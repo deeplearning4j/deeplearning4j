@@ -23,6 +23,7 @@
 #include <NDArray.h>
 #include <ops/ops.h>
 #include <GradCheck.h>
+#include <helpers/RandomLauncher.h>
 
 
 using namespace nd4j;
@@ -129,6 +130,70 @@ TEST_F(NlpTests, basic_sg_hs_test_2) {
     delete row2;
 
     delete result;
+}
+
+TEST_F(NlpTests, basic_sg_hs_test_3) {
+    auto exp0 = NDArrayFactory::create<float>('c', {1, 10});
+    auto exp1 = NDArrayFactory::create<float>('c', {1, 10});
+    auto exp2 = NDArrayFactory::create<float>('c', {1, 10});
+
+    exp0.assign(0.01f);
+    exp1.assign(0.020005f);
+    exp2.assign(0.019995f);
+
+    auto target = NDArrayFactory::create<int>(0);
+    auto ngStarter = NDArrayFactory::empty<int>();
+    auto indices0 = NDArrayFactory::create<int>('c', {3}, {1, 2, 3});
+    auto indices1 = NDArrayFactory::create<int>('c', {3}, {3, 1, 2});
+    auto codes00 = NDArrayFactory::create<int8_t>('c', {3}, {0, 1, 1});
+    auto codes01 = NDArrayFactory::create<int8_t>('c', {3}, {1, 0, 1});
+    auto syn00 = NDArrayFactory::create<float>('c', {100, 10});
+    auto syn01 = NDArrayFactory::create<float>('c', {100, 10});
+    auto syn10 = NDArrayFactory::create<float>('c', {100, 10});
+    auto syn11 = NDArrayFactory::create<float>('c', {100, 10});
+    auto syn1Neg = NDArrayFactory::empty<float>();
+    auto expTable = NDArrayFactory::create<float>('c', {10000});
+    auto negTable = NDArrayFactory::empty<float>();
+
+    RandomGenerator rng(119L, 198L);
+    RandomLauncher::fillUniform(rng, &syn00, 0.0, 1.0);
+    RandomLauncher::fillUniform(rng, &syn10, 0.0, 1.0);
+
+    syn01.assign(syn00);
+    syn11.assign(syn10);
+    expTable.assign(0.5);
+
+    auto alpha = NDArrayFactory::create<double>(0.001);
+    auto randomValue = NDArrayFactory::create<Nd4jLong>(1L);
+    auto inferenceVector = NDArrayFactory::empty<float>();
+
+    nd4j::ops::skipgram op;
+    auto result0 = op.execute({&target, &ngStarter, &indices0, &codes00, &syn00, &syn10, &syn1Neg, &expTable, &negTable, &alpha, &randomValue, &inferenceVector}, {}, {}, {false}, true);
+    auto result1 = op.execute({&target, &ngStarter, &indices1, &codes01, &syn01, &syn11, &syn1Neg, &expTable, &negTable, &alpha, &randomValue, &inferenceVector}, {}, {}, {false}, true);
+    ASSERT_EQ(Status::OK(), result0->status());
+
+    auto row00 = syn00.subarray({NDIndex::point(0), NDIndex::all()});
+    auto row01 = syn01.subarray({NDIndex::point(0), NDIndex::all()});
+    auto row1 = syn10.subarray({NDIndex::point(1), NDIndex::all()});
+    auto row2 = syn11.subarray({NDIndex::point(1), NDIndex::all()});
+
+    row00->printIndexedBuffer("syn00");
+    row01->printIndexedBuffer("syn01");
+
+    row1->printIndexedBuffer("syn10");
+    row2->printIndexedBuffer("syn11");
+
+
+    ASSERT_EQ(*row2, *row1);
+    ASSERT_EQ(*row00, *row01);
+
+    delete row00;
+    delete row01;
+    delete row1;
+    delete row2;
+
+    delete result0;
+    delete result1;
 }
 
 TEST_F(NlpTests, basic_sg_hs_ns_test_1) {

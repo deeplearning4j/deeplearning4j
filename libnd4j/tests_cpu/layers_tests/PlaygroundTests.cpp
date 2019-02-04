@@ -941,13 +941,14 @@ TEST_F(PlaygroundTests, test_batched_skipgram_1) {
     const int batchSize = 64;
     const int codeLen = 6;
     const int numWords = 244;
+    const int vectorLength = 50;
 
     auto target = NDArrayFactory::create<int>('c', {batchSize});
     auto ngStarter = NDArrayFactory::empty<int>();
     auto indices = NDArrayFactory::create<int>('c', {batchSize, codeLen});
     auto codes = NDArrayFactory::create<int8_t>('c', {batchSize, codeLen});
-    auto syn0 = NDArrayFactory::create<float>('c', {numWords, 100});
-    auto syn1 = NDArrayFactory::create<float>('c', {numWords, 100});
+    auto syn0 = NDArrayFactory::create<float>('c', {numWords, vectorLength});
+    auto syn1 = NDArrayFactory::create<float>('c', {numWords, vectorLength});
     auto syn1Neg = NDArrayFactory::empty<float>();
     auto expTable = NDArrayFactory::linspace<float>(0.001, 0.995, 10000);
     auto negTable = NDArrayFactory::empty<float>();
@@ -966,16 +967,21 @@ TEST_F(PlaygroundTests, test_batched_skipgram_1) {
         alpha.p(e, lr);
         randomValue.p(e, rv);
 
-
         lr -= 0.001;
-        rv = nd4j::math::nd4j_abs<Nd4jLong>(rv * 25214903917L + 11);
 
-        for (int s = 0; s < codeLen; s++) {
+
+        for (int s = 1; s < codeLen; s++) {
             indices.p(e, s, nd4j::math::nd4j_abs<Nd4jLong>(rv % numWords));
             codes.p(e, s, s % 2);
+
+            rv = nd4j::math::nd4j_abs<Nd4jLong>(rv * 25214903917L + 11);
         }
+
+        rv = nd4j::math::nd4j_abs<Nd4jLong>(rv * 25214903917L + 11);
     }
 
+    //indices.printIndexedBuffer("indices");
+    //codes.printIndexedBuffer("codes");
 
     auto iterations = 1000;
 
@@ -988,9 +994,11 @@ TEST_F(PlaygroundTests, test_batched_skipgram_1) {
     }
     auto timeEnd = std::chrono::system_clock::now();
     auto spanTime = std::chrono::duration_cast<std::chrono::microseconds> ((timeEnd - timeStart)/iterations).count();
+    auto ttlTime = std::chrono::duration_cast<std::chrono::milliseconds> ((timeEnd - timeStart)).count();
 
 
-    nd4j_printf("spanTime   time: %lld us;\n", spanTime);
+    nd4j_printf("average time: %lld us;\n", spanTime);
+    nd4j_printf("total time: %lld ms;\n", ttlTime);
 
 
     delete expTable;

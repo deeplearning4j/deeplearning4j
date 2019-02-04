@@ -279,34 +279,106 @@ namespace nd4j {
             BUILD_SINGLE_TEMPLATE(template void skipgram_, (void *syn0, void *syn1, void *syn1Neg, void *expTable, void *vnegTable, void *vinfVector, int target, int ngStarter, int *indices, int8_t *codes, double alpha, Nd4jLong randomValue, const int hsRounds, const int nsRounds, const int vocabSize, const int vectorLength, const int expLength, const int negLength), FLOAT_TYPES);
 
             template <typename T>
-            void skipgramBatchExec_(AveragingArrayProxy &s0, AveragingArrayProxy &s1, AveragingArrayProxy &s1n, void *vexpTable, void *vnegTable, void *vinfVector, int target, int ngStarter, int *indices, int8_t *codes, double alpha, Nd4jLong randomValue, const int hsRounds, const int nsRounds, const int vocabSize, const int vectorLength, const int expLength, const int negLength) {
+            void skipgramBatchExec_(NDArray &s0, NDArray &s1, NDArray &s1n, void *vexpTable, void *vnegTable, void *vinfVector, NDArray &targets, int ngStarter, NDArray &indices, NDArray &codes, NDArray &lr, NDArray &nextRandom, const int nsRounds, const int vocabSize, const int vectorLength, const int expLength, const int negLength) {
                 //auto syn0 = reinterpret_cast<T*>(vsyn0);
                 //auto syn1 = reinterpret_cast<T*>(vsyn1);
                 //auto syn1Neg = reinterpret_cast<T*>(vsyn1Neg);
-                auto expTable = reinterpret_cast<T*>(vexpTable);
-                auto negTable = reinterpret_cast<int*>(vnegTable);
-                auto infVector = reinterpret_cast<T*>(vinfVector);
+                const auto expTable = reinterpret_cast<T*>(vexpTable);
+                const auto negTable = reinterpret_cast<int*>(vnegTable);
+                const auto infVector = reinterpret_cast<T*>(vinfVector);
 
-                auto neu1e = new T[vectorLength];
-                memset(neu1e, 0, vectorLength * sizeof(T));
+                T sneu1e[600];
 
-                auto s0w = s0.writeable(target, omp_get_thread_num());
+                const auto numThreads = 12;
+                const auto idxShift = indices.sizeAt(1);
+                const auto hsRounds = codes.sizeAt(1);
 
-                // hierarchic softmax goes first (if enabled)
 
-                auto syn0row = reinterpret_cast<T*>(s0w->buffer());
-                auto irow = 0;
-                if (hsRounds > 0) {
-                    for (int r = 0; r < hsRounds; r++) {
-                        irow = indices[r];
-                        if (irow < 0 || irow >= vocabSize)
-                            break;
 
-                        hSoftmax_<T>(syn0row, s1.writeable(irow, omp_get_thread_num())->buffer(), expTable, neu1e, alpha, vectorLength, codes[r], expLength, infVector != nullptr);
+                if (!targets.isEmpty()) {
+                    auto bTarget = targets.bufferAsT<int>();
+                    auto bIndices = indices.bufferAsT<int>();
+                    auto bCodes = codes.bufferAsT<int8_t>();
+                    auto numTargets = targets.lengthOf();
+
+
+// parallel block and following loop will be the same for every thread
+#pragma omp parallel num_threads(numThreads)  private(sneu1e) default(shared)
+                    {
+                        auto isOwner = true;
+                        auto irow = 0;
+
+                        // if vectorLength > pre-defined value we'll allocate new array
+                        T* neu1e = vectorLength <= 600 ? sneu1e : new T[vectorLength];
+                        //T* neu1e = new T[vectorLength];
+
+                        // initial target position
+                        // f can't be higher than batch size
+                        int f = omp_get_thread_num() > numTargets ? omp_get_thread_num() % numTargets : omp_get_thread_num();
+
+                        for (int t = 0; t < numTargets; t++) {
+                            // this value should be different for all threads, so we're shifting values here
+                            if (f >= numTargets)
+                                f = 0;
+
+                            // actual target for THIS thread
+                            auto target = bTarget[f];
+                            auto alpha = lr.e<double>(f);
+
+                            // if previous cycle used neu1e - nullify it
+                            if (isOwner)
+                                memset(neu1e, 0, vectorLength * sizeof(T));
+
+                            // we're deciding if this thread will process this given target, or not
+                            isOwner = target % numThreads == omp_get_thread_num();
+                            auto syn0row = isOwner ? reinterpret_cast<T*>(s0.bufferWithOffset(target * vectorLength)) : 0;
+
+                            auto cShift = f * idxShift;
+
+                            int x = omp_get_thread_num() > hsRounds ? omp_get_thread_num() % hsRounds : omp_get_thread_num();
+
+                            for (int r = 0; r < hsRounds; r++) {
+                                // this row should be randomized as well, to reduce chances for race conditions
+                                if (x >= hsRounds)
+                                    x = 0;
+
+                                irow = bIndices[x + cShift];
+                                if (irow < 0 || irow >= vocabSize)
+                                    isOwner = false;
+
+                                // all threads diverge here on top of divergence over syn0 table
+                                if (isOwner) {
+                                    auto syn1row = s1.bufferWithOffset(irow * vectorLength);
+                                    auto code = bCodes[x + cShift];
+
+                                    //nd4j_printf("syn0: [%i]; syn1: [%i]; code: [%i]\n", target, irow, code);
+                                    hSoftmax_<T>(syn0row, syn1row, expTable, neu1e, alpha, vectorLength, code, expLength, infVector != nullptr);
+                                }
+
+                                x++;
+                            }
+
+                            if (isOwner) {
+                                for (int e = 0; e < vectorLength; e++) {
+                                    syn0row[e] += neu1e[e];
+                                }
+                            }
+
+                            // we synchronize all threads here so they move synchronously
+                            //#pragma omp barrier
+
+                            // now we increment further step
+                            f++;
+                        }
+
+                        // optional deallocation
+                        if (vectorLength > 600)
+                            delete[] neu1e;
                     }
                 }
 
                 // negative sampling goes second (if enabled)
+                /*
                 auto nsStarter = ngStarter;
                 irow = nsStarter;
                 if (nsRounds > 0) {
@@ -323,25 +395,12 @@ namespace nd4j {
                                 continue;
                         }
 
-                        nSampling_<T>(syn0row, s1n.writeable(irow, omp_get_thread_num())->buffer(), expTable, neu1e, alpha, vectorLength, r == 0 ? 1 : 0, expLength, infVector != nullptr);
+                        //nSampling_<T>(syn0row, s1n.writeable(irow, omp_get_thread_num())->buffer(), expTable, neu1e, alpha, vectorLength, r == 0 ? 1 : 0, expLength, infVector != nullptr);
                     }
                 }
-
-                if (infVector == nullptr) {
-#pragma omp simd
-                    for (int e = 0; e < vectorLength; e++) {
-                        syn0row[e] += neu1e[e];
-                    }
-                } else {
-#pragma omp simd
-                    for (int e = 0; e < vectorLength; e++) {
-                        infVector[e] += neu1e[e];
-                    }
-                }
-
-                delete[] neu1e;
+                */
             }
-            BUILD_SINGLE_TEMPLATE(template void skipgramBatchExec_, (AveragingArrayProxy &syn0, AveragingArrayProxy &syn1, AveragingArrayProxy &syn1Neg, void *expTable, void *vnegTable, void *vinfVector, int target, int ngStarter, int *indices, int8_t *codes, double alpha, Nd4jLong randomValue, const int hsRounds, const int nsRounds, const int vocabSize, const int vectorLength, const int expLength, const int negLength), FLOAT_TYPES);
+            BUILD_SINGLE_TEMPLATE(template void skipgramBatchExec_, (NDArray &s0, NDArray &s1, NDArray &s1n, void *vexpTable, void *vnegTable, void *vinfVector, NDArray &targets, int ngStarter, NDArray &indices, NDArray &codes, NDArray &lr, NDArray &nextRandom, const int nsRounds, const int vocabSize, const int vectorLength, const int expLength, const int negLength), FLOAT_TYPES);
 
             void skipgram(NDArray &syn0, NDArray &syn1, NDArray &syn1Neg, NDArray &expTable, NDArray &negTable, NDArray &target, NDArray &ngStarter, int nsRounds, NDArray &indices, NDArray &codes, NDArray &alpha, NDArray &randomValue, NDArray &inferenceVector) {
                 auto xType = syn0.dataType();
@@ -354,8 +413,10 @@ namespace nd4j {
                 } else if (ngStarter.isVector() || target.isVector()){
                     // batch mode
 
-                    auto batchSize = codes.sizeAt(0);
+                    //auto batchSize = codes.sizeAt(0);
+                    BUILD_SINGLE_SELECTOR(xType, skipgramBatchExec_, (syn0, syn1, syn1Neg, expTable.buffer(), negTable.buffer(), nullptr, target, 0, indices, codes, alpha, randomValue, 0, syn0.sizeAt(0), syn0.sizeAt(1), expTable.lengthOf(), 0), FLOAT_TYPES);
 
+/*
                     AveragingArrayProxy s0(&syn0);
                     AveragingArrayProxy s1(&syn1);
                     AveragingArrayProxy s1n(&syn1Neg);
@@ -388,7 +449,7 @@ namespace nd4j {
 
                     if (!s1n.isEmpty())
                         s1n.collapseWrites();
-
+*/
                 } else
                     throw std::runtime_error("SkipGram: Codes must have rank 1 or 2");
             }
