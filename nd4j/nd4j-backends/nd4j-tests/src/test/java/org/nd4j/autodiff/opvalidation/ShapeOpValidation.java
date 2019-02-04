@@ -2023,4 +2023,40 @@ public class ShapeOpValidation extends BaseOpValidation {
         assertTrue(isEmpty);
         assertArrayEquals(new long[0], shape);
     }
+
+    @Test
+    public void testSplitEmpty(){
+        /*
+        tf.reset_default_graph()
+        # Hack to create empty array
+        input = tf.constant([False], dtype=tf.bool)
+        empty = tf.where(condition=input)
+        empty = tf.reshape(empty, [0,4])
+        emptyFloat = tf.cast(empty, tf.float32)
+        const1 = tf.constant(1, dtype=tf.int32)
+        split = tf.split(value=emptyFloat, num_or_size_splits=4, axis=1)
+        sess = tf.Session()
+        out = sess.run([split])
+        # print(out[0].shape);
+        print(out[0]);
+         */
+
+        INDArray emptyIn = Nd4j.empty(DataType.FLOAT);
+        INDArray axis = Nd4j.scalar(1);
+
+        DynamicCustomOp op = DynamicCustomOp.builder("split")
+                .addInputs(axis, emptyIn)
+                .addIntegerArguments(4) //num_splits = 4
+                .build();
+
+        List<LongShapeDescriptor> l = op.calculateOutputShape();
+        assertEquals(4, l.size());
+        for( int i=0; i<4; i++ ){
+            assertArrayEquals(new long[0], l.get(i).getShape());
+            assertTrue(l.get(i).isEmpty());
+            op.addOutputArgument(Nd4j.empty(DataType.FLOAT));
+        }
+
+        Nd4j.exec(op);
+    }
 }
