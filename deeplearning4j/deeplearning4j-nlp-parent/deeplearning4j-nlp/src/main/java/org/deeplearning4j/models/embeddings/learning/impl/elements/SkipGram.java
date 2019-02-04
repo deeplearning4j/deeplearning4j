@@ -493,18 +493,6 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
                 codes = new byte[0][0];
                 indices = new int[0][0];
             }
-            /*for (int i = 0; i < maxCols; ++i) {
-                if (i < w1.getCodeLength())
-                    codes[cnt][i] = interimCodes[i];
-                else
-                    codes[cnt][i] = -1;
-            }
-            for (int i = 0; i < maxCols; ++i) {
-                if (i < w1.getCodeLength())
-                    indices[cnt][i]  = idxSyn1[i];
-                else
-                    indices[cnt][i] = -1;
-            }*/
 
             //negative sampling
             if (negative > 0) {
@@ -528,7 +516,6 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
                 (negative > 0) ? syn1Neg.get() : Nd4j.empty(syn0.get().dataType()), expTable.get(),
                 (negative > 0) ? table.get() : Nd4j.empty(syn0.get().dataType()),
                 (int) negative, indicesArray, codesArray,
-                //Nd4j.empty(DataType.INT),  Nd4j.empty(DataType.BYTE),
                 alphasArray, randomValuesArray,
                 /*inferenceVector != null ? inferenceVector :*/ Nd4j.empty(syn0.get().dataType()));
 
