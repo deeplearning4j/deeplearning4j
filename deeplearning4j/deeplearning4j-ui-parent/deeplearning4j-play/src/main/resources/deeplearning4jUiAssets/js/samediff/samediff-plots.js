@@ -16,8 +16,6 @@
 
 
 function renderLineChart(/*jquery selector*/ element, label, xDataArray, yDataArray ){
-
-
     var toPlot = [];
     for(var i=0; i<xDataArray.length; i++ ){
         toPlot.push([xDataArray[i], yDataArray[i]]);
@@ -53,12 +51,43 @@ function renderLineChart(/*jquery selector*/ element, label, xDataArray, yDataAr
 
     var plotData = [{data: toPlot, label: label}];
     var plot = $.plot(element, plotData, plotOptions);
+}
+
+function renderHistogramSingle(/*jquery selector*/ element, label, /*nd4j.graph.UIEvent*/ evt, /*nd4j.graph.UIHistogram*/ h){
+    //Histogram rendering:
+
+    var data = [];
+    if(h.type() == nd4j.graph.UIHistogramType.EQUAL_SPACING){
+        var minmaxArr = h.binranges();  //Rank 1, size 2
+        var min = scalarFromFlatArrayIdx(minmaxArr, 0);
+        var max = scalarFromFlatArrayIdx(minmaxArr, 1);
+        var numBins = h.numbins();
+
+        var y = h.y();
+
+        //Render this as a line chart for now. Could do this as a bar chart instead
+        var step = (max-min)/numBins;
+        for(var i=0; i<numBins; i++ ){
+            var lower = min + step * i;
+            var upper = lower + step;
+            var yValue = scalarFromFlatArrayIdx(y, i);
+            data.push([lower,0]);
+            data.push([lower,yValue]);
+            data.push([upper,yValue]);
+            data.push([upper,0]);
+        }
+
+        var plotData = [{data: toPlot, label: label}];
+        $.plot(element, plotData)
+    }
 
 }
 
 var sdEventNamesMap = new Map();        //Map<Integer,String>   - key is name index, value is name
 var sdPlotsLineChartX = new Map();      //Map<String,nd4j.graph.UIEvent>
 var sdPlotsLineChartY = new Map();      //Map<String,Number[]>
+var sdPlotsHistogramX = new Map();      //Map<String,nd4j.graph.UIEvent>
+var sdPlotsHistogramY = new Map();      //Map<String,nd4j.graph.UIHistogram>
 function readAndRenderPlotsData(){
 
     if (file) {
@@ -113,6 +142,8 @@ function readAndRenderPlotsData(){
                     var contentSlice = bytes.slice(currentOffset + 8 + headerLength, currentOffset + 8 + headerLength + contentLength);
                     var contentBuffer = new flatbuffers.ByteBuffer(contentSlice);
 
+                    var nameId = header.nameIdx();
+
                     var evtType = header.eventType();
                     if(evtType === nd4j.graph.UIEventType.ADD_NAME){
                         var content = nd4j.graph.UIAddName.getRootAsUIAddName(contentBuffer);
@@ -121,17 +152,31 @@ function readAndRenderPlotsData(){
                         var nameIdx = content.nameIdx();
                         sdEventNamesMap.set(nameIdx, name);
 
-                        sdPlotsLineChartX.set(name, []);
-                        sdPlotsLineChartY.set(name, []);
-
                     } else if(evtType === nd4j.graph.UIEventType.SCALAR){
                         var content = nd4j.graph.FlatArray.getRootAsFlatArray(contentBuffer);
+                        var name = sdEventNamesMap.get(nameId);
                         var scalar = scalarFromFlatArray(content);
                         var dt = dataTypeToString(content.dtype());
-                        console.log("Decoded SCALAR event: " + scalar + " - " + dt);
+                        // console.log("Decoded SCALAR event: " + scalar + " - " + dt);
+
+                        if(!sdPlotsLineChartX.has(name)){
+                            sdPlotsLineChartX.set(name, []);
+                            sdPlotsLineChartY.set(name, []);
+                        }
 
                         sdPlotsLineChartX.get(name).push(header);
                         sdPlotsLineChartY.get(name).push(scalar);
+                    } else if(evtType === nd4j.graph.UIEventType.HISTOGRAM){
+                        var content = nd4j.graph.UIHistogram.getRootAsUIHistogram(contentBuffer);
+                        var name = sdEventNamesMap.get(nameId);
+
+                        if(!sdPlotsHistogramX.has(name)){
+                            sdPlotsHistogramX.set(name, []);
+                            sdPlotsHistogramY.set(name, []);
+                        }
+
+                        sdPlotsHistogramX.get(name).push(header);
+                        sdPlotsHistogramY.get(name).push()
                     }
 
                     //TODO other types!
@@ -142,6 +187,7 @@ function readAndRenderPlotsData(){
         };
 
         renderLineCharts();
+        renderHistograms();
     }
 }
 
@@ -149,7 +195,8 @@ function renderLineCharts(){
     var contentDiv = $("#samediffcontent");
     //List available charts, histograms, etc:
     var lineChartKeys = Array.from(sdPlotsLineChartX.keys());
-    var content1 = "<div>Scalars Values: " + lineChartKeys + "<br><br></div>";
+    console.log("Line chart keys: " + lineChartKeys);
+    var content1 = "<div><b>Scalars Values</b>:\n" + lineChartKeys.join("\n") + "<br><br></div>";
     contentDiv.html(content1);
 
     for( var i=0; i<lineChartKeys.length; i++ ) {
@@ -159,9 +206,52 @@ function renderLineCharts(){
         var chartDivTxt = "\n<div id=\"" + chartName + "\" class=\"center\" style=\"height: 300px; max-width:750px\" ></div>";
         contentDiv.append(chartDivTxt);
         var element = $("#" + chartName);
-        var x = [];
-        var y = [];
-        renderLineChart(element, label, x, y);
+        var label = lineChartKeys[i];
+        var x = sdPlotsLineChartX.get(label);       //nd4j.graph.UIEvent
+        var y = sdPlotsLineChartY.get(label);
+
+        //Parse to iteration. We'll want to make this customizable eventually (iteration, time, etc)
+        var xPlot = [];
+        for( var j=0; j<x.length; j++ ){
+            var iter = x[j].iteration();
+            xPlot.push(iter);
+        }
+
+        renderLineChart(element, label, xPlot, y);
+    }
+}
+
+function renderHistograms(){
+    var contentDiv = $("#samediffcontent");
+    var content1 = "<br><br><div><b>Histograms</b>: TODO<br><br></div>";
+    contentDiv.append(content1);
+
+    var keys = Array.from(sdPlotsHistogramX.keys());
+    console.log("Histogram keys: " + keys);
+
+    for( var i=0; i<keys.length; i++ ){
+        var chartName = "sdHistogram_" + i;
+        var chartDivTxt = "\n<div id=\"" + chartName + "\" class=\"center\" style=\"height: 300px; max-width:750px\" ></div>";
+        contentDiv.append(chartDivTxt);
+        var element = $("#" + chartName);
+        var label = keys[i];
+        var x = sdPlotsHistogramX.get(label);       //nd4j.graph.UIEvent
+        var hist = sdPlotsHistogramY.get(label);    //nd4j.graph.UIHistogram
+        var h = null;
+        var evt = null;
+        if(hist.length > 0){
+            evt = x[x.length-1];
+            h = hist[hist.length-1];
+        }
+
+        //Parse to iteration. We'll want to make this customizable eventually (iteration, time, etc)
+        var xPlot = [];
+        for( var j=0; j<x.length; j++ ){
+            var iter = x[j].iteration();
+            xPlot.push(iter);
+        }
+
+        renderHistogramSingle(element, label, evt, h);
     }
 }
 

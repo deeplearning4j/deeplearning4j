@@ -315,7 +315,7 @@ public class LogFileWriter {
             }
             binLabelsOffset = UIHistogram.createBinlabelsVector(fbb2, str);
         }
-        int offset2 = UIHistogram.createUIHistogram(fbb, UIHistogramType.DISCRETE, y.length(), 0, yOffset, binLabelsOffset);
+        int offset2 = UIHistogram.createUIHistogram(fbb2, UIHistogramType.DISCRETE, y.length(), 0, yOffset, binLabelsOffset);
         fbb2.finish(offset2);
 
         return append(fbb, fbb2);
@@ -340,7 +340,7 @@ public class LogFileWriter {
         INDArray binRangesArr = Nd4j.createFromArray(min, max);
         int binRangesOffset = binRangesArr.toFlatArray(fbb2);
 
-        int offset2 = UIHistogram.createUIHistogram(fbb, UIHistogramType.EQUAL_SPACING, y.length(), binRangesOffset, yOffset, 0);
+        int offset2 = UIHistogram.createUIHistogram(fbb2, UIHistogramType.EQUAL_SPACING, y.length(), binRangesOffset, yOffset, 0);
         fbb2.finish(offset2);
 
         return append(fbb, fbb2);
@@ -365,7 +365,7 @@ public class LogFileWriter {
 
         int binRangesOffset = bins.toFlatArray(fbb2);
 
-        int offset2 = UIHistogram.createUIHistogram(fbb, UIHistogramType.CUSTOM, y.length(), binRangesOffset, yOffset, 0);
+        int offset2 = UIHistogram.createUIHistogram(fbb2, UIHistogramType.CUSTOM, y.length(), binRangesOffset, yOffset, 0);
         fbb2.finish(offset2);
 
         return append(fbb, fbb2);

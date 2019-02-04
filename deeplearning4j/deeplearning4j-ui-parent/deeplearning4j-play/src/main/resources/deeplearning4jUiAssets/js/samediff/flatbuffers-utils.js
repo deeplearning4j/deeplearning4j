@@ -210,7 +210,11 @@ function dataTypeBytesPerElement(dataTypeByte){
     }
 }
 
-function scalarFromFlatArray(/*FlatArray*/ flatArray){
+function scalarFromFlatArray(/*FlatArray*/ flatArray) {
+    return scalarFromFlatArrayIdx(flatArray, 0);
+}
+
+function scalarFromFlatArrayIdx(/*FlatArray*/ flatArray, idx){
 
     //TODO check if actually scalar...
     var dt = flatArray.dtype();
@@ -237,25 +241,25 @@ function scalarFromFlatArray(/*FlatArray*/ flatArray){
     var out;
     switch (dt){
         case nd4j.graph.DataType.BOOL:
-            out = (dv.getUint8(0) === 0 ? "false" : "true");
+            out = (dv.getUint8(idx) === 0 ? "false" : "true");
             break;
         case nd4j.graph.DataType.INT8:
-            out = dv.getInt8(0);
+            out = dv.getInt8(idx);
             break;
         case nd4j.graph.DataType.UINT8:
-            out = dv.getUint8(0);
+            out = dv.getUint8(idx);
             break;
         case nd4j.graph.DataType.INT16:
-            out = dv.getInt16(0);
+            out = dv.getInt16(idx);
             break;
         case nd4j.graph.DataType.UINT16:
-            out = dv.getUint16(0);
+            out = dv.getUint16(idx);
             break;
         case nd4j.graph.DataType.INT32:
-            out = dv.getInt32(0);
+            out = dv.getInt32(idx);
             break;
         case nd4j.graph.DataType.UINT32:
-            out = dv.getUint32(0);
+            out = dv.getUint32(idx);
             break;
         case nd4j.graph.DataType.INT64:
             //No getInt64 method... :/
@@ -266,10 +270,10 @@ function scalarFromFlatArray(/*FlatArray*/ flatArray){
             out = "<uint64>";
             break;
         case nd4j.graph.DataType.FLOAT:
-            out = dv.getFloat32(0);
+            out = dv.getFloat32(idx);
             break;
         case nd4j.graph.DataType.DOUBLE:
-            out = dv.getFloat64(0);
+            out = dv.getFloat64(idx);
             break;
         case nd4j.graph.DataType.UTF8:
             //TODO need to decode from bytes here
