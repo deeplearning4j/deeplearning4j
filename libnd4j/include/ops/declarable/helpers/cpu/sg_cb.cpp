@@ -287,15 +287,12 @@ namespace nd4j {
                 auto negTable = reinterpret_cast<int*>(vnegTable);
                 auto infVector = reinterpret_cast<T*>(vinfVector);
 
-                auto neu1e = new T[vectorLength];
-                memset(neu1e, 0, vectorLength * sizeof(T));
+                T sneu1e[600];
 
-                //auto s0w = s0.writeable(target, omp_get_thread_num());
-
-                // hierarchic softmax goes first (if enabled)
-
-                //auto syn0row = reinterpret_cast<T*>(s0w->buffer());
                 auto numThreads = 10;
+                auto idxShift = indices.sizeAt(1);
+                bool isOwner = true;
+
                 auto irow = 0;
                 if (!targets.isEmpty()) {
                     auto bTarget = targets.bufferAsT<int>();
@@ -303,32 +300,51 @@ namespace nd4j {
                     auto bCodes = codes.bufferAsT<int>();
 
 // parallel block and following loop will be the same for every thread
-//#pragma omp parallel num_threads(10)
+//#pragma omp parallel num_threads(10) private(neu1e)
                     {
+                        // if vectorLength > pre-defined value we'll allocate new array
+                        T* neu1e = vectorLength <= 600 ? sneu1e : new T[vectorLength];
+
                         for (int t = 0; t < targets.lengthOf(); t++) {
                             // this value should be different for all threads
                             auto target = bTarget[t];
 
-                            // we're deciding if this thread will process this given target, or not
-                            auto isOwner = target % numThreads == omp_get_thread_num();
-                            auto syn0row = isOwner ? s0.bufferWithOffset(target * vectorLength) : 0;
+                            // if previous cycle used neu1e - nullify it
+                            if (isOwner)
+                                memset(neu1e, 0, vectorLength * sizeof(T));
 
+                            // we're deciding if this thread will process this given target, or not
+                            isOwner = target % numThreads == omp_get_thread_num();
+                            auto syn0row = isOwner ? reinterpret_cast<T*>(s0.bufferWithOffset(target * vectorLength)) : 0;
+
+                            auto cShift = t * idxShift;
                             for (int r = 0; r < hsRounds; r++) {
                                 // this row should be randomized as well, to reduce chances for race conditions
-                                irow = bIndices[r];
+                                irow = bIndices[r + cShift];
                                 if (irow < 0 || irow >= vocabSize)
                                     isOwner = false;
 
                                 // all threads diverge here on top of
                                 if (isOwner) {
                                     auto syn1row = s1.bufferWithOffset(irow * vectorLength);
-                                    hSoftmax_<T>(syn0row, syn1row, expTable, neu1e, alpha, vectorLength, codes[r], expLength, infVector != nullptr);
+                                    hSoftmax_<T>(syn0row, syn1row, expTable, neu1e, alpha, vectorLength, bCodes[r + cShift], expLength, infVector != nullptr);
                                 }
                             }
 
                             // we synchronize all threads here so they move synchronously
                             //#pragma omp barrier
+
+
+                            if (isOwner) {
+                                for (int e = 0; e < vectorLength; e++) {
+                                    syn0row[e] += neu1e[e];
+                                }
+                            }
                         }
+
+                        // optional deallocation
+                        if (vectorLength > 600)
+                            delete[] neu1e;
                     }
                 }
 
@@ -349,15 +365,15 @@ namespace nd4j {
                                 continue;
                         }
 
-                        nSampling_<T>(syn0row, s1n.writeable(irow, omp_get_thread_num())->buffer(), expTable, neu1e, alpha, vectorLength, r == 0 ? 1 : 0, expLength, infVector != nullptr);
+                        //nSampling_<T>(syn0row, s1n.writeable(irow, omp_get_thread_num())->buffer(), expTable, neu1e, alpha, vectorLength, r == 0 ? 1 : 0, expLength, infVector != nullptr);
                     }
                 }
 
                 if (infVector == nullptr) {
-#pragma omp simd
-                    for (int e = 0; e < vectorLength; e++) {
-                        syn0row[e] += neu1e[e];
-                    }
+//#pragma omp simd
+//                    for (int e = 0; e < vectorLength; e++) {
+//                        syn0row[e] += neu1e[e];
+//                    }
                 } else {
 #pragma omp simd
                     for (int e = 0; e < vectorLength; e++) {
