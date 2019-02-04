@@ -310,7 +310,7 @@ namespace nd4j {
 
                         // initial target position
                         // f can't be higher than batch size
-                        int f = omp_get_thread_num();
+                        int f = omp_get_thread_num() > numTargets ? omp_get_thread_num() % numTargets : omp_get_thread_num();
 
                         for (int t = 0; t < numTargets; t++) {
                             // this value should be different for all threads, so we're shifting values here
