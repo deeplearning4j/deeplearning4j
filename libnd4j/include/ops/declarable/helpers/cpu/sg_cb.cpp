@@ -21,6 +21,7 @@
 #include <ops/declarable/helpers/sg_cb.h>
 #include <AveragingArrayProxy.h>
 #include <helpers/AveragingArrayProxy.h>
+#include <specials.h>
 
 #define HS_MAX_EXP 6.0f
 
@@ -278,6 +279,23 @@ namespace nd4j {
             }
             BUILD_SINGLE_TEMPLATE(template void skipgram_, (void *syn0, void *syn1, void *syn1Neg, void *expTable, void *vnegTable, void *vinfVector, int target, int ngStarter, int *indices, int8_t *codes, double alpha, Nd4jLong randomValue, const int hsRounds, const int nsRounds, const int vocabSize, const int vectorLength, const int expLength, const int negLength), FLOAT_TYPES);
 
+            bool search_(int *haystack, int needle, int totalElements) {
+                int firstIndex = 0;
+                int lastIndex = totalElements - 1;
+                int halfIndex = nd4j::math::nd4j_floor<float, int>((lastIndex + firstIndex) / (float) 2);
+
+                while(haystack[halfIndex] != needle && firstIndex < lastIndex) {
+                    if (needle < haystack[halfIndex]) {
+                        lastIndex = halfIndex - 1;
+                    } else if (needle > haystack[halfIndex]) {
+                        firstIndex = halfIndex + 1;
+                    }
+                    halfIndex = nd4j::math::nd4j_floor<float, int>((lastIndex + firstIndex) / (float) 2);
+                }
+
+                return (haystack[halfIndex] != needle) ? false : true;
+            }
+
             template <typename T>
             void skipgramBatchExec_(NDArray &s0, NDArray &s1, NDArray &s1n, void *vexpTable, void *vnegTable, void *vinfVector, NDArray &targets, NDArray &negStarters, NDArray &indices, NDArray &codes, NDArray &lr, NDArray &nextRandom, const int nsRounds, const int vocabSize, const int vectorLength, const int expLength, const int negLength) {
                 //auto syn0 = reinterpret_cast<T*>(vsyn0);
@@ -385,6 +403,11 @@ namespace nd4j {
                     const auto bTarget = targets.bufferAsT<int>();
                     const auto bStarters = negStarters.bufferAsT<int>();
 
+                    //copy & sort starters
+                    auto sStarters = new int[numTargets];
+                    memcpy(sStarters, bStarters, numTargets * sizeof(int));
+                    SpecialMethods<int>::sortGeneric(sStarters, negStarters.shapeInfo(), false);
+
 // same parallelism here, group by target AND nsStarter pair
 #pragma omp parallel num_threads(numThreads) private(sneu1e) default(shared)
                     {
@@ -432,6 +455,26 @@ namespace nd4j {
                                             continue;
 
                                         // we shift irow here to guarantee independence
+                                        int dim = irow % numThreads;
+                                        if (dim != omp_get_thread_num()) {
+                                            irow += numThreads - omp_get_thread_num();
+
+                                            //if (irow % numThreads != omp_get_thread_num())
+                                            //    throw std::runtime_error("boom");
+
+                                            // roll back to nearest affilated word
+                                            if (irow >= vocabSize)
+                                                irow -= numThreads;
+
+                                            /*
+                                            if (search_(sStarters, irow, numTargets)) {
+                                                if (irow < numTargets - numThreads)
+                                                    irow += numThreads;
+                                                else if (irow > numThreads)
+                                                    irow -= numThreads;
+                                            }
+                                            */
+                                        }
                                     }
 
                                     //nd4j_printf("Thread <%i>: syn0: [%i]; s1n: [%i];\n", omp_get_thread_num(), target, irow);
@@ -451,6 +494,9 @@ namespace nd4j {
                         if (vectorLength > 600)
                             delete[] neu1e;
                     }
+
+                    // deleting sorted stuff
+                    delete[] sStarters;
                 }
             }
             BUILD_SINGLE_TEMPLATE(template void skipgramBatchExec_, (NDArray &s0, NDArray &s1, NDArray &s1n, void *vexpTable, void *vnegTable, void *vinfVector, NDArray &targets, NDArray &negStarters, NDArray &indices, NDArray &codes, NDArray &lr, NDArray &nextRandom, const int nsRounds, const int vocabSize, const int vectorLength, const int expLength, const int negLength), FLOAT_TYPES);
