@@ -1,9 +1,30 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 package org.deeplearning4j.arbiter.optimize.generator.genetic.mutation;
 
 import org.apache.commons.math3.random.JDKRandomGenerator;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.apache.commons.math3.random.SynchronizedRandomGenerator;
 
+/**
+ * A mutation operator where each gene has a chance of being mutated with a <i>mutation rate</i> probability.
+ *
+ * @author Alexandre Boulanger
+ */
 public class RandomMutationOperator implements MutationOperator {
     private static final double DEFAULT_MUTATION_RATE = 0.005;
 
@@ -11,7 +32,12 @@ public class RandomMutationOperator implements MutationOperator {
         private double mutationRate = DEFAULT_MUTATION_RATE;
         private RandomGenerator rng;
 
-        public RandomMutationOperator.Builder mutationRate(double rate) {
+        /**
+         * Each gene will have this probability of being mutated.
+         *
+         * @param rate The mutation rate. (default 0.005)
+         */
+        public Builder mutationRate(double rate) {
             if(rate < 0 || rate> 1.0) {
                 throw new IllegalArgumentException("Rate must be within 0.0 and 1.0 range.");
             }
@@ -20,7 +46,12 @@ public class RandomMutationOperator implements MutationOperator {
             return this;
         }
 
-        public RandomMutationOperator.Builder randomGenerator(RandomGenerator rng) {
+        /**
+         * Use a supplied RandomGenerator
+         *
+         * @param rng An instance of RandomGenerator
+         */
+        public Builder randomGenerator(RandomGenerator rng) {
             this.rng = rng;
             return this;
         }
@@ -33,14 +64,7 @@ public class RandomMutationOperator implements MutationOperator {
         }
     }
 
-    private double mutationRate;
-    public double getMutationRate() {
-        return mutationRate;
-    }
-    public void setMutationRate(double mutationRate) {
-        this.mutationRate = mutationRate;
-    }
-
+    private final double mutationRate;
     private final RandomGenerator rng;
 
     private RandomMutationOperator(RandomMutationOperator.Builder builder) {
@@ -48,6 +72,12 @@ public class RandomMutationOperator implements MutationOperator {
         this.rng = builder.rng;
     }
 
+    /**
+     * Performs the mutation. Each gene has a <i>mutation rate</i> probability of being mutated.
+     *
+     * @param genes The genes to be mutated
+     * @return True if the genes were mutated, otherwise false.
+     */
     @Override
     public boolean mutate(double[] genes) {
         boolean hasMutation = false;

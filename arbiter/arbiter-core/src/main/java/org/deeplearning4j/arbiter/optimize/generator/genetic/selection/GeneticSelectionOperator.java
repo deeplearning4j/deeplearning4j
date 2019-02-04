@@ -1,3 +1,19 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 package org.deeplearning4j.arbiter.optimize.generator.genetic.selection;
 
 import org.apache.commons.math3.random.JDKRandomGenerator;
@@ -13,6 +29,12 @@ import org.deeplearning4j.arbiter.optimize.generator.genetic.population.Populati
 
 import java.util.Arrays;
 
+/**
+ * A selection operator that will generate random genes initially. Once the population has reached the culled size,
+ * will start to generate offsprings of parents selected in the population.
+ *
+ * @author Alexandre Boulanger
+ */
 public class GeneticSelectionOperator extends SelectionOperator {
 
     private final static int PREVIOUS_GENES_TO_KEEP = 100;
@@ -25,17 +47,32 @@ public class GeneticSelectionOperator extends SelectionOperator {
         private MutationOperator mutationOperator;
         private RandomGenerator rng;
 
-        public GeneticSelectionOperator.Builder crossoverOperator(CrossoverOperator crossoverOperator) {
+        /**
+         * Use an alternate crossover behavior. Default is SinglePointCrossover.
+         *
+         * @param crossoverOperator An instance of CrossoverOperator
+         */
+        public Builder crossoverOperator(CrossoverOperator crossoverOperator) {
             this.crossoverOperator = crossoverOperator;
             return this;
         }
 
-        public GeneticSelectionOperator.Builder mutationOperator(MutationOperator mutationOperator) {
+        /**
+         * Use an alternate mutation behavior. Default is RandomMutationOperator.
+         *
+         * @param mutationOperator An instance of MutationOperator
+         */
+        public Builder mutationOperator(MutationOperator mutationOperator) {
             this.mutationOperator = mutationOperator;
             return this;
         }
 
-        public GeneticSelectionOperator.Builder randomGenerator(RandomGenerator rng) {
+        /**
+         * Use a supplied RandomGenerator
+         *
+         * @param rng An instance of RandomGenerator
+         */
+        public Builder randomGenerator(RandomGenerator rng) {
             this.rng = rng;
             return this;
         }
@@ -64,18 +101,29 @@ public class GeneticSelectionOperator extends SelectionOperator {
     private int previousGenesIdx = 0;
 
 
-    public GeneticSelectionOperator(CrossoverOperator crossoverOperator, MutationOperator mutationOperator, RandomGenerator rng) {
+    private GeneticSelectionOperator(CrossoverOperator crossoverOperator, MutationOperator mutationOperator, RandomGenerator rng) {
         this.crossoverOperator = crossoverOperator;
         this.mutationOperator = mutationOperator;
         this.rng = rng;
     }
 
+    /**
+     * Called by GeneticSearchCandidateGenerator
+     */
     @Override
     public void initializeInstance(PopulationModel populationModel, ChromosomeFactory chromosomeFactory) {
         super.initializeInstance(populationModel, chromosomeFactory);
         crossoverOperator.initializeInstance(populationModel);
     }
 
+    /**
+     * Build a new set of genes. Has two distinct modes of operation
+     * <ul>
+     * <li>Before the population has reached the culled size: will return a random set of genes.</li>
+     * <li>After: Parents will be selected among the population, a crossover will be applied followed by a mutation.</li>
+     * </ul>
+     * @return Returns the generated set of genes
+     */
     @Override
     public double[] buildNextGenes() {
         double[] result;

@@ -1,9 +1,9 @@
 package org.deeplearning4j.arbiter.optimize.genetic.crossover;
 
-import main.java.org.ab2002.genetic.tests.TestCrossoverOperator;
-import main.java.org.ab2002.genetic.tests.TestPopulationInitializer;
 import org.deeplearning4j.arbiter.optimize.generator.genetic.population.PopulationInitializer;
 import org.deeplearning4j.arbiter.optimize.generator.genetic.population.PopulationModel;
+import org.deeplearning4j.arbiter.optimize.genetic.TestCrossoverOperator;
+import org.deeplearning4j.arbiter.optimize.genetic.TestPopulationInitializer;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -15,7 +15,7 @@ public class CrossoverOperatorTests {
 
         PopulationInitializer populationInitializer = new TestPopulationInitializer();
 
-        PopulationModel populationModel = new PopulationModel.Builder(populationInitializer).build();
+        PopulationModel populationModel = new PopulationModel.Builder().populationInitializer(populationInitializer).build();
         sut.initializeInstance(populationModel);
 
         Assert.assertSame(populationModel, sut.getPopulationModel());

@@ -1,27 +1,27 @@
 package org.deeplearning4j.arbiter.optimize.genetic.selection;
 
-import main.java.org.ab2002.genetic.tests.TestCrossoverOperator;
-import main.java.org.ab2002.genetic.tests.TestMutationOperator;
-import main.java.org.ab2002.genetic.tests.TestPopulationInitializer;
-import main.java.org.ab2002.genetic.tests.TestRandomGenerator;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.deeplearning4j.arbiter.optimize.generator.genetic.ChromosomeFactory;
 import org.deeplearning4j.arbiter.optimize.generator.genetic.crossover.CrossoverResult;
-import org.deeplearning4j.arbiter.optimize.generator.genetic.culling.CullOperation;
+import org.deeplearning4j.arbiter.optimize.generator.genetic.culling.CullOperator;
 import org.deeplearning4j.arbiter.optimize.generator.genetic.population.PopulationInitializer;
 import org.deeplearning4j.arbiter.optimize.generator.genetic.population.PopulationModel;
 import org.deeplearning4j.arbiter.optimize.generator.genetic.selection.GeneticSelectionOperator;
+import org.deeplearning4j.arbiter.optimize.genetic.TestCrossoverOperator;
+import org.deeplearning4j.arbiter.optimize.genetic.TestMutationOperator;
+import org.deeplearning4j.arbiter.optimize.genetic.TestPopulationInitializer;
+import org.deeplearning4j.arbiter.optimize.genetic.TestRandomGenerator;
 import org.junit.Assert;
 import org.junit.Test;
 import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
 public class GeneticSelectionOperatorTests {
 
-    private class TestCullOperation implements CullOperation {
+    private class TestCullOperator implements CullOperator {
 
         private final int culledSize;
 
-        public TestCullOperation(int culledSize) {
+        public TestCullOperator(int culledSize) {
 
             this.culledSize = culledSize;
         }
@@ -48,9 +48,9 @@ public class GeneticSelectionOperatorTests {
 
         PopulationInitializer populationInitializer = new TestPopulationInitializer();
 
-        TestCullOperation cullingOperation = new TestCullOperation(1000);
-        PopulationModel populationModel = new PopulationModel.Builder(populationInitializer)
-                .cullingOperation(cullingOperation)
+        TestCullOperator cullOperator = new TestCullOperator(1000);
+        PopulationModel populationModel = new PopulationModel.Builder().populationInitializer(populationInitializer)
+                .cullOperator(cullOperator)
                 .build();
         ChromosomeFactory chromosomeFactory = new ChromosomeFactory();
         chromosomeFactory.initializeInstance(1);
@@ -71,10 +71,10 @@ public class GeneticSelectionOperatorTests {
 
         PopulationInitializer populationInitializer = new TestPopulationInitializer();
 
-        TestCullOperation cullingOperation = new TestCullOperation(-1);
+        TestCullOperator cullOperator = new TestCullOperator(-1);
 
-        PopulationModel populationModel = new PopulationModel.Builder(populationInitializer)
-                .cullingOperation(cullingOperation)
+        PopulationModel populationModel = new PopulationModel.Builder().populationInitializer(populationInitializer)
+                .cullOperator(cullOperator)
                 .build();
 
         ChromosomeFactory chromosomeFactory = new ChromosomeFactory();
@@ -106,10 +106,10 @@ public class GeneticSelectionOperatorTests {
 
         PopulationInitializer populationInitializer = new TestPopulationInitializer();
 
-        TestCullOperation cullingOperation = new TestCullOperation(-1);
+        TestCullOperator cullOperator = new TestCullOperator(-1);
 
-        PopulationModel populationModel = new PopulationModel.Builder(populationInitializer)
-                .cullingOperation(cullingOperation)
+        PopulationModel populationModel = new PopulationModel.Builder().populationInitializer(populationInitializer)
+                .cullOperator(cullOperator)
                 .build();
 
         ChromosomeFactory chromosomeFactory = new ChromosomeFactory();
@@ -142,10 +142,10 @@ public class GeneticSelectionOperatorTests {
 
         PopulationInitializer populationInitializer = new TestPopulationInitializer();
 
-        TestCullOperation cullingOperation = new TestCullOperation(-1);
+        TestCullOperator cullOperator = new TestCullOperator(-1);
 
-        PopulationModel populationModel = new PopulationModel.Builder(populationInitializer)
-                .cullingOperation(cullingOperation)
+        PopulationModel populationModel = new PopulationModel.Builder().populationInitializer(populationInitializer)
+                .cullOperator(cullOperator)
                 .build();
 
         ChromosomeFactory chromosomeFactory = new ChromosomeFactory();

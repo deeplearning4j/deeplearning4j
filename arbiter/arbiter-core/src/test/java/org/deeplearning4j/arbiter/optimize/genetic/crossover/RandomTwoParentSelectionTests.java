@@ -1,9 +1,9 @@
 package org.deeplearning4j.arbiter.optimize.genetic.crossover;
 
-import main.java.org.ab2002.genetic.tests.TestRandomGenerator;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.deeplearning4j.arbiter.optimize.generator.genetic.Chromosome;
-import org.deeplearning4j.arbiter.optimize.generator.genetic.crossover.RandomTwoParentSelection;
+import org.deeplearning4j.arbiter.optimize.generator.genetic.crossover.parentselection.RandomTwoParentSelection;
+import org.deeplearning4j.arbiter.optimize.genetic.TestRandomGenerator;
 import org.junit.Assert;
 import org.junit.Test;
 

@@ -14,27 +14,12 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.deeplearning4j.arbiter.optimize.generator.genetic.crossover;
+package org.deeplearning4j.arbiter.optimize.generator.genetic.crossover.parentselection;
 
 /**
- * Returned by a crossover operator
- * 
+ * Abstract class for all parent selection behaviors that selects two parents.
+ *
  * @author Alexandre Boulanger
  */
-public class CrossoverResult {
-	/**
-	* If false, there was no crossover and the operator simply returned the genes of a random parent.
-	* If true, the genes are the result of a crossover.
-	*/
-    public final boolean hasModification;
-	
-	/**
-	* The genes returned by the operator.
-	*/
-    public final double[] genes;
-
-    public CrossoverResult(boolean hasModification, double[] genes) {
-        this.hasModification = hasModification;
-        this.genes = genes;
-    }
+public abstract class TwoParentSelection extends ParentSelection {
 }

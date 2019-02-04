@@ -14,27 +14,31 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.deeplearning4j.arbiter.optimize.generator.genetic.crossover;
+package org.deeplearning4j.arbiter.optimize.generator.genetic.crossover.parentselection;
+
+import org.deeplearning4j.arbiter.optimize.generator.genetic.Chromosome;
+
+import java.util.List;
 
 /**
- * Returned by a crossover operator
- * 
+ * Abstract class for all parent selection behaviors
+ *
  * @author Alexandre Boulanger
  */
-public class CrossoverResult {
-	/**
-	* If false, there was no crossover and the operator simply returned the genes of a random parent.
-	* If true, the genes are the result of a crossover.
-	*/
-    public final boolean hasModification;
-	
-	/**
-	* The genes returned by the operator.
-	*/
-    public final double[] genes;
+public abstract class ParentSelection {
+    protected List<Chromosome> population;
 
-    public CrossoverResult(boolean hasModification, double[] genes) {
-        this.hasModification = hasModification;
-        this.genes = genes;
+    /**
+     * Will be called by the crossover operator once the population model is instantiated.
+     */
+    public void initializeInstance(List<Chromosome> population) {
+        this.population = population;
     }
+
+    /**
+     * Performs the parent selection
+     *
+     * @return An array of parents genes. The outer array are the parents, and the inner array are the genes.
+     */
+    public abstract double[][] selectParents();
 }

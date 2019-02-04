@@ -1,7 +1,7 @@
 package org.deeplearning4j.arbiter.optimize.genetic.crossover;
 
-import main.java.org.ab2002.genetic.tests.TestParentSelection;
 import org.deeplearning4j.arbiter.optimize.generator.genetic.Chromosome;
+import org.deeplearning4j.arbiter.optimize.genetic.TestParentSelection;
 import org.junit.Assert;
 import org.junit.Test;
 
