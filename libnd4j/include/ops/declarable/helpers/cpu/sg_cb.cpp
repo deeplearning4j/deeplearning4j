@@ -408,7 +408,7 @@ namespace nd4j {
                             // actual target for THIS thread
                             auto target = bTarget[f];
                             auto alpha = lr.e<double>(f);
-                            auto randomValue = nextRandom.e<long>(f);
+                            auto randomValue = nextRandom.e<Nd4jLong>(f);
 
                             // we're deciding if this thread will process this given target, or not
                             isOwner = target % numThreads == omp_get_thread_num();
@@ -425,9 +425,12 @@ namespace nd4j {
                                     if (irow < 0 || irow >= vocabSize) irow = randomValue % (vocabSize - 1) + 1;
                                     if (irow == nsStarter)
                                         continue;
+
+                                    // we shift irow here to guarantee independence
                                 }
 
-                                //nSampling_<T>(syn0row, s1n.writeable(irow, omp_get_thread_num())->buffer(), expTable, neu1e, alpha, vectorLength, r == 0 ? 1 : 0, expLength, infVector != nullptr);
+                                if (isOwner)
+                                    nSampling_<T>(syn0row, s1n.bufferWithOffset(irow * vectorLength), expTable, neu1e, alpha, vectorLength, r == 0 ? 1 : 0, expLength, infVector != nullptr);
                             }
                         }
                     }
