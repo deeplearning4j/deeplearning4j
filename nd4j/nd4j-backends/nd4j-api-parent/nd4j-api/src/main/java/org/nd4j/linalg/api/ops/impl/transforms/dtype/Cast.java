@@ -35,6 +35,7 @@ import org.nd4j.linalg.api.ops.impl.transforms.BaseDynamicTransformOp;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.api.shape.options.ArrayOptionsHelper;
+import org.nd4j.linalg.api.shape.options.ArrayType;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
@@ -128,13 +129,25 @@ public class Cast extends BaseDynamicTransformOp {
     public List<LongShapeDescriptor> calculateOutputShape() {
         if(inputArguments.size() > 0){
             long[] s = inputArguments.get(0).shape();
-            return Collections.singletonList(LongShapeDescriptor.fromShape(s, typeDst));
+            LongShapeDescriptor lsd = LongShapeDescriptor.fromShape(s, typeDst);
+            if(inputArguments.get(0).isEmpty()){
+                long e = lsd.getExtras();
+                e = ArrayOptionsHelper.setOptionBit(e, ArrayType.EMPTY);
+                lsd.setExtras(e);
+            }
+            return Collections.singletonList(lsd);
         }
 
         if (arg() != null && (arg().getArr() != null || arg().getShape() != null)) {
             if (arg().getArr() != null) {
                 long[] s = arg().getArr().shape();
-                return Collections.singletonList(LongShapeDescriptor.fromShape(s, typeDst));
+                LongShapeDescriptor lsd = LongShapeDescriptor.fromShape(s, typeDst);
+                if(inputArguments.get(0).isEmpty()){
+                    long e = lsd.getExtras();
+                    e = ArrayOptionsHelper.setOptionBit(e, ArrayType.EMPTY);
+                    lsd.setExtras(e);
+                }
+                return Collections.singletonList(lsd);
             } else {
                 long[] s = arg().getShape();
                 if(Shape.isPlaceholderShape(s)){

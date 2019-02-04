@@ -39,7 +39,7 @@ namespace nd4j {
             */
 			
             if(input->isEmpty()){
-                REQUIRE_TRUE(output->isEmpty(), "If input is empty, output array must also be empty");
+                REQUIRE_TRUE(output->isEmpty(), 0, "If input is empty, output array must also be empty");
                 return Status::OK();
 			}
 

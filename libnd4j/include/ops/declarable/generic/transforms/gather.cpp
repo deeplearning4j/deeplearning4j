@@ -35,6 +35,12 @@ CUSTOM_OP_IMPL(gather, 1, 1, false, 0, -2) {
 	auto input   = INPUT_VARIABLE(0);
     auto indices = block.width() > 1 ? INPUT_VARIABLE(1) : nullptr;
 	auto output  = OUTPUT_VARIABLE(0);	
+	
+	//Edge case: empty indices -> empty output
+	if(indices != nullptr && indices->isEmpty()){
+		REQUIRE_TRUE(output->isEmpty(), 0, "Gather op: If indices are empty, output must also be empty");
+		return Status::OK();	//No op
+	}
 
 	const int numOfIntArgs = block.numI();
 
