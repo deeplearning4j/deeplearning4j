@@ -462,7 +462,7 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
 
             int[] idxSyn1 = null;
             byte[] interimCodes = null;
-            if (configuration.isUseHierarchicSoftmax()) {
+            if (useHS) {
                 idxSyn1 = new int[w1.getCodeLength()];
                 interimCodes = new byte[w1.getCodeLength()];
                 for (int i = 0; i < w1.getCodeLength(); i++) {
@@ -474,11 +474,26 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
                     interimCodes[i] = (byte) code;
                     idxSyn1[i] = point;
                 }
+                for (int i = 0; i < maxCols; ++i) {
+                    if (i < w1.getCodeLength())
+                        codes[cnt][i] = interimCodes[i];
+                    else
+                        codes[cnt][i] = -1;
+                }
+                for (int i = 0; i < maxCols; ++i) {
+                    if (i < w1.getCodeLength())
+                        indices[cnt][i]  = idxSyn1[i];
+                    else
+                        indices[cnt][i] = -1;
+                }
+
             } else {
                 idxSyn1 = new int[0];
                 interimCodes = new byte[0];
+                codes = new byte[0][0];
+                indices = new int[0][0];
             }
-            for (int i = 0; i < maxCols; ++i) {
+            /*for (int i = 0; i < maxCols; ++i) {
                 if (i < w1.getCodeLength())
                     codes[cnt][i] = interimCodes[i];
                 else
@@ -489,7 +504,7 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
                     indices[cnt][i]  = idxSyn1[i];
                 else
                     indices[cnt][i] = -1;
-            }
+            }*/
 
             //negative sampling
             if (negative > 0) {
@@ -508,8 +523,13 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
 
         val sg = new SkipGramRound(targetArray,
                 (negative > 0) ? ngStarterArray : Nd4j.empty(DataType.INT),
-                syn0.get(), syn1.get(), Nd4j.empty(syn0.get().dataType()), expTable.get(),
-                Nd4j.empty(syn0.get().dataType()), (int) negative, indicesArray, codesArray, alphasArray, randomValuesArray,
+                syn0.get(),
+                useHS ? syn1.get() : Nd4j.empty(syn0.get().dataType()),
+                (negative > 0) ? syn1Neg.get() : Nd4j.empty(syn0.get().dataType()), expTable.get(),
+                (negative > 0) ? table.get() : Nd4j.empty(syn0.get().dataType()),
+                (int) negative, indicesArray, codesArray,
+                //Nd4j.empty(DataType.INT),  Nd4j.empty(DataType.BYTE),
+                alphasArray, randomValuesArray,
                 /*inferenceVector != null ? inferenceVector :*/ Nd4j.empty(syn0.get().dataType()));
 
         Nd4j.getExecutioner().exec(sg);
