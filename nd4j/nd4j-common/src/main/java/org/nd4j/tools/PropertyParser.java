@@ -199,11 +199,8 @@ public class PropertyParser {
      * @return property
      */
     public String toString(String name, String defaultValue) {
-        try {
-            return parseString(name);
-        } catch (Exception e) {
-            return defaultValue;
-        }
+        String property = getProperties().getProperty(name);
+        return property != null ? property : defaultValue;
     }
 
     /**
@@ -229,11 +226,8 @@ public class PropertyParser {
      * @return property
      */
     public boolean toBoolean(String name, boolean defaultValue) {
-        try {
-            return parseBoolean(name);
-        } catch (Exception e) {
-            return defaultValue;
-        }
+        String property = getProperties().getProperty(name);
+        return property != null ? Boolean.parseBoolean(property) : defaultValue;
     }
 
     /**
