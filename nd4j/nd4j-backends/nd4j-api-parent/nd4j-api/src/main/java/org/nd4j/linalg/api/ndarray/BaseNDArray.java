@@ -5083,6 +5083,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             return false;
 
         INDArray n = (INDArray) o;
+        Nd4j.getCompressor().autoDecompress(n);
 
         if (n == this)
             return true;
