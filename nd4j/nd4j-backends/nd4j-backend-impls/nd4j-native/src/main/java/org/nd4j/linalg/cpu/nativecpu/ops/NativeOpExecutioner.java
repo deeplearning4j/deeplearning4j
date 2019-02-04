@@ -24,6 +24,7 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.bytedeco.javacpp.*;
 import org.bytedeco.javacpp.indexer.LongIndexer;
+import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.serde.FlatBuffersMapper;
 import org.nd4j.base.Preconditions;
@@ -1707,6 +1708,12 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                     sb.append(Arrays.toString(op.iArgs()));
                 } else {
                     sb.append("-");
+                }
+                if(op instanceof DifferentialFunction){
+                    String n = ((DifferentialFunction) op).getOwnName();
+                    if(n != null && !n.equals(op.opName())){
+                        sb.append(". Op own name: \"").append(n).append("\"");
+                    }
                 }
                 log.error("Failed to execute op " + op.opName() + ". Attempted to execute with " +
                                 String.valueOf(op.numInputArguments()) + " inputs, " +
