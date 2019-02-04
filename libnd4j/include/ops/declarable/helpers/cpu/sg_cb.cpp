@@ -289,7 +289,7 @@ namespace nd4j {
 
                 T sneu1e[600];
 
-                const auto numThreads = 1;
+                const auto numThreads = 6;
                 const auto idxShift = indices.isEmpty() ? 0 : indices.sizeAt(1);
                 const auto hsRounds = codes.isEmpty() ? 0 : codes.sizeAt(1);
 
@@ -385,8 +385,8 @@ namespace nd4j {
                     const auto bTarget = targets.bufferAsT<int>();
                     const auto bStarters = negStarters.bufferAsT<int>();
 
-// same parallelism here, group by target
-//#pragma omp parallel num_threads(numThreads) default(shared)
+// same parallelism here, group by target AND nsStarter pair
+#pragma omp parallel num_threads(numThreads) private(sneu1e) default(shared)
                     {
 
                         auto isOwner = true;
