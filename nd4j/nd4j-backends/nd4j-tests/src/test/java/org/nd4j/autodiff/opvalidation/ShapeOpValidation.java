@@ -1972,4 +1972,20 @@ public class ShapeOpValidation extends BaseOpValidation {
         INDArray exp = Nd4j.scalar(DataType.FLOAT, 100);
         assertEquals(exp, arr);
     }
+
+    @Test
+    public void testCastEmpty(){
+        INDArray emptyLong = Nd4j.empty(DataType.LONG);
+        int dtype = 9;  //INT = 9 - https://github.com/deeplearning4j/deeplearning4j/blob/master/libnd4j/include/array/DataType.h
+        DynamicCustomOp op = DynamicCustomOp.builder("cast")
+                .addInputs(emptyLong)
+                .addIntegerArguments(dtype)
+                .build();
+
+        List<LongShapeDescriptor> l = op.calculateOutputShape();
+        long[] shape = l.get(0).getShape();
+        boolean isEmpty = l.get(0).isEmpty();
+        assertEquals(0, shape.length);
+        assertTrue(isEmpty);
+    }
 }
