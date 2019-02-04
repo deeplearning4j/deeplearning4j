@@ -18,9 +18,11 @@ package org.deeplearning4j.arbiter.optimize;
 
 import org.deeplearning4j.arbiter.optimize.api.CandidateGenerator;
 import org.deeplearning4j.arbiter.optimize.api.data.DataSetIteratorFactoryProvider;
+import org.deeplearning4j.arbiter.optimize.api.score.ScoreFunction;
 import org.deeplearning4j.arbiter.optimize.api.termination.MaxCandidatesCondition;
-import org.deeplearning4j.arbiter.optimize.generator.RandomSearchGenerator;
 import org.deeplearning4j.arbiter.optimize.config.OptimizationConfiguration;
+import org.deeplearning4j.arbiter.optimize.generator.GeneticSearchCandidateGenerator;
+import org.deeplearning4j.arbiter.optimize.generator.RandomSearchGenerator;
 import org.deeplearning4j.arbiter.optimize.runner.IOptimizationRunner;
 import org.deeplearning4j.arbiter.optimize.runner.LocalOptimizationRunner;
 import org.deeplearning4j.arbiter.optimize.runner.listener.impl.LoggingStatusListener;
@@ -29,32 +31,27 @@ import org.junit.Test;
 import java.util.HashMap;
 import java.util.Map;
 
-/**
- *
- * Test random search on the Branin Function:
- * http://www.sfu.ca/~ssurjano/branin.html
- */
-public class TestRandomSearch {
-
+public class TestGeneticSearch {
     @Test
     public void test() throws Exception {
-        Map<String, Object> commands = new HashMap<>();
-        commands.put(DataSetIteratorFactoryProvider.FACTORY_KEY, new HashMap<>());
+
+        ScoreFunction scoreFunction = new BraninFunction.BraninScoreFunction();
 
         //Define configuration:
-        CandidateGenerator candidateGenerator = new RandomSearchGenerator(new BraninFunction.BraninSpace(), commands);
+        CandidateGenerator candidateGenerator = new GeneticSearchCandidateGenerator.Builder(new BraninFunction.BraninSpace(), scoreFunction).build();
+
         OptimizationConfiguration configuration = new OptimizationConfiguration.Builder()
-                        .candidateGenerator(candidateGenerator).scoreFunction(new BraninFunction.BraninScoreFunction())
-                        .terminationConditions(new MaxCandidatesCondition(50)).build();
+                .candidateGenerator(candidateGenerator)
+                .scoreFunction(scoreFunction)
+                .terminationConditions(new MaxCandidatesCondition(50))
+                .build();
 
         IOptimizationRunner runner = new LocalOptimizationRunner(configuration, new BraninFunction.BraninTaskCreator());
 
         runner.addListeners(new LoggingStatusListener());
         runner.execute();
 
-
         System.out.println("----- Complete -----");
     }
-
 
 }
