@@ -283,20 +283,18 @@ namespace nd4j {
                 //auto syn0 = reinterpret_cast<T*>(vsyn0);
                 //auto syn1 = reinterpret_cast<T*>(vsyn1);
                 //auto syn1Neg = reinterpret_cast<T*>(vsyn1Neg);
-                auto expTable = reinterpret_cast<T*>(vexpTable);
-                auto negTable = reinterpret_cast<int*>(vnegTable);
-                auto infVector = reinterpret_cast<T*>(vinfVector);
+                const auto expTable = reinterpret_cast<T*>(vexpTable);
+                const auto negTable = reinterpret_cast<int*>(vnegTable);
+                const auto infVector = reinterpret_cast<T*>(vinfVector);
 
                 T sneu1e[600];
 
-                auto numThreads = 10;
-                auto idxShift = indices.sizeAt(1);
-                auto isOwner = true;
-                auto hsRounds = codes.sizeAt(1);
+                const auto numThreads = 12;
+                const auto idxShift = indices.sizeAt(1);
+                const auto hsRounds = codes.sizeAt(1);
 
 
 
-                auto irow = 0;
                 if (!targets.isEmpty()) {
                     auto bTarget = targets.bufferAsT<int>();
                     auto bIndices = indices.bufferAsT<int>();
@@ -305,10 +303,14 @@ namespace nd4j {
 
 
 // parallel block and following loop will be the same for every thread
-//#pragma omp parallel num_threads(10) private(neu1e)
+#pragma omp parallel num_threads(numThreads)  private(sneu1e) default(shared)
                     {
+                        auto isOwner = true;
+                        auto irow = 0;
+
                         // if vectorLength > pre-defined value we'll allocate new array
                         T* neu1e = vectorLength <= 600 ? sneu1e : new T[vectorLength];
+                        //T* neu1e = new T[vectorLength];
 
                         // initial target position
                         // f can't be higher than batch size
@@ -331,30 +333,39 @@ namespace nd4j {
                             isOwner = target % numThreads == omp_get_thread_num();
                             auto syn0row = isOwner ? reinterpret_cast<T*>(s0.bufferWithOffset(target * vectorLength)) : 0;
 
-                            auto cShift = t * idxShift;
+                            auto cShift = f * idxShift;
+
+                            int x = omp_get_thread_num() > hsRounds ? omp_get_thread_num() % hsRounds : omp_get_thread_num();
+
                             for (int r = 0; r < hsRounds; r++) {
                                 // this row should be randomized as well, to reduce chances for race conditions
-                                irow = bIndices[r + cShift];
+                                if (x >= hsRounds)
+                                    x = 0;
+
+                                irow = bIndices[x + cShift];
                                 if (irow < 0 || irow >= vocabSize)
                                     isOwner = false;
 
-                                // all threads diverge here on top of
+                                // all threads diverge here on top of divergence over syn0 table
                                 if (isOwner) {
                                     auto syn1row = s1.bufferWithOffset(irow * vectorLength);
-                                    auto code = bCodes[r + cShift];
+                                    auto code = bCodes[x + cShift];
+
+                                    //nd4j_printf("syn0: [%i]; syn1: [%i]; code: [%i]\n", target, irow, code);
                                     hSoftmax_<T>(syn0row, syn1row, expTable, neu1e, alpha, vectorLength, code, expLength, infVector != nullptr);
                                 }
+
+                                x++;
                             }
-
-                            // we synchronize all threads here so they move synchronously
-                            //#pragma omp barrier
-
 
                             if (isOwner) {
                                 for (int e = 0; e < vectorLength; e++) {
                                     syn0row[e] += neu1e[e];
                                 }
                             }
+
+                            // we synchronize all threads here so they move synchronously
+                            //#pragma omp barrier
 
                             // now we increment further step
                             f++;
