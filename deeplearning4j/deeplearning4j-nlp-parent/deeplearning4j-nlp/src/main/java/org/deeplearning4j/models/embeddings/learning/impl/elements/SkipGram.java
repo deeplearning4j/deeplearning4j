@@ -306,11 +306,12 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
                 int c = i - currentWindow + a;
                 if (c >= 0 && c < sentence.size()) {
                     T lastWord = sentence.get(c);
+                    nextRandom.set(Math.abs(nextRandom.get() * 25214903917L + 11));
                     if (batchSize <= 1) {
                         score = iterateSample(word, lastWord, nextRandom, alpha, false, null);
                     }
                     else {
-                        batchSequences.put(word, lastWord, nextRandom, alpha);
+                        batchSequences.put(word, lastWord, nextRandom.get(), alpha);
                     }
                 }
             }
@@ -440,7 +441,7 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
         for (int cnt = 0; cnt < items.size(); ++cnt) {
             T w1 = items.get(cnt).getWord();
             T lastWord = items.get(cnt).getLastWord();
-            AtomicLong randomValue = items.get(cnt).getRandomValue();
+            randomValues[cnt] = items.get(cnt).getRandomValue();
             double alpha = items.get(cnt).getAlpha();
 
             if (w1 == null || lastWord == null || (lastWord.getIndex() < 0 && !isInference)
@@ -450,15 +451,12 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
                 continue;
             }
 
-            AtomicLong nextRandom = new AtomicLong(randomValue.get());
             int target = lastWord.getIndex();
             int ngStarter = w1.getIndex();
 
             targets[cnt] = target;
             starters[cnt] = ngStarter;
             alphas[cnt] = alpha;
-            nextRandom.set(Math.abs(nextRandom.get() * 25214903917L + 11));
-            randomValues[cnt] = nextRandom.get();
 
             int[] idxSyn1 = null;
             byte[] interimCodes = null;
@@ -515,7 +513,9 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
                 useHS ? syn1.get() : Nd4j.empty(syn0.get().dataType()),
                 (negative > 0) ? syn1Neg.get() : Nd4j.empty(syn0.get().dataType()), expTable.get(),
                 (negative > 0) ? table.get() : Nd4j.empty(syn0.get().dataType()),
-                (int) negative, indicesArray, codesArray,
+                (int) negative,
+                useHS ? indicesArray : Nd4j.empty(DataType.INT),
+                useHS ? codesArray : Nd4j.empty(DataType.BYTE),
                 alphasArray, randomValuesArray,
                 /*inferenceVector != null ? inferenceVector :*/ Nd4j.empty(syn0.get().dataType()));
 

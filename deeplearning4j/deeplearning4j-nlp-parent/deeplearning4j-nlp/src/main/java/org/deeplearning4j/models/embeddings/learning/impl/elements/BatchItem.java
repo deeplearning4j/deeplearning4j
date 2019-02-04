@@ -7,10 +7,10 @@ import java.util.concurrent.atomic.AtomicLong;
 class BatchItem<T extends SequenceElement>  {
     private T word;
     private T lastWord;
-    private AtomicLong randomValue;
+    private long randomValue;
     private double alpha;
 
-    public BatchItem(T word, T lastWord, AtomicLong randomValue, double alpha) {
+    public BatchItem(T word, T lastWord, long randomValue, double alpha) {
         this.word = word;
         this.lastWord = lastWord;
         this.randomValue = randomValue;
@@ -33,11 +33,11 @@ class BatchItem<T extends SequenceElement>  {
         this.lastWord = lastWord;
     }
 
-    public AtomicLong getRandomValue() {
+    public long getRandomValue() {
         return randomValue;
     }
 
-    public void setRandomValue(AtomicLong randomValue) {
+    public void setRandomValue(long randomValue) {
         this.randomValue = randomValue;
     }
 

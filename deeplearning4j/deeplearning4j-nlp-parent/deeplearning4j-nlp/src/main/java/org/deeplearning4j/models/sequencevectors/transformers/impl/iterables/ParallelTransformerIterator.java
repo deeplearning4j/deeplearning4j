@@ -43,41 +43,16 @@ import java.util.concurrent.atomic.AtomicInteger;
 @Slf4j
 public class ParallelTransformerIterator extends BasicTransformerIterator {
 
-    protected BlockingQueue<Future<Sequence<VocabWord>>> buffer = new LinkedBlockingQueue<>(1024);
+    protected BlockingQueue<Sequence<VocabWord>> buffer = new LinkedBlockingQueue<>(1024);
     protected BlockingQueue<LabelledDocument> stringBuffer;
-    //protected TokenizerThread[] threads;
+    protected TokenizerThread[] threads;
     protected boolean underlyingHas = true;
     protected AtomicInteger processing = new AtomicInteger(0);
 
-    private ExecutorService executorService;
-
     protected static final AtomicInteger count = new AtomicInteger(0);
-
-    private static final int PREFETCH_SIZE = 10;
 
     public ParallelTransformerIterator(@NonNull LabelAwareIterator iterator, @NonNull SentenceTransformer transformer) {
         this(iterator, transformer, true);
-    }
-
-    private void prefetchIterator() {
-        for (int i = 0; i < PREFETCH_SIZE; ++i) {
-            boolean before = underlyingHas;
-
-            if (before)
-                underlyingHas = iterator.hasNextDocument();
-            else
-                underlyingHas = false;
-
-            if (underlyingHas) {
-                CallableTransformer callableTransformer = new CallableTransformer(iterator.nextDocument(), sentenceTransformer);
-                Future<Sequence<VocabWord>> futureSequence = executorService.submit(callableTransformer);
-                try {
-                    buffer.put(futureSequence);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-            }
-        }
     }
 
     public ParallelTransformerIterator(@NonNull LabelAwareIterator iterator, @NonNull SentenceTransformer transformer,
@@ -86,14 +61,10 @@ public class ParallelTransformerIterator extends BasicTransformerIterator {
         this.allowMultithreading = allowMultithreading;
         this.stringBuffer = new LinkedBlockingQueue<>(512);
 
-        //threads = new TokenizerThread[1];
         //threads = new TokenizerThread[allowMultithreading ? Math.max(Runtime.getRuntime().availableProcessors(), 2) : 1];
-        executorService = Executors.newFixedThreadPool(allowMultithreading ? Math.max(Runtime.getRuntime().availableProcessors(), 2) : 1);
-
-        prefetchIterator();
-
-        //List<Future<Sequence<VocabWord>>> futureList = new ArrayList<>();
-        /*try {
+        ExecutorService executorService = Executors.newFixedThreadPool(allowMultithreading ? Math.max(Runtime.getRuntime().availableProcessors(), 2) : 1);
+        List<Future<Sequence<VocabWord>>> futureList = new ArrayList<Future<Sequence<VocabWord>>>();
+        try {
             int cnt = 0;
             while (cnt < 256) {
                 boolean before = underlyingHas;
@@ -103,6 +74,14 @@ public class ParallelTransformerIterator extends BasicTransformerIterator {
 
                 if (underlyingHas) {
                     stringBuffer.put(this.iterator.nextDocument());
+                    FutureTask<Sequence<VocabWord>> task = new FutureTask<>(new Callable<Sequence<VocabWord>>() {
+                        @Override
+                        public Sequence<VocabWord> call() throws Exception {
+                            Sequence<VocabWord> sequence = sentenceTransformer.transformToSequence(stringBuffer.take().getContent());
+                            return sequence;
+                        }
+                    });
+                    futureList.add((Future<Sequence<VocabWord>>)executorService.submit(task));
                 }
                 else
                     cnt += 257;
@@ -111,24 +90,34 @@ public class ParallelTransformerIterator extends BasicTransformerIterator {
             }
         } catch (Exception e) {
             //
-        }*/
+        }
+
+        for (val result : futureList) {
+            try {
+                buffer.put(result.get());
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            } catch (ExecutionException e) {
+                e.printStackTrace();
+            }
+        }
+
+        executorService.shutdown();
 
 
-        /*for (int x = 0; x < threads.length; x++) {
-           threads[x] = new TokenizerThread(x, transformer, stringBuffer, buffer, processing);
-           threads[x].setDaemon(true);
-           threads[x].setName("ParallelTransformer thread " + x);
-           threads[x].start();
-        }*/
+
+            /*for (int x = 0; x < threads.length; x++) {
+            threads[x] = new TokenizerThread(x, transformer, stringBuffer, buffer, processing);
+            threads[x].setDaemon(true);
+            threads[x].setName("ParallelTransformer thread " + x);
+            threads[x].start();*/
     }
 
     @Override
     public void reset() {
-        this.executorService.shutdown();
         this.iterator.shutdown();
-        //prefetchIterator();
 
-        /*for (int x = 0; x < threads.length; x++) {
+        for (int x = 0; x < threads.length; x++) {
             if (threads[x] != null) {
                 threads[x].shutdown();
                 try {
@@ -137,7 +126,7 @@ public class ParallelTransformerIterator extends BasicTransformerIterator {
                     //
                 }
             }
-        }*/
+        }
     }
 
     @Override
@@ -152,70 +141,30 @@ public class ParallelTransformerIterator extends BasicTransformerIterator {
         return (underlyingHas || !buffer.isEmpty() || !stringBuffer.isEmpty() || processing.get() > 0);
     }
 
-    private static class CallableTransformer implements Callable<Sequence<VocabWord>> {
-
-        private LabelledDocument document;
-        private SentenceTransformer transformer;
-
-        public CallableTransformer(LabelledDocument document, SentenceTransformer transformer) {
-            this.transformer = transformer;
-            this.document = document;
-        }
-
-        @Override
-        public Sequence<VocabWord> call() {
-            Sequence<VocabWord> sequence = null;
-
-            if (document != null && document.getContent() != null) {
-                sequence = transformer.transformToSequence(document.getContent());
-                if (document.getLabels() != null) {
-                    for (String label : document.getLabels()) {
-                        if (label != null && !label.isEmpty())
-                            sequence.addSequenceLabel(new VocabWord(1.0, label));
-                    }
-                }
-            }
-            return sequence;
-        }
-
-    }
-
     @Override
     public Sequence<VocabWord> next() {
         try {
-            /*if (underlyingHas)
-                stringBuffer.put(iterator.nextDocument());*/
+            if (underlyingHas)
+                stringBuffer.put(iterator.nextDocument());
 
-            //processing.incrementAndGet();
-            if (underlyingHas) {
-
-                CallableTransformer transformer = new CallableTransformer(iterator.nextDocument(), sentenceTransformer);
-                Future<Sequence<VocabWord>> futureSequence = executorService.submit(transformer);
-                buffer.put(futureSequence);
-            }
-            Future<Sequence<VocabWord>> future = buffer.take();
-            Sequence<VocabWord>  sequence = future.get();
-            //processing.decrementAndGet();
-            return sequence;
-
+            return buffer.take();
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
     }
 
 
-    /*private static class TokenizerThread extends Thread implements Runnable {
-        protected BlockingQueue<Future<Sequence<VocabWord>>> sequencesBuffer;
+
+    private static class TokenizerThread extends Thread implements Runnable {
+        protected BlockingQueue<Sequence<VocabWord>> sequencesBuffer;
         protected BlockingQueue<LabelledDocument> stringsBuffer;
         protected SentenceTransformer sentenceTransformer;
         protected AtomicBoolean shouldWork = new AtomicBoolean(true);
         protected AtomicInteger processing;
 
-        private LabelledDocument document;
-
         public TokenizerThread(int threadIdx, SentenceTransformer transformer,
                         BlockingQueue<LabelledDocument> stringsBuffer,
-                        BlockingQueue<Future<Sequence<VocabWord>>> sequencesBuffer, AtomicInteger processing) {
+                        BlockingQueue<Sequence<VocabWord>> sequencesBuffer, AtomicInteger processing) {
             this.stringsBuffer = stringsBuffer;
             this.sequencesBuffer = sequencesBuffer;
             this.sentenceTransformer = transformer;
@@ -229,12 +178,14 @@ public class ParallelTransformerIterator extends BasicTransformerIterator {
         public void run() {
             try {
                 while (shouldWork.get()) {
-                    document = stringsBuffer.take();
+                    LabelledDocument document = stringsBuffer.take();
 
                     if (document == null || document.getContent() == null)
                         continue;
 
                     processing.incrementAndGet();
+
+                    Sequence<VocabWord> sequence = sentenceTransformer.transformToSequence(document.getContent());
 
                     if (document.getLabels() != null)
                         for (String label : document.getLabels()) {
@@ -259,6 +210,5 @@ public class ParallelTransformerIterator extends BasicTransformerIterator {
         public void shutdown() {
             shouldWork.set(false);
         }
-      }*/
-
+    }
 }

@@ -18,7 +18,7 @@ public class BatchSequences<T extends SequenceElement> {
         this.batches = batches;
     }
 
-    public void put(T word, T lastWord, AtomicLong randomValue, double alpha) {
+    public void put(T word, T lastWord, long randomValue, double alpha) {
         BatchItem<T> newItem = new BatchItem<>(word, lastWord, randomValue, alpha);
         buffer.add(newItem);
     }

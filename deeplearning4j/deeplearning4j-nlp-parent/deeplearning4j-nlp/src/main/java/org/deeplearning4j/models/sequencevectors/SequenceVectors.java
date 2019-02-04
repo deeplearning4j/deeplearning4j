@@ -1268,6 +1268,7 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
                                 ((SkipGram)elementsLearningAlgorithm).iterateSample(batchSequences.get(j));
                             }
                             batchSequences.clear();
+                            batchSequences = null;
                         }
 
                         if (eventListeners != null && !eventListeners.isEmpty()) {
