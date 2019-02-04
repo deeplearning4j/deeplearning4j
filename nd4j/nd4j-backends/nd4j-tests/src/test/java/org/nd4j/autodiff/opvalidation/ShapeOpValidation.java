@@ -1988,4 +1988,39 @@ public class ShapeOpValidation extends BaseOpValidation {
         assertEquals(0, shape.length);
         assertTrue(isEmpty);
     }
+
+    @Test
+    public void testGatherEmpty(){
+        /*
+        tf.reset_default_graph()
+        # Hack to create empty array
+        input = tf.constant([False], dtype=tf.bool)
+        empty = tf.where(condition=input)
+        emptyInt = tf.cast(empty, tf.int32)
+        ingather = tf.reshape(tf.range(start=0,limit=100,delta=1,dtype=tf.float32), [25,4])
+        gather = tf.gather(params=ingather, indices=emptyInt)
+        sess = tf.Session()
+        out = sess.run([gather])
+        print(out[0].shape);
+        print(out[0]);
+        >> (0, 1, 4)
+        >> []
+         */
+
+        Nd4j.getExecutioner().enableVerboseMode(true);
+        Nd4j.getExecutioner().enableDebugMode(true);
+
+        INDArray emptyInt = Nd4j.empty(DataType.INT);
+        INDArray inGather = Nd4j.linspace(1,100,100,DataType.FLOAT).reshape(25,4);
+
+        DynamicCustomOp op = DynamicCustomOp.builder("gather")
+                .addInputs(inGather, emptyInt)
+                .build();
+
+        List<LongShapeDescriptor> l = op.calculateOutputShape();
+        long[] shape = l.get(0).getShape();
+        boolean isEmpty = l.get(0).isEmpty();
+        assertTrue(isEmpty);
+        assertArrayEquals(new long[0], shape);
+    }
 }

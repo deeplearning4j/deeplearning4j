@@ -88,6 +88,7 @@ DECLARE_SHAPE_FN(gather) {
 
     REQUIRE_TRUE(axis < inputRank, 0, "GATHER op: input axis must be smaller than input array rank, but got %i and %i correspondingly!", axis, inputRank);
 
+	bool isEmpty = false;
 	if (block.width() > 1) {
 		auto indicesShapeInfo = inputShape->at(1);
     
@@ -98,7 +99,13 @@ DECLARE_SHAPE_FN(gather) {
     	// else if(shape::isVector(indicesShapeInfo))
     	// 	indicesRank = 1;
 
-    	int outputRank = inputRank + indicesRank - 1;    	
+    	int outputRank = inputRank + indicesRank - 1;
+        if(INPUT_VARIABLE(1)->isEmpty()){
+			//Empty indices -> empty output
+            outputRank = 0;
+            isEmpty = true;
+        }
+		
     	ALLOCATE(outputShapeInfo, block.getWorkspace(), shape::shapeInfoLength(outputRank), Nd4jLong);
 
     	// fill output shapeInfo
@@ -138,6 +145,10 @@ DECLARE_SHAPE_FN(gather) {
 
 	ShapeUtils::updateStridesAndType(outputShapeInfo, inputShapeInfo, shape::order(inputShapeInfo));
 
+	if(isEmpty){
+		ArrayOptions::setPropertyBit(outputShapeInfo, ARRAY_EMPTY);
+	}
+	
     return SHAPELIST(outputShapeInfo);
 
 }
