@@ -289,7 +289,7 @@ namespace nd4j {
 
                 T sneu1e[600];
 
-                const auto numThreads = 12;
+                const auto numThreads = 1;
                 const auto idxShift = indices.sizeAt(1);
                 const auto hsRounds = codes.sizeAt(1);
 
@@ -303,7 +303,7 @@ namespace nd4j {
 
 
 // parallel block and following loop will be the same for every thread
-#pragma omp parallel num_threads(numThreads)  private(sneu1e) default(shared)
+//#pragma omp parallel num_threads(numThreads)  private(sneu1e) default(shared)
                     {
                         auto isOwner = true;
                         auto irow = 0;
@@ -342,12 +342,15 @@ namespace nd4j {
                                 if (x >= hsRounds)
                                     x = 0;
 
+                                bool isSkipRound = false;
+
                                 irow = bIndices[x + cShift];
-                                if (irow < 0 || irow >= vocabSize)
-                                    isOwner = false;
+                                if (irow < 0 || irow >= vocabSize) {
+                                    isSkipRound = true;
+                                }
 
                                 // all threads diverge here on top of divergence over syn0 table
-                                if (isOwner) {
+                                if (isOwner && !isSkipRound) {
                                     auto syn1row = s1.bufferWithOffset(irow * vectorLength);
                                     auto code = bCodes[x + cShift];
 
