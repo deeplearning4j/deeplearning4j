@@ -26,6 +26,7 @@ import org.deeplearning4j.models.embeddings.WeightLookupTable;
 import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
 import org.deeplearning4j.models.embeddings.learning.ElementsLearningAlgorithm;
 import org.deeplearning4j.models.embeddings.learning.SequenceLearningAlgorithm;
+import org.deeplearning4j.models.embeddings.learning.impl.elements.BatchSequences;
 import org.deeplearning4j.models.embeddings.learning.impl.elements.SkipGram;
 import org.deeplearning4j.models.embeddings.learning.impl.sequence.DBOW;
 import org.deeplearning4j.models.embeddings.learning.impl.sequence.DM;
@@ -89,6 +90,8 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
 
     protected boolean enableScavenger = false;
     protected int vocabLimit = 0;
+
+    private BatchSequences<T> batchSequences;
 
 
     @Setter
@@ -370,6 +373,19 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
             // call for ElementsLearningAlgorithm
             nextRandom.set(nextRandom.get() * 25214903917L + 11);
             if (!elementsLearningAlgorithm.isEarlyTerminationHit())
+                if (elementsLearningAlgorithm instanceof SkipGram) {
+                    scoreElements.set(((SkipGram)elementsLearningAlgorithm).learnSequence(sequence, nextRandom, alpha, batchSequences));
+                    /*int batchSize = configuration.getBatchSize();
+                    if (batchSize > 1 && batchSequences != null) {
+                        int rest = batchSequences.size() % batchSize;
+                        int chunks = ((batchSequences.size() >= batchSize) ? batchSequences.size() / batchSize : 0) + ((rest > 0)? 1 : 0);
+                        for (int j = 0; j < chunks; ++j) {
+                            ((SkipGram)elementsLearningAlgorithm).iterateSample(batchSequences.get(j));
+                        }
+                        batchSequences.clear();
+                    }*/
+                }
+            else
                 scoreElements.set(elementsLearningAlgorithm.learnSequence(sequence, nextRandom, alpha));
         }
 
@@ -1202,6 +1218,7 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
                     // getting back number of iterations
                     for (int i = 0; i < numIterations; i++) {
 
+                        batchSequences = new BatchSequences<>(configuration.getBatchSize());
                         // we roll over sequences derived from digitizer, it's NOT window loop
                         for (int x = 0; x < sequences.size(); x++) {
                             try (val ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace(conf, "sequence_vectors_training")) {
@@ -1242,6 +1259,15 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
                                     }
                                 }
                             }
+                        }
+                        int batchSize = configuration.getBatchSize();
+                        if (batchSize > 1 && batchSequences != null) {
+                            int rest = batchSequences.size() % batchSize;
+                            int chunks = ((batchSequences.size() >= batchSize) ? batchSequences.size() / batchSize : 0) + ((rest > 0)? 1 : 0);
+                            for (int j = 0; j < chunks; ++j) {
+                                ((SkipGram)elementsLearningAlgorithm).iterateSample(batchSequences.get(j));
+                            }
+                            batchSequences.clear();
                         }
 
                         if (eventListeners != null && !eventListeners.isEmpty()) {
