@@ -279,7 +279,7 @@ namespace nd4j {
             BUILD_SINGLE_TEMPLATE(template void skipgram_, (void *syn0, void *syn1, void *syn1Neg, void *expTable, void *vnegTable, void *vinfVector, int target, int ngStarter, int *indices, int8_t *codes, double alpha, Nd4jLong randomValue, const int hsRounds, const int nsRounds, const int vocabSize, const int vectorLength, const int expLength, const int negLength), FLOAT_TYPES);
 
             template <typename T>
-            void skipgramBatchExec_(NDArray &s0, NDArray &s1, NDArray &s1n, void *vexpTable, void *vnegTable, void *vinfVector, NDArray &targets, int ngStarter, NDArray &indices, NDArray &codes, double alpha, Nd4jLong randomValue, const int hsRounds, const int nsRounds, const int vocabSize, const int vectorLength, const int expLength, const int negLength) {
+            void skipgramBatchExec_(NDArray &s0, NDArray &s1, NDArray &s1n, void *vexpTable, void *vnegTable, void *vinfVector, NDArray &targets, int ngStarter, NDArray &indices, NDArray &codes, NDArray &lr, NDArray &nextRandom, const int nsRounds, const int vocabSize, const int vectorLength, const int expLength, const int negLength) {
                 //auto syn0 = reinterpret_cast<T*>(vsyn0);
                 //auto syn1 = reinterpret_cast<T*>(vsyn1);
                 //auto syn1Neg = reinterpret_cast<T*>(vsyn1Neg);
@@ -292,13 +292,15 @@ namespace nd4j {
                 auto numThreads = 10;
                 auto idxShift = indices.sizeAt(1);
                 auto isOwner = true;
+                auto hsRounds = codes.sizeAt(1);
+
 
 
                 auto irow = 0;
                 if (!targets.isEmpty()) {
                     auto bTarget = targets.bufferAsT<int>();
                     auto bIndices = indices.bufferAsT<int>();
-                    auto bCodes = codes.bufferAsT<int>();
+                    auto bCodes = codes.bufferAsT<int8_t>();
                     auto numTargets = targets.lengthOf();
 
 
@@ -319,6 +321,7 @@ namespace nd4j {
 
                             // actual target for THIS thread
                             auto target = bTarget[f];
+                            auto alpha = lr.e<double>(f);
 
                             // if previous cycle used neu1e - nullify it
                             if (isOwner)
@@ -338,7 +341,8 @@ namespace nd4j {
                                 // all threads diverge here on top of
                                 if (isOwner) {
                                     auto syn1row = s1.bufferWithOffset(irow * vectorLength);
-                                    hSoftmax_<T>(syn0row, syn1row, expTable, neu1e, alpha, vectorLength, bCodes[r + cShift], expLength, infVector != nullptr);
+                                    auto code = bCodes[r + cShift];
+                                    hSoftmax_<T>(syn0row, syn1row, expTable, neu1e, alpha, vectorLength, code, expLength, infVector != nullptr);
                                 }
                             }
 
@@ -363,6 +367,7 @@ namespace nd4j {
                 }
 
                 // negative sampling goes second (if enabled)
+                /*
                 auto nsStarter = ngStarter;
                 irow = nsStarter;
                 if (nsRounds > 0) {
@@ -382,8 +387,9 @@ namespace nd4j {
                         //nSampling_<T>(syn0row, s1n.writeable(irow, omp_get_thread_num())->buffer(), expTable, neu1e, alpha, vectorLength, r == 0 ? 1 : 0, expLength, infVector != nullptr);
                     }
                 }
+                */
             }
-            //BUILD_SINGLE_TEMPLATE(template void skipgramBatchExec_, (AveragingArrayProxy &syn0, AveragingArrayProxy &syn1, AveragingArrayProxy &syn1Neg, void *expTable, void *vnegTable, void *vinfVector, int target, int ngStarter, int *indices, int8_t *codes, double alpha, Nd4jLong randomValue, const int hsRounds, const int nsRounds, const int vocabSize, const int vectorLength, const int expLength, const int negLength), FLOAT_TYPES);
+            BUILD_SINGLE_TEMPLATE(template void skipgramBatchExec_, (NDArray &s0, NDArray &s1, NDArray &s1n, void *vexpTable, void *vnegTable, void *vinfVector, NDArray &targets, int ngStarter, NDArray &indices, NDArray &codes, NDArray &lr, NDArray &nextRandom, const int nsRounds, const int vocabSize, const int vectorLength, const int expLength, const int negLength), FLOAT_TYPES);
 
             void skipgram(NDArray &syn0, NDArray &syn1, NDArray &syn1Neg, NDArray &expTable, NDArray &negTable, NDArray &target, NDArray &ngStarter, int nsRounds, NDArray &indices, NDArray &codes, NDArray &alpha, NDArray &randomValue, NDArray &inferenceVector) {
                 auto xType = syn0.dataType();
@@ -396,7 +402,8 @@ namespace nd4j {
                 } else if (ngStarter.isVector() || target.isVector()){
                     // batch mode
 
-                    auto batchSize = codes.sizeAt(0);
+                    //auto batchSize = codes.sizeAt(0);
+                    BUILD_SINGLE_SELECTOR(xType, skipgramBatchExec_, (syn0, syn1, syn1Neg, expTable.buffer(), negTable.buffer(), nullptr, target, 0, indices, codes, alpha, randomValue, 0, syn0.sizeAt(0), syn0.sizeAt(1), expTable.lengthOf(), 0), FLOAT_TYPES);
 
 /*
                     AveragingArrayProxy s0(&syn0);
