@@ -1948,4 +1948,28 @@ public class ShapeOpValidation extends BaseOpValidation {
         boolean isEmpty = l.get(0).isEmpty();
         assertTrue(isEmpty);    //Not empty, but should be
     }
+
+    @Test
+    public void testGatherScalar(){
+        INDArray in = Nd4j.linspace(100, 200, 100, DataType.FLOAT).reshape(100);
+        INDArray indices = Nd4j.scalar(0);
+        INDArray axis = Nd4j.scalar(0);
+
+        DynamicCustomOp op = DynamicCustomOp.builder("gather")
+                .addInputs(in, indices, axis)
+                .build();
+
+        List<LongShapeDescriptor> l = op.calculateOutputShape();
+        long[] shape = l.get(0).getShape();
+        assertArrayEquals(new long[0], shape);
+
+        INDArray arr = Nd4j.create(l.get(0));
+
+        op.addOutputArgument(arr);
+
+        Nd4j.exec(op);
+
+        INDArray exp = Nd4j.scalar(DataType.FLOAT, 100);
+        assertEquals(exp, arr);
+    }
 }

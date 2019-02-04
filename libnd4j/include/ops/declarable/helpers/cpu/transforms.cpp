@@ -598,12 +598,19 @@ static void gather_(NDArray* input, const NDArray* indices, NDArray* output, con
     
         // first case: indices consist of only one scalar
         if(indices->isScalar()) {
-            std::vector<int> dimensions = ShapeUtils::evalDimsToExclude(input->rankOf(), {axis});
-            shape::TAD tad(input->getShapeInfo(), dimensions.data(), dimensions.size());
-            tad.createTadOnlyShapeInfo();
-            tad.createOffsets();
-            auto tadArr = NDArray(reinterpret_cast<void *>(reinterpret_cast<T*>(input->getBuffer()) + tad.tadOffsets[indices->e<Nd4jLong>(0)]), tad.tadOnlyShapeInfo, output->getWorkspace());
-            output->assign(&tadArr);
+            if(input->rankOf() <= 1){
+                //For scalar indices, rank 0 or 1 input: can't do tensor along dimension 0 as this is whole array... instead, we want to get a scalar
+				auto idx = indices->e<Nd4jLong>(0);
+				auto scalarNDArray = input->e(idx);
+                output->assign(scalarNDArray);
+            } else {
+                std::vector<int> dimensions = ShapeUtils::evalDimsToExclude(input->rankOf(), {axis});
+                shape::TAD tad(input->getShapeInfo(), dimensions.data(), dimensions.size());
+                tad.createTadOnlyShapeInfo();
+                tad.createOffsets();
+                auto tadArr = NDArray(reinterpret_cast<void *>(reinterpret_cast<T*>(input->getBuffer()) + tad.tadOffsets[indices->e<Nd4jLong>(0)]), tad.tadOnlyShapeInfo, output->getWorkspace());
+                output->assign(&tadArr);
+			}
         }
         else if (input->rankOf() == 1 && indices->isVector()) {
             // special case

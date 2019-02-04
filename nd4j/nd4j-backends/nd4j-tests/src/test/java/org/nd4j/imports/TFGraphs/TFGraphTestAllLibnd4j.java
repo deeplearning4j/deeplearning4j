@@ -63,16 +63,6 @@ public class TFGraphTestAllLibnd4j {
     private static final String BASE_DIR = "tf_graphs/examples";
     private static final String MODEL_FILENAME = "frozen_model.pb";
 
-    private static final String[] SKIP_ARR = new String[] {
-            //"deep_mnist",
-            //"deep_mnist_no_dropout",
-            //"ssd_mobilenet_v1_coco",
-            //"yolov2_608x608",
-            //"inception_v3_with_softmax",
-            "conv_5" // still RNG differences
-    };
-    public static final Set<String> SKIP_SET = new HashSet<>(Arrays.asList(SKIP_ARR));
-
     private static final String[] SKIP_FOR_LIBND4J_EXEC = new String[]{
             //Exceptions - need to look into:
             "alpha_dropout/.*",
@@ -141,10 +131,6 @@ public class TFGraphTestAllLibnd4j {
     @Test//(timeout = 25000L)
     public void test() throws Exception {
         Nd4j.create(1);
-        if (SKIP_SET.contains(modelName)) {
-            log.info("\n\tSKIPPED MODEL: " + modelName);
-            return;
-        }
         for(String s : TFGraphTestAllSameDiff.IGNORE_REGEXES){
             if(modelName.matches(s)){
                 log.info("\n\tIGNORE MODEL ON REGEX: {} - regex {}", modelName, s);
