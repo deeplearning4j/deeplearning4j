@@ -34,6 +34,9 @@ import org.nd4j.linalg.learning.config.IUpdater;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
 import org.nd4j.linalg.schedule.ISchedule;
 
+import java.util.Iterator;
+import java.util.List;
+
 @Slf4j
 public class NetworkUtils {
 
@@ -363,5 +366,29 @@ public class NetworkUtils {
         throw new UnsupportedOperationException(message);
     }
 
+    /**
+     * Remove any instances of the specified type from the list.
+     * This includes any subtypes.
+     * @param list   List. May be null
+     * @param remove Type of objects to remove
+     */
+    public static void removeInstances(List<?> list, Class<?> remove) {
+        removeInstancesWithWarning(list, remove, null);
+    }
+
+    public static void removeInstancesWithWarning(List<?> list, Class<?> remove, String warning){
+        if(list == null || list.isEmpty())
+            return;
+        Iterator<?> iter = list.iterator();
+        while(iter.hasNext()){
+            Object o = iter.next();
+            if(remove.isAssignableFrom(o.getClass())){
+                if(warning != null) {
+                    log.warn(warning);
+                }
+                iter.remove();
+            }
+        }
+    }
 
 }

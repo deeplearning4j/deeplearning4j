@@ -133,6 +133,11 @@ namespace helpers {
             return ND4J_STATUS_OK;
         }
 
+        // Special case for TF compatibility
+        if((center && inHeight < 2) || (center && inWidth < 2)){
+            center = false;
+        }
+
         if ((center && inHeight < 2) || (inHeight < 1) || (outHeight < 1) || (center && outHeight < 2) ||
             (center && inWidth < 2) || (inWidth < 1) || (outWidth < 1) || (center && outWidth < 2)) {
             // wrong input data

@@ -118,7 +118,7 @@ public class ParameterAveragingTrainingWorker extends BaseTrainingWorker<Paramet
         net.init(tuple.getParameters().unsafeDuplication(), false);
 
         if (tuple.getUpdaterState() != null) {
-            net.setUpdater(new MultiLayerUpdater(net, tuple.getUpdaterState().unsafeDuplication(), net.getLayerWiseConfigurations().isLegacyBatchScaledL2())); //Can't have shared updater state
+            net.setUpdater(new MultiLayerUpdater(net, tuple.getUpdaterState().unsafeDuplication())); //Can't have shared updater state
         }
 
         Nd4j.getExecutioner().commit();
@@ -148,7 +148,7 @@ public class ParameterAveragingTrainingWorker extends BaseTrainingWorker<Paramet
         net.init(tuple.getParameters().unsafeDuplication(), false);
 
         if (tuple.getUpdaterState() != null) {
-            net.setUpdater(new ComputationGraphUpdater(net, tuple.getUpdaterState().unsafeDuplication(), net.getConfiguration().isLegacyBatchScaledL2())); //Again: can't have shared updater state
+            net.setUpdater(new ComputationGraphUpdater(net, tuple.getUpdaterState().unsafeDuplication())); //Again: can't have shared updater state
         }
 
         Nd4j.getExecutioner().commit();

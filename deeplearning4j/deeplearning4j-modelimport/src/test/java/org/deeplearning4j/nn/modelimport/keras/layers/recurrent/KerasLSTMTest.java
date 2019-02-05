@@ -21,6 +21,7 @@ import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.LSTM;
 import org.deeplearning4j.nn.conf.layers.recurrent.LastTimeStep;
 import org.deeplearning4j.nn.conf.layers.util.MaskZeroLayer;
+import org.deeplearning4j.nn.modelimport.keras.KerasTestUtils;
 import org.deeplearning4j.nn.modelimport.keras.config.Keras1LayerConfiguration;
 import org.deeplearning4j.nn.modelimport.keras.config.Keras2LayerConfiguration;
 import org.deeplearning4j.nn.modelimport.keras.config.KerasLayerConfiguration;
@@ -31,13 +32,14 @@ import org.deeplearning4j.nn.weights.IWeightInit;
 import org.deeplearning4j.nn.weights.WeightInitXavier;
 import org.junit.Assert;
 import org.junit.Test;
+import org.nd4j.linalg.learning.regularization.L1Regularization;
+import org.nd4j.linalg.learning.regularization.L2Regularization;
+import org.nd4j.linalg.learning.regularization.Regularization;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
 /**
  * @author Max Pumperla
@@ -126,8 +128,8 @@ public class KerasLSTMTest {
         assertEquals(ACTIVATION_DL4J, layer.getActivationFn().toString());
         assertEquals(LAYER_NAME, layer.getLayerName());
         assertEquals(INIT_DL4J, layer.getWeightInitFn());
-        assertEquals(L1_REGULARIZATION, layer.getL1(), 0.0);
-        assertEquals(L2_REGULARIZATION, layer.getL2(), 0.0);
+        assertEquals(L1_REGULARIZATION, KerasTestUtils.getL1(layer), 0.0);
+        assertEquals(L2_REGULARIZATION, KerasTestUtils.getL2(layer), 0.0);
         assertEquals(new Dropout(DROPOUT_DL4J), layer.getIDropout());
         assertEquals(lstmForgetBiasDouble, layer.getForgetGateBiasInit(), 0.0);
         assertEquals(N_OUT, layer.getNOut());

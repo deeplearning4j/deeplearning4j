@@ -16,6 +16,7 @@
 
 package org.nd4j.linalg.api.ops.impl.controlflow.compat;
 
+import lombok.Data;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.base.Preconditions;
@@ -30,7 +31,10 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
+@Data
 public class Enter extends BaseCompatOp {
+
+    protected boolean isConstant;
 
     @Override
     public String opName() {
@@ -64,6 +68,7 @@ public class Enter extends BaseCompatOp {
     @Override
     public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
         super.initFromTensorFlow(nodeDef, initWith, attributesForNode, graph);
+        isConstant = attributesForNode.get("is_constant").getB();
     }
 
     @Override

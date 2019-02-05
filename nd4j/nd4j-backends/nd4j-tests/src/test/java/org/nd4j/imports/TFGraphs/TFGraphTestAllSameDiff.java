@@ -101,9 +101,6 @@ public class TFGraphTestAllSameDiff {
             //Failing 2019/01/16 - Issue 15 https://github.com/deeplearning4j/deeplearning4j/issues/6958
             "where/cond_only.*",
 
-            //Still failing 2019/01/15 - https://github.com/deeplearning4j/deeplearning4j/issues/7008
-            "sepconv1d_layers/.*",
-
             //scatter_nd: a few cases failing as of 2019/01/08
             "scatter_nd/rank2shape_2indices",
             "scatter_nd/rank3shape_2indices",
@@ -121,9 +118,6 @@ public class TFGraphTestAllSameDiff {
             //2019/01/16 - These have a random component so can't be validated using simple .equals... should still be compared, however to check range is sensible etc
             "alpha_dropout/.*",
             "layers_dropout/.*",
-
-            //2019/01/16 - "IllegalStateException: Expected exactly 1 op input, got null+null"
-            "simplewhile_nested",
 
             //2019/01/16 - "org.nd4j.linalg.api.ops.impl.controlflow.compat.Enter cannot be cast to org.nd4j.linalg.api.ops.impl.shape.tensorops.TensorArray"
             //Doesn't seem like a valid structure, based on the docs
@@ -152,12 +146,12 @@ public class TFGraphTestAllSameDiff {
     @Before
     public void setup() {
         Nd4j.setDataType(DataType.FLOAT);
+        Nd4j.getExecutioner().enableDebugMode(false);
+        Nd4j.getExecutioner().enableVerboseMode(false);
     }
 
     @After
     public void tearDown() {
-        NativeOpsHolder.getInstance().getDeviceNativeOps().enableDebugMode(true);
-        NativeOpsHolder.getInstance().getDeviceNativeOps().enableVerboseMode(true);
     }
 
     @Parameterized.Parameters(name="{2}")
@@ -185,8 +179,6 @@ public class TFGraphTestAllSameDiff {
     @Test//(timeout = 25000L)
     public void testOutputOnly() throws Exception {
         Nd4j.create(1);
-        Nd4j.getExecutioner().enableDebugMode(true);
-        Nd4j.getExecutioner().enableVerboseMode(true);
         if (SKIP_SET.contains(modelName)) {
             log.info("\n\tSKIPPED MODEL: " + modelName);
             return;

@@ -50,22 +50,20 @@ public interface IOutputLayer extends Layer, Classifier {
     /**
      * Compute score after labels and input have been set.
      *
-     * @param fullNetworkL1 L1 regularization term for the entire network
-     * @param fullNetworkL2 L2 regularization term for the entire network
-     * @param training      whether score should be calculated at train or test time (this affects things like application of
-     *                      dropout, etc)
+     * @param fullNetworkRegScore Regularization score (l1/l2/weight decay) for the entire network
+     * @param training            whether score should be calculated at train or test time (this affects things like application of
+     *                            dropout, etc)
      * @return score (loss function)
      */
-    double computeScore(double fullNetworkL1, double fullNetworkL2, boolean training, LayerWorkspaceMgr workspaceMgr);
+    double computeScore(double fullNetworkRegScore, boolean training, LayerWorkspaceMgr workspaceMgr);
 
     /**
      * Compute the score for each example individually, after labels and input have been set.
      *
-     * @param fullNetworkL1 L1 regularization term for the entire network (or, 0.0 to not include regularization)
-     * @param fullNetworkL2 L2 regularization term for the entire network (or, 0.0 to not include regularization)
+     * @param fullNetworkRegScore Regularization score (l1/l2/weight decay) for the entire network
      * @return A column INDArray of shape [numExamples,1], where entry i is the score of the ith example
      */
-    INDArray computeScoreForExamples(double fullNetworkL1, double fullNetworkL2, LayerWorkspaceMgr workspaceMgr);
+    INDArray computeScoreForExamples(double fullNetworkRegScore, LayerWorkspaceMgr workspaceMgr);
 
 
 }

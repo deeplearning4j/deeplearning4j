@@ -33,9 +33,11 @@ import org.deeplearning4j.nn.params.BidirectionalParamInitializer;
 import org.deeplearning4j.optimize.api.TrainingListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.learning.config.IUpdater;
+import org.nd4j.linalg.learning.regularization.Regularization;
 import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 
 import static org.nd4j.linalg.indexing.NDArrayIndex.interval;
@@ -187,14 +189,9 @@ public class Bidirectional extends Layer {
     }
 
     @Override
-    public double getL1ByParam(String paramName) {
+    public List<Regularization> getRegularizationByParam(String paramName){
         //Strip forward/backward prefix from param name
-        return fwd.getL1ByParam(paramName.substring(1));
-    }
-
-    @Override
-    public double getL2ByParam(String paramName) {
-        return fwd.getL2ByParam(paramName.substring(1));
+        return fwd.getRegularizationByParam(paramName.substring(1));
     }
 
     @Override

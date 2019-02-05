@@ -27,8 +27,10 @@ import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
 import org.deeplearning4j.nn.params.EmptyParamInitializer;
 import org.deeplearning4j.optimize.api.TrainingListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.learning.regularization.Regularization;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -73,13 +75,9 @@ public class MaskLayer extends NoParamLayer {
     }
 
     @Override
-    public double getL1ByParam(String paramName) {
-        return 0; //No params
-    }
-
-    @Override
-    public double getL2ByParam(String paramName) {
-        return 0; //No params
+    public List<Regularization> getRegularizationByParam(String paramName) {
+        //Not applicable
+        return null;
     }
 
     @Override

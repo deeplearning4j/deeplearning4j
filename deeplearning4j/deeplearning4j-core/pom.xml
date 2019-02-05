@@ -180,6 +180,14 @@
             <artifactId>deeplearning4j-ui-components</artifactId>
             <version>${project.version}</version>
         </dependency>
+
+        <!-- Workaround for Java 9+ -->
+        <dependency>
+            <groupId>javax.xml.bind</groupId>
+            <artifactId>jaxb-api</artifactId>
+            <version>${jaxb.version}</version>
+            <scope>provided</scope>
+        </dependency>
     </dependencies>
 
     <profiles>

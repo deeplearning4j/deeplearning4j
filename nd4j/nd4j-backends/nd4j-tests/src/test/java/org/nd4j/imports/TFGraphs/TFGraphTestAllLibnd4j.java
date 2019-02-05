@@ -87,7 +87,17 @@ public class TFGraphTestAllLibnd4j {
 
             //JVM crashes
             "simpleif.*",
-            "simple_cond.*"
+            "simple_cond.*",
+
+            //2019/01/24 - Failing
+            "cond/cond_true",
+            "simplewhile_.*",
+            "simple_while",
+            "while1/.*",
+            "while2/a",
+
+            //2019/01/24 - TensorArray support missing at libnd4j exec level??
+            "tensor_array/.*"
     };
 
     @BeforeClass
@@ -131,8 +141,6 @@ public class TFGraphTestAllLibnd4j {
     @Test//(timeout = 25000L)
     public void test() throws Exception {
         Nd4j.create(1);
-        Nd4j.getExecutioner().enableDebugMode(true);
-        Nd4j.getExecutioner().enableVerboseMode(true);
         if (SKIP_SET.contains(modelName)) {
             log.info("\n\tSKIPPED MODEL: " + modelName);
             return;

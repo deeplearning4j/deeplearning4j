@@ -35,7 +35,6 @@ public abstract class BaseOutputLayer extends FeedForwardLayer {
 
     protected ILossFunction lossFn;
     protected boolean hasBias = true;
-    protected boolean legacyBatchScaledL2 = true; //Default to legacy for pre 1.0.0-beta3 networks on deserialization
 
     protected BaseOutputLayer(Builder builder) {
         super(builder);

@@ -506,6 +506,14 @@
             <artifactId>flatbuffers</artifactId>
             <version>1.9.0</version>
         </dependency>
+
+        <!-- Workaround for Java 9+ -->
+        <dependency>
+            <groupId>javax.xml.bind</groupId>
+            <artifactId>jaxb-api</artifactId>
+            <version>${jaxb.version}</version>
+            <scope>provided</scope>
+        </dependency>
     </dependencies>
 
 

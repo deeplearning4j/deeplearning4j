@@ -393,8 +393,6 @@ public class DefaultOpExecutioner implements OpExecutioner {
         if (Nd4j.getExecutioner().isVerbose()) {
             if (op.z() != null)
                 log.info("Op name: {}; Z shapeInfo: {}; Z values: {}", op.opName(), op.z().shapeInfoJava(), firstX(op.z(), 10));
-
-            System.out.println();
         }
     }
 

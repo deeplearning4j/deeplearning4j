@@ -76,6 +76,7 @@ public class TestCase {
     private double gradCheckMaxRelativeError = GC_DEFAULT_MAX_REL_ERROR;
     private double gradCheckMinAbsError = GC_DEFAULT_MIN_ABS_ERROR;
     private Set<String> gradCheckSkipVariables;
+    private Map<String, INDArray> gradCheckMask;
 
     //FlatBuffers serialization configuration
     private TestSerialization testFlatBufferSerialization = TestSerialization.BOTH;
@@ -151,6 +152,10 @@ public class TestCase {
 
     public Set<String> gradCheckSkipVariables() {
         return gradCheckSkipVariables;
+    }
+
+    public Map<String, INDArray> gradCheckMask() {
+        return gradCheckMask;
     }
 
     /**

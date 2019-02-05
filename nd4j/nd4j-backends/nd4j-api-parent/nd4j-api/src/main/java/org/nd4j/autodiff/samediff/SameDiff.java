@@ -734,7 +734,7 @@ public class SameDiff {
                 return variablesArrays.containsKey(varName);
             case ARRAY:
                 long tid = Thread.currentThread().getId();
-                return sessions.containsKey(tid) && sessions.get(tid).contains(varName, InferenceSession.OUTER_FRAME, 0);
+                return sessions.containsKey(tid) && sessions.get(tid).contains(varName, InferenceSession.OUTER_FRAME, 0, null);
             case CONSTANT:
                 return constantArrays.containsKey(varName);
             case PLACEHOLDER:
@@ -771,7 +771,7 @@ public class SameDiff {
                 InferenceSession s = sessions.get(Thread.currentThread().getId());
                 if(s == null)
                     return null;
-                return s.get(varName, InferenceSession.OUTER_FRAME, 0, false);
+                return s.get(varName, InferenceSession.OUTER_FRAME, 0, null, false);
             case PLACEHOLDER:
                 long tid = Thread.currentThread().getId();
                 if(placeholdersPerThread.get(tid) == null || !placeholdersPerThread.get(tid).containsKey(varName))
@@ -829,7 +829,7 @@ public class SameDiff {
             case ARRAY:
                 // FIXME: remove this before release
                 val session = sessions.get(Thread.currentThread().getId());
-                val varId = session.newVarId(variable.getVarName(), AbstractSession.OUTER_FRAME, 0);
+                val varId = session.newVarId(variable.getVarName(), AbstractSession.OUTER_FRAME, 0, null);
                 session.getNodeOutputs().put(varId, arr);
                 //throw new UnsupportedOperationException("Cannot associate array with SDVariable of type ARRAY");
             case PLACEHOLDER:
@@ -8857,6 +8857,72 @@ public class SameDiff {
         return updateVariableNameAndReference(result, name);
     }
 
+    /**
+     * See {@link #lossLogPoisson(String, SDVariable, SDVariable, SDVariable, LossReduce)}.
+     */
+    public SDVariable lossLogPoisson(String name, @NonNull SDVariable label, @NonNull SDVariable predictions) {
+        return lossLogPoisson(name, label, predictions, null, LossReduce.MEAN_BY_NONZERO_WEIGHT_COUNT);
+    }
+
+    /**
+     * See {@link #lossLogPoisson(String, SDVariable, SDVariable, SDVariable, LossReduce)}.
+     */
+    public SDVariable lossLogPoisson(String name, @NonNull SDVariable label, @NonNull SDVariable predictions, @NonNull LossReduce lossReduce) {
+        return lossLogPoisson(name, label, predictions, null, lossReduce);
+    }
+
+    /**
+     * Log poisson loss: a loss function used for training classifiers.
+     * Implements {@code L = exp(c) - z * c} where c is log(predictions) and z is labels.
+     *
+     * @param name        Name of the operation
+     * @param label       Label array. Each value should be 0.0 or 1.0
+     * @param predictions Predictions array (has to be log(x) of actual predictions)
+     * @param weights     Weights array. May be null. If null, a weight of 1.0 is used
+     * @param lossReduce  Reduction type for the loss. See {@link LossReduce} for more details. Default: {@link LossReduce#MEAN_BY_NONZERO_WEIGHT_COUNT}
+     * @return Loss variable
+     */
+    public SDVariable lossLogPoisson(String name, @NonNull SDVariable label, @NonNull SDVariable predictions,
+                                     SDVariable weights, @NonNull LossReduce lossReduce) {
+        if(weights == null)
+            weights = this.scalar(null, 1.0);
+        SDVariable result = functionFactory.lossLogPoisson(label, predictions, weights, lossReduce);
+        return updateVariableNameAndReference(result, name);
+    }
+
+    /**
+     * See {@link #lossLogPoissonFull(String, SDVariable, SDVariable, SDVariable, LossReduce)}.
+     */
+    public SDVariable lossLogPoissonFull(String name, @NonNull SDVariable label, @NonNull SDVariable predictions) {
+        return lossLogPoissonFull(name, label, predictions, null, LossReduce.MEAN_BY_NONZERO_WEIGHT_COUNT);
+    }
+
+    /**
+     * See {@link #lossLogPoissonFull(String, SDVariable, SDVariable, SDVariable, LossReduce)}.
+     */
+    public SDVariable lossLogPoissonFull(String name, @NonNull SDVariable label, @NonNull SDVariable predictions, @NonNull LossReduce lossReduce) {
+        return lossLogPoissonFull(name, label, predictions, null, lossReduce);
+    }
+
+    /**
+     * Log poisson loss: a loss function used for training classifiers.
+     * Implements {@code L = exp(c) - z * c + z * log(z) - z + 0.5 * log(2 * pi * z)}
+     * where c is log(predictions) and z is labels.
+     *
+     * @param name        Name of the operation
+     * @param label       Label array. Each value should be 0.0 or 1.0
+     * @param predictions Predictions array (has to be log(x) of actual predictions)
+     * @param weights     Weights array. May be null. If null, a weight of 1.0 is used
+     * @param lossReduce  Reduction type for the loss. See {@link LossReduce} for more details. Default: {@link LossReduce#MEAN_BY_NONZERO_WEIGHT_COUNT}
+     * @return Loss variable
+     */
+    public SDVariable lossLogPoissonFull(String name, @NonNull SDVariable label, @NonNull SDVariable predictions,
+                                     SDVariable weights, @NonNull LossReduce lossReduce) {
+        if(weights == null)
+            weights = this.scalar(null, 1.0);
+        SDVariable result = functionFactory.lossLogPoissonFull(label, predictions, weights, lossReduce);
+        return updateVariableNameAndReference(result, name);
+    }
 
     /**
      * See {@link #lossHuber(String, SDVariable, SDVariable, SDVariable, LossReduce, double)}.
@@ -8933,10 +8999,10 @@ public class SameDiff {
     }
 
     /**
-     * See {@link #lossMeanPairwiseSquaredError(String, SDVariable, SDVariable, SDVariable)}.
+     * See {@link #lossMeanPairwiseSquaredError(String, SDVariable, SDVariable, SDVariable, LossReduce)}.
      */
-    public SDVariable lossMeanPairwiseSquaredError(String name, @NonNull SDVariable label, @NonNull SDVariable predictions) {
-        return lossMeanPairwiseSquaredError(name, label, predictions, null);
+    public SDVariable lossMeanPairwiseSquaredError(String name, @NonNull SDVariable label, @NonNull SDVariable predictions, @NonNull LossReduce lossReduce) {
+        return lossMeanPairwiseSquaredError(name, label, predictions, null, lossReduce);
     }
 
     /**
@@ -8951,10 +9017,10 @@ public class SameDiff {
      * @param weights     Weights array. May be null. If null, a weight of 1.0 is used. Must be either null, scalar, or have shape [batchSize]
      * @return Loss variable, scalar output
      */
-    public SDVariable lossMeanPairwiseSquaredError(String name, @NonNull SDVariable label, @NonNull SDVariable predictions, SDVariable weights) {
+    public SDVariable lossMeanPairwiseSquaredError(String name, @NonNull SDVariable label, @NonNull SDVariable predictions, SDVariable weights, @NonNull LossReduce lossReduce) {
         if(weights == null)
             weights = this.scalar(null, 1.0);
-        SDVariable result = functionFactory.lossMeanPairwiseSquaredError(label, predictions, weights);
+        SDVariable result = functionFactory.lossMeanPairwiseSquaredError(label, predictions, weights, lossReduce);
         return updateVariableNameAndReference(result, name);
     }
 
