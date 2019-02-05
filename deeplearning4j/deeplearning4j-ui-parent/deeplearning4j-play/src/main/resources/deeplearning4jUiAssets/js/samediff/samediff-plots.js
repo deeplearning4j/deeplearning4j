@@ -61,13 +61,12 @@ function renderHistogramSingle(/*jquery selector*/ element, label, /*nd4j.graph.
     //Histogram rendering:
 
     var data = [];
+    var y = h.y();
     if(h.type() === nd4j.graph.UIHistogramType.EQUAL_SPACING){
         var minmaxArr = h.binranges();  //Rank 1, size 2
         var min = scalarFromFlatArrayIdx(minmaxArr, 0);
         var max = scalarFromFlatArrayIdx(minmaxArr, 1);
         var numBins = h.numbins();
-
-        var y = h.y();
 
         //Render this as a line chart for now. Could do this as a bar chart instead, but this provides precise control...
         var step = (max-min)/numBins;
@@ -86,8 +85,6 @@ function renderHistogramSingle(/*jquery selector*/ element, label, /*nd4j.graph.
         for(var i=0; i<binLabelsCount; i++ ){
             lbl.push(h.binlabels(i));
         }
-
-        var y = h.y();
         var min = 0;
         var max = 1;
         var numBins = lbl.length;
@@ -97,6 +94,20 @@ function renderHistogramSingle(/*jquery selector*/ element, label, /*nd4j.graph.
             var lower = min + step * i;
             var upper = lower + step;
             var yValue = scalarFromFlatArrayIdx(y, i);
+            data.push([lower,0]);
+            data.push([lower,yValue]);
+            data.push([upper,yValue]);
+            data.push([upper,0]);
+        }
+    } else if(h.type() === nd4j.graph.UIHistogramType.CUSTOM){
+        var minmaxArr = h.binranges();  //Rank 2, shape [2,numBins]
+        var numBins = h.numbins();
+
+        for(var i=0; i<numBins; i++ ){
+            var lower = getScalar(minmaxArr, [0, i]);
+            var upper = getScalar(minmaxArr, [1, i]);
+            var yValue = scalarFromFlatArrayIdx(y, i);
+
             data.push([lower,0]);
             data.push([lower,yValue]);
             data.push([upper,yValue]);

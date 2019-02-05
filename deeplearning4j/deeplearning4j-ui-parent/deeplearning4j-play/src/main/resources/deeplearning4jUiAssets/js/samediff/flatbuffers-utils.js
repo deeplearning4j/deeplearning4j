@@ -210,6 +210,20 @@ function dataTypeBytesPerElement(dataTypeByte){
     }
 }
 
+function getScalar(/*FlatArray*/ flatArray, /*number[]*/ idxs){
+    //First: work out offset... assume C order here
+    var offset = 0;
+    // var prod = 1;
+    var rank = flatArray.shape(0).toFloat64();  //Note: shape is in nd4j format. So rank, shape. We're assuming C order here. Note also shape(i) returns flatbuffers long object
+    for( var i=0; i<rank; i++ ){
+        var size = flatArray.shape(i+1).toFloat64();
+        var stride = flatArray.shape(rank+i+1).toFloat64();
+        offset += stride * idxs[i];
+        // prod *= size.toFloat64();
+    }
+    return scalarFromFlatArrayIdx(flatArray, offset);
+}
+
 function scalarFromFlatArray(/*FlatArray*/ flatArray) {
     return scalarFromFlatArrayIdx(flatArray, 0);
 }
@@ -229,38 +243,39 @@ function scalarFromFlatArrayIdx(/*FlatArray*/ flatArray, idx){
     }
 
     var bytesPerElem = dataTypeBytesPerElement(dt);
-    var numBytes = flatArray.bufferLength();
     // var array = new Uint8Array(numBytes);
-    var dv = new DataView(new ArrayBuffer(numBytes));
-    for(var i=0; i<numBytes; i++ ){
+    var dv = new DataView(new ArrayBuffer(bytesPerElem));
+    var byteOffset = idx * bytesPerElem;
+    var j=0;
+    for(var i=byteOffset; i<byteOffset + bytesPerElem; i++ ){
         var signedByte = flatArray.buffer(i);
         // array[i] = signedByte;      //TODO do we need to convert here???
-        dv.setInt8(i, signedByte);
+        dv.setInt8(j++, signedByte);
     }
 
     //Note: "get(idx)" is byte offset
     var out;
     switch (dt){
         case nd4j.graph.DataType.BOOL:
-            out = (dv.getUint8(bytesPerElem * idx) === 0 ? "false" : "true");
+            out = (dv.getUint8(0) === 0 ? "false" : "true");
             break;
         case nd4j.graph.DataType.INT8:
-            out = dv.getInt8(bytesPerElem * idx);
+            out = dv.getInt8(0);
             break;
         case nd4j.graph.DataType.UINT8:
-            out = dv.getUint8(bytesPerElem * idx);
+            out = dv.getUint8(0);
             break;
         case nd4j.graph.DataType.INT16:
-            out = dv.getInt16(bytesPerElem * idx);
+            out = dv.getInt16(0);
             break;
         case nd4j.graph.DataType.UINT16:
-            out = dv.getUint16(bytesPerElem * idx);
+            out = dv.getUint16(0);
             break;
         case nd4j.graph.DataType.INT32:
-            out = dv.getInt32(bytesPerElem * idx);
+            out = dv.getInt32(0);
             break;
         case nd4j.graph.DataType.UINT32:
-            out = dv.getUint32(bytesPerElem * idx);
+            out = dv.getUint32(0);
             break;
         case nd4j.graph.DataType.INT64:
             //No getInt64 method... :/
@@ -271,10 +286,10 @@ function scalarFromFlatArrayIdx(/*FlatArray*/ flatArray, idx){
             out = "<uint64>";
             break;
         case nd4j.graph.DataType.FLOAT:
-            out = dv.getFloat32(bytesPerElem * idx);
+            out = dv.getFloat32(0);
             break;
         case nd4j.graph.DataType.DOUBLE:
-            out = dv.getFloat64(bytesPerElem * idx);
+            out = dv.getFloat64(0);
             break;
         case nd4j.graph.DataType.UTF8:
             //TODO need to decode from bytes here

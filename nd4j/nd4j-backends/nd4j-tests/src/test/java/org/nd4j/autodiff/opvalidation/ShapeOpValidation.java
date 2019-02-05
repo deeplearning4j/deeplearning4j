@@ -2059,4 +2059,41 @@ public class ShapeOpValidation extends BaseOpValidation {
 
         Nd4j.exec(op);
     }
+
+    @Test
+    public void testConcatEmpty(){
+        /*
+        TF behaviour with concatenatioun of empty arrays:
+        concat(empty,empty,empty) -> empty
+        cotcat(empty,nonEmpty) -> nonEmpty, etc (i.e., empty arrays are ignored)
+
+        tf.reset_default_graph()
+        # Hack to create empty array
+        input = tf.constant([False], dtype=tf.bool)
+        empty = tf.where(condition=input)
+        emptyFloat = tf.cast(empty, tf.float32)
+        var11 = tf.reshape(tf.constant([1], dtype=tf.float32), shape=[1,1])
+
+        concat = tf.concat(values=[emptyFloat, emptyFloat, var11, emptyFloat], axis=0)
+
+        sess = tf.Session()
+        out = sess.run([concat])
+        print(out[0].shape)
+        print(out[0]);
+         */
+
+        INDArray empty = Nd4j.empty(DataType.FLOAT);
+
+        DynamicCustomOp op = DynamicCustomOp.builder("concat")
+                .addInputs(empty, empty, empty)
+                .addIntegerArguments(0) //axis = 0
+                .build();
+
+        List<LongShapeDescriptor> l = op.calculateOutputShape();
+        assertEquals(1, l.size());
+        assertTrue(l.get(0).isEmpty());
+
+        op.addOutputArgument(empty);
+        Nd4j.exec(op);
+    }
 }
