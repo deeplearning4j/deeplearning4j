@@ -279,7 +279,7 @@ namespace nd4j {
             }
             BUILD_SINGLE_TEMPLATE(template void skipgram_, (void *syn0, void *syn1, void *syn1Neg, void *expTable, void *vnegTable, void *vinfVector, int target, int ngStarter, int *indices, int8_t *codes, double alpha, Nd4jLong randomValue, const int hsRounds, const int nsRounds, const int vocabSize, const int vectorLength, const int expLength, const int negLength), FLOAT_TYPES);
 
-            bool search_(int *haystack, int needle, int totalElements) {
+            int binarySearch(const int *haystack, const int needle, const int totalElements) {
                 int firstIndex = 0;
                 int lastIndex = totalElements - 1;
                 int halfIndex = nd4j::math::nd4j_floor<float, int>((lastIndex + firstIndex) / (float) 2);
@@ -293,7 +293,7 @@ namespace nd4j {
                     halfIndex = nd4j::math::nd4j_floor<float, int>((lastIndex + firstIndex) / (float) 2);
                 }
 
-                return (haystack[halfIndex] != needle) ? false : true;
+                return (haystack[halfIndex] == needle) ? halfIndex : -1;
             }
 
             template <typename T>
@@ -404,7 +404,7 @@ namespace nd4j {
                     const auto bStarters = negStarters.bufferAsT<int>();
 
                     //copy & sort starters
-                    auto sStarters = new int[numTargets];
+                    const auto sStarters = new int[numTargets];
                     memcpy(sStarters, bStarters, numTargets * sizeof(int));
                     SpecialMethods<int>::sortGeneric(sStarters, negStarters.shapeInfo(), false);
 
@@ -457,23 +457,21 @@ namespace nd4j {
                                         // we shift irow here to guarantee independence
                                         int dim = irow % numThreads;
                                         if (dim != omp_get_thread_num()) {
-                                            irow += numThreads - omp_get_thread_num();
+                                            irow += (numThreads - dim + omp_get_thread_num());
 
-                                            //if (irow % numThreads != omp_get_thread_num())
-                                            //    throw std::runtime_error("boom");
+                                            if (irow % numThreads != omp_get_thread_num())
+                                                throw std::runtime_error("boom");
 
                                             // roll back to nearest affilated word
-                                            if (irow >= vocabSize)
+                                            while (irow >= vocabSize)
                                                 irow -= numThreads;
 
-                                            /*
-                                            if (search_(sStarters, irow, numTargets)) {
-                                                if (irow < numTargets - numThreads)
-                                                    irow += numThreads;
-                                                else if (irow > numThreads)
-                                                    irow -= numThreads;
+
+                                            // if this row was processed as first step somewhere - skip it
+                                            if (binarySearch(sStarters, irow, numTargets) > 0 ) {
+                                                continue;
                                             }
-                                            */
+
                                         }
                                     }
 
