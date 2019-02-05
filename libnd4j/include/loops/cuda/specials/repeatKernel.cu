@@ -35,7 +35,9 @@ namespace nd4j {
             auto yOffset = tadInputOffsets[i];
             auto xOffset = tadOutputOffsets[i];
             for (Nd4jLong j = threadIdx.x; j < inputLength; j += totalThreads) {
-                *(reinterpret_cast<T*>(outputBuffer) + xOffset + shape::getIndexOffset(j, tadOnlyOutputShapeInfo, inputLength)) = *(reinterpret_cast<T const*>(inputBuffer) + yOffset + shape::getIndexOffset(j, tadOnlyInputShapeInfo, inputLength));
+                auto outputOffset = shape::getIndexOrderOffset(j, tadOnlyOutputShapeInfo, inputLength, shape::order(tadOnlyInputShapeInfo));
+                auto inputOffset  = shape::getIndexOrderOffset(j, tadOnlyInputShapeInfo,  inputLength, shape::order(tadOnlyInputShapeInfo));
+                *(reinterpret_cast<T*>(outputBuffer) + xOffset + outputOffset) = *(reinterpret_cast<T const*>(inputBuffer) + yOffset + inputOffset);
             }
         }
     }
@@ -54,7 +56,9 @@ namespace nd4j {
             auto yOffset = tadInputOffsets[i];
             auto xOffset = tadOutputOffsets[i];
             for (Nd4jLong j = threadIdx.x; j < inputLength; j += totalThreads) {
-                *(reinterpret_cast<X*>(outputBuffer) + xOffset + shape::getIndexOffset(j, tadOnlyOutputShapeInfo, inputLength)) = static_cast<X>(*(reinterpret_cast<Y const*>(inputBuffer) + yOffset + shape::getIndexOffset(j, tadOnlyInputShapeInfo, inputLength)));
+                auto outputOffset = shape::getIndexOrderOffset(j, tadOnlyOutputShapeInfo, inputLength, shape::order(tadOnlyInputShapeInfo));
+                auto inputOffset  = shape::getIndexOrderOffset(j, tadOnlyInputShapeInfo,  inputLength, shape::order(tadOnlyInputShapeInfo));
+                *(reinterpret_cast<X*>(outputBuffer) + xOffset + outputOffset) = static_cast<X>(*(reinterpret_cast<Y const*>(inputBuffer) + yOffset + inputOffset));
             }
         }
     }
@@ -63,14 +67,14 @@ namespace nd4j {
             Nd4jLong* tadOnlyOutputShapeInfo, Nd4jLong *tadOutputOffsets), LIBND4J_TYPES, LIBND4J_TYPES);
 
     template <typename T>
-    void repeatKernelH(void const* inputBuffer, void* outputBuffer, Nd4jLong numTads, Nd4jLong inputLength,
+    void repeatKernelH(void const* inputBuffer, void* outputBuffer, Nd4jLong numTads, Nd4jLong inputLength, Nd4jLong outputLength,
                               Nd4jLong *tadOnlyInputShapeInfo, Nd4jLong *tadInputOffsets,
                               Nd4jLong *tadOnlyOutputShapeInfo,Nd4jLong *tadOutputOffsets,
                               cudaStream_t stream) {
         dim3 launchDims(256, 512, 8192);
         repeatKernel<T><<<launchDims.x, launchDims.y, launchDims.z, stream>>>(inputBuffer, outputBuffer, numTads, inputLength, tadOnlyInputShapeInfo, tadInputOffsets, tadOnlyOutputShapeInfo, tadOutputOffsets);
     }
-    BUILD_SINGLE_TEMPLATE(template void repeatKernelH, (void const* inputBuffer, void* outputBuffer, Nd4jLong numTads, Nd4jLong inputLength,
+    BUILD_SINGLE_TEMPLATE(template void repeatKernelH, (void const* inputBuffer, void* outputBuffer, Nd4jLong numTads, Nd4jLong inputLength, Nd4jLong outputLength,
             Nd4jLong* tadOnlyInputShapeInfo,  Nd4jLong *tadInputOffsets,
             Nd4jLong* tadOnlyOutputShapeInfo, Nd4jLong *tadOutputOffsets,
             cudaStream_t stream), LIBND4J_TYPES);

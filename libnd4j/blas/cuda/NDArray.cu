@@ -3308,7 +3308,7 @@ void NDArray::reduceAlongDimension(nd4j::reduce::LongOps op, NDArray* target, co
         hostData.emplace_back(tadInput.tadOffsets, tadInput.numTads * sizeof(Nd4jLong));							// 2 -- xTadOffsets
         hostData.emplace_back(tadOutput.tadOnlyShapeInfo, shape::shapeInfoByteLength(tadOutput.tadOnlyShapeInfo));	// 1 -- xTadShapeInfo
         hostData.emplace_back(tadOutput.tadOffsets, tadOutput.numTads * sizeof(Nd4jLong));							// 2 -- xTadOffsets
-        std::vector<void*> devicePtrs(hostData.size(), nullptr);
+        std::vector<Nd4jLong*> devicePtrs(hostData.size(), nullptr);
 
         // create cuda stream and LaunchContext
         cudaError_t cudaResult;
@@ -3318,17 +3318,18 @@ void NDArray::reduceAlongDimension(nd4j::reduce::LongOps op, NDArray* target, co
         // allocate required amount of global device memory and copy host data to it
 //    cudaResult = allocateDeviceMem(*pLc, devicePtrs, hostData);	ASSERT_EQ(0, cudaResult);
         for(int i = 0; i < devicePtrs.size(); ++i) {
-            cudaResult = cudaMalloc(reinterpret_cast<void **>(&devicePtrs[i]), hostData[i].second);
-            if(cudaResult != 0) throw cuda_exception::build("Cannot allocate memory for tads on device", cudaResult);
+            cudaResult = cudaMalloc(&devicePtrs[i], hostData[i].second);
+            if(cudaResult != 0) throw cuda_exception::build("repeat: Cannot allocate memory for tads on device", cudaResult);
             cudaResult = cudaMemcpy(devicePtrs[i], hostData[i].first, hostData[i].second, cudaMemcpyHostToDevice);
-            if(cudaResult != 0) throw cuda_exception::build("Cannot copy memory block for tads on device", cudaResult);
+            if(cudaResult != 0) throw cuda_exception::build("repeat: Cannot copy memory block for tads on device", cudaResult);
         }
         auto stream = _context->getCudaStream();
-        BUILD_SINGLE_SELECTOR(_dataType, repeatKernelH, (_bufferD, ret->_bufferD, numTads, lengthOf(), (Nd4jLong*)devicePtrs[0], (Nd4jLong*)devicePtrs[1], (Nd4jLong*)devicePtrs[2], (Nd4jLong*)devicePtrs[3], *stream), LIBND4J_TYPES);
+        BUILD_SINGLE_SELECTOR(_dataType, repeatKernelH, (_bufferD, ret->_bufferD, numTads, lengthOf(), ret->lengthOf(), (Nd4jLong*)devicePtrs[0], (Nd4jLong*)devicePtrs[1], (Nd4jLong*)devicePtrs[2], (Nd4jLong*)devicePtrs[3], *stream), LIBND4J_TYPES);
 
         for(int i = 0; i < devicePtrs.size(); ++i) {
             cudaResult = cudaFree(devicePtrs[i]);
-            if(cudaResult != 0) throw cuda_exception::build("Cannot allocate memory for tads on device", cudaResult);
+            if(cudaResult != 0)
+                throw cuda_exception::build("repeat: Cannot deallocate memory for tads on device", cudaResult);
 //            cudaResult = cudaMemcpy(devicePtrs[i], hostData[i].first, hostData[i].second, cudaMemcpyHostToDevice);
 //            if(cudaResult != 0) throw cuda_exception::build("Cannot copy memory block for tads on device", cudaResult);
         }
@@ -3375,7 +3376,7 @@ void NDArray::reduceAlongDimension(nd4j::reduce::LongOps op, NDArray* target, co
         hostData.emplace_back(tadInput.tadOffsets, tadInput.numTads * sizeof(Nd4jLong));							// 2 -- xTadOffsets
         hostData.emplace_back(tadOutput.tadOnlyShapeInfo, shape::shapeInfoByteLength(tadOutput.tadOnlyShapeInfo));	// 1 -- xTadShapeInfo
         hostData.emplace_back(tadOutput.tadOffsets, tadOutput.numTads * sizeof(Nd4jLong));							// 2 -- xTadOffsets
-        std::vector<void*> devicePtrs(hostData.size(), nullptr);
+        std::vector<Nd4jLong*> devicePtrs(hostData.size(), nullptr);
 
         // create cuda stream and LaunchContext
         cudaError_t cudaResult;
@@ -3385,17 +3386,17 @@ void NDArray::reduceAlongDimension(nd4j::reduce::LongOps op, NDArray* target, co
         // allocate required amount of global device memory and copy host data to it
 //    cudaResult = allocateDeviceMem(*pLc, devicePtrs, hostData);	ASSERT_EQ(0, cudaResult);
         for(int i = 0; i < devicePtrs.size(); ++i) {
-            cudaResult = cudaMalloc(reinterpret_cast<void **>(&devicePtrs[i]), hostData[i].second);
-            if(cudaResult != 0) throw cuda_exception::build("Cannot allocate memory for tads on device", cudaResult);
+            cudaResult = cudaMalloc(&devicePtrs[i], hostData[i].second);
+            if(cudaResult != 0) throw cuda_exception::build("repeat: Cannot allocate memory for tads on device", cudaResult);
             cudaResult = cudaMemcpy(devicePtrs[i], hostData[i].first, hostData[i].second, cudaMemcpyHostToDevice);
-            if(cudaResult != 0) throw cuda_exception::build("Cannot copy memory block for tads on device", cudaResult);
+            if(cudaResult != 0) throw cuda_exception::build("repeat: Cannot copy memory block for tads on device", cudaResult);
         }
         auto stream = _context->getCudaStream();
         //BUILD_SINGLE_SELECTOR(_dataType, repeatKernelH, (_bufferD, target._bufferD, numTads, lengthOf(), (Nd4jLong*)devicePtrs[0], (Nd4jLong*)devicePtrs[1], (Nd4jLong*)devicePtrs[2], (Nd4jLong*)devicePtrs[3], *stream), LIBND4J_TYPES);
         BUILD_DOUBLE_SELECTOR(target._dataType, _dataType, repeatKernelHH, (_bufferD, target._bufferD, numTads, lengthOf(), (Nd4jLong*)devicePtrs[0], (Nd4jLong*)devicePtrs[1], (Nd4jLong*)devicePtrs[2], (Nd4jLong*)devicePtrs[3], *stream), LIBND4J_TYPES, LIBND4J_TYPES);
         for(int i = 0; i < devicePtrs.size(); ++i) {
             cudaResult = cudaFree(devicePtrs[i]);
-            if(cudaResult != 0) throw cuda_exception::build("Cannot allocate memory for tads on device", cudaResult);
+            if(cudaResult != 0) throw cuda_exception::build("repeat: Cannot deallocate memory for tads on device", cudaResult);
         }
     }
 

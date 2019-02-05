@@ -301,6 +301,36 @@ TEST_F(NDArrayTest, TestRepeat1) {
     ASSERT_EQ(4, rep->sizeAt(0));
     ASSERT_EQ(2, rep->sizeAt(1));
 
+    //rep->printIndexedBuffer("Repeated");
+
+    ASSERT_TRUE(exp->equalsTo(rep));
+
+    delete[] eBuffer;
+    delete[] eShape;
+    delete array;
+    delete exp;
+    delete rep;
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(NDArrayTest, TestRepeat2) {
+    auto eBuffer = new float[8] {1.0,2.0,1.0,2.0,3.0,4.0,3.0,4.0};
+    auto eShape = new Nd4jLong[8]{2, 4, 2, 2, 1, 8192, 1, 99};
+    auto array = NDArrayFactory::create_<float>('c', {2, 2});
+    auto exp = new NDArray(eBuffer, eShape);
+    for (int e = 0; e < array->lengthOf(); e++)
+        array->p(e, e + 1);
+
+    //array->printBuffer();
+
+    auto rep = exp->dup();
+    rep->assign(0.);
+    array->repeat(0, *rep);
+    //rep->printIndexedBuffer("Repeated");
+
+    ASSERT_EQ(4, rep->sizeAt(0));
+    ASSERT_EQ(2, rep->sizeAt(1));
+
     //rep->printBuffer();
 
     ASSERT_TRUE(exp->equalsTo(rep));
