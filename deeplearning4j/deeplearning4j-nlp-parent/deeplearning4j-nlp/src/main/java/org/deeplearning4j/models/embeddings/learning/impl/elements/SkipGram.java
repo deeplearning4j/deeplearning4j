@@ -395,7 +395,8 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
             sg = new SkipGramRound(Nd4j.scalar(lastWord.getIndex()), Nd4j.scalar(target), syn0.get(), syn1.get(), syn1Neg.get(), expTable.get(),
                     table.get(), (int) negative, Nd4j.create(idxSyn1), Nd4j.create(intCodes),
                     Nd4j.scalar(alpha), Nd4j.scalar(nextRandom.get()),
-                    inferenceVector != null ? inferenceVector : Nd4j.empty(syn0.get().dataType()));
+                    inferenceVector != null ? inferenceVector : Nd4j.empty(syn0.get().dataType()),
+                    configuration.isPreciseMode());
         }
         else if (useHS) {
             sg = new SkipGramRound(lastWord.getIndex(), syn0.get(), syn1.get(), expTable.get(),
@@ -517,7 +518,8 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
                 useHS ? indicesArray : Nd4j.empty(DataType.INT),
                 useHS ? codesArray : Nd4j.empty(DataType.BYTE),
                 alphasArray, randomValuesArray,
-                /*inferenceVector != null ? inferenceVector :*/ Nd4j.empty(syn0.get().dataType()));
+                /*inferenceVector != null ? inferenceVector :*/ Nd4j.empty(syn0.get().dataType()),
+                configuration.isPreciseMode());
 
         Nd4j.getExecutioner().exec(sg);
 

@@ -23,6 +23,11 @@ public class BatchSequences<T extends SequenceElement> {
         buffer.add(newItem);
     }
 
+    public void put(T word, int[] windowWords, long randomValue, double alpha) {
+        BatchItem<T> newItem = new BatchItem<>(word, windowWords, randomValue, alpha);
+        buffer.add(newItem);
+    }
+
     public List<BatchItem<T>> get(int chunkNo) {
         List<BatchItem<T>> retVal = new ArrayList<>();
 
