@@ -2183,7 +2183,7 @@ NDArray NDArray::e(const Nd4jLong i) const {
         cudaResult = cudaMalloc(reinterpret_cast<void **>(&yTadOffsets), yTad.numTads * sizeof(Nd4jLong));
         if (cudaResult != 0) throw cuda_exception::build("NDArray::applyAllReduce3 cuda memory allocation failed !", cudaResult);
 
-        cudaMemcpyAsync(dims, copy.data(), copy.size() * sizeof(int), cudaMemcpyHostToDevice, *_context->getCudaStream());  
+        cudaMemcpyAsync(dims, copy.data(), copy.size() * sizeof(int), cudaMemcpyHostToDevice, *_context->getCudaStream());
         cudaMemcpyAsync(xTadShapeInfo, xTad.tadOnlyShapeInfo, shape::shapeInfoByteLength(xTad.tadOnlyShapeInfo), cudaMemcpyHostToDevice, *_context->getCudaStream());
         cudaMemcpyAsync(yTadShapeInfo, yTad.tadOnlyShapeInfo, shape::shapeInfoByteLength(yTad.tadOnlyShapeInfo), cudaMemcpyHostToDevice, *_context->getCudaStream());
         cudaMemcpyAsync(xTadOffsets, xTad.tadOffsets, xTad.numTads * sizeof(Nd4jLong), cudaMemcpyHostToDevice, *_context->getCudaStream());

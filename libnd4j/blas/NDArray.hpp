@@ -1132,7 +1132,7 @@ NDArray *NDArray::reduceAlongDimension(nd4j::reduce::LongOps op, const std::init
     }
 
     void NDArray::printIndexedBuffer(const char* msg, Nd4jLong limit) const {
-        lazyAllocateBuffer();
+
         if (!isActualOnHostSide())
             syncToHost();
 
@@ -2722,7 +2722,6 @@ Nd4jLong NDArray::getOffset(const Nd4jLong i) const {
         }
 
         #ifdef __CUDABLAS__
-            const_cast<NDArray*>(this)->lazyAllocateBuffer();
             makeBothBuffersActual();
             NDArray result(bufferWithOffset(offset), specialBufferWithOffset(offset), newShape, _context, false, false, true);
         

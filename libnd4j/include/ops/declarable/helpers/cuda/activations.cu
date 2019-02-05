@@ -223,7 +223,7 @@ __host__ static void preluBPCudaLauncher(const int blocksPerGrid, const int thre
     template <typename T>
     static void thresholdRelu_(NDArray const& input, double threshold, NDArray& output) {
         auto routine = LAMBDA_T(_x, threshold) {
-            return _x > (T)threshold? _x: (T)0.f;
+            return _x > (T)threshold ? _x: (T)0.f;
         };
         const_cast<NDArray&>(input).applyLambda<T>(routine, &output);
     }
