@@ -311,6 +311,7 @@ namespace nd4j {
                 const auto idxShift = indices.isEmpty() ? 0 : indices.sizeAt(1);
                 const auto hsRounds = codes.isEmpty() ? 0 : codes.sizeAt(1);
 
+                const bool preciseMode = true;
 
 
                 if (!indices.isEmpty()) {
@@ -403,10 +404,13 @@ namespace nd4j {
                     const auto bTarget = targets.bufferAsT<int>();
                     const auto bStarters = negStarters.bufferAsT<int>();
 
-                    //copy & sort starters
-                    const auto sStarters = new int[numTargets];
-                    memcpy(sStarters, bStarters, numTargets * sizeof(int));
-                    SpecialMethods<int>::sortGeneric(sStarters, negStarters.shapeInfo(), false);
+                    //copy & sort starters if we're in preciseMode
+                    int *sStarters;
+                    if (preciseMode) {
+                        sStarters = new int[numTargets];
+                        memcpy(sStarters, bStarters, numTargets * sizeof(int));
+                        SpecialMethods<int>::sortGeneric(sStarters, negStarters.shapeInfo(), false);
+                    }
 
 // same parallelism here, group by target AND nsStarter pair
 #pragma omp parallel num_threads(numThreads) private(sneu1e) default(shared)
@@ -455,23 +459,20 @@ namespace nd4j {
                                             continue;
 
                                         // we shift irow here to guarantee independence
-                                        int dim = irow % numThreads;
-                                        if (dim != omp_get_thread_num()) {
-                                            irow += (numThreads - dim + omp_get_thread_num());
+                                        if (preciseMode) {
+                                            int dim = irow % numThreads;
+                                            if (dim != omp_get_thread_num()) {
+                                                irow += (numThreads - dim + omp_get_thread_num());
 
-                                            if (irow % numThreads != omp_get_thread_num())
-                                                throw std::runtime_error("boom");
+                                                // roll back to nearest affilated word
+                                                while (irow >= vocabSize)
+                                                    irow -= numThreads;
 
-                                            // roll back to nearest affilated word
-                                            while (irow >= vocabSize)
-                                                irow -= numThreads;
-
-
-                                            // if this row was processed as first step somewhere - skip it
-                                            if (binarySearch(sStarters, irow, numTargets) > 0 ) {
-                                                continue;
+                                                // if this row was processed as first step somewhere - skip it
+                                                if (binarySearch(sStarters, irow, numTargets) > 0) {
+                                                    continue;
+                                                }
                                             }
-
                                         }
                                     }
 
@@ -479,7 +480,7 @@ namespace nd4j {
                                     nSampling_<T>(syn0row, s1n.bufferWithOffset(irow * vectorLength), expTable, neu1e, alpha, vectorLength, r == 0 ? 1 : 0, expLength, infVector != nullptr);
                                 }
 
-
+                                #pragma omp simd
                                 for (int e = 0; e < vectorLength; e++) {
                                     syn0row[e] += neu1e[e];
                                 }
@@ -494,7 +495,8 @@ namespace nd4j {
                     }
 
                     // deleting sorted stuff
-                    delete[] sStarters;
+                    if (preciseMode)
+                        delete[] sStarters;
                 }
             }
             BUILD_SINGLE_TEMPLATE(template void skipgramBatchExec_, (NDArray &s0, NDArray &s1, NDArray &s1n, void *vexpTable, void *vnegTable, void *vinfVector, NDArray &targets, NDArray &negStarters, NDArray &indices, NDArray &codes, NDArray &lr, NDArray &nextRandom, const int nsRounds, const int vocabSize, const int vectorLength, const int expLength, const int negLength), FLOAT_TYPES);
