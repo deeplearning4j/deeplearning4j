@@ -49,8 +49,8 @@ namespace nd4j {
 
     DECLARE_TYPES(matrix_band_part) {
         getOpDescriptor()
-            ->setAllowedInputTypes(nd4j::DataType::ANY)
-            ->setAllowedInputTypes({ALL_FLOATS})
+            ->setAllowedInputTypes({ALL_INTS, ALL_FLOATS})
+            ->setAllowedInputTypes({ALL_INTS, ALL_FLOATS})
             ->setSameMode(true);
     }
 }
