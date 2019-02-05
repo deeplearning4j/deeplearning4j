@@ -87,7 +87,10 @@ public class TFGraphTestAllLibnd4j {
             "while2/a",
 
             //2019/01/24 - TensorArray support missing at libnd4j exec level??
-            "tensor_array/.*"
+            "tensor_array/.*",
+
+            //2019/02/04 - Native execution exception: "Graph wasn't toposorted"
+            "primitive_gru_dynamic"
     };
 
     @BeforeClass

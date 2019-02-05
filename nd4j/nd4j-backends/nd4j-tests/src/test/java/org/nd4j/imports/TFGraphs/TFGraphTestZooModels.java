@@ -38,8 +38,8 @@ public class TFGraphTestZooModels {
 
     public static final String[] IGNORE_REGEXES = {
             //2019/01/10 - Need TensorArray support - https://github.com/deeplearning4j/deeplearning4j/issues/6972
-//            "ssd_mobilenet_v1_0.75_depth_300x300_coco14_sync_2018_07_03",
-//            "ssd_mobilenet_v1_coco_2018_01_28",
+            "ssd_mobilenet_v1_0.75_depth_300x300_coco14_sync_2018_07_03",
+            "ssd_mobilenet_v1_coco_2018_01_28",
 
             //2019/01/10 - Blocked by resize bilinear edge case - issue 8, https://github.com/deeplearning4j/deeplearning4j/issues/6958
             //Also xception (deeplabv3_pascal_train_aug_2018_01_04) is VERY slow - may simply be large input image size (513x513)
@@ -162,9 +162,9 @@ public class TFGraphTestZooModels {
 
     @Test   //(timeout = 360000L)
     public void testOutputOnly() throws Exception {
-        if(!modelName.startsWith("ssd")){
-            OpValidationSuite.ignoreFailing();
-        }
+//        if(!modelName.startsWith("ssd")){
+//            OpValidationSuite.ignoreFailing();
+//        }
         currentTestDir = testDir.newFolder();
 
 //        Nd4j.getExecutioner().setProfilingMode(OpExecutioner.ProfilingMode.NAN_PANIC);

@@ -142,7 +142,7 @@ public class Cast extends BaseDynamicTransformOp {
             if (arg().getArr() != null) {
                 long[] s = arg().getArr().shape();
                 LongShapeDescriptor lsd = LongShapeDescriptor.fromShape(s, typeDst);
-                if(inputArguments.get(0).isEmpty()){
+                if(inputArguments.size() > 0 && inputArguments.get(0) != null && inputArguments.get(0).isEmpty()){
                     long e = lsd.getExtras();
                     e = ArrayOptionsHelper.setOptionBit(e, ArrayType.EMPTY);
                     lsd.setExtras(e);
