@@ -611,7 +611,7 @@ namespace nd4j {
                             const int nsStarter = irow;
                             unsigned long long randomValue = nextRandom.e<Nd4jLong>(e);
 
-                            nd4j_printf("E: %i; RNG: %lld\n", e, );
+                            nd4j_printf("E: %i; RNG: %lld\n", e, randomValue);
 
                             for (int r = 0; r < nsRounds + 1; r++) {
                                 // we're skipping rng on 0 step
