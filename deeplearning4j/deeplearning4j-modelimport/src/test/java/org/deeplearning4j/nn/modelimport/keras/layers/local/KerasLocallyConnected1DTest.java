@@ -20,6 +20,7 @@ import org.deeplearning4j.nn.conf.dropout.Dropout;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.LocallyConnected1D;
 import org.deeplearning4j.nn.conf.layers.LocallyConnected2D;
+import org.deeplearning4j.nn.modelimport.keras.KerasTestUtils;
 import org.deeplearning4j.nn.modelimport.keras.config.Keras1LayerConfiguration;
 import org.deeplearning4j.nn.modelimport.keras.config.Keras2LayerConfiguration;
 import org.deeplearning4j.nn.modelimport.keras.config.KerasLayerConfiguration;
@@ -119,8 +120,8 @@ public class KerasLocallyConnected1DTest {
         assertEquals(ACTIVATION_DL4J, layer.getActivation().toString().toLowerCase());
         assertEquals(LAYER_NAME, layer.getLayerName());
         assertEquals(INIT_DL4J, layer.getWeightInit());
-        assertEquals(L1_REGULARIZATION, layer.getL1(), 0.0);
-        assertEquals(L2_REGULARIZATION, layer.getL2(), 0.0);
+        assertEquals(L1_REGULARIZATION, KerasTestUtils.getL1(layer), 0.0);
+        assertEquals(L2_REGULARIZATION, KerasTestUtils.getL2(layer), 0.0);
         assertEquals(new Dropout(DROPOUT_DL4J), layer.getIDropout());
         assertEquals(KERNEL_SIZE, layer.getKernel());
         assertEquals(STRIDE, layer.getStride());

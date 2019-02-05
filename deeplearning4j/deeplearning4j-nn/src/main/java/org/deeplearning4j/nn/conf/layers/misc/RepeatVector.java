@@ -94,19 +94,6 @@ public class RepeatVector extends FeedForwardLayer {
                         .cacheMemory(MemoryReport.CACHE_MODE_ALL_ZEROS, MemoryReport.CACHE_MODE_ALL_ZEROS).build();
     }
 
-
-    @Override
-    public double getL1ByParam(String paramName) {
-        //Not applicable
-        return 0;
-    }
-
-    @Override
-    public double getL2ByParam(String paramName) {
-        //Not applicable
-        return 0;
-    }
-
     @Override
     public boolean isPretrainParam(String paramName) {
         throw new UnsupportedOperationException("UpsamplingLayer does not contain parameters");

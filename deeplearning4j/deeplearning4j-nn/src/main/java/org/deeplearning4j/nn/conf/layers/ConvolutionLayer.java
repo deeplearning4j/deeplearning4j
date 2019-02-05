@@ -214,30 +214,6 @@ public class ConvolutionLayer extends FeedForwardLayer {
     }
 
     @Override
-    public double getL1ByParam(String paramName) {
-        switch (paramName) {
-            case ConvolutionParamInitializer.WEIGHT_KEY:
-                return l1;
-            case ConvolutionParamInitializer.BIAS_KEY:
-                return l1Bias;
-            default:
-                throw new IllegalArgumentException("Unknown parameter name: \"" + paramName + "\"");
-        }
-    }
-
-    @Override
-    public double getL2ByParam(String paramName) {
-        switch (paramName) {
-            case ConvolutionParamInitializer.WEIGHT_KEY:
-                return l2;
-            case ConvolutionParamInitializer.BIAS_KEY:
-                return l2Bias;
-            default:
-                throw new IllegalArgumentException("Unknown parameter name: \"" + paramName + "\"");
-        }
-    }
-
-    @Override
     public LayerMemoryReport getMemoryReport(InputType inputType) {
         val paramSize = initializer().numParams(this);
         val updaterStateSize = (int) getIUpdater().stateSize(paramSize);

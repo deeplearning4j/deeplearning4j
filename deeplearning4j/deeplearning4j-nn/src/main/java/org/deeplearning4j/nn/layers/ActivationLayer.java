@@ -46,12 +46,7 @@ public class ActivationLayer extends AbstractLayer<org.deeplearning4j.nn.conf.la
     }
 
     @Override
-    public double calcL2(boolean backpropParamsOnly) {
-        return 0;
-    }
-
-    @Override
-    public double calcL1(boolean backpropParamsOnly) {
+    public double calcRegularizationScore(boolean backpropParamsOnly){
         return 0;
     }
 

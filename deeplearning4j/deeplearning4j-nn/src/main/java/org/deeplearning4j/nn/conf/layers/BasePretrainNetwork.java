@@ -39,34 +39,6 @@ public abstract class BasePretrainNetwork extends FeedForwardLayer {
     }
 
     @Override
-    public double getL1ByParam(String paramName) {
-        switch (paramName) {
-            case PretrainParamInitializer.WEIGHT_KEY:
-                return l1;
-            case PretrainParamInitializer.BIAS_KEY:
-                return l1Bias;
-            case PretrainParamInitializer.VISIBLE_BIAS_KEY:
-                return l1Bias;
-            default:
-                throw new IllegalArgumentException("Unknown parameter name: \"" + paramName + "\"");
-        }
-    }
-
-    @Override
-    public double getL2ByParam(String paramName) {
-        switch (paramName) {
-            case PretrainParamInitializer.WEIGHT_KEY:
-                return l2;
-            case PretrainParamInitializer.BIAS_KEY:
-                return l2Bias;
-            case PretrainParamInitializer.VISIBLE_BIAS_KEY:
-                return l2Bias;
-            default:
-                throw new IllegalArgumentException("Unknown parameter name: \"" + paramName + "\"");
-        }
-    }
-
-    @Override
     public boolean isPretrainParam(String paramName) {
         return PretrainParamInitializer.VISIBLE_BIAS_KEY.equals(paramName);
     }
