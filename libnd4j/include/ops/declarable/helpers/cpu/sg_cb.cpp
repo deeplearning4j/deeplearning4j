@@ -693,7 +693,7 @@ namespace nd4j {
 
                     BUILD_SINGLE_SELECTOR(xType, cbowBatchExec_, (syn0, syn1, syn1Neg, expTable.buffer(), negTable.buffer(), nullptr, context, target, ngStarter, indices, codes, alpha, randomValue, nsRounds, syn0.sizeAt(0), syn0.sizeAt(1), expTable.lengthOf(), negTable.isEmpty() ? 0 : negTable.lengthOf(), numLabels, trainWords), FLOAT_TYPES);
                 } else
-                    throw std::runtime_error("CBOW: context must have rank 0 or 1");
+                    throw std::runtime_error("CBOW: context must have rank 0/1 or 2");
             }
         }
     }
