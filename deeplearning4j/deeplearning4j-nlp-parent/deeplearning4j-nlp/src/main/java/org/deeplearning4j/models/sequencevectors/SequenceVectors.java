@@ -1063,6 +1063,8 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
         private AtomicLong nextRandom;
         private Collection<String> stopList;
 
+        private static final int DEFAULT_BUFFER_SIZE = 512;
+
         public AsyncSequencer(SequenceIterator<T> iterator, @NonNull Collection<String> stopList) {
             this.iterator = iterator;
             //            this.linesCounter = linesCounter;
@@ -1072,8 +1074,8 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
             this.stopList = stopList;
             this.setDaemon(true);
 
-            limitLower = workers * batchSize;
-            limitUpper = workers * batchSize * 2;
+            limitLower = workers * (batchSize < DEFAULT_BUFFER_SIZE ? DEFAULT_BUFFER_SIZE : batchSize);
+            limitUpper = limitLower * 2;
 
             this.buffer = new LinkedBlockingQueue<>(limitUpper);
         }
