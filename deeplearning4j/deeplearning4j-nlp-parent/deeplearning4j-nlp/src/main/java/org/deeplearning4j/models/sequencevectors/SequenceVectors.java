@@ -1218,10 +1218,10 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
                         continue;
                     }
 
-                    batchSequences = new BatchSequences<>(configuration.getBatchSize());
                     // getting back number of iterations
                     for (int i = 0; i < numIterations; i++) {
 
+                        batchSequences = new BatchSequences<>(configuration.getBatchSize());
                         // we roll over sequences derived from digitizer, it's NOT window loop
                         for (int x = 0; x < sequences.size(); x++) {
                             try (val ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace(conf, "sequence_vectors_training")) {
