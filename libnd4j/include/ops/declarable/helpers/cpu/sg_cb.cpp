@@ -490,7 +490,7 @@ namespace nd4j {
                         }
 
                         // optional deallocation
-                        if (vectorLength >= 600)
+                        if (vectorLength > 600)
                             delete[] neu1e;
                     }
 
@@ -516,7 +516,7 @@ namespace nd4j {
                 T sneu1[600];
                 T sneu1e[600];
 
-                const auto numThreads = 1; //omp_get_max_threads() * 2;
+                const auto numThreads = omp_get_max_threads();
                 const auto idxShift = indices.isEmpty() ? 0 : indices.sizeAt(1);
                 const auto hsRounds = codes.isEmpty() ? 0 : codes.sizeAt(1);
                 const auto numTargets = context.sizeAt(0);
@@ -529,129 +529,111 @@ namespace nd4j {
                 const auto numIndices = indices.isEmpty() ? 0 : indices.sizeAt(1);
 
 //
-#pragma omp parallel num_threads(numThreads) private(sneu1, sneu1e) default(shared)
-                {
+#pragma omp parallel for num_threads(numThreads) private(sneu1, sneu1e) default(shared) schedule(static)
+                for (int e = 0; e < numTargets; e++){
                     T* neu1 = vectorLength <= 600 ? sneu1 : new T[vectorLength];
                     T* neu1e = vectorLength <= 600 ? sneu1e : new T[vectorLength];
 
-                    bool isOwner = true;
 
-                    // every threads rolls over targets
-                    for (int e = 0; e < numTargets; e++) {
+                    // every threads rolls over own targets
 
-                        // optionally we nullify temp arrays after successful (and on first) cycle
-                        if (isOwner) {
-                            memset(neu1, 0, sizeof(T) * vectorLength);
-                            memset(neu1e, 0, sizeof(T) * vectorLength);
-                        }
+                    // optionally we nullify temp arrays after successful (and on first) cycle
+                    memset(neu1, 0, sizeof(T) * vectorLength);
+                    memset(neu1e, 0, sizeof(T) * vectorLength);
 
-                        // calculating simple hash for all context words to reduce number of collisions
-                        unsigned long long cTarget = 7;
-                        for (int c = 0; c < contextWidth; c++) {
-                            auto cContext = bContext[c + (e * contextWidth)];
-                            if (cContext < 0)
-                                continue;
+                    auto alpha = lr.e<double>(e);
 
-                            cTarget = 31 * cTarget + cContext;
-                        }
-                        isOwner = cTarget % numThreads == omp_get_thread_num();
+                    int actualContext = 0;
 
-                        // if this set of context arrays doesn't match our threadId - just skip it, and go to next one
-                        if (!isOwner)
+                    // building neu1 for current window
+                    for (int c = 0; c < contextWidth; c++) {
+                        // getting next context word
+                        auto cContext = bContext[c + (e * contextWidth)];
+
+                        // skipping padded values
+                        if (cContext < 0)
                             continue;
 
-                        auto alpha = lr.e<double>(e);
+                        T *syn0word = syn0 + (cContext * vectorLength);
 
-                        int actualContext = 0;
-                        // building neu1 for current window
-                        for (int c = 0; c < contextWidth; c++) {
-                            // getting next context word
-                            auto cContext = bContext[c + (e * contextWidth)];
+                        #pragma omp simd
+                        for (int i = 0; i < vectorLength; i++)
+                            neu1[i] += syn0word[i];
 
-                            // skipping padded values
-                            if (cContext < 0)
+                        actualContext++;
+                    }
+
+                    actualContext += (infVector != nullptr ? 1 : 0);
+                    if (actualContext > 1) {
+                        #pragma omp simd
+                        for (int i = 0; i < vectorLength; i++)
+                            neu1[i] /= actualContext;
+                    }
+
+                    // hierarchic softmax step
+                    if (!indices.isEmpty()) {
+                        for (int i = 0; i < numIndices; i++) {
+                            const int cIndex = bIndices[(e * numIndices) + i];
+                            const int cCode = bCodes[(e * numIndices) + i];
+
+                            // we're skipping padded values
+                            if (cIndex < 0)
                                 continue;
 
-                            T *syn0word = syn0 + (cContext * vectorLength);
-
-                            #pragma omp simd
-                            for (int i = 0; i < vectorLength; i++)
-                                neu1[i] += syn0word[i];
-
-                            actualContext++;
-                        }
-
-                        actualContext += (infVector != nullptr ? 1 : 0);
-                        if (actualContext > 1) {
-                            #pragma omp simd
-                            for (int i = 0; i < vectorLength; i++)
-                                neu1[i] /= actualContext;
-                        }
-
-                        // hierarchic softmax step
-                        if (!indices.isEmpty()) {
-                            for (int i = 0; i < numIndices; i++) {
-                                const int cIndex = bIndices[(e * numIndices) + i];
-                                const int cCode = bCodes[(e * numIndices) + i];
-
-                                // we're skipping padded values
-                                if (cIndex < 0)
-                                    continue;
-
-                                hSoftmax_<T>(neu1, syn1 + (cIndex * vectorLength), expTable, neu1e, alpha, vectorLength, cCode, expLength, false);
-                            }
-                        }
-
-                        // negative sampling step
-                        if (!negStarters.isEmpty() && nsRounds > 0) {
-                            int irow = bStarters[e];
-                            const int nsStarter = irow;
-                            unsigned long long randomValue = nextRandom.e<Nd4jLong>(e);
-
-                            for (int r = 0; r < nsRounds + 1; r++) {
-                                // we're skipping rng on 0 step
-                                if (r != 0) {
-                                    randomValue = randomValue * (unsigned long long) 25214903917 + 11;
-                                    auto idx = nd4j::math::nd4j_abs<Nd4jLong>((randomValue >> 16) % negLength);
-                                    irow = idx >= negLength ? -1 : static_cast<int>(negTable[idx]);
-
-                                    if (irow < 0 || irow >= vocabSize) irow = randomValue % (vocabSize - 1) + 1;
-                                    if (irow == nsStarter)
-                                        continue;
-
-                                    nSampling_<T>(neu1, s1n.bufferWithOffset(irow * vectorLength), expTable, neu1e, alpha, vectorLength, r == 0 ? 1 : 0, expLength, infVector != nullptr);
-                                } else {
-                                    nSampling_<T>(neu1, s1n.bufferWithOffset(irow * vectorLength), expTable, neu1e, alpha, vectorLength, r == 0 ? 1 : 0, expLength, infVector != nullptr);
-                                }
-
-                                //nd4j_printf("Thread <%i>: syn0: [%i]; s1n: [%i];\n", omp_get_thread_num(), 0, irow);
-                            }
-                        }
-
-                        // if we're skipping labels
-                        int starter = trainWords == 1 ? 0 : contextWidth - numLabels;
-
-                        // applying previously averaged results
-                        for (int c = starter; c < contextWidth; c++) {
-                            // getting context
-                            auto cContext = bContext[c + (e * contextWidth)];
-
-                            // skipping padded values
-                            if (cContext < 0)
-                                continue;
-
-                            // one word from context
-                            T *syn0word = syn0 + (cContext * vectorLength);
-
-
-                            #pragma omp simd
-                            for (int i = 0; i < vectorLength; i++)
-                                syn0word[i] += neu1e[i];
+                            hSoftmax_<T>(neu1, syn1 + (cIndex * vectorLength), expTable, neu1e, alpha, vectorLength, cCode, expLength, false);
                         }
                     }
 
+                    // negative sampling step
+                    if (!negStarters.isEmpty() && nsRounds > 0) {
+                        int irow = bStarters[e];
+                        const int nsStarter = irow;
+                        unsigned long long randomValue = nextRandom.e<Nd4jLong>(e);
+
+                        for (int r = 0; r < nsRounds + 1; r++) {
+                            // we're skipping rng on 0 step
+                            if (r != 0) {
+                                randomValue = randomValue * (unsigned long long) 25214903917 + 11;
+                                auto idx = nd4j::math::nd4j_abs<Nd4jLong>((randomValue >> 16) % negLength);
+                                irow = idx >= negLength ? -1 : static_cast<int>(negTable[idx]);
+
+                                if (irow < 0 || irow >= vocabSize) irow = randomValue % (vocabSize - 1) + 1;
+                                if (irow == nsStarter)
+                                    continue;
+
+                                nSampling_<T>(neu1, s1n.bufferWithOffset(irow * vectorLength), expTable, neu1e, alpha, vectorLength, r == 0 ? 1 : 0, expLength, infVector != nullptr);
+                            } else {
+                                nSampling_<T>(neu1, s1n.bufferWithOffset(irow * vectorLength), expTable, neu1e, alpha, vectorLength, r == 0 ? 1 : 0, expLength, infVector != nullptr);
+                            }
+
+                            //nd4j_printf("Thread <%i>: syn0: [%i]; s1n: [%i];\n", omp_get_thread_num(), 0, irow);
+                        }
+                    }
+
+                    // if we're skipping labels
+                    int starter = trainWords == 1 ? 0 : contextWidth - numLabels;
+
+                    // applying previously averaged results
+                    for (int c = starter; c < contextWidth; c++) {
+                        // getting context
+                        auto cContext = bContext[c + (e * contextWidth)];
+
+                        // skipping padded values
+                        if (cContext < 0)
+                            continue;
+
+                        // one word from context
+                        T *syn0word = syn0 + (cContext * vectorLength);
+
+
+                        #pragma omp simd
+                        for (int i = 0; i < vectorLength; i++)
+                            syn0word[i] += neu1e[i];
+                    }
+
+
                     // optionally release temp arrays
-                    if (vectorLength >= 600) {
+                    if (vectorLength > 600) {
                         delete[] neu1;
                         delete[] neu1e;
                     }
