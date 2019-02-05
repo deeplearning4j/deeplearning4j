@@ -378,7 +378,7 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
             // call for SequenceLearningAlgorithm
             nextRandom.set(nextRandom.get() * 25214903917L + 11);
             if (!sequenceLearningAlgorithm.isEarlyTerminationHit())
-                scoreSequences.set(sequenceLearningAlgorithm.learnSequence(sequence, nextRandom, alpha, batchSequences));
+                scoreSequences.set(sequenceLearningAlgorithm.learnSequence(sequence, nextRandom, alpha));
         }
     }
 
