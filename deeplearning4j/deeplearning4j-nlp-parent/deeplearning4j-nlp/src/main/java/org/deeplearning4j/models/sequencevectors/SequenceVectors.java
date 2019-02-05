@@ -311,14 +311,10 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
             val sequencer = new AsyncSequencer(this.iterator, this.stopWords);
             sequencer.start();
 
-
-            //final VectorCalculationsThread[] threads = new VectorCalculationsThread[workers];
             val timer = new AtomicLong(System.currentTimeMillis());
-            val threads = new ArrayList<VectorCalculationsThread>();
-            for (int x = 0; x < workers; x++) {
-                threads.add(x, new VectorCalculationsThread(x, currentEpoch, wordsCounter, vocab.totalWordOccurrences(), linesCounter, sequencer, timer, numEpochs));
-                threads.get(x).start();
-            }
+            val thread = new VectorCalculationsThread(0, currentEpoch, wordsCounter, vocab.totalWordOccurrences(),
+                    linesCounter, sequencer, timer, numEpochs);
+            thread.start();
 
             try {
                 sequencer.join();
@@ -326,12 +322,10 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
                 throw new RuntimeException(e);
             }
 
-            for (int x = 0; x < workers; x++) {
-                try {
-                    threads.get(x).join();
-                } catch (Exception e) {
-                    throw new RuntimeException(e);
-                }
+            try {
+               thread.join();
+            } catch (Exception e) {
+                throw new RuntimeException(e);
             }
 
             // TODO: fix this to non-exclusive termination
@@ -384,7 +378,7 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
             // call for SequenceLearningAlgorithm
             nextRandom.set(nextRandom.get() * 25214903917L + 11);
             if (!sequenceLearningAlgorithm.isEarlyTerminationHit())
-                scoreSequences.set(sequenceLearningAlgorithm.learnSequence(sequence, nextRandom, alpha));
+                scoreSequences.set(sequenceLearningAlgorithm.learnSequence(sequence, nextRandom, alpha, batchSequences));
         }
     }
 
@@ -1272,6 +1266,11 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
                                     ((SkipGram)elementsLearningAlgorithm).iterateSample(batchSequences.get(j));
                                 else if (elementsLearningAlgorithm instanceof CBOW)
                                     ((CBOW)elementsLearningAlgorithm).iterateSample(batchSequences.get(j));
+
+                                /*if (sequenceLearningAlgorithm instanceof DBOW)
+                                    ((SkipGram<T>)sequenceLearningAlgorithm.getElementsLearningAlgorithm()).iterateSample(batchSequences.get(j));
+                                else if (sequenceLearningAlgorithm instanceof DM)
+                                    ((CBOW<T>)sequenceLearningAlgorithm.getElementsLearningAlgorithm()).iterateSample(batchSequences.get(j));*/
                             }
                             batchSequences.clear();
                             batchSequences = null;
