@@ -26,41 +26,43 @@ namespace helpers {
 
 
 
-    template <typename T>
+    //template <typename T>
     static __device__ void adjustWeightsKernelD(void* inputBuffer,   Nd4jLong* inputShape,
                                                void* weightsBuffer, Nd4jLong* weightsShape,
-                                               void* outputBuffer,  Nd4jLong* outputShape,
-                                               Nd4jLong inputLength, Nd4jLong weightsLength,
-                                               Nd4jLong outputLength, int maxLength) {
-
+                                               void* outputBuffer,  Nd4jLong inputLength, Nd4jLong weightsLength,
+                                               Nd4jLong outputLength, int val) {
+        typedef int T;
         auto tid = threadIdx.x;
-        int threadCount = gridDim.x * blockDim.x;
+        //int threadCount = gridDim.x * blockDim.x;
         __shared__ T* outputPart;
         __shared__ Nd4jLong offset;
         //for (int e = 0; e < inputLength; e++) {
         for (Nd4jLong e = tid; e < inputLength; e += blockDim.x) {
-            printf("%d %d %d\n", blockIdx.x, blockDim.x, threadIdx.x);
 
             Nd4jLong xOffset = shape::getIndexOffset(e, inputShape, inputLength);
-            int val = *(reinterpret_cast<int*>(inputBuffer) + xOffset);
-            if (val < maxLength) {
-                Nd4jLong zOffset = shape::getIndexOffset(val, outputShape, outputLength);
+            int current = *(reinterpret_cast<int*>(inputBuffer) + xOffset);
+            if (current == val) {
+//                printf("%d %d %d\n", blockIdx.x, blockDim.x, threadIdx.x);
+                //Nd4jLong zOffset = shape::getIndexOffset(val, outputShape, outputLength);
                 if (weightsBuffer != nullptr) {
                     Nd4jLong yOffset = shape::getIndexOffset(e, weightsShape, weightsLength);
                     //atomicAdd();
-                    //reinterpret_cast<T *>(outputBuffer)[0] +=  reinterpret_cast<T *>(weightsBuffer)[yOffset];
+                    //*reinterpret_cast<int *>(outputBuffer) +=  reinterpret_cast<int *>(weightsBuffer)[yOffset];
                     nd4j::math::atomics::nd4j_atomicAdd(reinterpret_cast<T *>(outputBuffer), reinterpret_cast<T *>(weightsBuffer)[yOffset]); //output->p(val, output->e<T>(val) + 1);
+//                    atomicAdd(reinterpret_cast<int *>(outputBuffer), reinterpret_cast<int *>(weightsBuffer)[yOffset]); //output->p(val, output->e<T>(val) + 1);
                 }
                 else {
+                    //*reinterpret_cast<int *>(outputBuffer) += int(1);
                     //printf("outputBuffer[0] = %d\n", static_cast<int>(*(reinterpret_cast<T *>(outputBuffer))));
                     nd4j::math::atomics::nd4j_atomicAdd(reinterpret_cast<T *>(outputBuffer), T(1)); //output->p(val, output->e<T>(val) + 1);
+//                    atomicAdd(reinterpret_cast<int *>(outputBuffer), int(1)); //output->p(val, output->e<T>(val) + 1);
                     //            printf("outputBuffer[%ld] = %d\n", zOffset, static_cast<int>(*(reinterpret_cast<T *>(outputBuffer) + zOffset)));
                 }
                 //printf("xOffset is %ld, zOffset is %ld\n", xOffset, zOffset);
             }
         }
-        if (threadIdx.x + offset < outputLength)
-            reinterpret_cast<T *>(outputBuffer)[threadIdx.x + offset] = outputPart[threadIdx.x];
+//        if (threadIdx.x + offset < outputLength)
+//            reinterpret_cast<T *>(outputBuffer)[threadIdx.x + offset] = outputPart[threadIdx.x];
     }
 
         template <typename T>
@@ -84,10 +86,10 @@ namespace helpers {
             //if (e + threadCount < outputLength) {
             Nd4jLong zOffset = shape::getIndexOffset(e, outputShape, outputLength);
             //printf("%d %d %d\n", blockIdx.x, blockDim.x, threadIdx.x);
-            Nd4jLong borderLen = 1;
+            //Nd4jLong borderLen = 1;
             T* outputBufferZ = reinterpret_cast<T*>(outputBuffer) + zOffset;
-            adjustWeightsKernelD<T>(inputBuffer, inputShape, weightsBuffer, weightsShape, (void*)outputBufferZ, outputShape,
-                                 inputLength, weightsLength, borderLen, maxLength);
+            adjustWeightsKernelD(inputBuffer, inputShape, weightsBuffer, weightsShape, (void*)outputBufferZ,
+                                 inputLength, weightsLength, outputLength, (int)zOffset);
 
         }
     }
@@ -114,7 +116,7 @@ namespace helpers {
         BUILD_SINGLE_SELECTOR(output->dataType(), adjustWeights_, (context, input, weights, output, minLength, maxLength), LIBND4J_TYPES);
     }
 
-    BUILD_SINGLE_TEMPLATE(template void adjustWeights_, (graph::LaunchContext* context, NDArray* input, NDArray* weights, NDArray* output, int minLength, int maxLength), LIBND4J_TYPES);
+    BUILD_SINGLE_TEMPLATE(template void adjustWeights_, (graph::LaunchContext* context, NDArray* input, NDArray* weights, NDArray* output, int minLength, int maxLength), GENERIC_NUMERIC_TYPES);
 }
 }
 }
