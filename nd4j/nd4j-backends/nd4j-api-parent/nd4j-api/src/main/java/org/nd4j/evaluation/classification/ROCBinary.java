@@ -144,6 +144,12 @@ public class ROCBinary extends BaseEvaluation<ROCBinary> {
                     }
                 }
 
+                //TODO Temporary workaround for: https://github.com/deeplearning4j/deeplearning4j/issues/7102
+                if(prob.isView())
+                    prob = prob.dup();
+                if(label.isView())
+                    label = label.dup();
+
                 prob = Nd4j.pullRows(prob, 1, rowsToPull); //1: tensor along dim 1
                 label = Nd4j.pullRows(label, 1, rowsToPull);
             }
