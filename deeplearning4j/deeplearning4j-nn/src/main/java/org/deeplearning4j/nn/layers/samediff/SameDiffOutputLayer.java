@@ -279,12 +279,12 @@ public class SameDiffOutputLayer extends AbstractLayer<org.deeplearning4j.nn.con
     }
 
     @Override
-    public double computeScore(double fullNetworkL1, double fullNetworkL2, boolean training, LayerWorkspaceMgr workspaceMgr) {
-        return (activateHelper(false, workspaceMgr).getDouble(0) + fullNetworkL1 + fullNetworkL1) / input.size(0);
+    public double computeScore(double fullNetRegTerm, boolean training, LayerWorkspaceMgr workspaceMgr) {
+        return (activateHelper(false, workspaceMgr).getDouble(0) + fullNetRegTerm) / input.size(0);
     }
 
     @Override
-    public INDArray computeScoreForExamples(double fullNetworkL1, double fullNetworkL2, LayerWorkspaceMgr workspaceMgr) {
+    public INDArray computeScoreForExamples(double fullNetRegTerm, LayerWorkspaceMgr workspaceMgr) {
         throw new UnsupportedOperationException("Not yet implemented");
     }
 

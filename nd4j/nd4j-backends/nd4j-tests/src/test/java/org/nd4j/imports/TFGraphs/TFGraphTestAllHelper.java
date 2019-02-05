@@ -438,7 +438,11 @@ public class TFGraphTestAllHelper {
                 if (localPath == null) {
                     baseDir.mkdirs();
                     baseDir.deleteOnExit();
-                    new ClassPathResource(modelDir).copyDirectory(baseDir);
+                    String md = modelDir;
+                    if(!md.endsWith("/") && !md.endsWith("\\")){
+                        md = md + "/";
+                    }
+                    new ClassPathResource(md).copyDirectory(baseDir);
                 } else{
                     throw new IllegalStateException("local directory declared but could not find files: " + baseDir.getAbsolutePath());
                 }

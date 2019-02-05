@@ -27,8 +27,10 @@ import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.deeplearning4j.nn.params.EmptyParamInitializer;
 import org.deeplearning4j.optimize.api.TrainingListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.learning.regularization.Regularization;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -110,15 +112,8 @@ public class LocalResponseNormalization extends Layer {
     }
 
     @Override
-    public double getL1ByParam(String paramName) {
-        //Not applicable
-        return 0;
-    }
-
-    @Override
-    public double getL2ByParam(String paramName) {
-        //Not applicable
-        return 0;
+    public List<Regularization> getRegularizationByParam(String paramName) {
+        return null;
     }
 
     @Override

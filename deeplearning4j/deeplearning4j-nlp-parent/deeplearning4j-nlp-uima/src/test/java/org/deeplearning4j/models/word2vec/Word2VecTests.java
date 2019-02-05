@@ -114,6 +114,7 @@ public class Word2VecTests {
     }
 
     @Test
+    @Ignore // no adagrad these days
     public void testWord2VecAdaGrad() throws Exception {
         SentenceIterator iter = new BasicLineIterator(inputFile.getAbsolutePath());
 

@@ -173,18 +173,6 @@ public class GlobalPoolingLayer extends NoParamLayer {
     }
 
     @Override
-    public double getL1ByParam(String paramName) {
-        //Not applicable
-        return 0;
-    }
-
-    @Override
-    public double getL2ByParam(String paramName) {
-        //Not applicable
-        return 0;
-    }
-
-    @Override
     public boolean isPretrainParam(String paramName) {
         throw new UnsupportedOperationException("Global pooling layer does not contain parameters");
     }

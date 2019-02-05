@@ -17,6 +17,7 @@
 package org.deeplearning4j.nn.conf;
 
 import org.deeplearning4j.BaseDL4JTest;
+import org.deeplearning4j.TestUtils;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
@@ -39,10 +40,14 @@ import org.nd4j.linalg.api.ops.impl.scalar.LeakyReLU;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.config.Sgd;
+import org.nd4j.linalg.learning.regularization.Regularization;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
+
+import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotSame;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Created by agibsonccc on 11/27/14.
@@ -291,14 +296,21 @@ public class NeuralNetConfigurationTest extends BaseDL4JTest {
 
         ConvexOptimizer opt = new StochasticGradientDescent(net.getDefaultConfiguration(),
                         new NegativeDefaultStepFunction(), null, net);
-        assertEquals(l1, net.getLayer(0).conf().getLayer().getL1ByParam("W"), 1e-4);
-        assertEquals(0.0, net.getLayer(0).conf().getLayer().getL1ByParam("b"), 0.0);
-        assertEquals(0.0, net.getLayer(1).conf().getLayer().getL2ByParam("beta"), 0.0);
-        assertEquals(0.0, net.getLayer(1).conf().getLayer().getL2ByParam("gamma"), 0.0);
-        assertEquals(0.0, net.getLayer(1).conf().getLayer().getL2ByParam("mean"), 0.0);
-        assertEquals(0.0, net.getLayer(1).conf().getLayer().getL2ByParam("var"), 0.0);
-        assertEquals(l2, net.getLayer(2).conf().getLayer().getL2ByParam("W"), 1e-4);
-        assertEquals(0.0, net.getLayer(2).conf().getLayer().getL2ByParam("b"), 0.0);
+        assertEquals(l1, TestUtils.getL1(net.getLayer(0).conf().getLayer().getRegularizationByParam("W")), 1e-4);
+        List<Regularization> r = net.getLayer(0).conf().getLayer().getRegularizationByParam("b");
+        assertEquals(0, r.size());
+
+        r = net.getLayer(1).conf().getLayer().getRegularizationByParam("beta");
+        assertTrue(r == null || r.isEmpty());
+        r = net.getLayer(1).conf().getLayer().getRegularizationByParam("gamma");
+        assertTrue(r == null || r.isEmpty());
+        r = net.getLayer(1).conf().getLayer().getRegularizationByParam("mean");
+        assertTrue(r == null || r.isEmpty());
+        r = net.getLayer(1).conf().getLayer().getRegularizationByParam("var");
+        assertTrue(r == null || r.isEmpty());
+        assertEquals(l2, TestUtils.getL2(net.getLayer(2).conf().getLayer().getRegularizationByParam("W")), 1e-4);
+        r = net.getLayer(2).conf().getLayer().getRegularizationByParam("b");
+        assertTrue(r == null || r.isEmpty());
     }
 
     @Test

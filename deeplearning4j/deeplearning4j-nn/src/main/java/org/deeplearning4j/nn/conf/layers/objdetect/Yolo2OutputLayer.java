@@ -30,6 +30,7 @@ import org.deeplearning4j.nn.conf.preprocessor.FeedForwardToCnnPreProcessor;
 import org.deeplearning4j.nn.params.EmptyParamInitializer;
 import org.deeplearning4j.optimize.api.TrainingListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.learning.regularization.Regularization;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
 import org.nd4j.linalg.lossfunctions.impl.LossL2;
 import org.nd4j.shade.jackson.databind.annotation.JsonDeserialize;
@@ -39,6 +40,7 @@ import org.nd4j.shade.serde.jackson.VectorSerializer;
 
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -137,13 +139,9 @@ public class Yolo2OutputLayer extends org.deeplearning4j.nn.conf.layers.Layer {
     }
 
     @Override
-    public double getL1ByParam(String paramName) {
-        return 0; //No params
-    }
-
-    @Override
-    public double getL2ByParam(String paramName) {
-        return 0; //No params
+    public List<Regularization> getRegularizationByParam(String paramName) {
+        //Not applicable
+        return null;
     }
 
     @Override

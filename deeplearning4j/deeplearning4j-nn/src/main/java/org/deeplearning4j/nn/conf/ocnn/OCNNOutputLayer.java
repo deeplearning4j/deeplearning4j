@@ -27,12 +27,14 @@ import org.deeplearning4j.optimize.api.TrainingListener;
 import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.activations.impl.ActivationIdentity;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.learning.regularization.Regularization;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
 import org.nd4j.shade.jackson.annotation.JsonCreator;
 import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -134,13 +136,9 @@ public class OCNNOutputLayer extends BaseOutputLayer {
 
 
     @Override
-    public double getL1ByParam(String paramName) {
-        return l1;
-    }
-
-    @Override
-    public double getL2ByParam(String paramName) {
-        return l2;
+    public List<Regularization> getRegularizationByParam(String paramName) {
+        //Not applicable
+        return null;
     }
 
     @Getter
