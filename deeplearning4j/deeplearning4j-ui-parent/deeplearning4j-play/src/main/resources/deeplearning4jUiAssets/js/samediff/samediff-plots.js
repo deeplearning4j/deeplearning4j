@@ -54,10 +54,14 @@ function renderLineChart(/*jquery selector*/ element, label, xDataArray, yDataAr
 }
 
 function renderHistogramSingle(/*jquery selector*/ element, label, /*nd4j.graph.UIEvent*/ evt, /*nd4j.graph.UIHistogram*/ h){
+    if(evt == null || h == null){
+        return;
+    }
+
     //Histogram rendering:
 
     var data = [];
-    if(h.type() == nd4j.graph.UIHistogramType.EQUAL_SPACING){
+    if(h.type() === nd4j.graph.UIHistogramType.EQUAL_SPACING){
         var minmaxArr = h.binranges();  //Rank 1, size 2
         var min = scalarFromFlatArrayIdx(minmaxArr, 0);
         var max = scalarFromFlatArrayIdx(minmaxArr, 1);
@@ -65,7 +69,7 @@ function renderHistogramSingle(/*jquery selector*/ element, label, /*nd4j.graph.
 
         var y = h.y();
 
-        //Render this as a line chart for now. Could do this as a bar chart instead
+        //Render this as a line chart for now. Could do this as a bar chart instead, but this provides precise control...
         var step = (max-min)/numBins;
         for(var i=0; i<numBins; i++ ){
             var lower = min + step * i;
@@ -76,10 +80,32 @@ function renderHistogramSingle(/*jquery selector*/ element, label, /*nd4j.graph.
             data.push([upper,yValue]);
             data.push([upper,0]);
         }
+    } else if(h.type() === nd4j.graph.UIHistogramType.DISCRETE){
+        var binLabelsCount = h.binlabelsLength();
+        var lbl = [];
+        for(var i=0; i<binLabelsCount; i++ ){
+            lbl.push(h.binlabels(i));
+        }
 
-        var plotData = [{data: toPlot, label: label}];
-        $.plot(element, plotData)
+        var y = h.y();
+        var min = 0;
+        var max = 1;
+        var numBins = lbl.length;
+        //Render this as a line chart for now. Could do this as a bar chart instead, but this provides precise control...
+        var step = (max-min)/numBins;
+        for(var i=0; i<numBins; i++ ){
+            var lower = min + step * i;
+            var upper = lower + step;
+            var yValue = scalarFromFlatArrayIdx(y, i);
+            data.push([lower,0]);
+            data.push([lower,yValue]);
+            data.push([upper,yValue]);
+            data.push([upper,0]);
+        }
     }
+
+    var plotData = [{data: data, label: label, lines: { show: true, fill: true }}];
+    $.plot(element, plotData)
 
 }
 
@@ -176,7 +202,7 @@ function readAndRenderPlotsData(){
                         }
 
                         sdPlotsHistogramX.get(name).push(header);
-                        sdPlotsHistogramY.get(name).push()
+                        sdPlotsHistogramY.get(name).push(content);
                     }
 
                     //TODO other types!

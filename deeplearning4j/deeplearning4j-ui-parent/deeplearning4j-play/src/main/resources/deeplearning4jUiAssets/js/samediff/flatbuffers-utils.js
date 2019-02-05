@@ -215,8 +215,7 @@ function scalarFromFlatArray(/*FlatArray*/ flatArray) {
 }
 
 function scalarFromFlatArrayIdx(/*FlatArray*/ flatArray, idx){
-
-    //TODO check if actually scalar...
+    //TODO OPTIMIZE THIS!
     var dt = flatArray.dtype();
     switch (dt){
         //Skip hard to decode types for now
@@ -229,7 +228,8 @@ function scalarFromFlatArrayIdx(/*FlatArray*/ flatArray, idx){
             return null;
     }
 
-    var numBytes = dataTypeBytesPerElement(dt);
+    var bytesPerElem = dataTypeBytesPerElement(dt);
+    var numBytes = flatArray.bufferLength();
     // var array = new Uint8Array(numBytes);
     var dv = new DataView(new ArrayBuffer(numBytes));
     for(var i=0; i<numBytes; i++ ){
@@ -238,28 +238,29 @@ function scalarFromFlatArrayIdx(/*FlatArray*/ flatArray, idx){
         dv.setInt8(i, signedByte);
     }
 
+    //Note: "get(idx)" is byte offset
     var out;
     switch (dt){
         case nd4j.graph.DataType.BOOL:
-            out = (dv.getUint8(idx) === 0 ? "false" : "true");
+            out = (dv.getUint8(bytesPerElem * idx) === 0 ? "false" : "true");
             break;
         case nd4j.graph.DataType.INT8:
-            out = dv.getInt8(idx);
+            out = dv.getInt8(bytesPerElem * idx);
             break;
         case nd4j.graph.DataType.UINT8:
-            out = dv.getUint8(idx);
+            out = dv.getUint8(bytesPerElem * idx);
             break;
         case nd4j.graph.DataType.INT16:
-            out = dv.getInt16(idx);
+            out = dv.getInt16(bytesPerElem * idx);
             break;
         case nd4j.graph.DataType.UINT16:
-            out = dv.getUint16(idx);
+            out = dv.getUint16(bytesPerElem * idx);
             break;
         case nd4j.graph.DataType.INT32:
-            out = dv.getInt32(idx);
+            out = dv.getInt32(bytesPerElem * idx);
             break;
         case nd4j.graph.DataType.UINT32:
-            out = dv.getUint32(idx);
+            out = dv.getUint32(bytesPerElem * idx);
             break;
         case nd4j.graph.DataType.INT64:
             //No getInt64 method... :/
@@ -270,10 +271,10 @@ function scalarFromFlatArrayIdx(/*FlatArray*/ flatArray, idx){
             out = "<uint64>";
             break;
         case nd4j.graph.DataType.FLOAT:
-            out = dv.getFloat32(idx);
+            out = dv.getFloat32(bytesPerElem * idx);
             break;
         case nd4j.graph.DataType.DOUBLE:
-            out = dv.getFloat64(idx);
+            out = dv.getFloat64(bytesPerElem * idx);
             break;
         case nd4j.graph.DataType.UTF8:
             //TODO need to decode from bytes here
@@ -282,6 +283,6 @@ function scalarFromFlatArrayIdx(/*FlatArray*/ flatArray, idx){
         default:
             return "";
     }
-    return "" + out;
+    return out;
 }
 
