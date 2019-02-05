@@ -307,7 +307,7 @@ namespace nd4j {
 
                 T sneu1e[600];
 
-                const auto numThreads = 6;
+                const auto numThreads = omp_get_max_threads();
                 const auto idxShift = indices.isEmpty() ? 0 : indices.sizeAt(1);
                 const auto hsRounds = codes.isEmpty() ? 0 : codes.sizeAt(1);
 
@@ -384,9 +384,6 @@ namespace nd4j {
                                     syn0row[e] += neu1e[e];
                                 }
                             }
-
-                            // we synchronize all threads here so they move synchronously
-                            //#pragma omp barrier
 
                             // now we increment further step
                             f++;
@@ -474,10 +471,13 @@ namespace nd4j {
                                                 }
                                             }
                                         }
+
+                                        nSampling_<T>(syn0row, s1n.bufferWithOffset(irow * vectorLength), expTable, neu1e, alpha, vectorLength, r == 0 ? 1 : 0, expLength, infVector != nullptr);
+                                    } else {
+                                        nSampling_<T>(syn0row, s1n.bufferWithOffset(irow * vectorLength), expTable, neu1e, alpha, vectorLength, r == 0 ? 1 : 0, expLength, infVector != nullptr);
                                     }
 
                                     //nd4j_printf("Thread <%i>: syn0: [%i]; s1n: [%i];\n", omp_get_thread_num(), target, irow);
-                                    nSampling_<T>(syn0row, s1n.bufferWithOffset(irow * vectorLength), expTable, neu1e, alpha, vectorLength, r == 0 ? 1 : 0, expLength, infVector != nullptr);
                                 }
 
                                 #pragma omp simd
@@ -501,10 +501,77 @@ namespace nd4j {
             }
             BUILD_SINGLE_TEMPLATE(template void skipgramBatchExec_, (NDArray &s0, NDArray &s1, NDArray &s1n, void *vexpTable, void *vnegTable, void *vinfVector, NDArray &targets, NDArray &negStarters, NDArray &indices, NDArray &codes, NDArray &lr, NDArray &nextRandom, const int nsRounds, const int vocabSize, const int vectorLength, const int expLength, const int negLength), FLOAT_TYPES);
 
+
+            template <typename T>
+            void cbowBatchExec_(NDArray &s0, NDArray &s1, NDArray &s1n, void *vexpTable, void *vnegTable, void *vinfVector, NDArray &context, NDArray &targets, NDArray &negStarters, NDArray &indices, NDArray &codes, NDArray &lr, NDArray &nextRandom, const int nsRounds, const int vocabSize, const int vectorLength, const int expLength, const int negLength, const int numLabels, const bool trainWords) {
+                const auto syn0 = s0.bufferAsT<T>();
+
+                const auto expTable = reinterpret_cast<T*>(vexpTable);
+                const auto negTable = reinterpret_cast<int*>(vnegTable);
+                const auto infVector = reinterpret_cast<T*>(vinfVector);
+
+
+                T sneu1[600];
+                T sneu1e[600];
+
+                const auto numThreads = 6;
+                const auto idxShift = indices.isEmpty() ? 0 : indices.sizeAt(1);
+                const auto hsRounds = codes.isEmpty() ? 0 : codes.sizeAt(1);
+
+//
+//#pragma omp parallel
+                {
+                    T* neu1 = vectorLength <= 600 ? sneu1 : new T[vectorLength];
+                    T* neu1e = vectorLength <= 600 ? sneu1e : new T[vectorLength];
+                    const auto bContext = context.bufferAsT<int>();
+                    const int contextWidth = context.sizeAt(1);
+
+                    for (int e = 0; e < 100; e++) {
+
+
+
+
+                        // hierarchic softmax step
+                        if (!indices.isEmpty()) {
+
+                        }
+
+                        // negative sampling step
+                        if (!negStarters.isEmpty()) {
+
+                        }
+
+                        // if we're skipping labels
+                        int starter = trainWords == 1 ? 0 : contextWidth - numLabels;
+                        for (int c = starter; c < contextWidth; c++) {
+                            // getting context
+                            auto cContext = bContext[c + (e * contextWidth)];
+
+                            // skipping padded values
+                            if (cContext < 0)
+                                continue;
+
+                            // one word from context
+                            T *syn0word = syn0 + (cContext * vectorLength);
+
+
+                            #pragma omp simd
+                            for (int i = 0; i < vectorLength; i++)
+                                syn0word[i] += neu1e[i];
+                        }
+                    }
+
+                    //
+                }
+
+
+            }
+            BUILD_SINGLE_TEMPLATE(template void cbowBatchExec_, (NDArray &s0, NDArray &s1, NDArray &s1n, void *vexpTable, void *vnegTable, void *vinfVector, NDArray &context, NDArray &targets, NDArray &negStarters, NDArray &indices, NDArray &codes, NDArray &lr, NDArray &nextRandom, const int nsRounds, const int vocabSize, const int vectorLength, const int expLength, const int negLength, const int numLabels, const bool trainWords), FLOAT_TYPES);
+
             void skipgram(NDArray &syn0, NDArray &syn1, NDArray &syn1Neg, NDArray &expTable, NDArray &negTable, NDArray &target, NDArray &ngStarter, int nsRounds, NDArray &indices, NDArray &codes, NDArray &alpha, NDArray &randomValue, NDArray &inferenceVector) {
                 auto xType = syn0.dataType();
 
-                // single round hase
+                // single round case
                 if ((ngStarter.isScalar() && !ngStarter.isEmpty())|| (target.isScalar() && !target.isEmpty())) {
                     auto hsRounds = codes.lengthOf();
 
@@ -514,15 +581,22 @@ namespace nd4j {
 
                     BUILD_SINGLE_SELECTOR(xType, skipgramBatchExec_, (syn0, syn1, syn1Neg, expTable.buffer(), negTable.buffer(), nullptr, target, ngStarter, indices, codes, alpha, randomValue, nsRounds, syn0.sizeAt(0), syn0.sizeAt(1), expTable.lengthOf(), negTable.lengthOf()), FLOAT_TYPES);
                 } else
-                    throw std::runtime_error("SkipGram: Codes must have rank 1 or 2");
+                    throw std::runtime_error("SkipGram: target must have rank 0 or 1");
             }
 
             void cbow(NDArray &syn0, NDArray &syn1, NDArray &syn1Neg, NDArray &expTable, NDArray &negTable, NDArray &target, NDArray &ngStarter, int nsRounds, NDArray &context, NDArray &indices, NDArray &codes, NDArray &alpha, NDArray &randomValue, NDArray &inferenceVector, const int numLabels, const bool trainWords) {
                 auto xType = syn0.dataType();
 
-                auto hsRounds = codes.lengthOf();
+                // single round case
+                if ((ngStarter.isScalar() && !ngStarter.isEmpty())|| (target.isScalar() && !target.isEmpty())) {
+                    auto hsRounds = codes.lengthOf();
 
-                BUILD_SINGLE_SELECTOR(xType, cbow_, (syn0.buffer(), syn1.buffer(), syn1Neg.buffer(), expTable.buffer(), negTable.buffer(), inferenceVector.buffer(), target.isEmpty() ? -1 : target.e<int>(0), ngStarter.isEmpty() ? -1 : ngStarter.e<int>(0), reinterpret_cast<int*>(context.buffer()), reinterpret_cast<int *>(indices.buffer()), reinterpret_cast<int8_t*>(codes.buffer()), alpha.e<double>(0), randomValue.e<Nd4jLong>(0), (int) context.lengthOf(), hsRounds, nsRounds, (int) syn0.sizeAt(0), (int) syn0.sizeAt(1), (int) expTable.lengthOf(), (int) negTable.lengthOf(), numLabels, trainWords), FLOAT_TYPES);
+                    BUILD_SINGLE_SELECTOR(xType, cbow_, (syn0.buffer(), syn1.buffer(), syn1Neg.buffer(), expTable.buffer(), negTable.buffer(), inferenceVector.buffer(), target.isEmpty() ? -1 : target.e<int>(0), ngStarter.isEmpty() ? -1 : ngStarter.e<int>(0), reinterpret_cast<int *>(context.buffer()), reinterpret_cast<int *>(indices.buffer()), reinterpret_cast<int8_t *>(codes.buffer()), alpha.e<double>( 0), randomValue.e<Nd4jLong>(0), (int) context.lengthOf(), hsRounds, nsRounds, (int) syn0.sizeAt(0), (int) syn0.sizeAt(1), (int) expTable.lengthOf(), (int) negTable.lengthOf(), numLabels, trainWords), FLOAT_TYPES);
+                } else if (ngStarter.isVector() || target.isVector()) {
+                    // batch mode
+
+                } else
+                    throw std::runtime_error("CBOW: target must have rank 0 or 1");
             }
         }
     }
