@@ -2096,4 +2096,35 @@ public class ShapeOpValidation extends BaseOpValidation {
         op.addOutputArgument(empty);
         Nd4j.exec(op);
     }
+
+    @Test
+    public void testEmptyGather(){
+        /*
+        tf.reset_default_graph()
+        # Hack to create empty array
+        input = tf.constant([False], dtype=tf.bool)
+        empty = tf.where(condition=input)
+        emptyFloat = tf.cast(empty, tf.float32)
+        emptyInt = tf.cast(empty, tf.int32)
+
+        gather = tf.gather(params=emptyFloat, indices=emptyInt)
+
+        sess = tf.Session()
+        out = sess.run([gather])
+        print(out[0].shape)
+        print(out[0]);
+         */
+        INDArray emptyFloat = Nd4j.empty(DataType.FLOAT);
+        INDArray emptyInt = Nd4j.empty(DataType.INT);
+        DynamicCustomOp op = DynamicCustomOp.builder("gather")
+                .addInputs(emptyFloat, emptyInt)
+                .build();
+
+        List<LongShapeDescriptor> l = op.calculateOutputShape();
+        assertEquals(1, l.size());
+        assertTrue(l.get(0).isEmpty());
+
+        INDArray out = Nd4j.empty(DataType.FLOAT);
+        op.addOutputArgument(out);
+    }
 }

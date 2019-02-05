@@ -92,6 +92,13 @@ DECLARE_SHAPE_FN(gather) {
 	if(axis < 0)
 		axis += inputRank;
 
+	//Edge case: empty indices, empty input -> empty output
+	if(block.width() > 1 && INPUT_VARIABLE(0)->isEmpty() && INPUT_VARIABLE(1)->isEmpty()){
+		Nd4jLong* empty = ShapeBuilders::createScalarShapeInfo(INPUT_VARIABLE(0)->dataType(), block.getWorkspace());
+		ArrayOptions::setPropertyBit(empty, ARRAY_EMPTY);
+		return SHAPELIST(empty);
+	}
+
     REQUIRE_TRUE(axis < inputRank, 0, "GATHER op: input axis must be smaller than input array rank, but got %i and %i correspondingly!", axis, inputRank);
 
 	bool isEmpty = false;
