@@ -125,7 +125,7 @@ namespace nd4j {
                 auto syn1 = reinterpret_cast<T *>(vsyn1);
                 auto syn1Neg = reinterpret_cast<T *>(vsyn1Neg);
                 auto expTable = reinterpret_cast<T *>(vexpTable);
-                auto negTable = reinterpret_cast<int *>(vnegTable);
+                auto negTable = reinterpret_cast<T *>(vnegTable);
                 auto infVector = reinterpret_cast<T *>(vinfVector);
 
                 auto neu1 = new T[vectorLength];
@@ -178,7 +178,7 @@ namespace nd4j {
                         } else {
                             randomValue = randomValue * (unsigned long long) 25214903917 + 11;
                             auto idx = nd4j::math::nd4j_abs<Nd4jLong >((randomValue >> 16) % negLength);
-                            irow = idx >= negLength ? -1 : negTable[idx];
+                            irow = idx >= negLength ? -1 : static_cast<int>(negTable[idx]);
 
                             if (irow < 0 || irow >= vocabSize) irow = randomValue % (vocabSize - 1) + 1;
                             if (irow == nsStarter)
@@ -223,7 +223,7 @@ namespace nd4j {
                 auto syn1 = reinterpret_cast<T*>(vsyn1);
                 auto syn1Neg = reinterpret_cast<T*>(vsyn1Neg);
                 auto expTable = reinterpret_cast<T*>(vexpTable);
-                auto negTable = reinterpret_cast<int*>(vnegTable);
+                auto negTable = reinterpret_cast<T*>(vnegTable);
                 auto infVector = reinterpret_cast<T*>(vinfVector);
 
                 auto neu1e = new T[vectorLength];
@@ -252,7 +252,7 @@ namespace nd4j {
                         } else {
                             randomValue = randomValue * (unsigned long long) 25214903917 + 11;
                             auto idx = nd4j::math::nd4j_abs<Nd4jLong >((randomValue >> 16) % negLength);
-                            irow = idx >= negLength ? -1 : negTable[idx];
+                            irow = idx >= negLength ? -1 : static_cast<int>(negTable[idx]);
 
                             if (irow < 0 || irow >= vocabSize) irow = randomValue % (vocabSize - 1) + 1;
                             if (irow == nsStarter)
@@ -302,7 +302,7 @@ namespace nd4j {
                 //auto syn1 = reinterpret_cast<T*>(vsyn1);
                 //auto syn1Neg = reinterpret_cast<T*>(vsyn1Neg);
                 const auto expTable = reinterpret_cast<T*>(vexpTable);
-                const auto negTable = reinterpret_cast<int*>(vnegTable);
+                const auto negTable = reinterpret_cast<T*>(vnegTable);
                 const auto infVector = reinterpret_cast<T*>(vinfVector);
 
                 T sneu1e[600];
@@ -449,7 +449,7 @@ namespace nd4j {
                                     if (r != 0) {
                                         randomValue = nd4j::math::nd4j_abs<Nd4jLong>(randomValue * (unsigned long long) 25214903917 + 11);
                                         auto idx = nd4j::math::nd4j_abs<Nd4jLong>((randomValue >> 16) % negLength);
-                                        irow = idx >= negLength ? -1 : negTable[idx];
+                                        irow = idx >= negLength ? -1 : static_cast<int>(negTable[idx]);
 
                                         if (irow < 0 || irow >= vocabSize) irow = randomValue % (vocabSize - 1) + 1;
                                         if (irow == nsStarter)
@@ -509,7 +509,7 @@ namespace nd4j {
                 const auto syn1Neg = s1n.bufferAsT<T>();
 
                 const auto expTable = reinterpret_cast<T*>(vexpTable);
-                const auto negTable = reinterpret_cast<int*>(vnegTable);
+                const auto negTable = reinterpret_cast<T*>(vnegTable);
                 const auto infVector = reinterpret_cast<T*>(vinfVector);
 
 
@@ -523,7 +523,6 @@ namespace nd4j {
                 const int contextWidth = context.sizeAt(1);
                 const auto bContext = context.bufferAsT<int>();
 
-                const auto bTargets = targets.bufferAsT<int>();
                 const auto bIndices = indices.bufferAsT<int>();
                 const auto bCodes = codes.bufferAsT<int8_t>();
                 const auto bStarters = negStarters.bufferAsT<int>();
@@ -582,13 +581,11 @@ namespace nd4j {
                             actualContext++;
                         }
 
-                        if (actualContext > 0) {
-                            const int p = actualContext + (infVector != nullptr ? 1 : 0);
-
+                        actualContext += (infVector != nullptr ? 1 : 0);
+                        if (actualContext > 1) {
                             #pragma omp simd
-                            for (int i = 0; i < vectorLength; i++) {
-                                neu1[i] /= p;
-                            }
+                            for (int i = 0; i < vectorLength; i++)
+                                neu1[i] /= actualContext;
                         }
 
                         // hierarchic softmax step
@@ -606,19 +603,17 @@ namespace nd4j {
                         }
 
                         // negative sampling step
-                        if (!negStarters.isEmpty()) {
+                        if (!negStarters.isEmpty() && nsRounds > 0) {
                             int irow = bStarters[e];
                             const int nsStarter = irow;
                             unsigned long long randomValue = nextRandom.e<Nd4jLong>(e);
-
-                            nd4j_printf("E: %i; RNG: %lld\n", e, randomValue);
 
                             for (int r = 0; r < nsRounds + 1; r++) {
                                 // we're skipping rng on 0 step
                                 if (r != 0) {
                                     randomValue = randomValue * (unsigned long long) 25214903917 + 11;
                                     auto idx = nd4j::math::nd4j_abs<Nd4jLong>((randomValue >> 16) % negLength);
-                                    irow = idx >= negLength ? -1 : negTable[idx];
+                                    irow = idx >= negLength ? -1 : static_cast<int>(negTable[idx]);
 
                                     if (irow < 0 || irow >= vocabSize) irow = randomValue % (vocabSize - 1) + 1;
                                     if (irow == nsStarter)
