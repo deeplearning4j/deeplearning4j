@@ -490,7 +490,7 @@ namespace nd4j {
                         }
 
                         // optional deallocation
-                        if (vectorLength > 600)
+                        if (vectorLength >= 600)
                             delete[] neu1e;
                     }
 
@@ -505,6 +505,8 @@ namespace nd4j {
             template <typename T>
             void cbowBatchExec_(NDArray &s0, NDArray &s1, NDArray &s1n, void *vexpTable, void *vnegTable, void *vinfVector, NDArray &context, NDArray &targets, NDArray &negStarters, NDArray &indices, NDArray &codes, NDArray &lr, NDArray &nextRandom, const int nsRounds, const int vocabSize, const int vectorLength, const int expLength, const int negLength, const int numLabels, const bool trainWords) {
                 const auto syn0 = s0.bufferAsT<T>();
+                const auto syn1 = s1.bufferAsT<T>();
+                const auto syn1Neg = s1.bufferAsT<T>();
 
                 const auto expTable = reinterpret_cast<T*>(vexpTable);
                 const auto negTable = reinterpret_cast<int*>(vnegTable);
@@ -514,26 +516,78 @@ namespace nd4j {
                 T sneu1[600];
                 T sneu1e[600];
 
-                const auto numThreads = 6;
+                const auto numThreads = omp_get_max_threads();
                 const auto idxShift = indices.isEmpty() ? 0 : indices.sizeAt(1);
                 const auto hsRounds = codes.isEmpty() ? 0 : codes.sizeAt(1);
+                const auto numTargets = context.sizeAt(0);
+                const int contextWidth = context.sizeAt(1);
+                const auto bContext = context.bufferAsT<int>();
+
+                const auto bTargets = targets.bufferAsT<int>();
+                const auto bIndices = indices.bufferAsT<int>();
+                const auto bCodes = codes.bufferAsT<int8_t>();
+                const auto numIndices = indices.isEmpty() ? 0 : indices.sizeAt(1);
 
 //
 //#pragma omp parallel
                 {
                     T* neu1 = vectorLength <= 600 ? sneu1 : new T[vectorLength];
                     T* neu1e = vectorLength <= 600 ? sneu1e : new T[vectorLength];
-                    const auto bContext = context.bufferAsT<int>();
-                    const int contextWidth = context.sizeAt(1);
 
-                    for (int e = 0; e < 100; e++) {
+                    bool isOwner = true;
 
+                    // every threads rolls over targets
+                    for (int e = 0; e < numTargets; e++) {
 
+                        // optionally we nullify temp arrays after successful (and on first) cycle
+                        if (isOwner) {
+                            memset(neu1, 0, sizeof(T) * vectorLength);
+                            memset(neu1e, 0, sizeof(T) * vectorLength);
+                        }
 
+                        // calculating simple hash for all context words to reduce number of collisions
+                        int cTarget = 7;
+                        for (int c = 0; c < contextWidth; e++) {
+                            auto cContext = bContext[c + (e * contextWidth)];
+                            if (cContext < 0)
+                                continue;
+
+                            cTarget = 31 * cTarget + cContext;
+                        }
+                        isOwner = cTarget % numThreads == omp_get_thread_num();
+
+                        // if this set of context arrays doesn't match our threadId - just skip it, and go to next one
+                        if (!isOwner)
+                            continue;
+
+                        // building neu1 for current window
+                        for (int c = 0; c < contextWidth; c++) {
+                            // getting next context word
+                            auto cContext = bContext[c + (e * contextWidth)];
+
+                            // skipping padded values
+                            if (cContext < 0)
+                                continue;
+
+                            T *syn0word = syn0 + (cContext * vectorLength);
+
+                            #pragma omp simd
+                            for (int i = 0; i < vectorLength; i++)
+                                neu1[i] += syn0word[i];
+                        }
 
                         // hierarchic softmax step
                         if (!indices.isEmpty()) {
+                            for (int i = 0; i < numIndices; i++) {
+                                const int cIndex = bIndices[(e * numIndices) + i];
+                                const int cCode = bCodes[(e * numIndices) + i];
 
+                                // we're skipping padded values
+                                if (cIndex < 0)
+                                    continue;
+
+                                hSoftmax_<T>(neu1, syn1 + (cIndex * vectorLength), expTable, neu1e, 0.0, vectorLength, cCode, expLength, false);
+                            }
                         }
 
                         // negative sampling step
@@ -543,6 +597,8 @@ namespace nd4j {
 
                         // if we're skipping labels
                         int starter = trainWords == 1 ? 0 : contextWidth - numLabels;
+
+                        // applying previously averaged results
                         for (int c = starter; c < contextWidth; c++) {
                             // getting context
                             auto cContext = bContext[c + (e * contextWidth)];
@@ -561,10 +617,12 @@ namespace nd4j {
                         }
                     }
 
-                    //
+                    // optionally release temp arrays
+                    if (vectorLength >= 600) {
+                        delete[] neu1;
+                        delete[] neu1e;
+                    }
                 }
-
-
             }
             BUILD_SINGLE_TEMPLATE(template void cbowBatchExec_, (NDArray &s0, NDArray &s1, NDArray &s1n, void *vexpTable, void *vnegTable, void *vinfVector, NDArray &context, NDArray &targets, NDArray &negStarters, NDArray &indices, NDArray &codes, NDArray &lr, NDArray &nextRandom, const int nsRounds, const int vocabSize, const int vectorLength, const int expLength, const int negLength, const int numLabels, const bool trainWords), FLOAT_TYPES);
 
@@ -595,6 +653,7 @@ namespace nd4j {
                 } else if (ngStarter.isVector() || target.isVector()) {
                     // batch mode
 
+                    BUILD_SINGLE_SELECTOR(xType, cbowBatchExec_, (syn0, syn1, syn1Neg, expTable.buffer(), negTable.buffer(), nullptr, context, target, ngStarter, indices, codes, alpha, randomValue, nsRounds, syn0.sizeAt(0), syn0.sizeAt(1), expTable.lengthOf(), negTable.isEmpty() ? 0 : negTable.lengthOf(), numLabels, trainWords), FLOAT_TYPES);
                 } else
                     throw std::runtime_error("CBOW: target must have rank 0 or 1");
             }
