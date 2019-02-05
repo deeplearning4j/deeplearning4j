@@ -506,7 +506,7 @@ namespace nd4j {
             void cbowBatchExec_(NDArray &s0, NDArray &s1, NDArray &s1n, void *vexpTable, void *vnegTable, void *vinfVector, NDArray &context, NDArray &targets, NDArray &negStarters, NDArray &indices, NDArray &codes, NDArray &lr, NDArray &nextRandom, const int nsRounds, const int vocabSize, const int vectorLength, const int expLength, const int negLength, const int numLabels, const bool trainWords) {
                 const auto syn0 = s0.bufferAsT<T>();
                 const auto syn1 = s1.bufferAsT<T>();
-                const auto syn1Neg = s1.bufferAsT<T>();
+                const auto syn1Neg = s1n.bufferAsT<T>();
 
                 const auto expTable = reinterpret_cast<T*>(vexpTable);
                 const auto negTable = reinterpret_cast<int*>(vnegTable);
@@ -516,7 +516,7 @@ namespace nd4j {
                 T sneu1[600];
                 T sneu1e[600];
 
-                const auto numThreads = omp_get_max_threads();
+                const auto numThreads = omp_get_max_threads() * 2;
                 const auto idxShift = indices.isEmpty() ? 0 : indices.sizeAt(1);
                 const auto hsRounds = codes.isEmpty() ? 0 : codes.sizeAt(1);
                 const auto numTargets = context.sizeAt(0);
@@ -529,7 +529,7 @@ namespace nd4j {
                 const auto numIndices = indices.isEmpty() ? 0 : indices.sizeAt(1);
 
 //
-//#pragma omp parallel
+#pragma omp parallel num_threads(numThreads) private(sneu1, sneu1e) default(shared)
                 {
                     T* neu1 = vectorLength <= 600 ? sneu1 : new T[vectorLength];
                     T* neu1e = vectorLength <= 600 ? sneu1e : new T[vectorLength];
@@ -546,8 +546,8 @@ namespace nd4j {
                         }
 
                         // calculating simple hash for all context words to reduce number of collisions
-                        int cTarget = 7;
-                        for (int c = 0; c < contextWidth; e++) {
+                        unsigned long long cTarget = 7;
+                        for (int c = 0; c < contextWidth; c++) {
                             auto cContext = bContext[c + (e * contextWidth)];
                             if (cContext < 0)
                                 continue;
@@ -560,6 +560,9 @@ namespace nd4j {
                         if (!isOwner)
                             continue;
 
+                        auto alpha = lr.e<double>(e);
+
+                        int actualContext = 0;
                         // building neu1 for current window
                         for (int c = 0; c < contextWidth; c++) {
                             // getting next context word
@@ -574,6 +577,17 @@ namespace nd4j {
                             #pragma omp simd
                             for (int i = 0; i < vectorLength; i++)
                                 neu1[i] += syn0word[i];
+
+                            actualContext++;
+                        }
+
+                        if (contextWidth > 0) {
+                            const int p = actualContext + (infVector != nullptr ? 1 : 0);
+
+                            #pragma omp simd
+                            for (int i = 0; i < vectorLength; i++) {
+                                neu1[i] /= p;
+                            }
                         }
 
                         // hierarchic softmax step
@@ -586,7 +600,7 @@ namespace nd4j {
                                 if (cIndex < 0)
                                     continue;
 
-                                hSoftmax_<T>(neu1, syn1 + (cIndex * vectorLength), expTable, neu1e, 0.0, vectorLength, cCode, expLength, false);
+                                hSoftmax_<T>(neu1, syn1 + (cIndex * vectorLength), expTable, neu1e, alpha, vectorLength, cCode, expLength, false);
                             }
                         }
 
@@ -646,11 +660,11 @@ namespace nd4j {
                 auto xType = syn0.dataType();
 
                 // single round case
-                if ((ngStarter.isScalar() && !ngStarter.isEmpty())|| (target.isScalar() && !target.isEmpty())) {
+                if (context.isVector()) {
                     auto hsRounds = codes.lengthOf();
 
                     BUILD_SINGLE_SELECTOR(xType, cbow_, (syn0.buffer(), syn1.buffer(), syn1Neg.buffer(), expTable.buffer(), negTable.buffer(), inferenceVector.buffer(), target.isEmpty() ? -1 : target.e<int>(0), ngStarter.isEmpty() ? -1 : ngStarter.e<int>(0), reinterpret_cast<int *>(context.buffer()), reinterpret_cast<int *>(indices.buffer()), reinterpret_cast<int8_t *>(codes.buffer()), alpha.e<double>( 0), randomValue.e<Nd4jLong>(0), (int) context.lengthOf(), hsRounds, nsRounds, (int) syn0.sizeAt(0), (int) syn0.sizeAt(1), (int) expTable.lengthOf(), (int) negTable.lengthOf(), numLabels, trainWords), FLOAT_TYPES);
-                } else if (ngStarter.isVector() || target.isVector()) {
+                } else if (context.isMatrix()) {
                     // batch mode
 
                     BUILD_SINGLE_SELECTOR(xType, cbowBatchExec_, (syn0, syn1, syn1Neg, expTable.buffer(), negTable.buffer(), nullptr, context, target, ngStarter, indices, codes, alpha, randomValue, nsRounds, syn0.sizeAt(0), syn0.sizeAt(1), expTable.lengthOf(), negTable.isEmpty() ? 0 : negTable.lengthOf(), numLabels, trainWords), FLOAT_TYPES);
