@@ -29,8 +29,9 @@ namespace nd4j {
     namespace ops {
         DECLARE_TYPES(bincount) {
             getOpDescriptor()
-                    ->setAllowedInputTypes(nd4j::DataType::ANY)
-                    ->setAllowedOutputTypes({ALL_FLOATS});
+                    ->setAllowedInputTypes(0, nd4j::DataType::INT32)
+                    ->setAllowedInputTypes(1, nd4j::DataType::INT32)
+                    ->setAllowedOutputTypes({ALL_INTS, ALL_FLOATS});
         }
 
         CUSTOM_OP_IMPL(bincount, 1, 1, false, 0, 0) {
@@ -65,7 +66,7 @@ namespace nd4j {
             auto in = INPUT_VARIABLE(0);
             nd4j::DataType dtype = DataType::INT32;
             if (block.width() > 1)
-                dtype = in->dataType();
+                dtype = ArrayOptions::dataType(inputShape->at(1));
             else if (block.numI() > 2)
                 dtype = (nd4j::DataType)INT_ARG(2);
 

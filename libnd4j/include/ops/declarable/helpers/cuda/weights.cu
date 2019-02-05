@@ -26,12 +26,12 @@ namespace helpers {
 
 
 
-    //template <typename T>
+    template <typename T>
     static __device__ void adjustWeightsKernelD(void* inputBuffer,   Nd4jLong* inputShape,
                                                void* weightsBuffer, Nd4jLong* weightsShape,
                                                void* outputBuffer,  Nd4jLong inputLength, Nd4jLong weightsLength,
                                                Nd4jLong outputLength, int val) {
-        typedef int T;
+    //    typedef Nd4jLong T;
         auto tid = threadIdx.x;
         //int threadCount = gridDim.x * blockDim.x;
         __shared__ T* outputPart;
@@ -88,7 +88,7 @@ namespace helpers {
             //printf("%d %d %d\n", blockIdx.x, blockDim.x, threadIdx.x);
             //Nd4jLong borderLen = 1;
             T* outputBufferZ = reinterpret_cast<T*>(outputBuffer) + zOffset;
-            adjustWeightsKernelD(inputBuffer, inputShape, weightsBuffer, weightsShape, (void*)outputBufferZ,
+            adjustWeightsKernelD<T>(inputBuffer, inputShape, weightsBuffer, weightsShape, (void*)outputBufferZ,
                                  inputLength, weightsLength, outputLength, (int)zOffset);
 
         }
@@ -113,7 +113,7 @@ namespace helpers {
     }
 
     void adjustWeights(graph::LaunchContext* context, NDArray* input, NDArray* weights, NDArray* output, int minLength, int maxLength) {
-        BUILD_SINGLE_SELECTOR(output->dataType(), adjustWeights_, (context, input, weights, output, minLength, maxLength), LIBND4J_TYPES);
+        BUILD_SINGLE_SELECTOR(output->dataType(), adjustWeights_, (context, input, weights, output, minLength, maxLength), GENERIC_NUMERIC_TYPES);
     }
 
     BUILD_SINGLE_TEMPLATE(template void adjustWeights_, (graph::LaunchContext* context, NDArray* input, NDArray* weights, NDArray* output, int minLength, int maxLength), GENERIC_NUMERIC_TYPES);
