@@ -223,7 +223,7 @@ Seq[Any](format.raw/*1.4*/("""
 object SameDiffUI extends SameDiffUI_Scope0.SameDiffUI
               /*
                   -- GENERATED --
-                  DATE: Thu Jan 31 10:58:54 AEDT 2019
+                  DATE: Tue Feb 05 22:28:50 AEDT 2019
                   SOURCE: c:/DL4J/Git/deeplearning4j/deeplearning4j/deeplearning4j-ui-parent/deeplearning4j-play/src/main/views/org/deeplearning4j/ui/views/samediff/SameDiffUI.scala.html
                   HASH: 0c99ff525b71b9ca24441939ad34c68158a15ff2
                   MATRIX: 561->1|657->3|685->5|4980->4297|5017->4307|6797->6088|6844->6106|7025->6318|7076->6340|7745->7044|7796->7066|8578->7885|8629->7907|10475->9724|10505->9725|10556->9747|10625->9787|10655->9788

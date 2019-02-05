@@ -50,8 +50,8 @@ Seq[Any](format.raw/*1.40*/("""
         <meta name="viewport" content="width=device-width, initial-scale=1">
             <!-- end: Mobile Specific -->
 
-        <link id="bootstrap-style" href="/assets/webjars/bootstrap/2.3.1/css/bootstrap.min.css" rel="stylesheet">
-        <link id="bootstrap-style" href="/assets/webjars/bootstrap/2.3.1/css/bootstrap-responsive.min.css" rel="stylesheet">
+        <link id="bootstrap-style" href="/assets/webjars/bootstrap/2.3.2/css/bootstrap.min.css" rel="stylesheet">
+        <link id="bootstrap-style" href="/assets/webjars/bootstrap/2.3.2/css/bootstrap-responsive.min.css" rel="stylesheet">
         <link id="base-style" href="/assets/css/style.css" rel="stylesheet">
         <link id="base-style-responsive" href="/assets/css/style-responsive.css" rel="stylesheet">
         <link href='/assets/css/opensans-fonts.css' rel='stylesheet' type='text/css'>
@@ -281,7 +281,7 @@ Seq[Any](format.raw/*1.40*/("""
         <script src="/assets/webjars/jquery-migrate/1.2.1/jquery-migrate.min.js"></script>
         <script src="/assets/webjars/jquery-ui-touch-punch/0.2.2/jquery.ui.touch-punch.min.js"></script>
         <script src="/assets/webjars/modernizr/2.8.3/modernizr.min.js"></script>
-        <script src="/assets/webjars/bootstrap/2.3.1/js/bootstrap.min.js"></script>
+        <script src="/assets/webjars/bootstrap/2.3.2/js/bootstrap.min.js"></script>
         <script src="/assets/webjars/jquery-cookie/1.4.1-1/jquery.cookie.js"></script>
         <script src="/assets/webjars/fullcalendar/1.6.4/fullcalendar.min.js"></script>
         <script src="/assets/webjars/datatables/1.9.4/media/js/jquery.dataTables.min.js"></script>
@@ -347,9 +347,9 @@ Seq[Any](format.raw/*1.40*/("""
 object TrainingModel extends TrainingModel_Scope0.TrainingModel
               /*
                   -- GENERATED --
-                  DATE: Thu Jan 31 10:32:03 AEDT 2019
+                  DATE: Tue Feb 05 22:28:50 AEDT 2019
                   SOURCE: c:/DL4J/Git/deeplearning4j/deeplearning4j/deeplearning4j-ui-parent/deeplearning4j-play/src/main/views/org/deeplearning4j/ui/views/training/TrainingModel.scala.html
-                  HASH: c82677ad7cda9e5699867af9a058674a030bfb1a
+                  HASH: 1e9ef3af180df8514146820fd5bde769d79faa94
                   MATRIX: 598->1|731->39|759->41|1677->932|1690->936|1741->966|3471->2669|3484->2673|3535->2703|3683->2824|3696->2828|3751->2862|3805->2888|4121->3177|4134->3181|4196->3222|4250->3248|4979->3949|4993->3953|5048->3986|5227->4137|5241->4141|5293->4171|5448->4298|5462->4302|5515->4333|5590->4511|5648->4541|5861->4727|5874->4731|5928->4764|8463->7270|8493->7271|8544->7293|8729->7449|8759->7450|8806->7468|9333->7967|9347->7971|9416->8018|9876->8450|9890->8454|9964->8506|10319->8832|10334->8836|10401->8880|10571->9021|10586->9025|10653->9069|10825->9212|10840->9216|10908->9261|11321->9646|11335->9650|11415->9707|11572->9836|11586->9840|11654->9886|11725->9928|12007->10182|12021->10186|12092->10235|12377->10492|12391->10496|12468->10550|12535->10588|12645->10670|12659->10674|12727->10720|12798->10762|13077->11013|13091->11017|13160->11064|13784->11660|13798->11664|13868->11712|14491->12307|14505->12311|14567->12351|14853->12609|14867->12613|14935->12658|15002->12696|15113->12779|15127->12783|15195->12829|15266->12871|20464->18040|20494->18041|20544->18062|20652->18141|20682->18142|20853->18284|20883->18285|20934->18307|21004->18348|21034->18349
                   LINES: 20->1|25->1|26->2|48->24|48->24|48->24|81->57|81->57|81->57|83->59|83->59|83->59|84->60|89->65|89->65|89->65|90->66|106->82|106->82|106->82|107->83|107->83|107->83|108->84|108->84|108->84|109->85|110->86|112->88|112->88|112->88|146->122|146->122|147->123|151->127|151->127|152->128|165->141|165->141|165->141|174->150|174->150|174->150|176->152|176->152|176->152|177->153|177->153|177->153|178->154|178->154|178->154|184->160|184->160|184->160|186->162|186->162|186->162|187->163|193->169|193->169|193->169|197->173|197->173|197->173|198->174|199->175|199->175|199->175|200->176|206->182|206->182|206->182|217->193|217->193|217->193|228->204|228->204|228->204|232->208|232->208|232->208|233->209|234->210|234->210|234->210|235->211|316->292|316->292|317->293|319->295|319->295|324->300|324->300|325->301|326->302|326->302
                   -- GENERATED --
