@@ -19,6 +19,7 @@ package org.nd4j.linalg.api.shape;
 import lombok.*;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.shape.options.ArrayOptionsHelper;
+import org.nd4j.linalg.api.shape.options.ArrayType;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.ArrayUtil;
 
@@ -45,7 +46,7 @@ public class LongShapeDescriptor {
     @Getter
     private long[] stride;
 
-    @Getter
+    @Getter @Setter
     private long extras;
 
     public LongShapeDescriptor(long[] shape, long[] stride, long offset, long ews, char order, long extras) {
@@ -157,6 +158,9 @@ public class LongShapeDescriptor {
     public LongShapeDescriptor asDataType(DataType dataType){
         long extras = 0L;
         extras = ArrayOptionsHelper.setOptionBit(extras, dataType);
+        if(isEmpty()){
+            extras = ArrayOptionsHelper.setOptionBit(extras, ArrayType.EMPTY);
+        }
         return new LongShapeDescriptor(shape, stride, offset, ews, order, extras);
     }
 
