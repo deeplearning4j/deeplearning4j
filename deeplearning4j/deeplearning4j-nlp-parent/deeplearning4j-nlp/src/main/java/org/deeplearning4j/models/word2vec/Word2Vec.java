@@ -545,6 +545,12 @@ public class Word2Vec extends SequenceVectors<VocabWord> {
             return this;
         }
 
+        @Override
+        public Builder usePreciseMode(boolean reallyUse) {
+            super.usePreciseMode(reallyUse);
+            return this;
+        }
+
         public Word2Vec build() {
             presetTables();
 
@@ -625,6 +631,7 @@ public class Word2Vec extends SequenceVectors<VocabWord> {
             this.configuration.setPreciseWeightInit(this.preciseWeightInit);
             this.configuration.setModelUtils(this.modelUtils.getClass().getCanonicalName());
             this.configuration.setAllowParallelTokenization(this.allowParallelTokenization);
+            this.configuration.setPreciseMode(this.preciseMode);
 
             if (tokenizerFactory != null) {
                 this.configuration.setTokenizerFactory(tokenizerFactory.getClass().getCanonicalName());

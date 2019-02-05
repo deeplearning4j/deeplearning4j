@@ -433,6 +433,11 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
         protected boolean enableScavenger = false;
         protected int vocabLimit;
 
+        /**
+         * Experimental field. Switches on precise mode for batch operations.
+         */
+        protected boolean preciseMode = false;
+
         // defaults values for learning algorithms are set here
         protected ElementsLearningAlgorithm<T> elementsLearningAlgorithm = new SkipGram<>();
         protected SequenceLearningAlgorithm<T> sequenceLearningAlgorithm = new DBOW<>();
@@ -883,6 +888,11 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
          */
         public Builder<T> usePreciseWeightInit(boolean reallyUse) {
             this.preciseWeightInit = reallyUse;
+            return this;
+        }
+
+        public Builder<T> usePreciseMode(boolean reallyUse) {
+            this.preciseMode = reallyUse;
             return this;
         }
 

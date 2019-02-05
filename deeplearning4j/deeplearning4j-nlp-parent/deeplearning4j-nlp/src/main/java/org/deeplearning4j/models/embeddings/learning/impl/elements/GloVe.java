@@ -34,7 +34,6 @@ import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.util.ArrayUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -135,7 +134,7 @@ public class GloVe<T extends SequenceElement> implements ElementsLearningAlgorit
 
     public double learnSequence(Sequence<T> sequence, AtomicLong nextRandom, double learningRate,
                          BatchSequences<T> batchSequences) {
-        throw new NotImplementedException();
+        throw new UnsupportedOperationException();
     }
     /**
      * Learns sequence using GloVe algorithm
