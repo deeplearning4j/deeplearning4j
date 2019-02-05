@@ -42,7 +42,7 @@ namespace helpers {
             Nd4jLong xOffset = shape::getIndexOffset(e, inputShape, inputLength);
             int current = *(reinterpret_cast<int*>(inputBuffer) + xOffset);
             if (current == val) {
-//                printf("%d %d %d\n", blockIdx.x, blockDim.x, threadIdx.x);
+                //printf("%lld\n", xOffset);
                 //Nd4jLong zOffset = shape::getIndexOffset(val, outputShape, outputLength);
                 if (weightsBuffer != nullptr) {
                     Nd4jLong yOffset = shape::getIndexOffset(e, weightsShape, weightsLength);

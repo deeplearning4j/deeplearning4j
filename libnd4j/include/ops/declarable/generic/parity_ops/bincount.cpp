@@ -30,7 +30,7 @@ namespace nd4j {
         DECLARE_TYPES(bincount) {
             getOpDescriptor()
                     ->setAllowedInputTypes(0, nd4j::DataType::INT32)
-                    ->setAllowedInputTypes(1, nd4j::DataType::INT32)
+                    ->setAllowedInputTypes(1, nd4j::DataType::ANY)
                     ->setAllowedOutputTypes({ALL_INTS, ALL_FLOATS});
         }
 
