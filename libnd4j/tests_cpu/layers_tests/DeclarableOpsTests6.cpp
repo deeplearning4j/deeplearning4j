@@ -416,7 +416,7 @@ TEST_F(DeclarableOpsTests6, SufficientStatistics_2) {
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests6, BinCount_1) {
 
-    auto x = NDArrayFactory::create<double>('c', {2, 2, 2}, {
+    auto x = NDArrayFactory::create<int>('c', {2, 2, 2}, {
         1, 2, 0, 1, 2, 2, 1, 2}
     );
 // ------------------------------------
@@ -436,7 +436,7 @@ TEST_F(DeclarableOpsTests6, BinCount_1) {
 /////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests6, BinCount_2) {
 
-    auto x = NDArrayFactory::create<double>('c', {2, 2, 2}, {
+    auto x = NDArrayFactory::create<int>('c', {2, 2, 2}, {
         1, 2, 0, 1, 2, 2, 1, 2}
     );
 
@@ -461,7 +461,7 @@ TEST_F(DeclarableOpsTests6, BinCount_2) {
 /////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests6, BinCount_3) {
 
-    auto x = NDArrayFactory::create<double>('c', {2, 2, 2}, {
+    auto x = NDArrayFactory::create<int>('c', {2, 2, 2}, {
         1, 2, 0, 1, 2, 2, 1, 2}
     );
 
@@ -486,7 +486,7 @@ TEST_F(DeclarableOpsTests6, BinCount_3) {
 /////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests6, BinCount_4) {
 
-    auto x = NDArrayFactory::create<double>('c', {2, 2, 2}, {
+    auto x = NDArrayFactory::create<int>('c', {2, 2, 2}, {
         1, 2, 0, 1, 2, 2, 1, 2}
     );
 
