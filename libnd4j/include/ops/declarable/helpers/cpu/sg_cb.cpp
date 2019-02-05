@@ -516,7 +516,7 @@ namespace nd4j {
                 T sneu1[600];
                 T sneu1e[600];
 
-                const auto numThreads = omp_get_max_threads() * 2;
+                const auto numThreads = 1; //omp_get_max_threads() * 2;
                 const auto idxShift = indices.isEmpty() ? 0 : indices.sizeAt(1);
                 const auto hsRounds = codes.isEmpty() ? 0 : codes.sizeAt(1);
                 const auto numTargets = context.sizeAt(0);
@@ -526,6 +526,7 @@ namespace nd4j {
                 const auto bTargets = targets.bufferAsT<int>();
                 const auto bIndices = indices.bufferAsT<int>();
                 const auto bCodes = codes.bufferAsT<int8_t>();
+                const auto bStarters = negStarters.bufferAsT<int>();
                 const auto numIndices = indices.isEmpty() ? 0 : indices.sizeAt(1);
 
 //
@@ -581,7 +582,7 @@ namespace nd4j {
                             actualContext++;
                         }
 
-                        if (contextWidth > 0) {
+                        if (actualContext > 0) {
                             const int p = actualContext + (infVector != nullptr ? 1 : 0);
 
                             #pragma omp simd
@@ -606,7 +607,30 @@ namespace nd4j {
 
                         // negative sampling step
                         if (!negStarters.isEmpty()) {
+                            int irow = bStarters[e];
+                            const int nsStarter = irow;
+                            unsigned long long randomValue = nextRandom.e<Nd4jLong>(e);
 
+                            nd4j_printf("E: %i; RNG: %lld\n", e, );
+
+                            for (int r = 0; r < nsRounds + 1; r++) {
+                                // we're skipping rng on 0 step
+                                if (r != 0) {
+                                    randomValue = randomValue * (unsigned long long) 25214903917 + 11;
+                                    auto idx = nd4j::math::nd4j_abs<Nd4jLong>((randomValue >> 16) % negLength);
+                                    irow = idx >= negLength ? -1 : negTable[idx];
+
+                                    if (irow < 0 || irow >= vocabSize) irow = randomValue % (vocabSize - 1) + 1;
+                                    if (irow == nsStarter)
+                                        continue;
+
+                                    nSampling_<T>(neu1, s1n.bufferWithOffset(irow * vectorLength), expTable, neu1e, alpha, vectorLength, r == 0 ? 1 : 0, expLength, infVector != nullptr);
+                                } else {
+                                    nSampling_<T>(neu1, s1n.bufferWithOffset(irow * vectorLength), expTable, neu1e, alpha, vectorLength, r == 0 ? 1 : 0, expLength, infVector != nullptr);
+                                }
+
+                                //nd4j_printf("Thread <%i>: syn0: [%i]; s1n: [%i];\n", omp_get_thread_num(), 0, irow);
+                            }
                         }
 
                         // if we're skipping labels
@@ -660,7 +684,7 @@ namespace nd4j {
                 auto xType = syn0.dataType();
 
                 // single round case
-                if (context.isVector()) {
+                if (context.isVector() || context.isScalar()) {
                     auto hsRounds = codes.lengthOf();
 
                     BUILD_SINGLE_SELECTOR(xType, cbow_, (syn0.buffer(), syn1.buffer(), syn1Neg.buffer(), expTable.buffer(), negTable.buffer(), inferenceVector.buffer(), target.isEmpty() ? -1 : target.e<int>(0), ngStarter.isEmpty() ? -1 : ngStarter.e<int>(0), reinterpret_cast<int *>(context.buffer()), reinterpret_cast<int *>(indices.buffer()), reinterpret_cast<int8_t *>(codes.buffer()), alpha.e<double>( 0), randomValue.e<Nd4jLong>(0), (int) context.lengthOf(), hsRounds, nsRounds, (int) syn0.sizeAt(0), (int) syn0.sizeAt(1), (int) expTable.lengthOf(), (int) negTable.lengthOf(), numLabels, trainWords), FLOAT_TYPES);
@@ -669,7 +693,7 @@ namespace nd4j {
 
                     BUILD_SINGLE_SELECTOR(xType, cbowBatchExec_, (syn0, syn1, syn1Neg, expTable.buffer(), negTable.buffer(), nullptr, context, target, ngStarter, indices, codes, alpha, randomValue, nsRounds, syn0.sizeAt(0), syn0.sizeAt(1), expTable.lengthOf(), negTable.isEmpty() ? 0 : negTable.lengthOf(), numLabels, trainWords), FLOAT_TYPES);
                 } else
-                    throw std::runtime_error("CBOW: target must have rank 0 or 1");
+                    throw std::runtime_error("CBOW: context must have rank 0 or 1");
             }
         }
     }
