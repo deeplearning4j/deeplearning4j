@@ -20,6 +20,9 @@ package org.deeplearning4j.models.paragraphvectors;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import org.deeplearning4j.models.sequencevectors.sequence.Sequence;
+import org.deeplearning4j.models.sequencevectors.transformers.impl.SentenceTransformer;
+import org.deeplearning4j.models.sequencevectors.transformers.impl.iterables.ParallelTransformerIterator;
 import org.junit.Rule;
 import org.junit.rules.TemporaryFolder;
 import org.nd4j.linalg.io.ClassPathResource;
@@ -62,7 +65,9 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Iterator;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicLong;
 
 import static org.junit.Assert.*;
 
@@ -619,6 +624,29 @@ public class ParagraphVectorsTest {
 
         double simV = Transforms.cosineSim(mean, vec.lookupTable().vector("positive"));
         log.info("Similarity positive: " + simV);
+    }
+
+    @Test
+    public void testParallelIterator() throws IOException {
+        TokenizerFactory factory = new DefaultTokenizerFactory();
+        SentenceIterator iterator = new BasicLineIterator(new ClassPathResource("/big/raw_sentences.txt").getFile());
+
+        SentenceTransformer transformer = new SentenceTransformer.Builder().iterator(iterator).allowMultithreading(true)
+                .tokenizerFactory(factory).build();
+
+        Iterator<Sequence<VocabWord>> iter = transformer.iterator();
+        for (int i = 0; i < 2; ++i) {
+            int cnt = 0;
+            long counter = 0;
+            Sequence<VocabWord> sequence = null;
+            while (iter.hasNext()) {
+                sequence = iter.next();
+                counter += sequence.size();
+                cnt++;
+            }
+            iterator.reset();
+            assertEquals(757172, counter);
+        }
     }
 
     @Test
