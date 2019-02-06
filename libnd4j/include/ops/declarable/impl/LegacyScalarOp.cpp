@@ -34,11 +34,11 @@ namespace nd4j {
         }
 
         LegacyOp* LegacyScalarOp::clone() {
-            return new LegacyScalarOp(this->_opNum, this->_scalar);
+            return new LegacyScalarOp(this->_opNum, *this->_scalar);
         }
 
         LegacyScalarOp::LegacyScalarOp(int opNum, NDArray &scalar)  : LegacyOp::LegacyOp(1, opNum){
-            _scalar = scalar;
+            _scalar = &scalar;
         }
 
         ShapeList *LegacyScalarOp::calculateOutputShape(ShapeList *inputShape, nd4j::graph::Context &block) {
@@ -70,7 +70,7 @@ namespace nd4j {
             } else {
                 //auto y = NDArrayFactory::create(x->dataType(), _scalar, block.getVariableSpace()->launchContext());
 
-                NativeOpExecutioner::execScalar(block.launchContext(), opNum, x->getBuffer(), x->getShapeInfo(), x->specialBuffer(), x->specialShapeInfo(), z->getBuffer(), z->getShapeInfo(), z->specialBuffer(), z->specialShapeInfo(), _scalar.buffer(), _scalar.shapeInfo(), _scalar.specialBuffer(), _scalar.specialShapeInfo(),block.getTArguments()->data() + offset);
+                NativeOpExecutioner::execScalar(block.launchContext(), opNum, x->getBuffer(), x->getShapeInfo(), x->specialBuffer(), x->specialShapeInfo(), z->getBuffer(), z->getShapeInfo(), z->specialBuffer(), z->specialShapeInfo(), _scalar->buffer(), _scalar->shapeInfo(), _scalar->specialBuffer(), _scalar->specialShapeInfo(),block.getTArguments()->data() + offset);
             }
 
             STORE_RESULT(*z);

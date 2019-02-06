@@ -117,6 +117,10 @@ namespace helpers {
     }
     BUILD_SINGLE_TEMPLATE(template int resizeNeighborFunctor_, (NDArray const* images, int width, int height, bool center, NDArray* output), LIBND4J_TYPES);
 
+    ///////
+    void cropAndResizeFunctor(graph::LaunchContext* context, NDArray const *images, NDArray const *boxes, NDArray const *indices, NDArray const *cropSize, int method, double extrapolationVal, NDArray *crops) {
+        //
+    }
 }
 }
 }
