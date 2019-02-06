@@ -88,7 +88,7 @@ namespace nd4j {
         DECLARE_TYPES(sequence_mask) {
             getOpDescriptor()
                     ->setAllowedInputTypes(nd4j::DataType::ANY)
-                    ->setSameMode(true);
+                    ->setAllowedOutputTypes(nd4j::DataType::ANY);
         }
 }
 }

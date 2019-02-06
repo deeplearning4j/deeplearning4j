@@ -359,7 +359,7 @@ public class RandomOpValidation extends BaseOpValidation {
             INDArray e = exp.get(i);
 
             SameDiff sd = SameDiff.create();
-            SDVariable range = sd.range(d[0], d[1], d[2]);
+            SDVariable range = sd.range(d[0], d[1], d[2], DataType.FLOAT);
 
             SDVariable loss = range.std(true);
 

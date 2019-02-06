@@ -28,7 +28,7 @@ namespace nd4j {
         DECLARE_TYPES(argmax) {
             getOpDescriptor()
                     ->setAllowedInputTypes(nd4j::DataType::ANY)
-                    ->setAllowedOutputTypes(DataType::INT64);
+                    ->setAllowedOutputTypes({ALL_INTS});
         }
 
         CUSTOM_OP_IMPL(argmax, 1, 1, false, 0, -2) {

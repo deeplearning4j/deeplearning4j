@@ -1093,7 +1093,7 @@ public class MiscOpValidation extends BaseOpValidation {
 
             SameDiff sd = SameDiff.create();
             SDVariable indices = sd.var(indicesArr);
-            SDVariable oneHot = sd.oneHot(indices, depth, i, 1.0, 0.0);
+            SDVariable oneHot = sd.oneHot(indices, depth, i, 1.0, 0.0, DataType.DOUBLE);
 
             INDArray exp = Nd4j.eye(3).castTo(DataType.DOUBLE);
 
@@ -1135,7 +1135,7 @@ public class MiscOpValidation extends BaseOpValidation {
         SDVariable indices = sd.var("indices", indicesArr);
         int depth = 3;
         int axis = -1;
-        SDVariable oneHot = sd.oneHot("oneHot", indices, depth, axis, 5.0, 0.0);
+        SDVariable oneHot = sd.oneHot("oneHot", indices, depth, axis, 5.0, 0.0, DataType.DOUBLE);
 
         INDArray exp = Nd4j.create(new double[][]{{5, 0, 0}, {0,0,5}, {0,0,0}, {0, 5, 0}});
 
@@ -1358,9 +1358,9 @@ public class MiscOpValidation extends BaseOpValidation {
 
             SDVariable confMatrix;
             if(withMax){
-                confMatrix = sd.confusionMatrix(labels, predictions, 5);
+                confMatrix = sd.confusionMatrix(labels, predictions, 5).castTo(DataType.FLOAT);
             } else {
-                confMatrix = sd.confusionMatrix(labels, predictions);
+                confMatrix = sd.confusionMatrix("cm", labels, predictions, DataType.FLOAT);
             }
 
             SDVariable loss = confMatrix.castTo(DataType.DOUBLE).std(true);

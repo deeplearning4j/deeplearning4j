@@ -1485,7 +1485,6 @@ TEST_F(DeclarableOpsTests9, test_unstack_SGO_1) {
     delete result;
 }
 
-
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests9, clipbynorm_test12) {
     

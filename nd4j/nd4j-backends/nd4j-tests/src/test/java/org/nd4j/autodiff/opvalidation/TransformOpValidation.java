@@ -515,12 +515,12 @@ public class TransformOpValidation extends BaseOpValidation {
 
         for(int i=0; i<3; i++ ) {
             SameDiff sd = SameDiff.create();
-            SDVariable eye = sd.eye("e", rows[i], cols[i], batch[i]).castTo("e2", DataType.DOUBLE);
+            SDVariable eye = sd.eye("e", rows[i], cols[i], DataType.DOUBLE, batch[i]);
 
             SDVariable loss = sd.standardDeviation("loss", eye, true);
 
             String err = OpValidation.validate(new TestCase(sd)
-                    .expectedOutput("e2", expOut[i])
+                    .expectedOutput("e", expOut[i])
                     .gradCheckSkipVariables("e")
                     .gradientCheck(true));
             assertNull(err);

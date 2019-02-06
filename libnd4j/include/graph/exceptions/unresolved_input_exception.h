@@ -39,5 +39,4 @@ namespace nd4j {
     }
 }
 
-
 #endif //DEV_TESTS_UNRESOLVED_INPUT_H

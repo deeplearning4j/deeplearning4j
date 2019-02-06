@@ -109,15 +109,16 @@ TEST_F(EmptyTests, Test_Concat_2) {
 TEST_F(EmptyTests, Test_Reshape_1) {
     auto vector = NDArrayFactory::create<float>('c', {1}, {119.0f});
     auto exp = NDArrayFactory::create<float>(119.f);
-    auto empty = NDArrayFactory::empty<int>();
+    auto empty = NDArrayFactory::empty_<int>();
 
     nd4j::ops::reshape op;
-    auto result = op.execute({&vector, &empty}, {}, {});
+    auto result = op.execute({&vector, empty}, {}, {});
 
     ASSERT_EQ(Status::OK(), result->status());
 
     ASSERT_EQ(exp, *result->at(0));
 
+    delete empty;
     delete result;
 }
 

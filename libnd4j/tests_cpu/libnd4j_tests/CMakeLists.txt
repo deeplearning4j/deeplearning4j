@@ -54,6 +54,10 @@ else()
     if (${F16C})
         set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -mf16c -D__F16C__=true")
     endif()
+
+    if (${F16C})
+        set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -mf16c -D__F16C__=true")
+    endif()
 endif()
 
 if ("${EXPERIMENTAL}" STREQUAL "yes")

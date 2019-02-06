@@ -1978,11 +1978,11 @@ public class SameDiffTests {
         SDVariable labelsVar = sd.var("labels", labels);
         SDVariable predictionsVar = sd.var("predictions", pred);
         SDVariable weightsVar = sd.var("weights", weights);
-        sd.confusionMatrix(labelsVar, predictionsVar, numClasses, weightsVar);
+        sd.confusionMatrix("cm", labelsVar, predictionsVar, numClasses, weightsVar);
         INDArray out = sd.execAndEndResult();
 
         INDArray exp = Nd4j.create(new float[][]{{0, 0, 0, 0, 0}, {0, 0, 10, 0, 0}, {0, 0, 100, 0, 0},
-                {0, 0, 0, 0, 0}, {0, 0, 0, 0, 1000}});
+                {0, 0, 0, 0, 0}, {0, 0, 0, 0, 1000}}).castTo(DataType.INT);
 
         assertEquals(exp, out);
     }
