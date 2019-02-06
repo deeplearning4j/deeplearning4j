@@ -23,7 +23,6 @@
 #if NOT_EXCLUDED(OP_multiply)
 
 #include <ops/declarable/CustomOperations.h>
-#include <helpers/logger.h>
 
 namespace nd4j {
 namespace ops {

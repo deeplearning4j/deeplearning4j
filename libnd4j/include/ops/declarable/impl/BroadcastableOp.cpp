@@ -51,8 +51,8 @@ namespace nd4j {
                 }
             } else
                 dtype = nd4j::DataType::BOOL;
-            
-            if(INPUT_VARIABLE(0)->isEmpty() || INPUT_VARIABLE(1)->isEmpty()){
+
+            if(shape::isEmpty(x) || shape::isEmpty(y)){
                 //Edge case: broadcasting with empty array gives empty array output (behaviour to match TF for import cases)
                 Nd4jLong* empty = ShapeBuilders::createScalarShapeInfo(dtype, block.getWorkspace());
                 ArrayOptions::setPropertyBit(empty, ARRAY_EMPTY);

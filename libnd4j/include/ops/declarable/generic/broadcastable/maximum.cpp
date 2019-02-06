@@ -36,7 +36,7 @@ namespace nd4j {
             auto tZ = BroadcastHelper::broadcastApply(BROADCAST(MaxPairwise), x, y, z);
             if (tZ == nullptr)
                 return ND4J_STATUS_KERNEL_FAILURE;
-            else if (tZ != z /*&& !x->isEmpty() && !y->isEmpty()*/) {
+            else if (tZ != z) {
                 OVERWRITE_RESULT(tZ);
             }
 
