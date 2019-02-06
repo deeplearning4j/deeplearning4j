@@ -25,7 +25,9 @@ import org.nd4j.imports.descriptors.properties.PropertyMapping;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
+import org.nd4j.linalg.util.ArrayUtil;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
@@ -148,6 +150,19 @@ public class Unstack extends DynamicCustomOp {
             out.add(dataTypes.get(0));
         }
         return out;
+    }
+
+    @Override
+    public List<LongShapeDescriptor> calculateOutputShape(){
+        //TEMPORARY workaround for: https://github.com/deeplearning4j/deeplearning4j/issues/7093
+        if(inputArguments.size() == 1 && inputArguments.get(0).rank() == 1){
+            INDArray arr = inputArguments.get(0);
+            Preconditions.checkState(jaxis == 0, "Can only unstack along dimension 0 for rank 1 arrays, got axis %s for array %ndShape", jaxis, arr);
+            LongShapeDescriptor lsd = LongShapeDescriptor.fromShape(new long[0], arr.dataType());
+            List<LongShapeDescriptor> out = Arrays.asList(ArrayUtil.nTimes((int)arr.length(), lsd, LongShapeDescriptor.class));
+            return out;
+        }
+        return super.calculateOutputShape();
     }
 
 }

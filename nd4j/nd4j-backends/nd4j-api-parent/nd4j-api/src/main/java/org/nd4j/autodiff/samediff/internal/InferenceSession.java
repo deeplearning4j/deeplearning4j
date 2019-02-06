@@ -167,7 +167,7 @@ public class InferenceSession extends AbstractSession<INDArray,DifferentialFunct
                 return new INDArray[]{Nd4j.scalar(true), Nd4j.scalar(0.0f)};
             } else if (op instanceof TensorArrayRead) {
                 //Do lookup and return
-                //Input 0 is the TensorArray (or dummy variable that represents it)
+                //Input 0 is the TensorArray (or dummy variable that represents it). Sometimes (for import) this can be like (TensorArray -> Enter -> TensorArrayRead)
                 //Input 1 is the index
                 SDVariable idxSDV = op.arg(1);
                 INDArray idxArr = getArray(idxSDV, opInputs, allIterInputs);
@@ -175,10 +175,20 @@ public class InferenceSession extends AbstractSession<INDArray,DifferentialFunct
                 int i = idxArr.getInt(0);
 
                 SDVariable inTensorArray = op.arg(0);   //Dummy variable representing the tensor array
+
                 //Work out the frame/iteration:
                 VarId v = (opInputs == null ? null : lookup(inTensorArray.getVarName(), opInputs, false));
                 if(v == null && allIterInputs != null){
                     v = lookup(inTensorArray.getVarName(), allIterInputs, false);
+                }
+
+                Preconditions.checkState(v != null, "Could not find input %s", inTensorArray.getVarName());
+
+                while(sameDiff.getVariableOutputFunction(inTensorArray.getVarName()) instanceof Enter){
+                    //Handle the Enter case: this is like TensorArray -> Enter -> TensorArrayRead
+                    //TODO also TensorArrayWrite, scatter, etc??
+                    inTensorArray = sameDiff.getVariableOutputFunction(inTensorArray.getVarName()).arg();
+                    v = newVarId(inTensorArray.getVarName(), v.getParentFrame());
                 }
 
                 List<INDArray> list = getTensorArrays().get(v);
@@ -197,7 +207,16 @@ public class InferenceSession extends AbstractSession<INDArray,DifferentialFunct
                     tArr = lookup(inTensorArray.getVarName(), allIterInputs, false);
                 }
 
-                //Input 0 is the TensorArray (or dummy variable that represents it)
+                Preconditions.checkState(tArr != null, "Could not find input %s", inTensorArray.getVarName());
+
+                while(sameDiff.getVariableOutputFunction(inTensorArray.getVarName()) instanceof Enter){
+                    //Handle the Enter case: this is like TensorArray -> Enter -> TensorArrayWrite
+                    //TODO also TensorArrayScatter, etc??
+                    inTensorArray = sameDiff.getVariableOutputFunction(inTensorArray.getVarName()).arg();
+                    tArr = newVarId(inTensorArray.getVarName(), tArr.getParentFrame());
+                }
+
+                //Input 0 is the TensorArray (or dummy variable that represents it) - but sometimes Enter, in TensorArray -> Enter -> TensorARrayRead
                 //Input 1 is the index
                 //Input 2 is the value to write
 
@@ -316,6 +335,13 @@ public class InferenceSession extends AbstractSession<INDArray,DifferentialFunct
                     idx[0] = NDArrayIndex.point(i);
                     INDArray get = valuesArr.get(idx).dup();
                     int outIdx = idxs[i];
+                    if(valuesArr.rank() == 2 && get.rank() == 2){
+                        //Workaround for: https://github.com/deeplearning4j/deeplearning4j/issues/7092
+                        get = get.reshape(get.length());
+                    }
+                    if(valuesArr.rank() == 1 && get.rank() > 0){
+                        get = get.reshape(new long[0]);
+                    }
                     l.set(outIdx, get);
                 }
 
@@ -559,7 +585,15 @@ public class InferenceSession extends AbstractSession<INDArray,DifferentialFunct
                     reqShape = reqShape.asDataType(dt);
                 }
 
-                if(currOutput == null || !currOutput.shapeDescriptor().equals(reqShape) || isLoop){
+                //Validate shape
+                long[] shape = reqShape.getShape();
+                if(shape != null){
+                    for(long s : shape){
+                        Preconditions.checkState(s > 0, "Invalid shape for op %s: shape has invalid values <= 0: shape=%s", customOp.opName(), shape);
+                    }
+                }
+
+                if(currOutput == null || !currOutput.shapeDescriptor().equals(reqShape) || currOutput.isEmpty() != reqShape.isEmpty() || isLoop){
                     INDArray out = Nd4j.create(reqShape, false);
                     customOp.setOutputArgument(i, out);
                 }
@@ -612,7 +646,9 @@ public class InferenceSession extends AbstractSession<INDArray,DifferentialFunct
                     log.trace("Existing op result (z) array shape for op {} was {}, allocating new array of shape {}",
                             op.getClass().getSimpleName(), (z == null ? null : Arrays.toString(z.shape())), outputShape.get(0).toString());
                 }
-                z = Nd4j.create(outputShape.get(0), false);
+
+                LongShapeDescriptor lsd = outputShape.get(0);
+                z = Nd4j.create(lsd, false);
                 op.setZ(z);
             }
             df.resolvePropertiesFromSameDiffBeforeExecution();

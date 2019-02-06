@@ -99,16 +99,6 @@ public class ZeroPadding3DLayer extends NoParamLayer {
     }
 
     @Override
-    public double getL1ByParam(String paramName) {
-        return 0;
-    }
-
-    @Override
-    public double getL2ByParam(String paramName) {
-        return 0;
-    }
-
-    @Override
     public boolean isPretrainParam(String paramName) {
         throw new UnsupportedOperationException("ZeroPadding3DLayer does not contain parameters");
     }

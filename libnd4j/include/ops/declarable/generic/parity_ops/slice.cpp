@@ -112,6 +112,10 @@ namespace nd4j {
                 auto stop = end[e];
                 auto start = begin[e];
 
+                if(stop == -1){
+                    stop = inShape[e+1] - start;
+                }
+
                 shape.emplace_back(stop);
             }
 

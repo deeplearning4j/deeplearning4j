@@ -13,6 +13,7 @@ import org.junit.runners.Parameterized;
 import org.nd4j.OpValidationSuite;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.base.Preconditions;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.factory.Nd4j;
@@ -141,6 +142,7 @@ public class TFGraphTestZooModels {
     @BeforeClass
     public static void beforeClass(){
         Nd4j.getExecutioner().setProfilingMode(OpExecutioner.ProfilingMode.SCOPE_PANIC);
+        Nd4j.setDefaultDataTypes(DataType.FLOAT, DataType.FLOAT);
     }
 
     @Parameterized.Parameters(name="{2}")
@@ -160,7 +162,7 @@ public class TFGraphTestZooModels {
 
     @Test   //(timeout = 360000L)
     public void testOutputOnly() throws Exception {
-//        if(!modelName.startsWith("mobilenet_v1_0.5_128")){
+//        if(!modelName.startsWith("ssd")){
 //            OpValidationSuite.ignoreFailing();
 //        }
         currentTestDir = testDir.newFolder();

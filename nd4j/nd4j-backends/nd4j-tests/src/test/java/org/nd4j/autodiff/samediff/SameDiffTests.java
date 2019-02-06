@@ -1978,11 +1978,11 @@ public class SameDiffTests {
         SDVariable labelsVar = sd.var("labels", labels);
         SDVariable predictionsVar = sd.var("predictions", pred);
         SDVariable weightsVar = sd.var("weights", weights);
-        sd.confusionMatrix(labelsVar, predictionsVar, numClasses, weightsVar);
+        sd.confusionMatrix("cm", labelsVar, predictionsVar, numClasses, weightsVar);
         INDArray out = sd.execAndEndResult();
 
         INDArray exp = Nd4j.create(new float[][]{{0, 0, 0, 0, 0}, {0, 0, 10, 0, 0}, {0, 0, 100, 0, 0},
-                {0, 0, 0, 0, 0}, {0, 0, 0, 0, 1000}});
+                {0, 0, 0, 0, 0}, {0, 0, 0, 0, 1000}}).castTo(DataType.INT);
 
         assertEquals(exp, out);
     }
@@ -2639,4 +2639,24 @@ public class SameDiffTests {
         sd.createGradFunction();
     }
 
+    @Test
+    public void sameDiffPlaceholderGrad(){
+        INDArray x = Nd4j.ones(2,2);
+        INDArray y = Nd4j.ones(2,2);
+
+        SameDiff sd = SameDiff.create();
+
+        SDVariable xSd = sd.placeHolder("x", x.shape());
+        SDVariable ySd = sd.placeHolder("y", y.shape());
+
+        SDVariable add = ySd.add("add", xSd);
+
+        Map<String, INDArray> placeholders = new HashMap<>();
+        placeholders.put("x", x);
+        placeholders.put("y", y);
+        sd.createGradFunction();    //Otherwise: xSd.gradient() etc won't be defined
+        sd.execBackwards(placeholders, Arrays.asList(xSd.gradient().getVarName(), ySd.gradient().getVarName()));
+        INDArray xGradientEnforced = add.getGradient().getArr(true);
+        assertNotNull(xGradientEnforced);
+    }
 }

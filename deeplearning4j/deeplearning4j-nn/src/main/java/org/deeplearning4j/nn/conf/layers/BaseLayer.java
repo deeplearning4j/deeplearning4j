@@ -24,11 +24,19 @@ import org.deeplearning4j.nn.conf.weightnoise.IWeightNoise;
 import org.deeplearning4j.nn.weights.IWeightInit;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.nn.weights.WeightInitDistribution;
+import org.deeplearning4j.util.NetworkUtils;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.learning.config.IUpdater;
+import org.nd4j.linalg.learning.regularization.L1Regularization;
+import org.nd4j.linalg.learning.regularization.L2Regularization;
+import org.nd4j.linalg.learning.regularization.Regularization;
+import org.nd4j.linalg.learning.regularization.WeightDecay;
 
 import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 
 /**
  * A neural network layer.
@@ -41,10 +49,8 @@ public abstract class BaseLayer extends Layer implements Serializable, Cloneable
     protected IActivation activationFn;
     protected IWeightInit weightInitFn;
     protected double biasInit;
-    protected double l1;
-    protected double l2;
-    protected double l1Bias;
-    protected double l2Bias;
+    protected List<Regularization> regularization;
+    protected List<Regularization> regularizationBias;
     protected IUpdater iUpdater;
     protected IUpdater biasUpdater;
     protected IWeightNoise weightNoise;
@@ -58,10 +64,8 @@ public abstract class BaseLayer extends Layer implements Serializable, Cloneable
         this.activationFn = builder.activationFn;
         this.weightInitFn = builder.weightInitFn;
         this.biasInit = builder.biasInit;
-        this.l1 = builder.l1;
-        this.l2 = builder.l2;
-        this.l1Bias = builder.l1Bias;
-        this.l2Bias = builder.l2Bias;
+        this.regularization = builder.regularization;
+        this.regularizationBias = builder.regularizationBias;
         this.iUpdater = builder.iupdater;
         this.biasUpdater = builder.biasUpdater;
         this.gradientNormalization = builder.gradientNormalization;
@@ -79,8 +83,8 @@ public abstract class BaseLayer extends Layer implements Serializable, Cloneable
         this.setIUpdater(null);
         this.setWeightInitFn(null);
         this.setBiasInit(Double.NaN);
-        this.setL1(Double.NaN);
-        this.setL2(Double.NaN);
+        this.regularization = null;
+        this.regularizationBias = null;
         this.setGradientNormalization(GradientNormalization.None);
         this.setGradientNormalizationThreshold(1.0);
         this.iUpdater = null;
@@ -92,6 +96,19 @@ public abstract class BaseLayer extends Layer implements Serializable, Cloneable
         BaseLayer clone = (BaseLayer) super.clone();
         if (clone.iDropout != null) {
             clone.iDropout = clone.iDropout.clone();
+        }
+        if(regularization != null){
+            //Regularization fields are _usually_ thread safe and immutable, but let's clone to be sure
+            clone.regularization = new ArrayList<>(regularization.size());
+            for(Regularization r : regularization){
+                clone.regularization.add(r.clone());
+            }
+        }
+        if(regularizationBias != null){
+            clone.regularizationBias = new ArrayList<>(regularizationBias.size());
+            for(Regularization r : regularizationBias){
+                clone.regularizationBias.add(r.clone());
+            }
         }
         return clone;
     }
@@ -115,6 +132,17 @@ public abstract class BaseLayer extends Layer implements Serializable, Cloneable
     public GradientNormalization getGradientNormalization() {
         return gradientNormalization;
     }
+
+    @Override
+    public List<Regularization> getRegularizationByParam(String paramName){
+        if(initializer().isWeightParam(this, paramName)){
+            return regularization;
+        } else if(initializer().isBiasParam(this, paramName)){
+            return regularizationBias;
+        }
+        return null;
+    }
+
 
     @SuppressWarnings("unchecked")
     @Getter
@@ -142,26 +170,13 @@ public abstract class BaseLayer extends Layer implements Serializable, Cloneable
         protected double biasInit = Double.NaN;
 
         /**
-         * L1 regularization coefficient (weights only). Use {@link #l1Bias(double)} to configure the l1 regularization
-         * coefficient for the bias.
+         * Regularization for the parameters (excluding biases).
          */
-        protected double l1 = Double.NaN;
-
+        protected List<Regularization> regularization = new ArrayList<>();
         /**
-         * L2 regularization coefficient (weights only). Use {@link #l2Bias(double)} to configure the l2 regularization
-         * coefficient for the bias.
+         * Regularization for the bias parameters only
          */
-        protected double l2 = Double.NaN;
-
-        /**
-         * L1 regularization coefficient for the bias. Default: 0. See also {@link #l1(double)}
-         */
-        protected double l1Bias = Double.NaN;
-
-        /**
-         * L2 regularization coefficient for the bias. Default: 0. See also {@link #l2(double)}
-         */
-        protected double l2Bias = Double.NaN;
+        protected List<Regularization> regularizationBias = new ArrayList<>();
 
         /**
          * Gradient updater. For example, {@link org.nd4j.linalg.learning.config.Adam} or {@link
@@ -278,16 +293,27 @@ public abstract class BaseLayer extends Layer implements Serializable, Cloneable
          * coefficient for the bias.
          */
         public T l1(double l1) {
-            this.l1 = l1;
+            //Check if existing L1 exists; if so, replace it
+            NetworkUtils.removeInstances(this.regularization, L1Regularization.class);
+            if(l1 > 0.0) {
+                this.regularization.add(new L1Regularization(l1));
+            }
             return (T) this;
         }
 
         /**
          * L2 regularization coefficient (weights only). Use {@link #l2Bias(double)} to configure the l2 regularization
-         * coefficient for the bias.
+         * coefficient for the bias.<br>
+         * <b>Note</b>: Generally, {@link WeightDecay} (set via {@link #weightDecay(double,boolean)} should be preferred to
+         * L2 regularization. See {@link WeightDecay} javadoc for further details.<br>
          */
         public T l2(double l2) {
-            this.l2 = l2;
+            //Check if existing L2 exists; if so, replace it. Also remove weight decay - it doesn't make sense to use both
+            NetworkUtils.removeInstances(this.regularization, L2Regularization.class);
+            if(l2 > 0.0) {
+                NetworkUtils.removeInstancesWithWarning(this.regularization, WeightDecay.class, "WeightDecay regularization removed: incompatible with added L2 regularization");
+                this.regularization.add(new L2Regularization(l2));
+            }
             return (T) this;
         }
 
@@ -295,16 +321,99 @@ public abstract class BaseLayer extends Layer implements Serializable, Cloneable
          * L1 regularization coefficient for the bias. Default: 0. See also {@link #l1(double)}
          */
         public T l1Bias(double l1Bias) {
-            this.l1Bias = l1Bias;
+            NetworkUtils.removeInstances(this.regularizationBias, L1Regularization.class);
+            if(l1Bias > 0.0) {
+                this.regularizationBias.add(new L1Regularization(l1Bias));
+            }
             return (T) this;
         }
 
         /**
-         * L2 regularization coefficient for the bias. Default: 0. See also {@link #l2(double)}
+         * L2 regularization coefficient for the bias. Default: 0. See also {@link #l2(double)}<br>
+         * <b>Note</b>: Generally, {@link WeightDecay} (set via {@link #weightDecayBias(double,boolean)} should be preferred to
+         * L2 regularization. See {@link WeightDecay} javadoc for further details.<br>
          */
         public T l2Bias(double l2Bias) {
-            this.l2Bias = l2Bias;
+            NetworkUtils.removeInstances(this.regularizationBias, L2Regularization.class);
+            if(l2Bias > 0.0) {
+                NetworkUtils.removeInstancesWithWarning(this.regularizationBias, WeightDecay.class, "WeightDecay regularization removed: incompatible with added L2 regularization");
+                this.regularizationBias.add(new L2Regularization(l2Bias));
+            }
             return (T) this;
+        }
+
+        /**
+         * Add weight decay regularization for the network parameters (excluding biases).<br>
+         * This applies weight decay <i>with</i> multiplying the learning rate - see {@link WeightDecay} for more details.<br>
+         *
+         * @param coefficient Weight decay regularization coefficient
+         * @see #weightDecay(double, boolean)
+         */
+        public Builder weightDecay(double coefficient) {
+            return weightDecay(coefficient, true);
+        }
+
+        /**
+         * Add weight decay regularization for the network parameters (excluding biases). See {@link WeightDecay} for more details.<br>
+         *
+         * @param coefficient Weight decay regularization coefficient
+         * @param applyLR     Whether the learning rate should be multiplied in when performing weight decay updates. See {@link WeightDecay} for more details.
+         * @see #weightDecay(double, boolean)
+         */
+        public Builder weightDecay(double coefficient, boolean applyLR) {
+            //Check if existing weight decay if it exists; if so, replace it. Also remove L2 - it doesn't make sense to use both
+            NetworkUtils.removeInstances(this.regularization, WeightDecay.class);
+            if(coefficient > 0.0) {
+                NetworkUtils.removeInstancesWithWarning(this.regularization, L2Regularization.class, "L2 regularization removed: incompatible with added WeightDecay regularization");
+                this.regularization.add(new WeightDecay(coefficient, applyLR));
+            }
+            return this;
+        }
+
+        /**
+         * Weight decay for the biases only - see {@link #weightDecay(double)} for more details.
+         * This applies weight decay <i>with</i> multiplying the learning rate.<br>
+         *
+         * @param coefficient Weight decay regularization coefficient
+         * @see #weightDecayBias(double, boolean)
+         */
+        public Builder weightDecayBias(double coefficient) {
+            return weightDecayBias(coefficient, true);
+        }
+
+        /**
+         * Weight decay for the biases only - see {@link #weightDecay(double)} for more details<br>
+         *
+         * @param coefficient Weight decay regularization coefficient
+         */
+        public Builder weightDecayBias(double coefficient, boolean applyLR) {
+            //Check if existing weight decay if it exists; if so, replace it. Also remove L2 - it doesn't make sense to use both
+            NetworkUtils.removeInstances(this.regularizationBias, WeightDecay.class);
+            if(coefficient > 0.0) {
+                NetworkUtils.removeInstancesWithWarning(this.regularizationBias, L2Regularization.class, "L2 regularization removed: incompatible with added WeightDecay regularization");
+                this.regularizationBias.add(new WeightDecay(coefficient, applyLR));
+            }
+            return this;
+        }
+
+        /**
+         * Set the regularization for the parameters (excluding biases) - for example {@link WeightDecay}<br>
+         *
+         * @param regularization Regularization to apply for the network parameters/weights (excluding biases)
+         */
+        public Builder regularization(List<Regularization> regularization) {
+            this.regularization = regularization;
+            return this;
+        }
+
+        /**
+         * Set the regularization for the biases only - for example {@link WeightDecay}<br>
+         *
+         * @param regularizationBias Regularization to apply for the network biases only
+         */
+        public Builder regularizationBias(List<Regularization> regularizationBias) {
+            this.regularizationBias = regularizationBias;
+            return this;
         }
 
         /**

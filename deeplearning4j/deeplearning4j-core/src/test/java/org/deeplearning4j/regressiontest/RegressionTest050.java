@@ -17,6 +17,7 @@
 package org.deeplearning4j.regressiontest;
 
 import org.deeplearning4j.BaseDL4JTest;
+import org.deeplearning4j.TestUtils;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
@@ -34,6 +35,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.io.ClassPathResource;
 import org.nd4j.linalg.learning.config.Nesterovs;
 import org.nd4j.linalg.learning.config.RmsProp;
+import org.nd4j.linalg.learning.regularization.WeightDecay;
 import org.nd4j.linalg.lossfunctions.impl.LossMCXENT;
 import org.nd4j.linalg.lossfunctions.impl.LossMSE;
 import org.nd4j.linalg.lossfunctions.impl.LossNegativeLogLikelihood;
@@ -111,8 +113,8 @@ public class RegressionTest050 extends BaseDL4JTest {
         assertEquals(new RmsProp(0.15, 0.96, RmsProp.DEFAULT_RMSPROP_EPSILON), l0.getIUpdater());
         assertEquals(0.15, ((RmsProp)l0.getIUpdater()).getLearningRate(), 1e-6);
         assertEquals(new Dropout(0.6), l0.getIDropout());
-        assertEquals(0.1, l0.getL1(), 1e-6);
-        assertEquals(0.2, l0.getL2(), 1e-6);
+        assertEquals(0.1, TestUtils.getL1(l0), 1e-6);
+        assertEquals(new WeightDecay(0.2, false), TestUtils.getWeightDecayReg(l0));
 
         OutputLayer l1 = (OutputLayer) conf.getConf(1).getLayer();
         assertEquals("identity", l1.getActivationFn().toString());
@@ -123,8 +125,8 @@ public class RegressionTest050 extends BaseDL4JTest {
         assertEquals(new RmsProp(0.15, 0.96, RmsProp.DEFAULT_RMSPROP_EPSILON), l1.getIUpdater());
         assertEquals(0.15, ((RmsProp)l1.getIUpdater()).getLearningRate(), 1e-6);
         assertEquals(new Dropout(0.6), l1.getIDropout());
-        assertEquals(0.1, l1.getL1(), 1e-6);
-        assertEquals(0.2, l1.getL2(), 1e-6);
+        assertEquals(0.1, TestUtils.getL1(l1), 1e-6);
+        assertEquals(new WeightDecay(0.2, false), TestUtils.getWeightDecayReg(l1));
 
         int numParams = (int)net.numParams();
         assertEquals(Nd4j.linspace(1, numParams, numParams), net.params());

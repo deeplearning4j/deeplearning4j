@@ -2475,7 +2475,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         ol.setLabels(data.getLabels());
         double score;
         try(MemoryWorkspace ws = mgr.notifyScopeEntered(ArrayType.FF_WORKING_MEM)) {
-            score = ol.computeScore(calcL1(true), calcL2(true), training, mgr);
+            score = ol.computeScore(calcRegularizationScore(true), training, mgr);
         }
 
         if (hasMaskArray)
@@ -2534,9 +2534,8 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
             }
             ol.setLabels(data.getLabels());
             ol.setInput(inputLast, mgr);
-            double l1 = (addRegularizationTerms ? calcL1(true) : 0.0);
-            double l2 = (addRegularizationTerms ? calcL2(true) : 0.0);
-            out = ol.computeScoreForExamples(l1, l2, mgr);
+            double r = (addRegularizationTerms ? calcRegularizationScore(true) : 0);
+            out = ol.computeScoreForExamples(r, mgr);
         } else {
             throw new UnsupportedOperationException(
                     "Cannot calculate score with respect to labels without an OutputLayer");
@@ -2640,7 +2639,8 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
 
             //Calculate score
             try(MemoryWorkspace wsFF = mgr.notifyScopeEntered(ArrayType.FF_WORKING_MEM)) {
-                score = ((IOutputLayer) getOutputLayer()).computeScore(calcL1(true), calcL2(true), true, mgr);
+                double r = calcRegularizationScore(true);
+                score = ((IOutputLayer) getOutputLayer()).computeScore(r, true, mgr);
             }
 
             //Listeners
@@ -2915,21 +2915,12 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
     }
 
     @Override
-    public double calcL2(boolean backpropParamsOnly) {
-        double l2 = 0.0;
+    public double calcRegularizationScore(boolean backpropParamsOnly){
+        double scoreSum = 0.0;
         for (int i = 0; i < layers.length; i++) {
-            l2 += layers[i].calcL2(backpropParamsOnly);
+            scoreSum += layers[i].calcRegularizationScore(backpropParamsOnly);
         }
-        return l2;
-    }
-
-    @Override
-    public double calcL1(boolean backpropParamsOnly) {
-        double l1 = 0.0;
-        for (int i = 0; i < layers.length; i++) {
-            l1 += layers[i].calcL1(backpropParamsOnly);
-        }
-        return l1;
+        return scoreSum;
     }
 
     @Override

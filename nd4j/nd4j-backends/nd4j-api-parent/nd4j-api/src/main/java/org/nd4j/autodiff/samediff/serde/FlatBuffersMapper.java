@@ -448,6 +448,10 @@ public class FlatBuffersMapper {
                 String str = (String) v;
                 int strOffset = fbb.createString(str);
                 sIdx = new int[]{strOffset};
+            } else if(v instanceof org.nd4j.linalg.api.buffer.DataType ){
+                String str = v.toString();
+                int strOffset = fbb.createString(str);
+                sIdx = new int[]{strOffset};
             } else if(v instanceof INDArray){
                 INDArray arr = (INDArray)v;
                 aIdx = new int[]{arr.toFlatArray(fbb)};

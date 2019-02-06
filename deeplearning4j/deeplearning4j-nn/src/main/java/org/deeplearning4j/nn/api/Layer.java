@@ -54,26 +54,14 @@ public interface Layer extends Serializable, Cloneable, Model, Trainable {
     void setCacheMode(CacheMode mode);
 
     /**
-     * Calculate the l2 regularization term<br>
-     * 0.0 if regularization is not used. Or 0.5 * l2Coeff * l2Magnitude otherwise.<br>
-     * Note that this does not divide by mini-batch size
+     * Calculate the regularization component of the score, for the parameters in this layer<br>
+     * For example, the L1, L2 and/or weight decay components of the loss function<br>
      *
-     * @param backpropOnlyParams If true: calculate L2 based on backprop params only. If false: calculate
+     * @param backpropOnlyParams If true: calculate regularization score based on backprop params only. If false: calculate
      *                           based on all params (including pretrain params, if any)
-     * @return the l2 regularization term for this layer.
+     * @return the regularization score of
      */
-    double calcL2(boolean backpropOnlyParams);
-
-    /**
-     * Calculate the l1 regularization term<br>
-     * 0.0 if regularization is not used. Or l1Coeff * l1Magnitude otherwise.<br>
-     * Note that this does not divide by mini-batch size
-     *
-     * @param backpropOnlyParams If true: calculate L1 based on backprop params only. If false: calculate
-     *                           based on all params (including pretrain params, if any)
-     * @return the l1 regularization term for this layer.
-     */
-    double calcL1(boolean backpropOnlyParams);
+    double calcRegularizationScore(boolean backpropOnlyParams);
 
     /**
      * Returns the layer type

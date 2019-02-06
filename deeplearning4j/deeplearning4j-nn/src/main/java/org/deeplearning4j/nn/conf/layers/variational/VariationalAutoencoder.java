@@ -96,22 +96,6 @@ public class VariationalAutoencoder extends BasePretrainNetwork {
     }
 
     @Override
-    public double getL1ByParam(String paramName) {
-        if (paramName.endsWith(VariationalAutoencoderParamInitializer.BIAS_KEY_SUFFIX)) {
-            return l1Bias;
-        }
-        return l1;
-    }
-
-    @Override
-    public double getL2ByParam(String paramName) {
-        if (paramName.endsWith(VariationalAutoencoderParamInitializer.BIAS_KEY_SUFFIX)) {
-            return l2Bias;
-        }
-        return l2;
-    }
-
-    @Override
     public boolean isPretrainParam(String paramName) {
         if (paramName.startsWith(VariationalAutoencoderParamInitializer.DECODER_PREFIX)) {
             return true;

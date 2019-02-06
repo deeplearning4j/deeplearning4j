@@ -19,7 +19,6 @@ The example below shows how to build a simple linear classifier using `DenseLaye
 ```java
 MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
     .seed(seed)
-    .iterations(1)
     .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
     .learningRate(learningRate)
     .updater(Updater.NESTEROVS).momentum(0.9)
@@ -40,7 +39,6 @@ You can also create convolutional configurations:
 ```java
 MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder()
     .seed(seed)
-    .iterations(iterations)
     .regularization(true).l2(0.0005)
     .learningRate(0.01)//.biasLearningRate(0.02)
     //.learningRateDecayPolicy(LearningRatePolicy.Inverse).lrPolicyDecayRate(0.001).lrPolicyPower(0.75)

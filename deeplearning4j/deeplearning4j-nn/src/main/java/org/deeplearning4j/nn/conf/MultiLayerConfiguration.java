@@ -62,9 +62,6 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
     protected BackpropType backpropType = BackpropType.Standard;
     protected int tbpttFwdLength = 20;
     protected int tbpttBackLength = 20;
-    @Getter
-    @Setter
-    protected boolean legacyBatchScaledL2 = true;   //Default to legacy for pre 1.0.0-beta3 networks on deserialization
     protected boolean validateOutputLayerConfig = true; //Default to legacy for pre 1.0.0-beta3 networks on deserialization
 
     @Getter
@@ -371,7 +368,6 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
             clone.inferenceWorkspaceMode = this.inferenceWorkspaceMode;
             clone.trainingWorkspaceMode = this.trainingWorkspaceMode;
             clone.cacheMode = this.cacheMode;
-            clone.legacyBatchScaledL2 = legacyBatchScaledL2;
             clone.validateOutputLayerConfig = this.validateOutputLayerConfig;
 
             return clone;
@@ -458,7 +454,6 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
         protected CacheMode cacheMode = CacheMode.NONE;
         protected boolean validateOutputConfig = true;
         protected boolean validateTbpttConfig = true;
-        protected boolean legacyBatchScaledL2;
 
         /**
          * Specify the processors.
@@ -600,11 +595,6 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
             return this;
         }
 
-        public Builder legacyBatchScaledL2(boolean legacyBatchScaledL2) {
-            this.legacyBatchScaledL2 = legacyBatchScaledL2;
-            return this;
-        }
-
 
         public MultiLayerConfiguration build() {
             //Validate BackpropType setting
@@ -690,7 +680,6 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
             conf.trainingWorkspaceMode = trainingWorkspaceMode;
             conf.inferenceWorkspaceMode = inferenceWorkspaceMode;
             conf.cacheMode = cacheMode;
-            conf.legacyBatchScaledL2 = legacyBatchScaledL2;
 
             Nd4j.getRandom().setSeed(conf.getConf(0).getSeed());
 

@@ -35,6 +35,12 @@ CUSTOM_OP_IMPL(gather, 1, 1, false, 0, -2) {
 	auto input   = INPUT_VARIABLE(0);
     auto indices = block.width() > 1 ? INPUT_VARIABLE(1) : nullptr;
 	auto output  = OUTPUT_VARIABLE(0);	
+	
+	//Edge case: empty indices -> empty output
+	if(indices != nullptr && indices->isEmpty()){
+		REQUIRE_TRUE(output->isEmpty(), 0, "Gather op: If indices are empty, output must also be empty");
+		return Status::OK();	//No op
+	}
 
 	const int numOfIntArgs = block.numI();
 
@@ -86,8 +92,16 @@ DECLARE_SHAPE_FN(gather) {
 	if(axis < 0)
 		axis += inputRank;
 
+	//Edge case: empty indices, empty input -> empty output
+	if(block.width() > 1 && INPUT_VARIABLE(0)->isEmpty() && INPUT_VARIABLE(1)->isEmpty()){
+		Nd4jLong* empty = ShapeBuilders::createScalarShapeInfo(INPUT_VARIABLE(0)->dataType(), block.getWorkspace());
+		ArrayOptions::setPropertyBit(empty, ARRAY_EMPTY);
+		return SHAPELIST(empty);
+	}
+
     REQUIRE_TRUE(axis < inputRank, 0, "GATHER op: input axis must be smaller than input array rank, but got %i and %i correspondingly!", axis, inputRank);
 
+	bool isEmpty = false;
 	if (block.width() > 1) {
 		auto indicesShapeInfo = inputShape->at(1);
     
@@ -98,7 +112,13 @@ DECLARE_SHAPE_FN(gather) {
     	// else if(shape::isVector(indicesShapeInfo))
     	// 	indicesRank = 1;
 
-    	int outputRank = inputRank + indicesRank - 1;    	
+    	int outputRank = inputRank + indicesRank - 1;
+        if(INPUT_VARIABLE(1)->isEmpty()){
+			//Empty indices -> empty output
+            outputRank = 0;
+            isEmpty = true;
+        }
+		
     	ALLOCATE(outputShapeInfo, block.getWorkspace(), shape::shapeInfoLength(outputRank), Nd4jLong);
 
     	// fill output shapeInfo
@@ -138,6 +158,10 @@ DECLARE_SHAPE_FN(gather) {
 
 	ShapeUtils::updateStridesAndType(outputShapeInfo, inputShapeInfo, shape::order(inputShapeInfo));
 
+	if(isEmpty){
+		ArrayOptions::setPropertyBit(outputShapeInfo, ARRAY_EMPTY);
+	}
+	
     return SHAPELIST(outputShapeInfo);
 
 }

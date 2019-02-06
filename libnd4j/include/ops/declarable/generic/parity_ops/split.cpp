@@ -48,6 +48,15 @@ namespace ops {
                 input = a;
             }
         }
+		
+		//Edge case: splitting empty array (mainly for TF import compatibility) -> return N empty arrays
+		if(input->isEmpty()){
+			for( int i=0; i< num_splits; i++ ){
+				REQUIRE_TRUE(OUTPUT_VARIABLE(i)->isEmpty(), 0, "Split: When input array is empty, all output arrays must be empty");
+			}
+			//No op
+			return Status::OK();
+		}
 
         if (block.numI() == 2)
             axis = INT_ARG(1);
@@ -97,6 +106,7 @@ namespace ops {
         // axis is 0 by default
         int axis = 0;
 
+		int inputVar = 0;
         if (inputShape->size() == 1) {
             input = inputShape->at(0);
             dataType = ArrayOptions::dataType(input);
@@ -109,13 +119,27 @@ namespace ops {
                 auto _a = INPUT_VARIABLE(0);
                 axis = _a->e<int>(0);
                 dataType = ArrayOptions::dataType(shape1);
+				inputVar = 1;
             } else if (shape::isScalar(shape1)) {
                 input = shape0;
                 auto _a = INPUT_VARIABLE(1);
                 axis = _a->e<int>(0);
                 dataType = ArrayOptions::dataType(shape0);
+				inputVar = 0;
             }
         }
+		
+		auto shapes = SHAPELIST();
+		
+		//Edge case: splitting empty array (mainly for TF import compatibility) -> return N empty arrays
+		if(INPUT_VARIABLE(inputVar)->isEmpty()){
+			Nd4jLong* empty = ShapeBuilders::createScalarShapeInfo(dataType, block.getWorkspace());
+			ArrayOptions::setPropertyBit(empty, ARRAY_EMPTY);
+			for (int e = 0; e < num_splits; e++) {
+				shapes->push_back(empty);
+			}
+			return shapes;
+		}
 
         if (block.numI() == 2)
             axis = INT_ARG(1);
@@ -131,7 +155,7 @@ namespace ops {
             else 
                 shape[e] = shape::sizeAt(input, e);
 
-        auto shapes = SHAPELIST();
+        
 
         for (int e = 0; e < num_splits; e++) {
             Nd4jLong *newShape;

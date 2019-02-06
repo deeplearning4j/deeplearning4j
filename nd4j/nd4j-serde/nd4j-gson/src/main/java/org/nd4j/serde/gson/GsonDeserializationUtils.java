@@ -17,6 +17,7 @@
 package org.nd4j.serde.gson;
 
 import com.google.common.primitives.Ints;
+import com.google.common.primitives.Longs;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
@@ -59,17 +60,6 @@ public class GsonDeserializationUtils {
         dimensions.add(jsonArray.size());
         getSizeMultiDimensionalArray(jsonArray, dimensions);
 
-        /*
-            If the dimension list contains only a single element, then
-            we must have an array such as [ 4, 6, 7 ] which means one row
-            with columns. Since the Nd4j create method needs a minimum of two
-            dimensions, then we prepend the list with 1 to designate that
-            we have one row
-         */
-        if (isArrayWithSingleRow(dimensions)) {
-            dimensions.add(0, 1);
-        }
-
         return buildArray(dimensions, cleanedRawArray);
     }
 
@@ -100,7 +90,7 @@ public class GsonDeserializationUtils {
     }
 
     private static INDArray buildArray(List<Integer> dimensions, String rawArray) {
-        int[] shape = Ints.toArray(dimensions);
+        long[] shape = Longs.toArray(dimensions);
         String[] entries = StringUtils.replacePattern(rawArray, "[\\[\\]\\n]", "").split(",");
         double[] entryValues = new double[entries.length];
 
@@ -108,6 +98,6 @@ public class GsonDeserializationUtils {
             entryValues[i] = Double.parseDouble(entries[i]);
         }
 
-        return Nd4j.create(entryValues, shape);
+        return Nd4j.create(entryValues, shape, Nd4j.defaultFloatingPointType());
     }
 }
