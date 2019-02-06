@@ -50,7 +50,9 @@ Seq[Any](format.raw/*1.4*/("""
         <meta name="viewport" content="width=device-width, initial-scale=1">
             <!-- end: Mobile Specific -->
 
-        <link id="bootstrap-style" href="/assets/webjars/bootstrap/2.3.1/css/bootstrap.min.css" rel="stylesheet">
+        <link id="bootstrap-style" href="/assets/webjars/bootstrap/4.2.1/css/bootstrap.min.css" rel="stylesheet">
+
+        <link href="/assets/css/samediff/samediff.css" rel="stylesheet">
 
             <!-- The HTML5 shim, for IE6-8 support of HTML5 elements -->
             <!--[if lt IE 9]>
@@ -63,12 +65,11 @@ Seq[Any](format.raw/*1.4*/("""
 	<![endif]-->
     </head>
 
-    <body style="height: 100%;
-        margin: 0;">
+    <body>
             <!-- Start JavaScript-->
         <script src="/assets/webjars/jquery/2.2.0/jquery.min.js"></script>
         <script src="/assets/webjars/jquery-ui/1.10.2/ui/minified/jquery-ui.min.js"></script>
-        <script src="/assets/webjars/bootstrap/2.3.1/js/bootstrap.min.js"></script>
+        <script src="/assets/webjars/bootstrap/4.2.1/js/bootstrap.min.js"></script>
         <script src="/assets/webjars/jquery-cookie/1.4.1-1/jquery.cookie.js"></script>
         <script src="/assets/webjars/flatbuffers/1.9.0/js/flatbuffers.js"></script>
 
@@ -83,6 +84,11 @@ Seq[Any](format.raw/*1.4*/("""
         <script src="/assets/webjars/cytoscape-klay/3.1.2/cytoscape-klay.js"></script>
         <script src="/assets/webjars/weaverjs/1.2.0/dist/weaver.js"></script>
         <script src="/assets/webjars/cytoscape-spread/3.0.0/cytoscape-spread.js"></script>
+        <script src="/assets/webjars/flot/0.8.3/jquery.flot.js"></script>
+        <script src="/assets/webjars/flot/0.8.3/jquery.flot.pie.js"></script>
+        <script src="/assets/webjars/flot/0.8.3/jquery.flot.stack.js"></script>
+        <script src="/assets/webjars/flot/0.8.3/jquery.flot.resize.min.js"></script>
+        <script src="/assets/webjars/flot/0.8.3/jquery.flot.selection.js"></script>
 
 
         <script src="/assets/js/samediff/generated/uigraphevents_generated.js"></script>
@@ -92,40 +98,108 @@ Seq[Any](format.raw/*1.4*/("""
         <script src="/assets/js/samediff/generated/variable_generated.js"></script>
 
         <script src="/assets/js/samediff/samediff-ui.js"></script>
+        <script src="/assets/js/samediff/samediff-graph.js"></script>
+        <script src="/assets/js/samediff/samediff-plots.js"></script>
         <script src="/assets/js/samediff/flatbuffers-utils.js"></script>
-
-        <div class="container-fluid-full">
-            <div class="row-fluid">
-                <input type="file" id="file" name="file" />
-                <output id="list"></output>
-                """),format.raw/*77.78*/("""
-                """),format.raw/*78.17*/("""<div class="row-fluid">
-                    Layout:
-                    <button onclick="setLayout('dagre')">Dagre</button>
-                    <button onclick="setLayout('klay_down')">Klay (Down)</button>
-                    <button onclick="setLayout('klay_lr')">Klay (Right)</button>
-                    """),format.raw/*83.76*/("""
-                    """),format.raw/*84.78*/("""
-                    """),format.raw/*85.74*/("""
-                    """),format.raw/*86.21*/("""<button onclick="setLayout('cose-bilkent')">CoSE Bilkent</button>
-                    <button onclick="setLayout('breadthfirst')">Breadth First</button>
-                    """),format.raw/*88.74*/("""
-                """),format.raw/*89.17*/("""</div>
+        """),format.raw/*80.34*/("""
+        """),format.raw/*81.9*/("""<div class="container-fluid" style="min-height: 100%">
+            <div class="row">
+                    <!-- NavBar - Bootstrap classes -->
+                <nav class="navbar navbar-expand navbar-dark bg-dark" style="width: 100pc">
+                    <a class="navbar-brand" href="#">SameDiff</a>
+                    <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNavAltMarkup" aria-controls="navbarNavAltMarkup" aria-expanded="false" aria-label="Toggle navigation">
+                        <span class="navbar-toggler-icon"></span>
+                    </button>
+                    <div class="collapse navbar-collapse" id="navbarNavAltMarkup">
+                        <div class="navbar-nav">
+                            <a id="sdnavgraph" class="nav-item nav-link active" href="#" onclick="samediffSetPage('graph')">
+                                Graph</a>
+                            <a id="sdnavplots" class="nav-item nav-link" href="#" onclick="samediffSetPage('plots')">
+                                Plots</a>
+                            <a id="sdnaveval" class="nav-item nav-link" href="#" onclick="samediffSetPage('evaluation')">
+                                Evaluation</a>
+                            <a id="sdnavperf" class="nav-item nav-link" href="#" onclick="samediffSetPage('performance')">
+                                Performance</a>
+                            <a class="nav-item nav-link" href="#" onclick="toggleSidebar()">Toggle Sidebar</a>
+                        </div>
+                    </div>
+                </nav>
             </div>
-        </div>
-        <div id="graphdiv" style="height: calc(100% - 60px);
-            width: 100%;
-            display: table">
 
+            <div class="row" style="min-height: 100%">
+                    <!-- Sidebar -->
+                """),format.raw/*107.47*/("""
+                """),format.raw/*108.17*/("""<div class="col-md-4 col-12" style="min-width: 300px; max-width: 300px; background-color: #e6e6e6; height:100%; min-height:100vh">
+                    """),format.raw/*109.81*/("""
+                    """),format.raw/*110.21*/("""<div id="sidebartop" class="row p-2">
+                        <div style="width:auto">
+                            <label class="input-group-btn">
+                                <span class="btn btn-secondary btn-sm">
+                                    Select File<input type="file" id="fileselect" style="display: none;" multiple>
+                                </span>
+                            </label>
+                        </div>
+                        <div id="selectedfile" class="w-100">[No File Loaded]</div>
+                    </div>
+
+                    <div class="sidebarline"></div>
+
+                    """),format.raw/*123.85*/("""
+                    """),format.raw/*124.21*/("""<div id="sidebarmid" class="row p-2">
+                        <div class="w-100"><b>Selected Node:</b></div>
+                        <div id="sidebarmid-content" class="w-100">(None)</div>
+                    </div>
+
+                    <div class="sidebarline"></div>
+
+                    <div id="sidebarmid2" class="row p-2">
+                        <div style="width:100%">
+                            <b>Find Node:</b><br>
+                        </div>
+                        <input id="findnodetxt" type="text" oninput="onGraphNodeSearch()">
+                        <div id="findnoderesults">
+
+                        </div>
+                    </div>
+
+                    <div class="sidebarline"></div>
+
+                    """),format.raw/*143.87*/("""
+                    """),format.raw/*144.21*/("""<div id="sidebarbottom" class="row p-2">
+                        <br><br>
+                        <strong>Graph Layout:</strong>
+                        <div class="btn-group btn-group-toggle w-100" data-toggle="buttons" style="height: 40px">
+                            <label class="btn btn-secondary active" onclick="setLayout('klay_down')">
+                                <input type="radio" name="options" id="option1" autocomplete="off" checked>Down</label>
+                            <label class="btn btn-secondary" onclick="setLayout('klay_lr')">
+                                <input type="radio" name="options" id="option2" autocomplete="off">Right</label>
+                            <label class="btn btn-secondary" onclick="setLayout('dagre')">
+                                <input type="radio" name="options" id="option3" autocomplete="off">Alt</label>
+                            <label class="btn btn-secondary" onclick="setLayout('cose-bilkent')">
+                                <input type="radio" name="options" id="option3" autocomplete="off">Spread</label>
+                        </div>
+                        <br>
+                        <br>
+                        <br>
+                    </div>
+                </div>
+
+                    <!-- Page Content -->
+                <div id="samediffcontent" class="col-md col-12 main pa-1">
+                    <div id="graphdiv" style="height: 100%;
+                        width: 100%;
+                        display: table"></div>
+                </div>
+            </div>
         </div>
 
 
             <!-- Execute once on page load -->
         <script>
-                document.getElementById('file').addEventListener('change', fileSelect, false);
-                $(document).ready(function () """),format.raw/*102.47*/("""{"""),format.raw/*102.48*/("""
-                    """),format.raw/*103.21*/("""renderSameDiffGraph();
-                """),format.raw/*104.17*/("""}"""),format.raw/*104.18*/(""");
+                document.getElementById('fileselect').addEventListener('change', fileSelect, false);
+                $(document).ready(function () """),format.raw/*176.47*/("""{"""),format.raw/*176.48*/("""
+                    """),format.raw/*177.21*/("""renderSameDiffGraph();
+                """),format.raw/*178.17*/("""}"""),format.raw/*178.18*/(""");
         </script>
     </body>
 </html>
@@ -149,11 +223,11 @@ Seq[Any](format.raw/*1.4*/("""
 object SameDiffUI extends SameDiffUI_Scope0.SameDiffUI
               /*
                   -- GENERATED --
-                  DATE: Fri Jan 25 15:01:30 AEDT 2019
+                  DATE: Tue Feb 05 22:28:50 AEDT 2019
                   SOURCE: c:/DL4J/Git/deeplearning4j/deeplearning4j/deeplearning4j-ui-parent/deeplearning4j-play/src/main/views/org/deeplearning4j/ui/views/samediff/SameDiffUI.scala.html
-                  HASH: 5bbca606352004bcd370a7bff06c376141f0d082
-                  MATRIX: 561->1|657->3|685->5|4595->3948|4641->3966|4981->4333|5031->4412|5081->4487|5131->4509|5334->4737|5380->4755|5801->5147|5831->5148|5882->5170|5951->5210|5981->5211
-                  LINES: 20->1|25->1|26->2|101->77|102->78|107->83|108->84|109->85|110->86|112->88|113->89|126->102|126->102|127->103|128->104|128->104
+                  HASH: 0c99ff525b71b9ca24441939ad34c68158a15ff2
+                  MATRIX: 561->1|657->3|685->5|4980->4297|5017->4307|6797->6088|6844->6106|7025->6318|7076->6340|7745->7044|7796->7066|8578->7885|8629->7907|10475->9724|10505->9725|10556->9747|10625->9787|10655->9788
+                  LINES: 20->1|25->1|26->2|104->80|105->81|131->107|132->108|133->109|134->110|147->123|148->124|167->143|168->144|200->176|200->176|201->177|202->178|202->178
                   -- GENERATED --
               */
           

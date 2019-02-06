@@ -122,30 +122,7 @@ public class Reshape extends DynamicCustomOp {
             if (this.shape != null) {
                 addIArgument(this.shape);
             }
-
         }
-
-
-    }
-
-    @Override
-    public void resolvePropertiesFromSameDiffBeforeExecution() {
-        super.resolvePropertiesFromSameDiffBeforeExecution();
-        if (arrName != null) {
-            val args = args();
-            val firstInputShape = args[0].getShape();
-            val shapeInput = args[1].getArr().data().asLong();
-            for (int i = 0; i < shapeInput.length; i++) {
-                if (shapeInput[i] < 0) {
-                    shapeInput[i] = firstInputShape[i];
-                }
-            }
-
-            this.shape = shapeInput;
-            addIArgument(shapeInput);
-        }
-
-
     }
 
     @Override

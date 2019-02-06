@@ -43,6 +43,7 @@ import org.nd4j.linalg.api.ops.impl.transforms.custom.LessThanOrEqual;
 import org.nd4j.linalg.api.ops.impl.transforms.floating.RSqrt;
 import org.nd4j.linalg.api.ops.impl.transforms.strict.*;
 import org.nd4j.linalg.api.ops.random.impl.BernoulliDistribution;
+import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.indexing.BooleanIndexing;
@@ -1643,5 +1644,112 @@ public class TransformOpValidation extends BaseOpValidation {
         Nd4j.getExecutioner().exec(op);
 
         assertNotEquals(Nd4j.create(out.shape()), out);
+    }
+
+    @Test
+    public void testMaxEmptyScalar(){
+        INDArray empty = Nd4j.empty(DataType.FLOAT);
+        INDArray scalar = Nd4j.scalar(1.0f);
+
+        DynamicCustomOp op = DynamicCustomOp.builder("maximum")
+                .addInputs(empty, scalar)
+                .build();
+
+        List<LongShapeDescriptor> l = op.calculateOutputShape();
+        assertEquals(1, l.size());
+        long[] shape = l.get(0).getShape();
+        boolean isEmpty = l.get(0).isEmpty();
+
+        assertTrue(isEmpty);
+    }
+
+    @Test
+    public void testBroadcastEmpty(){
+//        Nd4j.getExecutioner().enableVerboseMode(true);
+//        Nd4j.getExecutioner().enableDebugMode(true);
+        //Check broadcast behaviour with empty arrays. The idea is to match TF import behaviour, for import
+        //TF behaviour: broadcastableOp(x,empty) -> empty
+
+        /*
+        tf.reset_default_graph()
+        # Hack to create empty array
+        input = tf.constant([False], dtype=tf.bool)
+        empty = tf.where(condition=input)
+        emptyFloat = tf.cast(empty, tf.float32)
+        emptyFloat = tf.reshape(emptyFloat, [0,1])
+        constScalar = tf.constant(1, dtype=tf.float32)
+        # out = tf.math.maximum(emptyFloat,constScalar)
+        # out = emptyFloat + constScalar
+        # out = emptyFloat / constScalar
+        out = tf.math.less(emptyFloat, constScalar)
+        sess = tf.Session()
+        out = sess.run([out])
+         */
+
+        for( int i=0; i<3; i++ ){
+            for(boolean scalar : new boolean[]{true, false}){
+                INDArray x = scalar ? Nd4j.scalar(2f) : Nd4j.create(DataType.FLOAT, 3,4);
+                INDArray y = scalar ? Nd4j.scalar(3f) : Nd4j.create(DataType.FLOAT, 3,4);
+                switch (i){
+                    case 0:
+                        //x only empty
+                        x = Nd4j.empty(DataType.FLOAT);
+                        break;
+                    case 1:
+                        //y only empty
+                        y = Nd4j.empty(DataType.FLOAT);
+                        break;
+                    case 2:
+                        //Both empty
+                        x = Nd4j.empty(DataType.FLOAT);
+                        y = Nd4j.empty(DataType.FLOAT);
+                        break;
+                    default:
+                        throw new RuntimeException();
+                }
+
+
+                for( String opName : new String[]{"maximum", "minimum", "add", "subtract", "multiply", "divide", "assign",
+                        "boolean_and", "boolean_or", "boolean_xor", "tf_atan2", "equals", "floordiv", "floormod", "greater",
+                        "greater_equal", "less", "less_equal", "mod", "not_equals", "realdiv", "reversedivide", "reversesubtract",
+                        "squaredsubtract", "truncatediv"} ){
+
+//                    log.info("Starting op: {}, case {} - x.isScalar()={}, x.isEmpty()={}, y.isScalar()={}, y.isEmpty()={}", opName, i,
+//                            x.isScalar(), x.isEmpty(), y.isScalar(), y.isEmpty());
+
+                    DynamicCustomOp op = DynamicCustomOp.builder(opName)
+                            .addInputs(x,y)
+                            .build();
+
+                    List<LongShapeDescriptor> l = op.calculateOutputShape();
+                    assertEquals(1, l.size());
+                    long[] shape = l.get(0).getShape();
+                    boolean empty = l.get(0).isEmpty();
+
+                    boolean isBool = isBoolBroadcast(opName);
+                    if(isBool){
+                        assertEquals(DataType.BOOL, l.get(0).dataType());
+                    } else {
+                        assertEquals(DataType.FLOAT, l.get(0).dataType());
+                    }
+
+                    assertArrayEquals(new long[0], shape);
+                    assertTrue(empty);
+
+
+                    INDArray out = Nd4j.empty(isBool ? DataType.BOOL : DataType.FLOAT);
+                    op.addOutputArgument(out);
+
+                    Nd4j.exec(op);
+                }
+            }
+        }
+    }
+
+    private static boolean isBoolBroadcast(String opName){
+        if(opName.startsWith("greater") || opName.startsWith("less") || opName.contains("equals"))
+            return true;
+        //Note that "boolean" ops are inherit
+        return false;
     }
 }

@@ -31,6 +31,7 @@ namespace nd4j {
             auto y = INPUT_VARIABLE(1);
             auto z = OUTPUT_VARIABLE(0);
 
+            BROADCAST_CHECK_EMPTY(x,y,z);
 
             auto tZ = BroadcastHelper::broadcastApply(BROADCAST(SquaredSubtract), x, y, z);
             if (tZ == nullptr)

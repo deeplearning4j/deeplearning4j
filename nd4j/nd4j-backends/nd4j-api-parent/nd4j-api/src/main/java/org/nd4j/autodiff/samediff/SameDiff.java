@@ -9960,11 +9960,16 @@ public class SameDiff {
     }
 
     /**
-     * Execute the gradient (backward pass) function on this graph.<br>
-     * Constructs a backwards graph (differentiating the defined graph) if it does not already exist, and the executes
-     * the operations on that graph, calculating gradients for all variables.<br>
-     * Note that after execBackwards() has completed, the gradient arrays for a each variable can be accessed using
-     * {@link SDVariable#getGradient()} followed by  {@link SDVariable#getArr()} or by using {@link #getGradForVariable(String)}
+     * Create (if required) and then calculate the variable gradients (backward pass) for this graph.<br>
+     * After execution, the gradient arrays can be accessed using {@code myVariable.getGradient().getArr()}<br>
+     * <b>Note</b>: This method by default calculates VARIABLE type SDVariable gradients only (as well as any other
+     * gradients needed to calculate the variable gradients). That is, placeholder, constant, etc gradients are not
+     * calculated. If these gradients are required, they can be calculated using {@link #execBackwards(Map, List)} instead,
+     * which allows specifying the set of SDVariables to calculate the gradients for. For example,
+     * {@code execBackwards(placeholders, Arrays.asList(myPlaceholder.gradient().getVarName())}. In some cases,
+     * {@link #createGradFunction()} may need to be called first
+     *
+     * @param placeholders Values for the placeholder variables in the graph. For graphs without placeholders, use null or an empty map
      */
     public void execBackwards(Map<String,INDArray> placeholders){
         if (getFunction("grad") == null) {
@@ -9982,7 +9987,8 @@ public class SameDiff {
 
         //Edge case: if no variables, no variable gradients to calculate...
         if(varGradNames.isEmpty()){
-            log.trace("Skipping gradient execution - no variables to be calculated (variableGradNamesList is empty)");
+            log.warn("Skipping gradient execution (backward pass) - no variables to be calculated (graph does not contain any VARIABLE type SDVariables).\n" +
+                    "If gradients for other variables (such as placeholders) are required, use execBackwards(Map, List) instead");
             return;
         }
 
@@ -9990,6 +9996,14 @@ public class SameDiff {
         execBackwards(placeholders, vargradNamesList);
     }
 
+    /**
+     * As per {@link #execBackwards(Map)}, but the set of gradients to calculate can be specified manually.<br>
+     * For example, to calculate the gradient for placeholder variable "myPlaceholder", use
+     * {@code execBackwards(placeholders, Arrays.asList(myPlaceholder.gradient().getVarName())}.
+     *
+     * @param placeholders Values for the placeholder variables in the graph. For graphs without placeholders, use null or an empty map
+     * @param variableGradNamesList Names of the gradient variables to calculate
+     */
     public void execBackwards(Map<String,INDArray> placeholders, List<String> variableGradNamesList){
         if (getFunction("grad") == null) {
             createGradFunction();
@@ -9999,16 +10013,15 @@ public class SameDiff {
 
         //Edge case: if no variables, no variable gradients to calculate...
         if(variableGradNamesList.isEmpty()){
-            log.trace("Skipping gradient execution - no variables to be calculated (variableGradNamesList is empty)");
+            log.warn("Skipping gradient calculation (backward pass) - no variables to be calculated (variableGradNamesList is empty)");
             return;
         }
-
 
         sameDiffFunctionInstances.get("grad").exec(placeholders, variableGradNamesList);
     }
 
     /**
-     * Create the gradient function (for calculating gradients via {@link #execBackwards()}) if it is not already defined.
+     * Create the gradient function (for calculating gradients via {@link #execBackwards(Map)}) if it is not already defined.
      * Users do not usually need to call this function manually, as it is called as required in the aforementioned method.
      * <br><br>
      * If the gradient function already exists, this method is a no-op.<br>
