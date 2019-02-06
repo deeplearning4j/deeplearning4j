@@ -117,7 +117,6 @@ namespace nd4j {
         if (_writeables.empty())
             return false;
 
-#pragma omp parallel for num_threads(4)
         for (int r = 0; r < _rows.size(); r++) {
             auto row = _rows[r];
             auto list = _writeablesLinear.at(row);
