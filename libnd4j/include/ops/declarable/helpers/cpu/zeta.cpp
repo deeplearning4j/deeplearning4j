@@ -114,22 +114,22 @@ static FORCEINLINE T zetaSlow(const T x, const T q) {
 //////////////////////////////////////////////////////////////////////////
 // calculate the Hurwitz zeta function for arrays
 template <typename T>
-static NDArray zeta_(graph::LaunchContext* context, const NDArray& x, const NDArray& q) {
+static NDArray zeta_(graph::LaunchContext* context, const NDArray& x, const NDArray& q, NDArray* output) {
 
-	auto result = NDArray(&x, false, context);
+	//auto result = NDArray(&x, false, context);
 
 #pragma omp parallel for if(x.lengthOf() > Environment::getInstance()->elementwiseThreshold()) schedule(guided)	
 	for(int i = 0; i < x.lengthOf(); ++i)
-		result.p(i, zeta<T>(context, x.e<T>(i), q.e<T>(i)));
+		output->p(i, zeta<T>(context, x.e<T>(i), q.e<T>(i)));
 
-	return result;
+	return *output;
 }
 
-	NDArray zeta(graph::LaunchContext* context, const NDArray& x, const NDArray& q) {
-		BUILD_SINGLE_SELECTOR(x.dataType(), return zeta_, (context, x, q), FLOAT_TYPES);
+	NDArray zeta(graph::LaunchContext* context, const NDArray& x, const NDArray& q, NDArray* output) {
+		BUILD_SINGLE_SELECTOR(x.dataType(), return zeta_, (context, x, q, output), FLOAT_TYPES);
 	}
 
-	BUILD_SINGLE_TEMPLATE(template NDArray zeta_, (graph::LaunchContext* context, const NDArray& x, const NDArray& q), FLOAT_TYPES);
+	BUILD_SINGLE_TEMPLATE(template NDArray zeta_, (graph::LaunchContext* context, const NDArray& x, const NDArray& q, NDArray* output), FLOAT_TYPES);
 
 
     template bfloat16 zeta(graph::LaunchContext* context, bfloat16, bfloat16);

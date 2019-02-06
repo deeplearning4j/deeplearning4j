@@ -490,7 +490,7 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
                 double prob = guesses.getDouble(i, labelIdx);
                 INDArray row = guesses.getRow(i);
                 int countGreaterThan = (int) Nd4j.getExecutioner()
-                                .exec(new MatchCondition(row, Conditions.greaterThan(prob)), Integer.MAX_VALUE)
+                                .exec(new MatchCondition(row, Conditions.greaterThan(prob)))
                                 .getDouble(0);
                 if (countGreaterThan < topN) {
                     //For example, for top 3 accuracy: can have at most 2 other probabilities larger

@@ -52,7 +52,7 @@ namespace nd4j {
         DECLARE_TYPES(shapes_of) {
             getOpDescriptor()
                     ->setAllowedInputTypes(nd4j::DataType::ANY)
-                    ->setAllowedOutputTypes(DataType::INT64);
+                    ->setAllowedOutputTypes({ALL_INTS});
         }
     }
 }

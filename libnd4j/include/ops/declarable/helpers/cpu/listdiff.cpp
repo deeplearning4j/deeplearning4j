@@ -84,7 +84,9 @@ namespace helpers {
                 throw std::invalid_argument("Op validation failed");
             }
             memcpy(z0->buffer(), saved.data(), saved.size() * sizeof(T));
-            memcpy(z1->buffer(), indices.data(), indices.size() * sizeof(Nd4jLong));
+            for (int e = 0; e < indices.size(); e++) {
+                z1->p(e, indices[e]);
+            }
         }
         return ND4J_STATUS_OK;
     }

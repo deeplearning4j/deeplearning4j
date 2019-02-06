@@ -157,6 +157,6 @@ public class BatchAndExportDataSetsFunction implements Function2<Integer, Iterat
             dataSet.save(out);
         }
 
-        return uri.getPath();
+        return uri.toString();
     }
 }

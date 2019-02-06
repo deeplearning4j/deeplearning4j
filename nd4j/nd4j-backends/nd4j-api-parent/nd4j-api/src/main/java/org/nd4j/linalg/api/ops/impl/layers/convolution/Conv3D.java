@@ -23,11 +23,13 @@ import lombok.val;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.base.Preconditions;
 import org.nd4j.imports.converters.DifferentialFunctionClassHolder;
 import org.nd4j.imports.descriptors.properties.AttributeAdapter;
 import org.nd4j.imports.descriptors.properties.PropertyMapping;
 import org.nd4j.imports.descriptors.properties.adapters.*;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv3DConfig;
@@ -268,12 +270,6 @@ public class Conv3D extends DynamicCustomOp {
         if (numIArguments() < 1) {
             addArgs();
         }
-
-        if (numInputArguments() < getDescriptor().getNumIArgs()) {
-            populateInputsAndOutputsFromSameDiff();
-        }
-
-
     }
 
     @Override
@@ -295,5 +291,12 @@ public class Conv3D extends DynamicCustomOp {
     @Override
     public String tensorflowName() {
         return "Conv3D";
+    }
+
+    @Override
+    public List<DataType> calculateOutputDataTypes(List<DataType> inputDataTypes){
+        int n = args().length;
+        Preconditions.checkState(inputDataTypes != null && inputDataTypes.size() == n, "Expected %s input data types for %s, got %s", n, getClass(), inputDataTypes);
+        return Collections.singletonList(inputDataTypes.get(0));
     }
 }

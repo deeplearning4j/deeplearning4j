@@ -41,8 +41,8 @@ public class ASinh extends BaseTransformStrictOp {
         super(sameDiff, i_v, shape, inPlace, extraArgs);
     }
 
-    public ASinh(SameDiff sameDiff, SDVariable i_v, Object[] extraArgs) {
-        super(sameDiff, i_v, extraArgs);
+    public ASinh(SameDiff sameDiff, SDVariable i_v) {
+        super(sameDiff, i_v, false);
     }
 
     public ASinh() {
@@ -50,10 +50,6 @@ public class ASinh extends BaseTransformStrictOp {
 
     public ASinh(INDArray x, INDArray z) {
         super(x, z);
-    }
-
-    public ASinh(INDArray x, INDArray z, long n) {
-        super(x, z, n);
     }
 
     public ASinh(INDArray x) {

@@ -51,10 +51,6 @@ public class RectifiedTanh extends BaseTransformStrictOp {
         super(x, z);
     }
 
-    public RectifiedTanh(INDArray x, INDArray z, long n) {
-        super(x, z, n);
-    }
-
     public RectifiedTanh(INDArray x) {
         super(x);
     }

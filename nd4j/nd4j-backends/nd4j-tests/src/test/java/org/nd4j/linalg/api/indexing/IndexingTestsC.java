@@ -29,7 +29,8 @@ import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.indexing.SpecifiedIndex;
 import org.nd4j.linalg.ops.transforms.Transforms;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.nd4j.linalg.indexing.NDArrayIndex.*;
 
 /**
@@ -66,7 +67,7 @@ public class IndexingTestsC extends BaseNd4jTest {
 
 
     @Test
-    public void broadcastBug() throws Exception {
+    public void broadcastBug() {
         INDArray a = Nd4j.create(new double[] {1.0, 2.0, 3.0, 4.0}, new int[] {2, 2});
         final INDArray col = a.get(NDArrayIndex.all(), NDArrayIndex.point(0));
 
@@ -257,11 +258,11 @@ public class IndexingTestsC extends BaseNd4jTest {
     }
 
     @Test
-    public void testGetIndices2d() throws Exception {
+    public void testGetIndices2d() {
         INDArray twoByTwo = Nd4j.linspace(1, 6, 6, DataType.DOUBLE).reshape(3, 2);
         INDArray firstRow = twoByTwo.getRow(0);
         INDArray secondRow = twoByTwo.getRow(1);
-        INDArray firstAndSecondRow = twoByTwo.getRows(new int[] {1, 2});
+        INDArray firstAndSecondRow = twoByTwo.getRows(1, 2);
         INDArray firstRowViaIndexing = twoByTwo.get(interval(0, 1));
         assertEquals(firstRow, firstRowViaIndexing);
         INDArray secondRowViaIndexing = twoByTwo.get(point(1));
@@ -271,7 +272,7 @@ public class IndexingTestsC extends BaseNd4jTest {
         assertEquals(firstAndSecondRow, firstAndSecondRowTest);
 
         INDArray individualElement = twoByTwo.get(interval(1, 2), interval(1, 2));
-        assertEquals(Nd4j.create(new float[] {4}), individualElement);
+        assertEquals(Nd4j.create(new double[] {4}), individualElement);
     }
 
     @Test

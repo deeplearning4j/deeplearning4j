@@ -90,6 +90,36 @@ TEST_F(DeclarableOpsTests14, Test_Inf_Comparison_2) {
     ASSERT_NE(x, y);
 }
 
+TEST_F(DeclarableOpsTests14, Test_EvalReductionShape_1) {
+    auto x = NDArrayFactory::create<int>('c', {3}, {5, 3, 4});
+    auto y = NDArrayFactory::create<int>('c', {1}, {1});
+    auto e = NDArrayFactory::create<Nd4jLong>('c', {2}, {5, 4});
+
+    nd4j::ops::evaluate_reduction_shape op;
+    auto result = op.execute({&x, &y}, {}, {}, {false, false});
+    ASSERT_EQ(Status::OK(), result->status());
+
+    auto z = result->at(0);
+    ASSERT_EQ(e, *z);
+
+    delete result;
+}
+
+TEST_F(DeclarableOpsTests14, Test_EvalReductionShape_2) {
+    auto x = NDArrayFactory::create<int>('c', {3}, {5, 3, 4});
+    auto y = NDArrayFactory::create<int>('c', {1}, {1});
+    auto e = NDArrayFactory::create<Nd4jLong>('c', {3}, {5, 1, 4});
+
+    nd4j::ops::evaluate_reduction_shape op;
+    auto result = op.execute({&x, &y}, {}, {}, {true, false});
+    ASSERT_EQ(Status::OK(), result->status());
+
+    auto z = result->at(0);
+    ASSERT_EQ(e, *z);
+
+    delete result;
+}
+
 TEST_F(DeclarableOpsTests14, Test_Diag_Zeros_1) {
     auto x = NDArrayFactory::create<double>('c', {2}, {1, 2});
     auto z = NDArrayFactory::create<double>('c', {2, 2}, {-119, -119, -119, -119});

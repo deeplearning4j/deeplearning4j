@@ -97,7 +97,7 @@ public class Convolution {
                 .conv2DConfig(cfg)
                 .build();
 
-        Nd4j.getExecutioner().exec(col2Im);
+        Nd4j.getExecutioner().execAndReturn(col2Im);
         return col2Im.outputArguments()[0];
     }
 
@@ -122,7 +122,7 @@ public class Convolution {
                         .build())
                 .build();
 
-        Nd4j.getExecutioner().exec(col2Im);
+        Nd4j.getExecutioner().execAndReturn(col2Im);
 
         return z;
     }
@@ -187,7 +187,7 @@ public class Convolution {
                         .isSameMode(isSameMode)
                         .build()).build();
 
-        Nd4j.getExecutioner().exec(im2col);
+        Nd4j.getExecutioner().execAndReturn(im2col);
         return im2col.outputArguments()[0];
     }
 
@@ -208,7 +208,7 @@ public class Convolution {
                         .isSameMode(isSameMode)
                         .build()).build();
 
-        Nd4j.getExecutioner().exec(im2col);
+        Nd4j.getExecutioner().execAndReturn(im2col);
         return im2col.outputArguments()[0];
     }
 
@@ -255,7 +255,7 @@ public class Convolution {
                         .divisor(divisor)
                         .build())
                 .build();
-        Nd4j.getExecutioner().exec(pooling);
+        Nd4j.getExecutioner().execAndReturn(pooling);
         return out;
     }
 
@@ -305,7 +305,7 @@ public class Convolution {
                         .isSameMode(isSameMode)
                         .build()).build();
 
-        Nd4j.getExecutioner().exec(im2col);
+        Nd4j.getExecutioner().execAndReturn(im2col);
         return im2col.outputArguments()[0];
     }
 

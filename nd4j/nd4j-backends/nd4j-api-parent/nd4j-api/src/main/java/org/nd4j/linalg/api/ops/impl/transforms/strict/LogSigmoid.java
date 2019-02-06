@@ -24,6 +24,7 @@ import org.nd4j.linalg.api.ops.BaseTransformOp;
 import org.nd4j.linalg.api.ops.BaseTransformStrictOp;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -36,23 +37,11 @@ public class LogSigmoid extends BaseTransformStrictOp {
         super(sameDiff, i_v, inPlace);
     }
 
-    public LogSigmoid(SameDiff sameDiff, SDVariable i_v, int[] shape, boolean inPlace, Object[] extraArgs) {
-        super(sameDiff, i_v, shape, inPlace, extraArgs);
-    }
-
-    public LogSigmoid(SameDiff sameDiff, SDVariable i_v, Object[] extraArgs) {
-        super(sameDiff, i_v, extraArgs);
-    }
-
     public LogSigmoid() {
     }
 
     public LogSigmoid(INDArray x, INDArray z) {
         super(x, z);
-    }
-
-    public LogSigmoid(INDArray x, INDArray z, long n) {
-        super(x, z, n);
     }
 
     public LogSigmoid(INDArray ndArray) {
@@ -82,8 +71,10 @@ public class LogSigmoid extends BaseTransformStrictOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
-        SDVariable ret = f().logSigmoidDerivative(arg(), i_v.get(0));
-        return Arrays.asList(ret);
+//        SDVariable ret = f().logSigmoidDerivative(arg(), i_v.get(0));
+//        return Arrays.asList(ret);
+        SDVariable sigmDeriv = f().sigmoidDerivative(arg(), i_v.get(0)).div(f().sigmoid(arg()));
+        return Collections.singletonList(sigmDeriv);
     }
 
 

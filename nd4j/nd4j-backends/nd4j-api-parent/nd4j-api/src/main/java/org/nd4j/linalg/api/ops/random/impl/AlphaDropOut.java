@@ -43,19 +43,16 @@ public class AlphaDropOut extends BaseRandomOp {
     }
 
     public AlphaDropOut(@NonNull INDArray x, double p, double alpha, double alphaPrime, double beta) {
-        this(x, x, p, alpha, alphaPrime, beta, x.lengthLong());
+        this(x, x, p, alpha, alphaPrime, beta);
     }
 
     public AlphaDropOut(@NonNull INDArray x, @NonNull INDArray z, double p, double alpha, double alphaPrime, double beta) {
-        this(x, z, p, alpha, alphaPrime, beta, x.lengthLong());
-    }
-
-    public AlphaDropOut(@NonNull INDArray x, @NonNull INDArray z, double p, double alpha, double alphaPrime, double beta, long n) {
+        super(x,null,z);
         this.p = p;
         this.a = alpha;
         this.b = beta;
         this.alphaPrime = alphaPrime;
-        init(x, null, z, n);
+        this.extraArgs = new Object[] {p, a, b, alphaPrime};
     }
 
     @Override
@@ -69,12 +66,6 @@ public class AlphaDropOut extends BaseRandomOp {
     }
 
     @Override
-    public void init(INDArray x, INDArray y, INDArray z, long n) {
-        super.init(x, y, z, n);
-        this.extraArgs = new Object[] {p, a, b, alphaPrime};
-    }
-
-    @Override
     public String onnxName() {
         throw new NoOpNameFoundException("No onnx op opName found for " +  opName());
     }
@@ -83,7 +74,6 @@ public class AlphaDropOut extends BaseRandomOp {
     public String tensorflowName() {
         throw new NoOpNameFoundException("No tensorflow op opName found for " +  opName());
     }
-
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {

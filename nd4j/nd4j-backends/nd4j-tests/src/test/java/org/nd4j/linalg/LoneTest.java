@@ -162,7 +162,7 @@ public class LoneTest extends BaseNd4jTest {
     public void testRelu() {
         INDArray aA = Nd4j.linspace(-3, 4, 8).reshape(2, 4);
         INDArray aD = Nd4j.linspace(-3, 4, 8).reshape(2, 4);
-        INDArray b = Nd4j.getExecutioner().execAndReturn(new Tanh(aA));
+        INDArray b = Nd4j.getExecutioner().exec(new Tanh(aA));
         //Nd4j.getExecutioner().execAndReturn(new TanhDerivative(aD));
         System.out.println(aA);
         System.out.println(aD);
@@ -207,7 +207,7 @@ public class LoneTest extends BaseNd4jTest {
 
 
     @Test
-    public void testConcat3D_Vstack_C() throws Exception {
+    public void testConcat3D_Vstack_C() {
         val shape = new long[]{1, 1000, 150};
 
         List<INDArray> cArrays = new ArrayList<>();
@@ -235,7 +235,7 @@ public class LoneTest extends BaseNd4jTest {
 
 
     @Test
-    public void testGetRow1() throws Exception {
+    public void testGetRow1() {
         INDArray array = Nd4j.create(10000, 10000);
 
         //Thread.sleep(10000);

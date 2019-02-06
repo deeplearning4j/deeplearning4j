@@ -20,5 +20,5 @@ package org.nd4j.linalg.api.ops;
  * ReduceLong take any type in, and return FLOATING-POINT type
  * @author raver119@gmail.com
  */
-public interface ReduceFloatOp {
+public interface ReduceFloatOp extends ReduceOp {
 }

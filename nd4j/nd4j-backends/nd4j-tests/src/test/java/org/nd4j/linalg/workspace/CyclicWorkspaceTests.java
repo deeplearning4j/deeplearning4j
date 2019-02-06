@@ -38,7 +38,7 @@ public class CyclicWorkspaceTests extends BaseNd4jTest {
     }
 
     @Test
-    public void testBasicMechanics_1() throws Exception {
+    public void testBasicMechanics_1() {
         val fShape = new long[]{128, 784};
         val lShape = new long[] {128, 10};
         val prefetchSize = 24;

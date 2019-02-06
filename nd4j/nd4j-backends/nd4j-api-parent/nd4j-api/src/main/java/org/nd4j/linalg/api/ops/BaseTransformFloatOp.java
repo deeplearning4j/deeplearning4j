@@ -23,6 +23,7 @@ import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
+import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -55,11 +56,6 @@ public abstract class BaseTransformFloatOp extends BaseTransformOp implements Tr
     public BaseTransformFloatOp() {
         super();
     }
-
-    public BaseTransformFloatOp(INDArray x, INDArray z, long n) {
-        super(x, z, n);
-    }
-
 
     public BaseTransformFloatOp(INDArray x) {
         super(x);
@@ -97,16 +93,17 @@ public abstract class BaseTransformFloatOp extends BaseTransformOp implements Tr
 
     @Override
     public List<LongShapeDescriptor> calculateOutputShape() {
-        val ret = new ArrayList<LongShapeDescriptor>(1);
-        if(arg() == null)
-            throw new ND4JIllegalStateException("No arg found for op!");
-
-        val arr = sameDiff.getArrForVarName(arg().getVarName());
-        if(arr == null)
+        if(x == null)
             return Collections.emptyList();
+        return Collections.singletonList(LongShapeDescriptor.fromShape(x.shape(), x.isR() ? x.dataType() : Nd4j.defaultFloatingPointType()));
+    }
 
-        ret.add(LongShapeDescriptor.fromShape(arr.shape(), arr.isR() ? arr.dataType() : Nd4j.defaultFloatingPointType()));
-        this.n = arr.length();
-        return ret;
+    @Override
+    public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes){
+        Preconditions.checkState(dataTypes != null && dataTypes.size() == 1, "Expected exactly 1 input datatype for %s, got input %s", getClass(), dataTypes);
+        if(dataTypes.get(0).isFPType())
+            return Collections.singletonList(dataTypes.get(0));
+        //TODO is this what we want for all cases?
+        return Collections.singletonList(DataType.FLOAT);
     }
 }

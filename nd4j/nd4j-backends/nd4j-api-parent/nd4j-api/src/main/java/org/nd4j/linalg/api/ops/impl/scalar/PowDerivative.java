@@ -46,19 +46,11 @@ public class PowDerivative extends BaseScalarOp {
     public PowDerivative(INDArray x, INDArray z, double pow) {
         super(x, z, pow);
         this.pow = pow;
-        init(x, null, z, x.lengthLong());
-    }
-
-    public PowDerivative(INDArray x, INDArray z, long n, double pow) {
-        super(x, z, n);
-        this.pow = pow;
-        init(x, null, z, x.lengthLong());
     }
 
     public PowDerivative(INDArray x, double pow) {
         super(x, pow);
         this.pow = pow;
-        init(x, null, z, x.lengthLong());
     }
 
     @Override

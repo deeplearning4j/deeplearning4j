@@ -109,9 +109,6 @@ public class MultiLayerTest extends BaseDL4JTest {
 
     @Test
     public void testSetParams() {
-        Nd4j.MAX_ELEMENTS_PER_SLICE = Integer.MAX_VALUE;
-        Nd4j.MAX_SLICES_TO_PRINT = Integer.MAX_VALUE;
-
         MultiLayerConfiguration conf =
                         new NeuralNetConfiguration.Builder()
                                         .list().layer(0,
@@ -828,8 +825,8 @@ public class MultiLayerTest extends BaseDL4JTest {
         net2.init();
 
         BaseLayer bl0 = (BaseLayer) net2.getLayer(0).conf().getLayer();
-        assertEquals(0.1, bl0.getL1Bias(), 1e-6);
-        assertEquals(0.2, bl0.getL2Bias(), 1e-6);
+        assertEquals(0.1, TestUtils.getL1(bl0.getRegularizationBias()), 1e-6);
+        assertEquals(0.2, TestUtils.getL2(bl0.getRegularizationBias()), 1e-6);
 
         INDArray features = Nd4j.rand(10, 10);
         INDArray labels = Nd4j.rand(10, 10);
@@ -844,15 +841,11 @@ public class MultiLayerTest extends BaseDL4JTest {
         net1.computeGradientAndScore();
         net2.computeGradientAndScore();
 
-        double l1 = net1.calcL1(true);
-        double l2 = net1.calcL2(true);
-        assertEquals(0.0, l1, 0.0);
-        assertEquals(0.0, l2, 0.0);
+        double r = net1.calcRegularizationScore(true);
+        assertEquals(0.0, r, 0.0);
 
-        l1 = net2.calcL1(true);
-        l2 = net2.calcL2(true);
-        assertEquals(0.0, l1, 0.0);
-        assertEquals(0.0, l2, 0.0);
+        r = net2.calcRegularizationScore(true);
+        assertEquals(0.0, r, 0.0);
 
 
         double s1 = net1.score();
@@ -867,15 +860,11 @@ public class MultiLayerTest extends BaseDL4JTest {
         net1.computeGradientAndScore();
         net2.computeGradientAndScore();
 
-        l1 = net1.calcL1(true);
-        l2 = net1.calcL2(true);
-        assertEquals(0.0, l1, 0.0);
-        assertEquals(0.0, l2, 0.0);
+        r = net1.calcRegularizationScore(true);
+        assertEquals(0.0, r, 0.0);
 
-        l1 = net2.calcL1(true);
-        l2 = net2.calcL2(true);
-        assertTrue(l1 > 0.0);
-        assertTrue(l2 > 0.0);
+        r = net2.calcRegularizationScore(true);
+        assertTrue(r > 0.0);
 
         s1 = net1.score();
         s2 = net2.score();
@@ -883,10 +872,8 @@ public class MultiLayerTest extends BaseDL4JTest {
         assertNotEquals(s1, s2, 1e-6); //Scores should differ due to bias l1/l2
 
         for (int i = 0; i < 2; i++) {
-            assertEquals(0.0, net1.getLayer(i).calcL1(true), 0.0);
-            assertEquals(0.0, net1.getLayer(i).calcL2(true), 0.0);
-            assertTrue(net2.getLayer(i).calcL1(true) > 0.0);
-            assertTrue(net2.getLayer(i).calcL2(true) > 0.0);
+            assertEquals(0.0, net1.getLayer(i).calcRegularizationScore(true), 0.0);
+            assertTrue(net2.getLayer(i).calcRegularizationScore(true) > 0.0);
         }
     }
 

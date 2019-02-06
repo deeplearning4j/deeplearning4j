@@ -36,22 +36,10 @@ public class RSqrt extends BaseTransformFloatOp {
         super(sameDiff, i_v, inPlace);
     }
 
-    public RSqrt(SameDiff sameDiff, SDVariable i_v, int[] shape, boolean inPlace, Object[] extraArgs) {
-        super(sameDiff, i_v, shape, inPlace, extraArgs);
-    }
-
-    public RSqrt(SameDiff sameDiff, SDVariable i_v, Object[] extraArgs) {
-        super(sameDiff, i_v, extraArgs);
-    }
-
     public RSqrt() {}
 
     public RSqrt(INDArray x, INDArray z) {
         super(x, z);
-    }
-
-    public RSqrt(INDArray x, INDArray z, long n) {
-        super(x, z, n);
     }
 
     public RSqrt(INDArray x) {

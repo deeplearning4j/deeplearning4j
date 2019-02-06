@@ -18,13 +18,13 @@ package org.nd4j.linalg;
 
 import org.junit.Ignore;
 import org.junit.Test;
-
 import org.nd4j.linalg.api.ndarray.BaseSparseNDArrayCSR;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertTrue;
 
 
 /**

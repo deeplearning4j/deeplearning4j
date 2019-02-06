@@ -46,4 +46,4 @@ if not "%CUDA%" == "" (
 )
 bash -c "bash change-scala-versions.sh $SCALA"
 call mvn clean %MAVEN_PHASE% -B -U --settings .\ci\settings.xml -Dmaven.test.skip=true -Dlocal.software.repository=sonatype ^
-    -Djavacpp.extension=%EXT% %EXTRA_OPTIONS%
+    -Dlibnd4j.extension=%EXT% %EXTRA_OPTIONS%

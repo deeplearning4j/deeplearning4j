@@ -19,13 +19,20 @@ package org.nd4j.linalg.api.ops.impl.scalar;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
+import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseScalarOp;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
 import org.nd4j.linalg.api.ops.impl.transforms.gradient.CubeDerivative;
+import org.nd4j.linalg.factory.Nd4j;
+import org.tensorflow.framework.AttrValue;
+import org.tensorflow.framework.GraphDef;
+import org.tensorflow.framework.NodeDef;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Rectified linear unit 6, i.e. min(max(input, cutoff), 6), where cutoff can be chosen.
@@ -33,14 +40,6 @@ import java.util.List;
  * @author Max Pumperla
  */
 public class Relu6 extends BaseScalarOp {
-    public Relu6(SameDiff sameDiff, SDVariable i_v1, SDVariable i_v2, boolean inPlace, double cutoff) {
-        super(sameDiff, i_v1, cutoff, inPlace);
-    }
-
-    public Relu6(SameDiff sameDiff, SDVariable i_v1, SDVariable i_v2, Object[] extraArgs, double cutoff) {
-        super(sameDiff, i_v1, cutoff, extraArgs);
-    }
-
     public Relu6(SameDiff sameDiff, SDVariable i_v, boolean inPlace, double cutoff) {
         super(sameDiff, i_v, cutoff, inPlace);
     }
@@ -50,38 +49,19 @@ public class Relu6 extends BaseScalarOp {
     }
 
     public Relu6(INDArray x, INDArray z, double cutoff) {
-        super(x,null, z, x.length(), cutoff);
-
-        init(x, null, z, x.length()); //Need to re-init to properly set cutoff in extra args array
+        super(x,null, z, cutoff);
     }
-
-    public Relu6(INDArray x, INDArray z, long n, double cutoff) {
-        super(x, null, z, n, cutoff);
-
-        init(x, null, z, n);
-    }
-
     public Relu6(INDArray x, double cutoff) {
         super(x, cutoff);
-        init(x, null, x, x.length());
     }
 
     public Relu6(INDArray x, INDArray z) {
-        super(x, null, z, x.length(), 0.0f);
-    }
-
-    public Relu6(INDArray x, INDArray z, long n) {
-        super(x, null, z, n, 0.0f);
+        super(x, null, z,0.0f);
     }
 
 
     public Relu6(INDArray x) {
         this(x, 0.0f);
-    }
-
-    @Override
-    public void init(INDArray x, INDArray y, INDArray z, long n) {
-        super.init(x, y, z, n);
     }
 
     @Override
@@ -101,6 +81,16 @@ public class Relu6 extends BaseScalarOp {
     @Override
     public String tensorflowName() {
         return "Relu6";
+    }
+
+    @Override
+    public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
+        //TF cutoff is always 0.0. Need to make sure scalar type is same as input type (due to scalar op 'same type' exec restrictions)
+        if(attributesForNode.containsKey("T")){
+            attributesForNode.get("T").getType();
+            DataType dt = TFGraphMapper.convertType(attributesForNode.get("T").getType());
+            scalarValue = Nd4j.scalar(dt, 0.0);
+        }
     }
 
 

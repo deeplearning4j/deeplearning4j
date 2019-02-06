@@ -22,9 +22,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.conf.distribution.Distribution;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
+import org.deeplearning4j.nn.conf.layers.recurrent.LastTimeStep;
 import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
 import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.deeplearning4j.nn.conf.memory.NetworkMemoryReport;
+import org.deeplearning4j.nn.layers.recurrent.LastTimeStepLayer;
 import org.deeplearning4j.nn.weights.IWeightInit;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.util.OutputLayerUtil;
@@ -60,9 +62,6 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
     protected BackpropType backpropType = BackpropType.Standard;
     protected int tbpttFwdLength = 20;
     protected int tbpttBackLength = 20;
-    @Getter
-    @Setter
-    protected boolean legacyBatchScaledL2 = true;   //Default to legacy for pre 1.0.0-beta3 networks on deserialization
     protected boolean validateOutputLayerConfig = true; //Default to legacy for pre 1.0.0-beta3 networks on deserialization
 
     @Getter
@@ -154,7 +153,7 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
         try {
             conf = mapper.readValue(json, MultiLayerConfiguration.class);
         } catch (IOException e) {
-            //Check if this exception came from legacy legacy deserializer...
+            //Check if this exception came from legacy deserializer...
             String msg = e.getMessage();
             if (msg != null && msg.contains("legacy")) {
                 throw new RuntimeException("Error deserializing MultiLayerConfiguration - configuration may have a custom " +
@@ -369,7 +368,6 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
             clone.inferenceWorkspaceMode = this.inferenceWorkspaceMode;
             clone.trainingWorkspaceMode = this.trainingWorkspaceMode;
             clone.cacheMode = this.cacheMode;
-            clone.legacyBatchScaledL2 = legacyBatchScaledL2;
             clone.validateOutputLayerConfig = this.validateOutputLayerConfig;
 
             return clone;
@@ -455,7 +453,7 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
         protected WorkspaceMode inferenceWorkspaceMode = WorkspaceMode.ENABLED;
         protected CacheMode cacheMode = CacheMode.NONE;
         protected boolean validateOutputConfig = true;
-        protected boolean legacyBatchScaledL2;
+        protected boolean validateTbpttConfig = true;
 
         /**
          * Specify the processors.
@@ -584,8 +582,16 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
             return this;
         }
 
-        public Builder legacyBatchScaledL2(boolean legacyBatchScaledL2) {
-            this.legacyBatchScaledL2 = legacyBatchScaledL2;
+        /**
+         * Enabled by default. If enabled, an exception will be throw when using the (invalid) combination of truncated
+         * backpropagation through time (TBPTT) with either a GlobalPoolingLayer or LastTimeStepLayer.<br>
+         * It is possible to disable this validation to allow what is almost certainly an invalid configuration to be used,
+         * however this is not recommended.
+         *
+         * @param validate Whether TBPTT validation should be performed
+         */
+        public Builder validateTbpttConfig(boolean validate){
+            this.validateTbpttConfig = validate;
             return this;
         }
 
@@ -596,6 +602,19 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
                 log.warn("Truncated backpropagation through time lengths have been configured with values " + tbpttFwdLength
                         + " and " + tbpttBackLength + " but backprop type is set to " + backpropType + ". TBPTT configuration" +
                         " settings will only take effect if backprop type is set to BackpropType.TruncatedBPTT");
+            }
+
+            if(backpropType == BackpropType.TruncatedBPTT && validateTbpttConfig){
+                //Check for invalid combination - tbptt plus LastTimeStepLayer or
+                for( int i=0; i<confs.size(); i++ ){
+                    Layer l = confs.get(i).getLayer();
+                    if(l instanceof LastTimeStep || l instanceof GlobalPoolingLayer){
+                        throw new IllegalStateException("Invalid network configuration detected: Truncated backpropagation through time (TBPTT)" +
+                                " cannot be used with layer " + i + " of type " + l.getClass().getName() + ": TBPTT is incompatible with this layer type (which is designed " +
+                                "to process entire sequences at once, and does support the type of sequence segments that TPBTT uses).\n" +
+                                "This check can be disabled using validateTbpttConfig(false) but this is not recommended.");
+                    }
+                }
             }
 
 
@@ -661,7 +680,6 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
             conf.trainingWorkspaceMode = trainingWorkspaceMode;
             conf.inferenceWorkspaceMode = inferenceWorkspaceMode;
             conf.cacheMode = cacheMode;
-            conf.legacyBatchScaledL2 = legacyBatchScaledL2;
 
             Nd4j.getRandom().setSeed(conf.getConf(0).getSeed());
 

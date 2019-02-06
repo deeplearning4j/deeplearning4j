@@ -24,11 +24,14 @@
     <fileSets>
         <fileSet>
             <directory>${project.basedir}/</directory>
-            <outputDirectory>/</outputDirectory>
+            <outputDirectory/> <!-- DO NOT remove this tag, alternative way to specify cross platform root path is to provide ${file.separator} -->
             <useDefaultExcludes>true</useDefaultExcludes>
             <excludes>
                 <exclude>**/target/**</exclude>
                 <exclude>**/CMakeFiles/**</exclude>
+                <exclude>**/CMakeCache.txt</exclude>
+                <exclude>%regex[(?!.*${libnd4j.chip}/).*blasbuild.*]</exclude>
+                <exclude>%regex[.*/lib/googletest.*]</exclude>
             </excludes>
         </fileSet>
     </fileSets>

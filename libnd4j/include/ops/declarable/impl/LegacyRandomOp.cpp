@@ -322,6 +322,15 @@ namespace nd4j {
                     RandomLauncher::applyAlphaDropOut(block.randomGenerator(), z, prob, a, b, pa);
                 }
                     break;
+                case nd4j::random::Linspace: {
+                        auto z = OUTPUT_VARIABLE(0);
+                        auto start = INPUT_VARIABLE(0);
+                        auto finish = INPUT_VARIABLE(1);
+                        auto numOfElements = INPUT_VARIABLE(2);
+
+                        z->linspace(start->e<double>(0), (finish->e<double>(0) - start->e<double>(0)) / (numOfElements->e<Nd4jLong>(0) - 1.));
+                    }
+                    break;
                 default: {
                     nd4j_printf("Unknown random op requested: [%i]\n", opNum);
                     return ND4J_STATUS_KERNEL_FAILURE;
@@ -412,7 +421,7 @@ namespace nd4j {
                 return arrayList;
 
 
-            for (int e = 0; e < 65536; e++) {
+            for (int e = 0; e < DataTypeUtils::max<int>(); e++) {
                 std::pair<int,int> pair(1, e);
                 if (variableSpace.hasVariable(pair)) {
                     auto var = variableSpace.getVariable(pair);

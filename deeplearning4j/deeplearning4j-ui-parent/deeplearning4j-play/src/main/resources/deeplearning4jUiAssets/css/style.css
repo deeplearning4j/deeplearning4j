@@ -11,22 +11,19 @@
 
 /* Import Section
 =================================================================== */
-@import url("jquery-ui-1.8.21.custom.css");								/* jQuery User Interface Framework Styles */
-@import url("fullcalendar.css");										/* Calendars Styles */
-@import url("chosen.css");												/* Select Boxes Styles */
+@import url("/assets/webjars/jquery-ui/1.10.2/themes/base/jquery-ui.css");								/* jQuery User Interface Framework Styles */
+@import url("/assets/webjars/fullcalendar/1.6.4/fullcalendar.css");										/* Calendars Styles */
+@import url("/assets/webjars/chosen/0.9.8/chosen/chosen.css");												/* Select Boxes Styles */
 @import url("uniform.default.css");										/* Uniform Styles */
-@import url("jquery.cleditor.css");										/* Text Editor Styles. */
 @import url("jquery.noty.css");											/* Noty Notifications Style */
 @import url("noty_theme_default.css");									/* Noty Notifications Style */
-@import url("elfinder.min.css");										/* File Manager Style */
-@import url("elfinder.theme.css");										/* File Manager Style */
 @import url("jquery.iphone.toggle.css");								/* Styles for iPhone */
 @import url("uploadify.css");											/* Uploadify Styles */
-@import url("jquery.gritter.css");										/* Growl Like Notifications Styles */
-@import url("font-awesome.min.css");									/* Font Awesome Styles */
-@import url("font-awesome-ie7.min.css");								/* Font Awesome Styles */
+@import url("/assets/webjars/github-com-jboesch-Gritter/1.7.4/jquery.gritter.css");										/* Growl Like Notifications Styles */
+@import url("/assets/webjars/font-awesome/3.0.2/css/font-awesome.min.css");									/* Font Awesome Styles */
+@import url("/assets/webjars/font-awesome/3.0.2/css/font-awesome-ie7.min.css");								/* Font Awesome Styles */
 @import url("glyphicons.css");											/* Glyphicons Font */
-@import url("halflings.css");											/* Glyphicons Halflings Font */
+@import url("/assets/webjars/bootstrap-glyphicons/bdd2cbfba0/css/bootstrap-glyphicons.css");											/* Glyphicons Halflings Font */
 @import url("style-forms.css");											/* Forms */
 
 /* Main Colors

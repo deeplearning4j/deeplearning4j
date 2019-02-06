@@ -18,6 +18,7 @@ package org.nd4j.linalg.api.ops.random.impl;
 
 import lombok.NonNull;
 import org.nd4j.autodiff.samediff.SDVariable;
+import org.nd4j.base.Preconditions;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.random.BaseRandomOp;
@@ -37,20 +38,12 @@ public class Choice extends BaseRandomOp {
     }
 
     public Choice(@NonNull INDArray source, @NonNull INDArray probabilities, @NonNull INDArray z) {
-        if (source.lengthLong() != probabilities.lengthLong())
-            throw new IllegalStateException("From & probabilities length mismatch: " + source.lengthLong() + "/"
-                            + probabilities.lengthLong());
-
+        super(source, probabilities, z);
+        Preconditions.checkState(source.length() == probabilities.length(), "From & probabilities length mismatch: %s vs. %s",
+                            source.length(), probabilities.length());
         if (probabilities.elementWiseStride() < 1 || source.elementWiseStride() < 1)
             throw new IllegalStateException("Source and probabilities should have element-wise stride >= 1");
-
-        init(source, probabilities, z, z.lengthLong());
         this.extraArgs = new Object[] {0.0};
-    }
-
-    @Override
-    public boolean isExecSpecial() {
-        return true;
     }
 
     @Override
@@ -73,7 +66,6 @@ public class Choice extends BaseRandomOp {
     public String tensorflowName() {
         throw new NoOpNameFoundException("No tensorflow op opName found for " +  opName());
     }
-
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {

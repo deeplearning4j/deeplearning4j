@@ -206,6 +206,7 @@ public class MultiDataSetIteratorSplitter {
 
             @Override
             public MultiDataSet next() {
+                counter.incrementAndGet();
                 return backedIterator.next();
             }
 

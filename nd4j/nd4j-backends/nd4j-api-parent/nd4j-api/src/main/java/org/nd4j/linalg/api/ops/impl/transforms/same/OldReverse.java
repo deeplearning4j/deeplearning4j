@@ -20,7 +20,6 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.BaseTransformOp;
 import org.nd4j.linalg.api.ops.BaseTransformSameOp;
 
 import java.util.Arrays;
@@ -42,10 +41,6 @@ public class OldReverse extends BaseTransformSameOp {
         super(x, z);
     }
 
-    public OldReverse(INDArray x, INDArray z, long n) {
-        super(x, z, n);
-    }
-
     public OldReverse(INDArray x) {
         super(x);
     }
@@ -53,11 +48,6 @@ public class OldReverse extends BaseTransformSameOp {
     @Override
     public int opNum() {
         return 20;
-    }
-
-    @Override
-    public boolean isExecSpecial() {
-        return true;
     }
 
     @Override

@@ -39,6 +39,7 @@
 #include <ops/declarable/LegacyPairwiseTransformBoolOp.h>
 #include <ops/declarable/LegacyTransformStrictOp.h>
 #include <ops/declarable/LegacyTransformBoolOp.h>
+#include <graph/FlatUtils.h>
 
 namespace nd4j {
     namespace graph {
@@ -163,7 +164,7 @@ namespace nd4j {
         }
 
         double nd4j::graph::Node::scalar() {
-            return  _scalar;
+            return  _scalar.e<double>(0);
         };
 
         void nd4j::graph::Node::pickInput(std::pair<int,int>& pair) {
@@ -433,7 +434,7 @@ namespace nd4j {
                     block->getTArguments()->emplace_back(v);
 
                 this->setContextPrototype(block);
-                this->setCustomOp(Node::buildOpByType(opType, (int) input.size(), (int) block->getIArguments()->size(), (int) block->getTArguments()->size(), opNum, scalar));
+                this->setCustomOp(Node::buildOpByType(opType, (int) input.size(), (int) block->getIArguments()->size(), (int) block->getTArguments()->size(), opNum, &_scalar));
                 block->setOpDescriptor(this->getCustomOp()->getOpDescriptor());
             } else if (opType == OpType_CUSTOM) {
                 if (this->getCustomOp()) {
@@ -467,6 +468,12 @@ namespace nd4j {
             if (node->scope_name() != nullptr && node->scope_name()->size() > 0)
                 this->_scope_name = node->scope_name()->str();
 
+            if (node->scalar() != nullptr) {
+                auto scalar = nd4j::graph::FlatUtils::fromFlatArray(node->scalar());
+                _scalar = *scalar;
+                delete scalar;
+            }
+
             if (node != nullptr) {
                 this->_id = node->id();
                 //this->_dataType = DataTypeUtils::fromFlatDataType(node->dataType());
@@ -488,9 +495,9 @@ namespace nd4j {
                 } else {
                     if (this->opType() != OpType_LOGIC) {
                         if (this->_name.size() > 0) {
-                            nd4j_printf("Node [%i:<%s>] do not have any inputs defined\n", this->_id, this->_name.c_str());
+                            nd4j_debug("Node [%i:<%s>] has no inputs defined\n", this->_id, this->_name.c_str());
                         } else {
-                            nd4j_printf("Node [%i:<noname>] do not have any inputs defined\n", this->_id);
+                            nd4j_debug("Node [%i:<noname>] has no inputs defined\n", this->_id);
                         }
                     }
                 }
@@ -580,7 +587,7 @@ namespace nd4j {
                             }
 
                         this->setContextPrototype(block);
-                        this->setCustomOp(Node::buildOpByType(_opType, (int) node->input()->size(), (int) block->getIArguments()->size(), (int) block->getTArguments()->size(), (int) _opNum, _scalar));
+                        this->setCustomOp(Node::buildOpByType(_opType, (int) node->input()->size(), (int) block->getIArguments()->size(), (int) block->getTArguments()->size(), (int) _opNum, &_scalar));
                         block->setOpDescriptor(this->getCustomOp()->getOpDescriptor());
                     } else if (node->inputPaired() != nullptr && node->inputPaired()->size() > 0) {
                         this->_isDeductable = true;
@@ -612,7 +619,7 @@ namespace nd4j {
 
                         this->setContextPrototype(block);
 
-                        this->setCustomOp(Node::buildOpByType(_opType, (int) node->inputPaired()->size(), (int) block->getIArguments()->size(), (int) block->getTArguments()->size(), (int) _opNum, _scalar));
+                        this->setCustomOp(Node::buildOpByType(_opType, (int) node->inputPaired()->size(), (int) block->getIArguments()->size(), (int) block->getTArguments()->size(), (int) _opNum, &_scalar));
                         block->setOpDescriptor(this->getCustomOp()->getOpDescriptor());
                     }
                 } else if (this->_opType == OpType_CUSTOM) {
@@ -702,7 +709,7 @@ namespace nd4j {
             return false;
         }
 
-        nd4j::ops::DeclarableOp* nd4j::graph::Node::buildOpByType(OpType opType, int numInputs,  int numIArgs, int numTArgs, int opNum, double scalar) {
+        nd4j::ops::DeclarableOp* nd4j::graph::Node::buildOpByType(OpType opType, int numInputs,  int numIArgs, int numTArgs, int opNum, NDArray *scalar) {
             switch (opType) {
                 case OpType_PAIRWISE:
                     return new nd4j::ops::LegacyPairwiseTransformOp(opNum);
@@ -717,9 +724,9 @@ namespace nd4j {
                 case OpType_TRANSFORM_BOOL:
                     return new nd4j::ops::LegacyTransformBoolOp(opNum);
                 case OpType_SCALAR:
-                    return new nd4j::ops::LegacyScalarOp(opNum, scalar);
+                    return scalar == nullptr ? new nd4j::ops::LegacyScalarOp(opNum) : new nd4j::ops::LegacyScalarOp(opNum, *scalar);
                 case OpType_SCALAR_BOOL:
-                    return new nd4j::ops::LegacyScalarBoolOp(opNum, scalar);
+                    return scalar == nullptr ? new nd4j::ops::LegacyScalarBoolOp(opNum) : new nd4j::ops::LegacyScalarBoolOp(opNum, *scalar);
                 case OpType_REDUCE_3:
                     return new nd4j::ops::LegacyReduce3Op(opNum);
                 case OpType_REDUCE_SAME:

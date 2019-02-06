@@ -26,6 +26,7 @@ import org.deeplearning4j.api.storage.StatsStorageEvent;
 import org.deeplearning4j.api.storage.StatsStorageListener;
 import org.deeplearning4j.api.storage.StatsStorageRouter;
 import org.deeplearning4j.config.DL4JSystemProperties;
+import org.deeplearning4j.ui.SameDiffModule;
 import org.deeplearning4j.ui.api.Route;
 import org.deeplearning4j.ui.api.UIModule;
 import org.deeplearning4j.ui.api.UIServer;
@@ -153,6 +154,7 @@ public class PlayUIServer extends UIServer {
         uiModules.add(new TrainModule());
         uiModules.add(new ConvolutionalListenerModule());
         uiModules.add(new TsneModule());
+        uiModules.add(new SameDiffModule());
         remoteReceiverModule = new RemoteReceiverModule();
         uiModules.add(remoteReceiverModule);
 
@@ -326,6 +328,7 @@ public class PlayUIServer extends UIServer {
             Pair<StatsStorage, StatsStorageListener> p = iterator.next();
             if (p.getFirst() == statsStorage) { //Same object, not equality
                 statsStorage.deregisterStatsStorageListener(p.getSecond());
+                listeners.remove(p);
                 found = true;
             }
         }
@@ -416,6 +419,8 @@ public class PlayUIServer extends UIServer {
 
                     m.reportStorageEvents(out);
                 }
+
+                events.clear();
 
                 try {
                     Thread.sleep(uiProcessingDelay);

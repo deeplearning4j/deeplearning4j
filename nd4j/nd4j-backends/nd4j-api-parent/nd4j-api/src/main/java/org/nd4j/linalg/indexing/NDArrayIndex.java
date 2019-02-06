@@ -40,9 +40,8 @@ import java.util.List;
 @Slf4j
 public class NDArrayIndex implements INDArrayIndex {
 
-    private long[] indices = new long[1];
+    private long[] indices;
     private boolean isInterval = false;
-    private static NDArrayIndexEmpty EMPTY = new NDArrayIndexEmpty();
     private static NewAxis NEW_AXIS = new NewAxis();
 
 
@@ -220,17 +219,6 @@ public class NDArrayIndex implements INDArrayIndex {
     }
 
     /**
-     * Represents collecting no elements
-     *
-     * @return an ndarray index
-     * meaning collect
-     * no elements
-     */
-    public static INDArrayIndex empty() {
-        return EMPTY;
-    }
-
-    /**
      * Represents collecting all elements
      *
      * @return an ndarray index
@@ -319,8 +307,6 @@ public class NDArrayIndex implements INDArrayIndex {
                         // FIXME: LONG
                         SpecifiedIndex specifiedIndex = new SpecifiedIndex(ArrayUtil.range(0L, (long) shape.getInt(i)));
                         ret[i] = specifiedIndex;
-                    } else if (intendedIndexes[i] instanceof NDArrayIndexEmpty) {
-                        ret[i] = new SpecifiedIndex(new long[0]);
                     } else if (intendedIndexes[i] instanceof IntervalIndex) {
                         IntervalIndex intervalIndex = (IntervalIndex) intendedIndexes[i];
                         ret[i] = new SpecifiedIndex(ArrayUtil.range(intervalIndex.begin, intervalIndex.end(),

@@ -939,7 +939,7 @@ TEST_F(ParityOpsTests, scatterMin_test4) {
     auto exp = NDArrayFactory::create<float>('c', {2, 2, 2}, {1, 1, 1, 1, 5, 6, 7, 8});
 
     nd4j::ops::scatter_min op;
-    auto result = op.execute({&matrix, &idc, &updates}, {}, {});
+    auto result = op.execute({&matrix, &idc, &updates}, {}, {}, {true});
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
     auto z = result->at(0);     

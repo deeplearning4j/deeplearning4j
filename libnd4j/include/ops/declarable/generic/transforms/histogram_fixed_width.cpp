@@ -33,7 +33,7 @@ CUSTOM_OP_IMPL(histogram_fixed_width, 2, 1, false, 0, 0) {
     auto range  = INPUT_VARIABLE(1);
     auto output = OUTPUT_VARIABLE(0);
 
-    const int nbins = block.getIArguments()->empty() ? 100 : INT_ARG(0);
+    const int nbins = block.width() == 3 ? INPUT_VARIABLE(2)->e<int>(0) : block.getIArguments()->empty() ? 100 : INT_ARG(0);
 
     const double leftEdge  = range->e<double>(0);
     const double rightEdge = range->e<double>(1);
@@ -56,7 +56,7 @@ DECLARE_TYPES(histogram_fixed_width) {
 //////////////////////////////////////////////////////////////////////////
 DECLARE_SHAPE_FN(histogram_fixed_width) {
 
-    const int nbins = block.getIArguments()->empty() ? 100 : INT_ARG(0);
+    const int nbins = block.width() == 3 ? INPUT_VARIABLE(2)->e<int>(0) : block.getIArguments()->empty() ? 100 : INT_ARG(0);
     auto outShapeInfo = ShapeBuilders::createVectorShapeInfo(DataType::INT64, nbins, block.workspace());
        
     return SHAPELIST(outShapeInfo);

@@ -159,6 +159,6 @@ public class BatchAndExportMultiDataSetsFunction
             dataSet.save(out);
         }
 
-        return uri.getPath();
+        return uri.toString();
     }
 }

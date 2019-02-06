@@ -36,9 +36,14 @@ namespace nd4j {
         static void memcpyFromVector(void *ptr, const std::vector<T> &vector);
     public:
         template <typename T>
-        static NDArray* empty_(nd4j::graph::LaunchContext* context = graph::LaunchContext::defaultContext());
+        static NDArray* empty_(nd4j::memory::Workspace* workspace = nullptr);
 
-        static NDArray* empty_(nd4j::DataType dataType, nd4j::graph::LaunchContext* context = graph::LaunchContext::defaultContext());
+        static NDArray* empty_(nd4j::DataType dataType, nd4j::memory::Workspace* workspace = nullptr);
+
+        template <typename T>
+        static NDArray empty(nd4j::memory::Workspace* workspace = nullptr);
+
+        static NDArray empty(nd4j::DataType dataType, nd4j::memory::Workspace* workspace = nullptr);
 
         template <typename T>
         static NDArray empty(nd4j::graph::LaunchContext* context = graph::LaunchContext::defaultContext());

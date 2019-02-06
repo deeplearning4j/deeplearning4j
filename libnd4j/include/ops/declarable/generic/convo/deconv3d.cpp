@@ -39,9 +39,9 @@ CUSTOM_OP_IMPL(deconv3d, 2, 1, false, 0, 13) {
     REQUIRE_TRUE(input->rankOf()   == 5, 0, "CUSTOM DECONV3D OP: rank of input array must be equal to 5, but got %i instead !", input->rankOf());
     REQUIRE_TRUE(weights->rankOf() == 5, 0, "CUSTOM DECONV3D OP: rank of weights array must be equal to 5, but got %i instead !", weights->rankOf());
 
-    int kD = INT_ARG(0);                                                        // filter(kernel) depth
-    int kH = INT_ARG(1);                                                        // filter(kernel) height
-    int kW = INT_ARG(2);                                                        // filter(kernel) width
+    int kD = INT_ARG(0) > 0 ? INT_ARG(0) : static_cast<int>(weights->sizeAt(0));// filter(kernel) depth
+    int kH = INT_ARG(1) > 0 ? INT_ARG(1) : static_cast<int>(weights->sizeAt(1));// filter(kernel) height
+    int kW = INT_ARG(2) > 0 ? INT_ARG(2) : static_cast<int>(weights->sizeAt(2));// filter(kernel) width
     int sD = INT_ARG(3);                                                        // strides depth
     int sH = INT_ARG(4);                                                        // strides height
     int sW = INT_ARG(5);                                                        // strides width
@@ -106,9 +106,9 @@ DECLARE_SHAPE_FN(deconv3d) {
     REQUIRE_TRUE(inputShapeInfo[0]   == rank, 0, "CUSTOM DECONV3D OP: rank of input array must be equal to %i, but got %i instead !", rank, inputShapeInfo[0]);
     REQUIRE_TRUE(weightsShapeInfo[0] == rank, 0, "CUSTOM DECONV3D OP: rank of weights array must be equal to %i, but got %i instead !", rank, weightsShapeInfo[0]);
 
-    int kD = INT_ARG(0);                                                        // filter(kernel) depth
-    int kH = INT_ARG(1);                                                        // filter(kernel) height
-    int kW = INT_ARG(2);                                                        // filter(kernel) width
+    int kD = INT_ARG(0) > 0 ? INT_ARG(0) : static_cast<int>(shape::sizeAt(weightsShapeInfo, 0));// filter(kernel) depth
+    int kH = INT_ARG(1) > 0 ? INT_ARG(1) : static_cast<int>(shape::sizeAt(weightsShapeInfo, 1));// filter(kernel) height
+    int kW = INT_ARG(2) > 0 ? INT_ARG(2) : static_cast<int>(shape::sizeAt(weightsShapeInfo, 2));// filter(kernel) width
     int sD = INT_ARG(3);                                                        // strides depth
     int sH = INT_ARG(4);                                                        // strides height
     int sW = INT_ARG(5);                                                        // strides width
@@ -185,9 +185,9 @@ CUSTOM_OP_IMPL(deconv3d_bp, 3, 2, false, 0, 13) {
     REQUIRE_TRUE(gradO->rankOf()   == 5, 0, "CUSTOM DECONV3D_BP OP: rank of output gradients (next epsilon) array must be equal to 5, but got %i instead !", gradO->rankOf());
 
 
-    int kD = INT_ARG(0);                                                        // filter(kernel) depth
-    int kH = INT_ARG(1);                                                        // filter(kernel) height
-    int kW = INT_ARG(2);                                                        // filter(kernel) width
+    int kD = INT_ARG(0) > 0 ? INT_ARG(0) : static_cast<int>(weights->sizeAt(0));// filter(kernel) depth
+    int kH = INT_ARG(1) > 0 ? INT_ARG(1) : static_cast<int>(weights->sizeAt(1));// filter(kernel) height
+    int kW = INT_ARG(2) > 0 ? INT_ARG(2) : static_cast<int>(weights->sizeAt(2));// filter(kernel) width
     int sD = INT_ARG(3);                                                        // strides depth
     int sH = INT_ARG(4);                                                        // strides height
     int sW = INT_ARG(5);                                                        // strides width
@@ -273,9 +273,9 @@ DECLARE_SHAPE_FN(deconv3d_bp) {
     REQUIRE_TRUE(weightsShapeInfo[0] == rank, 0, "CUSTOM DECONV3D_BP OP: rank of weights array must be equal to %i , but got %i instead !", rank, weightsShapeInfo[0]);
     REQUIRE_TRUE(gradOShapeInfo[0]   == rank, 0, "CUSTOM DECONV3D_BP OP: rank of output gradients (next epsilon) array must be equal to %i, but got %i instead !", rank, gradOShapeInfo[0]);
 
-    int kD = INT_ARG(0);                                                        // filter(kernel) depth
-    int kH = INT_ARG(1);                                                        // filter(kernel) height
-    int kW = INT_ARG(2);                                                        // filter(kernel) width
+    int kD = INT_ARG(0) > 0 ? INT_ARG(0) : static_cast<int>(shape::sizeAt(weightsShapeInfo, 0));// filter(kernel) depth
+    int kH = INT_ARG(1) > 0 ? INT_ARG(1) : static_cast<int>(shape::sizeAt(weightsShapeInfo, 1));// filter(kernel) height
+    int kW = INT_ARG(2) > 0 ? INT_ARG(2) : static_cast<int>(shape::sizeAt(weightsShapeInfo, 2));// filter(kernel) width
     int sD = INT_ARG(3);                                                        // strides depth
     int sH = INT_ARG(4);                                                        // strides height
     int sW = INT_ARG(5);                                                        // strides width

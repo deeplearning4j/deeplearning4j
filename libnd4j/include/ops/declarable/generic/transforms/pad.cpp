@@ -36,8 +36,6 @@ CUSTOM_OP_IMPL(pad, 2, 1, false, 0, 1) {
     auto paddings = INPUT_VARIABLE(1);
     auto output   = OUTPUT_VARIABLE(0);
 
-    std::vector<int>* argI = block.getIArguments();
-
     const int rank =  input->rankOf();    	
 
 	// input validation
@@ -45,12 +43,16 @@ CUSTOM_OP_IMPL(pad, 2, 1, false, 0, 1) {
 	std::string currentPaddingsShape  = ShapeUtils::shapeAsString(paddings);
 	REQUIRE_TRUE(expectedPaddingsShape == currentPaddingsShape, 0, "PAD op: wrong shape of paddings array, expected is %s, but got %s instead !", expectedPaddingsShape.c_str(), currentPaddingsShape.c_str());
 
-	NDArray padValue(nd4j::DataType::DOUBLE, block.getVariableSpace()->launchContext());
+	NDArray padValue(input->dataType(), block.workspace());
 
 	// in case of REFLECT and SYMMETRIC modes paddings must obey additional shape requirements 
 	// REFLECT case
-	if (INT_ARG(0) == 0) { // CONSTAND mode
-	    if (!block.getTArguments()->empty())
+	if (INT_ARG(0) == 0) { // CONSTANT mode
+		if(block.width() > 2) {
+			REQUIRE_TRUE(input->dataType() == INPUT_VARIABLE(2)->dataType(), 0, "PAD op: data types of input and padValue arrays should be the same but got %i and %i correspondingly !", input->dataType(), INPUT_VARIABLE(2)->dataType());
+			padValue.assign(INPUT_VARIABLE(2)->e(0));
+		}
+	    else if (!block.getTArguments()->empty())
 	        padValue = T_ARG(0);
     }
     else if(INT_ARG(0) == 1) {		// REFLECT mode

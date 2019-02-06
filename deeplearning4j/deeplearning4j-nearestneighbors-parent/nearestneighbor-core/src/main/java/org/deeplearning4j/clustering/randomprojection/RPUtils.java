@@ -73,7 +73,6 @@ public class RPUtils {
                     cosineSimilarity.setX(x);
                     cosineSimilarity.setY(y);
                     cosineSimilarity.setZ(result);
-                    cosineSimilarity.setN(x.length());
                     return cosineSimilarity;
 
                 }
@@ -88,7 +87,6 @@ public class RPUtils {
                     manhattanDistance.setX(x);
                     manhattanDistance.setY(y);
                     manhattanDistance.setZ(result);
-                    manhattanDistance.setN(x.length());
                     return  manhattanDistance;
                 }
             case "jaccard":
@@ -102,7 +100,6 @@ public class RPUtils {
                     jaccardDistance.setX(x);
                     jaccardDistance.setY(y);
                     jaccardDistance.setZ(result);
-                    jaccardDistance.setN(x.length());
                     return jaccardDistance;
                 }
             case "hamming":
@@ -116,7 +113,6 @@ public class RPUtils {
                     hammingDistance.setX(x);
                     hammingDistance.setY(y);
                     hammingDistance.setZ(result);
-                    hammingDistance.setN(x.length());
                     return hammingDistance;
                 }
                 //euclidean
@@ -131,7 +127,6 @@ public class RPUtils {
                     euclideanDistance.setX(x);
                     euclideanDistance.setY(y);
                     euclideanDistance.setZ(result);
-                    euclideanDistance.setN(x.length());
                     return euclideanDistance;
                 }
         }
@@ -328,7 +323,7 @@ public class RPUtils {
      */
     public static INDArray computeDistanceMulti(String function,INDArray x,INDArray y,INDArray result) {
         ReduceOp op = (ReduceOp) getOp(function, x, y, result);
-        Nd4j.getExecutioner().exec(op,-1);
+        Nd4j.getExecutioner().exec(op);
         return op.z();
     }
 

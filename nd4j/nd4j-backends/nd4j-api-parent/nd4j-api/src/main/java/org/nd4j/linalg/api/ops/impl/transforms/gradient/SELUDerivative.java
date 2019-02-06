@@ -42,22 +42,10 @@ public class SELUDerivative extends BaseTransformStrictOp {
         super(sameDiff, i_v, inPlace);
     }
 
-    public SELUDerivative(SameDiff sameDiff, SDVariable i_v, int[] shape, boolean inPlace, Object[] extraArgs) {
-        super(sameDiff, i_v, shape, inPlace, extraArgs);
-    }
-
-    public SELUDerivative(SameDiff sameDiff, SDVariable i_v, Object[] extraArgs) {
-        super(sameDiff, i_v, extraArgs);
-    }
-
     public SELUDerivative() {}
 
     public SELUDerivative(INDArray x, INDArray z) {
         super(x, z);
-    }
-
-    public SELUDerivative(INDArray x, INDArray z, long n) {
-        super(x, z, n);
     }
 
     public SELUDerivative(INDArray x) {

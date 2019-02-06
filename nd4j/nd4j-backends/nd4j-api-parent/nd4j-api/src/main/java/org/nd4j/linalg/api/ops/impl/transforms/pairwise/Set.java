@@ -38,27 +38,15 @@ public class Set extends BaseTransformAnyOp {
         super(sameDiff, i_v, inPlace);
     }
 
-    public Set(SameDiff sameDiff, SDVariable i_v, int[] shape, boolean inPlace, Object[] extraArgs) {
-        super(sameDiff, i_v, shape, inPlace, extraArgs);
-    }
-
-    public Set(SameDiff sameDiff, SDVariable i_v, Object[] extraArgs) {
-        super(sameDiff, i_v, extraArgs);
-    }
-
     public Set(INDArray x, INDArray z) {
         super(x, z);
     }
 
+    public Set(INDArray x, INDArray y, INDArray z) {
+        super(x, y, z);
+    }
+
     public Set() {
-    }
-
-    public Set(INDArray x, INDArray z, long n) {
-        super(x, z, n);
-    }
-
-    public Set(INDArray x, INDArray y, INDArray z, long n) {
-        super(x, y, z, n);
     }
 
     public Set(INDArray x) {
@@ -87,10 +75,7 @@ public class Set extends BaseTransformAnyOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
-        val shape = outputVariables()[0].getShape();
-        SDVariable ym1 = f().rsub(rarg(), f().one(shape));
-        SDVariable ret = f().mul(f().mul(rarg(), f().pow(larg(), 2.0)), larg());
-        return Arrays.asList(ret);
+        throw new UnsupportedOperationException("doDiff not yet implemented for op " + getClass().getName());
     }
 
 }

@@ -37,23 +37,11 @@ public class ASin extends BaseTransformStrictOp {
         super(sameDiff, i_v, inPlace);
     }
 
-    public ASin(SameDiff sameDiff, SDVariable i_v, int[] shape, boolean inPlace, Object[] extraArgs) {
-        super(sameDiff, i_v, shape, inPlace, extraArgs);
-    }
-
-    public ASin(SameDiff sameDiff, SDVariable i_v, Object[] extraArgs) {
-        super(sameDiff, i_v, extraArgs);
-    }
-
     public ASin() {
     }
 
     public ASin(INDArray x, INDArray z) {
         super(x, z);
-    }
-
-    public ASin(INDArray x, INDArray z, long n) {
-        super(x, z, n);
     }
 
     public ASin(INDArray x) {

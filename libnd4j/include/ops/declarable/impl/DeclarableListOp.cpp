@@ -143,11 +143,11 @@ namespace nd4j {
             auto res = new ResultSet();
             res->setStatus(result);
 
-            for (int e = 0; e < 65536; e++) {
+            for (int e = 0; e < DataTypeUtils::max<int>(); e++) {
                 std::pair<int,int> pair(1, e);
                 if (varSpace.hasVariable(pair)) {
                     auto var = varSpace.getVariable(pair);
-                    if (var->getNDArray() != nullptr) {
+                    if (var->hasNDArray()) {
                         auto arr = var->getNDArray();
                         if (arr->isAttached()) {
                             auto d = arr->detach();

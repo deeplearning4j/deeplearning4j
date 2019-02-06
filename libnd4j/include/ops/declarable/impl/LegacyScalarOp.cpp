@@ -37,7 +37,7 @@ namespace nd4j {
             return new LegacyScalarOp(this->_opNum, this->_scalar);
         }
 
-        LegacyScalarOp::LegacyScalarOp(int opNum, double scalar)  : LegacyOp::LegacyOp(1, opNum){
+        LegacyScalarOp::LegacyScalarOp(int opNum, NDArray &scalar)  : LegacyOp::LegacyOp(1, opNum){
             _scalar = scalar;
         }
 

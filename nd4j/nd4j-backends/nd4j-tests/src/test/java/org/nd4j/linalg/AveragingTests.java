@@ -17,16 +17,12 @@
 package org.nd4j.linalg;
 
 import lombok.extern.slf4j.Slf4j;
-import org.bytedeco.javacpp.Pointer;
-import org.nd4j.linalg.api.buffer.DataType;
-import org.nd4j.linalg.primitives.Pair;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -34,11 +30,8 @@ import org.nd4j.linalg.factory.Nd4jBackend;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicBoolean;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 /**
  * @author raver119@gmail.com
@@ -69,7 +62,7 @@ public class AveragingTests extends BaseNd4jTest {
 
 
     @Test
-    public void testSingleDeviceAveraging1() throws Exception {
+    public void testSingleDeviceAveraging1() {
         INDArray array1 = Nd4j.valueArrayOf(LENGTH, 1.0);
         INDArray array2 = Nd4j.valueArrayOf(LENGTH, 2.0);
         INDArray array3 = Nd4j.valueArrayOf(LENGTH, 3.0);
@@ -116,7 +109,7 @@ public class AveragingTests extends BaseNd4jTest {
     }
 
     @Test
-    public void testSingleDeviceAveraging2() throws Exception {
+    public void testSingleDeviceAveraging2() {
         INDArray exp = Nd4j.linspace(1, LENGTH, LENGTH);
         List<INDArray> arrays = new ArrayList<>();
         for (int i = 0; i < THREADS; i++)
@@ -139,7 +132,7 @@ public class AveragingTests extends BaseNd4jTest {
         INDArray array3 = Nd4j.create(100).assign(3.0);
         INDArray exp = Nd4j.create(100).assign(6.0);
 
-        INDArray accum = Nd4j.accumulate(new INDArray[] {array1, array2, array3});
+        INDArray accum = Nd4j.accumulate(array1, array2, array3);
 
         assertEquals(exp, accum);
     }

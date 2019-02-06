@@ -26,6 +26,9 @@
 #include <helpers/ShapeUtils.h>
 #include <ops/declarable/OpRegistrator.h>
 #include <graph/VariableProxy.h>
+#include <graph/exceptions/graph_exception.h>
+#include <graph/exceptions/unresolved_input_exception.h>
+#include <graph/exceptions/unresolved_output_exception.h>
 
 namespace nd4j {
     namespace graph {
@@ -82,7 +85,7 @@ namespace nd4j {
                         std::vector<Nd4jLong*> inputShapes;
                         int *oldShape;
                         for (auto v: *node->input()) {
-                            nd4j_debug("     inputs for estimation are are: %i:%i\n", v.first, v.second);
+                            nd4j_debug("     inputs for estimation are: %i:%i\n", v.first, v.second);
                             if (v.first < 0) {
                                 inputShapes.push_back(_variableSpace->getVariable(v.first)->getNDArray()->getShapeInfo());
                             } else {
@@ -227,8 +230,19 @@ namespace nd4j {
 
             nd4j_debug("Graph output size: %i\n", _output.size());
             for (int e = 0; e < (int) _output.size(); e++) {
-                nd4j_debug("Output node: %i\n", _output.at(e));
-                res->push_back(_variableSpace->getVariable(_output.at(e)));
+                auto nodeId = _output.at(e);
+                nd4j_debug("Output node: %i\n", nodeId);
+
+                for (int e = 0; e < DataTypeUtils::max<int>(); e++) {
+                    if (_variableSpace->hasVariable(nodeId, e)) {
+                        res->push_back(_variableSpace->getVariable(nodeId, e));
+                    } else {
+                        if (e == 0) {
+                            throw unresolved_output_exception::build("Can't find output variable", nodeId, e);
+                        } else
+                            break;
+                    }
+                }
             }
 
             return res;
@@ -305,7 +319,7 @@ namespace nd4j {
             }
 
             auto cname = node->getName() == nullptr ? nullptr : node->getName()->c_str();
-            auto nodeState = new Variable(nullptr, cname, node->id());
+            auto nodeState = _variableSpace->hasVariable(node->id()) ? _variableSpace->getVariable(node->id()) :new Variable(nullptr, cname, node->id());
             if (node->getName() != nullptr)
                 nodeState->setName(node->getName());
 
@@ -857,15 +871,6 @@ namespace nd4j {
             this->_variableSpace = variableSpace == nullptr ? new VariableSpace() : variableSpace;
             bool trusted = flatGraph != nullptr;
 
-            // creating RNG for this instance
-#ifndef __CUDABLAS__
-            // FIXME: we temporary skip this random init for CUDA
-            NativeOps nativeOps;
-            auto buffer = new uint64_t[1000000];
-            auto rng = (nd4j::random::RandomBuffer *) nativeOps.initRandom(nullptr, 119, 1000000, (Nd4jPointer) buffer);
-            this->_variableSpace->setRNG(rng);
-#endif
-
             // add 0 layer
             this->expandOnion(0);
 
@@ -926,12 +931,19 @@ namespace nd4j {
 
                     nd4j_debug("Node name: [%s]\n", node->name()->c_str());
                     auto nnode = new Node(node);
+                    /*
                     expandOnion(e);
                     nnode->setLayer(e);
                     this->addNode(nnode);
                     injectNode(nnode);
                     _unmapped.erase(nnode->id());
+                     */
+                    // just filling list of nodes
+                    _unmapped[nnode->id()] = nnode;
                 }
+
+
+                this->toposortNodes();
 
                 _built = true;
             }
@@ -943,6 +955,76 @@ namespace nd4j {
              */
             if (_configuration->_direction == Direction_FORWARD_ONLY && _configuration->_outputMode == OutputMode_OPTIMIZED)
                 this->tagInplaceNodes();
+        }
+
+
+        void Graph::toposortNodes() {
+            int attempts = 0;
+
+            // in worst possible case number of rolls equals to the number of nodes
+            int limit = _unmapped.size() + 1;
+
+            std::vector<int> tbd;
+            while (!_unmapped.empty() && attempts < limit) {
+                for (auto np:_unmapped) {
+                    auto id = np.first;
+                    tbd.emplace_back(id);
+                }
+
+                // rolling through unmapped nodes
+                for (auto np:tbd) {
+                    auto id = np;
+                    auto node = _unmapped[id];
+
+                    // this variables contains the layer of maximal dependency
+                    int maxDependencyLayer = -1;
+
+                    // simple flag
+                    bool canMap = true;
+
+                    // looping through inputs, to check if they were already mapped
+                    auto inputs = node->input();
+                    for (auto in:*inputs) {
+                        // only 2 options here, in either refers to the node, or to the variable
+                        // however, node can be already mapped, or not yet. this makes it 3 options :)
+
+                        if (hasNode(in.first)) { // node was mapped
+                            auto dependency = nodeById(in.first);
+                            auto layer = dependency->getLayer();
+                            if (layer > maxDependencyLayer)
+                                maxDependencyLayer = layer;
+
+                        } else if (_unmapped.count(in.first) > 0) { // node is unmapped yet
+                            // can't map this node yet, due to non-resolved dependencies
+                            canMap = false;
+                        } else if (_variableSpace->hasVariable(in.first)){ // that's probably variable. if not - we'll throw exception later
+                            // do nothing, maxDepLayer is -1 here, because it's a variable input
+                        } else {
+                            throw graph::unresolved_input_exception::build("Unknown input specified", id, in);
+                        }
+                    }
+
+                    if (canMap) {
+                        auto layer = maxDependencyLayer + 1;
+                        this->expandOnion(layer);
+                        node->setLayer(layer);
+                        this->addNode(node);
+                        this->injectNode(node);
+                        _unmapped.erase(id);
+                    }
+                }
+
+                // if something was successfully mapped - remove it from unmapped entries
+                if (!tbd.empty())
+                    tbd.clear();
+
+                attempts++;
+            }
+
+            if (!_unmapped.empty())
+                throw graph::graph_exception("Graph wasn't toposorted");
+
+            _built = true;
         }
 
 
@@ -1023,11 +1105,12 @@ namespace nd4j {
                     if (v->hasNDArray()) {
                         auto shape = ShapeUtils::shapeAsString(v->getNDArray());
                         auto values = v->getNDArray()->asString(16);
+                        auto dtype = DataTypeUtils::asString(v->getNDArray()->dataType());
 
                         if (v->getName() != nullptr && !v->getName()->empty()) {
-                            nd4j_printf("<%s> <%i:%i> shape: %s; values: %s;\n", v->getName()->c_str(), v->id(), v->index(), shape.c_str(), values.c_str());
+                            nd4j_printf("<%s> <%i:%i> dtype: %s; shape: %s; values: %s;\n", v->getName()->c_str(), v->id(), v->index(), dtype.c_str(), shape.c_str(), values.c_str());
                         } else {
-                            nd4j_printf("<%i:%i> shape: %s; values: %s;\n", v->id(), v->index(), shape.c_str(), values.c_str());
+                            nd4j_printf("<%i:%i> dtype: %s; shape: %s; values: %s;\n", v->id(), v->index(), dtype.c_str(), shape.c_str(), values.c_str());
                         }
                     } else if (v->hasNDArrayList()) {
                         // TODO: add better NDArrayList printout

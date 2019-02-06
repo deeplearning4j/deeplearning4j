@@ -49,21 +49,15 @@ public class ReplaceNans extends BaseScalarOp {
     }
 
     public ReplaceNans(INDArray x, double set) {
-        super(x, null, x, x.length(), set);
+        super(x, null, x, set);
         this.set = set;
-        init(x, null, x, x.length());
+        this.extraArgs = new Object[] {set};
     }
 
     public ReplaceNans(INDArray x, INDArray z, double set) {
         super(x, z, set);
         this.set = set;
-        init(x, null, z, x.length());
-    }
-
-    public ReplaceNans(INDArray x, INDArray z, double set, long n) {
-        super(x, z, n);
-        this.set = set;
-        init(x, null, x, n);
+        this.extraArgs = new Object[] {set};
     }
 
     @Override
@@ -85,14 +79,6 @@ public class ReplaceNans extends BaseScalarOp {
     public String tensorflowName() {
         throw new NoOpNameFoundException("No tensorflow op opName found for " +  opName());
     }
-
-
-    @Override
-    public void init(INDArray x, INDArray y, INDArray z, long n) {
-        super.init(x, y, z, n);
-        this.extraArgs = new Object[] {set, (double) n};
-    }
-
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {

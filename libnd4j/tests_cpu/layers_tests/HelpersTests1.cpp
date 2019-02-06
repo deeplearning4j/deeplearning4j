@@ -45,8 +45,8 @@ public:
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(HelpersTests1, evalHHmatrix_test1) {
-    
-    
+
+
     auto x = NDArrayFactory::create<double>('c', {1,4}, {14,17,3,1});
     auto exp = NDArrayFactory::create<double>('c', {4,4}, {-0.629253, -0.764093,   -0.13484, -0.0449467, -0.764093,  0.641653, -0.0632377, -0.0210792, -0.13484,-0.0632377,    0.98884,-0.00371987, -0.0449467,-0.0210792,-0.00371987,    0.99876});
     
@@ -62,7 +62,7 @@ TEST_F(HelpersTests1, evalHHmatrix_test2) {
 
     #ifdef __CUDABLAS__
     return;
-    #endif        
+    #endif
     auto x = NDArrayFactory::create<double>('c', {1,3}, {14,-4,3});
     auto exp = NDArrayFactory::create<double>('c', {3,3}, {-0.941742, 0.269069,-0.201802, 0.269069, 0.962715,0.0279639, -0.201802,0.0279639, 0.979027});
     
@@ -76,7 +76,7 @@ TEST_F(HelpersTests1, evalHHmatrix_test2) {
 
 /////////////////////////////////////////////////////////////////
 TEST_F(HelpersTests1, evalHHmatrixData_test1) {
-    
+
     #ifdef __CUDABLAS__
     return;
     #endif
@@ -99,7 +99,7 @@ TEST_F(HelpersTests1, evalHHmatrixData_test1) {
 
 /////////////////////////////////////////////////////////////////
 TEST_F(HelpersTests1, Householder_mulLeft_test1) {
-    
+
     #ifdef __CUDABLAS__
     return;
     #endif
@@ -117,7 +117,7 @@ TEST_F(HelpersTests1, Householder_mulLeft_test1) {
 
 /////////////////////////////////////////////////////////////////
 TEST_F(HelpersTests1, Householder_mulLeft_test2) {
-    
+
     #ifdef __CUDABLAS__
     return;
     #endif
@@ -134,7 +134,7 @@ TEST_F(HelpersTests1, Householder_mulLeft_test2) {
 
 /////////////////////////////////////////////////////////////////
 TEST_F(HelpersTests1, Householder_mulRight_test1) {
-    
+
     #ifdef __CUDABLAS__
     return;
     #endif
@@ -152,7 +152,7 @@ TEST_F(HelpersTests1, Householder_mulRight_test1) {
 
 /////////////////////////////////////////////////////////////////
 TEST_F(HelpersTests1, BiDiagonalizeUp_test1) {
-    
+
     #ifdef __CUDABLAS__
     return;
     #endif
@@ -171,7 +171,7 @@ TEST_F(HelpersTests1, BiDiagonalizeUp_test1) {
     
 ///////////////////////////////////////////////////////////////////
 TEST_F(HelpersTests1, BiDiagonalizeUp_test2) {
-    
+
     #ifdef __CUDABLAS__
     return;
     #endif
@@ -190,7 +190,7 @@ TEST_F(HelpersTests1, BiDiagonalizeUp_test2) {
     
 ///////////////////////////////////////////////////////////////////
 TEST_F(HelpersTests1, BiDiagonalizeUp_test3) {
-    
+
     #ifdef __CUDABLAS__
     return;
     #endif
@@ -209,7 +209,7 @@ TEST_F(HelpersTests1, BiDiagonalizeUp_test3) {
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(HelpersTests1, HHsequence_test1) {
-    
+
     #ifdef __CUDABLAS__
     return;
     #endif
@@ -236,7 +236,7 @@ TEST_F(HelpersTests1, HHsequence_test1) {
   
 ///////////////////////////////////////////////////////////////////
 TEST_F(HelpersTests1, HHsequence_test2) {
-    
+
     #ifdef __CUDABLAS__
     return;
     #endif
@@ -263,7 +263,7 @@ TEST_F(HelpersTests1, HHsequence_test2) {
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(HelpersTests1, HHsequence_test3) {
-    
+
     #ifdef __CUDABLAS__
     return;
     #endif
@@ -290,7 +290,7 @@ TEST_F(HelpersTests1, HHsequence_test3) {
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(HelpersTests1, HHsequence_test4) {
-    
+
     #ifdef __CUDABLAS__
     return;
     #endif
@@ -307,7 +307,7 @@ TEST_F(HelpersTests1, HHsequence_test4) {
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(HelpersTests1, HHsequence_test5) {
-    
+
     #ifdef __CUDABLAS__
     return;
     #endif
@@ -324,7 +324,7 @@ TEST_F(HelpersTests1, HHsequence_test5) {
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(HelpersTests1, HHsequence_test6) {
-    
+
     #ifdef __CUDABLAS__
     return;
     #endif
@@ -342,7 +342,7 @@ TEST_F(HelpersTests1, HHsequence_test6) {
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(HelpersTests1, HHsequence_test7) {
-    
+
     #ifdef __CUDABLAS__
     return;
     #endif
@@ -358,7 +358,7 @@ TEST_F(HelpersTests1, HHsequence_test7) {
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(HelpersTests1, HHsequence_test8) {
-    
+
     #ifdef __CUDABLAS__
     return;
     #endif
@@ -374,7 +374,7 @@ TEST_F(HelpersTests1, HHsequence_test8) {
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(HelpersTests1, HHsequence_test9) {
-    
+
     #ifdef __CUDABLAS__
     return;
     #endif
@@ -390,7 +390,7 @@ TEST_F(HelpersTests1, HHsequence_test9) {
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(HelpersTests1, HHsequence_test10) {
-    
+
     #ifdef __CUDABLAS__
     return;
     #endif
@@ -407,7 +407,7 @@ TEST_F(HelpersTests1, HHsequence_test10) {
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(HelpersTests1, HHsequence_test11) {
-    
+
     #ifdef __CUDABLAS__
     return;
     #endif
@@ -424,7 +424,7 @@ TEST_F(HelpersTests1, HHsequence_test11) {
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(HelpersTests1, HHsequence_test12) {
-    
+
     #ifdef __CUDABLAS__
     return;
     #endif
@@ -441,7 +441,7 @@ TEST_F(HelpersTests1, HHsequence_test12) {
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(HelpersTests1, HHsequence_test13) {
-    
+
     #ifdef __CUDABLAS__
     return;
     #endif
@@ -458,7 +458,7 @@ TEST_F(HelpersTests1, HHsequence_test13) {
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(HelpersTests1, HHsequence_test14) {
-    
+
     #ifdef __CUDABLAS__
     return;
     #endif
@@ -476,7 +476,7 @@ TEST_F(HelpersTests1, HHsequence_test14) {
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(HelpersTests1, HHsequence_test15) {
-    
+
     #ifdef __CUDABLAS__
     return;
     #endif
@@ -493,7 +493,7 @@ TEST_F(HelpersTests1, HHsequence_test15) {
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(HelpersTests1, HHsequence_test16) {
-    
+
     #ifdef __CUDABLAS__
     return;
     #endif
@@ -511,7 +511,7 @@ TEST_F(HelpersTests1, HHsequence_test16) {
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(HelpersTests1, HHsequence_test17) {
-    
+
     #ifdef __CUDABLAS__
     return;
     #endif
@@ -529,7 +529,7 @@ TEST_F(HelpersTests1, HHsequence_test17) {
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(HelpersTests1, HHsequence_test18) {
-    
+
     #ifdef __CUDABLAS__
     return;
     #endif
@@ -547,7 +547,7 @@ TEST_F(HelpersTests1, HHsequence_test18) {
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(HelpersTests1, HHsequence_test19) {
-    
+
     #ifdef __CUDABLAS__
     return;
     #endif
@@ -565,7 +565,7 @@ TEST_F(HelpersTests1, HHsequence_test19) {
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(HelpersTests1, SVD_test1) {
-    
+
     #ifdef __CUDABLAS__
     return;
     #endif
@@ -585,7 +585,7 @@ TEST_F(HelpersTests1, SVD_test1) {
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(HelpersTests1, SVD_test2) {
-    
+
     #ifdef __CUDABLAS__
     return;
     #endif
@@ -605,7 +605,7 @@ TEST_F(HelpersTests1, SVD_test2) {
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(HelpersTests1, SVD_test3) {
-    
+
     #ifdef __CUDABLAS__
     return;
     #endif
@@ -625,7 +625,7 @@ TEST_F(HelpersTests1, SVD_test3) {
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(HelpersTests1, SVD_test4) {
-    
+
     #ifdef __CUDABLAS__
     return;
     #endif
@@ -649,7 +649,7 @@ TEST_F(HelpersTests1, SVD_test4) {
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(HelpersTests1, SVD_test5) {
-    
+
     #ifdef __CUDABLAS__
     return;
     #endif
@@ -673,7 +673,7 @@ TEST_F(HelpersTests1, SVD_test5) {
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(HelpersTests1, SVD_test6) {
-    
+
     #ifdef __CUDABLAS__
     return;
     #endif
@@ -697,7 +697,7 @@ TEST_F(HelpersTests1, SVD_test6) {
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(HelpersTests1, SVD_test7) {
-    
+
     #ifdef __CUDABLAS__
     return;
     #endif
@@ -722,7 +722,7 @@ TEST_F(HelpersTests1, SVD_test7) {
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(HelpersTests1, SVD_test8) {
-    
+
     #ifdef __CUDABLAS__
     return;
     #endif
@@ -747,7 +747,7 @@ TEST_F(HelpersTests1, SVD_test8) {
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(HelpersTests1, SVD_test9) {
-    
+
     #ifdef __CUDABLAS__
     return;
     #endif
@@ -774,7 +774,7 @@ TEST_F(HelpersTests1, SVD_test9) {
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(HelpersTests1, SVD_test10) {
-    
+
     #ifdef __CUDABLAS__
     return;
     #endif
@@ -800,7 +800,7 @@ TEST_F(HelpersTests1, SVD_test10) {
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(HelpersTests1, SVD_test11) {
-    
+
     #ifdef __CUDABLAS__
     return;
     #endif
@@ -828,7 +828,7 @@ TEST_F(HelpersTests1, SVD_test11) {
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(HelpersTests1, SVD_test12) {
-    
+
     #ifdef __CUDABLAS__
     return;
     #endif
@@ -859,7 +859,7 @@ TEST_F(HelpersTests1, SVD_test12) {
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(HelpersTests1, SVD_test13) {
-    
+
     #ifdef __CUDABLAS__
     return;
     #endif
@@ -883,7 +883,7 @@ TEST_F(HelpersTests1, SVD_test13) {
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(HelpersTests1, SVD_test14) {
-    
+
     #ifdef __CUDABLAS__
     return;
     #endif
@@ -907,7 +907,7 @@ TEST_F(HelpersTests1, SVD_test14) {
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(HelpersTests1, SVD_test15) {
-    
+
     #ifdef __CUDABLAS__
     return;
     #endif
@@ -931,7 +931,7 @@ TEST_F(HelpersTests1, SVD_test15) {
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(HelpersTests1, JacobiSVD_test1) {
-    
+
     #ifdef __CUDABLAS__
     return;
     #endif
@@ -950,7 +950,7 @@ TEST_F(HelpersTests1, JacobiSVD_test1) {
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(HelpersTests1, JacobiSVD_test2) {
-    
+
     #ifdef __CUDABLAS__
     return;
     #endif
@@ -980,7 +980,7 @@ TEST_F(HelpersTests1, JacobiSVD_test2) {
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(HelpersTests1, JacobiSVD_test3) {
-    
+
     #ifdef __CUDABLAS__
     return;
     #endif
@@ -996,7 +996,7 @@ TEST_F(HelpersTests1, JacobiSVD_test3) {
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(HelpersTests1, JacobiSVD_test4) {
-    
+
     #ifdef __CUDABLAS__
     return;
     #endif
@@ -1012,7 +1012,7 @@ TEST_F(HelpersTests1, JacobiSVD_test4) {
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(HelpersTests1, JacobiSVD_test5) {
-    
+
     #ifdef __CUDABLAS__
     return;
     #endif
@@ -1028,7 +1028,7 @@ TEST_F(HelpersTests1, JacobiSVD_test5) {
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(HelpersTests1, JacobiSVD_test6) {
-    
+
     #ifdef __CUDABLAS__
     return;
     #endif
@@ -1044,7 +1044,7 @@ TEST_F(HelpersTests1, JacobiSVD_test6) {
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(HelpersTests1, JacobiSVD_test7) {
-    
+
     #ifdef __CUDABLAS__
     return;
     #endif
@@ -1060,7 +1060,7 @@ TEST_F(HelpersTests1, JacobiSVD_test7) {
 
 //////////////////////////////////////////////////////////////////
 TEST_F(HelpersTests1, JacobiSVD_test8) {
-    
+
     #ifdef __CUDABLAS__
     return;
     #endif
@@ -1076,7 +1076,7 @@ TEST_F(HelpersTests1, JacobiSVD_test8) {
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(HelpersTests1, JacobiSVD_test9) {
-    
+
     #ifdef __CUDABLAS__
     return;
     #endif
@@ -1095,7 +1095,7 @@ TEST_F(HelpersTests1, JacobiSVD_test9) {
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(HelpersTests1, JacobiSVD_test10) {
-    
+
     #ifdef __CUDABLAS__
     return;
     #endif
@@ -1114,7 +1114,7 @@ TEST_F(HelpersTests1, JacobiSVD_test10) {
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(HelpersTests1, JacobiSVD_test11) {
-    
+
     #ifdef __CUDABLAS__
     return;
     #endif
@@ -1133,7 +1133,7 @@ TEST_F(HelpersTests1, JacobiSVD_test11) {
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(HelpersTests1, JacobiSVD_test12) {
-    
+
     #ifdef __CUDABLAS__
     return;
     #endif
@@ -1152,7 +1152,7 @@ TEST_F(HelpersTests1, JacobiSVD_test12) {
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(HelpersTests1, JacobiSVD_test13) {
-    
+
     #ifdef __CUDABLAS__
     return;
     #endif
@@ -1171,7 +1171,7 @@ TEST_F(HelpersTests1, JacobiSVD_test13) {
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(HelpersTests1, JacobiSVD_test14) {
-    
+
     #ifdef __CUDABLAS__
     return;
     #endif
@@ -1190,7 +1190,7 @@ TEST_F(HelpersTests1, JacobiSVD_test14) {
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(HelpersTests1, JacobiSVD_test15) {
-    
+
     #ifdef __CUDABLAS__
     return;
     #endif
@@ -1208,7 +1208,7 @@ TEST_F(HelpersTests1, JacobiSVD_test15) {
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(HelpersTests1, SVD_test16) {
-    
+
     #ifdef __CUDABLAS__
     return;
     #endif
@@ -1239,7 +1239,7 @@ TEST_F(HelpersTests1, SVD_test16) {
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(HelpersTests1, SVD_test17) {
-    
+
     #ifdef __CUDABLAS__
     return;
     #endif
@@ -2096,6 +2096,7 @@ TEST_F(HelpersTests1, checkGrad_test6) {
     ASSERT_TRUE(isGradCorrect);
 }
 
+#endif
 //////////////////////////////////////////////////////////////////////////
 TEST_F(HelpersTests1, mmulMxV_1) {
 
@@ -2220,5 +2221,3 @@ TEST_F(HelpersTests1, mmulMxV_7) {
     nd4j::MmulHelper::mmul(&a, &x, &y, 1., 0.);
     ASSERT_TRUE(y.equalsTo(&exp));
 }
-
-#endif

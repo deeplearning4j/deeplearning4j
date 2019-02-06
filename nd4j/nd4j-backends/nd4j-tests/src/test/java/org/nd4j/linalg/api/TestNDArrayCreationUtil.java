@@ -16,16 +16,14 @@
 
 package org.nd4j.linalg.api;
 
-import org.nd4j.linalg.api.buffer.DataType;
-import org.nd4j.linalg.primitives.Pair;
 import org.junit.Test;
 import org.nd4j.linalg.BaseNd4jTest;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.checkutil.NDArrayCreationUtil;
 import org.nd4j.linalg.factory.Nd4jBackend;
+import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.util.ArrayUtil;
-
-import static org.junit.Assert.assertArrayEquals;
 
 /**
  * Created by Alex on 30/04/2016.

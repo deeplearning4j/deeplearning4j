@@ -119,7 +119,7 @@ DL4J's Layer API includes the concept of a "layer workspace manager".
 
 The idea with this class is that it allows us to easily and precisely control the location of a given array, given different possible configurations for the workspaces.
 For example, the activations out of a layer may be placed in one workspace during inference, and another during training; this is for performance reasons.
-However, with the LayerWorkspaceMgr design, implementers of layers don't need to wory about about this.
+However, with the LayerWorkspaceMgr design, implementers of layers don't need to worry about this.
 
 What does this mean in practice? Usually it's quite simple...
 * When returning activations (`activate(boolean training, LayerWorkspaceMgr workspaceMgr)` method), make sure the returned array is defined in `ArrayType.ACTIVATIONS` (i.e., use LayerWorkspaceMgr.create(ArrayType.ACTIVATIONS, ...) or similar)

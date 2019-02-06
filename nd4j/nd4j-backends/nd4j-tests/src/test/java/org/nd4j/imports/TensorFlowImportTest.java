@@ -24,23 +24,23 @@ import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-import org.nd4j.autodiff.execution.NativeGraphExecutioner;
 import org.nd4j.autodiff.execution.conf.ExecutionMode;
 import org.nd4j.autodiff.execution.conf.ExecutorConfiguration;
 import org.nd4j.autodiff.execution.conf.OutputMode;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.autodiff.samediff.internal.Variable;
 import org.nd4j.graph.FlatGraph;
 import org.nd4j.graph.FlatNode;
 import org.nd4j.imports.converters.DifferentialFunctionClassHolder;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
 import org.nd4j.linalg.BaseNd4jTest;
-import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.api.ops.impl.controlflow.If;
+import org.nd4j.linalg.api.ops.impl.scalar.RectifiedLinear;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
@@ -53,10 +53,10 @@ import java.io.DataInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import static org.junit.Assert.*;
@@ -84,11 +84,11 @@ public class TensorFlowImportTest extends BaseNd4jTest {
     }
 
     @Before
-    public void setUp() throws Exception {
+    public void setUp() {
     }
 
     @After
-    public void tearDown() throws Exception {
+    public void tearDown() {
         NativeOpsHolder.getInstance().getDeviceNativeOps().enableDebugMode(false);
         NativeOpsHolder.getInstance().getDeviceNativeOps().enableVerboseMode(false);
     }
@@ -99,7 +99,7 @@ public class TensorFlowImportTest extends BaseNd4jTest {
     }
 
     @Test
-    public void testSingleExample_1() throws Exception{
+    public void testSingleExample_1() {
         val g =TFGraphMapper.getInstance().importGraph(new File("C:\\Users\\raver\\Downloads\\mnist.pb"));
 
         val array = Nd4j.ones(1, 28, 28);
@@ -112,7 +112,7 @@ public class TensorFlowImportTest extends BaseNd4jTest {
 
 
     @Test
-    public void testAssertImport_1() throws Exception {
+    public void testAssertImport_1() {
         val graph = TFGraphMapper.getInstance().importGraph(new File("C:\\Users\\raver\\Downloads\\test.pb"));
     }
 
@@ -336,7 +336,7 @@ public class TensorFlowImportTest extends BaseNd4jTest {
 
         val ipod = Nd4j.read(new DataInputStream(new ClassPathResource("tf_graphs/ipod.nd4").getInputStream()));
 
-        tg.updateVariable("input",ipod);
+        tg.setArrayForVariable("input",ipod);
 
         val buffer = tg.asFlatBuffers();
         assertNotNull(buffer);
@@ -474,7 +474,7 @@ public class TensorFlowImportTest extends BaseNd4jTest {
     public void testIntermediateTensorArraySimple1() throws Exception {
         Nd4j.create(1);
         val tg = TFGraphMapper.getInstance().importGraph(new ClassPathResource("tf_graphs/tensor_array.pb.txt").getInputStream());
-        tg.updateVariable("input_matrix",Nd4j.ones(3,2));
+        tg.setArrayForVariable("input_matrix",Nd4j.ones(3,2));
 
         assertNotNull(tg);
 
@@ -501,7 +501,7 @@ public class TensorFlowImportTest extends BaseNd4jTest {
     public void testIntermediateTensorArrayLoop1() throws Exception {
         val input = Nd4j.linspace(1, 10, 10, DataType.FLOAT).reshape(5, 2);
         val tg = TFGraphMapper.getInstance().importGraph(new ClassPathResource("tf_graphs/tensor_array_loop.pb.txt").getInputStream());
-        tg.updateVariable("input_matrix",input);
+        tg.setArrayForVariable("input_matrix",input);
         assertNotNull(tg);
 
         val fb = tg.asFlatBuffers();
@@ -609,7 +609,7 @@ public class TensorFlowImportTest extends BaseNd4jTest {
 
     @Test
     public void testDefaultArgs() {
-        val op = Nd4j.getOpFactory().getOpByName("relu");
+        val op = new RectifiedLinear();
 
         val extras = op.extraArgs();
         assertTrue(extras.length == 1);
@@ -714,7 +714,7 @@ public class TensorFlowImportTest extends BaseNd4jTest {
 
         INDArray input = Nd4j.linspace(1,40,40, DataType.FLOAT).reshape(10,4);
         INDArray expectedOutput = Nd4j.linspace(1,40,40, DataType.FLOAT).reshape(10,4).addRowVector(Nd4j.linspace(1,4,4, DataType.FLOAT));
-        INDArray actual =  graph.execWithPlaceHolderAndEndResult(Collections.singletonMap("input",input));
+        INDArray actual =  graph.execSingle(Collections.singletonMap("input",input), graph.outputs().get(0));
         assertEquals(input,graph.getVariable("input").getArr());
         assertArrayEquals(input.shape(),graph.getShapeForVarName(graph.getVariable("input").getVarName()));
         assertEquals(expectedOutput,actual);
@@ -1027,15 +1027,11 @@ public class TensorFlowImportTest extends BaseNd4jTest {
 
     @Test
     public void testTensorArray_119_1() throws Exception {
-        Nd4j.create(1);
-
         val tg = TFGraphMapper.getInstance().importGraph(new ClassPathResource("tf_graphs/tensor_array.pb.txt").getInputStream());
         assertNotNull(tg);
 
         val input_matrix = Nd4j.ones(3, 2);
-        tg.associateArrayWithVariable(input_matrix, "input_matrix");
-
-        val array = tg.execAndEndResult();
+        val array = tg.execSingle(Collections.singletonMap("input_matrix", input_matrix), tg.outputs().get(0));
 
         val exp = Nd4j.create(new float[] {1, 1, 2, 2, 3, 3}, new int[]{3, 2});
 
@@ -1044,15 +1040,12 @@ public class TensorFlowImportTest extends BaseNd4jTest {
 
     @Test
     public void testTensorArray_119_2() throws Exception {
-        Nd4j.create(1);
-
         val tg = TFGraphMapper.getInstance().importGraph(new ClassPathResource("tf_graphs/tensor_array_read.pb.txt").getInputStream());
         assertNotNull(tg);
 
         val input_matrix = Nd4j.ones(3, 2);
-        tg.associateArrayWithVariable(input_matrix, "input_matrix");
 
-        val array = tg.execAndEndResult();
+        val array = tg.exec(Collections.singletonMap("input_matrix", input_matrix), tg.outputs().get(0));
 
         val exp = Nd4j.create(new float[] {2, 2}, new int[]{2});
 
@@ -1067,7 +1060,7 @@ public class TensorFlowImportTest extends BaseNd4jTest {
         val tg = TFGraphMapper.getInstance().importGraph(new ClassPathResource("tf_graphs/tensor_array_unstack.pb.txt").getInputStream());
         assertNotNull(tg);
 
-        val array = tg.execAndEndResult();
+        val array = tg.execSingle(Collections.emptyMap(), tg.outputs().get(0));
 
         val exp = Nd4j.create(new float[] {5, 6, 7, 8}, new int[]{4});
 
@@ -1076,19 +1069,12 @@ public class TensorFlowImportTest extends BaseNd4jTest {
 
     @Test
     public void testTensorArray_119_4() throws Exception {
-        Nd4j.create(1);
-
         val tg = TFGraphMapper.getInstance().importGraph(new ClassPathResource("tf_graphs/tensor_array_loop.pb.txt").getInputStream());
         assertNotNull(tg);
 
-
         val input_matrix = Nd4j.linspace(1, 10, 10, DataType.FLOAT).reshape(5, 2);
-        tg.associateArrayWithVariable(input_matrix, "input_matrix");
-
-
         log.info("Graph: {}", tg.asFlatPrint());
-
-        val array = tg.execAndEndResult();
+        val array = tg.execSingle(Collections.singletonMap("input_matrix", input_matrix), tg.outputs().get(0));
 
         val exp = Nd4j.create(new float[] {3,6,  9,12,  15,18,  21,24,  27,30}, new int[]{5, 2});
 
@@ -1117,10 +1103,10 @@ public class TensorFlowImportTest extends BaseNd4jTest {
         for (int e = 0; e < 1000; e++){
             val tg = TFGraphMapper.getInstance().importGraph(new ClassPathResource("tf_graphs/examples/reduce_any/rank0/frozen_model.pb").getInputStream());
 
-            val result = tg.execAndEndResult();
+            Map<String,INDArray> result = tg.exec(Collections.emptyMap(), tg.outputs());
 
-            val str = result.toString();
-            log.info("Result: {}", str);
+            assertNotNull(result);
+            assertTrue(result.size() > 0);
         }
     }
 
@@ -1144,5 +1130,45 @@ public class TensorFlowImportTest extends BaseNd4jTest {
     @Test(expected = ND4JIllegalStateException.class)
     public void testNonFrozenGraph1() throws Exception {
         val tg = TFGraphMapper.getInstance().importGraph(new ClassPathResource("tf_graphs/examples/unfrozen_simple_ae.pb").getInputStream());
+    }
+
+    @Test
+    public void testRandomGraph() throws Exception {
+        val tg = TFGraphMapper.getInstance().importGraph(new ClassPathResource("tf_graphs/examples/assert_equal/scalar_float32/frozen_model.pb").getInputStream());
+        assertNotNull(tg);
+
+        tg.asFlatFile(new File("../../../libnd4j/tests_cpu/resources/scalar_float32.fb"));
+    }
+
+    @Test
+    public void testRandomGraph2() throws Exception {
+        val tg = TFGraphMapper.getInstance().importGraph(new File("c:\\develop\\mobilenet_v2_1.0_224_frozen.pb"));
+        assertNotNull(tg);
+
+        tg.asFlatFile(new File("../../../libnd4j/tests_cpu/resources/mobilenet_v2.fb"));
+    }
+
+
+    @Test
+    public void testControlDependencies1() throws Exception {
+        SameDiff sd = TFGraphMapper.getInstance().importGraph(new ClassPathResource("tf_graphs/examples/cond/cond_true/frozen_model.pb").getInputStream());
+
+
+
+        /*
+        Control dependencies:
+        variables:
+            - cond/LinSpace/start - depends on cond/switch_t
+            - cond/LinSpace/stop - depends on cond/switch_t
+            - cond/LinSpace/num - depends on cond/switch_t
+            - cond/ones - depends on cond/switch_f
+         */
+
+        Map<String,Variable> variables = sd.getVariables();
+
+        assertEquals(variables.get("cond/LinSpace/start").getControlDeps(), Collections.singletonList("cond/switch_t"));
+        assertEquals(variables.get("cond/LinSpace/stop"), Collections.singletonList("cond/switch_t"));
+        assertEquals(variables.get("cond/LinSpace/num"), Collections.singletonList("cond/switch_t"));
+        assertEquals(variables.get("cond/ones"), Collections.singletonList("cond/switch_f"));
     }
 }

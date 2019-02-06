@@ -144,6 +144,12 @@ public class ROCBinary extends BaseEvaluation<ROCBinary> {
                     }
                 }
 
+                //TODO Temporary workaround for: https://github.com/deeplearning4j/deeplearning4j/issues/7102
+                if(prob.isView())
+                    prob = prob.dup();
+                if(label.isView())
+                    label = label.dup();
+
                 prob = Nd4j.pullRows(prob, 1, rowsToPull); //1: tensor along dim 1
                 label = Nd4j.pullRows(label, 1, rowsToPull);
             }
@@ -209,6 +215,16 @@ public class ROCBinary extends BaseEvaluation<ROCBinary> {
     public long getCountActualNegative(int outputNum) {
         assertIndex(outputNum);
         return underlying[outputNum].getCountActualNegative();
+    }
+
+    /**
+     * Get the ROC object for the specific column
+     * @param outputNum Column (output number)
+     * @return The underlying ROC object for this specific column
+     */
+    public ROC getROC(int outputNum){
+        assertIndex(outputNum);
+        return underlying[outputNum];
     }
 
     /**
@@ -310,11 +326,12 @@ public class ROCBinary extends BaseEvaluation<ROCBinary> {
             }
         }
 
-        String patternHeader = "%-" + (maxLabelsLength + 5) + "s%-12s%-10s%-10s";
-        String header = String.format(patternHeader, "Label", "AUC", "# Pos", "# Neg");
+        String patternHeader = "%-" + (maxLabelsLength + 5) + "s%-12s%-12s%-10s%-10s";
+        String header = String.format(patternHeader, "Label", "AUC", "AUPRC", "# Pos", "# Neg");
 
         String pattern = "%-" + (maxLabelsLength + 5) + "s" //Label
                         + "%-12." + printPrecision + "f" //AUC
+                        + "%-12." + printPrecision + "f" //AUPRC
                         + "%-10d%-10d"; //Count pos, count neg
 
         sb.append(header);
@@ -322,10 +339,11 @@ public class ROCBinary extends BaseEvaluation<ROCBinary> {
         if (underlying != null) {
             for (int i = 0; i < underlying.length; i++) {
                 double auc = calculateAUC(i);
+                double auprc = calculateAUCPR(i);
 
                 String label = (labels == null ? String.valueOf(i) : labels.get(i));
 
-                sb.append("\n").append(String.format(pattern, label, auc, getCountActualPositive(i),
+                sb.append("\n").append(String.format(pattern, label, auc, auprc, getCountActualPositive(i),
                                 getCountActualNegative(i)));
             }
 

@@ -261,8 +261,8 @@ public class TestWeightNoise extends BaseDL4JTest {
 
         assertEquals(l.getParam("W"), Nd4j.ones(10, 10));
 
-        int countZeros = Nd4j.getExecutioner().exec(new MatchCondition(outTrain, Conditions.equals(0))).z().getInt(0);
-        int countOnes = Nd4j.getExecutioner().exec(new MatchCondition(outTrain, Conditions.equals(1))).z().getInt(0);
+        int countZeros = Nd4j.getExecutioner().exec(new MatchCondition(outTrain, Conditions.equals(0))).getInt(0);
+        int countOnes = Nd4j.getExecutioner().exec(new MatchCondition(outTrain, Conditions.equals(1))).getInt(0);
 
         assertEquals(100, countZeros + countOnes);  //Should only be 0 or 2
         //Stochastic, but this should hold for most cases

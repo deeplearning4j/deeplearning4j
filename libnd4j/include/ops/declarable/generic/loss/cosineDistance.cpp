@@ -99,9 +99,9 @@ CUSTOM_OP_IMPL(cosine_distance_loss, 3, 1, false, 0, 2) {
 
 			if (numOfNonZeroWeights == 0)
 				*output = 0.;
-			else
-				output->assign(E.reduceNumber(reduce::Sum) / numOfNonZeroWeights);
-
+			else 
+				output->assign(E.reduceNumber(reduce::Sum) / double(numOfNonZeroWeights));
+			
 			break;
 		}
 	}

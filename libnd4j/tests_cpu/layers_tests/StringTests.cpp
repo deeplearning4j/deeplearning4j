@@ -66,3 +66,10 @@ TEST_F(StringTests, Basic_Test_3) {
 
     array.printIndexedBuffer("String array");
 }
+
+
+TEST_F(StringTests, Export_Test_1) {
+    auto array = NDArrayFactory::string('c', {3}, {"alpha", "beta", "gamma"});
+
+    auto vector = array.asByteVector();
+}

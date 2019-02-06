@@ -33,10 +33,8 @@ import java.util.Map;
 
 
 /**
- * Elementwise multiplication layer with weights: implements {@code out = activationFn(input .* w + b)} where:<br>
- * - w is a learnable weight vector of length nOut<br>
- * - ".*" is element-wise multiplication<br>
- * - b is a bias vector<br>
+ * Elementwise multiplication layer with weights: implements {@code out = activationFn(input .* w + b)} where:<br> - w
+ * is a learnable weight vector of length nOut<br> - ".*" is element-wise multiplication<br> - b is a bias vector<br>
  * <br>
  * Note that the input and output sizes of the element-wise layer are the same for this layer
  * <p>
@@ -48,7 +46,7 @@ import java.util.Map;
 public class ElementWiseMultiplicationLayer extends org.deeplearning4j.nn.conf.layers.FeedForwardLayer {
 
     //  We have to add an empty constructor for custom layers otherwise we will have errors when loading the model
-    protected ElementWiseMultiplicationLayer() { }
+    protected ElementWiseMultiplicationLayer() {}
 
     protected ElementWiseMultiplicationLayer(Builder builder) {
         super(builder);
@@ -61,14 +59,14 @@ public class ElementWiseMultiplicationLayer extends org.deeplearning4j.nn.conf.l
     }
 
     @Override
-    public Layer instantiate(NeuralNetConfiguration conf, Collection<TrainingListener> trainingListeners, int layerIndex,
-                             INDArray layerParamsView, boolean initializeParams) {
+    public Layer instantiate(NeuralNetConfiguration conf, Collection<TrainingListener> trainingListeners,
+                    int layerIndex, INDArray layerParamsView, boolean initializeParams) {
         if (this.nIn != this.nOut) {
             throw new IllegalStateException("Element wise layer must have the same input and output size. Got nIn="
-                    + nIn + ", nOut=" + nOut);
+                            + nIn + ", nOut=" + nOut);
         }
-        org.deeplearning4j.nn.layers.feedforward.elementwise.ElementWiseMultiplicationLayer ret
-                = new org.deeplearning4j.nn.layers.feedforward.elementwise.ElementWiseMultiplicationLayer(conf);
+        org.deeplearning4j.nn.layers.feedforward.elementwise.ElementWiseMultiplicationLayer ret =
+                        new org.deeplearning4j.nn.layers.feedforward.elementwise.ElementWiseMultiplicationLayer(conf);
         ret.setListeners(trainingListeners);
         ret.setIndex(layerIndex);
         ret.setParamsViewArray(layerParamsView);
@@ -116,10 +114,10 @@ public class ElementWiseMultiplicationLayer extends org.deeplearning4j.nn.conf.l
         trainSizeVariable += outputType.arrayElementsPerExample();
 
         return new LayerMemoryReport.Builder(layerName, ElementWiseMultiplicationLayer.class, inputType, outputType)
-                .standardMemory(numParams, updaterStateSize)
-                .workingMemory(0, 0, trainSizeFixed, trainSizeVariable) //No additional memory (beyond activations) for inference
-                .cacheMemory(MemoryReport.CACHE_MODE_ALL_ZEROS, MemoryReport.CACHE_MODE_ALL_ZEROS) //No caching in DenseLayer
-                .build();
+                        .standardMemory(numParams, updaterStateSize)
+                        .workingMemory(0, 0, trainSizeFixed, trainSizeVariable) //No additional memory (beyond activations) for inference
+                        .cacheMemory(MemoryReport.CACHE_MODE_ALL_ZEROS, MemoryReport.CACHE_MODE_ALL_ZEROS) //No caching in DenseLayer
+                        .build();
     }
 
 

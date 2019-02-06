@@ -848,6 +848,7 @@ namespace nd4j {
         std::vector<Nd4jLong> getShapeAsVector() const;
         std::vector<Nd4jLong> getShapeInfoAsVector();
         std::vector<int64_t> getShapeInfoAsFlatVector();
+        std::vector<int64_t> getShapeAsFlatVector();
 				
         /**
         *  set new order and shape in case of suitable array length (in-place operation)

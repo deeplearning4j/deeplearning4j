@@ -33,6 +33,9 @@ namespace nd4j {
             auto updates = INPUT_VARIABLE(2);
 
             auto output = OUTPUT_VARIABLE(0);
+
+            const bool lock = block.getBArguments()->empty() ? false : B_ARG(0);
+
             const int inRank  = input->rankOf();
             const int indRank = indices->rankOf();
             const int updRank = updates->rankOf();
@@ -68,7 +71,7 @@ namespace nd4j {
                 output->assign(input);
 
             // ScatterHelper<T>::template scatterApply<simdOps::Subtract<T>>(output, indices, updates);        
-            ScatterHelper::scatter(pairwise::Subtract, *indices, *updates, *output);
+            ScatterHelper::scatter(pairwise::Subtract, *indices, *updates, *output, lock);
 
             return Status::OK();
         }

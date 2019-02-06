@@ -88,7 +88,7 @@ public class GaussianDropout implements IDropout {
         noise = workspaceMgr.createUninitialized(ArrayType.INPUT, inputActivations.shape(), inputActivations.ordering());
         Nd4j.getExecutioner().exec(new GaussianDistribution(noise, 1.0, stdev));
 
-        return Nd4j.getExecutioner().execAndReturn(new OldMulOp(inputActivations, noise, output));
+        return Nd4j.getExecutioner().exec(new OldMulOp(inputActivations, noise, output));
     }
 
     @Override

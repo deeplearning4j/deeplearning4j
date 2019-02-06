@@ -28,6 +28,7 @@ namespace helpers {
 
     int resizeBilinearFunctor(graph::LaunchContext* context, NDArray const* image, int width, int height, bool center, NDArray* output);
     int resizeNeighborFunctor(graph::LaunchContext* context, NDArray const* image, int width, int height, bool center, NDArray* output);
+    void cropAndResizeFunctor(graph::LaunchContext* context, NDArray const* images, NDArray const* boxes, NDArray const* indices, NDArray const* cropSize, int method, double extrapolationVal, NDArray* crops);
 }
 }
 }

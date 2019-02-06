@@ -21,6 +21,7 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.base.Preconditions;
 import org.nd4j.imports.NoOpNameFoundException;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.random.BaseRandomOp;
 
@@ -56,7 +57,7 @@ public class BinomialDistribution extends BaseRandomOp {
      * @param probability
      */
     public BinomialDistribution(@NonNull INDArray z, int trials, double probability) {
-        init(z, z, z, z.lengthLong());
+        super(z, z, z);
         this.trials = trials;
         this.probability = probability;
         this.extraArgs = new Object[] {(double) this.trials, this.probability};
@@ -69,6 +70,7 @@ public class BinomialDistribution extends BaseRandomOp {
      * @param probabilities array with probability value for each trial
      */
     public BinomialDistribution(@NonNull INDArray z, int trials, @NonNull INDArray probabilities) {
+        super(z, probabilities, z);
         if (trials > probabilities.lengthLong())
             throw new IllegalStateException("Number of trials is > then amount of probabilities provided");
 
@@ -76,8 +78,6 @@ public class BinomialDistribution extends BaseRandomOp {
             throw new IllegalStateException("Probabilities array shouldn't have negative elementWiseStride");
 
         Preconditions.checkArgument(probabilities.dataType() == z.dataType(), "Probabilities and Z operand should have same data type");
-
-        init(z, probabilities, z, z.lengthLong());
 
         this.trials = trials;
         this.probability = 0.0;
@@ -105,11 +105,6 @@ public class BinomialDistribution extends BaseRandomOp {
     }
 
     @Override
-    public boolean isExecSpecial() {
-        return true;
-    }
-
-    @Override
     public String onnxName() {
         throw new NoOpNameFoundException("No onnx op opName found for " +  opName());
     }
@@ -132,5 +127,13 @@ public class BinomialDistribution extends BaseRandomOp {
         this.x = z;
         this.y = z;
         this.z = z;
+    }
+
+    @Override
+    public List<DataType> calculateOutputDataTypes(List<DataType> inputDataTypes){
+        Preconditions.checkState(inputDataTypes == null || inputDataTypes.isEmpty(), "Expected no input datatypes (no args) for %s, got %s", getClass(), inputDataTypes);
+        //Input data type specifies the shape; output data type should be any float
+        //TODO MAKE CONFIGUREABLE - https://github.com/deeplearning4j/deeplearning4j/issues/6854
+        return Collections.singletonList(DataType.DOUBLE);
     }
 }

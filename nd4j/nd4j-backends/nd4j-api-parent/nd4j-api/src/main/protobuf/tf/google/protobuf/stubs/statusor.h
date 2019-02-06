@@ -119,7 +119,7 @@ class StatusOr {
   //
   // NOTE: Not explicit - we want to use StatusOr<T> as a return type
   // so it is convenient and sensible to be able to do 'return T()'
-  // when when the return type is StatusOr<T>.
+  // when the return type is StatusOr<T>.
   //
   // REQUIRES: if T is a plain pointer, value != NULL. This requirement is
   // DCHECKed. In optimized builds, passing a NULL pointer here will have

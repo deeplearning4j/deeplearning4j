@@ -74,7 +74,7 @@ public class Cluster implements Serializable {
      */
     public double getDistanceToCenter(Point point) {
         return Nd4j.getExecutioner().execAndReturn(
-                        Nd4j.getOpFactory().createAccum(distanceFunction, center.getArray(), point.getArray()))
+                        ClusterUtils.createDistanceFunctionOp(distanceFunction, center.getArray(), point.getArray()))
                         .getFinalResult().doubleValue();
     }
 

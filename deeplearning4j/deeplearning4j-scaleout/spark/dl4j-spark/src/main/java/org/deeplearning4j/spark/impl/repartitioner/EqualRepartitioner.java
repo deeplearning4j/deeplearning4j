@@ -97,9 +97,7 @@ public class EqualRepartitioner implements Repartitioner {
                 temp[i] = i;
             }
             MathUtils.shuffleArray(temp, new Random());
-            for( int i=0; i<remainder; i++ ){
-                remainderPartitions[i] = temp[i];
-            }
+            System.arraycopy(temp, 0, remainderPartitions, 0, remainder);
         }
 
         int partitionSizeExRemainder = totalObjects / numPartitions;

@@ -36,23 +36,11 @@ public class Sign extends BaseTransformSameOp {
         super(sameDiff, i_v, inPlace);
     }
 
-    public Sign(SameDiff sameDiff, SDVariable i_v, int[] shape, boolean inPlace, Object[] extraArgs) {
-        super(sameDiff, i_v, shape, inPlace, extraArgs);
-    }
-
-    public Sign(SameDiff sameDiff, SDVariable i_v, Object[] extraArgs) {
-        super(sameDiff, i_v, extraArgs);
-    }
-
     public Sign() {
     }
 
     public Sign(INDArray x, INDArray z) {
         super(x, z);
-    }
-
-    public Sign(INDArray x, INDArray z, long n) {
-        super(x, z, n);
     }
 
     public Sign(INDArray x) {

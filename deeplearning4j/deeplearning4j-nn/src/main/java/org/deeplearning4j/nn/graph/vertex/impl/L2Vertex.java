@@ -77,7 +77,8 @@ public class L2Vertex extends BaseGraphVertex {
         }
 
         try(MemoryWorkspace ws = workspaceMgr.notifyScopeBorrowed(ArrayType.ACTIVATIONS)) {
-            return Nd4j.getExecutioner().exec(new EuclideanDistance(a, b), dimensions);
+            INDArray arr = Nd4j.getExecutioner().exec(new EuclideanDistance(a, b, dimensions));
+            return arr.reshape(arr.size(0), 1);
         }
     }
 
@@ -112,7 +113,7 @@ public class L2Vertex extends BaseGraphVertex {
             }
         } else {
             //RNN and CNN case - Broadcast along dimension 0
-            dLda = Nd4j.getExecutioner().execAndReturn(new BroadcastMulOp(diff, first, diff, 0));
+            dLda = Nd4j.getExecutioner().exec(new BroadcastMulOp(diff, first, diff, 0));
             try(MemoryWorkspace ws = workspaceMgr.notifyScopeBorrowed(ArrayType.ACTIVATION_GRAD)) {
                 dLdb = dLda.neg();
             }

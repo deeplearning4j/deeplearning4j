@@ -48,14 +48,6 @@ public class OldEqualTo extends BaseTransformBoolOp {
         super(sameDiff, i_v, inPlace);
     }
 
-    public OldEqualTo(SameDiff sameDiff, SDVariable i_v, int[] shape, boolean inPlace, Object[] extraArgs) {
-        super(sameDiff, i_v, shape, inPlace, extraArgs);
-    }
-
-    public OldEqualTo(SameDiff sameDiff, SDVariable i_v, Object[] extraArgs) {
-        super(sameDiff, i_v, extraArgs);
-    }
-
     public OldEqualTo(SameDiff sameDiff, SDVariable i_v1, SDVariable i_v2) {
         super(sameDiff, i_v1, i_v2);
     }
@@ -66,16 +58,12 @@ public class OldEqualTo extends BaseTransformBoolOp {
 
     public OldEqualTo() {}
 
-    public OldEqualTo(INDArray x, INDArray y, INDArray z, long n) {
-        super(x, y, z, n);
+    public OldEqualTo(INDArray x, INDArray y, INDArray z) {
+        super(x, y, z);
     }
 
     public OldEqualTo(INDArray x, INDArray y) {
-        super(x, y, null, x.length());
-    }
-
-    public OldEqualTo(INDArray x, INDArray y, long n) {
-        super(x, y, null, n);
+        super(x, y, null);
     }
 
     @Override

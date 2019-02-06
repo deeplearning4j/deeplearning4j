@@ -19,6 +19,7 @@ package org.nd4j.linalg.api.ops.impl.reduce.longer;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseReduceLongOp;
 import org.nd4j.linalg.factory.Nd4j;
@@ -51,17 +52,19 @@ public class MatchCondition extends BaseReduceLongOp {
     public MatchCondition() {}
 
 
-    public MatchCondition(INDArray x, Condition condition) {
-        this(x, Nd4j.EPS_THRESHOLD, condition);
+    public MatchCondition(INDArray x, Condition condition, int... dimensions) {
+        this(x, Nd4j.EPS_THRESHOLD, condition, dimensions);
     }
 
-    public MatchCondition(INDArray x, double eps, Condition condition) {
+    public MatchCondition(INDArray x, double eps, Condition condition, int... dimensions) {
         super(x);
         this.compare = condition.getValue();
         this.mode = condition.condtionNum();
         this.eps = eps;
 
         this.extraArgs = new Object[] {compare, eps, (double) mode};
+
+        defineDimensions(dimensions);
     }
 
     @Override
