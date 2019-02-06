@@ -297,7 +297,7 @@ namespace nd4j {
             }
 
             template <typename T>
-            void skipgramBatchExec_(NDArray &s0, NDArray &s1, NDArray &s1n, void *vexpTable, void *vnegTable, void *vinfVector, NDArray &targets, NDArray &negStarters, NDArray &indices, NDArray &codes, NDArray &lr, NDArray &nextRandom, const int nsRounds, const int vocabSize, const int vectorLength, const int expLength, const int negLength) {
+            void skipgramBatchExec_(NDArray &s0, NDArray &s1, NDArray &s1n, void *vexpTable, void *vnegTable, void *vinfVector, NDArray &targets, NDArray &negStarters, NDArray &indices, NDArray &codes, NDArray &lr, NDArray &nextRandom, const int nsRounds, const int vocabSize, const int vectorLength, const int expLength, const int negLength, const bool preciseMode, const int numThreads) {
                 //auto syn0 = reinterpret_cast<T*>(vsyn0);
                 //auto syn1 = reinterpret_cast<T*>(vsyn1);
                 //auto syn1Neg = reinterpret_cast<T*>(vsyn1Neg);
@@ -307,11 +307,11 @@ namespace nd4j {
 
                 T sneu1e[600];
 
-                const auto numThreads = omp_get_max_threads();
+                //const auto numThreads = omp_get_max_threads();
                 const auto idxShift = indices.isEmpty() ? 0 : indices.sizeAt(1);
                 const auto hsRounds = codes.isEmpty() ? 0 : codes.sizeAt(1);
 
-                const bool preciseMode = true;
+                //const bool preciseMode = true;
 
 
                 if (!indices.isEmpty()) {
@@ -499,11 +499,11 @@ namespace nd4j {
                         delete[] sStarters;
                 }
             }
-            BUILD_SINGLE_TEMPLATE(template void skipgramBatchExec_, (NDArray &s0, NDArray &s1, NDArray &s1n, void *vexpTable, void *vnegTable, void *vinfVector, NDArray &targets, NDArray &negStarters, NDArray &indices, NDArray &codes, NDArray &lr, NDArray &nextRandom, const int nsRounds, const int vocabSize, const int vectorLength, const int expLength, const int negLength), FLOAT_TYPES);
+            BUILD_SINGLE_TEMPLATE(template void skipgramBatchExec_, (NDArray &s0, NDArray &s1, NDArray &s1n, void *vexpTable, void *vnegTable, void *vinfVector, NDArray &targets, NDArray &negStarters, NDArray &indices, NDArray &codes, NDArray &lr, NDArray &nextRandom, const int nsRounds, const int vocabSize, const int vectorLength, const int expLength, const int negLength, const bool preciseMode, const int numThreads), FLOAT_TYPES);
 
 
             template <typename T>
-            void cbowBatchExec_(NDArray &s0, NDArray &s1, NDArray &s1n, void *vexpTable, void *vnegTable, void *vinfVector, NDArray &context, NDArray &targets, NDArray &negStarters, NDArray &indices, NDArray &codes, NDArray &lr, NDArray &nextRandom, const int nsRounds, const int vocabSize, const int vectorLength, const int expLength, const int negLength, const int numLabels, const bool trainWords) {
+            void cbowBatchExec_(NDArray &s0, NDArray &s1, NDArray &s1n, void *vexpTable, void *vnegTable, void *vinfVector, NDArray &context, NDArray &targets, NDArray &negStarters, NDArray &indices, NDArray &codes, NDArray &lr, NDArray &nextRandom, const int nsRounds, const int vocabSize, const int vectorLength, const int expLength, const int negLength, const int numLabels, const bool trainWords, const int numThreads) {
                 const auto syn0 = s0.bufferAsT<T>();
                 const auto syn1 = s1.bufferAsT<T>();
                 const auto syn1Neg = s1n.bufferAsT<T>();
@@ -516,7 +516,7 @@ namespace nd4j {
                 T sneu1[600];
                 T sneu1e[600];
 
-                const auto numThreads = omp_get_max_threads();
+                //const auto numThreads = omp_get_max_threads();
                 const auto idxShift = indices.isEmpty() ? 0 : indices.sizeAt(1);
                 const auto hsRounds = codes.isEmpty() ? 0 : codes.sizeAt(1);
                 const auto numTargets = context.sizeAt(0);
@@ -639,9 +639,9 @@ namespace nd4j {
                     }
                 }
             }
-            BUILD_SINGLE_TEMPLATE(template void cbowBatchExec_, (NDArray &s0, NDArray &s1, NDArray &s1n, void *vexpTable, void *vnegTable, void *vinfVector, NDArray &context, NDArray &targets, NDArray &negStarters, NDArray &indices, NDArray &codes, NDArray &lr, NDArray &nextRandom, const int nsRounds, const int vocabSize, const int vectorLength, const int expLength, const int negLength, const int numLabels, const bool trainWords), FLOAT_TYPES);
+            BUILD_SINGLE_TEMPLATE(template void cbowBatchExec_, (NDArray &s0, NDArray &s1, NDArray &s1n, void *vexpTable, void *vnegTable, void *vinfVector, NDArray &context, NDArray &targets, NDArray &negStarters, NDArray &indices, NDArray &codes, NDArray &lr, NDArray &nextRandom, const int nsRounds, const int vocabSize, const int vectorLength, const int expLength, const int negLength, const int numLabels, const bool trainWords, const int numThreads), FLOAT_TYPES);
 
-            void skipgram(NDArray &syn0, NDArray &syn1, NDArray &syn1Neg, NDArray &expTable, NDArray &negTable, NDArray &target, NDArray &ngStarter, int nsRounds, NDArray &indices, NDArray &codes, NDArray &alpha, NDArray &randomValue, NDArray &inferenceVector) {
+            void skipgram(NDArray &syn0, NDArray &syn1, NDArray &syn1Neg, NDArray &expTable, NDArray &negTable, NDArray &target, NDArray &ngStarter, int nsRounds, NDArray &indices, NDArray &codes, NDArray &alpha, NDArray &randomValue, NDArray &inferenceVector, const bool preciseMode, const int numWorkers) {
                 auto xType = syn0.dataType();
 
                 // single round case
@@ -652,12 +652,12 @@ namespace nd4j {
                 } else if (ngStarter.isVector() || target.isVector()){
                     // batch mode
 
-                    BUILD_SINGLE_SELECTOR(xType, skipgramBatchExec_, (syn0, syn1, syn1Neg, expTable.buffer(), negTable.buffer(), nullptr, target, ngStarter, indices, codes, alpha, randomValue, nsRounds, syn0.sizeAt(0), syn0.sizeAt(1), expTable.lengthOf(), negTable.lengthOf()), FLOAT_TYPES);
+                    BUILD_SINGLE_SELECTOR(xType, skipgramBatchExec_, (syn0, syn1, syn1Neg, expTable.buffer(), negTable.buffer(), nullptr, target, ngStarter, indices, codes, alpha, randomValue, nsRounds, syn0.sizeAt(0), syn0.sizeAt(1), expTable.lengthOf(), negTable.lengthOf(), preciseMode, numWorkers), FLOAT_TYPES);
                 } else
                     throw std::runtime_error("SkipGram: target must have rank 0 or 1");
             }
 
-            void cbow(NDArray &syn0, NDArray &syn1, NDArray &syn1Neg, NDArray &expTable, NDArray &negTable, NDArray &target, NDArray &ngStarter, int nsRounds, NDArray &context, NDArray &indices, NDArray &codes, NDArray &alpha, NDArray &randomValue, NDArray &inferenceVector, const int numLabels, const bool trainWords) {
+            void cbow(NDArray &syn0, NDArray &syn1, NDArray &syn1Neg, NDArray &expTable, NDArray &negTable, NDArray &target, NDArray &ngStarter, int nsRounds, NDArray &context, NDArray &indices, NDArray &codes, NDArray &alpha, NDArray &randomValue, NDArray &inferenceVector, const int numLabels, const bool trainWords, int numWorkers) {
                 auto xType = syn0.dataType();
 
                 // single round case
@@ -668,7 +668,7 @@ namespace nd4j {
                 } else if (context.isMatrix()) {
                     // batch mode
 
-                    BUILD_SINGLE_SELECTOR(xType, cbowBatchExec_, (syn0, syn1, syn1Neg, expTable.buffer(), negTable.buffer(), nullptr, context, target, ngStarter, indices, codes, alpha, randomValue, nsRounds, syn0.sizeAt(0), syn0.sizeAt(1), expTable.lengthOf(), negTable.isEmpty() ? 0 : negTable.lengthOf(), numLabels, trainWords), FLOAT_TYPES);
+                    BUILD_SINGLE_SELECTOR(xType, cbowBatchExec_, (syn0, syn1, syn1Neg, expTable.buffer(), negTable.buffer(), nullptr, context, target, ngStarter, indices, codes, alpha, randomValue, nsRounds, syn0.sizeAt(0), syn0.sizeAt(1), expTable.lengthOf(), negTable.isEmpty() ? 0 : negTable.lengthOf(), numLabels, trainWords, numWorkers), FLOAT_TYPES);
                 } else
                     throw std::runtime_error("CBOW: context must have rank 0/1 or 2");
             }

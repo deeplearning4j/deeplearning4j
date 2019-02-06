@@ -45,7 +45,7 @@ public class SkipGramRound extends DynamicCustomOp {
      * @param randomValue
      */
     public SkipGramRound(int target, @NonNull INDArray syn0, @NonNull INDArray syn1, @NonNull INDArray expTable, int[] indices, byte[] codes, double alpha, long randomValue, INDArray inferenceVector) {
-        this(Nd4j.scalar(target), Nd4j.scalar(-1), syn0, syn1, Nd4j.empty(syn1.dataType()), expTable, Nd4j.empty(syn1.dataType()), 0, Nd4j.createFromArray(indices), Nd4j.createFromArray(codes), Nd4j.scalar(alpha), Nd4j.scalar(randomValue), inferenceVector, false);
+        this(Nd4j.scalar(target), Nd4j.scalar(-1), syn0, syn1, Nd4j.empty(syn1.dataType()), expTable, Nd4j.empty(syn1.dataType()), 0, Nd4j.createFromArray(indices), Nd4j.createFromArray(codes), Nd4j.scalar(alpha), Nd4j.scalar(randomValue), inferenceVector, false, 1);
     }
 
     /**
@@ -59,13 +59,13 @@ public class SkipGramRound extends DynamicCustomOp {
      * @param negTable
      */
     public SkipGramRound(int target, int ngStarter, @NonNull INDArray syn0, @NonNull INDArray syn1Neg, @NonNull INDArray expTable, @NonNull INDArray negTable, int nsRounds, double alpha, long randomValue, INDArray inferenceVector) {
-        this(Nd4j.scalar(target), Nd4j.scalar(ngStarter), syn0, Nd4j.empty(syn0.dataType()), syn1Neg, expTable, negTable, nsRounds, Nd4j.empty(DataType.INT), Nd4j.empty(DataType.BYTE), Nd4j.scalar(alpha), Nd4j.scalar(randomValue), inferenceVector, false);
+        this(Nd4j.scalar(target), Nd4j.scalar(ngStarter), syn0, Nd4j.empty(syn0.dataType()), syn1Neg, expTable, negTable, nsRounds, Nd4j.empty(DataType.INT), Nd4j.empty(DataType.BYTE), Nd4j.scalar(alpha), Nd4j.scalar(randomValue), inferenceVector, false, 1);
     }
 
     /**
      * full constructor
      */
-    public SkipGramRound(@NonNull INDArray target, @NonNull INDArray ngStarter, @NonNull INDArray syn0, @NonNull INDArray syn1, @NonNull INDArray syn1Neg, @NonNull INDArray expTable, @NonNull INDArray negTable, int nsRounds, @NonNull INDArray indices, @NonNull INDArray codes, @NonNull INDArray alpha, @NonNull INDArray randomValue, INDArray inferenceVector, boolean preciseMode) {
+    public SkipGramRound(@NonNull INDArray target, @NonNull INDArray ngStarter, @NonNull INDArray syn0, @NonNull INDArray syn1, @NonNull INDArray syn1Neg, @NonNull INDArray expTable, @NonNull INDArray negTable, int nsRounds, @NonNull INDArray indices, @NonNull INDArray codes, @NonNull INDArray alpha, @NonNull INDArray randomValue, INDArray inferenceVector, boolean preciseMode, int numWorkers) {
 //        if (indices != null)
 //            Preconditions.checkArgument(indices.length == codes.length, "Indices length should be equal to codes length");
 
@@ -86,7 +86,9 @@ public class SkipGramRound extends DynamicCustomOp {
         inputArguments.add(inferenceVector);
 
         // couple of options
+        iArguments.add((long) numWorkers);
         iArguments.add((long) nsRounds);
+
         bArguments.add(!inferenceVector.isEmpty());
         bArguments.add(preciseMode);
 

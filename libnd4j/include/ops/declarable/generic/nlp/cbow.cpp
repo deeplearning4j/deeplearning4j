@@ -47,8 +47,10 @@ namespace nd4j {
 
             auto inferenceVector = INPUT_VARIABLE(12);
 
-            auto numLabels = block.numI() > 0 ? INT_ARG(0) : 0;
+            auto numWorkers = block.numI() > 0 ? INT_ARG(0) : omp_get_max_threads();
             auto nsRounds = block.numI() > 1 ? INT_ARG(1) : 0;
+            auto numLabels = block.numI() > 2 ? INT_ARG(2) : 0;
+
             auto trainWords = block.numB() > 0 ? B_ARG(0) : true;
             auto isInference = block.numB() > 1 ? B_ARG(1) : false;
 
@@ -58,7 +60,7 @@ namespace nd4j {
             REQUIRE_TRUE(syn0->dataType() == expTable->dataType(), 0, "CBOW: expTable must have the same data type as syn0 table");
 
 
-            nd4j::ops::helpers::cbow(*syn0, *syn1, *syn1neg, *expTable, *negTable, *target, *ngStarter, nsRounds, *context, *indices, *codes, *alpha, *randomValue, *inferenceVector, numLabels, trainWords);
+            nd4j::ops::helpers::cbow(*syn0, *syn1, *syn1neg, *expTable, *negTable, *target, *ngStarter, nsRounds, *context, *indices, *codes, *alpha, *randomValue, *inferenceVector, numLabels, trainWords, numWorkers);
 
 
             return Status::OK();

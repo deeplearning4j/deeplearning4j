@@ -41,7 +41,7 @@ public class CbowRound extends DynamicCustomOp {
      * @param inferenceVector
      */
     public CbowRound(int target, @NonNull int[] context, @NonNull INDArray syn0, @NonNull INDArray syn1, @NonNull INDArray expTable, @NonNull int[] indices, @NonNull byte[] codes, double alpha, long nextRandom, @NonNull INDArray inferenceVector) {
-        this(Nd4j.scalar(target), Nd4j.createFromArray(context), Nd4j.empty(DataType.INT), syn0, syn1, Nd4j.empty(syn1.dataType()), expTable, Nd4j.empty(syn1.dataType()), Nd4j.createFromArray(indices), Nd4j.createFromArray(codes), 0, Nd4j.scalar(alpha), Nd4j.scalar(nextRandom), inferenceVector, false);
+        this(Nd4j.scalar(target), Nd4j.createFromArray(context), Nd4j.empty(DataType.INT), syn0, syn1, Nd4j.empty(syn1.dataType()), expTable, Nd4j.empty(syn1.dataType()), Nd4j.createFromArray(indices), Nd4j.createFromArray(codes), 0, Nd4j.scalar(alpha), Nd4j.scalar(nextRandom), inferenceVector, 1);
     }
 
     /**
@@ -59,7 +59,7 @@ public class CbowRound extends DynamicCustomOp {
      * @param inferenceVector
      */
     public CbowRound(int target, @NonNull int[] context, int ngStarter, @NonNull INDArray syn0, @NonNull INDArray syn1Neg, @NonNull INDArray expTable, @NonNull INDArray negTable, int nsRounds, double alpha, long nextRandom, @NonNull INDArray inferenceVector) {
-        this(Nd4j.scalar(target), Nd4j.createFromArray(context), Nd4j.scalar(ngStarter), syn0, Nd4j.empty(syn0.dataType()), syn1Neg, expTable, negTable, Nd4j.empty(DataType.INT), Nd4j.empty(DataType.BYTE), nsRounds, Nd4j.scalar(alpha), Nd4j.scalar(nextRandom), inferenceVector, false);
+        this(Nd4j.scalar(target), Nd4j.createFromArray(context), Nd4j.scalar(ngStarter), syn0, Nd4j.empty(syn0.dataType()), syn1Neg, expTable, negTable, Nd4j.empty(DataType.INT), Nd4j.empty(DataType.BYTE), nsRounds, Nd4j.scalar(alpha), Nd4j.scalar(nextRandom), inferenceVector, 1);
     }
 
     /**
@@ -77,7 +77,7 @@ public class CbowRound extends DynamicCustomOp {
      * @param nextRandom
      * @param inferenceVector
      */
-    public CbowRound(@NonNull INDArray target, @NonNull INDArray context, @NonNull INDArray ngStarter, @NonNull INDArray syn0, @NonNull INDArray syn1, @NonNull INDArray syn1Neg, @NonNull INDArray expTable, @NonNull INDArray negTable, @NonNull INDArray indices, @NonNull INDArray codes, int nsRounds, @NonNull INDArray alpha, @NonNull INDArray nextRandom, @NonNull INDArray inferenceVector, boolean preciseMode) {
+    public CbowRound(@NonNull INDArray target, @NonNull INDArray context, @NonNull INDArray ngStarter, @NonNull INDArray syn0, @NonNull INDArray syn1, @NonNull INDArray syn1Neg, @NonNull INDArray expTable, @NonNull INDArray negTable, @NonNull INDArray indices, @NonNull INDArray codes, int nsRounds, @NonNull INDArray alpha, @NonNull INDArray nextRandom, @NonNull INDArray inferenceVector, int numWorkers) {
 
         inputArguments.add(target);
         inputArguments.add(ngStarter);
@@ -94,12 +94,13 @@ public class CbowRound extends DynamicCustomOp {
         inputArguments.add(inferenceVector);
 
         // couple of options
-        iArguments.add((long) 0);
+        iArguments.add((long) numWorkers);
         iArguments.add((long) nsRounds);
+        iArguments.add((long) 0);
+
 
         bArguments.add(true);
         bArguments.add(!inferenceVector.isEmpty());
-        bArguments.add(preciseMode);
 
         // this op is always inplace
         setInPlace(true);

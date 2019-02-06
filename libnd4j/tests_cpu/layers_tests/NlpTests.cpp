@@ -247,7 +247,7 @@ TEST_F(NlpTests, basic_sg_ns_test_1) {
     auto inferenceVector = NDArrayFactory::empty<float>();
 
     nd4j::ops::skipgram op;
-    auto result = op.execute({&target, &ngStarter, &indices, &codes, &syn0, &syn1, &syn1Neg, &expTable, &negTable, &alpha, &randomValue, &inferenceVector}, {}, {1}, {false}, true);
+    auto result = op.execute({&target, &ngStarter, &indices, &codes, &syn0, &syn1, &syn1Neg, &expTable, &negTable, &alpha, &randomValue, &inferenceVector}, {}, {1, 1}, {false}, true);
     ASSERT_EQ(Status::OK(), result->status());
 
     auto row0 = syn0.subarray({NDIndex::point(1), NDIndex::all()});
@@ -359,7 +359,7 @@ TEST_F(NlpTests, basic_cb_ns_test_1) {
     auto inferenceVector = NDArrayFactory::empty<float>();
 
     nd4j::ops::cbow op;
-    auto result = op.execute({&target, &ngStarter, &context, &indices, &codes, &syn0, &syn1, &syn1Neg, &expTable, &negTable, &alpha, &randomValue, &inferenceVector}, {}, {0, 2}, {true}, true);
+    auto result = op.execute({&target, &ngStarter, &context, &indices, &codes, &syn0, &syn1, &syn1Neg, &expTable, &negTable, &alpha, &randomValue, &inferenceVector}, {}, {1, 2, 0}, {true}, true);
     ASSERT_EQ(Status::OK(), result->status());
 
     auto row_s0_0 = syn0.subarray({NDIndex::point(0), NDIndex::all()});
