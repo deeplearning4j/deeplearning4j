@@ -52,8 +52,6 @@ else()
     else()
         # CUDA?
     endif()
-
-    set(CMAKE_CXX_FLAGS_DEBUG " ${CMAKE_CXX_FLAGS_DEBUG} -fsanitize=address")
 endif()
 
 # TODO: get rid of this once problem confirmed solved

@@ -20,6 +20,7 @@
 
 #include <graph/LaunchContext.h>
 #include <logger.h>
+#include <exceptions/cuda_exception.h>
 
 namespace nd4j {
 namespace graph {
@@ -27,16 +28,17 @@ namespace graph {
 LaunchContext* LaunchContext::sDefaultContext = nullptr;
 
 #ifdef __CUDABLAS__
+
 ////////////////////////////////////////////////////////////////////////
 LaunchContext::LaunchContext(cudaStream_t *cudaStream, void* reductionPointer, void* scalarPointer, int* allocationPointer)  {
-	
+
 	_cudaStream 	   = cudaStream;
 	_cudaSpecialStream = nullptr;
-	_reductionPointer  = reductionPointer;	
+	_reductionPointer  = reductionPointer;
 	_scalarPointer     = scalarPointer;
 	_allocationPointer = allocationPointer;
 	_workspace = nullptr;
-}	
+}
 ////////////////////////////////////////////////////////////////////////
 LaunchContext::LaunchContext(cudaStream_t *cudaStream, cudaStream_t& specialCudaStream, void* reductionPointer, void* scalarPointer, int* allocationPointer)  {
 
@@ -63,10 +65,11 @@ LaunchContext::LaunchContext() {
 
     cudaError_t err = cudaStreamCreate(_cudaStream);
     if (err != 0)
-        throw std::runtime_error("Failed to create default CUDA stream with launch context.");
+        throw cuda_exception::build("Failed to create default CUDA stream with launch context", err);
+
     err = cudaStreamCreate(_cudaSpecialStream);
     if (err != 0)
-        throw std::runtime_error("Failed to create default CUDA stream with launch context.");
+        throw cuda_exception::build("Failed to create special CUDA stream with launch context", err);
 
     auto res = cudaStreamSynchronize(*_cudaStream);
     if (res != 0)
