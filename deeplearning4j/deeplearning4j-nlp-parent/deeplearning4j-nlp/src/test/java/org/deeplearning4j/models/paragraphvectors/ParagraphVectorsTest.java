@@ -19,6 +19,7 @@ package org.deeplearning4j.models.paragraphvectors;
 
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.junit.Rule;
 import org.junit.rules.TemporaryFolder;
 import org.nd4j.linalg.io.ClassPathResource;
@@ -571,10 +572,11 @@ public class ParagraphVectorsTest {
     @Test
     @Ignore
     public void testParagraphVectorsReducedLabels1() throws Exception {
+        val tempDir = testDir.newFolder();
         ClassPathResource resource = new ClassPathResource("/labeled");
-        File file = resource.getFile();
+        resource.copyDirectory(tempDir);
 
-        LabelAwareIterator iter = new FileLabelAwareIterator.Builder().addSourceFolder(file).build();
+        LabelAwareIterator iter = new FileLabelAwareIterator.Builder().addSourceFolder(tempDir).build();
 
         TokenizerFactory t = new DefaultTokenizerFactory();
 
@@ -627,10 +629,14 @@ public class ParagraphVectorsTest {
 
         // we build w2v from multiple sources, to cover everything
         ClassPathResource resource_sentences = new ClassPathResource("/big/raw_sentences.txt");
+
+        val folder_mixed = testDir.newFolder();
         ClassPathResource resource_mixed = new ClassPathResource("/paravec");
+        resource_mixed.copyDirectory(folder_mixed);
+
         SentenceIterator iter = new AggregatingSentenceIterator.Builder()
                         .addSentenceIterator(new BasicLineIterator(resource_sentences.getFile()))
-                        .addSentenceIterator(new FileSentenceIterator(resource_mixed.getFile())).build();
+                        .addSentenceIterator(new FileSentenceIterator(folder_mixed)).build();
 
         TokenizerFactory t = new DefaultTokenizerFactory();
         t.setTokenPreProcessor(new CommonPreprocessor());
@@ -649,13 +655,19 @@ public class ParagraphVectorsTest {
 
         // At this moment we have ready w2v model. It's time to use it for ParagraphVectors
 
+        val folder_labeled = testDir.newFolder();
+        val folder_unlabeled = testDir.newFolder();
+        new ClassPathResource("/paravec/labeled").copyDirectory(folder_labeled);
+        new ClassPathResource("/paravec/unlabeled").copyDirectory(folder_unlabeled);
+
+
         FileLabelAwareIterator labelAwareIterator = new FileLabelAwareIterator.Builder()
-                        .addSourceFolder(new ClassPathResource("/paravec/labeled").getFile()).build();
+                        .addSourceFolder(folder_labeled).build();
 
 
         // documents from this iterator will be used for classification
         FileLabelAwareIterator unlabeledIterator = new FileLabelAwareIterator.Builder()
-                        .addSourceFolder(new ClassPathResource("/paravec/unlabeled").getFile()).build();
+                        .addSourceFolder(folder_unlabeled).build();
 
 
         // we're building classifier now, with pre-built w2v model passed in
@@ -716,6 +728,7 @@ public class ParagraphVectorsTest {
         log.info("Zhealth: " + paragraphVectors.getWordVectorMatrix("Zhealth"));
         log.info("Zscience: " + paragraphVectors.getWordVectorMatrix("Zscience"));
 
+        assertTrue(unlabeledIterator.hasNext());
         LabelledDocument document = unlabeledIterator.nextDocument();
 
         log.info("Results for document '" + document.getLabel() + "'");
