@@ -179,10 +179,10 @@ DECLARE_SHAPE_FN(huber_loss) {
 
 			NDArray E = quadratic * quadratic * 0.5f + (absDiff - quadratic)*delta;
 
-			NDArray lteMask(diff.getShapeInfo(), BOOL, true, block.getWorkspace());
+			NDArray lteMask(diff.getShapeInfo(), BOOL, true, block.launchContext());
 			absDiff.applyScalar(scalar::LessThanOrEqual, delta, &lteMask);
 
-            NDArray gtMask(diff.getShapeInfo(), BOOL, true, block.getWorkspace());
+            NDArray gtMask(diff.getShapeInfo(), BOOL, true, block.launchContext());
 			absDiff.applyScalar(scalar::GreaterThan, delta, &gtMask);
 
 			NDArray signDiff(diff);
@@ -258,7 +258,7 @@ DECLARE_SHAPE_FN(huber_loss) {
 						*dLdw = 0.;
 					}
 					else {
-						auto numOfNonZeroWeightsScalar = NDArrayFactory::create(dLdw->dataType(), numOfNonZeroWeights, block.getWorkspace());
+						auto numOfNonZeroWeightsScalar = NDArrayFactory::create(dLdw->dataType(), numOfNonZeroWeights, block.launchContext());
 
 						if(weights->isScalar())
 							dLdw->assign(E.reduceNumber(reduce::Sum) / double(numOfNonZeroWeights));

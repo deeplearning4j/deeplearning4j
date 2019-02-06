@@ -1639,7 +1639,6 @@ void NativeOps::execScalar(Nd4jPointer *extraPointers,
     int dimensionLength = static_cast<int>(shape::length(hDimensionShape));
 
     NativeOpExecutioner::execScalar(nullptr,
-                                   opNum,
             opNum,
             hX,
             hXShapeInfo,

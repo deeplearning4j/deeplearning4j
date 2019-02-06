@@ -121,7 +121,8 @@ namespace nd4j {
 
                     auto z = OUTPUT_VARIABLE(0);
 
-                    NativeOpExcutioner::execReduceBool(opNum, x->getBuffer(), x->getShapeInfo(), block.getTArguments()->data(), z->getBuffer(), z->getShapeInfo(), axis.data(), (int) axis.size(), tad.tadOnlyShapeInfo, tad.tadOffsets);
+                    // FIXME: extraArgs, axis, tad
+                    NativeOpExecutioner::execReduceBool(block.launchContext(), opNum, x->getBuffer(), x->getShapeInfo(), x->specialBuffer(), x->specialShapeInfo(), block.getTArguments()->data(), z->getBuffer(), z->getShapeInfo(), z->specialBuffer(), z->specialShapeInfo(), axis.data(), (int) axis.size(), tad.tadOnlyShapeInfo, tad.tadOffsets);
                 }
             }
 

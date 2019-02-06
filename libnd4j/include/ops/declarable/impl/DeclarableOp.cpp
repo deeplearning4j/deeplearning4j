@@ -23,8 +23,8 @@
 #include <Status.h>
 #include <helpers/ShapeUtils.h>
 #include <NDArrayFactory.h>
-#include <graph/exceptions/graph_exception.h>
-#include <graph/exceptions/unresolved_input_exception.h>
+#include <exceptions/graph_exception.h>
+#include <exceptions/unresolved_input_exception.h>
 
 namespace nd4j {
     namespace ops {

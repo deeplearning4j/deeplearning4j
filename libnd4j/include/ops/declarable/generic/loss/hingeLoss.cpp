@@ -243,7 +243,7 @@ namespace nd4j {
                         *dLdw = 0.;
                     }
                     else {
-                        auto numOfNonZeroWeightsScalar = NDArrayFactory::create(dLdw->dataType(), numOfNonZeroWeights, block.getWorkspace());
+                        auto numOfNonZeroWeightsScalar = NDArrayFactory::create(dLdw->dataType(), numOfNonZeroWeights, block.launchContext());
 
                         if(weights->isScalar())
                             dLdw->assign(E.reduceNumber(reduce::Sum) / double(numOfNonZeroWeights));

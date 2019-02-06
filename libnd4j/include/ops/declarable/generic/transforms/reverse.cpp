@@ -46,7 +46,7 @@ namespace ops  {
         else {
             // check the consistency of input dimensions to reverse along
             shape::checkDimensions(input->rankOf(), axis);
-            helpers::reverse(input, output, &axis, false);
+            helpers::reverse(block.launchContext(), input, output, &axis, false);
         }
 
         return Status::OK();

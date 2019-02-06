@@ -68,9 +68,9 @@ namespace nd4j {
                 offset++;
                 NativeOpExecutioner::execScalarBool(nullptr, opNum, x->getBuffer(), x->getShapeInfo(), x->specialBuffer(), x->specialShapeInfo(),z->getBuffer(), z->getShapeInfo(),z->specialBuffer(), z->specialShapeInfo(), y.buffer(), y.shapeInfo(), y.specialBuffer(), y.specialShapeInfo(),block.getTArguments()->data() + offset);
             } else {
-                auto y = NDArrayFactory::create(_scalar, block.getVariableSpace()->launchContext());
+                //auto y = NDArrayFactory::create(_scalar, block.getVariableSpace()->launchContext());
 
-                NativeOpExecutioner::execScalarBool(nullptr, opNum, x->getBuffer(), x->getShapeInfo(), x->specialBuffer(), x->specialShapeInfo(),z->getBuffer(), z->getShapeInfo(),z->specialBuffer(), z->specialShapeInfo(), y.buffer(), y.shapeInfo(), y.specialBuffer(), y.specialShapeInfo(),block.getTArguments()->data() + offset);
+                NativeOpExecutioner::execScalarBool(nullptr, opNum, x->getBuffer(), x->getShapeInfo(), x->specialBuffer(), x->specialShapeInfo(),z->getBuffer(), z->getShapeInfo(),z->specialBuffer(), z->specialShapeInfo(), _scalar.buffer(), _scalar.shapeInfo(), _scalar.specialBuffer(), _scalar.specialShapeInfo(),block.getTArguments()->data() + offset);
             }
 
             STORE_RESULT(*z);

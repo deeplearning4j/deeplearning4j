@@ -26,9 +26,9 @@
 #include <helpers/ShapeUtils.h>
 #include <ops/declarable/OpRegistrator.h>
 #include <graph/VariableProxy.h>
-#include <graph/exceptions/graph_exception.h>
-#include <graph/exceptions/unresolved_input_exception.h>
-#include <graph/exceptions/unresolved_output_exception.h>
+#include <exceptions/graph_exception.h>
+#include <exceptions/unresolved_input_exception.h>
+#include <exceptions/unresolved_output_exception.h>
 
 namespace nd4j {
     namespace graph {
@@ -1022,7 +1022,7 @@ namespace nd4j {
             }
 
             if (!_unmapped.empty())
-                throw graph::graph_exception("Graph wasn't toposorted");
+                throw graph_exception("Graph wasn't toposorted", 0);
 
             _built = true;
         }

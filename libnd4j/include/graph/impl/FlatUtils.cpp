@@ -75,7 +75,7 @@ namespace nd4j {
                     auto len = end - start;
 
                     auto c = (char *) malloc(len+1);
-                    CHECK_ALLOC(c, "Failed temp allocation");
+                    CHECK_ALLOC(c, "Failed temp allocation", len + 1);
                     memset(c, '\0', len + 1);
                     memcpy(c, charPtr + start, len);
 

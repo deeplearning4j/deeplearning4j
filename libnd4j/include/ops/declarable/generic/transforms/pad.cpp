@@ -43,7 +43,7 @@ CUSTOM_OP_IMPL(pad, 2, 1, false, 0, 1) {
 	std::string currentPaddingsShape  = ShapeUtils::shapeAsString(paddings);
 	REQUIRE_TRUE(expectedPaddingsShape == currentPaddingsShape, 0, "PAD op: wrong shape of paddings array, expected is %s, but got %s instead !", expectedPaddingsShape.c_str(), currentPaddingsShape.c_str());
 
-	NDArray padValue(input->dataType(), block.workspace());
+	NDArray padValue(input->dataType(), block.launchContext());
 
 	// in case of REFLECT and SYMMETRIC modes paddings must obey additional shape requirements 
 	// REFLECT case
