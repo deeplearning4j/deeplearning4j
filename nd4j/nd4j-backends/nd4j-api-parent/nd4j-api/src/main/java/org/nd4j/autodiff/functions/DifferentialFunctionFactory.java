@@ -170,9 +170,9 @@ public class DifferentialFunctionFactory {
         return new ZerosLike(name, sameDiff(), input).outputVariable();
     }
 
-    public SDVariable onesLike(String name, SDVariable input) {
+    public SDVariable onesLike(String name, SDVariable input, DataType dataType) {
         validateDifferentialFunctionsameDiff(input);
-        return new OnesLike(name, sameDiff(), input).outputVariable();
+        return new OnesLike(name, sameDiff(), input, dataType).outputVariable();
     }
 
     public SDVariable constant(SDVariable input, long... shape) {
@@ -1137,8 +1137,8 @@ public class DifferentialFunctionFactory {
         return new Squeeze(sameDiff(), iX, axis).outputVariable();
     }
 
-    public SDVariable confusionMatrix(SDVariable labels, SDVariable pred) {
-        return new ConfusionMatrix(sameDiff(), labels, pred).outputVariable();
+    public SDVariable confusionMatrix(SDVariable labels, SDVariable pred, DataType dataType) {
+        return new ConfusionMatrix(sameDiff(), labels, pred, dataType).outputVariable();
     }
 
     public SDVariable confusionMatrix(SDVariable labels, SDVariable pred, Integer numClasses) {

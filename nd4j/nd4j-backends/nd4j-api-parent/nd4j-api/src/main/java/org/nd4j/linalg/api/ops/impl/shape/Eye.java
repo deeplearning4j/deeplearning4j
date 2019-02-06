@@ -48,27 +48,25 @@ import java.util.List;
  * @author Max Pumperla
  */
 public class Eye extends DynamicCustomOp {
+    public static final DataType DEFAULT_DTYPE = DataType.FLOAT;
 
     private int numRows;
     private int numCols;
-    private boolean isVariableInput = false;
     private int[] batchDimension = new int[] {};
+    private DataType dataType = DEFAULT_DTYPE;
 
     public Eye() {
     }
 
     public Eye(SameDiff sameDiff, SDVariable numRows){
         super(null, sameDiff, new SDVariable[] {numRows}, false);
-        isVariableInput = true;
     }
 
     public Eye(SameDiff sameDiff, SDVariable numRows, SDVariable numCols){
         super(null, sameDiff, new SDVariable[] {numRows, numCols}, false);
-        isVariableInput = true;
     }
     public Eye(SameDiff sameDiff, SDVariable numRows, SDVariable numCols, SDVariable batch_shape){
         super(null, sameDiff, new SDVariable[] {numRows, numCols, batch_shape}, false);
-        isVariableInput = true;
     }
     public Eye(SameDiff sameDiff,  int numRows) {
         super(null, sameDiff, new SDVariable[] {}, false);
@@ -78,17 +76,23 @@ public class Eye extends DynamicCustomOp {
     }
 
     public Eye(SameDiff sameDiff,  int numRows, int numCols) {
+        this(sameDiff, numRows, numCols, DEFAULT_DTYPE);
+    }
+
+    public Eye(SameDiff sameDiff,  int numRows, int numCols, DataType dataType) {
         super(null, sameDiff, new SDVariable[] {}, false);
         this.numRows = numRows;
         this.numCols = numCols;
+        this.dataType = dataType;
         addArgs();
     }
 
-    public Eye(SameDiff sameDiff,  int numRows, int numCols, int[] batchDimension) {
+    public Eye(SameDiff sameDiff,  int numRows, int numCols, DataType dataType, int[] batchDimension) {
         super(null, sameDiff, new SDVariable[] {}, false);
         this.numRows = numRows;
         this.numCols = numCols;
         this.batchDimension = batchDimension;
+        this.dataType = dataType;
         addArgs();
     }
 
@@ -129,8 +133,7 @@ public class Eye extends DynamicCustomOp {
 
     @Override
     public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes){
-        //TODO this should be configurable!
-        return Collections.singletonList(DataType.FLOAT);
+        return Collections.singletonList(dataType == null ? DEFAULT_DTYPE : dataType);
     }
 
 }

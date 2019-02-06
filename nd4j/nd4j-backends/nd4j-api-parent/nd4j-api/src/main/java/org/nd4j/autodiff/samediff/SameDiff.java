@@ -66,6 +66,7 @@ import org.nd4j.linalg.api.ops.impl.loss.SoftmaxCrossEntropyLoss;
 import org.nd4j.linalg.api.ops.impl.reduce3.CosineSimilarity;
 import org.nd4j.linalg.api.ops.impl.reduce3.EuclideanDistance;
 import org.nd4j.linalg.api.ops.impl.reduce3.ManhattanDistance;
+import org.nd4j.linalg.api.ops.impl.shape.ConfusionMatrix;
 import org.nd4j.linalg.api.ops.impl.shape.Eye;
 import org.nd4j.linalg.api.ops.impl.shape.tensorops.TensorArray;
 import org.nd4j.linalg.api.ops.impl.transforms.Assert;
@@ -1888,7 +1889,14 @@ public class SameDiff {
      * @return A new SDVariable with the same (dynamic) shape as the input
      */
     public SDVariable onesLike(String name, SDVariable input) {
-        SDVariable ret = f().onesLike(name, input);
+        return onesLike(name, input, input.dataType());
+    }
+
+    /**
+     * As per {@link #onesLike(String, SDVariable)} but the output datatype may be specified
+     */
+    public SDVariable onesLike(String name, @NonNull SDVariable input, @NonNull DataType dataType) {
+        SDVariable ret = f().onesLike(name, input, dataType);
         return updateVariableNameAndReference(ret, name);
     }
 
@@ -2347,6 +2355,13 @@ public class SameDiff {
     }
 
     /**
+     * As per {@link #eye(String, int, int, DataType)} but with the default datatype, {@link Eye#DEFAULT_DTYPE}
+     */
+    public SDVariable eye(String name, int rows, int cols) {
+        return eye(name, rows, cols, Eye.DEFAULT_DTYPE);
+    }
+
+    /**
      * Generate an identity matrix with the specified number of rows and columns
      * Example:<br>
      * <pre>
@@ -2362,15 +2377,15 @@ public class SameDiff {
      * @param cols Number of columns
      * @return SDVaribable identity matrix
      */
-    public SDVariable eye(String name, int rows, int cols) {
-        return eye(name, rows, cols, null);
+    public SDVariable eye(String name, int rows, int cols, DataType dataType) {
+        return eye(name, rows, cols, dataType);
     }
 
     /**
-     * see {@link #eye(String, int, int, int...)}
+     * see {@link #eye(String, int, int, DataType, int...)}
      */
-    public SDVariable eye(int rows, int cols, int... batchDimension) {
-        return eye(null, rows, cols, batchDimension);
+    public SDVariable eye(int rows, int cols, DataType dataType, int... batchDimension) {
+        return eye(null, rows, cols, dataType, batchDimension);
     }
 
     /**
@@ -2387,8 +2402,8 @@ public class SameDiff {
      * @param cols           Number of columns
      * @param batchDimension Batch dimensions. May be null
      */
-    public SDVariable eye(String name, int rows, int cols, int... batchDimension) {
-        SDVariable eye = new Eye(this, rows, cols, batchDimension).outputVariables()[0];
+    public SDVariable eye(String name, int rows, int cols, DataType dataType, int... batchDimension) {
+        SDVariable eye = new Eye(this, rows, cols, dataType, batchDimension).outputVariables()[0];
         return updateVariableNameAndReference(eye, name);
     }
 
@@ -2402,7 +2417,7 @@ public class SameDiff {
     }
 
     /**
-     * As per {@link #eye(int, int, int...)} bit with the number of rows/columns specified as scalar SDVariables,
+     * As per {@link #eye(int, int, DataType, int...)} bit with the number of rows/columns specified as scalar SDVariables,
      * and the batch dimension specified as a 1D SDVariable
      */
     public SDVariable eye(SDVariable rows, SDVariable cols, SDVariable batchDimension){
@@ -8055,6 +8070,11 @@ public class SameDiff {
         return confusionMatrix((String) null, labels, predictions);
     }
 
+
+    public SDVariable confusionMatrix(String name, SDVariable labels, SDVariable pred) {
+        return confusionMatrix(name, labels, pred, ConfusionMatrix.DEFAULT_DTYPE);
+    }
+
     /**
      * Compute the 2d confusion matrix of size [numClasses, numClasses] from a pair of labels and predictions, both of
      * which are represented as integer values. This version assumes the number of classes is 1 + max(max(labels), max(pred))<br>
@@ -8068,8 +8088,8 @@ public class SameDiff {
      * @param pred   Predictions - 1D array of integer values representing predictions. Same length as labels
      * @return Output variable (2D, shape [numClasses, numClasses})
      */
-    public SDVariable confusionMatrix(String name, SDVariable labels, SDVariable pred) {
-        SDVariable result = f().confusionMatrix(labels, pred);
+    public SDVariable confusionMatrix(String name, SDVariable labels, SDVariable pred, DataType dataType) {
+        SDVariable result = f().confusionMatrix(labels, pred, dataType);
         return updateVariableNameAndReference(result, name);
     }
 
