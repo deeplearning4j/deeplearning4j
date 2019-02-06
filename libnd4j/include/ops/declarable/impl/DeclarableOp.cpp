@@ -71,6 +71,9 @@ namespace nd4j {
         DeclarableOp::~DeclarableOp() {
             if (_descriptor != nullptr)
                 delete _descriptor;
+
+            if (_scalar != nullptr)
+                delete _scalar;
         }
 
         OpDescriptor* DeclarableOp::getOpDescriptor() {

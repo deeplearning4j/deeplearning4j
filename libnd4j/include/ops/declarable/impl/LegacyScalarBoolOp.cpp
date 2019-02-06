@@ -38,7 +38,7 @@ namespace nd4j {
         }
 
         LegacyScalarBoolOp::LegacyScalarBoolOp(int opNum, NDArray &scalar)  : LegacyOp::LegacyOp(1, opNum){
-            _scalar = &scalar;
+            _scalar = scalar.dup(scalar.ordering());
         }
 
         ShapeList *LegacyScalarBoolOp::calculateOutputShape(ShapeList *inputShape, nd4j::graph::Context &block) {
@@ -52,25 +52,22 @@ namespace nd4j {
 
         Nd4jStatus LegacyScalarBoolOp::validateAndExecute(Context &block) {
             auto x = INPUT_VARIABLE(0);
-            int offset = 0;
             auto z = OUTPUT_VARIABLE(0);
 
             int opNum = block.opNum() < 0 ? this->_opNum : block.opNum();
 
+            ExtraArguments extras(*block.getTArguments());
+
             if (block.width() > 1) {
                 auto y = INPUT_VARIABLE(1);
 
-                NativeOpExecutioner::execScalarBool(nullptr, opNum, x->getBuffer(), x->getShapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
-                        z->getBuffer(), z->getShapeInfo(), z->specialBuffer(), z->specialShapeInfo(), y->buffer(), y->shapeInfo(), y->specialBuffer(), y->specialShapeInfo(),
-                        block.getTArguments()->data() + offset);
+                NativeOpExecutioner::execScalarBool(block.launchContext(), opNum, x->getBuffer(), x->getShapeInfo(), x->specialBuffer(), x->specialShapeInfo(), z->getBuffer(), z->getShapeInfo(), z->specialBuffer(), z->specialShapeInfo(), y->buffer(), y->shapeInfo(), y->specialBuffer(), y->specialShapeInfo(), extras.argumentsAsT(x->dataType()));
             } else if (block.getTArguments()->size() > 0) {
-                auto y = NDArrayFactory::create(T_ARG(0), block.getVariableSpace()->launchContext());
-                offset++;
-                NativeOpExecutioner::execScalarBool(nullptr, opNum, x->getBuffer(), x->getShapeInfo(), x->specialBuffer(), x->specialShapeInfo(),z->getBuffer(), z->getShapeInfo(),z->specialBuffer(), z->specialShapeInfo(), y.buffer(), y.shapeInfo(), y.specialBuffer(), y.specialShapeInfo(),block.getTArguments()->data() + offset);
-            } else {
-                //auto y = NDArrayFactory::create(_scalar, block.getVariableSpace()->launchContext());
+                auto y = NDArrayFactory::create(T_ARG(0), block.launchContext());
 
-                NativeOpExecutioner::execScalarBool(nullptr, opNum, x->getBuffer(), x->getShapeInfo(), x->specialBuffer(), x->specialShapeInfo(),z->getBuffer(), z->getShapeInfo(),z->specialBuffer(), z->specialShapeInfo(), _scalar->buffer(), _scalar->shapeInfo(), _scalar->specialBuffer(), _scalar->specialShapeInfo(), block.getTArguments()->data() + offset);
+                NativeOpExecutioner::execScalarBool(block.launchContext(), opNum, x->getBuffer(), x->getShapeInfo(), x->specialBuffer(), x->specialShapeInfo(),z->getBuffer(), z->getShapeInfo(),z->specialBuffer(), z->specialShapeInfo(), y.buffer(), y.shapeInfo(), y.specialBuffer(), y.specialShapeInfo(), extras.argumentsAsT(x->dataType(), 1));
+            } else {
+                NativeOpExecutioner::execScalarBool(block.launchContext(), opNum, x->getBuffer(), x->getShapeInfo(), x->specialBuffer(), x->specialShapeInfo(),z->getBuffer(), z->getShapeInfo(),z->specialBuffer(), z->specialShapeInfo(), _scalar->buffer(), _scalar->shapeInfo(), _scalar->specialBuffer(), _scalar->specialShapeInfo(), extras.argumentsAsT(x->dataType()));
             }
 
             STORE_RESULT(*z);
