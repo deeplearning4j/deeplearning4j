@@ -35,7 +35,7 @@ namespace nd4j {
     private:
         // workspace where chunks belong to
         //nd4j::memory::Workspace* _workspace = nullptr;
-        nd4j::graph::LaunchContext* _context = nullptr;
+        nd4j::graph::LaunchContext* _context = nd4j::graph::LaunchContext::defaultContext();
 
         // numeric and symbolic ids of this list
         std::pair<int, int> _id;
