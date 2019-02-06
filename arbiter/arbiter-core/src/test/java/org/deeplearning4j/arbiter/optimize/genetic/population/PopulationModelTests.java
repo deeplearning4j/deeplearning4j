@@ -72,7 +72,7 @@ public class PopulationModelTests {
                 .cullOperator(new TestCullOperator(1))
                 .build();
 
-        sut.population.add(null);
+        sut.getPopulation().add(null);
 
         boolean result = sut.isReadyToBreed();
 
@@ -98,9 +98,9 @@ public class PopulationModelTests {
         sut.add(chromosomes[1]);
         sut.add(chromosomes[2]);
 
-        Assert.assertSame(chromosomes[1], sut.population.get(0));
-        Assert.assertSame(chromosomes[2], sut.population.get(1));
-        Assert.assertSame(chromosomes[0], sut.population.get(2));
+        Assert.assertSame(chromosomes[1], sut.getPopulation().get(0));
+        Assert.assertSame(chromosomes[2], sut.getPopulation().get(1));
+        Assert.assertSame(chromosomes[0], sut.getPopulation().get(2));
     }
 
     @Test
@@ -122,9 +122,9 @@ public class PopulationModelTests {
         sut.add(chromosomes[1]);
         sut.add(chromosomes[2]);
 
-        Assert.assertSame(chromosomes[1], sut.population.get(0));
-        Assert.assertSame(chromosomes[2], sut.population.get(1));
-        Assert.assertSame(chromosomes[0], sut.population.get(2));
+        Assert.assertSame(chromosomes[1], sut.getPopulation().get(0));
+        Assert.assertSame(chromosomes[2], sut.getPopulation().get(1));
+        Assert.assertSame(chromosomes[0], sut.getPopulation().get(2));
     }
 
     @Test
@@ -143,7 +143,7 @@ public class PopulationModelTests {
 
         sut.add(new Chromosome(new double[0], 100.0));
 
-        Assert.assertSame(sut.population, populationListener.population);
+        Assert.assertSame(sut.getPopulation(), populationListener.population);
     }
 
     @Test

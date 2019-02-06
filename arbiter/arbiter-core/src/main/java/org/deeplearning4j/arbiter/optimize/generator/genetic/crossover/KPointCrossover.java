@@ -22,6 +22,7 @@ import org.apache.commons.math3.random.SynchronizedRandomGenerator;
 import org.deeplearning4j.arbiter.optimize.generator.genetic.crossover.parentselection.RandomTwoParentSelection;
 import org.deeplearning4j.arbiter.optimize.generator.genetic.crossover.parentselection.TwoParentSelection;
 import org.deeplearning4j.arbiter.optimize.generator.genetic.crossover.utils.CrossoverPointsGenerator;
+import org.nd4j.base.Preconditions;
 
 import java.util.*;
 
@@ -47,9 +48,7 @@ public class KPointCrossover extends TwoParentsCrossoverOperator {
          * @param rate A value between 0.0 and 1.0
          */
         public Builder crossoverRate(double rate) {
-            if(rate < 0 || rate > 1.0) {
-                throw new IllegalArgumentException("Rate must be between 0.0 and 1.0");
-            }
+            Preconditions.checkState(rate >= 0.0 && rate <= 1.0, "Rate must be between 0.0 and 1.0, got %s", rate);
 
             this.crossoverRate = rate;
             return this;
@@ -62,12 +61,9 @@ public class KPointCrossover extends TwoParentsCrossoverOperator {
          * @param max The maximum number
          */
         public Builder numCrossovers(int min, int max) {
-            if(max < 0 || min < 0) {
-                throw new IllegalArgumentException("Min and max must be positive");
-            }
-            if(max < min) {
-                throw new IllegalArgumentException("Max must be greater or equal to min");
-            }
+            Preconditions.checkState(max >= 0 && min >= 0, "Min and max must be positive");
+            Preconditions.checkState(max >= min, "Max must be greater or equal to min");
+
             this.minCrossovers = min;
             this.maxCrossovers = max;
             return this;
@@ -79,9 +75,8 @@ public class KPointCrossover extends TwoParentsCrossoverOperator {
          * @param num The number of crossovers
          */
         public Builder numCrossovers(int num) {
-            if(num < 0) {
-                throw new IllegalArgumentException("Num must be positive");
-            }
+            Preconditions.checkState(num >= 0, "Num must be positive");
+
             this.minCrossovers = num;
             this.maxCrossovers = num;
             return this;

@@ -16,25 +16,28 @@
 
 package org.deeplearning4j.arbiter.optimize.generator.genetic.crossover;
 
+import lombok.Data;
+
 /**
  * Returned by a crossover operator
  * 
  * @author Alexandre Boulanger
  */
+@Data
 public class CrossoverResult {
 	/**
 	* If false, there was no crossover and the operator simply returned the genes of a random parent.
 	* If true, the genes are the result of a crossover.
 	*/
-    public final boolean hasModification;
+    private final boolean isModified;
 	
 	/**
 	* The genes returned by the operator.
 	*/
-    public final double[] genes;
+    private final double[] genes;
 
-    public CrossoverResult(boolean hasModification, double[] genes) {
-        this.hasModification = hasModification;
+    public CrossoverResult(boolean isModified, double[] genes) {
+        this.isModified = isModified;
         this.genes = genes;
     }
 }

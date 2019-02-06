@@ -27,7 +27,7 @@ public class LeastFitCullOperatorTests {
             originalChromosomes.add(new Chromosome(null, (double)i));
         }
 
-        List<Chromosome> chromosomes = populationModel.population;
+        List<Chromosome> chromosomes = populationModel.getPopulation();
         for(int i = 0; i < 10; ++i) {
             chromosomes.add(originalChromosomes.get(i));
         }

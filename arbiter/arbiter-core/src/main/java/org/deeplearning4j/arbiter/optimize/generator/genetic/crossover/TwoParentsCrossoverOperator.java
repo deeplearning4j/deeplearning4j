@@ -41,6 +41,6 @@ public abstract class TwoParentsCrossoverOperator extends CrossoverOperator {
     @Override
     public void initializeInstance(PopulationModel populationModel) {
         super.initializeInstance(populationModel);
-        parentSelection.initializeInstance(populationModel.population);
+        parentSelection.initializeInstance(populationModel.getPopulation());
     }
 }

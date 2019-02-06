@@ -57,8 +57,8 @@ public class RandomTwoParentSelection extends TwoParentSelection {
             parent2Idx = rng.nextInt(population.size());
         } while (parent1Idx == parent2Idx);
 
-        parents[0] = population.get(parent1Idx).genes;
-        parents[1] = population.get(parent2Idx).genes;
+        parents[0] = population.get(parent1Idx).getGenes();
+        parents[1] = population.get(parent2Idx).getGenes();
 
         return parents;
     }

@@ -21,6 +21,7 @@ import org.apache.commons.math3.random.RandomGenerator;
 import org.apache.commons.math3.random.SynchronizedRandomGenerator;
 import org.deeplearning4j.arbiter.optimize.generator.genetic.crossover.parentselection.RandomTwoParentSelection;
 import org.deeplearning4j.arbiter.optimize.generator.genetic.crossover.parentselection.TwoParentSelection;
+import org.nd4j.base.Preconditions;
 
 /**
  * The uniform crossover will, for each gene, randomly select the parent that donates the gene.
@@ -43,9 +44,7 @@ public class UniformCrossover extends TwoParentsCrossoverOperator {
          * @param rate A value between 0.0 and 1.0
          */
         public Builder crossoverRate(double rate) {
-            if(rate < 0 || rate> 1.0) {
-                throw new IllegalArgumentException("Rate must be within 0.0 and 1.0 range.");
-            }
+            Preconditions.checkState(rate >= 0.0 && rate <= 1.0, "Rate must be between 0.0 and 1.0, got %s", rate);
 
             this.crossoverRate = rate;
             return this;
@@ -57,9 +56,8 @@ public class UniformCrossover extends TwoParentsCrossoverOperator {
          * @param factor In the range [0, 1]. 0 will only select the first parent while 1 only select the second one. The default is 0.5; no bias.
          */
         public Builder parentBiasFactor(double factor) {
-            if(factor < 0 || factor > 1.0) {
-                throw new IllegalArgumentException("Factor must be within 0.0 and 1.0 range.");
-            }
+            Preconditions.checkState(factor >= 0.0 && factor <= 1.0, "Factor must be between 0.0 and 1.0, got %s", factor);
+
             this.parentBiasFactor = factor;
             return this;
         }

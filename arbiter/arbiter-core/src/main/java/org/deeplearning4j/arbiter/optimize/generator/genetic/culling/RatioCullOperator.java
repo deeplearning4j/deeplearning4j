@@ -18,6 +18,7 @@ package org.deeplearning4j.arbiter.optimize.generator.genetic.culling;
 
 import org.deeplearning4j.arbiter.optimize.generator.genetic.Chromosome;
 import org.deeplearning4j.arbiter.optimize.generator.genetic.population.PopulationModel;
+import org.nd4j.base.Preconditions;
 
 import java.util.List;
 
@@ -36,6 +37,8 @@ public abstract class RatioCullOperator implements CullOperator {
      * For example, a ratio of 1/3 on a population with a maximum size of 30 will cull back a given population to 20.
      */
     public RatioCullOperator(double cullRatio) {
+        Preconditions.checkState(cullRatio >= 0.0 && cullRatio <= 1.0, "Cull ratio must be between 0.0 and 1.0, got %s", cullRatio);
+
         this.cullRatio = cullRatio;
     }
 
@@ -52,8 +55,8 @@ public abstract class RatioCullOperator implements CullOperator {
      * Will be called by the population model once created.
      */
     public void initializeInstance(PopulationModel populationModel) {
-        this.population = populationModel.population;
-        culledSize = (int)(populationModel.populationSize * (1.0 - cullRatio) + 0.5);
+        this.population = populationModel.getPopulation();
+        culledSize = (int)(populationModel.getPopulationSize() * (1.0 - cullRatio) + 0.5);
     }
 
     /**

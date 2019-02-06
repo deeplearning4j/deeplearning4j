@@ -16,6 +16,7 @@
 
 package org.deeplearning4j.arbiter.optimize.generator.genetic.population;
 
+import lombok.Getter;
 import org.deeplearning4j.arbiter.optimize.generator.genetic.Chromosome;
 import org.deeplearning4j.arbiter.optimize.generator.genetic.culling.CullOperator;
 import org.deeplearning4j.arbiter.optimize.generator.genetic.culling.LeastFitCullOperator;
@@ -36,28 +37,20 @@ public class PopulationModel {
     /**
      * A comparator used when higher fitness value is better
      */
-    public class MaximizeScoreComparator implements Comparator<Chromosome> {
+    public static class MaximizeScoreComparator implements Comparator<Chromosome> {
         @Override
         public int compare(Chromosome lhs, Chromosome rhs) {
-            if (lhs.fitness < rhs.fitness)
-                return 1;
-            else if (rhs.fitness < lhs.fitness)
-                return -1;
-            return 0;
+            return -Double.compare(lhs.getFitness(), rhs.getFitness());
         }
     }
 
     /**
      * A comparator used when lower fitness value is better
      */
-    public class MinimizeScoreComparator implements Comparator<Chromosome> {
+    public static class MinimizeScoreComparator implements Comparator<Chromosome> {
         @Override
         public int compare(Chromosome lhs, Chromosome rhs) {
-            if (lhs.fitness < rhs.fitness)
-                return -1;
-            else if (rhs.fitness < lhs.fitness)
-                return 1;
-            return 0;
+            return Double.compare(lhs.getFitness(), rhs.getFitness());
         }
     }
 
@@ -115,11 +108,13 @@ public class PopulationModel {
     /**
      * The maximum population size
      */
-    public final int populationSize;
+    @Getter
+    private final int populationSize;
 
     /**
      * The population
      */
+    @Getter
     public final List<Chromosome> population;
 
     private final PopulationInitializer populationInitializer;

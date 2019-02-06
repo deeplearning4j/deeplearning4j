@@ -16,18 +16,13 @@
 
 package org.deeplearning4j.arbiter.optimize.generator;
 
-import org.apache.commons.math3.random.JDKRandomGenerator;
-import org.apache.commons.math3.random.SynchronizedRandomGenerator;
+import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.arbiter.optimize.api.Candidate;
 import org.deeplearning4j.arbiter.optimize.api.OptimizationResult;
 import org.deeplearning4j.arbiter.optimize.api.ParameterSpace;
 import org.deeplearning4j.arbiter.optimize.api.score.ScoreFunction;
 import org.deeplearning4j.arbiter.optimize.generator.genetic.Chromosome;
 import org.deeplearning4j.arbiter.optimize.generator.genetic.ChromosomeFactory;
-import org.deeplearning4j.arbiter.optimize.generator.genetic.crossover.CrossoverOperator;
-import org.deeplearning4j.arbiter.optimize.generator.genetic.crossover.SinglePointCrossover;
-import org.deeplearning4j.arbiter.optimize.generator.genetic.mutation.MutationOperator;
-import org.deeplearning4j.arbiter.optimize.generator.genetic.mutation.RandomMutationOperator;
 import org.deeplearning4j.arbiter.optimize.generator.genetic.population.EmptyPopulationInitializer;
 import org.deeplearning4j.arbiter.optimize.generator.genetic.population.PopulationInitializer;
 import org.deeplearning4j.arbiter.optimize.generator.genetic.population.PopulationModel;
@@ -41,6 +36,7 @@ import java.util.Map;
  *
  * @author Alexandre Boulanger
  */
+@Slf4j
 public class GeneticSearchCandidateGenerator extends BaseCandidateGenerator {
     public static class Builder {
         protected final ParameterSpace<?> parameterSpace;
@@ -99,7 +95,9 @@ public class GeneticSearchCandidateGenerator extends BaseCandidateGenerator {
         public GeneticSearchCandidateGenerator build() {
             if(populationModel == null) {
                 PopulationInitializer defaultPopulationInitializer = new EmptyPopulationInitializer();
-                populationModel = new PopulationModel.Builder(defaultPopulationInitializer).build();
+                populationModel = new PopulationModel.Builder()
+                        .populationInitializer(defaultPopulationInitializer)
+                        .build();
             }
 
             if(chromosomeFactory == null) {
@@ -114,9 +112,9 @@ public class GeneticSearchCandidateGenerator extends BaseCandidateGenerator {
         }
     }
 
-    public final PopulationModel populationModel;
-    public final ChromosomeFactory chromosomeFactory;
-    public final SelectionOperator selectionOperator;
+    protected final PopulationModel populationModel;
+    protected final ChromosomeFactory chromosomeFactory;
+    protected final SelectionOperator selectionOperator;
 
     private GeneticSearchCandidateGenerator(Builder builder) {
         super(builder.parameterSpace, builder.dataParameters, builder.initDone);
@@ -136,7 +134,7 @@ public class GeneticSearchCandidateGenerator extends BaseCandidateGenerator {
     @Override
     public boolean hasMoreCandidates() {
         return true;
-    }
+    } // FIXME
 
     @Override
     public Candidate getCandidate() {
@@ -147,6 +145,7 @@ public class GeneticSearchCandidateGenerator extends BaseCandidateGenerator {
         try {
             value = parameterSpace.getValue(values);
         } catch (Exception e2) {
+            log.warn("Error getting configuration for candidate", e2);
             e = e2;
         }
 

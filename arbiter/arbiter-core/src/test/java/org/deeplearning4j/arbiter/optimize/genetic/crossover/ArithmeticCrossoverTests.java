@@ -26,7 +26,7 @@ public class ArithmeticCrossoverTests {
                 .build();
         CrossoverResult result = sut.crossover();
 
-        Assert.assertFalse(result.hasModification);
+        Assert.assertFalse(result.getHasModification());
         Assert.assertEquals(1, result.genes.length);
         Assert.assertEquals(1.0, result.genes[0], 0.001);
     }
@@ -47,7 +47,7 @@ public class ArithmeticCrossoverTests {
                 .build();
         CrossoverResult result = sut.crossover();
 
-        Assert.assertTrue(result.hasModification);
+        Assert.assertTrue(result.getHasModification());
         Assert.assertEquals(1, result.genes.length);
         Assert.assertEquals(1.9, result.genes[0], 0.001);
     }

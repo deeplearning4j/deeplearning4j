@@ -27,7 +27,7 @@ public class KPointCrossoverTests {
 
         CrossoverResult result = sut.crossover();
 
-        Assert.assertFalse(result.hasModification);
+        Assert.assertFalse(result.getHasModification());
         Assert.assertSame(parents[0], result.genes);
     }
 
@@ -49,7 +49,7 @@ public class KPointCrossoverTests {
 
         CrossoverResult result = sut.crossover();
 
-        Assert.assertTrue(result.hasModification);
+        Assert.assertTrue(result.getHasModification());
         for(double x : result.genes) {
             Assert.assertTrue(x == 0.0 || x == 1.0);
         }

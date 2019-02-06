@@ -156,13 +156,13 @@ public class GeneticSelectionOperator extends SelectionOperator {
     private double[] buildOffspring() {
         double[] offspringValues;
 
-        boolean hasModification = false;
+        boolean isModified = false;
         do {
             CrossoverResult crossoverResult = crossoverOperator.crossover();
-            offspringValues = crossoverResult.genes;
-            hasModification |= crossoverResult.hasModification;
-            hasModification |= mutationOperator.mutate(offspringValues);
-        } while (!hasModification);
+            offspringValues = crossoverResult.getGenes();
+            isModified |= crossoverResult.isModified();
+            isModified |= mutationOperator.mutate(offspringValues);
+        } while (!isModified);
         return offspringValues;
     }
 

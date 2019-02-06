@@ -21,6 +21,7 @@ import org.apache.commons.math3.random.RandomGenerator;
 import org.apache.commons.math3.random.SynchronizedRandomGenerator;
 import org.deeplearning4j.arbiter.optimize.generator.genetic.crossover.parentselection.RandomTwoParentSelection;
 import org.deeplearning4j.arbiter.optimize.generator.genetic.crossover.parentselection.TwoParentSelection;
+import org.nd4j.base.Preconditions;
 
 /**
  * The single point crossover will select a random point where every genes before that point comes from one parent
@@ -42,9 +43,7 @@ public class SinglePointCrossover extends TwoParentsCrossoverOperator {
          * @param rate A value between 0.0 and 1.0
          */
         public Builder crossoverRate(double rate) {
-            if(rate < 0 || rate > 1.0) {
-                throw new IllegalArgumentException("Rate must be between 0.0 and 1.0");
-            }
+            Preconditions.checkState(rate >= 0.0 && rate <= 1.0, "Rate must be between 0.0 and 1.0, got %s", rate);
 
             this.crossoverRate = rate;
             return this;

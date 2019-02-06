@@ -19,6 +19,7 @@ package org.deeplearning4j.arbiter.optimize.generator.genetic.mutation;
 import org.apache.commons.math3.random.JDKRandomGenerator;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.apache.commons.math3.random.SynchronizedRandomGenerator;
+import org.nd4j.base.Preconditions;
 
 /**
  * A mutation operator where each gene has a chance of being mutated with a <i>mutation rate</i> probability.
@@ -38,9 +39,7 @@ public class RandomMutationOperator implements MutationOperator {
          * @param rate The mutation rate. (default 0.005)
          */
         public Builder mutationRate(double rate) {
-            if(rate < 0 || rate> 1.0) {
-                throw new IllegalArgumentException("Rate must be within 0.0 and 1.0 range.");
-            }
+            Preconditions.checkState(rate >= 0.0 && rate <= 1.0, "Rate must be between 0.0 and 1.0, got %s", rate);
 
             this.mutationRate = rate;
             return this;

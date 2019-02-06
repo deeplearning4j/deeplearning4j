@@ -16,21 +16,24 @@
 
 package org.deeplearning4j.arbiter.optimize.generator.genetic;
 
+import lombok.Data;
+
 /**
  * Candidates are stored as Chromosome in the population model
  *
  * @author Alexandre Boulanger
  */
+@Data
 public class Chromosome {
     /**
      * The fitness score of the genes.
      */
-    public final double fitness;
+    protected final double fitness;
 
     /**
      * The genes.
      */
-    public final double[] genes;
+    protected final double[] genes;
 
     public Chromosome(double[] genes, double fitness) {
         this.genes = genes;
