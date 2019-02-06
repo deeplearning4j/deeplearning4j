@@ -634,8 +634,8 @@ public class ParagraphVectorsTest {
         SentenceTransformer transformer = new SentenceTransformer.Builder().iterator(iterator).allowMultithreading(true)
                 .tokenizerFactory(factory).build();
 
-        Iterator<Sequence<VocabWord>> iter = transformer.iterator();
-        for (int i = 0; i < 2; ++i) {
+        ParallelTransformerIterator iter = (ParallelTransformerIterator)transformer.iterator();
+        for (int i = 0; i < 100; ++i) {
             int cnt = 0;
             long counter = 0;
             Sequence<VocabWord> sequence = null;
@@ -644,7 +644,7 @@ public class ParagraphVectorsTest {
                 counter += sequence.size();
                 cnt++;
             }
-            iterator.reset();
+            iter.reset();
             assertEquals(757172, counter);
         }
     }

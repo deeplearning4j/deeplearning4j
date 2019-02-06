@@ -124,9 +124,10 @@ public class ParallelTransformerIterator extends BasicTransformerIterator {
 
     @Override
     public void reset() {
-        this.executorService.shutdown();
-        this.iterator.shutdown();
-        //prefetchIterator();
+        //this.executorService.shutdown();
+        this.iterator.reset();
+        underlyingHas = true;
+        prefetchIterator();
 
         /*for (int x = 0; x < threads.length; x++) {
             if (threads[x] != null) {
