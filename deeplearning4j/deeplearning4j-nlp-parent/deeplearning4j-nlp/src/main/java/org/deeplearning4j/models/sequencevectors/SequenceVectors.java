@@ -378,7 +378,7 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
             // call for SequenceLearningAlgorithm
             nextRandom.set(nextRandom.get() * 25214903917L + 11);
             if (!sequenceLearningAlgorithm.isEarlyTerminationHit())
-                scoreSequences.set(sequenceLearningAlgorithm.learnSequence(sequence, nextRandom, alpha));
+                scoreSequences.set(sequenceLearningAlgorithm.learnSequence(sequence, nextRandom, alpha, batchSequences));
         }
     }
 
@@ -1273,10 +1273,12 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
                                 else if (elementsLearningAlgorithm instanceof CBOW)
                                     ((CBOW)elementsLearningAlgorithm).iterateSample(batchSequences.get(j));
 
-                                /*if (sequenceLearningAlgorithm instanceof DBOW)
-                                    ((SkipGram<T>)sequenceLearningAlgorithm.getElementsLearningAlgorithm()).iterateSample(batchSequences.get(j));
-                                else if (sequenceLearningAlgorithm instanceof DM)
-                                    ((CBOW<T>)sequenceLearningAlgorithm.getElementsLearningAlgorithm()).iterateSample(batchSequences.get(j));*/
+                                if (trainSequenceVectors) {
+                                    if (sequenceLearningAlgorithm instanceof DBOW)
+                                        ((SkipGram<T>) sequenceLearningAlgorithm.getElementsLearningAlgorithm()).iterateSample(batchSequences.get(j));
+                                    else if (sequenceLearningAlgorithm instanceof DM)
+                                        ((CBOW<T>) sequenceLearningAlgorithm.getElementsLearningAlgorithm()).iterateSample(batchSequences.get(j));
+                                }
                             }
                             batchSequences.clear();
                             batchSequences = null;

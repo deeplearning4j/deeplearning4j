@@ -149,7 +149,7 @@ public class ParallelTransformerIterator extends BasicTransformerIterator {
         else
             underlyingHas = false;
 
-        return (underlyingHas || !buffer.isEmpty() || !stringBuffer.isEmpty() || processing.get() > 0);
+        return (underlyingHas || /*!buffer.isEmpty() ||*/ !stringBuffer.isEmpty() || processing.get() > 0);
     }
 
     private static class CallableTransformer implements Callable<Sequence<VocabWord>> {
@@ -186,7 +186,7 @@ public class ParallelTransformerIterator extends BasicTransformerIterator {
             /*if (underlyingHas)
                 stringBuffer.put(iterator.nextDocument());*/
 
-            //processing.incrementAndGet();
+            processing.incrementAndGet();
             if (underlyingHas) {
 
                 CallableTransformer transformer = new CallableTransformer(iterator.nextDocument(), sentenceTransformer);
@@ -195,7 +195,7 @@ public class ParallelTransformerIterator extends BasicTransformerIterator {
             }
             Future<Sequence<VocabWord>> future = buffer.take();
             Sequence<VocabWord>  sequence = future.get();
-            //processing.decrementAndGet();
+            processing.decrementAndGet();
             return sequence;
 
         } catch (Exception e) {
