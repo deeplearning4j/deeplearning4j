@@ -19,6 +19,7 @@ package org.nd4j.linalg.api.ops.impl.transforms.custom;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.base.Preconditions;
+import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.tensorflow.framework.AttrValue;
@@ -26,11 +27,13 @@ import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
 
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
 public class Unique extends DynamicCustomOp {
+    public static final DataType DEFAULT_IDX_DTYPE = DataType.INT;
+
+    private DataType idxDataType;
 
     public Unique(){ }
 
@@ -44,8 +47,8 @@ public class Unique extends DynamicCustomOp {
     }
 
     @Override
-    public String tensorflowName() {
-        return "Unique";
+    public String[] tensorflowNames() {
+        return new String[]{"Unique","UniqueV2"};
     }
 
     @Override
@@ -59,9 +62,13 @@ public class Unique extends DynamicCustomOp {
     }
 
     @Override
+    public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
+        idxDataType = TFGraphMapper.convertType(nodeDef.getAttrOrThrow("out_idx").getType());
+    }
+
+    @Override
     public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes){
         Preconditions.checkState(dataTypes != null && dataTypes.size() == 1, "Expected exactly 1 input datatype for %s, got %s", getClass(), dataTypes);
-        //TODO make out index type configurable
-        return Arrays.asList(dataTypes.get(0), DataType.INT);
+        return Arrays.asList(dataTypes.get(0), (idxDataType == null ? DEFAULT_IDX_DTYPE : idxDataType));
     }
 }

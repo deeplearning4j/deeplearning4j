@@ -41,7 +41,7 @@ import java.util.Map;
 @Slf4j
 public class OnesLike extends DynamicCustomOp {
 
-    protected DataType outputType;    //Alow customizing dtype for TF import
+    protected DataType outputType;    //Allow customizing dtype for TF import
 
     public OnesLike() {
     }
