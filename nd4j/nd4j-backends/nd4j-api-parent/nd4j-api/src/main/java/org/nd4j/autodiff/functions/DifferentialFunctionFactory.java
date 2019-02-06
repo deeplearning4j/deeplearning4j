@@ -187,8 +187,8 @@ public class DifferentialFunctionFactory {
         return new org.nd4j.linalg.api.ops.impl.shape.Linspace(sameDiff(), lower, upper, count, dt).outputVariable();
     }
 
-    public SDVariable range(double from, double to, double step) {
-        return new Range(sameDiff(), from, to, step).outputVariable();
+    public SDVariable range(double from, double to, double step, DataType dataType) {
+        return new Range(sameDiff(), from, to, step, dataType).outputVariable();
     }
 
     public SDVariable cast(SDVariable toCast, DataType toType){
@@ -1276,16 +1276,16 @@ public class DifferentialFunctionFactory {
         return new ReverseSequence(sameDiff(), x, seq_lengths).outputVariable();
     }
 
-    public SDVariable sequenceMask(SDVariable lengths, SDVariable maxLen) {
-        return new SequenceMask(sameDiff(), lengths, maxLen).outputVariable();
+    public SDVariable sequenceMask(SDVariable lengths, SDVariable maxLen, DataType dataType) {
+        return new SequenceMask(sameDiff(), lengths, maxLen, dataType).outputVariable();
     }
 
-    public SDVariable sequenceMask(SDVariable lengths, int maxLen) {
-        return new SequenceMask(sameDiff(), lengths, maxLen).outputVariable();
+    public SDVariable sequenceMask(SDVariable lengths, int maxLen, DataType dataType) {
+        return new SequenceMask(sameDiff(), lengths, maxLen, dataType).outputVariable();
     }
 
-    public SDVariable sequenceMask(SDVariable lengths) {
-        return new SequenceMask(sameDiff(), lengths).outputVariable();
+    public SDVariable sequenceMask(SDVariable lengths, DataType dataType) {
+        return new SequenceMask(sameDiff(), lengths, dataType).outputVariable();
     }
 
     public SDVariable concat(int dimension, SDVariable... inputs) {

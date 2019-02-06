@@ -68,6 +68,7 @@ import org.nd4j.linalg.api.ops.impl.reduce3.EuclideanDistance;
 import org.nd4j.linalg.api.ops.impl.reduce3.ManhattanDistance;
 import org.nd4j.linalg.api.ops.impl.shape.ConfusionMatrix;
 import org.nd4j.linalg.api.ops.impl.shape.Eye;
+import org.nd4j.linalg.api.ops.impl.shape.OneHot;
 import org.nd4j.linalg.api.ops.impl.shape.tensorops.TensorArray;
 import org.nd4j.linalg.api.ops.impl.transforms.Assert;
 import org.nd4j.linalg.api.ops.impl.transforms.gradient.GradientBackwardsMarker;
@@ -2044,10 +2045,11 @@ public class SameDiff {
      * @param from Initial/smallest value
      * @param to   Largest value (exclusive)
      * @param step Step size
+     * @param dataType The output variable datatype
      * @return 1D SDVariable with the specified values
      */
-    public SDVariable range(double from, double to, double step){
-        return range(null, from, to, step);
+    public SDVariable range(double from, double to, double step, DataType dataType){
+        return range(null, from, to, step, dataType);
     }
 
     /**
@@ -2060,8 +2062,8 @@ public class SameDiff {
      * @param step Step size
      * @return 1D SDVariable with the specified values
      */
-    public SDVariable range(String name, double from, double to, double step){
-        SDVariable ret = f().range(from, to, step);
+    public SDVariable range(String name, double from, double to, double step, DataType dataType){
+        SDVariable ret = f().range(from, to, step, dataType);
         return updateVariableNameAndReference(ret, name);
     }
 
@@ -6054,7 +6056,14 @@ public class SameDiff {
      * @see #oneHot(String, SDVariable, int, int, double, double)
      */
     public SDVariable oneHot(SDVariable indices, int depth, int axis, double on, double off) {
-        return oneHot(null, indices, depth, axis, on, off);
+        return oneHot(null, indices, depth, axis, on, off, OneHot.DEFAULT_DTYPE);
+    }
+
+    /**
+     * @see #oneHot(String, SDVariable, int, int, double, double, DataType)
+     */
+    public SDVariable oneHot(SDVariable indices, int depth, int axis, double on, double off, DataType dataType) {
+        return oneHot(null, indices, depth, axis, on, off, dataType);
     }
 
     /**
@@ -6083,6 +6092,13 @@ public class SameDiff {
      * @return Output variable
      */
     public SDVariable oneHot(String name, SDVariable indices, int depth, int axis, double on, double off) {
+        return oneHot(name, indices, depth, axis, on, off, OneHot.DEFAULT_DTYPE);
+    }
+
+    /**
+     * As per {@link #oneHot(String, SDVariable, int, int, double, double)} but allows configuring the output datatype
+     */
+    public SDVariable oneHot(String name, SDVariable indices, int depth, int axis, double on, double off, DataType dataType) {
         SDVariable ret = f().onehot(indices, depth, axis, on, off);
         return updateVariableNameAndReference(ret, name);
     }
@@ -7773,47 +7789,46 @@ public class SameDiff {
      * @param maxLen  Maximum sequence length
      * @return Output variable
      */
-    public SDVariable sequenceMask(String name, SDVariable lengths, SDVariable maxLen) {
-        SDVariable ret = f().sequenceMask(lengths, maxLen);
+    public SDVariable sequenceMask(String name, SDVariable lengths, SDVariable maxLen, DataType dataType) {
+        SDVariable ret = f().sequenceMask(lengths, maxLen, dataType);
         return updateVariableNameAndReference(ret, name);
     }
 
     /**
-     * @see #sequenceMask(String, SDVariable, SDVariable)
+     * @see #sequenceMask(String, SDVariable, SDVariable, DataType)
      */
-    public SDVariable sequenceMask(SDVariable lengths, SDVariable maxLen) {
-        return sequenceMask(null, lengths, maxLen);
+    public SDVariable sequenceMask(SDVariable lengths, SDVariable maxLen, DataType dataType) {
+        return sequenceMask(null, lengths, maxLen, dataType);
     }
 
     /**
-     * @see #sequenceMask(String, SDVariable, SDVariable)
+     * @see #sequenceMask(String, SDVariable, SDVariable, DataType)
      */
-    public SDVariable sequenceMask(String name, SDVariable lengths, int maxLen) {
-        SDVariable ret = f().sequenceMask(lengths, maxLen);
+    public SDVariable sequenceMask(String name, SDVariable lengths, int maxLen, DataType dataType) {
+        SDVariable ret = f().sequenceMask(lengths, maxLen, dataType);
         return updateVariableNameAndReference(ret, name);
     }
 
     /**
-     * @see #sequenceMask(String, SDVariable, SDVariable)
+     * @see #sequenceMask(String, SDVariable, SDVariable, DataType)
      */
-    public SDVariable sequenceMask(SDVariable lengths, int maxLen) {
-        return sequenceMask(null, lengths, maxLen);
+    public SDVariable sequenceMask(SDVariable lengths, int maxLen, DataType dataType) {
+        return sequenceMask(null, lengths, maxLen, dataType);
     }
 
     /**
-     * @see #sequenceMask(String, SDVariable, SDVariable)
+     * @see #sequenceMask(String, SDVariable, SDVariable, DataType)
      */
-    public SDVariable sequenceMask(String name, SDVariable lengths) {
-        SDVariable ret = f().sequenceMask(lengths);
+    public SDVariable sequenceMask(String name, SDVariable lengths, DataType dataType) {
+        SDVariable ret = f().sequenceMask(lengths, dataType);
         return updateVariableNameAndReference(ret, name);
     }
 
     /**
-     * @see #sequenceMask(String, SDVariable, SDVariable)
+     * @see #sequenceMask(String, SDVariable, SDVariable, DataType)
      */
-    public SDVariable sequenceMask(SDVariable lengths) {
-        SDVariable ret = f().sequenceMask(lengths);
-        return updateVariableNameAndReference(ret, null);
+    public SDVariable sequenceMask(SDVariable lengths, DataType dataType) {
+        return sequenceMask(lengths, null, dataType);
     }
 
     /**
