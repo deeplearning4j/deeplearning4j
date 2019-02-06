@@ -24,6 +24,7 @@ import org.nd4j.autodiff.samediff.serde.FlatBuffersMapper;
 import org.nd4j.base.Preconditions;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.imports.descriptors.properties.adapters.DataTypeAdapter;
+import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
@@ -42,6 +43,8 @@ import java.util.Map;
  * @author Adam Gibson
  */
 public class Shape extends DynamicCustomOp {
+
+    protected DataType dataType;
 
     public Shape() {}
 
@@ -78,8 +81,8 @@ public class Shape extends DynamicCustomOp {
     public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
         super.initFromTensorFlow(nodeDef, initWith, attributesForNode, graph);
 
-        val output_type = nodeDef.getAttrOrThrow("out_type").getType().getNumber();
-        val dtype = DataTypeAdapter.dtypeConv(output_type);
+        dataType = TFGraphMapper.convertType(nodeDef.getAttrOrThrow("out_type").getType());
+        val dtype = DataTypeAdapter.dtypeConv(nodeDef.getAttrOrThrow("out_type").getType());
         iArguments.add((long) FlatBuffersMapper.getDataTypeAsByte(dtype));
     }
 
@@ -96,8 +99,6 @@ public class Shape extends DynamicCustomOp {
     @Override
     public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes){
         Preconditions.checkState(dataTypes.size() == 1, "Expected list with exactly 1 datatype for %s, got %s", getClass(), dataTypes);
-        //Output type is always long (i.e., shape of array)
-        //TODO TF allows customizing type
-        return Collections.singletonList(DataType.LONG);
+        return Collections.singletonList(dataType == null ? DataType.LONG : dataType);
     }
 }
