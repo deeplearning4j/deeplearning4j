@@ -33,32 +33,40 @@ namespace helpers {
 
 ///////////////////////////////////////////////////////////////////
 template<typename T>
-__global__ static void concatCuda(void** pVx,  Nd4jLong** pxShapeInfo, void** pVz, Nd4jLong** pzShapeInfo) {
-
-    const int blockId = blockIdx.x;    
-
-    auto x = reinterpret_cast< T*>(pVx[blockId]);
-    auto z = reinterpret_cast<T*>(pVz[blockId]);
-    auto xShapeInfo = reinterpret_cast<Nd4jLong*>(pxShapeInfo[blockId]);
-    auto zShapeInfo = reinterpret_cast<Nd4jLong*>(pzShapeInfo[blockId]);          
-
-    __shared__ Nd4jLong  len;
+__global__ static void concatCuda(const int numOfArrs, void** pVx,  Nd4jLong** pxShapeInfo, void** pVz, Nd4jLong** pzShapeInfo) {
     
-    if (threadIdx.x == 0)         
-        len = shape::length(xShapeInfo);
+    __shared__ int arrIdx, blocksPerArr;
+    __shared__ T *x, *z;
+    __shared__ Nd4jLong *zShapeInfo, *xShapeInfo, arrLen, arrLenPerBlock, start, end;
+    
+    if (threadIdx.x == 0) {
+            
+        blocksPerArr = (gridDim.x + numOfArrs - 1) / numOfArrs;     // ceil 
+        arrIdx = blockIdx.x / blocksPerArr;
+    
+        x = reinterpret_cast<T*>(pVx[arrIdx]);
+        z = reinterpret_cast<T*>(pVz[arrIdx]);
+        xShapeInfo = reinterpret_cast<Nd4jLong*>(pxShapeInfo[arrIdx]);
+        zShapeInfo = reinterpret_cast<Nd4jLong*>(pzShapeInfo[arrIdx]);
+        arrLen = shape::length(xShapeInfo);
 
-    __syncthreads();
+        arrLenPerBlock = (arrLen + blocksPerArr - 1) / blocksPerArr;  // ceil
 
-    for (Nd4jLong i = threadIdx.x; i < len; i+= blockDim.x)
-        z[shape::getIndexOffset(i, zShapeInfo, len)] = x[shape::getIndexOffset(i, xShapeInfo, len)];
+        start = (blockIdx.x % blocksPerArr) * arrLenPerBlock;
+        end   = (start + arrLenPerBlock) > arrLen ? arrLen : (start + arrLenPerBlock);        
+    }
+
+    __syncthreads();    
+
+    for (Nd4jLong i = start + threadIdx.x; i < end; i += blockDim.x)
+        z[shape::getIndexOffset(i, zShapeInfo, arrLen)] = x[shape::getIndexOffset(i, xShapeInfo, arrLen)];
 }
 
 template<typename T>
-__host__ static void concatCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, const cudaStream_t *stream,  void** pVx, Nd4jLong** pxShapeInfo, void** pVz, Nd4jLong** pzShapeInfo) {
+__host__ static void concatCudaLauncher(const int numOfArrs, const cudaStream_t *stream,  void** pVx, Nd4jLong** pxShapeInfo, void** pVz, Nd4jLong** pzShapeInfo) {
 
-    concatCuda<T><<<blocksPerGrid, threadsPerBlock, 1024, *stream>>>(pVx, pxShapeInfo, pVz, pzShapeInfo);
+    concatCuda<T><<<512, 256, 1024, *stream>>>(numOfArrs, pVx, pxShapeInfo, pVz, pzShapeInfo);
 }
-
 
     //////////////////////////////////////////////////////////////////////////
     void triu(graph::LaunchContext* context, const NDArray& input, NDArray& output, const int diagonal) {
@@ -331,12 +339,9 @@ void concat(graph::LaunchContext* context, const std::vector<NDArray*>& inArrs, 
     cudaMemcpyAsync(dOutBuffers,   hOutBuffers.data(),   hOutBuffers.size() * sizeof(void*),       cudaMemcpyHostToDevice, *context->getCudaStream());
     cudaMemcpyAsync(dInBuffers,    hInBuffers.data(),    hInBuffers.size()  * sizeof(void*),       cudaMemcpyHostToDevice, *context->getCudaStream());
     cudaMemcpyAsync(dOutShapeInfo, hOutShapeInfo.data(), hOutShapeInfo.size() * sizeof(Nd4jLong*), cudaMemcpyHostToDevice, *context->getCudaStream());
-    cudaMemcpyAsync(dInShapeInfo,  hInShapeInfo.data(),  hInShapeInfo.size() * sizeof(Nd4jLong*),  cudaMemcpyHostToDevice, *context->getCudaStream());
+    cudaMemcpyAsync(dInShapeInfo,  hInShapeInfo.data(),  hInShapeInfo.size() * sizeof(Nd4jLong*),  cudaMemcpyHostToDevice, *context->getCudaStream());    
 
-    const int threadsPerBlock = MAX_NUM_THREADS;
-    const int blocksPerGrid = numOfArrs;
-
-    BUILD_SINGLE_SELECTOR(inArrs[0]->dataType(), concatCudaLauncher, (blocksPerGrid, threadsPerBlock, context->getCudaStream(), dInBuffers, dInShapeInfo, dOutBuffers, dOutShapeInfo), LIBND4J_TYPES);
+    BUILD_SINGLE_SELECTOR(inArrs[0]->dataType(), concatCudaLauncher, (numOfArrs, context->getCudaStream(), dInBuffers, dInShapeInfo, dOutBuffers, dOutShapeInfo), LIBND4J_TYPES);
 
     cudaResult = cudaStreamSynchronize(*context->getCudaStream());        
     if (cudaResult != 0) throw cuda_exception::build("helpers::concat cuda failed !", cudaResult);
@@ -368,7 +373,7 @@ void concat(graph::LaunchContext* context, const std::vector<NDArray*>& inArrs, 
 
 
 
-BUILD_SINGLE_TEMPLATE(template void concatCudaLauncher, (const int blocksPerGrid, const int threadsPerBlock, const cudaStream_t *stream, void** pVx, Nd4jLong** pxShapeInfo, void** pVz, Nd4jLong** pzShapeInfo), LIBND4J_TYPES);
+BUILD_SINGLE_TEMPLATE(template void concatCudaLauncher, (const int numOfArrs, const cudaStream_t *stream, void** pVx, Nd4jLong** pxShapeInfo, void** pVz, Nd4jLong** pzShapeInfo), LIBND4J_TYPES);
 
 }
 }
