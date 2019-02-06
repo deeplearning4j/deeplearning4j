@@ -23,6 +23,8 @@ import org.deeplearning4j.arbiter.optimize.api.termination.MaxCandidatesConditio
 import org.deeplearning4j.arbiter.optimize.config.OptimizationConfiguration;
 import org.deeplearning4j.arbiter.optimize.generator.GeneticSearchCandidateGenerator;
 import org.deeplearning4j.arbiter.optimize.generator.RandomSearchGenerator;
+import org.deeplearning4j.arbiter.optimize.generator.genetic.exceptions.GeneticGenerationException;
+import org.deeplearning4j.arbiter.optimize.generator.genetic.selection.SelectionOperator;
 import org.deeplearning4j.arbiter.optimize.runner.IOptimizationRunner;
 import org.deeplearning4j.arbiter.optimize.runner.LocalOptimizationRunner;
 import org.deeplearning4j.arbiter.optimize.runner.listener.impl.LoggingStatusListener;
@@ -32,6 +34,14 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class TestGeneticSearch {
+    public class TestSelectionOperator extends SelectionOperator {
+
+        @Override
+        public double[] buildNextGenes() {
+            throw new GeneticGenerationException("TEST");
+        }
+    }
+
     @Test
     public void test() throws Exception {
 
@@ -52,6 +62,31 @@ public class TestGeneticSearch {
         runner.execute();
 
         System.out.println("----- Complete -----");
+    }
+
+    @Test
+    public void GeneticSearchCandidateGenerator_getCandidate_GeneticExceptionShouldStopGeneration() {
+
+        ScoreFunction scoreFunction = new BraninFunction.BraninScoreFunction();
+
+        //Define configuration:
+        CandidateGenerator candidateGenerator = new GeneticSearchCandidateGenerator.Builder(new BraninFunction.BraninSpace(), scoreFunction)
+                .selectionOperator(new TestSelectionOperator())
+                .build();
+
+        OptimizationConfiguration configuration = new OptimizationConfiguration.Builder()
+                .candidateGenerator(candidateGenerator)
+                .scoreFunction(scoreFunction)
+                .terminationConditions(new MaxCandidatesCondition(50))
+                .build();
+
+        IOptimizationRunner runner = new LocalOptimizationRunner(configuration, new BraninFunction.BraninTaskCreator());
+
+        runner.addListeners(new LoggingStatusListener());
+        runner.execute();
+
+        System.out.println("----- Complete -----");
+
     }
 
 }

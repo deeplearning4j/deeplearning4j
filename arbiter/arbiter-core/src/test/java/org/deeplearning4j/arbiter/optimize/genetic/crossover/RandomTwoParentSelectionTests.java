@@ -24,7 +24,7 @@ public class RandomTwoParentSelectionTests {
 
         double[][] result = sut.selectParents();
 
-        Assert.assertSame(population.get(1).genes, result[0]);
-        Assert.assertSame(population.get(0).genes, result[1]);
+        Assert.assertSame(population.get(1).getGenes(), result[0]);
+        Assert.assertSame(population.get(0).getGenes(), result[1]);
     }
 }

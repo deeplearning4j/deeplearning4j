@@ -23,6 +23,7 @@ import org.deeplearning4j.arbiter.optimize.api.ParameterSpace;
 import org.deeplearning4j.arbiter.optimize.api.score.ScoreFunction;
 import org.deeplearning4j.arbiter.optimize.generator.genetic.Chromosome;
 import org.deeplearning4j.arbiter.optimize.generator.genetic.ChromosomeFactory;
+import org.deeplearning4j.arbiter.optimize.generator.genetic.exceptions.GeneticGenerationException;
 import org.deeplearning4j.arbiter.optimize.generator.genetic.population.EmptyPopulationInitializer;
 import org.deeplearning4j.arbiter.optimize.generator.genetic.population.PopulationInitializer;
 import org.deeplearning4j.arbiter.optimize.generator.genetic.population.PopulationModel;
@@ -116,6 +117,8 @@ public class GeneticSearchCandidateGenerator extends BaseCandidateGenerator {
     protected final ChromosomeFactory chromosomeFactory;
     protected final SelectionOperator selectionOperator;
 
+    protected boolean hasMoreCandidates = true;
+
     private GeneticSearchCandidateGenerator(Builder builder) {
         super(builder.parameterSpace, builder.dataParameters, builder.initDone);
 
@@ -133,8 +136,8 @@ public class GeneticSearchCandidateGenerator extends BaseCandidateGenerator {
 
     @Override
     public boolean hasMoreCandidates() {
-        return true;
-    } // FIXME
+        return hasMoreCandidates;
+    }
 
     @Override
     public Candidate getCandidate() {
@@ -144,6 +147,9 @@ public class GeneticSearchCandidateGenerator extends BaseCandidateGenerator {
         Exception e = null;
         try {
             value = parameterSpace.getValue(values);
+        } catch (GeneticGenerationException e2) {
+            hasMoreCandidates = false;
+            e = e2;
         } catch (Exception e2) {
             log.warn("Error getting configuration for candidate", e2);
             e = e2;

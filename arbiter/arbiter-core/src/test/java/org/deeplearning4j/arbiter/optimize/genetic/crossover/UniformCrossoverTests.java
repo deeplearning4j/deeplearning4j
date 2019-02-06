@@ -27,8 +27,8 @@ public class UniformCrossoverTests {
 
         CrossoverResult result = sut.crossover();
 
-        Assert.assertFalse(result.getHasModification());
-        Assert.assertSame(parents[0], result.genes);
+        Assert.assertFalse(result.isModified());
+        Assert.assertSame(parents[0], result.getGenes());
     }
 
     @Test
@@ -49,10 +49,10 @@ public class UniformCrossoverTests {
 
         CrossoverResult result = sut.crossover();
 
-        Assert.assertTrue(result.getHasModification());
-        Assert.assertEquals(1.0, result.genes[0], 0.0);
-        Assert.assertEquals(2.0, result.genes[1], 0.0);
-        Assert.assertEquals(1.0, result.genes[2], 0.0);
+        Assert.assertTrue(result.isModified());
+        Assert.assertEquals(1.0, result.getGenes()[0], 0.0);
+        Assert.assertEquals(2.0, result.getGenes()[1], 0.0);
+        Assert.assertEquals(1.0, result.getGenes()[2], 0.0);
     }
 
 }

@@ -2,13 +2,14 @@ package org.deeplearning4j.arbiter.optimize.genetic.selection;
 
 import org.apache.commons.math3.random.RandomGenerator;
 import org.deeplearning4j.arbiter.optimize.generator.genetic.ChromosomeFactory;
+import org.deeplearning4j.arbiter.optimize.generator.genetic.crossover.CrossoverOperator;
 import org.deeplearning4j.arbiter.optimize.generator.genetic.crossover.CrossoverResult;
 import org.deeplearning4j.arbiter.optimize.generator.genetic.culling.CullOperator;
+import org.deeplearning4j.arbiter.optimize.generator.genetic.exceptions.GeneticGenerationException;
+import org.deeplearning4j.arbiter.optimize.generator.genetic.mutation.MutationOperator;
 import org.deeplearning4j.arbiter.optimize.generator.genetic.population.PopulationInitializer;
 import org.deeplearning4j.arbiter.optimize.generator.genetic.population.PopulationModel;
 import org.deeplearning4j.arbiter.optimize.generator.genetic.selection.GeneticSelectionOperator;
-import org.deeplearning4j.arbiter.optimize.genetic.TestCrossoverOperator;
-import org.deeplearning4j.arbiter.optimize.genetic.TestMutationOperator;
 import org.deeplearning4j.arbiter.optimize.genetic.TestPopulationInitializer;
 import org.deeplearning4j.arbiter.optimize.genetic.TestRandomGenerator;
 import org.junit.Assert;
@@ -39,6 +40,36 @@ public class GeneticSelectionOperatorTests {
         @Override
         public int getCulledSize() {
             return culledSize;
+        }
+    }
+
+    private class TestMutationOperator implements  MutationOperator {
+
+        private boolean mutateResult;
+
+        public TestMutationOperator(boolean mutateResult) {
+
+            this.mutateResult = mutateResult;
+        }
+
+        @Override
+        public boolean mutate(double[] genes) {
+            return mutateResult;
+        }
+    }
+
+    private class TestCrossoverOperator extends CrossoverOperator {
+
+        private CrossoverResult result;
+
+        public TestCrossoverOperator(CrossoverResult result) {
+
+            this.result = result;
+        }
+
+        @Override
+        public CrossoverResult crossover() {
+            return result;
         }
     }
 
@@ -168,10 +199,52 @@ public class GeneticSelectionOperatorTests {
         sut.initializeInstance(populationModel, chromosomeFactory);
 
         double[] newGenes = sut.buildNextGenes();
-        Assert.assertSame(crossoverResults[0].genes, newGenes);
+        Assert.assertSame(crossoverResults[0].getGenes(), newGenes);
 
         newGenes = sut.buildNextGenes();
-        Assert.assertSame(crossoverResults[2].genes, newGenes);
+        Assert.assertSame(crossoverResults[2].getGenes(), newGenes);
     }
 
+    @Test(expeced = GeneticGenerationException.class)
+    public void GeneticSelectionOperator_CrossoverAndMutationCantGenerateNew_ShouldThrow() {
+        TestCullOperator cullOperator = new TestCullOperator(-1);
+
+        PopulationModel populationModel = new PopulationModel.Builder()
+                .cullOperator(cullOperator)
+                .build();
+
+        MutationOperator mutationOperator = new TestMutationOperator(false);
+        CrossoverOperator crossoverOperator = new TestCrossoverOperator(new CrossoverResult(false, null));
+
+        GeneticSelectionOperator sut = new GeneticSelectionOperator.Builder()
+                .crossoverOperator(crossoverOperator)
+                .mutationOperator(mutationOperator)
+                .build();
+        sut.initializeInstance(populationModel, null);
+
+        sut.buildNextGenes();
+    }
+
+    @Test(expected = GeneticGenerationException.class)
+    public void GeneticSelectionOperator_CrossoverAndMutationCantGenerateNew_ShouldThrow() {
+        TestCullOperator cullOperator = new TestCullOperator(-1);
+
+        PopulationModel populationModel = new PopulationModel.Builder()
+                .cullOperator(cullOperator)
+                .build();
+
+        MutationOperator mutationOperator = new TestMutationOperator(false);
+        CrossoverOperator crossoverOperator = new TestCrossoverOperator(new CrossoverResult(true, new double[] { 1.0 }));
+
+        GeneticSelectionOperator sut = new GeneticSelectionOperator.Builder()
+                .crossoverOperator(crossoverOperator)
+                .mutationOperator(mutationOperator)
+                .build();
+        sut.initializeInstance(populationModel, null);
+
+        // This call is used to add the genes to the previousGenes collection
+        sut.buildNextGenes();
+
+        sut.buildNextGenes();
+    }
 }

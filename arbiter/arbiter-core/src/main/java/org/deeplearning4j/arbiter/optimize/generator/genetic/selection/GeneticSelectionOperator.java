@@ -23,6 +23,7 @@ import org.deeplearning4j.arbiter.optimize.generator.genetic.ChromosomeFactory;
 import org.deeplearning4j.arbiter.optimize.generator.genetic.crossover.CrossoverOperator;
 import org.deeplearning4j.arbiter.optimize.generator.genetic.crossover.CrossoverResult;
 import org.deeplearning4j.arbiter.optimize.generator.genetic.crossover.SinglePointCrossover;
+import org.deeplearning4j.arbiter.optimize.generator.genetic.exceptions.GeneticGenerationException;
 import org.deeplearning4j.arbiter.optimize.generator.genetic.mutation.MutationOperator;
 import org.deeplearning4j.arbiter.optimize.generator.genetic.mutation.RandomMutationOperator;
 import org.deeplearning4j.arbiter.optimize.generator.genetic.population.PopulationModel;
@@ -38,6 +39,7 @@ import java.util.Arrays;
 public class GeneticSelectionOperator extends SelectionOperator {
 
     private final static int PREVIOUS_GENES_TO_KEEP = 100;
+    private final static int MAX_NUM_GENERATION_ATTEMPTS = 100;
 
     public static class Builder
     {
@@ -123,18 +125,28 @@ public class GeneticSelectionOperator extends SelectionOperator {
      * <li>After: Parents will be selected among the population, a crossover will be applied followed by a mutation.</li>
      * </ul>
      * @return Returns the generated set of genes
+     * @throws GeneticGenerationException If buildNextGenes() can't generate a set that has not already been tried,
+     *                                               or if the crossover and the mutation operators can't generate a set,
+     *                                               this exception is thrown.
      */
     @Override
     public double[] buildNextGenes() {
         double[] result;
 
+        boolean hasAlreadyBeenTried = false;
+        int attemptsRemaining = MAX_NUM_GENERATION_ATTEMPTS;
         do {
             if (populationModel.isReadyToBreed()) {
                 result = buildOffspring();
             } else {
                 result = buildRandomGenes();
             }
-        } while (hasAlreadyBeenTried(result));
+
+            hasAlreadyBeenTried = hasAlreadyBeenTried(result);
+            if(hasAlreadyBeenTried && --attemptsRemaining == 0) {
+                throw new GeneticGenerationException("Failed to generate a set of genes not already tried.");
+            }
+        } while (hasAlreadyBeenTried);
 
         previousGenes[previousGenesIdx] = result;
         previousGenesIdx = ++previousGenesIdx % previousGenes.length;
@@ -157,12 +169,18 @@ public class GeneticSelectionOperator extends SelectionOperator {
         double[] offspringValues;
 
         boolean isModified = false;
+        int attemptsRemaining = MAX_NUM_GENERATION_ATTEMPTS;
         do {
             CrossoverResult crossoverResult = crossoverOperator.crossover();
             offspringValues = crossoverResult.getGenes();
             isModified |= crossoverResult.isModified();
             isModified |= mutationOperator.mutate(offspringValues);
+
+            if(!isModified && --attemptsRemaining == 0) {
+                throw new GeneticGenerationException(String.format("Crossover and mutation operators failed to generate a new set of genes after %s attempts.", MAX_NUM_GENERATION_ATTEMPTS));
+            }
         } while (!isModified);
+
         return offspringValues;
     }
 
