@@ -61,6 +61,15 @@ public class CBOW<T extends SequenceElement> implements ElementsLearningAlgorith
     protected double negative;
     protected double sampling;
     protected int[] variableWindows;
+    protected int workers = Runtime.getRuntime().availableProcessors();
+
+    public int getWorkers() {
+        return workers;
+    }
+
+    public void setWorkers(int workers) {
+        this.workers = workers;
+    }
 
     @Getter
     @Setter
@@ -177,7 +186,7 @@ public class CBOW<T extends SequenceElement> implements ElementsLearningAlgorith
     }
 
     public void iterateSample(T currentWord, int[] windowWords, AtomicLong nextRandom, double alpha,
-                    boolean isInference, int numLabels, boolean trainWords, INDArray inferenceVector) {
+                              boolean isInference, int numLabels, boolean trainWords, INDArray inferenceVector) {
         int[] idxSyn1 = null;
         byte[] codes = null;
 
@@ -218,10 +227,13 @@ public class CBOW<T extends SequenceElement> implements ElementsLearningAlgorith
         CbowRound cbow = null;
 
         if (useHS && useNegative) {
-            cbow = new CbowRound(Nd4j.scalar(currentWord.getIndex()), Nd4j.createFromArray(windowWords), Nd4j.scalar(currentWord.getIndex()),
+            cbow = new CbowRound(Nd4j.scalar(currentWord.getIndex()), Nd4j.createFromArray(windowWords),
+                    Nd4j.scalar(currentWord.getIndex()),
                     syn0.get(), syn1.get(), syn1Neg.get(),
-                    expTable.get(), table.get(), Nd4j.createFromArray(idxSyn1), Nd4j.createFromArray(codes), (int)negative, Nd4j.scalar(alpha), Nd4j.scalar(nextRandom.get()),
-                    inferenceVector != null ? inferenceVector : Nd4j.empty(syn0.get().dataType()), configuration.isPreciseMode());
+                    expTable.get(), table.get(), Nd4j.createFromArray(idxSyn1), Nd4j.createFromArray(codes),
+                    (int)negative, Nd4j.scalar(alpha), Nd4j.scalar(nextRandom.get()),
+                    inferenceVector != null ? inferenceVector : Nd4j.empty(syn0.get().dataType()),
+                    workers);
         }
         else if (useHS) {
             cbow = new CbowRound(currentWord.getIndex(), windowWords,
@@ -359,7 +371,7 @@ public class CBOW<T extends SequenceElement> implements ElementsLearningAlgorith
                 useHS ? codesArray : Nd4j.empty(DataType.BYTE),
                 (int) negative, alphasArray, Nd4j.createFromArray(randoms),
                 /*inferenceVector != null ? inferenceVector :*/ Nd4j.empty(syn0.get().dataType()),
-                configuration.isPreciseMode());
+                workers);
 
         Nd4j.getExecutioner().exec(cbow);
 

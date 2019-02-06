@@ -30,10 +30,8 @@ import org.deeplearning4j.models.sequencevectors.sequence.Sequence;
 import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.nd4j.linalg.api.buffer.DataType;
-import org.nd4j.linalg.api.ndarray.BaseNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.aggregates.Aggregate;
-import org.nd4j.linalg.api.ops.aggregates.impl.AggregateSkipGram;
 import org.nd4j.linalg.api.ops.impl.nlp.SkipGramRound;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.DeviceLocalNDArray;
@@ -62,6 +60,15 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
     protected double sampling;
     protected int[] variableWindows;
     protected int vectorLength;
+    protected int workers = Runtime.getRuntime().availableProcessors();
+
+    public int getWorkers() {
+        return workers;
+    }
+
+    public void setWorkers(int workers) {
+        this.workers = workers;
+    }
 
     @Getter
     @Setter
@@ -392,11 +399,12 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
         }
 
         if (useHS && useNegative) {
-            sg = new SkipGramRound(Nd4j.scalar(lastWord.getIndex()), Nd4j.scalar(target), syn0.get(), syn1.get(), syn1Neg.get(), expTable.get(),
+            sg = new SkipGramRound(Nd4j.scalar(lastWord.getIndex()), Nd4j.scalar(target),
+                    syn0.get(), syn1.get(), syn1Neg.get(), expTable.get(),
                     table.get(), (int) negative, Nd4j.create(idxSyn1), Nd4j.create(intCodes),
                     Nd4j.scalar(alpha), Nd4j.scalar(nextRandom.get()),
                     inferenceVector != null ? inferenceVector : Nd4j.empty(syn0.get().dataType()),
-                    configuration.isPreciseMode());
+                    configuration.isPreciseMode(), workers);
         }
         else if (useHS) {
             sg = new SkipGramRound(lastWord.getIndex(), syn0.get(), syn1.get(), expTable.get(),
@@ -519,7 +527,8 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
                 useHS ? codesArray : Nd4j.empty(DataType.BYTE),
                 alphasArray, randomValuesArray,
                 /*inferenceVector != null ? inferenceVector :*/ Nd4j.empty(syn0.get().dataType()),
-                configuration.isPreciseMode());
+                configuration.isPreciseMode(),
+                workers);
 
         Nd4j.getExecutioner().exec(sg);
 

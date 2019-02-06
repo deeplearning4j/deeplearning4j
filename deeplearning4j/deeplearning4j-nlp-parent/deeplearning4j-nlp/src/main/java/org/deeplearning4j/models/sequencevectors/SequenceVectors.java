@@ -1257,6 +1257,12 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
                                 }
                             }
                         }
+
+                        if (elementsLearningAlgorithm instanceof SkipGram)
+                            ((SkipGram)elementsLearningAlgorithm).setWorkers(workers);
+                        else if (elementsLearningAlgorithm instanceof CBOW)
+                            ((CBOW)elementsLearningAlgorithm).setWorkers(workers);
+
                         int batchSize = configuration.getBatchSize();
                         if (batchSize > 1 && batchSequences != null) {
                             int rest = batchSequences.size() % batchSize;
