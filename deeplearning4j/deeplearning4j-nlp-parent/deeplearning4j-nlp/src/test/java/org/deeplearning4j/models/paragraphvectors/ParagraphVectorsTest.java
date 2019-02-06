@@ -52,12 +52,14 @@ import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.io.CollectionUtils;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.util.SerializationUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -619,6 +621,48 @@ public class ParagraphVectorsTest {
         log.info("Similarity positive: " + simV);
     }
 
+    @Test
+    public void testIterator() throws IOException {
+        val folder_labeled = testDir.newFolder();
+        val folder_unlabeled = testDir.newFolder();
+        new ClassPathResource("/paravec/labeled").copyDirectory(folder_labeled);
+        new ClassPathResource("/paravec/unlabeled").copyDirectory(folder_unlabeled);
+
+
+        FileLabelAwareIterator labelAwareIterator = new FileLabelAwareIterator.Builder()
+                .addSourceFolder(folder_labeled).build();
+
+        ClassPathResource resource_sentences = new ClassPathResource("/big/raw_sentences.txt");
+        SentenceIterator iter = new BasicLineIterator(resource_sentences.getFile());
+
+        int i = 0;
+        for (; i < 10000; ++i) {
+            int j = 0;
+            int labels = 0;
+            int words = 0;
+            while (labelAwareIterator.hasNextDocument()) {
+                ++j;
+                LabelledDocument document = labelAwareIterator.nextDocument();
+                labels += document.getLabels().size();
+                List<VocabWord> lst =  document.getReferencedContent();
+                if (!CollectionUtils.isEmpty(lst))
+                    words += lst.size();
+            }
+            labelAwareIterator.reset();
+            //System.out.println(words + " " + labels + " " + j);
+            assertEquals(0, words);
+            assertEquals(30, labels);
+            assertEquals(30, j);
+            j = 0;
+            while (iter.hasNext()) {
+                ++j;
+                iter.nextSentence();
+            }
+            assertEquals(97162, j);
+            iter.reset();
+        }
+
+    }
 
     /*
         In this test we'll build w2v model, and will use it's vocab and weights for ParagraphVectors.
