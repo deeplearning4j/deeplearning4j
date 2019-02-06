@@ -172,7 +172,7 @@ public class ClassPathResource extends AbstractFileResolvingResource {
                 stream = getStreamFromZip.getStream();
                 zipFile = getStreamFromZip.getZipFile();
 
-                Preconditions.checkState(entry.isDirectory(), "Source must be a directory");
+                Preconditions.checkState(entry.isDirectory(), "Source must be a directory: %s", entry.getName());
 
                 String pathNoSlash = this.path;
                 if(pathNoSlash.endsWith("/") || pathNoSlash.endsWith("\\")){

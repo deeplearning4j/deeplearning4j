@@ -21,7 +21,6 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.junit.Test;
 import org.nd4j.autodiff.functions.DifferentialFunction;
-import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.serde.FlatBuffersMapper;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ops.*;

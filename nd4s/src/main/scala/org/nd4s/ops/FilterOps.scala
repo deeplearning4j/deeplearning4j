@@ -25,7 +25,7 @@ object FilterOps {
     new FilterOps(x, x.length().toInt, f)
 }
 class FilterOps(_x: INDArray, len: Int, f: Double => Boolean)
-    extends BaseScalarOp(_x, null: INDArray, _x, len, 0)
+    extends BaseScalarOp(_x, null: INDArray, _x, 0)
     with LeftAssociativeBinaryOp {
 
   def this() {

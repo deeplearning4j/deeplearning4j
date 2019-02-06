@@ -20,4 +20,6 @@ class DataType(object):
     UINT64 = 14
     QINT8 = 15
     QINT16 = 16
+    BFLOAT16 = 17
+    UTF8 = 50
 

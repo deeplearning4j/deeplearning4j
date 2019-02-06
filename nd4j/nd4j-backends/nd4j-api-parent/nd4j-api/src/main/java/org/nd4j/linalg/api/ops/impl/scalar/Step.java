@@ -39,19 +39,6 @@ public class Step extends BaseScalarOp {
         super(sameDiff, i_v, cutoff, inPlace);
         this.cutoff = cutoff;
         this.extraArgs = new Object[] {cutoff};
-
-    }
-
-    public Step(SameDiff sameDiff, SDVariable i_v, boolean inPlace, Object[] extraArgs, double cutoff) {
-        super(sameDiff, i_v, cutoff, inPlace, extraArgs);
-        this.cutoff = cutoff;
-        this.extraArgs = new Object[] {cutoff};
-    }
-
-    public Step(SameDiff sameDiff, SDVariable i_v, Object[] extraArgs, double cutoff) {
-        super(sameDiff, i_v, cutoff, extraArgs);
-        this.cutoff = cutoff;
-        this.extraArgs = new Object[] {cutoff};
     }
 
     public Step() {
@@ -65,12 +52,6 @@ public class Step extends BaseScalarOp {
         this.extraArgs = new Object[] {cutoff};
     }
 
-    public Step(INDArray x, INDArray z, long n) {
-        super(x, z, n);
-        cutoff = 0.0;
-        this.extraArgs = new Object[] {cutoff};
-    }
-
     public Step(INDArray x) {
         super(x, 0.0);
         cutoff = 0.0;
@@ -79,12 +60,6 @@ public class Step extends BaseScalarOp {
 
     public Step(INDArray x, INDArray z, double cutoff) {
         super(x, z, cutoff);
-        this.cutoff = cutoff;
-        this.extraArgs = new Object[] {cutoff};
-    }
-
-    public Step(INDArray x, INDArray z, long n, double cutoff) {
-        super(x, z, n);
         this.cutoff = cutoff;
         this.extraArgs = new Object[] {cutoff};
     }
@@ -113,13 +88,6 @@ public class Step extends BaseScalarOp {
     @Override
     public String tensorflowName() {
         throw new NoOpNameFoundException("No tensorflow op opName found for " +  opName());
-    }
-
-
-    @Override
-    public void init(INDArray x, INDArray y, INDArray z, long n) {
-        super.init(x, y, z, n);
-        this.extraArgs = new Object[] {cutoff};
     }
 
     @Override

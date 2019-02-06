@@ -73,7 +73,7 @@ public class CompareAndSet extends BaseTransformSameOp {
         else
             this.mode = condition.condtionNum();
 
-        init(x, null, x, x.length());
+        this.extraArgs = new Object[]{compare, set, eps, (double) mode};
     }
 
 
@@ -106,12 +106,12 @@ public class CompareAndSet extends BaseTransformSameOp {
      * @param condition
      */
     public CompareAndSet(INDArray x, INDArray z, double set, Condition condition) {
-        super(x, null, z, x.lengthLong());
+        super(x, null, z);
         this.compare = condition.getValue();
         this.set = set;
         this.eps = condition.epsThreshold();
         this.mode = condition.condtionNum();
-        init(x, null, z, x.lengthLong());
+        this.extraArgs = new Object[]{compare, set, eps, (double) mode};
     }
 
     /**
@@ -143,12 +143,12 @@ public class CompareAndSet extends BaseTransformSameOp {
      * @param condition
      */
     public CompareAndSet(INDArray x, INDArray y, INDArray z, Condition condition) {
-        super(x, y, z, x.lengthLong());
+        super(x, y, z);
         this.compare = condition.getValue();
         this.set = 0;
         this.eps = condition.epsThreshold();
         this.mode = condition.condtionNum();
-        init(x, y, z, x.lengthLong());
+        this.extraArgs = new Object[]{compare, set, eps, (double) mode};
     }
 
     /**
@@ -166,25 +166,7 @@ public class CompareAndSet extends BaseTransformSameOp {
         this.set = set;
         this.eps = eps;
         this.mode = 0;
-        init(x, null, z, x.length());
-    }
-
-    /**
-     * This constructor is shortcut to epsEquals.
-     *
-     * @param x
-     * @param z
-     * @param compare
-     * @param set
-     * @param eps
-     */
-    public CompareAndSet(INDArray x, INDArray z, double compare, double set, double eps, long n) {
-        super(x, z, n);
-        this.compare = compare;
-        this.set = set;
-        this.eps = eps;
-        this.mode = 0;
-        init(x, null, x, n);
+        this.extraArgs = new Object[]{compare, set, eps, (double) mode};
     }
 
     @Override
@@ -223,15 +205,9 @@ public class CompareAndSet extends BaseTransformSameOp {
     }
 
     @Override
-    public void init(INDArray x, INDArray y, INDArray z, long n) {
-        super.init(x, y, z, n);
-        this.extraArgs = new Object[]{compare, set, eps, (double) mode};
-    }
-
-    @Override
     public List<SDVariable> doDiff(List<SDVariable> gradient) {
         //Pass through gradient where condition is NOT matched (condition matched: output replaced by scalar)
-        SDVariable maskNotMatched = sameDiff.matchCondition(arg(), condition).rsub(1.0);
+        SDVariable maskNotMatched = sameDiff.matchCondition(arg(), condition).castTo(arg().dataType()).rsub(1.0);
         SDVariable gradAtIn = gradient.get(0).mul(maskNotMatched);
         return Collections.singletonList(gradAtIn);
     }

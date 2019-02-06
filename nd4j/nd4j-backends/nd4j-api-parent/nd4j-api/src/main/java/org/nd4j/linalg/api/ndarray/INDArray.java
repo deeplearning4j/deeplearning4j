@@ -552,7 +552,7 @@ public interface INDArray extends Serializable, AutoCloseable {
     /**
      * Reverse in place division
      *
-     * @param n      the number to divide by  by
+     * @param n      the number to divide by
      * @param result the result ndarray
      * @return the result ndarray
      */
@@ -1750,6 +1750,8 @@ public interface INDArray extends Serializable, AutoCloseable {
      */
     INDArray sum(int... dimension);
 
+    INDArray sum(boolean keepDims, int... dimension);
+
     /**
      * This method takes boolean condition, and returns number of elements matching this condition
      *
@@ -1827,11 +1829,11 @@ public interface INDArray extends Serializable, AutoCloseable {
 
     @Deprecated
     void setShape(long... shape);
-    
+
     /**
      * Shape and stride setter
      * @param shape
-     * @param stride 
+     * @param stride
      */
     public void setShapeAndStride(int[] shape, int[] stride);
 
@@ -1859,7 +1861,7 @@ public interface INDArray extends Serializable, AutoCloseable {
     INDArray subArray(long[] offsets, int[] shape, int[] stride);
 
     /**
-     * Returns the elements at the the specified indices
+     * Returns the elements at the specified indices
      *
      * @param indices the indices to getScalar
      * @return the array with the specified elements
@@ -1875,6 +1877,8 @@ public interface INDArray extends Serializable, AutoCloseable {
      */
     int getInt(int... indices);
 
+    long getLong(long... indices);
+
     /**
      * Get a double value at the specified indices.
      * @param indices Indices to get the double at. Number of indices must match the array rank.
@@ -1885,7 +1889,7 @@ public interface INDArray extends Serializable, AutoCloseable {
     double getDouble(long... indices);
 
     /**
-     * Returns the elements at the the specified indices
+     * Returns the elements at the specified indices
      *
      * @param indices the indices to getScalar
      * @return the array with the specified elements
@@ -2123,20 +2127,20 @@ public interface INDArray extends Serializable, AutoCloseable {
      * Examples originally from the theano docs:
      * http://deeplearning.net/software/theano/library/tensor/basic.html
      *
-     *  Returns a view of this tensor with permuted dimensions. Typically the pattern will include the integers 0, 1, ... ndim-1, and any number of ‘x’ characters in dimensions where this tensor should be broadcasted.
-    
+     *  Returns a view of this tensor with permuted dimensions. Typically the pattern will include the integers 0, 1, ... ndim-1, and any number of 'x' characters in dimensions where this tensor should be broadcasted.
+
      A few examples of patterns and their effect:
-    
-     (‘x’) -> make a 0d (scalar) into a 1d vector
+
+     ('x') -> make a 0d (scalar) into a 1d vector
      (0, 1) -> identity for 2d vectors
      (1, 0) -> inverts the first and second dimensions
-     (‘x’, 0) -> make a row out of a 1d vector (N to 1xN)
-     (0, ‘x’) -> make a column out of a 1d vector (N to Nx1)
+     ('x', 0) -> make a row out of a 1d vector (N to 1xN)
+     (0, 'x') -> make a column out of a 1d vector (N to Nx1)
      (2, 0, 1) -> AxBxC to CxAxB
-     (0, ‘x’, 1) -> AxB to Ax1xB
-     (1, ‘x’, 0) -> AxB to Bx1xA
+     (0, 'x', 1) -> AxB to Ax1xB
+     (1, 'x', 0) -> AxB to Bx1xA
      (1,) -> This remove dimensions 0. It must be a broadcastable dimension (1xA to A)
-    
+
      * @param rearrange     the dimensions to swap to
      * @param newOrder      the new order (think permute)
      * @param broadCastable (whether the dimension is broadcastable) (must be same length as new order)
@@ -2289,7 +2293,9 @@ public interface INDArray extends Serializable, AutoCloseable {
      * Returns the total number of elements in the ndarray
      *
      * @return the number of elements in the ndarray
+     * @deprecated use {@link #length()}
      */
+    @Deprecated
     long lengthLong();
 
 
@@ -2547,11 +2553,11 @@ public interface INDArray extends Serializable, AutoCloseable {
     INDArray migrate(boolean detachOnNoWs);
 
     /**
-       * This method returns percentile value for this INDArray
-       *
-       * @param percentile target percentile in range of 0..100
-       * @return
-       */
+     * This method returns percentile value for this INDArray
+     *
+     * @param percentile target percentile in range of 0..100
+     * @return
+     */
     Number percentileNumber(Number percentile);
 
     /**
@@ -2704,4 +2710,16 @@ public interface INDArray extends Serializable, AutoCloseable {
      * PLEASE NOTE: This method is NOT safe by any means
      */
     void close();
+
+    /**
+     * This method returns empty array with the same dtype/order/shape as this one
+     * @return
+     */
+    INDArray like();
+
+    /**
+     * This method returns uninitialized array with the same dtype/order/shape as this one
+     * @return
+     */
+    INDArray ulike();
 }

@@ -44,19 +44,7 @@ public class LogX extends BaseScalarOp {
     public LogX() {}
 
     public LogX(INDArray x, INDArray z, double base) {
-        super(x, null, z, x.length(), base);
-        this.base = base;
-        this.extraArgs = new Object[] {base};
-    }
-
-    public LogX(INDArray x, INDArray z, double base, long n) {
-        super(x, null, z, n, base);
-        this.base = base;
-        this.extraArgs = new Object[] {base};
-    }
-
-    public LogX(INDArray x, INDArray y, INDArray z, double base, long n) {
-        super(x, null, z, x.length(), n);
+        super(x, null, z, base);
         this.base = base;
         this.extraArgs = new Object[] {base};
     }

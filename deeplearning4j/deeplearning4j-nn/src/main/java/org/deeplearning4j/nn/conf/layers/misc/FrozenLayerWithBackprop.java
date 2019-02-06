@@ -33,6 +33,7 @@ import org.deeplearning4j.nn.params.FrozenLayerWithBackpropParamInitializer;
 import org.deeplearning4j.optimize.api.TrainingListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.learning.config.IUpdater;
+import org.nd4j.linalg.learning.regularization.Regularization;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 
 import java.util.Collection;
@@ -94,13 +95,9 @@ public class FrozenLayerWithBackprop extends BaseWrapperLayer {
     }
 
     @Override
-    public double getL1ByParam(String paramName) {
-        return 0;
-    }
-
-    @Override
-    public double getL2ByParam(String paramName) {
-        return 0;
+    public List<Regularization> getRegularizationByParam(String paramName){
+        //No regularization for frozen layers
+        return null;
     }
 
     @Override
@@ -120,7 +117,7 @@ public class FrozenLayerWithBackprop extends BaseWrapperLayer {
     }
 
     @Override
-    public void setConstraints(List<LayerConstraint> constraints){
+    public void setConstraints(List<LayerConstraint> constraints) {
         this.constraints = constraints;
         this.underlying.setConstraints(constraints);
     }

@@ -33,7 +33,7 @@ namespace nd4j {
 
             bool hasList = false;
 
-            if (block.width() == 3){
+            if (block.width() >= 3){
                 list = INPUT_LIST(0);
                 array = INPUT_VARIABLE(1);
                 sizes = INPUT_VARIABLE(2);

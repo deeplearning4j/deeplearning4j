@@ -36,19 +36,24 @@ namespace nd4j {
         std::vector<Nd4jPointer> _pointers;
 
         template <typename T>
-        void convertAndCopy(Nd4jPointer pointer);
+        void convertAndCopy(Nd4jPointer pointer, Nd4jLong offset);
 
         void* allocate(size_t length, size_t elementSize);
     public:
         explicit ExtraArguments(std::initializer_list<double> arguments);
         explicit ExtraArguments(std::initializer_list<Nd4jLong> arguments);
+
+        explicit ExtraArguments(const std::vector<double> &arguments);
+        explicit ExtraArguments(const std::vector<int> &arguments);
+        explicit ExtraArguments(const std::vector<Nd4jLong> &arguments);
+
         explicit ExtraArguments();
         ~ExtraArguments();
 
         template <typename T>
-        void* argumentsAsT();
+        void* argumentsAsT(Nd4jLong offset = 0);
 
-        void* argumentsAsT(nd4j::DataType dataType);
+        void* argumentsAsT(nd4j::DataType dataType, Nd4jLong offset = 0);
 
         size_t length();
     };

@@ -39,16 +39,12 @@ public class Entropy extends BaseReduceFloatOp {
 
     public Entropy() {}
 
-    public Entropy(INDArray x, INDArray z, long n) {
-        super(x, null, z, n);
+    public Entropy(INDArray x, INDArray z, int... dimensions) {
+        super(x, null, z, dimensions);
     }
 
-    public Entropy(INDArray x) {
-        super(x);
-    }
-
-    public Entropy(INDArray x, INDArray z) {
-        super(x, null, z, x.lengthLong());
+    public Entropy(INDArray x, int... dimensions) {
+        super(x, dimensions);
     }
 
     @Override

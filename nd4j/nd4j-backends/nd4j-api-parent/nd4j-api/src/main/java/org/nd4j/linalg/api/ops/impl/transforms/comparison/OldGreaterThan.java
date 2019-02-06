@@ -45,20 +45,8 @@ public class OldGreaterThan extends BaseTransformBoolOp {
         super(sameDiff);
     }
 
-    public OldGreaterThan(SameDiff sameDiff, SDVariable i_v1, SDVariable i_v2, Object[] extraArgs) {
-        super(sameDiff, i_v1, i_v2, extraArgs);
-    }
-
     public OldGreaterThan(SameDiff sameDiff, SDVariable i_v, boolean inPlace) {
         super(sameDiff, i_v, inPlace);
-    }
-
-    public OldGreaterThan(SameDiff sameDiff, SDVariable i_v, long[] shape, boolean inPlace, Object[] extraArgs) {
-        super(sameDiff, i_v, shape, inPlace, extraArgs);
-    }
-
-    public OldGreaterThan(SameDiff sameDiff, SDVariable i_v, Object[] extraArgs) {
-        super(sameDiff, i_v, extraArgs);
     }
 
     public OldGreaterThan() {}
@@ -67,12 +55,8 @@ public class OldGreaterThan extends BaseTransformBoolOp {
         super(x, z);
     }
 
-    public OldGreaterThan(INDArray x, INDArray z, long n) {
-        super(x, z, n);
-    }
-
-    public OldGreaterThan(INDArray x, INDArray y, INDArray z, long n) {
-        super(x, y, z, n);
+    public OldGreaterThan(INDArray x, INDArray y, INDArray z) {
+        super(x, y, z);
     }
 
     public OldGreaterThan(INDArray x) {

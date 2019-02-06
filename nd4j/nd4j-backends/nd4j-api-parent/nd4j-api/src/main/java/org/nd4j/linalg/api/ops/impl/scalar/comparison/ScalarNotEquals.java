@@ -35,8 +35,8 @@ public class ScalarNotEquals extends BaseScalarBoolOp {
     public ScalarNotEquals() {
     }
 
-    public ScalarNotEquals(INDArray x, INDArray z, long n, Number num) {
-        super(x, null, z, n, num);
+    public ScalarNotEquals(INDArray x, INDArray z, Number num) {
+        super(x, null, z, num);
     }
 
     public ScalarNotEquals(INDArray x, Number num) {
@@ -50,14 +50,6 @@ public class ScalarNotEquals extends BaseScalarBoolOp {
 
     public ScalarNotEquals(SameDiff sameDiff, SDVariable i_v, Number scalar, boolean inPlace) {
         super(sameDiff, i_v, scalar, inPlace);
-    }
-
-    public ScalarNotEquals(SameDiff sameDiff, SDVariable i_v, Number scalar, boolean inPlace, Object[] extraArgs) {
-        super(sameDiff, i_v, scalar, inPlace, extraArgs);
-    }
-
-    public ScalarNotEquals(SameDiff sameDiff, SDVariable i_v, Number scalar, Object[] extraArgs) {
-        super(sameDiff, i_v, scalar, extraArgs);
     }
 
     @Override

@@ -43,35 +43,19 @@ public class RelativeError extends BaseTransformSameOp {
         super(sameDiff);
     }
 
-    public RelativeError(SameDiff sameDiff, SDVariable i_v1, SDVariable i_v2, Object[] extraArgs) {
-        super(sameDiff, i_v1, i_v2, extraArgs);
-    }
-
     public RelativeError(SameDiff sameDiff, SDVariable i_v, boolean inPlace) {
         super(sameDiff, i_v, inPlace);
-    }
-
-    public RelativeError(SameDiff sameDiff, SDVariable i_v, int[] shape, boolean inPlace, Object[] extraArgs) {
-        super(sameDiff, i_v, shape, inPlace, extraArgs);
-    }
-
-    public RelativeError(SameDiff sameDiff, SDVariable i_v, Object[] extraArgs) {
-        super(sameDiff, i_v, extraArgs);
     }
 
     public RelativeError() {
     }
 
-    public RelativeError(INDArray x, INDArray y, INDArray z, long n) {
-        super(x, y, z, n);
-    }
-
     public RelativeError(INDArray x, INDArray y) {
-        super(x, y, x, x.lengthLong());
+        super(x, y, x);
     }
 
     public RelativeError(INDArray x, INDArray y, INDArray z) {
-        super(x, y, z, x.lengthLong());
+        super(x, y, z);
     }
 
     @Override
@@ -86,19 +70,13 @@ public class RelativeError extends BaseTransformSameOp {
 
     @Override
     public String onnxName() {
-        throw new NoOpNameFoundException("No  onnx opName found for " + opName());
+        throw new NoOpNameFoundException("No onnx op name found for " + opName());
     }
 
     @Override
     public String tensorflowName() {
-        throw new NoOpNameFoundException("No  onnx opName found for " + opName());
+        throw new NoOpNameFoundException("No TensorFlow opName found for " + opName());
     }
-
-    @Override
-    public void init(INDArray x, INDArray y, INDArray z, long n) {
-        super.init(x, y, z, n);
-    }
-
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v1) {

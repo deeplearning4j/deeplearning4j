@@ -70,6 +70,7 @@ namespace nd4j {
 
         protected:
             OpDescriptor *_descriptor;
+            NDArray *_scalar = nullptr;
 
             virtual void registerTypes();
 

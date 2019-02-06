@@ -29,7 +29,10 @@ namespace nd4j {
             auto list = INPUT_LIST(0);
             auto indices = INPUT_VARIABLE(1);
 
-            REQUIRE_TRUE(indices->isVector(), 0, "Indices for Gather operation should be a vector");
+            indices->printShapeInfo("indices shape");
+            indices->printIndexedBuffer("indices");
+
+            REQUIRE_TRUE(indices->isVector() || indices->rankOf() == 1, 0, "Indices for Gather operation should be a vector");
             REQUIRE_TRUE(list->height() > 0, 0, "Number of elements in list should be positive prior to Gather call");
             REQUIRE_TRUE(list->height() == indices->lengthOf(), 1, "Number of indicies should be equal to number of elements in list, but got [%i] indices instead", indices->lengthOf());
 

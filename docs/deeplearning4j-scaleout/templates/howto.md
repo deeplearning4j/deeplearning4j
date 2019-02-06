@@ -222,7 +222,7 @@ You should set 4 things:
 
 
 Some notes:
-* On YARN, it is generally necessary to set the ```spark.driver.memoryOverhead``` and ```spark.executor.memoryOverhead``` properties. The default settings are much too small for DL4J training.
+* On YARN, it is generally necessary to set the ```spark.yarn.driver.memoryOverhead``` and ```spark.yarn.executor.memoryOverhead``` properties. The default settings are much too small for DL4J training.
 * On Spark standalone, you can also configure memory by modifying the ```conf/spark-env.sh``` file on each node, as described in the [Spark configuration docs](https://spark.apache.org/docs/latest/configuration.html#environment-variables). For example, you could add the following lines to set 8GB heap for the driver, 12 GB off-heap for the driver, 12GB heap for the workers, and 18GB off-heap for the workers:
     * ```SPARK_DRIVER_OPTS=-Dorg.bytedeco.javacpp.maxbytes=12G```
     * ```SPARK_DRIVER_MEMORY=8G```
@@ -472,7 +472,7 @@ try(BufferedInputStream is = new BufferedInputStream(fileSystem.open(new Path(ou
 ## <a name="inference">How to perform distributed inference</a>
 
 Deeplearning4j's Spark implementation supports distributed inference. That is, we can easily generate predictions on an RDD of inputs using a cluster of machines.
-This distributed inference can also be used for networks trained on a single machine and loaded for Spark (see the the [saving/loading section](#saveload) for details on how to load a saved network for use with Spark).
+This distributed inference can also be used for networks trained on a single machine and loaded for Spark (see the [saving/loading section](#saveload) for details on how to load a saved network for use with Spark).
 
 Note: If you want to perform evaluation (i.e., calculate accuracy, F1, MSE, etc), refer to the [evaluation how-to](#evaluation) instead.
 

@@ -34,6 +34,7 @@ import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -147,14 +148,12 @@ public abstract class BaseBroadcastOp extends BaseOp implements BroadcastOp {
     }
 
     public BaseBroadcastOp(INDArray x, INDArray y, INDArray z, int... dimension) {
-        super(x, y, z, x.lengthLong());
+        super(x, y, z);
         Broadcast.validateBroadcastDims(x,y,z, dimension);
 
         this.dimension = dimension;
-        for (int i = 0; i < dimension.length; i++)
-            if (dimension[i] < 0)
-                dimension[i] += x.rank();
 
+        defineDimensions(dimension);
     }
 
     @Override
@@ -168,13 +167,14 @@ public abstract class BaseBroadcastOp extends BaseOp implements BroadcastOp {
      * @return
      */
     public List<LongShapeDescriptor> calculateOutputShape() {
-        List<LongShapeDescriptor> ret = new ArrayList<>();
-        if (larg().getShape() != null && rarg().getShape() != null)
-            ret.add(LongShapeDescriptor.fromShape(Shape.broadcastOutputShape(larg().getShape(), rarg().getShape()), Shape.pickPairwiseDataType(larg().dataType(), rarg().dataType())));
-        else if(larg().getShape() != null)
-            ret.add(LongShapeDescriptor.fromShape(larg().getShape(), larg().dataType()));
+        if(x == null || y == null)
+            return Collections.emptyList();
 
-        return ret;
+        long[] shapeX = x.shape();
+        long[] shapeY = y.shape();
+
+        return Collections.singletonList(LongShapeDescriptor.fromShape(Shape.broadcastOutputShape(shapeX, shapeY),
+                Shape.pickPairwiseDataType(x.dataType(), y.dataType())));
     }
 
 

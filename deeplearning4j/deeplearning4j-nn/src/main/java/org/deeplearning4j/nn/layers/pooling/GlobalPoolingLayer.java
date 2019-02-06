@@ -98,16 +98,6 @@ public class GlobalPoolingLayer extends AbstractLayer<org.deeplearning4j.nn.conf
     }
 
     @Override
-    public double calcL2(boolean backpropParamsOnly) {
-        return 0;
-    }
-
-    @Override
-    public double calcL1(boolean backpropParamsOnly) {
-        return 0;
-    }
-
-    @Override
     public Type type() {
         return Type.SUBSAMPLING;
     }
@@ -303,8 +293,8 @@ public class GlobalPoolingLayer extends AbstractLayer<org.deeplearning4j.nn.conf
 
         switch (poolingType) {
             case MAX:
-                INDArray isMax = Nd4j.getExecutioner().execAndReturn(new IsMax(inputArray.dup(), poolDim));
-                return Nd4j.getExecutioner().execAndReturn(new BroadcastMulOp(isMax, epsilon, isMax, broadcastDims));
+                INDArray isMax = Nd4j.getExecutioner().exec(new IsMax(inputArray.dup(), poolDim));
+                return Nd4j.getExecutioner().exec(new BroadcastMulOp(isMax, epsilon, isMax, broadcastDims));
             case AVG:
                 //if out = avg(in,dims) then dL/dIn = 1/N * dL/dOut
                 int n = 1;

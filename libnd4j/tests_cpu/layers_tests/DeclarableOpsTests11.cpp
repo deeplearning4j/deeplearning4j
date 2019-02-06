@@ -2097,7 +2097,7 @@ TEST_F(DeclarableOpsTests11, softmax_cross_entropy_loss_grad_test6) {
     NDArray weights('c', {2}, nd4j::DataType::DOUBLE);
     
     NDArray dLdpExp('c', {2,4}, {0.0801,  0.0849, -0.2601,  0.0951, 0.0801, -0.2651,  0.0899,  0.0951});
-    NDArray dLdwExp('c', {2}, {-0.0098,  0.0098});
+    NDArray dLdwExp('c', {2}, {-0.014000, 0.014000});
 
     logits.linspace(-0.08, 0.04);
     weights.assign(0.5);
@@ -2195,30 +2195,6 @@ TEST_F(DeclarableOpsTests11, softmax_cross_entropy_loss_grad_test8) {
     delete results;
 }
 
-
-
-///////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests11, mean_pairwssqerr_loss_test9) {
-    
-    NDArray labels('c', {4}, {1,2,3,4});
-    NDArray predictions('c', {4}, {-0.1, 0.25, -0.5, 1.5});
-    NDArray weights('c', {4}, nd4j::DataType::DOUBLE);
-                                                
-    weights.assign(0.5);    
- 
-    nd4j::ops::mean_pairwssqerr_loss op;
-    auto results = op.execute({&predictions, &weights, &labels}, {}, {});
-
-    ASSERT_EQ(ND4J_STATUS_OK, results->status());
-
-    auto *result = results->at(0);            
-
-    ASSERT_TRUE(result->isScalar());    
-    ASSERT_NEAR(result->e<double>(0), 0.0, 1e-5);    
-
-    delete results;
-}
-
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests11, SafeDivideMixed_Test1) {
 
@@ -2229,46 +2205,6 @@ TEST_F(DeclarableOpsTests11, SafeDivideMixed_Test1) {
     numOfNonZero.assign(1);
     sumDiff.applyPairwiseTransform(pairwise::SafeDivide, &numOfNonZero, &sumDiff, nullptr);
     sumDiff.printIndexedBuffer("Output as Is");
-}
-
-////////////////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests11, mean_pairwssqerr_loss_test10) {
-    
-    NDArray labels('c', {2, 3}, {1.0, 2.0, 3.0, -1.0, 2.0, 1.0});    
-    NDArray predictions('c', {2, 3}, {-0.3, -0.2, -0.1, 0, 0.1, 0.2});
-    NDArray weights('c', {2, 1}, {0., 1.});    
-
-    nd4j::ops::mean_pairwssqerr_loss op;
-    auto results = op.execute({&predictions, &weights, &labels}, {}, {});
-
-    ASSERT_EQ(ND4J_STATUS_OK, results->status());
-
-    auto *result = results->at(0);            
-
-    ASSERT_TRUE(result->isScalar());    
-    ASSERT_NEAR(result->e<double>(0), 4.2866659, 1e-5);    
-
-    delete results;
-}
-
-////////////////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests11, mean_pairwssqerr_loss_test11) {
-    
-    NDArray labels('c', {2, 3}, {1.0, 2.0, 3.0, -1.0, 2.0, 1.0});    
-    NDArray predictions('c', {2, 3}, {-0.3, -0.2, -0.1, 0, 0.1, 0.2});
-    NDArray weights('c', {0}, {1.});    
-
-    nd4j::ops::mean_pairwssqerr_loss op;
-    auto results = op.execute({&predictions, &weights, &labels}, {}, {});
-
-    ASSERT_EQ(ND4J_STATUS_OK, results->status());
-
-    auto *result = results->at(0);            
-
-    ASSERT_TRUE(result->isScalar());    
-    ASSERT_NEAR(result->e<double>(0), 5.9066658, 1e-5);    
-
-    delete results;
 }
 
 /////////////////////////////////////////////////////////////////

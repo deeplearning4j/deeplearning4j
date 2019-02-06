@@ -17,8 +17,11 @@
 package org.nd4j.linalg.api.ops.impl.transforms.custom;
 
 import org.nd4j.autodiff.samediff.SDVariable;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 public class ListDiff extends DynamicCustomOp {
@@ -29,7 +32,7 @@ public class ListDiff extends DynamicCustomOp {
 
     @Override
     public String tensorflowName() {
-        return "ListDiff";
+        return "ListDiff";  //Note: Seems to be renamed to tf.setdiff1d in public API?
     }
 
     @Override
@@ -40,5 +43,11 @@ public class ListDiff extends DynamicCustomOp {
     @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {
         throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public List<DataType> calculateOutputDataTypes(List<DataType> inputDataTypes){
+        //TODO make this configurable
+        return Arrays.asList(inputDataTypes.get(0), DataType.INT);
     }
 }

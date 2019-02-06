@@ -22,14 +22,13 @@ import org.junit.Test;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.factory.Nd4j;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.*;
 
 @Slf4j
 public class StringArrayTests {
 
     @Test
-    public void testBasicStrings_1() throws Exception {
+    public void testBasicStrings_1() {
         val array = Nd4j.scalar("alpha");
 
         assertNotNull(array);
@@ -38,10 +37,13 @@ public class StringArrayTests {
         assertEquals(DataType.UTF8, array.dataType());
 
         assertEquals("alpha", array.getStringUnsafe(0));
+        String s = array.toString();
+        assertTrue(s, s.contains("alpha"));
+        System.out.println(s);
     }
 
     @Test
-    public void testBasicStrings_2() throws Exception {
+    public void testBasicStrings_2() {
         val array = Nd4j.create("alpha","beta", "gamma");
 
         assertNotNull(array);
@@ -52,5 +54,21 @@ public class StringArrayTests {
         assertEquals("alpha", array.getStringUnsafe(0));
         assertEquals("beta", array.getStringUnsafe(1));
         assertEquals("gamma", array.getStringUnsafe(2));
+        String s = array.toString();
+        assertTrue(s, s.contains("alpha"));
+        assertTrue(s, s.contains("beta"));
+        assertTrue(s, s.contains("gamma"));
+        System.out.println(s);
+    }
+
+    @Test
+    public void testBasicStrings_3() {
+        val arrayX = Nd4j.create("alpha", "beta", "gamma");
+        val arrayY = Nd4j.create("alpha", "beta", "gamma");
+        val arrayZ = Nd4j.create("Alpha", "bEta", "gamma");
+
+        assertEquals(arrayX, arrayX);
+        assertEquals(arrayX, arrayY);
+        assertNotEquals(arrayX, arrayZ);
     }
 }

@@ -48,16 +48,12 @@ public abstract class BaseReduceBoolOp extends BaseReduceOp implements ReduceBoo
         super(x, null, z, newFormat, keepDims, dimensions);
     }
 
-    public BaseReduceBoolOp(INDArray x, INDArray y, INDArray z, long n) {
-        super(x, y, z, n);
+    public BaseReduceBoolOp(INDArray x, int... dimensions) {
+        this(x, null, true, false, dimensions);
     }
 
-    public BaseReduceBoolOp(INDArray x, INDArray y, INDArray z) {
-        super(x, y, z, x.length());
-    }
-
-    public BaseReduceBoolOp(INDArray x) {
-        super(x);
+    public BaseReduceBoolOp(INDArray x, INDArray z, int... dimensions) {
+        this(x, z, true, false, dimensions);
     }
 
     protected BaseReduceBoolOp() {
@@ -93,19 +89,21 @@ public abstract class BaseReduceBoolOp extends BaseReduceOp implements ReduceBoo
 
     @Override
     public List<LongShapeDescriptor> calculateOutputShape() {
-        if(args().length < 1) {
-            throw new ND4JIllegalStateException("Unable to compute input shape. No arguments found.");
-        }
-
-        long[] argShape = arg().getShape();
-        if (argShape == null && x() == null) {
+        if(x == null)
             return Collections.emptyList();
-        }
-        long[] inputShape = (argShape == null ? x().shape() : argShape);
 
-        val ret = new ArrayList<LongShapeDescriptor>(1);
-        val reducedShape = Shape.getReducedShape(inputShape,dimensions, isKeepDims(), newFormat);
-        ret.add(LongShapeDescriptor.fromShape(reducedShape, DataType.BOOL));
-        return ret;
+        //Calculate reduction shape. Note that reduction on scalar - returns a scalar
+        long[] reducedShape = x.length() == 0 ? x.shape() : Shape.getReducedShape(x.shape(),dimensions, isKeepDims(), newFormat);
+        return Collections.singletonList(LongShapeDescriptor.fromShape(reducedShape, DataType.BOOL));
+    }
+
+    @Override
+    public List<org.nd4j.linalg.api.buffer.DataType> calculateOutputDataTypes(List<org.nd4j.linalg.api.buffer.DataType> dataTypes){
+        //All reduce bool: always bool output type. 2nd input is axis arg
+        Preconditions.checkState(dataTypes != null && (dataTypes.size() == 1 || dataTypes.size() == 2),
+                "Expected 1 or input datatype for %s, got input %s", getClass(), dataTypes);
+        Preconditions.checkState(dataTypes.size() == 1 || dataTypes.get(1).isIntType(), "When executing reductions" +
+                "with 2 inputs, second input (axis) must be an integer datatype for %s, got %s", getClass(), dataTypes);
+        return Collections.singletonList(DataType.BOOL);
     }
 }

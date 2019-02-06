@@ -507,7 +507,8 @@ public class JCublasNDArray extends BaseNDArray {
      */
     @Override
     public String toString() {
-        AtomicAllocator.getInstance().synchronizeHostData(this);
+        if (!isS())
+            AtomicAllocator.getInstance().synchronizeHostData(this);
         return super.toString();
     }
 

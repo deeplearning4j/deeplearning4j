@@ -66,10 +66,6 @@ public abstract class BaseTransformOp extends BaseOp implements TransformOp {
             if(Shape.isPlaceholderShape(i_v2.getShape())) {
                 sameDiff.addPropertyToResolve(this,i_v2.getVarName());
             }
-            if(i_v1.getShape() != null)
-                this.n = ArrayUtil.prod(i_v1.getShape());
-
-
         } else {
             throw new IllegalArgumentException("Input not null variables.");
         }
@@ -94,8 +90,6 @@ public abstract class BaseTransformOp extends BaseOp implements TransformOp {
             this.xVertexId = i_v1.getVarName();
             this.yVertexId = i_v2.getVarName();
             sameDiff.addArgsFor(new SDVariable[]{i_v1,i_v2},this);
-            if(i_v1.getShape() != null)
-                this.n = ArrayUtil.prod(i_v1.getShape());
 
             if(Shape.isPlaceholderShape(i_v1.getShape())) {
                 sameDiff.addPropertyToResolve(this,i_v1.getVarName());
@@ -138,9 +132,6 @@ public abstract class BaseTransformOp extends BaseOp implements TransformOp {
             f().validateDifferentialFunctionsameDiff(i_v);
             this.xVertexId = i_v.getVarName();
             sameDiff.addArgsFor(new SDVariable[]{i_v},this);
-            if(i_v.getShape() != null) {
-                this.n = ArrayUtil.prod(i_v.getShape());
-            }
 
             if(Shape.isPlaceholderShape(i_v.getShape())) {
                 sameDiff.addPropertyToResolve(this,i_v.getVarName());
@@ -169,12 +160,8 @@ public abstract class BaseTransformOp extends BaseOp implements TransformOp {
 
     public BaseTransformOp() {}
 
-    public BaseTransformOp(INDArray x, INDArray z, long n) {
-        super(x, z, n);
-    }
-
-    public BaseTransformOp(INDArray x, INDArray y, INDArray z, long n) {
-        super(x, y, z, n);
+    public BaseTransformOp(INDArray x, INDArray y, INDArray z) {
+        super(x, y, z);
         if (y != null)
             LinAlgExceptions.assertSameLength(x, y, z);
         else if (z != null)
@@ -191,24 +178,6 @@ public abstract class BaseTransformOp extends BaseOp implements TransformOp {
 
     @Override
     public INDArray z() {
-        if(z == null) {
-            if(sameDiff != null) {
-                this.z = outputVariables()[0].getArr();
-                if(this.z == null) {
-                    val var = outputVariables()[0];
-                    if(var.getShape() != null)
-                        this. z = var.storeAndAllocateNewArray();
-                    else {
-                        val argsShape = args()[0].getShape();
-                        if(argsShape != null) {
-                            sameDiff.putShapeForVarName(var.getVarName(),argsShape);
-                            this. z = var.storeAndAllocateNewArray();
-                        }
-                    }
-                }
-            }
-        }
-
         return z;
     }
 

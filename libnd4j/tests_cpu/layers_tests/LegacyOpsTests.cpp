@@ -145,7 +145,9 @@ TEST_F(LegacyOpsTests, Scalar_Test_2) {
     auto exp = NDArrayFactory::create<float>('c', {5, 5});
     exp.assign(7.0);
 
-    nd4j::ops::LegacyScalarOp op(scalar::Add, 5.0f);
+    auto y = NDArrayFactory::create<float>(5.0f);
+
+    nd4j::ops::LegacyScalarOp op(scalar::Add, y);
     auto result = op.execute({&x}, {}, {});
 
     auto z = result->at(0);

@@ -652,6 +652,9 @@ public class Shape {
     }
 
     private static INDArray toOffsetZeroCopyHelper(final INDArray arr, char order, boolean anyOrder) {
+        if(arr.isEmpty())
+            return arr; //Empty arrays are immutable, return as-is
+
         //Use CopyOp:
         char outOrder = (anyOrder ? arr.ordering() : order);
         if (outOrder == 'a')
@@ -677,6 +680,11 @@ public class Shape {
     public static double getDouble(INDArray arr, long... indices) {
         long offset = getOffset(arr.shapeInfo(), indices);
         return arr.data().getDouble(offset);
+    }
+
+    public static long getLong(INDArray arr, long... indices) {
+        long offset = getOffset(arr.shapeInfo(), indices);
+        return arr.data().getLong(offset);
     }
 
     /**
@@ -869,8 +877,8 @@ public class Shape {
 
     public static long getOffset(LongBuffer shapeInformation, long... indices) {
         int rank = rank(shapeInformation);
-        if (indices.length != rank)
-            throw new IllegalArgumentException("Indexes must be same length as array rank");
+        Preconditions.checkState(indices.length == rank, "Number of indices (got %s) must be same as array rank (%s) - indices %s",
+                indices.length, rank, indices);
         long offset = 0;
         for (int i = 0; i < rank; i++) {
             int size_dimi = (int) size(shapeInformation, i);
@@ -2436,9 +2444,7 @@ public class Shape {
     public static int[] newStrides(int[] strides, int newLength, INDArrayIndex[] indexes) {
         if (strides.length > newLength) {
             int[] newStrides = new int[strides.length - 1];
-            for (int i = 0; i < newStrides.length; i++) {
-                newStrides[i] = strides[i + 1];
-            }
+            System.arraycopy(strides, 1, newStrides, 0, newStrides.length);
             strides = newStrides;
         }
 
@@ -2663,15 +2669,13 @@ public class Shape {
      */
     public static int[] shape(int[] buffer) {
         int[] ret = new int[rank(buffer)];
-        for (int i = 0; i < ret.length; i++)
-            ret[i] = buffer[1 + i];
+        System.arraycopy(buffer, 1, ret, 0, ret.length);
         return ret;
     }
 
     public static long[] shape(long[] buffer) {
         long[] ret = new long[rank(buffer)];
-        for (int i = 0; i < ret.length; i++)
-            ret[i] = buffer[1 + i];
+        System.arraycopy(buffer, 1, ret, 0, ret.length);
         return ret;
     }
 
@@ -2950,14 +2954,17 @@ public class Shape {
     }
 
     public static String shapeToString(LongBuffer buffer) {
+        int length = buffer.capacity();
+        long options = buffer.get(length -3);
         val shapeBuff = shapeOf(buffer);
         int rank = Shape.rank(buffer);
         val strideBuff = stride(buffer);
         StringBuilder sb = new StringBuilder();
-        sb.append("Rank: " + rank + ",");
-        sb.append("Offset: " + Shape.offset(buffer) + "\n");
-        sb.append(" Order: " + Shape.order(buffer));
-        sb.append(" Shape: [");
+        sb.append("Rank: ").append(rank).append(",")
+                .append(" DataType: ").append(ArrayOptionsHelper.dataType(options)).append(",")
+                .append(" Offset: ").append(Shape.offset(buffer)).append(",")
+                .append(" Order: ").append(Shape.order(buffer)).append(",")
+                .append(" Shape: [");
         for (int i = 0; i < rank; i++) {
             sb.append(shapeBuff.get(i));
             if (i < rank - 1)
@@ -2965,7 +2972,7 @@ public class Shape {
         }
         sb.append("], ");
 
-        sb.append(" stride: [");
+        sb.append(" Stride: [");
         for (int i = 0; i < rank; i++) {
             sb.append(strideBuff.get(i));
             if (i < rank - 1)
@@ -2973,6 +2980,11 @@ public class Shape {
         }
         sb.append("]");
         return sb.toString();
+    }
+
+    public static String shapeToStringShort(INDArray arr){
+        long[] s = arr.shape();
+        return arr.dataType() + "," + (s == null ? "[]" : Arrays.toString(s).replace(" ","")) + "," + arr.ordering();
     }
 
 
@@ -3348,6 +3360,15 @@ public class Shape {
         if (axis == null || axis.length == 0)
             return new int[] {Integer.MAX_VALUE};
 
+        if(rank == 0){
+            if(axis.length != 1 || (axis[0] != 0 && axis[0] != Integer.MAX_VALUE)){
+                throw new ND4JIllegalStateException("Array axis for scalar (rank 0) array invalid: rank " + Arrays.toString(axis));
+            }
+            if(axis[0] == Integer.MAX_VALUE)
+                return axis;
+            return new int[]{Integer.MAX_VALUE};
+        }
+
         // first we should get rid of all negative axis
         int[] tmp = new int[axis.length];
 
@@ -3355,14 +3376,16 @@ public class Shape {
         for (val v: axis) {
             val t = v < 0 ? v + rank : v;
 
-            if ((t >= rank && t != Integer.MAX_VALUE)|| t < 0)
-                throw new ND4JIllegalStateException("Axis array " + Arrays.toString(axis) + " contains values above rank " + rank);
+            if ((t >= rank && t != Integer.MAX_VALUE)|| t < 0) {
+                throw new ND4JIllegalStateException("Axis array " + Arrays.toString(axis) + " contains values above array rank (rank=" + rank + ")");
+            }
 
             tmp[cnt++] = t;
         }
 
         // now we're sorting array
-        Arrays.sort(tmp);
+        if (tmp.length > 1)
+            Arrays.sort(tmp);
 
         // and getting rid of possible duplicates
         return uniquify(tmp);
@@ -3695,5 +3718,18 @@ public class Shape {
         if(order != 'c' && order != 'f' && order != 'a'){
             throw new IllegalArgumentException("Invalid order arg: must be 'c' or 'f' (or 'a' for vectors), got '" + order + "'");
         }
+    }
+
+    /**
+     * Create an INDArray to represent the (possibly null) int[] dimensions.
+     * If null or length 0, returns an empty INT array. Otherwise, returns a 1d INT NDArray
+     * @param dimensions Dimensions to convert
+     * @return Dimenions as an INDArray
+     */
+    public static INDArray ndArrayDimFromInt(int... dimensions){
+        if (dimensions == null || dimensions.length == 0)
+            return Nd4j.empty(DataType.INT);
+        else
+            return Nd4j.createFromArray(dimensions);
     }
 }

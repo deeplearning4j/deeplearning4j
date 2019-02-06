@@ -31,7 +31,7 @@ import java.util.List;
  * Dot product
  * @author Adam Gibson
  */
-public class Dot extends BaseReduceFloatOp {
+public class Dot extends BaseReduce3Op {
 
     public Dot(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, int... dimensions) {
         super(sameDiff, i_v, i_v2, dimensions);
@@ -39,20 +39,16 @@ public class Dot extends BaseReduceFloatOp {
 
     public Dot() {}
 
-    public Dot(INDArray x, INDArray y, INDArray z, long n) {
-        super(x, y, z, n);
+    public Dot(INDArray x, INDArray y, INDArray z, int... dimensions) {
+        this(x, y, z, true, false, dimensions);
     }
 
-    public Dot(INDArray x, INDArray y, long n) {
-        super(x, y, null, n);
+    public Dot(INDArray x, INDArray y,  int... dimensions) {
+        this(x, y, null, dimensions);
     }
 
-    public Dot(INDArray x) {
-        super(x);
-    }
-
-    public Dot(INDArray x, INDArray y) {
-        super(x, y, null);
+    public Dot(INDArray x, INDArray y, INDArray z) {
+        this(x, y, z, null);
     }
 
     public Dot(INDArray x, INDArray y, INDArray z, boolean newFormat, boolean keepDims, int... dimensions){
@@ -70,28 +66,8 @@ public class Dot extends BaseReduceFloatOp {
     }
 
     @Override
-    public String onnxName(){
-        throw new NoOpNameFoundException("No onnx op opName found for " +  opName());
-    }
-
-    @Override
-    public String tensorflowName(){
-        throw new NoOpNameFoundException("No tensorflow op opName found for " +  opName());
-    }
-
-    @Override
-    public Type getOpType() {
-        return Type.REDUCE3;
-    }
-
-    @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {
         //TODO KEEP DIMS
         return Arrays.asList(f().dotBp(arg(0), arg(1), f1.get(0), false, dimensions));
-    }
-
-    @Override
-    public DataType resultType() {
-        return Nd4j.defaultFloatingPointType();
     }
 }

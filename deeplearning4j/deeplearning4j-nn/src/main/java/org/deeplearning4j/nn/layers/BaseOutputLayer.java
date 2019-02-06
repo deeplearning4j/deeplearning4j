@@ -54,8 +54,7 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
 
     private transient Solver solver;
 
-    private double fullNetworkL1;
-    private double fullNetworkL2;
+    private double fullNetRegTerm;
 
     protected INDArray inputMaskArray;
     protected MaskState inputMaskArrayState;
@@ -69,18 +68,16 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
     }
 
     /** Compute score after labels and input have been set.
-     * @param fullNetworkL1 L1 regularization term for the entire network
-     * @param fullNetworkL2 L2 regularization term for the entire network
+     * @param fullNetRegTerm Regularization score term for the entire network
      * @param training whether score should be calculated at train or test time (this affects things like application of
      *                 dropout, etc)
      * @return score (loss function)
      */
     @Override
-    public double computeScore(double fullNetworkL1, double fullNetworkL2, boolean training, LayerWorkspaceMgr workspaceMgr) {
+    public double computeScore(double fullNetRegTerm, boolean training, LayerWorkspaceMgr workspaceMgr) {
         if (input == null || labels == null)
             throw new IllegalStateException("Cannot calculate score without input and labels " + layerId());
-        this.fullNetworkL1 = fullNetworkL1;
-        this.fullNetworkL2 = fullNetworkL2;
+        this.fullNetRegTerm = fullNetRegTerm;
         INDArray preOut = preOutput2d(training, workspaceMgr);
 
         ILossFunction lossFunction = layerConf().getLossFn();
@@ -88,20 +85,12 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
         double score = lossFunction.computeScore(getLabels2d(workspaceMgr, ArrayType.FF_WORKING_MEM), preOut,
                 layerConf().getActivationFn(), maskArray,false);
 
-        boolean legacy = layerConf().isLegacyBatchScaledL2();
-        if(legacy){
-            score += fullNetworkL1 + fullNetworkL2;
-        }
-
         if(conf().isMiniBatch())
             score /= getInputMiniBatchSize();
 
-        if(!legacy){
-            score += fullNetworkL1 + fullNetworkL2;
-        }
+        score += fullNetRegTerm;
 
         this.score = score;
-
         return score;
     }
 
@@ -112,12 +101,11 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
 
     /**Compute the score for each example individually, after labels and input have been set.
      *
-     * @param fullNetworkL1 L1 regularization term for the entire network (or, 0.0 to not include regularization)
-     * @param fullNetworkL2 L2 regularization term for the entire network (or, 0.0 to not include regularization)
+     * @param fullNetRegTerm Regularization score term for the entire network (or, 0.0 to not include regularization)
      * @return A column INDArray of shape [numExamples,1], where entry i is the score of the ith example
      */
     @Override
-    public INDArray computeScoreForExamples(double fullNetworkL1, double fullNetworkL2, LayerWorkspaceMgr workspaceMgr) {
+    public INDArray computeScoreForExamples(double fullNetRegTerm, LayerWorkspaceMgr workspaceMgr) {
         if (input == null || labels == null)
             throw new IllegalStateException("Cannot calculate score without input and labels " + layerId());
         INDArray preOut = preOutput2d(false, workspaceMgr);
@@ -126,9 +114,8 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
         INDArray scoreArray =
                 lossFunction.computeScoreArray(getLabels2d(workspaceMgr, ArrayType.FF_WORKING_MEM),
                         preOut, layerConf().getActivationFn(), maskArray);
-        double l1l2 = fullNetworkL1 + fullNetworkL2;
-        if (l1l2 != 0.0) {
-            scoreArray.addi(l1l2);
+        if (fullNetRegTerm != 0.0) {
+            scoreArray.addi(fullNetRegTerm);
         }
         return workspaceMgr.leverageTo(ArrayType.ACTIVATIONS, scoreArray);
     }
@@ -142,7 +129,7 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
         Pair<Gradient, INDArray> pair = getGradientsAndDelta(preOut, workspaceMgr);
         this.gradient = pair.getFirst();
 
-        score = computeScore(fullNetworkL1, fullNetworkL2, true, workspaceMgr);
+        score = computeScore(fullNetRegTerm, true, workspaceMgr);
     }
 
     @Override
@@ -324,8 +311,7 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
         solver = null;
         inputMaskArrayState = null;
         inputMaskArray = null;
-        fullNetworkL1 = 0.0;
-        fullNetworkL2 = 0.0;
+        fullNetRegTerm = 0.0;
     }
 
     @Override

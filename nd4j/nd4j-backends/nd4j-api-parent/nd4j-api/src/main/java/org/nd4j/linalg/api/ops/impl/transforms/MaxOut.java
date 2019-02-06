@@ -46,11 +46,6 @@ public class MaxOut extends BaseTransformOp {
         this.max = max;
     }
 
-    public MaxOut(SameDiff sameDiff, SDVariable i_v, long[] shape, boolean inPlace, Object[] extraArgs, Number max) {
-        super(sameDiff, i_v, shape, inPlace, extraArgs);
-        this.max = max;
-    }
-
     public MaxOut(SameDiff sameDiff, SDVariable i_v, Object[] extraArgs, Number max) {
         super(sameDiff, i_v, extraArgs);
         this.max = max;
@@ -60,14 +55,6 @@ public class MaxOut extends BaseTransformOp {
 
     public MaxOut(INDArray x, INDArray z) {
         super(x, z);
-    }
-
-    public MaxOut(INDArray x, INDArray z, long n) {
-        super(x, z, n);
-    }
-
-    public MaxOut(INDArray x, INDArray y, INDArray z, long n) {
-        super(x, y, z, n);
     }
 
     public MaxOut(INDArray x) {
@@ -136,7 +123,6 @@ public class MaxOut extends BaseTransformOp {
             return Collections.emptyList();
 
         ret.add(LongShapeDescriptor.fromShape(arr.shape(), Nd4j.defaultFloatingPointType()));
-        this.n = arr.length();
         return ret;
     }
 }

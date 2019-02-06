@@ -243,9 +243,4 @@ public class ScatterUpdate implements CustomOp {
     public void assertValidForExecution() {
 
     }
-
-    @Override
-    public void populateInputsAndOutputsFromSameDiff() {
-
-    }
 }

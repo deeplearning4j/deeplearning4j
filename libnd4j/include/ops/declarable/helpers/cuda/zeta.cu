@@ -35,7 +35,7 @@ namespace helpers {
     //////////////////////////////////////////////////////////////////////////
     // fast implementation, it is based on Euler-Maclaurin summation formula
     template <typename T>
-    T zeta(const T x, const T q) {
+    T zeta(graph::LaunchContext* context, const T x, const T q) {
         return (T) 0;
     }
 
@@ -48,17 +48,19 @@ namespace helpers {
 	    return result;
     }
 
-	NDArray zeta(graph::LaunchContext* context, const NDArray& x, const NDArray& q) {
-		BUILD_SINGLE_SELECTOR(x.dataType(), return zeta_, (x, q), FLOAT_TYPES);
+	NDArray zeta(graph::LaunchContext* context, const NDArray& x, const NDArray& q, NDArray* output) {
+		BUILD_SINGLE_SELECTOR(x.dataType(), zeta_, (x, q), FLOAT_TYPES);
+
+        return *output;
 	}
 
 	BUILD_SINGLE_TEMPLATE(template NDArray zeta_, (const NDArray& x, const NDArray& q), FLOAT_TYPES);
 
 
-    template bfloat16 zeta(bfloat16, bfloat16);
-    template float16 zeta(float16, float16);
-    template float zeta(float, float);
-    template double zeta(double, double);
+    template bfloat16 zeta(graph::LaunchContext* context, bfloat16, bfloat16);
+    template float16 zeta(graph::LaunchContext* context, float16, float16);
+    template float zeta(graph::LaunchContext* context, float, float);
+    template double zeta(graph::LaunchContext* context, double, double);
 }
 }
 }

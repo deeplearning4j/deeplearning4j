@@ -598,12 +598,19 @@ static void gather_(NDArray* input, const NDArray* indices, NDArray* output, con
     
         // first case: indices consist of only one scalar
         if(indices->isScalar()) {
-            std::vector<int> dimensions = ShapeUtils::evalDimsToExclude(input->rankOf(), {axis});
-            shape::TAD tad(input->getShapeInfo(), dimensions.data(), dimensions.size());
-            tad.createTadOnlyShapeInfo();
-            tad.createOffsets();
-            auto tadArr = NDArray(reinterpret_cast<void *>(reinterpret_cast<T*>(input->getBuffer()) + tad.tadOffsets[indices->e<Nd4jLong>(0)]), tad.tadOnlyShapeInfo, output->getContext());
-            output->assign(&tadArr);
+            if(input->rankOf() <= 1){
+                //For scalar indices, rank 0 or 1 input: can't do tensor along dimension 0 as this is whole array... instead, we want to get a scalar
+				auto idx = indices->e<Nd4jLong>(0);
+				auto scalarNDArray = input->e(idx);
+                output->assign(scalarNDArray);
+            } else {
+                std::vector<int> dimensions = ShapeUtils::evalDimsToExclude(input->rankOf(), {axis});
+                shape::TAD tad(input->getShapeInfo(), dimensions.data(), dimensions.size());
+                tad.createTadOnlyShapeInfo();
+                tad.createOffsets();
+                auto tadArr = NDArray(reinterpret_cast<void *>(reinterpret_cast<T*>(input->getBuffer()) + tad.tadOffsets[indices->e<Nd4jLong>(0)]), tad.tadOnlyShapeInfo, output->getContext());
+                output->assign(&tadArr);
+			}
         }
         else if (input->rankOf() == 1 && indices->isVector()) {
             // special case
@@ -611,57 +618,37 @@ static void gather_(NDArray* input, const NDArray* indices, NDArray* output, con
             for (int e = 0; e < indices->lengthOf(); e++)
                 output->p(e, input->e<T>(indices->e<Nd4jLong>(e)));
         }
-        // second case: indices is vector
-        else if(indices->isVector()) {      
-            auto listOut = output->allTensorsAlongDimension(ShapeUtils::evalDimsToExclude(output->rankOf(), {axis}));
-            auto listIn  = input->allTensorsAlongDimension(ShapeUtils::evalDimsToExclude(input->rankOf(),  {axis}));
-#pragma omp parallel for if(listOut->size() > Environment::getInstance()->elementwiseThreshold()) schedule(guided)             
-            for(int i = 0; i < listOut->size(); ++i)
-                listOut->at(i)->assign(listIn->at(indices->e<Nd4jLong>(i)));
-            delete listOut;
-            delete listIn;
-        }
-        // third case: indices is usual n-dim array
         else {
+
             std::vector<int> dimsOut(indices->rankOf());
             std::iota(dimsOut.begin(), dimsOut.end(), axis);   // fill with axis, axis+1, ... indices->rankOf()-1
-            std::vector<int> temp1 = ShapeUtils::evalDimsToExclude(output->rankOf(), dimsOut);
-            std::vector<int> temp2 = ShapeUtils::evalDimsToExclude(input->rankOf(),  {axis});
-            auto listOut = output->allTensorsAlongDimension(temp1);
-            auto listIn = input->allTensorsAlongDimension(temp2 );
-#pragma omp parallel for if(listOut->size() > Environment::getInstance()->elementwiseThreshold()) schedule(guided)
-            for(int i = 0; i < listOut->size(); ++i)
-                listOut->at(i)->assign(listIn->at(indices->e<Nd4jLong>(i)));
-            delete listOut;
-            delete listIn;
+            const Nd4jLong numOfSubArrs = ShapeUtils::getNumOfSubArrs(output->getShapeInfo(), dimsOut);
+#pragma omp parallel for if(numOfSubArrs > Environment::getInstance()->elementwiseThreshold()) schedule(guided)
+            for(int i = 0; i < numOfSubArrs; ++i) {
+                NDArray subArrOut = (*output)(i, dimsOut);
+                NDArray subArrIn  = (*input)(indices->e<Nd4jLong>(i), {axis});
+                subArrOut.assign(subArrIn);
+            }
         }
     } 
-    else {          // in this case always (numOfIntArgs > 1) !!!
+    else {
         
         for(int i = 1; i < numOfIntArgs; ++i)
             if(intArgs[i] >= input->sizeAt(axis))
                 throw std::runtime_error("helpers::gather function: some of input indexes is larger than corresponding shape of input array !");
 
         // we only allow scalar/vector case here
-        if (numOfIntArgs == 2) {
-            // scalar case
-            std::vector<int> dimensions = ShapeUtils::evalDimsToExclude(input->rankOf(), {axis});
-            shape::TAD tad(input->getShapeInfo(), dimensions.data(), dimensions.size());
-            tad.createTadOnlyShapeInfo();
-            tad.createOffsets();
-            auto tadArr = NDArray(reinterpret_cast<void *>(reinterpret_cast<T*>(input->getBuffer()) + tad.tadOffsets[intArgs[1]]), tad.tadOnlyShapeInfo);
-            output->assign(&tadArr);
-        } else {
-            // vector case
-            auto listOut = output->allTensorsAlongDimension(ShapeUtils::evalDimsToExclude(output->rankOf(), {axis}));
-            auto listIn  = input->allTensorsAlongDimension(ShapeUtils::evalDimsToExclude(input->rankOf(),  {axis}));
-
-            // that's fine, since we know that number of iArgs matches number of elements in listOut
-#pragma omp parallel for if(listOut->size() > Environment::getInstance()->elementwiseThreshold()) schedule(guided)     
-            for(int i = 0; i < listOut->size(); ++i)
-                listOut->at(i)->assign(listIn->at(intArgs[i+1]));
-            delete listOut;
-            delete listIn;
+        if (numOfIntArgs == 2) { // scalar case
+            output->assign((*input)(intArgs[1], {axis}));
+        }
+        else { // vector case
+            const Nd4jLong numOfSubArrs = ShapeUtils::getNumOfSubArrs(output->getShapeInfo(), {axis});
+#pragma omp parallel for if(numOfSubArrs > Environment::getInstance()->elementwiseThreshold()) schedule(guided)
+            for(int i = 0; i < numOfSubArrs; ++i) {
+                NDArray subArrOut = (*output)(i, {axis});
+                NDArray subArrIn  = (*input)(intArgs[i+1], {axis});
+                subArrOut.assign(subArrIn);
+            }
         }
     }    
 }
@@ -1093,62 +1080,27 @@ static void mirrorPad_(const NDArray& input, const NDArray& paddings, NDArray& o
     
     // mode:  0 - REFLECT, else - SYMMETRIC
     const int reflBorder = (bool)mode ? 1 : 0;
-    const int symmBorder = (bool)mode ? 0 : 1;
-
     const int rank        = input.rankOf();
     const Nd4jLong outLen = output.lengthOf();
-    const Nd4jLong inLen  = input.lengthOf();    
 
     if(rank <= 1) {
 
-        const auto leftSide  = paddings.e<Nd4jLong>(0);
-        const auto rightSide = paddings.e<Nd4jLong>(1);
-        if (mode == 0) {// REFLECT
-            for(int i = 0; i < outLen; ++i) {
-                if (i < leftSide) {
-                    // put
-                    output.p(i, input.e<T>(inLen - i  - 1));
-                }
-                else if (i > outLen - rightSide - 1) {
-                    output.p(i, input.e<T>(leftSide - i + outLen - rightSide - 1));
-                }
-                else
-                    output.p(i, input.e<T>(i - leftSide));
-            }
-        }
-        else {
-            for(int i = 0; i < outLen; ++i) {
-                if (i < leftSide) {
-                    // put
-                    output.p(i, input.e<T>(leftSide - i - 1));
-                }
-                else if (i > outLen - rightSide - 1) {
-                    output.p(i, input.e<T>(inLen + outLen - i - rightSide - 1)); //
-                }
-                else
-                    output.p(i, input.e<T>(i - leftSide));
-            }
-        }
-        /*
-//#pragma omp parallel for if(outLen > Environment::getInstance()->elementwiseThreshold()) schedule(guided)
+        const Nd4jLong inLen         = input.lengthOf();
+        const auto leftSide          = paddings.e<Nd4jLong>(0);
+        const auto leftSideCorrected = leftSide - reflBorder;
+        const Nd4jLong len           = 2*(inLen-1) + leftSide + reflBorder;
+
         for(int i = 0; i < outLen; ++i) {
+
+            if (i < leftSide)                                   // left side
+                output.p(i, input.e<T>(leftSideCorrected - i));
+
+            else if(i >= leftSide && i < leftSide + inLen)      // middle
+                output.p(i, input.e<T>(i - leftSide));
             
-            for(int j = 0; j < leftSide; ++j) {
-                Nd4jLong iindex = inLen - leftSide + symmBorder + j;
-                if (iindex >= inLen ) iindex = inLen - 1;
-                if (iindex < 0) iindex = 0;
-                output.p(j, input.e<T>(iindex));
-            }
-            for(int j = 0; j < inLen; ++j)
-                output.p(j + leftSide, input.e<T>(j));
-            for(int j = 0; j < rightSide; ++j) {
-                Nd4jLong iindex = inLen - 1 - symmBorder - j;
-                if (iindex < 0) iindex = 0;
-                if (iindex >= inLen) iindex = inLen - 1;
-                output.p(leftSide + inLen + j, input.e<T>(iindex));
-            }
+            else                                                // right side
+                output.p(i, input.e<T>(len - i));
         }
-         */
     }
     else {
 
@@ -1160,16 +1112,19 @@ static void mirrorPad_(const NDArray& input, const NDArray& paddings, NDArray& o
 
             for(int j = 0; j < rank; ++j) {
             
-                const auto leftSide  = paddings.e<T>(j, 0);
+                const Nd4jLong inLen         = input.sizeAt(j);
+                const auto leftSide          = paddings.e<T>(j, 0);
+                const auto leftSideCorrected = leftSide - reflBorder;
+                const Nd4jLong len           = 2*(inLen-1) + leftSide + reflBorder;
 
-                if(outIdx[j] < leftSide) 
-                    inIdx[j] = leftSide - outIdx[j] - reflBorder;
+                if(outIdx[j] < leftSide)                                        // left side
+                    inIdx[j] = leftSideCorrected - outIdx[j];
 
-                else if(outIdx[j] >= leftSide && outIdx[j] < leftSide + input.sizeAt(j)) 
+                else if(outIdx[j] >= leftSide && outIdx[j] < leftSide + inLen)  // middle
                     inIdx[j] = outIdx[j] - leftSide;
 
-                else
-                    inIdx[j] = 2 * input.sizeAt(j) + leftSide - outIdx[j] - 1 - symmBorder;                
+                else                                                            // right side
+                    inIdx[j] = len - outIdx[j];
             }
     
             auto outOffset = shape::getOffset(0, output.shapeOf(), output.stridesOf(), outIdx.data(), rank);

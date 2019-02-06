@@ -268,12 +268,12 @@ nd4j::NDArray* MmulHelper::mmul(const nd4j::NDArray* A, const nd4j::NDArray* B, 
 
     // matrix x matrix
     if(aRank == 2 && bRank == 2)
-        return mmulMxM(A, B, C, alpha, beta, outOrder);            
+        return mmulMxM(A, B, C, alpha, beta, outOrder);
 
     // matrix x vector
     if(aRank == 2 && isBVector)
         return mmulMxV(A, B, C, alpha, beta, outOrder);
-    
+
     // batched matrix multiplication
     return mmulNxN(A, B, C, alpha, beta, outOrder);
 }

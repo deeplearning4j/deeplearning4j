@@ -37,23 +37,11 @@ public class ATan extends BaseTransformStrictOp {
         super(sameDiff, i_v, inPlace);
     }
 
-    public ATan(SameDiff sameDiff, SDVariable i_v, int[] shape, boolean inPlace, Object[] extraArgs) {
-        super(sameDiff, i_v, shape, inPlace, extraArgs);
-    }
-
-    public ATan(SameDiff sameDiff, SDVariable i_v, Object[] extraArgs) {
-        super(sameDiff, i_v, extraArgs);
-    }
-
     public ATan() {
     }
 
     public ATan(INDArray x, INDArray z) {
         super(x, z);
-    }
-
-    public ATan(INDArray x, INDArray z, long n) {
-        super(x, z, n);
     }
 
     public ATan(INDArray x) {

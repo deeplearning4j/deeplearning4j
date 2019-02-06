@@ -19,15 +19,13 @@ package org.nd4j.linalg.api.ops.impl.loss;
 import lombok.NoArgsConstructor;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.imports.NoOpNameFoundException;
-import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
+import org.nd4j.base.Preconditions;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
-import org.nd4j.linalg.api.ops.Op;
-import org.tensorflow.framework.AttrValue;
-import org.tensorflow.framework.GraphDef;
-import org.tensorflow.framework.NodeDef;
 
-import java.util.Map;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 
 
 /**
@@ -38,23 +36,12 @@ import java.util.Map;
 @NoArgsConstructor
 public class SoftmaxCrossEntropyWithLogitsLoss extends DynamicCustomOp {
 
-    public SoftmaxCrossEntropyWithLogitsLoss(SameDiff sameDiff, SDVariable logits, SDVariable weights, SDVariable labels,
-                                             int reductionMode, double labelSmoothing) {
+    protected int classesDim;
+
+    public SoftmaxCrossEntropyWithLogitsLoss(SameDiff sameDiff, SDVariable logits, SDVariable weights, SDVariable labels, int classesDim) {
         super(null, sameDiff, new SDVariable[]{logits, weights, labels}, false);
-    }
-
-    public SoftmaxCrossEntropyWithLogitsLoss(SameDiff sameDiff, SDVariable logits, SDVariable weights, SDVariable labels,
-                                             int reductionMode) {
-        this(sameDiff, logits, weights, labels, reductionMode, 0.0);
-    }
-
-
-    public void addArgs() {
-    }
-
-    @Override
-    public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
-        TFGraphMapper.getInstance().initFunctionFromProperties(nodeDef.getOp(), this, attributesForNode, nodeDef, graph);
+        this.classesDim = classesDim;
+        addIArgument(classesDim);
     }
 
     @Override
@@ -63,17 +50,23 @@ public class SoftmaxCrossEntropyWithLogitsLoss extends DynamicCustomOp {
     }
 
     @Override
-    public String onnxName() {
-        throw new NoOpNameFoundException("No onnx op opName found for " + opName());
-    }
-
-    @Override
     public String tensorflowName() {
         return "SoftmaxCrossEntropyWithLogits";
     }
 
     @Override
-    public Op.Type opType() {
-        return Op.Type.CUSTOM;
+    public List<DataType> calculateOutputDataTypes(List<DataType> inputDataTypes){
+        Preconditions.checkState(inputDataTypes != null && (inputDataTypes.size() == 2 || inputDataTypes.size() == 3),
+                "Expected 2 or 3 input datatypes for %s, got %s", getClass(), inputDataTypes);
+
+        return Collections.singletonList(inputDataTypes.get(0));    //Same as predictions
+    }
+
+    @Override
+    public List<SDVariable> doDiff(List<SDVariable> grad){
+        //No external gradient
+        //Args: logits, weigths, label
+        SDVariable[] grads = f().lossSoftmaxCrossEntropyWithLogitsBp(arg(2), arg(0), arg(1), classesDim);
+        return Arrays.asList(grads);
     }
 }

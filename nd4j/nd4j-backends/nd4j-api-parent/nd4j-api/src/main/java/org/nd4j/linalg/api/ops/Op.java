@@ -66,7 +66,6 @@ public interface Op {
         AGGREGATION,
         CUSTOM,
         GRADIENT,
-        SHAPE,
         CONDITIONAL,
         LOOP,
         LOOP_COND,
@@ -79,14 +78,6 @@ public interface Op {
         MERGE,
         SUMMARYSTATS,
     }
-
-    /**
-     * Whether the executioner
-     * needs to do a special call or not
-     * @return true if the executioner needs to do a special
-     * call or not false otherwise
-     */
-    boolean isExecSpecial();
 
     /**
      * Returns the extra args as a data buffer
@@ -137,34 +128,6 @@ public interface Op {
      */
     INDArray z();
 
-
-
-    /**
-     * The number of elements to do a op over
-     *
-     * @return the op
-     */
-    long n();
-
-
-
-    /**
-     * Initialize the operation based on the parameters
-     *
-     * @param x the input
-     * @param y the pairwise transform ndarray
-     * @param z the resulting ndarray
-     * @param n the number of elements
-     */
-    void init(INDArray x, INDArray y, INDArray z, long n);
-
-    /**
-     * Number processed
-     *
-     * @return the number of elements accumulated
-     */
-    long numProcessed();
-
     /**
      * Extra arguments
      *
@@ -190,30 +153,6 @@ public interface Op {
      * @param y
      */
     void setY(INDArray y);
-
-    /**
-     * Returns whether the op should be executed or not (through the executioner)
-     *
-     * @return true if the op is pass through false otherwise
-     */
-    boolean isPassThrough();
-
-    /**
-     * Execute the op if its pass through (not needed most of the time)
-     */
-    void exec();
-
-    /**
-     * Exec along each dimension
-     * @param dimensions the dimensions to execute on
-     */
-    void exec(int... dimensions);
-
-    /**
-     * Change n
-     * @param n
-     */
-    void setN(long n);
 
     /**
      *

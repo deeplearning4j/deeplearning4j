@@ -54,8 +54,8 @@ public class Eps extends BaseTransformBoolOp {
 
     public Eps() {}
 
-    public Eps(INDArray x, INDArray y, INDArray z, long n) {
-        super(x, y, z, n);
+    public Eps(INDArray x, INDArray y, INDArray z) {
+        super(x, y, z);
     }
 
 

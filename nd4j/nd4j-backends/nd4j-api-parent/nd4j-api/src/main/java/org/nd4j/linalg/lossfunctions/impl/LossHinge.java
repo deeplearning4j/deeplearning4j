@@ -50,7 +50,6 @@ public class LossHinge extends DifferentialFunction implements ILossFunction {
         /* y_hat is -1 or 1
         hinge loss is max(0,1-y_hat*y)
          */
-        //INDArray output = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, preOutput.dup()));
         INDArray output = activationFn.getActivation(preOutput.dup(), true);
 
         INDArray scoreArr = output.muli(labels); //y*yhat
@@ -76,7 +75,7 @@ public class LossHinge extends DifferentialFunction implements ILossFunction {
     public INDArray computeScoreArray(INDArray labels, INDArray preOutput, IActivation activationFn, INDArray mask) {
         INDArray scoreArr = scoreArray(labels, preOutput, activationFn, mask);
         BooleanIndexing.replaceWhere(scoreArr, 0.0, Conditions.lessThan(0.0));//max(0,1-y*yhat)
-        return scoreArr.sum(1);
+        return scoreArr.sum(true,1);
     }
 
     @Override

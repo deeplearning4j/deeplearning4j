@@ -124,12 +124,7 @@ public class Indices {
 
         if (indices.length == shape.length) {
             for (int i = 0; i < indices.length; i++) {
-                if (indices[i] instanceof NDArrayIndexEmpty)
-                    ret[i] = 0;
-                else {
-                    ret[i] = indices[i].offset();
-                }
-
+                ret[i] = indices[i].offset();
             }
 
             if (ret.length == 1) {
@@ -154,12 +149,7 @@ public class Indices {
             } else {
                 int shapeIndex = 0;
                 for (int i = 0; i < indices.length; i++) {
-                    if (indices[i] instanceof NDArrayIndexEmpty)
-                        ret[i] = 0;
-                    else {
-                        ret[i] = indices[shapeIndex++].offset();
-                    }
-
+                    ret[i] = indices[shapeIndex++].offset();
                 }
             }
 

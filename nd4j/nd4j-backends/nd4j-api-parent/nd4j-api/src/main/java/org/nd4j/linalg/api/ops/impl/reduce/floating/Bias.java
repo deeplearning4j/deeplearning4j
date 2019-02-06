@@ -48,8 +48,8 @@ public class Bias extends BaseReduceFloatOp {
 
     public Bias() {}
 
-    public Bias(INDArray x) {
-        super(x);
+    public Bias(INDArray x, int... dimensions) {
+        super(x, dimensions);
     }
 
     @Override
@@ -68,13 +68,6 @@ public class Bias extends BaseReduceFloatOp {
     public String opName() {
         return "bias";
     }
-
-
-    @Override
-    public boolean isPassThrough() {
-        return false;
-    }
-
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {

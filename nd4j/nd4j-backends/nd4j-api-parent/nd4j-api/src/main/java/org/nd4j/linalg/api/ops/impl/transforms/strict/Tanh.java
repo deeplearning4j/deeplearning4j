@@ -36,23 +36,11 @@ public class Tanh extends BaseTransformStrictOp {
         super(sameDiff, i_v, inPlace);
     }
 
-    public Tanh(SameDiff sameDiff, SDVariable i_v, int[] shape, boolean inPlace, Object[] extraArgs) {
-        super(sameDiff, i_v, shape, inPlace, extraArgs);
-    }
-
-    public Tanh(SameDiff sameDiff, SDVariable i_v, Object[] extraArgs) {
-        super(sameDiff, i_v, extraArgs);
-    }
-
     public Tanh() {
     }
 
     public Tanh(INDArray x, INDArray z) {
         super(x, z);
-    }
-
-    public Tanh(INDArray x, INDArray z, long n) {
-        super(x, z, n);
     }
 
     public Tanh(INDArray x) {

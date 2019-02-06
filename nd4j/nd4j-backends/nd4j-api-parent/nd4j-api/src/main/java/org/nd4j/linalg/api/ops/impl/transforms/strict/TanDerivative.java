@@ -37,10 +37,6 @@ public class TanDerivative extends BaseTransformStrictOp {
         super(x, z);
     }
 
-    public TanDerivative(INDArray x, INDArray z, long n) {
-        super(x, z, n);
-    }
-
     public TanDerivative(INDArray x) {
         super(x);
     }

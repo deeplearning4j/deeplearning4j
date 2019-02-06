@@ -48,7 +48,8 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadPoolExecutor;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.nd4j.linalg.indexing.NDArrayIndex.*;
 
 /**
@@ -100,7 +101,7 @@ public class SpecialTests extends BaseNd4jTest {
 
 
     @Test(expected = ND4JIllegalStateException.class)
-    public void testScalarShuffle1() throws Exception {
+    public void testScalarShuffle1() {
         List<DataSet> listData = new ArrayList<>();
         for (int i = 0; i < 3; i++) {
             INDArray features = Nd4j.ones(25, 25);
@@ -114,7 +115,7 @@ public class SpecialTests extends BaseNd4jTest {
 
 
     @Test
-    public void testScalarShuffle2() throws Exception {
+    public void testScalarShuffle2() {
         List<DataSet> listData = new ArrayList<>();
         for (int i = 0; i < 3; i++) {
             INDArray features = Nd4j.ones(14, 25);
@@ -127,7 +128,7 @@ public class SpecialTests extends BaseNd4jTest {
     }
 
     @Test
-    public void testVstack2() throws Exception {
+    public void testVstack2() {
         INDArray matrix = Nd4j.create(10000, 100);
 
         List<INDArray> views = new ArrayList<>();
@@ -139,12 +140,12 @@ public class SpecialTests extends BaseNd4jTest {
     }
 
     @Test
-    public void testVstack1() throws Exception {
+    public void testVstack1() {
         INDArray matrix = Nd4j.create(10000, 100);
 
         List<INDArray> views = new ArrayList<>();
         for (int i = 0; i < matrix.rows() / 2; i++) {
-            views.add(matrix.getRow(RandomUtils.nextInt(0, (int) matrix.rows())));
+            views.add(matrix.getRow(RandomUtils.nextInt(0, matrix.rows())));
             //views.add(Nd4j.create(1, 10));
         }
 
@@ -180,7 +181,7 @@ public class SpecialTests extends BaseNd4jTest {
     }
 
     @Test
-    public void testConcatMulti2() throws Exception {
+    public void testConcatMulti2() {
         Nd4j.create(1);
         val executor = (ThreadPoolExecutor) Executors.newFixedThreadPool(2);
         executor.submit(new Runnable() {
@@ -367,19 +368,19 @@ public class SpecialTests extends BaseNd4jTest {
     }
 
     @Test
-    public void testCastHalf_1() throws Exception {
+    public void testCastHalf_1() {
         val array = Nd4j.create(DataType.HALF, 2, 5).assign(1);
         assertEquals(10.f, array.sumNumber().floatValue(), 1e-3);
     }
 
     @Test
-    public void testCastHalf_2() throws Exception {
+    public void testCastHalf_2() {
         val array = Nd4j.create(DataType.HALF, 2, 5).assign(1);
         assertEquals(10.f, array.sumNumber().floatValue(), 1e-3);
     }
 
     @Test
-    public void testCastHalf_3() throws Exception {
+    public void testCastHalf_3() {
         val arrayY = Nd4j.create(DataType.FLOAT, 2, 5).assign(2);
         val arrayX = Nd4j.create(DataType.HALF, 2, 5).assign(arrayY);
         assertEquals(20.f, arrayX.sumNumber().floatValue(), 1e-3);
@@ -453,8 +454,6 @@ public class SpecialTests extends BaseNd4jTest {
 
     @Test
     public void testConcatAgain(){
-        Nd4j.getExecutioner().enableDebugMode(true);
-        Nd4j.getExecutioner().enableVerboseMode(true);
         INDArray[] toConcat = new INDArray[3];
         for( int i=0; i<toConcat.length; i++ ) {
             toConcat[i] = Nd4j.valueArrayOf(new long[]{10, 1}, i).castTo(DataType.FLOAT);
@@ -479,7 +478,7 @@ public class SpecialTests extends BaseNd4jTest {
 
         Nd4j.getExecutioner().commit();
         INDArray out = null;
-        for (int e = 0; e < 100; e++) {
+        for (int e = 0; e < 5; e++) {
             if (e % 10 == 0)
                 log.info("Iteration: [{}]", e);
 
@@ -594,7 +593,7 @@ public class SpecialTests extends BaseNd4jTest {
         val op = DynamicCustomOp.builder("space_to_batch")
                 .addInputs(input, blocks, padding)
                 .addOutputs(expOut).build();
-        Nd4j.getExecutioner().exec(op);
+        Nd4j.getExecutioner().execAndReturn(op);
     }
 
     @Test
@@ -616,7 +615,7 @@ public class SpecialTests extends BaseNd4jTest {
         DynamicCustomOp op = DynamicCustomOp.builder("batch_to_space")
                 .addInputs(input, blocks, crops)
                 .addOutputs(expOut).build();
-        Nd4j.getExecutioner().exec(op);
+        Nd4j.getExecutioner().execAndReturn(op);
     }
 
     @Test
@@ -665,7 +664,7 @@ public class SpecialTests extends BaseNd4jTest {
     public void testMatchCondition(){
         INDArray x = Nd4j.valueArrayOf(new long[]{10,10}, 2.0, DataType.DOUBLE);
         val op = new MatchCondition(x, Conditions.equals(2));
-        INDArray z = Nd4j.getExecutioner().exec(op).z();
+        INDArray z = Nd4j.getExecutioner().exec(op);
         int count = z.getInt(0);
         assertEquals(100, count);
     }

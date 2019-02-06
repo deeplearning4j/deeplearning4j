@@ -43,34 +43,14 @@ public class CopyOp extends BaseTransformSameOp {
         super(sameDiff);
     }
 
-    public CopyOp(SameDiff sameDiff, SDVariable i_v1, SDVariable i_v2, Object[] extraArgs) {
-        super(sameDiff, i_v1, i_v2, extraArgs);
-    }
-
     public CopyOp(SameDiff sameDiff, SDVariable i_v, boolean inPlace) {
         super(sameDiff, i_v, inPlace);
     }
 
-    public CopyOp(SameDiff sameDiff, SDVariable i_v, int[] shape, boolean inPlace, Object[] extraArgs) {
-        super(sameDiff, i_v, shape, inPlace, extraArgs);
-    }
-
-    public CopyOp(SameDiff sameDiff, SDVariable i_v, Object[] extraArgs) {
-        super(sameDiff, i_v, extraArgs);
-    }
-
     public CopyOp() {}
-
-    public CopyOp(INDArray x, INDArray y, INDArray z, long n) {
-        super(x, y, z, n);
-    }
 
     public CopyOp(INDArray x, INDArray z) {
         super(x, z);
-    }
-
-    public CopyOp(INDArray x, INDArray z, long n) {
-        super(x, z, n);
     }
 
     public CopyOp(INDArray x) {
@@ -78,7 +58,7 @@ public class CopyOp extends BaseTransformSameOp {
     }
 
     public CopyOp(INDArray x, INDArray xDup, INDArray z) {
-        super(x, xDup, z, x.lengthLong());
+        super(x, xDup, z);
     }
 
     @Override
@@ -100,18 +80,6 @@ public class CopyOp extends BaseTransformSameOp {
     public String tensorflowName() {
         throw new NoOpNameFoundException("No tensorflow op opName found for " +  opName());
     }
-
-
-    @Override
-    public void exec() {
-        z.assign(x);
-    }
-
-    @Override
-    public boolean isPassThrough() {
-        return false;
-    }
-
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {

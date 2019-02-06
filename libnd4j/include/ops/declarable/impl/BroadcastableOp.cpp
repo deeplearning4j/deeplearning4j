@@ -40,15 +40,24 @@ namespace nd4j {
             auto outputs = _descriptor->getOutputTypesForOutput(0);
             nd4j::DataType dtype = block.dataType(0);
             if (block.dataType(0) != nd4j::DataType::BOOL && !(outputs.size() == 1 && outputs[0] == nd4j::DataType::BOOL)) {
-                if (shape::length(y) > shape::length(x)) {
-                    dtype = DataTypeUtils::pickPairwiseResultType(y, x);
+                if (Environment::getInstance()->isExperimentalBuild()) {
+                    if (shape::length(y) > shape::length(x)) {
+                        dtype = DataTypeUtils::pickPairwiseResultType(y, x);
+                    } else {
+                        dtype = DataTypeUtils::pickPairwiseResultType(x, y);
+                    }
                 } else {
-                    dtype = DataTypeUtils::pickPairwiseResultType(x, y);
+                    dtype = ArrayOptions::dataType(x);
                 }
             } else
                 dtype = nd4j::DataType::BOOL;
 
-            if (shape::isScalar(x) && shape::isScalar(y)) {
+            if(shape::isEmpty(x) || shape::isEmpty(y)){
+                //Edge case: broadcasting with empty array gives empty array output (behaviour to match TF for import cases)
+                Nd4jLong* empty = ShapeBuilders::createScalarShapeInfo(dtype, block.getWorkspace());
+                ArrayOptions::setPropertyBit(empty, ARRAY_EMPTY);
+				shapeList->push_back(empty);
+			} else if (shape::isScalar(x) && shape::isScalar(y)) {
                 if (shape::rank(x) >= shape::rank(y)) {
                     Nd4jLong *newshape;
                     COPY_SHAPE(x, newshape);

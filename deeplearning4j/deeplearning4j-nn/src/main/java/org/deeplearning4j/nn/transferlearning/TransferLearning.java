@@ -604,7 +604,7 @@ public class TransferLearning {
 
         /**
          * Specify a layer vertex to set as a "feature extractor"
-         * The specified layer vertex and the layers on the path from an input vertex to it it will be "frozen" with parameters staying constant
+         * The specified layer vertex and the layers on the path from an input vertex to it will be "frozen" with parameters staying constant
          * @param layerName
          * @return Builder
          */

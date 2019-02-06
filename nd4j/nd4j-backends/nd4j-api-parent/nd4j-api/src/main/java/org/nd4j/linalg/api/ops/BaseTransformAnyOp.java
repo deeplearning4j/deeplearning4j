@@ -23,6 +23,7 @@ import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
+import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.exception.ND4JIllegalArgumentException;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 
@@ -42,10 +43,6 @@ public abstract class BaseTransformAnyOp extends BaseTransformOp implements Tran
 
     public BaseTransformAnyOp(SameDiff sameDiff) {
         super(sameDiff);
-    }
-
-    public BaseTransformAnyOp(INDArray x, INDArray y, INDArray z, long n) {
-        super(x, y, z, n);
     }
 
     public BaseTransformAnyOp(SameDiff sameDiff, SDVariable i_v1, SDVariable i_v2, Object[] extraArgs) {
@@ -72,12 +69,12 @@ public abstract class BaseTransformAnyOp extends BaseTransformOp implements Tran
         super(x, z);
     }
 
-    public BaseTransformAnyOp() {
-        super();
+    public BaseTransformAnyOp(INDArray x, INDArray y, INDArray z) {
+        super(x, y, z);
     }
 
-    public BaseTransformAnyOp(INDArray x, INDArray z, long n) {
-        super(x, z, n);
+    public BaseTransformAnyOp() {
+        super();
     }
 
 
@@ -107,16 +104,15 @@ public abstract class BaseTransformAnyOp extends BaseTransformOp implements Tran
 
     @Override
     public List<LongShapeDescriptor> calculateOutputShape() {
-        val ret = new ArrayList<LongShapeDescriptor>(1);
-        if(arg() == null)
-            throw new ND4JIllegalStateException("No arg found for op!");
-
-        val arr = sameDiff.getArrForVarName(arg().getVarName());
-        if(arr == null)
+        if(x == null)
             return Collections.emptyList();
+        return Collections.singletonList(LongShapeDescriptor.fromShape(x.shape(), x.dataType()));
+    }
 
-        ret.add(LongShapeDescriptor.fromShape(arr.shape(), arr.dataType()));
-        this.n = arr.length();
-        return ret;
+    @Override
+    public List<org.nd4j.linalg.api.buffer.DataType> calculateOutputDataTypes(List<org.nd4j.linalg.api.buffer.DataType> dataTypes){
+        //Transform any: for the purposes of samediff datatype calculation, treat as same in/out
+        Preconditions.checkState(dataTypes != null && dataTypes.size() == 1, "Expected exactly 1 input datatype for %s, got input %s", getClass(), dataTypes);
+        return dataTypes;
     }
 }

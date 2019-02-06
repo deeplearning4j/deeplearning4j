@@ -55,18 +55,18 @@ struct FlatGraph FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
     return VerifyTableStart(verifier) &&
            VerifyField<int64_t>(verifier, VT_ID) &&
            VerifyOffset(verifier, VT_VARIABLES) &&
-           verifier.Verify(variables()) &&
+           verifier.VerifyVector(variables()) &&
            verifier.VerifyVectorOfTables(variables()) &&
            VerifyOffset(verifier, VT_NODES) &&
-           verifier.Verify(nodes()) &&
+           verifier.VerifyVector(nodes()) &&
            verifier.VerifyVectorOfTables(nodes()) &&
            VerifyOffset(verifier, VT_OUTPUTS) &&
-           verifier.Verify(outputs()) &&
+           verifier.VerifyVector(outputs()) &&
            verifier.VerifyVectorOfTables(outputs()) &&
            VerifyOffset(verifier, VT_CONFIGURATION) &&
            verifier.VerifyTable(configuration()) &&
            VerifyOffset(verifier, VT_PLACEHOLDERS) &&
-           verifier.Verify(placeholders()) &&
+           verifier.VerifyVector(placeholders()) &&
            verifier.VerifyVectorOfStrings(placeholders()) &&
            verifier.EndTable();
   }

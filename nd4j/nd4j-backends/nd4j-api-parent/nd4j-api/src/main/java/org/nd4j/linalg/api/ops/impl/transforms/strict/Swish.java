@@ -37,23 +37,11 @@ public class Swish extends BaseTransformStrictOp {
         super(sameDiff, i_v, inPlace);
     }
 
-    public Swish(SameDiff sameDiff, SDVariable i_v, int[] shape, boolean inPlace, Object[] extraArgs) {
-        super(sameDiff, i_v, shape, inPlace, extraArgs);
-    }
-
-    public Swish(SameDiff sameDiff, SDVariable i_v, Object[] extraArgs) {
-        super(sameDiff, i_v, extraArgs);
-    }
-
     public Swish() {
     }
 
     public Swish(INDArray x, INDArray z) {
         super(x, z);
-    }
-
-    public Swish(INDArray x, INDArray z, long n) {
-        super(x, z, n);
     }
 
     public Swish(INDArray ndArray) {

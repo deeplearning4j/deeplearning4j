@@ -41,16 +41,12 @@ public class LogSumExp extends BaseReduceFloatOp {
 
     public LogSumExp() {}
 
-    public LogSumExp(INDArray x, INDArray y, INDArray z, long n) {
-        super(x, y, z, n);
+    public LogSumExp(INDArray x, int... dimensions) {
+        super(x, dimensions);
     }
 
-    public LogSumExp(INDArray x) {
-        super(x);
-    }
-
-    public LogSumExp(INDArray x, INDArray y, INDArray z) {
-        super(x, y, z, x.lengthLong());
+    public LogSumExp(INDArray x, INDArray z, int... dimensions) {
+        super(x, z, dimensions);
     }
 
     @Override

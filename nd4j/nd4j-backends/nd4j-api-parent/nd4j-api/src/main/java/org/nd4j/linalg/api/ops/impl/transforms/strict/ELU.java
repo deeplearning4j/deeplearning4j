@@ -41,23 +41,11 @@ public class ELU extends BaseTransformStrictOp {
         super(sameDiff, i_v, inPlace);
     }
 
-    public ELU(SameDiff sameDiff, SDVariable i_v, long[] shape, boolean inPlace, Object[] extraArgs) {
-        super(sameDiff, i_v, shape, inPlace, extraArgs);
-    }
-
-    public ELU(SameDiff sameDiff, SDVariable i_v, Object[] extraArgs) {
-        super(sameDiff, i_v, extraArgs);
-    }
-
     public ELU() {
     }
 
     public ELU(INDArray x, INDArray z) {
         super(x, z);
-    }
-
-    public ELU(INDArray x, INDArray z, long n) {
-        super(x, z, n);
     }
 
     public ELU(INDArray x) {

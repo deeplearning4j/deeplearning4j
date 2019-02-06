@@ -47,46 +47,18 @@ public class Xor extends BaseTransformBoolOp {
         this.extraArgs = new Object[] {this.comparable};
     }
 
-    public Xor(SameDiff sameDiff, SDVariable i_v, long[] shape, boolean inPlace, Object[] extraArgs, double comparable) {
-        super(sameDiff, i_v, shape, inPlace, extraArgs);
-        this.comparable = comparable;
-        this.extraArgs = new Object[] {this.comparable};
-    }
-
-    public Xor(SameDiff sameDiff, SDVariable i_v, Object[] extraArgs, double comparable) {
-        super(sameDiff, i_v, extraArgs);
-        this.comparable = comparable;
-        this.extraArgs = new Object[] {this.comparable};
-    }
-
     public Xor() {}
 
     public Xor(@NonNull INDArray x, @NonNull INDArray y) {
-        this(x, y, 0.0);
-    }
-
-    public Xor(@NonNull INDArray x, @NonNull INDArray y, Number comparable) {
-        this(x, y, x, comparable, x.lengthLong());
-    }
-
-    public Xor(@NonNull INDArray x, @NonNull INDArray y, INDArray z, Number comparable) {
-        this(x, y, z, comparable, x.lengthLong());
-    }
-
-    public Xor(@NonNull INDArray x, @NonNull INDArray y, long n) {
-        this(x, y, x, n);
+        this(x, y, x, 0.0);
     }
 
     public Xor(@NonNull INDArray x, @NonNull INDArray y, INDArray z) {
-        this(x, y, z, z.lengthLong());
+        this(x, y, z, 0.0);
     }
 
-    public Xor(@NonNull INDArray x, @NonNull INDArray y, INDArray z, long n) {
-        this(x, y, z, 0.0, n);
-    }
-
-    public Xor(@NonNull INDArray x, @NonNull INDArray y, INDArray z, Number comparable, long n) {
-        super(x, y, z, n);
+    public Xor(@NonNull INDArray x, @NonNull INDArray y, INDArray z, Number comparable) {
+        super(x, y, z);
         this.comparable = comparable.doubleValue();
         this.extraArgs = new Object[] {this.comparable};
     }
@@ -95,6 +67,16 @@ public class Xor extends BaseTransformBoolOp {
     @Override
     public int opNum() {
         return 9;
+    }
+
+    @Override
+    public Type getOpType() {
+        return Type.PAIRWISE_BOOL;
+    }
+
+    @Override
+    public Type opType() {
+        return Type.PAIRWISE_BOOL;
     }
 
     @Override

@@ -558,28 +558,28 @@ TEST_F(DeclarableOpsTests9, concat_test13) {
 }
 
 TEST_F(DeclarableOpsTests9, concat_test14) {
-    
+
     NDArray x0('c', {1, 40, 60}, nd4j::DataType::DOUBLE);
     NDArray x1('c', {1, 40, 60}, nd4j::DataType::DOUBLE);
-    
+
     x0 = 1.;
-    x1 = 2.;    
-    
+    x1 = 2.;
+
     nd4j::ops::concat op;
     auto result = op.execute({&x0, &x1}, {}, {0}, {});
     ASSERT_EQ(Status::OK(), result->status());
 
     auto z = result->at(0);
-    
+
     Nd4jLong numOfTads= ShapeUtils::getNumOfSubArrs(z->getShapeInfo(), {0});
     ASSERT_TRUE(2 == numOfTads);
-    
+
     for (int e = 0; e < numOfTads; ++e) {
         NDArray tad  = (*z)(e, {0});
         auto mean = tad.meanNumber().e<double>(0);
         ASSERT_NEAR((e+1)*1., mean, 1e-5);
     }
-    
+
     delete result;
 }
 
@@ -1463,6 +1463,28 @@ TEST_F(DeclarableOpsTests9, test_unstack_1) {
 
     delete result;
 }
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests9, test_unstack_SGO_1) {
+    auto x = NDArrayFactory::create<double>({1, 2, 3, 4, 5});
+    x.linspace(1.0);
+    auto z1 = NDArrayFactory::create<double>(1);
+    auto z2 = NDArrayFactory::create<double>(2);
+    auto z3 = NDArrayFactory::create<double>(3);
+    auto z4 = NDArrayFactory::create<double>(4);
+    auto z5 = NDArrayFactory::create<double>(5);
+    std::vector<NDArray*> z({&z1, &z2, &z3, &z4, &z5});
+    nd4j::ops::unstack op;
+    auto result = op.execute({&x}, {}, {0});
+    ASSERT_EQ(Status::OK(), result->status());
+    ASSERT_EQ(5, result->size());
+    for (size_t i = 0; i < result->size(); i++) {
+        ASSERT_TRUE(result->at(i)->isSameShape(z[i]));
+        ASSERT_TRUE(result->at(i)->equalsTo(z[i]));
+    }
+    delete result;
+}
+
 
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests9, clipbynorm_test12) {

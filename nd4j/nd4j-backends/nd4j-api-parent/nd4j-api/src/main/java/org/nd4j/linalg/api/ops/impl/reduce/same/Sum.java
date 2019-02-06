@@ -44,19 +44,15 @@ public class Sum extends BaseReduceSameOp {
     public Sum() {
     }
 
-    public Sum(INDArray x, INDArray z, long n) {
-        super(x, null, z, n);
+    public Sum(INDArray x, int... dimensions) {
+        super(x, dimensions);
     }
 
-    public Sum(INDArray x) {
-        super(x);
+    public Sum(INDArray x, INDArray z, int... dimensions) {
+        super(x, null, z, dimensions);
     }
 
-    public Sum(INDArray x, INDArray z) {
-        super(x, null, z);
-    }
-
-    public Sum(INDArray x, INDArray z, boolean newFormat, boolean keepDims, int[] dimensions) {
+    public Sum(INDArray x, INDArray z, boolean newFormat, boolean keepDims, int... dimensions) {
         super(x, z, newFormat, keepDims, dimensions);
     }
 

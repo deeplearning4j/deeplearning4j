@@ -21,6 +21,7 @@ import lombok.val;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.serde.FlatBuffersMapper;
+import org.nd4j.base.Preconditions;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.imports.converters.DifferentialFunctionClassHolder;
 import org.nd4j.imports.descriptors.properties.AttributeAdapter;
@@ -32,7 +33,9 @@ import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ops.impl.transforms.BaseDynamicTransformOp;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
+import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.api.shape.options.ArrayOptionsHelper;
+import org.nd4j.linalg.api.shape.options.ArrayType;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
@@ -124,11 +127,33 @@ public class Cast extends BaseDynamicTransformOp {
 
     @Override
     public List<LongShapeDescriptor> calculateOutputShape() {
+        if(inputArguments.size() > 0){
+            long[] s = inputArguments.get(0).shape();
+            LongShapeDescriptor lsd = LongShapeDescriptor.fromShape(s, typeDst);
+            if(inputArguments.get(0).isEmpty()){
+                long e = lsd.getExtras();
+                e = ArrayOptionsHelper.setOptionBit(e, ArrayType.EMPTY);
+                lsd.setExtras(e);
+            }
+            return Collections.singletonList(lsd);
+        }
+
         if (arg() != null && (arg().getArr() != null || arg().getShape() != null)) {
             if (arg().getArr() != null) {
-                return Collections.singletonList(LongShapeDescriptor.fromShape(arg().getArr().shape(), DataType.fromInt(iArguments.get(0).intValue())));
+                long[] s = arg().getArr().shape();
+                LongShapeDescriptor lsd = LongShapeDescriptor.fromShape(s, typeDst);
+                if(inputArguments.size() > 0 && inputArguments.get(0) != null && inputArguments.get(0).isEmpty()){
+                    long e = lsd.getExtras();
+                    e = ArrayOptionsHelper.setOptionBit(e, ArrayType.EMPTY);
+                    lsd.setExtras(e);
+                }
+                return Collections.singletonList(lsd);
             } else {
-                return Collections.singletonList(LongShapeDescriptor.fromShape(arg().getShape(), DataType.fromInt(iArguments.get(0).intValue())));
+                long[] s = arg().getShape();
+                if(Shape.isPlaceholderShape(s)){
+                    return Collections.emptyList();
+                }
+                return Collections.singletonList(LongShapeDescriptor.fromShape(s, typeDst));
             }
         }
 
@@ -155,9 +180,18 @@ public class Cast extends BaseDynamicTransformOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
-        // FIXME: we'll just do reverse cast here, but we don't have sameDiff.cast() yet
-        SDVariable gradient = sameDiff.setupFunction(i_v.get(0));
-        throw new UnsupportedOperationException("Not implemented yet");
-        //return Collections.singletonList(sameDiff.batchToSpace(gradient, blocks, padding));
+        //If input is numerical: reverse cast. Otherwise 0
+        if(arg().dataType().isFPType()){
+            return Collections.singletonList(i_v.get(0).castTo(arg().dataType()));
+        } else {
+            return Collections.singletonList(f().zerosLike(arg()));
+        }
+    }
+
+    @Override
+    public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes){
+        //All scalar ops: output type is same as input type
+        Preconditions.checkState(dataTypes != null && dataTypes.size() == 1, "Expected exactly 1 input datatype for %s, got input %s", getClass(), dataTypes);
+        return Collections.singletonList(typeDst);
     }
 }

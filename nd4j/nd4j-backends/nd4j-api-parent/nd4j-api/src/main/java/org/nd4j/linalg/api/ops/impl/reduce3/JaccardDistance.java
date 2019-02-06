@@ -33,7 +33,7 @@ import java.util.List;
  *
  * @author raver119@gmail.com
  */
-public class JaccardDistance extends BaseReduceFloatOp {
+public class JaccardDistance extends BaseReduce3Op {
 
     public JaccardDistance(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, int... dimensions) {
         super(sameDiff, i_v, i_v2, dimensions);
@@ -41,36 +41,20 @@ public class JaccardDistance extends BaseReduceFloatOp {
     }
 
     public JaccardDistance() {
-        passThrough = false;
+
     }
 
-    public JaccardDistance(INDArray x, INDArray y, INDArray z, long n) {
-        super(x, y, z, n);
-        passThrough = Nd4j.getExecutioner().executionMode() == OpExecutioner.ExecutionMode.JAVA;
-        extraArgs = new Object[]{0.0f, 0.0f};
+    public JaccardDistance(INDArray x, INDArray y, int... dimensions) {
+        this(x, y, null, false, dimensions);
     }
 
-    public JaccardDistance(INDArray x, INDArray y, long n) {
-        super(x, y, null);
-        passThrough = Nd4j.getExecutioner().executionMode() == OpExecutioner.ExecutionMode.JAVA;
-        extraArgs = new Object[]{0.0f, 0.0f};
-    }
-
-    public JaccardDistance(INDArray x) {
-        super(x);
-        passThrough = Nd4j.getExecutioner().executionMode() == OpExecutioner.ExecutionMode.JAVA;
-        extraArgs = new Object[]{0.0f, 0.0f};
-    }
-
-    public JaccardDistance(INDArray x, INDArray y) {
-        super(x, y, null);
-        passThrough = Nd4j.getExecutioner().executionMode() == OpExecutioner.ExecutionMode.JAVA;
-        extraArgs = new Object[]{0.0f, 0.0f};
-    }
-
-    public JaccardDistance(INDArray x, INDArray y, INDArray z, boolean allDistances) {
-        this(x, y, z, x.lengthLong());
+    public JaccardDistance(INDArray x, INDArray y, INDArray z, boolean allDistances, int... dimensions) {
+        this(x, y, z, true, false, dimensions);
         this.isComplex = allDistances;
+    }
+
+    public JaccardDistance(INDArray x, INDArray y, INDArray z) {
+        this(x, y, z, false, null);
     }
 
     public JaccardDistance(INDArray x, INDArray y, boolean allDistances) {
@@ -113,21 +97,22 @@ public class JaccardDistance extends BaseReduceFloatOp {
         SDVariable sumMax = max.sum(true, dimensions);
         SDVariable sumMin = min.sum(true, dimensions);
 
-        SDVariable xIsMin = f().eq(min, larg());
-        SDVariable xIsMax = f().eq(max, larg());
-        SDVariable yIsMin = f().eq(min, rarg());
-        SDVariable yIsMax = f().eq(max, rarg());
+        DataType d = arg().dataType();
+        SDVariable xIsMin = f().eq(min, larg()).castTo(d);
+        SDVariable xIsMax = f().eq(max, larg()).castTo(d);
+        SDVariable yIsMin = f().eq(min, rarg()).castTo(d);
+        SDVariable yIsMax = f().eq(max, rarg()).castTo(d);
 
         SDVariable sqSumMax = f().square(sumMax);
         SDVariable dldx = xIsMax.mul(sumMin).sub(xIsMin.mul(sumMax)).div(sqSumMax);
         SDVariable dldy = yIsMax.mul(sumMin).sub(yIsMin.mul(sumMax)).div(sqSumMax);
 
         SDVariable bcGradOut;
-        if(dimensions == null){
+        if(keepDims || dimensions == null || dimensions.length == 0 || (dimensions.length == 1 && dimensions[0] == Integer.MAX_VALUE)){
+            //KeepDims or full array reduction - already broadcastable
             bcGradOut = f1.get(0);
         } else {
-            int inRank = arg().getArr().rank();
-            bcGradOut = f().reductionBroadcastableWithOrigShape(inRank, dimensions, f1.get(0));
+            bcGradOut = sameDiff.f().reductionBroadcastableWithOrigShape(arg(), sameDiff.constant(Nd4j.createFromArray(dimensions)), f1.get(0));
         }
         return Arrays.asList(dldx.mul(bcGradOut), dldy.mul(bcGradOut));
     }

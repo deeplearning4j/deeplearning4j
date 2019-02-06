@@ -39,23 +39,11 @@ public class Erf extends BaseTransformStrictOp {
         super(sameDiff, i_v, inPlace);
     }
 
-    public Erf(SameDiff sameDiff, SDVariable i_v, long[] shape, boolean inPlace, Object[] extraArgs) {
-        super(sameDiff, i_v, shape, inPlace, extraArgs);
-    }
-
-    public Erf(SameDiff sameDiff, SDVariable i_v, Object[] extraArgs) {
-        super(sameDiff, i_v, extraArgs);
-    }
-
     public Erf() {
     }
 
     public Erf(INDArray x, INDArray z) {
         super(x, z);
-    }
-
-    public Erf(INDArray x, INDArray z, long n) {
-        super(x, z, n);
     }
 
     public Erf(INDArray x) {

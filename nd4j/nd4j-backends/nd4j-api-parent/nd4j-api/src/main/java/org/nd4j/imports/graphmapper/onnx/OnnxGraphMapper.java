@@ -277,6 +277,11 @@ public class OnnxGraphMapper extends BaseGraphMapper<OnnxProto3.GraphProto, Onnx
     }
 
     @Override
+    public List<String> getControlDependencies(OnnxProto3.NodeProto node) {
+        throw new UnsupportedOperationException("Not yet implemented");
+    }
+
+    @Override
     public void dumpBinaryProtoAsText(File inputFile, File outputFile) {
         try {
             OnnxProto3.ModelProto graphDef = OnnxProto3.ModelProto.parseFrom(new BufferedInputStream(new FileInputStream(inputFile)));
@@ -403,7 +408,7 @@ public class OnnxGraphMapper extends BaseGraphMapper<OnnxProto3.GraphProto, Onnx
             importState.getSameDiff().putFunctionForId(newInstance.getOwnName(),newInstance);
             //ensure we can track node name to function instance later.
             diff.setBaseNameForFunctionInstanceId(tfNode.getName(),newInstance);
-            diff.addVarNameForImport(tfNode.getName());
+            //diff.addVarNameForImport(tfNode.getName());
         }
         catch (Exception e) {
             e.printStackTrace();
@@ -416,13 +421,8 @@ public class OnnxGraphMapper extends BaseGraphMapper<OnnxProto3.GraphProto, Onnx
 
 
     @Override
-    public DataType dataTypeForTensor(onnx.OnnxProto3.TypeProto.Tensor tensorProto) {
+    public DataType dataTypeForTensor(OnnxProto3.TypeProto.Tensor tensorProto, int outputNum) {
        return nd4jTypeFromOnnxType(tensorProto.getElemType());
-    }
-
-    @Override
-    public boolean unknownTypeNodeImportable(OnnxProto3.TypeProto.Tensor tensor) {
-        return false;
     }
 
     @Override
@@ -476,7 +476,7 @@ public class OnnxGraphMapper extends BaseGraphMapper<OnnxProto3.GraphProto, Onnx
 
     @Override
     public INDArray getNDArrayFromTensor(String tensorName, OnnxProto3.TypeProto.Tensor tensorProto, OnnxProto3.GraphProto graph) {
-        DataType type = dataTypeForTensor(tensorProto);
+        DataType type = dataTypeForTensor(tensorProto, 0);
         if(!tensorProto.isInitialized()) {
             throw new ND4JIllegalStateException("Unable to retrieve ndarray. Tensor was not initialized");
         }

@@ -187,7 +187,7 @@ If the Exception you are getting looks anything like this, and you see this upon
 o.n.j.c.CudaEnvironment - Device [0]: Free: 0 Total memory: 0
 ```
 
-Then you are most probably trying to use a mobile GPU (like 970**m**) and Optimus is trying to ruin the day. First you should try to force the usage of the GPU through normal means, like setting the the JVM to run on your GPU via the Nvidia System Panel or by disabling the iGPU in your BIOS. If this still isn't enough, you can try the following workaround, that while **not recommended** for production, should allow you to still use your GPU.
+Then you are most probably trying to use a mobile GPU (like 970**m**) and Optimus is trying to ruin the day. First you should try to force the usage of the GPU through normal means, like setting the JVM to run on your GPU via the Nvidia System Panel or by disabling the iGPU in your BIOS. If this still isn't enough, you can try the following workaround, that while **not recommended** for production, should allow you to still use your GPU.
 
 You will have to add JOGL to your dependencies:
 ```xml
@@ -214,7 +214,7 @@ This should allow ND4J to work correctly (you still have to set that the JVM has
 
 ### My Display Driver / System crashes when I use the CUDA Backend (Windows)
 
-ND4J is meant to be used with pure compute cards (i.e. the Tesla series). On consumer GPUs that are mainly meant for gaming, this results in a usage that can conflict with with the cards primary work: Displaying your Desktop. 
+ND4J is meant to be used with pure compute cards (i.e. the Tesla series). On consumer GPUs that are mainly meant for gaming, this results in a usage that can conflict with the cards primary work: Displaying your Desktop. 
 
 Microsoft has added the Timeout Detection and Recovery (TDR) to detect malfunctioning drivers and improper usage, which now interferes with the compute tasks of ND4J, by killing them if they occupy the GPU for longer then a few seconds. This results in the "Display driver stopped responding and has recovered" message. This results in a perceived driver crash along with a crash of your application. If you try to run it again TDR may decide that something is messing with the display driver and force a reboot.
 

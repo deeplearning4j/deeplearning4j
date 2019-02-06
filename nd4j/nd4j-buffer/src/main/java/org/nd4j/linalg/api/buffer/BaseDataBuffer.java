@@ -1171,7 +1171,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
                     }
                 }
                 break;
-                default:
+            default:
                     throw new UnsupportedOperationException("Unknown data type: [" + dataType + "]");
         }
         return bos.toByteArray();

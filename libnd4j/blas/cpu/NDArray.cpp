@@ -1001,21 +1001,21 @@ NDArray::NDArray(const char order, const std::vector<Nd4jLong> &shape, nd4j::Dat
 ////////////////////////////////////////////////////////////////////////
     // This method returns true if two arrays are equal, with custom or default Eps value of 1e-5, false otherwise
     bool NDArray::equalsTo(const NDArray *other, double eps) const {
-        
+
         if (this->dataType() != other->dataType() || lengthOf() != other->lengthOf())
             return false;
 
         // we need to be able to compare [1, len] to [len]
         if ((rankOf() == 1 && other->rankOf() == 2) || (rankOf() == 2 && other->rankOf() == 1)) {
             // FIXME: do something here?
-        } 
+        }
         else if (!shape::equalsSoft(_shapeInfo, other->_shapeInfo))
             return false;
 
         NDArray tmp(nd4j::DataType::FLOAT32, _context); // scalar = 0
 
-        ExtraArguments extras({eps}); 
-        NativeOpExecutioner::execReduce3Scalar(_context, reduce3::EqualsWithEps, _buffer, _shapeInfo, _bufferD, _shapeInfoD, extras.argumentsAsT(DataType::FLOAT32), other->_buffer, other->_shapeInfo, other->_bufferD, other->_shapeInfoD, tmp.buffer(), tmp.shapeInfo(), tmp._bufferD, tmp._shapeInfoD);        
+        ExtraArguments extras({eps});
+        NativeOpExecutioner::execReduce3Scalar(_context, reduce3::EqualsWithEps, _buffer, _shapeInfo, _bufferD, _shapeInfoD, extras.argumentsAsT(DataType::FLOAT32), other->_buffer, other->_shapeInfo, other->_bufferD, other->_shapeInfoD, tmp.buffer(), tmp.shapeInfo(), tmp._bufferD, tmp._shapeInfoD);
 
         if (tmp.e<int>(0) > 0)
             return false;
@@ -1423,8 +1423,8 @@ NDArray::NDArray(const char order, const std::vector<Nd4jLong> &shape, nd4j::Dat
         if (isS())
             throw std::runtime_error("NDArray::applyTransform StrictOps: you can't use this method on String array!");
 
-        if (target == nullptr)
-            target = this;
+            if (target == nullptr)
+                target = this;
 
         if (!this->isR() || !target->isR() || (this->dataType() != target->dataType()))
             throw std::runtime_error("NDArray::applyTransform StrictOps: both Source and Target array must have same FLOAT type !");
@@ -1433,7 +1433,7 @@ NDArray::NDArray(const char order, const std::vector<Nd4jLong> &shape, nd4j::Dat
         NativeOpExecutioner::execTransformStrict(_context, op, this->_buffer, this->_shapeInfo, _bufferD, _shapeInfoD, target->_buffer, target->_shapeInfo, target->_bufferD, target->_shapeInfoD, extraParams != nullptr ? extraParams->argumentsAsT(target->dataType()) : nullptr, nullptr, nullptr);
     }
 
-//////////////////////////////////////////////////////////////////////////
+    //////////////////////////////////////////////////////////////////////////
 // perform array transformation
     // void NDArray::applyTransform(nd4j::transform::FloatOps op, void *extraParams) {
     //     applyTransform(op, this, extraParams);
@@ -2606,4 +2606,4 @@ NDArray NDArray::e(const Nd4jLong i) const {
 }
 
 #endif
- 
+

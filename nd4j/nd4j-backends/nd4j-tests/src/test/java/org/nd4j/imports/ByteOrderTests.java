@@ -25,14 +25,14 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.graph.FlatArray;
 import org.nd4j.linalg.BaseNd4jTest;
-import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.nativeblas.NativeOpsHolder;
 
-import static org.junit.Assert.assertArrayEquals;
+import java.util.Arrays;
+
 import static org.junit.Assert.assertEquals;
 
 @Slf4j
@@ -44,14 +44,14 @@ public class ByteOrderTests  extends BaseNd4jTest {
     }
 
     @After
-    public void tearDown() throws Exception {
+    public void tearDown() {
         NativeOpsHolder.getInstance().getDeviceNativeOps().enableDebugMode(false);
         NativeOpsHolder.getInstance().getDeviceNativeOps().enableVerboseMode(false);
     }
 
     @Test
     public void testByteArrayOrder1() {
-        val ndarray = Nd4j.create(2).assign(1);
+        val ndarray = Nd4j.create(DataType.FLOAT, 2).assign(1);
 
         assertEquals(DataType.FLOAT, ndarray.data().dataType());
 
@@ -161,6 +161,24 @@ public class ByteOrderTests  extends BaseNd4jTest {
         val restored = Nd4j.createFromFlatArray(flat);
 
         assertEquals(scalar, restored);
+    }
+
+    @Test
+    public void testStringEncoding_1() {
+        val strings = Arrays.asList("alpha", "beta", "gamma");
+        val vector = Nd4j.create(strings, 3);
+
+        val bufferBuilder = new FlatBufferBuilder(0);
+
+        val fb = vector.toFlatArray(bufferBuilder);
+        bufferBuilder.finish(fb);
+        val db = bufferBuilder.dataBuffer();
+
+        val flat = FlatArray.getRootAsFlatArray(db);
+
+        val restored = Nd4j.createFromFlatArray(flat);
+
+        assertEquals(vector, restored);
     }
 
     @Override

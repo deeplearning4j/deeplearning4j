@@ -19,6 +19,7 @@ package org.nd4j.linalg.api.ops.impl.image;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.Op;
 
@@ -66,5 +67,11 @@ public class NonMaxSuppression extends DynamicCustomOp {
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
         return Collections.singletonList(sameDiff.zerosLike(arg()));
+    }
+
+    @Override
+    public List<DataType> calculateOutputDataTypes(List<DataType> inputDataTypes){
+        //Always 1D integer tensor (indices)
+        return Collections.singletonList(DataType.INT);
     }
 }

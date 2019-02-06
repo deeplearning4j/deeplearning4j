@@ -24,6 +24,7 @@ import org.nd4j.linalg.api.ops.BaseTransformOp;
 import org.nd4j.linalg.api.ops.BaseTransformStrictOp;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -34,23 +35,11 @@ public class SoftSignDerivative extends BaseTransformStrictOp {
         super(sameDiff, i_v, inPlace);
     }
 
-    public SoftSignDerivative(SameDiff sameDiff, SDVariable i_v, int[] shape, boolean inPlace, Object[] extraArgs) {
-        super(sameDiff, i_v, shape, inPlace, extraArgs);
-    }
-
-    public SoftSignDerivative(SameDiff sameDiff, SDVariable i_v, Object[] extraArgs) {
-        super(sameDiff, i_v, extraArgs);
-    }
-
     public SoftSignDerivative() {
     }
 
     public SoftSignDerivative(INDArray x, INDArray z) {
         super(x, z);
-    }
-
-    public SoftSignDerivative(INDArray x, INDArray z, long n) {
-        super(x, z, n);
     }
 
     public SoftSignDerivative(INDArray x) {
@@ -79,8 +68,8 @@ public class SoftSignDerivative extends BaseTransformStrictOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
-        SDVariable ret = f().zero(outputVariables()[0].getShape());
-        return Arrays.asList(ret);
+        SDVariable ret = sameDiff.zerosLike(arg());
+        return Collections.singletonList(ret);
     }
 
 }

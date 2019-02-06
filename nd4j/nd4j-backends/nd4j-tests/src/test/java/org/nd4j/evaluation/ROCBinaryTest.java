@@ -155,7 +155,9 @@ public class ROCBinaryTest extends BaseNd4jTest {
             ROCBinary rb = new ROCBinary(nSteps);
             rb.eval(labelsExMasked, predictedExMasked);
 
-            assertEquals(rb.stats(), rbMasked.stats());
+            String s1 = rb.stats();
+            String s2 = rbMasked.stats();
+            assertEquals(s1, s2);
 
             for (int i = 0; i < 3; i++) {
                 PrecisionRecallCurve pExp = rb.getPrecisionRecallCurve(i);

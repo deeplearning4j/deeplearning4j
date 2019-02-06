@@ -58,11 +58,13 @@ enum DataType {
   DataType_UINT64 = 14,
   DataType_QINT8 = 15,
   DataType_QINT16 = 16,
+  DataType_BFLOAT16 = 17,
+  DataType_UTF8 = 50,
   DataType_MIN = DataType_INHERIT,
-  DataType_MAX = DataType_QINT16
+  DataType_MAX = DataType_UTF8
 };
 
-inline const DataType (&EnumValuesDataType())[17] {
+inline const DataType (&EnumValuesDataType())[19] {
   static const DataType values[] = {
     DataType_INHERIT,
     DataType_BOOL,
@@ -80,7 +82,9 @@ inline const DataType (&EnumValuesDataType())[17] {
     DataType_UINT32,
     DataType_UINT64,
     DataType_QINT8,
-    DataType_QINT16
+    DataType_QINT16,
+    DataType_BFLOAT16,
+    DataType_UTF8
   };
   return values;
 }
@@ -104,6 +108,40 @@ inline const char * const *EnumNamesDataType() {
     "UINT64",
     "QINT8",
     "QINT16",
+    "BFLOAT16",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "UTF8",
     nullptr
   };
   return names;
@@ -136,9 +174,9 @@ struct FlatArray FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
            VerifyOffset(verifier, VT_SHAPE) &&
-           verifier.Verify(shape()) &&
+           verifier.VerifyVector(shape()) &&
            VerifyOffset(verifier, VT_BUFFER) &&
-           verifier.Verify(buffer()) &&
+           verifier.VerifyVector(buffer()) &&
            VerifyField<int8_t>(verifier, VT_DTYPE) &&
            VerifyField<int8_t>(verifier, VT_BYTEORDER) &&
            verifier.EndTable();

@@ -24,12 +24,14 @@ import org.bytedeco.javacpp.Pointer;
 import org.nd4j.autodiff.execution.conf.ExecutionMode;
 import org.nd4j.autodiff.execution.conf.ExecutorConfiguration;
 import org.nd4j.autodiff.execution.conf.OutputMode;
+import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.graph.FlatArray;
 import org.nd4j.graph.FlatResult;
 import org.nd4j.graph.FlatVariable;
 import org.nd4j.graph.OpType;
+import org.nd4j.imports.converters.DifferentialFunctionClassHolder;
 import org.nd4j.linalg.api.memory.pointers.PagedPointer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.Op;
@@ -148,8 +150,14 @@ public class NativeGraphExecutioner implements GraphExecutioner {
     public static long getOpNum(String name, Op.Type type) {
         if (type == Op.Type.CUSTOM)
             return Nd4j.getExecutioner().getCustomOperations().get(name.toLowerCase()).getHash();
-        else
-            return (long) Nd4j.getOpFactory().getOpNumByName(name);
+        else {
+            try {
+                DifferentialFunction op =  DifferentialFunctionClassHolder.getInstance().getInstance(name);
+                return  op.opNum();
+            } catch (Exception e) {
+                throw new RuntimeException("Could not find op number for operation: [" + name + "]",e);
+            }
+        }
     }
 
     public static byte getFlatOpType(Op.Type type) {

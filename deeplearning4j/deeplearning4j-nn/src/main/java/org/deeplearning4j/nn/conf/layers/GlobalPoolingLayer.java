@@ -16,9 +16,7 @@
 
 package org.deeplearning4j.nn.conf.layers;
 
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -34,29 +32,26 @@ import java.util.Collection;
 import java.util.Map;
 
 /**
- * Global pooling layer - used to do pooling over time for RNNs, and 2d pooling for CNNs.<br>
- * Supports the following {@link PoolingType}s: SUM, AVG, MAX, PNORM<br>
+ * Global pooling layer - used to do pooling over time for RNNs, and 2d pooling for CNNs.<br> Supports the following
+ * {@link PoolingType}s: SUM, AVG, MAX, PNORM<br>
  *
- * Global pooling layer can also handle mask arrays when dealing with variable length inputs. Mask arrays are assumed
- * to be 2d, and are fed forward through the network during training or post-training forward pass:<br>
- * - Time series: mask arrays are shape [miniBatchSize, maxTimeSeriesLength] and contain values 0 or 1 only<br>
- * - CNNs: mask have shape [miniBatchSize, height] or [miniBatchSize, width]. Important: the current implementation assumes
- *   that for CNNs + variable length (masking), the input shape is [miniBatchSize, channels, height, 1] or
- *   [miniBatchSize, channels, 1, width] respectively. This is the case with global pooling in architectures like CNN for
- *   sentence classification.<br>
+ * Global pooling layer can also handle mask arrays when dealing with variable length inputs. Mask arrays are assumed to
+ * be 2d, and are fed forward through the network during training or post-training forward pass:<br> - Time series: mask
+ * arrays are shape [miniBatchSize, maxTimeSeriesLength] and contain values 0 or 1 only<br> - CNNs: mask have shape
+ * [miniBatchSize, height] or [miniBatchSize, width]. Important: the current implementation assumes that for CNNs +
+ * variable length (masking), the input shape is [miniBatchSize, channels, height, 1] or [miniBatchSize, channels, 1,
+ * width] respectively. This is the case with global pooling in architectures like CNN for sentence classification.<br>
  * <p>
  *
- * Behaviour with default settings:<br>
- * - 3d (time series) input with shape [miniBatchSize, vectorSize, timeSeriesLength] -> 2d output [miniBatchSize, vectorSize]<br>
- * - 4d (CNN) input with shape [miniBatchSize, channels, height, width] -> 2d output [miniBatchSize, channels]<br>
- * - 5d (CNN3D) input with shape [miniBatchSize, channels, depth, height, width] -> 2d output [miniBatchSize, channels]<br>
+ * Behaviour with default settings:<br> - 3d (time series) input with shape [miniBatchSize, vectorSize,
+ * timeSeriesLength] -> 2d output [miniBatchSize, vectorSize]<br> - 4d (CNN) input with shape [miniBatchSize, channels,
+ * height, width] -> 2d output [miniBatchSize, channels]<br> - 5d (CNN3D) input with shape [miniBatchSize, channels,
+ * depth, height, width] -> 2d output [miniBatchSize, channels]<br>
  *
  * <p>
- * Alternatively, by setting collapseDimensions = false in the configuration, it is possible to retain the reduced dimensions
- * as 1s: this gives<br>
- * - [miniBatchSize, vectorSize, 1] for RNN output,<br>
- * - [miniBatchSize, channels, 1, 1] for CNN output, and<br>
- * - [miniBatchSize, channels, 1, 1, 1] for CNN3D output.<br>
+ * Alternatively, by setting collapseDimensions = false in the configuration, it is possible to retain the reduced
+ * dimensions as 1s: this gives<br> - [miniBatchSize, vectorSize, 1] for RNN output,<br> - [miniBatchSize, channels, 1,
+ * 1] for CNN output, and<br> - [miniBatchSize, channels, 1, 1, 1] for CNN3D output.<br>
  * <br>
  *
  * @author Alex Black
@@ -79,11 +74,11 @@ public class GlobalPoolingLayer extends NoParamLayer {
         this.layerName = builder.layerName;
     }
 
-    public GlobalPoolingLayer(){
+    public GlobalPoolingLayer() {
         this(PoolingType.MAX);
     }
 
-    public GlobalPoolingLayer(PoolingType poolingType){
+    public GlobalPoolingLayer(PoolingType poolingType) {
         this(new GlobalPoolingLayer.Builder().poolingType(poolingType));
     }
 
@@ -137,7 +132,7 @@ public class GlobalPoolingLayer extends NoParamLayer {
                 if (collapseDimensions) {
                     return InputType.feedForward(conv3d.getChannels());
                 } else {
-                    return InputType.convolutional3D(1,1,1, conv3d.getChannels());
+                    return InputType.convolutional3D(1, 1, 1, conv3d.getChannels());
                 }
             case CNNFlat:
                 InputType.InputTypeConvolutionalFlat convFlat = (InputType.InputTypeConvolutionalFlat) inputType;
@@ -178,18 +173,6 @@ public class GlobalPoolingLayer extends NoParamLayer {
     }
 
     @Override
-    public double getL1ByParam(String paramName) {
-        //Not applicable
-        return 0;
-    }
-
-    @Override
-    public double getL2ByParam(String paramName) {
-        //Not applicable
-        return 0;
-    }
-
-    @Override
     public boolean isPretrainParam(String paramName) {
         throw new UnsupportedOperationException("Global pooling layer does not contain parameters");
     }
@@ -215,11 +198,43 @@ public class GlobalPoolingLayer extends NoParamLayer {
                         .build();
     }
 
+    @Getter
+    @Setter
     public static class Builder extends Layer.Builder<Builder> {
 
+        /**
+         * Pooling type for global pooling
+         */
         private PoolingType poolingType = PoolingType.MAX;
+
+        /**
+         * Pooling dimensions. Note: most of the time, this doesn't need to be set, and the defaults can be used.
+         * Default for RNN data: pooling dimension 2 (time). Default for CNN data: pooling dimensions 2,3 (height and
+         * width) Default for CNN3D data: pooling dimensions 2,3,4 (depth, height and width)
+         *
+         */
         private int[] poolingDimensions;
+
+        /**
+         * P-norm constant. Only used if using {@link PoolingType#PNORM} for the pooling type
+         *
+         */
         private int pnorm = 2;
+
+        /**
+         * Whether to collapse dimensions when pooling or not. Usually you *do* want to do this. Default: true. If
+         * true:<br> - 3d (time series) input with shape [miniBatchSize, vectorSize, timeSeriesLength] -> 2d output
+         * [miniBatchSize, vectorSize]<br> - 4d (CNN) input with shape [miniBatchSize, channels, height, width] -> 2d
+         * output [miniBatchSize, channels]<br> - 5d (CNN3D) input with shape [miniBatchSize, channels, depth, height,
+         * width] -> 2d output [miniBatchSize, channels]<br>
+         *
+         *
+         * If false:<br> - 3d (time series) input with shape [miniBatchSize, vectorSize, timeSeriesLength] -> 3d output
+         * [miniBatchSize, vectorSize, 1]<br> - 4d (CNN) input with shape [miniBatchSize, channels, height, width] -> 2d
+         * output [miniBatchSize, channels, 1, 1]<br> - 5d (CNN3D) input with shape [miniBatchSize, channels, depth,
+         * height, width] -> 2d output [miniBatchSize, channels, 1, 1, 1]<br>
+         *
+         */
         private boolean collapseDimensions = true;
 
         public Builder() {
@@ -232,10 +247,9 @@ public class GlobalPoolingLayer extends NoParamLayer {
 
         /**
          * Pooling dimensions. Note: most of the time, this doesn't need to be set, and the defaults can be used.
-         * Default for RNN data: pooling dimension 2 (time).
-         * Default for CNN data: pooling dimensions 2,3 (height and width)
-         * Default for CNN3D data: pooling dimensions 2,3,4 (depth, height and width)
-
+         * Default for RNN data: pooling dimension 2 (time). Default for CNN data: pooling dimensions 2,3 (height and
+         * width) Default for CNN3D data: pooling dimensions 2,3,4 (depth, height and width)
+         *
          * @param poolingDimensions Pooling dimensions to use
          */
         public Builder poolingDimensions(int... poolingDimensions) {
@@ -252,17 +266,17 @@ public class GlobalPoolingLayer extends NoParamLayer {
         }
 
         /**
-         * Whether to collapse dimensions when pooling or not. Usually you *do* want to do this. Default: true.
-         * If true:<br>
-         * - 3d (time series) input with shape [miniBatchSize, vectorSize, timeSeriesLength] -> 2d output [miniBatchSize, vectorSize]<br>
-         * - 4d (CNN) input with shape [miniBatchSize, channels, height, width] -> 2d output [miniBatchSize, channels]<br>
-         * - 5d (CNN3D) input with shape [miniBatchSize, channels, depth, height, width] -> 2d output [miniBatchSize, channels]<br>
-
+         * Whether to collapse dimensions when pooling or not. Usually you *do* want to do this. Default: true. If
+         * true:<br> - 3d (time series) input with shape [miniBatchSize, vectorSize, timeSeriesLength] -> 2d output
+         * [miniBatchSize, vectorSize]<br> - 4d (CNN) input with shape [miniBatchSize, channels, height, width] -> 2d
+         * output [miniBatchSize, channels]<br> - 5d (CNN3D) input with shape [miniBatchSize, channels, depth, height,
+         * width] -> 2d output [miniBatchSize, channels]<br>
          *
-         * If false:<br>
-         * - 3d (time series) input with shape [miniBatchSize, vectorSize, timeSeriesLength] -> 3d output [miniBatchSize, vectorSize, 1]<br>
-         * - 4d (CNN) input with shape [miniBatchSize, channels, height, width] -> 2d output [miniBatchSize, channels, 1, 1]<br>
-         * - 5d (CNN3D) input with shape [miniBatchSize, channels, depth, height, width] -> 2d output [miniBatchSize, channels, 1, 1, 1]<br>
+         *
+         * If false:<br> - 3d (time series) input with shape [miniBatchSize, vectorSize, timeSeriesLength] -> 3d output
+         * [miniBatchSize, vectorSize, 1]<br> - 4d (CNN) input with shape [miniBatchSize, channels, height, width] -> 2d
+         * output [miniBatchSize, channels, 1, 1]<br> - 5d (CNN3D) input with shape [miniBatchSize, channels, depth,
+         * height, width] -> 2d output [miniBatchSize, channels, 1, 1, 1]<br>
          *
          * @param collapseDimensions Whether to collapse the dimensions or not
          */
@@ -277,10 +291,15 @@ public class GlobalPoolingLayer extends NoParamLayer {
          * @param pnorm P-norm constant
          */
         public Builder pnorm(int pnorm) {
-            if (pnorm <= 0)
+            if (pnorm <= 0) {
                 throw new IllegalArgumentException("Invalid input: p-norm value must be greater than 0. Got: " + pnorm);
+            }
             this.pnorm = pnorm;
             return this;
+        }
+
+        public void setPnorm(int pnorm){
+            pnorm(pnorm);
         }
 
         @SuppressWarnings("unchecked")

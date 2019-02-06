@@ -94,6 +94,11 @@ namespace nd4j {
         #if NOT_EXCLUDED(OP_broadcast_to)
         DECLARE_CUSTOM_OP(broadcast_to, 2, 1, false, 0, 0);        
         #endif
+
+
+        #if NOT_EXCLUDED(OP_evaluate_reduction_shape)
+        DECLARE_CUSTOM_OP(evaluate_reduction_shape, 2, 1, false, 0, 0);
+        #endif
     }
 }
 

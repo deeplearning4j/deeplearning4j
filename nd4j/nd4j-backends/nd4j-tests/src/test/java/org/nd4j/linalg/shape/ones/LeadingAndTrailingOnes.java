@@ -20,6 +20,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
@@ -40,13 +41,13 @@ public class LeadingAndTrailingOnes extends BaseNd4jTest {
     }
 
     @Test
-    public void testSliceConstructor() throws Exception {
+    public void testSliceConstructor() {
         List<INDArray> testList = new ArrayList<>();
         for (int i = 0; i < 5; i++)
-            testList.add(Nd4j.scalar(i + 1));
+            testList.add(Nd4j.scalar(DataType.DOUBLE, i + 1));
 
         INDArray test = Nd4j.create(testList, new int[] {1, testList.size()});
-        INDArray expected = Nd4j.create(new float[] {1, 2, 3, 4, 5}, new int[] {1, 5});
+        INDArray expected = Nd4j.create(new double[] {1, 2, 3, 4, 5}, new int[] {1, 5});
         assertEquals(expected, test);
     }
 

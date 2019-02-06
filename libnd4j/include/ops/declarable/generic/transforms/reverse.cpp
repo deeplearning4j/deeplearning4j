@@ -29,42 +29,26 @@ namespace nd4j {
 namespace ops  {
 
     CONFIGURABLE_OP_IMPL(reverse, 1, 1, true, 0, -2) {
+
         auto input = INPUT_VARIABLE(0);
         auto output = OUTPUT_VARIABLE(0);
+
         std::vector<int> axis;
-        auto isLegacy = false;
 
-        if (block.width() > 1) {
-            // dynamic input
+        if (block.width() > 1)
             axis = INPUT_VARIABLE(1)->template asVectorT<int>();
-            if (block.numI() > 0)
-                isLegacy = INT_ARG(0) == 1;
-
-        } else if (block.numI() > 0) {
+        else if (block.numI() > 0)
             axis = *block.getIArguments();
+
+        if(axis.empty()) {      // do not perform reversion
+            output->assign(input);
+        }
+        else {
+            // check the consistency of input dimensions to reverse along
+            shape::checkDimensions(input->rankOf(), axis);
+            helpers::reverse(block.launchContext(), input, output, &axis, false);
         }
 
-        for (int e = 0; e < axis.size(); e++)
-            if (axis[e] < 0)
-                axis[e] += input->rankOf();
-
-        // if full range of axis - then clear all axis for default behavior
-        if (axis.size() == input->rankOf()) {
-            bool dropAll = true;
-            for (int e = 0; e < axis.size(); e++)
-                if (e != axis[e]) {
-                    dropAll = false;
-                    break;
-                }
-           if (dropAll)
-                axis.clear();
-        }
-
-        if (input->rankOf() == 1) // there are no axis can be used for 1D tensor
-            axis.clear();
-            
-        helpers::reverse(block.launchContext(), input, output, &axis, isLegacy);
-   
         return Status::OK();
     }
 
@@ -83,19 +67,20 @@ namespace ops  {
         auto output = OUTPUT_VARIABLE(0);
         std::vector<int> axis;
 
-        if (block.width() == 3) {
-            // dynamic input
+        if (block.width() == 3)
             axis = INPUT_VARIABLE(1)->template asVectorT<int>();
-        } else if (block.numI() > 0) {
+        else if (block.numI() > 0)
             axis = *block.getIArguments();
+
+        if(axis.empty()) {      // reversion is not performed in this case
+            output->assign(eps);
         }
-
-        for (int e = 0; e < axis.size(); e++)
-            if (axis[e] < 0)
-                axis[e] += input->rankOf();
-
-        // we just reverse back original array
-        helpers::reverse(block.launchContext(), eps, output, &axis, false);
+        else {
+            // check the consistency of input dimensions to reverse along
+            shape::checkDimensions(input->rankOf(), axis);
+            // we just reverse back original array
+            helpers::reverse(block.launchContext(), eps, output, &axis, true);
+        }
 
         return Status::OK();
     }

@@ -166,7 +166,7 @@ One feature of the ComputationGraphConfiguration is that you can specify the typ
 The setInputType method has two effects:
 
 1. It will automatically add any [InputPreProcessor](https://github.com/deeplearning4j/deeplearning4j/tree/master/deeplearning4j/deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/conf/preprocessor)s as required. InputPreProcessors are necessary to handle the interaction between for example fully connected (dense) and convolutional layers, or recurrent and fully connected layers.
-2. It will automatically calculate the number of inputs (.nIn(x) config) to a layer. Thus, if you are using the ```setInputTypes(InputType...)``` functionality, it is not necessary to to manually specify the .nIn(x) options in your configuration. This can simplify building some architectures (such as convolutional networks with fully connected layers). If the .nIn(x) is specified for a layer, the network will not override this when using the InputType functionality.
+2. It will automatically calculate the number of inputs (.nIn(x) config) to a layer. Thus, if you are using the ```setInputTypes(InputType...)``` functionality, it is not necessary to manually specify the .nIn(x) options in your configuration. This can simplify building some architectures (such as convolutional networks with fully connected layers). If the .nIn(x) is specified for a layer, the network will not override this when using the InputType functionality.
 
 
 For example, if your network has 2 inputs, one being a convolutional input and the other being a feed-forward input, you would use ```.setInputTypes(InputType.convolutional(depth,width,height), InputType.feedForward(feedForwardInputSize))```

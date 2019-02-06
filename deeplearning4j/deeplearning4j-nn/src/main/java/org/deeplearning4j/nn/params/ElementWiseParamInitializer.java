@@ -87,7 +87,7 @@ public class ElementWiseParamInitializer extends DefaultParamInitializer{
 
     /**
      * Return a map of gradients (in their standard non-flattened representation), taken from the flattened (row vector) gradientView array.
-     * The idea is that operates in exactly the same way as the the paramsView does in
+     * The idea is that operates in exactly the same way as the paramsView does in
      * thus the position in the view (and, the array orders) must match those of the parameters
      *
      * @param conf         Configuration

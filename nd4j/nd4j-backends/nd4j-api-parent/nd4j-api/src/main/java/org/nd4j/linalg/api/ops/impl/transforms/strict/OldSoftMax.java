@@ -52,52 +52,22 @@ public class OldSoftMax extends BaseTransformStrictOp {
         super(sameDiff, i_v, inPlace);
     }
 
-    public OldSoftMax(SameDiff sameDiff, SDVariable i_v, long[] shape, boolean inPlace, Object[] extraArgs) {
-        super(sameDiff, i_v, shape, inPlace, extraArgs);
-    }
-
-    public OldSoftMax(SameDiff sameDiff, SDVariable i_v, Object[] extraArgs) {
-        super(sameDiff, i_v, extraArgs);
-    }
-
     public OldSoftMax() {
     }
 
+    public OldSoftMax(INDArray x){
+        this(x,x);
+    }
+
     public OldSoftMax(INDArray x, INDArray z) {
-        this(x, z, x.length());
-
-    }
-
-    public OldSoftMax(INDArray x, INDArray z, long n) {
-        super(x, z, n);
-    }
-
-    /*
-    public OldSoftMax(INDArray x, INDArray y, INDArray z, long n) {
-        super(x, y, z, n);
+        super(x, z);
         Preconditions.checkArgument(x != null && x.rank() == 2, "OldSoftMax op supports rank 2 (2d) arrays only. Got x (source) array with shape: %ndShape", x);
         Preconditions.checkArgument(z != null && z.rank() == 2, "OldSoftMax op supports rank 2 (2d) arrays only. Got z (result) array with shape: %ndShape", z);
-    }
-    */
-/*
-    public OldSoftMax(INDArray x, INDArray y, INDArray z) {
-        this(x, y, z, x.lengthLong());
-    }
-    */
-
-    public OldSoftMax(INDArray x) {
-        super(x);
-        Preconditions.checkArgument(x != null && x.rank() == 2, "OldSoftMax op supports rank 2 (2d) arrays only");
     }
 
     @Override
     public int opNum() {
         return 0;
-    }
-
-    @Override
-    public boolean isExecSpecial() {
-        return true;
     }
 
     @Override
@@ -115,56 +85,6 @@ public class OldSoftMax extends BaseTransformStrictOp {
     public String tensorflowName() {
         throw new NoOpNameFoundException("No tensorflow op opName found for " +  opName());
     }
-
-
-    @Override
-    public void exec() {
-        exec(1);
-    }
-
-    @Override
-    public void init(INDArray x, INDArray y, INDArray z, long n) {
-        super.init(x, y, z, n);
-        passThrough = true;
-    }
-
-
-    @Override
-    public void exec(int... dimensions) {
-        if (dimensions[0] != 1)
-            throw new IllegalArgumentException("Only supports row wise calculations");
-        if (x.isMatrix()) {
-            INDArray maxAlongDimension = x.max(dimensions);
-            if (!maxAlongDimension.isVector() && !maxAlongDimension.isScalar())
-                throw new IllegalStateException("Max along dimension for input must either be a row vector or scalar");
-
-            INDArray xMinusMax = x.subColumnVector(maxAlongDimension);
-
-            INDArray exp;
-            if (z != null) {
-                exp = Nd4j.getExecutioner().execAndReturn(new Exp(xMinusMax, z));
-            } else {
-                exp = Nd4j.getExecutioner().execAndReturn(new Exp(xMinusMax));
-            }
-
-            INDArray sum = exp.sum(dimensions);
-            exp.diviColumnVector(sum);
-
-            if (z == null)
-                z = exp;
-        } else if (x.isVector()) {
-            double max = x.maxNumber().doubleValue();
-            INDArray exp;
-            if (z != null) {
-                exp = Nd4j.getExecutioner().execAndReturn(new Exp(x.sub(max), z));
-            } else {
-                exp = Nd4j.getExecutioner().execAndReturn(new Exp(x.sub(max)));
-            }
-            exp.divi(exp.sumNumber().doubleValue());
-            this.z = exp;
-        }
-    }
-
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {

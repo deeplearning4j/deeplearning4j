@@ -38,6 +38,19 @@ namespace nd4j {
         _intArgs = arguments;
     }
 
+    ExtraArguments::ExtraArguments(const std::vector<double> &arguments) {
+        _fpArgs = arguments;
+    }
+
+    ExtraArguments::ExtraArguments(const std::vector<Nd4jLong> &arguments) {
+        _intArgs = arguments;
+    }
+
+    ExtraArguments::ExtraArguments(const std::vector<int> &arguments) {
+        for (const auto &v:arguments)
+            _intArgs.emplace_back(static_cast<Nd4jLong>(v));
+    }
+
     ExtraArguments::ExtraArguments() {
         // no-op
     }
@@ -53,7 +66,7 @@ namespace nd4j {
     }
 
     template <typename T>
-    void ExtraArguments::convertAndCopy(Nd4jPointer pointer) {
+    void ExtraArguments::convertAndCopy(Nd4jPointer pointer, Nd4jLong offset) {
         auto length = this->length();
         auto target = reinterpret_cast<T*>(pointer);
 #ifdef __CUDABLAS__
@@ -61,11 +74,11 @@ namespace nd4j {
 #endif
 
         if (!_fpArgs.empty()) {
-            for (int e = 0; e < _fpArgs.size(); e++) {
+            for (int e = offset; e < _fpArgs.size(); e++) {
                 target[e] = static_cast<T>(_fpArgs[e]);
             }
         } else if (_intArgs.empty()) {
-            for (int e = 0; e < _intArgs.size(); e++) {
+            for (int e = offset; e < _intArgs.size(); e++) {
                 target[e] = static_cast<T>(_intArgs[e]);
             }
         }
@@ -76,7 +89,7 @@ namespace nd4j {
         delete[] target;
 #endif
     }
-    BUILD_SINGLE_TEMPLATE(template void ExtraArguments::convertAndCopy, (Nd4jPointer pointer), LIBND4J_TYPES);
+    BUILD_SINGLE_TEMPLATE(template void ExtraArguments::convertAndCopy, (Nd4jPointer pointer, Nd4jLong offset), LIBND4J_TYPES);
 
     void* ExtraArguments::allocate(size_t length, size_t elementSize) {
 #ifdef __CUDABLAS__
@@ -103,21 +116,21 @@ namespace nd4j {
     }
 
     template <typename T>
-    void* ExtraArguments::argumentsAsT() {
-        return argumentsAsT(DataTypeUtils::fromT<T>());
+    void* ExtraArguments::argumentsAsT(Nd4jLong offset) {
+        return argumentsAsT(DataTypeUtils::fromT<T>(), offset);
     }
-    BUILD_SINGLE_TEMPLATE(template void *ExtraArguments::argumentsAsT, (), LIBND4J_TYPES);
+    BUILD_SINGLE_TEMPLATE(template void *ExtraArguments::argumentsAsT, (Nd4jLong offset), LIBND4J_TYPES);
 
 
-    void* ExtraArguments::argumentsAsT(nd4j::DataType dataType) {
+    void* ExtraArguments::argumentsAsT(nd4j::DataType dataType, Nd4jLong offset) {
         if (_fpArgs.empty() && _intArgs.empty())
             return nullptr;
 
         // we allocate pointer
-        auto ptr = allocate(length(), DataTypeUtils::sizeOf(dataType));
+        auto ptr = allocate(length() - offset, DataTypeUtils::sizeOf(dataType));
 
         // fill it with data
-        BUILD_SINGLE_SELECTOR(dataType, convertAndCopy, (ptr), LIBND4J_TYPES);
+        BUILD_SINGLE_SELECTOR(dataType, convertAndCopy, (ptr, offset), LIBND4J_TYPES);
 
         // store it internally for future release
         _pointers.emplace_back(ptr);

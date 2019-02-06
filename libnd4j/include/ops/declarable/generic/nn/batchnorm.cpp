@@ -15,7 +15,7 @@
  ******************************************************************************/
 
 //
-// @author raver119@gmail.com, created on on 29/10/17.
+// @author raver119@gmail.com, created on 29/10/17.
 // @author Yurii Shyrma (iuriish@yahoo.com)
 //
 

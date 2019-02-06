@@ -41,19 +41,15 @@ public class Prod extends BaseReduceSameOp {
     public Prod() {
     }
 
-    public Prod(INDArray x, INDArray z, long n) {
-        super(x, null, z, n);
+    public Prod(INDArray x, int... dimensions) {
+        super(x, dimensions);
     }
 
-    public Prod(INDArray x) {
-        super(x);
+    public Prod(INDArray x, INDArray z, int... dimensions) {
+        super(x, null, z, dimensions);
     }
 
-    public Prod(INDArray x, INDArray z) {
-        super(x, null, z);
-    }
-
-    public Prod(INDArray x, INDArray z, boolean newFormat, boolean keepDims, int[] dimensions) {
+    public Prod(INDArray x, INDArray z, boolean newFormat, boolean keepDims, int... dimensions) {
         super(x, z, newFormat, keepDims, dimensions);
     }
 
@@ -66,22 +62,6 @@ public class Prod extends BaseReduceSameOp {
     @Override
     public String opName() {
         return "reduce_prod";
-    }
-
-
-    @Override
-    public double zeroDouble() {
-        return 1.0;
-    }
-
-    @Override
-    public float zeroFloat() {
-        return 1.0f;
-    }
-
-    @Override
-    public float zeroHalf() {
-        return zeroFloat();
     }
 
     @Override
