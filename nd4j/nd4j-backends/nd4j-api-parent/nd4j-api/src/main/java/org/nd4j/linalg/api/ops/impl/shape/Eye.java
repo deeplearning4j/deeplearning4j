@@ -22,6 +22,7 @@ import org.nd4j.base.Preconditions;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -120,6 +121,15 @@ public class Eye extends DynamicCustomOp {
     @Override
     public String opName() {
         return "eye";
+    }
+
+    @Override
+    public List<LongShapeDescriptor> calculateOutputShape(){
+        List<LongShapeDescriptor> l = super.calculateOutputShape();
+        if(dataType != null && l != null && l.size() > 0){
+            l.set(0, l.get(0).asDataType(dataType));
+        }
+        return l;
     }
 
     @Override

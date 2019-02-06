@@ -1169,8 +1169,8 @@ public class DifferentialFunctionFactory {
         return new Broadcast(sameDiff(), iX, shape).outputVariable();
     }
 
-    public SDVariable onehot(SDVariable indices, int depth, int axis, double on, double off) {
-        return new OneHot(sameDiff(), indices, depth, axis, on, off).outputVariable();
+    public SDVariable onehot(SDVariable indices, int depth, int axis, double on, double off, DataType dataType) {
+        return new OneHot(sameDiff(), indices, depth, axis, on, off, dataType).outputVariable();
     }
 
     public SDVariable onehot(SDVariable indices, int depth) {

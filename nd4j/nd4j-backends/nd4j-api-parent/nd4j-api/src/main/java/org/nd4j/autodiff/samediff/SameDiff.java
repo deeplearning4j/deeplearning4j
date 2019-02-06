@@ -6099,7 +6099,7 @@ public class SameDiff {
      * As per {@link #oneHot(String, SDVariable, int, int, double, double)} but allows configuring the output datatype
      */
     public SDVariable oneHot(String name, SDVariable indices, int depth, int axis, double on, double off, DataType dataType) {
-        SDVariable ret = f().onehot(indices, depth, axis, on, off);
+        SDVariable ret = f().onehot(indices, depth, axis, on, off, dataType);
         return updateVariableNameAndReference(ret, name);
     }
 

@@ -50,16 +50,17 @@ public class OneHot extends DynamicCustomOp {
     }
 
     public OneHot(SameDiff sameDiff, SDVariable indices, int depth) {
-        this(sameDiff, indices, depth, -1, 1, 0);
+        this(sameDiff, indices, depth, -1, 1, 0, DEFAULT_DTYPE);
     }
 
-    public OneHot(SameDiff sameDiff, SDVariable indices, int depth, int axis, double on, double off) {
+    public OneHot(SameDiff sameDiff, SDVariable indices, int depth, int axis, double on, double off, DataType dataType) {
         super(null, sameDiff,  new SDVariable[] {indices}, false);
         this.depth = depth;
         this.jaxis = axis;
         this.on = on;
         this.off = off;
         addArgs();
+        this.outputType = dataType;
     }
 
     public OneHot(INDArray indices, INDArray output, int depth) {
