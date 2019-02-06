@@ -114,12 +114,14 @@ namespace nd4j {
 
             bool allAxes = false;
 
+            ExtraArguments extras(*block.getTArguments());
+
             if (block.width() == 1) {
                 if (block.getAxis()->size() == 0) {
                     // scalar
                     NativeOpExecutioner::execIndexReduceScalar(nullptr, opNum, x->getBuffer(), x->getShapeInfo(),
                                                                          x->getSpecialBuffer(), x->getSpecialShapeInfo(),
-                                                                         block.getTArguments()->data(),
+                                                                         extras.argumentsAsT(x->dataType()),
                                                                          z->getBuffer(), z->getShapeInfo(),
                                                                          z->getSpecialBuffer(), z->getSpecialShapeInfo());
                 } else {
@@ -137,8 +139,8 @@ namespace nd4j {
                     tad.createOffsets();
 
                     NativeOpExecutioner::execIndexReduce(nullptr, opNum, x->getBuffer(), x->getShapeInfo(),
-                                                         x->getSpecialBuffer(), x->getSpecialShapeInfo(),
-                            block.getTArguments()->data(),
+                                                        x->getSpecialBuffer(), x->getSpecialShapeInfo(),
+                                                        extras.argumentsAsT(x->dataType()),
                                                         reinterpret_cast<Nd4jLong *>(z->getBuffer()), z->getShapeInfo(),
                                                         z->getSpecialBuffer(), z->getSpecialShapeInfo(),
                                                         dims.data(), (int) dims.size(),
@@ -160,7 +162,7 @@ namespace nd4j {
                 if (allAxes) {
                     NativeOpExecutioner::execIndexReduceScalar(nullptr, opNum, x->getBuffer(), x->getShapeInfo(),
                                                               x->getSpecialBuffer(), x->getSpecialShapeInfo(),
-                                                              block.getTArguments()->data(),
+                                                              extras.argumentsAsT(x->dataType()),
                                                               z->getBuffer(), z->getShapeInfo(), z->getSpecialBuffer(),
                                                               z->getSpecialShapeInfo());
 
@@ -176,7 +178,7 @@ namespace nd4j {
 
                     NativeOpExecutioner::execIndexReduce(nullptr, opNum,
                             x->getBuffer(), x->getShapeInfo(), x->getSpecialBuffer(), x->getSpecialShapeInfo(),
-                            block.getTArguments()->data(),
+                            extras.argumentsAsT(x->dataType()),
                             reinterpret_cast<Nd4jLong *>(z->getBuffer()),
                             z->getShapeInfo(), z->getSpecialBuffer(), z->getSpecialShapeInfo(),
                             axis.data(), (int) axis.size(), tad.tadOnlyShapeInfo, tad.tadOffsets);

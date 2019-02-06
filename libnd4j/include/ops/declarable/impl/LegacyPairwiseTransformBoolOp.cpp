@@ -49,10 +49,12 @@ namespace nd4j {
 
             int opNum = block.opNum() < 0 ? this->_opNum : block.opNum();
 
+            ExtraArguments extras(*block.getTArguments());
+
             NativeOpExecutioner::execPairwiseTransform(nullptr, opNum, x->getBuffer(), x->getShapeInfo(), x->getSpecialBuffer(), x->getSpecialShapeInfo(),
                     y->getBuffer(), y->getShapeInfo(), y->getSpecialBuffer(), y->getSpecialShapeInfo(),
                     z->getBuffer(), z->getShapeInfo(), z->getSpecialBuffer(), z->getSpecialShapeInfo(),
-                    block.getTArguments()->data());
+                    extras.argumentsAsT(x->dataType()));
 
             STORE_RESULT(*z);
 

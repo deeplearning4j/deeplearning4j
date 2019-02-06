@@ -43,8 +43,8 @@ namespace nd4j {
 
             int opNum = block.opNum() < 0 ? this->_opNum : block.opNum();
 
-            NativeOpExecutioner::execTransformStrict(nullptr, opNum, input->getBuffer(), input->getShapeInfo(), input->specialBuffer(), input->specialShapeInfo(),
-                    z->getBuffer(), z->getShapeInfo(), z->specialBuffer(), z->specialShapeInfo(), block.getTArguments()->data(), nullptr, nullptr);
+            ExtraArguments extras(*block.getTArguments());
+            NativeOpExecutioner::execTransformStrict(nullptr, opNum, input->getBuffer(), input->getShapeInfo(), input->specialBuffer(), input->specialShapeInfo(), z->getBuffer(), z->getShapeInfo(), z->specialBuffer(), z->specialShapeInfo(), extras.argumentsAsT(z->dataType()), nullptr, nullptr);
 
             STORE_RESULT(*z);
 

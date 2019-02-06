@@ -47,6 +47,8 @@ namespace nd4j {
             auto axis = *block.getAxis();
             bool allAxes = false;
 
+            ExtraArguments extras(*block.getTArguments());
+
             if (block.width() == 1) {
                 auto z = OUTPUT_VARIABLE(0);
 
@@ -57,7 +59,7 @@ namespace nd4j {
                     (axis.size() == 1 && axis[0] == MAX_INT) || allAxes) {
                     // scalar
                     NativeOpExecutioner::execReduceLongScalar(nullptr, opNum, x->getBuffer(), x->getShapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
-                            block.getTArguments()->data(), z->buffer(), z->shapeInfo(), z->specialBuffer(), z->specialShapeInfo());
+                            extras.argumentsAsT(x->dataType()), z->buffer(), z->shapeInfo(), z->specialBuffer(), z->specialShapeInfo());
                 } else {
                     // TAD
                     std::vector<int> dims(axis);
@@ -75,7 +77,7 @@ namespace nd4j {
                     tad.createOffsets();
 
                     NativeOpExecutioner::execReduceLong(nullptr, opNum, x->getBuffer(), x->getShapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
-                            block.getTArguments()->data(),
+                            extras.argumentsAsT(x->dataType()),
                             z->getBuffer(), z->getShapeInfo(), z->specialBuffer(), z->specialShapeInfo(),
                             dims.data(), (int) dims.size(), tad.tadOnlyShapeInfo, tad.tadOffsets);
                 }

@@ -43,9 +43,10 @@ namespace nd4j {
 
             int opNum = block.opNum() < 0 ? this->_opNum : block.opNum();
 
+            ExtraArguments extras(*block.getTArguments());
             NativeOpExecutioner::execTransformBool(nullptr, opNum, input->getBuffer(), input->getShapeInfo(), input->specialBuffer(), input->specialShapeInfo(),
                     z->getBuffer(), z->getShapeInfo(), z->specialBuffer(), z->specialShapeInfo(),
-                    block.getTArguments()->data(), nullptr, nullptr);
+                    extras.argumentsAsT(input->dataType()), nullptr, nullptr);
 
             STORE_RESULT(*z);
 
