@@ -283,7 +283,8 @@ public class DefaultOpExecutioner implements OpExecutioner {
 
                 if (ws.getGenerationId() != array.data().getGenerationId())
                     throw new ND4JIllegalStateException("Op [" + opName + "] X argument uses outdated workspace pointer from workspace ["
-                            + ws.getId() + "]\nAll open workspaces: " + allOpenWorkspaces() + "\n" + SCOPE_PANIC_MSG);
+                            + ws.getId() + "] - array WS iteration " + array.data().getGenerationId() + ", workspace current iteration: " +
+                            ws.getGenerationId() + "\nAll open workspaces: " + allOpenWorkspaces() + "\n" + SCOPE_PANIC_MSG);
             }
         }
     }
