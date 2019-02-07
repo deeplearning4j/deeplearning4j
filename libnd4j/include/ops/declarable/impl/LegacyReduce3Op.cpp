@@ -29,6 +29,8 @@ namespace nd4j {
             auto y = INPUT_VARIABLE(1);
             auto z = OUTPUT_VARIABLE(0);
 
+            NDArray::prepareSpecialUse({z}, {x, y});
+
             int opNum = block.opNum() < 0 ? this->_opNum : block.opNum();
 
             nd4j_debug("Executing LegacyReduce3Op: [%i]\n", opNum);

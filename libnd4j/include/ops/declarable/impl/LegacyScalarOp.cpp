@@ -62,13 +62,21 @@ namespace nd4j {
             if (block.width() > 1) {
                 auto y = INPUT_VARIABLE(1);
 
+                NDArray::prepareSpecialUse({z}, {x, y});
+
                 NativeOpExecutioner::execScalar(block.launchContext(), opNum, x->getBuffer(), x->getShapeInfo(), x->specialBuffer(), x->specialShapeInfo(), z->getBuffer(), z->getShapeInfo(), z->specialBuffer(), z->specialShapeInfo(), y->buffer(), y->shapeInfo(), y->specialBuffer(), y->specialShapeInfo(), extras.argumentsAsT(z->dataType()));
 
             } else if (block.getTArguments()->size() > 0) {
                 auto y = NDArrayFactory::create(x->dataType(), T_ARG(0), block.launchContext());
 
+                NDArray::prepareSpecialUse({z}, {x, &y});
+
                 NativeOpExecutioner::execScalar(block.launchContext(), opNum, x->getBuffer(), x->getShapeInfo(), x->specialBuffer(), x->specialShapeInfo(), z->getBuffer(), z->getShapeInfo(), z->specialBuffer(), z->specialShapeInfo(), y.buffer(), y.shapeInfo(), y.specialBuffer(), y.specialShapeInfo(), extras.argumentsAsT(z->dataType(), 1));
+
+                manager.synchronize("LegacyScalarOp");
             } else {
+                NDArray::prepareSpecialUse({z}, {x, _scalar});
+
                 NativeOpExecutioner::execScalar(block.launchContext(), opNum, x->getBuffer(), x->getShapeInfo(), x->specialBuffer(), x->specialShapeInfo(), z->getBuffer(), z->getShapeInfo(), z->specialBuffer(), z->specialShapeInfo(), _scalar->buffer(), _scalar->shapeInfo(), _scalar->specialBuffer(), _scalar->specialShapeInfo(), extras.argumentsAsT(z->dataType()));
             }
 

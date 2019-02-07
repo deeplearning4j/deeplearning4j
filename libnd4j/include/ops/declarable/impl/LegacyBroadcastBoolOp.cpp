@@ -34,6 +34,7 @@ namespace nd4j {
             if (dims.size() > 0)
                 std::sort(dims.begin(), dims.end());
 
+            NDArray::prepareSpecialUse({z}, {x, y});
 
             int opNum = block.opNum() < 0 ? this->_opNum : block.opNum();
 

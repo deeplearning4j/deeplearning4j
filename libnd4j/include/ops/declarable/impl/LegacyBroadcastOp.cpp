@@ -31,6 +31,8 @@ namespace nd4j {
 
             auto z = OUTPUT_VARIABLE(0);
 
+            NDArray::prepareSpecialUse({z}, {x, y});
+
             std::vector<int> dims(*block.getAxis());
             if (dims.size() == 0 && block.width() > 2) {
                 auto axis = INPUT_VARIABLE(2);

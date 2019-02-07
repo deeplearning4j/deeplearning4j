@@ -29,6 +29,8 @@ namespace nd4j {
             auto x = INPUT_VARIABLE(0);
             auto z = OUTPUT_VARIABLE(0);
 
+            NDArray::prepareSpecialUse({z}, {x});
+
             // we assume that opNuk is either stored in block, or was provided via op constructor
             int opNum = block.opNum() < 0 ? this->_opNum : block.opNum();
 

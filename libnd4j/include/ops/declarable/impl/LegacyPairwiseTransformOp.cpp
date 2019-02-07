@@ -41,6 +41,8 @@ namespace nd4j {
             auto y = INPUT_VARIABLE(1);
             auto z = OUTPUT_VARIABLE(0);
 
+            NDArray::prepareSpecialUse({z}, {x, y});
+
             if (!x->isSameShape(y)) {
                 std::string sx = ShapeUtils::shapeAsString(x);
                 std::string sy = ShapeUtils::shapeAsString(y);

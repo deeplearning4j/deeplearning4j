@@ -41,6 +41,8 @@ namespace nd4j {
             auto input = INPUT_VARIABLE(0);
             auto z = OUTPUT_VARIABLE(0);
 
+            NDArray::prepareSpecialUse({z}, {input});
+
             int opNum = block.opNum() < 0 ? this->_opNum : block.opNum();
 
             ExtraArguments extras(*block.getTArguments());

@@ -364,6 +364,9 @@ TEST_F(LegacyOpsTests, IndexReduceTests_2) {
 }
 
 TEST_F(LegacyOpsTests, Test_IsMax_1) {
+    if (!Environment::getInstance()->isCPU())
+        return;
+
     auto x = NDArrayFactory::create<double>('c', {2, 2, 2, 2, 2, 2});
     auto z = NDArrayFactory::create<double>('c', {2, 2, 2, 2, 2, 2});
     x.linspace(1.0);
@@ -381,6 +384,9 @@ TEST_F(LegacyOpsTests, Test_IsMax_1) {
 }
 
 TEST_F(LegacyOpsTests, Test_IsMax_2) {
+    if (!Environment::getInstance()->isCPU())
+        return;
+
     auto x = NDArrayFactory::create<double>('c', {2, 2, 2, 2, 2, 2});
     auto z = NDArrayFactory::create<bool>('c', {2, 2, 2, 2, 2, 2});
     x.linspace(1.0);
