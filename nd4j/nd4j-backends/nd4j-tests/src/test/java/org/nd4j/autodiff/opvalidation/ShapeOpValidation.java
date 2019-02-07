@@ -1351,7 +1351,7 @@ public class ShapeOpValidation extends BaseOpValidation {
                         1, 1, 1, 0, 0,
                         1, 1, 0, 0, 0},
                 new long[]{3, 5});
-        SDVariable result1 = sameDiff.sequenceMask(lengths, maxlen);
+        SDVariable result1 = sameDiff.sequenceMask(lengths, maxlen, DataType.FLOAT);
         assertArrayEquals(expected.shape(), result1.eval().shape());
         assertEquals(expected, result1.eval());
 
@@ -1365,7 +1365,7 @@ public class ShapeOpValidation extends BaseOpValidation {
         // Test with dynamic maxlen
         lengths = sameDiff.var("lengths2", arr); // required because of an internal samediff bug
         SDVariable maxLen = sameDiff.var("maxLen", Nd4j.create(new float[]{5}).reshape(1));
-        SDVariable result2 = sameDiff.sequenceMask(lengths, maxLen);
+        SDVariable result2 = sameDiff.sequenceMask(lengths, maxLen, DataType.FLOAT);
         assertArrayEquals(expected.shape(), result2.eval().shape());
         assertEquals(expected, result2.eval());
     }
