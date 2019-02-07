@@ -44,6 +44,7 @@ import org.nd4j.linalg.api.blas.params.MMulTranspose;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.buffer.factory.DataBufferFactory;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
+import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.*;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
@@ -1682,7 +1683,9 @@ public class SameDiff {
             long updaterStateSize = trainingConfig.getUpdater().stateSize(numTrainableParams);
 
             if(updaterStateSize > 0) {
-                updaterState = Nd4j.createUninitialized(dt, 1, updaterStateSize);
+                try(MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+                    updaterState = Nd4j.createUninitialized(dt, 1, updaterStateSize);
+                }
             }
 
             long viewSoFar = 0;
@@ -2317,12 +2320,16 @@ public class SameDiff {
         if (arr == null)
             throw new IllegalArgumentException("Array for " + name + " must not be null");
 
-        arr = arr.migrate();
+        if(arr.isAttached())
+            arr = arr.detach();
         SDVariable ret = new SDVariable(name, VariableType.VARIABLE, this, arr.shape(), arr.dataType(), new NDArraySupplierInitScheme(arr));
 
         associateArrayWithVariable(arr, ret);
-        if (ArrayUtil.prod(arr.shape()) == 1)
-            ret.setScalarValue(Nd4j.scalar(arr.getDouble(0)));
+        if (ArrayUtil.prod(arr.shape()) == 1) {
+            try(MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+                ret.setScalarValue(Nd4j.scalar(arr.getDouble(0)));
+            }
+        }
 
         addVariable(ret);
         if (getShapeForVarName(name) == null)
@@ -3458,7 +3465,9 @@ public class SameDiff {
      * @return SDVariable
      */
     public SDVariable scalar(String name, double value) {
-        return var(name, Nd4j.trueScalar(value));
+        try(MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+            return var(name, Nd4j.scalar(value));
+        }
     }
 
 
@@ -10159,7 +10168,11 @@ public class SameDiff {
                 Queue<DifferentialFunction> availableForDiff = new LinkedList<>();
                 Set<String> seenOps = new HashSet<>();
                 //start with scalar backprop
-                SDVariable initialGrad = sameDiff.var("one-var", Nd4j.trueScalar(1.0));
+                INDArray initGradArr;
+                try(MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+                    initGradArr = Nd4j.scalar(1.0);
+                }
+                SDVariable initialGrad = sameDiff.var("one-var", initGradArr);
                 for(SDVariable v : finalOutputs) {
                     if(v.dataType() == initialGrad.dataType()){
                         sameDiff.setGradientForVariableName(v.getVarName(), initialGrad);
@@ -11217,7 +11230,10 @@ public class SameDiff {
 
             FlatArray fa = v.ndarray();
             if(fa != null && vt != VariableType.ARRAY){
-                INDArray arr = Nd4j.createFromFlatArray(fa);
+                INDArray arr;
+                try(MemoryWorkspace ws = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()) {
+                    arr = Nd4j.createFromFlatArray(fa);
+                }
                 sd.setArrayForVariable(n, arr);
             }
 
@@ -11355,7 +11371,10 @@ public class SameDiff {
         sb.append("\nExternal variables:\n\n");
         for (int e = 0; e < graph.variablesLength(); e++) {
             val var = graph.variables(e);
-            val ndarray = Nd4j.createFromFlatArray(var.ndarray());
+            INDArray ndarray;
+            try(MemoryWorkspace ws = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()) {
+                ndarray = Nd4j.createFromFlatArray(var.ndarray());
+            }
 
             sb.append(var.id().first())
                     .append(":<").append(var.name()).append("> ")
