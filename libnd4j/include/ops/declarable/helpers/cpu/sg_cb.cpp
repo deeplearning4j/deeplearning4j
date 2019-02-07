@@ -313,7 +313,6 @@ namespace nd4j {
 
                 //const bool preciseMode = true;
 
-
                 if (!indices.isEmpty()) {
                     auto bTarget = targets.bufferAsT<int>();
                     auto bIndices = indices.bufferAsT<int>();
