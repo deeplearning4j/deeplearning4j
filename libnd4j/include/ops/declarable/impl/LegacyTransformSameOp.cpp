@@ -44,12 +44,15 @@ namespace nd4j {
             int opNum = block.opNum() < 0 ? this->_opNum : block.opNum();
 
             ExtraArguments extras(*block.getTArguments());
-            NativeOpExecutioner::execTransformSame(nullptr, opNum, input->getBuffer(), input->getShapeInfo(), input->specialBuffer(), input->specialShapeInfo(),
+            PointersManager manager(block.launchContext());
+
+            NativeOpExecutioner::execTransformSame(block.launchContext(), opNum, input->getBuffer(), input->getShapeInfo(), input->specialBuffer(), input->specialShapeInfo(),
                     z->getBuffer(), z->getShapeInfo(), z->specialBuffer(), z->specialShapeInfo(), extras.argumentsAsT(z->dataType()), nullptr, nullptr);
 
+            manager.synchronize("LegacyTransformSameOp");
             STORE_RESULT(*z);
 
-            return ND4J_STATUS_OK;
+            return Status::OK();
         }
 
         /**

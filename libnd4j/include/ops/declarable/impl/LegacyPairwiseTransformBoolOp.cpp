@@ -50,15 +50,17 @@ namespace nd4j {
             int opNum = block.opNum() < 0 ? this->_opNum : block.opNum();
 
             ExtraArguments extras(*block.getTArguments());
+            PointersManager manager(block.launchContext());
 
-            NativeOpExecutioner::execPairwiseTransform(nullptr, opNum, x->getBuffer(), x->getShapeInfo(), x->getSpecialBuffer(), x->getSpecialShapeInfo(),
+            NativeOpExecutioner::execPairwiseTransform(block.launchContext(), opNum, x->getBuffer(), x->getShapeInfo(), x->getSpecialBuffer(), x->getSpecialShapeInfo(),
                     y->getBuffer(), y->getShapeInfo(), y->getSpecialBuffer(), y->getSpecialShapeInfo(),
                     z->getBuffer(), z->getShapeInfo(), z->getSpecialBuffer(), z->getSpecialShapeInfo(),
                     extras.argumentsAsT(x->dataType()));
 
+            manager.synchronize("LegacyPairwiseTransformBoolOp");
             STORE_RESULT(*z);
 
-            return ND4J_STATUS_OK;
+            return Status::OK();
         }
 
         /**

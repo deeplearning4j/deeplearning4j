@@ -48,6 +48,7 @@ namespace nd4j {
             auto axis = *block.getAxis();
 
             ExtraArguments extras(*block.getTArguments());
+            PointersManager manager(block.launchContext());
 
             if (block.width() == 1) {
                 auto z = OUTPUT_VARIABLE(0);
@@ -59,7 +60,7 @@ namespace nd4j {
                 //                    (block.getIArguments()->size() == 1 && INT_ARG(0) == MAX_INT)
                 if (block.getAxis()->empty() || allAxes) {
                     // scalar
-                    NativeOpExecutioner::execReduceFloatScalar(nullptr, opNum, x->getBuffer(), x->getShapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
+                    NativeOpExecutioner::execReduceFloatScalar(block.launchContext(), opNum, x->getBuffer(), x->getShapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
                             extras.argumentsAsT(z->dataType()), z->buffer(), z->shapeInfo(), z->specialBuffer(), z->specialShapeInfo());
                 } else {
                     // TAD
@@ -77,16 +78,14 @@ namespace nd4j {
                     tad.createTadOnlyShapeInfo();
                     tad.createOffsets();
 
-                    CudaManager manager(block.launchContext());
                     auto pDims = manager.replicatePointer(dims.data(), dims.size() * sizeof(int));
                     auto pTadShape = manager.replicatePointer(tad.tadOnlyShapeInfo, shape::shapeInfoByteLength(tad.tadOnlyShapeInfo));
                     auto pTadOffsets = manager.replicatePointer(tad.tadOffsets, tad.numTads * sizeof(Nd4jLong));
 
-                    NativeOpExecutioner::execReduceFloat(nullptr, opNum, x->getBuffer(), x->getShapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
+                    NativeOpExecutioner::execReduceFloat(block.launchContext(), opNum, x->getBuffer(), x->getShapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
                             extras.argumentsAsT(z->dataType()), z->getBuffer(), z->getShapeInfo(), z->specialBuffer(), z->specialShapeInfo(),
                             reinterpret_cast<int *>(pDims), (int) dims.size(), reinterpret_cast<Nd4jLong *>(pTadShape), reinterpret_cast<Nd4jLong *>(pTadOffsets));
 
-                    manager.syncStream("LegacyReduceFloatOp");
                 }
 
                 STORE_RESULT(*z);
@@ -106,14 +105,8 @@ namespace nd4j {
 
                 if ((block.getIArguments()->size() == 1 && INT_ARG(0) == MAX_INT) || allAxes) {
                     auto z = OUTPUT_VARIABLE(0);
-
-                    ExtraArguments extras(*block.getTArguments());
-                    CudaManager manager(block.launchContext());
-
                     // scalar
                     NativeOpExecutioner::execReduceFloatScalar(block.launchContext(), opNum, x->buffer(), x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo(), extras.argumentsAsT(x->dataType()), z->buffer(), z->shapeInfo(), z->specialBuffer(), z->specialShapeInfo());
-
-                    manager.syncStream("LegacyReduceFloatOp");
                 } else {
                     // TAD
                     if (indices->lengthOf() > 1)
@@ -127,20 +120,19 @@ namespace nd4j {
 
                     auto z = OUTPUT_VARIABLE(0);
 
-                    ExtraArguments extras(*block.getTArguments());
-                    CudaManager manager(block.launchContext());
                     auto pDims = (int *) manager.replicatePointer(axis.data(), axis.size() * sizeof(int));
                     auto pTadShape = (Nd4jLong *) manager.replicatePointer(tad.tadOnlyShapeInfo, shape::shapeInfoByteLength(tad.tadOnlyShapeInfo));
                     auto pTadOffsets = (Nd4jLong *) manager.replicatePointer(tad.tadOffsets, tad.numTads * sizeof(Nd4jLong));
 
-                    NativeOpExecutioner::execReduceFloat(nullptr, opNum, x->getBuffer(), x->getShapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
+                    NativeOpExecutioner::execReduceFloat(block.launchContext(), opNum, x->getBuffer(), x->getShapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
                             extras.argumentsAsT(z->dataType()), z->getBuffer(), z->getShapeInfo(), z->specialBuffer(), z->specialShapeInfo(),
                             axis.data(), (int) axis.size(), pTadShape, pTadOffsets);
 
-                    manager.syncStream("LegacyReduceFloatOp");
+
                 }
             }
 
+            manager.synchronize("LegacyReduceFloatOp");
             return Status::OK();
         }
 

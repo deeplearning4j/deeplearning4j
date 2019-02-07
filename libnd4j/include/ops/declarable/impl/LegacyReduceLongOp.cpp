@@ -48,6 +48,7 @@ namespace nd4j {
             bool allAxes = false;
 
             ExtraArguments extras(*block.getTArguments());
+            PointersManager manager(block.launchContext());
 
             if (block.width() == 1) {
                 auto z = OUTPUT_VARIABLE(0);
@@ -58,7 +59,7 @@ namespace nd4j {
                 if ((axis.empty()) ||
                     (axis.size() == 1 && axis[0] == MAX_INT) || allAxes) {
                     // scalar
-                    NativeOpExecutioner::execReduceLongScalar(nullptr, opNum, x->getBuffer(), x->getShapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
+                    NativeOpExecutioner::execReduceLongScalar(block.launchContext(), opNum, x->getBuffer(), x->getShapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
                             extras.argumentsAsT(x->dataType()), z->buffer(), z->shapeInfo(), z->specialBuffer(), z->specialShapeInfo());
                 } else {
                     // TAD
@@ -76,10 +77,14 @@ namespace nd4j {
                     tad.createTadOnlyShapeInfo();
                     tad.createOffsets();
 
-                    NativeOpExecutioner::execReduceLong(nullptr, opNum, x->getBuffer(), x->getShapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
+                    auto pDims = (int *) manager.replicatePointer(axis.data(), axis.size() * sizeof(int));
+                    auto pTadShape = (Nd4jLong *) manager.replicatePointer(tad.tadOnlyShapeInfo, shape::shapeInfoByteLength(tad.tadOnlyShapeInfo));
+                    auto pTadOffsets = (Nd4jLong *) manager.replicatePointer(tad.tadOffsets, tad.numTads * sizeof(Nd4jLong));
+
+                    NativeOpExecutioner::execReduceLong(block.launchContext(), opNum, x->getBuffer(), x->getShapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
                             extras.argumentsAsT(x->dataType()),
                             z->getBuffer(), z->getShapeInfo(), z->specialBuffer(), z->specialShapeInfo(),
-                            dims.data(), (int) dims.size(), tad.tadOnlyShapeInfo, tad.tadOffsets);
+                            pDims, (int) dims.size(), pTadShape, pTadOffsets);
                 }
 
                 STORE_RESULT(*z);
@@ -100,13 +105,8 @@ namespace nd4j {
                 if ((block.getIArguments()->size() == 1 && INT_ARG(0) == MAX_INT) || allAxes) {
                     auto z = OUTPUT_VARIABLE(0);
 
-                    ExtraArguments extras(*block.getTArguments());
-                    CudaManager manager(block.launchContext());
-
                     // scalar
                     NativeOpExecutioner::execReduceLongScalar(block.launchContext(), opNum, x->buffer(), x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo(), extras.argumentsAsT(x->dataType()), z->buffer(), z->shapeInfo(), z->specialBuffer(), z->specialShapeInfo());
-
-                    manager.syncStream("LegacyReduceLongOp");
                 } else {
                     // TAD
                     if (indices->lengthOf() > 1)
@@ -120,8 +120,6 @@ namespace nd4j {
 
                     auto z = OUTPUT_VARIABLE(0);
 
-                    ExtraArguments extras(*block.getTArguments());
-                    CudaManager manager(block.launchContext());
                     auto pDims = (int *) manager.replicatePointer(axis.data(), axis.size() * sizeof(int));
                     auto pTadShape = (Nd4jLong *) manager.replicatePointer(tad.tadOnlyShapeInfo, shape::shapeInfoByteLength(tad.tadOnlyShapeInfo));
                     auto pTadOffsets = (Nd4jLong *) manager.replicatePointer(tad.tadOffsets, tad.numTads * sizeof(Nd4jLong));
@@ -129,10 +127,10 @@ namespace nd4j {
                     NativeOpExecutioner::execReduceLong(block.launchContext(), opNum, x->getBuffer(), x->getShapeInfo(), x->specialBuffer(), x->specialShapeInfo(), extras.argumentsAsT(x->dataType()),
                             z->getBuffer(), z->getShapeInfo(), z->specialBuffer(), z->specialShapeInfo(), pDims, (int) axis.size(), pTadShape, pTadOffsets);
 
-                    manager.syncStream("LegacyReduceLongOp");
                 }
             }
 
+            manager.synchronize("LegacyReduceLongOp");
             return Status::OK();
         }
 

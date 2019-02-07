@@ -18,7 +18,7 @@
 // @author Yurii Shyrma (iuriish@yahoo.com), created on 06.02.2019
 //
 
-#include <CudaManager.h>
+#include <PointersManager.h>
 #include <exceptions/cuda_exception.h>
 #include <logger.h>
 #include <memory/Workspace.h>
@@ -26,23 +26,23 @@
 namespace nd4j {
 
 //////////////////////////////////////////////////////////////////////////
-    CudaManager::CudaManager(nd4j::graph::LaunchContext *context)  {
+    PointersManager::PointersManager(nd4j::graph::LaunchContext *context)  {
         _context = context;
     }
 
 //////////////////////////////////////////////////////////////////////////
-    void* CudaManager::replicatePointer(const void* src, const size_t numberOfBytes, const std::string& message) {
+    void* PointersManager::replicatePointer(const void* src, const size_t numberOfBytes, const std::string& message) {
         // no-op
-        return src;
+        return const_cast<void *>(src);
     }
 
 //////////////////////////////////////////////////////////////////////////
-    void CudaManager::syncStream(const std::string& message) const {
+    void PointersManager::synchronize(const std::string& message) const {
         // no-op
     }
 
 //////////////////////////////////////////////////////////////////////////
-    CudaManager::~CudaManager() {
+    PointersManager::~PointersManager() {
         // no-op
     }
 

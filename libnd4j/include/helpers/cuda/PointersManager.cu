@@ -18,7 +18,7 @@
 // @author Yurii Shyrma (iuriish@yahoo.com), created on 06.02.2019
 //
 
-#include <CudaManager.h>
+#include <PointersManager.h>
 #include <exceptions/cuda_exception.h>
 #include <logger.h>
 #include <memory/Workspace.h>
@@ -26,12 +26,12 @@
 namespace nd4j {
 
 //////////////////////////////////////////////////////////////////////////
-CudaManager::CudaManager(nd4j::graph::LaunchContext *context)  {
+PointersManager::PointersManager(nd4j::graph::LaunchContext *context)  {
         _context = context;
 }
 
 //////////////////////////////////////////////////////////////////////////
-void* CudaManager::replicatePointer(const void* src, const size_t numberOfBytes, const std::string& message) {
+void* PointersManager::replicatePointer(const void* src, const size_t numberOfBytes, const std::string& message) {
 
 	void* dst = nullptr;
 	if (_context->getWorkspace() == nullptr) {
@@ -53,7 +53,7 @@ void* CudaManager::replicatePointer(const void* src, const size_t numberOfBytes,
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CudaManager::syncStream(const std::string& message) const {
+void PointersManager::synchronize(const std::string& message) const {
     if (_context != nullptr) {
         cudaError_t cudaResult = cudaStreamSynchronize(*_context->getCudaStream());
         if (cudaResult != 0)
@@ -64,7 +64,7 @@ void CudaManager::syncStream(const std::string& message) const {
 }
 
 //////////////////////////////////////////////////////////////////////////
-CudaManager::~CudaManager() {
+PointersManager::~PointersManager() {
     
     for (auto& p :_pOnGlobMem)
         cudaFree(p);

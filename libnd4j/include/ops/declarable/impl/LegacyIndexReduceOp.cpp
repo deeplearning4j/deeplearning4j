@@ -115,11 +115,12 @@ namespace nd4j {
             bool allAxes = false;
 
             ExtraArguments extras(*block.getTArguments());
+            PointersManager manager(block.launchContext());
 
             if (block.width() == 1) {
                 if (block.getAxis()->size() == 0) {
                     // scalar
-                    NativeOpExecutioner::execIndexReduceScalar(nullptr, opNum, x->getBuffer(), x->getShapeInfo(),
+                    NativeOpExecutioner::execIndexReduceScalar(block.launchContext(), opNum, x->getBuffer(), x->getShapeInfo(),
                                                                          x->getSpecialBuffer(), x->getSpecialShapeInfo(),
                                                                          extras.argumentsAsT(x->dataType()),
                                                                          z->getBuffer(), z->getShapeInfo(),
@@ -138,13 +139,17 @@ namespace nd4j {
                     tad.createTadOnlyShapeInfo();
                     tad.createOffsets();
 
-                    NativeOpExecutioner::execIndexReduce(nullptr, opNum, x->getBuffer(), x->getShapeInfo(),
+                    auto pDims = (int *) manager.replicatePointer(dims.data(), dims.size() * sizeof(int));
+                    auto pTadShape = (Nd4jLong *) manager.replicatePointer(tad.tadOnlyShapeInfo, shape::shapeInfoByteLength(tad.tadOnlyShapeInfo));
+                    auto pTadOffsets = (Nd4jLong *) manager.replicatePointer(tad.tadOffsets, tad.numTads * sizeof(Nd4jLong));
+
+                    NativeOpExecutioner::execIndexReduce(block.launchContext(), opNum, x->getBuffer(), x->getShapeInfo(),
                                                         x->getSpecialBuffer(), x->getSpecialShapeInfo(),
                                                         extras.argumentsAsT(x->dataType()),
                                                         reinterpret_cast<Nd4jLong *>(z->getBuffer()), z->getShapeInfo(),
                                                         z->getSpecialBuffer(), z->getSpecialShapeInfo(),
-                                                        dims.data(), (int) dims.size(),
-                                                        tad.tadOnlyShapeInfo, tad.tadOffsets);
+                                                        pDims, (int) dims.size(),
+                                                        pTadShape, pTadOffsets);
                 }
             } else {
                 // TF mode
@@ -160,7 +165,7 @@ namespace nd4j {
                 }
 
                 if (allAxes) {
-                    NativeOpExecutioner::execIndexReduceScalar(nullptr, opNum, x->getBuffer(), x->getShapeInfo(),
+                    NativeOpExecutioner::execIndexReduceScalar(block.launchContext(), opNum, x->getBuffer(), x->getShapeInfo(),
                                                               x->getSpecialBuffer(), x->getSpecialShapeInfo(),
                                                               extras.argumentsAsT(x->dataType()),
                                                               z->getBuffer(), z->getShapeInfo(), z->getSpecialBuffer(),
@@ -176,15 +181,20 @@ namespace nd4j {
                     tad.createTadOnlyShapeInfo();
                     tad.createOffsets();
 
-                    NativeOpExecutioner::execIndexReduce(nullptr, opNum,
+                    auto pDims = (int *) manager.replicatePointer(axis.data(), axis.size() * sizeof(int));
+                    auto pTadShape = (Nd4jLong *) manager.replicatePointer(tad.tadOnlyShapeInfo, shape::shapeInfoByteLength(tad.tadOnlyShapeInfo));
+                    auto pTadOffsets = (Nd4jLong *) manager.replicatePointer(tad.tadOffsets, tad.numTads * sizeof(Nd4jLong));
+
+                    NativeOpExecutioner::execIndexReduce(block.launchContext(), opNum,
                             x->getBuffer(), x->getShapeInfo(), x->getSpecialBuffer(), x->getSpecialShapeInfo(),
                             extras.argumentsAsT(x->dataType()),
                             reinterpret_cast<Nd4jLong *>(z->getBuffer()),
                             z->getShapeInfo(), z->getSpecialBuffer(), z->getSpecialShapeInfo(),
-                            axis.data(), (int) axis.size(), tad.tadOnlyShapeInfo, tad.tadOffsets);
+                            pDims, (int) axis.size(), pTadShape, pTadOffsets);
                 }
             }
 
+            manager.synchronize("LegacyIndexReduceOp");
             STORE_RESULT(*z);
 
             return Status::OK();

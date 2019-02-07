@@ -48,6 +48,7 @@ namespace nd4j {
             bool allAxes = false;
 
             ExtraArguments extras(*block.getTArguments());
+            PointersManager manager(block.launchContext());
 
             if (block.width() == 1) {
                 auto z = OUTPUT_VARIABLE(0);
@@ -55,11 +56,9 @@ namespace nd4j {
                 if (axis.size() == x->rankOf())
                     allAxes = true;
 
-//                if ((block.getIArguments()->size() == 0) ||
-//                    (block.getIArguments()->size() == 1 && INT_ARG(0) == MAX_INT) || allAxes) {
                 if (axis.empty() || allAxes) {
                     // scalar
-                    NativeOpExecutioner::execReduceSameScalar(nullptr, opNum, x->getBuffer(), x->getShapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
+                    NativeOpExecutioner::execReduceSameScalar(block.launchContext(), opNum, x->getBuffer(), x->getShapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
                             extras.argumentsAsT(z->dataType()), z->buffer(), z->shapeInfo(), z->specialBuffer(), z->specialShapeInfo());
                 } else {
                     // TAD
@@ -77,10 +76,14 @@ namespace nd4j {
                     tad.createTadOnlyShapeInfo();
                     tad.createOffsets();
 
-                    NativeOpExecutioner::execReduceSame(nullptr, opNum, x->getBuffer(), x->getShapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
+                    auto pDims = (int *) manager.replicatePointer(axis.data(), axis.size() * sizeof(int));
+                    auto pTadShape = (Nd4jLong *) manager.replicatePointer(tad.tadOnlyShapeInfo, shape::shapeInfoByteLength(tad.tadOnlyShapeInfo));
+                    auto pTadOffsets = (Nd4jLong *) manager.replicatePointer(tad.tadOffsets, tad.numTads * sizeof(Nd4jLong));
+
+                    NativeOpExecutioner::execReduceSame(block.launchContext(), opNum, x->getBuffer(), x->getShapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
                             extras.argumentsAsT(z->dataType()),
                             z->getBuffer(), z->getShapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
-                            dims.data(), (int) dims.size(), tad.tadOnlyShapeInfo, tad.tadOffsets);
+                            pDims, (int) dims.size(), pTadShape, pTadOffsets);
                 }
 
                 STORE_RESULT(*z);
@@ -101,13 +104,8 @@ namespace nd4j {
                 if ((block.getIArguments()->size() == 1 && INT_ARG(0) == MAX_INT) || allAxes) {
                     auto z = OUTPUT_VARIABLE(0);
 
-                    ExtraArguments extras(*block.getTArguments());
-                    CudaManager manager(block.launchContext());
-
                     // scalar
                     NativeOpExecutioner::execReduceSameScalar(block.launchContext(), opNum, x->buffer(), x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo(), extras.argumentsAsT(z->dataType()), z->buffer(), z->shapeInfo(), z->specialBuffer(), z->specialShapeInfo());
-
-                    manager.syncStream("LegacyReduceSameOp");
                 } else {
                     // TAD
                     if (indices->lengthOf() > 1)
@@ -121,19 +119,17 @@ namespace nd4j {
 
                     auto z = OUTPUT_VARIABLE(0);
 
-                    ExtraArguments extras(*block.getTArguments());
-                    CudaManager manager(block.launchContext());
                     auto pDims = (int *) manager.replicatePointer(axis.data(), axis.size() * sizeof(int));
                     auto pTadShape = (Nd4jLong *) manager.replicatePointer(tad.tadOnlyShapeInfo, shape::shapeInfoByteLength(tad.tadOnlyShapeInfo));
                     auto pTadOffsets = (Nd4jLong *) manager.replicatePointer(tad.tadOffsets, tad.numTads * sizeof(Nd4jLong));
 
-                    NativeOpExecutioner::execReduceSame(nullptr, opNum, x->getBuffer(), x->getShapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
+                    NativeOpExecutioner::execReduceSame(block.launchContext(), opNum, x->getBuffer(), x->getShapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
                             extras.argumentsAsT(z->dataType()), z->getBuffer(), z->getShapeInfo(), z->specialBuffer(), z->specialShapeInfo(),
                             pDims, (int) axis.size(), pTadShape, pTadOffsets);
-
-                    manager.syncStream("LegacyReduceSameOp");
                 }
             }
+
+            manager.synchronize("LegacyReduceSameOp");
 
             return Status::OK();
         }

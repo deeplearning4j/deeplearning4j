@@ -28,7 +28,7 @@
 
 namespace nd4j {
 
-class CudaManager {
+class PointersManager {
     
     private:
 
@@ -37,13 +37,13 @@ class CudaManager {
         
     public:
         
-        CudaManager(nd4j::graph::LaunchContext *context);
+        PointersManager(nd4j::graph::LaunchContext *context);
         
-        ~CudaManager();
+        ~PointersManager();
         
         void* replicatePointer(const void* src, const size_t size, const std::string& message = "");
 
-        void syncStream(const std::string& message = "") const;
+        void synchronize(const std::string& message = "") const;
 };
 
 }
