@@ -28,6 +28,7 @@ public class BatchItem<T extends SequenceElement>  {
         this.randomValue = randomValue;
         this.alpha = alpha;
         this.numLabel = numLabel;
+        this.windowWords = windowWords.clone();
     }
 
     public BatchItem(T word, int[] windowWords, long randomValue, double alpha) {
