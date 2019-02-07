@@ -16,6 +16,7 @@
 
 //
 // @author Yurii Shyrma (iuriish@yahoo.com), created on 06.02.2019
+// @author raver119@gmail.com
 //
 
 #ifndef CUDAMANAGER_H
@@ -34,16 +35,26 @@ class PointersManager {
 
         nd4j::graph::LaunchContext *_context;
         std::vector<void*> _pOnGlobMem;
+        std::string _funcName;
         
     public:
         
-        PointersManager(nd4j::graph::LaunchContext *context);
+        PointersManager(nd4j::graph::LaunchContext *context, const std::string& funcName = "");
         
         ~PointersManager();
         
-        void* replicatePointer(const void* src, const size_t size, const std::string& message = "");
+        void* replicatePointer(const void* src, const size_t size);
 
-        void synchronize(const std::string& message = "") const;
+        void synchronize() const;
+
+        template<typename T>
+        void printDevContentOnHost(const void* pDev, const Nd4jLong len) const;
+        
+#ifdef __CUDACC__
+        template<typename T>
+        __device__ void printDevContentOnDev(const void* pDev, const Nd4jLong len, const int tid) const;
+#endif
+
 };
 
 }

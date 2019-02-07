@@ -19,6 +19,7 @@
 //
 
 #include <ops/declarable/LegacyBroadcastBoolOp.h>
+#include <PointersManager.h>
 #include <helpers/TAD.h>
 
 
@@ -42,7 +43,7 @@ namespace nd4j {
             tad.createTadOnlyShapeInfo();
             tad.createOffsets();
 
-            PointersManager manager(block.launchContext());
+            PointersManager manager(block.launchContext(), "LegacyBroadcastBoolOp");
             auto pDims = (int *) manager.replicatePointer(dims.data(), dims.size() * sizeof(int));
             auto pTadShape = (Nd4jLong *) manager.replicatePointer(tad.tadOnlyShapeInfo, shape::shapeInfoByteLength(tad.tadOnlyShapeInfo));
             auto pTadOffsets = (Nd4jLong *) manager.replicatePointer(tad.tadOffsets, tad.numTads * sizeof(Nd4jLong));
@@ -69,7 +70,7 @@ namespace nd4j {
                         pDims, dims.size(), pTadShape, pTadOffsets, zTadShape, zTadOffsets);
             }
 
-            manager.synchronize("LegacyBroadcastBoolOp");
+            manager.synchronize();
             STORE_RESULT(*z);
 
             return Status::OK();

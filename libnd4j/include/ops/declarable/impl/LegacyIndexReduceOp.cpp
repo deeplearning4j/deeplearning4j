@@ -117,7 +117,7 @@ namespace nd4j {
             bool allAxes = false;
 
             ExtraArguments extras(*block.getTArguments());
-            PointersManager manager(block.launchContext());
+            PointersManager manager(block.launchContext(), "LegacyIndexReduceOp");
 
             if (block.width() == 1) {
                 if (block.getAxis()->size() == 0) {
@@ -196,7 +196,7 @@ namespace nd4j {
                 }
             }
 
-            manager.synchronize("LegacyIndexReduceOp");
+            manager.synchronize();
             STORE_RESULT(*z);
 
             return Status::OK();

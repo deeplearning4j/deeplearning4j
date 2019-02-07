@@ -36,7 +36,7 @@ namespace nd4j {
             nd4j_debug("Executing LegacyReduce3Op: [%i]\n", opNum);
 
             ExtraArguments extras(*block.getTArguments());
-            PointersManager manager(block.launchContext());
+            PointersManager manager(block.launchContext(), "LegacyReduce3Op");
 
             if (x->isSameShape(y) && (block.getIArguments()->size() == 0 || (block.getIArguments()->size() == 1 && INT_ARG(0) == MAX_INT))) {
                 // reduce3 to scalar
@@ -76,7 +76,7 @@ namespace nd4j {
                         pDims, dims.size(), xTadShape, xTadOffsets, yTadShape, yTadOffsets);
             }
 
-            manager.synchronize("LegacyReduce3Op");
+            manager.synchronize();
             STORE_RESULT(*z);
 
             return Status::OK();

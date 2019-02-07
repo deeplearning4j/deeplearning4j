@@ -57,7 +57,7 @@ namespace nd4j {
             int opNum = block.opNum() < 0 ? this->_opNum : block.opNum();
 
             ExtraArguments extras(*block.getTArguments());
-            PointersManager manager(block.launchContext());
+            PointersManager manager(block.launchContext(), "LegacyScalarOp");
 
             if (block.width() > 1) {
                 auto y = INPUT_VARIABLE(1);
@@ -73,14 +73,14 @@ namespace nd4j {
 
                 NativeOpExecutioner::execScalar(block.launchContext(), opNum, x->getBuffer(), x->getShapeInfo(), x->specialBuffer(), x->specialShapeInfo(), z->getBuffer(), z->getShapeInfo(), z->specialBuffer(), z->specialShapeInfo(), y.buffer(), y.shapeInfo(), y.specialBuffer(), y.specialShapeInfo(), extras.argumentsAsT(z->dataType(), 1));
 
-                manager.synchronize("LegacyScalarOp");
+                manager.synchronize();
             } else {
                 NDArray::prepareSpecialUse({z}, {x, _scalar});
 
                 NativeOpExecutioner::execScalar(block.launchContext(), opNum, x->getBuffer(), x->getShapeInfo(), x->specialBuffer(), x->specialShapeInfo(), z->getBuffer(), z->getShapeInfo(), z->specialBuffer(), z->specialShapeInfo(), _scalar->buffer(), _scalar->shapeInfo(), _scalar->specialBuffer(), _scalar->specialShapeInfo(), extras.argumentsAsT(z->dataType()));
             }
 
-            manager.synchronize("LegacyScalarOp");
+            manager.synchronize();
             STORE_RESULT(*z);
 
             return Status::OK();

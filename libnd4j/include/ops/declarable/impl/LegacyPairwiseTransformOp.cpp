@@ -52,14 +52,14 @@ namespace nd4j {
             int opNum = block.opNum() < 0 ? this->_opNum : block.opNum();
 
             ExtraArguments extras(*block.getTArguments());
-            PointersManager manager(block.launchContext());
+            PointersManager manager(block.launchContext(), "LegacyPairwiseTransformOp");
 
             NativeOpExecutioner::execPairwiseTransform(block.launchContext(), opNum, x->getBuffer(), x->getShapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
                     y->getBuffer(), y->getShapeInfo(), y->specialBuffer(), y->specialShapeInfo(),
                     z->getBuffer(), z->getShapeInfo(), z->specialBuffer(), z->specialShapeInfo(),
                     extras.argumentsAsT(z->dataType()));
 
-            manager.synchronize("LegacyPairwiseTransformOp");
+            manager.synchronize();
             STORE_RESULT(*z);
 
             return Status::OK();
