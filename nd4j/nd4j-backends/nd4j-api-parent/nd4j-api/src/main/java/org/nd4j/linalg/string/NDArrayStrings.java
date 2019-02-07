@@ -255,10 +255,10 @@ public class NDArrayStrings {
                         }
                     }
                 } else if (arr.isZ()) {
-                    int arrElement = arr.getInt(i);
+                    long arrElement = arr.getLong(i);
                     sb.append(String.format("%1$" + padding + "s", arrElement));
                 } else if (arr.isB()) {
-                    int arrElement = arr.getInt(i);
+                    long arrElement = arr.getLong(i);
                     sb.append(String.format("%1$" + padding + "s", arrElement == 0 ? "false" : "true"));
                 } else if(arr.dataType() == DataType.UTF8){
                     String s = arr.getStringUnsafe(i);
