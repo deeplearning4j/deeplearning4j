@@ -861,7 +861,8 @@ public class WordVectorSerializer {
                         for (int i = 0; i < split.length; i++) {
                             array[i] = Double.parseDouble(split[i]);
                         }
-                        rows.add(Nd4j.create(array));
+                        rows.add(Nd4j.create(array, new long[]{array.length},
+                                ((InMemoryLookupTable) w2v.getLookupTable()).getSyn0().dataType()));
                     }
 
                     // it's possible to have full model without syn1Neg
@@ -934,7 +935,7 @@ public class WordVectorSerializer {
             for (int i = 0; i < split.length; i++) {
                 array[i] = Double.parseDouble(split[i]);
             }
-            rows.add(Nd4j.create(array));
+            rows.add(Nd4j.create(array, new long[]{array.length}, lookupTable.getSyn0().dataType()));
         }
         reader.close();
 

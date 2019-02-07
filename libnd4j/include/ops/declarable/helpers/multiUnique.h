@@ -15,24 +15,20 @@
  ******************************************************************************/
 
 //
-//  @author raver119@gmail.com
+//  @author sgazeos@gmail.com
 //
-
-#ifndef DEV_TESTS_NLP_H
-#define DEV_TESTS_NLP_H
-#include <ops/declarable/headers/common.h>
+#ifndef __MULTI_UNIQUE_H_HELPERS__
+#define __MULTI_UNIQUE_H_HELPERS__
+#include <op_boilerplate.h>
+#include <NDArray.h>
 
 namespace nd4j {
-    namespace ops {
+namespace ops {
+namespace helpers {
 
-        #if NOT_EXCLUDED(OP_skipgram)
-        DECLARE_CONFIGURABLE_OP(skipgram, 12, 12, true, 0, 0);
-        #endif
+    bool multiUnique(std::vector<NDArray*> const& inputList, nd4j::memory::Workspace* workspace = nullptr);
 
-        #if NOT_EXCLUDED(OP_cbow)
-        DECLARE_CONFIGURABLE_OP(cbow, 14, 14, true, 0, 0);
-        #endif
-    }
 }
-
-#endif //DEV_TESTS_NLP_H
+}
+}
+#endif
