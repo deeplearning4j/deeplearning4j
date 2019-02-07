@@ -44,16 +44,16 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class ParallelTransformerIterator extends BasicTransformerIterator {
 
     protected BlockingQueue<Future<Sequence<VocabWord>>> buffer = new LinkedBlockingQueue<>(1024);
-    protected BlockingQueue<LabelledDocument> stringBuffer;
+    //protected BlockingQueue<LabelledDocument> stringBuffer;
     //protected TokenizerThread[] threads;
-    protected boolean underlyingHas = true;
+    protected AtomicBoolean underlyingHas = new AtomicBoolean(true);
     protected AtomicInteger processing = new AtomicInteger(0);
 
     private ExecutorService executorService;
 
     protected static final AtomicInteger count = new AtomicInteger(0);
 
-    private static final int PREFETCH_SIZE = 10;
+    private static final int PREFETCH_SIZE = 100;
 
     public ParallelTransformerIterator(@NonNull LabelAwareIterator iterator, @NonNull SentenceTransformer transformer) {
         this(iterator, transformer, true);
@@ -61,14 +61,14 @@ public class ParallelTransformerIterator extends BasicTransformerIterator {
 
     private void prefetchIterator() {
         for (int i = 0; i < PREFETCH_SIZE; ++i) {
-            boolean before = underlyingHas;
+            //boolean before = underlyingHas;
 
-            if (before)
-                underlyingHas = iterator.hasNextDocument();
-            else
-                underlyingHas = false;
+                if (underlyingHas.get())
+                    underlyingHas.set(iterator.hasNextDocument());
+                else
+                    underlyingHas.set(false);
 
-            if (underlyingHas) {
+            if (underlyingHas.get()) {
                 CallableTransformer callableTransformer = new CallableTransformer(iterator.nextDocument(), sentenceTransformer);
                 Future<Sequence<VocabWord>> futureSequence = executorService.submit(callableTransformer);
                 try {
@@ -84,7 +84,7 @@ public class ParallelTransformerIterator extends BasicTransformerIterator {
                                        boolean allowMultithreading) {
         super(new AsyncLabelAwareIterator(iterator, 512), transformer);
         this.allowMultithreading = allowMultithreading;
-        this.stringBuffer = new LinkedBlockingQueue<>(512);
+        //this.stringBuffer = new LinkedBlockingQueue<>(512);
 
         //threads = new TokenizerThread[1];
         //threads = new TokenizerThread[allowMultithreading ? Math.max(Runtime.getRuntime().availableProcessors(), 2) : 1];
@@ -124,9 +124,8 @@ public class ParallelTransformerIterator extends BasicTransformerIterator {
 
     @Override
     public void reset() {
-        //this.executorService.shutdown();
         this.iterator.reset();
-        underlyingHas = true;
+        underlyingHas.set(true);
         prefetchIterator();
 
         /*for (int x = 0; x < threads.length; x++) {
@@ -141,16 +140,8 @@ public class ParallelTransformerIterator extends BasicTransformerIterator {
         }*/
     }
 
-    @Override
-    public boolean hasNext() {
-        boolean before = underlyingHas;
-
-        if (before)
-            underlyingHas = iterator.hasNextDocument();
-        else
-            underlyingHas = false;
-
-        return (underlyingHas || !buffer.isEmpty() || !stringBuffer.isEmpty() || processing.get() > 0);
+    public void shutdown() {
+        executorService.shutdown();
     }
 
     private static class CallableTransformer implements Callable<Sequence<VocabWord>> {
@@ -182,13 +173,25 @@ public class ParallelTransformerIterator extends BasicTransformerIterator {
     }
 
     @Override
+    public boolean hasNext() {
+        //boolean before = underlyingHas;
+
+            if (underlyingHas.get())
+                underlyingHas.set(iterator.hasNextDocument());
+            else
+                underlyingHas.set(false);
+
+        return (underlyingHas.get() || !buffer.isEmpty() || /*!stringBuffer.isEmpty() ||*/ processing.get() > 0);
+    }
+
+    @Override
     public Sequence<VocabWord> next() {
         try {
             /*if (underlyingHas)
                 stringBuffer.put(iterator.nextDocument());*/
 
             processing.incrementAndGet();
-            if (underlyingHas) {
+            if (underlyingHas.get()) {
 
                 CallableTransformer transformer = new CallableTransformer(iterator.nextDocument(), sentenceTransformer);
                 Future<Sequence<VocabWord>> futureSequence = executorService.submit(transformer);
