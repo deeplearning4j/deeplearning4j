@@ -20,6 +20,7 @@
 
 #include <ops/declarable/LegacyReduce3Op.h>
 #include <helpers/ShapeUtils.h>
+#include <helpers/TAD.h>
 
 namespace nd4j {
     namespace ops {
@@ -28,37 +29,57 @@ namespace nd4j {
             auto y = INPUT_VARIABLE(1);
             auto z = OUTPUT_VARIABLE(0);
 
+            NDArray::prepareSpecialUse({z}, {x, y});
+
             int opNum = block.opNum() < 0 ? this->_opNum : block.opNum();
 
             nd4j_debug("Executing LegacyReduce3Op: [%i]\n", opNum);
 
+            ExtraArguments extras(*block.getTArguments());
+            PointersManager manager(block.launchContext());
+
             if (x->isSameShape(y) && (block.getIArguments()->size() == 0 || (block.getIArguments()->size() == 1 && INT_ARG(0) == MAX_INT))) {
                 // reduce3 to scalar
-                NativeOpExecutioner::execReduce3Scalar(nullptr, opNum, x->buffer(), x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
-                        block.getTArguments()->data(),
+                NativeOpExecutioner::execReduce3Scalar(block.launchContext(), opNum, x->buffer(), x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
+                        extras.argumentsAsT(z->dataType()),
                         y->buffer(), y->shapeInfo(), y->specialBuffer(), y->specialShapeInfo(),
                         z->buffer(), z->shapeInfo(), z->specialBuffer(), z->specialShapeInfo());
             } else {
-                std::vector<int> dims(*block.getIArguments());
+                std::vector<int> dims(*block.getAxis());
                 for (int e = 0; e < dims.size(); e++)
                     if (dims[e] < 0)
                         dims[e] += x->rankOf();
 
                 std::sort(dims.begin(), dims.end());
 
+                shape::TAD tadX(x->getShapeInfo(), dims.data(), dims.size());
+                tadX.createTadOnlyShapeInfo();
+                tadX.createOffsets();
+
+                shape::TAD tadY(x->getShapeInfo(), dims.data(), dims.size());
+                tadY.createTadOnlyShapeInfo();
+                tadY.createOffsets();
+
                 REQUIRE_TRUE(dims.size() > 0, 0, "Some dimensions requuired for reduction!");
 
-                NativeOpExecutioner::execReduce3(nullptr, opNum, x->buffer(), x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
-                        block.getTArguments()->data(),
+                auto pDims = (int *) manager.replicatePointer(dims.data(), dims.size() * sizeof(int));
+                auto xTadShape = (Nd4jLong *) manager.replicatePointer(tadX.tadOnlyShapeInfo, shape::shapeInfoByteLength(tadX.tadOnlyShapeInfo));
+                auto xTadOffsets = (Nd4jLong *) manager.replicatePointer(tadX.tadOffsets, tadX.numTads * sizeof(Nd4jLong));
+
+                auto yTadShape = (Nd4jLong *) manager.replicatePointer(tadY.tadOnlyShapeInfo, shape::shapeInfoByteLength(tadY.tadOnlyShapeInfo));
+                auto yTadOffsets = (Nd4jLong *) manager.replicatePointer(tadY.tadOffsets, tadY.numTads * sizeof(Nd4jLong));
+
+                NativeOpExecutioner::execReduce3(block.launchContext(), opNum, x->buffer(), x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
+                        extras.argumentsAsT(z->dataType()),
                         y->buffer(), y->shapeInfo(), y->specialBuffer(), y->specialShapeInfo(),
                         z->buffer(), z->shapeInfo(), z->specialBuffer(), z->specialShapeInfo(),
-                        dims.data(), dims.size(), nullptr, nullptr, nullptr, nullptr);
+                        pDims, dims.size(), xTadShape, xTadOffsets, yTadShape, yTadOffsets);
             }
 
-
+            manager.synchronize("LegacyReduce3Op");
             STORE_RESULT(*z);
 
-            return ND4J_STATUS_OK;
+            return Status::OK();
         }
 
         LegacyReduce3Op::LegacyReduce3Op() : LegacyOp::LegacyOp(2) {

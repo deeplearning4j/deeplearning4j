@@ -34,6 +34,7 @@ namespace nd4j {
             if (dims.size() > 0)
                 std::sort(dims.begin(), dims.end());
 
+            NDArray::prepareSpecialUse({z}, {x, y});
 
             int opNum = block.opNum() < 0 ? this->_opNum : block.opNum();
 
@@ -41,28 +42,37 @@ namespace nd4j {
             tad.createTadOnlyShapeInfo();
             tad.createOffsets();
 
+            PointersManager manager(block.launchContext());
+            auto pDims = (int *) manager.replicatePointer(dims.data(), dims.size() * sizeof(int));
+            auto pTadShape = (Nd4jLong *) manager.replicatePointer(tad.tadOnlyShapeInfo, shape::shapeInfoByteLength(tad.tadOnlyShapeInfo));
+            auto pTadOffsets = (Nd4jLong *) manager.replicatePointer(tad.tadOffsets, tad.numTads * sizeof(Nd4jLong));
+
             REQUIRE_TRUE(shape::length(tad.tadOnlyShapeInfo) == y->lengthOf(), 0, "Length of broadcast TAD should be equal to length of Y operand, but got [%i] vs [%i]", (int) shape::length(tad.tadOnlyShapeInfo), (int) y->lengthOf());
 
             if (x == z)
-                NativeOpExecutioner::execBroadcast(nullptr, opNum, x->buffer(), x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
+                NativeOpExecutioner::execBroadcast(block.launchContext(), opNum, x->buffer(), x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
                         y->buffer(), y->shapeInfo(), y->specialBuffer(), y->specialShapeInfo(),
                         z->buffer(), z->shapeInfo(), z->specialBuffer(), z->specialShapeInfo(),
-                        dims.data(), dims.size(), tad.tadOnlyShapeInfo, tad.tadOffsets, tad.tadOnlyShapeInfo, tad.tadOffsets);
+                                                   pDims, dims.size(), pTadShape, pTadOffsets, pTadShape, pTadOffsets);
             else {
                 // this is rare, but possible use case - X and Z might have different shapes/strides/orders. In this case we prepare and pass separate TAD info
                 shape::TAD tadZ(z->shapeInfo(), dims.data(), dims.size());
                 tadZ.createTadOnlyShapeInfo();
                 tadZ.createOffsets();
 
-                NativeOpExecutioner::execBroadcast(nullptr, opNum, x->buffer(), x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
+                auto zTadShape = (Nd4jLong *) manager.replicatePointer(tadZ.tadOnlyShapeInfo, shape::shapeInfoByteLength(tadZ.tadOnlyShapeInfo));
+                auto zTadOffsets = (Nd4jLong *) manager.replicatePointer(tadZ.tadOffsets, tadZ.numTads * sizeof(Nd4jLong));
+
+                NativeOpExecutioner::execBroadcast(block.launchContext(), opNum, x->buffer(), x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
                         y->buffer(), y->shapeInfo(), y->specialBuffer(), y->specialShapeInfo(),
                         z->buffer(), z->shapeInfo(), z->specialBuffer(), z->specialShapeInfo(),
-                        dims.data(), dims.size(), tad.tadOnlyShapeInfo, tad.tadOffsets, tadZ.tadOnlyShapeInfo, tadZ.tadOffsets);
+                        pDims, dims.size(), pTadShape, pTadOffsets, zTadShape, zTadOffsets);
             }
 
+            manager.synchronize("LegacyBroadcastBoolOp");
             STORE_RESULT(*z);
 
-            return ND4J_STATUS_OK;
+            return Status::OK();
         }
 
         LegacyBroadcastBoolOp::LegacyBroadcastBoolOp() : LegacyOp::LegacyOp(2) {

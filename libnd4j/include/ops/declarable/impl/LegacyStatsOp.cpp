@@ -20,6 +20,7 @@
 
 #include <ops/declarable/LegacyStatsOp.h>
 #include <helpers/ShapeUtils.h>
+#include <helpers/TAD.h>
 
 
 namespace nd4j {
@@ -27,6 +28,8 @@ namespace nd4j {
         Nd4jStatus LegacyStatsOp::validateAndExecute(Context &block) {
             auto x = INPUT_VARIABLE(0);
             auto z = OUTPUT_VARIABLE(0);
+
+            NDArray::prepareSpecialUse({z}, {x});
 
             // we assume that opNuk is either stored in block, or was provided via op constructor
             int opNum = block.opNum() < 0 ? this->_opNum : block.opNum();
@@ -36,10 +39,13 @@ namespace nd4j {
             if (block.getIArguments()->size() > 0)
                 biasCorrected = INT_ARG(0) > 0;
 
+            ExtraArguments extras(*block.getTArguments());
+            PointersManager manager(block.launchContext());
+
             if (block.getIArguments()->size() == 1 || (block.getIArguments()->size() == 2 && INT_ARG(1) == MAX_INT)) {
                 // scalar
-                NativeOpExecutioner::execSummaryStatsScalar(nullptr, opNum, x->getBuffer(), x->getShapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
-                        nullptr, z->getBuffer(), z->getShapeInfo(), z->specialBuffer(), z->specialShapeInfo(), biasCorrected);
+                NativeOpExecutioner::execSummaryStatsScalar(block.launchContext(), opNum, x->getBuffer(), x->getShapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
+                        extras.argumentsAsT(z->dataType()), z->getBuffer(), z->getShapeInfo(), z->specialBuffer(), z->specialShapeInfo(), biasCorrected);
             } else {
                 // dimensions for TAD
                 // we should skip first argument here, because it's addressing bias correction
@@ -53,13 +59,22 @@ namespace nd4j {
 
                 REQUIRE_TRUE(dims.size() > 0, 0, "Some dimensions requuired for reduction!");
 
-                NativeOpExecutioner::execSummaryStats(nullptr, opNum, x->getBuffer(), x->getShapeInfo(), x->specialBuffer(), x->specialShapeInfo(), block.getTArguments()->data(),
-                        z->getBuffer(), z->getShapeInfo(), z->specialBuffer(), z->specialShapeInfo(), dims.data(), (int) dims.size(), nullptr, nullptr, biasCorrected);
+                shape::TAD tad(x->getShapeInfo(), dims.data(), dims.size());
+                tad.createTadOnlyShapeInfo();
+                tad.createOffsets();
+
+                auto pDims = (int *) manager.replicatePointer(dims.data(), dims.size() * sizeof(int));
+                auto pTadShape = (Nd4jLong *) manager.replicatePointer(tad.tadOnlyShapeInfo, shape::shapeInfoByteLength(tad.tadOnlyShapeInfo));
+                auto pTadOffsets = (Nd4jLong *) manager.replicatePointer(tad.tadOffsets, tad.numTads * sizeof(Nd4jLong));
+
+                NativeOpExecutioner::execSummaryStats(block.launchContext(), opNum, x->getBuffer(), x->getShapeInfo(), x->specialBuffer(), x->specialShapeInfo(), extras.argumentsAsT(z->dataType()),
+                        z->getBuffer(), z->getShapeInfo(), z->specialBuffer(), z->specialShapeInfo(), pDims, (int) dims.size(), pTadShape, pTadOffsets, biasCorrected);
             }
 
+            manager.synchronize("LegacyStatsOp");
             STORE_RESULT(*z);
 
-            return ND4J_STATUS_OK;
+            return Status::OK();
         }
 
         LegacyStatsOp::LegacyStatsOp() : LegacyOp::LegacyOp(1) {

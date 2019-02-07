@@ -41,6 +41,8 @@ namespace nd4j {
             auto y = INPUT_VARIABLE(1);
             auto z = OUTPUT_VARIABLE(0);
 
+            NDArray::prepareSpecialUse({z}, {x, y});
+
             if (!x->isSameShape(y)) {
                 std::string sx = ShapeUtils::shapeAsString(x);
                 std::string sy = ShapeUtils::shapeAsString(y);
@@ -49,14 +51,18 @@ namespace nd4j {
 
             int opNum = block.opNum() < 0 ? this->_opNum : block.opNum();
 
-            NativeOpExecutioner::execPairwiseTransform(nullptr, opNum, x->getBuffer(), x->getShapeInfo(), x->getSpecialBuffer(), x->getSpecialShapeInfo(),
+            ExtraArguments extras(*block.getTArguments());
+            PointersManager manager(block.launchContext());
+
+            NativeOpExecutioner::execPairwiseTransform(block.launchContext(), opNum, x->getBuffer(), x->getShapeInfo(), x->getSpecialBuffer(), x->getSpecialShapeInfo(),
                     y->getBuffer(), y->getShapeInfo(), y->getSpecialBuffer(), y->getSpecialShapeInfo(),
                     z->getBuffer(), z->getShapeInfo(), z->getSpecialBuffer(), z->getSpecialShapeInfo(),
-                    block.getTArguments()->data());
+                    extras.argumentsAsT(x->dataType()));
 
+            manager.synchronize("LegacyPairwiseTransformBoolOp");
             STORE_RESULT(*z);
 
-            return ND4J_STATUS_OK;
+            return Status::OK();
         }
 
         /**

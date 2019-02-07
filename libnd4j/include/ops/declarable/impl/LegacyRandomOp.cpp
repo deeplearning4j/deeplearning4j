@@ -88,49 +88,31 @@ namespace nd4j {
                 }
                     break;
                 case nd4j::random::DropOut: {
-                    auto z = OUTPUT_VARIABLE(0);
+                        auto z = OUTPUT_VARIABLE(0);
 
-                    T prob;
-                    if (block.width() > 1) {
-                        auto arg = INPUT_VARIABLE(1);
-                        REQUIRE_TRUE(arg->isScalar(), 0, "DropOut: Second argument must be scalar");
+                        T prob;
+                        if (block.width() > 1) {
+                            auto arg = INPUT_VARIABLE(1);
+                            REQUIRE_TRUE(arg->isScalar(), 0, "DropOut: Second argument must be scalar");
 
-                        prob = arg->e<T>(0);
-                    } else if (block.getTArguments()->size() > 0) {
-                        prob = T_ARG(0);
-                    } else {
-                        REQUIRE_TRUE(false, 0, "DropOut requires either TArgs or second argument to be present");
+                            prob = arg->e<T>(0);
+                        } else if (block.getTArguments()->size() > 0) {
+                            prob = T_ARG(0);
+                        } else {
+                            REQUIRE_TRUE(false, 0, "DropOut requires either TArgs or second argument to be present");
+                        }
+
+                        if (!block.isInplace())
+                            z->assign(input);
+
+                        RandomLauncher::applyDropOut(block.randomGenerator(), z, prob);
                     }
-
-                    if (!block.isInplace())
-                        z->assign(input);
-
-                    RandomLauncher::applyDropOut(block.randomGenerator(), z, prob);
-                }
                     break;
                 case nd4j::random::DropOutInverted: {
-                    auto z = OUTPUT_VARIABLE(0);
-                    nd4j::ops::dropout op;
-                    return op.execute(&block);
-                    /*
-                    T prob;
-                    if (block.width() > 1) {
-                        auto arg = INPUT_VARIABLE(1);
-                        REQUIRE_TRUE(arg->isScalar(), 0, "InvertedDropOut: Second argument must be scalar");
-
-                        prob = arg->e<T>(0);
-                    } else if (block.getTArguments()->size() == 1) {
-                        prob = T_ARG(0);
-                    } else {
-                        REQUIRE_TRUE(false, 0, "InvertedDropOut requires either TArgs or second argument to be present");
+                        auto z = OUTPUT_VARIABLE(0);
+                        nd4j::ops::dropout op;
+                        return op.execute(&block);
                     }
-
-                    if (!block.isInplace())
-                        z->assign(input);
-
-                    RandomLauncher::applyInvertedDropOut(block.randomGenerator(), z, prob);
-                     */
-                }
                     break;
                 case nd4j::random::GaussianDistribution: {
                     // gaussian distribution

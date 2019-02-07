@@ -41,14 +41,19 @@ namespace nd4j {
             auto input = INPUT_VARIABLE(0);
             auto z = OUTPUT_VARIABLE(0);
 
+            NDArray::prepareSpecialUse({z}, {input});
+
             int opNum = block.opNum() < 0 ? this->_opNum : block.opNum();
 
-            NativeOpExecutioner::execTransformStrict(nullptr, opNum, input->getBuffer(), input->getShapeInfo(), input->specialBuffer(), input->specialShapeInfo(),
-                    z->getBuffer(), z->getShapeInfo(), z->specialBuffer(), z->specialShapeInfo(), block.getTArguments()->data(), nullptr, nullptr);
+            ExtraArguments extras(*block.getTArguments());
+            PointersManager manager(block.launchContext());
 
+            NativeOpExecutioner::execTransformStrict(block.launchContext(), opNum, input->getBuffer(), input->getShapeInfo(), input->specialBuffer(), input->specialShapeInfo(), z->getBuffer(), z->getShapeInfo(), z->specialBuffer(), z->specialShapeInfo(), extras.argumentsAsT(z->dataType()), nullptr, nullptr);
+
+            manager.synchronize("LegacyTransformStrictOp");
             STORE_RESULT(*z);
 
-            return ND4J_STATUS_OK;
+            return Status::OK();
         }
 
         /**
