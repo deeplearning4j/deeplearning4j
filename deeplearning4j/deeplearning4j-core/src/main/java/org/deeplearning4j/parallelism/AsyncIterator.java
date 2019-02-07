@@ -80,7 +80,7 @@ public class AsyncIterator<T extends Object> implements Iterator<T> {
     @Override
     public T next() {
         T temp = nextElement;
-        nextElement = null;
+        nextElement = temp == terminator ? terminator : null;
         return temp;
     }
 

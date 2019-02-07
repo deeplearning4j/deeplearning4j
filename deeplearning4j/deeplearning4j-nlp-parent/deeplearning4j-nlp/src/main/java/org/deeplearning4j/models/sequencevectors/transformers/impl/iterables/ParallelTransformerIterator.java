@@ -43,7 +43,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 @Slf4j
 public class ParallelTransformerIterator extends BasicTransformerIterator {
 
-    protected BlockingQueue<Future<Sequence<VocabWord>>> buffer = new LinkedBlockingQueue<>(1024);
+    protected static final int capacity = 1024;
+    protected BlockingQueue<Future<Sequence<VocabWord>>> buffer = new LinkedBlockingQueue<>(capacity);
     //protected BlockingQueue<LabelledDocument> stringBuffer;
     //protected TokenizerThread[] threads;
     protected AtomicBoolean underlyingHas = new AtomicBoolean(true);
@@ -177,7 +178,7 @@ public class ParallelTransformerIterator extends BasicTransformerIterator {
         //boolean before = underlyingHas;
 
         //if (underlyingHas.get()) {
-            if (iterator.hasNextDocument()) {
+            if (buffer.size() < capacity && iterator.hasNextDocument()) {
                 CallableTransformer transformer = new CallableTransformer(iterator.nextDocument(), sentenceTransformer);
                 Future<Sequence<VocabWord>> futureSequence = executorService.submit(transformer);
                 try {
