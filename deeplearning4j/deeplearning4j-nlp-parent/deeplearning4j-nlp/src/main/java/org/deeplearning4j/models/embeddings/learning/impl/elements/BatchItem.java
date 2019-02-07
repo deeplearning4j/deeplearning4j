@@ -13,11 +13,21 @@ public class BatchItem<T extends SequenceElement>  {
     private double alpha;
     private int windowWordsLength;
 
+    private int numLabel;
+
     public BatchItem(T word, T lastWord, long randomValue, double alpha) {
         this.word = word;
         this.lastWord = lastWord;
         this.randomValue = randomValue;
         this.alpha = alpha;
+    }
+
+    public BatchItem(T word, int[] windowWords, long randomValue, double alpha, int numLabel) {
+        this.word = word;
+        this.lastWord = lastWord;
+        this.randomValue = randomValue;
+        this.alpha = alpha;
+        this.numLabel = numLabel;
     }
 
     public BatchItem(T word, int[] windowWords, long randomValue, double alpha) {
@@ -66,5 +76,13 @@ public class BatchItem<T extends SequenceElement>  {
 
     public void setWindowWords(int[] windowWords) {
         this.windowWords = windowWords;
+    }
+
+    public int getNumLabel() {
+        return numLabel;
+    }
+
+    public void setNumLabel(int numLabel) {
+        this.numLabel = numLabel;
     }
 }

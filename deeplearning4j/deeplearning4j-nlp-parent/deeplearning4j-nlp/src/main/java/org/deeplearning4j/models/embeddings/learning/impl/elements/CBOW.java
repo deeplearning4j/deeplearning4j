@@ -20,6 +20,7 @@ import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
 import lombok.val;
+import org.apache.commons.lang3.ArrayUtils;
 import org.deeplearning4j.models.embeddings.WeightLookupTable;
 import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
 import org.deeplearning4j.models.embeddings.learning.ElementsLearningAlgorithm;
@@ -233,6 +234,7 @@ public class CBOW<T extends SequenceElement> implements ElementsLearningAlgorith
                     expTable.get(), table.get(), Nd4j.createFromArray(idxSyn1), Nd4j.createFromArray(codes),
                     (int)negative, Nd4j.scalar(alpha), Nd4j.scalar(nextRandom.get()),
                     inferenceVector != null ? inferenceVector : Nd4j.empty(syn0.get().dataType()),
+                    Nd4j.empty(DataType.INT),
                     trainWords,
                     workers);
         }
@@ -240,13 +242,13 @@ public class CBOW<T extends SequenceElement> implements ElementsLearningAlgorith
             cbow = new CbowRound(currentWord.getIndex(), windowWords,
                     syn0.get(), syn1.get(),
                     expTable.get(), idxSyn1, codes, alpha, nextRandom.get(),
-                    inferenceVector != null ? inferenceVector : Nd4j.empty(syn0.get().dataType()));
+                    inferenceVector != null ? inferenceVector : Nd4j.empty(syn0.get().dataType()), 0);
         }
         else if (useNegative) {
             cbow = new CbowRound(currentWord.getIndex(), windowWords, currentWord.getIndex(),
                     syn0.get(), syn1Neg.get(),
                     expTable.get(), table.get(), (int)negative, alpha, nextRandom.get(),
-                    inferenceVector != null ? inferenceVector : Nd4j.empty(syn0.get().dataType()));
+                    inferenceVector != null ? inferenceVector : Nd4j.empty(syn0.get().dataType()), 0);
         }
 
         nextRandom.set(Math.abs(nextRandom.get() * 25214903917L + 11));
@@ -280,6 +282,8 @@ public class CBOW<T extends SequenceElement> implements ElementsLearningAlgorith
 
         byte[][] inputCodes = new byte[items.size()][maxCols];
         int[][] inputIndices = new int[items.size()][maxCols];
+        int[] numLabels = new int[items.size()];
+        boolean hasNumLabels = false;
 
         int maxWinWordsCols = -1;
         for (int i = 0; i < items.size(); ++i) {
@@ -310,6 +314,9 @@ public class CBOW<T extends SequenceElement> implements ElementsLearningAlgorith
             alphas[cnt] = alpha;
 
             randoms[cnt] = randomValue;
+            numLabels[cnt] = items.get(cnt).getNumLabel();
+            if (numLabels[cnt] > 0)
+                hasNumLabels = true;
 
             if (useHS) {
                 idxSyn1 = new int[currentWord.getCodeLength()];
@@ -360,6 +367,7 @@ public class CBOW<T extends SequenceElement> implements ElementsLearningAlgorith
         INDArray windowWordsArray = Nd4j.createFromArray(inputWindowWords);
         INDArray codesArray = Nd4j.createFromArray(inputCodes);
         INDArray indicesArray = Nd4j.createFromArray(inputIndices);
+        INDArray numLabelsArray = Nd4j.createFromArray(numLabels);
 
         CbowRound cbow = new CbowRound(currentWordIndexesArray, windowWordsArray,
                 currentWordIndexesArray,
@@ -372,6 +380,7 @@ public class CBOW<T extends SequenceElement> implements ElementsLearningAlgorith
                 useHS ? codesArray : Nd4j.empty(DataType.BYTE),
                 (int) negative, alphasArray, Nd4j.createFromArray(randoms),
                 /*inferenceVector != null ? inferenceVector :*/ Nd4j.empty(syn0.get().dataType()),
+                hasNumLabels ? numLabelsArray : Nd4j.empty(DataType.INT),
                 configuration.isTrainElementsVectors(),
                 workers);
 

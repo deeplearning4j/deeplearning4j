@@ -157,7 +157,7 @@ public class DM<T extends SequenceElement> implements SequenceLearningAlgorithm<
                     configuration.isTrainElementsVectors(), inferenceVector);
         }
         else {
-            batchSequences.put(currentWord, windowWords, nextRandom.get(), alpha);
+            batchSequences.put(currentWord, windowWords, nextRandom.get(), alpha, labels == null ? 0 : labels.size());
         }
 
         if (cbow.getBatch() != null && cbow.getBatch().size() >= configuration.getBatchSize()) {
