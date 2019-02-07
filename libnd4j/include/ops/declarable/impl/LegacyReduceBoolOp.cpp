@@ -77,10 +77,17 @@ namespace nd4j {
                     tad.createTadOnlyShapeInfo();
                     tad.createOffsets();
 
+                    CudaManager manager(block.launchContext());
+                    auto pDims = manager.replicatePointer(dims.data(), dims.size() * sizeof(int));
+                    auto pTadShape = manager.replicatePointer(tad.tadOnlyShapeInfo, shape::shapeInfoByteLength(tad.tadOnlyShapeInfo));
+                    auto pTadOffsets = manager.replicatePointer(tad.tadOffsets, tad.numTads * sizeof(Nd4jLong));
+
                     NativeOpExecutioner::execReduceBool(nullptr, opNum, x->getBuffer(), x->getShapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
                             extras.argumentsAsT(x->dataType()),
                             z->getBuffer(), z->getShapeInfo(), z->specialBuffer(), z->specialShapeInfo(),
-                            dims.data(), (int) dims.size(), tad.tadOnlyShapeInfo, tad.tadOffsets);
+                            reinterpret_cast<int *>(pDims), (int) dims.size(), reinterpret_cast<Nd4jLong *>(pTadShape), reinterpret_cast<Nd4jLong *>(pTadOffsets));
+
+                    manager.syncStream("LegacyReduceBoolOp");
                 }
 
                 STORE_RESULT(*z);
@@ -101,15 +108,13 @@ namespace nd4j {
                 if ((block.getIArguments()->size() == 1 && INT_ARG(0) == MAX_INT) || allAxes) {
                     auto z = OUTPUT_VARIABLE(0);
 
-                    auto b = x->getBuffer();
-                    auto s = x->shapeInfo();
-                    auto e = block.numT() > 0 ? block.getTArguments()->data() : nullptr;
-
-                    //x->printIndexedBuffer("x");
+                    ExtraArguments extras(*block.getTArguments());
+                    CudaManager manager(block.launchContext());
 
                     // scalar
-                    NativeOpExecutioner::execReduceBoolScalar(nullptr, opNum, b, s, x->specialBuffer(), x->specialShapeInfo(), e,
-                            z->buffer(), z->shapeInfo(), z->specialBuffer(), z->specialShapeInfo());
+                    NativeOpExecutioner::execReduceBoolScalar(block.launchContext(), opNum, x->getBuffer(), x->getShapeInfo(), x->specialBuffer(), x->specialShapeInfo(), extras.argumentsAsT(x->dataType()), z->buffer(), z->shapeInfo(), z->specialBuffer(), z->specialShapeInfo());
+
+                    manager.syncStream("LegacyReduceBoolOp");
                 } else {
                     // TAD
                     if (indices->lengthOf() > 1)
@@ -123,8 +128,16 @@ namespace nd4j {
 
                     auto z = OUTPUT_VARIABLE(0);
 
-                    // FIXME: extraArgs, axis, tad
-                    NativeOpExecutioner::execReduceBool(block.launchContext(), opNum, x->getBuffer(), x->getShapeInfo(), x->specialBuffer(), x->specialShapeInfo(), block.getTArguments()->data(), z->getBuffer(), z->getShapeInfo(), z->specialBuffer(), z->specialShapeInfo(), axis.data(), (int) axis.size(), tad.tadOnlyShapeInfo, tad.tadOffsets);
+                    ExtraArguments extras(*block.getTArguments());
+                    CudaManager manager(block.launchContext());
+                    auto pDims = (int *) manager.replicatePointer(axis.data(), axis.size() * sizeof(int));
+                    auto pTadShape = (Nd4jLong *) manager.replicatePointer(tad.tadOnlyShapeInfo, shape::shapeInfoByteLength(tad.tadOnlyShapeInfo));
+                    auto pTadOffsets = (Nd4jLong *) manager.replicatePointer(tad.tadOffsets, tad.numTads * sizeof(Nd4jLong));
+
+                    NativeOpExecutioner::execReduceBool(block.launchContext(), opNum, x->getBuffer(), x->getShapeInfo(), x->specialBuffer(), x->specialShapeInfo(), extras.argumentsAsT(x->dataType()),
+                            z->getBuffer(), z->getShapeInfo(), z->specialBuffer(), z->specialShapeInfo(), pDims, (int) axis.size(), pTadShape, pTadOffsets);
+
+                    manager.syncStream("LegacyReduceBoolOp");
                 }
             }
 
