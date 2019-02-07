@@ -939,8 +939,8 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
         if(isEmpty() || lengthOf() == 0) return;
         
         lazyAllocateBuffer();        
-
-        auto res = cudaStreamSynchronize(*_context->getCudaStream());
+        auto stream = _context->getCudaStream();
+        auto res = cudaStreamSynchronize(*stream);
         if (res != 0)
             throw cuda_exception::build("syncToHost failed to to some previous kernel failre", res);
 
@@ -2419,7 +2419,7 @@ void NDArray::setShapeInfo(Nd4jLong *shapeInfo, const nd4j::DataType dtype) {
         } else if (!shape::equalsSoft(_shapeInfo, other->_shapeInfo))
             return false;
 
-        NDArray tmp = NDArrayFactory::create<float>(0LL, _context); // scalar = 0
+        NDArray tmp = NDArrayFactory::create<float>(0.f, _context); // scalar = 0
         NDArray::prepareSpecialUse({&tmp}, {this, other});
 
         ExtraArguments extras({eps}); 
@@ -2431,7 +2431,7 @@ void NDArray::setShapeInfo(Nd4jLong *shapeInfo, const nd4j::DataType dtype) {
         if (res != 0)
             throw cuda_exception::build("NDArray::equalsTo failed", res);
 
-        auto r = tmp.e<Nd4jLong>(0);
+        auto r = tmp.e<int>(0);
         //nd4j_printf("equalsTo result: [%lld]\n", r);
         if (r > 0LL)
             return false;
