@@ -89,7 +89,7 @@ namespace helpers {
 			for (size_t i = 0; i < inArrs.size(); ++i) {
                 inArrs[i]->syncToHost();
 
-                outArr->p(i, inArrs[i]->e<T>(0));//scalarList[i] = inArrs[i]->getSpecialBuffer();
+                outArr->p(i, inArrs[i]->e<T>(0));
             }
 			outArr->syncToDevice();
 		}
@@ -105,18 +105,12 @@ namespace helpers {
 				inputShapeList[i] = inArrs[i]->getSpecialShapeInfo();
 			}
 
-			//cudaError_t cudaResult = cudaMalloc(reinterpret_cast<void **>(&dOutBuffers), hOutBuffers.size() * sizeof(void*));
-			//if(cudaResult != 0) throw cuda_exception::build("helpers::concat: cannot allocate global memory on device", cudaResult);
 			cudaError_t cudaResult = cudaMalloc(reinterpret_cast<void **>(&dInBuffers), inputList.size() * sizeof(void*));
 			if(cudaResult != 0) throw cuda_exception::build("helpers::stack_: cannot allocate global memory on device", cudaResult);
-			//cudaResult = cudaMalloc(reinterpret_cast<void **>(&dOutShapeInfo), hOutShapeInfo.size() * sizeof(Nd4jLong*));
-			//if(cudaResult != 0) throw cuda_exception::build("helpers::concat: cannot allocate global memory on device", cudaResult);
 			cudaResult = cudaMalloc(reinterpret_cast<void **>(&dInShapeInfo), inputShapeList.size() * sizeof(Nd4jLong*));
 			if(cudaResult != 0) throw cuda_exception::build("helpers::stack_: cannot allocate global memory on device", cudaResult);
 
-			//cudaMemcpyAsync(dOutBuffers,   hOutBuffers.data(),   hOutBuffers.size() * sizeof(void*),       cudaMemcpyHostToDevice, *context->getCudaStream());
 			cudaMemcpyAsync(dInBuffers,    inputList.data(),    inputList.size()  * sizeof(void*),       cudaMemcpyHostToDevice, *stream);
-			//cudaMemcpyAsync(dOutShapeInfo, hOutShapeInfo.data(), hOutShapeInfo.size() * sizeof(Nd4jLong*), cudaMemcpyHostToDevice, *context->getCudaStream());
 			cudaMemcpyAsync(dInShapeInfo,  inputShapeList.data(),  inputShapeList.size() * sizeof(Nd4jLong*),  cudaMemcpyHostToDevice, *stream);
 
             dim3 launchDims(256, 512, 8192);
@@ -126,32 +120,11 @@ namespace helpers {
 			cudaResult = cudaFree(dInBuffers);
 			if(cudaResult != 0)
 				throw cuda_exception::build("helpers::stack_: cannot deallocate global memory on device for buffer list", cudaResult);
-			//cudaResult = cudaMalloc(reinterpret_cast<void **>(&dOutShapeInfo), hOutShapeInfo.size() * sizeof(Nd4jLong*));
-			//if(cudaResult != 0) throw cuda_exception::build("helpers::concat: cannot allocate global memory on device", cudaResult);
 			cudaResult = cudaFree(dInShapeInfo);
 			if(cudaResult != 0)
 				throw cuda_exception::build("helpers::stack_: cannot deallocate global memory on device for shape list", cudaResult);
 
 		}
-		//auto res = cudaStreamSynchronize(*stream);
-		//if (res != 0)
-		//	throw cuda_exception::build("stack: Failed to continue due to some previous kernel failre", res);
-//
-//#pragma omp parallel for if(inArrs.size() > Environment::getInstance()->elementwiseThreshold()) schedule(guided)
-//			for(int i=0; i < inArrs.size(); ++i)
-//				outArr.p(i, inArrs[i]->e<T>(0));
-//		}
-//		else {
-//
-//			std::vector<int> dimsToExclude = ShapeUtils::evalDimsToExclude(outArr.rankOf(), {dim});
-//			auto list = outArr.allTensorsAlongDimension(dimsToExclude);		// list.size() == block.width()
-//
-//#pragma omp parallel for if(list->size() > Environment::getInstance()->elementwiseThreshold()) schedule(guided)
-//			for(int i=0; i<list->size(); ++i)
-//				list->at(i)->assign(inArrs[i]);
-//
-//			delete list;
-//		}
 	}
 
 	void stack(graph::LaunchContext* context, const std::vector<NDArray*>& inArrs, NDArray* outArr, const int dim) {
