@@ -24,6 +24,7 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.bytedeco.javacpp.*;
 import org.bytedeco.javacpp.indexer.LongIndexer;
+import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.serde.FlatBuffersMapper;
 import org.nd4j.base.Preconditions;
@@ -1697,38 +1698,44 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
                 if (status != OpStatus.ND4J_STATUS_OK)
                     throw new ND4JIllegalStateException("Failed to execute op [" + name + "] with error code [" + status +"]");
-        }catch(Exception e) {
-            val sb = new StringBuilder();
-            sb.append("Inputs: [(");
-            for( int i=0; i<inputArgs.length; i++ ){
-                if(i > 0)
-                    sb.append("), (");
-                sb.append(Shape.shapeToStringShort(inputArgs[i]));
-            }
-            sb.append(")]. Outputs: [(");
-            for( int i=0; i<outputArgs.length; i++){
-                if(i > 0)
-                    sb.append("), (");
-                sb.append(Shape.shapeToStringShort(outputArgs[i]));
-            }
-            sb.append(")]. tArgs: ");
-            if(op.numTArguments() > 0){
-                sb.append(Arrays.toString(op.tArgs()));
-            } else {
-                sb.append("-");
-            }
-            sb.append(". iArgs: ");
-            if(op.numIArguments() > 0){
-                sb.append(Arrays.toString(op.iArgs()));
-            } else {
-                sb.append("-");
-            }
-            log.error("Failed to execute op " + op.opName() + ". Attempted to execute with " +
-                    String.valueOf(op.numInputArguments()) + " inputs, " +
-                    String.valueOf(op.numOutputArguments()) + " outputs, "+
-                    String.valueOf(op.numTArguments()) + " targs and " +
-                    String.valueOf(op.numIArguments()) + " iargs. " +
-                    sb.toString() +
+            }catch(Exception e) {
+                val sb = new StringBuilder();
+                sb.append("Inputs: [(");
+                for( int i=0; i<inputArgs.length; i++ ){
+                    if(i > 0)
+                        sb.append("), (");
+                    sb.append(Shape.shapeToStringShort(inputArgs[i]));
+                }
+                sb.append(")]. Outputs: [(");
+                for( int i=0; i<outputArgs.length; i++){
+                    if(i > 0)
+                        sb.append("), (");
+                    sb.append(Shape.shapeToStringShort(outputArgs[i]));
+                }
+                sb.append(")]. tArgs: ");
+                if(op.numTArguments() > 0){
+                    sb.append(Arrays.toString(op.tArgs()));
+                } else {
+                    sb.append("-");
+                }
+                sb.append(". iArgs: ");
+                if(op.numIArguments() > 0){
+                    sb.append(Arrays.toString(op.iArgs()));
+                } else {
+                    sb.append("-");
+                }
+                if(op instanceof DifferentialFunction){
+                    String n = ((DifferentialFunction) op).getOwnName();
+                    if(n != null && !n.equals(op.opName())){
+                        sb.append(". Op own name: \"").append(n).append("\"");
+                    }
+                }
+                log.error("Failed to execute op " + op.opName() + ". Attempted to execute with " +
+                                String.valueOf(op.numInputArguments()) + " inputs, " +
+                                String.valueOf(op.numOutputArguments()) + " outputs, "+
+                                String.valueOf(op.numTArguments()) + " targs and " +
+                                String.valueOf(op.numIArguments()) + " iargs. " +
+                                sb.toString() +
                 " - Please see above message (printed out from c++) for a possible cause of error.");
                 throw e;
         }
@@ -1746,9 +1753,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         }
 
         val extras = ptr.get(Shape.shapeInfoLength(rank) - 3);
-        val dtype = ArrayOptionsHelper.dataType(extras);
-
-        return LongShapeDescriptor.fromShape(shape, dtype);
+        return LongShapeDescriptor.fromShape(shape, extras);
     }
 
     @Override

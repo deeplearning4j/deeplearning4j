@@ -44,6 +44,7 @@ import org.nd4j.linalg.api.blas.params.MMulTranspose;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.buffer.factory.DataBufferFactory;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
+import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.*;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
@@ -66,7 +67,9 @@ import org.nd4j.linalg.api.ops.impl.loss.SoftmaxCrossEntropyLoss;
 import org.nd4j.linalg.api.ops.impl.reduce3.CosineSimilarity;
 import org.nd4j.linalg.api.ops.impl.reduce3.EuclideanDistance;
 import org.nd4j.linalg.api.ops.impl.reduce3.ManhattanDistance;
+import org.nd4j.linalg.api.ops.impl.shape.ConfusionMatrix;
 import org.nd4j.linalg.api.ops.impl.shape.Eye;
+import org.nd4j.linalg.api.ops.impl.shape.OneHot;
 import org.nd4j.linalg.api.ops.impl.shape.tensorops.TensorArray;
 import org.nd4j.linalg.api.ops.impl.transforms.Assert;
 import org.nd4j.linalg.api.ops.impl.transforms.gradient.GradientBackwardsMarker;
@@ -1680,7 +1683,9 @@ public class SameDiff {
             long updaterStateSize = trainingConfig.getUpdater().stateSize(numTrainableParams);
 
             if(updaterStateSize > 0) {
-                updaterState = Nd4j.createUninitialized(dt, 1, updaterStateSize);
+                try(MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+                    updaterState = Nd4j.createUninitialized(dt, 1, updaterStateSize);
+                }
             }
 
             long viewSoFar = 0;
@@ -1888,7 +1893,14 @@ public class SameDiff {
      * @return A new SDVariable with the same (dynamic) shape as the input
      */
     public SDVariable onesLike(String name, SDVariable input) {
-        SDVariable ret = f().onesLike(name, input);
+        return onesLike(name, input, input.dataType());
+    }
+
+    /**
+     * As per {@link #onesLike(String, SDVariable)} but the output datatype may be specified
+     */
+    public SDVariable onesLike(String name, @NonNull SDVariable input, @NonNull DataType dataType) {
+        SDVariable ret = f().onesLike(name, input, dataType);
         return updateVariableNameAndReference(ret, name);
     }
 
@@ -2036,10 +2048,11 @@ public class SameDiff {
      * @param from Initial/smallest value
      * @param to   Largest value (exclusive)
      * @param step Step size
+     * @param dataType The output variable datatype
      * @return 1D SDVariable with the specified values
      */
-    public SDVariable range(double from, double to, double step){
-        return range(null, from, to, step);
+    public SDVariable range(double from, double to, double step, DataType dataType){
+        return range(null, from, to, step, dataType);
     }
 
     /**
@@ -2052,8 +2065,8 @@ public class SameDiff {
      * @param step Step size
      * @return 1D SDVariable with the specified values
      */
-    public SDVariable range(String name, double from, double to, double step){
-        SDVariable ret = f().range(from, to, step);
+    public SDVariable range(String name, double from, double to, double step, DataType dataType){
+        SDVariable ret = f().range(from, to, step, dataType);
         return updateVariableNameAndReference(ret, name);
     }
 
@@ -2307,12 +2320,16 @@ public class SameDiff {
         if (arr == null)
             throw new IllegalArgumentException("Array for " + name + " must not be null");
 
-        arr = arr.migrate();
+        if(arr.isAttached())
+            arr = arr.detach();
         SDVariable ret = new SDVariable(name, VariableType.VARIABLE, this, arr.shape(), arr.dataType(), new NDArraySupplierInitScheme(arr));
 
         associateArrayWithVariable(arr, ret);
-        if (ArrayUtil.prod(arr.shape()) == 1)
-            ret.setScalarValue(Nd4j.scalar(arr.getDouble(0)));
+        if (ArrayUtil.prod(arr.shape()) == 1) {
+            try(MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+                ret.setScalarValue(Nd4j.scalar(arr.getDouble(0)));
+            }
+        }
 
         addVariable(ret);
         if (getShapeForVarName(name) == null)
@@ -2347,6 +2364,13 @@ public class SameDiff {
     }
 
     /**
+     * As per {@link #eye(String, int, int, DataType)} but with the default datatype, {@link Eye#DEFAULT_DTYPE}
+     */
+    public SDVariable eye(String name, int rows, int cols) {
+        return eye(name, rows, cols, Eye.DEFAULT_DTYPE);
+    }
+
+    /**
      * Generate an identity matrix with the specified number of rows and columns
      * Example:<br>
      * <pre>
@@ -2362,15 +2386,15 @@ public class SameDiff {
      * @param cols Number of columns
      * @return SDVaribable identity matrix
      */
-    public SDVariable eye(String name, int rows, int cols) {
-        return eye(name, rows, cols, null);
+    public SDVariable eye(String name, int rows, int cols, DataType dataType) {
+        return eye(name, rows, cols, dataType);
     }
 
     /**
-     * see {@link #eye(String, int, int, int...)}
+     * see {@link #eye(String, int, int, DataType, int...)}
      */
-    public SDVariable eye(int rows, int cols, int... batchDimension) {
-        return eye(null, rows, cols, batchDimension);
+    public SDVariable eye(int rows, int cols, DataType dataType, int... batchDimension) {
+        return eye(null, rows, cols, dataType, batchDimension);
     }
 
     /**
@@ -2387,8 +2411,8 @@ public class SameDiff {
      * @param cols           Number of columns
      * @param batchDimension Batch dimensions. May be null
      */
-    public SDVariable eye(String name, int rows, int cols, int... batchDimension) {
-        SDVariable eye = new Eye(this, rows, cols, batchDimension).outputVariables()[0];
+    public SDVariable eye(String name, int rows, int cols, DataType dataType, int... batchDimension) {
+        SDVariable eye = new Eye(this, rows, cols, dataType, batchDimension).outputVariables()[0];
         return updateVariableNameAndReference(eye, name);
     }
 
@@ -2402,7 +2426,7 @@ public class SameDiff {
     }
 
     /**
-     * As per {@link #eye(int, int, int...)} bit with the number of rows/columns specified as scalar SDVariables,
+     * As per {@link #eye(int, int, DataType, int...)} bit with the number of rows/columns specified as scalar SDVariables,
      * and the batch dimension specified as a 1D SDVariable
      */
     public SDVariable eye(SDVariable rows, SDVariable cols, SDVariable batchDimension){
@@ -3441,7 +3465,9 @@ public class SameDiff {
      * @return SDVariable
      */
     public SDVariable scalar(String name, double value) {
-        return var(name, Nd4j.trueScalar(value));
+        try(MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+            return var(name, Nd4j.scalar(value));
+        }
     }
 
 
@@ -6039,7 +6065,14 @@ public class SameDiff {
      * @see #oneHot(String, SDVariable, int, int, double, double)
      */
     public SDVariable oneHot(SDVariable indices, int depth, int axis, double on, double off) {
-        return oneHot(null, indices, depth, axis, on, off);
+        return oneHot(null, indices, depth, axis, on, off, OneHot.DEFAULT_DTYPE);
+    }
+
+    /**
+     * @see #oneHot(String, SDVariable, int, int, double, double, DataType)
+     */
+    public SDVariable oneHot(SDVariable indices, int depth, int axis, double on, double off, DataType dataType) {
+        return oneHot(null, indices, depth, axis, on, off, dataType);
     }
 
     /**
@@ -6068,7 +6101,14 @@ public class SameDiff {
      * @return Output variable
      */
     public SDVariable oneHot(String name, SDVariable indices, int depth, int axis, double on, double off) {
-        SDVariable ret = f().onehot(indices, depth, axis, on, off);
+        return oneHot(name, indices, depth, axis, on, off, OneHot.DEFAULT_DTYPE);
+    }
+
+    /**
+     * As per {@link #oneHot(String, SDVariable, int, int, double, double)} but allows configuring the output datatype
+     */
+    public SDVariable oneHot(String name, SDVariable indices, int depth, int axis, double on, double off, DataType dataType) {
+        SDVariable ret = f().onehot(indices, depth, axis, on, off, dataType);
         return updateVariableNameAndReference(ret, name);
     }
 
@@ -7758,47 +7798,46 @@ public class SameDiff {
      * @param maxLen  Maximum sequence length
      * @return Output variable
      */
-    public SDVariable sequenceMask(String name, SDVariable lengths, SDVariable maxLen) {
-        SDVariable ret = f().sequenceMask(lengths, maxLen);
+    public SDVariable sequenceMask(String name, SDVariable lengths, SDVariable maxLen, DataType dataType) {
+        SDVariable ret = f().sequenceMask(lengths, maxLen, dataType);
         return updateVariableNameAndReference(ret, name);
     }
 
     /**
-     * @see #sequenceMask(String, SDVariable, SDVariable)
+     * @see #sequenceMask(String, SDVariable, SDVariable, DataType)
      */
-    public SDVariable sequenceMask(SDVariable lengths, SDVariable maxLen) {
-        return sequenceMask(null, lengths, maxLen);
+    public SDVariable sequenceMask(SDVariable lengths, SDVariable maxLen, DataType dataType) {
+        return sequenceMask(null, lengths, maxLen, dataType);
     }
 
     /**
-     * @see #sequenceMask(String, SDVariable, SDVariable)
+     * @see #sequenceMask(String, SDVariable, SDVariable, DataType)
      */
-    public SDVariable sequenceMask(String name, SDVariable lengths, int maxLen) {
-        SDVariable ret = f().sequenceMask(lengths, maxLen);
+    public SDVariable sequenceMask(String name, SDVariable lengths, int maxLen, DataType dataType) {
+        SDVariable ret = f().sequenceMask(lengths, maxLen, dataType);
         return updateVariableNameAndReference(ret, name);
     }
 
     /**
-     * @see #sequenceMask(String, SDVariable, SDVariable)
+     * @see #sequenceMask(String, SDVariable, SDVariable, DataType)
      */
-    public SDVariable sequenceMask(SDVariable lengths, int maxLen) {
-        return sequenceMask(null, lengths, maxLen);
+    public SDVariable sequenceMask(SDVariable lengths, int maxLen, DataType dataType) {
+        return sequenceMask(null, lengths, maxLen, dataType);
     }
 
     /**
-     * @see #sequenceMask(String, SDVariable, SDVariable)
+     * @see #sequenceMask(String, SDVariable, SDVariable, DataType)
      */
-    public SDVariable sequenceMask(String name, SDVariable lengths) {
-        SDVariable ret = f().sequenceMask(lengths);
+    public SDVariable sequenceMask(String name, SDVariable lengths, DataType dataType) {
+        SDVariable ret = f().sequenceMask(lengths, dataType);
         return updateVariableNameAndReference(ret, name);
     }
 
     /**
-     * @see #sequenceMask(String, SDVariable, SDVariable)
+     * @see #sequenceMask(String, SDVariable, SDVariable, DataType)
      */
-    public SDVariable sequenceMask(SDVariable lengths) {
-        SDVariable ret = f().sequenceMask(lengths);
-        return updateVariableNameAndReference(ret, null);
+    public SDVariable sequenceMask(SDVariable lengths, DataType dataType) {
+        return sequenceMask(lengths, null, dataType);
     }
 
     /**
@@ -8055,6 +8094,11 @@ public class SameDiff {
         return confusionMatrix((String) null, labels, predictions);
     }
 
+
+    public SDVariable confusionMatrix(String name, SDVariable labels, SDVariable pred) {
+        return confusionMatrix(name, labels, pred, ConfusionMatrix.DEFAULT_DTYPE);
+    }
+
     /**
      * Compute the 2d confusion matrix of size [numClasses, numClasses] from a pair of labels and predictions, both of
      * which are represented as integer values. This version assumes the number of classes is 1 + max(max(labels), max(pred))<br>
@@ -8068,8 +8112,8 @@ public class SameDiff {
      * @param pred   Predictions - 1D array of integer values representing predictions. Same length as labels
      * @return Output variable (2D, shape [numClasses, numClasses})
      */
-    public SDVariable confusionMatrix(String name, SDVariable labels, SDVariable pred) {
-        SDVariable result = f().confusionMatrix(labels, pred);
+    public SDVariable confusionMatrix(String name, SDVariable labels, SDVariable pred, DataType dataType) {
+        SDVariable result = f().confusionMatrix(labels, pred, dataType);
         return updateVariableNameAndReference(result, name);
     }
 
@@ -9960,11 +10004,16 @@ public class SameDiff {
     }
 
     /**
-     * Execute the gradient (backward pass) function on this graph.<br>
-     * Constructs a backwards graph (differentiating the defined graph) if it does not already exist, and the executes
-     * the operations on that graph, calculating gradients for all variables.<br>
-     * Note that after execBackwards() has completed, the gradient arrays for a each variable can be accessed using
-     * {@link SDVariable#getGradient()} followed by  {@link SDVariable#getArr()} or by using {@link #getGradForVariable(String)}
+     * Create (if required) and then calculate the variable gradients (backward pass) for this graph.<br>
+     * After execution, the gradient arrays can be accessed using {@code myVariable.getGradient().getArr()}<br>
+     * <b>Note</b>: This method by default calculates VARIABLE type SDVariable gradients only (as well as any other
+     * gradients needed to calculate the variable gradients). That is, placeholder, constant, etc gradients are not
+     * calculated. If these gradients are required, they can be calculated using {@link #execBackwards(Map, List)} instead,
+     * which allows specifying the set of SDVariables to calculate the gradients for. For example,
+     * {@code execBackwards(placeholders, Arrays.asList(myPlaceholder.gradient().getVarName())}. In some cases,
+     * {@link #createGradFunction()} may need to be called first
+     *
+     * @param placeholders Values for the placeholder variables in the graph. For graphs without placeholders, use null or an empty map
      */
     public void execBackwards(Map<String,INDArray> placeholders){
         if (getFunction("grad") == null) {
@@ -9982,7 +10031,8 @@ public class SameDiff {
 
         //Edge case: if no variables, no variable gradients to calculate...
         if(varGradNames.isEmpty()){
-            log.trace("Skipping gradient execution - no variables to be calculated (variableGradNamesList is empty)");
+            log.warn("Skipping gradient execution (backward pass) - no variables to be calculated (graph does not contain any VARIABLE type SDVariables).\n" +
+                    "If gradients for other variables (such as placeholders) are required, use execBackwards(Map, List) instead");
             return;
         }
 
@@ -9990,6 +10040,14 @@ public class SameDiff {
         execBackwards(placeholders, vargradNamesList);
     }
 
+    /**
+     * As per {@link #execBackwards(Map)}, but the set of gradients to calculate can be specified manually.<br>
+     * For example, to calculate the gradient for placeholder variable "myPlaceholder", use
+     * {@code execBackwards(placeholders, Arrays.asList(myPlaceholder.gradient().getVarName())}.
+     *
+     * @param placeholders Values for the placeholder variables in the graph. For graphs without placeholders, use null or an empty map
+     * @param variableGradNamesList Names of the gradient variables to calculate
+     */
     public void execBackwards(Map<String,INDArray> placeholders, List<String> variableGradNamesList){
         if (getFunction("grad") == null) {
             createGradFunction();
@@ -9999,16 +10057,15 @@ public class SameDiff {
 
         //Edge case: if no variables, no variable gradients to calculate...
         if(variableGradNamesList.isEmpty()){
-            log.trace("Skipping gradient execution - no variables to be calculated (variableGradNamesList is empty)");
+            log.warn("Skipping gradient calculation (backward pass) - no variables to be calculated (variableGradNamesList is empty)");
             return;
         }
-
 
         sameDiffFunctionInstances.get("grad").exec(placeholders, variableGradNamesList);
     }
 
     /**
-     * Create the gradient function (for calculating gradients via {@link #execBackwards()}) if it is not already defined.
+     * Create the gradient function (for calculating gradients via {@link #execBackwards(Map)}) if it is not already defined.
      * Users do not usually need to call this function manually, as it is called as required in the aforementioned method.
      * <br><br>
      * If the gradient function already exists, this method is a no-op.<br>
@@ -10111,7 +10168,11 @@ public class SameDiff {
                 Queue<DifferentialFunction> availableForDiff = new LinkedList<>();
                 Set<String> seenOps = new HashSet<>();
                 //start with scalar backprop
-                SDVariable initialGrad = sameDiff.var("one-var", Nd4j.trueScalar(1.0));
+                INDArray initGradArr;
+                try(MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+                    initGradArr = Nd4j.scalar(1.0);
+                }
+                SDVariable initialGrad = sameDiff.var("one-var", initGradArr);
                 for(SDVariable v : finalOutputs) {
                     if(v.dataType() == initialGrad.dataType()){
                         sameDiff.setGradientForVariableName(v.getVarName(), initialGrad);
@@ -11169,7 +11230,10 @@ public class SameDiff {
 
             FlatArray fa = v.ndarray();
             if(fa != null && vt != VariableType.ARRAY){
-                INDArray arr = Nd4j.createFromFlatArray(fa);
+                INDArray arr;
+                try(MemoryWorkspace ws = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()) {
+                    arr = Nd4j.createFromFlatArray(fa);
+                }
                 sd.setArrayForVariable(n, arr);
             }
 
@@ -11307,7 +11371,10 @@ public class SameDiff {
         sb.append("\nExternal variables:\n\n");
         for (int e = 0; e < graph.variablesLength(); e++) {
             val var = graph.variables(e);
-            val ndarray = Nd4j.createFromFlatArray(var.ndarray());
+            INDArray ndarray;
+            try(MemoryWorkspace ws = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()) {
+                ndarray = Nd4j.createFromFlatArray(var.ndarray());
+            }
 
             sb.append(var.id().first())
                     .append(":<").append(var.name()).append("> ")

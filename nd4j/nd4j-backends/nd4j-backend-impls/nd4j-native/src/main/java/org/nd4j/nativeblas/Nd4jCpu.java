@@ -10476,6 +10476,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 // #define STORE_3_RESULTS(A, B, C)    this->storeResult(block, 0, A); this->storeResult(block, 1, B); this->storeResult(block, 2, C)
 // #define STORE_4_RESULTS(A, B, C, D)     this->storeResult(block, 0, A); this->storeResult(block, 1, B); this->storeResult(block, 2, C); this->storeResult(block, 3, D)
 // #define STORE_5_RESULTS(A, B, C, D, E)      this->storeResult(block, 0, A); this->storeResult(block, 1, B); this->storeResult(block, 2, C); this->storeResult(block, 3, D); this->storeResult(block, 4, E)
+// #define BROADCAST_CHECK_EMPTY(X,Y,Z)     if(X->isEmpty() || Y->isEmpty()){ if(!Z->isEmpty()){ throw std::invalid_argument("Broadcast op validation failed: if x or y are empty, z must be empty");} return Status::OK();}
 
 // #define STASH(NAME, ARRAY)  block.getStash()->storeArray(block.getNodeId(), NAME, ARRAY);
 // #define CHECK_STASH(NAME)   block.getStash()->checkStash(block.getNodeId(), NAME);

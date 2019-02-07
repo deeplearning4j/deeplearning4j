@@ -49,7 +49,7 @@ public class TFGraphTestList {
     public TemporaryFolder testDir = new TemporaryFolder();
 
     public static String[] modelNames = new String[]{
-            "simplewhile_nested"
+            "cnn2d_nn/nhwc_b1_k12_s12_d12_SAME"
     };
 
     @After

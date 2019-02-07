@@ -170,9 +170,9 @@ public class DifferentialFunctionFactory {
         return new ZerosLike(name, sameDiff(), input).outputVariable();
     }
 
-    public SDVariable onesLike(String name, SDVariable input) {
+    public SDVariable onesLike(String name, SDVariable input, DataType dataType) {
         validateDifferentialFunctionsameDiff(input);
-        return new OnesLike(name, sameDiff(), input).outputVariable();
+        return new OnesLike(name, sameDiff(), input, dataType).outputVariable();
     }
 
     public SDVariable constant(SDVariable input, long... shape) {
@@ -187,8 +187,8 @@ public class DifferentialFunctionFactory {
         return new org.nd4j.linalg.api.ops.impl.shape.Linspace(sameDiff(), lower, upper, count, dt).outputVariable();
     }
 
-    public SDVariable range(double from, double to, double step) {
-        return new Range(sameDiff(), from, to, step).outputVariable();
+    public SDVariable range(double from, double to, double step, DataType dataType) {
+        return new Range(sameDiff(), from, to, step, dataType).outputVariable();
     }
 
     public SDVariable cast(SDVariable toCast, DataType toType){
@@ -1137,8 +1137,8 @@ public class DifferentialFunctionFactory {
         return new Squeeze(sameDiff(), iX, axis).outputVariable();
     }
 
-    public SDVariable confusionMatrix(SDVariable labels, SDVariable pred) {
-        return new ConfusionMatrix(sameDiff(), labels, pred).outputVariable();
+    public SDVariable confusionMatrix(SDVariable labels, SDVariable pred, DataType dataType) {
+        return new ConfusionMatrix(sameDiff(), labels, pred, dataType).outputVariable();
     }
 
     public SDVariable confusionMatrix(SDVariable labels, SDVariable pred, Integer numClasses) {
@@ -1169,8 +1169,8 @@ public class DifferentialFunctionFactory {
         return new Broadcast(sameDiff(), iX, shape).outputVariable();
     }
 
-    public SDVariable onehot(SDVariable indices, int depth, int axis, double on, double off) {
-        return new OneHot(sameDiff(), indices, depth, axis, on, off).outputVariable();
+    public SDVariable onehot(SDVariable indices, int depth, int axis, double on, double off, DataType dataType) {
+        return new OneHot(sameDiff(), indices, depth, axis, on, off, dataType).outputVariable();
     }
 
     public SDVariable onehot(SDVariable indices, int depth) {
@@ -1276,16 +1276,16 @@ public class DifferentialFunctionFactory {
         return new ReverseSequence(sameDiff(), x, seq_lengths).outputVariable();
     }
 
-    public SDVariable sequenceMask(SDVariable lengths, SDVariable maxLen) {
-        return new SequenceMask(sameDiff(), lengths, maxLen).outputVariable();
+    public SDVariable sequenceMask(SDVariable lengths, SDVariable maxLen, DataType dataType) {
+        return new SequenceMask(sameDiff(), lengths, maxLen, dataType).outputVariable();
     }
 
-    public SDVariable sequenceMask(SDVariable lengths, int maxLen) {
-        return new SequenceMask(sameDiff(), lengths, maxLen).outputVariable();
+    public SDVariable sequenceMask(SDVariable lengths, int maxLen, DataType dataType) {
+        return new SequenceMask(sameDiff(), lengths, maxLen, dataType).outputVariable();
     }
 
-    public SDVariable sequenceMask(SDVariable lengths) {
-        return new SequenceMask(sameDiff(), lengths).outputVariable();
+    public SDVariable sequenceMask(SDVariable lengths, DataType dataType) {
+        return new SequenceMask(sameDiff(), lengths, dataType).outputVariable();
     }
 
     public SDVariable concat(int dimension, SDVariable... inputs) {

@@ -1,0 +1,40 @@
+
+html, body {height: 100%; }
+
+.wrapper {
+    display: flex;
+    height: 100vh;
+    align-items: stretch;
+}
+
+.sidebarline {
+    height: 2px;
+    width: 100%;
+    background-color: #212529;
+    margin-top: 5px;
+    margin-bottom: 5px;
+}
+
+#samediffsidebar {
+    min-width: 250px;
+    max-width: 250px;
+    min-height: 100%;
+    background-color: #e6e6e6;
+    position: relative;
+}
+
+#samediffsidebar.sidebarhidden {
+    margin-left: -250px;
+}
+
+#samediffcontent {
+    min-height: 100%;
+}
+
+#findnoderesults {
+    width: 100%;
+    height: 160px;
+    overflow:hidden;
+    overflow-y:scroll;
+    overflow-x:scroll;
+}

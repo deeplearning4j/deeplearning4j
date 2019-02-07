@@ -162,7 +162,7 @@ public class TFGraphTestZooModels {
 
     @Test   //(timeout = 360000L)
     public void testOutputOnly() throws Exception {
-//        if(!modelName.startsWith("mobilenet_v1_0.5_128")){
+//        if(!modelName.startsWith("ssd")){
 //            OpValidationSuite.ignoreFailing();
 //        }
         currentTestDir = testDir.newFolder();

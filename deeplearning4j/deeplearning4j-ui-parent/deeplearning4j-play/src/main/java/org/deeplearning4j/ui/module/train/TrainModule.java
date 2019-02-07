@@ -247,6 +247,8 @@ public class TrainModule implements UIModule {
 
         //Get all worker IDs
         StatsStorage ss = knownSessionIDs.get(sid);
+        if(ss == null)
+            return null;
         List<String> allWorkerIds = new ArrayList<>(ss.listWorkerIDsForSessionAndType(sid, StatsListener.TYPE_ID));
         Collections.sort(allWorkerIds);
 

@@ -17,7 +17,7 @@ package org.deeplearning4j.scalnet.examples.dl4j.recurrent
 
 import org.deeplearning4j.nn.api.OptimizationAlgorithm
 import org.deeplearning4j.nn.conf.Updater
-import org.deeplearning4j.scalnet.layers.recurrent.{GravesLSTM, RnnOutputLayer}
+import org.deeplearning4j.scalnet.layers.recurrent.{ GravesLSTM, RnnOutputLayer }
 import org.deeplearning4j.scalnet.logging.Logging
 import org.deeplearning4j.scalnet.models.NeuralNet
 import org.nd4j.linalg.activations.Activation
