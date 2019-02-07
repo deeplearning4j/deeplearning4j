@@ -155,11 +155,9 @@ namespace helpers {
         }
         else {
             auto maxAlongDim = const_cast<NDArray&>(input).reduceAlongDims(reduce::Max, {dimension}, true);
-            auto exponents = (input - maxAlongDim).transform(transform::Exp);
-            auto sumAlongDim = exponents.reduceAlongDims(reduce::Sum, {dimension}, true);
-
-            // FIXME: assign?
-            output.assign(exponents / sumAlongDim);
+            (input - maxAlongDim).applyTransform(transform::Exp, &output); // output contains exponents temporarily
+            auto sumAlongDim = output.reduceAlongDims(reduce::Sum, {dimension}, true);        
+            output /= sumAlongDim;
         }
     }
 

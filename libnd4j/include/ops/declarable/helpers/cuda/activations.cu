@@ -60,12 +60,45 @@ __global__ static void preluCuda(const void *vx, const Nd4jLong *xShapeInfo,
 }
 
 template<typename X, typename Y>
-__host__ static void preluCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, const cudaStream_t *stream, const void *vx, const Nd4jLong *xShapeInfo, const void *vy, const Nd4jLong *yShapeInfo, void *vz) {
+static void preluCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, const cudaStream_t *stream, const void *vx, const Nd4jLong *xShapeInfo, const void *vy, const Nd4jLong *yShapeInfo, void *vz) {
 
     preluCuda<X, Y><<<blocksPerGrid, threadsPerBlock, 1024, *stream>>>(vx, xShapeInfo, vy, yShapeInfo, vz);
 }
 
 ///////////////////////////////////////////////////////////////////
+template<typename T>
+__global__ static void softMaxForVectorCuda(const void *vx, const Nd4jLong *xShapeInfo,
+                                                  void *vz, const Nd4jLong *zShapeInfo) {
+
+    const auto x = reinterpret_cast<const T*>(vx);    
+          auto z = reinterpret_cast<T*>(vz);    
+
+    __shared__ Nd4jLong  len;
+    extern __shared__ T shmem[];
+    
+    unsigned int tid = blockIdx.x * blockDim.x + threadIdx.x;
+    
+    if (tid == 0)
+        len = shape::length(xShapeInfo);    
+
+    shmem[threadIdx.x] = x[tid];
+    __syncthreads();    
+
+    for (unsigned int s=blockDim.x/2; s>0; s>>=1) {
+        if (threadIdx.x < s && tid < len)
+            shmem[threadIdx.x] += shmem[threadIdx.x + s];        
+        __syncthreads();
+    }
+    if (threadIdx.x == 0) 
+        z[0] = shmem[0];        
+}
+
+template <typename T>
+static void softMaxForVectorCudaLauncher(cudaStream_t* stream, const void *vx, const Nd4jLong *xShapeInfo, void *vz, const Nd4jLong *zShapeInfo) {
+
+    softMaxForVectorCuda<T><<<512, 256, 1024, *stream>>>(vx, xShapeInfo, vz, zShapeInfo);
+}
+
 template<typename X, typename Y, typename Z>
 __global__ static void preluBPCuda(const void *vIn,    const Nd4jLong *inShapeInfo,
                                    const void *vAlpha, const Nd4jLong *alphaShapeInfo,
@@ -121,26 +154,11 @@ template<typename X, typename Y, typename Z>
 __host__ static void preluBPCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, const cudaStream_t *stream, const void *vIn, const Nd4jLong *inShapeInfo, const void *vAlpha, const Nd4jLong *alphaShapeInfo, const void *vdLdO,  const Nd4jLong *dLdOShapeInfo, void *vdLdI,  const Nd4jLong *dLdIShapeInfo, void *vdLdA,  const Nd4jLong *dLdAShapeInfo) {
 
     preluBPCuda<X, Y, Z><<<blocksPerGrid, threadsPerBlock, 1024, *stream>>>(vIn, inShapeInfo, vAlpha, alphaShapeInfo, vdLdO, dLdOShapeInfo, vdLdI, dLdIShapeInfo, vdLdA, dLdAShapeInfo);
-}
-
-    template <typename T>
-    void _softMaxForVector(void *input, Nd4jLong *inShapeInfo, void *output, Nd4jLong *outShapeInfo) {
-
-    }
+}    
 
     template <typename T>
     void _logSoftMaxForVector(void *input, Nd4jLong *inShapeInfo, void *output, Nd4jLong *outShapeInfo) {
 
-    }
-
-    ///////////////////////////////////////////////////////////////////
-    void softMaxForVector(graph::LaunchContext* context, const NDArray& input, NDArray& output) {
-
-        if(!input.isVector() || !output.isVector())
-            throw std::runtime_error("ops::helpers::softMaxForVector function: input and output arrays must be vectors !");
-
-        auto xType = input.dataType();
-        BUILD_SINGLE_SELECTOR(xType, _softMaxForVector, (input.getBuffer(), input.getShapeInfo(), output.buffer(), output.shapeInfo()), FLOAT_TYPES);
     }
 
 
@@ -161,19 +179,22 @@ __host__ static void preluBPCudaLauncher(const int blocksPerGrid, const int thre
 
         if(input.isVector()) {
         
-            if(rank == 1 || input.sizeAt(dimension) != 1)
-                softMaxForVector(context, input, output);
+            if(rank == 1 || input.sizeAt(dimension) != 1) {
+                // softMaxForVector(context, input, output);
+                input.tickReadDevice();
+            }
             else
                 output = 1.;
         }
         else {
+        
             auto maxAlongDim = const_cast<NDArray&>(input).reduceAlongDims(reduce::Max, {dimension}, true);
-            auto exponents = (input - maxAlongDim).transform(transform::Exp);
-            auto sumAlongDim = exponents.reduceAlongDims(reduce::Sum, {dimension}, true);
-
-            // FIXME: assign?
-            output.assign(exponents / sumAlongDim);
+            (input - maxAlongDim).applyTransform(transform::Exp, &output); // output contains exponents temporarily
+            auto sumAlongDim = output.reduceAlongDims(reduce::Sum, {dimension}, true);        
+            output /= sumAlongDim;
+            input.tickReadDevice();
         }
+        output.tickWriteDevice();
     }
 
     //////////////////////////////////////////////////////////////////////////
@@ -242,7 +263,6 @@ __host__ static void preluBPCudaLauncher(const int blocksPerGrid, const int thre
     }
 
 
-BUILD_SINGLE_TEMPLATE(template void _softMaxForVector, (void *input, Nd4jLong *inShapeInfo, void *output, Nd4jLong *outShapeInfo), FLOAT_TYPES);
 BUILD_SINGLE_TEMPLATE(template void _logSoftMaxForVector, (void *input, Nd4jLong *inShapeInfo, void *output, Nd4jLong *outShapeInfo), FLOAT_TYPES);
 BUILD_SINGLE_TEMPLATE(template void thresholdReluDerivative_, (NDArray* input, double threshold, NDArray* dLdO, NDArray* output), FLOAT_TYPES);
 BUILD_DOUBLE_TEMPLATE(template void preluCudaLauncher,   (const int blocksPerGrid, const int threadsPerBlock, const cudaStream_t *stream, const void *vx, const Nd4jLong *xShapeInfo, const void *vy, const Nd4jLong *yShapeInfo, void *vz), LIBND4J_TYPES, FLOAT_TYPES);
