@@ -167,10 +167,10 @@ public class NDArrayStrings {
                     return decimalFormat.format(arr.getDouble(0));
                 }
             } else if (arr.isZ()) {
-                int arrElement = arr.getInt(0);
+                long arrElement = arr.getLong(0);
                 return String.valueOf(arrElement);
             } else if (arr.isB()) {
-                int arrElement = arr.getInt(0);
+                long arrElement = arr.getLong(0);
                 return arrElement == 0 ? "false" : "true";
             } else if (arr.dataType() == DataType.UTF8){
                 String s = arr.getStringUnsafe(0);
