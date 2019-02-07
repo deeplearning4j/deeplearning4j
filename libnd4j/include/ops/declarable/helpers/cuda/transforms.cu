@@ -26,6 +26,7 @@
 #include <NDArrayFactory.h>
 #include <helpers/TAD.h>
 #include <exceptions/cuda_exception.h>
+#include <PointersManager.h>
 
 namespace nd4j 	  {
 namespace ops 	  {
@@ -33,7 +34,7 @@ namespace helpers {
 
 ///////////////////////////////////////////////////////////////////
 template<typename T>
-__global__ static void concatCuda(const int numOfArrs, void** pVx,  Nd4jLong** pxShapeInfo, void** pVz, Nd4jLong** pzShapeInfo) {
+__global__ static void concatCuda(const int numOfArrs, void* pVx,  void* pxShapeInfo, void* pVz, void* pzShapeInfo) {
     
     __shared__ int arrIdx, blocksPerArr;
     __shared__ T *x, *z;
@@ -44,10 +45,10 @@ __global__ static void concatCuda(const int numOfArrs, void** pVx,  Nd4jLong** p
         blocksPerArr = (gridDim.x + numOfArrs - 1) / numOfArrs;     // ceil 
         arrIdx = blockIdx.x / blocksPerArr;
     
-        x = reinterpret_cast<T*>(pVx[arrIdx]);
-        z = reinterpret_cast<T*>(pVz[arrIdx]);
-        xShapeInfo = reinterpret_cast<Nd4jLong*>(pxShapeInfo[arrIdx]);
-        zShapeInfo = reinterpret_cast<Nd4jLong*>(pzShapeInfo[arrIdx]);
+        x = reinterpret_cast<T*>(reinterpret_cast<void**>(pVx)[arrIdx]);
+        z = reinterpret_cast<T*>(reinterpret_cast<void**>(pVz)[arrIdx]);        
+        xShapeInfo = reinterpret_cast<Nd4jLong**>(pxShapeInfo)[arrIdx];
+        zShapeInfo = reinterpret_cast<Nd4jLong**>(pzShapeInfo)[arrIdx];
         arrLen = shape::length(xShapeInfo);
 
         arrLenPerBlock = (arrLen + blocksPerArr - 1) / blocksPerArr;  // ceil
@@ -63,7 +64,7 @@ __global__ static void concatCuda(const int numOfArrs, void** pVx,  Nd4jLong** p
 }
 
 template<typename T>
-__host__ static void concatCudaLauncher(const int numOfArrs, const cudaStream_t *stream,  void** pVx, Nd4jLong** pxShapeInfo, void** pVz, Nd4jLong** pzShapeInfo) {
+__host__ static void concatCudaLauncher(const int numOfArrs, const cudaStream_t *stream,  void* pVx, void* pxShapeInfo, void* pVz, void* pzShapeInfo) {
 
     concatCuda<T><<<512, 256, 1024, *stream>>>(numOfArrs, pVx, pxShapeInfo, pVz, pzShapeInfo);
 }
@@ -323,28 +324,16 @@ void concat(graph::LaunchContext* context, const std::vector<NDArray*>& inArrs, 
         hInShapeInfo[i]  =     inArrs[i]->getSpecialShapeInfo();
     }
 
-    // allocate and copy all buffers and shapes arrays to global memory         
-    Nd4jLong **dOutShapeInfo, **dInShapeInfo;
-    void **dOutBuffers, **dInBuffers;
-
-    cudaError_t cudaResult = cudaMalloc(reinterpret_cast<void **>(&dOutBuffers), hOutBuffers.size() * sizeof(void*));
-    if(cudaResult != 0) throw cuda_exception::build("helpers::concat: cannot allocate global memory on device", cudaResult);
-    cudaResult = cudaMalloc(reinterpret_cast<void **>(&dInBuffers), hInBuffers.size() * sizeof(void*));
-    if(cudaResult != 0) throw cuda_exception::build("helpers::concat: cannot allocate global memory on device", cudaResult);
-    cudaResult = cudaMalloc(reinterpret_cast<void **>(&dOutShapeInfo), hOutShapeInfo.size() * sizeof(Nd4jLong*));
-    if(cudaResult != 0) throw cuda_exception::build("helpers::concat: cannot allocate global memory on device", cudaResult);
-    cudaResult = cudaMalloc(reinterpret_cast<void **>(&dInShapeInfo), hInShapeInfo.size() * sizeof(Nd4jLong*));
-    if(cudaResult != 0) throw cuda_exception::build("helpers::concat: cannot allocate global memory on device", cudaResult);
-
-    cudaMemcpyAsync(dOutBuffers,   hOutBuffers.data(),   hOutBuffers.size() * sizeof(void*),       cudaMemcpyHostToDevice, *context->getCudaStream());
-    cudaMemcpyAsync(dInBuffers,    hInBuffers.data(),    hInBuffers.size()  * sizeof(void*),       cudaMemcpyHostToDevice, *context->getCudaStream());
-    cudaMemcpyAsync(dOutShapeInfo, hOutShapeInfo.data(), hOutShapeInfo.size() * sizeof(Nd4jLong*), cudaMemcpyHostToDevice, *context->getCudaStream());
-    cudaMemcpyAsync(dInShapeInfo,  hInShapeInfo.data(),  hInShapeInfo.size() * sizeof(Nd4jLong*),  cudaMemcpyHostToDevice, *context->getCudaStream());    
+    // allocate and copy all buffers and shapes arrays to global memory    
+    PointersManager manager(context, "helpers::concat");
+    void* dOutBuffers	= manager.replicatePointer(hOutBuffers.data(),   hOutBuffers.size() * sizeof(void*));
+    void* dInBuffers	= manager.replicatePointer(hInBuffers.data(),    hInBuffers.size() * sizeof(void*));
+    void* dInShapeInfo  = manager.replicatePointer(hInShapeInfo.data(),  hInShapeInfo.size() * sizeof(Nd4jLong*));
+    void* dOutShapeInfo = manager.replicatePointer(hOutShapeInfo.data(), hOutShapeInfo.size() * sizeof(Nd4jLong*));
 
     BUILD_SINGLE_SELECTOR(inArrs[0]->dataType(), concatCudaLauncher, (numOfArrs, context->getCudaStream(), dInBuffers, dInShapeInfo, dOutBuffers, dOutShapeInfo), LIBND4J_TYPES);
 
-    cudaResult = cudaStreamSynchronize(*context->getCudaStream());        
-    if (cudaResult != 0) throw cuda_exception::build("helpers::concat cuda failed !", cudaResult);
+    manager.synchronize();
     
     for(int i = 0; i < numOfArrs; ++i)
         delete outSubArrs[i];
@@ -373,7 +362,7 @@ void concat(graph::LaunchContext* context, const std::vector<NDArray*>& inArrs, 
 
 
 
-BUILD_SINGLE_TEMPLATE(template void concatCudaLauncher, (const int numOfArrs, const cudaStream_t *stream, void** pVx, Nd4jLong** pxShapeInfo, void** pVz, Nd4jLong** pzShapeInfo), LIBND4J_TYPES);
+BUILD_SINGLE_TEMPLATE(template void concatCudaLauncher, (const int numOfArrs, const cudaStream_t *stream, void* pVx, void* pxShapeInfo, void* pVz, void* pzShapeInfo), LIBND4J_TYPES);
 
 }
 }

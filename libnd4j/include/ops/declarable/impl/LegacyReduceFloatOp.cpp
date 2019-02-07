@@ -51,7 +51,7 @@ namespace nd4j {
             auto axis = *block.getAxis();
 
             ExtraArguments extras(*block.getTArguments());
-            PointersManager manager(block.launchContext());
+            PointersManager manager(block.launchContext(), "LegacyReduceFloatOp");
 
             if (block.width() == 1) {
 
@@ -131,7 +131,7 @@ namespace nd4j {
                 }
             }
 
-            manager.synchronize("LegacyReduceFloatOp");
+            manager.synchronize();
             return Status::OK();
         }
 

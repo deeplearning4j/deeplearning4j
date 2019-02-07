@@ -26,25 +26,26 @@
 namespace nd4j {
 
 //////////////////////////////////////////////////////////////////////////
-    PointersManager::PointersManager(nd4j::graph::LaunchContext *context)  {
-        _context = context;
-    }
+PointersManager::PointersManager(nd4j::graph::LaunchContext *context, const std::string& funcName)  {
+    _context  = context;
+    _funcName = funcName;
+}
 
 //////////////////////////////////////////////////////////////////////////
-    void* PointersManager::replicatePointer(const void* src, const size_t numberOfBytes, const std::string& message) {
-        // no-op
-        return const_cast<void *>(src);
-    }
+void* PointersManager::replicatePointer(const void* src, const size_t numberOfBytes) {
+    // no-op
+    return const_cast<void *>(src);
+}
 
 //////////////////////////////////////////////////////////////////////////
-    void PointersManager::synchronize(const std::string& message) const {
+void PointersManager::synchronize() const {
         // no-op
-    }
+}
 
 //////////////////////////////////////////////////////////////////////////
-    PointersManager::~PointersManager() {
+PointersManager::~PointersManager() {
         // no-op
-    }
+}
 
 
 }

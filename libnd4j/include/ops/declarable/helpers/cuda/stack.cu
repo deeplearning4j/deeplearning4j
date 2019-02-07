@@ -21,24 +21,144 @@
 #include <ops/declarable/helpers/stack.h>
 #include <helpers/ShapeUtils.h>
 #include <array/ResultSet.h>
-
+#include <cuda_exception.h>
 
 namespace nd4j {
 namespace ops {
 namespace helpers {
 
+//	Nd4jLong* tadOnlyInputShapeInfo,  Nd4jLong *tadInputOffsets,
+//	Nd4jLong* tadOnlyOutputShapeInfo, Nd4jLong *tadOutputOffsets
 
+//	template <typename T>
+//	static __global__ void stackKernelScalar(void const* inputList[], void* outputBuffer, Nd4jLong* outputShape, Nd4jLong outputLength) {
+//		auto tid = blockIdx.x * blockDim.x + threadIdx.x;
+//		int totalThreads = gridDim.x * blockDim.x;
+//		//const auto resultLength = shape::length(outputShape);
+//		for (Nd4jLong i = tid; i < outputLength; i += totalThreads) {
+//			//auto yOffset = shape::subArrayOffset(i, outputShape, inputShape);
+//			//printf(">> %lld\n", i);
+//			auto xOffset = shape::getIndexOffset(i, outputShape, outputLength);
+//			printf(">> %lld\n", xOffset);
+//
+//			//*(reinterpret_cast<T *>(outputBuffer) + xOffset) = *(reinterpret_cast<T const *>(inputList[xOffset]));
+//		}
+//	}
+
+	template <typename T>
+	static __global__ void stackKernel(void* inputList[], void* inputShapeList[], size_t inputListLength, void* outputBuffer, Nd4jLong* outputShape) {
+
+		__shared__ int arrIdx, blocksPerArr;
+		__shared__ T *x, *z;
+		__shared__ Nd4jLong *zShapeInfo, *xShapeInfo, arrLen, arrLenPerBlock, start, end;
+
+		if (threadIdx.x == 0) {
+
+			blocksPerArr = (gridDim.x + inputListLength - 1) / inputListLength;     // ceil
+			arrIdx = blockIdx.x / blocksPerArr;
+
+			x = reinterpret_cast<T*>(inputList[arrIdx]);
+			z = reinterpret_cast<T*>(outputBuffer);
+			xShapeInfo = reinterpret_cast<Nd4jLong*>(inputShapeList[arrIdx]);
+			zShapeInfo = reinterpret_cast<Nd4jLong*>(outputShape);
+			arrLen = shape::length(xShapeInfo);
+
+			arrLenPerBlock = (arrLen + blocksPerArr - 1) / blocksPerArr;  // ceil
+
+			start = (blockIdx.x % blocksPerArr) * arrLenPerBlock;
+			end   = (start + arrLenPerBlock) > arrLen ? arrLen : (start + arrLenPerBlock);
+		}
+
+		__syncthreads();
+        //for (Nd4jLong arr = blockIdx.x; arr < inputListLength; arr += gridDim.x) {
+		for (Nd4jLong i = start + threadIdx.x; i < end; i += blockDim.x)
+				z[shape::getIndexOrderOffset(i, zShapeInfo, arrLen,
+											 shape::order(zShapeInfo))] = x[shape::getIndexOrderOffset(i, xShapeInfo,
+																									   arrLen,
+																									   shape::order(
+																											   xShapeInfo))];
+
+	}
 	///////////////////////////////////////////////////////////////////
 	template <typename T>
-	static void stack_(const std::vector<NDArray*>& inArrs, NDArray& outArr, const int dim) {
+	static void stack_(graph::LaunchContext* context, const std::vector<NDArray*>& inArrs, NDArray* outArr, const int dim) {
+		if(inArrs[0]->isScalar()) {
+            outArr->lazyAllocateBuffer();
 
+//#pragma omp parallel for
+			for (size_t i = 0; i < inArrs.size(); ++i) {
+                inArrs[i]->syncToHost();
+
+                outArr->p(i, inArrs[i]->e<T>(0));//scalarList[i] = inArrs[i]->getSpecialBuffer();
+            }
+			outArr->syncToDevice();
+		}
+		else {
+			Nd4jLong **dInShapeInfo;
+			void **dInBuffers;
+			std::vector<void const*> inputList(inArrs.size());
+			std::vector<Nd4jLong const*> inputShapeList(inArrs.size());
+			auto stream = context->getCudaStream();
+
+			for (size_t i = 0; i < inputList.size(); ++i) {
+				inputList[i] = inArrs[i]->getSpecialBuffer();
+				inputShapeList[i] = inArrs[i]->getSpecialShapeInfo();
+			}
+
+			//cudaError_t cudaResult = cudaMalloc(reinterpret_cast<void **>(&dOutBuffers), hOutBuffers.size() * sizeof(void*));
+			//if(cudaResult != 0) throw cuda_exception::build("helpers::concat: cannot allocate global memory on device", cudaResult);
+			cudaError_t cudaResult = cudaMalloc(reinterpret_cast<void **>(&dInBuffers), inputList.size() * sizeof(void*));
+			if(cudaResult != 0) throw cuda_exception::build("helpers::stack_: cannot allocate global memory on device", cudaResult);
+			//cudaResult = cudaMalloc(reinterpret_cast<void **>(&dOutShapeInfo), hOutShapeInfo.size() * sizeof(Nd4jLong*));
+			//if(cudaResult != 0) throw cuda_exception::build("helpers::concat: cannot allocate global memory on device", cudaResult);
+			cudaResult = cudaMalloc(reinterpret_cast<void **>(&dInShapeInfo), inputShapeList.size() * sizeof(Nd4jLong*));
+			if(cudaResult != 0) throw cuda_exception::build("helpers::stack_: cannot allocate global memory on device", cudaResult);
+
+			//cudaMemcpyAsync(dOutBuffers,   hOutBuffers.data(),   hOutBuffers.size() * sizeof(void*),       cudaMemcpyHostToDevice, *context->getCudaStream());
+			cudaMemcpyAsync(dInBuffers,    inputList.data(),    inputList.size()  * sizeof(void*),       cudaMemcpyHostToDevice, *stream);
+			//cudaMemcpyAsync(dOutShapeInfo, hOutShapeInfo.data(), hOutShapeInfo.size() * sizeof(Nd4jLong*), cudaMemcpyHostToDevice, *context->getCudaStream());
+			cudaMemcpyAsync(dInShapeInfo,  inputShapeList.data(),  inputShapeList.size() * sizeof(Nd4jLong*),  cudaMemcpyHostToDevice, *stream);
+
+            dim3 launchDims(256, 512, 8192);
+
+			stackKernel<T><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>((void**)dInBuffers, (void**)dInShapeInfo, inputList.size(), outArr->specialBuffer(), outArr->specialShapeInfo());
+
+			cudaResult = cudaFree(dInBuffers);
+			if(cudaResult != 0)
+				throw cuda_exception::build("helpers::stack_: cannot deallocate global memory on device for buffer list", cudaResult);
+			//cudaResult = cudaMalloc(reinterpret_cast<void **>(&dOutShapeInfo), hOutShapeInfo.size() * sizeof(Nd4jLong*));
+			//if(cudaResult != 0) throw cuda_exception::build("helpers::concat: cannot allocate global memory on device", cudaResult);
+			cudaResult = cudaFree(dInShapeInfo);
+			if(cudaResult != 0)
+				throw cuda_exception::build("helpers::stack_: cannot deallocate global memory on device for shape list", cudaResult);
+
+		}
+		//auto res = cudaStreamSynchronize(*stream);
+		//if (res != 0)
+		//	throw cuda_exception::build("stack: Failed to continue due to some previous kernel failre", res);
+//
+//#pragma omp parallel for if(inArrs.size() > Environment::getInstance()->elementwiseThreshold()) schedule(guided)
+//			for(int i=0; i < inArrs.size(); ++i)
+//				outArr.p(i, inArrs[i]->e<T>(0));
+//		}
+//		else {
+//
+//			std::vector<int> dimsToExclude = ShapeUtils::evalDimsToExclude(outArr.rankOf(), {dim});
+//			auto list = outArr.allTensorsAlongDimension(dimsToExclude);		// list.size() == block.width()
+//
+//#pragma omp parallel for if(list->size() > Environment::getInstance()->elementwiseThreshold()) schedule(guided)
+//			for(int i=0; i<list->size(); ++i)
+//				list->at(i)->assign(inArrs[i]);
+//
+//			delete list;
+//		}
 	}
 
-	void stack(graph::LaunchContext* context, const std::vector<NDArray*>& inArrs, NDArray& outArr, const int dim) {
-		BUILD_SINGLE_SELECTOR(outArr.dataType(), stack_, (inArrs, outArr, dim), LIBND4J_TYPES);
+	void stack(graph::LaunchContext* context, const std::vector<NDArray*>& inArrs, NDArray* outArr, const int dim) {
+		BUILD_SINGLE_SELECTOR(outArr->dataType(), stack_, (context, inArrs, outArr, dim), LIBND4J_TYPES);
 	}
 
-	BUILD_SINGLE_TEMPLATE(template void stack_ , (const std::vector<NDArray*>& inArrs, NDArray& outArr, const int dim), LIBND4J_TYPES);
+	BUILD_SINGLE_TEMPLATE(template void stack_ , (graph::LaunchContext* context, const std::vector<NDArray*>& inArrs, NDArray* outArr, const int dim), LIBND4J_TYPES);
 
 }
 }

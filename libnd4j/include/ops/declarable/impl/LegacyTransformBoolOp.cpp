@@ -46,13 +46,13 @@ namespace nd4j {
             int opNum = block.opNum() < 0 ? this->_opNum : block.opNum();
 
             ExtraArguments extras(*block.getTArguments());
-            PointersManager manager(block.launchContext());
+            PointersManager manager(block.launchContext(),"LegacyTransformBoolOp");
 
             NativeOpExecutioner::execTransformBool(block.launchContext(), opNum, input->getBuffer(), input->getShapeInfo(), input->specialBuffer(), input->specialShapeInfo(),
                     z->getBuffer(), z->getShapeInfo(), z->specialBuffer(), z->specialShapeInfo(),
                     extras.argumentsAsT(input->dataType()), nullptr, nullptr);
 
-            manager.synchronize("LegacyTransformBoolOp");
+            manager.synchronize();
             STORE_RESULT(*z);
 
             return Status::OK();

@@ -52,7 +52,7 @@ namespace nd4j {
             bool allAxes = false;
 
             ExtraArguments extras(*block.getTArguments());
-            PointersManager manager(block.launchContext());
+            PointersManager manager(block.launchContext(),"LegacyReduceBoolOp");
 
             if (block.width() == 1) {
                 if (axis.size() == x->rankOf())
@@ -128,7 +128,7 @@ namespace nd4j {
                 }
             }
 
-            manager.synchronize("LegacyReduceBoolOp");
+            manager.synchronize();
             return Status::OK();
         }
 

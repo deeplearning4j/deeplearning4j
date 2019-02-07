@@ -51,7 +51,7 @@ namespace nd4j {
             Nd4jLong tadLen = shape::length(tad.tadOnlyShapeInfo);
             REQUIRE_TRUE(tadLen == y->lengthOf(), 0, "Length of broadcast TAD should be equal to length of Y operand, but got [%i] vs [%i]",tadLen, (int) y->lengthOf());
 
-            PointersManager manager(block.launchContext());
+            PointersManager manager(block.launchContext(),"LegacyBroadcastOp");
             auto pDims = (int *) manager.replicatePointer(dims.data(), dims.size() * sizeof(int));
             auto pTadShape = (Nd4jLong *) manager.replicatePointer(tad.tadOnlyShapeInfo, shape::shapeInfoByteLength(tad.tadOnlyShapeInfo));
             auto pTadOffsets = (Nd4jLong *) manager.replicatePointer(tad.tadOffsets, tad.numTads * sizeof(Nd4jLong));
@@ -76,7 +76,7 @@ namespace nd4j {
                         pDims, dims.size(), pTadShape, pTadOffsets, zTadShape, zTadOffsets);
             }
 
-            manager.synchronize("LegacyBroadcastOp");
+            manager.synchronize();
             STORE_RESULT(*z);
 
             return Status::OK();

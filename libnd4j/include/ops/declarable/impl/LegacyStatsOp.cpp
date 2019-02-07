@@ -40,7 +40,7 @@ namespace nd4j {
                 biasCorrected = INT_ARG(0) > 0;
 
             ExtraArguments extras(*block.getTArguments());
-            PointersManager manager(block.launchContext());
+            PointersManager manager(block.launchContext(),"LegacyStatsOp");
 
             if (block.getIArguments()->size() == 1 || (block.getIArguments()->size() == 2 && INT_ARG(1) == MAX_INT)) {
                 // scalar
@@ -71,7 +71,7 @@ namespace nd4j {
                         z->getBuffer(), z->getShapeInfo(), z->specialBuffer(), z->specialShapeInfo(), pDims, (int) dims.size(), pTadShape, pTadOffsets, biasCorrected);
             }
 
-            manager.synchronize("LegacyStatsOp");
+            manager.synchronize();
             STORE_RESULT(*z);
 
             return Status::OK();
