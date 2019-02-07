@@ -17,7 +17,9 @@
 package org.deeplearning4j.models.word2vec;
 
 import com.google.common.primitives.Doubles;
+import lombok.val;
 import org.apache.commons.io.FileUtils;
+import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
 import org.nd4j.linalg.io.ClassPathResource;
 import org.deeplearning4j.models.embeddings.learning.impl.elements.CBOW;
 import org.deeplearning4j.models.embeddings.learning.impl.elements.SkipGram;
@@ -112,6 +114,7 @@ public class Word2VecTests {
     }
 
     @Test
+    @Ignore // no adagrad these days
     public void testWord2VecAdaGrad() throws Exception {
         SentenceIterator iter = new BasicLineIterator(inputFile.getAbsolutePath());
 
@@ -148,7 +151,7 @@ public class Word2VecTests {
 
         Word2Vec vec = new Word2Vec.Builder().minWordFrequency(1).iterations(5).learningRate(0.025).layerSize(150)
                         .seed(42).sampling(0).negativeSample(0).useHierarchicSoftmax(true).windowSize(5)
-                        .modelUtils(new BasicModelUtils<VocabWord>()).useAdaGrad(false).iterate(iter).workers(8)
+                        .modelUtils(new BasicModelUtils<VocabWord>()).useAdaGrad(false).iterate(iter).workers(4)
                         .tokenizerFactory(t).elementsLearningAlgorithm(new CBOW<VocabWord>()).build();
 
         vec.fit();
@@ -195,7 +198,37 @@ public class Word2VecTests {
         assertTrue(lst.contains("year"));
     }
 
+    @Test
+    public void reproducibleResults_ForMultipleRuns() throws Exception {
 
+        SentenceIterator iter = new BasicLineIterator(inputFile.getAbsolutePath());
+        TokenizerFactory t = new DefaultTokenizerFactory();
+        t.setTokenPreProcessor(new CommonPreprocessor());
+
+        Word2Vec vec1 = new Word2Vec.Builder().minWordFrequency(1).iterations(1).batchSize(64).layerSize(100)
+                .stopWords(new ArrayList<String>()).seed(42).learningRate(0.025).minLearningRate(0.001)
+                .sampling(0).elementsLearningAlgorithm(new SkipGram<VocabWord>())
+                //.negativeSample(10)
+                .epochs(1).windowSize(5).allowParallelTokenization(true)
+                .workers(1)
+                .modelUtils(new BasicModelUtils<VocabWord>()).iterate(iter).tokenizerFactory(t).build();
+
+        Word2Vec vec2 = new Word2Vec.Builder().minWordFrequency(1).iterations(1).batchSize(64).layerSize(100)
+                .stopWords(new ArrayList<String>()).seed(42).learningRate(0.025).minLearningRate(0.001)
+                .sampling(0).elementsLearningAlgorithm(new SkipGram<VocabWord>())
+                //.negativeSample(10)
+                .epochs(1).windowSize(5).allowParallelTokenization(true)
+                .workers(1)
+                .modelUtils(new BasicModelUtils<VocabWord>()).iterate(iter).tokenizerFactory(t).build();
+
+        vec1.fit();
+        vec2.fit();
+
+        INDArray syn0_from_vec1 = ((InMemoryLookupTable<VocabWord>) vec1.getLookupTable()).getSyn0();
+        INDArray syn0_from_vec2 = ((InMemoryLookupTable<VocabWord>) vec2.getLookupTable()).getSyn0();
+
+        assertEquals(syn0_from_vec1, syn0_from_vec2);
+    }
 
     @Test
     public void testRunWord2Vec() throws Exception {
@@ -211,6 +244,7 @@ public class Word2VecTests {
                         .sampling(0).elementsLearningAlgorithm(new SkipGram<VocabWord>())
                         //.negativeSample(10)
                         .epochs(1).windowSize(5).allowParallelTokenization(true)
+                        .workers(1)
                         .modelUtils(new BasicModelUtils<VocabWord>()).iterate(iter).tokenizerFactory(t).build();
 
         assertEquals(new ArrayList<String>(), vec.getStopWords());
@@ -416,6 +450,33 @@ public class Word2VecTests {
 
         assertEquals(unk, random);
         assertEquals(unk, randomRestored);
+    }
+
+    @Test
+    public void orderIsCorrect_WhenParallelized() throws Exception {
+        // Strip white space before and after for each line
+        SentenceIterator iter = new BasicLineIterator(inputFile.getAbsolutePath());
+        // Split on white spaces in the line to get words
+        TokenizerFactory t = new DefaultTokenizerFactory();
+        t.setTokenPreProcessor(new CommonPreprocessor());
+
+
+        Word2Vec vec = new Word2Vec.Builder().minWordFrequency(1).iterations(3).batchSize(64).layerSize(100)
+                .stopWords(new ArrayList<String>()).seed(42).learningRate(0.025).minLearningRate(0.001)
+                .sampling(0).elementsLearningAlgorithm(new SkipGram<VocabWord>())
+                //.negativeSample(10)
+                .epochs(1).windowSize(5).allowParallelTokenization(true)
+                .workers(1)
+                .modelUtils(new BasicModelUtils<VocabWord>()).iterate(iter).tokenizerFactory(t).build();
+
+
+        vec.fit();
+        System.out.println(vec.getVocab().numWords());
+
+        val words = vec.getVocab().words();
+        for (val word : words) {
+            System.out.println(word);
+        }
     }
 
     private static void printWords(String target, Collection<String> list, Word2Vec vec) {

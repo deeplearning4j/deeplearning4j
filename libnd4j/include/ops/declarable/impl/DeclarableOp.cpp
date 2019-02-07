@@ -311,7 +311,7 @@ namespace nd4j {
                     inputTypes[inT++] = array->dataType();
                     if (!_descriptor->checkInputMatch(cnt, array->dataType())) {
                         auto ctype = DataTypeUtils::asString(array->dataType());
-                        nd4j_printf("Op [%sxnj failed check for input [%i], DataType: [%s]\n", _descriptor->getOpName()->data(), cnt, ctype.c_str());
+                        nd4j_printf("Op [%s] failed check for input [%i], DataType: [%s]\n", _descriptor->getOpName()->data(), cnt, ctype.c_str());
                         return ND4J_STATUS_BAD_ARGUMENTS;
                     }
                 }

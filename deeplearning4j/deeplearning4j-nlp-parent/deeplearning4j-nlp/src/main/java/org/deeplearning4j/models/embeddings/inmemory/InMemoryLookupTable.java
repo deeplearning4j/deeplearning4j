@@ -112,6 +112,7 @@ public class InMemoryLookupTable<T extends SequenceElement> implements WeightLoo
     }
 
     public double[] getExpTable() {
+
         return expTable;
     }
 

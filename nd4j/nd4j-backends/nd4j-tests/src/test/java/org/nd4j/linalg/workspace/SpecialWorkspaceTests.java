@@ -17,6 +17,7 @@
 package org.nd4j.linalg.workspace;
 
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.junit.After;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -30,6 +31,7 @@ import org.nd4j.linalg.api.memory.enums.LearningPolicy;
 import org.nd4j.linalg.api.memory.enums.ResetPolicy;
 import org.nd4j.linalg.api.memory.enums.SpillPolicy;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.memory.abstracts.Nd4jWorkspace;
@@ -256,6 +258,44 @@ public class SpecialWorkspaceTests extends BaseNd4jTest {
                 }
             }
         }
+    }
+
+
+    @Test
+    public void testNoOpExecution_1() {
+        val configuration = WorkspaceConfiguration.builder().initialSize(10000000).overallocationLimit(3.0)
+                .policyAllocation(AllocationPolicy.OVERALLOCATE).policySpill(SpillPolicy.REALLOCATE)
+                .policyLearning(LearningPolicy.FIRST_LOOP).policyReset(ResetPolicy.BLOCK_LEFT).build();
+
+        int iterations = 10000;
+
+        val array0 = Nd4j.create(new long[]{ 100, 100});
+        val array1 = Nd4j.create(new long[]{ 100, 100});
+        val array2 = Nd4j.create(new long[]{ 100, 100});
+        val array3 = Nd4j.create(new long[]{ 100, 100});
+        val array4 = Nd4j.create(new long[]{ 100, 100});
+        val array5 = Nd4j.create(new long[]{ 100, 100});
+        val array6 = Nd4j.create(new long[]{ 100, 100});
+        val array7 = Nd4j.create(new long[]{ 100, 100});
+        val array8 = Nd4j.create(new long[]{ 100, 100});
+        val array9 = Nd4j.create(new long[]{ 100, 100});
+
+        val timeStart = System.nanoTime();
+        for (int e = 0; e < iterations; e++) {
+
+            val op = DynamicCustomOp.builder("noop")
+                    .addInputs(array0, array1, array2, array3, array4, array5, array6, array7, array8, array9)
+                    .addOutputs(array0, array1, array2, array3, array4, array5, array6, array7, array8, array9)
+                    .addIntegerArguments(5, 10)
+                    .addFloatingPointArguments(3.0, 10.0)
+                    .addBooleanArguments(true, false)
+                    .callInplace(true)
+                    .build();
+
+            Nd4j.getExecutioner().exec(op);
+        }
+        val timeEnd = System.nanoTime();
+        log.info("{} ns", ((timeEnd - timeStart) / (double) iterations));
     }
 
     @Override

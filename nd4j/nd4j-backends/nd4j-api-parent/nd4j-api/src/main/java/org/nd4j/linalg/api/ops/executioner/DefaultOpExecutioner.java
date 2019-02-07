@@ -278,12 +278,14 @@ public class DefaultOpExecutioner implements OpExecutioner {
 
                 if (!ws.isScopeActive()) {
                     throw new ND4JIllegalStateException("Op [" + opName + "] X argument uses leaked workspace pointer from workspace ["
-                            + ws.getId() + "]\nAll open workspaces: " + allOpenWorkspaces() + "\n" + SCOPE_PANIC_MSG);
+                            + ws.getId() + "]: Workspace the array was defined in is no longer open.\nAll open workspaces: " + allOpenWorkspaces() + "\n" + SCOPE_PANIC_MSG);
                 }
 
                 if (ws.getGenerationId() != array.data().getGenerationId())
                     throw new ND4JIllegalStateException("Op [" + opName + "] X argument uses outdated workspace pointer from workspace ["
-                            + ws.getId() + "]\nAll open workspaces: " + allOpenWorkspaces() + "\n" + SCOPE_PANIC_MSG);
+                            + ws.getId() + "]: Workspace array was defined in has been closed and reopened at least once since array creation. Array WS iteration: " +
+                            array.data().getGenerationId() + ". Workspace current iteration: " +
+                            ws.getGenerationId() + "\nAll open workspaces: " + allOpenWorkspaces() + "\n" + SCOPE_PANIC_MSG);
             }
         }
     }
@@ -310,7 +312,7 @@ public class DefaultOpExecutioner implements OpExecutioner {
             checkWorkspace(op.opName(), z);
     }
 
-    private static List<String> allOpenWorkspaces(){
+    public static List<String> allOpenWorkspaces(){
         List<MemoryWorkspace> l = Nd4j.getWorkspaceManager().getAllWorkspacesForCurrentThread();
         List<String> workspaces = new ArrayList<>(l.size());
         for( MemoryWorkspace ws : l){
