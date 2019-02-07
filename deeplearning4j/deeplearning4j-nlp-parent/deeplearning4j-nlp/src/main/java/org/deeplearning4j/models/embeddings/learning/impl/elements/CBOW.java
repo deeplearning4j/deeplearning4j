@@ -233,6 +233,7 @@ public class CBOW<T extends SequenceElement> implements ElementsLearningAlgorith
                     expTable.get(), table.get(), Nd4j.createFromArray(idxSyn1), Nd4j.createFromArray(codes),
                     (int)negative, Nd4j.scalar(alpha), Nd4j.scalar(nextRandom.get()),
                     inferenceVector != null ? inferenceVector : Nd4j.empty(syn0.get().dataType()),
+                    trainWords,
                     workers);
         }
         else if (useHS) {
@@ -371,6 +372,7 @@ public class CBOW<T extends SequenceElement> implements ElementsLearningAlgorith
                 useHS ? codesArray : Nd4j.empty(DataType.BYTE),
                 (int) negative, alphasArray, Nd4j.createFromArray(randoms),
                 /*inferenceVector != null ? inferenceVector :*/ Nd4j.empty(syn0.get().dataType()),
+                configuration.isTrainElementsVectors(),
                 workers);
 
         Nd4j.getExecutioner().exec(cbow);
