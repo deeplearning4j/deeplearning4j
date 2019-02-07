@@ -60,7 +60,7 @@ public class ParallelTransformerIterator extends BasicTransformerIterator {
     }
 
     private void prefetchIterator() {
-        for (int i = 0; i < PREFETCH_SIZE; ++i) {
+        /*for (int i = 0; i < PREFETCH_SIZE; ++i) {
             //boolean before = underlyingHas;
 
                 if (underlyingHas.get())
@@ -77,7 +77,7 @@ public class ParallelTransformerIterator extends BasicTransformerIterator {
                     e.printStackTrace();
                 }
             }
-        }
+        }*/
     }
 
     public ParallelTransformerIterator(@NonNull LabelAwareIterator iterator, @NonNull SentenceTransformer transformer,
@@ -176,12 +176,25 @@ public class ParallelTransformerIterator extends BasicTransformerIterator {
     public boolean hasNext() {
         //boolean before = underlyingHas;
 
-            if (underlyingHas.get())
-                underlyingHas.set(iterator.hasNextDocument());
-            else
+        //if (underlyingHas.get()) {
+            if (iterator.hasNextDocument()) {
+                CallableTransformer transformer = new CallableTransformer(iterator.nextDocument(), sentenceTransformer);
+                Future<Sequence<VocabWord>> futureSequence = executorService.submit(transformer);
+                try {
+                    buffer.put(futureSequence);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+          /*  else
                 underlyingHas.set(false);
 
-        return (underlyingHas.get() || !buffer.isEmpty() || /*!stringBuffer.isEmpty() ||*/ processing.get() > 0);
+        }
+        else {
+           underlyingHas.set(false);
+        }*/
+
+        return (/*underlyingHas.get() ||*/ !buffer.isEmpty() || /*!stringBuffer.isEmpty() ||*/ processing.get() > 0);
     }
 
     @Override
@@ -189,14 +202,7 @@ public class ParallelTransformerIterator extends BasicTransformerIterator {
         try {
             /*if (underlyingHas)
                 stringBuffer.put(iterator.nextDocument());*/
-
             processing.incrementAndGet();
-            if (underlyingHas.get()) {
-
-                CallableTransformer transformer = new CallableTransformer(iterator.nextDocument(), sentenceTransformer);
-                Future<Sequence<VocabWord>> futureSequence = executorService.submit(transformer);
-                buffer.put(futureSequence);
-            }
             Future<Sequence<VocabWord>> future = buffer.take();
             Sequence<VocabWord>  sequence = future.get();
             processing.decrementAndGet();
