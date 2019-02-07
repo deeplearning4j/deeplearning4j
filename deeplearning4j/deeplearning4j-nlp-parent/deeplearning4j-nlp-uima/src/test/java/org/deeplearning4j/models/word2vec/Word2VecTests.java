@@ -151,7 +151,7 @@ public class Word2VecTests {
 
         Word2Vec vec = new Word2Vec.Builder().minWordFrequency(1).iterations(5).learningRate(0.025).layerSize(150)
                         .seed(42).sampling(0).negativeSample(0).useHierarchicSoftmax(true).windowSize(5)
-                        .modelUtils(new BasicModelUtils<VocabWord>()).useAdaGrad(false).iterate(iter).workers(8)
+                        .modelUtils(new BasicModelUtils<VocabWord>()).useAdaGrad(false).iterate(iter).workers(4)
                         .tokenizerFactory(t).elementsLearningAlgorithm(new CBOW<VocabWord>()).build();
 
         vec.fit();

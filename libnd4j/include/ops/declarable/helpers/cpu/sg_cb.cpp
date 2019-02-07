@@ -541,7 +541,7 @@ namespace nd4j {
                     memset(neu1e, 0, sizeof(T) * vectorLength);
 
                     auto alpha = lr.e<double>(e);
-                    auto numLabels = nLabels.e<int>(e);
+                    auto numLabels = nLabels.isEmpty() ? 0 : nLabels.e<int>(e);
 
                     int actualContext = 0;
 
