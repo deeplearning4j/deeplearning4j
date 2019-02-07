@@ -151,7 +151,7 @@ public class DM<T extends SequenceElement> implements SequenceLearningAlgorithm<
         }
 
         int batchSize = configuration.getBatchSize();
-        if (batchSize == 1 || sequence == null) {
+        if (batchSize == 1 || isInference) {
             // pass for underlying
             cbow.iterateSample(currentWord, windowWords, nextRandom, alpha, isInference, labels == null ? 0 : labels.size(),
                     configuration.isTrainElementsVectors(), inferenceVector);
@@ -195,6 +195,8 @@ public class DM<T extends SequenceElement> implements SequenceLearningAlgorithm<
                         lookupTable.layerSize() + 1);
         INDArray ret = Nd4j.rand(new int[] {1, lookupTable.layerSize()}, random).subi(0.5)
                         .divi(lookupTable.layerSize());
+
+        log.info("Inf before: {}", ret);
 
         for (int iter = 0; iter < iterations; iter++) {
             for (int i = 0; i < sequence.size(); i++) {

@@ -175,6 +175,7 @@ public class ParagraphVectorsTest {
         ParagraphVectors vec = new ParagraphVectors.Builder().minWordFrequency(1).iterations(5).seed(119).epochs(1)
                         .layerSize(150).learningRate(0.025).labelsSource(source).windowSize(5)
                         .sequenceLearningAlgorithm(new DM<VocabWord>()).iterate(iter).trainWordVectors(true)
+                        .usePreciseWeightInit(true)
                         .batchSize(8192)
                         .tokenizerFactory(t).workers(4).sampling(0).build();
 

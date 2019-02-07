@@ -136,7 +136,7 @@ public class DBOW<T extends SequenceElement> implements SequenceLearningAlgorith
                 if (word == null)
                     continue;
 
-                if (batchSize == 1 || batchSequences == null)
+                if (batchSize == 1 || batchSequences == null || isInference)
                     skipGram.iterateSample(word, lastWord, nextRandom, alpha, isInference, inferenceVector);
                 else
                     batchSequences.put(word, lastWord, nextRandom.get(), alpha);
