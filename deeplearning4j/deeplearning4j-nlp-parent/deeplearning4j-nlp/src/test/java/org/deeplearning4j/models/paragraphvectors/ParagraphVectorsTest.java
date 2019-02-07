@@ -434,11 +434,13 @@ public class ParagraphVectorsTest {
         ParagraphVectors vec = new ParagraphVectors.Builder().minWordFrequency(1).iterations(5).seed(119).epochs(1)
                         .layerSize(100).learningRate(0.025).labelsSource(source).windowSize(5).iterate(iter)
                         .trainWordVectors(true).vocabCache(cache).tokenizerFactory(t).negativeSample(0)
-                        .allowParallelTokenization(true).useHierarchicSoftmax(true).sampling(0).workers(1)
+                        .allowParallelTokenization(true).useHierarchicSoftmax(true).sampling(0).workers(4)
                         .usePreciseWeightInit(true).sequenceLearningAlgorithm(new DBOW<VocabWord>()).build();
 
         vec.fit();
 
+        assertFalse(((InMemoryLookupTable<VocabWord>)vec.getLookupTable()).getSyn0().isAttached());
+        assertFalse(((InMemoryLookupTable<VocabWord>)vec.getLookupTable()).getSyn1().isAttached());
 
         int cnt1 = cache.wordFrequency("day");
         int cnt2 = cache.wordFrequency("me");

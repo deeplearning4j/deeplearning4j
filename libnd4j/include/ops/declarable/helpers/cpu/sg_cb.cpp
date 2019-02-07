@@ -230,7 +230,7 @@ namespace nd4j {
                 memset(neu1e, 0, vectorLength * sizeof(T));
 
                 // hierarchic softmax goes first (if enabled)
-                auto syn0row = syn0 + (target * vectorLength);
+                auto syn0row = infVector != nullptr ? infVector : syn0 + (target * vectorLength);
                 auto irow = 0;
                 if (hsRounds > 0) {
                     for (int r = 0; r < hsRounds; r++) {
