@@ -23,7 +23,7 @@
 
 #include <vector>
 #include <string>
-#include <cuda_runtime.h>
+#include <LaunchContext.h>
 
 
 namespace nd4j {
@@ -32,16 +32,16 @@ class CudaManager {
     
     private:
 
-        cudaStream_t _stream;
+        nd4j::graph::LaunchContext *_context;
         std::vector<void*> _pOnGlobMem;
         
     public:
         
-        CudaManager(cudaStream_t stream = 0);
+        CudaManager(nd4j::graph::LaunchContext *context);
         
         ~CudaManager();
         
-        void* allocGlobMemAndCopy(const void* src, const size_t size, const std::string& message = "");
+        void* replicatePointer(const void* src, const size_t size, const std::string& message = "");
 
         void syncStream(const std::string& message = "") const;
 };

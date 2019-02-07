@@ -20,30 +20,47 @@
 
 #include <CudaManager.h>
 #include <exceptions/cuda_exception.h>
+#include <logger.h>
+#include <memory/Workspace.h>
 
 namespace nd4j {
 
 //////////////////////////////////////////////////////////////////////////
-CudaManager::CudaManager(cudaStream_t stream): _stream(stream) { }
+CudaManager::CudaManager(nd4j::graph::LaunchContext *context)  {
+        _context = context;
+}
 
 //////////////////////////////////////////////////////////////////////////
-void* CudaManager::allocGlobMemAndCopy(const void* src, const size_t size, const std::string& message) {
+void* CudaManager::replicatePointer(const void* src, const size_t numberOfBytes, const std::string& message) {
 
 	void* dst = nullptr;
-    cudaError_t cudaResult = cudaMalloc(reinterpret_cast<void **>(&dst), size);
-    if(cudaResult != 0) 
-        throw cuda_exception::build(message + ": cannot allocate global memory on device!", cudaResult);
-    cudaMemcpyAsync(dst, src, size, cudaMemcpyHostToDevice, _stream);
-    _pOnGlobMem.push_back(dst);
+	if (_context->getWorkspace() == nullptr) {
+        cudaError_t cudaResult = cudaMalloc(reinterpret_cast<void **>(&dst), numberOfBytes);
+        if (cudaResult != 0)
+            throw cuda_exception::build(message + ": cannot allocate of global memory on device!", cudaResult);
+    } else {
+	    dst = _context->getWorkspace()->allocateBytes(nd4j::memory::MemoryType::DEVICE, numberOfBytes);
+	}
+
+    if (_context != nullptr)
+        cudaMemcpyAsync(dst, src, numberOfBytes, cudaMemcpyHostToDevice, *_context->getCudaStream());
+    else
+        cudaMemcpy(dst, src, numberOfBytes, cudaMemcpyHostToDevice);
+
+    _pOnGlobMem.emplace_back(dst);
     
     return dst;
 }
 
 //////////////////////////////////////////////////////////////////////////
 void CudaManager::syncStream(const std::string& message) const {
-	cudaError_t cudaResult = cudaStreamSynchronize(_stream);
-    if (cudaResult != 0) 
-    	throw cuda_exception::build(message + ": cuda stream synchronization failed !", cudaResult);
+    if (_context != nullptr) {
+        cudaError_t cudaResult = cudaStreamSynchronize(*_context->getCudaStream());
+        if (cudaResult != 0)
+            throw cuda_exception::build(message + ": cuda stream synchronization failed !", cudaResult);
+    } else {
+        nd4j_printf("<%s> syncStream isn't possible: no stream set!", message.c_str());
+    }
 }
 
 //////////////////////////////////////////////////////////////////////////
