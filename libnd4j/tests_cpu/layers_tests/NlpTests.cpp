@@ -280,6 +280,7 @@ TEST_F(NlpTests, basic_cb_hs_test_1) {
     auto syn1Neg = NDArrayFactory::empty<float>();
     auto expTable = NDArrayFactory::create<float>('c', {10000});
     auto negTable = NDArrayFactory::empty<float>();
+    auto numWords = NDArrayFactory::create<int>('c', {1}, {1});
 
     syn0.assign(0.01);
     syn1.assign(0.02);
@@ -290,7 +291,7 @@ TEST_F(NlpTests, basic_cb_hs_test_1) {
     auto inferenceVector = NDArrayFactory::empty<float>();
 
     nd4j::ops::cbow op;
-    auto result = op.execute({&target, &ngStarter, &context, &indices, &codes, &syn0, &syn1, &syn1Neg, &expTable, &negTable, &alpha, &randomValue, &inferenceVector}, {}, {}, {true}, true);
+    auto result = op.execute({&target, &ngStarter, &context, &indices, &codes, &syn0, &syn1, &syn1Neg, &expTable, &negTable, &alpha, &randomValue, &numWords, &inferenceVector}, {}, {}, {true}, true);
     ASSERT_EQ(Status::OK(), result->status());
 
     auto row_s0_0 = syn0.subarray({NDIndex::point(0), NDIndex::all()});
@@ -348,6 +349,7 @@ TEST_F(NlpTests, basic_cb_ns_test_1) {
     auto syn1Neg = NDArrayFactory::create<float>('c', {100, 10});
     auto expTable = NDArrayFactory::create<float>('c', {10000});
     auto negTable = NDArrayFactory::create<float>('c', {100000});
+    auto numWords = NDArrayFactory::create<int>('c', {2}, {1, 2});
 
     syn0.assign(0.01);
     syn1.assign(0.02);
@@ -359,7 +361,7 @@ TEST_F(NlpTests, basic_cb_ns_test_1) {
     auto inferenceVector = NDArrayFactory::empty<float>();
 
     nd4j::ops::cbow op;
-    auto result = op.execute({&target, &ngStarter, &context, &indices, &codes, &syn0, &syn1, &syn1Neg, &expTable, &negTable, &alpha, &randomValue, &inferenceVector}, {}, {1, 2, 0}, {true}, true);
+    auto result = op.execute({&target, &ngStarter, &context, &indices, &codes, &syn0, &syn1, &syn1Neg, &expTable, &negTable, &alpha, &randomValue, &numWords, &inferenceVector}, {}, {1, 2, 0}, {true}, true);
     ASSERT_EQ(Status::OK(), result->status());
 
     auto row_s0_0 = syn0.subarray({NDIndex::point(0), NDIndex::all()});
@@ -458,6 +460,7 @@ TEST_F(NlpTests, test_cbow_hs_batch_1) {
     auto syn1Neg = NDArrayFactory::empty<float>();
     auto expTable = NDArrayFactory::create<float>('c', {10000});
     auto negTable = NDArrayFactory::empty<float>();
+    auto numWords = NDArrayFactory::create<int>('c', {2}, {1, 2});
 
     syn0.assign(0.01);
     syn1.assign(0.02);
@@ -468,7 +471,7 @@ TEST_F(NlpTests, test_cbow_hs_batch_1) {
     auto inferenceVector = NDArrayFactory::empty<float>();
 
     nd4j::ops::cbow op;
-    auto result = op.execute({&target, &ngStarter, &context, &indices, &codes, &syn0, &syn1, &syn1Neg, &expTable, &negTable, &alpha, &randomValue, &inferenceVector}, {}, {}, {true}, true);
+    auto result = op.execute({&target, &ngStarter, &context, &indices, &codes, &syn0, &syn1, &syn1Neg, &expTable, &negTable, &alpha, &randomValue, &numWords, &inferenceVector}, {}, {}, {true}, true);
     ASSERT_EQ(Status::OK(), result->status());
 
     auto exp0 = NDArrayFactory::create<float>('c', {1, 10});
