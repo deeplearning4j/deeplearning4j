@@ -4,10 +4,12 @@ import com.sun.xml.internal.messaging.saaj.util.ByteOutputStream;
 import lombok.val;
 import org.apache.commons.lang.StringUtils;
 import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
+import org.deeplearning4j.models.embeddings.learning.impl.elements.CBOW;
 import org.deeplearning4j.models.embeddings.loader.VectorsConfiguration;
 import org.deeplearning4j.models.embeddings.loader.WordVectorSerializer;
 import org.deeplearning4j.models.embeddings.reader.ModelUtils;
 import org.deeplearning4j.models.embeddings.reader.impl.BasicModelUtils;
+import org.deeplearning4j.models.embeddings.reader.impl.FlatModelUtils;
 import org.deeplearning4j.models.sequencevectors.SequenceVectors;
 import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.models.word2vec.Word2Vec;
@@ -19,6 +21,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.io.*;
+import java.util.Collections;
 
 import static org.junit.Assert.*;
 
@@ -118,15 +121,36 @@ public class WordVectorSerializerTest {
                 layerSize(200).
                 modelUtils(new BasicModelUtils<VocabWord>()).
                 build();
+
         Word2Vec word2Vec = new Word2Vec.Builder(vectors.getConfiguration())
                 .vocabCache(vectors.vocab())
                 .lookupTable(lookupTable)
-                .layerSize(200)
-                .modelUtils(new BasicModelUtils<VocabWord>())
+                .modelUtils(new FlatModelUtils<VocabWord>())
+                .limitVocabularySize(1000)
+                .elementsLearningAlgorithm(CBOW.class.getCanonicalName())
+                .allowParallelTokenization(true)
+                .usePreciseMode(true)
+                .batchSize(1024)
+                .windowSize(23)
+                .minWordFrequency(24)
+                .iterations(54)
+                .seed(45)
+                .learningRate(0.08)
+                .epochs(45)
+                .stopWords(Collections.singletonList("NOT"))
+                .sampling(44)
+                .workers(45)
+                .negativeSample(56)
+                .useAdaGrad(true)
+                .useHierarchicSoftmax(false)
+                .minLearningRate(0.002)
+                .resetModel(true)
+                .useUnknown(true)
+                .enableScavenger(true)
+                .usePreciseWeightInit(true)
                 .build();
 
         Word2Vec deser = null;
-        String json = StringUtils.EMPTY;
         try {
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             WordVectorSerializer.writeWord2Vec(word2Vec, baos);

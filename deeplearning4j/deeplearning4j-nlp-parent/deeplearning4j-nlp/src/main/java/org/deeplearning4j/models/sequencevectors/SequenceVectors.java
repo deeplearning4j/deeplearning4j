@@ -462,6 +462,7 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
             this.STOP = configuration.getSTOP();
             this.variableWindows = configuration.getVariableWindows();
             this.useHierarchicSoftmax = configuration.isUseHierarchicSoftmax();
+            this.preciseMode = configuration.isPreciseMode();
 
             if (configuration.getModelUtils() != null && !configuration.getModelUtils().isEmpty()) {
 
@@ -884,11 +885,13 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
          */
         public Builder<T> usePreciseWeightInit(boolean reallyUse) {
             this.preciseWeightInit = reallyUse;
+            this.configuration.setPreciseWeightInit(reallyUse);
             return this;
         }
 
         public Builder<T> usePreciseMode(boolean reallyUse) {
             this.preciseMode = reallyUse;
+            this.configuration.setPreciseMode(reallyUse);
             return this;
         }
 
