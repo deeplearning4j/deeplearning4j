@@ -81,7 +81,7 @@ static void ismax_(graph::LaunchContext* context, const NDArray* input, NDArray*
         shape::TAD tadOutput(input->getShapeInfo(), copy.data(), copy.size());
         tadOutput.createTadOnlyShapeInfo();
         tadOutput.createOffsets();
-        cudaError_t err = cudaMalloc(&tadMaxOffsets, shape::shapeInfoByteLength(tadOutput.tadOnlyShapeInfo));
+        cudaError_t err = cudaMalloc(&tadMaxShapeInfo, shape::shapeInfoByteLength(tadOutput.tadOnlyShapeInfo));
         if (0 != err)
             throw cuda_exception::build("helpers::ismax_: Cannot allocate memory for tad shape.", err);
         err = cudaMalloc(&tadMaxOffsets, tadOutput.numTads * sizeof(Nd4jLong));
@@ -94,7 +94,7 @@ static void ismax_(graph::LaunchContext* context, const NDArray* input, NDArray*
         if (0 != err)
             throw cuda_exception::build("helpers::ismax_: Cannot copy memory for tad offset.", err);
         auto indexMaxArr = input->applyIndexReduce(indexreduce::IndexMax, dimensions);
-
+        indexMaxArr->printIndexedBuffer("Index max!!!");
         // we call for IMax on specified dimension
         //NativeOpExecutioner::execIndexReduce(context, indexreduce::IndexMax, nullptr, input->getShapeInfo(), input->getSpecialBuffer(), input->getSpecialShapeInfo(), extraParams, nullptr, hostTShapeInfo, special, hostYShapeInfo, const_cast<int*>(dimensions.data()), (int)dimensions.size(), nullptr, nullptr);
 
