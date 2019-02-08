@@ -46,7 +46,7 @@ namespace helpers {
 //	}
 
 	template <typename T>
-	static __global__ void stackKernel(void* inputList[], void* inputShapeList[], size_t inputListLength, Nd4jLong arrLen, void* outputBuffer, Nd4jLong* outputShape) {
+	static __global__ void stackKernel(void** inputList, void** inputShapeList, int inputListLength, Nd4jLong arrLen, void* outputBuffer, Nd4jLong* outputShape) {
 
 		__shared__ int arrIdx, blocksPerArr;
 		__shared__ T *x, *z;
@@ -67,7 +67,10 @@ namespace helpers {
 
 			start = (blockIdx.x % blocksPerArr) * arrLenPerBlock;
 			end   = (start + arrLenPerBlock) > arrLen ? arrLen : (start + arrLenPerBlock);
-			printf("Block: [%i]; arrIdx: [%i]; start: [%i]; end: [%i], arrLen: [%i], arrLenPerBlock: [%i]\n", blockIdx.x, arrIdx, start, end, arrLen, arrLenPerBlock);
+
+			//if (blockIdx.x == 0)
+			    //printf("Block: [%i]; arrLen: %i\n", blockIdx.x, arrLen);
+			    printf("Block: [%i]; arrIdx: [%i]; start: [%lld]; end: [%lld], arrLen: [%lld], arrLenPerBlock: [%lld]; blocksPerArr: [%i]; \n", blockIdx.x, arrIdx, start, end, arrLen, arrLenPerBlock, blocksPerArr);
 		}
 
 		__syncthreads();
@@ -116,6 +119,7 @@ namespace helpers {
 
             dim3 launchDims(256, 512, 8192);
 
+            nd4j_printf("length: %i\n", inArrs[0]->lengthOf());
 			stackKernel<T><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>((void**)dInBuffers, (void**)dInShapeInfo, inputList.size(), inArrs[0]->lengthOf(), outArr->specialBuffer(), outArr->specialShapeInfo());
 
 			cudaResult = cudaFree(dInBuffers);
