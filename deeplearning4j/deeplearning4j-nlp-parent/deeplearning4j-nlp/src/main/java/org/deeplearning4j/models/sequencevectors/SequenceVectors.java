@@ -550,6 +550,7 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
             try {
                 Class clazz = Class.forName(algoName);
                 elementsLearningAlgorithm = (ElementsLearningAlgorithm<T>) clazz.newInstance();
+                this.configuration.setElementsLearningAlgorithm(elementsLearningAlgorithm.getClass().getCanonicalName());
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
@@ -830,6 +831,7 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
          */
         public Builder<T> modelUtils(@NonNull ModelUtils<T> modelUtils) {
             this.modelUtils = modelUtils;
+            this.configuration.setModelUtils(modelUtils.getClass().getCanonicalName());
             return this;
         }
 
