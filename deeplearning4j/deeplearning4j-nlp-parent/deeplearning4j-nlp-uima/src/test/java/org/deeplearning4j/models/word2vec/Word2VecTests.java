@@ -482,7 +482,34 @@ public class Word2VecTests {
 
     @Test
     public void testJSONSerialization() {
-        Word2Vec word2Vec = new Word2Vec();
+        Word2Vec word2Vec = new Word2Vec.Builder()
+                .layerSize(1000)
+                .limitVocabularySize(1000)
+                .elementsLearningAlgorithm(CBOW.class.getCanonicalName())
+                .allowParallelTokenization(true)
+                .modelUtils(new FlatModelUtils<VocabWord>())
+                .usePreciseMode(true)
+                .batchSize(1024)
+                .windowSize(23)
+                .minWordFrequency(24)
+                .iterations(54)
+                .seed(45)
+                .learningRate(0.08)
+                .epochs(45)
+                .stopWords(Collections.singletonList("NOT"))
+                .sampling(44)
+                .workers(45)
+                .negativeSample(56)
+                .useAdaGrad(true)
+                .useHierarchicSoftmax(false)
+                .minLearningRate(0.002)
+                .resetModel(true)
+                .useUnknown(true)
+                .enableScavenger(true)
+                .usePreciseWeightInit(true)
+                .build();
+
+
         AbstractCache<VocabWord> cache = new AbstractCache.Builder<VocabWord>().build();
 
         val words = new VocabWord[3];
