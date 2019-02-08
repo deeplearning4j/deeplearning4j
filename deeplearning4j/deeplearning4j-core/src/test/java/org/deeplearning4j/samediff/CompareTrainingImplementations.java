@@ -40,12 +40,14 @@ import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.dataset.api.preprocessor.NormalizerStandardize;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.config.*;
+import org.nd4j.linalg.learning.regularization.L1Regularization;
+import org.nd4j.linalg.learning.regularization.L2Regularization;
+import org.nd4j.linalg.learning.regularization.Regularization;
+import org.nd4j.linalg.learning.regularization.WeightDecay;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.weightinit.impl.XavierInitScheme;
 
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
@@ -64,17 +66,18 @@ public class CompareTrainingImplementations extends BaseDL4JTest {
         INDArray f = ds.getFeatures();
         INDArray l = ds.getLabels();
 
-        //TODO 2019-02-01: SameDiff needs to be updated with same L1/L2/WeightDecay changes
-        double[] l1 = new double[]{0.0 /*, 0.0, 0.01, 0.01*/};
-        double[] l2 = new double[]{0.0 /*, 0.02, 0.00, 0.02*/};
+        double[] l1 = new double[]{0.0, 0.0, 0.01, 0.01, 0.0};
+        double[] l2 = new double[]{0.0, 0.02, 0.00, 0.02, 0.0};
+        double[] wd = new double[]{0.0, 0.0, 0.0, 0.0, 0.03};
 
         for (String u : new String[]{"sgd", "adam", "nesterov", "adamax", "amsgrad"}) {
             for(int i=0; i<l1.length; i++ ) {
                 Nd4j.getRandom().setSeed(12345);
                 double l1Val = l1[i];
                 double l2Val = l2[i];
+                double wdVal = wd[i];
 
-                String testName = u + ", l1=" + l1Val + ", l2=" + l2Val;
+                String testName = u + ", l1=" + l1Val + ", l2=" + l2Val + ", wd=" + wdVal;
 
                 log.info("Starting: {}", testName);
                 SameDiff sd = SameDiff.create();
@@ -123,9 +126,19 @@ public class CompareTrainingImplementations extends BaseDL4JTest {
                         throw new RuntimeException();
                 }
 
+                List<Regularization> r = new ArrayList<>();
+                if(l2Val > 0){
+                    r.add(new L2Regularization(l2Val));
+                }
+                if(l1Val > 0){
+                    r.add(new L1Regularization(l1Val));
+                }
+                if(wdVal > 0){
+                    r.add(new WeightDecay(wdVal, true));
+                }
                 TrainingConfig conf = new TrainingConfig.Builder()
-                        .l2(1e-4)
                         .updater(updater)
+                        .regularization(r)
                         .dataSetFeatureMapping("input")
                         .dataSetLabelMapping("label")
                         .l1(l1Val)
@@ -139,6 +152,7 @@ public class CompareTrainingImplementations extends BaseDL4JTest {
                         .weightInit(WeightInit.XAVIER).seed(12345)
                         .l1(l1Val).l2(l2Val)
                         .l1Bias(l1Val).l2Bias(l2Val)
+                        .weightDecay(wdVal, true).weightDecayBias(wdVal, true)
                         .updater(new Sgd(1.0))
                         .list()
                         .layer(new DenseLayer.Builder().nIn(4).nOut(10).activation(Activation.TANH).build())
@@ -174,24 +188,21 @@ public class CompareTrainingImplementations extends BaseDL4JTest {
 
                 //Check score
                 double scoreDl4j = net.score();
-                double scoreSd = lossMse.getArr().getDouble(0) + sd.calculateL1Loss() + sd.calculateL2Loss();
+                double scoreSd = lossMse.getArr().getDouble(0) + sd.calcRegularizationScore();
                 assertEquals(testName, scoreDl4j, scoreSd, 1e-6);
 
-                double l1Sd = sd.calculateL1Loss();
-                double l2Sd = sd.calculateL2Loss();
+                double lossRegScoreSD = sd.calcRegularizationScore();
+                double lossRegScoreDL4J = net.calcRegularizationScore(true);
 
-                double r = net.calcRegularizationScore(true);
-
-//                assertEquals(l1Dl4j, l1Sd, 1e-6);
-//                assertEquals(l2Dl4j, l2Sd, 1e-6);
+                assertEquals(lossRegScoreDL4J, lossRegScoreSD, 1e-6);
 
                 //Check gradients (before updater applied)
                 Map<String,INDArray> grads = net.gradient().gradientForVariable();
                 sd.execBackwards(placeholders);
 
-                //Note that the SameDiff gradients don't include the L1/L2 terms at present just from execBackwards()... these are added later
+                //Note that the SameDiff gradients don't include the L1/L2 terms at present just from execBackwards()... these are added in fitting only
                 //We can check correctness though with training param checks later
-                if(l1Val == 0 && l2Val == 0) {
+                if(l1Val == 0 && l2Val == 0 && wdVal == 0) {
                     assertEquals(testName, grads.get("1_b"), b1.getGradient().getArr());
                     assertEquals(testName, grads.get("1_W"), w1.getGradient().getArr());
                     assertEquals(testName, grads.get("0_b"), b0.getGradient().getArr());
@@ -212,9 +223,6 @@ public class CompareTrainingImplementations extends BaseDL4JTest {
                 net = new MultiLayerNetwork(mlc);
                 net.init();
                 net.setParamTable(oldParams);
-
-//                System.out.println("0_W before:\n" + oldParams.get("0_W"));
-//                System.out.println("0_W grad:\n" + grads.get("0_W"));
 
                 for( int j=0; j<3; j++ ) {
                     net.fit(ds);
@@ -241,7 +249,5 @@ public class CompareTrainingImplementations extends BaseDL4JTest {
                 System.out.println("---------------------------------");
             }
         }
-
     }
-
 }

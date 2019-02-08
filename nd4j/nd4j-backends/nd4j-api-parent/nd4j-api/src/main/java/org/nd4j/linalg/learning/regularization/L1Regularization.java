@@ -3,6 +3,7 @@ package org.nd4j.linalg.learning.regularization;
 import lombok.Data;
 import lombok.NonNull;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.Axpy;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.schedule.FixedSchedule;
@@ -48,7 +49,7 @@ public class L1Regularization implements Regularization {
         //where sign(x[i]) is -1 or 1
         double coeff = l1.valueAt(iteration, epoch);
         INDArray sign = Transforms.sign(param, true);
-        Nd4j.getBlasWrapper().level1().axpy(param.length(), coeff, sign, gradView);        //Gradient += l1 * sign(param)
+        Nd4j.exec(new Axpy(sign, gradView, coeff));    //Gradient += l1 * sign(param)
     }
 
     @Override
