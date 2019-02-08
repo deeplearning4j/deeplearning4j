@@ -2228,7 +2228,6 @@ TEST_F(DeclarableOpsTests5, StopGradient_2) {
     delete result;
 }
 
-
 //////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests5, log_softmax_test1) {
 
