@@ -307,7 +307,7 @@ namespace nd4j {
 
             template <typename T>
             static void do_positive(const int target, const int postive, T* syn0, T* syn1Neg, T* expTable, T* neu1e, const double alpha, const int vectorLength, const int expLength) {
-                //nd4j_printf("Target: [%i]; Positive: [%i]; TID: [%i];\n", target, postive, omp_get_thread_num());
+                nd4j_printf("Target: [%i]; Positive: [%i]; TID: [%i];\n", target, postive, omp_get_thread_num());
                 nSampling_<T>(syn0, syn1Neg, expTable, neu1e, alpha, vectorLength, 1, expLength, false);
             }
 
@@ -521,25 +521,25 @@ namespace nd4j {
 
                         auto neux = tempArray.bufferAsT<T>();
 // first of all we calculate positive samples into temporary
-#pragma omp parallel num_threads(numThreads) private(sneu1e) default(shared)
+#pragma omp parallel num_threads(numThreads) default(shared)
                         {
                             // master thread arranges stuff
                             #pragma omp single
                             {
                                 for (int t = 0; t < numTargets; t++) {
-                                    auto target = bTarget[t];
-                                    auto positive = bStarters[t];
-                                    auto alpha = lr.e<double>(t);
-                                    auto nr = nextRandom.e<Nd4jLong>(t);
+                                    const auto target = bTarget[t];
+                                    const auto positive = bStarters[t];
+                                    const auto alpha = lr.e<double>(t);
+                                    const auto nr = nextRandom.e<Nd4jLong>(t);
 
-                                    #pragma omp task depend(in:target,positive) shared(t, alpha)
+                                    #pragma omp task depend(in:positive) firstprivate(target, positive, alpha, nr, t)
                                     do_positive<T>(target, positive, reinterpret_cast<T*>(s0.bufferWithOffset(target * vectorLength)), reinterpret_cast<T*>(s1n.bufferWithOffset(positive * vectorLength)), expTable, reinterpret_cast<T*>(tempArray.bufferWithOffset(t * vectorLength)), alpha, vectorLength, expLength);
                                 }
                             }
                         }
 
 // doing negative samples updates
-#pragma omp parallel num_threads(numThreads) private(sneu1e) default(shared)
+#pragma omp parallel num_threads(numThreads) default(shared)
                         {
                             // master thread arranges stuff
                             #pragma omp single
@@ -550,14 +550,14 @@ namespace nd4j {
                                     auto alpha = lr.e<double>(t);
                                     auto nr = nextRandom.e<Nd4jLong>(t);
 
-                                    #pragma omp task depend(in:target, positive)
-                                    do_negative<T>(target, positive, reinterpret_cast<T*>(s0.bufferWithOffset(target * vectorLength)), reinterpret_cast<T*>(s1n.bufferWithOffset(positive * vectorLength)), expTable, negTable, reinterpret_cast<T*>(tempArray.bufferWithOffset(t * vectorLength)), sStarters, alpha, nr, vocabSize, vectorLength, expLength, negLength, nsRounds, numThreads, numTargets);
+                                    #pragma omp task depend(in:target)
+                                    do_negative<T>(target, positive, reinterpret_cast<T*>(s0.bufferWithOffset(target * vectorLength)), s1n.bufferAsT<T>(), expTable, negTable, reinterpret_cast<T*>(tempArray.bufferWithOffset(t * vectorLength)), sStarters, alpha, nr, vocabSize, vectorLength, expLength, negLength, nsRounds, numThreads, numTargets);
                                 }
                             }
                         }
 
 // updating syn0 now
-#pragma omp parallel num_threads(numThreads) private(sneu1e) default(shared)
+#pragma omp parallel num_threads(numThreads) default(shared)
                         {
                             // master thread arranges stuff
                             #pragma omp single

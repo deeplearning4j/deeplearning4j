@@ -205,7 +205,7 @@ public class Word2VecTests {
         TokenizerFactory t = new DefaultTokenizerFactory();
         t.setTokenPreProcessor(new CommonPreprocessor());
 
-        Word2Vec vec1 = new Word2Vec.Builder().minWordFrequency(1).iterations(1).batchSize(8192).layerSize(100)
+        Word2Vec vec1 = new Word2Vec.Builder().minWordFrequency(1).iterations(1).batchSize(512).layerSize(100)
                 .stopWords(new ArrayList<String>()).seed(42).learningRate(0.025).minLearningRate(0.001)
                 .sampling(0).elementsLearningAlgorithm(new SkipGram<VocabWord>())
                 .negativeSample(5)
@@ -215,7 +215,7 @@ public class Word2VecTests {
                 .useHierarchicSoftmax(false)
                 .modelUtils(new BasicModelUtils<VocabWord>()).iterate(iter).tokenizerFactory(t).build();
 
-        Word2Vec vec2 = new Word2Vec.Builder().minWordFrequency(1).iterations(1).batchSize(8192).layerSize(100)
+        Word2Vec vec2 = new Word2Vec.Builder().minWordFrequency(1).iterations(1).batchSize(512).layerSize(100)
                 .stopWords(new ArrayList<String>()).seed(42).learningRate(0.025).minLearningRate(0.001)
                 .sampling(0).elementsLearningAlgorithm(new SkipGram<VocabWord>())
                 .negativeSample(5)
