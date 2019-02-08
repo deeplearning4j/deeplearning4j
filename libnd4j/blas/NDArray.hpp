@@ -368,7 +368,6 @@ std::vector<int64_t> NDArray::getShapeInfoAsFlatVector() {
             throw std::runtime_error("NDArray::linspace: you can't use this method on String array!");
 
         Nd4jLong numElements = this->lengthOf();
-        lazyAllocateBuffer();
         for (Nd4jLong e = 0; e < numElements; e++) {
             this->p(e, start + (step * e));
         }

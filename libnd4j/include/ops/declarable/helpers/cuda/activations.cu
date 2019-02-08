@@ -30,243 +30,301 @@ namespace helpers {
 ///////////////////////////////////////////////////////////////////
 template<typename X, typename Y>
 __global__ static void preluCuda(const void *vx, const Nd4jLong *xShapeInfo,
-                                 const void *vy, const Nd4jLong *yShapeInfo,
-                                       void *vz) {
+								 const void *vy, const Nd4jLong *yShapeInfo,
+									   void *vz) {
 
-    const auto x = reinterpret_cast<const X*>(vx);
-    const auto y = reinterpret_cast<const Y*>(vy);
-          auto z = reinterpret_cast<X*>(vz);    
+	const auto x = reinterpret_cast<const X*>(vx);
+	const auto y = reinterpret_cast<const Y*>(vy);
+		  auto z = reinterpret_cast<X*>(vz);    
 
-    __shared__ Nd4jLong  len;
-    
-    if (threadIdx.x == 0)         
-        len = shape::length(xShapeInfo);    
+	__shared__ Nd4jLong  len;
+	
+	if (threadIdx.x == 0)         
+		len = shape::length(xShapeInfo);    
 
-    __syncthreads();    
+	__syncthreads();    
 
-    const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
-    const auto totalThreads = gridDim.x * blockDim.x;
+	const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
+	const auto totalThreads = gridDim.x * blockDim.x;
 
-    for (int i = tid; i < len; i += totalThreads) {
-            
-        const auto xzOffset = shape::getIndexOffset(i, xShapeInfo, len);
-        const auto xVal     = x[xzOffset];
+	for (int i = tid; i < len; i += totalThreads) {
+			
+		const auto xzOffset = shape::getIndexOffset(i, xShapeInfo, len);
+		const auto xVal     = x[xzOffset];
 
-        if(xVal < 0)                
-            z[xzOffset] = xVal * y[shape::subArrayOffset(i, xShapeInfo, yShapeInfo)];
-        else
-            z[xzOffset] = xVal;
-    }    
+		if(xVal < 0)                
+			z[xzOffset] = xVal * y[shape::subArrayOffset(i, xShapeInfo, yShapeInfo)];
+		else
+			z[xzOffset] = xVal;
+	}    
 }
 
 template<typename X, typename Y>
 static void preluCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, const cudaStream_t *stream, const void *vx, const Nd4jLong *xShapeInfo, const void *vy, const Nd4jLong *yShapeInfo, void *vz) {
 
-    preluCuda<X, Y><<<blocksPerGrid, threadsPerBlock, 1024, *stream>>>(vx, xShapeInfo, vy, yShapeInfo, vz);
+	preluCuda<X, Y><<<blocksPerGrid, threadsPerBlock, 1024, *stream>>>(vx, xShapeInfo, vy, yShapeInfo, vz);
 }
 
 ///////////////////////////////////////////////////////////////////
 template<typename T>
-__global__ static void softMaxForVectorCuda(const void *vx, const Nd4jLong *xShapeInfo,
-                                                  void *vz, const Nd4jLong *zShapeInfo) {
+__global__ static void softMaxForVectorCuda(const void *vx, const Nd4jLong *xzShapeInfo, void *vz) {
 
-    const auto x = reinterpret_cast<const T*>(vx);    
-          auto z = reinterpret_cast<T*>(vz);    
+	// logic of this kernel is based on assumption gridDim = 1
 
-    __shared__ Nd4jLong  len;
-    extern __shared__ T shmem[];
-    
-    unsigned int tid = blockIdx.x * blockDim.x + threadIdx.x;
-    
-    if (tid == 0)
-        len = shape::length(xShapeInfo);    
+	const auto x = reinterpret_cast<const T*>(vx);    
+		  auto z = reinterpret_cast<T*>(vz);    
 
-    shmem[threadIdx.x] = x[tid];
-    __syncthreads();    
+	__shared__ Nd4jLong  len;
+	__shared__ int numOfIters;
+	__shared__ T* shmem;
+	
+	if (threadIdx.x == 0) {
+		extern __shared__ char shared[];
+		shmem = reinterpret_cast<T*>(shared);
+		len = shape::length(xzShapeInfo);    
+		numOfIters = (len + blockDim.x - 1) / blockDim.x;   // ceil (len / blockDim.x)
+	}
+	__syncthreads();
 
-    for (unsigned int s=blockDim.x/2; s>0; s>>=1) {
-        if (threadIdx.x < s && tid < len)
-            shmem[threadIdx.x] += shmem[threadIdx.x + s];        
-        __syncthreads();
-    }
-    if (threadIdx.x == 0) 
-        z[0] = shmem[0];        
+	T temp = -DataTypeUtils::max<T>();	// set start value to compare with at first iteration, FIXME: what if T is unsigned ??
+
+	// ************ evaluate max element in input array x ************ //
+	for (int i = 0; i < numOfIters; ++i) {		
+		
+		const Nd4jLong elemIdx = i * blockDim.x + threadIdx.x;
+		if(elemIdx < len) {
+			const Nd4jLong offset = shape::getIndexOffset(elemIdx, xzShapeInfo, len);			
+			shmem[threadIdx.x] = (threadIdx.x != 0) ? x[offset] : nd4j::math::nd4j_max<T>(x[offset], temp);	// take into account max element evaluated on previous iteration and stored in temp			
+		}
+		else
+			shmem[threadIdx.x] = -DataTypeUtils::max<T>();	// FIXME: what if T is unsigned ??
+		
+		__syncthreads();
+		
+		for (int s = blockDim.x / 2; s > 0; s /= 2) {
+			if(threadIdx.x < s)
+				shmem[threadIdx.x] = nd4j::math::nd4j_max<T>(shmem[threadIdx.x], shmem[threadIdx.x + s]);
+			__syncthreads();
+		}						
+
+		temp = shmem[0];	// save max value calculated at current iteration
+	}
+
+	const T max = temp;	
+	temp = 0;
+
+	// ************ evaluate value of exp(x[offset] - max) per each element, store it to shared memory shmem ************ //
+	// at the same evaluate sum of exponents, sum will be stored in shmem[0]
+	for (int i = 0; i < numOfIters; ++i) {
+		
+		const Nd4jLong elemIdx = i * blockDim.x + threadIdx.x;
+		if(elemIdx < len) {
+			const Nd4jLong offset = shape::getIndexOffset(elemIdx, xzShapeInfo, len);
+			z[offset] = nd4j::math::nd4j_exp<T, T>(x[offset] - max);
+			shmem[threadIdx.x] = (threadIdx.x != 0) ? z[offset] : (z[offset] + temp); // take into account sum element evaluated on previous iteration and stored in temp
+		}
+		else
+			shmem[threadIdx.x] = 0;
+
+		__syncthreads();
+		
+		for (int s = blockDim.x / 2; s > 0; s /= 2) {
+			if(threadIdx.x < s)
+				shmem[threadIdx.x] += shmem[threadIdx.x + s];
+			__syncthreads();
+		}
+
+		temp = shmem[0];	// save sum calculated at current iteration
+	}
+
+	// ************ evaluate z[offset] / sum  ************ //
+	for (int i = 0; i < numOfIters; ++i) {
+		const Nd4jLong elemIdx = i * blockDim.x + threadIdx.x;
+		if(elemIdx >= len) continue;
+		const Nd4jLong offset = shape::getIndexOffset(elemIdx, xzShapeInfo, len);
+		z[offset] /= shmem[0];
+	}
+	
 }
 
 template <typename T>
-static void softMaxForVectorCudaLauncher(cudaStream_t* stream, const void *vx, const Nd4jLong *xShapeInfo, void *vz, const Nd4jLong *zShapeInfo) {
+static void softMaxForVectorCudaLauncher(const cudaStream_t* stream, const void *vx, const Nd4jLong *xzShapeInfo, void *vz) {
 
-    softMaxForVectorCuda<T><<<512, 256, 1024, *stream>>>(vx, xShapeInfo, vz, zShapeInfo);
+	softMaxForVectorCuda<T><<<1, MAX_NUM_THREADS, MAX_NUM_THREADS * sizeof(T) + 512, *stream>>>(vx, xzShapeInfo, vz);
 }
 
+///////////////////////////////////////////////////////////////////
 template<typename X, typename Y, typename Z>
 __global__ static void preluBPCuda(const void *vIn,    const Nd4jLong *inShapeInfo,
-                                   const void *vAlpha, const Nd4jLong *alphaShapeInfo,
-                                   const void *vdLdO,  const Nd4jLong *dLdOShapeInfo,
-                                         void *vdLdI,  const Nd4jLong *dLdIShapeInfo,
-                                         void *vdLdA,  const Nd4jLong *dLdAShapeInfo) {
+								   const void *vAlpha, const Nd4jLong *alphaShapeInfo,
+								   const void *vdLdO,  const Nd4jLong *dLdOShapeInfo,
+										 void *vdLdI,  const Nd4jLong *dLdIShapeInfo,
+										 void *vdLdA,  const Nd4jLong *dLdAShapeInfo) {
 
-    const auto in    = reinterpret_cast<const X*>(vIn);
-    const auto alpha = reinterpret_cast<const Y*>(vAlpha);
-    const auto dLdO  = reinterpret_cast<const Z*>(vdLdO);
-          auto dLdI  = reinterpret_cast<Z*>(vdLdI);
-          auto dLdA  = reinterpret_cast<Z*>(vdLdA);
+	const auto in    = reinterpret_cast<const X*>(vIn);
+	const auto alpha = reinterpret_cast<const Y*>(vAlpha);
+	const auto dLdO  = reinterpret_cast<const Z*>(vdLdO);
+		  auto dLdI  = reinterpret_cast<Z*>(vdLdI);
+		  auto dLdA  = reinterpret_cast<Z*>(vdLdA);
 
-    __shared__ Nd4jLong alphaLen;    
-    
-    if (threadIdx.x == 0)         
-        alphaLen = shape::length(alphaShapeInfo);        
+	__shared__ Nd4jLong alphaLen;    
+	
+	if (threadIdx.x == 0)         
+		alphaLen = shape::length(alphaShapeInfo);        
 
-    __syncthreads();    
+	__syncthreads();    
 
-    const auto i = blockIdx.x * blockDim.x + threadIdx.x;
-    if (i >= alphaLen) return;    
+	const auto i = blockIdx.x * blockDim.x + threadIdx.x;
+	if (i >= alphaLen) return;    
 
-    Nd4jLong inputIdxs[MAX_RANK*2];
-    int numIdxs = shape::outerArrayOffsets(inputIdxs, i, inShapeInfo, alphaShapeInfo);
-    Nd4jLong dLdOIdxs[MAX_RANK*2];
-    shape::outerArrayOffsets(dLdOIdxs, i, dLdOShapeInfo, alphaShapeInfo);
-    Nd4jLong dLdIIdxs[MAX_RANK*2];
-    shape::outerArrayOffsets(dLdIIdxs, i, dLdIShapeInfo, alphaShapeInfo);
-        
-    const auto alphaOffset = shape::getIndexOffset(i, alphaShapeInfo, alphaLen);
-    const auto dLdAOffset  = shape::getIndexOffset(i, dLdAShapeInfo, alphaLen);
-        
-    for(Nd4jLong j = 0; j < numIdxs; ++j) {
-                
-        const auto inInd   = inputIdxs[j];
-        const auto dLdOInd = dLdOIdxs[j];
-        const auto dLdIInd = dLdIIdxs[j];
+	Nd4jLong inputIdxs[MAX_RANK*2];
+	int numIdxs = shape::outerArrayOffsets(inputIdxs, i, inShapeInfo, alphaShapeInfo);
+	Nd4jLong dLdOIdxs[MAX_RANK*2];
+	shape::outerArrayOffsets(dLdOIdxs, i, dLdOShapeInfo, alphaShapeInfo);
+	Nd4jLong dLdIIdxs[MAX_RANK*2];
+	shape::outerArrayOffsets(dLdIIdxs, i, dLdIShapeInfo, alphaShapeInfo);
+		
+	const auto alphaOffset = shape::getIndexOffset(i, alphaShapeInfo, alphaLen);
+	const auto dLdAOffset  = shape::getIndexOffset(i, dLdAShapeInfo, alphaLen);
+		
+	for(Nd4jLong j = 0; j < numIdxs; ++j) {
+				
+		const auto inInd   = inputIdxs[j];
+		const auto dLdOInd = dLdOIdxs[j];
+		const auto dLdIInd = dLdIIdxs[j];
 
-        if(in[inInd] < 0) {                    
-            dLdI[dLdIInd] = dLdO[dLdOInd] * alpha[alphaOffset];
-            auto prevVal = dLdA[dLdAOffset];
-            prevVal = prevVal + dLdO[dLdOInd] * in[inInd];
-            dLdA[dLdAOffset] = prevVal;
-        }
-        else
-            dLdI[dLdIInd] = dLdO[dLdOInd];
-    }            
+		if(in[inInd] < 0) {                    
+			dLdI[dLdIInd] = dLdO[dLdOInd] * alpha[alphaOffset];
+			auto prevVal = dLdA[dLdAOffset];
+			prevVal = prevVal + dLdO[dLdOInd] * in[inInd];
+			dLdA[dLdAOffset] = prevVal;
+		}
+		else
+			dLdI[dLdIInd] = dLdO[dLdOInd];
+	}            
 }
 
 
 template<typename X, typename Y, typename Z>
 __host__ static void preluBPCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, const cudaStream_t *stream, const void *vIn, const Nd4jLong *inShapeInfo, const void *vAlpha, const Nd4jLong *alphaShapeInfo, const void *vdLdO,  const Nd4jLong *dLdOShapeInfo, void *vdLdI,  const Nd4jLong *dLdIShapeInfo, void *vdLdA,  const Nd4jLong *dLdAShapeInfo) {
 
-    preluBPCuda<X, Y, Z><<<blocksPerGrid, threadsPerBlock, 1024, *stream>>>(vIn, inShapeInfo, vAlpha, alphaShapeInfo, vdLdO, dLdOShapeInfo, vdLdI, dLdIShapeInfo, vdLdA, dLdAShapeInfo);
+	preluBPCuda<X, Y, Z><<<blocksPerGrid, threadsPerBlock, 1024, *stream>>>(vIn, inShapeInfo, vAlpha, alphaShapeInfo, vdLdO, dLdOShapeInfo, vdLdI, dLdIShapeInfo, vdLdA, dLdAShapeInfo);
 }    
 
-    template <typename T>
-    void _logSoftMaxForVector(void *input, Nd4jLong *inShapeInfo, void *output, Nd4jLong *outShapeInfo) {
+	template <typename T>
+	void _logSoftMaxForVector(void *input, Nd4jLong *inShapeInfo, void *output, Nd4jLong *outShapeInfo) {
 
-    }
-
-
-    ///////////////////////////////////////////////////////////////////
-    void logSoftMaxForVector(graph::LaunchContext* context, const NDArray& input, NDArray& output) {
-
-        if(!input.isVector() || !output.isVector())
-            throw std::runtime_error("ops::helpers::logSoftMaxForVector function input and output arrays must be vectors !");
-
-        auto xType = input.dataType();
-        BUILD_SINGLE_SELECTOR(xType, _logSoftMaxForVector, (input.getBuffer(), input.getShapeInfo(), output.buffer(), output.shapeInfo()), FLOAT_TYPES);
-    }
-
-    //////////////////////////////////////////////////////////////////////////
-    void softmax(graph::LaunchContext* context, const NDArray& input, NDArray& output, const int dimension) {
-
-        const int rank = input.rankOf();
-
-        if(input.isVector()) {
-        
-            if(rank == 1 || input.sizeAt(dimension) != 1) {
-                // softMaxForVector(context, input, output);
-                input.tickReadDevice();
-            }
-            else
-                output = 1.;
-        }
-        else {
-        
-            auto maxAlongDim = const_cast<NDArray&>(input).reduceAlongDims(reduce::Max, {dimension}, true);
-            (input - maxAlongDim).applyTransform(transform::Exp, &output); // output contains exponents temporarily
-            auto sumAlongDim = output.reduceAlongDims(reduce::Sum, {dimension}, true);        
-            output /= sumAlongDim;
-            input.tickReadDevice();
-        }
-        output.tickWriteDevice();
-    }
-
-    //////////////////////////////////////////////////////////////////////////
-    void prelu(graph::LaunchContext* context, const NDArray& input, const NDArray& alpha, NDArray& output) {
-
-        if(!input.isActualOnDeviceSide()) input.syncToDevice();
-        if(!alpha.isActualOnDeviceSide()) alpha.syncToDevice();        
-
-        const auto xType = input.dataType();
-        const auto yType = alpha.dataType();
-
-        int threadsPerBlock = MAX_NUM_THREADS;
-        int blocksPerGrid = (input.lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
-
-        BUILD_DOUBLE_SELECTOR(xType, yType, preluCudaLauncher, (blocksPerGrid, threadsPerBlock, context->getCudaStream(), input.getSpecialBuffer(), input.getSpecialShapeInfo(), alpha.getSpecialBuffer(), alpha.getSpecialShapeInfo(), output.getSpecialBuffer()), LIBND4J_TYPES, FLOAT_TYPES);
-        
-        input.tickReadHost();
-        alpha.tickReadHost();
-        output.tickWriteDevice();
-    }
-
-    //////////////////////////////////////////////////////////////////////////
-    void preluBP(graph::LaunchContext* context, const NDArray& input, const NDArray& alpha, const NDArray& dLdO, NDArray& dLdI, NDArray& dLdA) {
-
-        if(!input.isActualOnDeviceSide()) input.syncToDevice();
-        if(!alpha.isActualOnDeviceSide()) alpha.syncToDevice();
-        if(!dLdO.isActualOnDeviceSide())  dLdO.syncToDevice();
-
-        const auto xType = input.dataType();
-        const auto yType = alpha.dataType();
-        const auto zType = dLdO.dataType();
-
-        int threadsPerBlock = MAX_NUM_THREADS;
-        int blocksPerGrid = (alpha.lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
-
-        BUILD_TRIPLE_SELECTOR(xType, yType, zType, preluBPCudaLauncher, (blocksPerGrid, threadsPerBlock, context->getCudaStream(), input.getSpecialBuffer(), input.getSpecialShapeInfo(), alpha.getSpecialBuffer(), alpha.getSpecialShapeInfo(), dLdO.getSpecialBuffer(),  dLdO.getSpecialShapeInfo(), dLdI.getSpecialBuffer(), dLdI.getSpecialShapeInfo(), dLdA.getSpecialBuffer(), dLdA.getSpecialShapeInfo()), LIBND4J_TYPES, FLOAT_TYPES, FLOAT_TYPES);
-        
-        input.tickReadHost();
-        alpha.tickReadHost();
-        dLdO.tickReadHost();
-        dLdI.tickWriteDevice();
-        dLdA.tickWriteDevice();
-
-    }
+	}
 
 
-    template <typename T>
-    static void thresholdRelu_(NDArray const& input, double threshold, NDArray& output) {
-        auto routine = LAMBDA_T(_x, threshold) {
-            return _x > (T)threshold ? _x: (T)0.f;
-        };
-        const_cast<NDArray&>(input).applyLambda<T>(routine, &output);
-    }
+	///////////////////////////////////////////////////////////////////
+	void logSoftMaxForVector(graph::LaunchContext* context, const NDArray& input, NDArray& output) {
 
-    void thresholdRelu(graph::LaunchContext* context, NDArray const& input, double threshold, NDArray& output) {
-        BUILD_SINGLE_SELECTOR(input.dataType(), thresholdRelu_, (input, threshold, output), FLOAT_TYPES);
-    }
+		if(!input.isVector() || !output.isVector())
+			throw std::runtime_error("ops::helpers::logSoftMaxForVector function input and output arrays must be vectors !");
 
-    template <typename T>
-    static void thresholdReluDerivative_(NDArray* input, double theta, NDArray* dLdO, NDArray* output) {
+		auto xType = input.dataType();
+		BUILD_SINGLE_SELECTOR(xType, _logSoftMaxForVector, (input.getBuffer(), input.getShapeInfo(), output.buffer(), output.shapeInfo()), FLOAT_TYPES);
+	}
 
-    }
+//////////////////////////////////////////////////////////////////////////
+void softmax(graph::LaunchContext* context, const NDArray& input, NDArray& output, const int dimension) {
 
-    void thresholdReluDerivative(graph::LaunchContext* context, NDArray* input, double threshold, NDArray* dLdO, NDArray* output) {
-        BUILD_SINGLE_SELECTOR(input->dataType(), thresholdReluDerivative_, (input, threshold, dLdO, output), FLOAT_TYPES);
-    }
+	if(!input.isActualOnDeviceSide()) input.syncToDevice();
+	const int rank = input.rankOf();
+
+	if(input.isVector()) {
+		
+		if(rank == 1 || input.sizeAt(dimension) != 1) {
+			BUILD_SINGLE_SELECTOR(input.dataType(), softMaxForVectorCudaLauncher, (context->getCudaStream(), input.getSpecialBuffer(), input.getSpecialShapeInfo(), output.getSpecialBuffer()), FLOAT_TYPES);
+			input.tickReadDevice();
+		}
+		else
+			output = 1.;
+	}
+	else {
+		
+		auto maxAlongDim = const_cast<NDArray&>(input).reduceAlongDims(reduce::Max, {dimension}, true);
+		(input - maxAlongDim).applyTransform(transform::Exp, &output); // output contains exponents temporarily
+		auto sumAlongDim = output.reduceAlongDims(reduce::Sum, {dimension}, true);        
+		output /= sumAlongDim;
+		input.tickReadDevice();
+	}
+
+	output.tickWriteDevice();
+}
+
+	//////////////////////////////////////////////////////////////////////////
+	void prelu(graph::LaunchContext* context, const NDArray& input, const NDArray& alpha, NDArray& output) {
+
+		if(!input.isActualOnDeviceSide()) input.syncToDevice();
+		if(!alpha.isActualOnDeviceSide()) alpha.syncToDevice();        
+
+		const auto xType = input.dataType();
+		const auto yType = alpha.dataType();
+
+		int threadsPerBlock = MAX_NUM_THREADS;
+		int blocksPerGrid = (input.lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
+
+		BUILD_DOUBLE_SELECTOR(xType, yType, preluCudaLauncher, (blocksPerGrid, threadsPerBlock, context->getCudaStream(), input.getSpecialBuffer(), input.getSpecialShapeInfo(), alpha.getSpecialBuffer(), alpha.getSpecialShapeInfo(), output.getSpecialBuffer()), LIBND4J_TYPES, FLOAT_TYPES);
+		
+		input.tickReadHost();
+		alpha.tickReadHost();
+		output.tickWriteDevice();
+	}
+
+	//////////////////////////////////////////////////////////////////////////
+	void preluBP(graph::LaunchContext* context, const NDArray& input, const NDArray& alpha, const NDArray& dLdO, NDArray& dLdI, NDArray& dLdA) {
+
+		if(!input.isActualOnDeviceSide()) input.syncToDevice();
+		if(!alpha.isActualOnDeviceSide()) alpha.syncToDevice();
+		if(!dLdO.isActualOnDeviceSide())  dLdO.syncToDevice();
+
+		const auto xType = input.dataType();
+		const auto yType = alpha.dataType();
+		const auto zType = dLdO.dataType();
+
+		int threadsPerBlock = MAX_NUM_THREADS;
+		int blocksPerGrid = (alpha.lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
+
+		BUILD_TRIPLE_SELECTOR(xType, yType, zType, preluBPCudaLauncher, (blocksPerGrid, threadsPerBlock, context->getCudaStream(), input.getSpecialBuffer(), input.getSpecialShapeInfo(), alpha.getSpecialBuffer(), alpha.getSpecialShapeInfo(), dLdO.getSpecialBuffer(),  dLdO.getSpecialShapeInfo(), dLdI.getSpecialBuffer(), dLdI.getSpecialShapeInfo(), dLdA.getSpecialBuffer(), dLdA.getSpecialShapeInfo()), LIBND4J_TYPES, FLOAT_TYPES, FLOAT_TYPES);
+		
+		input.tickReadHost();
+		alpha.tickReadHost();
+		dLdO.tickReadHost();
+		dLdI.tickWriteDevice();
+		dLdA.tickWriteDevice();
+
+	}
+
+
+	template <typename T>
+	static void thresholdRelu_(NDArray const& input, double threshold, NDArray& output) {
+		auto routine = LAMBDA_T(_x, threshold) {
+			return _x > (T)threshold ? _x: (T)0.f;
+		};
+		const_cast<NDArray&>(input).applyLambda<T>(routine, &output);
+	}
+
+	void thresholdRelu(graph::LaunchContext* context, NDArray const& input, double threshold, NDArray& output) {
+		BUILD_SINGLE_SELECTOR(input.dataType(), thresholdRelu_, (input, threshold, output), FLOAT_TYPES);
+	}
+
+	template <typename T>
+	static void thresholdReluDerivative_(NDArray* input, double theta, NDArray* dLdO, NDArray* output) {
+
+	}
+
+	void thresholdReluDerivative(graph::LaunchContext* context, NDArray* input, double threshold, NDArray* dLdO, NDArray* output) {
+		BUILD_SINGLE_SELECTOR(input->dataType(), thresholdReluDerivative_, (input, threshold, dLdO, output), FLOAT_TYPES);
+	}
 
 
 BUILD_SINGLE_TEMPLATE(template void _logSoftMaxForVector, (void *input, Nd4jLong *inShapeInfo, void *output, Nd4jLong *outShapeInfo), FLOAT_TYPES);
 BUILD_SINGLE_TEMPLATE(template void thresholdReluDerivative_, (NDArray* input, double threshold, NDArray* dLdO, NDArray* output), FLOAT_TYPES);
 BUILD_DOUBLE_TEMPLATE(template void preluCudaLauncher,   (const int blocksPerGrid, const int threadsPerBlock, const cudaStream_t *stream, const void *vx, const Nd4jLong *xShapeInfo, const void *vy, const Nd4jLong *yShapeInfo, void *vz), LIBND4J_TYPES, FLOAT_TYPES);
 BUILD_TRIPLE_TEMPLATE(template void preluBPCudaLauncher, (const int blocksPerGrid, const int threadsPerBlock, const cudaStream_t *stream, const void *vIn, const Nd4jLong *inShapeInfo, const void *vAlpha, const Nd4jLong *alphaShapeInfo, const void *vdLdO,  const Nd4jLong *dLdOShapeInfo, void *vdLdI,  const Nd4jLong *dLdIShapeInfo, void *vdLdA,  const Nd4jLong *dLdAShapeInfo), LIBND4J_TYPES, FLOAT_TYPES, FLOAT_TYPES);
+BUILD_SINGLE_TEMPLATE(template void softMaxForVectorCudaLauncher, (const cudaStream_t* stream, const void *vx, const Nd4jLong *xzShapeInfo, void *vz), FLOAT_TYPES);
 
 
 }

@@ -30,7 +30,8 @@ namespace helpers {
         for (auto array: inputList) {
             length += array->lengthOf();
         }
-        auto arrayFull = NDArrayFactory::vector<int>(length, 0, workspace);
+        NDArray arrayFull('c', {length}, nd4j::DataType::INT32);
+        arrayFull = 0;
         int val = -1;
         Nd4jLong border = 0;
         for (auto& array: inputList) {
@@ -38,23 +39,22 @@ namespace helpers {
                 throw std::runtime_error("multiUnique: this op support INT32 data type only.");
 
             for (Nd4jLong pos = 0; pos < array->lengthOf(); pos++)
-                arrayFull->p(border + pos, array->e(pos));
+                arrayFull.p(border + pos, array->e(pos));
             // memcpy(reinterpret_cast<int*>(arrayFull.buffer() + border), reinterpret_cast<int const*>(array->getBuffer()), array->lengthOf() * array->sizeOf());
             val--;
             border += array->lengthOf();
         }
 
         nd4j::ops::unique opUnique;
-        auto uResult = opUnique.execute({arrayFull}, {}, {}, {});
+        auto uResult = opUnique.execute({&arrayFull}, {}, {}, {});
         if (ND4J_STATUS_OK != uResult->status())
             throw std::runtime_error("multiUnique: cannot execute unique op properly.");
 
         auto uniqueVals = uResult->at(0);
 
-        bool res = uniqueVals->lengthOf() == arrayFull->lengthOf();
+        bool res = uniqueVals->lengthOf() == arrayFull.lengthOf();
 
-        delete uResult;
-        delete arrayFull;
+        delete uResult;        
         return res;
     }
 
