@@ -2863,18 +2863,14 @@ public class WordVectorSerializer {
             return word;
     }
 
-    private static String CACHE_ENTRY = "CACHE_ENTRY";
-
-    public static void writeWord2Vec(@NonNull Word2Vec word2Vec, @NonNull OutputStream stream)
+    public static <T extends SequenceElement> void writeWord2Vec(@NonNull Word2Vec word2Vec, @NonNull OutputStream stream)
             throws IOException {
-        try (ZipOutputStream zipfile = new ZipOutputStream(new BufferedOutputStream(new CloseShieldOutputStream(stream)));
-             DataOutputStream dos = new DataOutputStream(new BufferedOutputStream(zipfile))) {
 
-            ZipEntry cacheEntry = new ZipEntry(CACHE_ENTRY);
-            zipfile.putNextEntry(cacheEntry);
-            zipfile.write(((AbstractCache<VocabWord>)word2Vec.getVocab()).toJson().getBytes("UTF-8"));
-        }
-
+        SequenceVectors<T> vectors = new SequenceVectors<>();
+        vectors.setVocab(word2Vec.getVocab());
+        vectors.setLookupTable(word2Vec.getLookupTable());
+        vectors.setModelUtils(word2Vec.getModelUtils());
+        writeSequenceVectors(vectors, stream);
     }
 
     public static Word2Vec readWord2Vec(@NonNull String path, boolean readExtendedTables)
@@ -2892,26 +2888,13 @@ public class WordVectorSerializer {
         return word2Vec;
     }
 
-    public static Word2Vec readWord2Vec(@NonNull InputStream stream, boolean readExtendedTable) throws IOException {
+    public static <T extends SequenceElement> Word2Vec readWord2Vec(@NonNull InputStream stream,
+                                                                    boolean readExtendedTable) throws IOException {
         Word2Vec word2Vec = new Word2Vec();
-        AbstractCache cache = new AbstractCache();
-
-        try (ZipInputStream zipfile = new ZipInputStream(new BufferedInputStream(stream))) {
-
-            ZipEntry entry = null;
-            while ((entry = zipfile.getNextEntry()) != null) {
-
-                String name = entry.getName();
-                byte[] bytes = IOUtils.toByteArray(zipfile);
-
-                if (name.equals(CACHE_ENTRY)) {
-                    String content = new String(bytes, "UTF-8");
-                    cache = AbstractCache.fromJson(content);
-                    continue;
-                }
-            }
-        }
-        word2Vec.setVocab(cache);
+        SequenceVectors<T> vectors = readSequenceVectors(stream, readExtendedTable);
+        word2Vec.setVocab(vectors.getVocab());
+        word2Vec.setLookupTable(vectors.lookupTable());
+        word2Vec.setModelUtils(vectors.getModelUtils());
         return word2Vec;
     }
 
