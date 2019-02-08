@@ -18,8 +18,10 @@ package org.deeplearning4j.models.word2vec;
 
 import com.google.common.primitives.Doubles;
 import lombok.val;
+import net.didion.jwnl.data.Word;
 import org.apache.commons.io.FileUtils;
 import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
+import org.deeplearning4j.models.word2vec.wordstore.inmemory.AbstractCache;
 import org.nd4j.linalg.io.ClassPathResource;
 import org.deeplearning4j.models.embeddings.learning.impl.elements.CBOW;
 import org.deeplearning4j.models.embeddings.learning.impl.elements.SkipGram;
@@ -478,6 +480,47 @@ public class Word2VecTests {
             System.out.println(word);
         }
     }
+
+    @Test
+    public void testJSONSerialization() {
+        Word2Vec word2Vec = new Word2Vec();
+        AbstractCache<VocabWord> cache = new AbstractCache.Builder<VocabWord>().build();
+
+        val words = new VocabWord[3];
+        words[0] = new VocabWord(1.0, "word");
+        words[1] = new VocabWord(2.0, "test");
+        words[2] = new VocabWord(3.0, "tester");
+
+        for (int i = 0; i < words.length; ++i) {
+            cache.addToken(words[i]);
+            cache.addWordToIndex(i, words[i].getLabel());
+        }
+        word2Vec.setVocab(cache);
+
+        String json = null;
+        Word2Vec unserialized = null;
+        try {
+            json = word2Vec.toJson();
+            log.info("{}", json.toString());
+
+            unserialized = Word2Vec.fromJson(json);
+        }
+        catch (Exception e) {
+            e.printStackTrace();
+            fail();
+        }
+
+        assertEquals(cache.totalWordOccurrences(),((Word2Vec) unserialized).getVocab().totalWordOccurrences());
+        assertEquals(cache.totalNumberOfDocs(), ((Word2Vec) unserialized).getVocab().totalNumberOfDocs());
+
+        for (int i = 0; i < words.length; ++i) {
+            val cached = cache.wordAtIndex(i);
+            val restored = ((Word2Vec) unserialized).getVocab().wordAtIndex(i);
+            assertNotNull(cached);
+            assertEquals(cached, restored);
+        }
+    }
+
 
     private static void printWords(String target, Collection<String> list, Word2Vec vec) {
         System.out.println("Words close to [" + target + "]:");
