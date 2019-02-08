@@ -115,9 +115,10 @@ public class WordVectorSerializerTest {
         SequenceVectors<VocabWord> vectors = new SequenceVectors.Builder<VocabWord>(new VectorsConfiguration()).
                 vocabCache(cache).
                 lookupTable(lookupTable).
+                layerSize(200).
                 modelUtils(new BasicModelUtils<VocabWord>()).
                 build();
-        Word2Vec word2Vec = new Word2Vec.Builder(new VectorsConfiguration())
+        Word2Vec word2Vec = new Word2Vec.Builder(vectors.getConfiguration())
                 .vocabCache(vectors.vocab())
                 .lookupTable(lookupTable)
                 .layerSize(200)
