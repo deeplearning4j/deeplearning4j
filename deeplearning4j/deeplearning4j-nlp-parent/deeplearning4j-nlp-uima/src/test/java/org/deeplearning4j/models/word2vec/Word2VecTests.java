@@ -491,13 +491,13 @@ public class Word2VecTests {
         word2Vec1.fit();
 
         Word2Vec word2Vec2 = new Word2Vec.Builder()
-                .limitVocabularySize(1)
+                .limitVocabularySize(500)
                 .iterate(iter)
                 .build();
         word2Vec2.fit();
 
-        assertEquals(word2Vec1.getVocab().numWords(), word2Vec2.getVocab().numWords());
-
+        assertEquals(word2Vec1.getVocab().numWords(), 652 );
+        assertEquals(word2Vec2.getVocab().numWords(), 501 );
     }
 
 
