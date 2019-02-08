@@ -136,7 +136,7 @@ public class Word2Vec extends SequenceVectors<VocabWord> {
     }
 
     private static final String CLASS_FIELD = "@class";
-    private static final String VOCAB_LIST_FIELD = "VocabList";
+    private static final String VOCAB_LIST_FIELD = "VocabCache";
 
     public String toJson() throws JsonProcessingException {
 
@@ -146,24 +146,20 @@ public class Word2Vec extends SequenceVectors<VocabWord> {
         retVal.addProperty(CLASS_FIELD, mapper.writeValueAsString(this.getClass().getName()));
 
         if (this.vocab instanceof AbstractCache) {
-            retVal.addProperty("VocabCache", ((AbstractCache<VocabWord>) this.vocab).toJson());
+            retVal.addProperty(VOCAB_LIST_FIELD, ((AbstractCache<VocabWord>) this.vocab).toJson());
         }
 
         return retVal.toString();
     }
 
     public static Word2Vec fromJson(String jsonString)  throws IOException {
-        InMemoryLookupTable lookupTable;
-        VocabCache cache;
-        INDArray syn0;
+
         Word2Vec ret = new Word2Vec();
 
         JsonParser parser = new JsonParser();
         JsonObject json = parser.parse(jsonString).getAsJsonObject();
 
-        ObjectMapper mapper = mapper();
-
-        cache = AbstractCache.fromJson(json.get("VocabCache").getAsString());
+        VocabCache cache = AbstractCache.fromJson(json.get(VOCAB_LIST_FIELD).getAsString());
 
         ret.setVocab(cache);
         return ret;
