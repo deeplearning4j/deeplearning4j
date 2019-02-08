@@ -95,7 +95,7 @@ static void ismax_(graph::LaunchContext* context, const NDArray* input, NDArray*
         auto pTadOffsets = (Nd4jLong *) manager.replicatePointer(tadOutput.tadOffsets, tadOutput.numTads * sizeof(Nd4jLong));
 
         // at this point, all IMax indexes are gathered, and we execute filler
-        BUILD_SINGLE_SELECTOR(zType, fillDimensionalIsMaxGeneric, (launchDims, stream, indexMaxArr->specialBuffer(), output->specialBuffer(), output->specialShapeInfo(), pTadShape, const_cast<int*>(dimensions.data()), dimensionLength, pTadOffsets), LIBND4J_TYPES);
+        BUILD_SINGLE_SELECTOR(zType, fillDimensionalIsMaxGeneric, (launchDims, stream, indexMaxArr->specialBuffer(), output->specialBuffer(), output->specialShapeInfo(), pTadShape, dimension, dimensionLength, pTadOffsets), LIBND4J_TYPES);
         manager.synchronize();
 
         nd4j::DebugHelper::checkErrorCode(stream, "Legacy IsMax(...) failed");
