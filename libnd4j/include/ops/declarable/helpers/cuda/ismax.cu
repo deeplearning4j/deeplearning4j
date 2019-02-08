@@ -25,6 +25,7 @@
 #include<loops/special_kernels.h>
 #include <helpers/DebugHelper.h>
 #include <cuda_exception.h>
+#include <PointersManager.h>
 
 namespace nd4j 	  {
 namespace ops 	  {
@@ -43,8 +44,9 @@ static void ismax_(graph::LaunchContext* context, const NDArray* input, NDArray*
     auto zRank = output->rankOf();
     auto xType = input->dataType();
     auto zType = output->dataType();
-
+    input->syncToDevice();
     Nd4jLong* special = nullptr;
+    PointersManager manager(context, "IsMaxHelper");
     if (dimensions.size() == 0) {
 //        auto scalarShape = ShapeBuilders::createScalarShapeInfo(nd4j::DataType::INT64);
         /**
@@ -73,43 +75,28 @@ static void ismax_(graph::LaunchContext* context, const NDArray* input, NDArray*
     } else {
         Nd4jLong* hostYShapeInfo  = nullptr;
         Nd4jLong* hostTShapeInfo  = nullptr;
-        Nd4jLong* tadMaxShapeInfo = nullptr;
-        Nd4jLong* tadMaxOffsets   = nullptr;
         int* dimension = nullptr;
-        int dimensionLength = 0;
+        int dimensionLength = dimensions.size();
         std::vector<int> copy(dimensions);
         shape::TAD tadOutput(input->getShapeInfo(), copy.data(), copy.size());
         tadOutput.createTadOnlyShapeInfo();
         tadOutput.createOffsets();
-        cudaError_t err = cudaMalloc(&tadMaxShapeInfo, shape::shapeInfoByteLength(tadOutput.tadOnlyShapeInfo));
-        if (0 != err)
-            throw cuda_exception::build("helpers::ismax_: Cannot allocate memory for tad shape.", err);
-        err = cudaMalloc(&tadMaxOffsets, tadOutput.numTads * sizeof(Nd4jLong));
-        if (0 != err)
-            throw cuda_exception::build("helpers::ismax_: Cannot allocate memory for tad offset.", err);
-        err = cudaMemcpy(tadMaxShapeInfo, tadOutput.tadOnlyShapeInfo, shape::shapeInfoByteLength(tadOutput.tadOnlyShapeInfo), cudaMemcpyHostToDevice);
-        if (0 != err)
-            throw cuda_exception::build("helpers::ismax_: Cannot copy memory for tad shape.", err);
-        err = cudaMemcpy(tadMaxOffsets, tadOutput.tadOffsets, tadOutput.numTads * sizeof(Nd4jLong), cudaMemcpyHostToDevice);
-        if (0 != err)
-            throw cuda_exception::build("helpers::ismax_: Cannot copy memory for tad offset.", err);
+
         auto indexMaxArr = input->applyIndexReduce(indexreduce::IndexMax, dimensions);
-        indexMaxArr->printIndexedBuffer("Index max!!!");
+        //indexMaxArr->printIndexedBuffer("Index max!!!");
         // we call for IMax on specified dimension
         //NativeOpExecutioner::execIndexReduce(context, indexreduce::IndexMax, nullptr, input->getShapeInfo(), input->getSpecialBuffer(), input->getSpecialShapeInfo(), extraParams, nullptr, hostTShapeInfo, special, hostYShapeInfo, const_cast<int*>(dimensions.data()), (int)dimensions.size(), nullptr, nullptr);
 
         //DEBUG_KERNEL(stream, opNum);
 
         dim3 launchDims(256, 256, 16384);
+        dimension = (int *) manager.replicatePointer(dimensions.data(), dimensions.size() * sizeof(int));
+        auto pTadShape = (Nd4jLong *) manager.replicatePointer(tadOutput.tadOnlyShapeInfo, shape::shapeInfoByteLength(tadOutput.tadOnlyShapeInfo));
+        auto pTadOffsets = (Nd4jLong *) manager.replicatePointer(tadOutput.tadOffsets, tadOutput.numTads * sizeof(Nd4jLong));
 
         // at this point, all IMax indexes are gathered, and we execute filler
-        BUILD_SINGLE_SELECTOR(zType, fillDimensionalIsMaxGeneric, (launchDims, stream, indexMaxArr->specialBuffer(), output->specialBuffer(), output->specialShapeInfo(), tadMaxShapeInfo, const_cast<int*>(dimensions.data()), (int)dimensions.size(), tadMaxOffsets), LIBND4J_TYPES);
-        err = cudaFree(tadMaxOffsets);
-        if (0 != err)
-            throw cuda_exception::build("helpers::ismax_: Cannot deallocate memory for tad offset.", err);
-        err = cudaFree(tadMaxShapeInfo);
-        if (0 != err)
-            throw cuda_exception::build("helpers::ismax_: Cannot deallocate memory for tad shape.", err);
+        BUILD_SINGLE_SELECTOR(zType, fillDimensionalIsMaxGeneric, (launchDims, stream, indexMaxArr->specialBuffer(), output->specialBuffer(), output->specialShapeInfo(), pTadShape, const_cast<int*>(dimensions.data()), dimensionLength, pTadOffsets), LIBND4J_TYPES);
+        manager.synchronize();
 
         nd4j::DebugHelper::checkErrorCode(stream, "Legacy IsMax(...) failed");
         delete indexMaxArr;
