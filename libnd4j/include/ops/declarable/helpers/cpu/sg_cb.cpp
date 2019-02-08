@@ -368,6 +368,11 @@ namespace nd4j {
                                 nSampling_<T>(syn0row, s1n.bufferWithOffset(irow * vectorLength), expTable, neu1e, alpha, vectorLength, r == 0 ? 1 : 0, expLength, infVector != nullptr);
                             }
                         }
+
+                        #pragma omp simd
+                        for (int e = 0; e < vectorLength; e++) {
+                            syn0row[e] += neu1e[e];
+                        }
                     }
                 } else {
                     // precise mode is possible for negative sampling only
