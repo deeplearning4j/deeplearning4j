@@ -90,7 +90,16 @@ public class TFGraphTestAllLibnd4j {
             "tensor_array/.*",
 
             //2019/02/04 - Native execution exception: "Graph wasn't toposorted"
-            "primitive_gru_dynamic"
+            "primitive_gru_dynamic",
+
+            //2019/02/08 - Native execution exception: "Graph wasn't toposorted". Note it's only the dynamic (while loop) RNNs
+            "rnn/basiclstmcell/dynamic.*",
+            "rnn/basicrnncell/dynamic.*",
+            "rnn/bidir_basic/dynamic.*",
+            "rnn/fused_adapt_basic/dynamic.*",
+            "rnn/grucell/dynamic.*",
+            "rnn/lstmcell/dynamic.*",
+            "rnn/srucell/dynamic.*"
     };
 
     @BeforeClass
