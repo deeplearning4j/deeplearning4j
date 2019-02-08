@@ -43,6 +43,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -478,6 +479,27 @@ public class Word2VecTests {
             System.out.println(word);
         }
     }
+
+    @Test
+    public void wordsCanBeDeletedFromLimitedVocabulary() throws IOException {
+        SentenceIterator iter = new BasicLineIterator(inputFile.getAbsolutePath());
+
+        Word2Vec word2Vec1 = new Word2Vec.Builder()
+                .iterate(iter)
+                .build();
+
+        word2Vec1.fit();
+
+        Word2Vec word2Vec2 = new Word2Vec.Builder()
+                .limitVocabularySize(1)
+                .iterate(iter)
+                .build();
+        word2Vec2.fit();
+
+        assertEquals(word2Vec1.getVocab().numWords(), word2Vec2.getVocab().numWords());
+
+    }
+
 
     private static void printWords(String target, Collection<String> list, Word2Vec vec) {
         System.out.println("Words close to [" + target + "]:");
