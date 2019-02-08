@@ -297,7 +297,57 @@ namespace nd4j {
             }
 
             template <typename T>
-            void skipgramBatchExec_(NDArray &s0, NDArray &s1, NDArray &s1n, void *vexpTable, void *vnegTable, void *vinfVector, NDArray &targets, NDArray &negStarters, NDArray &indices, NDArray &codes, NDArray &lr, NDArray &nextRandom, const int nsRounds, const int vocabSize, const int vectorLength, const int expLength, const int negLength, const bool preciseMode, const int numThreads) {
+            static void do_update(const int target, const int rowIndex, T *syn0, T *neu1t, const int vectorLength) {
+
+                auto syn0row = syn0 + (target * vectorLength);
+                auto neu1e = neu1t + (rowIndex * vectorLength);
+                for (int e = 0; e< vectorLength; e++)
+                    syn0row[e] += neu1e[e];
+            }
+
+            template <typename T>
+            static void do_positive(const int target, const int postive, T* syn0, T* syn1Neg, T* expTable, T* neu1e, const double alpha, const int vectorLength, const int expLength) {
+                //nd4j_printf("Target: [%i]; Positive: [%i]; TID: [%i];\n", target, postive, omp_get_thread_num());
+                nSampling_<T>(syn0, syn1Neg, expTable, neu1e, alpha, vectorLength, 1, expLength, false);
+            }
+
+            template <typename T>
+            static void do_negative(int target, int positive, T* syn0, T* syn1Neg, T* expTable, T* negTable, T* neu1e, int *sStarters, const double alpha, const unsigned long long rv, const int vocabSize, const int vectorLength, const int expLength, const int negLength, const int nsRounds, const int numThreads, const int numTargets) {
+                int irow = 0;
+                unsigned long long randomValue = rv;
+                for (int r = 0; r < nsRounds; r++) {
+                    randomValue = nd4j::math::nd4j_abs<Nd4jLong>(randomValue * (unsigned long long) 25214903917 + 11);
+                    auto idx = nd4j::math::nd4j_abs<Nd4jLong>((randomValue >> 16) % negLength);
+                    irow = idx >= negLength ? -1 : static_cast<int>(negTable[idx]);
+
+                    if (irow < 0 || irow >= vocabSize)
+                        irow = randomValue % (vocabSize - 1) + 1;
+
+                    if (irow == positive)
+                        continue;
+
+                    // we shift irow here to guarantee independence
+
+                    int dim = irow % numThreads;
+                    if (dim != omp_get_thread_num()) {
+                        irow += (numThreads - dim + omp_get_thread_num());
+
+                        // roll back to nearest affilated word
+                        while (irow >= vocabSize)
+                            irow -= numThreads;
+
+                        // if this row was processed as first step somewhere - skip it
+                        if (binarySearch(sStarters, irow, numTargets) > 0)
+                            continue;
+                    }
+
+
+                    nSampling_<T>(syn0, syn1Neg + (irow * vectorLength), expTable, neu1e, alpha, vectorLength,  0, expLength, false);
+                }
+            }
+
+            template <typename T>
+            void skipgramBatchExec_(NDArray &s0, NDArray &s1, NDArray &s1n, void *vexpTable, void *vnegTable, void *vinfVector, NDArray &targets, NDArray &negStarters, NDArray &indices, NDArray &codes, NDArray &lr, NDArray &nextRandom, NDArray &tempArray, const int nsRounds, const int vocabSize, const int vectorLength, const int expLength, const int negLength, const bool preciseMode, const int numThreads) {
                 //auto syn0 = reinterpret_cast<T*>(vsyn0);
                 //auto syn1 = reinterpret_cast<T*>(vsyn1);
                 //auto syn1Neg = reinterpret_cast<T*>(vsyn1Neg);
@@ -370,9 +420,8 @@ namespace nd4j {
                         }
 
                         #pragma omp simd
-                        for (int e = 0; e < vectorLength; e++) {
+                        for (int e = 0; e < vectorLength; e++)
                             syn0row[e] += neu1e[e];
-                        }
                     }
                 } else {
                     // precise mode is possible for negative sampling only
@@ -465,12 +514,64 @@ namespace nd4j {
 
                         //copy & sort starters if we're in preciseMode
                         int *sStarters;
-                        if (preciseMode) {
-                            sStarters = new int[numTargets];
-                            memcpy(sStarters, bStarters, numTargets * sizeof(int));
-                            SpecialMethods<int>::sortGeneric(sStarters, negStarters.shapeInfo(), false);
+                        sStarters = new int[numTargets];
+                        memcpy(sStarters, bStarters, numTargets * sizeof(int));
+                        SpecialMethods<int>::sortGeneric(sStarters, negStarters.shapeInfo(), false);
+
+
+                        auto neux = tempArray.bufferAsT<T>();
+// first of all we calculate positive samples into temporary
+#pragma omp parallel num_threads(numThreads) private(sneu1e) default(shared)
+                        {
+                            // master thread arranges stuff
+                            #pragma omp single
+                            {
+                                for (int t = 0; t < numTargets; t++) {
+                                    auto target = bTarget[t];
+                                    auto positive = bStarters[t];
+                                    auto alpha = lr.e<double>(t);
+                                    auto nr = nextRandom.e<Nd4jLong>(t);
+
+                                    #pragma omp task depend(in:target,positive) shared(t, alpha)
+                                    do_positive<T>(target, positive, reinterpret_cast<T*>(s0.bufferWithOffset(target * vectorLength)), reinterpret_cast<T*>(s1n.bufferWithOffset(positive * vectorLength)), expTable, reinterpret_cast<T*>(tempArray.bufferWithOffset(t * vectorLength)), alpha, vectorLength, expLength);
+                                }
+                            }
                         }
 
+// doing negative samples updates
+#pragma omp parallel num_threads(numThreads) private(sneu1e) default(shared)
+                        {
+                            // master thread arranges stuff
+                            #pragma omp single
+                            {
+                                for (int t = 0; t < numTargets; t++) {
+                                    auto target = bTarget[t];
+                                    auto positive = bStarters[t];
+                                    auto alpha = lr.e<double>(t);
+                                    auto nr = nextRandom.e<Nd4jLong>(t);
+
+                                    #pragma omp task depend(in:target, positive)
+                                    do_negative<T>(target, positive, reinterpret_cast<T*>(s0.bufferWithOffset(target * vectorLength)), reinterpret_cast<T*>(s1n.bufferWithOffset(positive * vectorLength)), expTable, negTable, reinterpret_cast<T*>(tempArray.bufferWithOffset(t * vectorLength)), sStarters, alpha, nr, vocabSize, vectorLength, expLength, negLength, nsRounds, numThreads, numTargets);
+                                }
+                            }
+                        }
+
+// updating syn0 now
+#pragma omp parallel num_threads(numThreads) private(sneu1e) default(shared)
+                        {
+                            // master thread arranges stuff
+                            #pragma omp single
+                            {
+                                for (int t = 0; t < numTargets; t++) {
+                                    auto target = bTarget[t];
+
+                                    #pragma omp task depend(in:target)
+                                    do_update<T>(target, t, s0.bufferAsT<T>(), tempArray.bufferAsT<T>(), vectorLength);
+                                }
+                            }
+                        }
+
+/*
 // same parallelism here, group by target AND nsStarter pair
 #pragma omp parallel num_threads(numThreads) private(sneu1e) default(shared)
                         {
@@ -555,6 +656,7 @@ namespace nd4j {
                             if (vectorLength > 600)
                                 delete[] neu1e;
                         }
+                        */
 
                         // deleting sorted stuff
                         if (preciseMode)
@@ -562,7 +664,7 @@ namespace nd4j {
                     }
                 }
             }
-            BUILD_SINGLE_TEMPLATE(template void skipgramBatchExec_, (NDArray &s0, NDArray &s1, NDArray &s1n, void *vexpTable, void *vnegTable, void *vinfVector, NDArray &targets, NDArray &negStarters, NDArray &indices, NDArray &codes, NDArray &lr, NDArray &nextRandom, const int nsRounds, const int vocabSize, const int vectorLength, const int expLength, const int negLength, const bool preciseMode, const int numThreads), FLOAT_TYPES);
+            BUILD_SINGLE_TEMPLATE(template void skipgramBatchExec_, (NDArray &s0, NDArray &s1, NDArray &s1n, void *vexpTable, void *vnegTable, void *vinfVector, NDArray &targets, NDArray &negStarters, NDArray &indices, NDArray &codes, NDArray &lr, NDArray &nextRandom, NDArray &tempArray, const int nsRounds, const int vocabSize, const int vectorLength, const int expLength, const int negLength, const bool preciseMode, const int numThreads), FLOAT_TYPES);
 
 
             template <typename T>
@@ -705,7 +807,7 @@ namespace nd4j {
             }
             BUILD_SINGLE_TEMPLATE(template void cbowBatchExec_, (NDArray &s0, NDArray &s1, NDArray &s1n, void *vexpTable, void *vnegTable, void *vinfVector, NDArray &context, NDArray &targets, NDArray &negStarters, NDArray &indices, NDArray &codes, NDArray &lr, NDArray &nextRandom, NDArray &nLabels, const int nsRounds, const int vocabSize, const int vectorLength, const int expLength, const int negLength,  const bool trainWords, const int numThreads), FLOAT_TYPES);
 
-            void skipgram(NDArray &syn0, NDArray &syn1, NDArray &syn1Neg, NDArray &expTable, NDArray &negTable, NDArray &target, NDArray &ngStarter, int nsRounds, NDArray &indices, NDArray &codes, NDArray &alpha, NDArray &randomValue, NDArray &inferenceVector, const bool preciseMode, const int numWorkers) {
+            void skipgram(NDArray &syn0, NDArray &syn1, NDArray &syn1Neg, NDArray &expTable, NDArray &negTable, NDArray &target, NDArray &ngStarter, int nsRounds, NDArray &indices, NDArray &codes, NDArray &alpha, NDArray &randomValue, NDArray &inferenceVector, NDArray &tempArray, const bool preciseMode, const int numWorkers) {
                 auto xType = syn0.dataType();
 
                 // single round case
@@ -716,7 +818,7 @@ namespace nd4j {
                 } else if (ngStarter.isVector() || target.isVector()){
                     // batch mode
 
-                    BUILD_SINGLE_SELECTOR(xType, skipgramBatchExec_, (syn0, syn1, syn1Neg, expTable.buffer(), negTable.buffer(), nullptr, target, ngStarter, indices, codes, alpha, randomValue, nsRounds, syn0.sizeAt(0), syn0.sizeAt(1), expTable.lengthOf(), negTable.lengthOf(), preciseMode, numWorkers), FLOAT_TYPES);
+                    BUILD_SINGLE_SELECTOR(xType, skipgramBatchExec_, (syn0, syn1, syn1Neg, expTable.buffer(), negTable.buffer(), nullptr, target, ngStarter, indices, codes, alpha, randomValue, tempArray, nsRounds, syn0.sizeAt(0), syn0.sizeAt(1), expTable.lengthOf(), negTable.lengthOf(), preciseMode, numWorkers), FLOAT_TYPES);
                 } else
                     throw std::runtime_error("SkipGram: target must have rank 0 or 1");
             }

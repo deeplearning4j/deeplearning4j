@@ -26,7 +26,7 @@ namespace nd4j {
     namespace ops {
 
         #if NOT_EXCLUDED(OP_skipgram)
-        DECLARE_CONFIGURABLE_OP(skipgram, 12, 12, true, 0, 0);
+        DECLARE_CONFIGURABLE_OP(skipgram, 13, 13, true, 0, 0);
         #endif
 
         #if NOT_EXCLUDED(OP_cbow)

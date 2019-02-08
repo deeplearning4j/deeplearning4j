@@ -46,6 +46,8 @@ namespace nd4j {
 
             auto inferenceVector = INPUT_VARIABLE(11);
 
+            auto neu1e = INPUT_VARIABLE(12);
+
             auto numWorkers = block.numI() > 0 ? INT_ARG(0) : omp_get_max_threads();
             auto nsRounds = block.numI() > 1 ? INT_ARG(1) : 0;
 
@@ -58,7 +60,7 @@ namespace nd4j {
             REQUIRE_TRUE(syn0->dataType() == expTable->dataType(), 0, "SkipGram: expTable must have the same data type as syn0 table");
 
 
-            nd4j::ops::helpers::skipgram(*syn0, *syn1, *syn1neg, *expTable, *negTable, *target, *ngStarter, nsRounds, *indices, *codes, *alpha, *randomValue, *inferenceVector, isPreciseMode, numWorkers);
+            nd4j::ops::helpers::skipgram(*syn0, *syn1, *syn1neg, *expTable, *negTable, *target, *ngStarter, nsRounds, *indices, *codes, *alpha, *randomValue, *inferenceVector, *neu1e, isPreciseMode, numWorkers);
 
             return Status::OK();
         }

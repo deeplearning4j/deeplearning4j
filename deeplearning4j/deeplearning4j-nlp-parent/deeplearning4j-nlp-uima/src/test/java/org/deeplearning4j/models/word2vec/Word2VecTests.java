@@ -200,28 +200,35 @@ public class Word2VecTests {
 
     @Test
     public void reproducibleResults_ForMultipleRuns() throws Exception {
-
-        SentenceIterator iter = new BasicLineIterator(inputFile.getAbsolutePath());
+        val shakespear = new ClassPathResource("big/rnj.txt");
+        SentenceIterator iter = new BasicLineIterator(shakespear.getFile());
         TokenizerFactory t = new DefaultTokenizerFactory();
         t.setTokenPreProcessor(new CommonPreprocessor());
 
-        Word2Vec vec1 = new Word2Vec.Builder().minWordFrequency(1).iterations(1).batchSize(64).layerSize(100)
+        Word2Vec vec1 = new Word2Vec.Builder().minWordFrequency(1).iterations(1).batchSize(8192).layerSize(100)
                 .stopWords(new ArrayList<String>()).seed(42).learningRate(0.025).minLearningRate(0.001)
                 .sampling(0).elementsLearningAlgorithm(new SkipGram<VocabWord>())
-                //.negativeSample(10)
+                .negativeSample(5)
                 .epochs(1).windowSize(5).allowParallelTokenization(true)
-                .workers(1)
+                .workers(4)
+                .usePreciseMode(true)
+                .useHierarchicSoftmax(false)
                 .modelUtils(new BasicModelUtils<VocabWord>()).iterate(iter).tokenizerFactory(t).build();
 
-        Word2Vec vec2 = new Word2Vec.Builder().minWordFrequency(1).iterations(1).batchSize(64).layerSize(100)
+        Word2Vec vec2 = new Word2Vec.Builder().minWordFrequency(1).iterations(1).batchSize(8192).layerSize(100)
                 .stopWords(new ArrayList<String>()).seed(42).learningRate(0.025).minLearningRate(0.001)
                 .sampling(0).elementsLearningAlgorithm(new SkipGram<VocabWord>())
-                //.negativeSample(10)
+                .negativeSample(5)
                 .epochs(1).windowSize(5).allowParallelTokenization(true)
-                .workers(1)
+                .workers(4)
+                .usePreciseMode(true)
+                .useHierarchicSoftmax(false)
                 .modelUtils(new BasicModelUtils<VocabWord>()).iterate(iter).tokenizerFactory(t).build();
 
         vec1.fit();
+
+        iter.reset();
+
         vec2.fit();
 
         INDArray syn0_from_vec1 = ((InMemoryLookupTable<VocabWord>) vec1.getLookupTable()).getSyn0();
@@ -239,12 +246,13 @@ public class Word2VecTests {
         t.setTokenPreProcessor(new CommonPreprocessor());
 
 
-        Word2Vec vec = new Word2Vec.Builder().minWordFrequency(1).iterations(3).batchSize(64).layerSize(100)
+        Word2Vec vec = new Word2Vec.Builder().minWordFrequency(1).iterations(1).batchSize(8192).layerSize(100)
                         .stopWords(new ArrayList<String>()).seed(42).learningRate(0.025).minLearningRate(0.001)
                         .sampling(0).elementsLearningAlgorithm(new SkipGram<VocabWord>())
                         //.negativeSample(10)
                         .epochs(1).windowSize(5).allowParallelTokenization(true)
-                        .workers(1)
+                        .workers(6)
+                        .usePreciseMode(true)
                         .modelUtils(new BasicModelUtils<VocabWord>()).iterate(iter).tokenizerFactory(t).build();
 
         assertEquals(new ArrayList<String>(), vec.getStopWords());
