@@ -2863,10 +2863,11 @@ public class WordVectorSerializer {
             return word;
     }
 
-    public static <T extends SequenceElement> void writeWord2Vec(@NonNull Word2Vec word2Vec, @NonNull OutputStream stream)
+    public static void writeWord2Vec(@NonNull Word2Vec word2Vec, @NonNull OutputStream stream)
             throws IOException {
 
-        SequenceVectors<T> vectors = new SequenceVectors.Builder<T>(word2Vec.getConfiguration()).layerSize(word2Vec.getLayerSize()).build();
+        SequenceVectors<VocabWord> vectors = new SequenceVectors.Builder<VocabWord>(word2Vec.getConfiguration())
+                .layerSize(word2Vec.getLayerSize()).build();
         vectors.setVocab(word2Vec.getVocab());
         vectors.setLookupTable(word2Vec.getLookupTable());
         vectors.setModelUtils(word2Vec.getModelUtils());
@@ -2888,9 +2889,9 @@ public class WordVectorSerializer {
         return word2Vec;
     }
 
-    public static <T extends SequenceElement> Word2Vec readWord2Vec(@NonNull InputStream stream,
-                                                                    boolean readExtendedTable) throws IOException {
-        SequenceVectors<T> vectors = readSequenceVectors(stream, readExtendedTable);
+    public static Word2Vec readWord2Vec(@NonNull InputStream stream,
+                                         boolean readExtendedTable) throws IOException {
+        SequenceVectors<VocabWord> vectors = readSequenceVectors(stream, readExtendedTable);
         Word2Vec word2Vec = new Word2Vec.Builder(vectors.getConfiguration()).layerSize(vectors.getLayerSize()).build();
         word2Vec.setVocab(vectors.getVocab());
         word2Vec.setLookupTable(vectors.lookupTable());
