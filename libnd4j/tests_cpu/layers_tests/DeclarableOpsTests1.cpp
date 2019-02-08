@@ -2518,7 +2518,51 @@ TEST_F(DeclarableOpsTests1, IsMax1) {
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
     auto res = result->at(0);
-    res->printIndexedBuffer("IS_MAX");
+    //res->printIndexedBuffer("IS_MAX");
+    ASSERT_TRUE(exp.equalsTo(res));
+
+    delete result;
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests1, IsMax2) {
+    NDArray x('c', {3, 3}, nd4j::DataType::FLOAT32);
+//    NDArray exp('c', {3, 3}, nd4j::DataType::BOOL);
+    NDArray exp('c', {3, 3}, nd4j::DataType::FLOAT32);
+    x.linspace(1);
+    //exp.p<bool>(0, 2, true);
+    //exp.p<bool>(1, 2, true);
+    exp.p<bool>(2, 2, true);
+
+    nd4j::ops::ismax ismaxOp;
+    auto result = ismaxOp.execute({&x}, {}, {0, 1});
+
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    auto res = result->at(0);
+    //res->printIndexedBuffer("IS_MAX");
+    ASSERT_TRUE(exp.equalsTo(res));
+
+    delete result;
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests1, IsMax3) {
+    NDArray x = NDArrayFactory::create<float>(120.f); //('c', {3, 3}, nd4j::DataType::FLOAT32);
+//    NDArray exp('c', {3, 3}, nd4j::DataType::BOOL);
+    NDArray exp = NDArrayFactory::create<float>(1.f);//, nd4j::DataType::FLOAT32); //'c', {3, 3}, nd4j::DataType::FLOAT32);
+    x.linspace(1);
+    //exp.p<bool>(0, 2, true);
+    //exp.p<bool>(1, 2, true);
+    //exp.p<bool>(2, 2, true);
+
+    nd4j::ops::ismax ismaxOp;
+    auto result = ismaxOp.execute({&x}, {}, {0});
+
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    auto res = result->at(0);
+    //res->printIndexedBuffer("IS_MAX");
     ASSERT_TRUE(exp.equalsTo(res));
 
     delete result;
