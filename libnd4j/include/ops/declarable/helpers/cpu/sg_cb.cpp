@@ -314,10 +314,60 @@ namespace nd4j {
                 if (!preciseMode) {
                     // regular mode provides 0 guarantees for reproducibility
                     auto numTargets = targets.lengthOf();
+                    auto bTarget = targets.bufferAsT<int>();
+                    auto bIndices = indices.bufferAsT<int>();
+                    auto bCodes = codes.bufferAsT<int8_t>();
 
-#pragma omp parallel for private(sneu1e) default(shared)
+#pragma omp parallel for private(sneu1e) default(shared) schedule(static)
                     for (int t = 0; t < numTargets; t++) {
+                        T* neu1e = vectorLength <= 600 ? sneu1e : new T[vectorLength];
+                        memset(neu1e, 0, vectorLength * sizeof(T));
 
+                        auto target = bTarget[t];
+                        auto alpha = lr.e<double>(t);
+                        unsigned long long randomValue = nextRandom.e<Nd4jLong>(t);
+
+                        auto syn0row = reinterpret_cast<T*>(s0.bufferWithOffset(target * vectorLength));
+
+                        if (hsRounds > 0) {
+                            int irow = 0;
+                            auto cShift = t * idxShift;
+
+                            for (int e = 0; e < hsRounds; e++) {
+                                irow = bIndices[e + cShift];
+                                if (irow < 0 || irow >= vocabSize)
+                                    continue;
+
+                                auto syn1row = s1.bufferWithOffset(irow * vectorLength);
+                                auto code = bCodes[e + cShift];
+
+                                    //nd4j_printf("syn0: [%i]; syn1: [%i]; code: [%i]\n", target, irow, code);
+                                hSoftmax_<T>(syn0row, syn1row, expTable, neu1e, alpha, vectorLength, code, expLength, false);
+                            }
+                        }
+
+
+                        if (nsRounds > 0) {
+                            int irow = negStarters.e<int>(t);
+                            int nsStarter = irow;
+                            for (int r = 0; r < nsRounds + 1; r++) {
+                                if (r == 0) {
+                                    // target is known in advance
+                                } else {
+                                    randomValue = randomValue * (unsigned long long) 25214903917 + 11;
+                                    auto idx = nd4j::math::nd4j_abs<Nd4jLong >((randomValue >> 16) % negLength);
+                                    irow = idx >= negLength ? -1 : static_cast<int>(negTable[idx]);
+
+                                    if (irow < 0 || irow >= vocabSize)
+                                        irow = randomValue % (vocabSize - 1) + 1;
+
+                                    if (irow == nsStarter)
+                                        continue;
+                                }
+
+                                nSampling_<T>(syn0row, s1n.bufferWithOffset(irow * vectorLength), expTable, neu1e, alpha, vectorLength, r == 0 ? 1 : 0, expLength, infVector != nullptr);
+                            }
+                        }
                     }
                 } else {
                     // precise mode is possible for negative sampling only
