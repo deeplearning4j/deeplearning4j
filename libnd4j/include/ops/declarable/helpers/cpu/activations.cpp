@@ -51,59 +51,42 @@ void _softMaxForVector(graph::LaunchContext* context, const void *input, const N
         sum += outBuff[offset];
     }
     #pragma omp simd
-        for (int i = 0; i < length; i++) {
-            const Nd4jLong offset = shape::getIndexOffset(i, inShapeInfo, length);
-            outBuff[offset] /= sum;
-        }
+    for (int i = 0; i < length; i++) {
+        const Nd4jLong offset = shape::getIndexOffset(i, inShapeInfo, length);
+        outBuff[offset] /= sum;
+    }
 }
 
 ///////////////////////////////////////////////////////////////////
-    template <typename T>
-    void _logSoftMaxForVector(graph::LaunchContext* context, const void *input, const Nd4jLong *inShapeInfo, void *output) {
+template <typename T>
+void _logSoftMaxForVector(graph::LaunchContext* context, const void *input, const Nd4jLong *inShapeInfo, void *output) {
         
-        const auto inBuff  = reinterpret_cast<const T*>(input);
-              auto outBuff = reinterpret_cast<T*>(output);
+    const auto inBuff  = reinterpret_cast<const T*>(input);
+          auto outBuff = reinterpret_cast<T*>(output);
 
-        T max = -DataTypeUtils::max<T>();
-        T sum = 0;
+    T max = -DataTypeUtils::max<T>();
+    T sum = 0;        
+    const auto length = shape::length(inShapeInfo);
 
-        auto inEWS  = shape::elementWiseStride(inShapeInfo);
-        auto length = shape::length(inShapeInfo);
-
-        if (inEWS == 1) {
-#pragma omp simd reduction(maxT:max)
-            for (int i = 0; i < length; i++)
-                max = nd4j::math::nd4j_max<T>(max, outBuff[i]);
-
-#pragma omp simd reduction(sumT:sum)
-            for (int i = 0; i < length; i++) {
-                outBuff[i] = nd4j::math::nd4j_exp<T,T>(inBuff[i] - max);
-                sum += outBuff[i];
-            }
-#pragma omp simd
-            for (int i = 0; i < length; i++) {
-                outBuff[i] /= sum;
-                outBuff[i] = nd4j::math::nd4j_log<T,T>(outBuff[i]);
-            }
-        }
-        else if (inEWS > 1) {
-
-#pragma omp simd reduction(maxT:max)
-            for (int i = 0; i < length; i++)
-                max = nd4j::math::nd4j_max<T>(max, outBuff[i * inEWS]);
-
-#pragma omp simd reduction(sumT:sum)
-            for (int i = 0; i < length; i++) {
-                outBuff[i * inEWS] = nd4j::math::nd4j_exp<T,T>(inBuff[i * inEWS] - max);
-                sum += outBuff[i * inEWS];
-            }
-#pragma omp simd
-            for (int i = 0; i < length; i++) {
-                outBuff[i * inEWS] /= sum;
-                outBuff[i * inEWS] = nd4j::math::nd4j_log<T, T>(outBuff[i * inEWS]);
-            }
-        }
+    #pragma omp simd reduction(maxT:max)
+    for (int i = 0; i < length; i++) {
+        const Nd4jLong offset = shape::getIndexOffset(i, inShapeInfo, length);
+        max = nd4j::math::nd4j_max<T>(max, inBuff[offset]);
     }
+
+    #pragma omp parallel for simd reduction(sumT:sum)
+    for (int i = 0; i < length; i++) {
+        const Nd4jLong offset = shape::getIndexOffset(i, inShapeInfo, length);
+        outBuff[offset] = nd4j::math::nd4j_exp<T, T>(inBuff[offset] - max);
+        sum += outBuff[offset];
+    }
+    
+    #pragma omp simd
+    for (int i = 0; i < length; i++) {
+        const Nd4jLong offset = shape::getIndexOffset(i, inShapeInfo, length);        
+        outBuff[offset] = nd4j::math::nd4j_log<T,T>(outBuff[offset] / sum);
+    }
+}
 
 //////////////////////////////////////////////////////////////////////////
 void logSoftmax(graph::LaunchContext* context, const NDArray& input, NDArray& output, const int dimension) {
