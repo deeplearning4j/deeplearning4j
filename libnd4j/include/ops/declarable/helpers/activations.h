@@ -33,11 +33,11 @@ namespace helpers {
     void softMaxForVector(graph::LaunchContext* context, const NDArray &input, NDArray &output);
 
     template<typename T>
-    void _logSoftMaxForVector(graph::LaunchContext* context, void *input, Nd4jLong *xShapeInfo, void *output, Nd4jLong *zShapeInfo);
-
-    void logSoftMaxForVector(graph::LaunchContext* context, const NDArray &input, NDArray &output);
+    void _logSoftMaxForVector(graph::LaunchContext* context, void *input, Nd4jLong *xShapeInfo, void *output, Nd4jLong *zShapeInfo);    
 
     void softmax(graph::LaunchContext* context, const NDArray &input, NDArray &output, const int dimension);
+
+    void logSoftmax(graph::LaunchContext* context, const NDArray &input, NDArray &output, const int dimension);
 
     void prelu(graph::LaunchContext* context, const NDArray &input, const NDArray &alpha, NDArray &output);
 
