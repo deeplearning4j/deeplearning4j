@@ -250,6 +250,9 @@ namespace nd4j {
 		template<typename T, typename Z>
         math_def inline Z nd4j_acos(T val);
 
+        template<typename T, typename Z>
+        math_def inline Z nd4j_sech(T val);
+
 		template<typename T, typename Z>
 		math_def inline Z nd4j_acosh(T val);
 
@@ -604,6 +607,11 @@ namespace nd4j {
         template <typename X, typename Z>
         math_def inline Z nd4j_acos(X val) {
             return p_acos<Z>(static_cast<Z>(val));
+        }
+
+        template <typename X, typename Z>
+        math_def inline Z nd4j_sech(X val) {
+            return static_cast<Z>(1) / nd4j_cosh<X,Z>(val);
         }
 
         template <typename X, typename Z>
