@@ -1,15 +1,12 @@
 /*******************************************************************************
  * Copyright (c) 2015-2018 Skymind, Inc.
  *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
+ * This program and the accompanying materials are made available under the terms of the Apache License, Version 2.0
+ * which is available at https://www.apache.org/licenses/LICENSE-2.0.
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
+ * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations under the License.
  *
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
@@ -41,8 +38,7 @@ public class GeneticSelectionOperator extends SelectionOperator {
     private final static int PREVIOUS_GENES_TO_KEEP = 100;
     private final static int MAX_NUM_GENERATION_ATTEMPTS = 100;
 
-    public static class Builder
-    {
+    public static class Builder {
         private ChromosomeFactory chromosomeFactory;
         private PopulationModel populationModel;
         private CrossoverOperator crossoverOperator;
@@ -80,15 +76,15 @@ public class GeneticSelectionOperator extends SelectionOperator {
         }
 
         public GeneticSelectionOperator build() {
-            if(crossoverOperator == null) {
+            if (crossoverOperator == null) {
                 crossoverOperator = new SinglePointCrossover.Builder().build();
             }
 
-            if(mutationOperator == null) {
+            if (mutationOperator == null) {
                 mutationOperator = new RandomMutationOperator.Builder().build();
             }
 
-            if(rng == null) {
+            if (rng == null) {
                 rng = new SynchronizedRandomGenerator(new JDKRandomGenerator());
             }
 
@@ -103,7 +99,8 @@ public class GeneticSelectionOperator extends SelectionOperator {
     private int previousGenesIdx = 0;
 
 
-    private GeneticSelectionOperator(CrossoverOperator crossoverOperator, MutationOperator mutationOperator, RandomGenerator rng) {
+    private GeneticSelectionOperator(CrossoverOperator crossoverOperator, MutationOperator mutationOperator,
+                    RandomGenerator rng) {
         this.crossoverOperator = crossoverOperator;
         this.mutationOperator = mutationOperator;
         this.rng = rng;
@@ -143,7 +140,7 @@ public class GeneticSelectionOperator extends SelectionOperator {
             }
 
             hasAlreadyBeenTried = hasAlreadyBeenTried(result);
-            if(hasAlreadyBeenTried && --attemptsRemaining == 0) {
+            if (hasAlreadyBeenTried && --attemptsRemaining == 0) {
                 throw new GeneticGenerationException("Failed to generate a set of genes not already tried.");
             }
         } while (hasAlreadyBeenTried);
@@ -155,9 +152,9 @@ public class GeneticSelectionOperator extends SelectionOperator {
     }
 
     private boolean hasAlreadyBeenTried(double[] genes) {
-        for(int i = 0; i < previousGenes.length; ++i) {
+        for (int i = 0; i < previousGenes.length; ++i) {
             double[] current = previousGenes[i];
-            if(current != null && Arrays.equals(current, genes)) {
+            if (current != null && Arrays.equals(current, genes)) {
                 return true;
             }
         }
@@ -176,8 +173,10 @@ public class GeneticSelectionOperator extends SelectionOperator {
             isModified |= crossoverResult.isModified();
             isModified |= mutationOperator.mutate(offspringValues);
 
-            if(!isModified && --attemptsRemaining == 0) {
-                throw new GeneticGenerationException(String.format("Crossover and mutation operators failed to generate a new set of genes after %s attempts.", MAX_NUM_GENERATION_ATTEMPTS));
+            if (!isModified && --attemptsRemaining == 0) {
+                throw new GeneticGenerationException(
+                                String.format("Crossover and mutation operators failed to generate a new set of genes after %s attempts.",
+                                                MAX_NUM_GENERATION_ATTEMPTS));
             }
         } while (!isModified);
 

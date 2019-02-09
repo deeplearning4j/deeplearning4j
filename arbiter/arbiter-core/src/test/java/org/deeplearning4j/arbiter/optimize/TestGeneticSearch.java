@@ -1,15 +1,12 @@
 /*******************************************************************************
  * Copyright (c) 2015-2018 Skymind, Inc.
  *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
+ * This program and the accompanying materials are made available under the terms of the Apache License, Version 2.0
+ * which is available at https://www.apache.org/licenses/LICENSE-2.0.
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
+ * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations under the License.
  *
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
@@ -54,19 +51,17 @@ public class TestGeneticSearch {
         public int evalCount = 0;
 
         @Override
-        public void initialize(IOptimizationRunner optimizationRunner) {
-        }
+        public void initialize(IOptimizationRunner optimizationRunner) {}
 
         @Override
         public boolean terminate(IOptimizationRunner optimizationRunner) {
-            if(++evalCount == 50)
-            {
+            if (++evalCount == 50) {
                 // Generator did not handle GeneticGenerationException
                 return true;
             }
 
-            for(CandidateInfo candidateInfo : optimizationRunner.getCandidateStatus()) {
-                if(candidateInfo.getCandidateStatus() == CandidateStatus.Failed) {
+            for (CandidateInfo candidateInfo : optimizationRunner.getCandidateStatus()) {
+                if (candidateInfo.getCandidateStatus() == CandidateStatus.Failed) {
                     hasAFailedCandidate = true;
                     return true;
                 }
@@ -82,14 +77,14 @@ public class TestGeneticSearch {
         ScoreFunction scoreFunction = new BraninFunction.BraninScoreFunction();
 
         //Define configuration:
-        CandidateGenerator candidateGenerator = new GeneticSearchCandidateGenerator.Builder(new BraninFunction.BraninSpace(), scoreFunction).build();
+        CandidateGenerator candidateGenerator =
+                        new GeneticSearchCandidateGenerator.Builder(new BraninFunction.BraninSpace(), scoreFunction)
+                                        .build();
 
         TestTerminationCondition testTerminationCondition = new TestTerminationCondition();
         OptimizationConfiguration configuration = new OptimizationConfiguration.Builder()
-                .candidateGenerator(candidateGenerator)
-                .scoreFunction(scoreFunction)
-                .terminationConditions(new MaxCandidatesCondition(50), testTerminationCondition)
-                .build();
+                        .candidateGenerator(candidateGenerator).scoreFunction(scoreFunction)
+                        .terminationConditions(new MaxCandidatesCondition(50), testTerminationCondition).build();
 
         IOptimizationRunner runner = new LocalOptimizationRunner(configuration, new BraninFunction.BraninTaskCreator());
 
@@ -105,17 +100,15 @@ public class TestGeneticSearch {
         ScoreFunction scoreFunction = new BraninFunction.BraninScoreFunction();
 
         //Define configuration:
-        CandidateGenerator candidateGenerator = new GeneticSearchCandidateGenerator.Builder(new BraninFunction.BraninSpace(), scoreFunction)
-                .selectionOperator(new TestSelectionOperator())
-                .build();
+        CandidateGenerator candidateGenerator =
+                        new GeneticSearchCandidateGenerator.Builder(new BraninFunction.BraninSpace(), scoreFunction)
+                                        .selectionOperator(new TestSelectionOperator()).build();
 
         TestTerminationCondition testTerminationCondition = new TestTerminationCondition();
 
         OptimizationConfiguration configuration = new OptimizationConfiguration.Builder()
-                .candidateGenerator(candidateGenerator)
-                .scoreFunction(scoreFunction)
-                .terminationConditions(testTerminationCondition)
-                .build();
+                        .candidateGenerator(candidateGenerator).scoreFunction(scoreFunction)
+                        .terminationConditions(testTerminationCondition).build();
 
         IOptimizationRunner runner = new LocalOptimizationRunner(configuration, new BraninFunction.BraninTaskCreator());
 

@@ -50,7 +50,8 @@ public class RatioCullOperatorTests {
 
         PopulationInitializer populationInitializer = new TestPopulationInitializer();
 
-        PopulationModel populationModel = new PopulationModel.Builder().populationInitializer(populationInitializer).populationSize(10).build();
+        PopulationModel populationModel = new PopulationModel.Builder().populationInitializer(populationInitializer)
+                        .populationSize(10).build();
         sut.initializeInstance(populationModel);
 
         Assert.assertSame(populationModel.getPopulation(), sut.getPopulation());

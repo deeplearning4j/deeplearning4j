@@ -15,7 +15,8 @@ public class CrossoverOperatorTests {
 
         PopulationInitializer populationInitializer = new TestPopulationInitializer();
 
-        PopulationModel populationModel = new PopulationModel.Builder().populationInitializer(populationInitializer).build();
+        PopulationModel populationModel =
+                        new PopulationModel.Builder().populationInitializer(populationInitializer).build();
         sut.initializeInstance(populationModel);
 
         Assert.assertSame(populationModel, sut.getPopulationModel());

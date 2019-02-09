@@ -1,15 +1,12 @@
 /*******************************************************************************
  * Copyright (c) 2015-2018 Skymind, Inc.
  *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
+ * This program and the accompanying materials are made available under the terms of the Apache License, Version 2.0
+ * which is available at https://www.apache.org/licenses/LICENSE-2.0.
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
+ * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations under the License.
  *
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
@@ -56,7 +53,8 @@ public class UniformCrossover extends TwoParentsCrossoverOperator {
          * @param factor In the range [0, 1]. 0 will only select the first parent while 1 only select the second one. The default is 0.5; no bias.
          */
         public Builder parentBiasFactor(double factor) {
-            Preconditions.checkState(factor >= 0.0 && factor <= 1.0, "Factor must be between 0.0 and 1.0, got %s", factor);
+            Preconditions.checkState(factor >= 0.0 && factor <= 1.0, "Factor must be between 0.0 and 1.0, got %s",
+                            factor);
 
             this.parentBiasFactor = factor;
             return this;
@@ -83,10 +81,10 @@ public class UniformCrossover extends TwoParentsCrossoverOperator {
         }
 
         public UniformCrossover build() {
-            if(rng == null) {
+            if (rng == null) {
                 rng = new SynchronizedRandomGenerator(new JDKRandomGenerator());
             }
-            if(parentSelection == null) {
+            if (parentSelection == null) {
                 parentSelection = new RandomTwoParentSelection();
             }
             return new UniformCrossover(this);
@@ -113,7 +111,7 @@ public class UniformCrossover extends TwoParentsCrossoverOperator {
      * @return The crossover result. See {@link CrossoverResult}.
      */
     @Override
-    public CrossoverResult crossover()  {
+    public CrossoverResult crossover() {
         // select the parents
         double[][] parents = parentSelection.selectParents();
 

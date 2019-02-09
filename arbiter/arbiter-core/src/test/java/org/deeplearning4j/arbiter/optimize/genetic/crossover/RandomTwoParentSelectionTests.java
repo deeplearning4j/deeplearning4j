@@ -13,13 +13,13 @@ import java.util.List;
 public class RandomTwoParentSelectionTests {
     @Test
     public void RandomTwoParentSelection_ShouldReturnTwoDifferentParents() {
-        RandomGenerator rng = new TestRandomGenerator(new int[] { 1, 1, 1, 0}, null);
+        RandomGenerator rng = new TestRandomGenerator(new int[] {1, 1, 1, 0}, null);
         RandomTwoParentSelection sut = new RandomTwoParentSelection(rng);
 
         List<Chromosome> population = new ArrayList<>();
-        population.add(new Chromosome(new double[] { 1, 1, 1 }, 1.0));
-        population.add(new Chromosome(new double[] { 2, 2, 2 }, 2.0));
-        population.add(new Chromosome(new double[] { 3, 3, 3 }, 3.0));
+        population.add(new Chromosome(new double[] {1, 1, 1}, 1.0));
+        population.add(new Chromosome(new double[] {2, 2, 2}, 2.0));
+        population.add(new Chromosome(new double[] {3, 3, 3}, 3.0));
         sut.initializeInstance(population);
 
         double[][] result = sut.selectParents();

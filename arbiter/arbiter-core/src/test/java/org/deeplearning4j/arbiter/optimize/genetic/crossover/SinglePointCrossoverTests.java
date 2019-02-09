@@ -11,18 +11,15 @@ import org.junit.Test;
 public class SinglePointCrossoverTests {
     @Test
     public void SinglePointCrossover_BelowCrossoverRate_ShouldReturnParent0() {
-        RandomGenerator rng = new TestRandomGenerator(null, new double[] { 1.0 });
+        RandomGenerator rng = new TestRandomGenerator(null, new double[] {1.0});
 
         double[][] parents = new double[2][];
-        parents[0] = new double[] { 1.0, 1.0, 1.0 };
-        parents[1] = new double[] { 2.0, 2.0, 2.0 };
+        parents[0] = new double[] {1.0, 1.0, 1.0};
+        parents[1] = new double[] {2.0, 2.0, 2.0};
         TestParentSelection parentSelection = new TestParentSelection(parents);
 
-        SinglePointCrossover sut = new SinglePointCrossover.Builder()
-                .parentSelection(parentSelection)
-                .randomGenerator(rng)
-                .crossoverRate(0.0)
-                .build();
+        SinglePointCrossover sut = new SinglePointCrossover.Builder().parentSelection(parentSelection)
+                        .randomGenerator(rng).crossoverRate(0.0).build();
 
         CrossoverResult result = sut.crossover();
 
@@ -32,18 +29,15 @@ public class SinglePointCrossoverTests {
 
     @Test
     public void SinglePointCrossover_ShouldReturnSingleSplit() {
-        RandomGenerator rng = new TestRandomGenerator(new int[] { 2 }, new double[] { 0.1 });
+        RandomGenerator rng = new TestRandomGenerator(new int[] {2}, new double[] {0.1});
 
         double[][] parents = new double[2][];
-        parents[0] = new double[] { 1.0, 1.0, 1.0 };
-        parents[1] = new double[] { 2.0, 2.0, 2.0 };
+        parents[0] = new double[] {1.0, 1.0, 1.0};
+        parents[1] = new double[] {2.0, 2.0, 2.0};
         TestParentSelection parentSelection = new TestParentSelection(parents);
 
-        SinglePointCrossover sut = new SinglePointCrossover.Builder()
-                .parentSelection(parentSelection)
-                .randomGenerator(rng)
-                .crossoverRate(0.5)
-                .build();
+        SinglePointCrossover sut = new SinglePointCrossover.Builder().parentSelection(parentSelection)
+                        .randomGenerator(rng).crossoverRate(0.5).build();
 
         CrossoverResult result = sut.crossover();
 

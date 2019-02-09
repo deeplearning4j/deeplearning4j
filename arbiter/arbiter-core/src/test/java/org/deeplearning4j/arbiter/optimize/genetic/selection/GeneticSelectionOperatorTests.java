@@ -45,7 +45,7 @@ public class GeneticSelectionOperatorTests {
         }
     }
 
-    private class GeneticSelectionOperatorTestsMutationOperator implements  MutationOperator {
+    private class GeneticSelectionOperatorTestsMutationOperator implements MutationOperator {
 
         private boolean mutateResult;
 
@@ -77,19 +77,16 @@ public class GeneticSelectionOperatorTests {
 
     @Test
     public void GeneticSelectionOperator_PopulationNotReadyToBreed_ShouldReturnRandomGenes() {
-        RandomGenerator rng = new TestRandomGenerator(null, new double[] { 123.0 });
+        RandomGenerator rng = new TestRandomGenerator(null, new double[] {123.0});
 
         PopulationInitializer populationInitializer = new TestPopulationInitializer();
 
         TestCullOperator cullOperator = new TestCullOperator(1000);
         PopulationModel populationModel = new PopulationModel.Builder().populationInitializer(populationInitializer)
-                .cullOperator(cullOperator)
-                .build();
+                        .cullOperator(cullOperator).build();
         ChromosomeFactory chromosomeFactory = new ChromosomeFactory();
         chromosomeFactory.initializeInstance(1);
-        GeneticSelectionOperator sut = new GeneticSelectionOperator.Builder()
-                .randomGenerator(rng)
-                .build();
+        GeneticSelectionOperator sut = new GeneticSelectionOperator.Builder().randomGenerator(rng).build();
         sut.initializeInstance(populationModel, chromosomeFactory);
 
         double[] newGenes = sut.buildNextGenes();
@@ -100,15 +97,14 @@ public class GeneticSelectionOperatorTests {
 
     @Test
     public void GeneticSelectionOperator_NoModificationOnFirstTry() {
-        RandomGenerator rng = new TestRandomGenerator(null, new double[] { 123.0 });
+        RandomGenerator rng = new TestRandomGenerator(null, new double[] {123.0});
 
         PopulationInitializer populationInitializer = new TestPopulationInitializer();
 
         TestCullOperator cullOperator = new TestCullOperator(-1);
 
         PopulationModel populationModel = new PopulationModel.Builder().populationInitializer(populationInitializer)
-                .cullOperator(cullOperator)
-                .build();
+                        .cullOperator(cullOperator).build();
 
         ChromosomeFactory chromosomeFactory = new ChromosomeFactory();
         chromosomeFactory.initializeInstance(1);
@@ -118,14 +114,11 @@ public class GeneticSelectionOperatorTests {
         crossoverResults[1] = new CrossoverResult(true, new double[0]);
         TestCrossoverOperator crossoverOperator = new TestCrossoverOperator(crossoverResults);
 
-        boolean[] mutationResults = new boolean[] { false, false };
+        boolean[] mutationResults = new boolean[] {false, false};
         TestMutationOperator mutationOperator = new TestMutationOperator(mutationResults);
 
-        GeneticSelectionOperator sut = new GeneticSelectionOperator.Builder()
-                .randomGenerator(rng)
-                .crossoverOperator(crossoverOperator)
-                .mutationOperator(mutationOperator)
-                .build();
+        GeneticSelectionOperator sut = new GeneticSelectionOperator.Builder().randomGenerator(rng)
+                        .crossoverOperator(crossoverOperator).mutationOperator(mutationOperator).build();
         sut.initializeInstance(populationModel, chromosomeFactory);
 
         double[] newGenes = sut.buildNextGenes();
@@ -135,15 +128,14 @@ public class GeneticSelectionOperatorTests {
 
     @Test
     public void GeneticSelectionOperator_MutationNoModificationOnFirstTry() {
-        RandomGenerator rng = new TestRandomGenerator(null, new double[] { 123.0 });
+        RandomGenerator rng = new TestRandomGenerator(null, new double[] {123.0});
 
         PopulationInitializer populationInitializer = new TestPopulationInitializer();
 
         TestCullOperator cullOperator = new TestCullOperator(-1);
 
         PopulationModel populationModel = new PopulationModel.Builder().populationInitializer(populationInitializer)
-                .cullOperator(cullOperator)
-                .build();
+                        .cullOperator(cullOperator).build();
 
         ChromosomeFactory chromosomeFactory = new ChromosomeFactory();
         chromosomeFactory.initializeInstance(1);
@@ -154,14 +146,11 @@ public class GeneticSelectionOperatorTests {
         crossoverResults[2] = new CrossoverResult(true, new double[0]);
         TestCrossoverOperator crossoverOperator = new TestCrossoverOperator(crossoverResults);
 
-        boolean[] mutationResults = new boolean[] { false, false, true };
+        boolean[] mutationResults = new boolean[] {false, false, true};
         TestMutationOperator mutationOperator = new TestMutationOperator(mutationResults);
 
-        GeneticSelectionOperator sut = new GeneticSelectionOperator.Builder()
-                .randomGenerator(rng)
-                .crossoverOperator(crossoverOperator)
-                .mutationOperator(mutationOperator)
-                .build();
+        GeneticSelectionOperator sut = new GeneticSelectionOperator.Builder().randomGenerator(rng)
+                        .crossoverOperator(crossoverOperator).mutationOperator(mutationOperator).build();
         sut.initializeInstance(populationModel, chromosomeFactory);
 
         double[] newGenes = sut.buildNextGenes();
@@ -171,33 +160,29 @@ public class GeneticSelectionOperatorTests {
 
     @Test
     public void GeneticSelectionOperator_ShouldNotBuildDuplicates() {
-        RandomGenerator rng = new TestRandomGenerator(null, new double[] { 123.0 });
+        RandomGenerator rng = new TestRandomGenerator(null, new double[] {123.0});
 
         PopulationInitializer populationInitializer = new TestPopulationInitializer();
 
         TestCullOperator cullOperator = new TestCullOperator(-1);
 
         PopulationModel populationModel = new PopulationModel.Builder().populationInitializer(populationInitializer)
-                .cullOperator(cullOperator)
-                .build();
+                        .cullOperator(cullOperator).build();
 
         ChromosomeFactory chromosomeFactory = new ChromosomeFactory();
         chromosomeFactory.initializeInstance(1);
 
         CrossoverResult[] crossoverResults = new CrossoverResult[3];
-        crossoverResults[0] = new CrossoverResult(true, new double[] { 1.0 });
-        crossoverResults[1] = new CrossoverResult(true, new double[] { 1.0 });
-        crossoverResults[2] = new CrossoverResult(true, new double[] { 2.0 });
+        crossoverResults[0] = new CrossoverResult(true, new double[] {1.0});
+        crossoverResults[1] = new CrossoverResult(true, new double[] {1.0});
+        crossoverResults[2] = new CrossoverResult(true, new double[] {2.0});
         TestCrossoverOperator crossoverOperator = new TestCrossoverOperator(crossoverResults);
 
-        boolean[] mutationResults = new boolean[] { false, false, false };
+        boolean[] mutationResults = new boolean[] {false, false, false};
         TestMutationOperator mutationOperator = new TestMutationOperator(mutationResults);
 
-        GeneticSelectionOperator sut = new GeneticSelectionOperator.Builder()
-                .randomGenerator(rng)
-                .crossoverOperator(crossoverOperator)
-                .mutationOperator(mutationOperator)
-                .build();
+        GeneticSelectionOperator sut = new GeneticSelectionOperator.Builder().randomGenerator(rng)
+                        .crossoverOperator(crossoverOperator).mutationOperator(mutationOperator).build();
         sut.initializeInstance(populationModel, chromosomeFactory);
 
         double[] newGenes = sut.buildNextGenes();
@@ -211,17 +196,14 @@ public class GeneticSelectionOperatorTests {
     public void GeneticSelectionOperator_CrossoverAndMutationCantGenerateNew_ShouldThrow() {
         TestCullOperator cullOperator = new TestCullOperator(-1);
 
-        PopulationModel populationModel = new PopulationModel.Builder()
-                .cullOperator(cullOperator)
-                .build();
+        PopulationModel populationModel = new PopulationModel.Builder().cullOperator(cullOperator).build();
 
         MutationOperator mutationOperator = new GeneticSelectionOperatorTestsMutationOperator(false);
-        CrossoverOperator crossoverOperator = new GeneticSelectionOperatorTestsCrossoverOperator(new CrossoverResult(false, null));
+        CrossoverOperator crossoverOperator =
+                        new GeneticSelectionOperatorTestsCrossoverOperator(new CrossoverResult(false, null));
 
-        GeneticSelectionOperator sut = new GeneticSelectionOperator.Builder()
-                .crossoverOperator(crossoverOperator)
-                .mutationOperator(mutationOperator)
-                .build();
+        GeneticSelectionOperator sut = new GeneticSelectionOperator.Builder().crossoverOperator(crossoverOperator)
+                        .mutationOperator(mutationOperator).build();
         sut.initializeInstance(populationModel, null);
 
         sut.buildNextGenes();
@@ -231,17 +213,14 @@ public class GeneticSelectionOperatorTests {
     public void GeneticSelectionOperator_CrossoverAndMutationAlwaysGenerateSame_ShouldThrow() {
         TestCullOperator cullOperator = new TestCullOperator(-1);
 
-        PopulationModel populationModel = new PopulationModel.Builder()
-                .cullOperator(cullOperator)
-                .build();
+        PopulationModel populationModel = new PopulationModel.Builder().cullOperator(cullOperator).build();
 
         MutationOperator mutationOperator = new GeneticSelectionOperatorTestsMutationOperator(false);
-        CrossoverOperator crossoverOperator = new GeneticSelectionOperatorTestsCrossoverOperator(new CrossoverResult(true, new double[] { 1.0 }));
+        CrossoverOperator crossoverOperator = new GeneticSelectionOperatorTestsCrossoverOperator(
+                        new CrossoverResult(true, new double[] {1.0}));
 
-        GeneticSelectionOperator sut = new GeneticSelectionOperator.Builder()
-                .crossoverOperator(crossoverOperator)
-                .mutationOperator(mutationOperator)
-                .build();
+        GeneticSelectionOperator sut = new GeneticSelectionOperator.Builder().crossoverOperator(crossoverOperator)
+                        .mutationOperator(mutationOperator).build();
         sut.initializeInstance(populationModel, null);
 
         // This call is used to add the genes to the previousGenes collection

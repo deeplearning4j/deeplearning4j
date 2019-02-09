@@ -54,9 +54,7 @@ public class PopulationModelTests {
         PopulationInitializer populationInitializer = new TestPopulationInitializer();
 
         PopulationModel sut = new PopulationModel.Builder().populationInitializer(populationInitializer)
-                .populationSize(5)
-                .cullOperator(new TestCullOperator(1))
-                .build();
+                        .populationSize(5).cullOperator(new TestCullOperator(1)).build();
 
         boolean result = sut.isReadyToBreed();
 
@@ -68,9 +66,7 @@ public class PopulationModelTests {
         PopulationInitializer populationInitializer = new TestPopulationInitializer();
 
         PopulationModel sut = new PopulationModel.Builder().populationInitializer(populationInitializer)
-                .populationSize(5)
-                .cullOperator(new TestCullOperator(1))
-                .build();
+                        .populationSize(5).cullOperator(new TestCullOperator(1)).build();
 
         sut.getPopulation().add(null);
 
@@ -84,9 +80,7 @@ public class PopulationModelTests {
         PopulationInitializer populationInitializer = new TestPopulationInitializer();
 
         PopulationModel sut = new PopulationModel.Builder().populationInitializer(populationInitializer)
-                .populationSize(5)
-                .cullOperator(new TestCullOperator(1))
-                .build();
+                        .populationSize(5).cullOperator(new TestCullOperator(1)).build();
 
         sut.initializeInstance(false);
 
@@ -108,9 +102,7 @@ public class PopulationModelTests {
         PopulationInitializer populationInitializer = new TestPopulationInitializer();
 
         PopulationModel sut = new PopulationModel.Builder().populationInitializer(populationInitializer)
-                .populationSize(5)
-                .cullOperator(new TestCullOperator(1))
-                .build();
+                        .populationSize(5).cullOperator(new TestCullOperator(1)).build();
 
         sut.initializeInstance(true);
 
@@ -132,9 +124,7 @@ public class PopulationModelTests {
         PopulationInitializer populationInitializer = new TestPopulationInitializer();
 
         PopulationModel sut = new PopulationModel.Builder().populationInitializer(populationInitializer)
-                .populationSize(5)
-                .cullOperator(new TestCullOperator(1))
-                .build();
+                        .populationSize(5).cullOperator(new TestCullOperator(1)).build();
 
         sut.initializeInstance(true);
 
@@ -153,9 +143,7 @@ public class PopulationModelTests {
         TestCullOperator cullOperator = new TestCullOperator(3);
 
         PopulationModel sut = new PopulationModel.Builder().populationInitializer(populationInitializer)
-                .populationSize(5)
-                .cullOperator(cullOperator)
-                .build();
+                        .populationSize(5).cullOperator(cullOperator).build();
 
         sut.initializeInstance(true);
 
@@ -175,9 +163,7 @@ public class PopulationModelTests {
         TestCullOperator cullOperator = new TestCullOperator(3);
 
         PopulationModel sut = new PopulationModel.Builder().populationInitializer(populationInitializer)
-                .populationSize(5)
-                .cullOperator(cullOperator)
-                .build();
+                        .populationSize(5).cullOperator(cullOperator).build();
 
         sut.initializeInstance(true);
 

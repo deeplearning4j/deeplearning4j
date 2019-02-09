@@ -12,18 +12,15 @@ public class UniformCrossoverTests {
 
     @Test
     public void UniformCrossover_BelowCrossoverRate_ShouldReturnParent0() {
-        RandomGenerator rng = new TestRandomGenerator(null, new double[] { 1.0 });
+        RandomGenerator rng = new TestRandomGenerator(null, new double[] {1.0});
 
         double[][] parents = new double[2][];
-        parents[0] = new double[] { 1.0, 1.0, 1.0 };
-        parents[1] = new double[] { 2.0, 2.0, 2.0 };
+        parents[0] = new double[] {1.0, 1.0, 1.0};
+        parents[1] = new double[] {2.0, 2.0, 2.0};
         TestParentSelection parentSelection = new TestParentSelection(parents);
 
-        UniformCrossover sut = new UniformCrossover.Builder()
-                .parentSelection(parentSelection)
-                .randomGenerator(rng)
-                .crossoverRate(0.0)
-                .build();
+        UniformCrossover sut = new UniformCrossover.Builder().parentSelection(parentSelection).randomGenerator(rng)
+                        .crossoverRate(0.0).build();
 
         CrossoverResult result = sut.crossover();
 
@@ -33,19 +30,15 @@ public class UniformCrossoverTests {
 
     @Test
     public void UniformCrossover_ShouldReturnMixedParents() {
-        RandomGenerator rng = new TestRandomGenerator(null, new double[] { 0.1, 0.1, 0.3, 0.2 });
+        RandomGenerator rng = new TestRandomGenerator(null, new double[] {0.1, 0.1, 0.3, 0.2});
 
         double[][] parents = new double[2][];
-        parents[0] = new double[] { 1.0, 1.0, 1.0 };
-        parents[1] = new double[] { 2.0, 2.0, 2.0 };
+        parents[0] = new double[] {1.0, 1.0, 1.0};
+        parents[1] = new double[] {2.0, 2.0, 2.0};
         TestParentSelection parentSelection = new TestParentSelection(parents);
 
-        UniformCrossover sut = new UniformCrossover.Builder()
-                .parentSelection(parentSelection)
-                .randomGenerator(rng)
-                .crossoverRate(0.5)
-                .parentBiasFactor(0.3)
-                .build();
+        UniformCrossover sut = new UniformCrossover.Builder().parentSelection(parentSelection).randomGenerator(rng)
+                        .crossoverRate(0.5).parentBiasFactor(0.3).build();
 
         CrossoverResult result = sut.crossover();
 

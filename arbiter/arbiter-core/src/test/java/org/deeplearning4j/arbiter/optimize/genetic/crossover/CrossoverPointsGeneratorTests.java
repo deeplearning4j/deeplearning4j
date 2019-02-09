@@ -12,7 +12,7 @@ public class CrossoverPointsGeneratorTests {
 
     @Test
     public void CrossoverPointsGenerator_FixedNumberCrossovers() {
-        RandomGenerator rng = new TestRandomGenerator(new int[] { 0 }, null);
+        RandomGenerator rng = new TestRandomGenerator(new int[] {0}, null);
         CrossoverPointsGenerator sut = new CrossoverPointsGenerator(10, 2, 2, rng);
 
         Deque<Integer> result = sut.getCrossoverPoints();

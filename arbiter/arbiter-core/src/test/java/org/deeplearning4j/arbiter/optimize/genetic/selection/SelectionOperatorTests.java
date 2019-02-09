@@ -32,7 +32,8 @@ public class SelectionOperatorTests {
 
         PopulationInitializer populationInitializer = new TestPopulationInitializer();
 
-        PopulationModel populationModel = new PopulationModel.Builder().populationInitializer(populationInitializer).build();
+        PopulationModel populationModel =
+                        new PopulationModel.Builder().populationInitializer(populationInitializer).build();
         ChromosomeFactory chromosomeFactory = new ChromosomeFactory();
         sut.initializeInstance(populationModel, chromosomeFactory);
 

@@ -19,23 +19,24 @@ public class LeastFitCullOperatorTests {
 
         PopulationInitializer populationInitializer = new TestPopulationInitializer();
 
-        PopulationModel populationModel = new PopulationModel.Builder().populationInitializer(populationInitializer).populationSize(10).build();
+        PopulationModel populationModel = new PopulationModel.Builder().populationInitializer(populationInitializer)
+                        .populationSize(10).build();
         sut.initializeInstance(populationModel);
 
         List<Chromosome> originalChromosomes = new ArrayList<>();
-        for(int i = 0; i < 10; ++i) {
-            originalChromosomes.add(new Chromosome(null, (double)i));
+        for (int i = 0; i < 10; ++i) {
+            originalChromosomes.add(new Chromosome(null, (double) i));
         }
 
         List<Chromosome> chromosomes = populationModel.getPopulation();
-        for(int i = 0; i < 10; ++i) {
+        for (int i = 0; i < 10; ++i) {
             chromosomes.add(originalChromosomes.get(i));
         }
 
         sut.cullPopulation();
 
         Assert.assertEquals(5, chromosomes.size());
-        for(int i = 0; i < 5; ++i) {
+        for (int i = 0; i < 5; ++i) {
             Assert.assertSame(originalChromosomes.get(i), chromosomes.get(i));
         }
     }

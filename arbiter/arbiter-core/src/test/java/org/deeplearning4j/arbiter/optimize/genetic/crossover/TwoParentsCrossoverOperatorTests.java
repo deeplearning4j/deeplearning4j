@@ -43,7 +43,8 @@ public class TwoParentsCrossoverOperatorTests {
         TestTwoParentsCrossoverOperator sut = new TestTwoParentsCrossoverOperator(parentSelection);
 
         PopulationInitializer populationInitializer = new TestPopulationInitializer();
-        PopulationModel populationModel = new PopulationModel.Builder().populationInitializer(populationInitializer).build();
+        PopulationModel populationModel =
+                        new PopulationModel.Builder().populationInitializer(populationInitializer).build();
 
         sut.initializeInstance(populationModel);
 
