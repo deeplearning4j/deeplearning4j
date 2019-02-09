@@ -91,8 +91,7 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
     @Setter @Getter
     protected INDArray labels;
 
-    private double fullNetworkL1;
-    private double fullNetworkL2;
+    private double fullNetRegTerm;
     private double score;
 
     public Yolo2OutputLayer(NeuralNetConfiguration conf) {
@@ -263,7 +262,10 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
                     .addi(classPredictionLoss)
                     .dup('c');
 
-            scoreForExamples = scoreForExamples.reshape('c', mb, b*h*w).sum(true, 1).addi(fullNetworkL1 + fullNetworkL2);
+            scoreForExamples = scoreForExamples.reshape('c', mb, b*h*w).sum(true, 1);
+            if(fullNetRegTerm > 0.0) {
+                scoreForExamples.addi(fullNetRegTerm);
+            }
 
             return workspaceMgr.leverageTo(ArrayType.ACTIVATIONS, scoreForExamples);
         }
@@ -280,7 +282,7 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
 
         this.score /= getInputMiniBatchSize();
 
-        this.score += fullNetworkL1 + fullNetworkL2;
+        this.score += fullNetRegTerm;
 
         if(scoreOnly)
             return null;
@@ -395,9 +397,8 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
     }
 
     @Override
-    public double computeScore(double fullNetworkL1, double fullNetworkL2, boolean training, LayerWorkspaceMgr workspaceMgr) {
-        this.fullNetworkL1 = fullNetworkL1;
-        this.fullNetworkL2 = fullNetworkL2;
+    public double computeScore(double fullNetRegTerm, boolean training, LayerWorkspaceMgr workspaceMgr) {
+        this.fullNetRegTerm = fullNetRegTerm;
 
         computeBackpropGradientAndScore(workspaceMgr, true, false);
         return score();
@@ -565,9 +566,8 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
     }
 
     @Override
-    public INDArray computeScoreForExamples(double fullNetworkL1, double fullNetworkL2, LayerWorkspaceMgr workspaceMgr) {
-        this.fullNetworkL1 = fullNetworkL1;
-        this.fullNetworkL2 = fullNetworkL2;
+    public INDArray computeScoreForExamples(double fullNetRegTerm, LayerWorkspaceMgr workspaceMgr) {
+        this.fullNetRegTerm = fullNetRegTerm;
         return computeBackpropGradientAndScore(workspaceMgr, false, true);
     }
 

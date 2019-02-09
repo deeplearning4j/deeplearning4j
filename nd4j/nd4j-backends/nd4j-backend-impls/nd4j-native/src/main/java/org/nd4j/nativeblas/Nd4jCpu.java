@@ -10476,6 +10476,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 // #define STORE_3_RESULTS(A, B, C)    this->storeResult(block, 0, A); this->storeResult(block, 1, B); this->storeResult(block, 2, C)
 // #define STORE_4_RESULTS(A, B, C, D)     this->storeResult(block, 0, A); this->storeResult(block, 1, B); this->storeResult(block, 2, C); this->storeResult(block, 3, D)
 // #define STORE_5_RESULTS(A, B, C, D, E)      this->storeResult(block, 0, A); this->storeResult(block, 1, B); this->storeResult(block, 2, C); this->storeResult(block, 3, D); this->storeResult(block, 4, E)
+// #define BROADCAST_CHECK_EMPTY(X,Y,Z)     if(X->isEmpty() || Y->isEmpty()){ if(!Z->isEmpty()){ throw std::invalid_argument("Broadcast op validation failed: if x or y are empty, z must be empty");} return Status::OK();}
 
 // #define STASH(NAME, ARRAY)  block.getStash()->storeArray(block.getNodeId(), NAME, ARRAY);
 // #define CHECK_STASH(NAME)   block.getStash()->checkStash(block.getNodeId(), NAME);
@@ -17695,8 +17696,6 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
                                                 }
 //         #endif
 
-
-
         /**
          * This op calculates dropout of input
          * Input arguments
@@ -19140,6 +19139,81 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
                                                                                     public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
                                                                                 }
 //         #endif
+        /**
+         * reduce_logsumexp - tf.reduce_logsumexe operation
+         * 
+         * input params:
+         *    0 - NDArray (input)
+         *    1 - 1D NDArray (axis) (optional) - integer array
+         *
+         * T_ARG param (optional):
+         * 0 - keep_dims != 0.
+         *
+         * int params (optional):
+         *    0 - axe 1
+         *    1 - axe 2
+         *    ...
+         *    N-1 axe N 
+         *
+         *  CAUTION: All axes are optional and should be between 0 and input->rankOf() - 1
+         *  and put either with second param or as integers but not both
+         *
+         * output:
+         *    0 - NDArray with reduces shape accordingly to axes (the scalar in default case).
+         */
+//         #if NOT_EXCLUDED(OP_reduce_logsumexp)
+        @Namespace("nd4j::ops") public static class reduce_logsumexp extends DeclarableCustomOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public reduce_logsumexp(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public reduce_logsumexp(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public reduce_logsumexp position(long position) {
+                return (reduce_logsumexp)super.position(position);
+            }
+        
+                                                                                    public reduce_logsumexp() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
+                                                                                }
+//         #endif
+
+        /**
+        * This op make bilinear or nearest neighbor interpolated resize for given tensor
+        *
+        * input array:
+        *    0 - 4D-Tensor with shape (batch, sizeX, sizeY, channels) numeric type
+        *    1 - 2D-Tensor with shape (num_boxes, 4) float type
+        *    2 - 1D-Tensor with shape (num_boxes) int type
+        *    3 - 1D-Tensor with 2 values (newWidth, newHeight) (optional) int type
+        *
+        * float arguments (optional)
+        *   0 - exprapolation_value (optional) default 0.f
+        *
+        * int arguments: (optional)
+        *   0 - mode (default 0 - bilinear interpolation)
+        *
+        * output array:
+        *   the 4D-Tensor with resized to crop_size images given - float type
+        */
+//         #if NOT_EXCLUDED(OP_crop_and_resize)
+        @Namespace("nd4j::ops") public static class crop_and_resize extends DeclarableCustomOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public crop_and_resize(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public crop_and_resize(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public crop_and_resize position(long position) {
+                return (crop_and_resize)super.position(position);
+            }
+        
+                                                                                    public crop_and_resize() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
+                                                                                }
+//         #endif
 
         /**
         * This op make bilinear interpolated resize for given tensor
@@ -19325,6 +19399,8 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
          *     0 - input array
          *     1 - scalar tensor with n for operation. n should be less than last dimension
          *
+         * output:
+         *    0 - NDArray with the same shape as input
          */
 //         #if NOT_EXCLUDED(OP_nth_element)
         @Namespace("nd4j::ops") public static class nth_element extends DeclarableCustomOp {
@@ -19343,6 +19419,39 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
                                                                                     public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
                                                                                 }
 //         #endif
+/**
+         * fake_quant_with_min_max_vals - tf.quantization.fake_quant_with_min_max_vars
+         * 
+         * input params:
+         *    0 - NDArray (input)
+         *    1 - 0D Tensor - min value
+         *    2 - 0D Tensor - max value
+         *
+         * int params (optional):
+         *    0 - num_bits (allowed interval [2, 16], default 8)
+         *    1 - narrow_range (default False)
+         *
+         * output:
+         *    0 - NDArray with the same shape as input
+         */
+//         #if NOT_EXCLUDED(OP_fake_quant_with_min_max_vars)
+        @Namespace("nd4j::ops") public static class fake_quant_with_min_max_vars extends DeclarableOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public fake_quant_with_min_max_vars(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public fake_quant_with_min_max_vars(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public fake_quant_with_min_max_vars position(long position) {
+                return (fake_quant_with_min_max_vars)super.position(position);
+            }
+        
+                                                                                    public fake_quant_with_min_max_vars() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
+                                                                                }
+//         #endif
+
     
 
 
@@ -20615,6 +20724,21 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
                                                                                     private native void allocate();
                                                                                     public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
                                                                                 }
+        @Namespace("nd4j::ops") public static class hinge_loss_grad extends DeclarableCustomOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public hinge_loss_grad(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public hinge_loss_grad(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public hinge_loss_grad position(long position) {
+                return (hinge_loss_grad)super.position(position);
+            }
+        
+                                                                                    public hinge_loss_grad() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
+                                                                                }
 //         #endif
 
 
@@ -20658,6 +20782,21 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
             }
         
                                                                                     public huber_loss() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
+                                                                                }
+        @Namespace("nd4j::ops") public static class huber_loss_grad extends DeclarableCustomOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public huber_loss_grad(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public huber_loss_grad(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public huber_loss_grad position(long position) {
+                return (huber_loss_grad)super.position(position);
+            }
+        
+                                                                                    public huber_loss_grad() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
                                                                                     public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
                                                                                 }
@@ -20749,25 +20888,54 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 
 
         /**
-         * This op calculates logarithmic loss of poison distributed input
-         * Input arguments
-         *  0 - target
-         *  1 - input
-         *  optional int - boolean value compute_full_loss: 0 (default) or 1 (compute)
+         * This op calculates logarithmic loss of poisson distributed input.
+         * Input arrays:
+         *    0: log_predictions - must be already pre-transformed to log(x)
+         *    1: weights - is used for weighting (multiplying) of loss values, type float.
+         *       Can be single scalar or has the same rank as labels and must be broadcastable to labels.
+         *    2: labels - ground truth vales, expected to be 0. or 1., type float.
+         *       Must have the same shape as logits.
+         *
+         *  Input integer arguments:
+         *    0: type of reduction to apply to loss
+         *       0 - "none", unreduced weighted losses with the same shape as logits.
+         *       1 - "weighted_sum", output is scalar and equal to sum of all elements of weightedLosses array
+         *       2 - "weighted_mean", output is scalar and equal to sum of all elements of weightedLosses array divided by sum of all elements of weightsBroad array
+         *       3 - "weighted_sum_by_nonzero_weights", output is scalar and equal to scalar sum of all elements of weightedLosses array divided by number of non-zero weights
+         *    1: optional - boolean value compute_full_loss: 0 (default) or 1 (compute)
+         *
+         * Output array:
+         *    0: loss values, type float.
+         *       Can be an array with the same shape as log_predictions or just single scalar, depending on reduction mode (see input integer argument)
          */
-//         #if NOT_EXCLUDED(OP_log_poison_loss)
-        @Namespace("nd4j::ops") public static class log_poison_loss extends DeclarableOp {
+//         #if NOT_EXCLUDED(OP_log_poisson_loss)
+        @Namespace("nd4j::ops") public static class log_poisson_loss extends DeclarableCustomOp {
             static { Loader.load(); }
             /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
-            public log_poison_loss(Pointer p) { super(p); }
+            public log_poisson_loss(Pointer p) { super(p); }
             /** Native array allocator. Access with {@link Pointer#position(long)}. */
-            public log_poison_loss(long size) { super((Pointer)null); allocateArray(size); }
+            public log_poisson_loss(long size) { super((Pointer)null); allocateArray(size); }
             private native void allocateArray(long size);
-            @Override public log_poison_loss position(long position) {
-                return (log_poison_loss)super.position(position);
+            @Override public log_poisson_loss position(long position) {
+                return (log_poisson_loss)super.position(position);
             }
         
-                                                                                    public log_poison_loss() { super((Pointer)null); allocate(); }
+                                                                                    public log_poisson_loss() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
+                                                                                }
+        @Namespace("nd4j::ops") public static class log_poisson_loss_grad extends DeclarableCustomOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public log_poisson_loss_grad(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public log_poisson_loss_grad(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public log_poisson_loss_grad position(long position) {
+                return (log_poisson_loss_grad)super.position(position);
+            }
+        
+                                                                                    public log_poisson_loss_grad() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
                                                                                     public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
                                                                                 }
@@ -20800,6 +20968,21 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
             }
         
                                                                                     public mean_pairwssqerr_loss() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
+                                                                                }
+        @Namespace("nd4j::ops") public static class mean_pairwssqerr_loss_grad extends DeclarableCustomOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public mean_pairwssqerr_loss_grad(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public mean_pairwssqerr_loss_grad(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public mean_pairwssqerr_loss_grad position(long position) {
+                return (mean_pairwssqerr_loss_grad)super.position(position);
+            }
+        
+                                                                                    public mean_pairwssqerr_loss_grad() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
                                                                                     public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
                                                                                 }

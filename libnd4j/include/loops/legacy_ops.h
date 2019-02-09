@@ -159,7 +159,9 @@
         (49, LogSigmoid), \
         (50, Erfc) ,\
         (51, Expm1), \
-        (52, ATanh)
+        (52, ATanh) ,\
+        (53, GELU) ,\
+        (54, GELUDerivative)
 
 // these ops return one of FLOAT data types
 #define TRANSFORM_FLOAT_OPS \
@@ -347,8 +349,8 @@
         (29, LogicalNot) ,\
         (30, LogicalAnd) ,\
         (31, PowDerivative), \
-        (32, LogPoisonLoss), \
-        (33, LogPoisonLossFull) , \
+        (32, LogPoissonLoss), \
+        (33, LogPoissonLossFull) , \
         (34, AMaxPairwise), \
         (35, AMinPairwise) ,\
         (36, TruncateMod)

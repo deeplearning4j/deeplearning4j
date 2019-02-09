@@ -17,8 +17,8 @@
 package org.datavec.image.recordreader;
 
 import org.datavec.api.records.Record;
-import org.datavec.api.records.metadata.RecordMetaDataImageURI;
 import org.datavec.api.records.metadata.RecordMetaData;
+import org.datavec.api.records.metadata.RecordMetaDataImageURI;
 import org.datavec.api.records.reader.RecordReader;
 import org.datavec.api.split.CollectionInputSplit;
 import org.datavec.api.split.FileSplit;
@@ -27,7 +27,9 @@ import org.datavec.api.writable.Writable;
 import org.datavec.image.recordreader.objdetect.ImageObject;
 import org.datavec.image.recordreader.objdetect.ImageObjectLabelProvider;
 import org.datavec.image.recordreader.objdetect.ObjectDetectionRecordReader;
+import org.datavec.image.transform.FlipImageTransform;
 import org.datavec.image.transform.ImageTransform;
+import org.datavec.image.transform.PipelineImageTransform;
 import org.datavec.image.transform.ResizeImageTransform;
 import org.junit.Rule;
 import org.junit.Test;
@@ -36,7 +38,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.BooleanIndexing;
 import org.nd4j.linalg.indexing.conditions.Conditions;
-import org.nd4j.linalg.indexing.functions.Value;
+import org.nd4j.linalg.io.ClassPathResource;
 
 import java.io.File;
 import java.net.URI;
@@ -44,9 +46,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import org.datavec.image.transform.FlipImageTransform;
-import org.datavec.image.transform.PipelineImageTransform;
-import org.nd4j.linalg.io.ClassPathResource;
 
 import static org.junit.Assert.*;
 
@@ -173,7 +172,7 @@ public class TestObjectDetectionRecordReader {
             assertEquals(37, transform.getCurrentImage().getWidth());
             assertEquals(42, transform.getCurrentImage().getHeight());
             INDArray labelArray = ((NDArrayWritable)next.get(1)).get();
-            BooleanIndexing.applyWhere(labelArray, Conditions.notEquals(0), new Value(1));
+            BooleanIndexing.replaceWhere(labelArray, 1, Conditions.notEquals(0));
             assertEquals(nonzeroCount[i++], labelArray.ravel().sum(1).getInt(0));
         }
 
@@ -186,7 +185,7 @@ public class TestObjectDetectionRecordReader {
             assertEquals(1024, transform2.getCurrentImage().getWidth());
             assertEquals(2048, transform2.getCurrentImage().getHeight());
             INDArray labelArray = ((NDArrayWritable)next.get(1)).get();
-            BooleanIndexing.applyWhere(labelArray, Conditions.notEquals(0), new Value(1));
+            BooleanIndexing.replaceWhere(labelArray, 1, Conditions.notEquals(0));
             assertEquals(nonzeroCount[i++], labelArray.ravel().sum(1).getInt(0));
         }
         
@@ -201,7 +200,7 @@ public class TestObjectDetectionRecordReader {
         while (rrTransform3.hasNext()) {
             List<Writable> next = rrTransform3.next();
             INDArray labelArray = ((NDArrayWritable)next.get(1)).get();
-            BooleanIndexing.applyWhere(labelArray, Conditions.notEquals(0), new Value(1));
+            BooleanIndexing.replaceWhere(labelArray, 1, Conditions.notEquals(0));
             assertEquals(nonzeroCount[i++], labelArray.ravel().sum(1).getInt(0));
         }
         
@@ -217,7 +216,7 @@ public class TestObjectDetectionRecordReader {
             assertEquals((int) origH[i], transform4.getCurrentImage().getHeight());
             
             INDArray labelArray = ((NDArrayWritable)next.get(1)).get();
-            BooleanIndexing.applyWhere(labelArray, Conditions.notEquals(0), new Value(1));
+            BooleanIndexing.replaceWhere(labelArray, 1, Conditions.notEquals(0));
             assertEquals(nonzeroCount[i++], labelArray.ravel().sum(1).getInt(0));
         }
     }

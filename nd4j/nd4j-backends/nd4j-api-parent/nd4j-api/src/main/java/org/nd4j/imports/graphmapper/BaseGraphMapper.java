@@ -130,15 +130,8 @@ public abstract class BaseGraphMapper<GRAPH_TYPE, NODE_TYPE, ATTR_TYPE, TENSOR_T
         try (FileInputStream fis = new FileInputStream(graphFile)) {
             return importGraph(fis);
         } catch (Exception e) {
-            e.printStackTrace();
-
+            throw new ND4JIllegalStateException("Error encountered loading graph file: " + graphFile.getAbsolutePath(), e);
         }
-
-        if (def == null)
-            throw new ND4JIllegalStateException("Unknown format: " + graphFile.getAbsolutePath());
-
-
-        return importGraph(def);
     }
 
     @Override

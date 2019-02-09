@@ -69,16 +69,14 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.zip.GZIPInputStream;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipFile;
-import java.util.zip.ZipOutputStream;
+import java.util.zip.*;
 
 /**
  * This is utility class, providing various methods for WordVectors serialization
  *
  * @author Adam Gibson
  * @author raver119
+ * @author alexander@skymind.io
  */
 @Slf4j
 public class WordVectorSerializer {
@@ -863,7 +861,8 @@ public class WordVectorSerializer {
                         for (int i = 0; i < split.length; i++) {
                             array[i] = Double.parseDouble(split[i]);
                         }
-                        rows.add(Nd4j.create(array));
+                        rows.add(Nd4j.create(array, new long[]{array.length},
+                                ((InMemoryLookupTable) w2v.getLookupTable()).getSyn0().dataType()));
                     }
 
                     // it's possible to have full model without syn1Neg
@@ -936,7 +935,7 @@ public class WordVectorSerializer {
             for (int i = 0; i < split.length; i++) {
                 array[i] = Double.parseDouble(split[i]);
             }
-            rows.add(Nd4j.create(array));
+            rows.add(Nd4j.create(array, new long[]{array.length}, lookupTable.getSyn0().dataType()));
         }
         reader.close();
 
@@ -1977,6 +1976,128 @@ public class WordVectorSerializer {
                 writer.flush();
             }
         }
+    }
+
+    private static final String CONFIG_ENTRY = "config.json";
+    private static final String VOCAB_ENTRY = "vocabulary.json";
+    private static final String SYN0_ENTRY = "syn0.bin";
+    private static final String SYN1_ENTRY = "syn1.bin";
+    private static final String SYN1_NEG_ENTRY = "syn1neg.bin";
+
+
+    public static <T extends  SequenceElement> void writeSequenceVectors(@NonNull SequenceVectors<T> vectors,
+                                                                         @NonNull OutputStream stream)
+            throws IOException {
+
+        InMemoryLookupTable<VocabWord> lookupTable = (InMemoryLookupTable<VocabWord>)vectors.getLookupTable();
+        AbstractCache<T> vocabCache = (AbstractCache<T>)vectors.getVocab();
+
+        try (ZipOutputStream zipfile = new ZipOutputStream(new BufferedOutputStream(new CloseShieldOutputStream(stream)));
+             DataOutputStream dos = new DataOutputStream(new BufferedOutputStream(zipfile))) {
+
+            ZipEntry config = new ZipEntry(CONFIG_ENTRY);
+            zipfile.putNextEntry(config);
+            VectorsConfiguration configuration = vectors.getConfiguration();
+
+            String json = configuration.toJson().trim();
+            zipfile.write(json.getBytes("UTF-8"));
+
+            ZipEntry vocab = new ZipEntry(VOCAB_ENTRY);
+            zipfile.putNextEntry(vocab);
+            zipfile.write(vocabCache.toJson().getBytes("UTF-8"));
+
+            INDArray syn0Data = lookupTable.getSyn0();
+            ZipEntry syn0 = new ZipEntry(SYN0_ENTRY);
+            zipfile.putNextEntry(syn0);
+            Nd4j.write(syn0Data, dos);
+            dos.flush();
+
+            INDArray syn1Data = lookupTable.getSyn1();
+            if (syn1Data != null) {
+                ZipEntry syn1 = new ZipEntry(SYN1_ENTRY);
+                zipfile.putNextEntry(syn1);
+                Nd4j.write(syn1Data, dos);
+                dos.flush();
+            }
+
+            INDArray syn1NegData = lookupTable.getSyn1Neg();
+            if (syn1NegData != null) {
+                ZipEntry syn1neg = new ZipEntry(SYN1_NEG_ENTRY);
+                zipfile.putNextEntry(syn1neg);
+                Nd4j.write(syn1NegData, dos);
+                dos.flush();
+            }
+        }
+    }
+
+
+    public static <T extends SequenceElement> SequenceVectors<T> readSequenceVectors(@NonNull String path,
+                                                                                     boolean readExtendedTables)
+        throws  IOException {
+
+        File file = new File(path);
+        SequenceVectors<T> vectors = readSequenceVectors(file, readExtendedTables);
+        return vectors;
+    }
+
+    public static <T extends SequenceElement> SequenceVectors<T> readSequenceVectors(@NonNull File file,
+                                                                                     boolean readExtendedTables)
+            throws IOException {
+
+        SequenceVectors<T> vectors = readSequenceVectors(new FileInputStream(file), readExtendedTables);
+        return vectors;
+    }
+
+    public static <T extends SequenceElement> SequenceVectors<T> readSequenceVectors(@NonNull InputStream stream,
+                                                                                     boolean readExtendedTables)
+            throws IOException {
+
+        SequenceVectors<T> vectors = null;
+        AbstractCache<T> vocabCache = null;
+        VectorsConfiguration configuration = null;
+
+        INDArray syn0 = null, syn1 = null, syn1neg = null;
+
+        try (ZipInputStream zipfile = new ZipInputStream(new BufferedInputStream(stream))) {
+
+            ZipEntry entry = null;
+            while ((entry = zipfile.getNextEntry()) != null) {
+
+                String name = entry.getName();
+                byte[] bytes = IOUtils.toByteArray(zipfile);
+
+                if (name.equals(CONFIG_ENTRY)) {
+                    String content = new String(bytes, "UTF-8");
+                    configuration = VectorsConfiguration.fromJson(content);
+                    continue;
+                }
+                else if (name.equals(VOCAB_ENTRY)) {
+                    String content = new String(bytes, "UTF-8");
+                    vocabCache = AbstractCache.fromJson(content);
+                    continue;
+                }
+                if (readExtendedTables) {
+                    if (name.equals(SYN0_ENTRY)) {
+                        syn0 = Nd4j.read(new ByteArrayInputStream(bytes));
+
+                    } else if (name.equals(SYN1_ENTRY)) {
+                        syn1 = Nd4j.read(new ByteArrayInputStream(bytes));
+                    } else if (name.equals(SYN1_NEG_ENTRY)) {
+                        syn1neg = Nd4j.read(new ByteArrayInputStream(bytes));
+                    }
+                }
+            }
+
+        }
+        InMemoryLookupTable<T> lookupTable = new InMemoryLookupTable<>();
+        lookupTable.setSyn0(syn0);
+        lookupTable.setSyn1(syn1);
+        lookupTable.setSyn1Neg(syn1neg);
+        vectors = new SequenceVectors.Builder<T>(configuration).
+                lookupTable(lookupTable).
+                vocabCache(vocabCache).
+                build();
+        return vectors;
     }
 
     /**

@@ -27,6 +27,7 @@ import org.deeplearning4j.models.word2vec.Word2Vec;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.deeplearning4j.plot.BarnesHutTsne;
 import org.deeplearning4j.ui.UiConnectionInfo;
+import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -111,6 +112,7 @@ public class InMemoryLookupTable<T extends SequenceElement> implements WeightLoo
     }
 
     public double[] getExpTable() {
+
         return expTable;
     }
 
@@ -577,15 +579,19 @@ public class InMemoryLookupTable<T extends SequenceElement> implements WeightLoo
         return syn0;
     }
 
-    public void setSyn0(INDArray syn0) {
+    public void setSyn0(@NonNull INDArray syn0) {
+        Preconditions.checkArgument(!syn0.isEmpty(), "syn0 can't be empty");
+        Preconditions.checkArgument(syn0.rank() == 2, "syn0 must have rank 2");
+
         this.syn0 = syn0;
+        this.vectorLength = syn0.columns();
     }
 
     public INDArray getSyn1() {
         return syn1;
     }
 
-    public void setSyn1(INDArray syn1) {
+    public void setSyn1(@NonNull INDArray syn1) {
         this.syn1 = syn1;
     }
 

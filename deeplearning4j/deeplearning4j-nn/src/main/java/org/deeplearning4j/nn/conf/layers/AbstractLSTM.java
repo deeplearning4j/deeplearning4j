@@ -42,32 +42,6 @@ public abstract class AbstractLSTM extends BaseRecurrentLayer {
         this.gateActivationFn = builder.gateActivationFn;
     }
 
-    @Override
-    public double getL1ByParam(String paramName) {
-        switch (paramName) {
-            case LSTMParamInitializer.INPUT_WEIGHT_KEY:
-            case LSTMParamInitializer.RECURRENT_WEIGHT_KEY:
-                return l1;
-            case LSTMParamInitializer.BIAS_KEY:
-                return l1Bias;
-            default:
-                throw new IllegalArgumentException("Unknown parameter name: \"" + paramName + "\"");
-        }
-    }
-
-    @Override
-    public double getL2ByParam(String paramName) {
-        switch (paramName) {
-            case LSTMParamInitializer.INPUT_WEIGHT_KEY:
-            case LSTMParamInitializer.RECURRENT_WEIGHT_KEY:
-                return l2;
-            case LSTMParamInitializer.BIAS_KEY:
-                return l2Bias;
-            default:
-                throw new IllegalArgumentException("Unknown parameter name: \"" + paramName + "\"");
-        }
-    }
-
     @AllArgsConstructor
     @NoArgsConstructor
     @Getter

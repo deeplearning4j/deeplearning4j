@@ -34,12 +34,16 @@ import java.util.*;
  *
  */
 public class ConfusionMatrix extends DynamicCustomOp {
+    public static final DataType DEFAULT_DTYPE = DataType.INT;
+
+    private DataType outputType = DEFAULT_DTYPE;
 
     public ConfusionMatrix(){
     }
 
-    public ConfusionMatrix(SameDiff sameDiff, SDVariable labels, SDVariable pred){
+    public ConfusionMatrix(SameDiff sameDiff, SDVariable labels, SDVariable pred, DataType dataType){
         super(null, sameDiff, new SDVariable[]{labels, pred});
+        this.outputType = dataType;
     }
 
     public ConfusionMatrix(SameDiff sameDiff, SDVariable labels, SDVariable pred, SDVariable weights){
@@ -59,6 +63,7 @@ public class ConfusionMatrix extends DynamicCustomOp {
     @Override
     public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
         super.initFromTensorFlow(nodeDef, initWith, attributesForNode, graph);
+        //Looks like this is implemented in practice using a large collection of discrete ops - not single TF import op?
     }
 
     @Override
@@ -84,7 +89,6 @@ public class ConfusionMatrix extends DynamicCustomOp {
 
     @Override
     public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes){
-        //TODO make this configurable: https://github.com/deeplearning4j/deeplearning4j/issues/6854
-        return Collections.singletonList(DataType.FLOAT);
+        return Collections.singletonList(outputType);
     }
 }

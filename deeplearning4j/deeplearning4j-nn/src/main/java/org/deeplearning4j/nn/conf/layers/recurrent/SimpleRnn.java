@@ -74,32 +74,6 @@ public class SimpleRnn extends BaseRecurrentLayer {
     }
 
     @Override
-    public double getL1ByParam(String paramName) {
-        switch (paramName) {
-            case SimpleRnnParamInitializer.WEIGHT_KEY:
-            case SimpleRnnParamInitializer.RECURRENT_WEIGHT_KEY:
-                return l1;
-            case SimpleRnnParamInitializer.BIAS_KEY:
-                return l1Bias;
-            default:
-                throw new IllegalStateException("Unknown parameter: \"" + paramName + "\"");
-        }
-    }
-
-    @Override
-    public double getL2ByParam(String paramName) {
-        switch (paramName) {
-            case SimpleRnnParamInitializer.WEIGHT_KEY:
-            case SimpleRnnParamInitializer.RECURRENT_WEIGHT_KEY:
-                return l2;
-            case SimpleRnnParamInitializer.BIAS_KEY:
-                return l2Bias;
-            default:
-                throw new IllegalStateException("Unknown parameter: \"" + paramName + "\"");
-        }
-    }
-
-    @Override
     public LayerMemoryReport getMemoryReport(InputType inputType) {
         return null;
     }

@@ -32,6 +32,7 @@ import org.deeplearning4j.optimize.api.TrainingListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.learning.config.IUpdater;
 import org.nd4j.linalg.learning.config.NoOp;
+import org.nd4j.linalg.learning.regularization.Regularization;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -164,15 +165,9 @@ public class BatchNormalization extends FeedForwardLayer {
     }
 
     @Override
-    public double getL1ByParam(String paramName) {
+    public List<Regularization> getRegularizationByParam(String paramName){
         //Don't regularize batch norm params: similar to biases in the sense that there are not many of them...
-        return 0.0;
-    }
-
-    @Override
-    public double getL2ByParam(String paramName) {
-        //Don't regularize batch norm params: similar to biases in the sense that there are not many of them...
-        return 0;
+        return null;
     }
 
     @Override

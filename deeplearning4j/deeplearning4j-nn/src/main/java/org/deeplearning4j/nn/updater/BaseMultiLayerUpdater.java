@@ -57,12 +57,11 @@ public abstract class BaseMultiLayerUpdater<T extends Model> implements Updater 
     protected Map<String, Trainable> layersByName;
     protected final List<UpdaterBlock> updaterBlocks;
     protected INDArray updaterStateViewArray;
-    protected boolean legacyBatchScaledL2;
     protected boolean initializedMinibatchDivision;
     protected List<INDArray> gradientsForMinibatchDivision;
 
-    public BaseMultiLayerUpdater(T network, boolean legacyBatchScaledL2) {
-        this(network, null, legacyBatchScaledL2);
+    public BaseMultiLayerUpdater(T network) {
+        this(network, null);
     }
 
     /**
@@ -70,9 +69,8 @@ public abstract class BaseMultiLayerUpdater<T extends Model> implements Updater 
      * @param network      Network to create the updater for
      * @param updaterState The updater state to use. Note: This array is used *directly* and isn't copied/cloned
      */
-    public BaseMultiLayerUpdater(T network, INDArray updaterState, boolean legacyBatchScaledL2) {
+    public BaseMultiLayerUpdater(T network, INDArray updaterState) {
         this.network = network;
-        this.legacyBatchScaledL2 = legacyBatchScaledL2;
         Trainable[] layers = getOrderedLayers();    //May also include vertices
 
         int updaterStateSize = 0;
@@ -295,7 +293,7 @@ public abstract class BaseMultiLayerUpdater<T extends Model> implements Updater 
             }
         }
 
-        if(!legacyBatchScaledL2 && isMiniBatch()){
+        if(isMiniBatch()){
             divideByMinibatch(isExternal, gradient, batchSize);
         }
 
@@ -327,10 +325,6 @@ public abstract class BaseMultiLayerUpdater<T extends Model> implements Updater 
                     ub.update(iteration, epoch);
                 }
             }
-        }
-
-        if(legacyBatchScaledL2 && isMiniBatch()){
-            divideByMinibatch(isExternal, gradient, batchSize);
         }
     }
 

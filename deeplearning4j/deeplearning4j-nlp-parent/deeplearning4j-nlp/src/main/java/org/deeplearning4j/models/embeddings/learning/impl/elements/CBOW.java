@@ -19,6 +19,8 @@ package org.deeplearning4j.models.embeddings.learning.impl.elements;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
+import lombok.val;
+import org.apache.commons.lang3.ArrayUtils;
 import org.deeplearning4j.models.embeddings.WeightLookupTable;
 import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
 import org.deeplearning4j.models.embeddings.learning.ElementsLearningAlgorithm;
@@ -27,9 +29,11 @@ import org.deeplearning4j.models.sequencevectors.interfaces.SequenceIterator;
 import org.deeplearning4j.models.sequencevectors.sequence.Sequence;
 import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.aggregates.Aggregate;
 import org.nd4j.linalg.api.ops.aggregates.impl.AggregateCBOW;
+import org.nd4j.linalg.api.ops.impl.nlp.CbowRound;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.DeviceLocalNDArray;
 import org.slf4j.Logger;
@@ -58,6 +62,15 @@ public class CBOW<T extends SequenceElement> implements ElementsLearningAlgorith
     protected double negative;
     protected double sampling;
     protected int[] variableWindows;
+    protected int workers = Runtime.getRuntime().availableProcessors();
+
+    public int getWorkers() {
+        return workers;
+    }
+
+    public void setWorkers(int workers) {
+        this.workers = workers;
+    }
 
     @Getter
     @Setter
@@ -99,7 +112,9 @@ public class CBOW<T extends SequenceElement> implements ElementsLearningAlgorith
         this.syn0 = new DeviceLocalNDArray(((InMemoryLookupTable<T>) lookupTable).getSyn0());
         this.syn1 = new DeviceLocalNDArray(((InMemoryLookupTable<T>) lookupTable).getSyn1());
         this.syn1Neg = new DeviceLocalNDArray(((InMemoryLookupTable<T>) lookupTable).getSyn1Neg());
-        this.expTable = new DeviceLocalNDArray(Nd4j.create(((InMemoryLookupTable<T>) lookupTable).getExpTable()));
+        //this.expTable = new DeviceLocalNDArray(Nd4j.create(((InMemoryLookupTable<T>) lookupTable).getExpTable()));
+        this.expTable = new DeviceLocalNDArray(Nd4j.create(((InMemoryLookupTable<T>) lookupTable).getExpTable(),
+                new long[]{((InMemoryLookupTable<T>) lookupTable).getExpTable().length}, syn0.get().dataType()));
         this.table = new DeviceLocalNDArray(((InMemoryLookupTable<T>) lookupTable).getTable());
         this.variableWindows = configuration.getVariableWindows();
     }
@@ -123,6 +138,29 @@ public class CBOW<T extends SequenceElement> implements ElementsLearningAlgorith
     }
 
     @Override
+    public double learnSequence(Sequence<T> sequence, AtomicLong nextRandom, double learningRate,
+                                BatchSequences<T> batchSequences) {
+        Sequence<T> tempSequence = sequence;
+
+        if (sampling > 0)
+            tempSequence = applySubsampling(sequence, nextRandom);
+
+        int currentWindow = window;
+
+        if (variableWindows != null && variableWindows.length != 0) {
+            currentWindow = variableWindows[RandomUtils.nextInt(variableWindows.length)];
+        }
+
+        for (int i = 0; i < tempSequence.getElements().size(); i++) {
+            nextRandom.set(Math.abs(nextRandom.get() * 25214903917L + 11));
+            cbow(i, tempSequence.getElements(), (int) nextRandom.get() % currentWindow, nextRandom, learningRate,
+                 currentWindow, batchSequences);
+        }
+
+        return 0;
+    }
+
+    @Override
     public double learnSequence(Sequence<T> sequence, AtomicLong nextRandom, double learningRate) {
         Sequence<T> tempSequence = sequence;
         if (sampling > 0)
@@ -137,7 +175,7 @@ public class CBOW<T extends SequenceElement> implements ElementsLearningAlgorith
         for (int i = 0; i < tempSequence.getElements().size(); i++) {
             nextRandom.set(Math.abs(nextRandom.get() * 25214903917L + 11));
             cbow(i, tempSequence.getElements(), (int) nextRandom.get() % currentWindow, nextRandom, learningRate,
-                            currentWindow);
+                            currentWindow, null);
         }
 
         return 0;
@@ -149,13 +187,13 @@ public class CBOW<T extends SequenceElement> implements ElementsLearningAlgorith
     }
 
     public void iterateSample(T currentWord, int[] windowWords, AtomicLong nextRandom, double alpha,
-                    boolean isInference, int numLabels, boolean trainWords, INDArray inferenceVector) {
+                              boolean isInference, int numLabels, boolean trainWords, INDArray inferenceVector) {
         int[] idxSyn1 = null;
-        int[] codes = null;
+        byte[] codes = null;
 
         if (configuration.isUseHierarchicSoftmax()) {
             idxSyn1 = new int[currentWord.getCodeLength()];
-            codes = new int[currentWord.getCodeLength()];
+            codes = new byte[currentWord.getCodeLength()];
             for (int p = 0; p < currentWord.getCodeLength(); p++) {
                 if (currentWord.getPoints().get(p) < 0)
                     continue;
@@ -165,7 +203,7 @@ public class CBOW<T extends SequenceElement> implements ElementsLearningAlgorith
             }
         } else {
             idxSyn1 = new int[0];
-            codes = new int[0];
+            codes = new byte[0];
         }
 
 
@@ -179,24 +217,190 @@ public class CBOW<T extends SequenceElement> implements ElementsLearningAlgorith
         if (batches.get() == null)
             batches.set(new ArrayList<Aggregate>());
 
-        AggregateCBOW cbow = new AggregateCBOW(syn0.get(), syn1.get(), syn1Neg.get(), expTable.get(), table.get(),
-                        currentWord.getIndex(), windowWords, idxSyn1, codes, (int) negative, currentWord.getIndex(),
-                        lookupTable.layerSize(), alpha, nextRandom.get(), vocabCache.numWords(), numLabels, trainWords,
-                        inferenceVector);
-        nextRandom.set(Math.abs(nextRandom.get() * 25214903917L + 11));
+        /*AggregateCBOW(syn0.get(), syn1.get(), syn1Neg.get(), expTable.get(), table.get(),
+                currentWord.getIndex(), windowWords, idxSyn1, codes, (int) negative, currentWord.getIndex(),
+                lookupTable.layerSize(), alpha, nextRandom.get(), vocabCache.numWords(), numLabels, trainWords,
+                inferenceVector);*/
 
-        if (!isInference) {
+        boolean useHS = configuration.isUseHierarchicSoftmax();
+        boolean useNegative = configuration.getNegative() > 0;
+
+        CbowRound cbow = null;
+
+        if (useHS && useNegative) {
+            cbow = new CbowRound(Nd4j.scalar(currentWord.getIndex()), Nd4j.createFromArray(windowWords),
+                    Nd4j.scalar(currentWord.getIndex()),
+                    syn0.get(), syn1.get(), syn1Neg.get(),
+                    expTable.get(), table.get(), Nd4j.createFromArray(idxSyn1), Nd4j.createFromArray(codes),
+                    (int)negative, Nd4j.scalar(alpha), Nd4j.scalar(nextRandom.get()),
+                    inferenceVector != null ? inferenceVector : Nd4j.empty(syn0.get().dataType()),
+                    Nd4j.empty(DataType.INT),
+                    trainWords,
+                    workers);
+        }
+        else if (useHS) {
+            cbow = new CbowRound(currentWord.getIndex(), windowWords,
+                    syn0.get(), syn1.get(),
+                    expTable.get(), idxSyn1, codes, alpha, nextRandom.get(),
+                    inferenceVector != null ? inferenceVector : Nd4j.empty(syn0.get().dataType()), 0);
+        }
+        else if (useNegative) {
+            cbow = new CbowRound(currentWord.getIndex(), windowWords, currentWord.getIndex(),
+                    syn0.get(), syn1Neg.get(),
+                    expTable.get(), table.get(), (int)negative, alpha, nextRandom.get(),
+                    inferenceVector != null ? inferenceVector : Nd4j.empty(syn0.get().dataType()), 0);
+        }
+
+        nextRandom.set(Math.abs(nextRandom.get() * 25214903917L + 11));
+        Nd4j.getExecutioner().exec(cbow);
+
+        /*if (!isInference) {
             batches.get().add(cbow);
             if (batches.get().size() > 4096) {
                 Nd4j.getExecutioner().exec(batches.get());
                 batches.get().clear();
             }
         } else
-            Nd4j.getExecutioner().exec(cbow);
+            Nd4j.getExecutioner().exec(cbow);*/
 
     }
 
-    public void cbow(int i, List<T> sentence, int b, AtomicLong nextRandom, double alpha, int currentWindow) {
+    public void iterateSample(List<BatchItem<T>> items) {
+
+        boolean useHS = configuration.isUseHierarchicSoftmax();
+        boolean useNegative = configuration.getNegative() > 0;
+
+        int[] idxSyn1 = null;
+        byte[] codes = null;
+
+        int maxCols = 1;
+        for (int i = 0; i < items.size(); ++i) {
+            int curr = items.get(i).getWord().getCodeLength();
+            if (curr > maxCols)
+                maxCols = curr;
+        }
+
+        byte[][] inputCodes = new byte[items.size()][maxCols];
+        int[][] inputIndices = new int[items.size()][maxCols];
+        int[] numLabels = new int[items.size()];
+        boolean hasNumLabels = false;
+
+        int maxWinWordsCols = -1;
+        for (int i = 0; i < items.size(); ++i) {
+            int curr = items.get(i).getWindowWords().length;
+            if (curr > maxWinWordsCols)
+                maxWinWordsCols = curr;
+        }
+        int[][] inputWindowWords = new int[items.size()][maxWinWordsCols];
+
+        long[] randoms = new long[items.size()];
+        double[] alphas = new double[items.size()];
+        int[]  currentWordIndexes = new int[items.size()];
+
+        for (int cnt = 0; cnt < items.size(); ++cnt) {
+
+            T currentWord = items.get(cnt).getWord();
+            currentWordIndexes[cnt] = currentWord.getIndex();
+            int[] windowWords = items.get(cnt).getWindowWords().clone();
+            for (int i = 0; i < maxWinWordsCols; ++i) {
+                if (i < windowWords.length)
+                    inputWindowWords[cnt][i] = windowWords[i];
+                else
+                    inputWindowWords[cnt][i] = -1;
+            }
+
+            long randomValue = items.get(cnt).getRandomValue();
+            double alpha = items.get(cnt).getAlpha();
+            alphas[cnt] = alpha;
+
+            randoms[cnt] = randomValue;
+            numLabels[cnt] = items.get(cnt).getNumLabel();
+            if (numLabels[cnt] > 0)
+                hasNumLabels = true;
+
+            if (useHS) {
+                idxSyn1 = new int[currentWord.getCodeLength()];
+                codes = new byte[currentWord.getCodeLength()];
+                for (int p = 0; p < currentWord.getCodeLength(); p++) {
+                    if (currentWord.getPoints().get(p) < 0)
+                        continue;
+
+                    codes[p] = currentWord.getCodes().get(p);
+                    idxSyn1[p] = currentWord.getPoints().get(p);
+                }
+                for (int i = 0; i < maxCols; ++i) {
+                    if (i < currentWord.getCodeLength())
+                        inputCodes[cnt][i] = codes[i];
+                    else
+                        inputCodes[cnt][i] = -1;
+                }
+                for (int i = 0; i < maxCols; ++i) {
+                    if (i < currentWord.getCodeLength())
+                        inputIndices[cnt][i]  = idxSyn1[i];
+                    else
+                        inputIndices[cnt][i] = -1;
+                }
+            } else {
+                idxSyn1 = new int[0];
+                codes = new byte[0];
+
+                inputIndices = new int[0][0];
+                inputCodes = new byte[0][0];
+            }
+
+
+            if (negative > 0) {
+                if (syn1Neg == null) {
+                    ((InMemoryLookupTable<T>) lookupTable).initNegative();
+                    syn1Neg = new DeviceLocalNDArray(((InMemoryLookupTable<T>) lookupTable).getSyn1Neg());
+                }
+            }
+
+            if (batches.get() == null)
+                batches.set(new ArrayList<Aggregate>());
+
+            //nextRandom.set(Math.abs(nextRandom.get() * 25214903917L + 11));
+        }
+
+        INDArray currentWordIndexesArray = Nd4j.createFromArray(currentWordIndexes);
+        INDArray alphasArray = Nd4j.createFromArray(alphas);
+        INDArray windowWordsArray = Nd4j.createFromArray(inputWindowWords);
+        INDArray codesArray = Nd4j.createFromArray(inputCodes);
+        INDArray indicesArray = Nd4j.createFromArray(inputIndices);
+        INDArray numLabelsArray = Nd4j.createFromArray(numLabels);
+
+        CbowRound cbow = new CbowRound(currentWordIndexesArray, windowWordsArray,
+                currentWordIndexesArray,
+                syn0.get(),
+                useHS? syn1.get() : Nd4j.empty(syn0.get().dataType()),
+                (negative > 0) ? syn1Neg.get() : Nd4j.empty(syn0.get().dataType()),
+                expTable.get(),
+                (negative > 0) ? table.get() : Nd4j.empty(syn0.get().dataType()),
+                useHS ? indicesArray : Nd4j.empty(DataType.INT),
+                useHS ? codesArray : Nd4j.empty(DataType.BYTE),
+                (int) negative, alphasArray, Nd4j.createFromArray(randoms),
+                /*inferenceVector != null ? inferenceVector :*/ Nd4j.empty(syn0.get().dataType()),
+                hasNumLabels ? numLabelsArray : Nd4j.empty(DataType.INT),
+                configuration.isTrainElementsVectors(),
+                workers);
+
+        Nd4j.getExecutioner().exec(cbow);
+
+        /*if (!isInference) {
+            batches.get().add(cbow);
+            if (batches.get().size() > 4096) {
+                Nd4j.getExecutioner().exec(batches.get());
+                batches.get().clear();
+            }
+        } else
+            Nd4j.getExecutioner().exec(cbow);*/
+
+    }
+
+    public void cbow(int i, List<T> sentence, int b, AtomicLong nextRandom, double alpha, int currentWindow,
+                     BatchSequences<T> batchSequences) {
+        int batchSize = configuration.getBatchSize();
+
         int end = window * 2 + 1 - b;
 
         T currentWord = sentence.get(i);
@@ -219,7 +423,11 @@ public class CBOW<T extends SequenceElement> implements ElementsLearningAlgorith
         }
 
         // we don't allow inference from main loop here
-        iterateSample(currentWord, windowWords, nextRandom, alpha, false, 0, true, null);
+        if (batchSize <= 1)
+            iterateSample(currentWord, windowWords, nextRandom, alpha, false, 0, true, null);
+        else {
+            batchSequences.put(currentWord, windowWords, nextRandom.get(), alpha);
+        }
 
         if (batches != null && batches.get() != null && batches.get().size() >= configuration.getBatchSize()) {
             Nd4j.getExecutioner().exec(batches.get());

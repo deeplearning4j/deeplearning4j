@@ -24,6 +24,7 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.bytedeco.javacpp.*;
 import org.bytedeco.javacpp.indexer.LongIndexer;
+import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.serde.FlatBuffersMapper;
 import org.nd4j.base.Preconditions;
@@ -91,6 +92,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
     private ThreadLocal<Map<Integer,PointerPointer>> inputBuffers = new ThreadLocal<>();
     private ThreadLocal<Map<Integer,PointerPointer>> outputShapes = new ThreadLocal<>();
     private ThreadLocal<Map<Integer,PointerPointer>> outputBuffers = new ThreadLocal<>();
+    private ThreadLocal<Map<Integer,LongPointer>> iArgsPointer = new ThreadLocal<>();
     private ThreadLocal<Map<Integer,DoublePointer>> tArgsPointer = new ThreadLocal<>();
     private ThreadLocal<Map<Integer,BooleanPointer>> bArgsPointer = new ThreadLocal<>();
     private ThreadLocal<Map<Integer,ShortPointer>> halfArgsPointer = new ThreadLocal<>();
@@ -1520,6 +1522,21 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
     }
 
 
+    private LongPointer getLongPointerFrom(ThreadLocal<Map<Integer,LongPointer>> map,int numArguments) {
+        if(map.get() == null) {
+            Map<Integer,LongPointer> store = new HashMap<>();
+            store.put(numArguments,new LongPointer(numArguments));
+            map.set(store);
+            return map.get().get(numArguments);
+        }
+        else if (map.get().get(numArguments) == null) {
+            val pointerPointer = new LongPointer(numArguments);
+            map.get().put(numArguments,pointerPointer);
+            return pointerPointer;
+        }
+
+        return map.get().get(numArguments);
+    }
 
     private DoublePointer getDoublePointerFrom(ThreadLocal<Map<Integer,DoublePointer>> map,int numArguments) {
         if(map.get() == null) {
@@ -1640,31 +1657,30 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             outputShapes.put(cnt++, out.shapeInfoDataBuffer().addressPointer());
         }
 
-        val iArgs = op.numIArguments() > 0 ? new LongPointer(op.numIArguments()) : null;
+        val iArgs = op.numIArguments() > 0 ? getLongPointerFrom(iArgsPointer,op.numIArguments()) : null;
+        val tArgs = op.numTArguments() > 0 ? getDoublePointerFrom(tArgsPointer,op.numTArguments()) : null;
+        val bArgs = op.numBArguments() > 0 ? getBooleanPointerFrom(bArgsPointer,op.numBArguments()) : null;
+
         cnt = 0;
         val iArgs1 = op.iArgs();
         for (val i: iArgs1)
             iArgs.put(cnt++, i);
 
+        cnt = 0;
+        val bArgs1 = op.bArgs();
+        for (val b: bArgs1)
+            bArgs.put(cnt++, b);
 
-            val tArgs = op.numTArguments() > 0 ? getDoublePointerFrom(tArgsPointer,op.numTArguments()) : null;
-            val bArgs = op.numBArguments() > 0 ? getBooleanPointerFrom(bArgsPointer,op.numBArguments()) : null;
+        cnt = 0;
+        val tArgs1 = op.tArgs();
+        for (val t: tArgs1)
+            tArgs.put(cnt++, t);
 
-            cnt = 0;
-            val bArgs1 = op.bArgs();
-            for (val b: bArgs1)
-                bArgs.put(cnt++, b);
+        val t = op.numInputArguments();
 
-            cnt = 0;
-            val tArgs1 = op.tArgs();
-            for (val t: tArgs1)
-                tArgs.put(cnt++, t);
-
-            val t = op.numInputArguments();
-
-            OpStatus status = OpStatus.ND4J_STATUS_OK;
-            try {
-                val code = loop.execCustomOp(
+        OpStatus status = OpStatus.ND4J_STATUS_OK;
+        try {
+            val code = loop.execCustomOp(
                         null,
                         hash,
                         inputBuffers,
@@ -1683,7 +1699,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                 if (status != OpStatus.ND4J_STATUS_OK)
                     throw new ND4JIllegalStateException("Failed to execute op [" + name + "] with error code [" + status +"]");
             }catch(Exception e) {
-                StringBuilder sb = new StringBuilder();
+                val sb = new StringBuilder();
                 sb.append("Inputs: [(");
                 for( int i=0; i<inputArgs.length; i++ ){
                     if(i > 0)
@@ -1708,6 +1724,12 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                 } else {
                     sb.append("-");
                 }
+                if(op instanceof DifferentialFunction){
+                    String n = ((DifferentialFunction) op).getOwnName();
+                    if(n != null && !n.equals(op.opName())){
+                        sb.append(". Op own name: \"").append(n).append("\"");
+                    }
+                }
                 log.error("Failed to execute op " + op.opName() + ". Attempted to execute with " +
                                 String.valueOf(op.numInputArguments()) + " inputs, " +
                                 String.valueOf(op.numOutputArguments()) + " outputs, "+
@@ -1716,8 +1738,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                                 sb.toString() +
                 " - Please see above message (printed out from c++) for a possible cause of error.");
                 throw e;
-            }
-
+        }
 
         profilingHookOut(op, st);
         return op.outputArguments();
@@ -1732,9 +1753,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         }
 
         val extras = ptr.get(Shape.shapeInfoLength(rank) - 3);
-        val dtype = ArrayOptionsHelper.dataType(extras);
-
-        return LongShapeDescriptor.fromShape(shape, dtype);
+        return LongShapeDescriptor.fromShape(shape, extras);
     }
 
     @Override

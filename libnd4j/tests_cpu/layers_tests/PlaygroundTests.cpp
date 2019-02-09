@@ -767,7 +767,7 @@ void loopSpan(float* x, Nd4jLong* xShapeInfo, float* y, Nd4jLong* yShapeInfo, fl
         auto zi = z + zEws * index;        
         #pragma omp simd
         for (Nd4jLong j = 0; j < itemsToLoop; j++) 
-            zi[j * zEws] = simdOps::LogPoisonLoss<float, float, float>::op(xi[j * xEws], yi[j * yEws]);
+            zi[j * zEws] = simdOps::LogPoissonLoss<float, float, float>::op(xi[j * xEws], yi[j * yEws]);
     }
 }
 
@@ -782,7 +782,7 @@ void loopSimple(float* x, Nd4jLong* xShapeInfo, float* y, Nd4jLong* yShapeInfo, 
     
     #pragma omp parallel for simd schedule(static, span_size) if (len > ELEMENT_THRESHOLD) proc_bind(close) default(shared)
     for(Nd4jLong i = 0; i < len; ++i)
-        z[i * zEws] = simdOps::LogPoisonLoss<float, float, float>::op(x[i * xEws], y[i * yEws]);
+        z[i * zEws] = simdOps::LogPoissonLoss<float, float, float>::op(x[i * xEws], y[i * yEws]);
 
 }
 
@@ -858,7 +858,7 @@ void loop1(float* x, Nd4jLong* xShapeInfo, float* y, Nd4jLong* yShapeInfo, float
             Nd4jLong xOffset = shape::getIndexOffset(j+threadOffset, xShapeInfo, len);
             Nd4jLong yOffset = shape::getIndexOffset(j+threadOffset, yShapeInfo, len);
             Nd4jLong zOffset = shape::getIndexOffset(j+threadOffset, zShapeInfo, len);
-            z[xOffset] = simdOps::LogPoisonLoss<float, float, float>::op(x[xOffset], y[xOffset]);
+            z[xOffset] = simdOps::LogPoissonLoss<float, float, float>::op(x[xOffset], y[xOffset]);
         }
     }
 }
@@ -877,7 +877,7 @@ void loop2(float* x, Nd4jLong* xShapeInfo, float* y, Nd4jLong* yShapeInfo, float
         Nd4jLong xOffset = shape::getIndexOffset(i, xShapeInfo, len);
         Nd4jLong yOffset = shape::getIndexOffset(i, yShapeInfo, len);
         Nd4jLong zOffset = shape::getIndexOffset(i, zShapeInfo, len);
-        z[xOffset] = simdOps::LogPoisonLoss<float, float, float>::op(x[xOffset], y[xOffset]);
+        z[xOffset] = simdOps::LogPoissonLoss<float, float, float>::op(x[xOffset], y[xOffset]);
     }
 
 }
@@ -935,4 +935,71 @@ TEST_F(PlaygroundTests, loopThroughArrs_test3) {
     nd4j_printf("spanTime   time: %lld us;\n", spanTime);
 
     ASSERT_TRUE(1);        
+}
+
+TEST_F(PlaygroundTests, test_batched_skipgram_1) {
+    const int batchSize = 64;
+    const int codeLen = 6;
+    const int numWords = 244;
+    const int vectorLength = 50;
+
+    auto target = NDArrayFactory::create<int>('c', {batchSize});
+    auto ngStarter = NDArrayFactory::empty<int>();
+    auto indices = NDArrayFactory::create<int>('c', {batchSize, codeLen});
+    auto codes = NDArrayFactory::create<int8_t>('c', {batchSize, codeLen});
+    auto syn0 = NDArrayFactory::create<float>('c', {numWords, vectorLength});
+    auto syn1 = NDArrayFactory::create<float>('c', {numWords, vectorLength});
+    auto syn1Neg = NDArrayFactory::empty<float>();
+    auto expTable = NDArrayFactory::linspace<float>(0.001, 0.995, 10000);
+    auto negTable = NDArrayFactory::empty<float>();
+
+    auto alpha = NDArrayFactory::create<double>('c', {batchSize});
+    auto randomValue = NDArrayFactory::create<Nd4jLong>('c', {batchSize});
+    auto inferenceVector = NDArrayFactory::empty<float>();
+
+    syn0.assign(0.01);
+    syn1.assign(0.02);
+
+    Nd4jLong rv = 2843242345121L;
+    auto lr = 0.025;
+    for (int e = 0; e < batchSize; e++) {
+        target.p(e, e);
+        alpha.p(e, lr);
+        randomValue.p(e, rv);
+
+        lr -= 0.001;
+
+
+        for (int s = 1; s < codeLen; s++) {
+            indices.p(e, s, nd4j::math::nd4j_abs<Nd4jLong>(rv % numWords));
+            codes.p(e, s, s % 2);
+
+            rv = nd4j::math::nd4j_abs<Nd4jLong>(rv * 25214903917L + 11);
+        }
+
+        rv = nd4j::math::nd4j_abs<Nd4jLong>(rv * 25214903917L + 11);
+    }
+
+    //indices.printIndexedBuffer("indices");
+    //codes.printIndexedBuffer("codes");
+
+    auto iterations = 1000;
+
+    nd4j::ops::skipgram op;
+
+    auto timeStart = std::chrono::system_clock::now();
+    for (int e = 0; e < iterations; e++) {
+        auto result = op.execute({&target, &ngStarter, &indices, &codes, &syn0, &syn1, &syn1Neg, expTable, &negTable, &alpha, &randomValue, &inferenceVector}, {}, {}, {false}, true);
+        ASSERT_EQ(Status::OK(), result->status());
+    }
+    auto timeEnd = std::chrono::system_clock::now();
+    auto spanTime = std::chrono::duration_cast<std::chrono::microseconds> ((timeEnd - timeStart)/iterations).count();
+    auto ttlTime = std::chrono::duration_cast<std::chrono::milliseconds> ((timeEnd - timeStart)).count();
+
+
+    nd4j_printf("average time: %lld us;\n", spanTime);
+    nd4j_printf("total time: %lld ms;\n", ttlTime);
+
+
+    delete expTable;
 }

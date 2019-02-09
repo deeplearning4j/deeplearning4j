@@ -41,6 +41,7 @@ import org.nd4j.linalg.api.blas.Level1;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.learning.regularization.Regularization;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.primitives.Pair;
@@ -245,7 +246,7 @@ public class VariationalAutoencoder implements Layer {
                 INDArray temp = meanZ.mul(meanZ).addi(pzxSigmaSquared).negi();
                 temp.addi(logStdev2Z).addi(1.0);
                 double scorePt1 = -0.5 / minibatch * temp.sumNumber().doubleValue();
-                this.score = scorePt1 + (calcL1(false) + calcL2(false));
+                this.score = scorePt1 + calcRegularizationScore(false);
             }
 
             INDArray pxzDistributionPreOut = current.mmul(pxzw).addiRowVector(pxzb);
@@ -632,33 +633,20 @@ public class VariationalAutoencoder implements Layer {
     }
 
     @Override
-    public double calcL2(boolean backpropParamsOnly) {
-        double l2Sum = 0.0;
+    public double calcRegularizationScore(boolean backpropParamsOnly){
+        double scoreSum = 0.0;
         for (Map.Entry<String, INDArray> e : paramTable().entrySet()) {
-            double l2 = conf().getLayer().getL2ByParam(e.getKey());
-            if (l2 <= 0.0 || (backpropParamsOnly && isPretrainParam(e.getKey()))) {
+            if(backpropParamsOnly && isPretrainParam(e.getKey()))
+                continue;
+            List<Regularization> l = layerConf().getRegularizationByParam(e.getKey());
+            if(l == null || l.isEmpty()){
                 continue;
             }
-
-            double l2Norm = e.getValue().norm2Number().doubleValue();
-            l2Sum += 0.5 * l2 * l2Norm * l2Norm;
-        }
-
-        return l2Sum;
-    }
-
-    @Override
-    public double calcL1(boolean backpropParamsOnly) {
-        double l1Sum = 0.0;
-        for (Map.Entry<String, INDArray> e : paramTable().entrySet()) {
-            double l1 = conf().getLayer().getL1ByParam(e.getKey());
-            if (l1 <= 0.0 || (backpropParamsOnly && isPretrainParam(e.getKey()))) {
-                continue;
+            for(Regularization r : l){
+                scoreSum += r.score(e.getValue(), getIterationCount(), getEpochCount());
             }
-
-            l1Sum += l1 * e.getValue().norm1Number().doubleValue();
         }
-        return l1Sum;
+        return scoreSum;
     }
 
     @Override

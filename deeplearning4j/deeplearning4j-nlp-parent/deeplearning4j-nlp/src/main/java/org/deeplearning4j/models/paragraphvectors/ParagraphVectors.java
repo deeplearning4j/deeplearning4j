@@ -497,7 +497,8 @@ public class ParagraphVectors extends Word2Vec {
             distances.incrementCount(s, (float) sim);
         }
 
-        return distances.keySetSorted().subList(0, limit);
+        val keys = distances.keySetSorted();
+        return keys.subList(0, Math.min(limit, keys.size()));
     }
 
     /**

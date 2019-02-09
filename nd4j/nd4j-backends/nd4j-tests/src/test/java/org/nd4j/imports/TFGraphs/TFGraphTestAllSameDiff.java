@@ -63,17 +63,6 @@ public class TFGraphTestAllSameDiff {
     private static final String BASE_DIR = "tf_graphs/examples";
     private static final String MODEL_FILENAME = "frozen_model.pb";
 
-
-
-    private static final String[] SKIP_ARR = new String[] {
-            //"deep_mnist",
-            //"deep_mnist_no_dropout",
-            //"ssd_mobilenet_v1_coco",
-            //"yolov2_608x608",
-            //"inception_v3_with_softmax",
-            "conv_5", // this test runs, but we can't make it pass atm due to different RNG algorithms
-    };
-
     public static final String[] IGNORE_REGEXES = new String[]{
 
             //Still failing: 2019/01/08 - https://github.com/deeplearning4j/deeplearning4j/issues/6322 and https://github.com/deeplearning4j/deeplearning4j/issues/6958 issue 1
@@ -101,9 +90,6 @@ public class TFGraphTestAllSameDiff {
             //Failing 2019/01/16 - Issue 15 https://github.com/deeplearning4j/deeplearning4j/issues/6958
             "where/cond_only.*",
 
-            //Still failing 2019/01/15 - https://github.com/deeplearning4j/deeplearning4j/issues/7008
-            "sepconv1d_layers/.*",
-
             //scatter_nd: a few cases failing as of 2019/01/08
             "scatter_nd/rank2shape_2indices",
             "scatter_nd/rank3shape_2indices",
@@ -122,23 +108,22 @@ public class TFGraphTestAllSameDiff {
             "alpha_dropout/.*",
             "layers_dropout/.*",
 
-            //2019/01/16 - "org.nd4j.linalg.api.ops.impl.controlflow.compat.Enter cannot be cast to org.nd4j.linalg.api.ops.impl.shape.tensorops.TensorArray"
-            //Doesn't seem like a valid structure, based on the docs
-            // TensorArrayReadV3 has 3 inputs - handle, index, and flow_in
-            //'handle' is supposed to be the handle to a TensorArray, but here's it's the output variable of an Enter op
-            "primitive_gru_dynamic",
-
-            //Still failing as of 2019/01/08 - https://github.com/deeplearning4j/deeplearning4j/issues/6464 - not sure if related to: https://github.com/deeplearning4j/deeplearning4j/issues/6447
-            "cnn2d_nn/nchw_b1_k12_s12_d12_SAME",
+            //Still failing as of 2019/02/04 - https://github.com/deeplearning4j/deeplearning4j/issues/6464 - not sure if related to: https://github.com/deeplearning4j/deeplearning4j/issues/6447
             "cnn2d_nn/nhwc_b1_k12_s12_d12_SAME",
 
             //2019/01/08 - No tensorflow op found for SparseTensorDenseAdd
             "confusion/.*",
 
             //2019/01/18 - Issue 18 here: https://github.com/deeplearning4j/deeplearning4j/issues/6958
-            "extractImagePatches/.*"
+            "extractImagePatches/.*",
+
+            //2019/02/08 - https://github.com/deeplearning4j/deeplearning4j/issues/7121
+            "rnn/bstack/d_.*",
+            "rnn/grublockcellv2/.*",
+            "rnn/lstmblockcell/.*",
+            "rnn/lstmblockfusedcell/.*",
+            "rnn/tr_lstmbfc/.*"
     };
-    public static final Set<String> SKIP_SET = new HashSet<>(Arrays.asList(SKIP_ARR));
 
     @BeforeClass
     public static void beforeClass() {
@@ -149,12 +134,12 @@ public class TFGraphTestAllSameDiff {
     @Before
     public void setup() {
         Nd4j.setDataType(DataType.FLOAT);
+        Nd4j.getExecutioner().enableDebugMode(false);
+        Nd4j.getExecutioner().enableVerboseMode(false);
     }
 
     @After
     public void tearDown() {
-        NativeOpsHolder.getInstance().getDeviceNativeOps().enableDebugMode(true);
-        NativeOpsHolder.getInstance().getDeviceNativeOps().enableVerboseMode(true);
     }
 
     @Parameterized.Parameters(name="{2}")
@@ -182,12 +167,6 @@ public class TFGraphTestAllSameDiff {
     @Test//(timeout = 25000L)
     public void testOutputOnly() throws Exception {
         Nd4j.create(1);
-        Nd4j.getExecutioner().enableDebugMode(true);
-        Nd4j.getExecutioner().enableVerboseMode(true);
-        if (SKIP_SET.contains(modelName)) {
-            log.info("\n\tSKIPPED MODEL: " + modelName);
-            return;
-        }
 
         for(String s : IGNORE_REGEXES){
             if(modelName.matches(s)){

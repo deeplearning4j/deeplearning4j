@@ -70,7 +70,7 @@ public class WordVectorsImpl<T extends SequenceElement> implements WordVectors {
     protected int learningRateDecayWords;
     protected boolean resetModel;
     protected boolean useAdeGrad;
-    protected int workers = Runtime.getRuntime().availableProcessors();
+    protected int workers = 1; //Runtime.getRuntime().availableProcessors();
     protected boolean trainSequenceVectors = false;
     protected boolean trainElementsVectors = true;
     protected long seed;

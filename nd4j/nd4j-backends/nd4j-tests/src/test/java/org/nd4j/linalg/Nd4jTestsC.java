@@ -122,7 +122,8 @@ public class Nd4jTestsC extends BaseNd4jTest {
         super.before();
         Nd4j.setDataType(DataType.DOUBLE);
         Nd4j.getRandom().setSeed(123);
-
+        Nd4j.getExecutioner().enableDebugMode(false);
+        Nd4j.getExecutioner().enableVerboseMode(false);
     }
 
     @After
@@ -962,8 +963,6 @@ public class Nd4jTestsC extends BaseNd4jTest {
 
     @Test
     public void testVStackDifferentOrders() {
-        Nd4j.getExecutioner().enableDebugMode(true);
-        Nd4j.getExecutioner().enableVerboseMode(true);
         INDArray expected = Nd4j.linspace(1, 9, 9, DataType.DOUBLE).reshape('c', 3, 3);
 
         for (char order : new char[] {'c', 'f'}) {
@@ -2904,14 +2903,11 @@ public class Nd4jTestsC extends BaseNd4jTest {
 
     @Test
     public void testConcatHorizontally() {
-        Nd4j.getExecutioner().enableDebugMode(true);
-        Nd4j.getExecutioner().enableVerboseMode(true);
         INDArray rowVector = Nd4j.ones(1, 5);
         INDArray other = Nd4j.ones(1, 5);
         INDArray concat = Nd4j.hstack(other, rowVector);
         assertEquals(rowVector.rows(), concat.rows());
         assertEquals(rowVector.columns() * 2, concat.columns());
-
     }
 
 
@@ -6135,8 +6131,6 @@ public class Nd4jTestsC extends BaseNd4jTest {
 
     @Test
     public void testConcat_1() {
-        Nd4j.getExecutioner().enableVerboseMode(true);
-        Nd4j.getExecutioner().enableDebugMode(true);
         for(char order : new char[]{'c', 'f'}) {
 
             INDArray arr1 = Nd4j.create(new double[]{1, 2}, new long[]{1, 2}, order);

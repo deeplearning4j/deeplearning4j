@@ -37,27 +37,30 @@ import java.util.*;
  * Created by susaneraly on 3/14/18.
  */
 public class OneHot extends DynamicCustomOp {
+    public static final DataType DEFAULT_DTYPE = DataType.FLOAT;
 
     private int depth;
     private int jaxis = -1;
     private double on;
     private double off;
+    private DataType outputType;
 
     public  OneHot() {
 
     }
 
     public OneHot(SameDiff sameDiff, SDVariable indices, int depth) {
-        this(sameDiff, indices, depth, -1, 1, 0);
+        this(sameDiff, indices, depth, -1, 1, 0, DEFAULT_DTYPE);
     }
 
-    public OneHot(SameDiff sameDiff, SDVariable indices, int depth, int axis, double on, double off) {
+    public OneHot(SameDiff sameDiff, SDVariable indices, int depth, int axis, double on, double off, DataType dataType) {
         super(null, sameDiff,  new SDVariable[] {indices}, false);
         this.depth = depth;
         this.jaxis = axis;
         this.on = on;
         this.off = off;
         addArgs();
+        this.outputType = dataType;
     }
 
     public OneHot(INDArray indices, INDArray output, int depth) {
@@ -87,6 +90,9 @@ public class OneHot extends DynamicCustomOp {
     public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
         TFGraphMapper.getInstance().initFunctionFromProperties(nodeDef.getOp(), this, attributesForNode, nodeDef, graph);
         addArgs();
+        if(attributesForNode.containsKey("T")) {
+            outputType = TFGraphMapper.convertType(attributesForNode.get("T").getType());
+        }
     }
 
 
@@ -146,10 +152,11 @@ public class OneHot extends DynamicCustomOp {
 
     @Override
     public List<org.nd4j.linalg.api.buffer.DataType> calculateOutputDataTypes(List<org.nd4j.linalg.api.buffer.DataType> dataTypes){
-        Preconditions.checkState(dataTypes.size() == 1, "Expected list with exactly 1 datatype for %s, got %s", getClass(), dataTypes);
-        //Output type defaults to floats
-        //TODO allow configuration + test import of output array dtype: https://github.com/deeplearning4j/deeplearning4j/issues/6854
-        DataType dt = Nd4j.defaultFloatingPointType();
-        return Collections.singletonList(dt);
+        Preconditions.checkState(dataTypes.size() >= 1 && dataTypes.size() <= 4, "Expected list with 1 to 4 datatypes for %s, got %s", getClass(), dataTypes);
+        if(outputType != null){
+            return Collections.singletonList(outputType);
+        } else {
+            return Collections.singletonList(DEFAULT_DTYPE);
+        }
     }
 }

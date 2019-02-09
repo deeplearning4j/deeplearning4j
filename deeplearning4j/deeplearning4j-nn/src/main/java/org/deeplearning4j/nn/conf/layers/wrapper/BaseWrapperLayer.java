@@ -17,15 +17,16 @@
 package org.deeplearning4j.nn.conf.layers.wrapper;
 
 import lombok.Data;
-import lombok.NonNull;
 import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.GradientNormalization;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.inputs.InputType;
-import org.deeplearning4j.nn.conf.layers.BaseLayer;
 import org.deeplearning4j.nn.conf.layers.Layer;
 import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
 import org.deeplearning4j.nn.params.WrapperLayerParamInitializer;
+import org.nd4j.linalg.learning.regularization.Regularization;
+
+import java.util.List;
 
 /**
  * Base wrapper layer: the idea is to pass through all methods to the underlying layer, and selectively override
@@ -69,13 +70,8 @@ public abstract class BaseWrapperLayer extends Layer {
     }
 
     @Override
-    public double getL1ByParam(String paramName) {
-        return underlying.getL1ByParam(paramName);
-    }
-
-    @Override
-    public double getL2ByParam(String paramName) {
-        return underlying.getL2ByParam(paramName);
+    public List<Regularization> getRegularizationByParam(String paramName){
+        return underlying.getRegularizationByParam(paramName);
     }
 
     @Override

@@ -2175,9 +2175,13 @@ public class ArrayUtil {
             return new int[0];
         int[] ret = new int[arr.length * arr[0].length];
         int count = 0;
-        for (int i = 0; i < arr.length; i++)
+        for (int i = 0; i < arr.length; i++) {
+            if (arr[i].length != arr[0].length)
+                throw new IllegalStateException("Length of all rows must be equal");
+
             for (int j = 0; j < arr[i].length; j++)
                 ret[count++] = arr[i][j];
+        }
         return ret;
     }
 
@@ -2197,9 +2201,13 @@ public class ArrayUtil {
             return new byte[0];
         val ret = new byte[arr.length * arr[0].length];
         int count = 0;
-        for (int i = 0; i < arr.length; i++)
+        for (int i = 0; i < arr.length; i++) {
+            if (arr[i].length != arr[0].length)
+                throw new IllegalStateException("Length of all rows must be equal");
+
             for (int j = 0; j < arr[i].length; j++)
                 ret[count++] = arr[i][j];
+        }
         return ret;
     }
 
