@@ -1509,15 +1509,39 @@ namespace simdOps {
 	};
 
 	template <typename X>
-	class Swish {
-	public:
-		no_op_exec_special_same
-		no_op_exec_special_same_cuda
+    class Swish {
+    public:
+        no_op_exec_special_same
+        no_op_exec_special_same_cuda
 
-		op_def static X op(X d1, X *params) {
-			return d1 * nd4j::math::nd4j_sigmoid<X,X>(d1);
-		}
-	};
+        op_def static X op(X d1, X *params) {
+            return d1 * nd4j::math::nd4j_sigmoid<X,X>(d1);
+        }
+    };
+
+    template <typename X>
+    class GELU {
+    public:
+        no_op_exec_special_same
+        no_op_exec_special_same_cuda
+
+        op_def static X op(X d1, X *params) {
+            auto sp = nd4j::math::nd4j_sqrt<X,X>(static_cast<X>(2) / static_cast<X>(M_PI));
+            auto xp = d1 + nd4j::math::nd4j_pow<X,X,X>(static_cast<X>(0.044715) * d1, static_cast<X>(3));
+            return (d1 / static_cast<X>(2))  * (static_cast<X>(1) + nd4j::math::nd4j_tanh<X, X>(sp * xp));
+        }
+    };
+
+    template <typename X>
+    class GELUDerivative {
+    public:
+        no_op_exec_special_same
+        no_op_exec_special_same_cuda
+
+        op_def static X op(X d1, X *params) {
+            return d1 * nd4j::math::nd4j_sigmoid<X,X>(d1);
+        }
+    };
 
 
 	template <typename X>

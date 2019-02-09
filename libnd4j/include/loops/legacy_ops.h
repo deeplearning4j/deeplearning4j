@@ -159,7 +159,9 @@
         (49, LogSigmoid), \
         (50, Erfc) ,\
         (51, Expm1), \
-        (52, ATanh)
+        (52, ATanh) ,\
+        (53, GELU) ,\
+        (54, GELUDerivative)
 
 // these ops return one of FLOAT data types
 #define TRANSFORM_FLOAT_OPS \
