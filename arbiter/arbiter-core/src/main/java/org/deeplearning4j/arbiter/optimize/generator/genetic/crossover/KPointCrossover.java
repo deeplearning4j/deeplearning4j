@@ -21,7 +21,7 @@ import org.deeplearning4j.arbiter.optimize.generator.genetic.crossover.parentsel
 import org.deeplearning4j.arbiter.optimize.generator.genetic.crossover.utils.CrossoverPointsGenerator;
 import org.nd4j.base.Preconditions;
 
-import java.util.*;
+import java.util.Deque;
 
 /**
 * The K-Point crossover will select at random multiple crossover points.<br>
@@ -31,6 +31,12 @@ public class KPointCrossover extends TwoParentsCrossoverOperator {
     private static final double DEFAULT_CROSSOVER_RATE = 0.85;
     private static final int DEFAULT_MIN_CROSSOVER = 1;
     private static final int DEFAULT_MAX_CROSSOVER = 4;
+
+    private final double crossoverRate;
+    private final int minCrossovers;
+    private final int maxCrossovers;
+
+    private final RandomGenerator rng;
 
     public static class Builder {
         private double crossoverRate = DEFAULT_CROSSOVER_RATE;
@@ -112,12 +118,6 @@ public class KPointCrossover extends TwoParentsCrossoverOperator {
         }
     }
 
-    private final double crossoverRate;
-    private final int minCrossovers;
-    private final int maxCrossovers;
-
-    private final RandomGenerator rng;
-
     private CrossoverPointsGenerator crossoverPointsGenerator;
 
     private KPointCrossover(KPointCrossover.Builder builder) {
@@ -127,6 +127,15 @@ public class KPointCrossover extends TwoParentsCrossoverOperator {
         this.maxCrossovers = builder.maxCrossovers;
         this.minCrossovers = builder.minCrossovers;
         this.rng = builder.rng;
+    }
+
+    private CrossoverPointsGenerator getCrossoverPointsGenerator(int chromosomeLength) {
+        if (crossoverPointsGenerator == null) {
+            crossoverPointsGenerator =
+                    new CrossoverPointsGenerator(chromosomeLength, minCrossovers, maxCrossovers, rng);
+        }
+
+        return crossoverPointsGenerator;
     }
 
     /**
@@ -140,28 +149,27 @@ public class KPointCrossover extends TwoParentsCrossoverOperator {
     public CrossoverResult crossover() {
         double[][] parents = parentSelection.selectParents();
 
+        boolean isModified = false;
+        double[] resultGenes = parents[0];
+
         if (rng.nextDouble() < crossoverRate) {
             // Select crossover points
-            if (crossoverPointsGenerator == null) {
-                crossoverPointsGenerator =
-                                new CrossoverPointsGenerator(parents[0].length, minCrossovers, maxCrossovers, rng);
-            }
-            Deque<Integer> crossoverPoints = crossoverPointsGenerator.getCrossoverPoints();
+            Deque<Integer> crossoverPoints = getCrossoverPointsGenerator(parents[0].length).getCrossoverPoints();
 
             // Crossover
-            double[] offspringValues = new double[parents[0].length];
+            resultGenes = new double[parents[0].length];
             int currentParent = 0;
             int nextCrossover = crossoverPoints.pop();
-            for (int i = 0; i < offspringValues.length; ++i) {
+            for (int i = 0; i < resultGenes.length; ++i) {
                 if (i == nextCrossover) {
                     currentParent = currentParent == 0 ? 1 : 0;
                     nextCrossover = crossoverPoints.pop();
                 }
-                offspringValues[i] = parents[currentParent][i];
+                resultGenes[i] = parents[currentParent][i];
             }
-            return new CrossoverResult(true, offspringValues);
+            isModified = true;
         }
 
-        return new CrossoverResult(false, parents[0]);
+        return new CrossoverResult(isModified, resultGenes);
     }
 }

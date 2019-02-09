@@ -13,7 +13,6 @@
 
 package org.deeplearning4j.arbiter.optimize.generator.genetic.crossover;
 
-import org.deeplearning4j.arbiter.optimize.generator.genetic.ChromosomeFactory;
 import org.deeplearning4j.arbiter.optimize.generator.genetic.population.PopulationModel;
 
 /**

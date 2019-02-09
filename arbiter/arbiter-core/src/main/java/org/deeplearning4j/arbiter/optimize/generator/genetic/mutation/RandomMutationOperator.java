@@ -26,6 +26,9 @@ import org.nd4j.base.Preconditions;
 public class RandomMutationOperator implements MutationOperator {
     private static final double DEFAULT_MUTATION_RATE = 0.005;
 
+    private final double mutationRate;
+    private final RandomGenerator rng;
+
     public static class Builder {
         private double mutationRate = DEFAULT_MUTATION_RATE;
         private RandomGenerator rng;
@@ -59,9 +62,6 @@ public class RandomMutationOperator implements MutationOperator {
             return new RandomMutationOperator(this);
         }
     }
-
-    private final double mutationRate;
-    private final RandomGenerator rng;
 
     private RandomMutationOperator(RandomMutationOperator.Builder builder) {
         this.mutationRate = builder.mutationRate;

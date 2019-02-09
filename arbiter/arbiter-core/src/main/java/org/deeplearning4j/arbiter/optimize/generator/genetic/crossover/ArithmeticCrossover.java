@@ -31,6 +31,9 @@ import org.nd4j.base.Preconditions;
 public class ArithmeticCrossover extends TwoParentsCrossoverOperator {
     private static final double DEFAULT_CROSSOVER_RATE = 0.85;
 
+    private final double crossoverRate;
+    private final RandomGenerator rng;
+
     public static class Builder {
         private double crossoverRate = DEFAULT_CROSSOVER_RATE;
         private RandomGenerator rng;
@@ -80,9 +83,6 @@ public class ArithmeticCrossover extends TwoParentsCrossoverOperator {
             return new ArithmeticCrossover(this);
         }
     }
-
-    private final double crossoverRate;
-    private final RandomGenerator rng;
 
     private ArithmeticCrossover(ArithmeticCrossover.Builder builder) {
         super(builder.parentSelection);

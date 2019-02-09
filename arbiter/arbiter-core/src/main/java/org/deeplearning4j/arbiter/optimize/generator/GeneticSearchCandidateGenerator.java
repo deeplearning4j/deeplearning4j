@@ -36,6 +36,13 @@ import java.util.Map;
  */
 @Slf4j
 public class GeneticSearchCandidateGenerator extends BaseCandidateGenerator {
+
+    protected final PopulationModel populationModel;
+    protected final ChromosomeFactory chromosomeFactory;
+    protected final SelectionOperator selectionOperator;
+
+    protected boolean hasMoreCandidates = true;
+
     public static class Builder {
         protected final ParameterSpace<?> parameterSpace;
 
@@ -108,12 +115,6 @@ public class GeneticSearchCandidateGenerator extends BaseCandidateGenerator {
             return new GeneticSearchCandidateGenerator(this);
         }
     }
-
-    protected final PopulationModel populationModel;
-    protected final ChromosomeFactory chromosomeFactory;
-    protected final SelectionOperator selectionOperator;
-
-    protected boolean hasMoreCandidates = true;
 
     private GeneticSearchCandidateGenerator(Builder builder) {
         super(builder.parameterSpace, builder.dataParameters, builder.initDone);

@@ -28,6 +28,7 @@ public abstract class RatioCullOperator implements CullOperator {
     private static final double DEFAULT_CULL_RATIO = 1.0 / 3.0;
     protected int culledSize;
     protected List<Chromosome> population;
+    protected final double cullRatio;
 
     /**
      * @param cullRatio The ratio of the maximum population size to be culled.<br>
@@ -46,8 +47,6 @@ public abstract class RatioCullOperator implements CullOperator {
     public RatioCullOperator() {
         this(DEFAULT_CULL_RATIO);
     }
-
-    protected final double cullRatio;
 
     /**
      * Will be called by the population model once created.

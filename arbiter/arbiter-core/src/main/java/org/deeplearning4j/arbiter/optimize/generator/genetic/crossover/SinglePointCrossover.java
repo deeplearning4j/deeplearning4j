@@ -29,6 +29,9 @@ import org.nd4j.base.Preconditions;
 public class SinglePointCrossover extends TwoParentsCrossoverOperator {
     private static final double DEFAULT_CROSSOVER_RATE = 0.85;
 
+    private final RandomGenerator rng;
+    private final double crossoverRate;
+
     public static class Builder {
         private double crossoverRate = DEFAULT_CROSSOVER_RATE;
         private RandomGenerator rng;
@@ -79,9 +82,6 @@ public class SinglePointCrossover extends TwoParentsCrossoverOperator {
         }
     }
 
-    private final RandomGenerator rng;
-    private final double crossoverRate;
-
     private SinglePointCrossover(SinglePointCrossover.Builder builder) {
         super(builder.parentSelection);
 
@@ -99,19 +99,22 @@ public class SinglePointCrossover extends TwoParentsCrossoverOperator {
     public CrossoverResult crossover() {
         double[][] parents = parentSelection.selectParents();
 
+        boolean isModified = false;
+        double[] resultGenes = parents[0];
+
         if (rng.nextDouble() < crossoverRate) {
             int chromosomeLength = parents[0].length;
 
             // Crossover
-            double[] offspringValues = new double[chromosomeLength];
+            resultGenes = new double[chromosomeLength];
 
             int crossoverPoint = rng.nextInt(chromosomeLength);
-            for (int i = 0; i < offspringValues.length; ++i) {
-                offspringValues[i] = ((i < crossoverPoint) ? parents[0] : parents[1])[i];
+            for (int i = 0; i < resultGenes.length; ++i) {
+                resultGenes[i] = ((i < crossoverPoint) ? parents[0] : parents[1])[i];
             }
-            return new CrossoverResult(true, offspringValues);
+            isModified = true;
         }
 
-        return new CrossoverResult(false, parents[0]);
+        return new CrossoverResult(isModified, resultGenes);
     }
 }

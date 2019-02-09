@@ -24,7 +24,6 @@ import java.util.*;
  * @author Alexandre Boulanger
  */
 public class CrossoverPointsGenerator {
-    private final int chromosomeLength;
     private final int minCrossovers;
     private final int maxCrossovers;
     private final RandomGenerator rng;
@@ -39,7 +38,6 @@ public class CrossoverPointsGenerator {
     * @param rng              A RandomGenerator instance
     */
     public CrossoverPointsGenerator(int chromosomeLength, int minCrossovers, int maxCrossovers, RandomGenerator rng) {
-        this.chromosomeLength = chromosomeLength;
         this.minCrossovers = minCrossovers;
         this.maxCrossovers = maxCrossovers;
         this.rng = rng;

@@ -38,6 +38,12 @@ public class GeneticSelectionOperator extends SelectionOperator {
     private final static int PREVIOUS_GENES_TO_KEEP = 100;
     private final static int MAX_NUM_GENERATION_ATTEMPTS = 100;
 
+    private final CrossoverOperator crossoverOperator;
+    private final MutationOperator mutationOperator;
+    private final RandomGenerator rng;
+    private double[][] previousGenes = new double[PREVIOUS_GENES_TO_KEEP][];
+    private int previousGenesIdx = 0;
+
     public static class Builder {
         private ChromosomeFactory chromosomeFactory;
         private PopulationModel populationModel;
@@ -92,13 +98,6 @@ public class GeneticSelectionOperator extends SelectionOperator {
         }
     }
 
-    private final CrossoverOperator crossoverOperator;
-    private final MutationOperator mutationOperator;
-    private final RandomGenerator rng;
-    private double[][] previousGenes = new double[PREVIOUS_GENES_TO_KEEP][];
-    private int previousGenesIdx = 0;
-
-
     private GeneticSelectionOperator(CrossoverOperator crossoverOperator, MutationOperator mutationOperator,
                     RandomGenerator rng) {
         this.crossoverOperator = crossoverOperator;
@@ -130,7 +129,7 @@ public class GeneticSelectionOperator extends SelectionOperator {
     public double[] buildNextGenes() {
         double[] result;
 
-        boolean hasAlreadyBeenTried = false;
+        boolean hasAlreadyBeenTried;
         int attemptsRemaining = MAX_NUM_GENERATION_ATTEMPTS;
         do {
             if (populationModel.isReadyToBreed()) {
@@ -165,12 +164,12 @@ public class GeneticSelectionOperator extends SelectionOperator {
     private double[] buildOffspring() {
         double[] offspringValues;
 
-        boolean isModified = false;
+        boolean isModified;
         int attemptsRemaining = MAX_NUM_GENERATION_ATTEMPTS;
         do {
             CrossoverResult crossoverResult = crossoverOperator.crossover();
             offspringValues = crossoverResult.getGenes();
-            isModified |= crossoverResult.isModified();
+            isModified = crossoverResult.isModified();
             isModified |= mutationOperator.mutate(offspringValues);
 
             if (!isModified && --attemptsRemaining == 0) {

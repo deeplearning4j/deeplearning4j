@@ -31,6 +31,22 @@ import java.util.List;
 public class PopulationModel {
     private static final int DEFAULT_POPULATION_SIZE = 30;
 
+    private final CullOperator cullOperator;
+    private final List<PopulationListener> populationListeners = new ArrayList<>();
+    private Comparator<Chromosome> chromosomeComparator;
+
+    /**
+     * The maximum population size
+     */
+    @Getter
+    private final int populationSize;
+
+    /**
+     * The population
+     */
+    @Getter
+    public final List<Chromosome> population;
+
     /**
      * A comparator used when higher fitness value is better
      */
@@ -102,27 +118,10 @@ public class PopulationModel {
 
     }
 
-    /**
-     * The maximum population size
-     */
-    @Getter
-    private final int populationSize;
-
-    /**
-     * The population
-     */
-    @Getter
-    public final List<Chromosome> population;
-
-    private final PopulationInitializer populationInitializer;
-    private final CullOperator cullOperator;
-    private final List<PopulationListener> populationListeners = new ArrayList<>();
-    private Comparator<Chromosome> chromosomeComparator;
-
     public PopulationModel(PopulationModel.Builder builder) {
         populationSize = builder.populationSize;
         population = new ArrayList<>(builder.populationSize);
-        populationInitializer = builder.populationInitializer;
+        PopulationInitializer populationInitializer = builder.populationInitializer;
 
         List<Chromosome> initializedPopulation = populationInitializer.getInitializedPopulation(populationSize);
         population.clear();

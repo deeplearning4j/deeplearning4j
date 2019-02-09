@@ -29,6 +29,10 @@ public class UniformCrossover extends TwoParentsCrossoverOperator {
     private static final double DEFAULT_CROSSOVER_RATE = 0.85;
     private static final double DEFAULT_PARENT_BIAS_FACTOR = 0.5;
 
+    private final double crossoverRate;
+    private final double parentBiasFactor;
+    private final RandomGenerator rng;
+
     public static class Builder {
         private double crossoverRate = DEFAULT_CROSSOVER_RATE;
         private double parentBiasFactor = DEFAULT_PARENT_BIAS_FACTOR;
@@ -91,10 +95,6 @@ public class UniformCrossover extends TwoParentsCrossoverOperator {
         }
     }
 
-    private final double crossoverRate;
-    private final double parentBiasFactor;
-    private final RandomGenerator rng;
-
     private UniformCrossover(UniformCrossover.Builder builder) {
         super(builder.parentSelection);
 
@@ -115,16 +115,19 @@ public class UniformCrossover extends TwoParentsCrossoverOperator {
         // select the parents
         double[][] parents = parentSelection.selectParents();
 
+        double[] resultGenes = parents[0];
+        boolean isModified = false;
+
         if (rng.nextDouble() < crossoverRate) {
             // Crossover
-            double[] offspringValues = new double[parents[0].length];
+            resultGenes = new double[parents[0].length];
 
-            for (int i = 0; i < offspringValues.length; ++i) {
-                offspringValues[i] = ((rng.nextDouble() < parentBiasFactor) ? parents[0] : parents[1])[i];
+            for (int i = 0; i < resultGenes.length; ++i) {
+                resultGenes[i] = ((rng.nextDouble() < parentBiasFactor) ? parents[0] : parents[1])[i];
             }
-            return new CrossoverResult(true, offspringValues);
+            isModified = true;
         }
 
-        return new CrossoverResult(false, parents[0]);
+        return new CrossoverResult(isModified, resultGenes);
     }
 }

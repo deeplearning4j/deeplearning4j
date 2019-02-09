@@ -14,14 +14,11 @@
 package org.deeplearning4j.arbiter.optimize;
 
 import org.deeplearning4j.arbiter.optimize.api.CandidateGenerator;
-import org.deeplearning4j.arbiter.optimize.api.data.DataSetIteratorFactoryProvider;
 import org.deeplearning4j.arbiter.optimize.api.score.ScoreFunction;
 import org.deeplearning4j.arbiter.optimize.api.termination.MaxCandidatesCondition;
-import org.deeplearning4j.arbiter.optimize.api.termination.MaxTimeCondition;
 import org.deeplearning4j.arbiter.optimize.api.termination.TerminationCondition;
 import org.deeplearning4j.arbiter.optimize.config.OptimizationConfiguration;
 import org.deeplearning4j.arbiter.optimize.generator.GeneticSearchCandidateGenerator;
-import org.deeplearning4j.arbiter.optimize.generator.RandomSearchGenerator;
 import org.deeplearning4j.arbiter.optimize.generator.genetic.exceptions.GeneticGenerationException;
 import org.deeplearning4j.arbiter.optimize.generator.genetic.selection.SelectionOperator;
 import org.deeplearning4j.arbiter.optimize.runner.CandidateInfo;
@@ -31,10 +28,6 @@ import org.deeplearning4j.arbiter.optimize.runner.LocalOptimizationRunner;
 import org.deeplearning4j.arbiter.optimize.runner.listener.impl.LoggingStatusListener;
 import org.junit.Assert;
 import org.junit.Test;
-
-import java.util.HashMap;
-import java.util.Map;
-import java.util.concurrent.TimeUnit;
 
 public class TestGeneticSearch {
     public class TestSelectionOperator extends SelectionOperator {
