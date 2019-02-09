@@ -39,6 +39,10 @@
 #define M_E 2.718281828459
 #endif
 
+#ifndef M_PI
+#define M_PI 3.14159265358979323846
+#endif
+
 
 namespace nd4j {
 #ifdef __CUDACC__
