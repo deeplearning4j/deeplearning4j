@@ -201,6 +201,7 @@ public class Word2VecTests {
     @Test
     public void reproducibleResults_ForMultipleRuns() throws Exception {
         val shakespear = new ClassPathResource("big/rnj.txt");
+        val basic = new ClassPathResource("big/rnj.txt");
         SentenceIterator iter = new BasicLineIterator(shakespear.getFile());
         TokenizerFactory t = new DefaultTokenizerFactory();
         t.setTokenPreProcessor(new CommonPreprocessor());
@@ -209,8 +210,8 @@ public class Word2VecTests {
                 .stopWords(new ArrayList<String>()).seed(42).learningRate(0.025).minLearningRate(0.001)
                 .sampling(0).elementsLearningAlgorithm(new SkipGram<VocabWord>())
                 .negativeSample(5)
-                .epochs(1).windowSize(5).allowParallelTokenization(true)
-                .workers(4)
+                .epochs(3).windowSize(5).allowParallelTokenization(true)
+                .workers(12)
                 .usePreciseMode(true)
                 .useHierarchicSoftmax(false)
                 .modelUtils(new BasicModelUtils<VocabWord>()).iterate(iter).tokenizerFactory(t).build();
@@ -219,8 +220,8 @@ public class Word2VecTests {
                 .stopWords(new ArrayList<String>()).seed(42).learningRate(0.025).minLearningRate(0.001)
                 .sampling(0).elementsLearningAlgorithm(new SkipGram<VocabWord>())
                 .negativeSample(5)
-                .epochs(1).windowSize(5).allowParallelTokenization(true)
-                .workers(4)
+                .epochs(3).windowSize(5).allowParallelTokenization(true)
+                .workers(12)
                 .usePreciseMode(true)
                 .useHierarchicSoftmax(false)
                 .modelUtils(new BasicModelUtils<VocabWord>()).iterate(iter).tokenizerFactory(t).build();
@@ -235,6 +236,10 @@ public class Word2VecTests {
         INDArray syn0_from_vec2 = ((InMemoryLookupTable<VocabWord>) vec2.getLookupTable()).getSyn0();
 
         assertEquals(syn0_from_vec1, syn0_from_vec2);
+
+        log.info("Day/night similarity: {}", vec1.similarity("day", "night"));
+        val result = vec1.wordsNearest("day", 10);
+        printWords("day", result, vec1);
     }
 
     @Test

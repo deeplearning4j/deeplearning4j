@@ -307,7 +307,7 @@ namespace nd4j {
 
             template <typename T>
             static void do_positive(const int target, const int postive, T* syn0, T* syn1Neg, T* expTable, T* neu1e, const double alpha, const int vectorLength, const int expLength) {
-                nd4j_printf("Target: [%i]; Positive: [%i]; TID: [%i];\n", target, postive, omp_get_thread_num());
+                //nd4j_printf("Target: [%i]; Positive: [%i]; TID: [%i];\n", target, postive, omp_get_thread_num());
                 nSampling_<T>(syn0, syn1Neg, expTable, neu1e, alpha, vectorLength, 1, expLength, false);
             }
 
@@ -523,17 +523,22 @@ namespace nd4j {
 // first of all we calculate positive samples into temporary
 #pragma omp parallel num_threads(numThreads) default(shared)
                         {
-                            // master thread arranges stuff
-                            #pragma omp single
-                            {
-                                for (int t = 0; t < numTargets; t++) {
+                            for (int t = 0; t < numTargets; t++) {
+
+                                const auto positive = bStarters[t];
+                                const auto isOwner = positive % numThreads == omp_get_thread_num();
+
+                                if (isOwner) {
                                     const auto target = bTarget[t];
-                                    const auto positive = bStarters[t];
                                     const auto alpha = lr.e<double>(t);
                                     const auto nr = nextRandom.e<Nd4jLong>(t);
 
-                                    #pragma omp task depend(in:positive) firstprivate(target, positive, alpha, nr, t)
-                                    do_positive<T>(target, positive, reinterpret_cast<T*>(s0.bufferWithOffset(target * vectorLength)), reinterpret_cast<T*>(s1n.bufferWithOffset(positive * vectorLength)), expTable, reinterpret_cast<T*>(tempArray.bufferWithOffset(t * vectorLength)), alpha, vectorLength, expLength);
+                                    do_positive<T>(target, positive,
+                                                   reinterpret_cast<T *>(s0.bufferWithOffset(target * vectorLength)),
+                                                   reinterpret_cast<T *>(s1n.bufferWithOffset(positive * vectorLength)),
+                                                   expTable,
+                                                   reinterpret_cast<T *>(tempArray.bufferWithOffset(t * vectorLength)),
+                                                   alpha, vectorLength, expLength);
                                 }
                             }
                         }
@@ -541,17 +546,22 @@ namespace nd4j {
 // doing negative samples updates
 #pragma omp parallel num_threads(numThreads) default(shared)
                         {
-                            // master thread arranges stuff
-                            #pragma omp single
-                            {
-                                for (int t = 0; t < numTargets; t++) {
-                                    auto target = bTarget[t];
+                            for (int t = 0; t < numTargets; t++) {
+                                auto target = bTarget[t];
+
+                                const auto isOwner = target % numThreads == omp_get_thread_num();
+
+                                if (isOwner) {
                                     auto positive = bStarters[t];
                                     auto alpha = lr.e<double>(t);
                                     auto nr = nextRandom.e<Nd4jLong>(t);
 
-                                    #pragma omp task depend(in:target)
-                                    do_negative<T>(target, positive, reinterpret_cast<T*>(s0.bufferWithOffset(target * vectorLength)), s1n.bufferAsT<T>(), expTable, negTable, reinterpret_cast<T*>(tempArray.bufferWithOffset(t * vectorLength)), sStarters, alpha, nr, vocabSize, vectorLength, expLength, negLength, nsRounds, numThreads, numTargets);
+                                    do_negative<T>(target, positive,
+                                                   reinterpret_cast<T *>(s0.bufferWithOffset(target * vectorLength)),
+                                                   s1n.bufferAsT<T>(), expTable, negTable,
+                                                   reinterpret_cast<T *>(tempArray.bufferWithOffset(t * vectorLength)),
+                                                   sStarters, alpha, nr, vocabSize, vectorLength, expLength, negLength,
+                                                   nsRounds, numThreads, numTargets);
                                 }
                             }
                         }
@@ -559,13 +569,14 @@ namespace nd4j {
 // updating syn0 now
 #pragma omp parallel num_threads(numThreads) default(shared)
                         {
-                            // master thread arranges stuff
-                            #pragma omp single
-                            {
-                                for (int t = 0; t < numTargets; t++) {
-                                    auto target = bTarget[t];
 
-                                    #pragma omp task depend(in:target)
+                            for (int t = 0; t < numTargets; t++) {
+                                auto target = bTarget[t];
+
+                                const auto isOwner = target % numThreads == omp_get_thread_num();
+
+                                if (isOwner) {
+                                    //#pragma omp task depend(in:target)
                                     do_update<T>(target, t, s0.bufferAsT<T>(), tempArray.bufferAsT<T>(), vectorLength);
                                 }
                             }
