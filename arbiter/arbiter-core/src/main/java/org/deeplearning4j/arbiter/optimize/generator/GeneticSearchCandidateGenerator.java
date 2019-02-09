@@ -142,14 +142,17 @@ public class GeneticSearchCandidateGenerator extends BaseCandidateGenerator {
     @Override
     public Candidate getCandidate() {
 
-        double[] values = selectionOperator.buildNextGenes();
+        double[] values = null;
         Object value = null;
         Exception e = null;
+
         try {
+            values = selectionOperator.buildNextGenes();
             value = parameterSpace.getValue(values);
         } catch (GeneticGenerationException e2) {
-            hasMoreCandidates = false;
+            log.warn("Error generating candidate", e2);
             e = e2;
+            hasMoreCandidates = false;
         } catch (Exception e2) {
             log.warn("Error getting configuration for candidate", e2);
             e = e2;

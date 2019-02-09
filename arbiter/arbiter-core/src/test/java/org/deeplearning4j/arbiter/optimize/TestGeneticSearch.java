@@ -20,40 +20,75 @@ import org.deeplearning4j.arbiter.optimize.api.CandidateGenerator;
 import org.deeplearning4j.arbiter.optimize.api.data.DataSetIteratorFactoryProvider;
 import org.deeplearning4j.arbiter.optimize.api.score.ScoreFunction;
 import org.deeplearning4j.arbiter.optimize.api.termination.MaxCandidatesCondition;
+import org.deeplearning4j.arbiter.optimize.api.termination.MaxTimeCondition;
+import org.deeplearning4j.arbiter.optimize.api.termination.TerminationCondition;
 import org.deeplearning4j.arbiter.optimize.config.OptimizationConfiguration;
 import org.deeplearning4j.arbiter.optimize.generator.GeneticSearchCandidateGenerator;
 import org.deeplearning4j.arbiter.optimize.generator.RandomSearchGenerator;
 import org.deeplearning4j.arbiter.optimize.generator.genetic.exceptions.GeneticGenerationException;
 import org.deeplearning4j.arbiter.optimize.generator.genetic.selection.SelectionOperator;
+import org.deeplearning4j.arbiter.optimize.runner.CandidateInfo;
+import org.deeplearning4j.arbiter.optimize.runner.CandidateStatus;
 import org.deeplearning4j.arbiter.optimize.runner.IOptimizationRunner;
 import org.deeplearning4j.arbiter.optimize.runner.LocalOptimizationRunner;
 import org.deeplearning4j.arbiter.optimize.runner.listener.impl.LoggingStatusListener;
+import org.junit.Assert;
 import org.junit.Test;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 public class TestGeneticSearch {
     public class TestSelectionOperator extends SelectionOperator {
 
         @Override
         public double[] buildNextGenes() {
-            throw new GeneticGenerationException("TEST");
+            throw new GeneticGenerationException("Forced exception to test exception handling.");
+        }
+    }
+
+    public class TestTerminationCondition implements TerminationCondition {
+
+        public boolean hasAFailedCandidate = false;
+        public int evalCount = 0;
+
+        @Override
+        public void initialize(IOptimizationRunner optimizationRunner) {
+        }
+
+        @Override
+        public boolean terminate(IOptimizationRunner optimizationRunner) {
+            if(++evalCount == 50)
+            {
+                // Generator did not handle GeneticGenerationException
+                return true;
+            }
+
+            for(CandidateInfo candidateInfo : optimizationRunner.getCandidateStatus()) {
+                if(candidateInfo.getCandidateStatus() == CandidateStatus.Failed) {
+                    hasAFailedCandidate = true;
+                    return true;
+                }
+            }
+
+            return false;
         }
     }
 
     @Test
-    public void test() throws Exception {
+    public void GeneticSearchCandidateGenerator_getCandidate_ShouldGenerateCandidates() throws Exception {
 
         ScoreFunction scoreFunction = new BraninFunction.BraninScoreFunction();
 
         //Define configuration:
         CandidateGenerator candidateGenerator = new GeneticSearchCandidateGenerator.Builder(new BraninFunction.BraninSpace(), scoreFunction).build();
 
+        TestTerminationCondition testTerminationCondition = new TestTerminationCondition();
         OptimizationConfiguration configuration = new OptimizationConfiguration.Builder()
                 .candidateGenerator(candidateGenerator)
                 .scoreFunction(scoreFunction)
-                .terminationConditions(new MaxCandidatesCondition(50))
+                .terminationConditions(new MaxCandidatesCondition(50), testTerminationCondition)
                 .build();
 
         IOptimizationRunner runner = new LocalOptimizationRunner(configuration, new BraninFunction.BraninTaskCreator());
@@ -61,11 +96,11 @@ public class TestGeneticSearch {
         runner.addListeners(new LoggingStatusListener());
         runner.execute();
 
-        System.out.println("----- Complete -----");
+        Assert.assertFalse(testTerminationCondition.hasAFailedCandidate);
     }
 
     @Test
-    public void GeneticSearchCandidateGenerator_getCandidate_GeneticExceptionShouldStopGeneration() {
+    public void GeneticSearchCandidateGenerator_getCandidate_GeneticExceptionShouldMarkCandidateAsFailed() {
 
         ScoreFunction scoreFunction = new BraninFunction.BraninScoreFunction();
 
@@ -74,10 +109,12 @@ public class TestGeneticSearch {
                 .selectionOperator(new TestSelectionOperator())
                 .build();
 
+        TestTerminationCondition testTerminationCondition = new TestTerminationCondition();
+
         OptimizationConfiguration configuration = new OptimizationConfiguration.Builder()
                 .candidateGenerator(candidateGenerator)
                 .scoreFunction(scoreFunction)
-                .terminationConditions(new MaxCandidatesCondition(50))
+                .terminationConditions(testTerminationCondition)
                 .build();
 
         IOptimizationRunner runner = new LocalOptimizationRunner(configuration, new BraninFunction.BraninTaskCreator());
@@ -85,8 +122,7 @@ public class TestGeneticSearch {
         runner.addListeners(new LoggingStatusListener());
         runner.execute();
 
-        System.out.println("----- Complete -----");
-
+        Assert.assertTrue(testTerminationCondition.hasAFailedCandidate);
     }
 
 }
