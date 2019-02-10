@@ -206,24 +206,20 @@ public class Word2VecTests {
         TokenizerFactory t = new DefaultTokenizerFactory();
         t.setTokenPreProcessor(new CommonPreprocessor());
 
-        Word2Vec vec1 = new Word2Vec.Builder().minWordFrequency(1).iterations(1).batchSize(64).layerSize(100)
+        Word2Vec vec1 = new Word2Vec.Builder().minWordFrequency(1).iterations(1).batchSize(8192).layerSize(100)
                 .stopWords(new ArrayList<String>()).seed(42).learningRate(0.025).minLearningRate(0.001)
                 .sampling(0).elementsLearningAlgorithm(new SkipGram<VocabWord>())
-                .negativeSample(5)
-                .epochs(3).windowSize(5).allowParallelTokenization(true)
-                .workers(12)
-                .usePreciseMode(true)
-                .useHierarchicSoftmax(false)
+                .epochs(1).windowSize(5).allowParallelTokenization(true)
+                .workers(1)
+                .useHierarchicSoftmax(true)
                 .modelUtils(new BasicModelUtils<VocabWord>()).iterate(iter).tokenizerFactory(t).build();
 
-        Word2Vec vec2 = new Word2Vec.Builder().minWordFrequency(1).iterations(1).batchSize(64).layerSize(100)
+        Word2Vec vec2 = new Word2Vec.Builder().minWordFrequency(1).iterations(1).batchSize(8192).layerSize(100)
                 .stopWords(new ArrayList<String>()).seed(42).learningRate(0.025).minLearningRate(0.001)
                 .sampling(0).elementsLearningAlgorithm(new SkipGram<VocabWord>())
-                .negativeSample(5)
-                .epochs(3).windowSize(5).allowParallelTokenization(true)
-                .workers(12)
-                .usePreciseMode(true)
-                .useHierarchicSoftmax(false)
+                .epochs(1).windowSize(5).allowParallelTokenization(true)
+                .workers(1)
+                .useHierarchicSoftmax(true)
                 .modelUtils(new BasicModelUtils<VocabWord>()).iterate(iter).tokenizerFactory(t).build();
 
         vec1.fit();
@@ -245,7 +241,9 @@ public class Word2VecTests {
     @Test
     public void testRunWord2Vec() throws Exception {
         // Strip white space before and after for each line
-        SentenceIterator iter = new BasicLineIterator(inputFile.getAbsolutePath());
+        val shakespear = new ClassPathResource("big/rnj.txt");
+        SentenceIterator iter = new BasicLineIterator(shakespear.getFile());
+        //SentenceIterator iter = new BasicLineIterator(inputFile.getAbsolutePath());
         // Split on white spaces in the line to get words
         TokenizerFactory t = new DefaultTokenizerFactory();
         t.setTokenPreProcessor(new CommonPreprocessor());

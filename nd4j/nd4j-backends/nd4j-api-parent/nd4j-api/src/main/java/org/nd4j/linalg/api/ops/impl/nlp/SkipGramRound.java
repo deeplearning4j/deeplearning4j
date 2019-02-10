@@ -86,7 +86,7 @@ public class SkipGramRound extends DynamicCustomOp {
         inputArguments.add(inferenceVector);
 
         // temporary arrays for neu1e
-        inputArguments.add(Nd4j.create(syn0.dataType(), new long[]{target.isVector() ? target.size(0) : 1, syn0.columns()}));
+        //inputArguments.add(Nd4j.create(syn0.dataType(), new long[]{target.isVector() ? target.size(0) : 1, syn0.columns()}));
 
         // couple of options
         iArguments.add((long) numWorkers);

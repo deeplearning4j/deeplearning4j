@@ -349,7 +349,7 @@ namespace nd4j {
             }
 
             template <typename T>
-            void skipgramBatchExec_(NDArray &s0, NDArray &s1, NDArray &s1n, void *vexpTable, void *vnegTable, void *vinfVector, NDArray &targets, NDArray &negStarters, NDArray &indices, NDArray &codes, NDArray &lr, NDArray &nextRandom, NDArray &tempArray, const int nsRounds, const int vocabSize, const int vectorLength, const int expLength, const int negLength, const bool preciseMode, const int numThreads) {
+            void skipgramBatchExec_(NDArray &s0, NDArray &s1, NDArray &s1n, void *vexpTable, void *vnegTable, void *vinfVector, NDArray &targets, NDArray &negStarters, NDArray &indices, NDArray &codes, NDArray &lr, NDArray &nextRandom, const int nsRounds, const int vocabSize, const int vectorLength, const int expLength, const int negLength, const bool preciseMode, const int numThreads) {
                 //auto syn0 = reinterpret_cast<T*>(vsyn0);
                 //auto syn1 = reinterpret_cast<T*>(vsyn1);
                 //auto syn1Neg = reinterpret_cast<T*>(vsyn1Neg);
@@ -363,14 +363,13 @@ namespace nd4j {
                 const auto idxShift = indices.isEmpty() ? 0 : indices.sizeAt(1);
                 const auto hsRounds = codes.isEmpty() ? 0 : codes.sizeAt(1);
 
-                if (!preciseMode) {
                     // regular mode provides 0 guarantees for reproducibility
                     auto numTargets = targets.lengthOf();
                     auto bTarget = targets.bufferAsT<int>();
                     auto bIndices = indices.bufferAsT<int>();
                     auto bCodes = codes.bufferAsT<int8_t>();
 
-#pragma omp parallel for private(sneu1e) default(shared) schedule(static)
+#pragma omp parallel for num_threads(numThreads) private(sneu1e) default(shared) schedule(static)
                     for (int t = 0; t < numTargets; t++) {
                         T* neu1e = vectorLength <= 600 ? sneu1e : new T[vectorLength];
                         memset(neu1e, 0, vectorLength * sizeof(T));
@@ -425,284 +424,8 @@ namespace nd4j {
                         for (int e = 0; e < vectorLength; e++)
                             syn0row[e] += neu1e[e];
                     }
-                } else {
-                    // precise mode is possible for negative sampling only
-
-                    if (!indices.isEmpty()) {
-                        auto bTarget = targets.bufferAsT<int>();
-                        auto bIndices = indices.bufferAsT<int>();
-                        auto bCodes = codes.bufferAsT<int8_t>();
-                        auto numTargets = targets.lengthOf();
-
-                        nd4j_printf("going for HS...\n","");
-
-// parallel block and following loop will be the same for every thread
-#pragma omp parallel num_threads(numThreads)  private(sneu1e) default(shared)
-                        {
-                            auto isOwner = true;
-                            auto irow = 0;
-
-                            // if vectorLength > pre-defined value we'll allocate new array
-                            T* neu1e = vectorLength <= 600 ? sneu1e : new T[vectorLength];
-
-                            // initial target position
-                            // f can't be higher than batch size
-                            int f = omp_get_thread_num() > numTargets ? omp_get_thread_num() % numTargets : omp_get_thread_num();
-
-                            for (int t = 0; t < numTargets; t++) {
-                                // this value should be different for all threads, so we're shifting values here
-                                if (f >= numTargets)
-                                    f = 0;
-
-                                // actual target for THIS thread
-                                auto target = bTarget[f];
-                                auto alpha = lr.e<double>(f);
-
-                                // if previous cycle used neu1e - nullify it
-                                if (isOwner)
-                                    memset(neu1e, 0, vectorLength * sizeof(T));
-
-                                // we're deciding if this thread will process this given target, or not
-                                isOwner = target % numThreads == omp_get_thread_num();
-                                auto syn0row = isOwner ? reinterpret_cast<T*>(s0.bufferWithOffset(target * vectorLength)) : 0;
-
-                                auto cShift = f * idxShift;
-
-                                int x = omp_get_thread_num() > hsRounds ? omp_get_thread_num() % hsRounds : omp_get_thread_num();
-
-                                for (int r = 0; r < hsRounds; r++) {
-                                    // this row should be randomized as well, to reduce chances for race conditions
-                                    if (x >= hsRounds)
-                                        x = 0;
-
-                                    bool isSkipRound = false;
-
-                                    irow = bIndices[x + cShift];
-                                    if (irow < 0 || irow >= vocabSize) {
-                                        isSkipRound = true;
-                                    }
-
-                                    // all threads diverge here on top of divergence over syn0 table
-                                    if (isOwner && !isSkipRound) {
-                                        auto syn1row = s1.bufferWithOffset(irow * vectorLength);
-                                        auto code = bCodes[x + cShift];
-
-                                        //nd4j_printf("syn0: [%i]; syn1: [%i]; code: [%i]\n", target, irow, code);
-                                        hSoftmax_<T>(syn0row, syn1row, expTable, neu1e, alpha, vectorLength, code, expLength, infVector != nullptr);
-                                    }
-
-                                    x++;
-                                }
-
-                                if (isOwner) {
-                                    for (int e = 0; e < vectorLength; e++)
-                                        syn0row[e] += neu1e[e];
-                                }
-
-                                // now we increment further step
-                                f++;
-                            }
-
-                            // optional deallocation
-                            if (vectorLength > 600)
-                                delete[] neu1e;
-                        }
-                    }
-
-                    // negative sampling goes second (if enabled)
-                    if (nsRounds > 0) {
-                        const auto totalTargets = targets.lengthOf();
-                        const auto bTarget = targets.bufferAsT<int>();
-                        const auto bStarters = negStarters.bufferAsT<int>();
-
-                        const int numTargets = 64;
-
-                        //copy & sort starters if we're in preciseMode
-                        int *sStarters;
-                        sStarters = new int[totalTargets];
-                        memcpy(sStarters, bStarters, totalTargets * sizeof(int));
-                        SpecialMethods<int>::sortGeneric(sStarters, negStarters.shapeInfo(), false);
-
-                        for (int start = 0; start < totalTargets; start += numTargets) {
-
-
-                            auto neux = tempArray.bufferAsT<T>();
-// first of all we calculate positive samples into temporary
-#pragma omp parallel num_threads(numThreads) default(shared)
-                            {
-                                for (int t = 0; t < numTargets; t++) {
-
-                                    const auto positive = bStarters[t + start];
-                                    const auto isOwner = positive % numThreads == omp_get_thread_num();
-
-                                    if (isOwner) {
-                                        const auto target = bTarget[t + start];
-                                        const auto alpha = lr.e<double>(t + start);
-                                        const auto nr = nextRandom.e<Nd4jLong>(t + start);
-
-                                        do_positive<T>(target, positive,
-                                                       reinterpret_cast<T *>(s0.bufferWithOffset(
-                                                               target * vectorLength)),
-                                                       reinterpret_cast<T *>(s1n.bufferWithOffset(
-                                                               positive * vectorLength)),
-                                                       expTable,
-                                                       reinterpret_cast<T *>(tempArray.bufferWithOffset(
-                                                               (t + start) * vectorLength)),
-                                                       alpha, vectorLength, expLength);
-                                    }
-                                }
-                            }
-
-                            // number of updates per target
-                            std::map<int, int> counts;
-
-// doing negative samples updates
-#pragma omp parallel num_threads(numThreads) default(shared)
-                            {
-                                for (int t = 0; t < numTargets; t++) {
-                                    auto target = bTarget[t + start];
-
-                                    const auto isOwner = target % numThreads == omp_get_thread_num();
-
-                                    if (isOwner) {
-
-                                        #pragma omp critical
-                                        {
-                                            if (counts.count(target) == 0)
-                                                counts[target] = 1;
-                                            else
-                                                counts[target]++;
-                                        }
-
-                                        auto positive = bStarters[t + start];
-                                        auto alpha = lr.e<double>(t + start);
-                                        auto nr = nextRandom.e<Nd4jLong>(t + start);
-
-                                        do_negative<T>(target, positive,
-                                                       reinterpret_cast<T *>(s0.bufferWithOffset(
-                                                               target * vectorLength)),
-                                                       s1n.bufferAsT<T>(), expTable, negTable,
-                                                       reinterpret_cast<T *>(tempArray.bufferWithOffset(
-                                                               (t + start) * vectorLength)),
-                                                       sStarters, alpha, nr, vocabSize, vectorLength, expLength,
-                                                       negLength, nsRounds, numThreads, totalTargets);
-                                    }
-                                }
-                            }
-
-
-// updating syn0 now
-#pragma omp parallel num_threads(numThreads) default(shared)
-                            {
-
-                                for (int t = 0; t < numTargets; t++) {
-                                    auto target = bTarget[t + start];
-
-                                    const auto isOwner = target % numThreads == omp_get_thread_num();
-
-                                    if (isOwner) {
-                                        //#pragma omp task depend(in:target)
-                                        do_update<T>(target, t + start, counts[target], s0.bufferAsT<T>(),
-                                                     tempArray.bufferAsT<T>(), vectorLength);
-                                    }
-                                }
-                            }
-                        }
-
-                        // deleting sorted stuff
-                        if (preciseMode)
-                            delete[] sStarters;
-
-/*
-// same parallelism here, group by target AND nsStarter pair
-#pragma omp parallel num_threads(numThreads) private(sneu1e) default(shared)
-                        {
-
-                            auto isOwner = true;
-                            auto irow = 0;
-
-                            // if vectorLength > pre-defined value we'll allocate new array
-                            T* neu1e = vectorLength <= 600 ? sneu1e : new T[vectorLength];
-
-                            // initial target position
-                            // f can't be higher than batch size
-                            int f = omp_get_thread_num() > numTargets ? omp_get_thread_num() % numTargets : omp_get_thread_num();
-
-                            for(int t = 0; t < numTargets; t++) {
-                                // this value should be different for all threads, so we're shifting values here
-                                if (f >= numTargets)
-                                    f = 0;
-
-                                // actual target for THIS thread
-                                auto target = bTarget[f];
-                                auto nsStarter = bStarters[f];
-                                auto alpha = lr.e<double>(f);
-                                auto randomValue = nextRandom.e<Nd4jLong>(f);
-
-                                // if previous cycle used neu1e - nullify it
-                                if (isOwner)
-                                    memset(neu1e, 0, vectorLength * sizeof(T));
-
-                                // we're deciding if this thread will process this given target, or not
-                                isOwner = (((target * 31) + nsStarter) * 31) % numThreads == omp_get_thread_num();
-                                auto syn0row = isOwner ? reinterpret_cast<T*>(s0.bufferWithOffset(target * vectorLength)) : 0;
-
-                                irow = nsStarter;
-                                if (isOwner) {
-                                    for (int r = 0; r < nsRounds + 1; r++) {
-                                        // we're skipping rng on 0 step
-                                        if (r != 0) {
-                                            randomValue = nd4j::math::nd4j_abs<Nd4jLong>(randomValue * (unsigned long long) 25214903917 + 11);
-                                            auto idx = nd4j::math::nd4j_abs<Nd4jLong>((randomValue >> 16) % negLength);
-                                            irow = idx >= negLength ? -1 : static_cast<int>(negTable[idx]);
-
-                                            if (irow < 0 || irow >= vocabSize)
-                                                irow = randomValue % (vocabSize - 1) + 1;
-
-                                            if (irow == nsStarter)
-                                                continue;
-
-                                            // we shift irow here to guarantee independence
-                                            if (preciseMode) {
-                                                int dim = irow % numThreads;
-                                                if (dim != omp_get_thread_num()) {
-                                                    irow += (numThreads - dim + omp_get_thread_num());
-
-                                                    // roll back to nearest affilated word
-                                                    while (irow >= vocabSize)
-                                                        irow -= numThreads;
-
-                                                    // if this row was processed as first step somewhere - skip it
-                                                    if (binarySearch(sStarters, irow, numTargets) > 0)
-                                                        continue;
-                                                }
-                                            }
-
-                                            nSampling_<T>(syn0row, s1n.bufferWithOffset(irow * vectorLength), expTable, neu1e, alpha, vectorLength, r == 0 ? 1 : 0, expLength, infVector != nullptr);
-                                        } else {
-                                            nSampling_<T>(syn0row, s1n.bufferWithOffset(irow * vectorLength), expTable, neu1e, alpha, vectorLength, r == 0 ? 1 : 0, expLength, infVector != nullptr);
-                                        }
-
-                                        //nd4j_printf("Thread <%i>: syn0: [%i]; s1n: [%i];\n", omp_get_thread_num(), target, irow);
-                                    }
-
-                                    #pragma omp simd
-                                    for (int e = 0; e < vectorLength; e++)
-                                        syn0row[e] += neu1e[e];
-                                }
-
-                                f++;
-                            }
-
-                            // optional deallocation
-                            if (vectorLength > 600)
-                                delete[] neu1e;
-                        }
-                        */
-                    }
-                }
             }
-            BUILD_SINGLE_TEMPLATE(template void skipgramBatchExec_, (NDArray &s0, NDArray &s1, NDArray &s1n, void *vexpTable, void *vnegTable, void *vinfVector, NDArray &targets, NDArray &negStarters, NDArray &indices, NDArray &codes, NDArray &lr, NDArray &nextRandom, NDArray &tempArray, const int nsRounds, const int vocabSize, const int vectorLength, const int expLength, const int negLength, const bool preciseMode, const int numThreads), FLOAT_TYPES);
+            BUILD_SINGLE_TEMPLATE(template void skipgramBatchExec_, (NDArray &s0, NDArray &s1, NDArray &s1n, void *vexpTable, void *vnegTable, void *vinfVector, NDArray &targets, NDArray &negStarters, NDArray &indices, NDArray &codes, NDArray &lr, NDArray &nextRandom, const int nsRounds, const int vocabSize, const int vectorLength, const int expLength, const int negLength, const bool preciseMode, const int numThreads), FLOAT_TYPES);
 
 
             template <typename T>
@@ -845,7 +568,7 @@ namespace nd4j {
             }
             BUILD_SINGLE_TEMPLATE(template void cbowBatchExec_, (NDArray &s0, NDArray &s1, NDArray &s1n, void *vexpTable, void *vnegTable, void *vinfVector, NDArray &context, NDArray &targets, NDArray &negStarters, NDArray &indices, NDArray &codes, NDArray &lr, NDArray &nextRandom, NDArray &nLabels, const int nsRounds, const int vocabSize, const int vectorLength, const int expLength, const int negLength,  const bool trainWords, const int numThreads), FLOAT_TYPES);
 
-            void skipgram(NDArray &syn0, NDArray &syn1, NDArray &syn1Neg, NDArray &expTable, NDArray &negTable, NDArray &target, NDArray &ngStarter, int nsRounds, NDArray &indices, NDArray &codes, NDArray &alpha, NDArray &randomValue, NDArray &inferenceVector, NDArray &tempArray, const bool preciseMode, const int numWorkers) {
+            void skipgram(NDArray &syn0, NDArray &syn1, NDArray &syn1Neg, NDArray &expTable, NDArray &negTable, NDArray &target, NDArray &ngStarter, int nsRounds, NDArray &indices, NDArray &codes, NDArray &alpha, NDArray &randomValue, NDArray &inferenceVector, const bool preciseMode, const int numWorkers) {
                 auto xType = syn0.dataType();
 
                 // single round case
@@ -856,7 +579,7 @@ namespace nd4j {
                 } else if (ngStarter.isVector() || target.isVector()){
                     // batch mode
 
-                    BUILD_SINGLE_SELECTOR(xType, skipgramBatchExec_, (syn0, syn1, syn1Neg, expTable.buffer(), negTable.buffer(), nullptr, target, ngStarter, indices, codes, alpha, randomValue, tempArray, nsRounds, syn0.sizeAt(0), syn0.sizeAt(1), expTable.lengthOf(), negTable.lengthOf(), preciseMode, numWorkers), FLOAT_TYPES);
+                    BUILD_SINGLE_SELECTOR(xType, skipgramBatchExec_, (syn0, syn1, syn1Neg, expTable.buffer(), negTable.buffer(), nullptr, target, ngStarter, indices, codes, alpha, randomValue, nsRounds, syn0.sizeAt(0), syn0.sizeAt(1), expTable.lengthOf(), negTable.lengthOf(), preciseMode, numWorkers), FLOAT_TYPES);
                 } else
                     throw std::runtime_error("SkipGram: target must have rank 0 or 1");
             }
