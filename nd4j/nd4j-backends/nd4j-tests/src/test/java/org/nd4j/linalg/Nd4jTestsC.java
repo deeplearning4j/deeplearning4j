@@ -69,6 +69,7 @@ import org.nd4j.linalg.api.ops.impl.transforms.comparison.CompareAndSet;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.Eps;
 import org.nd4j.linalg.api.ops.impl.transforms.pairwise.BinaryRelativeError;
 import org.nd4j.linalg.api.ops.impl.transforms.pairwise.Set;
+import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.Axpy;
 import org.nd4j.linalg.api.ops.impl.transforms.same.OldReverse;
 import org.nd4j.linalg.api.ops.impl.transforms.same.Sign;
 import org.nd4j.linalg.api.ops.impl.transforms.strict.ACosh;
@@ -7198,6 +7199,18 @@ public class Nd4jTestsC extends BaseNd4jTest {
                 {4,5,6},
                 {7,8,9}});
         assertEquals(exp, out);
+    }
+
+    @Test
+    public void testAxpyOpRows(){
+        INDArray arr = Nd4j.create(1,4).assign(2.0f);
+        INDArray ones = Nd4j.ones(1,4).assign(3.0f);
+
+        Nd4j.exec(new Axpy(arr, ones, arr, 10.0, 4));
+
+        INDArray exp = Nd4j.valueArrayOf(new long[]{1,4}, 23.0);
+
+        assertEquals(exp, arr);
     }
 
     ///////////////////////////////////////////////////////
