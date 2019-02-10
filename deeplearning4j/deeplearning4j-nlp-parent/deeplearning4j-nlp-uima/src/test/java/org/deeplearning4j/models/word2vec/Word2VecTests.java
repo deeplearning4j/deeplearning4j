@@ -202,11 +202,11 @@ public class Word2VecTests {
     public void reproducibleResults_ForMultipleRuns() throws Exception {
         val shakespear = new ClassPathResource("big/rnj.txt");
         val basic = new ClassPathResource("big/rnj.txt");
-        SentenceIterator iter = new BasicLineIterator(shakespear.getFile());
+        SentenceIterator iter = new BasicLineIterator(inputFile);
         TokenizerFactory t = new DefaultTokenizerFactory();
         t.setTokenPreProcessor(new CommonPreprocessor());
 
-        Word2Vec vec1 = new Word2Vec.Builder().minWordFrequency(1).iterations(1).batchSize(512).layerSize(100)
+        Word2Vec vec1 = new Word2Vec.Builder().minWordFrequency(1).iterations(1).batchSize(64).layerSize(100)
                 .stopWords(new ArrayList<String>()).seed(42).learningRate(0.025).minLearningRate(0.001)
                 .sampling(0).elementsLearningAlgorithm(new SkipGram<VocabWord>())
                 .negativeSample(5)
@@ -216,7 +216,7 @@ public class Word2VecTests {
                 .useHierarchicSoftmax(false)
                 .modelUtils(new BasicModelUtils<VocabWord>()).iterate(iter).tokenizerFactory(t).build();
 
-        Word2Vec vec2 = new Word2Vec.Builder().minWordFrequency(1).iterations(1).batchSize(512).layerSize(100)
+        Word2Vec vec2 = new Word2Vec.Builder().minWordFrequency(1).iterations(1).batchSize(64).layerSize(100)
                 .stopWords(new ArrayList<String>()).seed(42).learningRate(0.025).minLearningRate(0.001)
                 .sampling(0).elementsLearningAlgorithm(new SkipGram<VocabWord>())
                 .negativeSample(5)

@@ -297,12 +297,12 @@ namespace nd4j {
             }
 
             template <typename T>
-            static void do_update(const int target, const int rowIndex, T *syn0, T *neu1t, const int vectorLength) {
+            static void do_update(const int target, const int rowIndex, const int count, T *syn0, T *neu1t, const int vectorLength) {
 
                 auto syn0row = syn0 + (target * vectorLength);
                 auto neu1e = neu1t + (rowIndex * vectorLength);
                 for (int e = 0; e< vectorLength; e++)
-                    syn0row[e] += neu1e[e];
+                    syn0row[e] += neu1e[e] / count;
             }
 
             template <typename T>
@@ -337,8 +337,10 @@ namespace nd4j {
                             irow -= numThreads;
 
                         // if this row was processed as first step somewhere - skip it
-                        if (binarySearch(sStarters, irow, numTargets) > 0)
+                        if (binarySearch(sStarters, irow, numTargets) > 0) {
+                            r--;
                             continue;
+                        }
                     }
 
 
@@ -432,6 +434,7 @@ namespace nd4j {
                         auto bCodes = codes.bufferAsT<int8_t>();
                         auto numTargets = targets.lengthOf();
 
+                        nd4j_printf("going for HS...\n","");
 
 // parallel block and following loop will be the same for every thread
 #pragma omp parallel num_threads(numThreads)  private(sneu1e) default(shared)
@@ -508,79 +511,107 @@ namespace nd4j {
 
                     // negative sampling goes second (if enabled)
                     if (nsRounds > 0) {
-                        const auto numTargets = targets.lengthOf();
+                        const auto totalTargets = targets.lengthOf();
                         const auto bTarget = targets.bufferAsT<int>();
                         const auto bStarters = negStarters.bufferAsT<int>();
 
+                        const int numTargets = 64;
+
                         //copy & sort starters if we're in preciseMode
                         int *sStarters;
-                        sStarters = new int[numTargets];
-                        memcpy(sStarters, bStarters, numTargets * sizeof(int));
+                        sStarters = new int[totalTargets];
+                        memcpy(sStarters, bStarters, totalTargets * sizeof(int));
                         SpecialMethods<int>::sortGeneric(sStarters, negStarters.shapeInfo(), false);
 
+                        for (int start = 0; start < totalTargets; start += numTargets) {
 
-                        auto neux = tempArray.bufferAsT<T>();
+
+                            auto neux = tempArray.bufferAsT<T>();
 // first of all we calculate positive samples into temporary
 #pragma omp parallel num_threads(numThreads) default(shared)
-                        {
-                            for (int t = 0; t < numTargets; t++) {
+                            {
+                                for (int t = 0; t < numTargets; t++) {
 
-                                const auto positive = bStarters[t];
-                                const auto isOwner = positive % numThreads == omp_get_thread_num();
+                                    const auto positive = bStarters[t + start];
+                                    const auto isOwner = positive % numThreads == omp_get_thread_num();
 
-                                if (isOwner) {
-                                    const auto target = bTarget[t];
-                                    const auto alpha = lr.e<double>(t);
-                                    const auto nr = nextRandom.e<Nd4jLong>(t);
+                                    if (isOwner) {
+                                        const auto target = bTarget[t + start];
+                                        const auto alpha = lr.e<double>(t + start);
+                                        const auto nr = nextRandom.e<Nd4jLong>(t + start);
 
-                                    do_positive<T>(target, positive,
-                                                   reinterpret_cast<T *>(s0.bufferWithOffset(target * vectorLength)),
-                                                   reinterpret_cast<T *>(s1n.bufferWithOffset(positive * vectorLength)),
-                                                   expTable,
-                                                   reinterpret_cast<T *>(tempArray.bufferWithOffset(t * vectorLength)),
-                                                   alpha, vectorLength, expLength);
+                                        do_positive<T>(target, positive,
+                                                       reinterpret_cast<T *>(s0.bufferWithOffset(
+                                                               target * vectorLength)),
+                                                       reinterpret_cast<T *>(s1n.bufferWithOffset(
+                                                               positive * vectorLength)),
+                                                       expTable,
+                                                       reinterpret_cast<T *>(tempArray.bufferWithOffset(
+                                                               (t + start) * vectorLength)),
+                                                       alpha, vectorLength, expLength);
+                                    }
                                 }
                             }
-                        }
+
+                            // number of updates per target
+                            std::map<int, int> counts;
 
 // doing negative samples updates
 #pragma omp parallel num_threads(numThreads) default(shared)
-                        {
-                            for (int t = 0; t < numTargets; t++) {
-                                auto target = bTarget[t];
+                            {
+                                for (int t = 0; t < numTargets; t++) {
+                                    auto target = bTarget[t + start];
 
-                                const auto isOwner = target % numThreads == omp_get_thread_num();
+                                    const auto isOwner = target % numThreads == omp_get_thread_num();
 
-                                if (isOwner) {
-                                    auto positive = bStarters[t];
-                                    auto alpha = lr.e<double>(t);
-                                    auto nr = nextRandom.e<Nd4jLong>(t);
+                                    if (isOwner) {
 
-                                    do_negative<T>(target, positive,
-                                                   reinterpret_cast<T *>(s0.bufferWithOffset(target * vectorLength)),
-                                                   s1n.bufferAsT<T>(), expTable, negTable,
-                                                   reinterpret_cast<T *>(tempArray.bufferWithOffset(t * vectorLength)),
-                                                   sStarters, alpha, nr, vocabSize, vectorLength, expLength, negLength,
-                                                   nsRounds, numThreads, numTargets);
+                                        #pragma omp critical
+                                        {
+                                            if (counts.count(target) == 0)
+                                                counts[target] = 1;
+                                            else
+                                                counts[target]++;
+                                        }
+
+                                        auto positive = bStarters[t + start];
+                                        auto alpha = lr.e<double>(t + start);
+                                        auto nr = nextRandom.e<Nd4jLong>(t + start);
+
+                                        do_negative<T>(target, positive,
+                                                       reinterpret_cast<T *>(s0.bufferWithOffset(
+                                                               target * vectorLength)),
+                                                       s1n.bufferAsT<T>(), expTable, negTable,
+                                                       reinterpret_cast<T *>(tempArray.bufferWithOffset(
+                                                               (t + start) * vectorLength)),
+                                                       sStarters, alpha, nr, vocabSize, vectorLength, expLength,
+                                                       negLength, nsRounds, numThreads, totalTargets);
+                                    }
                                 }
                             }
-                        }
+
 
 // updating syn0 now
 #pragma omp parallel num_threads(numThreads) default(shared)
-                        {
+                            {
 
-                            for (int t = 0; t < numTargets; t++) {
-                                auto target = bTarget[t];
+                                for (int t = 0; t < numTargets; t++) {
+                                    auto target = bTarget[t + start];
 
-                                const auto isOwner = target % numThreads == omp_get_thread_num();
+                                    const auto isOwner = target % numThreads == omp_get_thread_num();
 
-                                if (isOwner) {
-                                    //#pragma omp task depend(in:target)
-                                    do_update<T>(target, t, s0.bufferAsT<T>(), tempArray.bufferAsT<T>(), vectorLength);
+                                    if (isOwner) {
+                                        //#pragma omp task depend(in:target)
+                                        do_update<T>(target, t + start, counts[target], s0.bufferAsT<T>(),
+                                                     tempArray.bufferAsT<T>(), vectorLength);
+                                    }
                                 }
                             }
                         }
+
+                        // deleting sorted stuff
+                        if (preciseMode)
+                            delete[] sStarters;
 
 /*
 // same parallelism here, group by target AND nsStarter pair
@@ -668,10 +699,6 @@ namespace nd4j {
                                 delete[] neu1e;
                         }
                         */
-
-                        // deleting sorted stuff
-                        if (preciseMode)
-                            delete[] sStarters;
                     }
                 }
             }
