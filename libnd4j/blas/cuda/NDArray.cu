@@ -1558,10 +1558,10 @@ NDArray NDArray::e(const Nd4jLong i) const {
 
         if (target->dataType() != this->dataType())
             throw std::runtime_error("NDArray::applyTransform SameOps: target array must have the same data type as original array");
-//        NDArray::registerSpecialUse({target}, {this});
-        if(!isActualOnDeviceSide()) syncToDevice();
+        NDArray::registerSpecialUse({target}, {this});
+//        if(!isActualOnDeviceSide()) syncToDevice();
         NativeOpExecutioner::execTransformSame(_context, op, this->_buffer, this->_shapeInfo, this->_bufferD, this->_shapeInfoD, target->_buffer, target->_shapeInfo, target->_bufferD, target->_shapeInfoD, extraParams != nullptr ? extraParams->argumentsAsT(target->dataType()) : nullptr, nullptr, nullptr);
-        target->tickWriteDevice();
+//        target->tickWriteDevice();
     }
 
     void NDArray::applyTransform(nd4j::transform::BoolOps op, NDArray *target, ExtraArguments *extraParams) {

@@ -579,6 +579,10 @@ TEST_F(ConvolutionTests, Test_im2col_col2im_1) {
     x.linspace(1);
 
     int oY, oX;
+    x.syncToDevice();
+    ASSERT_TRUE(x.isActualOnDeviceSide());
+    ASSERT_TRUE(x.isActualOnHostSide());
+    //x.printBuffer("x", 64);
 
     nd4j::ops::ConvolutionUtils::calcOutSizePool2D(oY, oX, kY, kX, sY, sX, pY, pX, dY, dX, inY, inX, isSameMode);
 
@@ -594,6 +598,9 @@ TEST_F(ConvolutionTests, Test_im2col_col2im_1) {
     auto result2col = op.execute({&x}, {}, {kY, kX, sY, sX, pY, pX, dY, dX, isSameMode ? 1 : 0});
 
     auto im2col1 = result2col->at(0);
+
+    //im2col0.printBuffer("transformed");
+    //im2col1->printBuffer("customized", 64);
 
     ASSERT_TRUE(im2col1->isSameShape(&im2col0));
     ASSERT_TRUE(im2col1->equalsTo(&im2col0));
