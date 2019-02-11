@@ -1405,13 +1405,11 @@ NDArray NDArray::transp() const {
 
     //////////////////////////////////////////////////////////////////////////
     NDArray* NDArray::permute(const int* dimensions, const int rank) const {
-        // evaluate shapeInfo for output (permuted) array ret
-        const_cast<NDArray*>(this)->lazyAllocateBuffer();
-        int8_t* buffer = _buffer;
-        //if (buffer == nullptr)
-        auto shapeInfoNew = ShapeUtils::evalPermShapeInfo(dimensions, rank, *this, _context->getWorkspace());
-        // create array to be returned
-        auto ret = new NDArray(buffer, shapeInfoNew, _context, false, true);
+        
+        // evaluate shapeInfo for output (permuted) array ret        
+        auto shapeInfoPermuted = ShapeUtils::evalPermShapeInfo(dimensions, rank, *this, _context->getWorkspace());
+        // create array to be returned        
+        auto ret = new NDArray(_buffer, _bufferD, shapeInfoPermuted, _context, false, false, true);
 	    ret->_isView = true;
 
         return ret;
