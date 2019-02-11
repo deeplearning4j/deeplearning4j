@@ -423,6 +423,11 @@ namespace nd4j {
                         #pragma omp simd
                         for (int e = 0; e < vectorLength; e++)
                             syn0row[e] += neu1e[e];
+
+
+                        // optionally release temp arrays
+                        if (vectorLength > 600)
+                            delete[] neu1e;
                     }
             }
             BUILD_SINGLE_TEMPLATE(template void skipgramBatchExec_, (NDArray &s0, NDArray &s1, NDArray &s1n, void *vexpTable, void *vnegTable, void *vinfVector, NDArray &targets, NDArray &negStarters, NDArray &indices, NDArray &codes, NDArray &lr, NDArray &nextRandom, const int nsRounds, const int vocabSize, const int vectorLength, const int expLength, const int negLength, const bool preciseMode, const int numThreads), FLOAT_TYPES);
