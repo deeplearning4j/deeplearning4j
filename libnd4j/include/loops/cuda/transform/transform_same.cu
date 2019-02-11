@@ -35,7 +35,7 @@ __global__ void transformSameSimple(void *x, Nd4jLong *xShapeInfo, int xRank,
 								int *allocationPointer,
 								void *reductionPointer,
 								Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
-	
+
 	functions::transform::TransformSame<X>::template transformCuda<OpType>(x,xShapeInfo,params,z,zShapeInfo,allocationPointer,reductionPointer, tadShapeInfo, tadOffsets);
 }
 
@@ -67,8 +67,7 @@ namespace functions {
 		    if(OpType::requiresSpecial) {
 			    OpType::execSpecialCuda(x,xShapeInfo,z,zShapeInfo,params, allocationPointer, reductionPointer, tadShapeInfo, tadOffsets);
 			    return;
-		    } 
-		    else {
+		    } else {
 		    	__shared__ Nd4jLong xEws;
     	        __shared__ Nd4jLong zEws;
         	    __shared__ char xOrder;
@@ -107,7 +106,7 @@ namespace functions {
 	    			    	z[zOffset] = OpType::op(x[xOffset], params); 							
 		    	    	}
 		    		}
-		        }		        
+		        }
 	        }
 	    };
 

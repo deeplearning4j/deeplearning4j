@@ -1549,7 +1549,7 @@ NDArray NDArray::e(const Nd4jLong i) const {
     }
 
     void NDArray::applyTransform(nd4j::transform::SameOps op, NDArray *target, ExtraArguments *extraParams) {
-        nd4j_printf("Same op %i transform:\n", (int)op);
+        //nd4j_printf("Same op %i transform:\n", (int)op);
         if (isS())
             throw std::runtime_error("NDArray::applyTransform SameOps: you can't use this method on String array!");
 
