@@ -152,7 +152,7 @@ public class OneHot extends DynamicCustomOp {
 
     @Override
     public List<org.nd4j.linalg.api.buffer.DataType> calculateOutputDataTypes(List<org.nd4j.linalg.api.buffer.DataType> dataTypes){
-        Preconditions.checkState(dataTypes.size() == 1, "Expected list with exactly 1 datatype for %s, got %s", getClass(), dataTypes);
+        Preconditions.checkState(dataTypes.size() >= 1 && dataTypes.size() <= 4, "Expected list with 1 to 4 datatypes for %s, got %s", getClass(), dataTypes);
         if(outputType != null){
             return Collections.singletonList(outputType);
         } else {

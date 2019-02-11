@@ -1123,6 +1123,9 @@ public class DifferentialFunctionFactory {
         return new SwishDerivative(sameDiff(), iX, false).outputVariable();
     }
 
+    public SDVariable geluDerivative(SDVariable iX) {
+        return new GELUDerivative(sameDiff(), iX, false).outputVariable();
+    }
 
     public SDVariable sign(SDVariable iX) {
         return new Sign(sameDiff(), iX, false).outputVariable();
