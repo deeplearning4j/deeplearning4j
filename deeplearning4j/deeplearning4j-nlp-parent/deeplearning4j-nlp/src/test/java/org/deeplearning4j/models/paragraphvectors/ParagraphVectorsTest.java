@@ -1133,7 +1133,6 @@ public class ParagraphVectorsTest {
             fail();
         }
 
-        assertEquals(paragraphVectors.getConfiguration(), ((ParagraphVectors) unserialized).getConfiguration());
         assertEquals(cache.totalWordOccurrences(),((ParagraphVectors) unserialized).getVocab().totalWordOccurrences());
         assertEquals(cache.totalNumberOfDocs(), ((ParagraphVectors) unserialized).getVocab().totalNumberOfDocs());
 
