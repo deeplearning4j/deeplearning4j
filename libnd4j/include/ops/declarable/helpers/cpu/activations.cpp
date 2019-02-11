@@ -29,7 +29,7 @@ namespace helpers {
 
 ///////////////////////////////////////////////////////////////////
 template <typename T>
-void _softMaxForVector(graph::LaunchContext* context, const void *input, const Nd4jLong *inShapeInfo, void *output) {
+void static _softMaxForVector(graph::LaunchContext* context, const void *input, const Nd4jLong *inShapeInfo, void *output) {
     
     const T* inBuff  = reinterpret_cast<const T *>(input);
     T* outBuff = reinterpret_cast<T *>(output);
@@ -58,8 +58,29 @@ void _softMaxForVector(graph::LaunchContext* context, const void *input, const N
 }
 
 ///////////////////////////////////////////////////////////////////
+void softmax(graph::LaunchContext* context, const NDArray& input, NDArray& output, const int dimension) {
+
+    const int rank = input.rankOf();
+
+    if(input.isVector()) {
+        
+        if(rank == 1 || input.sizeAt(dimension) != 1) {
+            BUILD_SINGLE_SELECTOR(input.dataType(), _softMaxForVector, (context, input.getBuffer(), input.getShapeInfo(), output.buffer()), FLOAT_TYPES);
+        }                
+        else
+            output = 1.;
+    }
+    else {
+        auto maxAlongDim = const_cast<NDArray&>(input).reduceAlongDims(reduce::Max, {dimension}, true);
+        (input - maxAlongDim).applyTransform(transform::Exp, &output); // output contains exponents temporarily
+        auto sumAlongDim = output.reduceAlongDims(reduce::Sum, {dimension}, true);        
+        output /= sumAlongDim;
+    }
+}
+
+///////////////////////////////////////////////////////////////////
 template <typename T>
-void _logSoftMaxForVector(graph::LaunchContext* context, const void *input, const Nd4jLong *inShapeInfo, void *output) {
+void static _logSoftMaxForVector(graph::LaunchContext* context, const void *input, const Nd4jLong *inShapeInfo, void *output) {
         
     const auto inBuff  = reinterpret_cast<const T*>(input);
           auto outBuff = reinterpret_cast<T*>(output);
@@ -88,7 +109,7 @@ void _logSoftMaxForVector(graph::LaunchContext* context, const void *input, cons
     }
 }
 
-//////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////
 void logSoftmax(graph::LaunchContext* context, const NDArray& input, NDArray& output, const int dimension) {
 
     const int rank = input.rankOf();
@@ -111,26 +132,57 @@ void logSoftmax(graph::LaunchContext* context, const NDArray& input, NDArray& ou
     }
 }
 
-    //////////////////////////////////////////////////////////////////////////
-    void softmax(graph::LaunchContext* context, const NDArray& input, NDArray& output, const int dimension) {
+///////////////////////////////////////////////////////////////////
+template <typename T>
+void static _softMaxDerivForVector(graph::LaunchContext* context, const void *input, const Nd4jLong *inShapeInfo, void *output) {
+    
+    const T* inBuff  = reinterpret_cast<const T *>(input);
+    T* outBuff = reinterpret_cast<T *>(output);
 
-        const int rank = input.rankOf();
+    T max = -DataTypeUtils::max<T>();
+    T sum = 0.;
+    int length = shape::length(inShapeInfo);
 
-        if(input.isVector()) {
-        
-            if(rank == 1 || input.sizeAt(dimension) != 1) {
-                BUILD_SINGLE_SELECTOR(input.dataType(), _softMaxForVector, (context, input.getBuffer(), input.getShapeInfo(), output.buffer()), FLOAT_TYPES);
-            }                
-            else
-                output = 1.;
-        }
-        else {
-            auto maxAlongDim = const_cast<NDArray&>(input).reduceAlongDims(reduce::Max, {dimension}, true);
-            (input - maxAlongDim).applyTransform(transform::Exp, &output); // output contains exponents temporarily
-            auto sumAlongDim = output.reduceAlongDims(reduce::Sum, {dimension}, true);        
-            output /= sumAlongDim;
-        }
+    #pragma omp simd reduction(maxT:max)
+    for (int i = 0; i < length; i++) {
+        const Nd4jLong offset = shape::getIndexOffset(i, inShapeInfo, length);
+        max = nd4j::math::nd4j_max<T>(max, inBuff[offset]);
     }
+
+    #pragma omp parallel for simd reduction(sumT:sum)
+    for (int i = 0; i < length; i++) {
+        const Nd4jLong offset = shape::getIndexOffset(i, inShapeInfo, length);
+        outBuff[offset] = nd4j::math::nd4j_exp<T, T>(inBuff[offset] - max);
+        sum += outBuff[offset];
+    }
+    #pragma omp simd
+    for (int i = 0; i < length; i++) {
+        const Nd4jLong offset = shape::getIndexOffset(i, inShapeInfo, length);
+        outBuff[offset] /= sum;
+        outBuff[offset] *= (1.f - outBuff[offset]);     // derivative
+    }
+}
+
+///////////////////////////////////////////////////////////////////
+void softmaxDerivative(graph::LaunchContext* context, const NDArray& input, NDArray& output, const int dimension) {
+
+    const int rank = input.rankOf();
+    int temp;
+
+    if(shape::isCommonVector(input.getShapeInfo(), temp)) {
+        
+        BUILD_SINGLE_SELECTOR(input.dataType(), _softMaxDerivForVector, (context, input.getBuffer(), input.getShapeInfo(), output.buffer()), FLOAT_TYPES);
+    }
+    else {
+        auto maxAlongDim = const_cast<NDArray&>(input).reduceAlongDims(reduce::Max, {dimension}, true);
+        (input - maxAlongDim).applyTransform(transform::Exp, &output); // output contains exponents temporarily
+        auto sumAlongDim = output.reduceAlongDims(reduce::Sum, {dimension}, true);        
+        output /= sumAlongDim;
+        output *= (1.f - output);   // derivative
+    }
+}   
+
+
 
     //////////////////////////////////////////////////////////////////////////
     void prelu(graph::LaunchContext* context, const NDArray& input, const NDArray& alpha, NDArray& output) {
@@ -181,9 +233,7 @@ void logSoftmax(graph::LaunchContext* context, const NDArray& input, NDArray& ou
             }                      
         }
     }
-
-    BUILD_SINGLE_TEMPLATE(template void _softMaxForVector, (graph::LaunchContext* context, const void *input, const Nd4jLong *inShapeInfo, void *output), FLOAT_TYPES);
-    BUILD_SINGLE_TEMPLATE(template void _logSoftMaxForVector, (graph::LaunchContext* context, const void *input, const Nd4jLong *inShapeInfo, void *output), FLOAT_TYPES);
+    
     
     template <typename T>
     static void thresholdRelu_(NDArray const& input, double threshold, NDArray& output) {
@@ -209,7 +259,12 @@ void logSoftmax(graph::LaunchContext* context, const NDArray& input, NDArray& ou
         BUILD_SINGLE_SELECTOR(input->dataType(), thresholdReluDerivative_, (context, input, threshold, dLdO, output), FLOAT_TYPES);
     }
 
-    BUILD_SINGLE_TEMPLATE(template void thresholdReluDerivative_, (graph::LaunchContext* context, NDArray* input, double threshold, NDArray* dLdO, NDArray* output), FLOAT_TYPES);
+
+
+BUILD_SINGLE_TEMPLATE(template void thresholdReluDerivative_, (graph::LaunchContext* context, NDArray* input, double threshold, NDArray* dLdO, NDArray* output), FLOAT_TYPES);
+BUILD_SINGLE_TEMPLATE(template void _softMaxForVector, (graph::LaunchContext* context, const void *input, const Nd4jLong *inShapeInfo, void *output), FLOAT_TYPES);
+BUILD_SINGLE_TEMPLATE(template void _logSoftMaxForVector, (graph::LaunchContext* context, const void *input, const Nd4jLong *inShapeInfo, void *output), FLOAT_TYPES);
+BUILD_SINGLE_TEMPLATE(template void _softMaxDerivForVector, (graph::LaunchContext* context, const void *input, const Nd4jLong *inShapeInfo, void *output), FLOAT_TYPES);
 
 }
 }
