@@ -475,7 +475,7 @@ namespace shape {
  * Returns the stride portion of an information
  * buffer
  */
-    ND4J_EXPORT _CUDA_HD Nd4jLong *stride(Nd4jLong *buffer);
+    ND4J_EXPORT _CUDA_HD Nd4jLong *stride(const Nd4jLong *buffer);
 
 /**
  * Compute the length of the given shape
@@ -1923,16 +1923,16 @@ template <typename T>
  * the equivalent nd index
  * @param shape the shape of the dimensions
  * @param index the index to map
- * @param numIndices the number of total indices (typically prod of shape(
+ * @param arrLen the number of total indices (typically prod of shape(
  * @return the mapped indexes along each dimension
  */
-    INLINEDEF _CUDA_HD void ind2subC(const int rank, const Nd4jLong *shape, Nd4jLong index, Nd4jLong numIndices, Nd4jLong *ret) {
+    INLINEDEF _CUDA_HD void ind2subC(const int rank, const Nd4jLong *shape, Nd4jLong index, Nd4jLong arrLen, Nd4jLong *ret) {
 
         for(int i = 0; i < rank; i++) {
-            numIndices /= shape[i];
-            if(numIndices > 0) {
-                ret[i] = index / numIndices;
-                index %= numIndices;
+            arrLen /= shape[i];
+            if(arrLen > 0) {
+                ret[i] = index / arrLen;
+                index %= arrLen;
             }
             else
                 ret[i] = 0;
@@ -2744,8 +2744,8 @@ template <typename T>
  * Returns the stride portion of an information
  * buffer
  */
-    INLINEDEF _CUDA_HD Nd4jLong *stride( Nd4jLong *buffer) {
-        return buffer + (1 + rank(buffer));
+    INLINEDEF _CUDA_HD Nd4jLong *stride(const Nd4jLong *buffer) {
+        return const_cast<Nd4jLong*>(buffer) + (1 + rank(buffer));
     }
 
     INLINEDEF _CUDA_HD bool isEmpty(const Nd4jLong *shapeInfo) {
