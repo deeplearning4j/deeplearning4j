@@ -20,6 +20,8 @@ package org.deeplearning4j.models.paragraphvectors;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import org.deeplearning4j.models.embeddings.learning.impl.elements.CBOW;
+import org.deeplearning4j.models.embeddings.reader.impl.FlatModelUtils;
 import org.deeplearning4j.models.sequencevectors.sequence.Sequence;
 import org.deeplearning4j.models.sequencevectors.transformers.impl.SentenceTransformer;
 import org.deeplearning4j.models.sequencevectors.transformers.impl.iterables.ParallelTransformerIterator;
@@ -63,10 +65,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static org.junit.Assert.*;
@@ -1102,6 +1101,47 @@ public class ParagraphVectorsTest {
             for (Thread t : threads) {
                 t.join();
             }
+        }
+    }
+
+    @Test
+    public void testJSONSerialization() {
+        ParagraphVectors paragraphVectors = new ParagraphVectors.Builder().build();
+        AbstractCache<VocabWord> cache = new AbstractCache.Builder<VocabWord>().build();
+
+        val words = new VocabWord[3];
+        words[0] = new VocabWord(1.0, "word");
+        words[1] = new VocabWord(2.0, "test");
+        words[2] = new VocabWord(3.0, "tester");
+
+        for (int i = 0; i < words.length; ++i) {
+            cache.addToken(words[i]);
+            cache.addWordToIndex(i, words[i].getLabel());
+        }
+        paragraphVectors.setVocab(cache);
+
+        String json = null;
+        Word2Vec unserialized = null;
+        try {
+            json = paragraphVectors.toJson();
+            log.info("{}", json.toString());
+
+            unserialized = ParagraphVectors.fromJson(json);
+        }
+        catch (Exception e) {
+            e.printStackTrace();
+            fail();
+        }
+
+        assertEquals(paragraphVectors.getConfiguration(), ((ParagraphVectors) unserialized).getConfiguration());
+        assertEquals(cache.totalWordOccurrences(),((ParagraphVectors) unserialized).getVocab().totalWordOccurrences());
+        assertEquals(cache.totalNumberOfDocs(), ((ParagraphVectors) unserialized).getVocab().totalNumberOfDocs());
+
+        for (int i = 0; i < words.length; ++i) {
+            val cached = cache.wordAtIndex(i);
+            val restored = ((ParagraphVectors) unserialized).getVocab().wordAtIndex(i);
+            assertNotNull(cached);
+            assertEquals(cached, restored);
         }
     }
 }
