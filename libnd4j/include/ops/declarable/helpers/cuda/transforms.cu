@@ -164,43 +164,79 @@ __host__ static void concatCudaLauncher(const int numOfArrs, const cudaStream_t 
     }
 
     //////////////////////////////////////////////////////////////////////////
-    template<typename T>
-    static void mergeMaxIndex_(graph::LaunchContext* context, const std::vector<NDArray*>& inArrs, NDArray& output) {
-
-    }
-
-    void mergeMaxIndex(graph::LaunchContext* context, const std::vector<NDArray*>& inArrs, NDArray& output) {
-        BUILD_SINGLE_SELECTOR(inArrs[0]->dataType(), mergeMaxIndex_, (context, inArrs, output), LIBND4J_TYPES);
-    }
-
-    BUILD_SINGLE_TEMPLATE(template void mergeMaxIndex_, (graph::LaunchContext* context, const std::vector<NDArray*>& inArrs, NDArray& output), LIBND4J_TYPES);
-
-    //////////////////////////////////////////////////////////////////////////
-    template <typename T>
-    static __global__ void global_mergeMax_(void **inArrs, void **inShapes, const int numArrays, void *voutput, Nd4jLong *outputShape, Nd4jLong length) {
-        __shared__ T *temporary, *output;
-        if (threadIdx.x == 0) {
-            output = reinterpret_cast<T*>(voutput);
-            extern __shared__ unsigned char ext[];
-            temporary = reinterpret_cast<T*>(ext);
-        }
-        __syncthreads();
+    template <typename T, typename Z>
+    static __global__ void global_mergeMaxIndex_(void **inArrs, void **inShapes, const int numArrays, void *voutput, Nd4jLong *outputShape, Nd4jLong length) {
+        auto output = reinterpret_cast<Z*>(voutput);
 
         const auto tid = blockIdx.x * gridDim.x + threadIdx.x;
         const auto step = gridDim.x * blockDim.x;
 
         for (Nd4jLong e = tid; e < length; e += step) {
-            temporary[threadIdx.x] = -DataTypeUtils::max<T>();
+            T mVal = -DataTypeUtils::max<T>();
+            Z mIdx = -DataTypeUtils::max<Z>();
+
 
             for (int i = 0; i < numArrays; i++) {
                 auto x = reinterpret_cast<T*>(inArrs[i]);
                 auto xShape = reinterpret_cast<Nd4jLong *>(inShapes[i]);
                 auto val = x[shape::getIndexOffset(e, xShape, length)];;
-                if (temporary[threadIdx.x] < val)
-                    temporary[threadIdx.x] = val;
+                if (mVal < val)
+                    mIdx = static_cast<Z>(e);
             }
+            __syncthreads();
 
-            output[shape::getIndexOffset(e, outputShape, length)] = temporary[threadIdx.x];
+            output[shape::getIndexOffset(e, outputShape, length)] = mIdx;
+        }
+    }
+
+    template <typename T, typename Z>
+    static void mergeMaxIndex_(graph::LaunchContext* context, const std::vector<NDArray*>& inArrs, NDArray& output) {
+        std::vector<void *> inBuffers(inArrs.size());
+        std::vector<void *> inShapes(inArrs.size());
+
+        for (int e = 0; e < inArrs.size(); e++) {
+            inBuffers[e] = inArrs[e]->getSpecialBuffer();
+            inShapes[e] = inArrs[e]->getSpecialShapeInfo();
+        }
+
+        PointersManager manager(context, "mergeMaxIndex");
+
+        auto pInBuffers = reinterpret_cast<void **>(manager.replicatePointer(inBuffers.data(), inBuffers.size() * sizeof(void *)));
+        auto pInShapes = reinterpret_cast<void **>(manager.replicatePointer(inShapes.data(), inShapes.size() * sizeof(void *)));
+        auto length = output.lengthOf();
+
+        global_mergeMaxIndex_<T,Z><<<512, 512, 512, *context->getCudaStream()>>>(pInBuffers, pInShapes, (int) inArrs.size(), output.getSpecialBuffer(), output.getSpecialShapeInfo(), length);
+
+        manager.synchronize();
+    }
+
+    void mergeMaxIndex(graph::LaunchContext* context, const std::vector<NDArray*>& inArrs, NDArray& output) {
+        BUILD_DOUBLE_SELECTOR(inArrs[0]->dataType(), output.dataType(), mergeMaxIndex_, (context, inArrs, output), LIBND4J_TYPES, INTEGER_TYPES);
+    }
+
+    BUILD_DOUBLE_TEMPLATE(template void mergeMaxIndex_, (graph::LaunchContext* context, const std::vector<NDArray*>& inArrs, NDArray& output), LIBND4J_TYPES, INTEGER_TYPES);
+
+    //////////////////////////////////////////////////////////////////////////
+    template <typename T>
+    static __global__ void global_mergeMax_(void **inArrs, void **inShapes, const int numArrays, void *voutput, Nd4jLong *outputShape, Nd4jLong length) {
+        auto output = reinterpret_cast<T*>(voutput);
+
+        const auto tid = blockIdx.x * gridDim.x + threadIdx.x;
+        const auto step = gridDim.x * blockDim.x;
+
+        for (Nd4jLong e = tid; e < length; e += step) {
+            T mVal = -DataTypeUtils::max<T>();
+
+            for (int i = 0; i < numArrays; i++) {
+                auto x = reinterpret_cast<T*>(inArrs[i]);
+                auto xShape = reinterpret_cast<Nd4jLong *>(inShapes[i]);
+                auto val = x[shape::getIndexOffset(e, xShape, length)];;
+                if (mVal < val)
+                    mVal = val;
+            }
+            __syncthreads();
+
+            output[shape::getIndexOffset(e, outputShape, length)] = mVal;
         }
     }
 
@@ -220,9 +256,7 @@ __host__ static void concatCudaLauncher(const int numOfArrs, const cudaStream_t 
         auto pInShapes = reinterpret_cast<void **>(manager.replicatePointer(inShapes.data(), inShapes.size() * sizeof(void *)));
         auto length = output.lengthOf();
 
-        const int blockSize = 512;
-        const int shmemSize = blockSize * sizeof(T) + 1024;
-        global_mergeMax_<T><<<512, blockSize, shmemSize, *context->getCudaStream()>>>(pInBuffers, pInShapes, (int) inArrs.size(), output.getSpecialBuffer(), output.getSpecialShapeInfo(), length);
+        global_mergeMax_<T><<<512, 512, 512, *context->getCudaStream()>>>(pInBuffers, pInShapes, (int) inArrs.size(), output.getSpecialBuffer(), output.getSpecialShapeInfo(), length);
 
         manager.synchronize();
     }
@@ -235,28 +269,22 @@ __host__ static void concatCudaLauncher(const int numOfArrs, const cudaStream_t 
     //////////////////////////////////////////////////////////////////////////
     template <typename T>
     static __global__ void global_mergeAvg_(void **inArrs, void **inShapes, const int numArrays, void *voutput, Nd4jLong *outputShape, Nd4jLong length) {
-        __shared__ T *temporary, *output;
-        if (threadIdx.x == 0) {
-            output = reinterpret_cast<T*>(voutput);
-            extern __shared__ unsigned char ext[];
-            temporary = reinterpret_cast<T*>(ext);
-        }
-        __syncthreads();
+        auto output = reinterpret_cast<T*>(voutput);
 
         const auto tid = blockIdx.x * gridDim.x + threadIdx.x;
         const auto step = gridDim.x * blockDim.x;
 
         for (Nd4jLong e = tid; e < length; e += step) {
-            temporary[threadIdx.x] = (T) 0.0f;
+            T sum(0.0f);
 
             for (int i = 0; i < numArrays; i++) {
                 auto x = reinterpret_cast<T*>(inArrs[i]);
                 auto xShape = reinterpret_cast<Nd4jLong *>(inShapes[i]);
 
-                temporary[threadIdx.x] += x[shape::getIndexOffset(e, xShape, length)];
+                sum += x[shape::getIndexOffset(e, xShape, length)];
             }
 
-            output[shape::getIndexOffset(e, outputShape, length)] = temporary[threadIdx.x] / numArrays;
+            output[shape::getIndexOffset(e, outputShape, length)] = sum / numArrays;
         }
     }
 
@@ -276,9 +304,7 @@ __host__ static void concatCudaLauncher(const int numOfArrs, const cudaStream_t 
         auto pInShapes = reinterpret_cast<void **>(manager.replicatePointer(inShapes.data(), inShapes.size() * sizeof(void *)));
         auto length = output.lengthOf();
 
-        const int blockSize = 512;
-        const int shmemSize = blockSize * sizeof(T) + 1024;
-        global_mergeAvg_<T><<<512, blockSize, shmemSize, *context->getCudaStream()>>>(pInBuffers, pInShapes, (int) inArrs.size(), output.getSpecialBuffer(), output.getSpecialShapeInfo(), length);
+        global_mergeAvg_<T><<<512, 512, 512, *context->getCudaStream()>>>(pInBuffers, pInShapes, (int) inArrs.size(), output.getSpecialBuffer(), output.getSpecialShapeInfo(), length);
 
         manager.synchronize();
     }
@@ -291,28 +317,22 @@ __host__ static void concatCudaLauncher(const int numOfArrs, const cudaStream_t 
     //////////////////////////////////////////////////////////////////////////
     template <typename T>
     static __global__ void global_mergeAdd_(void **inArrs, void **inShapes, const int numArrays, void *voutput, Nd4jLong *outputShape, Nd4jLong length) {
-        __shared__ T *temporary, *output;
-        if (threadIdx.x == 0) {
-            output = reinterpret_cast<T*>(voutput);
-            extern __shared__ unsigned char ext[];
-            temporary = reinterpret_cast<T*>(ext);
-        }
-        __syncthreads();
+        auto output = reinterpret_cast<T*>(voutput);
 
         const auto tid = blockIdx.x * gridDim.x + threadIdx.x;
         const auto step = gridDim.x * blockDim.x;
 
         for (Nd4jLong e = tid; e < length; e += step) {
-            temporary[threadIdx.x] = (T) 0.0f;
+            T sum(0.0f);
 
             for (int i = 0; i < numArrays; i++) {
                 auto x = reinterpret_cast<T*>(inArrs[i]);
                 auto xShape = reinterpret_cast<Nd4jLong *>(inShapes[i]);
 
-                temporary[threadIdx.x] += x[shape::getIndexOffset(e, xShape, length)];
+                sum += x[shape::getIndexOffset(e, xShape, length)];
             }
 
-            output[shape::getIndexOffset(e, outputShape, length)] = temporary[threadIdx.x];
+            output[shape::getIndexOffset(e, outputShape, length)] = sum;
         }
     }
 
@@ -332,9 +352,7 @@ __host__ static void concatCudaLauncher(const int numOfArrs, const cudaStream_t 
         auto pInShapes = reinterpret_cast<void **>(manager.replicatePointer(inShapes.data(), inShapes.size() * sizeof(void *)));
         auto length = output.lengthOf();
 
-        const int blockSize = 512;
-        const int shmemSize = blockSize * sizeof(T) + 1024;
-        global_mergeAdd_<T><<<512, blockSize, shmemSize, *context->getCudaStream()>>>(pInBuffers, pInShapes, (int) inArrs.size(), output.getSpecialBuffer(), output.getSpecialShapeInfo(), length);
+        global_mergeAdd_<T><<<512, 512, 512, *context->getCudaStream()>>>(pInBuffers, pInShapes, (int) inArrs.size(), output.getSpecialBuffer(), output.getSpecialShapeInfo(), length);
 
         manager.synchronize();
     }
