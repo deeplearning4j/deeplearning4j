@@ -77,7 +77,7 @@ namespace nd4j {
         }
 
         template <typename T, typename Z>
-        static __global__ void global_avg_pooling2d(void *vx, Nd4jLong *xShapeBuffer, void *vz, Nd4jLong *zShapeBuffer, const int kH, const int kW, const int sH, const int sW, const int pH, const int pW, const int dH, const int dW, const int extraParam0) {
+        static __global__ void avgPooling2dCuda(void *vx, Nd4jLong *xShapeBuffer, void *vz, Nd4jLong *zShapeBuffer, const int kH, const int kW, const int sH, const int sW, const int pH, const int pW, const int dH, const int dW, const int extraParam0) {
             auto dx = reinterpret_cast<T*>(vx);
             auto result = reinterpret_cast<Z*>(vz);
 
@@ -182,7 +182,7 @@ namespace nd4j {
         }
 
         template <typename T, typename Z>
-        static __global__ void global_pnorm_pooling2d(void *vx, Nd4jLong *xShapeBuffer, void *vz, Nd4jLong *zShapeBuffer, const int kH, const int kW, const int sH, const int sW, const int pH, const int pW, const int dH, const int dW, const int extraParam0) {
+        static __global__ void pnormPooling2dCuda(void *vx, Nd4jLong *xShapeBuffer, void *vz, Nd4jLong *zShapeBuffer, const int kH, const int kW, const int sH, const int sW, const int pH, const int pW, const int dH, const int dW, const int extraParam0) {
             auto dx = reinterpret_cast<T*>(vx);
             auto result = reinterpret_cast<Z*>(vz);
 
@@ -284,7 +284,7 @@ namespace nd4j {
         }
 
         template <typename T, typename Z>
-        static __global__ void global_max_pooling2d(void *vx, Nd4jLong *xShapeBuffer, void *vz, Nd4jLong *zShapeBuffer, const int kH, const int kW, const int sH, const int sW, const int pH, const int pW, const int dH, const int dW, const int extraParam0) {
+        static __global__ void globalMaxPooling2d(void *vx, Nd4jLong *xShapeBuffer, void *vz, Nd4jLong *zShapeBuffer, const int kH, const int kW, const int sH, const int sW, const int pH, const int pW, const int dH, const int dW, const int extraParam0) {
             auto dx = reinterpret_cast<T*>(vx);
             auto result = reinterpret_cast<Z*>(vz);
 
@@ -388,19 +388,19 @@ namespace nd4j {
 
         template <typename T, typename Z>
         static void _max_pooling2d(nd4j::graph::LaunchContext& block, void *vx, Nd4jLong *vxShapeInfo, void *vz, Nd4jLong *vzShapeInfo, const int kH, const int kW, const int sH, const int sW, const int pH, const int pW, const int dH, const int dW, const int extraParam0) {
-            global_max_pooling2d<T,Z><<<512, 512, 4192, *block.getCudaStream()>>>(vx, vxShapeInfo, vz, vzShapeInfo, kH, kW, sH, sW, pH, pW, dH, dW, extraParam0);
+            globalMaxPooling2d<T,Z><<<512, 512, 4192, *block.getCudaStream()>>>(vx, vxShapeInfo, vz, vzShapeInfo, kH, kW, sH, sW, pH, pW, dH, dW, extraParam0);
         }
         BUILD_DOUBLE_TEMPLATE(template void _max_pooling2d, (nd4j::graph::LaunchContext& block, void *vx, Nd4jLong *vxShapeInfo, void *vz, Nd4jLong *vzShapeInfo, const int kH, const int kW, const int sH, const int sW, const int pH, const int pW, const int dH, const int dW, const int extraParam0), LIBND4J_TYPES, FLOAT_TYPES);
 
         template <typename T, typename Z>
         static void _pnorm_pooling2d(nd4j::graph::LaunchContext& block, void *vx, Nd4jLong *vxShapeInfo, void *vz, Nd4jLong *vzShapeInfo, const int kH, const int kW, const int sH, const int sW, const int pH, const int pW, const int dH, const int dW, const int extraParam0) {
-            global_pnorm_pooling2d<T,Z><<<512, 512, 4192, *block.getCudaStream()>>>(vx, vxShapeInfo, vz, vzShapeInfo, kH, kW, sH, sW, pH, pW, dH, dW, extraParam0);
+            pnormPooling2dCuda<T,Z><<<512, 512, 4192, *block.getCudaStream()>>>(vx, vxShapeInfo, vz, vzShapeInfo, kH, kW, sH, sW, pH, pW, dH, dW, extraParam0);
         }
         BUILD_DOUBLE_TEMPLATE(template void _pnorm_pooling2d, (nd4j::graph::LaunchContext& block, void *vx, Nd4jLong *vxShapeInfo, void *vz, Nd4jLong *vzShapeInfo, const int kH, const int kW, const int sH, const int sW, const int pH, const int pW, const int dH, const int dW, const int extraParam0), LIBND4J_TYPES, FLOAT_TYPES);
 
         template <typename T, typename Z>
         static void _avg_pooling2d(nd4j::graph::LaunchContext& block, void *vx, Nd4jLong *vxShapeInfo, void *vz, Nd4jLong *vzShapeInfo, const int kH, const int kW, const int sH, const int sW, const int pH, const int pW, const int dH, const int dW, const int extraParam0) {
-            global_avg_pooling2d<T,Z><<<512, 512, 4192, *block.getCudaStream()>>>(vx, vxShapeInfo, vz, vzShapeInfo, kH, kW, sH, sW, pH, pW, dH, dW, extraParam0);
+            avgPooling2dCuda<T,Z><<<512, 512, 4192, *block.getCudaStream()>>>(vx, vxShapeInfo, vz, vzShapeInfo, kH, kW, sH, sW, pH, pW, dH, dW, extraParam0);
         }
         BUILD_DOUBLE_TEMPLATE(template void _avg_pooling2d, (nd4j::graph::LaunchContext& block, void *vx, Nd4jLong *vxShapeInfo, void *vz, Nd4jLong *vzShapeInfo, const int kH, const int kW, const int sH, const int sW, const int pH, const int pW, const int dH, const int dW, const int extraParam0), LIBND4J_TYPES, FLOAT_TYPES);
 
