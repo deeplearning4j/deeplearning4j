@@ -71,7 +71,7 @@ CUSTOM_OP_IMPL(avgpool2d, 1, 1, false, 0, 10) {
             
     // 0,1 - kernel Height/Width; 2,3 - stride Height/Width; 4,5 - pad Height/Width; 6,7 - dilation Height/Width; 8 - poolingMode; 9 - divisor;
     ConvolutionUtils::pooling2d(*block.launchContext(), *input, *output, kH, kW, sH, sW, pH, pW, dH, dW, PoolingType::AVG_POOL, extraParam0);
-    output->printBuffer("output op");
+    //output->printBuffer("output op");
 
     if (!isNCHW) {
         delete input;

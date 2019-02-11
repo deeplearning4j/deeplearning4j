@@ -2481,7 +2481,8 @@ TEST_F(DeclarableOpsTests8, avgpool2d_test13) {
 
     ASSERT_EQ(Status::OK(), results->status());
 
-    output->printBuffer("output");
+    //output->printIndexedBuffer("output");
+    //expected.printIndexedBuffer("expected");
 
     ASSERT_TRUE(expected.isSameShape(output));
     ASSERT_TRUE(expected.equalsTo(output));    

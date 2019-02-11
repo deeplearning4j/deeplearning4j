@@ -177,16 +177,7 @@ namespace nd4j {
                 if (extraParam0 == 1)     //Case 1: include padding
                     divide_factor = kH * kW;
 
-                auto res = sum / static_cast<Z>(divide_factor);
-
-                if (threadIdx.x == 0)
-                    printf("Z[%i]: %f\n", index, (float) res);
-
-                if (!fOrder) {
-                    result[index] = res;
-                } else {
-                    result[n * strideOB + c * strideOC + pw * strideOX + ph * strideOY] = res;
-                }
+                result[n * strideOB + c * strideOC + pw * strideOX + ph * strideOY] = sum / static_cast<Z>(divide_factor);
             }
         }
 
@@ -288,14 +279,7 @@ namespace nd4j {
                     }
                 }
 
-                auto res = nd4j::math::nd4j_pow<Z, Z, Z>(sum, (Z) 1.0f / extraParam0);
-
-
-                if (!fOrder) {
-                    result[index] = res;
-                } else {
-                    result[n * strideOB + c * strideOC + pw * strideOX + ph * strideOY] = res;
-                }
+                result[n * strideOB + c * strideOC + pw * strideOX + ph * strideOY] = nd4j::math::nd4j_pow<Z, Z, Z>(sum, (Z) 1.0f / extraParam0);
             }
         }
 
@@ -398,12 +382,7 @@ namespace nd4j {
                     }
                 }
 
-
-                if (!fOrder) {
-                    result[index] = max;
-                } else {
-                    result[n * strideOB + c * strideOC + pw * strideOX + ph * strideOY] = max;
-                }
+                result[n * strideOB + c * strideOC + pw * strideOX + ph * strideOY] = max;
             }
         }
 
