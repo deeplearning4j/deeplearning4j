@@ -398,8 +398,8 @@ public class SameDiff {
         Map<Integer, Integer> thisVertexIdToNew = new HashMap<>();
         int idx = 1;
         for (val var : variables()) {
-            val clone = cloner.deepCloneDontCloneInstances(var, var.getSameDiff());
-            val newVar = sameDiff.var(clone);
+            SDVariable clone = cloner.deepCloneDontCloneInstances(var, var.getSameDiff());
+            SDVariable newVar = sameDiff.var(clone);
             if (var.getArr() != null && var.getVariableType() != VariableType.ARRAY) {      //ARRAY type = "activations" - are overwritten anyway
                 sameDiff.associateArrayWithVariable(var.getArr(), newVar);
             }
@@ -2213,24 +2213,32 @@ public class SameDiff {
      * {@link NDArraySupplierInitScheme} is used to ensure that if the array is allocated anywhere
      * and {@link SameDiff} instance to exist as a copy of the variable.
      *
-     * @param arr
+     * @param v Variable
      * @return
      */
-    public SDVariable var(@NonNull final SDVariable arr) {
-        if (variables.containsKey(arr.getVarName()) && variables.get(arr.getVarName()).getVariable().getArr() != null)
-            return variables.get(arr.getVarName()).getVariable();
+    public SDVariable var(@NonNull final SDVariable v) {
+        if (variables.containsKey(v.getVarName()) && variables.get(v.getVarName()).getVariable().getArr() != null)
+            return variables.get(v.getVarName()).getVariable();
 
-        if (arr.getVarName() == null || arr.getVarName().length() < 1)
+        if (v.getVarName() == null || v.getVarName().length() < 1)
             throw new IllegalArgumentException("Name for variable must be defined");
 
-        VariableType vt = arr.getVariableType();
-        WeightInitScheme s = null;
-        if(vt == VariableType.CONSTANT || vt == VariableType.VARIABLE){
-            s = new NDArraySupplierInitScheme(arr.getArr());
+        VariableType vt = v.getVariableType();
+        NDArraySupplierInitScheme s = null;
+        switch(vt){
+            case VARIABLE:
+                s = new NDArraySupplierInitScheme(v.getArr());
+                //Intentional fallthrough
+            case ARRAY:
+                SDVariable ret = new SDVariable(v.getVarName(), v.getVariableType(), this, v.getShape(), v.dataType(), s);
+                return addVariable(ret);
+            case CONSTANT:
+                return constant(v.getVarName(), v.getArr());
+            case PLACEHOLDER:
+                return placeHolder(v.getVarName(), v.dataType(), v.placeholderShape());
+            default:
+                throw new RuntimeException("Unknown/not supported variable type: " + vt);
         }
-
-        SDVariable ret = new SDVariable(arr.getVarName(), arr.getVariableType(), this, arr.getShape(), arr.dataType(), s);
-        return addVariable(ret);
     }
 
     private String getNewVarName() {
