@@ -46,6 +46,8 @@ namespace nd4j {
 
             auto inferenceVector = INPUT_VARIABLE(11);
 
+            //auto neu1e = INPUT_VARIABLE(12);
+
             auto numWorkers = block.numI() > 0 ? INT_ARG(0) : omp_get_max_threads();
             auto nsRounds = block.numI() > 1 ? INT_ARG(1) : 0;
 
