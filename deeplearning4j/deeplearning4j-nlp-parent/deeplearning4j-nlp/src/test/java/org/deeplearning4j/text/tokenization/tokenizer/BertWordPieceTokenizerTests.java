@@ -17,6 +17,7 @@
 package org.deeplearning4j.text.tokenization.tokenizer;
 
 import org.apache.commons.io.FileUtils;
+import org.deeplearning4j.text.tokenization.tokenizer.preprocessor.LowCasePreProcessor;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.BertWordPieceTokenizerFactory;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
 import org.junit.Test;
@@ -110,6 +111,20 @@ public class BertWordPieceTokenizerTests {
         String toTokenize = "I sAw A gIrL wItH a tElEsCoPe.";
         BertWordPieceTokenizerFactory t = new BertWordPieceTokenizerFactory(pathToVocab);
         t.setLowerCaseOnly(true);
+
+        Tokenizer tokenizer = t.create(toTokenize);
+        Tokenizer tokenizer2 = t.create(new ByteArrayInputStream(toTokenize.getBytes()));
+
+        final List<String> expected = Arrays.asList("i", "saw", "a", "girl", "with", "a", "tele", "##scope", ".");
+        assertEquals(expected, tokenizer.getTokens());
+        assertEquals(expected, tokenizer2.getTokens());
+    }
+
+    @Test
+    public void testBertWordPieceTokenizer7() throws Exception {
+        String toTokenize = "I saw a girl with a telescope.";
+        BertWordPieceTokenizerFactory t = new BertWordPieceTokenizerFactory(pathToVocab);
+        t.setTokenPreProcessor(new LowCasePreProcessor());
 
         Tokenizer tokenizer = t.create(toTokenize);
         Tokenizer tokenizer2 = t.create(new ByteArrayInputStream(toTokenize.getBytes()));

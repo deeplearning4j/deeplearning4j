@@ -63,7 +63,15 @@ public class BertWordPieceTokenizer implements Tokenizer {
 
     @Override
     public List<String> getTokens() {
-        return tokens;
+        if (tokenPreProcess != null){
+            final List<String> result = new ArrayList<>(tokens.size());
+            for (String token : tokens) {
+                result.add(tokenPreProcess.preProcess(token));
+            }
+            return result;
+        }else {
+            return tokens;
+        }
     }
 
     @Override
