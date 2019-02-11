@@ -2038,7 +2038,7 @@ TEST_F(ConvolutionTests, vol2col_test1) {
             -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., 
             -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1.});
 
-    nd4j::ops::ConvolutionUtils::vol2col(volume, columns, sD, sH, sW, pD, pH, pW, dD, dH, dW);
+    nd4j::ops::ConvolutionUtils::vol2col(*LaunchContext::defaultContext(), volume, columns, sD, sH, sW, pD, pH, pW, dD, dH, dW);
     // nd4j::ops::ConvolutionUtils<float>::vol2col2(volume, columns, sD, sH, sW, pD, pH, pW, dD, dH, dW);
 
     ASSERT_TRUE(columns.equalsTo(columnsExpected));    
@@ -2070,7 +2070,7 @@ TEST_F(ConvolutionTests, vol2col_test2) {
             -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., 
             -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1.});
 
-    nd4j::ops::ConvolutionUtils::vol2col(volume, columns, sD, sH, sW, pD, pH, pW, dD, dH, dW);
+    nd4j::ops::ConvolutionUtils::vol2col(*LaunchContext::defaultContext(), volume, columns, sD, sH, sW, pD, pH, pW, dD, dH, dW);
 
     ASSERT_TRUE(columns.equalsTo(columnsExpected));    
 }

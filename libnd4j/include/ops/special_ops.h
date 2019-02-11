@@ -508,7 +508,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
 			/*kernel[0], kernel[1], stride[0], stride[1], padding[0], padding[1], 0, false*/
 			__shared__ int kernelHeight, kernelWidth, strideY, strideX, padHeight, padWidth, dY, dX, kSize, samples, depth, height, width, strideex, stridech, strideh, stridew, height_col, width_col, n;
 			__shared__ T zeroPadVal;
-			__shared__ Nd4jLong *outShape, *outStride, *inShape, *inStride,
+			__shared__ Nd4jLong *outShape, *outStride, *inShape, *inStride;
 			__shared__ char resultOrder;
 
 			if (threadIdx.x == 0) {
@@ -929,7 +929,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
             Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
 
 		    __shared__ int strideex, stridech, stridekrow, stridekcol, striderow, stridecol, kernelHeight, kernelWidth, strideY, strideX, padHeight, padWidth, imgHeight, imgWidth, dY, dX, samples, depth, imgH, imgW, height_col, width_col, n, kEffectiveW, kEffectiveH;
-		    __shared__ Nd4jLong *inShape, *inStride, *outShape, *outStride,
+		    __shared__ Nd4jLong *inShape, *inStride, *outShape, *outStride;
 		    __shared__ char resultOrder;
 
 		    if (threadIdx.x == 0) {
