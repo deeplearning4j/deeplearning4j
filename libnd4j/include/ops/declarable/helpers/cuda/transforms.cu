@@ -173,8 +173,7 @@ __host__ static void concatCudaLauncher(const int numOfArrs, const cudaStream_t 
 
         for (Nd4jLong e = tid; e < length; e += step) {
             T mVal = -DataTypeUtils::max<T>();
-            Z mIdx = -DataTypeUtils::max<Z>();
-
+            Z mIdx(0);
 
             for (int i = 0; i < numArrays; i++) {
                 auto x = reinterpret_cast<T*>(inArrs[i]);
