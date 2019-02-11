@@ -29,7 +29,9 @@ import java.util.regex.Pattern;
 @Slf4j
 public class BertWordPieceTokenizer implements Tokenizer {
     public static final Pattern splitPattern = Pattern.compile("(\\p{javaWhitespace}|((?<=\\p{Punct})|(?=\\p{Punct})))+");
+
     private final List<String> tokens;
+    private TokenPreProcess tokenPreProcess;
     private AtomicInteger cursor = new AtomicInteger(0);
 
     public BertWordPieceTokenizer(String tokens, NavigableMap<String, Integer> vocab, boolean lowerCaseOnly) {
@@ -40,7 +42,6 @@ public class BertWordPieceTokenizer implements Tokenizer {
         this.tokens = tokenize(vocab, tokens, lowerCaseOnly);
     }
 
-    private TokenPreProcess tokenPreProcess;
 
     @Override
     public boolean hasMoreTokens() {

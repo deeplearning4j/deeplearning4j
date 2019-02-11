@@ -149,6 +149,9 @@ public class BertWordPieceStreamTokenizer implements Tokenizer {
 
         prevRest = tokenRest;
 
+        if (tokenPreProcess != null)
+            output = tokenPreProcess.preProcess(output);
+
         return output;
     }
 
