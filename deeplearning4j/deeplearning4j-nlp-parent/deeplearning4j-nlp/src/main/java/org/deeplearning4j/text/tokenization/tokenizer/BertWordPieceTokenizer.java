@@ -67,18 +67,19 @@ public class BertWordPieceTokenizer implements Tokenizer {
     }
 
     private List<String> tokenize(NavigableMap<String, Integer> vocab, String toTokenzie) {
-        final LinkedList<String> output = new LinkedList<>();
+        final List<String> output = new ArrayList<>();
 
         for (String basicToken : splitPattern.split(toTokenzie)) {
             String candidate = basicToken;
 
             while(candidate.length() > 0 && !"##".equals(candidate)){
-                String longestSubstring = vocab.floorKey(candidate);
-                int backoff = Math.min(candidate.length(), longestSubstring.length());
-                while(!candidate.startsWith(longestSubstring)){
-                    backoff--;
-                    String subCandidate = candidate.substring(0, backoff);
-                    longestSubstring = vocab.floorKey(subCandidate);
+                final Set<Map.Entry<String, Integer>> entries = vocab.headMap(candidate, true).descendingMap().entrySet();
+                String longestSubstring = null;
+                for (Map.Entry<String, Integer> entry : entries) {
+                    if(candidate.startsWith(entry.getKey())){
+                        longestSubstring = entry.getKey();
+                        break;
+                    }
                 }
                 output.add(longestSubstring);
                 candidate = "##"+candidate.substring(longestSubstring.length());

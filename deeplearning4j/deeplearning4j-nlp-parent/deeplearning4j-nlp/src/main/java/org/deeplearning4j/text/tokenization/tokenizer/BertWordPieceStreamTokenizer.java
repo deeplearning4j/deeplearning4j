@@ -21,9 +21,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.NavigableMap;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Pattern;
 
@@ -136,11 +134,13 @@ public class BertWordPieceStreamTokenizer implements Tokenizer {
             }
         }
 
-        String longestSubstring = vocab.floorKey(basicToken);
-        int subStringLength = Math.min(basicToken.length(), longestSubstring.length());
-        while(!basicToken.startsWith(longestSubstring)){
-            subStringLength--;
-            longestSubstring = vocab.floorKey(basicToken.substring(0, subStringLength));
+        final Set<Map.Entry<String, Integer>> entries = vocab.headMap(basicToken, true).descendingMap().entrySet();
+        String longestSubstring = null;
+        for (Map.Entry<String, Integer> entry : entries) {
+            if(basicToken.startsWith(entry.getKey())){
+                longestSubstring = entry.getKey();
+                break;
+            }
         }
 
         String output = longestSubstring;
