@@ -1,6 +1,5 @@
 package org.deeplearning4j.models.sequencevectors.serialization;
 
-import com.sun.xml.internal.messaging.saaj.util.ByteOutputStream;
 import lombok.val;
 import org.apache.commons.lang.StringUtils;
 import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
