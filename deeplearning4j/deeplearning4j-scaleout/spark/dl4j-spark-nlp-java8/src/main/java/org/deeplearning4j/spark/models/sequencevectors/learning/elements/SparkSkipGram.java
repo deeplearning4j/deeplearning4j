@@ -17,6 +17,7 @@
 package org.deeplearning4j.spark.models.sequencevectors.learning.elements;
 
 import lombok.extern.slf4j.Slf4j;
+import org.deeplearning4j.models.embeddings.learning.impl.elements.BatchSequences;
 import org.deeplearning4j.models.embeddings.learning.impl.elements.RandomUtils;
 import org.deeplearning4j.models.sequencevectors.sequence.Sequence;
 import org.deeplearning4j.models.sequencevectors.sequence.ShallowSequenceElement;
@@ -37,6 +38,11 @@ public class SparkSkipGram extends BaseSparkLearningAlgorithm {
     @Override
     public String getCodeName() {
         return "Spark-SkipGram";
+    }
+
+    @Override
+    public double learnSequence(Sequence<ShallowSequenceElement> sequence, AtomicLong nextRandom, double learningRate, BatchSequences<ShallowSequenceElement> batchSequences) {
+        throw new UnsupportedOperationException();
     }
 
     protected transient AtomicLong counter;
