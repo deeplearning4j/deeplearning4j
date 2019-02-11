@@ -22,7 +22,7 @@
 #if NOT_EXCLUDED(OP_deconv3d)
 
 #include <ops/declarable/CustomOperations.h>
-#include <ops/declarable/generic/helpers/convolutions.h>
+#include <ops/declarable/helpers/convolutions.h>
 #include <MmulHelper.h>
 
 namespace nd4j {

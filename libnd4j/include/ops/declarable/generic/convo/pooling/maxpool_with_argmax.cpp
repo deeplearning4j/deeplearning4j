@@ -22,7 +22,7 @@
 #if NOT_EXCLUDED(OP_max_pool_with_argmax)
 
 #include <ops/declarable/CustomOperations.h>
-#include <ops/declarable/generic/helpers/convolutions.h>
+#include <ops/declarable/helpers/convolutions.h>
 #include <ops/declarable/helpers/max_pooling.h>
 
 namespace nd4j {

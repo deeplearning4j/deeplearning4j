@@ -24,7 +24,7 @@
 
 #include <ops/declarable/DeclarableOp.h>
 #include <ops/declarable/CustomOperations.h>
-#include <declarable/generic/helpers/convolutions.h>
+#include <ops/declarable/helpers/convolutions.h>
 
 namespace nd4j {
 namespace ops  {

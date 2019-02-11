@@ -19,7 +19,7 @@
 //
 
 #include <ops/declarable/helpers/max_pooling.h>
-#include <ops/declarable/generic/helpers/convolutions.h>
+#include <ops/declarable/helpers/convolutions.h>
 
 
 namespace nd4j {

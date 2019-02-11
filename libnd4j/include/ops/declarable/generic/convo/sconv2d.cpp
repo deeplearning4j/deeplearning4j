@@ -23,7 +23,7 @@
 #if NOT_EXCLUDED(OP_sconv2d)
 
 #include <ops/declarable/CustomOperations.h>
-#include <ops/declarable/generic/helpers/convolutions.h>
+#include <ops/declarable/helpers/convolutions.h>
 #include <memory>
 
 namespace nd4j {

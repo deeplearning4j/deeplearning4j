@@ -23,7 +23,7 @@
 
 #include <op_boilerplate.h>
 #include <ops/declarable/CustomOperations.h>
-#include <declarable/generic/helpers/convolutions.h>
+#include <declarable/helpers/convolutions.h>
 
 
 namespace nd4j {

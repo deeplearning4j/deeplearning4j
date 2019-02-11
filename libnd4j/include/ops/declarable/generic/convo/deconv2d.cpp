@@ -24,7 +24,7 @@
 
 #include <ops/declarable/CustomOperations.h>
 #include <MmulHelper.h>
-#include <declarable/generic/helpers/convolutions.h>
+#include <declarable/helpers/convolutions.h>
 #include <ops/declarable/helpers/im2col.h>
 #include <ops/declarable/helpers/col2im.h>
 
