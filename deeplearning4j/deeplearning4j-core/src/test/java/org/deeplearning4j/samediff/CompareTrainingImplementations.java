@@ -69,6 +69,9 @@ public class CompareTrainingImplementations extends BaseDL4JTest {
         double[] l1 = new double[]{0.0, 0.0, 0.01, 0.01, 0.0};
         double[] l2 = new double[]{0.0, 0.02, 0.00, 0.02, 0.0};
         double[] wd = new double[]{0.0, 0.0, 0.0, 0.0, 0.03};
+//        double[] l1 = new double[]{0.0};
+//        double[] l2 = new double[]{0.0};
+//        double[] wd = new double[]{0.03};
 
         for (String u : new String[]{"sgd", "adam", "nesterov", "adamax", "amsgrad"}) {
             for(int i=0; i<l1.length; i++ ) {
@@ -141,8 +144,6 @@ public class CompareTrainingImplementations extends BaseDL4JTest {
                         .regularization(r)
                         .dataSetFeatureMapping("input")
                         .dataSetLabelMapping("label")
-                        .l1(l1Val)
-                        .l2(l2Val)
                         .build();
                 sd.setTrainingConfig(conf);
 
@@ -153,7 +154,7 @@ public class CompareTrainingImplementations extends BaseDL4JTest {
                         .l1(l1Val).l2(l2Val)
                         .l1Bias(l1Val).l2Bias(l2Val)
                         .weightDecay(wdVal, true).weightDecayBias(wdVal, true)
-                        .updater(new Sgd(1.0))
+                        .updater(new Sgd(1.0))      //Exclicitly use SGD(1.0) for comparing PRE-UPDATE GRADIENTS (but with l1/l2/wd component added)
                         .list()
                         .layer(new DenseLayer.Builder().nIn(4).nOut(10).activation(Activation.TANH).build())
                         .layer(new OutputLayer.Builder().nIn(10).nOut(3).activation(Activation.SOFTMAX).lossFunction(LossFunctions.LossFunction.MSE).build())
@@ -215,6 +216,7 @@ public class CompareTrainingImplementations extends BaseDL4JTest {
                         .weightInit(WeightInit.XAVIER).seed(12345)
                         .l1(l1Val).l2(l2Val)
                         .l1Bias(l1Val).l2Bias(l2Val)
+                        .weightDecay(wdVal, true).weightDecayBias(wdVal, true)
                         .updater(updater.clone())
                         .list()
                         .layer(new DenseLayer.Builder().nIn(4).nOut(10).activation(Activation.TANH).build())
@@ -229,7 +231,9 @@ public class CompareTrainingImplementations extends BaseDL4JTest {
                     sd.fit(ds);
 
                     String s = testName + " - " + j;
-                    assertEquals(s, net.getParam("0_W"), w0.getArr());
+                    INDArray dl4j_0W = net.getParam("0_W");
+                    INDArray sd_0W = w0.getArr();
+                    assertEquals(s, dl4j_0W, sd_0W);
                     assertEquals(s, net.getParam("0_b"), b0.getArr());
                     assertEquals(s, net.getParam("1_W"), w1.getArr());
                     assertEquals(s, net.getParam("1_b"), b1.getArr());
