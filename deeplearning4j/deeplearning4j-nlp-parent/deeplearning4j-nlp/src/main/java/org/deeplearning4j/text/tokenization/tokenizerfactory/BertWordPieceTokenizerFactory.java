@@ -22,6 +22,7 @@ import org.deeplearning4j.text.tokenization.tokenizer.TokenPreProcess;
 import org.deeplearning4j.text.tokenization.tokenizer.Tokenizer;
 
 import java.io.*;
+import java.util.Collections;
 import java.util.NavigableMap;
 import java.util.TreeMap;
 
@@ -73,7 +74,7 @@ public class BertWordPieceTokenizerFactory implements TokenizerFactory {
 
 
     public static NavigableMap<String, Integer> loadVocab(File pathToVocab) throws IOException {
-        final TreeMap<String, Integer> map = new TreeMap<>();
+        final TreeMap<String, Integer> map = new TreeMap<>(Collections.reverseOrder());
 
         try(final BufferedReader reader =  new BufferedReader(new InputStreamReader(new FileInputStream(pathToVocab)))){
             String token;

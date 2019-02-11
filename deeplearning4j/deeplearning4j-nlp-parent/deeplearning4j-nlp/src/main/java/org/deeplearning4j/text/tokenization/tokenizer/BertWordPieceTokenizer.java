@@ -30,6 +30,10 @@ public class BertWordPieceTokenizer implements Tokenizer {
     private int cursor;
 
     public BertWordPieceTokenizer(String tokens, NavigableMap<String, Integer> vocab) {
+        if(vocab.comparator() == null || vocab.comparator().compare("a", "b") < 0){
+            throw new IllegalArgumentException("Vocab must use reverse sort order!");
+        }
+
         this.tokens = tokenize(vocab, tokens);
         this.cursor = 0;
     }
@@ -73,7 +77,7 @@ public class BertWordPieceTokenizer implements Tokenizer {
             String candidate = basicToken;
 
             while(candidate.length() > 0 && !"##".equals(candidate)){
-                final Set<Map.Entry<String, Integer>> entries = vocab.headMap(candidate, true).descendingMap().entrySet();
+                final Set<Map.Entry<String, Integer>> entries = vocab.tailMap(candidate, true).entrySet();
                 String longestSubstring = null;
                 for (Map.Entry<String, Integer> entry : entries) {
                     if(candidate.startsWith(entry.getKey())){

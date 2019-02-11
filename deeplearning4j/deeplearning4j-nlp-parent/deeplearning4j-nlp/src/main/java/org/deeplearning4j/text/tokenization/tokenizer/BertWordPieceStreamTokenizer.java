@@ -47,6 +47,10 @@ public class BertWordPieceStreamTokenizer implements Tokenizer {
     protected static final Logger log = LoggerFactory.getLogger(BertWordPieceStreamTokenizer.class);
 
     public BertWordPieceStreamTokenizer(InputStream is, NavigableMap<String, Integer> vocab) {
+        if(vocab.comparator() == null || vocab.comparator().compare("a", "b") < 0){
+            throw new IllegalArgumentException("Vocab must use reverse sort order!");
+        }
+
         this.reader = new BufferedReader(new InputStreamReader(is));
         this.vocab = vocab;
         for (String token : vocab.keySet()) {
@@ -134,7 +138,7 @@ public class BertWordPieceStreamTokenizer implements Tokenizer {
             }
         }
 
-        final Set<Map.Entry<String, Integer>> entries = vocab.headMap(basicToken, true).descendingMap().entrySet();
+        final Set<Map.Entry<String, Integer>> entries = vocab.tailMap(basicToken, true).entrySet();
         String longestSubstring = null;
         for (Map.Entry<String, Integer> entry : entries) {
             if(basicToken.startsWith(entry.getKey())){
