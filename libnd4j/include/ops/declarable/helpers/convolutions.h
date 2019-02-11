@@ -32,6 +32,12 @@
 namespace nd4j {
     namespace ops {
 
+        enum PoolingType {
+            MAX_POOL = 0,
+            AVG_POOL = 1,
+            PNORM_POOL = 2,
+        };
+
         class ConvolutionUtils {
         public:
             static inline void calcOutSizePool2D(int& oH, int& oW, const int kH, const int kW, const int sH, const int sW, const int pH, const int pW, const int dH, const int dW, const int iH, const int iW, const int isSameMode) {
@@ -249,7 +255,7 @@ namespace nd4j {
 
             static void upsampling3dBP(const NDArray& gradO, NDArray& gradI, const bool isNCDHW);
 
-            static void pooling2d(nd4j::graph::Context& block, const NDArray& input, NDArray& output, const int kH, const int kW, const int sH, const int sW, const int pH, const int pW, const int dH, const int dW, const int poolingMode, const int extraParam0);
+            static void pooling2d(nd4j::graph::Context& block, const NDArray& input, NDArray& output, const int kH, const int kW, const int sH, const int sW, const int pH, const int pW, const int dH, const int dW, const PoolingType poolingMode, const int extraParam0);
 
             static void pooling3d(nd4j::graph::Context& block, const NDArray& input, NDArray& output, const int kD, const int kH, const int kW, const int sD, const int sH, const int sW, const int pD, const int pH, const int pW, const int dD, const int dH, const int dW, const int poolingMode, const int extraParam0);
 
