@@ -75,7 +75,7 @@ public class WeightDecay implements Regularization {
         if(applyLR){
             scale *= lr;
         }
-        Nd4j.exec(new Axpy(gradView, param, gradView, scale));    //update += scale * param
+        Nd4j.exec(new Axpy(param, gradView, gradView, scale));    //update = scale * param + update
     }
 
     @Override

@@ -49,7 +49,7 @@ public class L1Regularization implements Regularization {
         //where sign(x[i]) is -1 or 1
         double coeff = l1.valueAt(iteration, epoch);
         INDArray sign = Transforms.sign(param, true);
-        Nd4j.exec(new Axpy(gradView, sign, gradView, coeff));    //Gradient += l1 * sign(param)
+        Nd4j.exec(new Axpy(sign, gradView, gradView, coeff));    //Gradient = l1 * sign(param) + gradient
     }
 
     @Override
