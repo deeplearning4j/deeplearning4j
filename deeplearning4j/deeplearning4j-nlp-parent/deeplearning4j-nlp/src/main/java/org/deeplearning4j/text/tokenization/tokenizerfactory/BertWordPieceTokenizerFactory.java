@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
+ * Copyright (c) 2015-2019 Skymind, Inc.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
@@ -34,6 +34,7 @@ public class BertWordPieceTokenizerFactory implements TokenizerFactory {
 
     private final NavigableMap<String, Integer> vocab;
     private TokenPreProcess tokenPreProcess;
+    private boolean lowerCaseOnly = false;
 
     public BertWordPieceTokenizerFactory(NavigableMap<String, Integer> vocab) {
         this.vocab = vocab;
@@ -43,16 +44,20 @@ public class BertWordPieceTokenizerFactory implements TokenizerFactory {
         this(loadVocab(pathToVocab));
     }
 
+    public BertWordPieceTokenizerFactory(InputStream vocabInputStream) throws IOException {
+        this(loadVocab(vocabInputStream));
+    }
+
     @Override
     public Tokenizer create(String toTokenize) {
-        Tokenizer t = new BertWordPieceTokenizer(toTokenize, vocab);
+        Tokenizer t = new BertWordPieceTokenizer(toTokenize, vocab, lowerCaseOnly);
         t.setTokenPreProcessor(tokenPreProcess);
         return t;
     }
 
     @Override
     public Tokenizer create(InputStream toTokenize) {
-        Tokenizer t = new BertWordPieceStreamTokenizer(toTokenize, vocab);
+        Tokenizer t = new BertWordPieceStreamTokenizer(toTokenize, vocab, lowerCaseOnly);
         t.setTokenPreProcessor(tokenPreProcess);
         return t;
     }
@@ -73,17 +78,43 @@ public class BertWordPieceTokenizerFactory implements TokenizerFactory {
     }
 
 
-    public static NavigableMap<String, Integer> loadVocab(File pathToVocab) throws IOException {
+    public boolean isLowerCaseOnly() {
+        return lowerCaseOnly;
+    }
+
+    public void setLowerCaseOnly(boolean lowerCaseOnly) {
+        this.lowerCaseOnly = lowerCaseOnly;
+    }
+
+    /**
+     * The expected format is a \n seperated list of tokens for examples
+     *
+     * <code>
+     *     foo
+     *     bar
+     *     baz
+     * </code>
+     *
+     * the tokens should <b>not</b> have any whitespace on either of their sides
+     *
+     * @param is InputStream
+     * @return A vocab map with the popper sort order for fast traversal
+     */
+    public static NavigableMap<String, Integer> loadVocab(InputStream is) throws IOException {
         final TreeMap<String, Integer> map = new TreeMap<>(Collections.reverseOrder());
 
-        try(final BufferedReader reader =  new BufferedReader(new InputStreamReader(new FileInputStream(pathToVocab)))){
+        try (final BufferedReader reader = new BufferedReader(new InputStreamReader(is))) {
             String token;
             int i = 0;
-            while((token = reader.readLine()) != null){
+            while ((token = reader.readLine()) != null) {
                 map.put(token, i++);
             }
         }
 
         return map;
+    }
+
+    public static NavigableMap<String, Integer> loadVocab(File vocabFile) throws IOException {
+        return loadVocab(new FileInputStream(vocabFile));
     }
 }

@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
+ * Copyright (c) 2015-2019 Skymind, Inc.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
@@ -16,33 +16,35 @@
 
 package org.deeplearning4j.text.tokenization.tokenizer;
 
+import lombok.extern.slf4j.Slf4j;
+
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Pattern;
 
 /**
  * A tokenizer that works with a vocab from a published bert model
  * @author Paul Dubs
  */
+@Slf4j
 public class BertWordPieceTokenizer implements Tokenizer {
-
-    private final Pattern splitPattern = Pattern.compile("(\\p{javaWhitespace}|((?<=\\p{Punct})|(?=\\p{Punct})))+");
+    public static final Pattern splitPattern = Pattern.compile("(\\p{javaWhitespace}|((?<=\\p{Punct})|(?=\\p{Punct})))+");
     private final List<String> tokens;
-    private int cursor;
+    private AtomicInteger cursor = new AtomicInteger(0);
 
-    public BertWordPieceTokenizer(String tokens, NavigableMap<String, Integer> vocab) {
+    public BertWordPieceTokenizer(String tokens, NavigableMap<String, Integer> vocab, boolean lowerCaseOnly) {
         if(vocab.comparator() == null || vocab.comparator().compare("a", "b") < 0){
             throw new IllegalArgumentException("Vocab must use reverse sort order!");
         }
 
-        this.tokens = tokenize(vocab, tokens);
-        this.cursor = 0;
+        this.tokens = tokenize(vocab, tokens, lowerCaseOnly);
     }
 
     private TokenPreProcess tokenPreProcess;
 
     @Override
     public boolean hasMoreTokens() {
-        return cursor < tokens.size();
+        return cursor.get() < tokens.size();
     }
 
     @Override
@@ -52,8 +54,7 @@ public class BertWordPieceTokenizer implements Tokenizer {
 
     @Override
     public String nextToken() {
-        String base = tokens.get(cursor);
-        cursor++;
+        String base = tokens.get(cursor.getAndIncrement());
         if (tokenPreProcess != null)
             base = tokenPreProcess.preProcess(base);
         return base;
@@ -70,27 +71,37 @@ public class BertWordPieceTokenizer implements Tokenizer {
 
     }
 
-    private List<String> tokenize(NavigableMap<String, Integer> vocab, String toTokenzie) {
+    private List<String> tokenize(NavigableMap<String, Integer> vocab, String toTokenzie, boolean lowerCaseOnly) {
         final List<String> output = new ArrayList<>();
 
-        for (String basicToken : splitPattern.split(toTokenzie)) {
+        String fullString = toTokenzie;
+        if(lowerCaseOnly){
+            fullString = fullString.toLowerCase();
+        }
+
+        for (String basicToken : splitPattern.split(fullString)) {
             String candidate = basicToken;
 
             while(candidate.length() > 0 && !"##".equals(candidate)){
-                final Set<Map.Entry<String, Integer>> entries = vocab.tailMap(candidate, true).entrySet();
-                String longestSubstring = null;
-                for (Map.Entry<String, Integer> entry : entries) {
-                    if(candidate.startsWith(entry.getKey())){
-                        longestSubstring = entry.getKey();
-                        break;
-                    }
-                }
+                String longestSubstring = findLongestSubstring(vocab, candidate);;
                 output.add(longestSubstring);
                 candidate = "##"+candidate.substring(longestSubstring.length());
             }
         }
 
         return output;
+    }
+
+    static String findLongestSubstring(NavigableMap<String, Integer> vocab, String candidate) {
+        NavigableMap<String, Integer> tailMap = vocab.tailMap(candidate, true);
+        String longestSubstring = tailMap.firstKey();
+        int subStringLength = Math.min(candidate.length(), longestSubstring.length());
+        while(!candidate.startsWith(longestSubstring)){
+            subStringLength--;
+            tailMap = tailMap.tailMap(candidate.substring(0, subStringLength), true);
+            longestSubstring = tailMap.firstKey();
+        }
+        return longestSubstring;
     }
 
 }

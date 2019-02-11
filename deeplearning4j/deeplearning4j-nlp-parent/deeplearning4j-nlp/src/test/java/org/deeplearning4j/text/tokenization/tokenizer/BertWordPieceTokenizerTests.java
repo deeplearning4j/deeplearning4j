@@ -105,4 +105,18 @@ public class BertWordPieceTokenizerTests {
         assertEquals(expected, tokenizer2.getTokens());
     }
 
+    @Test
+    public void testBertWordPieceTokenizer6() throws Exception {
+        String toTokenize = "I sAw A gIrL wItH a tElEsCoPe.";
+        BertWordPieceTokenizerFactory t = new BertWordPieceTokenizerFactory(pathToVocab);
+        t.setLowerCaseOnly(true);
+
+        Tokenizer tokenizer = t.create(toTokenize);
+        Tokenizer tokenizer2 = t.create(new ByteArrayInputStream(toTokenize.getBytes()));
+
+        final List<String> expected = Arrays.asList("i", "saw", "a", "girl", "with", "a", "tele", "##scope", ".");
+        assertEquals(expected, tokenizer.getTokens());
+        assertEquals(expected, tokenizer2.getTokens());
+    }
+
 }

@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
+ * Copyright (c) 2015-2019 Skymind, Inc.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
@@ -17,23 +17,21 @@
 package org.deeplearning4j.text.tokenization.tokenizer;
 
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 
 import java.io.*;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.regex.Pattern;
 
 /**
  * A tokenizer that works with a vocab from a published bert model and tokenizes a token at a time from a stream
  * @author Paul Dubs
  */
+@Slf4j
 public class BertWordPieceStreamTokenizer implements Tokenizer {
-
-    private final Pattern splitPattern = Pattern.compile("(\\p{javaWhitespace}|((?<=\\p{Punct})|(?=\\p{Punct})))+");
     private final NavigableMap<String, Integer> vocab;
     private final Reader reader;
+    private final boolean lowerCaseOnly;
     private boolean more = true;
     private String buffer = "";
     private int longestToken = 0;
@@ -44,11 +42,10 @@ public class BertWordPieceStreamTokenizer implements Tokenizer {
     private List<String> tokens = new ArrayList<>();
     private AtomicInteger position = new AtomicInteger(0);
 
-    protected static final Logger log = LoggerFactory.getLogger(BertWordPieceStreamTokenizer.class);
-
-    public BertWordPieceStreamTokenizer(InputStream is, NavigableMap<String, Integer> vocab) {
+    public BertWordPieceStreamTokenizer(InputStream is, NavigableMap<String, Integer> vocab, boolean lowerCaseOnly) {
+        this.lowerCaseOnly = lowerCaseOnly;
         if(vocab.comparator() == null || vocab.comparator().compare("a", "b") < 0){
-            throw new IllegalArgumentException("Vocab must use reverse sort order!");
+            //throw new IllegalArgumentException("Vocab must use reverse sort order!");
         }
 
         this.reader = new BufferedReader(new InputStreamReader(is));
@@ -85,15 +82,19 @@ public class BertWordPieceStreamTokenizer implements Tokenizer {
             }
         }
 
+        String input = builder.toString();
+        if(lowerCaseOnly){
+            input = input.toLowerCase();
+        }
         if(noSplit){
-            final String[] parts = splitPattern.split(builder.toString(), 2);
+            final String[] parts = BertWordPieceTokenizer.splitPattern.split(input, 2);
             prevRest = (prevRest == null ? "" : prevRest) + parts[0];
             if(parts.length > 1){
                 noSplit = false;
                 buffer += parts[1];
             }
         }else{
-            buffer += builder.toString();
+            buffer += input;
         }
     }
 
@@ -127,7 +128,7 @@ public class BertWordPieceStreamTokenizer implements Tokenizer {
         String basicToken = prevRest;
         if(basicToken == null || basicToken.length() == 0){
             if(buffer.length() < longestToken && more) readMore();
-            final String[] parts = splitPattern.split(buffer, 2);
+            final String[] parts = BertWordPieceTokenizer.splitPattern.split(buffer, 2);
             basicToken = parts[0];
             if(parts.length > 1){
                 buffer = parts[1];
@@ -138,16 +139,7 @@ public class BertWordPieceStreamTokenizer implements Tokenizer {
             }
         }
 
-        final Set<Map.Entry<String, Integer>> entries = vocab.tailMap(basicToken, true).entrySet();
-        String longestSubstring = null;
-        for (Map.Entry<String, Integer> entry : entries) {
-            if(basicToken.startsWith(entry.getKey())){
-                longestSubstring = entry.getKey();
-                break;
-            }
-        }
-
-        String output = longestSubstring;
+        String output = BertWordPieceTokenizer.findLongestSubstring(vocab, basicToken);;
         String tokenRest = basicToken.substring(output.length());
         if(basicToken.length() > output.length()){
             tokenRest = "##"+tokenRest;
