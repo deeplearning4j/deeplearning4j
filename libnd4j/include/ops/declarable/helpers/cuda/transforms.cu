@@ -176,40 +176,173 @@ __host__ static void concatCudaLauncher(const int numOfArrs, const cudaStream_t 
     BUILD_SINGLE_TEMPLATE(template void mergeMaxIndex_, (graph::LaunchContext* context, const std::vector<NDArray*>& inArrs, NDArray& output), LIBND4J_TYPES);
 
     //////////////////////////////////////////////////////////////////////////
+    template <typename T>
+    static __global__ void global_mergeMax_(void **inArrs, void **inShapes, const int numArrays, void *voutput, Nd4jLong *outputShape, Nd4jLong length) {
+        __shared__ T *temporary, *output;
+        if (threadIdx.x == 0) {
+            output = reinterpret_cast<T*>(voutput);
+            extern __shared__ unsigned char ext[];
+            temporary = reinterpret_cast<T*>(ext);
+        }
+        __syncthreads();
+
+        const auto tid = blockIdx.x * gridDim.x + threadIdx.x;
+        const auto step = gridDim.x * blockDim.x;
+
+        for (Nd4jLong e = tid; e < length; e += step) {
+            temporary[threadIdx.x] = -DataTypeUtils::max<T>();
+
+            for (int i = 0; i < numArrays; i++) {
+                auto x = reinterpret_cast<T*>(inArrs[i]);
+                auto xShape = reinterpret_cast<Nd4jLong *>(inShapes[i]);
+                auto val = x[shape::getIndexOffset(e, xShape, length)];;
+                if (temporary[threadIdx.x] < val)
+                    temporary[threadIdx.x] = val;
+            }
+
+            output[shape::getIndexOffset(e, outputShape, length)] = temporary[threadIdx.x];
+        }
+    }
+
     template<typename T>
     static void mergeMax_(graph::LaunchContext* context, const std::vector<NDArray*>& inArrs, NDArray& output) {
+        std::vector<void *> inBuffers(inArrs.size());
+        std::vector<void *> inShapes(inArrs.size());
 
+        for (int e = 0; e < inArrs.size(); e++) {
+            inBuffers[e] = inArrs[e]->getSpecialBuffer();
+            inShapes[e] = inArrs[e]->getSpecialShapeInfo();
+        }
+
+        PointersManager manager(context, "mergeMax");
+
+        auto pInBuffers = reinterpret_cast<void **>(manager.replicatePointer(inBuffers.data(), inBuffers.size() * sizeof(void *)));
+        auto pInShapes = reinterpret_cast<void **>(manager.replicatePointer(inShapes.data(), inShapes.size() * sizeof(void *)));
+        auto length = output.lengthOf();
+
+        const int blockSize = 512;
+        const int shmemSize = blockSize * sizeof(T) + 1024;
+        global_mergeMax_<T><<<512, blockSize, shmemSize, *context->getCudaStream()>>>(pInBuffers, pInShapes, (int) inArrs.size(), output.getSpecialBuffer(), output.getSpecialShapeInfo(), length);
+
+        manager.synchronize();
     }
+    BUILD_SINGLE_TEMPLATE(template void mergeMax_, (graph::LaunchContext* context, const std::vector<NDArray*>& inArrs, NDArray& output), LIBND4J_TYPES);
 
     void mergeMax(graph::LaunchContext* context, const std::vector<NDArray*>& inArrs, NDArray& output) {
         BUILD_SINGLE_SELECTOR(output.dataType(), mergeMax_, (context, inArrs, output), LIBND4J_TYPES);
     }
 
-    BUILD_SINGLE_TEMPLATE(template void mergeMax_, (graph::LaunchContext* context, const std::vector<NDArray*>& inArrs, NDArray& output), LIBND4J_TYPES);
-
     //////////////////////////////////////////////////////////////////////////
+    template <typename T>
+    static __global__ void global_mergeAvg_(void **inArrs, void **inShapes, const int numArrays, void *voutput, Nd4jLong *outputShape, Nd4jLong length) {
+        __shared__ T *temporary, *output;
+        if (threadIdx.x == 0) {
+            output = reinterpret_cast<T*>(voutput);
+            extern __shared__ unsigned char ext[];
+            temporary = reinterpret_cast<T*>(ext);
+        }
+        __syncthreads();
+
+        const auto tid = blockIdx.x * gridDim.x + threadIdx.x;
+        const auto step = gridDim.x * blockDim.x;
+
+        for (Nd4jLong e = tid; e < length; e += step) {
+            temporary[threadIdx.x] = (T) 0.0f;
+
+            for (int i = 0; i < numArrays; i++) {
+                auto x = reinterpret_cast<T*>(inArrs[i]);
+                auto xShape = reinterpret_cast<Nd4jLong *>(inShapes[i]);
+
+                temporary[threadIdx.x] += x[shape::getIndexOffset(e, xShape, length)];
+            }
+
+            output[shape::getIndexOffset(e, outputShape, length)] = temporary[threadIdx.x] / numArrays;
+        }
+    }
+
     template<typename T>
     static void mergeAvg_(graph::LaunchContext* context, const std::vector<NDArray*>& inArrs, NDArray& output) {
+        std::vector<void *> inBuffers(inArrs.size());
+        std::vector<void *> inShapes(inArrs.size());
 
+        for (int e = 0; e < inArrs.size(); e++) {
+            inBuffers[e] = inArrs[e]->getSpecialBuffer();
+            inShapes[e] = inArrs[e]->getSpecialShapeInfo();
+        }
+
+        PointersManager manager(context, "mergeAvg");
+
+        auto pInBuffers = reinterpret_cast<void **>(manager.replicatePointer(inBuffers.data(), inBuffers.size() * sizeof(void *)));
+        auto pInShapes = reinterpret_cast<void **>(manager.replicatePointer(inShapes.data(), inShapes.size() * sizeof(void *)));
+        auto length = output.lengthOf();
+
+        const int blockSize = 512;
+        const int shmemSize = blockSize * sizeof(T) + 1024;
+        global_mergeAvg_<T><<<512, blockSize, shmemSize, *context->getCudaStream()>>>(pInBuffers, pInShapes, (int) inArrs.size(), output.getSpecialBuffer(), output.getSpecialShapeInfo(), length);
+
+        manager.synchronize();
     }
+    BUILD_SINGLE_TEMPLATE(template void mergeAvg_, (graph::LaunchContext* context, const std::vector<NDArray*>& inArrs, NDArray& output), LIBND4J_TYPES);
 
     void mergeAvg(graph::LaunchContext* context, const std::vector<NDArray*>& inArrs, NDArray& output) {
         BUILD_SINGLE_SELECTOR(output.dataType(), mergeAvg_, (context, inArrs, output), LIBND4J_TYPES);
     }
 
-    BUILD_SINGLE_TEMPLATE(template void mergeAvg_, (graph::LaunchContext* context, const std::vector<NDArray*>& inArrs, NDArray& output), LIBND4J_TYPES);
-
     //////////////////////////////////////////////////////////////////////////
+    template <typename T>
+    static __global__ void global_mergeAdd_(void **inArrs, void **inShapes, const int numArrays, void *voutput, Nd4jLong *outputShape, Nd4jLong length) {
+        __shared__ T *temporary, *output;
+        if (threadIdx.x == 0) {
+            output = reinterpret_cast<T*>(voutput);
+            extern __shared__ unsigned char ext[];
+            temporary = reinterpret_cast<T*>(ext);
+        }
+        __syncthreads();
+
+        const auto tid = blockIdx.x * gridDim.x + threadIdx.x;
+        const auto step = gridDim.x * blockDim.x;
+
+        for (Nd4jLong e = tid; e < length; e += step) {
+            temporary[threadIdx.x] = (T) 0.0f;
+
+            for (int i = 0; i < numArrays; i++) {
+                auto x = reinterpret_cast<T*>(inArrs[i]);
+                auto xShape = reinterpret_cast<Nd4jLong *>(inShapes[i]);
+
+                temporary[threadIdx.x] += x[shape::getIndexOffset(e, xShape, length)];
+            }
+
+            output[shape::getIndexOffset(e, outputShape, length)] = temporary[threadIdx.x];
+        }
+    }
+
     template<typename T>
     static void mergeAdd_(graph::LaunchContext* context, const std::vector<NDArray*>& inArrs, NDArray& output) {
+        std::vector<void *> inBuffers(inArrs.size());
+        std::vector<void *> inShapes(inArrs.size());
 
+        for (int e = 0; e < inArrs.size(); e++) {
+            inBuffers[e] = inArrs[e]->getSpecialBuffer();
+            inShapes[e] = inArrs[e]->getSpecialShapeInfo();
+        }
+
+        PointersManager manager(context, "mergeAdd");
+
+        auto pInBuffers = reinterpret_cast<void **>(manager.replicatePointer(inBuffers.data(), inBuffers.size() * sizeof(void *)));
+        auto pInShapes = reinterpret_cast<void **>(manager.replicatePointer(inShapes.data(), inShapes.size() * sizeof(void *)));
+        auto length = output.lengthOf();
+
+        const int blockSize = 512;
+        const int shmemSize = blockSize * sizeof(T) + 1024;
+        global_mergeAdd_<T><<<512, blockSize, shmemSize, *context->getCudaStream()>>>(pInBuffers, pInShapes, (int) inArrs.size(), output.getSpecialBuffer(), output.getSpecialShapeInfo(), length);
+
+        manager.synchronize();
     }
+    BUILD_SINGLE_TEMPLATE(template void mergeAdd_, (graph::LaunchContext* context, const std::vector<NDArray*>& inArrs, NDArray& output), LIBND4J_TYPES);
 
     void mergeAdd(graph::LaunchContext* context, const std::vector<NDArray*>& inArrs, NDArray& output) {
         BUILD_SINGLE_SELECTOR(output.dataType(), mergeAdd_, (context, inArrs, output), LIBND4J_TYPES);
     }
-
-    BUILD_SINGLE_TEMPLATE(template void mergeAdd_, (graph::LaunchContext* context, const std::vector<NDArray*>& inArrs, NDArray& output), LIBND4J_TYPES);
 
     //////////////////////////////////////////////////////////////////////////
     template<typename T>

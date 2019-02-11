@@ -28,8 +28,8 @@ namespace helpers {
     template <typename T>
     static __global__ void global_range(void *output, Nd4jLong length, T start, T delta) {
         auto buff = reinterpret_cast<T*>(output);
-        auto tid = blockIdx.x * gridDim.x + threadIdx.x;
-        auto step = gridDim.x * blockDim.x;
+        const auto tid = blockIdx.x * gridDim.x + threadIdx.x;
+        const auto step = gridDim.x * blockDim.x;
 
         for(Nd4jLong i = tid; i < length; i += step)
             buff[i] = start + i * delta;
