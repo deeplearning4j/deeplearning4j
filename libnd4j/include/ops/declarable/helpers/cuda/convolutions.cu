@@ -179,6 +179,9 @@ namespace nd4j {
 
                 auto res = sum / static_cast<Z>(divide_factor);
 
+                if (threadIdx.x == 0)
+                    printf("Z[%i]: %f\n", index, (float) res);
+
                 if (!fOrder) {
                     result[index] = res;
                 } else {
@@ -281,9 +284,7 @@ namespace nd4j {
 
                 for (int h = hstart; h < hend; h += dH) {
                     for (int w = wstart; w < wend; w += dW) {
-                        sum += nd4j::math::nd4j_pow<Z, Z, Z>(
-                                static_cast<Z>(nd4j::math::nd4j_abs<T>(input_slice[h * strideY + w * strideX])),
-                                extraParam0);
+                        sum += nd4j::math::nd4j_pow<Z, Z, Z>(static_cast<Z>(nd4j::math::nd4j_abs<T>(input_slice[h * strideY + w * strideX])), extraParam0);
                     }
                 }
 
@@ -408,19 +409,19 @@ namespace nd4j {
 
         template <typename T, typename Z>
         static void _max_pooling2d(nd4j::graph::LaunchContext& block, void *vx, Nd4jLong *vxShapeInfo, void *vz, Nd4jLong *vzShapeInfo, const int kH, const int kW, const int sH, const int sW, const int pH, const int pW, const int dH, const int dW, const int extraParam0) {
-            global_max_pooling2d<T,Z><<<512, 512, 2048, *block.getCudaStream()>>>(vx, vxShapeInfo, vz, vzShapeInfo, kH, kW, sH, sW, pH, pW, dH, dW, extraParam0);
+            global_max_pooling2d<T,Z><<<512, 512, 4192, *block.getCudaStream()>>>(vx, vxShapeInfo, vz, vzShapeInfo, kH, kW, sH, sW, pH, pW, dH, dW, extraParam0);
         }
         BUILD_DOUBLE_TEMPLATE(template void _max_pooling2d, (nd4j::graph::LaunchContext& block, void *vx, Nd4jLong *vxShapeInfo, void *vz, Nd4jLong *vzShapeInfo, const int kH, const int kW, const int sH, const int sW, const int pH, const int pW, const int dH, const int dW, const int extraParam0), LIBND4J_TYPES, FLOAT_TYPES);
 
         template <typename T, typename Z>
         static void _pnorm_pooling2d(nd4j::graph::LaunchContext& block, void *vx, Nd4jLong *vxShapeInfo, void *vz, Nd4jLong *vzShapeInfo, const int kH, const int kW, const int sH, const int sW, const int pH, const int pW, const int dH, const int dW, const int extraParam0) {
-            global_pnorm_pooling2d<T,Z><<<512, 512, 2048, *block.getCudaStream()>>>(vx, vxShapeInfo, vz, vzShapeInfo, kH, kW, sH, sW, pH, pW, dH, dW, extraParam0);
+            global_pnorm_pooling2d<T,Z><<<512, 512, 4192, *block.getCudaStream()>>>(vx, vxShapeInfo, vz, vzShapeInfo, kH, kW, sH, sW, pH, pW, dH, dW, extraParam0);
         }
         BUILD_DOUBLE_TEMPLATE(template void _pnorm_pooling2d, (nd4j::graph::LaunchContext& block, void *vx, Nd4jLong *vxShapeInfo, void *vz, Nd4jLong *vzShapeInfo, const int kH, const int kW, const int sH, const int sW, const int pH, const int pW, const int dH, const int dW, const int extraParam0), LIBND4J_TYPES, FLOAT_TYPES);
 
         template <typename T, typename Z>
         static void _avg_pooling2d(nd4j::graph::LaunchContext& block, void *vx, Nd4jLong *vxShapeInfo, void *vz, Nd4jLong *vzShapeInfo, const int kH, const int kW, const int sH, const int sW, const int pH, const int pW, const int dH, const int dW, const int extraParam0) {
-            global_avg_pooling2d<T,Z><<<512, 512, 2048, *block.getCudaStream()>>>(vx, vxShapeInfo, vz, vzShapeInfo, kH, kW, sH, sW, pH, pW, dH, dW, extraParam0);
+            global_avg_pooling2d<T,Z><<<512, 512, 4192, *block.getCudaStream()>>>(vx, vxShapeInfo, vz, vzShapeInfo, kH, kW, sH, sW, pH, pW, dH, dW, extraParam0);
         }
         BUILD_DOUBLE_TEMPLATE(template void _avg_pooling2d, (nd4j::graph::LaunchContext& block, void *vx, Nd4jLong *vxShapeInfo, void *vz, Nd4jLong *vzShapeInfo, const int kH, const int kW, const int sH, const int sW, const int pH, const int pW, const int dH, const int dW, const int extraParam0), LIBND4J_TYPES, FLOAT_TYPES);
 
@@ -442,6 +443,7 @@ namespace nd4j {
                     throw std::runtime_error("Pooling2D: Unknown PoolingType used");
             }
 
+            output.tickWriteDevice();
             auto result = cudaStreamSynchronize(*block.getCudaStream());
             if (result != 0)
                 throw cuda_exception::build("Pooling2D failed", result);

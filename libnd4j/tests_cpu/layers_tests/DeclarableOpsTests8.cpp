@@ -2461,7 +2461,7 @@ TEST_F(DeclarableOpsTests8, avgpool2d_test13) {
     int bS=4, iH=10,iW=10,  iC=3,  kH=3,kW=3,  sH=3,sW=3,  pH=0,pW=0,  dH=1,dW=1;
     int       oH=4, oW=4;
     int paddingMode = 1;             // 1-SAME,  0-VALID
-    int dataFormat  = 1;             // 1-NDHWC, 0-NCDHW
+    int dataFormat  = 1;             // 1-NHWC, 0-NDHW
 
     auto input    = NDArrayFactory::create<double>('c', {bS, iH, iW, iC});
     auto expected = NDArrayFactory::create<double>('c', {bS, oH, oW, iC}, { 17.5,   18.5,   19.5,  25. ,   26. ,   27. ,  34. ,   35. ,   36. ,  41.5,   42.5,   43.5,  92.5,   93.5,   94.5, 100. ,  101. ,  102. , 109. ,  110. ,  111. , 116.5,  117.5,  118.5,
@@ -2480,6 +2480,9 @@ TEST_F(DeclarableOpsTests8, avgpool2d_test13) {
     auto output = results->at(0);    
 
     ASSERT_EQ(Status::OK(), results->status());
+
+    output->printBuffer("output");
+
     ASSERT_TRUE(expected.isSameShape(output));
     ASSERT_TRUE(expected.equalsTo(output));    
  
