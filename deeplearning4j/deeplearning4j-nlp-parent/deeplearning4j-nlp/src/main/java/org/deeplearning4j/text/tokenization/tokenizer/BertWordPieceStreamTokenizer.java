@@ -45,7 +45,7 @@ public class BertWordPieceStreamTokenizer implements Tokenizer {
     public BertWordPieceStreamTokenizer(InputStream is, NavigableMap<String, Integer> vocab, boolean lowerCaseOnly) {
         this.lowerCaseOnly = lowerCaseOnly;
         if(vocab.comparator() == null || vocab.comparator().compare("a", "b") < 0){
-            //throw new IllegalArgumentException("Vocab must use reverse sort order!");
+            throw new IllegalArgumentException("Vocab must use reverse sort order!");
         }
 
         this.reader = new BufferedReader(new InputStreamReader(is));
