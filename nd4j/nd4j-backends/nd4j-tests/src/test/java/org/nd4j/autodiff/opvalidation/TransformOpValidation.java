@@ -545,7 +545,7 @@ public class TransformOpValidation extends BaseOpValidation {
         Nd4j.getRandom().setSeed(12345);
 
         List<String> allFailed = new ArrayList<>();
-        for (int i = 0; i < 80; i++) {
+        for (int i = 0; i < 82; i++) {
             SameDiff sd = SameDiff.create();
 
             int nOut = 4;
@@ -988,6 +988,24 @@ public class TransformOpValidation extends BaseOpValidation {
                     t = sd.f().tanhRectified(in);
                     tc.expected(t, Nd4j.getExecutioner().exec(new RectifiedTanh(ia.dup())));
                     break;
+                case 80:
+                    t = sd.gelu(in);
+                    INDArray gelu = Transforms.sigmoid(ia.mul(1.702)).mul(ia);
+                    tc.expected(t, gelu);
+                    break;
+                case 81:
+                    ia = Nd4j.rand(DataType.DOUBLE, ia.shape()).muli(0.5);
+                    t = sd.f().gelu(in, true);
+//                    INDArray geluPrecise = ia.mul(0.5);
+//                    INDArray inner = ia.add(ia.mul(ia).mul(ia).mul(0.044715)).mul(Math.sqrt(2.0/Math.PI));
+//                    geluPrecise.mul(Transforms.tanh(inner).add(1.0));
+//                    tc.expected(t, geluPrecise);
+                    INDArray x3 = Transforms.pow(ia.mul(0.044715), 3, true);
+                    INDArray inner1 = ia.add(x3).mul(Math.sqrt(2.0/Math.PI));
+                    INDArray inner2 = Transforms.tanh(inner1, true).addi(1.0);
+                    INDArray geluPrecise = inner2.mul(ia).mul(0.5);
+                    tc.expected(t, geluPrecise);
+                    break;
                 default:
                     throw new RuntimeException();
             }
@@ -1012,7 +1030,7 @@ public class TransformOpValidation extends BaseOpValidation {
             tc.testName(name);
             String error = OpValidation.validate(tc, true);
             if(error != null){
-                allFailed.add(name);
+                allFailed.add(name + " - " + error);
             }
         }
 

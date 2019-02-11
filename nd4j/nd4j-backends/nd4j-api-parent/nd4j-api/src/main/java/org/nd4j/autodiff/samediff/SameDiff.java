@@ -5044,6 +5044,32 @@ public class SameDiff {
     }
 
     /**
+     * GELU activation function - Gaussian Error Linear Units<br>
+     * For more details, see <i>Gaussian Error Linear Units (GELUs)</i> - <a href="https://arxiv.org/abs/1606.08415">https://arxiv.org/abs/1606.08415</a>
+     * This method uses the sigmoid approximation
+     *
+     * @param x Input
+     * @return Output variable - GELU applied to the input
+     */
+    public SDVariable gelu(SDVariable x) {
+        return gelu(null, x);
+    }
+
+    /**
+     * GELU activation function - Gaussian Error Linear Units<br>
+     * For more details, see <i>Gaussian Error Linear Units (GELUs)</i> - <a href="https://arxiv.org/abs/1606.08415">https://arxiv.org/abs/1606.08415</a>
+     * This method uses the sigmoid approximation
+     *
+     * @param name Name of the output variable. May be null.
+     * @param x    Input
+     * @return Output variable - GELU applied to the input
+     */
+    public SDVariable gelu(String name, SDVariable x) {
+        SDVariable ret = f().gelu(x, false);    //Defaults to si
+        return updateVariableNameAndReference(ret, name);
+    }
+
+    /**
      * Softmax activation
      *
      * @param x Input variable
