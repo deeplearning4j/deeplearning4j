@@ -1834,6 +1834,24 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     }
 
     @Override
+    public long getLong(long index) {
+        Nd4j.getCompressor().autoDecompress(this);
+
+        if (index >= length()) {
+            throw new IllegalArgumentException("Unable to get linear index " + index + ": values is greater than length (" + length() + ")");
+        }
+
+        autoProcessScalarCall();
+
+        if (index == 0)
+            return data().getLong(index);
+
+        long[] dimensions = ordering() == 'c' ? Shape.ind2subC(this, index) : Shape.ind2sub(this, index);
+        Shape.assertShapeLessThan(dimensions, shape());
+        return getLong(dimensions);
+    }
+
+    @Override
     public long getLong(long... indices) {
         if(isScalar())
             return data().getLong(0);

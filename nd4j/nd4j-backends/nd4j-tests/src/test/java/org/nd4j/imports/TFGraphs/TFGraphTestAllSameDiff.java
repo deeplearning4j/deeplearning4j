@@ -115,7 +115,14 @@ public class TFGraphTestAllSameDiff {
             "confusion/.*",
 
             //2019/01/18 - Issue 18 here: https://github.com/deeplearning4j/deeplearning4j/issues/6958
-            "extractImagePatches/.*"
+            "extractImagePatches/.*",
+
+            //2019/02/08 - https://github.com/deeplearning4j/deeplearning4j/issues/7121
+            "rnn/bstack/d_.*",
+            "rnn/grublockcellv2/.*",
+            "rnn/lstmblockcell/.*",
+            "rnn/lstmblockfusedcell/.*",
+            "rnn/tr_lstmbfc/.*"
     };
 
     @BeforeClass

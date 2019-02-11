@@ -442,7 +442,7 @@ public class JcublasLevel1 extends BaseLevel1 {
         //Preconditions.checkArgument(X.dataType() == DataType.FLOAT, "Float dtype expected");
 
         //        CudaContext ctx = allocator.getFlowController().prepareAction(Y, X);
-        Nd4j.getExecutioner().exec(new Axpy(X, Y, alpha, N));
+        Nd4j.getExecutioner().exec(new Axpy(X, Y, Y, alpha));
 
         OpExecutionerUtil.checkForAny(Y);
         /*
@@ -478,7 +478,7 @@ public class JcublasLevel1 extends BaseLevel1 {
 
         //        cublasHandle_t handle = ctx.getHandle();
 
-        ((CudaExecutioner) Nd4j.getExecutioner()).exec(new Axpy(X, Y, alpha, N));
+        ((CudaExecutioner) Nd4j.getExecutioner()).exec(new Axpy(X, Y, Y, alpha));
 
         OpExecutionerUtil.checkForAny(Y);
 
@@ -572,7 +572,7 @@ public class JcublasLevel1 extends BaseLevel1 {
 
         //    logger.info("incX: {}, incY: {}, N: {}, X.length: {}, Y.length: {}", incX, incY, N, X.length(), Y.length());
 
-        Nd4j.getExecutioner().exec(new Axpy(X, Y, alpha, N));
+        Nd4j.getExecutioner().exec(new Axpy(X, Y, Y, alpha));
 
         OpExecutionerUtil.checkForAny(Y);
 

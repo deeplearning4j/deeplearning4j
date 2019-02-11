@@ -14,70 +14,52 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic;
+package org.nd4j.linalg.api.ops.impl.transforms.strict;
 
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.BaseTransformOp;
-import org.nd4j.linalg.api.ops.BaseTransformSameOp;
+import org.nd4j.linalg.api.ops.BaseTransformStrictOp;
 
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 
 /**
- *  Level 1 blas op Axpy as libnd4j native op
+ * GELU derivative
  *
- * @author raver119@gmail.com
+ * @author Adam Gibson
  */
-public class Axpy extends BaseTransformSameOp {
-
-    private double p;
-
-    public Axpy(SameDiff sameDiff, SDVariable i_v1, SDVariable i_v2, double p) {
+public class GELUDerivative extends BaseTransformStrictOp {
+    public GELUDerivative(SameDiff sameDiff, SDVariable i_v1, SDVariable i_v2) {
         super(sameDiff, i_v1, i_v2);
-        this.p = p;
     }
 
-    public Axpy(SameDiff sameDiff, SDVariable i_v1, SDVariable i_v2, boolean inPlace, double p) {
+    public GELUDerivative(SameDiff sameDiff, SDVariable i_v1, SDVariable i_v2, boolean inPlace) {
         super(sameDiff, i_v1, i_v2, inPlace);
-        this.p = p;
     }
 
-    public Axpy(SameDiff sameDiff, double p) {
-        super(sameDiff);
-        this.p = p;
-    }
-
-    public Axpy(SameDiff sameDiff, SDVariable i_v, boolean inPlace, double p) {
+    public GELUDerivative(SameDiff sameDiff, SDVariable i_v, boolean inPlace) {
         super(sameDiff, i_v, inPlace);
-        this.p = p;
     }
 
-    public Axpy() {
+    public GELUDerivative() {}
 
+    public GELUDerivative(INDArray x, INDArray z) {
+        super(x, z);
     }
 
-    public Axpy(INDArray x, INDArray y, INDArray z, double p) {
-        this(x,y,z,p,x.length());
-    }
-
-    public Axpy(INDArray x, INDArray y, INDArray z, double p, long n) {
-        super(x,y,z);
-        this.p = p;
-        this.extraArgs = new Object[] {p, (double) n};
+    public GELUDerivative(INDArray x) {
+        super(x);
     }
 
     @Override
     public int opNum() {
-        return 10;
+        return 54;
     }
 
     @Override
     public String opName() {
-        return "axpy";
+        return "_geluderivative";
     }
 
     @Override
@@ -90,9 +72,8 @@ public class Axpy extends BaseTransformSameOp {
         throw new NoOpNameFoundException("No tensorflow op opName found for " +  opName());
     }
 
-
-    @Override
+       @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {
-        throw new UnsupportedOperationException("Backprop: not yet implemented");
+       throw new UnsupportedOperationException();
     }
 }

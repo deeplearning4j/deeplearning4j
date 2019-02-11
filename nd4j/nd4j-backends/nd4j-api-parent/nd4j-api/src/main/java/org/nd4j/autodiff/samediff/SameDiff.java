@@ -91,6 +91,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.indexing.conditions.Condition;
 import org.nd4j.linalg.learning.GradientUpdater;
+import org.nd4j.linalg.learning.regularization.Regularization;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.primitives.AtomicBoolean;
 import org.nd4j.linalg.primitives.Pair;
@@ -1534,6 +1535,19 @@ public class SameDiff {
                     //Note: don't need to divide by minibatch - that should be handled in loss function and hence loss function gradients,
                     // which should flow through to here
 
+                    //Pre-apply regularization (L1, L2)
+                    List<Regularization> r = trainingConfig.getRegularization();
+                    int iterCount = trainingConfig.getIterationCount();
+                    int epochCount = trainingConfig.getEpochCount();
+                    double lr = trainingConfig.getUpdater().hasLearningRate() ? trainingConfig.getUpdater().getLearningRate(iteration, epochCount) : 1.0;
+                    if(r != null && r.size() > 0){
+                        for(Regularization reg : r){
+                            if(reg.applyStep() == Regularization.ApplyStep.BEFORE_UPDATER){
+                                reg.apply(param, grad, lr, iterCount, epochCount);
+                            }
+                        }
+                    }
+
                     //Apply updater. Note that we need to reshape to [1,length] for updater
                     INDArray reshapedView = Shape.newShapeNoCopy(grad, new long[]{1, grad.length()}, grad.ordering() == 'f');       //TODO make sure we always reshape in same order!
                     Preconditions.checkState(reshapedView != null, "Error reshaping array for parameter \"%s\": array is a view?", s);
@@ -1545,18 +1559,13 @@ public class SameDiff {
                                 + "\": either parameter size is inconsistent between iterations, or \"" + s + "\" should not be a trainable parameter?", t);
                     }
 
-                    //L1 and L2 regularization:
-                    if (trainingConfig.getL1() > 0) {
-                        //L1: loss += lambda * sum_i |param_i|
-                        //dL/dp_i: lambda * sgn(param_i)
-                        INDArray signProd = Transforms.sign(param, true).muli(trainingConfig.getL1());
-                        grad.addi(signProd);
-                    }
-                    if (trainingConfig.getL2() > 0) {
-                        //L2: loss += 0.5 * lambda * sum_i param_i^2
-                        //dL/dp_i: lambda * param_i
-                        //TODO axpy optimization = safe/possible?
-                        grad.addi(param.mul(trainingConfig.getL2()));
+                    //Post-apply regularization (weight decay)
+                    if(r != null && r.size() > 0){
+                        for(Regularization reg : r){
+                            if(reg.applyStep() == Regularization.ApplyStep.POST_UPDATER){
+                                reg.apply(param, grad, lr, iterCount, epochCount);
+                            }
+                        }
                     }
 
                     if (trainingConfig.isMinimize()) {
@@ -1579,59 +1588,32 @@ public class SameDiff {
     }
 
     /**
-     * Calculate the L2 regularization component of the loss: {@code 0.5 * sum_i (weights_i)}<br>
+     * Calculate the regularization (L1, L2 and/or WeightDecay) component of the loss function for the current parameters..
      * Note that the training configuration must be set (via {@link #setTrainingConfig(TrainingConfig)}) before this
      * method can be called
      *
-     * @return The L2 regularization component of the score
+     * @return The regularization component of the score/loss function
      */
-    public double calculateL2Loss() {
+    public double calcRegularizationScore() {
         Preconditions.checkState(trainingConfig != null, "No training configuration has been set. A training configuration must " +
                 "be set before calculating the L2 loss. Use setTrainingConfig(TrainingConfig)");
 
-        if(trainingConfig.getL2() == 0){
+        if(trainingConfig.getRegularization() == null || trainingConfig.getRegularization().isEmpty()){
             return 0.0;
         }
 
         if(trainingConfig.getTrainableParams() == null || trainingConfig.getTrainableParams().isEmpty())
             initializeTraining();
 
-        double l2 = trainingConfig.getL2();
-        double l2Loss = 0.0;
+        List<Regularization> l = trainingConfig.getRegularization();
+        double loss = 0.0;
         for (String s : trainingConfig.getTrainableParams()) {
-            //L2: loss += 0.5 * lambda * sum_i param_i^2
-            double norm2 = getVariable(s).getArr().norm2Number().doubleValue();
-            l2Loss += 0.5 * l2 * norm2 * norm2;
+            for(Regularization r : l){
+                INDArray arr = getVariable(s).getArr();
+                loss += r.score(arr, trainingConfig.getIterationCount(), trainingConfig.getEpochCount());
+            }
         }
-        return l2Loss;
-    }
-
-    /**
-     * Calculate the L1 regularization component of the loss: {@code 0sum_i (abs(weights_i))}<br>
-     * Note that the training configuration must be set (via {@link #setTrainingConfig(TrainingConfig)}) before this
-     * method can be called
-     *
-     * @return The L1 regularization component of the score
-     */
-    public double calculateL1Loss(){
-        Preconditions.checkState(trainingConfig != null, "No training configuration has been set. A training configuration must " +
-                "be set before calculating the L1 loss. Use setTrainingConfig(TrainingConfig)");
-
-        if(trainingConfig.getL1() == 0){
-            return 0.0;
-        }
-
-        if(trainingConfig.getTrainableParams() == null || trainingConfig.getTrainableParams().isEmpty())
-            initializeTraining();
-
-        double l1 = trainingConfig.getL1();
-        double l1Loss = 0.0;
-        for (String s : trainingConfig.getTrainableParams()) {
-            //L1: loss += lambda * sum_i |param_i|
-            double norm1 = getVariable(s).getArr().norm1Number().doubleValue();
-            l1Loss += l1 * norm1;
-        }
-        return l1Loss;
+        return loss;
     }
 
     /**
