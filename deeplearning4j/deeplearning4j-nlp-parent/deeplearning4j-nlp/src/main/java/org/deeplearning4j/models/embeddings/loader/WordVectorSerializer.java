@@ -2596,7 +2596,7 @@ public class WordVectorSerializer {
                             return vec;
 
                         } catch (Exception excep) {
-                            throw new RuntimeException("Unable to load model in binary format");
+                            throw new RuntimeException("Unable to guess input file format. Please use corresponding loader directly");
                         }
                     }
                 }
