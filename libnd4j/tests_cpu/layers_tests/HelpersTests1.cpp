@@ -2300,3 +2300,50 @@ TEST_F(HelpersTests1, mmulMxV_7) {
     nd4j::MmulHelper::mmul(&a, &x, &y, 1., 0.);
     ASSERT_TRUE(y.equalsTo(&exp));
 }
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(HelpersTests1, softmaxDerivative_1) {
+    
+    NDArray input('c', {3,3}, {-1, 1, -2, 2, -3, 3, -4, 4, 5.}, nd4j::DataType::DOUBLE);
+    NDArray expOutput('c', {3,3}, {0.04508, 0.04514, 0.0008 , 0.0472 , 0.00087, 0.10492, 0.00235, 0.04592, 0.10553}, nd4j::DataType::DOUBLE);
+    NDArray output('c', {3,3}, nd4j::DataType::DOUBLE);
+
+    // input.applyTransform(nd4j::transform::SoftMaxDerivative, &output);
+
+    nd4j::ops::helpers::softmaxDerivative(input.getContext(), input, output, 0);
+    ASSERT_TRUE(expOutput.isSameShape(output));
+    ASSERT_TRUE(expOutput.equalsTo(output));    
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(HelpersTests1, softmaxDerivative_2) {
+    
+    NDArray input('c', {3,3,3}, {-1, 1, -2, 2, -3, 3, -4, 4, -5,5 ,-6,6, -7,7, -8,8, -9,9, -10,10, -11,11, -12,12, -13,13, 14.}, nd4j::DataType::DOUBLE);
+    NDArray expOutput('c', {3,3,3}, {4.50755e-02, 4.51394e-02, 6.64586e-03,4.72027e-02, 8.67128e-04, 6.97440e-03,2.35008e-03, 4.59243e-02, 3.32995e-04,
+                                    4.51766e-02, 2.26032e-06, 4.51767e-02,2.91394e-07, 2.37285e-06, 3.94360e-08,4.51769e-02, 1.12535e-07, 4.51767e-02,
+                                    7.58256e-10, 4.51767e-02, 1.22325e-11,7.96007e-10, 1.32293e-11, 1.04994e-01,3.77513e-11, 4.51767e-02, 1.04994e-01}, nd4j::DataType::DOUBLE);
+    NDArray output('c', {3,3,3}, nd4j::DataType::DOUBLE);
+
+    // input.applyTransform(nd4j::transform::SoftMaxDerivative, &output);
+
+    nd4j::ops::helpers::softmaxDerivative(input.getContext(), input, output, 1);
+    ASSERT_TRUE(expOutput.isSameShape(output));
+    ASSERT_TRUE(expOutput.equalsTo(output));    
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(HelpersTests1, softmaxDerivative_3) {
+    
+    NDArray input('c', {5}, {-1., 1, -2, 2, 3}, nd4j::DataType::DOUBLE);
+    NDArray expOutput('c', {5}, {0.01184, 0.08071, 0.00439, 0.18277, 0.22618}, nd4j::DataType::DOUBLE);
+    NDArray output('c', {5}, nd4j::DataType::DOUBLE);
+
+    // input.applyTransform(nd4j::transform::SoftMaxDerivative, &output);
+
+    nd4j::ops::helpers::softmaxDerivative(input.getContext(), input, output, 0);
+    ASSERT_TRUE(expOutput.isSameShape(output));
+    ASSERT_TRUE(expOutput.equalsTo(output));    
+}
+
+
+

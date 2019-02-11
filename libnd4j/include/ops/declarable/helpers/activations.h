@@ -39,6 +39,8 @@ namespace helpers {
 
     void logSoftmax(graph::LaunchContext* context, const NDArray &input, NDArray &output, const int dimension);
 
+    void softmaxDerivative(graph::LaunchContext* context, const NDArray& input, NDArray& output, const int dimension);
+
     void prelu(graph::LaunchContext* context, const NDArray &input, const NDArray &alpha, NDArray &output);
 
     void preluBP(graph::LaunchContext* context, const NDArray &input, const NDArray &alpha, const NDArray &dLdO, NDArray &dLdI, NDArray &dLdA);
