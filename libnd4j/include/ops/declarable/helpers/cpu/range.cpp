@@ -34,11 +34,12 @@ static void _range(const NDArray& start, const NDArray& delta, NDArray& outVecto
     const Nd4jLong len = outVector.lengthOf();
 
     auto buff = reinterpret_cast<T *>(outVector.getBuffer());
+    auto s = start.e<T>(0);
+    auto d = delta.e<T>(0);
 
-// #pragma omp parallel for simd if(len > Environment::getInstance()->elementwiseThreshold()) schedule(guided)
 #pragma omp parallel for simd schedule(guided)
     for(Nd4jLong i = 0; i < len; ++i)
-    	buff[i] =  start.e<T>(0) + i * delta.e<T>(0);
+    	buff[i] = s + i * d;
         
 }
 
