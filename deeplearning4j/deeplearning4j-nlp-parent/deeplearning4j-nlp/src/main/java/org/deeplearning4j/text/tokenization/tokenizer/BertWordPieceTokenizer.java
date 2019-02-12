@@ -92,7 +92,7 @@ public class BertWordPieceTokenizer implements Tokenizer {
             String candidate = basicToken;
 
             while(candidate.length() > 0 && !"##".equals(candidate)){
-                String longestSubstring = findLongestSubstring(vocab, candidate);;
+                String longestSubstring = findLongestSubstring(vocab, candidate);
                 output.add(longestSubstring);
                 candidate = "##"+candidate.substring(longestSubstring.length());
             }
@@ -101,7 +101,7 @@ public class BertWordPieceTokenizer implements Tokenizer {
         return output;
     }
 
-    static String findLongestSubstring(NavigableMap<String, Integer> vocab, String candidate) {
+    protected static String findLongestSubstring(NavigableMap<String, Integer> vocab, String candidate) {
         NavigableMap<String, Integer> tailMap = vocab.tailMap(candidate, true);
         String longestSubstring = tailMap.firstKey();
         int subStringLength = Math.min(candidate.length(), longestSubstring.length());

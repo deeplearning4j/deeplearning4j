@@ -139,13 +139,13 @@ public class BertWordPieceStreamTokenizer implements Tokenizer {
             }
         }
 
-        String output = BertWordPieceTokenizer.findLongestSubstring(vocab, basicToken);;
+        String output = BertWordPieceTokenizer.findLongestSubstring(vocab, basicToken);
         String tokenRest = basicToken.substring(output.length());
         if(basicToken.length() > output.length()){
             tokenRest = "##"+tokenRest;
         }
 
-        if(tokenRest.equals("##") || tokenRest.length() == 0) tokenRest = null;
+        if("##".equals(tokenRest) || tokenRest.length() == 0) tokenRest = null;
 
         prevRest = tokenRest;
 
