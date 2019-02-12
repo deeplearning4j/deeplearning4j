@@ -32,7 +32,7 @@ namespace helpers {
         auto input = reinterpret_cast<T*>(vinput);
         auto output = reinterpret_cast<T*>(voutput);
 
-        const int warpSize = 32;
+        const int warpSize = 16;
         const int tid = blockIdx.x * gridDim.x + threadIdx.x;
         const int warpIdx = tid / warpSize;
         const int warpPos = tid % warpSize;
@@ -46,14 +46,27 @@ namespace helpers {
         for (int e = warpIdx; e < numTads; e += numWarps) {
             auto patch = input + xTadOffsets[e];
             auto matrix = output + zTadOffsets[e];
-            int startRow = 0;
-            int startCol = 0;
-            int pos = 0;
+                int iter = 0;
 
-            for (int i = warpPos; i < patchLength; i += warpSize) {
-                Nd4jLong xIndex[3] = {0, 0, 0};
-                matrix[shape::getIndexOffset(i, zTadShape, patchLength)] = patch[shape::getOffset(0, xShape, xStride, xIndex, xRank)];
-            }
+                for (int i = 0; i < rowDim; i += stradeRow)
+                    for (int j = 0; j < colDim; j += stradeCol)
+                        for (int l = 0; l < sizeRow && l + i < rowDim; l++)
+                            for (int m = 0; m < sizeCol && m + j < colDim; m++) {
+                                for (int k = warpPos; k < lastDim; k += warpSize) {
+                                    auto x = i + rateRow * l;
+                                    auto y = j + m * rateCol;
+                                    Nd4jLong xIndex[3] = {x, y, k};
+
+                                    auto pos = k + (iter * lastDim);
+                                    auto pOffset = shape::getOffset(0, xShape, xStride, xIndex, xRank);
+                                    auto v = patch[pOffset];
+                                    printf("blockIdx.x: [%i]; threadIdx.x: [%i]; warpIdx: [%i]; warpPos: [%i]; e: [%i]; iter: [%i]; k: [%i]; pos: [%i]; coords: [%i, %i, %i]; pOffset: [%i]; v: [%f];\n", blockIdx.x, threadIdx.x, warpIdx, warpPos, e, iter, k, pos, x, y, k, (int) pOffset, (float) v);
+
+                                    if (pos < patchLength)
+                                        matrix[shape::getIndexOffset(pos, zTadShape, patchLength)] = v;
+                                }
+                                iter++;
+                            }
 
             /*
             for (int i = 0; i < rowDim; i += stradeRow)
@@ -88,11 +101,16 @@ namespace helpers {
         auto pxTadOffsets = (Nd4jLong *) manager.replicatePointer(xTad.tadOffsets, xTad.numTads * sizeof(Nd4jLong));
         auto pzTadOffsets = (Nd4jLong *) manager.replicatePointer(zTad.tadOffsets, zTad.numTads * sizeof(Nd4jLong));
 
+        shape::printShapeInfoLinear("x shape", xTad.tadOnlyShapeInfo);
+        shape::printShapeInfoLinear("z shape", zTad.tadOnlyShapeInfo);
+
         int lastDim = images->sizeAt(3);
         int rowDim = images->sizeAt(1);
         int colDim = images->sizeAt(2);
 
-        globalExtractPatches_<T><<<512, 512, 1024, *context->getCudaStream()>>>(images->getSpecialBuffer(), pxTadShape, pxTadOffsets, output->getSpecialBuffer(), pzTadShape, pzTadOffsets, xTad.numTads, sizeRow, sizeCol, stradeRow, stradeCol, rateRow, rateCol, theSame, lastDim, rowDim, colDim);
+        globalExtractPatches_<T><<<2, 32, 1024, *context->getCudaStream()>>>(images->getSpecialBuffer(), pxTadShape, pxTadOffsets, output->getSpecialBuffer(), pzTadShape, pzTadOffsets, xTad.numTads, sizeRow, sizeCol, stradeRow, stradeCol, rateRow, rateCol, theSame, lastDim, rowDim, colDim);
+
+        output->tickWriteDevice();
 
         manager.synchronize();
     }
