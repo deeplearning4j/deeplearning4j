@@ -339,7 +339,6 @@ public class Word2VecTests {
         System.out.println(Arrays.toString(lst.toArray()));
     }
 
-
     @Ignore
     @Test
     public void testWord2VecGoogleModelUptraining() throws Exception {
@@ -692,7 +691,8 @@ public class Word2VecTests {
         labels.add("car");
 
         INDArray matrix = vec.getWordVectors(labels);
-        assertEquals(matrix.getRow(0), vec.getWordVectorMatrix("UNK"));
+        for (int i = 0; i < labels.size(); ++i)
+            assertEquals(matrix.getRow(i), vec.getWordVectorMatrix("UNKNOWN"));
     }
 
     private static void printWords(String target, Collection<String> list, Word2Vec vec) {

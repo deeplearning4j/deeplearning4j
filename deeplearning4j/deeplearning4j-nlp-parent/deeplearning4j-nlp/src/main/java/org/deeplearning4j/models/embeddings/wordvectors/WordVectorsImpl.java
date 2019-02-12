@@ -6,7 +6,7 @@
  * https://www.apache.org/licenses/LICENSE-2.0.
  *
  * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUTду
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
  * License for the specific language governing permissions and limitations
  * under the License.
@@ -22,6 +22,7 @@ import lombok.NonNull;
 import lombok.Setter;
 import org.apache.commons.lang.ArrayUtils;
 import org.deeplearning4j.models.embeddings.WeightLookupTable;
+import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
 import org.deeplearning4j.models.embeddings.reader.ModelUtils;
 import org.deeplearning4j.models.embeddings.reader.impl.BasicModelUtils;
 import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;
@@ -230,11 +231,13 @@ public class WordVectorsImpl<T extends SequenceElement> implements WordVectors {
     public INDArray getWordVectors(@NonNull Collection<String> labels) {
         int indexes[] = new int[labels.size()];
         int cnt = 0;
+        boolean useIndexUnknown = useUnknown && vocab.containsWord(getUNK());
+
         for (String label : labels) {
             if (vocab.containsWord(label)) {
                 indexes[cnt] = vocab.indexOf(label);
             } else
-                indexes[cnt] = -1;
+                indexes[cnt] = useIndexUnknown ? vocab.indexOf(getUNK()) : -1;
             cnt++;
         }
 
@@ -242,7 +245,7 @@ public class WordVectorsImpl<T extends SequenceElement> implements WordVectors {
             indexes = ArrayUtils.removeElement(indexes, -1);
         }
         if (indexes.length == 0) {
-            return useUnknown ? getWordVectorMatrix(getUNK()) : Nd4j.empty(lookupTable.getWeights().dataType());
+                return Nd4j.empty(((InMemoryLookupTable)lookupTable).getSyn0().dataType());
         }
 
         INDArray result = Nd4j.pullRows(lookupTable.getWeights(), 1, indexes);
