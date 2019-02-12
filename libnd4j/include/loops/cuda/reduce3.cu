@@ -115,7 +115,7 @@ __device__ void Reduce3<X,Z>::execScalarCuda( void *vx, Nd4jLong *xShapeInfo,
 								void *vy, Nd4jLong *yShapeInfo,
 								void *extraParams,
 								void *vz, Nd4jLong *zShapeInfo, 
-								int *allocationPointer, void *reductionBuffer, Nd4jLong *tadOnlyShapeInfo) {
+								int *allocationPointer, void *reductionBuffer, Nd4jLong *tadOnlyShapeInfo) {    
 
 	auto x = reinterpret_cast<X*>(vx);
 	auto y = reinterpret_cast<X*>(vy);
@@ -150,16 +150,13 @@ __device__ void Reduce3<X,Z>::execScalarCuda( void *vx, Nd4jLong *xShapeInfo,
 
         if(xOrder == yOrder && (xEws > 0 && yEws > 0) && shape::strideDescendingCAscendingF(xShapeInfo) && shape::strideDescendingCAscendingF(yShapeInfo)) {
 
-            if (xEws == 1 && yEws == 1) {
-                for(Nd4jLong i = tid; i < length; i+= gridDim.x * blockDim.x) {
-					sPartials[threadIdx.x] = OpType::update(sPartials[threadIdx.x], OpType::opAtomic(x[i], y[i], extraZ), extraZ);
-					//printf("X: %f; Y: %f; Z: %f;\n", (float) x[i], (float) y[i], (float) tzf);
-                }
+            if (xEws == 1 && yEws == 1) {                
+                for(Nd4jLong i = tid; i < length; i+= gridDim.x * blockDim.x)                     
+					sPartials[threadIdx.x] = OpType::update(sPartials[threadIdx.x], OpType::opAtomic(x[i], y[i], extraZ), extraZ);				                
             }
             else {
-                for(Nd4jLong i = tid; i < length; i+= gridDim.x * blockDim.x) {
-					sPartials[threadIdx.x] = OpType::update(sPartials[threadIdx.x], OpType::opAtomic(x[i * xEws], y[i * yEws], extraZ), extraZ);
-				}
+                for(Nd4jLong i = tid; i < length; i+= gridDim.x * blockDim.x) 
+					sPartials[threadIdx.x] = OpType::update(sPartials[threadIdx.x], OpType::opAtomic(x[i * xEws], y[i * yEws], extraZ), extraZ);				
             }
         }
         else {

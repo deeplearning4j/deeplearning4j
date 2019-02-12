@@ -117,7 +117,13 @@ void col2imCudaLauncher(nd4j::graph::LaunchContext &context, const void *x, void
 
 //////////////////////////////////////////////////////////////////////////
 void col2im(graph::LaunchContext& context, const NDArray& input, NDArray& output, const int sH, const int sW, const int pH, const int pW, const int iH, const int iW, const int dH, const int dW) {
+    
+    if(!input.isActualOnDeviceSide()) input.syncToDevice();
+
     BUILD_SINGLE_SELECTOR(output.dataType(), col2imCudaLauncher, (context, input.getSpecialBuffer(), output.getSpecialBuffer(), input.getSpecialShapeInfo(), output.getSpecialShapeInfo(), sH, sW, pH, pW, iH, iW, dH, dW), FLOAT_TYPES);
+
+    input.tickReadDevice();
+    output.tickWriteDevice();
 }
 
 

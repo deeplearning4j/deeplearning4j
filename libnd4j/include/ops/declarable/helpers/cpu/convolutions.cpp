@@ -55,7 +55,7 @@ static void vol2col_(const NDArray& volume, NDArray& columns, const int sD, cons
     const Nd4jLong volStride1 = volume.stridesOf()[1];
     const Nd4jLong volStride2 = volume.stridesOf()[2];
     const Nd4jLong volStride3 = volume.stridesOf()[3];
-    const Nd4jLong volStride4 = volume.stridesOf()[4];    
+    const Nd4jLong volStride4 = volume.stridesOf()[4];
     
     T* colBuff = columns.bufferAsT<T>();
     T* volBuff = const_cast<NDArray&>(volume).bufferAsT<T>();

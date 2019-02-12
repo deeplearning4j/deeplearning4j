@@ -118,13 +118,19 @@ static void im2colCudaLauncher(nd4j::graph::LaunchContext& context, const void *
 
 //////////////////////////////////////////////////////////////////////////
 void im2col(nd4j::graph::LaunchContext& context, const NDArray& in, NDArray& out, const int kH, const int kW, const int sH, const int sW, const int pH, const int pW, const int dH, const int dW, const NDArray& arrZeroPadVal) {
+
+    if(!in.isActualOnDeviceSide()) in.syncToDevice();
+
     BUILD_SINGLE_SELECTOR(out.dataType(), im2colCudaLauncher, (context, in.getSpecialBuffer(), out.getSpecialBuffer(), in.getSpecialShapeInfo(), out.getSpecialShapeInfo(), kH, kW, sH, sW, pH, pW, dH, dW, arrZeroPadVal.e<double>(0)), FLOAT_TYPES);
+
+    in.tickReadDevice();
+    out.tickWriteDevice();
 }
 
 
 
 
-BUILD_SINGLE_TEMPLATE(template void im2colCudaLauncher, (nd4j::graph::LaunchContext& context, const void *in, void *out, const Nd4jLong *inShapeInfo, const Nd4jLong *xShape, const int kY, const int kX, const int sH, const int sW, const int pH, const int pW, const int dH, const int dW, const double zeroPadVal), FLOAT_TYPES);
+BUILD_SINGLE_TEMPLATE(template void im2colCudaLauncher, (nd4j::graph::LaunchContext& context, const void *in, void *out, const Nd4jLong *inShapeInfo, const Nd4jLong *outShapeInfo, const int kY, const int kX, const int sH, const int sW, const int pH, const int pW, const int dH, const int dW, const double zeroPadVal), FLOAT_TYPES);
 
 }
 }

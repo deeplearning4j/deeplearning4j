@@ -23,6 +23,7 @@
 #include <exceptions/datatype_exception.h>
 #include <helpers/CudaLaunchHelper.h>
 #include <helpers/ShapeBuilders.h>
+#include <PointersManager.h>
 
 #include <loops/transform_float.h>
 #include <loops/transform_bool.h>
@@ -995,7 +996,7 @@ void NativeOpExecutioner::execReduce3Scalar(nd4j::graph::LaunchContext *lc,
 
     if (!DataTypeUtils::isR(zType))
         throw nd4j::datatype_exception::build("NativeOpExecutioner::execReduce3Scalar requires Z operand to have floating point data type", zType);
-
+    
     BUILD_DOUBLE_SELECTOR(xType, zType, functions::reduce3::Reduce3, ::execScalar(launchDims, stream, opNum, dX, dXShapeInfo, dY, dYShapeInfo, extraParams, dZ, dZShapeInfo, allocationPointer, reductionPointer, nullptr), LIBND4J_TYPES, FLOAT_TYPES);
 }
 

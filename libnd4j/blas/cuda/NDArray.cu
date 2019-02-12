@@ -43,6 +43,7 @@
 #include <exceptions/cuda_exception.h>
 #include <specials_cuda.h>
 #include <loops/special_kernels.h>
+#include <PointersManager.h>
 #include "../NDArray.hpp"
 
 namespace nd4j {
@@ -175,7 +176,7 @@ NDArray::NDArray(const char order, const std::vector<Nd4jLong> &shape, const std
 
     for(Nd4jLong i=0; i < _length; ++i) {
         BUILD_SINGLE_PARTIAL_SELECTOR(dtype, templatedDoubleAssign<, double>(_buffer, i, reinterpret_cast<const void *>(data.data()), i), LIBND4J_TYPES);
-    }
+    }    
         
     syncToDevice();
     tickReadHost();
@@ -2422,8 +2423,8 @@ void NDArray::setShapeInfo(Nd4jLong *shapeInfo, const nd4j::DataType dtype) {
         NDArray tmp = NDArrayFactory::create<float>(0.f, _context); // scalar = 0
         NDArray::prepareSpecialUse({&tmp}, {this, other});
 
-        ExtraArguments extras({eps}); 
-        NativeOpExecutioner::execReduce3Scalar(_context, reduce3::EqualsWithEps, _buffer, _shapeInfo, _bufferD, _shapeInfoD, extras.argumentsAsT(DataType::FLOAT32), other->_buffer, other->_shapeInfo, other->_bufferD, other->_shapeInfoD, tmp.buffer(), tmp.shapeInfo(), tmp._bufferD, tmp._shapeInfoD);
+        ExtraArguments extras({eps});
+        NativeOpExecutioner::execReduce3Scalar(_context, reduce3::EqualsWithEps, _buffer, _shapeInfo, _bufferD, _shapeInfoD, extras.argumentsAsT(DataType::FLOAT32), other->_buffer, other->_shapeInfo, other->_bufferD, other->_shapeInfoD, tmp._buffer, tmp._shapeInfo, tmp._bufferD, tmp._shapeInfoD);
 
         NDArray::registerSpecialUse({&tmp}, {this, other});
 
