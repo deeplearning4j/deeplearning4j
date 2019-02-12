@@ -164,6 +164,8 @@ namespace functions {
                     tad->createTadOnlyShapeInfo();
                     tad->createOffsets();
 
+                    nd4j_printf("Calculating TAD\n","");
+
                     if (tad->dimensionLength < 1) {
                         delete tad;
                         return;
@@ -179,12 +181,12 @@ namespace functions {
                 auto tadEWS = shape::elementWiseStride(tadOnlyShapeInfo);
 
                 int tadsPerThread = resultLength / TAD_THRESHOLD;
-  //              int num_threads = nd4j::math::nd4j_max<int>(1, tadsPerThread);
-    //            num_threads = nd4j::math::nd4j_min<int>(num_threads, omp_get_max_threads());
+                int num_threads = nd4j::math::nd4j_max<int>(1, tadsPerThread);
+                num_threads = nd4j::math::nd4j_min<int>(num_threads, omp_get_max_threads());
 
                 if (tadEWS > 0 && (numTads == 1 || shape::isVector(tadOnlyShapeInfo) || shape::isScalar(tadOnlyShapeInfo))) {
 
-#pragma omp parallel for schedule(static, TAD_THRESHOLD) proc_bind(AFFINITY) default(shared)
+#pragma omp parallel for schedule(guided) num_threads(num_threads) if(num_threads>1) proc_bind(AFFINITY) default(shared)
                     for (int i = 0; i < resultLength; i++) {
                         auto iter = x + tadOffsets[i];
                         auto start = OpType::startingValue(iter);
@@ -207,15 +209,16 @@ namespace functions {
                 }
                 else {
 
-#pragma omp  parallel for schedule(static, TAD_THRESHOLD) proc_bind(AFFINITY) default(shared)
+#pragma omp  parallel for schedule(guided) num_threads(num_threads) if(num_threads>1) proc_bind(AFFINITY) default(shared)
                     for (int i = 0; i < resultLength; i++) {
                         
                         auto offset = tadOffsets[i];
-                        auto start = OpType::startingValue(x + offset);
+                        auto tx = x + offset;
+                        auto start = OpType::startingValue(tx);
 
                         for (int j = 0; j < tadLength; j++) {
-                            auto xOffset = offset + shape::getIndexOffset(j, tadOnlyShapeInfo, tadLength);
-                            start = OpType::update(start, OpType::op(x[xOffset], extraParams), extraParams);
+                            auto xOffset = shape::getIndexOffset(j, tadOnlyShapeInfo, tadLength);
+                            start = OpType::update(start, OpType::op(tx[xOffset], extraParams), extraParams);
                         }
 
                         z[i] = OpType::postProcess(start, tadLength, extraParams);;

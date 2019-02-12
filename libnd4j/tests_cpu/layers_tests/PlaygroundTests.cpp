@@ -1003,3 +1003,33 @@ TEST_F(PlaygroundTests, test_batched_skipgram_1) {
 
     delete expTable;
 }
+
+TEST_F(PlaygroundTests, test_reduce_float) {
+    auto array = NDArrayFactory::create<float>('c', {32, 128, 256, 256});
+    auto target = NDArrayFactory::create<float>('c', {32, 128});
+    std::array<int,2> dims = {2, 3};
+    shape::TAD xTad(array.shapeInfo(), dims.data(), dims.size());
+    xTad.createTadOnlyShapeInfo();
+    xTad.createOffsets();
+
+    // warm up
+    for (int e = 0; e < 5; e++) {
+        NativeOpExcutioner::execReduceFloat(reduce::Mean, array.buffer(), array.shapeInfo(), nullptr, target.buffer(),
+                                            target.shapeInfo(), dims.data(), dims.size(), xTad.tadOnlyShapeInfo,
+                                            xTad.tadOffsets);
+    }
+
+    int iterations = 100;
+    auto timeStart = std::chrono::system_clock::now();
+    for (int e = 0; e < iterations; e++) {
+        NativeOpExcutioner::execReduceFloat(reduce::Mean, array.buffer(), array.shapeInfo(), nullptr, target.buffer(),
+                                            target.shapeInfo(), dims.data(), dims.size(), xTad.tadOnlyShapeInfo,
+                                            xTad.tadOffsets);
+    }
+    auto timeEnd = std::chrono::system_clock::now();
+    auto spanTime = std::chrono::duration_cast<std::chrono::microseconds> ((timeEnd - timeStart)/iterations).count();
+    auto ttlTime = std::chrono::duration_cast<std::chrono::milliseconds> ((timeEnd - timeStart)).count();
+
+    nd4j_printf("average time: %lld us;\n", spanTime);
+    nd4j_printf("total time: %lld ms;\n", ttlTime);
+}
