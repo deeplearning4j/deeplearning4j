@@ -816,19 +816,18 @@ public class WordVectorSerializerTest {
         assertEquals(wordB, WordVectorSerializer.decodeB64(wordB));
 
     }
-    
+
     @Test
     public void testFastText() {
 
         File[] files = {fastTextRaw, fastTextZip, fastTextGzip};
         for (File file : files) {
             try {
-                Word2Vec word2Vec = WordVectorSerializer.readWord2VecModel(file);
-                String word = "test";
-                Collection lst = word2Vec.wordsNearest(word, 20);
-                System.out.println(word + " -> " + lst);
+                Word2Vec word2Vec = WordVectorSerializer.readAsCsv(file);
+                assertEquals(99,  word2Vec.getVocab().numWords());
+
             } catch (Exception e) {
-                fail("Failure for input file " + file.getAbsolutePath());
+                fail("Failure for input file " + file.getAbsolutePath() + " " + e.getMessage());
             }
         }
     }
