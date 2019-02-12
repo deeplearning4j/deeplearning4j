@@ -3266,6 +3266,14 @@ public class SameDiff {
         return updateVariableNameAndReference(ret, name);
     }
 
+    /**
+     * 3D CNN deconvolution operation with or without optional bias
+     * @param name    Name of the output variable
+     * @param input   Input array - shape [bS, iD, iH, iW, iC] (NDHWC) or [bS, iC, iD, iH, iW] (NCDHW)
+     * @param weights Weights array - shape [kD, kH, kW, oC, iC]
+     * @param bias    Bias array - optional, may be null. If non-null, must have shape [outputChannels]
+     * @param config  Configuration
+     */
     public SDVariable deconv3d(String name, SDVariable input, SDVariable weights, SDVariable bias, DeConv3DConfig config){
         SDVariable ret = f().deconv3d(input, weights, bias, config);
         return updateVariableNameAndReference(ret, name);
