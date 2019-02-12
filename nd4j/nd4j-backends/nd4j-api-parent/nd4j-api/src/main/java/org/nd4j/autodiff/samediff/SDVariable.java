@@ -1674,7 +1674,8 @@ public class SDVariable extends DifferentialFunction implements Serializable {
 
     @Override
     public String toString() {
-        return "SDVariable(name=\"" + varName + "\",variableType=" + variableType + ",dtype=" + dataType + ")";
+        return "SDVariable(name=\"" + varName + "\",variableType=" + variableType + ",dtype=" + dataType +
+                (variableType == VariableType.PLACEHOLDER && shape != null ? ",shape=" + Arrays.toString(shape): "") + ")";
     }
 
     @Override

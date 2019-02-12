@@ -45,6 +45,7 @@ public class DeConv3DDerivative extends DynamicCustomOp {
     public DeConv3DDerivative(SameDiff sameDiff, @NonNull SDVariable input, @NonNull SDVariable weights, SDVariable bias, SDVariable grad, DeConv3DConfig config) {
         super(sameDiff, toArr(input, weights, bias, grad));
         this.config = config;
+        addArgs();
     }
 
     private static SDVariable[] toArr(SDVariable input, SDVariable weights, SDVariable bias, SDVariable grad){

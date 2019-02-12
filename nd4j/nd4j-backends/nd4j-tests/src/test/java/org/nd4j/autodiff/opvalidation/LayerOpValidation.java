@@ -529,7 +529,7 @@ public class LayerOpValidation extends BaseOpValidation {
                             break;
                         case 4:
                             //Deconv3d
-                            msg = "4 - deconvcd, ncdhw=" + ncdhw;
+                            msg = "4 - deconv3d, ncdhw=" + ncdhw;
                             SDVariable wDeconv = sd.var(Nd4j.rand(new int[]{2,2,2,3,nIn}));  //[kD, kH, kW, oC, iC]
                             SDVariable bDeconv = sd.var(Nd4j.rand(new int[]{3}));
                             out = sd.deconv3d("Deconv3d", in, wDeconv, bDeconv, DeConv3DConfig.builder()
