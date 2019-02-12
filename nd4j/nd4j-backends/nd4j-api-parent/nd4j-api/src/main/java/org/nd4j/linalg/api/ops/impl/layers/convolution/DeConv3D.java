@@ -35,6 +35,7 @@ import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
 
 import java.lang.reflect.Field;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -53,8 +54,7 @@ public class DeConv3D extends DynamicCustomOp {
     protected DeConv3DConfig config;
 
     public DeConv3D(SameDiff sameDiff, @NonNull SDVariable input, @NonNull SDVariable weights, SDVariable bias, DeConv3DConfig config) {
-        super(null, toArr(input, weights, bias));
-        this.sameDiff = sameDiff;
+        super(sameDiff, toArr(input, weights, bias));
         this.config = config;
         addArgs();
     }
@@ -201,15 +201,12 @@ public class DeConv3D extends DynamicCustomOp {
         return "deconv3d";
     }
 
-    @Override
-    public String tensorflowName() {
-        return "Conv2DTranspose";
-    }
-
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {
-        throw new UnsupportedOperationException("Not yet implemneted");
+        SDVariable bias = args().length > 2 ? arg(2) : null;
+        SDVariable[] outVars = f().deconv3dDerivative(arg(0), arg(1), bias, f1.get(0), config);
+        return Arrays.asList(outVars);
     }
 
     @Override

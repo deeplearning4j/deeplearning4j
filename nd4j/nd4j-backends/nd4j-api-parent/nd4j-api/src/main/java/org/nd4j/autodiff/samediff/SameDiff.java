@@ -3266,6 +3266,11 @@ public class SameDiff {
         return updateVariableNameAndReference(ret, name);
     }
 
+    public SDVariable deconv3d(String name, SDVariable input, SDVariable weights, SDVariable bias, DeConv3DConfig config){
+        SDVariable ret = f().deconv3d(input, weights, bias, config);
+        return updateVariableNameAndReference(ret, name);
+    }
+
 
     /**
      * Convolution 3D operation without bias
