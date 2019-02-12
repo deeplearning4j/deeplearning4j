@@ -1932,7 +1932,12 @@ template <typename T>
 
 //////////////////////////////////////////////////////////////////////    
     INLINEDEF _CUDA_HD Nd4jLong getIndexOffset(Nd4jLong index, const Nd4jLong *shapeInfo, Nd4jLong arrLen) {
-        
+        if(elementWiseStride(shapeInfo) > 0 && order(shapeInfo) == 'c')
+            if (elementWiseStride(shapeInfo) == 1)
+                return index;
+            else
+                return elementWiseStride(shapeInfo) * index;
+
         Nd4jLong offset = 0;
 
         for(int i = 1; i <= *shapeInfo; ++i) {
