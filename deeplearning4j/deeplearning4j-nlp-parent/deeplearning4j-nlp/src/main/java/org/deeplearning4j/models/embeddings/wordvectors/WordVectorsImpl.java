@@ -242,7 +242,7 @@ public class WordVectorsImpl<T extends SequenceElement> implements WordVectors {
             indexes = ArrayUtils.removeElement(indexes, -1);
         }
         if (indexes.length == 0) {
-            return useUnknown ? getWordVectorMatrix(UNK) : Nd4j.empty(lookupTable.getWeights().dataType());
+            return useUnknown ? getWordVectorMatrix(getUNK()) : Nd4j.empty(lookupTable.getWeights().dataType());
         }
 
         INDArray result = Nd4j.pullRows(lookupTable.getWeights(), 1, indexes);
