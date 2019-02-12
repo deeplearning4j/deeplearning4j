@@ -171,7 +171,7 @@ namespace functions {
 
                 if (tadEWS > 0 && (numTads == 1 || shape::isVector(tadOnlyShapeInfo) || shape::isScalar(tadOnlyShapeInfo))) {
 
-//#pragma omp parallel for schedule(guided) num_threads(num_threads) if (num_threads > 1) proc_bind(AFFINITY) default(shared)
+#pragma omp parallel for schedule(static, TAD_THRESHOLD) proc_bind(AFFINITY) default(shared)
                     for (int i = 0; i < resultLength; i++) {
                         auto iter = x + tadOffsets[i];
                         auto start = OpType::startingValue(iter);
@@ -194,7 +194,7 @@ namespace functions {
                 }
                 else {
 
-//#pragma omp  parallel for schedule(guided) num_threads(num_threads) if (num_threads > 1) proc_bind(AFFINITY) default(shared)
+#pragma omp  parallel for schedule(static, TAD_THRESHOLD) proc_bind(AFFINITY) default(shared)
                     for (int i = 0; i < resultLength; i++) {
 
                         auto offset = tadOffsets[i];
