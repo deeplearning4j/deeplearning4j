@@ -1609,10 +1609,12 @@ public class WordVectorSerializer {
         try (ZipInputStream zipStream = new ZipInputStream(new BufferedInputStream(new FileInputStream(modelFile)))) {
 
             ZipEntry entry = null;
-            while ((entry = zipStream.getNextEntry()) != null) {
+            if ((entry = zipStream.getNextEntry()) != null) {
 
-                InputStream input = zipFile.getInputStream(entry);
-                return input;
+                inputStream = zipFile.getInputStream(entry);
+            }
+            if (zipStream.getNextEntry() != null) {
+                throw new RuntimeException("Zip archive " + modelFile + " contains more than 1 file");
             }
         }
         return inputStream;
