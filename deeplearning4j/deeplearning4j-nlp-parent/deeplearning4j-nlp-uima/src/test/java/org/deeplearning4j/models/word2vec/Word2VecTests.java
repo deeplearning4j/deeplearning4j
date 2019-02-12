@@ -643,7 +643,57 @@ public class Word2VecTests {
         assertTrue(configuration.isUseUnknown());
     }
 
+    @Test
+    public void testWordVectorsAbsentLabels() throws Exception {
 
+        SentenceIterator iter = new BasicLineIterator(inputFile.getAbsolutePath());
+        // Split on white spaces in the line to get words
+        TokenizerFactory t = new DefaultTokenizerFactory();
+        t.setTokenPreProcessor(new CommonPreprocessor());
+
+        Word2Vec vec = new Word2Vec.Builder().minWordFrequency(10).useUnknown(true)
+                .iterations(1).layerSize(100)
+                .stopWords(new ArrayList<String>()).seed(42).learningRate(0.025).minLearningRate(0.001)
+                .sampling(0).elementsLearningAlgorithm(new CBOW<VocabWord>()).epochs(1).windowSize(5)
+                .useHierarchicSoftmax(true).allowParallelTokenization(true)
+                .useUnknown(false)
+                .modelUtils(new FlatModelUtils<VocabWord>()).iterate(iter).tokenizerFactory(t).build();
+
+        vec.fit();
+
+        ArrayList<String> labels = new ArrayList<>();
+        labels.add("fewfew");
+
+        INDArray matrix = vec.getWordVectors(labels);
+        assertTrue(matrix.isEmpty());
+    }
+
+    @Test
+    public void testWordVectorsAbsentLabels_WithUnknown() throws Exception {
+
+        SentenceIterator iter = new BasicLineIterator(inputFile.getAbsolutePath());
+        // Split on white spaces in the line to get words
+        TokenizerFactory t = new DefaultTokenizerFactory();
+        t.setTokenPreProcessor(new CommonPreprocessor());
+
+        Word2Vec vec = new Word2Vec.Builder().minWordFrequency(1).iterations(1).batchSize(8192).layerSize(100)
+                .stopWords(new ArrayList<String>()).seed(42).learningRate(0.025).minLearningRate(0.001)
+                .sampling(0).elementsLearningAlgorithm(new SkipGram<VocabWord>())
+                //.negativeSample(10)
+                .epochs(1).windowSize(5).allowParallelTokenization(true)
+                .workers(4)
+                .modelUtils(new BasicModelUtils<VocabWord>()).iterate(iter).tokenizerFactory(t)
+                .useUnknown(true).unknownElement(new VocabWord(1, "UNKOWN")).build();
+
+        vec.fit();
+
+        ArrayList<String> labels = new ArrayList<>();
+        labels.add("bus");
+        labels.add("car");
+
+        INDArray matrix = vec.getWordVectors(labels);
+        assertEquals(matrix.getRow(0), vec.getWordVectorMatrix("UNK"));
+    }
 
     private static void printWords(String target, Collection<String> list, Word2Vec vec) {
         System.out.println("Words close to [" + target + "]:");
