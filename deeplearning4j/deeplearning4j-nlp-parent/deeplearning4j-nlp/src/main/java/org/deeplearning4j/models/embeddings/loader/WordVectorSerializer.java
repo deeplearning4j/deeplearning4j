@@ -1596,9 +1596,39 @@ public class WordVectorSerializer {
      */
     @Deprecated
     public static WordVectors loadTxtVectors(File vectorsFile)
-            throws FileNotFoundException, UnsupportedEncodingException {
+            throws IOException {
         Pair<InMemoryLookupTable, VocabCache> pair = loadTxt(vectorsFile);
         return fromPair(pair);
+    }
+
+    private static InputStream decompressZip(File modelFile) throws IOException {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        ZipFile zipFile = new ZipFile(modelFile);
+        InputStream inputStream = null;
+
+        try (ZipInputStream zipStream = new ZipInputStream(new BufferedInputStream(new FileInputStream(modelFile)))) {
+
+            ZipEntry entry = null;
+            while ((entry = zipStream.getNextEntry()) != null) {
+
+                InputStream input = zipFile.getInputStream(entry);
+                return input;
+            }
+        }
+        return inputStream;
+    }
+
+    private static BufferedReader createReader(File vectorsFile) throws IOException {
+        InputStreamReader inputStreamReader;
+        try {
+            inputStreamReader = new InputStreamReader(decompressZip(vectorsFile));
+        } catch (IOException e) {
+            inputStreamReader = new InputStreamReader(GzipUtils.isCompressedFilename(vectorsFile.getName())
+                    ? new GZIPInputStream(new FileInputStream(vectorsFile))
+                    : new FileInputStream(vectorsFile), "UTF-8");
+        }
+        BufferedReader reader = new BufferedReader(inputStreamReader);
+        return reader;
     }
 
     /**
@@ -1609,10 +1639,10 @@ public class WordVectorSerializer {
      * @throws FileNotFoundException if the input file does not exist
      */
     public static Pair<InMemoryLookupTable, VocabCache> loadTxt(File vectorsFile)
-            throws FileNotFoundException, UnsupportedEncodingException {
-        BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(vectorsFile), "UTF-8"));
-        AbstractCache cache = new AbstractCache<>();
+            throws IOException, UnsupportedEncodingException {
 
+        AbstractCache cache = new AbstractCache<>();
+        BufferedReader reader = createReader(vectorsFile);
         LineIterator iter = IOUtils.lineIterator(reader);
         String line = null;
         boolean hasHeader = false;
@@ -1660,7 +1690,8 @@ public class WordVectorSerializer {
         if (hasHeader) {
             line = "";
             iter.close();
-            reader = new BufferedReader(new FileReader(vectorsFile));
+            //reader = new BufferedReader(new FileReader(vectorsFile));
+            reader = createReader(vectorsFile);
             iter = IOUtils.lineIterator(reader);
             iter.nextLine();
         }
@@ -2327,7 +2358,7 @@ public class WordVectorSerializer {
         return readWord2VecModel(new File(path), extendedModel);
     }
 
-    private static Word2Vec readAsBinaryNoLineBreaks(@NonNull File file) {
+    public static Word2Vec readAsBinaryNoLineBreaks(@NonNull File file) {
 
         boolean originalPeriodic = Nd4j.getMemoryManager().isPeriodicGcActive();
         int originalFreq = Nd4j.getMemoryManager().getOccasionalGcFrequency();
@@ -2348,7 +2379,7 @@ public class WordVectorSerializer {
         }
     }
 
-    private static Word2Vec readAsBinary(@NonNull File file) {
+    public static Word2Vec readAsBinary(@NonNull File file) {
         boolean originalPeriodic = Nd4j.getMemoryManager().isPeriodicGcActive();
         int originalFreq = Nd4j.getMemoryManager().getOccasionalGcFrequency();
 
@@ -2370,7 +2401,7 @@ public class WordVectorSerializer {
         }
     }
 
-    private static Word2Vec readAsCsv(@NonNull File file) {
+    public static Word2Vec readAsCsv(@NonNull File file) {
 
         Word2Vec vec;
         VectorsConfiguration configuration = new VectorsConfiguration();
@@ -2392,7 +2423,7 @@ public class WordVectorSerializer {
             vec = builder.build();
             return vec;
         } catch (Exception ex) {
-            throw new RuntimeException("Unable to load model in binary format");
+            throw new RuntimeException("Unable to load model in CSV format");
         }
     }
 

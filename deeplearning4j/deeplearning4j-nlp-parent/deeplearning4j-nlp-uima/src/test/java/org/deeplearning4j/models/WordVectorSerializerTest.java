@@ -71,6 +71,7 @@ public class WordVectorSerializerTest {
     public TemporaryFolder testDir = new TemporaryFolder();
 
     private File textFile, binaryFile, textFile2;
+    private File fastTextRaw, fastTextZip, fastTextGzip;
     String pathToWriteto;
 
     private Logger logger = LoggerFactory.getLogger(WordVectorSerializerTest.class);
@@ -87,6 +88,19 @@ public class WordVectorSerializerTest {
         }
         pathToWriteto = new ClassPathResource("word2vecserialization/testing_word2vec_serialization.txt").getFile()
                         .getAbsolutePath();
+        if (fastTextRaw == null) {
+            fastTextRaw = new ClassPathResource("word2vecserialization/fast_text.vec").getFile();
+        }
+        if (fastTextZip == null) {
+            File dir = testDir.newFolder();
+            fastTextZip = new File(dir, "fast_text.vec.zip");
+            FileUtils.copyFile(new ClassPathResource("word2vecserialization/fast_text.vec.zip").getFile(), fastTextZip);
+        }
+        if (fastTextGzip == null) {
+            File dir = testDir.newFolder();
+            fastTextGzip = new File(dir, "fast_text.vec.gz");
+            FileUtils.copyFile(new ClassPathResource("word2vecserialization/fast_text.vec.gz").getFile(), fastTextGzip);
+        }
         FileUtils.deleteDirectory(new File("word2vec-index"));
     }
 
@@ -802,4 +816,21 @@ public class WordVectorSerializerTest {
         assertEquals(wordB, WordVectorSerializer.decodeB64(wordB));
 
     }
+    
+    @Test
+    public void testFastText() {
+
+        File[] files = {fastTextRaw, fastTextZip, fastTextGzip};
+        for (File file : files) {
+            try {
+                Word2Vec word2Vec = WordVectorSerializer.readWord2VecModel(file);
+                String word = "test";
+                Collection lst = word2Vec.wordsNearest(word, 20);
+                System.out.println(word + " -> " + lst);
+            } catch (Exception e) {
+                fail("Failure for input file " + file.getAbsolutePath());
+            }
+        }
+    }
+
 }
