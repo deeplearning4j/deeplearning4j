@@ -1877,6 +1877,8 @@ public interface INDArray extends Serializable, AutoCloseable {
      */
     int getInt(int... indices);
 
+    long getLong(long index);
+
     long getLong(long... indices);
 
     /**

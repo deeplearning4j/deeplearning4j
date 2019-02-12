@@ -1509,15 +1509,60 @@ namespace simdOps {
 	};
 
 	template <typename X>
-	class Swish {
-	public:
-		no_op_exec_special_same
-		no_op_exec_special_same_cuda
+    class Swish {
+    public:
+        no_op_exec_special_same
+        no_op_exec_special_same_cuda
 
-		op_def static X op(X d1, X *params) {
-			return d1 * nd4j::math::nd4j_sigmoid<X,X>(d1);
-		}
-	};
+        op_def static X op(X d1, X *params) {
+            return d1 * nd4j::math::nd4j_sigmoid<X,X>(d1);
+        }
+    };
+
+    template <typename X>
+    class GELU {
+    public:
+        no_op_exec_special_same
+        no_op_exec_special_same_cuda
+
+        op_def static X op(X d1, X *params) {
+            bool precise = params != nullptr && params[0] > static_cast<X>(0.0f) ? true : false;
+
+            if (precise) {
+                auto sp = nd4j::math::nd4j_sqrt<X, X>(static_cast<X>(2) / static_cast<X>(M_PI));
+                auto xp = d1 + nd4j::math::nd4j_pow<X, X, X>(static_cast<X>(0.044715) * d1, static_cast<X>(3));
+                return (d1 / static_cast<X>(2)) * (static_cast<X>(1) + nd4j::math::nd4j_tanh<X, X>(sp * xp));
+            } else {
+                return d1 * nd4j::math::nd4j_sigmoid<X,X>(static_cast<X>(1.702f) * d1);
+            }
+        }
+    };
+
+    template <typename X>
+    class GELUDerivative {
+    public:
+        no_op_exec_special_same
+        no_op_exec_special_same_cuda
+
+        op_def static X op(X d1, X *params) {
+            bool precise = params != nullptr && params[0] > static_cast<X>(0.0f) ? true : false;
+
+            if (precise) {
+                auto x79 = static_cast<X>(0.797885) * d1;
+                auto x03 = nd4j::math::nd4j_pow<X, int, X>(static_cast<X>(0.0356774) * d1, 3);
+                auto x39 = static_cast<X>(0.398942) * d1;
+                auto x05 = nd4j::math::nd4j_pow<X, int, X>(static_cast<X>(0.0535161) * d1, 3);
+                auto scz = nd4j::math::nd4j_sech<X, X>(x79 + x03);
+                // 0.5 + (0.398942 x + 0.0535161 x^3) Sech[0.797885 x + 0.0356774 x^3]^2 + 0.5 Tanh[0.797885 x + 0.0356774 x^3]
+                return static_cast<X>(0.5) + (x39 + x05) * nd4j::math::nd4j_pow<X, int, X>(scz, 2) + static_cast<X>(0.5) * nd4j::math::nd4j_tanh<X, X>(x79 + x03);
+            } else {
+                auto x17 = static_cast<X>(1.702f) * d1;
+                auto ep = nd4j::math::nd4j_pow<X,X,X>(static_cast<X>(M_E), x17);
+                // (E^(1.702 x) (1. + E^(1.702 x) + 1.702 x))/(1. + E^(1.702 x))^2
+                return (ep * (static_cast<X>(1.f) + ep + x17)) / nd4j::math::nd4j_pow<X, int, X>((static_cast<X>(1.f) + ep), 2);
+            }
+        }
+    };
 
 
 	template <typename X>

@@ -91,6 +91,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.indexing.conditions.Condition;
 import org.nd4j.linalg.learning.GradientUpdater;
+import org.nd4j.linalg.learning.regularization.Regularization;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.primitives.AtomicBoolean;
 import org.nd4j.linalg.primitives.Pair;
@@ -397,8 +398,8 @@ public class SameDiff {
         Map<Integer, Integer> thisVertexIdToNew = new HashMap<>();
         int idx = 1;
         for (val var : variables()) {
-            val clone = cloner.deepCloneDontCloneInstances(var, var.getSameDiff());
-            val newVar = sameDiff.var(clone);
+            SDVariable clone = cloner.deepCloneDontCloneInstances(var, var.getSameDiff());
+            SDVariable newVar = sameDiff.var(clone);
             if (var.getArr() != null && var.getVariableType() != VariableType.ARRAY) {      //ARRAY type = "activations" - are overwritten anyway
                 sameDiff.associateArrayWithVariable(var.getArr(), newVar);
             }
@@ -1534,6 +1535,19 @@ public class SameDiff {
                     //Note: don't need to divide by minibatch - that should be handled in loss function and hence loss function gradients,
                     // which should flow through to here
 
+                    //Pre-apply regularization (L1, L2)
+                    List<Regularization> r = trainingConfig.getRegularization();
+                    int iterCount = trainingConfig.getIterationCount();
+                    int epochCount = trainingConfig.getEpochCount();
+                    double lr = trainingConfig.getUpdater().hasLearningRate() ? trainingConfig.getUpdater().getLearningRate(iteration, epochCount) : 1.0;
+                    if(r != null && r.size() > 0){
+                        for(Regularization reg : r){
+                            if(reg.applyStep() == Regularization.ApplyStep.BEFORE_UPDATER){
+                                reg.apply(param, grad, lr, iterCount, epochCount);
+                            }
+                        }
+                    }
+
                     //Apply updater. Note that we need to reshape to [1,length] for updater
                     INDArray reshapedView = Shape.newShapeNoCopy(grad, new long[]{1, grad.length()}, grad.ordering() == 'f');       //TODO make sure we always reshape in same order!
                     Preconditions.checkState(reshapedView != null, "Error reshaping array for parameter \"%s\": array is a view?", s);
@@ -1545,18 +1559,13 @@ public class SameDiff {
                                 + "\": either parameter size is inconsistent between iterations, or \"" + s + "\" should not be a trainable parameter?", t);
                     }
 
-                    //L1 and L2 regularization:
-                    if (trainingConfig.getL1() > 0) {
-                        //L1: loss += lambda * sum_i |param_i|
-                        //dL/dp_i: lambda * sgn(param_i)
-                        INDArray signProd = Transforms.sign(param, true).muli(trainingConfig.getL1());
-                        grad.addi(signProd);
-                    }
-                    if (trainingConfig.getL2() > 0) {
-                        //L2: loss += 0.5 * lambda * sum_i param_i^2
-                        //dL/dp_i: lambda * param_i
-                        //TODO axpy optimization = safe/possible?
-                        grad.addi(param.mul(trainingConfig.getL2()));
+                    //Post-apply regularization (weight decay)
+                    if(r != null && r.size() > 0){
+                        for(Regularization reg : r){
+                            if(reg.applyStep() == Regularization.ApplyStep.POST_UPDATER){
+                                reg.apply(param, grad, lr, iterCount, epochCount);
+                            }
+                        }
                     }
 
                     if (trainingConfig.isMinimize()) {
@@ -1579,59 +1588,32 @@ public class SameDiff {
     }
 
     /**
-     * Calculate the L2 regularization component of the loss: {@code 0.5 * sum_i (weights_i)}<br>
+     * Calculate the regularization (L1, L2 and/or WeightDecay) component of the loss function for the current parameters..
      * Note that the training configuration must be set (via {@link #setTrainingConfig(TrainingConfig)}) before this
      * method can be called
      *
-     * @return The L2 regularization component of the score
+     * @return The regularization component of the score/loss function
      */
-    public double calculateL2Loss() {
+    public double calcRegularizationScore() {
         Preconditions.checkState(trainingConfig != null, "No training configuration has been set. A training configuration must " +
                 "be set before calculating the L2 loss. Use setTrainingConfig(TrainingConfig)");
 
-        if(trainingConfig.getL2() == 0){
+        if(trainingConfig.getRegularization() == null || trainingConfig.getRegularization().isEmpty()){
             return 0.0;
         }
 
         if(trainingConfig.getTrainableParams() == null || trainingConfig.getTrainableParams().isEmpty())
             initializeTraining();
 
-        double l2 = trainingConfig.getL2();
-        double l2Loss = 0.0;
+        List<Regularization> l = trainingConfig.getRegularization();
+        double loss = 0.0;
         for (String s : trainingConfig.getTrainableParams()) {
-            //L2: loss += 0.5 * lambda * sum_i param_i^2
-            double norm2 = getVariable(s).getArr().norm2Number().doubleValue();
-            l2Loss += 0.5 * l2 * norm2 * norm2;
+            for(Regularization r : l){
+                INDArray arr = getVariable(s).getArr();
+                loss += r.score(arr, trainingConfig.getIterationCount(), trainingConfig.getEpochCount());
+            }
         }
-        return l2Loss;
-    }
-
-    /**
-     * Calculate the L1 regularization component of the loss: {@code 0sum_i (abs(weights_i))}<br>
-     * Note that the training configuration must be set (via {@link #setTrainingConfig(TrainingConfig)}) before this
-     * method can be called
-     *
-     * @return The L1 regularization component of the score
-     */
-    public double calculateL1Loss(){
-        Preconditions.checkState(trainingConfig != null, "No training configuration has been set. A training configuration must " +
-                "be set before calculating the L1 loss. Use setTrainingConfig(TrainingConfig)");
-
-        if(trainingConfig.getL1() == 0){
-            return 0.0;
-        }
-
-        if(trainingConfig.getTrainableParams() == null || trainingConfig.getTrainableParams().isEmpty())
-            initializeTraining();
-
-        double l1 = trainingConfig.getL1();
-        double l1Loss = 0.0;
-        for (String s : trainingConfig.getTrainableParams()) {
-            //L1: loss += lambda * sum_i |param_i|
-            double norm1 = getVariable(s).getArr().norm1Number().doubleValue();
-            l1Loss += l1 * norm1;
-        }
-        return l1Loss;
+        return loss;
     }
 
     /**
@@ -2231,24 +2213,32 @@ public class SameDiff {
      * {@link NDArraySupplierInitScheme} is used to ensure that if the array is allocated anywhere
      * and {@link SameDiff} instance to exist as a copy of the variable.
      *
-     * @param arr
+     * @param v Variable
      * @return
      */
-    public SDVariable var(@NonNull final SDVariable arr) {
-        if (variables.containsKey(arr.getVarName()) && variables.get(arr.getVarName()).getVariable().getArr() != null)
-            return variables.get(arr.getVarName()).getVariable();
+    public SDVariable var(@NonNull final SDVariable v) {
+        if (variables.containsKey(v.getVarName()) && variables.get(v.getVarName()).getVariable().getArr() != null)
+            return variables.get(v.getVarName()).getVariable();
 
-        if (arr.getVarName() == null || arr.getVarName().length() < 1)
+        if (v.getVarName() == null || v.getVarName().length() < 1)
             throw new IllegalArgumentException("Name for variable must be defined");
 
-        VariableType vt = arr.getVariableType();
-        WeightInitScheme s = null;
-        if(vt == VariableType.CONSTANT || vt == VariableType.VARIABLE){
-            s = new NDArraySupplierInitScheme(arr.getArr());
+        VariableType vt = v.getVariableType();
+        NDArraySupplierInitScheme s = null;
+        switch(vt){
+            case VARIABLE:
+                s = new NDArraySupplierInitScheme(v.getArr());
+                //Intentional fallthrough
+            case ARRAY:
+                SDVariable ret = new SDVariable(v.getVarName(), v.getVariableType(), this, v.getShape(), v.dataType(), s);
+                return addVariable(ret);
+            case CONSTANT:
+                return constant(v.getVarName(), v.getArr());
+            case PLACEHOLDER:
+                return placeHolder(v.getVarName(), v.dataType(), v.placeholderShape());
+            default:
+                throw new RuntimeException("Unknown/not supported variable type: " + vt);
         }
-
-        SDVariable ret = new SDVariable(arr.getVarName(), arr.getVariableType(), this, arr.getShape(), arr.dataType(), s);
-        return addVariable(ret);
     }
 
     private String getNewVarName() {
@@ -3273,6 +3263,19 @@ public class SameDiff {
      */
     public SDVariable deconv2d(String name, SDVariable[] inputs, DeConv2DConfig deconv2DConfig) {
         SDVariable ret = f().deconv2d(inputs, deconv2DConfig);
+        return updateVariableNameAndReference(ret, name);
+    }
+
+    /**
+     * 3D CNN deconvolution operation with or without optional bias
+     * @param name    Name of the output variable
+     * @param input   Input array - shape [bS, iD, iH, iW, iC] (NDHWC) or [bS, iC, iD, iH, iW] (NCDHW)
+     * @param weights Weights array - shape [kD, kH, kW, oC, iC]
+     * @param bias    Bias array - optional, may be null. If non-null, must have shape [outputChannels]
+     * @param config  Configuration
+     */
+    public SDVariable deconv3d(String name, SDVariable input, SDVariable weights, SDVariable bias, DeConv3DConfig config){
+        SDVariable ret = f().deconv3d(input, weights, bias, config);
         return updateVariableNameAndReference(ret, name);
     }
 
@@ -5051,6 +5054,32 @@ public class SameDiff {
     public SDVariable relu6(String name, SDVariable x, double cutoff) {
         SDVariable result = functionFactory.relu6(x, cutoff);
         return updateVariableNameAndReference(result, name);
+    }
+
+    /**
+     * GELU activation function - Gaussian Error Linear Units<br>
+     * For more details, see <i>Gaussian Error Linear Units (GELUs)</i> - <a href="https://arxiv.org/abs/1606.08415">https://arxiv.org/abs/1606.08415</a>
+     * This method uses the sigmoid approximation
+     *
+     * @param x Input
+     * @return Output variable - GELU applied to the input
+     */
+    public SDVariable gelu(SDVariable x) {
+        return gelu(null, x);
+    }
+
+    /**
+     * GELU activation function - Gaussian Error Linear Units<br>
+     * For more details, see <i>Gaussian Error Linear Units (GELUs)</i> - <a href="https://arxiv.org/abs/1606.08415">https://arxiv.org/abs/1606.08415</a>
+     * This method uses the sigmoid approximation
+     *
+     * @param name Name of the output variable. May be null.
+     * @param x    Input
+     * @return Output variable - GELU applied to the input
+     */
+    public SDVariable gelu(String name, SDVariable x) {
+        SDVariable ret = f().gelu(x, false);    //Defaults to si
+        return updateVariableNameAndReference(ret, name);
     }
 
     /**
