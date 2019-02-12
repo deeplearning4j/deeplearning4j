@@ -26,6 +26,7 @@ import org.deeplearning4j.models.embeddings.reader.ModelUtils;
 import org.deeplearning4j.models.embeddings.reader.impl.BasicModelUtils;
 import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.heartbeat.Heartbeat;
@@ -33,11 +34,9 @@ import org.nd4j.linalg.heartbeat.reports.Environment;
 import org.nd4j.linalg.heartbeat.reports.Event;
 import org.nd4j.linalg.heartbeat.reports.Task;
 import org.nd4j.linalg.heartbeat.utils.EnvironmentUtils;
+import org.nd4j.linalg.io.CollectionUtils;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Common word vector operations
@@ -241,6 +240,9 @@ public class WordVectorsImpl<T extends SequenceElement> implements WordVectors {
 
         while (ArrayUtils.contains(indexes, -1)) {
             indexes = ArrayUtils.removeElement(indexes, -1);
+        }
+        if (indexes.length == 0) {
+            return useUnknown ? getWordVectorMatrix(UNK) : Nd4j.empty(lookupTable.getWeights().dataType());
         }
 
         INDArray result = Nd4j.pullRows(lookupTable.getWeights(), 1, indexes);
