@@ -75,8 +75,8 @@ echo 'export PATH=/usr/local/src/apache-maven/bin:${PATH}' >> ~/.profile
 source ~/.profile
 
 # Installing Python Developer Tools
-sudo apt-get upgrade python-setuptools
-sudo apt-get install python-pip python-wheel python-dev
+sudo apt-get upgrade python-setuptools -y
+sudo apt-get install python-pip python-wheel python-dev -y
 sudo pip install --upgrade pip
 sudo pip install --upgrade setuptools
 ```
@@ -150,8 +150,8 @@ sudo yum install -y centos-release-scl-rh epel-release
 sudo yum install -y devtoolset-3-gcc-c++ cmake3
 scl enable devtoolset-3 bash
 # Installing Python Developer Tools
-sudo yum upgrade python-setuptools
-sudo yum install python-pip python-wheel python-devel
+sudo yum upgrade python-setuptools -y
+sudo yum install python-pip python-wheel python-devel -y
 sudo pip install --upgrade pip
 sudo pip install --upgrade setuptools
 ```
