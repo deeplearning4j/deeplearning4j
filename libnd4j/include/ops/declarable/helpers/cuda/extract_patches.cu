@@ -52,42 +52,24 @@ namespace helpers {
                     for (int j = 0; j < colDim; j += stradeCol)
                         for (int l = 0; l < sizeRow && l + i < rowDim; l++)
                             for (int m = 0; m < sizeCol && m + j < colDim; m++) {
-                                for (int k = warpPos; k < lastDim; k += warpSize) {
+                                auto pos = warpPos + (iter * lastDim);
+
+                                if (pos < patchLength) {
                                     auto x = i + rateRow * l;
                                     auto y = j + m * rateCol;
-                                    Nd4jLong xIndex[3] = {x, y, k};
+                                    Nd4jLong xIndex[3] = {x, y, warpPos};
 
-                                    auto pos = k + (iter * lastDim);
-
-                                    if (pos < patchLength) {
-                                        auto pOffset = shape::getOffset(0, xShape, xStride, xIndex, xRank);
-                                        auto v = patch[pOffset];
-                                        //if (e == 2)
-                                        //    printf("blockIdx.x: [%i]; threadIdx.x: [%i]; warpIdx: [%i]; warpPos: [%i]; e: [%i]; iter: [%i]; k: [%i]; pos: [%i]; coords: [%i, %i, %i]; pOffset: [%i]; v: [%f];\n", blockIdx.x, threadIdx.x, warpIdx, warpPos, e, iter, k, pos, x, y, k, (int) pOffset, (float) v);
-
-                                        matrix[shape::getIndexOffset(pos, zTadShape, patchLength)] = v;
-                                    } else {
-                                        i = rowDim;
-                                        j = colDim;
-                                        l = sizeRow;
-                                        m = sizeCol;
-                                        k = lastDim;
-                                    }
+                                    matrix[shape::getIndexOffset(pos, zTadShape, patchLength)] = patch[shape::getOffset(0, xShape, xStride, xIndex, xRank)];
+                                } else {
+                                    // early loop termination
+                                    i = rowDim;
+                                    j = colDim;
+                                    l = sizeRow;
+                                    m = sizeCol;
                                 }
+
                                 iter++;
                             }
-
-            /*
-            for (int i = 0; i < rowDim; i += stradeRow)
-                for (int j = 0; j < colDim; j += stradeCol)
-                    for (int l = 0; l < sizeRow && l + i < rowDim; l++)
-                        for (int m = 0; m < sizeCol && m + j < colDim; m++) {
-                            for (int k = 0; k < lastDim; ++k) {
-                                outMatrix->p<T>(pos++, patch->e<T>(i + rateRow * l, j + m * rateCol, k));
-                                if (pos >= outMatrix->lengthOf()) { k = lastDim; m = sizeCol; l = sizeRow; j = colDim; i = rowDim; }
-                            }
-                        }
-            */
 
             __syncthreads();
         }
