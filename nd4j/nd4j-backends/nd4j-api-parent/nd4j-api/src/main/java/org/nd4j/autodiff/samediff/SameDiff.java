@@ -398,8 +398,8 @@ public class SameDiff {
         Map<Integer, Integer> thisVertexIdToNew = new HashMap<>();
         int idx = 1;
         for (val var : variables()) {
-            val clone = cloner.deepCloneDontCloneInstances(var, var.getSameDiff());
-            val newVar = sameDiff.var(clone);
+            SDVariable clone = cloner.deepCloneDontCloneInstances(var, var.getSameDiff());
+            SDVariable newVar = sameDiff.var(clone);
             if (var.getArr() != null && var.getVariableType() != VariableType.ARRAY) {      //ARRAY type = "activations" - are overwritten anyway
                 sameDiff.associateArrayWithVariable(var.getArr(), newVar);
             }
@@ -2213,24 +2213,32 @@ public class SameDiff {
      * {@link NDArraySupplierInitScheme} is used to ensure that if the array is allocated anywhere
      * and {@link SameDiff} instance to exist as a copy of the variable.
      *
-     * @param arr
+     * @param v Variable
      * @return
      */
-    public SDVariable var(@NonNull final SDVariable arr) {
-        if (variables.containsKey(arr.getVarName()) && variables.get(arr.getVarName()).getVariable().getArr() != null)
-            return variables.get(arr.getVarName()).getVariable();
+    public SDVariable var(@NonNull final SDVariable v) {
+        if (variables.containsKey(v.getVarName()) && variables.get(v.getVarName()).getVariable().getArr() != null)
+            return variables.get(v.getVarName()).getVariable();
 
-        if (arr.getVarName() == null || arr.getVarName().length() < 1)
+        if (v.getVarName() == null || v.getVarName().length() < 1)
             throw new IllegalArgumentException("Name for variable must be defined");
 
-        VariableType vt = arr.getVariableType();
-        WeightInitScheme s = null;
-        if(vt == VariableType.CONSTANT || vt == VariableType.VARIABLE){
-            s = new NDArraySupplierInitScheme(arr.getArr());
+        VariableType vt = v.getVariableType();
+        NDArraySupplierInitScheme s = null;
+        switch(vt){
+            case VARIABLE:
+                s = new NDArraySupplierInitScheme(v.getArr());
+                //Intentional fallthrough
+            case ARRAY:
+                SDVariable ret = new SDVariable(v.getVarName(), v.getVariableType(), this, v.getShape(), v.dataType(), s);
+                return addVariable(ret);
+            case CONSTANT:
+                return constant(v.getVarName(), v.getArr());
+            case PLACEHOLDER:
+                return placeHolder(v.getVarName(), v.dataType(), v.placeholderShape());
+            default:
+                throw new RuntimeException("Unknown/not supported variable type: " + vt);
         }
-
-        SDVariable ret = new SDVariable(arr.getVarName(), arr.getVariableType(), this, arr.getShape(), arr.dataType(), s);
-        return addVariable(ret);
     }
 
     private String getNewVarName() {
@@ -3255,6 +3263,19 @@ public class SameDiff {
      */
     public SDVariable deconv2d(String name, SDVariable[] inputs, DeConv2DConfig deconv2DConfig) {
         SDVariable ret = f().deconv2d(inputs, deconv2DConfig);
+        return updateVariableNameAndReference(ret, name);
+    }
+
+    /**
+     * 3D CNN deconvolution operation with or without optional bias
+     * @param name    Name of the output variable
+     * @param input   Input array - shape [bS, iD, iH, iW, iC] (NDHWC) or [bS, iC, iD, iH, iW] (NCDHW)
+     * @param weights Weights array - shape [kD, kH, kW, oC, iC]
+     * @param bias    Bias array - optional, may be null. If non-null, must have shape [outputChannels]
+     * @param config  Configuration
+     */
+    public SDVariable deconv3d(String name, SDVariable input, SDVariable weights, SDVariable bias, DeConv3DConfig config){
+        SDVariable ret = f().deconv3d(input, weights, bias, config);
         return updateVariableNameAndReference(ret, name);
     }
 
@@ -5033,6 +5054,32 @@ public class SameDiff {
     public SDVariable relu6(String name, SDVariable x, double cutoff) {
         SDVariable result = functionFactory.relu6(x, cutoff);
         return updateVariableNameAndReference(result, name);
+    }
+
+    /**
+     * GELU activation function - Gaussian Error Linear Units<br>
+     * For more details, see <i>Gaussian Error Linear Units (GELUs)</i> - <a href="https://arxiv.org/abs/1606.08415">https://arxiv.org/abs/1606.08415</a>
+     * This method uses the sigmoid approximation
+     *
+     * @param x Input
+     * @return Output variable - GELU applied to the input
+     */
+    public SDVariable gelu(SDVariable x) {
+        return gelu(null, x);
+    }
+
+    /**
+     * GELU activation function - Gaussian Error Linear Units<br>
+     * For more details, see <i>Gaussian Error Linear Units (GELUs)</i> - <a href="https://arxiv.org/abs/1606.08415">https://arxiv.org/abs/1606.08415</a>
+     * This method uses the sigmoid approximation
+     *
+     * @param name Name of the output variable. May be null.
+     * @param x    Input
+     * @return Output variable - GELU applied to the input
+     */
+    public SDVariable gelu(String name, SDVariable x) {
+        SDVariable ret = f().gelu(x, false);    //Defaults to si
+        return updateVariableNameAndReference(ret, name);
     }
 
     /**
