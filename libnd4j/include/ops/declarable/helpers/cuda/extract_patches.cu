@@ -39,6 +39,9 @@ namespace helpers {
         const int numWarps = (gridDim.x * blockDim.x) / warpSize;
         const int patchLength = shape::length(zTadShape);
 
+        auto xShape = shape::shapeOf(xTadShape);
+        auto xStride = shape::stride(xTadShape);
+        auto xRank = shape::rank(xTadShape);
 
         for (int e = warpIdx; e < numTads; e += numWarps) {
             auto patch = input + xTadOffsets[e];
@@ -48,7 +51,8 @@ namespace helpers {
             int pos = 0;
 
             for (int i = warpPos; i < patchLength; i += warpSize) {
-
+                Nd4jLong xIndex[3] = {0, 0, 0};
+                matrix[shape::getIndexOffset(i, zTadShape, patchLength)] = patch[shape::getOffset(0, xShape, xStride, xIndex, xRank)];
             }
 
             /*
