@@ -413,7 +413,7 @@ public class ImageLoader extends BaseImageLoader {
         if (arr.rank() < 3)
             throw new IllegalArgumentException("Arr must be 3d");
 
-        image = scalingIfNeed(image, arr.size(-2), arr.size(-1), true);
+        image = scalingIfNeed(image, arr.size(-2), arr.size(-1), image.getType(), true);
         for (int i = 0; i < image.getHeight(); i++) {
             for (int j = 0; j < image.getWidth(); j++) {
                 int r = arr.slice(2).getInt(i, j);
