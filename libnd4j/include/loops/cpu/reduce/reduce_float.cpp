@@ -50,7 +50,7 @@ namespace functions {
 
                 X start = OpType::startingValue(x);
 
-                for(Nd4jLong i = 0; i < length; ++i)                     
+                for(unsigned int i = 0; i < length; ++i)
                     start = OpType::update(start, OpType::op(x[shape::getIndexOffset(i, xShapeInfo, length)], extraParams), extraParams);                
 
                 z[0] = OpType::postProcess(start, shape::length(xShapeInfo), extraParams);
@@ -74,7 +74,7 @@ namespace functions {
 
                     X start = OpType::startingValue(x);
 
-                    for(Nd4jLong i = 0; i < length; ++i)                     
+                    for(unsigned int i = 0; i < length; ++i)
                         start = OpType::update(start, OpType::op(x[shape::getIndexOffset(i, xShapeInfo, length)], extraParams), extraParams);                                                    
                     
                     return OpType::postProcess(start, shape::length(xShapeInfo), extraParams);
@@ -155,6 +155,9 @@ namespace functions {
                     return;
                 }
 
+                int reducedTadShapeInfo[MAX_RANK];
+                bool isReduced = nd4j::DataTypeUtils::castShapeInfo(tadShapeInfo, reducedTadShapeInfo);
+
                 auto tadOnlyShapeInfo = tadShapeInfo;
                 auto tadOffsets = tadOffset;
                 shape::TAD *tad = nullptr;
@@ -187,20 +190,20 @@ namespace functions {
                 if (tadEWS > 0 && (numTads == 1 || shape::isVector(tadOnlyShapeInfo) || shape::isScalar(tadOnlyShapeInfo))) {
 
 #pragma omp parallel for schedule(guided) num_threads(num_threads) if(num_threads>1) proc_bind(AFFINITY) default(shared)
-                    for (int i = 0; i < resultLength; i++) {
+                    for (unsigned int i = 0; i < resultLength; i++) {
                         auto iter = x + tadOffsets[i];
                         auto start = OpType::startingValue(iter);
                         if (tadEWS == 1) {
 
 // FIXME: proper reduction should be used here
-                            for (int j = 0; j < tadLength; j++) {
+                            for (unsigned int j = 0; j < tadLength; j++) {
                                 start = OpType::update(start, OpType::op(iter[j], extraParams), extraParams);
 
                             }
                         }
                         else {
 // FIXME: proper reduction to be used here
-                            for (int j = 0; j < tadLength; j++) {
+                            for (unsigned int j = 0; j < tadLength; j++) {
                                 start = OpType::update(start, OpType::op(iter[j * tadEWS], extraParams), extraParams);
                             }
                         }
@@ -210,15 +213,22 @@ namespace functions {
                 else {
 
 #pragma omp  parallel for schedule(guided) num_threads(num_threads) if(num_threads>1) proc_bind(AFFINITY) default(shared)
-                    for (int i = 0; i < resultLength; i++) {
+                    for (unsigned int i = 0; i < resultLength; i++) {
                         
                         auto offset = tadOffsets[i];
                         auto tx = x + offset;
                         auto start = OpType::startingValue(tx);
 
-                        for (int j = 0; j < tadLength; j++) {
-                            auto xOffset = shape::getIndexOffset(j, tadOnlyShapeInfo, tadLength);
-                            start = OpType::update(start, OpType::op(tx[xOffset], extraParams), extraParams);
+                        if (isReduced) {
+                            for (unsigned int j = 0; j < tadLength; j++) {
+                                auto xOffset = shape::getIndexOffset(j, reducedTadShapeInfo, tadLength);
+                                start = OpType::update(start, OpType::op(tx[xOffset], extraParams), extraParams);
+                            }
+                        } else {
+                            for (unsigned int j = 0; j < tadLength; j++) {
+                                auto xOffset = shape::getIndexOffset(j, tadOnlyShapeInfo, tadLength);
+                                start = OpType::update(start, OpType::op(tx[xOffset], extraParams), extraParams);
+                            }
                         }
 
                         z[i] = OpType::postProcess(start, tadLength, extraParams);;
@@ -262,7 +272,7 @@ namespace functions {
                         auto xi = x + threadOffset;
 
                         #pragma omp simd
-                        for (Nd4jLong i = 0; i < info.getItersPerThread(threadNum); i++)                                
+                        for (unsigned int i = 0; i < info.getItersPerThread(threadNum); i++)
                             local = OpType::update(local, OpType::op(xi[i], extraParams), extraParams);
                             
                         #pragma omp critical
@@ -279,7 +289,7 @@ namespace functions {
                         auto xi = x + xEws*threadOffset;
 
                         #pragma omp simd
-                        for (Nd4jLong i = 0; i < info.getItersPerThread(threadNum); i++)                                
+                        for (unsigned int i = 0; i < info.getItersPerThread(threadNum); i++)
                             local = OpType::update(local, OpType::op(xi[i*xEws], extraParams), extraParams);
                             
                         #pragma omp critical

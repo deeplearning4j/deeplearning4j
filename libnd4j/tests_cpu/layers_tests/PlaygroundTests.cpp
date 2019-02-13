@@ -1019,7 +1019,7 @@ TEST_F(PlaygroundTests, test_reduce_float) {
                                             xTad.tadOffsets);
     }
 
-    int iterations = 100;
+    int iterations = 10;
     auto timeStart = std::chrono::system_clock::now();
     for (int e = 0; e < iterations; e++) {
         NativeOpExcutioner::execReduceFloat(reduce::Mean, array.buffer(), array.shapeInfo(), nullptr, target.buffer(),
@@ -1043,7 +1043,7 @@ TEST_F(PlaygroundTests, test_reduce_scalar_float_1) {
         NativeOpExcutioner::execReduceFloatScalar(reduce::Mean, array.buffer(), array.shapeInfo(), nullptr, target.buffer(), target.shapeInfo());
     }
 
-    int iterations = 100;
+    int iterations = 10;
     auto timeStart = std::chrono::system_clock::now();
     for (int e = 0; e < iterations; e++) {
         NativeOpExcutioner::execReduceFloatScalar(reduce::Mean, array.buffer(), array.shapeInfo(), nullptr, target.buffer(), target.shapeInfo());
@@ -1089,7 +1089,7 @@ TEST_F(PlaygroundTests, test_assign_float) {
         NativeOpExcutioner::execTransformAny(transform::Assign, array.buffer(), array.shapeInfo(), target.buffer(), target.shapeInfo(), nullptr, nullptr, nullptr);
     }
 
-    int iterations = 100;
+    int iterations = 10;
     auto timeStart = std::chrono::system_clock::now();
     for (int e = 0; e < iterations; e++) {
         NativeOpExcutioner::execTransformAny(transform::Assign, array.buffer(), array.shapeInfo(), target.buffer(), target.shapeInfo(), nullptr, nullptr, nullptr);

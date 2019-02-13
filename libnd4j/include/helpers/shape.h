@@ -456,6 +456,8 @@ namespace shape {
  * an information buffer
  */
     ND4J_EXPORT _CUDA_HD int rank(const Nd4jLong *buffer);
+    ND4J_EXPORT _CUDA_HD int rank(const int *buffer);
+    ND4J_EXPORT _CUDA_HD int rank(const unsigned int *buffer);
 
 /**
  * Converts a raw int buffer of the layout:
@@ -974,6 +976,8 @@ namespace shape {
    /* calculates an array buffer offset for given "index" using following formula: offset = coord_0*stride_0 + coord_1*stride_1 + ... + coord_{rank-1}*stride_{rank-1}
     * arrLen - array length
    */
+    ND4J_EXPORT _CUDA_HD Nd4jLong getIndexOffset(unsigned int index, const unsigned int *shapeInfo, unsigned int arrLen);
+    ND4J_EXPORT _CUDA_HD Nd4jLong getIndexOffset(int index, const int *shapeInfo, int arrLen);
     ND4J_EXPORT _CUDA_HD Nd4jLong getIndexOffset(Nd4jLong index, const Nd4jLong *shapeInfo, Nd4jLong arrLen);
     ND4J_EXPORT _CUDA_HD Nd4jLong getIndexOrderOffset(Nd4jLong index, const Nd4jLong *shapeInfo, Nd4jLong arrLen, const char order);
     
@@ -1932,18 +1936,59 @@ template <typename T>
 
 //////////////////////////////////////////////////////////////////////    
     INLINEDEF _CUDA_HD Nd4jLong getIndexOffset(Nd4jLong index, const Nd4jLong *shapeInfo, Nd4jLong arrLen) {
-        if(elementWiseStride(shapeInfo) > 0 && order(shapeInfo) == 'c')
-            if (elementWiseStride(shapeInfo) == 1)
-                return index;
-            else
-                return elementWiseStride(shapeInfo) * index;
+        //if(elementWiseStride(shapeInfo) > 0 && order(shapeInfo) == 'c')
+        //    if (elementWiseStride(shapeInfo) == 1)
+        //        return index;
+        //    else
+        //        return elementWiseStride(shapeInfo) * index;
 
         Nd4jLong offset = 0;
+        int rank = shape::rank(shapeInfo);
 
-        for(int i = 1; i <= *shapeInfo; ++i) {
+        for(int i = 1; i <= rank; ++i) {
             arrLen /= shapeInfo[i];
             if(arrLen > 0 && shapeInfo[i] > 1) {                
-                offset += (index / arrLen) * shapeInfo[i + *shapeInfo];
+                offset += (index / arrLen) * shapeInfo[i + rank];
+                index %= arrLen;
+            }
+        }
+        return offset;
+    }
+
+    INLINEDEF _CUDA_HD Nd4jLong getIndexOffset(int index, const int *shapeInfo, int arrLen) {
+        //if(elementWiseStride(shapeInfo) > 0 && order(shapeInfo) == 'c')
+        //    if (elementWiseStride(shapeInfo) == 1)
+        //        return index;
+        //    else
+        //        return elementWiseStride(shapeInfo) * index;
+
+        int offset = 0;
+        int rank = shape::rank(shapeInfo);
+
+        for(int i = 1; i <= rank; ++i) {
+            arrLen /= shapeInfo[i];
+            if(arrLen > 0 && shapeInfo[i] > 1) {
+                offset += (index / arrLen) * shapeInfo[i + rank];
+                index %= arrLen;
+            }
+        }
+        return offset;
+    }
+
+    INLINEDEF _CUDA_HD Nd4jLong getIndexOffset(unsigned int index, const unsigned int *shapeInfo, unsigned int arrLen) {
+        //if(elementWiseStride(shapeInfo) > 0 && order(shapeInfo) == 'c')
+        //    if (elementWiseStride(shapeInfo) == 1)
+        //        return index;
+        //    else
+        //        return elementWiseStride(shapeInfo) * index;
+
+        unsigned int offset = 0;
+        unsigned int rank = shape::rank(shapeInfo);
+
+        for(int i = 1; i <= rank; ++i) {
+            arrLen /= shapeInfo[i];
+            if(arrLen > 0 && shapeInfo[i] > 1) {
+                offset += (index / arrLen) * shapeInfo[i + rank];
                 index %= arrLen;
             }
         }
@@ -2675,6 +2720,14 @@ template <typename T>
  * an information buffer
  */
     INLINEDEF _CUDA_HD  int rank(const Nd4jLong *buffer) {
+        return static_cast<int>(buffer[0]);
+    }
+
+    INLINEDEF _CUDA_HD  int rank(const int *buffer) {
+        return buffer[0];
+    }
+
+    INLINEDEF _CUDA_HD  int rank(const unsigned int *buffer) {
         return static_cast<int>(buffer[0]);
     }
 
