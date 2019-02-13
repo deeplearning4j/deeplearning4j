@@ -42,8 +42,12 @@ import org.nd4j.linalg.api.ops.impl.transforms.comparison.OldMin;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.*;
 import org.nd4j.linalg.api.ops.random.impl.BernoulliDistribution;
 import org.nd4j.linalg.checkutil.NDArrayCreationUtil;
+import org.nd4j.linalg.dataset.DataSet;
+import org.nd4j.linalg.dataset.adapter.SingletonDataSetIterator;
+import org.nd4j.linalg.dataset.adapter.SingletonMultiDataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
+import org.nd4j.linalg.learning.config.Adam;
 import org.nd4j.linalg.learning.config.Nesterovs;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.primitives.Pair;
@@ -2658,5 +2662,53 @@ public class SameDiffTests {
         sd.execBackwards(placeholders, Arrays.asList(xSd.gradient().getVarName(), ySd.gradient().getVarName()));
         INDArray xGradientEnforced = add.getGradient().getArr(true);
         assertNotNull(xGradientEnforced);
+    }
+
+
+    @Test
+    public void testConvertToConstant(){
+
+        SameDiff sd = SameDiff.create();
+        SDVariable in = sd.placeHolder("in", DataType.FLOAT, 1,3);
+        SDVariable w = sd.var("w", Nd4j.rand(DataType.FLOAT, 3,4));
+        SDVariable b = sd.var("b", Nd4j.rand(DataType.FLOAT, 1,4));
+        SDVariable mmul = in.mmul(w);
+        SDVariable add = mmul.add(b);
+        SDVariable tanh = sd.tanh(add);
+        SDVariable loss = sd.variance(tanh, true);
+
+        INDArray inArr = Nd4j.rand(DataType.FLOAT, 1,3);
+        in.setArray(inArr);
+
+        INDArray out = tanh.eval();
+
+        TrainingConfig c = TrainingConfig.builder()
+                .updater(new Adam(0.01))
+                .weightDecay(0.001, true)
+                .dataSetFeatureMapping("in")
+                .skipBuilderValidation(true)
+                .build();
+        sd.setTrainingConfig(c);
+
+
+        sd.fit(new SingletonMultiDataSetIterator(new DataSet(inArr,null).toMultiDataSet()), 1);
+        List<String> tp = c.getTrainableParams();
+        assertEquals(2, tp.size());
+        assertTrue(tp.contains("w"));
+        assertTrue(tp.contains("b"));
+
+        w.convertToConstant();
+
+        INDArray out2 = tanh.eval();
+
+        assertEquals(out, out2);
+        assertEquals(VariableType.CONSTANT, w.getVariableType());
+        assertEquals(VariableType.VARIABLE, b.getVariableType());
+        assertEquals(VariableType.ARRAY, add.getVariableType());
+        assertEquals(VariableType.ARRAY, tanh.getVariableType());
+
+        //Sanity check on training:
+
+
     }
 }

@@ -1786,6 +1786,10 @@ public class SDVariable extends DifferentialFunction implements Serializable {
                 begin_mask, end_mask, 0, 0, shrink_axis);
     }
 
+    public SDVariable convertToConstant(){
+        return sameDiff.convertToConstant(this);
+    }
+
 
     private static int binArrToInt(int[] arr) {
         int x = 0;

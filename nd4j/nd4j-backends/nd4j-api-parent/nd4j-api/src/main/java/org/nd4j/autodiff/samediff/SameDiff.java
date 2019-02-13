@@ -932,17 +932,6 @@ public class SameDiff {
         return this.sameDiffFunctionInstances.keySet();
     }
 
-
-    /**
-     * Returns the number of bytes for the graph. Calculated as sum_i prod(shapeOf(variable[i]))
-     *
-     * @return Bytes for all of the arrays in the graph for the current variable shapes
-     */
-    public long memoryForGraph() {
-        //TODO FIX ME
-        return numElements() * DataTypeUtil.lengthForDtype(Nd4j.dataType());
-    }
-
     /**
      * Invoke an op by opName
      *
@@ -1505,9 +1494,11 @@ public class SameDiff {
                     Preconditions.checkState(trainingConfig.getDataSetFeatureMapping().size() == ds.numFeatureArrays(),
                             "The number of dataset feature mapping variables set in the training configuration (%s) must match" +
                                     " the number of dataset feature arrays (%s)", trainingConfig.getDataSetFeatureMapping().size(), ds.numFeatureArrays());
-                    Preconditions.checkState(trainingConfig.getDataSetLabelMapping().size() == ds.numLabelsArrays(),
+                    List<String> labelMapping = trainingConfig.getDataSetLabelMapping();
+                    int lblSize = labelMapping == null ? 0 : labelMapping.size();
+                    Preconditions.checkState(lblSize == ds.numLabelsArrays(),
                             "The number of dataset label mapping variables set in the training configuration (%s) must match" +
-                                    " the number of dataset label arrays (%s)", trainingConfig.getDataSetLabelMapping().size(), ds.numLabelsArrays());
+                                    " the number of dataset label arrays (%s)", lblSize, ds.numLabelsArrays());
 
                     performedValidation = true;
                 }
@@ -2326,6 +2317,50 @@ public class SameDiff {
             putShapeForVarName(name, arr.shape());
         return ret;
     }
+
+    /**
+     * Convert the specified variable to a constant. This is equivalent to "freezing" a variable so that it's value
+     * won't be changed by further training.
+     * Note: it is not possible to freeze array type variables
+     * @param variable
+     * @return
+     */
+    public SDVariable convertToConstant(@NonNull SDVariable variable){
+        if(variable.getVariableType() == VariableType.CONSTANT)
+            return variable; //No change required
+        Preconditions.checkState(variable.getVariableType() != VariableType.ARRAY, "Cannot convert variable of type ARRAY to a constant: %s", variable);
+
+        String n = variable.getVarName();
+        INDArray arr = variable.getArr();
+        Preconditions.checkNotNull(arr, "Could not get array for variable %s: if this is a placeholder, use SDVariable.setArray before converting", variable);
+
+        //Remove all sessions in case they have any cached arrays/state
+        sessions.clear();
+
+        //If gradient function has been defined, remove it (so it will be recreated later)
+        sameDiffFunctionInstances.remove("grad");
+
+        constantArrays.put(n, new DeviceLocalNDArray(arr));
+        variablesArrays.remove(n);
+        if(!placeholdersPerThread.isEmpty()){
+            for(Map<String,INDArray> m : placeholdersPerThread.values()){
+                m.remove(n);
+            }
+        }
+
+        variable.setVariableType(VariableType.CONSTANT);
+
+
+        //TODO also handle training config!
+
+
+        return variable;
+    }
+
+    public SDVariable convertToVariable(@NonNull SDVariable constant){
+        throw new UnsupportedOperationException("Not yet implemented");
+    }
+
 
     /**
      * Generate a square identity matrix with the specified number of rows.
