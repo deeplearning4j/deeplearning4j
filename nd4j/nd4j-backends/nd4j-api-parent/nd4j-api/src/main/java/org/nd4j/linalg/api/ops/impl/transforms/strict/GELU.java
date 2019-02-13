@@ -23,23 +23,32 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformStrictOp;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 /**
- * GELU function
- *
+ * GELU activation function - Gaussian Error Linear Units<br>
+ * For more details, see <i>Gaussian Error Linear Units (GELUs)</i> - <a href="https://arxiv.org/abs/1606.08415">https://arxiv.org/abs/1606.08415</a>
+ * Note: This op implements both the sigmoid and tanh-based approximations; to use the sigmoid approximation (recommended)
+ * use precise=false; otherwise, use precise = true for the slower but marginally more accurate tanh version.
  * @author raver119@gmail.com
  */
 public class GELU extends BaseTransformStrictOp {
-    public GELU(SameDiff sameDiff, SDVariable i_v, boolean inPlace) {
+    public GELU(SameDiff sameDiff, SDVariable i_v, boolean inPlace, boolean precise) {
         super(sameDiff, i_v, inPlace);
+        this.extraArgs = new Object[]{precise ? 1.0 : 0.0};
     }
 
     public GELU() {
     }
 
     public GELU(INDArray x, INDArray z) {
+        this(x, z, false);
+    }
+
+    public GELU(INDArray x, INDArray z, boolean precise) {
         super(x, z);
+        this.extraArgs = new Object[]{precise ? 1.0 : 0.0};
     }
 
     public GELU(INDArray ndArray) {
@@ -69,8 +78,9 @@ public class GELU extends BaseTransformStrictOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
-        SDVariable ret = f().geluDerivative(arg()).mul(i_v.get(0));
-        return Arrays.asList(ret);
+        boolean precise = this.extraArgs != null && this.extraArgs.length == 1 && ((Double)this.extraArgs[0]) > 0.0;
+        SDVariable ret = f().geluDerivative(arg(), precise).mul(i_v.get(0));
+        return Collections.singletonList(ret);
     }
 
 
