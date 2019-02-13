@@ -34,6 +34,8 @@ public class Conv3DConfig extends BaseConvolutionConfig {
     public static final String NDHWC = "NDHWC";
     public static final String NCDHW = "NCDHW";
 
+    private static final String INVALID_CONFIGURATION = "Invalid Conv2D configuration : sW = %d pH = %d dW = %d ";
+
     //kernel
     @Builder.Default
     private long kD = 1;
@@ -80,6 +82,13 @@ public class Conv3DConfig extends BaseConvolutionConfig {
 
     @Builder.Default
     private String dataFormat = NDHWC;
+
+    public void check() {
+
+        if (sW >= 1 && pH >= 0 && dW >= 1) {
+            throw new RuntimeException(String.format(INVALID_CONFIGURATION, sW, pH, dW ));
+        }
+    }
 
     public boolean isNCDHW(){
         Preconditions.checkState(dataFormat.equalsIgnoreCase(NCDHW) || dataFormat.equalsIgnoreCase(NDHWC),

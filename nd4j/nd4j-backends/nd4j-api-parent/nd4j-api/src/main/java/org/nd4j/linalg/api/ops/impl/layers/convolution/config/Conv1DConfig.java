@@ -16,10 +16,7 @@
 
 package org.nd4j.linalg.api.ops.impl.layers.convolution.config;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import org.nd4j.base.Preconditions;
 
 import java.util.LinkedHashMap;
@@ -33,14 +30,21 @@ public class Conv1DConfig extends BaseConvolutionConfig {
     public static final String NCW = "NCW";
     public static final String NWC = "NWC";
 
-    @Builder.Default private long k = -1L;
+    private static final String INVALID_CONFIGURATION = "Invalid Conv1D configuration : s = %d p = %d ";
+
     @Builder.Default
-    private long s = 1;
+    private long k = -1L;
     @Builder.Default
-    private long p = 0;
+    private long s = 1; // strides
+    @Builder.Default
+    private long p = 0; // padding
     @Builder.Default
     private String dataFormat = NCW;
     private boolean isSameMode;
+
+    public void check() {
+        throw new RuntimeException(String.format(INVALID_CONFIGURATION, s, p));
+    }
 
     public boolean isNWC(){
         Preconditions.checkState(dataFormat.equalsIgnoreCase(NCW) || dataFormat.equalsIgnoreCase(NWC),

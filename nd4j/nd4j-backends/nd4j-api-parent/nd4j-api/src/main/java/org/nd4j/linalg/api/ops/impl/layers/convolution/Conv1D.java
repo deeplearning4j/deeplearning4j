@@ -68,7 +68,7 @@ public class Conv1D extends DynamicCustomOp {
         super(null, inputArrays, outputs);
         this.sameDiff = sameDiff;
         this.config = config;
-
+        config.check();
         addArgs();
         sameDiff.putFunctionForId(this.getOwnName(), this);
         sameDiff.addArgsFor(inputFunctions, this);

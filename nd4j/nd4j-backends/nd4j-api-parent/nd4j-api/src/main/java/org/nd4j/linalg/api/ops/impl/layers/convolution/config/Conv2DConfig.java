@@ -33,6 +33,8 @@ public class Conv2DConfig extends BaseConvolutionConfig {
     public static final String NCHW = "NCHW";
     public static final String NHWC = "NHWC";
 
+    private static final String INVALID_CONFIGURATION = "Invalid Conv2D configuration : sW = %d pH = %d dW = %d ";
+
     @Builder.Default
     private long kH = -1L;
     @Builder.Default
@@ -40,18 +42,24 @@ public class Conv2DConfig extends BaseConvolutionConfig {
     @Builder.Default
     private long sH = 1;
     @Builder.Default
-    private long sW = 1;
+    private long sW = 1; // strides >= 1
     @Builder.Default
-    private long pH = 0;
+    private long pH = 0; // padding >= 0
     @Builder.Default
     private long pW = 0;
     @Builder.Default
     private long dH = 1;
     @Builder.Default
-    private long dW = 1;
+    private long dW = 1;  // dilations >= 1
     private boolean isSameMode;
     @Builder.Default
     private String dataFormat = NCHW;
+
+    public void check() {
+        if (sW >= 1 && pH >= 0 && dW >= 1) {
+            throw new RuntimeException(String.format(INVALID_CONFIGURATION, sW, pH, dW));
+        }
+    }
 
     public boolean isNHWC(){
         Preconditions.checkState(dataFormat.equalsIgnoreCase(NCHW) || dataFormat.equalsIgnoreCase(NHWC),

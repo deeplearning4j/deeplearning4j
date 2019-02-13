@@ -64,6 +64,7 @@ public class Conv3D extends DynamicCustomOp {
         if (outputs != null)
             addOutputArgument(outputs);
         this.config = conv3DConfig;
+        config.check();
         addArgs();
 
 
