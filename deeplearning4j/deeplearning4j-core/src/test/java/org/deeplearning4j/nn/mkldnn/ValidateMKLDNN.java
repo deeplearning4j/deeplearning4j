@@ -24,6 +24,7 @@ import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
+import org.deeplearning4j.nn.conf.layers.BatchNormalization;
 import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.conf.layers.SubsamplingLayer;
@@ -105,6 +106,64 @@ public class ValidateMKLDNN extends BaseDL4JTest {
                     }
                 }
             }
+        }
+    }
+
+    @Test
+    public void validateBatchNorm() {
+        //Only run test if using nd4j-native backend
+        assumeTrue(Nd4j.getBackend().getClass().getName().toLowerCase().contains("native"));
+
+        int[] inputSize = {-1, 3, 16, 16};
+        int[] stride = {1, 1};
+        int[] kernel = {2, 2};
+        ConvolutionMode cm = ConvolutionMode.Truncate;
+
+        for (int minibatch : new int[]{1, 3}) {
+
+            inputSize[0] = minibatch;
+            INDArray f = Nd4j.rand(Nd4j.defaultFloatingPointType(), inputSize);
+            INDArray l = TestUtils.randomOneHot(minibatch, 10);
+
+            MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                    .updater(new Adam(0.01))
+                    .convolutionMode(cm)
+                    .list()
+                    .layer(new ConvolutionLayer.Builder().activation(Activation.TANH)
+                            .kernelSize(kernel)
+                            .stride(stride)
+                            .padding(0, 0)
+                            .nOut(3)
+                            .build())
+                    .layer(new BatchNormalization.Builder().cudnnAllowFallback(false).build())
+                    .layer(new ConvolutionLayer.Builder().activation(Activation.TANH)
+                            .kernelSize(kernel)
+                            .stride(stride)
+                            .padding(0, 0)
+                            .nOut(3)
+                            .build())
+                    .layer(new OutputLayer.Builder().nOut(10).activation(Activation.SOFTMAX).lossFunction(LossFunctions.LossFunction.MCXENT).build())
+                    .setInputType(InputType.convolutional(inputSize[2], inputSize[3], inputSize[1]))
+                    .build();
+
+            MultiLayerNetwork netWith = new MultiLayerNetwork(conf.clone());
+            netWith.init();
+
+            MultiLayerNetwork netWithout = new MultiLayerNetwork(conf.clone());
+            netWithout.init();
+
+            LayerHelperValidationUtil.TestCase tc = LayerHelperValidationUtil.TestCase.builder()
+                    .allowHelpersForClasses(Arrays.<Class<?>>asList(org.deeplearning4j.nn.layers.normalization.BatchNormalization.class))
+                    .testForward(true)
+                    .testScore(true)
+                    .testBackward(true)
+                    .testTraining(true)
+                    .features(f)
+                    .labels(l)
+                    .data(new SingletonDataSetIterator(new DataSet(f, l)))
+                    .build();
+
+            LayerHelperValidationUtil.validateMLN(netWith, tc);
         }
     }
 }

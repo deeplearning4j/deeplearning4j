@@ -18,12 +18,12 @@ package org.deeplearning4j.nn.layers.normalization;
 
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.BaseLayer;
 import org.deeplearning4j.nn.layers.LayerHelper;
+import org.deeplearning4j.nn.layers.mkldnn.MKLDNNBatchNormHelper;
 import org.deeplearning4j.nn.params.BatchNormalizationParamInitializer;
 import org.deeplearning4j.nn.workspace.ArrayType;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
@@ -90,6 +90,9 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
                             + "For more information, please refer to: https://deeplearning4j.org/docs/latest/deeplearning4j-config-cudnn", t);
                 }
             }
+        } else if("CPU".equalsIgnoreCase(backend)){
+            helper = new MKLDNNBatchNormHelper();
+            log.info("Created MKLDNNBatchNormHelper");
         }
     }
 
@@ -262,6 +265,15 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
             batchMean = input.mean(0);
             batchVar = input.var(false, 0);
         } else if (epsilon.rank() == 4) {
+            if(xHat == null && helper != null){
+                INDArray mean = helper.getMeanCache();
+                std = Transforms.sqrt(helper.getVarCache().addi(layerConf().getEps()));
+                xMu =  Nd4j.createUninitialized(input.shape(), input.ordering());
+                xMu = Nd4j.getExecutioner().exec(new BroadcastSubOp(input, mean, xMu, 1));
+                xHat =  Nd4j.createUninitialized(input.shape(), input.ordering());
+                xHat = Nd4j.getExecutioner().exec(new BroadcastDivOp(xMu, std,xHat, 1));
+            }
+
             INDArray dBeta = epsilon.sum(0, 2, 3);
             INDArray dGamma = epsilon.mul(xHat).sum(0, 2, 3);
             INDArray dxhat;
