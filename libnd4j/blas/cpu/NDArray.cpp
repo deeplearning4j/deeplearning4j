@@ -3670,7 +3670,7 @@ template void NDArray::pIdx(const Nd4jLong* indices, const bool value);
         Nd4jLong* newShape;
         ALLOCATE(newShape, _workspace, shape::shapeInfoLength(this->rankOf()), Nd4jLong);
         memcpy(newShape, this->_shapeInfo, shape::shapeInfoByteLength(this->rankOf()));
-        newShape[shape::shapeInfoLength(this->rankOf()) - 2] = -1;
+        newShape[shape::shapeInfoLength(this->rankOf()) - 2] = 0;
 
         auto shapeOf = shape::shapeOf(newShape);
         auto stridesOf = shape::stride(newShape);
@@ -3713,7 +3713,7 @@ template void NDArray::pIdx(const Nd4jLong* indices, const bool value);
         Nd4jLong *newShape;
         ALLOCATE(newShape, _workspace, shape::shapeInfoLength(this->rankOf()), Nd4jLong);
         memcpy(newShape, this->_shapeInfo, shape::shapeInfoByteLength(this->rankOf()));
-        newShape[shape::shapeInfoLength(this->rankOf()) - 2] = -1;
+        newShape[shape::shapeInfoLength(this->rankOf()) - 2] = 0;
 
         auto shapeOf = shape::shapeOf(newShape);
         auto stridesOf = shape::stride(newShape);
@@ -3752,7 +3752,7 @@ template void NDArray::pIdx(const Nd4jLong* indices, const bool value);
         Nd4jLong *newShape;
         ALLOCATE(newShape, _workspace, shape::shapeInfoLength(this->rankOf()), Nd4jLong);
         memcpy(newShape, this->_shapeInfo, shape::shapeInfoByteLength(this->rankOf()));
-        newShape[shape::shapeInfoLength(this->rankOf()) - 2] = -1;
+        newShape[shape::shapeInfoLength(this->rankOf()) - 2] = 0;
 
         auto shapeOf = shape::shapeOf(newShape);
         auto stridesOf = shape::stride(newShape);
@@ -4036,7 +4036,7 @@ template void NDArray::pIdx(const Nd4jLong* indices, const bool value);
         Nd4jLong *newShape;
         ALLOCATE(newShape, _workspace, shape::shapeInfoLength(rank), Nd4jLong);
         memcpy(newShape, _shapeInfo, shape::shapeInfoByteLength(rank));
-        newShape[shape::shapeInfoLength(rank) - 2] = -1;
+        newShape[shape::shapeInfoLength(rank) - 2] = 0;
 
         auto shapeOf = shape::shapeOf(newShape);
         auto stridesOf = shape::stride(newShape);
@@ -4808,7 +4808,7 @@ template void NDArray::operator/=(const bool scalar);
                         
             outShapeInfo[3] *= step;
             outShapeInfo[4] *= step;
-            outShapeInfo[6] =  -1;
+            outShapeInfo[6] =  0;
         }
 
         ArrayOptions::setDataType(outShapeInfo, this->dataType());

@@ -112,7 +112,7 @@ TYPED_TEST(TypedConvolutionTests, TestConv2D_1) {
     ASSERT_TRUE(res->isSameShape(exp));
     // just for visual validation
     //exp->printBuffer("Expected");
-    //res->printBuffer("Actual  ");
+    res->printIndexedBuffer("Actual  ");
     res->printShapeInfo("Result shape");
     // final check
     ASSERT_TRUE(res->equalsTo(exp));
