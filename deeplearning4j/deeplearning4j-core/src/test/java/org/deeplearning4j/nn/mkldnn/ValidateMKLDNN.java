@@ -35,7 +35,6 @@ import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.config.Adam;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
-import org.nd4j.nativeblas.Nd4jCpu;
 
 import java.util.Arrays;
 
@@ -91,7 +90,8 @@ public class ValidateMKLDNN extends BaseDL4JTest {
                         netWithout.init();
 
                         LayerHelperValidationUtil.TestCase tc = LayerHelperValidationUtil.TestCase.builder()
-                                .allowHelpersForClasses(Arrays.<Class<?>>asList(org.deeplearning4j.nn.layers.convolution.subsampling.SubsamplingLayer.class))
+                                .allowHelpersForClasses(Arrays.<Class<?>>asList(org.deeplearning4j.nn.layers.convolution.subsampling.SubsamplingLayer.class,
+                                        org.deeplearning4j.nn.layers.convolution.ConvolutionLayer.class))
                                 .testForward(true)
                                 .testScore(true)
                                 .testBackward(true)

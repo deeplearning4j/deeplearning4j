@@ -128,10 +128,10 @@ public class CudnnConvolutionHelper extends BaseCudnnHelper implements Convoluti
     private CudnnConvolutionContext cudnnContext = new CudnnConvolutionContext();
 
     @Override
-    public Pair<Gradient, INDArray> backpropGradient(INDArray input, INDArray weights, INDArray delta, int[] kernel,
-                    int[] strides, int[] pad, INDArray biasGradView, INDArray weightGradView, IActivation afn,
-                    AlgoMode mode, BwdFilterAlgo bwdFilterAlgo, BwdDataAlgo bwdDataAlgo,
-                    ConvolutionMode convolutionMode, int[] dilation, LayerWorkspaceMgr workspaceMgr) {
+    public Pair<Gradient, INDArray> backpropGradient(INDArray input, INDArray weights, INDArray bias, INDArray delta, int[] kernel,
+                                                     int[] strides, int[] pad, INDArray biasGradView, INDArray weightGradView, IActivation afn,
+                                                     AlgoMode mode, BwdFilterAlgo bwdFilterAlgo, BwdDataAlgo bwdDataAlgo,
+                                                     ConvolutionMode convolutionMode, int[] dilation, LayerWorkspaceMgr workspaceMgr) {
         int code;
 
         val miniBatch = input.size(0);
