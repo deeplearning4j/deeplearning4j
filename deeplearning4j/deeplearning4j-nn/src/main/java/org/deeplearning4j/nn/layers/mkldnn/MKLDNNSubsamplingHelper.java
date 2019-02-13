@@ -69,8 +69,10 @@ public class MKLDNNSubsamplingHelper implements SubsamplingHelper {
         switch (poolingType){
             case MAX:
                 conf.setType(Pooling2D.Pooling2DType.MAX);
+                break;
             case AVG:
                 conf.setType(Pooling2D.Pooling2DType.AVG);
+                break;
         }
 
         Pooling2DDerivative d = Pooling2DDerivative.derivativeBuilder()

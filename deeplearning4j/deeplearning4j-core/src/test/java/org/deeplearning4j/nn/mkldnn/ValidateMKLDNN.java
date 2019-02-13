@@ -19,6 +19,7 @@ package org.deeplearning4j.nn.mkldnn;
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.LayerHelperValidationUtil;
 import org.deeplearning4j.TestUtils;
+import org.deeplearning4j.datasets.iterator.impl.SingletonDataSetIterator;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -30,9 +31,11 @@ import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.config.Adam;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
+import org.nd4j.nativeblas.Nd4jCpu;
 
 import java.util.Arrays;
 
@@ -45,10 +48,10 @@ public class ValidateMKLDNN extends BaseDL4JTest {
         //Only run test if using nd4j-native backend
         assumeTrue(Nd4j.getBackend().getClass().getName().toLowerCase().contains("native"));
 
-        int[] inputSize = {-1, 3, 10, 10};
+        int[] inputSize = {-1, 3, 16, 16};
 
         for(int minibatch : new int[]{1,3}) {
-            for (ConvolutionMode cm : ConvolutionMode.values()) {
+            for (ConvolutionMode cm : new ConvolutionMode[]{ConvolutionMode.Same, ConvolutionMode.Truncate}) {
                 for (int[] kernel : new int[][]{{2, 2}, {2, 3}}) {
                     for (int[] stride : new int[][]{{1, 1}, {2, 2}}) {
 
@@ -95,6 +98,7 @@ public class ValidateMKLDNN extends BaseDL4JTest {
                                 .testTraining(true)
                                 .features(f)
                                 .labels(l)
+                                .data(new SingletonDataSetIterator(new DataSet(f,l)))
                                 .build();
 
                         LayerHelperValidationUtil.validateMLN(netWith, tc);
