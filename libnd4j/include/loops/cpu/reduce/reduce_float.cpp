@@ -186,7 +186,7 @@ namespace functions {
 
                 uint castTadOnlyShapeInfo[MAX_RANK];
                 const bool canCast = nd4j::DataTypeUtils::castShapeInfo<uint>(tadOnlyShapeInfo, castTadOnlyShapeInfo);
-               
+
 #pragma omp  parallel for schedule(guided) num_threads(num_threads) if(num_threads>1) proc_bind(AFFINITY) default(shared)
                 for (unsigned int i = 0; i < resultLength; i++) {
                                             
