@@ -13,6 +13,7 @@
 
 package org.deeplearning4j.arbiter.optimize.generator;
 
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.arbiter.optimize.api.Candidate;
 import org.deeplearning4j.arbiter.optimize.api.OptimizationResult;
@@ -37,7 +38,9 @@ import java.util.Map;
 @Slf4j
 public class GeneticSearchCandidateGenerator extends BaseCandidateGenerator {
 
+    @Getter
     protected final PopulationModel populationModel;
+
     protected final ChromosomeFactory chromosomeFactory;
     protected final SelectionOperator selectionOperator;
 
