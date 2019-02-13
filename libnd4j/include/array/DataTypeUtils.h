@@ -322,8 +322,8 @@ FORCEINLINE std::string DataTypeUtils::asString(DataType dataType) {
 
 template <typename T>
 FORCEINLINE bool DataTypeUtils::castShapeInfo(Nd4jLong *originalShapeInfo, T *newShapeInfo) {
-    auto length = shape::shapeInfoLength(originalShapeInfo);
-    for (int e = 0; e < length; e++) {
+    
+    for (int e = 0; e < shape::shapeInfoLength(originalShapeInfo); e++) {
         if (originalShapeInfo[e] < static_cast<Nd4jLong>(DataTypeUtils::max<T>())) {
             newShapeInfo[e] = static_cast<T>(originalShapeInfo[e]);
         } else

@@ -153,10 +153,7 @@ namespace functions {
                 if (OpType::requiresSpecialAccumulation) {
                     OpType::execSpecial(x, xShapeInfo, extraParams, z, resultShapeInfoBuffer, dimension, dimensionLength, tadShapeInfo, tadOffset);
                     return;
-                }
-
-                int reducedTadShapeInfo[MAX_RANK];
-                bool isReduced = nd4j::DataTypeUtils::castShapeInfo(tadShapeInfo, reducedTadShapeInfo);
+                }            
 
                 auto tadOnlyShapeInfo = tadShapeInfo;
                 auto tadOffsets = tadOffset;
@@ -219,17 +216,12 @@ namespace functions {
                         auto tx = x + offset;
                         auto start = OpType::startingValue(tx);
 
-                        if (isReduced) {
-                            for (unsigned int j = 0; j < tadLength; j++) {
-                                auto xOffset = shape::getIndexOffset(j, reducedTadShapeInfo, tadLength);
-                                start = OpType::update(start, OpType::op(tx[xOffset], extraParams), extraParams);
-                            }
-                        } else {
+                       
                             for (unsigned int j = 0; j < tadLength; j++) {
                                 auto xOffset = shape::getIndexOffset(j, tadOnlyShapeInfo, tadLength);
                                 start = OpType::update(start, OpType::op(tx[xOffset], extraParams), extraParams);
                             }
-                        }
+                       
 
                         z[i] = OpType::postProcess(start, tadLength, extraParams);;
                     }
