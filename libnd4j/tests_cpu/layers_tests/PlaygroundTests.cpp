@@ -1101,3 +1101,72 @@ TEST_F(PlaygroundTests, test_assign_float) {
     nd4j_printf("average time: %lld us;\n", spanTime);
     nd4j_printf("total time: %lld ms;\n", ttlTime);
 }
+
+//////////////////////////////////////////////////////////////////////    
+INLINEDEF unsigned offsetUns(unsigned index, const unsigned *shapeInfo, unsigned arrLen) {
+        
+    unsigned offset = 0;        
+
+    for(unsigned i = 1; i <= shapeInfo[0]; ++i) {
+        arrLen /= shapeInfo[i];
+        if(arrLen > 0 && shapeInfo[i] > 1) {                
+            offset += (index / arrLen) * shapeInfo[i + shapeInfo[0]];
+            index %= arrLen;
+        }
+    }
+    return offset;
+}
+
+//////////////////////////////////////////////////////////////////////    
+INLINEDEF int offsetInt(int index, const int *shapeInfo, int arrLen) {
+        
+    int offset = 0;        
+
+    for(int i = 1; i <= shapeInfo[0]; ++i) {
+        arrLen /= shapeInfo[i];
+        if(arrLen > 0 && shapeInfo[i] > 1) {                
+            offset += (index / arrLen) * shapeInfo[i + shapeInfo[0]];
+            index %= arrLen;
+        }
+    }
+    return offset;
+}
+
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(PlaygroundTests, signed_unsigned_1) {
+    
+    const int dim0(32), dim1(128), dim2(256), dim3(256);
+    const unsigned len = dim0*dim1*dim2*dim3;
+    
+    unsigned shapeInfoUns[] = {4,  dim0,dim1,dim2,dim3,  dim1*dim2*dim3,dim2*dim3,dim3,1,   0, 1, 99};
+    int      shapeInfoInt[] = {4,  dim0,dim1,dim2,dim3,  dim1*dim2*dim3,dim2*dim3,dim3,1,   0, 1, 99};
+
+    double* buffer = new double[len];
+
+    //***********************************    
+    auto timeStart = std::chrono::system_clock::now();
+    for(int i=0; i<len; ++i) {
+        int offset = offsetInt(i, shapeInfoInt, (int)len);
+        buffer[offset] = i;
+    }    
+
+    auto timeEnd = std::chrono::system_clock::now();
+    auto timeInt = std::chrono::duration_cast<std::chrono::nanoseconds> ((timeEnd - timeStart)/len).count();
+
+    //***********************************
+    timeStart = std::chrono::system_clock::now();
+    
+    for(unsigned i=0; i<len; ++i) {
+        unsigned offset = offsetUns(i, shapeInfoUns, len);
+        buffer[offset] = i;
+    }   
+    
+    timeEnd = std::chrono::system_clock::now();
+    auto timeUns = std::chrono::duration_cast<std::chrono::nanoseconds> ((timeEnd - timeStart)/len).count();
+
+    nd4j_printf("signed   time: %i ns;\n", timeInt);
+    nd4j_printf("unsigned time: %u ns;\n", timeUns);
+
+    delete []buffer;
+}
