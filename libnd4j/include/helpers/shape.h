@@ -57,6 +57,8 @@
 #include <stdint.h>
 #include <array/ArrayOptions.h>
 
+typedef unsigned int uint;
+
 namespace shape {
 
 /**
@@ -976,8 +978,7 @@ namespace shape {
    /* calculates an array buffer offset for given "index" using following formula: offset = coord_0*stride_0 + coord_1*stride_1 + ... + coord_{rank-1}*stride_{rank-1}
     * arrLen - array length
    */
-    ND4J_EXPORT _CUDA_HD Nd4jLong getIndexOffset(unsigned int index, const unsigned int *shapeInfo, unsigned int arrLen);
-    ND4J_EXPORT _CUDA_HD Nd4jLong getIndexOffset(int index, const int *shapeInfo, int arrLen);
+    ND4J_EXPORT _CUDA_HD uint getIndexOffset(uint index, const uint *shapeInfo, uint arrLen);
     ND4J_EXPORT _CUDA_HD Nd4jLong getIndexOffset(Nd4jLong index, const Nd4jLong *shapeInfo, Nd4jLong arrLen);
     ND4J_EXPORT _CUDA_HD Nd4jLong getIndexOrderOffset(Nd4jLong index, const Nd4jLong *shapeInfo, Nd4jLong arrLen, const char order);
     
@@ -1936,59 +1937,43 @@ template <typename T>
 
 //////////////////////////////////////////////////////////////////////    
     INLINEDEF _CUDA_HD Nd4jLong getIndexOffset(Nd4jLong index, const Nd4jLong *shapeInfo, Nd4jLong arrLen) {
-        //if(elementWiseStride(shapeInfo) > 0 && order(shapeInfo) == 'c')
-        //    if (elementWiseStride(shapeInfo) == 1)
-        //        return index;
-        //    else
-        //        return elementWiseStride(shapeInfo) * index;
+        
+        const Nd4jLong ews = shapeInfo[shapeInfo[0] + shapeInfo[0] + 2];
 
-        Nd4jLong offset = 0;
-        int rank = shape::rank(shapeInfo);
+        if(ews > 0 && order(shapeInfo) == 'c')
+           if (ews == 1)
+               return index;
+           else
+               return ews * index;
 
-        for(int i = 1; i <= rank; ++i) {
+        Nd4jLong offset = 0;        
+
+        for(int i = 1; i <= shapeInfo[0]; ++i) {
             arrLen /= shapeInfo[i];
             if(arrLen > 0 && shapeInfo[i] > 1) {                
-                offset += (index / arrLen) * shapeInfo[i + rank];
+                offset += (index / arrLen) * shapeInfo[i + shapeInfo[0]];
                 index %= arrLen;
             }
         }
         return offset;
-    }
+    }    
 
-    INLINEDEF _CUDA_HD Nd4jLong getIndexOffset(int index, const int *shapeInfo, int arrLen) {
-        //if(elementWiseStride(shapeInfo) > 0 && order(shapeInfo) == 'c')
-        //    if (elementWiseStride(shapeInfo) == 1)
-        //        return index;
-        //    else
-        //        return elementWiseStride(shapeInfo) * index;
+    INLINEDEF _CUDA_HD uint getIndexOffset(uint index, const uint *shapeInfo, uint arrLen) {
+        
+        const uint ews = shapeInfo[shapeInfo[0] + shapeInfo[0] + 2];
 
-        int offset = 0;
-        int rank = shape::rank(shapeInfo);
+        if(ews > 0 && shapeInfo[shapeInfo[0] + shapeInfo[0] + 3] == 99)
+           if (ews == 1)
+               return index;
+           else
+               return ews * index;
 
-        for(int i = 1; i <= rank; ++i) {
+        uint offset = 0;
+
+        for(uint i = 1; i <= shapeInfo[0]; ++i) {
             arrLen /= shapeInfo[i];
             if(arrLen > 0 && shapeInfo[i] > 1) {
-                offset += (index / arrLen) * shapeInfo[i + rank];
-                index %= arrLen;
-            }
-        }
-        return offset;
-    }
-
-    INLINEDEF _CUDA_HD Nd4jLong getIndexOffset(unsigned int index, const unsigned int *shapeInfo, unsigned int arrLen) {
-        //if(elementWiseStride(shapeInfo) > 0 && order(shapeInfo) == 'c')
-        //    if (elementWiseStride(shapeInfo) == 1)
-        //        return index;
-        //    else
-        //        return elementWiseStride(shapeInfo) * index;
-
-        unsigned int offset = 0;
-        unsigned int rank = shape::rank(shapeInfo);
-
-        for(int i = 1; i <= rank; ++i) {
-            arrLen /= shapeInfo[i];
-            if(arrLen > 0 && shapeInfo[i] > 1) {
-                offset += (index / arrLen) * shapeInfo[i + rank];
+                offset += (index / arrLen) * shapeInfo[i + shapeInfo[0]];
                 index %= arrLen;
             }
         }
