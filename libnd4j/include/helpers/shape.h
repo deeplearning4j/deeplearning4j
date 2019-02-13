@@ -2214,7 +2214,7 @@ template <typename T>
         }
 
         shapeInfo[shapeInfoLength(rank) - 2] = 0;
-        shapeInfo[shape::shapeInfoLength(rank) - 1] = shape::getOrder(rank, shape::shapeOf(shapeInfo),shape::stride(shapeInfo),1);
+        shapeInfo[shape::shapeInfoLength(rank) - 1] = shape::getOrder(rank, shape::shapeOf(shapeInfo),shape::stride(shapeInfo), 1);
 
         delete[] temp;
     }
