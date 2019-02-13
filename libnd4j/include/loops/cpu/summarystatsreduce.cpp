@@ -85,29 +85,20 @@ namespace functions {
             SummaryStatsData<X> startingIndex;
             startingIndex.initialize();
             auto length = shape::length(xShapeInfo);
-            auto xEws = shape::elementWiseStride(xShapeInfo);
-            if (xEws == 1) {
-                for (Nd4jLong i = 0; i < length; i++) {
-                    SummaryStatsData<X> curr;
-                    curr.initWithValue(x[i]);
-                    startingIndex = update(startingIndex, curr, extraParams);
-                }
-
-                return OpType::getValue(biasCorrected, startingIndex);
-            }
-            else {
-
-                for (Nd4jLong i = 0; i < length; i++) {
+            
+            uint xShapeInfoCast[MAX_RANK];
+            const bool canCast = nd4j::DataTypeUtils::castShapeInfo<uint>(xShapeInfo, xShapeInfoCast);
+            
+            for (Nd4jLong i = 0; i < length; i++) {
                                         
-                    auto xOffset = shape::getIndexOffset(i, xShapeInfo, length);
+                auto xOffset = shape::indexOffset(i, xShapeInfo, xShapeInfoCast, length, canCast);
 
-                    SummaryStatsData<X> curr;
-                    curr.initWithValue(x[xOffset]);
-                    startingIndex = update(startingIndex, curr, extraParams);
-                }
-
-                return OpType::getValue(biasCorrected, startingIndex);
+                SummaryStatsData<X> curr;
+                curr.initWithValue(x[xOffset]);
+                startingIndex = update(startingIndex, curr, extraParams);
             }
+
+            return OpType::getValue(biasCorrected, startingIndex);            
         }
 
         template <typename X, typename Z>
@@ -148,64 +139,7 @@ namespace functions {
                 return;
             }
 
-            if (!(shape::elementWiseStride(tad.tadOnlyShapeInfo) > 0 && (tad.numTads == 1 || shape::isVector(tad.tadOnlyShapeInfo) ||
-                                                                         shape::isScalar(tad.tadOnlyShapeInfo) || tad.wholeThing)) && !(dimensionLength > 1)) {
-
-                /**
-                 * The element wise stride belong longs to a reduction index.
-                 * When used out of order, we can get rid of the data
-                 * dependencies and rely on using the max dimension
-                 * specified for stride instead.
-                 * Say we take the sum(0,1) along long arr
-                 * we can use arr.stride(1) as a representation
-                 * along long which to iterate.
-                 */
-
-                auto tadShapeShapeInfo = tad.tadOnlyShapeInfo;
-
-                auto xShape = shape::shapeOf(tadShapeShapeInfo);
-                auto xStride = shape::stride(tadShapeShapeInfo);
-                int rank = shape::rank(tadShapeShapeInfo);
-#pragma omp parallel for schedule(guided) default(shared)
-                for (int i = 0; i < resultLength; i++) {
-                    auto offset = tad.tadOffsets[i];
-                    Nd4jLong shapeIter[MAX_RANK];
-                    Nd4jLong coord[MAX_RANK];
-                    int dim;
-                    int rankIter = rank;
-                    Nd4jLong xStridesIter[MAX_RANK];
-                    auto xPointer = x + offset;
-                    SummaryStatsData<X> comp;
-                    comp.initWithValue(0.0);
-                    if (PrepareOneRawArrayIter<X>(rankIter,
-                                                  xShape,
-                                                  xPointer,
-                                                  xStride,
-                                                  &rankIter,
-                                                  shapeIter,
-                                                  &xPointer,
-                                                  xStridesIter) >= 0) {
-                        ND4J_RAW_ITER_START(dim, rank, coord, shapeIter); {
-                                /* Process the innermost dimension */
-                                SummaryStatsData<X> comp2;
-                                comp2.initWithValue(xPointer[0]);
-                                comp = update(comp, comp2, extraParams);
-                            } ND4J_RAW_ITER_ONE_NEXT(dim,
-                                                     rank,
-                                                     coord,
-                                                     shapeIter,
-                                                     xPointer,
-                                                     xStridesIter);
-                    }
-                    else {
-                        printf("Unable to prepare array\n");
-                    }
-
-                    z[i] = OpType::getValue(biasCorrected, comp);
-                }
-            }
-            else {
-                if (dimensionLength == 1) {
+            if (dimensionLength == 1) {
                     auto tadElementWiseStride = shape::elementWiseStride(tad.tadOnlyShapeInfo);
                     auto tadLength = shape::length(tad.tadOnlyShapeInfo);
 
@@ -223,9 +157,13 @@ namespace functions {
 
                         z[i] = OpType::getValue(biasCorrected, comp);
                     }
-                } else {
+                } 
+                else {
                     auto tadShapeShapeInfo = tad.tadOnlyShapeInfo;
                     auto tadLength = shape::length(tad.tadOnlyShapeInfo);
+
+                    uint tadShapeShapeInfoCast[MAX_RANK];
+                    const bool canCast = nd4j::DataTypeUtils::castShapeInfo<uint>(tadShapeShapeInfo, tadShapeShapeInfoCast);
 
 #pragma omp parallel for schedule(guided) default(shared)
                     for (int r = 0; r < resultLength; r++) {
@@ -237,7 +175,7 @@ namespace functions {
 // FIXME: reduction should be fixed
                         for (int i = 1; i < tadLength; i ++) {                            
                             
-                            auto xOffset = tadOffsetForBlock + shape::getIndexOffset(i, tadShapeShapeInfo, tadLength);
+                            auto xOffset = tadOffsetForBlock + shape::indexOffset(i, tadShapeShapeInfo, tadShapeShapeInfoCast, tadLength, canCast);
 
                             SummaryStatsData <X> indexVal2;
                             indexVal2.initWithValue(x[xOffset]);
@@ -247,7 +185,6 @@ namespace functions {
                         z[r] = OpType::getValue(biasCorrected, comp);
                     }
                 }
-            }
         }
 
 

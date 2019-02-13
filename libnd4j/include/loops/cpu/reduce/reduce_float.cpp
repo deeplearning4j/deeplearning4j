@@ -192,24 +192,14 @@ namespace functions {
                                             
                     auto tx = x + tadOffsets[i];
                     auto start = OpType::startingValue(tx);                    
-
-                    if(canCast) {
-                        for (uint j = 0; j < tadLength; j++) {
-                            auto xOffset = shape::getIndexOffset(j, castTadOnlyShapeInfo, (uint)tadLength);
-                            start = OpType::update(start, OpType::op(tx[xOffset], extraParams), extraParams);
-                        }
+                    
+                    for (Nd4jLong j = 0; j < tadLength; j++) {
+                        auto xOffset = shape::indexOffset(j, tadOnlyShapeInfo, castTadOnlyShapeInfo, tadLength, canCast);
+                        start = OpType::update(start, OpType::op(tx[xOffset], extraParams), extraParams);
                     }
-                    else {                       
-                        for (int j = 0; j < tadLength; j++) {
-                            auto xOffset = shape::getIndexOffset(j, tadOnlyShapeInfo, tadLength);
-                            start = OpType::update(start, OpType::op(tx[xOffset], extraParams), extraParams);
-                        }
-                    }
-                       
-
+                                           
                     z[i] = OpType::postProcess(start, tadLength, extraParams);;
-                }
-                
+                }                
 
                 if (tad != nullptr)
                     delete tad;

@@ -981,6 +981,7 @@ namespace shape {
     ND4J_EXPORT _CUDA_HD uint getIndexOffset(uint index, const uint *shapeInfo, uint arrLen);
     ND4J_EXPORT _CUDA_HD Nd4jLong getIndexOffset(Nd4jLong index, const Nd4jLong *shapeInfo, Nd4jLong arrLen);
     ND4J_EXPORT _CUDA_HD Nd4jLong getIndexOrderOffset(Nd4jLong index, const Nd4jLong *shapeInfo, Nd4jLong arrLen, const char order);
+    ND4J_EXPORT _CUDA_HD Nd4jLong indexOffset(Nd4jLong index, const Nd4jLong* lShapeInfo, const uint* uShapeInfo, Nd4jLong arrLen, const bool useUnsigned);
     
     /**
    * Compute the real linear indices for the given shape and stride
@@ -1978,6 +1979,14 @@ template <typename T>
             }
         }
         return offset;
+    }
+
+    INLINEDEF _CUDA_HD Nd4jLong indexOffset(Nd4jLong index, const Nd4jLong* lShapeInfo, const uint* uShapeInfo, Nd4jLong arrLen, const bool useUnsigned) {
+
+        if(useUnsigned)
+            return getIndexOffset(static_cast<uint>(index), uShapeInfo, static_cast<uint>(arrLen));
+
+        return getIndexOffset(index, lShapeInfo, arrLen);
     }
 
 //////////////////////////////////////////////////////////////////////    
