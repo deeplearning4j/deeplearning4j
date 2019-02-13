@@ -183,14 +183,15 @@ namespace functions {
                 int tadsPerThread = resultLength / TAD_THRESHOLD;
                 int num_threads = nd4j::math::nd4j_max<int>(1, tadsPerThread);
                 num_threads = nd4j::math::nd4j_min<int>(num_threads, omp_get_max_threads());
+
+                uint castTadOnlyShapeInfo[MAX_RANK];
+                const bool canCast = nd4j::DataTypeUtils::castShapeInfo<uint>(tadOnlyShapeInfo, castTadOnlyShapeInfo);
                
 #pragma omp  parallel for schedule(guided) num_threads(num_threads) if(num_threads>1) proc_bind(AFFINITY) default(shared)
                 for (unsigned int i = 0; i < resultLength; i++) {
                                             
                     auto tx = x + tadOffsets[i];
-                    auto start = OpType::startingValue(tx);
-                    uint castTadOnlyShapeInfo[MAX_RANK];
-                    const bool canCast = nd4j::DataTypeUtils::castShapeInfo<uint>(tadOnlyShapeInfo, castTadOnlyShapeInfo);
+                    auto start = OpType::startingValue(tx);                    
 
                     if(canCast) {
                         for (uint j = 0; j < tadLength; j++) {
