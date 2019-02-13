@@ -129,6 +129,27 @@ public class TestImageLoader {
     }
 
     @Test
+    public void testScalingIfNeed_suitable_size_diff_channel() {
+        int width1 = 60, height1 = 110, channel1 = BufferedImage.TYPE_BYTE_GRAY;
+        BufferedImage img1 = makeRandomBufferedImage(true, width1, height1);
+        ImageLoader loader1 = new ImageLoader(height1, width1, channel1);
+        BufferedImage scaled1 = loader1.scalingIfNeed(img1, false);
+        assertEquals(width1, scaled1.getWidth());
+        assertEquals(height1, scaled1.getHeight());
+        assertEquals(channel1, scaled1.getType());
+        assertEquals(1, scaled1.getSampleModel().getNumBands());
+
+        int width2 = 70, height2 = 120, channel2 = BufferedImage.TYPE_BYTE_GRAY;
+        BufferedImage img2 = makeRandomBufferedImage(false, width2, height2);
+        ImageLoader loader2 = new ImageLoader(height2, width2, channel2);
+        BufferedImage scaled2 = loader2.scalingIfNeed(img2, false);
+        assertEquals(width2, scaled2.getWidth());
+        assertEquals(height2, scaled2.getHeight());
+        assertEquals(channel2, scaled2.getType());
+        assertEquals(1, scaled2.getSampleModel().getNumBands());
+    }
+
+    @Test
     public void testToBufferedImageRGB() {
         BufferedImage img = makeRandomBufferedImage(false);
         int w = img.getWidth();
@@ -150,9 +171,17 @@ public class TestImageLoader {
 
     }
 
-    private BufferedImage makeRandomBufferedImage(boolean alpha) {
-        int w = rng.nextInt() % 100 + 100;
-        int h = rng.nextInt() % 100 + 100;
+    /**
+     * Generate a Random BufferedImage with specified width and height
+     *
+     * @param alpha  Is image alpha
+     * @param width  Proposed width
+     * @param height Proposed height
+     * @return Generated BufferedImage
+     */
+    private BufferedImage makeRandomBufferedImage(boolean alpha, int width, int height) {
+        int w = width > 0 ? width : (rng.nextInt() % 100 + 100);
+        int h = height > 0 ? height : (rng.nextInt() % 100 + 100);
         int type = alpha ? BufferedImage.TYPE_4BYTE_ABGR : BufferedImage.TYPE_3BYTE_BGR;
         BufferedImage img = new BufferedImage(w, h, type);
         for (int i = 0; i < h; ++i) {
@@ -166,5 +195,15 @@ public class TestImageLoader {
             }
         }
         return img;
+    }
+
+    /**
+     * Generate a Random BufferedImage with random width and height
+     *
+     * @param alpha Is image alpha
+     * @return Generated BufferedImage
+     */
+    private BufferedImage makeRandomBufferedImage(boolean alpha) {
+        return makeRandomBufferedImage(alpha, -1, -1);
     }
 }
