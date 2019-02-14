@@ -11695,7 +11695,6 @@ public class SameDiff {
         int maxLengthOfName = 8;       //Length of "- Name -"
         for (String s : varMap.keySet()) {
             String outputOf = null;
-//            for (Map.Entry<String, String[]> dfToArgs : outgoingArgsReverse.entrySet()) {
             for(SameDiffOp op : ops.values()){
                 List<String> outputsOfOp = op.getOutputsOfOp();
                 if (outputsOfOp != null && outputsOfOp.contains(s)) {
@@ -11718,14 +11717,16 @@ public class SameDiff {
         maxLengthOfName += 2;
 
         //Create the output for values:
-        format = "%-" + maxLengthOfName + "s%-20s%-" + maxLengthOutputOf + "s%-20s";
-        sb.append(String.format(format, "- Name -", "- Array Shape -", "- Output Of Function -", "- Inputs To Functions -")).append("\n");
+        format = "%-" + maxLengthOfName + "s%-20s%-20s%-20s%-" + maxLengthOutputOf + "s%-20s";
+        sb.append(String.format(format, "- Name -", "- Array Shape -", "- Variable Type -", "- Data Type-", "- Output Of Function -", "- Inputs To Functions -")).append("\n");
         for (String s : varMap.keySet()) {
             INDArray arr = getArrForVarName(s);
             String arrayShape = "-";
             if (arr != null) {
                 arrayShape = Arrays.toString(arr.shape());
             }
+            String varType = getVariable(s).getVariableType().toString();
+            String dtype = getVariable(s).dataType().toString();
 
             List<String> argNames = variables.get(s).getInputsForOp();
             String dfArrStr = "";
@@ -11735,7 +11736,7 @@ public class SameDiff {
 
             String outputOfStr = outputOfFn.get(s);
 
-            sb.append(String.format(format, s, arrayShape, outputOfStr, dfArrStr)).append("\n");
+            sb.append(String.format(format, s, arrayShape, varType, dtype, outputOfStr, dfArrStr)).append("\n");
         }
 
         sb.append("\n\n--- Functions ---\n");
