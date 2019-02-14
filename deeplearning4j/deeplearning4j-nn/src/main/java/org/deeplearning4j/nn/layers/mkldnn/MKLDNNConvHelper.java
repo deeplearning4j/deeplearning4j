@@ -37,6 +37,11 @@ import org.nd4j.linalg.primitives.Pair;
 import java.util.Collections;
 import java.util.Map;
 
+/**
+ * MKL-DNN Convolution (2d) helper
+ *
+ * @author Alex Black
+ */
 public class MKLDNNConvHelper implements ConvolutionHelper {
     @Override
     public boolean checkSupported() {

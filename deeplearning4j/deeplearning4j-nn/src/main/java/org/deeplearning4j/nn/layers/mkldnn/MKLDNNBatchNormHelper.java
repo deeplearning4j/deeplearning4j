@@ -31,6 +31,11 @@ import org.nd4j.linalg.primitives.Pair;
 import java.util.Collections;
 import java.util.Map;
 
+/**
+ * MKL-DNN batch normalization helper implementation
+ *
+ * @author Alex Black
+ */
 public class MKLDNNBatchNormHelper implements BatchNormalizationHelper {
     private static final int[] RANK2_DIMS = {0};
     private static final int[] RANK4_DIMS = {0,2,3};
@@ -46,6 +51,8 @@ public class MKLDNNBatchNormHelper implements BatchNormalizationHelper {
     @Override
     public Pair<Gradient, INDArray> backpropGradient(INDArray input, INDArray epsilon, int[] shape, INDArray gamma,
                                                      INDArray dGammaView, INDArray dBetaView, double eps, LayerWorkspaceMgr workspaceMgr) {
+        //2019-02-14: Backprop disabled pending fixes. https://github.com/deeplearning4j/deeplearning4j/issues/7166
+        //Also no MKL-DNN implemented for backprop anyway
         /*
         INDArray[] in = gamma == null ? new INDArray[]{input, mean, var, epsilon} : new INDArray[]{input, mean, var, gamma, beta, epsilon};
 

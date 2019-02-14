@@ -104,10 +104,13 @@ public class LocalResponseNormalization
                             + "For more information, please refer to: https://deeplearning4j.org/docs/latest/deeplearning4j-config-cudnn", t);
                 }
             }
-        } else if("CPU".equalsIgnoreCase(backend)){
+        }
+        /*
+        //2019-02-14 AB - MKL-DNN helper disabled: LRN backprop is broken: https://github.com/deeplearning4j/deeplearning4j/issues/6958 issue 20
+        else if("CPU".equalsIgnoreCase(backend)){
             helper = new MKLDNNLocalResponseNormalizationHelper();
             log.debug("Created MKLDNNLocalResponseNormalizationHelper");
-        }
+        }*/
         if (helper != null && !helper.checkSupported(layerConf().getK(), layerConf().getN(), layerConf().getAlpha(), layerConf().getBeta())) {
             log.debug("Removed helper {} as not supported (k={}, n={}, alpha={}, beta={})", helper.getClass(), layerConf().getK(), layerConf().getN(), layerConf().getAlpha(), layerConf().getBeta());
             helper = null;

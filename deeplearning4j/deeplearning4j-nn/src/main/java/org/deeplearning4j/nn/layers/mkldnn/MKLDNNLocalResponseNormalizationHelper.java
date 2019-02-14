@@ -31,6 +31,11 @@ import org.nd4j.linalg.primitives.Pair;
 import java.util.Collections;
 import java.util.Map;
 
+/**
+ * MKL-DNN Local response normalization helper
+ *
+ * @author Alex Black
+ */
 public class MKLDNNLocalResponseNormalizationHelper extends BaseMKLDNNHelper implements LocalResponseNormalizationHelper {
     @Override
     public boolean checkSupported(double k, double n, double alpha, double beta) {
@@ -39,7 +44,8 @@ public class MKLDNNLocalResponseNormalizationHelper extends BaseMKLDNNHelper imp
 
     @Override
     public Pair<Gradient, INDArray> backpropGradient(INDArray input, INDArray epsilon, double k, double n, double alpha, double beta, LayerWorkspaceMgr workspaceMgr) {
-        INDArray gradAtInput = workspaceMgr.createUninitialized(ArrayType.ACTIVATIONS, input.dataType(), input.shape());
+        INDArray gradAtInput = workspaceMgr.createUninitialized(ArrayType.ACTIVATION_GRAD, input.dataType(), input.shape());
+        gradAtInput.assign(0);
 
         LocalResponseNormalizationConfig conf = LocalResponseNormalizationConfig.builder()
                 .alpha(alpha)
