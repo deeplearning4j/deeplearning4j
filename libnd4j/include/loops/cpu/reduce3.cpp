@@ -49,36 +49,28 @@ void Reduce3<X,Z>::execScalar(void *vx, Nd4jLong *xShapeInfo,
     Z extraParamsVals[3] = {(X) 0.0f, (X) 0.0f, (X) 0.0f};
     // it's possible case for EqualsWithEps op
     if (extraParams != nullptr) 
-        extraParamsVals[2] = extraParams[0];
-                
-    auto xOrder = shape::order(xShapeInfo);
-    auto yOrder = shape::order(yShapeInfo);
-    if(xOrder == yOrder && (xEws  >=1 && yEws >= 1) && shape::strideDescendingCAscendingF(xShapeInfo) && shape::strideDescendingCAscendingF(yShapeInfo)) {
+        extraParamsVals[2] = extraParams[0];                
+    
+    uint xShapeInfoCast[MAX_RANK];
+    const bool canCastX = nd4j::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
 
-        if (xEws == 1 && yEws == 1) {
+    if(shape::equalsStrict(xShapeInfo, yShapeInfo)) {
 
-            #pragma omp simd reduction(sumT:startingVal)
-            for(int i = 0; i < length; i++) 
-                startingVal = OpType::update(startingVal, OpType::op(x[i],y[i], extraParamsVals),extraParamsVals);                        
-
-            z[0] = OpType::postProcess(startingVal, length, extraParamsVals);
-
+        #pragma omp simd reduction(sumT:startingVal)
+        for(unsigned int i = 0; i < length; i++) {            
+            auto offset  = shape::indexOffset(i, xShapeInfo, xShapeInfoCast, length, canCastX);
+            startingVal = OpType::update(startingVal, OpType::op(x[offset], y[offset], extraParamsVals), extraParamsVals);
         }
-        else {
-            #pragma omp simd reduction(sumT:startingVal)
-            for(Nd4jLong i = 0; i < length; i++) 
-                startingVal = OpType::update(startingVal, OpType::op(x[i * xEws],y[i * yEws], extraParamsVals), extraParamsVals);
-                        
-            z[0] =  OpType::postProcess(startingVal, length, extraParamsVals);
-        }
-
     }
     else {
+        uint yShapeInfoCast[MAX_RANK];
+        const bool canCastY = nd4j::DataTypeUtils::castShapeInfo(yShapeInfo, yShapeInfoCast);
+
         #pragma omp simd reduction(sumT:startingVal)
-        for(unsigned int i = 0 ;i < length; i++) {
-            auto offset  = shape::getIndexOffset(i, xShapeInfo, length);
-            auto yOffset = shape::getIndexOffset(i, yShapeInfo, length);
-            startingVal = OpType::update(startingVal, OpType::op(x[offset], y[yOffset], extraParamsVals), extraParamsVals);
+        for(unsigned int i = 0; i < length; i++) {            
+            auto xOffset  = shape::indexOffset(i, xShapeInfo, xShapeInfoCast, length, canCastX);
+            auto yOffset  = shape::indexOffset(i, yShapeInfo, yShapeInfoCast, length, canCastY);
+            startingVal = OpType::update(startingVal, OpType::op(x[xOffset], y[yOffset], extraParamsVals), extraParamsVals);
         }
     }
 
@@ -206,12 +198,12 @@ void Reduce3<X,Z>::exec(void *vx, Nd4jLong *xShapeInfo,
         }
         else {
 
-        uint xShapeInfoCast[MAX_RANK];
-        uint yShapeInfoCast[MAX_RANK];
-        uint zShapeInfoCast[MAX_RANK];
-        const bool canCastX = nd4j::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
-        const bool canCastY = nd4j::DataTypeUtils::castShapeInfo(yShapeInfo, yShapeInfoCast);
-        const bool canCastZ = nd4j::DataTypeUtils::castShapeInfo(zShapeInfo, zShapeInfoCast);
+            uint xShapeInfoCast[MAX_RANK];
+            uint yShapeInfoCast[MAX_RANK];
+            uint zShapeInfoCast[MAX_RANK];
+            const bool canCastX = nd4j::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
+            const bool canCastY = nd4j::DataTypeUtils::castShapeInfo(yShapeInfo, yShapeInfoCast);
+            const bool canCastZ = nd4j::DataTypeUtils::castShapeInfo(zShapeInfo, zShapeInfoCast);
 
             #pragma omp parallel num_threads(info._numThreads) if (info._numThreads > 1) default(shared)
             {                
@@ -445,36 +437,67 @@ void Reduce3<X,Z>::exec(void *vx, Nd4jLong *xShapeInfo,
     auto tadLength = shape::tadLength(xShapeInfo, dimension, dimensionLength);
     auto tads = shape::length(xShapeInfo) / tadLength;
 
-    uint castTadShapeX[MAX_RANK];
-    uint castTadShapeY[MAX_RANK];
+    uint tadShapeInfoCast[MAX_RANK];
+    bool canCastX = nd4j::DataTypeUtils::castShapeInfo(tadShapeInfo, tadShapeInfoCast);
 
-    bool canCastX = nd4j::DataTypeUtils::castShapeInfo(tadShapeInfo, castTadShapeX);
-    bool canCastY = nd4j::DataTypeUtils::castShapeInfo(yShapeInfo, castTadShapeY);
+    if(shape::equalsStrict(tadShapeInfo, yShapeInfo)) {
+
+        #pragma  omp parallel for proc_bind(AFFINITY) default(shared)
+        for (Nd4jLong r = 0; r < tads; r++) {
+            
+            Nd4jLong offset = tadOffsets[r];
+            Z *localExtraParams = nullptr;
+            auto sv = OpType::startingValue(x);
+
+            if (OpType::extraParamsLen > 0)
+                localExtraParams = new Z[OpType::extraParamsLen];
+
+            for (int extraParamsIdx = 0; extraParamsIdx < OpType::extraParamsLen; extraParamsIdx++) 
+                localExtraParams[extraParamsIdx] = startingVal;
+
+            #pragma omp simd reduction(sumT:sv)
+            for (Nd4jLong f = 0; f < tadLength; f++) {
+                auto yOffset = shape::indexOffset(f, tadShapeInfo, tadShapeInfoCast, tadLength, canCastX);
+                auto xOffset = offset + yOffset;                
+                sv = OpType::update(sv, OpType::op(x[xOffset], y[yOffset], localExtraParams), localExtraParams);
+            }
+
+            z[r] = OpType::postProcess(sv, tadLength, localExtraParams);
+
+            if (localExtraParams != nullptr)
+                delete[] localExtraParams;
+        }        
+    }
+    else {
+
+        uint yShapeInfoCast[MAX_RANK];
+        bool canCastY = nd4j::DataTypeUtils::castShapeInfo(yShapeInfo, yShapeInfoCast);
 
 #pragma  omp parallel for proc_bind(AFFINITY) default(shared)
-    for (Nd4jLong r = 0; r < tads; r++) {
-        
-        Nd4jLong offset = tadOffsets[r];
-        Z *localExtraParams = nullptr;
-        auto sv = OpType::startingValue(x);
+        for (Nd4jLong r = 0; r < tads; r++) {
+            
+            Nd4jLong offset = tadOffsets[r];
+            Z *localExtraParams = nullptr;
+            auto sv = OpType::startingValue(x);
 
-        if (OpType::extraParamsLen > 0)
-            localExtraParams = new Z[OpType::extraParamsLen];
+            if (OpType::extraParamsLen > 0)
+                localExtraParams = new Z[OpType::extraParamsLen];
 
-        for (int extraParamsIdx = 0; extraParamsIdx < OpType::extraParamsLen; extraParamsIdx++) 
-            localExtraParams[extraParamsIdx] = startingVal;
+            for (int extraParamsIdx = 0; extraParamsIdx < OpType::extraParamsLen; extraParamsIdx++) 
+                localExtraParams[extraParamsIdx] = startingVal;
 
-        #pragma omp simd reduction(sumT:sv)
-        for (Nd4jLong f = 0; f < tadLength; f++) {
-            auto xOffset = offset + shape::indexOffset(f, tadShapeInfo, castTadShapeX, tadLength, canCastX);
-            auto yOffset = shape::indexOffset(f, yShapeInfo, castTadShapeY, tadLength, canCastY);
-            sv = OpType::update(sv, OpType::op(x[xOffset], y[yOffset], localExtraParams), localExtraParams);
+            #pragma omp simd reduction(sumT:sv)
+            for (Nd4jLong f = 0; f < tadLength; f++) {
+                auto xOffset = offset + shape::indexOffset(f, tadShapeInfo, tadShapeInfoCast, tadLength, canCastX);
+                auto yOffset = shape::indexOffset(f, yShapeInfo, yShapeInfoCast, tadLength, canCastY);
+                sv = OpType::update(sv, OpType::op(x[xOffset], y[yOffset], localExtraParams), localExtraParams);
+            }
+
+            z[r] = OpType::postProcess(sv, tadLength, localExtraParams);
+
+            if (localExtraParams != nullptr)
+                delete[] localExtraParams;
         }
-
-        z[r] = OpType::postProcess(sv, tadLength, localExtraParams);
-
-        if (localExtraParams != nullptr)
-            delete[] localExtraParams;
     }
 }
 
@@ -502,43 +525,81 @@ void Reduce3<X,Z>:: execAll(void *vx, Nd4jLong *xShapeInfo,
     auto yTads = shape::length(yShapeInfo) / yTadLength;
     auto startingVal = OpType::startingValue(x);
 
-    uint castTadShapeX[MAX_RANK];
-    uint castTadShapeY[MAX_RANK];
-
-    bool canCastX = nd4j::DataTypeUtils::castShapeInfo(xTadShapeInfo, castTadShapeX);
-    bool canCastY = canCastX ? nd4j::DataTypeUtils::castShapeInfo(yTadShapeInfo, castTadShapeY) : false;
-
-    #pragma  omp parallel for proc_bind(AFFINITY) default(shared)
-    for (Nd4jLong r = 0; r < xTads; r++) {
+    uint xTadShapeInfoCast[MAX_RANK];
+    bool canCastX = nd4j::DataTypeUtils::castShapeInfo(xTadShapeInfo, xTadShapeInfoCast);
     
-        Nd4jLong xOffset = xOffsets[r];
-        auto lX = x + xOffset;
-
-        for (Nd4jLong g = 0; g < yTads; g++) {
+    if (shape::equalsStrict(xTadShapeInfo, yTadShapeInfo) ) {
         
-            auto yOffset = yOffsets[g];
-            auto lY = y + yOffset;
-            auto ri = (r * yTads) + g;
-            auto sv = OpType::startingValue(x);
+        #pragma  omp parallel for proc_bind(AFFINITY) default(shared)
+        for (Nd4jLong r = 0; r < xTads; r++) {
+        
+            Nd4jLong xOffset = xOffsets[r];
+            auto lX = x + xOffset;
 
-            Z *localExtraParams = nullptr;
-            if (OpType::extraParamsLen > 0)
-                localExtraParams = new Z[OpType::extraParamsLen];
+            for (Nd4jLong g = 0; g < yTads; g++) {
+            
+                auto yOffset = yOffsets[g];
+                auto lY = y + yOffset;
+                auto ri = (r * yTads) + g;
+                auto sv = OpType::startingValue(x);
 
-            for (int extraParamsIdx = 0; extraParamsIdx < OpType::extraParamsLen; extraParamsIdx++) 
-                localExtraParams[extraParamsIdx] = startingVal;
+                Z *localExtraParams = nullptr;
+                if (OpType::extraParamsLen > 0)
+                    localExtraParams = new Z[OpType::extraParamsLen];
 
-            #pragma omp simd reduction(sumT:sv)
-            for (int f = 0; f < xTadLength; f++) {                            
-                auto xO = shape::indexOffset(f, xTadShapeInfo, castTadShapeX, xTadLength, canCastX);
-                auto yO = shape::indexOffset(f, yTadShapeInfo, castTadShapeY, xTadLength, canCastY);
-                sv = OpType::update(sv, OpType::op(lX[xO], lY[yO], localExtraParams), localExtraParams);
+                for (int extraParamsIdx = 0; extraParamsIdx < OpType::extraParamsLen; extraParamsIdx++) 
+                    localExtraParams[extraParamsIdx] = startingVal;
+
+                #pragma omp simd reduction(sumT:sv)
+                for (int f = 0; f < xTadLength; f++) {                            
+                    auto offset = shape::indexOffset(f, xTadShapeInfo, xTadShapeInfoCast, xTadLength, canCastX);                    
+                    sv = OpType::update(sv, OpType::op(lX[offset], lY[offset], localExtraParams), localExtraParams);
+                }
+
+                z[ri] = OpType::postProcess(sv, xTadLength, localExtraParams);
+
+                if (localExtraParams != nullptr)
+                    delete[] localExtraParams;
             }
+        }
+    }
+    else {
 
-            z[ri] = OpType::postProcess(sv, xTadLength, localExtraParams);
+        uint yTadShapeInfoCast[MAX_RANK];
+        bool canCastY = canCastX ? nd4j::DataTypeUtils::castShapeInfo(yTadShapeInfo, yTadShapeInfoCast) : false;
+        
+        #pragma  omp parallel for proc_bind(AFFINITY) default(shared)
+        for (Nd4jLong r = 0; r < xTads; r++) {
+        
+            Nd4jLong xOffset = xOffsets[r];
+            auto lX = x + xOffset;
 
-            if (localExtraParams != nullptr)
-                delete[] localExtraParams;
+            for (Nd4jLong g = 0; g < yTads; g++) {
+            
+                auto yOffset = yOffsets[g];
+                auto lY = y + yOffset;
+                auto ri = (r * yTads) + g;
+                auto sv = OpType::startingValue(x);
+
+                Z *localExtraParams = nullptr;
+                if (OpType::extraParamsLen > 0)
+                    localExtraParams = new Z[OpType::extraParamsLen];
+
+                for (int extraParamsIdx = 0; extraParamsIdx < OpType::extraParamsLen; extraParamsIdx++) 
+                    localExtraParams[extraParamsIdx] = startingVal;
+
+                #pragma omp simd reduction(sumT:sv)
+                for (int f = 0; f < xTadLength; f++) {                            
+                    auto xO = shape::indexOffset(f, yTadShapeInfo, xTadShapeInfoCast, xTadLength, canCastX);
+                    auto yO = shape::indexOffset(f, yTadShapeInfo, yTadShapeInfoCast, xTadLength, canCastY);
+                    sv = OpType::update(sv, OpType::op(lX[xO], lY[yO], localExtraParams), localExtraParams);
+                }
+
+                z[ri] = OpType::postProcess(sv, xTadLength, localExtraParams);
+
+                if (localExtraParams != nullptr)
+                    delete[] localExtraParams;
+            }
         }
     }
 }
