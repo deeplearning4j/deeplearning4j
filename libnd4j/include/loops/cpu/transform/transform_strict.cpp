@@ -62,113 +62,40 @@ namespace functions {
             }
 
             const auto len = shape::length(xShapeInfo);
-            const auto xEws = shape::elementWiseStride(xShapeInfo);
-            const auto zEws = shape::elementWiseStride(zShapeInfo);
-            const auto xOrder = shape::order(xShapeInfo);
-            const auto zOrder = shape::order(zShapeInfo);
+                        
+            nd4j::OmpLaunchHelper info(len);
 
-            // loop2ArrsSame<X>(x, xShapeInfo, z, zShapeInfo, extraParams, OpType::op);
+            uint xShapeInfoCast[MAX_RANK];
+            bool canCastX = nd4j::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
 
-            if(xEws >= 1 && zEws >= 1 && xOrder == zOrder) {
-                nd4j::OmpLaunchHelper info(len);
-
-                if (xEws == 1 && zEws == 1) {
+            if(shape::haveSameOffsets(xShapeInfo, zShapeInfo)) {
 
 #pragma omp parallel num_threads(info._numThreads) if (info._numThreads > 1) default(shared)
-                    {
-                        auto threadNum = omp_get_thread_num();
-                        auto threadOffset = info.getThreadOffset(threadNum);
-                        auto xi = x + threadOffset;
-                        auto zi = z + threadOffset;
+                {
+                    auto threadNum = omp_get_thread_num();
+                    auto threadOffset = info.getThreadOffset(threadNum);                        
 
-                        #pragma omp simd
-                        for (Nd4jLong j = 0; j < info.getItersPerThread(threadNum); j++)
-                            zi[j] = OpType::op(xi[j], extraParams);
-                    }
-                } else {
-
-#pragma omp parallel num_threads(info._numThreads) if (info._numThreads > 1) default(shared)
-                    {
-                        auto threadNum = omp_get_thread_num();
-                        auto threadOffset = info.getThreadOffset(threadNum);
-                        auto xi = x + xEws * threadOffset;
-                        auto zi = z + zEws * threadOffset;
-
-                        #pragma omp simd
-                        for (Nd4jLong j = 0; j < info.getItersPerThread(threadNum); j++)
-                            zi[j * zEws] = OpType::op(xi[j * xEws], extraParams);
+                    #pragma omp simd
+                    for (Nd4jLong i = 0; i < info.getItersPerThread(threadNum); i++) {
+                        auto offset = shape::indexOffset(i + threadOffset, zShapeInfo, xShapeInfoCast, len, canCastX);
+                        z[offset] = OpType::op(x[offset], extraParams);
                     }
                 }
             }
             else {
-
-                const bool xSimple = shape::isStrideSimple(xShapeInfo);
-                const bool zSimple = shape::isStrideSimple(zShapeInfo);
-
-                uint castShapeInfoX[MAX_RANK];
-                uint castShapeInfoZ[MAX_RANK];
-
-                bool canCastX = nd4j::DataTypeUtils::castShapeInfo(xShapeInfo, castShapeInfoX);
-                bool canCastZ = canCastX ? nd4j::DataTypeUtils::castShapeInfo(zShapeInfo, castShapeInfoZ) : false;
-
-                nd4j::OmpLaunchHelper info(len);
-
-                if(xSimple) {
+                uint zShapeInfoCast[MAX_RANK];
+                bool canCastZ = nd4j::DataTypeUtils::castShapeInfo(zShapeInfo, zShapeInfoCast);
 
 #pragma omp parallel num_threads(info._numThreads) if (info._numThreads > 1) default(shared)
-                    {
-                        auto threadNum = omp_get_thread_num();
-                        auto threadOffset = info.getThreadOffset(threadNum);
-                        auto xi = x + xEws * threadOffset;
+                {
+                    auto threadNum = omp_get_thread_num();
+                    auto threadOffset = info.getThreadOffset(threadNum);
 
-                        #pragma omp simd
-                        for (Nd4jLong i = 0; i < info.getItersPerThread(threadNum); i++) {
-                            auto zOffset = shape::indexOffset(i+threadOffset, zShapeInfo, castShapeInfoZ, len, canCastZ);
-                            z[zOffset] = OpType::op(xi[i*xEws], extraParams);
-                        }
-                    }
-                }
-                else if(zSimple) {
-
-#pragma omp parallel num_threads(info._numThreads) if (info._numThreads > 1) default(shared)
-                    {
-                        auto threadNum = omp_get_thread_num();
-                        auto threadOffset = info.getThreadOffset(threadNum);
-                        auto zi = z + zEws * threadOffset;
-
-                        #pragma omp simd
-                        for (Nd4jLong i = 0; i < info.getItersPerThread(threadNum); i++) {
-                            auto xOffset = shape::indexOffset(i+threadOffset, xShapeInfo, castShapeInfoX, len, canCastX);
-                            zi[i*zEws] = OpType::op(x[xOffset], extraParams);
-                        }
-                    }
-                }
-                else if(shape::equalsStrict(xShapeInfo, zShapeInfo)) {
-
-#pragma omp parallel num_threads(info._numThreads) if (info._numThreads > 1) default(shared)
-                    {
-                        auto threadNum = omp_get_thread_num();
-                        auto threadOffset = info.getThreadOffset(threadNum);
-
-                        #pragma omp simd
-                        for (Nd4jLong i = 0; i < info.getItersPerThread(threadNum); i++) {
-                            auto offset = shape::indexOffset(i+threadOffset, xShapeInfo, castShapeInfoX, len, canCastX);
-                            z[offset] = OpType::op(x[offset], extraParams);
-                        }
-                    }
-                }
-                else {
-#pragma omp parallel num_threads(info._numThreads) if (info._numThreads > 1) default(shared)
-                    {
-                        auto threadNum = omp_get_thread_num();
-                        auto threadOffset = info.getThreadOffset(threadNum);
-
-                        #pragma omp simd
-                        for (Nd4jLong i = 0; i < info.getItersPerThread(threadNum); i++) {
-                            auto xOffset = shape::indexOffset(i+threadOffset, xShapeInfo, castShapeInfoX, len, canCastX);
-                            auto zOffset = shape::indexOffset(i+threadOffset, zShapeInfo, castShapeInfoZ, len, canCastZ);
-                            z[zOffset] = OpType::op(x[xOffset], extraParams);
-                        }
+                    #pragma omp simd
+                    for (Nd4jLong i = 0; i < info.getItersPerThread(threadNum); i++) {
+                        auto xOffset = shape::indexOffset(i + threadOffset, xShapeInfo, xShapeInfoCast, len, canCastX);
+                        auto zOffset = shape::indexOffset(i + threadOffset, zShapeInfo, zShapeInfoCast, len, canCastZ);
+                        z[zOffset] = OpType::op(x[xOffset], extraParams);
                     }
                 }
             }
