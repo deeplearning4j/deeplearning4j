@@ -70,7 +70,7 @@ public class MKLDNNConvHelper implements ConvolutionHelper {
 
         INDArray[] inputsArr = biasGradView == null ? new INDArray[]{input, weightsPermute, delta} : new INDArray[]{input, weightsPermute, bias, delta};
         INDArray[] outputArr = biasGradView == null ? new INDArray[]{gradAtInput, weightGradViewPermute} : new INDArray[]{gradAtInput, weightGradViewPermute, biasGradView};
-        DynamicCustomOp op = Conv2DDerivative.builder()
+        DynamicCustomOp op = Conv2DDerivative.derivativeBuilder()
                 .config(conf)
                 .inputArrays(inputsArr)
                 .outputs(outputArr)
@@ -126,8 +126,8 @@ public class MKLDNNConvHelper implements ConvolutionHelper {
     }
 
     @Override
-    public INDArray activate(INDArray z, IActivation afn) {
-        return afn.getActivation(z, false); //TODO train/test mode
+    public INDArray activate(INDArray z, IActivation afn, boolean training) {
+        return afn.getActivation(z, training);
     }
 
     @Override

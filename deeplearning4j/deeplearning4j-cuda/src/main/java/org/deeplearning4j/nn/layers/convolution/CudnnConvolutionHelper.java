@@ -529,7 +529,7 @@ public class CudnnConvolutionHelper extends BaseCudnnHelper implements Convoluti
     }
 
     @Override
-    public INDArray activate(INDArray z, IActivation afn) {
+    public INDArray activate(INDArray z, IActivation afn, boolean training) {
         if (Nd4j.getExecutioner() instanceof GridExecutioner)
             ((GridExecutioner) Nd4j.getExecutioner()).flushQueue();
 

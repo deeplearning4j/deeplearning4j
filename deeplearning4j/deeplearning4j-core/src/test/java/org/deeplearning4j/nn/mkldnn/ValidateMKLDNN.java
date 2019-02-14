@@ -36,6 +36,7 @@ import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.nativeblas.Nd4jCpu;
 
 import java.util.Arrays;
+import java.util.Collections;
 
 import static org.junit.Assume.assumeTrue;
 
@@ -222,7 +223,7 @@ public class ValidateMKLDNN extends BaseDL4JTest {
                 netWithout.init();
 
                 LayerHelperValidationUtil.TestCase tc = LayerHelperValidationUtil.TestCase.builder()
-                        .allowHelpersForClasses(Arrays.<Class<?>>asList(org.deeplearning4j.nn.layers.normalization.LocalResponseNormalization.class))
+                        .allowHelpersForClasses(Collections.<Class<?>>singletonList(org.deeplearning4j.nn.layers.normalization.LocalResponseNormalization.class))
                         .testForward(true)
                         .testScore(true)
                         .testBackward(true)

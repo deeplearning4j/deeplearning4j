@@ -44,5 +44,5 @@ public interface ConvolutionHelper extends LayerHelper {
     INDArray preOutput(INDArray input, INDArray weights, INDArray bias, int[] kernel, int[] strides, int[] pad,
                        AlgoMode mode, FwdAlgo fwdAlgo, ConvolutionMode convolutionMode, int[] dilation, LayerWorkspaceMgr workspaceMgr);
 
-    INDArray activate(INDArray z, IActivation afn);
+    INDArray activate(INDArray z, IActivation afn, boolean training);
 }
