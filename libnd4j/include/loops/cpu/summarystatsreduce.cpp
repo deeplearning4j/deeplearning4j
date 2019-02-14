@@ -139,53 +139,32 @@ namespace functions {
                 return;
             }
 
-            if (dimensionLength == 1) {
-                    auto tadElementWiseStride = shape::elementWiseStride(tad.tadOnlyShapeInfo);
-                    auto tadLength = shape::length(tad.tadOnlyShapeInfo);
+            auto tadShapeShapeInfo = tad.tadOnlyShapeInfo;
+            auto tadLength = shape::length(tad.tadOnlyShapeInfo);
 
-#pragma omp parallel for schedule(guided) default(shared)
-                    for (int i = 0; i < resultLength; i++) {
-                        Nd4jLong baseOffset = tad.tadOffsets[i];
-                        SummaryStatsData<X> comp;
-                        comp.initWithValue(x[baseOffset]);
-// FIXME: reduction to be used here
-                        for (int j = 1; j < tadLength; j++) {
-                            SummaryStatsData<X> comp2;
-                            comp2.initWithValue(x[baseOffset + (tadElementWiseStride * j)]);
-                            comp = update(comp, comp2, extraParams);
-                        }
+            uint tadShapeShapeInfoCast[MAX_RANK];
+            const bool canCast = nd4j::DataTypeUtils::castShapeInfo<uint>(tadShapeShapeInfo, tadShapeShapeInfoCast);
 
-                        z[i] = OpType::getValue(biasCorrected, comp);
-                    }
-                } 
-                else {
-                    auto tadShapeShapeInfo = tad.tadOnlyShapeInfo;
-                    auto tadLength = shape::length(tad.tadOnlyShapeInfo);
-
-                    uint tadShapeShapeInfoCast[MAX_RANK];
-                    const bool canCast = nd4j::DataTypeUtils::castShapeInfo<uint>(tadShapeShapeInfo, tadShapeShapeInfoCast);
-
-#pragma omp parallel for schedule(guided) default(shared)
-                    for (int r = 0; r < resultLength; r++) {
+#pragma omp parallel for if(resultLength > nd4j::Environment::getInstance()->elementwiseThreshold()) schedule(guided) default(shared)
+            for (int r = 0; r < resultLength; r++) {
                         
-                        auto tadOffsetForBlock = tad.tadOffsets[r];
-                        SummaryStatsData<X> comp;
-                        comp.initWithValue(x[tadOffsetForBlock]);
+            auto tadOffsetForBlock = tad.tadOffsets[r];
+            SummaryStatsData<X> comp;
+            comp.initWithValue(x[tadOffsetForBlock]);
 
 // FIXME: reduction should be fixed
-                        for (int i = 1; i < tadLength; i ++) {                            
+            for (int i = 1; i < tadLength; i ++) {                            
                             
-                            auto xOffset = tadOffsetForBlock + shape::indexOffset(i, tadShapeShapeInfo, tadShapeShapeInfoCast, tadLength, canCast);
+                auto xOffset = tadOffsetForBlock + shape::indexOffset(i, tadShapeShapeInfo, tadShapeShapeInfoCast, tadLength, canCast);
 
-                            SummaryStatsData <X> indexVal2;
-                            indexVal2.initWithValue(x[xOffset]);
+                SummaryStatsData <X> indexVal2;
+                indexVal2.initWithValue(x[xOffset]);
 
-                            comp = update(comp, OpType::op(indexVal2, extraParams), extraParams);
-                        }
-                        z[r] = OpType::getValue(biasCorrected, comp);
-                    }
-                }
-        }
+                comp = update(comp, OpType::op(indexVal2, extraParams), extraParams);
+            }
+            z[r] = OpType::getValue(biasCorrected, comp);
+        }            
+    }
 
 
         BUILD_DOUBLE_TEMPLATE(template class ND4J_EXPORT SummaryStatsReduce, , LIBND4J_TYPES, FLOAT_TYPES);

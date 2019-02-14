@@ -53,7 +53,7 @@ namespace nd4j {
         T mn = DataTypeUtils::max<T>();
         T mx = -DataTypeUtils::max<T>();
 
-#pragma omp parallel for reduction(minT:mn), reduction(maxT:mx)
+#pragma omp parallel for if(N > Environment::getInstance()->elementwiseThreshold()) reduction(minT:mn), reduction(maxT:mx)
         for (Nd4jLong e = 0; e < N; e++) {
             T v = x[e];
             if (v < mn)
@@ -175,7 +175,7 @@ namespace nd4j {
         // we use 3 as offset, since first 12 bytes are occupied with header
         int flimit = limit + 4;
 
-#pragma omp parallel for schedule(guided)
+#pragma omp parallel for if(flimit > Environment::getInstance()->elementwiseThreshold()) schedule(guided)
         for (int e = 4; e < flimit; e++) {
             int el = x[e];
             int ael = nd4j::math::nd4j_abs<int>(el) - 1;
