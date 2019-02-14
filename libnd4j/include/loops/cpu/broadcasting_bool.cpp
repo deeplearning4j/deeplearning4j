@@ -101,6 +101,9 @@ namespace functions {
                     tadOffsetZ = tadOffsets;
                 }                                
 
+                auto lenZ = shape::length(tadShapeInfoZ);
+                auto lenY = shape::length(yShapeInfo);
+
                 int tadsPerThread = tads / TAD_THRESHOLD;
                 int _threads = nd4j::math::nd4j_max<int>(1, tadsPerThread);
                 _threads = nd4j::math::nd4j_min<int>(_threads, omp_get_max_threads());
@@ -118,6 +121,7 @@ namespace functions {
                                         
                         // TODO: cover this codebranch with tests
                         // all this stuff already happens within thread
+                        #pragma omp simd
                         for (int f = 0; f < tadLength; f++) {
                             auto offset = shape::indexOffset(f, tadShapeShapeInfo, tadShapeShapeInfoCast, tadLength, canCastX);
                             oZ[offset] = OpType::op(oX[offset], y[offset]);
@@ -137,16 +141,14 @@ namespace functions {
                         auto oZ = z + tadOffsetZ[i];
                         auto oX = x + tadOffsets[i];
                                         
-                        // TODO: cover this codebranch with tests
-                        // all this stuff already happens within thread
+                        #pragma omp simd
                         for (int f = 0; f < tadLength; f++) {
                             auto offset  = shape::indexOffset(f, tadShapeShapeInfo, tadShapeShapeInfoCast, tadLength, canCastX);
-                            auto zOffset = shape::indexOffset(f, tadShapeInfoZ, tadShapeInfoZCast, tadLength, canCastZ);
+                            auto zOffset = shape::indexOffset(f, tadShapeInfoZ, tadShapeInfoZCast, lenZ, canCastZ);
                             oZ[zOffset] = OpType::op(oX[offset], y[offset]);
                         }
                     }
                 }
-
                 else if(shape::haveSameOffsets(tadShapeShapeInfo, tadShapeInfoZ)) {
 
                     uint tadShapeShapeInfoCast[MAX_RANK];
@@ -159,12 +161,11 @@ namespace functions {
                     
                         auto oZ = z + tadOffsetZ[i];
                         auto oX = x + tadOffsets[i];
-                                        
-                        // TODO: cover this codebranch with tests
-                        // all this stuff already happens within thread
+                        
+                        #pragma omp simd
                         for (int f = 0; f < tadLength; f++) {
                             auto offset  = shape::indexOffset(f, tadShapeShapeInfo, tadShapeShapeInfoCast, tadLength, canCastX);
-                            auto yOffset = shape::indexOffset(f, yShapeInfo, yShapeInfoCast, tadLength, canCastY);
+                            auto yOffset = shape::indexOffset(f, yShapeInfo, yShapeInfoCast, lenY, canCastY);
                             oZ[offset] = OpType::op(oX[offset], y[yOffset]);
                         }
                     }
@@ -182,11 +183,10 @@ namespace functions {
                         auto oZ = z + tadOffsetZ[i];
                         auto oX = x + tadOffsets[i];
                                         
-                        // TODO: cover this codebranch with tests
-                        // all this stuff already happens within thread
+                        #pragma omp simd
                         for (int f = 0; f < tadLength; f++) {
                             auto xOffset  = shape::indexOffset(f, tadShapeShapeInfo, tadShapeShapeInfoCast, tadLength, canCastX);
-                            auto offset = shape::indexOffset(f, yShapeInfo, yShapeInfoCast, tadLength, canCastY);
+                            auto offset = shape::indexOffset(f, yShapeInfo, yShapeInfoCast, lenY, canCastY);
                             oZ[offset] = OpType::op(oX[xOffset], y[offset]);
                         }
                     }
@@ -206,12 +206,11 @@ namespace functions {
                         auto oZ = z + tadOffsetZ[i];
                         auto oX = x + tadOffsets[i];
                                         
-                        // TODO: cover this codebranch with tests
-                        // all this stuff already happens within thread
+                        #pragma omp simd
                         for (int f = 0; f < tadLength; f++) {
                             auto xOffset  = shape::indexOffset(f, tadShapeShapeInfo, tadShapeShapeInfoCast, tadLength, canCastX);
-                            auto yOffset = shape::indexOffset(f, yShapeInfo, yShapeInfoCast, tadLength, canCastY);
-                            auto zOffset  = shape::indexOffset(f, tadShapeInfoZ, tadShapeInfoZCast, tadLength, canCastZ);
+                            auto yOffset = shape::indexOffset(f, yShapeInfo, yShapeInfoCast, lenY, canCastY);
+                            auto zOffset  = shape::indexOffset(f, tadShapeInfoZ, tadShapeInfoZCast, lenZ, canCastZ);
                             oZ[zOffset] = OpType::op(oX[xOffset], y[yOffset]);
                         }
                     }
