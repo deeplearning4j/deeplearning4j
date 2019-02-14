@@ -1624,7 +1624,8 @@ public class SameDiff {
                     SDVariable v = var.getVariable();
                     String n = v.getVarName();
                     if(variables.get(n).getOutputOfOp() == null &&       //Is a leaf (not the output of a function)
-                            !isPlaceHolder(n) &&                                                                                 //and not a placeholder
+                            !isPlaceHolder(n) &&                                //and not a placeholder
+                            !variables.get(n).getVariable().isConstant() &&     //and not a constant
                             (trainingConfig.getDataSetFeatureMapping() == null || !trainingConfig.getDataSetFeatureMapping().contains(n))   &&  //and not an input (this really should be a placeholder, but we can't guarantee that...)
                             (trainingConfig.getDataSetLabelMapping() == null || !trainingConfig.getDataSetLabelMapping().contains(n))   &&      //and not a label (this really should be a placeholder, but we can't guarantee that...)
                             (trainingConfig.getDataSetFeatureMaskMapping() == null || !trainingConfig.getDataSetFeatureMaskMapping().contains(n))   &&  //and not a feature mask (this really should be a placeholder, but we can't guarantee that...)
