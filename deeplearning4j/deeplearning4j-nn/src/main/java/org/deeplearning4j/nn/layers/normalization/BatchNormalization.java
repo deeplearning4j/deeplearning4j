@@ -78,9 +78,6 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
                 helper = Class.forName("org.deeplearning4j.nn.layers.normalization.CudnnBatchNormalizationHelper")
                         .asSubclass(BatchNormalizationHelper.class).newInstance();
                 log.debug("CudnnBatchNormalizationHelper successfully initialized");
-                if (!helper.checkSupported(layerConf().getEps())) {
-                    helper = null;
-                }
             } catch (Throwable t) {
                 if (!(t instanceof ClassNotFoundException)) {
                     log.warn("Could not initialize CudnnBatchNormalizationHelper", t);
@@ -92,7 +89,11 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
             }
         } else if("CPU".equalsIgnoreCase(backend)){
             helper = new MKLDNNBatchNormHelper();
-            log.info("Created MKLDNNBatchNormHelper");
+            log.debug("Created MKLDNNBatchNormHelper");
+        }
+        if (helper != null && !helper.checkSupported(layerConf().getEps())) {
+            log.debug("Removed helper {} as not supported with epsilon {}", helper.getClass(), layerConf().getEps());
+            helper = null;
         }
     }
 

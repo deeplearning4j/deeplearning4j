@@ -93,7 +93,8 @@ public class SubsamplingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
                             + "For more information, please refer to: https://deeplearning4j.org/docs/latest/deeplearning4j-config-cudnn", t);
                 }
             }
-        } else if("CPU".equalsIgnoreCase(backend)){
+        } else if("CPU".equalsIgnoreCase(backend) ){
+
             //TODO check if native libraries are available
             helper = new MKLDNNSubsamplingHelper();
             log.info("Created MKL-DNN helper");

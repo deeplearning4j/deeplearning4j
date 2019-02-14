@@ -40,7 +40,7 @@ import java.util.Map;
 public class MKLDNNConvHelper implements ConvolutionHelper {
     @Override
     public boolean checkSupported() {
-        return true;
+        return BaseMKLDNNHelper.mklDnnEnabled();
     }
 
     @Override

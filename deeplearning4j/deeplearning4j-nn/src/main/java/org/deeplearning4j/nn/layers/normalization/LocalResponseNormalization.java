@@ -23,6 +23,7 @@ import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.AbstractLayer;
 import org.deeplearning4j.nn.layers.LayerHelper;
+import org.deeplearning4j.nn.layers.mkldnn.MKLDNNLocalResponseNormalizationHelper;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.OldMulOp;
 import org.nd4j.linalg.factory.Nd4j;
@@ -94,10 +95,6 @@ public class LocalResponseNormalization
                 helper = Class.forName("org.deeplearning4j.nn.layers.normalization.CudnnLocalResponseNormalizationHelper")
                         .asSubclass(LocalResponseNormalizationHelper.class).newInstance();
                 log.debug("CudnnLocalResponseNormalizationHelper successfully initialized");
-                if (!helper.checkSupported(layerConf().getK(), layerConf().getN(), layerConf().getAlpha(),
-                        layerConf().getBeta())) {
-                    helper = null;
-                }
             } catch (Throwable t) {
                 if (!(t instanceof ClassNotFoundException)) {
                     log.warn("Could not initialize CudnnLocalResponseNormalizationHelper", t);
@@ -107,6 +104,13 @@ public class LocalResponseNormalization
                             + "For more information, please refer to: https://deeplearning4j.org/docs/latest/deeplearning4j-config-cudnn", t);
                 }
             }
+        } else if("CPU".equalsIgnoreCase(backend)){
+            helper = new MKLDNNLocalResponseNormalizationHelper();
+            log.debug("Created MKLDNNLocalResponseNormalizationHelper");
+        }
+        if (helper != null && !helper.checkSupported(layerConf().getK(), layerConf().getN(), layerConf().getAlpha(), layerConf().getBeta())) {
+            log.debug("Removed helper {} as not supported (k={}, n={}, alpha={}, beta={})", helper.getClass(), layerConf().getK(), layerConf().getN(), layerConf().getAlpha(), layerConf().getBeta());
+            helper = null;
         }
     }
 

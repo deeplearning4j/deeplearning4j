@@ -40,7 +40,7 @@ public class MKLDNNBatchNormHelper implements BatchNormalizationHelper {
 
     @Override
     public boolean checkSupported(double eps) {
-        return true;
+        return BaseMKLDNNHelper.mklDnnEnabled();
     }
 
     @Override
