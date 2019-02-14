@@ -188,7 +188,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      *
      * @param lower upper bound
      * @param upper lower bound
-     * @param num   the step size
+     * @param num   number of items in returned vector
      * @return the linearly spaced vector
      */
     @Override

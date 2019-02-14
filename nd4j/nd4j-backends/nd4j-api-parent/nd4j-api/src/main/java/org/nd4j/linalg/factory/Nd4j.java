@@ -2024,6 +2024,10 @@ public class Nd4j {
         return linspace(lower, upper, num, Nd4j.dataType());
     }
 
+    public static INDArray linspace(long lower, long upper, long num, long step) {
+        return linspace(lower, upper, num, Nd4j.dataType());
+    }
+
     /**
      * Generate a linearly spaced 1d vector of the default floating point datatype
      *
@@ -2048,6 +2052,11 @@ public class Nd4j {
     public static INDArray linspace(double lower, double upper, long num, DataType dataType) {
         // FIXME: int cast
         return Nd4j.getExecutioner().exec(new Linspace(lower, upper, (int) num, dataType));
+    }
+
+    public static INDArray linspace(double lower, double upper, long num, double step, DataType dataType) {
+        // FIXME: int cast
+        return Nd4j.getExecutioner().exec(new Linspace(lower, upper, (int)num, step, dataType));
     }
 
     /**

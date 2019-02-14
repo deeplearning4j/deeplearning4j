@@ -44,10 +44,15 @@ import java.util.Map;
 public class Linspace extends BaseRandomOp {
     private double from;
     private double to;
+    private double step;
     private long length;
 
     public Linspace() {
         // no-op
+    }
+
+    public Linspace(double from, double to, int length, double step, DataType dataType){
+        this(Nd4j.createUninitialized(dataType, new long[] {1, length}, Nd4j.order()), from, to, step);
     }
 
     public Linspace(double from, double to, int length, DataType dataType) {
@@ -62,6 +67,15 @@ public class Linspace extends BaseRandomOp {
         this.extraArgs = new Object[] {from, to};
     }
 
+    public Linspace(@NonNull INDArray z, double from, double to, double step) {
+        super(null, null, z);
+        this.from = from;
+        this.to = to;
+        this.length = z.length();
+        this.step = step;
+        this.extraArgs = new Object[] {from, to};
+    }
+
     public Linspace(SameDiff sd, double from, double to, long length){
         super(sd, new long[]{length});
         this.sameDiff = sd;
@@ -70,7 +84,6 @@ public class Linspace extends BaseRandomOp {
         this.length = length;
         this.extraArgs = new Object[] {from, to};
     }
-
 
     @Override
     public int opNum() {
