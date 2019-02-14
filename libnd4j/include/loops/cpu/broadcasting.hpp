@@ -93,9 +93,7 @@ namespace functions {
                 }
 
                 //int *resultStride = shape::stride(tadShapeShapeInfo);                
-                auto tadEWS = shape::elementWiseStride(tadShapeShapeInfo);
                 auto tadLength = shape::tadLength(xShapeInfo, dimension, dimensionLength);
-                auto yStride = shape::elementWiseStride(yShapeInfo);
                 auto tads = shape::length(xShapeInfo) / tadLength;
 
                 if (tadShapeInfoZ == nullptr) {
@@ -103,15 +101,6 @@ namespace functions {
                     tadOffsetZ = tadOffsets;
                 }
 
-                uint castTadShapeX[MAX_RANK];
-                uint castTadShapeY[MAX_RANK];
-                uint castTadShapeZ[MAX_RANK];
-
-                bool canCastX = nd4j::DataTypeUtils::castShapeInfo(tadShapeShapeInfo, castTadShapeX);
-                bool canCastY = nd4j::DataTypeUtils::castShapeInfo(yShapeInfo, castTadShapeY);
-                bool canCastZ = canCastX ? nd4j::DataTypeUtils::castShapeInfo(tadShapeInfoZ, castTadShapeZ) : false;
-
-                auto zEWS = shape::elementWiseStride(tadShapeInfoZ);
                 auto lenZ = shape::length(tadShapeInfoZ);
                 auto lenY = shape::length(yShapeInfo);
 
@@ -119,40 +108,127 @@ namespace functions {
                 int _threads = nd4j::math::nd4j_max<int>(1, tadsPerThread);
                 _threads = nd4j::math::nd4j_min<int>(_threads, omp_get_max_threads());
 
+                if(shape::haveSameOffsets(tadShapeShapeInfo, yShapeInfo) && shape::haveSameOffsets(tadShapeShapeInfo, tadShapeInfoZ)) {
+
+                    uint tadShapeShapeInfoCast[MAX_RANK];
+                    bool canCastX = nd4j::DataTypeUtils::castShapeInfo(tadShapeShapeInfo, tadShapeShapeInfoCast);
+
 #pragma omp parallel for schedule(guided) num_threads(_threads) if (_threads > 1) proc_bind(AFFINITY) default(shared)
-                for (int i = 0; i < tads; i++) {
-                    auto offset = tadOffsets[i];
-                    auto offsetZ = tadOffsetZ[i];
-                    auto oZ = z + offsetZ;
-                    auto oX = x + offset;
+                    for (int i = 0; i < tads; i++) {
+                        
+                        auto oX = x + tadOffsets[i];
+                        auto oZ = z + tadOffsetZ[i];
 
-                    if (tadEWS > 0 && yStride > 0 && zEWS > 0 && dimensionLength == 1) {
-
-                        if (tadEWS == 1 && yStride == 1 && zEWS == 1) {
-                            #pragma omp simd
-                            for (int f = 0; f < tadLength; f++)
-                                oZ[f] = OpType::op(oX[f], y[f]);                            
-                        } 
-                        else {
-                            #pragma omp simd
-                            for (int f = 0; f < tadLength; f++) 
-                                oZ[f * zEWS] = OpType::op(oX[f * tadEWS], y[f * yStride]);                            
-                        }
-                    }
-                    else {
-
-                        // all this stuff already happens within thread
                         #pragma omp simd
                         for (unsigned int f = 0; f < tadLength; f++) {
+                            auto offset = shape::indexOffset(f, tadShapeShapeInfo, tadShapeShapeInfoCast, tadLength, canCastX);
+                            oZ[offset] = OpType::op(oX[offset], y[offset]);
+                        }
+                    }
+                }
+                else if(shape::haveSameOffsets(tadShapeShapeInfo, yShapeInfo)) {
 
-                            auto xOffset = shape::indexOffset(f, tadShapeShapeInfo, castTadShapeX, tadLength, canCastX);
-                            auto zOffset = shape::indexOffset(f, tadShapeInfoZ, castTadShapeZ, lenZ, canCastZ);
-                            auto yOffset = shape::indexOffset(f, yShapeInfo, castTadShapeY, lenY, canCastY);
+                    uint tadShapeShapeInfoCast[MAX_RANK];
+                    uint tadShapeInfoZCast[MAX_RANK];
+                    bool canCastX = nd4j::DataTypeUtils::castShapeInfo(tadShapeShapeInfo, tadShapeShapeInfoCast);
+                    bool canCastZ = nd4j::DataTypeUtils::castShapeInfo(tadShapeInfoZ, tadShapeInfoZCast);
 
+#pragma omp parallel for schedule(guided) num_threads(_threads) if (_threads > 1) proc_bind(AFFINITY) default(shared)
+                    for (int i = 0; i < tads; i++) {
+                    
+                        auto oZ = z + tadOffsetZ[i];
+                        auto oX = x + tadOffsets[i];
+                                        
+                        #pragma omp simd
+                        for (int f = 0; f < tadLength; f++) {
+                            auto offset  = shape::indexOffset(f, tadShapeShapeInfo, tadShapeShapeInfoCast, tadLength, canCastX);
+                            auto zOffset = shape::indexOffset(f, tadShapeInfoZ, tadShapeInfoZCast, lenZ, canCastZ);
+                            oZ[zOffset] = OpType::op(oX[offset], y[offset]);
+                        }
+                    }
+                }
+                else if(shape::haveSameOffsets(tadShapeShapeInfo, tadShapeInfoZ)) {
+
+                    uint tadShapeShapeInfoCast[MAX_RANK];
+                    uint yShapeInfoCast[MAX_RANK];
+                    bool canCastX = nd4j::DataTypeUtils::castShapeInfo(tadShapeShapeInfo, tadShapeShapeInfoCast);
+                    bool canCastY = nd4j::DataTypeUtils::castShapeInfo(yShapeInfo, yShapeInfoCast);
+
+#pragma omp parallel for schedule(guided) num_threads(_threads) if (_threads > 1) proc_bind(AFFINITY) default(shared)
+                    for (int i = 0; i < tads; i++) {
+                    
+                        auto oZ = z + tadOffsetZ[i];
+                        auto oX = x + tadOffsets[i];
+                        
+                        #pragma omp simd
+                        for (int f = 0; f < tadLength; f++) {
+                            auto offset  = shape::indexOffset(f, tadShapeShapeInfo, tadShapeShapeInfoCast, tadLength, canCastX);
+                            auto yOffset = shape::indexOffset(f, yShapeInfo, yShapeInfoCast, lenY, canCastY);
+                            oZ[offset] = OpType::op(oX[offset], y[yOffset]);
+                        }
+                    }
+                }
+                else if(shape::haveSameOffsets(yShapeInfo, tadShapeInfoZ)) {
+
+                    uint tadShapeShapeInfoCast[MAX_RANK];
+                    uint yShapeInfoCast[MAX_RANK];
+                    bool canCastX = nd4j::DataTypeUtils::castShapeInfo(tadShapeShapeInfo, tadShapeShapeInfoCast);
+                    bool canCastY = nd4j::DataTypeUtils::castShapeInfo(yShapeInfo, yShapeInfoCast);
+
+#pragma omp parallel for schedule(guided) num_threads(_threads) if (_threads > 1) proc_bind(AFFINITY) default(shared)
+                    for (int i = 0; i < tads; i++) {
+                    
+                        auto oZ = z + tadOffsetZ[i];
+                        auto oX = x + tadOffsets[i];
+                                        
+                        #pragma omp simd
+                        for (int f = 0; f < tadLength; f++) {
+                            auto xOffset  = shape::indexOffset(f, tadShapeShapeInfo, tadShapeShapeInfoCast, tadLength, canCastX);
+                            auto offset = shape::indexOffset(f, yShapeInfo, yShapeInfoCast, lenY, canCastY);
+                            oZ[offset] = OpType::op(oX[xOffset], y[offset]);
+                        }
+                    }
+                }
+                else {
+
+                    uint tadShapeShapeInfoCast[MAX_RANK];
+                    uint tadShapeInfoZCast[MAX_RANK];
+                    uint yShapeInfoCast[MAX_RANK];
+                    bool canCastX = nd4j::DataTypeUtils::castShapeInfo(tadShapeShapeInfo, tadShapeShapeInfoCast);
+                    bool canCastY = nd4j::DataTypeUtils::castShapeInfo(yShapeInfo, yShapeInfoCast);
+                    bool canCastZ = nd4j::DataTypeUtils::castShapeInfo(tadShapeInfoZ, tadShapeInfoZCast);
+
+#pragma omp parallel for schedule(guided) num_threads(_threads) if (_threads > 1) proc_bind(AFFINITY) default(shared)
+                    for (int i = 0; i < tads; i++) {
+                    
+                        auto oZ = z + tadOffsetZ[i];
+                        auto oX = x + tadOffsets[i];
+                                        
+                        #pragma omp simd
+                        for (int f = 0; f < tadLength; f++) {
+                            auto xOffset  = shape::indexOffset(f, tadShapeShapeInfo, tadShapeShapeInfoCast, tadLength, canCastX);
+                            auto yOffset = shape::indexOffset(f, yShapeInfo, yShapeInfoCast, lenY, canCastY);
+                            auto zOffset  = shape::indexOffset(f, tadShapeInfoZ, tadShapeInfoZCast, lenZ, canCastZ);
                             oZ[zOffset] = OpType::op(oX[xOffset], y[yOffset]);
                         }
                     }
                 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
                 if (tad != nullptr)
                     delete tad;
