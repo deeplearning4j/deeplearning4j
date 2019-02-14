@@ -530,13 +530,13 @@ public class LayerOpValidation extends BaseOpValidation {
                         case 4:
                             //Deconv3d
                             msg = "4 - deconv3d, ncdhw=" + ncdhw;
-                            SDVariable wDeconv = sd.var(Nd4j.rand(new int[]{2,2,2,3,nIn}));  //[kD, kH, kW, oC, iC]
+                            SDVariable wDeconv = sd.var(Nd4j.rand(new int[]{2, 2, 2, 3, nIn}));  //[kD, kH, kW, oC, iC]
                             SDVariable bDeconv = sd.var(Nd4j.rand(new int[]{3}));
                             out = sd.deconv3d("Deconv3d", in, wDeconv, bDeconv, DeConv3DConfig.builder()
                                     .kD(2).kH(2).kW(2)
                                     .isSameMode(true)
                                     .dataFormat(ncdhw ? DeConv3DConfig.NCDHW : DeConv3DConfig.NDHWC)
-                            .build());
+                                    .build());
                             break;
                         case 5:
                             //Batch norm - 3d input
@@ -787,12 +787,12 @@ public class LayerOpValidation extends BaseOpValidation {
 
         INDArray exp = Nd4j.create(mb, nIn, 7, 7);
         NdIndexIterator iter = new NdIndexIterator(mb, nIn, 7, 7);
-        while(iter.hasNext()){
+        while (iter.hasNext()) {
             long[] next = iter.next();
             double max = max(inArr.getDouble(next),
-                    inArr.getDouble(next[0], next[1], next[2]+1, next[3]),
-                    inArr.getDouble(next[0], next[1], next[2], next[3]+1),
-                    inArr.getDouble(next[0], next[1], next[2]+1, next[3]+1));
+                    inArr.getDouble(next[0], next[1], next[2] + 1, next[3]),
+                    inArr.getDouble(next[0], next[1], next[2], next[3] + 1),
+                    inArr.getDouble(next[0], next[1], next[2] + 1, next[3] + 1));
             exp.putScalar(next, max);
         }
 
@@ -800,10 +800,10 @@ public class LayerOpValidation extends BaseOpValidation {
                 .expected(outPool, exp)));
     }
 
-    private double max(double... in){
+    private double max(double... in) {
         double max = -Double.MAX_VALUE;
-        for(double d : in){
-            if(d > max)
+        for (double d : in) {
+            if (d > max)
                 max = d;
         }
         return max;
@@ -845,11 +845,11 @@ public class LayerOpValidation extends BaseOpValidation {
 
         INDArray exp = Nd4j.create(mb, nIn, 7, 7);
         NdIndexIterator iter = new NdIndexIterator(mb, nIn, 7, 7);
-        while(iter.hasNext()){
+        while (iter.hasNext()) {
             long[] next = iter.next();
-            double avg = (inArr.getDouble(next) + inArr.getDouble(next[0], next[1], next[2]+1, next[3])
-                    + inArr.getDouble(next[0], next[1], next[2], next[3]+1)
-                    + inArr.getDouble(next[0], next[1], next[2]+1, next[3]+1)) / 4.0;
+            double avg = (inArr.getDouble(next) + inArr.getDouble(next[0], next[1], next[2] + 1, next[3])
+                    + inArr.getDouble(next[0], next[1], next[2], next[3] + 1)
+                    + inArr.getDouble(next[0], next[1], next[2] + 1, next[3] + 1)) / 4.0;
             exp.putScalar(next, avg);
         }
 
@@ -1013,4 +1013,80 @@ public class LayerOpValidation extends BaseOpValidation {
         assertNull(err);
     }
 
+    @Test(expected = RuntimeException.class)
+    public void exceptionThrown_WhenConv1DConfigInvalid() {
+        int nIn = 3;
+        int nOut = 4;
+        int k = 2;
+        int mb = 3;
+        int img = 28;
+
+        SameDiff sd = SameDiff.create();
+        INDArray wArr = Nd4j.create(k, nIn, nOut);
+        INDArray inArr = Nd4j.create(mb, nIn, img);
+
+        SDVariable in = sd.var("in", inArr);
+        SDVariable w = sd.var("W", wArr);
+
+        SDVariable[] vars = new SDVariable[]{in, w};
+
+        Conv1DConfig conv1DConfig = Conv1DConfig.builder()
+                .k(k).p(-1).s(0)
+                .isSameMode(false)
+                .build();
+
+        SDVariable out = sd.conv1d(in, w, conv1DConfig);
+
+    }
+
+    @Test(expected = RuntimeException.class)
+    public void exceptionThrown_WhenConv2DConfigInvalid() {
+
+        Nd4j.getRandom().setSeed(12345);
+
+        SameDiff sd = SameDiff.create();
+        SDVariable in = null;
+
+        int[] inSizeNCHW = {1, 3, 8, 8};
+
+        String msg = "0 - conv2d+bias, nchw - input " + Arrays.toString(inSizeNCHW);
+        SDVariable w0 = sd.var("w0", Nd4j.rand(new int[]{3, 3, inSizeNCHW[1], 3}).muli(10));  //kH,kW,iC,oC
+        SDVariable b0 = sd.var("b0", Nd4j.rand(new long[]{3}).muli(10));
+        SDVariable out = sd.conv2d(in, w0, b0, Conv2DConfig.builder()
+                .dataFormat(Conv2DConfig.NCHW)
+                .isSameMode(true)
+                .kH(3).kW(-3)
+                .sH(1).sW(0)
+                .build());
+    }
+
+    @Test(expected = RuntimeException.class)
+    public void exceptionThrown_WhenConf3DInvalid() {
+        Nd4j.getRandom().setSeed(12345);
+
+        //NCDHW format
+        int[] inSizeNCDHW = {2, 3, 4, 5, 5};
+
+        List<String> failed = new ArrayList<>();
+
+        for (boolean ncdhw : new boolean[]{true, false}) {
+                int nIn = inSizeNCDHW[1];
+                int[] shape = (ncdhw ? inSizeNCDHW : ncdhwToNdhwc(inSizeNCDHW));
+
+                SameDiff sd = SameDiff.create();
+                SDVariable in = sd.var("in", shape);
+
+                SDVariable out;
+                String msg = "0 - conv3d+bias+same, ncdhw=" + ncdhw + " - input " + Arrays.toString(shape);
+
+                SDVariable w0 = sd.var("w0", Nd4j.rand(new int[]{2, 2, 2, nIn, 3}).muli(10));  //[kD, kH, kW, iC, oC]
+                SDVariable b0 = sd.var("b0", Nd4j.rand(new long[]{3}).muli(10));
+                out = sd.conv3d(in, w0, b0, Conv3DConfig.builder()
+                        .dataFormat(ncdhw ? Conv3DConfig.NCDHW : Conv3DConfig.NDHWC)
+                        .isSameMode(true)
+                        .kH(2).kW(2).kD(2)
+                        .sD(1).sH(1).sW(-1).dW(-1)
+                        .build());
+        }
+    }
 }

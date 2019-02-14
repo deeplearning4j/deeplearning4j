@@ -43,7 +43,9 @@ public class Conv1DConfig extends BaseConvolutionConfig {
     private boolean isSameMode;
 
     public void check() {
-        throw new RuntimeException(String.format(INVALID_CONFIGURATION, s, p));
+        if (s < 1 || p < 0) {
+            throw new RuntimeException(String.format(INVALID_CONFIGURATION, s, p));
+        }
     }
 
     public boolean isNWC(){

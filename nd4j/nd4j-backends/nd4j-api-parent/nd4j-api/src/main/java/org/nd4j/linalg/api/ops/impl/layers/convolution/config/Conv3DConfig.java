@@ -85,7 +85,7 @@ public class Conv3DConfig extends BaseConvolutionConfig {
 
     public void check() {
 
-        if (sW >= 1 && pH >= 0 && dW >= 1) {
+        if (sW < 1 || pH < 0 || dW < 1) {
             throw new RuntimeException(String.format(INVALID_CONFIGURATION, sW, pH, dW ));
         }
     }
