@@ -190,17 +190,34 @@ void ScalarTransform<X, Y, Z>::transform(void *vx, Nd4jLong xEws,
     auto scalar = reinterpret_cast<Y *>(vscalar)[0];
     auto extraParams = reinterpret_cast<Z *>(vextraParams);
 
-    nd4j::OmpLaunchHelper info(len);     
-    #pragma omp parallel num_threads(info._numThreads) if (info._numThreads > 1) default(shared)
-    {                
-        auto threadNum = omp_get_thread_num();
-        Nd4jLong threadOffset = info.getThreadOffset(threadNum);        
-        auto xi = x + xEws * threadOffset;
-        auto zi = z + zEws * threadOffset;        
+    nd4j::OmpLaunchHelper info(len);
 
-        #pragma omp simd
-        for (Nd4jLong i = 0; i < info.getItersPerThread(threadNum); i++) 
-            zi[i * zEws] = OpType::op(xi[i * xEws], scalar, extraParams);
+    if (xEws == 1 && zEws == 1) {
+
+#pragma omp parallel num_threads(info._numThreads) if (info._numThreads > 1) default(shared)
+        {
+            auto threadNum = omp_get_thread_num();
+            Nd4jLong threadOffset = info.getThreadOffset(threadNum);
+            auto xi = x + threadOffset;
+            auto zi = z + threadOffset;
+
+#pragma omp simd
+            for (Nd4jLong i = 0; i < info.getItersPerThread(threadNum); i++)
+                zi[i] = OpType::op(xi[i], scalar, extraParams);
+        }
+    } else {
+
+#pragma omp parallel num_threads(info._numThreads) if (info._numThreads > 1) default(shared)
+        {
+            auto threadNum = omp_get_thread_num();
+            Nd4jLong threadOffset = info.getThreadOffset(threadNum);
+            auto xi = x + xEws * threadOffset;
+            auto zi = z + zEws * threadOffset;
+
+            #pragma omp simd
+            for (Nd4jLong i = 0; i < info.getItersPerThread(threadNum); i++)
+                zi[i * zEws] = OpType::op(xi[i * xEws], scalar, extraParams);
+        }
     }
 }
 
