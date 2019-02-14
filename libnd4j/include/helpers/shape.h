@@ -110,7 +110,9 @@ namespace shape {
 
     ND4J_EXPORT _CUDA_HD bool equalsTypesAndShapesSoft(const Nd4jLong *shapeA, const Nd4jLong *shapeB);
 
-    ND4J_EXPORT _CUDA_HD bool equalsStrict(Nd4jLong *shapeA, Nd4jLong *shapeB);
+    ND4J_EXPORT _CUDA_HD bool equalsStrict(const Nd4jLong *shapeA, const Nd4jLong *shapeB);
+    ND4J_EXPORT _CUDA_HD bool haveSameOffsets(const Nd4jLong *shapeA, const Nd4jLong *shapeB);
+
 
     ND4J_EXPORT _CUDA_HD int sizeAt(const Nd4jLong *shape, const int dim);
 
@@ -3087,7 +3089,7 @@ template <typename T>
      * @param shape
      * @return
      */
-    INLINEDEF _CUDA_HD bool equalsStrict(Nd4jLong *shapeA, Nd4jLong *shapeB) {
+    INLINEDEF _CUDA_HD bool equalsStrict(const Nd4jLong *shapeA, const Nd4jLong *shapeB) {
         if (shapeA[0] != shapeB[0])
             return false;
 
@@ -3103,6 +3105,26 @@ template <typename T>
 
         return true;
     }
+
+    INLINEDEF _CUDA_HD bool haveSameOffsets(const Nd4jLong *shapeA, const Nd4jLong *shapeB) {
+        if (shapeA[0] != shapeB[0])
+            return false;
+
+        if (shapeA[0] == 0)
+            return true;
+
+        // we do full comparison here
+        int length = shape::shapeInfoLength(shapeA[0]);
+
+        for (int e = 1; e < length; e++) {
+            if(e == (length - 3)) continue;       // type position, neglect it 
+            if (shapeA[e] != shapeB[e])
+                return false;
+        }
+
+        return true;
+    }
+
 
     INLINEDEF _CUDA_HD int sizeAt(const Nd4jLong *shape, const int dim) {
         if (dim >= 0)

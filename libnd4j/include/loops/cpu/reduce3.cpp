@@ -54,7 +54,7 @@ void Reduce3<X,Z>::execScalar(void *vx, Nd4jLong *xShapeInfo,
     uint xShapeInfoCast[MAX_RANK];
     const bool canCastX = nd4j::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
 
-    if(shape::equalsStrict(xShapeInfo, yShapeInfo)) {
+    if(shape::haveSameOffsets(xShapeInfo, yShapeInfo)) {
 
         #pragma omp simd reduction(sumT:startingVal)
         for(unsigned int i = 0; i < length; i++) {            
@@ -119,7 +119,7 @@ void Reduce3<X,Z>::exec(void *vx, Nd4jLong *xShapeInfo,
     
     if(xOrder != yOrder) {
          
-         if(shape::equalsStrict(xShapeInfo, yShapeInfo) && shape::equalsStrict(xShapeInfo, zShapeInfo)) {
+         if(shape::haveSameOffsets(xShapeInfo, yShapeInfo) && shape::haveSameOffsets(xShapeInfo, zShapeInfo)) {
 
             uint xShapeInfoCast[MAX_RANK];
             const bool canCastX = nd4j::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
@@ -136,7 +136,7 @@ void Reduce3<X,Z>::exec(void *vx, Nd4jLong *xShapeInfo,
                 }
             }
         }
-        else if(shape::equalsStrict(xShapeInfo, yShapeInfo)) {
+        else if(shape::haveSameOffsets(xShapeInfo, yShapeInfo)) {
 
             uint xShapeInfoCast[MAX_RANK];
             uint zShapeInfoCast[MAX_RANK];        
@@ -156,7 +156,7 @@ void Reduce3<X,Z>::exec(void *vx, Nd4jLong *xShapeInfo,
                 }
             }       
         }
-        else if(shape::equalsStrict(xShapeInfo, zShapeInfo)) {
+        else if(shape::haveSameOffsets(xShapeInfo, zShapeInfo)) {
 
             uint xShapeInfoCast[MAX_RANK];
             uint yShapeInfoCast[MAX_RANK];
@@ -176,7 +176,7 @@ void Reduce3<X,Z>::exec(void *vx, Nd4jLong *xShapeInfo,
                 }
             }
         }
-        else if(shape::equalsStrict(yShapeInfo, zShapeInfo)) {
+        else if(shape::haveSameOffsets(yShapeInfo, zShapeInfo)) {
 
             uint xShapeInfoCast[MAX_RANK];
             uint yShapeInfoCast[MAX_RANK];
@@ -328,7 +328,7 @@ void Reduce3<X,Z>::exec(void *vx, Nd4jLong *xShapeInfo,
                     auto tX = x + xOffset;
                     auto tY = y + yOffset;
 
-                    if(shape::equalsStrict(xShapeInf, yShapeInf)) {
+                    if(shape::haveSameOffsets(xShapeInf, yShapeInf)) {
                         #pragma omp simd reduction(sumT:start)
                         for (unsigned int j = 0; j < tadLength; j++) {                            
                             auto offset = shape::indexOffset(j, xShapeInf, xShapeInfoCast, tadLength, canCastX);
@@ -364,7 +364,7 @@ void Reduce3<X,Z>::exec(void *vx, Nd4jLong *xShapeInfo,
             uint xShapeInfoCast[MAX_RANK];            
             bool canCastX = nd4j::DataTypeUtils::castShapeInfo(xTad.tadOnlyShapeInfo, xShapeInfoCast);            
 
-            if(shape::equalsStrict(xShapeInfo, yShapeInfo)) {
+            if(shape::haveSameOffsets(xShapeInfo, yShapeInfo)) {
 
 #pragma omp  parallel for schedule(guided) num_threads(num_threads) if (num_threads > 1) proc_bind(AFFINITY) default(shared)
                 for (unsigned int i = 0; i < zLen; i++) {
@@ -440,7 +440,7 @@ void Reduce3<X,Z>::exec(void *vx, Nd4jLong *xShapeInfo,
     uint tadShapeInfoCast[MAX_RANK];
     bool canCastX = nd4j::DataTypeUtils::castShapeInfo(tadShapeInfo, tadShapeInfoCast);
 
-    if(shape::equalsStrict(tadShapeInfo, yShapeInfo)) {
+    if(shape::haveSameOffsets(tadShapeInfo, yShapeInfo)) {
 
         #pragma  omp parallel for proc_bind(AFFINITY) default(shared)
         for (Nd4jLong r = 0; r < tads; r++) {
@@ -528,7 +528,7 @@ void Reduce3<X,Z>:: execAll(void *vx, Nd4jLong *xShapeInfo,
     uint xTadShapeInfoCast[MAX_RANK];
     bool canCastX = nd4j::DataTypeUtils::castShapeInfo(xTadShapeInfo, xTadShapeInfoCast);
     
-    if (shape::equalsStrict(xTadShapeInfo, yTadShapeInfo) ) {
+    if (shape::haveSameOffsets(xTadShapeInfo, yTadShapeInfo) ) {
         
         #pragma  omp parallel for proc_bind(AFFINITY) default(shared)
         for (Nd4jLong r = 0; r < xTads; r++) {

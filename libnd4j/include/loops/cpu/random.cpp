@@ -57,7 +57,7 @@ namespace functions {
             nd4j::OmpLaunchHelper info(length);
 
            
-            if(shape::equalsStrict(xShapeInfo, yShapeInfo) && shape::equalsStrict(xShapeInfo, zShapeInfo)) {
+            if(shape::haveSameOffsets(xShapeInfo, yShapeInfo) && shape::haveSameOffsets(xShapeInfo, zShapeInfo)) {
 
                 uint xShapeInfoCast[MAX_RANK];
                 const bool canCastX = nd4j::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
@@ -75,7 +75,7 @@ namespace functions {
                     }
                 }
             }
-            else if (shape::equalsStrict(xShapeInfo, yShapeInfo)) {
+            else if (shape::haveSameOffsets(xShapeInfo, yShapeInfo)) {
 
                 uint xShapeInfoCast[MAX_RANK];
                 uint zShapeInfoCast[MAX_RANK];
@@ -96,7 +96,7 @@ namespace functions {
                     }
                 }
             }
-            else if (shape::equalsStrict(xShapeInfo, zShapeInfo)) {
+            else if (shape::haveSameOffsets(xShapeInfo, zShapeInfo)) {
 
                 uint xShapeInfoCast[MAX_RANK];
                 uint yShapeInfoCast[MAX_RANK];
@@ -117,7 +117,7 @@ namespace functions {
                     }
                 }
             }
-            else if (shape::equalsStrict(yShapeInfo, zShapeInfo)) {
+            else if (shape::haveSameOffsets(yShapeInfo, zShapeInfo)) {
 
                 uint xShapeInfoCast[MAX_RANK];
                 uint yShapeInfoCast[MAX_RANK];
@@ -190,7 +190,7 @@ namespace functions {
             nd4j::graph::RandomGenerator* rng = reinterpret_cast<nd4j::graph::RandomGenerator*>(state);
             nd4j::OmpLaunchHelper info(length);
             
-            if(shape::equalsStrict(xShapeInfo, zShapeInfo)) {
+            if(shape::haveSameOffsets(xShapeInfo, zShapeInfo)) {
 
                 #pragma omp parallel num_threads(info._numThreads) if (info._numThreads > 1) default(shared)
                 {                

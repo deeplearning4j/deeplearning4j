@@ -142,8 +142,8 @@ void ScalarTransform<X, Y, Z>::transform(void *vx, Nd4jLong *xShapeInfo,
         const bool canCastX = nd4j::DataTypeUtils::castShapeInfo<uint>(xShapeInfo, xShapeInfoCast);
 
         nd4j::OmpLaunchHelper info(len);
-                         
-        if(shape::equalsStrict(xShapeInfo, zShapeInfo)) {
+
+        if(shape::haveSameOffsets(xShapeInfo, zShapeInfo)) {
                         
             #pragma omp parallel num_threads(info._numThreads) if (info._numThreads > 1) default(shared)
             {

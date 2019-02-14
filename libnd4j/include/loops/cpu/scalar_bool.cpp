@@ -149,7 +149,7 @@ namespace functions {
 
             nd4j::OmpLaunchHelper info(len);
                                
-            if(shape::equalsStrict(xShapeInfo, zShapeInfo)) {
+            if(shape::haveSameOffsets(xShapeInfo, zShapeInfo)) {
                         
                 #pragma omp parallel num_threads(info._numThreads) if (info._numThreads > 1) default(shared)
                 {
