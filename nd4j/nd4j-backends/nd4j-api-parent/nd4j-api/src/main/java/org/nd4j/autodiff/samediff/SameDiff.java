@@ -43,7 +43,6 @@ import org.nd4j.jackson.objectmapper.holder.ObjectMapperHolder;
 import org.nd4j.linalg.api.blas.params.MMulTranspose;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.buffer.factory.DataBufferFactory;
-import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.*;
@@ -52,6 +51,7 @@ import org.nd4j.linalg.api.ops.impl.controlflow.If;
 import org.nd4j.linalg.api.ops.impl.controlflow.While;
 import org.nd4j.linalg.api.ops.impl.controlflow.compat.Enter;
 import org.nd4j.linalg.api.ops.impl.controlflow.compat.Switch;
+import org.nd4j.linalg.api.ops.impl.layers.ExternalErrorsFunction;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.*;
 import org.nd4j.linalg.api.ops.impl.layers.recurrent.GRUCell;
 import org.nd4j.linalg.api.ops.impl.layers.recurrent.LSTMCell;
@@ -73,7 +73,6 @@ import org.nd4j.linalg.api.ops.impl.shape.OneHot;
 import org.nd4j.linalg.api.ops.impl.shape.tensorops.TensorArray;
 import org.nd4j.linalg.api.ops.impl.transforms.Assert;
 import org.nd4j.linalg.api.ops.impl.transforms.gradient.GradientBackwardsMarker;
-import org.nd4j.linalg.api.ops.impl.layers.ExternalErrorsFunction;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.collection.IntArrayKeyMap;
@@ -92,7 +91,6 @@ import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.indexing.conditions.Condition;
 import org.nd4j.linalg.learning.GradientUpdater;
 import org.nd4j.linalg.learning.regularization.Regularization;
-import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.primitives.AtomicBoolean;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.util.ArrayUtil;
@@ -1692,8 +1690,11 @@ public class SameDiff {
             placeholders.put(s, ds.getFeatures(count++));
         }
         count = 0;
-        for(String s : trainingConfig.getDataSetLabelMapping()){
-            placeholders.put(s, ds.getLabels(count++));
+        if(trainingConfig.getDataSetLabelMapping() != null) {
+            //Labels may be null in some models (unsupervised etc)
+            for (String s : trainingConfig.getDataSetLabelMapping()) {
+                placeholders.put(s, ds.getLabels(count++));
+            }
         }
 
         if(trainingConfig.getDataSetFeatureMaskMapping() != null && trainingConfig.getDataSetFeatureMaskMapping().size() > 0){
@@ -2320,19 +2321,40 @@ public class SameDiff {
 
     /**
      * Convert the specified variable to a constant. This is equivalent to "freezing" a variable so that it's value
-     * won't be changed by further training.
-     * Note: it is not possible to freeze array type variables
-     * @param variable
-     * @return
+     * won't be changed by further training.<br>
+     * This can only be done for variables and placeholders, not ARRAY type variables (which are usually network activations).
+     * As a constant, this variable will no longer be modified by any subsequent training.
+     *
+     * @param variable Variable to convert to a constant
+     * @return The (now constant) SDVariable
      */
-    public SDVariable convertToConstant(@NonNull SDVariable variable){
-        if(variable.getVariableType() == VariableType.CONSTANT)
-            return variable; //No change required
-        Preconditions.checkState(variable.getVariableType() != VariableType.ARRAY, "Cannot convert variable of type ARRAY to a constant: %s", variable);
+    public SDVariable convertToConstant(@NonNull SDVariable variable) {
+        convertToConstants(Collections.singletonList(variable));
+        return variable;
+    }
 
-        String n = variable.getVarName();
-        INDArray arr = variable.getArr();
-        Preconditions.checkNotNull(arr, "Could not get array for variable %s: if this is a placeholder, use SDVariable.setArray before converting", variable);
+    /**
+     * Convert all of the specified variables to constants. This is equivalent to "freezing" the variables so that their values
+     * won't be changed by further training.<br>
+     * This can only be done for variables and placeholders, not ARRAY type variables (which are usually network activations).
+     * As constants, these variables will no longer be modified by any subsequent training.
+     *
+     * @param variables Variables to convert to constants
+     * @return The (now constant) SDVariables
+     */
+    public void convertToConstants(List<SDVariable> variables){
+        if(variables.size() == 0)
+            return;
+        boolean allConst = true;
+        for(SDVariable variable : variables) {
+            if (variable.getVariableType() != VariableType.CONSTANT) {
+                allConst = false;
+                Preconditions.checkState(variable.getVariableType() != VariableType.ARRAY, "Cannot convert variable of type ARRAY to a constant: %s", variable);
+            }
+        }
+        if(allConst){
+            return; //No op
+        }
 
         //Remove all sessions in case they have any cached arrays/state
         sessions.clear();
@@ -2340,25 +2362,167 @@ public class SameDiff {
         //If gradient function has been defined, remove it (so it will be recreated later)
         sameDiffFunctionInstances.remove("grad");
 
-        constantArrays.put(n, new DeviceLocalNDArray(arr));
-        variablesArrays.remove(n);
-        if(!placeholdersPerThread.isEmpty()){
-            for(Map<String,INDArray> m : placeholdersPerThread.values()){
-                m.remove(n);
+        for(SDVariable variable : variables ) {
+            String n = variable.getVarName();
+            INDArray arr = variable.getArr();
+            Preconditions.checkNotNull(arr, "Could not get array for variable %s: if this is a placeholder, use SDVariable.setArray before converting", variable);
+
+            constantArrays.put(n, new DeviceLocalNDArray(arr));
+            variablesArrays.remove(n);
+            if(!placeholdersPerThread.isEmpty()){
+                for(Map<String,INDArray> m : placeholdersPerThread.values()){
+                    m.remove(n);
+                }
             }
+
+            variable.setVariableType(VariableType.CONSTANT);
         }
 
-        variable.setVariableType(VariableType.CONSTANT);
+
+        if(trainingConfig != null){
+            Set<String> toRemove = new HashSet<>();
+            boolean anyTrainableParmsModified = false;
+            List<String> origTrainableParams = trainingConfig.getTrainableParams();
+            for(SDVariable v : variables){
+                toRemove.add(v.getVarName());
+                if(!anyTrainableParmsModified && origTrainableParams.contains(v.getVarName())){
+                    anyTrainableParmsModified = true;
+                }
+            }
 
 
-        //TODO also handle training config!
+            //Remove updater state for this variable: updaterState, updaterViews, updaterMap
+            if(anyTrainableParmsModified) {
+                List<String> newTrainableParams = new ArrayList<>();
+                for (String s : origTrainableParams) {
+                    if (!toRemove.contains(s)) {
+                        newTrainableParams.add(s);
+                    }
+                }
+                trainingConfig.setTrainableParams(newTrainableParams);
+            }
 
+            if(initializedTraining){
+                List<INDArray> newUpdaterState = new ArrayList<>();
+                for (String s : origTrainableParams) {
+                    INDArray stateArr = updaterViews.get(s);
+                    if (!toRemove.contains(s)) {
+                        newUpdaterState.add(stateArr);
+                    }
+                }
 
-        return variable;
+                updaterState = newUpdaterState.isEmpty() ? null : Nd4j.concat(0, newUpdaterState.toArray(new INDArray[newUpdaterState.size()]));
+                //Now, update updaterViews map:
+                long viewSoFar = 0;
+                updaterViews = new HashMap<>();
+                updaterMap = new HashMap<>();
+                for(String s : trainingConfig.getTrainableParams()) {
+                    long thisSize = trainingConfig.getUpdater().stateSize(this.variables.get(s).getVariable().getArr().length());
+                    INDArray view = (updaterState == null || thisSize == 0 ? null :
+                            updaterState.get(NDArrayIndex.interval(0, 1), NDArrayIndex.interval(viewSoFar, viewSoFar + thisSize)));
+
+                    updaterViews.put(s, view);
+                    updaterMap.put(s, trainingConfig.getUpdater().instantiate(view, false));
+                    viewSoFar += thisSize;
+                }
+            }
+        }
     }
 
-    public SDVariable convertToVariable(@NonNull SDVariable constant){
-        throw new UnsupportedOperationException("Not yet implemented");
+    /**
+     * Convert the specified variable to a VARIABLE type SDVariable.<br>
+     * This can only be done for constants and placeholders, not ARRAY type variables (which are usually network activations).
+     * As a variable, this variable will modified during any subsequent training.
+     *
+     * @return This variable (now a variable type SDVariable)
+     */
+    public SDVariable convertToVariable(@NonNull SDVariable constant) {
+        convertToVariables(Collections.singletonList(constant));
+        return constant;
+    }
+
+    /**
+     * Convert the specified variables to VARIABLE type SDVariables.<br>
+     * This can only be done for constants and placeholders, not ARRAY type variables (which are usually network activations).
+     * As variables, this variable will modified during any subsequent training.
+     */
+    public void convertToVariables(@NonNull List<SDVariable> constants){
+        if(constants.size() == 0)
+            return;
+        boolean allConst = true;
+        for(SDVariable variable : constants) {
+            if (variable.getVariableType() != VariableType.VARIABLE) {
+                allConst = false;
+            }
+            Preconditions.checkState(variable.getVariableType() != VariableType.ARRAY, "Cannot convert variable of type ARRAY to a variable: %s", variable);
+        }
+        if(allConst){
+            return; //No op
+        }
+
+        //Remove all sessions in case they have any cached arrays/state
+        sessions.clear();
+
+        //If gradient function has been defined, remove it (so it will be recreated later)
+        sameDiffFunctionInstances.remove("grad");
+
+        for(SDVariable variable : constants) {
+            String n = variable.getVarName();
+            INDArray arr = variable.getArr();
+            Preconditions.checkNotNull(arr, "Could not get array for variable %s: if this is a placeholder, use SDVariable.setArray before converting", variable);
+
+            variablesArrays.put(n, new DeviceLocalNDArray(arr));
+            constantArrays.remove(n);
+            if(!placeholdersPerThread.isEmpty()){
+                for(Map<String,INDArray> m : placeholdersPerThread.values()){
+                    m.remove(n);
+                }
+            }
+
+            variable.setVariableType(VariableType.VARIABLE);
+        }
+
+
+        //For training: need to add new updater state
+        if(trainingConfig != null){
+            List<String> newTrainableParams = new ArrayList<>(trainingConfig.getTrainableParams());
+            List<String> convertedToVars = new ArrayList<>();
+            for(SDVariable v : constants){
+                newTrainableParams.add(v.getVarName());
+                convertedToVars.add(v.getVarName());
+            }
+            trainingConfig.setTrainableParams(newTrainableParams);
+
+
+            //Add updater state for this variable: updaterState, updaterViews, updaterMap
+            if(initializedTraining){
+                long extraStateSize = 0;
+                for (String s : convertedToVars) {
+                    INDArray arr = getVariable(s).getArr();
+                    long stateSize = trainingConfig.getUpdater().stateSize(arr.length());
+                    extraStateSize += stateSize;
+                }
+                if(extraStateSize > 0) {
+                    INDArray newState = Nd4j.createUninitialized(updaterState.dataType(), 1, extraStateSize);
+
+                    updaterState = (updaterState == null ? newState : Nd4j.concat(1, updaterState, newState));
+                    //Now, update updaterViews map:
+                    long viewSoFar = 0;
+                    updaterViews = new HashMap<>();
+                    updaterMap = new HashMap<>();
+                    for (String s : trainingConfig.getTrainableParams()) {
+                        long thisSize = trainingConfig.getUpdater().stateSize(this.variables.get(s).getVariable().getArr().length());
+                        INDArray view = (updaterState == null || thisSize == 0 ? null :
+                                updaterState.get(NDArrayIndex.interval(0, 1), NDArrayIndex.interval(viewSoFar, viewSoFar + thisSize)));
+
+                        updaterViews.put(s, view);
+                        boolean init = convertedToVars.contains(s); //Only initialize/zero the states for the new variables
+                        updaterMap.put(s, trainingConfig.getUpdater().instantiate(view, init));
+                        viewSoFar += thisSize;
+                    }
+                }
+            }
+        }
     }
 
 

@@ -2667,6 +2667,7 @@ public class SameDiffTests {
 
     @Test
     public void testConvertToConstant(){
+        Nd4j.getRandom().setSeed(12345);
 
         SameDiff sd = SameDiff.create();
         SDVariable in = sd.placeHolder("in", DataType.FLOAT, 1,3);
@@ -2680,11 +2681,9 @@ public class SameDiffTests {
         INDArray inArr = Nd4j.rand(DataType.FLOAT, 1,3);
         in.setArray(inArr);
 
-        INDArray out = tanh.eval();
-
         TrainingConfig c = TrainingConfig.builder()
-                .updater(new Adam(0.01))
-                .weightDecay(0.001, true)
+                .updater(new Adam(0.1))
+                .weightDecay(0.01, true)
                 .dataSetFeatureMapping("in")
                 .skipBuilderValidation(true)
                 .build();
@@ -2692,6 +2691,9 @@ public class SameDiffTests {
 
 
         sd.fit(new SingletonMultiDataSetIterator(new DataSet(inArr,null).toMultiDataSet()), 1);
+
+        INDArray out = tanh.eval();
+
         List<String> tp = c.getTrainableParams();
         assertEquals(2, tp.size());
         assertTrue(tp.contains("w"));
@@ -2708,7 +2710,51 @@ public class SameDiffTests {
         assertEquals(VariableType.ARRAY, tanh.getVariableType());
 
         //Sanity check on training:
+        sd.fit(new SingletonMultiDataSetIterator(new DataSet(inArr,null).toMultiDataSet()), 1);
+    }
 
+    @Test
+    public void testConvertToVariable(){
+        Nd4j.getRandom().setSeed(12345);
 
+        SameDiff sd = SameDiff.create();
+        SDVariable in = sd.placeHolder("in", DataType.FLOAT, 1,3);
+        SDVariable w = sd.constant("w", Nd4j.rand(DataType.FLOAT, 3,4));
+        SDVariable b = sd.var("b", Nd4j.rand(DataType.FLOAT, 1,4));
+        SDVariable mmul = in.mmul(w);
+        SDVariable add = mmul.add(b);
+        SDVariable tanh = sd.tanh(add);
+        SDVariable loss = sd.variance(tanh, true);
+
+        INDArray inArr = Nd4j.rand(DataType.FLOAT, 1,3);
+        in.setArray(inArr);
+
+        TrainingConfig c = TrainingConfig.builder()
+                .updater(new Adam(0.1))
+                .weightDecay(0.01, true)
+                .dataSetFeatureMapping("in")
+                .skipBuilderValidation(true)
+                .build();
+        sd.setTrainingConfig(c);
+
+        INDArray out = tanh.eval();
+        sd.fit(new SingletonMultiDataSetIterator(new DataSet(inArr,null).toMultiDataSet()), 1);
+        List<String> tp = c.getTrainableParams();
+        assertEquals(1, tp.size());
+        assertFalse(tp.contains("w"));
+        assertTrue(tp.contains("b"));
+
+        w.convertToVariable();
+
+        INDArray out2 = tanh.eval();
+
+        assertEquals(out, out2);
+        assertEquals(VariableType.VARIABLE, w.getVariableType());
+        assertEquals(VariableType.VARIABLE, b.getVariableType());
+        assertEquals(VariableType.ARRAY, add.getVariableType());
+        assertEquals(VariableType.ARRAY, tanh.getVariableType());
+
+        //Sanity check on training:
+        sd.fit(new SingletonMultiDataSetIterator(new DataSet(inArr,null).toMultiDataSet()), 1);
     }
 }
