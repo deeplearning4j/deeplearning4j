@@ -103,6 +103,14 @@ namespace functions {
                     tadOffsetZ = tadOffsets;
                 }
 
+                uint castTadShapeX[MAX_RANK];
+                uint castTadShapeY[MAX_RANK];
+                uint castTadShapeZ[MAX_RANK];
+
+                bool canCastX = nd4j::DataTypeUtils::castShapeInfo(tadShapeShapeInfo, castTadShapeX);
+                bool canCastY = nd4j::DataTypeUtils::castShapeInfo(yShapeInfo, castTadShapeY);
+                bool canCastZ = canCastX ? nd4j::DataTypeUtils::castShapeInfo(tadShapeInfoZ, castTadShapeZ) : false;
+
                 auto zEWS = shape::elementWiseStride(tadShapeInfoZ);
                 auto lenZ = shape::length(tadShapeInfoZ);
                 auto lenY = shape::length(yShapeInfo);
@@ -115,33 +123,33 @@ namespace functions {
                 for (int i = 0; i < tads; i++) {
                     auto offset = tadOffsets[i];
                     auto offsetZ = tadOffsetZ[i];
+                    auto oZ = z + offsetZ;
+                    auto oX = x + offset;
 
                     if (tadEWS > 0 && yStride > 0 && zEWS > 0 && dimensionLength == 1) {
-                        auto oZ = z + offsetZ;
-                        auto oX = x + offset;
 
                         if (tadEWS == 1 && yStride == 1 && zEWS == 1) {
-#pragma omp simd
+                            #pragma omp simd
                             for (int f = 0; f < tadLength; f++)
                                 oZ[f] = OpType::op(oX[f], y[f]);                            
                         } 
                         else {
-#pragma omp simd
+                            #pragma omp simd
                             for (int f = 0; f < tadLength; f++) 
                                 oZ[f * zEWS] = OpType::op(oX[f * tadEWS], y[f * yStride]);                            
                         }
                     }
                     else {
 
-                        // TODO: cover this codebranch with tests
-                        // all this stuff already happens within thread                        
-                        for (int f = 0; f < tadLength; f++) {                            
+                        // all this stuff already happens within thread
+                        #pragma omp simd
+                        for (unsigned int f = 0; f < tadLength; f++) {
 
-                            auto xOffset = offset + shape::getIndexOffset(f, tadShapeShapeInfo, tadLength);
-                            auto zOffset = offsetZ + shape::getIndexOffset(f, tadShapeInfoZ, lenZ);
-                            auto yOffset = shape::getIndexOffset(f, yShapeInfo, lenY);
+                            auto xOffset = shape::indexOffset(f, tadShapeShapeInfo, castTadShapeX, tadLength, canCastX);
+                            auto zOffset = shape::indexOffset(f, tadShapeInfoZ, castTadShapeZ, lenZ, canCastZ);
+                            auto yOffset = shape::indexOffset(f, yShapeInfo, castTadShapeY, lenY, canCastY);
 
-                            z[zOffset] = OpType::op(x[xOffset], y[yOffset]);
+                            oZ[zOffset] = OpType::op(oX[xOffset], y[yOffset]);
                         }
                     }
                 }
