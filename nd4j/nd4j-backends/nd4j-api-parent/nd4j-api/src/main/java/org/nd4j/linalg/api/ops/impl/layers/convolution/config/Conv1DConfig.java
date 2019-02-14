@@ -30,8 +30,6 @@ public class Conv1DConfig extends BaseConvolutionConfig {
     public static final String NCW = "NCW";
     public static final String NWC = "NWC";
 
-    private static final String INVALID_CONFIGURATION = "Invalid Conv1D configuration : s = %d p = %d ";
-
     @Builder.Default
     private long k = -1L;
     @Builder.Default
@@ -41,12 +39,6 @@ public class Conv1DConfig extends BaseConvolutionConfig {
     @Builder.Default
     private String dataFormat = NCW;
     private boolean isSameMode;
-
-    public void check() {
-        if (s < 1 || p < 0) {
-            throw new RuntimeException(String.format(INVALID_CONFIGURATION, s, p));
-        }
-    }
 
     public boolean isNWC(){
         Preconditions.checkState(dataFormat.equalsIgnoreCase(NCW) || dataFormat.equalsIgnoreCase(NWC),

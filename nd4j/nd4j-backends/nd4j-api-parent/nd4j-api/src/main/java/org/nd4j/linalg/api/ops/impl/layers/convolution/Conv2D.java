@@ -54,6 +54,7 @@ import java.util.*;
 public class Conv2D extends DynamicCustomOp {
 
     protected Conv2DConfig config;
+    private static final String INVALID_CONFIGURATION = "Invalid Conv2D configuration : sW = %d pH = %d dW = %d ";
 
     @Builder(builderMethodName = "builder")
     public Conv2D(SameDiff sameDiff,
@@ -64,7 +65,9 @@ public class Conv2D extends DynamicCustomOp {
         this.sameDiff = sameDiff;
         this.config = config;
 
-        config.check();
+        Preconditions.checkState(config.getSW() >= 1 && config.getPH() >= 0 && config.getDW() >= 1,
+                                    INVALID_CONFIGURATION,
+                                    config.getSH(), config.getPH(), config.getDW());
         addArgs();
         sameDiff.putFunctionForId(this.getOwnName(), this);    //Normally called in DynamicCustomOp constructor, via setInstanceId - but sameDiff field is null at that point
         sameDiff.addArgsFor(inputFunctions, this);

@@ -59,6 +59,7 @@ import java.util.*;
 public class Conv1D extends DynamicCustomOp {
 
     protected Conv1DConfig config;
+    private static final String INVALID_CONFIGURATION = "Invalid Conv1D configuration : s = %d p = %d ";
 
     @Builder(builderMethodName = "builder")
     public Conv1D(SameDiff sameDiff,
@@ -68,7 +69,7 @@ public class Conv1D extends DynamicCustomOp {
         super(null, inputArrays, outputs);
         this.sameDiff = sameDiff;
         this.config = config;
-        config.check();
+        Preconditions.checkState(config.getS() >= 1 && config.getP() >= 0, INVALID_CONFIGURATION, config.getS(), config.getP());
         addArgs();
         sameDiff.putFunctionForId(this.getOwnName(), this);
         sameDiff.addArgsFor(inputFunctions, this);
