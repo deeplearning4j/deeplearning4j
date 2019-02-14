@@ -66,7 +66,7 @@ Nd4jLong OmpLaunchHelper::betterSpan(Nd4jLong N) {
         if (r == 0)
             return t;
         else {
-            // fuck alignment
+            // hug alignment
             return t + 1;
         }
     }
