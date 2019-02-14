@@ -1962,10 +1962,11 @@ template <typename T>
     }    
 
     INLINEDEF _CUDA_HD uint getIndexOffset(uint index, const uint *shapeInfo, uint arrLen) {
-        
-        const uint ews = shapeInfo[shapeInfo[0] + shapeInfo[0] + 2];
 
-        if(ews > 0 && shapeInfo[shapeInfo[0] + shapeInfo[0] + 3] == 99)
+        const uint rank = shapeInfo[0];
+        const uint ews = shapeInfo[rank + rank + 2];
+
+        if(ews > 0 && shapeInfo[rank + rank + 3] == 99)
            if (ews == 1)
                return index;
            else
@@ -1973,10 +1974,10 @@ template <typename T>
 
         uint offset = 0;
 
-        for(uint i = 1; i <= shapeInfo[0]; ++i) {
+        for(uint i = 1; i <= rank; ++i) {
             arrLen /= shapeInfo[i];
             if(arrLen > 0 && shapeInfo[i] > 1) {
-                offset += (index / arrLen) * shapeInfo[i + shapeInfo[0]];
+                offset += (index / arrLen) * shapeInfo[i + rank];
                 index %= arrLen;
             }
         }
