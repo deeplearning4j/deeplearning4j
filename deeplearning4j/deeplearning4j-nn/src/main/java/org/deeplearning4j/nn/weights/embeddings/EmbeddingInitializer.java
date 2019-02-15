@@ -21,14 +21,30 @@ import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
 
 import java.io.Serializable;
 
+/**
+ * An interface implemented by things like Word2Vec etc that allows them to be used as weight
+ */
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY, property = "@class")
 public interface EmbeddingInitializer extends Serializable {
 
+    /**
+     * Load the weights into the specified INDArray
+     * @param array Array of shape [vocabSize, vectorSize]
+     */
     void loadWeightsInto(INDArray array);
 
+    /**
+     * @return Size of the vocabulary
+     */
     long vocabSize();
 
+    /**
+     * @return Size of each vector
+     */
     int vectorSize();
 
+    /**
+     * @return True if the embedding initializer can be safely serialized as JSON
+     */
     boolean jsonSerializable();
 }

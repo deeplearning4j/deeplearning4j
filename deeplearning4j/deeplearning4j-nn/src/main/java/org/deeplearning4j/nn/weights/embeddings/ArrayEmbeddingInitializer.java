@@ -16,15 +16,25 @@
 
 package org.deeplearning4j.nn.weights.embeddings;
 
-import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
+import lombok.NonNull;
+import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
-@AllArgsConstructor
+/**
+ * Embedding layer initialization from a specified array
+ *
+ * @author Alex Black
+ */
 @EqualsAndHashCode
 public class ArrayEmbeddingInitializer implements EmbeddingInitializer {
 
     private final INDArray embeddings;
+
+    public ArrayEmbeddingInitializer(@NonNull INDArray embeddings) {
+        Preconditions.checkState(embeddings.rank() == 2, "Embedding array must be rank 2 with shape [vocabSize, vectorSize], got array with shape %ndShape", embeddings);
+        this.embeddings = embeddings;
+    }
 
     @Override
     public void loadWeightsInto(INDArray array) {
