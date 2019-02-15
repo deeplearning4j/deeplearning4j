@@ -1015,13 +1015,13 @@ TEST_F(PlaygroundTests, test_reduce_float) {
 
 //     // warm up
      for (int e = 0; e < 5; e++) {
-         NativeOpExcutioner::execReduceFloat(reduce::Mean, array.buffer(), array.shapeInfo(), nullptr, target.buffer(),target.shapeInfo(), dims.data(), dims.size(), xTad.tadOnlyShapeInfo,xTad.tadOffsets);
+         NativeOpExcutioner::execReduceFloat(reduce::ReduceFloatBenchmarkOp, array.buffer(), array.shapeInfo(), nullptr, target.buffer(),target.shapeInfo(), dims.data(), dims.size(), xTad.tadOnlyShapeInfo,xTad.tadOffsets);
      }
 
      int iterations = 1000;
      auto timeStart = std::chrono::system_clock::now();
      for (int e = 0; e < iterations; e++) {
-         NativeOpExcutioner::execReduceFloat(reduce::Mean, array.buffer(), array.shapeInfo(), nullptr, target.buffer(), target.shapeInfo(), dims.data(), dims.size(), xTad.tadOnlyShapeInfo, xTad.tadOffsets);
+         NativeOpExcutioner::execReduceFloat(reduce::ReduceFloatBenchmarkOp, array.buffer(), array.shapeInfo(), nullptr, target.buffer(), target.shapeInfo(), dims.data(), dims.size(), xTad.tadOnlyShapeInfo, xTad.tadOffsets);
      }
      auto timeEnd = std::chrono::system_clock::now();
      auto spanTime = std::chrono::duration_cast<std::chrono::microseconds> ((timeEnd - timeStart)/iterations).count();
@@ -1041,13 +1041,13 @@ TEST_F(PlaygroundTests, test_reduce_same) {
 
 //     // warm up
     for (int e = 0; e < 5; e++) {
-        NativeOpExcutioner::execReduceSame(reduce::Sum, array.buffer(), array.shapeInfo(), nullptr, target.buffer(),target.shapeInfo(), dims.data(), dims.size(), xTad.tadOnlyShapeInfo,xTad.tadOffsets);
+        NativeOpExcutioner::execReduceSame(reduce::ReduceSameBenchmarkOp, array.buffer(), array.shapeInfo(), nullptr, target.buffer(),target.shapeInfo(), dims.data(), dims.size(), xTad.tadOnlyShapeInfo,xTad.tadOffsets);
     }
 
     int iterations = 1000;
     auto timeStart = std::chrono::system_clock::now();
     for (int e = 0; e < iterations; e++) {
-        NativeOpExcutioner::execReduceSame(reduce::Sum, array.buffer(), array.shapeInfo(), nullptr, target.buffer(), target.shapeInfo(), dims.data(), dims.size(), xTad.tadOnlyShapeInfo, xTad.tadOffsets);
+        NativeOpExcutioner::execReduceSame(reduce::ReduceSameBenchmarkOp, array.buffer(), array.shapeInfo(), nullptr, target.buffer(), target.shapeInfo(), dims.data(), dims.size(), xTad.tadOnlyShapeInfo, xTad.tadOffsets);
     }
     auto timeEnd = std::chrono::system_clock::now();
     auto spanTime = std::chrono::duration_cast<std::chrono::microseconds> ((timeEnd - timeStart)/iterations).count();
@@ -1085,13 +1085,13 @@ TEST_F(PlaygroundTests, test_reduce_scalar_float_2) {
 
      // warm up
      for (int e = 0; e < 100; e++) {
-         NativeOpExcutioner::execReduceFloatScalar(reduce::Mean, array.buffer(), array.shapeInfo(), nullptr, target.buffer(), target.shapeInfo());
+         NativeOpExcutioner::execReduceFloatScalar(reduce::ReduceFloatBenchmarkOp, array.buffer(), array.shapeInfo(), nullptr, target.buffer(), target.shapeInfo());
      }
 
      int iterations = 100000;
      auto timeStart = std::chrono::system_clock::now();
      for (int e = 0; e < iterations; e++) {
-         NativeOpExcutioner::execReduceFloatScalar(reduce::Mean, array.buffer(), array.shapeInfo(), nullptr, target.buffer(), target.shapeInfo());
+         NativeOpExcutioner::execReduceFloatScalar(reduce::ReduceFloatBenchmarkOp, array.buffer(), array.shapeInfo(), nullptr, target.buffer(), target.shapeInfo());
      }
      auto timeEnd = std::chrono::system_clock::now();
      auto spanTime = std::chrono::duration_cast<std::chrono::nanoseconds> ((timeEnd - timeStart)/iterations).count();
@@ -1107,13 +1107,13 @@ TEST_F(PlaygroundTests, test_reduce_scalar_same_2) {
 
     // warm up
     for (int e = 0; e < 100; e++) {
-        NativeOpExcutioner::execReduceSameScalar(reduce::Sum, array.buffer(), array.shapeInfo(), nullptr, target.buffer(), target.shapeInfo());
+        NativeOpExcutioner::execReduceSameScalar(reduce::ReduceSameBenchmarkOp, array.buffer(), array.shapeInfo(), nullptr, target.buffer(), target.shapeInfo());
     }
 
     int iterations = 100000;
     auto timeStart = std::chrono::system_clock::now();
     for (int e = 0; e < iterations; e++) {
-        NativeOpExcutioner::execReduceSameScalar(reduce::Sum, array.buffer(), array.shapeInfo(), nullptr, target.buffer(), target.shapeInfo());
+        NativeOpExcutioner::execReduceSameScalar(reduce::ReduceSameBenchmarkOp, array.buffer(), array.shapeInfo(), nullptr, target.buffer(), target.shapeInfo());
     }
     auto timeEnd = std::chrono::system_clock::now();
     auto spanTime = std::chrono::duration_cast<std::chrono::nanoseconds> ((timeEnd - timeStart)/iterations).count();

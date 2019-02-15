@@ -2398,7 +2398,39 @@ namespace simdOps {
 		}
 	};
 
+    template <typename X>
+    class ReduceSameBenchmarkOp {
+    public:
+        no_op_exec_special_accumulation_same
+        no_op_exec_special_accumulation_same_cuda
 
+        const static functions::ReduceType reduceType = functions::ReduceType::SUM;
+
+        op_def static X startingValue(const X *input) {
+            return static_cast<X>(0.0f);
+        }
+
+        op_def static X merge(X old, X opOutput, X *extraParams) {
+            return opOutput + old;
+        }
+
+        op_def static X update(X old, X opOutput, X *extraParams) {
+            return opOutput + old;
+        }
+
+        op_def static X op(X d1, X *extraParams) {
+            auto f1 = static_cast<float>(d1);
+            return static_cast<X>(nd4j::math::nd4j_pow<float,float,float>(f1, 3)
+                   + nd4j::math::nd4j_log<float,float>(f1) * nd4j::math::nd4j_sin<float,float>(f1)
+                     / nd4j::math::nd4j_tanh<float,float>(static_cast<float>(M_E) * static_cast<float>(M_PI) * f1)
+                     * nd4j::math::nd4j_sqrt<float,float>(static_cast<float>(M_PI) / f1)
+                   - nd4j::math::nd4j_atan<float,float>(static_cast<float>(M_E) / f1));
+        }
+
+        op_def static X postProcess(X reduction, Nd4jLong n, X *extraParams) {
+            return reduction;
+        }
+    };
 
 
     template <typename X, typename Z>
@@ -2697,6 +2729,40 @@ namespace simdOps {
 			return (Z) reduction / (Z) n;
 		}
 	};
+
+    template <typename X, typename Z>
+    class ReduceFloatBenchmarkOp {
+    public:
+        no_op_exec_special_accumulation
+        no_op_exec_special_accumulation_cuda
+
+        const static functions::ReduceType reduceType = functions::ReduceType::SUM;
+
+        op_def static X startingValue(const X *input) {
+            return static_cast<X>(0);
+        }
+
+        op_def static Z merge(X old, X opOutput, Z *extraParams) {
+            return opOutput + old;
+        }
+
+        op_def static Z update(X old, X opOutput, Z *extraParams) {
+            return opOutput + old;
+        }
+
+        op_def static Z op(X d1, Z *extraParams) {
+            auto f1 = static_cast<float>(d1);
+            return static_cast<Z>(nd4j::math::nd4j_pow<float,float,float>(f1, 3)
+                    + nd4j::math::nd4j_log<float,float>(f1) * nd4j::math::nd4j_sin<float,float>(f1)
+                    / nd4j::math::nd4j_tanh<float,float>(static_cast<float>(M_E) * static_cast<float>(M_PI) * f1)
+                    * nd4j::math::nd4j_sqrt<float,float>(static_cast<float>(M_PI) / f1)
+                    - nd4j::math::nd4j_atan<float,float>(static_cast<float>(M_E) / f1));
+        }
+
+        op_def static Z postProcess(X reduction, Nd4jLong n, Z *extraParams) {
+            return (Z) reduction / (Z) n;
+        }
+    };
 
 
     template <typename X, typename Z>
