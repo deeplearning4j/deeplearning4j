@@ -17,9 +17,11 @@
 package org.deeplearning4j.nn.weights.embeddings;
 
 import lombok.AllArgsConstructor;
+import lombok.EqualsAndHashCode;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 @AllArgsConstructor
+@EqualsAndHashCode
 public class ArrayEmbeddingInitializer implements EmbeddingInitializer {
 
     private final INDArray embeddings;

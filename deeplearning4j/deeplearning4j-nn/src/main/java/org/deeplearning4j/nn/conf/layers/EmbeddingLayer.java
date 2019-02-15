@@ -124,6 +124,8 @@ public class EmbeddingLayer extends FeedForwardLayer {
         }
 
         public Builder weightInit(EmbeddingInitializer embeddingInitializer){
+            nIn(embeddingInitializer.vocabSize());
+            nOut(embeddingInitializer.vectorSize());
             return weightInit(new WeightInitEmbedding(embeddingInitializer));
         }
 

@@ -16,6 +16,7 @@
 
 package org.deeplearning4j.nn.weights.embeddings;
 
+import lombok.EqualsAndHashCode;
 import lombok.NonNull;
 import org.deeplearning4j.nn.weights.IWeightInit;
 import org.nd4j.base.Preconditions;
@@ -24,6 +25,7 @@ import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 
 @JsonIgnoreProperties("nonSerializableInit")
+@EqualsAndHashCode
 public class WeightInitEmbedding implements IWeightInit {
 
     private EmbeddingInitializer serializableInit;
