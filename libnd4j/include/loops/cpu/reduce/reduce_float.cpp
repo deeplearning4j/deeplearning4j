@@ -188,132 +188,31 @@ namespace functions {
                 uint castTadOnlyShapeInfo[MAX_RANK];
                 const bool canCast = nd4j::DataTypeUtils::castShapeInfo<uint>(tadOnlyShapeInfo, castTadOnlyShapeInfo);
 
-                if (tadEWS == 1 && order == 'c') {
+                if (tadEWS == 1 && shape::order(tadOnlyShapeInfo) == 'c') {
+
 #pragma omp parallel for schedule(guided) num_threads(num_threads) if(num_threads>1) proc_bind(AFFINITY) default(shared)
-                    for (unsigned int i = 0; i < resultLength; i++) {
+                    for (int i = 0; i < resultLength; i++) {
 
                         auto tx = x + tadOffsets[i];
                         auto start = OpType::startingValue(tx);
 
-                        switch (OpType::reduceType) {
-                            case PRODUCT: {
-                                #pragma omp simd reduction(prodT:start)
-                                for (unsigned int j = 0; j < tadLength; j++)
-                                    start = OpType::update(start, OpType::op(tx[j], extraParams), extraParams);
-
-                            }
-                                break;
-                            case SUM: {
-                                #pragma omp simd reduction(sumT:start)
-                                for (int j = 0; j < tadLength; j++)
-                                    start = OpType::update(start, OpType::op(tx[j], extraParams), extraParams);
-                            }
-                                break;
-                            case ASUM: {
-                                #pragma omp simd reduction(asumT:start)
-                                for (unsigned int j = 0; j < tadLength; j++)
-                                    start = OpType::update(start, OpType::op(tx[j], extraParams), extraParams);
-
-                            }
-                                break;
-                            case MAX: {
-                                #pragma omp simd reduction(maxT:start)
-                                for (unsigned int j = 0; j < tadLength; j++)
-                                    start = OpType::update(start, OpType::op(tx[j], extraParams), extraParams);
-
-                            }
-                                break;
-                            case AMAX: {
-                                #pragma omp simd reduction(amaxT:start)
-                                for (unsigned int j = 0; j < tadLength; j++)
-                                    start = OpType::update(start, OpType::op(tx[j], extraParams), extraParams);
-
-                            }
-                                break;
-                            case MIN: {
-                                #pragma omp simd reduction(minT:start)
-                                for (unsigned int j = 0; j < tadLength; j++)
-                                    start = OpType::update(start, OpType::op(tx[j], extraParams), extraParams);
-
-                            }
-                                break;
-                            case AMIN: {
-                                #pragma omp simd reduction(aminT:start)
-                                for (unsigned int j = 0; j < tadLength; j++)
-                                    start = OpType::update(start, OpType::op(tx[j], extraParams), extraParams);
-
-                            }
-                            break;
-                        }
+                        for (int j = 0; j < tadLength; j++)
+                            start = OpType::update(start, OpType::op(tx[j], extraParams), extraParams);
 
                         z[i] = OpType::postProcess(start, tadLength, extraParams);;
                     }
                 } else {
-                    #pragma omp parallel for schedule(guided) num_threads(num_threads) if(num_threads>1) proc_bind(AFFINITY) default(shared)
-                    for (unsigned int i = 0; i < resultLength; i++) {
+
+#pragma omp parallel for schedule(guided) num_threads(num_threads) if(num_threads>1) proc_bind(AFFINITY) default(shared)
+                    for (int i = 0; i < resultLength; i++) {
 
                         auto tx = x + tadOffsets[i];
                         auto start = OpType::startingValue(tx);
 
-                        switch (OpType::reduceType) {
-                            case PRODUCT: {
-                                #pragma omp simd reduction(prodT:start)
-                                for (unsigned int j = 0; j < tadLength; j++) {
-                                    auto xOffset = shape::indexOffset(j, tadOnlyShapeInfo, castTadOnlyShapeInfo, tadLength, canCast);
-                                    start = OpType::update(start, OpType::op(tx[xOffset], extraParams), extraParams);
-                                }
-                            }
-                                break;
-                            case SUM: {
-                                #pragma omp simd reduction(sumT:start)
-                                for (int j = 0; j < tadLength; j++) {
-                                    auto xOffset = shape::indexOffset(j, tadOnlyShapeInfo, castTadOnlyShapeInfo, tadLength, canCast);
-                                    start = OpType::update(start, OpType::op(tx[xOffset], extraParams), extraParams);
-                                }
-                            }
-                                break;
-                            case ASUM: {
-                                #pragma omp simd reduction(asumT:start)
-                                for (unsigned int j = 0; j < tadLength; j++) {
-                                    auto xOffset = shape::indexOffset(j, tadOnlyShapeInfo, castTadOnlyShapeInfo, tadLength, canCast);
-                                    start = OpType::update(start, OpType::op(tx[xOffset], extraParams), extraParams);
-                                }
-                            }
-                                break;
-                            case MAX: {
-                                #pragma omp simd reduction(maxT:start)
-                                for (unsigned int j = 0; j < tadLength; j++) {
-                                    auto xOffset = shape::indexOffset(j, tadOnlyShapeInfo, castTadOnlyShapeInfo, tadLength, canCast);
-                                    start = OpType::update(start, OpType::op(tx[xOffset], extraParams), extraParams);
-                                }
-                            }
-                                break;
-                            case AMAX: {
-                                #pragma omp simd reduction(amaxT:start)
-                                for (unsigned int j = 0; j < tadLength; j++) {
-                                    auto xOffset = shape::indexOffset(j, tadOnlyShapeInfo, castTadOnlyShapeInfo, tadLength, canCast);
-                                    start = OpType::update(start, OpType::op(tx[xOffset], extraParams), extraParams);
-                                }
-                            }
-                                break;
-                            case MIN: {
-                                #pragma omp simd reduction(minT:start)
-                                for (unsigned int j = 0; j < tadLength; j++) {
-                                    auto xOffset = shape::indexOffset(j, tadOnlyShapeInfo, castTadOnlyShapeInfo, tadLength, canCast);
-                                    start = OpType::update(start, OpType::op(tx[xOffset], extraParams), extraParams);
-                                }
-                            }
-                                break;
-                            case AMIN: {
-                                #pragma omp simd reduction(aminT:start)
-                                for (unsigned int j = 0; j < tadLength; j++) {
-                                    auto xOffset = shape::indexOffset(j, tadOnlyShapeInfo, castTadOnlyShapeInfo, tadLength, canCast);
-                                    start = OpType::update(start, OpType::op(tx[xOffset], extraParams), extraParams);
-                                }
-                            }
-                                break;
+                        for (int j = 0; j < tadLength; j++) {
+                            auto xOffset = shape::indexOffset(j, tadOnlyShapeInfo, castTadOnlyShapeInfo, tadLength, canCast);
+                            start = OpType::update(start, OpType::op(tx[xOffset], extraParams), extraParams);
                         }
-
                         z[i] = OpType::postProcess(start, tadLength, extraParams);;
                     }
                 }

@@ -186,17 +186,33 @@ namespace functions {
                 uint castTadOnlyShapeInfo[MAX_RANK];
                 const bool canCast = nd4j::DataTypeUtils::castShapeInfo<uint>(tadOnlyShapeInfo, castTadOnlyShapeInfo);
 
-#pragma omp parallel for schedule(guided) num_threads(num_threads) if(num_threads>1) proc_bind(AFFINITY) default(shared)
-                for (int i = 0; i < zLength; i++) {
-                                                
-                    auto tx = x + tadOffsets[i];
-                    auto start = OpType::startingValue(tx);
+                if (tadEWS == 1 && shape::order(tadOnlyShapeInfo) == 'c') {
 
-                    for (int j = 0; j < tadLength; j++) {                        
-                        auto xOffset = shape::indexOffset(j, tadOnlyShapeInfo, castTadOnlyShapeInfo, tadLength, canCast);
-                        start = OpType::update(start, OpType::op(tx[xOffset], extraParams), extraParams);
+#pragma omp parallel for schedule(guided) num_threads(num_threads) if(num_threads>1) proc_bind(AFFINITY) default(shared)
+                    for (int i = 0; i < zLength; i++) {
+
+                        auto tx = x + tadOffsets[i];
+                        auto start = OpType::startingValue(tx);
+
+                        for (int j = 0; j < tadLength; j++)
+                            start = OpType::update(start, OpType::op(tx[j], extraParams), extraParams);
+
+                        z[i] = OpType::postProcess(start, tadLength, extraParams);;
                     }
-                    z[i] = OpType::postProcess(start, tadLength, extraParams);;
+                } else {
+
+#pragma omp parallel for schedule(guided) num_threads(num_threads) if(num_threads>1) proc_bind(AFFINITY) default(shared)
+                    for (int i = 0; i < zLength; i++) {
+
+                        auto tx = x + tadOffsets[i];
+                        auto start = OpType::startingValue(tx);
+
+                        for (int j = 0; j < tadLength; j++) {
+                            auto xOffset = shape::indexOffset(j, tadOnlyShapeInfo, castTadOnlyShapeInfo, tadLength, canCast);
+                            start = OpType::update(start, OpType::op(tx[xOffset], extraParams), extraParams);
+                        }
+                        z[i] = OpType::postProcess(start, tadLength, extraParams);;
+                    }
                 }
                 
                 if (tad != nullptr)

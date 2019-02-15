@@ -221,7 +221,6 @@ namespace functions {
                         Nd4jLong threadOffset = info.getThreadOffset(threadNum);
                         auto xi = x + threadOffset;
 
-                        #pragma omp simd
                         for (Nd4jLong i = 0; i < info.getItersPerThread(threadNum); i++)                                
                             local = OpType::update(local, OpType::op(xi[i], extraParams), extraParams);
                             
@@ -238,7 +237,6 @@ namespace functions {
                         Nd4jLong threadOffset = info.getThreadOffset(threadNum);
                         auto xi = x + xEws*threadOffset;
 
-                        #pragma omp simd
                         for (Nd4jLong i = 0; i < info.getItersPerThread(threadNum); i++)                                
                             local = OpType::update(local, OpType::op(xi[i*xEws], extraParams), extraParams);
                             
