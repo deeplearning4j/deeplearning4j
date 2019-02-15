@@ -129,8 +129,10 @@ public class TestImageLoader {
     }
 
     @Test
-    public void testScalingIfNeed_suitable_size_diff_channel() {
-        int width1 = 60, height1 = 110, channel1 = BufferedImage.TYPE_BYTE_GRAY;
+    public void testScalingIfNeedWhenSuitableSizeButDiffChannel() {
+        int width1 = 60;
+        int height1 = 110;
+        int channel1 = BufferedImage.TYPE_BYTE_GRAY;
         BufferedImage img1 = makeRandomBufferedImage(true, width1, height1);
         ImageLoader loader1 = new ImageLoader(height1, width1, channel1);
         BufferedImage scaled1 = loader1.scalingIfNeed(img1, false);
@@ -139,7 +141,9 @@ public class TestImageLoader {
         assertEquals(channel1, scaled1.getType());
         assertEquals(1, scaled1.getSampleModel().getNumBands());
 
-        int width2 = 70, height2 = 120, channel2 = BufferedImage.TYPE_BYTE_GRAY;
+        int width2 = 70;
+        int height2 = 120;
+        int channel2 = BufferedImage.TYPE_BYTE_GRAY;
         BufferedImage img2 = makeRandomBufferedImage(false, width2, height2);
         ImageLoader loader2 = new ImageLoader(height2, width2, channel2);
         BufferedImage scaled2 = loader2.scalingIfNeed(img2, false);
@@ -180,12 +184,10 @@ public class TestImageLoader {
      * @return Generated BufferedImage
      */
     private BufferedImage makeRandomBufferedImage(boolean alpha, int width, int height) {
-        int w = width > 0 ? width : (rng.nextInt() % 100 + 100);
-        int h = height > 0 ? height : (rng.nextInt() % 100 + 100);
         int type = alpha ? BufferedImage.TYPE_4BYTE_ABGR : BufferedImage.TYPE_3BYTE_BGR;
-        BufferedImage img = new BufferedImage(w, h, type);
-        for (int i = 0; i < h; ++i) {
-            for (int j = 0; j < w; ++j) {
+        BufferedImage img = new BufferedImage(width, height, type);
+        for (int i = 0; i < height; ++i) {
+            for (int j = 0; j < width; ++j) {
                 int a = (alpha ? rng.nextInt() : 1) & 0xff;
                 int r = rng.nextInt() & 0xff;
                 int g = rng.nextInt() & 0xff;
@@ -204,6 +206,6 @@ public class TestImageLoader {
      * @return Generated BufferedImage
      */
     private BufferedImage makeRandomBufferedImage(boolean alpha) {
-        return makeRandomBufferedImage(alpha, -1, -1);
+        return makeRandomBufferedImage(alpha, rng.nextInt() % 100 + 100, rng.nextInt() % 100 + 100);
     }
 }
