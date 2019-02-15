@@ -206,10 +206,13 @@ namespace randomOps {
         random_def T op(Nd4jLong idx, Nd4jLong length, nd4j::graph::RandomGenerator *helper, T *extraParams) {
             T from = extraParams[0];
             T to = extraParams[1];
+            T step = extraParams[2];
 
-            T step = (T) idx / ((T)length - (T) 1.0f);
+            //T step = (T) idx / ((T)length - (T) 1.0f);
+            //return from * ((T) 1.0f - step) + step * to;
 
-            return from * ((T) 1.0f - step) + step * to;
+	    return from + idx * step;
+
         }
     };
 
