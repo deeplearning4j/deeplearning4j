@@ -64,7 +64,8 @@ public class Linspace extends BaseRandomOp {
         this.from = from;
         this.to = to;
         this.length = z.length();
-        this.extraArgs = new Object[] {from, to};
+        double step = (to - from) / (length - 1);
+        this.extraArgs = new Object[] {from, to, step};
     }
 
     public Linspace(@NonNull INDArray z, double from, double to, double step) {
@@ -73,7 +74,7 @@ public class Linspace extends BaseRandomOp {
         this.to = to;
         this.length = z.length();
         this.step = step;
-        this.extraArgs = new Object[] {from, to};
+        this.extraArgs = new Object[] {from, to, step};
     }
 
     public Linspace(SameDiff sd, double from, double to, long length){
@@ -82,7 +83,8 @@ public class Linspace extends BaseRandomOp {
         this.from = from;
         this.to = to;
         this.length = length;
-        this.extraArgs = new Object[] {from, to};
+        double step = (to - from) / (length - 1);
+        this.extraArgs = new Object[] {from, to, step};
     }
 
     @Override

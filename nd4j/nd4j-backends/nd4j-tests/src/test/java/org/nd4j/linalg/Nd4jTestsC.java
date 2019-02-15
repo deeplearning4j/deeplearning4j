@@ -17,6 +17,7 @@
 package org.nd4j.linalg;
 
 
+import com.fasterxml.jackson.databind.ser.Serializers;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import lombok.var;
@@ -37,6 +38,7 @@ import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.environment.Nd4jEnvironment;
 import org.nd4j.linalg.api.iter.INDArrayIterator;
 import org.nd4j.linalg.api.iter.NdIndexIterator;
+import org.nd4j.linalg.api.ndarray.BaseNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BroadcastOp;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
@@ -7211,6 +7213,41 @@ public class Nd4jTestsC extends BaseNd4jTest {
         INDArray exp = Nd4j.valueArrayOf(new long[]{1,4}, 23.0);
 
         assertEquals(exp, arr);
+    }
+
+    @Test
+    public void testEmptyArray() {
+        INDArray empty = Nd4j.empty(DataType.INT);
+        assertEquals(empty.toString(), "[]");
+    }
+
+    @Test
+    public void testLinspaceWithStep(){
+
+        INDArray in = Nd4j.linspace(-0.9, 0.9, 10, DataType.DOUBLE);
+        assertEquals(in.getDouble(0), -0.9, 1e-5);
+        assertEquals(in.getDouble(1), -0.7, 1e-5);
+        assertEquals(in.getDouble(2), -0.5, 1e-5);
+
+        in = Nd4j.linspace(-0.9, 0.9, 10, 0.3, DataType.DOUBLE);
+        assertEquals(in.getDouble(0), -0.9, 1e-5);
+        assertEquals(in.getDouble(1), -0.6, 1e-5);
+        assertEquals(in.getDouble(2), -0.3, 1e-5);
+    }
+
+    @Test
+    public void testArangeWithStep() {
+        int begin = -9, end = 9, step = 2;
+        INDArray in = Nd4j.arange(begin, end, step);
+        assertEquals(in.getInt(0),  -9);
+        assertEquals(in.getInt(1),  -7);
+        assertEquals(in.getInt(2),  -5);
+        assertEquals(in.getInt(3),  -3);
+        assertEquals(in.getInt(4),  -1);
+        assertEquals(in.getInt(5),  1);
+        assertEquals(in.getInt(6),  3);
+        assertEquals(in.getInt(7),  5);
+        assertEquals(in.getInt(8),  7);
     }
 
     ///////////////////////////////////////////////////////

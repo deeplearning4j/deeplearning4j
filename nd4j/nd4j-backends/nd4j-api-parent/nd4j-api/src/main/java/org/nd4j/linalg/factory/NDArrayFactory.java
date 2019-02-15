@@ -133,10 +133,22 @@ public interface NDArrayFactory {
      *
      * @param lower upper bound
      * @param upper lower bound
-     * @param num   the step size
+     * @param num   number of items in resulting vector
      * @return the linearly spaced vector
      */
     INDArray linspace(int lower, int upper, int num, DataType dataType);
+
+    /**
+     * Generate a linearly spaced vector
+     *
+     * @param lower upper bound
+     * @param upper lower bound
+     * @param num   number of items in resulting vector
+     * @param step the step size
+     * @return the linearly spaced vector
+     */
+    INDArray linspace(int lower, int upper, int num, int step, DataType dataType);
+
 
     /**
      * /**
@@ -233,7 +245,7 @@ public interface NDArrayFactory {
      * @param end   the end of the range
      * @return the range vector
      */
-    INDArray arange(double begin, double end);
+    INDArray arange(double begin, double end, double step);
 
 
     /**

@@ -2000,9 +2000,26 @@ public class Nd4j {
      *
      * @param lower upper bound
      * @param upper lower bound
-     * @param num   the step size
+     * @param num   number of items in returned vector
+     * @param step  the step
      * @return the linearly spaced vector
      */
+    public static INDArray linspace(long lower, long upper, long num, long step, @NonNull DataType dtype) {
+        // for now we'll temporarily keep original impl
+        if(lower == upper && num == 1) {
+            return Nd4j.scalar(dtype, lower);
+        }
+
+
+        double approx = (double) num / ((double) (upper - lower) + 1);
+        if (approx % 1 <= EPS_THRESHOLD) {
+            // FIXME: int cast
+            return INSTANCE.linspace((int) lower, (int) upper, (int) num, (int) step, dtype);
+        } else {
+            return linspace((double) lower, (double) upper, (int) num, step, dtype);
+        }
+    }
+
     public static INDArray linspace(long lower, long upper, long num, @NonNull DataType dtype) {
         // for now we'll temporarily keep original impl
         if(lower == upper && num == 1) {
@@ -2770,14 +2787,20 @@ public class Nd4j {
      *
      * @param begin the begin of the range (inclusive)
      * @param end   the end of the range (exclusive)
+     * @param step spacing between values. Default value is 1.
      * @return the 1D range vector
      */
-    public static INDArray arange(double begin, double end) {
-        INDArray ret = INSTANCE.arange(begin, end);
+    public static INDArray arange(double begin, double end, double step) {
+        INDArray ret = INSTANCE.arange(begin, end, step);
         logCreationIfNecessary(ret);
         return ret;
     }
 
+    public static INDArray arange(double begin, double end) {
+        INDArray ret = INSTANCE.arange(begin, end, 1);
+        logCreationIfNecessary(ret);
+        return ret;
+    }
 
     /**
      * Create a 1D array of evenly spaced values between 0 (inclusive) and {@code end} (exclusive)
