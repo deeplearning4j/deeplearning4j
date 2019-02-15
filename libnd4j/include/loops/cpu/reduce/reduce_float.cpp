@@ -183,7 +183,7 @@ namespace functions {
 
                 int tadsPerThread = resultLength / TAD_THRESHOLD;
                 int num_threads = nd4j::math::nd4j_max<int>(1, tadsPerThread);
-                num_threads = 6; //nd4j::math::nd4j_min<int>(num_threads, omp_get_max_threads());
+                num_threads = nd4j::math::nd4j_min<int>(num_threads, omp_get_max_threads());
 
                 uint castTadOnlyShapeInfo[MAX_RANK];
                 const bool canCast = nd4j::DataTypeUtils::castShapeInfo<uint>(tadOnlyShapeInfo, castTadOnlyShapeInfo);

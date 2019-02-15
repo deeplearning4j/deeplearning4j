@@ -181,7 +181,7 @@ namespace functions {
 
                 int tadsPerThread = zLength / TAD_THRESHOLD;
                 int num_threads = nd4j::math::nd4j_max<int>(1, tadsPerThread);
-                num_threads = 6; //nd4j::math::nd4j_min<int>(num_threads, omp_get_max_threads());
+                num_threads = nd4j::math::nd4j_min<int>(num_threads, omp_get_max_threads());
 
                 uint castTadOnlyShapeInfo[MAX_RANK];
                 const bool canCast = nd4j::DataTypeUtils::castShapeInfo<uint>(tadOnlyShapeInfo, castTadOnlyShapeInfo);
@@ -193,8 +193,8 @@ namespace functions {
                     auto start = OpType::startingValue(tx);
 
                     for (int j = 0; j < tadLength; j++) {                        
-                        //auto xOffset = shape::indexOffset(j, tadOnlyShapeInfo, castTadOnlyShapeInfo, tadLength, canCast);
-                        start = OpType::update(start, OpType::op(tx[j], extraParams), extraParams);
+                        auto xOffset = shape::indexOffset(j, tadOnlyShapeInfo, castTadOnlyShapeInfo, tadLength, canCast);
+                        start = OpType::update(start, OpType::op(tx[xOffset], extraParams), extraParams);
                     }
                     z[i] = OpType::postProcess(start, tadLength, extraParams);;
                 }

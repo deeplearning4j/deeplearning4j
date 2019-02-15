@@ -1080,7 +1080,7 @@ TEST_F(PlaygroundTests, test_reduce_same) {
 // }
 
 TEST_F(PlaygroundTests, test_reduce_scalar_float_2) {
-    auto array = NDArrayFactory::create<float>('c', {10000});
+    auto array = NDArrayFactory::create<float>('c', {100000});
     auto target = NDArrayFactory::create<float>(0.0f);
 
      // warm up
@@ -1102,7 +1102,7 @@ TEST_F(PlaygroundTests, test_reduce_scalar_float_2) {
 }
 
 TEST_F(PlaygroundTests, test_reduce_scalar_same_2) {
-    auto array = NDArrayFactory::create<float>('c', {10000});
+    auto array = NDArrayFactory::create<float>('c', {100000});
     auto target = NDArrayFactory::create<float>(0.0f);
 
     // warm up
