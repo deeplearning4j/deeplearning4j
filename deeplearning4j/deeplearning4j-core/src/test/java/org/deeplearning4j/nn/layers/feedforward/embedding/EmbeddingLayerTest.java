@@ -16,7 +16,9 @@
 
 package org.deeplearning4j.nn.layers.feedforward.embedding;
 
+import lombok.EqualsAndHashCode;
 import org.deeplearning4j.BaseDL4JTest;
+import org.deeplearning4j.TestUtils;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
@@ -29,8 +31,10 @@ import org.deeplearning4j.nn.conf.preprocessor.RnnToFeedForwardPreProcessor;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.deeplearning4j.nn.weights.WeightInit;
+import org.deeplearning4j.nn.weights.embeddings.EmbeddingInitializer;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.config.Sgd;
@@ -516,4 +520,87 @@ public class EmbeddingLayerTest extends BaseDL4JTest {
         }
     }
 
+
+    @Test
+    public void testW2VInits(){
+        Nd4j.setDefaultDataTypes(DataType.FLOAT, DataType.FLOAT);
+
+        for( int i=0; i<2; i++ ) {
+
+            INDArray vectors = Nd4j.linspace(1,15,15, DataType.FLOAT).reshape(5,3);
+
+            EmbeddingLayer el;
+            if(i == 0){
+                el = new EmbeddingLayer.Builder().weightInit(vectors).build();
+            } else {
+                el = new EmbeddingLayer.Builder().weightInit(new WordVectorsMockup()).build();
+            }
+
+            MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                    .seed(12345).list()
+                    .layer(el)
+                    .layer(new DenseLayer.Builder().activation(Activation.TANH).nIn(3).nOut(3).build())
+                    .layer(new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE).nIn(3)
+                            .nOut(4).build())
+                    .build();
+
+            MultiLayerNetwork net = new MultiLayerNetwork(conf);
+            net.init();
+
+            INDArray w = net.getParam("0_W");
+            assertEquals(vectors, w);
+
+            TestUtils.testModelSerialization(net);
+
+            //Test same thing for embedding sequence layer:
+            EmbeddingSequenceLayer esl;
+            if(i == 0){
+                esl = new EmbeddingSequenceLayer.Builder().weightInit(vectors).build();
+            } else {
+                esl = new EmbeddingSequenceLayer.Builder().weightInit(new WordVectorsMockup()).build();
+            }
+
+            conf = new NeuralNetConfiguration.Builder()
+                    .seed(12345).list()
+                    .layer(esl)
+                    .layer(new GlobalPoolingLayer())
+                    .layer(new DenseLayer.Builder().activation(Activation.TANH).nIn(3).nOut(3).build())
+                    .layer(new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE).nIn(3)
+                            .nOut(4).build())
+                    .build();
+
+            net = new MultiLayerNetwork(conf);
+            net.init();
+
+            w = net.getParam("0_W");
+            assertEquals(vectors, w);
+
+            TestUtils.testModelSerialization(net);
+        }
+    }
+
+    @EqualsAndHashCode
+    private static class WordVectorsMockup implements EmbeddingInitializer {
+
+        @Override
+        public void loadWeightsInto(INDArray array) {
+            INDArray vectors = Nd4j.linspace(1,15,15, DataType.FLOAT).reshape(5,3);
+            array.assign(vectors);
+        }
+
+        @Override
+        public long vocabSize() {
+            return 5;
+        }
+
+        @Override
+        public int vectorSize() {
+            return 3;
+        }
+
+        @Override
+        public boolean jsonSerializable() {
+            return true;
+        }
+    }
 }

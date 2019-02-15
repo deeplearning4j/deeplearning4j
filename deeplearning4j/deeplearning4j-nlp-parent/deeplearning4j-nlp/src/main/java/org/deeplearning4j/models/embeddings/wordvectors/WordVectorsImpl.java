@@ -337,4 +337,24 @@ public class WordVectorsImpl<T extends SequenceElement> implements WordVectors {
             heartbeat.reportEvent(event, env, task);
         }
     }
+
+    @Override
+    public void loadWeightsInto(INDArray array) {
+        array.assign(lookupTable.getWeights());
+    }
+
+    @Override
+    public long vocabSize() {
+        return lookupTable.getWeights().size(0);
+    }
+
+    @Override
+    public int vectorSize() {
+        return lookupTable.layerSize();
+    }
+
+    @Override
+    public boolean jsonSerializable() {
+        return false;
+    }
 }

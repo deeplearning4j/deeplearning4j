@@ -18,19 +18,32 @@ package org.deeplearning4j.models.word2vec;
 
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
+import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.layers.DenseLayer;
+import org.deeplearning4j.nn.conf.layers.EmbeddingLayer;
+import org.deeplearning4j.nn.conf.layers.OutputLayer;
+import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.text.documentiterator.FileLabelAwareIterator;
 import org.deeplearning4j.text.documentiterator.LabelAwareIterator;
 import org.deeplearning4j.text.sentenceiterator.BasicLineIterator;
 import org.deeplearning4j.text.tokenization.tokenizer.preprocessor.CommonPreprocessor;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.DefaultTokenizerFactory;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
+import org.deeplearning4j.util.ModelSerializer;
+import org.nd4j.linalg.activations.Activation;
+import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.io.ClassPathResource;
 import org.deeplearning4j.models.embeddings.loader.WordVectorSerializer;
 import org.deeplearning4j.models.embeddings.wordvectors.WordVectors;
 import org.junit.Before;
 import org.junit.Test;
+import org.nd4j.linalg.lossfunctions.LossFunctions;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.util.Collection;
 
@@ -124,5 +137,69 @@ public class Word2VecTestsSmall {
     @Test
     public void testPlot() {
         //word2vec.lookupTable().plotVocab();
+    }
+
+
+    @Test
+    public void testW2VEmbeddingLayerInit() throws Exception {
+        Nd4j.setDefaultDataTypes(DataType.FLOAT, DataType.FLOAT);
+
+        val inputFile = new ClassPathResource("/big/raw_sentences.txt").getFile();
+
+        val iter = new BasicLineIterator(inputFile);
+        val t = new DefaultTokenizerFactory();
+        t.setTokenPreProcessor(new CommonPreprocessor());
+
+        Word2Vec vec = new Word2Vec.Builder()
+                .minWordFrequency(1)
+                .epochs(1)
+                .layerSize(300)
+                .limitVocabularySize(1) // Limit the vocab size to 2 words
+                .windowSize(5)
+                .allowParallelTokenization(true)
+                .batchSize(512)
+                .learningRate(0.025)
+                .minLearningRate(0.0001)
+                .negativeSample(0.0)
+                .sampling(0.0)
+                .useAdaGrad(false)
+                .useHierarchicSoftmax(true)
+                .iterations(1)
+                .useUnknown(true) // Using UNK with limited vocab size causes the issue
+                .seed(42)
+                .iterate(iter)
+                .workers(4)
+                .tokenizerFactory(t).build();
+
+        vec.fit();
+
+        INDArray w = vec.lookupTable().getWeights();
+        System.out.println(w);
+
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                .seed(12345).list()
+                .layer(new EmbeddingLayer.Builder().weightInit(vec).build())
+                .layer(new DenseLayer.Builder().activation(Activation.TANH).nIn(w.size(1)).nOut(3).build())
+                .layer(new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE).nIn(3)
+                        .nOut(4).build())
+                .build();
+
+        MultiLayerNetwork net = new MultiLayerNetwork(conf);
+        net.init();
+
+        INDArray w0 = net.getParam("0_W");
+        assertEquals(w, w0);
+
+
+
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        ModelSerializer.writeModel(net, baos, true);
+        byte[] bytes = baos.toByteArray();
+
+        ByteArrayInputStream bais = new ByteArrayInputStream(bytes);
+        MultiLayerNetwork restored = ModelSerializer.restoreMultiLayerNetwork(bais, true);
+
+        assertEquals(net.getLayerWiseConfigurations(), restored.getLayerWiseConfigurations());
+        assertEquals(net.params(), restored.params());
     }
 }
