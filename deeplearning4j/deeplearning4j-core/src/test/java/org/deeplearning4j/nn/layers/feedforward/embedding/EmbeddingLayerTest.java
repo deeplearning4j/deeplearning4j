@@ -551,6 +551,31 @@ public class EmbeddingLayerTest extends BaseDL4JTest {
             assertEquals(vectors, w);
 
             TestUtils.testModelSerialization(net);
+
+            //Test same thing for embedding sequence layer:
+            EmbeddingSequenceLayer esl;
+            if(i == 0){
+                esl = new EmbeddingSequenceLayer.Builder().weightInit(vectors).build();
+            } else {
+                esl = new EmbeddingSequenceLayer.Builder().weightInit(new WordVectorsMockup()).build();
+            }
+
+            conf = new NeuralNetConfiguration.Builder()
+                    .seed(12345).list()
+                    .layer(esl)
+                    .layer(new GlobalPoolingLayer())
+                    .layer(new DenseLayer.Builder().activation(Activation.TANH).nIn(3).nOut(3).build())
+                    .layer(new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE).nIn(3)
+                            .nOut(4).build())
+                    .build();
+
+            net = new MultiLayerNetwork(conf);
+            net.init();
+
+            w = net.getParam("0_W");
+            assertEquals(vectors, w);
+
+            TestUtils.testModelSerialization(net);
         }
     }
 
