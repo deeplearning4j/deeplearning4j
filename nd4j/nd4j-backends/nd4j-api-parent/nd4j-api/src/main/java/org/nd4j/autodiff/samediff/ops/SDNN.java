@@ -141,6 +141,26 @@ public class SDNN extends SDOps {
     }
 
     /**
+     * @see #biasAdd(String, SDVariable, SDVariable)
+     */
+    public SDVariable biasAdd(SDVariable input, SDVariable bias) {
+        return biasAdd(null, input, bias);
+    }
+
+    /**
+     * Bias addition operation: a special case of addition, typically used with CNN 4D activations and a 1D bias vector
+     *
+     * @param name  Name of the output variable
+     * @param input 4d input variable
+     * @param bias  1d bias
+     * @return Output variable
+     */
+    public SDVariable biasAdd(String name, SDVariable input, SDVariable bias) {
+        SDVariable ret = f().biasAdd(input, bias);
+        return updateVariableNameAndReference(ret, name);
+    }
+
+    /**
      * col2im operation for use in 2D convolution operations. Outputs a 4d array with shape
      * [minibatch, inputChannels, height, width]
      *
@@ -521,6 +541,15 @@ public class SDNN extends SDOps {
      * @param inputRetainProbability Probability of retaining an input (set to 0 with probability 1-p)
      * @return
      */
+    public SDVariable dropout(SDVariable input, double inputRetainProbability) {
+        return dropout(null, input, inputRetainProbability);
+    }
+
+    /**
+     * @param input                  Input
+     * @param inputRetainProbability Probability of retaining an input (set to 0 with probability 1-p)
+     * @return
+     */
     public SDVariable dropout(String name, SDVariable input, double inputRetainProbability) {
         SDVariable res = f().dropout(input, inputRetainProbability);
         return updateVariableNameAndReference(res, name);
@@ -864,6 +893,28 @@ public class SDNN extends SDOps {
     }
 
     /**
+     * Log softmax activation
+     *
+     * @param x Input variable
+     * @return Output variable
+     */
+    public SDVariable logSoftmax(SDVariable x) {
+        return logSoftmax(null, x);
+    }
+
+    /**
+     * Log softmax activation
+     *
+     * @param name Variable name
+     * @param x    Input variable
+     * @return Output variable
+     */
+    public SDVariable logSoftmax(String name, SDVariable x) {
+        SDVariable ret = f().logSoftmax(x);
+        return updateVariableNameAndReference(ret, name);
+    }
+
+    /**
      * LSTM unit
      *
      * @param baseName      the base name for outputs
@@ -1144,6 +1195,40 @@ public class SDNN extends SDOps {
     }
 
     /**
+     * Softmax activation
+     *
+     * @param x Input variable
+     * @return Output variable
+     */
+    public SDVariable softmax(SDVariable x) {
+        return softmax(null, x);
+    }
+
+    /**
+     * Softmax activation
+     *
+     * @param x Input variable
+     * @return Output variable
+     */
+    public SDVariable softmax(String name, SDVariable x) {
+        SDVariable result = f().softmax(x);
+        return updateVariableNameAndReference(result, name);
+    }
+
+    /**
+     * @param x
+     * @return
+     */
+    public SDVariable softmaxDerivative(String name, SDVariable x, SDVariable wrt) {
+        return softmaxDerivative(name, x, wrt, null);
+    }
+
+    public SDVariable softmaxDerivative(String name, SDVariable x, SDVariable wrt, Integer dimension) {
+        SDVariable result = f().softmaxDerivative(x, wrt, dimension);
+        return updateVariableNameAndReference(result, name);
+    }
+
+    /**
      * Element-wise softplus function: out = log(exp(x) + 1)
      *
      * @param x Input variable
@@ -1373,5 +1458,4 @@ public class SDNN extends SDOps {
     public SDVariable upsampling2d(SDVariable input, boolean nchw, int scaleH, int scaleW) {
         return upsampling2d(null, input, nchw, scaleH, scaleW);
     }
-
 }

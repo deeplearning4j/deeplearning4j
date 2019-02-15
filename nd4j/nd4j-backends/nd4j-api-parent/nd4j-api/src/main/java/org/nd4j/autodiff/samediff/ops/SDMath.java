@@ -2,15 +2,43 @@ package org.nd4j.autodiff.samediff.ops;
 
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.ops.impl.reduce3.CosineSimilarity;
+import org.nd4j.linalg.api.ops.impl.reduce3.EuclideanDistance;
+import org.nd4j.linalg.api.ops.impl.reduce3.ManhattanDistance;
 import org.nd4j.linalg.api.ops.impl.shape.ConfusionMatrix;
+import org.nd4j.linalg.api.ops.impl.shape.Eye;
 import org.nd4j.linalg.indexing.conditions.Condition;
+
+import java.util.List;
 
 public class SDMath extends SDOps {
     public SDMath(SameDiff sameDiff) {
         super(sameDiff);
     }
 
+    /**
+     * Elementwise absolute value operation: out = abs(x)
+     *
+     * @param x Input variable
+     * @return Output variable
+     */
+    public SDVariable abs(SDVariable x) {
+        return abs(null, x);
+    }
+
+    /**
+     * Elementwise absolute value operation: out = abs(x)
+     *
+     * @param name Name of the output variable
+     * @param x    Input variable
+     * @return Output variable
+     */
+    public SDVariable abs(String name, SDVariable x) {
+        SDVariable result = f().abs(x);
+        return updateVariableNameAndReference(result, name);
+    }
 
     /**
      * Elementwise acos (arccosine, inverse cosine) operation: out = arccos(x)
@@ -57,6 +85,108 @@ public class SDMath extends SDOps {
     }
 
     /**
+     * Absolute max array reduction operation, optionally along specified dimensions: out = max(abs(x))
+     *
+     * @param in         Input variable
+     * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed
+     * @return Reduced array of rank (input rank - num dimensions)
+     */
+    public SDVariable amax(SDVariable in, int... dimensions) {
+        return amax(null, in, dimensions);
+    }
+
+    /**
+     * Absolute max array reduction operation, optionally along specified dimensions: out = max(abs(x))
+     *
+     * @param name       Name of the output variable
+     * @param in         Input variable
+     * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed
+     * @return Reduced array of rank (input rank - num dimensions)
+     */
+    public SDVariable amax(String name, SDVariable in, int... dimensions) {
+        SDVariable ret = f().amax(in, dimensions);
+        return updateVariableNameAndReference(ret, name);
+    }
+
+    /**
+     * Absolute mean array reduction operation, optionally along specified dimensions: out = mean(abs(x))
+     *
+     * @param in         Input variable
+     * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed
+     * @return Reduced array of rank (input rank - num dimensions)
+     */
+    public SDVariable amean(SDVariable in, int... dimensions) {
+        return amean(null, in, dimensions);
+    }
+
+    /**
+     * Absolute mean array reduction operation, optionally along specified dimensions: out = mean(abs(x))
+     *
+     * @param name       Name of the output variable
+     * @param in         Input variable
+     * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed
+     * @return Reduced array of rank (input rank - num dimensions)
+     */
+    public SDVariable amean(String name, SDVariable in, int... dimensions) {
+        SDVariable ret = f().amean(in, dimensions);
+        return updateVariableNameAndReference(ret, name);
+    }
+
+    /**
+     * Absolute min array reduction operation, optionally along specified dimensions: out = min(abs(x))
+     *
+     * @param in         Input variable
+     * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed
+     * @return Reduced array of rank (input rank - num dimensions)
+     */
+    public SDVariable amin(SDVariable in, int... dimensions) {
+        return amin(null, in, dimensions);
+    }
+
+    /**
+     * Absolute min array reduction operation, optionally along specified dimensions: out = min(abs(x))
+     *
+     * @param name       Name of the output variable
+     * @param in         Input variable
+     * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed
+     * @return Reduced array of rank (input rank - num dimensions)
+     */
+    public SDVariable amin(String name, SDVariable in, int... dimensions) {
+        SDVariable ret = f().amin(in, dimensions);
+        return updateVariableNameAndReference(ret, name);
+    }
+
+    /**
+     * Boolean AND operation: elementwise (x != 0) && (y != 0)<br>
+     * If x and y arrays have equal shape, the output shape is the same as these inputs.<br>
+     * Note: supports broadcasting if x and y have different shapes and are broadcastable.<br>
+     * Returns an array with values 1 where condition is satisfied, or value 0 otherwise.
+     *
+     * @param x Input 1
+     * @param y Input 2
+     * @return Output SDVariable with values 0 and 1 based on where the condition is satisfied
+     */
+    public SDVariable and(SDVariable x, SDVariable y) {
+        return and(null, x, y);
+    }
+
+    /**
+     * Boolean AND operation: elementwise (x != 0) && (y != 0)<br>
+     * If x and y arrays have equal shape, the output shape is the same as these inputs.<br>
+     * Note: supports broadcasting if x and y have different shapes and are broadcastable.<br>
+     * Returns an array with values 1 where condition is satisfied, or value 0 otherwise.
+     *
+     * @param name Name of the output variable
+     * @param x    Input 1
+     * @param y    Input 2
+     * @return Output SDVariable with values 0 and 1 based on where the condition is satisfied
+     */
+    public SDVariable and(String name, SDVariable x, SDVariable y) {
+        SDVariable result = f().and(x, y);
+        return updateVariableNameAndReference(result, name);
+    }
+
+    /**
      * Elementwise asin (arcsin, inverse sine) operation: out = arcsin(x)
      *
      * @param x Input variable
@@ -98,6 +228,30 @@ public class SDMath extends SDOps {
     public SDVariable asinh(String name, SDVariable x) {
         SDVariable result = f().asinh(x);
         return updateVariableNameAndReference(result, name);
+    }
+
+    /**
+     * Absolute sum array reduction operation, optionally along specified dimensions: out = sum(abs(x))
+     *
+     * @param in         Input variable
+     * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed
+     * @return Reduced array of rank (input rank - num dimensions)
+     */
+    public SDVariable asum(SDVariable in, int... dimensions) {
+        return asum(null, in, dimensions);
+    }
+
+    /**
+     * Absolute sum array reduction operation, optionally along specified dimensions: out = sum(abs(x))
+     *
+     * @param name       Name of the output variable
+     * @param in         Input variable
+     * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed
+     * @return Reduced array of rank (input rank - num dimensions)
+     */
+    public SDVariable asum(String name, SDVariable in, int... dimensions) {
+        SDVariable ret = f().asum(in, dimensions);
+        return updateVariableNameAndReference(ret, name);
     }
 
     /**
@@ -398,6 +552,28 @@ public class SDMath extends SDOps {
     }
 
     /**
+     * Elementwise cosine operation: out = cos(x)
+     *
+     * @param x Input variable
+     * @return Output variable
+     */
+    public SDVariable cos(SDVariable x) {
+        return cos(null, x);
+    }
+
+    /**
+     * Elementwise cosine operation: out = cos(x)
+     *
+     * @param name Output variable name
+     * @param x    Input variable
+     * @return Output variable
+     */
+    public SDVariable cos(String name, SDVariable x) {
+        SDVariable result = f().cos(x);
+        return updateVariableNameAndReference(result, name);
+    }
+
+    /**
      * Elementwise cosh (hyperbolic cosine) operation: out = cosh(x)
      *
      * @param x Input variable
@@ -417,6 +593,52 @@ public class SDMath extends SDOps {
     public SDVariable cosh(String name, SDVariable x) {
         SDVariable result = f().cosh(x);
         return updateVariableNameAndReference(result, name);
+    }
+
+    /**
+     * @see #cosineDistance(String, SDVariable, SDVariable, int...)
+     */
+    public SDVariable cosineDistance(SDVariable x, SDVariable y, int... dimensions) {
+        return cosineDistance(null, x, y, dimensions);
+    }
+
+    /**
+     * Cosine distance reduction operation. The output contains the cosine distance for each
+     * tensor/subset along the specified dimensions:<br>
+     * out = 1.0 - cosineSimilarity(x,y)<br>
+     * See {@link #cosineSimilarity(String, SDVariable, SDVariable, int...)}
+     *
+     * @param name       Name of the output variable
+     * @param x          Input variable x
+     * @param y          Input variable y
+     * @param dimensions Dimensions to calculate cosine similarity over
+     * @return Output variable
+     */
+    public SDVariable cosineDistance(String name, SDVariable x, SDVariable y, int... dimensions) {
+        SDVariable result = f().cosineDistance(x, y, dimensions);
+        return updateVariableNameAndReference(result, name);
+    }
+
+    /**
+     * @see #cosineSimilarity(String, SDVariable, SDVariable, int...)
+     */
+    public SDVariable cosineSimilarity(SDVariable x, SDVariable y, int... dimensions) {
+        return cosineSimilarity(generateNewVarName(CosineSimilarity.OP_NAME, 0), x, y, dimensions);
+    }
+
+    /**
+     * Cosine similarity pairwise reduction operation. The output contains the cosine similarity for each tensor/subset
+     * along the specified dimensions:<br>
+     * out = (sum_i x[i] * y[i]) / ( sqrt(sum_i x[i]^2) * sqrt(sum_i y[i]^2)
+     *
+     * @param x          Input variable x
+     * @param y          Input variable y
+     * @param dimensions Dimensions to calculate cosine similarity over
+     * @return Output variable
+     */
+    public SDVariable cosineSimilarity(String name, SDVariable x, SDVariable y, int... dimensions) {
+        SDVariable cosim = f().cosineSimilarity(x, y, dimensions);
+        return updateVariableNameAndReference(cosim, name);
     }
 
     /**
@@ -629,6 +851,28 @@ public class SDMath extends SDOps {
     }
 
     /**
+     * @see #euclideanDistance(String, SDVariable, SDVariable, int...)
+     */
+    public SDVariable euclideanDistance(SDVariable x, SDVariable y, int... dimensions) {
+        return euclideanDistance(generateNewVarName(EuclideanDistance.OP_NAME, 0), x, y, dimensions);
+    }
+
+    /**
+     * Euclidean distance (l2 norm, l2 distance) reduction operation. The output contains the Euclidean distance for each
+     * tensor/subset along the specified dimensions:<br>
+     * out = sqrt( sum_i (x[i] - y[i])^2 )
+     *
+     * @param x          Input variable x
+     * @param y          Input variable y
+     * @param dimensions Dimensions to calculate cosine similarity over
+     * @return Output variable
+     */
+    public SDVariable euclideanDistance(String name, SDVariable x, SDVariable y, int... dimensions) {
+        SDVariable result = f().euclideanDistance(x, y, dimensions);
+        return updateVariableNameAndReference(result, name);
+    }
+
+    /**
      * Elementwise exponent function: out = exp(x) = 2.71828...^x
      *
      * @param x Input variable
@@ -670,6 +914,134 @@ public class SDMath extends SDOps {
     public SDVariable expm1(String name, SDVariable x) {
         SDVariable result = f().expm1(x);
         return updateVariableNameAndReference(result, name);
+    }
+
+    /**
+     * Generate a square identity matrix with the specified number of rows.
+     *
+     * @param rows Number of rows (and columns)
+     * @return SDVariable with an identity matrix array
+     */
+    public SDVariable eye(int rows) {
+        return eye(rows, rows);
+    }
+
+    /**
+     * Generate an identity matrix with the specified number of rows and columns.
+     *
+     * @param rows Number of rows
+     */
+    public SDVariable eye(String name, int rows) {
+        return eye(name, rows, rows);
+    }
+
+    /**
+     * @see #eye(String, int, int)
+     */
+    public SDVariable eye(int rows, int cols) {
+        return eye(null, rows, cols);
+    }
+
+    /**
+     * As per {@link #eye(String, int, int, DataType)} but with the default datatype, {@link Eye#DEFAULT_DTYPE}
+     */
+    public SDVariable eye(String name, int rows, int cols) {
+        return eye(name, rows, cols, Eye.DEFAULT_DTYPE);
+    }
+
+    /**
+     * Generate an identity matrix with the specified number of rows and columns
+     * Example:<br>
+     * <pre>
+     * {@code SDVariable eye = eye(3,2)
+     * eye:
+     * [ 1, 0]
+     * [ 0, 1]
+     * [ 0, 0]}
+     * </pre>
+     *
+     * @param name Name of the new SDVariable
+     * @param rows Number of rows
+     * @param cols Number of columns
+     * @return SDVaribable identity matrix
+     */
+    public SDVariable eye(String name, int rows, int cols, DataType dataType) {
+        return eye(name, rows, cols, dataType);
+    }
+
+    /**
+     * see {@link #eye(String, int, int, DataType, int...)}
+     */
+    public SDVariable eye(int rows, int cols, DataType dataType, int... batchDimension) {
+        return eye(null, rows, cols, dataType, batchDimension);
+    }
+
+    /**
+     * Generate an identity matrix with the specified number of rows and columns, with optional leading dims<br>
+     * Example:<br>
+     * batchShape: [3,3]<br>
+     * numRows: 2<br>
+     * numCols: 4<br>
+     * returns a tensor of shape (3, 3, 2, 4) that consists of 3 * 3 batches of (2,4)-shaped identity matrices:<br>
+     * 1 0 0 0<br>
+     * 0 1 0 0<br>
+     *
+     * @param rows           Number of rows
+     * @param cols           Number of columns
+     * @param batchDimension Batch dimensions. May be null
+     */
+    public SDVariable eye(String name, int rows, int cols, DataType dataType, int... batchDimension) {
+        SDVariable eye = new Eye(this, rows, cols, dataType, batchDimension).outputVariables()[0];
+        return updateVariableNameAndReference(eye, name);
+    }
+
+    /**
+     * As per {@link #eye(int, int, DataType, int...)} bit with the number of rows/columns specified as scalar SDVariables,
+     * and the batch dimension specified as a 1D SDVariable
+     */
+    public SDVariable eye(SDVariable rows, SDVariable cols, SDVariable batchDimension) {
+        return eye(null, rows, cols, batchDimension);
+    }
+
+    /**
+     * As per {@link #eye(String, int, int, int...)} bit with the number of rows/columns specified as scalar SDVariables,
+     * and the batch dimension specified as a 1D SDVariable
+     */
+    public SDVariable eye(String name, SDVariable rows, SDVariable cols, SDVariable batchDimension) {
+        SDVariable eye = new Eye(this, rows, cols, batchDimension).outputVariable();
+        return updateVariableNameAndReference(eye, name);
+    }
+
+    /**
+     * As per {@link #eye(String, int, int)} bit with the number of rows/columns specified as scalar SDVariables
+     */
+    public SDVariable eye(String name, SDVariable rows, SDVariable cols) {
+        SDVariable eye = new Eye(this, rows, cols).outputVariables()[0];
+        return updateVariableNameAndReference(eye, name);
+    }
+
+    /**
+     * As per {@link #eye(int, int)} bit with the number of rows/columns specified as scalar SDVariables
+     */
+    public SDVariable eye(SDVariable rows, SDVariable cols) {
+        SDVariable eye = new Eye(this, rows, cols).outputVariables()[0];
+        return updateVariableNameAndReference(eye, null);
+    }
+
+    /**
+     * As per {@link #eye(String, int)} but with the number of rows specified as a scalar SDVariable
+     */
+    public SDVariable eye(String name, SDVariable rows) {
+        SDVariable eye = new Eye(this, rows).outputVariables()[0];
+        return updateVariableNameAndReference(eye, name);
+    }
+
+    /**
+     * As per {@link #eye(int)} but with the number of rows specified as a scalar SDVariable
+     */
+    public SDVariable eye(SDVariable rows) {
+        SDVariable eye = new Eye(this, rows).outputVariables()[0];
+        return updateVariableNameAndReference(eye, null);
     }
 
     /**
@@ -749,6 +1121,207 @@ public class SDMath extends SDOps {
     }
 
     /**
+     * @see #hammingDistance(String, SDVariable, SDVariable, int...)
+     */
+    public SDVariable hammingDistance(SDVariable x, SDVariable y, int... dimensions) {
+        return hammingDistance(null, x, y, dimensions);
+    }
+
+    /**
+     * Hamming distance reduction operation. The output contains the cosine distance for each
+     * tensor/subset along the specified dimensions:<br>
+     * out = count( x[i] != y[i] )
+     *
+     * @param name       Name of the output variable
+     * @param x          Input variable x
+     * @param y          Input variable y
+     * @param dimensions Dimensions to calculate cosine similarity over
+     * @return Output variable
+     */
+    public SDVariable hammingDistance(String name, SDVariable x, SDVariable y, int... dimensions) {
+        SDVariable result = f().hammingDistance(x, y, dimensions);
+        return updateVariableNameAndReference(result, name);
+    }
+
+    /**
+     * Index of the max absolute value: argmax(abs(in))
+     *
+     * @see #argmax(SDVariable, int...)
+     */
+    public SDVariable iamax(SDVariable in, int... dimensions) {
+        return iamax(null, in, dimensions);
+    }
+
+    /**
+     * Index of the max absolute value: argmax(abs(in))
+     *
+     * @see #argmax(String, SDVariable, boolean, int...)
+     */
+    public SDVariable iamax(String name, SDVariable in, int... dimensions) {
+        return iamax(name, in, false, dimensions);
+    }
+
+    /**
+     * Index of the max absolute value: argmax(abs(in))
+     *
+     * @see #argmax(String, SDVariable, boolean, int...)
+     */
+    public SDVariable iamax(String name, SDVariable in, boolean keepDims, int... dimensions) {
+        SDVariable ret = f().iamax(in, keepDims, dimensions);
+        return updateVariableNameAndReference(ret, name);
+    }
+
+    /**
+     * Index of the max absolute value: argmax(abs(in))
+     *
+     * @see #argmax(String, SDVariable, boolean, int...)
+     */
+    public SDVariable iamax(SDVariable in, boolean keepDims, int... dimensions) {
+        return iamax(null, in, keepDims, dimensions);
+    }
+
+    /**
+     * Index of the min absolute value: argmin(abs(in))
+     *
+     * @see #argmin(String, SDVariable, boolean, int...)
+     */
+    public SDVariable iamin(SDVariable in, int... dimensions) {
+        return iamin(null, in, dimensions);
+    }
+
+    /**
+     * Index of the min absolute value: argmin(abs(in))
+     *
+     * @see #argmin(String, SDVariable, boolean, int...)
+     */
+    public SDVariable iamin(String name, SDVariable in, int... dimensions) {
+        return iamin(name, in, false, dimensions);
+    }
+
+    /**
+     * Index of the min absolute value: argmin(abs(in))
+     *
+     * @see #argmin(String, SDVariable, boolean, int...)
+     */
+    public SDVariable iamin(String name, SDVariable in, boolean keepDims, int... dimensions) {
+        SDVariable ret = f().iamin(in, keepDims, dimensions);
+        return updateVariableNameAndReference(ret, name);
+    }
+
+    /**
+     * Index of the min absolute value: argmin(abs(in))
+     *
+     * @see #argmin(String, SDVariable, boolean, int...)
+     */
+    public SDVariable iamin(SDVariable in, boolean keepDims, int... dimensions) {
+        return iamin(null, in, keepDims, dimensions);
+    }
+
+    /**
+     * Is finite operation: elementwise isFinite(x)<br>
+     * Returns an array with the same shape/size as the input, with values 1 where condition is satisfied, or
+     * value 0 otherwise
+     *
+     * @param x Input array
+     * @return Output SDVariable with values 0 and 1 based on where the condition is satisfied
+     */
+    public SDVariable isFinite(SDVariable x) {
+        return isFinite(null, x);
+    }
+
+    /**
+     * Is finite operation: elementwise isFinite(x)<br>
+     * Returns an array with the same shape/size as the input, with values 1 where condition is satisfied, or
+     * value 0 otherwise
+     *
+     * @param name Output variable name
+     * @param x    Input array
+     * @return Output SDVariable with values 0 and 1 based on where the condition is satisfied
+     */
+    public SDVariable isFinite(String name, SDVariable x) {
+        SDVariable result = f().isFinite(x);
+        return updateVariableNameAndReference(result, name);
+    }
+
+    /**
+     * Is infinite operation: elementwise isInfinite(x)<br>
+     * Returns an array with the same shape/size as the input, with values 1 where condition is satisfied, or
+     * value 0 otherwise
+     *
+     * @param x Input array
+     * @return Output SDVariable with values 0 and 1 based on where the condition is satisfied
+     */
+    public SDVariable isInfinite(SDVariable x) {
+        return isInfinite(null, x);
+    }
+
+    /**
+     * Is infinite operation: elementwise isInfinite(x)<br>
+     * Returns an array with the same shape/size as the input, with values 1 where condition is satisfied, or
+     * value 0 otherwise
+     *
+     * @param name Output variable name
+     * @param x    Input array
+     * @return Output SDVariable with values 0 and 1 based on where the condition is satisfied
+     */
+    public SDVariable isInfinite(String name, SDVariable x) {
+        SDVariable result = f().isInfinite(x);
+        return updateVariableNameAndReference(result, name);
+    }
+
+    /**
+     * Is maximum operation: elementwise x == max(x)<br>
+     * Returns an array with the same shape/size as the input, with values 1 where condition is satisfied, or
+     * value 0 otherwise
+     *
+     * @param x Input array
+     * @return Output SDVariable with values 0 and 1 based on where the condition is satisfied
+     */
+    public SDVariable isMax(SDVariable x) {
+        return isMax(null, x);
+    }
+
+    /**
+     * Is maximum operation: elementwise x == max(x)<br>
+     * Returns an array with the same shape/size as the input, with values 1 where condition is satisfied, or
+     * value 0 otherwise
+     *
+     * @param name Name of the output variable
+     * @param x    Input array
+     * @return Output SDVariable with values 0 and 1 based on where the condition is satisfied
+     */
+    public SDVariable isMax(String name, SDVariable x) {
+        SDVariable ret = f().isMax(x);
+        return updateVariableNameAndReference(ret, name);
+    }
+
+    /**
+     * Is Not a Number operation: elementwise isNaN(x)<br>
+     * Returns an array with the same shape/size as the input, with values 1 where condition is satisfied, or
+     * value 0 otherwise
+     *
+     * @param x Input array
+     * @return Output SDVariable with values 0 and 1 based on where the condition is satisfied
+     */
+    public SDVariable isNaN(SDVariable x) {
+        return isNaN(null, x);
+    }
+
+    /**
+     * Is Not a Number operation: elementwise isNaN(x)<br>
+     * Returns an array with the same shape/size as the input, with values 1 where condition is satisfied, or
+     * value 0 otherwise
+     *
+     * @param name Output variable name
+     * @param x    Input array
+     * @return Output SDVariable with values 0 and 1 based on where the condition is satisfied
+     */
+    public SDVariable isNaN(String name, SDVariable x) {
+        SDVariable result = f().isNaN(x);
+        return updateVariableNameAndReference(result, name);
+    }
+
+    /**
      * Is the array non decreasing?<br>
      * An array is non-decreasing if for every valid i, x[i] <= x[i+1]. For Rank 2+ arrays, values are compared
      * in 'c' (row major) order
@@ -798,6 +1371,34 @@ public class SDMath extends SDOps {
      */
     public SDVariable isStrictlyIncreasing(String name, SDVariable x) {
         SDVariable result = f().isStrictlyIncreasing(x);
+        return updateVariableNameAndReference(result, name);
+    }
+
+    /**
+     * Jaccard similarity reduction operation. The output contains the Jaccard distance for each
+     * tensor along the specified dimensions.
+     *
+     * @param x          Input variable x
+     * @param y          Input variable y
+     * @param dimensions Dimensions to calculate Jaccard similarity over
+     * @return Output variable
+     */
+    public SDVariable jaccardDistance(SDVariable x, SDVariable y, int... dimensions) {
+        return jaccardDistance(null, x, y, dimensions);
+    }
+
+    /**
+     * Jaccard similarity reduction operation. The output contains the Jaccard distance for each
+     * tensor along the specified dimensions.
+     *
+     * @param name       Name of the output variable
+     * @param x          Input variable x
+     * @param y          Input variable y
+     * @param dimensions Dimensions to calculate Jaccard similarity over
+     * @return Output variable
+     */
+    public SDVariable jaccardDistance(String name, SDVariable x, SDVariable y, int... dimensions) {
+        SDVariable result = f().jaccardDistance(x, y, dimensions);
         return updateVariableNameAndReference(result, name);
     }
 
@@ -942,6 +1543,311 @@ public class SDMath extends SDOps {
     public SDVariable logEntropy(String name, SDVariable in, int... dimensions) {
         SDVariable ret = f().logEntropy(in, dimensions);
         return updateVariableNameAndReference(ret, name);
+    }
+
+    /**
+     * Log-sum-exp reduction (optionally along dimension).
+     * Computes log(sum(exp(x))
+     *
+     * @param input      Input variable
+     * @param dimensions Optional dimensions to reduce along
+     * @return Output variable
+     */
+    public SDVariable logSumExp(SDVariable input, int... dimensions) {
+        return logSumExp(null, input, dimensions);
+    }
+
+    /**
+     * Log-sum-exp reduction (optionally along dimension).
+     * Computes log(sum(exp(x))
+     *
+     * @param name       Name of the output variable
+     * @param input      Input variable
+     * @param dimensions Optional dimensions to reduce along
+     * @return Output variable
+     */
+    public SDVariable logSumExp(String name, SDVariable input, int... dimensions) {
+        SDVariable ret = f().logSumExp(input, dimensions);
+        return updateVariableNameAndReference(ret, name);
+    }
+
+    /**
+     * @see #manhattanDistance(String, SDVariable, SDVariable, int...)
+     */
+    public SDVariable manhattanDistance(SDVariable x, SDVariable y, int... dimensions) {
+        return manhattanDistance(generateNewVarName(ManhattanDistance.OP_NAME, 0), x, y, dimensions);
+    }
+
+    /**
+     * Manhattan distance (l1 norm, l1 distance) reduction operation. The output contains the Manhattan distance for each
+     * tensor/subset along the specified dimensions:<br>
+     * out = sum_i abs(x[i]-y[i])
+     *
+     * @param name       Name of the output variable
+     * @param x          Input variable x
+     * @param y          Input variable y
+     * @param dimensions Dimensions to calculate cosine similarity over
+     * @return Output variable
+     */
+    public SDVariable manhattanDistance(String name, SDVariable x, SDVariable y, int... dimensions) {
+        SDVariable result = f().manhattanDistance(x, y, dimensions);
+        return updateVariableNameAndReference(result, name);
+    }
+
+    /**
+     * @see #matrixDeterminant(String, SDVariable)
+     */
+    public SDVariable matrixDeterminant(SDVariable in) {
+        return matrixDeterminant(null, in);
+    }
+
+    /**
+     * Matrix determinant op. For 2D input, this returns the standard matrix determinant.
+     * For higher dimensional input with shape [..., m, m] the matrix determinant is returned for each
+     * shape [m,m] sub-matrix.
+     *
+     * @param name Name of the output variable
+     * @param in   Input
+     * @return Matrix determinant variable
+     */
+    public SDVariable matrixDeterminant(String name, SDVariable in) {
+        SDVariable ret = f().matrixDeterminant(in);
+        return updateVariableNameAndReference(ret, name);
+    }
+
+    /**
+     * @see #matrixInverse(String, SDVariable)
+     */
+    public SDVariable matrixInverse(SDVariable in) {
+        return matrixInverse(null, in);
+    }
+
+    /**
+     * Matrix inverse op. For 2D input, this returns the standard matrix inverse.
+     * For higher dimensional input with shape [..., m, m] the matrix inverse is returned for each
+     * shape [m,m] sub-matrix.
+     *
+     * @param name Name of the output variable
+     * @param in   Input
+     * @return Matrix inverse variable
+     */
+    public SDVariable matrixInverse(String name, SDVariable in) {
+        SDVariable ret = f().matrixInverse(in);
+        return updateVariableNameAndReference(ret, name);
+    }
+
+    /**
+     * Merge add function: merges an arbitrary number of equal shaped arrays using elementwise addition:
+     * out = sum_i in[i]
+     *
+     * @param x Input variables
+     * @return Output variable
+     */
+    public SDVariable mergeAdd(SDVariable... x) {
+        return mergeAdd(null, x);
+    }
+
+    /**
+     * Merge add function: merges an arbitrary number of equal shaped arrays using element-wise addition:
+     * out = sum_i in[i]
+     *
+     * @param name   Name of the output variable
+     * @param inputs Input variables
+     * @return Output variable
+     */
+    public SDVariable mergeAdd(String name, SDVariable... inputs) {
+        SDVariable ret = f().mergeAdd(inputs);
+        return updateVariableNameAndReference(ret, name);
+    }
+
+    /**
+     * Merge average function: merges an arbitrary number of equal shaped arrays using element-wise mean operation:
+     * out = mean_i in[i]
+     *
+     * @param inputs Input variables
+     * @return Output variable
+     */
+    public SDVariable mergeAvg(SDVariable... inputs) {
+        return mergeAvg(null, inputs);
+    }
+
+    /**
+     * Merge average function: merges an arbitrary number of equal shaped arrays using element-wise mean operation:
+     * out = mean_i in[i]
+     *
+     * @param name   Name of the output variable
+     * @param inputs Input variables
+     * @return Output variable
+     */
+    public SDVariable mergeAvg(String name, SDVariable... inputs) {
+        SDVariable ret = f().mergeAvg(inputs);
+        return updateVariableNameAndReference(ret, name);
+    }
+
+    /**
+     * Merge max function: merges an arbitrary number of equal shaped arrays using element-wise maximum operation:
+     * out = max_i in[i]
+     *
+     * @param x Input variables
+     * @return Output variable
+     */
+    public SDVariable mergeMax(SDVariable... x) {
+        return mergeMax(null, x);
+    }
+
+    /**
+     * Merge max function: merges an arbitrary number of equal shaped arrays using element-wise maximum operation:
+     * out = max_i in[i]
+     *
+     * @param inputs Input variables
+     * @return Output variable
+     */
+    public SDVariable mergeMax(String name, SDVariable... inputs) {
+        SDVariable ret = f().mergeMax(inputs);
+        return updateVariableNameAndReference(ret, name);
+    }
+
+    /**
+     * @see #meshgrid(List, SDVariable...)
+     */
+    public SDVariable[] meshgrid(SDVariable... inputs) {
+        return meshgrid(null, inputs);
+    }
+
+    /**
+     * Broadcast the 1D input variables onto an n-dimensional grid.<br>
+     * The resulting variable can be used for example for evaluating functions at all locations on a grid.<br>
+     * Example:<br>
+     * <pre>
+     * {@code input1 = [1, 2, 3]
+     * input2 = [4, 5, 6]
+     * SDVariable[] out = meshgrid(input1, input2)
+     * out[0]:
+     * [ 1, 2, 3]
+     * [ 1, 2, 3]
+     * [ 1, 2, 3]
+     *
+     * out[1]:
+     * [ 4, 4, 4]
+     * [ 5, 5, 5]
+     * [ 6, 6, 6]}
+     * </pre>
+     * <br>
+     *
+     * @param names  List of names for the output variables. Must have exactly N names for N input arrays
+     * @param inputs N x 1D input variables
+     * @return an array of exactly N SDVariables (for N inputs), of rank N
+     */
+    public SDVariable[] meshgrid(List<String> names, SDVariable... inputs) {
+        return meshgrid(names, true, inputs);
+    }
+
+    /**
+     * @see #meshgrid(List, SDVariable...)
+     */
+    public SDVariable[] meshgrid(List<String> names, boolean cartesian, SDVariable... inputs) {
+        Preconditions.checkState(names == null || names.size() == inputs.length,
+                "Got %s names but %s inputs", (names == null ? 0 : names.size()), inputs.length);
+        SDVariable[] ret = f().meshgrid(cartesian, inputs);
+        for (int i = 0; i < ret.length; i++) {
+            ret[i] = updateVariableNameAndReference(ret[i], names == null ? null : names.get(i));
+        }
+        return ret;
+    }
+
+    /**
+     * @see #moments(String[], SDVariable, int...)
+     */
+    public SDVariable[] moments(SDVariable input, int... axes) {
+        return moments(null, input, axes);
+    }
+
+    /**
+     * Calculate the mean and (population) variance for the input variable, for the specified axis
+     *
+     * @param name  Name of the output variables. Can be null; if non-null, must be length 2
+     * @param input Input to calculate moments for
+     * @param axes  Dimensions to perform calculation over
+     * @return Mean and variance variables
+     */
+    public SDVariable[] moments(String[] name, SDVariable input, int... axes) {
+        SDVariable[] res = f().moments(input, axes);
+        return updateVariableNamesAndReferences(res, name);
+    }
+
+    /**
+     * Elementwise negative operation: out = -x
+     *
+     * @param x Input variable
+     * @return Output variable
+     */
+    public SDVariable neg(SDVariable x) {
+        return neg(null, x);
+    }
+
+    /**
+     * Elementwise negative operation: out = -x
+     *
+     * @param name Name of the output variable
+     * @param x    Input variable
+     * @return Output variable
+     */
+    public SDVariable neg(String name, SDVariable x) {
+        SDVariable result = f().neg(x);
+        return updateVariableNameAndReference(result, name);
+    }
+
+    /**
+     * @see #normalizeMoments(String[], SDVariable, SDVariable, SDVariable, double)
+     */
+    public SDVariable[] normalizeMoments(SDVariable counts, SDVariable means, SDVariable variances, double shift) {
+        return normalizeMoments(null, counts, means, variances, shift);
+    }
+
+    /**
+     * Calculate the mean and variance from the sufficient statistics
+     *
+     * @param name      Name of the output variables. Can be null; if non-null, must be length 2
+     * @param counts    Rank 0 (scalar) value with the total number of values used to calculate the sufficient statistics
+     * @param means     Mean-value sufficient statistics: this is the SUM of all data values
+     * @param variances Variaance sufficient statistics: this is the squared sum of all data values
+     * @param shift     Shift value, possibly 0, used when calculating the sufficient statistics (for numerical stability)
+     * @return Output variables: mean and population variance
+     */
+    public SDVariable[] normalizeMoments(String[] name, SDVariable counts, SDVariable means, SDVariable variances,
+                                         double shift) {
+        SDVariable[] res = f().normalizeMoments(counts, means, variances, shift);
+        return updateVariableNamesAndReferences(res, name);
+    }
+
+    /**
+     * Boolean OR operation: elementwise (x != 0) || (y != 0)<br>
+     * If x and y arrays have equal shape, the output shape is the same as these inputs.<br>
+     * Note: supports broadcasting if x and y have different shapes and are broadcastable.<br>
+     * Returns an array with values 1 where condition is satisfied, or value 0 otherwise.
+     *
+     * @param x Input 1
+     * @param y Input 2
+     * @return Output SDVariable with values 0 and 1 based on where the condition is satisfied
+     */
+    public SDVariable or(SDVariable x, SDVariable y) {
+        return or(null, x, y);
+    }
+
+    /**
+     * Boolean OR operation: elementwise (x != 0) || (y != 0)<br>
+     * If x and y arrays have equal shape, the output shape is the same as these inputs.<br>
+     * Note: supports broadcasting if x and y have different shapes and are broadcastable.<br>
+     * Returns an array with values 1 where condition is satisfied, or value 0 otherwise.
+     *
+     * @param name Name of the output variable
+     * @param x    Input 1
+     * @param y    Input 2
+     * @return Output SDVariable with values 0 and 1 based on where the condition is satisfied
+     */
+    public SDVariable or(String name, SDVariable x, SDVariable y) {
+        SDVariable result = f().or(x, y);
+        return updateVariableNameAndReference(result, name);
     }
 
     /**
@@ -1141,6 +2047,28 @@ public class SDMath extends SDOps {
     }
 
     /**
+     * Elementwise sine operation: out = sin(x)
+     *
+     * @param x Input variable
+     * @return Output variable
+     */
+    public SDVariable sin(SDVariable x) {
+        return sin(null, x);
+    }
+
+    /**
+     * Elementwise sine operation: out = sin(x)
+     *
+     * @param name Output variable name
+     * @param x    Input variable
+     * @return Output variable
+     */
+    public SDVariable sin(String name, SDVariable x) {
+        SDVariable result = f().sin(x);
+        return updateVariableNameAndReference(result, name);
+    }
+
+    /**
      * Elementwise sinh (hyperbolic sine) operation: out = sinh(x)
      *
      * @param x Input variable
@@ -1235,6 +2163,28 @@ public class SDMath extends SDOps {
     }
 
     /**
+     * Elementwise tangent operation: out = tan(x)
+     *
+     * @param x Input variable
+     * @return Output variable
+     */
+    public SDVariable tan(SDVariable x) {
+        return tan(null, x);
+    }
+
+    /**
+     * Elementwise tangent operation: out = tan(x)
+     *
+     * @param name Output variable name
+     * @param x    Input variable
+     * @return Output variable
+     */
+    public SDVariable tan(String name, SDVariable x) {
+        SDVariable result = f().tan(x);
+        return updateVariableNameAndReference(result, name);
+    }
+
+    /**
      * Elementwise tanh (hyperbolic tangent) operation: out = tanh(x)
      *
      * @param x Input variable
@@ -1253,6 +2203,57 @@ public class SDMath extends SDOps {
      */
     public SDVariable tanh(String name, SDVariable x) {
         SDVariable result = f().tanh(x);
+        return updateVariableNameAndReference(result, name);
+    }
+
+    /**
+     * @see #trace(String, SDVariable)
+     */
+    public SDVariable trace(SDVariable in) {
+        return trace(null, in);
+    }
+
+    /**
+     * Matrix trace operation
+     * For rank 2 matrices, the output is a scalar vith the trace - i.e., sum of the main diagonal.<br>
+     * For higher rank inputs, output[a,b,c] = trace(in[a,b,c,:,:])
+     *
+     * @param name Name of the output variable. May be null.
+     * @param in   Input variable
+     * @return Trace
+     */
+    public SDVariable trace(String name, SDVariable in) {
+        SDVariable ret = f().trace(in);
+        return updateVariableNameAndReference(ret, name);
+    }
+
+    /**
+     * Boolean XOR (exclusive OR) operation: elementwise (x != 0) XOR (y != 0)<br>
+     * If x and y arrays have equal shape, the output shape is the same as these inputs.<br>
+     * Note: supports broadcasting if x and y have different shapes and are broadcastable.<br>
+     * Returns an array with values 1 where condition is satisfied, or value 0 otherwise.
+     *
+     * @param x Input 1
+     * @param y Input 2
+     * @return Output SDVariable with values 0 and 1 based on where the condition is satisfied
+     */
+    public SDVariable xor(SDVariable x, SDVariable y) {
+        return xor(null, x, y);
+    }
+
+    /**
+     * Boolean XOR (exclusive OR) operation: elementwise (x != 0) XOR (y != 0)<br>
+     * If x and y arrays have equal shape, the output shape is the same as these inputs.<br>
+     * Note: supports broadcasting if x and y have different shapes and are broadcastable.<br>
+     * Returns an array with values 1 where condition is satisfied, or value 0 otherwise.
+     *
+     * @param name Name of the output variable
+     * @param x    Input 1
+     * @param y    Input 2
+     * @return Output SDVariable with values 0 and 1 based on where the condition is satisfied
+     */
+    public SDVariable xor(String name, SDVariable x, SDVariable y) {
+        SDVariable result = f().xor(x, y);
         return updateVariableNameAndReference(result, name);
     }
 
@@ -1277,5 +2278,6 @@ public class SDMath extends SDOps {
         SDVariable res = f().zeroFraction(input);
         return updateVariableNameAndReference(res, name);
     }
+
 
 }
