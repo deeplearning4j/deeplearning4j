@@ -2763,905 +2763,6 @@ public class SameDiff {
 
 
     /**
-     * @see #randomUniform(String, double, double, SDVariable)
-     */
-    public SDVariable randomUniform(double min, double max, SDVariable shape){
-        return randomUniform(null, min, max, shape);
-    }
-
-    /**
-     * Generate a new random SDVariable, where values are randomly sampled according to a uniform distribution,
-     * U(min,max)<br>
-     * See {@link #randomUniform(double, double, long...)} for the equivalent function where the shape is
-     * specified as a long[] instead
-     *
-     * @param name  Name of the new SDVariable
-     * @param min   Minimum value
-     * @param max   Maximum value. Must satisfy max >= min
-     * @param shape  Shape of the new random SDVariable, as a 1D array
-     * @return New SDVariable
-     */
-    public SDVariable randomUniform(String name, double min, double max, SDVariable shape){
-        SDVariable ret = f().randomUniform(min, max, shape);
-        return updateVariableNameAndReference(ret, name);
-    }
-
-    /**
-     * @see #randomUniform(String, double, double, long...)
-     */
-    public SDVariable randomUniform(double min, double max, long... shape){
-        return randomUniform(null, min, max, shape);
-    }
-
-    /**
-     * Generate a new random SDVariable, where values are randomly sampled according to a uniform distribution,
-     * U(min,max)<br>
-     * See {@link #randomUniform(double, double, long...)} for the equivalent function where the shape is
-     * specified as a SDVariable instead
-     *
-     * @param name  Name of the new SDVariable
-     * @param min   Minimum value
-     * @param max   Maximum value. Must satisfy max >= min
-     * @param shape Shape of the new random SDVariable
-     * @return New SDVariable
-     */
-    public SDVariable randomUniform(String name, double min, double max, long... shape){
-        SDVariable ret = f().randomUniform(min, max, shape);
-        return updateVariableNameAndReference(ret, name);
-    }
-
-    /**
-     * @see #randomNormal(String, double, double, SDVariable)
-     */
-    public SDVariable randomNormal(double mean, double stddev, SDVariable shape){
-        return randomNormal(null, mean, stddev, shape);
-    }
-
-    /**
-     * Generate a new random SDVariable, where values are randomly sampled according to a Gaussian (normal) distribution,
-     * N(mean, stdev)<br>
-     * See {@link #randomNormal(String, double, double, long...)} for the equivalent function where the shape is
-     * specified as a long[] instead
-     *
-     * @param name   Name of the new SDVariable
-     * @param mean   Mean value for the random array
-     * @param stddev Standard deviation for the random array
-     * @param shape  Shape of the new random SDVariable, as a 1D array
-     * @return New SDVariable
-     */
-    public SDVariable randomNormal(String name, double mean, double stddev, SDVariable shape){
-        SDVariable ret = f().randomNormal(mean, stddev, shape);
-        return updateVariableNameAndReference(ret, name);
-    }
-
-    /**
-     * @see #randomNormal(String, double, double, long...)
-     */
-    public SDVariable randomNormal(double mean, double stddev, long... shape){
-        return randomNormal(null, mean, stddev, shape);
-    }
-
-    /**
-     * Generate a new random SDVariable, where values are randomly sampled according to a Gaussian (normal) distribution,
-     * N(mean, stdev)<br>
-     * See {@link #randomNormal(String, double, double, SDVariable)} for the equivalent function where the shape is
-     * specified as a long[] instead
-     *
-     * @param name   Name of the new SDVariable
-     * @param mean   Mean value for the random array
-     * @param stddev Standard deviation for the random array
-     * @param shape  Shape of the new random SDVariable
-     * @return New SDVariable
-     */
-    public SDVariable randomNormal(String name, double mean, double stddev, long... shape){
-        SDVariable ret = f().randomNormal(mean, stddev, shape);
-        return updateVariableNameAndReference(ret, name);
-    }
-
-    /**
-     * @see #randomLogNormal(String, double, double, long...)
-     */
-    public SDVariable randomLogNormal(double mean, double stddev, long... shape){
-        return randomLogNormal(null, mean, stddev, shape);
-    }
-
-    /**
-     * Generate a new random SDVariable, where values are randomly sampled according to a Log Normal distribution,
-     * i.e., {@code log(x) ~ N(mean, stdev)}<br>
-     *
-     * @param name   Name of the new SDVariable
-     * @param mean   Mean value for the random array
-     * @param stddev Standard deviation for the random array
-     * @param shape  Shape of the new random SDVariable
-     * @return New SDVariable
-     */
-    public SDVariable randomLogNormal(String name, double mean, double stddev, long... shape){
-        SDVariable ret = f().randomLogNormal(mean, stddev, shape);
-        return updateVariableNameAndReference(ret, name);
-    }
-
-    /**
-     * @see #randomNormalTruncated(String, double, double, long...)
-     */
-    public SDVariable randomNormalTruncated(double mean, double stddev, long... shape){
-        return randomNormalTruncated(null, mean, stddev, shape);
-    }
-
-    /**
-     * Generate a new random SDVariable, where values are randomly sampled according to a Gaussian (normal) distribution,
-     * N(mean, stdev). However, any values more than 1 standard deviation from the mean are dropped and re-sampled<br>
-     *
-     * @param name   Name of the new SDVariable
-     * @param mean   Mean value for the random array
-     * @param stddev Standard deviation for the random array
-     * @param shape  Shape of the new random SDVariable
-     * @return New SDVariable
-     */
-    public SDVariable randomNormalTruncated(String name, double mean, double stddev, long... shape){
-        SDVariable ret = f().randomNormalTruncated(mean, stddev, shape);
-        return updateVariableNameAndReference(ret, name);
-    }
-
-    /**
-     * @see #randomBernoulli(String, double, SDVariable)
-     */
-    public SDVariable randomBernoulli(double p, SDVariable shape){
-        return randomBernoulli(null, p, shape);
-    }
-
-    /**
-     * Generate a new random SDVariable, where values are randomly sampled according to a Bernoulli distribution,
-     * with the specified probability. Array values will have value 1 with probability P and value 0 with probability
-     * 1-P.<br>
-     * See {@link #randomBernoulli(String, double, long...)}  for the equivalent function where the shape is
-     * specified as a long[] instead
-     *
-     * @param name   Name of the new SDVariable
-     * @param p      Probability of value 1
-     * @param shape  Shape of the new random SDVariable, as a 1D array
-     * @return New SDVariable
-     */
-    public SDVariable randomBernoulli(String name, double p, SDVariable shape){
-        SDVariable ret = f().randomBernoulli(p, shape);
-        return updateVariableNameAndReference(ret, name);
-    }
-
-    /**
-     * @see #randomBernoulli(String, double, long...)
-     */
-    public SDVariable randomBernoulli(double p, long... shape){
-        return randomBernoulli(null, p, shape);
-    }
-
-    /**
-     * Generate a new random SDVariable, where values are randomly sampled according to a Bernoulli distribution,
-     * with the specified probability. Array values will have value 1 with probability P and value 0 with probability
-     * 1-P.<br>
-     * See {@link #randomBernoulli(String, double, SDVariable)}  for the equivalent function where the shape is
-     * specified as a SDVarible instead
-     *
-     * @param name   Name of the new SDVariable
-     * @param p      Probability of value 1
-     * @param shape  Shape of the new random SDVariable, as a 1D array
-     * @return New SDVariable
-     */
-    public SDVariable randomBernoulli(String name, double p, long... shape){
-        SDVariable ret = f().randomBernoulli(p, shape);
-        return updateVariableNameAndReference(ret, name);
-    }
-
-
-    /**
-     * Generate a new random SDVariable, where values are randomly sampled according to a Binomial distribution,
-     * with the specified number of trials and probability.
-     *
-     * @param nTrials Number of trials parameter for the binomial distribution
-     * @param p       Probability of success for each trial
-     * @param shape   Shape of the new random SDVariable, as a 1D array
-     * @return New SDVariable
-     */
-    public SDVariable randomBinomial(int nTrials, double p, long... shape){
-        return randomBinomial(null, nTrials, p, shape);
-    }
-
-    /**
-     * Generate a new random SDVariable, where values are randomly sampled according to a Binomial distribution,
-     * with the specified number of trials and probability.
-     *
-     * @param name    Name of the new SDVariable
-     * @param nTrials Number of trials parameter for the binomial distribution
-     * @param p       Probability of success for each trial
-     * @param shape   Shape of the new random SDVariable, as a 1D array
-     * @return New SDVariable
-     */
-    public SDVariable randomBinomial(String name, int nTrials, double p, long... shape){
-        SDVariable ret = f().randomBinomial(nTrials, p, shape);
-        return updateVariableNameAndReference(ret, name);
-    }
-
-    /**
-     * Generate a new random SDVariable, where values are randomly sampled according to a exponential distribution:
-     * P(x) = lambda * exp(-lambda * x)
-     *
-     * @param lambda Must be > 0
-     * @param shape  Shape of the output
-     * @return new SDVariable
-     */
-    public SDVariable randomExponential(double lambda, SDVariable shape) {
-        return randomExponential(null, lambda, shape);
-    }
-
-    /**
-     * Generate a new random SDVariable, where values are randomly sampled according to a exponential distribution:
-     * P(x) = lambda * exp(-lambda * x)
-     *
-     * @param name   Name of the output variable
-     * @param lambda Must be > 0
-     * @param shape  Shape of the new variable
-     * @return new SDVaribale
-     */
-    public SDVariable randomExponential(String name, double lambda, SDVariable shape) {
-        SDVariable ret = f().randomExponential(lambda, shape);
-        return updateVariableNameAndReference(ret, name);
-    }
-
-    /**
-     * 2D Convolution layer operation - Upsampling 2d with same scale for both dimensions. NCHW input format.
-     *
-     * @param input Input - 4d CNN (image) activations in NCHW format (shape [minibatch, channels, height, width])
-     * @param scale Scale to upsample in both H and W dimensions
-     * @return Upsampled input
-     */
-    public SDVariable upsampling2d(SDVariable input, int scale) {
-        return upsampling2d(null, input, true, scale, scale);
-    }
-
-    /**
-     * 2D Convolution layer operation - Upsampling 2d with same scale for both dimensions. NCHW input format.
-     *
-     * @param input Input - 4d CNN (image) activations in NCHW format (shape [minibatch, channels, height, width])
-     * @param scale Scale to upsample in both H and W dimensions
-     * @return Upsampled input
-     */
-    public SDVariable upsampling2d(String name, SDVariable input, int scale) {
-        return upsampling2d(name, input, true, scale, scale);
-    }
-
-    /**
-     * 2D Convolution layer operation - Upsampling 2d
-     *
-     * @param input Input - 4d CNN (image) activations in NCHW format (shape [minibatch, channels, height, width])
-     *              or NHWC format (shape [minibatch, height, width, channels])
-     * @param nchw   If true: input is in NCHW (minibatch, channels, height, width) format. False: NHWC format
-     * @param scaleH Scale to upsample in height dimension
-     * @param scaleW Scale to upsample in width dimension
-     * @return Upsampled input
-     */
-    public SDVariable upsampling2d(SDVariable input, boolean nchw, int scaleH, int scaleW) {
-        return upsampling2d(null, input, nchw, scaleH, scaleW);
-    }
-
-    /**
-     * 2D Convolution layer operation - Upsampling 2d
-     *
-     * @param input  Input, in NCHW format
-     * @param nchw   If true: input is in NCHW (minibatch, channels, height, width) format. False: NHWC format
-     * @param scaleH Scale to upsample in height dimension
-     * @param scaleW Scale to upsample in width dimension
-     * @return Upsampled input
-     */
-    public SDVariable upsampling2d(String name, SDVariable input, boolean nchw, int scaleH, int scaleW) {
-        SDVariable ret = f().upsampling2d(input, nchw, scaleH, scaleW);
-        return updateVariableNameAndReference(ret, name);
-    }
-
-    /**
-     * 2D Convolution layer operation - average pooling 2d
-     *
-     * @param input           the input to average pooling 2d operation - 4d CNN (image) activations in NCHW format
-     *                        (shape [minibatch, channels, height, width]) or NHWC format (shape [minibatch, height, width, channels])
-     * @param pooling2DConfig the configuration for
-     * @return Result after applying average pooling on the input
-     */
-    public SDVariable avgPooling2d(SDVariable input, Pooling2DConfig pooling2DConfig) {
-        return avgPooling2d(null, input, pooling2DConfig);
-    }
-
-    /**
-     * 2D Convolution layer operation - average pooling 2d
-     *
-     * @param name            name of the operation in SameDiff
-     * @param input           the input to average pooling 2d operation - 4d CNN (image) activations in NCHW format
-     *                        (shape [minibatch, channels, height, width]) or NHWC format (shape [minibatch, height, width, channels])
-     * @param pooling2DConfig the configuration
-     * @return Result after applying average pooling on the input
-     */
-    public SDVariable avgPooling2d(String name, SDVariable input, Pooling2DConfig pooling2DConfig) {
-        SDVariable ret = f().avgPooling2d(input, pooling2DConfig);
-        return updateVariableNameAndReference(ret, name);
-    }
-
-    /**
-     * 2D Convolution layer operation - max pooling 2d
-     *
-     * @param input           the input to max pooling 2d operation - 4d CNN (image) activations in NCHW format
-     *                        (shape [minibatch, channels, height, width]) or NHWC format (shape [minibatch, height, width, channels])
-     * @param pooling2DConfig the configuration
-     * @return Result after applying max pooling on the input
-     */
-    public SDVariable maxPooling2d(SDVariable input, Pooling2DConfig pooling2DConfig) {
-        return maxPooling2d(null, input, pooling2DConfig);
-    }
-
-    /**
-     * 2D Convolution layer operation - max pooling 2d
-     *
-     * @param name            name of the operation in SameDiff
-     * @param input           the input to max pooling 2d operation - 4d CNN (image) activations in NCHW format
-     *                        (shape [minibatch, channels, height, width]) or NHWC format (shape [minibatch, height, width, channels])
-     * @param pooling2DConfig the configuration
-     * @return Result after applying max pooling on the input
-     */
-    public SDVariable maxPooling2d(String name, SDVariable input, Pooling2DConfig pooling2DConfig) {
-        SDVariable ret = f().maxPooling2d(input, pooling2DConfig);
-        return updateVariableNameAndReference(ret, name);
-    }
-
-    /**
-     * 3D convolution layer operation - average pooling 3d
-     *
-     * @param input           the input to average pooling 3d operation - 5d activations in NCDHW format
-     *                        (shape [minibatch, channels, depth, height, width]) or NDHWC format
-     *                        (shape [minibatch, depth, height, width, channels])
-     * @param pooling3DConfig the configuration
-     * @return Result after applying average pooling on the input
-     */
-    public SDVariable avgPooling3d(SDVariable input, Pooling3DConfig pooling3DConfig) {
-        return avgPooling3d(null, input, pooling3DConfig);
-    }
-
-    /**
-     * 3D convolution layer operation - average pooling 3d
-     *
-     * @param name            name of the operation in SameDiff
-     * @param input           the input to average pooling 3d operation - 5d activations in NCDHW format
-     *                        (shape [minibatch, channels, depth, height, width]) or NDHWC format
-     *                        (shape [minibatch, depth, height, width, channels])
-     * @param pooling3DConfig the configuration
-     * @return Result after applying average pooling on the input
-     */
-    public SDVariable avgPooling3d(String name, SDVariable input, Pooling3DConfig pooling3DConfig) {
-        SDVariable ret = f().avgPooling3d(input, pooling3DConfig);
-        return updateVariableNameAndReference(ret, name);
-    }
-
-    /**
-     * 3D convolution layer operation - max pooling 3d operation.
-     *
-     * @param input           the input to average pooling 3d operation - 5d activations in NCDHW format
-     *                        (shape [minibatch, channels, depth, height, width]) or NDHWC format
-     *                        (shape [minibatch, depth, height, width, channels])
-     * @param pooling3DConfig the configuration
-     * @return Result after applying max pooling on the input
-     */
-    public SDVariable maxPooling3d(SDVariable input, Pooling3DConfig pooling3DConfig) {
-        return maxPooling3d(null, input, pooling3DConfig);
-    }
-
-    /**
-     * 3D convolution layer operation - max pooling 3d operation.
-     *
-     * @param name            name of the operation in SameDiff
-     * @param input           the input to average pooling 3d operation - 5d activations in NCDHW format
-     *                        (shape [minibatch, channels, depth, height, width]) or NDHWC format
-     *                        (shape [minibatch, depth, height, width, channels])
-     * @param pooling3DConfig the configuration
-     * @return Result after applying max pooling on the input
-     */
-    public SDVariable maxPooling3d(String name, SDVariable input, Pooling3DConfig pooling3DConfig) {
-        SDVariable ret = f().maxPooling3d(input, pooling3DConfig);
-        return updateVariableNameAndReference(ret, name);
-    }
-
-    /**
-     * 1D Convolution layer operation - Conv1d
-     *
-     * @param input        the input array/activations for the conv1d op
-     * @param weights      weights for conv1d op - rank 3 array with values [kernelSize, inputChannels, outputChannels]
-     * @param conv1DConfig the configuration
-     * @return
-     */
-    public SDVariable conv1d(SDVariable input, SDVariable weights, Conv1DConfig conv1DConfig) {
-        return conv1d(null, input, weights, conv1DConfig);
-    }
-
-    /**
-     * Conv1d operation.
-     *
-     * @param name         name of the operation in SameDiff
-     * @param input        the inputs to conv1d
-     * @param weights      weights for conv1d op - rank 3 array with values [kernelSize, inputChannels, outputChannels]
-     * @param conv1DConfig the configuration
-     * @return
-     */
-    public SDVariable conv1d(String name, SDVariable input, SDVariable weights, Conv1DConfig conv1DConfig) {
-        SDVariable ret = f().conv1d(input, weights, conv1DConfig);
-        return updateVariableNameAndReference(ret, name);
-    }
-
-
-    /**
-     * 2D convolution layer operation - local response normalization
-     *
-     * @param inputs    the inputs to lrn
-     * @param lrnConfig the configuration
-     * @return
-     */
-    public SDVariable localResponseNormalization(SDVariable inputs, LocalResponseNormalizationConfig lrnConfig) {
-        return localResponseNormalization(null, inputs, lrnConfig);
-    }
-
-    /**
-     * 2D convolution layer operation - local response normalization
-     *
-     * @param name      name of the operation in SameDiff
-     * @param input    the inputs to lrn
-     * @param lrnConfig the configuration
-     * @return
-     */
-    public SDVariable localResponseNormalization(String name, SDVariable input,
-                                                 LocalResponseNormalizationConfig lrnConfig) {
-        SDVariable ret = f().localResponseNormalization(input, lrnConfig);
-        return updateVariableNameAndReference(ret, name);
-    }
-
-    /**
-     * 2D Convolution operation (without bias)
-     *
-     * @param layerInput the input to max pooling 2d operation - 4d CNN (image) activations in NCHW format
-     *                   (shape [minibatch, channels, height, width]) or NHWC format (shape [minibatch, height, width, channels])
-     * @param weights    Weights for the convolution operation. 4 dimensions with format [kernelHeight, kernelWidth, inputChannels, outputChannels]
-     * @param config     Conv2DConfig configuration
-     * @return result of conv2d op
-     */
-    public SDVariable conv2d(SDVariable layerInput, SDVariable weights, Conv2DConfig config) {
-        return conv2d(layerInput, weights, null, config);
-    }
-
-
-    /**
-     * 2D Convolution operation with optional bias
-     *
-     * @param layerInput the input to max pooling 2d operation - 4d CNN (image) activations in NCHW format
-     *                   (shape [minibatch, channels, height, width]) or NHWC format (shape [minibatch, height, width, channels])
-     * @param weights    Weights for the convolution operation. 4 dimensions with format [kernelHeight, kernelWidth, inputChannels, outputChannels]
-     * @param bias       Optional 1D bias array with shape [outputChannels]. May be null.
-     * @param config     Conv2DConfig configuration
-     * @return result of conv2d op
-     */
-    public SDVariable conv2d(SDVariable layerInput, SDVariable weights, SDVariable bias, Conv2DConfig config) {
-        SDVariable[] arr = new SDVariable[bias == null ? 2 : 3];
-        arr[0] = layerInput;
-        arr[1] = weights;
-        if (bias != null)
-            arr[2] = bias;
-        return conv2d(arr, config);
-    }
-
-    /**
-     * 2D Convolution operation with optional bias
-     *
-     * @param inputs an array with either 2 elements (layerInput, weights) or 3 elements (layerInput, weights, bias) as
-     *               described in {@link #conv2d(SDVariable, SDVariable, SDVariable, Conv2DConfig)}
-     * @param config     Conv2DConfig configuration
-     * @return result of convolution 2d operation
-     */
-    public SDVariable conv2d(SDVariable[] inputs, Conv2DConfig config) {
-        return conv2d(null, inputs, config);
-    }
-
-    /**
-     * 2D Convolution operation with optional bias
-     *
-     * @param name   Name of the output SDVariable
-     * @param inputs an array with either 2 elements (layerInput, weights) or 3 elements (layerInput, weights, bias) as
-     *               described in {@link #conv2d(SDVariable, SDVariable, SDVariable, Conv2DConfig)}
-     * @param config Conv2DConfig configuration
-     * @return result of convolution 2d operation
-     */
-    public SDVariable conv2d(String name, SDVariable[] inputs, Conv2DConfig config) {
-        SDVariable ret = f().conv2d(inputs, config);
-        return updateVariableNameAndReference(ret, name);
-    }
-
-    /**
-     * Depth-wise 2D convolution operation without bias
-     *
-     * @param layerInput   the input to max pooling 2d operation - 4d CNN (image) activations in NCHW format
-     *                     (shape [minibatch, channels, height, width]) or NHWC format (shape [minibatch, height, width, channels])
-     * @param depthWeights Depth-wise conv2d weights. 4 dimensions with format [kernelHeight, kernelWidth, inputChannels, depthMultiplier]
-     * @param config       Conv2DConfig configuration
-     * @return result of conv2d op
-     */
-    public SDVariable depthWiseConv2d(SDVariable layerInput, SDVariable depthWeights, Conv2DConfig config) {
-        return depthWiseConv2d(layerInput, depthWeights, null, config);
-    }
-
-
-    /**
-     * Depth-wise 2D convolution operation with optional bias
-     *
-     * @param layerInput   the input to max pooling 2d operation - 4d CNN (image) activations in NCHW format
-     *                     (shape [minibatch, channels, height, width]) or NHWC format (shape [minibatch, height, width, channels])
-     * @param depthWeights Depth-wise conv2d weights. 4 dimensions with format [kernelHeight, kernelWidth, inputChannels, depthMultiplier]
-     * @param bias         Optional 1D bias array with shape [outputChannels]. May be null.
-     * @param config       Conv2DConfig configuration
-     * @return result of depthwise conv2d op
-     */
-    public SDVariable depthWiseConv2d(SDVariable layerInput, SDVariable depthWeights, SDVariable bias, Conv2DConfig config) {
-        SDVariable[] arr = new SDVariable[bias == null ? 2 : 3];
-        arr[0] = layerInput;
-        arr[1] = depthWeights;
-        if (bias != null)
-            arr[2] = bias;
-        return depthWiseConv2d(arr, config);
-    }
-
-
-    /**
-     * Depth-wise convolution 2D operation.
-     *
-     * @param inputs            the inputs to depth-wise conv2d. An array with either 2 elements (layerInput, depthWeights)
-     *                          or 3 elements (layerInput, depthWeights, bias) as described in
-     *                          {@link #depthWiseConv2d(SDVariable, SDVariable, SDVariable, Conv2DConfig)}
-     * @param depthConv2DConfig the configuration
-     * @return result of depthwise conv2d op
-     */
-    public SDVariable depthWiseConv2d(SDVariable[] inputs, Conv2DConfig depthConv2DConfig) {
-        return depthWiseConv2d(null, inputs, depthConv2DConfig);
-    }
-
-
-    /**
-     * Depth-wise convolution 2D operation.
-     *
-     * @param name              name of the output variable
-     * @param inputs            the inputs to depth-wise conv2d. An array with either 2 elements (layerInput, depthWeights)
-     *                          or 3 elements (layerInput, depthWeights, bias) as described in
-     *                          {@link #depthWiseConv2d(SDVariable, SDVariable, SDVariable, Conv2DConfig)}
-     * @param depthConv2DConfig the configuration
-     * @return result of depthwise conv2d op
-     */
-    public SDVariable depthWiseConv2d(String name, SDVariable[] inputs, Conv2DConfig depthConv2DConfig) {
-        SDVariable ret = f().depthWiseConv2d(inputs, depthConv2DConfig);
-        return updateVariableNameAndReference(ret, name);
-    }
-
-
-    /**
-     * Separable 2D convolution operation without bias
-     *
-     * @param layerInput   the input to max pooling 2d operation - 4d CNN (image) activations in NCHW format
-     *                     (shape [minibatch, channels, height, width]) or NHWC format (shape [minibatch, height, width, channels])
-     * @param depthWeights Separable conv2d depth weights. 4 dimensions with format [kernelHeight, kernelWidth, inputChannels, depthMultiplier]
-     * @param pointWeights Point weights, rank 4 with format [1, 1, inputChannels*depthMultiplier, outputChannels]
-     *                     May be null
-     * @param config       Conv2DConfig configuration
-     * @return result of separable convolution 2d operation
-     */
-    public SDVariable separableConv2d(SDVariable layerInput, SDVariable depthWeights, SDVariable pointWeights,
-                                      Conv2DConfig config) {
-        return separableConv2d(layerInput, depthWeights, pointWeights, null, config);
-    }
-
-
-    /**
-     * Separable 2D convolution operation with optional bias
-     *
-     * @param layerInput   the input to max pooling 2d operation - 4d CNN (image) activations in NCHW format
-     *                     (shape [minibatch, channels, height, width]) or NHWC format (shape [minibatch, height, width, channels])
-     * @param depthWeights Separable conv2d depth weights. 4 dimensions with format [kernelHeight, kernelWidth, inputChannels, depthMultiplier]
-     * @param pointWeights Point weights, rank 4 with format [1, 1, inputChannels*depthMultiplier, outputChannels]
-     *                     May be null
-     * @param bias         Optional bias, rank 1 with shape [outputChannels]. May be null.
-     * @param config       Conv2DConfig configuration
-     * @return result of separable convolution 2d operation
-     */
-    public SDVariable separableConv2d(SDVariable layerInput, SDVariable depthWeights, SDVariable pointWeights,
-                                      SDVariable bias, Conv2DConfig config) {
-        SDVariable[] arr = new SDVariable[bias == null ? 3 : 4];
-        arr[0] = layerInput;
-        arr[1] = depthWeights;
-        arr[2] = pointWeights;
-        if (bias != null)
-            arr[3] = bias;
-        return sconv2d(arr, config);
-    }
-
-    /**
-     * Separable 2D convolution operation with/without optional bias
-     *
-     * @param inputs       the inputs to separable conv2 operation. Should be length 3 (layerInput, depthWeights, pointWeights)
-     *                     or length 4 (layerInput, depthWeights, pointWeights, bias) as described in {@link #separableConv2d(SDVariable, SDVariable, SDVariable, SDVariable, Conv2DConfig)}
-     * @param conv2DConfig the configuration
-     * @return result of separable convolution 2d operation
-     */
-    public SDVariable sconv2d(SDVariable[] inputs, Conv2DConfig conv2DConfig) {
-        return sconv2d(null, inputs, conv2DConfig);
-    }
-
-
-    /**
-     * Separable 2D convolution operation with/without optional bias
-     *
-     * @param name         name of the output variable
-     * @param inputs       the inputs to separable conv2 operation. Should be length 3 (layerInput, depthWeights, pointWeights)
-     *                     or length 4 (layerInput, depthWeights, pointWeights, bias) as described in {@link #separableConv2d(SDVariable, SDVariable, SDVariable, SDVariable, Conv2DConfig)}
-     * @param conv2DConfig the configuration
-     * @return result of separable convolution 2d operation
-     */
-    public SDVariable sconv2d(String name, SDVariable[] inputs, Conv2DConfig conv2DConfig) {
-        SDVariable ret = f().sconv2d(inputs, conv2DConfig);
-        return updateVariableNameAndReference(ret, name);
-    }
-
-
-    /**
-     * 2D deconvolution operation without bias
-     *
-     * @param layerInput     the input to deconvolution 2d operation - 4d CNN (image) activations in NCHW format
-     *                       (shape [minibatch, channels, height, width]) or NHWC format (shape [minibatch, height, width, channels])
-     * @param weights        Weights for the 2d deconvolution operation. 4 dimensions with format [inputChannels, outputChannels, kernelHeight, kernelWidth].
-     * @param deconv2DConfig DeConv2DConfig configuration
-     * @return result of deconv2d op
-     */
-    public SDVariable deconv2d(SDVariable layerInput, SDVariable weights, DeConv2DConfig deconv2DConfig) {
-        return deconv2d(layerInput, weights, null, deconv2DConfig);
-    }
-
-
-    /**
-     * 2D deconvolution operation with optional bias
-     *
-     * @param layerInput     the input to deconvolution 2d operation - 4d CNN (image) activations in NCHW format
-     *                       (shape [minibatch, channels, height, width]) or NHWC format (shape [minibatch, height, width, channels])
-     * @param weights        Weights for the 2d deconvolution operation. 4 dimensions with format [inputChannels, outputChannels, kernelHeight, kernelWidth].
-     * @param bias           Optional 1D bias array with shape [outputChannels]. May be null.
-     * @param deconv2DConfig DeConv2DConfig configuration
-     * @return result of deconv2d op
-     */
-    public SDVariable deconv2d(SDVariable layerInput, SDVariable weights, SDVariable bias, DeConv2DConfig deconv2DConfig) {
-        SDVariable[] arr = new SDVariable[bias == null ? 2 : 3];
-        arr[0] = layerInput;
-        arr[1] = weights;
-        if (bias != null)
-            arr[2] = bias;
-        return deconv2d(arr, deconv2DConfig);
-    }
-
-    /**
-     * 2D deconvolution operation with or without optional bias
-     *
-     * @param inputs         Inputs to the deconvolution 2d operation - input array of length 2 (layerInput, weights)
-     *                       or length 3 (layerInput, weights, bias) as described in {@link #deconv2d(SDVariable[], DeConv2DConfig)}
-     * @param deconv2DConfig the configuration
-     * @return result of deconv2d op
-     */
-    public SDVariable deconv2d(SDVariable[] inputs, DeConv2DConfig deconv2DConfig) {
-        return deconv2d(null, inputs, deconv2DConfig);
-    }
-
-
-    /**
-     * 2D deconvolution operation with or without optional bias
-     *
-     * @param name           Name of the output variable
-     * @param inputs         Inputs to the deconvolution 2d operation - input array of length 2 (layerInput, weights)
-     *                       or length 3 (layerInput, weights, bias) as described in {@link #deconv2d(SDVariable[], DeConv2DConfig)}
-     * @param deconv2DConfig the configuration
-     * @return result of deconv2d op
-     */
-    public SDVariable deconv2d(String name, SDVariable[] inputs, DeConv2DConfig deconv2DConfig) {
-        SDVariable ret = f().deconv2d(inputs, deconv2DConfig);
-        return updateVariableNameAndReference(ret, name);
-    }
-
-    /**
-     * 3D CNN deconvolution operation with or without optional bias
-     * @param name    Name of the output variable
-     * @param input   Input array - shape [bS, iD, iH, iW, iC] (NDHWC) or [bS, iC, iD, iH, iW] (NCDHW)
-     * @param weights Weights array - shape [kD, kH, kW, oC, iC]
-     * @param bias    Bias array - optional, may be null. If non-null, must have shape [outputChannels]
-     * @param config  Configuration
-     */
-    public SDVariable deconv3d(String name, SDVariable input, SDVariable weights, SDVariable bias, DeConv3DConfig config){
-        SDVariable ret = f().deconv3d(input, weights, bias, config);
-        return updateVariableNameAndReference(ret, name);
-    }
-
-
-    /**
-     * Convolution 3D operation without bias
-     *
-     * @param input        the input to average pooling 3d operation - 5d activations in NCDHW format
-     *                     (shape [minibatch, channels, depth, height, width]) or NDHWC format
-     *                     (shape [minibatch, depth, height, width, channels])
-     * @param weights      Weights for conv3d. Rank 5 with shape [kernelDepth, kernelHeight, kernelWidth, inputChannels, outputChannels].
-     * @param conv3DConfig the configuration
-     * @return Conv3d output variable
-     */
-    public SDVariable conv3d(SDVariable input, SDVariable weights, Conv3DConfig conv3DConfig) {
-        return conv3d(null, input, weights, null, conv3DConfig);
-    }
-
-    /**
-     * Convolution 3D operation with optional bias
-     *
-     * @param input        the input to average pooling 3d operation - 5d activations in NCDHW format
-     *                     (shape [minibatch, channels, depth, height, width]) or NDHWC format
-     *                     (shape [minibatch, depth, height, width, channels])
-     * @param weights      Weights for conv3d. Rank 5 with shape [kernelDepth, kernelHeight, kernelWidth, inputChannels, outputChannels].
-     * @param bias         Optional 1D bias array with shape [outputChannels]. May be null.
-     * @param conv3DConfig the configuration
-     * @return Conv3d output variable
-     */
-    public SDVariable conv3d(SDVariable input, SDVariable weights, SDVariable bias, Conv3DConfig conv3DConfig) {
-        return conv3d(null, input, weights, bias, conv3DConfig);
-    }
-
-    /**
-     * Convolution 3D operation without bias
-     *
-     * @param name         Name of the output variable
-     * @param input        the input to average pooling 3d operation - 5d activations in NCDHW format
-     *                     (shape [minibatch, channels, depth, height, width]) or NDHWC format
-     *                     (shape [minibatch, depth, height, width, channels])
-     * @param weights      Weights for conv3d. Rank 5 with shape [kernelDepth, kernelHeight, kernelWidth, inputChannels, outputChannels].
-     * @param conv3DConfig the configuration
-     * @return Conv3d output variable
-     */
-    public SDVariable conv3d(String name, SDVariable input, SDVariable weights, Conv3DConfig conv3DConfig) {
-        return conv3d(name, input, weights, null, conv3DConfig);
-    }
-
-    /**
-     * Convolution 3D operation with optional bias
-     *
-     * @param name         Name of the output variable
-     * @param input        the input to average pooling 3d operation - 5d activations in NCDHW format
-     *                     (shape [minibatch, channels, depth, height, width]) or NDHWC format
-     *                     (shape [minibatch, depth, height, width, channels])
-     * @param weights      Weights for conv3d. Rank 5 with shape [kernelDepth, kernelHeight, kernelWidth, inputChannels, outputChannels].
-     * @param bias         Optional 1D bias array with shape [outputChannels]. May be null.
-     * @param conv3DConfig the configuration
-     * @return Conv3d output variable
-     */
-    public SDVariable conv3d(String name, SDVariable input, SDVariable weights, SDVariable bias, Conv3DConfig conv3DConfig) {
-        SDVariable[] args;
-        if (bias == null) {
-            args = new SDVariable[]{input, weights};
-        } else {
-            args = new SDVariable[]{input, weights, bias};
-        }
-        SDVariable ret = f().conv3d(args, conv3DConfig);
-        return updateVariableNameAndReference(ret, name);
-    }
-
-    /**
-     * Batch norm operation.
-     * @see #batchNorm(String, SDVariable, SDVariable, SDVariable, SDVariable, SDVariable, double, int...)
-     */
-    public SDVariable batchNorm(SDVariable input, SDVariable mean,
-                                SDVariable variance, SDVariable gamma,
-                                SDVariable beta, double epsilon, int... axis) {
-        return batchNorm(null, input, mean, variance, gamma, beta, true, true, epsilon, axis);
-    }
-
-    /**
-     * Neural network batch normalization operation.<br>
-     * For details, see <a href="http://arxiv.org/abs/1502.03167">http://arxiv.org/abs/1502.03167</a>
-     *
-     * @param name       Name of the output variable
-     * @param input      Input variable.
-     * @param mean       Mean value. For 1d axis, this should match input.size(axis)
-     * @param variance   Variance value. For 1d axis, this should match input.size(axis)
-     * @param gamma      Gamma value. For 1d axis, this should match input.size(axis)
-     * @param beta       Beta value. For 1d axis, this should match input.size(axis)
-     * @param epsilon    Epsilon constant for numerical stability (to avoid division by 0)
-     * @param axis       For 2d CNN activations: 1 for NCHW format activations, or 3 for NHWC format activations.<br>
-     *                   For 3d CNN activations: 1 for NCDHW format, 4 for NDHWC<br>
-     *                   For 1d/RNN activations: 1 for NCW format, 2 for NWC
-     * @return Output variable for batch normalization
-     */
-    public SDVariable batchNorm(String name, SDVariable input, SDVariable mean,
-                                SDVariable variance, SDVariable gamma,
-                                SDVariable beta, double epsilon, int... axis) {
-        return batchNorm(name, input, mean, variance, gamma, beta, true, true, epsilon, axis);
-    }
-
-    /**
-     * Batch normalization with optional application of gamma/beta args.
-     * See {@link #batchNorm(String, SDVariable, SDVariable, SDVariable, SDVariable, SDVariable, double, int...)}
-     */
-    public SDVariable batchNorm(String name, SDVariable input, SDVariable mean,
-                                SDVariable variance, SDVariable gamma,
-                                SDVariable beta, boolean applyGamma, boolean applyBeta, double epsilon, int... axis) {
-        SDVariable res = f().batchNorm(input, mean, variance, gamma, beta, applyGamma, applyBeta, epsilon, axis);
-        return updateVariableNameAndReference(res, name);
-    }
-
-    /**
-     * im2col operation for use in 2D convolution operations. Outputs a 6d array with shape
-     * [minibatch, inputChannels, kernelHeight, kernelWidth, outputHeight, outputWidth]
-     *
-     * @param in     Input - rank 4 input with shape [minibatch, inputChannels, height, width]
-     * @param config Convolution configuration for the im2col operation
-     * @return Im2Col output variable
-     */
-    public SDVariable im2Col(SDVariable in, Conv2DConfig config) {
-        return im2Col(null, in, config);
-    }
-
-    /**
-     * im2col operation for use in 2D convolution operations. Outputs a 6d array with shape
-     * [minibatch, inputChannels, kernelHeight, kernelWidth, outputHeight, outputWidth]
-     *
-     * @param name   Name of the output variable
-     * @param in     Input - rank 4 input with shape [minibatch, inputChannels, height, width]
-     * @param config Convolution configuration for the im2col operation
-     * @return Im2Col output variable
-     */
-    public SDVariable im2Col(String name, SDVariable in, Conv2DConfig config) {
-        SDVariable ret = f().im2Col(in, config);
-        return updateVariableNameAndReference(ret, name);
-    }
-
-    /**
-     * col2im operation for use in 2D convolution operations. Outputs a 4d array with shape
-     * [minibatch, inputChannels, height, width]
-     *
-     * @param in     Input - rank 6 input with shape [minibatch, inputChannels, kernelHeight, kernelWidth, outputHeight, outputWidth]
-     * @param config Convolution configuration for the col2im operation
-     * @return Col2Im output variable
-     */
-    public SDVariable col2Im(SDVariable in, Conv2DConfig config) {
-        return col2Im(null, in, config);
-    }
-
-    /**
-     * col2im operation for use in 2D convolution operations. Outputs a 4d array with shape
-     * [minibatch, inputChannels, height, width]
-     *
-     * @param name   Name of the output variable
-     * @param in     Input - rank 6 input with shape [minibatch, inputChannels, kernelHeight, kernelWidth, outputHeight, outputWidth]
-     * @param config Convolution configuration for the col2im operation
-     * @return Col2Im output variable
-     */
-    public SDVariable col2Im(String name, SDVariable in, Conv2DConfig config) {
-        SDVariable ret = f().col2Im(in, config);
-        return updateVariableNameAndReference(ret, name);
-    }
-
-    /**
-     * Extract image patches
-     *
-     * @param name     Name of the output variable
-     * @param input    Input array. Must be rank 4, with shape [minibatch, height, width, channels]
-     * @param kH       Kernel height
-     * @param kW       Kernel width
-     * @param sH       Stride height
-     * @param sW       Stride width
-     * @param rH       Rate height
-     * @param rW       Rate width
-     * @param sameMode If true: use same mode padding. If false
-     * @return
-     */
-    public SDVariable extractImagePatches(String name, SDVariable input, int kH, int kW, int sH, int sW, int rH, int rW, boolean sameMode){
-        SDVariable ret = f().extractImagePatches(input, kH, kW, sH, sW, rH, rW, sameMode);
-        return updateVariableNameAndReference(ret, name);
-    }
-
-    /**
      * Create a new scalar (rank 0) SDVariable with the specified value
      * @param name  Name of the SDVariable
      * @param value Value to initialize the variable with
@@ -3698,7 +2799,7 @@ public class SameDiff {
      * @return Output SDVariable with values 0 and 1 based on where the condition is satisfied
      */
     public SDVariable gte(String name, SDVariable x, double y) {
-        SDVariable result = functionFactory.gte(x, y);
+        SDVariable result = f().gte(x, y);
         return updateVariableNameAndReference(result, name);
     }
 
@@ -3726,7 +2827,7 @@ public class SameDiff {
      * @return Output SDVariable with values 0 and 1 based on where the condition is satisfied
      */
     public SDVariable lte(String name, SDVariable x, double y) {
-        SDVariable result = functionFactory.lte(x, y);
+        SDVariable result = f().lte(x, y);
         return updateVariableNameAndReference(result, name);
     }
 
@@ -3755,7 +2856,7 @@ public class SameDiff {
      * @return Output SDVariable with values 0 and 1 based on where the condition is satisfied
      */
     public SDVariable gt(String name, SDVariable x, double y) {
-        SDVariable result = functionFactory.gt(x, y);
+        SDVariable result = f().gt(x, y);
         return updateVariableNameAndReference(result, name);
     }
 
@@ -3783,7 +2884,7 @@ public class SameDiff {
      * @return Output SDVariable with values 0 and 1 based on where the condition is satisfied
      */
     public SDVariable lt(String name, SDVariable x, double y) {
-        SDVariable result = functionFactory.lt(x, y);
+        SDVariable result = f().lt(x, y);
         return updateVariableNameAndReference(result, name);
     }
 
@@ -3811,7 +2912,7 @@ public class SameDiff {
      * @return Output SDVariable with values 0 and 1 based on where the condition is satisfied
      */
     public SDVariable neq(String name, SDVariable x, double y) {
-        SDVariable result = functionFactory.neq(x, y);
+        SDVariable result = f().neq(x, y);
         return updateVariableNameAndReference(result, name);
     }
 
@@ -3839,7 +2940,7 @@ public class SameDiff {
      * @return Output SDVariable with values 0 and 1 based on where the condition is satisfied
      */
     public SDVariable eq(String name, SDVariable x, double y) {
-        SDVariable result = functionFactory.eq(x, y);
+        SDVariable result = f().eq(x, y);
         return updateVariableNameAndReference(result, name);
     }
 
@@ -3869,7 +2970,7 @@ public class SameDiff {
      * @return Output SDVariable with values 0 and 1 based on where the condition is satisfied
      */
     public SDVariable gte(String name, SDVariable x, SDVariable y) {
-        SDVariable result = functionFactory.gte(x, y);
+        SDVariable result = f().gte(x, y);
         return updateVariableNameAndReference(result, name);
     }
 
@@ -3899,7 +3000,7 @@ public class SameDiff {
      * @return Output SDVariable with values 0 and 1 based on where the condition is satisfied
      */
     public SDVariable lte(String name, SDVariable x, SDVariable y) {
-        SDVariable result = functionFactory.lte(x, y);
+        SDVariable result = f().lte(x, y);
         return updateVariableNameAndReference(result, name);
     }
 
@@ -3929,7 +3030,7 @@ public class SameDiff {
      * @return Output SDVariable with values 0 and 1 based on where the condition is satisfied
      */
     public SDVariable gt(String name, SDVariable x, SDVariable y) {
-        SDVariable result = functionFactory.gt(x, y);
+        SDVariable result = f().gt(x, y);
         return updateVariableNameAndReference(result, name);
     }
 
@@ -3959,7 +3060,7 @@ public class SameDiff {
      * @return Output SDVariable with values 0 and 1 based on where the condition is satisfied
      */
     public SDVariable lt(String name, SDVariable x, SDVariable y) {
-        SDVariable result = functionFactory.lt(x, y);
+        SDVariable result = f().lt(x, y);
         return updateVariableNameAndReference(result, name);
     }
 
@@ -3989,7 +3090,7 @@ public class SameDiff {
      * @return Output SDVariable with values 0 and 1 based on where the condition is satisfied
      */
     public SDVariable neq(String name, SDVariable x, SDVariable y) {
-        SDVariable result = functionFactory.neq(x, y);
+        SDVariable result = f().neq(x, y);
         return updateVariableNameAndReference(result, name);
     }
 
@@ -4019,7 +3120,7 @@ public class SameDiff {
      * @return Output SDVariable with values 0 and 1 based on where the condition is satisfied
      */
     public SDVariable eq(String name, SDVariable x, SDVariable y) {
-        SDVariable result = functionFactory.eq(x, y);
+        SDVariable result = f().eq(x, y);
         return updateVariableNameAndReference(result, name);
     }
 
@@ -4049,7 +3150,7 @@ public class SameDiff {
      * @return Output SDVariable with values 0 and 1 based on where the condition is satisfied
      */
     public SDVariable or(String name, SDVariable x, SDVariable y) {
-        SDVariable result = functionFactory.or(x, y);
+        SDVariable result = f().or(x, y);
         return updateVariableNameAndReference(result, name);
     }
 
@@ -4153,7 +3254,7 @@ public class SameDiff {
      * @return Output variable
      */
     public SDVariable neg(String name, SDVariable x) {
-        SDVariable result = functionFactory.neg(x);
+        SDVariable result = f().neg(x);
         return updateVariableNameAndReference(result, name);
     }
 
@@ -4176,7 +3277,7 @@ public class SameDiff {
      * @return Output variable
      */
     public SDVariable cos(String name, SDVariable x) {
-        SDVariable result = functionFactory.cos(x);
+        SDVariable result = f().cos(x);
         return updateVariableNameAndReference(result, name);
     }
 
@@ -4198,7 +3299,7 @@ public class SameDiff {
      * @return Output variable
      */
     public SDVariable sin(String name, SDVariable x) {
-        SDVariable result = functionFactory.sin(x);
+        SDVariable result = f().sin(x);
         return updateVariableNameAndReference(result, name);
     }
 
@@ -4220,7 +3321,7 @@ public class SameDiff {
      * @return Output variable
      */
     public SDVariable tan(String name, SDVariable x) {
-        SDVariable result = functionFactory.tan(x);
+        SDVariable result = f().tan(x);
         return updateVariableNameAndReference(result, name);
     }
 
@@ -4272,370 +3373,6 @@ public class SameDiff {
         return updateVariableNameAndReference(ret, name);
     }
 
-    /**
-     * Elementwise acos (arccosine, inverse cosine) operation: out = arccos(x)
-     *
-     * @param x   Input variable
-     * @return Output variable
-     */
-    public SDVariable acos(SDVariable x) {
-        return acos(null, x);
-    }
-
-    /**
-     * Elementwise acos (arccosine, inverse cosine) operation: out = arccos(x)
-     *
-     * @param name Output variable name
-     * @param x   Input variable
-     * @return Output variable
-     */
-    public SDVariable acos(String name, SDVariable x) {
-        SDVariable result = functionFactory.acos(x);
-        return updateVariableNameAndReference(result, name);
-    }
-
-    /**
-     * Elementwise asin (arcsin, inverse sine) operation: out = arcsin(x)
-     *
-     * @param x   Input variable
-     * @return Output variable
-     */
-    public SDVariable asin(SDVariable x) {
-        return asin(null, x);
-    }
-
-    /**
-     * Elementwise asin (arcsin, inverse sine) operation: out = arcsin(x)
-     *
-     * @param name Output variable name
-     * @param x   Input variable
-     * @return Output variable
-     */
-    public SDVariable asin(String name, SDVariable x) {
-        SDVariable result = functionFactory.asin(x);
-        return updateVariableNameAndReference(result, name);
-    }
-
-    /**
-     * Elementwise atan (arctangent, inverse tangent) operation: out = arctangent(x)
-     *
-     * @param x   Input variable
-     * @return Output variable
-     */
-    public SDVariable atan(SDVariable x) {
-        return atan(null, x);
-    }
-
-    /**
-     * Elementwise atan (arctangent, inverse tangent) operation: out = arctangent(x)
-     *
-     * @param name Output variable name
-     * @param x   Input variable
-     * @return Output variable
-     */
-    public SDVariable atan(String name, SDVariable x) {
-        SDVariable result = functionFactory.atan(x);
-        return updateVariableNameAndReference(result, name);
-    }
-
-    /**
-     * Elementwise atan (arctangent, inverse tangent) operation: out = atan2(x,y).
-     * Similar to atan(y/x) but sigts of x and y are used to determine the location of the result
-     *
-     * @param y Input Y variable
-     * @param x Input X variable
-     * @return Output variable
-     */
-    public SDVariable atan2(SDVariable y, SDVariable x) {
-        return atan2(null, y, x);
-    }
-
-    /**
-     * Elementwise atan (arctangent, inverse tangent) operation: out = atan2(x,y).
-     * Similar to atan(y/x) but sigts of x and y are used to determine the location of the result
-     *
-     * @param name Name of the output variable
-     * @param y    Input Y variable
-     * @param x    Input X variable
-     * @return Output variable
-     */
-    public SDVariable atan2(String name, SDVariable y, SDVariable x) {
-        SDVariable ret = f().atan2(y, x);
-        return updateVariableNameAndReference(ret, name);
-    }
-
-    /**
-     * Elementwise cosh (hyperbolic cosine) operation: out = cosh(x)
-     *
-     * @param x   Input variable
-     * @return Output variable
-     */
-    public SDVariable cosh(SDVariable x) {
-        return cosh(null, x);
-    }
-
-    /**
-     * Elementwise cosh (hyperbolic cosine) operation: out = cosh(x)
-     *
-     * @param name Output variable name
-     * @param x   Input variable
-     * @return Output variable
-     */
-    public SDVariable cosh(String name, SDVariable x) {
-        SDVariable result = functionFactory.cosh(x);
-        return updateVariableNameAndReference(result, name);
-    }
-
-    /**
-     * Elementwise sinh (hyperbolic sine) operation: out = sinh(x)
-     *
-     * @param x   Input variable
-     * @return Output variable
-     */
-    public SDVariable sinh(SDVariable x) {
-        return sinh(null, x);
-    }
-
-    /**
-     * Elementwise sinh (hyperbolic sine) operation: out = sinh(x)
-     *
-     * @param name Output variable name
-     * @param x   Input variable
-     * @return Output variable
-     */
-    public SDVariable sinh(String name, SDVariable x) {
-        SDVariable result = functionFactory.sinh(x);
-        return updateVariableNameAndReference(result, name);
-    }
-
-    /**
-     * Elementwise tanh (hyperbolic tangent) operation: out = tanh(x)
-     *
-     * @param x Input variable
-     * @return Output variable
-     */
-    public SDVariable tanh(SDVariable x) {
-        return tanh(null, x);
-    }
-
-    /**
-     * Elementwise tanh (hyperbolic tangent) operation: out = tanh(x)
-     *
-     * @param name Output variable name
-     * @param x   Input variable
-     * @return Output variable
-     */
-    public SDVariable tanh(String name, SDVariable x) {
-        SDVariable result = functionFactory.tanh(x);
-        return updateVariableNameAndReference(result, name);
-    }
-
-    /**
-     * Elementwise step function:<br>
-     * out(x) = 1 if x >= cutoff<br>
-     * out(x) = 0 otherwise<br>
-     *
-     * @param in     Input variable
-     * @param cutoff Cutoff value for step function
-     * @return Output variable
-     */
-    public SDVariable step(SDVariable in, double cutoff) {
-        return step(null, in, cutoff);
-    }
-
-    /**
-     * Elementwise step function:<br>
-     * out(x) = 1 if x >= cutoff<br>
-     * out(x) = 0 otherwise<br>
-     *
-     * @param name   Name of the output variable
-     * @param in     Input variable
-     * @param cutoff Cutoff value for step function
-     * @return Output variable
-     */
-    public SDVariable step(String name, SDVariable in, double cutoff) {
-        SDVariable ret = f().step(in, cutoff);
-        return updateVariableNameAndReference(ret, name);
-    }
-
-    /**
-     * Elementwise acosh (inverse hyperbolic cosine) function: out = acosh(x)
-     *
-     * @param x   Input variable
-     * @return Output variable
-     */
-    public SDVariable acosh(SDVariable x) {
-        return acosh(null, x);
-    }
-
-    /**
-     * Elementwise acosh (inverse hyperbolic cosine) function: out = acosh(x)
-     *
-     * @param name Output variable name
-     * @param x   Input variable
-     * @return Output variable
-     */
-    public SDVariable acosh(String name, SDVariable x) {
-        SDVariable result = functionFactory.acosh(x);
-        return updateVariableNameAndReference(result, name);
-    }
-
-    /**
-     * Elementwise asinh (inverse hyperbolic sine) function: out = asinh(x)
-     *
-     * @param x   Input variable
-     * @return Output variable
-     */
-    public SDVariable asinh(SDVariable x) {
-        return asinh(null, x);
-    }
-
-    /**
-     * Elementwise asinh (inverse hyperbolic sine) function: out = asinh(x)
-     *
-     * @param name Output variable name
-     * @param x   Input variable
-     * @return Output variable
-     */
-    public SDVariable asinh(String name, SDVariable x) {
-        SDVariable result = functionFactory.asinh(x);
-        return updateVariableNameAndReference(result, name);
-    }
-
-    /**
-     * Elementwise atanh (inverse hyperbolic tangent) function: out = atanh(x)
-     *
-     * @param x   Input variable
-     * @return Output variable
-     */
-    public SDVariable atanh(SDVariable x) {
-        return atanh(null, x);
-    }
-
-    /**
-     * Elementwise atanh (inverse hyperbolic tangent) function: out = atanh(x)
-     *
-     * @param name Output variable name
-     * @param x   Input variable
-     * @return Output variable
-     */
-    public SDVariable atanh(String name, SDVariable x) {
-        SDVariable result = functionFactory.atanh(x);
-        return updateVariableNameAndReference(result, name);
-    }
-
-    /**
-     * Elementwise exponent function: out = exp(x) = 2.71828...^x
-     *
-     * @param x   Input variable
-     * @return Output variable
-     */
-    public SDVariable exp(SDVariable x) {
-        return exp(null, x);
-    }
-
-    /**
-     * Elementwise exponent function: out = exp(x) = 2.71828...^x
-     *
-     * @param name Output variable name
-     * @param x   Input variable
-     * @return Output variable
-     */
-    public SDVariable exp(String name, SDVariable x) {
-        SDVariable result = functionFactory.exp(x);
-        return updateVariableNameAndReference(result, name);
-    }
-
-
-    /**
-     * Element-wise reciprocal (inverse) of square root: out = 1.0 / sqrt(x)
-     *
-     * @param x   Input variable
-     * @return Output variable
-     */
-    public SDVariable rsqrt(SDVariable x) {
-        return rsqrt(null, x);
-    }
-
-    /**
-     * Element-wise reciprocal (inverse) of square root: out = 1.0 / sqrt(x)
-     *
-     * @param name Output variable name
-     * @param x   Input variable
-     * @return Output variable
-     */
-    public SDVariable rsqrt(String name, SDVariable x) {
-        SDVariable result = functionFactory.rsqrt(x);
-        return updateVariableNameAndReference(result, name);
-    }
-
-    /**
-     * Elementwise 1.0 - exponent function: out = 1.0 - exp(x) = 1.0 - 2.71828...^x
-     *
-     * @param x   Input variable
-     * @return Output variable
-     */
-    public SDVariable expm1(SDVariable x) {
-        return expm1(null, x);
-    }
-
-    /**
-     * Elementwise 1.0 - exponent function: out = 1.0 - exp(x) = 1.0 - 2.71828...^x
-     *
-     * @param name Output variable name
-     * @param x   Input variable
-     * @return Output variable
-     */
-    public SDVariable expm1(String name, SDVariable x) {
-        SDVariable result = functionFactory.expm1(x);
-        return updateVariableNameAndReference(result, name);
-    }
-
-    /**
-     * Elementwise natural logarithm function: out = log_e (1 + x)
-     *
-     * @param x   Input variable
-     * @return Output variable
-     */
-    public SDVariable log1p(SDVariable x) {
-        return log1p(null, x);
-    }
-
-    /**
-     * Elementwise natural logarithm function: out = log_e (1 + x)
-     *
-     * @param name Output variable name
-     * @param x   Input variable
-     * @return Output variable
-     */
-    public SDVariable log1p(String name, SDVariable x) {
-        SDVariable result = functionFactory.log1p(x);
-        return updateVariableNameAndReference(result, name);
-    }
-
-    /**
-     * Elementwise round function: out = round(x).
-     * Rounds (up or down depending on value) to the nearest integer value.
-     *
-     * @param x   Input variable
-     * @return Output variable
-     */
-    public SDVariable round(SDVariable x) {
-        return round(null, x);
-    }
-
-    /**
-     * Element-wise round function: out = round(x).
-     * Rounds (up or down depending on value) to the nearest integer value.
-     *
-     * @param name Output variable name
-     * @param x   Input variable
-     * @return Output variable
-     */
-    public SDVariable round(String name, SDVariable x) {
-        SDVariable result = functionFactory.round(x);
-        return updateVariableNameAndReference(result, name);
-    }
 
     /**
      * Is infinite operation: elementwise isInfinite(x)<br>
@@ -4659,7 +3396,7 @@ public class SameDiff {
      * @return Output SDVariable with values 0 and 1 based on where the condition is satisfied
      */
     public SDVariable isInfinite(String name, SDVariable x) {
-        SDVariable result = functionFactory.isInfinite(x);
+        SDVariable result = f().isInfinite(x);
         return updateVariableNameAndReference(result, name);
     }
 
@@ -4685,7 +3422,7 @@ public class SameDiff {
      * @return Output SDVariable with values 0 and 1 based on where the condition is satisfied
      */
     public SDVariable isNaN(String name, SDVariable x) {
-        SDVariable result = functionFactory.isNaN(x);
+        SDVariable result = f().isNaN(x);
         return updateVariableNameAndReference(result, name);
     }
 
@@ -4711,7 +3448,7 @@ public class SameDiff {
      * @return Output SDVariable with values 0 and 1 based on where the condition is satisfied
      */
     public SDVariable isFinite(String name, SDVariable x) {
-        SDVariable result = functionFactory.isFinite(x);
+        SDVariable result = f().isFinite(x);
         return updateVariableNameAndReference(result, name);
     }
 
@@ -4742,59 +3479,6 @@ public class SameDiff {
     }
 
     /**
-     * Is the array non decreasing?<br>
-     * An array is non-decreasing if for every valid i, x[i] <= x[i+1]. For Rank 2+ arrays, values are compared
-     * in 'c' (row major) order
-     *
-     * @param x Input variable
-     * @return Scalar variable with value 1 if non-decreasing, or 0 otherwise
-     */
-    public SDVariable isNonDecreasing(SDVariable x) {
-        return isNonDecreasing(null, x);
-    }
-
-    /**
-     * Is the array non decreasing?<br>
-     * An array is non-decreasing if for every valid i, x[i] <= x[i+1]. For Rank 2+ arrays, values are compared
-     * in 'c' (row major) order
-     *
-     * @param name Output name
-     * @param x   Input variable
-     * @return Scalar variable with value 1 if non-decreasing, or 0 otherwise
-     */
-    public SDVariable isNonDecreasing(String name, SDVariable x) {
-        SDVariable result = functionFactory.isNonDecreasing(x);
-        return updateVariableNameAndReference(result, name);
-    }
-
-    /**
-     * Is the array strictly increasing?<br>
-     * An array is strictly increasing if for every valid i, x[i] < x[i+1]. For Rank 2+ arrays, values are compared
-     * in 'c' (row major) order
-     *
-     * @param x Input variable
-     * @return Scalar variable with value 1 if strictly increasing, or 0 otherwise
-     */
-    public SDVariable isStrictlyIncreasing(SDVariable x) {
-        return isStrictlyIncreasing(null, x);
-
-    }
-
-    /**
-     * Is the array strictly increasing?<br>
-     * An array is strictly increasing if for every valid i, x[i] < x[i+1]. For Rank 2+ arrays, values are compared
-     * in 'c' (row major) order
-     *
-     * @param name Output variable name
-     * @param x   Input variable
-     * @return Scalar variable with value 1 if strictly increasing, or 0 otherwise
-     */
-    public SDVariable isStrictlyIncreasing(String name, SDVariable x) {
-        SDVariable result = functionFactory.isStrictlyIncreasing(x);
-        return updateVariableNameAndReference(result, name);
-    }
-
-    /**
      * Is the director a numeric tensor? In the current version of ND4J/SameDiff, this always returns true/1
      *
      * @param x Input variable
@@ -4812,7 +3496,7 @@ public class SameDiff {
      * @return Scalar variable with value 1
      */
     public SDVariable isNumericTensor(String name, SDVariable x) {
-        SDVariable result = functionFactory.isNumericTensor(x);
+        SDVariable result = f().isNumericTensor(x);
         return updateVariableNameAndReference(result, name);
     }
 
@@ -4877,52 +3561,6 @@ public class SameDiff {
     }
 
     /**
-     * Element-wise logarithm function (base e - natural logarithm): out = log(x)
-     *
-     * @param x Input variable
-     * @return Output variable
-     */
-    public SDVariable log(SDVariable x) {
-        return log(null, x);
-    }
-
-    /**
-     * Element-wise logarithm function (base e - natural logarithm): out = log(x)
-     *
-     * @param name Output variable name
-     * @param x   Input variable
-     * @return Output variable
-     */
-    public SDVariable log(String name, SDVariable x) {
-        SDVariable result = functionFactory.log(x);
-        return updateVariableNameAndReference(result, name);
-    }
-
-    /**
-     * Element-wise logarithm function (with specified base): out = log_{base}(x)
-     *
-     * @param in   Input variable
-     * @param base Logarithm base
-     * @return Output variable
-     */
-    public SDVariable log(SDVariable in, double base) {
-        return log(null, in, base);
-    }
-
-    /**
-     * Element-wise logarithm function (with specified base): out = log_{base}(x)
-     *
-     * @param name Name of the output variable
-     * @param in   Input variable
-     * @param base Logarithm base
-     * @return Output variable
-     */
-    public SDVariable log(String name, SDVariable in, double base) {
-        SDVariable ret = f().log(in, base);
-        return updateVariableNameAndReference(ret, name);
-    }
-
-    /**
      * Log-sum-exp reduction (optionally along dimension).
      * Computes log(sum(exp(x))
      *
@@ -4948,339 +3586,6 @@ public class SameDiff {
         return updateVariableNameAndReference(ret, name);
     }
 
-    /**
-     * Element-wise cube function: out = x^3
-     *
-     * @param x Input variable
-     * @return Output variable
-     */
-    public SDVariable cube(SDVariable x) {
-        return cube(null, x);
-    }
-
-    /**
-     * Element-wise cube function: out = x^3
-     *
-     * @param name Output variable name
-     * @param x   Input variable
-     * @return Output variable
-     */
-    public SDVariable cube(String name, SDVariable x) {
-        SDVariable result = functionFactory.cube(x);
-        return updateVariableNameAndReference(result, name);
-    }
-
-
-    /**
-     * Element-wise power function: out = x^value
-     *
-     * @param x    Input variable
-     * @param value Power to raise each element to
-     * @return Output variable
-     */
-    public SDVariable pow(SDVariable x, double value) {
-        return pow(null, x, value);
-    }
-
-    /**
-     * Element-wise power function: out = x^value
-     *
-     * @param name  Output variable name
-     * @param x    Input variable
-     * @param value Power to raise each element to
-     * @return Output variable
-     */
-    public SDVariable pow(String name, SDVariable x, double value) {
-        SDVariable result = functionFactory.pow(x, value);
-        return updateVariableNameAndReference(result, name);
-    }
-
-    /**
-     * Element-wise (broadcastable) power function: out = x[i]^y[i]
-     *
-     * @param x    Input variable
-     * @param y    Power
-     * @return Output variable
-     */
-    public SDVariable pow(SDVariable x, SDVariable y) {
-        return pow(null, x, y);
-    }
-
-    /**
-     * Element-wise (broadcastable) power function: out = x[i]^y[i]
-     *
-     * @param name  Output variable name
-     * @param x    Input variable
-     * @param y    Power
-     * @return Output variable
-     */
-    public SDVariable pow(String name, SDVariable x, SDVariable y) {
-        SDVariable result = functionFactory.pow(x, y);
-        return updateVariableNameAndReference(result, name);
-    }
-
-    /**
-     * Element-wise square root function: out = sqrt(x)
-     *
-     * @param x Input variable
-     * @return Output variable
-     */
-    public SDVariable sqrt(SDVariable x) {
-        return sqrt(null, x);
-    }
-
-    /**
-     * Element-wise square root function: out = sqrt(x)
-     *
-     * @param name Output variable name
-     * @param x   Input variable
-     * @return Output variable
-     */
-    public SDVariable sqrt(String name, SDVariable x) {
-        SDVariable result = functionFactory.sqrt(x);
-        return updateVariableNameAndReference(result, name);
-    }
-
-    /**
-     * Element-wise square function: out = x^2
-     *
-     * @param x Input variable
-     * @return Output variable
-     */
-    public SDVariable square(SDVariable x) {
-        return square(null, x);
-    }
-
-    /**
-     * Element-wise square function: out = x^2
-     *
-     * @param name Output variable name
-     * @param x   Input variable
-     * @return Output variable
-     */
-    public SDVariable square(String name, SDVariable x) {
-        SDVariable result = functionFactory.square(x);
-        return updateVariableNameAndReference(result, name);
-    }
-
-    /**
-     * Element-wise floor function: out = floor(x).
-     * Rounds each value down to the nearest integer value (if not already an integer)
-     *
-     * @param x Input variable
-     * @return Output variable
-     */
-    public SDVariable floor(SDVariable x) {
-        return floor(null, x);
-    }
-
-    /**
-     * Element-wise floor function: out = floor(x).
-     * Rounds each value down to the nearest integer value (if not already an integer)
-     *
-     * @param name Output variable name
-     * @param x   Input variable
-     * @return Output variable
-     */
-    public SDVariable floor(String name, SDVariable x) {
-        SDVariable result = functionFactory.floor(x);
-        return updateVariableNameAndReference(result, name);
-    }
-
-    /**
-     * Element-wise ceiling function: out = ceil(x).
-     * Rounds each value up to the nearest integer value (if not already an integer)
-     *
-     * @param x Input variable
-     * @return Output variable
-     */
-    public SDVariable ceil(SDVariable x) {
-        return ceil(null, x);
-    }
-
-    /**
-     * Element-wise ceiling function: out = ceil(x).
-     * Rounds each value up to the nearest integer value (if not already an integer)
-     *
-     * @param name Name of the output variable
-     * @param x Input variable
-     * @return Output variable
-     */
-    public SDVariable ceil(String name, SDVariable x) {
-        SDVariable ret = f().ceil(x);
-        return updateVariableNameAndReference(ret, name);
-    }
-
-    /**
-     * Element-wise clipping function:<br>
-     * out[i] = in[i] if in[i] >= clipValueMin and in[i] <= clipValueMax<br>
-     * out[i] = clipValueMin if in[i] < clipValueMin<br>
-     * out[i] = clipValueMax if in[i] > clipValueMax<br>
-     * @param x            Input variable
-     * @param clipValueMin Minimum value for clipping
-     * @param clipValueMax Maximum value for clipping
-     * @return Output variable
-     */
-    public SDVariable clipByValue(SDVariable x, double clipValueMin, double clipValueMax) {
-        return clipByValue(null, x, clipValueMin, clipValueMax);
-    }
-
-    /**
-     * Element-wise clipping function:<br>
-     * out[i] = in[i] if in[i] >= clipValueMin and in[i] <= clipValueMax<br>
-     * out[i] = clipValueMin if in[i] < clipValueMin<br>
-     * out[i] = clipValueMax if in[i] > clipValueMax<br>
-     *
-     * @param name         Name of the output variable
-     * @param x            Input variable
-     * @param clipValueMin Minimum value for clipping
-     * @param clipValueMax Maximum value for clipping
-     * @return Output variable
-     */
-    public SDVariable clipByValue(String name, SDVariable x, double clipValueMin, double clipValueMax) {
-        SDVariable ret = f().clipByValue(x, clipValueMin, clipValueMax);
-        return updateVariableNameAndReference(ret, name);
-    }
-
-    /**
-     * Clipping by L2 norm<br>
-     * if l2Norm(x) < clipValue, then input is returned unmodifed<br>
-     * Otherwise, out[i] = in[i] * clipValue / l2Norm(in)
-     *
-     * @param x         Input variable
-     * @param clipValue Clipping value (maximum l2 norm)
-     * @return Output variable
-     */
-    public SDVariable clipByNorm(SDVariable x, double clipValue) {
-        return clipByNorm(null, x, clipValue);
-    }
-
-    /**
-     * Clipping by L2 norm<br>
-     * if l2Norm(x) < clipValue, then input is returned unmodifed<br>
-     * Otherwise, out[i] = in[i] * clipValue / l2Norm(in)
-     *
-     * @param name      Name of the output variable
-     * @param x         Input variable
-     * @param clipValue Clipping value (maximum l2 norm)
-     * @return Output variable
-     */
-    public SDVariable clipByNorm(String name, SDVariable x, double clipValue) {
-        SDVariable ret = f().clipByNorm(x, clipValue);
-        return updateVariableNameAndReference(ret, name);
-    }
-
-    /**
-     * Clipping by L2 norm, optionally along dimension(s)<br>
-     * if l2Norm(x,dimension) < clipValue, then input is returned unmodifed<br>
-     * Otherwise, out[i] = in[i] * clipValue / l2Norm(in, dimensions) where each value is clipped according
-     * to the corresponding l2Norm along the specified dimensions
-     *
-     * @param x          Input variable
-     * @param clipValue  Clipping value (maximum l2 norm)
-     * @param dimensions If not specified, all dimensions are used
-     * @return Output variable
-     */
-    public SDVariable clipByNorm(SDVariable x, double clipValue, int... dimensions) {
-        return clipByNorm(null, x, clipValue, dimensions);
-    }
-
-    /**
-     * Clipping by L2 norm, optionally along dimension(s)<br>
-     * if l2Norm(x,dimension) < clipValue, then input is returned unmodifed<br>
-     * Otherwise, out[i] = in[i] * clipValue / l2Norm(in, dimensions) where each value is clipped according
-     * to the corresponding l2Norm along the specified dimensions
-     *
-     * @param name       Output variable name
-     * @param x          Input variable
-     * @param clipValue  Clipping value (maximum l2 norm)
-     * @param dimensions If not specified, all dimensions are used
-     * @return Output variable
-     */
-    public SDVariable clipByNorm(String name, SDVariable x, double clipValue, int... dimensions) {
-        SDVariable ret = f().clipByNorm(x, clipValue, dimensions);
-        return updateVariableNameAndReference(ret, name);
-    }
-
-    /**
-     * Element-wise rectified linear function with specified cutoff:<br>
-     * out[i] = in[i] if in[i] >= cutoff
-     * out[i] = 0 otherwise
-     *
-     * @param x     Input variable
-     * @param cutoff Cutoff value. Usually 0
-     * @return Output variable
-     */
-    public SDVariable relu(SDVariable x, double cutoff) {
-        return relu(null, x, cutoff);
-    }
-
-    /**
-     * Element-wise rectified linear function with specified cutoff:<br>
-     * out[i] = in[i] if in[i] >= cutoff
-     * out[i] = 0 otherwise
-     *
-     * @param name   Output variable name
-     * @param x     Input variable
-     * @param cutoff Cutoff value. Usually 0
-     * @return Output variable
-     */
-    public SDVariable relu(String name, SDVariable x, double cutoff) {
-        SDVariable result = functionFactory.relu(x, cutoff);
-        return updateVariableNameAndReference(result, name);
-    }
-
-    /**
-     * Element-wise "rectified linear 6" function with specified cutoff:<br>
-     * out[i] = min(max(in, cutoff), 6)
-     *
-     * @param x     Input variable
-     * @param cutoff Cutoff value. Usually 0
-     * @return Output variable
-     */
-    public SDVariable relu6(SDVariable x, double cutoff) {
-        return relu6(null, x, cutoff);
-    }
-
-    /**
-     * Element-wise "rectified linear 6" function with specified cutoff:<br>
-     * out[i] = min(max(in, cutoff), 6)
-     *
-     * @param name   Output variable name
-     * @param x     Input variable
-     * @param cutoff Cutoff value. Usually 0
-     * @return Output variable
-     */
-    public SDVariable relu6(String name, SDVariable x, double cutoff) {
-        SDVariable result = functionFactory.relu6(x, cutoff);
-        return updateVariableNameAndReference(result, name);
-    }
-
-    /**
-     * GELU activation function - Gaussian Error Linear Units<br>
-     * For more details, see <i>Gaussian Error Linear Units (GELUs)</i> - <a href="https://arxiv.org/abs/1606.08415">https://arxiv.org/abs/1606.08415</a>
-     * This method uses the sigmoid approximation
-     *
-     * @param x Input
-     * @return Output variable - GELU applied to the input
-     */
-    public SDVariable gelu(SDVariable x) {
-        return gelu(null, x);
-    }
-
-    /**
-     * GELU activation function - Gaussian Error Linear Units<br>
-     * For more details, see <i>Gaussian Error Linear Units (GELUs)</i> - <a href="https://arxiv.org/abs/1606.08415">https://arxiv.org/abs/1606.08415</a>
-     * This method uses the sigmoid approximation
-     *
-     * @param name Name of the output variable. May be null.
-     * @param x    Input
-     * @return Output variable - GELU applied to the input
-     */
-    public SDVariable gelu(String name, SDVariable x) {
-        SDVariable ret = f().gelu(x, false);    //Defaults to si
-        return updateVariableNameAndReference(ret, name);
-    }
 
     /**
      * Softmax activation
@@ -5299,7 +3604,7 @@ public class SameDiff {
      * @return Output variable
      */
     public SDVariable softmax(String name, SDVariable x) {
-        SDVariable result = functionFactory.softmax(x);
+        SDVariable result = f().softmax(x);
         return updateVariableNameAndReference(result, name);
     }
 
@@ -5323,34 +3628,6 @@ public class SameDiff {
      */
     public SDVariable logSoftmax(String name, SDVariable x) {
         SDVariable ret = f().logSoftmax(x);
-        return updateVariableNameAndReference(ret, name);
-    }
-
-    /**
-     * Element-wise SeLU function - Scaled exponential Lineal Unit: see <a href="https://arxiv.org/abs/1706.02515">Self-Normalizing Neural Networks</a>
-     * <br>
-     * out[i] = scale * alpha * (exp(in[i])-1) if in[i]>0, or 0 if in[i] <= 0<br>
-     * Uses default lcale and alpha values.
-     *
-     * @param x Input variable
-     * @return Output variable
-     */
-    public SDVariable selu(SDVariable x) {
-        return selu(null, x);
-    }
-
-    /**
-     * Element-wise SeLU function - Scaled exponential Lineal Unit: see <a href="https://arxiv.org/abs/1706.02515">Self-Normalizing Neural Networks</a>
-     * <br>
-     * out[i] = scale * alpha * (exp(in[i])-1) if in[i]>0, or 0 if in[i] <= 0<br>
-     * Uses default lcale and alpha values.
-     *
-     * @param name Name of the output variable
-     * @param x   Input variable
-     * @return Output variable
-     */
-    public SDVariable selu(String name, SDVariable x) {
-        SDVariable ret = f().selu(x);
         return updateVariableNameAndReference(ret, name);
     }
 
@@ -5422,114 +3699,6 @@ public class SameDiff {
      */
     public SDVariable mergeAvg(String name, SDVariable... inputs) {
         SDVariable ret = f().mergeAvg(inputs);
-        return updateVariableNameAndReference(ret, name);
-    }
-
-    /**
-     * @see #batchToSpace(String, SDVariable, int[], int[][])
-     */
-    public SDVariable batchToSpace(SDVariable x, int[] blocks, int[][] crops) {
-        return batchToSpace(null, x, blocks, crops);
-    }
-
-    /**
-     * Convolution 2d layer batch to space operation on 4d input.
-     * Reduces input batch dimension by rearranging data into a larger spatial dimensions
-     *
-     * @param name   Output variable name
-     * @param x     Input variable. 4d input
-     * @param blocks Block size, in the height/width dimension
-     * @param crops  Optional 2d int[] array: values [[crop top, crop bottom], [crop left, crop right]]
-     * @return Output variable
-     * @see #spaceToBatch(String, SDVariable, int[], int[][])
-     */
-    public SDVariable batchToSpace(String name, SDVariable x, int[] blocks, int[][] crops) {
-        SDVariable ret = f().batchToSpace(x, blocks, crops);
-        return updateVariableNameAndReference(ret, name);
-    }
-
-
-    /**
-     * Convolution 2d layer batch to space operation on 4d input.<br>
-     * Reduces input channels dimension by rearranging data into a larger spatial dimensions<br>
-     * Example: if input has shape [mb, 8, 2, 2] and block size is 2, then output size is [mb, 8/(2*2), 2*2, 2*2]
-     * = [mb, 2, 4, 4]
-     *
-     * @param x         the input to depth to space pooling 2d operation - 4d activations in NCHW format
-     *                   (shape [minibatch, channels, height, width]) or NHWC format (shape [minibatch, height, width, channels])
-     * @param blockSize  Block size, in the height/width dimension
-     * @param dataFormat Data format: "NCHW" or "NHWC"
-     * @return Output variable
-     */
-    public SDVariable depthToSpace(SDVariable x, int blockSize, String dataFormat) {
-        return depthToSpace(null, x, blockSize, dataFormat);
-    }
-
-    /**
-     * Convolution 2d layer batch to space operation on 4d input.<br>
-     * Reduces input channels dimension by rearranging data into a larger spatial dimensions<br>
-     * Example: if input has shape [mb, 8, 2, 2] and block size is 2, then output size is [mb, 8/(2*2), 2*2, 2*2]
-     * = [mb, 2, 4, 4]
-     *
-     * @param name       Output variable name
-     * @param x         the input to depth to space pooling 2d operation - 4d activations in NCHW format
-     *                   (shape [minibatch, channels, height, width]) or NHWC format (shape [minibatch, height, width, channels])
-     * @param blockSize  Block size, in the height/width dimension
-     * @param dataFormat Data format: "NCHW" or "NHWC"
-     * @return Output variable
-     * @see #depthToSpace(String, SDVariable, int, String)
-     */
-    public SDVariable depthToSpace(String name, SDVariable x, int blockSize, String dataFormat) {
-        SDVariable ret = f().depthToSpace(x, blockSize, dataFormat);
-        return updateVariableNameAndReference(ret, name);
-    }
-
-    /**
-     * @see #spaceToBatch(String, SDVariable, int[], int[][])
-     */
-    public SDVariable spaceToBatch(SDVariable x, int[] blocks, int[][] padding) {
-        return spaceToBatch(null, x, blocks, padding);
-    }
-
-    /**
-     * Convolution 2d layer space to batch operation on 4d input.
-     * Increases input batch dimension by rearranging data from spatial dimensions into batch dimension
-     *
-     * @param name   Output variable name
-     * @param x     Input variable. 4d input
-     * @param blocks Block size, in the height/width dimension
-     * @param padding Optional 2d int[] array for padding the result: values [[pad top, pad bottom], [pad left, pad right]]
-     * @return Output variable
-     * @see #batchToSpace(String, SDVariable, int[], int[][])
-     */
-    public SDVariable spaceToBatch(String name, SDVariable x, int[] blocks, int[][] padding) {
-        SDVariable ret = f().spaceToBatch(x, blocks, padding);
-        return updateVariableNameAndReference(ret, name);
-    }
-
-    /**
-     * @see #spaceToDepth(String, SDVariable, int, String)
-     */
-    public SDVariable spaceToDepth(SDVariable x, int blockSize, String dataFormat) {
-        return spaceToDepth(null, x, blockSize, dataFormat);
-    }
-
-    /**
-     * Convolution 2d layer space to depth operation on 4d input.<br>
-     * Increases input channels (reduced spatial dimensions) by rearranging data into a larger channels dimension<br>
-     * Example: if input has shape [mb, 2, 4, 4] and block size is 2, then output size is [mb, 8/(2*2), 2*2, 2*2]
-     * = [mb, 2, 4, 4]
-     *
-     * @param name       Output variable name
-     * @param x         the input to depth to space pooling 2d operation - 4d activations in NCHW format
-     *                   (shape [minibatch, channels, height, width]) or NHWC format (shape [minibatch, height, width, channels])
-     * @param blockSize  Block size, in the height/width dimension
-     * @param dataFormat Data format: "NCHW" or "NHWC"
-     * @return Output variable
-     * @see #depthToSpace(String, SDVariable, int, String)
-     */
-    public SDVariable spaceToDepth(String name, SDVariable x, int blockSize, String dataFormat) {
-        SDVariable ret = f().spaceToDepth(x, blockSize, dataFormat);
         return updateVariableNameAndReference(ret, name);
     }
 
@@ -5857,38 +4026,6 @@ public class SameDiff {
 
 
     /**
-     * TODO doc string
-     *
-     * @param df
-     * @param weights
-     * @param strides
-     * @param rates
-     * @param isSameMode
-     * @return
-     */
-    public SDVariable dilation2D(SDVariable df, SDVariable weights, int[] strides,
-                                 int[] rates, boolean isSameMode) {
-        return dilation2D(null, df, weights, strides, rates, isSameMode);
-    }
-
-    /**
-     * TODO doc string
-     *
-     * @param name
-     * @param df
-     * @param weights
-     * @param strides
-     * @param rates
-     * @param isSameMode
-     * @return
-     */
-    public SDVariable dilation2D(String name, SDVariable df, SDVariable weights, int[] strides,
-                                 int[] rates, boolean isSameMode) {
-        SDVariable ret = f().dilation2D(df, weights, strides, rates, isSameMode);
-        return updateVariableNameAndReference(ret, name);
-    }
-
-    /**
      * Returns the shape of the specified SDVariable as a 1D SDVariable
      *
      * @param input Input variable
@@ -5975,25 +4112,6 @@ public class SameDiff {
         return updateVariableNameAndReference(ret, name);
     }
 
-    /**
-     * @see #cross(String, SDVariable, SDVariable)
-     */
-    public SDVariable cross(SDVariable a, SDVariable b) {
-        return cross(null, a, b);
-    }
-
-    /**
-     * Returns the pair-wise cross product of equal size arrays a and b: a x b = ||a||x||b|| sin(theta).
-     * Can take rank 1 or above inputs (of equal shapes), but note that the last dimension must have dimension 3
-     *
-     * @param a First input
-     * @param b Second input
-     * @return Element-wise cross product
-     */
-    public SDVariable cross(String name, SDVariable a, SDVariable b) {
-        SDVariable ret = f().cross(a, b);
-        return updateVariableNameAndReference(ret, name);
-    }
 
     /**
      * @see #gather(String, SDVariable, int[], int)
@@ -6160,128 +4278,6 @@ public class SameDiff {
         return updateVariableNamesAndReferences(ret, names);
     }
 
-    /**
-     * Element-wise Gaussian error function - out = erf(in)
-     *
-     * @param x Input variable
-     * @return Output variable
-     */
-    public SDVariable erf(SDVariable x) {
-        return erf(null, x);
-    }
-
-    /**
-     * Element-wise Gaussian error function - out = erf(in)
-     *
-     * @param name Output variable name
-     * @param x   Input variable
-     * @return Output variable
-     */
-    public SDVariable erf(String name, SDVariable x) {
-        SDVariable ret = f().erf(x);
-        return updateVariableNameAndReference(ret, name);
-    }
-
-    /**
-     * Element-wise complementary Gaussian error function - out = erfc(in) = 1 - erf(in)
-     *
-     * @param x Input variable
-     * @return Output variable
-     */
-    public SDVariable erfc(SDVariable x) {
-        return erfc(null, x);
-    }
-
-    /**
-     * Element-wise complementary Gaussian error function - out = erfc(in) = 1 - erf(in)
-     *
-     * @param name Name of the output variable
-     * @param x   Input variable
-     * @return Output variable
-     */
-    public SDVariable erfc(String name, SDVariable x) {
-        SDVariable ret = f().erfc(x);
-        return updateVariableNameAndReference(ret, name);
-    }
-
-    /**
-     * @see #diag(String, SDVariable)
-     */
-    public SDVariable diag(SDVariable x) {
-        return diag(null, x);
-    }
-
-    /**
-     * Returns an output variable with diagonal values equal to the specified values; off-diagonal values will be set to 0<br>
-     * For example, if input = [1,2,3], then output is given by:<br>
-     * [ 1, 0, 0]<br>
-     * [ 0, 2, 0]<br>
-     * [ 0, 0, 3]<br>
-     * <br>
-     * Higher input ranks are also supported: if input has shape [a,...,R-1] then output[i,...,k,i,...,k] = input[i,...,k].
-     * i.e., for input rank R, output has rank 2R
-     *
-     * @param name Name of the output variable
-     * @param x   Input variable
-     * @return Output variable
-     */
-    public SDVariable diag(String name, SDVariable x) {
-        SDVariable ret = f().diag(x);
-        return updateVariableNameAndReference(ret, name);
-    }
-
-    /**
-     * @see #diagPart(String, SDVariable)
-     */
-    public SDVariable diagPart(SDVariable x) {
-        return diagPart(null, x);
-    }
-
-    /**
-     * Extract the diagonal part from the input array.<br>
-     * If input is<br>
-     * [ 1, 0, 0]<br>
-     * [ 0, 2, 0]<br>
-     * [ 0, 0, 3]<br>
-     * then output is [1, 2, 3].<br>
-     * Supports higher dimensions: in general, out[i,...,k] = in[i,...,k,i,...,k]
-     *
-     * @param x Input variable
-     * @return Diagonal part of the input
-     * @see #diag(String, SDVariable)
-     */
-    public SDVariable diagPart(String name, SDVariable x) {
-        SDVariable ret = f().diagPart(x);
-        return updateVariableNameAndReference(ret, name);
-    }
-
-    /**
-     * @see #setDiag(String, SDVariable, SDVariable)
-     */
-    public SDVariable setDiag(SDVariable in, SDVariable diag) {
-        return setDiag(null, in, diag);
-    }
-
-    /**
-     * Set the diagonal value to the specified values<br>
-     * If input is<br>
-     * [ a, b, c]<br>
-     * [ d, e, f]<br>
-     * [ g, h, i]<br>
-     * and diag = [ 1, 2, 3] then output is<br>
-     * [ 1, b, c]<br>
-     * [ d, 2, f]<br>
-     * [ g, h, 3]<br>
-     *
-     * @param name Name of the output variable
-     * @param in   Input variable
-     * @param diag Diagonal
-     * @return Output variable
-     */
-    public SDVariable setDiag(String name, SDVariable in, SDVariable diag) {
-        SDVariable ret = f().setDiag(in, diag);
-        return updateVariableNameAndReference(ret, name);
-    }
 
     /**
      * @see #oneHot(String, SDVariable, int)
@@ -6342,28 +4338,6 @@ public class SameDiff {
     }
 
     /**
-     * Element-wise reciprocal (inverse) function: out[i] = 1 / in[i]
-     *
-     * @param a Input variable
-     * @return Output variable
-     */
-    public SDVariable reciprocal(SDVariable a) {
-        return reciprocal(null, a);
-    }
-
-    /**
-     * Element-wise reciprocal (inverse) function: out[i] = 1 / in[i]
-     *
-     * @param name Name of the output variable
-     * @param a    Input variable
-     * @return Output variable
-     */
-    public SDVariable reciprocal(String name, SDVariable a) {
-        SDVariable ret = f().reciprocal(a);
-        return updateVariableNameAndReference(ret, name);
-    }
-
-    /**
      * Intended for internal/developer use
      */
     public SDVariable gradientBackwardsMarker(SDVariable x) {
@@ -6374,373 +4348,10 @@ public class SameDiff {
      * Intended for internal/developer use
      */
     public SDVariable gradientBackwardsMarker(String name, SDVariable x) {
-        SDVariable result = functionFactory.gradientBackwardsMarker(x);
+        SDVariable result = f().gradientBackwardsMarker(x);
         return updateVariableNameAndReference(result, name);
     }
 
-    /**
-     * Element-wise hard tanh function:<br>
-     * out[i] = -1 if in[i] <= -1<br>
-     * out[1] = in[i] if -1 < in[i] < 1<br>
-     * out[i] = 1 if in[i] >= 1<br>
-     *
-     * @param in Input variable
-     * @return Output variable
-     */
-    public SDVariable hardTanh(SDVariable in) {
-        return hardTanh(null, in);
-    }
-
-    /**
-     * Element-wise hard tanh function:<br>
-     * out[i] = -1 if in[i] <= -1<br>
-     * out[1] = in[i] if -1 < in[i] < 1<br>
-     * out[i] = 1 if in[i] >= 1<br>
-     *
-     * @param name Output variable name
-     * @param in   Input variable
-     * @return Output variable
-     */
-    public SDVariable hardTanh(String name, SDVariable in) {
-        SDVariable result = functionFactory.hardTanh(in);
-        return updateVariableNameAndReference(result, name);
-    }
-
-    /**
-     * Element-wise hard sigmoid function:<br>
-     * out[i] = 0 if in[i] <= -2.5<br>
-     * out[1] = 0.2*in[i]+0.5 if -2.5 < in[i] < 2.5<br>
-     * out[i] = 1 if in[i] >= 2.5<br>
-     *
-     * @param in Input variable
-     * @return Output variable
-     */
-    public SDVariable hardSigmoid(SDVariable in) {
-        return hardSigmoid(null, in);
-    }
-
-    /**
-     * Element-wise hard sigmoid function:<br>
-     * out[i] = 0 if in[i] <= -2.5<br>
-     * out[1] = 0.2*in[i]+0.5 if -2.5 < in[i] < 2.5<br>
-     * out[i] = 1 if in[i] >= 2.5<br>
-     *
-     * @param name Name of the output variable
-     * @param in    Input variable
-     * @return Output variable
-     */
-    public SDVariable hardSigmoid(String name, SDVariable in) {
-        SDVariable ret = f().hardSigmoid(in);
-        return updateVariableNameAndReference(ret, name);
-    }
-
-    /**
-     * Derivative (dOut/dIn) of the element-wise hard Tanh function - {@link #hardTanh(SDVariable)}
-     *
-     * @param x Input
-     * @return Output variable
-     */
-    public SDVariable hardTanhDerivative(SDVariable x) {
-        return hardTanhDerivative(null, x);
-    }
-
-    /**
-     * Derivative (dOut/dIn) of the element-wise hard Tanh function - {@link #hardTanh(SDVariable)}
-     *
-     * @param name Output variable name
-     * @param x   Input
-     * @return Output variable
-     */
-    public SDVariable hardTanhDerivative(String name, SDVariable x) {
-        SDVariable result = functionFactory.hardTanhDerivative(x);
-        return updateVariableNameAndReference(result, name);
-    }
-
-    /**
-     * Element-wise sigmoid function: out[i] = 1.0/(1+exp(-in[i]))
-     *
-     * @param x Input Variable
-     * @return Output variable
-     */
-    public SDVariable sigmoid(SDVariable x) {
-        return sigmoid(null, x);
-    }
-
-    /**
-     * Element-wise sigmoid function: out[i] = 1.0/(1+exp(-in[i]))
-     *
-     * @param name Output variable name
-     * @param x   Input Variable
-     * @return Output variable
-     */
-    public SDVariable sigmoid(String name, SDVariable x) {
-        SDVariable result = functionFactory.sigmoid(x);
-        return updateVariableNameAndReference(result, name);
-    }
-
-
-    /**
-     * Element-wise sigmoid function derivative: dL/dIn given input and dL/dOut
-     *
-     * @param x  Input Variable
-     * @param wrt Gradient at the output - dL/dOut. Must have same shape as the input
-     * @return Output variable
-     */
-    public SDVariable sigmoidDerivative(SDVariable x, SDVariable wrt) {
-        return sigmoidDerivative(null, x, wrt);
-    }
-
-    /**
-     * Element-wise sigmoid function derivative: dL/dIn given input and dL/dOut
-     *
-     * @param name Output variable name
-     * @param x   Input Variable
-     * @param wrt  Gradient at the output - dL/dOut. Must have same shape as the input
-     * @return Output variable
-     */
-    public SDVariable sigmoidDerivative(String name, SDVariable x, SDVariable wrt) {
-        SDVariable result = functionFactory
-                .sigmoidDerivative(x, wrt);
-        return updateVariableNameAndReference(result, name);
-    }
-
-    /**
-     * Element-wise sigmoid function: out[i] = log(sigmoid(in[i]))
-     *
-     * @param x Input Variable
-     * @return Output variable
-     */
-    public SDVariable logSigmoid(SDVariable x) {
-        return logSigmoid(null, x);
-    }
-
-    /**
-     * Element-wise sigmoid function: out[i] = log(sigmoid(in[i]))
-     *
-     * @param name Name of the output variable
-     * @param x   Input Variable
-     * @return Output variable
-     */
-    public SDVariable logSigmoid(String name, SDVariable x) {
-        SDVariable ret = f().logSigmoid(x);
-        return updateVariableNameAndReference(ret, name);
-    }
-
-    /**
-     * Element-wise sign (signum) function:<br>
-     * out = -1 if in < 0<br>
-     * out = 0 if in = 0<br>
-     * out = 1 if in > 0
-     *
-     * @param x Input variable
-     * @return Output variable
-     */
-    public SDVariable sign(SDVariable x) {
-        return sign(null, x);
-    }
-
-    /**
-     * Element-wise sign (signum) function:<br>
-     * out = -1 if in < 0<br>
-     * out = 0 if in = 0<br>
-     * out = 1 if in > 0
-     *
-     * @param name Output variable name
-     * @param x   Input variable
-     * @return Output variable
-     */
-    public SDVariable sign(String name, SDVariable x) {
-        SDVariable result = functionFactory.sign(x);
-        return updateVariableNameAndReference(result, name);
-    }
-
-    /**
-     * Element-wise softsign function: out = x / (abs(x) + 1)
-     *
-     * @param x Input variable
-     * @return Output variable
-     */
-    public SDVariable softsign(SDVariable x) {
-        return softsign(null, x);
-    }
-
-    /**
-     * Element-wise softsign function: out = x / (abs(x) + 1)
-     *
-     * @param name Output variable name
-     * @param x   Input variable
-     * @return Output variable
-     */
-    public SDVariable softsign(String name, SDVariable x) {
-        SDVariable result = functionFactory.softsign(x);
-        return updateVariableNameAndReference(result, name);
-    }
-
-    /**
-     * Element-wise derivative (dOut/dIn) of the softsign function {@link #softsign(SDVariable)}
-     *
-     * @param x Input variable
-     * @return Output varible
-     */
-    public SDVariable softsignDerivative(SDVariable x) {
-        return softsignDerivative(null, x);
-    }
-
-    /**
-     * Element-wise derivative (dOut/dIn) of the softsign function {@link #softsign(SDVariable)}
-     *
-     * @param name Output variable name
-     * @param x   Input variable
-     * @return Output varible
-     */
-    public SDVariable softsignDerivative(String name, SDVariable x) {
-        SDVariable result = functionFactory.softsignDerivative(x);
-        return updateVariableNameAndReference(result, name);
-    }
-
-    /**
-     * Element-wise softplus function: out = log(exp(x) + 1)
-     *
-     * @param x Input variable
-     * @return Output variable
-     */
-    public SDVariable softplus(SDVariable x) {
-        return softplus(null, x);
-    }
-
-    /**
-     * Element-wise softplus function: out = log(exp(x) + 1)
-     *
-     * @param name Output variable name
-     * @param x   Input variable
-     * @return Output variable
-     */
-    public SDVariable softplus(String name, SDVariable x) {
-        SDVariable result = functionFactory.softplus(x);
-        return updateVariableNameAndReference(result, name);
-    }
-
-    /**
-     * Element-wise "swish" function: out = x * sigmoid(b*x) with b=1.0<br>
-     * See: <a href="https://arxiv.org/abs/1710.05941">https://arxiv.org/abs/1710.05941</a>
-     *
-     * @param x Input variable
-     * @return Output variable
-     */
-    public SDVariable swish(SDVariable x) {
-        return swish(null, x);
-    }
-
-    /**
-     * Element-wise "swish" function: out = x * sigmoid(b*x) with b=1.0<br>
-     * See: <a href="https://arxiv.org/abs/1710.05941">https://arxiv.org/abs/1710.05941</a>
-     *
-     * @param name Name of the output variable
-     * @param x   Input variable
-     * @return Output variable
-     */
-    public SDVariable swish(String name, SDVariable x) {
-        SDVariable ret = f().swish(x);
-        return updateVariableNameAndReference(ret, name);
-    }
-
-    /**
-     * Element-wise exponential linear unit (ELU) function:<br>
-     * out = x if x > 0<br>
-     * out = a * (exp(x) - 1) if x <= 0<br>
-     * with constant a = 1.0
-     * <p>
-     * See: <a href="http://arxiv.org/abs/1511.07289">http://arxiv.org/abs/1511.07289</a>
-     *
-     * @param x Input variable
-     * @return Output variable
-     */
-    public SDVariable elu(SDVariable x) {
-        return elu(null, x);
-    }
-
-    /**
-     * Element-wise exponential linear unit (ELU) function:<br>
-     * out = x if x > 0<br>
-     * out = a * (exp(x) - 1) if x <= 0<br>
-     * with constant a = 1.0
-     * <p>
-     * See: <a href="http://arxiv.org/abs/1511.07289">http://arxiv.org/abs/1511.07289</a>
-     *
-     * @param name Output variable name
-     * @param x Input variable
-     * @return Output variable
-     */
-    public SDVariable elu(String name, SDVariable x) {
-        SDVariable result = functionFactory.elu(x);
-        return updateVariableNameAndReference(result, name);
-    }
-
-    /**
-     * Element-wise derivative exponential linear unit (ELU) function, dOut/dIn given input.
-     * {@link #elu(SDVariable)}
-     *
-     * @param x Input variable
-     * @return Output variable
-     */
-    public SDVariable eluDerivative(SDVariable x) {
-        return eluDerivative(null, x);
-    }
-
-    /**
-     * Element-wise derivative exponential linear unit (ELU) function, dOut/dIn given input.
-     * {@link #elu(SDVariable)}
-     *
-     * @param name Output variable name
-     * @param x   Input variable
-     * @return Output variable
-     */
-    public SDVariable eluDerivative(String name, SDVariable x) {
-        SDVariable result = functionFactory.eluDerivative(x);
-        return updateVariableNameAndReference(result, name);
-    }
-
-    /**
-     * Element-wise leaky ReLU function:<br>
-     * out = x if x >= 0.0<br>
-     * out = alpha * x if x < cutoff<br>
-     * Alpha value is most commonly set to 0.01
-     *
-     * @param x    Input variable
-     * @param alpha Cutoff - usually 0.0
-     * @return Output variable
-     */
-    public SDVariable leakyRelu(SDVariable x, double alpha) {
-        return leakyRelu(null, x, alpha);
-    }
-
-    /**
-     * Element-wise leaky ReLU function:<br>
-     * out = x if x >= 0.0<br>
-     * out = alpha * x if x < cutoff<br>
-     * Alpha value is most commonly set to 0.01
-     *
-     * @param x    Input variable
-     * @param alpha Cutoff - usually 0.0
-     * @return Output variable
-     */
-    public SDVariable leakyRelu(String name, SDVariable x, double alpha) {
-        SDVariable result = functionFactory.leakyRelu(x, alpha);
-        return updateVariableNameAndReference(result, name);
-    }
-
-    /**
-     * Leaky ReLU derivative: dOut/dIn given input.<br>
-     * See {@link #leakyRelu(String, SDVariable, double)}
-     *
-     * @param x    Input variable
-     * @param alpha Alpha value
-     * @return Output variable
-     */
-    public SDVariable leakyReluDerivative(String name, SDVariable x, double alpha) {
-        SDVariable result = functionFactory.leakyReluDerivative(x, alpha);
-        return updateVariableNameAndReference(result, name);
-    }
 
     /**
      * Full array mean reduction operation
@@ -6791,7 +4402,7 @@ public class SameDiff {
      * @return Reduced array of rank (input rank - num dimensions)
      */
     public SDVariable mean(String name, SDVariable x, boolean keepDims, int... dimension) {
-        SDVariable result = functionFactory.mean(x, keepDims, dimension);
+        SDVariable result = f().mean(x, keepDims, dimension);
         return updateVariableNameAndReference(result, name);
     }
 
@@ -6831,7 +4442,7 @@ public class SameDiff {
      * @return Output variable: reduced array of rank (input rank - num dimensions)
      */
     public SDVariable standardDeviation(String name, SDVariable x, boolean biasCorrected, boolean keepDims, int... dimensions) {
-        SDVariable result = functionFactory.std(x, biasCorrected, keepDims, dimensions);
+        SDVariable result = f().std(x, biasCorrected, keepDims, dimensions);
         return updateVariableNameAndReference(result, name);
     }
 
@@ -6872,80 +4483,8 @@ public class SameDiff {
      * @return Output variable: reduced array of rank (input rank - num dimensions)
      */
     public SDVariable variance(String name, SDVariable x, boolean biasCorrected, boolean keepDims, int... dimensions) {
-        SDVariable result = functionFactory.variance(x, biasCorrected, keepDims, dimensions);
+        SDVariable result = f().variance(x, biasCorrected, keepDims, dimensions);
         return updateVariableNameAndReference(result, name);
-    }
-
-    /**
-     * Entropy reduction: -sum(x * log(x))
-     *
-     * @param in         Input variable
-     * @param dimensions Dimensions to reduce on (null/empty for full array)
-     * @return Output variable
-     */
-    public SDVariable entropy(SDVariable in, int... dimensions) {
-        return entropy(null, in, dimensions);
-    }
-
-    /**
-     * Entropy reduction: -sum(x * log(x))
-     *
-     * @param name       Name of the output variable
-     * @param in         Input variable
-     * @param dimensions Dimensions to reduce on (null/empty for full array)
-     * @return Output variable: reduced array of rank (input rank - num dimensions)
-     */
-    public SDVariable entropy(String name, SDVariable in, int... dimensions) {
-        SDVariable ret = f().entropy(in, dimensions);
-        return updateVariableNameAndReference(ret, name);
-    }
-
-    /**
-     * Log entropy reduction: log(-sum(x * log(x)))
-     *
-     * @param in         Input variable
-     * @param dimensions Dimensions to reduce on (null for full array)
-     * @return Output variable: reduced array of rank (input rank - num dimensions)
-     */
-    public SDVariable logEntropy(SDVariable in, int... dimensions) {
-        return logEntropy(null, in, dimensions);
-    }
-
-    /**
-     * Log entropy reduction: log(-sum(x * log(x)))
-     *
-     * @param name       Name of the output variable
-     * @param in         Input variable
-     * @param dimensions Dimensions to reduce on (null for full array)
-     * @return Output variable: reduced array of rank (input rank - num dimensions)
-     */
-    public SDVariable logEntropy(String name, SDVariable in, int... dimensions) {
-        SDVariable ret = f().logEntropy(in, dimensions);
-        return updateVariableNameAndReference(ret, name);
-    }
-
-    /**
-     * Shannon Entropy reduction: -sum(x * log2(x))
-     *
-     * @param in         Input variable
-     * @param dimensions Dimensions to reduce on (null/empty for full array)
-     * @return Output variable
-     */
-    public SDVariable shannonEntropy(SDVariable in, int... dimensions) {
-        return shannonEntropy(null, in, dimensions);
-    }
-
-    /**
-     * Shannon Entropy reduction: -sum(x * log2(x))
-     *
-     * @param name       Name of the output variable
-     * @param in         Input variable
-     * @param dimensions Dimensions to reduce on (null/empty for full array)
-     * @return Output variable: reduced array of rank (input rank - num dimensions)
-     */
-    public SDVariable shannonEntropy(String name, SDVariable in, int... dimensions) {
-        SDVariable ret = f().shannonEntropy(in, dimensions);
-        return updateVariableNameAndReference(ret, name);
     }
 
     /**
@@ -6988,7 +4527,7 @@ public class SameDiff {
      * of rank (input rank) if keepdims = true
      */
     public SDVariable sum(String name, SDVariable x, boolean keepDims, int... dimensions) {
-        SDVariable result = functionFactory.sum(x, keepDims, dimensions);
+        SDVariable result = f().sum(x, keepDims, dimensions);
         return updateVariableNameAndReference(result, name);
     }
 
@@ -7039,7 +4578,7 @@ public class SameDiff {
      * @return Output variable: reduced array of rank (input rank - num dimensions)
      */
     public SDVariable prod(String name, SDVariable x, boolean keepDims, int... dimensions) {
-        SDVariable result = functionFactory.prod(x, keepDims, dimensions);
+        SDVariable result = f().prod(x, keepDims, dimensions);
         return updateVariableNameAndReference(result, name);
     }
 
@@ -7181,7 +4720,7 @@ public class SameDiff {
      * @return Reduced array of rank (input rank - num dimensions)
      */
     public SDVariable max(String name, SDVariable x, boolean keepDims, int... dimensions) {
-        SDVariable result = functionFactory.max(x, keepDims, dimensions);
+        SDVariable result = f().max(x, keepDims, dimensions);
         return updateVariableNameAndReference(result, name);
     }
 
@@ -7308,76 +4847,6 @@ public class SameDiff {
     }
 
     /**
-     * Count zero array reduction operation, optionally along specified dimensions: out = count(x == 0)
-     *
-     * @param input      Input variable
-     * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed
-     * @return Reduced array of rank (input rank - num dimensions)
-     */
-    public SDVariable countZero(SDVariable input, int... dimensions) {
-        return countZero(null, input, dimensions);
-    }
-
-    /**
-     * Count zero array reduction operation, optionally along specified dimensions: out = count(x == 0)
-     *
-     * @param name       Name of the output variable
-     * @param input      Input variable
-     * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed
-     * @return Reduced array of rank (input rank - num dimensions)
-     */
-    public SDVariable countZero(String name, SDVariable input, int... dimensions) {
-        SDVariable res = f().countZero(input, dimensions);
-        return updateVariableNameAndReference(res, name);
-    }
-
-    /**
-     * Full array zero fraction array reduction operation, optionally along specified dimensions: out = (count(x == 0) / length(x))
-     *
-     * @param input Input variable
-     * @return Reduced array of rank 0 (scalar)
-     */
-    public SDVariable zeroFraction(SDVariable input) {
-        return zeroFraction(null, input);
-    }
-
-    /**
-     * Full array zero fraction array reduction operation, optionally along specified dimensions: out = (count(x == 0) / length(x))
-     *
-     * @param name  Name of the output variable
-     * @param input Input variable
-     * @return Reduced array of rank 0 (scalar)
-     */
-    public SDVariable zeroFraction(String name, SDVariable input) {
-        SDVariable res = f().zeroFraction(input);
-        return updateVariableNameAndReference(res, name);
-    }
-
-    /**
-     * Count non zero array reduction operation, optionally along specified dimensions: out = count(x != 0)
-     *
-     * @param input      Input variable
-     * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed
-     * @return Reduced array of rank (input rank - num dimensions)
-     */
-    public SDVariable countNonZero(SDVariable input, int... dimensions) {
-        return countNonZero(null, input, dimensions);
-    }
-
-    /**
-     * Count non zero array reduction operation, optionally along specified dimensions: out = count(x != 0)
-     *
-     * @param name       Name of the output variable
-     * @param input      Input variable
-     * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed
-     * @return Reduced array of rank (input rank - num dimensions)
-     */
-    public SDVariable countNonZero(String name, SDVariable input, int... dimensions) {
-        SDVariable res = f().countNonZero(input, dimensions);
-        return updateVariableNameAndReference(res, name);
-    }
-
-    /**
      * Minimum array reduction operation, optionally along specified dimensions. out = min(in)
      *
      * @param x         Input variable
@@ -7416,7 +4885,7 @@ public class SameDiff {
      * @return Reduced array of rank (input rank - num dimensions)
      */
     public SDVariable min(String name, SDVariable x, boolean keepDims, int... dimensions) {
-        SDVariable result = functionFactory.min(x, keepDims, dimensions);
+        SDVariable result = f().min(x, keepDims, dimensions);
         return updateVariableNameAndReference(result, name);
 
     }
@@ -7621,108 +5090,6 @@ public class SameDiff {
         return updateVariableNameAndReference(ret, name);
     }
 
-    /**
-     * @see #firstIndex(String, SDVariable, Condition, int...)
-     */
-    public SDVariable firstIndex(SDVariable in, Condition condition, int... dimensions) {
-        return firstIndex(null, in, condition, dimensions);
-    }
-
-    /**
-     * @see #firstIndex(String, SDVariable, Condition, boolean, int...)
-     */
-    public SDVariable firstIndex(SDVariable in, Condition condition, boolean keepDims, int... dimensions){
-        return firstIndex(null, in, condition, keepDims, dimensions);
-    }
-
-    /**
-     * First index reduction operation.<br>
-     * Returns a variable that contains the index of the first element that matches the specified condition (for each
-     * slice along the specified dimensions)
-     *
-     * @param name       Name of the output variable
-     * @param in         Input variable
-     * @param condition  Condition to check on input variable
-     * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed
-     * @return Reduced array of rank (input rank - num dimensions)
-     */
-    public SDVariable firstIndex(String name, SDVariable in, Condition condition, int... dimensions) {
-        return firstIndex(name, in, condition, false, dimensions);
-    }
-
-    /**
-     * First index reduction operation.<br>
-     * Returns a variable that contains the index of the first element that matches the specified condition (for each
-     * slice along the specified dimensions)<br>
-     * Note that if keepDims = true, the output variable has the same rank as the input variable,
-     * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting
-     * the mean along a dimension).<br>
-     * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:
-     * keepDims = true: [a,1,c]<br>
-     * keepDims = false: [a,c]
-     *
-     * @param name       Name of the output variable
-     * @param in         Input variable
-     * @param condition  Condition to check on input variable
-     * @param keepDims   If true: keep the dimensions that are reduced on (as length 1). False: remove the reduction dimensions
-     * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed
-     * @return Reduced array of rank (input rank - num dimensions)
-     */
-    public SDVariable firstIndex(String name, SDVariable in, Condition condition, boolean keepDims, int... dimensions) {
-        SDVariable ret = f().firstIndex(in, condition, keepDims, dimensions);
-        return updateVariableNameAndReference(ret, name);
-    }
-
-    /**
-     * @see #lastIndex(String, SDVariable, Condition, int...)
-     */
-    public SDVariable lastIndex(SDVariable in, Condition condition, int... dimensions) {
-        return lastIndex(null, in, condition, dimensions);
-    }
-
-    /**
-     * @see #lastIndex(String, SDVariable, Condition, boolean, int...)
-     */
-    public SDVariable lastIndex(SDVariable in, Condition condition, boolean keepDims, int... dimensions){
-        return lastIndex(null, in, condition, keepDims, dimensions);
-    }
-
-    /**
-     * Last index reduction operation.<br>
-     * Returns a variable that contains the index of the last element that matches the specified condition (for each
-     * slice along the specified dimensions)
-     *
-     * @param name       Name of the output variable
-     * @param in         Input variable
-     * @param condition  Condition to check on input variable
-     * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed
-     * @return Reduced array of rank (input rank - num dimensions)
-     */
-    public SDVariable lastIndex(String name, SDVariable in, Condition condition, int... dimensions) {
-        return lastIndex(name, in, condition, false, dimensions);
-    }
-
-    /**
-     * Last index reduction operation.<br>
-     * Returns a variable that contains the index of the last element that matches the specified condition (for each
-     * slice along the specified dimensions)<br>
-     * Note that if keepDims = true, the output variable has the same rank as the input variable,
-     * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting
-     * the mean along a dimension).<br>
-     * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:
-     * keepDims = true: [a,1,c]<br>
-     * keepDims = false: [a,c]
-     *
-     * @param name       Name of the output variable
-     * @param in         Input variable
-     * @param condition  Condition to check on input variable
-     * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed
-     * @return Reduced array of rank (input rank - num dimensions)
-     */
-    public SDVariable lastIndex(String name, SDVariable in, Condition condition, boolean keepDims, int... dimensions){
-        SDVariable ret = f().lastIndex(in, condition, keepDims, dimensions);
-        return updateVariableNameAndReference(ret, name);
-    }
 
     /**
      * Returns a count of the number of elements that satisfy the condition
@@ -7948,7 +5315,7 @@ public class SameDiff {
      * @see #reshape(SDVariable, int[])
      */
     public SDVariable reshape(String name, SDVariable x,SDVariable shape) {
-        SDVariable result = functionFactory.reshape(x, shape);
+        SDVariable result = f().reshape(x, shape);
         return updateVariableNameAndReference(result, name);
     }
 
@@ -8182,7 +5549,7 @@ public class SameDiff {
      * @return Output variable (transposed input)
      */
     public SDVariable transpose(String name, SDVariable x) {
-        SDVariable result = functionFactory.transpose(x);
+        SDVariable result = f().transpose(x);
         return updateVariableNameAndReference(result, name);
     }
 
@@ -8206,7 +5573,7 @@ public class SameDiff {
      * @return Output variable (permuted input)
      */
     public SDVariable permute(String name, SDVariable x, int... dimensions) {
-        SDVariable result = functionFactory.permute(x, dimensions);
+        SDVariable result = f().permute(x, dimensions);
         return updateVariableNameAndReference(result, name);
     }
 
@@ -8229,7 +5596,7 @@ public class SameDiff {
      * @see #stack(String, int, SDVariable...)
      */
     public SDVariable concat(String name, int dimension, SDVariable... inputs) {
-        SDVariable result = functionFactory.concat(dimension, inputs);
+        SDVariable result = f().concat(dimension, inputs);
         return updateVariableNameAndReference(result, name);
     }
 
@@ -8317,119 +5684,6 @@ public class SameDiff {
     }
 
     /**
-     * @see #confusionMatrix(String, SDVariable, SDVariable)
-     */
-    public SDVariable confusionMatrix(SDVariable labels, SDVariable predictions) {
-        return confusionMatrix((String) null, labels, predictions);
-    }
-
-
-    public SDVariable confusionMatrix(String name, SDVariable labels, SDVariable pred) {
-        return confusionMatrix(name, labels, pred, ConfusionMatrix.DEFAULT_DTYPE);
-    }
-
-    /**
-     * Compute the 2d confusion matrix of size [numClasses, numClasses] from a pair of labels and predictions, both of
-     * which are represented as integer values. This version assumes the number of classes is 1 + max(max(labels), max(pred))<br>
-     * For example, if labels = [0, 1, 1] and predicted = [0, 2, 1] then output is:<br>
-     * [1, 0, 0]<br>
-     * [0, 1, 1]<br>
-     * [0, 0, 0]<br>
-     *
-     * @param name   Name of the output variable
-     * @param labels Labels - 1D array of integer values representing label values
-     * @param pred   Predictions - 1D array of integer values representing predictions. Same length as labels
-     * @return Output variable (2D, shape [numClasses, numClasses})
-     */
-    public SDVariable confusionMatrix(String name, SDVariable labels, SDVariable pred, DataType dataType) {
-        SDVariable result = f().confusionMatrix(labels, pred, dataType);
-        return updateVariableNameAndReference(result, name);
-    }
-
-    /**
-     * @see #confusionMatrix(String, SDVariable, SDVariable, Integer)
-     */
-    public SDVariable confusionMatrix(SDVariable labels, SDVariable pred, Integer numClasses) {
-        return confusionMatrix(null, labels, pred, numClasses);
-    }
-
-    /**
-     * Compute the 2d confusion matrix of size [numClasses, numClasses] from a pair of labels and predictions, both of
-     * which are represented as integer values.<br>
-     * For example, if labels = [0, 1, 1], predicted = [0, 2, 1], and numClasses=4 then output is:<br>
-     * [1, 0, 0, 0]<br>
-     * [0, 1, 1, 0]<br>
-     * [0, 0, 0, 0]<br>
-     * [0, 0, 0, 0]<br>
-     *
-     * @param name       Name of the output variable
-     * @param labels     Labels - 1D array of integer values representing label values
-     * @param pred       Predictions - 1D array of integer values representing predictions. Same length as labels
-     * @param numClasses Number of classes
-     * @return Output variable (2D, shape [numClasses, numClasses})
-     */
-    public SDVariable confusionMatrix(String name, SDVariable labels, SDVariable pred, Integer numClasses) {
-        SDVariable result = f().confusionMatrix(labels, pred, numClasses);
-        return updateVariableNameAndReference(result, name);
-    }
-
-    /**
-     * @see #confusionMatrix(String, SDVariable, SDVariable, SDVariable)
-     */
-    public SDVariable confusionMatrix(SDVariable labels, SDVariable pred, SDVariable weights) {
-        return confusionMatrix(null, labels, pred, weights);
-    }
-
-    /**
-     * Compute the 2d confusion matrix of size [numClasses, numClasses] from a pair of labels and predictions, both of
-     * which are represented as integer values. This version assumes the number of classes is 1 + max(max(labels), max(pred))<br>
-     * For example, if labels = [0, 1, 1], predicted = [0, 2, 1] and weights = [1, 2, 3]
-     * [1, 0, 0]<br>
-     * [0, 3, 2]<br>
-     * [0, 0, 0]<br>
-     *
-     * @param name    Name of the output variable
-     * @param labels  Labels - 1D array of integer values representing label values
-     * @param pred    Predictions - 1D array of integer values representing predictions. Same length as labels
-     * @param weights Weights - 1D array of values (may be real/decimal) representing the weight/contribution of
-     *                each prediction. Must be same length as both labels and predictions arrays
-     * @return Output variable (2D, shape [numClasses, numClasses})
-     */
-    public SDVariable confusionMatrix(String name, SDVariable labels, SDVariable pred, SDVariable weights) {
-        SDVariable result = f().confusionMatrix(labels, pred, weights);
-        return updateVariableNameAndReference(result, name);
-    }
-
-
-    /**
-     * @see #confusionMatrix(String, SDVariable, SDVariable, Integer, SDVariable)
-     */
-    public SDVariable confusionMatrix(SDVariable labels, SDVariable pred, Integer numClasses, SDVariable weights) {
-        return confusionMatrix(null, labels, pred, numClasses, weights);
-    }
-
-    /**
-     * Compute the 2d confusion matrix of size [numClasses, numClasses] from a pair of labels and predictions, both of
-     * which are represented as integer values.<br>
-     * For example, if labels = [0, 1, 1], predicted = [0, 2, 1], numClasses = 4, and weights = [1, 2, 3]
-     * [1, 0, 0, 0]<br>
-     * [0, 3, 2, 0]<br>
-     * [0, 0, 0, 0]<br>
-     * [0, 0, 0, 0]<br>
-     *
-     * @param name    Name of the output variable
-     * @param labels  Labels - 1D array of integer values representing label values
-     * @param pred    Predictions - 1D array of integer values representing predictions. Same length as labels
-     * @param weights Weights - 1D array of values (may be real/decimal) representing the weight/contribution of
-     *                each prediction. Must be same length as both labels and predictions arrays
-     * @return Output variable (2D, shape [numClasses, numClasses})
-     */
-    public SDVariable confusionMatrix(String name, SDVariable labels, SDVariable pred, Integer numClasses, SDVariable weights) {
-        SDVariable result = f().confusionMatrix(labels, pred, numClasses, weights);
-        return updateVariableNameAndReference(result, name);
-    }
-
-    /**
      * @see #tile(String, SDVariable, int[])
      */
     public SDVariable tile(SDVariable x, int[] repeat) {
@@ -8455,7 +5709,7 @@ public class SameDiff {
      * @return Output variable
      */
     public SDVariable tile(String name, SDVariable x, int[] repeat) {
-        SDVariable result = functionFactory.tile(x, repeat);
+        SDVariable result = f().tile(x, repeat);
         return updateVariableNameAndReference(result, name);
     }
 
@@ -8479,7 +5733,7 @@ public class SameDiff {
      * @return Output variable
      */
     public SDVariable fill(String name, SDVariable shape, org.nd4j.linalg.api.buffer.DataType dataType, double value) {
-        SDVariable result = functionFactory.fill(shape, dataType, value);
+        SDVariable result = f().fill(shape, dataType, value);
         return updateVariableNameAndReference(result, name);
     }
 
@@ -8492,61 +5746,6 @@ public class SameDiff {
      */
     public SDVariable dropout(SDVariable input, double inputRetainProbability) {
         return dropout(null, input, inputRetainProbability);
-    }
-
-    /**
-     *
-     * @param input                  Input
-     * @param inputRetainProbability Probability of retaining an input (set to 0 with probability 1-p)
-     * @return
-     */
-    public SDVariable dropout(String name, SDVariable input, double inputRetainProbability) {
-        SDVariable res = f().dropout(input, inputRetainProbability);
-        return updateVariableNameAndReference(res, name);
-    }
-
-    /**
-     * @see #linear(String, SDVariable, SDVariable, SDVariable)
-     */
-    public SDVariable linear(SDVariable input, SDVariable weights, SDVariable bias) {
-        return linear(null, input, weights, bias);
-    }
-
-    /**
-     * Linear layer operation: out = mmul(in,w) + bias<br>
-     * Note that bias array is optional
-     *
-     * @param name    Name of the output variable
-     * @param input   Input data
-     * @param weights Weights variable
-     * @param bias    Optional bias variable (may be null)
-     * @return Output variable
-     */
-    public SDVariable linear(String name, SDVariable input, SDVariable weights, SDVariable bias) {
-        SDVariable res = f().xwPlusB(input, weights, bias);
-        return updateVariableNameAndReference(res, name);
-    }
-
-    /**
-     * @see #reluLayer(String, SDVariable, SDVariable, SDVariable)
-     */
-    public SDVariable reluLayer(SDVariable input, SDVariable weights, SDVariable bias) {
-        return reluLayer(null, input, weights, bias);
-    }
-
-    /**
-     * ReLU (Rectified Linear Unit) layer operation: out = relu(mmul(in,w) + bias)<br>
-     * Note that bias array is optional
-     *
-     * @param name    Name of the output variable
-     * @param input   Input data
-     * @param weights Weights variable
-     * @param bias    Optional bias variable (may be null)
-     * @return Output variable
-     */
-    public SDVariable reluLayer(String name, SDVariable input, SDVariable weights, SDVariable bias) {
-        SDVariable res = f().reluLayer(input, weights, bias);
-        return updateVariableNameAndReference(res, name);
     }
 
     /**
@@ -8585,7 +5784,7 @@ public class SameDiff {
      * @return Output variable
      */
     public SDVariable mmul(String name, SDVariable x, SDVariable y, MMulTranspose transpose) {
-        SDVariable result = functionFactory.mmul(x, y, transpose);
+        SDVariable result = f().mmul(x, y, transpose);
         return updateVariableNameAndReference(result, name);
     }
 
@@ -8621,7 +5820,7 @@ public class SameDiff {
      */
     public SDVariable[] batchMmul(String[] names, SDVariable[] matricesA, SDVariable[] matricesB,
                                   boolean transposeA, boolean transposeB) {
-        SDVariable[] result = functionFactory.batchMmul(matricesA, matricesB, transposeA, transposeB);
+        SDVariable[] result = f().batchMmul(matricesA, matricesB, transposeA, transposeB);
         return updateVariableNamesAndReferences(result, names);
     }
 
@@ -8853,7 +6052,7 @@ public class SameDiff {
      * @return Output variable
      */
     public SDVariable cosineSimilarity(String name, SDVariable x, SDVariable y, int... dimensions) {
-        SDVariable cosim = functionFactory.cosineSimilarity(x, y, dimensions);
+        SDVariable cosim = f().cosineSimilarity(x, y, dimensions);
         return updateVariableNameAndReference(cosim, name);
     }
 
@@ -8875,7 +6074,7 @@ public class SameDiff {
      * @return Output variable
      */
     public SDVariable euclideanDistance(String name, SDVariable x, SDVariable y, int... dimensions) {
-        SDVariable result = functionFactory.euclideanDistance(x, y, dimensions);
+        SDVariable result = f().euclideanDistance(x, y, dimensions);
         return updateVariableNameAndReference(result, name);
     }
 
@@ -8898,7 +6097,7 @@ public class SameDiff {
      * @return Output variable
      */
     public SDVariable manhattanDistance(String name, SDVariable x, SDVariable y, int... dimensions) {
-        SDVariable result = functionFactory.manhattanDistance(x, y, dimensions);
+        SDVariable result = f().manhattanDistance(x, y, dimensions);
         return updateVariableNameAndReference(result, name);
     }
 
@@ -8922,7 +6121,7 @@ public class SameDiff {
      * @return Output variable
      */
     public SDVariable cosineDistance(String name, SDVariable x, SDVariable y, int... dimensions) {
-        SDVariable result = functionFactory.cosineDistance(x, y, dimensions);
+        SDVariable result = f().cosineDistance(x, y, dimensions);
         return updateVariableNameAndReference(result, name);
     }
 
@@ -8945,7 +6144,7 @@ public class SameDiff {
      * @return Output variable
      */
     public SDVariable hammingDistance(String name, SDVariable x, SDVariable y, int... dimensions) {
-        SDVariable result = functionFactory.hammingDistance(x, y, dimensions);
+        SDVariable result = f().hammingDistance(x, y, dimensions);
         return updateVariableNameAndReference(result, name);
     }
 
@@ -8973,7 +6172,7 @@ public class SameDiff {
      * @return Output variable
      */
     public SDVariable jaccardDistance(String name, SDVariable x, SDVariable y, int... dimensions) {
-        SDVariable result = functionFactory.jaccardDistance(x, y, dimensions);
+        SDVariable result = f().jaccardDistance(x, y, dimensions);
         return updateVariableNameAndReference(result, name);
     }
 
@@ -8986,7 +6185,7 @@ public class SameDiff {
     }
 
     public SDVariable softmaxDerivative(String name, SDVariable x, SDVariable wrt, Integer dimension) {
-        SDVariable result = functionFactory.softmaxDerivative(x, wrt, dimension);
+        SDVariable result = f().softmaxDerivative(x, wrt, dimension);
         return updateVariableNameAndReference(result, name);
     }
 
@@ -9000,470 +6199,8 @@ public class SameDiff {
                                  SDVariable x,
                                  SDVariable y,
                                  int[][] dimensions) {
-        SDVariable result = functionFactory.tensorMmul(x, y, dimensions);
+        SDVariable result = f().tensorMmul(x, y, dimensions);
         return updateVariableNameAndReference(result, name);
-    }
-
-    /**
-     * L2 loss: 1/2 * sum(x^2)
-     * @param var  Variable to calculate L2 loss of
-     * @return L2 loss
-     */
-    public SDVariable lossL2(@NonNull SDVariable var){
-        return lossL2(null, var);
-    }
-
-    /**
-     * L2 loss: 1/2 * sum(x^2)
-     * @param name Name of the output variable
-     * @param var  Variable to calculate L2 loss of
-     * @return L2 loss
-     */
-    public SDVariable lossL2(String name, @NonNull SDVariable var){
-        SDVariable ret = f().lossL2(var);
-        return updateVariableNameAndReference(ret, name);
-    }
-
-    /**
-     * See {@link #lossAbsoluteDifference(String, SDVariable, SDVariable, SDVariable, LossReduce)}.
-     */
-    public SDVariable lossAbsoluteDifference(String name, @NonNull SDVariable label, @NonNull SDVariable predictions) {
-        return lossAbsoluteDifference(name, label, predictions, null, LossReduce.MEAN_BY_NONZERO_WEIGHT_COUNT);
-    }
-
-    /**
-     * See {@link #lossAbsoluteDifference(String, SDVariable, SDVariable, SDVariable, LossReduce)}.
-     */
-    public SDVariable lossAbsoluteDifference(String name, @NonNull SDVariable label, @NonNull SDVariable predictions, @NonNull LossReduce lossReduce) {
-        return lossAbsoluteDifference(name, label, predictions, null, lossReduce);
-    }
-
-    /**
-     * Absolute difference loss: {@code sum_i abs( label[i] - predictions[i] )
-     *
-     * @param name        Name of the operation
-     * @param label       Label array
-     * @param predictions Predictions array
-     * @param weights     Weights array. May be null. If null, a weight of 1.0 is used
-     * @param lossReduce  Reduction type for the loss. See {@link LossReduce} for more details. Default: {@link LossReduce#MEAN_BY_NONZERO_WEIGHT_COUNT}
-     * @return Loss variable
-     */
-    public SDVariable lossAbsoluteDifference(String name, @NonNull SDVariable label, @NonNull SDVariable predictions,
-                                             SDVariable weights, @NonNull LossReduce lossReduce) {
-        if(weights == null)
-            weights = this.scalar(null, 1.0);
-        SDVariable result = functionFactory.lossAbsoluteDifference(label, predictions, weights, lossReduce);
-        return updateVariableNameAndReference(result, name);
-    }
-
-
-    /**
-     * See {@link #lossCosineDistance(String, SDVariable, SDVariable, SDVariable, LossReduce, int)}.
-     */
-    public SDVariable lossCosineDistance(String name, @NonNull SDVariable label, @NonNull SDVariable predictions, int dimension) {
-        return lossCosineDistance(name, label, predictions, null, LossReduce.MEAN_BY_NONZERO_WEIGHT_COUNT, dimension);
-    }
-
-    /**
-     * See {@link #lossCosineDistance(String, SDVariable, SDVariable, SDVariable, LossReduce, int)}.
-     */
-    public SDVariable lossCosineDistance(String name, @NonNull SDVariable label, @NonNull SDVariable predictions,
-                                         @NonNull LossReduce lossReduce, int dimension) {
-        return lossCosineDistance(name, label, predictions, null, lossReduce, dimension);
-    }
-
-    /**
-     *
-     * Cosine distance loss: {@code 1 - cosineSimilarity(x,y)} or {@code 1 - sum_i label[i] * prediction[i]}, which is
-     * equivalent to cosine distance when both the predictions and labels are normalized.<br>
-     * <b>Note</b>: This loss function assumes that both the predictions and labels are normalized to have unit l2 norm.
-     * If this is not the case, you should normalize them first by dividing by {@link #norm2(String, SDVariable, boolean, int...)}
-     * along the cosine distance dimension (with keepDims=true).
-     *
-     * @param name        Name of the operation
-     * @param label       Label array
-     * @param predictions Predictions array
-     * @param weights     Weights array. May be null. If null, a weight of 1.0 is used
-     * @param lossReduce  Reduction type for the loss. See {@link LossReduce} for more details. Default: {@link LossReduce#MEAN_BY_NONZERO_WEIGHT_COUNT}
-     * @param dimension   Dimension to perform the cosine distance over
-     * @return Cosine distance loss variable
-     */
-    public SDVariable lossCosineDistance(String name, @NonNull SDVariable label, @NonNull SDVariable predictions,
-                                         SDVariable weights, @NonNull LossReduce lossReduce, int dimension) {
-        if(weights == null)
-            weights = this.scalar(null, 1.0);
-        SDVariable result = functionFactory.lossCosineDistance(label, predictions, weights, lossReduce, dimension);
-        return updateVariableNameAndReference(result, name);
-    }
-
-    /**
-     * See {@link #lossHinge(String, SDVariable, SDVariable, SDVariable, LossReduce)}.
-     */
-    public SDVariable lossHinge(String name, @NonNull SDVariable label, @NonNull SDVariable predictions) {
-        return lossHinge(name, label, predictions, null, LossReduce.MEAN_BY_NONZERO_WEIGHT_COUNT);
-    }
-
-    /**
-     * See {@link #lossHinge(String, SDVariable, SDVariable, SDVariable, LossReduce)}.
-     */
-    public SDVariable lossHinge(String name, @NonNull SDVariable label, @NonNull SDVariable predictions, @NonNull LossReduce lossReduce) {
-        return lossHinge(name, label, predictions, null, lossReduce);
-    }
-
-    /**
-     * Hinge loss: a loss function used for training classifiers.
-     * Implements {@code L = max(0, 1 - t * predictions)} where t is the label values after internally converting to {-1,1}
-     * from the user specified {0,1}. Note that Labels should be provided with values {0,1}.
-     *
-     * @param name        Name of the operation
-     * @param label       Label array. Each value should be 0.0 or 1.0 (internally -1 to 1 is used)
-     * @param predictions Predictions array
-     * @param weights     Weights array. May be null. If null, a weight of 1.0 is used
-     * @param lossReduce  Reduction type for the loss. See {@link LossReduce} for more details. Default: {@link LossReduce#MEAN_BY_NONZERO_WEIGHT_COUNT}
-     * @return Loss variable
-     */
-    public SDVariable lossHinge(String name, @NonNull SDVariable label, @NonNull SDVariable predictions,
-                                SDVariable weights, @NonNull LossReduce lossReduce) {
-        if(weights == null)
-            weights = this.scalar(null, 1.0);
-        SDVariable result = functionFactory.lossHinge(label, predictions, weights, lossReduce);
-        return updateVariableNameAndReference(result, name);
-    }
-
-    /**
-     * See {@link #lossLogPoisson(String, SDVariable, SDVariable, SDVariable, LossReduce)}.
-     */
-    public SDVariable lossLogPoisson(String name, @NonNull SDVariable label, @NonNull SDVariable predictions) {
-        return lossLogPoisson(name, label, predictions, null, LossReduce.MEAN_BY_NONZERO_WEIGHT_COUNT);
-    }
-
-    /**
-     * See {@link #lossLogPoisson(String, SDVariable, SDVariable, SDVariable, LossReduce)}.
-     */
-    public SDVariable lossLogPoisson(String name, @NonNull SDVariable label, @NonNull SDVariable predictions, @NonNull LossReduce lossReduce) {
-        return lossLogPoisson(name, label, predictions, null, lossReduce);
-    }
-
-    /**
-     * Log poisson loss: a loss function used for training classifiers.
-     * Implements {@code L = exp(c) - z * c} where c is log(predictions) and z is labels.
-     *
-     * @param name        Name of the operation
-     * @param label       Label array. Each value should be 0.0 or 1.0
-     * @param predictions Predictions array (has to be log(x) of actual predictions)
-     * @param weights     Weights array. May be null. If null, a weight of 1.0 is used
-     * @param lossReduce  Reduction type for the loss. See {@link LossReduce} for more details. Default: {@link LossReduce#MEAN_BY_NONZERO_WEIGHT_COUNT}
-     * @return Loss variable
-     */
-    public SDVariable lossLogPoisson(String name, @NonNull SDVariable label, @NonNull SDVariable predictions,
-                                     SDVariable weights, @NonNull LossReduce lossReduce) {
-        if(weights == null)
-            weights = this.scalar(null, 1.0);
-        SDVariable result = functionFactory.lossLogPoisson(label, predictions, weights, lossReduce);
-        return updateVariableNameAndReference(result, name);
-    }
-
-    /**
-     * See {@link #lossLogPoissonFull(String, SDVariable, SDVariable, SDVariable, LossReduce)}.
-     */
-    public SDVariable lossLogPoissonFull(String name, @NonNull SDVariable label, @NonNull SDVariable predictions) {
-        return lossLogPoissonFull(name, label, predictions, null, LossReduce.MEAN_BY_NONZERO_WEIGHT_COUNT);
-    }
-
-    /**
-     * See {@link #lossLogPoissonFull(String, SDVariable, SDVariable, SDVariable, LossReduce)}.
-     */
-    public SDVariable lossLogPoissonFull(String name, @NonNull SDVariable label, @NonNull SDVariable predictions, @NonNull LossReduce lossReduce) {
-        return lossLogPoissonFull(name, label, predictions, null, lossReduce);
-    }
-
-    /**
-     * Log poisson loss: a loss function used for training classifiers.
-     * Implements {@code L = exp(c) - z * c + z * log(z) - z + 0.5 * log(2 * pi * z)}
-     * where c is log(predictions) and z is labels.
-     *
-     * @param name        Name of the operation
-     * @param label       Label array. Each value should be 0.0 or 1.0
-     * @param predictions Predictions array (has to be log(x) of actual predictions)
-     * @param weights     Weights array. May be null. If null, a weight of 1.0 is used
-     * @param lossReduce  Reduction type for the loss. See {@link LossReduce} for more details. Default: {@link LossReduce#MEAN_BY_NONZERO_WEIGHT_COUNT}
-     * @return Loss variable
-     */
-    public SDVariable lossLogPoissonFull(String name, @NonNull SDVariable label, @NonNull SDVariable predictions,
-                                     SDVariable weights, @NonNull LossReduce lossReduce) {
-        if(weights == null)
-            weights = this.scalar(null, 1.0);
-        SDVariable result = functionFactory.lossLogPoissonFull(label, predictions, weights, lossReduce);
-        return updateVariableNameAndReference(result, name);
-    }
-
-    /**
-     * See {@link #lossHuber(String, SDVariable, SDVariable, SDVariable, LossReduce, double)}.
-     */
-    public SDVariable lossHuber(String name, @NonNull SDVariable label, @NonNull SDVariable predictions, double delta) {
-        return lossHuber(name, label, predictions, null, LossReduce.MEAN_BY_NONZERO_WEIGHT_COUNT, delta);
-    }
-
-    /**
-     * See {@link #lossHuber(String, SDVariable, SDVariable, SDVariable, LossReduce, double)}.
-     */
-    public SDVariable lossHuber(String name, @NonNull SDVariable label, @NonNull SDVariable predictions, @NonNull LossReduce lossReduce, double delta) {
-        return lossHuber(name, label, predictions, null, lossReduce, delta);
-    }
-
-    /**
-     * Huber loss function, used for robust regression. It is similar both squared error loss and absolute difference loss,
-     * though is less sensitive to outliers than squared error.<br>
-     * Huber loss implements:
-     * <pre>
-     *{@code L = 0.5 * (label[i] - predictions[i])^2 if abs(label[i] - predictions[i]) < delta
-     *  L = delta * abs(label[i] - predictions[i]) - 0.5 * delta^2 otherwise
-     *     }
-     * </pre>
-     *
-     * @param name        Name of the operation
-     * @param label       Label array
-     * @param predictions Predictions array
-     * @param weights     Weights array. May be null. If null, a weight of 1.0 is used
-     * @param lossReduce  Reduction type for the loss. See {@link LossReduce} for more details. Default: {@link LossReduce#MEAN_BY_NONZERO_WEIGHT_COUNT}
-     * @param delta       Loss function delta value
-     * @return Huber loss variable
-     */
-    public SDVariable lossHuber(String name, @NonNull SDVariable label, @NonNull SDVariable predictions,
-                                SDVariable weights, @NonNull LossReduce lossReduce, double delta) {
-        if(weights == null)
-            weights = this.scalar(null, 1.0);
-        SDVariable result = functionFactory.lossHuber(label, predictions, weights, lossReduce, delta);
-        return updateVariableNameAndReference(result, name);
-    }
-
-
-    /**
-     * See {@link #lossLog(String, SDVariable, SDVariable, SDVariable, LossReduce, double)}.
-     */
-    public SDVariable lossLog(String name, @NonNull SDVariable label, @NonNull SDVariable predictions) {
-        return lossLog(name, label, predictions, null, LossReduce.MEAN_BY_NONZERO_WEIGHT_COUNT, LogLoss.DEFAULT_EPSILON);
-    }
-
-    /**
-     * See {@link #lossLog(String, SDVariable, SDVariable, SDVariable, LossReduce, double)}.
-     */
-    public SDVariable lossLog(String name, @NonNull SDVariable label, @NonNull SDVariable predictions, @NonNull LossReduce lossReduce) {
-        return lossLog(name, label, predictions, null, lossReduce, LogLoss.DEFAULT_EPSILON);
-    }
-
-    /**
-     * Log loss, i.e., binary cross entropy loss, usually used for binary multi-label classification. Implements:
-     * {@code -1/numExamples * sum_i (labels[i] * log(predictions[i] + epsilon) + (1-labels[i]) * log(1-predictions[i] + epsilon))}
-     *
-     * @param name        Name of the operation
-     * @param label       Label array
-     * @param predictions Predictions array
-     * @param weights     Weights array. May be null. If null, a weight of 1.0 is used
-     * @param lossReduce  Reduction type for the loss. See {@link LossReduce} for more details. Default: {@link LossReduce#MEAN_BY_NONZERO_WEIGHT_COUNT}
-     * @return Log loss variable
-     */
-    public SDVariable lossLog(String name, @NonNull SDVariable label, @NonNull SDVariable predictions,
-                              SDVariable weights, @NonNull LossReduce lossReduce, double epsilon) {
-        if(weights == null)
-            weights = this.scalar(null, 1.0);
-        SDVariable result = functionFactory.lossLog(label, predictions, weights, lossReduce, epsilon);
-        return updateVariableNameAndReference(result, name);
-    }
-
-    /**
-     * See {@link #lossMeanPairwiseSquaredError(String, SDVariable, SDVariable, SDVariable, LossReduce)}.
-     */
-    public SDVariable lossMeanPairwiseSquaredError(String name, @NonNull SDVariable label, @NonNull SDVariable predictions, @NonNull LossReduce lossReduce) {
-        return lossMeanPairwiseSquaredError(name, label, predictions, null, lossReduce);
-    }
-
-    /**
-     * Mean pairwise squared error.<br>
-     * MPWSE loss calculates the difference between pairs of consecutive elements in the predictions and labels arrays.
-     * For example, if predictions = [p0, p1, p2] and labels are [l0, l1, l2] then MPWSE is:
-     * {@code [((p0-p1) - (l0-l1))^2 + ((p0-p2) - (l0-l2))^2 + ((p1-p2) - (l1-l2))^2] / 3}<br>
-     *
-     * @param name        Name of the operation
-     * @param label       Label array
-     * @param predictions Predictions array
-     * @param weights     Weights array. May be null. If null, a weight of 1.0 is used. Must be either null, scalar, or have shape [batchSize]
-     * @return Loss variable, scalar output
-     */
-    public SDVariable lossMeanPairwiseSquaredError(String name, @NonNull SDVariable label, @NonNull SDVariable predictions, SDVariable weights, @NonNull LossReduce lossReduce) {
-        if(weights == null)
-            weights = this.scalar(null, 1.0);
-        SDVariable result = functionFactory.lossMeanPairwiseSquaredError(label, predictions, weights, lossReduce);
-        return updateVariableNameAndReference(result, name);
-    }
-
-    /**
-     * See {@link #lossMeanSquaredError(String, SDVariable, SDVariable, SDVariable, LossReduce)}.
-     */
-    public SDVariable lossMeanSquaredError(String name, @NonNull SDVariable label, @NonNull SDVariable predictions) {
-        return lossMeanSquaredError(name, label, predictions, null, LossReduce.MEAN_BY_NONZERO_WEIGHT_COUNT);
-    }
-
-    /**
-     * See {@link #lossMeanSquaredError(String, SDVariable, SDVariable, SDVariable, LossReduce)}.
-     */
-    public SDVariable lossMeanSquaredError(String name, @NonNull SDVariable label, @NonNull SDVariable predictions, @NonNull LossReduce lossReduce) {
-        return lossMeanSquaredError(name, label, predictions, null, lossReduce);
-    }
-
-    /**
-     * Mean squared error loss function. Implements {@code (label[i] - prediction[i])^2} - i.e., squared error on a per-element basis.
-     * When averaged (using {@link LossReduce#MEAN_BY_WEIGHT} or {@link LossReduce#MEAN_BY_NONZERO_WEIGHT_COUNT} (the default))
-     * this is the mean squared error loss function.
-     * @param name        Name of the operation
-     * @param label       Label array
-     * @param predictions Predictions array
-     * @param weights     Weights array. May be null. If null, a weight of 1.0 is used
-     * @param lossReduce  Reduction type for the loss. See {@link LossReduce} for more details. Default: {@link LossReduce#MEAN_BY_NONZERO_WEIGHT_COUNT}
-     * @return Loss variable
-     */
-    public SDVariable lossMeanSquaredError(String name, @NonNull SDVariable label, @NonNull SDVariable predictions,
-                                           SDVariable weights, @NonNull LossReduce lossReduce) {
-        if(weights == null)
-            weights = this.scalar(null, 1.0);
-        SDVariable result = functionFactory.lossMeanSquaredError(label, predictions, weights, lossReduce);
-        return updateVariableNameAndReference(result, name);
-    }
-
-    /**
-     * See {@link #lossSigmoidCrossEntropy(String, SDVariable, SDVariable, SDVariable, LossReduce, double)}.
-     */
-    public SDVariable lossSigmoidCrossEntropy(String name, @NonNull SDVariable label, @NonNull SDVariable predictions) {
-        return lossSigmoidCrossEntropy(name, label, predictions, null, LossReduce.MEAN_BY_NONZERO_WEIGHT_COUNT, SigmoidCrossEntropyLoss.DEFAULT_LABEL_SMOOTHING);
-    }
-
-    /**
-     * See {@link #lossSigmoidCrossEntropy(String, SDVariable, SDVariable, SDVariable, LossReduce, double)}.
-     */
-    public SDVariable lossSigmoidCrossEntropy(String name, @NonNull SDVariable label, @NonNull SDVariable predictions, @NonNull LossReduce lossReduce) {
-        return lossSigmoidCrossEntropy(name, label, predictions, null, lossReduce, SigmoidCrossEntropyLoss.DEFAULT_LABEL_SMOOTHING);
-    }
-
-    /**
-     * Sigmoid cross entropy: applies the sigmoid activation function on the input logits (input "pre-sigmoid preductions")
-     * and implements the binary cross entropy loss function. This implementation is numerically more stable than using
-     * standard (but separate) sigmoid activation function and log loss (binary cross entropy) loss function.<br>
-     * Implements:
-     * {@code -1/numExamples * sum_i (labels[i] * log(sigmoid(logits[i])) + (1-labels[i]) * log(1-sigmoid(logits[i])))}
-     * though this is done in a mathematically equivalent but more numerical stable form.<br>
-     * <br>
-     * When label smoothing is > 0, the following label smoothing is used:<br>
-     * <pre>
-     * {@code numClasses = labels.size(1);
-     * label = (1.0 - labelSmoothing) * label + 0.5 * labelSmoothing}
-     * </pre>
-     *
-     * @param name        Name of the operation
-     * @param label       Label array
-     * @param predictionLogits Predictions array
-     * @param weights     Weights array. May be null. If null, a weight of 1.0 is used
-     * @param lossReduce  Reduction type for the loss. See {@link LossReduce} for more details. Default: {@link LossReduce#MEAN_BY_NONZERO_WEIGHT_COUNT}
-     * @return Loss variable
-     */
-    public SDVariable lossSigmoidCrossEntropy(String name, @NonNull SDVariable label, @NonNull SDVariable predictionLogits,
-                                              SDVariable weights, @NonNull LossReduce lossReduce, double labelSmoothing) {
-        if(weights == null)
-            weights = this.scalar(null, 1.0);
-        SDVariable result = functionFactory.lossSigmoidCrossEntropy(label, predictionLogits, weights, lossReduce, labelSmoothing);
-        return updateVariableNameAndReference(result, name);
-    }
-
-    /**
-     * See {@link #lossSoftmaxCrossEntropy(String, SDVariable, SDVariable, SDVariable, LossReduce, double)}.
-     */
-    public SDVariable lossSoftmaxCrossEntropy(String name, @NonNull SDVariable label, @NonNull SDVariable predictions) {
-        return lossSoftmaxCrossEntropy(name, label, predictions, null, LossReduce.MEAN_BY_NONZERO_WEIGHT_COUNT, SoftmaxCrossEntropyLoss.DEFAULT_LABEL_SMOOTHING);
-    }
-
-    /**
-     * See {@link #lossSoftmaxCrossEntropy(String, SDVariable, SDVariable, SDVariable, LossReduce, double)}.
-     */
-    public SDVariable lossSoftmaxCrossEntropy(String name, @NonNull SDVariable label, @NonNull SDVariable predictions, @NonNull LossReduce lossReduce) {
-        return lossSoftmaxCrossEntropy(name, label, predictions, null, lossReduce, SoftmaxCrossEntropyLoss.DEFAULT_LABEL_SMOOTHING);
-    }
-
-    /**
-     * Applies the softmax activation function to the input, then implement multi-class cross entropy:<br>
-     * {@code -sum_classes label[i] * log(p[c])} where {@code p = softmax(logits)}<br>
-     * If {@link LossReduce#NONE} is used, returned shape is [numExamples] out for [numExamples, numClasses] predicitons/labels;
-     * otherwise, the output is a scalar.<br>
-     * <p>
-     * When label smoothing is > 0, the following label smoothing is used:<br>
-     * <pre>
-     * {@code numClasses = labels.size(1);
-     * oneHotLabel = (1.0 - labelSmoothing) * oneHotLabels + labelSmoothing/numClasses}
-     * </pre>
-     *
-     * @param name             Name of the operation
-     * @param oneHotLabels     Label array. Should be one-hot per example and same shape as predictions (for example, [mb, nOut])
-     * @param logitPreductions Predictions array (pre-softmax)
-     * @param weights          Weights array. May be null. If null, a weight of 1.0 is used
-     * @param lossReduce       Reduction type for the loss. See {@link LossReduce} for more details. Default: {@link LossReduce#MEAN_BY_NONZERO_WEIGHT_COUNT}
-     * @param labelSmoothing   Label smoothing value. Default value: 0
-     * @return Loss variable
-     */
-    public SDVariable lossSoftmaxCrossEntropy(String name, @NonNull SDVariable oneHotLabels, @NonNull SDVariable logitPreductions,
-                                              SDVariable weights, @NonNull LossReduce lossReduce, double labelSmoothing) {
-        if(weights == null)
-            weights = this.scalar(null, 1.0);
-        SDVariable result = functionFactory.lossSoftmaxCrossEntropy(oneHotLabels, logitPreductions, weights, lossReduce, labelSmoothing);
-        return updateVariableNameAndReference(result, name);
-    }
-
-    /**
-     * See {@link #lossSparseSoftmaxCrossEntropy(String, SDVariable, SDVariable)}
-     */
-    public SDVariable lossSparseSoftmaxCrossEntropy(@NonNull SDVariable logits, @NonNull SDVariable labels) {
-        return lossSparseSoftmaxCrossEntropy(null, logits, labels);
-    }
-
-    /**
-     * As per {@link #lossSoftmaxCrossEntropy(String, SDVariable, SDVariable, LossReduce)} but the labels variable
-     * is represented as an integer array instead of the equivalent one-hot array.<br>
-     * i.e., if logits are rank N, then labels have rank N-1
-     *
-     * @param name       Name of the output variable. May be null
-     * @param logits     Logits array ("pre-softmax activations")
-     * @param labels     Labels array. Must be an integer type.
-     * @return Softmax cross entropy
-     */
-    public SDVariable lossSparseSoftmaxCrossEntropy(String name, @NonNull SDVariable logits, @NonNull SDVariable labels) {
-        Preconditions.checkState(labels.dataType().isIntType(), "Labels variable must be an integer type: got %s", logits);
-        SDVariable ret = f().lossSparseSoftmaxCrossEntropy(logits, labels);
-        return updateVariableNameAndReference(ret, name);
-    }
-
-    /**
-     * TODO
-     *
-     * @param targets
-     * @param inputs
-     * @param weights
-     * @return
-     */
-    public SDVariable weightedCrossEntropyWithLogits(SDVariable targets, SDVariable inputs,
-                                                     SDVariable weights) {
-        return weightedCrossEntropyWithLogits(null, targets, inputs, weights);
-    }
-
-    /**
-     * TODO
-     *
-     * @param name
-     * @param targets
-     * @param inputs
-     * @param weights
-     * @return
-     */
-    public SDVariable weightedCrossEntropyWithLogits(String name, SDVariable targets, SDVariable inputs,
-                                                     SDVariable weights) {
-        SDVariable res = f().weightedCrossEntropyWithLogits(targets, inputs, weights);
-        return updateVariableNameAndReference(res, name);
     }
 
     /**
@@ -9511,85 +6248,6 @@ public class SameDiff {
             throw new ND4JIllegalStateException("Converged on already generated variable!");
         }
         return name;
-    }
-
-
-    /**
-     * LSTM unit
-     *
-     * @param baseName      the base name for outputs
-     * @param configuration the configuration to use
-     * @return
-     */
-    public SDVariable lstm(String baseName, LSTMCellConfiguration configuration) {
-        return new LSTMCell(this, configuration).outputVariables(baseName)[0];
-    }
-
-
-    /**
-     * An sru cell
-     *
-     * @param configuration the configuration for the sru cell
-     * @return
-     */
-    public SDVariable sruCell(SRUCellConfiguration configuration) {
-        return new SRUCell(this, configuration).outputVariables()[0];
-    }
-
-
-    /**
-     * Simple recurrent unit
-     *
-     * @param configuration the configuration for the sru
-     * @return
-     */
-    public SDVariable sru(SRUConfiguration configuration) {
-        return new SRU(this, configuration).outputVariables()[0];
-    }
-
-    /**
-     * The gru cell
-     *
-     * @param configuration teh configuration to use
-     * @return
-     */
-    public SDVariable gru(GRUCellConfiguration configuration) {
-        return new GRUCell(this, configuration).outputVariables()[0];
-    }
-
-
-    /**
-     * An sru cell
-     *
-     * @param baseName      the base name to  use for the output variables
-     * @param configuration the configuration for the sru cell
-     * @return
-     */
-    public SDVariable sruCell(String baseName, SRUCellConfiguration configuration) {
-        return new SRUCell(this, configuration).outputVariables(baseName)[0];
-    }
-
-
-    /**
-     * Simiple recurrent unit
-     *
-     * @param baseName      the base name to use for output variables
-     * @param configuration the configuration for the sru
-     * @return
-     */
-    public SDVariable sru(String baseName, SRUConfiguration configuration) {
-        return new SRU(this, configuration).outputVariables(baseName)[0];
-    }
-
-    /**
-     * The gru cell
-     *
-     * @param baseName      the base name for the gru cell
-     * @param configuration teh configuration to use
-     * @return
-     */
-    public SDVariable gru(String baseName, GRUCellConfiguration configuration) {
-        return new GRUCell(this, configuration).outputVariables(baseName)[0];
     }
 
     /**
