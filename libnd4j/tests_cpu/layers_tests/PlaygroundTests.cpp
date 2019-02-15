@@ -983,7 +983,7 @@ TEST_F(PlaygroundTests, test_batched_skipgram_1) {
     //indices.printIndexedBuffer("indices");
     //codes.printIndexedBuffer("codes");
 
-    auto iterations = 1000;
+    auto iterations = 10;
 
     nd4j::ops::skipgram op;
 
@@ -1018,7 +1018,7 @@ TEST_F(PlaygroundTests, test_reduce_float) {
          NativeOpExcutioner::execReduceFloat(reduce::ReduceFloatBenchmarkOp, array.buffer(), array.shapeInfo(), nullptr, target.buffer(),target.shapeInfo(), dims.data(), dims.size(), xTad.tadOnlyShapeInfo,xTad.tadOffsets);
      }
 
-     int iterations = 1000;
+     int iterations = 10;
      auto timeStart = std::chrono::system_clock::now();
      for (int e = 0; e < iterations; e++) {
          NativeOpExcutioner::execReduceFloat(reduce::ReduceFloatBenchmarkOp, array.buffer(), array.shapeInfo(), nullptr, target.buffer(), target.shapeInfo(), dims.data(), dims.size(), xTad.tadOnlyShapeInfo, xTad.tadOffsets);
@@ -1044,10 +1044,54 @@ TEST_F(PlaygroundTests, test_reduce_same) {
         NativeOpExcutioner::execReduceSame(reduce::ReduceSameBenchmarkOp, array.buffer(), array.shapeInfo(), nullptr, target.buffer(),target.shapeInfo(), dims.data(), dims.size(), xTad.tadOnlyShapeInfo,xTad.tadOffsets);
     }
 
-    int iterations = 1000;
+    int iterations = 10;
     auto timeStart = std::chrono::system_clock::now();
     for (int e = 0; e < iterations; e++) {
         NativeOpExcutioner::execReduceSame(reduce::ReduceSameBenchmarkOp, array.buffer(), array.shapeInfo(), nullptr, target.buffer(), target.shapeInfo(), dims.data(), dims.size(), xTad.tadOnlyShapeInfo, xTad.tadOffsets);
+    }
+    auto timeEnd = std::chrono::system_clock::now();
+    auto spanTime = std::chrono::duration_cast<std::chrono::microseconds> ((timeEnd - timeStart)/iterations).count();
+    auto ttlTime = std::chrono::duration_cast<std::chrono::milliseconds> ((timeEnd - timeStart)).count();
+
+    nd4j_printf("average time: %lld us;\n", spanTime);
+    nd4j_printf("total time: %lld ms;\n", ttlTime);
+}
+
+TEST_F(PlaygroundTests, test_reduce_float_manual) {
+    auto array = NDArrayFactory::create<float>('c', {32, 128, 256, 256});
+    auto target = NDArrayFactory::create<float>('c', {32, 128});
+    std::array<int, 2> dims = {2, 3};
+    shape::TAD xTad(array.shapeInfo(), dims.data(), dims.size());
+    xTad.createTadOnlyShapeInfo();
+    xTad.createOffsets();
+
+//     // warm up
+    for (int e = 0; e < 5; e++) {
+        NativeOpExcutioner::execReduceFloat(reduce::ReduceFloatBenchmarkOp, array.buffer(), array.shapeInfo(), nullptr,
+                                           target.buffer(), target.shapeInfo(), dims.data(), dims.size(),
+                                           xTad.tadOnlyShapeInfo, xTad.tadOffsets);
+    }
+
+    int tadLength = 256 * 256;
+
+    int iterations = 10;
+    auto timeStart = std::chrono::system_clock::now();
+    for (int i = 0; i < iterations; i++) {
+        auto z = target.bufferAsT<float>();
+
+#pragma omp parallel for schedule(static) num_threads(6)
+        for (int t = 0; t < target.lengthOf(); t++) {
+
+            auto x = array.bufferAsT<float>() + (tadLength * t);
+            float local = 0.0f;
+
+            #pragma omp simd reduction(+:local)
+            for (int e = 0; e < tadLength; e++) {
+                local += powf(x[e], 3) * logf(x[e]);
+            }
+
+            z[t] = local / tadLength;
+        }
     }
     auto timeEnd = std::chrono::system_clock::now();
     auto spanTime = std::chrono::duration_cast<std::chrono::microseconds> ((timeEnd - timeStart)/iterations).count();
@@ -1088,7 +1132,7 @@ TEST_F(PlaygroundTests, test_reduce_scalar_float_2) {
          NativeOpExcutioner::execReduceFloatScalar(reduce::ReduceFloatBenchmarkOp, array.buffer(), array.shapeInfo(), nullptr, target.buffer(), target.shapeInfo());
      }
 
-     int iterations = 100000;
+     int iterations = 100;
      auto timeStart = std::chrono::system_clock::now();
      for (int e = 0; e < iterations; e++) {
          NativeOpExcutioner::execReduceFloatScalar(reduce::ReduceFloatBenchmarkOp, array.buffer(), array.shapeInfo(), nullptr, target.buffer(), target.shapeInfo());
@@ -1110,7 +1154,7 @@ TEST_F(PlaygroundTests, test_reduce_scalar_same_2) {
         NativeOpExcutioner::execReduceSameScalar(reduce::ReduceSameBenchmarkOp, array.buffer(), array.shapeInfo(), nullptr, target.buffer(), target.shapeInfo());
     }
 
-    int iterations = 100000;
+    int iterations = 100;
     auto timeStart = std::chrono::system_clock::now();
     for (int e = 0; e < iterations; e++) {
         NativeOpExcutioner::execReduceSameScalar(reduce::ReduceSameBenchmarkOp, array.buffer(), array.shapeInfo(), nullptr, target.buffer(), target.shapeInfo());

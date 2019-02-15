@@ -53,7 +53,7 @@ namespace nd4j {
         T mn = DataTypeUtils::max<T>();
         T mx = -DataTypeUtils::max<T>();
 
-#pragma omp parallel for if(N > Environment::getInstance()->elementwiseThreshold()) reduction(minT:mn), reduction(maxT:mx)
+#pragma omp parallel for if(N > Environment::getInstance()->elementwiseThreshold()) reduction(minTF:mn), reduction(maxTF:mx)
         for (Nd4jLong e = 0; e < N; e++) {
             T v = x[e];
             if (v < mn)

@@ -56,7 +56,6 @@ void Reduce3<X,Z>::execScalar(void *vx, Nd4jLong *xShapeInfo,
 
     if(shape::haveSameOffsets(xShapeInfo, yShapeInfo)) {
 
-        #pragma omp simd reduction(sumT:startingVal)
         for(unsigned int i = 0; i < length; i++) {            
             auto offset  = shape::indexOffset(i, xShapeInfo, xShapeInfoCast, length, canCastX);
             startingVal = OpType::update(startingVal, OpType::op(x[offset], y[offset], extraParamsVals), extraParamsVals);
@@ -66,7 +65,6 @@ void Reduce3<X,Z>::execScalar(void *vx, Nd4jLong *xShapeInfo,
         uint yShapeInfoCast[MAX_RANK];
         const bool canCastY = nd4j::DataTypeUtils::castShapeInfo(yShapeInfo, yShapeInfoCast);
 
-        #pragma omp simd reduction(sumT:startingVal)
         for(unsigned int i = 0; i < length; i++) {            
             auto xOffset  = shape::indexOffset(i, xShapeInfo, xShapeInfoCast, length, canCastX);
             auto yOffset  = shape::indexOffset(i, yShapeInfo, yShapeInfoCast, length, canCastY);
@@ -129,7 +127,6 @@ void Reduce3<X,Z>::exec(void *vx, Nd4jLong *xShapeInfo,
                 auto threadNum = omp_get_thread_num();         
                 auto threadOffset = info.getThreadOffset(threadNum);
 
-                #pragma omp simd
                 for (Nd4jLong i = 0; i < info.getItersPerThread(threadNum); i++) {
                     auto offset = shape::indexOffset(i + threadOffset, xShapeInfo, xShapeInfoCast, zLen, canCastX);
                     z[offset] = OpType::update(z[offset], OpType::op(x[offset], y[offset], extraParamsVals), extraParamsVals);
@@ -148,7 +145,6 @@ void Reduce3<X,Z>::exec(void *vx, Nd4jLong *xShapeInfo,
                 auto threadNum = omp_get_thread_num();         
                 auto threadOffset = info.getThreadOffset(threadNum);
 
-                #pragma omp simd
                 for (Nd4jLong i = 0; i < info.getItersPerThread(threadNum); i++) {
                     auto offset  = shape::indexOffset(i + threadOffset, xShapeInfo, xShapeInfoCast, zLen, canCastX);
                     auto zOffset = shape::indexOffset(i + threadOffset, zShapeInfo, zShapeInfoCast, zLen, canCastZ);
@@ -168,7 +164,6 @@ void Reduce3<X,Z>::exec(void *vx, Nd4jLong *xShapeInfo,
                 auto threadNum = omp_get_thread_num();         
                 auto threadOffset = info.getThreadOffset(threadNum);
 
-                #pragma omp simd
                 for (Nd4jLong i = 0; i < info.getItersPerThread(threadNum); i++) {
                     auto offset  = shape::indexOffset(i + threadOffset, xShapeInfo, xShapeInfoCast, zLen, canCastX);
                     auto yOffset = shape::indexOffset(i + threadOffset, yShapeInfo, yShapeInfoCast, zLen, canCastY);
@@ -188,7 +183,6 @@ void Reduce3<X,Z>::exec(void *vx, Nd4jLong *xShapeInfo,
                 auto threadNum = omp_get_thread_num();         
                 auto threadOffset = info.getThreadOffset(threadNum);
 
-                #pragma omp simd
                 for (Nd4jLong i = 0; i < info.getItersPerThread(threadNum); i++) {
                     auto xOffset = shape::indexOffset(i + threadOffset, xShapeInfo, xShapeInfoCast, zLen, canCastX);
                     auto offset  = shape::indexOffset(i + threadOffset, yShapeInfo, yShapeInfoCast, zLen, canCastY);
@@ -210,7 +204,6 @@ void Reduce3<X,Z>::exec(void *vx, Nd4jLong *xShapeInfo,
                 auto threadNum = omp_get_thread_num();         
                 auto threadOffset = info.getThreadOffset(threadNum);
 
-                #pragma omp simd
                 for (Nd4jLong i = 0; i < info.getItersPerThread(threadNum); i++) {
                     auto xOffset = shape::indexOffset(i + threadOffset, xShapeInfo, xShapeInfoCast, zLen, canCastX);
                     auto yOffset = shape::indexOffset(i + threadOffset, yShapeInfo, yShapeInfoCast, zLen, canCastY);
@@ -294,7 +287,6 @@ void Reduce3<X,Z>::exec(void *vx, Nd4jLong *xShapeInfo,
                     auto yOffset = yTad.tadOffsets[i];
                     auto sv = OpType::op(x[offset], y[yOffset], localExtraParams);
 
-                    #pragma omp simd reduction(sumT:sv)
                     for (int j = 1; j < tadLength; j++) {
                         auto xIdx = (offset + xEws * j);
                         auto yIdx = (yOffset + yEws * j);
@@ -329,7 +321,7 @@ void Reduce3<X,Z>::exec(void *vx, Nd4jLong *xShapeInfo,
                     auto tY = y + yOffset;
 
                     if(shape::haveSameOffsets(xShapeInf, yShapeInf)) {
-                        #pragma omp simd reduction(sumT:start)
+
                         for (unsigned int j = 0; j < tadLength; j++) {                            
                             auto offset = shape::indexOffset(j, xShapeInf, xShapeInfoCast, tadLength, canCastX);
                             start = OpType::update(start, OpType::op(tX[offset], tY[offset],extraParams), extraParamsVals);
@@ -339,7 +331,6 @@ void Reduce3<X,Z>::exec(void *vx, Nd4jLong *xShapeInfo,
                         uint yShapeInfoCast[MAX_RANK];                    
                         bool canCastY = nd4j::DataTypeUtils::castShapeInfo(yShapeInf, yShapeInfoCast);
 
-                        #pragma omp simd reduction(sumT:start)
                         for (unsigned int j = 0; j < tadLength; j++) {                            
                             auto xOffset2 = shape::indexOffset(j, xShapeInf, xShapeInfoCast, tadLength, canCastX);
                             auto yOffset2 = shape::indexOffset(j, yShapeInf, yShapeInfoCast, tadLength, canCastY);
@@ -375,7 +366,6 @@ void Reduce3<X,Z>::exec(void *vx, Nd4jLong *xShapeInfo,
                     auto tX = x + offset;
                     auto tY = y + offset;
 
-                    #pragma omp simd reduction(sumT:start)
                     for (unsigned int j = 0; j < tadLength; j++) {
                         auto offset = shape::indexOffset(j, xTad.tadOnlyShapeInfo, xShapeInfoCast, tadLength, canCastX);                        
                         start = OpType::update(start, OpType::op(tX[offset], tY[offset], extraParamsVals), extraParamsVals);
@@ -403,7 +393,6 @@ void Reduce3<X,Z>::exec(void *vx, Nd4jLong *xShapeInfo,
                     auto tX = x + xOffset;
                     auto tY = y + yOffset;
 
-                    #pragma omp simd reduction(sumT:start)
                     for (unsigned int j = 0; j < tadLength; j++) {
                         auto xOffset2 = shape::indexOffset(j, xTad.tadOnlyShapeInfo, xShapeInfoCast, tadLength, canCastX);
                         auto yOffset2 = shape::indexOffset(j, yTad.tadOnlyShapeInfo, yShapeInfoCast, tadLength, canCastY);
@@ -455,7 +444,6 @@ void Reduce3<X,Z>::exec(void *vx, Nd4jLong *xShapeInfo,
             for (int extraParamsIdx = 0; extraParamsIdx < OpType::extraParamsLen; extraParamsIdx++) 
                 localExtraParams[extraParamsIdx] = startingVal;
 
-            #pragma omp simd reduction(sumT:sv)
             for (Nd4jLong f = 0; f < tadLength; f++) {
                 auto yOffset = shape::indexOffset(f, tadShapeInfo, tadShapeInfoCast, tadLength, canCastX);
                 auto xOffset = offset + yOffset;                
@@ -486,7 +474,6 @@ void Reduce3<X,Z>::exec(void *vx, Nd4jLong *xShapeInfo,
             for (int extraParamsIdx = 0; extraParamsIdx < OpType::extraParamsLen; extraParamsIdx++) 
                 localExtraParams[extraParamsIdx] = startingVal;
 
-            #pragma omp simd reduction(sumT:sv)
             for (Nd4jLong f = 0; f < tadLength; f++) {
                 auto xOffset = offset + shape::indexOffset(f, tadShapeInfo, tadShapeInfoCast, tadLength, canCastX);
                 auto yOffset = shape::indexOffset(f, yShapeInfo, yShapeInfoCast, tadLength, canCastY);
@@ -550,7 +537,6 @@ void Reduce3<X,Z>:: execAll(void *vx, Nd4jLong *xShapeInfo,
                 for (int extraParamsIdx = 0; extraParamsIdx < OpType::extraParamsLen; extraParamsIdx++) 
                     localExtraParams[extraParamsIdx] = startingVal;
 
-                #pragma omp simd reduction(sumT:sv)
                 for (int f = 0; f < xTadLength; f++) {                            
                     auto offset = shape::indexOffset(f, xTadShapeInfo, xTadShapeInfoCast, xTadLength, canCastX);                    
                     sv = OpType::update(sv, OpType::op(lX[offset], lY[offset], localExtraParams), localExtraParams);
@@ -588,8 +574,7 @@ void Reduce3<X,Z>:: execAll(void *vx, Nd4jLong *xShapeInfo,
                 for (int extraParamsIdx = 0; extraParamsIdx < OpType::extraParamsLen; extraParamsIdx++) 
                     localExtraParams[extraParamsIdx] = startingVal;
 
-                #pragma omp simd reduction(sumT:sv)
-                for (int f = 0; f < xTadLength; f++) {                            
+                for (int f = 0; f < xTadLength; f++) {
                     auto xO = shape::indexOffset(f, yTadShapeInfo, xTadShapeInfoCast, xTadLength, canCastX);
                     auto yO = shape::indexOffset(f, yTadShapeInfo, yTadShapeInfoCast, xTadLength, canCastY);
                     sv = OpType::update(sv, OpType::op(lX[xO], lY[yO], localExtraParams), localExtraParams);

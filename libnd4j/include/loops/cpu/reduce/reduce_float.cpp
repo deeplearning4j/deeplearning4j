@@ -347,117 +347,39 @@ namespace functions {
                 nd4j::OmpLaunchHelper info(length);
                 int nt = info._numThreads;
 
-                if (xEws == 1) {
-                                           
-                    #pragma omp parallel num_threads(info._numThreads) if (info._numThreads > 1) default(shared)
-                    {                
-                        auto local = OpType::startingValue(x);
-                        auto threadNum = omp_get_thread_num();                    
-                        Nd4jLong threadOffset = info.getThreadOffset(threadNum);
-                        auto xi = x + threadOffset;
+            if (xEws == 1) {
 
-                        switch (OpType::reduceType) {
-                            case PRODUCT: {
-                                #pragma omp simd reduction(prodT:startingVal)
-                                for (unsigned int i = 0; i < info.getItersPerThread(threadNum); i++)
-                                    startingVal = OpType::update(startingVal, OpType::op(xi[i], extraParams), extraParams);
-                            }
-                                break;
-                            case SUM: {
-                                #pragma omp simd reduction(sumT:startingVal)
-                                for (unsigned int i = 0; i < info.getItersPerThread(threadNum); i++)
-                                    startingVal = OpType::update(startingVal, OpType::op(xi[i], extraParams), extraParams);
-                            }
-                                break;
-                            case ASUM: {
-                                #pragma omp simd reduction(asumT:startingVal)
-                                for (unsigned int i = 0; i < info.getItersPerThread(threadNum); i++)
-                                    startingVal = OpType::update(startingVal, OpType::op(xi[i], extraParams), extraParams);
-                            }
-                                break;
-                            case MAX: {
-                                #pragma omp simd reduction(maxT:startingVal)
-                                for (unsigned int i = 0; i < info.getItersPerThread(threadNum); i++)
-                                    startingVal = OpType::update(startingVal, OpType::op(xi[i], extraParams), extraParams);
-                            }
-                                break;
-                            case MIN: {
-                                #pragma omp simd reduction(minT:startingVal)
-                                for (unsigned int i = 0; i < info.getItersPerThread(threadNum); i++)
-                                    startingVal = OpType::update(startingVal, OpType::op(xi[i], extraParams), extraParams);
-                            }
-                                break;
-                            case AMAX: {
-                                #pragma omp simd reduction(amaxT:startingVal)
-                                for (unsigned int i = 0; i < info.getItersPerThread(threadNum); i++)
-                                    startingVal = OpType::update(startingVal, OpType::op(xi[i], extraParams), extraParams);
-                            }
-                                break;
-                            case AMIN: {
-                                #pragma omp simd reduction(aminT:startingVal)
-                                for (unsigned int i = 0; i < info.getItersPerThread(threadNum); i++)
-                                    startingVal = OpType::update(startingVal, OpType::op(xi[i], extraParams), extraParams);
-                            }
-                                break;
-                        }
-                    }
+#pragma omp parallel num_threads(info._numThreads) if (info._numThreads > 1) default(shared)
+                {
+                    auto local = OpType::startingValue(x);
+                    auto threadNum = omp_get_thread_num();
+                    Nd4jLong threadOffset = info.getThreadOffset(threadNum);
+                    auto xi = x + threadOffset;
+
+                    for (Nd4jLong i = 0; i < info.getItersPerThread(threadNum); i++)
+                        local = OpType::update(local, OpType::op(xi[i], extraParams), extraParams);
+
+                    #pragma omp critical
+                    startingVal = OpType::update(startingVal, local, extraParams);
                 }
-                else {
+            }
+            else {
 
-                    #pragma omp parallel num_threads(info._numThreads) if (info._numThreads > 1) default(shared)
-                    {                
-                        auto local = OpType::startingValue(x);
-                        auto threadNum = omp_get_thread_num();                    
-                        Nd4jLong threadOffset = info.getThreadOffset(threadNum);
-                        auto xi = x + xEws*threadOffset;
+#pragma omp parallel num_threads(info._numThreads) if (info._numThreads > 1) default(shared)
+                {
+                    auto local = OpType::startingValue(x);
+                    auto threadNum = omp_get_thread_num();
+                    Nd4jLong threadOffset = info.getThreadOffset(threadNum);
+                    auto xi = x + xEws*threadOffset;
 
-                        switch (OpType::reduceType) {
-                            case PRODUCT: {
-                                #pragma omp simd reduction(prodT:startingVal)
-                                for (unsigned int i = 0; i < info.getItersPerThread(threadNum); i++)
-                                    startingVal = OpType::update(startingVal, OpType::op(xi[i*xEws], extraParams), extraParams);
-                            }
-                                break;
-                            case SUM: {
-                                #pragma omp simd reduction(sumT:startingVal)
-                                for (unsigned int i = 0; i < info.getItersPerThread(threadNum); i++)
-                                    startingVal = OpType::update(startingVal, OpType::op(xi[i*xEws], extraParams), extraParams);
-                            }
-                            break;
-                            case ASUM: {
-                            #pragma omp simd reduction(asumT:startingVal)
-                                for (unsigned int i = 0; i < info.getItersPerThread(threadNum); i++)
-                                    startingVal = OpType::update(startingVal, OpType::op(xi[i*xEws], extraParams), extraParams);
-                            }
-                            break;
-                            case MAX: {
-                                #pragma omp simd reduction(maxT:startingVal)
-                                for (unsigned int i = 0; i < info.getItersPerThread(threadNum); i++)
-                                    startingVal = OpType::update(startingVal, OpType::op(xi[i*xEws], extraParams), extraParams);
-                            }
-                            break;
-                            case MIN: {
-                                #pragma omp simd reduction(minT:startingVal)
-                                for (unsigned int i = 0; i < info.getItersPerThread(threadNum); i++)
-                                    startingVal = OpType::update(startingVal, OpType::op(xi[i*xEws], extraParams), extraParams);
-                            }
-                            break;
-                            case AMAX: {
-                                #pragma omp simd reduction(amaxT:startingVal)
-                                for (unsigned int i = 0; i < info.getItersPerThread(threadNum); i++)
-                                    startingVal = OpType::update(startingVal, OpType::op(xi[i*xEws], extraParams), extraParams);
-                            }
-                            break;
-                            case AMIN: {
-                                #pragma omp simd reduction(aminT:startingVal)
-                                for (unsigned int i = 0; i < info.getItersPerThread(threadNum); i++)
-                                    startingVal = OpType::update(startingVal, OpType::op(xi[i*xEws], extraParams), extraParams);
-                            }
-                            break;
-                        }
-                    }                    
+                    for (Nd4jLong i = 0; i < info.getItersPerThread(threadNum); i++)
+                        local = OpType::update(local, OpType::op(xi[i*xEws], extraParams), extraParams);
+
+                    #pragma omp critical
+                    startingVal = OpType::update(startingVal, local, extraParams);
                 }
-                return OpType::postProcess(startingVal, length, extraParams);
+            }
+            return OpType::postProcess(startingVal, length, extraParams);
             }
 
 
