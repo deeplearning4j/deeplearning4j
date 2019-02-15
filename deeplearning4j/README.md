@@ -34,7 +34,7 @@ To get started using Deeplearning4j, please go to our [Quickstart](https://deepl
     - spark = integration with Apache Spark versions 1.3 to 1.6 (Spark 2.0 coming soon)
     - parallel-wraper = Single machine model parallelism (for multi-GPU systems, etc)
     - aws = loading data to and from aws resources EC2 and S3
-- ui = provides visual interfaces for tuning models. [Details here](https://deeplearning4j.org/visualization)
+- ui = provides visual interfaces for tuning models. [Details here](https://deeplearning4j.org/docs/latest/deeplearning4j-nn-visualization)
 
 ---
 ## Documentation
