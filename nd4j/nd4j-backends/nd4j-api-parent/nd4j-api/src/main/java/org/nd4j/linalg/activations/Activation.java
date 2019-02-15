@@ -41,7 +41,7 @@ import org.nd4j.linalg.api.ops.impl.transforms.strict.TanhDerivative;
 public enum Activation {
     CUBE, ELU, HARDSIGMOID, HARDTANH, IDENTITY, LEAKYRELU, RATIONALTANH, RELU, RELU6,
     RRELU, SIGMOID, SOFTMAX, SOFTPLUS, SOFTSIGN, TANH, RECTIFIEDTANH, SELU, SWISH,
-    THRESHOLDEDRELU;
+    THRESHOLDEDRELU, GELU;
 
     /**
      * Creates an instance of the activation function
@@ -88,6 +88,8 @@ public enum Activation {
                 return new ActivationTanH();
             case THRESHOLDEDRELU:
                 return new ActivationThresholdedReLU();
+            case GELU:
+                return new ActivationGELU();
             default:
                 throw new UnsupportedOperationException("Unknown or not supported activation function: " + this);
         }
@@ -147,6 +149,8 @@ public enum Activation {
                 return sd.softsign(variableName, input);
             case TANH:
                 return sd.tanh(variableName, input);
+            case GELU:
+                return sd.gelu(variableName, input);
             case HARDSIGMOID:
             case RATIONALTANH:
             case RRELU:
@@ -202,6 +206,8 @@ public enum Activation {
                 return new SELU(in);
             case SWISH:
                 return new Swish(in);
+            case GELU:
+                return new GELU(in);
             case RRELU:
             default:
                 throw new UnsupportedOperationException("Not supported via this method: " + this);
@@ -253,6 +259,8 @@ public enum Activation {
                 return new ScalarSet(in, 1.0);
             case RELU:
                 return new Step(in);
+            case GELU:
+                return new GELUDerivative(in);
             case RRELU:
             default:
                 throw new UnsupportedOperationException("Not supported via this method: " + this);
