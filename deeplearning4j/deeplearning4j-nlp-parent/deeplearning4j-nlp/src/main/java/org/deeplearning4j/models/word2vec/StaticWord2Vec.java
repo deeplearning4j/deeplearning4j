@@ -336,6 +336,46 @@ public class StaticWord2Vec implements WordVectors {
         // no-op
     }
 
+    @Override
+    public void loadWeightsInto(INDArray array) {
+        int n = (int)vocabSize();
+        INDArray zero = null;
+        for( int i=0; i<n; i++ ){
+            INDArray arr = storage.get(i);
+            if(arr == null){    //TODO is this even possible?
+                if(zero == null)
+                    zero = Nd4j.create(array.dataType(), 1, array.size(1));
+                arr = zero;
+            }
+            array.putRow(i, arr);
+        }
+    }
+
+    @Override
+    public long vocabSize() {
+        return storage.size();
+    }
+
+    @Override
+    public int vectorSize() {
+        INDArray arr = storage.get(0);
+        if(arr != null)
+            return (int)arr.length();
+
+        int vs = (int)vocabSize();
+        for( int i=1; i<vs; i++ ){
+            arr = storage.get(0);
+            if(arr != null)
+                return (int)arr.length();
+        }
+        throw new UnsupportedOperationException("No vectors found");
+    }
+
+    @Override
+    public boolean jsonSerializable() {
+        return false;
+    }
+
     public static class Builder {
 
         private AbstractStorage<Integer> storage;

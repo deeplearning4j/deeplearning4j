@@ -24,6 +24,9 @@ import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
 import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
+import org.deeplearning4j.nn.weights.embeddings.ArrayEmbeddingInitializer;
+import org.deeplearning4j.nn.weights.embeddings.EmbeddingInitializer;
+import org.deeplearning4j.nn.weights.embeddings.WeightInitEmbedding;
 import org.deeplearning4j.optimize.api.TrainingListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
@@ -118,6 +121,14 @@ public class EmbeddingLayer extends FeedForwardLayer {
         public Builder hasBias(boolean hasBias) {
             this.hasBias = hasBias;
             return this;
+        }
+
+        public Builder weightInit(EmbeddingInitializer embeddingInitializer){
+            return weightInit(new WeightInitEmbedding(embeddingInitializer));
+        }
+
+        public Builder weightInit(INDArray vectors){
+            return weightInit(new ArrayEmbeddingInitializer(vectors));
         }
 
         @Override
