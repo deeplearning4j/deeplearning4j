@@ -100,19 +100,6 @@ public class TFGraphTestAllLibnd4j {
             "rnn/grucell/dynamic.*",
             "rnn/lstmcell/dynamic.*",
             "rnn/srucell/dynamic.*",
-
-            //2019/02/16 JVM crash:
-            "logsumexp/.*",
-            "losses/absdiff.*",
-            "losses/cosine.*",
-            "losses/hinge.*",
-            "losses/huber.*",
-            "losses/log_loss.*",
-            "losses/mse.*",
-            "losses/sigmoid_ce.*",
-            "losses/softmax_ce.*",
-            "losses/sparse_softmax.*",
-            "reductions/count_nonzero_all"
     };
 
     @BeforeClass
