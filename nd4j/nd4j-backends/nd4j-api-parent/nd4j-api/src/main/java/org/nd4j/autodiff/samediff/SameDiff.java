@@ -33,7 +33,7 @@ import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.functions.DifferentialFunctionFactory;
 import org.nd4j.autodiff.loss.LossReduce;
 import org.nd4j.autodiff.samediff.internal.*;
-import org.nd4j.autodiff.samediff.ops.SDBaseOps;
+import org.nd4j.autodiff.samediff.ops.*;
 import org.nd4j.autodiff.samediff.serde.FlatBuffersMapper;
 import org.nd4j.autodiff.util.cloner.DataBufferFastCloner;
 import org.nd4j.autodiff.util.cloner.INDArrayFastCloner;
@@ -164,6 +164,39 @@ public class SameDiff extends SDBaseOps {
 
     // counter for auto-naming variables
     private int variableId = 0;
+
+    ////////////////////////////////////////
+
+    public final SDNN nn = new SDNN(this);
+    public final SDCNN cnn = new SDCNN(this);
+    public final SDRNN rnn = new SDRNN(this);
+    public final SDLoss loss = new SDLoss(this);
+    public final SDMath math = new SDMath(this);
+    public final SDRandom random = new SDRandom(this);
+
+    public SDNN nn(){
+        return nn;
+    }
+
+    public SDCNN cnn(){
+        return cnn;
+    }
+
+    public SDRNN rnn(){
+        return rnn;
+    }
+
+    public SDLoss loss(){
+        return loss;
+    }
+
+    public SDMath math(){
+        return math;
+    }
+
+    public SDRandom random(){
+        return random;
+    }
 
 
 
@@ -665,7 +698,8 @@ public class SameDiff extends SDBaseOps {
     public void putOrUpdateShapeForVarName(String varName, long[] shape, boolean clearArrayOnShapeMismatch){
         Preconditions.checkNotNull(shape, "Cannot put null shape for variable: %s", varName);
         if(variableNameToShape.containsKey(varName)){
-            updateShapeForVarName(varName, shape, clearArrayOnShapeMismatch);
+//            updateShapeForVarName(varName, shape, clearArrayOnShapeMismatch);
+            //TODO
         } else {
             putShapeForVarName(varName, shape);
         }
@@ -3055,8 +3089,6 @@ public class SameDiff extends SDBaseOps {
      * returns false for the passed in vertex id,
      * a {@link ND4JIllegalStateException} is thrown.
      * <p>
-     * A vertex id must be added first. You can
-     * do this with {@link #addAsPlaceHolder(String)}
      *
      * @param variableName the vertex id for the original shape
      * @param shape        the shape of the place holder
@@ -3089,6 +3121,7 @@ public class SameDiff extends SDBaseOps {
      * @param varName the vertex id to get the original shape for.
      * @return the set vertex
      */
+    @Deprecated
     public long[] getOriginalShapeForPlaceHolder(String varName) {
         return placeHolderOriginalShapes.get(varName);
     }

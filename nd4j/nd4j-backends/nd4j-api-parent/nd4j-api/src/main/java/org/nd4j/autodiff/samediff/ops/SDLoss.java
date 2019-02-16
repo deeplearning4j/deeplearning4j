@@ -34,7 +34,7 @@ public class SDLoss extends SDOps {
     public SDVariable lossAbsoluteDifference(String name, @NonNull SDVariable label, @NonNull SDVariable predictions,
                                              SDVariable weights, @NonNull LossReduce lossReduce) {
         if (weights == null)
-            weights = this.scalar(null, 1.0);
+            weights = sd.scalar(null, 1.0);
         SDVariable result = f().lossAbsoluteDifference(label, predictions, weights, lossReduce);
         return updateVariableNameAndReference(result, name);
     }
@@ -71,7 +71,7 @@ public class SDLoss extends SDOps {
     public SDVariable lossCosineDistance(String name, @NonNull SDVariable label, @NonNull SDVariable predictions,
                                          SDVariable weights, @NonNull LossReduce lossReduce, int dimension) {
         if (weights == null)
-            weights = this.scalar(null, 1.0);
+            weights = sd.scalar(null, 1.0);
         SDVariable result = f().lossCosineDistance(label, predictions, weights, lossReduce, dimension);
         return updateVariableNameAndReference(result, name);
     }
@@ -106,7 +106,7 @@ public class SDLoss extends SDOps {
     public SDVariable lossHinge(String name, @NonNull SDVariable label, @NonNull SDVariable predictions,
                                 SDVariable weights, @NonNull LossReduce lossReduce) {
         if (weights == null)
-            weights = this.scalar(null, 1.0);
+            weights = sd.scalar(null, 1.0);
         SDVariable result = f().lossHinge(label, predictions, weights, lossReduce);
         return updateVariableNameAndReference(result, name);
     }
@@ -146,7 +146,7 @@ public class SDLoss extends SDOps {
     public SDVariable lossHuber(String name, @NonNull SDVariable label, @NonNull SDVariable predictions,
                                 SDVariable weights, @NonNull LossReduce lossReduce, double delta) {
         if (weights == null)
-            weights = this.scalar(null, 1.0);
+            weights = sd.scalar(null, 1.0);
         SDVariable result = f().lossHuber(label, predictions, weights, lossReduce, delta);
         return updateVariableNameAndReference(result, name);
     }
@@ -201,7 +201,7 @@ public class SDLoss extends SDOps {
     public SDVariable lossLog(String name, @NonNull SDVariable label, @NonNull SDVariable predictions,
                               SDVariable weights, @NonNull LossReduce lossReduce, double epsilon) {
         if (weights == null)
-            weights = this.scalar(null, 1.0);
+            weights = sd.scalar(null, 1.0);
         SDVariable result = f().lossLog(label, predictions, weights, lossReduce, epsilon);
         return updateVariableNameAndReference(result, name);
     }
@@ -234,7 +234,7 @@ public class SDLoss extends SDOps {
     public SDVariable lossLogPoisson(String name, @NonNull SDVariable label, @NonNull SDVariable predictions,
                                      SDVariable weights, @NonNull LossReduce lossReduce) {
         if (weights == null)
-            weights = this.scalar(null, 1.0);
+            weights = sd.scalar(null, 1.0);
         SDVariable result = f().lossLogPoisson(label, predictions, weights, lossReduce);
         return updateVariableNameAndReference(result, name);
     }
@@ -268,7 +268,7 @@ public class SDLoss extends SDOps {
     public SDVariable lossLogPoissonFull(String name, @NonNull SDVariable label, @NonNull SDVariable predictions,
                                          SDVariable weights, @NonNull LossReduce lossReduce) {
         if (weights == null)
-            weights = this.scalar(null, 1.0);
+            weights = sd.scalar(null, 1.0);
         SDVariable result = f().lossLogPoissonFull(label, predictions, weights, lossReduce);
         return updateVariableNameAndReference(result, name);
     }
@@ -301,7 +301,7 @@ public class SDLoss extends SDOps {
      */
     public SDVariable lossMeanPairwiseSquaredError(String name, @NonNull SDVariable label, @NonNull SDVariable predictions, SDVariable weights, @NonNull LossReduce lossReduce) {
         if (weights == null)
-            weights = this.scalar(null, 1.0);
+            weights = sd.scalar(null, 1.0);
         SDVariable result = f().lossMeanPairwiseSquaredError(label, predictions, weights, lossReduce);
         return updateVariableNameAndReference(result, name);
     }
@@ -328,7 +328,7 @@ public class SDLoss extends SDOps {
     public SDVariable lossMeanSquaredError(String name, @NonNull SDVariable label, @NonNull SDVariable predictions,
                                            SDVariable weights, @NonNull LossReduce lossReduce) {
         if (weights == null)
-            weights = this.scalar(null, 1.0);
+            weights = sd.scalar(null, 1.0);
         SDVariable result = f().lossMeanSquaredError(label, predictions, weights, lossReduce);
         return updateVariableNameAndReference(result, name);
     }
@@ -371,7 +371,7 @@ public class SDLoss extends SDOps {
     public SDVariable lossSigmoidCrossEntropy(String name, @NonNull SDVariable label, @NonNull SDVariable predictionLogits,
                                               SDVariable weights, @NonNull LossReduce lossReduce, double labelSmoothing) {
         if (weights == null)
-            weights = this.scalar(null, 1.0);
+            weights = sd.scalar(null, 1.0);
         SDVariable result = f().lossSigmoidCrossEntropy(label, predictionLogits, weights, lossReduce, labelSmoothing);
         return updateVariableNameAndReference(result, name);
     }
@@ -413,7 +413,7 @@ public class SDLoss extends SDOps {
     public SDVariable lossSoftmaxCrossEntropy(String name, @NonNull SDVariable oneHotLabels, @NonNull SDVariable logitPreductions,
                                               SDVariable weights, @NonNull LossReduce lossReduce, double labelSmoothing) {
         if (weights == null)
-            weights = this.scalar(null, 1.0);
+            weights = sd.scalar(null, 1.0);
         SDVariable result = f().lossSoftmaxCrossEntropy(oneHotLabels, logitPreductions, weights, lossReduce, labelSmoothing);
         return updateVariableNameAndReference(result, name);
     }

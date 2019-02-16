@@ -358,7 +358,7 @@ public class SDVariable extends DifferentialFunction implements Serializable {
      * @return Negated variable
      */
     public SDVariable neg(String name){
-        return sameDiff.neg(name, this);
+        return sameDiff.math().neg(name, this);
     }
 
     /**

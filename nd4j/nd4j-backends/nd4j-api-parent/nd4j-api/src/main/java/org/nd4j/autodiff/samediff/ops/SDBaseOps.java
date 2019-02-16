@@ -26,6 +26,12 @@ public abstract class SDBaseOps {
         return updateVariableNameAndReference(result, name);
     }
 
+    protected abstract String generateNewVarName(String baseName, int argIndex);
+
+    protected abstract DifferentialFunctionFactory f();
+
+    protected abstract SDVariable updateVariableNameAndReference(SDVariable varToUpdate, String newVarName);
+
     /**
      * Argmax array reduction operation, optionally along specified dimensions.<br>
      * Output values are the index of the maximum value of each slice along the specified dimension
@@ -225,6 +231,8 @@ public abstract class SDBaseOps {
         SDVariable[] result = f().batchMmul(matricesA, matricesB, transposeA, transposeB);
         return updateVariableNamesAndReferences(result, names);
     }
+
+    protected abstract SDVariable[] updateVariableNamesAndReferences(SDVariable[] variablesToUpdate, String[] newVariableNames);
 
     /**
      * Matrix multiply a batch of matrices. matricesA and matricesB have to be arrays of same
@@ -1472,10 +1480,6 @@ public abstract class SDBaseOps {
         return updateVariableNameAndReference(ret, name);
     }
 
-    protected abstract DifferentialFunctionFactory f();
-
-    protected abstract SDVariable updateVariableNameAndReference(SDVariable varToUpdate, String newVarName);
-
     /**
      * @see #stack(String, int, SDVariable...)
      */
@@ -1712,7 +1716,7 @@ public abstract class SDBaseOps {
      * @see #reshape(SDVariable, SDVariable)
      */
     public SDVariable reshape(String name, SDVariable x, long... shape) {
-        SDVariable result = functionFactory.reshape(x, shape);
+        SDVariable result = f().reshape(x, shape);
         return updateVariableNameAndReference(result, name);
     }
 
@@ -1742,7 +1746,7 @@ public abstract class SDBaseOps {
      * @see #reshape(SDVariable, SDVariable)
      */
     public SDVariable reshape(String name, SDVariable x, int... shape) {
-        SDVariable result = functionFactory.reshape(x, shape);
+        SDVariable result = f().reshape(x, shape);
         return updateVariableNameAndReference(result, name);
     }
 

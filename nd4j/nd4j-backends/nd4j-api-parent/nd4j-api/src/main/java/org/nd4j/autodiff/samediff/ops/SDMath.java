@@ -623,7 +623,7 @@ public class SDMath extends SDOps {
      * @see #cosineSimilarity(String, SDVariable, SDVariable, int...)
      */
     public SDVariable cosineSimilarity(SDVariable x, SDVariable y, int... dimensions) {
-        return cosineSimilarity(generateNewVarName(CosineSimilarity.OP_NAME, 0), x, y, dimensions);
+        return cosineSimilarity(sd.generateNewVarName(CosineSimilarity.OP_NAME, 0), x, y, dimensions);
     }
 
     /**
@@ -854,7 +854,7 @@ public class SDMath extends SDOps {
      * @see #euclideanDistance(String, SDVariable, SDVariable, int...)
      */
     public SDVariable euclideanDistance(SDVariable x, SDVariable y, int... dimensions) {
-        return euclideanDistance(generateNewVarName(EuclideanDistance.OP_NAME, 0), x, y, dimensions);
+        return euclideanDistance(sd.generateNewVarName(EuclideanDistance.OP_NAME, 0), x, y, dimensions);
     }
 
     /**
@@ -991,7 +991,7 @@ public class SDMath extends SDOps {
      * @param batchDimension Batch dimensions. May be null
      */
     public SDVariable eye(String name, int rows, int cols, DataType dataType, int... batchDimension) {
-        SDVariable eye = new Eye(this, rows, cols, dataType, batchDimension).outputVariables()[0];
+        SDVariable eye = new Eye(sd, rows, cols, dataType, batchDimension).outputVariables()[0];
         return updateVariableNameAndReference(eye, name);
     }
 
@@ -1008,7 +1008,7 @@ public class SDMath extends SDOps {
      * and the batch dimension specified as a 1D SDVariable
      */
     public SDVariable eye(String name, SDVariable rows, SDVariable cols, SDVariable batchDimension) {
-        SDVariable eye = new Eye(this, rows, cols, batchDimension).outputVariable();
+        SDVariable eye = new Eye(sd, rows, cols, batchDimension).outputVariable();
         return updateVariableNameAndReference(eye, name);
     }
 
@@ -1016,7 +1016,7 @@ public class SDMath extends SDOps {
      * As per {@link #eye(String, int, int)} bit with the number of rows/columns specified as scalar SDVariables
      */
     public SDVariable eye(String name, SDVariable rows, SDVariable cols) {
-        SDVariable eye = new Eye(this, rows, cols).outputVariables()[0];
+        SDVariable eye = new Eye(sd, rows, cols).outputVariables()[0];
         return updateVariableNameAndReference(eye, name);
     }
 
@@ -1024,7 +1024,7 @@ public class SDMath extends SDOps {
      * As per {@link #eye(int, int)} bit with the number of rows/columns specified as scalar SDVariables
      */
     public SDVariable eye(SDVariable rows, SDVariable cols) {
-        SDVariable eye = new Eye(this, rows, cols).outputVariables()[0];
+        SDVariable eye = new Eye(sd, rows, cols).outputVariables()[0];
         return updateVariableNameAndReference(eye, null);
     }
 
@@ -1032,7 +1032,7 @@ public class SDMath extends SDOps {
      * As per {@link #eye(String, int)} but with the number of rows specified as a scalar SDVariable
      */
     public SDVariable eye(String name, SDVariable rows) {
-        SDVariable eye = new Eye(this, rows).outputVariables()[0];
+        SDVariable eye = new Eye(sd, rows).outputVariables()[0];
         return updateVariableNameAndReference(eye, name);
     }
 
@@ -1040,7 +1040,7 @@ public class SDMath extends SDOps {
      * As per {@link #eye(int)} but with the number of rows specified as a scalar SDVariable
      */
     public SDVariable eye(SDVariable rows) {
-        SDVariable eye = new Eye(this, rows).outputVariables()[0];
+        SDVariable eye = new Eye(sd, rows).outputVariables()[0];
         return updateVariableNameAndReference(eye, null);
     }
 
@@ -1146,7 +1146,7 @@ public class SDMath extends SDOps {
     /**
      * Index of the max absolute value: argmax(abs(in))
      *
-     * @see #argmax(SDVariable, int...)
+     * @see SameDiff#argmax(SDVariable, int...)
      */
     public SDVariable iamax(SDVariable in, int... dimensions) {
         return iamax(null, in, dimensions);
@@ -1155,7 +1155,7 @@ public class SDMath extends SDOps {
     /**
      * Index of the max absolute value: argmax(abs(in))
      *
-     * @see #argmax(String, SDVariable, boolean, int...)
+     * @see SameDiff#argmax(String, SDVariable, boolean, int...)
      */
     public SDVariable iamax(String name, SDVariable in, int... dimensions) {
         return iamax(name, in, false, dimensions);
@@ -1164,7 +1164,7 @@ public class SDMath extends SDOps {
     /**
      * Index of the max absolute value: argmax(abs(in))
      *
-     * @see #argmax(String, SDVariable, boolean, int...)
+     * @see SameDiff#argmax(String, SDVariable, boolean, int...)
      */
     public SDVariable iamax(String name, SDVariable in, boolean keepDims, int... dimensions) {
         SDVariable ret = f().iamax(in, keepDims, dimensions);
@@ -1174,7 +1174,7 @@ public class SDMath extends SDOps {
     /**
      * Index of the max absolute value: argmax(abs(in))
      *
-     * @see #argmax(String, SDVariable, boolean, int...)
+     * @see SameDiff#argmax(String, SDVariable, boolean, int...)
      */
     public SDVariable iamax(SDVariable in, boolean keepDims, int... dimensions) {
         return iamax(null, in, keepDims, dimensions);
@@ -1183,7 +1183,7 @@ public class SDMath extends SDOps {
     /**
      * Index of the min absolute value: argmin(abs(in))
      *
-     * @see #argmin(String, SDVariable, boolean, int...)
+     * @see SameDiff#argmin(String, SDVariable, boolean, int...)
      */
     public SDVariable iamin(SDVariable in, int... dimensions) {
         return iamin(null, in, dimensions);
@@ -1192,7 +1192,7 @@ public class SDMath extends SDOps {
     /**
      * Index of the min absolute value: argmin(abs(in))
      *
-     * @see #argmin(String, SDVariable, boolean, int...)
+     * @see SameDiff#argmin(String, SDVariable, boolean, int...)
      */
     public SDVariable iamin(String name, SDVariable in, int... dimensions) {
         return iamin(name, in, false, dimensions);
@@ -1201,7 +1201,7 @@ public class SDMath extends SDOps {
     /**
      * Index of the min absolute value: argmin(abs(in))
      *
-     * @see #argmin(String, SDVariable, boolean, int...)
+     * @see SameDiff#argmin(String, SDVariable, boolean, int...)
      */
     public SDVariable iamin(String name, SDVariable in, boolean keepDims, int... dimensions) {
         SDVariable ret = f().iamin(in, keepDims, dimensions);
@@ -1211,7 +1211,7 @@ public class SDMath extends SDOps {
     /**
      * Index of the min absolute value: argmin(abs(in))
      *
-     * @see #argmin(String, SDVariable, boolean, int...)
+     * @see SameDiff#argmin(String, SDVariable, boolean, int...)
      */
     public SDVariable iamin(SDVariable in, boolean keepDims, int... dimensions) {
         return iamin(null, in, keepDims, dimensions);
@@ -1575,7 +1575,7 @@ public class SDMath extends SDOps {
      * @see #manhattanDistance(String, SDVariable, SDVariable, int...)
      */
     public SDVariable manhattanDistance(SDVariable x, SDVariable y, int... dimensions) {
-        return manhattanDistance(generateNewVarName(ManhattanDistance.OP_NAME, 0), x, y, dimensions);
+        return manhattanDistance(sd.generateNewVarName(ManhattanDistance.OP_NAME, 0), x, y, dimensions);
     }
 
     /**
@@ -1772,7 +1772,7 @@ public class SDMath extends SDOps {
      */
     public SDVariable[] moments(String[] name, SDVariable input, int... axes) {
         SDVariable[] res = f().moments(input, axes);
-        return updateVariableNamesAndReferences(res, name);
+        return sd.updateVariableNamesAndReferences(res, name);
     }
 
     /**
@@ -1817,7 +1817,7 @@ public class SDMath extends SDOps {
     public SDVariable[] normalizeMoments(String[] name, SDVariable counts, SDVariable means, SDVariable variances,
                                          double shift) {
         SDVariable[] res = f().normalizeMoments(counts, means, variances, shift);
-        return updateVariableNamesAndReferences(res, name);
+        return sd.updateVariableNamesAndReferences(res, name);
     }
 
     /**

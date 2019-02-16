@@ -107,8 +107,8 @@ public class ReductionOpValidation extends BaseOpValidation {
             SDVariable input = sd.var("in", DataType.DOUBLE, 2, 2);
             sd.associateArrayWithVariable(ia, input);
 
-            SDVariable nonZero = sd.countNonZero(input);
-            SDVariable zero = sd.countZero(input);
+            SDVariable nonZero = sd.math().countNonZero(input);
+            SDVariable zero = sd.math().countZero(input);
 
             SDVariable loss = nonZero.add(zero).castTo(DataType.DOUBLE).std(true);
 

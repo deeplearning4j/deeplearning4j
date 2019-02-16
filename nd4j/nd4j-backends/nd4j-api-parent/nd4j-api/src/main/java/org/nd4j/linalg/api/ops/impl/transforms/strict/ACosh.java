@@ -77,8 +77,8 @@ public class ACosh extends BaseTransformStrictOp {
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
         //dacosh(x)/dx = 1/(sqrt(x^2-1)) -- note that domain is x >= 1
-        SDVariable xSqPlus1 = sameDiff.square(arg()).sub(1.0);
-        SDVariable sqrt = sameDiff.sqrt(xSqPlus1);
+        SDVariable xSqPlus1 = sameDiff.math().square(arg()).sub(1.0);
+        SDVariable sqrt = sameDiff.math().sqrt(xSqPlus1);
         return Arrays.asList(i_v.get(0).div(sqrt));
     }
 

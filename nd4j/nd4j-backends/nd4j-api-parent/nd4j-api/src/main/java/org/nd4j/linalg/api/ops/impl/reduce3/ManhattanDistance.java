@@ -94,7 +94,7 @@ public class ManhattanDistance extends BaseReduce3Op {
             gradBroadcastable = sameDiff.f().reductionBroadcastableWithOrigShape(arg(), sameDiff.constant(Nd4j.createFromArray(dimensions)), i_v1.get(0));
         }
 
-        SDVariable gradX = sameDiff.sign(difference).mul(gradBroadcastable);
+        SDVariable gradX = sameDiff.math().sign(difference).mul(gradBroadcastable);
         SDVariable gradY = f().neg(gradX);
         return Arrays.asList(gradX, gradY);
     }
