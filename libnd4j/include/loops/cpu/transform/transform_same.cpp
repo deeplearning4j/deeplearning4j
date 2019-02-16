@@ -60,10 +60,20 @@ namespace functions {
                         
             nd4j::OmpLaunchHelper info(len);
 
-            uint xShapeInfoCast[MAX_RANK];
-            bool canCastX = nd4j::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
+            if (shape::elementWiseStride(xShapeInfo) == 1 && shape::elementWiseStride(zShapeInfo) == 1 && shape::order(xShapeInfo) == shape::order(zShapeInfo)) {
 
-            if(shape::haveSameOffsets(xShapeInfo, zShapeInfo)) {
+#pragma omp parallel num_threads(info._numThreads) if (info._numThreads > 1) default(shared)
+                {
+                    auto threadNum = omp_get_thread_num();
+                    auto threadOffset = info.getThreadOffset(threadNum);
+
+                    #pragma omp simd
+                    for (Nd4jLong i = 0; i < info.getItersPerThread(threadNum); i++)
+                        z[i] = OpType::op(x[i], extraParams);
+                }
+            } else if(shape::haveSameOffsets(xShapeInfo, zShapeInfo)) {
+                uint xShapeInfoCast[MAX_RANK];
+                bool canCastX = nd4j::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
 
 #pragma omp parallel num_threads(info._numThreads) if (info._numThreads > 1) default(shared)
                 {
@@ -78,6 +88,9 @@ namespace functions {
                 }
             }
             else {
+                uint xShapeInfoCast[MAX_RANK];
+                bool canCastX = nd4j::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
+
                 uint zShapeInfoCast[MAX_RANK];
                 bool canCastZ = nd4j::DataTypeUtils::castShapeInfo(zShapeInfo, zShapeInfoCast);
 

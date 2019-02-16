@@ -141,27 +141,38 @@ namespace functions {
 
             auto tadShapeShapeInfo = tad.tadOnlyShapeInfo;
             auto tadLength = shape::length(tad.tadOnlyShapeInfo);
+            auto tadEWS = shape::elementWiseStride(tad.tadOnlyShapeInfo);
+            auto tadOrder = shape::order(tad.tadOnlyShapeInfo);
 
             uint tadShapeShapeInfoCast[MAX_RANK];
-            const bool canCast = nd4j::DataTypeUtils::castShapeInfo<uint>(tadShapeShapeInfo, tadShapeShapeInfoCast);
+            const bool canCast = tadEWS == 1 && tadOrder == 'c' ? false : nd4j::DataTypeUtils::castShapeInfo<uint>(tadShapeShapeInfo, tadShapeShapeInfoCast);
 
 #pragma omp parallel for if(resultLength > nd4j::Environment::getInstance()->elementwiseThreshold()) schedule(guided) default(shared)
             for (int r = 0; r < resultLength; r++) {
                         
             auto tadOffsetForBlock = tad.tadOffsets[r];
+            auto tx = x + tadOffsetForBlock;
             SummaryStatsData<X> comp;
-            comp.initWithValue(x[tadOffsetForBlock]);
+            comp.initWithValue(tx[0]);
 
-// FIXME: reduction should be fixed
-            for (int i = 1; i < tadLength; i ++) {                            
-                            
-                auto xOffset = tadOffsetForBlock + shape::indexOffset(i, tadShapeShapeInfo, tadShapeShapeInfoCast, tadLength, canCast);
+            if (tadEWS == 1 && tadOrder == 'c') {
+                for (int i = 1; i < tadLength; i ++) {
+                    SummaryStatsData <X> indexVal2;
+                    indexVal2.initWithValue(tx[i]);
 
-                SummaryStatsData <X> indexVal2;
-                indexVal2.initWithValue(x[xOffset]);
+                    comp = update(comp, OpType::op(indexVal2, extraParams), extraParams);
+                }
+            } else {
+                for (int i = 1; i < tadLength; i ++) {
+                    auto xOffset = shape::indexOffset(i, tadShapeShapeInfo, tadShapeShapeInfoCast, tadLength, canCast);
 
-                comp = update(comp, OpType::op(indexVal2, extraParams), extraParams);
+                    SummaryStatsData <X> indexVal2;
+                    indexVal2.initWithValue(tx[xOffset]);
+
+                    comp = update(comp, OpType::op(indexVal2, extraParams), extraParams);
+                }
             }
+
             z[r] = OpType::getValue(biasCorrected, comp);
         }            
     }
