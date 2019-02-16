@@ -177,4 +177,15 @@ public class PopulationModelTests {
         Assert.assertTrue(cullOperator.hasCulled);
     }
 
+    @Test(expected = IllegalArgumentException.class)
+    public void PopulationModel_ctor_culledSizeLessThanTwo_ShouldThrow() {
+        PopulationInitializer populationInitializer = new TestPopulationInitializer();
+
+        TestCullOperator cullOperator = new TestCullOperator(1);
+
+        PopulationModel sut = new PopulationModel.Builder().populationInitializer(populationInitializer)
+                .populationSize(5).cullOperator(cullOperator).build();
+
+        Assert.fail("Should have thrown IllegalArgumentException");
+    }
 }
