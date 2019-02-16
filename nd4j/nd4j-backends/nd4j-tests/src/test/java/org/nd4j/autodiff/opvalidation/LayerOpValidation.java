@@ -28,6 +28,7 @@ import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.iter.NdIndexIterator;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.AvgPooling2D;
+import org.nd4j.linalg.api.ops.impl.layers.convolution.DeConv3DDerivative;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.Pooling2D;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.Pooling2DDerivative;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.*;
@@ -478,7 +479,7 @@ public class LayerOpValidation extends BaseOpValidation {
                 int nIn = inSizeNCDHW[1];
                 int[] shape = (ncdhw ? inSizeNCDHW : ncdhwToNdhwc(inSizeNCDHW));
 
-                for (int i = 0; i < 4; i++) {
+                for (int i = 0; i < 5; i++) {
                     SameDiff sd = SameDiff.create();
                     SDVariable in = sd.var("in", shape);
 
@@ -527,11 +528,21 @@ public class LayerOpValidation extends BaseOpValidation {
                                     .build());
                             break;
                         case 4:
+                            //Deconv3d
+                            msg = "4 - deconv3d, ncdhw=" + ncdhw;
+                            SDVariable wDeconv = sd.var(Nd4j.rand(new int[]{2,2,2,3,nIn}));  //[kD, kH, kW, oC, iC]
+                            SDVariable bDeconv = sd.var(Nd4j.rand(new int[]{3}));
+                            out = sd.deconv3d("Deconv3d", in, wDeconv, bDeconv, DeConv3DConfig.builder()
+                                    .kD(2).kH(2).kW(2)
+                                    .isSameMode(true)
+                                    .dataFormat(ncdhw ? DeConv3DConfig.NCDHW : DeConv3DConfig.NDHWC)
+                            .build());
+                            break;
+                        case 5:
                             //Batch norm - 3d input
                             throw new RuntimeException("Batch norm test not yet implemented");
                         default:
                             throw new RuntimeException();
-
                     }
 
                     INDArray inArr = Nd4j.rand(shape).muli(10);

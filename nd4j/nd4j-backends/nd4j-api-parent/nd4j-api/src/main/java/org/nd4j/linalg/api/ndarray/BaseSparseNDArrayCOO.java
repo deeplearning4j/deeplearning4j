@@ -737,6 +737,11 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
     }
 
     @Override
+    public long getLong(long index) {
+        return 0;
+    }
+
+    @Override
     public double getDouble(int... indices) {
         int valIdx = reverseIndexes(indices);
         if (valIdx == -1) {

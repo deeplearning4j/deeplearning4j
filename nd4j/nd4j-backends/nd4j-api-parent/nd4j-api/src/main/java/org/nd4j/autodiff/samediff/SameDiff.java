@@ -43,7 +43,6 @@ import org.nd4j.jackson.objectmapper.holder.ObjectMapperHolder;
 import org.nd4j.linalg.api.blas.params.MMulTranspose;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.buffer.factory.DataBufferFactory;
-import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.*;
@@ -52,6 +51,7 @@ import org.nd4j.linalg.api.ops.impl.controlflow.If;
 import org.nd4j.linalg.api.ops.impl.controlflow.While;
 import org.nd4j.linalg.api.ops.impl.controlflow.compat.Enter;
 import org.nd4j.linalg.api.ops.impl.controlflow.compat.Switch;
+import org.nd4j.linalg.api.ops.impl.layers.ExternalErrorsFunction;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.*;
 import org.nd4j.linalg.api.ops.impl.layers.recurrent.GRUCell;
 import org.nd4j.linalg.api.ops.impl.layers.recurrent.LSTMCell;
@@ -73,7 +73,6 @@ import org.nd4j.linalg.api.ops.impl.shape.OneHot;
 import org.nd4j.linalg.api.ops.impl.shape.tensorops.TensorArray;
 import org.nd4j.linalg.api.ops.impl.transforms.Assert;
 import org.nd4j.linalg.api.ops.impl.transforms.gradient.GradientBackwardsMarker;
-import org.nd4j.linalg.api.ops.impl.layers.ExternalErrorsFunction;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.collection.IntArrayKeyMap;
@@ -91,7 +90,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.indexing.conditions.Condition;
 import org.nd4j.linalg.learning.GradientUpdater;
-import org.nd4j.linalg.ops.transforms.Transforms;
+import org.nd4j.linalg.learning.regularization.Regularization;
 import org.nd4j.linalg.primitives.AtomicBoolean;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.util.ArrayUtil;
@@ -397,8 +396,8 @@ public class SameDiff {
         Map<Integer, Integer> thisVertexIdToNew = new HashMap<>();
         int idx = 1;
         for (val var : variables()) {
-            val clone = cloner.deepCloneDontCloneInstances(var, var.getSameDiff());
-            val newVar = sameDiff.var(clone);
+            SDVariable clone = cloner.deepCloneDontCloneInstances(var, var.getSameDiff());
+            SDVariable newVar = sameDiff.var(clone);
             if (var.getArr() != null && var.getVariableType() != VariableType.ARRAY) {      //ARRAY type = "activations" - are overwritten anyway
                 sameDiff.associateArrayWithVariable(var.getArr(), newVar);
             }
@@ -929,17 +928,6 @@ public class SameDiff {
      */
     public Collection<String> definedFunctionNames() {
         return this.sameDiffFunctionInstances.keySet();
-    }
-
-
-    /**
-     * Returns the number of bytes for the graph. Calculated as sum_i prod(shapeOf(variable[i]))
-     *
-     * @return Bytes for all of the arrays in the graph for the current variable shapes
-     */
-    public long memoryForGraph() {
-        //TODO FIX ME
-        return numElements() * DataTypeUtil.lengthForDtype(Nd4j.dataType());
     }
 
     /**
@@ -1504,9 +1492,11 @@ public class SameDiff {
                     Preconditions.checkState(trainingConfig.getDataSetFeatureMapping().size() == ds.numFeatureArrays(),
                             "The number of dataset feature mapping variables set in the training configuration (%s) must match" +
                                     " the number of dataset feature arrays (%s)", trainingConfig.getDataSetFeatureMapping().size(), ds.numFeatureArrays());
-                    Preconditions.checkState(trainingConfig.getDataSetLabelMapping().size() == ds.numLabelsArrays(),
+                    List<String> labelMapping = trainingConfig.getDataSetLabelMapping();
+                    int lblSize = labelMapping == null ? 0 : labelMapping.size();
+                    Preconditions.checkState(lblSize == ds.numLabelsArrays(),
                             "The number of dataset label mapping variables set in the training configuration (%s) must match" +
-                                    " the number of dataset label arrays (%s)", trainingConfig.getDataSetLabelMapping().size(), ds.numLabelsArrays());
+                                    " the number of dataset label arrays (%s)", lblSize, ds.numLabelsArrays());
 
                     performedValidation = true;
                 }
@@ -1534,6 +1524,19 @@ public class SameDiff {
                     //Note: don't need to divide by minibatch - that should be handled in loss function and hence loss function gradients,
                     // which should flow through to here
 
+                    //Pre-apply regularization (L1, L2)
+                    List<Regularization> r = trainingConfig.getRegularization();
+                    int iterCount = trainingConfig.getIterationCount();
+                    int epochCount = trainingConfig.getEpochCount();
+                    double lr = trainingConfig.getUpdater().hasLearningRate() ? trainingConfig.getUpdater().getLearningRate(iteration, epochCount) : 1.0;
+                    if(r != null && r.size() > 0){
+                        for(Regularization reg : r){
+                            if(reg.applyStep() == Regularization.ApplyStep.BEFORE_UPDATER){
+                                reg.apply(param, grad, lr, iterCount, epochCount);
+                            }
+                        }
+                    }
+
                     //Apply updater. Note that we need to reshape to [1,length] for updater
                     INDArray reshapedView = Shape.newShapeNoCopy(grad, new long[]{1, grad.length()}, grad.ordering() == 'f');       //TODO make sure we always reshape in same order!
                     Preconditions.checkState(reshapedView != null, "Error reshaping array for parameter \"%s\": array is a view?", s);
@@ -1545,18 +1548,13 @@ public class SameDiff {
                                 + "\": either parameter size is inconsistent between iterations, or \"" + s + "\" should not be a trainable parameter?", t);
                     }
 
-                    //L1 and L2 regularization:
-                    if (trainingConfig.getL1() > 0) {
-                        //L1: loss += lambda * sum_i |param_i|
-                        //dL/dp_i: lambda * sgn(param_i)
-                        INDArray signProd = Transforms.sign(param, true).muli(trainingConfig.getL1());
-                        grad.addi(signProd);
-                    }
-                    if (trainingConfig.getL2() > 0) {
-                        //L2: loss += 0.5 * lambda * sum_i param_i^2
-                        //dL/dp_i: lambda * param_i
-                        //TODO axpy optimization = safe/possible?
-                        grad.addi(param.mul(trainingConfig.getL2()));
+                    //Post-apply regularization (weight decay)
+                    if(r != null && r.size() > 0){
+                        for(Regularization reg : r){
+                            if(reg.applyStep() == Regularization.ApplyStep.POST_UPDATER){
+                                reg.apply(param, grad, lr, iterCount, epochCount);
+                            }
+                        }
                     }
 
                     if (trainingConfig.isMinimize()) {
@@ -1579,59 +1577,32 @@ public class SameDiff {
     }
 
     /**
-     * Calculate the L2 regularization component of the loss: {@code 0.5 * sum_i (weights_i)}<br>
+     * Calculate the regularization (L1, L2 and/or WeightDecay) component of the loss function for the current parameters..
      * Note that the training configuration must be set (via {@link #setTrainingConfig(TrainingConfig)}) before this
      * method can be called
      *
-     * @return The L2 regularization component of the score
+     * @return The regularization component of the score/loss function
      */
-    public double calculateL2Loss() {
+    public double calcRegularizationScore() {
         Preconditions.checkState(trainingConfig != null, "No training configuration has been set. A training configuration must " +
                 "be set before calculating the L2 loss. Use setTrainingConfig(TrainingConfig)");
 
-        if(trainingConfig.getL2() == 0){
+        if(trainingConfig.getRegularization() == null || trainingConfig.getRegularization().isEmpty()){
             return 0.0;
         }
 
         if(trainingConfig.getTrainableParams() == null || trainingConfig.getTrainableParams().isEmpty())
             initializeTraining();
 
-        double l2 = trainingConfig.getL2();
-        double l2Loss = 0.0;
+        List<Regularization> l = trainingConfig.getRegularization();
+        double loss = 0.0;
         for (String s : trainingConfig.getTrainableParams()) {
-            //L2: loss += 0.5 * lambda * sum_i param_i^2
-            double norm2 = getVariable(s).getArr().norm2Number().doubleValue();
-            l2Loss += 0.5 * l2 * norm2 * norm2;
+            for(Regularization r : l){
+                INDArray arr = getVariable(s).getArr();
+                loss += r.score(arr, trainingConfig.getIterationCount(), trainingConfig.getEpochCount());
+            }
         }
-        return l2Loss;
-    }
-
-    /**
-     * Calculate the L1 regularization component of the loss: {@code 0sum_i (abs(weights_i))}<br>
-     * Note that the training configuration must be set (via {@link #setTrainingConfig(TrainingConfig)}) before this
-     * method can be called
-     *
-     * @return The L1 regularization component of the score
-     */
-    public double calculateL1Loss(){
-        Preconditions.checkState(trainingConfig != null, "No training configuration has been set. A training configuration must " +
-                "be set before calculating the L1 loss. Use setTrainingConfig(TrainingConfig)");
-
-        if(trainingConfig.getL1() == 0){
-            return 0.0;
-        }
-
-        if(trainingConfig.getTrainableParams() == null || trainingConfig.getTrainableParams().isEmpty())
-            initializeTraining();
-
-        double l1 = trainingConfig.getL1();
-        double l1Loss = 0.0;
-        for (String s : trainingConfig.getTrainableParams()) {
-            //L1: loss += lambda * sum_i |param_i|
-            double norm1 = getVariable(s).getArr().norm1Number().doubleValue();
-            l1Loss += l1 * norm1;
-        }
-        return l1Loss;
+        return loss;
     }
 
     /**
@@ -1653,7 +1624,8 @@ public class SameDiff {
                     SDVariable v = var.getVariable();
                     String n = v.getVarName();
                     if(variables.get(n).getOutputOfOp() == null &&       //Is a leaf (not the output of a function)
-                            !isPlaceHolder(n) &&                                                                                 //and not a placeholder
+                            !isPlaceHolder(n) &&                                //and not a placeholder
+                            !variables.get(n).getVariable().isConstant() &&     //and not a constant
                             (trainingConfig.getDataSetFeatureMapping() == null || !trainingConfig.getDataSetFeatureMapping().contains(n))   &&  //and not an input (this really should be a placeholder, but we can't guarantee that...)
                             (trainingConfig.getDataSetLabelMapping() == null || !trainingConfig.getDataSetLabelMapping().contains(n))   &&      //and not a label (this really should be a placeholder, but we can't guarantee that...)
                             (trainingConfig.getDataSetFeatureMaskMapping() == null || !trainingConfig.getDataSetFeatureMaskMapping().contains(n))   &&  //and not a feature mask (this really should be a placeholder, but we can't guarantee that...)
@@ -1719,8 +1691,11 @@ public class SameDiff {
             placeholders.put(s, ds.getFeatures(count++));
         }
         count = 0;
-        for(String s : trainingConfig.getDataSetLabelMapping()){
-            placeholders.put(s, ds.getLabels(count++));
+        if(trainingConfig.getDataSetLabelMapping() != null) {
+            //Labels may be null in some models (unsupervised etc)
+            for (String s : trainingConfig.getDataSetLabelMapping()) {
+                placeholders.put(s, ds.getLabels(count++));
+            }
         }
 
         if(trainingConfig.getDataSetFeatureMaskMapping() != null && trainingConfig.getDataSetFeatureMaskMapping().size() > 0){
@@ -2231,24 +2206,32 @@ public class SameDiff {
      * {@link NDArraySupplierInitScheme} is used to ensure that if the array is allocated anywhere
      * and {@link SameDiff} instance to exist as a copy of the variable.
      *
-     * @param arr
+     * @param v Variable
      * @return
      */
-    public SDVariable var(@NonNull final SDVariable arr) {
-        if (variables.containsKey(arr.getVarName()) && variables.get(arr.getVarName()).getVariable().getArr() != null)
-            return variables.get(arr.getVarName()).getVariable();
+    public SDVariable var(@NonNull final SDVariable v) {
+        if (variables.containsKey(v.getVarName()) && variables.get(v.getVarName()).getVariable().getArr() != null)
+            return variables.get(v.getVarName()).getVariable();
 
-        if (arr.getVarName() == null || arr.getVarName().length() < 1)
+        if (v.getVarName() == null || v.getVarName().length() < 1)
             throw new IllegalArgumentException("Name for variable must be defined");
 
-        VariableType vt = arr.getVariableType();
-        WeightInitScheme s = null;
-        if(vt == VariableType.CONSTANT || vt == VariableType.VARIABLE){
-            s = new NDArraySupplierInitScheme(arr.getArr());
+        VariableType vt = v.getVariableType();
+        NDArraySupplierInitScheme s = null;
+        switch(vt){
+            case VARIABLE:
+                s = new NDArraySupplierInitScheme(v.getArr());
+                //Intentional fallthrough
+            case ARRAY:
+                SDVariable ret = new SDVariable(v.getVarName(), v.getVariableType(), this, v.getShape(), v.dataType(), s);
+                return addVariable(ret);
+            case CONSTANT:
+                return constant(v.getVarName(), v.getArr());
+            case PLACEHOLDER:
+                return placeHolder(v.getVarName(), v.dataType(), v.placeholderShape());
+            default:
+                throw new RuntimeException("Unknown/not supported variable type: " + vt);
         }
-
-        SDVariable ret = new SDVariable(arr.getVarName(), arr.getVariableType(), this, arr.getShape(), arr.dataType(), s);
-        return addVariable(ret);
     }
 
     private String getNewVarName() {
@@ -2336,6 +2319,213 @@ public class SameDiff {
             putShapeForVarName(name, arr.shape());
         return ret;
     }
+
+    /**
+     * Convert the specified variable to a constant. This is equivalent to "freezing" a variable so that it's value
+     * won't be changed by further training.<br>
+     * This can only be done for variables and placeholders, not ARRAY type variables (which are usually network activations).
+     * As a constant, this variable will no longer be modified by any subsequent training.
+     *
+     * @param variable Variable to convert to a constant
+     * @return The (now constant) SDVariable
+     */
+    public SDVariable convertToConstant(@NonNull SDVariable variable) {
+        convertToConstants(Collections.singletonList(variable));
+        return variable;
+    }
+
+    /**
+     * Convert all of the specified variables to constants. This is equivalent to "freezing" the variables so that their values
+     * won't be changed by further training.<br>
+     * This can only be done for variables and placeholders, not ARRAY type variables (which are usually network activations).
+     * As constants, these variables will no longer be modified by any subsequent training.
+     *
+     * @param variables Variables to convert to constants
+     * @return The (now constant) SDVariables
+     */
+    public void convertToConstants(List<SDVariable> variables){
+        if(variables.size() == 0)
+            return;
+        boolean allConst = true;
+        for(SDVariable variable : variables) {
+            if (variable.getVariableType() != VariableType.CONSTANT) {
+                allConst = false;
+                Preconditions.checkState(variable.getVariableType() != VariableType.ARRAY, "Cannot convert variable of type ARRAY to a constant: %s", variable);
+            }
+        }
+        if(allConst){
+            return; //No op
+        }
+
+        //Remove all sessions in case they have any cached arrays/state
+        sessions.clear();
+
+        //If gradient function has been defined, remove it (so it will be recreated later)
+        sameDiffFunctionInstances.remove("grad");
+
+        for(SDVariable variable : variables ) {
+            String n = variable.getVarName();
+            INDArray arr = variable.getArr();
+            Preconditions.checkNotNull(arr, "Could not get array for variable %s: if this is a placeholder, use SDVariable.setArray before converting", variable);
+
+            constantArrays.put(n, new DeviceLocalNDArray(arr));
+            variablesArrays.remove(n);
+            if(!placeholdersPerThread.isEmpty()){
+                for(Map<String,INDArray> m : placeholdersPerThread.values()){
+                    m.remove(n);
+                }
+            }
+
+            variable.setVariableType(VariableType.CONSTANT);
+        }
+
+
+        if(trainingConfig != null){
+            Set<String> toRemove = new HashSet<>();
+            boolean anyTrainableParmsModified = false;
+            List<String> origTrainableParams = trainingConfig.getTrainableParams();
+            for(SDVariable v : variables){
+                toRemove.add(v.getVarName());
+                if(!anyTrainableParmsModified && origTrainableParams.contains(v.getVarName())){
+                    anyTrainableParmsModified = true;
+                }
+            }
+
+
+            //Remove updater state for this variable: updaterState, updaterViews, updaterMap
+            if(anyTrainableParmsModified) {
+                List<String> newTrainableParams = new ArrayList<>();
+                for (String s : origTrainableParams) {
+                    if (!toRemove.contains(s)) {
+                        newTrainableParams.add(s);
+                    }
+                }
+                trainingConfig.setTrainableParams(newTrainableParams);
+            }
+
+            if(initializedTraining){
+                List<INDArray> newUpdaterState = new ArrayList<>();
+                for (String s : origTrainableParams) {
+                    INDArray stateArr = updaterViews.get(s);
+                    if (!toRemove.contains(s)) {
+                        newUpdaterState.add(stateArr);
+                    }
+                }
+
+                updaterState = newUpdaterState.isEmpty() ? null : Nd4j.concat(0, newUpdaterState.toArray(new INDArray[newUpdaterState.size()]));
+                //Now, update updaterViews map:
+                long viewSoFar = 0;
+                updaterViews = new HashMap<>();
+                updaterMap = new HashMap<>();
+                for(String s : trainingConfig.getTrainableParams()) {
+                    long thisSize = trainingConfig.getUpdater().stateSize(this.variables.get(s).getVariable().getArr().length());
+                    INDArray view = (updaterState == null || thisSize == 0 ? null :
+                            updaterState.get(NDArrayIndex.interval(0, 1), NDArrayIndex.interval(viewSoFar, viewSoFar + thisSize)));
+
+                    updaterViews.put(s, view);
+                    updaterMap.put(s, trainingConfig.getUpdater().instantiate(view, false));
+                    viewSoFar += thisSize;
+                }
+            }
+        }
+    }
+
+    /**
+     * Convert the specified variable to a VARIABLE type SDVariable.<br>
+     * This can only be done for constants and placeholders, not ARRAY type variables (which are usually network activations).
+     * As a variable, this variable will modified during any subsequent training.
+     *
+     * @return This variable (now a variable type SDVariable)
+     */
+    public SDVariable convertToVariable(@NonNull SDVariable constant) {
+        convertToVariables(Collections.singletonList(constant));
+        return constant;
+    }
+
+    /**
+     * Convert the specified variables to VARIABLE type SDVariables.<br>
+     * This can only be done for constants and placeholders, not ARRAY type variables (which are usually network activations).
+     * As variables, this variable will modified during any subsequent training.
+     */
+    public void convertToVariables(@NonNull List<SDVariable> constants){
+        if(constants.size() == 0)
+            return;
+        boolean allConst = true;
+        for(SDVariable variable : constants) {
+            if (variable.getVariableType() != VariableType.VARIABLE) {
+                allConst = false;
+            }
+            Preconditions.checkState(variable.getVariableType() != VariableType.ARRAY, "Cannot convert variable of type ARRAY to a variable: %s", variable);
+        }
+        if(allConst){
+            return; //No op
+        }
+
+        //Remove all sessions in case they have any cached arrays/state
+        sessions.clear();
+
+        //If gradient function has been defined, remove it (so it will be recreated later)
+        sameDiffFunctionInstances.remove("grad");
+
+        for(SDVariable variable : constants) {
+            String n = variable.getVarName();
+            INDArray arr = variable.getArr();
+            Preconditions.checkNotNull(arr, "Could not get array for variable %s: if this is a placeholder, use SDVariable.setArray before converting", variable);
+
+            variablesArrays.put(n, new DeviceLocalNDArray(arr));
+            constantArrays.remove(n);
+            if(!placeholdersPerThread.isEmpty()){
+                for(Map<String,INDArray> m : placeholdersPerThread.values()){
+                    m.remove(n);
+                }
+            }
+
+            variable.setVariableType(VariableType.VARIABLE);
+        }
+
+
+        //For training: need to add new updater state
+        if(trainingConfig != null){
+            List<String> newTrainableParams = new ArrayList<>(trainingConfig.getTrainableParams());
+            List<String> convertedToVars = new ArrayList<>();
+            for(SDVariable v : constants){
+                newTrainableParams.add(v.getVarName());
+                convertedToVars.add(v.getVarName());
+            }
+            trainingConfig.setTrainableParams(newTrainableParams);
+
+
+            //Add updater state for this variable: updaterState, updaterViews, updaterMap
+            if(initializedTraining){
+                long extraStateSize = 0;
+                for (String s : convertedToVars) {
+                    INDArray arr = getVariable(s).getArr();
+                    long stateSize = trainingConfig.getUpdater().stateSize(arr.length());
+                    extraStateSize += stateSize;
+                }
+                if(extraStateSize > 0) {
+                    INDArray newState = Nd4j.createUninitialized(updaterState.dataType(), 1, extraStateSize);
+
+                    updaterState = (updaterState == null ? newState : Nd4j.concat(1, updaterState, newState));
+                    //Now, update updaterViews map:
+                    long viewSoFar = 0;
+                    updaterViews = new HashMap<>();
+                    updaterMap = new HashMap<>();
+                    for (String s : trainingConfig.getTrainableParams()) {
+                        long thisSize = trainingConfig.getUpdater().stateSize(this.variables.get(s).getVariable().getArr().length());
+                        INDArray view = (updaterState == null || thisSize == 0 ? null :
+                                updaterState.get(NDArrayIndex.interval(0, 1), NDArrayIndex.interval(viewSoFar, viewSoFar + thisSize)));
+
+                        updaterViews.put(s, view);
+                        boolean init = convertedToVars.contains(s); //Only initialize/zero the states for the new variables
+                        updaterMap.put(s, trainingConfig.getUpdater().instantiate(view, init));
+                        viewSoFar += thisSize;
+                    }
+                }
+            }
+        }
+    }
+
 
     /**
      * Generate a square identity matrix with the specified number of rows.
@@ -3273,6 +3463,19 @@ public class SameDiff {
      */
     public SDVariable deconv2d(String name, SDVariable[] inputs, DeConv2DConfig deconv2DConfig) {
         SDVariable ret = f().deconv2d(inputs, deconv2DConfig);
+        return updateVariableNameAndReference(ret, name);
+    }
+
+    /**
+     * 3D CNN deconvolution operation with or without optional bias
+     * @param name    Name of the output variable
+     * @param input   Input array - shape [bS, iD, iH, iW, iC] (NDHWC) or [bS, iC, iD, iH, iW] (NCDHW)
+     * @param weights Weights array - shape [kD, kH, kW, oC, iC]
+     * @param bias    Bias array - optional, may be null. If non-null, must have shape [outputChannels]
+     * @param config  Configuration
+     */
+    public SDVariable deconv3d(String name, SDVariable input, SDVariable weights, SDVariable bias, DeConv3DConfig config){
+        SDVariable ret = f().deconv3d(input, weights, bias, config);
         return updateVariableNameAndReference(ret, name);
     }
 
@@ -5051,6 +5254,32 @@ public class SameDiff {
     public SDVariable relu6(String name, SDVariable x, double cutoff) {
         SDVariable result = functionFactory.relu6(x, cutoff);
         return updateVariableNameAndReference(result, name);
+    }
+
+    /**
+     * GELU activation function - Gaussian Error Linear Units<br>
+     * For more details, see <i>Gaussian Error Linear Units (GELUs)</i> - <a href="https://arxiv.org/abs/1606.08415">https://arxiv.org/abs/1606.08415</a>
+     * This method uses the sigmoid approximation
+     *
+     * @param x Input
+     * @return Output variable - GELU applied to the input
+     */
+    public SDVariable gelu(SDVariable x) {
+        return gelu(null, x);
+    }
+
+    /**
+     * GELU activation function - Gaussian Error Linear Units<br>
+     * For more details, see <i>Gaussian Error Linear Units (GELUs)</i> - <a href="https://arxiv.org/abs/1606.08415">https://arxiv.org/abs/1606.08415</a>
+     * This method uses the sigmoid approximation
+     *
+     * @param name Name of the output variable. May be null.
+     * @param x    Input
+     * @return Output variable - GELU applied to the input
+     */
+    public SDVariable gelu(String name, SDVariable x) {
+        SDVariable ret = f().gelu(x, false);    //Defaults to si
+        return updateVariableNameAndReference(ret, name);
     }
 
     /**
@@ -11466,7 +11695,6 @@ public class SameDiff {
         int maxLengthOfName = 8;       //Length of "- Name -"
         for (String s : varMap.keySet()) {
             String outputOf = null;
-//            for (Map.Entry<String, String[]> dfToArgs : outgoingArgsReverse.entrySet()) {
             for(SameDiffOp op : ops.values()){
                 List<String> outputsOfOp = op.getOutputsOfOp();
                 if (outputsOfOp != null && outputsOfOp.contains(s)) {
@@ -11489,14 +11717,16 @@ public class SameDiff {
         maxLengthOfName += 2;
 
         //Create the output for values:
-        format = "%-" + maxLengthOfName + "s%-20s%-" + maxLengthOutputOf + "s%-20s";
-        sb.append(String.format(format, "- Name -", "- Array Shape -", "- Output Of Function -", "- Inputs To Functions -")).append("\n");
+        format = "%-" + maxLengthOfName + "s%-20s%-20s%-20s%-" + maxLengthOutputOf + "s%-20s";
+        sb.append(String.format(format, "- Name -", "- Array Shape -", "- Variable Type -", "- Data Type-", "- Output Of Function -", "- Inputs To Functions -")).append("\n");
         for (String s : varMap.keySet()) {
             INDArray arr = getArrForVarName(s);
             String arrayShape = "-";
             if (arr != null) {
                 arrayShape = Arrays.toString(arr.shape());
             }
+            String varType = getVariable(s).getVariableType().toString();
+            String dtype = getVariable(s).dataType().toString();
 
             List<String> argNames = variables.get(s).getInputsForOp();
             String dfArrStr = "";
@@ -11506,7 +11736,7 @@ public class SameDiff {
 
             String outputOfStr = outputOfFn.get(s);
 
-            sb.append(String.format(format, s, arrayShape, outputOfStr, dfArrStr)).append("\n");
+            sb.append(String.format(format, s, arrayShape, varType, dtype, outputOfStr, dfArrStr)).append("\n");
         }
 
         sb.append("\n\n--- Functions ---\n");
