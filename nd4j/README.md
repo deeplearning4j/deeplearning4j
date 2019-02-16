@@ -3,7 +3,7 @@ ND4J: Scientific Computing on the JVM
 
 [![Join the chat at https://gitter.im/deeplearning4j/deeplearning4j](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/deeplearning4j/deeplearning4j?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 [![Maven Central](https://maven-badges.herokuapp.com/maven-central/org.nd4j/nd4j/badge.svg)](https://maven-badges.herokuapp.com/maven-central/org.nd4j/nd4j)
-[![Javadoc](https://javadoc-emblem.rhcloud.com/doc/org.nd4j/nd4j/badge.svg)](http://nd4j.org/doc)
+[![Javadoc](https://javadoc-emblem.rhcloud.com/doc/org.nd4j/nd4j/badge.svg)](https://deeplearning4j.org/api/latest/)
 
 ND4J is an Apache 2.0-licensed scientific computing library for the JVM. By contributing code to this repository, you agree to make your contribution available under an Apache 2.0 license.
 
@@ -52,12 +52,12 @@ mvn clean package test -pl :nd4j-api
 
 ## Documentation
 
-Documentation is available at [nd4j.org](http://nd4j.org/). Access the [JavaDocs](http://nd4j.org/doc/) for more detail.
+Documentation is available at [deeplearning4j.org](https://deeplearning4j.org/). Access the [JavaDocs](https://deeplearning4j.org/api/latest/) for more detail.
 
 ---
 ## Installation
 
-To install ND4J, there are a couple of approaches, and more information can be found on the [ND4J website](http://nd4j.org/getstarted.html).
+To install ND4J, there are a couple of approaches, and more information can be found on the [DL4J website](https://deeplearning4j.org/docs/latest/nd4j-overview).
 
 #### Install from Maven Central
 

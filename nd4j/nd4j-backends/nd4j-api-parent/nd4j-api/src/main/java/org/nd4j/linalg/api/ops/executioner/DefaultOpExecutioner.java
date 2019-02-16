@@ -53,7 +53,7 @@ import java.util.*;
 @Slf4j
 public class DefaultOpExecutioner implements OpExecutioner {
 
-    private static final String SCOPE_PANIC_MSG = "For more details, see the ND4J User Guide: nd4j.org/userguide#workspaces-panic";
+    private static final String SCOPE_PANIC_MSG = "For more details, see the ND4J User Guide: deeplearning4j.org/docs/latest/nd4j-overview#workspaces-panic";
 
     protected ProfilingMode profilingMode = ProfilingMode.SCOPE_PANIC;
 

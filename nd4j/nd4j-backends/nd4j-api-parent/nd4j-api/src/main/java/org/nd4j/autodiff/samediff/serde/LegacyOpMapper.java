@@ -333,6 +333,10 @@ public class LegacyOpMapper {
                 return Expm1.class;
             case 52:
                 return ATanh.class;
+            case 53:
+                return GELU.class;
+            case 54:
+                return GELUDerivative.class;
             default:
                 throw new UnsupportedOperationException("No known transform strict op for op number: " + opNum);
         }
