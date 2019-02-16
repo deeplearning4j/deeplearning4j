@@ -182,8 +182,8 @@ public:
 
 class OrderTest : public testing::Test {
 public:
-    Nd4jLong expected[8] = {2,3,4,1,3,0,-1,102};
-    Nd4jLong test[8] = {2,3,4,1,3,0,-1,102};
+    Nd4jLong expected[8] = {2,3,4,1,3,0,0,102};
+    Nd4jLong test[8] = {2,3,4,1,3,0,0,102};
 
 };
 
@@ -194,8 +194,8 @@ public:
     Nd4jLong shapeBufferC[16] = {4,1,1,4,4,16,16,4,1,16384,1,99};
     int dimensionLength = 2;
     int dimension[2] = {2,3};
-    Nd4jLong tadAssertionC[10] = {3,4,4,1,4,1,16,16384,-1,99};
-    Nd4jLong tadCAssertionF[10] = {3,4,4,1,1,4,1,16384,-1,99};
+    Nd4jLong tadAssertionC[10] = {3,4,4,1,4,1,16,16384,0,99};
+    Nd4jLong tadCAssertionF[10] = {3,4,4,1,1,4,1,16384,0,99};
 };
 
 
@@ -216,7 +216,7 @@ TEST_F(LeadingOnes,OnesTest) {
 
 class NormalThreeFourFive : public testing::Test {
 public:
-    Nd4jLong assertionBuffer[8] = {2, 3, 4, 20, 5, 16384, -1, 99};
+    Nd4jLong assertionBuffer[8] = {2, 3, 4, 20, 5, 16384, 0, 99};
     Nd4jLong inputShapeBuffer[10] = {3,3,4,5,20,5,1,16384,1,99};
     int dimensionLength = 2;
     int dimension[2] = {0,1};
@@ -292,8 +292,8 @@ public:
 
 class BeginOneTadTest : public testing::Test {
 public:
-    Nd4jLong assertionShapeBuffer[8] = {2,3,5,1,3,16384,-1,102};
-    Nd4jLong inputShapeBuffer[10] = {3,1,3,5,1,1,3,16384,1,102};
+    Nd4jLong assertionShapeBuffer[8] = {2,3,5,1,3,16384,0,102};
+    Nd4jLong inputShapeBuffer[10] = {3,1,3,5,1,1,3,16384,0,102};
     int dimensionLength = 2;
     int dimension[2] = {1,2};
     //error: [2,1,1,1,1,0,1,97]
@@ -356,7 +356,7 @@ class RowVectorOnesTest : public testing::Test {
 public:
     Nd4jLong shapeBuffer[12] = {4,4,3,1,1,3,1,1,1,8192,1,99}; // float32 type of shape
     float data[12] = {1,2,3,4,5,6,7,8,9,10,11,12};
-    Nd4jLong assertionBuffer[10] = {3,4,1,1,3,1,1,8192,-1,99};
+    Nd4jLong assertionBuffer[10] = {3,4,1,1,3,1,1,8192,0,99};
     int dimensionLength = 3;
     int dimension[3] = {0,2,3};
 };
@@ -376,7 +376,7 @@ public:
     Nd4jLong inputShapeBuffer[16] = {6,1,1,4,4,4,4,1,1,1,4,16,64,16384,1,102}; // shape with double data type
     int dimensionLength = 2;
     int dimension[2] = {2,3};
-    Nd4jLong assertionShapeBuffer[8] = {2,4,4,1,4,16384,-1,102}; // also double typed shape
+    Nd4jLong assertionShapeBuffer[8] = {2,4,4,1,4,16384,0,102}; // also double typed shape
 };
 
 TEST_F(SixDTest,SixDWithOnes) {
@@ -393,7 +393,7 @@ public:
     Nd4jLong inputShapeBuffer[12] = {4,5,5,5,1,1,5,25,125,16384,1,102};
     int dimensionLength = 1;
     int dimension[1] = {0};
-    Nd4jLong assertionShapeBuffer[8] = {2,1,5,125,1,16384,-1,99};
+    Nd4jLong assertionShapeBuffer[8] = {2,1,5,125,1,16384,0,99};
 };
 
 TEST_F(TrailingTest,TrailingTest2) {

@@ -96,6 +96,7 @@ TEST_F(DeclarableOpsTests9, reduceStDevBP_test03) {
     delete result;
 
 }
+/*
 
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests9, exponentialDistributionInv_test1) {
@@ -186,6 +187,7 @@ TEST_F(DeclarableOpsTests9, exponentialDistribution_test1) {
     nativeOps.destroyRandom((Nd4jPointer) rng);
     delete[] buffer;       
 }
+*/
 
 //////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests9, exponentialDistribution_test2) {

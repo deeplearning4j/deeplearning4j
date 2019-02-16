@@ -1027,7 +1027,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
         //TAD always calls permute. Permute EWS is always -1. This is not true for vector shapes though.
         if (!Shape.isVector(baseNDArray.shapeInfoDataBuffer()))
-            ews = -1;
+            ews = 0;
 
         // we create new shapeInfo with possibly new ews & order
         /**
@@ -1229,7 +1229,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public void setShapeAndStride(int[] shape, int[] stride) {
-        setShapeInformation(Nd4j.getShapeInfoProvider().createShapeInformation(ArrayUtil.toLongArray(shape), ArrayUtil.toLongArray(stride),  -1, ordering(), this.dataType()));
+        setShapeInformation(Nd4j.getShapeInfoProvider().createShapeInformation(ArrayUtil.toLongArray(shape), ArrayUtil.toLongArray(stride),  0, ordering(), this.dataType()));
     }
 
 
@@ -5646,7 +5646,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         if (shapeInfo.get(2 * rank + 2) > 0) {
             //for the backend to work - no ews for permutei
             //^^ not true anymore? Not sure here. Marking this for raver
-            setShapeInformation(Nd4j.getShapeInfoProvider().createShapeInformation(newShape, newStride, -1, newOrder, dataType()));
+            setShapeInformation(Nd4j.getShapeInfoProvider().createShapeInformation(newShape, newStride, 0, newOrder, dataType()));
         }
 
         //this.shape = null;

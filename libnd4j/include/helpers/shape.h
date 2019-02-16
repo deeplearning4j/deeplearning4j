@@ -57,6 +57,8 @@
 #include <stdint.h>
 #include <array/ArrayOptions.h>
 
+typedef unsigned int uint;
+
 namespace shape {
 
 /**
@@ -108,7 +110,9 @@ namespace shape {
 
     ND4J_EXPORT _CUDA_HD bool equalsTypesAndShapesSoft(const Nd4jLong *shapeA, const Nd4jLong *shapeB);
 
-    ND4J_EXPORT _CUDA_HD bool equalsStrict(Nd4jLong *shapeA, Nd4jLong *shapeB);
+    ND4J_EXPORT _CUDA_HD bool equalsStrict(const Nd4jLong *shapeA, const Nd4jLong *shapeB);
+    ND4J_EXPORT _CUDA_HD bool haveSameOffsets(const Nd4jLong *shapeA, const Nd4jLong *shapeB);
+
 
     ND4J_EXPORT _CUDA_HD int sizeAt(const Nd4jLong *shape, const int dim);
 
@@ -235,7 +239,7 @@ namespace shape {
  * @param stride the stride
  * @param isFOrder 0 or 1 for whether the array is f
  * ordered or not
- * @return -1 if there is no element wise stride the
+ * @return 0 if there is no element wise stride the
  * element wise stride of reshape(1,length) otherwise
  */
     ND4J_EXPORT _CUDA_HD int computeElementWiseStride(int rank, Nd4jLong *shape, Nd4jLong *stride, int isFOrder);
@@ -248,7 +252,7 @@ namespace shape {
  * @param stride the stride
  * @param isFOrder 0 or 1 for whether the array is f
  * ordered or not
- * @return -1 if there is no element wise stride the
+ * @return 0 if there is no element wise stride the
  * element wise stride of reshape(1,length) otherwise
  */
     ND4J_EXPORT _CUDA_HD int computeElementWiseStride(int rank, Nd4jLong *shape, Nd4jLong *stride, int isFOrder, Nd4jLong *dimension, int dimensionLength);
@@ -456,6 +460,8 @@ namespace shape {
  * an information buffer
  */
     ND4J_EXPORT _CUDA_HD int rank(const Nd4jLong *buffer);
+    ND4J_EXPORT _CUDA_HD int rank(const int *buffer);
+    ND4J_EXPORT _CUDA_HD int rank(const unsigned int *buffer);
 
 /**
  * Converts a raw int buffer of the layout:
@@ -974,8 +980,10 @@ namespace shape {
    /* calculates an array buffer offset for given "index" using following formula: offset = coord_0*stride_0 + coord_1*stride_1 + ... + coord_{rank-1}*stride_{rank-1}
     * arrLen - array length
    */
+    ND4J_EXPORT _CUDA_HD uint getIndexOffset(uint index, const uint *shapeInfo, uint arrLen);
     ND4J_EXPORT _CUDA_HD Nd4jLong getIndexOffset(Nd4jLong index, const Nd4jLong *shapeInfo, Nd4jLong arrLen);
     ND4J_EXPORT _CUDA_HD Nd4jLong getIndexOrderOffset(Nd4jLong index, const Nd4jLong *shapeInfo, Nd4jLong arrLen, const char order);
+    ND4J_EXPORT _CUDA_HD Nd4jLong indexOffset(Nd4jLong index, const Nd4jLong* lShapeInfo, const uint* uShapeInfo, Nd4jLong arrLen, const bool useUnsigned);
     
     /**
    * Compute the real linear indices for the given shape and stride
@@ -1558,7 +1566,7 @@ __device__ INLINEDEF Nd4jLong *cuMalloc(Nd4jLong *buffer, long size) {
                 delete[] newShape;
                 delete[] oldstrides;
                 delete[] olddims;
-                return -1;
+                return 0;
             }
 
             if (np == 0) {
@@ -1567,7 +1575,7 @@ __device__ INLINEDEF Nd4jLong *cuMalloc(Nd4jLong *buffer, long size) {
                 delete[] newShape;
                 delete[] oldstrides;
                 delete[] olddims;
-                return -1;
+                return 0;
             }
 
 /* oi to oj and ni to nj give the axis ranges currently worked with */
@@ -1597,7 +1605,7 @@ __device__ INLINEDEF Nd4jLong *cuMalloc(Nd4jLong *buffer, long size) {
                             delete[] newShape;
                             delete[] oldstrides;
                             delete[] olddims;
-                            return -1;
+                            return 0;
                         }
                     } else {
 /* C order */
@@ -1607,7 +1615,7 @@ __device__ INLINEDEF Nd4jLong *cuMalloc(Nd4jLong *buffer, long size) {
                             delete[] newShape;
                             delete[] oldstrides;
                             delete[] olddims;
-                            return -1;
+                            return 0;
                         }
                     }
                 }
@@ -1661,7 +1669,7 @@ __device__ INLINEDEF Nd4jLong *cuMalloc(Nd4jLong *buffer, long size) {
         if(dimensionLength == 1) {
             return stride[dimension[0]];
         }
-        return -1;
+        return 0;
 
     }
 
@@ -1933,16 +1941,55 @@ template <typename T>
 //////////////////////////////////////////////////////////////////////    
     INLINEDEF _CUDA_HD Nd4jLong getIndexOffset(Nd4jLong index, const Nd4jLong *shapeInfo, Nd4jLong arrLen) {
         
-        Nd4jLong offset = 0;
+        const Nd4jLong ews = shapeInfo[shapeInfo[0] + shapeInfo[0] + 2];
 
-        for(int i = 1; i <= *shapeInfo; ++i) {
+        if(ews > 0 && order(shapeInfo) == 'c')
+           if (ews == 1)
+               return index;
+           else
+               return ews * index;
+
+        Nd4jLong offset = 0;        
+
+        for(int i = 1; i <= shapeInfo[0]; ++i) {
             arrLen /= shapeInfo[i];
             if(arrLen > 0 && shapeInfo[i] > 1) {                
-                offset += (index / arrLen) * shapeInfo[i + *shapeInfo];
+                offset += (index / arrLen) * shapeInfo[i + shapeInfo[0]];
                 index %= arrLen;
             }
         }
         return offset;
+    }    
+
+    INLINEDEF _CUDA_HD uint getIndexOffset(uint index, const uint *shapeInfo, uint arrLen) {
+
+        const uint rank = shapeInfo[0];
+        const uint ews = shapeInfo[rank + rank + 2];
+
+        if(ews > 0 && shapeInfo[rank + rank + 3] == 99)
+           if (ews == 1)
+               return index;
+           else
+               return ews * index;
+
+        uint offset = 0;
+
+        for(uint i = 1; i <= rank; ++i) {
+            arrLen /= shapeInfo[i];
+            if(arrLen > 0 && shapeInfo[i] > 1) {
+                offset += (index / arrLen) * shapeInfo[i + rank];
+                index %= arrLen;
+            }
+        }
+        return offset;
+    }
+
+    INLINEDEF _CUDA_HD Nd4jLong indexOffset(Nd4jLong index, const Nd4jLong* lShapeInfo, const uint* uShapeInfo, Nd4jLong arrLen, const bool useUnsigned) {
+
+        if(useUnsigned)
+            return getIndexOffset(static_cast<uint>(index), uShapeInfo, static_cast<uint>(arrLen));
+
+        return getIndexOffset(index, lShapeInfo, arrLen);
     }
 
 //////////////////////////////////////////////////////////////////////    
@@ -2138,7 +2185,7 @@ template <typename T>
             shapeInfo[i + 1 + rank] = temp[rearrange[i] + 1 + rank];
         }
 
-        shapeInfo[shapeInfoLength(rank) - 2] = -1;
+        shapeInfo[shapeInfoLength(rank) - 2] = 0;
         shapeInfo[shape::shapeInfoLength(rank) - 1] = shape::getOrder(rank, shape::shapeOf(shapeInfo),shape::stride(shapeInfo),1);
 
         delete[] temp;
@@ -2178,8 +2225,8 @@ template <typename T>
             shapeInfo[i + 1 + rank] = temp[rearrange[i] + 1 + rank];
         }
 
-        shapeInfo[shapeInfoLength(rank) - 2] = -1;
-        shapeInfo[shape::shapeInfoLength(rank) - 1] = shape::getOrder(rank, shape::shapeOf(shapeInfo),shape::stride(shapeInfo),1);
+        shapeInfo[shapeInfoLength(rank) - 2] = 0;
+        shapeInfo[shape::shapeInfoLength(rank) - 1] = shape::getOrder(rank, shape::shapeOf(shapeInfo),shape::stride(shapeInfo), 1);
 
         delete[] temp;
     }
@@ -2198,7 +2245,7 @@ template <typename T>
         Nd4jLong *stride = shape::stride(shapeRef);
         shape::doPermuteSwap(rearrageRank,&shape,rearrange);
         shape::doPermuteSwap(rearrageRank,&stride,rearrange);
-        shapeRef[shapeInfoLength(rearrageRank) - 2] = -1;
+        shapeRef[shapeInfoLength(rearrageRank) - 2] = 0;
         shapeRef[shape::shapeInfoLength(rearrageRank) - 1] = shape::getOrder(rearrageRank,shape,stride,1);
 
         // doPermuteShapeInfo(shapeBuffer, rearrange); // possible fix of integer overflow issue when strides are too large
@@ -2217,7 +2264,7 @@ template <typename T>
         shape::copyOf(rearrageRank,rearrange, tmpBuffer);
         shape::doPermuteSwap(rearrageRank,&stride,tmpBuffer);
 
-        shapeRef[shapeInfoLength(rearrageRank) - 2] = -1;
+        shapeRef[shapeInfoLength(rearrageRank) - 2] = 0;
         shapeRef[shape::shapeInfoLength(rearrageRank) - 1] = shape::getOrder(rearrageRank,shape,stride,1);
     }
     */
@@ -2234,7 +2281,7 @@ template <typename T>
         auto rearrangeCopy2 = shape::copyOf(rearrageRank,rearrange);
         shape::doPermuteSwap(rearrageRank, &stride, rearrangeCopy2);
         shapeBuffer[shape::shapeInfoLength(rank) - 1] = shape::getOrder(rank,shape,stride,1);
-        shapeBuffer[shape::shapeInfoLength(rank) - 2] = -1;
+        shapeBuffer[shape::shapeInfoLength(rank) - 2] = 0;
         delete[] rearrangeCopy2;
     }
 
@@ -2249,7 +2296,7 @@ template <typename T>
 
         shape::doPermuteSwap(rearrageRank,&shape,rearrange);
         shape::doPermuteSwap(rearrageRank,&stride,rearrange);
-        shapeRef[shapeInfoLength(rank) - 2] = -1;
+        shapeRef[shapeInfoLength(rank) - 2] = 0;
         shapeRef[shape::shapeInfoLength(rank) - 1] = shape::getOrder(rank,shape,stride,1);
     }
 
@@ -2673,6 +2720,14 @@ template <typename T>
         return static_cast<int>(buffer[0]);
     }
 
+    INLINEDEF _CUDA_HD  int rank(const int *buffer) {
+        return buffer[0];
+    }
+
+    INLINEDEF _CUDA_HD  int rank(const unsigned int *buffer) {
+        return static_cast<int>(buffer[0]);
+    }
+
 /**
  * Converts a raw int buffer of the layout:
  * rank
@@ -3035,7 +3090,7 @@ template <typename T>
      * @param shape
      * @return
      */
-    INLINEDEF _CUDA_HD bool equalsStrict(Nd4jLong *shapeA, Nd4jLong *shapeB) {
+    INLINEDEF _CUDA_HD bool equalsStrict(const Nd4jLong *shapeA, const Nd4jLong *shapeB) {
         if (shapeA[0] != shapeB[0])
             return false;
 
@@ -3051,6 +3106,26 @@ template <typename T>
 
         return true;
     }
+
+    INLINEDEF _CUDA_HD bool haveSameOffsets(const Nd4jLong *shapeA, const Nd4jLong *shapeB) {
+        if (shapeA[0] != shapeB[0])
+            return false;
+
+        if (shapeA[0] == 0)
+            return true;
+
+        // we do full comparison here
+        int length = shape::shapeInfoLength(shapeA[0]);
+
+        for (int e = 1; e < length; e++) {
+            if(e == (length - 3)) continue;       // type position, neglect it 
+            if (shapeA[e] != shapeB[e])
+                return false;
+        }
+
+        return true;
+    }
+
 
     INLINEDEF _CUDA_HD int sizeAt(const Nd4jLong *shape, const int dim) {
         if (dim >= 0)
@@ -4030,7 +4105,7 @@ INLINEDEF _CUDA_HD bool areStridesDefault(const Nd4jLong* shapeInfo) {
             target[cnt++] = newStrides[e];
 
         target[shape::shapeInfoLength(newRank) - 3] = 0;
-        target[shape::shapeInfoLength(newRank) - 2] = -1;
+        target[shape::shapeInfoLength(newRank) - 2] = 0;
         target[shape::shapeInfoLength(newRank) - 1] = isFOrder ? 102 : 99;
         nd4j::ArrayOptions::setDataType(target, nd4j::ArrayOptions::dataType(oldShape));
 

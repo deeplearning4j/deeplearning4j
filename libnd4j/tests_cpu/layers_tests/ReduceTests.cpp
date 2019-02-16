@@ -95,7 +95,7 @@ TEST_F(StdTest,MultiDimTest) {
     tad->createTadOnlyShapeInfo();
     tad->createOffsets();
     int tadElementWiseStride = shape::elementWiseStride(tad->tadOnlyShapeInfo);
-    ASSERT_EQ(-1,tadElementWiseStride);
+    ASSERT_EQ(0,tadElementWiseStride);
     float *result = new float[shape::length(resultShapeInfo)];
     functions::reduce::ReduceFloatFunction<float,float>::exec(
             opNum,

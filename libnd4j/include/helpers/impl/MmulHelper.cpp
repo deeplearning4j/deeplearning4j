@@ -527,13 +527,13 @@ nd4j::NDArray* MmulHelper::mmulMxM(nd4j::NDArray* A, nd4j::NDArray* B, nd4j::NDA
 // the lines in gemm.cpp for reference
 //        bool transAFlag = TransA == CblasTrans;
 //        bool transBFlag = TransB == CblasTrans;
-    if (tB->ews() == -1) {
+    if (tB->ews() < 1) {
         pB = tB->dup('f');
         transB = CblasNoTrans;
     }
     else 
         pB = tB; //->dup('f');
-    if (tA->ews() == -1) {
+    if (tA->ews() < 1) {
         pA = tA->dup('c');
         transA = CblasNoTrans;
     }

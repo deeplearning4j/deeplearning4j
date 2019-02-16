@@ -1734,12 +1734,12 @@ public class Shape {
         }
         if (np != op) {
             /* different total sizes; no hope */
-            return -1;
+            return 0;
         }
 
         if (np == 0) {
             /* the current code does not handle 0-sized arrays, so give up */
-            return -1;
+            return 0;
         }
 
         /* oi to oj and ni to nj give the axis ranges currently worked with */
@@ -1765,13 +1765,13 @@ public class Shape {
                 if (isFOrder) {
                     if (oldstrides[ok + 1] != olddims[ok] * oldstrides[ok]) {
                         /* not contiguous enough */
-                        return -1;
+                        return 0;
                     }
                 } else {
                     /* C order */
                     if (oldstrides[ok] != olddims[ok + 1] * oldstrides[ok + 1]) {
                         /* not contiguous enough */
-                        return -1;
+                        return 0;
                     }
                 }
             }
@@ -1856,12 +1856,12 @@ public class Shape {
         }
         if (np != op) {
             /* different total sizes; no hope */
-            return -1;
+            return 0;
         }
 
         if (np == 0) {
             /* the current code does not handle 0-sized arrays, so give up */
-            return -1;
+            return 0;
         }
 
         /* oi to oj and ni to nj give the axis ranges currently worked with */
@@ -1887,13 +1887,13 @@ public class Shape {
                 if (isFOrder) {
                     if (oldstrides[ok + 1] != olddims[ok] * oldstrides[ok]) {
                         /* not contiguous enough */
-                        return -1;
+                        return 0;
                     }
                 } else {
                     /* C order */
                     if (oldstrides[ok] != olddims[ok + 1] * oldstrides[ok + 1]) {
                         /* not contiguous enough */
-                        return -1;
+                        return 0;
                     }
                 }
             }

@@ -242,8 +242,8 @@ TEST_F(NDArrayTest, TestTad3) {
 
 TEST_F(NDArrayTest, TestPermuteReshape1) {
     auto array = NDArrayFactory::create<float>('c', {2, 2, 5, 5});
-    int pShape[] = {4, 2, 5, 5, 2, 25, 5, 1, 50, 8192, -1, 99};
-    int rShape[] = {3, 2, 25, 2, 25, 1, 50, 8192, -1, 99};
+    int pShape[] = {4, 2, 5, 5, 2, 25, 5, 1, 50, 8192, 0, 99};
+    int rShape[] = {3, 2, 25, 2, 25, 1, 50, 8192, 0, 99};
 
     array.permutei({1, 2, 3, 0});
 
@@ -260,7 +260,7 @@ TEST_F(NDArrayTest, TestPermuteReshape1) {
 
 TEST_F(NDArrayTest, TestPermuteReshape2) {
     auto array = NDArrayFactory::create<float>('c', {2, 2, 5, 5, 6, 6});
-    int pShape[] = {6, 2, 2, 6, 6, 5, 5, 900, 1800, 6, 1, 180, 36, 8192, -1, 99};
+    int pShape[] = {6, 2, 2, 6, 6, 5, 5, 900, 1800, 6, 1, 180, 36, 8192, 0, 99};
     int rShape[] = {3, 2, 72, 25, 1800, 25, 1, 8192, 1, 99};
 
 
@@ -1188,7 +1188,7 @@ TEST_F(NDArrayTest, TestNegSize1) {
 TEST_F(NDArrayTest, Permute1) {  
     
     Nd4jLong shape1[] = {3, 5, 10, 15, 150, 15, 1, 8192, 1, 99};
-	Nd4jLong shape2[] = {3, 15, 5, 10, 1, 150, 15, 8192, -1, 99};
+	Nd4jLong shape2[] = {3, 15, 5, 10, 1, 150, 15, 8192, 0, 99};
     const std::initializer_list<int> perm = {2, 0, 1};    
     
     NDArray arr1(shape1,true);
@@ -1205,7 +1205,7 @@ TEST_F(NDArrayTest, Permute1) {
 TEST_F(NDArrayTest, Permute2) {
     
     Nd4jLong shape1[] = {3, 5, 10, 15, 150, 15, 1, 8192, 1, 99};
-	Nd4jLong shape2[] = {3, 15, 5, 10, 1, 150, 15, 8192, -1, 99};
+	Nd4jLong shape2[] = {3, 15, 5, 10, 1, 150, 15, 8192, 0, 99};
     const std::initializer_list<int> perm = {2, 0, 1};    
     
     NDArray arr1(shape1,true);
