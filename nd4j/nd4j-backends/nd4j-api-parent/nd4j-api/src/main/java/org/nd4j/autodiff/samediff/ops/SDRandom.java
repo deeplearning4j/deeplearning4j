@@ -3,6 +3,12 @@ package org.nd4j.autodiff.samediff.ops;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 
+/**
+ * SameDiff random number generator operations<br>
+ * Accessible via {@link SameDiff#random()}
+ *
+ * @author Alex Black
+ */
 public class SDRandom extends SDOps {
 
     public SDRandom(SameDiff sd) {

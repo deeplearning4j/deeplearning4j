@@ -9,6 +9,12 @@ import org.nd4j.linalg.api.ops.impl.loss.LogLoss;
 import org.nd4j.linalg.api.ops.impl.loss.SigmoidCrossEntropyLoss;
 import org.nd4j.linalg.api.ops.impl.loss.SoftmaxCrossEntropyLoss;
 
+/**
+ * SameDiff loss functions<br>
+ * Accessible via {@link SameDiff#loss()}
+ *
+ * @author Alex Black
+ */
 public class SDLoss extends SDOps {
     public SDLoss(SameDiff sameDiff) {
         super(sameDiff);

@@ -3,6 +3,14 @@ package org.nd4j.autodiff.samediff.ops;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 
+/**
+ * SameDiff general neural network operations<br>
+ * Accessible via {@link SameDiff#math()}<br>
+ * See also {@link SDCNN} (accessible via {@link SameDiff#cnn()} for convolutional neural network ops.<br>
+ * See also {@link SDRNN} (accessible via {@link SameDiff#rnn()} for recurrent neural network ops.<br>
+ *
+ * @author Alex Black
+ */
 public class SDNN extends SDOps {
     public SDNN(SameDiff sameDiff) {
         super(sameDiff);

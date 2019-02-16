@@ -4,6 +4,14 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.*;
 
+/**
+ * SameDiff Convolutional Neural Network operations - CNN1d, 2d and 3d ops - as well as related functions.<br>
+ * Accessible via {@link SameDiff#cnn()}<br>
+ * See also {@link SDNN} (accessible via {@link SameDiff#nn()} for general neural network ops.<br>
+ * See also {@link SDRNN} (accessible via {@link SameDiff#rnn()} for recurrent neural network ops.<br>
+ *
+ * @author Alex Black
+ */
 public class SDCNN extends SDOps {
 
     public SDCNN(SameDiff sameDiff) {

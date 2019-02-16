@@ -9,6 +9,17 @@ import org.nd4j.linalg.api.ops.impl.shape.OneHot;
 import org.nd4j.linalg.api.ops.impl.transforms.gradient.GradientBackwardsMarker;
 import org.nd4j.linalg.indexing.conditions.Condition;
 
+/**
+ * Core op creator methods available via SameDiff class directly
+ *
+ * @author Alex Black
+ * @see SDMath SDMath for Math operations
+ * @see SDRandom SDRandom for random number generator operations
+ * @see SDNN SDNN for general neural network operations
+ * @see SDCNN SDCNN for Convolutional Neural Network operations
+ * @see SDRNN SDRNN for Recurrent Neural Network operations
+ * @see SDLoss SDLoss for loss function operations
+ */
 public abstract class SDBaseOps {
 
     /**

@@ -11,6 +11,14 @@ import org.nd4j.linalg.api.ops.impl.layers.recurrent.config.LSTMCellConfiguratio
 import org.nd4j.linalg.api.ops.impl.layers.recurrent.config.SRUCellConfiguration;
 import org.nd4j.linalg.api.ops.impl.layers.recurrent.config.SRUConfiguration;
 
+/**
+ * SameDiff Recurrent Neural Network operations<br>
+ * Accessible via {@link SameDiff#rnn()}<br>
+ * See also {@link SDNN} (accessible via {@link SameDiff#nn()} for general neural network ops.<br>
+ * See also {@link SDCNN} (accessible via {@link SameDiff#cnn()} for convolutional neural network ops.<br>
+ *
+ * @author Alex Black
+ */
 public class SDRNN extends SDOps {
     public SDRNN(SameDiff sameDiff) {
         super(sameDiff);

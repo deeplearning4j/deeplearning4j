@@ -13,6 +13,12 @@ import org.nd4j.linalg.indexing.conditions.Condition;
 
 import java.util.List;
 
+/**
+ * SameDiff math operations<br>
+ * Accessible via {@link SameDiff#math()}
+ *
+ * @author Alex Black
+ */
 public class SDMath extends SDOps {
     public SDMath(SameDiff sameDiff) {
         super(sameDiff);

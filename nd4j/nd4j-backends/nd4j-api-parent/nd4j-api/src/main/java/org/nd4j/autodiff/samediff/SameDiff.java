@@ -167,35 +167,47 @@ public class SameDiff extends SDBaseOps {
 
     ////////////////////////////////////////
 
-    public final SDNN nn = new SDNN(this);
-    public final SDCNN cnn = new SDCNN(this);
-    public final SDRNN rnn = new SDRNN(this);
-    public final SDLoss loss = new SDLoss(this);
+    /** Op creator object for math operations */
     public final SDMath math = new SDMath(this);
+    /** Op creator object for random number generation operations */
     public final SDRandom random = new SDRandom(this);
+    /** Op creator object for general neural network operations */
+    public final SDNN nn = new SDNN(this);
+    /** Op creator object for convolutional neural network operations */
+    public final SDCNN cnn = new SDCNN(this);
+    /** Op creator object for recurrent neural network operations */
+    public final SDRNN rnn = new SDRNN(this);
+    /** Op creator object for loss function operations */
+    public final SDLoss loss = new SDLoss(this);
 
-    public SDNN nn(){
-        return nn;
-    }
-
-    public SDCNN cnn(){
-        return cnn;
-    }
-
-    public SDRNN rnn(){
-        return rnn;
-    }
-
-    public SDLoss loss(){
-        return loss;
-    }
-
+    /** Op creator object for math operations */
     public SDMath math(){
         return math;
     }
 
+    /** Op creator object for random number generation operations */
     public SDRandom random(){
         return random;
+    }
+
+    /** Op creator object for general neural network operations */
+    public SDNN nn(){
+        return nn;
+    }
+
+    /** Op creator object for convolutional neural network operations */
+    public SDCNN cnn(){
+        return cnn;
+    }
+
+    /** Op creator object for recurrent neural network operations */
+    public SDRNN rnn(){
+        return rnn;
+    }
+
+    /** Op creator object for loss function operations */
+    public SDLoss loss(){
+        return loss;
     }
 
 
