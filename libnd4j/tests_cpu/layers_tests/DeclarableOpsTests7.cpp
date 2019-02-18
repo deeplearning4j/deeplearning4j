@@ -2246,6 +2246,31 @@ auto exp = NDArrayFactory::create<double>('c', {2, 1, 4, 4}, {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests7, TestExtractImagePatches_SGO_7) {
+    auto x = NDArrayFactory::create<double>('c', {1, 3, 3, 1});
+    x.linspace(1);
+
+//Images shape is  (1, 3, 3, 4)
+//[1, 1, 1, 1]
+//[1, 3, 2, 1]
+    auto exp = NDArrayFactory::create<double>('c', {1, 3, 3, 4}, {
+            1., 2., 4., 5.,    2., 3., 5., 6.,    3., 0., 6., 0.,
+    4., 5., 7., 8.,    5., 6., 8., 9.,    6., 0., 9., 0.,    7., 8., 0., 0.,    8., 9., 0., 0.,   9., 0., 0., 0. });
+// ----------------------------------------------------------------
+    nd4j::ops::extract_image_patches op;
+
+    auto result = op.execute({&x}, {}, {2,2, 1,1, 1,1, 1}); // equiv TF ksizes=[1,2,2,1], strides=[1,1,1,1], rates=[1,1,1,1], padding="SAME"
+    ASSERT_EQ(result->status(), Status::OK());
+    auto output = result->at(0);
+    output->printIndexedBuffer("Output");
+    //result->at(1)->printBuffer("OUtput2");
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests7, TestRoll_1) {
     auto x = NDArrayFactory::create<double>('c', {2, 2, 4, 2}, {
     11.11, 11.12, 11.21, 11.22, 11.31, 11.32, 11.41, 11.42,     12.11, 12.12, 12.21, 12.22, 12.31, 12.32, 12.41, 12.42,
