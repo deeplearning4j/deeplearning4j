@@ -208,10 +208,11 @@ namespace randomOps {
             T to = extraParams[1];
             T step = extraParams[2];
 
-            //T step = (T) idx / ((T)length - (T) 1.0f);
-            //return from * ((T) 1.0f - step) + step * to;
-
-	    return from + idx * step;
+	    if (!step) {
+            	T step = (T) idx / ((T)length - (T) 1.0f);
+            	return from * ((T) 1.0f - step) + step * to;
+            }
+	    return from * (1.0f - idx * step)  + idx * step * to;
 
         }
     };
