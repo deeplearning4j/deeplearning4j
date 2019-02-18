@@ -80,7 +80,7 @@ public class Erfc extends BaseTransformStrictOp {
         SDVariable gradient = i_v.get(0);
         SDVariable z = arg();
         SDVariable constant = sameDiff.onesLike(gradient).mul(-2.0 / Math.sqrt(Math.PI));
-        SDVariable ret = constant.mul(sameDiff.exp(z.mul(z).mul(-1))).mul(gradient);
+        SDVariable ret = constant.mul(sameDiff.math().exp(z.mul(z).mul(-1))).mul(gradient);
         return Collections.singletonList(ret);
     }
 }

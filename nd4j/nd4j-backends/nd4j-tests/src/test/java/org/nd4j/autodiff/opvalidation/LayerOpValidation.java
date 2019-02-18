@@ -62,7 +62,7 @@ public class LayerOpValidation extends BaseOpValidation {
         SDVariable sdWeights = sameDiff.var("weights", weights);
         SDVariable sdBias = sameDiff.var("bias", b);
 
-        SDVariable res = sameDiff.linear(sdInput, sdWeights, sdBias);
+        SDVariable res = sameDiff.nn().linear(sdInput, sdWeights, sdBias);
         SDVariable loss = sameDiff.standardDeviation(res, true);
 
         INDArray exp = input.mmul(weights).addiRowVector(b);
@@ -94,7 +94,7 @@ public class LayerOpValidation extends BaseOpValidation {
         SDVariable sdWeights = sameDiff.var("weights", weights);
         SDVariable sdBias = sameDiff.var("bias", b);
 
-        SDVariable res = sameDiff.reluLayer(sdInput, sdWeights, sdBias);
+        SDVariable res = sameDiff.nn().reluLayer(sdInput, sdWeights, sdBias);
         SDVariable loss = sameDiff.standardDeviation(res, true);
 
         INDArray exp = input.mmul(weights).addiRowVector(b);
@@ -122,7 +122,7 @@ public class LayerOpValidation extends BaseOpValidation {
             SDVariable sdInput = sameDiff.var("input", input);
             SDVariable sdBias = sameDiff.var("bias", b);
 
-            SDVariable res = sameDiff.biasAdd(sdInput, sdBias);
+            SDVariable res = sameDiff.nn().biasAdd(sdInput, sdBias);
             SDVariable loss = sameDiff.standardDeviation(res, true);
 
             INDArray exp = input.addRowVector(b);
@@ -165,7 +165,7 @@ public class LayerOpValidation extends BaseOpValidation {
                         in = sd.var("in", inSize);
                         SDVariable w0 = sd.var("w0", Nd4j.rand(new int[]{3, 3, inSizeNCHW[1], 3}).muli(10));  //kH,kW,iC,oC
                         SDVariable b0 = sd.var("b0", Nd4j.rand(new long[]{3}).muli(10));
-                        out = sd.conv2d(in, w0, b0, Conv2DConfig.builder()
+                        out = sd.cnn().conv2d(in, w0, b0, Conv2DConfig.builder()
                                 .dataFormat(Conv2DConfig.NCHW)
                                 .isSameMode(true)
                                 .kH(3).kW(3)
@@ -179,7 +179,7 @@ public class LayerOpValidation extends BaseOpValidation {
                         in = sd.var("in", inSize);
                         SDVariable w1 = sd.var("w1", Nd4j.rand(new int[]{2, 4, inSizeNCHW[1], 3}).muli(10));  //kH,kW,nIn,nOut
                         SDVariable b1 = sd.var("b1", Nd4j.rand(new long[]{3}).muli(10));
-                        out = sd.conv2d(in, w1, b1, Conv2DConfig.builder()
+                        out = sd.cnn().conv2d(in, w1, b1, Conv2DConfig.builder()
                                 .dataFormat(Conv2DConfig.NHWC)
                                 .isSameMode(false)
                                 .kH(2).kW(4)
@@ -192,7 +192,7 @@ public class LayerOpValidation extends BaseOpValidation {
                         inSize = inSizeNCHW;
                         in = sd.var("in", inSize);
                         SDVariable w2 = sd.var("w0", Nd4j.rand(new int[]{1, 3, inSizeNCHW[1], 3}).muli(10));  ////kH,kW,iC,oC
-                        out = sd.conv2d(in, w2, Conv2DConfig.builder()
+                        out = sd.cnn().conv2d(in, w2, Conv2DConfig.builder()
                                 .dataFormat(Conv2DConfig.NCHW)
                                 .isSameMode(true)
                                 .kH(1).kW(3)
@@ -204,7 +204,7 @@ public class LayerOpValidation extends BaseOpValidation {
                         msg = "3 - avg pool, NCHW, same - input " + Arrays.toString(inSizeNCHW);
                         inSize = inSizeNCHW;
                         in = sd.var("in", inSize);
-                        out = sd.avgPooling2d(in, Pooling2DConfig.builder()
+                        out = sd.cnn().avgPooling2d(in, Pooling2DConfig.builder()
                                 .isNHWC(true)
                                 .isSameMode(true)
                                 .kH(2).kW(2)
@@ -216,7 +216,7 @@ public class LayerOpValidation extends BaseOpValidation {
                         msg = "3 - avg pool, NHWC, not same - input " + Arrays.toString(inSizeNCHW);
                         inSize = nchwToNhwc(inSizeNCHW);
                         in = sd.var("in", inSize);
-                        out = sd.avgPooling2d(in, Pooling2DConfig.builder()
+                        out = sd.cnn().avgPooling2d(in, Pooling2DConfig.builder()
                                 .isNHWC(true)
                                 .isSameMode(false)
                                 .kH(3).kW(2)
@@ -228,7 +228,7 @@ public class LayerOpValidation extends BaseOpValidation {
                         msg = "5 - avg pool, NCHW, same - input " + Arrays.toString(inSizeNCHW);
                         inSize = inSizeNCHW;
                         in = sd.var("in", inSize);
-                        out = sd.maxPooling2d(in, Pooling2DConfig.builder()
+                        out = sd.cnn().maxPooling2d(in, Pooling2DConfig.builder()
                                 .isNHWC(false)
                                 .isSameMode(true)
                                 .kH(2).kW(2)
@@ -240,7 +240,7 @@ public class LayerOpValidation extends BaseOpValidation {
                         msg = "6 - avg pool, NHWC, not same - input " + Arrays.toString(inSizeNCHW);
                         inSize = inSizeNCHW;
                         in = sd.var("in", inSize);
-                        out = sd.maxPooling2d(in, Pooling2DConfig.builder()
+                        out = sd.cnn().maxPooling2d(in, Pooling2DConfig.builder()
                                 .isNHWC(true)
                                 .isSameMode(false)
                                 .kH(3).kW(2)
@@ -252,7 +252,7 @@ public class LayerOpValidation extends BaseOpValidation {
                         msg = "7 - upsampling2d, NCHW, 2x2 - " + Arrays.toString(inSizeNCHW);
                         inSize = inSizeNCHW;
                         in = sd.var("in", inSize);
-                        out = sd.upsampling2d(in, true, 2, 2);
+                        out = sd.cnn().upsampling2d(in, true, 2, 2);
                         break;
                     default:
                         throw new RuntimeException();
@@ -297,7 +297,7 @@ public class LayerOpValidation extends BaseOpValidation {
             String msg = "LRN with NCHW - input" + Arrays.toString(inSizeNCHW);
             inSize = inSizeNCHW;
             in = sd.var("in", inSize);
-            SDVariable out = sd.localResponseNormalization(in, LocalResponseNormalizationConfig.builder()
+            SDVariable out = sd.cnn().localResponseNormalization(in, LocalResponseNormalizationConfig.builder()
                     .depth(3)
                     .bias(1)
                     .alpha(1)
@@ -332,7 +332,7 @@ public class LayerOpValidation extends BaseOpValidation {
 
             SameDiff sd = SameDiff.create();
             SDVariable var = sd.var("in", Nd4j.rand(DataType.DOUBLE, inSizeNCHW));
-            SDVariable im2col = sd.im2Col(var, Conv2DConfig.builder()
+            SDVariable im2col = sd.cnn().im2Col(var, Conv2DConfig.builder()
                     .kH(2).kW(2)
                     .sH(1).sW(1)
                     .isSameMode(true)
@@ -491,7 +491,7 @@ public class LayerOpValidation extends BaseOpValidation {
                             msg = "0 - conv3d+bias+same, ncdhw=" + ncdhw + " - input " + Arrays.toString(shape);
                             SDVariable w0 = sd.var("w0", Nd4j.rand(new int[]{2, 2, 2, nIn, 3}).muli(10));  //[kD, kH, kW, iC, oC]
                             SDVariable b0 = sd.var("b0", Nd4j.rand(new long[]{3}).muli(10));
-                            out = sd.conv3d(in, w0, b0, Conv3DConfig.builder()
+                            out = sd.cnn().conv3d(in, w0, b0, Conv3DConfig.builder()
                                     .dataFormat(ncdhw ? Conv3DConfig.NCDHW : Conv3DConfig.NDHWC)
                                     .isSameMode(true)
                                     .kH(2).kW(2).kD(2)
@@ -502,7 +502,7 @@ public class LayerOpValidation extends BaseOpValidation {
                             //Conv3d, no bias, no same
                             msg = "1 - conv3d+no bias+no same, ncdhw=" + ncdhw + " - input " + Arrays.toString(shape);
                             SDVariable w1 = sd.var("w1", Nd4j.rand(new int[]{2, 2, 2, nIn, 3}).muli(10));  //[kD, kH, kW, iC, oC]
-                            out = sd.conv3d(in, w1, Conv3DConfig.builder()
+                            out = sd.cnn().conv3d(in, w1, Conv3DConfig.builder()
                                     .dataFormat(ncdhw ? Conv3DConfig.NCDHW : Conv3DConfig.NDHWC)
                                     .isSameMode(false)
                                     .kH(2).kW(2).kD(2)
@@ -512,7 +512,7 @@ public class LayerOpValidation extends BaseOpValidation {
                         case 2:
                             //pooling3d - average, same
                             msg = "2 - pooling 3d, average, same";
-                            out = sd.avgPooling3d(in, Pooling3DConfig.builder()
+                            out = sd.cnn().avgPooling3d(in, Pooling3DConfig.builder()
                                     .kH(2).kW(2).kD(2)
                                     .sH(1).sW(1).sD(1)
                                     .isSameMode(false)
@@ -521,7 +521,7 @@ public class LayerOpValidation extends BaseOpValidation {
                         case 3:
                             //pooling 3d - max, no same
                             msg = "3 - pooling 3d, max, no same";
-                            out = sd.avgPooling3d(in, Pooling3DConfig.builder()
+                            out = sd.cnn().avgPooling3d(in, Pooling3DConfig.builder()
                                     .kH(2).kW(2).kD(2)
                                     .sH(1).sW(1).sD(1)
                                     .isSameMode(true)
@@ -532,7 +532,7 @@ public class LayerOpValidation extends BaseOpValidation {
                             msg = "4 - deconv3d, ncdhw=" + ncdhw;
                             SDVariable wDeconv = sd.var(Nd4j.rand(new int[]{2,2,2,3,nIn}));  //[kD, kH, kW, oC, iC]
                             SDVariable bDeconv = sd.var(Nd4j.rand(new int[]{3}));
-                            out = sd.deconv3d("Deconv3d", in, wDeconv, bDeconv, DeConv3DConfig.builder()
+                            out = sd.cnn().deconv3d("Deconv3d", in, wDeconv, bDeconv, DeConv3DConfig.builder()
                                     .kD(2).kH(2).kW(2)
                                     .isSameMode(true)
                                     .dataFormat(ncdhw ? DeConv3DConfig.NCDHW : DeConv3DConfig.NDHWC)
@@ -596,8 +596,8 @@ public class LayerOpValidation extends BaseOpValidation {
                 .isSameMode(false)
                 .build();
 
-        SDVariable out = sd.sconv2d(vars, c);
-        out = sd.tanh("out", out);
+        SDVariable out = sd.cnn().sconv2d(vars, c);
+        out = sd.nn().tanh("out", out);
 
         INDArray outArr = sd.execAndEndResult();
         //Expected output size: out = (in - k + 2*p)/s + 1 = (28-2+0)/1+1 = 27
@@ -642,8 +642,8 @@ public class LayerOpValidation extends BaseOpValidation {
                 .dataFormat(Conv2DConfig.NCHW)
                 .build();
 
-        SDVariable out = sd.sconv2d(vars, c);
-        out = sd.tanh("out", out);
+        SDVariable out = sd.cnn().sconv2d(vars, c);
+        out = sd.nn().tanh("out", out);
 
         INDArray outArr = sd.execAndEndResult();
         //Expected output size: out = (in - k + 2*p)/s + 1 = (8-2+0)/1+1 = 7
@@ -693,8 +693,8 @@ public class LayerOpValidation extends BaseOpValidation {
                 .isSameMode(false)
                 .build();
 
-        SDVariable out = sd.deconv2d(vars, deconv);
-        out = sd.tanh("out", out);
+        SDVariable out = sd.cnn().deconv2d(vars, deconv);
+        out = sd.nn().tanh("out", out);
 
         INDArray outArr = sd.execAndEndResult();
         //Expected output size: out = (in + k + 2*p)/ s - 1 = (8 + 2+0)/1 - 1 = 9
@@ -741,8 +741,8 @@ public class LayerOpValidation extends BaseOpValidation {
                 .isSameMode(false)
                 .build();
 
-        SDVariable out = sd.conv2d(vars, c);
-        out = sd.tanh("out", out);
+        SDVariable out = sd.cnn().conv2d(vars, c);
+        out = sd.nn().tanh("out", out);
 
         INDArray outArr = sd.execAndEndResult();
         //Expected output size: out = (in - k + 2*p)/s + 1 = (28-2+0)/1+1 = 27
@@ -775,8 +775,8 @@ public class LayerOpValidation extends BaseOpValidation {
                 .isSameMode(false)
                 .build();
 
-        SDVariable outPool = sd.maxPooling2d(in, pooling2DConfig);
-        SDVariable out = sd.tanh("out", outPool);
+        SDVariable outPool = sd.cnn().maxPooling2d(in, pooling2DConfig);
+        SDVariable out = sd.nn().tanh("out", outPool);
 
         INDArray outArr = sd.execAndEndResult();
         val outShape = outArr.shape();
@@ -833,8 +833,8 @@ public class LayerOpValidation extends BaseOpValidation {
                 .isSameMode(false)
                 .build();
 
-        SDVariable outPool = sd.avgPooling2d(in, pooling2DConfig);
-        SDVariable out = sd.tanh("out", outPool);
+        SDVariable outPool = sd.cnn().avgPooling2d(in, pooling2DConfig);
+        SDVariable out = sd.nn().tanh("out", outPool);
 
         INDArray outArr = sd.execAndEndResult();
         val outShape = outArr.shape();
@@ -884,8 +884,8 @@ public class LayerOpValidation extends BaseOpValidation {
                 .isNCDHW(true)
                 .build();
 
-        SDVariable out = sd.avgPooling3d(in, pooling3DConfig);
-        out = sd.tanh("out", out);
+        SDVariable out = sd.cnn().avgPooling3d(in, pooling3DConfig);
+        out = sd.nn().tanh("out", out);
 
         INDArray outArr = sd.execAndEndResult();
         val outShape = outArr.shape();
@@ -924,8 +924,8 @@ public class LayerOpValidation extends BaseOpValidation {
                 .isSameMode(false)
                 .build();
 
-        SDVariable out = sd.maxPooling3d(in, pooling3DConfig);
-        out = sd.tanh("out", out);
+        SDVariable out = sd.cnn().maxPooling3d(in, pooling3DConfig);
+        out = sd.nn().tanh("out", out);
 
         INDArray outArr = sd.execAndEndResult();
         val outShape = outArr.shape();
@@ -955,8 +955,8 @@ public class LayerOpValidation extends BaseOpValidation {
                 .isSameMode(false)
                 .build();
 
-        SDVariable out = sd.conv1d(in, w, conv1DConfig);
-        out = sd.tanh("out", out);
+        SDVariable out = sd.cnn().conv1d(in, w, conv1DConfig);
+        out = sd.nn().tanh("out", out);
 
         INDArray outArr = sd.execAndEndResult();
         INDArray iOut = out.getArr();
@@ -997,8 +997,8 @@ public class LayerOpValidation extends BaseOpValidation {
                 .dataFormat(Conv3DConfig.NCDHW)
                 .build();
 
-        SDVariable out = sd.conv3d(in, w, b, conv3DConfig);
-        out = sd.tanh("out", out);
+        SDVariable out = sd.cnn().conv3d(in, w, b, conv3DConfig);
+        out = sd.nn().tanh("out", out);
 
         INDArray outArr = sd.execAndEndResult();
         //Expected output size, NOT same mode: out = (in - k)/d + 1 = (28-2+0)/1+1 = 27

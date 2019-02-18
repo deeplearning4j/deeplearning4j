@@ -128,29 +128,29 @@ public enum Activation {
     public SDVariable asSameDiff(String variableName, SameDiff sd, SDVariable input) {
         switch (this) {
             case CUBE:
-                return sd.pow(variableName, input, 3.0);
+                return sd.math().pow(variableName, input, 3.0);
             case ELU:
-                return sd.elu(variableName, input);
+                return sd.nn().elu(variableName, input);
             case HARDTANH:
-                return sd.hardTanh(variableName, input);
+                return sd.nn().hardTanh(variableName, input);
             case IDENTITY:
                 return sd.identity(variableName, input);
             case LEAKYRELU:
-                return sd.leakyRelu(variableName, input, 0.0);
+                return sd.nn().leakyRelu(variableName, input, 0.0);
             case RELU:
-                return sd.relu(variableName, input, 0.0);
+                return sd.nn().relu(variableName, input, 0.0);
             case SIGMOID:
-                return sd.sigmoid(variableName, input);
+                return sd.nn().sigmoid(variableName, input);
             case SOFTMAX:
-                return sd.softmax(variableName, input);
+                return sd.nn().softmax(variableName, input);
             case SOFTPLUS:
-                return sd.softplus(variableName, input);
+                return sd.nn().softplus(variableName, input);
             case SOFTSIGN:
-                return sd.softsign(variableName, input);
+                return sd.nn().softsign(variableName, input);
             case TANH:
-                return sd.tanh(variableName, input);
+                return sd.math().tanh(variableName, input);
             case GELU:
-                return sd.gelu(variableName, input);
+                return sd.nn().gelu(variableName, input);
             case HARDSIGMOID:
             case RATIONALTANH:
             case RRELU:
