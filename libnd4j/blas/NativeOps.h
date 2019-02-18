@@ -1623,9 +1623,10 @@ public:
     void scatterUpdate(Nd4jPointer *extraPointers,
             void *hX,       const Nd4jLong *hXShapeInfo,
             void *dX,       const Nd4jLong *dXShapeInfo,            
-            const void *hY, const Nd4jLong *hYShapeInfo,
+            const void *hY, const Nd4jLong *hSYhapeInfo,
             const void *dY, const Nd4jLong *dYShapeInfo,            
-            const std::vector<int>* intArgs);
+            const void *hIntArgs, const Nd4jLong *hIntArgsShapeInfo,
+            const void *dIntArgs, const Nd4jLong *dIntArgsShapeInfo);
 
 };
 

@@ -3712,3 +3712,4 @@ Nd4jPointer NativeOps::createUtf8String(Nd4jPointer *extraPointers, const char *
 void NativeOps::deleteUtf8String(Nd4jPointer *extraPointers, Nd4jPointer ptr) {
     delete(reinterpret_cast<nd4j::utf8string*>(ptr));
 }
+

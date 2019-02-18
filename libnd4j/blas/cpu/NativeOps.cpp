@@ -2473,13 +2473,20 @@ void NativeOps::scatterUpdate(Nd4jPointer *extraPointers,
             void *hX,       const Nd4jLong *hXShapeInfo,
             void *dX,       const Nd4jLong *dXShapeInfo,            
             const void *hY, const Nd4jLong *hYShapeInfo,
-            const void *dY, const Nd4jLong *dYShapeInfo,            
-            const std::vector<int>* intArgs) {
+            const void *dY, const Nd4jLong *dYShapeInfo,
+            const void *hIntArgs, const Nd4jLong *hIntArgsShapeInfo,
+            const void *dIntArgs, const Nd4jLong *dIntArgsShapeInfo) {
 
-    NDArray input(const_cast<void*>(hX), const_cast<Nd4jLong*>(hXShapeInfo));
+    const int* intArgsBuff = reinterpret_cast<const int*>(hIntArgs);
+
+    NDArray input(hX, const_cast<Nd4jLong*>(hXShapeInfo));
     NDArray updates(const_cast<void*>(hY), const_cast<Nd4jLong*>(hYShapeInfo));
 
-    ops::helpers::scatterUpdate(input, updates, intArgs);
+    std::vector<int> intArgs(shape::length(hIntArgsShapeInfo));
+    for(int i = 0; i < intArgs.size(); ++i)
+        intArgs[i] = intArgsBuff[shape::getIndexOffset(i, hIntArgsShapeInfo, intArgs.size())];
+
+    ops::helpers::scatterUpdate(input, updates, &intArgs);
 }
 
 BUILD_SINGLE_TEMPLATE(template void flattenGeneric,(Nd4jPointer*, int, char, void*, Nd4jLong*, void*, Nd4jLong*), LIBND4J_TYPES);
