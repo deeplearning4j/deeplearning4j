@@ -108,8 +108,8 @@ public class CosineSimilarity extends BaseReduce3Op {
         SDVariable l2y = f.norm2(y, true, dimensions);
         SDVariable b = l2x.mul(l2y);
 
-        SDVariable l2xSq = sameDiff.square(l2x);
-        SDVariable l2ySq = sameDiff.square(l2y);
+        SDVariable l2xSq = sameDiff.math().square(l2x);
+        SDVariable l2ySq = sameDiff.math().square(l2y);
         SDVariable broadcastableGrad;
         if(keepDims || dimensions == null || dimensions.length == 0 || (dimensions.length == 1 && dimensions[0] == Integer.MAX_VALUE)){
             //keepDims or full array reduction

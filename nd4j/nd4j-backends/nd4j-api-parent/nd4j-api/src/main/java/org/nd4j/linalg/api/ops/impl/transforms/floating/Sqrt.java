@@ -23,6 +23,7 @@ import org.nd4j.linalg.api.ops.BaseTransformFloatOp;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -70,8 +71,8 @@ public class Sqrt extends BaseTransformFloatOp {
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
         SDVariable out = arg();
-        SDVariable g = sameDiff.pow(out, -0.5).mul(0.5).mul(i_v.get(0));
-        return Arrays.asList(g);
+        SDVariable g = sameDiff.math().pow(out, -0.5).mul(0.5).mul(i_v.get(0));
+        return Collections.singletonList(g);
     }
 
 }
