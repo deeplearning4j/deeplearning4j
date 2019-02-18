@@ -3713,3 +3713,86 @@ void NativeOps::deleteUtf8String(Nd4jPointer *extraPointers, Nd4jPointer ptr) {
     delete(reinterpret_cast<nd4j::utf8string*>(ptr));
 }
 
+///////////////////////////////////////////////////////////////////
+template<typename T>
+__global__ static void scatterUpdateCuda(const int opCode, const int numOfSubArrs, 
+										void* pVx, void* pxShapeInfo, 
+										void* pVy, void* pyShapeInfo, 
+										const int* indexes) {
+        
+    __shared__ T *x, *y;
+    __shared__ Nd4jLong *yShapeInfo, *xShapeInfo, arrLenX, arrLenY;
+    
+    if (threadIdx.x == 0) {
+                    
+        x = reinterpret_cast<T*>(reinterpret_cast<void**>(pVx)[indexes[blockIdx.x]]);
+        y = reinterpret_cast<T*>(reinterpret_cast<void**>(pVy)[blockIdx.x]);  
+        xShapeInfo = reinterpret_cast<Nd4jLong**>(pxShapeInfo)[indexes[blockIdx.x]];
+        yShapeInfo = reinterpret_cast<Nd4jLong**>(pyShapeInfo)[blockIdx.x];
+        arrLenX = shape::length(xShapeInfo);
+        arrLenY = shape::length(yShapeInfo);
+    }
+
+    __syncthreads();    
+
+    if(arrLenX != arrLenY) 
+    	return;
+    
+    for (Nd4jLong i = threadIdx.x; i < arrLenX; i += blockDim.x) {
+
+    	const auto xOffset = shape::getIndexOffset(i, xShapeInfo, arrLenX);
+    	const auto yOffset = shape::getIndexOffset(i, yShapeInfo, arrLenX);
+
+    	switch (opCode) {
+            case 0:
+                x[xOffset] += y[yOffset];
+                break;
+            case 1:
+                x[xOffset] -= y[yOffset];
+                break;
+            case 2:
+                x[xOffset] *= y[yOffset];
+                break;
+            case 3:
+                x[xOffset] /= y[yOffset];
+                break;
+            case 4:
+                x[xOffset] = y[yOffset] - x[xOffset];
+                break;
+            case 5:
+                x[xOffset] = y[yOffset] / x[xOffset];
+                break;
+            case 6:
+                x[xOffset] = y[yOffset];
+                break;
+            default:
+                continue;
+        }
+
+        // z[shape::getIndexOffset(i, yShapeInfo, arrLen)] = x[shape::getIndexOffset(i, xShapeInfo, arrLen)];
+    }
+}
+
+template<typename T>
+__host__ static void scatterUpdateCudaLauncher(const cudaStream_t* stream, const int opCode, const int numOfSubArrs, void* pVx, void* pxShapeInfo, void* pVy, void* pyShapeInfo, const int* indexes) {
+
+    scatterUpdateCuda<T><<<512, 256, 1024, *stream>>>(opCode, numOfSubArrs, pVx, pxShapeInfo, pVy, pyShapeInfo, indexes);
+}
+
+
+//////////////////////////////////////////////////////////////////////////
+void NativeOps::scatterUpdate(Nd4jPointer *extraPointers, const int opCode, const int numOfSubArrs,
+                      			void* phX, void* phXShapeInfo,
+                      			void* pdX, void* pdXShapeInfo,
+                      			void* phY, void* phYShapeInfo,
+                      			void* pdY, void* pdYShapeInfo,
+                      			int* indexes) {
+
+	auto stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
+		
+	nd4j::DataType type = ArrayOptions::dataType(reinterpret_cast<Nd4jLong**>(phXShapeInfo)[0]);
+
+    BUILD_SINGLE_SELECTOR(type, scatterUpdateCudaLauncher, (stream, opCode, numOfSubArrs, pdX, pdXShapeInfo, pdY, pdYShapeInfo, indexes), LIBND4J_TYPES);
+
+}
+
