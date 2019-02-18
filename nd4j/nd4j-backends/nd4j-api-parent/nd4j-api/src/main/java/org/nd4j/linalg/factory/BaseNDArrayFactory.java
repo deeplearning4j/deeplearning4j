@@ -213,18 +213,16 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      * Generate a linearly spaced vector
      *
      * @param lower upper bound
-     * @param upper lower bound
      * @param num   number of items in resulting vector
      * @param step the step size
      * @return the linearly spaced vector
      */
     @Override
-    public INDArray linspace(int lower, int upper, int num, int step, DataType dtype) {
+    public INDArray linspace(int lower, int step, DataType dtype, int num) {
         double[] data = new double[num];
         for (int i = 0; i < num; i++) {
             double t = (double) i / (num - 1);
-            data[i] = lower * (1 - step) + step * upper;
-
+            data[i] = lower * (1 - step) + step * (lower + step * num);
         }
 
         //edge case for scalars

@@ -142,12 +142,11 @@ public interface NDArrayFactory {
      * Generate a linearly spaced vector
      *
      * @param lower upper bound
-     * @param upper lower bound
      * @param num   number of items in resulting vector
      * @param step the step size
      * @return the linearly spaced vector
      */
-    INDArray linspace(int lower, int upper, int num, int step, DataType dataType);
+    INDArray linspace(int lower, int num, DataType dataType, int step);
 
 
     /**
