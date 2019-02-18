@@ -83,7 +83,7 @@ public class Linspace extends BaseRandomOp {
         this.from = from;
         this.to = to;
         this.length = length;
-        double step = (to - from) / (length - 1);
+        double step = 0.0; //(to - from) / (length - 1);
         this.extraArgs = new Object[] {from, to, step};
     }
 

@@ -7229,7 +7229,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
         assertEquals(-0.7, in.getDouble(1), 1e-5);
         assertEquals(-0.5, in.getDouble(2), 1e-5);
 
-        in = Nd4j.linspace(-0.9, 0.9, 10, 0.3, DataType.DOUBLE);
+        in = Nd4j.linspace(-0.9, 10,DataType.DOUBLE, 0.3);
         assertEquals(-0.9, in.getDouble(0), 1e-5);
         assertEquals(-0.6, in.getDouble(1), 1e-5);
         assertEquals(-0.3, in.getDouble(2), 1e-5);
