@@ -34,6 +34,7 @@
 #include <pointercast.h>
 #include <pairwise_util.h>
 #include <types/types.h>
+#include <ops/declarable/helpers/transforms.h>
 
 
 #include <fcntl.h>
@@ -2466,6 +2467,20 @@ void NativeOps::deleteUtf8String(Nd4jPointer *extraPointers, Nd4jPointer ptr) {
     delete(reinterpret_cast<nd4j::utf8string*>(ptr));
 }
 
+
+////////////////////////////////////////////////////////////////////////
+void NativeOps::scatterUpdate(Nd4jPointer *extraPointers,
+            void *hX,       const Nd4jLong *hXShapeInfo,
+            void *dX,       const Nd4jLong *dXShapeInfo,            
+            const void *hY, const Nd4jLong *hYShapeInfo,
+            const void *dY, const Nd4jLong *dYShapeInfo,            
+            const std::vector<int>* intArgs) {
+
+    NDArray input(const_cast<void*>(hX), const_cast<Nd4jLong*>(hXShapeInfo));
+    NDArray updates(const_cast<void*>(hY), const_cast<Nd4jLong*>(hYShapeInfo));
+
+    ops::helpers::scatterUpdate(input, updates, intArgs);
+}
 
 BUILD_SINGLE_TEMPLATE(template void flattenGeneric,(Nd4jPointer*, int, char, void*, Nd4jLong*, void*, Nd4jLong*), LIBND4J_TYPES);
 BUILD_SINGLE_TEMPLATE(template void pullRowsGeneric, (void *, Nd4jLong*, void*, Nd4jLong*, const int, Nd4jLong*, Nd4jLong*, Nd4jLong*, Nd4jLong*, Nd4jLong*), LIBND4J_TYPES);

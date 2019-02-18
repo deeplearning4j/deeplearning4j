@@ -1619,6 +1619,14 @@ public:
     //void fillUtf8String(Nd4jPointer *extraPointers, const char **string, int numStrings, Nd4jPointer buffer);
     Nd4jPointer createUtf8String(Nd4jPointer *extraPointers, const char *string, int length);
     void deleteUtf8String(Nd4jPointer *extraPointers, Nd4jPointer ptr);
+
+    void scatterUpdate(Nd4jPointer *extraPointers,
+            void *hX,       const Nd4jLong *hXShapeInfo,
+            void *dX,       const Nd4jLong *dXShapeInfo,            
+            const void *hY, const Nd4jLong *hYShapeInfo,
+            const void *dY, const Nd4jLong *dYShapeInfo,            
+            const std::vector<int>* intArgs);
+
 };
 
 

@@ -19,7 +19,7 @@
 //
 
 
-#include<ops/declarable/helpers/transforms.h>
+#include <ops/declarable/helpers/transforms.h>
 #include <array/ResultSet.h>
 #include <helpers/ShapeUtils.h>
 #include <numeric>
@@ -673,59 +673,54 @@ void eye(NDArray& output) {
 }
 
 //////////////////////////////////////////////////////////////////////////
-void scatterUpdate(NDArray& operand, NDArray& updates, const std::vector<int>* intArgs) {
+void scatterUpdate(NDArray& input, NDArray& updates, const std::vector<int>* intArgs) {
 
     int opCode = (*intArgs)[0];
     int dimSize = (*intArgs)[1];    
-    unsigned long e;
-    unsigned long limg = 2 + dimSize;
-    std::vector<int> tadDimension(dimSize);
+    Nd4jLong e;
+    Nd4jLong limg = 2 + dimSize;
+    std::vector<int> tadDimensions(dimSize);
     for (e = 2; e < limg; e++)
-        tadDimension[e-2] = (*intArgs)[e];
+        tadDimensions[e-2] = (*intArgs)[e];
+
+    std::vector<int> dimsToExclude = ShapeUtils::evalDimsToExclude(input.rankOf(), tadDimensions);
 
     // increasing counter to skip numIndices
     e++;
-    std::vector<int> indices;
-    std::vector<int> indicesU;
-    int cnt = 0;
-    for (; e < intArgs->size(); e++) {
+    std::vector<int> indices;        
+    for (; e < intArgs->size(); e++)
         indices.push_back((*intArgs)[e]);
-        indicesU.push_back(cnt++);
-    }
 
-    std::unique_ptr<ResultSet> tadsOperand(operand.multipleTensorsAlongDimension(indices, tadDimension));
-    std::unique_ptr<ResultSet> tadsUpdate(updates.multipleTensorsAlongDimension(indicesU, tadDimension));
-
-#pragma omp parallel for if(indices.size() > Environment::getInstance()->elementwiseThreshold()) schedule(guided) proc_bind(close) shared(tadsOperand, tadsUpdate)
-    for (unsigned long x = 0; x < indices.size(); x++) {
+#pragma omp parallel for if(indices.size() > Environment::getInstance()->elementwiseThreshold()) schedule(guided) proc_bind(close)
+    for (Nd4jLong i = 0; i < indices.size(); ++i) {
                 
-        auto tad = tadsOperand->at(x);
-        auto tadUpdates = tadsUpdate->at(x);
-
-        if (tad->lengthOf() != tadUpdates->lengthOf())
+        auto inSubArr  = input(indices[i], dimsToExclude, true);
+        auto updSubArr = updates(i,        dimsToExclude, true);
+        
+        if (inSubArr.lengthOf() != updSubArr.lengthOf())
             continue;
 
         switch (opCode) {
             case 0:
-                tad->applyPairwiseTransform(pairwise::Add, tadUpdates, tad, nullptr);
+                inSubArr.applyPairwiseTransform(pairwise::Add, &updSubArr, &inSubArr, nullptr);
                 break;
             case 1:
-                tad->applyPairwiseTransform(pairwise::Subtract, tadUpdates, tad, nullptr);
+                inSubArr.applyPairwiseTransform(pairwise::Subtract, &updSubArr, &inSubArr, nullptr);
                 break;
             case 2:
-                tad->applyPairwiseTransform(pairwise::Multiply, tadUpdates, tad, nullptr);
+                inSubArr.applyPairwiseTransform(pairwise::Multiply, &updSubArr, &inSubArr, nullptr);
                 break;
             case 3:
-                tad->applyPairwiseTransform(pairwise::Divide, tadUpdates, tad, nullptr);
+                inSubArr.applyPairwiseTransform(pairwise::Divide, &updSubArr, &inSubArr, nullptr);
                 break;
             case 4:
-                tad->applyPairwiseTransform(pairwise::ReverseSubtract, tadUpdates, tad, nullptr);
+                inSubArr.applyPairwiseTransform(pairwise::ReverseSubtract, &updSubArr, &inSubArr, nullptr);
                 break;
             case 5:
-                tad->applyPairwiseTransform(pairwise::ReverseDivide, tadUpdates, tad, nullptr);
+                inSubArr.applyPairwiseTransform(pairwise::ReverseDivide, &updSubArr, &inSubArr, nullptr);
                 break;
             case 6:
-                tad->applyPairwiseTransform(pairwise::CopyPws, tadUpdates, tad, nullptr);
+                inSubArr.applyPairwiseTransform(pairwise::CopyPws, &updSubArr, &inSubArr, nullptr);
                 break;
             default:
                 continue;                 
