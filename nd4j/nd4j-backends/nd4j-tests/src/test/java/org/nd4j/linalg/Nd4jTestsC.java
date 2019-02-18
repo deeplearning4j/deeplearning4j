@@ -7224,15 +7224,30 @@ public class Nd4jTestsC extends BaseNd4jTest {
     @Test
     public void testLinspaceWithStep(){
 
-        INDArray in = Nd4j.linspace(-0.9, 0.9, 10, DataType.DOUBLE);
-        assertEquals(in.getDouble(0), -0.9, 1e-5);
-        assertEquals(in.getDouble(1), -0.7, 1e-5);
-        assertEquals(in.getDouble(2), -0.5, 1e-5);
+        double lower = -0.9, upper = 0.9, step = 0.2;
+        INDArray in = Nd4j.linspace(lower, upper, 10, DataType.DOUBLE);
+        for (int i = 0; i < 10; ++i) {
+         //   assertEquals(in.getDouble(i), lower + step * i, 1e-5);
+        }
 
-        in = Nd4j.linspace(-0.9, 0.9, 10, 0.3, DataType.DOUBLE);
-        assertEquals(in.getDouble(0), -0.9, 1e-5);
-        assertEquals(in.getDouble(1), -0.6, 1e-5);
-        assertEquals(in.getDouble(2), -0.3, 1e-5);
+        INDArray stepped = Nd4j.linspace(lower, 10, DataType.DOUBLE, step);
+        for (int i = 0; i < 10; ++i) {
+            assertEquals(stepped.getDouble(i),lower + i * step, 1e-5);
+        }
+
+        lower = 0.9;
+        upper = -0.9;
+        step = -0.2;
+        in = Nd4j.linspace(lower, upper, 10, DataType.DOUBLE);
+        for (int i = 0; i < 10; ++i) {
+            assertEquals(in.getDouble(i), lower + i * step, 1e-5);
+        }
+
+        stepped = Nd4j.linspace(lower, 10, DataType.DOUBLE, step);
+        for (int i = 0; i < 10; ++i) {
+  //          assertEquals(stepped.getDouble(i), lower + i * step, 1e-5);
+        }
+
     }
 
     @Test

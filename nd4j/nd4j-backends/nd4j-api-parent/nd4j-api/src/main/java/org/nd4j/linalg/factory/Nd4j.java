@@ -1999,26 +1999,33 @@ public class Nd4j {
      * Generate a linearly spaced vector
      *
      * @param lower upper bound
-     * @param upper lower bound
      * @param num   number of items in returned vector
-     * @param step  the step
+     * @param step  the step (incompatible with <b>upper</b>)
      * @return the linearly spaced vector
      */
-    public static INDArray linspace(long lower, long upper, long num, long step, @NonNull DataType dtype) {
+    public static INDArray linspace(long lower, long num, @NonNull DataType dtype, long step) {
         // for now we'll temporarily keep original impl
-        if(lower == upper && num == 1) {
+        if(num == 1) {
             return Nd4j.scalar(dtype, lower);
         }
 
-
-        double approx = (double) num / ((double) (upper - lower) + 1);
+        double approx = (double) num / ((double) (step * num) + 1);
         if (approx % 1 <= EPS_THRESHOLD) {
             // FIXME: int cast
-            return INSTANCE.linspace((int) lower, (int) upper, (int) num, (int) step, dtype);
+            return INSTANCE.linspace((int) lower, (int) num, (int) step, dtype);
         } else {
-            return linspace((double) lower, (double) upper, (int) num, step, dtype);
+            return linspace((double) lower, (int) num, step, dtype);
         }
     }
+
+    /**
+     * Generate a linearly spaced vector
+     *
+     * @param lower upper bound
+     * @param upper lower bound
+     * @param num   number of items in returned vector
+     * @return the linearly spaced vector
+     */
 
     public static INDArray linspace(long lower, long upper, long num, @NonNull DataType dtype) {
         // for now we'll temporarily keep original impl
@@ -2068,12 +2075,14 @@ public class Nd4j {
      */
     public static INDArray linspace(double lower, double upper, long num, DataType dataType) {
         // FIXME: int cast
+        Preconditions.checkState(dataType.isFPType());
         return Nd4j.getExecutioner().exec(new Linspace(lower, upper, (int) num, dataType));
     }
 
-    public static INDArray linspace(double lower, double upper, long num, double step, DataType dataType) {
+    public static INDArray linspace(double lower, long num, DataType dataType, double step) {
         // FIXME: int cast
-        return Nd4j.getExecutioner().exec(new Linspace(lower, upper, (int)num, step, dataType));
+        Preconditions.checkState(dataType.isFPType());
+        return Nd4j.getExecutioner().exec(new Linspace(lower, (int)num, dataType, step));
     }
 
     /**
