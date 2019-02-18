@@ -209,7 +209,6 @@ namespace randomOps {
             T step = extraParams[2];
 
 	        if (step == static_cast<T>(0.0f)) {
-	            nd4j_printf("Stepless [%f];\n", (float) step);
             	step = (T) idx / ((T)length - (T) 1.0f);
             	return from * ((T) 1.0f - step) + step * to;
             }
