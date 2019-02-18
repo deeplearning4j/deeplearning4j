@@ -2469,24 +2469,48 @@ void NativeOps::deleteUtf8String(Nd4jPointer *extraPointers, Nd4jPointer ptr) {
 
 
 ////////////////////////////////////////////////////////////////////////
-void NativeOps::scatterUpdate(Nd4jPointer *extraPointers,
-            void *hX,       const Nd4jLong *hXShapeInfo,
-            void *dX,       const Nd4jLong *dXShapeInfo,            
-            const void *hY, const Nd4jLong *hYShapeInfo,
-            const void *dY, const Nd4jLong *dYShapeInfo,
-            const void *hIntArgs, const Nd4jLong *hIntArgsShapeInfo,
-            const void *dIntArgs, const Nd4jLong *dIntArgsShapeInfo) {
+static void scatterUpdate(Nd4jPointer *extraPointers, const int opCode, const int numOfSubArrs,
+                            void* phX, void* phXShapeInfo,
+                            void* pdX, void* pdXShapeInfo,
+                            void* phY, void* phYShapeInfo,
+                            void* pdY, void* pdYShapeInfo,
+                            int* indexes) {
 
-    const int* intArgsBuff = reinterpret_cast<const int*>(hIntArgs);
+    #pragma omp parallel for schedule(guided) proc_bind(close)
+    for (Nd4jLong i = 0; i < numOfSubArrs; ++i) {
 
-    NDArray input(hX, const_cast<Nd4jLong*>(hXShapeInfo));
-    NDArray updates(const_cast<void*>(hY), const_cast<Nd4jLong*>(hYShapeInfo));
+        NDArray inSubArr(reinterpret_cast<void*>(reinterpret_cast<void**>(phX)[indexes[i]]), reinterpret_cast<Nd4jLong**>(phXShapeInfo)[indexes[i]]);
+        NDArray updSubArr(reinterpret_cast<void*>(reinterpret_cast<void**>(phY)[i]), reinterpret_cast<Nd4jLong**>(phYShapeInfo)[i]);        
+        
+        if (inSubArr.lengthOf() != updSubArr.lengthOf())
+            continue;
 
-    std::vector<int> intArgs(shape::length(hIntArgsShapeInfo));
-    for(int i = 0; i < intArgs.size(); ++i)
-        intArgs[i] = intArgsBuff[shape::getIndexOffset(i, hIntArgsShapeInfo, intArgs.size())];
-
-    ops::helpers::scatterUpdate(input, updates, &intArgs);
+        switch (opCode) {
+            case 0:
+                inSubArr.applyPairwiseTransform(pairwise::Add, &updSubArr, &inSubArr, nullptr);
+                break;
+            case 1:
+                inSubArr.applyPairwiseTransform(pairwise::Subtract, &updSubArr, &inSubArr, nullptr);
+                break;
+            case 2:
+                inSubArr.applyPairwiseTransform(pairwise::Multiply, &updSubArr, &inSubArr, nullptr);
+                break;
+            case 3:
+                inSubArr.applyPairwiseTransform(pairwise::Divide, &updSubArr, &inSubArr, nullptr);
+                break;
+            case 4:
+                inSubArr.applyPairwiseTransform(pairwise::ReverseSubtract, &updSubArr, &inSubArr, nullptr);
+                break;
+            case 5:
+                inSubArr.applyPairwiseTransform(pairwise::ReverseDivide, &updSubArr, &inSubArr, nullptr);
+                break;
+            case 6:
+                inSubArr.applyPairwiseTransform(pairwise::CopyPws, &updSubArr, &inSubArr, nullptr);
+                break;
+            default:
+                continue;                 
+        }
+    }
 }
 
 BUILD_SINGLE_TEMPLATE(template void flattenGeneric,(Nd4jPointer*, int, char, void*, Nd4jLong*, void*, Nd4jLong*), LIBND4J_TYPES);

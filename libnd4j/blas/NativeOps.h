@@ -1620,13 +1620,12 @@ public:
     Nd4jPointer createUtf8String(Nd4jPointer *extraPointers, const char *string, int length);
     void deleteUtf8String(Nd4jPointer *extraPointers, Nd4jPointer ptr);
 
-    void scatterUpdate(Nd4jPointer *extraPointers,
-            void *hX,       const Nd4jLong *hXShapeInfo,
-            void *dX,       const Nd4jLong *dXShapeInfo,            
-            const void *hY, const Nd4jLong *hSYhapeInfo,
-            const void *dY, const Nd4jLong *dYShapeInfo,            
-            const void *hIntArgs, const Nd4jLong *hIntArgsShapeInfo,
-            const void *dIntArgs, const Nd4jLong *dIntArgsShapeInfo);
+    void scatterUpdate(Nd4jPointer *extraPointers, const int opCode, const int numOfSubArrs,
+                      void* phX, void* phXShapeInfo,
+                      void* pdX, void* pdXShapeInfo,
+                      void* phY, void* phYShapeInfo,
+                      void* pdY, void* pdYShapeInfo,
+                      int* indexes);
 
 };
 

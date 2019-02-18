@@ -691,7 +691,7 @@ void scatterUpdate(NDArray& input, NDArray& updates, const std::vector<int>* int
     for (; e < intArgs->size(); e++)
         indices.push_back((*intArgs)[e]);
 
-#pragma omp parallel for if(indices.size() > Environment::getInstance()->elementwiseThreshold()) schedule(guided) proc_bind(close)
+#pragma omp parallel for schedule(guided) proc_bind(close)
     for (Nd4jLong i = 0; i < indices.size(); ++i) {
                 
         auto inSubArr  = input(indices[i], dimsToExclude, true);
