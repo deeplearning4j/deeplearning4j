@@ -265,7 +265,8 @@
         (3, Prod), \
         (4, ASum), \
         (5, AMax) ,\
-        (6, AMin)
+        (6, AMin) ,\
+        (7, ReduceSameBenchmarkOp)
 
 
 
@@ -281,7 +282,8 @@
         (8, Entropy) ,\
         (9, LogEntropy) ,\
         (10, ShannonEntropy) ,\
-        (11, LogSumExp)
+        (11, LogSumExp), \
+        (12, ReduceFloatBenchmarkOp)
 
 
 

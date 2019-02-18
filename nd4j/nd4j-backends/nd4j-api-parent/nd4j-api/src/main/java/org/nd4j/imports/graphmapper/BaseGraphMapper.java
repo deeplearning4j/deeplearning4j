@@ -80,15 +80,20 @@ public abstract class BaseGraphMapper<GRAPH_TYPE, NODE_TYPE, ATTR_TYPE, TENSOR_T
      */
     @Override
     public SameDiff importGraph(InputStream inputStream) {
-        GRAPH_TYPE def = readGraph(inputStream);
-        return importGraph(def);
+        return importGraph(inputStream, Collections.<String, OpImportOverride<GRAPH_TYPE,NODE_TYPE,ATTR_TYPE>>emptyMap());
     }
 
-    protected GRAPH_TYPE readGraph(InputStream inputStream) {
+    @Override
+    public SameDiff importGraph(InputStream inputStream, Map<String,? extends OpImportOverride<GRAPH_TYPE,NODE_TYPE,ATTR_TYPE>> opImportOverrides) {
+        GRAPH_TYPE def = readGraph(inputStream, opImportOverrides);
+        return importGraph(def, opImportOverrides);
+    }
+
+    protected GRAPH_TYPE readGraph(InputStream inputStream, Map<String,? extends OpImportOverride<GRAPH_TYPE,NODE_TYPE,ATTR_TYPE>> opImportOverrides) {
         byte[] bytes = null;
         GRAPH_TYPE def = null;
         try {
-            bytes = IOUtils.toByteArray(inputStream);
+            bytes = IOUtils.toByteArray(inputStream);   //Buffers internally
             def = parseGraphFrom(bytes);
         } catch (IOException e) {
             try (BufferedInputStream bis2 = new BufferedInputStream(new ByteArrayInputStream(bytes)); BufferedReader reader = new BufferedReader(new InputStreamReader(bis2))) {
@@ -110,25 +115,20 @@ public abstract class BaseGraphMapper<GRAPH_TYPE, NODE_TYPE, ATTR_TYPE, TENSOR_T
         return def;
     }
 
-
-    /**
-     * @param graphFile
-     * @return
-     */
-    @Override
-    public SameDiff importGraph(String graphFile) {
-        return importGraph(new File(graphFile));
-    }
-
     /**
      * @param graphFile
      * @return
      */
     @Override
     public SameDiff importGraph(File graphFile) {
+        return importGraph(graphFile, Collections.<String, OpImportOverride<GRAPH_TYPE,NODE_TYPE,ATTR_TYPE>>emptyMap());
+    }
+
+    @Override
+    public SameDiff importGraph(File graphFile, Map<String,? extends OpImportOverride<GRAPH_TYPE,NODE_TYPE,ATTR_TYPE>> opImportOverrides) {
         GRAPH_TYPE def = null;
         try (FileInputStream fis = new FileInputStream(graphFile)) {
-            return importGraph(fis);
+            return importGraph(fis, opImportOverrides);
         } catch (Exception e) {
             throw new ND4JIllegalStateException("Error encountered loading graph file: " + graphFile.getAbsolutePath(), e);
         }
@@ -162,6 +162,11 @@ public abstract class BaseGraphMapper<GRAPH_TYPE, NODE_TYPE, ATTR_TYPE, TENSOR_T
      */
     @Override
     public SameDiff importGraph(GRAPH_TYPE tfGraph) {
+        return importGraph(tfGraph, Collections.<String, OpImportOverride<GRAPH_TYPE,NODE_TYPE,ATTR_TYPE>>emptyMap());
+    }
+
+    @Override
+    public SameDiff importGraph(GRAPH_TYPE tfGraph, Map<String,? extends OpImportOverride<GRAPH_TYPE,NODE_TYPE,ATTR_TYPE>> opImportOverrides) {
         SameDiff diff = SameDiff.create();
         ImportState<GRAPH_TYPE, TENSOR_TYPE> importState = new ImportState<>();
         importState.setSameDiff(diff);
@@ -218,9 +223,15 @@ public abstract class BaseGraphMapper<GRAPH_TYPE, NODE_TYPE, ATTR_TYPE, TENSOR_T
 
         //Map ops
         val tfNodesList = getNodeList(tfGraph);
-        for (NODE_TYPE tfNode : tfNodesList) {
-            if (!opsToIgnore().contains(getOpType(tfNode)) || isOpIgnoreException(tfNode))
-                mapNodeType(tfNode, importState);
+        for (NODE_TYPE node : tfNodesList) {
+            String opType = getOpType(node);
+            OpImportOverride<GRAPH_TYPE,NODE_TYPE,ATTR_TYPE> importOverride = null;
+            if(opImportOverrides != null){
+                importOverride = opImportOverrides.get(opType);
+            }
+
+            if (!opsToIgnore().contains(opType) || isOpIgnoreException(node))
+                mapNodeType(node, importState, importOverride);
         }
 
 

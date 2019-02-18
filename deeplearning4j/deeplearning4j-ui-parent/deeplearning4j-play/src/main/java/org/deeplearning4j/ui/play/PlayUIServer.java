@@ -134,7 +134,7 @@ public class PlayUIServer extends UIServer {
 
             log.error("Error loading UI Language (Internationalization) data: no language resource data files were" +
                     "found on the classpath. This usually occurs when running DL4J's UI from an uber-jar, which was " +
-                    "built incorrectly (without language resource files). See https://deeplearning4j.org/visualization#issues" +
+                    "built incorrectly (without language resource files). See https://deeplearning4j.org/docs/latest/deeplearning4j-nn-visualization#issues" +
                     "for more details");
             System.exit(1);
         }
@@ -222,7 +222,7 @@ public class PlayUIServer extends UIServer {
                 log.error("Error starting UI server due to missing play.crypto.provider config: This usually occurs due to missing" +
                         " application.conf file. DL4J's UI (based on the Play framework) requires this file in order" +
                         " to run. File can be missing due to incorrect creation of uber-jars that do not include resource" +
-                        " files. See https://deeplearning4j.org/visualization#issues for more information", e);
+                        " files. See https://deeplearning4j.org/docs/latest/deeplearning4j-nn-visualization#issues for more information", e);
             } else {
                 log.error("Unknown error when starting UI server",e);
             }

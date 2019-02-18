@@ -33,6 +33,7 @@ namespace simdOps {
     public:
         static const bool requiresSpecialAccumulation = true;
 
+        constexpr static functions::ReduceType reduceType = functions::ReduceType::SUM;
 
         op_def static T startingValue(T *input) {
             return (T) 0.0f;

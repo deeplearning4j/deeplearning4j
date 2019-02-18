@@ -38,7 +38,8 @@ import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.environment.Nd4jEnvironment;
 import org.nd4j.linalg.api.iter.INDArrayIterator;
 import org.nd4j.linalg.api.iter.NdIndexIterator;
-import org.nd4j.linalg.api.ndarray.BaseNDArray;
+import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
+import org.nd4j.linalg.api.memory.enums.LearningPolicy;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BroadcastOp;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
@@ -7255,15 +7256,41 @@ public class Nd4jTestsC extends BaseNd4jTest {
     public void testArangeWithStep() {
         int begin = -9, end = 9, step = 2;
         INDArray in = Nd4j.arange(begin, end, step);
-        assertEquals(in.getInt(0),  -9);
-        assertEquals(in.getInt(1),  -7);
-        assertEquals(in.getInt(2),  -5);
-        assertEquals(in.getInt(3),  -3);
-        assertEquals(in.getInt(4),  -1);
-        assertEquals(in.getInt(5),  1);
-        assertEquals(in.getInt(6),  3);
-        assertEquals(in.getInt(7),  5);
-        assertEquals(in.getInt(8),  7);
+        assertEquals(in.getInt(0), -9);
+        assertEquals(in.getInt(1), -7);
+        assertEquals(in.getInt(2), -5);
+        assertEquals(in.getInt(3), -3);
+        assertEquals(in.getInt(4), -1);
+        assertEquals(in.getInt(5), 1);
+        assertEquals(in.getInt(6), 3);
+        assertEquals(in.getInt(7), 5);
+        assertEquals(in.getInt(8), 7);
+    }
+
+    @Test
+    public void testRollingMean() {
+        val wsconf = WorkspaceConfiguration.builder()
+                .initialSize(1500L * 1024L * 1024L)
+                .policyLearning(LearningPolicy.FIRST_LOOP)
+                .build();
+
+        for (int e = 0; e < 5; e++) {
+            try (val ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace(wsconf, "kjmnf,ndsfhnsdjhflljkl131334")) {
+                val array = Nd4j.create(DataType.FLOAT, 32, 128, 256, 256);
+                array.mean(2, 3);
+            }
+        }
+
+        int iterations = 100;
+        val timeStart = System.nanoTime();
+        for (int e = 0; e < iterations; e++) {
+            try (val ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace(wsconf, "kjmnf,ndsfhnsdjhflljkl131334")) {
+                val array = Nd4j.create(DataType.FLOAT, 32, 128, 256, 256);
+                array.mean(2, 3);
+            }
+        }
+        val timeEnd = System.nanoTime();
+        log.info("Average time: {} ms", (timeEnd - timeStart) / (double) iterations / (double) 1000 / (double) 1000);
     }
 
     ///////////////////////////////////////////////////////

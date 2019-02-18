@@ -99,7 +99,7 @@ public class TFGraphTestAllLibnd4j {
             "rnn/fused_adapt_basic/dynamic.*",
             "rnn/grucell/dynamic.*",
             "rnn/lstmcell/dynamic.*",
-            "rnn/srucell/dynamic.*"
+            "rnn/srucell/dynamic.*",
     };
 
     @BeforeClass

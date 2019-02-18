@@ -874,11 +874,6 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
     }
 
     @Override
-    public long index(long row, long column) {
-        return 0;
-    }
-
-    @Override
     public double squaredDistance(INDArray other) {
         return 0;
     }

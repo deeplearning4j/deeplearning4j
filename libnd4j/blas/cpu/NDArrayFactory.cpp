@@ -296,9 +296,14 @@ template NDArray* NDArrayFactory::create_(const char order, const std::vector<Nd
     NDArray* NDArrayFactory::linspace(const T from, const T to, const Nd4jLong numElements) {
         auto result = NDArrayFactory::vector<T>(numElements);
 
+        auto b = reinterpret_cast<T *>(result->getBuffer());
+        auto t1 = static_cast<T>(1.0f);
+        auto tn = static_cast<T>(numElements);
+
+#pragma omp parallel for simd default(shared)
         for (Nd4jLong e = 0; e < numElements; e++) {
-            T step = (T) e / ((T) numElements - (T) 1);
-            reinterpret_cast<T *>(result->getBuffer())[e] = (from * ((T) 1 - step) + step * to);            
+            T step = (T) e / (tn - t1);
+            b[e] = (from * (t1 - step) + step * to);
         }
         return result;
     }

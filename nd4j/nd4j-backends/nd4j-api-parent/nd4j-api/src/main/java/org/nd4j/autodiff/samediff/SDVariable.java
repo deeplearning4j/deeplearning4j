@@ -358,7 +358,7 @@ public class SDVariable extends DifferentialFunction implements Serializable {
      * @return Negated variable
      */
     public SDVariable neg(String name){
-        return sameDiff.neg(name, this);
+        return sameDiff.math().neg(name, this);
     }
 
     /**
@@ -1786,6 +1786,28 @@ public class SDVariable extends DifferentialFunction implements Serializable {
                 begin_mask, end_mask, 0, 0, shrink_axis);
     }
 
+    /**
+     * Convert this variable to a constant. This is equivalent to "freezing" a variable so that it's value
+     * won't be changed by further training.<br>
+     * This can only be done for variables and placeholders, not ARRAY type variables (which are usually network activations).
+     * As a constant, this variable will no longer be modified by any subsequent training.
+     *
+     * @return This variable (now a constant)
+     */
+    public SDVariable convertToConstant(){
+        return sameDiff.convertToConstant(this);
+    }
+
+    /**
+     * Convert this variable to a VARIABLE type SDVariable.<br>
+     * This can only be done for constants and placeholders, not ARRAY type variables (which are usually network activations).
+     * As a variable, this variable will modified during any subsequent training.
+     *
+     * @return This variable (now a variable type SDVariable)
+     */
+    public SDVariable convertToVariable(){
+        return sameDiff.convertToVariable(this);
+    }
 
     private static int binArrToInt(int[] arr) {
         int x = 0;
