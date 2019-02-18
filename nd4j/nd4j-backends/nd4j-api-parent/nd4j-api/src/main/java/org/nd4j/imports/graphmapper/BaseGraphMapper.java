@@ -84,12 +84,12 @@ public abstract class BaseGraphMapper<GRAPH_TYPE, NODE_TYPE, ATTR_TYPE, TENSOR_T
     }
 
     @Override
-    public SameDiff importGraph(InputStream inputStream, Map<String,OpImportOverride<GRAPH_TYPE,NODE_TYPE,ATTR_TYPE>> opImportOverrides) {
+    public SameDiff importGraph(InputStream inputStream, Map<String,? extends OpImportOverride<GRAPH_TYPE,NODE_TYPE,ATTR_TYPE>> opImportOverrides) {
         GRAPH_TYPE def = readGraph(inputStream, opImportOverrides);
         return importGraph(def, opImportOverrides);
     }
 
-    protected GRAPH_TYPE readGraph(InputStream inputStream, Map<String,OpImportOverride<GRAPH_TYPE,NODE_TYPE,ATTR_TYPE>> opImportOverrides) {
+    protected GRAPH_TYPE readGraph(InputStream inputStream, Map<String,? extends OpImportOverride<GRAPH_TYPE,NODE_TYPE,ATTR_TYPE>> opImportOverrides) {
         byte[] bytes = null;
         GRAPH_TYPE def = null;
         try {
@@ -125,7 +125,7 @@ public abstract class BaseGraphMapper<GRAPH_TYPE, NODE_TYPE, ATTR_TYPE, TENSOR_T
     }
 
     @Override
-    public SameDiff importGraph(File graphFile, Map<String,OpImportOverride<GRAPH_TYPE,NODE_TYPE,ATTR_TYPE>> opImportOverrides) {
+    public SameDiff importGraph(File graphFile, Map<String,? extends OpImportOverride<GRAPH_TYPE,NODE_TYPE,ATTR_TYPE>> opImportOverrides) {
         GRAPH_TYPE def = null;
         try (FileInputStream fis = new FileInputStream(graphFile)) {
             return importGraph(fis, opImportOverrides);
@@ -166,7 +166,7 @@ public abstract class BaseGraphMapper<GRAPH_TYPE, NODE_TYPE, ATTR_TYPE, TENSOR_T
     }
 
     @Override
-    public SameDiff importGraph(GRAPH_TYPE tfGraph, Map<String,OpImportOverride<GRAPH_TYPE,NODE_TYPE,ATTR_TYPE>> opImportOverrides) {
+    public SameDiff importGraph(GRAPH_TYPE tfGraph, Map<String,? extends OpImportOverride<GRAPH_TYPE,NODE_TYPE,ATTR_TYPE>> opImportOverrides) {
         SameDiff diff = SameDiff.create();
         ImportState<GRAPH_TYPE, TENSOR_TYPE> importState = new ImportState<>();
         importState.setSameDiff(diff);
@@ -227,7 +227,7 @@ public abstract class BaseGraphMapper<GRAPH_TYPE, NODE_TYPE, ATTR_TYPE, TENSOR_T
             String opType = getOpType(node);
             OpImportOverride<GRAPH_TYPE,NODE_TYPE,ATTR_TYPE> importOverride = null;
             if(opImportOverrides != null){
-                opImportOverrides.get(opType);
+                importOverride = opImportOverrides.get(opType);
             }
 
             if (!opsToIgnore().contains(opType) || isOpIgnoreException(node))

@@ -517,8 +517,45 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
             val opName = tfNode.getOp();
 
             if(importOverride != null){
+                //First, get inputs:
+                int numInputs = tfNode.getInputCount();
+                List<SDVariable> inputs = new ArrayList<>(numInputs);
+                List<SDVariable> controlDeps = null;
+                for( int i=0; i<numInputs; i++ ){
+                    String inName = tfNode.getInput(i);
+
+                    boolean controlDep = isControlDependency(inName);
+                    String name = getNodeName(inName);
+
+                    SDVariable v = diff.getVariable(name);
+                    //At this point, all placeholders, variables and constants should have been imported
+                    //This: this should be an array type variable (i.e., activations)
+                    if (v == null) {
+                        //First: try to work out the datatype of this input node
+                        //Given we haven't already imported it at this point, it must be the 2nd or later output of an op
+
+                        String inputOpName = varNameToOpName(inName);
+                        NodeDef inputOp = importState.getVariables().get(inputOpName);
+                        int outputIdx = varNameToOpOutputNumber(name);
+                        org.nd4j.linalg.api.buffer.DataType dt = dataTypeForTensor(inputOp, outputIdx);
+                        if (dt == org.nd4j.linalg.api.buffer.DataType.UNKNOWN)
+                            dt = null;    //Infer it later
+
+
+                        v = diff.var(name, VariableType.ARRAY, null, dt, (long[]) null);
+                    }
+
+                    if(controlDep){
+                        if(controlDeps == null)
+                            controlDeps = new ArrayList<>();
+                        controlDeps.add(v);
+                    } else {
+                        inputs.add(v);
+                    }
+                }
+
                 log.info("Importing op {} using override {}", opName, importOverride);
-                importOverride.initFromTensorFlow(tfNode, diff, getAttrMap(tfNode), importState.getGraph());
+                importOverride.initFromTensorFlow(inputs, controlDeps, tfNode, diff, getAttrMap(tfNode), importState.getGraph());
             } else {
 
                 val differentialFunction = DifferentialFunctionClassHolder.getInstance().getOpWithTensorflowName(opName);
@@ -537,12 +574,10 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
                         String inputOpName = varNameToOpName(inName);
                         NodeDef inputNode = importState.getVariables().get(inputOpName);
 
-                        //Idea here: skip ".../reduction_indices" and the like that get mapped to properties not variables
                         if (shouldSkip(inputNode) && !inName.endsWith("/read"))
                             continue;
 
                         boolean controlDep = isControlDependency(inName);
-                        boolean placeholder = isPlaceHolder(tfNode);
                         String name = getNodeName(inName);
 
                         SDVariable v = diff.getVariable(name);

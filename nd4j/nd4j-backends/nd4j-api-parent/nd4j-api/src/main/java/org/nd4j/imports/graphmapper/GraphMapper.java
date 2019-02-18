@@ -50,7 +50,7 @@ public interface GraphMapper<GRAPH_TYPE,NODE_TYPE,ATTR_TYPE,TENSOR_TYPE> {
      */
     SameDiff importGraph(InputStream graphFile);
 
-    SameDiff importGraph(InputStream graphFile, Map<String,OpImportOverride<GRAPH_TYPE,NODE_TYPE,ATTR_TYPE>> opImportOverrides);
+    SameDiff importGraph(InputStream graphFile, Map<String,? extends OpImportOverride<GRAPH_TYPE,NODE_TYPE,ATTR_TYPE>> opImportOverrides);
 
     /**
      * Import a graph as SameDiff from the given file
@@ -70,7 +70,7 @@ public interface GraphMapper<GRAPH_TYPE,NODE_TYPE,ATTR_TYPE,TENSOR_TYPE> {
      *                          operation to import, value is the object used to import it
      * @return Imported graph
      */
-    SameDiff importGraph(File graphFile, Map<String,OpImportOverride<GRAPH_TYPE,NODE_TYPE,ATTR_TYPE>> opImportOverrides);
+    SameDiff importGraph(File graphFile, Map<String,? extends OpImportOverride<GRAPH_TYPE,NODE_TYPE,ATTR_TYPE>> opImportOverrides);
 
     /**
      * This method converts given graph type (in its native format) to SameDiff
@@ -86,7 +86,7 @@ public interface GraphMapper<GRAPH_TYPE,NODE_TYPE,ATTR_TYPE,TENSOR_TYPE> {
      * @param graph Graph to import
      * @return Imported graph
      */
-    SameDiff importGraph(GRAPH_TYPE graph, Map<String,OpImportOverride<GRAPH_TYPE,NODE_TYPE,ATTR_TYPE>> opImportOverrides);
+    SameDiff importGraph(GRAPH_TYPE graph, Map<String,? extends OpImportOverride<GRAPH_TYPE,NODE_TYPE,ATTR_TYPE>> opImportOverrides);
 
 
     /**
