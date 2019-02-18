@@ -2082,7 +2082,7 @@ public class Nd4j {
     public static INDArray linspace(double lower, long num, double step, DataType dataType) {
         // FIXME: int cast
         Preconditions.checkState(dataType.isFPType());
-        return Nd4j.getExecutioner().exec(new Linspace(lower, (int)num, dataType, step));
+        return Nd4j.getExecutioner().exec(new Linspace(lower, (int)num, step, dataType));
     }
 
     /**
