@@ -2014,7 +2014,7 @@ public class Nd4j {
             // FIXME: int cast
             return INSTANCE.linspace((int) lower, (int) num, (int) step, dtype);
         } else {
-            return linspace((double) lower, (int) num, step, dtype);
+            return linspace((double) lower, (int) num, (double) step, dtype);
         }
     }
 
@@ -2079,7 +2079,7 @@ public class Nd4j {
         return Nd4j.getExecutioner().exec(new Linspace(lower, upper, (int) num, dataType));
     }
 
-    public static INDArray linspace(double lower, long num, DataType dataType, double step) {
+    public static INDArray linspace(double lower, long num, double step, DataType dataType) {
         // FIXME: int cast
         Preconditions.checkState(dataType.isFPType());
         return Nd4j.getExecutioner().exec(new Linspace(lower, (int)num, dataType, step));
