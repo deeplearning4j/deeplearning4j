@@ -72,9 +72,12 @@ namespace functions {
                     auto threadNum = omp_get_thread_num();
                     auto threadOffset = info.getThreadOffset(threadNum);
 
+                    auto tz = z + threadOffset;
+                    auto tx = x + threadOffset;
+
                     #pragma omp simd
                     for (Nd4jLong i = 0; i < info.getItersPerThread(threadNum); i++)
-                        z[i] = OpType::op(x[i], extraParams);
+                        tz[i] = OpType::op(tx[i], extraParams);
                 }
             } else if (shape::haveSameOffsets(xShapeInfo, zShapeInfo)) {
                 uint xShapeInfoCast[MAX_RANK];

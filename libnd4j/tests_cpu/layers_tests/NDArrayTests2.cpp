@@ -844,3 +844,12 @@ TEST_F(NDArrayTest2, scalar_set_test2) {
     ASSERT_TRUE(exp.equalsTo(arr));
 }
 
+TEST_F(NDArrayTest2, big_dup_test) {
+    auto arr = NDArrayFactory::linspace<float>(1.0f, 10000000.0f, 100000000);
+    auto dup = arr->dup('c');
+
+    ASSERT_EQ(*arr, *dup);
+
+    delete arr;
+    delete dup;
+}
