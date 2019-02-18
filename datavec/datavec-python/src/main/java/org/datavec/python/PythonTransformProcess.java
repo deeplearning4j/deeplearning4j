@@ -1,7 +1,6 @@
 package org.datavec.python;
 
-
-import com.sun.corba.se.spi.ior.Writeable;
+import org.datavec.api.writable.Writable;
 import org.datavec.api.transform.ColumnType;
 import org.datavec.api.transform.TransformProcess;
 import org.datavec.api.transform.schema.Schema;
@@ -33,10 +32,13 @@ public class PythonTransformProcess implements Serializable{
                 case Double:
                 case Float:
                     pyVars.addFloat(colName);
+                    break;
                 case String:
                     pyVars.addStr(colName);
+                    break;
                 case NDArray:
                     pyVars.addNDArray(colName);
+                    break;
                 default:
                     throw new Exception("Unsupported python input type: " + colType.toString());
             }
@@ -55,55 +57,61 @@ public class PythonTransformProcess implements Serializable{
 
    }
 
-   private void setPyInputs(List<Writeable> writeables) throws Exception{
+   private PythonVariables getPyInputsFromWritables(List<Writable> writables) throws Exception{
         PythonVariables pyInputs = pythonTransform.getInputs();
+        PythonVariables ret = new PythonVariables();
+
         for (String name: pyInputs.getVariables()){
             int colIdx = initialSchema.getIndexOfColumn(name);
-            Writeable w = writeables.get(colIdx);
+            Writable w = writables.get(colIdx);
             PythonVariables.Type pyType = pyInputs.getType(name);
             switch (pyType){
                 case INT:
-                    pyInputs.setValue(name, ((LongWritable)w).get());
+                    ret.addInt(name, ((LongWritable)w).get());
                     break;
                 case FLOAT:
-                    pyInputs.setValue(name, ((DoubleWritable)w).get());
+                    ret.addFloat(name, ((DoubleWritable)w).get());
                     break;
                 case STR:
-                    pyInputs.setValue(name, ((Text)w).toString());
+                    ret.addStr(name, ((Text)w).toString());
                     break;
                 case NDARRAY:
-                    pyInputs.setValue(name,((NDArrayWritable)w).get());
+                    ret.addNDArray(name,((NDArrayWritable)w).get());
                     break;
             }
 
         }
+        return ret;
    }
 
-   private List<Writeable> getPyOutputs(){
-        PythonVariables pyOuts = pythonTransform.getOutputs();
-        List<Writeable> out = new ArrayList<>();
+   private List<Writable> getWritablesFromPyOutputs(PythonVariables pyOuts){
+        List<Writable> out = new ArrayList<>();
         for (int i=0; i<finalSchema.numColumns(); i++){
             String name = finalSchema.getName(i);
-            PythonVariables.Type pyType = pyOuts.getType(name);
+            PythonVariables.Type pyType = pythonTransform.getOutputs().getType(name);
             switch (pyType){
                 case INT:
-                    out.add((Writeable) new LongWritable(pyOuts.getIntValue(name)));
+                    out.add((Writable) new LongWritable(pyOuts.getIntValue(name)));
                     break;
                 case FLOAT:
-                    out.add((Writeable) new DoubleWritable(pyOuts.getFloatValue(name)));
+                    out.add((Writable) new DoubleWritable(pyOuts.getFloatValue(name)));
+                    break;
+                case STR:
+                    out.add((Writable) new Text(pyOuts.getStrValue(name)));
                     break;
                 case NDARRAY:
-                out.add((Writeable) new NDArrayWritable(pyOuts.getNDArrayValue(name).getND4JArray()));
+                out.add((Writable) new NDArrayWritable(pyOuts.getNDArrayValue(name).getND4JArray()));
                 break;
             }
         }
         return out;
    }
 
-   public List<Writeable> execute(List<Writeable> inputs) throws Exception{
-        setPyInputs(inputs);
-        PythonExecutioner.getInstance().safeExec(pythonTransform);
-        return getPyOutputs();
+   public List<Writable> execute(List<Writable> inputs) throws Exception{
+        PythonVariables pyInputs = getPyInputsFromWritables(inputs);
+        PythonVariables pyOuts = PythonExecutioner.getInstance().exec(pythonTransform, pyInputs);
+        List<Writable> out = getWritablesFromPyOutputs(pyOuts);
+        return out;
    }
 
 
