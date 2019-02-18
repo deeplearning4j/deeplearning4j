@@ -449,7 +449,8 @@ public class PlayUIServer extends UIServer {
                     List<String> callbackTypes = m.getCallbackTypeIDs();
                     List<StatsStorageEvent> out = new ArrayList<>();
                     for (StatsStorageEvent e : events) {
-                        if (callbackTypes.contains(e.getTypeID())) {
+                        if (callbackTypes.contains(e.getTypeID())
+                                && statsStorageInstances.contains(e.getStatsStorage())) {
                             out.add(e);
                         }
                     }

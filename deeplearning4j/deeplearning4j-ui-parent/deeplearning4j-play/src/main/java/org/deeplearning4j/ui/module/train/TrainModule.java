@@ -214,6 +214,10 @@ public class TrainModule implements UIModule {
                                 && StatsListener.TYPE_ID.equals(sse.getTypeID())
                                 && !knownSessionIDs.containsKey(sse.getSessionID())) {
                     knownSessionIDs.put(sse.getSessionID(), sse.getStatsStorage());
+                    if (multiSession) {
+                        log.info("Adding training session {}/train/{} of StatsStorage instance {}",
+                                addressSupplier.get(), sse.getSessionID(), sse.getStatsStorage());
+                    }
                 }
 
                 Long lastUpdate = lastUpdateForSession.get(sse.getSessionID());
@@ -236,7 +240,11 @@ public class TrainModule implements UIModule {
                 if (!StatsListener.TYPE_ID.equals(typeID))
                     continue;
                 knownSessionIDs.put(sessionID, statsStorage);
-                log.info("Training session attached (onAttach), available at {}/train/{}", addressSupplier.get(), sessionID);
+                if (multiSession) {
+                    log.info("Adding training session {}/train/{} of StatsStorage instance {}",
+                            addressSupplier.get(), sessionID, statsStorage);
+                }
+
                 List<Persistable> latestUpdates = statsStorage.getLatestUpdateAllWorkers(sessionID, typeID);
                 for (Persistable update: latestUpdates) {
                     long updateTime = update.getTimeStamp();
@@ -264,7 +272,10 @@ public class TrainModule implements UIModule {
         }
         for(String s : toRemove) {
             knownSessionIDs.remove(s);
-            log.info("Training session detached, not available any more at {}/train/{}", addressSupplier.get(), s);
+            if (multiSession) {
+                log.info("Removing training session {}/train/{} of StatsStorage instance {}.",
+                        addressSupplier.get(), s, statsStorage);
+            }
             lastUpdateForSession.remove(s);
             I18NProvider.removeInstance(s);
         }
@@ -1489,50 +1500,53 @@ public class TrainModule implements UIModule {
                 }
             }
 
-            for (Persistable p : updatesLastNMinutes) {
-                //TODO single pass
-                if (!p.getWorkerID().equals(wid))
-                    continue;
-                if (!(p instanceof StatsReport))
-                    continue;
+            if (updatesLastNMinutes != null) {
+                for (Persistable p : updatesLastNMinutes) {
+                    //TODO single pass
+                    if (!p.getWorkerID().equals(wid))
+                        continue;
+                    if (!(p instanceof StatsReport))
+                        continue;
 
-                StatsReport sp = (StatsReport) p;
+                    StatsReport sp = (StatsReport) p;
 
-                timestamps.add(sp.getTimeStamp());
+                    timestamps.add(sp.getTimeStamp());
 
-                long jvmCurrentBytes = sp.getJvmCurrentBytes();
-                long jvmMaxBytes = sp.getJvmMaxBytes();
-                long ohCurrentBytes = sp.getOffHeapCurrentBytes();
-                long ohMaxBytes = sp.getOffHeapMaxBytes();
+                    long jvmCurrentBytes = sp.getJvmCurrentBytes();
+                    long jvmMaxBytes = sp.getJvmMaxBytes();
+                    long ohCurrentBytes = sp.getOffHeapCurrentBytes();
+                    long ohMaxBytes = sp.getOffHeapMaxBytes();
 
-                double jvmFrac = jvmCurrentBytes / ((double) jvmMaxBytes);
-                double offheapFrac = ohCurrentBytes / ((double) ohMaxBytes);
-                if (Double.isNaN(jvmFrac))
-                    jvmFrac = 0.0;
-                if (Double.isNaN(offheapFrac))
-                    offheapFrac = 0.0;
-                fracJvm.add((float) jvmFrac);
-                fracOffHeap.add((float) offheapFrac);
+                    double jvmFrac = jvmCurrentBytes / ((double) jvmMaxBytes);
+                    double offheapFrac = ohCurrentBytes / ((double) ohMaxBytes);
+                    if (Double.isNaN(jvmFrac))
+                        jvmFrac = 0.0;
+                    if (Double.isNaN(offheapFrac))
+                        offheapFrac = 0.0;
+                    fracJvm.add((float) jvmFrac);
+                    fracOffHeap.add((float) offheapFrac);
 
-                lastBytes[0] = jvmCurrentBytes;
-                lastBytes[1] = ohCurrentBytes;
+                    lastBytes[0] = jvmCurrentBytes;
+                    lastBytes[1] = ohCurrentBytes;
 
-                lastMaxBytes[0] = jvmMaxBytes;
-                lastMaxBytes[1] = ohMaxBytes;
+                    lastMaxBytes[0] = jvmMaxBytes;
+                    lastMaxBytes[1] = ohMaxBytes;
 
-                if (numDevices > 0) {
-                    long[] devBytes = sp.getDeviceCurrentBytes();
-                    long[] devMaxBytes = sp.getDeviceMaxBytes();
-                    for (int i = 0; i < numDevices; i++) {
-                        double frac = devBytes[i] / ((double) devMaxBytes[i]);
-                        if (Double.isNaN(frac))
-                            frac = 0.0;
-                        fracDeviceMem.get(i).add((float) frac);
-                        lastBytes[2 + i] = devBytes[i];
-                        lastMaxBytes[2 + i] = devMaxBytes[i];
+                    if (numDevices > 0) {
+                        long[] devBytes = sp.getDeviceCurrentBytes();
+                        long[] devMaxBytes = sp.getDeviceMaxBytes();
+                        for (int i = 0; i < numDevices; i++) {
+                            double frac = devBytes[i] / ((double) devMaxBytes[i]);
+                            if (Double.isNaN(frac))
+                                frac = 0.0;
+                            fracDeviceMem.get(i).add((float) frac);
+                            lastBytes[2 + i] = devBytes[i];
+                            lastMaxBytes[2 + i] = devMaxBytes[i];
+                        }
                     }
                 }
             }
+
 
             List<List<Float>> fracUtilized = new ArrayList<>();
             fracUtilized.add(fracJvm);
