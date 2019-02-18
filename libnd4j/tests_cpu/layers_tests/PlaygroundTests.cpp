@@ -1087,7 +1087,7 @@ TEST_F(PlaygroundTests, test_reduce_float_manual) {
 
             #pragma omp simd reduction(+:local)
             for (int e = 0; e < tadLength; e++) {
-                local += powf(x[e], 3) * logf(x[e]);
+                local += x[e];//powf(x[e], 3) * logf(x[e]);
             }
 
             z[t] = local / tadLength;

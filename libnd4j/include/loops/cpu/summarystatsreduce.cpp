@@ -147,7 +147,7 @@ namespace functions {
             uint tadShapeShapeInfoCast[MAX_RANK];
             const bool canCast = tadEWS == 1 && tadOrder == 'c' ? false : nd4j::DataTypeUtils::castShapeInfo<uint>(tadShapeShapeInfo, tadShapeShapeInfoCast);
 
-#pragma omp parallel for if(resultLength > nd4j::Environment::getInstance()->elementwiseThreshold()) schedule(guided) default(shared)
+#pragma omp parallel for schedule(guided) default(shared)
             for (int r = 0; r < resultLength; r++) {
                         
             auto tadOffsetForBlock = tad.tadOffsets[r];
