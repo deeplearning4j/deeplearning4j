@@ -119,8 +119,8 @@ public class SameDiffTests {
 
         val input = sd.var("inp", new long[]{2, 3});
 
-        val nodeA = sd.square(input);
-        val nodeB = sd.square(nodeA);
+        val nodeA = sd.math().square(input);
+        val nodeB = sd.math().square(nodeA);
 
         sd.associateArrayWithVariable(Nd4j.create(new double[]{1, 2, 3, 4, 5, 6}, new long[]{2, 3}), input);
 
@@ -245,7 +245,7 @@ public class SameDiffTests {
         SDVariable sdWeights = sameDiff.var("weights", weights);
         SDVariable sdTargets = sameDiff.var("targets", targets);
 
-        SDVariable res = sameDiff.weightedCrossEntropyWithLogits(sdTargets, sdInputs, sdWeights);
+        SDVariable res = sameDiff.loss().weightedCrossEntropyWithLogits(sdTargets, sdInputs, sdWeights);
         sameDiff.exec(Collections.emptyMap(), sameDiff.outputs());
 
         INDArray resultArray = res.getArr();
@@ -284,7 +284,7 @@ public class SameDiffTests {
         INDArray arr = Transforms.sigmoid(Nd4j.linspace(1, 4, 4, DataType.FLOAT)).reshape(2, 2);
         SDVariable x = sameDiff.var("x", arr);
         SDVariable y = sameDiff.var("y", arr);
-        SDVariable result = sameDiff.cosineSimilarity(x, y, 1);
+        SDVariable result = sameDiff.math().cosineSimilarity(x, y, 1);
         SDVariable addResult = result.add(result);
         SDVariable finalReshape = sameDiff.reshape(addResult, 1, 2);
         sameDiff.exec(Collections.emptyMap(), sameDiff.outputs());
@@ -309,7 +309,7 @@ public class SameDiffTests {
         SameDiff sameDiff = SameDiff.create();
         INDArray arr = Nd4j.linspace(1, 4, 4, DataType.FLOAT);
         SDVariable x = sameDiff.var("x", arr);
-        SDVariable sigmoid = sameDiff.sigmoid("s", x);
+        SDVariable sigmoid = sameDiff.nn().sigmoid("s", x);
         INDArray assertion = Transforms.sigmoid(arr);
         INDArray eval = sameDiff.exec(Collections.singletonMap("x", arr), Collections.singletonList("s")).get("s");
         assertEquals(assertion, eval);
@@ -451,7 +451,7 @@ public class SameDiffTests {
             @Override
             public SDVariable[] define(SameDiff sameDiff, Map<String, INDArray> inputs, SDVariable[] variableInputs) {
                 SDVariable x = sameDiff.var("x", inputs.get("x"));
-                return new SDVariable[]{sameDiff.neg(x)};
+                return new SDVariable[]{sameDiff.math().neg(x)};
             }
         }, xAndY);
 
@@ -521,7 +521,7 @@ public class SameDiffTests {
     @Test(expected = IllegalStateException.class)
     public void testPlaceHolderWithFullShape() {
         val sd = SameDiff.create();
-        val placeholder = sd.placeHolder("somevar", 2, 2);
+        val placeholder = sd.placeHolder("somevar", DataType.FLOAT, 2, 2);
         assertTrue(sd.isPlaceHolder(placeholder.getVarName()));
         sd.resolveVariablesWith(Collections.singletonMap(placeholder.getVarName(), Nd4j.linspace(1, 4, 4, DataType.FLOAT)));
     }
@@ -771,7 +771,7 @@ public class SameDiffTests {
 
             SDVariable mmul = sd.mmul("mmul", layerInput, weights);
             SDVariable z = mmul.add("z", bias);
-            SDVariable out = sd.sigmoid("out", z);
+            SDVariable out = sd.nn().sigmoid("out", z);
 
             Map<String, INDArray> m = new HashMap<>();
             INDArray in = Nd4j.rand(new long[]{minibatch, nIn});
@@ -807,7 +807,7 @@ public class SameDiffTests {
 
         SDVariable mmul = sd.mmul("mmul", input, weights);
         SDVariable z = mmul.add("z", bias);
-        SDVariable out = sd.tanh(z);
+        SDVariable out = sd.math().tanh(z);
 
         SDVariable diff = out.sub(label);
         SDVariable sqDiff = diff.mul(diff);
@@ -920,15 +920,15 @@ public class SameDiffTests {
                 SDVariable x = sameDiff.var("x", inputs.get("x"));
                 SDVariable w = sameDiff.var("w", inputs.get("w"));
                 SDVariable y = sameDiff.var("y", inputs.get("y"));
-                SDVariable activation = sameDiff.sigmoid("activation", sameDiff.mmul("mmul", x, w));
+                SDVariable activation = sameDiff.nn().sigmoid("activation", sameDiff.mmul("mmul", x, w));
                 SDVariable oneMinusY = y.rsub("oneminusy", 1.0);
                 SDVariable oneMinusPredictions = activation.rsub("oneminusactivations", 1.0);
                 SDVariable outputTimesY = y.mul("output * y", activation);
                 SDVariable yHat = oneMinusPredictions.mul("yhat", oneMinusY);
                 SDVariable probs = outputTimesY.add("probs", yHat);
-                SDVariable logProbs = sameDiff.log("logprob", probs);
+                SDVariable logProbs = sameDiff.math().log("logprob", probs);
                 SDVariable ret = sameDiff.sum("totalsum", logProbs, Integer.MAX_VALUE);
-                SDVariable ret2 = sameDiff.neg("negtotalsum", ret);
+                SDVariable ret2 = sameDiff.math().neg("negtotalsum", ret);
                 return new SDVariable[]{ret2};
             }
         }, vars);
@@ -971,7 +971,7 @@ public class SameDiffTests {
                 SDVariable input = sameDiff.var("x", inputs.get("x"));
                 SDVariable w = sameDiff.var("w", inputs.get("w"));
                 SDVariable preOutput = sameDiff.mmul(input, w);
-                SDVariable sigmoid = sameDiff.sigmoid(preOutput);
+                SDVariable sigmoid = sameDiff.nn().sigmoid(preOutput);
                 return new SDVariable[]{sigmoid};
             }
 
@@ -1026,7 +1026,7 @@ public class SameDiffTests {
                 SDVariable input = sameDiff.var("x", inputs.get("x"));
                 SDVariable w = sameDiff.var("w", inputs.get("w"));
                 SDVariable preOutput = sameDiff.mmul(input, w);
-                SDVariable sigmoid = sameDiff.sigmoid(preOutput);
+                SDVariable sigmoid = sameDiff.nn().sigmoid(preOutput);
                 return new SDVariable[]{sigmoid};
             }
         }, inputs);
@@ -1073,7 +1073,7 @@ public class SameDiffTests {
                 SDVariable w = sameDiff.var("w", inputs.get("w"));
                 SDVariable y = sameDiff.var("y", inputs.get("y"));
                 SDVariable preOutput = sameDiff.mmul(input, w);
-                SDVariable sigmoid = sameDiff.sigmoid(preOutput);
+                SDVariable sigmoid = sameDiff.nn().sigmoid(preOutput);
 
                 return new SDVariable[]{sigmoid};
             }
@@ -1137,7 +1137,7 @@ public class SameDiffTests {
 
         SDVariable mmul = sd.mmul("mmul", input, weights);
         SDVariable z = mmul.add("z", bias);
-        SDVariable out = sd.sigmoid("out", z);
+        SDVariable out = sd.nn().sigmoid("out", z);
 
         INDArray expMmul = iInput.mmul(iWeights);
         INDArray expZ = expMmul.addRowVector(iBias);
@@ -1178,39 +1178,39 @@ public class SameDiffTests {
             SDVariable out;
             switch (a) {
                 case ELU:
-                    out = sd.elu("out", in);
+                    out = sd.nn().elu("out", in);
                     outExp = Transforms.elu(inArr, true);
                     break;
                 case HARDTANH:
-                    out = sd.hardTanh("out", in);
+                    out = sd.nn().hardTanh("out", in);
                     outExp = Transforms.hardTanh(inArr, true);
                     break;
                 case LEAKYRELU:
-                    out = sd.leakyRelu("out", in, 0.01);
+                    out = sd.nn().leakyRelu("out", in, 0.01);
                     outExp = Transforms.leakyRelu(inArr, true);
                     break;
                 case RELU:
-                    out = sd.relu("out", in, 0.0);
+                    out = sd.nn().relu("out", in, 0.0);
                     outExp = Transforms.relu(inArr, true);
                     break;
                 case SIGMOID:
-                    out = sd.sigmoid("out", in);
+                    out = sd.nn().sigmoid("out", in);
                     outExp = Transforms.sigmoid(inArr, true);
                     break;
                 case SOFTPLUS:
-                    out = sd.softplus("out", in);
+                    out = sd.nn().softplus("out", in);
                     outExp = Transforms.softPlus(inArr, true);
                     break;
                 case SOFTSIGN:
-                    out = sd.softsign("out", in);
+                    out = sd.nn().softsign("out", in);
                     outExp = Transforms.softsign(inArr, true);
                     break;
                 case TANH:
-                    out = sd.tanh("out", in);
+                    out = sd.math().tanh("out", in);
                     outExp = Transforms.tanh(inArr, true);
                     break;
                 case CUBE:
-                    out = sd.cube("out", in);
+                    out = sd.math().cube("out", in);
                     outExp = Transforms.pow(inArr, 3, true);
                     break;
                 default:
@@ -1276,9 +1276,9 @@ public class SameDiffTests {
         SDVariable sdGamma = sd.var("gamma", gamma);
         SDVariable sdBeta = sd.var("beta", beta);
 
-        SDVariable out = sd.batchNorm(sdInput, sdMean, sdVar, sdGamma, sdBeta,
+        SDVariable out = sd.nn().batchNorm(sdInput, sdMean, sdVar, sdGamma, sdBeta,
                 0.0, 1);
-        out = sd.tanh("out", out);
+        out = sd.nn().tanh("out", out);
 
         INDArray outArr = sd.execAndEndResult();
         assertArrayEquals(new long[]{1, 10}, outArr.shape());
@@ -1299,8 +1299,8 @@ public class SameDiffTests {
                 .bias(0.0)
                 .depth(1).build();
 
-        SDVariable out = sd.localResponseNormalization(sdInput, lrn);
-        SDVariable sdOut = sd.tanh("out", out);
+        SDVariable out = sd.cnn().localResponseNormalization(sdInput, lrn);
+        SDVariable sdOut = sd.math().tanh("out", out);
 
         sd.exec(Collections.emptyMap(), sd.outputs());
 
@@ -1318,12 +1318,12 @@ public class SameDiffTests {
         SDVariable sdInput = sd.var("input", input);
 
         val axis = new int[]{0, 1};
-        SDVariable[] moments = sd.moments(sdInput, axis);
+        SDVariable[] moments = sd.math().moments(sdInput, axis);
         SDVariable mean = moments[0];
         SDVariable variance = moments[1];
 
         SDVariable sum = mean.add(variance);
-        SDVariable out = sd.tanh("out", sum);
+        SDVariable out = sd.math().tanh("out", sum);
 
         INDArray outArr = sd.execAndEndResult();
 
@@ -1348,12 +1348,12 @@ public class SameDiffTests {
         SDVariable sdVars = sd.var("vars", vars);
         double shift = 0.0;
 
-        SDVariable[] moments = sd.normalizeMoments(sdCounts, sdMeans, sdVars, shift);
+        SDVariable[] moments = sd.math().normalizeMoments(sdCounts, sdMeans, sdVars, shift);
         SDVariable normMean = moments[0];
         SDVariable normVariance = moments[1];
 
         SDVariable sum = normMean.add(normVariance);
-        SDVariable out = sd.tanh("out", sum);
+        SDVariable out = sd.math().tanh("out", sum);
 
         INDArray outArr = sd.execAndEndResult();
 
@@ -1397,8 +1397,8 @@ public class SameDiffTests {
                 .isSameMode(false)
                 .build();
 
-        SDVariable out = sd.depthWiseConv2d(in, dW, b, c);
-        out = sd.tanh("out", out);
+        SDVariable out = sd.cnn().depthWiseConv2d(in, dW, b, c);
+        out = sd.math().tanh("out", out);
 
         INDArray outArr = sd.execAndEndResult();
         //Expected output size: out = (in - k + 2*p)/s + 1 = (28-2+0)/1+1 = 27
@@ -1593,7 +1593,7 @@ public class SameDiffTests {
         SDVariable in = sd.var("in", Nd4j.rand(mb, nOut));
         SDVariable label = sd.var("label", Nd4j.rand(mb, nOut));
         SDVariable diff = in.sub(label);
-        SDVariable sqDiff = sd.square(diff);
+        SDVariable sqDiff = sd.math().square(diff);
 
         INDArray expOut = in.getArr().sub(label.getArr());
         expOut.muli(expOut);
@@ -1701,7 +1701,7 @@ public class SameDiffTests {
         SDVariable in1 = sd.var("in1", a);
         SDVariable in2 = sd.var("in2", b);
 
-        SDVariable jaccard = sd.jaccardDistance("out", in1, in2);
+        SDVariable jaccard = sd.math().jaccardDistance("out", in1, in2);
 
         INDArray min = Transforms.min(a, b);
         INDArray max = Transforms.max(a, b);
@@ -1769,7 +1769,7 @@ public class SameDiffTests {
                 case 6:
                     ia = Nd4j.getExecutioner().exec(new BernoulliDistribution(ia, 0.5));
                     ib = Nd4j.getExecutioner().exec(new BernoulliDistribution(ib, 0.5));
-                    t = sd.or(in1, in2);
+                    t = sd.math().or(in1, in2);
                     expOut = Transforms.or(ia, ib);
                     break;
                 case 7:
@@ -1783,13 +1783,13 @@ public class SameDiffTests {
                 case 9:
                     ia = Nd4j.getExecutioner().exec(new BernoulliDistribution(ia, 0.5));
                     ib = Nd4j.getExecutioner().exec(new BernoulliDistribution(ib, 0.5));
-                    t = sd.and(in1, in2);
+                    t = sd.math().and(in1, in2);
                     expOut = Transforms.and(ia, ib);
                     break;
                 case 10:
                     ia = Nd4j.getExecutioner().exec(new BernoulliDistribution(ia, 0.5));
                     ib = Nd4j.getExecutioner().exec(new BernoulliDistribution(ib, 0.5));
-                    t = sd.xor(in1, in2);
+                    t = sd.math().xor(in1, in2);
                     expOut = Transforms.xor(ia, ib);
                     break;
                 default:
@@ -1824,11 +1824,11 @@ public class SameDiffTests {
 
             switch (i) {
                 case 0:
-                    t = sd.isNonDecreasing(in1);
+                    t = sd.math().isNonDecreasing(in1);
                     Nd4j.getExecutioner().exec(new IsNonDecreasing(new INDArray[]{ia}, new INDArray[]{expOut}));
                     break;
                 case 1:
-                    t = sd.isStrictlyIncreasing(in1);
+                    t = sd.math().isStrictlyIncreasing(in1);
                     Nd4j.getExecutioner().exec(new IsStrictlyIncreasing(new INDArray[]{ia}, new INDArray[]{expOut}));
                     break;
                 case 2:
@@ -1982,7 +1982,7 @@ public class SameDiffTests {
         SDVariable labelsVar = sd.var("labels", labels);
         SDVariable predictionsVar = sd.var("predictions", pred);
         SDVariable weightsVar = sd.var("weights", weights);
-        sd.confusionMatrix("cm", labelsVar, predictionsVar, numClasses, weightsVar);
+        sd.math().confusionMatrix("cm", labelsVar, predictionsVar, numClasses, weightsVar);
         INDArray out = sd.execAndEndResult();
 
         INDArray exp = Nd4j.create(new float[][]{{0, 0, 0, 0, 0}, {0, 0, 10, 0, 0}, {0, 0, 100, 0, 0},
@@ -2159,7 +2159,7 @@ public class SameDiffTests {
         INDArray expected = Nd4j.onesLike(inArr).divi(inArr);
         SameDiff sd = SameDiff.create();
         SDVariable in = sd.var("in", inArr);
-        SDVariable reciprocal = sd.reciprocal(in);
+        SDVariable reciprocal = sd.math().reciprocal(in);
         INDArray res = reciprocal.eval();
         assertEquals(expected,res);
     }
@@ -2226,13 +2226,13 @@ public class SameDiffTests {
 
 
         INDArray expFinite = Nd4j.create(new boolean[]{true, true});
-        SDVariable finite = sd.isFinite(in);
+        SDVariable finite = sd.math().isFinite(in);
 
         INDArray expInfinite = Nd4j.create(new boolean[]{false,  false});
-        SDVariable infinite = sd.isInfinite(in);
+        SDVariable infinite = sd.math().isInfinite(in);
 
         INDArray expNaN =  Nd4j.create(new boolean[]{false, false});
-        SDVariable isnan = sd.isNaN(in);
+        SDVariable isnan = sd.math().isNaN(in);
 
         sd.exec(Collections.emptyMap(), sd.outputs());
         assertEquals(expFinite, finite.getArr());
@@ -2576,7 +2576,7 @@ public class SameDiffTests {
         SDVariable w = sd.var("W", DataType.FLOAT,5,4);
         SDVariable b = sd.var("b", DataType.FLOAT, 1,4);
         SDVariable z = in.mmul(w).add(b);
-        SDVariable out = sd.tanh("tanh", z);
+        SDVariable out = sd.math().tanh("tanh", z);
         ExternalErrorsFunction fn = sd.f().externalErrors(out);
 
         INDArray inA = Nd4j.linspace(1,15,15, DataType.FLOAT).reshape(3,5);
@@ -2650,8 +2650,8 @@ public class SameDiffTests {
 
         SameDiff sd = SameDiff.create();
 
-        SDVariable xSd = sd.placeHolder("x", x.shape());
-        SDVariable ySd = sd.placeHolder("y", y.shape());
+        SDVariable xSd = sd.placeHolder("x", DataType.FLOAT, x.shape());
+        SDVariable ySd = sd.placeHolder("y", DataType.FLOAT, y.shape());
 
         SDVariable add = ySd.add("add", xSd);
 
@@ -2675,7 +2675,7 @@ public class SameDiffTests {
         SDVariable b = sd.var("b", Nd4j.rand(DataType.FLOAT, 1,4));
         SDVariable mmul = in.mmul(w);
         SDVariable add = mmul.add(b);
-        SDVariable tanh = sd.tanh(add);
+        SDVariable tanh = sd.math().tanh(add);
         SDVariable loss = sd.variance(tanh, true);
 
         INDArray inArr = Nd4j.rand(DataType.FLOAT, 1,3);
@@ -2723,7 +2723,7 @@ public class SameDiffTests {
         SDVariable b = sd.var("b", Nd4j.rand(DataType.FLOAT, 1,4));
         SDVariable mmul = in.mmul(w);
         SDVariable add = mmul.add(b);
-        SDVariable tanh = sd.tanh(add);
+        SDVariable tanh = sd.math().tanh(add);
         SDVariable loss = sd.variance(tanh, true);
 
         INDArray inArr = Nd4j.rand(DataType.FLOAT, 1,3);

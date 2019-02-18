@@ -495,7 +495,7 @@ public class MiscOpValidation extends BaseOpValidation {
             INDArray in = Nd4j.rand(inShape);
             SameDiff sd = SameDiff.create();
             SDVariable i = sd.var("in", in);
-            SDVariable trace = sd.trace(i);
+            SDVariable trace = sd.math().trace(i);
 
             double exp = Nd4j.diag(in).sumNumber().doubleValue();
 
@@ -1243,7 +1243,7 @@ public class MiscOpValidation extends BaseOpValidation {
         SameDiff sd = SameDiff.create();
         SDVariable var = sd.var("in", Nd4j.create(new long[]{1}).assign(5));
 
-        SDVariable merged = sd.mergeAvg(var);
+        SDVariable merged = sd.math().mergeAvg(var);
         SDVariable sum = sd.sum(merged);
 
         sd.execAndEndResult();
@@ -1262,7 +1262,7 @@ public class MiscOpValidation extends BaseOpValidation {
 
         SameDiff sd = SameDiff.create();
         SDVariable var = sd.var("in", i);
-        SDVariable diag = sd.diagPart(var);
+        SDVariable diag = sd.math().diagPart(var);
 
         INDArray out = sd.execAndEndResult();
         assertEquals(1, out.rank());
@@ -1358,9 +1358,9 @@ public class MiscOpValidation extends BaseOpValidation {
 
             SDVariable confMatrix;
             if(withMax){
-                confMatrix = sd.confusionMatrix(labels, predictions, 5).castTo(DataType.FLOAT);
+                confMatrix = sd.math().confusionMatrix(labels, predictions, 5).castTo(DataType.FLOAT);
             } else {
-                confMatrix = sd.confusionMatrix("cm", labels, predictions, DataType.FLOAT);
+                confMatrix = sd.math().confusionMatrix("cm", labels, predictions, DataType.FLOAT);
             }
 
             SDVariable loss = confMatrix.castTo(DataType.DOUBLE).std(true);
@@ -1402,9 +1402,9 @@ public class MiscOpValidation extends BaseOpValidation {
                     SDVariable in = sd.var("in", inArr);
                     SDVariable out;
                     if(nonDec){
-                        out = sd.isNonDecreasing(in).castTo(DataType.DOUBLE);
+                        out = sd.math().isNonDecreasing(in).castTo(DataType.DOUBLE);
                     } else {
-                        out = sd.isStrictlyIncreasing(in).castTo(DataType.DOUBLE);
+                        out = sd.math().isStrictlyIncreasing(in).castTo(DataType.DOUBLE);
                     }
 
                     if (shape == null) {

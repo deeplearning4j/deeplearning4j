@@ -69,7 +69,7 @@ public class RandomOpValidation extends BaseOpValidation {
                 switch (i) {
                     case 0:
                         name = "randomUniform";
-                        rand = sd.randomUniform(1, 2, shapeVar);
+                        rand = sd.random().uniform(1, 2, shapeVar);
                         checkFn = in -> {
                             double min = in.minNumber().doubleValue();
                             double max = in.maxNumber().doubleValue();
@@ -81,7 +81,7 @@ public class RandomOpValidation extends BaseOpValidation {
                         break;
                     case 1:
                         name = "randomNormal";
-                        rand = sd.randomNormal(1, 1, shapeVar);
+                        rand = sd.random().normal(1, 1, shapeVar);
                         checkFn = in -> {
                             double mean = in.meanNumber().doubleValue();
                             double stdev = in.std(true).getDouble(0);
@@ -92,7 +92,7 @@ public class RandomOpValidation extends BaseOpValidation {
                         break;
                     case 2:
                         name = "randomBernoulli";
-                        rand = sd.randomBernoulli(0.5, shapeVar);
+                        rand = sd.random().bernoulli(0.5, shapeVar);
                         checkFn = in -> {
                             double mean = in.meanNumber().doubleValue();
                             double min = in.minNumber().doubleValue();
@@ -108,7 +108,7 @@ public class RandomOpValidation extends BaseOpValidation {
                     case 3:
                         name = "randomExponential";
                         final double lambda = 2;
-                        rand = sd.randomExponential(lambda, shapeVar);
+                        rand = sd.random().exponential(lambda, shapeVar);
                         checkFn = in -> {
                             double mean = in.meanNumber().doubleValue();
                             double min = in.minNumber().doubleValue();
@@ -166,7 +166,7 @@ public class RandomOpValidation extends BaseOpValidation {
                 switch (i) {
                     case 0:
                         name = "randomBernoulli";
-                        rand = sd.randomBernoulli(0.5, shape);
+                        rand = sd.random().bernoulli(0.5, shape);
                         checkFn = in -> {
                             double mean = in.meanNumber().doubleValue();
                             double min = in.minNumber().doubleValue();
@@ -181,7 +181,7 @@ public class RandomOpValidation extends BaseOpValidation {
                         break;
                     case 1:
                         name = "normal";
-                        rand = sd.randomNormal(1, 2, shape);
+                        rand = sd.random().normal(1, 2, shape);
                         checkFn = in -> {
                             double mean = in.meanNumber().doubleValue();
                             double stdev = in.std(true).getDouble(0);
@@ -192,7 +192,7 @@ public class RandomOpValidation extends BaseOpValidation {
                         break;
                     case 2:
                         name = "randomBinomial";
-                        rand = sd.randomBinomial(4, 0.5, shape);
+                        rand = sd.random().binomial(4, 0.5, shape);
                         checkFn = in -> {
                             NdIndexIterator iter = new NdIndexIterator(in.shape());
                             while(iter.hasNext()){
@@ -207,7 +207,7 @@ public class RandomOpValidation extends BaseOpValidation {
                         break;
                     case 3:
                         name = "randomUniform";
-                        rand = sd.randomUniform(1, 2, shape);
+                        rand = sd.random().uniform(1, 2, shape);
                         checkFn = in -> {
                             double min = in.minNumber().doubleValue();
                             double max = in.maxNumber().doubleValue();
@@ -223,7 +223,7 @@ public class RandomOpValidation extends BaseOpValidation {
                             continue;
                         }
                         name = "truncatednormal";
-                        rand = sd.randomNormalTruncated(1, 2, shape);
+                        rand = sd.random().normalTruncated(1, 2, shape);
                         checkFn = in -> {
                             double mean = in.meanNumber().doubleValue();
                             double stdev = in.std(true).getDouble(0);
@@ -234,7 +234,7 @@ public class RandomOpValidation extends BaseOpValidation {
                         break;
                     case 5:
                         name = "lognormal";
-                        rand = sd.randomLogNormal(1, 2, shape);
+                        rand = sd.random().logNormal(1, 2, shape);
                         //Note: lognormal parameters are mean and stdev of LOGARITHM of values
                         checkFn = in -> {
                             INDArray log = Transforms.log(in, true);
