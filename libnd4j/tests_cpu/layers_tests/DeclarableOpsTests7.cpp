@@ -2262,7 +2262,43 @@ TEST_F(DeclarableOpsTests7, TestExtractImagePatches_SGO_7) {
     auto result = op.execute({&x}, {}, {2,2, 1,1, 1,1, 1}); // equiv TF ksizes=[1,2,2,1], strides=[1,1,1,1], rates=[1,1,1,1], padding="SAME"
     ASSERT_EQ(result->status(), Status::OK());
     auto output = result->at(0);
-    output->printIndexedBuffer("Output");
+//    output->printBuffer("Output");
+//    exp.printBuffer("Expect");
+//    for (Nd4jLong e = 0; e < exp.lengthOf(); e++)
+//        if (exp.e<double>(e) != output->e<double>(e))
+//            printf("%lld ", e);
+//        printf("\n");
+    //result->at(1)->printBuffer("OUtput2");
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests7, TestExtractImagePatches_SGO_8) {
+    auto x = NDArrayFactory::create<double>('c', {1, 3, 3, 2});
+    x.linspace(1);
+
+//Images shape is  (1, 3, 3, 4)
+//[1, 1, 1, 1]
+//[1, 3, 2, 1]
+    auto exp = NDArrayFactory::create<double>('c', {1, 3, 3, 8}, {
+            1,  2,  3,  4,  7,  8,  9, 10,  3,  4,  5,  6,  9, 10, 11, 12,  5,  6,  0,  0, 11, 12,  0,  0,
+            7,  8,  9, 10, 13, 14, 15, 16,  9, 10, 11, 12, 15, 16, 17, 18, 11, 12,  0,  0, 17, 18,  0,  0,
+            13, 14, 15, 16, 0, 0, 0, 0, 15, 16, 17, 18, 0, 0, 0, 0, 17, 18, 0, 0, 0, 0, 0, 0 });
+// ----------------------------------------------------------------
+    nd4j::ops::extract_image_patches op;
+
+    auto result = op.execute({&x}, {}, {2,2, 1,1, 1,1, 1}); // equiv TF ksizes=[1,2,2,1], strides=[1,1,1,1], rates=[1,1,1,1], padding="SAME"
+    ASSERT_EQ(result->status(), Status::OK());
+    auto output = result->at(0);
+//    output->printBuffer("Output");
+//    exp.printBuffer("Expect");
+//    for (Nd4jLong e = 0; e < exp.lengthOf(); e++)
+//        if (exp.e<double>(e) != output->e<double>(e))
+//            printf("%lld ", e);
+//    printf("\n");
     //result->at(1)->printBuffer("OUtput2");
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));
