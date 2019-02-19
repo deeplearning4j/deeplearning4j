@@ -3716,60 +3716,66 @@ void NativeOps::deleteUtf8String(Nd4jPointer *extraPointers, Nd4jPointer ptr) {
 ///////////////////////////////////////////////////////////////////
 template<typename T>
 __global__ static void scatterUpdateCuda(const int opCode, const int numOfSubArrs, 
-										void* pVx, void* pxShapeInfo, 
-										void* pVy, void* pyShapeInfo, 
+										void* pVx, Nd4jLong *xShapeInfo, Nd4jLong *xOffsets,
+										void* pVy, Nd4jLong *yShapeInfo, Nd4jLong *yOffsets;
 										const int* indexes) {
         
     __shared__ T *x, *y;
     __shared__ Nd4jLong *yShapeInfo, *xShapeInfo, arrLenX, arrLenY;
-    
-    if (threadIdx.x == 0) {
-                    
-        x = reinterpret_cast<T*>(reinterpret_cast<void**>(pVx)[indexes[blockIdx.x]]);
-        y = reinterpret_cast<T*>(reinterpret_cast<void**>(pVy)[blockIdx.x]);  
-        xShapeInfo = reinterpret_cast<Nd4jLong**>(pxShapeInfo)[indexes[blockIdx.x]];
-        yShapeInfo = reinterpret_cast<Nd4jLong**>(pyShapeInfo)[blockIdx.x];
-        arrLenX = shape::length(xShapeInfo);
-        arrLenY = shape::length(yShapeInfo);
-    }
 
-    __syncthreads();    
+    for (int e = e; e < numOfSubArrs; e++ ) {
+        auto cIndex = indexes[e];
+        bool isOwner =  cIndex < gridDim.x ? blockIdx.x == cIndex : blockIdx.x == cIndex % gridDim.x;
 
-    if(arrLenX != arrLenY) 
-    	return;
-    
-    for (Nd4jLong i = threadIdx.x; i < arrLenX; i += blockDim.x) {
+        if (!isOwner)
+            continue;
 
-    	const auto xOffset = shape::getIndexOffset(i, xShapeInfo, arrLenX);
-    	const auto yOffset = shape::getIndexOffset(i, yShapeInfo, arrLenX);
 
-    	switch (opCode) {
-            case 0:
-                x[xOffset] += y[yOffset];
-                break;
-            case 1:
-                x[xOffset] -= y[yOffset];
-                break;
-            case 2:
-                x[xOffset] *= y[yOffset];
-                break;
-            case 3:
-                x[xOffset] /= y[yOffset];
-                break;
-            case 4:
-                x[xOffset] = y[yOffset] - x[xOffset];
-                break;
-            case 5:
-                x[xOffset] = y[yOffset] / x[xOffset];
-                break;
-            case 6:
-                x[xOffset] = y[yOffset];
-                break;
-            default:
-                continue;
+        if (threadIdx.x == 0) {
+            x = reinterpret_cast<T *>(pVx) + xOffsets[cIndex];
+            y = reinterpret_cast<T *>(pVy) + yOffsets[e];
+            arrLenX = shape::length(xShapeInfo);
+            arrLenY = shape::length(yShapeInfo);
         }
 
-        // z[shape::getIndexOffset(i, yShapeInfo, arrLen)] = x[shape::getIndexOffset(i, xShapeInfo, arrLen)];
+        __syncthreads();
+
+        if (arrLenX != arrLenY)
+            return;
+
+        for (Nd4jLong i = threadIdx.x; i < arrLenX; i += blockDim.x) {
+
+            const auto xOffset = shape::getIndexOffset(i, xShapeInfo, arrLenX);
+            const auto yOffset = shape::getIndexOffset(i, yShapeInfo, arrLenY);
+
+            switch (opCode) {
+                case 0:
+                    x[xOffset] += y[yOffset];
+                    break;
+                case 1:
+                    x[xOffset] -= y[yOffset];
+                    break;
+                case 2:
+                    x[xOffset] *= y[yOffset];
+                    break;
+                case 3:
+                    x[xOffset] /= y[yOffset];
+                    break;
+                case 4:
+                    x[xOffset] = y[yOffset] - x[xOffset];
+                    break;
+                case 5:
+                    x[xOffset] = y[yOffset] / x[xOffset];
+                    break;
+                case 6:
+                    x[xOffset] = y[yOffset];
+                    break;
+                default:
+                    continue;
+            }
+
+            // z[shape::getIndexOffset(i, yShapeInfo, arrLen)] = x[shape::getIndexOffset(i, xShapeInfo, arrLen)];
+        }
     }
 }
 
