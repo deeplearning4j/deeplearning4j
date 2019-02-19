@@ -168,9 +168,9 @@ public class ConcatTestsC extends BaseNd4jTest {
 
     @Test
     public void testConcat3d() {
-        INDArray first = Nd4j.linspace(1, 24, 24, DataType.INT).reshape('c', 2, 3, 4);
-        INDArray second = Nd4j.linspace(24, 36, 12, DataType.INT).reshape('c', 1, 3, 4);
-        INDArray third = Nd4j.linspace(36, 48, 12, DataType.INT).reshape('c', 1, 3, 4);
+        INDArray first = Nd4j.linspace(1, 24, 24, Nd4j.dataType()).reshape('c', 2, 3, 4);
+        INDArray second = Nd4j.linspace(24, 36, 12, Nd4j.dataType()).reshape('c', 1, 3, 4);
+        INDArray third = Nd4j.linspace(36, 48, 12, Nd4j.dataType()).reshape('c', 1, 3, 4);
 
         //ConcatV2, dim 0
         INDArray exp = Nd4j.create(2 + 1 + 1, 3, 4);

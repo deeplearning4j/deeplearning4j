@@ -2023,8 +2023,8 @@ public class Nd4j {
     /**
      * Generate a linearly spaced vector
      *
-     * @param lower upper bound
-     * @param upper lower bound
+     * @param lower lower bound
+     * @param upper upper bound
      * @param num   number of items in returned vector
      * @return the linearly spaced vector
      */
