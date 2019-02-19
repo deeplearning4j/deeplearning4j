@@ -96,6 +96,10 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
             helper = new MKLDNNConvHelper();
             log.info("Created MKLDNNConvHelper");
         }
+        if (helper != null && !helper.checkSupported()) {
+            log.debug("Removed helper {} as not supported", helper.getClass());
+            helper = null;
+        }
     }
 
     @Override
