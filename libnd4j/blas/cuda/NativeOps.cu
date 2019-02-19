@@ -1167,7 +1167,7 @@ void NativeOps::execIndexReduceScalar(
 	//if (!DataTypeUtils::isZ(zType))
 	//    throw nd4j::datatype_exception("NativeOps::execIndexReduceScalar requires Z operand to have one of integer types")
 	if (zType != nd4j::DataType::INT64)
-        throw nd4j::datatype_exception::build("NativeOps::execIndexReduceScalar requires Z operand to have INT64 data type", zType);
+        throw nd4j::datatype_exception::build("NativeOps::exeIndexReduceScalar requires Z operand to have INT64 data type", zType);
 
     auto dz = reinterpret_cast<Nd4jLong*>(dZ);
 
@@ -3716,24 +3716,24 @@ void NativeOps::deleteUtf8String(Nd4jPointer *extraPointers, Nd4jPointer ptr) {
 ///////////////////////////////////////////////////////////////////
 template<typename T>
 __global__ static void scatterUpdateCuda(const int opCode, const int numOfSubArrs, 
-										void* pVx, Nd4jLong *xShapeInfo, Nd4jLong *xOffsets,
-										void* pVy, Nd4jLong *yShapeInfo, Nd4jLong *yOffsets;
+										      void* vx, const Nd4jLong *xShapeInfo, const Nd4jLong *xOffsets,
+										const void* vy, const Nd4jLong *yShapeInfo, const Nd4jLong *yOffsets,
 										const int* indexes) {
         
     __shared__ T *x, *y;
     __shared__ Nd4jLong arrLenX, arrLenY;
 
     for (int e = 0; e < numOfSubArrs; e++ ) {
-        auto cIndex = indexes[e];
-        bool isOwner =  cIndex < gridDim.x ? blockIdx.x == cIndex : blockIdx.x == cIndex % gridDim.x;
+        
+        const auto xIndex = indexes[e];
+        const bool isOwner = xIndex < gridDim.x ? blockIdx.x == xIndex : blockIdx.x == xIndex % gridDim.x;
 
         if (!isOwner)
             continue;
 
-
         if (threadIdx.x == 0) {
-            x = reinterpret_cast<T *>(pVx) + xOffsets[cIndex];
-            y = reinterpret_cast<T *>(pVy) + yOffsets[e];
+            x = reinterpret_cast<T*>(vx) + xOffsets[xIndex];
+            y = reinterpret_cast<const T*>(vy) + yOffsets[e];
             arrLenX = shape::length(xShapeInfo);
             arrLenY = shape::length(yShapeInfo);
         }
@@ -3779,25 +3779,24 @@ __global__ static void scatterUpdateCuda(const int opCode, const int numOfSubArr
 }
 
 template<typename T>
-__host__ static void scatterUpdateCudaLauncher(const cudaStream_t* stream, const int opCode, const int numOfSubArrs, void* pVx, void* pxShapeInfo, void* pVy, void* pyShapeInfo, const int* indexes) {
+__host__ static void scatterUpdateCudaLauncher(const cudaStream_t* stream, const int opCode, const int numOfSubArrs, void* vx, const Nd4jLong *xShapeInfo, const Nd4jLong *xOffsets, const void* vy, const Nd4jLong *yShapeInfo, const Nd4jLong *yOffsets, const int* indexes) {
 
-    scatterUpdateCuda<T><<<512, 256, 1024, *stream>>>(opCode, numOfSubArrs, pVx, pxShapeInfo, pVy, pyShapeInfo, indexes);
+    scatterUpdateCuda<T><<<512, 256, MAX_NUM_THREADS, *stream>>>(opCode, numOfSubArrs, vx, xShapeInfo, xOffsets, vy, yShapeInfo, yOffsets, indexes);
 }
 
 
 //////////////////////////////////////////////////////////////////////////
-void NativeOps::scatterUpdate(Nd4jPointer *extraPointers, const int opCode, const int numOfSubArrs,
-                      			void* phX, void* phXShapeInfo,
-                      			void* pdX, void* pdXShapeInfo,
-                      			void* phY, void* phYShapeInfo,
-                      			void* pdY, void* pdYShapeInfo,
+void NativeOps::scatterUpdate(Nd4jPointer *extraPointers, int opCode, int numOfSubArrs,
+                      			void* hX, Nd4jLong* hXShapeInfo, Nd4jLong* hXOffsets,
+                      			void* dX, Nd4jLong* dXShapeInfo, Nd4jLong* dXOffsets,
+                      			void* hY, Nd4jLong* hYShapeInfo, Nd4jLong* hYOffsets,
+                      			void* dY, Nd4jLong* dYShapeInfo, Nd4jLong* dYOffsets,
                       			int* indexes) {
 
 	auto stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 		
-	nd4j::DataType type = ArrayOptions::dataType(reinterpret_cast<Nd4jLong**>(phXShapeInfo)[0]);
+	nd4j::DataType type = ArrayOptions::dataType(hXShapeInfo);
 
-    BUILD_SINGLE_SELECTOR(type, scatterUpdateCudaLauncher, (stream, opCode, numOfSubArrs, pdX, pdXShapeInfo, pdY, pdYShapeInfo, indexes), LIBND4J_TYPES);
-
+    BUILD_SINGLE_SELECTOR(type, scatterUpdateCudaLauncher, (stream, opCode, numOfSubArrs, dX, dXShapeInfo, dXOffsets, dY, dYShapeInfo, dYOffsets, indexes), LIBND4J_TYPES);
 }
 
