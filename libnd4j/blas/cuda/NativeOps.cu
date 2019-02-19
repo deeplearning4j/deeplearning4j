@@ -3723,7 +3723,7 @@ __global__ static void scatterUpdateCuda(const int opCode, const int numOfSubArr
     __shared__ T *x, *y;
     __shared__ Nd4jLong *yShapeInfo, *xShapeInfo, arrLenX, arrLenY;
 
-    for (int e = e; e < numOfSubArrs; e++ ) {
+    for (int e = 0; e < numOfSubArrs; e++ ) {
         auto cIndex = indexes[e];
         bool isOwner =  cIndex < gridDim.x ? blockIdx.x == cIndex : blockIdx.x == cIndex % gridDim.x;
 
@@ -3773,9 +3773,8 @@ __global__ static void scatterUpdateCuda(const int opCode, const int numOfSubArr
                 default:
                     continue;
             }
-
-            // z[shape::getIndexOffset(i, yShapeInfo, arrLen)] = x[shape::getIndexOffset(i, xShapeInfo, arrLen)];
         }
+        __syncthreads();
     }
 }
 
