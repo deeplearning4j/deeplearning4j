@@ -32,7 +32,7 @@ namespace helpers {
         int idx = indices->e<int>(0);
         if (input->isVector()) {
             T val = input->e<T>(0);
-#pragma omp parallel for schedule(static)
+//#pragma omp parallel for schedule(static)
             for (int e = 1; e < indices->lengthOf(); e++) {
                 if (idx == indices->e<int>(e)) {
                    // max 
@@ -47,7 +47,7 @@ namespace helpers {
         }
         else {
             std::vector<int> restDims(input->rankOf() - 1);
-#pragma omp parallel for schedule(static)
+//#pragma omp parallel for schedule(static)
             for (int e = 1; e < input->rankOf(); e++)
                 restDims[e - 1] = e;
 
@@ -60,7 +60,7 @@ namespace helpers {
 
             int pos = 0;
             maxT->assign(listOfTensors->at(0));
-#pragma omp parallel for schedule(static)
+//#pragma omp parallel for schedule(static)
             for (int i = 1; i < indices->lengthOf(); i++) {
                 if (indices->e<int>(i) == idx) {
                     for (int e = 0; e < maxT->lengthOf(); e++) {
@@ -87,7 +87,7 @@ namespace helpers {
         int idx = indices->e<int>(0);
         if (input->isVector()) {
             T val = input->e<T>(0);
-#pragma omp parallel for schedule(static)
+//#pragma omp parallel for schedule(static)
             for (int e = 1; e < indices->lengthOf(); e++) {
                 if (idx == indices->e<int>(e)) {
                    // min 
@@ -102,7 +102,7 @@ namespace helpers {
         }
         else {
             std::vector<int> restDims(input->rankOf() - 1);
-#pragma omp parallel for schedule(static)
+//#pragma omp parallel for schedule(static)
             for (int e = 1; e < input->rankOf(); e++)
                 restDims[e - 1] = e;
 
@@ -115,7 +115,7 @@ namespace helpers {
 
             int pos = 0;
             minT->assign(listOfTensors->at(0));
-#pragma omp parallel for schedule(static)
+//#pragma omp parallel for schedule(static)
             for (int i = 1; i < indices->lengthOf(); i++) {
                 if (indices->e<T>(i) == idx) {
                     for (int e = 0; e < minT->lengthOf(); e++) {
@@ -140,7 +140,7 @@ namespace helpers {
         if (input->isVector()) {
             T val = T(0.f);
             int count = 0;
-#pragma omp parallel for schedule(static)
+//#pragma omp parallel for schedule(static)
             for (int e = 0; e < indices->lengthOf(); e++) {
                 if (idx == indices->e<int>(e)) {
                    // mean 
@@ -158,7 +158,7 @@ namespace helpers {
         }
         else {
             std::vector<int> restDims(input->rankOf() - 1);
-#pragma omp parallel for schedule(static)
+//#pragma omp parallel for schedule(static)
             for (int e = 1; e < input->rankOf(); e++)
                 restDims[e - 1] = e;
 
@@ -171,6 +171,7 @@ namespace helpers {
             int count = 1;
             auto meanV = meanT->dup();
             meanV->assign(listOfTensors->at(0));
+//#pragma omp parallel for schedule(static)
             for (int i = 1; i < indices->lengthOf(); i++) {
                 if (indices->e<int>(i) == idx) {
                     for (int e = 0; e < meanT->lengthOf(); e++) {
@@ -493,7 +494,7 @@ namespace helpers {
         }
         else {
             std::vector<int> restDims(input->rankOf() - 1);
-#pragma omp parallel for schedule(static)
+//#pragma omp parallel for schedule(static)
             for (int e = 1; e < input->rankOf(); e++)
                 restDims[e - 1] = e;
 
@@ -715,6 +716,7 @@ namespace helpers {
         std::unique_ptr<NDArray> tempRes(gradOut->dup());
         segmentMinFunctor(input, indices, tempRes.get());
         if (input->isVector()) {
+#pragma omp parallel for schedule(static)
             for (Nd4jLong e = 0; e < input->lengthOf(); ++e) {
                 Nd4jLong classNum = indices->e<Nd4jLong>(e);
                 if (nd4j::math::nd4j_abs(tempRes->e<double>(classNum) - input->e<double>(e)) < 1.e-5)
@@ -883,16 +885,16 @@ namespace helpers {
         auto tempRes = gradOut->dup();
         unsortedSegmentMaxFunctor(input, indices, numOfClasses, tempRes);
         if (input->isVector()) {
-#pragma omp parallel for schedule(static)
+//#pragma omp parallel for schedule(static)
             for (Nd4jLong e = 0; e < input->lengthOf(); ++e) {
                 Nd4jLong classNum = indices->e<Nd4jLong>(e);
-                if (nd4j::math::nd4j_abs(tempRes->e<double>(classNum) -input->e<double>(e)) < 1.e-5)
+                if (nd4j::math::nd4j_abs(tempRes->e<double>(classNum) - input->e<double>(e)) < 1.e-5)
                     output->p(e, gradOut->e<T>(classNum));
             }
         }
         else {
             std::vector<int> restDims(input->rankOf() - 1);
-#pragma omp parallel for schedule(static)
+//#pragma omp parallel for schedule(static)
             for (int e = 1; e < input->rankOf(); e++)
                 restDims[e - 1] = e;
 
@@ -905,7 +907,7 @@ namespace helpers {
             //std::vector<std::pair<NDArray*, int>> outputs(numOfClasses);
 
             int pos = 0;
-#pragma omp parallel for schedule(static)
+//#pragma omp parallel for schedule(static)
             for (int i = 0; i < indices->lengthOf(); i++) {
                 Nd4jLong classNum = indices->e<Nd4jLong>(i);
                 NDArray* current = listOfTensors->at(i);
@@ -979,19 +981,19 @@ namespace helpers {
 
         std::map<Nd4jLong, Nd4jLong> classCount;//(numClasses);
 
-#pragma omp parallel for schedule(static)
+//#pragma omp parallel for schedule(static)
         for (Nd4jLong count = 0; count < numOfClasses; ++count) {
             classCount[count] = 0;
         }
 
-#pragma omp parallel for schedule(static)
+//#pragma omp parallel for schedule(static)
         for (Nd4jLong e = 0; e < indices->lengthOf(); ++e) {
             classCount[indices->e<Nd4jLong>(e)]++;
         }
 
         // if input is a vector: (as if in doc sample)
         if (input->isVector()) {
-#pragma omp parallel for schedule(static)
+//#pragma omp parallel for schedule(static)
             for (Nd4jLong e = 0; e < indices->lengthOf(); ++e) {
                 Nd4jLong classNum = indices->e<Nd4jLong>(e);
                 output->p(e, gradOut->e<double>(classNum) / classCount[classNum]);
@@ -999,7 +1001,7 @@ namespace helpers {
         }
         else {
             std::vector<int> restDims(input->rankOf() - 1);
-#pragma omp parallel for schedule(static)
+//#pragma omp parallel for schedule(static)
             for (int e = 1; e < input->rankOf(); e++)
                 restDims[e - 1] = e;
 
@@ -1011,7 +1013,7 @@ namespace helpers {
             //std::vector<std::pair<NDArray*, int>> outputs(numOfClasses);
 
             int pos = 0;
-#pragma omp parallel for schedule(static)
+//#pragma omp parallel for schedule(static)
             for (int i = 0; i < indices->lengthOf(); i++) {
                 Nd4jLong classNum = indices->e<Nd4jLong>(i);
                 NDArray* current = listOfTensors->at(i);
@@ -1102,12 +1104,12 @@ namespace helpers {
     int unsortedSegmentSqrtNFunctorBP(NDArray* input, NDArray* indices, NDArray* gradOut, Nd4jLong numOfClasses, NDArray* output) {
         std::map<Nd4jLong, Nd4jLong> classCount;//(numClasses);
 
-#pragma omp parallel for schedule(static)
+//#pragma omp parallel for schedule(static)
         for (Nd4jLong count = 0; count < numOfClasses; ++count) {
             classCount[count] = 0;
         }
 
-#pragma omp parallel for schedule(static)
+//#pragma omp parallel for schedule(static)
         for (Nd4jLong e = 0; e < indices->lengthOf(); ++e) {
             classCount[indices->e<Nd4jLong>(e)]++;
         }
