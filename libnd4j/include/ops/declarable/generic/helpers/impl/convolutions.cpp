@@ -1316,10 +1316,10 @@ static void pooling2d_(nd4j::graph::Context& block, const NDArray& input, NDArra
     const Nd4jLong kProd   = kH*kW;
 
     Nd4jLong hstart, wstart, hend, wend;
-    T sum, *pIn;
+    T *pIn;
 
     if(poolingMode == 0) {        // max 
-#pragma omp parallel for schedule(guided) private(pIn, sum, hstart, wstart, hend, wend)
+#pragma omp parallel for schedule(guided) private(pIn, hstart, wstart, hend, wend) collapse(2)
         for(int b = 0; b < bS; ++b) {
             for(int c = 0; c < iC; ++c) {                                                            
                 for(int oh = 0; oh < oH; ++oh) {
@@ -1346,15 +1346,15 @@ static void pooling2d_(nd4j::graph::Context& block, const NDArray& input, NDArra
                         wstart *= iStride3;
                         wend   *= iStride3;
 
-                        sum = -DataTypeUtils::max<T>();
-                                                                    
+                        T max = -DataTypeUtils::max<T>();
+
                         for (Nd4jLong kh = hstart; kh < hend; kh += iStep2) 
                             for (Nd4jLong kw = wstart; kw < wend; kw += iStep3) {
                                 T val = pIn[kh + kw];
-                                    if (val > sum)
-                                        sum = val;
+                                    if (val > max)
+                                        max = val;
                             }
-                        out[b * oStride0 + c * oStride1 + oh * oStride2 + ow * oStride3] = sum;
+                        out[b * oStride0 + c * oStride1 + oh * oStride2 + ow * oStride3] = max;
                     }
                 }
             }
@@ -1362,7 +1362,7 @@ static void pooling2d_(nd4j::graph::Context& block, const NDArray& input, NDArra
     }
 /*************************************************************************/    
     else if(poolingMode == 1) {      // avg
-// #pragma omp parallel for schedule(guided) private(pIn, sum, hstart, wstart, hend, wend)        
+#pragma omp parallel for schedule(guided) private(pIn, hstart, wstart, hend, wend) collapse(2)
         for(int b = 0; b < bS; ++b) {
             for(int c = 0; c < iC; ++c) {                                                            
                 for(int oh = 0; oh < oH; ++oh) {
@@ -1389,27 +1389,22 @@ static void pooling2d_(nd4j::graph::Context& block, const NDArray& input, NDArra
                         wstart *= iStride3;
                         wend   *= iStride3;
 
-                        sum = static_cast<T>(0.f);
-                                            
-                        for (Nd4jLong kh = hstart; kh < hend; kh += iStep2) 
+                        T sum = static_cast<T>(0.f);
+
+                        for (Nd4jLong kh = hstart; kh < hend; kh += iStep2)
                             for (Nd4jLong kw = wstart; kw < wend; kw += iStep3)
                                 sum += pIn[kh + kw];
+
 
                         auto oi = b * oStride0 + c * oStride1 + oh * oStride2 + ow * oStride3;
 
                         if (extraParam0 == 0) {       //Exclude padding
-                            //auto _v = static_cast<float>(hend - hstart) / static_cast<float>(iStep2);
-                            //auto _a = static_cast<T>(nd4j::math::nd4j_ceil<float, T>(_v));
-                            //auto _b = static_cast<T>(nd4j::math::nd4j_ceil<float, T>(static_cast<float>(wend - wstart) / static_cast<float>(iStep3)));
-
-                            auto _a = (hend-hstart)/iStep2 + ((hend-hstart) % iStep2 == 0 ? 0 : 1);
-                            auto _b = (wend-wstart)/iStep3 + ((wend-wstart) % iStep3 == 0 ? 0 : 1);
+                            int _a = (hend-hstart)/iStep2 + ((hend-hstart) % iStep2 == 0 ? 0 : 1);
+                            int _b = (wend-wstart)/iStep3 + ((wend-wstart) % iStep3 == 0 ? 0 : 1);
 
                             sum /=  _a * _b;   //Accounts for dilation
-
                         } else if (extraParam0 == 1)  //Include padding
                             sum /= kProd;
-
                 
                         out[oi] = sum;
                     }
@@ -1419,7 +1414,7 @@ static void pooling2d_(nd4j::graph::Context& block, const NDArray& input, NDArra
     }    
 /*************************************************************************/    
     else if(poolingMode == 2) {  // pnorm
-#pragma omp parallel for schedule(guided) private(pIn, sum, hstart, wstart, hend, wend)    
+#pragma omp parallel for schedule(guided) private(pIn, hstart, wstart, hend, wend) collapse(2)
         for(int b = 0; b < bS; ++b) {
             for(int c = 0; c < iC; ++c) {                                                            
                 for(int oh = 0; oh < oH; ++oh) {
@@ -1446,8 +1441,8 @@ static void pooling2d_(nd4j::graph::Context& block, const NDArray& input, NDArra
                         wstart *= iStride3;
                         wend   *= iStride3;
 
-                        sum = static_cast<T>(0.f);
-                                                                    
+                        T sum = static_cast<T>(0.f);
+
                         for (Nd4jLong kh = hstart; kh < hend; kh += iStep2) 
                             for (Nd4jLong kw = wstart; kw < wend; kw += iStep3)
                                 sum += nd4j::math::nd4j_pow<T,T,T>(nd4j::math::nd4j_abs<T>(pIn[kh + kw]), extraParam0);
