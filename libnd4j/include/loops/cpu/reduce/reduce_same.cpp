@@ -194,7 +194,7 @@ namespace functions {
                         auto tx = x + tadOffsets[i];
                         auto start = OpType::startingValue(tx);
 
-                        for (int j = 0; j < tadLength; j++)
+                        for (unsigned int j = 0; j < tadLength; j++)
                             start = OpType::update(start, OpType::op(tx[j], extraParams), extraParams);
 
                         z[i] = OpType::postProcess(start, tadLength, extraParams);;
@@ -207,7 +207,7 @@ namespace functions {
                         auto tx = x + tadOffsets[i];
                         auto start = OpType::startingValue(tx);
 
-                        for (int j = 0; j < tadLength; j++) {
+                        for (unsigned int j = 0; j < tadLength; j++) {
                             auto xOffset = shape::indexOffset(j, tadOnlyShapeInfo, castTadOnlyShapeInfo, tadLength, canCast);
                             start = OpType::update(start, OpType::op(tx[xOffset], extraParams), extraParams);
                         }
