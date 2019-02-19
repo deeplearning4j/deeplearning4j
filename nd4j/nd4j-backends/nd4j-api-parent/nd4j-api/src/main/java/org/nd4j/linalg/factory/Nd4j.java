@@ -2021,6 +2021,19 @@ public class Nd4j {
     }
 
     /**
+     * Generate a linearly spaced vector with default data type
+     *
+     * @param lower lower bound
+     * @param upper upper bound
+     * @param num   number of items in returned vector
+     * @return the linearly spaced vector
+     */
+    public static INDArray linspace(long lower, long upper, long num) {
+        return linspace(lower, upper, num, Nd4j.dataType());
+    }
+
+
+    /**
      * Generate a linearly spaced vector
      *
      * @param lower lower bound

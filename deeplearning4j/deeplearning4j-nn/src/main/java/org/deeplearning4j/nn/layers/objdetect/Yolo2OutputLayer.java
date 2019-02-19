@@ -436,8 +436,8 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         int gridW = (int) labelTL.size(3);
         //Add grid positions to the predicted XY values (to get predicted XY in terms of grid cell units in image,
         // from (0 to 1 in grid cell) format)
-        INDArray linspaceX = Nd4j.linspace(0, gridW-1, gridW);
-        INDArray linspaceY = Nd4j.linspace(0, gridH-1, gridH);
+        INDArray linspaceX = Nd4j.linspace(0, gridW-1, gridW, Nd4j.dataType());
+        INDArray linspaceY = Nd4j.linspace(0, gridH-1, gridH, Nd4j.dataType());
         INDArray grid = Nd4j.createUninitialized(new int[]{2, gridH, gridW}, 'c');
         INDArray gridX = grid.get(point(0), all(), all());
         INDArray gridY = grid.get(point(1), all(), all());
