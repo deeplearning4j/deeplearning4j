@@ -206,17 +206,17 @@ void ConvolutionUtils::calcOutSizePool3D(int& oD, int& oH, int& oW, const int kD
 template <typename T>
 static void vol2col_(const NDArray& volume, NDArray& columns, const int sD, const int sH, const int sW, const int pD, const int pH, const int pW, const int dD, const int dH, const int dW) {
 
-    const Nd4jLong bS = volume.sizeAt(0);
-    const Nd4jLong iC = volume.sizeAt(1);
-    const Nd4jLong iD = volume.sizeAt(2);
-    const Nd4jLong iH = volume.sizeAt(3);
-    const Nd4jLong iW = volume.sizeAt(4);
-    const Nd4jLong kD = columns.sizeAt(2);
-    const Nd4jLong kH = columns.sizeAt(3);
-    const Nd4jLong kW = columns.sizeAt(4);
-    const Nd4jLong oD = columns.sizeAt(5);
-    const Nd4jLong oH = columns.sizeAt(6);
-    const Nd4jLong oW = columns.sizeAt(7);
+    const int bS = volume.sizeAt(0);
+    const int iC = volume.sizeAt(1);
+    const int iD = volume.sizeAt(2);
+    const int iH = volume.sizeAt(3);
+    const int iW = volume.sizeAt(4);
+    const int kD = columns.sizeAt(2);
+    const int kH = columns.sizeAt(3);
+    const int kW = columns.sizeAt(4);
+    const int oD = columns.sizeAt(5);
+    const int oH = columns.sizeAt(6);
+    const int oW = columns.sizeAt(7);
     const Nd4jLong colStride0 = columns.stridesOf()[0];
     const Nd4jLong colStride1 = columns.stridesOf()[1];
     const Nd4jLong colStride2 = columns.stridesOf()[2];
@@ -307,17 +307,17 @@ else
 template <typename T>
 static void col2vol_(const NDArray& columns, NDArray& volume, const int sD, const int sH, const int sW, const int pD, const int pH, const int pW, const int dD, const int dH, const int dW) {
 
-    const Nd4jLong bS = volume.sizeAt(0);
-    const Nd4jLong iC = volume.sizeAt(1);
-    const Nd4jLong iD = volume.sizeAt(2);
-    const Nd4jLong iH = volume.sizeAt(3);
-    const Nd4jLong iW = volume.sizeAt(4);
-    const Nd4jLong kD = columns.sizeAt(2);
-    const Nd4jLong kH = columns.sizeAt(3);
-    const Nd4jLong kW = columns.sizeAt(4);
-    const Nd4jLong oD = columns.sizeAt(5);
-    const Nd4jLong oH = columns.sizeAt(6);
-    const Nd4jLong oW = columns.sizeAt(7);
+    const int bS = volume.sizeAt(0);
+    const int iC = volume.sizeAt(1);
+    const int iD = volume.sizeAt(2);
+    const int iH = volume.sizeAt(3);
+    const int iW = volume.sizeAt(4);
+    const int kD = columns.sizeAt(2);
+    const int kH = columns.sizeAt(3);
+    const int kW = columns.sizeAt(4);
+    const int oD = columns.sizeAt(5);
+    const int oH = columns.sizeAt(6);
+    const int oW = columns.sizeAt(7);
     const Nd4jLong colStride0 = columns.stridesOf()[0];
     const Nd4jLong colStride1 = columns.stridesOf()[1];
     const Nd4jLong colStride2 = columns.stridesOf()[2];
@@ -336,19 +336,20 @@ static void col2vol_(const NDArray& columns, NDArray& volume, const int sD, cons
     T* colBuff = const_cast<NDArray&>(columns).bufferAsT<T>();
 
     // initial zeroing of volume content
-    const Nd4jLong volEWS = volume.ews();
-    const auto volLen = volume.lengthOf();
-    if(volEWS == 1)
-        memset(volBuff, 0, volLen * sizeof(T));
-    else if(volEWS > 1) {
-#pragma omp parallel for schedule(static) proc_bind(close)
-        for (Nd4jLong i = 0; i < volLen * volEWS; i += volEWS)
-            volBuff[i] = static_cast<T>(0.f);
-    }
-    else {        
-        for (Nd4jLong i = 0; i < volLen; i++)
-            volBuff[shape::getIndexOffset(i, volume.getShapeInfo(), volLen)] = static_cast<T>(0.f);
-    }
+    memset(volBuff, 0, volume.lengthOf() * sizeof(T));
+//     const Nd4jLong volEWS = volume.ews();
+//     const auto volLen = volume.lengthOf();
+//     if(volEWS == 1)
+//         memset(volBuff, 0, volLen * sizeof(T));
+//     else if(volEWS > 1) {
+// #pragma omp parallel for schedule(static) proc_bind(close)
+//         for (Nd4jLong i = 0; i < volLen * volEWS; i += volEWS)
+//             volBuff[i] = static_cast<T>(0.f);
+//     }
+//     else {        
+//         for (Nd4jLong i = 0; i < volLen; i++)
+//             volBuff[shape::getIndexOffset(i, volume.getShapeInfo(), volLen)] = static_cast<T>(0.f);
+//     }
 
     T* col, *vol;
     int volDep, volRow, volCol;
