@@ -573,7 +573,7 @@ namespace helpers {
 //#pragma omp parallel for schedule(static)
             for (auto fi = idxs.begin(); fi != idxs.end(); ++fi) {
                 T prodValue = input->e<T>(fi->second.at(0));
-                for (Nd4jLong idx = 1; idx < fi->second.size(); ++idx) {
+                for (size_t idx = 1; idx < fi->second.size(); ++idx) {
                     prodValue *= input->e<T>(fi->second.at(idx));
                 }
                 output->p(fi->first, prodValue);
@@ -1065,7 +1065,7 @@ namespace helpers {
 #pragma omp parallel for if(indices->lengthOf() > Environment::getInstance()->elementwiseThreshold()) schedule(static)
             for (Nd4jLong e = 0; e < indices->lengthOf(); ++e) {
                 Nd4jLong classNum = indices->e<Nd4jLong>(e);
-                output->e<double>(e, gradOut->e<double>(classNum) * tempRes->e<double>(classNum)/ input->e<double>(e));
+                output->p<double>(e, gradOut->e<double>(classNum) * tempRes->e<double>(classNum)/ input->e<double>(e));
             }
         }
         else {
