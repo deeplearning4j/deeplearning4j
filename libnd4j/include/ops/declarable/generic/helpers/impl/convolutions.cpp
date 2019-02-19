@@ -1261,13 +1261,13 @@ static void pooling2d_(nd4j::graph::Context& block, const NDArray& input, NDArra
     const int kHEff = kH + (kH-1)*(dH-1);
     const int kWEff = kW + (kW-1)*(dW-1);
 
-    const Nd4jLong bS = input.sizeAt(0);
-    const Nd4jLong iC = input.sizeAt(1);
-    const Nd4jLong iH = input.sizeAt(2);
-    const Nd4jLong iW = input.sizeAt(3);
-    const Nd4jLong oC = output.sizeAt(1);
-    const Nd4jLong oH = output.sizeAt(2);
-    const Nd4jLong oW = output.sizeAt(3);
+    const int bS = input.sizeAt(0);
+    const int iC = input.sizeAt(1);
+    const int iH = input.sizeAt(2);
+    const int iW = input.sizeAt(3);
+    const int oC = output.sizeAt(1);
+    const int oH = output.sizeAt(2);
+    const int oW = output.sizeAt(3);
 
 #ifdef HAVE_MKLDNN
     if (poolingMode < 2 && block.isUseMKLDNN() && nd4j::MKLDNNStream::isSupported<T, T>()) {
@@ -1314,7 +1314,7 @@ static void pooling2d_(nd4j::graph::Context& block, const NDArray& input, NDArra
     
     const Nd4jLong iStep2   = dH*iStride2;
     const Nd4jLong iStep3   = dW*iStride3;    
-    const Nd4jLong kProd   = kH*kW;
+    const int kProd         = kH*kW;
 
     Nd4jLong hstart, wstart, hend, wend;
     T *pIn;
@@ -1474,15 +1474,15 @@ static void pooling3d_(nd4j::graph::Context& block, const NDArray& input, NDArra
     const int kHEff = kH + (kH-1)*(dH-1);
     const int kWEff = kW + (kW-1)*(dW-1);
 
-    const Nd4jLong bS = input.sizeAt(0);
-    const Nd4jLong iC = input.sizeAt(1);
-    const Nd4jLong iD = input.sizeAt(2);
-    const Nd4jLong iH = input.sizeAt(3);
-    const Nd4jLong iW = input.sizeAt(4);
-    const Nd4jLong oC = output.sizeAt(1);
-    const Nd4jLong oD = output.sizeAt(2);
-    const Nd4jLong oH = output.sizeAt(3);
-    const Nd4jLong oW = output.sizeAt(4);
+    const int bS = input.sizeAt(0);
+    const int iC = input.sizeAt(1);
+    const int iD = input.sizeAt(2);
+    const int iH = input.sizeAt(3);
+    const int iW = input.sizeAt(4);
+    const int oC = output.sizeAt(1);
+    const int oD = output.sizeAt(2);
+    const int oH = output.sizeAt(3);
+    const int oW = output.sizeAt(4);
 
 #ifdef HAVE_MKLDNN
     if (poolingMode < 2 && block.isUseMKLDNN() && nd4j::MKLDNNStream::isSupported<T, T>()) {
@@ -1531,7 +1531,7 @@ static void pooling3d_(nd4j::graph::Context& block, const NDArray& input, NDArra
     const Nd4jLong iStep2   = dD*iStride2;
     const Nd4jLong iStep3   = dH*iStride3;
     const Nd4jLong iStep4   = dW*iStride4;
-    const Nd4jLong kProd    = kD*kH*kW;
+    const int kProd         = kD*kH*kW;
     const T iStep2Inv = 1./iStep2;
     const T iStep3Inv = 1./iStep3;
     const T iStep4Inv = 1./iStep4;
@@ -1739,13 +1739,13 @@ static void pooling2dBP_(nd4j::graph::Context& block, const NDArray& input, cons
     const int kHEff = kH + (kH-1)*(dH-1);
     const int kWEff = kW + (kW-1)*(dW-1);
 
-    const Nd4jLong bS = gradI.sizeAt(0);
-    const Nd4jLong iC = gradI.sizeAt(1);
-    const Nd4jLong iH = gradI.sizeAt(2);
-    const Nd4jLong iW = gradI.sizeAt(3);
-    const Nd4jLong oC = gradO.sizeAt(1);
-    const Nd4jLong oH = gradO.sizeAt(2);
-    const Nd4jLong oW = gradO.sizeAt(3);
+    const int bS = gradI.sizeAt(0);
+    const int iC = gradI.sizeAt(1);
+    const int iH = gradI.sizeAt(2);
+    const int iW = gradI.sizeAt(3);
+    const int oC = gradO.sizeAt(1);
+    const int oH = gradO.sizeAt(2);
+    const int oW = gradO.sizeAt(3);
 
 #ifdef HAVE_MKLDNN
     if (poolingMode < 2 && block.isUseMKLDNN() && nd4j::MKLDNNStream::isSupported<T, T>()) {
@@ -1815,7 +1815,7 @@ static void pooling2dBP_(nd4j::graph::Context& block, const NDArray& input, cons
     const Nd4jLong oStride3 = gradO.stridesOf()[3];
     const Nd4jLong iStep2   = dH*iStride2;
     const Nd4jLong iStep3   = dW*iStride3;
-    const Nd4jLong kProd    = kH*kW;
+    const int      kProd    = kH*kW;
     const T iStep2Inv = 1./iStep2;
     const T iStep3Inv = 1./iStep3;
 
@@ -1997,15 +1997,15 @@ static void pooling3dBP_(nd4j::graph::Context& block, const NDArray& input, cons
     const int kHEff = kH + (kH-1)*(dH-1);
     const int kWEff = kW + (kW-1)*(dW-1);
 
-    const Nd4jLong bS = gradI.sizeAt(0);
-    const Nd4jLong iC = gradI.sizeAt(1);
-    const Nd4jLong iD = gradI.sizeAt(2);
-    const Nd4jLong iH = gradI.sizeAt(3);
-    const Nd4jLong iW = gradI.sizeAt(4);
-    const Nd4jLong oC = gradO.sizeAt(1);
-    const Nd4jLong oD = gradO.sizeAt(2);
-    const Nd4jLong oH = gradO.sizeAt(3);
-    const Nd4jLong oW = gradO.sizeAt(4);
+    const int bS = gradI.sizeAt(0);
+    const int iC = gradI.sizeAt(1);
+    const int iD = gradI.sizeAt(2);
+    const int iH = gradI.sizeAt(3);
+    const int iW = gradI.sizeAt(4);
+    const int oC = gradO.sizeAt(1);
+    const int oD = gradO.sizeAt(2);
+    const int oH = gradO.sizeAt(3);
+    const int oW = gradO.sizeAt(4);
 
 #ifdef HAVE_MKLDNN
     if (poolingMode < 2 && block.isUseMKLDNN() && nd4j::MKLDNNStream::isSupported<T, T>()) {
@@ -2078,7 +2078,7 @@ static void pooling3dBP_(nd4j::graph::Context& block, const NDArray& input, cons
     const Nd4jLong iStep2   = dD*iStride2;
     const Nd4jLong iStep3   = dH*iStride3;
     const Nd4jLong iStep4   = dW*iStride4;
-    const Nd4jLong kProd    = kD*kH*kW;
+    const int      kProd    = kD*kH*kW;
     const T iStep2Inv = 1./iStep2;
     const T iStep3Inv = 1./iStep3;
     const T iStep4Inv = 1./iStep4;

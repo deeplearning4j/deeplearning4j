@@ -88,10 +88,10 @@ void col2im_(graph::LaunchContext& context, const NDArray& input,  NDArray& outp
     else {
         
 #pragma omp parallel for schedule(guided) proc_bind(close) firstprivate(imRow, imCol)
-    	for (int b = 0; b < bS; ++b) {            
+    	for (int b = 0; b < bS; ++b) {
             T* im0  = imBuff + b*imStride0;
             T* col4 = colBuff + b*colStride0;
-        	for (int colH = 0; colH < oH; ++colH, col4 += colStride4) {                
+        	for (int colH = 0; colH < oH; ++colH, col4 += colStride4) {
                 T* col5 = col4;
             	for (int colW = 0; colW < oW; ++colW, col5 += colStride5) {
                     T* col1 = col5;
