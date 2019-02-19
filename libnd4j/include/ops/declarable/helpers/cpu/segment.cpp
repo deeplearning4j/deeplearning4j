@@ -32,7 +32,7 @@ namespace helpers {
         int idx = indices->e<int>(0);
         if (input->isVector()) {
             T val = input->e<T>(0);
-#pragma omp parallel for if(indices->lengthOf() > Environment::getInstance()->elementwiseThreshold()) schedule(static)
+#pragma omp parallel for schedule(static)
             for (int e = 1; e < indices->lengthOf(); e++) {
                 if (idx == indices->e<int>(e)) {
                    // max 
@@ -47,7 +47,7 @@ namespace helpers {
         }
         else {
             std::vector<int> restDims(input->rankOf() - 1);
-#pragma omp parallel for if(input->rankOf() > Environment::getInstance()->elementwiseThreshold()) schedule(static)
+#pragma omp parallel for schedule(static)
             for (int e = 1; e < input->rankOf(); e++)
                 restDims[e - 1] = e;
 
@@ -60,7 +60,7 @@ namespace helpers {
 
             int pos = 0;
             maxT->assign(listOfTensors->at(0));
-#pragma omp parallel for if(indices->lengthOf() > Environment::getInstance()->elementwiseThreshold()) schedule(static)
+#pragma omp parallel for schedule(static)
             for (int i = 1; i < indices->lengthOf(); i++) {
                 if (indices->e<int>(i) == idx) {
                     for (int e = 0; e < maxT->lengthOf(); e++) {
@@ -87,7 +87,7 @@ namespace helpers {
         int idx = indices->e<int>(0);
         if (input->isVector()) {
             T val = input->e<T>(0);
-#pragma omp parallel for if(indices->rankOf() > Environment::getInstance()->elementwiseThreshold()) schedule(static)
+#pragma omp parallel for schedule(static)
             for (int e = 1; e < indices->lengthOf(); e++) {
                 if (idx == indices->e<int>(e)) {
                    // min 
@@ -102,7 +102,7 @@ namespace helpers {
         }
         else {
             std::vector<int> restDims(input->rankOf() - 1);
-#pragma omp parallel for if(input->rankOf() > Environment::getInstance()->elementwiseThreshold()) schedule(static)         
+#pragma omp parallel for schedule(static)
             for (int e = 1; e < input->rankOf(); e++)
                 restDims[e - 1] = e;
 
@@ -115,7 +115,7 @@ namespace helpers {
 
             int pos = 0;
             minT->assign(listOfTensors->at(0));
-#pragma omp parallel for if(indices->lengthOf() > Environment::getInstance()->elementwiseThreshold()) schedule(static)
+#pragma omp parallel for schedule(static)
             for (int i = 1; i < indices->lengthOf(); i++) {
                 if (indices->e<T>(i) == idx) {
                     for (int e = 0; e < minT->lengthOf(); e++) {
@@ -140,7 +140,7 @@ namespace helpers {
         if (input->isVector()) {
             T val = T(0.f);
             int count = 0;
-//#pragma omp parallel for if(indices->lengthOf() > Environment::getInstance()->elementwiseThreshold()) schedule(static)
+#pragma omp parallel for schedule(static)
             for (int e = 0; e < indices->lengthOf(); e++) {
                 if (idx == indices->e<int>(e)) {
                    // mean 
@@ -158,7 +158,7 @@ namespace helpers {
         }
         else {
             std::vector<int> restDims(input->rankOf() - 1);
-#pragma omp parallel for if(input->rankOf() > Environment::getInstance()->elementwiseThreshold()) schedule(static)         
+#pragma omp parallel for schedule(static)
             for (int e = 1; e < input->rankOf(); e++)
                 restDims[e - 1] = e;
 
@@ -216,7 +216,7 @@ namespace helpers {
         }
         else {
             std::vector<int> restDims(input->rankOf() - 1);
-#pragma omp parallel for if(input->rankOf() > Environment::getInstance()->elementwiseThreshold()) schedule(static)         
+#pragma omp parallel for schedule(static)
             for (int e = 1; e < input->rankOf(); e++)
                 restDims[e - 1] = e;
 
@@ -246,7 +246,7 @@ namespace helpers {
 
     template <typename T>
     static void segmentProdFunctor_(NDArray* input, NDArray* indices, NDArray* output) {
-        int numClasses = output->sizeAt(0);
+        //int numClasses = output->sizeAt(0);
         // if input is a vector: (as if in doc sample)
         int idx = indices->e<int>(0);
         output->assign(1.f);
@@ -267,7 +267,7 @@ namespace helpers {
         }
         else {
             std::vector<int> restDims(input->rankOf() - 1);
-#pragma omp parallel for if(input->rankOf() > Environment::getInstance()->elementwiseThreshold()) schedule(static)         
+#pragma omp parallel for schedule(static)
             for (int e = 1; e < input->rankOf(); e++)
                 restDims[e - 1] = e;
 
@@ -368,7 +368,7 @@ namespace helpers {
         if (input->isVector()) { // 1D case
             T maxVal = DataTypeUtils::max<T>();
             output->assign(-maxVal);
-//#pragma omp parallel for if(idxs.size() > Environment::getInstance()->elementwiseThreshold()) schedule(static)
+//#pragma omp parallel for schedule(static)
             for (auto fi = idxs.begin(); fi != idxs.end(); ++fi) {
                 T val = input->e<T>(fi->second.at(0));
                 for (Nd4jLong idx = 1; idx < fi->second.size(); ++idx) {
@@ -380,7 +380,7 @@ namespace helpers {
         else {
             std::vector<int> restDims(input->rankOf() - 1);
             Nd4jLong idx = idxs[0][0];
-#pragma omp parallel for if(input->lengthOf() > Environment::getInstance()->elementwiseThreshold()) schedule(static)
+#pragma omp parallel for schedule(static)
             for (int e = 1; e < input->rankOf(); e++)
                 restDims[e - 1] = e;
 
@@ -438,7 +438,7 @@ namespace helpers {
         else {
             std::vector<int> restDims(input->rankOf() - 1);
             Nd4jLong idx = idxs[0][0];
-#pragma omp parallel for if(input->lengthOf() > Environment::getInstance()->elementwiseThreshold()) schedule(static)
+#pragma omp parallel for schedule(static)
             for (int e = 1; e < input->rankOf(); e++)
                 restDims[e - 1] = e;
 
@@ -493,7 +493,7 @@ namespace helpers {
         }
         else {
             std::vector<int> restDims(input->rankOf() - 1);
-#pragma omp parallel for if(input->lengthOf() > Environment::getInstance()->elementwiseThreshold()) schedule(static)
+#pragma omp parallel for schedule(static)
             for (int e = 1; e < input->rankOf(); e++)
                 restDims[e - 1] = e;
 
@@ -536,7 +536,7 @@ namespace helpers {
         }
         else {
             std::vector<int> restDims(input->rankOf() - 1);
-#pragma omp parallel for if(input->lengthOf() > Environment::getInstance()->elementwiseThreshold()) schedule(static)
+#pragma omp parallel for schedule(static)
             for (int e = 1; e < input->rankOf(); e++)
                 restDims[e - 1] = e;
 
@@ -581,7 +581,7 @@ namespace helpers {
         }
         else {
             std::vector<int> restDims(input->rankOf() - 1);
-#pragma omp parallel for if(input->lengthOf() > Environment::getInstance()->elementwiseThreshold()) schedule(static)
+#pragma omp parallel for schedule(static)
             for (int e = 1; e < input->rankOf(); e++)
                 restDims[e - 1] = e;
 
@@ -628,7 +628,7 @@ namespace helpers {
         }
         else {
             std::vector<int> restDims(input->rankOf() - 1);
-#pragma omp parallel for if(input->lengthOf() > Environment::getInstance()->elementwiseThreshold()) schedule(static)
+#pragma omp parallel for schedule(static)
             for (int e = 1; e < input->rankOf(); e++)
                 restDims[e - 1] = e;
 
@@ -666,7 +666,7 @@ namespace helpers {
         auto tempRes = gradOut->dup();
         segmentMaxFunctor(input, indices, tempRes);
         if (input->isVector()) {
-#pragma omp parallel for if(input->lengthOf() > Environment::getInstance()->elementwiseThreshold()) schedule(static)
+#pragma omp parallel for schedule(static)
             for (Nd4jLong e = 0; e < input->lengthOf(); ++e) {
                 Nd4jLong classNum = indices->e<Nd4jLong>(e);
                 if (nd4j::math::nd4j_abs(tempRes->e<T>(classNum) -input->e<T>(e) <= T(1.e-6)))
@@ -675,7 +675,7 @@ namespace helpers {
         }
         else {
             std::vector<int> restDims(input->rankOf() - 1);
-#pragma omp parallel for if(input->lengthOf() > Environment::getInstance()->elementwiseThreshold()) schedule(static)
+#pragma omp parallel for schedule(static)
             for (int e = 1; e < input->rankOf(); e++)
                 restDims[e - 1] = e;
 
@@ -688,7 +688,7 @@ namespace helpers {
             //std::vector<std::pair<NDArray*, int>> outputs(numOfClasses);
 
             int pos = 0;
-#pragma omp parallel for if(indices->lengthOf() > Environment::getInstance()->elementwiseThreshold()) schedule(static)
+#pragma omp parallel for schedule(static)
             for (int i = 0; i < indices->lengthOf(); i++) {
                 Nd4jLong classNum = indices->e<Nd4jLong>(i);
                 NDArray* current = listOfTensors->at(i);
@@ -723,7 +723,7 @@ namespace helpers {
         }
         else {
             std::vector<int> restDims(input->rankOf() - 1);
-#pragma omp parallel for if(input->lengthOf() > Environment::getInstance()->elementwiseThreshold()) schedule(static)
+#pragma omp parallel for schedule(static)
             for (int e = 1; e < input->rankOf(); e++)
                 restDims[e - 1] = e;
 
@@ -736,7 +736,7 @@ namespace helpers {
             //std::vector<std::pair<NDArray*, int>> outputs(numOfClasses);
             output->assign(0.);
             int pos = 0;
-#pragma omp parallel for if(indices->lengthOf() > Environment::getInstance()->elementwiseThreshold()) schedule(static)
+#pragma omp parallel for schedule(static)
             for (int i = 0; i < indices->lengthOf(); i++) {
                 Nd4jLong classNum = indices->e<Nd4jLong>(i);
                 NDArray* current = listOfTensors->at(i);
@@ -773,7 +773,7 @@ namespace helpers {
         }
         else {
             std::vector<int> restDims(input->rankOf() - 1);
-#pragma omp parallel for if(input->lengthOf() > Environment::getInstance()->elementwiseThreshold()) schedule(static)
+#pragma omp parallel for schedule(static)
             for (int e = 1; e < input->rankOf(); e++)
                 restDims[e - 1] = e;
 
@@ -785,13 +785,13 @@ namespace helpers {
             //std::vector<std::pair<NDArray*, int>> outputs(numOfClasses);
 
             int pos = 0;
-#pragma omp parallel for if(indices->lengthOf() > Environment::getInstance()->elementwiseThreshold()) schedule(static)
+#pragma omp parallel for schedule(static)
             for (int i = 0; i < indices->lengthOf(); i++) {
                 Nd4jLong classNum = indices->e<Nd4jLong>(i);
                 NDArray* current = listOfTensors->at(i);
                 NDArray* currentOut = listOfOutTensors->at(i);
                 NDArray* currentGradOut = listOfGradOuts->at(classNum);
-//#pragma omp parallel for
+
                 for (int e = 0; e < current->lengthOf(); e++) {
                     currentOut->p(e, currentGradOut->e<double>(e) / classCount[classNum]);
                 }
@@ -801,7 +801,7 @@ namespace helpers {
     }
 
     int segmentSumFunctorBP(NDArray* input, NDArray* indices, NDArray* gradOut, NDArray* output) {
-        int numClasses = output->sizeAt(0);
+//        int numClasses = output->sizeAt(0);
         // if input is a vector: (as if in doc sample)
         Nd4jLong idx = indices->e<Nd4jLong>(0);
         if (input->isVector()) {
@@ -812,7 +812,7 @@ namespace helpers {
         }
         else {
             std::vector<int> restDims(input->rankOf() - 1);
-#pragma omp parallel for if(input->lengthOf() > Environment::getInstance()->elementwiseThreshold()) schedule(static)
+#pragma omp parallel for schedule(static)
             for (int e = 1; e < input->rankOf(); e++)
                 restDims[e - 1] = e;
 
@@ -821,7 +821,7 @@ namespace helpers {
             std::unique_ptr<ResultSet> listOfOutTensors(output->allTensorsAlongDimension(restDims));
 
             int pos = 0;
-#pragma omp parallel for if(indices->lengthOf() > Environment::getInstance()->elementwiseThreshold()) schedule(static)
+#pragma omp parallel for schedule(static)
             for (int i = 0; i < indices->lengthOf(); i++) {
                 Nd4jLong classNum = indices->e<Nd4jLong>(i);
                 NDArray* current = listOfTensors->at(i);
@@ -844,7 +844,7 @@ namespace helpers {
         }
         else {
             std::vector<int> restDims(input->rankOf() - 1);
-#pragma omp parallel for if(input->lengthOf() > Environment::getInstance()->elementwiseThreshold()) schedule(static)
+#pragma omp parallel for schedule(static)
             for (int e = 1; e < input->rankOf(); e++)
                 restDims[e - 1] = e;
 
@@ -857,7 +857,7 @@ namespace helpers {
             //std::vector<std::pair<NDArray*, int>> outputs(numOfClasses);
 
             int pos = 0;
-#pragma omp parallel for if(indices->lengthOf() > Environment::getInstance()->elementwiseThreshold()) schedule(static)
+#pragma omp parallel for schedule(static)
             for (int i = 0; i < indices->lengthOf(); i++) {
                 Nd4jLong classNum = indices->e<Nd4jLong>(i);
                 NDArray* current = listOfTensors->at(i);
@@ -883,7 +883,7 @@ namespace helpers {
         auto tempRes = gradOut->dup();
         unsortedSegmentMaxFunctor(input, indices, numOfClasses, tempRes);
         if (input->isVector()) {
-#pragma omp parallel for if(input->lengthOf() > Environment::getInstance()->elementwiseThreshold()) schedule(static)
+#pragma omp parallel for schedule(static)
             for (Nd4jLong e = 0; e < input->lengthOf(); ++e) {
                 Nd4jLong classNum = indices->e<Nd4jLong>(e);
                 if (nd4j::math::nd4j_abs(tempRes->e<double>(classNum) -input->e<double>(e)) < 1.e-5)
@@ -892,7 +892,7 @@ namespace helpers {
         }
         else {
             std::vector<int> restDims(input->rankOf() - 1);
-#pragma omp parallel for if(input->lengthOf() > Environment::getInstance()->elementwiseThreshold()) schedule(static)
+#pragma omp parallel for schedule(static)
             for (int e = 1; e < input->rankOf(); e++)
                 restDims[e - 1] = e;
 
@@ -905,7 +905,7 @@ namespace helpers {
             //std::vector<std::pair<NDArray*, int>> outputs(numOfClasses);
 
             int pos = 0;
-#pragma omp parallel for if(indices->lengthOf() > Environment::getInstance()->elementwiseThreshold()) schedule(static)
+#pragma omp parallel for schedule(static)
             for (int i = 0; i < indices->lengthOf(); i++) {
                 Nd4jLong classNum = indices->e<Nd4jLong>(i);
                 NDArray* current = listOfTensors->at(i);
@@ -931,7 +931,7 @@ namespace helpers {
         auto tempRes = gradOut->dup();
         unsortedSegmentMinFunctor(input, indices, numOfClasses, tempRes);
         if (input->isVector()) {
-#pragma omp parallel for if(input->lengthOf() > Environment::getInstance()->elementwiseThreshold()) schedule(static)
+#pragma omp parallel for schedule(static)
             for (Nd4jLong e = 0; e < input->lengthOf(); ++e) {
                 Nd4jLong classNum = indices->e<Nd4jLong>(e);
                 if (nd4j::math::nd4j_abs(tempRes->e<double>(classNum) - input->e<double>(e)) < 1.e-5)
@@ -940,7 +940,7 @@ namespace helpers {
         }
         else {
             std::vector<int> restDims(input->rankOf() - 1);
-#pragma omp parallel for if(input->lengthOf() > Environment::getInstance()->elementwiseThreshold()) schedule(static)
+#pragma omp parallel for schedule(static)
             for (int e = 1; e < input->rankOf(); e++)
                 restDims[e - 1] = e;
 
@@ -953,7 +953,7 @@ namespace helpers {
             //std::vector<std::pair<NDArray*, int>> outputs(numOfClasses);
 
             int pos = 0;
-#pragma omp parallel for if(indices->lengthOf() > Environment::getInstance()->elementwiseThreshold()) schedule(static)
+#pragma omp parallel for schedule(static)
             for (int i = 0; i < indices->lengthOf(); i++) {
                 Nd4jLong classNum = indices->e<Nd4jLong>(i);
                 NDArray* current = listOfTensors->at(i);
@@ -979,19 +979,19 @@ namespace helpers {
 
         std::map<Nd4jLong, Nd4jLong> classCount;//(numClasses);
 
-//#pragma omp parallel for if(numOfClasses > Environment::getInstance()->elementwiseThreshold()) schedule(static)
+#pragma omp parallel for schedule(static)
         for (Nd4jLong count = 0; count < numOfClasses; ++count) {
             classCount[count] = 0;
         }
 
-//#pragma omp parallel for if(indices->lengthOf() > Environment::getInstance()->elementwiseThreshold()) schedule(static)
+#pragma omp parallel for schedule(static)
         for (Nd4jLong e = 0; e < indices->lengthOf(); ++e) {
-            classCount[indices->e<Nd4jLong>(e)] ++;
+            classCount[indices->e<Nd4jLong>(e)]++;
         }
 
         // if input is a vector: (as if in doc sample)
         if (input->isVector()) {
-#pragma omp parallel for if(indices->lengthOf() > Environment::getInstance()->elementwiseThreshold()) schedule(static)
+#pragma omp parallel for schedule(static)
             for (Nd4jLong e = 0; e < indices->lengthOf(); ++e) {
                 Nd4jLong classNum = indices->e<Nd4jLong>(e);
                 output->p(e, gradOut->e<double>(classNum) / classCount[classNum]);
@@ -999,7 +999,7 @@ namespace helpers {
         }
         else {
             std::vector<int> restDims(input->rankOf() - 1);
-#pragma omp parallel for if(input->lengthOf() > Environment::getInstance()->elementwiseThreshold()) schedule(static)
+#pragma omp parallel for schedule(static)
             for (int e = 1; e < input->rankOf(); e++)
                 restDims[e - 1] = e;
 
@@ -1011,7 +1011,7 @@ namespace helpers {
             //std::vector<std::pair<NDArray*, int>> outputs(numOfClasses);
 
             int pos = 0;
-#pragma omp parallel for if(indices->lengthOf() > Environment::getInstance()->elementwiseThreshold()) schedule(static)
+#pragma omp parallel for schedule(static)
             for (int i = 0; i < indices->lengthOf(); i++) {
                 Nd4jLong classNum = indices->e<Nd4jLong>(i);
                 NDArray* current = listOfTensors->at(i);
@@ -1035,7 +1035,7 @@ namespace helpers {
         }
         else {
             std::vector<int> restDims(input->rankOf() - 1);
-#pragma omp parallel for if(input->lengthOf() > Environment::getInstance()->elementwiseThreshold()) schedule(static)
+#pragma omp parallel for schedule(static)
             for (int e = 1; e < input->rankOf(); e++)
                 restDims[e - 1] = e;
 
@@ -1044,7 +1044,7 @@ namespace helpers {
             std::unique_ptr<ResultSet> listOfOutTensors(output->allTensorsAlongDimension(restDims));
 
             int pos = 0;
-#pragma omp parallel for if(indices->lengthOf() > Environment::getInstance()->elementwiseThreshold()) schedule(static)
+#pragma omp parallel for schedule(static)
             for (int i = 0; i < indices->lengthOf(); i++) {
                 Nd4jLong classNum = indices->e<Nd4jLong>(i);
                 //NDArray* current = listOfTensors->at(i);
@@ -1062,7 +1062,7 @@ namespace helpers {
 
         unsortedSegmentProdFunctor(input, indices, numOfClasses, tempRes);
         if (input->isVector()) {
-#pragma omp parallel for if(indices->lengthOf() > Environment::getInstance()->elementwiseThreshold()) schedule(static)
+#pragma omp parallel for schedule(static)
             for (Nd4jLong e = 0; e < indices->lengthOf(); ++e) {
                 Nd4jLong classNum = indices->e<Nd4jLong>(e);
                 output->p<double>(e, gradOut->e<double>(classNum) * tempRes->e<double>(classNum)/ input->e<double>(e));
@@ -1070,7 +1070,7 @@ namespace helpers {
         }
         else {
             std::vector<int> restDims(input->rankOf() - 1);
-#pragma omp parallel for if(input->lengthOf() > Environment::getInstance()->elementwiseThreshold()) schedule(static)
+#pragma omp parallel for schedule(static)
             for (int e = 1; e < input->rankOf(); e++)
                 restDims[e - 1] = e;
 
@@ -1083,7 +1083,7 @@ namespace helpers {
             //std::vector<std::pair<NDArray*, int>> outputs(numOfClasses);
 
             int pos = 0;
-#pragma omp parallel for if(indices->lengthOf() > Environment::getInstance()->elementwiseThreshold()) schedule(static)
+#pragma omp parallel for schedule(static)
             for (int i = 0; i < indices->lengthOf(); i++) {
                 Nd4jLong classNum = indices->e<Nd4jLong>(i);
                 NDArray* current = listOfTensors->at(i);
@@ -1102,19 +1102,19 @@ namespace helpers {
     int unsortedSegmentSqrtNFunctorBP(NDArray* input, NDArray* indices, NDArray* gradOut, Nd4jLong numOfClasses, NDArray* output) {
         std::map<Nd4jLong, Nd4jLong> classCount;//(numClasses);
 
-//#pragma omp parallel for if(numOfClasses > Environment::getInstance()->elementwiseThreshold()) schedule(static)
+#pragma omp parallel for schedule(static)
         for (Nd4jLong count = 0; count < numOfClasses; ++count) {
             classCount[count] = 0;
         }
 
-//#pragma omp parallel for if(indices->lengthOf() > Environment::getInstance()->elementwiseThreshold()) schedule(static)
+#pragma omp parallel for schedule(static)
         for (Nd4jLong e = 0; e < indices->lengthOf(); ++e) {
-            classCount[indices->e<Nd4jLong>(e)] ++;
+            classCount[indices->e<Nd4jLong>(e)]++;
         }
 
         // if input is a vector: (as if in doc sample)
         if (input->isVector()) {
-#pragma omp parallel for if(indices->lengthOf() > Environment::getInstance()->elementwiseThreshold()) schedule(static)
+#pragma omp parallel for schedule(static)
             for (Nd4jLong e = 0; e < indices->lengthOf(); ++e) {
                 Nd4jLong classNum = indices->e<Nd4jLong>(e);
                 output->p(e, gradOut->e<double>(classNum) / nd4j::math::nd4j_sqrt<double,double>(classCount[classNum]));
@@ -1122,7 +1122,7 @@ namespace helpers {
         }
         else {
             std::vector<int> restDims(input->rankOf() - 1);
-#pragma omp parallel for if(indices->lengthOf() > Environment::getInstance()->elementwiseThreshold()) schedule(static)
+#pragma omp parallel for schedule(static)
             for (int e = 1; e < input->rankOf(); e++)
                 restDims[e - 1] = e;
 
@@ -1134,7 +1134,7 @@ namespace helpers {
             //std::vector<std::pair<NDArray*, int>> outputs(numOfClasses);
 
             int pos = 0;
-#pragma omp parallel for if(indices->lengthOf() > Environment::getInstance()->elementwiseThreshold()) schedule(static)
+#pragma omp parallel for schedule(static)
             for (int i = 0; i < indices->lengthOf(); i++) {
                 Nd4jLong classNum = indices->e<Nd4jLong>(i);
                 NDArray* current = listOfTensors->at(i);
@@ -1149,10 +1149,6 @@ namespace helpers {
         return ND4J_STATUS_OK;
     }
 
-//    int unsortedSegmentSqrtNFunctorBP(NDArray* input, NDArray* indices, NDArray* gradOut, Nd4jLong numOfClasses, NDArray* output) {
-//        BUILD_SINGLE_SELECTOR(output->dataType(), return unsortedSegmentSqrtNFunctorBP_, (input, indices, gradOut, numOfClasses, output), FLOAT_TYPES);
-//    }
-//    BUILD_SINGLE_TEMPLATE(template int unsortedSegmentSqrtNFunctorBP_, (NDArray* input, NDArray* indices, NDArray* gradOut, Nd4jLong numOfClasses, NDArray* output), FLOAT_TYPES);
 }
 }
 }
