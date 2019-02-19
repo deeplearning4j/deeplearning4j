@@ -1227,6 +1227,41 @@ TEST_F(PlaygroundTests, test_manual_loop) {
     delete[] z;
 }
 
+TEST_F(PlaygroundTests, test_col2im_permuted_1) {
+    auto x = NDArrayFactory::create<float>('c', {8, 64, 55, 55, 3, 3});
+    x.assign(1.f);
+    x.permutei({0, 1, 4, 5, 2, 3});
+
+    auto z = NDArrayFactory::create<float>('c', {64, 8, 112, 112});
+    z.permutei({1, 0, 2, 3});
+
+    nd4j_printf("Starting custom run...\n","");
+    const int iterations = 100;
+    nd4j::ops::col2im op;
+
+    auto timeStart = std::chrono::system_clock::now();
+    for (int e = 0; e < iterations; e++) {
+        op.execute({&x}, {&z}, {}, {2, 2, 0, 0, 112, 112, 1, 1, 1}, {});
+    }
+    auto timeEnd = std::chrono::system_clock::now();
+    auto spanTime = std::chrono::duration_cast<std::chrono::microseconds> ((timeEnd - timeStart) / iterations).count();
+    auto ttlTime = std::chrono::duration_cast<std::chrono::milliseconds> ((timeEnd - timeStart)).count();
+
+    nd4j_printf("Starting legacy run...\n","");
+    std::array<float, 8> extra = {2.f, 2.f, 0.f, 0.f, 112.f, 112.f, 1.f, 1.f};
+
+    auto legacyStart = std::chrono::system_clock::now();
+    for (int e = 0; e < iterations; e++) {
+        x.applyTransform(transform::Col2Im, &z, extra.data());
+    }
+    auto legacyEnd = std::chrono::system_clock::now();
+    auto legacySpanTime = std::chrono::duration_cast<std::chrono::microseconds> ((legacyEnd - legacyStart) / iterations).count();
+    auto legacyTtlTime = std::chrono::duration_cast<std::chrono::milliseconds> ((legacyEnd - legacyStart)).count();
+
+    nd4j_printf("average time: %lld us vs %lld us;\n", spanTime, legacySpanTime);
+    nd4j_printf("total time: %lld ms vs %lld ms;\n", ttlTime, legacyTtlTime);
+}
+
 // //////////////////////////////////////////////////////////////////////    
 // INLINEDEF unsigned offsetUns(unsigned index, const unsigned *shapeInfo, unsigned arrLen) {
         
