@@ -94,7 +94,7 @@ namespace helpers {
         BilinearInterpolationData const *xs_ = xs.data();
 
         T *output_y_ptr = reinterpret_cast<T *>(output->buffer());
-#pragma omp parallel for if(batchSize > Environment::getInstance()->elementwiseThreshold()) schedule(static)
+#pragma omp parallel for
         for (Nd4jLong b = 0; b < batchSize; ++b) {
             for (Nd4jLong y = 0; y < outHeight; ++y) {
                 const T *ys_input_lower_ptr = input_b_ptr + ys[y].bottomIndex * inRowSize;
@@ -147,8 +147,8 @@ namespace helpers {
             nd4j_printf("image.resize_bilinear: Wrong input or output size to resize\n", "");
             return ND4J_STATUS_BAD_ARGUMENTS;
         }
-        double heightScale = center ? (inHeight - 1.) / double(outHeight - 1.0) : (inHeight / double(outHeight));
-        double widthScale = center ? (inWidth - 1.) / double(outWidth - 1.0) : (inWidth / double(outWidth));
+        float heightScale = center ? (inHeight - 1.f) / double(outHeight - 1.f) : (inHeight / float(outHeight));
+        float widthScale = center ? (inWidth - 1.f) / double(outWidth - 1.f) : (inWidth / float(outWidth));
 
         std::vector<BilinearInterpolationData> ys(outHeight + 1);
         std::vector<BilinearInterpolationData> xs(outWidth + 1);
@@ -194,15 +194,15 @@ namespace helpers {
         double heightScale = center ? (inHeight - 1.) / double(outHeight - 1.0) : (inHeight / double(outHeight));
         double widthScale = center ? (inWidth - 1.) / double(outWidth - 1.0) : (inWidth / double(outWidth));
 
-#pragma omp parallel for if(batchSize > Environment::getInstance()->elementwiseThreshold()) schedule(static)
+#pragma omp parallel for
         for (int b = 0; b < batchSize; ++b) {
             for (int y = 0; y < outHeight; ++y) {
-                Nd4jLong inY = std::min(
-                        (center) ? static_cast<Nd4jLong>(roundf(y * heightScale)) : static_cast<Nd4jLong>(floorf(
+                Nd4jLong inY = nd4j::math::nd4j_min(
+                        (center) ? static_cast<Nd4jLong>(nd4j::math::p_round<float>(y * heightScale)) : static_cast<Nd4jLong>(nd4j::math::p_floor<float>(
                                 y * heightScale)), inHeight - 1);
                 for (int x = 0; x < outWidth; ++x) {
-                    Nd4jLong inX = std::min(
-                            (center) ? static_cast<Nd4jLong>(roundf(x * widthScale)) : static_cast<Nd4jLong>(floorf(
+                    Nd4jLong inX = nd4j::math::nd4j_min(
+                            (center) ? static_cast<Nd4jLong>(nd4j::math::p_round<float>(x * widthScale)) : static_cast<Nd4jLong>(nd4j::math::p_floor<float>(
                                     x * widthScale)), inWidth - 1);
                     for (Nd4jLong e = 0; e < channels; e++)
                         output->p(b, y, x, e, images->e<T>(b, inY, inX, e));
@@ -275,7 +275,7 @@ namespace helpers {
                 T heightScale = (cropHeight > 1) ? (y2 - y1) * (imageHeight - 1) / (cropHeight - 1) : T(0);
                 T widthScale = (cropWidth > 1) ? (x2 - x1) * (imageWidth - 1) / (cropWidth - 1) : T(0);
 
-#pragma omp parallel for if(cropHeight > Environment::getInstance()->elementwiseThreshold()) schedule(static)
+#pragma omp parallel for //if(cropHeight > Environment::getInstance()->elementwiseThreshold()) schedule(static)
                 for (int y = 0; y < cropHeight; ++y) {
                     const float inY = (cropHeight > 1)
                                       ? y1 * (imageHeight - 1) + y * heightScale
@@ -289,8 +289,8 @@ namespace helpers {
                         continue;
                     }
                     if (method == 0 /* bilinear */) {
-                        const int topYIndex = floorf(inY);
-                        const int bottomYIndex = ceilf(inY);
+                        const int topYIndex = nd4j::math::p_floor(inY);
+                        const int bottomYIndex = nd4j::math::p_ceil(inY);
                         const float y_lerp = inY - topYIndex;
 
                         for (int x = 0; x < cropWidth; ++x) {
@@ -303,8 +303,8 @@ namespace helpers {
                                 }
                                 continue;
                             }
-                            int left_x_index = floorf(in_x);
-                            int right_x_index = ceilf(in_x);
+                            int left_x_index = math::p_floor(in_x);
+                            int right_x_index = math::p_ceil(in_x);
                             T x_lerp = in_x - left_x_index;
 
                             for (int d = 0; d < depth; ++d) {
@@ -338,32 +338,7 @@ namespace helpers {
                 }
             }
         };
-        //for (int b = 0; b < numBoxes; ++b) {
         CropAndResizePerBox(0, numBoxes);
-        //}
-/*
-    // A rough estimation of the cost for each cropped box.
-    double cost_per_pixel =
-        depth * (Eigen::TensorOpCost::AddCost<float>() * 6 +
-                 Eigen::TensorOpCost::MulCost<float>() * 3 +
-                 Eigen::TensorOpCost::CastCost<T, float>() * 4) +
-        (Eigen::TensorOpCost::AddCost<float>() * 2 +
-         Eigen::TensorOpCost::AddCost<float>() * 3);
-
-    if (method == 1 ) { // nearest neighbor
-      cost_per_pixel = depth * Eigen::TensorOpCost::CastCost<T, float>() +
-                       Eigen::TensorOpCost::AddCost<float>() * 4 +
-                       Eigen::TensorOpCost::MulCost<float>() * 4;
-    }
-    const double cost_per_box = crop_height * crop_width * cost_per_pixel;
-
-    const DeviceBase::CpuWorkerThreads& worker_threads =
-        *(context->device()->tensorflow_cpu_worker_threads());
-    Shard(worker_threads.num_threads, worker_threads.workers, num_boxes,
-          cost_per_box, CropAndResizePerBox);
-
-    return true;
-*/
     }
 
 
