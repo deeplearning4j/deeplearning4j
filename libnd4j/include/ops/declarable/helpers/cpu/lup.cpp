@@ -279,10 +279,22 @@ template <typename T>
         std::unique_ptr<ResultSet> lastMatrixList(input->allTensorsAlongDimension({input->rankOf() - 2, input->rankOf()-1}));
         for (size_t i = 0; i < lastMatrixList->size(); i++) {
             auto thisMatrix = lastMatrixList->at(i);
+            // check for symmetric
             for (Nd4jLong r = 0; r < thisMatrix->rows(); r++)
                 for (Nd4jLong c = 0; c < thisMatrix->columns(); c++)
-                    if (thisMatrix->e<double>(r, c) != lastMatrixList->at(i)->e<double>(c,r)) return false;
+                    if (nd4j::math::nd4j_abs(thisMatrix->e<T>(r, c) - lastMatrixList->at(i)->e<T>(c,r)) > T(1.e-6f)) return false;
+
+            NDArray output = NDArrayFactory::create<T>(0.);
+            if (ND4J_STATUS_OK != determinant(thisMatrix, &output)) return false;
+            if (output.e<T>(0) <= T(0)) return 0;
+            NDArray reversedMatrix(*thisMatrix);
+            if (ND4J_STATUS_OK != inverse(thisMatrix, &reversedMatrix)) return false;
+            if (ND4J_STATUS_OK != determinant(&reversedMatrix, &output)) return false;
+            if (output.e<T>(0) <= T(0)) return 0;
+
         }
+
+
         return true;
     }
     BUILD_SINGLE_TEMPLATE(template bool checkCholeskyInput_, (NDArray const* input), FLOAT_TYPES);
