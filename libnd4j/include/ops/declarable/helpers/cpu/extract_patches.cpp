@@ -39,7 +39,7 @@ namespace helpers {
         Nd4jLong rowDim = images->sizeAt(1);
         Nd4jLong colDim = images->sizeAt(2);
 
-#pragma omp parallel for if(batchCount > Environment::getInstance()->elementwiseThreshold()) schedule(static)
+#pragma omp parallel for
         for (Nd4jLong e = 0; e < batchCount; ++e) {
             auto patch = listOfMatricies->at(e);
             auto outMatrix = listOfOutputs->at(e);
