@@ -507,7 +507,7 @@ public class ImageLoader extends BaseImageLoader {
         return scalingIfNeed(image, height, width, channels, needAlpha);
     }
 
-    protected static BufferedImage scalingIfNeed(BufferedImage image, long dstHeight, long dstWidth, long dstImageType, boolean needAlpha) {
+    protected BufferedImage scalingIfNeed(BufferedImage image, long dstHeight, long dstWidth, long dstImageType, boolean needAlpha) {
         Image scaled;
         // Scale width and height first if necessary
         if (dstHeight > 0 && dstWidth > 0 && (image.getHeight() != dstHeight || image.getWidth() != dstWidth)) {
