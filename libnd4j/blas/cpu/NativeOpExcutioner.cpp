@@ -479,7 +479,11 @@ void NativeOpExcutioner::execTransformAny(int opNum, void *dx, Nd4jLong *xShapeI
     auto xType = nd4j::ArrayOptions::dataType(xShapeInfo);
     auto zType = nd4j::ArrayOptions::dataType(resultShapeInfo);
 
-    BUILD_DOUBLE_SELECTOR(xType, zType, functions::transform::TransformAny, ::exec(opNum, dx, xShapeInfo, result, resultShapeInfo, extraParams, tadShapeInfo, tadOffsets), LIBND4J_TYPES, LIBND4J_TYPES);
+    if (opNum == nd4j::transform::Assign && xType == zType && shape::elementWiseStride(xShapeInfo) == 1 && shape::elementWiseStride(resultShapeInfo) && shape::equalsTypesAndShapesSoft(xShapeInfo, resultShapeInfo)) {
+        memcpy(result, dx, nd4j::DataTypeUtils::sizeOf(xType) * shape::length(xShapeInfo));
+    } else {
+        BUILD_DOUBLE_SELECTOR(xType, zType, functions::transform::TransformAny, ::exec(opNum, dx, xShapeInfo, result, resultShapeInfo, extraParams, tadShapeInfo, tadOffsets), LIBND4J_TYPES, LIBND4J_TYPES);
+    }
 }
 
 void NativeOpExcutioner::execTransformSame(int opNum, void *dx, Nd4jLong *xShapeInfo, void *result, Nd4jLong *resultShapeInfo, void *extraParams, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {

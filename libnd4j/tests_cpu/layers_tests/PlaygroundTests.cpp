@@ -1195,6 +1195,38 @@ TEST_F(PlaygroundTests, test_assign_float) {
 
 }
 
+TEST_F(PlaygroundTests, test_manual_loop) {
+    const unsigned int len = 32 * 128 * 256 * 256;
+    auto array = new float[len];
+    auto z = new float[len];
+
+    for (unsigned int e = 0; e < len; e++)
+        array[e] = (float) e;
+
+    const int iterations = 100;
+
+    auto timeStart = std::chrono::system_clock::now();
+    for (int i = 0; i < iterations; i++) {
+
+#pragma omp parallel for num_threads(4) schedule(static, 32768)
+        for (unsigned int e = 0; e < len; e++)
+            z[e] = array[e];
+    }
+
+    auto timeEnd = std::chrono::system_clock::now();
+    auto spanTime = std::chrono::duration_cast<std::chrono::microseconds> ((timeEnd - timeStart) / iterations).count();
+    auto ttlTime = std::chrono::duration_cast<std::chrono::milliseconds> ((timeEnd - timeStart)).count();
+    auto bw = (1000000L * (float) (len * sizeof(float)) / spanTime) / 1024 / 1024 / 1024;
+
+    nd4j_printf("length: %i\n", len);
+    nd4j_printf("average time: %lld us;\n", spanTime);
+    nd4j_printf("total time: %lld ms;\n", ttlTime);
+    nd4j_printf("Bandwidth: %f GB/s\n", bw)
+
+    delete[] array;
+    delete[] z;
+}
+
 // //////////////////////////////////////////////////////////////////////    
 // INLINEDEF unsigned offsetUns(unsigned index, const unsigned *shapeInfo, unsigned arrLen) {
         
