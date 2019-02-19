@@ -61,7 +61,7 @@ void col2im_(graph::LaunchContext& context, const NDArray& input,  NDArray& outp
         memset(imBuff, 0, shape::length(imShapeBuffer) * sizeof(T));
     } 
     else {
-#pragma omp parallel for schedule(static, 256) proc_bind(close)
+#pragma omp parallel for schedule(guided) proc_bind(close)
         for (int i = 0; i < shape::length(imShapeBuffer); i++)
             imBuff[i] = static_cast<T>(0.f);
     }
@@ -71,7 +71,7 @@ void col2im_(graph::LaunchContext& context, const NDArray& input,  NDArray& outp
 
     if (shape::order(colShapeBuffer) == 'c' &&  shape::order(imShapeBuffer) == 'c' && shape::strideDescendingCAscendingF(colShapeBuffer) && shape::strideDescendingCAscendingF(imShapeBuffer)) {
             
-#pragma omp parallel for schedule(static) proc_bind(close) private(col, im, imRow, imCol)
+#pragma omp parallel for schedule(guided) proc_bind(close) private(col, im, imRow, imCol)
     	for (int b = 0; b < bS; b++) {        
       		for (int c = 0; c < iC; ++c) {                    
             	for (int kRow = 0; kRow < kH; ++kRow) {                        
@@ -96,7 +96,7 @@ void col2im_(graph::LaunchContext& context, const NDArray& input,  NDArray& outp
     }
     else {
 
-#pragma omp parallel for schedule(static) proc_bind(close) private(im, col, imRow, imCol)
+#pragma omp parallel for schedule(guided) proc_bind(close) private(im, col, imRow, imCol)
     	for (int b = 0; b < bS; b++) {        
         	for (int colH = 0; colH < oH; ++colH) {
             	for (int colW = 0; colW < oW; ++colW) {

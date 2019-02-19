@@ -1065,7 +1065,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
             if(imEWS == 1)
                  memset(imBuff, 0, shape::length(imShapeBuffer) * sizeof(X));
             else 
-#pragma omp parallel for schedule(static, 256) proc_bind(close)
+#pragma omp parallel for schedule(static) proc_bind(close)
                 for (int i = 0; i < zLength; i++)
                     imBuff[i] = static_cast<X>(0.f);
 
