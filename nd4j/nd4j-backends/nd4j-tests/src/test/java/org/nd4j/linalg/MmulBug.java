@@ -51,7 +51,7 @@ public class MmulBug {
         assertEquals(correctResult, newResult);
 
         //But not so mmuli (which is somewhat mixed)
-        INDArray target = Nd4j.linspace(1, 4, 4).reshape(2, 2);
+        INDArray target = Nd4j.linspace(1, 4, 4, DataType.INT).reshape(2, 2);
         target = m1.mmuli(m2, m1);
         assertEquals(true, target.equals(correctResult));
         assertEquals(true, m1.equals(correctResult));

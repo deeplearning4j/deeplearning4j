@@ -17,6 +17,7 @@
 package org.nd4j.linalg;
 
 import org.junit.Ignore;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
@@ -29,7 +30,7 @@ public class TempNdArrayIndexTest {
 
     public static void main(String[] args) {
         //deliberately not doing a square matrix
-        INDArray cOrder = Nd4j.linspace(1, 12, 12).reshape('c', 4, 3);
+        INDArray cOrder = Nd4j.linspace(1, 12, 12, DataType.FLOAT).reshape('c', 4, 3);
 
         System.out.println("==========================");
         System.out.println("C order..");
@@ -56,7 +57,7 @@ public class TempNdArrayIndexTest {
         System.out.println("==========================");
         System.out.println("One way to build an f order array");
         System.out.println("==========================");
-        INDArray fOrder = Nd4j.linspace(1, 12, 12).reshape('f', 4, 3);
+        INDArray fOrder = Nd4j.linspace(1, 12, 12, DataType.FLOAT).reshape('f', 4, 3);
         System.out.println(fOrder);
         System.out.println(fOrder.shapeInfoToString());
     }

@@ -191,7 +191,7 @@ public class SameDiffTests {
     @Test
     public void testSaveWriteWithTrainingConfig() throws Exception {
         SameDiff sameDiff = SameDiff.create();
-        INDArray arr = Transforms.sigmoid(Nd4j.linspace(1, 4, 4));
+        INDArray arr = Transforms.sigmoid(Nd4j.linspace(1, 4, 4, DataType.DOUBLE));
         SDVariable x = sameDiff.var("x", arr);
         SDVariable result = sameDiff.sum(x, 1); //[1,4].sum(1) == [1,1]
         TrainingConfig trainingConfig = TrainingConfig.builder()

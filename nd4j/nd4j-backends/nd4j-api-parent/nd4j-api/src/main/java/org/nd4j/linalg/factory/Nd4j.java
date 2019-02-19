@@ -2010,7 +2010,8 @@ public class Nd4j {
         }
 
         if (dtype.isIntType()) {
-            return linspaceWithCustomOp((long) lower, (int) num, (long) step, dtype);
+            long upper = lower + num * step;
+            return linspaceWithCustomOpByRange((long) lower, upper, num, (long) step, dtype);
         } else if (dtype.isFPType()) {
             return Nd4j.getExecutioner().exec(new Linspace((double) lower, num, (double)step, dtype));
         }
@@ -2050,7 +2051,7 @@ public class Nd4j {
      * @param num   number of resulting items
      * @return the linearly spaced vector
      */
-    public static INDArray linspace(double lower, double step, long num, @NonNull DataType dataType) {
+    public static INDArray linspace(@NonNull DataType dataType, double lower, double step, long num) {
         Preconditions.checkState(dataType.isFPType());
         return Nd4j.getExecutioner().exec(new Linspace(lower, num, step, dataType));
     }
@@ -2063,34 +2064,31 @@ public class Nd4j {
      * @param num   number of resulting items
      * @return the linearly spaced vector
      */
-    public static INDArray linspace(@NonNull DataType dataType, double lower, double upper, long num) {
+    public static INDArray linspace( double lower, double upper, long num, @NonNull DataType dataType) {
         Preconditions.checkState(dataType.isFPType());
         return Nd4j.getExecutioner().exec(new Linspace(lower, upper, num, dataType));
     }
 
-    private static INDArray linspaceWithCustomOp(long lower, int num, long steps, DataType dataType) {
+    private static INDArray linspaceWithCustomOp(long lower, long upper, int num, DataType dataType) {
 
-        INDArray input = Nd4j.createUninitialized(dataType, new long[] {1, num}, Nd4j.order());
-        INDArray result = Nd4j.createUninitialized(dataType, new long[] {1, num}, Nd4j.order());
+        INDArray result = Nd4j.createUninitialized(dataType, new long[] {num}, Nd4j.order());
+
         val op = DynamicCustomOp.builder("lin_space")
-                .addInputs(input)
+                .addInputs(Nd4j.scalar(lower), Nd4j.scalar(upper), Nd4j.scalar(num))
                 .addOutputs(result)
-                .addIntegerArguments((int)lower, num, (int)steps)
                 .build();
 
         Nd4j.getExecutioner().execAndReturn(op);
         return result;
     }
 
-    private static INDArray linspaceWithCustomOp(long lower, long upper, int num, DataType dataType) {
+    private static INDArray linspaceWithCustomOpByRange(long lower, long upper, long num, long step, DataType dataType) {
 
-        INDArray input = Nd4j.createUninitialized(dataType, new long[] {1, num}, Nd4j.order());
-        INDArray result = Nd4j.createUninitialized(dataType, new long[] {1, num}, Nd4j.order());
+        INDArray result = Nd4j.createUninitialized(dataType, new long[] {num}, Nd4j.order());
 
-        val op = DynamicCustomOp.builder("lin_space")
-                .addInputs(input)
+        val op = DynamicCustomOp.builder("range")
+                .addInputs(Nd4j.scalar(lower), Nd4j.scalar(upper), Nd4j.scalar(step))
                 .addOutputs(result)
-                .addIntegerArguments((int)lower, (int)upper, num)
                 .build();
 
         Nd4j.getExecutioner().execAndReturn(op);

@@ -20,6 +20,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
@@ -46,14 +47,14 @@ public class LeadingAndTrailingOnesC extends BaseNd4jTest {
 
     @Test
     public void testMatrix() {
-        INDArray arr = Nd4j.linspace(1, 4, 4).reshape(2, 2);
+        INDArray arr = Nd4j.linspace(1, 4, 4, DataType.INT).reshape(2, 2);
         INDArray slice1 = arr.slice(1);
         System.out.println(arr.slice(1));
-        INDArray oneInMiddle = Nd4j.linspace(1, 4, 4).reshape(2, 1, 2);
+        INDArray oneInMiddle = Nd4j.linspace(1, 4, 4, DataType.INT).reshape(2, 1, 2);
         INDArray otherSlice = oneInMiddle.slice(1);
         assertEquals(2, otherSlice.offset());
         System.out.println(otherSlice);
-        INDArray twoOnesInMiddle = Nd4j.linspace(1, 4, 4).reshape(2, 1, 1, 2);
+        INDArray twoOnesInMiddle = Nd4j.linspace(1, 4, 4, DataType.INT).reshape(2, 1, 1, 2);
         INDArray sub = twoOnesInMiddle.get(NDArrayIndex.point(1), NDArrayIndex.all(), NDArrayIndex.all(),
                         NDArrayIndex.all());
         assertEquals(2, sub.offset());
@@ -62,7 +63,7 @@ public class LeadingAndTrailingOnesC extends BaseNd4jTest {
 
     @Test
     public void testMultipleOnesInMiddle() {
-        INDArray tensor = Nd4j.linspace(1, 144, 144).reshape(2, 2, 1, 1, 6, 6);
+        INDArray tensor = Nd4j.linspace(1, 144, 144, DataType.INT).reshape(2, 2, 1, 1, 6, 6);
         INDArray tensorSlice1 = tensor.slice(1);
         INDArray tensorSlice1Slice1 = tensorSlice1.slice(1);
         System.out.println(tensor);

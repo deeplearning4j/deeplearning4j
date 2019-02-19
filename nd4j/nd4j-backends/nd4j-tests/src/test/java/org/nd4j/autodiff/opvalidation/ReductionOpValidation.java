@@ -708,7 +708,7 @@ public class ReductionOpValidation extends BaseOpValidation {
     @Test
     public void testMoments() {
         for (int[] axes : new int[][]{{0}, {1}, {0, 1}}) {
-            INDArray input = Nd4j.linspace(1, 12, 12).reshape(3, 4);
+            INDArray input = Nd4j.linspace(1, 12, 12, DataType.INT).reshape(3, 4);
 
             SameDiff sd = SameDiff.create();
             SDVariable in = sd.var("in", input);
@@ -740,7 +740,7 @@ public class ReductionOpValidation extends BaseOpValidation {
     @Test
     public void testMomentsOp() {
         int[] axes = new int[]{0};
-        INDArray input = Nd4j.linspace(1, 12, 12).reshape(3, 4);
+        INDArray input = Nd4j.linspace(1, 12, 12, DataType.INT).reshape(3, 4);
 
         INDArray outMean = Nd4j.createUninitialized(new long[]{4});
         INDArray outVar = Nd4j.createUninitialized(new long[]{4});

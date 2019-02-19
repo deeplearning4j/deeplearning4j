@@ -61,7 +61,7 @@ public class IndexingTestsC extends BaseNd4jTest {
 
     @Test
     public void testLinearViewElementWiseMatching() {
-        INDArray linspace = Nd4j.linspace(1, 4, 4).reshape(2, 2);
+        INDArray linspace = Nd4j.linspace(1, 4, 4, DataType.DOUBLE).reshape(2, 2);
         INDArray dup = linspace.dup();
         linspace.addi(dup);
     }
@@ -196,7 +196,7 @@ public class IndexingTestsC extends BaseNd4jTest {
     public void testGet() {
         System.out.println("Testing sub-array put and get with a 3D array ...");
 
-        INDArray arr = Nd4j.linspace(0, 124, 125).reshape(5, 5, 5);
+        INDArray arr = Nd4j.linspace(0, 124, 125, DataType.DOUBLE).reshape(5, 5, 5);
 
         /*
          * Extract elements with the following indices:
@@ -251,7 +251,7 @@ public class IndexingTestsC extends BaseNd4jTest {
 
     @Test
     public void testSimplePoint() {
-        INDArray A = Nd4j.linspace(1, 3 * 3 * 3, 3 * 3 * 3).reshape(3, 3, 3);
+        INDArray A = Nd4j.linspace(1, 3 * 3 * 3, 3 * 3 * 3, DataType.DOUBLE).reshape(3, 3, 3);
 
         /*
             c - ordering
@@ -281,7 +281,7 @@ public class IndexingTestsC extends BaseNd4jTest {
         int rows = 5;
         int cols = 5;
         int l = slices * rows * cols;
-        INDArray A = Nd4j.linspace(1, l, l).reshape(slices, rows, cols);
+        INDArray A = Nd4j.linspace(1, l, l, DataType.DOUBLE).reshape(slices, rows, cols);
 
         for (int s = 0; s < slices; s++) {
             INDArrayIndex ndi_Slice = NDArrayIndex.point(s);

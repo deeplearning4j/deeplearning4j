@@ -20,6 +20,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
@@ -99,8 +100,8 @@ public class ShapeTest extends BaseNd4jTest {
 
     @Test
     public void testElementWiseCompareOnesInMiddle() {
-        INDArray arr = Nd4j.linspace(1, 6, 6).reshape(2, 3);
-        INDArray onesInMiddle = Nd4j.linspace(1, 6, 6).reshape(2, 1, 3);
+        INDArray arr = Nd4j.linspace(1, 6, 6, DataType.INT).reshape(2, 3);
+        INDArray onesInMiddle = Nd4j.linspace(1, 6, 6, DataType.INT).reshape(2, 1, 3);
         for (int i = 0; i < arr.length(); i++) {
             double val = arr.getDouble(i);
             double middleVal = onesInMiddle.getDouble(i);

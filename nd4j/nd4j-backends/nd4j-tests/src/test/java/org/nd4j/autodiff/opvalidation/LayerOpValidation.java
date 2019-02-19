@@ -1035,7 +1035,7 @@ public class LayerOpValidation extends BaseOpValidation {
                 .isSameMode(false)
                 .build();
 
-        SDVariable out = sd.conv1d(in, w, conv1DConfig);
+        SDVariable out = sd.cnn().conv1d(in, w, conv1DConfig);
 
     }
 
@@ -1052,7 +1052,7 @@ public class LayerOpValidation extends BaseOpValidation {
         String msg = "0 - conv2d+bias, nchw - input " + Arrays.toString(inSizeNCHW);
         SDVariable w0 = sd.var("w0", Nd4j.rand(new int[]{3, 3, inSizeNCHW[1], 3}).muli(10));  //kH,kW,iC,oC
         SDVariable b0 = sd.var("b0", Nd4j.rand(new long[]{3}).muli(10));
-        SDVariable out = sd.conv2d(in, w0, b0, Conv2DConfig.builder()
+        SDVariable out = sd.cnn().conv2d(in, w0, b0, Conv2DConfig.builder()
                 .dataFormat(Conv2DConfig.NCHW)
                 .isSameMode(true)
                 .kH(3).kW(-3)
@@ -1081,7 +1081,7 @@ public class LayerOpValidation extends BaseOpValidation {
 
                 SDVariable w0 = sd.var("w0", Nd4j.rand(new int[]{2, 2, 2, nIn, 3}).muli(10));  //[kD, kH, kW, iC, oC]
                 SDVariable b0 = sd.var("b0", Nd4j.rand(new long[]{3}).muli(10));
-                out = sd.conv3d(in, w0, b0, Conv3DConfig.builder()
+                out = sd.cnn().conv3d(in, w0, b0, Conv3DConfig.builder()
                         .dataFormat(ncdhw ? Conv3DConfig.NCDHW : Conv3DConfig.NDHWC)
                         .isSameMode(true)
                         .kH(2).kW(2).kD(2)

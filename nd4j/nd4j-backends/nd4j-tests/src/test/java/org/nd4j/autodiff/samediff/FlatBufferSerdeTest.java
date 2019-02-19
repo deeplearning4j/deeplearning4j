@@ -7,6 +7,7 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.graph.*;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -29,7 +30,7 @@ public class FlatBufferSerdeTest {
     @Test
     public void testBasic() throws Exception {
         SameDiff sd = SameDiff.create();
-        INDArray arr = Nd4j.linspace(1,12,12).reshape(3,4);
+        INDArray arr = Nd4j.linspace(1,12,12, DataType.DOUBLE).reshape(3,4);
         SDVariable in = sd.placeHolder("in", arr.dataType(), arr.shape() );
         SDVariable tanh = sd.nn().tanh("out", in);
 

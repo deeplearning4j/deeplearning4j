@@ -290,7 +290,7 @@ public class PreProcessor3D4DTest extends BaseNd4jTest {
 
     @Test
     public void test3dNinMaxScaling() {
-        INDArray values = Nd4j.linspace(-10, 10, 100).reshape(5, 2, 10);
+        INDArray values = Nd4j.linspace(-10, 10, 100, DataType.DOUBLE).reshape(5, 2, 10);
         DataSet data = new DataSet(values, values);
 
         NormalizerMinMaxScaler SUT = new NormalizerMinMaxScaler();
@@ -326,9 +326,9 @@ public class PreProcessor3D4DTest extends BaseNd4jTest {
             // FIXME: int cast
             numFeatures = (int) featureScale.size(0);
             maxN = samples * timeSteps;
-            INDArray template = Nd4j.linspace(origin, origin + timeSteps - 1, timeSteps).reshape(1, -1);
-            template = Nd4j.concat(0, Nd4j.linspace(origin, origin + timeSteps - 1, timeSteps).reshape(1, -1), template);
-            template = Nd4j.concat(0, Nd4j.linspace(origin, origin + timeSteps - 1, timeSteps).reshape(1, -1), template);
+            INDArray template = Nd4j.linspace(origin, origin + timeSteps - 1, timeSteps, DataType.DOUBLE).reshape(1, -1);
+            template = Nd4j.concat(0, Nd4j.linspace(origin, origin + timeSteps - 1, timeSteps, DataType.DOUBLE).reshape(1, -1), template);
+            template = Nd4j.concat(0, Nd4j.linspace(origin, origin + timeSteps - 1, timeSteps, DataType.DOUBLE).reshape(1, -1), template);
             template.muliColumnVector(featureScale);
             template = template.reshape(1, numFeatures, timeSteps);
             INDArray featureMatrix = template.dup();
@@ -337,9 +337,9 @@ public class PreProcessor3D4DTest extends BaseNd4jTest {
             int newEnd;
             for (int i = 1; i < samples; i++) {
                 newEnd = newStart + timeSteps - 1;
-                template = Nd4j.linspace(newStart, newEnd, timeSteps).reshape(1, -1);
-                template = Nd4j.concat(0, Nd4j.linspace(newStart, newEnd, timeSteps).reshape(1, -1), template);
-                template = Nd4j.concat(0, Nd4j.linspace(newStart, newEnd, timeSteps).reshape(1, -1), template);
+                template = Nd4j.linspace(newStart, newEnd, timeSteps, DataType.DOUBLE).reshape(1, -1);
+                template = Nd4j.concat(0, Nd4j.linspace(newStart, newEnd, timeSteps, DataType.DOUBLE).reshape(1, -1), template);
+                template = Nd4j.concat(0, Nd4j.linspace(newStart, newEnd, timeSteps, DataType.DOUBLE).reshape(1, -1), template);
                 template.muliColumnVector(featureScale);
                 template = template.reshape(1, numFeatures, timeSteps);
                 newStart = newEnd + 1;
@@ -383,7 +383,7 @@ public class PreProcessor3D4DTest extends BaseNd4jTest {
             allImages.get(NDArrayIndex.all(), NDArrayIndex.point(2), NDArrayIndex.all(), NDArrayIndex.all()).muli(0.01)
                             .subi(10);
 
-            INDArray labels = Nd4j.linspace(1, nChannels, nChannels).reshape('c', nChannels, 1);
+            INDArray labels = Nd4j.linspace(1, nChannels, nChannels, DataType.DOUBLE).reshape('c', nChannels, 1);
             sampleDataSet = new DataSet(allImages, labels);
 
             expectedMean = allImages.mean(0, 2, 3);

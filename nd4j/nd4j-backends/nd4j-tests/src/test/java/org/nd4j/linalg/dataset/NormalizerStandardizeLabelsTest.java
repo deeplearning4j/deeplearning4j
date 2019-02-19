@@ -20,6 +20,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.dataset.api.iterator.TestDataSetIterator;
@@ -49,7 +50,7 @@ public class NormalizerStandardizeLabelsTest extends BaseNd4jTest {
         int nSamples = 5120;
         int x = 1, y = 2, z = 3;
 
-        INDArray featureX = Nd4j.linspace(1, nSamples, nSamples).reshape(nSamples, 1).mul(x);
+        INDArray featureX = Nd4j.linspace(1, nSamples, nSamples, DataType.DOUBLE).reshape(nSamples, 1).mul(x);
         INDArray featureY = featureX.mul(y);
         INDArray featureZ = featureX.mul(z);
         INDArray featureSet = Nd4j.concat(1, featureX, featureY, featureZ);

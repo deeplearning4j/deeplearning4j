@@ -20,6 +20,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
@@ -38,7 +39,7 @@ public class CopyTest extends BaseNd4jTest {
 
     @Test
     public void testCopy() {
-        INDArray arr = Nd4j.linspace(1, 4, 4).reshape(2, 2);
+        INDArray arr = Nd4j.linspace(1, 4, 4, DataType.INT).reshape(2, 2);
         INDArray dup = arr.dup();
         assertEquals(arr, dup);
     }
@@ -47,7 +48,7 @@ public class CopyTest extends BaseNd4jTest {
     public void testDup() {
 
         for (int x = 0; x < 100; x++) {
-            INDArray orig = Nd4j.linspace(1, 4, 4);
+            INDArray orig = Nd4j.linspace(1, 4, 4, DataType.INT);
             INDArray dup = orig.dup();
             assertEquals(orig, dup);
 

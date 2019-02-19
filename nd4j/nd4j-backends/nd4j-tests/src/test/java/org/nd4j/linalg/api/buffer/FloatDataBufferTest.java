@@ -144,7 +144,7 @@ public class FloatDataBufferTest extends BaseNd4jTest {
 
     @Test
     public void testGetRange() {
-        DataBuffer buffer = Nd4j.linspace(1, 5, 5).data();
+        DataBuffer buffer = Nd4j.linspace(1, 5, 5, DataType.FLOAT).data();
         float[] get = buffer.getFloatsAt(0, 3);
         float[] data = new float[] {1, 2, 3};
         assertArrayEquals(getFailureMessage(), get, data, 1e-1f);
@@ -160,7 +160,7 @@ public class FloatDataBufferTest extends BaseNd4jTest {
 
     @Test
     public void testGetOffsetRange() {
-        DataBuffer buffer = Nd4j.linspace(1, 5, 5).data();
+        DataBuffer buffer = Nd4j.linspace(1, 5, 5, DataType.FLOAT).data();
         float[] get = buffer.getFloatsAt(1, 3);
         float[] data = new float[] {2, 3, 4};
         assertArrayEquals(getFailureMessage(), get, data, 1e-1f);

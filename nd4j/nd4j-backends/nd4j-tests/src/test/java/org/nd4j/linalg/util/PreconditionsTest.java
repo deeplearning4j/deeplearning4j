@@ -3,6 +3,7 @@ package org.nd4j.linalg.util;
 import org.junit.Test;
 import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.BaseNd4jTest;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
@@ -22,7 +23,7 @@ public class PreconditionsTest extends BaseNd4jTest {
     @Test
     public void test(){
 
-        INDArray arr = Nd4j.linspace(1,60,60).reshape('c',3,4,5);
+        INDArray arr = Nd4j.linspace(1,60,60, DataType.INT).reshape('c',3,4,5);
 
         try{
             Preconditions.checkArgument(false, "Shape is: %ndShape with rank %ndRank", arr, arr);

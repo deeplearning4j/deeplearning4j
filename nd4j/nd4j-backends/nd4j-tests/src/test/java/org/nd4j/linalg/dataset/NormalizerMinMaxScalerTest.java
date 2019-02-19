@@ -21,6 +21,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.dataset.api.iterator.TestDataSetIterator;
@@ -51,7 +52,7 @@ public class NormalizerMinMaxScalerTest extends BaseNd4jTest {
         int nSamples = 500;
         int x = 4, y = 2, z = 3;
 
-        INDArray featureX = Nd4j.linspace(1, nSamples, nSamples).reshape(nSamples, 1);
+        INDArray featureX = Nd4j.linspace(1, nSamples, nSamples, DataType.DOUBLE).reshape(nSamples, 1);
         INDArray featureY = featureX.mul(y);
         INDArray featureZ = featureX.mul(z);
         featureX.muli(x);

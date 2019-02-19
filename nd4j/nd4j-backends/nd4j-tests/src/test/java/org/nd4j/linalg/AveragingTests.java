@@ -110,7 +110,7 @@ public class AveragingTests extends BaseNd4jTest {
 
     @Test
     public void testSingleDeviceAveraging2() {
-        INDArray exp = Nd4j.linspace(1, LENGTH, LENGTH);
+        INDArray exp = Nd4j.linspace(1, LENGTH, LENGTH, DataType.DOUBLE);
         List<INDArray> arrays = new ArrayList<>();
         for (int i = 0; i < THREADS; i++)
             arrays.add(exp.dup());
