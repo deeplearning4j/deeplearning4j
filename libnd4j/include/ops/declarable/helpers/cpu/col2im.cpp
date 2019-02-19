@@ -57,14 +57,9 @@ void col2im_(graph::LaunchContext& context, const NDArray& input,  NDArray& outp
     // initial zeroing of image content
     const auto imEWS = shape::elementWiseStride(imShapeBuffer);
 
-    if(imEWS == 1) {
-        memset(imBuff, 0, shape::length(imShapeBuffer) * sizeof(T));
-    } 
-    else {
-#pragma omp parallel for schedule(guided) proc_bind(close)
-        for (int i = 0; i < shape::length(imShapeBuffer); i++)
-            imBuff[i] = static_cast<T>(0.f);
-    }
+
+    memset(imBuff, 0, shape::length(imShapeBuffer) * sizeof(T));
+
 
 	T *col, *im;
     int imRow, imCol;

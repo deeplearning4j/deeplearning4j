@@ -1061,13 +1061,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
             auto zLength = shape::length(imShapeBuffer);
 
             // initial zeroing of image content
-            const Nd4jLong imEWS = nd4j::math::nd4j_abs<Nd4jLong>(shape::elementWiseStride(imShapeBuffer));
-            if(imEWS == 1)
-                 memset(imBuff, 0, shape::length(imShapeBuffer) * sizeof(X));
-            else 
-#pragma omp parallel for schedule(static) proc_bind(close)
-                for (int i = 0; i < zLength; i++)
-                    imBuff[i] = static_cast<X>(0.f);
+            memset(imBuff, 0, zLength * sizeof(X));
 
 
             X *col, *im;
