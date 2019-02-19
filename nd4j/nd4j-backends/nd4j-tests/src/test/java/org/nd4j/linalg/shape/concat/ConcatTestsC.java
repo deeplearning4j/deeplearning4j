@@ -136,7 +136,7 @@ public class ConcatTestsC extends BaseNd4jTest {
 
     @Test
     public void testAssign() {
-        INDArray vector = Nd4j.linspace(1, 5, 5, DataType.INT);
+        INDArray vector = Nd4j.linspace(1, 5, 5, Nd4j.dataType());
         vector.assign(1);
         assertEquals(Nd4j.ones(5), vector);
         INDArray twos = Nd4j.ones(2, 2);
@@ -183,7 +183,7 @@ public class ConcatTestsC extends BaseNd4jTest {
         assertEquals(exp, concat0);
 
         //ConcatV2, dim 1
-        second = Nd4j.linspace(24, 32, 8, DataType.INT).reshape('c', 2, 1, 4);
+        second = Nd4j.linspace(24, 32, 8, Nd4j.dataType()).reshape('c', 2, 1, 4);
         for (int i = 0; i < second.tensorsAlongDimension(1); i++) {
             INDArray secondTad = second.javaTensorAlongDimension(i, 1);
             System.out.println(second.tensorAlongDimension(i, 1));
