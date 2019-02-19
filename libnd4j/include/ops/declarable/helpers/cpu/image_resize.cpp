@@ -49,6 +49,8 @@ namespace helpers {
                                             BilinearInterpolationData *interpolationData) {
         interpolationData[outSize].bottomIndex = 0;
         interpolationData[outSize].topIndex = 0;
+
+#pragma omp parallel for if(outSize > Environment::getInstance()->elementwiseThreshold()) schedule(static)
         for (Nd4jLong i = outSize - 1; i >= 0; --i) {
             double in = i * scale;
             interpolationData[i].bottomIndex = static_cast<Nd4jLong>(in);
@@ -92,6 +94,7 @@ namespace helpers {
         BilinearInterpolationData const *xs_ = xs.data();
 
         T *output_y_ptr = reinterpret_cast<T *>(output->buffer());
+#pragma omp parallel for if(batchSize > Environment::getInstance()->elementwiseThreshold()) schedule(static)
         for (Nd4jLong b = 0; b < batchSize; ++b) {
             for (Nd4jLong y = 0; y < outHeight; ++y) {
                 const T *ys_input_lower_ptr = input_b_ptr + ys[y].bottomIndex * inRowSize;
@@ -156,6 +159,7 @@ namespace helpers {
         computeInterpolationWeights(outWidth, inWidth, widthScale, xs.data());
 
         // Scale x interpolation weights to avoid a multiplication during iteration.
+#pragma omp parallel for if(xs.size() > Environment::getInstance()->elementwiseThreshold()) schedule(static)
         for (int i = 0; i < xs.size(); ++i) {
             xs[i].bottomIndex *= channels;
             xs[i].topIndex *= channels;
@@ -190,6 +194,7 @@ namespace helpers {
         double heightScale = center ? (inHeight - 1.) / double(outHeight - 1.0) : (inHeight / double(outHeight));
         double widthScale = center ? (inWidth - 1.) / double(outWidth - 1.0) : (inWidth / double(outWidth));
 
+#pragma omp parallel for if(batchSize > Environment::getInstance()->elementwiseThreshold()) schedule(static)
         for (int b = 0; b < batchSize; ++b) {
             for (int y = 0; y < outHeight; ++y) {
                 Nd4jLong inY = std::min(
@@ -270,6 +275,7 @@ namespace helpers {
                 T heightScale = (cropHeight > 1) ? (y2 - y1) * (imageHeight - 1) / (cropHeight - 1) : T(0);
                 T widthScale = (cropWidth > 1) ? (x2 - x1) * (imageWidth - 1) / (cropWidth - 1) : T(0);
 
+#pragma omp parallel for if(cropHeight > Environment::getInstance()->elementwiseThreshold()) schedule(static)
                 for (int y = 0; y < cropHeight; ++y) {
                     const float inY = (cropHeight > 1)
                                       ? y1 * (imageHeight - 1) + y * heightScale
