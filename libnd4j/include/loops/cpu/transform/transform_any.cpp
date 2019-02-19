@@ -66,7 +66,7 @@ namespace functions {
             nd4j::OmpLaunchHelper info(len);
 
             if (shape::elementWiseStride(xShapeInfo) == 1 && shape::elementWiseStride(zShapeInfo) == 1 && shape::order(xShapeInfo) == shape::order(zShapeInfo)) {
-
+/*
 #pragma omp parallel num_threads(info._numThreads) if (info._numThreads > 1) default(shared)
                 {
                     auto threadNum = omp_get_thread_num();
@@ -79,6 +79,10 @@ namespace functions {
                     for (unsigned int i = 0; i < info.getItersPerThread(threadNum); i++)
                         tz[i] = OpType::op(tx[i], extraParams);
                 }
+                */
+                for (unsigned int i = 0; i < info.getItersPerThread(threadNum); i++)
+                    tz[i] = OpType::op(tx[i], extraParams);
+
             } else if (shape::haveSameOffsets(xShapeInfo, zShapeInfo)) {
                 uint xShapeInfoCast[MAX_RANK];
                 bool canCastX = nd4j::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);

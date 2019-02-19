@@ -848,7 +848,7 @@ void loop1(float* x, Nd4jLong* xShapeInfo, float* y, Nd4jLong* yShapeInfo, float
     int yEws = shape::elementWiseStride(yShapeInfo);
     int zEws = shape::elementWiseStride(zShapeInfo);
             
-    nd4j::OmpLaunchHelper info(len);
+    nd4j::OmpLaunchHelper info(len, 4);
     #pragma omp parallel num_threads(info._numThreads) default(shared)
     {                
         auto threadNum = omp_get_thread_num();
@@ -1168,29 +1168,32 @@ TEST_F(PlaygroundTests, test_reduce_scalar_same_2) {
 }
 
 
-// TEST_F(PlaygroundTests, test_assign_float) {
-//     auto array = NDArrayFactory::create<float>('c', {32, 128, 256, 256});
-//     auto target = NDArrayFactory::create<float>('c', {32, 128, 256, 256});
+TEST_F(PlaygroundTests, test_assign_float) {
+     auto array = NDArrayFactory::create<float>('c', {32, 128, 256, 256});
+     auto target = NDArrayFactory::create<float>('c', {32, 128, 256, 256});
 
-//     array.assign(119);
+     array.assign(119);
 
-//     // warm up
-//     for (int e = 0; e < 5; e++) {
-//         NativeOpExcutioner::execTransformAny(transform::Assign, array.buffer(), array.shapeInfo(), target.buffer(), target.shapeInfo(), nullptr, nullptr, nullptr);
-//     }
+     // warm up
+     for (int e = 0; e < 5; e++) {
+         NativeOpExcutioner::execTransformAny(transform::Assign, array.buffer(), array.shapeInfo(), target.buffer(), target.shapeInfo(), nullptr, nullptr, nullptr);
+     }
 
-//     int iterations = 10;
-//     auto timeStart = std::chrono::system_clock::now();
-//     for (int e = 0; e < iterations; e++) {
-//         NativeOpExcutioner::execTransformAny(transform::Assign, array.buffer(), array.shapeInfo(), target.buffer(), target.shapeInfo(), nullptr, nullptr, nullptr);
-//     }
-//     auto timeEnd = std::chrono::system_clock::now();
-//     auto spanTime = std::chrono::duration_cast<std::chrono::microseconds> ((timeEnd - timeStart)/iterations).count();
-//     auto ttlTime = std::chrono::duration_cast<std::chrono::milliseconds> ((timeEnd - timeStart)).count();
+     int iterations = 10;
+     auto timeStart = std::chrono::system_clock::now();
+     for (int e = 0; e < iterations; e++) {
+         NativeOpExcutioner::execTransformAny(transform::Assign, array.buffer(), array.shapeInfo(), target.buffer(), target.shapeInfo(), nullptr, nullptr, nullptr);
+     }
+     auto timeEnd = std::chrono::system_clock::now();
+     auto spanTime = std::chrono::duration_cast<std::chrono::microseconds> ((timeEnd - timeStart)/iterations).count();
+     auto ttlTime = std::chrono::duration_cast<std::chrono::milliseconds> ((timeEnd - timeStart)).count();
+     auto bw = (1000000L * (float) (array.lengthOf() * array.sizeOfT()) / spanTime) / 1024 / 1024 / 1024;
 
-//     nd4j_printf("average time: %lld us;\n", spanTime);
-//     nd4j_printf("total time: %lld ms;\n", ttlTime);
-// }
+     nd4j_printf("average time: %lld us;\n", spanTime);
+     nd4j_printf("total time: %lld ms;\n", ttlTime);
+     nd4j_printf("Bandwidth: %f GB/s\n", bw)
+
+}
 
 // //////////////////////////////////////////////////////////////////////    
 // INLINEDEF unsigned offsetUns(unsigned index, const unsigned *shapeInfo, unsigned arrLen) {
