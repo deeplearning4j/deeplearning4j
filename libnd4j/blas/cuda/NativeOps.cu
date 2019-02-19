@@ -3721,7 +3721,7 @@ __global__ static void scatterUpdateCuda(const int opCode, const int numOfSubArr
 										const int* indexes) {
         
     __shared__ T *x, *y;
-    __shared__ Nd4jLong *yShapeInfo, *xShapeInfo, arrLenX, arrLenY;
+    __shared__ Nd4jLong arrLenX, arrLenY;
 
     for (int e = 0; e < numOfSubArrs; e++ ) {
         auto cIndex = indexes[e];
