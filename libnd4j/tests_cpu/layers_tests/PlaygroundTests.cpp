@@ -1232,8 +1232,11 @@ TEST_F(PlaygroundTests, test_col2im_permuted_1) {
     x.assign(1.f);
     x.permutei({0, 1, 4, 5, 2, 3});
 
-    auto z = NDArrayFactory::create<float>('c', {64, 8, 112, 112});
-    z.permutei({1, 0, 2, 3});
+    auto z0 = NDArrayFactory::create<float>('c', {64, 8, 112, 112});
+    z0.permutei({1, 0, 2, 3});
+
+    auto z1 = NDArrayFactory::create<float>('c', {64, 8, 112, 112});
+    z1.permutei({1, 0, 2, 3});
 
     nd4j_printf("Starting custom run...\n","");
     const int iterations = 100;
@@ -1241,7 +1244,7 @@ TEST_F(PlaygroundTests, test_col2im_permuted_1) {
 
     auto timeStart = std::chrono::system_clock::now();
     for (int e = 0; e < iterations; e++) {
-        op.execute({&x}, {&z}, {}, {2, 2, 0, 0, 112, 112, 1, 1, 1}, {});
+        op.execute({&x}, {&z0}, {}, {2, 2, 0, 0, 112, 112, 1, 1, 1}, {});
     }
     auto timeEnd = std::chrono::system_clock::now();
     auto spanTime = std::chrono::duration_cast<std::chrono::microseconds> ((timeEnd - timeStart) / iterations).count();
@@ -1252,7 +1255,7 @@ TEST_F(PlaygroundTests, test_col2im_permuted_1) {
 
     auto legacyStart = std::chrono::system_clock::now();
     for (int e = 0; e < iterations; e++) {
-        x.applyTransform(transform::Col2Im, &z, extra.data());
+        x.applyTransform(transform::Col2Im, &z1, extra.data());
     }
     auto legacyEnd = std::chrono::system_clock::now();
     auto legacySpanTime = std::chrono::duration_cast<std::chrono::microseconds> ((legacyEnd - legacyStart) / iterations).count();
@@ -1260,6 +1263,8 @@ TEST_F(PlaygroundTests, test_col2im_permuted_1) {
 
     nd4j_printf("average time: %lld us vs %lld us;\n", spanTime, legacySpanTime);
     nd4j_printf("total time: %lld ms vs %lld ms;\n", ttlTime, legacyTtlTime);
+
+    ASSERT_EQ(z0, z1);
 }
 
 // //////////////////////////////////////////////////////////////////////    
