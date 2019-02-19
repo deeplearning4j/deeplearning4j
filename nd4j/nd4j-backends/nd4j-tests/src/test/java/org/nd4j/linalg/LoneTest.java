@@ -105,7 +105,7 @@ public class LoneTest extends BaseNd4jTest {
     @Test
     public void testIndexingColVec() {
         int elements = 5;
-        INDArray rowVector = Nd4j.linspace(1, elements, elements, DataType.INT).reshape(1, elements);
+        INDArray rowVector = Nd4j.linspace(1, elements, elements).reshape(1, elements);
         INDArray colVector = rowVector.transpose();
         int j;
         INDArray jj;
@@ -145,8 +145,8 @@ public class LoneTest extends BaseNd4jTest {
 
     @Test
     public void maskWhenMerge() {
-        DataSet dsA = new DataSet(Nd4j.linspace(1, 15, 15, DataType.INT).reshape(1, 3, 5), Nd4j.zeros(1, 3, 5));
-        DataSet dsB = new DataSet(Nd4j.linspace(1, 9, 9, DataType.INT).reshape(1, 3, 3), Nd4j.zeros(1, 3, 3));
+        DataSet dsA = new DataSet(Nd4j.linspace(1, 15, 15).reshape(1, 3, 5), Nd4j.zeros(1, 3, 5));
+        DataSet dsB = new DataSet(Nd4j.linspace(1, 9, 9).reshape(1, 3, 3), Nd4j.zeros(1, 3, 3));
         List<DataSet> dataSetList = new ArrayList<DataSet>();
         dataSetList.add(dsA);
         dataSetList.add(dsB);
@@ -194,12 +194,12 @@ public class LoneTest extends BaseNd4jTest {
     //broken at a threshold
     public void testArgMax() {
         int max = 63;
-        INDArray A = Nd4j.linspace(1, max, max, DataType.INT).reshape(1, max);
+        INDArray A = Nd4j.linspace(1, max, max).reshape(1, max);
         int currentArgMax = Nd4j.argMax(A).getInt(0, 0);
         assertEquals(max - 1, currentArgMax);
 
         max = 64;
-        A = Nd4j.linspace(1, max, max, DataType.INT).reshape(1, max);
+        A = Nd4j.linspace(1, max, max).reshape(1, max);
         currentArgMax = Nd4j.argMax(A).getInt(0, 0);
         System.out.println("Returned argMax is " + currentArgMax);
         assertEquals(max - 1, currentArgMax);
@@ -263,7 +263,7 @@ public class LoneTest extends BaseNd4jTest {
 
     @Test(expected = Exception.class)
     public void checkIllegalElementOps() {
-        INDArray A = Nd4j.linspace(1, 20, 20, DataType.INT).reshape(4, 5);
+        INDArray A = Nd4j.linspace(1, 20, 20).reshape(4, 5);
         INDArray B = A.dup().reshape(2, 2, 5);
 
         //multiplication of arrays of different rank should throw exception

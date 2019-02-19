@@ -43,8 +43,8 @@ public class TestSerialization extends BaseNd4jTest {
     @Test
     public void testSerializationFullArrayNd4jWriteRead() throws Exception {
         int length = 100;
-        INDArray arrC = Nd4j.linspace(1, length, length, DataType.INT).reshape('c', 10, 10);
-        INDArray arrF = Nd4j.linspace(1, length, length, DataType.INT).reshape('f', 10, 10);
+        INDArray arrC = Nd4j.linspace(1, length, length).reshape('c', 10, 10);
+        INDArray arrF = Nd4j.linspace(1, length, length).reshape('f', 10, 10);
 
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         try (DataOutputStream dos = new DataOutputStream(baos)) {
@@ -73,8 +73,8 @@ public class TestSerialization extends BaseNd4jTest {
     @Test
     public void testSerializationFullArrayJava() throws Exception {
         int length = 100;
-        INDArray arrC = Nd4j.linspace(1, length, length, DataType.INT).reshape('c', 10, 10);
-        INDArray arrF = Nd4j.linspace(1, length, length, DataType.INT).reshape('f', 10, 10);
+        INDArray arrC = Nd4j.linspace(1, length, length).reshape('c', 10, 10);
+        INDArray arrF = Nd4j.linspace(1, length, length).reshape('f', 10, 10);
 
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         try (ObjectOutputStream oos = new ObjectOutputStream(baos)) {
@@ -104,8 +104,8 @@ public class TestSerialization extends BaseNd4jTest {
     @Test
     public void testSerializationOnViewsNd4jWriteRead() throws Exception {
         int length = 100;
-        INDArray arrC = Nd4j.linspace(1, length, length, DataType.INT).reshape('c', 10, 10);
-        INDArray arrF = Nd4j.linspace(1, length, length, DataType.INT).reshape('f', 10, 10);
+        INDArray arrC = Nd4j.linspace(1, length, length).reshape('c', 10, 10);
+        INDArray arrF = Nd4j.linspace(1, length, length).reshape('f', 10, 10);
 
         INDArray subC = arrC.get(NDArrayIndex.interval(5, 10), NDArrayIndex.interval(5, 10));
         INDArray subF = arrF.get(NDArrayIndex.interval(5, 10), NDArrayIndex.interval(5, 10));
@@ -140,8 +140,8 @@ public class TestSerialization extends BaseNd4jTest {
     @Test
     public void testSerializationOnViewsJava() throws Exception {
         int length = 100;
-        INDArray arrC = Nd4j.linspace(1, length, length, DataType.INT).reshape('c', 10, 10);
-        INDArray arrF = Nd4j.linspace(1, length, length, DataType.INT).reshape('f', 10, 10);
+        INDArray arrC = Nd4j.linspace(1, length, length).reshape('c', 10, 10);
+        INDArray arrF = Nd4j.linspace(1, length, length).reshape('f', 10, 10);
 
         INDArray subC = arrC.get(NDArrayIndex.interval(5, 10), NDArrayIndex.interval(5, 10));
         INDArray subF = arrF.get(NDArrayIndex.interval(5, 10), NDArrayIndex.interval(5, 10));

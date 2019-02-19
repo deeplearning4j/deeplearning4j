@@ -894,7 +894,7 @@ public class ReductionBpOpValidation extends BaseOpValidation {
         for (boolean keepDims : new boolean[]{false, true}) {
 
             long[] reducedShape_0 = (keepDims ? new long[]{1, 4} : new long[]{4});
-            INDArray preReduceInput = Nd4j.linspace(1, 12, 12, DataType.INT).reshape(3, 4);
+            INDArray preReduceInput = Nd4j.linspace(1, 12, 12).reshape(3, 4);
             INDArray sgn = Transforms.sign(preReduceInput, true);
             INDArray max_0 = Nd4j.create(3,4);
             max_0.getRow(2).assign(1.0);

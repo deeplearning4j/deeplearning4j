@@ -136,7 +136,7 @@ public class TADTests extends BaseNd4jTest {
 
     @Test
     public void testTADEWSStride(){
-        INDArray orig = Nd4j.linspace(1, 600, 600, DataType.INT).reshape('f', 10, 1, 60);
+        INDArray orig = Nd4j.linspace(1, 600, 600).reshape('f', 10, 1, 60);
 
         for( int i=0; i<60; i++ ){
             INDArray tad = orig.tensorAlongDimension(i, 0, 1);

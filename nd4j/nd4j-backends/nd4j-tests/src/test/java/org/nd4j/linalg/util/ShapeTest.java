@@ -100,8 +100,8 @@ public class ShapeTest extends BaseNd4jTest {
 
     @Test
     public void testElementWiseCompareOnesInMiddle() {
-        INDArray arr = Nd4j.linspace(1, 6, 6, DataType.INT).reshape(2, 3);
-        INDArray onesInMiddle = Nd4j.linspace(1, 6, 6, DataType.INT).reshape(2, 1, 3);
+        INDArray arr = Nd4j.linspace(1, 6, 6).reshape(2, 3);
+        INDArray onesInMiddle = Nd4j.linspace(1, 6, 6).reshape(2, 1, 3);
         for (int i = 0; i < arr.length(); i++) {
             double val = arr.getDouble(i);
             double middleVal = onesInMiddle.getDouble(i);

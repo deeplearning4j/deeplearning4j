@@ -873,7 +873,7 @@ public class ShapeOpValidation extends BaseOpValidation {
     @Test
     public void testReshape() {
         SameDiff sameDiff = SameDiff.create();
-        INDArray arr = Transforms.sigmoid(Nd4j.linspace(-5, 6, 12, DataType.INT)).reshape(3, 4);
+        INDArray arr = Transforms.sigmoid(Nd4j.linspace(-5, 6, 12)).reshape(3, 4);
         SDVariable x = sameDiff.var("x", arr);
         SDVariable result1 = sameDiff.reshape(x, 4, 3);
         SDVariable loss = sameDiff.standardDeviation(result1, true);
@@ -891,7 +891,7 @@ public class ShapeOpValidation extends BaseOpValidation {
         Nd4j.getRandom().setSeed(12345);
         int[] origShape = new int[]{3, 4, 5};
 
-        INDArray inArr = Nd4j.linspace(1, 60, 60, DataType.INT).reshape(origShape);
+        INDArray inArr = Nd4j.linspace(1, 60, 60).reshape(origShape);
 
         for (int[] toShape : new int[][]{{3, 4 * 5}, {3 * 4, 5}, {1, 3 * 4 * 5}, {3 * 4 * 5, 1}}) {
             INDArray exp = inArr.reshape(toShape);
@@ -912,7 +912,7 @@ public class ShapeOpValidation extends BaseOpValidation {
     @Test
     public void testTranspose() {
         SameDiff sameDiff = SameDiff.create();
-        INDArray arr = Transforms.sigmoid(Nd4j.linspace(1, 4, 4, DataType.INT)).reshape(1,4);
+        INDArray arr = Transforms.sigmoid(Nd4j.linspace(1, 4, 4)).reshape(1,4);
         SDVariable x = sameDiff.var("x", arr);
         SDVariable result = sameDiff.transpose(x);
         SDVariable loss = sameDiff.standardDeviation(result, true);
@@ -924,7 +924,7 @@ public class ShapeOpValidation extends BaseOpValidation {
     @Test
     public void testTransposeOp(){
 
-        INDArray arr = Nd4j.linspace(1,15, 15, DataType.INT).reshape(5,3);
+        INDArray arr = Nd4j.linspace(1,15, 15).reshape(5,3);
         INDArray out = Nd4j.create(3,5);
 
         OpTestCase op = new OpTestCase(new Transpose(arr, out));
@@ -964,7 +964,7 @@ public class ShapeOpValidation extends BaseOpValidation {
 
     @Test
     public void testDiagShapeFn() {
-        INDArray i = Nd4j.linspace(1, 16, 16, DataType.INT).reshape(4,4);
+        INDArray i = Nd4j.linspace(1, 16, 16).reshape(4,4);
 
         OpTestCase op = new OpTestCase(new DiagPart(i, null));
 
@@ -978,7 +978,7 @@ public class ShapeOpValidation extends BaseOpValidation {
 
     @Test
     public void testPermute(){
-        INDArray in = Nd4j.linspace(1, 60, 60, DataType.INT).reshape(3,4,5);
+        INDArray in = Nd4j.linspace(1, 60, 60).reshape(3,4,5);
         INDArray exp = in.permute(0,1,2);   //No op
 
         assertEquals(in, exp);
@@ -993,7 +993,7 @@ public class ShapeOpValidation extends BaseOpValidation {
     @Test
     public void testPermute2(){
         for (int[] perm : new int[][]{{0, 1, 2}, {0, 2, 1}, {1, 0, 2}, {1, 2, 0}, {2, 0, 1}, {2, 1, 0}}) {
-            INDArray in = Nd4j.linspace(1, 60, 60, DataType.INT).reshape(3,4,5);
+            INDArray in = Nd4j.linspace(1, 60, 60).reshape(3,4,5);
             INDArray exp = in.permute(perm);
 
             int[] outShape = new int[3];
@@ -1380,7 +1380,7 @@ public class ShapeOpValidation extends BaseOpValidation {
             SDVariable[] arr = new SDVariable[rank];
             List<String> names = new ArrayList<>();
             for( int i=0; i<rank; i++ ){
-                INDArray in = Nd4j.linspace(1,3+i, 3+i, DataType.INT).reshape(3+i).castTo(DataType.DOUBLE);
+                INDArray in = Nd4j.linspace(1,3+i, 3+i).reshape(3+i).castTo(DataType.DOUBLE);
                 arr[i] = sd.var("in"+i, in);
                 names.add("meshgrid-" + i);
             }
@@ -1433,7 +1433,7 @@ public class ShapeOpValidation extends BaseOpValidation {
         List<Integer> axis = new ArrayList<>();
         List<INDArray> indices = new ArrayList<>();
 
-        inArrs.add(Nd4j.linspace(1,48,48, DataType.INT).reshape(2,4,3,2));
+        inArrs.add(Nd4j.linspace(1,48,48).reshape(2,4,3,2));
         indices.add(Nd4j.create(new double[]{1,0}).castTo(DataType.INT));
         axis.add(-2);
 
@@ -1509,7 +1509,7 @@ public class ShapeOpValidation extends BaseOpValidation {
     @Test
     public void testGatherNdSingle() {
         SameDiff sameDiff = SameDiff.create();
-        INDArray arr1 = Transforms.sigmoid(Nd4j.linspace(1, 24, 24, DataType.INT)).reshape(2, 3, 4);
+        INDArray arr1 = Transforms.sigmoid(Nd4j.linspace(1, 24, 24)).reshape(2, 3, 4);
         INDArray arr2 = Nd4j.create(new float[]{1, 2, 3, 0, 1, 3, 1, 0, 2}, new long[]{3, 3}).castTo(DataType.INT);
         SDVariable x = sameDiff.var("x", arr1);
         SDVariable idxs = sameDiff.var("idxs", arr2);
@@ -1529,8 +1529,8 @@ public class ShapeOpValidation extends BaseOpValidation {
     @Test
     public void testStack2() {
         SameDiff sameDiff = SameDiff.create();
-        INDArray arr1 = Transforms.sigmoid(Nd4j.linspace(1, 6, 6, DataType.INT)).reshape(3, 2);
-        INDArray arr2 = Transforms.sigmoid(Nd4j.linspace(7, 12, 6, DataType.INT)).reshape(3, 2);
+        INDArray arr1 = Transforms.sigmoid(Nd4j.linspace(1, 6, 6)).reshape(3, 2);
+        INDArray arr2 = Transforms.sigmoid(Nd4j.linspace(7, 12, 6)).reshape(3, 2);
         SDVariable x1 = sameDiff.var("x1", arr1);
         SDVariable x2 = sameDiff.var("x2", arr2);
         SDVariable result = sameDiff.stack(1, x1, x2);
@@ -1540,8 +1540,8 @@ public class ShapeOpValidation extends BaseOpValidation {
     @Test
     public void testParallelStack() {
         SameDiff sameDiff = SameDiff.create();
-        INDArray arr1 = Transforms.sigmoid(Nd4j.linspace(1, 6, 6, DataType.INT)).reshape(3, 2);
-        INDArray arr2 = Transforms.sigmoid(Nd4j.linspace(7, 12, 6, DataType.INT)).reshape(3, 2);
+        INDArray arr1 = Transforms.sigmoid(Nd4j.linspace(1, 6, 6)).reshape(3, 2);
+        INDArray arr2 = Transforms.sigmoid(Nd4j.linspace(7, 12, 6)).reshape(3, 2);
         SDVariable x1 = sameDiff.var("x1", arr1);
         SDVariable x2 = sameDiff.var("x2", arr2);
         SDVariable result = sameDiff.parallel_stack(new SDVariable[]{x1, x2});
@@ -1565,7 +1565,7 @@ public class ShapeOpValidation extends BaseOpValidation {
     @Test
     public void testPermuteSimple() {
         SameDiff sameDiff = SameDiff.create();
-        INDArray arr = Transforms.sigmoid(Nd4j.linspace(1, 6, 6, DataType.INT).reshape(2, 3));
+        INDArray arr = Transforms.sigmoid(Nd4j.linspace(1, 6, 6).reshape(2, 3));
         SDVariable x = sameDiff.var("x", arr);
         SDVariable result = sameDiff.permute(x, 1, 0);
         sameDiff.execAll(null);
@@ -1576,8 +1576,8 @@ public class ShapeOpValidation extends BaseOpValidation {
     @Test
     public void testConcat2() {
         SameDiff sameDiff = SameDiff.create();
-        INDArray arr1 = Transforms.sigmoid(Nd4j.linspace(1, 4, 4, DataType.INT)).reshape(1,4);
-        INDArray arr2 = Transforms.sigmoid(Nd4j.linspace(4, 8, 4, DataType.INT)).reshape(1,4);
+        INDArray arr1 = Transforms.sigmoid(Nd4j.linspace(1, 4, 4)).reshape(1,4);
+        INDArray arr2 = Transforms.sigmoid(Nd4j.linspace(4, 8, 4)).reshape(1,4);
         SDVariable x1 = sameDiff.var("x1", arr1);
         SDVariable x2 = sameDiff.var("x2", arr2);
         SDVariable result = sameDiff.concat(0, x1, x2);
@@ -1614,7 +1614,7 @@ public class ShapeOpValidation extends BaseOpValidation {
 
     @Test
     public void testSlice2d() {
-        INDArray inArr = Nd4j.linspace(1, 12, 12, DataType.INT).reshape('c', 3, 4);
+        INDArray inArr = Nd4j.linspace(1, 12, 12).reshape('c', 3, 4);
 
         SameDiff sd = SameDiff.create();
         SDVariable in = sd.var("in", inArr);
@@ -1630,7 +1630,7 @@ public class ShapeOpValidation extends BaseOpValidation {
 
     @Test
     public void testSlice3d() {
-        INDArray inArr = Nd4j.linspace(1, 60, 60, DataType.INT).reshape('c', 3, 4, 5);
+        INDArray inArr = Nd4j.linspace(1, 60, 60).reshape('c', 3, 4, 5);
 
         SameDiff sd = SameDiff.create();
         SDVariable in = sd.var("in", inArr);
@@ -1645,7 +1645,7 @@ public class ShapeOpValidation extends BaseOpValidation {
 
     @Test
     public void testStridedSlice2dBasic() {
-        INDArray inArr = Nd4j.linspace(1, 12, 12, DataType.INT).reshape('c', 3, 4);
+        INDArray inArr = Nd4j.linspace(1, 12, 12).reshape('c', 3, 4);
 
         SameDiff sd = SameDiff.create();
         SDVariable in = sd.var("in", inArr);
@@ -1663,7 +1663,7 @@ public class ShapeOpValidation extends BaseOpValidation {
 
     @Test
     public void testStridedSliceBeginEndMask() {
-        INDArray inArr = Nd4j.linspace(1, 12, 12, DataType.INT).reshape('c', 3, 4);
+        INDArray inArr = Nd4j.linspace(1, 12, 12).reshape('c', 3, 4);
 
         SameDiff sd = SameDiff.create();
         SDVariable in = sd.var("in", inArr);
@@ -1678,7 +1678,7 @@ public class ShapeOpValidation extends BaseOpValidation {
 
     @Test
     public void testStridedSliceEllipsisMask() {
-        INDArray inArr = Nd4j.linspace(1, 60, 60, DataType.INT).reshape('c', 3, 4, 5);
+        INDArray inArr = Nd4j.linspace(1, 60, 60).reshape('c', 3, 4, 5);
         SameDiff sd = SameDiff.create();
         SDVariable in = sd.var("in", inArr);
 
@@ -1695,7 +1695,7 @@ public class ShapeOpValidation extends BaseOpValidation {
 
     @Test
     public void testStridedSliceNewAxisMask() {
-        INDArray inArr = Nd4j.linspace(1, 60, 60, DataType.INT).reshape('c', 3, 4, 5);
+        INDArray inArr = Nd4j.linspace(1, 60, 60).reshape('c', 3, 4, 5);
         SameDiff sd = SameDiff.create();
         SDVariable in = sd.var("in", inArr);
         SDVariable slice = sd.stridedSlice(in, new int[]{-999, 0, 0, 0}, new int[]{-999, 3, 4, 5}, new int[]{-999, 1, 1, 1}, 0, 0, 0, 1, 0);
@@ -1708,7 +1708,7 @@ public class ShapeOpValidation extends BaseOpValidation {
 
     @Test
     public void testStridedSliceNewAxisMask2() {
-        INDArray inArr = Nd4j.linspace(1, 60, 60, DataType.INT).reshape('c', 3, 4, 5);
+        INDArray inArr = Nd4j.linspace(1, 60, 60).reshape('c', 3, 4, 5);
         SameDiff sd = SameDiff.create();
         SDVariable in = sd.var("in", inArr);
         SDVariable slice = sd.stridedSlice(in, new int[]{1, 1, -999, 1}, new int[]{3, 3, -999, 4}, new int[]{1, 1, -999, 1}, 0, 0, 0, 1 << 2, 0);
@@ -1720,7 +1720,7 @@ public class ShapeOpValidation extends BaseOpValidation {
     @Test
     public void testStridedSliceShrinkAxisMask() {
 
-        INDArray inArr = Nd4j.linspace(1, 60, 60, DataType.INT).reshape('c', 3, 4, 5);
+        INDArray inArr = Nd4j.linspace(1, 60, 60).reshape('c', 3, 4, 5);
         SameDiff sd = SameDiff.create();
         SDVariable in = sd.var("in", inArr);
         SDVariable slice = sd.stridedSlice(in, new int[]{0, 0, 0}, new int[]{-999, 4, 5}, new int[]{1, 1, 1}, 0, 0, 0, 0, 1);
@@ -1788,7 +1788,7 @@ public class ShapeOpValidation extends BaseOpValidation {
 
     @Test
     public void testSplit1(){
-        INDArray in = Nd4j.linspace(1,10,10, DataType.INT).reshape(10);
+        INDArray in = Nd4j.linspace(1,10,10).reshape(10);
         INDArray axis = Nd4j.trueScalar(-1);
 
         INDArray out1 = Nd4j.create(new long[]{5});
@@ -1806,7 +1806,7 @@ public class ShapeOpValidation extends BaseOpValidation {
 
     @Test
     public void testSplit2(){
-        INDArray in = Nd4j.linspace(1,24,24, DataType.INT).reshape(3,8);
+        INDArray in = Nd4j.linspace(1,24,24).reshape(3,8);
         INDArray axis = Nd4j.trueScalar(-1);
 
         INDArray out1 = Nd4j.create(new long[]{3,4});

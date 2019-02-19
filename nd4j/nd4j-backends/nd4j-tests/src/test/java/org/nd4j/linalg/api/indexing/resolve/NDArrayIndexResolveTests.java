@@ -43,7 +43,7 @@ public class NDArrayIndexResolveTests extends BaseNd4jTest {
 
     @Test
     public void testResolvePoint() {
-        INDArray arr = Nd4j.linspace(1, 4, 4, DataType.INT).reshape(2, 2);
+        INDArray arr = Nd4j.linspace(1, 4, 4).reshape(2, 2);
         INDArrayIndex[] test = NDArrayIndex.resolve(arr.shape(), NDArrayIndex.point(1));
         INDArrayIndex[] assertion = {NDArrayIndex.point(1), NDArrayIndex.all()};
         assertArrayEquals(assertion, test);
@@ -58,7 +58,7 @@ public class NDArrayIndexResolveTests extends BaseNd4jTest {
 
     @Test
     public void testResolvePointVector() {
-        INDArray arr = Nd4j.linspace(1, 4, 4, DataType.INT);
+        INDArray arr = Nd4j.linspace(1, 4, 4);
         INDArrayIndex[] getPoint = {NDArrayIndex.point(1)};
         INDArrayIndex[] resolved = NDArrayIndex.resolve(arr.shape(), getPoint);
         if (getPoint.length == resolved.length)
