@@ -64,7 +64,7 @@ namespace helpers {
 //#pragma omp parallel for schedule(static)
             for (Nd4jLong i = 1; i < indices->lengthOf(); i++) {
                 if (indices->e<int>(i) == idx) {
-#pragma omp parallel for schedule(static)
+//#pragma omp parallel for schedule(static)
                     for (Nd4jLong e = 0; e < maxT->lengthOf(); e++) {
                        maxT->t<T>(e) = nd4j::math::nd4j_max(maxT->t<T>(e), listOfTensors->at(i)->t<T>(e));
                     }
@@ -120,7 +120,7 @@ namespace helpers {
 //#pragma omp parallel for schedule(dynamic)
             for (Nd4jLong i = 1; i < indices->lengthOf(); i++) {
                 if (indices->e<T>(i) == idx) {
-#pragma omp parallel for schedule(static)
+//#pragma omp parallel for schedule(static)
                     for (int e = 0; e < minT->lengthOf(); e++) {
                        minT->p(e, nd4j::math::nd4j_min(minT->e<T>(e), listOfTensors->at(i)->e<T>(e)));
                     }
@@ -210,11 +210,11 @@ namespace helpers {
             for (int e = 0; e < indices->lengthOf(); e++) {
                 if (idx == indices->e<int>(e)) {
                    // sum 
-                   val += input->e<T>(e);
+                   val += input->t<T>(e);
                 }
                 else {
                     idx = indices->e<int>(e);
-                    val = input->e<T>(e);
+                    val = input->t<T>(e);
                 }
                 output->p(idx, val);
             }
@@ -236,7 +236,7 @@ namespace helpers {
                 if (indices->e<int>(i) == idx) {
 #pragma omp parallel for schedule(static)
                     for (int e = 0; e < sumT->lengthOf(); e++) {
-                       sumT->p(e, sumT->e<T>(e) +listOfTensors->at(i)->e<T>(e));
+                       sumT->p(e, sumT->e<T>(e) + listOfTensors->at(i)->e<T>(e));
                     }
                 }
                 else {
@@ -259,6 +259,7 @@ namespace helpers {
         if (input->isVector()) {
             T val = input->e<T>(0);
             int count = 0;
+//#pragma omp parallel for //reduction(* : val) schedule(static)
             for (int e = 1; e < indices->lengthOf(); e++) {
                 if (idx == indices->e<int>(e)) {
                    // sum 
@@ -301,18 +302,9 @@ namespace helpers {
         }
     }
 
-    template <typename T>
-    static bool segmentIndicesValidate_(NDArray* indices, NDArray& aexpected, NDArray& aoutput) {
-            T val = indices->e<T>(0);
-            for (int e = 1; e < indices->lengthOf(); e++) {
-                aoutput.p<T>(Nd4jLong(0), indices->e<T>(e));
-                if (val > aoutput.e<T>(0))
-                    return false;
-                val = indices->e<T>(e);
-            }
-
-            return true;
-    }
+//    template <typename T>
+//    static bool segmentIndicesValidate_(NDArray* indices, NDArray& aexpected, NDArray& anOutput) {
+//      }
 
     void segmentMaxFunctor(NDArray* input, NDArray* indices, NDArray* output) {
         BUILD_SINGLE_SELECTOR(input->dataType(), segmentMaxFunctor_, (input, indices, output), LIBND4J_TYPES);
@@ -335,10 +327,18 @@ namespace helpers {
     }
 
     bool segmentIndicesValidate(NDArray* indices, NDArray& expected, NDArray& output) {
-        BUILD_SINGLE_SELECTOR(output.dataType(), return segmentIndicesValidate_, (indices, expected, output), LIBND4J_TYPES);
+        auto val = indices->e(0);
+        for (int e = 1; e < indices->lengthOf(); e++) {
+            output = indices->e(e);
+            if (val.e<Nd4jLong>(0) > output.e<Nd4jLong>(0))
+                return false;
+            val = indices->e(e);
+        }
+
+        return true;
     }
 
-    BUILD_SINGLE_TEMPLATE(template bool segmentIndicesValidate_, (NDArray*, NDArray&, NDArray&), LIBND4J_TYPES);
+    //BUILD_SINGLE_TEMPLATE(template bool segmentIndicesValidate_, (NDArray*, NDArray&, NDArray&), LIBND4J_TYPES);
     BUILD_SINGLE_TEMPLATE(template void segmentProdFunctor_, (NDArray* input, NDArray* indices, NDArray* output), LIBND4J_TYPES);
     BUILD_SINGLE_TEMPLATE(template void segmentSumFunctor_, (NDArray* input, NDArray* indices, NDArray* output), LIBND4J_TYPES);
     BUILD_SINGLE_TEMPLATE(template void segmentMeanFunctor_, (NDArray* input, NDArray* indices, NDArray* output), LIBND4J_TYPES);
@@ -435,12 +435,12 @@ namespace helpers {
             output->assign(maxVal);
 //#pragma omp parallel for schedule(static)
             for (auto fi = idxs.begin(); fi != idxs.end(); ++fi) {
-                T val = input->e<T>(fi->second.at(0));
-#pragma omp parallel for schedule(static)
-                for (Nd4jLong idx = 1; idx < fi->second.size(); ++idx) {
-                    val = nd4j::math::nd4j_min(val, input->e<T>(fi->second.at(idx)));
+                T val = input->t<T>(fi->second.at(0));
+//#pragma omp parallel for schedule(static)
+                for (size_t idx = 1; idx < fi->second.size(); ++idx) {
+                    val = nd4j::math::nd4j_min(val, input->t<T>(fi->second.at(idx)));
                 }
-                output->p(fi->first, val);
+                output->t<T>(fi->first) = val;
             }
         }
         else {
@@ -464,11 +464,9 @@ namespace helpers {
                 outputT->assign(listOfTensors->at(fi->second.at(0)));
                 for (Nd4jLong idx = 1; idx < fi->second.size(); ++idx) {
                     auto minT = listOfTensors->at(fi->second.at(idx));
-#pragma omp parallel for schedule(static)
+//#pragma omp parallel for schedule(guided)
                     for (Nd4jLong e = 0; e < outputT->lengthOf(); ++e) {
-                        T val = nd4j::math::nd4j_min(minT->e<T>(e), outputT->e<T>(e));
-
-                        outputT->t<T>(e) = val;
+                        outputT->t<T>(e) = nd4j::math::nd4j_min(minT->t<T>(e), outputT->t<T>(e));
                     }
                 }
                 //outputT->assign(maxT);
@@ -948,8 +946,8 @@ namespace helpers {
 #pragma omp parallel for schedule(static)
             for (Nd4jLong e = 0; e < input->lengthOf(); ++e) {
                 Nd4jLong classNum = indices->e<Nd4jLong>(e);
-                if (nd4j::math::nd4j_abs(tempRes->e<double>(classNum) - input->e<double>(e)) < 1.e-5)
-                    output->p(e, gradOut->e<T>(classNum));
+                if (nd4j::math::nd4j_abs(tempRes->t<T>(classNum) - input->t<T>(e)) < 1.e-6)
+                    output->t<T>(e) = gradOut->t<T>(classNum);
             }
         }
         else {
@@ -975,8 +973,8 @@ namespace helpers {
                 NDArray* currentGradOut = listOfGradOuts->at(classNum);
 
                 for (int e = 0; e < current->lengthOf(); e++) {
-                    if (nd4j::math::nd4j_abs(listOfBPTensors->at(classNum)->e<double>(e) - current->e<double>(e)) < 1.e-5)
-                        currentOut->p(e, currentGradOut->e<T>(e));
+                    if (nd4j::math::nd4j_abs(listOfBPTensors->at(classNum)->t<T>(e) - current->t<T>(e)) < 1.e-6)
+                        currentOut->t<T>(e) = currentGradOut->t<T>(e);
                 }
             }
         }
