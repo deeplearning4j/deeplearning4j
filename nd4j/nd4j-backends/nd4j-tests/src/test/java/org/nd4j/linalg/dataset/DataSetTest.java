@@ -752,8 +752,18 @@ public class DataSetTest extends BaseNd4jTest {
         }
         int labels = shape[0] * nLabels;
 
-        INDArray ds_data = Nd4j.linspace(1, entries, entries).reshape(shape);
-        INDArray ds_labels = Nd4j.linspace(1, labels, labels).reshape(shape[0], nLabels);
+        INDArray ds_data = Nd4j.linspace(1, entries, entries, DataType.DOUBLE).reshape(shape);
+        INDArray ds_labels = Nd4j.linspace(1, labels, labels, DataType.DOUBLE).reshape(shape[0], nLabels);
+
+        val d = ds_data.data().asFloat();
+        for (int e = 0; e < d.length; e++) {
+            assertEquals((double) (e+1), d[e], 1e-5);
+        }
+
+        val l = ds_labels.data().asFloat();
+        for (int e = 0; e < l.length; e++) {
+            assertEquals((double) (e+1), l[e], 1e-5);
+        }
 
         DataSet ds = new DataSet(ds_data, ds_labels);
         ds.shuffle();
