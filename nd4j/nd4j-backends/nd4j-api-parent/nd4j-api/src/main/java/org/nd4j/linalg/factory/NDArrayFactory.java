@@ -129,27 +129,6 @@ public interface NDArrayFactory {
     DataType dtype();
 
     /**
-     * Generate a linearly spaced vector
-     *
-     * @param lower upper bound
-     * @param upper lower bound
-     * @param num   number of items in resulting vector
-     * @return the linearly spaced vector
-     */
-    INDArray linspace(int lower, int upper, int num, DataType dataType);
-
-    /**
-     * Generate a linearly spaced vector
-     *
-     * @param lower upper bound
-     * @param num   number of items in resulting vector
-     * @param step the step size
-     * @return the linearly spaced vector
-     */
-    INDArray linspace(int lower, int num, DataType dataType, int step);
-
-
-    /**
      * /**
      * Returns a flattened ndarray with all of the elements in each ndarray
      * regardless of dimension

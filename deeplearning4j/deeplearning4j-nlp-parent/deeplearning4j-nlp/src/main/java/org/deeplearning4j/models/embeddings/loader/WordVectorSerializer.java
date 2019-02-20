@@ -2675,9 +2675,12 @@ public class WordVectorSerializer {
     public static WordVectors loadStaticModel(InputStream inputStream) throws IOException {
 
         File tmpFile = DL4JFileUtils.createTempFile("word2vec"+System.currentTimeMillis(), "tmp");
-        tmpFile.deleteOnExit();
         FileUtils.copyInputStreamToFile(inputStream, tmpFile);
-        return loadStaticModel(tmpFile);
+        try {
+            return loadStaticModel(tmpFile);
+        } finally {
+            tmpFile.delete();
+        }
 
     }
 

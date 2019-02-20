@@ -59,7 +59,7 @@ import java.util.*;
 public class Conv1D extends DynamicCustomOp {
 
     protected Conv1DConfig config;
-    private static final String INVALID_CONFIGURATION = "Invalid Conv1D configuration : s = %d p = %d ";
+    private static final String INVALID_CONFIGURATION = "Invalid Conv1D configuration : s = %s p = %s ";
 
     @Builder(builderMethodName = "builder")
     public Conv1D(SameDiff sameDiff,

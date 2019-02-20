@@ -183,59 +183,6 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
         return Nd4j.dataType();
     }
 
-    /**
-     * Generate a linearly spaced vector
-     *
-     * @param lower upper bound
-     * @param upper lower bound
-     * @param num   number of items in returned vector
-     * @return the linearly spaced vector
-     */
-    @Override
-    public INDArray linspace(int lower, int upper, int num, DataType dtype) {
-        double[] data = new double[num];
-        for (int i = 0; i < num; i++) {
-            double t = (double) i / (num - 1);
-            data[i] = lower * (1 - t) + t * upper;
-        }
-
-        //edge case for scalars
-        INDArray ret = Nd4j.createUninitialized(dtype, new long[]{data.length});
-        if (ret.isScalar())
-            return ret;
-
-        for (int i = 0; i < ret.length(); i++)
-            ret.putScalar(i, data[i]);
-        return ret;
-    }
-
-    /**
-     * Generate a linearly spaced vector
-     *
-     * @param lower upper bound
-     * @param num   number of items in resulting vector
-     * @param step the step size
-     * @return the linearly spaced vector
-     */
-    @Override
-    public INDArray linspace(int lower, int step, DataType dtype, int num) {
-        double[] data = new double[num];
-        for (int i = 0; i < num; i++) {
-            double t = (double) i / (num - 1);
-            data[i] = lower * (1 - step) + step * (lower + step * num);
-        }
-
-        //edge case for scalars
-        INDArray ret = Nd4j.createUninitialized(dtype, new long[]{data.length});
-        if (ret.isScalar())
-            return ret;
-
-        for (int i = 0; i < ret.length(); i++)
-            ret.putScalar(i, data[i]);
-        return ret;
-    }
-
-
     @Override
     public INDArray create(int[] ints, int[] ints1, int[] stride, long offset) {
         return create(Nd4j.createBuffer(ints), ints1, stride, offset);

@@ -54,7 +54,7 @@ import java.util.*;
 public class Conv2D extends DynamicCustomOp {
 
     protected Conv2DConfig config;
-    private static final String INVALID_CONFIGURATION = "Invalid Conv2D configuration : sW = %d pH = %d dW = %d ";
+    private static final String INVALID_CONFIGURATION = "Invalid Conv2D configuration : sW = %s pH = %s dW = %s ";
 
     @Builder(builderMethodName = "builder")
     public Conv2D(SameDiff sameDiff,

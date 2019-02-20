@@ -49,7 +49,7 @@ import java.util.*;
 public class Conv3D extends DynamicCustomOp {
 
     protected Conv3DConfig config;
-    private static final String INVALID_CONFIGURATION = "Invalid Conv3D configuration : sW = %d pH = %d dW = %d ";
+    private static final String INVALID_CONFIGURATION = "Invalid Conv3D configuration : sW = %s pH = %s dW = %s ";
 
     public Conv3D() {
     }
