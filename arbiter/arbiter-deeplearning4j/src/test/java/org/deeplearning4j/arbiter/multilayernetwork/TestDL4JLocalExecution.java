@@ -53,12 +53,15 @@ import org.deeplearning4j.earlystopping.termination.MaxEpochsTerminationConditio
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
+import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.nd4j.linalg.activations.Activation;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import java.io.File;
@@ -75,6 +78,11 @@ public class TestDL4JLocalExecution {
 
     @Rule
     public TemporaryFolder testDir = new TemporaryFolder();
+
+    @BeforeClass
+    public static void before(){
+        Nd4j.setDefaultDataTypes(DataType.FLOAT, DataType.FLOAT);
+    }
 
     @Test
     public void testLocalExecution() throws Exception {
