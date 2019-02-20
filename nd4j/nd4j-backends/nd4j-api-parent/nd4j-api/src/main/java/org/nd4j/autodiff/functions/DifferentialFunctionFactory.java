@@ -170,9 +170,9 @@ public class DifferentialFunctionFactory {
         return new ZerosLike(name, sameDiff(), input).outputVariable();
     }
 
-    public SDVariable onesLike(String name, SDVariable input) {
+    public SDVariable onesLike(String name, SDVariable input, DataType dataType) {
         validateDifferentialFunctionsameDiff(input);
-        return new OnesLike(name, sameDiff(), input).outputVariable();
+        return new OnesLike(name, sameDiff(), input, dataType).outputVariable();
     }
 
     public SDVariable constant(SDVariable input, long... shape) {
@@ -187,8 +187,8 @@ public class DifferentialFunctionFactory {
         return new org.nd4j.linalg.api.ops.impl.shape.Linspace(sameDiff(), lower, upper, count, dt).outputVariable();
     }
 
-    public SDVariable range(double from, double to, double step) {
-        return new Range(sameDiff(), from, to, step).outputVariable();
+    public SDVariable range(double from, double to, double step, DataType dataType) {
+        return new Range(sameDiff(), from, to, step, dataType).outputVariable();
     }
 
     public SDVariable cast(SDVariable toCast, DataType toType){
@@ -429,6 +429,16 @@ public class DifferentialFunctionFactory {
                 .build();
 
         return deconv2D.outputVariable();
+    }
+
+    public SDVariable deconv3d(SDVariable input, SDVariable weights, SDVariable bias, DeConv3DConfig config) {
+        DeConv3D d = new DeConv3D(sameDiff(), input, weights, bias, config);
+        return d.outputVariable();
+    }
+
+    public SDVariable[] deconv3dDerivative(SDVariable input, SDVariable weights, SDVariable bias, SDVariable grad, DeConv3DConfig config) {
+        DeConv3DDerivative d = new DeConv3DDerivative(sameDiff(), input, weights, bias, grad, config);
+        return d.outputVariables();
     }
 
     /**
@@ -1123,6 +1133,13 @@ public class DifferentialFunctionFactory {
         return new SwishDerivative(sameDiff(), iX, false).outputVariable();
     }
 
+    public SDVariable gelu(SDVariable iX, boolean precise) {
+        return new GELU(sameDiff(), iX, false, precise).outputVariable();
+    }
+
+    public SDVariable geluDerivative(SDVariable iX, boolean precise) {
+        return new GELUDerivative(sameDiff(), iX, false, precise).outputVariable();
+    }
 
     public SDVariable sign(SDVariable iX) {
         return new Sign(sameDiff(), iX, false).outputVariable();
@@ -1137,8 +1154,8 @@ public class DifferentialFunctionFactory {
         return new Squeeze(sameDiff(), iX, axis).outputVariable();
     }
 
-    public SDVariable confusionMatrix(SDVariable labels, SDVariable pred) {
-        return new ConfusionMatrix(sameDiff(), labels, pred).outputVariable();
+    public SDVariable confusionMatrix(SDVariable labels, SDVariable pred, DataType dataType) {
+        return new ConfusionMatrix(sameDiff(), labels, pred, dataType).outputVariable();
     }
 
     public SDVariable confusionMatrix(SDVariable labels, SDVariable pred, Integer numClasses) {
@@ -1169,8 +1186,8 @@ public class DifferentialFunctionFactory {
         return new Broadcast(sameDiff(), iX, shape).outputVariable();
     }
 
-    public SDVariable onehot(SDVariable indices, int depth, int axis, double on, double off) {
-        return new OneHot(sameDiff(), indices, depth, axis, on, off).outputVariable();
+    public SDVariable onehot(SDVariable indices, int depth, int axis, double on, double off, DataType dataType) {
+        return new OneHot(sameDiff(), indices, depth, axis, on, off, dataType).outputVariable();
     }
 
     public SDVariable onehot(SDVariable indices, int depth) {
@@ -1276,16 +1293,16 @@ public class DifferentialFunctionFactory {
         return new ReverseSequence(sameDiff(), x, seq_lengths).outputVariable();
     }
 
-    public SDVariable sequenceMask(SDVariable lengths, SDVariable maxLen) {
-        return new SequenceMask(sameDiff(), lengths, maxLen).outputVariable();
+    public SDVariable sequenceMask(SDVariable lengths, SDVariable maxLen, DataType dataType) {
+        return new SequenceMask(sameDiff(), lengths, maxLen, dataType).outputVariable();
     }
 
-    public SDVariable sequenceMask(SDVariable lengths, int maxLen) {
-        return new SequenceMask(sameDiff(), lengths, maxLen).outputVariable();
+    public SDVariable sequenceMask(SDVariable lengths, int maxLen, DataType dataType) {
+        return new SequenceMask(sameDiff(), lengths, maxLen, dataType).outputVariable();
     }
 
-    public SDVariable sequenceMask(SDVariable lengths) {
-        return new SequenceMask(sameDiff(), lengths).outputVariable();
+    public SDVariable sequenceMask(SDVariable lengths, DataType dataType) {
+        return new SequenceMask(sameDiff(), lengths, dataType).outputVariable();
     }
 
     public SDVariable concat(int dimension, SDVariable... inputs) {
@@ -1366,6 +1383,10 @@ public class DifferentialFunctionFactory {
         return new HuberLoss(sameDiff(), lossReduce, predictions, weights, label, delta).outputVariable();
     }
 
+    public SDVariable[] lossHuberBp(SDVariable label, SDVariable predictions, SDVariable weights, LossReduce lossReduce, double delta){
+        return new HuberLossBp(sameDiff(), lossReduce, predictions, weights, label, delta).outputVariables();
+    }
+
     public SDVariable lossLog(SDVariable label, SDVariable predictions, SDVariable weights, LossReduce lossReduce, double epsilon){
         return new LogLoss(sameDiff(), lossReduce, predictions, weights, label, epsilon).outputVariable();
     }
@@ -1374,8 +1395,28 @@ public class DifferentialFunctionFactory {
         return new LogLossBp(sameDiff(), lossReduce, predictions, weights, label, epsilon).outputVariables();
     }
 
-    public SDVariable lossMeanPairwiseSquaredError(SDVariable label, SDVariable predictions, SDVariable weights){
-        return new MeanPairwiseSquaredErrorLoss(sameDiff(), predictions, weights, label).outputVariable();
+    public SDVariable lossLogPoisson(SDVariable label, SDVariable predictions, SDVariable weights, LossReduce lossReduce){
+        return new LogPoissonLoss(sameDiff(), lossReduce, predictions, weights, label).outputVariable();
+    }
+
+    public SDVariable[] lossLogPoissonBp(SDVariable label, SDVariable predictions, SDVariable weights, LossReduce lossReduce){
+        return new LogPoissonLossBp(sameDiff(), lossReduce, predictions, weights, label).outputVariables();
+    }
+
+    public SDVariable lossLogPoissonFull(SDVariable label, SDVariable predictions, SDVariable weights, LossReduce lossReduce){
+        return new LogPoissonLoss(sameDiff(), lossReduce, predictions, weights, label, true).outputVariable();
+    }
+
+    public SDVariable[] lossLogPoissonFullBp(SDVariable label, SDVariable predictions, SDVariable weights, LossReduce lossReduce){
+        return new LogPoissonLossBp(sameDiff(), lossReduce, predictions, weights, label, true).outputVariables();
+    }
+
+    public SDVariable lossMeanPairwiseSquaredError(SDVariable label, SDVariable predictions, SDVariable weights, LossReduce lossReduce){
+        return new MeanPairwiseSquaredErrorLoss(sameDiff(), lossReduce, predictions, weights, label).outputVariable();
+    }
+
+    public SDVariable[] lossMeanPairwiseSquaredErrorBp(SDVariable label, SDVariable predictions, SDVariable weights, LossReduce lossReduce){
+        return new MeanPairwiseSquaredErrorLossBp(sameDiff(), lossReduce, predictions, weights, label).outputVariables();
     }
 
     public SDVariable lossMeanSquaredError(SDVariable label, SDVariable predictions, SDVariable weights, LossReduce lossReduce){

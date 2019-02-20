@@ -47,9 +47,7 @@ import org.nd4j.linalg.util.ArrayUtil;
 
 import java.util.*;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
+import static org.junit.Assert.*;
 import static org.nd4j.linalg.indexing.NDArrayIndex.*;
 
 @Slf4j
@@ -507,21 +505,21 @@ public class ShapeOpValidation extends BaseOpValidation {
                     switch (t) {
                         case 0:
                             name = "mergeAdd";
-                            merge = sd.mergeAdd(arr);
+                            merge = sd.math().mergeAdd(arr);
                             for( int i=1; i<numArrays; i++ ){
                                 exp.addi(arr[i].getArr().dup());
                             }
                             break;
                         case 1:
                             name = "mergeMax";
-                            merge = sd.mergeMax(arr);
+                            merge = sd.math().mergeMax(arr);
                             for( int i=1; i<numArrays; i++ ){
                                 exp = Transforms.max(exp, arr[i].getArr(), true);
                             }
                             break;
                         case 2:
                             name = "mergeAvg";
-                            merge = sd.mergeAvg(arr);
+                            merge = sd.math().mergeAvg(arr);
                             for( int i=1; i<numArrays; i++ ){
                                 exp.addi(arr[i].getArr().dup());
                             }
@@ -700,7 +698,7 @@ public class ShapeOpValidation extends BaseOpValidation {
                     }
 
                     //for gradient check, need to combine to single scalar output...
-                    SDVariable merged = sd.mergeAvg(unstacked);
+                    SDVariable merged = sd.math().mergeAvg(unstacked);
 
                     if (ArrayUtil.prodLong(stackedShape) == 1 || ArrayUtil.prodLong(shape) == 1) {
                         SDVariable loss = sd.sum("loss", merged);
@@ -1353,7 +1351,7 @@ public class ShapeOpValidation extends BaseOpValidation {
                         1, 1, 1, 0, 0,
                         1, 1, 0, 0, 0},
                 new long[]{3, 5});
-        SDVariable result1 = sameDiff.sequenceMask(lengths, maxlen);
+        SDVariable result1 = sameDiff.sequenceMask(lengths, maxlen, DataType.FLOAT);
         assertArrayEquals(expected.shape(), result1.eval().shape());
         assertEquals(expected, result1.eval());
 
@@ -1367,7 +1365,7 @@ public class ShapeOpValidation extends BaseOpValidation {
         // Test with dynamic maxlen
         lengths = sameDiff.var("lengths2", arr); // required because of an internal samediff bug
         SDVariable maxLen = sameDiff.var("maxLen", Nd4j.create(new float[]{5}).reshape(1));
-        SDVariable result2 = sameDiff.sequenceMask(lengths, maxLen);
+        SDVariable result2 = sameDiff.sequenceMask(lengths, maxLen, DataType.FLOAT);
         assertArrayEquals(expected.shape(), result2.eval().shape());
         assertEquals(expected, result2.eval());
     }
@@ -1387,7 +1385,7 @@ public class ShapeOpValidation extends BaseOpValidation {
                 names.add("meshgrid-" + i);
             }
 
-            SDVariable[] meshgrid = sd.meshgrid(names, false, arr);
+            SDVariable[] meshgrid = sd.math().meshgrid(names, false, arr);
 
             TestCase tc = new TestCase(sd);
 
@@ -1852,19 +1850,19 @@ public class ShapeOpValidation extends BaseOpValidation {
             SDVariable dist;
             switch (s){
                 case "euclidean":
-                    dist = sd.euclideanDistance(s, ySd, xSd, 0);
+                    dist = sd.math().euclideanDistance(s, ySd, xSd, 0);
                     break;
                 case "manhattan":
-                    dist = sd.manhattanDistance(s, ySd, xSd, 0);
+                    dist = sd.math().manhattanDistance(s, ySd, xSd, 0);
                     break;
                 case "cosinesim":
-                    dist = sd.cosineSimilarity(s, ySd, xSd, 0);
+                    dist = sd.math().cosineSimilarity(s, ySd, xSd, 0);
                     break;
                 case "cosinedist":
-                    dist = sd.cosineDistance(s, ySd, xSd, 0);
+                    dist = sd.math().cosineDistance(s, ySd, xSd, 0);
                     break;
                 case "jaccard":
-                    dist = sd.jaccardDistance(s, ySd, xSd, 0);
+                    dist = sd.math().jaccardDistance(s, ySd, xSd, 0);
                     break;
                 default:
                     throw new RuntimeException();
@@ -1914,5 +1912,219 @@ public class ShapeOpValidation extends BaseOpValidation {
         long[] shape = shapeList.get(0).getShape();
         long[] expShape = new long[]{1,5};
         assertArrayEquals(expShape, shape);     //Fails: actual shape: [5]
+    }
+
+    @Test
+    public void testSliceShape(){
+
+        INDArray arr = Nd4j.arange(0, 25).reshape(1,5,5).castTo(DataType.INT);
+        System.out.println(Arrays.toString(arr.shape()));
+        System.out.println(arr);
+
+        INDArray begin = Nd4j.createFromArray(0, 1, 2);
+        INDArray size = Nd4j.createFromArray(-1, -1, -1);
+
+        DynamicCustomOp op = DynamicCustomOp.builder("slice")
+                .addInputs(arr, begin, size)
+                .build();
+
+        List<LongShapeDescriptor> l = op.calculateOutputShape();
+        long[] shape = l.get(0).getShape();
+        long[] shapeExp = new long[]{1,4,3};
+
+        assertArrayEquals(shapeExp, shape);
+    }
+
+    @Test
+    public void testWhereAllFalse(){
+        INDArray in = Nd4j.create(DataType.BOOL, 1917);
+        DynamicCustomOp op = DynamicCustomOp.builder("Where")
+                .addInputs(in)
+                .addOutputs(Nd4j.empty(DataType.LONG))
+                .build();
+        List<LongShapeDescriptor> l = op.calculateOutputShape();
+        Nd4j.getExecutioner().exec(op);
+        long[] shape = l.get(0).getShape();
+        boolean isEmpty = l.get(0).isEmpty();
+        assertTrue(isEmpty);    //Not empty, but should be
+    }
+
+    @Test
+    public void testGatherScalar(){
+        INDArray in = Nd4j.linspace(100, 200, 100, DataType.FLOAT).reshape(100);
+        INDArray indices = Nd4j.scalar(0);
+        INDArray axis = Nd4j.scalar(0);
+
+        DynamicCustomOp op = DynamicCustomOp.builder("gather")
+                .addInputs(in, indices, axis)
+                .build();
+
+        List<LongShapeDescriptor> l = op.calculateOutputShape();
+        long[] shape = l.get(0).getShape();
+        assertArrayEquals(new long[0], shape);
+
+        INDArray arr = Nd4j.create(l.get(0));
+
+        op.addOutputArgument(arr);
+
+        Nd4j.exec(op);
+
+        INDArray exp = Nd4j.scalar(DataType.FLOAT, 100);
+        assertEquals(exp, arr);
+    }
+
+    @Test
+    public void testCastEmpty(){
+        INDArray emptyLong = Nd4j.empty(DataType.LONG);
+        int dtype = 9;  //INT = 9 - https://github.com/deeplearning4j/deeplearning4j/blob/master/libnd4j/include/array/DataType.h
+        DynamicCustomOp op = DynamicCustomOp.builder("cast")
+                .addInputs(emptyLong)
+                .addIntegerArguments(dtype)
+                .build();
+
+        List<LongShapeDescriptor> l = op.calculateOutputShape();
+        long[] shape = l.get(0).getShape();
+        boolean isEmpty = l.get(0).isEmpty();
+        assertEquals(0, shape.length);
+        assertTrue(isEmpty);
+    }
+
+    @Test
+    public void testGatherEmpty(){
+        /*
+        tf.reset_default_graph()
+        # Hack to create empty array
+        input = tf.constant([False], dtype=tf.bool)
+        empty = tf.where(condition=input)
+        emptyInt = tf.cast(empty, tf.int32)
+        ingather = tf.reshape(tf.range(start=0,limit=100,delta=1,dtype=tf.float32), [25,4])
+        gather = tf.gather(params=ingather, indices=emptyInt)
+        sess = tf.Session()
+        out = sess.run([gather])
+        print(out[0].shape);
+        print(out[0]);
+        >> (0, 1, 4)
+        >> []
+         */
+
+        Nd4j.getExecutioner().enableVerboseMode(true);
+        Nd4j.getExecutioner().enableDebugMode(true);
+
+        INDArray emptyInt = Nd4j.empty(DataType.INT);
+        INDArray inGather = Nd4j.linspace(1,100,100,DataType.FLOAT).reshape(25,4);
+
+        DynamicCustomOp op = DynamicCustomOp.builder("gather")
+                .addInputs(inGather, emptyInt)
+                .build();
+
+        List<LongShapeDescriptor> l = op.calculateOutputShape();
+        long[] shape = l.get(0).getShape();
+        boolean isEmpty = l.get(0).isEmpty();
+        assertTrue(isEmpty);
+        assertArrayEquals(new long[0], shape);
+    }
+
+    @Test
+    public void testSplitEmpty(){
+        /*
+        tf.reset_default_graph()
+        # Hack to create empty array
+        input = tf.constant([False], dtype=tf.bool)
+        empty = tf.where(condition=input)
+        empty = tf.reshape(empty, [0,4])
+        emptyFloat = tf.cast(empty, tf.float32)
+        const1 = tf.constant(1, dtype=tf.int32)
+        split = tf.split(value=emptyFloat, num_or_size_splits=4, axis=1)
+        sess = tf.Session()
+        out = sess.run([split])
+        # print(out[0].shape);
+        print(out[0]);
+         */
+
+        INDArray emptyIn = Nd4j.empty(DataType.FLOAT);
+        INDArray axis = Nd4j.scalar(1);
+
+        DynamicCustomOp op = DynamicCustomOp.builder("split")
+                .addInputs(axis, emptyIn)
+                .addIntegerArguments(4) //num_splits = 4
+                .build();
+
+        List<LongShapeDescriptor> l = op.calculateOutputShape();
+        assertEquals(4, l.size());
+        for( int i=0; i<4; i++ ){
+            assertArrayEquals(new long[0], l.get(i).getShape());
+            assertTrue(l.get(i).isEmpty());
+            op.addOutputArgument(Nd4j.empty(DataType.FLOAT));
+        }
+
+        Nd4j.exec(op);
+    }
+
+    @Test
+    public void testConcatEmpty(){
+        /*
+        TF behaviour with concatenatioun of empty arrays:
+        concat(empty,empty,empty) -> empty
+        cotcat(empty,nonEmpty) -> nonEmpty, etc (i.e., empty arrays are ignored)
+
+        tf.reset_default_graph()
+        # Hack to create empty array
+        input = tf.constant([False], dtype=tf.bool)
+        empty = tf.where(condition=input)
+        emptyFloat = tf.cast(empty, tf.float32)
+        var11 = tf.reshape(tf.constant([1], dtype=tf.float32), shape=[1,1])
+
+        concat = tf.concat(values=[emptyFloat, emptyFloat, var11, emptyFloat], axis=0)
+
+        sess = tf.Session()
+        out = sess.run([concat])
+        print(out[0].shape)
+        print(out[0]);
+         */
+
+        INDArray empty = Nd4j.empty(DataType.FLOAT);
+
+        DynamicCustomOp op = DynamicCustomOp.builder("concat")
+                .addInputs(empty, empty, empty)
+                .addIntegerArguments(0) //axis = 0
+                .build();
+
+        List<LongShapeDescriptor> l = op.calculateOutputShape();
+        assertEquals(1, l.size());
+        assertTrue(l.get(0).isEmpty());
+
+        op.addOutputArgument(empty);
+        Nd4j.exec(op);
+    }
+
+    @Test
+    public void testEmptyGather(){
+        /*
+        tf.reset_default_graph()
+        # Hack to create empty array
+        input = tf.constant([False], dtype=tf.bool)
+        empty = tf.where(condition=input)
+        emptyFloat = tf.cast(empty, tf.float32)
+        emptyInt = tf.cast(empty, tf.int32)
+
+        gather = tf.gather(params=emptyFloat, indices=emptyInt)
+
+        sess = tf.Session()
+        out = sess.run([gather])
+        print(out[0].shape)
+        print(out[0]);
+         */
+        INDArray emptyFloat = Nd4j.empty(DataType.FLOAT);
+        INDArray emptyInt = Nd4j.empty(DataType.INT);
+        DynamicCustomOp op = DynamicCustomOp.builder("gather")
+                .addInputs(emptyFloat, emptyInt)
+                .build();
+
+        List<LongShapeDescriptor> l = op.calculateOutputShape();
+        assertEquals(1, l.size());
+        assertTrue(l.get(0).isEmpty());
+
+        INDArray out = Nd4j.empty(DataType.FLOAT);
+        op.addOutputArgument(out);
     }
 }

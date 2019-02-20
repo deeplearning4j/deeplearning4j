@@ -563,9 +563,12 @@ public class CrashReportingUtil {
             }
             long numElements = ArrayUtil.prodLong(shape);
             long bytes = numElements*bytesPerElement;
+            if (bytes < 0) {
+                bytes = 0;
+            }
             totalActivationBytes += bytes;
             sb.append(String.format(format, String.valueOf(i), layers[i].conf().getLayer().getLayerName(), layers[i].getClass().getSimpleName(),
-                    inputTypes.get(i), Arrays.toString(shape), String.valueOf(numElements), fBytes(bytes))).append("\n");
+                    inputTypes.get(i), Arrays.toString(shape), (numElements < 0 ? "<variable>" : String.valueOf(numElements)), fBytes(bytes))).append("\n");
             last = bytes;
         }
         sb.append(fBytes("Total Activations Memory", totalActivationBytes));
@@ -616,6 +619,9 @@ public class CrashReportingUtil {
             }
             long numElements = ArrayUtil.prodLong(shape);
             long bytes = numElements*bytesPerElement;
+            if(bytes < 0){
+                bytes = 0;
+            }
             totalActivationBytes += bytes;
             String className;
             if(gv instanceof LayerVertex){
@@ -625,7 +631,7 @@ public class CrashReportingUtil {
             }
 
             sb.append(String.format(format, String.valueOf(i), layerName, className, it,
-                    Arrays.toString(shape), String.valueOf(numElements), fBytes(bytes))).append("\n");
+                    Arrays.toString(shape), (numElements < 0 ? "<variable>" : String.valueOf(numElements)), fBytes(bytes))).append("\n");
 
             if(!net.getConfiguration().getNetworkOutputs().contains(layerName)){
                 totalExOutput += bytes;

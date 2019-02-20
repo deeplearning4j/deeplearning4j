@@ -162,6 +162,41 @@ TEST_F(TadTests, TadEdgeCase_2) {
     delete tad;
 }
 
+TEST_F(TadTests, test_Tad_Ews_optimization_1) {
+    shape::TAD xTad;
+
+    std::array<int,2> array = {1,2};
+    ASSERT_TRUE(xTad.dimensionsDescending(3, array.data(), array.size()));
+}
+
+TEST_F(TadTests, test_Tad_Ews_optimization_2) {
+    shape::TAD xTad;
+
+    std::array<int,2> array = {0,2};
+    ASSERT_FALSE(xTad.dimensionsDescending(3, array.data(), array.size()));
+}
+
+TEST_F(TadTests, test_Tad_Ews_optimization_3) {
+    shape::TAD xTad;
+
+    std::array<int,1> array = {1};
+    ASSERT_TRUE(xTad.dimensionsDescending(2, array.data(), array.size()));
+}
+
+TEST_F(TadTests, test_Tad_Ews_optimization_4) {
+    shape::TAD xTad;
+
+    std::array<int,1> array = {0};
+    ASSERT_TRUE(xTad.dimensionsDescending(1, array.data(), array.size()));
+}
+
+TEST_F(TadTests, test_Tad_Ews_optimization_5) {
+    shape::TAD xTad;
+
+    std::array<int,2> array = {2,3};
+    ASSERT_TRUE(xTad.dimensionsDescending(4, array.data(), array.size()));
+}
+
 /*
  // FIXME: we want this test passing eventually
 TEST_F(TadTests, Tad_1D_1) {

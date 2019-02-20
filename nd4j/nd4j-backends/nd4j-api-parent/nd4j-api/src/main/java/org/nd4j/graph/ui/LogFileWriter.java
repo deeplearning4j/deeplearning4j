@@ -5,13 +5,20 @@ import com.google.flatbuffers.Table;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
+import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.autodiff.samediff.VariableType;
 import org.nd4j.autodiff.samediff.internal.SameDiffOp;
 import org.nd4j.autodiff.samediff.internal.Variable;
 import org.nd4j.autodiff.samediff.serde.FlatBuffersMapper;
 import org.nd4j.base.Preconditions;
 import org.nd4j.graph.*;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.impl.controlflow.compat.BaseCompatOp;
+import org.nd4j.linalg.api.ops.impl.controlflow.compat.Enter;
+import org.nd4j.linalg.api.ops.impl.controlflow.compat.Exit;
+import org.nd4j.linalg.api.ops.impl.controlflow.compat.NextIteration;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
 
@@ -268,7 +275,7 @@ public class LogFileWriter {
      * @return          Number of bytes written
      */
     public long writeScalarEvent(String name, long time, int iteration, int epoch, Number scalar) throws IOException {
-        //TODO add support for plugin and frame/iter
+        //TODO add support for plugin, variable and frame/iter
         Preconditions.checkState(indexNameMap.containsKey(name), "Name \"%s\" not yet registered", name);
         int idx = indexNameMap.get(name);
         FlatBufferBuilder fbb = new FlatBufferBuilder(0);
@@ -277,6 +284,88 @@ public class LogFileWriter {
 
         FlatBufferBuilder fbb2 = new FlatBufferBuilder(0);
         int offset2 = Nd4j.scalar(scalar).toFlatArray(fbb2);
+        fbb2.finish(offset2);
+
+        return append(fbb, fbb2);
+    }
+
+    public long writeHistogramEventDiscrete(String name, long time, int iteration, int epoch, List<String> binLabels, INDArray y) throws IOException {
+        Preconditions.checkState(binLabels == null || binLabels.size() == y.length(), "Number of bin labels (if present) must " +
+                "be same as Y array length - got %s bins, array shape %ndShape", binLabels.size(), y.length());
+        Preconditions.checkState(y.rank() == 1, "Y array must be rank 1, got Y array with shape %ndShape", y);
+
+        //TODO add support for plugin, variable and frame/iter
+        Preconditions.checkState(indexNameMap.containsKey(name), "Name \"%s\" not yet registered", name);
+        int idx = indexNameMap.get(name);
+
+        FlatBufferBuilder fbb = new FlatBufferBuilder(0);
+        int offset = UIEvent.createUIEvent(fbb, UIEventType.HISTOGRAM, idx, time, iteration, epoch, (short)-1, 0, 0);
+        fbb.finish(offset);
+
+        FlatBufferBuilder fbb2 = new FlatBufferBuilder(0);
+        int yOffset = y.toFlatArray(fbb2);
+        int binLabelsOffset = 0;
+        if(binLabels != null){
+            int[] str = new int[binLabels.size()];
+            for( int i=0; i<binLabels.size(); i++ ){
+                String s = binLabels.get(i);
+                if(s == null)
+                    s = "";
+                str[i] = fbb2.createString(s);
+            }
+            binLabelsOffset = UIHistogram.createBinlabelsVector(fbb2, str);
+        }
+        int offset2 = UIHistogram.createUIHistogram(fbb2, UIHistogramType.DISCRETE, y.length(), 0, yOffset, binLabelsOffset);
+        fbb2.finish(offset2);
+
+        return append(fbb, fbb2);
+    }
+
+    public long writeHistogramEventEqualSpacing(String name, long time, int iteration, int epoch, double min, double max, INDArray y) throws IOException {
+        Preconditions.checkState(y.rank() == 1, "Y array must be rank 1, got Y array with shape %ndShape", y);
+        Preconditions.checkState(max > min, "Maximum histogram value must be greater than minimum - got max=%s, min=%s", max, min);
+
+        //TODO add support for plugin, variable and frame/iter
+        //TODO: Code duplication for histogram methods...
+        Preconditions.checkState(indexNameMap.containsKey(name), "Name \"%s\" not yet registered", name);
+        int idx = indexNameMap.get(name);
+
+        FlatBufferBuilder fbb = new FlatBufferBuilder(0);
+        int offset = UIEvent.createUIEvent(fbb, UIEventType.HISTOGRAM, idx, time, iteration, epoch, (short)-1, 0, 0);
+        fbb.finish(offset);
+
+        FlatBufferBuilder fbb2 = new FlatBufferBuilder(0);
+        int yOffset = y.toFlatArray(fbb2);
+
+        INDArray binRangesArr = Nd4j.createFromArray(min, max);
+        int binRangesOffset = binRangesArr.toFlatArray(fbb2);
+
+        int offset2 = UIHistogram.createUIHistogram(fbb2, UIHistogramType.EQUAL_SPACING, y.length(), binRangesOffset, yOffset, 0);
+        fbb2.finish(offset2);
+
+        return append(fbb, fbb2);
+    }
+
+    public long writeHistogramEventCustomBins(String name, long time, int iteration, int epoch, INDArray bins, INDArray y) throws IOException {
+        Preconditions.checkState(y.rank() == 1, "Y array must be rank 1, got Y array with shape %ndShape", y);
+        Preconditions.checkState(bins.rank() == 2, "Bins array must have shape [2,numBins], got bins array with shape %ndShape", bins);
+        Preconditions.checkState(y.length() == bins.size(1), "Bins array must have shape [2,numBins], where numBins must match y.length()=%s, got bins array with shape %ndShape", y.length(), bins);
+
+        //TODO add support for plugin, variable and frame/iter
+        //TODO: Code duplication for histogram methods...
+        Preconditions.checkState(indexNameMap.containsKey(name), "Name \"%s\" not yet registered", name);
+        int idx = indexNameMap.get(name);
+
+        FlatBufferBuilder fbb = new FlatBufferBuilder(0);
+        int offset = UIEvent.createUIEvent(fbb, UIEventType.HISTOGRAM, idx, time, iteration, epoch, (short)-1, 0, 0);
+        fbb.finish(offset);
+
+        FlatBufferBuilder fbb2 = new FlatBufferBuilder(0);
+        int yOffset = y.toFlatArray(fbb2);
+
+        int binRangesOffset = bins.toFlatArray(fbb2);
+
+        int offset2 = UIHistogram.createUIHistogram(fbb2, UIHistogramType.CUSTOM, y.length(), binRangesOffset, yOffset, 0);
         fbb2.finish(offset2);
 
         return append(fbb, fbb2);
@@ -358,17 +447,41 @@ public class LogFileWriter {
                 shapeOffset = UIVariable.createShapeVector(fbb, shape);
             }
 
+            int controlDepsIdx = 0;
+            if(e.getValue().getControlDeps() != null ){
+                List<String> cds = e.getValue().getControlDeps();
+                if(!cds.isEmpty()){
+                    int[] cdIdxs = new int[cds.size()];
+                    for( int i=0; i<cdIdxs.length; i++ ){
+                        cdIdxs[i] = fbb.createString(cds.get(i));
+                    }
+                    controlDepsIdx = UIVariable.createControlDepsVector(fbb, cdIdxs);
+                }
+            }
+
+            int uiExtraLabelOffset = 0;     //String value - "extra" information to be shown in label. Currently unused
+            int constantValueOffset = 0;
+            if(e.getValue().getVariable().getVariableType() == VariableType.CONSTANT){
+                INDArray arr = e.getValue().getVariable().getArr();
+                if(arr != null && arr.length() < 1000){
+                    constantValueOffset = arr.toFlatArray(fbb);
+                }
+            }
+
             int uiVariableIdx = UIVariable.createUIVariable(fbb,
                     intPair,
                     name,
                     FlatBuffersMapper.toVarType(e.getValue().getVariable().getVariableType()),
                     dtVal,
                     shapeOffset,
+                    controlDepsIdx,
                     outputOfOpIdx,
                     inputsForOpIdx,
                     controlDepsForOpIdx,
                     controlDepsForVarIdx,
-                    0       //TODO gradient variable
+                    0,       //TODO gradient variable
+                    uiExtraLabelOffset,
+                    constantValueOffset
             );
 
             varListOffsets[count++] = uiVariableIdx;
@@ -409,12 +522,23 @@ public class LogFileWriter {
                 controlDepIdxs = UIOp.createControlDepsVector(fbb, idx);
             }
 
+            int extraLabelOffset = 0;
+            DifferentialFunction df = e.getValue().getOp();
+            if(df instanceof Enter || df instanceof Exit || df instanceof NextIteration){ //Enter, Exit, NextIteration
+                String frame = ((BaseCompatOp) df).getFrameName();
+                if(frame != null) {
+                    String extra = "Frame: \"" + frame + "\"";
+                    extraLabelOffset = fbb.createString(extra);
+                }
+            }
+
             opListOffsets[count++] = UIOp.createUIOp(fbb,
                     nameIdx,
                     opNameIdx,
                     inputsIdx,
                     outputsIdx,
-                    controlDepIdxs);
+                    controlDepIdxs,
+                    extraLabelOffset);
 
         }
         int opsListOffset = UIGraphStructure.createOpsVector(fbb, opListOffsets);

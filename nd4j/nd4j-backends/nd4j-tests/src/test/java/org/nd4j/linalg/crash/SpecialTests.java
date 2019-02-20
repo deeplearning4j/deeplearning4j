@@ -454,8 +454,6 @@ public class SpecialTests extends BaseNd4jTest {
 
     @Test
     public void testConcatAgain(){
-        Nd4j.getExecutioner().enableDebugMode(true);
-        Nd4j.getExecutioner().enableVerboseMode(true);
         INDArray[] toConcat = new INDArray[3];
         for( int i=0; i<toConcat.length; i++ ) {
             toConcat[i] = Nd4j.valueArrayOf(new long[]{10, 1}, i).castTo(DataType.FLOAT);

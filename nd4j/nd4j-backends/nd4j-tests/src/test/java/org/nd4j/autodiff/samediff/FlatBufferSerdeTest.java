@@ -31,7 +31,7 @@ public class FlatBufferSerdeTest {
         SameDiff sd = SameDiff.create();
         INDArray arr = Nd4j.linspace(1,12,12).reshape(3,4);
         SDVariable in = sd.placeHolder("in", arr.dataType(), arr.shape() );
-        SDVariable tanh = sd.tanh("out", in);
+        SDVariable tanh = sd.nn().tanh("out", in);
 
         ByteBuffer bb = sd.asFlatBuffers();
 
@@ -93,7 +93,7 @@ public class FlatBufferSerdeTest {
                         break;
                     case 1:
                         //Transform
-                        x = sd.tanh("out", in);
+                        x = sd.nn().tanh("out", in);
                         break;
                     case 2:
                     case 3:
@@ -102,7 +102,7 @@ public class FlatBufferSerdeTest {
                         break;
                     case 4:
                         //Transform
-                        x = sd.square(in);
+                        x = sd.math().square(in);
                         break;
                     case 5:
                     case 6:
@@ -116,12 +116,12 @@ public class FlatBufferSerdeTest {
                     case 8:
                         //Reduce 3:
                         SDVariable y = sd.var("in2", Nd4j.linspace(1,12,12, org.nd4j.linalg.api.buffer.DataType.FLOAT).muli(0.1).addi(0.5).reshape(3,4));
-                        x = sd.cosineSimilarity(in, y);
+                        x = sd.math().cosineSimilarity(in, y);
                         break;
                     case 9:
                         //Reduce 3 (along dim)
                         SDVariable z = sd.var("in2", Nd4j.linspace(1,12,12, org.nd4j.linalg.api.buffer.DataType.FLOAT).muli(0.1).addi(0.5).reshape(3,4));
-                        x = sd.cosineSimilarity(in, z, 1);
+                        x = sd.math().cosineSimilarity(in, z, 1);
                         break;
                     default:
                         throw new RuntimeException();

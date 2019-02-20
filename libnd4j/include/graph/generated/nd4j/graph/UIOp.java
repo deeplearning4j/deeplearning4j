@@ -26,14 +26,19 @@ public final class UIOp extends Table {
   public int outputsLength() { int o = __offset(10); return o != 0 ? __vector_len(o) : 0; }
   public String controlDeps(int j) { int o = __offset(12); return o != 0 ? __string(__vector(o) + j * 4) : null; }
   public int controlDepsLength() { int o = __offset(12); return o != 0 ? __vector_len(o) : 0; }
+  public String uiLabelExtra() { int o = __offset(14); return o != 0 ? __string(o + bb_pos) : null; }
+  public ByteBuffer uiLabelExtraAsByteBuffer() { return __vector_as_bytebuffer(14, 1); }
+  public ByteBuffer uiLabelExtraInByteBuffer(ByteBuffer _bb) { return __vector_in_bytebuffer(_bb, 14, 1); }
 
   public static int createUIOp(FlatBufferBuilder builder,
       int nameOffset,
       int opNameOffset,
       int inputsOffset,
       int outputsOffset,
-      int controlDepsOffset) {
-    builder.startObject(5);
+      int controlDepsOffset,
+      int uiLabelExtraOffset) {
+    builder.startObject(6);
+    UIOp.addUiLabelExtra(builder, uiLabelExtraOffset);
     UIOp.addControlDeps(builder, controlDepsOffset);
     UIOp.addOutputs(builder, outputsOffset);
     UIOp.addInputs(builder, inputsOffset);
@@ -42,7 +47,7 @@ public final class UIOp extends Table {
     return UIOp.endUIOp(builder);
   }
 
-  public static void startUIOp(FlatBufferBuilder builder) { builder.startObject(5); }
+  public static void startUIOp(FlatBufferBuilder builder) { builder.startObject(6); }
   public static void addName(FlatBufferBuilder builder, int nameOffset) { builder.addOffset(0, nameOffset, 0); }
   public static void addOpName(FlatBufferBuilder builder, int opNameOffset) { builder.addOffset(1, opNameOffset, 0); }
   public static void addInputs(FlatBufferBuilder builder, int inputsOffset) { builder.addOffset(2, inputsOffset, 0); }
@@ -54,6 +59,7 @@ public final class UIOp extends Table {
   public static void addControlDeps(FlatBufferBuilder builder, int controlDepsOffset) { builder.addOffset(4, controlDepsOffset, 0); }
   public static int createControlDepsVector(FlatBufferBuilder builder, int[] data) { builder.startVector(4, data.length, 4); for (int i = data.length - 1; i >= 0; i--) builder.addOffset(data[i]); return builder.endVector(); }
   public static void startControlDepsVector(FlatBufferBuilder builder, int numElems) { builder.startVector(4, numElems, 4); }
+  public static void addUiLabelExtra(FlatBufferBuilder builder, int uiLabelExtraOffset) { builder.addOffset(5, uiLabelExtraOffset, 0); }
   public static int endUIOp(FlatBufferBuilder builder) {
     int o = builder.endObject();
     return o;

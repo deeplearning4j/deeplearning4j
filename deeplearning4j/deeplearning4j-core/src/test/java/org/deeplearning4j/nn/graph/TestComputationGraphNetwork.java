@@ -52,6 +52,7 @@ import org.deeplearning4j.nn.modelimport.keras.preprocessors.PermutePreprocessor
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.multilayer.MultiLayerTest;
 import org.deeplearning4j.nn.transferlearning.TransferLearning;
+import org.deeplearning4j.nn.updater.UpdaterBlock;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
@@ -1149,8 +1150,8 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
         ComputationGraph g = new ComputationGraph(c);
         g.init();
 
-        g.calcL2();
-        g.calcL1();
+        g.calcRegularizationScore(true);
+        g.calcRegularizationScore(false);
     }
 
     @Test(expected = DL4JException.class)
@@ -1983,5 +1984,104 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
         net.fit(dataSet1);
         DataSet dataSet2 = new DataSet(features, labels, featuresMask, labelsMask);
         net.fit(dataSet2);
+    }
+
+
+    @Test
+    public void testCompGraphUpdaterBlocks(){
+        //Check that setting learning rate results in correct rearrangement of updater state within updater blocks
+        //https://github.com/deeplearning4j/deeplearning4j/issues/6809#issuecomment-463892644
+
+        double lr = 1e-3;
+        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
+                .seed(12345)
+                .weightInit(WeightInit.XAVIER)
+                .updater(new Adam(lr))
+                .graphBuilder()
+                .backpropType(BackpropType.Standard)
+                .addInputs("in")
+                .setOutputs("out")
+                .addLayer("0",new DenseLayer.Builder().nIn(5).nOut(3).build(),"in")
+                .addLayer("1",new DenseLayer.Builder().nIn(3).nOut(2).build(),"0")
+                .addLayer("out",new OutputLayer.Builder(LossFunctions.LossFunction.XENT).nIn(2).nOut(1)
+                        .activation(Activation.SIGMOID).build(),"1")
+                .build();
+
+        ComputationGraph cg = new ComputationGraph(conf);
+        cg.init();
+
+        INDArray in = Nd4j.rand(1, 5);
+        INDArray lbl = Nd4j.rand(1,1);
+
+        cg.fit(new DataSet(in, lbl));
+
+        INDArray viewArray = cg.getUpdater().getUpdaterStateViewArray();
+        INDArray viewArrayCopy = viewArray.dup();
+        //Initially updater view array is set out like:
+        //[m0w, m0b, m1w, m1b, m2w, m2b][v0w, v0b, v1w, v1b, v2w, v2b]
+        long soFar = 0;
+        INDArray m0w = viewArray.get(NDArrayIndex.point(0), NDArrayIndex.interval(soFar, soFar+5*3)).assign(0);    //m0w
+        soFar += 5*3;
+        INDArray m0b = viewArray.get(NDArrayIndex.point(0), NDArrayIndex.interval(soFar, soFar+3)).assign(1);    //m0b
+        soFar += 3;
+        INDArray m1w = viewArray.get(NDArrayIndex.point(0), NDArrayIndex.interval(soFar, soFar+3*2)).assign(2);    //m1w
+        soFar += 3*2;
+        INDArray m1b = viewArray.get(NDArrayIndex.point(0), NDArrayIndex.interval(soFar, soFar+2)).assign(3);    //m1b
+        soFar += 2;
+        INDArray m2w = viewArray.get(NDArrayIndex.point(0), NDArrayIndex.interval(soFar, soFar+2*1)).assign(4);    //m2w
+        soFar += 2*1;
+        INDArray m2b = viewArray.get(NDArrayIndex.point(0), NDArrayIndex.interval(soFar, soFar+1)).assign(5);    //m2b
+        soFar += 1;
+
+        INDArray v0w = viewArray.get(NDArrayIndex.point(0), NDArrayIndex.interval(soFar, soFar+5*3)).assign(6);    //v0w
+        soFar += 5*3;
+        INDArray v0b = viewArray.get(NDArrayIndex.point(0), NDArrayIndex.interval(soFar, soFar+3)).assign(7);    //v0b
+        soFar += 3;
+        INDArray v1w = viewArray.get(NDArrayIndex.point(0), NDArrayIndex.interval(soFar, soFar+3*2)).assign(8);    //v1w
+        soFar += 3*2;
+        INDArray v1b = viewArray.get(NDArrayIndex.point(0), NDArrayIndex.interval(soFar, soFar+2)).assign(9);    //v1b
+        soFar += 2;
+        INDArray v2w = viewArray.get(NDArrayIndex.point(0), NDArrayIndex.interval(soFar, soFar+2*1)).assign(10);    //v2w
+        soFar += 2*1;
+        INDArray v2b = viewArray.get(NDArrayIndex.point(0), NDArrayIndex.interval(soFar, soFar+1)).assign(11);    //v2b
+        soFar += 1;
+
+
+        cg.setLearningRate("0", 0.0);
+
+        //Expect new updater state to look like:
+        //[m0w, m0b][v0w,v0b], [m1w, m1b, m2w, m2b][v1w, v1b, v2w, v2b]
+        INDArray exp = Nd4j.concat(1, m0w, m0b, v0w, v0b,
+                m1w, m1b, m2w, m2b, v1w, v1b, v2w, v2b);
+
+        INDArray act = cg.getUpdater().getUpdaterStateViewArray();
+//        System.out.println(exp);
+//        System.out.println(act);
+
+        assertEquals(exp, act);
+
+        //And set layer 1 LR:
+        cg.setLearningRate("1", 0.2);
+        exp = Nd4j.concat(1, m0w, m0b, v0w, v0b,
+                m1w, m1b, v1w, v1b,
+                m2w, m2b, v2w, v2b);
+        assertEquals(exp, cg.getUpdater().getStateViewArray());
+
+
+        //Set all back to original LR and check again:
+        cg.setLearningRate("1", lr);
+        cg.setLearningRate("0", lr);
+
+        exp = Nd4j.concat(1, m0w, m0b, m1w, m1b, m2w, m2b, v0w, v0b, v1w, v1b, v2w, v2b);
+        assertEquals(exp, cg.getUpdater().getStateViewArray());
+
+
+        //Finally, training sanity check (if things are wrong, we get -ve values in adam V, which causes NaNs)
+        cg.getUpdater().getStateViewArray().assign(viewArrayCopy);
+        cg.setLearningRate("0", 0.0);
+
+        Nd4j.getExecutioner().setProfilingMode(OpExecutioner.ProfilingMode.NAN_PANIC);
+        cg.fit(new DataSet(in, lbl));
+        Nd4j.getExecutioner().setProfilingMode(OpExecutioner.ProfilingMode.SCOPE_PANIC);
     }
 }

@@ -26,6 +26,8 @@ import org.deeplearning4j.models.embeddings.WeightLookupTable;
 import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
 import org.deeplearning4j.models.embeddings.learning.ElementsLearningAlgorithm;
 import org.deeplearning4j.models.embeddings.learning.SequenceLearningAlgorithm;
+import org.deeplearning4j.models.embeddings.learning.impl.elements.BatchSequences;
+import org.deeplearning4j.models.embeddings.learning.impl.elements.CBOW;
 import org.deeplearning4j.models.embeddings.learning.impl.elements.SkipGram;
 import org.deeplearning4j.models.embeddings.learning.impl.sequence.DBOW;
 import org.deeplearning4j.models.embeddings.learning.impl.sequence.DM;
@@ -45,6 +47,8 @@ import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.deeplearning4j.models.word2vec.wordstore.VocabConstructor;
 import org.deeplearning4j.models.word2vec.wordstore.inmemory.AbstractCache;
 import org.deeplearning4j.util.ThreadUtils;
+import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
+import org.nd4j.linalg.api.memory.enums.LearningPolicy;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.rng.Random;
 import org.nd4j.linalg.factory.Nd4j;
@@ -87,6 +91,8 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
 
     protected boolean enableScavenger = false;
     protected int vocabLimit = 0;
+
+    private BatchSequences<T> batchSequences;
 
 
     @Setter
@@ -305,14 +311,10 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
             val sequencer = new AsyncSequencer(this.iterator, this.stopWords);
             sequencer.start();
 
-
-            //final VectorCalculationsThread[] threads = new VectorCalculationsThread[workers];
             val timer = new AtomicLong(System.currentTimeMillis());
-            val threads = new ArrayList<VectorCalculationsThread>();
-            for (int x = 0; x < workers; x++) {
-                threads.add(x, new VectorCalculationsThread(x, currentEpoch, wordsCounter, vocab.totalWordOccurrences(), linesCounter, sequencer, timer, numEpochs));
-                threads.get(x).start();
-            }
+            val thread = new VectorCalculationsThread(0, currentEpoch, wordsCounter, vocab.totalWordOccurrences(),
+                    linesCounter, sequencer, timer, numEpochs);
+            thread.start();
 
             try {
                 sequencer.join();
@@ -320,12 +322,10 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
                 throw new RuntimeException(e);
             }
 
-            for (int x = 0; x < workers; x++) {
-                try {
-                    threads.get(x).join();
-                } catch (Exception e) {
-                    throw new RuntimeException(e);
-                }
+            try {
+               thread.join();
+            } catch (Exception e) {
+                throw new RuntimeException(e);
             }
 
             // TODO: fix this to non-exclusive termination
@@ -367,7 +367,10 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
         if (trainElementsVectors && !(trainSequenceVectors && sequenceLearningAlgorithm instanceof DM)) {
             // call for ElementsLearningAlgorithm
             nextRandom.set(nextRandom.get() * 25214903917L + 11);
-            if (!elementsLearningAlgorithm.isEarlyTerminationHit())
+            if (!elementsLearningAlgorithm.isEarlyTerminationHit()) {
+                    scoreElements.set(elementsLearningAlgorithm.learnSequence(sequence, nextRandom, alpha, batchSequences));
+                }
+            else
                 scoreElements.set(elementsLearningAlgorithm.learnSequence(sequence, nextRandom, alpha));
         }
 
@@ -375,7 +378,7 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
             // call for SequenceLearningAlgorithm
             nextRandom.set(nextRandom.get() * 25214903917L + 11);
             if (!sequenceLearningAlgorithm.isEarlyTerminationHit())
-                scoreSequences.set(sequenceLearningAlgorithm.learnSequence(sequence, nextRandom, alpha));
+                scoreSequences.set(sequenceLearningAlgorithm.learnSequence(sequence, nextRandom, alpha, batchSequences));
         }
     }
 
@@ -424,6 +427,11 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
         protected boolean enableScavenger = false;
         protected int vocabLimit;
 
+        /**
+         * Experimental field. Switches on precise mode for batch operations.
+         */
+        protected boolean preciseMode = false;
+
         // defaults values for learning algorithms are set here
         protected ElementsLearningAlgorithm<T> elementsLearningAlgorithm = new SkipGram<>();
         protected SequenceLearningAlgorithm<T> sequenceLearningAlgorithm = new DBOW<>();
@@ -454,6 +462,7 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
             this.STOP = configuration.getSTOP();
             this.variableWindows = configuration.getVariableWindows();
             this.useHierarchicSoftmax = configuration.isUseHierarchicSoftmax();
+            this.preciseMode = configuration.isPreciseMode();
 
             if (configuration.getModelUtils() != null && !configuration.getModelUtils().isEmpty()) {
 
@@ -542,6 +551,7 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
             try {
                 Class clazz = Class.forName(algoName);
                 elementsLearningAlgorithm = (ElementsLearningAlgorithm<T>) clazz.newInstance();
+                this.configuration.setElementsLearningAlgorithm(elementsLearningAlgorithm.getClass().getCanonicalName());
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
@@ -822,6 +832,7 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
          */
         public Builder<T> modelUtils(@NonNull ModelUtils<T> modelUtils) {
             this.modelUtils = modelUtils;
+            this.configuration.setModelUtils(modelUtils.getClass().getCanonicalName());
             return this;
         }
 
@@ -874,6 +885,13 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
          */
         public Builder<T> usePreciseWeightInit(boolean reallyUse) {
             this.preciseWeightInit = reallyUse;
+            this.configuration.setPreciseWeightInit(reallyUse);
+            return this;
+        }
+
+        public Builder<T> usePreciseMode(boolean reallyUse) {
+            this.preciseMode = reallyUse;
+            this.configuration.setPreciseMode(reallyUse);
             return this;
         }
 
@@ -1044,6 +1062,8 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
         private AtomicLong nextRandom;
         private Collection<String> stopList;
 
+        private static final int DEFAULT_BUFFER_SIZE = 512;
+
         public AsyncSequencer(SequenceIterator<T> iterator, @NonNull Collection<String> stopList) {
             this.iterator = iterator;
             //            this.linesCounter = linesCounter;
@@ -1053,12 +1073,13 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
             this.stopList = stopList;
             this.setDaemon(true);
 
-            limitLower = workers * batchSize;
-            limitUpper = workers * batchSize * 2;
+            limitLower = workers * (batchSize < DEFAULT_BUFFER_SIZE ? DEFAULT_BUFFER_SIZE : batchSize);
+            limitUpper = limitLower * 2;
 
             this.buffer = new LinkedBlockingQueue<>(limitUpper);
         }
 
+        // Preserve order of input sequences to gurantee order of output tokens
         @Override
         public void run() {
             isRunning.set(true);
@@ -1170,6 +1191,13 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
 
         @Override
         public void run() {
+            // small workspace, just to handle
+            val conf = WorkspaceConfiguration.builder()
+                    .policyLearning(LearningPolicy.OVER_TIME)
+                    .cyclesBeforeInitialization(3)
+                    .initialSize(25L * 1024L * 1024L)
+                    .build();
+
             Nd4j.getAffinityManager().getDeviceForCurrentThread();
             while (digitizer.hasMoreLines()) {
                 try {
@@ -1192,44 +1220,73 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
                     // getting back number of iterations
                     for (int i = 0; i < numIterations; i++) {
 
+                        batchSequences = new BatchSequences<>(configuration.getBatchSize());
                         // we roll over sequences derived from digitizer, it's NOT window loop
                         for (int x = 0; x < sequences.size(); x++) {
-                            Sequence<T> sequence = sequences.get(x);
+                            try (val ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace(conf, "sequence_vectors_training")) {
+                                Sequence<T> sequence = sequences.get(x);
 
-                            //log.info("LR before: {}; wordsCounter: {}; totalWordsCount: {}", learningRate.get(), this.wordsCounter.get(), this.totalWordsCount);
-                            alpha = Math.max(minLearningRate,
-                                            learningRate.get() * (1 - (1.0 * this.wordsCounter.get()
-                                                            / ((double) this.totalWordsCount) / (numIterations
-                                                                            * totalEpochs))));
+                                //log.info("LR before: {}; wordsCounter: {}; totalWordsCount: {}", learningRate.get(), this.wordsCounter.get(), this.totalWordsCount);
+                                alpha = Math.max(minLearningRate,
+                                        learningRate.get() * (1 - (1.0 * this.wordsCounter.get()
+                                                / ((double) this.totalWordsCount) / (numIterations
+                                                * totalEpochs))));
 
-                            trainSequence(sequence, nextRandom, alpha);
+                                trainSequence(sequence, nextRandom, alpha);
 
-                            // increment processed word count, please note: this affects learningRate decay
-                            totalLines.incrementAndGet();
-                            this.wordsCounter.addAndGet(sequence.getElements().size());
+                                // increment processed word count, please note: this affects learningRate decay
+                                totalLines.incrementAndGet();
+                                this.wordsCounter.addAndGet(sequence.getElements().size());
 
-                            if (totalLines.get() % 100000 == 0) {
-                                long currentTime = System.currentTimeMillis();
-                                long timeSpent = currentTime - timer.get();
+                                if (totalLines.get() % 100000 == 0) {
+                                    long currentTime = System.currentTimeMillis();
+                                    long timeSpent = currentTime - timer.get();
 
-                                timer.set(currentTime);
-                                long totalTimeSpent = currentTime - startTime;
+                                    timer.set(currentTime);
+                                    long totalTimeSpent = currentTime - startTime;
 
-                                double seqSec = (100000.0 / ((double) timeSpent / 1000.0));
-                                double wordsSecTotal = this.wordsCounter.get() / ((double) totalTimeSpent / 1000.0);
+                                    double seqSec = (100000.0 / ((double) timeSpent / 1000.0));
+                                    double wordsSecTotal = this.wordsCounter.get() / ((double) totalTimeSpent / 1000.0);
 
-                                log.info("Epoch: [{}]; Words vectorized so far: [{}];  Lines vectorized so far: [{}]; Seq/sec: [{}]; Words/sec: [{}]; learningRate: [{}]",
-                                                this.epochNumber, this.wordsCounter.get(), this.totalLines.get(),
-                                                String.format("%.2f", seqSec), String.format("%.2f", wordsSecTotal),
-                                                alpha);
-                            }
-                            if (eventListeners != null && !eventListeners.isEmpty()) {
-                                for (VectorsListener listener : eventListeners) {
-                                    if (listener.validateEvent(ListenerEvent.LINE, totalLines.get()))
-                                        listener.processEvent(ListenerEvent.LINE, SequenceVectors.this,
-                                                        totalLines.get());
+                                    log.info("Epoch: [{}]; Words vectorized so far: [{}];  Lines vectorized so far: [{}]; Seq/sec: [{}]; Words/sec: [{}]; learningRate: [{}]",
+                                            this.epochNumber, this.wordsCounter.get(), this.totalLines.get(),
+                                            String.format("%.2f", seqSec), String.format("%.2f", wordsSecTotal),
+                                            alpha);
+                                }
+                                if (eventListeners != null && !eventListeners.isEmpty()) {
+                                    for (VectorsListener listener : eventListeners) {
+                                        if (listener.validateEvent(ListenerEvent.LINE, totalLines.get()))
+                                            listener.processEvent(ListenerEvent.LINE, SequenceVectors.this,
+                                                    totalLines.get());
+                                    }
                                 }
                             }
+                        }
+
+                        if (elementsLearningAlgorithm instanceof SkipGram)
+                            ((SkipGram)elementsLearningAlgorithm).setWorkers(workers);
+                        else if (elementsLearningAlgorithm instanceof CBOW)
+                            ((CBOW)elementsLearningAlgorithm).setWorkers(workers);
+
+                        int batchSize = configuration.getBatchSize();
+                        if (batchSize > 1 && batchSequences != null) {
+                            int rest = batchSequences.size() % batchSize;
+                            int chunks = ((batchSequences.size() >= batchSize) ? batchSequences.size() / batchSize : 0) + ((rest > 0)? 1 : 0);
+                            for (int j = 0; j < chunks; ++j) {
+                                if (elementsLearningAlgorithm instanceof SkipGram)
+                                    ((SkipGram)elementsLearningAlgorithm).iterateSample(batchSequences.get(j));
+                                else if (elementsLearningAlgorithm instanceof CBOW)
+                                    ((CBOW)elementsLearningAlgorithm).iterateSample(batchSequences.get(j));
+
+                                if (trainSequenceVectors) {
+                                    if (sequenceLearningAlgorithm instanceof DBOW)
+                                        ((SkipGram<T>) sequenceLearningAlgorithm.getElementsLearningAlgorithm()).iterateSample(batchSequences.get(j));
+                                    else if (sequenceLearningAlgorithm instanceof DM)
+                                        ((CBOW<T>) sequenceLearningAlgorithm.getElementsLearningAlgorithm()).iterateSample(batchSequences.get(j));
+                                }
+                            }
+                            batchSequences.clear();
+                            batchSequences = null;
                         }
 
                         if (eventListeners != null && !eventListeners.isEmpty()) {

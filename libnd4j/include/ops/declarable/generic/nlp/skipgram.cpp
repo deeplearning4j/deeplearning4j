@@ -46,8 +46,13 @@ namespace nd4j {
 
             auto inferenceVector = INPUT_VARIABLE(11);
 
-            auto nsRounds = block.numI() > 0 ? INT_ARG(0) : 0;
+            //auto neu1e = INPUT_VARIABLE(12);
+
+            auto numWorkers = block.numI() > 0 ? INT_ARG(0) : omp_get_max_threads();
+            auto nsRounds = block.numI() > 1 ? INT_ARG(1) : 0;
+
             auto isInference = block.numB() > 0 ? B_ARG(0) : false;
+            auto isPreciseMode = block.numB() > 1 ? B_ARG(1) : false;
 
             REQUIRE_TRUE(block.isInplace(), 0, "SkipGram: this operation requires inplace execution only");
 
@@ -55,7 +60,7 @@ namespace nd4j {
             REQUIRE_TRUE(syn0->dataType() == expTable->dataType(), 0, "SkipGram: expTable must have the same data type as syn0 table");
 
 
-            nd4j::ops::helpers::skipgram(*syn0, *syn1, *syn1neg, *expTable, *negTable, *target, *ngStarter, nsRounds, *indices, *codes, *alpha, *randomValue, *inferenceVector);
+            nd4j::ops::helpers::skipgram(*syn0, *syn1, *syn1neg, *expTable, *negTable, *target, *ngStarter, nsRounds, *indices, *codes, *alpha, *randomValue, *inferenceVector, isPreciseMode, numWorkers);
 
             return Status::OK();
         }

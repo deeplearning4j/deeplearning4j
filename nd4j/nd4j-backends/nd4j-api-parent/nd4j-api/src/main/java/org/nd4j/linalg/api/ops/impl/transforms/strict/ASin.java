@@ -25,6 +25,7 @@ import org.nd4j.linalg.api.ops.BaseTransformOp;
 import org.nd4j.linalg.api.ops.BaseTransformStrictOp;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -72,9 +73,9 @@ public class ASin extends BaseTransformStrictOp {
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
         //d(asin(x))/dx = 1/sqrt(1-x^2)
-        SDVariable oneSubSq = sameDiff.square(arg()).rsub(1.0);
-        SDVariable ret = sameDiff.sqrt(oneSubSq).rdiv(1.0).mul(i_v.get(0));
-        return Arrays.asList(ret);
+        SDVariable oneSubSq = sameDiff.math().square(arg()).rsub(1.0);
+        SDVariable ret = sameDiff.math().sqrt(oneSubSq).rdiv(1.0).mul(i_v.get(0));
+        return Collections.singletonList(ret);
     }
 
 

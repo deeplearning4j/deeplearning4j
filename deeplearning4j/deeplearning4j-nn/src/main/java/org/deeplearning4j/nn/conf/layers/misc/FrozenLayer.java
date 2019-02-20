@@ -32,6 +32,7 @@ import org.deeplearning4j.nn.params.FrozenLayerParamInitializer;
 import org.deeplearning4j.optimize.api.TrainingListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.learning.config.IUpdater;
+import org.nd4j.linalg.learning.regularization.Regularization;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 import org.nd4j.shade.jackson.databind.annotation.JsonDeserialize;
 
@@ -118,13 +119,8 @@ public class FrozenLayer extends Layer {
     }
 
     @Override
-    public double getL1ByParam(String paramName) {
-        return 0;
-    }
-
-    @Override
-    public double getL2ByParam(String paramName) {
-        return 0;
+    public List<Regularization> getRegularizationByParam(String param){
+        return null;
     }
 
     @Override

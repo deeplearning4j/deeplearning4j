@@ -16,6 +16,7 @@
 
 package org.deeplearning4j.nn.conf.serde;
 
+import org.apache.commons.io.IOUtils;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.dropout.Dropout;
@@ -35,6 +36,7 @@ import org.nd4j.shade.jackson.databind.ObjectMapper;
 import org.nd4j.shade.jackson.databind.node.ObjectNode;
 
 import java.io.IOException;
+import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -70,13 +72,25 @@ public class ComputationGraphConfigurationDeserializer
         Layer[] layers = layerList.toArray(new Layer[layerList.size()]);
         //Now, check if we need to manually handle IUpdater deserialization from legacy format
         boolean attemptIUpdaterFromLegacy = requiresIUpdaterFromLegacy(layers);
+        boolean requireLegacyRegularizationHandling = requiresRegularizationFromLegacy(layers);
+        boolean requiresLegacyWeightInitHandling = requiresWeightInitFromLegacy(layers);
+
         Long charOffsetEnd = null;
         JsonLocation endLocation = null;
         String jsonSubString = null;
-        if(attemptIUpdaterFromLegacy) {
+        if(attemptIUpdaterFromLegacy || requireLegacyRegularizationHandling || requiresLegacyWeightInitHandling) {
             endLocation = jp.getCurrentLocation();
             charOffsetEnd = endLocation.getCharOffset();
-            jsonSubString = endLocation.getSourceRef().toString().substring((int) charOffsetStart - 1, charOffsetEnd.intValue());
+            Object sourceRef = endLocation.getSourceRef();
+            String s;
+            if (sourceRef instanceof StringReader) {
+                //Workaround: sometimes sourceRef is a String, sometimes a StringReader
+                ((StringReader) sourceRef).reset();
+                s = IOUtils.toString((StringReader)sourceRef);
+            } else {
+                s = sourceRef.toString();
+            }
+            jsonSubString = s.substring((int) charOffsetStart - 1, charOffsetEnd.intValue());
 
             ObjectMapper om = NeuralNetConfiguration.mapper();
             JsonNode rootNode = om.readTree(jsonSubString);
@@ -87,6 +101,7 @@ public class ComputationGraphConfigurationDeserializer
             while(iter.hasNext()){
                 JsonNode next = iter.next();
                 ObjectNode confNode = null;
+                String cls = next.has("@class") ? next.get("@class").asText() : null;
                 if(next.has("LayerVertex")){
                     next = next.get("LayerVertex");
                     if(next.has("layerConf")){
@@ -96,8 +111,16 @@ public class ComputationGraphConfigurationDeserializer
                         continue;
                     }
 
-                    if(layers[layerIdx] instanceof BaseLayer && ((BaseLayer)layers[layerIdx]).getIUpdater() == null){
+                    if(attemptIUpdaterFromLegacy && layers[layerIdx] instanceof BaseLayer && ((BaseLayer)layers[layerIdx]).getIUpdater() == null){
                         handleUpdaterBackwardCompatibility((BaseLayer)layers[layerIdx], (ObjectNode)next);
+                    }
+
+                    if(requireLegacyRegularizationHandling && layers[layerIdx] instanceof BaseLayer && ((BaseLayer)layers[layerIdx]).getRegularization() == null){
+                        handleL1L2BackwardCompatibility((BaseLayer)layers[layerIdx], (ObjectNode)next);
+                    }
+
+                    if(requiresLegacyWeightInitHandling && layers[layerIdx] instanceof BaseLayer && ((BaseLayer)layers[layerIdx]).getWeightInitFn() == null){
+                        handleWeightInitBackwardCompatibility((BaseLayer)layers[layerIdx], (ObjectNode)next);
                     }
 
                     if(layers[layerIdx].getIDropout() == null){
@@ -115,7 +138,14 @@ public class ComputationGraphConfigurationDeserializer
                             }
                         }
                     }
-
+                    layerIdx++;
+                } else if("org.deeplearning4j.nn.conf.graph.LayerVertex".equals(cls)){
+                    if(requiresLegacyWeightInitHandling && layers[layerIdx] instanceof BaseLayer && ((BaseLayer)layers[layerIdx]).getWeightInitFn() == null) {
+                        //Post JSON format change for subclasses, but before WeightInit was made a class
+                        confNode = (ObjectNode) next.get("layerConf");
+                        next = confNode.get("layer");
+                        handleWeightInitBackwardCompatibility((BaseLayer) layers[layerIdx], (ObjectNode) next);
+                    }
                     layerIdx++;
                 }
             }

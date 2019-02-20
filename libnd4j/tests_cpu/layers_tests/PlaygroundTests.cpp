@@ -767,7 +767,7 @@ void loopSpan(float* x, Nd4jLong* xShapeInfo, float* y, Nd4jLong* yShapeInfo, fl
         auto zi = z + zEws * index;        
         #pragma omp simd
         for (Nd4jLong j = 0; j < itemsToLoop; j++) 
-            zi[j * zEws] = simdOps::LogPoisonLoss<float, float, float>::op(xi[j * xEws], yi[j * yEws]);
+            zi[j * zEws] = simdOps::LogPoissonLoss<float, float, float>::op(xi[j * xEws], yi[j * yEws]);
     }
 }
 
@@ -782,7 +782,7 @@ void loopSimple(float* x, Nd4jLong* xShapeInfo, float* y, Nd4jLong* yShapeInfo, 
     
     #pragma omp parallel for simd schedule(static, span_size) if (len > ELEMENT_THRESHOLD) proc_bind(close) default(shared)
     for(Nd4jLong i = 0; i < len; ++i)
-        z[i * zEws] = simdOps::LogPoisonLoss<float, float, float>::op(x[i * xEws], y[i * yEws]);
+        z[i * zEws] = simdOps::LogPoissonLoss<float, float, float>::op(x[i * xEws], y[i * yEws]);
 
 }
 
@@ -848,7 +848,7 @@ void loop1(float* x, Nd4jLong* xShapeInfo, float* y, Nd4jLong* yShapeInfo, float
     int yEws = shape::elementWiseStride(yShapeInfo);
     int zEws = shape::elementWiseStride(zShapeInfo);
             
-    nd4j::OmpLaunchHelper info(len);
+    nd4j::OmpLaunchHelper info(len, 4);
     #pragma omp parallel num_threads(info._numThreads) default(shared)
     {                
         auto threadNum = omp_get_thread_num();
@@ -858,7 +858,7 @@ void loop1(float* x, Nd4jLong* xShapeInfo, float* y, Nd4jLong* yShapeInfo, float
             Nd4jLong xOffset = shape::getIndexOffset(j+threadOffset, xShapeInfo, len);
             Nd4jLong yOffset = shape::getIndexOffset(j+threadOffset, yShapeInfo, len);
             Nd4jLong zOffset = shape::getIndexOffset(j+threadOffset, zShapeInfo, len);
-            z[xOffset] = simdOps::LogPoisonLoss<float, float, float>::op(x[xOffset], y[xOffset]);
+            z[xOffset] = simdOps::LogPoissonLoss<float, float, float>::op(x[xOffset], y[xOffset]);
         }
     }
 }
@@ -877,7 +877,7 @@ void loop2(float* x, Nd4jLong* xShapeInfo, float* y, Nd4jLong* yShapeInfo, float
         Nd4jLong xOffset = shape::getIndexOffset(i, xShapeInfo, len);
         Nd4jLong yOffset = shape::getIndexOffset(i, yShapeInfo, len);
         Nd4jLong zOffset = shape::getIndexOffset(i, zShapeInfo, len);
-        z[xOffset] = simdOps::LogPoisonLoss<float, float, float>::op(x[xOffset], y[xOffset]);
+        z[xOffset] = simdOps::LogPoissonLoss<float, float, float>::op(x[xOffset], y[xOffset]);
     }
 
 }
@@ -936,3 +936,402 @@ TEST_F(PlaygroundTests, loopThroughArrs_test3) {
 
     ASSERT_TRUE(1);        
 }
+
+TEST_F(PlaygroundTests, test_batched_skipgram_1) {
+    const int batchSize = 64;
+    const int codeLen = 6;
+    const int numWords = 244;
+    const int vectorLength = 50;
+
+    auto target = NDArrayFactory::create<int>('c', {batchSize});
+    auto ngStarter = NDArrayFactory::empty<int>();
+    auto indices = NDArrayFactory::create<int>('c', {batchSize, codeLen});
+    auto codes = NDArrayFactory::create<int8_t>('c', {batchSize, codeLen});
+    auto syn0 = NDArrayFactory::create<float>('c', {numWords, vectorLength});
+    auto syn1 = NDArrayFactory::create<float>('c', {numWords, vectorLength});
+    auto syn1Neg = NDArrayFactory::empty<float>();
+    auto expTable = NDArrayFactory::linspace<float>(0.001, 0.995, 10000);
+    auto negTable = NDArrayFactory::empty<float>();
+
+    auto alpha = NDArrayFactory::create<double>('c', {batchSize});
+    auto randomValue = NDArrayFactory::create<Nd4jLong>('c', {batchSize});
+    auto inferenceVector = NDArrayFactory::empty<float>();
+
+    syn0.assign(0.01);
+    syn1.assign(0.02);
+
+    Nd4jLong rv = 2843242345121L;
+    auto lr = 0.025;
+    for (int e = 0; e < batchSize; e++) {
+        target.p(e, e);
+        alpha.p(e, lr);
+        randomValue.p(e, rv);
+
+        lr -= 0.001;
+
+
+        for (int s = 1; s < codeLen; s++) {
+            indices.p(e, s, nd4j::math::nd4j_abs<Nd4jLong>(rv % numWords));
+            codes.p(e, s, s % 2);
+
+            rv = nd4j::math::nd4j_abs<Nd4jLong>(rv * 25214903917L + 11);
+        }
+
+        rv = nd4j::math::nd4j_abs<Nd4jLong>(rv * 25214903917L + 11);
+    }
+
+    //indices.printIndexedBuffer("indices");
+    //codes.printIndexedBuffer("codes");
+
+    auto iterations = 10;
+
+    nd4j::ops::skipgram op;
+
+    auto timeStart = std::chrono::system_clock::now();
+    for (int e = 0; e < iterations; e++) {
+        auto result = op.execute({&target, &ngStarter, &indices, &codes, &syn0, &syn1, &syn1Neg, expTable, &negTable, &alpha, &randomValue, &inferenceVector}, {}, {}, {false}, true);
+        ASSERT_EQ(Status::OK(), result->status());
+        delete result;
+    }
+    auto timeEnd = std::chrono::system_clock::now();
+    auto spanTime = std::chrono::duration_cast<std::chrono::microseconds> ((timeEnd - timeStart)/iterations).count();
+    auto ttlTime = std::chrono::duration_cast<std::chrono::milliseconds> ((timeEnd - timeStart)).count();
+
+
+    nd4j_printf("average time: %lld us;\n", spanTime);
+    nd4j_printf("total time: %lld ms;\n", ttlTime);
+
+
+    delete expTable;
+}
+
+// TEST_F(PlaygroundTests, test_reduce_float) {
+//      auto array = NDArrayFactory::create<float>('c', {32, 128, 256, 256});
+//      auto target = NDArrayFactory::create<float>('c', {32, 128});
+//      std::array<int,2> dims = {2, 3};
+//      shape::TAD xTad(array.shapeInfo(), dims.data(), dims.size());
+//      xTad.createTadOnlyShapeInfo();
+//      xTad.createOffsets();
+
+// //     // warm up
+//      for (int e = 0; e < 5; e++) {
+//          NativeOpExcutioner::execReduceFloat(reduce::ReduceFloatBenchmarkOp, array.buffer(), array.shapeInfo(), nullptr, target.buffer(),target.shapeInfo(), dims.data(), dims.size(), xTad.tadOnlyShapeInfo,xTad.tadOffsets);
+//      }
+
+//      int iterations = 10;
+//      auto timeStart = std::chrono::system_clock::now();
+//      for (int e = 0; e < iterations; e++) {
+//          NativeOpExcutioner::execReduceFloat(reduce::ReduceFloatBenchmarkOp, array.buffer(), array.shapeInfo(), nullptr, target.buffer(), target.shapeInfo(), dims.data(), dims.size(), xTad.tadOnlyShapeInfo, xTad.tadOffsets);
+//      }
+//      auto timeEnd = std::chrono::system_clock::now();
+//      auto spanTime = std::chrono::duration_cast<std::chrono::microseconds> ((timeEnd - timeStart)/iterations).count();
+//      auto ttlTime = std::chrono::duration_cast<std::chrono::milliseconds> ((timeEnd - timeStart)).count();
+
+//      nd4j_printf("average time: %lld us;\n", spanTime);
+//      nd4j_printf("total time: %lld ms;\n", ttlTime);
+// }
+
+// TEST_F(PlaygroundTests, test_reduce_same) {
+//     auto array = NDArrayFactory::create<float>('c', {32, 128, 256, 256});
+//     auto target = NDArrayFactory::create<float>('c', {32, 128});
+//     std::array<int,2> dims = {2, 3};
+//     shape::TAD xTad(array.shapeInfo(), dims.data(), dims.size());
+//     xTad.createTadOnlyShapeInfo();
+//     xTad.createOffsets();
+
+// //     // warm up
+//     for (int e = 0; e < 5; e++) {
+//         NativeOpExcutioner::execReduceSame(reduce::ReduceSameBenchmarkOp, array.buffer(), array.shapeInfo(), nullptr, target.buffer(),target.shapeInfo(), dims.data(), dims.size(), xTad.tadOnlyShapeInfo,xTad.tadOffsets);
+//     }
+
+//     int iterations = 10;
+//     auto timeStart = std::chrono::system_clock::now();
+//     for (int e = 0; e < iterations; e++) {
+//         NativeOpExcutioner::execReduceSame(reduce::ReduceSameBenchmarkOp, array.buffer(), array.shapeInfo(), nullptr, target.buffer(), target.shapeInfo(), dims.data(), dims.size(), xTad.tadOnlyShapeInfo, xTad.tadOffsets);
+//     }
+//     auto timeEnd = std::chrono::system_clock::now();
+//     auto spanTime = std::chrono::duration_cast<std::chrono::microseconds> ((timeEnd - timeStart)/iterations).count();
+//     auto ttlTime = std::chrono::duration_cast<std::chrono::milliseconds> ((timeEnd - timeStart)).count();
+
+//     nd4j_printf("average time: %lld us;\n", spanTime);
+//     nd4j_printf("total time: %lld ms;\n", ttlTime);
+// }
+
+// TEST_F(PlaygroundTests, test_reduce_float_manual) {
+//     auto array = NDArrayFactory::create<float>('c', {32, 128, 256, 256});
+//     auto target = NDArrayFactory::create<float>('c', {32, 128});
+//     std::array<int, 2> dims = {2, 3};
+//     shape::TAD xTad(array.shapeInfo(), dims.data(), dims.size());
+//     xTad.createTadOnlyShapeInfo();
+//     xTad.createOffsets();
+
+// //     // warm up
+//     for (int e = 0; e < 5; e++) {
+//         NativeOpExcutioner::execReduceFloat(reduce::ReduceFloatBenchmarkOp, array.buffer(), array.shapeInfo(), nullptr,
+//                                            target.buffer(), target.shapeInfo(), dims.data(), dims.size(),
+//                                            xTad.tadOnlyShapeInfo, xTad.tadOffsets);
+//     }
+
+//     int tadLength = 256 * 256;
+
+//     int iterations = 10;
+//     auto timeStart = std::chrono::system_clock::now();
+//     for (int i = 0; i < iterations; i++) {
+//         auto z = target.bufferAsT<float>();
+
+// #pragma omp parallel for schedule(static) num_threads(6)
+//         for (int t = 0; t < target.lengthOf(); t++) {
+
+//             auto x = array.bufferAsT<float>() + (tadLength * t);
+//             float local = 0.0f;
+
+//             #pragma omp simd reduction(+:local)
+//             for (int e = 0; e < tadLength; e++) {
+//                 local += x[e];//powf(x[e], 3) * logf(x[e]);
+//             }
+
+//             z[t] = local / tadLength;
+//         }
+//     }
+//     auto timeEnd = std::chrono::system_clock::now();
+//     auto spanTime = std::chrono::duration_cast<std::chrono::microseconds> ((timeEnd - timeStart)/iterations).count();
+//     auto ttlTime = std::chrono::duration_cast<std::chrono::milliseconds> ((timeEnd - timeStart)).count();
+
+//     nd4j_printf("average time: %lld us;\n", spanTime);
+//     nd4j_printf("total time: %lld ms;\n", ttlTime);
+// }
+
+// TEST_F(PlaygroundTests, test_reduce_scalar_float_1) {
+//     auto array = NDArrayFactory::create<float>('c', {32, 128, 256, 256});
+//     auto target = NDArrayFactory::create<float>(0.0f);
+
+//     // warm up
+//     for (int e = 0; e < 5; e++) {
+//         NativeOpExcutioner::execReduceFloatScalar(reduce::Mean, array.buffer(), array.shapeInfo(), nullptr, target.buffer(), target.shapeInfo());
+//     }
+
+//     int iterations = 10;
+//     auto timeStart = std::chrono::system_clock::now();
+//     for (int e = 0; e < iterations; e++) {
+//         NativeOpExcutioner::execReduceFloatScalar(reduce::Mean, array.buffer(), array.shapeInfo(), nullptr, target.buffer(), target.shapeInfo());
+//     }
+//     auto timeEnd = std::chrono::system_clock::now();
+//     auto spanTime = std::chrono::duration_cast<std::chrono::microseconds> ((timeEnd - timeStart)/iterations).count();
+//     auto ttlTime = std::chrono::duration_cast<std::chrono::milliseconds> ((timeEnd - timeStart)).count();
+
+//     nd4j_printf("average time: %lld us;\n", spanTime);
+//     nd4j_printf("total time: %lld ms;\n", ttlTime);
+// }
+
+// TEST_F(PlaygroundTests, test_reduce_scalar_float_2) {
+//     auto array = NDArrayFactory::create<float>('c', {100000});
+//     auto target = NDArrayFactory::create<float>(0.0f);
+
+//      // warm up
+//      for (int e = 0; e < 100; e++) {
+//          NativeOpExcutioner::execReduceFloatScalar(reduce::ReduceFloatBenchmarkOp, array.buffer(), array.shapeInfo(), nullptr, target.buffer(), target.shapeInfo());
+//      }
+
+//      int iterations = 100;
+//      auto timeStart = std::chrono::system_clock::now();
+//      for (int e = 0; e < iterations; e++) {
+//          NativeOpExcutioner::execReduceFloatScalar(reduce::ReduceFloatBenchmarkOp, array.buffer(), array.shapeInfo(), nullptr, target.buffer(), target.shapeInfo());
+//      }
+//      auto timeEnd = std::chrono::system_clock::now();
+//      auto spanTime = std::chrono::duration_cast<std::chrono::nanoseconds> ((timeEnd - timeStart)/iterations).count();
+//      auto ttlTime = std::chrono::duration_cast<std::chrono::milliseconds> ((timeEnd - timeStart)).count();
+
+//      nd4j_printf("average time: %lld ns;\n", spanTime);
+//      nd4j_printf("total time: %lld ms;\n", ttlTime);
+// }
+
+// TEST_F(PlaygroundTests, test_reduce_scalar_same_2) {
+//     auto array = NDArrayFactory::create<float>('c', {100000});
+//     auto target = NDArrayFactory::create<float>(0.0f);
+
+//     // warm up
+//     for (int e = 0; e < 100; e++) {
+//         NativeOpExcutioner::execReduceSameScalar(reduce::ReduceSameBenchmarkOp, array.buffer(), array.shapeInfo(), nullptr, target.buffer(), target.shapeInfo());
+//     }
+
+//     int iterations = 100;
+//     auto timeStart = std::chrono::system_clock::now();
+//     for (int e = 0; e < iterations; e++) {
+//         NativeOpExcutioner::execReduceSameScalar(reduce::ReduceSameBenchmarkOp, array.buffer(), array.shapeInfo(), nullptr, target.buffer(), target.shapeInfo());
+//     }
+//     auto timeEnd = std::chrono::system_clock::now();
+//     auto spanTime = std::chrono::duration_cast<std::chrono::nanoseconds> ((timeEnd - timeStart)/iterations).count();
+//     auto ttlTime = std::chrono::duration_cast<std::chrono::milliseconds> ((timeEnd - timeStart)).count();
+
+//     nd4j_printf("average time: %lld ns;\n", spanTime);
+//     nd4j_printf("total time: %lld ms;\n", ttlTime);
+// }
+
+
+// TEST_F(PlaygroundTests, test_assign_float) {
+//      auto array = NDArrayFactory::create<float>('c', {32, 128, 256, 256});
+//      auto target = NDArrayFactory::create<float>('c', {32, 128, 256, 256});
+
+//      array.assign(119);
+
+//      // warm up
+//      for (int e = 0; e < 5; e++) {
+//          NativeOpExcutioner::execTransformAny(transform::Assign, array.buffer(), array.shapeInfo(), target.buffer(), target.shapeInfo(), nullptr, nullptr, nullptr);
+//      }
+
+//      int iterations = 10;
+//      auto timeStart = std::chrono::system_clock::now();
+//      for (int e = 0; e < iterations; e++) {
+//          NativeOpExcutioner::execTransformAny(transform::Assign, array.buffer(), array.shapeInfo(), target.buffer(), target.shapeInfo(), nullptr, nullptr, nullptr);
+//      }
+//      auto timeEnd = std::chrono::system_clock::now();
+//      auto spanTime = std::chrono::duration_cast<std::chrono::microseconds> ((timeEnd - timeStart)/iterations).count();
+//      auto ttlTime = std::chrono::duration_cast<std::chrono::milliseconds> ((timeEnd - timeStart)).count();
+//      auto bw = (1000000L * (float) (array.lengthOf() * array.sizeOfT()) / spanTime) / 1024 / 1024 / 1024;
+
+//      nd4j_printf("average time: %lld us;\n", spanTime);
+//      nd4j_printf("total time: %lld ms;\n", ttlTime);
+//      nd4j_printf("Bandwidth: %f GB/s\n", bw)
+
+// }
+
+// TEST_F(PlaygroundTests, test_manual_loop) {
+//     const unsigned int len = 32 * 128 * 256 * 256;
+//     auto array = new float[len];
+//     auto z = new float[len];
+
+//     for (unsigned int e = 0; e < len; e++)
+//         array[e] = (float) e;
+
+//     const int iterations = 100;
+
+//     auto timeStart = std::chrono::system_clock::now();
+//     for (int i = 0; i < iterations; i++) {
+
+// #pragma omp parallel for num_threads(4) schedule(static, 32768)
+//         for (unsigned int e = 0; e < len; e++)
+//             z[e] = array[e];
+//     }
+
+//     auto timeEnd = std::chrono::system_clock::now();
+//     auto spanTime = std::chrono::duration_cast<std::chrono::microseconds> ((timeEnd - timeStart) / iterations).count();
+//     auto ttlTime = std::chrono::duration_cast<std::chrono::milliseconds> ((timeEnd - timeStart)).count();
+//     auto bw = (1000000L * (float) (len * sizeof(float)) / spanTime) / 1024 / 1024 / 1024;
+
+//     nd4j_printf("length: %i\n", len);
+//     nd4j_printf("average time: %lld us;\n", spanTime);
+//     nd4j_printf("total time: %lld ms;\n", ttlTime);
+//     nd4j_printf("Bandwidth: %f GB/s\n", bw)
+
+//     delete[] array;
+//     delete[] z;
+// }
+
+TEST_F(PlaygroundTests, test_col2im_permuted_1) {
+    auto x = NDArrayFactory::create<float>('c', {8, 64, 55, 55, 3, 3});
+    x.assign(1.f);
+    x.permutei({0, 1, 4, 5, 2, 3});
+
+    auto z0 = NDArrayFactory::create<float>('c', {64, 8, 112, 112});
+    z0.permutei({1, 0, 2, 3});
+
+    auto z1 = NDArrayFactory::create<float>('c', {64, 8, 112, 112});
+    z1.permutei({1, 0, 2, 3});
+
+    nd4j_printf("Starting custom run...\n","");
+    const int iterations = 100;
+    nd4j::ops::col2im op;
+
+    auto timeStart = std::chrono::system_clock::now();
+    for (int e = 0; e < iterations; e++) {
+        op.execute({&x}, {&z0}, {}, {2, 2, 0, 0, 112, 112, 1, 1, 1}, {});
+    }
+    auto timeEnd = std::chrono::system_clock::now();
+    auto spanTime = std::chrono::duration_cast<std::chrono::microseconds> ((timeEnd - timeStart) / iterations).count();
+    auto ttlTime = std::chrono::duration_cast<std::chrono::milliseconds> ((timeEnd - timeStart)).count();
+
+    nd4j_printf("Starting legacy run...\n","");
+    std::array<float, 8> extra = {2.f, 2.f, 0.f, 0.f, 112.f, 112.f, 1.f, 1.f};
+
+    auto legacyStart = std::chrono::system_clock::now();
+    for (int e = 0; e < iterations; e++) {
+        x.applyTransform(transform::Col2Im, &z1, extra.data());
+    }
+    auto legacyEnd = std::chrono::system_clock::now();
+    auto legacySpanTime = std::chrono::duration_cast<std::chrono::microseconds> ((legacyEnd - legacyStart) / iterations).count();
+    auto legacyTtlTime = std::chrono::duration_cast<std::chrono::milliseconds> ((legacyEnd - legacyStart)).count();
+
+    nd4j_printf("average time: %lld us vs %lld us;\n", spanTime, legacySpanTime);
+    nd4j_printf("total time: %lld ms vs %lld ms;\n", ttlTime, legacyTtlTime);
+
+    ASSERT_EQ(z0, z1);
+}
+
+// //////////////////////////////////////////////////////////////////////    
+// INLINEDEF unsigned offsetUns(unsigned index, const unsigned *shapeInfo, unsigned arrLen) {
+        
+//     unsigned offset = 0;        
+
+//     for(unsigned i = 1; i <= shapeInfo[0]; ++i) {
+//         arrLen /= shapeInfo[i];
+//         if(arrLen > 0 && shapeInfo[i] > 1) {                
+//             offset += (index / arrLen) * shapeInfo[i + shapeInfo[0]];
+//             index %= arrLen;
+//         }
+//     }
+//     return offset;
+// }
+
+// //////////////////////////////////////////////////////////////////////    
+// INLINEDEF int offsetInt(int index, const int *shapeInfo, int arrLen) {
+        
+//     int offset = 0;        
+
+//     for(int i = 1; i <= shapeInfo[0]; ++i) {
+//         arrLen /= shapeInfo[i];
+//         if(arrLen > 0 && shapeInfo[i] > 1) {                
+//             offset += (index / arrLen) * shapeInfo[i + shapeInfo[0]];
+//             index %= arrLen;
+//         }
+//     }
+//     return offset;
+// }
+
+
+// //////////////////////////////////////////////////////////////////////
+// TEST_F(PlaygroundTests, signed_unsigned_1) {
+    
+//     const int dim0(32), dim1(128), dim2(256), dim3(256);
+//     const unsigned len = dim0*dim1*dim2*dim3;
+    
+//     unsigned shapeInfoUns[] = {4,  dim0,dim1,dim2,dim3,  dim1*dim2*dim3,dim2*dim3,dim3,1,   0, 1, 99};
+//     int      shapeInfoInt[] = {4,  dim0,dim1,dim2,dim3,  dim1*dim2*dim3,dim2*dim3,dim3,1,   0, 1, 99};
+
+//     double* buffer = new double[len];
+
+//     //***********************************    
+//     auto timeStart = std::chrono::system_clock::now();
+//     for(int i=0; i<(int)len; ++i) {
+//         int offset = offsetInt(i, shapeInfoInt, (int)len);
+//         buffer[offset] = i;
+//     }    
+
+//     auto timeEnd = std::chrono::system_clock::now();
+//     auto timeInt = std::chrono::duration_cast<std::chrono::nanoseconds> ((timeEnd - timeStart)/len).count();
+
+//     //***********************************
+//     timeStart = std::chrono::system_clock::now();
+    
+//     for(unsigned i=0; i<len; ++i) {
+//         unsigned offset = offsetUns(i, shapeInfoUns, len);
+//         buffer[offset] = i;
+//     }   
+    
+//     timeEnd = std::chrono::system_clock::now();
+//     auto timeUns = std::chrono::duration_cast<std::chrono::nanoseconds> ((timeEnd - timeStart)/len).count();
+
+//     nd4j_printf("signed   time: %i ns;\n", timeInt);
+//     nd4j_printf("unsigned time: %u ns;\n", timeUns);
+
+//     delete []buffer;
+// }

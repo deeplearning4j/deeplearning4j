@@ -3046,7 +3046,13 @@ template void NDArray::applyScalar(nd4j::scalar::Ops op, const bool scalar, NDAr
             throw std::runtime_error("NDArray::applyTrueBroadcast bool: you can't use this method on String array!");
         if(target == nullptr || other == nullptr)
             throw std::runtime_error("NDArray::applyTrueBroadcast bool method: target or other = nullptr !");
+
+        if(isEmpty() || other->isEmpty()){
+            //Edge case: broadcastOp(x,empty) -> empty; no-op
+			return;
+		}
         
+		
         if (isScalar()) {
             NDArray temp(target->_shapeInfo, _dataType, false, _workspace);
             temp.assign(this);
@@ -3142,6 +3148,11 @@ template void NDArray::applyScalar(nd4j::scalar::Ops op, const bool scalar, NDAr
             throw std::runtime_error("NDArray::applyTrueBroadcast method: target or other = nullptr !");
         if(((op.s == scalar::Divide || op.s == scalar::FloorDiv || op.s == scalar::FloorMod) && other->isB()) || (op.s == scalar::ReverseDivide && this->isB()))
             throw std::runtime_error("NDArray::applyTrueBroadcast method: you can't divide by bool array !");
+
+        if(isEmpty() || other->isEmpty()){
+            //Edge case: broadcastOp(x,empty) -> empty; no-op
+			return;
+		}
 
         if (isScalar()) {
             target->assign(this);
@@ -3659,7 +3670,7 @@ template void NDArray::pIdx(const Nd4jLong* indices, const bool value);
         Nd4jLong* newShape;
         ALLOCATE(newShape, _workspace, shape::shapeInfoLength(this->rankOf()), Nd4jLong);
         memcpy(newShape, this->_shapeInfo, shape::shapeInfoByteLength(this->rankOf()));
-        newShape[shape::shapeInfoLength(this->rankOf()) - 2] = -1;
+        newShape[shape::shapeInfoLength(this->rankOf()) - 2] = 0;
 
         auto shapeOf = shape::shapeOf(newShape);
         auto stridesOf = shape::stride(newShape);
@@ -3702,7 +3713,7 @@ template void NDArray::pIdx(const Nd4jLong* indices, const bool value);
         Nd4jLong *newShape;
         ALLOCATE(newShape, _workspace, shape::shapeInfoLength(this->rankOf()), Nd4jLong);
         memcpy(newShape, this->_shapeInfo, shape::shapeInfoByteLength(this->rankOf()));
-        newShape[shape::shapeInfoLength(this->rankOf()) - 2] = -1;
+        newShape[shape::shapeInfoLength(this->rankOf()) - 2] = 0;
 
         auto shapeOf = shape::shapeOf(newShape);
         auto stridesOf = shape::stride(newShape);
@@ -3741,7 +3752,7 @@ template void NDArray::pIdx(const Nd4jLong* indices, const bool value);
         Nd4jLong *newShape;
         ALLOCATE(newShape, _workspace, shape::shapeInfoLength(this->rankOf()), Nd4jLong);
         memcpy(newShape, this->_shapeInfo, shape::shapeInfoByteLength(this->rankOf()));
-        newShape[shape::shapeInfoLength(this->rankOf()) - 2] = -1;
+        newShape[shape::shapeInfoLength(this->rankOf()) - 2] = 0;
 
         auto shapeOf = shape::shapeOf(newShape);
         auto stridesOf = shape::stride(newShape);
@@ -4025,7 +4036,7 @@ template void NDArray::pIdx(const Nd4jLong* indices, const bool value);
         Nd4jLong *newShape;
         ALLOCATE(newShape, _workspace, shape::shapeInfoLength(rank), Nd4jLong);
         memcpy(newShape, _shapeInfo, shape::shapeInfoByteLength(rank));
-        newShape[shape::shapeInfoLength(rank) - 2] = -1;
+        newShape[shape::shapeInfoLength(rank) - 2] = 0;
 
         auto shapeOf = shape::shapeOf(newShape);
         auto stridesOf = shape::stride(newShape);
@@ -4797,7 +4808,7 @@ template void NDArray::operator/=(const bool scalar);
                         
             outShapeInfo[3] *= step;
             outShapeInfo[4] *= step;
-            outShapeInfo[6] =  -1;
+            outShapeInfo[6] =  0;
         }
 
         ArrayOptions::setDataType(outShapeInfo, this->dataType());

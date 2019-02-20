@@ -19,6 +19,8 @@ package org.deeplearning4j.zoo;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.datasets.iterator.impl.BenchmarkDataSetIterator;
 import org.deeplearning4j.nn.api.Model;
+import org.deeplearning4j.nn.conf.inputs.InputType;
+import org.deeplearning4j.nn.conf.layers.LossLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
@@ -345,5 +347,19 @@ public class TestInstantiation extends BaseDL4JTest {
 
             System.gc();
         }
+    }
+
+    @Test
+    public void testTransferLearning() throws Exception {
+        //https://github.com/deeplearning4j/deeplearning4j/issues/7193
+
+        ComputationGraph cg = (ComputationGraph) ResNet50.builder().build().initPretrained();
+
+        cg = new TransferLearning.GraphBuilder(cg)
+                .addLayer("out", new LossLayer.Builder().lossFunction(LossFunctions.LossFunction.MCXENT).activation(Activation.IDENTITY).build(), "fc1000")
+                .setInputTypes(InputType.convolutional(224, 224, 3))
+                .setOutputs("out")
+                .build();
+
     }
 }

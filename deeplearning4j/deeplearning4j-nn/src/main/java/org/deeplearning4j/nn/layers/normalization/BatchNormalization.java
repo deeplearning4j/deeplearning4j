@@ -87,20 +87,10 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
                 } else {
                     OneTimeLogger.info(log, "cuDNN not found: "
                             + "use cuDNN for better GPU performance by including the deeplearning4j-cuda module. "
-                            + "For more information, please refer to: https://deeplearning4j.org/cudnn", t);
+                            + "For more information, please refer to: https://deeplearning4j.org/docs/latest/deeplearning4j-config-cudnn", t);
                 }
             }
         }
-    }
-
-    @Override
-    public double calcL2(boolean backpropParamsOnly) {
-        return 0;
-    }
-
-    @Override
-    public double calcL1(boolean backpropParamsOnly) {
-        return 0;
     }
 
     @Override

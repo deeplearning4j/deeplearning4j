@@ -28,8 +28,10 @@ import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.deeplearning4j.nn.params.EmptyParamInitializer;
 import org.deeplearning4j.optimize.api.TrainingListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.learning.regularization.Regularization;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -93,15 +95,9 @@ public class DropoutLayer extends FeedForwardLayer {
     }
 
     @Override
-    public double getL1ByParam(String paramName) {
+    public List<Regularization> getRegularizationByParam(String paramName) {
         //Not applicable
-        return 0;
-    }
-
-    @Override
-    public double getL2ByParam(String paramName) {
-        //Not applicable
-        return 0;
+        return null;
     }
 
     @Override

@@ -17,6 +17,8 @@
 package org.deeplearning4j.models.paragraphvectors;
 
 import com.google.common.collect.Lists;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
@@ -38,6 +40,7 @@ import org.deeplearning4j.models.sequencevectors.transformers.impl.SentenceTrans
 import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.models.word2vec.Word2Vec;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
+import org.deeplearning4j.models.word2vec.wordstore.inmemory.AbstractCache;
 import org.deeplearning4j.text.documentiterator.*;
 import org.deeplearning4j.text.documentiterator.interoperability.DocumentIteratorConverter;
 import org.deeplearning4j.text.invertedindex.InvertedIndex;
@@ -52,9 +55,14 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.primitives.Counter;
 import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.shade.jackson.core.JsonProcessingException;
+import org.nd4j.shade.jackson.databind.DeserializationFeature;
+import org.nd4j.shade.jackson.databind.ObjectMapper;
+import org.nd4j.shade.jackson.databind.SerializationFeature;
 import org.threadly.concurrent.PriorityScheduler;
 import org.threadly.concurrent.TaskPriority;
 
+import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicLong;
@@ -497,7 +505,8 @@ public class ParagraphVectors extends Word2Vec {
             distances.incrementCount(s, (float) sim);
         }
 
-        return distances.keySetSorted().subList(0, limit);
+        val keys = distances.keySetSorted();
+        return keys.subList(0, Math.min(limit, keys.size()));
     }
 
     /**
@@ -700,7 +709,52 @@ public class ParagraphVectors extends Word2Vec {
         return sim;
     }
 
+    private static ObjectMapper mapper = null;
+    private static final Object lock = new Object();
 
+    private static ObjectMapper mapper() {
+        if (mapper == null) {
+            synchronized (lock) {
+                if (mapper == null) {
+                    mapper = new ObjectMapper();
+                    mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+                    mapper.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
+                    return mapper;
+                }
+            }
+        }
+        return mapper;
+    }
+
+    private static final String CLASS_FIELD = "@class";
+    private static final String VOCAB_LIST_FIELD = "VocabCache";
+
+    public String toJson() throws JsonProcessingException {
+
+        JsonObject retVal = new JsonObject();
+        ObjectMapper mapper = mapper();
+
+        retVal.addProperty(CLASS_FIELD, mapper.writeValueAsString(this.getClass().getName()));
+
+        if (this.vocab instanceof AbstractCache) {
+            retVal.addProperty(VOCAB_LIST_FIELD, ((AbstractCache<VocabWord>) this.vocab).toJson());
+        }
+
+        return retVal.toString();
+    }
+
+    public static ParagraphVectors fromJson(String jsonString)  throws IOException {
+
+        ParagraphVectors ret = new ParagraphVectors();
+
+        JsonParser parser = new JsonParser();
+        JsonObject json = parser.parse(jsonString).getAsJsonObject();
+
+        VocabCache cache = AbstractCache.fromJson(json.get(VOCAB_LIST_FIELD).getAsString());
+
+        ret.setVocab(cache);
+        return ret;
+    }
 
     public static class Builder extends Word2Vec.Builder {
         protected LabelAwareIterator labelAwareIterator;

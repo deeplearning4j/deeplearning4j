@@ -62,6 +62,8 @@ TYPED_TEST(TypedConvolutionTests, TestConv2D_1) {
         weights->p(e, e + 1);
     weights->permutei({2,3,1,0});
 
+    weights->printShapeInfo("weights");
+
     ArrayOptions::setDataType(_expS, input->dataType());
     auto exp = new NDArray(_expB, _expS);
     exp->triggerAllocationFlag(false, false);
@@ -111,8 +113,8 @@ TYPED_TEST(TypedConvolutionTests, TestConv2D_1) {
     // basically the same as above
     ASSERT_TRUE(res->isSameShape(exp));
     // just for visual validation
-    //exp->printBuffer("Expected");
-    //res->printBuffer("Actual  ");
+    exp->printIndexedBuffer("Expected");
+    res->printIndexedBuffer("Actual  ");
     res->printShapeInfo("Result shape");
     // final check
     ASSERT_TRUE(res->equalsTo(exp));
@@ -131,6 +133,9 @@ TYPED_TEST(TypedConvolutionTests, TestAvgFF_TF) {
     ASSERT_EQ(Status::OK(), result->status());
 
     auto z = result->at(0);
+
+    z->printIndexedBuffer("z");
+    exp.printIndexedBuffer("e");
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));

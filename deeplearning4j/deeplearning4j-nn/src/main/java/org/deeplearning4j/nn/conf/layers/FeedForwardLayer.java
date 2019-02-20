@@ -104,30 +104,6 @@ public abstract class FeedForwardLayer extends BaseLayer {
     }
 
     @Override
-    public double getL1ByParam(String paramName) {
-        switch (paramName) {
-            case DefaultParamInitializer.WEIGHT_KEY:
-                return l1;
-            case DefaultParamInitializer.BIAS_KEY:
-                return l1Bias;
-            default:
-                throw new IllegalStateException("Unknown parameter: \"" + paramName + "\"");
-        }
-    }
-
-    @Override
-    public double getL2ByParam(String paramName) {
-        switch (paramName) {
-            case DefaultParamInitializer.WEIGHT_KEY:
-                return l2;
-            case DefaultParamInitializer.BIAS_KEY:
-                return l2Bias;
-            default:
-                throw new IllegalStateException("Unknown parameter: \"" + paramName + "\"");
-        }
-    }
-
-    @Override
     public boolean isPretrainParam(String paramName) {
         return false; //No pretrain params in standard FF layers
     }

@@ -17,7 +17,6 @@
 package org.nd4j.autodiff.validation;
 
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
@@ -26,7 +25,6 @@ import org.nd4j.autodiff.samediff.internal.SameDiffOp;
 import org.nd4j.autodiff.samediff.internal.Variable;
 import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataType;
-import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.iter.NdIndexIterator;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -51,7 +49,7 @@ public class GradCheckUtil {
 
     public static boolean checkGradients(TestCase t){
         return checkGradients(t.sameDiff(), t.placeholderValues(), t.gradCheckEpsilon(), t.gradCheckMaxRelativeError(), t.gradCheckMinAbsError(),
-                t.gradCheckPrint(), t.gradCheckDefaultExitFirstFailure(), false, t.gradCheckDebugMode(), t.gradCheckSkipVariables());
+                t.gradCheckPrint(), t.gradCheckDefaultExitFirstFailure(), false, t.gradCheckDebugMode(), t.gradCheckSkipVariables(), t.gradCheckMask());
     }
 
     public static boolean checkGradients(SameDiff sd, Map<String,INDArray> placeholderValues, String... skipVariables){
@@ -61,7 +59,7 @@ public class GradCheckUtil {
             Collections.addAll(skip, skipVariables);
         }
         return checkGradients(sd, placeholderValues, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR, DEFAULT_MIN_ABS_ERROR, DEFAULT_PRINT, DEFAULT_EXIT_FIRST_FAILURE,
-                false, DEFAULT_DEBUG_MODE, skip);
+                false, DEFAULT_DEBUG_MODE, skip, null);
     }
 
     public static boolean checkGradients(SameDiff sd, Map<String,INDArray> placeholderValues, boolean print, boolean exitOnFirstFailure){
@@ -71,11 +69,11 @@ public class GradCheckUtil {
 
     public static boolean checkGradients(SameDiff sd, Map<String,INDArray> placeholderValues, double eps, double maxRelError, double minAbsError, boolean print,
                                          boolean exitOnFirstFailure) {
-        return checkGradients(sd, placeholderValues, eps, maxRelError, minAbsError, print, exitOnFirstFailure, false, DEFAULT_DEBUG_MODE, null);
+        return checkGradients(sd, placeholderValues, eps, maxRelError, minAbsError, print, exitOnFirstFailure, false, DEFAULT_DEBUG_MODE, null, null);
     }
 
     public static boolean checkGradients(SameDiff sd, Map<String,INDArray> placeholderValues, double eps, double maxRelError, double minAbsError, boolean print,
-                                         boolean exitOnFirstFailure, boolean skipValidation, boolean debugMode, Set<String> skipVariables){
+                                         boolean exitOnFirstFailure, boolean skipValidation, boolean debugMode, Set<String> skipVariables, Map<String,INDArray> gradCheckMask){
 
         boolean debugBefore = sd.isDebugMode();
         if(debugMode){
@@ -182,12 +180,25 @@ public class GradCheckUtil {
 
             NdIndexIterator iter = new NdIndexIterator('c',a.shape());
 
+            INDArray varMask = (gradCheckMask == null ? null : gradCheckMask.get(s.getVarName()));
+
+            if(varMask != null){
+                Preconditions.checkState(a.equalShapes(varMask), "Variable \"%s\": Gradient check mask and array shapes must be equal: got %s vs. mask shape %s", s.getVarName(), a.shape(), varMask.shape());
+                Preconditions.checkState(varMask.dataType() == DataType.BOOL, "Variable \"%s\": Gradient check mask must be BOOLEAN datatype, got %s", s.getVarName(), varMask.dataType());
+            }
+
             int i=0;
             while(iter.hasNext()){
-                val idx = iter.next();
+                long[] idx = iter.next();
                 String strIdx = null;
                 if(print){
                     strIdx = Arrays.toString(idx).replaceAll(" ","");
+                }
+
+                boolean maskValue = (varMask == null || (varMask.getDouble(idx) != 0));
+                if(!maskValue){
+                    //Skip this specific entry (masked out)
+                    continue;
                 }
 
                 totalCount++;

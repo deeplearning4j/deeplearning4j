@@ -80,6 +80,9 @@ namespace shape {
         // special case for CUDA, we're passing in __shared__ memory pointers to be used instead of new/malloc
         void *ptrManager = nullptr;
         int *ptrOutput = nullptr;
+
+        INLINEDEF bool dimensionsDescending(int rank, int *dimensions, int length);
+
 #ifdef __CUDACC__
         __host__ __device__
 #endif
@@ -361,7 +364,8 @@ namespace shape {
             //vector case
         } else {
             // if(dimensionLength == 1 && shape::shapeOf(shapeInfo)[dimension[0]] == 1) {
-            if(dimension == 0 && shape::shapeOf(shapeInfo)[dimension[0]] == 1) {
+            //if(dimension == 0 && ) {
+            if(dimension != nullptr && shape::shapeOf(shapeInfo)[dimension[0]] == 1) {
                 wholeThing = true;
             }
         }
@@ -425,19 +429,32 @@ namespace shape {
         return copy;
     }
 
+    INLINEDEF bool TAD::dimensionsDescending(int rank, int *dimensions, int length) {
+        int desired = rank - 1;
+        for (int e = length - 1; e >= 0; e--) {
+            if (dimensions[e] != desired--)
+                return false;
+        }
+        return true;
+    }
+
     INLINEDEF void TAD::createTadOnlyShapeInfo() {
         this->tadOnlyShapeInfo = this->shapeInfoOnlyShapeAndStride();
         nd4j::ArrayOptions::setDataType(this->tadOnlyShapeInfo, nd4j::ArrayOptions::dataType(this->originalShapeInfo));
+
+        // possible optimization goes here
+        if (shape::order(this->originalShapeInfo) == 'c'
+                && shape::strideDescendingCAscendingF(this->originalShapeInfo)
+                && dimensionsDescending(shape::rank(this->originalShapeInfo), this->originalDimension, this->originalDimensionLength)) {
+            // for C order, if outer dimensions are used, continuous layout is preserved
+            this->tadOnlyShapeInfo[shape::shapeInfoLength(this->tadOnlyShapeInfo) - 2] = this->originalShapeInfo[shape::shapeInfoLength(this->originalShapeInfo) - 2];
+        }
 
         if (this->tadShape != nullptr)
             delete[] this->tadShape;
 
         this->tadShape = shape::shapeOf(this->tadOnlyShapeInfo);
         this->tadStride = shape::stride(this->tadOnlyShapeInfo);
-        /* if(tadIndex > 0) {
-             this->createOffsets();
-             this->tadOnlyShapeInfo[shape::shapeInfoLength(shape::rank(this->tadOnlyShapeInfo)) - 3] = this->tadOffsets[tadIndex];
-         }*/
     }
 
     INLINEDEF Nd4jLong TAD::lengthPerSlice(Nd4jLong* shapeBuffer) {

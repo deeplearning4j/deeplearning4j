@@ -473,8 +473,6 @@ public class RandomTests extends BaseNd4jTest {
 
     @Test
     public void testSum_119() {
-        Nd4j.getExecutioner().enableVerboseMode(true);
-        Nd4j.getExecutioner().enableDebugMode(true);
         INDArray z2 = Nd4j.zeros(DataType.DOUBLE, 55000000);
         val sum = z2.sumNumber().doubleValue();
         log.info("Sum2: {}", sum);

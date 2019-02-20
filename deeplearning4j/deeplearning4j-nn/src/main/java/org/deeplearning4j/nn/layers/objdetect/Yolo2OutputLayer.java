@@ -91,8 +91,7 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
     @Setter @Getter
     protected INDArray labels;
 
-    private double fullNetworkL1;
-    private double fullNetworkL2;
+    private double fullNetRegTerm;
     private double score;
 
     public Yolo2OutputLayer(NeuralNetConfiguration conf) {
@@ -129,6 +128,9 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         //Infer mask array from labels. Mask array is 1_i^B in YOLO paper - i.e., whether an object is present in that
         // grid location or not. Here: we are using the fact that class labels are one-hot, and assume that values are
         // all 0s if no class label is present
+        Preconditions.checkState(labels.rank() == 4, "Expected labels array to be rank 4 with shape [minibatch, 4+numClasses, H, W]. Got labels array with shape %ndShape", labels);
+        Preconditions.checkState(labels.size(1) > 0, "Invalid labels array: labels.size(1) must be > 4. labels array should be rank 4 with shape [minibatch, 4+numClasses, H, W]. Got labels array with shape %ndShape", labels);
+
         val size1 = labels.size(1);
         INDArray classLabels = labels.get(all(), interval(4,size1), all(), all());   //Shape: [minibatch, nClasses, H, W]
         INDArray maskObjectPresent = classLabels.sum(Nd4j.createUninitialized(nhw, 'c'), 1);//.castTo(DataType.BOOL); //Shape: [minibatch, H, W]
@@ -169,7 +171,7 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         //Exponential for w/h (for: boxPrior * exp(input))      ->      Predicted WH in grid units (0 to 13 usually)
         INDArray predictedWHPreExp = input5.get(all(), all(), interval(2,4), all(), all());
         INDArray predictedWH = Transforms.exp(predictedWHPreExp, true);
-        Broadcast.mul(predictedWH, layerConf().getBoundingBoxes(), predictedWH, 1, 2);  //Box priors: [b, 2]; predictedWH: [mb, b, 2, h, w]
+        Broadcast.mul(predictedWH, layerConf().getBoundingBoxes().castTo(predictedWH.dataType()), predictedWH, 1, 2);  //Box priors: [b, 2]; predictedWH: [mb, b, 2, h, w]
 
         //Apply sqrt to W/H in preparation for loss function
         INDArray predictedWHSqrt = Transforms.sqrt(predictedWH, true);
@@ -263,7 +265,10 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
                     .addi(classPredictionLoss)
                     .dup('c');
 
-            scoreForExamples = scoreForExamples.reshape('c', mb, b*h*w).sum(true, 1).addi(fullNetworkL1 + fullNetworkL2);
+            scoreForExamples = scoreForExamples.reshape('c', mb, b*h*w).sum(true, 1);
+            if(fullNetRegTerm > 0.0) {
+                scoreForExamples.addi(fullNetRegTerm);
+            }
 
             return workspaceMgr.leverageTo(ArrayType.ACTIVATIONS, scoreForExamples);
         }
@@ -280,7 +285,7 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
 
         this.score /= getInputMiniBatchSize();
 
-        this.score += fullNetworkL1 + fullNetworkL2;
+        this.score += fullNetRegTerm;
 
         if(scoreOnly)
             return null;
@@ -395,9 +400,8 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
     }
 
     @Override
-    public double computeScore(double fullNetworkL1, double fullNetworkL2, boolean training, LayerWorkspaceMgr workspaceMgr) {
-        this.fullNetworkL1 = fullNetworkL1;
-        this.fullNetworkL2 = fullNetworkL2;
+    public double computeScore(double fullNetRegTerm, boolean training, LayerWorkspaceMgr workspaceMgr) {
+        this.fullNetRegTerm = fullNetRegTerm;
 
         computeBackpropGradientAndScore(workspaceMgr, true, false);
         return score();
@@ -565,9 +569,8 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
     }
 
     @Override
-    public INDArray computeScoreForExamples(double fullNetworkL1, double fullNetworkL2, LayerWorkspaceMgr workspaceMgr) {
-        this.fullNetworkL1 = fullNetworkL1;
-        this.fullNetworkL2 = fullNetworkL2;
+    public INDArray computeScoreForExamples(double fullNetRegTerm, LayerWorkspaceMgr workspaceMgr) {
+        this.fullNetRegTerm = fullNetRegTerm;
         return computeBackpropGradientAndScore(workspaceMgr, false, true);
     }
 

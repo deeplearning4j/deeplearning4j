@@ -614,6 +614,9 @@ public class Nd4j {
     }
 
     public static INDArray create(LongShapeDescriptor descriptor, boolean initialize) {
+        if(descriptor.isEmpty()){
+            return Nd4j.empty(descriptor.dataType());
+        }
         if (initialize)
             return create(descriptor.dataType(), descriptor.getShape(), descriptor.getStride(), descriptor.getOrder());
         else

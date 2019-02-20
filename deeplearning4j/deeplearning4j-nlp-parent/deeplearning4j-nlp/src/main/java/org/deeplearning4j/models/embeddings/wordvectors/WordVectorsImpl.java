@@ -22,10 +22,12 @@ import lombok.NonNull;
 import lombok.Setter;
 import org.apache.commons.lang.ArrayUtils;
 import org.deeplearning4j.models.embeddings.WeightLookupTable;
+import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
 import org.deeplearning4j.models.embeddings.reader.ModelUtils;
 import org.deeplearning4j.models.embeddings.reader.impl.BasicModelUtils;
 import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.heartbeat.Heartbeat;
@@ -33,11 +35,9 @@ import org.nd4j.linalg.heartbeat.reports.Environment;
 import org.nd4j.linalg.heartbeat.reports.Event;
 import org.nd4j.linalg.heartbeat.reports.Task;
 import org.nd4j.linalg.heartbeat.utils.EnvironmentUtils;
+import org.nd4j.linalg.io.CollectionUtils;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Common word vector operations
@@ -70,7 +70,7 @@ public class WordVectorsImpl<T extends SequenceElement> implements WordVectors {
     protected int learningRateDecayWords;
     protected boolean resetModel;
     protected boolean useAdeGrad;
-    protected int workers = Runtime.getRuntime().availableProcessors();
+    protected int workers = 1; //Runtime.getRuntime().availableProcessors();
     protected boolean trainSequenceVectors = false;
     protected boolean trainElementsVectors = true;
     protected long seed;
@@ -231,16 +231,21 @@ public class WordVectorsImpl<T extends SequenceElement> implements WordVectors {
     public INDArray getWordVectors(@NonNull Collection<String> labels) {
         int indexes[] = new int[labels.size()];
         int cnt = 0;
+        boolean useIndexUnknown = useUnknown && vocab.containsWord(getUNK());
+
         for (String label : labels) {
             if (vocab.containsWord(label)) {
                 indexes[cnt] = vocab.indexOf(label);
             } else
-                indexes[cnt] = -1;
+                indexes[cnt] = useIndexUnknown ? vocab.indexOf(getUNK()) : -1;
             cnt++;
         }
 
         while (ArrayUtils.contains(indexes, -1)) {
             indexes = ArrayUtils.removeElement(indexes, -1);
+        }
+        if (indexes.length == 0) {
+                return Nd4j.empty(((InMemoryLookupTable)lookupTable).getSyn0().dataType());
         }
 
         INDArray result = Nd4j.pullRows(lookupTable.getWeights(), 1, indexes);
@@ -331,5 +336,25 @@ public class WordVectorsImpl<T extends SequenceElement> implements WordVectors {
 
             heartbeat.reportEvent(event, env, task);
         }
+    }
+
+    @Override
+    public void loadWeightsInto(INDArray array) {
+        array.assign(lookupTable.getWeights());
+    }
+
+    @Override
+    public long vocabSize() {
+        return lookupTable.getWeights().size(0);
+    }
+
+    @Override
+    public int vectorSize() {
+        return lookupTable.layerSize();
+    }
+
+    @Override
+    public boolean jsonSerializable() {
+        return false;
     }
 }

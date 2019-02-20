@@ -37,6 +37,8 @@ import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.environment.Nd4jEnvironment;
 import org.nd4j.linalg.api.iter.INDArrayIterator;
 import org.nd4j.linalg.api.iter.NdIndexIterator;
+import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
+import org.nd4j.linalg.api.memory.enums.LearningPolicy;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BroadcastOp;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
@@ -69,6 +71,7 @@ import org.nd4j.linalg.api.ops.impl.transforms.comparison.CompareAndSet;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.Eps;
 import org.nd4j.linalg.api.ops.impl.transforms.pairwise.BinaryRelativeError;
 import org.nd4j.linalg.api.ops.impl.transforms.pairwise.Set;
+import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.Axpy;
 import org.nd4j.linalg.api.ops.impl.transforms.same.OldReverse;
 import org.nd4j.linalg.api.ops.impl.transforms.same.Sign;
 import org.nd4j.linalg.api.ops.impl.transforms.strict.ACosh;
@@ -122,7 +125,8 @@ public class Nd4jTestsC extends BaseNd4jTest {
         super.before();
         Nd4j.setDataType(DataType.DOUBLE);
         Nd4j.getRandom().setSeed(123);
-
+        Nd4j.getExecutioner().enableDebugMode(false);
+        Nd4j.getExecutioner().enableVerboseMode(false);
     }
 
     @After
@@ -962,8 +966,6 @@ public class Nd4jTestsC extends BaseNd4jTest {
 
     @Test
     public void testVStackDifferentOrders() {
-        Nd4j.getExecutioner().enableDebugMode(true);
-        Nd4j.getExecutioner().enableVerboseMode(true);
         INDArray expected = Nd4j.linspace(1, 9, 9, DataType.DOUBLE).reshape('c', 3, 3);
 
         for (char order : new char[] {'c', 'f'}) {
@@ -2904,14 +2906,11 @@ public class Nd4jTestsC extends BaseNd4jTest {
 
     @Test
     public void testConcatHorizontally() {
-        Nd4j.getExecutioner().enableDebugMode(true);
-        Nd4j.getExecutioner().enableVerboseMode(true);
         INDArray rowVector = Nd4j.ones(1, 5);
         INDArray other = Nd4j.ones(1, 5);
         INDArray concat = Nd4j.hstack(other, rowVector);
         assertEquals(rowVector.rows(), concat.rows());
         assertEquals(rowVector.columns() * 2, concat.columns());
-
     }
 
 
@@ -6135,8 +6134,6 @@ public class Nd4jTestsC extends BaseNd4jTest {
 
     @Test
     public void testConcat_1() {
-        Nd4j.getExecutioner().enableVerboseMode(true);
-        Nd4j.getExecutioner().enableDebugMode(true);
         for(char order : new char[]{'c', 'f'}) {
 
             INDArray arr1 = Nd4j.create(new double[]{1, 2}, new long[]{1, 2}, order);
@@ -7204,6 +7201,44 @@ public class Nd4jTestsC extends BaseNd4jTest {
                 {4,5,6},
                 {7,8,9}});
         assertEquals(exp, out);
+    }
+
+    @Test
+    public void testAxpyOpRows(){
+        INDArray arr = Nd4j.create(1,4).assign(2.0f);
+        INDArray ones = Nd4j.ones(1,4).assign(3.0f);
+
+        Nd4j.exec(new Axpy(arr, ones, arr, 10.0, 4));
+
+        INDArray exp = Nd4j.valueArrayOf(new long[]{1,4}, 23.0);
+
+        assertEquals(exp, arr);
+    }
+
+    @Test
+    public void testRollingMean() {
+        val wsconf = WorkspaceConfiguration.builder()
+                .initialSize(1500L * 1024L * 1024L)
+                .policyLearning(LearningPolicy.FIRST_LOOP)
+                .build();
+
+        for (int e = 0; e < 5; e++) {
+            try (val ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace(wsconf, "kjmnf,ndsfhnsdjhflljkl131334")) {
+                val array = Nd4j.create(DataType.FLOAT, 32, 128, 256, 256);
+                array.mean(2, 3);
+            }
+        }
+
+        int iterations = 100;
+        val timeStart = System.nanoTime();
+        for (int e = 0; e < iterations; e++) {
+            try (val ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace(wsconf, "kjmnf,ndsfhnsdjhflljkl131334")) {
+                val array = Nd4j.create(DataType.FLOAT, 32, 128, 256, 256);
+                array.mean(2, 3);
+            }
+        }
+        val timeEnd = System.nanoTime();
+        log.info("Average time: {} ms", (timeEnd - timeStart) / (double) iterations / (double) 1000 / (double) 1000);
     }
 
     ///////////////////////////////////////////////////////
