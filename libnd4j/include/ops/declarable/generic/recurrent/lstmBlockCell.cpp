@@ -73,11 +73,11 @@ CUSTOM_OP_IMPL(lstmBlockCell, 8, 7, false, 2, 1) {
     return Status::OK();
 }
 
-        DECLARE_TYPES(lstmCell) {
-            getOpDescriptor()
-                    ->setAllowedInputTypes(nd4j::DataType::ANY)
-                    ->setAllowedOutputTypes({ALL_FLOATS});
-        }
+DECLARE_TYPES(lstmBlockCell) {
+    getOpDescriptor()
+            ->setAllowedInputTypes(nd4j::DataType::ANY)
+            ->setAllowedOutputTypes({ALL_FLOATS});
+}
 
 
 DECLARE_SHAPE_FN(lstmBlockCell) {
@@ -104,10 +104,12 @@ DECLARE_SHAPE_FN(lstmBlockCell) {
     //TODO: shape validation
 
     // evaluate output shapeInfos
+    const int bS = xt[1];
+    const int numUnits = cLast[2];
     Nd4jLong *s(nullptr);
-    ALLOCATE(s, block.getWorkspace(), shape::shapeInfoLength(rank), Nd4jLong);      // [bS, numUnits]
+    ALLOCATE(s, block.getWorkspace(), shape::shapeInfoLength(2), Nd4jLong);      // [bS, numUnits]
 
-    s[0] = rank;
+    s[0] = 2;
     s[1] = bS;
     s[2] = numUnits;
 
