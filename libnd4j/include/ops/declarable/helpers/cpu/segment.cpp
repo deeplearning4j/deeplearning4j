@@ -64,6 +64,7 @@ namespace helpers {
 //#pragma omp parallel for schedule(static)
             for (Nd4jLong i = 1; i < indices->lengthOf(); i++) {
                 if (indices->e<int>(i) == idx) {
+#pragma omp parallel for schedule(static)
                     for (Nd4jLong e = 0; e < maxT->lengthOf(); e++) {
                        maxT->t<T>(e) = nd4j::math::nd4j_max(maxT->t<T>(e), listOfTensors->at(i)->t<T>(e));
                     }
@@ -119,6 +120,7 @@ namespace helpers {
 //#pragma omp parallel for schedule(dynamic)
             for (Nd4jLong i = 1; i < indices->lengthOf(); i++) {
                 if (indices->e<T>(i) == idx) {
+#pragma omp parallel for schedule(static)
                     for (int e = 0; e < minT->lengthOf(); e++) {
                        minT->p(e, nd4j::math::nd4j_min(minT->e<T>(e), listOfTensors->at(i)->e<T>(e)));
                     }
@@ -159,7 +161,7 @@ namespace helpers {
         }
         else {
             std::vector<int> restDims(input->rankOf() - 1);
-//#pragma omp parallel for schedule(static)
+#pragma omp parallel for schedule(static)
             for (int e = 1; e < input->rankOf(); e++)
                 restDims[e - 1] = e;
 
@@ -175,6 +177,7 @@ namespace helpers {
 //#pragma omp parallel for schedule(static)
             for (int i = 1; i < indices->lengthOf(); i++) {
                 if (indices->e<int>(i) == idx) {
+#pragma omp parallel for schedule(static)
                     for (int e = 0; e < meanT->lengthOf(); e++) {
                        meanV->p<T>(e, meanV->e<T>(e) + listOfTensors->at(i)->e<T>(e));
                     }
@@ -231,6 +234,7 @@ namespace helpers {
 
             for (int i = 0; i < indices->lengthOf(); i++) {
                 if (indices->e<int>(i) == idx) {
+#pragma omp parallel for schedule(static)
                     for (int e = 0; e < sumT->lengthOf(); e++) {
                        sumT->p(e, sumT->e<T>(e) +listOfTensors->at(i)->e<T>(e));
                     }
@@ -281,6 +285,7 @@ namespace helpers {
             sumT->assign(listOfTensors->at(0));
             for (int i = 1; i < indices->lengthOf(); i++) {
                 if (indices->e<int>(i)  == idx) {
+#pragma omp parallel for schedule(static)
                     for (int e = 0; e < sumT->lengthOf(); e++) {
                        sumT->p(e, sumT->e<T>(e) * listOfTensors->at(i)->e<T>(e));
                     }
