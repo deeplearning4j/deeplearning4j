@@ -3717,8 +3717,8 @@ void NativeOps::deleteUtf8String(Nd4jPointer *extraPointers, Nd4jPointer ptr) {
 template<typename T>
 __global__ static void scatterUpdateCuda(const int opCode, const int numOfSubArrs, 
 										      void* vx, const Nd4jLong *xShapeInfo, const Nd4jLong *xOffsets,
-										const void* vy, const Nd4jLong *yShapeInfo, const Nd4jLong *yOffsets,
-										const int* indexes) {
+										      void* vy, const Nd4jLong *yShapeInfo, const Nd4jLong *yOffsets,
+										      const int* indexes) {
         
     __shared__ T *x, *y;
     __shared__ Nd4jLong arrLenX, arrLenY;
@@ -3733,7 +3733,7 @@ __global__ static void scatterUpdateCuda(const int opCode, const int numOfSubArr
 
         if (threadIdx.x == 0) {
             x = reinterpret_cast<T*>(vx) + xOffsets[xIndex];
-            y = reinterpret_cast<const T*>(vy) + yOffsets[e];
+            y = reinterpret_cast<T*>(vy) + yOffsets[e];
             arrLenX = shape::length(xShapeInfo);
             arrLenY = shape::length(yShapeInfo);
         }
@@ -3779,7 +3779,7 @@ __global__ static void scatterUpdateCuda(const int opCode, const int numOfSubArr
 }
 
 template<typename T>
-__host__ static void scatterUpdateCudaLauncher(const cudaStream_t* stream, const int opCode, const int numOfSubArrs, void* vx, const Nd4jLong *xShapeInfo, const Nd4jLong *xOffsets, const void* vy, const Nd4jLong *yShapeInfo, const Nd4jLong *yOffsets, const int* indexes) {
+__host__ static void scatterUpdateCudaLauncher(const cudaStream_t* stream, const int opCode, const int numOfSubArrs, void* vx, const Nd4jLong *xShapeInfo, const Nd4jLong *xOffsets, void* vy, const Nd4jLong *yShapeInfo, const Nd4jLong *yOffsets, const int* indexes) {
 
     scatterUpdateCuda<T><<<512, 256, MAX_NUM_THREADS, *stream>>>(opCode, numOfSubArrs, vx, xShapeInfo, xOffsets, vy, yShapeInfo, yOffsets, indexes);
 }
@@ -3791,7 +3791,7 @@ void NativeOps::scatterUpdate(Nd4jPointer *extraPointers, int opCode, int numOfS
                       			void* dX, Nd4jLong* dXShapeInfo, Nd4jLong* dXOffsets,
                       			void* hY, Nd4jLong* hYShapeInfo, Nd4jLong* hYOffsets,
                       			void* dY, Nd4jLong* dYShapeInfo, Nd4jLong* dYOffsets,
-                      			int* hIindexes, int* dIindexes) {
+                      			int* hIindexes, int* dIndexes) {
 
 	auto stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 		

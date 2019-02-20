@@ -2469,7 +2469,7 @@ void NativeOps::deleteUtf8String(Nd4jPointer *extraPointers, Nd4jPointer ptr) {
 
 
 ////////////////////////////////////////////////////////////////////////
-static void scatterUpdate(Nd4jPointer *extraPointers, int opCode, int numOfSubArrs,
+void NativeOps::scatterUpdate(Nd4jPointer *extraPointers, int opCode, int numOfSubArrs,
                       void* hX, Nd4jLong* hXShapeInfo, Nd4jLong* hXOffsets,
                       void* dX, Nd4jLong* dXShapeInfo, Nd4jLong* dXOffsets,
                       void* hY, Nd4jLong* hYShapeInfo, Nd4jLong* hYOffsets,
