@@ -54,7 +54,7 @@ public class IndexingTests extends BaseNd4jTest {
     public void testGet() {
         System.out.println("Testing sub-array put and get with a 3D array ...");
 
-        INDArray arr = Nd4j.linspace(0, 124, 125, DataType.DOUBLE).reshape(5, 5, 5);
+        INDArray arr = Nd4j.linspace(0, 124, 125).reshape(5, 5, 5);
 
         /*
          * Extract elements with the following indices:
@@ -113,7 +113,7 @@ public class IndexingTests extends BaseNd4jTest {
      */
     @Test
     public void testSimplePoint() {
-        INDArray A = Nd4j.linspace(1, 3 * 3 * 3, 3 * 3 * 3, DataType.DOUBLE).reshape(3, 3, 3);
+        INDArray A = Nd4j.linspace(1, 3 * 3 * 3, 3 * 3 * 3).reshape(3, 3, 3);
 
         /*
             f - ordering
@@ -148,7 +148,7 @@ public class IndexingTests extends BaseNd4jTest {
         int rows = 5;
         int cols = 5;
         int l = slices * rows * cols;
-        INDArray A = Nd4j.linspace(1, l, l, DataType.DOUBLE).reshape(slices, rows, cols);
+        INDArray A = Nd4j.linspace(1, l, l).reshape(slices, rows, cols);
 
         for (int s = 0; s < slices; s++) {
             INDArrayIndex ndi_Slice = NDArrayIndex.point(s);
@@ -177,7 +177,7 @@ public class IndexingTests extends BaseNd4jTest {
     //TODO: possibly figure out what's going on here at some point?
     // - Adam
     public void testTensorGet() {
-        INDArray threeTwoTwo = Nd4j.linspace(1, 12, 12, DataType.DOUBLE).reshape(3, 2, 2);
+        INDArray threeTwoTwo = Nd4j.linspace(1, 12, 12).reshape(3, 2, 2);
         /*
         * [[[  1.,   7.],
         [  4.,  10.]],
@@ -208,8 +208,8 @@ public class IndexingTests extends BaseNd4jTest {
         int length1 = width * height * depth * nExamples1;
         int length2 = width * height * depth * nExamples2;
 
-        INDArray first = Nd4j.linspace(1, length1, length1, DataType.DOUBLE).reshape('c', nExamples1, depth, width, height);
-        INDArray second = Nd4j.linspace(1, length2, length2, DataType.DOUBLE).reshape('c', nExamples2, depth, width, height).addi(0.1);
+        INDArray first = Nd4j.linspace(1, length1, length1).reshape('c', nExamples1, depth, width, height);
+        INDArray second = Nd4j.linspace(1, length2, length2).reshape('c', nExamples2, depth, width, height).addi(0.1);
 
         INDArray fMerged = Nd4j.concat(0, first, second);
 
@@ -254,7 +254,7 @@ public class IndexingTests extends BaseNd4jTest {
 
     @Test
     public void testLinearIndex() {
-        INDArray linspace = Nd4j.linspace(1, 4, 4, DataType.DOUBLE).reshape(2, 2);
+        INDArray linspace = Nd4j.linspace(1, 4, 4).reshape(2, 2);
         for (int i = 0; i < linspace.length(); i++) {
             assertEquals(i + 1, linspace.getDouble(i), 1e-1);
         }

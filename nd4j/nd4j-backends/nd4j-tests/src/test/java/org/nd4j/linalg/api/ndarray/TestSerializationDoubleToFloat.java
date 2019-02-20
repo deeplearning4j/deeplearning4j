@@ -61,7 +61,7 @@ public class TestSerializationDoubleToFloat extends BaseNd4jTest {
         val initialType = Nd4j.dataType();
 
         Nd4j.setDataType(DataType.DOUBLE);
-        INDArray arr = Nd4j.linspace(1, length, length, DataType.DOUBLE).reshape('c', 10, 10);
+        INDArray arr = Nd4j.linspace(1, length, length).reshape('c', 10, 10);
         arr.subi(50.0123456); //assures positive and negative numbers with decimal points
 
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -74,7 +74,7 @@ public class TestSerializationDoubleToFloat extends BaseNd4jTest {
         //Nd4j.create(1);
         DataTypeUtil.setDTypeForContext(DataType.FLOAT);
         System.out.println("The data opType is " + Nd4j.dataType());
-        INDArray arr1 = Nd4j.linspace(1, length, length, DataType.DOUBLE).reshape('c', 10, 10);
+        INDArray arr1 = Nd4j.linspace(1, length, length).reshape('c', 10, 10);
         arr1.subi(50.0123456);
 
         INDArray arr2;
@@ -92,7 +92,7 @@ public class TestSerializationDoubleToFloat extends BaseNd4jTest {
         int length = 100;
         Nd4j.create(1);
         DataTypeUtil.setDTypeForContext(DataType.DOUBLE);
-        INDArray arr = Nd4j.linspace(1, length, length, DataType.DOUBLE).reshape('c', 10, 10);
+        INDArray arr = Nd4j.linspace(1, length, length).reshape('c', 10, 10);
         arr.subi(50.0123456); //assures positive and negative numbers with decimal points
 
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -105,7 +105,7 @@ public class TestSerializationDoubleToFloat extends BaseNd4jTest {
         //Nd4j.create(1);
         DataTypeUtil.setDTypeForContext(DataType.FLOAT);
         System.out.println("The data opType is " + Nd4j.dataType());
-        INDArray arr1 = Nd4j.linspace(1, length, length, DataType.FLOAT).reshape('c', 10, 10);
+        INDArray arr1 = Nd4j.linspace(1, length, length).reshape('c', 10, 10);
         arr1.subi(50.0123456);
 
         INDArray arr2;
@@ -122,7 +122,7 @@ public class TestSerializationDoubleToFloat extends BaseNd4jTest {
         int length = 100;
         Nd4j.create(1);
         DataTypeUtil.setDTypeForContext(DataType.DOUBLE);
-        INDArray arr = Nd4j.linspace(1, length, length, DataType.DOUBLE).reshape('c', 10, 10);
+        INDArray arr = Nd4j.linspace(1, length, length).reshape('c', 10, 10);
         INDArray sub = arr.get(NDArrayIndex.interval(5, 10), NDArrayIndex.interval(5, 10));
 
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -152,7 +152,7 @@ public class TestSerializationDoubleToFloat extends BaseNd4jTest {
         int length = 100;
         Nd4j.create(1);
         DataTypeUtil.setDTypeForContext(DataType.DOUBLE);
-        INDArray arr = Nd4j.linspace(1, length, length, DataType.DOUBLE).reshape('c', 10, 10);
+        INDArray arr = Nd4j.linspace(1, length, length).reshape('c', 10, 10);
 
         INDArray sub = arr.get(NDArrayIndex.interval(5, 10), NDArrayIndex.interval(5, 10));
 

@@ -52,7 +52,7 @@ public class TestInvertMatrices extends BaseNd4jTest {
         RealMatrix matrix = new Array2DRowRealMatrix(new double[][] {{1, 2}, {3, 4}});
 
         RealMatrix inverse = MatrixUtils.inverse(matrix);
-        INDArray arr = InvertMatrix.invert(Nd4j.linspace(1, 4, 4, DataType.DOUBLE).reshape(2, 2), false);
+        INDArray arr = InvertMatrix.invert(Nd4j.linspace(1, 4, 4).reshape(2, 2), false);
         for (int i = 0; i < inverse.getRowDimension(); i++) {
             for (int j = 0; j < inverse.getColumnDimension(); j++) {
                 assertEquals(arr.getDouble(i, j), inverse.getEntry(i, j), 1e-1);

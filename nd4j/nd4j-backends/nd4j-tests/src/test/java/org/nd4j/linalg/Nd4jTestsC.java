@@ -7033,7 +7033,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
 
     @Test
     public void testTransposei(){
-        INDArray arr = Nd4j.linspace(1,12,12, DataType.INT).reshape('c',3,4);
+        INDArray arr = Nd4j.linspace(1,12,12).reshape('c',3,4);
 
         INDArray ti = arr.transposei();
         assertArrayEquals(new long[]{4,3}, ti.shape());
@@ -7132,7 +7132,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
 
     @Test
     public void testAssignValid(){
-        INDArray arr1 = Nd4j.linspace(1, 12, 12, DataType.DOUBLE).reshape('c', 3, 4);
+        INDArray arr1 = Nd4j.linspace(1, 12, 12).reshape('c', 3, 4);
         INDArray arr2 = Nd4j.create(3,4);
         arr2.assign(arr1);
         assertEquals(arr1, arr2);
@@ -7140,7 +7140,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
 
     @Test
     public void testAssignInvalid(){
-        INDArray arr1 = Nd4j.linspace(1, 12, 12, DataType.DOUBLE).reshape('c', 3, 4);
+        INDArray arr1 = Nd4j.linspace(1, 12, 12).reshape('c', 3, 4);
         INDArray arr2 = Nd4j.create(4,3);
         try {
             arr2.assign(arr1);

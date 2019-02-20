@@ -74,7 +74,7 @@ public class ReductionBpOpValidation extends BaseOpValidation {
 
         for (boolean keepDims : new boolean[]{false, true}) {
 
-            INDArray preReduceInput = Nd4j.linspace(1, 12, 12, DataType.DOUBLE).reshape(3, 4);
+            INDArray preReduceInput = Nd4j.linspace(1, 12, 12).reshape(3, 4);
             INDArray dLdOut;
             if (keepDims) {
                 dLdOut = Nd4j.valueArrayOf(new long[]{1, 1}, 0.5);
@@ -101,7 +101,7 @@ public class ReductionBpOpValidation extends BaseOpValidation {
 
         for (boolean keepDims : new boolean[]{false, true}) {
             long[] reducedShape_0 = (keepDims ? new long[]{1, 4} : new long[]{4});
-            INDArray preReduceInput = Nd4j.linspace(1, 12, 12, DataType.DOUBLE).reshape(3, 4);
+            INDArray preReduceInput = Nd4j.linspace(1, 12, 12).reshape(3, 4);
             INDArray dLdOut_0 = Nd4j.create(new double[]{1, 2, 3, 4}, reducedShape_0);
             INDArray dLdInExpected_0 = Nd4j.createUninitialized(preReduceInput.shape());
             for (int i = 0; i < 3; i++) {
@@ -126,7 +126,7 @@ public class ReductionBpOpValidation extends BaseOpValidation {
         //We have one epsilon/gradient for each of the 3 TADs -> dL/dOut length is 3
 
         for (boolean keepDims : new boolean[]{false, true}) {
-            INDArray preReduceInput = Nd4j.linspace(1, 12, 12, DataType.DOUBLE).reshape(3, 4);
+            INDArray preReduceInput = Nd4j.linspace(1, 12, 12).reshape(3, 4);
 
             long[] reducedShape_1 = (keepDims ? new long[]{3, 1} : new long[]{3});
             INDArray dLdOut_1 = Nd4j.create(new double[]{1, 2, 3}, reducedShape_1);
@@ -159,7 +159,7 @@ public class ReductionBpOpValidation extends BaseOpValidation {
 
         for (boolean keepDims : new boolean[]{false, true}) {
 
-            INDArray preReduceInput = Nd4j.linspace(1, 12, 12, DataType.DOUBLE).reshape(3, 4);
+            INDArray preReduceInput = Nd4j.linspace(1, 12, 12).reshape(3, 4);
             INDArray dLdOut;
             if (keepDims) {
                 dLdOut = Nd4j.valueArrayOf(new long[]{1, 1}, 0.5);
@@ -199,7 +199,7 @@ public class ReductionBpOpValidation extends BaseOpValidation {
 
         for (boolean keepDims : new boolean[]{false, true}) {
             long[] reducedShape_0 = (keepDims ? new long[]{1, 4} : new long[]{4});
-            INDArray preReduceInput = Nd4j.linspace(1, 12, 12, DataType.DOUBLE).reshape('c',3, 4);
+            INDArray preReduceInput = Nd4j.linspace(1, 12, 12).reshape('c',3, 4);
             INDArray dLdOut_0 = Nd4j.create(new double[]{1, 2, 3, 4}, reducedShape_0);
             INDArray dLdInExpected_0 = Nd4j.createUninitialized(preReduceInput.shape());
             for (int i = 0; i < 3; i++) {
@@ -226,7 +226,7 @@ public class ReductionBpOpValidation extends BaseOpValidation {
         //We have one epsilon/gradient for each of the 3 TADs -> dL/dOut length is 3
 
         for (boolean keepDims : new boolean[]{false, true}) {
-            INDArray preReduceInput = Nd4j.linspace(1, 12, 12, DataType.DOUBLE).reshape(3, 4);
+            INDArray preReduceInput = Nd4j.linspace(1, 12, 12).reshape(3, 4);
 
             long[] reducedShape_1 = (keepDims ? new long[]{3, 1} : new long[]{3});
             INDArray dLdOut_1 = Nd4j.create(new double[]{1, 2, 3}, reducedShape_1);
@@ -255,7 +255,7 @@ public class ReductionBpOpValidation extends BaseOpValidation {
 
         for (boolean keepDims : new boolean[]{false, true}) {
 
-            INDArray preReduceInput = Nd4j.linspace(1, 12, 12, DataType.DOUBLE).reshape(3, 4);
+            INDArray preReduceInput = Nd4j.linspace(1, 12, 12).reshape(3, 4);
             preReduceInput.putScalar(new int[]{2, 2}, -1);   //Minimum value at position [2,2]
             INDArray dLdOut;
             if (keepDims) {
@@ -295,7 +295,7 @@ public class ReductionBpOpValidation extends BaseOpValidation {
         for (boolean keepDims : new boolean[]{false, true}) {
 
             long[] reducedShape_0 = (keepDims ? new long[]{1, 4} : new long[]{4});
-            INDArray preReduceInput = Nd4j.linspace(1, 16, 16, DataType.DOUBLE).reshape(4, 4);
+            INDArray preReduceInput = Nd4j.linspace(1, 16, 16).reshape(4, 4);
             preReduceInput.putScalar(0, 0, -1);
             preReduceInput.putScalar(1, 1, -2);
             preReduceInput.putScalar(2, 2, -3);
@@ -337,7 +337,7 @@ public class ReductionBpOpValidation extends BaseOpValidation {
 
         for (boolean keepDims : new boolean[]{false, true}) {
 
-            INDArray preReduceInput = Nd4j.linspace(1, 12, 12, DataType.DOUBLE).reshape(3, 4);
+            INDArray preReduceInput = Nd4j.linspace(1, 12, 12).reshape(3, 4);
             preReduceInput.putScalar(new int[]{2, 2}, 20);   //Maximum value at position [2,2]
             INDArray dLdOut;
             if (keepDims) {
@@ -368,7 +368,7 @@ public class ReductionBpOpValidation extends BaseOpValidation {
         for (boolean keepDims : new boolean[]{false, true}) {
 
             long[] reducedShape_0 = (keepDims ? new long[]{1, 4} : new long[]{4});
-            INDArray preReduceInput = Nd4j.linspace(1, 16, 16, DataType.DOUBLE).reshape(4, 4);
+            INDArray preReduceInput = Nd4j.linspace(1, 16, 16).reshape(4, 4);
             preReduceInput.putScalar(0, 0, 20);
             preReduceInput.putScalar(1, 1, 21);
             preReduceInput.putScalar(2, 2, 22);
@@ -410,7 +410,7 @@ public class ReductionBpOpValidation extends BaseOpValidation {
 
         for (boolean keepDims : new boolean[]{false, true}) {
 
-            INDArray preReduceInput = Nd4j.linspace(1, 12, 12, DataType.DOUBLE).reshape(3, 4);
+            INDArray preReduceInput = Nd4j.linspace(1, 12, 12).reshape(3, 4);
             INDArray dLdOut;
             if (keepDims) {
                 dLdOut = Nd4j.valueArrayOf(new long[]{1, 1}, 0.5);
@@ -437,7 +437,7 @@ public class ReductionBpOpValidation extends BaseOpValidation {
 
         for (boolean keepDims : new boolean[]{false, true}) {
             long[] reducedShape_0 = (keepDims ? new long[]{1, 4} : new long[]{4});
-            INDArray preReduceInput = Nd4j.linspace(1, 12, 12, DataType.DOUBLE).reshape(3, 4);
+            INDArray preReduceInput = Nd4j.linspace(1, 12, 12).reshape(3, 4);
             INDArray prod_0 = preReduceInput.prod(0);
             INDArray dLdOut_0 = Nd4j.create(new double[]{1, 2, 3, 4}, reducedShape_0);
             INDArray dLdInExpected_0 = Nd4j.create(3, 4);
@@ -495,7 +495,7 @@ public class ReductionBpOpValidation extends BaseOpValidation {
         for (boolean biasCorrected : new boolean[]{true, false}) {
             for (boolean keepDims : new boolean[]{false, true}) {
 
-                INDArray preReduceInput = Nd4j.linspace(1, 12, 12, DataType.DOUBLE).reshape(3, 4);
+                INDArray preReduceInput = Nd4j.linspace(1, 12, 12).reshape(3, 4);
                 INDArray dLdOut;
                 if (keepDims) {
                     dLdOut = Nd4j.valueArrayOf(new long[]{1, 1}, 0.5);
@@ -552,7 +552,7 @@ public class ReductionBpOpValidation extends BaseOpValidation {
         for (boolean biasCorrected : new boolean[]{false, true}) {
             for (boolean keepDims : new boolean[]{false, true}) {
                 long[] reducedShape_0 = (keepDims ? new long[]{1, 4} : new long[]{4});
-                INDArray preReduceInput = Nd4j.linspace(1, 12, 12, DataType.DOUBLE).reshape(3, 4);
+                INDArray preReduceInput = Nd4j.linspace(1, 12, 12).reshape(3, 4);
                 long divisor = biasCorrected ? 2 : 3;
                 INDArray mean_0 = preReduceInput.mean(0);
                 INDArray stdev_0 = preReduceInput.std(biasCorrected, 0);
@@ -597,7 +597,7 @@ public class ReductionBpOpValidation extends BaseOpValidation {
         for (boolean biasCorrected : new boolean[]{true, false}) {
             for (boolean keepDims : new boolean[]{false, true}) {
 
-                INDArray preReduceInput = Nd4j.linspace(1, 12, 12, DataType.DOUBLE).reshape(3, 4);
+                INDArray preReduceInput = Nd4j.linspace(1, 12, 12).reshape(3, 4);
                 INDArray dLdOut;
                 if (keepDims) {
                     dLdOut = Nd4j.valueArrayOf(new long[]{1, 1}, 0.5);
@@ -633,7 +633,7 @@ public class ReductionBpOpValidation extends BaseOpValidation {
         for (boolean biasCorrected : new boolean[]{false, true}) {
             for (boolean keepDims : new boolean[]{false, true}) {
                 long[] reducedShape_0 = (keepDims ? new long[]{1, 4} : new long[]{4});
-                INDArray preReduceInput = Nd4j.linspace(1, 12, 12, DataType.DOUBLE).reshape(3, 4);
+                INDArray preReduceInput = Nd4j.linspace(1, 12, 12).reshape(3, 4);
                 long divisor = biasCorrected ? 2 : 3;
                 INDArray mean_0 = preReduceInput.mean(0);
                 INDArray dLdOut_0 = Nd4j.create(new double[]{1, 2, 3, 4}, reducedShape_0);
@@ -692,7 +692,7 @@ public class ReductionBpOpValidation extends BaseOpValidation {
         for(boolean exclusive : new boolean[]{false, true}) {
             for(boolean reverse : new boolean[]{false, true}) {
 
-                INDArray preReduceInput = Nd4j.linspace(1, 12, 12, DataType.DOUBLE).reshape(3, 4);
+                INDArray preReduceInput = Nd4j.linspace(1, 12, 12).reshape(3, 4);
                 INDArray dLdOut = Nd4j.valueArrayOf(new long[]{3,4}, 0.5);
                 INDArray dLdIn = Nd4j.createUninitialized(3, 4);
 
@@ -743,7 +743,7 @@ public class ReductionBpOpValidation extends BaseOpValidation {
 
         for (boolean keepDims : new boolean[]{false, true}) {
 
-            INDArray preReduceInput = Nd4j.linspace(1, 12, 12, DataType.DOUBLE).reshape(3, 4).castTo(DataType.DOUBLE);
+            INDArray preReduceInput = Nd4j.linspace(1, 12, 12).reshape(3, 4).castTo(DataType.DOUBLE);
 
             double norm2 = preReduceInput.norm2Number().doubleValue();
 
@@ -771,7 +771,7 @@ public class ReductionBpOpValidation extends BaseOpValidation {
         for (boolean keepDims : new boolean[]{false, true}) {
 
             long[] reducedShape_0 = (keepDims ? new long[]{1, 4} : new long[]{4});
-            INDArray preReduceInput = Nd4j.linspace(1, 12, 12, DataType.DOUBLE).reshape(3, 4);
+            INDArray preReduceInput = Nd4j.linspace(1, 12, 12).reshape(3, 4);
             INDArray norm2_0 = preReduceInput.norm2(0);
             INDArray dLdOut_0 = Nd4j.create(new double[]{1, 2, 3, 4}, reducedShape_0);
             INDArray dLdInExpected_0 = preReduceInput.divRowVector(norm2_0).mulRowVector(dLdOut_0);
@@ -803,7 +803,7 @@ public class ReductionBpOpValidation extends BaseOpValidation {
 
         for (boolean keepDims : new boolean[]{false, true}) {
 
-            INDArray preReduceInput = Nd4j.linspace(-5, 6, 12, DataType.DOUBLE).addi(0.1).reshape(3, 4);
+            INDArray preReduceInput = Nd4j.linspace(-5, 6, 12).addi(0.1).reshape(3, 4);
 
             INDArray sgn = Transforms.sign(preReduceInput, true);
 
@@ -831,7 +831,7 @@ public class ReductionBpOpValidation extends BaseOpValidation {
         for (boolean keepDims : new boolean[]{false, true}) {
 
             long[] reducedShape_0 = (keepDims ? new long[]{1, 4} : new long[]{4});
-            INDArray preReduceInput = Nd4j.linspace(-5, 6, 12, DataType.DOUBLE).addi(0.1).reshape(3, 4);
+            INDArray preReduceInput = Nd4j.linspace(-5, 6, 12).addi(0.1).reshape(3, 4);
             INDArray sgn = Transforms.sign(preReduceInput, true);
             INDArray dLdOut_0 = Nd4j.create(new double[]{1, 2, 3, 4}, reducedShape_0);
             INDArray dLdInExpected_0 = sgn.mulRowVector(dLdOut_0);
@@ -863,7 +863,7 @@ public class ReductionBpOpValidation extends BaseOpValidation {
 
         for (boolean keepDims : new boolean[]{false, true}) {
 
-            INDArray preReduceInput = Nd4j.linspace(-5, 6, 12, DataType.DOUBLE).reshape(3, 4);
+            INDArray preReduceInput = Nd4j.linspace(-5, 6, 12).reshape(3, 4);
 
             INDArray sgn = Transforms.sign(preReduceInput, true);
             INDArray max = Nd4j.create(3,4);

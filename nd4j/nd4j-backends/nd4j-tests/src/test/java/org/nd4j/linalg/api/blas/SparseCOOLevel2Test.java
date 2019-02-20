@@ -47,7 +47,7 @@ public class SparseCOOLevel2Test extends BaseNd4jTest {
     @Test
     public void testGemv() {
         INDArray array1 = Nd4j.createSparseCOO(data, indexes, shape);
-        INDArray array2 = Nd4j.linspace(1, 2, 2, DataType.FLOAT).reshape(2, 1);
+        INDArray array2 = Nd4j.linspace(1, 2, 2).reshape(2, 1);
 
         INDArray array3 = array1.mmul(array2); // should be [5, 0]
         assertEquals(2, array3.length());

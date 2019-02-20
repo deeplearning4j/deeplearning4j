@@ -52,7 +52,7 @@ public class NormalizerMinMaxScalerTest extends BaseNd4jTest {
         int nSamples = 500;
         int x = 4, y = 2, z = 3;
 
-        INDArray featureX = Nd4j.linspace(1, nSamples, nSamples, DataType.DOUBLE).reshape(nSamples, 1);
+        INDArray featureX = Nd4j.linspace(1, nSamples, nSamples).reshape(nSamples, 1);
         INDArray featureY = featureX.mul(y);
         INDArray featureZ = featureX.mul(z);
         featureX.muli(x);

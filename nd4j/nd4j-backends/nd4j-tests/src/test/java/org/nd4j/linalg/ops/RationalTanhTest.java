@@ -44,7 +44,7 @@ public class RationalTanhTest extends BaseNd4jTest {
     public void gradientCheck() {
 
         double eps = 1e-6;
-        INDArray A = Nd4j.linspace(-3, 3, 10, DataType.DOUBLE).reshape(2, 5);
+        INDArray A = Nd4j.linspace(-3, 3, 10).reshape(2, 5);
         INDArray ADer = Nd4j.getExecutioner().exec(new RationalTanhDerivative(A.dup()));
 
         double[] a = A.data().asDouble();

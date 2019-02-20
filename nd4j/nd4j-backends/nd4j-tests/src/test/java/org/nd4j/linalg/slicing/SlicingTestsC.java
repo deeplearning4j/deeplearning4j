@@ -49,7 +49,7 @@ public class SlicingTestsC extends BaseNd4jTest {
 
     @Test
     public void testSliceAssertion() {
-        INDArray arr = Nd4j.linspace(1, 30, 30, DataType.DOUBLE).reshape(3, 5, 2);
+        INDArray arr = Nd4j.linspace(1, 30, 30).reshape(3, 5, 2);
         INDArray firstRow = arr.slice(0).slice(0);
         for (int i = 0; i < firstRow.length(); i++) {
             System.out.println(firstRow.getDouble(i));

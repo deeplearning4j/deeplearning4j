@@ -38,8 +38,8 @@ public class Level2Test extends BaseNd4jTest {
 
     @Test
     public void testGemv1() {
-        INDArray array1 = Nd4j.linspace(1, 1000, 1000, DataType.FLOAT).reshape(10, 100);
-        INDArray array2 = Nd4j.linspace(1, 100, 100, DataType.FLOAT).reshape(100, 1);
+        INDArray array1 = Nd4j.linspace(1, 1000, 1000).reshape(10, 100);
+        INDArray array2 = Nd4j.linspace(1, 100, 100).reshape(100, 1);
 
         INDArray array3 = array1.mmul(array2);
 
@@ -52,8 +52,8 @@ public class Level2Test extends BaseNd4jTest {
 
     @Test
     public void testGemv2() {
-        INDArray array1 = Nd4j.linspace(1, 1000, 1000, DataType.DOUBLE).reshape(10, 100);
-        INDArray array2 = Nd4j.linspace(1, 100, 100, DataType.DOUBLE).reshape('f', 100, 1);
+        INDArray array1 = Nd4j.linspace(1, 1000, 1000).reshape(10, 100);
+        INDArray array2 = Nd4j.linspace(1, 100, 100).reshape('f', 100, 1);
 
         INDArray array3 = array1.mmul(array2);
 
@@ -66,8 +66,8 @@ public class Level2Test extends BaseNd4jTest {
 
     @Test
     public void testGemv3() {
-        INDArray array1 = Nd4j.linspace(1, 1000, 1000, DataType.FLOAT).reshape('f', 10, 100);
-        INDArray array2 = Nd4j.linspace(1, 100, 100, DataType.FLOAT).reshape('f', 100, 1);
+        INDArray array1 = Nd4j.linspace(1, 1000, 1000).reshape('f', 10, 100);
+        INDArray array2 = Nd4j.linspace(1, 100, 100).reshape('f', 100, 1);
 
         INDArray array3 = array1.mmul(array2);
 
@@ -80,8 +80,8 @@ public class Level2Test extends BaseNd4jTest {
 
     @Test
     public void testGemv4() {
-        INDArray array1 = Nd4j.linspace(1, 1000, 1000, DataType.FLOAT).reshape('f', 10, 100);
-        INDArray array2 = Nd4j.linspace(1, 100, 100, DataType.FLOAT).reshape(100, 1);
+        INDArray array1 = Nd4j.linspace(1, 1000, 1000).reshape('f', 10, 100);
+        INDArray array2 = Nd4j.linspace(1, 100, 100).reshape(100, 1);
 
         INDArray array3 = array1.mmul(array2);
 
@@ -94,8 +94,8 @@ public class Level2Test extends BaseNd4jTest {
 
     @Test
     public void testGemv5() {
-        INDArray array1 = Nd4j.linspace(1, 1000, 1000, DataType.DOUBLE).reshape(10, 100);
-        INDArray array2 = Nd4j.linspace(1, 100, 100, DataType.DOUBLE).reshape(100, 1);
+        INDArray array1 = Nd4j.linspace(1, 1000, 1000).reshape(10, 100);
+        INDArray array2 = Nd4j.linspace(1, 100, 100).reshape(100, 1);
 
         INDArray array3 = Nd4j.create(10,1);
 
@@ -110,8 +110,8 @@ public class Level2Test extends BaseNd4jTest {
 
     @Test
     public void testGemv6() {
-        INDArray array1 = Nd4j.linspace(1, 1000, 1000, DataType.DOUBLE).reshape('f', 10, 100);
-        INDArray array2 = Nd4j.linspace(1, 100, 100, DataType.DOUBLE).reshape(100, 1);
+        INDArray array1 = Nd4j.linspace(1, 1000, 1000).reshape('f', 10, 100);
+        INDArray array2 = Nd4j.linspace(1, 100, 100).reshape(100, 1);
 
         INDArray array3 = Nd4j.create(10,1);
 
@@ -126,8 +126,8 @@ public class Level2Test extends BaseNd4jTest {
 
     @Test
     public void testGemv7() {
-        INDArray array1 = Nd4j.linspace(1, 1000, 1000, DataType.DOUBLE).reshape('f', 10, 100);
-        INDArray array2 = Nd4j.linspace(1, 100, 100, DataType.DOUBLE).reshape(100, 1);
+        INDArray array1 = Nd4j.linspace(1, 1000, 1000).reshape('f', 10, 100);
+        INDArray array2 = Nd4j.linspace(1, 100, 100).reshape(100, 1);
 
         INDArray array3 = Nd4j.create(10,1);
 

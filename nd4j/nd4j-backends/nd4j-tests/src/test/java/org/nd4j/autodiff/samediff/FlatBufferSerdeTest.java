@@ -30,7 +30,7 @@ public class FlatBufferSerdeTest {
     @Test
     public void testBasic() throws Exception {
         SameDiff sd = SameDiff.create();
-        INDArray arr = Nd4j.linspace(1,12,12, DataType.DOUBLE).reshape(3,4);
+        INDArray arr = Nd4j.linspace(1,12,12).reshape(3,4);
         SDVariable in = sd.placeHolder("in", arr.dataType(), arr.shape() );
         SDVariable tanh = sd.nn().tanh("out", in);
 
@@ -84,7 +84,7 @@ public class FlatBufferSerdeTest {
             for(boolean execFirst : new boolean[]{false, true}) {
                 log.info("Starting test: i={}, execFirst={}", i, execFirst);
                 SameDiff sd = SameDiff.create();
-                INDArray arr = Nd4j.linspace(1, 12, 12, org.nd4j.linalg.api.buffer.DataType.FLOAT).reshape(3, 4);
+                INDArray arr = Nd4j.linspace(1, 12, 12).reshape(3, 4);
                 SDVariable in = sd.placeHolder("in", arr.dataType(), arr.shape());
                 SDVariable x;
                 switch (i) {
@@ -116,12 +116,12 @@ public class FlatBufferSerdeTest {
                         break;
                     case 8:
                         //Reduce 3:
-                        SDVariable y = sd.var("in2", Nd4j.linspace(1,12,12, org.nd4j.linalg.api.buffer.DataType.FLOAT).muli(0.1).addi(0.5).reshape(3,4));
+                        SDVariable y = sd.var("in2", Nd4j.linspace(1,12,12).muli(0.1).addi(0.5).reshape(3,4));
                         x = sd.math().cosineSimilarity(in, y);
                         break;
                     case 9:
                         //Reduce 3 (along dim)
-                        SDVariable z = sd.var("in2", Nd4j.linspace(1,12,12, org.nd4j.linalg.api.buffer.DataType.FLOAT).muli(0.1).addi(0.5).reshape(3,4));
+                        SDVariable z = sd.var("in2", Nd4j.linspace(1,12,12).muli(0.1).addi(0.5).reshape(3,4));
                         x = sd.math().cosineSimilarity(in, z, 1);
                         break;
                     default:

@@ -379,13 +379,13 @@ public class ShapeTestsC extends BaseNd4jTest {
 
     @Test
     public void testRavel() {
-        INDArray linspace = Nd4j.linspace(1, 4, 4, DataType.INT).reshape(2, 2);
-        INDArray asseriton = Nd4j.linspace(1, 4, 4, DataType.INT);
+        INDArray linspace = Nd4j.linspace(1, 4, 4).reshape(2, 2);
+        INDArray asseriton = Nd4j.linspace(1, 4, 4);
         INDArray raveled = linspace.ravel();
         assertEquals(asseriton, raveled);
 
-        INDArray tensorLinSpace = Nd4j.linspace(1, 16, 16, DataType.INT).reshape(2, 2, 2, 2);
-        INDArray linspaced = Nd4j.linspace(1, 16, 16, DataType.INT);
+        INDArray tensorLinSpace = Nd4j.linspace(1, 16, 16).reshape(2, 2, 2, 2);
+        INDArray linspaced = Nd4j.linspace(1, 16, 16);
         INDArray tensorLinspaceRaveled = tensorLinSpace.ravel();
         assertEquals(linspaced, tensorLinspaceRaveled);
 

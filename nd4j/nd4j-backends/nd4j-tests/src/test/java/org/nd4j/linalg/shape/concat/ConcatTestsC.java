@@ -189,7 +189,7 @@ public class ConcatTestsC extends BaseNd4jTest {
             System.out.println(second.tensorAlongDimension(i, 1));
         }
 
-        third = Nd4j.linspace(32, 48, 16, DataType.INT).reshape('c', 2, 2, 4);
+        third = Nd4j.linspace(32, 48, 16).reshape('c', 2, 2, 4);
         exp = Nd4j.create(2, 3 + 1 + 2, 4);
         exp.put(new INDArrayIndex[] {NDArrayIndex.all(), NDArrayIndex.interval(0, 3), NDArrayIndex.all()}, first);
         exp.put(new INDArrayIndex[] {NDArrayIndex.all(), NDArrayIndex.point(3), NDArrayIndex.all()}, second);
@@ -200,8 +200,8 @@ public class ConcatTestsC extends BaseNd4jTest {
         assertEquals(exp, concat1);
 
         //ConcatV2, dim 2
-        second = Nd4j.linspace(24, 36, 12, DataType.INT).reshape('c', 2, 3, 2);
-        third = Nd4j.linspace(36, 42, 6, DataType.INT).reshape('c', 2, 3, 1);
+        second = Nd4j.linspace(24, 36, 12).reshape('c', 2, 3, 2);
+        third = Nd4j.linspace(36, 42, 6).reshape('c', 2, 3, 1);
         exp = Nd4j.create(2, 3, 4 + 2 + 1);
 
         exp.put(new INDArrayIndex[] {NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.interval(0, 4)}, first);
@@ -222,9 +222,9 @@ public class ConcatTestsC extends BaseNd4jTest {
     @Ignore
     public void testConcat3dv2() {
 
-        INDArray first = Nd4j.linspace(1, 24, 24, DataType.INT).reshape('c', 2, 3, 4);
-        INDArray second = Nd4j.linspace(24, 35, 12, DataType.INT).reshape('c', 1, 3, 4);
-        INDArray third = Nd4j.linspace(36, 47, 12, DataType.INT).reshape('c', 1, 3, 4);
+        INDArray first = Nd4j.linspace(1, 24, 24).reshape('c', 2, 3, 4);
+        INDArray second = Nd4j.linspace(24, 35, 12).reshape('c', 1, 3, 4);
+        INDArray third = Nd4j.linspace(36, 47, 12).reshape('c', 1, 3, 4);
 
         //ConcatV2, dim 0
         INDArray exp = Nd4j.create(2 + 1 + 1, 3, 4);
@@ -252,8 +252,8 @@ public class ConcatTestsC extends BaseNd4jTest {
         }
 
         //ConcatV2, dim 1
-        second = Nd4j.linspace(24, 31, 8, DataType.INT).reshape('c', 2, 1, 4);
-        third = Nd4j.linspace(32, 47, 16, DataType.INT).reshape('c', 2, 2, 4);
+        second = Nd4j.linspace(24, 31, 8).reshape('c', 2, 1, 4);
+        third = Nd4j.linspace(32, 47, 16).reshape('c', 2, 2, 4);
         exp = Nd4j.create(2, 3 + 1 + 2, 4);
         exp.put(new INDArrayIndex[] {NDArrayIndex.all(), NDArrayIndex.interval(0, 3), NDArrayIndex.all()}, first);
         exp.put(new INDArrayIndex[] {NDArrayIndex.all(), NDArrayIndex.point(3), NDArrayIndex.all()}, second);
@@ -277,8 +277,8 @@ public class ConcatTestsC extends BaseNd4jTest {
         }
 
         //ConcatV2, dim 2
-        second = Nd4j.linspace(24, 35, 12, DataType.INT).reshape('c', 2, 3, 2);
-        third = Nd4j.linspace(36, 41, 6, DataType.INT).reshape('c', 2, 3, 1);
+        second = Nd4j.linspace(24, 35, 12).reshape('c', 2, 3, 2);
+        third = Nd4j.linspace(36, 41, 6).reshape('c', 2, 3, 1);
         exp = Nd4j.create(2, 3, 4 + 2 + 1);
         exp.put(new INDArrayIndex[] {NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.interval(0, 4)}, first);
         exp.put(new INDArrayIndex[] {NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.interval(4, 6)}, second);

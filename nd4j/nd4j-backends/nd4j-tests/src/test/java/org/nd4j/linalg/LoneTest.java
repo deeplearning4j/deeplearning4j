@@ -76,9 +76,9 @@ public class LoneTest extends BaseNd4jTest {
         int length = rows * cols;
         int length3d = rows * cols * dim2;
 
-        INDArray first = Nd4j.linspace(1, length, length, DataType.DOUBLE).reshape('c', rows, cols);
+        INDArray first = Nd4j.linspace(1, length, length).reshape('c', rows, cols);
         INDArray second = Nd4j.create(DataType.DOUBLE, new long[]{rows, cols}, 'f').assign(first);
-        INDArray third = Nd4j.linspace(1, length3d, length3d, DataType.DOUBLE).reshape('c', rows, cols, dim2);
+        INDArray third = Nd4j.linspace(1, length3d, length3d).reshape('c', rows, cols, dim2);
         first.addi(0.1);
         second.addi(0.2);
         third.addi(0.3);
@@ -133,8 +133,8 @@ public class LoneTest extends BaseNd4jTest {
 
     @Test
     public void reshapeTensorMmul() {
-        INDArray a = Nd4j.linspace(1, 2, 12, DataType.DOUBLE).reshape(2, 3, 2);
-        INDArray b = Nd4j.linspace(3, 4, 4, DataType.DOUBLE).reshape(2, 2);
+        INDArray a = Nd4j.linspace(1, 2, 12).reshape(2, 3, 2);
+        INDArray b = Nd4j.linspace(3, 4, 4).reshape(2, 2);
         int[][] axes = new int[2][];
         axes[0] = new int[]{0, 1};
         axes[1] = new int[]{0, 2};
@@ -160,8 +160,8 @@ public class LoneTest extends BaseNd4jTest {
 
     @Test
     public void testRelu() {
-        INDArray aA = Nd4j.linspace(-3, 4, 8, DataType.DOUBLE).reshape(2, 4);
-        INDArray aD = Nd4j.linspace(-3, 4, 8, DataType.DOUBLE).reshape(2, 4);
+        INDArray aA = Nd4j.linspace(-3, 4, 8).reshape(2, 4);
+        INDArray aD = Nd4j.linspace(-3, 4, 8).reshape(2, 4);
         INDArray b = Nd4j.getExecutioner().exec(new Tanh(aA));
         //Nd4j.getExecutioner().execAndReturn(new TanhDerivative(aD));
         System.out.println(aA);
@@ -172,7 +172,7 @@ public class LoneTest extends BaseNd4jTest {
     @Test
     public void testTad() {
         int[] someShape = {2, 1, 3, 3};
-        INDArray a = Nd4j.linspace(1, 18, 18, DataType.DOUBLE).reshape(someShape);
+        INDArray a = Nd4j.linspace(1, 18, 18).reshape(someShape);
         INDArray java = a.javaTensorAlongDimension(0, 2, 3);
         INDArray tad = a.tensorAlongDimension(0, 2, 3);
         //assertTrue(a.tensorAlongDimension(0,2,3).rank() == 2); //is rank 3 with an extra 1
