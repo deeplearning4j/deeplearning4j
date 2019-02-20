@@ -3791,12 +3791,12 @@ void NativeOps::scatterUpdate(Nd4jPointer *extraPointers, int opCode, int numOfS
                       			void* dX, Nd4jLong* dXShapeInfo, Nd4jLong* dXOffsets,
                       			void* hY, Nd4jLong* hYShapeInfo, Nd4jLong* hYOffsets,
                       			void* dY, Nd4jLong* dYShapeInfo, Nd4jLong* dYOffsets,
-                      			int* indexes) {
+                      			int* hIindexes, int* dIindexes) {
 
 	auto stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 		
 	nd4j::DataType type = ArrayOptions::dataType(hXShapeInfo);
 
-    BUILD_SINGLE_SELECTOR(type, scatterUpdateCudaLauncher, (stream, opCode, numOfSubArrs, dX, dXShapeInfo, dXOffsets, dY, dYShapeInfo, dYOffsets, indexes), LIBND4J_TYPES);
+    BUILD_SINGLE_SELECTOR(type, scatterUpdateCudaLauncher, (stream, opCode, numOfSubArrs, dX, dXShapeInfo, dXOffsets, dY, dYShapeInfo, dYOffsets, dIndexes), LIBND4J_TYPES);
 }
 
