@@ -135,7 +135,7 @@ public class TrainModule implements UIModule {
 
     @Override
     public List<Route> getRoutes() {
-        Route r0, r0a, r0b, r, r2, r2a, r3, r3a, r3b, r4, r4a, r6b, r6d, r7a;
+        Route r0, r0a, r0b, r2, r2a, r3, r3a, r3b, r4, r4a, r6b, r6d, r7a;
         r0 = new Route("/train/multisession", HttpMethod.GET, FunctionType.Supplier, () -> ok(multiSession ? "true" : "false"));
 
         if (multiSession) {
@@ -144,19 +144,19 @@ public class TrainModule implements UIModule {
                     (sessionId) -> redirect("/train/" + sessionId + "/overview"));
             r2 = new Route("/train/:sessionId/overview", HttpMethod.GET, FunctionType.Function,
                 (sessionId) -> knownSessionIDs.containsKey(sessionId)
-                        ? ok(TrainingOverview.apply(I18NProvider.getInstance(sessionId))) : sessionNotFound(sessionId, "overview"));
+                        ? ok(TrainingOverview.apply(getI18N(sessionId))) : sessionNotFound(sessionId, "overview"));
             r2a = new Route("/train/:sessionId/overview/data", HttpMethod.GET, FunctionType.Function,
                     this::getOverviewDataForSession);
             r3 = new Route("/train/:sessionId/model", HttpMethod.GET, FunctionType.Function,
                 (sessionId) -> knownSessionIDs.containsKey(sessionId)
-                        ? ok(TrainingModel.apply(I18NProvider.getInstance(sessionId))) : sessionNotFound(sessionId, "model"));
+                        ? ok(TrainingModel.apply(getI18N(sessionId))) : sessionNotFound(sessionId, "model"));
             r3a = new Route("/train/:sessionId/model/graph", HttpMethod.GET, FunctionType.Function,
                     this::getModelGraphForSession);
             r3b = new Route("/train/:sessionId/model/data/:layerId", HttpMethod.GET, FunctionType.BiFunction,
                     this::getModelDataForSession);
             r4 = new Route("/train/:sessionId/system", HttpMethod.GET, FunctionType.Function,
                 (sessionId) -> knownSessionIDs.containsKey(sessionId)
-                        ? ok(TrainingSystem.apply(I18NProvider.getInstance(sessionId))) : sessionNotFound(sessionId, "system"));
+                        ? ok(TrainingSystem.apply(getI18N(sessionId))) : sessionNotFound(sessionId, "system"));
             r4a = new Route("/train/:sessionId/system/data", HttpMethod.GET, FunctionType.Function,
                     this::getSystemDataForSession);
             r6b = new Route("/train/:sessionId/info", HttpMethod.GET, FunctionType.Function, this::sessionInfoForSession);
@@ -165,14 +165,14 @@ public class TrainModule implements UIModule {
                     () -> ok(currentSessionID == null ? "" : currentSessionID));
             r0b = new Route("/train/sessions/set/:to", HttpMethod.GET, FunctionType.Function, this::setSession);
             r2 = new Route("/train/overview", HttpMethod.GET, FunctionType.Supplier,
-                    () -> ok(TrainingOverview.apply(I18NProvider.getInstance())));
+                    () -> ok(TrainingOverview.apply(getI18N())));
             r2a = new Route("/train/overview/data", HttpMethod.GET, FunctionType.Supplier, this::getOverviewData);
             r3 = new Route("/train/model", HttpMethod.GET, FunctionType.Supplier,
-                    () -> ok(TrainingModel.apply(I18NProvider.getInstance())));
+                    () -> ok(TrainingModel.apply(getI18N())));
             r3a = new Route("/train/model/graph", HttpMethod.GET, FunctionType.Supplier, this::getModelGraph);
             r3b = new Route("/train/model/data/:layerId", HttpMethod.GET, FunctionType.Function, this::getModelData);
             r4 = new Route("/train/system", HttpMethod.GET, FunctionType.Supplier,
-                    () -> ok(TrainingSystem.apply(I18NProvider.getInstance())));
+                    () -> ok(TrainingSystem.apply(getI18N())));
             r6b = new Route("/train/sessions/info", HttpMethod.GET, FunctionType.Supplier, this::sessionInfo);
             r4a = new Route("/train/system/data", HttpMethod.GET, FunctionType.Supplier, this::getSystemData);
         }
@@ -349,7 +349,7 @@ public class TrainModule implements UIModule {
 
     /**
      * Display, for each session: session ID, start time, number of workers, last update
-     * @return
+     * @return info for each session as JSON
      */
     private Result sessionInfo() {
 
@@ -363,7 +363,12 @@ public class TrainModule implements UIModule {
         return Results.ok(asJson(dataEachSession)).as("application/json");
     }
 
-
+    /**
+     * Extract session data from {@link StatsStorage}
+     * @param sid session ID
+     * @param ss {@code StatsStorage} instance
+     * @return session data map
+     */
     private static Map<String, Object> sessionData(String sid, StatsStorage ss) {
         Map<String, Object> dataThisSession = new HashMap<>();
         List<String> workerIDs = ss.listWorkerIDsForSessionAndType(sid, StatsListener.TYPE_ID);
@@ -423,12 +428,10 @@ public class TrainModule implements UIModule {
 
         Map<String, Object> dataEachSession = new HashMap<>();
         StatsStorage ss = knownSessionIDs.get(sessionId);
-        if (ss == null) {
-            return notFound();
+        if (ss != null) {
+            Map<String, Object> dataThisSession = sessionData(sessionId, ss);
+            dataEachSession.put(sessionId, dataThisSession);
         }
-        Map<String, Object> dataThisSession = sessionData(sessionId, ss);
-        dataEachSession.put(sessionId, dataThisSession);
-
         return Results.ok(asJson(dataEachSession)).as("application/json");
     }
 
@@ -489,40 +492,55 @@ public class TrainModule implements UIModule {
         }
     }
 
+    /**
+     * Get last update time for given session ID, checking for null values
+     * @param sessionId session ID
+     * @return last update time for session if found, or {@code null}
+     */
+    private Long getLastUpdateTime(String sessionId) {
+        if (lastUpdateForSession != null && sessionId != null && lastUpdateForSession.containsKey(sessionId)) {
+            return lastUpdateForSession.get(sessionId);
+        } else {
+            return -1L;
+        }
+    }
+
+    /**
+     * Get global {@link I18N} instance if {@link #multiSession} is {@code true}, or instance for session
+     * @param sessionId session ID
+     * @return {@link I18N} instance
+     */
+    private I18N getI18N(String sessionId) {
+        return multiSession ? I18NProvider.getInstance(sessionId) : I18NProvider.getInstance();
+    }
+
+    /**
+     * Get global {@link I18N} instance, used if {@link #multiSession} is {@code false}
+     * @return {@link I18N} instance
+     */
+    private I18N getI18N() {
+        return I18NProvider.getInstance();
+    }
+
+
     private Result getOverviewData() {
         return getOverviewDataForSession(currentSessionID);
     }
 
     private Result getOverviewDataForSession(String sessionId) {
-        Long lastUpdate;
-        if (lastUpdateForSession != null && sessionId != null) {
-            lastUpdate = lastUpdateForSession.get(sessionId);
-            if (lastUpdate == null) {
-                lastUpdate = -1L;
-            }
-        } else {
-            lastUpdate = -1L;
-        }
-        I18N i18N = multiSession ? I18NProvider.getInstance(sessionId) : I18NProvider.getInstance();
+        Long lastUpdateTime = getLastUpdateTime(sessionId);
+        I18N i18N = getI18N(sessionId);
 
-        boolean noData = sessionId == null;
         //First pass (optimize later): query all data...
-
-        StatsStorage ss = (noData ? null : knownSessionIDs.get(sessionId));
-        if (ss == null) {
-            noData = true;
-        }
-
+        StatsStorage ss = (sessionId == null ? null : knownSessionIDs.get(sessionId));
         String wid = getWorkerIdForIndex(sessionId, currentWorkerIdx);
-        if (wid == null) {
-            noData = true;
-        }
+        boolean noData = (sessionId == null) || (ss == null) || (wid == null);
 
         List<Integer> scoresIterCount = new ArrayList<>();
         List<Double> scores = new ArrayList<>();
 
         Map<String, Object> result = new HashMap<>();
-        result.put("updateTimestamp", lastUpdate);
+        result.put("updateTimestamp", lastUpdateTime);
         result.put("scores", scores);
         result.put("scoresIter", scoresIterCount);
 
@@ -695,7 +713,6 @@ public class TrainModule implements UIModule {
         }
 
 
-
         //----- Performance Info -----
         String[][] perfInfo = new String[][] {{i18N.getMessage("train.overview.perftable.startTime"), ""},
                         {i18N.getMessage("train.overview.perftable.totalRuntime"), ""},
@@ -764,14 +781,14 @@ public class TrainModule implements UIModule {
             return ok();
         }
 
-        TrainModuleUtils.GraphInfo gi = getGraphInfo(sessionId);
+        TrainModuleUtils.GraphInfo gi = getGraphInfo(getConfig(sessionId));
         if (gi == null)
             return ok();
         return Results.ok(asJson(gi)).as("application/json");
     }
 
-    private TrainModuleUtils.GraphInfo getGraphInfo(String sessionId) {
-        Triple<MultiLayerConfiguration, ComputationGraphConfiguration, NeuralNetConfiguration> conf = getConfig(sessionId);
+    private TrainModuleUtils.GraphInfo getGraphInfo(Triple<MultiLayerConfiguration,
+            ComputationGraphConfiguration, NeuralNetConfiguration> conf) {
         if (conf == null) {
             return null;
         }
@@ -788,7 +805,7 @@ public class TrainModule implements UIModule {
     }
 
     private Triple<MultiLayerConfiguration, ComputationGraphConfiguration, NeuralNetConfiguration> getConfig(String sessionId) {
-        boolean noData = sessionId == null;
+        boolean noData = (sessionId == null || !knownSessionIDs.containsKey(sessionId));
         StatsStorage ss = (noData ? null : knownSessionIDs.get(sessionId));
         List<Persistable> allStatic = (noData ? Collections.EMPTY_LIST
                         : ss.getAllStaticInfos(sessionId, StatsListener.TYPE_ID));
@@ -817,35 +834,24 @@ public class TrainModule implements UIModule {
         return null;
     }
 
+
+
     private Result getModelData(String layerId) {
         return getModelDataForSession(currentSessionID, layerId);
     }
+
     private Result getModelDataForSession(String sessionId, String layerId) {
-        Long lastUpdateTime;
-        if (lastUpdateForSession != null && sessionId != null) {
-            lastUpdateTime = lastUpdateForSession.get(sessionId);
-            if (lastUpdateTime == null) {
-                lastUpdateTime = -1L;
-            }
-        } else {
-            lastUpdateTime = -1L;
-        }
+        Long lastUpdateTime = getLastUpdateTime(sessionId);
 
         int layerIdx = Integer.parseInt(layerId); //TODO validation
-        I18N i18N = multiSession ? I18NProvider.getInstance(sessionId) : I18NProvider.getInstance();
+        I18N i18N = getI18N(sessionId);
 
         //Model info for layer
 
-        boolean noData = sessionId == null;
         //First pass (optimize later): query all data...
-
-        StatsStorage ss = (noData ? null : knownSessionIDs.get(sessionId));
-
+        StatsStorage ss = (sessionId == null ? null : knownSessionIDs.get(sessionId));
         String wid = getWorkerIdForIndex(sessionId, currentWorkerIdx);
-        if (wid == null) {
-            noData = true;
-        }
-
+        boolean noData = (sessionId == null) || (ss == null) || (wid == null);
 
         Map<String, Object> result = new HashMap<>();
         result.put("updateTimestamp", lastUpdateTime);
@@ -855,7 +861,7 @@ public class TrainModule implements UIModule {
             return Results.ok(asJson(result)).as("application/json");
         }
 
-        TrainModuleUtils.GraphInfo gi = getGraphInfo(sessionId);
+        TrainModuleUtils.GraphInfo gi = getGraphInfo(conf);
         if (gi == null) {
             return Results.ok(asJson(result)).as("application/json");
         }
@@ -956,27 +962,15 @@ public class TrainModule implements UIModule {
     }
 
     private Result getSystemDataForSession(String sessionId) {
-        Long lastUpdate;
-        if (lastUpdateForSession != null && sessionId != null) {
-            lastUpdate = lastUpdateForSession.get(sessionId);
-            if (lastUpdate == null) {
-                lastUpdate = -1L;
-            }
-        } else {
-            lastUpdate = -1L;
-        }
+        Long lastUpdate = getLastUpdateTime(sessionId);
 
-        I18N i18n = multiSession ? I18NProvider.getInstance(sessionId) : I18NProvider.getInstance();
+        I18N i18n = getI18N(sessionId);
 
         //First: get the MOST RECENT update...
         //Then get all updates from most recent - 5 minutes -> TODO make this configurable...
 
-        boolean noData = (sessionId == null);
-        StatsStorage ss = (noData ? null : knownSessionIDs.get(sessionId));
-
-        if (ss == null) {
-            return notFound();
-        }
+        StatsStorage ss = (sessionId == null ? null : knownSessionIDs.get(sessionId));
+        boolean noData = (ss == null);
 
         List<Persistable> allStatic = (noData ? Collections.EMPTY_LIST
                         : ss.getAllStaticInfos(sessionId, StatsListener.TYPE_ID));
