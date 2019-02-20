@@ -17,6 +17,7 @@
 package org.deeplearning4j.arbiter.multilayernetwork;
 
 import org.apache.commons.lang3.ArrayUtils;
+import org.deeplearning4j.arbiter.TestUtils;
 import org.deeplearning4j.arbiter.conf.updater.SgdSpace;
 import org.deeplearning4j.arbiter.layers.*;
 import org.deeplearning4j.arbiter.optimize.api.ParameterSpace;
@@ -96,7 +97,7 @@ public class TestLayerSpace {
 
             assertEquals(20, l.getNOut());
             double lr = ((Sgd) l.getIUpdater()).getLearningRate();
-            double l2 = l.getL2();
+            double l2 = TestUtils.getL2(l);
             IActivation activation = l.getActivationFn();
 
             System.out.println(lr + "\t" + l2 + "\t" + activation);

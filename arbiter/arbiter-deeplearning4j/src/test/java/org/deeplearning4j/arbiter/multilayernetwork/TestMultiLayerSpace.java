@@ -18,6 +18,7 @@ package org.deeplearning4j.arbiter.multilayernetwork;
 
 import org.deeplearning4j.arbiter.DL4JConfiguration;
 import org.deeplearning4j.arbiter.MultiLayerSpace;
+import org.deeplearning4j.arbiter.TestUtils;
 import org.deeplearning4j.arbiter.conf.updater.AdamSpace;
 import org.deeplearning4j.arbiter.conf.updater.SgdSpace;
 import org.deeplearning4j.arbiter.layers.*;
@@ -256,7 +257,7 @@ public class TestMultiLayerSpace {
 
                 double lr = ((Sgd)((BaseLayer) layerConf.getLayer()).getIUpdater()).getLearningRate();
                 assertTrue(lr >= 0.0001 && lr <= 0.1);
-                double l2 = ((BaseLayer) layerConf.getLayer()).getL2();
+                double l2 = TestUtils.getL2((BaseLayer) layerConf.getLayer());
                 assertTrue(l2 >= 0.2 && l2 <= 0.5);
 
                 if (j == nLayers - 1) { //Output layer
