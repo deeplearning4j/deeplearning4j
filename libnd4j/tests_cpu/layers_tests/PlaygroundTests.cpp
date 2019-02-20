@@ -848,7 +848,7 @@ void loop1(float* x, Nd4jLong* xShapeInfo, float* y, Nd4jLong* yShapeInfo, float
     int yEws = shape::elementWiseStride(yShapeInfo);
     int zEws = shape::elementWiseStride(zShapeInfo);
             
-    nd4j::OmpLaunchHelper info(len, 4);
+    nd4j::OmpLaunchHelper info(len);
     #pragma omp parallel num_threads(info._numThreads) default(shared)
     {                
         auto threadNum = omp_get_thread_num();
@@ -1087,7 +1087,7 @@ TEST_F(PlaygroundTests, test_batched_skipgram_1) {
 
 //             #pragma omp simd reduction(+:local)
 //             for (int e = 0; e < tadLength; e++) {
-//                 local += x[e];//powf(x[e], 3) * logf(x[e]);
+//                 local += powf(x[e], 3) * logf(x[e]);
 //             }
 
 //             z[t] = local / tadLength;
@@ -1267,71 +1267,84 @@ TEST_F(PlaygroundTests, test_col2im_permuted_1) {
     ASSERT_EQ(z0, z1);
 }
 
-// //////////////////////////////////////////////////////////////////////    
-// INLINEDEF unsigned offsetUns(unsigned index, const unsigned *shapeInfo, unsigned arrLen) {
-        
-//     unsigned offset = 0;        
 
-//     for(unsigned i = 1; i <= shapeInfo[0]; ++i) {
-//         arrLen /= shapeInfo[i];
-//         if(arrLen > 0 && shapeInfo[i] > 1) {                
-//             offset += (index / arrLen) * shapeInfo[i + shapeInfo[0]];
-//             index %= arrLen;
-//         }
-//     }
-//     return offset;
-// }
-
-// //////////////////////////////////////////////////////////////////////    
-// INLINEDEF int offsetInt(int index, const int *shapeInfo, int arrLen) {
-        
-//     int offset = 0;        
-
-//     for(int i = 1; i <= shapeInfo[0]; ++i) {
-//         arrLen /= shapeInfo[i];
-//         if(arrLen > 0 && shapeInfo[i] > 1) {                
-//             offset += (index / arrLen) * shapeInfo[i + shapeInfo[0]];
-//             index %= arrLen;
-//         }
-//     }
-//     return offset;
-// }
-
-
-// //////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////
 // TEST_F(PlaygroundTests, signed_unsigned_1) {
     
-//     const int dim0(32), dim1(128), dim2(256), dim3(256);
+//     const int dim0(32), dim1(128), dim2(256), dim3(512);
 //     const unsigned len = dim0*dim1*dim2*dim3;
-    
-//     unsigned shapeInfoUns[] = {4,  dim0,dim1,dim2,dim3,  dim1*dim2*dim3,dim2*dim3,dim3,1,   0, 1, 99};
-//     int      shapeInfoInt[] = {4,  dim0,dim1,dim2,dim3,  dim1*dim2*dim3,dim2*dim3,dim3,1,   0, 1, 99};
+//     int ews = 1;
 
-//     double* buffer = new double[len];
+//     uint      uShapeInfo[] = {4,  dim0,dim1,dim2,dim3,  dim1*dim2*dim3,dim2*dim3,dim3,1,   0, 1, 99};
+//     Nd4jLong  lShapeInfo[] = {4,  dim0,dim1,dim2,dim3,  dim1*dim2*dim3,dim2*dim3,dim3,1,   0, 1, 99};
 
-//     //***********************************    
+//     float* x = new float[len];
+//     int* y = new int[len];
+//     double* z = new double[len];
+
+//     // warming up cpu
+//     for(int i=0; i<10; ++i)
+//         z[i] = x[i] / y[i];
+
+//     // 0 ***********************************
 //     auto timeStart = std::chrono::system_clock::now();
-//     for(int i=0; i<(int)len; ++i) {
-//         int offset = offsetInt(i, shapeInfoInt, (int)len);
-//         buffer[offset] = i;
-//     }    
+//     for(int i=0; i<(int)len; ++i)
+//         z[i] = x[i] / y[i];
 
 //     auto timeEnd = std::chrono::system_clock::now();
-//     auto timeInt = std::chrono::duration_cast<std::chrono::nanoseconds> ((timeEnd - timeStart)/len).count();
+//     auto time0 = std::chrono::duration_cast<std::chrono::nanoseconds> ((timeEnd - timeStart)/len).count();
 
-//     //***********************************
+//     // 1 ***********************************
 //     timeStart = std::chrono::system_clock::now();
-    
-//     for(unsigned i=0; i<len; ++i) {
-//         unsigned offset = offsetUns(i, shapeInfoUns, len);
-//         buffer[offset] = i;
-//     }   
-    
+//     for(int i=0; i<(int)len; ++i)
+//         z[i*ews] = x[i*ews] / y[i*ews];
+
 //     timeEnd = std::chrono::system_clock::now();
-//     auto timeUns = std::chrono::duration_cast<std::chrono::nanoseconds> ((timeEnd - timeStart)/len).count();
+//     auto time1 = std::chrono::duration_cast<std::chrono::nanoseconds> ((timeEnd - timeStart)/len).count();
 
-//     nd4j_printf("signed   time: %i ns;\n", timeInt);
-//     nd4j_printf("unsigned time: %u ns;\n", timeUns);
+//     // 2 ***********************************
+//     timeStart = std::chrono::system_clock::now();
+//     for(int i=0; i<(int)len; ++i) {
+//         const Nd4jLong offset0 = ews > 0 ? i*ews : shape::indexOffset(i, lShapeInfo, uShapeInfo, len, true);
+//         const Nd4jLong offset1 = ews > 0 ? i*ews : shape::indexOffset(i, lShapeInfo, uShapeInfo, len, true);
+//         const Nd4jLong offset2 = ews > 0 ? i*ews : shape::indexOffset(i, lShapeInfo, uShapeInfo, len, true);
+//         z[offset0] = x[offset1] / y[offset2];
+//     }
 
-//     delete []buffer;
+//     timeEnd = std::chrono::system_clock::now();
+//     auto time2 = std::chrono::duration_cast<std::chrono::nanoseconds> ((timeEnd - timeStart)/len).count();
+
+//     // 3 ***********************************
+//     timeStart = std::chrono::system_clock::now();
+//     for(int i=0; i<(int)len; ++i) {
+//         const Nd4jLong offset0 = shape::indexOffset(i, lShapeInfo, uShapeInfo, len, true);
+//         const Nd4jLong offset1 = shape::indexOffset(i, lShapeInfo, uShapeInfo, len, true);
+//         const Nd4jLong offset2 = shape::indexOffset(i, lShapeInfo, uShapeInfo, len, true);
+//         z[offset0] = x[offset1] / y[offset2];
+//     }
+
+//     timeEnd = std::chrono::system_clock::now();
+//     auto time3 = std::chrono::duration_cast<std::chrono::nanoseconds> ((timeEnd - timeStart)/len).count();
+
+//     // 4 ***********************************
+//     timeStart = std::chrono::system_clock::now();
+//     for(int i=0; i<(int)len; ++i) {
+//         const Nd4jLong offset0 = shape::indexOffset(i, lShapeInfo, uShapeInfo, len, false);
+//         const Nd4jLong offset1 = shape::indexOffset(i, lShapeInfo, uShapeInfo, len, false);
+//         const Nd4jLong offset2 = shape::indexOffset(i, lShapeInfo, uShapeInfo, len, false);
+//         z[offset0] = x[offset1] / y[offset2];
+//     }
+
+//     timeEnd = std::chrono::system_clock::now();
+//     auto time4 = std::chrono::duration_cast<std::chrono::nanoseconds> ((timeEnd - timeStart)/len).count();
+
+//     nd4j_printf("time0 : %i ns;\n", time0);
+//     nd4j_printf("time1 : %i ns;\n", time1);
+//     nd4j_printf("time2 : %i ns;\n", time2);
+//     nd4j_printf("time3 : %i ns;\n", time3);
+//     nd4j_printf("time4 : %i ns;\n", time4);
+
+//     delete []x;
+//     delete []y;
+//     delete []z;
 // }

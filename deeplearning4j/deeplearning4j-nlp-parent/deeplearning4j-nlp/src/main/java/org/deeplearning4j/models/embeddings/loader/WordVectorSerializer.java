@@ -2672,11 +2672,23 @@ public class WordVectorSerializer {
      * @param file File should point to previously saved w2v model
      * @return
      */
+    public static WordVectors loadStaticModel(InputStream inputStream) throws IOException {
+
+        File tmpFile = DL4JFileUtils.createTempFile("word2vec"+System.currentTimeMillis(), "tmp");
+        FileUtils.copyInputStreamToFile(inputStream, tmpFile);
+        try {
+            return loadStaticModel(tmpFile);
+        } finally {
+            tmpFile.delete();
+        }
+
+    }
+
     // TODO: this method needs better name :)
-    public static WordVectors loadStaticModel(File file) {
+    public static WordVectors loadStaticModel(@NonNull File file) {
         if (!file.exists() || file.isDirectory())
             throw new RuntimeException(
-                            new FileNotFoundException("File [" + file.getAbsolutePath() + "] was not found"));
+                    new FileNotFoundException("File [" + file.getAbsolutePath() + "] was not found"));
 
         int originalFreq = Nd4j.getMemoryManager().getOccasionalGcFrequency();
         boolean originalPeriodic = Nd4j.getMemoryManager().isPeriodicGcActive();

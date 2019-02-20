@@ -249,7 +249,7 @@ public class NeuralNetConfigurationTest extends BaseDL4JTest {
         int sizeX = 4;
         int scaleX = 10;
         System.out.println("Here is a leaky vector..");
-        INDArray leakyVector = Nd4j.linspace(-1, 1, sizeX);
+        INDArray leakyVector = Nd4j.linspace(-1, 1, sizeX, Nd4j.dataType());
         leakyVector = leakyVector.mul(scaleX);
         System.out.println(leakyVector);
 

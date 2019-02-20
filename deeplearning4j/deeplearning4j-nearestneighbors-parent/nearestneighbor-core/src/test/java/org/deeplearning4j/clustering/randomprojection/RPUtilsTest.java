@@ -26,8 +26,8 @@ public class RPUtilsTest {
 
     @Test
     public void testDistanceComputeBatch() {
-        INDArray x = Nd4j.linspace(1,4,4).reshape(1, 4);
-        INDArray y = Nd4j.linspace(1,16,16).reshape(4,4);
+        INDArray x = Nd4j.linspace(1,4,4, Nd4j.dataType()).reshape(1, 4);
+        INDArray y = Nd4j.linspace(1,16,16, Nd4j.dataType()).reshape(4,4);
         INDArray result = Nd4j.create(4);
         INDArray distances = RPUtils.computeDistanceMulti("euclidean",x,y,result);
         INDArray scalarResult = Nd4j.scalar(1.0);

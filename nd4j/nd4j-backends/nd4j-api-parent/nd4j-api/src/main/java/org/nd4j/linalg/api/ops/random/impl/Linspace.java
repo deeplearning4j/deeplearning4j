@@ -44,14 +44,19 @@ import java.util.Map;
 public class Linspace extends BaseRandomOp {
     private double from;
     private double to;
+    private double step;
     private long length;
 
     public Linspace() {
         // no-op
     }
 
-    public Linspace(double from, double to, int length, DataType dataType) {
-        this(Nd4j.createUninitialized(dataType, new long[] {1, length}, Nd4j.order()), from, to);
+    public Linspace(double from, long length, double step, DataType dataType){
+        this(Nd4j.createUninitialized(dataType, new long[] {length}, Nd4j.order()), from, from, step);
+    }
+
+    public Linspace(double from, double to, long length, DataType dataType) {
+        this(Nd4j.createUninitialized(dataType, new long[] {length}, Nd4j.order()), from, to);
     }
 
     public Linspace(@NonNull INDArray z, double from, double to) {
@@ -59,7 +64,17 @@ public class Linspace extends BaseRandomOp {
         this.from = from;
         this.to = to;
         this.length = z.length();
-        this.extraArgs = new Object[] {from, to};
+        double step = 0.0;
+        this.extraArgs = new Object[] {from, to, step};
+    }
+
+    public Linspace(@NonNull INDArray z, double from, double to, double step) {
+        super(null, null, z);
+        this.from = from;
+        this.to = to;
+        this.length = z.length();
+        this.step = step;
+        this.extraArgs = new Object[] {from, to, step};
     }
 
     public Linspace(SameDiff sd, double from, double to, long length){
@@ -68,9 +83,9 @@ public class Linspace extends BaseRandomOp {
         this.from = from;
         this.to = to;
         this.length = length;
-        this.extraArgs = new Object[] {from, to};
+        double step = 0.0; //(to - from) / (length - 1);
+        this.extraArgs = new Object[] {from, to, step};
     }
-
 
     @Override
     public int opNum() {
