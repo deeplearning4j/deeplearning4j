@@ -63,7 +63,7 @@ namespace functions {
 
             const auto len = shape::length(xShapeInfo);
                         
-            nd4j::OmpLaunchHelper info(len);
+            nd4j::OmpLaunchHelper info(len, 8);
 
             if (shape::elementWiseStride(xShapeInfo) == 1 && shape::elementWiseStride(zShapeInfo) == 1 && shape::order(xShapeInfo) == shape::order(zShapeInfo)) {
 
