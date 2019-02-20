@@ -1127,13 +1127,12 @@ public class ParagraphVectorsTest {
             log.info("{}", json.toString());
 
             unserialized = ParagraphVectors.fromJson(json);
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             e.printStackTrace();
             fail();
         }
 
-        assertEquals(cache.totalWordOccurrences(),((ParagraphVectors) unserialized).getVocab().totalWordOccurrences());
+        assertEquals(cache.totalWordOccurrences(), ((ParagraphVectors) unserialized).getVocab().totalWordOccurrences());
         assertEquals(cache.totalNumberOfDocs(), ((ParagraphVectors) unserialized).getVocab().totalNumberOfDocs());
 
         for (int i = 0; i < words.length; ++i) {
@@ -1143,4 +1142,37 @@ public class ParagraphVectorsTest {
             assertEquals(cached, restored);
         }
     }
-}
+
+        @Test
+        public void testDoubleFit() throws Exception {
+            ClassPathResource resource = new ClassPathResource("/big/raw_sentences.txt");
+            File file = resource.getFile();
+            SentenceIterator iter = new BasicLineIterator(file);
+
+            TokenizerFactory t = new DefaultTokenizerFactory();
+            t.setTokenPreProcessor(new CommonPreprocessor());
+
+            LabelsSource source = new LabelsSource("DOC_");
+
+            val builder = new ParagraphVectors.Builder();
+            ParagraphVectors vec = builder.minWordFrequency(1).iterations(5).seed(119).epochs(1)
+                    .layerSize(150).learningRate(0.025).labelsSource(source).windowSize(5)
+                    .sequenceLearningAlgorithm(new DM<VocabWord>()).iterate(iter).trainWordVectors(true)
+                    .usePreciseWeightInit(true)
+                    .batchSize(8192)
+                    .allowParallelTokenization(false)
+                    .tokenizerFactory(t).workers(1).sampling(0).build();
+
+            vec.fit();
+            long num1 = vec.vocab().totalNumberOfDocs();
+
+         //   builder.resetIterators();
+            vec.fit();
+            System.out.println(vec.vocab().totalNumberOfDocs());
+            long num2 = vec.vocab().totalNumberOfDocs();
+
+            assertEquals(num1, num2);
+        }
+    }
+
+

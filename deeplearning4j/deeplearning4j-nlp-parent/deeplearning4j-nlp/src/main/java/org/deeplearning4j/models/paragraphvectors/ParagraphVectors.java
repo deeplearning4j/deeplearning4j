@@ -957,6 +957,44 @@ public class ParagraphVectors extends Word2Vec {
             return this;
         }
 
+        public void resetIterators() {
+            if (this.labelsSource == null)
+                this.labelsSource = new LabelsSource();
+            if (docIter != null) {
+                /*
+                        we're going to work with DocumentIterator.
+                        First, we have to assume that user can provide LabelAwareIterator. In this case we'll use them, as provided source, and collec labels provided there
+                        Otherwise we'll go for own labels via LabelsSource
+                */
+
+                if (docIter instanceof LabelAwareDocumentIterator)
+                    this.labelAwareIterator =
+                            new DocumentIteratorConverter((LabelAwareDocumentIterator) docIter, labelsSource);
+                else
+                    this.labelAwareIterator = new DocumentIteratorConverter(docIter, labelsSource);
+            } else if (sentenceIterator != null) {
+                // we have SentenceIterator. Mechanics will be the same, as above
+                if (sentenceIterator instanceof LabelAwareSentenceIterator)
+                    this.labelAwareIterator = new SentenceIteratorConverter(
+                            (LabelAwareSentenceIterator) sentenceIterator, labelsSource);
+                else
+                    this.labelAwareIterator = new SentenceIteratorConverter(sentenceIterator, labelsSource);
+            } else if (labelAwareIterator != null) {
+                // if we have LabelAwareIterator defined, we have to be sure that LabelsSource is propagated properly
+                this.labelsSource = labelAwareIterator.getLabelsSource();
+            } else {
+                // we have nothing, probably that's restored model building. ignore iterator for now.
+                // probably there's few reasons to move iterator initialization code into ParagraphVectors methods. Like protected setLabelAwareIterator method.
+            }
+
+            if (labelAwareIterator != null) {
+                SentenceTransformer transformer = new SentenceTransformer.Builder().iterator(labelAwareIterator)
+                        .tokenizerFactory(tokenizerFactory).allowMultithreading(allowParallelTokenization)
+                        .build();
+                this.iterator = new AbstractSequenceIterator.Builder<>(transformer).build();
+            }
+        }
+
         @Override
         public ParagraphVectors build() {
             presetTables();
