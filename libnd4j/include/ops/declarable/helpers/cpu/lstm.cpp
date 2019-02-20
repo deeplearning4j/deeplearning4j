@@ -128,6 +128,79 @@ void lstmCell(const NDArray* xt, const NDArray* ht_1, const NDArray* ct_1, const
         ht->assign(&htNoPeepHole);     
 }
 
+//////////////////////////////////////////////////////////////////////////
+
+void lstmBlockCell(const NDArray* xt, const NDArray* cLast, const NDArray* yLast,
+                   const NDArray* W, const NDArray* Wci, const NDArray* Wcf, const NDArray* Wco, const NDArray* b,
+                   const NDArray* z, const NDArray* i, const NDArray* f, const NDArray* o, const NDArray* h, NDArray* c, NDArray* y, const std::vector<double>& params) {
+
+    /* Input arrays:
+    *    0: input [bS, inSize] at time t
+    *    1: previous cell state  [bS, numUnits], time t-1
+    *    2: previous output [bS, numUnits], time t-1
+    *    3: Weights - concatenated (input-to-hidden, hidden-to-hidden weights)  weights, [(inSize+numUnits), 4*numUnits]
+    *    4: weights - cell peephole (t-1) connections to input modulation gate, [numUnits]
+    *    5: weights - cell peephole (t-1) connections to forget gate, [numUnits]
+    *    6: weights - cell peephole (t) connections to output gate, [numUnits]
+    *    7: biases, [4*numUnits]
+    *
+    *  Input integer arguments:
+    *    0: if not zero, provide peephole connections
+    *
+    *  Input float arguments:
+    *    0: the bias added to forget gates in order to reduce the scale of forgetting in the beginning of the training
+    *    1: clipping value for cell state, if it is not equal to zero, then cell state is clipped
+    *
+    * Output arrays:
+    *    0: Output - input gate activations [bs, numUnits]
+    *    1: Output - input modulation gate activations [bS, numUnits]
+    *    2: Output - forget gate activations [bs, numUnits]
+    *    3: Output - output gate activations [bs, numUnits]
+    *    4: Activations, pre input gate [bs, numUnits]
+    *    5: Activations, cell state [bs, numUnits]
+    *    6: Current cell output [bS, numProj], time t
+    */
+    const bool peephole   = (bool)params[0];        // if true, provide peephole connections
+    /*
+    double clippingCellValue   = params[2];              // clipping value for ct, if it is not equal to zero, then cell state is clipped
+    double clippingProjValue   = params[3];              // clipping value for projected ht, if it is not equal to zero, then projected cell output is clipped
+    const double forgetBias    = params[4];
+
+    const int bS   = xt->sizeAt(0);
+    const int inSize      = xt->sizeAt(1);
+    const int numProj     = ht_1->sizeAt(1);
+    const int numUnits    = ct_1->sizeAt(1);
+
+    auto z = mmul(*xt, *Wx) + mmul(*ht_1, *Wh) + *b;      // [bS x 4*numUnits] + [bS x 4*numUnits] + [1 x 4*numUnits] = [bS x 4*numUnits]
+
+    auto zit = z({0,0, 0,            numUnits});      	// z for input gate,  = mmul(Wxi,xt) + mmul(Whi,ht_1) + bi    = [bS x numUnits]
+    auto zft = z({0,0, numUnits,   2*numUnits});      	// z for forget gate, = mmul(Wxf,xt) + mmul(Whf,ht_1) + bf    = [bS x numUnits]
+    auto zct = z({0,0, 2*numUnits, 3*numUnits});      	// z for cell state,  = mmul(Wxc,xt) + mmul(Whc,ht_1) + bc    = [bS x numUnits]
+    auto zot = z({0,0, 3*numUnits, 4*numUnits});      	// z for output gate, = mmul(Wxo,xt) + mmul(Who,ht_1) + bo    = [bS x numUnits]
+
+    if(peephole) {                                              // add peephole connections: z  +  ct_1*Wc
+        zit += (*ct_1) * (*Wc)({0,          numUnits});       // add peephole connections to input gate
+        zft += (*ct_1) * (*Wc)({numUnits, 2*numUnits});       // add peephole connections to forget gate
+    }
+
+    // current sell state = ft*ct_1 + it*activation(mmul(Wxc,xt) + mmul(Whc,ht_1) + bc
+    ct->assign( sigmoid(zft + forgetBias) * (*ct_1) + sigmoid(zit) * activation(zct) );
+
+    // if clipping value is provided then cell state is clipped by this value prior to the cell output activation
+    if(clippingCellValue != 0.)
+        clipping(ct, clippingCellValue);
+
+    if(peephole)
+        zot += (*ct) * (*Wc)({{2*numUnits, 3*numUnits}});            // add peephole connections to output gate zot + ct*Wc
+
+    // current cell output = ot*activation(ct)
+    auto htNoPeepHole = sigmoid(zot) * activation(*ct);      // = [bS x numUnits]
+
+    ht->assign(&htNoPeepHole);
+        */
+}
+
+
 
 //////////////////////////////////////////////////////////////////////////
 void lstmTimeLoop(const NDArray* x, const NDArray* h0, const NDArray* c0, const NDArray* Wx, const NDArray* Wh, const NDArray* Wc, const NDArray* Wp, const NDArray* b,
