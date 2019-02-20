@@ -32,11 +32,11 @@ namespace helpers {
         Nd4jLong idx = indices->e<Nd4jLong>(0);
         if (input->isVector()) {
             T val = input->e<T>(0);
-//#pragma omp parallel for schedule(static)
+//#pragma omp parallel for default(shared) schedule(guided)
             for (Nd4jLong e = 1; e < indices->lengthOf(); e++) {
                 if (idx == indices->e<Nd4jLong>(e)) {
-                   // max 
-                   val = nd4j::math::nd4j_max<T>(val, input->e<T>(e));
+                   // max
+                   val = nd4j::math::nd4j_max<T>(val, input->t<T>(e));
                 }
                 else {
                     idx = indices->e<Nd4jLong>(e);
@@ -86,20 +86,20 @@ namespace helpers {
     static void segmentMinFunctor_(NDArray* input, NDArray* indices, NDArray* output) {
         //int numClasses = output->sizeAt(0);
         // if input is a vector: (as if in doc sample)
-        int idx = indices->e<int>(0);
+        Nd4jLong idx = indices->e<Nd4jLong>(0);
         if (input->isVector()) {
             T val = input->e<T>(0);
-//#pragma omp parallel for schedule(dynamic)
+//#pragma omp parallel for default(shared) schedule(guided)
             for (int e = 1; e < indices->lengthOf(); e++) {
-                if (idx == indices->e<int>(e)) {
+                if (idx == indices->e<Nd4jLong>(e)) {
                    // min 
-                   val = nd4j::math::nd4j_min<T>(val, input->e<T>(e));
+                   val = nd4j::math::nd4j_min<T>(val, input->t<T>(e));
                 }
                 else {
                     idx = indices->e<int>(e);
-                    val = input->e<T>(e);
+                    val = input->t<T>(e);
                 }
-                output->p(idx, val);
+                output->t<T>(idx) = val;
             }
         }
         else {
