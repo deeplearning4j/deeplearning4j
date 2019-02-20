@@ -350,12 +350,11 @@ namespace helpers {
 
     bool unsortedSegmentIndicesValidate(NDArray* indices, Nd4jLong expected, Nd4jLong& output) {
         Nd4jLong val = indices->e<Nd4jLong>(0);
-        for (int e = 1; e < indices->lengthOf(); e++) {
-            if (val >= expected) {
+
+        Nd4jLong maxInd = indices->argMax();
+        if (indices->e<Nd4jLong>(maxInd) >= expected) {
                 output = val;
                 return false;
-            }
-            val = indices->e<Nd4jLong>(e);
         }
         output = expected;
         return true;
@@ -425,6 +424,7 @@ namespace helpers {
         // if input is a vector: (as if in doc sample)
         //int idx = static_cast<int>((*indices)(0.));
         std::map<Nd4jLong, std::vector<Nd4jLong>> idxs;//(indices->lengthOf());
+//#pragma omp parallel for schedule(static)
         for (Nd4jLong e = 0; e < indices->lengthOf(); ++e)
             idxs[indices->e<Nd4jLong>(e)].push_back(e);
 
@@ -436,6 +436,7 @@ namespace helpers {
 //#pragma omp parallel for schedule(static)
             for (auto fi = idxs.begin(); fi != idxs.end(); ++fi) {
                 T val = input->e<T>(fi->second.at(0));
+#pragma omp parallel for schedule(static)
                 for (Nd4jLong idx = 1; idx < fi->second.size(); ++idx) {
                     val = nd4j::math::nd4j_min(val, input->e<T>(fi->second.at(idx)));
                 }
@@ -463,10 +464,11 @@ namespace helpers {
                 outputT->assign(listOfTensors->at(fi->second.at(0)));
                 for (Nd4jLong idx = 1; idx < fi->second.size(); ++idx) {
                     auto minT = listOfTensors->at(fi->second.at(idx));
+#pragma omp parallel for schedule(static)
                     for (Nd4jLong e = 0; e < outputT->lengthOf(); ++e) {
                         T val = nd4j::math::nd4j_min(minT->e<T>(e), outputT->e<T>(e));
 
-                        outputT->p(e, val);
+                        outputT->t<T>(e) = val;
                     }
                 }
                 //outputT->assign(maxT);
@@ -492,7 +494,8 @@ namespace helpers {
 //#pragma omp parallel for schedule(static)
             for (auto fi = idxs.begin(); fi != idxs.end(); ++fi) {
                 double sumValue = input->e<double>(fi->second.at(0));
-                for (Nd4jLong idx = 1; idx < fi->second.size(); ++idx) {
+#pragma omp parallel for reduction(+:sumValue) schedule(static)
+                for (size_t idx = 1; idx < fi->second.size(); ++idx) {
                     sumValue += input->e<double>(fi->second.at(idx));
                 }
                 output->p(fi->first, sumValue / fi->second.size());
@@ -500,7 +503,7 @@ namespace helpers {
         }
         else {
             std::vector<int> restDims(input->rankOf() - 1);
-//#pragma omp parallel for schedule(static)
+#pragma omp parallel for schedule(static)
             for (int e = 1; e < input->rankOf(); e++)
                 restDims[e - 1] = e;
 
@@ -514,6 +517,7 @@ namespace helpers {
             for (auto fi = idxs.begin(); fi != idxs.end(); ++fi) {
                 auto outputT = listOfOutTensors->at(fi->first);
                 outputT->assign(listOfTensors->at(fi->second.at(0)));
+#pragma omp parallel for schedule(static)
                 for (Nd4jLong idx = 1; idx < fi->second.size(); ++idx) {
                     auto current = listOfTensors->at(fi->second.at(idx));
                     *outputT += *current;
@@ -535,6 +539,7 @@ namespace helpers {
 //#pragma omp parallel for schedule(static)
             for (auto fi = idxs.begin(); fi != idxs.end(); ++fi) {
                 double sumValue = input->e<double>(fi->second.at(0));
+#pragma omp parallel for reduction(+:sumValue) schedule(static)
                 for (Nd4jLong idx = 1; idx < fi->second.size(); ++idx) {
                     sumValue += input->e<double>(fi->second.at(idx));
                 }
@@ -557,6 +562,7 @@ namespace helpers {
             for (auto fi = idxs.begin(); fi != idxs.end(); ++fi) {
                 auto outputT = listOfOutTensors->at(fi->first);
                 outputT->assign(listOfTensors->at(fi->second.at(0)));
+#pragma omp parallel for schedule(static)
                 for (Nd4jLong idx = 1; idx < fi->second.size(); ++idx) {
                     auto current = listOfTensors->at(fi->second.at(idx));
                     *(outputT) += *current;
