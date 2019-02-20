@@ -1166,7 +1166,6 @@ public class ParagraphVectorsTest {
             vec.fit();
             long num1 = vec.vocab().totalNumberOfDocs();
 
-         //   builder.resetIterators();
             vec.fit();
             System.out.println(vec.vocab().totalNumberOfDocs());
             long num2 = vec.vocab().totalNumberOfDocs();
