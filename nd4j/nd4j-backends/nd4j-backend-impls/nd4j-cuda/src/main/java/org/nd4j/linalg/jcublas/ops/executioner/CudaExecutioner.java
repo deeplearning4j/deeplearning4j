@@ -2629,7 +2629,22 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
     @Override
     public void scatterUpdate(ScatterUpdate.UpdateOp op, @NonNull INDArray array, @NonNull INDArray indices, @NonNull INDArray updates, int[] axis) {
+        CudaContext context = AtomicAllocator.getInstance().getFlowController().prepareAction(array, indices, updates);
 
+        val tadX = tadManager.getTADOnlyShapeInfo(array, axis);
+        val tadY = tadManager.getTADOnlyShapeInfo(updates, axis);
+
+        if (extraz.get() == null)
+            extraz.set(new PointerPointer(32));
+
+        val stuff = extraz.get().put(null, context.getOldStream());
+
+        nativeOps.scatterUpdate(stuff, op.ordinal(), (int) indices.length(),
+                null, (LongPointer) AtomicAllocator.getInstance().getHostPointer(tadX.getFirst()), null, AtomicAllocator.getInstance().getPointer(array, context), (LongPointer) AtomicAllocator.getInstance().getPointer(tadX.getFirst()), (LongPointer) AtomicAllocator.getInstance().getPointer(tadX.getSecond()),
+                null, (LongPointer) AtomicAllocator.getInstance().getHostPointer(tadY.getFirst()), null, AtomicAllocator.getInstance().getPointer(updates, context), (LongPointer) AtomicAllocator.getInstance().getPointer(tadY.getFirst()), (LongPointer) AtomicAllocator.getInstance().getPointer(tadY.getSecond()),
+                null, (IntPointer) AtomicAllocator.getInstance().getPointer(indices, context));
+
+        AtomicAllocator.getInstance().getFlowController().registerAction(context, array, indices, updates);
     }
 }
 

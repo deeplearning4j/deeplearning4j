@@ -2015,6 +2015,12 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
     @Override
     public void scatterUpdate(ScatterUpdate.UpdateOp op, @NonNull INDArray array, @NonNull INDArray indices, @NonNull INDArray updates, int[] axis) {
+        val tadX = tadManager.getTADOnlyShapeInfo(array, axis);
+        val tadY = tadManager.getTADOnlyShapeInfo(updates, axis);
 
+        loop.scatterUpdate(null, op.ordinal(), (int) indices.length(),
+                array.data().addressPointer(), (LongPointer) tadX.getFirst().addressPointer(), (LongPointer) tadX.getSecond().addressPointer(), null, null, null,
+                updates.data().addressPointer(), (LongPointer) tadY.getFirst().addressPointer(), (LongPointer) tadY.getSecond().addressPointer(), null, null, null,
+                (IntPointer) indices.data().addressPointer(), null);
     }
 }

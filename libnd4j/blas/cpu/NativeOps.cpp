@@ -2476,39 +2476,52 @@ void NativeOps::scatterUpdate(Nd4jPointer *extraPointers, int opCode, int numOfS
                       void* dY, Nd4jLong* dYShapeInfo, Nd4jLong* dYOffsets,
                       int* hIindexes, int* dIindexes) {
 
-    #pragma omp parallel for schedule(guided) proc_bind(close)
-    for (Nd4jLong i = 0; i < numOfSubArrs; ++i) {
 
-        NDArray inSubArr(reinterpret_cast<int8_t*>(hX) + (hXOffsets[hIindexes[i]] * DataTypeUtils::sizeOf(hXShapeInfo)), hXShapeInfo);
-        NDArray updSubArr(reinterpret_cast<int8_t*>(hY) + (hYOffsets[i] * DataTypeUtils::sizeOf(hXShapeInfo)), hYShapeInfo);
-        
-        if (inSubArr.lengthOf() != updSubArr.lengthOf())
-            continue;
+    int numThreads = omp_get_max_threads();
 
-        switch (opCode) {
-            case 0:
-                inSubArr.applyPairwiseTransform(pairwise::Add, &updSubArr, &inSubArr, nullptr);
-                break;
-            case 1:
-                inSubArr.applyPairwiseTransform(pairwise::Subtract, &updSubArr, &inSubArr, nullptr);
-                break;
-            case 2:
-                inSubArr.applyPairwiseTransform(pairwise::Multiply, &updSubArr, &inSubArr, nullptr);
-                break;
-            case 3:
-                inSubArr.applyPairwiseTransform(pairwise::Divide, &updSubArr, &inSubArr, nullptr);
-                break;
-            case 4:
-                inSubArr.applyPairwiseTransform(pairwise::ReverseSubtract, &updSubArr, &inSubArr, nullptr);
-                break;
-            case 5:
-                inSubArr.applyPairwiseTransform(pairwise::ReverseDivide, &updSubArr, &inSubArr, nullptr);
-                break;
-            case 6:
-                inSubArr.applyPairwiseTransform(pairwise::CopyPws, &updSubArr, &inSubArr, nullptr);
-                break;
-            default:
-                continue;                 
+    #pragma omp parallel for default(shared)
+    {
+        for (int i = 0; i < numOfSubArrs; ++i) {
+
+            int threadIndex = omp_get_thread_num();
+            const auto xIndex = hIindexes[i];
+            const bool isOwner = xIndex < numThreads ? threadIndex == xIndex : threadIndex == xIndex % numThreads;
+
+            if (!isOwner)
+                continue;
+
+            NDArray inSubArr(reinterpret_cast<int8_t *>(hX) + (hXOffsets[hIindexes[i]] * DataTypeUtils::sizeOf(hXShapeInfo)), hXShapeInfo);
+            NDArray updSubArr(reinterpret_cast<int8_t *>(hY) + (hYOffsets[i] * DataTypeUtils::sizeOf(hXShapeInfo)), hYShapeInfo);
+
+            if (inSubArr.lengthOf() != updSubArr.lengthOf()) {
+                continue;
+            }
+
+            switch (opCode) {
+                case 0:
+                    inSubArr.applyPairwiseTransform(pairwise::Add, &updSubArr, &inSubArr, nullptr);
+                    break;
+                case 1:
+                    inSubArr.applyPairwiseTransform(pairwise::Subtract, &updSubArr, &inSubArr, nullptr);
+                    break;
+                case 2:
+                    inSubArr.applyPairwiseTransform(pairwise::Multiply, &updSubArr, &inSubArr, nullptr);
+                    break;
+                case 3:
+                    inSubArr.applyPairwiseTransform(pairwise::Divide, &updSubArr, &inSubArr, nullptr);
+                    break;
+                case 4:
+                    inSubArr.applyPairwiseTransform(pairwise::ReverseSubtract, &updSubArr, &inSubArr, nullptr);
+                    break;
+                case 5:
+                    inSubArr.applyPairwiseTransform(pairwise::ReverseDivide, &updSubArr, &inSubArr, nullptr);
+                    break;
+                case 6:
+                    inSubArr.applyPairwiseTransform(pairwise::CopyPws, &updSubArr, &inSubArr, nullptr);
+                    break;
+                default:
+                    continue;
+            }
         }
     }
 }
