@@ -50,6 +50,9 @@ namespace nd4j {
 
         static void tensorDot(const nd4j::NDArray* a, const nd4j::NDArray* b, nd4j::NDArray* c, const std::vector<int>& axes_a, const std::vector<int>& axes_b, const std::vector<int>& permutForC = {});
 
+        static void tensorDot(const nd4j::NDArray* a, const nd4j::NDArray* b, nd4j::NDArray* c, const char aOrder, const char bOrder, const char cOrder, const std::vector<Nd4jLong>& aShape, const std::vector<Nd4jLong>& bShape, const std::vector<int>& permutForC = {});
+
+
 #ifndef __JAVACPP_HACK__
         /**
         *  modif - (can be empty) vector containing a subsequence of permutation/reshaping arrays (in any order), user must take care of correctness of such arrays by himself 

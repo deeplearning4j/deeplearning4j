@@ -1227,111 +1227,71 @@ TEST_F(PlaygroundTests, test_batched_skipgram_1) {
 //     delete[] z;
 // }
 
-TEST_F(PlaygroundTests, test_col2im_permuted_1) {
-    auto x = NDArrayFactory::create<float>('c', {8, 64, 55, 55, 3, 3});
-    x.assign(1.f);
-    x.permutei({0, 1, 4, 5, 2, 3});
+// TEST_F(PlaygroundTests, test_col2im_permuted_1) {
+//     auto x = NDArrayFactory::create<float>('c', {8, 64, 55, 55, 3, 3});
+//     x.assign(1.f);
+//     x.permutei({0, 1, 4, 5, 2, 3});
 
-    auto z0 = NDArrayFactory::create<float>('c', {64, 8, 112, 112});
-    z0.permutei({1, 0, 2, 3});
+//     auto z0 = NDArrayFactory::create<float>('c', {64, 8, 112, 112});
+//     z0.permutei({1, 0, 2, 3});
 
-    auto z1 = NDArrayFactory::create<float>('c', {64, 8, 112, 112});
-    z1.permutei({1, 0, 2, 3});
+//     auto z1 = NDArrayFactory::create<float>('c', {64, 8, 112, 112});
+//     z1.permutei({1, 0, 2, 3});
 
-    nd4j_printf("Starting custom run...\n","");
-    const int iterations = 100;
-    nd4j::ops::col2im op;
+//     nd4j_printf("Starting custom run...\n","");
+//     const int iterations = 100;
+//     nd4j::ops::col2im op;
+
+//     auto timeStart = std::chrono::system_clock::now();
+//     for (int e = 0; e < iterations; e++) {
+//         op.execute({&x}, {&z0}, {}, {2, 2, 0, 0, 112, 112, 1, 1, 1}, {});
+//     }
+//     auto timeEnd = std::chrono::system_clock::now();
+//     auto spanTime = std::chrono::duration_cast<std::chrono::microseconds> ((timeEnd - timeStart) / iterations).count();
+//     auto ttlTime = std::chrono::duration_cast<std::chrono::milliseconds> ((timeEnd - timeStart)).count();
+
+//     nd4j_printf("Starting legacy run...\n","");
+//     std::array<float, 8> extra = {2.f, 2.f, 0.f, 0.f, 112.f, 112.f, 1.f, 1.f};
+
+//     auto legacyStart = std::chrono::system_clock::now();
+//     for (int e = 0; e < iterations; e++) {
+//         x.applyTransform(transform::Col2Im, &z1, extra.data());
+//     }
+//     auto legacyEnd = std::chrono::system_clock::now();
+//     auto legacySpanTime = std::chrono::duration_cast<std::chrono::microseconds> ((legacyEnd - legacyStart) / iterations).count();
+//     auto legacyTtlTime = std::chrono::duration_cast<std::chrono::milliseconds> ((legacyEnd - legacyStart)).count();
+
+//     nd4j_printf("average time: %lld us vs %lld us;\n", spanTime, legacySpanTime);
+//     nd4j_printf("total time: %lld ms vs %lld ms;\n", ttlTime, legacyTtlTime);
+
+//     ASSERT_EQ(z0, z1);
+// }
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(PlaygroundTests, conv2d_1) {
+
+    const int N = 100;
+    int bS=8, iH=64,iW=64,  iC=32,oC=32,  kH=2,kW=2,  sH=1,sW=1,  pH=0,pW=0,  dH=1,dW=1;    
+    int paddingMode = 1;             // 1-SAME, 0-VALID;
+    int dataFormat  = 0;             // 1-NHWC, 0-NCHW    
+
+    NDArray input('c', {bS, iC, iH, iW}, nd4j::DataType::FLOAT32);
+    NDArray output(input);
+    NDArray weights('c', {kH, kW, iC, oC}, nd4j::DataType::FLOAT32);
+    NDArray bias('c', {oC}, nd4j::DataType::FLOAT32);    
+    input = 2.;
+    weights.linspace(0.1, 0.1);
+    bias = 0.5;
+
+    nd4j::ops::conv2d op;
 
     auto timeStart = std::chrono::system_clock::now();
-    for (int e = 0; e < iterations; e++) {
-        op.execute({&x}, {&z0}, {}, {2, 2, 0, 0, 112, 112, 1, 1, 1}, {});
-    }
+    
+    // for (int i = 0; i < N; i++) 
+        op.execute({&input, &weights, &bias}, {&output} , {}, {kH,kW,  sH,sW,  pH,pW,  dH,dW, paddingMode, dataFormat},{});
+    
     auto timeEnd = std::chrono::system_clock::now();
-    auto spanTime = std::chrono::duration_cast<std::chrono::microseconds> ((timeEnd - timeStart) / iterations).count();
-    auto ttlTime = std::chrono::duration_cast<std::chrono::milliseconds> ((timeEnd - timeStart)).count();
-
-    nd4j_printf("Starting legacy run...\n","");
-    std::array<float, 8> extra = {2.f, 2.f, 0.f, 0.f, 112.f, 112.f, 1.f, 1.f};
-
-    auto legacyStart = std::chrono::system_clock::now();
-    for (int e = 0; e < iterations; e++) {
-        x.applyTransform(transform::Col2Im, &z1, extra.data());
-    }
-    auto legacyEnd = std::chrono::system_clock::now();
-    auto legacySpanTime = std::chrono::duration_cast<std::chrono::microseconds> ((legacyEnd - legacyStart) / iterations).count();
-    auto legacyTtlTime = std::chrono::duration_cast<std::chrono::milliseconds> ((legacyEnd - legacyStart)).count();
-
-    nd4j_printf("average time: %lld us vs %lld us;\n", spanTime, legacySpanTime);
-    nd4j_printf("total time: %lld ms vs %lld ms;\n", ttlTime, legacyTtlTime);
-
-    ASSERT_EQ(z0, z1);
+    auto duration = std::chrono::duration_cast<std::chrono::microseconds> ((timeEnd - timeStart)).count();
+    printf("duration %ld\n", duration);    
 }
 
-// //////////////////////////////////////////////////////////////////////    
-// INLINEDEF unsigned offsetUns(unsigned index, const unsigned *shapeInfo, unsigned arrLen) {
-        
-//     unsigned offset = 0;        
-
-//     for(unsigned i = 1; i <= shapeInfo[0]; ++i) {
-//         arrLen /= shapeInfo[i];
-//         if(arrLen > 0 && shapeInfo[i] > 1) {                
-//             offset += (index / arrLen) * shapeInfo[i + shapeInfo[0]];
-//             index %= arrLen;
-//         }
-//     }
-//     return offset;
-// }
-
-// //////////////////////////////////////////////////////////////////////    
-// INLINEDEF int offsetInt(int index, const int *shapeInfo, int arrLen) {
-        
-//     int offset = 0;        
-
-//     for(int i = 1; i <= shapeInfo[0]; ++i) {
-//         arrLen /= shapeInfo[i];
-//         if(arrLen > 0 && shapeInfo[i] > 1) {                
-//             offset += (index / arrLen) * shapeInfo[i + shapeInfo[0]];
-//             index %= arrLen;
-//         }
-//     }
-//     return offset;
-// }
-
-
-// //////////////////////////////////////////////////////////////////////
-// TEST_F(PlaygroundTests, signed_unsigned_1) {
-    
-//     const int dim0(32), dim1(128), dim2(256), dim3(256);
-//     const unsigned len = dim0*dim1*dim2*dim3;
-    
-//     unsigned shapeInfoUns[] = {4,  dim0,dim1,dim2,dim3,  dim1*dim2*dim3,dim2*dim3,dim3,1,   0, 1, 99};
-//     int      shapeInfoInt[] = {4,  dim0,dim1,dim2,dim3,  dim1*dim2*dim3,dim2*dim3,dim3,1,   0, 1, 99};
-
-//     double* buffer = new double[len];
-
-//     //***********************************    
-//     auto timeStart = std::chrono::system_clock::now();
-//     for(int i=0; i<(int)len; ++i) {
-//         int offset = offsetInt(i, shapeInfoInt, (int)len);
-//         buffer[offset] = i;
-//     }    
-
-//     auto timeEnd = std::chrono::system_clock::now();
-//     auto timeInt = std::chrono::duration_cast<std::chrono::nanoseconds> ((timeEnd - timeStart)/len).count();
-
-//     //***********************************
-//     timeStart = std::chrono::system_clock::now();
-    
-//     for(unsigned i=0; i<len; ++i) {
-//         unsigned offset = offsetUns(i, shapeInfoUns, len);
-//         buffer[offset] = i;
-//     }   
-    
-//     timeEnd = std::chrono::system_clock::now();
-//     auto timeUns = std::chrono::duration_cast<std::chrono::nanoseconds> ((timeEnd - timeStart)/len).count();
-
-//     nd4j_printf("signed   time: %i ns;\n", timeInt);
-//     nd4j_printf("unsigned time: %u ns;\n", timeUns);
-
-//     delete []buffer;
-// }

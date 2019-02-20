@@ -77,11 +77,11 @@ void nd4j::MmulHelper::tensorDot(const nd4j::NDArray* a, const nd4j::NDArray* b,
     NDArray *aPR(const_cast<NDArray*>(a)), *bPR(const_cast<NDArray*>(b)), *cP(c), *cPR(c);
     // check whether permutation is required
     if(!permutForC.empty())
-        cP = c->permute(permutForC);            
-    
-    aPR = a->permute(permutAt);        
-    bPR = b->permute(permutBt);    
-    // check whether reshape is necessary        
+        cP = c->permute(permutForC);
+
+    aPR = a->permute(permutAt);
+    bPR = b->permute(permutBt);
+    // check whether reshape is necessary
     if(!aPR->isSameShape(shapeAt)) {
         if(aPR == a)
             aPR = a->reshape('c', shapeAt);
@@ -92,7 +92,7 @@ void nd4j::MmulHelper::tensorDot(const nd4j::NDArray* a, const nd4j::NDArray* b,
         if(bPR == b)
             bPR = b->reshape('c', shapeBt);
         else 
-            bPR->reshapei('c', shapeBt);                
+            bPR->reshapei('c', shapeBt);
     }
     if(!cP->isSameShape({aPR->sizeAt(0), bPR->sizeAt(1)}))
         cPR = cP->reshape('c', {aPR->sizeAt(0), bPR->sizeAt(1)});
@@ -109,6 +109,36 @@ void nd4j::MmulHelper::tensorDot(const nd4j::NDArray* a, const nd4j::NDArray* b,
         delete bPR;
     if(cP != c)
         delete cP;
+}
+
+//////////////////////////////////////////////////////////////////////////
+void nd4j::MmulHelper::tensorDot(const nd4j::NDArray* a, const nd4j::NDArray* b, nd4j::NDArray* c,
+                                 const char aOrder, const char bOrder, const char cOrder,
+                                 const std::vector<Nd4jLong>& aShape,
+                                 const std::vector<Nd4jLong>& bShape,
+                                 const std::vector<int>& permutForC) {
+
+    NDArray *cP(c);
+    
+    NDArray* aR = a->reshape(aOrder, aShape);
+    NDArray* bR = b->reshape(bOrder, bShape);
+
+    // check whether permutation is required
+    if(!permutForC.empty())
+        cP = c->permute(permutForC);            
+
+    if(!cP->isSameShape({aR->sizeAt(0), bR->sizeAt(1)}) || cOrder != c->ordering())
+        cP->reshapei(cOrder, {aR->sizeAt(0), bR->sizeAt(1)});            
+
+    mmul(aR, bR, cP, 1.0, 0.0);
+
+    if(cP->getBuffer() != c->getBuffer())                    // this means both permute and reshape have been performed on c, cP always points on c->getBuffer()
+        c->assign(cP);
+        
+    if(cP != c)
+        delete cP;
+    delete aR;
+    delete bR;
 }
 
 #ifndef __JAVACPP_HACK__

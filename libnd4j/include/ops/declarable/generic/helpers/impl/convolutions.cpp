@@ -644,14 +644,24 @@ static void conv2d_(nd4j::graph::Context& block, const NDArray* input, const NDA
     if(!isNCHW)
         input = input->permute({0, 3, 1, 2});                                       // [bS, iH, iW, iC] -> [bS, iC, iH, iW] if NHWC
     else
-        permutForOutput = {0, indOoH, indOoH+1, indIOioC};                          // [bS, oC, oH, oW] -> [bS, oH, oW, oC]
+        // permutForOutput = {0, indOoH, indOoH+1, indIOioC};                          // [bS, oC, oH, oW] -> [bS, oH, oW, oC]
+        permutForOutput = {0, 3, 1, 2};                                             // [bS, oH, oW, oC] -> [bS, oC, oH, oW]
 
-    NDArray columns(input->ordering(), {bS, iC, kH, kW, oH, oW}, input->dataType(), input->getWorkspace());
+    NDArray col('c', {bS, oH, oW, iC, kH, kW}, input->dataType(), input->getWorkspace());
+    NDArray* colP = col.permute({0, 3, 4, 5, 1, 2});            // {bS, iC, kH, kW, oH, oW}    
+    NDArray outTemp('f', {bS*oH*oW, oC}, output->dataType(), output->getWorkspace());
 
     //----- calculation of output -----//
     graph::LaunchContext ctx;
-    helpers::im2col(ctx, *input, columns, kH, kW, sH, sW, pH, pW, dH, dW, NDArrayFactory::create(0.f, input->getWorkspace()));  // [bS, iC, iH, iW] is convoluted to [bS, iC, kH, kW, oH, oW]
-    MmulHelper::tensorDot(&columns, weights, output, {1,2,3}, {indWiC, indWkH, indWkH+1}, permutForOutput); // [bS, iC, kH, kW, oH, oW] x [kH, kW, iC, oC]/[oC, iC, kH, kW] = [bS, oH, oW, oC]
+    helpers::im2col(ctx, *input, *colP, kH, kW, sH, sW, pH, pW, dH, dW, NDArrayFactory::create(0.f, input->getWorkspace()));  // [bS, iC, iH, iW] is convoluted to [bS, iC, kH, kW, oH, oW]
+    // MmulHelper::tensorDot(&col, weights, &outTemp, {3,4,5}, {indWiC, indWkH, indWkH+1}, {}); // [bS, iC, kH, kW, oH, oW] x [kH, kW, iC, oC]/[oC, iC, kH, kW] = [bS, oH, oW, oC]
+    MmulHelper::tensorDot(&col, weights, &outTemp, 'c', 'f', 'f', {bS*oH*oW, iC*kH*kW}, {kH*kW*iC, oC});     
+
+    //----- assign outTemp to output  -----//
+    outTemp.reshapei({bS, oH, oW, oC});
+    if(isNCHW)
+        outTemp.permutei(permutForOutput);
+    output->assign(outTemp);
 
     //----- add biases if required -----//
     if(bias)
@@ -659,6 +669,8 @@ static void conv2d_(nd4j::graph::Context& block, const NDArray* input, const NDA
 
     if(!isNCHW)
         delete input;
+
+    delete colP;    
 }
 
 //////////////////////////////////////////////////////////////////////////
