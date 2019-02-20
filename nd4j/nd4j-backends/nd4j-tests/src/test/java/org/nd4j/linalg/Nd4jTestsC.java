@@ -66,6 +66,7 @@ import org.nd4j.linalg.api.ops.impl.reduce.same.Sum;
 import org.nd4j.linalg.api.ops.impl.reduce3.*;
 import org.nd4j.linalg.api.ops.impl.scalar.LeakyReLU;
 import org.nd4j.linalg.api.ops.impl.scalar.ReplaceNans;
+import org.nd4j.linalg.api.ops.impl.scatter.ScatterUpdate;
 import org.nd4j.linalg.api.ops.impl.transforms.any.IsMax;
 import org.nd4j.linalg.api.ops.impl.transforms.bool.MatchConditionTransform;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.CompareAndSet;
@@ -7040,6 +7041,32 @@ public class Nd4jTestsC extends BaseNd4jTest {
         assertArrayEquals(new long[]{4,3}, arr.shape());
 
         assertTrue(arr == ti);  //Should be same object
+    }
+
+    @Test
+    public void testScatterUpdateShortcut() {
+        val array = Nd4j.create(DataType.FLOAT, 5, 2);
+        val updates = Nd4j.createFromArray(new float[][] {{1,1}, {2,2}, {3, 3}});
+        val indices = Nd4j.createFromArray(new int[]{1, 2, 3});
+        val exp = Nd4j.createFromArray(new float[][] {{0,0}, {1,1}, {2,2}, {3, 3}, {0,0}});
+
+        assertArrayEquals(exp.shape(), array.shape());
+        Nd4j.scatterUpdate(ScatterUpdate.UpdateOp.ADD, array, indices, updates, 1);
+
+        assertEquals(exp, array);
+    }
+
+    @Test(expected = IllegalStateException.class)
+    public void testScatterUpdateShortcut_f1() {
+        val array = Nd4j.create(DataType.FLOAT, 5, 2);
+        val updates = Nd4j.createFromArray(new float[][] {{1,1}, {2,2}, {3, 3}});
+        val indices = Nd4j.createFromArray(new int[]{1, 2, 3});
+        val exp = Nd4j.createFromArray(new float[][] {{0,0}, {1,1}, {2,2}, {3, 3}, {0,0}});
+
+        assertArrayEquals(exp.shape(), array.shape());
+        Nd4j.scatterUpdate(ScatterUpdate.UpdateOp.ADD, array, indices, updates, 0);
+
+        assertEquals(exp, array);
     }
 
     @Test

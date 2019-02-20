@@ -55,6 +55,7 @@ import org.nd4j.linalg.api.ops.executioner.DefaultOpExecutioner;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.api.ops.impl.indexaccum.IMax;
 import org.nd4j.linalg.api.ops.impl.indexaccum.IMin;
+import org.nd4j.linalg.api.ops.impl.scatter.ScatterUpdate;
 import org.nd4j.linalg.api.ops.impl.shape.Diag;
 import org.nd4j.linalg.api.ops.impl.shape.DiagPart;
 import org.nd4j.linalg.api.ops.impl.shape.Stack;
@@ -7457,5 +7458,22 @@ public class Nd4j {
      */
     public static INDArray[] exec(CustomOp op){
         return getExecutioner().exec(op);
+    }
+
+
+    /**
+     * This method applies ScatterUpdate op
+     *
+     * @param op
+     * @param array
+     * @param indices
+     * @param updates
+     * @param axis
+     */
+    @Deprecated
+    public static void scatterUpdate(ScatterUpdate.UpdateOp op, @NonNull INDArray array, @NonNull INDArray indices, @NonNull INDArray updates, int... axis) {
+        Preconditions.checkArgument(indices.dataType() == DataType.INT, "Indices should have INT data type");
+        Preconditions.checkArgument(array.dataType() == updates.dataType(), "Array and updates should have the same data type");
+        getExecutioner().scatterUpdate(op, array, indices, updates, axis);
     }
 }
