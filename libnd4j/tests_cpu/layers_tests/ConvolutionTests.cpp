@@ -134,6 +134,9 @@ TYPED_TEST(TypedConvolutionTests, TestAvgFF_TF) {
 
     auto z = result->at(0);
 
+    z->printIndexedBuffer("z");
+    exp.printIndexedBuffer("e");
+
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 

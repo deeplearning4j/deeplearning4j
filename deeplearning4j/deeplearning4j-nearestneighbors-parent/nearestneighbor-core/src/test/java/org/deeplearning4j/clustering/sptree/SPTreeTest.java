@@ -55,7 +55,7 @@ public class SPTreeTest {
     @Ignore
     public void testLargeTree() {
         int num = 100000;
-        INDArray arr = Nd4j.linspace(1, num, num).reshape(num, 1);
+        INDArray arr = Nd4j.linspace(1, num, num, Nd4j.dataType()).reshape(num, 1);
         SpTree tree = new SpTree(arr);
     }
 

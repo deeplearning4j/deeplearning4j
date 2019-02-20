@@ -440,7 +440,7 @@ public class BooleanIndexingTest extends BaseNd4jTest {
     public void testChooseBasic() {
         Nd4j.getExecutioner().setProfilingMode(OpExecutioner.ProfilingMode.ANY_PANIC);
         NativeOpsHolder.getInstance().getDeviceNativeOps().enableDebugMode(true);
-        INDArray arr = Nd4j.linspace(1,4,4).reshape(2,2);
+        INDArray arr = Nd4j.linspace(1,4,4, Nd4j.dataType()).reshape(2,2);
         INDArray filtered = BooleanIndexing.chooseFrom(new INDArray[]{arr},Arrays.asList(2.0), Collections.emptyList(),new GreaterThan());
         assertEquals(4,filtered.length());
     }
@@ -448,7 +448,7 @@ public class BooleanIndexingTest extends BaseNd4jTest {
 
     @Test
     public void testChooseGreaterThanZero() {
-        INDArray zero = Nd4j.linspace(0,4,4);
+        INDArray zero = Nd4j.linspace(0,4,4, Nd4j.dataType());
         INDArray filtered = BooleanIndexing.chooseFrom(new INDArray[]{zero},Arrays.asList(0.0), Collections.emptyList(),new GreaterThan());
         assertEquals(3,filtered.length());
     }
@@ -457,7 +457,7 @@ public class BooleanIndexingTest extends BaseNd4jTest {
     public void testChooseNone() {
         Nd4j.getExecutioner().setProfilingMode(OpExecutioner.ProfilingMode.ANY_PANIC);
         NativeOpsHolder.getInstance().getDeviceNativeOps().enableDebugMode(true);
-        INDArray arr = Nd4j.linspace(1,4,4).reshape(2,2);
+        INDArray arr = Nd4j.linspace(1,4,4, Nd4j.dataType()).reshape(2,2);
         INDArray filtered = BooleanIndexing.chooseFrom(new INDArray[]{arr},Arrays.asList(5.0), Collections.emptyList(),new GreaterThan());
         assertNull(filtered);
     }

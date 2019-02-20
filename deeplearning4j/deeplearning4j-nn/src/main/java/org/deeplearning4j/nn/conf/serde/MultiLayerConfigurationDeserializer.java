@@ -58,8 +58,9 @@ public class MultiLayerConfigurationDeserializer extends BaseNetConfigDeserializ
         boolean attemptIUpdaterFromLegacy = requiresIUpdaterFromLegacy(layers);
 
         boolean requiresLegacyRegularizationHandling = requiresRegularizationFromLegacy(layers);
+        boolean requiresLegacyWeightInitHandling = requiresWeightInitFromLegacy(layers);
 
-        if(attemptIUpdaterFromLegacy || requiresLegacyRegularizationHandling) {
+        if(attemptIUpdaterFromLegacy || requiresLegacyRegularizationHandling || requiresLegacyWeightInitHandling) {
             JsonLocation endLocation = jp.getCurrentLocation();
             long charOffsetEnd = endLocation.getCharOffset();
             Object sourceRef = endLocation.getSourceRef();
@@ -121,6 +122,16 @@ public class MultiLayerConfigurationDeserializer extends BaseNetConfigDeserializ
                             on = (ObjectNode) on.get("layer").elements().next();
                         }
                         handleL1L2BackwardCompatibility((BaseLayer) layers[i], on);
+                    }
+                }
+
+                if(requiresLegacyWeightInitHandling){
+                    if (layers[i] instanceof BaseLayer && ((BaseLayer) layers[i]).getWeightInitFn() == null) {
+                        if(on.has("layer")){
+                            //Legacy format
+                            on = (ObjectNode) on.get("layer").elements().next();
+                        }
+                        handleWeightInitBackwardCompatibility((BaseLayer) layers[i], on);
                     }
                 }
             }
