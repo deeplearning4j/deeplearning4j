@@ -529,8 +529,8 @@ public class ComputationGraphTestRNN extends BaseDL4JTest {
         ComputationGraph net = new ComputationGraph(conf);
         net.init();
 
-        MultiDataSet data = new MultiDataSet(new INDArray[] {Nd4j.linspace(1, 10, 10).reshape(1, 1, 10)},
-                        new INDArray[] {Nd4j.linspace(2, 20, 10).reshape(1, 1, 10)}, null,
+        MultiDataSet data = new MultiDataSet(new INDArray[] {Nd4j.linspace(1, 10, 10, Nd4j.dataType()).reshape(1, 1, 10)},
+                        new INDArray[] {Nd4j.linspace(2, 20, 10, Nd4j.dataType()).reshape(1, 1, 10)}, null,
                         new INDArray[] {Nd4j.ones(1, 10)});
 
         net.fit(data);
@@ -551,8 +551,8 @@ public class ComputationGraphTestRNN extends BaseDL4JTest {
             ComputationGraph net = new ComputationGraph(conf);
             net.init();
 
-            MultiDataSet data = new MultiDataSet(new INDArray[] {Nd4j.linspace(1, 10, 10).reshape(1, 1, 10)},
-                            new INDArray[] {Nd4j.linspace(2, 20, 10).reshape(1, 1, 10)}, new INDArray[] {Nd4j.ones(1, 10)},
+            MultiDataSet data = new MultiDataSet(new INDArray[] {Nd4j.linspace(1, 10, 10, Nd4j.dataType()).reshape(1, 1, 10)},
+                            new INDArray[] {Nd4j.linspace(2, 20, 10, Nd4j.dataType()).reshape(1, 1, 10)}, new INDArray[] {Nd4j.ones(1, 10)},
                             new INDArray[] {Nd4j.ones(1, 10)});
 
             net.fit(data);
