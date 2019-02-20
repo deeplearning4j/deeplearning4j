@@ -2469,18 +2469,18 @@ void NativeOps::deleteUtf8String(Nd4jPointer *extraPointers, Nd4jPointer ptr) {
 
 
 ////////////////////////////////////////////////////////////////////////
-static void scatterUpdate(Nd4jPointer *extraPointers, const int opCode, const int numOfSubArrs,
-                            void* phX, void* phXShapeInfo,
-                            void* pdX, void* pdXShapeInfo,
-                            void* phY, void* phYShapeInfo,
-                            void* pdY, void* pdYShapeInfo,
-                            int* indexes) {
+static void scatterUpdate(Nd4jPointer *extraPointers, int opCode, int numOfSubArrs,
+                      void* hX, Nd4jLong* hXShapeInfo, Nd4jLong* hXOffsets,
+                      void* dX, Nd4jLong* dXShapeInfo, Nd4jLong* dXOffsets,
+                      void* hY, Nd4jLong* hYShapeInfo, Nd4jLong* hYOffsets,
+                      void* dY, Nd4jLong* dYShapeInfo, Nd4jLong* dYOffsets,
+                      int* hIindexes, int* dIindexes) {
 
     #pragma omp parallel for schedule(guided) proc_bind(close)
     for (Nd4jLong i = 0; i < numOfSubArrs; ++i) {
 
-        NDArray inSubArr(reinterpret_cast<void*>(reinterpret_cast<void**>(phX)[indexes[i]]), reinterpret_cast<Nd4jLong**>(phXShapeInfo)[indexes[i]]);
-        NDArray updSubArr(reinterpret_cast<void*>(reinterpret_cast<void**>(phY)[i]), reinterpret_cast<Nd4jLong**>(phYShapeInfo)[i]);        
+        NDArray inSubArr(reinterpret_cast<int8_t*>(hX) + hXOffsets[hIindexes[i]], hXShapeInfo);
+        NDArray updSubArr(reinterpret_cast<int8_t*>(hY) + hYOffsets[i], hYShapeInfo);        
         
         if (inSubArr.lengthOf() != updSubArr.lengthOf())
             continue;

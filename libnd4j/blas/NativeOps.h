@@ -1625,7 +1625,7 @@ public:
                       void* dX, Nd4jLong* dXShapeInfo, Nd4jLong* dXOffsets,
                       void* hY, Nd4jLong* hYShapeInfo, Nd4jLong* hYOffsets,
                       void* dY, Nd4jLong* dYShapeInfo, Nd4jLong* dYOffsets,
-                      int* indexes);
+                      int* hIindexes, int* dIindexes);
 
 };
 
