@@ -206,17 +206,17 @@ void ConvolutionUtils::calcOutSizePool3D(int& oD, int& oH, int& oW, const int kD
 template <typename T>
 static void vol2col_(const NDArray& volume, NDArray& columns, const int sD, const int sH, const int sW, const int pD, const int pH, const int pW, const int dD, const int dH, const int dW) {
 
-    const Nd4jLong bS = volume.sizeAt(0);
-    const Nd4jLong iC = volume.sizeAt(1);
-    const Nd4jLong iD = volume.sizeAt(2);
-    const Nd4jLong iH = volume.sizeAt(3);
-    const Nd4jLong iW = volume.sizeAt(4);
-    const Nd4jLong kD = columns.sizeAt(2);
-    const Nd4jLong kH = columns.sizeAt(3);
-    const Nd4jLong kW = columns.sizeAt(4);
-    const Nd4jLong oD = columns.sizeAt(5);
-    const Nd4jLong oH = columns.sizeAt(6);
-    const Nd4jLong oW = columns.sizeAt(7);
+    const int bS = volume.sizeAt(0);
+    const int iC = volume.sizeAt(1);
+    const int iD = volume.sizeAt(2);
+    const int iH = volume.sizeAt(3);
+    const int iW = volume.sizeAt(4);
+    const int kD = columns.sizeAt(2);
+    const int kH = columns.sizeAt(3);
+    const int kW = columns.sizeAt(4);
+    const int oD = columns.sizeAt(5);
+    const int oH = columns.sizeAt(6);
+    const int oW = columns.sizeAt(7);
     const Nd4jLong colStride0 = columns.stridesOf()[0];
     const Nd4jLong colStride1 = columns.stridesOf()[1];
     const Nd4jLong colStride2 = columns.stridesOf()[2];
@@ -307,17 +307,17 @@ else
 template <typename T>
 static void col2vol_(const NDArray& columns, NDArray& volume, const int sD, const int sH, const int sW, const int pD, const int pH, const int pW, const int dD, const int dH, const int dW) {
 
-    const Nd4jLong bS = volume.sizeAt(0);
-    const Nd4jLong iC = volume.sizeAt(1);
-    const Nd4jLong iD = volume.sizeAt(2);
-    const Nd4jLong iH = volume.sizeAt(3);
-    const Nd4jLong iW = volume.sizeAt(4);
-    const Nd4jLong kD = columns.sizeAt(2);
-    const Nd4jLong kH = columns.sizeAt(3);
-    const Nd4jLong kW = columns.sizeAt(4);
-    const Nd4jLong oD = columns.sizeAt(5);
-    const Nd4jLong oH = columns.sizeAt(6);
-    const Nd4jLong oW = columns.sizeAt(7);
+    const int bS = volume.sizeAt(0);
+    const int iC = volume.sizeAt(1);
+    const int iD = volume.sizeAt(2);
+    const int iH = volume.sizeAt(3);
+    const int iW = volume.sizeAt(4);
+    const int kD = columns.sizeAt(2);
+    const int kH = columns.sizeAt(3);
+    const int kW = columns.sizeAt(4);
+    const int oD = columns.sizeAt(5);
+    const int oH = columns.sizeAt(6);
+    const int oW = columns.sizeAt(7);
     const Nd4jLong colStride0 = columns.stridesOf()[0];
     const Nd4jLong colStride1 = columns.stridesOf()[1];
     const Nd4jLong colStride2 = columns.stridesOf()[2];
@@ -336,19 +336,20 @@ static void col2vol_(const NDArray& columns, NDArray& volume, const int sD, cons
     T* colBuff = const_cast<NDArray&>(columns).bufferAsT<T>();
 
     // initial zeroing of volume content
-    const Nd4jLong volEWS = volume.ews();
-    const auto volLen = volume.lengthOf();
-    if(volEWS == 1)
-        memset(volBuff, 0, volLen * sizeof(T));
-    else if(volEWS > 1) {
-#pragma omp parallel for schedule(static) proc_bind(close)
-        for (Nd4jLong i = 0; i < volLen * volEWS; i += volEWS)
-            volBuff[i] = static_cast<T>(0.f);
-    }
-    else {        
-        for (Nd4jLong i = 0; i < volLen; i++)
-            volBuff[shape::getIndexOffset(i, volume.getShapeInfo(), volLen)] = static_cast<T>(0.f);
-    }
+    memset(volBuff, 0, volume.lengthOf() * sizeof(T));
+//     const Nd4jLong volEWS = volume.ews();
+//     const auto volLen = volume.lengthOf();
+//     if(volEWS == 1)
+//         memset(volBuff, 0, volLen * sizeof(T));
+//     else if(volEWS > 1) {
+// #pragma omp parallel for schedule(static) proc_bind(close)
+//         for (Nd4jLong i = 0; i < volLen * volEWS; i += volEWS)
+//             volBuff[i] = static_cast<T>(0.f);
+//     }
+//     else {        
+//         for (Nd4jLong i = 0; i < volLen; i++)
+//             volBuff[shape::getIndexOffset(i, volume.getShapeInfo(), volLen)] = static_cast<T>(0.f);
+//     }
 
     T* col, *vol;
     int volDep, volRow, volCol;
@@ -1260,13 +1261,13 @@ static void pooling2d_(nd4j::graph::Context& block, const NDArray& input, NDArra
     const int kHEff = kH + (kH-1)*(dH-1);
     const int kWEff = kW + (kW-1)*(dW-1);
 
-    const Nd4jLong bS = input.sizeAt(0);
-    const Nd4jLong iC = input.sizeAt(1);
-    const Nd4jLong iH = input.sizeAt(2);
-    const Nd4jLong iW = input.sizeAt(3);
-    const Nd4jLong oC = output.sizeAt(1);
-    const Nd4jLong oH = output.sizeAt(2);
-    const Nd4jLong oW = output.sizeAt(3);
+    const int bS = input.sizeAt(0);
+    const int iC = input.sizeAt(1);
+    const int iH = input.sizeAt(2);
+    const int iW = input.sizeAt(3);
+    const int oC = output.sizeAt(1);
+    const int oH = output.sizeAt(2);
+    const int oW = output.sizeAt(3);
 
 #ifdef HAVE_MKLDNN
     if (poolingMode < 2 && block.isUseMKLDNN() && nd4j::MKLDNNStream::isSupported<T, T>()) {
@@ -1313,13 +1314,13 @@ static void pooling2d_(nd4j::graph::Context& block, const NDArray& input, NDArra
     
     const Nd4jLong iStep2   = dH*iStride2;
     const Nd4jLong iStep3   = dW*iStride3;    
-    const Nd4jLong kProd   = kH*kW;
+    const int kProd         = kH*kW;
 
     Nd4jLong hstart, wstart, hend, wend;
-    T sum, *pIn;
+    T *pIn;
 
     if(poolingMode == 0) {        // max 
-#pragma omp parallel for schedule(guided) private(pIn, sum, hstart, wstart, hend, wend)
+#pragma omp parallel for schedule(guided) private(pIn, hstart, wstart, hend, wend) collapse(2)
         for(int b = 0; b < bS; ++b) {
             for(int c = 0; c < iC; ++c) {                                                            
                 for(int oh = 0; oh < oH; ++oh) {
@@ -1346,15 +1347,15 @@ static void pooling2d_(nd4j::graph::Context& block, const NDArray& input, NDArra
                         wstart *= iStride3;
                         wend   *= iStride3;
 
-                        sum = -DataTypeUtils::max<T>();
-                                                                    
+                        T max = -DataTypeUtils::max<T>();
+
                         for (Nd4jLong kh = hstart; kh < hend; kh += iStep2) 
                             for (Nd4jLong kw = wstart; kw < wend; kw += iStep3) {
                                 T val = pIn[kh + kw];
-                                    if (val > sum)
-                                        sum = val;
+                                    if (val > max)
+                                        max = val;
                             }
-                        out[b * oStride0 + c * oStride1 + oh * oStride2 + ow * oStride3] = sum;
+                        out[b * oStride0 + c * oStride1 + oh * oStride2 + ow * oStride3] = max;
                     }
                 }
             }
@@ -1362,7 +1363,7 @@ static void pooling2d_(nd4j::graph::Context& block, const NDArray& input, NDArra
     }
 /*************************************************************************/    
     else if(poolingMode == 1) {      // avg
-// #pragma omp parallel for schedule(guided) private(pIn, sum, hstart, wstart, hend, wend)        
+#pragma omp parallel for schedule(guided) private(pIn, hstart, wstart, hend, wend) collapse(2)
         for(int b = 0; b < bS; ++b) {
             for(int c = 0; c < iC; ++c) {                                                            
                 for(int oh = 0; oh < oH; ++oh) {
@@ -1389,27 +1390,22 @@ static void pooling2d_(nd4j::graph::Context& block, const NDArray& input, NDArra
                         wstart *= iStride3;
                         wend   *= iStride3;
 
-                        sum = static_cast<T>(0.f);
-                                            
-                        for (Nd4jLong kh = hstart; kh < hend; kh += iStep2) 
+                        T sum = static_cast<T>(0.f);
+
+                        for (Nd4jLong kh = hstart; kh < hend; kh += iStep2)
                             for (Nd4jLong kw = wstart; kw < wend; kw += iStep3)
                                 sum += pIn[kh + kw];
+
 
                         auto oi = b * oStride0 + c * oStride1 + oh * oStride2 + ow * oStride3;
 
                         if (extraParam0 == 0) {       //Exclude padding
-                            //auto _v = static_cast<float>(hend - hstart) / static_cast<float>(iStep2);
-                            //auto _a = static_cast<T>(nd4j::math::nd4j_ceil<float, T>(_v));
-                            //auto _b = static_cast<T>(nd4j::math::nd4j_ceil<float, T>(static_cast<float>(wend - wstart) / static_cast<float>(iStep3)));
-
-                            auto _a = (hend-hstart)/iStep2 + ((hend-hstart) % iStep2 == 0 ? 0 : 1);
-                            auto _b = (wend-wstart)/iStep3 + ((wend-wstart) % iStep3 == 0 ? 0 : 1);
+                            int _a = (hend-hstart)/iStep2 + ((hend-hstart) % iStep2 == 0 ? 0 : 1);
+                            int _b = (wend-wstart)/iStep3 + ((wend-wstart) % iStep3 == 0 ? 0 : 1);
 
                             sum /=  _a * _b;   //Accounts for dilation
-
                         } else if (extraParam0 == 1)  //Include padding
                             sum /= kProd;
-
                 
                         out[oi] = sum;
                     }
@@ -1419,7 +1415,7 @@ static void pooling2d_(nd4j::graph::Context& block, const NDArray& input, NDArra
     }    
 /*************************************************************************/    
     else if(poolingMode == 2) {  // pnorm
-#pragma omp parallel for schedule(guided) private(pIn, sum, hstart, wstart, hend, wend)    
+#pragma omp parallel for schedule(guided) private(pIn, hstart, wstart, hend, wend) collapse(2)
         for(int b = 0; b < bS; ++b) {
             for(int c = 0; c < iC; ++c) {                                                            
                 for(int oh = 0; oh < oH; ++oh) {
@@ -1446,8 +1442,8 @@ static void pooling2d_(nd4j::graph::Context& block, const NDArray& input, NDArra
                         wstart *= iStride3;
                         wend   *= iStride3;
 
-                        sum = static_cast<T>(0.f);
-                                                                    
+                        T sum = static_cast<T>(0.f);
+
                         for (Nd4jLong kh = hstart; kh < hend; kh += iStep2) 
                             for (Nd4jLong kw = wstart; kw < wend; kw += iStep3)
                                 sum += nd4j::math::nd4j_pow<T,T,T>(nd4j::math::nd4j_abs<T>(pIn[kh + kw]), extraParam0);
@@ -1478,15 +1474,15 @@ static void pooling3d_(nd4j::graph::Context& block, const NDArray& input, NDArra
     const int kHEff = kH + (kH-1)*(dH-1);
     const int kWEff = kW + (kW-1)*(dW-1);
 
-    const Nd4jLong bS = input.sizeAt(0);
-    const Nd4jLong iC = input.sizeAt(1);
-    const Nd4jLong iD = input.sizeAt(2);
-    const Nd4jLong iH = input.sizeAt(3);
-    const Nd4jLong iW = input.sizeAt(4);
-    const Nd4jLong oC = output.sizeAt(1);
-    const Nd4jLong oD = output.sizeAt(2);
-    const Nd4jLong oH = output.sizeAt(3);
-    const Nd4jLong oW = output.sizeAt(4);
+    const int bS = input.sizeAt(0);
+    const int iC = input.sizeAt(1);
+    const int iD = input.sizeAt(2);
+    const int iH = input.sizeAt(3);
+    const int iW = input.sizeAt(4);
+    const int oC = output.sizeAt(1);
+    const int oD = output.sizeAt(2);
+    const int oH = output.sizeAt(3);
+    const int oW = output.sizeAt(4);
 
 #ifdef HAVE_MKLDNN
     if (poolingMode < 2 && block.isUseMKLDNN() && nd4j::MKLDNNStream::isSupported<T, T>()) {
@@ -1535,7 +1531,7 @@ static void pooling3d_(nd4j::graph::Context& block, const NDArray& input, NDArra
     const Nd4jLong iStep2   = dD*iStride2;
     const Nd4jLong iStep3   = dH*iStride3;
     const Nd4jLong iStep4   = dW*iStride4;
-    const Nd4jLong kProd    = kD*kH*kW;
+    const int kProd         = kD*kH*kW;
     const T iStep2Inv = 1./iStep2;
     const T iStep3Inv = 1./iStep3;
     const T iStep4Inv = 1./iStep4;
@@ -1743,13 +1739,13 @@ static void pooling2dBP_(nd4j::graph::Context& block, const NDArray& input, cons
     const int kHEff = kH + (kH-1)*(dH-1);
     const int kWEff = kW + (kW-1)*(dW-1);
 
-    const Nd4jLong bS = gradI.sizeAt(0);
-    const Nd4jLong iC = gradI.sizeAt(1);
-    const Nd4jLong iH = gradI.sizeAt(2);
-    const Nd4jLong iW = gradI.sizeAt(3);
-    const Nd4jLong oC = gradO.sizeAt(1);
-    const Nd4jLong oH = gradO.sizeAt(2);
-    const Nd4jLong oW = gradO.sizeAt(3);
+    const int bS = gradI.sizeAt(0);
+    const int iC = gradI.sizeAt(1);
+    const int iH = gradI.sizeAt(2);
+    const int iW = gradI.sizeAt(3);
+    const int oC = gradO.sizeAt(1);
+    const int oH = gradO.sizeAt(2);
+    const int oW = gradO.sizeAt(3);
 
 #ifdef HAVE_MKLDNN
     if (poolingMode < 2 && block.isUseMKLDNN() && nd4j::MKLDNNStream::isSupported<T, T>()) {
@@ -1819,7 +1815,7 @@ static void pooling2dBP_(nd4j::graph::Context& block, const NDArray& input, cons
     const Nd4jLong oStride3 = gradO.stridesOf()[3];
     const Nd4jLong iStep2   = dH*iStride2;
     const Nd4jLong iStep3   = dW*iStride3;
-    const Nd4jLong kProd    = kH*kW;
+    const int      kProd    = kH*kW;
     const T iStep2Inv = 1./iStep2;
     const T iStep3Inv = 1./iStep3;
 
@@ -2001,15 +1997,15 @@ static void pooling3dBP_(nd4j::graph::Context& block, const NDArray& input, cons
     const int kHEff = kH + (kH-1)*(dH-1);
     const int kWEff = kW + (kW-1)*(dW-1);
 
-    const Nd4jLong bS = gradI.sizeAt(0);
-    const Nd4jLong iC = gradI.sizeAt(1);
-    const Nd4jLong iD = gradI.sizeAt(2);
-    const Nd4jLong iH = gradI.sizeAt(3);
-    const Nd4jLong iW = gradI.sizeAt(4);
-    const Nd4jLong oC = gradO.sizeAt(1);
-    const Nd4jLong oD = gradO.sizeAt(2);
-    const Nd4jLong oH = gradO.sizeAt(3);
-    const Nd4jLong oW = gradO.sizeAt(4);
+    const int bS = gradI.sizeAt(0);
+    const int iC = gradI.sizeAt(1);
+    const int iD = gradI.sizeAt(2);
+    const int iH = gradI.sizeAt(3);
+    const int iW = gradI.sizeAt(4);
+    const int oC = gradO.sizeAt(1);
+    const int oD = gradO.sizeAt(2);
+    const int oH = gradO.sizeAt(3);
+    const int oW = gradO.sizeAt(4);
 
 #ifdef HAVE_MKLDNN
     if (poolingMode < 2 && block.isUseMKLDNN() && nd4j::MKLDNNStream::isSupported<T, T>()) {
@@ -2082,7 +2078,7 @@ static void pooling3dBP_(nd4j::graph::Context& block, const NDArray& input, cons
     const Nd4jLong iStep2   = dD*iStride2;
     const Nd4jLong iStep3   = dH*iStride3;
     const Nd4jLong iStep4   = dW*iStride4;
-    const Nd4jLong kProd    = kD*kH*kW;
+    const int      kProd    = kD*kH*kW;
     const T iStep2Inv = 1./iStep2;
     const T iStep3Inv = 1./iStep3;
     const T iStep4Inv = 1./iStep4;

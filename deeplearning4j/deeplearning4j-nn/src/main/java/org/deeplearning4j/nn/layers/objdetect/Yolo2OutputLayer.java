@@ -171,7 +171,7 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         //Exponential for w/h (for: boxPrior * exp(input))      ->      Predicted WH in grid units (0 to 13 usually)
         INDArray predictedWHPreExp = input5.get(all(), all(), interval(2,4), all(), all());
         INDArray predictedWH = Transforms.exp(predictedWHPreExp, true);
-        Broadcast.mul(predictedWH, layerConf().getBoundingBoxes(), predictedWH, 1, 2);  //Box priors: [b, 2]; predictedWH: [mb, b, 2, h, w]
+        Broadcast.mul(predictedWH, layerConf().getBoundingBoxes().castTo(predictedWH.dataType()), predictedWH, 1, 2);  //Box priors: [b, 2]; predictedWH: [mb, b, 2, h, w]
 
         //Apply sqrt to W/H in preparation for loss function
         INDArray predictedWHSqrt = Transforms.sqrt(predictedWH, true);
