@@ -2014,9 +2014,12 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
     }
 
     @Override
-    public void scatterUpdate(ScatterUpdate.UpdateOp op, @NonNull INDArray array, @NonNull INDArray indices, @NonNull INDArray updates, int[] axis) {
+    public void scatterUpdate(ScatterUpdate.UpdateOp op, @NonNull INDArray array, @NonNull INDArray indices, @NonNull INDArray updates, @NonNull int[] axis) {
         val tadX = tadManager.getTADOnlyShapeInfo(array, axis);
         val tadY = tadManager.getTADOnlyShapeInfo(updates, axis);
+
+        if (tadY.getSecond().length() != indices.length())
+            throw new IllegalStateException("Number of updates doesn't match number of indices. Bad dimensions used?");
 
         loop.scatterUpdate(null, op.ordinal(), (int) indices.length(),
                 array.data().addressPointer(), (LongPointer) tadX.getFirst().addressPointer(), (LongPointer) tadX.getSecond().addressPointer(), null, null, null,

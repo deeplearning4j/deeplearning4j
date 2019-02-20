@@ -7055,6 +7055,19 @@ public class Nd4jTestsC extends BaseNd4jTest {
         assertEquals(exp, array);
     }
 
+    @Test(expected = IllegalStateException.class)
+    public void testScatterUpdateShortcut_f1() {
+        val array = Nd4j.create(DataType.FLOAT, 5, 2);
+        val updates = Nd4j.createFromArray(new float[][] {{1,1}, {2,2}, {3, 3}});
+        val indices = Nd4j.createFromArray(new int[]{1, 2, 3});
+        val exp = Nd4j.createFromArray(new float[][] {{0,0}, {1,1}, {2,2}, {3, 3}, {0,0}});
+
+        assertArrayEquals(exp.shape(), array.shape());
+        Nd4j.scatterUpdate(ScatterUpdate.UpdateOp.ADD, array, indices, updates, 0);
+
+        assertEquals(exp, array);
+    }
+
     @Test
     public void testINDArrayMmulWithTranspose(){
         Nd4j.getRandom().setSeed(12345);

@@ -2628,11 +2628,14 @@ public class CudaExecutioner extends DefaultOpExecutioner {
     }
 
     @Override
-    public void scatterUpdate(ScatterUpdate.UpdateOp op, @NonNull INDArray array, @NonNull INDArray indices, @NonNull INDArray updates, int[] axis) {
+    public void scatterUpdate(ScatterUpdate.UpdateOp op, @NonNull INDArray array, @NonNull INDArray indices, @NonNull INDArray updates, @NonNull int[] axis) {
         CudaContext context = AtomicAllocator.getInstance().getFlowController().prepareAction(array, indices, updates);
 
         val tadX = tadManager.getTADOnlyShapeInfo(array, axis);
         val tadY = tadManager.getTADOnlyShapeInfo(updates, axis);
+
+        if (tadY.getSecond().length() != indices.length())
+            throw new IllegalStateException("Number of updates doesn't match number of indices. Bad dimensions used?");
 
         if (extraz.get() == null)
             extraz.set(new PointerPointer(32));
