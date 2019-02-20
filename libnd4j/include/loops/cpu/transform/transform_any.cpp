@@ -63,7 +63,7 @@ namespace functions {
 
             const auto len = shape::length(xShapeInfo);
                         
-            nd4j::OmpLaunchHelper info(len, 8);
+            nd4j::OmpLaunchHelper info(len);
 
             if (shape::elementWiseStride(xShapeInfo) == 1 && shape::elementWiseStride(zShapeInfo) == 1 && shape::order(xShapeInfo) == shape::order(zShapeInfo)) {
 
@@ -79,6 +79,22 @@ namespace functions {
                     for (unsigned int i = 0; i < info.getItersPerThread(threadNum); i++)
                         tz[i] = OpType::op(tx[i], extraParams);
                 }
+            } else if (shape::elementWiseStride(zShapeInfo) == 1 && shape::order(zShapeInfo) == 'c') {
+                // this is reshape + copy edge case
+                uint xShapeInfoCast[MAX_RANK];
+                bool canCastX = nd4j::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
+
+#pragma omp parallel num_threads(info._numThreads) if (info._numThreads > 1) default(shared)
+                {
+                    auto threadNum = omp_get_thread_num();
+                    auto threadOffset = info.getThreadOffset(threadNum);
+
+                    auto tz = z + threadOffset;
+
+                    #pragma omp simd
+                    for (unsigned int i = 0; i < info.getItersPerThread(threadNum); i++)
+                        tz[i] = OpType::op(x[shape::indexOffset(i + threadOffset, xShapeInfo, xShapeInfoCast, len, canCastX)], extraParams);
+                }
             } else if (shape::haveSameOffsets(xShapeInfo, zShapeInfo)) {
                 uint xShapeInfoCast[MAX_RANK];
                 bool canCastX = nd4j::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
@@ -90,7 +106,7 @@ namespace functions {
 
                     #pragma omp simd
                     for (unsigned int i = 0; i < info.getItersPerThread(threadNum); i++) {
-                        auto offset = shape::indexOffset(i + threadOffset, zShapeInfo, xShapeInfoCast, len, canCastX);
+                        auto offset = shape::indexOffset(i + threadOffset, xShapeInfo, xShapeInfoCast, len, canCastX);
                         z[offset] = OpType::op(x[offset], extraParams);
                     }
                 }
