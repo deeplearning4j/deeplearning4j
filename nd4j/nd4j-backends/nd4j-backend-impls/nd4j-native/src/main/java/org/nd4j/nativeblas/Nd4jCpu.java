@@ -2671,6 +2671,26 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
     public native @Cast("Nd4jPointer") Pointer createUtf8String(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("char*") String string, int length);
     public native @Cast("Nd4jPointer") Pointer createUtf8String(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("char*") BytePointer string, int length);
     public native void deleteUtf8String(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jPointer") Pointer ptr);
+
+    public native void scatterUpdate(@Cast("Nd4jPointer*") PointerPointer extraPointers, int opCode, int numOfSubArrs,
+                          Pointer hX, @Cast("Nd4jLong*") LongPointer hXShapeInfo, @Cast("Nd4jLong*") LongPointer hXOffsets,
+                          Pointer dX, @Cast("Nd4jLong*") LongPointer dXShapeInfo, @Cast("Nd4jLong*") LongPointer dXOffsets,
+                          Pointer hY, @Cast("Nd4jLong*") LongPointer hYShapeInfo, @Cast("Nd4jLong*") LongPointer hYOffsets,
+                          Pointer dY, @Cast("Nd4jLong*") LongPointer dYShapeInfo, @Cast("Nd4jLong*") LongPointer dYOffsets,
+                          IntPointer hIindexes, IntPointer dIindexes);
+    public native void scatterUpdate(@Cast("Nd4jPointer*") PointerPointer extraPointers, int opCode, int numOfSubArrs,
+                          Pointer hX, @Cast("Nd4jLong*") LongBuffer hXShapeInfo, @Cast("Nd4jLong*") LongBuffer hXOffsets,
+                          Pointer dX, @Cast("Nd4jLong*") LongBuffer dXShapeInfo, @Cast("Nd4jLong*") LongBuffer dXOffsets,
+                          Pointer hY, @Cast("Nd4jLong*") LongBuffer hYShapeInfo, @Cast("Nd4jLong*") LongBuffer hYOffsets,
+                          Pointer dY, @Cast("Nd4jLong*") LongBuffer dYShapeInfo, @Cast("Nd4jLong*") LongBuffer dYOffsets,
+                          IntBuffer hIindexes, IntBuffer dIindexes);
+    public native void scatterUpdate(@Cast("Nd4jPointer*") PointerPointer extraPointers, int opCode, int numOfSubArrs,
+                          Pointer hX, @Cast("Nd4jLong*") long[] hXShapeInfo, @Cast("Nd4jLong*") long[] hXOffsets,
+                          Pointer dX, @Cast("Nd4jLong*") long[] dXShapeInfo, @Cast("Nd4jLong*") long[] dXOffsets,
+                          Pointer hY, @Cast("Nd4jLong*") long[] hYShapeInfo, @Cast("Nd4jLong*") long[] hYOffsets,
+                          Pointer dY, @Cast("Nd4jLong*") long[] dYShapeInfo, @Cast("Nd4jLong*") long[] dYOffsets,
+                          int[] hIindexes, int[] dIindexes);
+
 }
 
 

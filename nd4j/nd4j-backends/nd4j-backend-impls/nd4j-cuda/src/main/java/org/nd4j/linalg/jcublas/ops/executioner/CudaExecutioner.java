@@ -44,6 +44,7 @@ import org.nd4j.linalg.api.ops.aggregates.Aggregate;
 import org.nd4j.linalg.api.ops.aggregates.Batch;
 import org.nd4j.linalg.api.ops.executioner.DefaultOpExecutioner;
 import org.nd4j.linalg.api.ops.executioner.OpStatus;
+import org.nd4j.linalg.api.ops.impl.scatter.ScatterUpdate;
 import org.nd4j.linalg.api.ops.impl.summarystats.Variance;
 import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.CopyOp;
 import org.nd4j.linalg.api.ops.performance.PerformanceTracker;
@@ -2624,6 +2625,11 @@ public class CudaExecutioner extends DefaultOpExecutioner {
     @Override
     public boolean isExperimentalMode() {
         return experimentalMode.get();
+    }
+
+    @Override
+    public void scatterUpdate(ScatterUpdate.UpdateOp op, @NonNull INDArray array, @NonNull INDArray indices, @NonNull INDArray updates, int[] axis) {
+
     }
 }
 

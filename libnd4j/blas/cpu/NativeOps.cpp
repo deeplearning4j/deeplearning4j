@@ -2479,8 +2479,8 @@ void NativeOps::scatterUpdate(Nd4jPointer *extraPointers, int opCode, int numOfS
     #pragma omp parallel for schedule(guided) proc_bind(close)
     for (Nd4jLong i = 0; i < numOfSubArrs; ++i) {
 
-        NDArray inSubArr(reinterpret_cast<int8_t*>(hX) + hXOffsets[hIindexes[i]], hXShapeInfo);
-        NDArray updSubArr(reinterpret_cast<int8_t*>(hY) + hYOffsets[i], hYShapeInfo);        
+        NDArray inSubArr(reinterpret_cast<int8_t*>(hX) + (hXOffsets[hIindexes[i]] * DataTypeUtils::sizeOf(hXShapeInfo)), hXShapeInfo);
+        NDArray updSubArr(reinterpret_cast<int8_t*>(hY) + (hYOffsets[i] * DataTypeUtils::sizeOf(hXShapeInfo)), hYShapeInfo);
         
         if (inSubArr.lengthOf() != updSubArr.lengthOf())
             continue;
