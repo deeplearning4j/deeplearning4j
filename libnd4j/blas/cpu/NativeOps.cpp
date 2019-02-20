@@ -2479,7 +2479,7 @@ void NativeOps::scatterUpdate(Nd4jPointer *extraPointers, int opCode, int numOfS
 
     int numThreads = omp_get_max_threads();
 
-    #pragma omp parallel for default(shared)
+    #pragma omp parallel default(shared)
     {
         for (int i = 0; i < numOfSubArrs; ++i) {
 
