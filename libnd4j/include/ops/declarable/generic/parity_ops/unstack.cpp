@@ -87,7 +87,8 @@ namespace nd4j {
                 return result;
             }
 
-            shape::TAD tad(inShape, dims.data(), (int) dims.size());
+            shape::TAD tad;
+            tad.init(inShape, dims.data(), (int) dims.size());
             tad.createTadOnlyShapeInfo();
             Nd4jLong numTads = shape::length(inShape) / shape::tadLength(inShape, dims.data(), (int) dims.size());
 

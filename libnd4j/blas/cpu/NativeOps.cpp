@@ -914,7 +914,8 @@ void flattenGeneric(Nd4jPointer *extraPointers,
         int rank = shape::rank(inputShapeInfo);
         auto xShape = shape::shapeOf(inputShapeInfo);
         auto tadShape = xShape[dimension];
-        shape::TAD tad(inputShapeInfo,&dimension,dimensionLength);
+        shape::TAD tad;
+        tad.init(inputShapeInfo,&dimension,dimensionLength);
         tad.createTadOnlyShapeInfo();
 #pragma omp  parallel for schedule(guided) default(shared)
         for(int i = 0; i < numTads; i++) {

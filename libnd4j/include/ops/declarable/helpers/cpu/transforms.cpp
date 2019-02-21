@@ -605,7 +605,8 @@ static void gather_(NDArray* input, const NDArray* indices, NDArray* output, con
                 output->assign(scalarNDArray);
             } else {
                 std::vector<int> dimensions = ShapeUtils::evalDimsToExclude(input->rankOf(), {axis});
-                shape::TAD tad(input->getShapeInfo(), dimensions.data(), dimensions.size());
+                shape::TAD tad;
+                tad.init(input->getShapeInfo(), dimensions.data(), dimensions.size());
                 tad.createTadOnlyShapeInfo();
                 tad.createOffsets();
                 auto tadArr = NDArray(reinterpret_cast<void *>(reinterpret_cast<T*>(input->getBuffer()) + tad.tadOffsets[indices->e<Nd4jLong>(0)]), tad.tadOnlyShapeInfo, output->getWorkspace());
