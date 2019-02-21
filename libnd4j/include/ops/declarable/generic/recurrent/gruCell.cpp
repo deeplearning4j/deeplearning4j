@@ -15,7 +15,7 @@
  ******************************************************************************/
 
 // 
-// created by Yurii Shyrma on 05.12.2017
+// created by Yurii Shyrma on 05.12.2017, Alex Black
 //
 
 #include <op_boilerplate.h>
@@ -29,9 +29,13 @@ namespace ops  {
 
 
 //////////////////////////////////////////////////////////////////////////
-CUSTOM_OP_IMPL(gruCell, 5, 1, false, 0, 0) {
+CUSTOM_OP_IMPL(gruCell, 6, 4, false, 0, 0) {
     auto x  = INPUT_VARIABLE(0);                     // input [bS x inSize]
     auto h0 = INPUT_VARIABLE(1);                     // previous cell output [bS x numUnits],  that is at previous time step t-1
+    auto Wru = INPUT_VARIABLE(2);                    // RU weights - [bS, 2*inSize]
+    auto Wc = INPUT_VARIABLE(3);                     // C weights
+    auto bru    = INPUT_VARIABLE(4);                   // biases, [3*numUnits]
+    auto bc     = INPUT_VARIABLE(5);                   // biases, [3*numUnits]
 
     auto Wx   = INPUT_VARIABLE(2);                   // input-to-hidden weights, [inSize   x 3*numUnits]
     auto Wh   = INPUT_VARIABLE(3);                   // hidden-to-hidden weights, [numUnits x 3*numUnits]
