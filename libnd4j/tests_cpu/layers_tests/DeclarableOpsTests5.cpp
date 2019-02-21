@@ -2047,8 +2047,8 @@ TEST_F(DeclarableOpsTests5, fusedBatchNorm_test5) {
 //////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests5, confusion_matrix_test1) {
 
-    auto labels = NDArrayFactory::create<double>('c', {1, 3}, {1, 2, 4});
-    auto predictions = NDArrayFactory::create<double>('c', {1, 3}, {2, 2, 4});
+    auto labels = NDArrayFactory::create<Nd4jLong>('c', {1, 3}, {1, 2, 4});
+    auto predictions = NDArrayFactory::create<Nd4jLong>('c', {1, 3}, {2, 2, 4});
     auto expected = NDArrayFactory::create<Nd4jLong>('c', {5, 5}, {0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1});
 
     nd4j::ops::confusion_matrix op;
@@ -2068,8 +2068,8 @@ TEST_F(DeclarableOpsTests5, confusion_matrix_test1) {
 //////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests5, confusion_matrix_test2) {
 
-    auto labels = NDArrayFactory::create<double>('c', {1, 2}, {1, 2});
-    auto predictions = NDArrayFactory::create<double>('c', {1, 2}, {0, 2});
+    auto labels = NDArrayFactory::create<Nd4jLong>('c', {1, 2}, {1, 2});
+    auto predictions = NDArrayFactory::create<Nd4jLong>('c', {1, 2}, {0, 2});
     auto expected = NDArrayFactory::create<Nd4jLong>('c', {3, 3}, {0, 0, 0, 1, 0, 0, 0, 0, 1});
 
     nd4j::ops::confusion_matrix op;
@@ -2090,15 +2090,16 @@ TEST_F(DeclarableOpsTests5, confusion_matrix_test2) {
 //////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests5, confusion_matrix_test3) {
 
-    auto labels = NDArrayFactory::create<double>('c', {1, 2}, {1, 2});
-    auto predictions = NDArrayFactory::create<double>('c', {1, 2}, {0, 2});
-    auto weights = NDArrayFactory::create<double>('c', {1, 2}, {100, 200});
+    auto labels = NDArrayFactory::create<Nd4jLong>('c', {1, 2}, {1, 2});
+    auto predictions = NDArrayFactory::create<Nd4jLong>('c', {1, 2}, {0, 2});
+    auto weights = NDArrayFactory::create<Nd4jLong>('c', {1, 2}, {100, 200});
     auto expected = NDArrayFactory::create<Nd4jLong>('c', {3, 3}, {0, 0, 0, 100, 0, 0, 0, 0, 200});
 
     nd4j::ops::confusion_matrix op;
     auto results = op.execute({&labels, &predictions, &weights}, {}, {3});
     auto output = results->at(0);
-    // output->printIndexedBuffer();
+    output->printIndexedBuffer("CM3");
+
 
     ASSERT_EQ(Status::OK(), results->status());
     ASSERT_TRUE(expected.isSameShape(output));

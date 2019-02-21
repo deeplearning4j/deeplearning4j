@@ -43,7 +43,7 @@ namespace helpers {
 
         const auto tid = blockIdx.x * gridDim.x + threadIdx.x;
         const auto step = gridDim.x * blockDim.x;
-        for (Nd4jLong t = tid; t < bufferLength; t += step) {
+        for (int t = tid; t < bufferLength; t += step) {
             //auto tX = reinterpret_cast<T*>(inputList[t]);
             //auto xShape = reinterpret_cast<Nd4jLong*>(inputShapeList[t]);
             auto label = labelsBuffer[t]; //->e<Nd4jLong>(j);
@@ -96,7 +96,7 @@ namespace helpers {
         }
 
         auto bufferLength = labels->lengthOf();
-        dim3 launchDims(256, 512, 8192);
+        dim3 launchDims(32, 32, 1024);
         auto stream = context->getCudaStream();
         confusionFunctorKernel<T><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(labelsLongBuffer, predictionLongBuffer,
                 bufferLength, weights != nullptr? weights->getSpecialBuffer():nullptr, output->specialBuffer(), pTadShape, pTadOffsets);
