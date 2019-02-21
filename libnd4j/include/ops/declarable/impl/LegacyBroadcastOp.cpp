@@ -55,7 +55,7 @@ namespace nd4j {
             else {
                 // this is rare, but possible use case - X and Z might have different shapes/strides/orders. In this case we prepare and pass separate TAD info
                 shape::TAD tadZ;
-                tad.init(z->shapeInfo(), dims.data(), dims.size());
+                tadZ.init(z->shapeInfo(), dims.data(), dims.size());
                 tadZ.createTadOnlyShapeInfo();
                 tadZ.createOffsets();
 
