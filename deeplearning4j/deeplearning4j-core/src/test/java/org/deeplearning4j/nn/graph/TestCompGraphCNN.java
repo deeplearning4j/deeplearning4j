@@ -125,7 +125,7 @@ public class TestCompGraphCNN extends BaseDL4JTest {
         int nParams = getNumParams();
         assertEquals(nParams, params.length());
 
-        INDArray arr = Nd4j.linspace(0, nParams, nParams);
+        INDArray arr = Nd4j.linspace(0, nParams, nParams, Nd4j.dataType());
         assertEquals(nParams, arr.length());
 
         // params are set

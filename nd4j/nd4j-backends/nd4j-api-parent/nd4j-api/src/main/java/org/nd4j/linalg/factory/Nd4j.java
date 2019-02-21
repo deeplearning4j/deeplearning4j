@@ -55,6 +55,7 @@ import org.nd4j.linalg.api.ops.executioner.DefaultOpExecutioner;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.api.ops.impl.indexaccum.IMax;
 import org.nd4j.linalg.api.ops.impl.indexaccum.IMin;
+import org.nd4j.linalg.api.ops.impl.scatter.ScatterUpdate;
 import org.nd4j.linalg.api.ops.impl.shape.Diag;
 import org.nd4j.linalg.api.ops.impl.shape.DiagPart;
 import org.nd4j.linalg.api.ops.impl.shape.Stack;
@@ -1999,8 +2000,46 @@ public class Nd4j {
      * Generate a linearly spaced vector
      *
      * @param lower upper bound
-     * @param upper lower bound
-     * @param num   the step size
+     * @param num   number of items in returned vector
+     * @param step  the step (incompatible with <b>upper</b>)
+     * @return the linearly spaced vector
+     */
+    public static INDArray linspace(@NonNull DataType dtype, long lower, long num, long step) {
+        // for now we'll temporarily keep original impl
+        if(num == 1) {
+            return Nd4j.scalar(dtype, lower);
+        }
+
+        if (dtype.isIntType()) {
+            long upper = lower + num * step;
+            return linspaceWithCustomOpByRange((long) lower, upper, num, (long) step, dtype);
+        } else if (dtype.isFPType()) {
+            return Nd4j.getExecutioner().exec(new Linspace((double) lower, num, (double)step, dtype));
+        }
+        else {
+            throw new IllegalStateException("Illegal data type for linspace: " + dtype.toString());
+        }
+    }
+
+    /**
+     * Generate a linearly spaced vector with default data type
+     *
+     * @param lower lower bound
+     * @param upper upper bound
+     * @param num   number of items in returned vector
+     * @return the linearly spaced vector
+     */
+    public static INDArray linspace(long lower, long upper, long num) {
+        return linspace(lower, upper, num, Nd4j.dataType());
+    }
+
+
+    /**
+     * Generate a linearly spaced vector
+     *
+     * @param lower lower bound
+     * @param upper upper bound
+     * @param num   number of items in returned vector
      * @return the linearly spaced vector
      */
     public static INDArray linspace(long lower, long upper, long num, @NonNull DataType dtype) {
@@ -2008,58 +2047,66 @@ public class Nd4j {
         if(lower == upper && num == 1) {
             return Nd4j.scalar(dtype, lower);
         }
-
-
-        double approx = (double) num / ((double) (upper - lower) + 1);
-        if (approx % 1 <= EPS_THRESHOLD) {
-            // FIXME: int cast
-            return INSTANCE.linspace((int) lower, (int) upper, (int) num, dtype);
-        } else {
-            return linspace((double) lower, (double) upper, (int) num, dtype);
+        if (dtype.isIntType()) {
+            return linspaceWithCustomOp((long)lower, (long)upper, (int)num, dtype);
+        } else if (dtype.isFPType()) {
+            return linspace((double) lower, (double)upper, (int) num, dtype);
+        }
+        else {
+            throw new IllegalStateException("Illegal data type for linspace: " + dtype.toString());
         }
     }
-
-
-    public static INDArray linspace(long lower, long upper, long num) {
-        return linspace(lower, upper, num, Nd4j.dataType());
-    }
-
-    /**
-     * Generate a linearly spaced 1d vector of the default floating point datatype
-     *
-     * @param lower upper bound
-     * @param upper lower bound
-     * @param num   the step size
-     * @return the linearly spaced vector
-     */
-    public static INDArray linspace(double lower, double upper, long num) {
-        return linspace(lower, upper, num, Nd4j.defaultFloatingPointType());
-    }
-
 
     /**
      * Generate a linearly spaced 1d vector of the specified datatype
      *
-     * @param lower upper bound
-     * @param upper lower bound
-     * @param num   the step size
+     * @param lower lower bound
+     * @param step step between items
+     * @param num   number of resulting items
      * @return the linearly spaced vector
      */
-    public static INDArray linspace(double lower, double upper, long num, DataType dataType) {
-        // FIXME: int cast
-        return Nd4j.getExecutioner().exec(new Linspace(lower, upper, (int) num, dataType));
+    public static INDArray linspace(@NonNull DataType dataType, double lower, double step, long num) {
+        Preconditions.checkState(dataType.isFPType());
+        return Nd4j.getExecutioner().exec(new Linspace(lower, num, step, dataType));
     }
 
     /**
-     * Generate a linearly spaced vector
+     * Generate a linearly spaced 1d vector of the specified datatype
      *
-     * @param lower upper bound
-     * @param upper lower bound
-     * @param num   the step size
+     * @param lower lower bound
+     * @param upper upper bound
+     * @param num   number of resulting items
      * @return the linearly spaced vector
      */
-    public static INDArray linspace(float lower, float upper, long num, DataType dataType) {
-        return linspace((double) lower, (double) upper, num, dataType);
+    public static INDArray linspace( double lower, double upper, long num, @NonNull DataType dataType) {
+        Preconditions.checkState(dataType.isFPType());
+        return Nd4j.getExecutioner().exec(new Linspace(lower, upper, num, dataType));
+    }
+
+    private static INDArray linspaceWithCustomOp(long lower, long upper, int num, DataType dataType) {
+
+        INDArray result = Nd4j.createUninitialized(dataType, new long[] {num}, Nd4j.order());
+
+        val op = DynamicCustomOp.builder("lin_space")
+                .addInputs(Nd4j.scalar(lower), Nd4j.scalar(upper), Nd4j.scalar(num))
+                .addOutputs(result)
+                .build();
+
+        Nd4j.getExecutioner().execAndReturn(op);
+        return result;
+    }
+
+    private static INDArray linspaceWithCustomOpByRange(long lower, long upper, long num, long step, DataType dataType) {
+
+        INDArray result = Nd4j.createUninitialized(dataType, new long[] {num}, Nd4j.order());
+
+        val op = DynamicCustomOp.builder("range")
+                .addInputs(Nd4j.scalar(lower), Nd4j.scalar(upper), Nd4j.scalar(step))
+                .addOutputs(result)
+                .build();
+
+        Nd4j.getExecutioner().execAndReturn(op);
+        return result;
     }
 
     /**
@@ -2761,14 +2808,20 @@ public class Nd4j {
      *
      * @param begin the begin of the range (inclusive)
      * @param end   the end of the range (exclusive)
+     * @param step spacing between values. Default value is 1.
      * @return the 1D range vector
      */
-    public static INDArray arange(double begin, double end) {
-        INDArray ret = INSTANCE.arange(begin, end);
+    public static INDArray arange(double begin, double end, double step) {
+        INDArray ret = INSTANCE.arange(begin, end, step);
         logCreationIfNecessary(ret);
         return ret;
     }
 
+    public static INDArray arange(double begin, double end) {
+        INDArray ret = INSTANCE.arange(begin, end, 1);
+        logCreationIfNecessary(ret);
+        return ret;
+    }
 
     /**
      * Create a 1D array of evenly spaced values between 0 (inclusive) and {@code end} (exclusive)
@@ -7405,5 +7458,22 @@ public class Nd4j {
      */
     public static INDArray[] exec(CustomOp op){
         return getExecutioner().exec(op);
+    }
+
+
+    /**
+     * This method applies ScatterUpdate op
+     *
+     * @param op
+     * @param array
+     * @param indices
+     * @param updates
+     * @param axis
+     */
+    @Deprecated
+    public static void scatterUpdate(ScatterUpdate.UpdateOp op, @NonNull INDArray array, @NonNull INDArray indices, @NonNull INDArray updates, int... axis) {
+        Preconditions.checkArgument(indices.dataType() == DataType.INT, "Indices should have INT data type");
+        Preconditions.checkArgument(array.dataType() == updates.dataType(), "Array and updates should have the same data type");
+        getExecutioner().scatterUpdate(op, array, indices, updates, axis);
     }
 }

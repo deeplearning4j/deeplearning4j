@@ -76,9 +76,9 @@ public class LoneTest extends BaseNd4jTest {
         int length = rows * cols;
         int length3d = rows * cols * dim2;
 
-        INDArray first = Nd4j.linspace(1, length, length, DataType.DOUBLE).reshape('c', rows, cols);
+        INDArray first = Nd4j.linspace(1, length, length).reshape('c', rows, cols);
         INDArray second = Nd4j.create(DataType.DOUBLE, new long[]{rows, cols}, 'f').assign(first);
-        INDArray third = Nd4j.linspace(1, length3d, length3d, DataType.DOUBLE).reshape('c', rows, cols, dim2);
+        INDArray third = Nd4j.linspace(1, length3d, length3d).reshape('c', rows, cols, dim2);
         first.addi(0.1);
         second.addi(0.2);
         third.addi(0.3);
