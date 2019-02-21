@@ -2095,12 +2095,15 @@ void NativeOps::tadOnlyShapeInfo(Nd4jLong *dXShapeInfo, int *dimension, int dime
     nd4j_printf("END ------->\n","");
 
 	shape::TAD tad(dXShapeInfo, dimension, dimensionLength);
-	//tad->setOutputBuffer(target);
+
+	nd4j_printf("Creating TAD shape...")
 	tad.createTadOnlyShapeInfo();
+	nd4j_printf("Creating TAD offsets...")
 	tad.createOffsets();
 
-
+	nd4j_printf("memcpy TAD shape...")
 	std::memcpy(reinterpret_cast<void *>(target), tad.tadOnlyShapeInfo, shape::shapeInfoByteLength(tad.tadOnlyShapeInfo));
+	nd4j_printf("memcpy TAD offsets...")
 	std::memcpy(reinterpret_cast<void *>(offsets), tad.tadOffsets, tad.numTads * sizeof(Nd4jLong));
 }
 
