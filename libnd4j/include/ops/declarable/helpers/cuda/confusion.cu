@@ -28,7 +28,7 @@ namespace ops {
 namespace helpers {
 
     template <typename T>
-    __global__ static void confusionFunctorKernel(Nd4jLong* labelsBuffer, Nd4jLong* prediciontLongBuffer, Nd4jLong bufferLength, void const* weightsBuffer, void* outputBuffer, Nd4jLong* tadShape, Nd4jLong* tadOffsets) {
+    __global__ static void confusionFunctorKernel(Nd4jLong* labelsBuffer, Nd4jLong* predictionBuffer, Nd4jLong bufferLength, void const* weightsBuffer, void* outputBuffer, Nd4jLong* tadShape, Nd4jLong* tadOffsets) {
         __shared__ int arrIdx, blocksPerArr;
         __shared__ T *z;
         __shared__ T const* w;
@@ -44,16 +44,16 @@ namespace helpers {
         const auto tid = blockIdx.x * gridDim.x + threadIdx.x;
         const auto step = gridDim.x * blockDim.x;
         for (Nd4jLong t = tid; t < bufferLength; t += step) {
-            auto tZ = z + tadOffsets[t];
             //auto tX = reinterpret_cast<T*>(inputList[t]);
             //auto xShape = reinterpret_cast<Nd4jLong*>(inputShapeList[t]);
-//            auto label = labels->e<Nd4jLong>(j);
-//            auto pred = predictions->e<Nd4jLong>(j);
+            auto label = labelsBuffer[t]; //->e<Nd4jLong>(j);
+            auto pred = predictionBuffer[t]; //->e<Nd4jLong>(j);
+            auto tZ = z + tadOffsets[label];
             T val = (weightsBuffer == nullptr ? (T)1.0f : w[t]);
 
             //for (int e = threadIdx.x; e < arrLen; e += blockDim.x) {
 
-                tZ[shape::getIndexOffset(t, tadShape, arrLen)] = val; //tX[shape::getIndexOffset(e, , arrLen)];
+            tZ[shape::getIndexOffset(pred, tadShape, arrLen)] = val; //tX[shape::getIndexOffset(e, , arrLen)];
         }
     }
 
