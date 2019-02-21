@@ -215,76 +215,59 @@ public class LocallyConnected1DLayer extends SameDiffLayer {
         }
     }
 
+    @Getter
+    @Setter
     public static class Builder extends SameDiffLayer.Builder<Builder> {
 
         /**
          * Number of inputs to the layer (input size)
          */
-        @Getter
-        @Setter
         private int nIn;
 
         /**
          * Number of outputs (output size)
          */
-        @Getter
-        @Setter
         private int nOut;
 
         /**
          * Activation function for the layer
          */
-        @Getter
-        @Setter
         private Activation activation = Activation.TANH;
 
         /**
          * Kernel size for the layer
          */
-        @Getter
-        @Setter
         private int kernel = 2;
 
         /**
          * Stride for the layer
          */
-        @Getter
-        @Setter
         private int stride = 1;
 
         /**
          * Padding for the layer. Not used if {@link ConvolutionMode#Same} is set
          */
-        @Getter
-        @Setter
         private int padding = 0;
 
         /**
          * Dilation for the layer
          */
-        @Getter
-        @Setter
         private int dilation = 1;
 
         /**
          * Input filter size for this locally connected 1D layer
          *
          */
-        @Getter
         private int inputSize;
 
         /**
          * Convolution mode for the layer. See {@link ConvolutionMode} for details
          */
-        @Getter
-        @Setter
         private ConvolutionMode cm = ConvolutionMode.Same;
 
         /**
          * If true (default is false) the layer will have a bias
          */
-        @Getter
-        @Setter
         private boolean hasBias = true;
 
         /**

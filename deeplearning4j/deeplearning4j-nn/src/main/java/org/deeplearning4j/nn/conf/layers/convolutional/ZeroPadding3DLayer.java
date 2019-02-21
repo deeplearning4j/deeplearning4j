@@ -35,6 +35,7 @@ import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
 import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.deeplearning4j.nn.params.EmptyParamInitializer;
 import org.deeplearning4j.optimize.api.TrainingListener;
+import org.deeplearning4j.util.ValidationUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 /**
@@ -138,21 +139,6 @@ public class ZeroPadding3DLayer extends NoParamLayer {
         private int[] padding = new int[] {0, 0, 0, 0, 0, 0};
 
         /**
-         * [padLeftD, padRightD, padLeftH, padRightH, padLeftW, padRightW]
-         */
-        public void setPadding(int[] padding) {
-            if (padding.length == 3) {
-                this.padding = new int[] {padding[0], padding[0], padding[1], padding[1], padding[2], padding[2]};
-            } else if (padding.length == 6) {
-                this.padding = padding;
-            } else if (padding.length == 1) {
-                this.padding = new int[] {padding[0], padding[0], padding[0], padding[0], padding[0], padding[0]};
-            } else {
-                throw new IllegalStateException("Padding length has to be either 1, 3 or 6, got " + padding.length);
-            }
-        }
-
-        /**
          * @param padding Padding for both the left and right in all three spatial dimensions
          */
         public Builder(int padding) {
@@ -186,15 +172,7 @@ public class ZeroPadding3DLayer extends NoParamLayer {
         }
 
         public Builder(int[] padding) {
-            if (padding.length == 3) {
-                this.padding = new int[] {padding[0], padding[0], padding[1], padding[1], padding[2], padding[2]};
-            } else if (padding.length == 6) {
-                this.padding = padding;
-            } else if (padding.length == 1) {
-                this.padding = new int[] {padding[0], padding[0], padding[0], padding[0], padding[0], padding[0]};
-            } else {
-                throw new IllegalStateException("Padding length has to be either 1, 3 or 6, got " + padding.length);
-            }
+            this.setPadding(padding);
         }
 
         @Override
@@ -207,6 +185,10 @@ public class ZeroPadding3DLayer extends NoParamLayer {
                 }
             }
             return new ZeroPadding3DLayer(this);
+        }
+
+        public void setPadding(int[] padding){
+            this.padding = ValidationUtils.validate6(padding, "padding");
         }
     }
 }

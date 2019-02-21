@@ -172,7 +172,7 @@ public class SpaceToDepthLayer extends NoParamLayer {
          * @param blockSize Block size
          */
         public Builder(int blockSize) {
-            this.blockSize = blockSize;
+            this.setBlockSize(blockSize);
         }
 
         /**
@@ -180,15 +180,15 @@ public class SpaceToDepthLayer extends NoParamLayer {
          * @param dataFormat Data format for input activations. Note DL4J uses NCHW in most cases
          */
         public Builder(int blockSize, DataFormat dataFormat) {
-            this.blockSize = blockSize;
-            this.dataFormat = dataFormat;
+            this.setBlockSize(blockSize);
+            this.setDataFormat(dataFormat);
         }
 
         /**
          * @param blockSize Block size
          */
         public T blocks(int blockSize) {
-            this.blockSize = blockSize;
+            this.setBlockSize(blockSize);
             return (T) this;
         }
 
@@ -196,13 +196,13 @@ public class SpaceToDepthLayer extends NoParamLayer {
          * @param dataFormat Data format for input activations. Note DL4J uses NCHW in most cases
          */
         public T dataFormat(DataFormat dataFormat) {
-            this.dataFormat = dataFormat;
+            this.setDataFormat(dataFormat);
             return (T) this;
         }
 
         @Override
         public T name(String layerName) {
-            this.layerName = layerName;
+            this.setLayerName(layerName);
             return (T) this;
         }
 

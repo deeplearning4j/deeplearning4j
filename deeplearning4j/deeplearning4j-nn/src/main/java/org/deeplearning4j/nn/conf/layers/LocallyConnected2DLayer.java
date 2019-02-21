@@ -36,6 +36,7 @@ import org.deeplearning4j.nn.conf.layers.samediff.SameDiffLayerUtils;
 import org.deeplearning4j.nn.params.ConvolutionParamInitializer;
 import org.deeplearning4j.nn.weights.WeightInitUtil;
 import org.deeplearning4j.util.ConvolutionUtils;
+import org.deeplearning4j.util.ValidationUtils;
 import org.nd4j.autodiff.samediff.SDIndex;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
@@ -284,32 +285,28 @@ public class LocallyConnected2DLayer extends SameDiffLayer {
          * @param kernel Kernel size for the layer. Must be 2 values (height/width)
          */
         public void setKernel(int[] kernel) {
-            Preconditions.checkArgument(kernel.length == 2, "Must have 2 kernel values - got %s", kernel);
-            this.kernel = kernel;
+            this.kernel = ValidationUtils.validate2(kernel, "kernel");
         }
 
         /**
          * @param stride Stride for the layer. Must be 2 values (height/width)
          */
         public void setStride(int[] stride) {
-            Preconditions.checkArgument(stride.length == 2, "Must have 2 stride values - got %s", stride);
-            this.stride = stride;
+            this.stride = ValidationUtils.validate2(stride, "stride");
         }
 
         /**
          * @param padding Padding for the layer. Not used if {@link ConvolutionMode#Same} is set. Must be 2 values (height/width)
          */
         public void setPadding(int[] padding) {
-            Preconditions.checkArgument(padding.length == 2, "Must have 2 padding values - got %s", padding);
-            this.padding = padding;
+            this.padding = ValidationUtils.validate2(padding, "padding");
         }
 
         /**
          * @param dilation Dilation for the layer. Must be 2 values (height/width)
          */
         public void setDilation(int[] dilation) {
-            Preconditions.checkArgument(dilation.length == 2, "Must have 2 dilation values - got %s", dilation);
-            this.dilation = dilation;
+            this.dilation = ValidationUtils.validate2(dilation, "dilation");
         }
 
         /**

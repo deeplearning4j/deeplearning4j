@@ -33,6 +33,7 @@ import org.deeplearning4j.nn.conf.layers.LayerValidation;
 import org.deeplearning4j.nn.params.DepthwiseConvolutionParamInitializer;
 import org.deeplearning4j.optimize.api.TrainingListener;
 import org.deeplearning4j.util.ConvolutionUtils;
+import org.deeplearning4j.util.ValidationUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 /**
@@ -135,7 +136,7 @@ public class DepthwiseConvolution2DLayer extends Convolution2DLayer {
          * @return Builder
          */
         public Builder depthMultiplier(int depthMultiplier) {
-            this.depthMultiplier = depthMultiplier;
+            this.setDepthMultiplier(depthMultiplier);
             return this;
         }
 
@@ -145,7 +146,7 @@ public class DepthwiseConvolution2DLayer extends Convolution2DLayer {
          * @param kernelSize the height and width of the kernel
          */
         public Builder kernelSize(int... kernelSize) {
-            this.kernelSize = kernelSize;
+            this.setKernelSize(kernelSize);
             return this;
         }
 
@@ -155,7 +156,7 @@ public class DepthwiseConvolution2DLayer extends Convolution2DLayer {
          * @param stride Stride of the layer
          */
         public Builder stride(int... stride) {
-            this.stride = stride;
+            this.setStride(stride);
             return this;
         }
 
@@ -165,7 +166,7 @@ public class DepthwiseConvolution2DLayer extends Convolution2DLayer {
          * @param padding Padding of the layer
          */
         public Builder padding(int... padding) {
-            this.padding = padding;
+            this.setPadding(padding);
             return this;
         }
 
@@ -176,6 +177,29 @@ public class DepthwiseConvolution2DLayer extends Convolution2DLayer {
             ConvolutionUtils.validateCnnKernelStridePadding(kernelSize, stride, padding);
 
             return new DepthwiseConvolution2DLayer(this);
+        }
+
+
+
+
+        @Override
+        public void setKernelSize(int[] kernelSize) {
+            this.kernelSize = ValidationUtils.validate2(kernelSize, "kernelSize");
+        }
+
+        @Override
+        public void setStride(int[] stride) {
+            this.stride = ValidationUtils.validate2(stride, "stride");
+        }
+
+        @Override
+        public void setPadding(int[] padding) {
+            this.padding = ValidationUtils.validate2(padding, "padding");
+        }
+
+        @Override
+        public void setDilation(int[] dilation) {
+            this.dilation = ValidationUtils.validate2(dilation, "dilation");
         }
     }
 

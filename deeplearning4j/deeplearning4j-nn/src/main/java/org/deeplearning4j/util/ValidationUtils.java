@@ -57,6 +57,49 @@ public class ValidationUtils {
     }
 
     /**
+     * Reformats the input array to a 2x2 array.
+     *
+     * If the array is 2x1 ([[a], [b]]), returns [[a, a], [b, b]]
+     * If the array is 1x2 ([[a, b]]), returns [[a, b], [a, b]]
+     * If the array is 2x2, returns the array
+     *
+     * @param data An array
+     * @param paramName The param name, for error reporting
+     * @return An int array of length 2 that represents the input
+     */
+    public static int[][] validate2x2(int[][] data, String paramName){
+        if(data == null) {
+            return null;
+        }
+
+        Preconditions.checkArgument(
+                (data.length == 1 && data[0].length == 2) ||
+                        (data.length == 2 &&
+                                (data[0].length == 1 || data[0].length == 2) &&
+                                (data[1].length == 1 || data[1].length == 2) &&
+                                data[0].length == data[1].length
+                        ),
+                "Value for " +
+                        paramName + " must have shape 2x1, 1x2, or 2x2, got " +
+                        data.length + "x" + data[0].length + " shaped array: " +
+                        Arrays.toString(data));
+
+        if(data.length == 1) {
+            return new int[][]{
+                    data[0],
+                    data[0]
+            };
+        } else if(data[0].length == 1){
+            return new int[][]{
+                    new int[]{data[0][0], data[0][0]},
+                    new int[]{data[1][0], data[1][0]}
+            };
+        } else {
+            return data;
+        }
+    }
+
+    /**
      * Reformats the input array to a length 3 array.
      *
      * If the array is length 1, returns [a, a, a]

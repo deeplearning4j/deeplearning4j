@@ -31,6 +31,7 @@ import org.deeplearning4j.nn.conf.layers.InputTypeUtil;
 import org.deeplearning4j.nn.conf.layers.LayerValidation;
 import org.deeplearning4j.nn.params.DeconvolutionParamInitializer;
 import org.deeplearning4j.optimize.api.TrainingListener;
+import org.deeplearning4j.util.ValidationUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 /**
@@ -146,23 +147,44 @@ public class Deconvolution2DLayer extends Convolution2DLayer {
          * @param kernelSize the height and width of the kernel
          */
         public Builder kernelSize(int... kernelSize) {
-            this.kernelSize = kernelSize;
+            this.setKernelSize(kernelSize);
             return this;
         }
 
         public Builder stride(int... stride) {
-            this.stride = stride;
+            this.setStride(stride);
             return this;
         }
 
         public Builder padding(int... padding) {
-            this.padding = padding;
+            this.setPadding(padding);
             return this;
         }
 
         @Override
         public Deconvolution2DLayer build() {
             return new Deconvolution2DLayer(this);
+        }
+
+
+        @Override
+        public void setKernelSize(int[] kernelSize) {
+            this.kernelSize = ValidationUtils.validate2(kernelSize, "kernelSize");
+        }
+
+        @Override
+        public void setStride(int[] stride) {
+            this.stride = ValidationUtils.validate2(stride, "stride");
+        }
+
+        @Override
+        public void setPadding(int[] padding) {
+            this.padding = ValidationUtils.validate2(padding, "padding");
+        }
+
+        @Override
+        public void setDilation(int[] dilation) {
+            this.dilation = ValidationUtils.validate2(dilation, "dilation");
         }
     }
 

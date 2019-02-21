@@ -35,6 +35,7 @@ import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
 import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.deeplearning4j.optimize.api.TrainingListener;
 import org.deeplearning4j.util.ConvolutionUtils;
+import org.deeplearning4j.util.ValidationUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 /**
@@ -121,21 +122,6 @@ public class ZeroPadding2DLayer extends NoParamLayer {
         private int[] padding = new int[] {0, 0, 0, 0}; //Padding: top, bottom, left, right
 
         /**
-         * @param padding Padding value for top, bottom, left, and right. Must be length 4 array
-         */
-        public void setPadding(int[] padding) {
-            if (padding.length == 1) {
-                this.padding = new int[] {padding[0], padding[0], padding[0], padding[0]};
-            } else if (padding.length == 2) {
-                this.padding = new int[] {padding[0], padding[0], padding[1], padding[1]};
-            } else if (padding.length == 4) {
-                this.padding = padding;
-            } else {
-                Preconditions.checkArgument(false, "Must have 1, 2, or 4 padding values - got %s", padding);
-            }
-        }
-
-        /**
          * @param padHeight Padding for both the top and bottom
          * @param padWidth Padding for both the left and right
          */
@@ -158,13 +144,7 @@ public class ZeroPadding2DLayer extends NoParamLayer {
          * values [padTop, padBottom, padLeft, padRight]
          */
         public Builder(int[] padding) {
-            if (padding.length == 2) {
-                padding = new int[] {padding[0], padding[0], padding[1], padding[1]};
-            } else if (padding.length != 4) {
-                throw new IllegalArgumentException(
-                                "Padding must have exactly 2 or 4 values - got " + Arrays.toString(padding));
-            }
-            this.padding = padding;
+            this.setPadding(padding);
         }
 
         @Override
@@ -180,6 +160,10 @@ public class ZeroPadding2DLayer extends NoParamLayer {
             }
 
             return new ZeroPadding2DLayer(this);
+        }
+
+        public void setPadding(int[] padding){
+            this.padding = ValidationUtils.validate4(padding, "padding");
         }
     }
 }

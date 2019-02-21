@@ -253,5 +253,26 @@ public class Convolution1DLayer extends Convolution2DLayer {
 
             this.padding[0] = ValidationUtils.validate1(padding, "padding")[0];
         }
+
+        @Override
+        public void setDilation(int[] dilation) {
+
+            if(dilation == null){
+                this.dilation = null;
+                return;
+            }
+
+            // just in case we get a call from super
+            if(dilation.length == 2 && (dilation[0] == dilation[1] || dilation[1] == 1)){
+                this.dilation = dilation;
+                return;
+            }
+
+            if(this.dilation == null) {
+                this.dilation = new int[] {1, 1};
+            }
+
+            this.dilation[0] = ValidationUtils.validate1(dilation, "dilation")[0];
+        }
     }
 }
