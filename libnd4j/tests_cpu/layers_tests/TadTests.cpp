@@ -197,6 +197,13 @@ TEST_F(TadTests, test_Tad_Ews_optimization_5) {
     ASSERT_TRUE(xTad.dimensionsDescending(4, array.data(), array.size()));
 }
 
+TEST_F(TadTests, test_TAD_empty_dims_1) {
+    Nd4jLong xShape[8] = {2, 150, 1, 3, 1, 16384, 3, 99};
+    shape::TAD xTad(xShape, nullptr, 0);
+    xTad.createTadOnlyShapeInfo();
+    xTad.createOffsets();
+}
+
 /*
  // FIXME: we want this test passing eventually
 TEST_F(TadTests, Tad_1D_1) {
