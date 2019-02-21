@@ -84,7 +84,8 @@ namespace functions {
                 shape::TAD *tad = nullptr;
 
                 if (tadShapeInfo == nullptr || tadOffsets == nullptr) {
-                    tad = new shape::TAD(xShapeInfo, dimension, dimensionLength);
+                    tad = new shape::TAD();
+                    tad->init(xShapeInfo, dimension, dimensionLength);
                     tad->createTadOnlyShapeInfo();
                     tad->createOffsets();
 

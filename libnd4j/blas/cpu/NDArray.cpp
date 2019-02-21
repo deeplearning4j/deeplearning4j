@@ -1396,7 +1396,8 @@ void NDArray::reduceAlongDimension(nd4j::reduce::FloatOps op, NDArray* target, c
         //target->_buffer[0] = functions::reduce::ReduceFloatFunction<T>::template execScalar<OpName>(_buffer, _shapeInfo, extras);
         NativeOpExcutioner::execReduceFloatScalar(op, this->getBuffer(), this->getShapeInfo(), nullptr, target->buffer(), target->shapeInfo());
     else {
-        shape::TAD tad(_shapeInfo, copy.data(), copy.size());
+        shape::TAD tad;
+        tad.init(_shapeInfo, copy.data(), copy.size());
         tad.createTadOnlyShapeInfo();
         tad.createOffsets();
 
@@ -1427,7 +1428,8 @@ void NDArray::reduceAlongDimension(nd4j::reduce::SameOps op, NDArray* target, co
         //target->_buffer[0] = functions::reduce::ReduceFloatFunction<T>::template execScalar<OpName>(_buffer, _shapeInfo, extras);
         NativeOpExcutioner::execReduceSameScalar(op, this->getBuffer(), this->getShapeInfo(), nullptr, target->buffer(), target->shapeInfo());
     else {
-        shape::TAD tad(_shapeInfo, copy.data(), copy.size());
+        shape::TAD tad;
+        tad.init(_shapeInfo, copy.data(), copy.size());
         tad.createTadOnlyShapeInfo();
         tad.createOffsets();
 
@@ -1456,7 +1458,8 @@ void NDArray::reduceAlongDimension(nd4j::reduce::BoolOps op, NDArray* target, co
         //target->_buffer[0] = functions::reduce::ReduceFloatFunction<T>::template execScalar<OpName>(_buffer, _shapeInfo, extras);
         NativeOpExcutioner::execReduceBoolScalar(op, this->getBuffer(), this->getShapeInfo(), nullptr, target->buffer(), target->shapeInfo());
     else {
-        shape::TAD tad(_shapeInfo, copy.data(), copy.size());
+        shape::TAD tad;
+        tad.init(_shapeInfo, copy.data(), copy.size());
         tad.createTadOnlyShapeInfo();
         tad.createOffsets();
 
@@ -1485,7 +1488,8 @@ void NDArray::reduceAlongDimension(nd4j::reduce::LongOps op, NDArray* target, co
         //target->_buffer[0] = functions::reduce::ReduceFloatFunction<T>::template execScalar<OpName>(_buffer, _shapeInfo, extras);
         NativeOpExcutioner::execReduceLongScalar(op, this->getBuffer(), this->getShapeInfo(), nullptr, target->buffer(), target->shapeInfo());
     else {
-        shape::TAD tad(_shapeInfo, copy.data(), copy.size());
+        shape::TAD tad;
+        tad.init(_shapeInfo, copy.data(), copy.size());
         tad.createTadOnlyShapeInfo();
         tad.createOffsets();
 
@@ -1999,7 +2003,8 @@ void NDArray::applyPairwiseTransform(nd4j::pairwise::BoolOps op, const NDArray *
         if (index >= numTads)
             throw std::runtime_error("Can't get index higher than total number of TADs");
 
-        shape::TAD tad(this->_shapeInfo, copy.data(), copy.size());
+        shape::TAD tad;
+        tad.init(this->_shapeInfo, copy.data(), copy.size());
         tad.createTadOnlyShapeInfo();
         tad.createOffsets();
 
@@ -2150,7 +2155,8 @@ NDArray NDArray::transp() const {
 
         int dimension[1] = {1};
 
-        std::unique_ptr<shape::TAD> tad(new shape::TAD(_shapeInfo, dimension, 1));
+        std::unique_ptr<shape::TAD> tad(new shape::TAD());
+        tad->init(_shapeInfo, dimension, 1);
         tad->createTadOnlyShapeInfo();
         tad->createOffsets();
 
@@ -2169,7 +2175,8 @@ NDArray NDArray::transp() const {
 
         int dimension[1] = {1};
 
-        std::unique_ptr<shape::TAD> tad(new shape::TAD(_shapeInfo, dimension, 1));
+        std::unique_ptr<shape::TAD> tad(new shape::TAD());
+        tad->init(_shapeInfo, dimension, 1);
         tad->createTadOnlyShapeInfo();
         tad->createOffsets();
 
@@ -2188,7 +2195,8 @@ NDArray NDArray::transp() const {
 
         int dimension[1] = {1};
 
-        std::unique_ptr<shape::TAD> tad(new shape::TAD(_shapeInfo, dimension, 1));
+        std::unique_ptr<shape::TAD> tad(new shape::TAD());
+        tad->init(_shapeInfo, dimension, 1);
         tad->createTadOnlyShapeInfo();
         tad->createOffsets();
 
@@ -2209,7 +2217,8 @@ NDArray NDArray::transp() const {
 
         int dimension[1] = {1};
 
-        std::unique_ptr<shape::TAD> tad(new shape::TAD(_shapeInfo, dimension, 1));
+        std::unique_ptr<shape::TAD> tad(new shape::TAD());
+        tad->init(_shapeInfo, dimension, 1);
         tad->createTadOnlyShapeInfo();
         tad->createOffsets();
 
@@ -2230,7 +2239,8 @@ NDArray NDArray::transp() const {
 
         int dimension[1] = {1};
 
-        std::unique_ptr<shape::TAD> tad(new shape::TAD(_shapeInfo, dimension, 1));
+        std::unique_ptr<shape::TAD> tad(new shape::TAD());
+        tad->init(_shapeInfo, dimension, 1);
         tad->createTadOnlyShapeInfo();
         tad->createOffsets();
 
@@ -2250,7 +2260,8 @@ NDArray NDArray::transp() const {
 
         int dimension[1] = {0};
 
-        std::unique_ptr<shape::TAD> tad(new shape::TAD(_shapeInfo, dimension, 1));
+        std::unique_ptr<shape::TAD> tad(new shape::TAD());
+        tad->init(_shapeInfo, dimension, 1);
         tad->createTadOnlyShapeInfo();
         tad->createOffsets();
 
@@ -2269,7 +2280,8 @@ NDArray NDArray::transp() const {
 
         int dimension[1] = {0};
 
-        std::unique_ptr<shape::TAD> tad(new shape::TAD(_shapeInfo, dimension, 1));
+        std::unique_ptr<shape::TAD> tad(new shape::TAD());
+        tad->init(_shapeInfo, dimension, 1);
         tad->createTadOnlyShapeInfo();
         tad->createOffsets();
 
@@ -2288,7 +2300,8 @@ NDArray NDArray::transp() const {
 
         int dimension[1] = {0};
 
-        std::unique_ptr<shape::TAD> tad(new shape::TAD(_shapeInfo, dimension, 1));
+        std::unique_ptr<shape::TAD> tad(new shape::TAD());
+        tad->init(_shapeInfo, dimension, 1);
         tad->createTadOnlyShapeInfo();
         tad->createOffsets();
 
@@ -2998,7 +3011,8 @@ template void NDArray::applyScalar(nd4j::scalar::Ops op, const bool scalar, NDAr
         if (tadLength != tadArray->lengthOf())
             throw std::runtime_error("NDArray::applyBroadcast method: tad length mismatch !");
 
-        shape::TAD tad(this->_shapeInfo, copy.data(), copy.size());
+        shape::TAD tad;
+        tad.init(this->_shapeInfo, copy.data(), copy.size());
         tad.createTadOnlyShapeInfo();
         tad.createOffsets();
 
@@ -3032,7 +3046,8 @@ template void NDArray::applyScalar(nd4j::scalar::Ops op, const bool scalar, NDAr
         if (tadLength != tadArray->lengthOf())
             throw std::runtime_error("Tad length mismatch");
 
-        shape::TAD tad(this->_shapeInfo, copy.data(), copy.size());
+        shape::TAD tad;
+        tad.init(this->_shapeInfo, copy.data(), copy.size());
         tad.createTadOnlyShapeInfo();
         tad.createOffsets();
 
@@ -3817,7 +3832,8 @@ template void NDArray::pIdx(const Nd4jLong* indices, const bool value);
             if (dimensions.size() > 1)
                 std::sort(copy.begin(), copy.end());
 
-            shape::TAD tad(_shapeInfo, copy.data(), copy.size());
+            shape::TAD tad;
+            tad.init(_shapeInfo, copy.data(), copy.size());
             tad.createTadOnlyShapeInfo();
             tad.createOffsets();
 
@@ -3845,7 +3861,8 @@ template void NDArray::pIdx(const Nd4jLong* indices, const bool value);
         if (rankOf() == copy.size()) {
             NativeOpExcutioner::execIndexReduceScalar(op, _buffer, _shapeInfo, const_cast<void *>(extraParams), result->getBuffer(), result->getShapeInfo());
         } else {
-            shape::TAD tad(_shapeInfo, copy.data(), copy.size());
+            shape::TAD tad;
+            tad.init(_shapeInfo, copy.data(), copy.size());
             tad.createTadOnlyShapeInfo();
             tad.createOffsets();
 
@@ -3898,11 +3915,13 @@ template void NDArray::pIdx(const Nd4jLong* indices, const bool value);
         shape::checkDimensions(rankOf(), copy);
         shape::checkDimensions(other->rankOf(), copy);               
         // create tads
-        shape::TAD tadX(_shapeInfo, copy.data(), copy.size());
+        shape::TAD tadX;
+        tadX.init(_shapeInfo, copy.data(), copy.size());
         tadX.createTadOnlyShapeInfo();
         tadX.createOffsets();
 
-        shape::TAD tadY(other->_shapeInfo, copy.data(), copy.size());
+        shape::TAD tadY;
+        tadY.init(other->_shapeInfo, copy.data(), copy.size());
         tadY.createTadOnlyShapeInfo();
         tadY.createOffsets();        
         // check tads shapes
@@ -3964,11 +3983,13 @@ template void NDArray::pIdx(const Nd4jLong* indices, const bool value);
         if(rankOf() == copy.size() && other->rankOf() == copy.size())
             NativeOpExcutioner::execReduce3Scalar(op, _buffer, _shapeInfo, params, other->_buffer, other->_shapeInfo, result->_buffer, result->shapeInfo());
         else {
-            shape::TAD tadX(_shapeInfo, copy.data(), copy.size());
+            shape::TAD tadX;
+            tadX.init(_shapeInfo, copy.data(), copy.size());
             tadX.createTadOnlyShapeInfo();
             tadX.createOffsets();
 
-            shape::TAD tadY(other->_shapeInfo, copy.data(), copy.size());
+            shape::TAD tadY;
+            tadY.init(other->_shapeInfo, copy.data(), copy.size());
             tadY.createTadOnlyShapeInfo();
             tadY.createOffsets();        
         
@@ -5070,7 +5091,8 @@ template void NDArray::operator/=(const bool scalar);
         auto tadLength = shape::tadLength(_shapeInfo, copy.data(), copy.size());
         auto numTads = _length / tadLength;
 
-        std::unique_ptr<shape::TAD> tad(new shape::TAD(_shapeInfo, copy.data(), copy.size()));
+        std::unique_ptr<shape::TAD> tad(new shape::TAD());
+        tad->init(_shapeInfo, copy.data(), copy.size());
         tad->createTadOnlyShapeInfo();
         tad->createOffsets();
 
@@ -5116,7 +5138,8 @@ template void NDArray::operator/=(const bool scalar);
         auto tadLength = shape::tadLength(_shapeInfo, copy.data(), copy.size());
         auto numTads = _length / tadLength;
 
-        std::unique_ptr<shape::TAD> tad(new shape::TAD(_shapeInfo, copy.data(), copy.size()));
+        std::unique_ptr<shape::TAD> tad(new shape::TAD());
+        tad->init(_shapeInfo, copy.data(), copy.size());
         tad->createTadOnlyShapeInfo();
         tad->createOffsets();
 

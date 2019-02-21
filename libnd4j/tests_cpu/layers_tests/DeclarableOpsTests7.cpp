@@ -2022,6 +2022,37 @@ TEST_F(DeclarableOpsTests7, TestUnsortedSegmentProd_4) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests7, TestUnsortedSegmentProdBP_4) {
+    auto x = NDArrayFactory::create<double>('c', {8}, {
+            5,1,7,2,3,4,1,3});
+    auto gradO = NDArrayFactory::create<double>('c', {4}, {1.0,2.0,3.0,4.0});
+// ----------------------------------------------------------------
+
+    auto idx = NDArrayFactory::create<int>({0,0,0,1,2,2,3,3});
+    auto exp = NDArrayFactory::create<double>('c', {8}, {
+            7.000000, 35.000000, 5.000000, 2.000000, 12.000000, 9.000000, 12.000000, 4.000000
+    });
+//            1., 1., 1., 1.,      1., 1.,1.,1.,     1.,1.,1.,1.,     1.,1.,1.,1.,
+//
+//            143871.0, 75768.0, 215673.0, 67584.,     45843.75, 121426.96, 495597.0, 21952.0,
+//            1547562.8, 12020.262, 161306.38, 19409.092,  22344.0, 185191.27, 30495.531, 150579.0,
+//
+//            91., 82., 37., 64,     55.1, 46.400002, 73, 28,    119.1, 12.1, 112.7, 13.1,    14.0, 114.2, 16.2, 117.0});
+
+    nd4j::ops::unsorted_segment_prod_bp op;
+
+    auto result = op.execute({&x, &idx, &gradO}, {}, {4});
+    ASSERT_EQ(result->status(), Status::OK());
+    //result->at(0)->printIndexedBuffer("Output");
+    //result->at(0)->printShapeInfo("Out Shape");
+    //exp.printIndexedBuffer("Expect");
+//    exp.printShapeInfo("Exp Shape");
+    ASSERT_TRUE(exp.equalsTo(result->at(0)));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests7, TestExtractImagePatches_1) {
     auto x = NDArrayFactory::create<double>('c', {2,4, 4, 4}, {
      91.,  82.,  37.,  64.,     55.,  46.,  73.,  28.,   119.,  12., 112.,  13.,     14., 114.,  16., 117.,
