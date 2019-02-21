@@ -56,7 +56,10 @@ public class TfidfVectorizerTest {
 
     @Test(timeout = 60000L)
     public void testTfIdfVectorizer() throws Exception {
-        File rootDir = new ClassPathResource("tripledir").getFile();
+        val rootDir = testDir.newFolder();
+        ClassPathResource resource = new ClassPathResource("tripledir");
+        resource.copyDirectory(rootDir);
+        
         assertTrue(rootDir.isDirectory());
 
         LabelAwareSentenceIterator iter = new LabelAwareFileSentenceIterator(rootDir);
