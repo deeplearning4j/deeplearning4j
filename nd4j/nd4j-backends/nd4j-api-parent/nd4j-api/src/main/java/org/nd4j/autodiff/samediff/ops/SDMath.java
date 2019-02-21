@@ -2169,6 +2169,28 @@ public class SDMath extends SDOps {
     }
 
     /**
+     * Standardize input variable along given axis
+     *
+     * @param x Input variable
+     * @return Output variable
+     */
+    public SDVariable standardize(SDVariable x, int... dimensions) {
+        return standardize(null, x, dimensions);
+    }
+
+    /**
+     * Standardize input variable along given axis
+     *
+     * @param name Name of the output variable
+     * @param x    Input variable
+     * @return Output variable
+     */
+    public SDVariable standardize(String name, SDVariable x, int... dimensions) {
+        SDVariable result = f().standardize(x, dimensions);
+        return updateVariableNameAndReference(result, name);
+    }
+
+    /**
      * Elementwise tangent operation: out = tan(x)
      *
      * @param x Input variable

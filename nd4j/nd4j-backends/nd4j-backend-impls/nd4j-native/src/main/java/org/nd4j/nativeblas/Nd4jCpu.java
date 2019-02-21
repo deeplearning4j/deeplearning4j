@@ -15944,6 +15944,43 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 //         #endif
 
 
+        /**
+         * standardizes input array to be zero mean unit variance along the given axis
+         *
+         *
+         */
+//         #if NOT_EXCLUDED(OP_standardize)
+                @Namespace("nd4j::ops") public static class standardize extends DeclarableOp {
+                    static { Loader.load(); }
+                    /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+                    public standardize(Pointer p) { super(p); }
+                    /** Native array allocator. Access with {@link Pointer#position(long)}. */
+                    public standardize(long size) { super((Pointer)null); allocateArray(size); }
+                    private native void allocateArray(long size);
+                    @Override public standardize position(long position) {
+                        return (standardize)super.position(position);
+                    }
+                
+                                                                                    public standardize() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
+                                                                                }
+                @Namespace("nd4j::ops") public static class standardize_bp extends DeclarableCustomOp {
+                    static { Loader.load(); }
+                    /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+                    public standardize_bp(Pointer p) { super(p); }
+                    /** Native array allocator. Access with {@link Pointer#position(long)}. */
+                    public standardize_bp(long size) { super((Pointer)null); allocateArray(size); }
+                    private native void allocateArray(long size);
+                    @Override public standardize_bp position(long position) {
+                        return (standardize_bp)super.position(position);
+                    }
+                
+                                                                                    public standardize_bp() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
+                                                                                }
+//         #endif
     
 
 

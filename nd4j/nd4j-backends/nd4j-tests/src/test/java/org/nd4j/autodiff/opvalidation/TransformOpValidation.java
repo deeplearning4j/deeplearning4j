@@ -1766,4 +1766,26 @@ public class TransformOpValidation extends BaseOpValidation {
         //Note that "boolean" ops are inherit
         return false;
     }
+
+    @Test
+    public void testStandardize() {
+        final INDArray random = Nd4j.rand(new int[]{10, 4});
+
+        final int[] axis = new int[]{1};
+        final INDArray means = random.mean(axis);
+        final INDArray std = random.std(false, axis);
+        final INDArray res = random.subColumnVector(means).divColumnVector(std);
+        final INDArray expOut = res.norm1();
+
+        SameDiff sd = SameDiff.create();
+        SDVariable sdA = sd.var("a", random);
+        SDVariable t = sd.math.standardize(sdA, axis);
+        t.norm1("out");
+
+        String err = OpValidation.validate(new TestCase(sd)
+                .expectedOutput("out", expOut)
+                //.gradCheckEpsilon(10)
+                .gradientCheck(true));
+        assertNull(err, err);
+    }
 }
