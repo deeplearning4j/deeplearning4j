@@ -2085,8 +2085,11 @@ void NativeOps::specialConcat(
  * This method saves
  */
 void NativeOps::tadOnlyShapeInfo(Nd4jLong *dXShapeInfo, int *dimension, int dimensionLength, Nd4jLong *target, Nd4jLong *offsets) {
-	shape::TAD tad;
-	tad.init(dXShapeInfo, dimension, dimensionLength);
+    nd4j_printf("shape rank: [%i]; dimLength: [%i]\n", shape::rank(dXShapeInfo), dimensionLength);
+    shape::printShapeInfoLinear(dXShapeInfo);
+    shape::printArray<int>(dimension, dimensionLength, "dimensions");
+
+	shape::TAD tad(dXShapeInfo, dimension, dimensionLength);
 	//tad->setOutputBuffer(target);
 	tad.createTadOnlyShapeInfo();
 	tad.createOffsets();
