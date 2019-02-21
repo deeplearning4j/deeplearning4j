@@ -202,6 +202,8 @@ TEST_F(TadTests, test_TAD_empty_dims_1) {
     shape::TAD xTad(xShape, nullptr, 0);
     xTad.createTadOnlyShapeInfo();
     xTad.createOffsets();
+    nd4j_printf("numTads: %i\n", (int) xTad.numTads);
+    shape::printShapeInfoLinear("TAD shape", xTad.tadOnlyShapeInfo);
 }
 
 /*
