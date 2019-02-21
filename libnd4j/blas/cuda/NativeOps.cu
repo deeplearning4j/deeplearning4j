@@ -2087,7 +2087,7 @@ void NativeOps::specialConcat(
 void NativeOps::tadOnlyShapeInfo(Nd4jLong *dXShapeInfo, int *dimension, int dimensionLength, Nd4jLong *target, Nd4jLong *offsets) {
     nd4j_printf("shape rank: [%i]; dimLength: [%i]\n", shape::rank(dXShapeInfo), dimensionLength);
     shape::printShapeInfoLinear(dXShapeInfo);
-    shape::printArray<int>(dimension, dimensionLength, "dimensions");
+    shape::printArray<int>(reinterpret_cast<void*>(dimension), dimensionLength, "dimensions");
 
 	shape::TAD tad(dXShapeInfo, dimension, dimensionLength);
 	//tad->setOutputBuffer(target);
