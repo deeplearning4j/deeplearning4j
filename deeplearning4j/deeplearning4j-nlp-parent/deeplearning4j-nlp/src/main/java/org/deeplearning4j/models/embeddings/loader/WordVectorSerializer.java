@@ -2951,6 +2951,81 @@ public class WordVectorSerializer {
         return word2Vec;
     }
 
+    public static <T extends SequenceElement>  void writeLookupTable(WeightLookupTable<T> weightLookupTable,
+                                                                     @NonNull File file) throws IOException {
+        try (BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(file),
+                                                                                StandardCharsets.UTF_8))) {
+            int numWords = weightLookupTable.getVocabCache().numWords();
+            int layersSize = weightLookupTable.layerSize();
+            long totalNumberOfDocs = weightLookupTable.getVocabCache().totalNumberOfDocs();
+
+            String format = "%d %d %d\n";
+            String header = String.format(format, numWords, layersSize, totalNumberOfDocs);
+
+            writer.write(header);
+
+            String row = "";
+            for (String label : weightLookupTable.getVocabCache().words()) {
+                row += label + " ";
+                int idx = weightLookupTable.getVocabCache().indexOf(label);
+                INDArray slice = ((InMemoryLookupTable)weightLookupTable).getSyn0().slice(idx);
+                for (int i = 0; i < slice.columns(); ++i) {
+                    row += slice.getDouble(i) + " ";
+                }
+                row += "\n";
+            }
+            writer.write(row);
+        }
+    }
+
+    public static <T extends SequenceElement> WeightLookupTable<T> readLookupTable(File file)
+            throws IOException {
+        return readLookupTable(new FileInputStream(file));
+    }
+
+    public static <T extends SequenceElement> WeightLookupTable<T> readLookupTable(InputStream stream)
+            throws IOException {
+        WeightLookupTable<T> weightLookupTable = null;
+        AbstractCache<VocabWord> vocabCache = new AbstractCache<>();
+
+        boolean headerRead = false;
+
+        try {
+            INDArray syn0 = null;
+
+            for (String line : IOUtils.readLines(stream)) {
+                String[] tokens = line.split(" ");
+                if (!headerRead) {
+                    // reading header as "NUM_WORDS VECTOR_SIZE NUM_DOCS"
+                    int numWords = Integer.parseInt(tokens[0]);
+                    int layerSize = Integer.parseInt(tokens[1]);
+                    int totalNumberOfDocs = Integer.parseInt(tokens[2]);
+                    log.debug("Reading header - words: {}, layerSize: {}, totalNumberOfDocs: {}",
+                            numWords, layerSize, totalNumberOfDocs);
+                    headerRead = true;
+                    weightLookupTable = new InMemoryLookupTable.Builder().cache(vocabCache).vectorLength(layerSize).build();
+                    syn0  = Nd4j.createUninitialized(layerSize, numWords);
+                } else {
+                    String label = decodeB64(tokens[0]);
+                    INDArray vector = Nd4j.create(tokens.length - 1);
+                    for (int i = 1; i < tokens.length; i++) {
+                        vector.putScalar(i - 1, Double.parseDouble(tokens[i]));
+                        if (syn0 != null)
+                            syn0.putScalar(i - 1, Double.parseDouble(tokens[i]));
+                    }
+                    //VocabWord newWord = new VocabWord(1, label);
+                    //weightLookupTable.getVocabCache().addToken((T) newWord);
+                    //weightLookupTable.putVector(label, vector);
+                }
+            }
+            ((InMemoryLookupTable<T>) weightLookupTable).setSyn0(syn0);
+        }
+        finally {
+            stream.close();
+        }
+        return weightLookupTable;
+    }
+
     public static Word2Vec readWord2Vec(@NonNull File file, boolean readExtendedTables)
             throws IOException {
 
