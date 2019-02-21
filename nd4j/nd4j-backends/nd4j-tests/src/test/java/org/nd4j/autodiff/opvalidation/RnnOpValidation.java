@@ -42,7 +42,6 @@ public class RnnOpValidation extends BaseOpValidation {
 
     @Test
     public void testRnnBlockCell(){
-        Nd4j.getExecutioner().enableVerboseMode(true);
         Nd4j.getRandom().setSeed(12345);
         int mb = 2;
         int nIn = 3;
@@ -58,6 +57,7 @@ public class RnnOpValidation extends BaseOpValidation {
         SDVariable Wco = sd.constant(Nd4j.rand(DataType.FLOAT, nOut));
         SDVariable b = sd.constant(Nd4j.rand(DataType.FLOAT, 4*nOut));
 
+        double fb = 1.0;
         LSTMBlockCellConfiguration conf = LSTMBlockCellConfiguration.builder()
                 .xt(x)
                 .cLast(cLast)
@@ -68,7 +68,7 @@ public class RnnOpValidation extends BaseOpValidation {
                 .Wco(Wco)
                 .b(b)
                 .peepHole(true)
-                .forgetBias(1)
+                .forgetBias(fb)
                 .clippingCellValue(0.0)
                 .build();
 
@@ -102,7 +102,7 @@ public class RnnOpValidation extends BaseOpValidation {
         INDArray iExp = x.getArr().mmul(wi_x).addiRowVector(bi);        //[mb,nIn]*[nIn, nOut] + [nOut]
         iExp.addi(yLast.getArr().mmul(wi_r));   //[mb,nOut]*[nOut,nOut]
         iExp.addi(cLast.getArr().mulRowVector(Wci.getArr()));    //Peephole
-        assertEquals(iExp, m.get(toExec.get(2)));
+        assertEquals(iExp, m.get(toExec.get(1)));
 
 
         //Activations, pre input gate: tanh(z) .* sigmoid(i)
@@ -110,18 +110,19 @@ public class RnnOpValidation extends BaseOpValidation {
         INDArray hAct = m.get(toExec.get(4));
         assertEquals(hExp, hAct);
 
-        //Forget gate: (note: peephole input - last time step
+        //Forget gate: (note: peephole input - last time step)
         INDArray wf_x = W.getArr().get(NDArrayIndex.interval(0,nIn), NDArrayIndex.interval(1*nOut, 2*nOut));           //Input weights
         INDArray wf_r = W.getArr().get(NDArrayIndex.interval(nIn,nIn+nOut), NDArrayIndex.interval(1*nOut, 2*nOut));    //Recurrent weights
         INDArray bf = b.getArr().get(NDArrayIndex.interval(1*nOut, 2*nOut));
 
         INDArray fExp = x.getArr().mmul(wf_x).addiRowVector(bf);        //[mb,nIn]*[nIn, nOut] + [nOut]
         fExp.addi(yLast.getArr().mmul(wf_r));   //[mb,nOut]*[nOut,nOut]
-        fExp.muliColumnVector(Wcf.getArr().mul(cLast.getArr()));
-        assertEquals(fExp, m.get(toExec.get(3)));
+        fExp.addi(cLast.getArr().mulRowVector(Wcf.getArr()));   //Peephole
+        fExp.addi(fb);
+        assertEquals(fExp, m.get(toExec.get(2)));
 
         //Cell state: h + cLast .* forgetGate
-        INDArray cExp = hExp.add(cLast.getArr().mul(fExp));
+        INDArray cExp = hExp.add(cLast.getArr().mul(Transforms.sigmoid(fExp,true)));
         assertEquals(cExp, m.get(toExec.get(5)));
 
 
@@ -132,10 +133,12 @@ public class RnnOpValidation extends BaseOpValidation {
 
         INDArray oExp = x.getArr().mmul(wo_x).addiRowVector(bo);        //[mb,nIn]*[nIn, nOut] + [nOut]
         oExp.addi(yLast.getArr().mmul(wo_r));   //[mb,nOut]*[nOut,nOut]
-        oExp.addi(cExp.mul(Wco.getArr()));
+        oExp.addi(cExp.mulRowVector(Wco.getArr())); //Peephole
+        assertEquals(oExp, m.get(toExec.get(3)));
 
-        assertEquals(iExp, m.get(toExec.get(4)));
 
+        INDArray yExp = Transforms.tanh(cExp,true).mul(Transforms.sigmoid(oExp,true));
+        assertEquals(yExp, m.get(toExec.get(6)));
     }
 
 }

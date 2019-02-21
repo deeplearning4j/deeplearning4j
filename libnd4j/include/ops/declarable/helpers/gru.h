@@ -27,7 +27,9 @@ namespace nd4j {
 namespace ops {
 namespace helpers {
 
-	void gruCell(const NDArray* x, const NDArray* h0, const NDArray* Wx, const NDArray* Wh, const NDArray* b, NDArray* h);
+	void gruCell(const NDArray* x, const NDArray* hLast, const NDArray* Wru, const NDArray* Wc,
+				 const NDArray* bru, const NDArray* bc,
+				 const NDArray* r, const NDArray* u, const NDArray* c, const NDArray* h);
 
 	void gruTimeLoop(const NDArray* x, const NDArray* h0, const NDArray* Wx, const NDArray* Wh, const NDArray* b, NDArray* h);
 

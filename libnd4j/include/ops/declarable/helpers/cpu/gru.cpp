@@ -43,160 +43,169 @@ static FORCEINLINE NDArray activation(const NDArray& arr) {
 
 
 //////////////////////////////////////////////////////////////////////////
-void gruCell(const NDArray* x, const NDArray* h0, const NDArray* Wx, const NDArray* Wh, const NDArray* b, NDArray* h) {
+void gruCell(const NDArray* x, const NDArray* hLast, const NDArray* Wru, const NDArray* Wc,
+             const NDArray* bru, const NDArray* bc,
+             const NDArray* r, const NDArray* u, const NDArray* c, const NDArray* h) {
 
-    // x    input [bS, iS], bS - batch size, iS - input size
-    // h0   previous cell output [bS, nU],  that is at previous time step t-1
-    // Wx   input-to-hidden  weights, [iS, 3*nU]
-    // Wh   hidden-to-hidden weights, [nU, 3*nU]
-    // b    biases, [3*nU]
-    
-    // h is current cell output [bS, nU], that is at current time step t    
+    //Inputs:
+    // x        input [bS x inSize]
+    // hLast    previous cell output [bS x numUnits],  that is at previous time step t-1
+    // Wru      RU weights - [bS, 2*numUnits] - reset and update gates
+    // Wc       C weights - [bS, numUnits] - cell gate
+    // bru      r and u biases, [2*numUnits] - reset and update gates
+    // bc       c biases, [numUnits] - cell gate
 
-    const int nU = h0->sizeAt(1);                // number of units
-    
-    // gates = sigmoid(x*Wx + h0*Wh + b)
-    auto gates = sigmoid(mmul(*x, (*Wx)({0,0, 0,2*nU})) + mmul(*h0, (*Wh)({0,0, 0,2*nU})) + (*b)({0,2*nU}));       // [bS, 2*nU] + [bS, 2*nU] + [1, 2*nU] = [bS, 2*nU]
-    
-    // reset gate
-    auto r = gates({0,0, 0,nU});                     // [bS, nU]
+    //Outputs:
+    // r        Reset gate output [bS, numUnits]
+    // u        Update gate output [bS, numUnits]
+    // c        Cell gate output [bS, numUnits]
+    // h        current cell output [bS, numUnits]
 
-    // update gate
-    auto u = gates({0,0, nU,2*nU});            // [bS, nU]
 
-    // ◦ means element-wise product or so called Hadamard product
-    // n = activation(x*Wx + (r◦h0)*Wh + b)
-    auto n = activation(mmul(*x, (*Wx)({0,0, 2*nU,3*nU})) + mmul((*h0)*r, (*Wh)({0,0, 2*nU,3*nU})) + (*b)({2*nU,3*nU}));     // [bS, nU]
+const int nU = h0->sizeAt(1);                // number of units
 
-    // current cell output
-    h->assign( u * (*h0) + (1.f - u) * n );
+// gates = sigmoid(x*Wx + h0*Wh + b)
+auto gates = sigmoid(mmul(*x, (*Wx)({0,0, 0,2*nU})) + mmul(*h0, (*Wh)({0,0, 0,2*nU})) + (*b)({0,2*nU}));       // [bS, 2*nU] + [bS, 2*nU] + [1, 2*nU] = [bS, 2*nU]
+
+// reset gate
+auto r = gates({0,0, 0,nU});                     // [bS, nU]
+
+// update gate
+auto u = gates({0,0, nU,2*nU});            // [bS, nU]
+
+// ◦ means element-wise product or so called Hadamard product
+// n = activation(x*Wx + (r◦h0)*Wh + b)
+auto n = activation(mmul(*x, (*Wx)({0,0, 2*nU,3*nU})) + mmul((*h0)*r, (*Wh)({0,0, 2*nU,3*nU})) + (*b)({2*nU,3*nU}));     // [bS, nU]
+
+// current cell output
+h->assign( u * (*h0) + (1.f - u) * n );
 }
 
 //////////////////////////////////////////////////////////////////////////
 void gruTimeLoop(const NDArray* x, const NDArray* h0, const NDArray* Wx, const NDArray* Wh, const NDArray* b, NDArray* h) {
 
-    // x   input [time, bS, iS]
-    // h0  initial cell output (at time step = 0) [bS, nU]
-    // Wx  input-to-hidden  weights, [iS, 3*nU]
-    // Wh  hidden-to-hidden weights, [nU, 3*nU]
-    // b   biases, [3*nU]
-    
-    // h is cell outputs at each time step [time, bS, nU]
+// x   input [time, bS, iS]
+// h0  initial cell output (at time step = 0) [bS, nU]
+// Wx  input-to-hidden  weights, [iS, 3*nU]
+// Wh  hidden-to-hidden weights, [nU, 3*nU]
+// b   biases, [3*nU]
 
-    const int time = x->sizeAt(0);    
+// h is cell outputs at each time step [time, bS, nU]
 
-    NDArray ht_1(*h0);
+const int time = x->sizeAt(0);
 
-    // loop through time steps
-    for (int t = 0; t < time; ++t) {
+NDArray ht_1(*h0);
 
-        auto xt = (*x)({t,t+1, 0,0, 0,0});
-        auto ht = (*h)({t,t+1, 0,0, 0,0});
+// loop through time steps
+for (int t = 0; t < time; ++t) {
 
-        helpers::gruCell(&xt, &ht_1, Wx, Wh, b, &ht);
-        ht_1.assign(ht);    
-    }
+    auto xt = (*x)({t,t+1, 0,0, 0,0});
+    auto ht = (*h)({t,t+1, 0,0, 0,0});
+
+    helpers::gruCell(&xt, &ht_1, Wx, Wh, b, &ht);
+    ht_1.assign(ht);
+}
 }
 
 //////////////////////////////////////////////////////////////////////////
 void gruCellBP(const NDArray* x, const NDArray* h0, const NDArray* Wx, const NDArray* Wh, const NDArray* b, const NDArray* dLdh, const NDArray* dLdWx0,
-               const NDArray* dLdWh0, const NDArray* dLdb0, NDArray* dLdx, NDArray* dLdh0, NDArray* dLdWx, NDArray* dLdWh, NDArray* dLdb) {
+           const NDArray* dLdWh0, const NDArray* dLdb0, NDArray* dLdx, NDArray* dLdh0, NDArray* dLdWx, NDArray* dLdWh, NDArray* dLdb) {
 
-    // x                        input [bS, iS]
-    // h0                       previous cell output [bS, nU],  that is at previous time step t-1
-    // Wx                       input-to-hidden  weights, [iS, 3*nU]
-    // Wh                       hidden-to-hidden weights, [nU, 3*nU]
-    // b                        biases, [3*nU]
-    // dLdh                     gradient wrt output, [bS,nU], that is epsilon_next
-    // dLdWx0                   gradient wrt Wx at previous time step, [iS, 3*nU]
-    // dLdWh0                   gradient wrt Wh at previous time step, [nU, 3*nU]
-    // dLdb0                    gradient wrt b at previous time step,  [3*nU]
+// x                        input [bS, iS]
+// h0                       previous cell output [bS, nU],  that is at previous time step t-1
+// Wx                       input-to-hidden  weights, [iS, 3*nU]
+// Wh                       hidden-to-hidden weights, [nU, 3*nU]
+// b                        biases, [3*nU]
+// dLdh                     gradient wrt output, [bS,nU], that is epsilon_next
+// dLdWx0                   gradient wrt Wx at previous time step, [iS, 3*nU]
+// dLdWh0                   gradient wrt Wh at previous time step, [nU, 3*nU]
+// dLdb0                    gradient wrt b at previous time step,  [3*nU]
 
-    // dLdx                   gradient wrt x,  [bS, iS], that is epsilon
-    // dLdh0                  gradient wrt h0, [bS, nU]
-    // dLdWx                  gradient wrt Wx, [iS, 3*nU]
-    // dLdWh                  gradient wrt Wh, [nU, 3*nU]
-    // dLdb                   gradient wrt b at previous time step,  [3*nU]
-    
-    // h is current cell output [bS, nU], that is at current time step t    
+// dLdx                   gradient wrt x,  [bS, iS], that is epsilon
+// dLdh0                  gradient wrt h0, [bS, nU]
+// dLdWx                  gradient wrt Wx, [iS, 3*nU]
+// dLdWh                  gradient wrt Wh, [nU, 3*nU]
+// dLdb                   gradient wrt b at previous time step,  [3*nU]
 
-    const int nU = h0->sizeAt(1);
+// h is current cell output [bS, nU], that is at current time step t
 
-    // ***** feed forward step ***** //    
-    // gates = sigmoid(x*Wx + h0*Wh + b)
-    auto gates = sigmoid(mmul(*x, (*Wx)({0,0, 0,2*nU})) + mmul(*h0, (*Wh)({0,0, 0,2*nU})) + (*b)({0,2*nU}));       // [bS, 2*nU] + [bS, 2*nU] + [1, 2*nU] = [bS, 2*nU]
-    // reset gate
-    auto r = gates({0,0, 0, nU});               // [bS, nU]
-    // update gate
-    auto u = gates({0,0, nU, 2*nU});            // [bS, nU]
-    // ◦ means element-wise product or so called Hadamard product
-    // n = activation(x*Wx + (r◦h0)*Wh + b)
-    auto n = activation(mmul(*x, (*Wx)({0,0, 2*nU,3*nU})) + mmul((*h0)*r, (*Wh)({0,0, 2*nU,3*nU})) + (*b)({2*nU,3*nU}));     // [bS, nU]
+const int nU = h0->sizeAt(1);
 
-    // ***** back prop step ***** // 
-    auto Wxr  = (*Wx)({0,0, 0,   nU});
-    auto Wxu  = (*Wx)({0,0, nU,  2*nU});
-    auto Wxn  = (*Wx)({0,0, 2*nU,3*nU});
-    auto Whr  = (*Wh)({0,0, 0,   nU});
-    auto Whu  = (*Wh)({0,0, nU,  2*nU});
-    auto Whn  = (*Wh)({0,0, 2*nU,3*nU});
-    auto WxrT = Wxr.transp();
-    auto WxuT = Wxu.transp();
-    auto WxnT = Wxn.transp();
-    auto WhrT = Whr.transp();
-    auto WhuT = Whu.transp();
-    auto WhnT = Whn.transp();
-    auto xT   = x->transp();
-    auto h0T  = h0->transp();
+// ***** feed forward step ***** //
+// gates = sigmoid(x*Wx + h0*Wh + b)
+auto gates = sigmoid(mmul(*x, (*Wx)({0,0, 0,2*nU})) + mmul(*h0, (*Wh)({0,0, 0,2*nU})) + (*b)({0,2*nU}));       // [bS, 2*nU] + [bS, 2*nU] + [1, 2*nU] = [bS, 2*nU]
+// reset gate
+auto r = gates({0,0, 0, nU});               // [bS, nU]
+// update gate
+auto u = gates({0,0, nU, 2*nU});            // [bS, nU]
+// ◦ means element-wise product or so called Hadamard product
+// n = activation(x*Wx + (r◦h0)*Wh + b)
+auto n = activation(mmul(*x, (*Wx)({0,0, 2*nU,3*nU})) + mmul((*h0)*r, (*Wh)({0,0, 2*nU,3*nU})) + (*b)({2*nU,3*nU}));     // [bS, nU]
 
-    auto dLdWxr = (*dLdWx)({0,0, 0,     nU});
-    auto dLdWxu = (*dLdWx)({0,0, nU,  2*nU});
-    auto dLdWxn = (*dLdWx)({0,0, 2*nU,3*nU});
+// ***** back prop step ***** //
+auto Wxr  = (*Wx)({0,0, 0,   nU});
+auto Wxu  = (*Wx)({0,0, nU,  2*nU});
+auto Wxn  = (*Wx)({0,0, 2*nU,3*nU});
+auto Whr  = (*Wh)({0,0, 0,   nU});
+auto Whu  = (*Wh)({0,0, nU,  2*nU});
+auto Whn  = (*Wh)({0,0, 2*nU,3*nU});
+auto WxrT = Wxr.transp();
+auto WxuT = Wxu.transp();
+auto WxnT = Wxn.transp();
+auto WhrT = Whr.transp();
+auto WhuT = Whu.transp();
+auto WhnT = Whn.transp();
+auto xT   = x->transp();
+auto h0T  = h0->transp();
 
-    auto dLdWhr = (*dLdWh)({0,0, 0,     nU});
-    auto dLdWhu = (*dLdWh)({0,0, nU,  2*nU});
-    auto dLdWhn = (*dLdWh)({0,0, 2*nU,3*nU});
+auto dLdWxr = (*dLdWx)({0,0, 0,     nU});
+auto dLdWxu = (*dLdWx)({0,0, nU,  2*nU});
+auto dLdWxn = (*dLdWx)({0,0, 2*nU,3*nU});
 
-    auto dLdbr = (*dLdb)({0,     nU});
-    auto dLdbu = (*dLdb)({nU,  2*nU});
-    auto dLdbn = (*dLdb)({2*nU,3*nU});
+auto dLdWhr = (*dLdWh)({0,0, 0,     nU});
+auto dLdWhu = (*dLdWh)({0,0, nU,  2*nU});
+auto dLdWhn = (*dLdWh)({0,0, 2*nU,3*nU});
 
-    auto dhdu   = *h0  - n;              // [bS, nU]
-    auto dhdn   = 1.f - u;               // [bS, nU]
-    auto dSigdu = u * (1.f - u);         // [bS, nU]
-    auto dSigdr = r * (1.f - r);         // [bS, nU]
-    auto dActdn = 1.f - n * n;           // [bS, nU]
-    auto dndr   = mmul(dActdn * (*h0), WhnT);
-    auto drdh0  = mmul(dSigdr, WhrT);
+auto dLdbr = (*dLdb)({0,     nU});
+auto dLdbu = (*dLdb)({nU,  2*nU});
+auto dLdbn = (*dLdb)({2*nU,3*nU});
 
-    auto dLdn = (*dLdh) * dhdn;
-    auto dLdu = (*dLdh) * dhdu;
-    auto dLdr = dLdn * dndr;
+auto dhdu   = *h0  - n;              // [bS, nU]
+auto dhdn   = 1.f - u;               // [bS, nU]
+auto dSigdu = u * (1.f - u);         // [bS, nU]
+auto dSigdr = r * (1.f - r);         // [bS, nU]
+auto dActdn = 1.f - n * n;           // [bS, nU]
+auto dndr   = mmul(dActdn * (*h0), WhnT);
+auto drdh0  = mmul(dSigdr, WhrT);
 
-    dLdx->assign( mmul(dLdu * dSigdu, WxuT) + mmul(dLdr * dSigdr, WxrT) + mmul(dLdn * dActdn, WxnT) );      // [bS,iS]
-    dLdh0->assign( mmul(dLdu * dSigdu, WhuT) + mmul(dLdn * dActdn * (r + drdh0), WhnT) + (*dLdh)*u );       // [bS,nU]
+auto dLdn = (*dLdh) * dhdn;
+auto dLdu = (*dLdh) * dhdu;
+auto dLdr = dLdn * dndr;
 
-    dLdWxr.assign( mmul(xT, dSigdr * dLdr) );                                                               //  [iS,nU]
-    dLdWhr.assign( mmul(h0T, dSigdr * dLdr) );                                                              //  [nU,nU]
-    
-    dLdWxu.assign( mmul(xT, dSigdu * dLdu) );                                                               //  [iS,nU]
-    dLdWhu.assign( mmul(h0T, dSigdu * dLdu) );                                                              //  [nU,nU]
-    
-    dLdWxn.assign( mmul(xT, dActdn * dLdn) );                                                               //  [iS,nU]
-    dLdWhn.assign( mmul((r*(*h0)).transp(), dActdn * dLdn) );                                               //  [nU,nU]
-    
-    dLdbr.assign( (dSigdr * dLdr).reduceAlongDims(reduce::Sum, {0}));                          // [nU]
-    dLdbu.assign( (dSigdu * dLdu).reduceAlongDims(reduce::Sum, {0}));                          // [nU]
-    dLdbn.assign( (dActdn * dLdn).reduceAlongDims(reduce::Sum, {0}));                          // [nU]
+dLdx->assign( mmul(dLdu * dSigdu, WxuT) + mmul(dLdr * dSigdr, WxrT) + mmul(dLdn * dActdn, WxnT) );      // [bS,iS]
+dLdh0->assign( mmul(dLdu * dSigdu, WhuT) + mmul(dLdn * dActdn * (r + drdh0), WhnT) + (*dLdh)*u );       // [bS,nU]
 
-    if(dLdWx0 != nullptr) 
-        *dLdWx += *dLdWx0;
+dLdWxr.assign( mmul(xT, dSigdr * dLdr) );                                                               //  [iS,nU]
+dLdWhr.assign( mmul(h0T, dSigdr * dLdr) );                                                              //  [nU,nU]
 
-    if(dLdWh0 != nullptr)
-        *dLdWh += *dLdWh0;    
-        
-    if(dLdb0 != nullptr)
-        *dLdb += *dLdb0;
+dLdWxu.assign( mmul(xT, dSigdu * dLdu) );                                                               //  [iS,nU]
+dLdWhu.assign( mmul(h0T, dSigdu * dLdu) );                                                              //  [nU,nU]
+
+dLdWxn.assign( mmul(xT, dActdn * dLdn) );                                                               //  [iS,nU]
+dLdWhn.assign( mmul((r*(*h0)).transp(), dActdn * dLdn) );                                               //  [nU,nU]
+
+dLdbr.assign( (dSigdr * dLdr).reduceAlongDims(reduce::Sum, {0}));                          // [nU]
+dLdbu.assign( (dSigdu * dLdu).reduceAlongDims(reduce::Sum, {0}));                          // [nU]
+dLdbn.assign( (dActdn * dLdn).reduceAlongDims(reduce::Sum, {0}));                          // [nU]
+
+if(dLdWx0 != nullptr)
+    *dLdWx += *dLdWx0;
+
+if(dLdWh0 != nullptr)
+    *dLdWh += *dLdWh0;
+
+if(dLdb0 != nullptr)
+    *dLdb += *dLdb0;
 
 }
 

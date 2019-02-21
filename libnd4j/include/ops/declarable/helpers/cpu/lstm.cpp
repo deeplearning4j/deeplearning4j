@@ -166,7 +166,6 @@ void lstmBlockCell(const NDArray* xt, const NDArray* cLast, const NDArray* yLast
     *    5: Activations, cell state [bs, numUnits]
     *    6: Current cell output [bS, numUnits], time t
     */
-    nd4j_printf("Start of lstmBlockCell call\n","");
     const bool peephole   = (bool)params[0];        // if true, provide peephole connections
     const double forgetBias    = params[1];
     const double clippingCellValue   = params[2];              // clipping value for ct, if it is not equal to zero, then cell state is clipped
@@ -189,18 +188,8 @@ void lstmBlockCell(const NDArray* xt, const NDArray* cLast, const NDArray* yLast
     auto result = concat->execute(inputs, targs, iargs, bargs);
     auto concatOut = result->at(0);
 
-    for( int i=0; i<4; i++ ){
-        nd4j_printf("First 4 concat elements: <%f>\n", concatOut->e<float>(i));
-    }
-
-    nd4j_printf("Before mmul call\n","");
     auto m = mmul(*concatOut, *W);    //mmul: [bs, (nIn+numUnits)]* [(inSize+numUnits), 4*numUnits] = [bs, 4*numUnits]
-    nd4j_printf("Before bias add\n","");
     m += (*b);
-
-    for( int i=0; i<4; i++ ){
-        nd4j_printf("First 4 mmul elements: <%f>\n", m.e<float>(i));
-    }
 
     auto zz = m({0,0, 0,            numUnits});      	// z for input gate, [bS, numUnits]
     auto zf = m({0,0, numUnits,   2*numUnits});      	// z for forget gate, [bS, numUnits]
@@ -215,40 +204,28 @@ void lstmBlockCell(const NDArray* xt, const NDArray* cLast, const NDArray* yLast
 
     // current sell state = ft*cLast + it*activation(mmul(Wxc,xt) + mmul(Whc,ht_1) + bc
     if(forgetBias != 0.0){
-        nd4j_printf("Before forget bias\n","");
         zf += forgetBias;
     }
 
     const_cast<NDArray*>(z)->assign(&zz);
     const_cast<NDArray*>(i)->assign(&zi);
     const_cast<NDArray*>(f)->assign(&zf);
-    const_cast<NDArray*>(o)->assign(&zo);
 
-    nd4j_printf("Before c assign call\n","");
-    c->assign( sigmoid(zf) * (*cLast) + sigmoid(zi) * activation(zz) );
-
-    for( int i=0; i<4; i++ ){
-        nd4j_printf("First 4 C elements: <%f>\n", c->e<float>(i));
-    }
+    const_cast<NDArray*>(h)->assign( sigmoid(zi) * activation(zz) );
+    c->assign( sigmoid(zf) * (*cLast) + (*h) );
 
     // if clipping value is provided then cell state is clipped by this value prior to the cell output activation
-    if(clippingCellValue != 0.0) {
-        nd4j_printf("Before cell clipping\n","");
+    if(clippingCellValue > 0.0) {
         clipping(c, clippingCellValue);
     }
 
     if(peephole) {
-        nd4j_printf("Before peephole 2\n","");
-        zo += (*c) * (*Wcf);            // add peephole connections to output gate zot + ct*Wc
+        zo += (*c) * (*Wco);            // add peephole connections to output gate zot + ct*Wc
     }
+    const_cast<NDArray*>(o)->assign(&zo);
 
     // current cell output = ot*activation(ct)
-    nd4j_printf("Before final assign\n","");
     y->assign(sigmoid(zo) * activation(*c));
-
-    for( int i=0; i<4; i++ ){
-        nd4j_printf("First 4 y elements: <%f>\n", y->e<float>(i));
-    }
 
     //TODO do I need to delete vairable space and concat op??
 }

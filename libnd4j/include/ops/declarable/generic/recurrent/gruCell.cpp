@@ -30,18 +30,18 @@ namespace ops  {
 
 //////////////////////////////////////////////////////////////////////////
 CUSTOM_OP_IMPL(gruCell, 6, 4, false, 0, 0) {
-    auto x  = INPUT_VARIABLE(0);                     // input [bS x inSize]
-    auto h0 = INPUT_VARIABLE(1);                     // previous cell output [bS x numUnits],  that is at previous time step t-1
-    auto Wru = INPUT_VARIABLE(2);                    // RU weights - [bS, 2*inSize]
-    auto Wc = INPUT_VARIABLE(3);                     // C weights
-    auto bru    = INPUT_VARIABLE(4);                   // biases, [3*numUnits]
-    auto bc     = INPUT_VARIABLE(5);                   // biases, [3*numUnits]
+    auto x      = INPUT_VARIABLE(0);                   // input [bS x inSize]
+    auto hLast  = INPUT_VARIABLE(1);                   // previous cell output [bS x numUnits],  that is at previous time step t-1
+    auto Wru    = INPUT_VARIABLE(2);                   // RU weights - [bS, 2*numUnits] - reset and update gates
+    auto Wc     = INPUT_VARIABLE(3);                   // C weights - [bS, numUnits] - cell gate
+    auto bru    = INPUT_VARIABLE(4);                   // r and u biases, [2*numUnits] - reset and update gates
+    auto bc     = INPUT_VARIABLE(5);                   // c biases, [numUnits] - cell gate
 
-    auto Wx   = INPUT_VARIABLE(2);                   // input-to-hidden weights, [inSize   x 3*numUnits]
-    auto Wh   = INPUT_VARIABLE(3);                   // hidden-to-hidden weights, [numUnits x 3*numUnits]
-    auto b    = INPUT_VARIABLE(4);                   // biases, [3*numUnits]
-    
-    auto h    =  OUTPUT_VARIABLE(0);                  // current cell output [bS x numUnits], that is at current time step t
+    /*
+    auto r    =  OUTPUT_VARIABLE(0);                  // Reset gate output [bS, numUnits]
+    auto u    =  OUTPUT_VARIABLE(0);                  // Update gate output [bS, numUnits]
+    auto c    =  OUTPUT_VARIABLE(0);                  // Cell gate output [bS, numUnits]
+    auto h    =  OUTPUT_VARIABLE(0);                  // current cell output [bS, numUnits]
 
     const int rank     = x->rankOf();              // = 2
     const auto bS       = x->sizeAt(0);
@@ -63,6 +63,7 @@ CUSTOM_OP_IMPL(gruCell, 6, 4, false, 0, 0) {
     REQUIRE_TRUE(bShape  == bCorrectShape,  0, "GRUCELL operation: wrong shape of biases  array, expected is %s, but got %s instead !", bCorrectShape.c_str(), bShape.c_str());
 
     helpers::gruCell(x, h0, Wx, Wh, b, h);
+     */
 
     return Status::OK();
 }
