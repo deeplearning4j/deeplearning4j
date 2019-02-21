@@ -63,6 +63,7 @@ namespace nd4j {
 #endif
 
             std::vector<NDArray*> _fastpath;
+            std::vector<NDArray*> _handles;
         public:
             // TODO: maybe override new here as well?
 
@@ -173,8 +174,10 @@ namespace nd4j {
 
             Variable* ensureVariable(int idx = 0);
 
+            unsigned long width() override;
 
             // methods used in java interop
+            void addInputArray(int index, NDArray *array);
             void addInputArray(int index, void *buffer, void *shapeInfo, void *specialBuffer, void *specialShapeInfo);
         };
     }

@@ -99,11 +99,12 @@ namespace nd4j {
             this->_iArgs.clear();
             this->_tArgs.clear();
             this->_inputs.clear();
+            this->_fastpath.clear();
 #ifdef HAVE_MKLDNN
             this->_mkldnnStreams.clear();
 #endif
 
-            for (auto v:_fastpath)
+            for (auto v:_handles)
                 delete v;
         }
 
@@ -351,6 +352,19 @@ namespace nd4j {
             return nullptr;
         }
 
+        unsigned long Context::width() {
+            if (!_fastpath.empty())
+                return _fastpath.size();
+            else
+                return _inputs.size();
+        }
+
+        void Context::addInputArray(int index, NDArray *array) {
+            if (_fastpath.size() < index + 1)
+                _fastpath.resize(index+1);
+
+            _fastpath[index] = array;
+        }
 
         void Context::addInputArray(int index, void *buffer, void *shapeInfo, void *specialBuffer, void *specialShapeInfo) {
             auto array = new NDArray(buffer, reinterpret_cast<Nd4jLong *>(shapeInfo));
@@ -360,6 +374,7 @@ namespace nd4j {
                 _fastpath.resize(index+1);
 
             _fastpath[index] = array;
+            _handles.emplace_back(array);
         }
     }
 }

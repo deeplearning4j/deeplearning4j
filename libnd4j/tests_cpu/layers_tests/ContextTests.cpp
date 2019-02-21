@@ -292,6 +292,8 @@ TEST_F(ContextTests, test_short_context_1) {
     ctx.addInputArray(0, array0.buffer(), array0.shapeInfo(), nullptr, nullptr);
     ctx.addInputArray(1, array1.buffer(), array1.shapeInfo(), nullptr, nullptr);
 
+    ASSERT_EQ(2, ctx.width());
+
     auto input0 = ctx.array(0);
     ASSERT_TRUE(input0 != nullptr);
 
