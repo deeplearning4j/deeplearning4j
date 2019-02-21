@@ -2108,6 +2108,26 @@ TEST_F(DeclarableOpsTests5, confusion_matrix_test3) {
     delete results;
 }
 
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests5, confusion_matrix_test4) {
+
+    auto labels = NDArrayFactory::create<double>('c', {1, 2}, {1, 2});
+    auto predictions = NDArrayFactory::create<double>('c', {1, 2}, {0, 2});
+    auto weights = NDArrayFactory::create<double>('c', {1, 2}, {100, 200});
+    auto expected = NDArrayFactory::create<double>('c', {3, 3}, {0, 0, 0, 100, 0, 0, 0, 0, 200});
+
+    nd4j::ops::confusion_matrix op;
+    auto results = op.execute({&labels, &predictions, &weights}, {}, {3, nd4j::DataType::DOUBLE});
+    auto output = results->at(0);
+    output->printIndexedBuffer("CM4");
+
+    ASSERT_EQ(Status::OK(), results->status());
+    ASSERT_TRUE(expected.isSameShape(output));
+    ASSERT_TRUE(expected.equalsTo(output));
+
+    delete results;
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests5, ZeroFraction_1) {
     

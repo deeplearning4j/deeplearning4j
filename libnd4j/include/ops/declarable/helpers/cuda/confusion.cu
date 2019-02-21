@@ -28,6 +28,15 @@ namespace ops {
 namespace helpers {
 
     template <typename T>
+    __global__ static void copyBuffers(Nd4jLong* destination, void const* source, Nd4jLong bufferLength) {
+        const auto tid = blockIdx.x * gridDim.x + threadIdx.x;
+        const auto step = gridDim.x * blockDim.x;
+        for (int t = tid; t < bufferLength; t += step) {
+            destination[t] = reinterpret_cast<T const*>(source)[t];
+        }
+    }
+
+    template <typename T>
     __global__ static void confusionFunctorKernel(Nd4jLong* labelsBuffer, Nd4jLong* predictionBuffer, Nd4jLong bufferLength, void const* weightsBuffer, void* outputBuffer, Nd4jLong* tadShape, Nd4jLong* tadOffsets) {
         __shared__ int arrIdx, blocksPerArr;
         __shared__ T *z;
@@ -86,6 +95,7 @@ namespace helpers {
             if (err != 0)
                 throw nd4j::cuda_exception::build("Cannot allocate memory for labels long buffer", err);
             // copy with type conversion
+            copyBuffers<T><<<256, 512, 8192>>>(labelsLongBuffer, labels->getSpecialBuffer(), labels->lengthOf());
         }
 
         if (predictionLongBuffer == nullptr) {
@@ -93,6 +103,7 @@ namespace helpers {
             if (err != 0)
                 throw nd4j::cuda_exception::build("Cannot allocate memory for predictions long buffer", err);
             // copy with type conversion
+            copyBuffers<T><<<256, 512, 8192>>>(predictionLongBuffer, predictions->getSpecialBuffer(), predictions->lengthOf());
         }
 
         auto bufferLength = labels->lengthOf();
@@ -100,6 +111,18 @@ namespace helpers {
         auto stream = context->getCudaStream();
         confusionFunctorKernel<T><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(labelsLongBuffer, predictionLongBuffer,
                 bufferLength, weights != nullptr? weights->getSpecialBuffer():nullptr, output->specialBuffer(), pTadShape, pTadOffsets);
+
+        if (predictionLongBuffer != predictions->getSpecialBuffer()) {
+            cudaError_t err = cudaFree(predictionLongBuffer);
+            if (err != 0)
+                throw nd4j::cuda_exception::build("Cannot deallocate memory for predictions long buffer", err);
+        }
+
+        if (labelsLongBuffer != labels->getSpecialBuffer()) {
+            cudaError_t err = cudaFree(labelsLongBuffer);
+            if (err != 0)
+                throw nd4j::cuda_exception::build("Cannot deallocate memory for labels long buffer", err);
+        }
         manager.synchronize();
     }
 
