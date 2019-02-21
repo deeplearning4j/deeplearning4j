@@ -53,7 +53,7 @@ CUSTOM_OP_IMPL(lstmBlockCell, 8, 7, false, 2, 1) {
     const int peephole   = INT_ARG(0);                // if 1, provide peephole connections
 
 	const double forgetBias   = T_ARG(0);
-    const double clippingCellValue  = T_ARG(0);       // clipping value for ct, if it is not equal to zero, then cell state is clipped
+    const double clippingCellValue  = T_ARG(1);       // clipping value for ct, if it is not equal to zero, then cell state is clipped
 
     const int rank     = xt->rankOf();
     const int bS       = xt->sizeAt(0);

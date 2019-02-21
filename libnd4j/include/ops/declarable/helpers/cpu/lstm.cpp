@@ -166,9 +166,10 @@ void lstmBlockCell(const NDArray* xt, const NDArray* cLast, const NDArray* yLast
     *    5: Activations, cell state [bs, numUnits]
     *    6: Current cell output [bS, numUnits], time t
     */
+    nd4j_printf("Start of lstmBlockCell call\n","");
     const bool peephole   = (bool)params[0];        // if true, provide peephole connections
     const double forgetBias    = params[1];
-    double clippingCellValue   = params[2];              // clipping value for ct, if it is not equal to zero, then cell state is clipped
+    const double clippingCellValue   = params[2];              // clipping value for ct, if it is not equal to zero, then cell state is clipped
 
 
     const int bS   = xt->sizeAt(0);
@@ -184,37 +185,64 @@ void lstmBlockCell(const NDArray* xt, const NDArray* cLast, const NDArray* yLast
     inputs.emplace_back(const_cast<NDArray*>(xt));
     inputs.emplace_back(const_cast<NDArray*>(yLast));
 
+    nd4j_printf("Before concat call\n","");
     auto result = concat->execute(inputs, targs, iargs, bargs);
-    auto concatInputs = result->at(0);
+    auto concatOut = result->at(0);
 
+    for( int i=0; i<4; i++ ){
+        nd4j_printf("First 4 concat elements: <%f>\n", concatOut->e<float>(i));
+    }
 
-    auto m = mmul(*concatInputs, *W);    //mmul: [bs, (nIn+numUnits)]* [(inSize+numUnits), 4*numUnits] = [bs, 4*numUnits]
+    nd4j_printf("Before mmul call\n","");
+    auto m = mmul(*concatOut, *W);    //mmul: [bs, (nIn+numUnits)]* [(inSize+numUnits), 4*numUnits] = [bs, 4*numUnits]
+    nd4j_printf("Before bias add\n","");
+    m += (*b);
 
-    auto zz = m({0,0, 0,            numUnits});      	// z for input gate, [bS x numUnits]
-    auto zf = m({0,0, numUnits,   2*numUnits});      	// z for forget gate, [bS x numUnits]
-    auto zi = m({0,0, 2*numUnits, 3*numUnits});      	// z for input modulation gate, [bS x numUnits]
-    auto zo = m({0,0, 3*numUnits, 4*numUnits});      	// z for output gate, [bS x numUnits]
+    for( int i=0; i<4; i++ ){
+        nd4j_printf("First 4 mmul elements: <%f>\n", m.e<float>(i));
+    }
+
+    auto zz = m({0,0, 0,            numUnits});      	// z for input gate, [bS, numUnits]
+    auto zf = m({0,0, numUnits,   2*numUnits});      	// z for forget gate, [bS, numUnits]
+    auto zi = m({0,0, 2*numUnits, 3*numUnits});      	// z for input modulation gate, [bS, numUnits]
+    auto zo = m({0,0, 3*numUnits, 4*numUnits});      	// z for output gate, [bS, numUnits]
 
     if(peephole) {                                              // add peephole connections: z  +  ct_1*Wc
+        nd4j_printf("Before peepholes\n","");
         zi += (*cLast) * (*Wci);       // add peephole connections to input gate
         zf += (*cLast) * (*Wcf);       // add peephole connections to forget gate
     }
 
     // current sell state = ft*cLast + it*activation(mmul(Wxc,xt) + mmul(Whc,ht_1) + bc
-    if(forgetBias > 0.0){
+    if(forgetBias != 0.0){
+        nd4j_printf("Before forget bias\n","");
         zf += forgetBias;
     }
+    nd4j_printf("Before c assign call\n","");
     c->assign( sigmoid(zf) * (*cLast) + sigmoid(zi) * activation(zz) );
 
-    // if clipping value is provided then cell state is clipped by this value prior to the cell output activation
-    if(clippingCellValue != 0.0)
-        clipping(c, clippingCellValue);
+    for( int i=0; i<4; i++ ){
+        nd4j_printf("First 4 C elements: <%f>\n", c->e<float>(i));
+    }
 
-    if(peephole)
+    // if clipping value is provided then cell state is clipped by this value prior to the cell output activation
+    if(clippingCellValue != 0.0) {
+        nd4j_printf("Before cell clipping\n","");
+        clipping(c, clippingCellValue);
+    }
+
+    if(peephole) {
+        nd4j_printf("Before peephole 2\n","");
         zo += (*c) * (*Wcf);            // add peephole connections to output gate zot + ct*Wc
+    }
 
     // current cell output = ot*activation(ct)
+    nd4j_printf("Before final assign\n","");
     y->assign(sigmoid(zo) * activation(*c));
+
+    for( int i=0; i<4; i++ ){
+        nd4j_printf("First 4 y elements: <%f>\n", y->e<float>(i));
+    }
 
     //TODO do I need to delete vairable space and concat op??
 }

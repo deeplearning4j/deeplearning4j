@@ -17,7 +17,6 @@
 package org.nd4j.linalg;
 
 
-import com.fasterxml.jackson.databind.ser.Serializers;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import lombok.var;
