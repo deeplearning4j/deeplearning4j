@@ -41,12 +41,12 @@ CUSTOM_OP_IMPL(lstmBlockCell, 8, 7, false, 2, 1) {
 	auto Wco  = INPUT_VARIABLE(6);                    // weights - cell peephole (t) connections to output gate, [numUnits]
     auto b    = INPUT_VARIABLE(7);                    // biases, [4*numUnits]
 
-	auto z   =  OUTPUT_VARIABLE(0);                   // Output - input gate activations [bs, numUnits]
-	auto i   =  OUTPUT_VARIABLE(1);                   // Output - input modulation gate activations [bS, numUnits]
-    auto f   =  OUTPUT_VARIABLE(2);                   // Output - forget gate activations [bs, numUnits]
+    auto i   =  OUTPUT_VARIABLE(0);                   // Output - input modulation gate activations [bS, numUnits]
+	auto c   =  OUTPUT_VARIABLE(1);		              // Activations, cell state (pre tanh) [bs, numUnits]
+	auto f   =  OUTPUT_VARIABLE(2);                   // Output - forget gate activations [bs, numUnits]
 	auto o   =  OUTPUT_VARIABLE(3);                   // Output - output gate activations [bs, numUnits]
-	auto h   =  OUTPUT_VARIABLE(4);                   // Activations, pre input gate [bs, numUnits]
-	auto c   =  OUTPUT_VARIABLE(5);		               // Activations, cell state [bs, numUnits]
+	auto z   =  OUTPUT_VARIABLE(4);                   // Output - input gate activations [bs, numUnits]
+	auto h   =  OUTPUT_VARIABLE(5);                   // Cell state, post tanh [bs, numUnits]
 	auto y   =  OUTPUT_VARIABLE(6);                   // current cell output [bS, numProj], time t
 
 
@@ -67,7 +67,7 @@ CUSTOM_OP_IMPL(lstmBlockCell, 8, 7, false, 2, 1) {
 
 
     // calculations
-    helpers::lstmBlockCell(xt, cLast, yLast, W, Wci, Wcf, Wco, b, z, i, f, o, h, c, y, {(double)peephole, forgetBias, clippingCellValue});
+    helpers::lstmBlockCell(xt, cLast, yLast, W, Wci, Wcf, Wco, b, i, c, f, o, z, h, y, {(double)peephole, forgetBias, clippingCellValue});
 
     return Status::OK();
 }

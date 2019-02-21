@@ -61,9 +61,8 @@ void gruCell(const NDArray* x, const NDArray* hLast, const NDArray* Wru, const N
     // c        Cell gate output [bS, numUnits]
     // h        current cell output [bS, numUnits]
 
-
+/*
 const int nU = h0->sizeAt(1);                // number of units
-
 // gates = sigmoid(x*Wx + h0*Wh + b)
 auto gates = sigmoid(mmul(*x, (*Wx)({0,0, 0,2*nU})) + mmul(*h0, (*Wh)({0,0, 0,2*nU})) + (*b)({0,2*nU}));       // [bS, 2*nU] + [bS, 2*nU] + [1, 2*nU] = [bS, 2*nU]
 
@@ -79,6 +78,7 @@ auto n = activation(mmul(*x, (*Wx)({0,0, 2*nU,3*nU})) + mmul((*h0)*r, (*Wh)({0,0
 
 // current cell output
 h->assign( u * (*h0) + (1.f - u) * n );
+ */
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -102,8 +102,8 @@ for (int t = 0; t < time; ++t) {
     auto xt = (*x)({t,t+1, 0,0, 0,0});
     auto ht = (*h)({t,t+1, 0,0, 0,0});
 
-    helpers::gruCell(&xt, &ht_1, Wx, Wh, b, &ht);
-    ht_1.assign(ht);
+    //helpers::gruCell(&xt, &ht_1, Wx, Wh, b, &ht);
+    //ht_1.assign(ht);
 }
 }
 

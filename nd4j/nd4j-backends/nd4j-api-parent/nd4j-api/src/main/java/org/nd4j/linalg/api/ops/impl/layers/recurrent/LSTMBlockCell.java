@@ -73,6 +73,8 @@ public class LSTMBlockCell extends DynamicCustomOp {
                 .clippingCellValue(attributesForNode.get("cell_clip").getF())
                 .peepHole(attributesForNode.get("use_peephole").getB())
                 .build();
+        addIArgument(configuration.iArgs());
+        addTArgument(configuration.tArgs());
     }
 
     @Override

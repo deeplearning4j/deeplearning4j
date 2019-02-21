@@ -30,7 +30,7 @@ namespace helpers {
 
 	void lstmBlockCell(const NDArray* xt, const NDArray* cLast, const NDArray* yLast,
 					   const NDArray* W, const NDArray* Wci, const NDArray* Wcf, const NDArray* Wco, const NDArray* b,
-					   const NDArray* z, const NDArray* i, const NDArray* f, const NDArray* o, const NDArray* h, NDArray* c, NDArray* y, const std::vector<double>& params);
+					   const NDArray* i, NDArray* c, const NDArray* f, const NDArray* o, const NDArray* z, const NDArray* h, NDArray* y, const std::vector<double>& params);
 	
     
 

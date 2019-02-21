@@ -492,10 +492,52 @@ public class InferenceSession extends AbstractSession<INDArray,DifferentialFunct
 
         Set<String> constEnterInputs = null;
         if(numArgs != (numNonConstIns + numConstPhIns + numNonConstInsAllIters)){
+            //We have fewer inputs than we expected for some reason
+            //Sometimes it's because of repeated inputs - it's only recorded as one "input" from the perspective of
+            // the sets. But in actuality, the repeated input needs to be counted multiple times
+            //There is also a separate edge case for nested enter ops (see below)
+            Set<String> seen = new HashSet<>();
+
             boolean anyConstEnterInputs = false;
             SDVariable[] args = df.args();
             for(SDVariable v : args){
                 Variable var = sameDiff.getVariables().get(v.getVarName());
+                //Repeated inputs:
+//                String n = var.getName();
+//                if(seen.contains(n)){
+//                    //Add to appropriate count
+//                    boolean found = false;
+//                    if (numNonConstIns > 0 ) {
+//                        for(VarId varId : opInputs){
+//                            if(n.equals(varId.getVariable())){
+//                                found = true;
+//                                numNonConstIns++;
+//                                break;
+//                            }
+//                        }
+//                    }
+//                    if(!found && numConstPhIns > 0){
+//                        for(String s : constAndPhInputs){
+//                            if(n.equals(s)){
+//                                found = true;
+//                                numConstPhIns++;
+//                                break;
+//                            }
+//                        }
+//                    }
+//                    if(!found && numNonConstInsAllIters > 0){
+//                        for(VarId varId : allIterInputs){
+//                            if(n.equals(varId.getVariable())){
+//                                numNonConstInsAllIters++;
+//                                break;
+//                            }
+//                        }
+//                    }
+//                } else {
+//                    seen.add(n);
+//                }
+
+                //Nested enter case:
                 DifferentialFunction inputVarFn = (var.getOutputOfOp() == null ? null : sameDiff.getOps().get(var.getOutputOfOp()).getOp());
                 if(inputVarFn instanceof Enter && ((Enter)inputVarFn).isConstant()){
                     anyConstEnterInputs = true;
@@ -505,6 +547,7 @@ public class InferenceSession extends AbstractSession<INDArray,DifferentialFunct
                 }
             }
 
+            int constEnterInputCount = 0;
             if(anyConstEnterInputs){
                 /*
                 2019/01/26: AB
@@ -541,14 +584,9 @@ public class InferenceSession extends AbstractSession<INDArray,DifferentialFunct
                     if(found)
                         continue;
 
-                    //Resolve missing constant
-                    if(constEnterInputs == null)
-                        constEnterInputs = new HashSet<>();
-                    constEnterInputs.add(s);
+                    constEnterInputCount++;
                 }
             }
-
-            int constEnterInputCount = anyConstEnterInputs ? constEnterInputs.size() : 0;
 
             if(numArgs > 1){
                 //Might be due to repeated inputs
