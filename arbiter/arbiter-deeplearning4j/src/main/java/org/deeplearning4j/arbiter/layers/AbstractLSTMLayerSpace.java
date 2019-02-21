@@ -29,7 +29,7 @@ import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.activations.IActivation;
 
 /**
- * Layer space for LSTMLayer layers
+ * Layer space for LSTM layers
  *
  * @author Alex Black
  */

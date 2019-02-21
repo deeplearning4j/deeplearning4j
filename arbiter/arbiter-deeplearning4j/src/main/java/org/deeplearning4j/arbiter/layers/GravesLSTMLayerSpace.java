@@ -24,7 +24,7 @@ import org.deeplearning4j.arbiter.util.LeafUtils;
 import org.deeplearning4j.nn.conf.layers.recurrent.GravesLSTMLayer;
 
 /**
- * Layer space for LSTMLayer layers
+ * Layer space for LSTM layers
  *
  * @author Alex Black
  */

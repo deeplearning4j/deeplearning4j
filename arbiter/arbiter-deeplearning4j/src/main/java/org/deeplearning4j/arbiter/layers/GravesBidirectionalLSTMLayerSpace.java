@@ -28,7 +28,7 @@ import org.deeplearning4j.nn.conf.layers.recurrent.GravesBidirectionalLSTMLayer;
 import java.util.List;
 
 /**
- * Layer space for BidirectionalLayer LSTMLayer layers
+ * Layer space for Bidirectional LSTM layers
  *
  * @author Alex Black
  */

@@ -25,7 +25,7 @@ import java.util.List;
 import org.deeplearning4j.nn.conf.layers.recurrent.BidirectionalLayer;
 
 /**
- * BidirectionalLayer layer wrapper. Can be used wrap an existing layer space, in the same way that
+ * Bidirectional layer wrapper. Can be used wrap an existing layer space, in the same way that
  * {@link BidirectionalLayer} wraps a DL4J layer
  *
  * @author Alex Black
