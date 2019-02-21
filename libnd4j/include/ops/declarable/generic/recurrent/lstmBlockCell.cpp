@@ -22,7 +22,7 @@
 #if NOT_EXCLUDED(OP_lstmBlockCell)
 
 #include <ops/declarable/CustomOperations.h>
-#include<ops/declarable/helpers/lstm.h>
+#include<ops/declarable/helpers/lstmBlock.h>
 
 namespace nd4j {
 namespace ops {
@@ -58,17 +58,16 @@ CUSTOM_OP_IMPL(lstmBlockCell, 8, 7, false, 2, 1) {
     const int rank     = xt->rankOf();
     const int bS       = xt->sizeAt(0);
     const int inSize   = xt->sizeAt(1);
-    const int numProj  = ht_1->sizeAt(1);
-    const int numUnits = ct_1->sizeAt(1);
+    const int numUnits = cLast->sizeAt(1);
 
     // input shapes validation
 	REQUIRE_TRUE(xt->rankOf()==2 && cLast->rankOf()==2 && yLast->rankOf()==2, 0, "Input ranks must be 2 for inputs 0/1/2 (x, cLast, outLast) - got %i, %i, %i", xt->rankOf(), cLast->rankOf(), yLast->rankOf());
 
-	//TODO: other checks
+	//TODO: other size checks
 
 
     // calculations
-    helpers::lstmCell(xt, cLast, yLast, W, Wci, Wcf, Wco, b, z, i, f, o, h, c, y, {(double)peephole, forgetBias, clippingCellValue});
+    helpers::lstmBlockCell(xt, cLast, yLast, W, Wci, Wcf, Wco, b, z, i, f, o, h, c, y, {(double)peephole, forgetBias, clippingCellValue});
 
     return Status::OK();
 }
@@ -90,16 +89,6 @@ DECLARE_SHAPE_FN(lstmBlockCell) {
 	auto Wcf  = inputShape->at(5);                    // weights - cell peephole (t-1) connections to forget gate, [numUnits]
 	auto Wco  = inputShape->at(6);                    // weights - cell peephole (t) connections to output gate, [numUnits]
     auto b    = inputShape->at(7);                    // biases, [4*numUnits]
-
-    auto xtShapeInfo   = inputShape->at(0);                   // input [bS x inSize]
-    auto ht_1ShapeInfo = inputShape->at(1);                   // previous cell output [bS x numProj],  that is at previous time step t-1, in case of projection=false -> numProj=numUnits!!!
-    auto ct_1ShapeInfo = inputShape->at(2);                   // previous cell state  [bS x numUnits], that is at previous time step t-1
-
-    auto WxShapeInfo   = inputShape->at(3);                   // input-to-hidden  weights, [inSize  x 4*numUnits]
-    auto WhShapeInfo   = inputShape->at(4);                   // hidden-to-hidden weights, [numProj x 4*numUnits]
-    auto WcShapeInfo   = inputShape->at(5);                   // diagonal weights for peephole connections [3*numUnits]
-    auto WpShapeInfo   = inputShape->at(6);                   // projection weights [numUnits x numProj]
-    auto bShapeInfo    = inputShape->at(7);                   // biases, [4*numUnits]
 
     //TODO: shape validation
 

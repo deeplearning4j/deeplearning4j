@@ -245,7 +245,7 @@ namespace nd4j {
 	   *    3: Output - output gate activations [bs, numUnits]
 	   *    4: Activations, pre input gate [bs, numUnits]
 	   *    5: Activations, cell state [bs, numUnits]
-	   *    6: Current cell output [bS, numProj], time t
+	   *    6: Current cell output [bS, numUnits], time t
        */                  
         #if NOT_EXCLUDED(OP_lstmBlockCell)
         DECLARE_CUSTOM_OP(lstmBlockCell, 8, 7, false, 2, 1);

@@ -27,6 +27,10 @@
 
 
 #include<ops/declarable/helpers/lstm.h>
+#include <VariableSpace.h>
+#include <ops/declarable/CustomOperations.h>
+#include<ops/declarable/helpers/transforms.h>
+#include <ops/declarable/helpers/legacy_helpers.h>
 
 namespace nd4j 	  {
 namespace ops 	  {
@@ -158,7 +162,7 @@ void lstmBlockCell(const NDArray* xt, const NDArray* cLast, const NDArray* yLast
     *    3: Output - output gate activations [bs, numUnits]
     *    4: Activations, pre input gate [bs, numUnits]
     *    5: Activations, cell state [bs, numUnits]
-    *    6: Current cell output [bS, numProj], time t
+    *    6: Current cell output [bS, numUnits], time t
     */
     const bool peephole   = (bool)params[0];        // if true, provide peephole connections
     const double forgetBias    = params[1];
@@ -167,45 +171,45 @@ void lstmBlockCell(const NDArray* xt, const NDArray* cLast, const NDArray* yLast
 
     const int bS   = xt->sizeAt(0);
     const int inSize      = xt->sizeAt(1);
-    const int numUnits    = ct_1->sizeAt(1);
+    const int numUnits    = cLast->sizeAt(1);
 
     //Concat inputs: [xt, yt-1]: concat([bs,nIn],[bs,nOut]) -> [bs, (nIn+nOut)]
     auto concat = new nd4j::ops::concat();
     auto variableSpace = new VariableSpace();
-    variableSpace->putVariable(-1, xt);
-    variableSpace->putVariable(-2, yLast);
+    variableSpace->putVariable(-1, const_cast<NDArray*>(xt));
+    variableSpace->putVariable(-2, const_cast<NDArray*>(yLast));
     Context block(1, variableSpace);
     block.getIArguments()->push_back(1);    //Dim 1
-    auto concatInputs = concat.execute(block);
+    auto concatInputs = concat->execute(block);
 
 
-    auto mmul = mmul(*concatInputs, *W);    //mmul: [bs, (nIn+numUnits)]* [(inSize+numUnits), 4*numUnits] = [bs, 4*numUnits]
+    auto m = mmul(*concatInputs, *W);    //mmul: [bs, (nIn+numUnits)]* [(inSize+numUnits), 4*numUnits] = [bs, 4*numUnits]
 
-    auto zz = z({0,0, 0,            numUnits});      	// z for input gate, [bS x numUnits]
-    auto zf = z({0,0, numUnits,   2*numUnits});      	// z for forget gate, [bS x numUnits]
-    auto zi = z({0,0, 2*numUnits, 3*numUnits});      	// z for input modulation gate, [bS x numUnits]
-    auto zo = z({0,0, 3*numUnits, 4*numUnits});      	// z for output gate, [bS x numUnits]
+    auto zz = m({0,0, 0,            numUnits});      	// z for input gate, [bS x numUnits]
+    auto zf = m({0,0, numUnits,   2*numUnits});      	// z for forget gate, [bS x numUnits]
+    auto zi = m({0,0, 2*numUnits, 3*numUnits});      	// z for input modulation gate, [bS x numUnits]
+    auto zo = m({0,0, 3*numUnits, 4*numUnits});      	// z for output gate, [bS x numUnits]
 
     if(peephole) {                                              // add peephole connections: z  +  ct_1*Wc
-        zi += (*ct_1) * (*Wci);       // add peephole connections to input gate
-        zf += (*ct_1) * (*Wcf);       // add peephole connections to forget gate
+        zi += (*cLast) * (*Wci);       // add peephole connections to input gate
+        zf += (*cLast) * (*Wcf);       // add peephole connections to forget gate
     }
 
     // current sell state = ft*ct_1 + it*activation(mmul(Wxc,xt) + mmul(Whc,ht_1) + bc
     if(forgetBias > 0.0){
         zft += forgetBias;
     }
-    c->assign( sigmoid(zft) * (*cLast) + sigmoid(zit) * activation(zct) );
+    c->assign( sigmoid(zf) * (*cLast) + sigmoid(zi) * activation(zz) );
 
     // if clipping value is provided then cell state is clipped by this value prior to the cell output activation
     if(clippingCellValue != 0.0)
         clipping(c, clippingCellValue);
 
     if(peephole)
-        zot += (*c) * (*Wcf);            // add peephole connections to output gate zot + ct*Wc
+        zo += (*c) * (*Wcf);            // add peephole connections to output gate zot + ct*Wc
 
     // current cell output = ot*activation(ct)
-    ht->assign(sigmoid(zo) * activation(*ct));
+    ht->assign(sigmoid(zo) * activation(*c));
 }
 
 
