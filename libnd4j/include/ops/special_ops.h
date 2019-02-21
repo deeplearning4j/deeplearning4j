@@ -2250,7 +2250,8 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
                 //to the back.
                 //permuted version of the x shape info for setting up the tad problem				
 				auto tadShapeShapeInfo = tadShapeInfo;
-				shape::TAD tad (xShapeBuffer, dimension, dimensionLength);
+				shape::TAD tad;
+				tad.init(xShapeBuffer, dimension, dimensionLength);
 				if(tadShapeInfo==nullptr) {
 					tad.createTadOnlyShapeInfo();
 					tad.createOffsets();
