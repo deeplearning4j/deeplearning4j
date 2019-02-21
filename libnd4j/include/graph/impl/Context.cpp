@@ -102,6 +102,9 @@ namespace nd4j {
 #ifdef HAVE_MKLDNN
             this->_mkldnnStreams.clear();
 #endif
+
+            for (auto v:_fastpath)
+                delete v;
         }
 
         bool Context::hasWorkspaceProvided() {
@@ -322,6 +325,20 @@ namespace nd4j {
             return false;
         }
 
+        NDArray* Context::getNDArray(int idx) {
+            return array(idx);
+        }
+
+        NDArray* Context::array(int idx) {
+            // we check for fastpath first
+            if (!_fastpath.empty() && _fastpath.size() > idx) {
+                return _fastpath[idx];
+            }
+
+            // if no luck for fastpath - return whatever is available
+            return getVariable(idx)->getNDArray();
+        }
+
         nd4j::memory::Workspace *Context::fWorkspace() {
             return workspace();
         }
@@ -332,6 +349,17 @@ namespace nd4j {
 
         nd4j::memory::Workspace *Context::oWorkspace() {
             return nullptr;
+        }
+
+
+        void Context::addInputArray(int index, void *buffer, void *shapeInfo, void *specialBuffer, void *specialShapeInfo) {
+            auto array = new NDArray(buffer, reinterpret_cast<Nd4jLong *>(shapeInfo));
+            array->triggerAllocationFlag(false, false);
+
+            if (_fastpath.size() < index + 1)
+                _fastpath.resize(index+1);
+
+            _fastpath[index] = array;
         }
     }
 }

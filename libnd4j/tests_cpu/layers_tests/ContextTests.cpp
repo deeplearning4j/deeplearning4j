@@ -282,5 +282,25 @@ TEST_F(ContextTests, Prototype_Test_2) {
     ASSERT_EQ(0, ctx.inputs()->size());
     ASSERT_EQ(0, ctx.getTArguments()->size());
     ASSERT_EQ(0, ctx.getIArguments()->size());
+}
 
+TEST_F(ContextTests, test_short_context_1) {
+    auto array0 = NDArrayFactory::create<float>('c', {3, 2}, {1.f, 2.f, 3.f, 4.f, 5.f, 6.f});
+    auto array1 = NDArrayFactory::create<float>('c', {3, 2}, {-1.f, -2.f, -3.f, -4.f, -5.f, -6.f});
+    Context ctx(1);
+
+    ctx.addInputArray(0, array0.buffer(), array0.shapeInfo(), nullptr, nullptr);
+    ctx.addInputArray(1, array1.buffer(), array1.shapeInfo(), nullptr, nullptr);
+
+    auto input0 = ctx.array(0);
+    ASSERT_TRUE(input0 != nullptr);
+
+    auto input1 = ctx.array(1);
+    ASSERT_TRUE(input1 != nullptr);
+
+    ASSERT_TRUE(input0->buffer() == array0.buffer());
+    ASSERT_TRUE(input0->shapeInfo() == array0.shapeInfo());
+
+    ASSERT_TRUE(input1->buffer() == array1.buffer());
+    ASSERT_TRUE(input1->shapeInfo() == array1.shapeInfo());
 }

@@ -22,6 +22,7 @@
 #define LIBND4J_CONTEXT_H
 
 #include <vector>
+#include <NDArray.h>
 #include <graph/Variable.h>
 #include <graph/VariableSpace.h>
 #include <graph/ContextPrototype.h>
@@ -60,6 +61,8 @@ namespace nd4j {
 #ifdef HAVE_MKLDNN
             std::vector<nd4j::MKLDNNStream> _mkldnnStreams;
 #endif
+
+            std::vector<NDArray*> _fastpath;
         public:
             // TODO: maybe override new here as well?
 
@@ -140,9 +143,18 @@ namespace nd4j {
             Variable* getVariable(int idx);
             Variable* variable(int idx);
 
+            /**
+             * This method is shortcut to getVariable(int idx);
+             *
+             * + it check fastpath for array availability (preferred)
+             * @return
+             */
+            NDArray* getNDArray(int idx);
+            NDArray* array(int idx);
+
 
             /**
-             * This method fetches variable from Workspace DIRECTLY
+             * This method fetches variable from VariableSpace DIRECTLY
              * @param p
              * @return
              */
@@ -160,6 +172,10 @@ namespace nd4j {
             bool isValueAvailable(int idx = 0);
 
             Variable* ensureVariable(int idx = 0);
+
+
+            // methods used in java interop
+            void addInputArray(int index, void *buffer, void *shapeInfo, void *specialBuffer, void *specialShapeInfo);
         };
     }
 }
