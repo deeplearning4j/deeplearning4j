@@ -2087,6 +2087,7 @@ void NativeOps::specialConcat(
 void NativeOps::tadOnlyShapeInfo(Nd4jLong *dXShapeInfo, int *dimension, int dimensionLength, Nd4jLong *target, Nd4jLong *offsets) {
     nd4j_printf("START ------->\n","");
     nd4j_printf("Shape pointer: [%p]\n", dXShapeInfo);
+	nd4j_printf("Dimension pointer: [%p]\n", dimension);
     nd4j_printf("shape rank: [%i]; dimLength: [%i]\n", shape::rank(dXShapeInfo), dimensionLength);
     shape::printShapeInfoLinear(dXShapeInfo);
     fflush(stdout);
@@ -2094,7 +2095,8 @@ void NativeOps::tadOnlyShapeInfo(Nd4jLong *dXShapeInfo, int *dimension, int dime
     fflush(stdout);
     nd4j_printf("END ------->\n","");
 
-	shape::TAD tad(dXShapeInfo, dimension, dimensionLength);
+	shape::TAD tad;
+	tad.init(dXShapeInfo, dimension, dimensionLength);
 
 	nd4j_printf("Creating TAD shape...\n","");
 	tad.createTadOnlyShapeInfo();
