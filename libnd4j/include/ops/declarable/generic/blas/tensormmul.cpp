@@ -47,7 +47,7 @@ namespace nd4j {
 
             // nd4j::MmulHelper<T>::tensorDot(a, b, c, axes_0, axes_1);
             auto result = nd4j::MmulHelper::tensorDot(a, b, axes_0, axes_1);
-            *c = *result;
+            c->assign(result);
 
             STORE_RESULT(*c);
             delete result;  

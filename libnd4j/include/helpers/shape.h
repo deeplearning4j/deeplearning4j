@@ -4104,10 +4104,10 @@ INLINEDEF _CUDA_HD bool areStridesDefault(const Nd4jLong* shapeInfo) {
         for (int e = 0; e < newRank; e++)
             target[cnt++] = newStrides[e];
 
-        target[shape::shapeInfoLength(newRank) - 3] = 0;
-        target[shape::shapeInfoLength(newRank) - 2] = 0;
+        target[shape::shapeInfoLength(newRank) - 3] = oldShape[shape::shapeInfoLength(oldRank) - 3];
         target[shape::shapeInfoLength(newRank) - 1] = isFOrder ? 102 : 99;
-        nd4j::ArrayOptions::setDataType(target, nd4j::ArrayOptions::dataType(oldShape));
+        target[shape::shapeInfoLength(newRank) - 2] = (shape::order(oldShape) == shape::order(target)) ? shape::elementWiseStride(oldShape) : 0;
+        // nd4j::ArrayOptions::setDataType(target, nd4j::ArrayOptions::dataType(oldShape));
 
         delete[] olddims;
         delete[] oldstrides;

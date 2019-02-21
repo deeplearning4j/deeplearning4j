@@ -38,33 +38,28 @@ nd4j::NDArray* nd4j::MmulHelper::tensorDot(const nd4j::NDArray* A, const nd4j::N
 
 //////////////////////////////////////////////////////////////////////////
 nd4j::NDArray* nd4j::MmulHelper::tensorDot(const nd4j::NDArray* a, const nd4j::NDArray* b, const std::vector<int>& axes_0, const std::vector<int>& axes_1) {
+
     std::vector<int> permutAt, permutBt;
     std::vector<Nd4jLong> shapeAt, shapeBt;        
+
     auto outShape = ShapeUtils::evalShapeForTensorDot(a, b, axes_0, axes_1, permutAt, permutBt, shapeAt, shapeBt);
-    NDArray* aPR(const_cast<NDArray*>(a)), *bPR(const_cast<NDArray*>(b));
-    aPR = a->permute(permutAt);        
-    bPR = b->permute(permutBt);
+    
+    NDArray* aPR = a->permute(permutAt);        
+    NDArray* bPR = b->permute(permutBt);
     
     // check whether reshape is necessary
-    if(!aPR->isSameShape(shapeAt)) {
-        if(aPR == a)
-            aPR = a->reshape('c', shapeAt);
-        else 
-            aPR->reshapei('c', shapeAt);
-    }
-    if(!bPR->isSameShape(shapeBt)) {
-        if(bPR == b)
-            bPR = b->reshape('c', shapeBt);
-        else 
-            bPR->reshapei('c', shapeBt);                
-    }
-    NDArray* c = mmul(aPR, bPR, nullptr, 1.0, 0.0);
-    c->reshapei('c', outShape);
+    if(!aPR->isSameShape(shapeAt))
+        aPR->reshapei('c', shapeAt);    
+    if(!bPR->isSameShape(shapeBt)) 
+        bPR->reshapei('c', shapeBt);                
     
-    if(aPR != a)
-        delete aPR;        
-    if(bPR != b)
-        delete bPR;
+    NDArray* c = mmul(aPR, bPR, nullptr, 1.0, 0.0);
+
+    c->reshapei('c', outShape);
+        
+    delete aPR;        
+    delete bPR;
+
     return c;
 }
 
