@@ -647,21 +647,21 @@ static void conv2d_(nd4j::graph::Context& block, const NDArray* input, const NDA
         // permutForOutput = {0, indOoH, indOoH+1, indIOioC};                          // [bS, oC, oH, oW] -> [bS, oH, oW, oC]
         permutForOutput = {0, 3, 1, 2};                                             // [bS, oH, oW, oC] -> [bS, oC, oH, oW]
 
-    NDArray col('c', {bS, oH, oW, iC, kH, kW}, input->dataType(), input->getWorkspace());
-    NDArray* colP = col.permute({0, 3, 4, 5, 1, 2});            // {bS, iC, kH, kW, oH, oW}    
-    NDArray outTemp('f', {bS*oH*oW, oC}, output->dataType(), output->getWorkspace());
+    NDArray col('c', {bS, oH, oW, kH, kW, iC}, input->dataType(), input->getWorkspace());
+    NDArray* colP = col.permute({0, 5, 3, 4, 1, 2});            // {bS, iC, kH, kW, oH, oW}    
+    NDArray mmulResult('f', {bS*oH*oW, oC}, output->dataType(), output->getWorkspace());
 
     //----- calculation of output -----//
     graph::LaunchContext ctx;
-    helpers::im2col(ctx, *input, *colP, kH, kW, sH, sW, pH, pW, dH, dW, NDArrayFactory::create(0.f, input->getWorkspace()));  // [bS, iC, iH, iW] is convoluted to [bS, iC, kH, kW, oH, oW]
-    // MmulHelper::tensorDot(&col, weights, &outTemp, {3,4,5}, {indWiC, indWkH, indWkH+1}, {}); // [bS, iC, kH, kW, oH, oW] x [kH, kW, iC, oC]/[oC, iC, kH, kW] = [bS, oH, oW, oC]
-    MmulHelper::tensorDot(&col, weights, &outTemp, 'c', 'f', 'f', {bS*oH*oW, iC*kH*kW}, {kH*kW*iC, oC});     
+    helpers::im2col(ctx, *input, *colP, kH, kW, sH, sW, pH, pW, dH, dW, NDArrayFactory::create(0.f, input->getWorkspace()));  // [bS, iC, iH, iW] is convoluted to [bS, iC, kH, kW, oH, oW]        
+    MmulHelper::tensorDot(&col, weights, &mmulResult, {3,4,5}, {0,1,2}, {}, col.ordering(), weights->ordering(), mmulResult.ordering()); // [bS, oH, oW, kH, kW, iC] x [kH, kW, iC, oC] = [bS, oH, oW, oC]
 
     //----- assign outTemp to output  -----//
-    outTemp.reshapei({bS, oH, oW, oC});
-    if(isNCHW)
-        outTemp.permutei(permutForOutput);
-    output->assign(outTemp);
+    if(isNCHW) {
+        mmulResult.reshapei({bS, oH, oW, oC});
+        mmulResult.permutei(permutForOutput);        
+    }
+    output->assign(mmulResult);
 
     //----- add biases if required -----//
     if(bias)
