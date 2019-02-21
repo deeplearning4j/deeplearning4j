@@ -42,7 +42,7 @@
         <dependency>
             <groupId>org.nd4j</groupId>
             <artifactId>nd4j-native</artifactId>
-            <version>${nd4j.version}</version>
+            <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>com.google.code.findbugs</groupId>
