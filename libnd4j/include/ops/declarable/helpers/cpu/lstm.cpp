@@ -207,12 +207,6 @@ void lstmBlockCell(const NDArray* xt, const NDArray* cLast, const NDArray* yLast
     auto zi = m({0,0, 2*numUnits, 3*numUnits});      	// z for input modulation gate, [bS, numUnits]
     auto zo = m({0,0, 3*numUnits, 4*numUnits});      	// z for output gate, [bS, numUnits]
 
-    const_cast<NDArray*>(z)->assign(&zz);
-    const_cast<NDArray*>(i)->assign(&zi);
-    const_cast<NDArray*>(f)->assign(&zf);
-    const_cast<NDArray*>(o)->assign(&zo);
-
-
     if(peephole) {                                              // add peephole connections: z  +  ct_1*Wc
         nd4j_printf("Before peepholes\n","");
         zi += (*cLast) * (*Wci);       // add peephole connections to input gate
@@ -224,6 +218,12 @@ void lstmBlockCell(const NDArray* xt, const NDArray* cLast, const NDArray* yLast
         nd4j_printf("Before forget bias\n","");
         zf += forgetBias;
     }
+
+    const_cast<NDArray*>(z)->assign(&zz);
+    const_cast<NDArray*>(i)->assign(&zi);
+    const_cast<NDArray*>(f)->assign(&zf);
+    const_cast<NDArray*>(o)->assign(&zo);
+
     nd4j_printf("Before c assign call\n","");
     c->assign( sigmoid(zf) * (*cLast) + sigmoid(zi) * activation(zz) );
 

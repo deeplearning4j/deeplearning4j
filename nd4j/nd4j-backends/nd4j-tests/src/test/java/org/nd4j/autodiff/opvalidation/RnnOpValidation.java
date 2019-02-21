@@ -26,6 +26,7 @@ import org.nd4j.linalg.api.ops.impl.layers.recurrent.config.LSTMBlockCellConfigu
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.indexing.NDArrayIndex;
+import org.nd4j.linalg.ops.transforms.Transforms;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -71,7 +72,7 @@ public class RnnOpValidation extends BaseOpValidation {
                 .clippingCellValue(0.0)
                 .build();
 
-        List<SDVariable> v = sd.rnn().lstmBlock("lstm", conf);
+        List<SDVariable> v = sd.rnn().lstmBlock("lstm", conf);  //Output order: z, i, f, o, h, c, y
         List<String> toExec = new ArrayList<>();
         for(SDVariable sdv : v){
             toExec.add(sdv.getVarName());
@@ -80,6 +81,9 @@ public class RnnOpValidation extends BaseOpValidation {
         //Test forward pass:
         Map<String,INDArray> m = sd.exec(null, toExec);
 
+        //Weights and bias order: [z, f, i, o]
+
+        //Block input (z):
         INDArray wz_x = W.getArr().get(NDArrayIndex.interval(0,nIn), NDArrayIndex.interval(0, nOut));           //Input weights
         INDArray wz_r = W.getArr().get(NDArrayIndex.interval(nIn,nIn+nOut), NDArrayIndex.interval(0, nOut));    //Recurrent weights
         INDArray bz = b.getArr().get(NDArrayIndex.interval(0, nOut));
@@ -89,6 +93,48 @@ public class RnnOpValidation extends BaseOpValidation {
 
         INDArray zAct = m.get(toExec.get(0));
         assertEquals(zExp, zAct);
+
+        //Input modulation gate (pre sigmoid) - i: (note: peephole input - last time step)
+        INDArray wi_x = W.getArr().get(NDArrayIndex.interval(0,nIn), NDArrayIndex.interval(2*nOut, 3*nOut));           //Input weights
+        INDArray wi_r = W.getArr().get(NDArrayIndex.interval(nIn,nIn+nOut), NDArrayIndex.interval(2*nOut, 3*nOut));    //Recurrent weights
+        INDArray bi = b.getArr().get(NDArrayIndex.interval(2*nOut, 3*nOut));
+
+        INDArray iExp = x.getArr().mmul(wi_x).addiRowVector(bi);        //[mb,nIn]*[nIn, nOut] + [nOut]
+        iExp.addi(yLast.getArr().mmul(wi_r));   //[mb,nOut]*[nOut,nOut]
+        iExp.addi(cLast.getArr().mulRowVector(Wci.getArr()));    //Peephole
+        assertEquals(iExp, m.get(toExec.get(2)));
+
+
+        //Activations, pre input gate: tanh(z) .* sigmoid(i)
+        INDArray hExp = Transforms.tanh(zExp,true).muli(Transforms.sigmoid(iExp,true));
+        INDArray hAct = m.get(toExec.get(4));
+        assertEquals(hExp, hAct);
+
+        //Forget gate: (note: peephole input - last time step
+        INDArray wf_x = W.getArr().get(NDArrayIndex.interval(0,nIn), NDArrayIndex.interval(1*nOut, 2*nOut));           //Input weights
+        INDArray wf_r = W.getArr().get(NDArrayIndex.interval(nIn,nIn+nOut), NDArrayIndex.interval(1*nOut, 2*nOut));    //Recurrent weights
+        INDArray bf = b.getArr().get(NDArrayIndex.interval(1*nOut, 2*nOut));
+
+        INDArray fExp = x.getArr().mmul(wf_x).addiRowVector(bf);        //[mb,nIn]*[nIn, nOut] + [nOut]
+        fExp.addi(yLast.getArr().mmul(wf_r));   //[mb,nOut]*[nOut,nOut]
+        fExp.muliColumnVector(Wcf.getArr().mul(cLast.getArr()));
+        assertEquals(fExp, m.get(toExec.get(3)));
+
+        //Cell state: h + cLast .* forgetGate
+        INDArray cExp = hExp.add(cLast.getArr().mul(fExp));
+        assertEquals(cExp, m.get(toExec.get(5)));
+
+
+        //Output gate: (note: peephole input: current time step)
+        INDArray wo_x = W.getArr().get(NDArrayIndex.interval(0,nIn), NDArrayIndex.interval(3*nOut, 4*nOut));           //Input weights
+        INDArray wo_r = W.getArr().get(NDArrayIndex.interval(nIn,nIn+nOut), NDArrayIndex.interval(3*nOut, 4*nOut));    //Recurrent weights
+        INDArray bo = b.getArr().get(NDArrayIndex.interval(3*nOut, 4*nOut));
+
+        INDArray oExp = x.getArr().mmul(wo_x).addiRowVector(bo);        //[mb,nIn]*[nIn, nOut] + [nOut]
+        oExp.addi(yLast.getArr().mmul(wo_r));   //[mb,nOut]*[nOut,nOut]
+        oExp.addi(cExp.mul(Wco.getArr()));
+
+        assertEquals(iExp, m.get(toExec.get(4)));
 
     }
 
