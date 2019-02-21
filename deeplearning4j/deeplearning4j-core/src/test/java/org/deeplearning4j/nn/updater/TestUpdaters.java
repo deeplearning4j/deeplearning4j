@@ -1035,7 +1035,7 @@ public class TestUpdaters extends BaseDL4JTest {
         assertEquals(8*7 + 7, l.get(2).length());
 
         INDArray view = ((BaseMultiLayerUpdater) net.getUpdater()).getFlattenedGradientsView();
-        view.assign(Nd4j.linspace(1, view.length(), view.length()));
+        view.assign(Nd4j.linspace(1, view.length(), view.length(), Nd4j.dataType()));
 
         INDArray expView1 = view.get(point(0), interval(0, 10*9 + 9 + 2*9));
         assertEquals(expView1, l.get(0));
@@ -1091,7 +1091,7 @@ public class TestUpdaters extends BaseDL4JTest {
         assertEquals(5*4*2*2 + 4 + 2*4, l.get(2).length());
 
         INDArray view = ((BaseMultiLayerUpdater) net.getUpdater()).getFlattenedGradientsView();
-        view.assign(Nd4j.linspace(1, view.length(), view.length()));
+        view.assign(Nd4j.linspace(1, view.length(), view.length(), Nd4j.dataType()));
 
         INDArray expView1 = view.get(point(0), interval(0, 2*6));
         assertEquals(expView1, l.get(0));

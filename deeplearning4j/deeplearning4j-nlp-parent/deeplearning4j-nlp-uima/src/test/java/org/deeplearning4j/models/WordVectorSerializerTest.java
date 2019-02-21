@@ -599,6 +599,21 @@ public class WordVectorSerializerTest {
         assertEquals(arrayLive, arrayStatic);
     }
 
+    @Test
+    public void testStaticLoaderFromStream() throws Exception {
+
+        logger.info("Executor name: {}", Nd4j.getExecutioner().getClass().getSimpleName());
+
+        WordVectors vectorsLive = WordVectorSerializer.readWord2VecModel(binaryFile);
+        WordVectors vectorsStatic = WordVectorSerializer.loadStaticModel(new FileInputStream(binaryFile));
+
+        INDArray arrayLive = vectorsLive.getWordVectorMatrix("Morgan_Freeman");
+        INDArray arrayStatic = vectorsStatic.getWordVectorMatrix("Morgan_Freeman");
+
+        assertNotEquals(null, arrayLive);
+        assertEquals(arrayLive, arrayStatic);
+    }
+
     /**
      * This method tests CSV file loading as static model
      *

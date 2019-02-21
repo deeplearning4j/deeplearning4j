@@ -2,14 +2,11 @@ package org.nd4j.autodiff.samediff.ops;
 
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.linalg.api.ops.impl.layers.recurrent.GRUCell;
-import org.nd4j.linalg.api.ops.impl.layers.recurrent.LSTMCell;
-import org.nd4j.linalg.api.ops.impl.layers.recurrent.SRU;
-import org.nd4j.linalg.api.ops.impl.layers.recurrent.SRUCell;
-import org.nd4j.linalg.api.ops.impl.layers.recurrent.config.GRUCellConfiguration;
-import org.nd4j.linalg.api.ops.impl.layers.recurrent.config.LSTMCellConfiguration;
-import org.nd4j.linalg.api.ops.impl.layers.recurrent.config.SRUCellConfiguration;
-import org.nd4j.linalg.api.ops.impl.layers.recurrent.config.SRUConfiguration;
+import org.nd4j.linalg.api.ops.impl.layers.recurrent.*;
+import org.nd4j.linalg.api.ops.impl.layers.recurrent.config.*;
+
+import java.util.Arrays;
+import java.util.List;
 
 /**
  * SameDiff Recurrent Neural Network operations<br>
@@ -56,6 +53,11 @@ public class SDRNN extends SDOps {
      */
     public SDVariable lstm(String baseName, LSTMCellConfiguration configuration) {
         return new LSTMCell(sd, configuration).outputVariables(baseName)[0];
+    }
+
+    public List<SDVariable> lstmBlock(String name, LSTMBlockCellConfiguration configuration){
+        SDVariable[] v = new LSTMBlockCell(sd, configuration).outputVariables();
+        return Arrays.asList(v);
     }
 
 

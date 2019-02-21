@@ -2671,6 +2671,26 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
     public native @Cast("Nd4jPointer") Pointer createUtf8String(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("char*") String string, int length);
     public native @Cast("Nd4jPointer") Pointer createUtf8String(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("char*") BytePointer string, int length);
     public native void deleteUtf8String(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jPointer") Pointer ptr);
+
+    public native void scatterUpdate(@Cast("Nd4jPointer*") PointerPointer extraPointers, int opCode, int numOfSubArrs,
+                          Pointer hX, @Cast("Nd4jLong*") LongPointer hXShapeInfo, @Cast("Nd4jLong*") LongPointer hXOffsets,
+                          Pointer dX, @Cast("Nd4jLong*") LongPointer dXShapeInfo, @Cast("Nd4jLong*") LongPointer dXOffsets,
+                          Pointer hY, @Cast("Nd4jLong*") LongPointer hYShapeInfo, @Cast("Nd4jLong*") LongPointer hYOffsets,
+                          Pointer dY, @Cast("Nd4jLong*") LongPointer dYShapeInfo, @Cast("Nd4jLong*") LongPointer dYOffsets,
+                          IntPointer hIindexes, IntPointer dIindexes);
+    public native void scatterUpdate(@Cast("Nd4jPointer*") PointerPointer extraPointers, int opCode, int numOfSubArrs,
+                          Pointer hX, @Cast("Nd4jLong*") LongBuffer hXShapeInfo, @Cast("Nd4jLong*") LongBuffer hXOffsets,
+                          Pointer dX, @Cast("Nd4jLong*") LongBuffer dXShapeInfo, @Cast("Nd4jLong*") LongBuffer dXOffsets,
+                          Pointer hY, @Cast("Nd4jLong*") LongBuffer hYShapeInfo, @Cast("Nd4jLong*") LongBuffer hYOffsets,
+                          Pointer dY, @Cast("Nd4jLong*") LongBuffer dYShapeInfo, @Cast("Nd4jLong*") LongBuffer dYOffsets,
+                          IntBuffer hIindexes, IntBuffer dIindexes);
+    public native void scatterUpdate(@Cast("Nd4jPointer*") PointerPointer extraPointers, int opCode, int numOfSubArrs,
+                          Pointer hX, @Cast("Nd4jLong*") long[] hXShapeInfo, @Cast("Nd4jLong*") long[] hXOffsets,
+                          Pointer dX, @Cast("Nd4jLong*") long[] dXShapeInfo, @Cast("Nd4jLong*") long[] dXOffsets,
+                          Pointer hY, @Cast("Nd4jLong*") long[] hYShapeInfo, @Cast("Nd4jLong*") long[] hYOffsets,
+                          Pointer dY, @Cast("Nd4jLong*") long[] dYShapeInfo, @Cast("Nd4jLong*") long[] dYOffsets,
+                          int[] hIindexes, int[] dIindexes);
+
 }
 
 
@@ -6421,9 +6441,13 @@ public static final int PREALLOC_SIZE = 33554432;
     @Namespace("shape") public static native @Cast("bool") boolean equalsTypesAndShapesSoft(@Cast("const Nd4jLong*") LongBuffer shapeA, @Cast("const Nd4jLong*") LongBuffer shapeB);
     @Namespace("shape") public static native @Cast("bool") boolean equalsTypesAndShapesSoft(@Cast("const Nd4jLong*") long[] shapeA, @Cast("const Nd4jLong*") long[] shapeB);
 
-    @Namespace("shape") public static native @Cast("bool") boolean equalsStrict(@Cast("Nd4jLong*") LongPointer shapeA, @Cast("Nd4jLong*") LongPointer shapeB);
-    @Namespace("shape") public static native @Cast("bool") boolean equalsStrict(@Cast("Nd4jLong*") LongBuffer shapeA, @Cast("Nd4jLong*") LongBuffer shapeB);
-    @Namespace("shape") public static native @Cast("bool") boolean equalsStrict(@Cast("Nd4jLong*") long[] shapeA, @Cast("Nd4jLong*") long[] shapeB);
+    @Namespace("shape") public static native @Cast("bool") boolean equalsStrict(@Cast("const Nd4jLong*") LongPointer shapeA, @Cast("const Nd4jLong*") LongPointer shapeB);
+    @Namespace("shape") public static native @Cast("bool") boolean equalsStrict(@Cast("const Nd4jLong*") LongBuffer shapeA, @Cast("const Nd4jLong*") LongBuffer shapeB);
+    @Namespace("shape") public static native @Cast("bool") boolean equalsStrict(@Cast("const Nd4jLong*") long[] shapeA, @Cast("const Nd4jLong*") long[] shapeB);
+    @Namespace("shape") public static native @Cast("bool") boolean haveSameOffsets(@Cast("const Nd4jLong*") LongPointer shapeA, @Cast("const Nd4jLong*") LongPointer shapeB);
+    @Namespace("shape") public static native @Cast("bool") boolean haveSameOffsets(@Cast("const Nd4jLong*") LongBuffer shapeA, @Cast("const Nd4jLong*") LongBuffer shapeB);
+    @Namespace("shape") public static native @Cast("bool") boolean haveSameOffsets(@Cast("const Nd4jLong*") long[] shapeA, @Cast("const Nd4jLong*") long[] shapeB);
+
 
     @Namespace("shape") public static native int sizeAt(@Cast("const Nd4jLong*") LongPointer shape, int dim);
     @Namespace("shape") public static native int sizeAt(@Cast("const Nd4jLong*") LongBuffer shape, int dim);
@@ -6582,7 +6606,7 @@ public static final int PREALLOC_SIZE = 33554432;
  * @param stride the stride
  * @param isFOrder 0 or 1 for whether the array is f
  * ordered or not
- * @return -1 if there is no element wise stride the
+ * @return 0 if there is no element wise stride the
  * element wise stride of reshape(1,length) otherwise
  */
     @Namespace("shape") public static native int computeElementWiseStride(int rank, @Cast("Nd4jLong*") LongPointer shape, @Cast("Nd4jLong*") LongPointer stride, int isFOrder);
@@ -6597,7 +6621,7 @@ public static final int PREALLOC_SIZE = 33554432;
  * @param stride the stride
  * @param isFOrder 0 or 1 for whether the array is f
  * ordered or not
- * @return -1 if there is no element wise stride the
+ * @return 0 if there is no element wise stride the
  * element wise stride of reshape(1,length) otherwise
  */
     @Namespace("shape") public static native int computeElementWiseStride(int rank, @Cast("Nd4jLong*") LongPointer shape, @Cast("Nd4jLong*") LongPointer stride, int isFOrder, @Cast("Nd4jLong*") LongPointer dimension, int dimensionLength);
@@ -6855,6 +6879,9 @@ public static final int PREALLOC_SIZE = 33554432;
     @Namespace("shape") public static native int rank(@Cast("const Nd4jLong*") LongPointer buffer);
     @Namespace("shape") public static native int rank(@Cast("const Nd4jLong*") LongBuffer buffer);
     @Namespace("shape") public static native int rank(@Cast("const Nd4jLong*") long[] buffer);
+    @Namespace("shape") public static native int rank(@Const IntPointer buffer);
+    @Namespace("shape") public static native int rank(@Const IntBuffer buffer);
+    @Namespace("shape") public static native int rank(@Const int[] buffer);
 
 /**
  * Converts a raw int buffer of the layout:
@@ -7430,12 +7457,18 @@ public static final int PREALLOC_SIZE = 33554432;
    /* calculates an array buffer offset for given "index" using following formula: offset = coord_0*stride_0 + coord_1*stride_1 + ... + coord_{rank-1}*stride_{rank-1}
     * arrLen - array length
    */
+    @Namespace("shape") public static native @Cast("uint") int getIndexOffset(@Cast("uint") int index, @Cast("const uint*") IntPointer shapeInfo, @Cast("uint") int arrLen);
+    @Namespace("shape") public static native @Cast("uint") int getIndexOffset(@Cast("uint") int index, @Cast("const uint*") IntBuffer shapeInfo, @Cast("uint") int arrLen);
+    @Namespace("shape") public static native @Cast("uint") int getIndexOffset(@Cast("uint") int index, @Cast("const uint*") int[] shapeInfo, @Cast("uint") int arrLen);
     @Namespace("shape") public static native @Cast("Nd4jLong") long getIndexOffset(@Cast("Nd4jLong") long index, @Cast("const Nd4jLong*") LongPointer shapeInfo, @Cast("Nd4jLong") long arrLen);
     @Namespace("shape") public static native @Cast("Nd4jLong") long getIndexOffset(@Cast("Nd4jLong") long index, @Cast("const Nd4jLong*") LongBuffer shapeInfo, @Cast("Nd4jLong") long arrLen);
     @Namespace("shape") public static native @Cast("Nd4jLong") long getIndexOffset(@Cast("Nd4jLong") long index, @Cast("const Nd4jLong*") long[] shapeInfo, @Cast("Nd4jLong") long arrLen);
     @Namespace("shape") public static native @Cast("Nd4jLong") long getIndexOrderOffset(@Cast("Nd4jLong") long index, @Cast("const Nd4jLong*") LongPointer shapeInfo, @Cast("Nd4jLong") long arrLen, byte order);
     @Namespace("shape") public static native @Cast("Nd4jLong") long getIndexOrderOffset(@Cast("Nd4jLong") long index, @Cast("const Nd4jLong*") LongBuffer shapeInfo, @Cast("Nd4jLong") long arrLen, byte order);
     @Namespace("shape") public static native @Cast("Nd4jLong") long getIndexOrderOffset(@Cast("Nd4jLong") long index, @Cast("const Nd4jLong*") long[] shapeInfo, @Cast("Nd4jLong") long arrLen, byte order);
+    @Namespace("shape") public static native @Cast("Nd4jLong") long indexOffset(@Cast("Nd4jLong") long index, @Cast("const Nd4jLong*") LongPointer lShapeInfo, @Cast("const uint*") IntPointer uShapeInfo, @Cast("Nd4jLong") long arrLen, @Cast("const bool") boolean useUnsigned);
+    @Namespace("shape") public static native @Cast("Nd4jLong") long indexOffset(@Cast("Nd4jLong") long index, @Cast("const Nd4jLong*") LongBuffer lShapeInfo, @Cast("const uint*") IntBuffer uShapeInfo, @Cast("Nd4jLong") long arrLen, @Cast("const bool") boolean useUnsigned);
+    @Namespace("shape") public static native @Cast("Nd4jLong") long indexOffset(@Cast("Nd4jLong") long index, @Cast("const Nd4jLong*") long[] lShapeInfo, @Cast("const uint*") int[] uShapeInfo, @Cast("Nd4jLong") long arrLen, @Cast("const bool") boolean useUnsigned);
     
     /**
    * Compute the real linear indices for the given shape and stride
@@ -7795,7 +7828,7 @@ public static final int PREALLOC_SIZE = 33554432;
         shape::copyOf(rearrageRank,rearrange, tmpBuffer);
         shape::doPermuteSwap(rearrageRank,&stride,tmpBuffer);
 
-        shapeRef[shapeInfoLength(rearrageRank) - 2] = -1;
+        shapeRef[shapeInfoLength(rearrageRank) - 2] = 0;
         shapeRef[shape::shapeInfoLength(rearrageRank) - 1] = shape::getOrder(rearrageRank,shape,stride,1);
     }
     */

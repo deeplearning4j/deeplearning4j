@@ -1619,6 +1619,14 @@ public:
     //void fillUtf8String(Nd4jPointer *extraPointers, const char **string, int numStrings, Nd4jPointer buffer);
     Nd4jPointer createUtf8String(Nd4jPointer *extraPointers, const char *string, int length);
     void deleteUtf8String(Nd4jPointer *extraPointers, Nd4jPointer ptr);
+
+    void scatterUpdate(Nd4jPointer *extraPointers, int opCode, int numOfSubArrs,
+                      void* hX, Nd4jLong* hXShapeInfo, Nd4jLong* hXOffsets,
+                      void* dX, Nd4jLong* dXShapeInfo, Nd4jLong* dXOffsets,
+                      void* hY, Nd4jLong* hYShapeInfo, Nd4jLong* hYOffsets,
+                      void* dY, Nd4jLong* dYShapeInfo, Nd4jLong* dYOffsets,
+                      int* hIindexes, int* dIindexes);
+
 };
 
 

@@ -34,6 +34,7 @@
 #include <pointercast.h>
 #include <pairwise_util.h>
 #include <types/types.h>
+#include <ops/declarable/helpers/transforms.h>
 
 
 #include <fcntl.h>
@@ -2466,6 +2467,64 @@ void NativeOps::deleteUtf8String(Nd4jPointer *extraPointers, Nd4jPointer ptr) {
     delete(reinterpret_cast<nd4j::utf8string*>(ptr));
 }
 
+
+////////////////////////////////////////////////////////////////////////
+void NativeOps::scatterUpdate(Nd4jPointer *extraPointers, int opCode, int numOfSubArrs,
+                      void* hX, Nd4jLong* hXShapeInfo, Nd4jLong* hXOffsets,
+                      void* dX, Nd4jLong* dXShapeInfo, Nd4jLong* dXOffsets,
+                      void* hY, Nd4jLong* hYShapeInfo, Nd4jLong* hYOffsets,
+                      void* dY, Nd4jLong* dYShapeInfo, Nd4jLong* dYOffsets,
+                      int* hIindexes, int* dIindexes) {
+
+
+    int numThreads = omp_get_max_threads();
+
+    #pragma omp parallel default(shared)
+    {
+        for (int i = 0; i < numOfSubArrs; ++i) {
+
+            int threadIndex = omp_get_thread_num();
+            const auto xIndex = hIindexes[i];
+            const bool isOwner = xIndex < numThreads ? threadIndex == xIndex : threadIndex == xIndex % numThreads;
+
+            if (!isOwner)
+                continue;
+
+            NDArray inSubArr(reinterpret_cast<int8_t *>(hX) + (hXOffsets[hIindexes[i]] * DataTypeUtils::sizeOf(hXShapeInfo)), hXShapeInfo);
+            NDArray updSubArr(reinterpret_cast<int8_t *>(hY) + (hYOffsets[i] * DataTypeUtils::sizeOf(hXShapeInfo)), hYShapeInfo);
+
+            if (inSubArr.lengthOf() != updSubArr.lengthOf()) {
+                continue;
+            }
+
+            switch (opCode) {
+                case 0:
+                    inSubArr.applyPairwiseTransform(pairwise::Add, &updSubArr, &inSubArr, nullptr);
+                    break;
+                case 1:
+                    inSubArr.applyPairwiseTransform(pairwise::Subtract, &updSubArr, &inSubArr, nullptr);
+                    break;
+                case 2:
+                    inSubArr.applyPairwiseTransform(pairwise::Multiply, &updSubArr, &inSubArr, nullptr);
+                    break;
+                case 3:
+                    inSubArr.applyPairwiseTransform(pairwise::Divide, &updSubArr, &inSubArr, nullptr);
+                    break;
+                case 4:
+                    inSubArr.applyPairwiseTransform(pairwise::ReverseSubtract, &updSubArr, &inSubArr, nullptr);
+                    break;
+                case 5:
+                    inSubArr.applyPairwiseTransform(pairwise::ReverseDivide, &updSubArr, &inSubArr, nullptr);
+                    break;
+                case 6:
+                    inSubArr.applyPairwiseTransform(pairwise::CopyPws, &updSubArr, &inSubArr, nullptr);
+                    break;
+                default:
+                    continue;
+            }
+        }
+    }
+}
 
 BUILD_SINGLE_TEMPLATE(template void flattenGeneric,(Nd4jPointer*, int, char, void*, Nd4jLong*, void*, Nd4jLong*), LIBND4J_TYPES);
 BUILD_SINGLE_TEMPLATE(template void pullRowsGeneric, (void *, Nd4jLong*, void*, Nd4jLong*, const int, Nd4jLong*, Nd4jLong*, Nd4jLong*, Nd4jLong*, Nd4jLong*), LIBND4J_TYPES);
