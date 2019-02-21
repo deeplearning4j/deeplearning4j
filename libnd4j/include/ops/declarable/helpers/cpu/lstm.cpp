@@ -31,6 +31,8 @@
 #include <ops/declarable/CustomOperations.h>
 #include<ops/declarable/helpers/transforms.h>
 #include <ops/declarable/helpers/legacy_helpers.h>
+#include <array/NDArrayList.h>
+#include <iterator>
 
 namespace nd4j 	  {
 namespace ops 	  {
@@ -175,12 +177,15 @@ void lstmBlockCell(const NDArray* xt, const NDArray* cLast, const NDArray* yLast
 
     //Concat inputs: [xt, yt-1]: concat([bs,nIn],[bs,nOut]) -> [bs, (nIn+nOut)]
     auto concat = new nd4j::ops::concat();
-    auto variableSpace = new VariableSpace();
-    variableSpace->putVariable(-1, const_cast<NDArray*>(xt));
-    variableSpace->putVariable(-2, const_cast<NDArray*>(yLast));
-    Context block(1, variableSpace);
-    block.getIArguments()->push_back(1);    //Dim 1
-    auto concatInputs = concat->execute(block);
+    std::vector<NDArray*> inputs;
+    std::vector<double> targs;
+    std::vector<Nd4jLong> iargs({1});   //Axis = 1
+    std::vector<bool> bargs;
+    inputs.emplace_back(const_cast<NDArray*>(xt));
+    inputs.emplace_back(const_cast<NDArray*>(yLast));
+
+    auto result = concat->execute(inputs, targs, iargs, bargs);
+    auto concatInputs = result->at(0);
 
 
     auto m = mmul(*concatInputs, *W);    //mmul: [bs, (nIn+numUnits)]* [(inSize+numUnits), 4*numUnits] = [bs, 4*numUnits]
@@ -195,9 +200,9 @@ void lstmBlockCell(const NDArray* xt, const NDArray* cLast, const NDArray* yLast
         zf += (*cLast) * (*Wcf);       // add peephole connections to forget gate
     }
 
-    // current sell state = ft*ct_1 + it*activation(mmul(Wxc,xt) + mmul(Whc,ht_1) + bc
+    // current sell state = ft*cLast + it*activation(mmul(Wxc,xt) + mmul(Whc,ht_1) + bc
     if(forgetBias > 0.0){
-        zft += forgetBias;
+        zf += forgetBias;
     }
     c->assign( sigmoid(zf) * (*cLast) + sigmoid(zi) * activation(zz) );
 
@@ -209,7 +214,9 @@ void lstmBlockCell(const NDArray* xt, const NDArray* cLast, const NDArray* yLast
         zo += (*c) * (*Wcf);            // add peephole connections to output gate zot + ct*Wc
 
     // current cell output = ot*activation(ct)
-    ht->assign(sigmoid(zo) * activation(*c));
+    y->assign(sigmoid(zo) * activation(*c));
+
+    //TODO do I need to delete vairable space and concat op??
 }
 
 
