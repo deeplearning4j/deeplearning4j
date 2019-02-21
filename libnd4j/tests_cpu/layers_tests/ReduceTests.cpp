@@ -90,7 +90,8 @@ TEST_F(StdTest,MultiDimTest) {
     auto resultShapeInfo = nd4j::ShapeUtils::evalReduceShapeInfo('c', dimsForStd, xShapeInfo, false, true, nullptr);
     int resultLengthAssertion = 5;
     ASSERT_EQ(resultLengthAssertion,shape::length(resultShapeInfo));
-    shape::TAD *tad = new shape::TAD(xShapeInfo,dimensionsForStd,dimensionLength);
+    shape::TAD *tad = new shape::TAD;
+    tad->init(xShapeInfo,dimensionsForStd,dimensionLength);
     float none[1] = {0};
     tad->createTadOnlyShapeInfo();
     tad->createOffsets();
@@ -129,7 +130,8 @@ TEST_F(ReduceTest,MatrixTest) {
     auto resultShapeInfo = nd4j::ShapeUtils::evalReduceShapeInfo('c', dim, xShapeInfo, false, true, nullptr);
     int resultLengthAssertion = 3;
     ASSERT_EQ(resultLengthAssertion,shape::length(resultShapeInfo));
-    shape::TAD *tad = new shape::TAD(xShapeInfo,dimension,dimensionLength);
+    shape::TAD *tad = new shape::TAD;
+    tad->init(xShapeInfo,dimension,dimensionLength);
     float none[1] = {0};
     tad->createTadOnlyShapeInfo();
     tad->createOffsets();

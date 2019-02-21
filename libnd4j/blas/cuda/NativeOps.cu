@@ -2085,15 +2085,29 @@ void NativeOps::specialConcat(
  * This method saves
  */
 void NativeOps::tadOnlyShapeInfo(Nd4jLong *dXShapeInfo, int *dimension, int dimensionLength, Nd4jLong *target, Nd4jLong *offsets) {
+    //nd4j_printf("START ------->\n","");
+    //nd4j_printf("Shape pointer: [%p]\n", dXShapeInfo);
+	//nd4j_printf("Dimension pointer: [%p]\n", dimension);
+    //nd4j_printf("shape rank: [%i]; dimLength: [%i]\n", shape::rank(dXShapeInfo), dimensionLength);
+    //shape::printShapeInfoLinear(dXShapeInfo);
+    //fflush(stdout);
+    //shape::printArray<int>(reinterpret_cast<void*>(dimension), dimensionLength, "dimensions");
+    //fflush(stdout);
+    //nd4j_printf("END ------->\n","");
+
 	shape::TAD tad;
 	tad.init(dXShapeInfo, dimension, dimensionLength);
-	//tad->setOutputBuffer(target);
+
+	//nd4j_printf("Creating TAD shape...\n","");
 	tad.createTadOnlyShapeInfo();
+	//nd4j_printf("Creating TAD offsets...\n","");
 	tad.createOffsets();
 
-
+	//nd4j_printf("memcpy TAD shape...\n","");
 	std::memcpy(reinterpret_cast<void *>(target), tad.tadOnlyShapeInfo, shape::shapeInfoByteLength(tad.tadOnlyShapeInfo));
+	//nd4j_printf("memcpy TAD offsets...\n","");
 	std::memcpy(reinterpret_cast<void *>(offsets), tad.tadOffsets, tad.numTads * sizeof(Nd4jLong));
+	//nd4j_printf("memcpy finished...\n","");
 }
 
 int NativeOps::memcpyConstantAsync(Nd4jLong dst, Nd4jPointer src, Nd4jLong size, int flags, Nd4jPointer reserved) {
