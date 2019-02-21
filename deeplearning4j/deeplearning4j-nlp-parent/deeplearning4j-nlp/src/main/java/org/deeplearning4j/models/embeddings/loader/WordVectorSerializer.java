@@ -2965,7 +2965,8 @@ public class WordVectorSerializer {
             writer.write(header);
 
             String row = "";
-            for (String label : weightLookupTable.getVocabCache().words()) {
+            for (int j = 0; j < weightLookupTable.getVocabCache().words().size(); ++j) {
+                String label =  weightLookupTable.getVocabCache().wordAtIndex(j);
                 row += label + " ";
                 int idx = weightLookupTable.getVocabCache().indexOf(label);
                 INDArray slice = ((InMemoryLookupTable)weightLookupTable).getSyn0().slice(idx);
@@ -2989,17 +2990,17 @@ public class WordVectorSerializer {
         AbstractCache<VocabWord> vocabCache = new AbstractCache<>();
 
         boolean headerRead = false;
-
+        int numWords = -1, layerSize = -1, totalNumberOfDocs = -1;
         try {
             INDArray syn0 = null;
-
+            int index = 0;
             for (String line : IOUtils.readLines(stream)) {
                 String[] tokens = line.split(" ");
                 if (!headerRead) {
                     // reading header as "NUM_WORDS VECTOR_SIZE NUM_DOCS"
-                    int numWords = Integer.parseInt(tokens[0]);
-                    int layerSize = Integer.parseInt(tokens[1]);
-                    int totalNumberOfDocs = Integer.parseInt(tokens[2]);
+                    numWords = Integer.parseInt(tokens[0]);
+                    layerSize = Integer.parseInt(tokens[1]);
+                    totalNumberOfDocs = Integer.parseInt(tokens[2]);
                     log.debug("Reading header - words: {}, layerSize: {}, totalNumberOfDocs: {}",
                             numWords, layerSize, totalNumberOfDocs);
                     headerRead = true;
@@ -3013,9 +3014,11 @@ public class WordVectorSerializer {
                         if (syn0 != null)
                             syn0.putScalar(i - 1, Double.parseDouble(tokens[i]));
                     }
-                    //VocabWord newWord = new VocabWord(1, label);
-                    //weightLookupTable.getVocabCache().addToken((T) newWord);
-                    //weightLookupTable.putVector(label, vector);
+                    VocabWord vw = new VocabWord(1.0, label);
+                    vw.setIndex(index);
+                    weightLookupTable.getVocabCache().addToken((T)vw);
+                    weightLookupTable.getVocabCache().addWordToIndex(index, label);
+                    ++index;
                 }
             }
             ((InMemoryLookupTable<T>) weightLookupTable).setSyn0(syn0);
