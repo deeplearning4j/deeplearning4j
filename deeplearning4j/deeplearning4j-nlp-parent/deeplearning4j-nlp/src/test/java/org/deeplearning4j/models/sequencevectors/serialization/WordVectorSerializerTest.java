@@ -262,7 +262,7 @@ public class WordVectorSerializerTest {
             e.printStackTrace();
             fail();
         }
-        //assertEquals(lookupTable.getVocab().totalWordOccurrences(), ((InMemoryLookupTable<VocabWord>)deser).getVocab().totalWordOccurrences());
+        assertEquals(lookupTable.getVocab().totalWordOccurrences(), ((InMemoryLookupTable<VocabWord>)deser).getVocab().totalWordOccurrences());
         assertEquals(cache.totalNumberOfDocs(), ((InMemoryLookupTable<VocabWord>)deser).getVocab().totalNumberOfDocs());
         assertEquals(cache.numWords(), ((InMemoryLookupTable<VocabWord>)deser).getVocab().numWords());
 
@@ -273,7 +273,13 @@ public class WordVectorSerializerTest {
             assertEquals(cached, restored);
         }
 
-        assertEquals(lookupTable.getSyn0(), ((InMemoryLookupTable<VocabWord>) deser).getSyn0());
-
+        assertEquals(lookupTable.getSyn0().columns(), ((InMemoryLookupTable<VocabWord>) deser).getSyn0().columns());
+        assertEquals(lookupTable.getSyn0().rows(), ((InMemoryLookupTable<VocabWord>) deser).getSyn0().rows());
+        for (int c = 0; c < ((InMemoryLookupTable<VocabWord>) deser).getSyn0().columns(); ++c) {
+            for (int r = 0; r < ((InMemoryLookupTable<VocabWord>) deser).getSyn0().rows(); ++r) {
+                assertEquals(lookupTable.getSyn0().getDouble(c,r),
+                            ((InMemoryLookupTable<VocabWord>) deser).getSyn0().getDouble(c,r), 1e-5);
+            }
+        }
     }
 }

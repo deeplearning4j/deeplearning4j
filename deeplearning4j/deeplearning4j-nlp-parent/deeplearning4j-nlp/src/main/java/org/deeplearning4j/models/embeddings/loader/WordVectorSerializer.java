@@ -2968,10 +2968,17 @@ public class WordVectorSerializer {
             for (int j = 0; j < weightLookupTable.getVocabCache().words().size(); ++j) {
                 String label =  weightLookupTable.getVocabCache().wordAtIndex(j);
                 row += label + " ";
-                int idx = weightLookupTable.getVocabCache().indexOf(label);
-                INDArray slice = ((InMemoryLookupTable)weightLookupTable).getSyn0().slice(idx);
-                for (int i = 0; i < slice.columns(); ++i) {
-                    row += slice.getDouble(i) + " ";
+                int freq = weightLookupTable.getVocabCache().wordFrequency(label);
+                int rows = ((InMemoryLookupTable)weightLookupTable).getSyn0().rows();
+                int cols = ((InMemoryLookupTable)weightLookupTable).getSyn0().columns();
+                row += freq + " " + rows + " " + cols + " ";
+
+                for (int r = 0; r < rows; ++r) {
+                    //row += " ";
+                    for (int c = 0; c < cols; ++c) {
+                        row += ((InMemoryLookupTable) weightLookupTable).getSyn0().getDouble(r, c) + " ";
+                    }
+                    //row += " ";
                 }
                 row += "\n";
             }
@@ -2988,7 +2995,7 @@ public class WordVectorSerializer {
             throws IOException {
         WeightLookupTable<T> weightLookupTable = null;
         AbstractCache<VocabWord> vocabCache = new AbstractCache<>();
-
+        final int startSyn0 = 4;
         boolean headerRead = false;
         int numWords = -1, layerSize = -1, totalNumberOfDocs = -1;
         try {
@@ -3005,16 +3012,26 @@ public class WordVectorSerializer {
                             numWords, layerSize, totalNumberOfDocs);
                     headerRead = true;
                     weightLookupTable = new InMemoryLookupTable.Builder().cache(vocabCache).vectorLength(layerSize).build();
-                    syn0  = Nd4j.createUninitialized(layerSize, numWords);
                 } else {
                     String label = decodeB64(tokens[0]);
-                    INDArray vector = Nd4j.create(tokens.length - 1);
-                    for (int i = 1; i < tokens.length; i++) {
-                        vector.putScalar(i - 1, Double.parseDouble(tokens[i]));
-                        if (syn0 != null)
-                            syn0.putScalar(i - 1, Double.parseDouble(tokens[i]));
+                    int freq = Integer.parseInt(tokens[1]);
+                    int rows = Integer.parseInt(tokens[2]);
+                    int cols = Integer.parseInt(tokens[3]);
+
+                    if (syn0 == null)
+                        syn0  = Nd4j.createUninitialized(rows, cols);
+
+                    int i = startSyn0;
+                    for (int r = 0; r < rows; ++r) {
+                        double[] vector = new double[cols];
+                        for (int c = 0;  c < cols; ++c) {
+                            vector[c] = Double.parseDouble(tokens[i]);
+                            ++i;
+                        }
+                        syn0.putRow(r, Nd4j.create(vector));
                     }
-                    VocabWord vw = new VocabWord(1.0, label);
+
+                    VocabWord vw = new VocabWord(freq, label);
                     vw.setIndex(index);
                     weightLookupTable.getVocabCache().addToken((T)vw);
                     weightLookupTable.getVocabCache().addWordToIndex(index, label);
