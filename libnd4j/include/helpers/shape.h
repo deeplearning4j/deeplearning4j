@@ -128,7 +128,7 @@ namespace shape {
 
     ND4J_EXPORT _CUDA_HD bool canReshape(const int oldRank, Nd4jLong* oldShape, const int newRank, Nd4jLong* newShape, bool isFOrder);
 
-    ND4J_EXPORT _CUDA_HD bool reshapeCF(const int oldRank, Nd4jLong* oldShape, const int newRank, Nd4jLong* newShape, bool isFOrder, Nd4jLong* target);
+    ND4J_EXPORT _CUDA_HD bool reshapeCF(const int oldRank, const Nd4jLong* oldShapeInfo, const int newRank, const Nd4jLong* newShape, const bool isFOrder, Nd4jLong* newShapeInfo);
 
     /**
     * Get the shape info buffer
@@ -1525,10 +1525,10 @@ __device__ INLINEDEF Nd4jLong *cuMalloc(Nd4jLong *buffer, long size) {
 
         else {
             int oldnd;
-            Nd4jLong *olddims = shape::copyOf(rank, shape);
-            Nd4jLong *oldstrides = shape::copyOf(rank, stride);
+            Nd4jLong *oldDims = shape::copyOf(rank, shape);
+            Nd4jLong *oldStrides = shape::copyOf(rank, stride);
             int np, op, last_stride;
-            int oi, oj, ok, ni, nj, nk;
+            int oldStart, oldStop, ok, newStart, newStop, nk;
 
             traceNew(10);
 
@@ -1544,28 +1544,28 @@ __device__ INLINEDEF Nd4jLong *cuMalloc(Nd4jLong *buffer, long size) {
              * Remove axes with dimension 1 from the old array. They have no effect
              * but would need special cases since their strides do not matter.
              */
-            for (oi = 0; oi < rank; oi++) {
-                if (shape[oi] != 1) {
-                    olddims[oldnd] = shape[oi];
-                    oldstrides[oldnd] = stride[oi];
+            for (oldStart = 0; oldStart < rank; oldStart++) {
+                if (shape[oldStart] != 1) {
+                    oldDims[oldnd] = shape[oldStart];
+                    oldStrides[oldnd] = stride[oldStart];
                     oldnd++;
                 }
             }
 
             np = 1;
-            for (ni = 0; ni < newShapeRank; ni++) {
-                np *= newShape[ni];
+            for (newStart = 0; newStart < newShapeRank; newStart++) {
+                np *= newShape[newStart];
             }
             op = 1;
-            for (oi = 0; oi < oldnd; oi++) {
-                op *= olddims[oi];
+            for (oldStart = 0; oldStart < oldnd; oldStart++) {
+                op *= oldDims[oldStart];
             }
             if (np != op) {
 /* different total sizes; no hope */
                 delete[] newStrides;
                 delete[] newShape;
-                delete[] oldstrides;
-                delete[] olddims;
+                delete[] oldStrides;
+                delete[] oldDims;
                 return 0;
             }
 
@@ -1573,48 +1573,48 @@ __device__ INLINEDEF Nd4jLong *cuMalloc(Nd4jLong *buffer, long size) {
 /* the current code does not handle 0-sized arrays, so give up */
                 delete[] newStrides;
                 delete[] newShape;
-                delete[] oldstrides;
-                delete[] olddims;
+                delete[] oldStrides;
+                delete[] oldDims;
                 return 0;
             }
 
-/* oi to oj and ni to nj give the axis ranges currently worked with */
-            oi = 0;
-            oj = 1;
-            ni = 0;
-            nj = 1;
-            while (ni < newShapeRank && oi < oldnd) {
-                np = newShape[ni];
-                op = olddims[oi];
+/* oldStart to oldStop and newStart to newStop give the axis ranges currently worked with */
+            oldStart = 0;
+            oldStop = 1;
+            newStart = 0;
+            newStop = 1;
+            while (newStart < newShapeRank && oldStart < oldnd) {
+                np = newShape[newStart];
+                op = oldDims[oldStart];
 
                 while (np != op) {
                     if (np < op) {
 /* Misses trailing 1s, these are handled later */
-                        np *= newShape[nj++];
+                        np *= newShape[newStop++];
                     } else {
-                        op *= olddims[oj++];
+                        op *= oldDims[oldStop++];
                     }
                 }
 
 /* Check whether the original axes can be combined */
-                for (ok = oi; ok < oj - 1; ok++) {
+                for (ok = oldStart; ok < oldStop - 1; ok++) {
                     if (isFOrder) {
-                        if (oldstrides[ok + 1] != olddims[ok] * oldstrides[ok]) {
+                        if (oldStrides[ok + 1] != oldDims[ok] * oldStrides[ok]) {
 /* not contiguous enough */
                             delete[] newStrides;
                             delete[] newShape;
-                            delete[] oldstrides;
-                            delete[] olddims;
+                            delete[] oldStrides;
+                            delete[] oldDims;
                             return 0;
                         }
                     } else {
 /* C order */
-                        if (oldstrides[ok] != olddims[ok + 1] * oldstrides[ok + 1]) {
+                        if (oldStrides[ok] != oldDims[ok + 1] * oldStrides[ok + 1]) {
 /* not contiguous enough */
                             delete[] newStrides;
                             delete[] newShape;
-                            delete[] oldstrides;
-                            delete[] olddims;
+                            delete[] oldStrides;
+                            delete[] oldDims;
                             return 0;
                         }
                     }
@@ -1622,42 +1622,42 @@ __device__ INLINEDEF Nd4jLong *cuMalloc(Nd4jLong *buffer, long size) {
 
 /* Calculate new strides for all axes currently worked with */
                 if (isFOrder) {
-                    newStrides[ni] = oldstrides[oi];
-                    for (nk = ni + 1; nk < nj; nk++) {
+                    newStrides[newStart] = oldStrides[oldStart];
+                    for (nk = newStart + 1; nk < newStop; nk++) {
                         newStrides[nk] = newStrides[nk - 1] * newShape[nk - 1];
                     }
                 } else {
 /* C order */
-                    newStrides[nj - 1] = oldstrides[oj - 1];
-                    for (nk = nj - 1; nk > ni; nk--) {
+                    newStrides[newStop - 1] = oldStrides[oldStop - 1];
+                    for (nk = newStop - 1; nk > newStart; nk--) {
                         newStrides[nk - 1] = newStrides[nk] * newShape[nk];
                     }
                 }
-                ni = nj++;
-                oi = oj++;
+                newStart = newStop++;
+                oldStart = oldStop++;
             }
 
 /*
  * Set strides corresponding to trailing 1s of the new shape.
  */
-            if (ni >= 1) {
-                last_stride = newStrides[ni - 1];
+            if (newStart >= 1) {
+                last_stride = newStrides[newStart - 1];
             } else {
                 last_stride = stride[rank - 1];
             }
             if (isFOrder) {
-                if (ni >= 1)
-                    last_stride *= newShape[ni - 1];
+                if (newStart >= 1)
+                    last_stride *= newShape[newStart - 1];
             }
-            for (nk = ni; nk < newShapeRank; nk++) {
+            for (nk = newStart; nk < newShapeRank; nk++) {
                 newStrides[nk] = last_stride;
             }
 //returns the last element of the new stride array
             int ret = last_stride;
             delete[] newStrides;
             delete[] newShape;
-            delete[] oldstrides;
-            delete[] olddims;
+            delete[] oldStrides;
+            delete[] oldDims;
             return ret;
         }
 
@@ -3977,151 +3977,85 @@ INLINEDEF _CUDA_HD bool areStridesDefault(const Nd4jLong* shapeInfo) {
     return result;
 }
 
-    INLINEDEF _CUDA_H bool reshapeCF(const int oldRank, Nd4jLong* oldShape, const int newRank, Nd4jLong* newShapeOf, bool isFOrder, Nd4jLong* target) {
-        int oldnd;
-        Nd4jLong* olddims = shape::copyOf(oldRank, shape::shapeOf(oldShape));
-        Nd4jLong* oldstrides = shape::copyOf(oldRank, shape::stride(oldShape));
-        int np, op, last_stride;
-        int oi, oj, ok, ni, nj, nk;
-        Nd4jLong* newStrides = new Nd4jLong[newRank];
-        oldnd = 0;
+    INLINEDEF _CUDA_H bool reshapeCF(const int oldRank, const Nd4jLong* oldShapeInfo, const int newRank, const Nd4jLong* newShape, const bool isFOrder, Nd4jLong* newShapeInfo) {
+        
+        const int newOrder = isFOrder ? 102 : 99;
+        const int oldOrder = oldShapeInfo[2 * oldRank + 3];
+        newShapeInfo[0] = newRank;
+        memcpy(newShapeInfo + 1, newShape, newRank * sizeof(Nd4jLong));
 
-        /*
-         * Remove axes with dimension 1 from the old array. They have no effect
-         * but would need special cases since their strides do not matter.
-         */
-        for (oi = 0; oi < oldRank; oi++) {
-            if (shape::shapeOf(oldShape)[oi] != 1) {
-                olddims[oldnd] = shape::shapeOf(oldShape)[oi];
-                oldstrides[oldnd] = shape::stride(oldShape)[oi];
-                oldnd++;
+        if(newOrder == oldOrder && shape::elementWiseStride(oldShapeInfo) == 1) {
+            shape::updateStrides(newShapeInfo, newOrder);
+            return true;
+        }
+
+        Nd4jLong* newStrides = shape::stride(newShapeInfo);
+        const Nd4jLong* oldShape = shape::shapeOf(const_cast<Nd4jLong*>(oldShapeInfo));
+        const Nd4jLong* oldStrides = shape::stride(const_cast<Nd4jLong*>(oldShapeInfo));        
+        int oldStart(0), oldStop(1), newStart(0), newStop(1), newDim, oldDim;
+
+        if(isFOrder) {
+
+            while (newStart < newRank && oldStart < oldRank) {
+                newDim = newShape[newStart];
+                oldDim = oldShape[oldStart];
+
+                while (newDim != oldDim)
+                    if (newDim < oldDim) newDim *= newShape[newStop++];                
+                    else         oldDim *= oldShape[oldStop++];
+                            
+                /* Check whether the original axes can be combined */
+                for (int i = oldStart; i < oldStop - 1; i++)
+                    if (oldShape[i] != 1 && oldStrides[i + 1] != oldShape[i] * oldStrides[i])
+                        return false;       // not contiguous enough            
+
+                /* Calculate new strides for all axes currently worked with */            
+                newStrides[newStart] = oldStrides[oldStart];
+                for (int i = newStart + 1; i < newStop; i++) 
+                    newStrides[i] = newStrides[i - 1] * newShape[i - 1];                
+            
+                newStart = newStop++;
+                oldStart = oldStop++;
             }
         }
+        else {
 
-        np = 1;
-        for (ni = 0; ni < newRank; ni++) {
-            np *= newShapeOf[ni];
-        }
-        op = 1;
-        for (oi = 0; oi < oldnd; oi++) {
-            op *= olddims[oi];
-        }
-        if (np != op) {
-            /* different total sizes; no hope */
-            delete[] olddims;
-            delete[] oldstrides;
-            delete[] newStrides;
+            while (newStart < newRank && oldStart < oldRank) {
+                newDim = newShape[newStart];
+                oldDim = oldShape[oldStart];
 
-            return false;
-        }
+            while (newDim != oldDim) 
+                if (newDim < oldDim) newDim *= newShape[newStop++];
+                else         oldDim *= oldShape[oldStop++];
+            
+                /* Check whether the original axes can be combined */
+                for (int i = oldStart; i < oldStop - 1; i++) 
+                    if (oldShape[i] != 1 && oldStrides[i] != oldShape[i + 1] * oldStrides[i + 1]) 
+                        return false;       /* not contiguous enough */
 
-        if (np == 0) {
-            /* the current code does not handle 0-sized arrays, so give up */
-            delete[] olddims;
-            delete[] oldstrides;
-            delete[] newStrides;
-
-            return false;
-        }
-
-        /* oi to oj and ni to nj give the axis ranges currently worked with */
-        oi = 0;
-        oj = 1;
-        ni = 0;
-        nj = 1;
-
-        while (ni < newRank && oi < oldnd) {
-            np = newShapeOf[ni];
-            op = olddims[oi];
-
-            while (np != op) {
-                if (np < op) {
-                    /* Misses trailing 1s, these are handled later */
-                    np *= newShapeOf[nj++];
-                } else {
-                    op *= olddims[oj++];
-                }
+                /* Calculate new strides for all axes currently worked with */                        
+                newStrides[newStop - 1] = oldStrides[oldStop - 1];
+                for (int i = newStop - 1; i > newStart; i--) 
+                    newStrides[i - 1] = newStrides[i] * newShape[i];                            
+                
+                newStart = newStop++;
+                oldStart = oldStop++;
             }
-
-            /* Check whether the original axes can be combined */
-            for (ok = oi; ok < oj - 1; ok++) {
-                if (isFOrder) {
-                    if (oldstrides[ok + 1] != olddims[ok] * oldstrides[ok]) {
-                        /* not contiguous enough */
-                        delete[] olddims;
-                        delete[] oldstrides;
-                        delete[] newStrides;
-
-                        return false;
-                    }
-                } else {
-                    /* C order */
-                    if (oldstrides[ok] != olddims[ok + 1] * oldstrides[ok + 1]) {
-                        /* not contiguous enough */
-                        delete[] olddims;
-                        delete[] oldstrides;
-                        delete[] newStrides;
-
-                        return false;
-                    }
-                }
-            }
-
-            /* Calculate new strides for all axes currently worked with */
-            if (isFOrder) {
-                newStrides[ni] = oldstrides[oi];
-                for (nk = ni + 1; nk < nj; nk++) {
-                    newStrides[nk] = newStrides[nk - 1] * newShapeOf[nk - 1];
-                }
-            } else {
-                /* C order */
-                newStrides[nj - 1] = oldstrides[oj - 1];
-                for (nk = nj - 1; nk > ni; nk--) {
-                    newStrides[nk - 1] = newStrides[nk] * newShapeOf[nk];
-                }
-            }
-            ni = nj++;
-            oi = oj++;
-        }
-
-        if (ni >= 1) {
-            last_stride = newStrides[ni - 1];
-        } else {
-            last_stride = shape::elementWiseStride(oldShape);
-        }
-        if (isFOrder && ni >= 1) {
-            last_stride *= newShapeOf[ni - 1];
-        }
-        for (nk = ni; nk < newRank; nk++) {
-            newStrides[nk] = last_stride;
-        }
-
-        target[0] = newRank;
-        int cnt = 1;
-        for (int e = 0; e < newRank; e++)
-            target[cnt++] = newShapeOf[e];
-
-        for (int e = 0; e < newRank; e++)
-            target[cnt++] = newStrides[e];
-
-        target[shape::shapeInfoLength(newRank) - 3] = oldShape[shape::shapeInfoLength(oldRank) - 3];
-        target[shape::shapeInfoLength(newRank) - 1] = isFOrder ? 102 : 99;
-        target[shape::shapeInfoLength(newRank) - 2] = (shape::order(oldShape) == shape::order(target)) ? shape::elementWiseStride(oldShape) : 0;
-        // nd4j::ArrayOptions::setDataType(target, nd4j::ArrayOptions::dataType(oldShape));
-
-        delete[] olddims;
-        delete[] oldstrides;
-        delete[] newStrides;
+        }        
+        
+        newShapeInfo[2 * newRank + 3] = newOrder;    // order
+        newShapeInfo[2 * newRank + 2] = (newOrder == oldOrder) ? shape::elementWiseStride(oldShapeInfo) : 0;    // ews
+        newShapeInfo[2 * newRank + 1] = oldShapeInfo[2 * oldRank + 1]; // type
 
         return true;
     }
 
     INLINEDEF _CUDA_H bool canReshape(const int oldRank, Nd4jLong* oldShape, const int newRank, Nd4jLong* newShapeOf, bool isFOrder) {
         int oldnd;
-        Nd4jLong* olddims = shape::copyOf(oldRank, shape::shapeOf(oldShape));
-        Nd4jLong* oldstrides = shape::copyOf(oldRank, shape::stride(oldShape));
+        Nd4jLong* oldDims = shape::copyOf(oldRank, shape::shapeOf(oldShape));
+        Nd4jLong* oldStrides = shape::copyOf(oldRank, shape::stride(oldShape));
         int np, op, last_stride;
-        int oi, oj, ok, ni, nj, nk;
+        int oldStart, oldStop, ok, newStart, newStop, nk;
         auto newStrides = new Nd4jLong[newRank];
         oldnd = 0;
 
@@ -4129,26 +4063,26 @@ INLINEDEF _CUDA_HD bool areStridesDefault(const Nd4jLong* shapeInfo) {
          * Remove axes with dimension 1 from the old array. They have no effect
          * but would need special cases since their strides do not matter.
          */
-        for (oi = 0; oi < oldRank; oi++) {
-            if (shape::shapeOf(oldShape)[oi] != 1) {
-                olddims[oldnd] = shape::shapeOf(oldShape)[oi];
-                oldstrides[oldnd] = shape::stride(oldShape)[oi];
+        for (oldStart = 0; oldStart < oldRank; oldStart++) {
+            if (shape::shapeOf(oldShape)[oldStart] != 1) {
+                oldDims[oldnd] = shape::shapeOf(oldShape)[oldStart];
+                oldStrides[oldnd] = shape::stride(oldShape)[oldStart];
                 oldnd++;
             }
         }
 
         np = 1;
-        for (ni = 0; ni < newRank; ni++) {
-            np *= newShapeOf[ni];
+        for (newStart = 0; newStart < newRank; newStart++) {
+            np *= newShapeOf[newStart];
         }
         op = 1;
-        for (oi = 0; oi < oldnd; oi++) {
-            op *= olddims[oi];
+        for (oldStart = 0; oldStart < oldnd; oldStart++) {
+            op *= oldDims[oldStart];
         }
         if (np != op) {
             /* different total sizes; no hope */
-            delete[] olddims;
-            delete[] oldstrides;
+            delete[] oldDims;
+            delete[] oldStrides;
             delete[] newStrides;
 
             return false;
@@ -4156,49 +4090,49 @@ INLINEDEF _CUDA_HD bool areStridesDefault(const Nd4jLong* shapeInfo) {
 
         if (np == 0) {
             /* the current code does not handle 0-sized arrays, so give up */
-            delete[] olddims;
-            delete[] oldstrides;
+            delete[] oldDims;
+            delete[] oldStrides;
             delete[] newStrides;
 
             return false;
         }
 
-        /* oi to oj and ni to nj give the axis ranges currently worked with */
-        oi = 0;
-        oj = 1;
-        ni = 0;
-        nj = 1;
+        /* oldStart to oldStop and newStart to newStop give the axis ranges currently worked with */
+        oldStart = 0;
+        oldStop = 1;
+        newStart = 0;
+        newStop = 1;
 
-        while (ni < newRank && oi < oldnd) {
-            np = newShapeOf[ni];
-            op = olddims[oi];
+        while (newStart < newRank && oldStart < oldnd) {
+            np = newShapeOf[newStart];
+            op = oldDims[oldStart];
 
             while (np != op) {
                 if (np < op) {
                     /* Misses trailing 1s, these are handled later */
-                    np *= newShapeOf[nj++];
+                    np *= newShapeOf[newStop++];
                 } else {
-                    op *= olddims[oj++];
+                    op *= oldDims[oldStop++];
                 }
             }
 
             /* Check whether the original axes can be combined */
-            for (ok = oi; ok < oj - 1; ok++) {
+            for (ok = oldStart; ok < oldStop - 1; ok++) {
                 if (isFOrder) {
-                    if (oldstrides[ok + 1] != olddims[ok] * oldstrides[ok]) {
+                    if (oldStrides[ok + 1] != oldDims[ok] * oldStrides[ok]) {
                         /* not contiguous enough */
-                        delete[] olddims;
-                        delete[] oldstrides;
+                        delete[] oldDims;
+                        delete[] oldStrides;
                         delete[] newStrides;
 
                         return false;
                     }
                 } else {
                     /* C order */
-                    if (oldstrides[ok] != olddims[ok + 1] * oldstrides[ok + 1]) {
+                    if (oldStrides[ok] != oldDims[ok + 1] * oldStrides[ok + 1]) {
                         /* not contiguous enough */
-                        delete[] olddims;
-                        delete[] oldstrides;
+                        delete[] oldDims;
+                        delete[] oldStrides;
                         delete[] newStrides;
 
                         return false;
@@ -4208,23 +4142,23 @@ INLINEDEF _CUDA_HD bool areStridesDefault(const Nd4jLong* shapeInfo) {
 
             /* Calculate new strides for all axes currently worked with */
             if (isFOrder) {
-                newStrides[ni] = oldstrides[oi];
-                for (nk = ni + 1; nk < nj; nk++) {
+                newStrides[newStart] = oldStrides[oldStart];
+                for (nk = newStart + 1; nk < newStop; nk++) {
                     newStrides[nk] = newStrides[nk - 1] * newShapeOf[nk - 1];
                 }
             } else {
                 /* C order */
-                newStrides[nj - 1] = oldstrides[oj - 1];
-                for (nk = nj - 1; nk > ni; nk--) {
+                newStrides[newStop - 1] = oldStrides[oldStop - 1];
+                for (nk = newStop - 1; nk > newStart; nk--) {
                     newStrides[nk - 1] = newStrides[nk] * newShapeOf[nk];
                 }
             }
-            ni = nj++;
-            oi = oj++;
+            newStart = newStop++;
+            oldStart = oldStop++;
         }
 
-        delete[] olddims;
-        delete[] oldstrides;
+        delete[] oldDims;
+        delete[] oldStrides;
         delete[] newStrides;
 
         return true;

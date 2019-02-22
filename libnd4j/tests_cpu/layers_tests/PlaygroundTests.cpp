@@ -1291,6 +1291,6 @@ TEST_F(PlaygroundTests, conv2d_1) {
         op.execute({&input, &weights, &bias}, {&output} , {}, {kH,kW,  sH,sW,  pH,pW,  dH,dW, paddingMode, dataFormat},{});
     
     auto timeEnd = std::chrono::system_clock::now();
-    auto duration = std::chrono::duration_cast<std::chrono::microseconds> ((timeEnd - timeStart) / N).count();
+    auto duration = std::chrono::duration_cast<std::chrono::milliseconds> ((timeEnd - timeStart) / N).count();
     printf("duration %ld\n", duration);    
 }
