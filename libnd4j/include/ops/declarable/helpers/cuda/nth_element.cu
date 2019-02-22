@@ -19,20 +19,82 @@
 //
 
 #include <ops/declarable/helpers/nth_element.h>
+#include <TAD.h>
+#include <PointersManager.h>
+#include <NativeOps.h>
 
 namespace nd4j {
 namespace ops {
 namespace helpers {
 
     template <typename T>
-    void nthElementFunctor_(NDArray* input, NDArray* nVal, NDArray* output) {
+    static __global__ void fillUpElementKernel(void* outputBuffer, Nd4jLong* outputShapeInfo, void* inputBuffer, Nd4jLong* inputShapeInfo, Nd4jLong* pTadShape, Nd4jLong* pTadOffsets, Nd4jLong n) {
+        __shared__ T *z, *x;
+        __shared__ Nd4jLong bufferLength, arrLen;
 
+        if (threadIdx.x == 0) {
+            z = reinterpret_cast<T*>(outputBuffer);
+            x = reinterpret_cast<T*>(inputBuffer);
+            arrLen = shape::length(pTadShape);
+            bufferLength = shape::length(outputShapeInfo);
+        }
+        __syncthreads();
+
+        const auto tid = blockIdx.x * gridDim.x + threadIdx.x;
+        const auto step = gridDim.x * blockDim.x;
+        for (int t = tid; t < bufferLength; t += step) {
+            auto tX = x + pTadOffsets[t];
+            z[shape::getIndexOffset(t, outputShapeInfo, bufferLength)] = tX[shape::getIndexOffset(n, pTadShape, arrLen)]; //tX];
+        }
+    }
+
+    template <typename T>
+    void nthElementFunctor_(graph::LaunchContext* context, NDArray* input, NDArray* nVal, NDArray* output) {
+            Nd4jLong n = nVal->e<Nd4jLong>(0);
+            NDArray sortedVals(*input);
+            Nd4jPointer params[2];
+            params[0] = context;
+            params[1] = context->getCudaStream();
+
+            if (input->isVector()) {
+                NativeOps ops;
+                ops.sort(params, sortedVals.buffer(), sortedVals.shapeInfo(), sortedVals.specialBuffer(), sortedVals.specialShapeInfo(), false);
+                //sortedVals.syncToHost();
+                //output->syncToHost();
+                //SpecialMethods<T>::sortGeneric(sortedVals.buffer(), sortedVals.shapeInfo(), false);
+                //output->p(0, sortedVals.e<T>(n));
+                *reinterpret_cast<T*>(output->specialBuffer()) = reinterpret_cast<T*>(sortedVals.specialBuffer())[n];
+            }
+            else { // rank greater than 1
+                std::vector<int> lastDims({input->rankOf() - 1});// = ShapeUtils::evalDimsToExclude(input->rankOf(), {input->rankOf() - 1});
+                shape::TAD tadSorted;
+                tadSorted.init(sortedVals.shapeInfo(), lastDims.data(), lastDims.size());
+                tadSorted.createTadOnlyShapeInfo();
+                tadSorted.createOffsets();
+                PointersManager manager(context, "helpers::nth_element");
+                auto pTadShape = (Nd4jLong *) manager.replicatePointer(tadSorted.tadOnlyShapeInfo, shape::shapeInfoByteLength(tadSorted.tadOnlyShapeInfo));
+                auto pTadOffsets = (Nd4jLong *) manager.replicatePointer(tadSorted.tadOffsets, tadSorted.numTads * sizeof(Nd4jLong));
+                auto pLastDimData = (int*) manager.replicatePointer(lastDims.data(), lastDims.size() * sizeof(int));
+                //SpecialMethods<T>::sortTadGeneric(sortedVals.specialBuffer(), sortedVals.specialShapeInfo(), lastDims.data(), lastDims.size(), pTadShape, pTadOffsets, false);
+                NativeOps ops;
+                ops.sortTad(params, sortedVals.buffer(), sortedVals.shapeInfo(), sortedVals.specialBuffer(), sortedVals.specialShapeInfo(), pLastDimData, lastDims.size(), pTadShape, pTadOffsets, false);
+                auto stream = context->getCudaStream();
+                fillUpElementKernel<T><<<32, 64, 1024, *stream>>>(output->specialBuffer(), output->specialShapeInfo(), sortedVals.specialBuffer(), sortedVals.specialShapeInfo(), pTadShape, pTadOffsets, n);
+                manager.synchronize();
+//                std::unique_ptr<ResultSet> rows(input->allTensorsAlongDimension(lastDims));
+//#pragma omp parallel for
+//                for (Nd4jLong e = 0; e < output->lengthOf(); e++) {
+//                    auto row = rows->at(e);
+//                    output->p(e, row->e<T>(n));
+//                }
+//            }
+        }
     }
     void nthElementFunctor(graph::LaunchContext* context, NDArray* input, NDArray* n, NDArray* output) {
-    BUILD_SINGLE_SELECTOR(input->dataType(), nthElementFunctor_, (input, n, output), LIBND4J_TYPES);
+    BUILD_SINGLE_SELECTOR(input->dataType(), nthElementFunctor_, (context, input, n, output), LIBND4J_TYPES);
 
     }
-    BUILD_SINGLE_TEMPLATE(template void nthElementFunctor_, (NDArray* input, NDArray* n, NDArray* output), LIBND4J_TYPES);
+    BUILD_SINGLE_TEMPLATE(template void nthElementFunctor_, (graph::LaunchContext* context, NDArray* input, NDArray* n, NDArray* output), LIBND4J_TYPES);
     
 }
 }
