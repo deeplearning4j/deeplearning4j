@@ -1,9 +1,13 @@
 package org.deeplearning4j.util;
 
-import com.google.common.base.Preconditions;
 import java.util.Arrays;
+import org.nd4j.base.Preconditions;
 
 public class ValidationUtils {
+
+    private ValidationUtils(){
+
+    }
 
     /**
      * Checks that the values is >= 0.
@@ -13,9 +17,7 @@ public class ValidationUtils {
      */
     public static void validateNonNegative(int data, String paramName){
         Preconditions.checkArgument(data >= 0,
-                "Values for " +
-                        paramName + " must be >= 0, got: " +
-                        data);
+                "Values for %s must be >= 0, got: %s", paramName, data);
     }
 
     /**
@@ -26,9 +28,7 @@ public class ValidationUtils {
      */
     public static void validateNonNegative(double data, String paramName){
         Preconditions.checkArgument(data >= 0,
-                "Values for " +
-                        paramName + " must be >= 0, got: " +
-                        data);
+                "Values for %s must be >= 0, got: %s", paramName, data);
     }
 
     /**
@@ -47,9 +47,7 @@ public class ValidationUtils {
         }
 
         Preconditions.checkArgument(nonnegative,
-                "Values for " +
-                        paramName + " must be >= 0, got: " +
-                        Arrays.toString(data));
+                "Values for %s must be >= 0, got: %s", paramName, data);
     }
 
     /**
@@ -81,10 +79,8 @@ public class ValidationUtils {
         }
 
         Preconditions.checkArgument(data.length == 1,
-                "Need either 1 " +
-                        paramName + " values, got " +
-                        data.length + " values: " +
-                        Arrays.toString(data));
+                "Need 1 %s value, got %s values: %s",
+                        paramName, data.length, data);
 
         return data;
     }
@@ -120,10 +116,8 @@ public class ValidationUtils {
         }
 
         Preconditions.checkArgument(data.length == 1 || data.length == 2,
-                "Need either 1 or 2 " +
-                        paramName + " values, got " +
-                        data.length + " values: " +
-                        Arrays.toString(data));
+                "Need either 1 or 2 %s values, got %s values: %s",
+                       paramName, data.length, data);
 
         if(data.length == 1){
             return new int[]{data[0], data[0]};
@@ -173,10 +167,8 @@ public class ValidationUtils {
                                 (data[1].length == 1 || data[1].length == 2) &&
                                 data[0].length == data[1].length
                         ),
-                "Value for " +
-                        paramName + " must have shape 2x1, 1x2, or 2x2, got " +
-                        data.length + "x" + data[0].length + " shaped array: " +
-                        Arrays.toString(data));
+                "Value for %s must have shape 2x1, 1x2, or 2x2, got %sx%s shaped array: %s",
+                paramName, data.length, data[0].length, data);
 
         if(data.length == 1) {
             return new int[][]{
@@ -224,10 +216,8 @@ public class ValidationUtils {
         }
 
         Preconditions.checkArgument(data.length == 1 || data.length == 3,
-                "Need either 1 or 3 " +
-                        paramName + " values, got " +
-                        data.length + " values: " +
-                        Arrays.toString(data));
+                "Need either 1 or 3 %s values, got %s values: %s",
+                paramName, data.length, data);
 
         if(data.length == 1){
             return new int[]{data[0], data[0], data[0]};
@@ -269,10 +259,8 @@ public class ValidationUtils {
         }
 
         Preconditions.checkArgument(data.length == 1 || data.length == 2 || data.length == 4,
-                "Need either 1, 2, or 4 " +
-                        paramName + " values, got " +
-                        data.length + " values: " +
-                        Arrays.toString(data));
+                "Need either 1, 2, or 4 %s values, got %s values: %s",
+                paramName, data.length, data);
 
         if(data.length == 1){
             return new int[]{data[0], data[0], data[0], data[0]};
@@ -316,10 +304,8 @@ public class ValidationUtils {
         }
 
         Preconditions.checkArgument(data.length == 1 || data.length == 3 || data.length == 6,
-                "Need either 1, 3, or 6 " +
-                        paramName + " values, got " +
-                        data.length + " values: " +
-                        Arrays.toString(data));
+                "Need either 1, 3, or 6 %s values, got %s values: %s",
+                paramName, data.length, data);
 
         if(data.length == 1){
             return new int[]{data[0], data[0], data[0], data[0], data[0], data[0]};

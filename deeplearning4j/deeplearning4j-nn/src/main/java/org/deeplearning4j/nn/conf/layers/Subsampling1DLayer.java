@@ -16,7 +16,6 @@
 
 package org.deeplearning4j.nn.conf.layers;
 
-import com.google.common.base.Preconditions;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;

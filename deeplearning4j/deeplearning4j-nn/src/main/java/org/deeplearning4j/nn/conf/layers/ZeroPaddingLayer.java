@@ -16,7 +16,6 @@
 
 package org.deeplearning4j.nn.conf.layers;
 
-import com.google.common.base.Preconditions;
 import lombok.*;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -26,6 +25,7 @@ import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.deeplearning4j.optimize.api.TrainingListener;
 import org.deeplearning4j.util.ConvolutionUtils;
 import org.deeplearning4j.util.ValidationUtils;
+import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.util.Arrays;
