@@ -289,8 +289,8 @@ TEST_F(ContextTests, test_short_context_1) {
     auto array1 = NDArrayFactory::create<float>('c', {3, 2}, {-1.f, -2.f, -3.f, -4.f, -5.f, -6.f});
     Context ctx(1);
 
-    ctx.addInputArray(0, array0.buffer(), array0.shapeInfo(), nullptr, nullptr);
-    ctx.addInputArray(1, array1.buffer(), array1.shapeInfo(), nullptr, nullptr);
+    ctx.setInputArray(0, array0.buffer(), array0.shapeInfo(), nullptr, nullptr);
+    ctx.setInputArray(1, array1.buffer(), array1.shapeInfo(), nullptr, nullptr);
 
     ASSERT_EQ(2, ctx.width());
 
@@ -305,4 +305,24 @@ TEST_F(ContextTests, test_short_context_1) {
 
     ASSERT_TRUE(input1->buffer() == array1.buffer());
     ASSERT_TRUE(input1->shapeInfo() == array1.shapeInfo());
+}
+
+TEST_F(ContextTests, test_short_context_2) {
+    auto array0 = NDArrayFactory::create<float>('c', {3, 2}, {1.f, 2.f, 3.f, 4.f, 5.f, 6.f});
+    auto array1 = NDArrayFactory::create<float>('c', {3, 2}, {1.f, 2.f, 3.f, 4.f, 5.f, 6.f});
+    auto z = NDArrayFactory::create<float>('c', {3, 2});
+
+    auto exp = NDArrayFactory::create<float>('c', {3, 2}, {2.f, 4.f, 6.f, 8.f, 10.f, 12.f});
+    Context ctx(1);
+
+    ctx.setInputArray(0, array0.buffer(), array0.shapeInfo(), nullptr, nullptr);
+    ctx.setInputArray(1, array1.buffer(), array1.shapeInfo(), nullptr, nullptr);
+    ctx.setOutputArray(0, z.buffer(), z.shapeInfo(), nullptr, nullptr);
+
+    ASSERT_EQ(2, ctx.width());
+
+    nd4j::ops::add op;
+    op.execute(&ctx);
+
+    ASSERT_EQ(exp, z);
 }

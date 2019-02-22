@@ -62,7 +62,8 @@ namespace nd4j {
             std::vector<nd4j::MKLDNNStream> _mkldnnStreams;
 #endif
 
-            std::vector<NDArray*> _fastpath;
+            std::vector<NDArray*> _fastpath_in;
+            std::vector<NDArray*> _fastpath_out;
             std::vector<NDArray*> _handles;
         public:
             // TODO: maybe override new here as well?
@@ -177,8 +178,22 @@ namespace nd4j {
             unsigned long width() override;
 
             // methods used in java interop
-            void addInputArray(int index, NDArray *array);
-            void addInputArray(int index, void *buffer, void *shapeInfo, void *specialBuffer, void *specialShapeInfo);
+            /**
+             * This method checks, if Context uses fastpath variable access
+             * @return
+             */
+            bool isFastPath();
+
+#ifndef __JAVACPP_HACK__
+            std::vector<NDArray*>& fastpath_in();
+            std::vector<NDArray*>& fastpath_out();
+#endif
+
+            void setInputArray(int index, NDArray *array);
+            void setInputArray(int index, void *buffer, void *shapeInfo, void *specialBuffer, void *specialShapeInfo);
+
+            void setOutputArray(int index, NDArray *array);
+            void setOutputArray(int index, void *buffer, void *shapeInfo, void *specialBuffer, void *specialShapeInfo);
         };
     }
 }

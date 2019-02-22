@@ -99,7 +99,8 @@ namespace nd4j {
             this->_iArgs.clear();
             this->_tArgs.clear();
             this->_inputs.clear();
-            this->_fastpath.clear();
+            this->_fastpath_in.clear();
+            this->_fastpath_out.clear();
 #ifdef HAVE_MKLDNN
             this->_mkldnnStreams.clear();
 #endif
@@ -125,6 +126,18 @@ namespace nd4j {
 
         void Context::forgetWorkspace() {
             _workspace = nullptr;
+        }
+
+        std::vector<NDArray*>& Context::fastpath_in() {
+            return _fastpath_in;
+        }
+
+        std::vector<NDArray*>& Context::fastpath_out() {
+            return _fastpath_out;
+        }
+
+        bool Context::isFastPath() {
+            return !_fastpath_in.empty();
         }
 
         VariableSpace *Context::getVariableSpace() {
@@ -332,8 +345,8 @@ namespace nd4j {
 
         NDArray* Context::array(int idx) {
             // we check for fastpath first
-            if (!_fastpath.empty() && _fastpath.size() > idx) {
-                return _fastpath[idx];
+            if (!_fastpath_in.empty() && _fastpath_in.size() > idx) {
+                return _fastpath_in[idx];
             }
 
             // if no luck for fastpath - return whatever is available
@@ -353,27 +366,45 @@ namespace nd4j {
         }
 
         unsigned long Context::width() {
-            if (!_fastpath.empty())
-                return _fastpath.size();
+            if (!_fastpath_in.empty())
+                return _fastpath_in.size();
             else
                 return _inputs.size();
         }
 
-        void Context::addInputArray(int index, NDArray *array) {
-            if (_fastpath.size() < index + 1)
-                _fastpath.resize(index+1);
+        void Context::setInputArray(int index, NDArray *array) {
+            if (_fastpath_in.size() < index + 1)
+                _fastpath_in.resize(index+1);
 
-            _fastpath[index] = array;
+            _fastpath_in[index] = array;
         }
 
-        void Context::addInputArray(int index, void *buffer, void *shapeInfo, void *specialBuffer, void *specialShapeInfo) {
+        void Context::setInputArray(int index, void *buffer, void *shapeInfo, void *specialBuffer, void *specialShapeInfo) {
             auto array = new NDArray(buffer, reinterpret_cast<Nd4jLong *>(shapeInfo));
             array->triggerAllocationFlag(false, false);
 
-            if (_fastpath.size() < index + 1)
-                _fastpath.resize(index+1);
+            if (_fastpath_in.size() < index + 1)
+                _fastpath_in.resize(index+1);
 
-            _fastpath[index] = array;
+            _fastpath_in[index] = array;
+            _handles.emplace_back(array);
+        }
+
+        void Context::setOutputArray(int index, NDArray *array) {
+            if (_fastpath_out.size() < index + 1)
+                _fastpath_out.resize(index+1);
+
+            _fastpath_out[index] = array;
+        }
+
+        void Context::setOutputArray(int index, void *buffer, void *shapeInfo, void *specialBuffer, void *specialShapeInfo) {
+            if (_fastpath_out.size() < index + 1)
+                _fastpath_out.resize(index+1);
+
+            auto array = new NDArray(buffer, reinterpret_cast<Nd4jLong *>(shapeInfo));
+            array->triggerAllocationFlag(false, false);
+
+            _fastpath_out[index] = array;
             _handles.emplace_back(array);
         }
     }
