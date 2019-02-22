@@ -28,6 +28,7 @@ import org.deeplearning4j.nn.params.Convolution3DParamInitializer;
 import org.deeplearning4j.optimize.api.TrainingListener;
 import org.deeplearning4j.util.Convolution3DUtils;
 import org.deeplearning4j.util.ConvolutionUtils;
+import org.deeplearning4j.util.ValidationUtils;
 import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
@@ -164,10 +165,6 @@ public class Convolution3D extends ConvolutionLayer {
 
         public Builder(int[] kernelSize, int[] stride, int[] padding, int[] dilation) {
             super(kernelSize, stride, padding, dilation, 3);
-            Preconditions.checkState(kernelSize.length == 3, "Kernel size argument has to have length 3.");
-            Preconditions.checkState(stride.length == 3, "Stride size argument has to have length 3.");
-            Preconditions.checkState(padding.length == 3, "Padding size argument has to have length 3.");
-            Preconditions.checkState(dilation.length == 3, "Padding size argument has to have length 3.");
         }
 
         public Builder(int[] kernelSize, int[] stride, int[] padding) {
@@ -189,8 +186,7 @@ public class Convolution3D extends ConvolutionLayer {
          * @return 3D convolution layer builder
          */
         public Builder kernelSize(int... kernelSize) {
-            Preconditions.checkState(kernelSize.length == 3, "Kernel size argument has to have length 3.");
-            this.kernelSize = kernelSize;
+            this.setKernelSize(kernelSize);
             return this;
         }
 
@@ -201,8 +197,7 @@ public class Convolution3D extends ConvolutionLayer {
          * @return 3D convolution layer builder
          */
         public Builder stride(int... stride) {
-            Preconditions.checkState(stride.length == 3, "Stride size argument has to have length 3.");
-            this.stride = stride;
+            this.setStride(stride);
             return this;
         }
 
@@ -213,9 +208,7 @@ public class Convolution3D extends ConvolutionLayer {
          * @return 3D convolution layer builder
          */
         public Builder padding(int... padding) {
-            Preconditions.checkState(padding.length == 3, "Padding size argument has to have length 3.");
-
-            this.padding = padding;
+            this.setPadding(padding);
             return this;
         }
 
@@ -226,13 +219,12 @@ public class Convolution3D extends ConvolutionLayer {
          * @return 3D convolution layer builder
          */
         public Builder dilation(int... dilation) {
-            Preconditions.checkState(dilation.length == 3, "Dilation size argument has to have length 3.");
-            this.dilation = dilation;
+            this.setDilation(dilation);
             return this;
         }
 
         public Builder convolutionMode(ConvolutionMode mode) {
-            this.convolutionMode = mode;
+            this.setConvolutionMode(mode);
             return this;
         }
 
@@ -244,7 +236,7 @@ public class Convolution3D extends ConvolutionLayer {
          * @param dataFormat Data format to use for activations
          */
         public Builder dataFormat(DataFormat dataFormat) {
-            this.dataFormat = dataFormat;
+            this.setDataFormat(dataFormat);
             return this;
         }
 
@@ -255,7 +247,7 @@ public class Convolution3D extends ConvolutionLayer {
          */
         @Override
         public void setKernelSize(int[] kernelSize) {
-            kernelSize(kernelSize);
+            this.kernelSize = ValidationUtils.validate3NonNegative(kernelSize, "kernelSize");
         }
 
         /**
@@ -265,7 +257,7 @@ public class Convolution3D extends ConvolutionLayer {
          */
         @Override
         public void setStride(int[] stride) {
-            stride(stride);
+            this.stride = ValidationUtils.validate3NonNegative(stride, "stride");
         }
 
         /**
@@ -275,7 +267,7 @@ public class Convolution3D extends ConvolutionLayer {
          */
         @Override
         public void setPadding(int[] padding) {
-            padding(padding);
+            this.padding = ValidationUtils.validate3NonNegative(padding, "padding");
         }
 
         /**
@@ -285,7 +277,7 @@ public class Convolution3D extends ConvolutionLayer {
          */
         @Override
         public void setDilation(int[] dilation) {
-            dilation(dilation);
+            this.dilation = ValidationUtils.validate3NonNegative(dilation, "dilation");
         }
 
 

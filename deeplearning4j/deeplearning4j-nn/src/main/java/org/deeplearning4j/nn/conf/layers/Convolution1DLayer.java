@@ -26,6 +26,7 @@ import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.optimize.api.TrainingListener;
 import org.deeplearning4j.util.Convolution1DUtils;
 import org.deeplearning4j.util.ConvolutionUtils;
+import org.deeplearning4j.util.ValidationUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.util.Collection;
@@ -158,7 +159,7 @@ public class Convolution1DLayer extends ConvolutionLayer {
          * @param kernelSize the length of the kernel
          */
         public Builder kernelSize(int kernelSize) {
-            this.kernelSize = new int[] {kernelSize, 1};
+            this.setKernelSize(new int[]{kernelSize});
             return this;
         }
 
@@ -168,7 +169,7 @@ public class Convolution1DLayer extends ConvolutionLayer {
          * @param stride Stride
          */
         public Builder stride(int stride) {
-            this.stride[0] = stride;
+            this.setStride(new int[]{stride});
             return this;
         }
 
@@ -178,8 +179,28 @@ public class Convolution1DLayer extends ConvolutionLayer {
          * @param padding Padding value
          */
         public Builder padding(int padding) {
-            this.padding[0] = padding;
+            this.setPadding(new int[]{padding});
             return this;
+        }
+
+        @Override
+        public void setKernelSize(int[] kernelSize) {
+            this.kernelSize[0] = ValidationUtils.validate1NonNegative(kernelSize, "kernelSize")[0];
+        }
+
+        @Override
+        public void setStride(int[] stride) {
+            this.stride[0] = ValidationUtils.validate1NonNegative(stride, "stride")[0];
+        }
+
+        @Override
+        public void setPadding(int[] padding) {
+            this.padding[0] = ValidationUtils.validate1NonNegative(padding, "padding")[0];
+        }
+
+        @Override
+        public void setDilation(int[] dilation) {
+            this.dilation[0] = ValidationUtils.validate1NonNegative(dilation, "dilation")[0];
         }
 
         @Override

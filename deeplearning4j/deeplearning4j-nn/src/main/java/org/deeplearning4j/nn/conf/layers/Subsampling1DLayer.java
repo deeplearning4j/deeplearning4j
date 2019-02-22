@@ -27,6 +27,7 @@ import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.optimize.api.TrainingListener;
 import org.deeplearning4j.util.Convolution1DUtils;
 import org.deeplearning4j.util.ConvolutionUtils;
+import org.deeplearning4j.util.ValidationUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.util.Collection;
@@ -197,7 +198,7 @@ public class Subsampling1DLayer extends SubsamplingLayer {
          * @param kernelSize kernel size
          */
         public Subsampling1DLayer.Builder kernelSize(int kernelSize) {
-            this.kernelSize[0] = kernelSize;
+            this.setKernelSize(new int[]{kernelSize});
             return this;
         }
 
@@ -207,7 +208,7 @@ public class Subsampling1DLayer extends SubsamplingLayer {
          * @param stride stride value
          */
         public Subsampling1DLayer.Builder stride(int stride) {
-            this.stride[0] = stride;
+            this.setStride(new int[]{stride});
             return this;
         }
 
@@ -217,7 +218,7 @@ public class Subsampling1DLayer extends SubsamplingLayer {
          * @param padding padding value
          */
         public Subsampling1DLayer.Builder padding(int padding) {
-            this.padding[0] = padding;
+            this.setPadding(new int[]{padding});
             return this;
         }
 
@@ -228,8 +229,7 @@ public class Subsampling1DLayer extends SubsamplingLayer {
          */
         @Override
         public void setKernelSize(int[] kernelSize) {
-            Preconditions.checkArgument(kernelSize.length == 1, "Must have 1 kernelSize value - got %s", kernelSize);
-            super.setKernelSize(kernelSize);
+            this.kernelSize[0] = ValidationUtils.validate1NonNegative(kernelSize, "kernelSize")[0];
         }
 
         /**
@@ -239,8 +239,7 @@ public class Subsampling1DLayer extends SubsamplingLayer {
          */
         @Override
         public void setStride(int[] stride) {
-            Preconditions.checkArgument(stride.length == 1, "Must have 1 stride value - got %s", stride);
-            super.setStride(stride);
+            this.stride[0] = ValidationUtils.validate1NonNegative(stride, "stride")[0];
         }
 
         /**
@@ -250,8 +249,7 @@ public class Subsampling1DLayer extends SubsamplingLayer {
          */
         @Override
         public void setPadding(int[] padding) {
-            Preconditions.checkArgument(kernelSize.length == 1, "Must have 1 padding value - got %s", padding);
-            super.setPadding(padding);
+            this.padding[0] = ValidationUtils.validate1NonNegative(padding, "padding")[0];
         }
     }
 }

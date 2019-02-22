@@ -26,6 +26,7 @@ import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
 import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.deeplearning4j.nn.params.EmptyParamInitializer;
 import org.deeplearning4j.optimize.api.TrainingListener;
+import org.deeplearning4j.util.ValidationUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.util.Collection;
@@ -161,18 +162,14 @@ public class SpaceToBatchLayer extends NoParamLayer {
          * dimensions
          */
         public void setBlocks(int[] blocks) {
-            Preconditions.checkArgument(blocks.length == 2, "Must have 2 block values - got %s", blocks);
-            this.blocks = blocks;
+            this.blocks = ValidationUtils.validate2NonNegative(blocks);
         }
 
         /**
          * @param padding Padding - should be a 2d array, with format [[padTop, padBottom], [padLeft, padRight]]
          */
         public void setPadding(int[][] padding) {
-            Preconditions.checkArgument(padding.length == 2 && padding[0].length == 2 && padding[1].length == 2,
-                            "Padding must be a 2d array of shape [[padTop, padBottom], [padLeft, padRight]] - got %s",
-                            padding);
-            this.padding = padding;
+            this.padding = ValidationUtils.validate2x2NonNegative(padding);
         }
 
 
@@ -181,8 +178,8 @@ public class SpaceToBatchLayer extends NoParamLayer {
          * dimensions
          */
         public Builder(int[] blocks) {
-            this.blocks = blocks;
-            this.padding = new int[][] {{0, 0}, {0, 0}};
+            this.setBlocks(blocks);
+            this.setPadding(new int[][] {{0, 0}, {0, 0}});
         }
 
         /**
@@ -191,8 +188,8 @@ public class SpaceToBatchLayer extends NoParamLayer {
          * @param padding Padding - should be a 2d array, with format [[padTop, padBottom], [padLeft, padRight]]
          */
         public Builder(int[] blocks, int[][] padding) {
-            this.blocks = blocks;
-            this.padding = padding;
+            this.setBlocks(blocks);
+            this.setPadding(padding);
         }
 
         /**
@@ -200,7 +197,7 @@ public class SpaceToBatchLayer extends NoParamLayer {
          * dimensions
          */
         public T blocks(int[] blocks) {
-            this.blocks = blocks;
+            this.setBlocks(blocks);
             return (T) this;
         }
 
@@ -208,13 +205,13 @@ public class SpaceToBatchLayer extends NoParamLayer {
          * @param padding Padding - should be a 2d array, with format [[padTop, padBottom], [padLeft, padRight]]
          */
         public T padding(int[][] padding) {
-            this.padding = padding;
+            this.setPadding(padding);
             return (T) this;
         }
 
         @Override
         public T name(String layerName) {
-            this.layerName = layerName;
+            this.setLayerName(layerName);
             return (T) this;
         }
 

@@ -307,23 +307,23 @@ public class BatchNormalization extends FeedForwardLayer {
         protected boolean useLogStd = true;
 
         public Builder(double decay, boolean isMinibatch) {
-            this.decay = decay;
-            this.isMinibatch = isMinibatch;
+            this.setDecay(decay);
+            this.setMinibatch(isMinibatch);
         }
 
         public Builder(double gamma, double beta) {
-            this.gamma = gamma;
-            this.beta = beta;
+            this.setGamma(gamma);
+            this.setBeta(beta);
         }
 
         public Builder(double gamma, double beta, boolean lockGammaBeta) {
-            this.gamma = gamma;
-            this.beta = beta;
-            this.lockGammaBeta = lockGammaBeta;
+            this.setGamma(gamma);
+            this.setBeta(beta);
+            this.setLockGammaBeta(lockGammaBeta);
         }
 
         public Builder(boolean lockGammaBeta) {
-            this.lockGammaBeta = lockGammaBeta;
+            this.setLockGammaBeta(lockGammaBeta);
         }
 
         public Builder() {}
@@ -336,7 +336,7 @@ public class BatchNormalization extends FeedForwardLayer {
          * @param minibatch Minibatch parameter
          */
         public Builder minibatch(boolean minibatch) {
-            this.isMinibatch = minibatch;
+            this.setMinibatch(minibatch);
             return this;
         }
 
@@ -347,7 +347,7 @@ public class BatchNormalization extends FeedForwardLayer {
          * @param gamma Gamma parameter for all activations, used only with locked gamma/beta configuration mode
          */
         public Builder gamma(double gamma) {
-            this.gamma = gamma;
+            this.setGamma(gamma);
             return this;
         }
 
@@ -358,7 +358,7 @@ public class BatchNormalization extends FeedForwardLayer {
          * @param beta Beta parameter for all activations, used only with locked gamma/beta configuration mode
          */
         public Builder beta(double beta) {
-            this.beta = beta;
+            this.setBeta(beta);
             return this;
         }
 
@@ -370,7 +370,7 @@ public class BatchNormalization extends FeedForwardLayer {
          * @param eps Epsilon values to use
          */
         public Builder eps(double eps) {
-            this.eps = eps;
+            this.setEps(eps);
             return this;
         }
 
@@ -383,7 +383,7 @@ public class BatchNormalization extends FeedForwardLayer {
          * @param decay Decay value to use for global stats calculation
          */
         public Builder decay(double decay) {
-            this.decay = decay;
+            this.setDecay(decay);
             return this;
         }
 
@@ -395,7 +395,7 @@ public class BatchNormalization extends FeedForwardLayer {
          * @param lockGammaBeta If true: use fixed beta/gamma values. False: learn during
          */
         public Builder lockGammaBeta(boolean lockGammaBeta) {
-            this.lockGammaBeta = lockGammaBeta;
+            this.setLockGammaBeta(lockGammaBeta);
             return this;
         }
 
@@ -408,7 +408,7 @@ public class BatchNormalization extends FeedForwardLayer {
          * @param constraints Constraints to apply to the beta parameter of this layer
          */
         public Builder constrainBeta(LayerConstraint... constraints) {
-            this.betaConstraints = Arrays.asList(constraints);
+            this.setBetaConstraints(Arrays.asList(constraints));
             return this;
         }
 
@@ -421,7 +421,7 @@ public class BatchNormalization extends FeedForwardLayer {
          * @param constraints Constraints to apply to the gamma parameter of this layer
          */
         public Builder constrainGamma(LayerConstraint... constraints) {
-            this.gammaConstraints = Arrays.asList(constraints);
+            this.setGammaConstraints(Arrays.asList(constraints));
             return this;
         }
 
@@ -433,7 +433,7 @@ public class BatchNormalization extends FeedForwardLayer {
          * @param allowFallback Whether fallback to non-CuDNN implementation should be used
          */
         public Builder cudnnAllowFallback(boolean allowFallback) {
-            this.cudnnAllowFallback = allowFallback;
+            this.setCudnnAllowFallback(allowFallback);
             return this;
         }
 
@@ -446,7 +446,7 @@ public class BatchNormalization extends FeedForwardLayer {
          * gives a variance of 1e-6, which can be problematic for 16-bit floating point
          */
         public Builder useLogStd(boolean useLogStd) {
-            this.useLogStd = useLogStd;
+            this.setUseLogStd(useLogStd);
             return this;
         }
 
