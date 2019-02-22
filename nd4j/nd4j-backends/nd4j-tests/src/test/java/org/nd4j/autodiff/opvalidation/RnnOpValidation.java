@@ -73,7 +73,7 @@ public class RnnOpValidation extends BaseOpValidation {
                 .clippingCellValue(0.0)
                 .build();
 
-        List<SDVariable> v = sd.rnn().lstmBlock("lstm", conf);  //Output order: i, c, f, o, z, h, y
+        List<SDVariable> v = sd.rnn().lstmBlockCell("lstm", conf);  //Output order: i, c, f, o, z, h, y
         List<String> toExec = new ArrayList<>();
         for(SDVariable sdv : v){
             toExec.add(sdv.getVarName());
@@ -181,7 +181,7 @@ public class RnnOpValidation extends BaseOpValidation {
                 .clippingCellValue(0.0)
                 .build();
 
-        List<SDVariable> v = sd.rnn().lstmBlock("lstm", conf);  //Output order: i, c, f, o, z, h, y
+        List<SDVariable> v = sd.rnn().lstmBlockCell("lstm", conf);  //Output order: i, c, f, o, z, h, y
         List<String> toExec = new ArrayList<>();
         for(SDVariable sdv : v){
             toExec.add(sdv.getVarName());

@@ -239,16 +239,56 @@ namespace nd4j {
 	   *    1: clipping value for cell state, if it is not equal to zero, then cell state is clipped
        *  
        * Output arrays: 
-       *    0: Output - input gate activations [bs, numUnits]
-       *    1: Output - input modulation gate activations [bS, numUnits]
-	   *    2: Output - forget gate activations [bs, numUnits]
-	   *    3: Output - output gate activations [bs, numUnits]
-	   *    4: Activations, pre input gate [bs, numUnits]
-	   *    5: Activations, cell state [bs, numUnits]
-	   *    6: Current cell output [bS, numUnits], time t
+       *    0: i      - Input modulation gate activations [bS, numUnits]
+       *    1: c (cs) - Cell state (pre tanh) [bs, numUnits] (cs)
+       *    2: f      - Output - forget gate activations [bs, numUnits]
+       *    3: o      - Output - output gate activations [bs, numUnits]
+       *    4: z (ci) - Output - block input [bs, numUnits]
+       *    5: h (co) - Cell state, post tanh [bs, numUnits]
+       *    6: y (h)  - Current cell output [bS, numUnits], time t
        */                  
         #if NOT_EXCLUDED(OP_lstmBlockCell)
         DECLARE_CUSTOM_OP(lstmBlockCell, 8, 7, false, 2, 1);
+        #endif
+
+    //////////////////////////////////////////////////////////////////////////
+    /**
+       * Implementation of operation for LSTM layer with optional peep hole connections.
+       * See lstmBlockCell for details. lstmBlockCell is used internally for computation.
+       * This method expects as input (and returns as output) sequences in time major order: i.e., shape
+       * [seqLength,batchSize,inOutSize] where inOutSize is either the input size or the output size, depending
+       * on the array.
+       *
+       *
+       * Input arrays:
+       *    0: max sequence length; int64 scalar
+       *    1: input [seqLength, bS, inSize] at time t
+       *    2: previous/initial cell state  [bS, numUnits]
+       *    3: previous/initial output [bS, numUnits]
+       *    4: Weights - concatenated (input-to-hidden, hidden-to-hidden weights)  weights, [(inSize+numUnits), 4*numUnits]
+       *    5: weights - cell peephole (t-1) connections to input modulation gate, [numUnits]
+       *    6: weights - cell peephole (t-1) connections to forget gate, [numUnits]
+       *    7: weights - cell peephole (t) connections to output gate, [numUnits]
+       *    8: biases, [4*numUnits]
+       *
+       *  Input integer arguments:
+       *    0: if not zero, provide peephole connections
+       *
+       *  Input float arguments:
+       *    0: the bias added to forget gates in order to reduce the scale of forgetting in the beginning of the training
+       *    1: clipping value for cell state, if it is not equal to zero, then cell state is clipped
+       *
+       * Output arrays:
+       *    0: i      - Input modulation gate activations [seqLenth, bS, numUnits]
+       *    1: c (cs) - Cell state (pre tanh) [seqLength, bs, numUnits]
+       *    2: f      - Output - forget gate activations [seqLength, bs, numUnits]
+       *    3: o      - Output - output gate activations [seqLength, bs, numUnits]
+       *    4: z (ci) - Output - block input [seqLength, bs, numUnits]
+       *    5: h (co) - Cell state, post tanh [seqLength, bs, numUnits]
+       *    6: y (h)  - Current cell output [seqLength, bS, numUnits]
+       */
+        #if NOT_EXCLUDED(OP_lstmBlock)
+        DECLARE_CUSTOM_OP(lstmBlock, 9, 7, false, 2, 1);
         #endif
 		
     //////////////////////////////////////////////////////////////////////////

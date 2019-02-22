@@ -144,7 +144,8 @@ void lstmCell(const NDArray* xt, const NDArray* ht_1, const NDArray* ct_1, const
 
 void lstmBlockCell(const NDArray* xt, const NDArray* cLast, const NDArray* yLast,
                    const NDArray* W, const NDArray* Wci, const NDArray* Wcf, const NDArray* Wco, const NDArray* b,
-                   const NDArray* i, const NDArray* c, const NDArray* f, const NDArray* o, const NDArray* z, const NDArray* h, NDArray* y, const std::vector<double>& params) {
+                   const NDArray* i, const NDArray* c, const NDArray* f, const NDArray* o, const NDArray* z, const NDArray* h,
+                   const NDArray* y, const std::vector<double>& params) {
 
     /* Input arrays:
     *    0: xt              - input [bS, inSize] at time t
@@ -243,7 +244,7 @@ void lstmBlockCell(const NDArray* xt, const NDArray* cLast, const NDArray* yLast
     const_cast<NDArray*>(h)->assign(&tanhc);       //Assign: expects NDArray& or NDArray*
 
 
-    y->assign(zo * (*h));
+    const_cast<NDArray*>(y)->assign(zo * (*h));
 
     //TODO do I need to delete variable space and concat op??
 
@@ -282,7 +283,44 @@ void lstmTimeLoop(const NDArray* x, const NDArray* h0, const NDArray* c0, const 
         helpers::lstmCell(&xt,&currentH,&currentC, Wx,Wh,Wc,Wp, b,   &ht, &ct,   params);
         currentH.assign(ht);
         currentC.assign(ct);
-    }    
+    }
+}
+
+/////////////////////////////////////////////////////////////////////////////
+void lstmBlockTimeLoop(const NDArray* maxSeqLength, const NDArray* xSeq, const NDArray* W, const NDArray* b,
+                       const NDArray* c0, const NDArray* y0, const NDArray* Wci, const NDArray* Wcf, const NDArray* Wco,
+                       const NDArray* iSeq, const NDArray* cSeq, const NDArray* fSeq, const NDArray* oSeq, const NDArray* zSeq,
+                       const NDArray* hSeq, const NDArray* ySeq, const std::vector<double>& params){
+
+    const int seqLen = xSeq->sizeAt(0);
+    const int mb = xSeq->sizeAt(1);
+    const int inSize = xSeq->sizeAt(2);
+    const int outSize = iSeq->sizeAt(2);
+
+    const std::vector<Nd4jLong> inSliceShape({mb,inSize});
+    const std::vector<Nd4jLong> outSliceShape({mb,inSize});
+
+    NDArray* c_t1 = const_cast<NDArray*>(c0);
+    NDArray* y_t1 = const_cast<NDArray*>(y0);
+
+    // loop through time steps
+    for (int t = 0; t <seqLen; ++t) {
+        auto xt = (*xSeq)({t,t+1, 0,0, 0,0}).reshape('c', inSliceShape);
+
+        auto it = (*iSeq)({t,t+1, 0,0, 0,0}).reshape('c', outSliceShape);
+        auto ct = (*cSeq)({t,t+1, 0,0, 0,0}).reshape('c', outSliceShape);
+        auto ft = (*fSeq)({t,t+1, 0,0, 0,0}).reshape('c', outSliceShape);
+        auto ot = (*oSeq)({t,t+1, 0,0, 0,0}).reshape('c', outSliceShape);
+        auto zt = (*zSeq)({t,t+1, 0,0, 0,0}).reshape('c', outSliceShape);
+        auto ht = (*hSeq)({t,t+1, 0,0, 0,0}).reshape('c', outSliceShape);
+        auto yt = (*ySeq)({t,t+1, 0,0, 0,0}).reshape('c', outSliceShape);
+
+        helpers::lstmBlockCell(xt, c_t1, y_t1, W, Wci, Wcf, Wco, b, it, ct, ft, ot, zt, ht, yt, params);
+
+        c_t1 = ct;
+        y_t1 = yt;
+    }
+
 }
 
 

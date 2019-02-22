@@ -42,7 +42,7 @@ public class SDRNN extends SDOps {
      */
     public List<SDVariable> gru(String baseName, GRUCellConfiguration configuration) {
         GRUCell c = new GRUCell(sd, configuration);
-        return Arrays.asList(c.outputVariables());
+        return Arrays.asList(c.outputVariables(baseName));
     }
 
 
@@ -53,15 +53,19 @@ public class SDRNN extends SDOps {
      * @param configuration the configuration to use
      * @return
      */
-    public SDVariable lstm(String baseName, LSTMCellConfiguration configuration) {
+    public SDVariable lstmCell(String baseName, LSTMCellConfiguration configuration) {
         return new LSTMCell(sd, configuration).outputVariables(baseName)[0];
     }
 
-    public List<SDVariable> lstmBlock(String name, LSTMBlockCellConfiguration configuration){
-        SDVariable[] v = new LSTMBlockCell(sd, configuration).outputVariables();
+    public List<SDVariable> lstmBlockCell(String name, LSTMBlockCellConfiguration configuration){
+        SDVariable[] v = new LSTMBlockCell(sd, configuration).outputVariables(name);
         return Arrays.asList(v);
     }
 
+    public List<SDVariable> lstmBlock(String name, LSTMBlockCellConfiguration configuration){
+        SDVariable[] v = new LSTMBlock(sd, configuration).outputVariables(name);
+        return Arrays.asList(v);
+    }
 
     /**
      * Simple recurrent unit
