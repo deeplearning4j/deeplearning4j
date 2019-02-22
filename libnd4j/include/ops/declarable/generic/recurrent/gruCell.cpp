@@ -37,12 +37,13 @@ CUSTOM_OP_IMPL(gruCell, 6, 4, false, 0, 0) {
     auto bru    = INPUT_VARIABLE(4);                   // r and u biases, [2*numUnits] - reset and update gates
     auto bc     = INPUT_VARIABLE(5);                   // c biases, [numUnits] - cell gate
 
-    /*
-    auto r    =  OUTPUT_VARIABLE(0);                  // Reset gate output [bS, numUnits]
-    auto u    =  OUTPUT_VARIABLE(0);                  // Update gate output [bS, numUnits]
-    auto c    =  OUTPUT_VARIABLE(0);                  // Cell gate output [bS, numUnits]
-    auto h    =  OUTPUT_VARIABLE(0);                  // current cell output [bS, numUnits]
 
+    auto r    =  OUTPUT_VARIABLE(0);                  // Reset gate output [bS, numUnits]
+    auto u    =  OUTPUT_VARIABLE(1);                  // Update gate output [bS, numUnits]
+    auto c    =  OUTPUT_VARIABLE(2);                  // Cell gate output [bS, numUnits]
+    auto h    =  OUTPUT_VARIABLE(3);                  // current cell output [bS, numUnits]
+
+    /*
     const int rank     = x->rankOf();              // = 2
     const auto bS       = x->sizeAt(0);
     const auto inSize   = x->sizeAt(1);

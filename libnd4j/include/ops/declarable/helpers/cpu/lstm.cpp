@@ -165,7 +165,7 @@ void lstmBlockCell(const NDArray* xt, const NDArray* cLast, const NDArray* yLast
     *
     * Output arrays:
     *    0: i - Output - input modulation gate activations [bS, numUnits]
-    *    1: c - Cell state (pre tanh) [bs, numUnits]
+    *    1: c - Cell state (pre tanh) [bs, numUnits] (cs)
     *    2: f - Output - forget gate activations [bs, numUnits]
     *    3: o - Output - output gate activations [bs, numUnits]
     *    4: z - Output - block input [bs, numUnits]
@@ -223,6 +223,7 @@ void lstmBlockCell(const NDArray* xt, const NDArray* cLast, const NDArray* yLast
     const_cast<NDArray*>(c)->assign( zi * zz + zf * (*cLast) ); //cell state = blockInput .* inputGate + prevCellState .* forgetGate
     const_cast<NDArray*>(h)->assign( tanh(*c) );
 
+
     // if clipping value is provided then cell state is clipped by this value prior to the cell output activation
     if(clippingCellValue > 0.0) {
         clipping(const_cast<NDArray*>(c), clippingCellValue);
@@ -241,7 +242,7 @@ void lstmBlockCell(const NDArray* xt, const NDArray* cLast, const NDArray* yLast
     const_cast<NDArray*>(h)->assign(&tanhc);       //Assign: expects NDArray& or NDArray*
 
 
-    y->assign(zo * (*c));
+    y->assign(zo * (*h));
 
     //TODO do I need to delete variable space and concat op??
 

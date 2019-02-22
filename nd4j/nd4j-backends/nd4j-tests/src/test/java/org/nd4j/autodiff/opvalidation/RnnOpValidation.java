@@ -106,13 +106,7 @@ public class RnnOpValidation extends BaseOpValidation {
         Transforms.sigmoid(iExp, false);
         assertEquals(iExp, m.get(toExec.get(0)));
 
-
-        //Cell state, pre tanh: tanh(z) .* sigmoid(i)
-        INDArray hExp = zExp.mul(iExp);
-        INDArray hAct = m.get(toExec.get(1));
-        assertEquals(hExp, hAct);
-
-        //Forget gate: (note: peephole input - last time step)
+        //Forget gate (post sigmoid): (note: peephole input - last time step)
         INDArray wf_x = W.getArr().get(NDArrayIndex.interval(0,nIn), NDArrayIndex.interval(1*nOut, 2*nOut));           //Input weights
         INDArray wf_r = W.getArr().get(NDArrayIndex.interval(nIn,nIn+nOut), NDArrayIndex.interval(1*nOut, 2*nOut));    //Recurrent weights
         INDArray bf = b.getArr().get(NDArrayIndex.interval(1*nOut, 2*nOut));
@@ -121,14 +115,15 @@ public class RnnOpValidation extends BaseOpValidation {
         fExp.addi(yLast.getArr().mmul(wf_r));   //[mb,nOut]*[nOut,nOut]
         fExp.addi(cLast.getArr().mulRowVector(Wcf.getArr()));   //Peephole
         fExp.addi(fb);
+        Transforms.sigmoid(fExp, false);
         assertEquals(fExp, m.get(toExec.get(2)));
 
-        //Cell state: h + cLast .* forgetGate
-        INDArray cExp = hExp.add(cLast.getArr().mul(Transforms.sigmoid(fExp,true)));
-        assertEquals(cExp, m.get(toExec.get(5)));
+        //Cell state (pre tanh): tanh(z) .* sigmoid(i) + sigmoid(f) .* cLast
+        INDArray cExp = zExp.mul(iExp).add(fExp.mul(cLast.getArr()));
+        INDArray cAct = m.get(toExec.get(1));
+        assertEquals(cExp, cAct);
 
-
-        //Output gate: (note: peephole input: current time step)
+        //Output gate (post sigmoid): (note: peephole input: current time step)
         INDArray wo_x = W.getArr().get(NDArrayIndex.interval(0,nIn), NDArrayIndex.interval(3*nOut, 4*nOut));           //Input weights
         INDArray wo_r = W.getArr().get(NDArrayIndex.interval(nIn,nIn+nOut), NDArrayIndex.interval(3*nOut, 4*nOut));    //Recurrent weights
         INDArray bo = b.getArr().get(NDArrayIndex.interval(3*nOut, 4*nOut));
@@ -136,11 +131,15 @@ public class RnnOpValidation extends BaseOpValidation {
         INDArray oExp = x.getArr().mmul(wo_x).addiRowVector(bo);        //[mb,nIn]*[nIn, nOut] + [nOut]
         oExp.addi(yLast.getArr().mmul(wo_r));   //[mb,nOut]*[nOut,nOut]
         oExp.addi(cExp.mulRowVector(Wco.getArr())); //Peephole
+        Transforms.sigmoid(oExp, false);
         assertEquals(oExp, m.get(toExec.get(3)));
 
+        //Cell state, post tanh
+        INDArray hExp = Transforms.tanh(cExp, true);
+        assertEquals(hExp, m.get(toExec.get(5)));
 
-        INDArray yExp = Transforms.tanh(cExp,true).mul(Transforms.sigmoid(oExp,true));
+        //Final output
+        INDArray yExp = hExp.mul(oExp);
         assertEquals(yExp, m.get(toExec.get(6)));
     }
-
 }
