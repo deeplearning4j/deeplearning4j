@@ -22,6 +22,7 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.impl.layers.recurrent.config.GRUCellConfiguration;
 import org.nd4j.linalg.api.ops.impl.layers.recurrent.config.LSTMBlockCellConfiguration;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
@@ -209,5 +210,80 @@ public class RnnOpValidation extends BaseOpValidation {
         assertEquals(out4, m.get(toExec.get(4)));       //block input
         assertEquals(out5, m.get(toExec.get(5)));       //Cell state
         assertEquals(out6, m.get(toExec.get(6)));       //Output
+    }
+
+    @Test
+    public void testGRUCell(){
+        Nd4j.getRandom().setSeed(12345);
+        int mb = 2;
+        int nIn = 3;
+        int nOut = 4;
+
+        SameDiff sd = SameDiff.create();
+        SDVariable x = sd.constant(Nd4j.rand(DataType.FLOAT, mb, nIn));
+        SDVariable hLast = sd.constant(Nd4j.rand(DataType.FLOAT, mb, nOut));
+        SDVariable Wru = sd.constant(Nd4j.rand(DataType.FLOAT, (nIn+nOut), 2*nOut));
+        SDVariable Wc = sd.constant(Nd4j.rand(DataType.FLOAT, (nIn+nOut), nOut));
+        SDVariable bru = sd.constant(Nd4j.rand(DataType.FLOAT, 2*nOut));
+        SDVariable bc = sd.constant(Nd4j.rand(DataType.FLOAT, nOut));
+
+        double fb = 1.0;
+        GRUCellConfiguration conf = GRUCellConfiguration.builder()
+                .xt(x)
+                .hLast(hLast)
+                .Wru(Wru)
+                .Wc(Wc)
+                .bru(bru)
+                .bc(bc)
+                .build();
+
+        List<SDVariable> v = sd.rnn().gru("gru", conf);
+        List<String> toExec = new ArrayList<>();
+        for(SDVariable sdv : v){
+            toExec.add(sdv.getVarName());
+        }
+
+        //Test forward pass:
+        Map<String,INDArray> m = sd.exec(null, toExec);
+
+        //Weights and bias order: [r, u], [c]
+
+        //Reset gate:
+        INDArray wr_x = Wru.getArr().get(NDArrayIndex.interval(0,nIn), NDArrayIndex.interval(0, nOut));           //Input weights
+        INDArray wr_r = Wru.getArr().get(NDArrayIndex.interval(nIn,nIn+nOut), NDArrayIndex.interval(0, nOut));    //Recurrent weights
+        INDArray br = bru.getArr().get(NDArrayIndex.interval(0, nOut));
+
+        INDArray rExp = x.getArr().mmul(wr_x).addiRowVector(br);        //[mb,nIn]*[nIn, nOut] + [nOut]
+        rExp.addi(hLast.getArr().mmul(wr_r));   //[mb,nOut]*[nOut,nOut]
+        Transforms.sigmoid(rExp,false);
+
+        INDArray rAct = m.get(toExec.get(0));
+        assertEquals(rExp, rAct);
+
+        //Update gate:
+        INDArray wu_x = Wru.getArr().get(NDArrayIndex.interval(0,nIn), NDArrayIndex.interval(nOut, 2*nOut));           //Input weights
+        INDArray wu_r = Wru.getArr().get(NDArrayIndex.interval(nIn,nIn+nOut), NDArrayIndex.interval(nOut, 2*nOut));    //Recurrent weights
+        INDArray bu = bru.getArr().get(NDArrayIndex.interval(nOut, 2*nOut));
+
+        INDArray uExp = x.getArr().mmul(wu_x).addiRowVector(bu);        //[mb,nIn]*[nIn, nOut] + [nOut]
+        uExp.addi(hLast.getArr().mmul(wu_r));   //[mb,nOut]*[nOut,nOut]
+        Transforms.sigmoid(uExp,false);
+
+        INDArray uAct = m.get(toExec.get(1));
+        assertEquals(uExp, uAct);
+
+        //c = tanh(x * Wcx + Wcr * (hLast .* r))
+        INDArray Wcx = Wc.getArr().get(NDArrayIndex.interval(0,nIn), NDArrayIndex.all());
+        INDArray Wcr = Wc.getArr().get(NDArrayIndex.interval(nIn, nIn+nOut), NDArrayIndex.all());
+        INDArray cExp = x.getArr().mmul(Wcx);
+        cExp.addi(hLast.getArr().mul(rExp).mmul(Wcr));
+        cExp.addiRowVector(bc.getArr());
+        Transforms.tanh(cExp, false);
+
+        assertEquals(cExp, m.get(toExec.get(2)));
+
+        //h = u * hLast + (1-u) * c
+        INDArray hExp = uExp.mul(hLast.getArr()).add(uExp.rsub(1.0).mul(cExp));
+        assertEquals(hExp, m.get(toExec.get(3)));
     }
 }

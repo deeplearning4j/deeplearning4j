@@ -36,10 +36,10 @@ public class GRUCellConfiguration {
     bc       c biases, [numUnits] - cell gate
      */
 
-    private SDVariable xt,ht_1,Wx,Wh,b;
+    private SDVariable xt, hLast, Wru, Wc, bru, bc;
 
     public SDVariable[] args() {
-        return new SDVariable[] {xt,ht_1,Wx,Wh,b};
+        return new SDVariable[] {xt, hLast, Wru, Wc, bru, bc};
     }
 
 }

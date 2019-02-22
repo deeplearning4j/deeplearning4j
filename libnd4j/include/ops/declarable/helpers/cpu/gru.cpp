@@ -101,7 +101,7 @@ void gruCell(const NDArray* x, const NDArray* hLast, const NDArray* Wru, const N
     auto yr = (*concatOut)({0,0, nIn, nIn+nU});
     yr *= (*r);
 
-    //c = tanh(x * weight_cx + (hLast .* r) * weight_cr + b_r)
+    //c = tanh(x * weight_cx + (hLast .* r) * weight_cr + b_c)
     auto mc = mmul(*concatOut, *Wc);
     mc += (*bc);
     tanhInplace(mc);
@@ -109,7 +109,9 @@ void gruCell(const NDArray* x, const NDArray* hLast, const NDArray* Wru, const N
     const_cast<NDArray*>(c)->assign(&mc);
 
     //Output: (1-u).*c + u .* hPrev
-    const_cast<NDArray*>(h)->assign(u * (*hLast) + (1.0f - *u) * (*c));
+    auto hResult = (*u) * (*hLast) + (1.0f - *u) * (*c);
+
+    const_cast<NDArray*>(h)->assign(&hResult);
 }
 
 //////////////////////////////////////////////////////////////////////////

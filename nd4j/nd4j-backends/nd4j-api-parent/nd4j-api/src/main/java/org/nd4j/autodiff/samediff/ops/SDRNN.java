@@ -28,8 +28,9 @@ public class SDRNN extends SDOps {
      * @param configuration the configuration to use
      * @return
      */
-    public SDVariable gru(GRUCellConfiguration configuration) {
-        return new GRUCell(sd, configuration).outputVariables()[0];
+    public List<SDVariable> gru(GRUCellConfiguration configuration) {
+        GRUCell c = new GRUCell(sd, configuration);
+        return Arrays.asList(c.outputVariables());
     }
 
     /**
@@ -39,8 +40,9 @@ public class SDRNN extends SDOps {
      * @param configuration the configuration to use
      * @return
      */
-    public SDVariable gru(String baseName, GRUCellConfiguration configuration) {
-        return new GRUCell(sd, configuration).outputVariables(baseName)[0];
+    public List<SDVariable> gru(String baseName, GRUCellConfiguration configuration) {
+        GRUCell c = new GRUCell(sd, configuration);
+        return Arrays.asList(c.outputVariables());
     }
 
 

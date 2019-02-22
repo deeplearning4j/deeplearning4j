@@ -78,18 +78,18 @@ DECLARE_SHAPE_FN(gruCell) {
     const int rank     = x[0];
     const auto bS       = x[1];
     const auto inSize   = x[2];
-    const auto numUnits = h0ShapeInfo[2];
+    const auto numUnits = hLast[2];
 
     //TODO SHAPE VALIDATION
 
     Nd4jLong *s(nullptr);
     ALLOCATE(s, block.getWorkspace(), shape::shapeInfoLength(rank), Nd4jLong);// [bS x numUnits]
 
-    hShapeInfo[0] = rank;
-    hShapeInfo[1] = bS;
-    hShapeInfo[2] = numUnits;
+    s[0] = rank;
+    s[1] = bS;
+    s[2] = numUnits;
 
-    ShapeUtils::updateStridesAndType(s, xShapeInfo, shape::order(h0ShapeInfo));
+    ShapeUtils::updateStridesAndType(s, x, shape::order(hLast));
 
     //4 output shapes, all [bs, numUnits]
     return SHAPELIST(s, s, s, s);
