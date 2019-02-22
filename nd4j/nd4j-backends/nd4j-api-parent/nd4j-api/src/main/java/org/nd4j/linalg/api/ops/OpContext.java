@@ -16,6 +16,7 @@
 
 package org.nd4j.linalg.api.ops;
 
+import org.bytedeco.javacpp.Pointer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 /**
@@ -69,4 +70,10 @@ public interface OpContext {
      * @param array
      */
     void setOutputArray(int index, INDArray array);
+
+    /**
+     * This method returns pointer to context, to be used during native op execution
+     * @return
+     */
+    Pointer contextPointer();
 }

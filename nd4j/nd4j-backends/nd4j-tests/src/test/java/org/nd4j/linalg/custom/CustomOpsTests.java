@@ -26,9 +26,11 @@ import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.custom.ScatterUpdate;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.api.ops.executioner.OpStatus;
+import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.AddOp;
 import org.nd4j.linalg.api.ops.random.compat.RandomStandardNormal;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.nativeblas.NativeOpsHolder;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
@@ -405,5 +407,24 @@ public class CustomOpsTests {
         val output = op.getOutputArgument(0);
 
         assertArrayEquals(new long[]{5, 10}, output.shape());
+    }
+
+    @Test
+    public void testOpContextExecution_1() {
+        val arrayX = Nd4j.createFromArray(new float[]{1, 2, 3, 4, 5});
+        val arrayY = Nd4j.createFromArray(new float[]{1, 2, 3, 4, 5});
+        val arrayZ = Nd4j.create(DataType.FLOAT, 5);
+
+        val exp = Nd4j.createFromArray(new float[]{2, 4, 6, 8, 10});
+
+        val context = Nd4j.getExecutioner().buildContext();
+        context.setInputArray(0, arrayX);
+        context.setInputArray(1, arrayY);
+        context.setOutputArray(0, arrayZ);
+
+        val addOp = new AddOp();
+        NativeOpsHolder.getInstance().getDeviceNativeOps().execCustomOp(null, addOp.opHash(), context.contextPointer());
+
+        assertEquals(exp, arrayZ);
     }
 }

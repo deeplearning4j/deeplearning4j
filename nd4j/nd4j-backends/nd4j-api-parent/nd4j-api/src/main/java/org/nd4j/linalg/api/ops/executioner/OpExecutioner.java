@@ -389,6 +389,20 @@ public interface OpExecutioner {
      */
     String getString(Utf8Buffer buffer, long index);
 
-
+    /**
+     * Temporary hook
+     * @param op
+     * @param array
+     * @param indices
+     * @param updates
+     * @param axis
+     */
+    @Deprecated
     void scatterUpdate(ScatterUpdate.UpdateOp op, @NonNull INDArray array, @NonNull INDArray indices, @NonNull INDArray updates, int[] axis);
+
+    /**
+     * This method returns OpContext which can be used (and reused) to execute custom ops
+     * @return
+     */
+    OpContext buildContext();
 }

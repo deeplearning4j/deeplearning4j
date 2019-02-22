@@ -2026,4 +2026,9 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                 updates.data().addressPointer(), (LongPointer) tadY.getFirst().addressPointer(), (LongPointer) tadY.getSecond().addressPointer(), null, null, null,
                 (IntPointer) indices.data().addressPointer(), null);
     }
+
+    @Override
+    public OpContext buildContext() {
+        return new CpuOpContext();
+    }
 }

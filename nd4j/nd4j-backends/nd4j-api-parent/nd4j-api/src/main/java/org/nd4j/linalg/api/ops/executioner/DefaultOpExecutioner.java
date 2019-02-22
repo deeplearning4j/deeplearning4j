@@ -760,4 +760,9 @@ public class DefaultOpExecutioner implements OpExecutioner {
     public boolean isExperimentalMode() {
         return false;
     }
+
+    @Override
+    public OpContext buildContext() {
+        throw new UnsupportedOperationException("OpContext is available only on native backends");
+    }
 }

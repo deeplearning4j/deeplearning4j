@@ -2625,6 +2625,8 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
     public native int execCustomOp(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jLong") long hash, @Cast("Nd4jPointer*") PointerPointer inputBuffers, @Cast("Nd4jPointer*") PointerPointer inputShapes, int numInputs, @Cast("Nd4jPointer*") PointerPointer outputBuffers, @Cast("Nd4jPointer*") PointerPointer outputShapes, int numOutputs, DoublePointer tArgs, int numTArgs, @Cast("Nd4jLong*") LongPointer iArgs, int numIArgs, @Cast("bool*") boolean[] bArgs, int numBArgs, @Cast("bool") boolean isInplace);
     public native int execCustomOp(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jLong") long hash, @Cast("Nd4jPointer*") PointerPointer inputBuffers, @Cast("Nd4jPointer*") PointerPointer inputShapes, int numInputs, @Cast("Nd4jPointer*") PointerPointer outputBuffers, @Cast("Nd4jPointer*") PointerPointer outputShapes, int numOutputs, DoubleBuffer tArgs, int numTArgs, @Cast("Nd4jLong*") LongBuffer iArgs, int numIArgs, @Cast("bool*") BooleanPointer bArgs, int numBArgs, @Cast("bool") boolean isInplace);
     public native int execCustomOp(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jLong") long hash, @Cast("Nd4jPointer*") PointerPointer inputBuffers, @Cast("Nd4jPointer*") PointerPointer inputShapes, int numInputs, @Cast("Nd4jPointer*") PointerPointer outputBuffers, @Cast("Nd4jPointer*") PointerPointer outputShapes, int numOutputs, double[] tArgs, int numTArgs, @Cast("Nd4jLong*") long[] iArgs, int numIArgs, @Cast("bool*") boolean[] bArgs, int numBArgs, @Cast("bool") boolean isInplace);
+    public native int execCustomOp(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jLong") long hash, @Cast("Nd4jPointer") Pointer opContext);
+
     public native ShapeList calculateOutputShapes(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jLong") long hash, @Cast("Nd4jPointer*") PointerPointer inputShapes, int numInputShapes, DoublePointer tArgs, int numTArgs, @Cast("Nd4jLong*") LongPointer iArgs, int numIArgs);
     public native ShapeList calculateOutputShapes(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jLong") long hash, @Cast("Nd4jPointer*") PointerPointer inputShapes, int numInputShapes, DoubleBuffer tArgs, int numTArgs, @Cast("Nd4jLong*") LongBuffer iArgs, int numIArgs);
     public native ShapeList calculateOutputShapes(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jLong") long hash, @Cast("Nd4jPointer*") PointerPointer inputShapes, int numInputShapes, double[] tArgs, int numTArgs, @Cast("Nd4jLong*") long[] iArgs, int numIArgs);
@@ -6137,8 +6139,22 @@ NDArray& NDArray::operator()(const Nd4jLong* idx) {
             public native @Cast("unsigned long") long width();
 
             // methods used in java interop
-            public native void addInputArray(int index, NDArray array);
-            public native void addInputArray(int index, Pointer buffer, Pointer shapeInfo, Pointer specialBuffer, Pointer specialShapeInfo);
+            /**
+             * This method checks, if Context uses fastpath variable access
+             * @return
+             */
+            public native @Cast("bool") boolean isFastPath();
+
+// #ifndef __JAVACPP_HACK__
+// #endif
+
+            public native void setInputArray(int index, NDArray array, @Cast("bool") boolean removable/*=false*/);
+            public native void setInputArray(int index, NDArray array);
+            public native void setInputArray(int index, Pointer buffer, Pointer shapeInfo, Pointer specialBuffer, Pointer specialShapeInfo);
+
+            public native void setOutputArray(int index, NDArray array, @Cast("bool") boolean removable/*=false*/);
+            public native void setOutputArray(int index, NDArray array);
+            public native void setOutputArray(int index, Pointer buffer, Pointer shapeInfo, Pointer specialBuffer, Pointer specialShapeInfo);
         }
     
 
@@ -10530,7 +10546,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 // #define CHECK_STASH(NAME)   block.getStash()->checkStash(block.getNodeId(), NAME);
 // #define UNSTASH(NAME)       block.getStash()->extractArray(block.getNodeId(), NAME);
 
-// #define INPUT_VARIABLE(INDEX)     reinterpret_cast<nd4j::NDArray *>(block.getVariable(INDEX)->getNDArray())
+// #define INPUT_VARIABLE(INDEX)     block.array(INDEX)
 // #define OUTPUT_VARIABLE(INDEX)    reinterpret_cast<nd4j::NDArray *>(this->getZ(block, INDEX))
 
 // #define INPUT_LIST(INDEX)     reinterpret_cast<nd4j::NDArrayList *>(block.getVariable(INDEX)->getNDArrayList())
