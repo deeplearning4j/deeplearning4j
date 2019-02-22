@@ -144,7 +144,7 @@ void lstmCell(const NDArray* xt, const NDArray* ht_1, const NDArray* ct_1, const
 
 void lstmBlockCell(const NDArray* xt, const NDArray* cLast, const NDArray* yLast,
                    const NDArray* W, const NDArray* Wci, const NDArray* Wcf, const NDArray* Wco, const NDArray* b,
-                   const NDArray* i, NDArray* c, const NDArray* f, const NDArray* o, const NDArray* z, const NDArray* h, NDArray* y, const std::vector<double>& params) {
+                   const NDArray* i, const NDArray* c, const NDArray* f, const NDArray* o, const NDArray* z, const NDArray* h, NDArray* y, const std::vector<double>& params) {
 
     /* Input arrays:
     *    0: input [bS, inSize] at time t
@@ -190,7 +190,6 @@ void lstmBlockCell(const NDArray* xt, const NDArray* cLast, const NDArray* yLast
     inputs.emplace_back(const_cast<NDArray*>(xt));
     inputs.emplace_back(const_cast<NDArray*>(yLast));
 
-    nd4j_printf("Before concat call\n","");
     auto result = concat->execute(inputs, targs, iargs, bargs);
     auto concatOut = result->at(0);
 
@@ -220,26 +219,31 @@ void lstmBlockCell(const NDArray* xt, const NDArray* cLast, const NDArray* yLast
     const_cast<NDArray*>(i)->assign(&zi);
     const_cast<NDArray*>(f)->assign(&zf);
 
-    const_cast<NDArray*>(h)->assign( zi * zz );
-    c->assign( zf * (*cLast) + const_cast<NDArray*>(h) );
+    //const_cast<NDArray*>(c)->assign( zi * zz );     //
+    const_cast<NDArray*>(c)->assign( zi * zz + zf * (*cLast) ); //cell state = blockInput .* inputGate + prevCellState .* forgetGate
+    const_cast<NDArray*>(h)->assign( tanh(*c) );
 
     // if clipping value is provided then cell state is clipped by this value prior to the cell output activation
     if(clippingCellValue > 0.0) {
-        clipping(c, clippingCellValue);
+        clipping(const_cast<NDArray*>(c), clippingCellValue);
     }
 
     if(peephole) {
-        zo += (*c) * (*Wco);            // add peephole connections to output gate zot + ct*Wc
+        // add peephole connections to output gate zot + ct*Wc
+        auto prod = *const_cast<NDArray*>(c) * (*Wco);
+        zo += prod;
     }
     sigmoidInplace(zo);
     const_cast<NDArray*>(o)->assign(&zo);
 
     // current cell output = ot*tanh(ct)
-    h->assign(tanh((*c)));
+    auto tanhc = tanh(*c);
+    const_cast<NDArray*>(h)->assign(&tanhc);       //Assign: expects NDArray& or NDArray*
+
 
     y->assign(zo * (*c));
 
-    //TODO do I need to delete vairable space and concat op??
+    //TODO do I need to delete variable space and concat op??
 
 }
 

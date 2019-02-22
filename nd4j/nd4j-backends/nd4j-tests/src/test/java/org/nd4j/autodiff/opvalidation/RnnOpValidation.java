@@ -81,33 +81,35 @@ public class RnnOpValidation extends BaseOpValidation {
         //Test forward pass:
         Map<String,INDArray> m = sd.exec(null, toExec);
 
-        //Weights and bias order: [z, f, i, o]
+        //Weights and bias order: [i, f, z, o]
 
-        //Block input (z):
-        INDArray wz_x = W.getArr().get(NDArrayIndex.interval(0,nIn), NDArrayIndex.interval(0, nOut));           //Input weights
-        INDArray wz_r = W.getArr().get(NDArrayIndex.interval(nIn,nIn+nOut), NDArrayIndex.interval(0, nOut));    //Recurrent weights
-        INDArray bz = b.getArr().get(NDArrayIndex.interval(0, nOut));
+        //Block input (z) - post tanh:
+        INDArray wz_x = W.getArr().get(NDArrayIndex.interval(0,nIn), NDArrayIndex.interval(2*nOut, 3*nOut));           //Input weights
+        INDArray wz_r = W.getArr().get(NDArrayIndex.interval(nIn,nIn+nOut), NDArrayIndex.interval(2*nOut, 3*nOut));    //Recurrent weights
+        INDArray bz = b.getArr().get(NDArrayIndex.interval(2*nOut, 3*nOut));
 
         INDArray zExp = x.getArr().mmul(wz_x).addiRowVector(bz);        //[mb,nIn]*[nIn, nOut] + [nOut]
         zExp.addi(yLast.getArr().mmul(wz_r));   //[mb,nOut]*[nOut,nOut]
+        Transforms.tanh(zExp, false);
 
-        INDArray zAct = m.get(toExec.get(0));
+        INDArray zAct = m.get(toExec.get(4));
         assertEquals(zExp, zAct);
 
-        //Input modulation gate (pre sigmoid) - i: (note: peephole input - last time step)
-        INDArray wi_x = W.getArr().get(NDArrayIndex.interval(0,nIn), NDArrayIndex.interval(2*nOut, 3*nOut));           //Input weights
-        INDArray wi_r = W.getArr().get(NDArrayIndex.interval(nIn,nIn+nOut), NDArrayIndex.interval(2*nOut, 3*nOut));    //Recurrent weights
-        INDArray bi = b.getArr().get(NDArrayIndex.interval(2*nOut, 3*nOut));
+        //Input modulation gate (post sigmoid) - i: (note: peephole input - last time step)
+        INDArray wi_x = W.getArr().get(NDArrayIndex.interval(0,nIn), NDArrayIndex.interval(0, nOut));           //Input weights
+        INDArray wi_r = W.getArr().get(NDArrayIndex.interval(nIn,nIn+nOut), NDArrayIndex.interval(0, nOut));    //Recurrent weights
+        INDArray bi = b.getArr().get(NDArrayIndex.interval(0, nOut));
 
         INDArray iExp = x.getArr().mmul(wi_x).addiRowVector(bi);        //[mb,nIn]*[nIn, nOut] + [nOut]
         iExp.addi(yLast.getArr().mmul(wi_r));   //[mb,nOut]*[nOut,nOut]
         iExp.addi(cLast.getArr().mulRowVector(Wci.getArr()));    //Peephole
-        assertEquals(iExp, m.get(toExec.get(1)));
+        Transforms.sigmoid(iExp, false);
+        assertEquals(iExp, m.get(toExec.get(0)));
 
 
-        //Activations, pre input gate: tanh(z) .* sigmoid(i)
-        INDArray hExp = Transforms.tanh(zExp,true).muli(Transforms.sigmoid(iExp,true));
-        INDArray hAct = m.get(toExec.get(4));
+        //Cell state, pre tanh: tanh(z) .* sigmoid(i)
+        INDArray hExp = zExp.mul(iExp);
+        INDArray hAct = m.get(toExec.get(1));
         assertEquals(hExp, hAct);
 
         //Forget gate: (note: peephole input - last time step)
