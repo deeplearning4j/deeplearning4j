@@ -412,6 +412,27 @@ namespace nd4j {
             _fastpath_out[index] = array;
             _handles.emplace_back(array);
         }
+
+        void Context::setTArguments(double *arguments, int numberOfArguments) {
+            _tArgs.clear();
+            _tArgs.reserve(numberOfArguments);
+            for (int e = 0; e < numberOfArguments; e++)
+                _tArgs.push_back(arguments[e]);
+        }
+
+        void Context::setIArguments(Nd4jLong *arguments, int numberOfArguments) {
+            _iArgs.clear();
+            _iArgs.reserve(numberOfArguments);
+            for (int e = 0; e < numberOfArguments; e++)
+                _iArgs.push_back(arguments[e]);
+        }
+
+        void Context::setBArguments(bool *arguments, int numberOfArguments) {
+            _bArgs.clear();
+            _bArgs.reserve(numberOfArguments);
+            for (int e = 0; e < numberOfArguments; e++)
+                _bArgs.push_back(arguments[e]);
+        }
     }
 }
 
