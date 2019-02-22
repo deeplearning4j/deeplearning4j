@@ -142,4 +142,72 @@ public class RnnOpValidation extends BaseOpValidation {
         INDArray yExp = hExp.mul(oExp);
         assertEquals(yExp, m.get(toExec.get(6)));
     }
+
+
+    @Test
+    public void testRnnBlockCellManualTFCompare() {
+        //Test case: "rnn/lstmblockcell/static_batch1_n3-2_tsLength1_noPH_noClip_fBias1_noIS"
+
+        SameDiff sd = SameDiff.create();
+        INDArray zero2d = Nd4j.createFromArray(new float[][]{{0,0}});
+        INDArray zero1d = Nd4j.createFromArray(new float[]{0,0});
+        SDVariable x = sd.constant(Nd4j.createFromArray(new float[][]{{0.7787856f,0.80119777f,0.72437465f}}));
+        SDVariable cLast = sd.constant(zero2d);
+        SDVariable yLast = sd.constant(zero2d);
+        //Weights shape: [(nIn+nOut), 4*nOut]
+        SDVariable W = sd.constant(Nd4j.createFromArray(-0.61977,-0.5708851,-0.38089648,-0.07994056,-0.31706482,0.21500933,-0.35454142,-0.3239095,-0.3177906,
+                0.39918554,-0.3115911,0.540841,0.38552666,0.34270835,-0.63456273,-0.13917702,-0.2985368,0.343238,
+                -0.3178353,0.017154932,-0.060259163,0.28841054,-0.6257687,0.65097713,0.24375653,-0.22315514,0.2033832,
+                0.24894875,-0.2062299,-0.2242794,-0.3809483,-0.023048997,-0.036284804,-0.46398938,-0.33979666,0.67012596,
+                -0.42168984,0.34208286,-0.0456419,0.39803517).castTo(DataType.FLOAT).reshape(5,8));
+        SDVariable Wci = sd.constant(zero1d);
+        SDVariable Wcf = sd.constant(zero1d);
+        SDVariable Wco = sd.constant(zero1d);
+        SDVariable b = sd.constant(Nd4j.zeros(DataType.FLOAT, 8));
+
+        double fb = 1.0;
+        LSTMBlockCellConfiguration conf = LSTMBlockCellConfiguration.builder()
+                .xt(x)
+                .cLast(cLast)
+                .yLast(yLast)
+                .W(W)
+                .Wci(Wci)
+                .Wcf(Wcf)
+                .Wco(Wco)
+                .b(b)
+                .peepHole(false)
+                .forgetBias(fb)
+                .clippingCellValue(0.0)
+                .build();
+
+        List<SDVariable> v = sd.rnn().lstmBlock("lstm", conf);  //Output order: i, c, f, o, z, h, y
+        List<String> toExec = new ArrayList<>();
+        for(SDVariable sdv : v){
+            toExec.add(sdv.getVarName());
+        }
+
+        //Test forward pass:
+        Map<String,INDArray> m = sd.exec(null, toExec);
+
+        INDArray out0 = Nd4j.create(new float[]{0.27817473f, 0.53092605f}, new int[]{1,2});     //Input mod gate
+        INDArray out1 = Nd4j.create(new float[]{-0.18100877f, 0.19417824f}, new int[]{1,2});    //CS (pre tanh)
+        INDArray out2 = Nd4j.create(new float[]{0.73464274f, 0.83901811f}, new int[]{1,2});     //Forget gate
+        INDArray out3 = Nd4j.create(new float[]{0.22481689f, 0.52692068f}, new int[]{1,2});     //Output gate
+
+        INDArray out4 = Nd4j.create(new float[]{-0.65070170f, 0.36573499f}, new int[]{1,2});    //block input
+        INDArray out5 = Nd4j.create(new float[]{-0.17905743f, 0.19177397f}, new int[]{1,2});    //Cell state
+        INDArray out6 = Nd4j.create(new float[]{-0.04025514f, 0.10104967f}, new int[]{1,2});    //Output
+
+        for(int i=0; i<toExec.size(); i++ ){
+            System.out.println(i + "\t" + m.get(toExec.get(i)));
+        }
+
+        assertEquals(out0, m.get(toExec.get(0)));       //Input modulation gate
+        assertEquals(out1, m.get(toExec.get(1)));       //Cell state (pre tanh)
+        assertEquals(out2, m.get(toExec.get(2)));       //Forget gate
+        assertEquals(out3, m.get(toExec.get(3)));       //Output gate
+        assertEquals(out4, m.get(toExec.get(4)));       //block input
+        assertEquals(out5, m.get(toExec.get(5)));       //Cell state
+        assertEquals(out6, m.get(toExec.get(6)));       //Output
+    }
 }

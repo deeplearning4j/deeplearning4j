@@ -61,6 +61,18 @@ void gruCell(const NDArray* x, const NDArray* hLast, const NDArray* Wru, const N
     // c        Cell gate output [bS, numUnits]
     // h        current cell output [bS, numUnits]
 
+    //Concat inputs: [xt, yt-1]: concat([bs,nIn],[bs,nOut]) -> [bs, (nIn+nOut)]
+    auto concat = new nd4j::ops::concat();
+    std::vector<NDArray*> inputs;
+    std::vector<double> targs;
+    std::vector<Nd4jLong> iargs({1});   //Axis = 1
+    std::vector<bool> bargs;
+    inputs.emplace_back(const_cast<NDArray*>(xt));
+    inputs.emplace_back(const_cast<NDArray*>(hLast));
+
+    auto result = concat->execute(inputs, targs, iargs, bargs);
+    auto concatOut = result->at(0);
+
 /*
 const int nU = h0->sizeAt(1);                // number of units
 // gates = sigmoid(x*Wx + h0*Wh + b)

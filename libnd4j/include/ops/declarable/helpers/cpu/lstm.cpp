@@ -147,14 +147,14 @@ void lstmBlockCell(const NDArray* xt, const NDArray* cLast, const NDArray* yLast
                    const NDArray* i, const NDArray* c, const NDArray* f, const NDArray* o, const NDArray* z, const NDArray* h, NDArray* y, const std::vector<double>& params) {
 
     /* Input arrays:
-    *    0: input [bS, inSize] at time t
-    *    1: previous cell state  [bS, numUnits], time t-1
-    *    2: previous output [bS, numUnits], time t-1
-    *    3: Weights - concatenated (input-to-hidden, hidden-to-hidden weights)  weights, [(inSize+numUnits), 4*numUnits]
-    *    4: weights - cell peephole (t-1) connections to input modulation gate, [numUnits]
-    *    5: weights - cell peephole (t-1) connections to forget gate, [numUnits]
-    *    6: weights - cell peephole (t) connections to output gate, [numUnits]
-    *    7: biases, [4*numUnits]
+    *    0: xt              - input [bS, inSize] at time t
+    *    1: cLast (cs_prev) - previous cell state  [bS, numUnits], time t-1
+    *    2: yLast (h_prev)  - previous output [bS, numUnits], time t-1
+    *    3: W               - Weights - concatenated (input-to-hidden, hidden-to-hidden weights)  weights, [(inSize+numUnits), 4*numUnits]
+    *    4: Wci             - weights - cell peephole (t-1) connections to input modulation gate, [numUnits]
+    *    5: Wcf             - weights - cell peephole (t-1) connections to forget gate, [numUnits]
+    *    6: Wco             - weights - cell peephole (t) connections to output gate, [numUnits]
+    *    7: b               - biases, [4*numUnits]
     *
     *  Input integer arguments:
     *    0: if not zero, provide peephole connections
@@ -164,13 +164,13 @@ void lstmBlockCell(const NDArray* xt, const NDArray* cLast, const NDArray* yLast
     *    1: clipping value for cell state, if it is not equal to zero, then cell state is clipped
     *
     * Output arrays:
-    *    0: i - Output - input modulation gate activations [bS, numUnits]
-    *    1: c - Cell state (pre tanh) [bs, numUnits] (cs)
-    *    2: f - Output - forget gate activations [bs, numUnits]
-    *    3: o - Output - output gate activations [bs, numUnits]
-    *    4: z - Output - block input [bs, numUnits]
-    *    5: h - Cell state, post tanh [bs, numUnits]
-    *    6: y - Current cell output [bS, numUnits], time t
+    *    0: i      - Input modulation gate activations [bS, numUnits]
+    *    1: c (cs) - Cell state (pre tanh) [bs, numUnits] (cs)
+    *    2: f      - Output - forget gate activations [bs, numUnits]
+    *    3: o      - Output - output gate activations [bs, numUnits]
+    *    4: z (ci) - Output - block input [bs, numUnits]
+    *    5: h (co) - Cell state, post tanh [bs, numUnits]
+    *    6: y (h)  - Current cell output [bS, numUnits], time t
     */
     const bool peephole   = (bool)params[0];        // if true, provide peephole connections
     const double forgetBias    = params[1];
@@ -196,9 +196,10 @@ void lstmBlockCell(const NDArray* xt, const NDArray* cLast, const NDArray* yLast
     auto m = mmul(*concatOut, *W);    //mmul: [bs, (nIn+numUnits)]* [(inSize+numUnits), 4*numUnits] = [bs, 4*numUnits]
     m += (*b);
 
+    //Note: weights are ordered [inputGate, blockInput, forgetGate, outputGate] to match TF (TF code comments state [i,f,z/ci,o] but behaviour is [i,z,f,o])
     auto zi = m({0,0, 0,            numUnits});      	// z for input modulation gate, [bS, numUnits]
-    auto zf = m({0,0, numUnits,   2*numUnits});      	// z for forget gate, [bS, numUnits]
-    auto zz = m({0,0, 2*numUnits, 3*numUnits});      	// z for block input, [bS, numUnits]
+    auto zz = m({0,0, numUnits, 2*numUnits});      	    // z for block input, [bS, numUnits]
+    auto zf = m({0,0, 2*numUnits, 3*numUnits});      	// z for forget gate, [bS, numUnits]
     auto zo = m({0,0, 3*numUnits, 4*numUnits});      	// z for output gate, [bS, numUnits]
 
     if(peephole) {                                              // add peephole connections: z  +  ct_1*Wc

@@ -279,15 +279,19 @@ namespace nd4j {
        * Input arrays: 
        *    0: input with shape [batchSize x inSize], batchSize - batch size, inSize - number of features
        *    1: previous cell output [batchSize x numUnits],  that is at previous time step t-1
-       *    2: input-to-hidden  weights, [inSize   x 3*numUnits] 
-       *    3: hidden-to-hidden weights, [numUnits x 3*numUnits] 
-       *    4: biases, [3*numUnits]        
+       *    2: RU weights - [(nIn+nOut), 2*numUnits] - reset and update gates (input/recurrent weights)
+       *    3: C weights - [(nIn+nOut), numUnits] - cell gate (input/recurrent weights)
+       *    4: reset and update biases, [2*numUnits] - reset and update gates
+       *    5: cell biases, [numUnits]
        *  
        * Output arrays: 
-       *    0: current cell output [batchSize x numUnits], that is at current time step t       
+       *    0: Reset gate output [bS, numUnits]
+       *    1: Update gate output [bS, numUnits]
+       *    2: Cell gate output [bS, numUnits]
+       *    3: Current cell output [bS, numUnits]
        */                  
         #if NOT_EXCLUDED(OP_gruCell)
-        DECLARE_CUSTOM_OP(gruCell, 5, 1, false, 0, 0);
+        DECLARE_CUSTOM_OP(gruCell, 6, 4, false, 0, 0);
         #endif
 
         #if NOT_EXCLUDED(OP_gruCell)
