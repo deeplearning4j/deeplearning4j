@@ -51,6 +51,7 @@ import org.nd4j.linalg.api.ndarray.*;
 import org.nd4j.linalg.api.ops.CustomOp;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.Op;
+import org.nd4j.linalg.api.ops.OpContext;
 import org.nd4j.linalg.api.ops.executioner.DefaultOpExecutioner;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.api.ops.impl.indexaccum.IMax;
@@ -7458,6 +7459,15 @@ public class Nd4j {
      */
     public static INDArray[] exec(CustomOp op){
         return getExecutioner().exec(op);
+    }
+
+    /**
+     * Execute the operation and return the result
+     *
+     * @param op the operation to execute
+     */
+    public static INDArray[] exec(CustomOp op, OpContext context){
+        return getExecutioner().exec(op, context);
     }
 
 

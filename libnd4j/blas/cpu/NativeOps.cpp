@@ -1970,6 +1970,13 @@ nd4j::ShapeList* NativeOps::calculateOutputShapes(Nd4jPointer* extraPointers, Nd
     return _calculateOutputShapes(extraPointers, op, inputShapes, numInputShapes, tArgs, numTArgs, iArgs, numIArgs);
 }
 
+int NativeOps::execCustomOp(Nd4jPointer* extraPointers, Nd4jLong hash, Nd4jPointer opContext) {
+    auto op = nd4j::ops::OpRegistrator::getInstance()->getOperation(hash);
+    auto context = reinterpret_cast<Context*>(opContext);
+
+    return op->execute(context);
+}
+
 Nd4jStatus realExec(nd4j::ops::DeclarableOp* op, Nd4jPointer* extraPointers, Nd4jLong hash, Nd4jPointer* inputBuffers, Nd4jPointer* inputShapes, int numInputs, Nd4jPointer* outputBuffers, Nd4jPointer* outputShapes, int numOutputs, double* tArgs, int numTArgs, Nd4jLong *iArgs, int numIArgs, bool* bArgs, int numBArgs, bool isInplace) {
     if (op == nullptr)
         nd4j_printf("Can't find requested operation: [%lld]\n", hash);
