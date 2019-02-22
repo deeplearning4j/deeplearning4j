@@ -173,11 +173,6 @@
                 <updatePolicy>daily</updatePolicy>  <!-- Optional, update daily -->
             </snapshots>
         </repository>
-        <repository>
-            <id>scala-tools.org</id>
-            <name>Scala-Tools Maven2 Repository</name>
-            <url>http://scala-tools.org/repo-releases</url>
-        </repository>
     </repositories>
 
     <pluginRepositories>
@@ -204,11 +199,6 @@
                 <enabled>true</enabled>
                 <updatePolicy>daily</updatePolicy>  <!-- Optional, update daily -->
             </snapshots>
-        </pluginRepository>
-        <pluginRepository>
-            <id>scala-tools.org</id>
-            <name>Scala-Tools Maven2 Repository</name>
-            <url>http://scala-tools.org/repo-releases</url>
         </pluginRepository>
     </pluginRepositories>
 
