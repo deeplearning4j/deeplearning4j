@@ -19,6 +19,8 @@
 //
 
 #include <ops/declarable/helpers/nth_element.h>
+#include <TAD.h>
+#include <ShapeUtils.h>
 
 namespace nd4j {
 namespace ops {
@@ -27,6 +29,7 @@ namespace helpers {
     template <typename T>
     void nthElementFunctor_(NDArray* input, NDArray* nVal, NDArray* output, bool reverse) {
         Nd4jLong n = nVal->e<Nd4jLong>(0);
+        NDArray sortedVals(*input);
         if (input->isVector()) {
             //std::vector<float> data(input->lengthOf());
             //memcpy(&data[0], input->getBuffer(), sizeof(T) * data.size());
@@ -36,19 +39,22 @@ namespace helpers {
             //auto nthPos = data.begin();
             //nthPos += n;
             //std::nth_element(data.begin(), nthPos, data.end());
-            NDArray sortedVals(*input);
             SpecialMethods<T>::sortGeneric(sortedVals.buffer(), sortedVals.shapeInfo(), reverse);
             output->p(0, sortedVals.e<T>(n));
         }
         else { // rank greater than 1
-            std::vector<int> lastDims({input->rankOf() - 1});
+            std::vector<int> lastDims({input->rankOf() - 1});// = ShapeUtils::evalDimsToExclude(input->rankOf(), {input->rankOf() - 1});
+            shape::TAD tadSorted;
+            tadSorted.init(sortedVals.shapeInfo(), lastDims.data(), lastDims.size());
+            tadSorted.createTadOnlyShapeInfo();
+            tadSorted.createOffsets();
+            SpecialMethods<T>::sortTadGeneric(sortedVals.buffer(), sortedVals.shapeInfo(), lastDims.data(), lastDims.size(), tadSorted.tadOnlyShapeInfo, tadSorted.tadOffsets, reverse);
+
             std::unique_ptr<ResultSet> rows(input->allTensorsAlongDimension(lastDims));
 #pragma omp parallel for
             for (Nd4jLong e = 0; e < output->lengthOf(); e++) {
                 auto row = rows->at(e);
-                NDArray sortedVals(*row);
-                SpecialMethods<T>::sortGeneric(sortedVals.buffer(), sortedVals.shapeInfo(), reverse);
-                output->p(e, sortedVals.e<T>(n));
+                output->p(e, row->e<T>(n));
             }
         }
     }
