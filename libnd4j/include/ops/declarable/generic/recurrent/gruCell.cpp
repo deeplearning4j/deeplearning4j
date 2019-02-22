@@ -37,7 +37,6 @@ CUSTOM_OP_IMPL(gruCell, 6, 4, false, 0, 0) {
     auto bru    = INPUT_VARIABLE(4);                   // reset and update biases, [2*numUnits] - reset and update gates
     auto bc     = INPUT_VARIABLE(5);                   // cell biases, [numUnits]
 
-
     auto r    =  OUTPUT_VARIABLE(0);                  // Reset gate output [bS, numUnits]
     auto u    =  OUTPUT_VARIABLE(1);                  // Update gate output [bS, numUnits]
     auto c    =  OUTPUT_VARIABLE(2);                  // Cell gate output [bS, numUnits]
@@ -67,42 +66,33 @@ DECLARE_TYPES(gruCell) {
 }
 
 
-DECLARE_SHAPE_FN(gruCell) {    
-    
-    const auto xShapeInfo  = inputShape->at(0);                     // input [bS x inSize]
-    const auto h0ShapeInfo = inputShape->at(1);                     // previous cell output [bS x numUnits],  that is at previous time step t-1
-    const auto WxShapeInfo = inputShape->at(2);                     // input-to-hidden weights, [inSize   x 3*numUnits]
-    const auto WhShapeInfo = inputShape->at(3);                     // hidden-to-hidden weights, [numUnits x 3*numUnits]
-    const auto bShapeInfo  = inputShape->at(4);                     // biases, [3*numUnits]
+DECLARE_SHAPE_FN(gruCell) {
 
-    const int rank     = shape::rank(xShapeInfo);              // = 2
-    const auto bS       = xShapeInfo[1];
-    const auto inSize   = xShapeInfo[2];
+    auto x      = inputShape->at(0);                   // input [bS x inSize]
+    auto hLast  = inputShape->at(1);                   // previous cell output [bS x numUnits],  that is at previous time step t-1
+    auto Wru    = inputShape->at(2);                   // RU weights - [(nIn+nOut), 2*numUnits] - reset and update gates (input/recurrent weights)
+    auto Wc     = inputShape->at(3);                   // C weights - [(nIn+nOut), numUnits] - cell gate (input/recurrent weights)
+    auto bru    = inputShape->at(4);                   // reset and update biases, [2*numUnits] - reset and update gates
+    auto bc     = inputShape->at(5);                   // cell biases, [numUnits]
+
+    const int rank     = x[0];
+    const auto bS       = x[1];
+    const auto inSize   = x[2];
     const auto numUnits = h0ShapeInfo[2];
 
-    const std::string h0Shape        = ShapeUtils::shapeAsString(h0ShapeInfo);
-    const std::string h0CorrectShape = ShapeUtils::shapeAsString({bS, numUnits});
-    const std::string wxShape        = ShapeUtils::shapeAsString(WxShapeInfo);
-    const std::string wxCorrectShape = ShapeUtils::shapeAsString({inSize, 3*numUnits});
-    const std::string whShape        = ShapeUtils::shapeAsString(WhShapeInfo);
-    const std::string whCorrectShape = ShapeUtils::shapeAsString({numUnits, 3*numUnits});
-    const std::string bShape         = ShapeUtils::shapeAsString(bShapeInfo);
-    const std::string bCorrectShape  = ShapeUtils::shapeAsString({3*numUnits});
+    //TODO SHAPE VALIDATION
 
-    REQUIRE_TRUE(h0Shape == h0CorrectShape, 0, "GRUCELL operation: wrong shape of previous cell output array, expected is %s, but got %s instead !", h0CorrectShape.c_str(), h0Shape.c_str());
-    REQUIRE_TRUE(wxShape == wxCorrectShape, 0, "GRUCELL operation: wrong shape of input-to-hidden weights array, expected is %s, but got %s instead !", wxCorrectShape.c_str(), wxShape.c_str());
-    REQUIRE_TRUE(whShape == whCorrectShape, 0, "GRUCELL operation: wrong shape of hidden-to-hidden weights array, expected is %s, but got %s instead !", whCorrectShape.c_str(), whShape.c_str());
-    REQUIRE_TRUE(bShape  == bCorrectShape,  0, "GRUCELL operation: wrong shape of biases  array, expected is %s, but got %s instead !", bCorrectShape.c_str(), bShape.c_str());
-    Nd4jLong *hShapeInfo(nullptr);
-    ALLOCATE(hShapeInfo, block.getWorkspace(), shape::shapeInfoLength(rank), Nd4jLong);// [bS x numUnits]
+    Nd4jLong *s(nullptr);
+    ALLOCATE(s, block.getWorkspace(), shape::shapeInfoLength(rank), Nd4jLong);// [bS x numUnits]
 
     hShapeInfo[0] = rank;
     hShapeInfo[1] = bS;
     hShapeInfo[2] = numUnits;
 
-    ShapeUtils::updateStridesAndType(hShapeInfo, xShapeInfo, shape::order(h0ShapeInfo));
+    ShapeUtils::updateStridesAndType(s, xShapeInfo, shape::order(h0ShapeInfo));
 
-    return SHAPELIST(hShapeInfo);
+    //4 output shapes, all [bs, numUnits]
+    return SHAPELIST(s, s, s, s);
 }
 
 

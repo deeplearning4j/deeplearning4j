@@ -15,7 +15,7 @@
  ******************************************************************************/
 
 //
-// @author Yurii Shyrma (iuriish@yahoo.com), created on 15.02.2018
+// @author Yurii Shyrma (iuriish@yahoo.com), created on 15.02.2018, Alex Black
 //
 
 // implementation of gated Recurrent Unit cell 
@@ -25,6 +25,8 @@
 
 
 #include<ops/declarable/helpers/gru.h>
+#include <ops/declarable/CustomOperations.h>
+#include<ops/declarable/helpers/transforms.h>
 
 namespace nd4j 	  {
 namespace ops 	  {
@@ -36,11 +38,18 @@ static FORCEINLINE NDArray sigmoid(const NDArray& arr) {
     return (const_cast<NDArray&>(arr)).transform(transform::Sigmoid);
 }
 
+static FORCEINLINE void sigmoidInplace(const NDArray& arr) {
+    (const_cast<NDArray&>(arr)).applyTransform(transform::Sigmoid);
+}
+
 //////////////////////////////////////////////////////////////////////////
-static FORCEINLINE NDArray activation(const NDArray& arr) {
+static FORCEINLINE NDArray tanh(const NDArray& arr) {
     return (const_cast<NDArray&>(arr)).transform(transform::Tanh);
 }
 
+static FORCEINLINE void tanhInplace(const NDArray& arr) {
+    (const_cast<NDArray&>(arr)).applyTransform(transform::Tanh);
+}
 
 //////////////////////////////////////////////////////////////////////////
 void gruCell(const NDArray* x, const NDArray* hLast, const NDArray* Wru, const NDArray* Wc,
@@ -61,36 +70,46 @@ void gruCell(const NDArray* x, const NDArray* hLast, const NDArray* Wru, const N
     // c        Cell gate output [bS, numUnits]
     // h        current cell output [bS, numUnits]
 
+    const int nIn = x->sizeAt(1);
+    const int nU = hLast->sizeAt(1);                // number of units
+
     //Concat inputs: [xt, yt-1]: concat([bs,nIn],[bs,nOut]) -> [bs, (nIn+nOut)]
     auto concat = new nd4j::ops::concat();
     std::vector<NDArray*> inputs;
     std::vector<double> targs;
     std::vector<Nd4jLong> iargs({1});   //Axis = 1
     std::vector<bool> bargs;
-    inputs.emplace_back(const_cast<NDArray*>(xt));
+    inputs.emplace_back(const_cast<NDArray*>(x));
     inputs.emplace_back(const_cast<NDArray*>(hLast));
 
     auto result = concat->execute(inputs, targs, iargs, bargs);
     auto concatOut = result->at(0);
 
-/*
-const int nU = h0->sizeAt(1);                // number of units
-// gates = sigmoid(x*Wx + h0*Wh + b)
-auto gates = sigmoid(mmul(*x, (*Wx)({0,0, 0,2*nU})) + mmul(*h0, (*Wh)({0,0, 0,2*nU})) + (*b)({0,2*nU}));       // [bS, 2*nU] + [bS, 2*nU] + [1, 2*nU] = [bS, 2*nU]
+    //mmul/z for reset and update gates: (x * weight_ux + hLast * weight_xr + b_u)
+    auto m = mmul(*concatOut, *Wru);    //mmul: [bs, (nIn+numUnits)]* [(inSize+numUnits), 2*numUnits] = [bs, 4*numUnits]
+    m += (*bru);
 
-// reset gate
-auto r = gates({0,0, 0,nU});                     // [bS, nU]
+    sigmoidInplace(m);  //sigmoid(rz) and sigmoid(uz)
+    auto mr = m({0,0, 0, nU});
+    auto mu = m({0,0, nU, 2*nU});
 
-// update gate
-auto u = gates({0,0, nU,2*nU});            // [bS, nU]
+    const_cast<NDArray*>(r)->assign(&mr);
+    const_cast<NDArray*>(u)->assign(&mu);
 
-// ◦ means element-wise product or so called Hadamard product
-// n = activation(x*Wx + (r◦h0)*Wh + b)
-auto n = activation(mmul(*x, (*Wx)({0,0, 2*nU,3*nU})) + mmul((*h0)*r, (*Wh)({0,0, 2*nU,3*nU})) + (*b)({2*nU,3*nU}));     // [bS, nU]
 
-// current cell output
-h->assign( u * (*h0) + (1.f - u) * n );
- */
+    //Concatenated inputs: [xt, yt-1 .* r]
+    auto yr = (*concatOut)({0,0, nIn, nIn+nU});
+    yr *= (*r);
+
+    //c = tanh(x * weight_cx + (hLast .* r) * weight_cr + b_r)
+    auto mc = mmul(*concatOut, *Wc);
+    mc += (*bc);
+    tanhInplace(mc);
+
+    const_cast<NDArray*>(c)->assign(&mc);
+
+    //Output: (1-u).*c + u .* hPrev
+    const_cast<NDArray*>(h)->assign(u * (*hLast) + (1.0f - *u) * (*c));
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -151,8 +170,8 @@ auto r = gates({0,0, 0, nU});               // [bS, nU]
 // update gate
 auto u = gates({0,0, nU, 2*nU});            // [bS, nU]
 // ◦ means element-wise product or so called Hadamard product
-// n = activation(x*Wx + (r◦h0)*Wh + b)
-auto n = activation(mmul(*x, (*Wx)({0,0, 2*nU,3*nU})) + mmul((*h0)*r, (*Wh)({0,0, 2*nU,3*nU})) + (*b)({2*nU,3*nU}));     // [bS, nU]
+// n = tanh(x*Wx + (r◦h0)*Wh + b)
+auto n = tanh(mmul(*x, (*Wx)({0,0, 2*nU,3*nU})) + mmul((*h0)*r, (*Wh)({0,0, 2*nU,3*nU})) + (*b)({2*nU,3*nU}));     // [bS, nU]
 
 // ***** back prop step ***** //
 auto Wxr  = (*Wx)({0,0, 0,   nU});
