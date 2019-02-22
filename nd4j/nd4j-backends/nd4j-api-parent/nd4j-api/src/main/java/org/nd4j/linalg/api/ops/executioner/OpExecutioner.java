@@ -341,6 +341,14 @@ public interface OpExecutioner {
 
     INDArray[] exec(CustomOp op);
 
+    /**
+     * This method executes op with given context
+     * @param op
+     * @param context
+     * @return method returns output arrays defined within context
+     */
+    INDArray[] exec(CustomOp op, OpContext context);
+
     List<LongShapeDescriptor> calculateOutputShape(CustomOp op);
 
     /**

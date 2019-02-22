@@ -32,8 +32,7 @@ import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.nativeblas.NativeOpsHolder;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.*;
 
 /**
  * This class holds various CustomOps tests
@@ -426,5 +425,25 @@ public class CustomOpsTests {
         NativeOpsHolder.getInstance().getDeviceNativeOps().execCustomOp(null, addOp.opHash(), context.contextPointer());
 
         assertEquals(exp, arrayZ);
+    }
+
+    @Test
+    public void testOpContextExecution_2() {
+        val arrayX = Nd4j.createFromArray(new float[]{1, 2, 3, 4, 5});
+        val arrayY = Nd4j.createFromArray(new float[]{1, 2, 3, 4, 5});
+        val arrayZ = Nd4j.create(DataType.FLOAT, 5);
+
+        val exp = Nd4j.createFromArray(new float[]{2, 4, 6, 8, 10});
+
+        val context = Nd4j.getExecutioner().buildContext();
+        context.setInputArray(0, arrayX);
+        context.setInputArray(1, arrayY);
+        context.setOutputArray(0, arrayZ);
+
+        val addOp = new AddOp();
+        val output = Nd4j.exec(addOp, context);
+
+        assertEquals(exp, arrayZ);
+        assertTrue(arrayZ == output[0]);
     }
 }

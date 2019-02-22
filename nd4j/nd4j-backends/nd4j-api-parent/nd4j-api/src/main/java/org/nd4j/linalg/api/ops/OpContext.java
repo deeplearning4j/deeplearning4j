@@ -19,6 +19,8 @@ package org.nd4j.linalg.api.ops;
 import org.bytedeco.javacpp.Pointer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
+import java.util.List;
+
 /**
  * This interface describes OpContext, abstraction used to setup op for execution.
  *
@@ -65,11 +67,23 @@ public interface OpContext {
     void setInputArray(int index, INDArray array);
 
     /**
+     * This method returns List of input arrays defined within this context
+     * @return
+     */
+    List<INDArray> getInputArrays();
+
+    /**
      * This method adds INDArray as output for future op call
      * @param index
      * @param array
      */
     void setOutputArray(int index, INDArray array);
+
+    /**
+     * This method returns List of output arrays defined within this context
+     * @return
+     */
+    List<INDArray> getOutputArrays();
 
     /**
      * This method returns pointer to context, to be used during native op execution

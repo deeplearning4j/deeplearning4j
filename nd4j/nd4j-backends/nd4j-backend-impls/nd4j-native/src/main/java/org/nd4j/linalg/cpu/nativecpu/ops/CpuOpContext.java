@@ -16,34 +16,23 @@
 
 package org.nd4j.linalg.cpu.nativecpu.ops;
 
+import lombok.NonNull;
 import org.bytedeco.javacpp.Pointer;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.BaseOpContext;
 import org.nd4j.linalg.api.ops.OpContext;
 import org.nd4j.nativeblas.Nd4jCpu;
+
+import java.util.List;
 
 /**
  * CPU backend Context wrapper
  *
  * @author raver119@gmail.com
  */
-public class CpuOpContext implements OpContext {
+public class CpuOpContext extends BaseOpContext implements OpContext {
     // we might want to have configurable
     private Nd4jCpu.Context context = new Nd4jCpu.Context(1);
-
-    @Override
-    public void setIArguments(long... arguments) {
-
-    }
-
-    @Override
-    public void setTArguments(double... arguments) {
-
-    }
-
-    @Override
-    public void setBArguments(boolean... arguments) {
-
-    }
 
     @Override
     public void setRootSeed(long seed) {
@@ -56,13 +45,17 @@ public class CpuOpContext implements OpContext {
     }
 
     @Override
-    public void setInputArray(int index, INDArray array) {
+    public void setInputArray(int index, @NonNull INDArray array) {
         context.setInputArray(index, array.data().addressPointer(), array.shapeInfoDataBuffer().addressPointer(), null, null);
+
+        super.setInputArray(index, array);
     }
 
     @Override
-    public void setOutputArray(int index, INDArray array) {
+    public void setOutputArray(int index, @NonNull INDArray array) {
         context.setOutputArray(index, array.data().addressPointer(), array.shapeInfoDataBuffer().addressPointer(), null, null);
+
+        super.setOutputArray(index, array);
     }
 
     @Override
