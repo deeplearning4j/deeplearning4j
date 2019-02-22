@@ -573,8 +573,8 @@ public class TestVariableLengthTS extends BaseDL4JTest {
 
         for(char c : new char[]{'f','c'}) {
 
-            INDArray in = Nd4j.linspace(1, 3 * 5 * 10, 3 * 5 * 10).reshape('f', 3, 5, 10).dup(c);
-            INDArray inMask = Nd4j.linspace(1, 30, 30).reshape('f', 3, 10).dup(c); //Minibatch, TS length
+            INDArray in = Nd4j.linspace(1, 3 * 5 * 10, 3 * 5 * 10, Nd4j.dataType()).reshape('f', 3, 5, 10).dup(c);
+            INDArray inMask = Nd4j.linspace(1, 30, 30, Nd4j.dataType()).reshape('f', 3, 10).dup(c); //Minibatch, TS length
 
             INDArray inReverseExp = reverseTimeSeries(in);
             INDArray inMaskReverseExp = Nd4j.create(inMask.shape());

@@ -121,7 +121,8 @@ namespace functions {
             }
 
 
-            shape::TAD tad(xShapeInfo, dimension, dimensionLength);
+            shape::TAD tad;
+            tad.init(xShapeInfo, dimension, dimensionLength);
             tad.createTadOnlyShapeInfo();
             tad.createOffsets();
 

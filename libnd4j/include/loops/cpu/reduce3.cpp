@@ -222,11 +222,13 @@ void Reduce3<X,Z>::exec(void *vx, Nd4jLong *xShapeInfo,
         
         auto startingVal = OpType::startingValue(x);        
         
-        shape::TAD xTad(xShapeInfo, dimension, dimensionLength);
+        shape::TAD xTad;
+        xTad.init(xShapeInfo, dimension, dimensionLength);
         xTad.createTadOnlyShapeInfo();
         xTad.createOffsets();
 
-        shape::TAD yTad(yShapeInfo, dimension, dimensionLength);
+        shape::TAD yTad;
+        yTad.init(yShapeInfo, dimension, dimensionLength);
         yTad.createTadOnlyShapeInfo();
         yTad.createOffsets();
 
@@ -344,7 +346,8 @@ void Reduce3<X,Z>::exec(void *vx, Nd4jLong *xShapeInfo,
         } 
         else {
         
-            shape::TAD xTad(xShapeInfo, dimension, dimensionLength);
+            shape::TAD xTad;
+            xTad.init(xShapeInfo, dimension, dimensionLength);
             xTad.createTadOnlyShapeInfo();
             xTad.createOffsets();
             
@@ -376,7 +379,8 @@ void Reduce3<X,Z>::exec(void *vx, Nd4jLong *xShapeInfo,
             }
             else {
                 
-                shape::TAD yTad(yShapeInfo, dimension, dimensionLength);
+                shape::TAD yTad;
+                yTad.init(yShapeInfo, dimension, dimensionLength);
                 yTad.createTadOnlyShapeInfo();
                 yTad.createOffsets();
                 
