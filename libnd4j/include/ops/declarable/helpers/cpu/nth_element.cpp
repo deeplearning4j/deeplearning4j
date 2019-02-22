@@ -25,19 +25,20 @@ namespace ops {
 namespace helpers {
 
     template <typename T>
-    void nthElementFunctor_(NDArray* input, NDArray* nVal, NDArray* output) {
+    void nthElementFunctor_(NDArray* input, NDArray* nVal, NDArray* output, bool reverse) {
         Nd4jLong n = nVal->e<Nd4jLong>(0);
-        // TODO: fix using std::nth_element to use typename T instead float or avoid use double with this op.
         if (input->isVector()) {
-            std::vector<float> data(input->lengthOf());
+            //std::vector<float> data(input->lengthOf());
             //memcpy(&data[0], input->getBuffer(), sizeof(T) * data.size());
-            size_t l = 0;
-            for (size_t l = 0; l < data.size(); ++l)
-                data[l] = input->e<float>(l);
-            auto nthPos = data.begin();
-            nthPos += n;
-            std::nth_element(data.begin(), nthPos, data.end());
-            output->p<float>(0, data[n]);
+            //size_t l = 0;
+            //for (size_t l = 0; l < data.size(); ++l)
+            //    data[l] = input->e<float>(l);
+            //auto nthPos = data.begin();
+            //nthPos += n;
+            //std::nth_element(data.begin(), nthPos, data.end());
+            NDArray sortedVals(*input);
+            SpecialMethods<T>::sortGeneric(sortedVals.buffer(), sortedVals.shapeInfo(), reverse);
+            output->p(0, sortedVals.e<T>(n));
         }
         else { // rank greater than 1
             std::vector<int> lastDims({input->rankOf() - 1});
@@ -45,24 +46,17 @@ namespace helpers {
 #pragma omp parallel for
             for (Nd4jLong e = 0; e < output->lengthOf(); e++) {
                 auto row = rows->at(e);
-                std::vector<float> internalData(row->lengthOf());
-                //T* internalP = const_cast<T*>(internalData.data());
-                for (size_t l = 0; l < internalData.size(); ++l)
-                    internalData[l] = row->e<float>(l);
-
-                //memcpy(&internalData[0], row->getBuffer(), sizeof(T) * internalData.size());
-                auto nthPos = internalData.begin();
-                nthPos += n;
-                std::nth_element(internalData.begin(), nthPos, internalData.end());
-                output->p<float>(e, internalData[n]);
+                NDArray sortedVals(*row);
+                SpecialMethods<T>::sortGeneric(sortedVals.buffer(), sortedVals.shapeInfo(), reverse);
+                output->p(e, sortedVals.e<T>(n));
             }
         }
     }
-    void nthElementFunctor(NDArray* input, NDArray* n, NDArray* output) {
-    BUILD_SINGLE_SELECTOR(input->dataType(), nthElementFunctor_, (input, n, output), LIBND4J_TYPES);
+    void nthElementFunctor(NDArray* input, NDArray* n, NDArray* output, bool reverse) {
+    BUILD_SINGLE_SELECTOR(input->dataType(), nthElementFunctor_, (input, n, output, reverse), LIBND4J_TYPES);
 
     }
-    BUILD_SINGLE_TEMPLATE(template void nthElementFunctor_, (NDArray* input, NDArray* n, NDArray* output), LIBND4J_TYPES);
+    BUILD_SINGLE_TEMPLATE(template void nthElementFunctor_, (NDArray* input, NDArray* n, NDArray* output, bool reverse), LIBND4J_TYPES);
     
 }
 }
