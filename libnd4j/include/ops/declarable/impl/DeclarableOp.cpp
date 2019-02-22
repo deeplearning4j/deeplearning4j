@@ -226,7 +226,8 @@ namespace nd4j {
                         auto idx = cnt++;
                         if (fout.size() <= idx) {
                             // array doesnt exist
-                            throw std::runtime_error("fastpath out array doesn't exist");
+                            auto outArr = new NDArray(out, true, workspace);
+                            ctx.setOutputArray(idx, outArr, true);
                         } else {
                             auto array = fout[idx];
                             if (!shape::equalsSoft(out, array->shapeInfo())) {

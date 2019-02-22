@@ -372,11 +372,13 @@ namespace nd4j {
                 return _inputs.size();
         }
 
-        void Context::setInputArray(int index, NDArray *array) {
+        void Context::setInputArray(int index, NDArray *array, bool removable) {
             if (_fastpath_in.size() < index + 1)
                 _fastpath_in.resize(index+1);
 
             _fastpath_in[index] = array;
+            if (removable)
+                _handles.emplace_back(array);
         }
 
         void Context::setInputArray(int index, void *buffer, void *shapeInfo, void *specialBuffer, void *specialShapeInfo) {
@@ -390,11 +392,14 @@ namespace nd4j {
             _handles.emplace_back(array);
         }
 
-        void Context::setOutputArray(int index, NDArray *array) {
+        void Context::setOutputArray(int index, NDArray *array, bool removable) {
             if (_fastpath_out.size() < index + 1)
                 _fastpath_out.resize(index+1);
 
             _fastpath_out[index] = array;
+
+            if (removable)
+                _handles.emplace_back(array);
         }
 
         void Context::setOutputArray(int index, void *buffer, void *shapeInfo, void *specialBuffer, void *specialShapeInfo) {

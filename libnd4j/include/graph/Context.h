@@ -189,10 +189,10 @@ namespace nd4j {
             std::vector<NDArray*>& fastpath_out();
 #endif
 
-            void setInputArray(int index, NDArray *array);
+            void setInputArray(int index, NDArray *array, bool removable = false);
             void setInputArray(int index, void *buffer, void *shapeInfo, void *specialBuffer, void *specialShapeInfo);
 
-            void setOutputArray(int index, NDArray *array);
+            void setOutputArray(int index, NDArray *array, bool removable = false);
             void setOutputArray(int index, void *buffer, void *shapeInfo, void *specialBuffer, void *specialShapeInfo);
         };
     }
