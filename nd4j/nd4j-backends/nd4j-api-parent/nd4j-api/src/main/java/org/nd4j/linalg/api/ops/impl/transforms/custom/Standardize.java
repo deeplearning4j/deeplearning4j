@@ -20,6 +20,7 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 
 import java.util.Arrays;
@@ -30,6 +31,12 @@ public class Standardize extends DynamicCustomOp {
 
     public Standardize(SameDiff sameDiff, SDVariable i_v, int... dimensions) {
         super(null, sameDiff, new SDVariable[]{i_v}, false);
+        this.dimensions = dimensions;
+        addIArgument(dimensions);
+    }
+
+    public Standardize(INDArray input, INDArray result, int... dimensions){
+        super("standardize", new INDArray[]{input}, new INDArray[]{result});
         this.dimensions = dimensions;
         addIArgument(dimensions);
     }
