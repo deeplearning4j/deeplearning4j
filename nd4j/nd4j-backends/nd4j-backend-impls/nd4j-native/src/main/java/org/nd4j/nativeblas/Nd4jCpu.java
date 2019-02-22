@@ -5998,6 +5998,7 @@ NDArray& NDArray::operator()(const Nd4jLong* idx) {
 // #define LIBND4J_CONTEXT_H
 
 // #include <vector>
+// #include <NDArray.h>
 // #include <graph/Variable.h>
 // #include <graph/VariableSpace.h>
 // #include <graph/ContextPrototype.h>
@@ -6008,7 +6009,6 @@ NDArray& NDArray::operator()(const Nd4jLong* idx) {
 
 // CUDA-specific includes
 // #ifdef __CUDACC__
-
 // #endif
         /**
          * This class defines input desired for any given node/operation within graph
@@ -6099,9 +6099,18 @@ NDArray& NDArray::operator()(const Nd4jLong* idx) {
             public native Variable getVariable(int idx);
             public native Variable variable(int idx);
 
+            /**
+             * This method is shortcut to getVariable(int idx);
+             *
+             * + it check fastpath for array availability (preferred)
+             * @return
+             */
+            public native NDArray getNDArray(int idx);
+            public native NDArray array(int idx);
+
 
             /**
-             * This method fetches variable from Workspace DIRECTLY
+             * This method fetches variable from VariableSpace DIRECTLY
              * @param p
              * @return
              */
@@ -6124,6 +6133,12 @@ NDArray& NDArray::operator()(const Nd4jLong* idx) {
 
             public native Variable ensureVariable(int idx/*=0*/);
             public native Variable ensureVariable();
+
+            public native @Cast("unsigned long") long width();
+
+            // methods used in java interop
+            public native void addInputArray(int index, NDArray array);
+            public native void addInputArray(int index, Pointer buffer, Pointer shapeInfo, Pointer specialBuffer, Pointer specialShapeInfo);
         }
     
 
