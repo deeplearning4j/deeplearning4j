@@ -75,6 +75,11 @@ namespace nd4j {
             virtual void registerTypes();
 
             /**
+             * This method executes this Op, and defined for most of individual ops separately
+             */
+            virtual Nd4jStatus validateAndExecute(Context& block) = 0;
+
+            /**
              * This method ensures that target variable has enough space for op execution
              *
              * TODO: we want workspaces support right here
@@ -154,11 +159,6 @@ namespace nd4j {
              * This method returns pointer to results
              */
 //            void getResults();
-
-/**
-             * This method executes this Op, and defined for most of individual ops separately
-             */
-            virtual Nd4jStatus validateAndExecute(Context& block) = 0;
 
             /**
              * This method executes given Op

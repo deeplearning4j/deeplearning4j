@@ -1974,7 +1974,7 @@ int NativeOps::execCustomOp(Nd4jPointer* extraPointers, Nd4jLong hash, Nd4jPoint
     auto op = nd4j::ops::OpRegistrator::getInstance()->getOperation(hash);
     auto context = reinterpret_cast<Context*>(opContext);
 
-    op->validateAndExecute(*context);
+    op->execute(context);
 
     return Status::OK();
 }
