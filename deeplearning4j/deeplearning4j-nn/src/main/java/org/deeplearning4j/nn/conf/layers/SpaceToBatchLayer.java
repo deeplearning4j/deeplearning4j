@@ -162,14 +162,14 @@ public class SpaceToBatchLayer extends NoParamLayer {
          * dimensions
          */
         public void setBlocks(int[] blocks) {
-            this.blocks = ValidationUtils.validate2NonNegative(blocks);
+            this.blocks = ValidationUtils.validate2NonNegative(blocks, "blocks");
         }
 
         /**
          * @param padding Padding - should be a 2d array, with format [[padTop, padBottom], [padLeft, padRight]]
          */
         public void setPadding(int[][] padding) {
-            this.padding = ValidationUtils.validate2x2NonNegative(padding);
+            this.padding = ValidationUtils.validate2x2NonNegative(padding, "padding");
         }
 
 
