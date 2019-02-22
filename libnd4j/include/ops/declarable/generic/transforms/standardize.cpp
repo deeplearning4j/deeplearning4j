@@ -47,10 +47,11 @@ namespace ops  {
             shape::checkDimensions(input->rankOf(), axis);
 
             auto means = input->reduceAlongDims(reduce::Mean, axis, true);
-            auto stddev = input->varianceAlongDimension(variance::SummaryStatsStandardDeviation, false, axis);
-            stddev->reshapei(means.getShapeAsVector());
+            auto stddev = *input->varianceAlongDimension(variance::SummaryStatsStandardDeviation, false, axis);
+            stddev.reshapei(means.getShapeAsVector());
 
-            output->assign((*input - means) / *stddev);
+            input->applyTrueBroadcast(nd4j::BroadcastOpsTuple::Subtract(), &means, output, false);
+            output->applyTrueBroadcast(nd4j::BroadcastOpsTuple::Divide(), &stddev, output, false);
         }
    
         return Status::OK();
@@ -86,15 +87,22 @@ namespace ops  {
             auto stdev = *input->varianceAlongDimension(variance::SummaryStatsStandardDeviation, false, axis);
             stdev.reshapei(means.getShapeAsVector());
 
-            auto dldx = *eps / stdev;
-            output->assign(dldx);
+            eps->applyTrueBroadcast(nd4j::BroadcastOpsTuple::Divide(), &stdev, output, false);
 
-            auto dldu_sum =(-dldx).reduceAlongDims(reduce::Sum, axis, true);
+            auto dldu_sum = -output->reduceAlongDims(reduce::Sum, axis, true);
             nd4j::ops::reduce_mean_bp meanBp;
             auto dldx_u = *meanBp.execute({input, &dldu_sum}, {}, longAxis)->at(0);
             *output += dldx_u;
 
-            auto dlds_sum = (*eps * (means - *input) / (stdev * stdev)).reduceAlongDims(reduce::Sum, axis, true);
+
+            // (eps * (means - input) / (stdev * stdev))
+            NDArray tmp(eps);
+            means.applyTrueBroadcast(nd4j::BroadcastOpsTuple::Subtract(), input, &tmp, false);
+            tmp.applyPairwiseTransform(nd4j::pairwise::Multiply, eps, &tmp, nullptr);
+            stdev.applyPairwiseTransform(nd4j::pairwise::Multiply, &stdev, &stdev, nullptr);
+            tmp.applyTrueBroadcast(nd4j::BroadcastOpsTuple::Divide(), &stdev, &tmp, false);
+
+            auto dlds_sum = tmp.reduceAlongDims(reduce::Sum, axis, true);
             nd4j::ops::reduce_stdev_bp stdevBp;
             auto dldx_s = *stdevBp.execute({input, &dlds_sum}, {}, longAxis)->at(0);
             *output += dldx_s;
