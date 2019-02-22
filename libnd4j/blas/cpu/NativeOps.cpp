@@ -1974,9 +1974,7 @@ int NativeOps::execCustomOp(Nd4jPointer* extraPointers, Nd4jLong hash, Nd4jPoint
     auto op = nd4j::ops::OpRegistrator::getInstance()->getOperation(hash);
     auto context = reinterpret_cast<Context*>(opContext);
 
-    op->execute(context);
-
-    return Status::OK();
+    return op->execute(context);
 }
 
 Nd4jStatus realExec(nd4j::ops::DeclarableOp* op, Nd4jPointer* extraPointers, Nd4jLong hash, Nd4jPointer* inputBuffers, Nd4jPointer* inputShapes, int numInputs, Nd4jPointer* outputBuffers, Nd4jPointer* outputShapes, int numOutputs, double* tArgs, int numTArgs, Nd4jLong *iArgs, int numIArgs, bool* bArgs, int numBArgs, bool isInplace) {

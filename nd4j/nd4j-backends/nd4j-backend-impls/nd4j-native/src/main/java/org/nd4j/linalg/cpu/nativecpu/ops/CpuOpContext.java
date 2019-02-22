@@ -35,6 +35,24 @@ public class CpuOpContext extends BaseOpContext implements OpContext {
     private Nd4jCpu.Context context = new Nd4jCpu.Context(1);
 
     @Override
+    public void setIArguments(long... arguments) {
+        super.setIArguments(arguments);
+        context.setIArguments(arguments, arguments.length);
+    }
+
+    @Override
+    public void setBArguments(boolean... arguments) {
+        super.setBArguments(arguments);
+        context.setBArguments(arguments, arguments.length);
+    }
+
+    @Override
+    public void setTArguments(double... arguments) {
+        super.setTArguments(arguments);
+        context.setTArguments(arguments, arguments.length);
+    }
+
+    @Override
     public void setRootSeed(long seed) {
 
     }

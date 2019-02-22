@@ -36,18 +36,21 @@ public abstract class BaseOpContext implements OpContext {
 
     @Override
     public void setIArguments(long... arguments) {
+        fastpath_i.clear();
         for (val v:arguments)
             fastpath_i.add(v);
     }
 
     @Override
     public void setTArguments(double... arguments) {
+        fastpath_d.clear();
         for (val v:arguments)
             fastpath_d.add(v);
     }
 
     @Override
     public void setBArguments(boolean... arguments) {
+        fastpath_b.clear();
         for (val v:arguments)
             fastpath_b.add(v);
     }

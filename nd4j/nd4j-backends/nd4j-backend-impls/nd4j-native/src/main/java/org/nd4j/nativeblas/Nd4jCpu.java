@@ -6155,6 +6155,15 @@ NDArray& NDArray::operator()(const Nd4jLong* idx) {
             public native void setOutputArray(int index, NDArray array, @Cast("bool") boolean removable/*=false*/);
             public native void setOutputArray(int index, NDArray array);
             public native void setOutputArray(int index, Pointer buffer, Pointer shapeInfo, Pointer specialBuffer, Pointer specialShapeInfo);
+
+            public native void setTArguments(DoublePointer arguments, int numberOfArguments);
+            public native void setTArguments(DoubleBuffer arguments, int numberOfArguments);
+            public native void setTArguments(double[] arguments, int numberOfArguments);
+            public native void setIArguments(@Cast("Nd4jLong*") LongPointer arguments, int numberOfArguments);
+            public native void setIArguments(@Cast("Nd4jLong*") LongBuffer arguments, int numberOfArguments);
+            public native void setIArguments(@Cast("Nd4jLong*") long[] arguments, int numberOfArguments);
+            public native void setBArguments(@Cast("bool*") BooleanPointer arguments, int numberOfArguments);
+            public native void setBArguments(@Cast("bool*") boolean[] arguments, int numberOfArguments);
         }
     
 
