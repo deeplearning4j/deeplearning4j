@@ -15003,7 +15003,60 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
                                                                                 }
 //         #endif
 
-    
+
+    //////////////////////////////////////////////////////////////////////////
+    /**
+       * Implementation of operation for LSTM cell with optional peep hole connections:
+       *    S. Hochreiter and J. Schmidhuber. "Long Short-Term Memory". Neural Computation
+       *    and 
+       *    https://research.google.com/pubs/archive/43905.pdf
+       *    Hasim Sak, Andrew Senior, and Francoise Beaufays. "Long short-term memory recurrent neural network architectures for large scale acoustic modeling." INTERSPEECH, 2014.
+	   * See also: https://arxiv.org/pdf/1503.04069.pdf
+       *
+       * Input arrays: 
+       *    0: input [bS, inSize] at time t
+       *    1: previous cell state  [bS, numUnits], time t-1
+       *    2: previous output [bS, numUnits], time t-1
+       *    3: Weights - concatenated (input-to-hidden, hidden-to-hidden weights)  weights, [(inSize+numUnits), 4*numUnits]
+       *    4: weights - cell peephole (t-1) connections to input modulation gate, [numUnits]
+       *    5: weights - cell peephole (t-1) connections to forget gate, [numUnits]
+       *    6: weights - cell peephole (t) connections to output gate, [numUnits]
+       *    7: biases, [4*numUnits]
+       * 
+       *  Input integer arguments:
+       *    0: if not zero, provide peephole connections
+       *
+       *  Input float arguments:
+       *    0: the bias added to forget gates in order to reduce the scale of forgetting in the beginning of the training
+	   *    1: clipping value for cell state, if it is not equal to zero, then cell state is clipped
+       *  
+       * Output arrays: 
+       *    0: Output - input gate activations [bs, numUnits]
+       *    1: Output - input modulation gate activations [bS, numUnits]
+	   *    2: Output - forget gate activations [bs, numUnits]
+	   *    3: Output - output gate activations [bs, numUnits]
+	   *    4: Activations, pre input gate [bs, numUnits]
+	   *    5: Activations, cell state [bs, numUnits]
+	   *    6: Current cell output [bS, numUnits], time t
+       */                  
+//         #if NOT_EXCLUDED(OP_lstmBlockCell)
+        @Namespace("nd4j::ops") public static class lstmBlockCell extends DeclarableCustomOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public lstmBlockCell(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public lstmBlockCell(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public lstmBlockCell position(long position) {
+                return (lstmBlockCell)super.position(position);
+            }
+        
+                                                                                    public lstmBlockCell() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
+                                                                                }
+//         #endif
+		
     //////////////////////////////////////////////////////////////////////////
     /**
        * Implementation of operations for Simple Recurrent Unit cell: "Training RNNs as Fast as CNNs" Tao Lei, Yu Zhang, Yoav Artzi

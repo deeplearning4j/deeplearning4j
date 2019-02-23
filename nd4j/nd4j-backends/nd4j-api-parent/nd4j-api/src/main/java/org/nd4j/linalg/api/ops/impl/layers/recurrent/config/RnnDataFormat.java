@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
+ * Copyright (c) 2015-2019 Skymind, Inc.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
@@ -16,30 +16,20 @@
 
 package org.nd4j.linalg.api.ops.impl.layers.recurrent.config;
 
-import lombok.Builder;
-import lombok.Data;
-import org.nd4j.autodiff.samediff.SDVariable;
+/**
+ * Data format for RNNs - rank 3 data.<br>
+ * TNS: shape [timeLength, numExamples, inOutSize] - sometimes referred to as "time major"<br>
+ * NST: shape [numExamples, inOutSize, timeLength]<br>
+ * NTS: shape [numExamples, timeLength, inOutSize] - TF "time_major=false" layout<br>
+ *
+ * @author Alex Black
+ */
+public enum RnnDataFormat {
 
-import java.util.LinkedHashMap;
-import java.util.Map;
+    //Note: ordinal (order) here matters for C++ level. Any new formats hsould be added at end
+    TNS,
+    NST,
+    NTS
 
-@Data
-@Builder
-public class GRUCellConfiguration {
-    /*
-    Inputs:
-    x        input [bS x inSize]
-    hLast    previous cell output [bS x numUnits],  that is at previous time step t-1
-    Wru      RU weights - [bS, 2*numUnits] - reset and update gates
-    Wc       C weights - [bS, numUnits] - cell gate
-    bru      r and u biases, [2*numUnits] - reset and update gates
-    bc       c biases, [numUnits] - cell gate
-     */
-
-    private SDVariable xt, hLast, Wru, Wc, bru, bc;
-
-    public SDVariable[] args() {
-        return new SDVariable[] {xt, hLast, Wru, Wc, bru, bc};
-    }
 
 }

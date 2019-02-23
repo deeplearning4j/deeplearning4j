@@ -211,7 +211,88 @@ namespace nd4j {
         DECLARE_CUSTOM_OP(lstmCell, 8, 2, false, 3, 2);
         #endif
 
-    
+
+    //////////////////////////////////////////////////////////////////////////
+    /**
+       * Implementation of operation for LSTM cell with optional peep hole connections:
+       *    S. Hochreiter and J. Schmidhuber. "Long Short-Term Memory". Neural Computation
+       *    and 
+       *    https://research.google.com/pubs/archive/43905.pdf
+       *    Hasim Sak, Andrew Senior, and Francoise Beaufays. "Long short-term memory recurrent neural network architectures for large scale acoustic modeling." INTERSPEECH, 2014.
+	   * See also: https://arxiv.org/pdf/1503.04069.pdf
+       *
+       * Input arrays: 
+       *    0: input [bS, inSize] at time t
+       *    1: previous cell state  [bS, numUnits], time t-1
+       *    2: previous output [bS, numUnits], time t-1
+       *    3: Weights - concatenated (input-to-hidden, hidden-to-hidden weights)  weights, [(inSize+numUnits), 4*numUnits]
+       *    4: weights - cell peephole (t-1) connections to input modulation gate, [numUnits]
+       *    5: weights - cell peephole (t-1) connections to forget gate, [numUnits]
+       *    6: weights - cell peephole (t) connections to output gate, [numUnits]
+       *    7: biases, shape [4*numUnits]
+       * 
+       *  Input integer arguments:
+       *    0: if not zero, provide peephole connections
+       *
+       *  Input float arguments:
+       *    0: the bias added to forget gates in order to reduce the scale of forgetting in the beginning of the training
+	   *    1: clipping value for cell state, if it is not equal to zero, then cell state is clipped
+       *  
+       * Output arrays: 
+       *    0: i      - Input modulation gate activations [bS, numUnits]
+       *    1: c (cs) - Cell state (pre tanh) [bs, numUnits] (cs)
+       *    2: f      - Output - forget gate activations [bs, numUnits]
+       *    3: o      - Output - output gate activations [bs, numUnits]
+       *    4: z (ci) - Output - block input [bs, numUnits]
+       *    5: h (co) - Cell state, post tanh [bs, numUnits]
+       *    6: y (h)  - Current cell output [bS, numUnits], time t
+       */                  
+        #if NOT_EXCLUDED(OP_lstmBlockCell)
+        DECLARE_CUSTOM_OP(lstmBlockCell, 8, 7, false, 2, 1);
+        #endif
+
+    //////////////////////////////////////////////////////////////////////////
+    /**
+       * Implementation of operation for LSTM layer with optional peep hole connections.
+       * See lstmBlockCell for details. lstmBlockCell is used internally for computation.
+       * This method expects as input (and returns as output) sequences in one of 3 formats, depending on the data format arg:
+       * dataFormat = 0 -> TNS: shape [timeLength, numExamples, inOutSize] - sometimes referred to as "time major"
+       * dataFormat = 1 -> NST: shape [numExamples, inOutSize, timeLength]
+       * dataFormat = 2 -> NTS: shape [numExamples, timeLength, inOutSize] - TF "time_major=false" layout
+       *
+       *
+       * Input arrays:
+       *    0: max sequence length; long/int64 scalar
+       *    1: input [seqLength, bS, inSize] at time t
+       *    2: previous/initial cell state  [bS, numUnits]
+       *    3: previous/initial output [bS, numUnits]
+       *    4: Weights - concatenated (input-to-hidden, hidden-to-hidden weights)  weights, [(inSize+numUnits), 4*numUnits]
+       *    5: weights - cell peephole (t-1) connections to input modulation gate, [numUnits]
+       *    6: weights - cell peephole (t-1) connections to forget gate, [numUnits]
+       *    7: weights - cell peephole (t) connections to output gate, [numUnits]
+       *    8: biases, Shape [4*numUnits]
+       *
+       *  Input integer arguments:
+       *    0: if not zero, provide peephole connections
+       *    1: Data format - 0=TNS=[seqLen,mb,size]; 1=NST=[mb,size,seqLen]; 2=NTS=[mb,seqLen,size]
+       *
+       *  Input float arguments:
+       *    0: the bias added to forget gates in order to reduce the scale of forgetting in the beginning of the training
+       *    1: clipping value for cell state, if it is not equal to zero, then cell state is clipped
+       *
+       * Output arrays:
+       *    0: i      - Input modulation gate activations, rank 3, shape as per dataFormat
+       *    1: c (cs) - Cell state (pre tanh), rank 3, shape as per dataFormat
+       *    2: f      - Output - forget gate activations, rank 3, shape as per dataFormat
+       *    3: o      - Output - output gate activations, rank 3, shape as per dataFormat
+       *    4: z (ci) - Output - block input, rank 3, shape as per dataFormat
+       *    5: h (co) - Cell state, post tanh, rank 3, shape as per dataFormat
+       *    6: y (h)  - Current cell output, rank 3, shape as per dataFormat
+       */
+        #if NOT_EXCLUDED(OP_lstmBlock)
+        DECLARE_CUSTOM_OP(lstmBlock, 9, 7, false, 2, 2);
+        #endif
+		
     //////////////////////////////////////////////////////////////////////////
     /**
        * Implementation of operations for Simple Recurrent Unit cell: "Training RNNs as Fast as CNNs" Tao Lei, Yu Zhang, Yoav Artzi
@@ -240,15 +321,19 @@ namespace nd4j {
        * Input arrays: 
        *    0: input with shape [batchSize x inSize], batchSize - batch size, inSize - number of features
        *    1: previous cell output [batchSize x numUnits],  that is at previous time step t-1
-       *    2: input-to-hidden  weights, [inSize   x 3*numUnits] 
-       *    3: hidden-to-hidden weights, [numUnits x 3*numUnits] 
-       *    4: biases, [3*numUnits]        
+       *    2: RU weights - [(nIn+nOut), 2*numUnits] - reset and update gates (input/recurrent weights)
+       *    3: C weights - [(nIn+nOut), numUnits] - cell gate (input/recurrent weights)
+       *    4: reset and update biases, [2*numUnits] - reset and update gates
+       *    5: cell biases, [numUnits]
        *  
        * Output arrays: 
-       *    0: current cell output [batchSize x numUnits], that is at current time step t       
+       *    0: Reset gate output [bS, numUnits]
+       *    1: Update gate output [bS, numUnits]
+       *    2: Cell gate output [bS, numUnits]
+       *    3: Current cell output [bS, numUnits]
        */                  
         #if NOT_EXCLUDED(OP_gruCell)
-        DECLARE_CUSTOM_OP(gruCell, 5, 1, false, 0, 0);
+        DECLARE_CUSTOM_OP(gruCell, 6, 4, false, 0, 0);
         #endif
 
         #if NOT_EXCLUDED(OP_gruCell)
