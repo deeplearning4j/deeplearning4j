@@ -96,19 +96,16 @@ DECLARE_SHAPE_FN(lstmBlockCell) {
     auto b    = inputShape->at(7);                    // biases, [4*numUnits]
 
     REQUIRE_TRUE(shape::rank(xt)==2 && shape::rank(cLast)==2 && shape::rank(yLast)==2, 0, "lstmBlockCell: Input ranks must be 2 for inputs 0/1/2 (x, cLast, outLast) - got %i, %i, %i", shape::rank(xt), shape::rank(cLast), shape::rank(yLast));
-    REQUIRE_TRUE(xt->sizeAt(0) == yLast->sizeAt(0) && xt->sizeAt(0) == cLast->sizeAt(0), 0, "lstmBlockCell: Input minibatch sizes (dimension 0) must be same for xt, cLast, yLast");
+    const int inSize = xt[2];
+    const int numUnits = cLast[2];  //[rank, bS, nOut, ...]
+    REQUIRE_TRUE(xt[1] == yLast[1] && xt[1] == cLast[1], 0, "lstmBlockCell: Input minibatch sizes (dimension 0) must be same for xt, cLast, yLast");
     REQUIRE_TRUE(shape::rank(W)==2, 0, "lstmBlockCell: Weights array rank must be rank 2, got %i", shape::rank(W));
     REQUIRE_TRUE(W[1]==(inSize+numUnits), 0, "lstmBlockCell: Weights size(0) must be equal to inSize + numUnits, got %i", W[1]);
     REQUIRE_TRUE(W[2]==(4*numUnits), 0, "lstmBlockCell: Weights size(1) must be equal to 4*numUnits, got %i", W[2]);
     REQUIRE_TRUE(shape::rank(b)==1 && b[1]==(4*numUnits), 0, "lstmBlockCell: Biases must be rank 1, size 4*numUnits");
-	REQUIRE_TRUE(shape::rank(i)==2 && shape::rank(c)==2 && shape::rank(f)==2 && shape::rank(o)==2 && shape::rank(z)==2 && shape::rank(h)==2 && shape::rank(y)==2 &&
-	             i[1]==bS && c[1]==bS && f[1]==bS && o[1]==bS && z[1]==bS && h[1]==bS && y[1]==bS &&
-	             i[2]==numUnits && c[2]==numUnits && f[2]==numUnits && o[2]==numUnits && z[2]==numUnits && h[2]==numUnits && y[2]==numUnits,
-	             0, "lstmBlockCell: Output arrays must all be rank 2 with size(0) == batchSize and size(1) == numUnits");
 
     // evaluate output shapeInfos
     const int bS = xt[1];
-    const int numUnits = cLast[2];  //[rank, bS, nOut, ...]
     Nd4jLong *s(nullptr);
     ALLOCATE(s, block.getWorkspace(), shape::shapeInfoLength(2), Nd4jLong);      // [bS, numUnits]
 

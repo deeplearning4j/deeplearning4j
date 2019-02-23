@@ -51,7 +51,7 @@ CUSTOM_OP_IMPL(gruCell, 6, 4, false, 0, 0) {
 
     REQUIRE_TRUE(x->sizeAt(0) == hLast->sizeAt(0), 0, "gruCell: Input minibatch sizes (dimension 0) must be same for x and hLast");
     REQUIRE_TRUE(Wru->rankOf()==2 && Wc->rankOf()==2, 0, "gruCell: weight arrays (Wru, Wc) arrays must be 2, got %i and %i", Wru->rankOf(), Wc->rankOf());
-    REQUIRE_TRUE(Wru->sizeAt(0)==(nIn+nU) && Wc->sizeAt(0)==(nIn+nU), 0, "gruCell: Weights size(0) must be equal to inSize + numUnits, got %i", W->sizeAt(0));
+    REQUIRE_TRUE(Wru->sizeAt(0)==(nIn+nU) && Wc->sizeAt(0)==(nIn+nU), 0, "gruCell: Weights size(0) must be equal to inSize + numUnits, got %i", Wru->sizeAt(0));
     REQUIRE_TRUE(Wru->sizeAt(1)==(2*nU), 0, "gruCell: Weights (reset and update) size(1) must be equal to 2*numUnits, got %i", Wru->sizeAt(1));
     REQUIRE_TRUE(Wc->sizeAt(1)==nU, 0, "gruCell: Weights (cell) size(1) must be equal to numUnits, got %i", Wc->sizeAt(1));
     REQUIRE_TRUE(bru->rankOf()==1 && bru->sizeAt(0)==(2*nU), 0, "gruCell: reset/update biases must be rank 1, size 2*numUnits");
@@ -95,7 +95,7 @@ DECLARE_SHAPE_FN(gruCell) {
 
     REQUIRE_TRUE(x[1] == hLast[1], 0, "gruCell: Input minibatch sizes (dimension 0) must be same for x and hLast");
     REQUIRE_TRUE(shape::rank(Wru)==2 && shape::rank(Wc)==2, 0, "gruCell: weight arrays (Wru, Wc) arrays must be 2, got %i and %i", shape::rank(Wru), shape::rank(Wc));
-    REQUIRE_TRUE(Wru[1]==(inSize+numUnits) && Wc[1]==(inSize+numUnits), 0, "gruCell: Weights size(0) must be equal to inSize + numUnits, got %i", W[1]);
+    REQUIRE_TRUE(Wru[1]==(inSize+numUnits) && Wc[1]==(inSize+numUnits), 0, "gruCell: Weights size(0) must be equal to inSize + numUnits, got %i and %i", Wru[1], Wc[1]);
     REQUIRE_TRUE(Wru[2]==(2*numUnits), 0, "gruCell: Weights (reset and update) size(1) must be equal to 2*numUnits, got %i", Wru[2]);
     REQUIRE_TRUE(Wc[2]==numUnits, 0, "gruCell: Weights (cell) size(1) must be equal to numUnits, got %i", Wc[2]);
     REQUIRE_TRUE(shape::rank(bru)==1 && bru[1]==(2*numUnits), 0, "gruCell: reset/update biases must be rank 1, size 2*numUnits");
