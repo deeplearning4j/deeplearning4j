@@ -270,13 +270,13 @@ public class VocabConstructor<T extends SequenceElement> {
         long lastSequences = 0;
         long lastElements = 0;
         long startTime = lastTime;
-        long startWords = 0;
         AtomicLong parsedCount = new AtomicLong(0);
         if (resetCounters && buildHuffmanTree)
             throw new IllegalStateException("You can't reset counters and build Huffman tree at the same time!");
 
         if (cache == null)
             cache = new AbstractCache.Builder<T>().build();
+
         log.debug("Target vocab size before building: [" + cache.numWords() + "]");
         final AtomicLong loopCounter = new AtomicLong(0);
 
@@ -299,11 +299,7 @@ public class VocabConstructor<T extends SequenceElement> {
 
             AbstractCache<T> tempHolder = new AbstractCache.Builder<T>().build();
 
-
-            List<Long> timesHasNext = new ArrayList<>();
-            List<Long> timesNext = new ArrayList<>();
             int sequences = 0;
-            long time3 = 0;
             while (iterator.hasMoreSequences()) {
                 Sequence<T> document = iterator.nextSequence();
 
@@ -396,9 +392,7 @@ public class VocabConstructor<T extends SequenceElement> {
         //topHolder.resetWordCounters();
 
 
-
         System.gc();
-
         cache.importVocabulary(topHolder);
 
         // adding UNK word

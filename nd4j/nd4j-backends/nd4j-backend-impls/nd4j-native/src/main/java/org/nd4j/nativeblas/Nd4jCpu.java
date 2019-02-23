@@ -2625,6 +2625,8 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
     public native int execCustomOp(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jLong") long hash, @Cast("Nd4jPointer*") PointerPointer inputBuffers, @Cast("Nd4jPointer*") PointerPointer inputShapes, int numInputs, @Cast("Nd4jPointer*") PointerPointer outputBuffers, @Cast("Nd4jPointer*") PointerPointer outputShapes, int numOutputs, DoublePointer tArgs, int numTArgs, @Cast("Nd4jLong*") LongPointer iArgs, int numIArgs, @Cast("bool*") boolean[] bArgs, int numBArgs, @Cast("bool") boolean isInplace);
     public native int execCustomOp(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jLong") long hash, @Cast("Nd4jPointer*") PointerPointer inputBuffers, @Cast("Nd4jPointer*") PointerPointer inputShapes, int numInputs, @Cast("Nd4jPointer*") PointerPointer outputBuffers, @Cast("Nd4jPointer*") PointerPointer outputShapes, int numOutputs, DoubleBuffer tArgs, int numTArgs, @Cast("Nd4jLong*") LongBuffer iArgs, int numIArgs, @Cast("bool*") BooleanPointer bArgs, int numBArgs, @Cast("bool") boolean isInplace);
     public native int execCustomOp(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jLong") long hash, @Cast("Nd4jPointer*") PointerPointer inputBuffers, @Cast("Nd4jPointer*") PointerPointer inputShapes, int numInputs, @Cast("Nd4jPointer*") PointerPointer outputBuffers, @Cast("Nd4jPointer*") PointerPointer outputShapes, int numOutputs, double[] tArgs, int numTArgs, @Cast("Nd4jLong*") long[] iArgs, int numIArgs, @Cast("bool*") boolean[] bArgs, int numBArgs, @Cast("bool") boolean isInplace);
+    public native int execCustomOp(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jLong") long hash, @Cast("Nd4jPointer") Pointer opContext);
+
     public native ShapeList calculateOutputShapes(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jLong") long hash, @Cast("Nd4jPointer*") PointerPointer inputShapes, int numInputShapes, DoublePointer tArgs, int numTArgs, @Cast("Nd4jLong*") LongPointer iArgs, int numIArgs);
     public native ShapeList calculateOutputShapes(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jLong") long hash, @Cast("Nd4jPointer*") PointerPointer inputShapes, int numInputShapes, DoubleBuffer tArgs, int numTArgs, @Cast("Nd4jLong*") LongBuffer iArgs, int numIArgs);
     public native ShapeList calculateOutputShapes(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jLong") long hash, @Cast("Nd4jPointer*") PointerPointer inputShapes, int numInputShapes, double[] tArgs, int numTArgs, @Cast("Nd4jLong*") long[] iArgs, int numIArgs);
@@ -5998,6 +6000,7 @@ NDArray& NDArray::operator()(const Nd4jLong* idx) {
 // #define LIBND4J_CONTEXT_H
 
 // #include <vector>
+// #include <NDArray.h>
 // #include <graph/Variable.h>
 // #include <graph/VariableSpace.h>
 // #include <graph/ContextPrototype.h>
@@ -6008,7 +6011,6 @@ NDArray& NDArray::operator()(const Nd4jLong* idx) {
 
 // CUDA-specific includes
 // #ifdef __CUDACC__
-
 // #endif
         /**
          * This class defines input desired for any given node/operation within graph
@@ -6099,9 +6101,18 @@ NDArray& NDArray::operator()(const Nd4jLong* idx) {
             public native Variable getVariable(int idx);
             public native Variable variable(int idx);
 
+            /**
+             * This method is shortcut to getVariable(int idx);
+             *
+             * + it check fastpath for array availability (preferred)
+             * @return
+             */
+            public native NDArray getNDArray(int idx);
+            public native NDArray array(int idx);
+
 
             /**
-             * This method fetches variable from Workspace DIRECTLY
+             * This method fetches variable from VariableSpace DIRECTLY
              * @param p
              * @return
              */
@@ -6124,6 +6135,35 @@ NDArray& NDArray::operator()(const Nd4jLong* idx) {
 
             public native Variable ensureVariable(int idx/*=0*/);
             public native Variable ensureVariable();
+
+            public native @Cast("unsigned long") long width();
+
+            // methods used in java interop
+            /**
+             * This method checks, if Context uses fastpath variable access
+             * @return
+             */
+            public native @Cast("bool") boolean isFastPath();
+
+// #ifndef __JAVACPP_HACK__
+// #endif
+
+            public native void setInputArray(int index, NDArray array, @Cast("bool") boolean removable/*=false*/);
+            public native void setInputArray(int index, NDArray array);
+            public native void setInputArray(int index, Pointer buffer, Pointer shapeInfo, Pointer specialBuffer, Pointer specialShapeInfo);
+
+            public native void setOutputArray(int index, NDArray array, @Cast("bool") boolean removable/*=false*/);
+            public native void setOutputArray(int index, NDArray array);
+            public native void setOutputArray(int index, Pointer buffer, Pointer shapeInfo, Pointer specialBuffer, Pointer specialShapeInfo);
+
+            public native void setTArguments(DoublePointer arguments, int numberOfArguments);
+            public native void setTArguments(DoubleBuffer arguments, int numberOfArguments);
+            public native void setTArguments(double[] arguments, int numberOfArguments);
+            public native void setIArguments(@Cast("Nd4jLong*") LongPointer arguments, int numberOfArguments);
+            public native void setIArguments(@Cast("Nd4jLong*") LongBuffer arguments, int numberOfArguments);
+            public native void setIArguments(@Cast("Nd4jLong*") long[] arguments, int numberOfArguments);
+            public native void setBArguments(@Cast("bool*") BooleanPointer arguments, int numberOfArguments);
+            public native void setBArguments(@Cast("bool*") boolean[] arguments, int numberOfArguments);
         }
     
 
@@ -10515,7 +10555,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 // #define CHECK_STASH(NAME)   block.getStash()->checkStash(block.getNodeId(), NAME);
 // #define UNSTASH(NAME)       block.getStash()->extractArray(block.getNodeId(), NAME);
 
-// #define INPUT_VARIABLE(INDEX)     reinterpret_cast<nd4j::NDArray *>(block.getVariable(INDEX)->getNDArray())
+// #define INPUT_VARIABLE(INDEX)     block.array(INDEX)
 // #define OUTPUT_VARIABLE(INDEX)    reinterpret_cast<nd4j::NDArray *>(this->getZ(block, INDEX))
 
 // #define INPUT_LIST(INDEX)     reinterpret_cast<nd4j::NDArrayList *>(block.getVariable(INDEX)->getNDArrayList())
@@ -14963,7 +15003,60 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
                                                                                 }
 //         #endif
 
-    
+
+    //////////////////////////////////////////////////////////////////////////
+    /**
+       * Implementation of operation for LSTM cell with optional peep hole connections:
+       *    S. Hochreiter and J. Schmidhuber. "Long Short-Term Memory". Neural Computation
+       *    and 
+       *    https://research.google.com/pubs/archive/43905.pdf
+       *    Hasim Sak, Andrew Senior, and Francoise Beaufays. "Long short-term memory recurrent neural network architectures for large scale acoustic modeling." INTERSPEECH, 2014.
+	   * See also: https://arxiv.org/pdf/1503.04069.pdf
+       *
+       * Input arrays: 
+       *    0: input [bS, inSize] at time t
+       *    1: previous cell state  [bS, numUnits], time t-1
+       *    2: previous output [bS, numUnits], time t-1
+       *    3: Weights - concatenated (input-to-hidden, hidden-to-hidden weights)  weights, [(inSize+numUnits), 4*numUnits]
+       *    4: weights - cell peephole (t-1) connections to input modulation gate, [numUnits]
+       *    5: weights - cell peephole (t-1) connections to forget gate, [numUnits]
+       *    6: weights - cell peephole (t) connections to output gate, [numUnits]
+       *    7: biases, [4*numUnits]
+       * 
+       *  Input integer arguments:
+       *    0: if not zero, provide peephole connections
+       *
+       *  Input float arguments:
+       *    0: the bias added to forget gates in order to reduce the scale of forgetting in the beginning of the training
+	   *    1: clipping value for cell state, if it is not equal to zero, then cell state is clipped
+       *  
+       * Output arrays: 
+       *    0: Output - input gate activations [bs, numUnits]
+       *    1: Output - input modulation gate activations [bS, numUnits]
+	   *    2: Output - forget gate activations [bs, numUnits]
+	   *    3: Output - output gate activations [bs, numUnits]
+	   *    4: Activations, pre input gate [bs, numUnits]
+	   *    5: Activations, cell state [bs, numUnits]
+	   *    6: Current cell output [bS, numUnits], time t
+       */                  
+//         #if NOT_EXCLUDED(OP_lstmBlockCell)
+        @Namespace("nd4j::ops") public static class lstmBlockCell extends DeclarableCustomOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public lstmBlockCell(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public lstmBlockCell(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public lstmBlockCell position(long position) {
+                return (lstmBlockCell)super.position(position);
+            }
+        
+                                                                                    public lstmBlockCell() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
+                                                                                }
+//         #endif
+		
     //////////////////////////////////////////////////////////////////////////
     /**
        * Implementation of operations for Simple Recurrent Unit cell: "Training RNNs as Fast as CNNs" Tao Lei, Yu Zhang, Yoav Artzi

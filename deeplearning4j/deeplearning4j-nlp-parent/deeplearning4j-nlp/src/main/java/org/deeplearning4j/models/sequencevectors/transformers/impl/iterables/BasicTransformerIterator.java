@@ -70,7 +70,7 @@ public class BasicTransformerIterator implements Iterator<Sequence<VocabWord>> {
 
 
     public void reset() {
-        //
+        this.iterator.reset();
     }
 
     @Override

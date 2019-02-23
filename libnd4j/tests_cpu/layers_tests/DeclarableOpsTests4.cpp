@@ -1414,47 +1414,7 @@ TEST_F(DeclarableOpsTests4, lstm_test1) {
     ASSERT_TRUE(expClast.equalsTo(&cLast));            
 
     delete results;
-} 
-
-
-///////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests4, gru_test1) {
-    
-    const int time      = 5;
-    const int batchSize = 3;
-    const int inSize    = 3;    
-    const int numUnits  = 3;
-
-    auto x   = NDArrayFactory::create<double>('c', {time, batchSize, inSize});
-    auto h0  = NDArrayFactory::create<double>('c', {batchSize, numUnits});
-    auto Wx  = NDArrayFactory::create<double>('c', {inSize, 3*numUnits});
-    auto Wh  = NDArrayFactory::create<double>('c', {numUnits, 3*numUnits});
-    auto b   = NDArrayFactory::create<double>('c', {3*numUnits});
-
-    x.linspace(0.5, 0.5);
-    h0 = 1.;    
-    Wx = 0.003;
-    Wh = 0.006;
-    b = 0.5;
-
-    auto expH = NDArrayFactory::create<double>('c', {time, batchSize, numUnits},{0.8062 ,0.8062 ,0.8062 ,0.81167,0.81167,0.81167,0.81702,0.81702,0.81702,
-                                                           0.69772,0.69772,0.69772,0.70577,0.70577,0.70577,0.71366,0.71366,0.71366,
-                                                           0.64041,0.64041,0.64041,0.64952,0.64952,0.64952,0.65847,0.65847,0.65847,
-                                                           0.61392,0.61392,0.61392,0.62331,0.62331,0.62331,0.63254,0.63254,0.63254,
-                                                           0.60603,0.60603,0.60603,0.61531,0.61531,0.61531,0.62443,0.62443,0.62443});    
-    
-    nd4j::ops::gru op;
-    auto results = op.execute({&x, &h0, &Wx, &Wh, &b}, {}, {});
-
-    ASSERT_EQ(ND4J_STATUS_OK, results->status());
-
-    auto *h = results->at(0);
-
-    ASSERT_TRUE(expH.isSameShape(h));
-    ASSERT_TRUE(expH.equalsTo(h));    
-
-    delete results;
-} 
+}
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests4, relu6_test1) {

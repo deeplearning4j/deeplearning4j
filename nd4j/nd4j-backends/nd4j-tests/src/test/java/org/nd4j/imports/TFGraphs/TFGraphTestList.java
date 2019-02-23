@@ -43,13 +43,13 @@ import java.util.Map;
  * <p>
  */
 @RunWith(Parameterized.class)
-@Ignore
+//@Ignore
 public class TFGraphTestList {
     @Rule
     public TemporaryFolder testDir = new TemporaryFolder();
 
     public static String[] modelNames = new String[]{
-            "cnn2d_nn/nhwc_b1_k12_s12_d12_SAME"
+            "rnn/lstmblockcell/dynamic_b1_n5-3_ts4_noPH_clip-0.3-0.4_fB1_Tanh_noIS_noTM"
     };
 
     @After
