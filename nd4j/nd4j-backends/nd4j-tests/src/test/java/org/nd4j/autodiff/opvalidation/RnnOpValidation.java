@@ -85,9 +85,9 @@ public class RnnOpValidation extends BaseOpValidation {
         //Weights and bias order: [i, f, z, o]
 
         //Block input (z) - post tanh:
-        INDArray wz_x = W.getArr().get(NDArrayIndex.interval(0,nIn), NDArrayIndex.interval(2*nOut, 3*nOut));           //Input weights
-        INDArray wz_r = W.getArr().get(NDArrayIndex.interval(nIn,nIn+nOut), NDArrayIndex.interval(2*nOut, 3*nOut));    //Recurrent weights
-        INDArray bz = b.getArr().get(NDArrayIndex.interval(2*nOut, 3*nOut));
+        INDArray wz_x = W.getArr().get(NDArrayIndex.interval(0,nIn), NDArrayIndex.interval(nOut, 2*nOut));           //Input weights
+        INDArray wz_r = W.getArr().get(NDArrayIndex.interval(nIn,nIn+nOut), NDArrayIndex.interval(nOut, 2*nOut));    //Recurrent weights
+        INDArray bz = b.getArr().get(NDArrayIndex.interval(nOut, 2*nOut));
 
         INDArray zExp = x.getArr().mmul(wz_x).addiRowVector(bz);        //[mb,nIn]*[nIn, nOut] + [nOut]
         zExp.addi(yLast.getArr().mmul(wz_r));   //[mb,nOut]*[nOut,nOut]
@@ -108,9 +108,9 @@ public class RnnOpValidation extends BaseOpValidation {
         assertEquals(iExp, m.get(toExec.get(0)));
 
         //Forget gate (post sigmoid): (note: peephole input - last time step)
-        INDArray wf_x = W.getArr().get(NDArrayIndex.interval(0,nIn), NDArrayIndex.interval(1*nOut, 2*nOut));           //Input weights
-        INDArray wf_r = W.getArr().get(NDArrayIndex.interval(nIn,nIn+nOut), NDArrayIndex.interval(1*nOut, 2*nOut));    //Recurrent weights
-        INDArray bf = b.getArr().get(NDArrayIndex.interval(1*nOut, 2*nOut));
+        INDArray wf_x = W.getArr().get(NDArrayIndex.interval(0,nIn), NDArrayIndex.interval(2*nOut, 3*nOut));           //Input weights
+        INDArray wf_r = W.getArr().get(NDArrayIndex.interval(nIn,nIn+nOut), NDArrayIndex.interval(2*nOut, 3*nOut));    //Recurrent weights
+        INDArray bf = b.getArr().get(NDArrayIndex.interval(2*nOut, 3*nOut));
 
         INDArray fExp = x.getArr().mmul(wf_x).addiRowVector(bf);        //[mb,nIn]*[nIn, nOut] + [nOut]
         fExp.addi(yLast.getArr().mmul(wf_r));   //[mb,nOut]*[nOut,nOut]
