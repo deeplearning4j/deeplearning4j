@@ -502,41 +502,6 @@ public class InferenceSession extends AbstractSession<INDArray,DifferentialFunct
             SDVariable[] args = df.args();
             for(SDVariable v : args){
                 Variable var = sameDiff.getVariables().get(v.getVarName());
-                //Repeated inputs:
-//                String n = var.getName();
-//                if(seen.contains(n)){
-//                    //Add to appropriate count
-//                    boolean found = false;
-//                    if (numNonConstIns > 0 ) {
-//                        for(VarId varId : opInputs){
-//                            if(n.equals(varId.getVariable())){
-//                                found = true;
-//                                numNonConstIns++;
-//                                break;
-//                            }
-//                        }
-//                    }
-//                    if(!found && numConstPhIns > 0){
-//                        for(String s : constAndPhInputs){
-//                            if(n.equals(s)){
-//                                found = true;
-//                                numConstPhIns++;
-//                                break;
-//                            }
-//                        }
-//                    }
-//                    if(!found && numNonConstInsAllIters > 0){
-//                        for(VarId varId : allIterInputs){
-//                            if(n.equals(varId.getVariable())){
-//                                numNonConstInsAllIters++;
-//                                break;
-//                            }
-//                        }
-//                    }
-//                } else {
-//                    seen.add(n);
-//                }
-
                 //Nested enter case:
                 DifferentialFunction inputVarFn = (var.getOutputOfOp() == null ? null : sameDiff.getOps().get(var.getOutputOfOp()).getOp());
                 if(inputVarFn instanceof Enter && ((Enter)inputVarFn).isConstant()){
