@@ -99,7 +99,7 @@ DECLARE_SHAPE_FN(gruCell) {
     REQUIRE_TRUE(Wru[2]==(2*numUnits), 0, "gruCell: Weights (reset and update) size(1) must be equal to 2*numUnits, got %i", Wru[2]);
     REQUIRE_TRUE(Wc[2]==numUnits, 0, "gruCell: Weights (cell) size(1) must be equal to numUnits, got %i", Wc[2]);
     REQUIRE_TRUE(shape::rank(bru)==1 && bru[1]==(2*numUnits), 0, "gruCell: reset/update biases must be rank 1, size 2*numUnits");
-    REQUIRE_TRUE(shape::rank(bc)==1 && bru[1]==numUnits, 0, "gruCell: reset/update biases must be rank 1, size numUnits");
+    REQUIRE_TRUE(shape::rank(bc)==1 && bc[1]==numUnits, 0, "gruCell: reset/update biases must be rank 1, size numUnits");
 
     Nd4jLong *s(nullptr);
     ALLOCATE(s, block.getWorkspace(), shape::shapeInfoLength(rank), Nd4jLong);// [bS x numUnits]
