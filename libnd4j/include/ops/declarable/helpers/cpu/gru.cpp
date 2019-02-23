@@ -112,6 +112,8 @@ void gruCell(const NDArray* x, const NDArray* hLast, const NDArray* Wru, const N
     auto hResult = (*u) * (*hLast) + (1.0f - *u) * (*c);
 
     const_cast<NDArray*>(h)->assign(&hResult);
+
+    delete concatOut;
 }
 
 //////////////////////////////////////////////////////////////////////////

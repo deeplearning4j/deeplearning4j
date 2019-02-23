@@ -229,7 +229,7 @@ namespace nd4j {
        *    4: weights - cell peephole (t-1) connections to input modulation gate, [numUnits]
        *    5: weights - cell peephole (t-1) connections to forget gate, [numUnits]
        *    6: weights - cell peephole (t) connections to output gate, [numUnits]
-       *    7: biases, [4*numUnits]
+       *    7: biases, shape [4*numUnits]
        * 
        *  Input integer arguments:
        *    0: if not zero, provide peephole connections
@@ -256,14 +256,13 @@ namespace nd4j {
        * Implementation of operation for LSTM layer with optional peep hole connections.
        * See lstmBlockCell for details. lstmBlockCell is used internally for computation.
        * This method expects as input (and returns as output) sequences in one of 3 formats, depending on the data format arg:
-       * dataFormat = 0 ->
-       * time major order: i.e., shape
-       * [seqLength,batchSize,inOutSize] where inOutSize is either the input size or the output size, depending
-       * on the array.
+       * dataFormat = 0 -> TNS: shape [timeLength, numExamples, inOutSize] - sometimes referred to as "time major"
+       * dataFormat = 1 -> NST: shape [numExamples, inOutSize, timeLength]
+       * dataFormat = 2 -> NTS: shape [numExamples, timeLength, inOutSize] - TF "time_major=false" layout
        *
        *
        * Input arrays:
-       *    0: max sequence length; int64 scalar
+       *    0: max sequence length; long/int64 scalar
        *    1: input [seqLength, bS, inSize] at time t
        *    2: previous/initial cell state  [bS, numUnits]
        *    3: previous/initial output [bS, numUnits]
@@ -271,7 +270,7 @@ namespace nd4j {
        *    5: weights - cell peephole (t-1) connections to input modulation gate, [numUnits]
        *    6: weights - cell peephole (t-1) connections to forget gate, [numUnits]
        *    7: weights - cell peephole (t) connections to output gate, [numUnits]
-       *    8: biases, [4*numUnits]
+       *    8: biases, Shape [4*numUnits]
        *
        *  Input integer arguments:
        *    0: if not zero, provide peephole connections
@@ -282,13 +281,13 @@ namespace nd4j {
        *    1: clipping value for cell state, if it is not equal to zero, then cell state is clipped
        *
        * Output arrays:
-       *    0: i      - Input modulation gate activations [seqLenth, bS, numUnits]
-       *    1: c (cs) - Cell state (pre tanh) [seqLength, bs, numUnits]
-       *    2: f      - Output - forget gate activations [seqLength, bs, numUnits]
-       *    3: o      - Output - output gate activations [seqLength, bs, numUnits]
-       *    4: z (ci) - Output - block input [seqLength, bs, numUnits]
-       *    5: h (co) - Cell state, post tanh [seqLength, bs, numUnits]
-       *    6: y (h)  - Current cell output [seqLength, bS, numUnits]
+       *    0: i      - Input modulation gate activations, rank 3, shape as per dataFormat
+       *    1: c (cs) - Cell state (pre tanh), rank 3, shape as per dataFormat
+       *    2: f      - Output - forget gate activations, rank 3, shape as per dataFormat
+       *    3: o      - Output - output gate activations, rank 3, shape as per dataFormat
+       *    4: z (ci) - Output - block input, rank 3, shape as per dataFormat
+       *    5: h (co) - Cell state, post tanh, rank 3, shape as per dataFormat
+       *    6: y (h)  - Current cell output, rank 3, shape as per dataFormat
        */
         #if NOT_EXCLUDED(OP_lstmBlock)
         DECLARE_CUSTOM_OP(lstmBlock, 9, 7, false, 2, 2);

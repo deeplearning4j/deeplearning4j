@@ -248,13 +248,10 @@ void lstmBlockCell(const NDArray* xt, const NDArray* cLast, const NDArray* yLast
 
     // current cell output = ot*tanh(ct)
     auto tanhc = tanh(*c);
-    const_cast<NDArray*>(h)->assign(&tanhc);       //Assign: expects NDArray& or NDArray*
-
-
+    const_cast<NDArray*>(h)->assign(&tanhc);
     const_cast<NDArray*>(y)->assign(zo * (*h));
 
-    //TODO do I need to delete variable space and concat op??
-
+    delete result;
 }
 
 
@@ -329,7 +326,6 @@ void lstmBlockTimeLoop(const NDArray* maxSeqLength, const NDArray* xSeq, const N
     }
 
 }
-
 
 }
 }
