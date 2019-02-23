@@ -492,12 +492,6 @@ public class InferenceSession extends AbstractSession<INDArray,DifferentialFunct
 
         Set<String> constEnterInputs = null;
         if(numArgs != (numNonConstIns + numConstPhIns + numNonConstInsAllIters)){
-            //We have fewer inputs than we expected for some reason
-            //Sometimes it's because of repeated inputs - it's only recorded as one "input" from the perspective of
-            // the sets. But in actuality, the repeated input needs to be counted multiple times
-            //There is also a separate edge case for nested enter ops (see below)
-            Set<String> seen = new HashSet<>();
-
             boolean anyConstEnterInputs = false;
             SDVariable[] args = df.args();
             for(SDVariable v : args){
