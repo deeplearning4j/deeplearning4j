@@ -62,8 +62,8 @@ public class SDRNN extends SDOps {
         return Arrays.asList(v);
     }
 
-    public List<SDVariable> lstmBlock(String name, LSTMBlockCellConfiguration configuration){
-        SDVariable[] v = new LSTMBlock(sd, configuration).outputVariables(name);
+    public List<SDVariable> lstmLayer(String name, LSTMConfiguration configuration){
+        SDVariable[] v = new LSTMLayer(sd, configuration).outputVariables(name);
         return Arrays.asList(v);
     }
 

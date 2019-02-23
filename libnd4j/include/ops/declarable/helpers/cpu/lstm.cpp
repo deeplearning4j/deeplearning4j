@@ -58,21 +58,28 @@ static FORCEINLINE void tanhInplace(const NDArray& arr) {
 }
 
 //////////////////////////////////////////////////////////////////////////
+static NDArray* timeSubset(const NDArray* arr, const int t, const int dataFormat){
+    if(dataFormat == 0){
+        //TNS: shape [timeLength, numExamples, inOutSize]
+        auto x = (*arr)({t,t+1, 0,0, 0,0});
+        const std::vector<Nd4jLong> newShape({arr->sizeAt(1),arr->sizeAt(2)});
+        return x.reshape(arr->ordering(), newShape);
+    } else if(dataFormat == 1){
+        //NST: shape [numExamples, inOutSize, timeLength]
+        auto x = (*arr)({0,0, 0,0, t,t+1});
+        const std::vector<Nd4jLong> newShape({arr->sizeAt(0),arr->sizeAt(1)});
+        return x.reshape(arr->ordering(), newShape);
+    } else {
+        //NTS: shape [numExamples, timeLength, inOutSize] - TF "time_major=false" layout
+        auto x = (*arr)({0,0, t,t+1, 0,0});
+        const std::vector<Nd4jLong> newShape({arr->sizeAt(0),arr->sizeAt(2)});
+        return x.reshape(arr->ordering(), newShape);
+    }
+}
+
+//////////////////////////////////////////////////////////////////////////
 template <typename T>
 static void clipping(NDArray* arr, T limit) {
-
-    if(limit < (T)0.f)
-        limit *= (T)(-1.f);
-
-    /*
-    auto clip = LAMBDA_T(value, limit) {
-        if(value < -limit || value > limit)
-            value = limit;
-        return value;
-    };
-
-    arr->applyLambda(clip);
-    */
     arr->applyScalar(scalar::LstmClip, limit);
 }
 
@@ -120,7 +127,7 @@ void lstmCell(const NDArray* xt, const NDArray* ht_1, const NDArray* ct_1, const
     ct->assign( sigmoid(zft + forgetBias) * (*ct_1) + sigmoid(zit) * tanh(zct) );
 
     // if clipping value is provided then cell state is clipped by this value prior to the cell output activation
-    if(clippingCellValue != 0.)
+    if(clippingCellValue > 0.0)
         clipping(ct, clippingCellValue);
 
     if(peephole)
@@ -287,10 +294,10 @@ void lstmTimeLoop(const NDArray* x, const NDArray* h0, const NDArray* c0, const 
 }
 
 /////////////////////////////////////////////////////////////////////////////
-void lstmBlockTimeLoop(const NDArray* maxSeqLength, const NDArray* xSeq, const NDArray* W, const NDArray* b,
-                       const NDArray* c0, const NDArray* y0, const NDArray* Wci, const NDArray* Wcf, const NDArray* Wco,
+void lstmBlockTimeLoop(const NDArray* maxSeqLength, const NDArray* xSeq, const NDArray* c0, const NDArray* y0,
+                       const NDArray* W, const NDArray* Wci, const NDArray* Wcf, const NDArray* Wco, const NDArray* b,
                        const NDArray* iSeq, const NDArray* cSeq, const NDArray* fSeq, const NDArray* oSeq, const NDArray* zSeq,
-                       const NDArray* hSeq, const NDArray* ySeq, const std::vector<double>& params){
+                       const NDArray* hSeq, const NDArray* ySeq, const std::vector<double>& params, const int dataFormat){
 
     const int seqLen = xSeq->sizeAt(0);
     const int mb = xSeq->sizeAt(1);
@@ -298,22 +305,22 @@ void lstmBlockTimeLoop(const NDArray* maxSeqLength, const NDArray* xSeq, const N
     const int outSize = iSeq->sizeAt(2);
 
     const std::vector<Nd4jLong> inSliceShape({mb,inSize});
-    const std::vector<Nd4jLong> outSliceShape({mb,inSize});
+    const std::vector<Nd4jLong> outSliceShape({mb,outSize});
 
     NDArray* c_t1 = const_cast<NDArray*>(c0);
     NDArray* y_t1 = const_cast<NDArray*>(y0);
 
     // loop through time steps
     for (int t = 0; t <seqLen; ++t) {
-        auto xt = (*xSeq)({t,t+1, 0,0, 0,0}).reshape('c', inSliceShape);
+        auto xt = timeSubset(xSeq, t, dataFormat);
 
-        auto it = (*iSeq)({t,t+1, 0,0, 0,0}).reshape('c', outSliceShape);
-        auto ct = (*cSeq)({t,t+1, 0,0, 0,0}).reshape('c', outSliceShape);
-        auto ft = (*fSeq)({t,t+1, 0,0, 0,0}).reshape('c', outSliceShape);
-        auto ot = (*oSeq)({t,t+1, 0,0, 0,0}).reshape('c', outSliceShape);
-        auto zt = (*zSeq)({t,t+1, 0,0, 0,0}).reshape('c', outSliceShape);
-        auto ht = (*hSeq)({t,t+1, 0,0, 0,0}).reshape('c', outSliceShape);
-        auto yt = (*ySeq)({t,t+1, 0,0, 0,0}).reshape('c', outSliceShape);
+        auto it = timeSubset(iSeq, t, dataFormat);
+        auto ct = timeSubset(cSeq, t, dataFormat);
+        auto ft = timeSubset(fSeq, t, dataFormat);
+        auto ot = timeSubset(oSeq, t, dataFormat);
+        auto zt = timeSubset(zSeq, t, dataFormat);
+        auto ht = timeSubset(hSeq, t, dataFormat);
+        auto yt = timeSubset(ySeq, t, dataFormat);
 
         helpers::lstmBlockCell(xt, c_t1, y_t1, W, Wci, Wcf, Wco, b, it, ct, ft, ot, zt, ht, yt, params);
 

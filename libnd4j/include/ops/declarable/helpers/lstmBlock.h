@@ -32,10 +32,10 @@ namespace helpers {
 					   const NDArray* W, const NDArray* Wci, const NDArray* Wcf, const NDArray* Wco, const NDArray* b,
 					   const NDArray* i, const NDArray* c, const NDArray* f, const NDArray* o, const NDArray* z, const NDArray* h, const NDArray* y, const std::vector<double>& params);
 
-    void lstmBlockTimeLoop(const NDArray* maxSeqLength, const NDArray* xSeq, const NDArray* W, const NDArray* b,
-                           const NDArray* c0, const NDArray* y0, const NDArray* Wci, const NDArray* Wcf, const NDArray* Wco,
+    void lstmBlockTimeLoop(const NDArray* maxSeqLength, const NDArray* xSeq, const NDArray* c0, const NDArray* y0,
+                           const NDArray* W, const NDArray* Wci, const NDArray* Wcf, const NDArray* Wco, const NDArray* b,
                            const NDArray* iSeq, const NDArray* cSeq, const NDArray* fSeq, const NDArray* oSeq, const NDArray* zSeq,
-                           const NDArray* hSeq, const NDArray* ySeq, const std::vector<double>& params);
+                           const NDArray* hSeq, const NDArray* ySeq, const std::vector<double>& params, const int dataFormat);
 
 }
 }

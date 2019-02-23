@@ -255,7 +255,9 @@ namespace nd4j {
     /**
        * Implementation of operation for LSTM layer with optional peep hole connections.
        * See lstmBlockCell for details. lstmBlockCell is used internally for computation.
-       * This method expects as input (and returns as output) sequences in time major order: i.e., shape
+       * This method expects as input (and returns as output) sequences in one of 3 formats, depending on the data format arg:
+       * dataFormat = 0 ->
+       * time major order: i.e., shape
        * [seqLength,batchSize,inOutSize] where inOutSize is either the input size or the output size, depending
        * on the array.
        *
@@ -273,6 +275,7 @@ namespace nd4j {
        *
        *  Input integer arguments:
        *    0: if not zero, provide peephole connections
+       *    1: Data format - 0=TNS=[seqLen,mb,size]; 1=NST=[mb,size,seqLen]; 2=NTS=[mb,seqLen,size]
        *
        *  Input float arguments:
        *    0: the bias added to forget gates in order to reduce the scale of forgetting in the beginning of the training
@@ -288,7 +291,7 @@ namespace nd4j {
        *    6: y (h)  - Current cell output [seqLength, bS, numUnits]
        */
         #if NOT_EXCLUDED(OP_lstmBlock)
-        DECLARE_CUSTOM_OP(lstmBlock, 9, 7, false, 2, 1);
+        DECLARE_CUSTOM_OP(lstmBlock, 9, 7, false, 2, 2);
         #endif
 		
     //////////////////////////////////////////////////////////////////////////

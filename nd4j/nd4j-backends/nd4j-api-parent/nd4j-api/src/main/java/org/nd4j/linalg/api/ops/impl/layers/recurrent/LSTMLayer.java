@@ -16,12 +16,15 @@
 
 package org.nd4j.linalg.api.ops.impl.layers.recurrent;
 
+import lombok.NonNull;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.impl.layers.recurrent.config.LSTMBlockCellConfiguration;
+import org.nd4j.linalg.api.ops.impl.layers.recurrent.config.LSTMConfiguration;
+import org.nd4j.linalg.api.ops.impl.layers.recurrent.config.RnnDataFormat;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
@@ -31,7 +34,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * LSTM Block - i.e., LSTM layer
+ * LSTM layer implemented as a single operation.
  * Implementation of operation for LSTM layer with optional peep hole connections.
  * See lstmBlockCell for details. lstmBlockCell is used internally for computation.
  * This method expects as input (and returns as output) sequences in time major order: i.e., shape
@@ -40,14 +43,14 @@ import java.util.Map;
  *
  * @author Alex Black
  */
-public class LSTMBlock extends DynamicCustomOp {
+public class LSTMLayer extends DynamicCustomOp {
 
-    private LSTMBlockCellConfiguration configuration;
+    private LSTMConfiguration configuration;
 
-    public LSTMBlock() {
+    public LSTMLayer() {
     }
 
-    public LSTMBlock(SameDiff sameDiff, LSTMBlockCellConfiguration configuration) {
+    public LSTMLayer(@NonNull SameDiff sameDiff, @NonNull LSTMConfiguration configuration) {
         super(null, sameDiff, configuration.args());
         this.configuration = configuration;
         addIArgument(configuration.iArgs());
@@ -71,10 +74,11 @@ public class LSTMBlock extends DynamicCustomOp {
 
     @Override
     public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
-        configuration = LSTMBlockCellConfiguration.builder()
+        configuration = LSTMConfiguration.builder()
                 .forgetBias(attributesForNode.get("forget_bias").getF())
                 .clippingCellValue(attributesForNode.get("cell_clip").getF())
                 .peepHole(attributesForNode.get("use_peephole").getB())
+                .dataFormat(RnnDataFormat.TNS)  //Always time major for TF BlockLSTM
                 .build();
         addIArgument(configuration.iArgs());
         addTArgument(configuration.tArgs());

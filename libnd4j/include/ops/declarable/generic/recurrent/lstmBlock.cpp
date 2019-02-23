@@ -29,7 +29,7 @@ namespace ops  {
 
 
 //////////////////////////////////////////////////////////////////////////
-CUSTOM_OP_IMPL(lstmBlock, 9, 7, false, 2, 1) {
+CUSTOM_OP_IMPL(lstmBlock, 9, 7, false, 2, 2) {
     auto maxTSLength = INPUT_VARIABLE(0);
     auto xt    = INPUT_VARIABLE(1);                   // input [seqLen, bS, inSize] at time t
     auto cLast = INPUT_VARIABLE(2);                   // previous cell state  [bS, numUnits], time t-1
@@ -50,12 +50,13 @@ CUSTOM_OP_IMPL(lstmBlock, 9, 7, false, 2, 1) {
 	auto y   =  OUTPUT_VARIABLE(6);                   // current cell output [seqLen, bS, numProj], time t
     
     const int peephole   = INT_ARG(0);                     // if 1, provide peephole connections
+    const int dataFormat = INT_ARG(1);                     // 0=TNS=[seqLen,mb,size]; 1=NST=[mb,size,seqLen]; 2=NTS=[mb,seqLen,size]
 	const double forgetBias   = T_ARG(0);
     const double clippingCellValue  = T_ARG(1);       // clipping value for ct, if it is not equal to zero, then cell state is clipped
 
     //TODO input validation
 
-    helpers::lstmBlockTimeLoop(maxTSLength, xt, yLast, yLast,   W, Wci, Wcf, Wco, b,    i, c, f, o, z, h, y, {(double)peephole, forgetBias, clippingCellValue});
+    helpers::lstmBlockTimeLoop(maxTSLength, xt, cLast, yLast,   W, Wci, Wcf, Wco, b,    i, c, f, o, z, h, y, {(double)peephole, forgetBias, clippingCellValue}, dataFormat);
 
     return Status::OK();
 }
@@ -71,9 +72,9 @@ DECLARE_SHAPE_FN(lstmBlock) {
     auto xt    = inputShape->at(1);                   // input [seqLen, bS, inSize] at time t
     auto cLast = inputShape->at(2);                   // prev cell state, [bS, numUnits]
 
-    int bs = xt[2];
+    int bs = xt[2];     //[rank, seqLen, bs, nIn, ...]
     int t = xt[1];
-    int nOut = cLast[1];
+    int nOut = cLast[2];    //rank, bs, nOut, ...]
 
     Nd4jLong *s(nullptr);
     ALLOCATE(s, block.getWorkspace(), shape::shapeInfoLength(3), Nd4jLong);      // [time, bS, nOut]
