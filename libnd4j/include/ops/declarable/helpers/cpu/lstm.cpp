@@ -225,10 +225,10 @@ void lstmBlockCell(const NDArray* xt, const NDArray* cLast, const NDArray* yLast
 
 
     //cell state = blockInput .* inputGate + prevCellState .* forgetGate
-    zi *= zz;       //Reuse zi array as already assigned to z
-    zf *= (*cLast); //Reuse zf array as already assigned to f
-    zi.applyPairwiseTransform(pairwise::Add, &zf, c, nullptr);  //c = zi * zz + zf * (*cLast)
-    c->applyTransform(transform::Tanh, h);                      //h = tanh(c)
+    z->applyPairwiseTransform(pairwise::Multiply, i, c, nullptr);       //c = z * i
+    auto temp = (*f) * (*cLast);
+    *c += temp;                              //c = (i * z) + (zf * (*cLast))
+    c->applyTransform(transform::Tanh, h);  //h = tanh(c)
 
 
     // if clipping value is provided then cell state is clipped by this value prior to the cell output activation
