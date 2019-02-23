@@ -151,8 +151,7 @@ void lstmCell(const NDArray* xt, const NDArray* ht_1, const NDArray* ct_1, const
 
 void lstmBlockCell(const NDArray* xt, const NDArray* cLast, const NDArray* yLast,
                    const NDArray* W, const NDArray* Wci, const NDArray* Wcf, const NDArray* Wco, const NDArray* b,
-                   const NDArray* i, const NDArray* c, const NDArray* f, const NDArray* o, const NDArray* z, const NDArray* h,
-                   const NDArray* y, const std::vector<double>& params) {
+                   NDArray* i, NDArray* c, NDArray* f, NDArray* o, NDArray* z, NDArray* h, NDArray* y, const std::vector<double>& params) {
 
     /* Input arrays:
     *    0: xt              - input [bS, inSize] at time t
@@ -220,36 +219,33 @@ void lstmBlockCell(const NDArray* xt, const NDArray* cLast, const NDArray* yLast
         zf += forgetBias;
     }
 
-    tanhInplace(zz);
-    sigmoidInplace(zf);
-    sigmoidInplace(zi);
+    zz.applyTransform(transform::Tanh, z);      //z = tanh(zz)
+    zi.applyTransform(transform::Sigmoid, i);   //i = sigmoid(zi)
+    zf.applyTransform(transform::Sigmoid, f);   //f = sigmoid(zf);
 
-    const_cast<NDArray*>(z)->assign(&zz);
-    const_cast<NDArray*>(i)->assign(&zi);
-    const_cast<NDArray*>(f)->assign(&zf);
 
-    //const_cast<NDArray*>(c)->assign( zi * zz );     //
-    const_cast<NDArray*>(c)->assign( zi * zz + zf * (*cLast) ); //cell state = blockInput .* inputGate + prevCellState .* forgetGate
-    const_cast<NDArray*>(h)->assign( tanh(*c) );
+    //cell state = blockInput .* inputGate + prevCellState .* forgetGate
+    zi *= zz;       //Reuse zi array as already assigned to z
+    zf *= (*cLast); //Reuse zf array as already assigned to f
+    zi.applyPairwiseTransform(pairwise::Add, &zf, c, nullptr);  //c = zi * zz + zf * (*cLast)
+    c->applyTransform(transform::Tanh, h);                      //h = tanh(c)
 
 
     // if clipping value is provided then cell state is clipped by this value prior to the cell output activation
     if(clippingCellValue > 0.0) {
-        clipping(const_cast<NDArray*>(c), clippingCellValue);
+        clipping(c, clippingCellValue);
     }
 
     if(peephole) {
         // add peephole connections to output gate zot + ct*Wc
-        auto prod = *const_cast<NDArray*>(c) * (*Wco);
+        auto prod = *c * (*Wco);
         zo += prod;
     }
-    sigmoidInplace(zo);
-    const_cast<NDArray*>(o)->assign(&zo);
+    zo.applyTransform(transform::Sigmoid, o);   // o = sigmoid(zo)
 
     // current cell output = ot*tanh(ct)
-    auto tanhc = tanh(*c);
-    const_cast<NDArray*>(h)->assign(&tanhc);
-    const_cast<NDArray*>(y)->assign(zo * (*h));
+    c->applyTransform(transform::Tanh, h);  //h = tanh(c)
+    o->applyPairwiseTransform(pairwise::Multiply, h, y, nullptr);   //y = o * h
 
     delete result;
 }

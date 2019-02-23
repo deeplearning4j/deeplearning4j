@@ -27,6 +27,7 @@
 #include<ops/declarable/helpers/gru.h>
 #include <ops/declarable/CustomOperations.h>
 #include<ops/declarable/helpers/transforms.h>
+#include <MmulHelper.h>
 
 namespace nd4j 	  {
 namespace ops 	  {
@@ -54,7 +55,7 @@ static FORCEINLINE void tanhInplace(const NDArray& arr) {
 //////////////////////////////////////////////////////////////////////////
 void gruCell(const NDArray* x, const NDArray* hLast, const NDArray* Wru, const NDArray* Wc,
              const NDArray* bru, const NDArray* bc,
-             const NDArray* r, const NDArray* u, const NDArray* c, const NDArray* h) {
+             NDArray* r, NDArray* u, NDArray* c, NDArray* h) {
 
     //Inputs:
     // x        input [bS x inSize]
@@ -93,25 +94,24 @@ void gruCell(const NDArray* x, const NDArray* hLast, const NDArray* Wru, const N
     auto mr = m({0,0, 0, nU});
     auto mu = m({0,0, nU, 2*nU});
 
-    const_cast<NDArray*>(r)->assign(&mr);
-    const_cast<NDArray*>(u)->assign(&mu);
-
+    r->assign(&mr);
+    u->assign(&mu);
 
     //Concatenated inputs: [x, yt-1 .* r]
     auto yr = (*concatOut)({0,0, nIn, nIn+nU});
     yr *= (*r);
 
     //c = tanh(x * weight_cx + (hLast .* r) * weight_cr + b_c)
-    auto mc = mmul(*concatOut, *Wc);
-    mc += (*bc);
-    tanhInplace(mc);
+    MmulHelper::mmul(concatOut, const_cast<NDArray*>(Wc), c, 1.0, 0.0);       //c = 1.0 * concatOut * Wc + 0.0 * c
+    *c += *bc;
+    tanhInplace(*c);
 
-    const_cast<NDArray*>(c)->assign(&mc);
-
-    //Output: (1-u).*c + u .* hPrev
-    auto hResult = (*u) * (*hLast) + (1.0f - *u) * (*c);
-
-    const_cast<NDArray*>(h)->assign(&hResult);
+    //Output: h = (1-u).*c + u .* hPrev
+    //auto hResult = (*u) * (*hLast) + (1.0f - *u) * (*c); const_cast<NDArray*>(h)->assign(&hResult);
+    u->applyPairwiseTransform(pairwise::Multiply, hLast, h, nullptr);        //h = u * hLast
+    auto temp = (1.0f - *u);
+    temp *= (*c);
+    (*h) += temp;
 
     delete concatOut;
 }
