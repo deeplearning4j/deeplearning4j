@@ -73,7 +73,7 @@ void gruCell(const NDArray* x, const NDArray* hLast, const NDArray* Wru, const N
     const int nIn = x->sizeAt(1);
     const int nU = hLast->sizeAt(1);                // number of units
 
-    //Concat inputs: [xt, yt-1]: concat([bs,nIn],[bs,nOut]) -> [bs, (nIn+nOut)]
+    //Concat inputs: [x, yt-1]: concat([bs,nIn],[bs,nOut]) -> [bs, (nIn+nOut)]
     auto concat = new nd4j::ops::concat();
     std::vector<NDArray*> inputs;
     std::vector<double> targs;
@@ -97,7 +97,7 @@ void gruCell(const NDArray* x, const NDArray* hLast, const NDArray* Wru, const N
     const_cast<NDArray*>(u)->assign(&mu);
 
 
-    //Concatenated inputs: [xt, yt-1 .* r]
+    //Concatenated inputs: [x, yt-1 .* r]
     auto yr = (*concatOut)({0,0, nIn, nIn+nU});
     yr *= (*r);
 

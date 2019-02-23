@@ -42,13 +42,24 @@ CUSTOM_OP_IMPL(gruCell, 6, 4, false, 0, 0) {
     auto c    =  OUTPUT_VARIABLE(2);                  // Cell gate output [bS, numUnits]
     auto h    =  OUTPUT_VARIABLE(3);                  // current cell output [bS, numUnits]
 
+    REQUIRE_TRUE(x->rankOf()==2 && hLast->rankOf()==2, 0, "gruCell: Input ranks must be 2 for inputs 0 and 1 (x, hLast) - got %i, %i", x->rankOf(), hLast->rankOf());
 
     const int rank     = x->rankOf();
     const auto bS       = x->sizeAt(0);
-    const auto inSize   = x->sizeAt(1);
-    const auto numUnits = hLast->sizeAt(1);
-    
-    //TODO: input shape validation
+    const auto nIn   = x->sizeAt(1);
+    const auto nU = hLast->sizeAt(1);
+
+    REQUIRE_TRUE(x->sizeAt(0) == hLast->sizeAt(0), 0, "gruCell: Input minibatch sizes (dimension 0) must be same for x and hLast");
+    REQUIRE_TRUE(Wru->rankOf()==2 && Wc->rankOf()==2, 0, "gruCell: weight arrays (Wru, Wc) arrays must be 2, got %i and %i", Wru->rankOf(), Wc->rankOf());
+    REQUIRE_TRUE(Wru->sizeAt(0)==(nIn+nU) && Wc->sizeAt(0)==(nIn+nU), 0, "gruCell: Weights size(0) must be equal to inSize + numUnits, got %i", W->sizeAt(0));
+    REQUIRE_TRUE(Wru->sizeAt(1)==(2*nU), 0, "gruCell: Weights (reset and update) size(1) must be equal to 2*numUnits, got %i", Wru->sizeAt(1));
+    REQUIRE_TRUE(Wc->sizeAt(1)==nU, 0, "gruCell: Weights (cell) size(1) must be equal to numUnits, got %i", Wc->sizeAt(1));
+    REQUIRE_TRUE(bru->rankOf()==1 && bru->sizeAt(0)==(2*nU), 0, "gruCell: reset/update biases must be rank 1, size 2*numUnits");
+    REQUIRE_TRUE(bc->rankOf()==1 && bru->sizeAt(0)==nU, 0, "gruCell: reset/update biases must be rank 1, size numUnits");
+    REQUIRE_TRUE(r->rankOf()==2 && u->rankOf()==2 && c->rankOf()==2 && h->rankOf()==2 &&
+                 r->sizeAt(0)==bS && u->sizeAt(0)==bS && c->sizeAt(0)==bS && h->sizeAt(0)==bS &&
+                 r->sizeAt(1)==nU && u->sizeAt(1)==nU && c->sizeAt(1)==nU && h->sizeAt(1)==nU,
+                 0, "gruCell: Output arrays must all be rank 2 with size(0) == batchSize and size(1) == numUnits");
 
     helpers::gruCell(x, hLast, Wru, Wc, bru, bc, r, u, c, h);
 
@@ -75,12 +86,20 @@ DECLARE_SHAPE_FN(gruCell) {
     auto bru    = inputShape->at(4);                   // reset and update biases, [2*numUnits] - reset and update gates
     auto bc     = inputShape->at(5);                   // cell biases, [numUnits]
 
+    REQUIRE_TRUE(shape::rank(x)==2 && shape::rank(hLast)==2, 0, "gruCell: Input ranks must be 2 for inputs 0 and 1 (x, hLast) - got %i, %i", shape::rank(x), shape::rank(hLast));
+
     const int rank     = x[0];
     const auto bS       = x[1];
     const auto inSize   = x[2];
     const auto numUnits = hLast[2];
 
-    //TODO SHAPE VALIDATION
+    REQUIRE_TRUE(x[1] == hLast[1], 0, "gruCell: Input minibatch sizes (dimension 0) must be same for x and hLast");
+    REQUIRE_TRUE(shape::rank(Wru)==2 && shape::rank(Wc)==2, 0, "gruCell: weight arrays (Wru, Wc) arrays must be 2, got %i and %i", shape::rank(Wru), shape::rank(Wc));
+    REQUIRE_TRUE(Wru[1]==(inSize+numUnits) && Wc[1]==(inSize+numUnits), 0, "gruCell: Weights size(0) must be equal to inSize + numUnits, got %i", W[1]);
+    REQUIRE_TRUE(Wru[2]==(2*numUnits), 0, "gruCell: Weights (reset and update) size(1) must be equal to 2*numUnits, got %i", Wru[2]);
+    REQUIRE_TRUE(Wc[2]==numUnits, 0, "gruCell: Weights (cell) size(1) must be equal to numUnits, got %i", Wc[2]);
+    REQUIRE_TRUE(shape::rank(bru)==1 && bru[1]==(2*numUnits), 0, "gruCell: reset/update biases must be rank 1, size 2*numUnits");
+    REQUIRE_TRUE(shape::rank(bc)==1 && bru[1]==numUnits, 0, "gruCell: reset/update biases must be rank 1, size numUnits");
 
     Nd4jLong *s(nullptr);
     ALLOCATE(s, block.getWorkspace(), shape::shapeInfoLength(rank), Nd4jLong);// [bS x numUnits]

@@ -55,13 +55,12 @@ CUSTOM_OP_IMPL(lstmBlockCell, 8, 7, false, 2, 1) {
 	const double forgetBias   = T_ARG(0);
     const double clippingCellValue  = T_ARG(1);       // clipping value for ct, if it is not equal to zero, then cell state is clipped
 
+    REQUIRE_TRUE(xt->rankOf()==2 && cLast->rankOf()==2 && yLast->rankOf()==2, 0, "lstmBlockCell: Input ranks must be 2 for inputs 0/1/2 (x, cLast, outLast) - got %i, %i, %i", xt->rankOf(), cLast->rankOf(), yLast->rankOf());
     const int rank     = xt->rankOf();
     const int bS       = xt->sizeAt(0);
     const int inSize   = xt->sizeAt(1);
     const int numUnits = cLast->sizeAt(1);
 
-    // input shapes validation
-	REQUIRE_TRUE(xt->rankOf()==2 && cLast->rankOf()==2 && yLast->rankOf()==2, 0, "lstmBlockCell: Input ranks must be 2 for inputs 0/1/2 (x, cLast, outLast) - got %i, %i, %i", xt->rankOf(), cLast->rankOf(), yLast->rankOf());
     REQUIRE_TRUE(xt->sizeAt(0) == yLast->sizeAt(0) && xt->sizeAt(0) == cLast->sizeAt(0), 0, "lstmBlockCell: Input minibatch sizes (dimension 0) must be same for xt, cLast, yLast");
     REQUIRE_TRUE(W->rankOf()==2, 0, "lstmBlockCell: Weights array rank must be 2");
     REQUIRE_TRUE(W->sizeAt(0)==(inSize+numUnits), 0, "lstmBlockCell: Weights size(0) must be equal to inSize + numUnits, got %i", W->sizeAt(0));
@@ -96,8 +95,7 @@ DECLARE_SHAPE_FN(lstmBlockCell) {
 	auto Wco  = inputShape->at(6);                    // weights - cell peephole (t) connections to output gate, [numUnits]
     auto b    = inputShape->at(7);                    // biases, [4*numUnits]
 
-    //TODO: shape validation
-            REQUIRE_TRUE(shape::rank(xt)==2 && shape::rank(cLast)==2 && shape::rank(yLast)==2, 0, "lstmBlockCell: Input ranks must be 2 for inputs 0/1/2 (x, cLast, outLast) - got %i, %i, %i", shape::rank(xt), shape::rank(cLast), shape::rank(yLast));
+    REQUIRE_TRUE(shape::rank(xt)==2 && shape::rank(cLast)==2 && shape::rank(yLast)==2, 0, "lstmBlockCell: Input ranks must be 2 for inputs 0/1/2 (x, cLast, outLast) - got %i, %i, %i", shape::rank(xt), shape::rank(cLast), shape::rank(yLast));
     REQUIRE_TRUE(xt->sizeAt(0) == yLast->sizeAt(0) && xt->sizeAt(0) == cLast->sizeAt(0), 0, "lstmBlockCell: Input minibatch sizes (dimension 0) must be same for xt, cLast, yLast");
     REQUIRE_TRUE(shape::rank(W)==2, 0, "lstmBlockCell: Weights array rank must be rank 2, got %i", shape::rank(W));
     REQUIRE_TRUE(W[1]==(inSize+numUnits), 0, "lstmBlockCell: Weights size(0) must be equal to inSize + numUnits, got %i", W[1]);
