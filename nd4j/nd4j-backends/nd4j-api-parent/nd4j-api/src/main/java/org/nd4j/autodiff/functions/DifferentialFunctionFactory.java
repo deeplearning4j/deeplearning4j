@@ -571,6 +571,14 @@ public class DifferentialFunctionFactory {
         return new StandardizeBp(sameDiff(), stdInput, gradient, dimensions).outputVariable();
     }
 
+    public SDVariable layerNorm(SDVariable input, SDVariable gain, SDVariable bias, int... dimensions) {
+        return new LayerNorm(sameDiff(), input, gain, bias, dimensions).outputVariable();
+    }
+
+    public SDVariable[] layerNormBp(SDVariable input, SDVariable gain, SDVariable bias, SDVariable gradient, int... dimensions) {
+        return new LayerNormBp(sameDiff(), input, gain, bias, gradient, dimensions).outputVariables();
+    }
+
     public SDVariable squaredNorm(SDVariable input, boolean keepDims, int... dimensions) {
         return new SquaredNorm(sameDiff(), input, keepDims, dimensions).outputVariable();
     }

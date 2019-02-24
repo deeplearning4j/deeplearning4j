@@ -20336,6 +20336,46 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
                                                                                     public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
                                                                                 }
 
+        /**
+         * applies layer normalization to input
+         * y = g * standardize(x) + b
+         *
+         * see nd4j::ops::standardize
+         *
+         */
+//         #if NOT_EXCLUDED(OP_layer_norm)
+                @Namespace("nd4j::ops") public static class layer_norm extends DeclarableOp {
+                    static { Loader.load(); }
+                    /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+                    public layer_norm(Pointer p) { super(p); }
+                    /** Native array allocator. Access with {@link Pointer#position(long)}. */
+                    public layer_norm(long size) { super((Pointer)null); allocateArray(size); }
+                    private native void allocateArray(long size);
+                    @Override public layer_norm position(long position) {
+                        return (layer_norm)super.position(position);
+                    }
+                
+                                                                                    public layer_norm() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
+                                                                                }
+                @Namespace("nd4j::ops") public static class layer_norm_bp extends DeclarableCustomOp {
+                    static { Loader.load(); }
+                    /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+                    public layer_norm_bp(Pointer p) { super(p); }
+                    /** Native array allocator. Access with {@link Pointer#position(long)}. */
+                    public layer_norm_bp(long size) { super((Pointer)null); allocateArray(size); }
+                    private native void allocateArray(long size);
+                    @Override public layer_norm_bp position(long position) {
+                        return (layer_norm_bp)super.position(position);
+                    }
+                
+                                                                                    public layer_norm_bp() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
+                                                                                }
+//         #endif
+
     
 
 

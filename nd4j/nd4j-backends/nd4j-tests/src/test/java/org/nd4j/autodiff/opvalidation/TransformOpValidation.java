@@ -40,6 +40,7 @@ import org.nd4j.linalg.api.ops.impl.transforms.comparison.OldMax;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.OldMin;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.GreaterThanOrEqual;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.LessThanOrEqual;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.Standardize;
 import org.nd4j.linalg.api.ops.impl.transforms.floating.RSqrt;
 import org.nd4j.linalg.api.ops.impl.transforms.strict.*;
 import org.nd4j.linalg.api.ops.random.impl.BernoulliDistribution;
@@ -1784,8 +1785,51 @@ public class TransformOpValidation extends BaseOpValidation {
 
         String err = OpValidation.validate(new TestCase(sd)
                 .expectedOutput("out", expOut)
-                //.gradCheckEpsilon(10)
                 .gradientCheck(true));
         assertNull(err, err);
+    }
+
+    @Test
+    public void testStandardizeOP() {
+        final INDArray random = Nd4j.rand(new int[]{10, 4});
+
+        final int[] axis = new int[]{1};
+        final INDArray means = random.mean(axis);
+        final INDArray std = random.std(false, axis);
+        final INDArray res = random.subColumnVector(means).divColumnVector(std);
+
+        final INDArray output = Nd4j.emptyLike(res);
+        Nd4j.getExecutioner().exec(new Standardize(random, output, 1));
+
+        assertEquals(res, output);
+    }
+
+    @Test
+    public void testStandardizeNoAxis() {
+        final INDArray random = Nd4j.rand(new int[]{10, 4});
+
+
+        final INDArray expOut = random.norm1();
+
+        SameDiff sd = SameDiff.create();
+        SDVariable sdA = sd.var("a", random);
+        SDVariable t = sd.math.standardize(sdA);
+        t.norm1("out");
+
+        String err = OpValidation.validate(new TestCase(sd)
+                .expectedOutput("out", expOut)
+                .gradientCheck(true));
+        assertNull(err, err);
+    }
+
+    @Test
+    public void testStandardizeOPNoAxis() {
+        final INDArray random = Nd4j.rand(new int[]{10, 4});
+
+        final INDArray output = Nd4j.emptyLike(random);
+        Nd4j.getExecutioner().exec(new Standardize(random, output));
+
+        assertEquals(random, output);
+
     }
 }

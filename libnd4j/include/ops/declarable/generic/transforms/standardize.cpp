@@ -40,7 +40,7 @@ namespace ops  {
         else if (block.numI() > 0) 
             axis = *block.getIArguments();        
 
-        if(axis.empty()) {      // do not perform standardization, as element-wise each element is already at zero mean unit variance
+        if(axis.empty()) {      // do not perform standardization
             output->assign(input);
         }
         else {

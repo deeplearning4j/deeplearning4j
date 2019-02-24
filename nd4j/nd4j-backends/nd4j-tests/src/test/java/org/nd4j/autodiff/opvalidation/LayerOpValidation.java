@@ -28,10 +28,11 @@ import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.iter.NdIndexIterator;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.AvgPooling2D;
-import org.nd4j.linalg.api.ops.impl.layers.convolution.DeConv3DDerivative;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.Pooling2D;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.Pooling2DDerivative;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.*;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.Standardize;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.LayerNorm;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.ops.transforms.Transforms;
@@ -1013,4 +1014,86 @@ public class LayerOpValidation extends BaseOpValidation {
         assertNull(err);
     }
 
+
+    @Test
+    public void testLayerNorm() {
+        final INDArray random = Nd4j.rand(new int[]{10, 4});
+        final INDArray standardized = Nd4j.emptyLike(random);
+        Nd4j.getExecutioner().exec(new Standardize(random, standardized, 1));
+
+        final INDArray gain = Nd4j.rand(new int[]{1, 4});
+        final INDArray bias = Nd4j.rand(new int[]{1, 4});
+        final INDArray res = standardized.mulRowVector(gain).addRowVector(bias);
+        final INDArray expOut = res.norm1();
+
+        final int[] axis = new int[]{1};
+        SameDiff sd = SameDiff.create();
+        SDVariable sdInput = sd.var("input", standardized);
+        SDVariable sdGain = sd.var("gain", gain);
+        SDVariable sdBias = sd.var("bias", bias);
+        SDVariable out = sd.nn.layerNorm(sdInput, sdGain, sdBias, axis);
+        out.norm1("out");
+
+        String err = OpValidation.validate(new TestCase(sd)
+                .expectedOutput("out", expOut)
+                .gradientCheck(true));
+        assertNull(err, err);
+    }
+
+    @Test
+    public void testLayerNormOP() {
+        final INDArray random = Nd4j.rand(new int[]{10, 4});
+        final INDArray standardized = Nd4j.emptyLike(random);
+        Nd4j.getExecutioner().exec(new Standardize(random, standardized, 1));
+
+        final INDArray gain = Nd4j.rand(new int[]{1, 4});
+        final INDArray bias = Nd4j.rand(new int[]{1, 4});
+        final INDArray res = standardized.mulRowVector(gain).addRowVector(bias);
+
+        final INDArray output = Nd4j.emptyLike(res);
+        Nd4j.getExecutioner().exec(new LayerNorm(standardized, gain, bias, output, 1));
+
+        assertEquals(res, output);
+    }
+
+
+    @Test
+    public void testLayerNormNoAxis() {
+        final INDArray random = Nd4j.rand(new int[]{10, 4});
+        final INDArray standardized = Nd4j.emptyLike(random);
+        Nd4j.getExecutioner().exec(new Standardize(random, standardized));
+
+        final INDArray gain = Nd4j.rand(new int[]{1, 4});
+        final INDArray bias = Nd4j.rand(new int[]{1, 4});
+        final INDArray res = standardized.mulRowVector(gain).addRowVector(bias);
+        final INDArray expOut = res.norm1();
+
+        SameDiff sd = SameDiff.create();
+        SDVariable sdInput = sd.var("input", standardized);
+        SDVariable sdGain = sd.var("gain", gain);
+        SDVariable sdBias = sd.var("bias", bias);
+        SDVariable out = sd.nn.layerNorm(sdInput, sdGain, sdBias);
+        out.norm1("out");
+
+        String err = OpValidation.validate(new TestCase(sd)
+                .expectedOutput("out", expOut)
+                .gradientCheck(true));
+        assertNull(err, err);
+    }
+
+    @Test
+    public void testLayerNormOPNoAxis() {
+        final INDArray random = Nd4j.rand(new int[]{10, 4});
+        final INDArray standardized = Nd4j.emptyLike(random);
+        Nd4j.getExecutioner().exec(new Standardize(random, standardized));
+
+        final INDArray gain = Nd4j.rand(new int[]{1, 4});
+        final INDArray bias = Nd4j.rand(new int[]{1, 4});
+        final INDArray res = standardized.mulRowVector(gain).addRowVector(bias);
+
+        final INDArray output = Nd4j.emptyLike(res);
+        Nd4j.getExecutioner().exec(new LayerNorm(standardized, gain, bias, output));
+
+        assertEquals(res, output);
+    }
 }
