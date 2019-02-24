@@ -15021,7 +15021,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
        *    4: weights - cell peephole (t-1) connections to input modulation gate, [numUnits]
        *    5: weights - cell peephole (t-1) connections to forget gate, [numUnits]
        *    6: weights - cell peephole (t) connections to output gate, [numUnits]
-       *    7: biases, [4*numUnits]
+       *    7: biases, shape [4*numUnits]
        * 
        *  Input integer arguments:
        *    0: if not zero, provide peephole connections
@@ -15031,13 +15031,13 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 	   *    1: clipping value for cell state, if it is not equal to zero, then cell state is clipped
        *  
        * Output arrays: 
-       *    0: Output - input gate activations [bs, numUnits]
-       *    1: Output - input modulation gate activations [bS, numUnits]
-	   *    2: Output - forget gate activations [bs, numUnits]
-	   *    3: Output - output gate activations [bs, numUnits]
-	   *    4: Activations, pre input gate [bs, numUnits]
-	   *    5: Activations, cell state [bs, numUnits]
-	   *    6: Current cell output [bS, numUnits], time t
+       *    0: i      - Input modulation gate activations [bS, numUnits]
+       *    1: c (cs) - Cell state (pre tanh) [bs, numUnits] (cs)
+       *    2: f      - Output - forget gate activations [bs, numUnits]
+       *    3: o      - Output - output gate activations [bs, numUnits]
+       *    4: z (ci) - Output - block input [bs, numUnits]
+       *    5: h (co) - Cell state, post tanh [bs, numUnits]
+       *    6: y (h)  - Current cell output [bS, numUnits], time t
        */                  
 //         #if NOT_EXCLUDED(OP_lstmBlockCell)
         @Namespace("nd4j::ops") public static class lstmBlockCell extends DeclarableCustomOp {
@@ -15052,6 +15052,62 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
             }
         
                                                                                     public lstmBlockCell() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
+                                                                                }
+//         #endif
+
+    //////////////////////////////////////////////////////////////////////////
+    /**
+       * Implementation of operation for LSTM layer with optional peep hole connections.
+       * See lstmBlockCell for details. lstmBlockCell is used internally for computation.
+       * This method expects as input (and returns as output) sequences in one of 3 formats, depending on the data format arg:
+       * dataFormat = 0 -> TNS: shape [timeLength, numExamples, inOutSize] - sometimes referred to as "time major"
+       * dataFormat = 1 -> NST: shape [numExamples, inOutSize, timeLength]
+       * dataFormat = 2 -> NTS: shape [numExamples, timeLength, inOutSize] - TF "time_major=false" layout
+       *
+       *
+       * Input arrays:
+       *    0: max sequence length; long/int64 scalar
+       *    1: input [seqLength, bS, inSize] at time t
+       *    2: previous/initial cell state  [bS, numUnits]
+       *    3: previous/initial output [bS, numUnits]
+       *    4: Weights - concatenated (input-to-hidden, hidden-to-hidden weights)  weights, [(inSize+numUnits), 4*numUnits]
+       *    5: weights - cell peephole (t-1) connections to input modulation gate, [numUnits]
+       *    6: weights - cell peephole (t-1) connections to forget gate, [numUnits]
+       *    7: weights - cell peephole (t) connections to output gate, [numUnits]
+       *    8: biases, Shape [4*numUnits]
+       *
+       *  Input integer arguments:
+       *    0: if not zero, provide peephole connections
+       *    1: Data format - 0=TNS=[seqLen,mb,size]; 1=NST=[mb,size,seqLen]; 2=NTS=[mb,seqLen,size]
+       *
+       *  Input float arguments:
+       *    0: the bias added to forget gates in order to reduce the scale of forgetting in the beginning of the training
+       *    1: clipping value for cell state, if it is not equal to zero, then cell state is clipped
+       *
+       * Output arrays:
+       *    0: i      - Input modulation gate activations, rank 3, shape as per dataFormat
+       *    1: c (cs) - Cell state (pre tanh), rank 3, shape as per dataFormat
+       *    2: f      - Output - forget gate activations, rank 3, shape as per dataFormat
+       *    3: o      - Output - output gate activations, rank 3, shape as per dataFormat
+       *    4: z (ci) - Output - block input, rank 3, shape as per dataFormat
+       *    5: h (co) - Cell state, post tanh, rank 3, shape as per dataFormat
+       *    6: y (h)  - Current cell output, rank 3, shape as per dataFormat
+       */
+//         #if NOT_EXCLUDED(OP_lstmBlock)
+        @Namespace("nd4j::ops") public static class lstmBlock extends DeclarableCustomOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public lstmBlock(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public lstmBlock(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public lstmBlock position(long position) {
+                return (lstmBlock)super.position(position);
+            }
+        
+                                                                                    public lstmBlock() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
                                                                                     public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
                                                                                 }
@@ -15099,12 +15155,16 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
        * Input arrays: 
        *    0: input with shape [batchSize x inSize], batchSize - batch size, inSize - number of features
        *    1: previous cell output [batchSize x numUnits],  that is at previous time step t-1
-       *    2: input-to-hidden  weights, [inSize   x 3*numUnits] 
-       *    3: hidden-to-hidden weights, [numUnits x 3*numUnits] 
-       *    4: biases, [3*numUnits]        
+       *    2: RU weights - [(nIn+nOut), 2*numUnits] - reset and update gates (input/recurrent weights)
+       *    3: C weights - [(nIn+nOut), numUnits] - cell gate (input/recurrent weights)
+       *    4: reset and update biases, [2*numUnits] - reset and update gates
+       *    5: cell biases, [numUnits]
        *  
        * Output arrays: 
-       *    0: current cell output [batchSize x numUnits], that is at current time step t       
+       *    0: Reset gate output [bS, numUnits]
+       *    1: Update gate output [bS, numUnits]
+       *    2: Cell gate output [bS, numUnits]
+       *    3: Current cell output [bS, numUnits]
        */                  
 //         #if NOT_EXCLUDED(OP_gruCell)
         @Namespace("nd4j::ops") public static class gruCell extends DeclarableCustomOp {
