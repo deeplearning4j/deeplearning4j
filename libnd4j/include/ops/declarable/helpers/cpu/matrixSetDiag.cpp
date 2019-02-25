@@ -32,7 +32,7 @@ namespace helpers {
 template <typename T>
 static void _matrixSetDiag(const NDArray* input, const NDArray* diagonal, NDArray* output) {
 
-    *output = *input;
+    //*output = *input;
 
 //    ResultSet<T>* listOut  = output->allTensorsAlongDimension({output->rankOf()-2, output->rankOf()-1});
 //    ResultSet<T>* listDiag = diagonal->allTensorsAlongDimension({diagonal->rankOf()-1});
