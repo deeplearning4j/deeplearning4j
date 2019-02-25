@@ -446,4 +446,25 @@ public class CustomOpsTests {
         assertEquals(exp, arrayZ);
         assertTrue(arrayZ == output[0]);
     }
+
+    @Test
+    public void testOpContextExecution_3() {
+        val arrayX = Nd4j.create(100);
+        val arrayY = Nd4j.ones(100);
+        val arrayZ = Nd4j.create(100);
+
+        val exp = Nd4j.ones(100);
+
+        val context = Nd4j.getExecutioner().buildContext();
+        context.setInputArray(0, arrayX);
+        context.setInputArray(1, arrayY);
+
+        context.setOutputArray(0, arrayZ);
+
+        val addOp = new AddOp();
+        val output = Nd4j.exec(addOp, context);
+
+        assertEquals(exp, arrayZ);
+        assertTrue(arrayZ == output[0]);
+    }
 }
