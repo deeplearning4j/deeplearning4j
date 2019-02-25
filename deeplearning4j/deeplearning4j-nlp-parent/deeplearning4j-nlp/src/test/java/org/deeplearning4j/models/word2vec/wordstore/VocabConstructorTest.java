@@ -391,6 +391,81 @@ public class VocabConstructorTest {
         assertEquals("alpha", result.wordAtIndex(0));
     }
 
+    @Test
+    public void testTransfer_3() {
+        val vocab = new AbstractCache<VocabWord>();
+
+        vocab.addToken(new VocabWord(1.0,"alpha"));
+        vocab.addWordToIndex(0, "alpha");
+
+        vocab.addToken(new VocabWord(2.0,"beta"));
+        vocab.addWordToIndex(5, "beta");
+
+        vocab.addToken(new VocabWord(3.0,"gamma"));
+        vocab.addWordToIndex(10, "gamma");
+
+        val vocabIntersect = new AbstractCache<VocabWord>();
+
+        vocabIntersect.addToken(new VocabWord(4.0,"alpha"));
+        vocabIntersect.addWordToIndex(0, "alpha");
+
+        vocab.addToken(new VocabWord(2.0,"delta"));
+        vocab.addWordToIndex(15, "delta");
+
+
+        val constructor = new VocabConstructor.Builder<VocabWord>().setTargetVocabCache(vocab).setLockFactor(false)
+                .build();
+
+        val result = constructor.transferVocabulary(vocabIntersect, true);
+
+        assertEquals(4, result.numWords());
+
+        assertEquals("alpha", result.wordAtIndex(0));
+        assertEquals(5.0, result.wordFrequency("alpha"), 1e-5);
+
+        assertEquals("beta", result.wordAtIndex(5));
+        assertEquals("gamma", result.wordAtIndex(10));
+        assertEquals("delta", result.wordAtIndex(15));
+    }
+
+    @Test
+    public void testTransfer_4() {
+        val vocab = new AbstractCache<VocabWord>();
+
+        vocab.addToken(new VocabWord(1.0,"alpha"));
+        vocab.addWordToIndex(0, "alpha");
+
+        vocab.addToken(new VocabWord(2.0,"beta"));
+        vocab.addWordToIndex(5, "beta");
+
+        vocab.addToken(new VocabWord(2.0,"delta"));
+        vocab.addWordToIndex(15, "delta");
+
+
+        val vocabIntersect = new AbstractCache<VocabWord>();
+
+        vocabIntersect.addToken(new VocabWord(4.0,"alpha"));
+        vocabIntersect.addWordToIndex(0, "alpha");
+
+        vocabIntersect.addToken(new VocabWord(3.0,"gamma"));
+        vocabIntersect.addWordToIndex(10, "gamma");
+
+
+        val constructor = new VocabConstructor.Builder<VocabWord>().setTargetVocabCache(vocab).setLockFactor(true)
+                .build();
+
+        val result = constructor.transferVocabulary(vocabIntersect, true);
+
+        assertEquals(4, result.numWords());
+
+        //assertEquals("alpha", result.wordAtIndex(0));
+        assertEquals(1.0, result.wordFrequency("alpha"), 1e-5);
+
+        /*assertEquals("beta", result.wordAtIndex(5));
+        assertEquals("gamma", result.wordAtIndex(10));
+        assertEquals("delta", result.wordAtIndex(15));*/
+    }
+
     @Test(timeout=5000)		// 5s timeout
     public void testParallelTokenizationDisabled_Completes() throws Exception {
         File inputFile = new ClassPathResource("big/raw_sentences.txt").getFile();

@@ -59,6 +59,7 @@ public class VocabConstructor<T extends SequenceElement> {
     private boolean enableScavenger = false;
     private T unk;
     private boolean allowParallelBuilder = true;
+    private boolean lockf = false;
 
     protected static final Logger log = LoggerFactory.getLogger(VocabConstructor.class);
 
@@ -103,6 +104,69 @@ public class VocabConstructor<T extends SequenceElement> {
         return seqCount.get();
     }
 
+    public VocabCache<T> buildMergedVocabularyWithLock(@NonNull VocabCache<T> vocabCache, boolean fetchLabels) {
+        if (cache == null)
+            cache = new AbstractCache.Builder<T>().build();
+        for (int t = 0; t < vocabCache.numWords(); t++) {
+            String label = vocabCache.wordAtIndex(t);
+            if (label == null)
+                continue;
+            T element = vocabCache.wordFor(label);
+
+            // skip this element if it's a label, and user don't want labels to be merged
+            if (!fetchLabels && element.isLabel())
+                continue;
+
+            //element.setIndex(t);
+            cache.addToken(element);
+            cache.addWordToIndex(element.getIndex(), element.getLabel());
+
+            // backward compatibility code
+            cache.putVocabWord(element.getLabel());
+        }
+
+        if (cache.numWords() == 0)
+            throw new IllegalStateException("Source VocabCache has no indexes available, transfer is impossible");
+
+        /*
+            Now, when we have transferred vocab, we should roll over iterator, and  gather labels, if any
+         */
+        log.info("Vocab size before labels: " + cache.numWords());
+
+        if (fetchLabels) {
+            for (VocabSource<T> source : sources) {
+                SequenceIterator<T> iterator = source.getIterator();
+                iterator.reset();
+
+                while (iterator.hasMoreSequences()) {
+                    Sequence<T> sequence = iterator.nextSequence();
+                    seqCount.incrementAndGet();
+
+                    if (sequence.getSequenceLabels() != null)
+                        for (T label : sequence.getSequenceLabels()) {
+                            if (!cache.containsWord(label.getLabel())) {
+                                label.markAsLabel(true);
+                                label.setSpecial(true);
+
+                                label.setIndex(cache.numWords());
+
+                                cache.addToken(label);
+                                cache.addWordToIndex(label.getIndex(), label.getLabel());
+
+                                // backward compatibility code
+                                cache.putVocabWord(label.getLabel());
+
+                                //  log.info("Adding label ["+label.getLabel()+"]: " + cache.wordFor(label.getLabel()));
+                            } // else log.info("Label ["+label.getLabel()+"] already exists: " + cache.wordFor(label.getLabel()));
+                        }
+                }
+            }
+        }
+
+        log.info("Vocab size after labels: " + cache.numWords());
+
+        return cache;
+    }
     /**
      * This method transfers existing vocabulary into current one
      *
@@ -179,13 +243,15 @@ public class VocabConstructor<T extends SequenceElement> {
         val result = cache != null ? cache : new AbstractCache.Builder<T>().build();
 
         for (val v: vocabCache.tokens()) {
-            result.addToken(v);
-
-            // optionally transferring indices
-            if (v.getIndex() >= 0)
-                result.addWordToIndex(v.getIndex(), v.getLabel());
-            else
-                result.addWordToIndex(result.numWords(), v.getLabel());
+            boolean contains = cache.containsWord(v.getLabel());
+            if (!lockf || !contains) {
+                result.addToken(v);
+            }
+                // optionally transferring indices
+                if (v.getIndex() >= 0)
+                    result.addWordToIndex(v.getIndex(), v.getLabel());
+                else
+                    result.addWordToIndex(result.numWords(), v.getLabel());
         }
 
         if (buildHuffman) {
@@ -473,6 +539,7 @@ public class VocabConstructor<T extends SequenceElement> {
         private boolean enableScavenger = false;
         private T unk;
         private boolean allowParallelBuilder = true;
+        private boolean lockf = false;
 
         public Builder() {
 
@@ -592,8 +659,14 @@ public class VocabConstructor<T extends SequenceElement> {
             constructor.enableScavenger = this.enableScavenger;
             constructor.unk = this.unk;
             constructor.allowParallelBuilder = this.allowParallelBuilder;
+            constructor.lockf = this.lockf;
 
             return constructor;
+        }
+
+        public Builder<T> setLockFactor(boolean lockf) {
+            this.lockf = lockf;
+            return this;
         }
     }
 
