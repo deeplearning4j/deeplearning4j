@@ -175,7 +175,7 @@ namespace helpers {
             double x = input.e<double>(i);
             if(x < 0.0) {
                 // FIXME: double
-                output.p(i, (x * alpha.e<double>(ShapeUtils::getSubArrayIndex(inputShapeInfo, alphaShapeInfo, i))));
+                output.p(i, (x * alpha.e<double>(shape::subArrayIndex(i, inputShapeInfo, alphaShapeInfo))));
             } else
                 output.p(i, x);
         }
@@ -196,7 +196,7 @@ namespace helpers {
             double x   = input.e<double>(i);
             double grO = dLdO.e<double>(i);
             if(x < 0.0) {
-                Nd4jLong alphaInd = ShapeUtils::getSubArrayIndex(inputShapeInfo, alphaShapeInfo, i);
+                Nd4jLong alphaInd = shape::subArrayIndex(i, inputShapeInfo, alphaShapeInfo);
                 dLdI.p(i, grO * alpha.e<double>(alphaInd));
                 double prevVal = dLdA.e<double>(alphaInd);
                 prevVal += (grO * x);

@@ -23,6 +23,7 @@
 #if NOT_EXCLUDED(OP_batchnorm)
 
 #include <ops/declarable/CustomOperations.h>
+#include<ops/declarable/helpers/batchnorm.h>
 
 namespace nd4j {
 namespace ops {
@@ -151,9 +152,9 @@ CUSTOM_OP_IMPL(batchnorm_new, 3, 1, false, 1, 2) {
 
     auto output   = OUTPUT_VARIABLE(0);
 
-    const bool applyScale  = (bool)INT_ARG(0);
-    const bool applyOffset = (bool)INT_ARG(1);
-    const double    epsilon     = T_ARG(0);
+    const bool   applyScale  = (bool)INT_ARG(0);
+    const bool   applyOffset = (bool)INT_ARG(1);
+    const double epsilon     = T_ARG(0);
 
     if(applyScale)
         gamma = INPUT_VARIABLE(3);
@@ -187,7 +188,7 @@ CUSTOM_OP_IMPL(batchnorm_new, 3, 1, false, 1, 2) {
     REQUIRE_TRUE(ShapeUtils::shapeAsString(mean)     == expShapeStr, 0, "BATCHNORM_NEW op: wrong shape of mean array, expected is %s, but got %s instead !", expShapeStr.c_str(), ShapeUtils::shapeAsString(mean).c_str());
     REQUIRE_TRUE(ShapeUtils::shapeAsString(variance) == expShapeStr, 0, "BATCHNORM_NEW op: wrong shape of variance array, expected is %s, but got %s instead !", expShapeStr.c_str(), ShapeUtils::shapeAsString(variance).c_str());
     if(gamma)
-        REQUIRE_TRUE(ShapeUtils::shapeAsString(variance) == expShapeStr, 0, "BATCHNORM_NEW op: wrong shape of gamma array, expected is %s, but got %s instead !", expShapeStr.c_str(), ShapeUtils::shapeAsString(gamma).c_str());
+        REQUIRE_TRUE(ShapeUtils::shapeAsString(gamma) == expShapeStr, 0, "BATCHNORM_NEW op: wrong shape of gamma array, expected is %s, but got %s instead !", expShapeStr.c_str(), ShapeUtils::shapeAsString(gamma).c_str());
     if(beta)
         REQUIRE_TRUE(ShapeUtils::shapeAsString(beta) == expShapeStr, 0, "BATCHNORM_NEW op: wrong shape of beta array, expected is %s, but got %s instead !", expShapeStr.c_str(), ShapeUtils::shapeAsString(beta).c_str());
 
@@ -245,30 +246,30 @@ CUSTOM_OP_IMPL(batchnorm_new, 3, 1, false, 1, 2) {
 
     // normalized output = gamma * ((input - mean) / sqrt(variance + epsilon)) + beta
 
-    if(numOfAxes == 1 && inRank > 1) {
-        mean     = mean->reshape(mean->ordering(), expShapeWithUnities);
-        variance = variance->reshape(variance->ordering(), expShapeWithUnities);
-        if(gamma)
-            gamma = gamma->reshape(gamma->ordering(), expShapeWithUnities);
-        if(beta)
-            beta  = beta->reshape(beta->ordering(), expShapeWithUnities);
-    }
+    // if(numOfAxes == 1 && inRank > 1) {
+    //     mean     = mean->reshape(mean->ordering(), expShapeWithUnities);
+    //     variance = variance->reshape(variance->ordering(), expShapeWithUnities);
+    //     if(gamma)
+    //         gamma = gamma->reshape(gamma->ordering(), expShapeWithUnities);
+    //     if(beta)
+    //         beta  = beta->reshape(beta->ordering(), expShapeWithUnities);
+    // }
 
-    auto sigmaInvGam = (*variance + epsilon).transform(transform::RSqrt);
-    if(applyScale)
-        sigmaInvGam *= *gamma;
+    // auto sigmaInvGam = (*variance + epsilon).transform(transform::RSqrt);   //  sigmaInvGam = 1 / sqrt(variance + epsilon)
+    // if(applyScale) sigmaInvGam *= *gamma;                   
+    // input->applyTrueBroadcast(nd4j::BroadcastOpsTuple::Subtract(), mean, output, false);    // output = input - mean
+    // *output *= sigmaInvGam;                                                 
+    // if (applyOffset) *output += *beta;    
 
-    if (applyOffset)
-        output->assign((*input - *mean) * sigmaInvGam + *beta);
-    else
-        output->assign((*input - *mean) * sigmaInvGam);
+    // if(numOfAxes == 1 && inRank > 1) {
+    //     delete mean;
+    //     delete variance;
+    //     delete gamma;
+    //     delete beta;
+    // }
 
-    if(numOfAxes == 1 && inRank > 1) {
-        delete mean;
-        delete variance;
-        delete gamma;
-        delete beta;
-    }
+    // normalized output = gamma * ((input - mean) / sqrt(variance + epsilon)) + beta
+    helpers::batchnorm(input, mean, variance, gamma, beta, output, axes, epsilon);
 
     return Status::OK();
 }
