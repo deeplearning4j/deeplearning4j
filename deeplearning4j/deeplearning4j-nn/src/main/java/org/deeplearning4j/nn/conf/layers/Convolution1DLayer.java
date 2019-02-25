@@ -122,7 +122,7 @@ public class Convolution1DLayer extends ConvolutionLayer {
 
         public Builder() {
             this(0, 1, 0);
-            this.kernelSize = null;
+            this.setKernelSize(null);
         }
 
         /**
@@ -148,9 +148,13 @@ public class Convolution1DLayer extends ConvolutionLayer {
          * @param padding Padding
          */
         public Builder(int kernelSize, int stride, int padding) {
-            this.kernelSize = new int[] {kernelSize, 1};
-            this.stride = new int[] {stride, 1};
-            this.padding = new int[] {padding, 0};
+            this.kernelSize = new int[] {1, 1};
+            this.stride = new int[] {1, 1};
+            this.padding = new int[] {0, 0};
+
+            this.setKernelSize(new int[]{kernelSize});
+            this.setStride(new int[]{stride});
+            this.setPadding(new int[]{padding});
         }
 
         /**
@@ -185,21 +189,61 @@ public class Convolution1DLayer extends ConvolutionLayer {
 
         @Override
         public void setKernelSize(int[] kernelSize) {
+
+            if(kernelSize == null){
+                this.kernelSize = null;
+                return;
+            }
+
+            if(this.kernelSize == null){
+                this.kernelSize = new int[] {1, 1};
+            }
+
             this.kernelSize[0] = ValidationUtils.validate1NonNegative(kernelSize, "kernelSize")[0];
         }
 
         @Override
         public void setStride(int[] stride) {
+
+            if(stride == null){
+                this.stride = null;
+                return;
+            }
+
+            if(this.stride == null){
+                this.stride = new int[] {1, 1};
+            }
+
             this.stride[0] = ValidationUtils.validate1NonNegative(stride, "stride")[0];
         }
 
         @Override
         public void setPadding(int[] padding) {
+
+            if(padding == null){
+                this.padding = null;
+                return;
+            }
+
+            if(this.padding == null){
+                this.padding = new int[] {0, 0};
+            }
+
             this.padding[0] = ValidationUtils.validate1NonNegative(padding, "padding")[0];
         }
 
         @Override
         public void setDilation(int[] dilation) {
+
+            if(dilation == null){
+                this.dilation = null;
+                return;
+            }
+
+            if(this.dilation == null){
+                this.dilation = new int[] {1, 1};
+            }
+
             this.dilation[0] = ValidationUtils.validate1NonNegative(dilation, "dilation")[0];
         }
 
