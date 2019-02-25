@@ -162,22 +162,22 @@ public class Deconvolution2D extends ConvolutionLayer {
         }
 
         @Override
-        public void setKernelSize(int[] kernelSize) {
+        public void setKernelSize(int... kernelSize) {
             this.kernelSize = ValidationUtils.validate2NonNegative(kernelSize, "kernelSize");
         }
 
         @Override
-        public void setStride(int[] stride) {
+        public void setStride(int... stride) {
             this.stride = ValidationUtils.validate2NonNegative(stride, "stride");
         }
 
         @Override
-        public void setPadding(int[] padding) {
+        public void setPadding(int... padding) {
             this.padding = ValidationUtils.validate2NonNegative(padding, "padding");
         }
 
         @Override
-        public void setDilation(int[] dilation) {
+        public void setDilation(int... dilation) {
             this.dilation = ValidationUtils.validate2NonNegative(dilation, "dilation");
         }
 

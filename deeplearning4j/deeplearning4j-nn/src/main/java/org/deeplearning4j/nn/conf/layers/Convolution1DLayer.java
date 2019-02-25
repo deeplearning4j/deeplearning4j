@@ -188,7 +188,7 @@ public class Convolution1DLayer extends ConvolutionLayer {
         }
 
         @Override
-        public void setKernelSize(int[] kernelSize) {
+        public void setKernelSize(int... kernelSize) {
 
             if(kernelSize == null){
                 this.kernelSize = null;
@@ -203,7 +203,7 @@ public class Convolution1DLayer extends ConvolutionLayer {
         }
 
         @Override
-        public void setStride(int[] stride) {
+        public void setStride(int... stride) {
 
             if(stride == null){
                 this.stride = null;
@@ -218,7 +218,7 @@ public class Convolution1DLayer extends ConvolutionLayer {
         }
 
         @Override
-        public void setPadding(int[] padding) {
+        public void setPadding(int... padding) {
 
             if(padding == null){
                 this.padding = null;
@@ -233,7 +233,7 @@ public class Convolution1DLayer extends ConvolutionLayer {
         }
 
         @Override
-        public void setDilation(int[] dilation) {
+        public void setDilation(int... dilation) {
 
             if(dilation == null){
                 this.dilation = null;

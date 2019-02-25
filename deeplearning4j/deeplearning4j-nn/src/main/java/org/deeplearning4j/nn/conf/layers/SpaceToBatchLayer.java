@@ -149,6 +149,7 @@ public class SpaceToBatchLayer extends NoParamLayer {
          * Block size for SpaceToBatch layer. Should be a length 2 array for the height and width
          * dimensions
          */
+        @Setter(AccessLevel.NONE)
         protected int[] blocks;
 
         /**
@@ -160,7 +161,7 @@ public class SpaceToBatchLayer extends NoParamLayer {
          * @param blocks Block size for SpaceToBatch layer. Should be a length 2 array for the height and width
          * dimensions
          */
-        public void setBlocks(int[] blocks) {
+        public void setBlocks(int... blocks) {
             this.blocks = ValidationUtils.validate2NonNegative(blocks, "blocks");
         }
 

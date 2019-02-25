@@ -246,7 +246,7 @@ public class Convolution3D extends ConvolutionLayer {
          * @param kernelSize kernel size
          */
         @Override
-        public void setKernelSize(int[] kernelSize) {
+        public void setKernelSize(int... kernelSize) {
             this.kernelSize = ValidationUtils.validate3NonNegative(kernelSize, "kernelSize");
         }
 
@@ -256,7 +256,7 @@ public class Convolution3D extends ConvolutionLayer {
          * @param stride kernel size
          */
         @Override
-        public void setStride(int[] stride) {
+        public void setStride(int... stride) {
             this.stride = ValidationUtils.validate3NonNegative(stride, "stride");
         }
 
@@ -266,7 +266,7 @@ public class Convolution3D extends ConvolutionLayer {
          * @param padding kernel size
          */
         @Override
-        public void setPadding(int[] padding) {
+        public void setPadding(int... padding) {
             this.padding = ValidationUtils.validate3NonNegative(padding, "padding");
         }
 
@@ -276,7 +276,7 @@ public class Convolution3D extends ConvolutionLayer {
          * @param dilation kernel size
          */
         @Override
-        public void setDilation(int[] dilation) {
+        public void setDilation(int... dilation) {
             this.dilation = ValidationUtils.validate3NonNegative(dilation, "dilation");
         }
 

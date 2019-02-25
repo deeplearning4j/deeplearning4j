@@ -159,7 +159,7 @@ public class Upsampling1D extends BaseUpsamplingLayer {
         }
 
         @Override
-        public void setSize(int[] size) {
+        public void setSize(int... size) {
 
             if(size.length == 2){
                 if(size[0] == size[1]) {

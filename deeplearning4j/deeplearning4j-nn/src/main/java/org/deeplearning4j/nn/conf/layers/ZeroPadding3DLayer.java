@@ -121,12 +121,13 @@ public class ZeroPadding3DLayer extends NoParamLayer {
         /**
          * [padLeftD, padRightD, padLeftH, padRightH, padLeftW, padRightW]
          */
+        @Setter(AccessLevel.NONE)
         private int[] padding = new int[] {0, 0, 0, 0, 0, 0};
 
         /**
          * [padLeftD, padRightD, padLeftH, padRightH, padLeftW, padRightW]
          */
-        public void setPadding(int[] padding) {
+        public void setPadding(int... padding) {
             this.padding = ValidationUtils.validate6NonNegative(padding, "padding");
         }
 

@@ -113,12 +113,13 @@ public class ZeroPaddingLayer extends NoParamLayer {
         /**
          * Padding value for top, bottom, left, and right. Must be length 4 array
          */
+        @Setter(AccessLevel.NONE)
         private int[] padding = new int[] {0, 0, 0, 0}; //Padding: top, bottom, left, right
 
         /**
          * @param padding Padding value for top, bottom, left, and right. Must be length 4 array
          */
-        public void setPadding(int[] padding) {
+        public void setPadding(int... padding) {
             this.padding = ValidationUtils.validate4NonNegative(padding, "padding");
         }
 

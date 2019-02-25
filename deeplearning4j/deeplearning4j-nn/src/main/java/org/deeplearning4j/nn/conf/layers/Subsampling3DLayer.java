@@ -299,7 +299,7 @@ public class Subsampling3DLayer extends NoParamLayer {
         }
 
         @Override
-        public void setKernelSize(int[] kernelSize) {
+        public void setKernelSize(int... kernelSize) {
             this.kernelSize = ValidationUtils.validate3NonNegative(kernelSize, "kernelSize");
         }
 
@@ -309,7 +309,7 @@ public class Subsampling3DLayer extends NoParamLayer {
          * @param stride stride in height and width dimensions
          */
         @Override
-        public void setStride(int[] stride) {
+        public void setStride(int... stride) {
             this.stride = ValidationUtils.validate3NonNegative(stride, "stride");
         }
 
@@ -319,7 +319,7 @@ public class Subsampling3DLayer extends NoParamLayer {
          * @param padding padding in the height and width dimensions
          */
         @Override
-        public void setPadding(int[] padding) {
+        public void setPadding(int... padding) {
             this.padding = ValidationUtils.validate3NonNegative(padding, "padding");
         }
 
@@ -329,7 +329,7 @@ public class Subsampling3DLayer extends NoParamLayer {
          * @param dilation padding in the height and width dimensions
          */
         @Override
-        public void setDilation(int[] dilation) {
+        public void setDilation(int... dilation) {
             this.dilation = ValidationUtils.validate3NonNegative(dilation, "dilation");
         }
     }
@@ -346,6 +346,8 @@ public class Subsampling3DLayer extends NoParamLayer {
         protected int[] kernelSize = new int[] {1, 1, 1};
         protected int[] stride = new int[] {2, 2, 2};
         protected int[] padding = new int[] {0, 0, 0};
+
+        @Setter(AccessLevel.NONE)
         protected int[] dilation = new int[] {1, 1, 1};
 
         /**
@@ -361,7 +363,7 @@ public class Subsampling3DLayer extends NoParamLayer {
          */
         protected boolean cudnnAllowFallback = true;
 
-        public void setDilation(int[] dilation) {
+        public void setDilation(int... dilation) {
             Preconditions.checkArgument(dilation.length == 1 || dilation.length == 3,
                     "Must have 1 or 3 dilation values - got %s", dilation);
 

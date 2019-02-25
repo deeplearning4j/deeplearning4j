@@ -219,7 +219,7 @@ public class VariationalAutoencoder extends BasePretrainNetwork {
          *
          * @param encoderLayerSizes Size of each encoder layer in the variational autoencoder
          */
-        public void setEncoderLayerSizes(int[] encoderLayerSizes) {
+        public void setEncoderLayerSizes(int... encoderLayerSizes) {
             if (encoderLayerSizes == null || encoderLayerSizes.length < 1) {
                 throw new IllegalArgumentException("Encoder layer sizes array must have length > 0");
             }
@@ -246,7 +246,7 @@ public class VariationalAutoencoder extends BasePretrainNetwork {
          *
          * @param decoderLayerSizes Size of each deccoder layer in the variational autoencoder
          */
-        public void setDecoderLayerSizes(int[] decoderLayerSizes) {
+        public void setDecoderLayerSizes(int... decoderLayerSizes) {
             if (decoderLayerSizes == null || decoderLayerSizes.length < 1) {
                 throw new IllegalArgumentException("Decoder layer sizes array must have length > 0");
             }

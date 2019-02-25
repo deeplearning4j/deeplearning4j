@@ -118,12 +118,13 @@ public class Cropping1D extends NoParamLayer {
         /**
          * Cropping amount for top/bottom (in that order). Must be length 1 or 2 array.
          */
+        @Setter(AccessLevel.NONE)
         private int[] cropping = new int[] {0, 0};
 
         /**
          * @param cropping Cropping amount for top/bottom (in that order). Must be length 1 or 2 array.
          */
-        public void setCropping(int[] cropping) {
+        public void setCropping(int... cropping) {
             this.cropping = ValidationUtils.validate2NonNegative(cropping, "cropping");
         }
 

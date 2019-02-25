@@ -239,21 +239,25 @@ public class LocallyConnected2D extends SameDiffLayer {
         /**
          * Kernel size for the layer. Must be 2 values (height/width)
          */
+        @Setter(AccessLevel.NONE)
         private int[] kernel = new int[] {2, 2};
 
         /**
          * Stride for the layer. Must be 2 values (height/width)
          */
+        @Setter(AccessLevel.NONE)
         private int[] stride = new int[] {1, 1};
 
         /**
          * Padding for the layer. Not used if {@link ConvolutionMode#Same} is set. Must be 2 values (height/width)
          */
+        @Setter(AccessLevel.NONE)
         private int[] padding = new int[] {0, 0};
 
         /**
          * Dilation for the layer. Must be 2 values (height/width)
          */
+        @Setter(AccessLevel.NONE)
         private int[] dilation = new int[] {1, 1};
 
         /**
@@ -278,28 +282,28 @@ public class LocallyConnected2D extends SameDiffLayer {
         /**
          * @param kernel Kernel size for the layer. Must be 2 values (height/width)
          */
-        public void setKernel(int[] kernel) {
+        public void setKernel(int... kernel) {
             this.kernel = ValidationUtils.validate2NonNegative(kernel, "kernel");
         }
 
         /**
          * @param stride Stride for the layer. Must be 2 values (height/width)
          */
-        public void setStride(int[] stride) {
+        public void setStride(int... stride) {
             this.stride = ValidationUtils.validate2NonNegative(stride, "stride");
         }
 
         /**
          * @param padding Padding for the layer. Not used if {@link ConvolutionMode#Same} is set. Must be 2 values (height/width)
          */
-        public void setPadding(int[] padding) {
+        public void setPadding(int... padding) {
             this.padding = ValidationUtils.validate2NonNegative(padding, "padding");
         }
 
         /**
          * @param dilation Dilation for the layer. Must be 2 values (height/width)
          */
-        public void setDilation(int[] dilation) {
+        public void setDilation(int... dilation) {
             this.dilation = ValidationUtils.validate2NonNegative(dilation, "dilation");
         }
 

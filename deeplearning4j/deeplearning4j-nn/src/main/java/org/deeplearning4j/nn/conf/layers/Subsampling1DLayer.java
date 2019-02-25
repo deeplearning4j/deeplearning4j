@@ -227,7 +227,7 @@ public class Subsampling1DLayer extends SubsamplingLayer {
          * @param kernelSize kernel size
          */
         @Override
-        public void setKernelSize(int[] kernelSize) {
+        public void setKernelSize(int... kernelSize) {
             this.kernelSize[0] = ValidationUtils.validate1NonNegative(kernelSize, "kernelSize")[0];
         }
 
@@ -237,7 +237,7 @@ public class Subsampling1DLayer extends SubsamplingLayer {
          * @param stride stride value
          */
         @Override
-        public void setStride(int[] stride) {
+        public void setStride(int... stride) {
             this.stride[0] = ValidationUtils.validate1NonNegative(stride, "stride")[0];
         }
 
@@ -247,7 +247,7 @@ public class Subsampling1DLayer extends SubsamplingLayer {
          * @param padding padding value
          */
         @Override
-        public void setPadding(int[] padding) {
+        public void setPadding(int... padding) {
             this.padding[0] = ValidationUtils.validate1NonNegative(padding, "padding")[0];
         }
     }

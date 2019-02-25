@@ -157,7 +157,7 @@ public class Upsampling3D extends BaseUpsamplingLayer {
         }
 
         @Override
-        public void setSize(int[] size) {
+        public void setSize(int... size) {
             this.size = ValidationUtils.validate3NonNegative(size, "size");
         }
     }

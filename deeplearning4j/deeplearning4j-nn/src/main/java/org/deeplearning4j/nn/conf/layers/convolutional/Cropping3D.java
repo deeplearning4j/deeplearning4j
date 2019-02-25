@@ -132,13 +132,14 @@ public class Cropping3D extends NoParamLayer {
         /**
          * Cropping amount, a length 6 array, i.e. crop left depth, crop right depth, crop left height, crop right height, crop left width, crop right width
          */
+        @Setter(AccessLevel.NONE)
         private int[] cropping = new int[] {0, 0, 0, 0, 0, 0};
 
         /**
          * @param cropping Cropping amount, must be length 1, 3, or 6 array, i.e. either all values, crop depth, crop height, crop width
          * or crop left depth, crop right depth, crop left height, crop right height, crop left width, crop right width
          */
-        public void setCropping(int[] cropping) {
+        public void setCropping(int... cropping) {
             this.cropping = ValidationUtils.validate6NonNegative(cropping, "cropping");
         }
 
