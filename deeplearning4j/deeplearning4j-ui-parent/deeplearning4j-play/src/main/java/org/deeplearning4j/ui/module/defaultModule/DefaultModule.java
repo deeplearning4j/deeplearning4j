@@ -38,7 +38,7 @@ import static play.mvc.Results.redirect;
  * @author Alex Black
  */
 public class DefaultModule implements UIModule {
-    private boolean multiSession;
+    private final boolean multiSession;
     private final Supplier<String> addressSupplier;
 
     public DefaultModule() {

@@ -107,7 +107,7 @@ public class PlayUIServer extends UIServer {
     @Parameter(names = {"-m", "--multiSession"}, description = "Whether to enable multiple separate browser sessions or not", arity = 1)
     private boolean multiSession;
 
-    StatsStorageLoader statsStorageLoader;
+    private StatsStorageLoader statsStorageLoader;
 
     public PlayUIServer() {
         this(DEFAULT_UI_PORT);

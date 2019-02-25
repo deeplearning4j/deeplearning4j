@@ -227,6 +227,20 @@ public class TestPlayUIMultiSession {
         Thread.sleep(1_000_000);
     }
 
+    @Test (expected = RuntimeException.class)
+    public void testUIServerGetInstanceMultipleCalls1() {
+        UIServer uiServer = UIServer.getInstance();
+        assertFalse(uiServer.isMultiSession());
+        UIServer.getInstance(true, null);
+    }
+
+    @Test (expected = RuntimeException.class)
+    public void testUIServerGetInstanceMultipleCalls2() {
+        UIServer uiServer = UIServer.getInstance(true, null);
+        assertTrue(uiServer.isMultiSession());
+        UIServer.getInstance(false, null);
+    }
+
     /**
      * Get URL-encoded URL for training session on given server address
      * @param serverAddress server address
