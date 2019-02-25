@@ -3,6 +3,11 @@ package org.deeplearning4j.util;
 import java.util.Arrays;
 import org.nd4j.base.Preconditions;
 
+/**
+ * Validation methods for array sizes/shapes and value non-negativeness
+ *
+ * @author Ryan Nett
+ */
 public class ValidationUtils {
 
     private ValidationUtils(){
