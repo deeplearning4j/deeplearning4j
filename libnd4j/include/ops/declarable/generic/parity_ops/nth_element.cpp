@@ -39,7 +39,7 @@ namespace nd4j {
             else {
                 if (reverse)
                     (*n) = lastDim - n->e<Nd4jLong>(0) - 1;
-                helpers::nthElementFunctor(block.launchContext(), input, n, output);
+                helpers::nthElementFunctor(block.launchContext(), input, n, output, reverse);
             }
             return ND4J_STATUS_OK;
         }

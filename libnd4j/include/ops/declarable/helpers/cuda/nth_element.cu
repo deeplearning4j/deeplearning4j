@@ -49,21 +49,21 @@ namespace helpers {
     }
 
     template <typename T>
-    void nthElementFunctor_(graph::LaunchContext* context, NDArray* input, NDArray* nVal, NDArray* output) {
+    void nthElementFunctor_(graph::LaunchContext* context, NDArray* input, NDArray* nVal, NDArray* output, bool reverse) {
             Nd4jLong n = nVal->e<Nd4jLong>(0);
             NDArray sortedVals(*input);
             Nd4jPointer params[2];
-            params[0] = context;
-            params[1] = context->getCudaStream();
+            params[0] = context->getCudaStream();
+            params[1] = *context->getCudaStream();
 
             if (input->isVector()) {
                 NativeOps ops;
-                ops.sort(params, sortedVals.buffer(), sortedVals.shapeInfo(), sortedVals.specialBuffer(), sortedVals.specialShapeInfo(), false);
+                ops.sort(params, sortedVals.buffer(), sortedVals.shapeInfo(), sortedVals.specialBuffer(), sortedVals.specialShapeInfo(), reverse);
                 //sortedVals.syncToHost();
                 //output->syncToHost();
                 //SpecialMethods<T>::sortGeneric(sortedVals.buffer(), sortedVals.shapeInfo(), false);
                 //output->p(0, sortedVals.e<T>(n));
-                *reinterpret_cast<T*>(output->specialBuffer()) = reinterpret_cast<T*>(sortedVals.specialBuffer())[n];
+                cudaMemcpy(reinterpret_cast<T*>(output->specialBuffer()), reinterpret_cast<T*>(sortedVals.specialBuffer()) + n, sizeof(T), cudaMemcpyDeviceToDevice);
             }
             else { // rank greater than 1
                 std::vector<int> lastDims({input->rankOf() - 1});// = ShapeUtils::evalDimsToExclude(input->rankOf(), {input->rankOf() - 1});
@@ -77,24 +77,17 @@ namespace helpers {
                 auto pLastDimData = (int*) manager.replicatePointer(lastDims.data(), lastDims.size() * sizeof(int));
                 //SpecialMethods<T>::sortTadGeneric(sortedVals.specialBuffer(), sortedVals.specialShapeInfo(), lastDims.data(), lastDims.size(), pTadShape, pTadOffsets, false);
                 NativeOps ops;
-                ops.sortTad(params, sortedVals.buffer(), sortedVals.shapeInfo(), sortedVals.specialBuffer(), sortedVals.specialShapeInfo(), pLastDimData, lastDims.size(), pTadShape, pTadOffsets, false);
+                ops.sortTad(params, sortedVals.buffer(), sortedVals.shapeInfo(), sortedVals.specialBuffer(), sortedVals.specialShapeInfo(), pLastDimData, lastDims.size(), pTadShape, pTadOffsets, reverse);
                 auto stream = context->getCudaStream();
                 fillUpElementKernel<T><<<32, 64, 1024, *stream>>>(output->specialBuffer(), output->specialShapeInfo(), sortedVals.specialBuffer(), sortedVals.specialShapeInfo(), pTadShape, pTadOffsets, n);
                 manager.synchronize();
-//                std::unique_ptr<ResultSet> rows(input->allTensorsAlongDimension(lastDims));
-//#pragma omp parallel for
-//                for (Nd4jLong e = 0; e < output->lengthOf(); e++) {
-//                    auto row = rows->at(e);
-//                    output->p(e, row->e<T>(n));
-//                }
-//            }
         }
     }
-    void nthElementFunctor(graph::LaunchContext* context, NDArray* input, NDArray* n, NDArray* output) {
-    BUILD_SINGLE_SELECTOR(input->dataType(), nthElementFunctor_, (context, input, n, output), LIBND4J_TYPES);
+    void nthElementFunctor(graph::LaunchContext* context, NDArray* input, NDArray* n, NDArray* output, bool reverse) {
+    BUILD_SINGLE_SELECTOR(input->dataType(), nthElementFunctor_, (context, input, n, output, reverse), LIBND4J_TYPES);
 
     }
-    BUILD_SINGLE_TEMPLATE(template void nthElementFunctor_, (graph::LaunchContext* context, NDArray* input, NDArray* n, NDArray* output), LIBND4J_TYPES);
+    BUILD_SINGLE_TEMPLATE(template void nthElementFunctor_, (graph::LaunchContext* context, NDArray* input, NDArray* n, NDArray* output, bool reverse), LIBND4J_TYPES);
     
 }
 }
