@@ -78,7 +78,9 @@ static __global__ void diagFunctorKernel(void* outputBuffer, Nd4jLong* outputSha
         auto stream = context->getCudaStream();
         auto inputLength = input->lengthOf();
         dim3 launchDims(256, 512, 8192);
-        diagFunctorKernel<T><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(output->specialBuffer(), output->specialShapeInfo(), input->getSpecialShapeInfo(), input->getSpecialShapeInfo(), inputLength);
+        if (!input->isActualOnDeviceSide())
+            input->syncToDevice();
+        diagFunctorKernel<T><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(output->specialBuffer(), output->specialShapeInfo(), input->getSpecialBuffer(), input->getSpecialShapeInfo(), inputLength);
     }
 
     void diagFunctor(graph::LaunchContext* context, const NDArray* input, NDArray* output) {
