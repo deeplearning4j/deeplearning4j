@@ -51,23 +51,21 @@ static __global__ void diagFunctorKernel(void* outputBuffer, Nd4jLong* outputSha
     static __global__ void diagPartFunctorKernel(void* outputBuffer, Nd4jLong* outputShape, void const* inputBuffer, Nd4jLong* inputShape, Nd4jLong outputLength, Nd4jLong inputLength) {
         __shared__ T *z;
         __shared__ T const* x;
-        __shared__ Nd4jLong i;
 
         if (threadIdx.x == 0) {
             z = reinterpret_cast<T*>(outputBuffer);
             x = reinterpret_cast<T const*>(inputBuffer);
 
-            i = 0;
         }
         __syncthreads();
 
         const auto tid = blockIdx.x * gridDim.x + threadIdx.x;
         const auto step = gridDim.x * blockDim.x;
-        for (int t = tid; t < outputLength; t += step) {
+        Nd4jLong i = threadIdx.x * (outputLength + 1);
+        for (int t = tid; t < outputLength && i < inputLength; t += step) {
             z[shape::getIndexOffset(t, outputShape, outputLength)] = x[shape::getIndexOffset(i, inputShape, inputLength)]; //tX];
-            nd4j::math::atomics::nd4j_atomicAdd(&i, outputLength + 1);
+            i += outputLength + 1;
         }
-
     }
 
 //////////////////////////////////////////////////////////////////////////
@@ -98,6 +96,8 @@ static __global__ void diagFunctorKernel(void* outputBuffer, Nd4jLong* outputSha
         auto stream = context->getCudaStream();
 
         dim3 launchDims(256, 512, 8192);
+        if (!input->isActualOnDeviceSide())
+            input->syncToDevice();
 
         diagPartFunctorKernel<T><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(output->specialBuffer(), output->specialShapeInfo(), input->getSpecialBuffer(), input->getSpecialShapeInfo(), outLen, inLen);
 //        int i(0), j;
