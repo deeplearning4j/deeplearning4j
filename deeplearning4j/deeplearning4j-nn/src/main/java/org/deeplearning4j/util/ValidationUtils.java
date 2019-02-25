@@ -38,6 +38,11 @@ public class ValidationUtils {
      * @param paramName The param name, for error reporting
      */
     public static void validateNonNegative(int[] data, String paramName){
+
+        if(data == null) {
+            return;
+        }
+
         boolean nonnegative = true;
 
         for(int value : data){
