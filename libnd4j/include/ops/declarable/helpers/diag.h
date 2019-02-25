@@ -27,7 +27,7 @@ namespace ops {
 namespace helpers {
 
     void diagFunctor(graph::LaunchContext* context, NDArray const* input, NDArray* output);
-    void diagPartFunctor(graph::LaunchContext* context, NDArray* input, NDArray* output);
+    void diagPartFunctor(graph::LaunchContext* context, NDArray const* input, NDArray* output);
 
 }
 }

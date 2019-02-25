@@ -59,10 +59,7 @@ namespace helpers {
             if (input->isVector()) {
                 NativeOps ops;
                 ops.sort(params, sortedVals.buffer(), sortedVals.shapeInfo(), sortedVals.specialBuffer(), sortedVals.specialShapeInfo(), reverse);
-                //sortedVals.syncToHost();
-                //output->syncToHost();
-                //SpecialMethods<T>::sortGeneric(sortedVals.buffer(), sortedVals.shapeInfo(), false);
-                //output->p(0, sortedVals.e<T>(n));
+
                 cudaMemcpy(reinterpret_cast<T*>(output->specialBuffer()), reinterpret_cast<T*>(sortedVals.specialBuffer()) + n, sizeof(T), cudaMemcpyDeviceToDevice);
             }
             else { // rank greater than 1
@@ -75,7 +72,7 @@ namespace helpers {
                 auto pTadShape = (Nd4jLong *) manager.replicatePointer(tadSorted.tadOnlyShapeInfo, shape::shapeInfoByteLength(tadSorted.tadOnlyShapeInfo));
                 auto pTadOffsets = (Nd4jLong *) manager.replicatePointer(tadSorted.tadOffsets, tadSorted.numTads * sizeof(Nd4jLong));
                 auto pLastDimData = (int*) manager.replicatePointer(lastDims.data(), lastDims.size() * sizeof(int));
-                //SpecialMethods<T>::sortTadGeneric(sortedVals.specialBuffer(), sortedVals.specialShapeInfo(), lastDims.data(), lastDims.size(), pTadShape, pTadOffsets, false);
+
                 NativeOps ops;
                 ops.sortTad(params, sortedVals.buffer(), sortedVals.shapeInfo(), sortedVals.specialBuffer(), sortedVals.specialShapeInfo(), pLastDimData, lastDims.size(), pTadShape, pTadOffsets, reverse);
                 auto stream = context->getCudaStream();
