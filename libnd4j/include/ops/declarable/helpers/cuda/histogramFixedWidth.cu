@@ -44,7 +44,7 @@ namespace helpers {
     }
 
     template <typename T>
-    static __global__ void histogramFixedWidthKernel(void* outputBuffer, Nd4jLong outputLength, void const* inputBuffer, Nd4jLong* inputShape, Nd4jLong inputLength, double const leftEdge, T binWidth, T secondEdge, double lastButOneEdge) {
+    static __global__ void histogramFixedWidthKernel(void* outputBuffer, Nd4jLong outputLength, void const* inputBuffer, Nd4jLong* inputShape, Nd4jLong inputLength, double const leftEdge, double binWidth, double secondEdge, double lastButOneEdge) {
 
         __shared__ T const* x;
         __shared__ Nd4jLong* z; // output buffer
@@ -59,15 +59,13 @@ namespace helpers {
         for(auto i = tid; i < inputLength; i += step) {
 
             const T value = x[shape::getIndexOffset(i, inputShape, inputLength)];
+            Nd4jLong currInd = static_cast<Nd4jLong>((value - leftEdge) / binWidth);
 
             if(value < secondEdge)
-                z[0] = z[0] + 1;
+                currInd = 0;
             else if(value >= lastButOneEdge)
-                z[outputLength - 1] = z[outputLength - 1] + 1;
-            else {
-                Nd4jLong currInd = static_cast<Nd4jLong>((value - leftEdge) / binWidth);
-                z[currInd] = z[currInd] + 1;
-            }
+                currInd = outputLength - 1;
+            nd4j::math::atomics::nd4j_atomicAdd(&z[currInd], 1LL);
         }
     }
 
@@ -81,20 +79,22 @@ namespace helpers {
         //    memset(output.buffer(), 0, nbins * output.sizeOfT());
         //else
         output.assign(0);
+        if (!input.isActualOnDeviceSide())
+            input.syncToDevice();
 
         const double leftEdge  = range.e<double>(0);
         const double rightEdge = range.e<double>(1);
 
-        const T binWidth       = (rightEdge - leftEdge ) / nbins;
-        const T secondEdge     = leftEdge + binWidth;
+        const double binWidth       = (rightEdge - leftEdge ) / nbins;
+        const double secondEdge     = leftEdge + binWidth;
         double lastButOneEdge = rightEdge - binWidth;
         Nd4jLong* outputBuffer;
         cudaError_t err = cudaMalloc(&outputBuffer, output.lengthOf() * sizeof(Nd4jLong));
         if (err != 0)
             throw cuda_exception::build("helpers::histogramFixedWidth: Cannot allocate memory for output", err);
-        copyBuffers<T><<<256, 512, 8192, *stream>>>(outputBuffer, output.getSpecialBuffer(), output.getSpecialShapeInfo(), output.lengthOf());
+        copyBuffers<Nd4jLong ><<<256, 512, 8192, *stream>>>(outputBuffer, output.getSpecialBuffer(), output.getSpecialShapeInfo(), output.lengthOf());
         histogramFixedWidthKernel<T><<<256, 512, 8192, *stream>>>(outputBuffer, output.lengthOf(), input.getSpecialBuffer(), input.getSpecialShapeInfo(), input.lengthOf(), leftEdge, binWidth, secondEdge, lastButOneEdge);
-        returnBuffers<T><<<256, 512, 8192, *stream>>>(output.specialBuffer(), outputBuffer, output.specialShapeInfo(), output.lengthOf());
+        returnBuffers<Nd4jLong><<<256, 512, 8192, *stream>>>(output.specialBuffer(), outputBuffer, output.specialShapeInfo(), output.lengthOf());
         err = cudaFree(outputBuffer);
         if (err != 0)
             throw cuda_exception::build("helpers::histogramFixedWidth: Cannot deallocate memory for output buffer", err);
