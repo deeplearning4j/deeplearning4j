@@ -98,24 +98,25 @@ static void getMKLDNNMemoryDescLrn(const NDArray* src, const NDArray* diff_src,
 #endif
     nd4j_debug("MKL-DNN is not used for lrn!\n", 0);
 
-        std::unique_ptr<ResultSet> listOut(output->allTensorsAlongDimension({output->rankOf() - 1}));
-        std::unique_ptr<ResultSet> listInput(input->allTensorsAlongDimension({input->rankOf() - 1}));
-        if (chunkCount != listOut->size())
-            return ND4J_STATUS_VALIDATION;
+        //std::unique_ptr<ResultSet> listOut(output->allTensorsAlongDimension({output->rankOf() - 1}));
+        //std::unique_ptr<ResultSet> listInput(input->allTensorsAlongDimension({input->rankOf() - 1}));
+        //if (chunkCount != listOut->size())
+        //    return ND4J_STATUS_VALIDATION;
 
-#pragma omp parallel for schedule(static)
+#pragma omp parallel for schedule(guided) collapse(2)
         for (int c = 0; c < chunkCount; c++) {
             for (int e = 0; e < lastDim; e++) {
                 int begin = nd4j::math::nd4j_max(0, e - depth);
                 int end = nd4j::math::nd4j_min(depth + e + 1, lastDim);
                 T quadSum = 0;
-
+                int shift = c * lastDim;
+#pragma omp simd reduction(sumT:quadSum)
                 for (int pos = begin; pos < end; ++pos) {
-                    T val = inputBuffer[c * lastDim + pos]; //listInput->at(c)->t<T>(pos);
+                    T val = inputBuffer[shift + pos]; //listInput->at(c)->t<T>(pos);
                     quadSum += val * val;
                 }
-                T dividor = nd4j::math::nd4j_pow<float, float, T>(bias + alpha * quadSum, beta);
-                outputBuffer[c * lastDim + e] = inputBuffer[c * lastDim + e] / dividor;
+                T dividor = nd4j::math::nd4j_pow<T, T, T>(bias + alpha * quadSum, beta);
+                outputBuffer[shift + e] = inputBuffer[shift + e] / dividor;
             }
         }
 //        for (int c = 0; c < chunkCount; c++) {
