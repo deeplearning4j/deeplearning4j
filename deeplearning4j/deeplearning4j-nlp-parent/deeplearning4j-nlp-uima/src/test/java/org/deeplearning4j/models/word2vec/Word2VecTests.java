@@ -20,6 +20,8 @@ import com.google.common.primitives.Doubles;
 import lombok.val;
 import org.apache.commons.io.FileUtils;
 import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
+import org.deeplearning4j.models.word2vec.wordstore.VocabConstructor;
+import org.deeplearning4j.models.word2vec.wordstore.inmemory.AbstractCache;
 import org.nd4j.linalg.io.ClassPathResource;
 import org.deeplearning4j.models.embeddings.learning.impl.elements.CBOW;
 import org.deeplearning4j.models.embeddings.learning.impl.elements.SkipGram;
@@ -498,6 +500,63 @@ public class Word2VecTests {
 
         assertEquals(word2Vec1.getVocab().numWords(), 652 );
         assertEquals(word2Vec2.getVocab().numWords(), 501 );
+    }
+
+    @Test
+    public void weightsNotUpdated_WhenLocked() throws Exception {
+
+        SentenceIterator iter = new BasicLineIterator(inputFile.getAbsolutePath());
+        val vocab = new AbstractCache<VocabWord>();
+
+        vocab.addToken(new VocabWord(1.0,"alpha"));
+        vocab.addWordToIndex(0, "alpha");
+
+        vocab.addToken(new VocabWord(2.0,"beta"));
+        vocab.addWordToIndex(1, "beta");
+
+        vocab.addToken(new VocabWord(3.0,"delta"));
+        vocab.addWordToIndex(2, "delta");
+
+
+        Word2Vec vec = new Word2Vec.Builder().minWordFrequency(1).iterations(3).batchSize(64).layerSize(100)
+                .stopWords(new ArrayList<String>()).seed(42).learningRate(0.025).minLearningRate(0.001)
+                .sampling(0).elementsLearningAlgorithm(new SkipGram<VocabWord>())
+                .epochs(1).windowSize(5).allowParallelTokenization(true)
+                .workers(1)
+                .vocabCache(vocab)
+                .iterate(iter)
+                .modelUtils(new BasicModelUtils<VocabWord>()).build();
+
+        vec.fit();
+        int num = vec.getVocab().numWords();
+        for (int i = 0; i < num; ++i) {
+            String word = vec.getVocab().wordAtIndex(i);
+            System.out.println(word + " " + vec.getVocab().wordFrequency(word));
+        }
+
+        boolean locked = true;
+        val constructor = new VocabConstructor.Builder<VocabWord>().setTargetVocabCache(vec.getVocab())
+                                                                    .setLockFactor(locked)
+                                                                    .build();
+
+        val vocabIntersect = new AbstractCache<VocabWord>();
+
+        vocabIntersect.addToken(new VocabWord(10,"alpha"));  //2607
+        vocabIntersect.addWordToIndex(0, "where");
+
+        vocabIntersect.addToken(new VocabWord(20,"gamma")); // 2221
+        vocabIntersect.addWordToIndex(1, "gamma");
+
+        vocabIntersect.addToken(new VocabWord(25,"theta"));  //2151
+        vocabIntersect.addWordToIndex(2, "well");
+
+        val result = constructor.transferIntersectVocabulary(vocabIntersect, true);
+        vec.setVocab(result);
+        vec.fit();
+
+        assertEquals(11, vec.getVocab().wordFrequency("alpha"));
+        assertEquals(2, vec.getVocab().wordFrequency("beta"));
+        assertEquals(3, vec.getVocab().wordFrequency("delta"));
     }
 
 

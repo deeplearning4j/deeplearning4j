@@ -478,4 +478,9 @@ public class InMemoryLookupCache implements VocabCache<VocabWord>, Serializable 
     public String toString() {
         return "InMemoryLookupCache{" + "totalWordOccurrences=" + totalWordOccurrences + ", numDocs=" + numDocs + '}';
     }
+
+    @Override
+    public void setLockFactor(boolean lockFactor) {
+
+    }
 }

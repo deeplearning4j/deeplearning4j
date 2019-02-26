@@ -85,6 +85,11 @@ public class AbstractCache<T extends SequenceElement> implements VocabCache<T> {
 
     private static final int MAX_CODE_LENGTH = 40;
 
+    private boolean lock_factor = false;
+
+    public void setLockFactor(boolean lockFactor) {
+        this.lock_factor = lockFactor;
+    }
     /**
      * Deserialize vocabulary from specified path
      */
@@ -406,6 +411,23 @@ public class AbstractCache<T extends SequenceElement> implements VocabCache<T> {
      */
     @Override
     public void addToken(T element) {
+        T oldElement = vocabulary.putIfAbsent(element.getStorageId(), element);
+        if (oldElement == null) {
+            //putIfAbsent added our element
+            if (element.getLabel() != null) {
+                extendedVocabulary.put(element.getLabel(), element);
+            }
+            oldElement = element;
+        } else {
+            if (!element.isLocked()) {
+                oldElement.incrementSequencesCount(element.getSequencesCount());
+                oldElement.increaseElementFrequency((int) element.getElementFrequency());
+            }
+        }
+        totalWordCount.addAndGet((long) oldElement.getElementFrequency());
+    }
+
+    public void addToken(T element, boolean lockf) {
         T oldElement = vocabulary.putIfAbsent(element.getStorageId(), element);
         if (oldElement == null) {
             //putIfAbsent added our element

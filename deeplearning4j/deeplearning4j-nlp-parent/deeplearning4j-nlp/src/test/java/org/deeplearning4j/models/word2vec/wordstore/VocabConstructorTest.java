@@ -16,6 +16,8 @@
 
 package org.deeplearning4j.models.word2vec.wordstore;
 
+import lombok.Getter;
+import lombok.Setter;
 import lombok.val;
 import org.junit.Rule;
 import org.junit.rules.TemporaryFolder;
@@ -42,8 +44,7 @@ import java.io.File;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 /**
  * @author raver119@gmail.com
@@ -454,16 +455,16 @@ public class VocabConstructorTest {
         val constructor = new VocabConstructor.Builder<VocabWord>().setTargetVocabCache(vocab).setLockFactor(true)
                 .build();
 
-        val result = constructor.transferVocabulary(vocabIntersect, true);
+        val result = constructor.transferIntersectVocabulary(vocabIntersect, true);
 
-        assertEquals(4, result.numWords());
+        assertEquals(3, result.numWords());
 
-        //assertEquals("alpha", result.wordAtIndex(0));
-        assertEquals(1.0, result.wordFrequency("alpha"), 1e-5);
+        assertEquals("alpha", result.wordAtIndex(0));
+        assertEquals(5.0, result.wordFrequency("alpha"), 1e-5);
 
-        /*assertEquals("beta", result.wordAtIndex(5));
-        assertEquals("gamma", result.wordAtIndex(10));
-        assertEquals("delta", result.wordAtIndex(15));*/
+        assertEquals("beta", result.wordAtIndex(5));
+        assertEquals("delta", result.wordAtIndex(15));
+        assertNull("OK", result.wordAtIndex(10));
     }
 
     @Test(timeout=5000)		// 5s timeout
