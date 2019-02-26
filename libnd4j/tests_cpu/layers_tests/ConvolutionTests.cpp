@@ -1891,7 +1891,7 @@ TYPED_TEST(TypedConvolutionTests, pointwise_conv2d_test1) {
     auto* output = results->at(0);
 
     ASSERT_EQ(Status::OK(), results->status());
-
+output->printIndexedBuffer();
     ASSERT_TRUE(expOutput.isSameShape(output));
     ASSERT_TRUE(expOutput.equalsTo(output));    
     

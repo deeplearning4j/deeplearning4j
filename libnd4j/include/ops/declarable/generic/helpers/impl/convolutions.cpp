@@ -19,6 +19,7 @@
 //
 
 #include <ops/declarable/generic/helpers/convolutions.h>
+#include<ops/declarable/helpers/addBias.h>
 #include <ops/declarable/helpers/im2col.h>
 #include <ops/declarable/helpers/col2im.h>
 #include <NDArrayFactory.h>
@@ -665,7 +666,9 @@ static void conv2d_(nd4j::graph::Context& block, const NDArray* input, const NDA
 
     //----- add biases if required -----//
     if(bias)
-        output->applyBroadcast(broadcast::Add, {indIOioC}, bias);
+        // output->applyBroadcast(broadcast::Add, {indIOioC}, bias);
+        helpers::addBias(*output, *bias, isNCHW);
+
 
     if(!isNCHW)
         delete input;
