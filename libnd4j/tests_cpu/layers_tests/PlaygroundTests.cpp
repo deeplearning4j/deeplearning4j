@@ -1268,32 +1268,32 @@ public:
 // }
 
 // /////////////////////////////////////////////////////////////////////
-// TEST_F(PlaygroundTests, conv2d_1) {
+TEST_F(PlaygroundTests, conv2d_1) {
 
-//     const int N = 100;
-//     int bS=8, iH=64,iW=64,  iC=32,oC=32,  kH=2,kW=2,  sH=1,sW=1,  pH=0,pW=0,  dH=1,dW=1;    
-//     int paddingMode = 1;             // 1-SAME, 0-VALID;
-//     int dataFormat  = 0;             // 1-NHWC, 0-NCHW    
+     const int N = 100;
+     int bS=8, iH=64,iW=64,  iC=32,oC=32,  kH=2,kW=2,  sH=1,sW=1,  pH=0,pW=0,  dH=1,dW=1;
+     int paddingMode = 1;             // 1-SAME, 0-VALID;
+     int dataFormat  = 0;             // 1-NHWC, 0-NCHW
 
-//     NDArray input('c', {bS, iC, iH, iW}, nd4j::DataType::FLOAT32);
-//     NDArray output(input);
-//     NDArray weights('c', {kH, kW, iC, oC}, nd4j::DataType::FLOAT32);
-//     NDArray bias('c', {oC}, nd4j::DataType::FLOAT32);    
-//     input = 2.;
-//     weights.linspace(0.1, 0.1);
-//     bias = 0.5;
+     NDArray input('c', {bS, iC, iH, iW}, nd4j::DataType::FLOAT32);
+     NDArray output(input);
+     NDArray weights('c', {kH, kW, iC, oC}, nd4j::DataType::FLOAT32);
+     NDArray bias('c', {oC}, nd4j::DataType::FLOAT32);
+     input = 2.;
+     weights.linspace(0.1, 0.1);
+     bias = 0.5;
 
-//     nd4j::ops::conv2d op;
+     nd4j::ops::conv2d op;
 
-//     auto timeStart = std::chrono::system_clock::now();
+     auto timeStart = std::chrono::system_clock::now();
     
-//     // for (int i = 0; i < N; i++) 
-//         op.execute({&input, &weights, &bias}, {&output} , {}, {kH,kW,  sH,sW,  pH,pW,  dH,dW, paddingMode, dataFormat},{});
+     for (int i = 0; i < N; i++)
+         op.execute({&input, &weights, &bias}, {&output} , {}, {kH,kW,  sH,sW,  pH,pW,  dH,dW, paddingMode, dataFormat},{});
     
-//     auto timeEnd = std::chrono::system_clock::now();
-//     auto duration = std::chrono::duration_cast<std::chrono::milliseconds> ((timeEnd - timeStart) / N).count();
-//     printf("duration %ld\n", duration);    
-// }
+     auto timeEnd = std::chrono::system_clock::now();
+     auto duration = std::chrono::duration_cast<std::chrono::milliseconds> ((timeEnd - timeStart) / N).count();
+     printf("duration %ld\n", duration);
+}
 
 /////////////////////////////////////////////////////////////////////
 TEST_F(PlaygroundTests, batchnorm_1) {
