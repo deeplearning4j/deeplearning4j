@@ -79,7 +79,6 @@ namespace nd4j {
              */
             virtual Nd4jStatus validateAndExecute(Context& block) = 0;
 
-
             /**
              * This method ensures that target variable has enough space for op execution
              *

@@ -22,6 +22,7 @@
 #define LIBND4J_CONTEXT_H
 
 #include <vector>
+#include <NDArray.h>
 #include <graph/Variable.h>
 #include <graph/VariableSpace.h>
 #include <graph/ContextPrototype.h>
@@ -38,7 +39,6 @@
 #include <cuda_runtime_api.h>
 #include <cuda_runtime.h>
 #include <cuda_device_runtime_api.h>
-
 #endif
 
 namespace nd4j {
@@ -61,6 +61,10 @@ namespace nd4j {
 #ifdef HAVE_MKLDNN
             std::vector<nd4j::MKLDNNStream> _mkldnnStreams;
 #endif
+
+            std::vector<NDArray*> _fastpath_in;
+            std::vector<NDArray*> _fastpath_out;
+            std::vector<NDArray*> _handles;
         public:
             // TODO: maybe override new here as well?
 
@@ -141,9 +145,18 @@ namespace nd4j {
             Variable* getVariable(int idx);
             Variable* variable(int idx);
 
+            /**
+             * This method is shortcut to getVariable(int idx);
+             *
+             * + it check fastpath for array availability (preferred)
+             * @return
+             */
+            NDArray* getNDArray(int idx);
+            NDArray* array(int idx);
+
 
             /**
-             * This method fetches variable from Workspace DIRECTLY
+             * This method fetches variable from VariableSpace DIRECTLY
              * @param p
              * @return
              */
@@ -161,6 +174,30 @@ namespace nd4j {
             bool isValueAvailable(int idx = 0);
 
             Variable* ensureVariable(int idx = 0);
+
+            unsigned long width() override;
+
+            // methods used in java interop
+            /**
+             * This method checks, if Context uses fastpath variable access
+             * @return
+             */
+            bool isFastPath();
+
+#ifndef __JAVACPP_HACK__
+            std::vector<NDArray*>& fastpath_in();
+            std::vector<NDArray*>& fastpath_out();
+#endif
+
+            void setInputArray(int index, NDArray *array, bool removable = false);
+            void setInputArray(int index, void *buffer, void *shapeInfo, void *specialBuffer, void *specialShapeInfo);
+
+            void setOutputArray(int index, NDArray *array, bool removable = false);
+            void setOutputArray(int index, void *buffer, void *shapeInfo, void *specialBuffer, void *specialShapeInfo);
+
+            void setTArguments(double *arguments, int numberOfArguments);
+            void setIArguments(Nd4jLong *arguments, int numberOfArguments);
+            void setBArguments(bool *arguments, int numberOfArguments);
         };
     }
 }

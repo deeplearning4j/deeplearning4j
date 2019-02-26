@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
+ * Copyright (c) 2015-2019 Skymind, Inc.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
@@ -14,21 +14,22 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-//
-//  @author sgazeos@gmail.com
-//
-#ifndef __NTH_ELEMENT__H_HELPERS__
-#define __NTH_ELEMENT__H_HELPERS__
-#include <op_boilerplate.h>
-#include <NDArray.h>
+package org.nd4j.linalg.api.ops.impl.layers.recurrent.config;
 
-namespace nd4j {
-namespace ops {
-namespace helpers {
+/**
+ * Data format for RNNs - rank 3 data.<br>
+ * TNS: shape [timeLength, numExamples, inOutSize] - sometimes referred to as "time major"<br>
+ * NST: shape [numExamples, inOutSize, timeLength]<br>
+ * NTS: shape [numExamples, timeLength, inOutSize] - TF "time_major=false" layout<br>
+ *
+ * @author Alex Black
+ */
+public enum RnnDataFormat {
 
-    void nthElementFunctor(NDArray* input, NDArray* n, NDArray* output, bool reverse);
+    //Note: ordinal (order) here matters for C++ level. Any new formats hsould be added at end
+    TNS,
+    NST,
+    NTS
+
 
 }
-}
-}
-#endif

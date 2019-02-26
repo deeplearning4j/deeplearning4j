@@ -4205,10 +4205,9 @@ NDArray NDArray::operator/(const T& scalar) const {
     if(scalar == (T)0.)
         throw std::runtime_error("NDArray::operator/ (division operator) : division by zero !");
 
-    DataType type;
-    if (!Environment::getInstance()->isExperimentalBuild()){
+    auto type = DataTypeUtils::fromT<T>();
+    if (!Environment::getInstance()->isExperimentalBuild())
         type = this->dataType();
-    }
 
     auto tmp = NDArrayFactory::create(type, scalar, _workspace);
     NDArray result(_shapeInfo, DataTypeUtils::pickPairwiseResultType(_dataType, DataTypeUtils::fromT<T>()), false, _workspace);
@@ -4564,7 +4563,12 @@ void NDArray::operator+=(const T value) {
     if (isS())
         throw std::runtime_error("NDArray::operator+=: you can't use this method on String array!");
 
-    auto tmp = NDArrayFactory::create(value, _workspace);
+    auto type = DataTypeUtils::fromT<T>();
+    if (!Environment::getInstance()->isExperimentalBuild())
+        type = this->dataType();
+
+
+    auto tmp = NDArrayFactory::create(type, value, _workspace);
     NativeOpExcutioner::execScalar(nd4j::scalar::Add, this->_buffer, this->_shapeInfo, this->_buffer, this->_shapeInfo, tmp.buffer(), tmp.shapeInfo(), nullptr);
 }
 template void NDArray::operator+=(const double value);
@@ -4580,7 +4584,11 @@ void NDArray::operator-=(const T value) {
     if (isS())
         throw std::runtime_error("NDArray::operator-=: you can't use this method on String array!");
 
-    auto tmp = NDArrayFactory::create(value, _workspace);
+    auto type = DataTypeUtils::fromT<T>();
+    if (!Environment::getInstance()->isExperimentalBuild())
+        type = this->dataType();
+
+    auto tmp = NDArrayFactory::create(type, value, _workspace);
     NativeOpExcutioner::execScalar(nd4j::scalar::Subtract, this->_buffer, this->_shapeInfo, this->_buffer, this->_shapeInfo, tmp.buffer(), tmp.shapeInfo(), nullptr);
 }
 template void NDArray::operator-=(const double value);
@@ -4615,7 +4623,11 @@ void NDArray::operator/=(const T scalar) {
     if (isS())
         throw std::runtime_error("NDArray::operator/=: you can't use this method on String array!");
 
-    auto tmp = NDArrayFactory::create(this->dataType(), scalar, _workspace);
+    auto type = DataTypeUtils::fromT<T>();
+    if (!Environment::getInstance()->isExperimentalBuild())
+        type = this->dataType();
+
+    auto tmp = NDArrayFactory::create(type, scalar, _workspace);
     NativeOpExcutioner::execScalar(nd4j::scalar::Divide, this->_buffer, this->_shapeInfo, this->_buffer, this->_shapeInfo, tmp.getBuffer(), tmp.getShapeInfo(), nullptr);
 }
 template void NDArray::operator/=(const double scalar);

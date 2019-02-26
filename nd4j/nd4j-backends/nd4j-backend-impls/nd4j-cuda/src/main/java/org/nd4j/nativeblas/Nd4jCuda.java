@@ -2625,6 +2625,8 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
     public native int execCustomOp(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jLong") long hash, @Cast("Nd4jPointer*") PointerPointer inputBuffers, @Cast("Nd4jPointer*") PointerPointer inputShapes, int numInputs, @Cast("Nd4jPointer*") PointerPointer outputBuffers, @Cast("Nd4jPointer*") PointerPointer outputShapes, int numOutputs, DoublePointer tArgs, int numTArgs, @Cast("Nd4jLong*") LongPointer iArgs, int numIArgs, @Cast("bool*") boolean[] bArgs, int numBArgs, @Cast("bool") boolean isInplace);
     public native int execCustomOp(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jLong") long hash, @Cast("Nd4jPointer*") PointerPointer inputBuffers, @Cast("Nd4jPointer*") PointerPointer inputShapes, int numInputs, @Cast("Nd4jPointer*") PointerPointer outputBuffers, @Cast("Nd4jPointer*") PointerPointer outputShapes, int numOutputs, DoubleBuffer tArgs, int numTArgs, @Cast("Nd4jLong*") LongBuffer iArgs, int numIArgs, @Cast("bool*") BooleanPointer bArgs, int numBArgs, @Cast("bool") boolean isInplace);
     public native int execCustomOp(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jLong") long hash, @Cast("Nd4jPointer*") PointerPointer inputBuffers, @Cast("Nd4jPointer*") PointerPointer inputShapes, int numInputs, @Cast("Nd4jPointer*") PointerPointer outputBuffers, @Cast("Nd4jPointer*") PointerPointer outputShapes, int numOutputs, double[] tArgs, int numTArgs, @Cast("Nd4jLong*") long[] iArgs, int numIArgs, @Cast("bool*") boolean[] bArgs, int numBArgs, @Cast("bool") boolean isInplace);
+    public native int execCustomOp(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jLong") long hash, @Cast("Nd4jPointer") Pointer opContext);
+
     public native ShapeList calculateOutputShapes(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jLong") long hash, @Cast("Nd4jPointer*") PointerPointer inputShapes, int numInputShapes, DoublePointer tArgs, int numTArgs, @Cast("Nd4jLong*") LongPointer iArgs, int numIArgs);
     public native ShapeList calculateOutputShapes(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jLong") long hash, @Cast("Nd4jPointer*") PointerPointer inputShapes, int numInputShapes, DoubleBuffer tArgs, int numTArgs, @Cast("Nd4jLong*") LongBuffer iArgs, int numIArgs);
     public native ShapeList calculateOutputShapes(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jLong") long hash, @Cast("Nd4jPointer*") PointerPointer inputShapes, int numInputShapes, double[] tArgs, int numTArgs, @Cast("Nd4jLong*") long[] iArgs, int numIArgs);
@@ -5998,6 +6000,7 @@ NDArray& NDArray::operator()(const Nd4jLong* idx) {
 // #define LIBND4J_CONTEXT_H
 
 // #include <vector>
+// #include <NDArray.h>
 // #include <graph/Variable.h>
 // #include <graph/VariableSpace.h>
 // #include <graph/ContextPrototype.h>
@@ -6008,7 +6011,6 @@ NDArray& NDArray::operator()(const Nd4jLong* idx) {
 
 // CUDA-specific includes
 // #ifdef __CUDACC__
-
 // #endif
         /**
          * This class defines input desired for any given node/operation within graph
@@ -6099,9 +6101,18 @@ NDArray& NDArray::operator()(const Nd4jLong* idx) {
             public native Variable getVariable(int idx);
             public native Variable variable(int idx);
 
+            /**
+             * This method is shortcut to getVariable(int idx);
+             *
+             * + it check fastpath for array availability (preferred)
+             * @return
+             */
+            public native NDArray getNDArray(int idx);
+            public native NDArray array(int idx);
+
 
             /**
-             * This method fetches variable from Workspace DIRECTLY
+             * This method fetches variable from VariableSpace DIRECTLY
              * @param p
              * @return
              */
@@ -6124,6 +6135,35 @@ NDArray& NDArray::operator()(const Nd4jLong* idx) {
 
             public native Variable ensureVariable(int idx/*=0*/);
             public native Variable ensureVariable();
+
+            public native @Cast("unsigned long") long width();
+
+            // methods used in java interop
+            /**
+             * This method checks, if Context uses fastpath variable access
+             * @return
+             */
+            public native @Cast("bool") boolean isFastPath();
+
+// #ifndef __JAVACPP_HACK__
+// #endif
+
+            public native void setInputArray(int index, NDArray array, @Cast("bool") boolean removable/*=false*/);
+            public native void setInputArray(int index, NDArray array);
+            public native void setInputArray(int index, Pointer buffer, Pointer shapeInfo, Pointer specialBuffer, Pointer specialShapeInfo);
+
+            public native void setOutputArray(int index, NDArray array, @Cast("bool") boolean removable/*=false*/);
+            public native void setOutputArray(int index, NDArray array);
+            public native void setOutputArray(int index, Pointer buffer, Pointer shapeInfo, Pointer specialBuffer, Pointer specialShapeInfo);
+
+            public native void setTArguments(DoublePointer arguments, int numberOfArguments);
+            public native void setTArguments(DoubleBuffer arguments, int numberOfArguments);
+            public native void setTArguments(double[] arguments, int numberOfArguments);
+            public native void setIArguments(@Cast("Nd4jLong*") LongPointer arguments, int numberOfArguments);
+            public native void setIArguments(@Cast("Nd4jLong*") LongBuffer arguments, int numberOfArguments);
+            public native void setIArguments(@Cast("Nd4jLong*") long[] arguments, int numberOfArguments);
+            public native void setBArguments(@Cast("bool*") BooleanPointer arguments, int numberOfArguments);
+            public native void setBArguments(@Cast("bool*") boolean[] arguments, int numberOfArguments);
         }
     
 
