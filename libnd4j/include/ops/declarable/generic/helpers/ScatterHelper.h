@@ -19,6 +19,8 @@
 // @author Yurii Shyrma (iuriish@yahoo.com)
 //
 
+#ifndef LIBND4J_SCATTERHELPER_H
+#define LIBND4J_SCATTERHELPER_H
 
 #include <pointercast.h>
 #include <op_boilerplate.h>
@@ -233,3 +235,5 @@ static FORCEINLINE void scatterForLoss(const NDArray& indices, const NDArray& up
 
 }
 }
+
+#endif

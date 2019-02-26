@@ -43,15 +43,15 @@ namespace functions {
             const Nd4jLong length = shape::length(xShapeInfo);
             auto xEws = shape::elementWiseStride(xShapeInfo);
             
-            if (xEws >= 1) {
+            if (xEws > 0) {
                 z[0] = execScalar<OpType>(x, xEws, length, extraParams);
             }
             else {
 
                 X start = OpType::startingValue(x);
 
-                for(Nd4jLong i = 0; i < length; ++i)                     
-                    start = OpType::update(start, OpType::op(x[shape::getIndexOffset(i, xShapeInfo, length)], extraParams), extraParams);                
+                for(unsigned int i = 0; i < length; ++i)
+                    start = OpType::update(start, OpType::op(x[shape::getIndexOffset(i, xShapeInfo, length)], extraParams), extraParams);
 
                 z[0] = OpType::postProcess(start, shape::length(xShapeInfo), extraParams);
             }            
@@ -67,14 +67,14 @@ namespace functions {
                 const Nd4jLong length = shape::length(xShapeInfo);
                 int xEws = shape::elementWiseStride(xShapeInfo);
 
-                if (xEws >= 1) {
+                if (xEws > 0) {
                     return execScalar<OpType>(x, xEws, length, extraParams);
                 }
                 else {
 
                     X start = OpType::startingValue(x);
 
-                    for(Nd4jLong i = 0; i < length; ++i)                     
+                    for(unsigned int i = 0; i < length; ++i)
                         start = OpType::update(start, OpType::op(x[shape::getIndexOffset(i, xShapeInfo, length)], extraParams), extraParams);                                                    
                     
                     return OpType::postProcess(start, shape::length(xShapeInfo), extraParams);
@@ -153,16 +153,19 @@ namespace functions {
                 if (OpType::requiresSpecialAccumulation) {
                     OpType::execSpecial(x, xShapeInfo, extraParams, z, resultShapeInfoBuffer, dimension, dimensionLength, tadShapeInfo, tadOffset);
                     return;
-                }
+                }            
 
                 auto tadOnlyShapeInfo = tadShapeInfo;
                 auto tadOffsets = tadOffset;
                 shape::TAD *tad = nullptr;
 
                 if (tadOnlyShapeInfo == nullptr || tadOffsets == nullptr) {
-                    tad = new shape::TAD(xShapeInfo, dimension, dimensionLength);
+                    tad = new shape::TAD();
+                    tad->init(xShapeInfo, dimension, dimensionLength);
                     tad->createTadOnlyShapeInfo();
                     tad->createOffsets();
+
+                    nd4j_printf("Calculating TAD\n","");
 
                     if (tad->dimensionLength < 1) {
                         delete tad;
@@ -174,53 +177,47 @@ namespace functions {
                 }
 
 
-                const auto tadLength = shape::tadLength(xShapeInfo, dimension, dimensionLength);
+                const int tadLength = shape::tadLength(xShapeInfo, dimension, dimensionLength);
                 auto numTads = shape::length(xShapeInfo) / tadLength;
                 auto tadEWS = shape::elementWiseStride(tadOnlyShapeInfo);
+                auto order = shape::order(tadOnlyShapeInfo);
 
-   //             int tadsPerThread = resultLength / TAD_THRESHOLD;
-  //              int num_threads = nd4j::math::nd4j_max<int>(1, tadsPerThread);
-    //            num_threads = nd4j::math::nd4j_min<int>(num_threads, omp_get_max_threads());
+                int tadsPerThread = resultLength / TAD_THRESHOLD;
+                int num_threads = nd4j::math::nd4j_max<int>(1, tadsPerThread);
+                num_threads = nd4j::math::nd4j_min<int>(num_threads, omp_get_max_threads());
 
-                if (tadEWS > 0 && (numTads == 1 || shape::isVector(tadOnlyShapeInfo) || shape::isScalar(tadOnlyShapeInfo))) {
+                uint castTadOnlyShapeInfo[MAX_RANK];
+                const bool canCast = nd4j::DataTypeUtils::castShapeInfo<uint>(tadOnlyShapeInfo, castTadOnlyShapeInfo);
 
-//#pragma omp parallel for schedule(guided) num_threads(num_threads) if (num_threads > 1) proc_bind(AFFINITY) default(shared)
+                if (tadEWS == 1 && shape::order(tadOnlyShapeInfo) == 'c') {
+
+#pragma omp parallel for schedule(guided) num_threads(num_threads) if(num_threads>1) proc_bind(AFFINITY) default(shared)
                     for (int i = 0; i < resultLength; i++) {
-                        auto iter = x + tadOffsets[i];
-                        auto start = OpType::startingValue(iter);
-                        if (tadEWS == 1) {
 
-// FIXME: proper reduction should be used here
-                            for (int j = 0; j < tadLength; j++) {
-                                start = OpType::update(start, OpType::op(iter[j], extraParams), extraParams);
+                        auto tx = x + tadOffsets[i];
+                        auto start = OpType::startingValue(tx);
 
-                            }
-                        }
-                        else {
-// FIXME: proper reduction to be used here
-                            for (int j = 0; j < tadLength; j++) {
-                                start = OpType::update(start, OpType::op(iter[j * tadEWS], extraParams), extraParams);
-                            }
-                        }
-                        z[i] = OpType::postProcess(start, tadLength, extraParams);
-                    }
-                }
-                else {
-
-//#pragma omp  parallel for schedule(guided) num_threads(num_threads) if (num_threads > 1) proc_bind(AFFINITY) default(shared)
-                    for (int i = 0; i < resultLength; i++) {
-                        
-                        auto offset = tadOffsets[i];
-                        auto start = OpType::startingValue(x + offset);
-
-                        for (int j = 0; j < tadLength; j++) {
-                            auto xOffset = offset + shape::getIndexOffset(j, tadOnlyShapeInfo, tadLength);
-                            start = OpType::update(start, OpType::op(x[xOffset], extraParams), extraParams);
-                        }
+                        for (int j = 0; j < tadLength; j++)
+                            start = OpType::update(start, OpType::op(tx[j], extraParams), extraParams);
 
                         z[i] = OpType::postProcess(start, tadLength, extraParams);;
                     }
+                } else {
+
+#pragma omp parallel for schedule(guided) num_threads(num_threads) if(num_threads>1) proc_bind(AFFINITY) default(shared)
+                    for (int i = 0; i < resultLength; i++) {
+
+                        auto tx = x + tadOffsets[i];
+                        auto start = OpType::startingValue(tx);
+
+                        for (int j = 0; j < tadLength; j++) {
+                            auto xOffset = shape::indexOffset(j, tadOnlyShapeInfo, castTadOnlyShapeInfo, tadLength, canCast);
+                            start = OpType::update(start, OpType::op(tx[xOffset], extraParams), extraParams);
+                        }
+                        z[i] = OpType::postProcess(start, tadLength, extraParams);;
+                    }
                 }
+
 
                 if (tad != nullptr)
                     delete tad;
@@ -248,42 +245,41 @@ namespace functions {
 
                 auto startingVal = OpType::startingValue(x);
                 nd4j::OmpLaunchHelper info(length);
+                int nt = info._numThreads;
 
-                if (xEws == 1) {
-                                           
-                    #pragma omp parallel num_threads(info._numThreads) if (info._numThreads > 1) default(shared)
-                    {                
-                        auto local = OpType::startingValue(x);
-                        auto threadNum = omp_get_thread_num();                    
-                        Nd4jLong threadOffset = info.getThreadOffset(threadNum);
-                        auto xi = x + threadOffset;
+            if (xEws == 1) {
 
-                        #pragma omp simd
-                        for (Nd4jLong i = 0; i < info.getItersPerThread(threadNum); i++)                                
-                            local = OpType::update(local, OpType::op(xi[i], extraParams), extraParams);
-                            
-                        #pragma omp critical
-                        startingVal = OpType::update(startingVal, local, extraParams);        
-                    }
+#pragma omp parallel num_threads(info._numThreads) if (info._numThreads > 1) default(shared)
+                {
+                    auto local = OpType::startingValue(x);
+                    auto threadNum = omp_get_thread_num();
+                    Nd4jLong threadOffset = info.getThreadOffset(threadNum);
+                    auto xi = x + threadOffset;
+
+                    for (Nd4jLong i = 0; i < info.getItersPerThread(threadNum); i++)
+                        local = OpType::update(local, OpType::op(xi[i], extraParams), extraParams);
+
+                    #pragma omp critical
+                    startingVal = OpType::update(startingVal, local, extraParams);
                 }
-                else {
+            }
+            else {
 
-                    #pragma omp parallel num_threads(info._numThreads) if (info._numThreads > 1) default(shared)
-                    {                
-                        auto local = OpType::startingValue(x);
-                        auto threadNum = omp_get_thread_num();                    
-                        Nd4jLong threadOffset = info.getThreadOffset(threadNum);
-                        auto xi = x + xEws*threadOffset;
+#pragma omp parallel num_threads(info._numThreads) if (info._numThreads > 1) default(shared)
+                {
+                    auto local = OpType::startingValue(x);
+                    auto threadNum = omp_get_thread_num();
+                    Nd4jLong threadOffset = info.getThreadOffset(threadNum);
+                    auto xi = x + xEws*threadOffset;
 
-                        #pragma omp simd
-                        for (Nd4jLong i = 0; i < info.getItersPerThread(threadNum); i++)                                
-                            local = OpType::update(local, OpType::op(xi[i*xEws], extraParams), extraParams);
-                            
-                        #pragma omp critical
-                        startingVal = OpType::update(startingVal, local, extraParams);        
-                    }                    
+                    for (Nd4jLong i = 0; i < info.getItersPerThread(threadNum); i++)
+                        local = OpType::update(local, OpType::op(xi[i*xEws], extraParams), extraParams);
+
+                    #pragma omp critical
+                    startingVal = OpType::update(startingVal, local, extraParams);
                 }
-                return OpType::postProcess(startingVal, length, extraParams);
+            }
+            return OpType::postProcess(startingVal, length, extraParams);
             }
 
 

@@ -152,7 +152,7 @@ public class DerivativeTests extends BaseNd4jTest {
 
         double[] expHSOut = new double[300];
         double[] expDerivOut = new double[300];
-        INDArray xArr = Nd4j.linspace(-3, 3, 300);
+        INDArray xArr = Nd4j.linspace(-3, 3, 300, Nd4j.dataType());
         for (int i = 0; i < xArr.length(); i++) {
             double x = xArr.getDouble(i);
             double hs = 0.2 * x + 0.5;

@@ -933,16 +933,6 @@ public interface INDArray extends Serializable, AutoCloseable {
      */
     INDArray getScalar(long i);
 
-
-    /**
-     * Return the linear index of the specified row and column
-     *
-     * @param row    the row to getScalar the linear index for
-     * @param column the column to getScalar the linear index for
-     * @return the linear index of the given row and column
-     */
-    long index(long row, long column);
-
     /**
      * Returns the square of the Euclidean distance.
      */
@@ -1876,6 +1866,8 @@ public interface INDArray extends Serializable, AutoCloseable {
      * @return Integer value at the specified index
      */
     int getInt(int... indices);
+
+    long getLong(long index);
 
     long getLong(long... indices);
 

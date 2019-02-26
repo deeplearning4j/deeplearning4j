@@ -55,7 +55,8 @@ TEST_F(TadTests, Test4DTad1) {
 
 
     int dim = 1;
-    shape::TAD tad(arrayBad->getShapeInfo(), &dim, 1);
+    shape::TAD tad;
+    tad.init(arrayBad->getShapeInfo(), &dim, 1);
     tad.createTadOnlyShapeInfo();
     tad.createOffsets();
 
@@ -95,7 +96,8 @@ TEST_F(TadTests, TestShapeTad_1) {
     Nd4jLong tadLength = shape::tadLength(input.getShapeInfo(), dimensions.data(), dimensions.size());
     Nd4jLong numTads = input.lengthOf() / tadLength;
     
-    shape::TAD tad(input.getShapeInfo(), dimensions.data(), dimensions.size());
+    shape::TAD tad;
+    tad.init(input.getShapeInfo(), dimensions.data(), dimensions.size());
     tad.createTadOnlyShapeInfo();
     tad.createOffsets();
 
@@ -114,7 +116,8 @@ TEST_F(TadTests, TestShapeTad_1) {
 TEST_F(TadTests, TadNoAxis_1) {
     auto array = NDArrayFactory::create<float>('c', {2, 3});
 
-    shape::TAD tad(array.shapeInfo(), nullptr, 0);
+    shape::TAD tad;
+    tad.init(array.shapeInfo(), nullptr, 0);
     tad.createTadOnlyShapeInfo();
     tad.createOffsets();
 
@@ -160,6 +163,51 @@ TEST_F(TadTests, TadEdgeCase_2) {
     ASSERT_EQ(3, tad->lengthOf());
 
     delete tad;
+}
+
+TEST_F(TadTests, test_Tad_Ews_optimization_1) {
+    shape::TAD xTad;
+
+    std::array<int,2> array = {1,2};
+    ASSERT_TRUE(xTad.dimensionsDescending(3, array.data(), array.size()));
+}
+
+TEST_F(TadTests, test_Tad_Ews_optimization_2) {
+    shape::TAD xTad;
+
+    std::array<int,2> array = {0,2};
+    ASSERT_FALSE(xTad.dimensionsDescending(3, array.data(), array.size()));
+}
+
+TEST_F(TadTests, test_Tad_Ews_optimization_3) {
+    shape::TAD xTad;
+
+    std::array<int,1> array = {1};
+    ASSERT_TRUE(xTad.dimensionsDescending(2, array.data(), array.size()));
+}
+
+TEST_F(TadTests, test_Tad_Ews_optimization_4) {
+    shape::TAD xTad;
+
+    std::array<int,1> array = {0};
+    ASSERT_TRUE(xTad.dimensionsDescending(1, array.data(), array.size()));
+}
+
+TEST_F(TadTests, test_Tad_Ews_optimization_5) {
+    shape::TAD xTad;
+
+    std::array<int,2> array = {2,3};
+    ASSERT_TRUE(xTad.dimensionsDescending(4, array.data(), array.size()));
+}
+
+TEST_F(TadTests, test_TAD_empty_dims_1) {
+    Nd4jLong xShape[8] = {2, 150, 1, 3, 1, 16384, 3, 99};
+    shape::TAD xTad;
+    xTad.init(xShape, reinterpret_cast<int*>(112L), 0);
+    xTad.createTadOnlyShapeInfo();
+    xTad.createOffsets();
+    nd4j_printf("numTads: %i\n", (int) xTad.numTads);
+    shape::printShapeInfoLinear("TAD shape", xTad.tadOnlyShapeInfo);
 }
 
 /*

@@ -1895,7 +1895,7 @@ TEST_F(DeclarableOpsTests1, Transpose2) {
 TEST_F(DeclarableOpsTests1, Permute1) {
 
     Nd4jLong shapeX[]   = {3, 5, 10, 15, 150, 15, 1, 0, 1, 99};
-    Nd4jLong shapeExp[] = {3, 15, 5, 10, 1, 150, 15, 0, -1, 99};
+    Nd4jLong shapeExp[] = {3, 15, 5, 10, 1, 150, 15, 0, 0, 99};
     const std::vector<int> perm = {2, 0, 1};
     ArrayOptions::setDataType(shapeX, nd4j::DataType::FLOAT32);
     ArrayOptions::setDataType(shapeExp, nd4j::DataType::FLOAT32);
@@ -1927,7 +1927,7 @@ TEST_F(DeclarableOpsTests1, Permute1) {
 TEST_F(DeclarableOpsTests1, Permute2) {      
 
     Nd4jLong shapeX[]   = {3, 5, 10, 15, 150, 15, 1, 0, 1, 99};
-    Nd4jLong shapeExp[] = {3, 15, 5, 10, 1, 150, 15, 0, -1, 99};
+    Nd4jLong shapeExp[] = {3, 15, 5, 10, 1, 150, 15, 0, 0, 99};
     const std::vector<int> perm = {2, 0, 1};
 
     ArrayOptions::setDataType(shapeX, nd4j::DataType::FLOAT32);

@@ -27,7 +27,7 @@
     <packaging>pom</packaging>
 
     <name>nd4j-jdbc</name>
-    <url>http://nd4j.org</url>
+    <url>https://deeplearning4j.org</url>
     <modules>
         <module>nd4j-jdbc-api</module>
         <module>nd4j-jdbc-mysql</module>

@@ -37,7 +37,7 @@ public class TestSessions {
         InferenceSession is = new InferenceSession(sd);
 
         INDArray x = Nd4j.linspace(1, 12, 12).castTo(DataType.FLOAT).reshape(3,4);
-        INDArray y = Nd4j.linspace(0.1, 0.4, 4).castTo(DataType.FLOAT).reshape(1,4);
+        INDArray y = Nd4j.linspace(0.1, 0.4, 4, DataType.DOUBLE).castTo(DataType.FLOAT).reshape(1,4);
 
         INDArray outExp = x.addRowVector(y);
 
@@ -71,7 +71,7 @@ public class TestSessions {
 
         InferenceSession is = new InferenceSession(sd);
         INDArray x = Nd4j.linspace(1, 9, 9).castTo(DataType.FLOAT).reshape(3,3);
-        INDArray y = Nd4j.linspace(0.0, 0.9, 9).castTo(DataType.FLOAT).reshape(3,3);
+        INDArray y = Nd4j.linspace(0.0, 0.9, 9, DataType.DOUBLE).castTo(DataType.FLOAT).reshape(3,3);
 
         INDArray aExp = x.add(y);
         INDArray bExp = x.mmul(y);
@@ -101,7 +101,7 @@ public class TestSessions {
         SDVariable outVar = sd.identity(merge);
 
         INDArray x = Nd4j.linspace(1, 9, 9).castTo(DataType.FLOAT).reshape(3,3);
-        INDArray y = Nd4j.linspace(0.0, 0.9, 9).castTo(DataType.FLOAT).reshape(3,3);
+        INDArray y = Nd4j.linspace(0.0, 0.9, 9, DataType.DOUBLE).castTo(DataType.FLOAT).reshape(3,3);
 //        ph1.setArray(x);
 //        ph2.setArray(y);
 //        INDArray out = sd.execAndEndResult();

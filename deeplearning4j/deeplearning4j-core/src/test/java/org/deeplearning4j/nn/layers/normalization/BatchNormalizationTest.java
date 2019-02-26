@@ -81,11 +81,11 @@ public class BatchNormalizationTest extends BaseDL4JTest {
         DataTypeUtil.setDTypeForContext(DataType.DOUBLE);
     }
 
-    protected INDArray dnnInput = Nd4j.linspace(0, 31, 32).reshape(2, 16);
-    protected INDArray dnnEpsilon = Nd4j.linspace(0, 31, 32).reshape(2, 16);
+    protected INDArray dnnInput = Nd4j.linspace(0, 31, 32, Nd4j.dataType()).reshape(2, 16);
+    protected INDArray dnnEpsilon = Nd4j.linspace(0, 31, 32, Nd4j.dataType()).reshape(2, 16);
 
-    protected INDArray cnnInput = Nd4j.linspace(0, 63, 64).reshape(2, 2, 4, 4);
-    protected INDArray cnnEpsilon = Nd4j.linspace(0, 63, 64).reshape(2, 2, 4, 4);
+    protected INDArray cnnInput = Nd4j.linspace(0, 63, 64, Nd4j.dataType()).reshape(2, 2, 4, 4);
+    protected INDArray cnnEpsilon = Nd4j.linspace(0, 63, 64, Nd4j.dataType()).reshape(2, 2, 4, 4);
 
     @Before
     public void doBefore() {

@@ -1167,7 +1167,7 @@ void NativeOps::execIndexReduceScalar(
 	//if (!DataTypeUtils::isZ(zType))
 	//    throw nd4j::datatype_exception("NativeOps::execIndexReduceScalar requires Z operand to have one of integer types")
 	if (zType != nd4j::DataType::INT64)
-        throw nd4j::datatype_exception::build("NativeOps::execIndexReduceScalar requires Z operand to have INT64 data type", zType);
+        throw nd4j::datatype_exception::build("NativeOps::exeIndexReduceScalar requires Z operand to have INT64 data type", zType);
 
     auto dz = reinterpret_cast<Nd4jLong*>(dZ);
 
@@ -2085,15 +2085,29 @@ void NativeOps::specialConcat(
  * This method saves
  */
 void NativeOps::tadOnlyShapeInfo(Nd4jLong *dXShapeInfo, int *dimension, int dimensionLength, Nd4jLong *target, Nd4jLong *offsets) {
+    //nd4j_printf("START ------->\n","");
+    //nd4j_printf("Shape pointer: [%p]\n", dXShapeInfo);
+	//nd4j_printf("Dimension pointer: [%p]\n", dimension);
+    //nd4j_printf("shape rank: [%i]; dimLength: [%i]\n", shape::rank(dXShapeInfo), dimensionLength);
+    //shape::printShapeInfoLinear(dXShapeInfo);
+    //fflush(stdout);
+    //shape::printArray<int>(reinterpret_cast<void*>(dimension), dimensionLength, "dimensions");
+    //fflush(stdout);
+    //nd4j_printf("END ------->\n","");
+
 	shape::TAD tad;
 	tad.init(dXShapeInfo, dimension, dimensionLength);
-	//tad->setOutputBuffer(target);
+
+	//nd4j_printf("Creating TAD shape...\n","");
 	tad.createTadOnlyShapeInfo();
+	//nd4j_printf("Creating TAD offsets...\n","");
 	tad.createOffsets();
 
-
+	//nd4j_printf("memcpy TAD shape...\n","");
 	std::memcpy(reinterpret_cast<void *>(target), tad.tadOnlyShapeInfo, shape::shapeInfoByteLength(tad.tadOnlyShapeInfo));
+	//nd4j_printf("memcpy TAD offsets...\n","");
 	std::memcpy(reinterpret_cast<void *>(offsets), tad.tadOffsets, tad.numTads * sizeof(Nd4jLong));
+	//nd4j_printf("memcpy finished...\n","");
 }
 
 int NativeOps::memcpyConstantAsync(Nd4jLong dst, Nd4jPointer src, Nd4jLong size, int flags, Nd4jPointer reserved) {
@@ -3712,3 +3726,91 @@ Nd4jPointer NativeOps::createUtf8String(Nd4jPointer *extraPointers, const char *
 void NativeOps::deleteUtf8String(Nd4jPointer *extraPointers, Nd4jPointer ptr) {
     delete(reinterpret_cast<nd4j::utf8string*>(ptr));
 }
+
+///////////////////////////////////////////////////////////////////
+template<typename T>
+__global__ static void scatterUpdateCuda(const int opCode, const int numOfSubArrs, 
+										      void* vx, const Nd4jLong *xShapeInfo, const Nd4jLong *xOffsets,
+										      void* vy, const Nd4jLong *yShapeInfo, const Nd4jLong *yOffsets,
+										      const int* indexes) {
+        
+    __shared__ T *x, *y;
+    __shared__ Nd4jLong arrLenX, arrLenY;
+
+    for (int e = 0; e < numOfSubArrs; e++ ) {
+        
+        const auto xIndex = indexes[e];
+        const bool isOwner = xIndex < gridDim.x ? blockIdx.x == xIndex : blockIdx.x == xIndex % gridDim.x;
+
+        if (!isOwner)
+            continue;
+
+        if (threadIdx.x == 0) {
+            x = reinterpret_cast<T*>(vx) + xOffsets[xIndex];
+            y = reinterpret_cast<T*>(vy) + yOffsets[e];
+            arrLenX = shape::length(xShapeInfo);
+            arrLenY = shape::length(yShapeInfo);
+        }
+
+        __syncthreads();
+
+        if (arrLenX != arrLenY)
+            return;
+
+        for (Nd4jLong i = threadIdx.x; i < arrLenX; i += blockDim.x) {
+
+            const auto xOffset = shape::getIndexOffset(i, xShapeInfo, arrLenX);
+            const auto yOffset = shape::getIndexOffset(i, yShapeInfo, arrLenY);
+
+            switch (opCode) {
+                case 0:
+                    x[xOffset] += y[yOffset];
+                    break;
+                case 1:
+                    x[xOffset] -= y[yOffset];
+                    break;
+                case 2:
+                    x[xOffset] *= y[yOffset];
+                    break;
+                case 3:
+                    x[xOffset] /= y[yOffset];
+                    break;
+                case 4:
+                    x[xOffset] = y[yOffset] - x[xOffset];
+                    break;
+                case 5:
+                    x[xOffset] = y[yOffset] / x[xOffset];
+                    break;
+                case 6:
+                    x[xOffset] = y[yOffset];
+                    break;
+                default:
+                    continue;
+            }
+        }
+        __syncthreads();
+    }
+}
+
+template<typename T>
+__host__ static void scatterUpdateCudaLauncher(const cudaStream_t* stream, const int opCode, const int numOfSubArrs, void* vx, const Nd4jLong *xShapeInfo, const Nd4jLong *xOffsets, void* vy, const Nd4jLong *yShapeInfo, const Nd4jLong *yOffsets, const int* indexes) {
+
+    scatterUpdateCuda<T><<<512, 256, MAX_NUM_THREADS, *stream>>>(opCode, numOfSubArrs, vx, xShapeInfo, xOffsets, vy, yShapeInfo, yOffsets, indexes);
+}
+
+
+//////////////////////////////////////////////////////////////////////////
+void NativeOps::scatterUpdate(Nd4jPointer *extraPointers, int opCode, int numOfSubArrs,
+                      			void* hX, Nd4jLong* hXShapeInfo, Nd4jLong* hXOffsets,
+                      			void* dX, Nd4jLong* dXShapeInfo, Nd4jLong* dXOffsets,
+                      			void* hY, Nd4jLong* hYShapeInfo, Nd4jLong* hYOffsets,
+                      			void* dY, Nd4jLong* dYShapeInfo, Nd4jLong* dYOffsets,
+                      			int* hIindexes, int* dIndexes) {
+
+	auto stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
+		
+	nd4j::DataType type = ArrayOptions::dataType(hXShapeInfo);
+
+    BUILD_SINGLE_SELECTOR(type, scatterUpdateCudaLauncher, (stream, opCode, numOfSubArrs, dX, dXShapeInfo, dXOffsets, dY, dYShapeInfo, dYOffsets, dIndexes), LIBND4J_TYPES);
+}
+

@@ -108,6 +108,7 @@
             <artifactId>nd4j-native</artifactId>
             <version>${project.version}</version>
         </dependency>
+
 <!--
         <dependency>
             <groupId>org.nd4j</groupId>

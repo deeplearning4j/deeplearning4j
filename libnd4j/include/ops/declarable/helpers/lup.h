@@ -34,6 +34,7 @@ namespace helpers {
 
     int inverse(NDArray* input, NDArray* output);
 
+    bool checkCholeskyInput(NDArray const* input);
     int cholesky(NDArray* input, NDArray* output, bool inplace = false);
 }
 }

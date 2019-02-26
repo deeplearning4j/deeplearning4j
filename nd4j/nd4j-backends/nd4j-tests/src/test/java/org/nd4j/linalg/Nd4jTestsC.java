@@ -17,6 +17,7 @@
 package org.nd4j.linalg;
 
 
+import com.fasterxml.jackson.databind.ser.Serializers;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import lombok.var;
@@ -37,6 +38,8 @@ import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.environment.Nd4jEnvironment;
 import org.nd4j.linalg.api.iter.INDArrayIterator;
 import org.nd4j.linalg.api.iter.NdIndexIterator;
+import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
+import org.nd4j.linalg.api.memory.enums.LearningPolicy;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BroadcastOp;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
@@ -63,12 +66,14 @@ import org.nd4j.linalg.api.ops.impl.reduce.same.Sum;
 import org.nd4j.linalg.api.ops.impl.reduce3.*;
 import org.nd4j.linalg.api.ops.impl.scalar.LeakyReLU;
 import org.nd4j.linalg.api.ops.impl.scalar.ReplaceNans;
+import org.nd4j.linalg.api.ops.impl.scatter.ScatterUpdate;
 import org.nd4j.linalg.api.ops.impl.transforms.any.IsMax;
 import org.nd4j.linalg.api.ops.impl.transforms.bool.MatchConditionTransform;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.CompareAndSet;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.Eps;
 import org.nd4j.linalg.api.ops.impl.transforms.pairwise.BinaryRelativeError;
 import org.nd4j.linalg.api.ops.impl.transforms.pairwise.Set;
+import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.Axpy;
 import org.nd4j.linalg.api.ops.impl.transforms.same.OldReverse;
 import org.nd4j.linalg.api.ops.impl.transforms.same.Sign;
 import org.nd4j.linalg.api.ops.impl.transforms.strict.ACosh;
@@ -7039,6 +7044,32 @@ public class Nd4jTestsC extends BaseNd4jTest {
     }
 
     @Test
+    public void testScatterUpdateShortcut() {
+        val array = Nd4j.create(DataType.FLOAT, 5, 2);
+        val updates = Nd4j.createFromArray(new float[][] {{1,1}, {2,2}, {3, 3}});
+        val indices = Nd4j.createFromArray(new int[]{1, 2, 3});
+        val exp = Nd4j.createFromArray(new float[][] {{0,0}, {1,1}, {2,2}, {3, 3}, {0,0}});
+
+        assertArrayEquals(exp.shape(), array.shape());
+        Nd4j.scatterUpdate(ScatterUpdate.UpdateOp.ADD, array, indices, updates, 1);
+
+        assertEquals(exp, array);
+    }
+
+    @Test(expected = IllegalStateException.class)
+    public void testScatterUpdateShortcut_f1() {
+        val array = Nd4j.create(DataType.FLOAT, 5, 2);
+        val updates = Nd4j.createFromArray(new float[][] {{1,1}, {2,2}, {3, 3}});
+        val indices = Nd4j.createFromArray(new int[]{1, 2, 3});
+        val exp = Nd4j.createFromArray(new float[][] {{0,0}, {1,1}, {2,2}, {3, 3}, {0,0}});
+
+        assertArrayEquals(exp.shape(), array.shape());
+        Nd4j.scatterUpdate(ScatterUpdate.UpdateOp.ADD, array, indices, updates, 0);
+
+        assertEquals(exp, array);
+    }
+
+    @Test
     public void testINDArrayMmulWithTranspose(){
         Nd4j.getRandom().setSeed(12345);
         INDArray a = Nd4j.rand(2,5);
@@ -7198,6 +7229,125 @@ public class Nd4jTestsC extends BaseNd4jTest {
                 {4,5,6},
                 {7,8,9}});
         assertEquals(exp, out);
+    }
+
+    @Test
+    public void testAxpyOpRows(){
+        INDArray arr = Nd4j.create(1,4).assign(2.0f);
+        INDArray ones = Nd4j.ones(1,4).assign(3.0f);
+
+        Nd4j.exec(new Axpy(arr, ones, arr, 10.0, 4));
+
+        INDArray exp = Nd4j.valueArrayOf(new long[]{1,4}, 23.0);
+
+        assertEquals(exp, arr);
+    }
+
+    @Test
+    public void testEmptyArray() {
+        INDArray empty = Nd4j.empty(DataType.INT);
+        assertEquals(empty.toString(), "[]");
+    }
+
+    @Test
+    public void testLinspaceWithStep(){
+
+        double lower = -0.9, upper = 0.9, step = 0.2;
+        INDArray in = Nd4j.linspace(lower, upper, 10, DataType.DOUBLE);
+        for (int i = 0; i < 10; ++i) {
+            assertEquals(lower + step * i, in.getDouble(i), 1e-5);
+        }
+
+        step = 0.3;
+        INDArray stepped = Nd4j.linspace(DataType.DOUBLE, lower, step, 10);
+        for (int i = 0; i < 10; ++i) {
+            assertEquals(lower + i * step, stepped.getDouble(i),1e-5);
+        }
+
+        lower = 0.9;
+        upper = -0.9;
+        step = -0.2;
+        in = Nd4j.linspace(lower, upper, 10, DataType.DOUBLE);
+        for (int i = 0; i < 10; ++i) {
+            assertEquals(lower + i * step, in.getDouble(i),  1e-5);
+        }
+
+        stepped = Nd4j.linspace(DataType.DOUBLE, lower, step, 10);
+        for (int i = 0; i < 10; ++i) {
+             assertEquals(lower + i * step, stepped.getDouble(i),  1e-5);
+        }
+
+    }
+
+    @Test
+    public void testLinspaceWithStepForIntegers(){
+
+        long lower = -9, upper = 9, step = 2;
+        INDArray in = Nd4j.linspace(lower, upper, 10, DataType.LONG);
+        for (int i = 0; i < 10; ++i) {
+            assertEquals(lower + step * i, in.getInt(i));
+        }
+
+        INDArray stepped = Nd4j.linspace(DataType.INT, lower, 10, step);
+        for (int i = 0; i < 10; ++i) {
+            assertEquals(lower + i * step, stepped.getInt(i));
+        }
+
+        lower = 9;
+        upper = -9;
+        step = -2;
+        in = Nd4j.linspace(lower, upper, 10, DataType.INT);
+        for (int i = 0; i < 10; ++i) {
+            assertEquals(lower + i * step, in.getInt(i));
+        }
+        lower = 9;
+        step = -2;
+        INDArray stepped2 = Nd4j.linspace(DataType.INT, lower, 10, step);
+        for (int i = 0; i < 10; ++i) {
+            assertEquals(lower + i * step, stepped2.getInt(i));
+        }
+
+    }
+
+    @Test
+    public void testArangeWithStep() {
+        int begin = -9, end = 9, step = 2;
+        INDArray in = Nd4j.arange(begin, end, step);
+        assertEquals(in.getInt(0), -9);
+        assertEquals(in.getInt(1), -7);
+        assertEquals(in.getInt(2), -5);
+        assertEquals(in.getInt(3), -3);
+        assertEquals(in.getInt(4), -1);
+        assertEquals(in.getInt(5), 1);
+        assertEquals(in.getInt(6), 3);
+        assertEquals(in.getInt(7), 5);
+        assertEquals(in.getInt(8), 7);
+    }
+
+    @Test
+    public void testRollingMean() {
+        val wsconf = WorkspaceConfiguration.builder()
+                .initialSize(1500L * 1024L * 1024L)
+                .policyLearning(LearningPolicy.FIRST_LOOP)
+                .build();
+
+        for (int e = 0; e < 5; e++) {
+            try (val ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace(wsconf, "kjmnf,ndsfhnsdjhflljkl131334")) {
+                val array = Nd4j.create(DataType.FLOAT, 32, 128, 256, 256);
+                array.mean(2, 3);
+            }
+        }
+
+        int iterations = 100;
+        val timeStart = System.nanoTime();
+        for (int e = 0; e < iterations; e++) {
+            try (val ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace(wsconf, "kjmnf,ndsfhnsdjhflljkl131334")) {
+                val array = Nd4j.create(DataType.FLOAT, 32, 128, 256, 256);
+                array.mean(2, 3);
+            }
+        }
+        val timeEnd = System.nanoTime();
+        log.info("Average time: {} ms", (timeEnd - timeStart) / (double) iterations / (double) 1000 / (double) 1000);
     }
 
     ///////////////////////////////////////////////////////

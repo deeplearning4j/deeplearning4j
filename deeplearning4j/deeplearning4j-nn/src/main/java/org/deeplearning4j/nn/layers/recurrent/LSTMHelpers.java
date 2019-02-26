@@ -52,7 +52,7 @@ import static org.nd4j.linalg.indexing.NDArrayIndex.point;
 
 /**
  *
- * RNN tutorial: <a href="http://deeplearning4j.org/usingrnns.html">http://deeplearning4j.org/usingrnns.html</a>
+ * RNN tutorial: <a href="https://deeplearning4j.org/docs/latest/deeplearning4j-nn-recurrent">https://deeplearning4j.org/docs/latest/deeplearning4j-nn-recurrent</a>
  * READ THIS FIRST if you want to understand what the heck is happening here.
  *
  * Shared code for the standard "forwards" LSTM RNN and the bidirectional LSTM RNN

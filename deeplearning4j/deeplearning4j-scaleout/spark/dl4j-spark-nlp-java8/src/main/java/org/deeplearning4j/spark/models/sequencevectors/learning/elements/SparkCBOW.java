@@ -16,6 +16,7 @@
 
 package org.deeplearning4j.spark.models.sequencevectors.learning.elements;
 
+import org.deeplearning4j.models.embeddings.learning.impl.elements.BatchSequences;
 import org.deeplearning4j.models.embeddings.learning.impl.elements.RandomUtils;
 import org.deeplearning4j.models.sequencevectors.sequence.Sequence;
 import org.deeplearning4j.models.sequencevectors.sequence.ShallowSequenceElement;
@@ -43,6 +44,11 @@ public class SparkCBOW extends BaseSparkLearningAlgorithm {
     @Override
     public String getCodeName() {
         return "Spark-CBOW";
+    }
+
+    @Override
+    public double learnSequence(Sequence<ShallowSequenceElement> sequence, AtomicLong nextRandom, double learningRate, BatchSequences<ShallowSequenceElement> batchSequences) {
+        throw new UnsupportedOperationException();
     }
 
     @Override

@@ -411,9 +411,12 @@ public class TimeSeriesUtils {
 
             //Now, get and assign the corresponding subsets of 3d activations:
             for (int i = 0; i < fwdPassTimeSteps.length; i++) {
+                int lastStepIdx = fwdPassTimeSteps[i];
+                Preconditions.checkState(lastStepIdx >= 0, "Invalid last time step index: example %s in minibatch is entirely masked out" +
+                        " (input mask is all 0s, meaning no input data is present for this example)", i);
                 //TODO can optimize using reshape + pullRows
                 out.putRow(i, pullFrom.get(NDArrayIndex.point(i), NDArrayIndex.all(),
-                        NDArrayIndex.point(fwdPassTimeSteps[i])));
+                        NDArrayIndex.point(lastStepIdx)));
             }
         }
 

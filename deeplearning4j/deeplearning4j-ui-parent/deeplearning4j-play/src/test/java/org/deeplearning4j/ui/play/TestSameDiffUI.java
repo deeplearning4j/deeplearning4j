@@ -47,7 +47,7 @@ public class TestSameDiffUI {
         SDVariable b = sd.var("b", DataType.FLOAT, 1, 4);
 
         SDVariable z = in.mmul(w).add(b);
-        SDVariable a = sd.tanh(z);
+        SDVariable a = sd.nn().tanh(z);
 
         LogFileWriter lfw = new LogFileWriter(f);
         lfw.writeGraphStructure(sd);

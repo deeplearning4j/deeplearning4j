@@ -143,7 +143,7 @@ public class SameDiffConv extends SameDiffLayer {
                 .isSameMode(this.cm == ConvolutionMode.Same)
                 .build();
 
-        SDVariable conv = sameDiff.conv2d(vars, c);    //TODO can't set name
+        SDVariable conv = sameDiff.cnn().conv2d(vars, c);    //TODO can't set name
 
         return activation.asSameDiff("out", sameDiff, conv);
     }
