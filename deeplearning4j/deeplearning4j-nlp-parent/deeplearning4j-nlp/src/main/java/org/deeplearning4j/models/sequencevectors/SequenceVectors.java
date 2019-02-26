@@ -47,9 +47,11 @@ import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.deeplearning4j.models.word2vec.wordstore.VocabConstructor;
 import org.deeplearning4j.models.word2vec.wordstore.inmemory.AbstractCache;
 import org.deeplearning4j.util.ThreadUtils;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
 import org.nd4j.linalg.api.memory.enums.LearningPolicy;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.custom.ScatterUpdate;
 import org.nd4j.linalg.api.rng.Random;
 import org.nd4j.linalg.factory.Nd4j;
 import org.slf4j.Logger;
@@ -84,10 +86,12 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
     protected static final Logger log = LoggerFactory.getLogger(SequenceVectors.class);
 
     protected transient WordVectors existingModel;
+    protected transient WordVectors intersectModel;
     protected transient T unknownElement;
     protected transient AtomicDouble scoreElements = new AtomicDouble(0.0);
     protected transient AtomicDouble scoreSequences = new AtomicDouble(0.0);
     protected transient boolean configured = false;
+    protected transient boolean lockFactor = false;
 
     protected boolean enableScavenger = false;
     protected int vocabLimit = 0;
@@ -297,6 +301,22 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
         }
 
         initLearners();
+        if (intersectModel != null) {
+            int[] intersectIndexes = new int[intersectModel.vocab().numWords()];
+            int cnt = 0;
+            for (int i = 0; i < intersectModel.vocab().numWords(); ++i) {
+                String externalWord = intersectModel.vocab().wordAtIndex(i);
+                int index = this.vocab.indexOf(externalWord);
+                if (index > -2) {
+                    this.vocab.wordFor(externalWord).setLocked(lockFactor);
+                    intersectIndexes[cnt++] = index;
+                }
+            }
+            ScatterUpdate op = new ScatterUpdate(((InMemoryLookupTable<VocabWord>) lookupTable).getSyn0(),
+                    ((InMemoryLookupTable<VocabWord>) intersectModel.lookupTable()).getSyn0(),
+                    intersectIndexes, new int[]{1}, ScatterUpdate.UpdateOp.ASSIGN);
+            Nd4j.getExecutioner().exec(op);
+        }
 
         log.info("Starting learning process...");
         timeSpent.set(System.currentTimeMillis());
@@ -390,6 +410,8 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
         protected ModelUtils<T> modelUtils = new BasicModelUtils<>();
 
         protected WordVectors existingVectors;
+        protected SequenceVectors<T> intersectVectors;
+        protected boolean lockFactor = false;
 
         protected double sampling = 0;
         protected double negative = 0;
@@ -964,6 +986,12 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
             return this;
         }
 
+        public Builder<T> intersectModel(@NonNull SequenceVectors<T> intersectVectors, boolean lockFactor) {
+            this.intersectVectors = intersectVectors;
+            this.lockFactor = lockFactor;
+            return this;
+        }
+
         /**
          * Build SequenceVectors instance with defined settings/options
          * @return
@@ -1011,6 +1039,7 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
             vectors.sequenceLearningAlgorithm = this.sequenceLearningAlgorithm;
 
             vectors.existingModel = this.existingVectors;
+            vectors.intersectModel = this.intersectVectors;
             vectors.enableScavenger = this.enableScavenger;
 
             this.configuration.setLearningRate(this.learningRate);
