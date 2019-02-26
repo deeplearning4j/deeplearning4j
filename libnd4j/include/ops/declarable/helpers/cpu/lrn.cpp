@@ -60,15 +60,16 @@ static void getMKLDNNMemoryDescLrn(const NDArray* src, const NDArray* diff_src,
 }
 #endif
 
-    // FIXME: double
-    int lrnFunctor(nd4j::graph::Context& block, NDArray* input, NDArray* output, int depth, double bias, double alpha, double beta) {
+    template <typename T>
+    static int lrnFunctor_(nd4j::graph::Context& block, NDArray* input, NDArray* output, int depth, float bias, float alpha, float beta) {
 
         double dividor;
 
         int totalLength = input->lengthOf();
         int lastDim = input->sizeAt(-1);
         int chunkCount = totalLength / lastDim;
-
+        T* inputBuffer = reinterpret_cast<T*>(input->buffer());
+        T* outputBuffer = reinterpret_cast<T*>(output->buffer());
 #ifdef HAVE_MKLDNN
     if (block.isUseMKLDNN() && nd4j::MKLDNNStream::isSupported({input, output})) {
         std::vector<nd4j::MKLDNNStream>& streams = block.getMKLDNNStreams();
@@ -99,24 +100,45 @@ static void getMKLDNNMemoryDescLrn(const NDArray* src, const NDArray* diff_src,
 
         std::unique_ptr<ResultSet> listOut(output->allTensorsAlongDimension({output->rankOf() - 1}));
         std::unique_ptr<ResultSet> listInput(input->allTensorsAlongDimension({input->rankOf() - 1}));
-        if (chunkCount != listOut->size()) 
+        if (chunkCount != listOut->size())
             return ND4J_STATUS_VALIDATION;
+
+#pragma omp parallel for schedule(static)
         for (int c = 0; c < chunkCount; c++) {
             for (int e = 0; e < lastDim; e++) {
                 int begin = nd4j::math::nd4j_max(0, e - depth);
                 int end = nd4j::math::nd4j_min(depth + e + 1, lastDim);
-                double quadSum = 0;
+                T quadSum = 0;
 
                 for (int pos = begin; pos < end; ++pos) {
-                    double val = listInput->at(c)->e<double>(pos);
+                    T val = inputBuffer[c * lastDim + pos]; //listInput->at(c)->t<T>(pos);
                     quadSum += val * val;
                 }
-                double dividor = nd4j::math::nd4j_pow<double, double, double>(bias + alpha * quadSum, beta);
-                listOut->at(c)->p<double>(e,  listInput->at(c)->e<double>(e) / dividor);
+                T dividor = nd4j::math::nd4j_pow<float, float, T>(bias + alpha * quadSum, beta);
+                outputBuffer[c * lastDim + e] = inputBuffer[c * lastDim + e] / dividor;
             }
         }
+//        for (int c = 0; c < chunkCount; c++) {
+//            for (int e = 0; e < lastDim; e++) {
+//                int begin = nd4j::math::nd4j_max(0, e - depth);
+//                int end = nd4j::math::nd4j_min(depth + e + 1, lastDim);
+//                T quadSum = 0;
+//
+//                for (int pos = begin; pos < end; ++pos) {
+//                    T val = listInput->at(c)->t<T>(pos);
+//                    quadSum += val * val;
+//                }
+//                T dividor = nd4j::math::nd4j_pow<double, double, T>(bias + alpha * quadSum, beta);
+//                listOut->at(c)->t<T>(e) = T(listInput->at(c)->t<T>(e) / dividor);
+//            }
+//        }
 
         return Status::OK();
+    }
+    BUILD_SINGLE_TEMPLATE(template int lrnFunctor_, (nd4j::graph::Context& block, NDArray* input, NDArray* output, int depth, float bias, float alpha, float beta), NUMERIC_TYPES);
+
+    int lrnFunctor(nd4j::graph::Context& block, NDArray* input, NDArray* output, int depth, double bias, double alpha, double beta) {
+        BUILD_SINGLE_SELECTOR(input->dataType(), return lrnFunctor_, (block, input, output, depth, bias, alpha, beta), NUMERIC_TYPES);
     }
 
     int lrnFunctorEx(nd4j::graph::Context& block, NDArray* input, NDArray* output, NDArray* unitScale, NDArray* scale, int depth, double bias, double alpha, double beta) {
