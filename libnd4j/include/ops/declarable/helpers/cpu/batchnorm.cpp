@@ -20,6 +20,7 @@
 
 
 #include<ops/declarable/helpers/batchnorm.h>
+#include <helpers/ShapeUtils.h>
 #include <OmpLaunchHelper.h>
 
 namespace nd4j 	  {
@@ -28,28 +29,28 @@ namespace helpers {
 
 
 //////////////////////////////////////////////////////////////////////////
-void batchnorm(const NDArray* input, const NDArray* mean, const NDArray* variance, const NDArray* gamma, const NDArray* beta, NDArray* output, const std::vector<int>& dimsToExclude, const float epsilon) {
+template <typename T>
+static void batchnorm_(const NDArray* input, const NDArray* mean, const NDArray* variance, const NDArray* gamma, const NDArray* beta, NDArray* output, const std::vector<int>& axes, const double epsilon) {
 
     NDArray sigmaInvGam(mean);  // do not copy mean's buffer, take only its shapeInfo
-    float eps = epsilon;
+    T eps = epsilon;
 
     if(gamma != nullptr) {
-        auto lambda = LAMBDA_FF(x, y, eps) {return x / nd4j::math::nd4j_sqrt<float, float>(y + eps);};
-        const_cast<NDArray*>(gamma)->applyPairwiseLambda<float>(variance, lambda, &sigmaInvGam);
+        auto lambda = LAMBDA_TT(x, y, eps) {return x / nd4j::math::nd4j_sqrt<T, T>(y + eps);};
+        const_cast<NDArray*>(gamma)->applyPairwiseLambda<T>(variance, lambda, &sigmaInvGam);
     }
     else {
-        auto lambda = LAMBDA_F(x, eps) { return 1. / nd4j::math::nd4j_sqrt<float, float>(x + eps); };
-        const_cast<NDArray*>(variance)->applyLambda<float>(lambda, &sigmaInvGam);
+        auto lambda = LAMBDA_T(x, eps) { return 1. / nd4j::math::nd4j_sqrt<T, T>(x + eps); };
+        const_cast<NDArray*>(variance)->applyLambda<T>(lambda, &sigmaInvGam);
     }
 
     // auto sigmaInvGam = (*variance + epsilon).transform(transform::RSqrt);   //  sigmaInvGam = 1 / sqrt(variance + epsilon)
     // if(gamma != nullptr) sigmaInvGam *= *gamma;                   
 
-    const float* sigmaBuff = sigmaInvGam.bufferAsT<float>();
-    const float* meanBuff  = mean->bufferAsT<float>();
-    const float* betaBuff  = beta->bufferAsT<float>();
-    const float* inBuff    = input->bufferAsT<float>();
-          float* outBuff   = output->bufferAsT<float>();
+    const T* sigmaBuff = sigmaInvGam.bufferAsT<T>();
+    const T* meanBuff  = mean->bufferAsT<T>();
+    const T* inBuff    = input->bufferAsT<T>();
+          T* outBuff   = output->bufferAsT<T>();
 
     const Nd4jLong  lenBig        = input->lengthOf();
     const Nd4jLong  lenSmall      = mean->lengthOf();
@@ -59,54 +60,81 @@ void batchnorm(const NDArray* input, const NDArray* mean, const NDArray* varianc
     uint inShapeInfoCast[MAX_RANK];
     uint meanShapeInfoCast[MAX_RANK];
     bool canCastIn   = nd4j::DataTypeUtils::castShapeInfo(inShapeInfo, inShapeInfoCast);
-    bool canCastMean = nd4j::DataTypeUtils::castShapeInfo(meanShapeInfo, meanShapeInfoCast);
-
-    // if(beta != nullptr) {
-    //     const float* betaBuff = beta->bufferAsT<float>();
-    //     #pragma omp parallel for if(lenBig > Environment::getInstance()->elementwiseThreshold()) schedule(guided)
-    //     for(Nd4jLong i = 0; i < lenBig; ++i) {            
-    //         auto offset      = shape::subArrayOffset(i, inShapeInfo, meanShapeInfo);
-    //         auto offsetInOut = shape::indexOffset(i, inShapeInfo, inShapeInfoCast, lenBig, canCast);
-    //         outBuff[offsetInOut] = (inBuff[offsetInOut] - meanBuff[offset]) * sigmaBuff[offset] + betaBuff[offset];
-    //     }
-    // }
-    // else {
-    //     #pragma omp parallel for if(lenBig > Environment::getInstance()->elementwiseThreshold()) schedule(guided)
-    //     for(Nd4jLong i = 0; i < lenBig; ++i) {            
-    //         auto offset      = shape::subArrayOffset(i, inShapeInfo, meanShapeInfo);
-    //         auto offsetInOut = shape::indexOffset(i, inShapeInfo, inShapeInfoCast, lenBig, canCast);
-    //         outBuff[offsetInOut] = (inBuff[offsetInOut] - meanBuff[offset]) * sigmaBuff[offset];
-    //     }   
-    // }    
-    
+    bool canCastMean = nd4j::DataTypeUtils::castShapeInfo(meanShapeInfo, meanShapeInfoCast);    
     
     const Nd4jLong step = lenBig / lenSmall;
-    OmpLaunchHelper info(lenBig, lenSmall);    
-    #pragma omp parallel num_threads(info._numThreads) if (info._numThreads > 1) default(shared)
-    {                        
-        const auto threadNum = omp_get_thread_num();
-        Nd4jLong* inOffsets = new Nd4jLong[step];
+    std::vector<int> dimsToExclude = ShapeUtils::evalDimsToExclude(input->rankOf(), axes);
 
-        for (int j = 0; j < lenSmall; ++j) {            
-            
-            const bool isOwner = j < info._numThreads ? threadNum == j : threadNum == j % info._numThreads;
-            if (!isOwner) continue;
-            const Nd4jLong start = j * step;
-            const Nd4jLong end   = start + step;
+    OmpLaunchHelper info(lenBig, lenSmall);
 
-            auto offsetSmall = shape::indexOffset(j, meanShapeInfo, meanShapeInfoCast, lenSmall, canCastMean);            
-            shape::outerArrayOffsets(inOffsets, j, inShapeInfo, meanShapeInfo, dimsToExclude.data());
-
-            #pragma omp simd
-            for (Nd4jLong i = 0; i < step; ++i) {
-                // auto offsetBig = shape::indexOffset(i, inShapeInfo, inShapeInfoCast, lenBig, canCastIn);            
-                auto offsetBig = inOffsets[i];
-                outBuff[offsetBig] = (inBuff[offsetBig] - meanBuff[offsetSmall]) * sigmaBuff[offsetSmall] + betaBuff[offsetSmall];
+    if(beta != nullptr) {
+        const T* betaBuff  = beta->bufferAsT<T>();
+        #pragma omp parallel num_threads(info._numThreads) if (info._numThreads > 1) default(shared)
+        {                        
+            const auto threadNum = omp_get_thread_num();
+            Nd4jLong* inOffsets = new Nd4jLong[step];
+    
+            for (int j = 0; j < lenSmall; ++j) {            
+                
+                const bool isOwner = j < info._numThreads ? threadNum == j : threadNum == j % info._numThreads;
+                if (!isOwner) continue;
+    
+                const Nd4jLong start = j * step;
+                const Nd4jLong end   = start + step;
+    
+                // calculate offset for mean, variance, gamma, beta (all of them have the same shape)
+                auto offsetSmall = shape::indexOffset(j, meanShapeInfo, meanShapeInfoCast, lenSmall, canCastMean);            
+                // calculate offset for input and output (all of them have the same shape)
+                shape::outerArrayOffsets(inOffsets, j, inShapeInfo, meanShapeInfo, dimsToExclude.data());
+    
+                #pragma omp simd
+                for (Nd4jLong i = 0; i < step; ++i) {                    
+                    auto offsetBig = inOffsets[i];
+                    outBuff[offsetBig] = (inBuff[offsetBig] - meanBuff[offsetSmall]) * sigmaBuff[offsetSmall] + betaBuff[offsetSmall];
+                }
             }
+            delete []inOffsets;
+        }    
+    }
+    else {
+        #pragma omp parallel num_threads(info._numThreads) if (info._numThreads > 1) default(shared)
+        {                        
+            const auto threadNum = omp_get_thread_num();
+            Nd4jLong* inOffsets = new Nd4jLong[step];
+    
+            for (int j = 0; j < lenSmall; ++j) {            
+                
+                const bool isOwner = j < info._numThreads ? threadNum == j : threadNum == j % info._numThreads;
+                if (!isOwner) continue;
+    
+                const Nd4jLong start = j * step;
+                const Nd4jLong end   = start + step;
+    
+                // calculate offset for mean, variance, gamma, beta (all of them have the same shape)
+                auto offsetSmall = shape::indexOffset(j, meanShapeInfo, meanShapeInfoCast, lenSmall, canCastMean);            
+                // calculate offset for input and output (all of them have the same shape)
+                shape::outerArrayOffsets(inOffsets, j, inShapeInfo, meanShapeInfo, dimsToExclude.data());
+    
+                #pragma omp simd
+                for (Nd4jLong i = 0; i < step; ++i) {                    
+                    auto offsetBig = inOffsets[i];
+                    outBuff[offsetBig] = (inBuff[offsetBig] - meanBuff[offsetSmall]) * sigmaBuff[offsetSmall];
+                }
+            }
+            delete []inOffsets;
         }
-        delete []inOffsets;
-    }    
+    }
 }
+
+//////////////////////////////////////////////////////////////////////////
+void batchnorm(const NDArray* input, const NDArray* mean, const NDArray* variance, const NDArray* gamma, const NDArray* beta, NDArray* output, const std::vector<int>& axes, const double epsilon) {
+
+    BUILD_SINGLE_SELECTOR(input->dataType(), batchnorm_, (input, mean, variance, gamma, beta, output, axes, epsilon), FLOAT_TYPES);
+}
+
+
+
+BUILD_SINGLE_TEMPLATE(template void batchnorm_, (const NDArray* input, const NDArray* mean, const NDArray* variance, const NDArray* gamma, const NDArray* beta, NDArray* output, const std::vector<int>& axes, const double epsilon), FLOAT_TYPES);
 
 }
 }
