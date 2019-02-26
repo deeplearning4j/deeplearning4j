@@ -1056,23 +1056,21 @@ public class LayerOpValidation extends BaseOpValidation {
         assertEquals(res, output);
     }
 
-
     @Test
-    public void testLayerNormNoAxis() {
+    public void testLayerNormNoBias() {
         final INDArray random = Nd4j.rand(new int[]{10, 4});
         final INDArray standardized = Nd4j.emptyLike(random);
-        Nd4j.getExecutioner().exec(new Standardize(random, standardized));
+        Nd4j.getExecutioner().exec(new Standardize(random, standardized, 1));
 
         final INDArray gain = Nd4j.rand(new int[]{1, 4});
-        final INDArray bias = Nd4j.rand(new int[]{1, 4});
-        final INDArray res = standardized.mulRowVector(gain).addRowVector(bias);
+        final INDArray res = standardized.mulRowVector(gain);
         final INDArray expOut = res.norm1();
 
+        final int[] axis = new int[]{1};
         SameDiff sd = SameDiff.create();
         SDVariable sdInput = sd.var("input", standardized);
         SDVariable sdGain = sd.var("gain", gain);
-        SDVariable sdBias = sd.var("bias", bias);
-        SDVariable out = sd.nn.layerNorm(sdInput, sdGain, sdBias);
+        SDVariable out = sd.nn.layerNorm(sdInput, sdGain, axis);
         out.norm1("out");
 
         String err = OpValidation.validate(new TestCase(sd)
@@ -1082,17 +1080,16 @@ public class LayerOpValidation extends BaseOpValidation {
     }
 
     @Test
-    public void testLayerNormOPNoAxis() {
+    public void testLayerNormOPNoBias() {
         final INDArray random = Nd4j.rand(new int[]{10, 4});
         final INDArray standardized = Nd4j.emptyLike(random);
-        Nd4j.getExecutioner().exec(new Standardize(random, standardized));
+        Nd4j.getExecutioner().exec(new Standardize(random, standardized, 1));
 
         final INDArray gain = Nd4j.rand(new int[]{1, 4});
-        final INDArray bias = Nd4j.rand(new int[]{1, 4});
-        final INDArray res = standardized.mulRowVector(gain).addRowVector(bias);
+        final INDArray res = standardized.mulRowVector(gain);
 
         final INDArray output = Nd4j.emptyLike(res);
-        Nd4j.getExecutioner().exec(new LayerNorm(standardized, gain, bias, output));
+        Nd4j.getExecutioner().exec(new LayerNorm(standardized, gain, output, 1));
 
         assertEquals(res, output);
     }

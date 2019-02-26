@@ -38,6 +38,8 @@ import java.util.List;
 @NoArgsConstructor
 public class LayerNormBp extends DynamicCustomOp {
 
+    private boolean noBias = false;
+
 
     public LayerNormBp(SameDiff sameDiff, SDVariable input, SDVariable gain, SDVariable bias, SDVariable gradient, int... dimensions) {
         super(null, sameDiff, new SDVariable[] {input, gain, bias, gradient}, false);
@@ -47,6 +49,21 @@ public class LayerNormBp extends DynamicCustomOp {
 
     public LayerNormBp(INDArray input, INDArray gain, INDArray bias, INDArray grad, INDArray dLdx, INDArray dLdg, INDArray dLdb, int... dimensions) {
         super("layer_norm_bp", new INDArray[]{input, gain, bias, grad}, new INDArray[]{dLdx, dLdg, dLdb});
+        this.dimensions = dimensions;
+        addIArgument(dimensions);
+    }
+
+
+    public LayerNormBp(SameDiff sameDiff, SDVariable input, SDVariable gain, SDVariable gradient, int... dimensions) {
+        super(null, sameDiff, new SDVariable[] {input, gain, gradient}, false);
+        noBias = true;
+        this.dimensions = dimensions;
+        addIArgument(dimensions);
+    }
+
+    public LayerNormBp(INDArray input, INDArray gain, INDArray grad, INDArray dLdx, INDArray dLdg, int... dimensions) {
+        super("layer_norm_bp", new INDArray[]{input, gain, grad}, new INDArray[]{dLdx, dLdg});
+        noBias = true;
         this.dimensions = dimensions;
         addIArgument(dimensions);
     }
@@ -74,15 +91,18 @@ public class LayerNormBp extends DynamicCustomOp {
 
     @Override
     public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes){
-        Preconditions.checkState(dataTypes != null && dataTypes.size() == 4, "Expected exactly 4 input datatypes, got %s", dataTypes);
+        Preconditions.checkState(dataTypes != null && dataTypes.size() >= 3 && dataTypes.size() <= 4, "Expected exactly 3 or 4 input datatypes, got %s", dataTypes);
         DataType first = dataTypes.get(0);
-        for( int i=0; i<4; i++ ) {
-            Preconditions.checkState(dataTypes.get(i).isFPType(), "Input %s datatype must be a floating point type, got datypes %s", dataTypes);
-            if(i > 0){
-                Preconditions.checkState(first == dataTypes.get(i), "All datatypes must be same type, got input datatypes %s", dataTypes);
-            }
+        for (DataType dataType : dataTypes) {
+            Preconditions.checkState(dataType.isFPType(), "Input %s datatype must be a floating point type, got datypes %s", dataTypes);
+            Preconditions.checkState(first == dataType, "All datatypes must be same type, got input datatypes %s", dataTypes);
         }
-        return dataTypes.subList(0,3);
+        return dataTypes.subList(0, dataTypes.size()-1);
+    }
+
+    @Override
+    public int getNumOutputs(){
+        return noBias ? 2 : 3;
     }
 
 }

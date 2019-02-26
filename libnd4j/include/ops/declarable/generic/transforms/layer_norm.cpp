@@ -28,100 +28,77 @@
 namespace nd4j {
 namespace ops  {
 
-    CONFIGURABLE_OP_IMPL(layer_norm, 3, 1, true, 0, -2) {
+    CONFIGURABLE_OP_IMPL(layer_norm, 2, 1, false, 0, -1) {
         auto input = INPUT_VARIABLE(0);
         auto gain = INPUT_VARIABLE(1);
-        auto bias = INPUT_VARIABLE(2);
         auto output = OUTPUT_VARIABLE(0);
         
-        std::vector<int> axis;
+        std::vector<int> axis = *block.getIArguments();
 
-        if (block.width() > 3)
-            axis = INPUT_VARIABLE(3)->template asVectorT<int>();
-        else if (block.numI() > 0) 
-            axis = *block.getIArguments();
-
+        NDArray* bias = nullptr;
+        if (block.width() > 2)
+            bias = INPUT_VARIABLE(2);
 
         std::vector<Nd4jLong> longAxis = ArrayUtils::toLongVector(axis);
 
-        if(axis.empty()) {      // do not perform standardization
-            output->assign(input);
-        }
-        else {
-            nd4j::ops::standardize standardizeOp;
-            std::vector<NDArray *> inputs = {input};
-            std::vector<NDArray *> outputs = {output};
-            std::vector<double> targs = {};
-            std::vector<bool> bargs = {};
-            standardizeOp.execute(inputs, outputs, targs, longAxis, bargs);
-        }
+        nd4j::ops::standardize standardizeOp;
+        std::vector<NDArray *> inputs = {input};
+        std::vector<NDArray *> outputs = {output};
+        std::vector<double> targs = {};
+        std::vector<bool> bargs = {};
+        standardizeOp.execute(inputs, outputs, targs, longAxis, bargs);
 
         output->applyTrueBroadcast(nd4j::BroadcastOpsTuple::Multiply(), gain, output);
-        output->applyTrueBroadcast(nd4j::BroadcastOpsTuple::Add(), bias, output);
+        if(bias != nullptr)
+            output->applyTrueBroadcast(nd4j::BroadcastOpsTuple::Add(), bias, output);
 
         return Status::OK();
     }
 
 
     DECLARE_TYPES(layer_norm) {
-        getOpDescriptor()->setAllowedInputTypes(0, DataType::ANY);
-        getOpDescriptor()->setAllowedInputTypes(1, DataType::ANY);
-        getOpDescriptor()->setAllowedInputTypes(2, DataType::ANY);
-        getOpDescriptor()->setAllowedInputTypes(3, {DataType::INT32, DataType::INT64});
-        getOpDescriptor()->setAllowedOutputTypes(0, DataType::INHERIT);
+        getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS});
+        getOpDescriptor()->setAllowedOutputTypes({ALL_FLOATS});
     }
 
-    CUSTOM_OP_IMPL(layer_norm_bp, 4, 3, false, 0, -2) {
+    CUSTOM_OP_IMPL(layer_norm_bp, 3, -1, false, 0, -1) {
         auto input = INPUT_VARIABLE(0);
         auto gain = INPUT_VARIABLE(1);
-        auto bias = INPUT_VARIABLE(2);
-        auto eps = block.width() == 5 ? INPUT_VARIABLE(4) : INPUT_VARIABLE(3);
+        auto bias = block.width() == 4 ? INPUT_VARIABLE(2) : nullptr;
+        auto eps = block.width() == 4 ? INPUT_VARIABLE(3) : INPUT_VARIABLE(2);
 
         auto dLdx = OUTPUT_VARIABLE(0);
         auto dLdg = OUTPUT_VARIABLE(1);
-        auto dLdb = OUTPUT_VARIABLE(2);
+        auto dLdb = block.width() == 4 ? OUTPUT_VARIABLE(2) : nullptr;
 
-        std::vector<int> axis;
-        if (block.width() == 5)
-            axis = INPUT_VARIABLE(3)->template asVectorT<int>();
-        else if (block.numI() > 0) 
-            axis = *block.getIArguments();
+        std::vector<int> axis = *block.getIArguments();;
+
         std::vector<Nd4jLong> longAxis = ArrayUtils::toLongVector(axis);
 
-        eps->reduceAlongDimension(nd4j::reduce::Sum, dLdb, {0}, true);
+        if(bias != nullptr)
+            eps->reduceAlongDimension(nd4j::reduce::Sum, dLdb, {0}, true);
 
         NDArray standardized(input);
-        if(axis.empty()) {      // do not perform standardization
-            input->applyPairwiseTransform(nd4j::pairwise::Multiply, eps, &standardized, nullptr);
-            standardized.reduceAlongDimension(nd4j::reduce::Sum, dLdg, {0}, true);
 
-            eps->applyTrueBroadcast(nd4j::BroadcastOpsTuple::Multiply(), gain, dLdx);
-        }
-        else {
-            nd4j::ops::standardize standardizeOp;
-            std::vector<NDArray *> inputs = {input};
-            std::vector<NDArray *> outputs = {&standardized};
-            std::vector<double> targs = {};
-            std::vector<bool> bargs = {};
+        nd4j::ops::standardize standardizeOp;
+        std::vector<NDArray *> inputs = {input};
+        std::vector<NDArray *> outputs = {&standardized};
+        std::vector<double> targs = {};
+        std::vector<bool> bargs = {};
 
-            standardizeOp.execute(inputs, outputs, targs, longAxis, bargs);
-            standardized.applyPairwiseTransform(nd4j::pairwise::Multiply, eps, &standardized, nullptr);
-            standardized.reduceAlongDimension(nd4j::reduce::Sum, dLdg, {0}, true);
+        standardizeOp.execute(inputs, outputs, targs, longAxis, bargs);
+        standardized.applyPairwiseTransform(nd4j::pairwise::Multiply, eps, &standardized, nullptr);
+        standardized.reduceAlongDimension(nd4j::reduce::Sum, dLdg, {0}, true);
 
-            nd4j::ops::standardize_bp standardizeBp;
-            eps->applyTrueBroadcast(nd4j::BroadcastOpsTuple::Multiply(), gain, dLdx);
-            dLdx->assign(standardizeBp.execute({input, dLdx}, {}, longAxis)->at(0));
-        }
+        nd4j::ops::standardize_bp standardizeBp;
+        eps->applyTrueBroadcast(nd4j::BroadcastOpsTuple::Multiply(), gain, dLdx);
+        dLdx->assign(standardizeBp.execute({input, dLdx}, {}, longAxis)->at(0));
 
         return Status::OK();
     }
 
     DECLARE_TYPES(layer_norm_bp) {
-        getOpDescriptor()->setAllowedInputTypes(0, DataType::ANY);
-        getOpDescriptor()->setAllowedInputTypes(1, DataType::ANY);
-        getOpDescriptor()->setAllowedInputTypes(2, DataType::ANY);
-        getOpDescriptor()->setAllowedInputTypes(3, DataType::ANY);
-        getOpDescriptor()->setAllowedInputTypes(4, DataType::ANY);
+        getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS});
         getOpDescriptor()->setAllowedOutputTypes({ALL_FLOATS});
     }
 
@@ -130,10 +107,12 @@ namespace ops  {
         COPY_SHAPE(inputShape->at(0), dLdx_shape);
         Nd4jLong *dLdg_shape;
         COPY_SHAPE(inputShape->at(1), dLdg_shape);
-        Nd4jLong *dLdb_shape;
-        COPY_SHAPE(inputShape->at(2), dLdb_shape);
-
-        return SHAPELIST(dLdx_shape, dLdg_shape, dLdb_shape);
+        if(inputShape->size() > 3){
+            Nd4jLong *dLdb_shape;
+            COPY_SHAPE(inputShape->at(2), dLdb_shape);
+            return SHAPELIST(dLdx_shape, dLdg_shape, dLdb_shape);
+        }
+        return SHAPELIST(dLdx_shape, dLdg_shape);
     }
 
 }

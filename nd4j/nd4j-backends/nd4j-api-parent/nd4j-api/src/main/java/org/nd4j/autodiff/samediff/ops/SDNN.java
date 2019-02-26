@@ -675,4 +675,30 @@ public class SDNN extends SDOps {
         SDVariable result = f().layerNorm(input, gain, bias, dimensions);
         return updateVariableNameAndReference(result, name);
     }
+
+    /**
+     * Apply Layer Normalization without bias
+     *
+     * y = gain * standardize(x)
+     *
+     * @return Output variable
+     */
+    public SDVariable layerNorm(SDVariable input, SDVariable gain, int... dimensions) {
+        return layerNorm((String)null, input, gain, dimensions);
+    }
+
+    /**
+     * Apply Layer Normalization
+     *
+     * y = gain * standardize(x)
+     *
+     * @param name Name of the output variable
+     * @param input Input variable
+     * @param gain gain
+     * @return Output variable
+     */
+    public SDVariable layerNorm(String name, SDVariable input, SDVariable gain, int... dimensions) {
+        SDVariable result = f().layerNorm(input, gain, dimensions);
+        return updateVariableNameAndReference(result, name);
+    }
 }
