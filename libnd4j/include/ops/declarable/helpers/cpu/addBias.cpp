@@ -77,7 +77,7 @@ static void addBias_(NDArray& input, const NDArray& bias, const bool isNCHW) {
             #pragma omp simd
             for (int c = 0; c < oC; ++c) {
                 auto biasOffset = shape::indexOffset(c, bias.getShapeInfo(), biasShapeInfoCast, oC, canCastBias);
-                inBuff[i + c] += static_cast<X>(biasBuff[biasOffset]);
+                inBuff[i * oC + c] += static_cast<X>(biasBuff[biasOffset]);
             }                            
         }
     }        
