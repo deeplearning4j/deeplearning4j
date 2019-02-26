@@ -95,11 +95,12 @@ else()
     message("OPENMP NOT FOUND")
 endif()
 
-
-find_package(BLAS)
-if (BLAS_FOUND)
-    message("Found external BLAS implementation...")
-    add_definitions(-D__EXTERNAL_BLAS__=true)
+if ("${OPENBLAS}" OR CMAKE_BUILD_TYPE STREQUAL "Release")
+    find_package(BLAS)
+    if (BLAS_FOUND)
+        message("Found external BLAS implementation...")
+        add_definitions(-D__EXTERNAL_BLAS__=true)
+    endif()
 endif()
 
 file(GLOB_RECURSE TYPES_SOURCES false ../../include/types/*.cpp ../../include/types/*.h)
