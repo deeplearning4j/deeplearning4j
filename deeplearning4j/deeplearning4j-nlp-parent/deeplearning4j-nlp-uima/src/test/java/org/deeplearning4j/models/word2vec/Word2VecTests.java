@@ -552,9 +552,9 @@ public class Word2VecTests {
 
         vec2.fit();
 
-        assertEquals(11, vec2.getVocab().wordFrequency("alpha"));
-        assertEquals(2, vec2.getVocab().wordFrequency("beta"));
-        assertEquals(3, vec2.getVocab().wordFrequency("delta"));
+        assertEquals(vec1.getWordVectorMatrix("PRESIDENT"), vec1.getWordVectorMatrix("PRESIDENT"));
+
+
     }
 
 

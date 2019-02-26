@@ -551,6 +551,12 @@ public class Word2Vec extends SequenceVectors<VocabWord> {
             return this;
         }
 
+        @Override
+        public Builder intersectModel(@NonNull SequenceVectors vectors, boolean isLocked) {
+            super.intersectModel(vectors, isLocked);
+            return this;
+        }
+
         public Word2Vec build() {
             presetTables();
 
@@ -647,7 +653,6 @@ public class Word2Vec extends SequenceVectors<VocabWord> {
             ret.trainElementsVectors = true;
 
             ret.eventListeners = this.vectorsListeners;
-
 
 
             return ret;
