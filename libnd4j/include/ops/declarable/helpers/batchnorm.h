@@ -28,7 +28,7 @@ namespace ops     {
 namespace helpers {
 
 
-	void batchnorm(const NDArray* input, const NDArray* mean, const NDArray* variance, const NDArray* gamma, const NDArray* beta, NDArray* output, const std::vector<int>& dimsToExclude, const float epsilon);
+	void batchnorm(const NDArray* input, const NDArray* mean, const NDArray* variance, const NDArray* gamma, const NDArray* beta, NDArray* output, const std::vector<int>& axes, const double epsilon);
     
 
 }
