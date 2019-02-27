@@ -60,15 +60,16 @@ static void getMKLDNNMemoryDescLrn(const NDArray* src, const NDArray* diff_src,
 }
 #endif
 
-    // FIXME: double
-    int lrnFunctor(nd4j::graph::Context& block, NDArray* input, NDArray* output, int depth, double bias, double alpha, double beta) {
+    template <typename T>
+    static int lrnFunctor_(nd4j::graph::Context& block, NDArray* input, NDArray* output, int depth, float bias, float alpha, float beta) {
 
         double dividor;
 
         int totalLength = input->lengthOf();
         int lastDim = input->sizeAt(-1);
         int chunkCount = totalLength / lastDim;
-
+        T* inputBuffer = reinterpret_cast<T*>(input->buffer());
+        T* outputBuffer = reinterpret_cast<T*>(output->buffer());
 #ifdef HAVE_MKLDNN
     if (block.isUseMKLDNN() && nd4j::MKLDNNStream::isSupported({input, output})) {
         std::vector<nd4j::MKLDNNStream>& streams = block.getMKLDNNStreams();
@@ -97,27 +98,104 @@ static void getMKLDNNMemoryDescLrn(const NDArray* src, const NDArray* diff_src,
 #endif
     nd4j_debug("MKL-DNN is not used for lrn!\n", 0);
 
-        std::unique_ptr<ResultSet> listOut(output->allTensorsAlongDimension({output->rankOf() - 1}));
-        std::unique_ptr<ResultSet> listInput(input->allTensorsAlongDimension({input->rankOf() - 1}));
-        if (chunkCount != listOut->size()) 
-            return ND4J_STATUS_VALIDATION;
+#pragma omp parallel for schedule(guided)
         for (int c = 0; c < chunkCount; c++) {
             for (int e = 0; e < lastDim; e++) {
                 int begin = nd4j::math::nd4j_max(0, e - depth);
                 int end = nd4j::math::nd4j_min(depth + e + 1, lastDim);
-                double quadSum = 0;
-
+                T quadSum = 0;
+                int shift = c * lastDim;
+#pragma omp simd reduction(sumT:quadSum)
                 for (int pos = begin; pos < end; ++pos) {
-                    double val = listInput->at(c)->e<double>(pos);
+                    T val = (output->ews() == 1 && output->ordering() == 'c')?inputBuffer[shift + pos]:inputBuffer[shape::getIndexOffset(shift + pos, input->getShapeInfo(), input->lengthOf())]; //listInput->at(c)->t<T>(pos);
                     quadSum += val * val;
                 }
-                double dividor = nd4j::math::nd4j_pow<double, double, double>(bias + alpha * quadSum, beta);
-                listOut->at(c)->p<double>(e,  listInput->at(c)->e<double>(e) / dividor);
+                T dividor = nd4j::math::nd4j_pow<T, T, T>(bias + alpha * quadSum, beta);
+                if (output->ews() == 1 && output->ordering() == 'c')
+                    outputBuffer[shift + e] = inputBuffer[shift + e] / dividor;
+                else
+                    outputBuffer[shape::getIndexOffset(shift + e, output->shapeInfo(), output->lengthOf())] = inputBuffer[shape::getIndexOffset(shift + e, input->getShapeInfo(), input->lengthOf())] / dividor;
+
             }
         }
 
         return Status::OK();
     }
+
+    template <typename T>
+    static int lrnFunctorEx_(nd4j::graph::Context& block, NDArray* input, NDArray* output, NDArray* scale, int depth, float bias, float alpha, float beta) {
+
+        scale->assign(1.);
+        int totalLength = input->lengthOf();
+        int lastDim = input->sizeAt(-1);
+        int chunkCount = totalLength / lastDim;
+        T* inputBuffer = reinterpret_cast<T*>(input->buffer());
+        T* outputBuffer = reinterpret_cast<T*>(output->buffer());
+#ifdef HAVE_MKLDNN
+            if (block.isUseMKLDNN() && nd4j::MKLDNNStream::isSupported({input, output})) {
+        std::vector<nd4j::MKLDNNStream>& streams = block.getMKLDNNStreams();
+        if (streams.empty()) {
+            streams.push_back(MKLDNNStream("lrn"));
+        }
+
+        if (streams[0].checkAndReset({input}, {output}, {bias, alpha, beta}, {depth})) {
+            mkldnn_memory_desc_t empty;
+            mkldnn::memory::desc lrn_src_md(empty);
+
+            getMKLDNNMemoryDescLrn(input, nullptr, &lrn_src_md, nullptr, input->rankOf() - 1);
+
+            auto lrn_desc = lrn_forward::desc(prop_kind::forward_inference, lrn_across_channels, lrn_src_md, (2 * depth + 1), alpha * (2 * depth + 1), beta, bias);
+
+            auto lrn_prim_desc = lrn_forward::primitive_desc(lrn_desc, streams[0].getEngine());
+            auto lrn_src_memory = mkldnn::memory(lrn_prim_desc.src_primitive_desc(), input->buffer());
+            auto lrn_dst_memory = mkldnn::memory(lrn_prim_desc.dst_primitive_desc(), output->buffer());
+            streams[0].setMemory({lrn_src_memory, lrn_dst_memory});
+            streams[0].setOperation(lrn_forward(lrn_prim_desc, lrn_src_memory, lrn_dst_memory));
+        }
+
+        streams[0].submitAndWait();
+        return ND4J_STATUS_OK;
+    }
+#endif
+        nd4j_debug("MKL-DNN is not used for lrn!\n", 0);
+        T* scaleBuffer = reinterpret_cast<T*>(scale->buffer());
+
+#pragma omp parallel for schedule(guided)
+        for (int c = 0; c < chunkCount; c++) {
+            for (int e = 0; e < lastDim; e++) {
+                int begin = nd4j::math::nd4j_max(0, e - depth);
+                int end = nd4j::math::nd4j_min(depth + e + 1, lastDim);
+                T quadSum = 0;
+                int shift = c * lastDim;
+#pragma omp simd reduction(sumT:quadSum)
+                for (int pos = begin; pos < end; ++pos) {
+                    T val = (output->ews() == 1 && output->ordering() == 'c')?inputBuffer[shift + pos]:inputBuffer[shape::getIndexOffset(shift + pos, input->getShapeInfo(), totalLength)]; //listInput->at(c)->t<T>(pos);
+                    quadSum += val * val;
+                }
+                scaleBuffer[shift + e] += (inputBuffer[shift + e] * inputBuffer[shift + e] * 2 * beta) / (bias - alpha * quadSum);
+                T dividor = nd4j::math::nd4j_pow<T, T, T>(bias + alpha * quadSum, beta);
+                if (output->ews() == 1 && output->ordering() == 'c')
+                    outputBuffer[shift + e] = inputBuffer[shift + e] / dividor;
+                else
+                    outputBuffer[shape::getIndexOffset(shift + e, output->shapeInfo(), totalLength)] = inputBuffer[shape::getIndexOffset(shift + e, input->getShapeInfo(), totalLength)] / dividor;
+
+            }
+        }
+
+        return Status::OK();
+    }
+
+    BUILD_SINGLE_TEMPLATE(template int lrnFunctor_, (nd4j::graph::Context& block, NDArray* input, NDArray* output, int depth, float bias, float alpha, float beta), FLOAT_TYPES);
+
+    int lrnFunctor(nd4j::graph::Context& block, NDArray* input, NDArray* output, int depth, double bias, double alpha, double beta) {
+        BUILD_SINGLE_SELECTOR(input->dataType(), return lrnFunctor_, (block, input, output, depth, bias, alpha, beta), FLOAT_TYPES);
+    }
+
+    int lrnFunctorEx(nd4j::graph::Context& block, NDArray* input, NDArray* output, NDArray* scale, int depth, double bias, double alpha, double beta) {
+        BUILD_SINGLE_SELECTOR(input->dataType(), return lrnFunctorEx_, (block, input, output, scale, depth, bias, alpha, beta), FLOAT_TYPES);
+    }
+
+    BUILD_SINGLE_TEMPLATE(template int lrnFunctorEx_, (nd4j::graph::Context& block, NDArray* input, NDArray* output, NDArray* scale, int depth, float bias, float alpha, float beta);, FLOAT_TYPES);
 
     int lrnFunctorEx(nd4j::graph::Context& block, NDArray* input, NDArray* output, NDArray* unitScale, NDArray* scale, int depth, double bias, double alpha, double beta) {
     
