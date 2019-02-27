@@ -165,7 +165,7 @@ static void getMKLDNNMemoryDescLrn(const NDArray* src, const NDArray* diff_src,
 
         if (output->ews() == 1 && input->ews() == 1 && input->ordering() == 'c' && output->ordering() == 'c') {
 
-#pragma omp parallel for schedule(guided)
+#pragma omp parallel for simd schedule(static, 16) collapse(2)
             for (int c = 0; c < chunkCount; c++) {
                 for (int e = 0; e < lastDim; e++) {
                     int begin = nd4j::math::nd4j_max<int>(0, e - depth);
@@ -173,7 +173,7 @@ static void getMKLDNNMemoryDescLrn(const NDArray* src, const NDArray* diff_src,
                     T quadSum = 0.f;
                     int shift = c * lastDim;
                     auto iX = inputBuffer + shift;
-#pragma omp simd reduction(sumT:quadSum)
+
                     for (int pos = begin; pos < end; ++pos) {
                         T val = iX[pos]; //listInput->at(c)->t<T>(pos);
                         quadSum += val * val;
