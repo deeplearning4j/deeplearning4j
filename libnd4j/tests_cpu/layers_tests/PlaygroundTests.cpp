@@ -1166,7 +1166,7 @@ TEST_F(PlaygroundTests, test_addi_assign) {
     nd4j_printf("Avg add(1.0f) time: %lld us\n", spanTime);
     nd4j_printf("Bandwidth: %f GB/s\n", bw);
 }
- */
+
 /////////////////////////////////////////////////////////////////////
 TEST_F(PlaygroundTests, conv2d_1) {
 
