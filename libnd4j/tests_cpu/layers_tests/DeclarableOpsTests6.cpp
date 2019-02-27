@@ -509,6 +509,32 @@ TEST_F(DeclarableOpsTests6, BinCount_4) {
 }
 
 /////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests6, BinCount_5) {
+
+    auto x = NDArrayFactory::create<double>('c', {2, 2, 2}, {
+            1, 2, 0, 1, 2, 2, 1, 2}
+    );
+
+    auto weights = NDArrayFactory::create<double>('c', {2, 2, 2}, {
+            2, 1, 3, 1, 5, 1, 1, 6}
+    );
+    auto minV = NDArrayFactory::create(4);
+    auto maxV = NDArrayFactory::create(4);
+// ------------------------------------
+
+    auto exp = NDArrayFactory::create<double>({3., 4.,  13., 0.0});
+
+    nd4j::ops::bincount op;
+
+    auto res = op.execute({&x, &weights, &minV, &maxV}, {}, {});
+    res->at(0)->printBuffer("BC out");
+    ASSERT_EQ(ND4J_STATUS_OK, res->status());
+    ASSERT_TRUE(exp.equalsTo(res->at(0)));
+
+    delete res;
+}
+
+/////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests6, BroadcastDynamicShape_1) {
 
     auto x = NDArrayFactory::create<int>( {2, 2, 2} );
