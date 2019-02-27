@@ -18,8 +18,6 @@
 // Created by raver on 6/12/2018.
 //
 
-#include "config.h"
-
 #ifndef LIBND4J_TYPE_BOILERPLATE_H
 #define LIBND4J_TYPE_BOILERPLATE_H
 
