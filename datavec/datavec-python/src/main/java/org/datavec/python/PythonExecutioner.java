@@ -281,36 +281,7 @@ public class PythonExecutioner {
         }
 
     }
-    private String outputCode(PythonVariables pyOutputs){
-        return "";
-        /*
-        if (pyOutputs == null){
-            return "";
-        }
-        String outputCode = "import json;json.dump({";
-        String[] VarNames = pyOutputs.getVariables();
-        boolean ndarrayHelperAdded = false;
-        for (String varName: VarNames){
-            if (pyOutputs.getType(varName) == PythonVariables.Type.NDARRAY){
-                if (! ndarrayHelperAdded){
-                    ndarrayHelperAdded = true;
-                    String helper = "serialize_ndarray_metadata=lambda x:{\"address\":x.__array_interface__['data'][0]" +
-                            ",\"shape\":x.shape,\"strides\":x.strides,\"dtype\":str(x.dtype)};";
-                    outputCode = helper + outputCode;
-                }
-                outputCode += "\"" + varName + "\"" + ":serialize_ndarray_metadata(" + varName + "),";
 
-            }
-            else {
-                outputCode += "\"" + varName + "\"" + ":" + varName + ",";
-            }
-        }
-        outputCode = outputCode.substring(0, outputCode.length() - 1);
-        outputCode += "},open('" + tempFile + "', 'w'));";
-        return outputCode;
-
-    */
-    }
 
 
     public void exec(String code){
@@ -347,14 +318,13 @@ public class PythonExecutioner {
 
     public void exec(String code, PythonVariables pyInputs, PythonVariables pyOutputs) throws Exception{
         String inputCode = inputCode(pyInputs);
-        String outputCode = outputCode(pyOutputs);
         if (code.charAt(code.length() - 1) != '\n'){
             code += '\n';
         }
         if(restricted){
             code = RestrictedPython.getSafeCode(code);
         }
-        exec(inputCode + code + outputCode);
+        exec(inputCode + code);
         _readOutputs(pyOutputs);
     }
 
@@ -378,7 +348,6 @@ public class PythonExecutioner {
 
     public void exec(String[] code, PythonVariables pyInputs, PythonVariables pyOutputs)throws Exception{
         String inputCode = inputCode(pyInputs);
-        String outputCode = outputCode(pyOutputs);
         String x = "";
         for (String line: code){
             if(line.charAt(line.length() - 1) != '\n'){
@@ -391,7 +360,7 @@ public class PythonExecutioner {
         if (restricted){
             x = RestrictedPython.getSafeCode(x);
         }
-        exec(inputCode + x + outputCode);
+        exec(inputCode + x);
         _readOutputs(pyOutputs);
     }
 
