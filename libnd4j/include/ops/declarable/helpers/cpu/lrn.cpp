@@ -160,25 +160,51 @@ static void getMKLDNNMemoryDescLrn(const NDArray* src, const NDArray* diff_src,
         nd4j_debug("MKL-DNN is not used for lrn!\n", 0);
         T* scaleBuffer = reinterpret_cast<T*>(scale->buffer());
 
-#pragma omp parallel for schedule(guided)
-        for (int c = 0; c < chunkCount; c++) {
-            for (int e = 0; e < lastDim; e++) {
-                int begin = nd4j::math::nd4j_max(0, e - depth);
-                int end = nd4j::math::nd4j_min(depth + e + 1, lastDim);
-                T quadSum = 0;
-                int shift = c * lastDim;
-#pragma omp simd reduction(sumT:quadSum)
-                for (int pos = begin; pos < end; ++pos) {
-                    T val = (output->ews() == 1 && output->ordering() == 'c')?inputBuffer[shift + pos]:inputBuffer[shape::getIndexOffset(shift + pos, input->getShapeInfo(), totalLength)]; //listInput->at(c)->t<T>(pos);
-                    quadSum += val * val;
-                }
-                scaleBuffer[shift + e] += (inputBuffer[shift + e] * inputBuffer[shift + e] * 2 * beta) / (bias - alpha * quadSum);
-                T dividor = nd4j::math::nd4j_pow<T, T, T>(bias + alpha * quadSum, beta);
-                if (output->ews() == 1 && output->ordering() == 'c')
-                    outputBuffer[shift + e] = inputBuffer[shift + e] / dividor;
-                else
-                    outputBuffer[shape::getIndexOffset(shift + e, output->shapeInfo(), totalLength)] = inputBuffer[shape::getIndexOffset(shift + e, input->getShapeInfo(), totalLength)] / dividor;
+        T tbias = static_cast<T>(bias);
+        T tbeta = static_cast<T>(beta);
 
+        if (output->ews() == 1 && input->ews() == 1 && input->ordering() == 'c' && output->ordering() == 'c') {
+
+#pragma omp parallel for schedule(guided)
+            for (int c = 0; c < chunkCount; c++) {
+                for (int e = 0; e < lastDim; e++) {
+                    int begin = nd4j::math::nd4j_max<int>(0, e - depth);
+                    int end = nd4j::math::nd4j_min<int>(depth + e + 1, lastDim);
+                    T quadSum = 0.f;
+                    int shift = c * lastDim;
+                    auto iX = inputBuffer + shift;
+#pragma omp simd reduction(sumT:quadSum)
+                    for (int pos = begin; pos < end; ++pos) {
+                        T val = iX[pos]; //listInput->at(c)->t<T>(pos);
+                        quadSum += val * val;
+                    }
+                    T aSum = alpha * quadSum;
+                    T tXe = iX[e];
+                    scaleBuffer[shift + e] += (tXe * tXe * 2 * tbeta) / (tbias - aSum);
+                    T dividor = nd4j::math::nd4j_pow<T, T, T>(tbias + aSum, tbeta);
+                    outputBuffer[shift + e] = tXe / dividor;
+                }
+            }
+        } else {
+#pragma omp parallel for schedule(guided)
+            for (int c = 0; c < chunkCount; c++) {
+                for (int e = 0; e < lastDim; e++) {
+                    int begin = nd4j::math::nd4j_max(0, e - depth);
+                    int end = nd4j::math::nd4j_min(depth + e + 1, lastDim);
+                    T quadSum = 0;
+                    int shift = c * lastDim;
+
+#pragma omp simd reduction(sumT:quadSum)
+                    for (int pos = begin; pos < end; ++pos) {
+                        T val = inputBuffer[shape::getIndexOffset(shift + pos, input->getShapeInfo(), totalLength)]; //listInput->at(c)->t<T>(pos);
+                        quadSum += val * val;
+                    }
+
+                    auto p = shape::getIndexOffset(shift + e, input->getShapeInfo(), totalLength);
+                    scaleBuffer[shift + e] += (inputBuffer[p] * inputBuffer[p] * 2 * beta) / (bias - alpha * quadSum);
+                    T dividor = nd4j::math::nd4j_pow<T, T, T>(bias + alpha * quadSum, beta);
+                    outputBuffer[shape::getIndexOffset(shift + e, output->shapeInfo(), totalLength)] = inputBuffer[p] / dividor;
+                }
             }
         }
 
