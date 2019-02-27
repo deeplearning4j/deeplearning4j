@@ -161,9 +161,43 @@ static void softmax_(const NDArray& input, NDArray& output, const int dimension)
         
         const std::vector<int> dimsToExclude = ShapeUtils::evalDimsToExclude(input.rankOf(), {dimension});
         const uint numOfSubArrs = ShapeUtils::getNumOfSubArrs(input.getShapeInfo(), dimsToExclude);
+        const auto subArr = input(0, dimsToExclude);
         std::vector<Nd4jLong> idxRanges(2 * input.rankOf());
 
-        const auto subArr  = input(0, dimsToExclude);
+        if(subArr.ews() == 1 && subArr.ordering() == 'c') {
+
+            #pragma omp parallel for simd schedule(guided) firstprivate(idxRanges)
+            for (uint i = 0; i < numOfSubArrs; ++i) {
+            
+                ShapeUtils::evalIdxRangesForSubArr(i, input.getShapeInfo(), dimsToExclude, idxRanges.data());
+                const auto inSubArr  = input(idxRanges);                
+                const uint len       = inSubArr.lengthOf();
+
+                T* inBuff  = inSubArr.bufferAsT<T>();
+                T* outBuff = reinterpret_cast<T*>(output.getBuffer()) + (inBuff - reinterpret_cast<T*>(input.getBuffer()));
+
+                T max = -DataTypeUtils::max<T>();
+                T sum = 0;
+                        
+                // #pragma omp simd reduction(maxT:max)
+                for(uint j = 0; j < len; ++j)                 
+                    max = nd4j::math::nd4j_max<T>(max, inBuff[j]);
+            
+            
+                // #pragma omp simd reduction(sumT:sum)
+                for (uint j = 0; j < len; ++j) {
+                    T temp = nd4j::math::nd4j_exp<T,T>(inBuff[j] - max);
+                    outBuff[j] = temp;
+                    sum += temp;
+                }
+            
+                // #pragma omp simd
+                for (uint j = 0; j < len; ++j)
+                    outBuff[j] /= sum;            
+            }
+            return;
+        }
+                
         uint inShapeInfoCast[MAX_RANK];
         bool canCast = nd4j::DataTypeUtils::castShapeInfo(subArr.getShapeInfo(), inShapeInfoCast);
 
@@ -171,12 +205,11 @@ static void softmax_(const NDArray& input, NDArray& output, const int dimension)
         for (uint i = 0; i < numOfSubArrs; ++i) {
             
             ShapeUtils::evalIdxRangesForSubArr(i, input.getShapeInfo(), dimsToExclude, idxRanges.data());
-            const auto inSubArr  = input(idxRanges);
-            const auto outSubArr = output(idxRanges);
+            const auto inSubArr  = input(idxRanges);            
             const uint len       = inSubArr.lengthOf();
 
             T* inBuff  = inSubArr.bufferAsT<T>();
-            T* outBuff = outSubArr.bufferAsT<T>();
+            T* outBuff = reinterpret_cast<T*>(output.getBuffer()) + (inBuff - reinterpret_cast<T*>(input.getBuffer()));
 
             T max = -DataTypeUtils::max<T>();
             T sum = 0;

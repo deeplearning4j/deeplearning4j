@@ -875,8 +875,8 @@ void ShapeUtils::evalIdxRangesForSubArr(const Nd4jLong subArrIdx,  const Nd4jLon
 
     for(int i = 0; i < subArrRank; ++i) {
         int currIdx = 2 * dimsToExclude[i];
-        idxRanges[currIdx]    = indexes[i];
-        idxRanges[currIdx +1] = indexes[i] + 1;
+        idxRanges[currIdx]     = indexes[i];
+        idxRanges[currIdx + 1] = indexes[i] + 1;
     }
 }
 

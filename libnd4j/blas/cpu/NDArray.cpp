@@ -4049,16 +4049,19 @@ template void NDArray::pIdx(const Nd4jLong* indices, const bool value);
         Nd4jLong *newShape;
         ALLOCATE(newShape, _workspace, shape::shapeInfoLength(rank), Nd4jLong);
         memcpy(newShape, _shapeInfo, shape::shapeInfoByteLength(rank));
-        newShape[shape::shapeInfoLength(rank) - 2] = 0;
 
         auto shapeOf = shape::shapeOf(newShape);
         auto stridesOf = shape::stride(newShape);
 
         Nd4jLong offset = 0;
         Nd4jLong first, last;
-        for (int d = 0; d < rank; ++d) {
+        bool continuous = false;
+        int current = rank - 1;
+
+        for (int d = rank - 1; d >= 0; --d) {
+
             // building new shape first
-            if (idx[2*d] != idx[2*d+1]) {
+            if (idx[2*d] != idx[2*d+1]) {                                
 
                 first = idx[2*d]   >= 0 ? idx[2*d]   : idx[2*d]   + sizeAt(d) + 1;
                 last  = idx[2*d+1] >= 0 ? idx[2*d+1] : idx[2*d+1] + sizeAt(d) + 1;
@@ -4067,7 +4070,12 @@ template void NDArray::pIdx(const Nd4jLong* indices, const bool value);
                 // for offset we're taking only the first index
                 offset += first * stridesOf[d];
             }
+            else
+                continuous = current-- == d;
         }
+
+        // evaluate ews
+        newShape[2 * rank + 2] = (continuous && ordering() == 'c') ? ews() : 0;
 
         NDArray result(bufferWithOffset(offset), newShape, _workspace, false, true);
 
