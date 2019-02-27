@@ -1146,35 +1146,55 @@ TEST_F(PlaygroundTests, test_col2im_permuted_1) {
 
     ASSERT_EQ(z0, z1);
 }
+/*
+TEST_F(PlaygroundTests, test_addi_assign) {
+    int iterations = 1;
+    auto x = NDArrayFactory::create<float>('c', {1000000000});
+    auto z = NDArrayFactory::create<float>('c', {1000000000});
+    x.assign(119.0f);
+
+    auto timeStart = std::chrono::system_clock::now();
+
+    x.applyScalar(scalar::Add,1.0f, &z, nullptr);
+    //z.assign(x);
+
+    auto timeEnd = std::chrono::system_clock::now();
+    auto spanTime = std::chrono::duration_cast<std::chrono::microseconds> ((timeEnd - timeStart) / iterations).count();
+    auto ttlTime = std::chrono::duration_cast<std::chrono::milliseconds> ((timeEnd - timeStart)).count();
+    auto bw = (1000000L * (float) (x.lengthOf() * x.sizeOfT()) / spanTime) / 1024 / 1024 / 1024;
+
+    nd4j_printf("Avg add(1.0f) time: %lld us\n", spanTime);
+    nd4j_printf("Bandwidth: %f GB/s\n", bw);
+}
 
 /////////////////////////////////////////////////////////////////////
 TEST_F(PlaygroundTests, conv2d_1) {
 
     const int N = 100;
-    int bS=8, iH=64,iW=64,  iC=32,oC=32,  kH=2,kW=2,  sH=1,sW=1,  pH=0,pW=0,  dH=1,dW=1;    
+    int bS=8, iH=64,iW=64,  iC=32,oC=32,  kH=2,kW=2,  sH=1,sW=1,  pH=0,pW=0,  dH=1,dW=1;
     int paddingMode = 1;             // 1-SAME, 0-VALID;
-    int dataFormat  = 0;             // 1-NHWC, 0-NCHW    
+    int dataFormat  = 0;             // 1-NHWC, 0-NCHW
 
     NDArray input('c', {bS, iC, iH, iW}, nd4j::DataType::FLOAT32);
     NDArray output(input);
     NDArray weights('c', {kH, kW, iC, oC}, nd4j::DataType::FLOAT32);
-    NDArray bias('c', {oC}, nd4j::DataType::FLOAT32);    
+    NDArray bias('c', {oC}, nd4j::DataType::FLOAT32);
     input = 2.;
     weights.linspace(0.1, 0.1);
     bias = 0.5;
 
     nd4j::ops::conv2d op;
-    for (int i = 0; i < 10; i++) 
+    for (int i = 0; i < 10; i++)
     	100.5*0.5;
 
     auto timeStart = std::chrono::system_clock::now();
-    
-    for (int i = 0; i < N; i++) 
+
+    for (int i = 0; i < N; i++)
         op.execute({&input, &weights, &bias}, {&output} , {}, {kH,kW,  sH,sW,  pH,pW,  dH,dW, paddingMode, dataFormat},{});
-    
+
     auto timeEnd = std::chrono::system_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::microseconds> ((timeEnd - timeStart) / N).count();
-    printf("duration %ld\n", duration);    
+    printf("duration %ld\n", duration);
 }
 
 /////////////////////////////////////////////////////////////////////
@@ -1195,14 +1215,14 @@ TEST_F(PlaygroundTests, batchnorm_1) {
     beta = 2.5;
 
     nd4j::ops::batchnorm_new op;
-    
-    auto timeStart = std::chrono::system_clock::now();    
-    // for (int i = 0; i <N ; i++) 
+
+    auto timeStart = std::chrono::system_clock::now();
+    // for (int i = 0; i <N ; i++)
         op.execute({&input, &mean, &variance, &gamma, &beta}, {&output}, {1e-5}, {1,1,1}, {});
     auto timeEnd = std::chrono::system_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::microseconds> ((timeEnd - timeStart) / N).count();
-    
-    printf("duration %ld\n", duration);    
+
+    printf("duration %ld\n", duration);
 }
 
 ////////////////////////////////////////////////////////////////////////////
@@ -1213,34 +1233,34 @@ static void usualGemm(const char cOrder, const bool transA, const bool transB, c
     float* B = reinterpret_cast<float*>(const_cast<void*>(vB));
     float* C = reinterpret_cast<float*>(vC);
     float alphaZ(alpha), betaZ(beta);
-    
+
     Nd4jLong strideArow, strideAcol, strideBrow, strideBcol, strideCrow, strideCcol;
 
-    if(cOrder == 'f') {        
-        strideCrow = 1; 
+    if(cOrder == 'f') {
+        strideCrow = 1;
         strideCcol = ldc;
 
         if(transA) { strideArow = lda; strideAcol = 1; } else { strideArow = 1; strideAcol = lda; }
         if(transB) { strideBrow = ldb; strideBcol = 1; } else { strideBrow = 1; strideBcol = ldb; }
     }
     else {
-        strideCrow = ldc; 
+        strideCrow = ldc;
         strideCcol = 1;
 
         if(transA) { strideArow = 1; strideAcol = lda; } else { strideArow = lda; strideAcol = 1; }
         if(transB) { strideBrow = 1; strideBcol = ldb; } else { strideBrow = ldb; strideBcol = 1; }
     }
 
-    #pragma omp parallel for schedule(guided) 
+    #pragma omp parallel for schedule(guided)
     for(int row = 0; row < M; ++row) {
-       for(int col = 0; col < N; ++col) {            
+       for(int col = 0; col < N; ++col) {
             float* a = A + row * strideArow;
-            float* b = B + col * strideBcol;            
+            float* b = B + col * strideBcol;
             float* c = C + row * strideCrow + col * strideCcol;
             float val = 0;
             #pragma omp simd
             for(int i = 0; i < K; ++i)
-                val = val + a[i*strideAcol] * b[i*strideBrow];            
+                val = val + a[i*strideAcol] * b[i*strideBrow];
             *c = alphaZ * val + betaZ * *c;
        }
     }
@@ -1252,26 +1272,26 @@ TEST_F(PlaygroundTests, gemm_1) {
 	// MXK x KxN = MxN
     const int M = 2048;
     const int K = 512;
-    const int N = 1024;    
+    const int N = 1024;
 
     NDArray a('c', {M, K}, nd4j::DataType::FLOAT32);
     NDArray b('f', {K, N}, nd4j::DataType::FLOAT32);
     NDArray c('f', {M, N}, nd4j::DataType::FLOAT32);
-        
+
     a.linspace(-100, 0.01);
-    b.linspace(-200, 0.01);    
-    
+    b.linspace(-200, 0.01);
+
     double temp;
     for (int i = 0; i < 100; ++i)
     	temp = temp * temp;
 
     auto timeStart = std::chrono::system_clock::now();
-       
+
 	usualGemm(c.ordering(), false, false, M, N, K, 1., a.getBuffer(), K, b.getBuffer(), K, 0., c.buffer(), M);
 
     auto timeEnd = std::chrono::system_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::microseconds> ((timeEnd - timeStart) / N).count();
-    printf("duration my %ld\n", duration);    
+    printf("duration my %ld\n", duration);
 
     //***********************
 
@@ -1280,7 +1300,7 @@ TEST_F(PlaygroundTests, gemm_1) {
     nd4j::blas::GEMM<float, float, float>::op('f', CblasTrans, CblasNoTrans, M, N, K, 1., a.getBuffer(), K, b.getBuffer(), K, 0., c.buffer(), M);
     timeEnd = std::chrono::system_clock::now();
     duration = std::chrono::duration_cast<std::chrono::microseconds> ((timeEnd - timeStart) / N).count();
-    printf("duration raver %ld\n", duration);    
+    printf("duration raver %ld\n", duration);
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -1291,20 +1311,20 @@ TEST_F(PlaygroundTests, softmax_1) {
     NDArray output('c', {1024, 256}, nd4j::DataType::FLOAT32);
 
     input.linspace(-100., 0.01);
-    
+
     nd4j::ops::softmax op;
 
-    for (int i = 0; i < 20 ; i++) 
+    for (int i = 0; i < 20 ; i++)
     	100.5*100.5;
 
     auto timeStart = std::chrono::system_clock::now();
 
-	for (int i = 0; i < N ; i++) 
+	for (int i = 0; i < N ; i++)
         op.execute({&input}, {&output}, {}, {1}, {});
-    
+
     auto timeEnd = std::chrono::system_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::microseconds> ((timeEnd - timeStart) / N).count();
-    printf("duration %ld\n", duration);    
-    
+    printf("duration %ld\n", duration);
+
 }
 */
