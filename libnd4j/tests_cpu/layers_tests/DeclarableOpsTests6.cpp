@@ -522,7 +522,7 @@ TEST_F(DeclarableOpsTests6, BinCount_5) {
     auto maxV = NDArrayFactory::create(4);
 // ------------------------------------
 
-    auto exp = NDArrayFactory::create<double>({3., 4.,  13., 0.0});
+    auto exp = NDArrayFactory::create<double>({3., 4., 13., 0.0});
 
     nd4j::ops::bincount op;
 

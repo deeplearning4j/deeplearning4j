@@ -64,6 +64,9 @@ namespace nd4j {
                 auto max = INPUT_VARIABLE(3);
                 minLength = min->e<int>(0);
                 maxLength = max->e<int>(0);
+                weights = INPUT_VARIABLE(1);
+                REQUIRE_TRUE(values->isSameShape(weights), 0, "bincount: the input and weights shapes should be equals");
+
             }
             minLength = nd4j::math::nd4j_max(minLength, 0);
             maxLength = nd4j::math::nd4j_min(maxLength, values->e<int>(maxIndex) + 1);
