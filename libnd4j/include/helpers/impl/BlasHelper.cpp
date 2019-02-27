@@ -74,12 +74,20 @@ namespace nd4j {
 
     template <>
     bool BlasHelper::hasGEMV<float>() {
+#ifdef __EXTERNAL_BLAS__
+        return true;
+#else
         return _hasSgemv;
+#endif
     }
 
     template <>
     bool BlasHelper::hasGEMV<double>() {
-        return _hasDgemv;
+#ifdef __EXTERNAL_BLAS__
+        return true;
+#else
+    return _hasDgemv;
+#endif
     }
 
     template <>
@@ -124,12 +132,20 @@ namespace nd4j {
 
     template <>
     bool BlasHelper::hasGEMM<float>() {
-        return _hasSgemm;
+#ifdef __EXTERNAL_BLAS__
+        return true;
+#else
+    return _hasSgemm;
+#endif
     }
 
     template <>
     bool BlasHelper::hasGEMM<double>() {
-        return _hasDgemm;
+#ifdef __EXTERNAL_BLAS__
+        return true;
+#else
+    return _hasDgemm;
+#endif
     }
 
     template <>
@@ -223,18 +239,34 @@ namespace nd4j {
     }
 
     CblasSgemv BlasHelper::sgemv() {
+#ifdef __EXTERNAL_BLAS__
+        return &cblas_sgemv;
+#else
         return this->cblasSgemv;
+#endif
     }
     CblasDgemv BlasHelper::dgemv() {
+#ifdef __EXTERNAL_BLAS__
+        return &cblas_dgemv;
+#else
         return this->cblasDgemv;
+#endif
     }
 
     CblasSgemm BlasHelper::sgemm() {
+#ifdef __EXTERNAL_BLAS__
+        return &cblas_sgemm;
+#else
         return this->cblasSgemm;
+#endif
     }
 
     CblasDgemm BlasHelper::dgemm() {
+#ifdef __EXTERNAL_BLAS__
+        return &cblas_dgemm;
+#else
         return this->cblasDgemm;
+#endif
     }
 
     CblasSgemmBatch BlasHelper::sgemmBatched() {

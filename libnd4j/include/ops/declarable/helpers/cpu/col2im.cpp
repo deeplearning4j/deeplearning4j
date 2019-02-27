@@ -63,7 +63,7 @@ void col2im_(graph::LaunchContext& context, const NDArray& input,  NDArray& outp
     if (false) {
             
 #pragma omp parallel for schedule(guided) proc_bind(close) private(col, im, imRow, imCol)
-    	for (int b = 0; b < bS; b++) {        
+    	for (int b = 0; b < bS; b++) {
       		for (int c = 0; c < iC; ++c) {                    
             	for (int kRow = 0; kRow < kH; ++kRow) {                        
                 	for (int kCol = 0; kCol < kW; ++kCol) {                            
