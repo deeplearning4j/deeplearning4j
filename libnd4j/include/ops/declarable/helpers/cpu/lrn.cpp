@@ -202,7 +202,7 @@ static void getMKLDNNMemoryDescLrn(const NDArray* src, const NDArray* diff_src,
                     }
                     T aSum = alpha * quadSum;
                     T tXe = iX[e];
-                    scaleBuffer[shift + e] = one + (tXe * tXe * 2 * tbeta) / (tbias - aSum);
+                    scaleBuffer[shift + e] = one - (tXe * tXe * 2 * tbeta) / (tbias - aSum);
                     T dividor = nd4j::math::nd4j_pow<T, T, T>(tbias + aSum, tbeta);
                     outputBuffer[shift + e] = tXe / dividor;
                 }
@@ -223,7 +223,7 @@ static void getMKLDNNMemoryDescLrn(const NDArray* src, const NDArray* diff_src,
                     }
 
                     auto p = shape::getIndexOffset(shift + e, input->getShapeInfo(), totalLength);
-                    scaleBuffer[shift + e] += (inputBuffer[p] * inputBuffer[p] * 2 * beta) / (bias - alpha * quadSum);
+                    scaleBuffer[shift + e] = one - (inputBuffer[p] * inputBuffer[p] * 2 * beta) / (bias - alpha * quadSum);
                     T dividor = nd4j::math::nd4j_pow<T, T, T>(bias + alpha * quadSum, beta);
                     outputBuffer[shape::getIndexOffset(shift + e, output->shapeInfo(), totalLength)] = inputBuffer[p] / dividor;
                 }
