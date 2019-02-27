@@ -160,42 +160,44 @@ static void softmax_(const NDArray& input, NDArray& output, const int dimension)
     else {
         
         const std::vector<int> dimsToExclude = ShapeUtils::evalDimsToExclude(input.rankOf(), {dimension});
-        const Nd4jLong numOfSubArrs = ShapeUtils::getNumOfSubArrs(input.getShapeInfo(), dimsToExclude);
+        const uint numOfSubArrs = ShapeUtils::getNumOfSubArrs(input.getShapeInfo(), dimsToExclude);
         std::vector<Nd4jLong> idxRanges(2 * input.rankOf());
 
-        #pragma omp parallel for schedule(guided) firstprivate(idxRanges)
-        for (Nd4jLong i = 0; i < numOfSubArrs; ++i) {
+        const auto subArr  = input(0, dimsToExclude);
+        uint inShapeInfoCast[MAX_RANK];
+        bool canCast = nd4j::DataTypeUtils::castShapeInfo(subArr.getShapeInfo(), inShapeInfoCast);
+
+        #pragma omp parallel for simd schedule(guided) firstprivate(idxRanges)
+        for (uint i = 0; i < numOfSubArrs; ++i) {
             
             ShapeUtils::evalIdxRangesForSubArr(i, input.getShapeInfo(), dimsToExclude, idxRanges.data());
             const auto inSubArr  = input(idxRanges);
             const auto outSubArr = output(idxRanges);
-            const auto len       = inSubArr.lengthOf();
+            const uint len       = inSubArr.lengthOf();
 
             T* inBuff  = inSubArr.bufferAsT<T>();
             T* outBuff = outSubArr.bufferAsT<T>();
 
             T max = -DataTypeUtils::max<T>();
             T sum = 0;
-
-            uint inShapeInfoCast[MAX_RANK];
-            bool canCast = nd4j::DataTypeUtils::castShapeInfo(inSubArr.getShapeInfo(), inShapeInfoCast);
+            
             Nd4jLong* offsets = new Nd4jLong[len];
 
-            #pragma omp simd reduction(maxT:max)
-            for(Nd4jLong j = 0; j < len; ++j) {
+            // #pragma omp simd reduction(maxT:max)
+            for(uint j = 0; j < len; ++j) {
                 offsets[j] = shape::indexOffset(j, inSubArr.getShapeInfo(), inShapeInfoCast, len, canCast);
                 max = nd4j::math::nd4j_max<T>(max, inBuff[offsets[j]]);
             }
             
-            #pragma omp simd reduction(sumT:sum)
-            for (Nd4jLong j = 0; j < len; ++j) {
+            // #pragma omp simd reduction(sumT:sum)
+            for (uint j = 0; j < len; ++j) {
                 T temp = nd4j::math::nd4j_exp<T,T>(inBuff[offsets[j]] - max);
                 outBuff[offsets[j]] = temp;
                 sum += temp;
             }
             
-            #pragma omp simd
-            for (Nd4jLong j = 0; j < len; ++j)
+            // #pragma omp simd
+            for (uint j = 0; j < len; ++j)
                 outBuff[offsets[j]] /= sum;                
             
             delete []offsets;
