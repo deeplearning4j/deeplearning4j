@@ -1267,6 +1267,25 @@ TEST_F(PlaygroundTests, test_col2im_permuted_1) {
     ASSERT_EQ(z0, z1);
 }
 
+TEST_F(PlaygroundTests, test_addi_assign) {
+    int iterations = 1;
+    auto x = NDArrayFactory::create<float>('c', {1000000000});
+    auto z = NDArrayFactory::create<float>('c', {1000000000});
+    x.assign(119.0f);
+
+    auto timeStart = std::chrono::system_clock::now();
+
+    x.applyScalar(scalar::Add,1.0f, &z, nullptr);
+    //z.assign(x);
+
+    auto timeEnd = std::chrono::system_clock::now();
+    auto spanTime = std::chrono::duration_cast<std::chrono::microseconds> ((timeEnd - timeStart) / iterations).count();
+    auto ttlTime = std::chrono::duration_cast<std::chrono::milliseconds> ((timeEnd - timeStart)).count();
+    auto bw = (1000000L * (float) (x.lengthOf() * x.sizeOfT()) / spanTime) / 1024 / 1024 / 1024;
+
+    nd4j_printf("Avg add(1.0f) time: %lld us\n", spanTime);
+    nd4j_printf("Bandwidth: %f GB/s\n", bw);
+}
 
 //////////////////////////////////////////////////////////////////////
 // TEST_F(PlaygroundTests, signed_unsigned_1) {

@@ -975,3 +975,17 @@ TEST_F(RNGTests, Test_Uniform_4) {
     ASSERT_NEAR(mean.e<double>(0), 1.5, 1e-3);
     ASSERT_NEAR(1/12., deviation.e<double>(0), 1e-3);
 }
+
+TEST_F(RNGTests, test_choice_1) {
+    auto x = NDArrayFactory::linspace<double>(0, 10, 11);
+    auto prob = NDArrayFactory::valueOf<double>({11}, 1.0/11, 'c');
+    auto z = NDArrayFactory::create<double>('c', {1000});
+
+    RandomGenerator rng(119, 256);
+    NativeOpExcutioner::execRandom(random::Choice, &rng, x->buffer(), x->shapeInfo(), prob->buffer(), prob->shapeInfo(), z.buffer(), z.shapeInfo(), nullptr);
+
+    z.printIndexedBuffer("z");
+
+    delete x;
+    delete prob;
+}
