@@ -215,21 +215,28 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
 
     private void initIntersectVectors() {
         if (intersectModel != null && intersectModel.vocab().numWords() > 0) {
-            int[] intersectIndexes = new int[intersectModel.vocab().numWords()];
-            int cnt = 0;
+            List<Integer> indexes = new ArrayList<>();
             for (int i = 0; i < intersectModel.vocab().numWords(); ++i) {
                 String externalWord = intersectModel.vocab().wordAtIndex(i);
                 int index = this.vocab.indexOf(externalWord);
                 if (index >= 0) {
                     this.vocab.wordFor(externalWord).setLocked(lockFactor);
-                    intersectIndexes[cnt++] = index;
+                    indexes.add(index);
                 }
             }
-            Nd4j.scatterUpdate(org.nd4j.linalg.api.ops.impl.scatter.ScatterUpdate.UpdateOp.ASSIGN,
-                    ((InMemoryLookupTable<VocabWord>) lookupTable).getSyn0(),
-                    Nd4j.createFromArray(intersectIndexes),
-                    ((InMemoryLookupTable<VocabWord>) intersectModel.lookupTable()).getSyn0(),
-                    1);
+
+            if (indexes.size() > 0) {
+                int[] intersectIndexes = new int[indexes.size()];
+                for (int  i = 0; i < intersectIndexes.length; ++i) {
+                    intersectIndexes[i] = indexes.get(i);
+                }
+
+                Nd4j.scatterUpdate(org.nd4j.linalg.api.ops.impl.scatter.ScatterUpdate.UpdateOp.ASSIGN,
+                        ((InMemoryLookupTable<VocabWord>) lookupTable).getSyn0(),
+                        Nd4j.createFromArray(intersectIndexes),
+                        ((InMemoryLookupTable<VocabWord>) intersectModel.lookupTable()).getSyn0(),
+                        1);
+            }
         }
     }
 

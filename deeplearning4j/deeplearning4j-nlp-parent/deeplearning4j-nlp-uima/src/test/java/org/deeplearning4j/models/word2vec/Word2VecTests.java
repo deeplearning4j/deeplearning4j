@@ -733,21 +733,6 @@ public class Word2VecTests {
     public void weightsNotUpdated_WhenLocked() throws Exception {
 
         SentenceIterator iter = new BasicLineIterator(inputFile.getAbsolutePath());
-        val vocab = new AbstractCache<VocabWord>();
-
-        val vocabIntersect = new AbstractCache<VocabWord>();
-
-        vocabIntersect.addToken(new VocabWord(10, "put"));
-        vocabIntersect.addWordToIndex(0, "put");
-
-        vocabIntersect.addToken(new VocabWord(20, "part"));
-        vocabIntersect.addWordToIndex(1, "part");
-
-        vocabIntersect.addToken(new VocabWord(25, "made"));
-        vocabIntersect.addWordToIndex(2, "made");
-
-        vocabIntersect.addToken(new VocabWord(25, "money"));
-        vocabIntersect.addWordToIndex(3, "money");
 
         Word2Vec vec1 = new Word2Vec.Builder().minWordFrequency(1).iterations(3).batchSize(64).layerSize(100)
                 .stopWords(new ArrayList<String>()).seed(42).learningRate(0.025).minLearningRate(0.001)
@@ -765,15 +750,11 @@ public class Word2VecTests {
                 .sampling(0).elementsLearningAlgorithm(new SkipGram<VocabWord>())
                 .epochs(1).windowSize(5).allowParallelTokenization(true)
                 .workers(1)
-                .vocabCache(vocab)
                 .iterate(iter)
                 .intersectModel(vec1, true)
                 .modelUtils(new BasicModelUtils<VocabWord>()).build();
 
         vec2.fit();
-
-        /*assertEquals(((InMemoryLookupTable)vec1.lookupTable()).getSyn0(),
-                    ((InMemoryLookupTable)vec2.lookupTable()).getSyn0());*/
 
         assertEquals(vec1.getWordVectorMatrix("put"), vec2.getWordVectorMatrix("put"));
         assertEquals(vec1.getWordVectorMatrix("part"), vec2.getWordVectorMatrix("part"));
