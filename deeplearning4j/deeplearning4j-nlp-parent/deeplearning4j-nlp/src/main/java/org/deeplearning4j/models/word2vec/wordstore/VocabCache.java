@@ -265,5 +265,4 @@ public interface VocabCache<T extends SequenceElement> extends Serializable {
      */
     void removeElement(T element);
 
-    void setLockFactor(boolean lockFactor);
 }

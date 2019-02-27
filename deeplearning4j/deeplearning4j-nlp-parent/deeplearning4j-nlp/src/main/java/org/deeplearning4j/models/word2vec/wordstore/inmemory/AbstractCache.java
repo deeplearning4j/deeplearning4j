@@ -86,11 +86,6 @@ public class AbstractCache<T extends SequenceElement> implements VocabCache<T> {
 
     private static final int MAX_CODE_LENGTH = 40;
 
-    private boolean lock_factor = false;
-
-    public void setLockFactor(boolean lockFactor) {
-        this.lock_factor = lockFactor;
-    }
     /**
      * Deserialize vocabulary from specified path
      */
