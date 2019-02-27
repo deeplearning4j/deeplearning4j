@@ -3475,8 +3475,8 @@ template <typename T>
 #endif
 
 #ifdef __CUDA_ARCH__
-                if (threadIdx.x == 0 && blockIdx.x == 0)
-                    printShapeInfoLinear("getOffsetFailed", rank, shape, stride);
+                //if (threadIdx.x == 0 && blockIdx.x == 0)
+                //    printShapeInfoLinear("getOffsetFailed", rank, shape, stride);
 #endif
                 return -1;
             }
@@ -3616,7 +3616,6 @@ template <typename T>
         fflush(stdout);
 #endif
     }
-
 
     INLINEDEF _CUDA_HD void printShapeInfoLinear(const char *msg, int rank, Nd4jLong *shape, Nd4jLong *strides) {
         printf("%s : [", msg);
