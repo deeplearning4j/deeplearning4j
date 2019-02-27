@@ -8500,6 +8500,8 @@ public static final int PREALLOC_SIZE = 33554432;
 // Created by raver on 6/12/2018.
 //
 
+// #include "config.h"
+
 // #ifndef LIBND4J_TYPE_BOILERPLATE_H
 // #define LIBND4J_TYPE_BOILERPLATE_H
 
@@ -9110,6 +9112,7 @@ public static final int ALL_INTS =INT64;
 public static final int ALL_FLOATS =DOUBLE;
 
 // #endif //TESTS_CPU_TYPE_BOILERPLATE_H
+
 
 // Parsed from op_boilerplate.h
 

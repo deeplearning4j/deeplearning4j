@@ -1,0 +1,8 @@
+#ifndef LIBND4J_CONFIG_H
+#define LIBND4J_CONFIG_H
+
+#cmakedefine HAVE_MKLDNN
+
+#cmakedefine HAVE_OPENBLAS
+
+#endif

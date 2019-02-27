@@ -169,6 +169,8 @@ GraphUtils::runPreprocessor(char const* input, char const* output) {
     args.emplace_back(std::string("-std=c++11"));
     args.emplace_back(std::string("-o"));
     args.emplace_back(output);
+    args.emplace_back(std::string("-I../blasbuild/cpu/include"));
+    args.emplace_back(std::string("-I../blasbuild/cuda/include"));
     args.emplace_back(std::string("-I../include"));
     args.emplace_back(std::string("-I../blas"));
     args.emplace_back(std::string("-I../include/ops"));
