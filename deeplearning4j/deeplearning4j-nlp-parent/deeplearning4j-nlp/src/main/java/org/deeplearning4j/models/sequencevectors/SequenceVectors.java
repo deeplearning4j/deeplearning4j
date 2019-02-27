@@ -213,6 +213,26 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
         }
     }
 
+    private void initIntersectVectors() {
+        if (intersectModel != null && intersectModel.vocab().numWords() > 0) {
+            int[] intersectIndexes = new int[intersectModel.vocab().numWords()];
+            int cnt = 0;
+            for (int i = 0; i < intersectModel.vocab().numWords(); ++i) {
+                String externalWord = intersectModel.vocab().wordAtIndex(i);
+                int index = this.vocab.indexOf(externalWord);
+                if (index >= 0) {
+                    this.vocab.wordFor(externalWord).setLocked(lockFactor);
+                    intersectIndexes[cnt++] = index;
+                }
+            }
+            Nd4j.scatterUpdate(org.nd4j.linalg.api.ops.impl.scatter.ScatterUpdate.UpdateOp.ASSIGN,
+                    ((InMemoryLookupTable<VocabWord>) lookupTable).getSyn0(),
+                    Nd4j.createFromArray(intersectIndexes),
+                    ((InMemoryLookupTable<VocabWord>) intersectModel.lookupTable()).getSyn0(),
+                    1);
+        }
+    }
+
     /**
      * Starts training over
      */
@@ -299,23 +319,7 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
         }
 
         initLearners();
-        if (intersectModel != null && intersectModel.vocab().numWords() > 0) {
-            int[] intersectIndexes = new int[intersectModel.vocab().numWords()];
-            int cnt = 0;
-            for (int i = 0; i < intersectModel.vocab().numWords(); ++i) {
-                String externalWord = intersectModel.vocab().wordAtIndex(i);
-                int index = this.vocab.indexOf(externalWord);
-                if (index >= 0) {
-                    this.vocab.wordFor(externalWord).setLocked(lockFactor);
-                    intersectIndexes[cnt++] = index;
-                }
-            }
-            Nd4j.scatterUpdate(org.nd4j.linalg.api.ops.impl.scatter.ScatterUpdate.UpdateOp.ASSIGN,
-                                ((InMemoryLookupTable<VocabWord>) lookupTable).getSyn0(),
-                                Nd4j.createFromArray(intersectIndexes),
-                                ((InMemoryLookupTable<VocabWord>) intersectModel.lookupTable()).getSyn0(),
-                                1);
-        }
+        initIntersectVectors();
 
         log.info("Starting learning process...");
         timeSpent.set(System.currentTimeMillis());
@@ -1045,6 +1049,7 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
             vectors.existingModel = this.existingVectors;
             vectors.intersectModel = this.intersectVectors;
             vectors.enableScavenger = this.enableScavenger;
+            vectors.lockFactor = this.lockFactor;
 
             this.configuration.setLearningRate(this.learningRate);
             this.configuration.setLayersSize(layerSize);

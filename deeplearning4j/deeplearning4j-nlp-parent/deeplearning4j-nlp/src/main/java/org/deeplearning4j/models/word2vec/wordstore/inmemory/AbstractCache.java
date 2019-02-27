@@ -423,12 +423,11 @@ public class AbstractCache<T extends SequenceElement> implements VocabCache<T> {
             oldElement = element;
             ret = true;
         } else {
-            if (!element.isLocked()) {
-                oldElement.incrementSequencesCount(element.getSequencesCount());
-                oldElement.increaseElementFrequency((int) element.getElementFrequency());
-            }
+            oldElement.incrementSequencesCount(element.getSequencesCount());
+            oldElement.increaseElementFrequency((int) element.getElementFrequency());
         }
         totalWordCount.addAndGet((long) oldElement.getElementFrequency());
+        return ret;
     }
 
     public void addToken(T element, boolean lockf) {
@@ -444,7 +443,6 @@ public class AbstractCache<T extends SequenceElement> implements VocabCache<T> {
             oldElement.increaseElementFrequency((int) element.getElementFrequency());
         }
         totalWordCount.addAndGet((long) oldElement.getElementFrequency());
-        return ret;
     }
 
     /**

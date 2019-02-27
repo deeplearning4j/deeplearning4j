@@ -60,6 +60,7 @@ public class Word2VecTests {
     private static final Logger log = LoggerFactory.getLogger(Word2VecTests.class);
 
     private File inputFile;
+    private File inputFile2;
     private String pathToWriteto;
     private WordVectors googleModel;
 
@@ -68,6 +69,7 @@ public class Word2VecTests {
         File googleModelTextFile = new ClassPathResource("word2vecserialization/google_news_30.txt").getFile();
         googleModel = WordVectorSerializer.readWord2VecModel(googleModelTextFile);
         inputFile = new ClassPathResource("/big/raw_sentences.txt").getFile();
+        inputFile2 = new ClassPathResource("/big/raw_sentences_2.txt").getFile();
 
         File ptwt = new File(System.getProperty("java.io.tmpdir"), "testing_word2vec_serialization.txt");
 
@@ -733,39 +735,33 @@ public class Word2VecTests {
         SentenceIterator iter = new BasicLineIterator(inputFile.getAbsolutePath());
         val vocab = new AbstractCache<VocabWord>();
 
-        vocab.addToken(new VocabWord(1.0, "alpha"));
-        vocab.addWordToIndex(0, "alpha");
-
-        vocab.addToken(new VocabWord(2.0, "beta"));
-        vocab.addWordToIndex(1, "beta");
-
-        vocab.addToken(new VocabWord(3.0, "delta"));
-        vocab.addWordToIndex(2, "delta");
-
         val vocabIntersect = new AbstractCache<VocabWord>();
 
-        vocabIntersect.addToken(new VocabWord(10, "alpha"));  //2607
-        vocabIntersect.addWordToIndex(0, "where");
+        vocabIntersect.addToken(new VocabWord(10, "put"));
+        vocabIntersect.addWordToIndex(0, "put");
 
-        vocabIntersect.addToken(new VocabWord(20, "gamma")); // 2221
-        vocabIntersect.addWordToIndex(1, "gamma");
+        vocabIntersect.addToken(new VocabWord(20, "part"));
+        vocabIntersect.addWordToIndex(1, "part");
 
-        vocabIntersect.addToken(new VocabWord(25, "theta"));  //2151
-        vocabIntersect.addWordToIndex(2, "well");
+        vocabIntersect.addToken(new VocabWord(25, "made"));
+        vocabIntersect.addWordToIndex(2, "made");
+
+        vocabIntersect.addToken(new VocabWord(25, "money"));
+        vocabIntersect.addWordToIndex(3, "money");
 
         Word2Vec vec1 = new Word2Vec.Builder().minWordFrequency(1).iterations(3).batchSize(64).layerSize(100)
                 .stopWords(new ArrayList<String>()).seed(42).learningRate(0.025).minLearningRate(0.001)
                 .sampling(0).elementsLearningAlgorithm(new SkipGram<VocabWord>())
                 .epochs(1).windowSize(5).allowParallelTokenization(true)
                 .workers(1)
-                .vocabCache(vocab)
                 .iterate(iter)
                 .modelUtils(new BasicModelUtils<VocabWord>()).build();
 
         vec1.fit();
 
-        Word2Vec vec2 = new Word2Vec.Builder().minWordFrequency(1).iterations(3).batchSize(64).layerSize(100)
-                .stopWords(new ArrayList<String>()).seed(42).learningRate(0.025).minLearningRate(0.001)
+        iter = new BasicLineIterator(inputFile2.getAbsolutePath());
+        Word2Vec vec2 = new Word2Vec.Builder().minWordFrequency(1).iterations(3).batchSize(32).layerSize(100)
+                .stopWords(new ArrayList<String>()).seed(32).learningRate(0.021).minLearningRate(0.001)
                 .sampling(0).elementsLearningAlgorithm(new SkipGram<VocabWord>())
                 .epochs(1).windowSize(5).allowParallelTokenization(true)
                 .workers(1)
@@ -776,8 +772,13 @@ public class Word2VecTests {
 
         vec2.fit();
 
-        assertEquals(((InMemoryLookupTable)vec1.lookupTable()).getSyn0(),
-                    ((InMemoryLookupTable)vec2.lookupTable()).getSyn0());
+        /*assertEquals(((InMemoryLookupTable)vec1.lookupTable()).getSyn0(),
+                    ((InMemoryLookupTable)vec2.lookupTable()).getSyn0());*/
+
+        assertEquals(vec1.getWordVectorMatrix("put"), vec2.getWordVectorMatrix("put"));
+        assertEquals(vec1.getWordVectorMatrix("part"), vec2.getWordVectorMatrix("part"));
+        assertEquals(vec1.getWordVectorMatrix("made"), vec2.getWordVectorMatrix("made"));
+        assertEquals(vec1.getWordVectorMatrix("money"), vec2.getWordVectorMatrix("money"));
     }
 
     private static void printWords(String target, Collection<String> list, Word2Vec vec) {
