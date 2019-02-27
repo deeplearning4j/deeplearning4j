@@ -2,6 +2,7 @@ package org.nd4j.imports.TFGraphs;
 
 import org.junit.Test;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.graph.ui.LogFileWriter;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
 import org.nd4j.imports.tensorflow.TFImportOverride;
 import org.nd4j.imports.tensorflow.TFOpImportFilter;
@@ -20,9 +21,37 @@ import static org.junit.Assert.assertEquals;
 public class BERTGraphTest {
 
     @Test
+    public void writeBertUI() throws Exception {
+        File f = new File("C:/Temp/TF_Graphs/mrpc_output/frozen/bert_mrpc_frozen.pb");
+        int minibatchSize = 4;
+
+        Map<String, TFImportOverride> m = new HashMap<>();
+        m.put("IteratorGetNext", (inputs, controlDepInputs, nodeDef, initWith, attributesForNode, graph) -> {
+            //Return 3 placeholders called "IteratorGetNext:0", "IteratorGetNext:1", "IteratorGetNext:3" instead of the training iterator
+            return Arrays.asList(
+                    initWith.placeHolder("IteratorGetNext", DataType.INT, minibatchSize, 128),
+                    initWith.placeHolder("IteratorGetNext:1", DataType.INT, minibatchSize, 128),
+                    initWith.placeHolder("IteratorGetNext:4", DataType.INT, minibatchSize, 128)
+            );
+        });
+
+        //Skip the "IteratorV2" op - we don't want or need this
+        TFOpImportFilter filter = (nodeDef, initWith, attributesForNode, graph) -> {
+            return "IteratorV2".equals(nodeDef.getName());
+        };
+
+        SameDiff sd = TFGraphMapper.getInstance().importGraph(f, m, filter);
+
+        LogFileWriter w = new LogFileWriter(new File("C:/Temp/BERT_UI.bin"));
+        long bytesWritten = w.writeGraphStructure(sd);
+        long bytesWritten2 = w.writeFinishStaticMarker();
+
+    }
+
+    @Test
     public void testBert(){
         /*
-        Important node: BERT model uses a FIXED
+        Important node: BERT model uses a FIXED (hardcoded) minibatch size, not dynamic as most models use
          */
 //        File f = new File("C:\\Temp\\TF_Graphs\\mrpc_output\\BERT_uncased_L-12_H-768_A-12_mrpc_frozen.pb");
         File f = new File("C:/Temp/TF_Graphs/mrpc_output/frozen/bert_mrpc_frozen.pb");
