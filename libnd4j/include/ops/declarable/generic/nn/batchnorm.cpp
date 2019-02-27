@@ -23,6 +23,7 @@
 #if NOT_EXCLUDED(OP_batchnorm)
 
 #include <ops/declarable/CustomOperations.h>
+#include<ops/declarable/helpers/batchnorm.h>
 
 namespace nd4j {
 namespace ops {
@@ -151,9 +152,9 @@ CUSTOM_OP_IMPL(batchnorm_new, 3, 1, false, 1, 2) {
 
     auto output   = OUTPUT_VARIABLE(0);
 
-    const bool applyScale  = (bool)INT_ARG(0);
-    const bool applyOffset = (bool)INT_ARG(1);
-    const double    epsilon     = T_ARG(0);
+    const bool   applyScale  = (bool)INT_ARG(0);
+    const bool   applyOffset = (bool)INT_ARG(1);
+    const double epsilon     = T_ARG(0);
 
     if(applyScale)
         gamma = INPUT_VARIABLE(3);
@@ -187,11 +188,15 @@ CUSTOM_OP_IMPL(batchnorm_new, 3, 1, false, 1, 2) {
     REQUIRE_TRUE(ShapeUtils::shapeAsString(mean)     == expShapeStr, 0, "BATCHNORM_NEW op: wrong shape of mean array, expected is %s, but got %s instead !", expShapeStr.c_str(), ShapeUtils::shapeAsString(mean).c_str());
     REQUIRE_TRUE(ShapeUtils::shapeAsString(variance) == expShapeStr, 0, "BATCHNORM_NEW op: wrong shape of variance array, expected is %s, but got %s instead !", expShapeStr.c_str(), ShapeUtils::shapeAsString(variance).c_str());
     if(gamma)
-        REQUIRE_TRUE(ShapeUtils::shapeAsString(variance) == expShapeStr, 0, "BATCHNORM_NEW op: wrong shape of gamma array, expected is %s, but got %s instead !", expShapeStr.c_str(), ShapeUtils::shapeAsString(gamma).c_str());
+        REQUIRE_TRUE(ShapeUtils::shapeAsString(gamma) == expShapeStr, 0, "BATCHNORM_NEW op: wrong shape of gamma array, expected is %s, but got %s instead !", expShapeStr.c_str(), ShapeUtils::shapeAsString(gamma).c_str());
     if(beta)
         REQUIRE_TRUE(ShapeUtils::shapeAsString(beta) == expShapeStr, 0, "BATCHNORM_NEW op: wrong shape of beta array, expected is %s, but got %s instead !", expShapeStr.c_str(), ShapeUtils::shapeAsString(beta).c_str());
 
-#ifdef HAVE_MKLDNN
+    // types of all input arrays should be the same
+    for(int i = 1; i < block.width(); ++i)
+        REQUIRE_TRUE(INPUT_VARIABLE(0)->dataType() == INPUT_VARIABLE(i)->dataType(), 0, "BATCHNORM_NEW op: types of all input arrays should be the same !");
+
+#ifdef HAVE_MKLDNN    
     if (block.isUseMKLDNN() && nd4j::MKLDNNStream::isSupported({input, mean, variance, gamma, beta, output}) && numOfAxes == 1) {
         std::vector<nd4j::MKLDNNStream>& streams = block.getMKLDNNStreams();
         if (streams.empty()) {
@@ -243,41 +248,15 @@ CUSTOM_OP_IMPL(batchnorm_new, 3, 1, false, 1, 2) {
 #endif
     nd4j_debug("MKL-DNN is not used for batchnorm_new!\n", 0);
 
-    // normalized output = gamma * ((input - mean) / sqrt(variance + epsilon)) + beta
-
-    if(numOfAxes == 1 && inRank > 1) {
-        mean     = mean->reshape(mean->ordering(), expShapeWithUnities);
-        variance = variance->reshape(variance->ordering(), expShapeWithUnities);
-        if(gamma)
-            gamma = gamma->reshape(gamma->ordering(), expShapeWithUnities);
-        if(beta)
-            beta  = beta->reshape(beta->ordering(), expShapeWithUnities);
-    }
-
-    auto sigmaInvGam = (*variance + epsilon).transform(transform::RSqrt);
-    if(applyScale)
-        sigmaInvGam *= *gamma;
-
-    if (applyOffset)
-        output->assign((*input - *mean) * sigmaInvGam + *beta);
-    else
-        output->assign((*input - *mean) * sigmaInvGam);
-
-    if(numOfAxes == 1 && inRank > 1) {
-        delete mean;
-        delete variance;
-        delete gamma;
-        delete beta;
-    }
+    // formula: output = gamma * ((input - mean) / sqrt(variance + epsilon)) + beta
+    helpers::batchnorm(input, mean, variance, gamma, beta, output, axes, epsilon);
 
     return Status::OK();
 }
 
-   DECLARE_TYPES(batchnorm_new) {
-        getOpDescriptor()
-                ->setAllowedInputTypes(nd4j::DataType::ANY)
-                ->setAllowedOutputTypes({ALL_FLOATS});
-    }
+DECLARE_TYPES(batchnorm_new) {
+    getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS})->setSameMode(true);
+}
 
 DECLARE_SHAPE_FN(batchnorm_new) {
 
