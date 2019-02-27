@@ -1284,14 +1284,16 @@ TEST_F(PlaygroundTests, conv2d_1) {
     bias = 0.5;
 
     nd4j::ops::conv2d op;
+    for (int i = 0; i < 10; i++) 
+    	100.5*0.5;
 
     auto timeStart = std::chrono::system_clock::now();
     
-    // for (int i = 0; i < N; i++) 
+    for (int i = 0; i < N; i++) 
         op.execute({&input, &weights, &bias}, {&output} , {}, {kH,kW,  sH,sW,  pH,pW,  dH,dW, paddingMode, dataFormat},{});
     
     auto timeEnd = std::chrono::system_clock::now();
-    auto duration = std::chrono::duration_cast<std::chrono::milliseconds> ((timeEnd - timeStart) / N).count();
+    auto duration = std::chrono::duration_cast<std::chrono::microseconds> ((timeEnd - timeStart) / N).count();
     printf("duration %ld\n", duration);    
 }
 
@@ -1315,7 +1317,7 @@ TEST_F(PlaygroundTests, batchnorm_1) {
     nd4j::ops::batchnorm_new op;
     
     auto timeStart = std::chrono::system_clock::now();    
-    for (int i = 0; i <N ; i++) 
+    // for (int i = 0; i <N ; i++) 
         op.execute({&input, &mean, &variance, &gamma, &beta}, {&output}, {1e-5}, {1,1,1}, {});
     auto timeEnd = std::chrono::system_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::microseconds> ((timeEnd - timeStart) / N).count();

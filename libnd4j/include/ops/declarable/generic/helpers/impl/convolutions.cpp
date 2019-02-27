@@ -660,7 +660,7 @@ static void conv2d_(nd4j::graph::Context& block, const NDArray* input, const NDA
     //----- assign outTemp to output  -----//
     if(isNCHW) {
         mmulResult.reshapei({bS, oH, oW, oC});
-        mmulResult.permutei(permutForOutput);        
+        mmulResult.permutei(permutForOutput);
     }
     output->assign(mmulResult);
 
