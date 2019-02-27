@@ -596,6 +596,27 @@ TEST_F(DeclarableOpsTests6, BroadcastDynamicShape_3) {
 }
 
 /////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests6, BroadcastDynamicShape_SGO_4) {
+
+    auto x = NDArrayFactory::create<Nd4jLong>( {2, 1} );
+
+    auto y = NDArrayFactory::create<Nd4jLong>('c', {1}, { 4,});
+
+// ------------------------------------
+
+    auto exp = NDArrayFactory::create<Nd4jLong>({2, 4});
+
+    nd4j::ops::broadcast_dynamic_shape op;
+
+    auto res = op.execute({&x, &y}, {}, {}, {}, false, nd4j::DataType::INT64);
+
+    ASSERT_EQ(ND4J_STATUS_OK, res->status());
+    //res->at(0)->printBuffer("Shape SGO 4");
+    ASSERT_TRUE(exp.equalsTo(res->at(0)));
+
+    delete res;
+}
+/////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests6, BroadcastDynamicShape_5) {
 
     auto x = NDArrayFactory::create<Nd4jLong>({2, 2, 2});

@@ -34,7 +34,7 @@ namespace helpers {
             auto greater = (x_shape->lengthOf() == 1 ? y_shape: x_shape);
             output->assign(greater);
 
-            //output->putScalar(greater->lengthOf() - 1, lesser->getScalar(0L));
+            output->p(greater->lengthOf() - 1, lesser->e(0L));
         }
         else
         for ( ; e < output->lengthOf(); e++) {
