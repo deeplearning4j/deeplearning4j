@@ -292,7 +292,8 @@
         <javacpp-presets.version>1.4.4</javacpp-presets.version>
         <javacv.version>1.4.4</javacv.version>
 
-        <cpython-platform.version>3.6-${javacpp-presets.version}</cpython-platform.version>
+        <python.version>3.6</python.version>
+        <cpython-platform.version>${python.version}-${javacpp-presets.version}</cpython-platform.version>
         <openblas.version>0.3.5</openblas.version>
         <mkl.version>2019.1</mkl.version>
         <mkl-dnn.version>0.17.2</mkl-dnn.version>

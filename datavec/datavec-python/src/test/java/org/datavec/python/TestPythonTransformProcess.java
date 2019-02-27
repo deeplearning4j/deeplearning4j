@@ -1,5 +1,6 @@
 package org.datavec.python;
 
+import org.datavec.api.transform.TransformProcess;
 import org.datavec.api.writable.NDArrayWritable;
 import org.datavec.api.writable.Writable;
 import org.datavec.api.transform.schema.Schema;
@@ -28,11 +29,14 @@ public class TestPythonTransformProcess {
         Schema finalSchema = schemaBuilder.build();
 
         String pythonCode = "col3 = col1 + col2";
-        PythonTransformProcess ptp = new PythonTransformProcess(pythonCode, initialSchema, finalSchema);
+
+        TransformProcess tp = new TransformProcess.Builder(initialSchema).transform(
+                new PythonTransform(pythonCode, finalSchema)
+        ).build();
 
         List<Writable> inputs = Arrays.asList((Writable) new Text("Hello "), new Text("World!"));
 
-        List<Writable> outputs = ptp.execute(inputs);
+        List<Writable> outputs = tp.execute(inputs);
         assertEquals((outputs.get(0)).toString(), "Hello ");
         assertEquals((outputs.get(1)).toString(), "World!");
         assertEquals((outputs.get(2)).toString(), "Hello World!");
@@ -57,14 +61,16 @@ public class TestPythonTransformProcess {
         Schema finalSchema = schemaBuilder.build();
 
         String pythonCode = "col3 = col1 + col2";
-        PythonTransformProcess ptp = new PythonTransformProcess(pythonCode, initialSchema, finalSchema);
+        TransformProcess tp = new TransformProcess.Builder(initialSchema).transform(
+                new PythonTransform(pythonCode, finalSchema)
+        ).build();
 
         List<Writable> inputs = Arrays.asList(
                 (Writable) new NDArrayWritable(arr1),
                  new NDArrayWritable(arr2)
         );
 
-        List<Writable> outputs = ptp.execute(inputs);
+        List<Writable> outputs = tp.execute(inputs);
         assertEquals(arr1, ((NDArrayWritable)outputs.get(0)).get());
         assertEquals(arr2, ((NDArrayWritable)outputs.get(1)).get());
         assertEquals(expectedOutput,((NDArrayWritable)outputs.get(2)).get());

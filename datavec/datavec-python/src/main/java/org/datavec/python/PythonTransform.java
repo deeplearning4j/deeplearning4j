@@ -1,5 +1,9 @@
 package org.datavec.python;
 
+import org.datavec.api.transform.ColumnType;
+import org.datavec.api.transform.Transform;
+import org.datavec.api.transform.schema.Schema;
+import org.datavec.api.writable.*;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
@@ -11,16 +15,144 @@ import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 
-public class PythonTransform {
+public class PythonTransform implements Transform{
     private String setupCode;
     private String execCode;
     private String code;
-    private String name;
     private PythonVariables pyInputs;
     private PythonVariables pyOutputs;
+    private String name;
+    private Schema inputSchema;
+    private Schema outputSchema;
+
+    @Override
+    public void setInputSchema(Schema inputSchema){
+        this.inputSchema = inputSchema;
+        try{
+            pyInputs = schemaToPythonVariables(inputSchema);
+        }catch (Exception e){
+            // FixMe: Do no suppress this
+            System.out.println(e.toString());
+        }
+
+    }
+
+    @Override
+    public Schema getInputSchema(){
+        return inputSchema;
+    }
+
+    @Override
+    public List<List<Writable>> mapSequence(List<List<Writable>> sequence) {
+        List<List<Writable>> out = new ArrayList<>();
+        for (List<Writable> l : sequence) {
+            out.add(map(l));
+        }
+        return out;
+    }
+
+    @Override
+    public Object map(Object input) {
+        throw new UnsupportedOperationException("Not yet implemented");
+    }
+
+    @Override
+    public Object mapSequence(Object sequence) {
+        throw new UnsupportedOperationException("Not yet implemented");
+    }
+
+    @Override
+    public List<Writable> map(List<Writable> writables){
+        PythonVariables pyInputs = getPyInputsFromWritables(writables);
+        try{
+            PythonVariables pyOutputs = PythonExecutioner.getInstance().exec(this, pyInputs);
+        }
+        catch (Exception e){
+            // FixMe: Do no suppress this
+            System.out.println(e.toString());
+        }
+        return getWritablesFromPyOutputs(pyOutputs);
+
+    }
+
+    @Override
+    public String[] outputColumnNames(){
+        return pyOutputs.getVariables();
+    }
+
+    @Override
+    public String outputColumnName(){
+        return outputColumnNames()[0];
+    }
+    @Override
+    public String[] columnNames(){
+        return pyOutputs.getVariables();
+    }
+
+    @Override
+    public String columnName(){
+        return columnNames()[0];
+    }
+
+    public Schema transform(Schema inputSchema){
+        return outputSchema;
+    }
+
+
+    private PythonVariables getPyInputsFromWritables(List<Writable> writables){
+
+        PythonVariables ret = new PythonVariables();
+
+        for (String name: pyInputs.getVariables()){
+            int colIdx = inputSchema.getIndexOfColumn(name);
+            Writable w = writables.get(colIdx);
+            PythonVariables.Type pyType = pyInputs.getType(name);
+            switch (pyType){
+                case INT:
+                    ret.addInt(name, ((LongWritable)w).get());
+                    break;
+                case FLOAT:
+                    ret.addFloat(name, ((DoubleWritable)w).get());
+                    break;
+                case STR:
+                    ret.addStr(name, ((Text)w).toString());
+                    break;
+                case NDARRAY:
+                    ret.addNDArray(name,((NDArrayWritable)w).get());
+                    break;
+            }
+
+        }
+        return ret;
+    }
+
+    private List<Writable> getWritablesFromPyOutputs(PythonVariables pyOuts){
+        List<Writable> out = new ArrayList<>();
+        for (int i=0; i<outputSchema.numColumns(); i++){
+            String name = outputSchema.getName(i);
+            PythonVariables.Type pyType = pyOutputs.getType(name);
+            switch (pyType){
+                case INT:
+                    out.add((Writable) new LongWritable(pyOuts.getIntValue(name)));
+                    break;
+                case FLOAT:
+                    out.add((Writable) new DoubleWritable(pyOuts.getFloatValue(name)));
+                    break;
+                case STR:
+                    out.add((Writable) new Text(pyOuts.getStrValue(name)));
+                    break;
+                case NDARRAY:
+                    out.add((Writable) new NDArrayWritable(pyOuts.getNDArrayValue(name).getND4JArray()));
+                    break;
+            }
+        }
+        return out;
+    }
 
     private void parseSetupAndExecCode() throws Exception{
         String startTag = "#<SETUP>";
@@ -42,61 +174,58 @@ public class PythonTransform {
             setupCode = null;
         }
     }
-    public PythonTransform(String name, String code) throws Exception{
-        this.name = name;
+    public PythonTransform(String code) throws Exception{
         this.code = code;
         parseSetupAndExecCode();
+        this.name = UUID.randomUUID().toString();
     }
-    public PythonTransform(String name, String[] code) throws Exception{
+    public PythonTransform(String[] code) throws Exception{
         String x = "";
         for (String line: code){
             x += line + "\n";
         }
-        this.name = name;
         this.code = x;
         parseSetupAndExecCode();
+        this.name = UUID.randomUUID().toString();
     }
-    public PythonTransform(String name, List<String> code) throws Exception{
-        String x = "";
-        for (String line: code){
-            x += line + "\n";
+    private PythonVariables schemaToPythonVariables(Schema schema) throws Exception{
+        PythonVariables pyVars = new PythonVariables();
+        int numCols = schema.numColumns();
+        for (int i=0; i<numCols; i++){
+            String colName = schema.getName(i);
+            ColumnType colType = schema.getType(i);
+            switch (colType){
+                case Long:
+                case Integer:
+                    pyVars.addInt(colName);
+                    break;
+                case Double:
+                case Float:
+                    pyVars.addFloat(colName);
+                    break;
+                case String:
+                    pyVars.addStr(colName);
+                    break;
+                case NDArray:
+                    pyVars.addNDArray(colName);
+                    break;
+                default:
+                    throw new Exception("Unsupported python input type: " + colType.toString());
+            }
         }
-        this.name = name;
-        this.code = x;
-        parseSetupAndExecCode();
+        return pyVars;
     }
 
-    public PythonTransform(String name, String code, @Nullable PythonVariables pyInputs, @Nullable PythonVariables pyOutputs)throws Exception{
-        this.name = name;
+    public PythonTransform(String code, Schema outputSchema) throws Exception{
         this.code = code;
-        this.pyInputs = pyInputs;
-        this.pyOutputs = pyOutputs;
         parseSetupAndExecCode();
-    }
-    public PythonTransform(String name, String[] code, @Nullable PythonVariables pyInputs, @Nullable PythonVariables pyOutputs)throws Exception{
-        String x = "";
-        for (String line: code){
-            x += line + "\n";
-        }
-        this.name = name;
-        this.code = x;
-        this.pyInputs = pyInputs;
-        this.pyOutputs = pyOutputs;
-        parseSetupAndExecCode();
-    }
-    public PythonTransform(String name, List<String> code, @Nullable PythonVariables pyInputs, @Nullable PythonVariables pyOutputs)throws Exception{
-        String x = "";
-        for (String line: code){
-            x += line + "\n";
-        }
-        this.name = name;
-        this.code = x;
-        this.pyInputs = pyInputs;
-        this.pyOutputs = pyOutputs;
-        parseSetupAndExecCode();
-    }
+        this.name = UUID.randomUUID().toString();
+        this.outputSchema = outputSchema;
+        this.pyOutputs = schemaToPythonVariables(outputSchema);
 
-    public String getName(){
+
+    }
+    public String getName() {
         return name;
     }
 
@@ -119,53 +248,5 @@ public class PythonTransform {
         return pyOutputs;
     }
 
-    public static PythonTransform load(String filePath) throws Exception{
-        JSONParser parser = new JSONParser();
-        JSONObject jsonObject = (JSONObject) parser.parse(new FileReader(filePath));
-        String code = (String)jsonObject.get("code");
-        String name = (String)jsonObject.get("name");
-        PythonVariables pyInputs;
-        JSONArray inputsArr = (JSONArray) jsonObject.get("inputs");
-        if (inputsArr == null){
-            pyInputs = null;
-        }
-        else{
-            pyInputs = PythonVariables.fromJSON(inputsArr);
-        }
-        PythonVariables pyOutputs;
-        JSONArray outputsArr = (JSONArray) jsonObject.get("outputs");
-        if (outputsArr == null){
-            pyOutputs = null;
-        }
-        else{
-            pyOutputs = PythonVariables.fromJSON(outputsArr);
-        }
-        return new PythonTransform(name, code, pyInputs, pyOutputs);
-    }
 
-    public void save(String filePath) throws IOException{
-        JSONObject jsonObject = new JSONObject();
-        jsonObject.put("code", code);
-        jsonObject.put("name", name);
-        JSONArray inputs;
-        if (pyInputs == null){
-            inputs = null;
-        }
-        else{
-            inputs = pyInputs.toJSON();
-        }
-        jsonObject.put("inputs", inputs);
-        JSONArray outputs;
-        if (pyOutputs == null){
-            outputs = null;
-        }
-        else{
-            outputs = pyOutputs.toJSON();
-        }
-        jsonObject.put("outputs", outputs);
-        String jsonString = jsonObject.toJSONString();
-        FileWriter fw = new FileWriter(filePath);
-        fw.write(jsonString);
-        fw.close();
-    }
 }

@@ -187,7 +187,7 @@ public class PythonVariables {
                 ndVars.put(name, new NumpyArray((INDArray) value));
             }
             else{
-                ndVars.put(name, new NumpyArray((JSONObject)value));
+                throw new Exception("Unsupported type: " + value.getClass().toString());
             }
         }
         else if (type == Type.LIST){
