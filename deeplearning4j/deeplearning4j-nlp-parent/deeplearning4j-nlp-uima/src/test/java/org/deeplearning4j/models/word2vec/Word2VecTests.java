@@ -727,6 +727,59 @@ public class Word2VecTests {
             assertEquals(matrix.getRow(i), vec.getWordVectorMatrix("UNKNOWN"));
     }
 
+    @Test
+    public void weightsNotUpdated_WhenLocked() throws Exception {
+
+        SentenceIterator iter = new BasicLineIterator(inputFile.getAbsolutePath());
+        val vocab = new AbstractCache<VocabWord>();
+
+        vocab.addToken(new VocabWord(1.0, "alpha"));
+        vocab.addWordToIndex(0, "alpha");
+
+        vocab.addToken(new VocabWord(2.0, "beta"));
+        vocab.addWordToIndex(1, "beta");
+
+        vocab.addToken(new VocabWord(3.0, "delta"));
+        vocab.addWordToIndex(2, "delta");
+
+        val vocabIntersect = new AbstractCache<VocabWord>();
+
+        vocabIntersect.addToken(new VocabWord(10, "alpha"));  //2607
+        vocabIntersect.addWordToIndex(0, "where");
+
+        vocabIntersect.addToken(new VocabWord(20, "gamma")); // 2221
+        vocabIntersect.addWordToIndex(1, "gamma");
+
+        vocabIntersect.addToken(new VocabWord(25, "theta"));  //2151
+        vocabIntersect.addWordToIndex(2, "well");
+
+        Word2Vec vec1 = new Word2Vec.Builder().minWordFrequency(1).iterations(3).batchSize(64).layerSize(100)
+                .stopWords(new ArrayList<String>()).seed(42).learningRate(0.025).minLearningRate(0.001)
+                .sampling(0).elementsLearningAlgorithm(new SkipGram<VocabWord>())
+                .epochs(1).windowSize(5).allowParallelTokenization(true)
+                .workers(1)
+                .vocabCache(vocab)
+                .iterate(iter)
+                .modelUtils(new BasicModelUtils<VocabWord>()).build();
+
+        vec1.fit();
+
+        Word2Vec vec2 = new Word2Vec.Builder().minWordFrequency(1).iterations(3).batchSize(64).layerSize(100)
+                .stopWords(new ArrayList<String>()).seed(42).learningRate(0.025).minLearningRate(0.001)
+                .sampling(0).elementsLearningAlgorithm(new SkipGram<VocabWord>())
+                .epochs(1).windowSize(5).allowParallelTokenization(true)
+                .workers(1)
+                .vocabCache(vocab)
+                .iterate(iter)
+                .intersectModel(vec1, true)
+                .modelUtils(new BasicModelUtils<VocabWord>()).build();
+
+        vec2.fit();
+
+        assertEquals(((InMemoryLookupTable)vec1.lookupTable()).getSyn0(),
+                    ((InMemoryLookupTable)vec2.lookupTable()).getSyn0());
+    }
+
     private static void printWords(String target, Collection<String> list, Word2Vec vec) {
         System.out.println("Words close to [" + target + "]:");
         for (String word : list) {

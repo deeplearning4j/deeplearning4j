@@ -47,11 +47,9 @@ import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.deeplearning4j.models.word2vec.wordstore.VocabConstructor;
 import org.deeplearning4j.models.word2vec.wordstore.inmemory.AbstractCache;
 import org.deeplearning4j.util.ThreadUtils;
-import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
 import org.nd4j.linalg.api.memory.enums.LearningPolicy;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.custom.ScatterUpdate;
 import org.nd4j.linalg.api.rng.Random;
 import org.nd4j.linalg.factory.Nd4j;
 import org.slf4j.Logger;
@@ -301,21 +299,22 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
         }
 
         initLearners();
-        if (intersectModel != null) {
+        if (intersectModel != null && intersectModel.vocab().numWords() > 0) {
             int[] intersectIndexes = new int[intersectModel.vocab().numWords()];
             int cnt = 0;
             for (int i = 0; i < intersectModel.vocab().numWords(); ++i) {
                 String externalWord = intersectModel.vocab().wordAtIndex(i);
                 int index = this.vocab.indexOf(externalWord);
-                if (index > -2) {
+                if (index >= 0) {
                     this.vocab.wordFor(externalWord).setLocked(lockFactor);
                     intersectIndexes[cnt++] = index;
                 }
             }
-            ScatterUpdate op = new ScatterUpdate(((InMemoryLookupTable<VocabWord>) lookupTable).getSyn0(),
-                    ((InMemoryLookupTable<VocabWord>) intersectModel.lookupTable()).getSyn0(),
-                    intersectIndexes, new int[]{1}, ScatterUpdate.UpdateOp.ASSIGN);
-            Nd4j.getExecutioner().exec(op);
+            Nd4j.scatterUpdate(org.nd4j.linalg.api.ops.impl.scatter.ScatterUpdate.UpdateOp.ASSIGN,
+                                ((InMemoryLookupTable<VocabWord>) lookupTable).getSyn0(),
+                                Nd4j.createFromArray(intersectIndexes),
+                                ((InMemoryLookupTable<VocabWord>) intersectModel.lookupTable()).getSyn0(),
+                                1);
         }
 
         log.info("Starting learning process...");
