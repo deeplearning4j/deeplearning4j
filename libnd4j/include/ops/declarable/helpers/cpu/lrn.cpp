@@ -125,7 +125,7 @@ static void getMKLDNNMemoryDescLrn(const NDArray* src, const NDArray* diff_src,
     template <typename T>
     static int lrnFunctorEx_(nd4j::graph::Context& block, NDArray* input, NDArray* output, NDArray* scale, int depth, float bias, float alpha, float beta) {
 
-        scale->assign(1.);
+        //scale->assign(1.);
         int totalLength = input->lengthOf();
         int lastDim = input->sizeAt(-1);
         int chunkCount = totalLength / lastDim;
@@ -180,7 +180,7 @@ static void getMKLDNNMemoryDescLrn(const NDArray* src, const NDArray* diff_src,
                     }
                     T aSum = alpha * quadSum;
                     T tXe = iX[e];
-                    scaleBuffer[shift + e] += (tXe * tXe * 2 * tbeta) / (tbias - aSum);
+                    //scaleBuffer[shift + e] += (tXe * tXe * 2 * tbeta) / (tbias - aSum);
                     T dividor = nd4j::math::nd4j_pow<T, T, T>(tbias + aSum, tbeta);
                     outputBuffer[shift + e] = tXe / dividor;
                 }
