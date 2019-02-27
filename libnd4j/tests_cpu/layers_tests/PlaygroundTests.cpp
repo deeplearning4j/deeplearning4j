@@ -1267,63 +1267,63 @@ public:
 //     ASSERT_EQ(z0, z1);
 // }
 
-/////////////////////////////////////////////////////////////////////
-TEST_F(PlaygroundTests, conv2d_1) {
+// /////////////////////////////////////////////////////////////////////
+// TEST_F(PlaygroundTests, conv2d_1) {
 
-    const int N = 100;
-    int bS=8, iH=64,iW=64,  iC=32,oC=32,  kH=2,kW=2,  sH=1,sW=1,  pH=0,pW=0,  dH=1,dW=1;    
-    int paddingMode = 1;             // 1-SAME, 0-VALID;
-    int dataFormat  = 0;             // 1-NHWC, 0-NCHW    
+//     const int N = 100;
+//     int bS=8, iH=64,iW=64,  iC=32,oC=32,  kH=2,kW=2,  sH=1,sW=1,  pH=0,pW=0,  dH=1,dW=1;    
+//     int paddingMode = 1;             // 1-SAME, 0-VALID;
+//     int dataFormat  = 0;             // 1-NHWC, 0-NCHW    
 
-    NDArray input('c', {bS, iC, iH, iW}, nd4j::DataType::FLOAT32);
-    NDArray output(input);
-    NDArray weights('c', {kH, kW, iC, oC}, nd4j::DataType::FLOAT32);
-    NDArray bias('c', {oC}, nd4j::DataType::FLOAT32);    
-    input = 2.;
-    weights.linspace(0.1, 0.1);
-    bias = 0.5;
+//     NDArray input('c', {bS, iC, iH, iW}, nd4j::DataType::FLOAT32);
+//     NDArray output(input);
+//     NDArray weights('c', {kH, kW, iC, oC}, nd4j::DataType::FLOAT32);
+//     NDArray bias('c', {oC}, nd4j::DataType::FLOAT32);    
+//     input = 2.;
+//     weights.linspace(0.1, 0.1);
+//     bias = 0.5;
 
-    nd4j::ops::conv2d op;
-    for (int i = 0; i < 10; i++) 
-    	100.5*0.5;
+//     nd4j::ops::conv2d op;
+//     for (int i = 0; i < 10; i++) 
+//     	100.5*0.5;
 
-    auto timeStart = std::chrono::system_clock::now();
+//     auto timeStart = std::chrono::system_clock::now();
     
-    for (int i = 0; i < N; i++) 
-        op.execute({&input, &weights, &bias}, {&output} , {}, {kH,kW,  sH,sW,  pH,pW,  dH,dW, paddingMode, dataFormat},{});
+//     for (int i = 0; i < N; i++) 
+//         op.execute({&input, &weights, &bias}, {&output} , {}, {kH,kW,  sH,sW,  pH,pW,  dH,dW, paddingMode, dataFormat},{});
     
-    auto timeEnd = std::chrono::system_clock::now();
-    auto duration = std::chrono::duration_cast<std::chrono::microseconds> ((timeEnd - timeStart) / N).count();
-    printf("duration %ld\n", duration);    
-}
+//     auto timeEnd = std::chrono::system_clock::now();
+//     auto duration = std::chrono::duration_cast<std::chrono::microseconds> ((timeEnd - timeStart) / N).count();
+//     printf("duration %ld\n", duration);    
+// }
 
-/////////////////////////////////////////////////////////////////////
-TEST_F(PlaygroundTests, batchnorm_1) {
+// /////////////////////////////////////////////////////////////////////
+// TEST_F(PlaygroundTests, batchnorm_1) {
 
-    const int N   = 100;
-    NDArray input   ('c', {8, 32, 64, 64}, nd4j::DataType::FLOAT32);
-    NDArray output  ('c', {8, 32, 64, 64}, nd4j::DataType::FLOAT32);
-    NDArray mean    ('c', {32}, nd4j::DataType::FLOAT32);
-    NDArray variance('c', {32}, nd4j::DataType::FLOAT32);
-    NDArray gamma   ('c', {32}, nd4j::DataType::FLOAT32);
-    NDArray beta    ('c', {32}, nd4j::DataType::FLOAT32);
+//     const int N   = 100;
+//     NDArray input   ('c', {8, 32, 64, 64}, nd4j::DataType::FLOAT32);
+//     NDArray output  ('c', {8, 32, 64, 64}, nd4j::DataType::FLOAT32);
+//     NDArray mean    ('c', {32}, nd4j::DataType::FLOAT32);
+//     NDArray variance('c', {32}, nd4j::DataType::FLOAT32);
+//     NDArray gamma   ('c', {32}, nd4j::DataType::FLOAT32);
+//     NDArray beta    ('c', {32}, nd4j::DataType::FLOAT32);
 
-    input = 10.5;
-    mean = 5.5;
-    variance = 1.5;
-    gamma = 0.5;
-    beta = 2.5;
+//     input = 10.5;
+//     mean = 5.5;
+//     variance = 1.5;
+//     gamma = 0.5;
+//     beta = 2.5;
 
-    nd4j::ops::batchnorm_new op;
+//     nd4j::ops::batchnorm_new op;
     
-    auto timeStart = std::chrono::system_clock::now();    
-    // for (int i = 0; i <N ; i++) 
-        op.execute({&input, &mean, &variance, &gamma, &beta}, {&output}, {1e-5}, {1,1,1}, {});
-    auto timeEnd = std::chrono::system_clock::now();
-    auto duration = std::chrono::duration_cast<std::chrono::microseconds> ((timeEnd - timeStart) / N).count();
+//     auto timeStart = std::chrono::system_clock::now();    
+//     // for (int i = 0; i <N ; i++) 
+//         op.execute({&input, &mean, &variance, &gamma, &beta}, {&output}, {1e-5}, {1,1,1}, {});
+//     auto timeEnd = std::chrono::system_clock::now();
+//     auto duration = std::chrono::duration_cast<std::chrono::microseconds> ((timeEnd - timeStart) / N).count();
     
-    printf("duration %ld\n", duration);    
-}
+//     printf("duration %ld\n", duration);    
+// }
 
 //////////////////////////////////////////////////////////////////////////////
 // MXK x KxN = MxN
@@ -1403,3 +1403,27 @@ TEST_F(PlaygroundTests, batchnorm_1) {
 //     printf("duration raver %ld\n", duration);    
 // }
 
+//////////////////////////////////////////////////////////////////////
+TEST_F(PlaygroundTests, softmax_1) {
+    
+    const int N = 100;
+    NDArray input('c', {1024, 256}, nd4j::DataType::FLOAT32);
+    NDArray output('c', {1024, 256}, nd4j::DataType::FLOAT32);
+
+    input.linspace(-100., 0.01);
+    
+    nd4j::ops::softmax op;
+
+    for (int i = 0; i < 20 ; i++) 
+    	100.5*100.5;
+
+    auto timeStart = std::chrono::system_clock::now();
+
+	for (int i = 0; i < N ; i++) 
+        op.execute({&input}, {&output}, {}, {1}, {});
+    
+    auto timeEnd = std::chrono::system_clock::now();
+    auto duration = std::chrono::duration_cast<std::chrono::microseconds> ((timeEnd - timeStart) / N).count();
+    printf("duration %ld\n", duration);    
+    
+}
