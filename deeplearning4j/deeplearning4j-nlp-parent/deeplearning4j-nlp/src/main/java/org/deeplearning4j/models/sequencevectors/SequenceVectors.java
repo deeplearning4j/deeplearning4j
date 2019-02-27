@@ -16,6 +16,7 @@
 
 package org.deeplearning4j.models.sequencevectors;
 
+import com.google.common.primitives.Ints;
 import com.google.common.util.concurrent.AtomicDouble;
 import lombok.Getter;
 import lombok.NonNull;
@@ -226,10 +227,7 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
             }
 
             if (indexes.size() > 0) {
-                int[] intersectIndexes = new int[indexes.size()];
-                for (int  i = 0; i < intersectIndexes.length; ++i) {
-                    intersectIndexes[i] = indexes.get(i);
-                }
+                int[] intersectIndexes = Ints.toArray(indexes);
 
                 Nd4j.scatterUpdate(org.nd4j.linalg.api.ops.impl.scatter.ScatterUpdate.UpdateOp.ASSIGN,
                         ((InMemoryLookupTable<VocabWord>) lookupTable).getSyn0(),

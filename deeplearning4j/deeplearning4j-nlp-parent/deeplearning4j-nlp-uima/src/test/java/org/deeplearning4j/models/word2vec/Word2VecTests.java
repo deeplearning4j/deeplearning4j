@@ -762,6 +762,39 @@ public class Word2VecTests {
         assertEquals(vec1.getWordVectorMatrix("money"), vec2.getWordVectorMatrix("money"));
     }
 
+    @Test
+    public void weightsNotUpdated_WhenLocked_CBOW() throws Exception {
+
+        SentenceIterator iter = new BasicLineIterator(inputFile.getAbsolutePath());
+
+        Word2Vec vec1 = new Word2Vec.Builder().minWordFrequency(1).iterations(3).batchSize(2).layerSize(100)
+                .stopWords(new ArrayList<String>()).seed(42).learningRate(0.025).minLearningRate(0.001)
+                .sampling(0).elementsLearningAlgorithm(new CBOW<VocabWord>())
+                .epochs(1).windowSize(5).allowParallelTokenization(true)
+                .workers(1)
+                .iterate(iter)
+                .modelUtils(new BasicModelUtils<VocabWord>()).build();
+
+        vec1.fit();
+
+        iter = new BasicLineIterator(inputFile2.getAbsolutePath());
+        Word2Vec vec2 = new Word2Vec.Builder().minWordFrequency(1).iterations(3).batchSize(1).layerSize(100)
+                .stopWords(new ArrayList<String>()).seed(32).learningRate(0.021).minLearningRate(0.001)
+                .sampling(0).elementsLearningAlgorithm(new CBOW<VocabWord>())
+                .epochs(1).windowSize(5).allowParallelTokenization(true)
+                .workers(1)
+                .iterate(iter)
+                .intersectModel(vec1, true)
+                .modelUtils(new BasicModelUtils<VocabWord>()).build();
+
+        vec2.fit();
+
+        assertEquals(vec1.getWordVectorMatrix("put"), vec2.getWordVectorMatrix("put"));
+        assertEquals(vec1.getWordVectorMatrix("part"), vec2.getWordVectorMatrix("part"));
+        assertEquals(vec1.getWordVectorMatrix("made"), vec2.getWordVectorMatrix("made"));
+        assertEquals(vec1.getWordVectorMatrix("money"), vec2.getWordVectorMatrix("money"));
+    }
+
     private static void printWords(String target, Collection<String> list, Word2Vec vec) {
         System.out.println("Words close to [" + target + "]:");
         for (String word : list) {
