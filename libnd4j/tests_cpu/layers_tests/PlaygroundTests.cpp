@@ -1266,7 +1266,7 @@ TEST_F(PlaygroundTests, test_col2im_permuted_1) {
 
     ASSERT_EQ(z0, z1);
 }
-
+/*
 TEST_F(PlaygroundTests, test_addi_assign) {
     int iterations = 1;
     auto x = NDArrayFactory::create<float>('c', {1000000000});
@@ -1286,6 +1286,7 @@ TEST_F(PlaygroundTests, test_addi_assign) {
     nd4j_printf("Avg add(1.0f) time: %lld us\n", spanTime);
     nd4j_printf("Bandwidth: %f GB/s\n", bw);
 }
+ */
 
 //////////////////////////////////////////////////////////////////////
 // TEST_F(PlaygroundTests, signed_unsigned_1) {
