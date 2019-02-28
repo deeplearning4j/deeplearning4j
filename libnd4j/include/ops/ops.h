@@ -101,11 +101,11 @@
 #pragma omp declare reduction(aminT : float,double,float16,bfloat16,int,Nd4jLong,Nd4jULong,int8_t,uint8_t,bool,int16_t,uint16_t,uint32_t :              \
                 omp_out = nd4j::math::nd4j_min(nd4j::math::nd4j_abs(omp_in), nd4j::math::nd4j_abs(omp_out)) )
 
-#pragma omp declare reduction(sumT : float,double,float16,bfloat16,int,Nd4jLong,Nd4jULong,int8_t,uint8_t,bool,int16_t,uint16_t,uint32_t :              \
+#pragma omp declare reduction(asumT : float,double,float16,bfloat16,int,Nd4jLong,Nd4jULong,int8_t,uint8_t,bool,int16_t,uint16_t,uint32_t :              \
                 omp_out = nd4j::math::nd4j_abs(omp_in) + nd4j::math::nd4j_abs(omp_out))\
                 initializer (omp_priv=0)
 
-#pragma omp declare reduction(asumT : float,double,float16,bfloat16,int,Nd4jLong,Nd4jULong,int8_t,uint8_t,bool,int16_t,uint16_t,uint32_t :              \
+#pragma omp declare reduction(sumT : float,double,float16,bfloat16,int,Nd4jLong,Nd4jULong,int8_t,uint8_t,bool,int16_t,uint16_t,uint32_t :              \
                 omp_out = omp_in + omp_out)\
                 initializer (omp_priv=0)
 
