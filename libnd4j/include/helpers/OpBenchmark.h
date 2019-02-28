@@ -27,6 +27,8 @@ namespace nd4j {
         void setX(NDArray *array);
         void setY(NDArray *array);
         void setZ(NDArray *array);
+        void setAxis(std::vector<int> axis);
+        void setAxis(std::initializer_list<int> axis);
 
         NDArray& x();
         int opNum();

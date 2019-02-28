@@ -18,12 +18,19 @@ namespace nd4j {
             _opNum = (int) op;
         }
 
+        ReductionBenchmark(reduce::FloatOps op) : OpBenchmark() {
+            _opNum = (int) op;
+        }
+
         ReductionBenchmark(reduce::FloatOps op, NDArray *x, NDArray *z, std::vector<int> axis) : OpBenchmark(x, z, axis) {
             _opNum = (int) op;
         }
 
         void executeOnce() override {
-            NativeOpExcutioner::execReduceFloat(_opNum, _x->buffer(), _x->shapeInfo(), nullptr,  _z->buffer(), _z->shapeInfo(), _axis.data(), _axis.size(), nullptr, nullptr);
+            if (_z->isScalar())
+                NativeOpExcutioner::execReduceFloatScalar(_opNum, _x->buffer(), _x->shapeInfo(), nullptr, _z->buffer(), _z->shapeInfo());
+            else
+                NativeOpExcutioner::execReduceFloat(_opNum, _x->buffer(), _x->shapeInfo(), nullptr,  _z->buffer(), _z->shapeInfo(), _axis.data(), _axis.size(), nullptr, nullptr);
         }
 
         std::string orders() {
@@ -32,6 +39,11 @@ namespace nd4j {
             result += "/";
             result += _z == nullptr ? _x->ordering() : _z->ordering();
             return result;
+        }
+
+        ~ReductionBenchmark(){
+            delete _x;
+            delete _z;
         }
 
         OpBenchmark* clone() override  {

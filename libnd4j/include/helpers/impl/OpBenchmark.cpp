@@ -57,4 +57,12 @@ namespace nd4j {
     void OpBenchmark::setZ(NDArray *array) {
         _z = array;
     }
+
+    void OpBenchmark::setAxis(std::vector<int> axis) {
+        _axis = axis;
+    }
+
+    void OpBenchmark::setAxis(std::initializer_list<int> axis) {
+        _axis = axis;
+    }
 }

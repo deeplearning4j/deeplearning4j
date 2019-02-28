@@ -190,6 +190,73 @@ namespace nd4j {
         }
     }
 
+    void BenchmarkHelper::runOperationSuit(ReductionBenchmark *op, const std::function<void (ResultSet&, ResultSet&)>& func, const char *message) {
+        ResultSet x;
+        x.setNonRemovable();
+        ResultSet z;
+        z.setNonRemovable();
+        func(x, z);
+        std::vector<OpBenchmark*> result;
+
+        if (x.size() != z.size())
+            throw std::runtime_error("ReductionBenchmark: number of X and Z arrays should match");
+
+        for (int e = 0; e < x.size(); e++) {
+            auto x_ = x.at(e);
+            auto z_ = z.at(e);
+
+            auto clone = op->clone();
+            clone->setX(x_);
+            clone->setZ(z_);
+
+            result.emplace_back(clone);
+        }
+
+        runOperationSuit(result, message);
+
+        // removing everything
+        for (auto v:result) {
+            delete reinterpret_cast<ReductionBenchmark*>(v);
+        }
+    }
+
+    void BenchmarkHelper::runOperationSuit(ReductionBenchmark *op, const std::function<void (ResultSet&, ResultSet&, ResultSet &)>& func, const char *message) {
+        ResultSet x;
+        x.setNonRemovable();
+        ResultSet y;
+        y.setNonRemovable();
+        ResultSet z;
+        z.setNonRemovable();
+        func(x, y, z);
+        std::vector<OpBenchmark*> result;
+
+        if (x.size() != z.size() || x.size() != y.size())
+            throw std::runtime_error("PairwiseBenchmark: number of X and Z arrays should match");
+
+        for (int e = 0; e < x.size(); e++) {
+            auto x_ = x.at(e);
+            auto y_ = y.at(e);
+            auto z_ = z.at(e);
+
+            auto clone = op->clone();
+            clone->setX(x_);
+            clone->setZ(z_);
+
+            if (y_ != nullptr) {
+                clone->setAxis(y_->asVectorT<int>());
+                delete y_;
+            }
+            result.emplace_back(clone);
+        }
+
+        runOperationSuit(result, message);
+
+        // removing everything
+        for (auto v:result) {
+            delete reinterpret_cast<ReductionBenchmark*>(v);
+        }
+    }
+
     void BenchmarkHelper::runOperationSuit(PairwiseBenchmark *op, const std::function<void (ResultSet&, ResultSet&, ResultSet &)>& func, const char *message) {
         ResultSet x;
         x.setNonRemovable();

@@ -114,6 +114,28 @@ TEST_F(PlaygroundTests, Test_OpBenchmark_2) {
     };
 
     helper.runOperationSuit(&pb, generatorXYZ, "PairwiseTest");
+
+    auto generatorReductionAxis = GENERATE_XYZ() {
+        x.push_back(NDArrayFactory::create_<float>('c', {100, 1000}));
+
+        // axis goes to y here
+        y.push_back(NDArrayFactory::create_<int>('c', {1}, {(int) 0}));
+        z.push_back(NDArrayFactory::create_<float>('c', {1000}));
+
+        x.push_back(NDArrayFactory::create_<float>('c', {100, 1000}));
+        y.push_back(NDArrayFactory::create_<int>('c', {1}, {1}));
+        z.push_back(NDArrayFactory::create_<float>('c', {100}));
+
+        // scalar case
+        x.push_back(NDArrayFactory::create_<float>('c', {100, 1000}));
+        y.push_back(nullptr);
+        z.push_back(NDArrayFactory::create_<float>(0.0f));
+    };
+
+
+    ReductionBenchmark rb(reduce::FloatOps::Mean);
+
+    helper.runOperationSuit(&rb, generatorReductionAxis, "ReductionAlongDimensionTest");
 }
 
 /*
