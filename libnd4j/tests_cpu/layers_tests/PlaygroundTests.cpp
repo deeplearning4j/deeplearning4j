@@ -62,27 +62,34 @@ TEST_F(PlaygroundTests, Test_OpBenchmark_1) {
 TEST_F(PlaygroundTests, Test_OpBenchmark_2) {
     BenchmarkHelper helper;
     Parameters parameters;
+    parameters.addBoolParam("fOrder", true);
     float scalar = 2.0f;
 
     ScalarBenchmark sb(scalar::Multiply);
 
+
     // Y will be shared
     sb.setY(NDArrayFactory::create_<float>(scalar));
 
-    auto generator = GENERATE_XZ() {
+    auto generator = GENERATE_XZ(parameters) {
         x.push_back(NDArrayFactory::create_<float>('c', {100, 100}));
         z.push_back(NDArrayFactory::create_<float>('c', {100, 100}));
 
         x.push_back(NDArrayFactory::create_<float>('c', {1000, 1000}));
         z.push_back(NDArrayFactory::create_<float>('c', {1000, 1000}));
 
+        // only share within single op call. do not cross share
         auto shared = NDArrayFactory::create_<float>('c', {256, 768});
         x.push_back(shared);
         z.push_back(shared);
+
+        if (parameters.getBoolParam("fOrder")) {
+            x.push_back(NDArrayFactory::create_<float>('c', {1000, 1000}));
+            z.push_back(NDArrayFactory::create_<float>('f', {1000, 1000}));
+        }
     };
 
-    auto list = helper.buildOperations(&sb, generator);
-    helper.runOperationSuit(list, "LambdaTest");
+    helper.runOperationSuit(&sb, generator, "LambdaTest");
 }
 
 /*

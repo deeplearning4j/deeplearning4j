@@ -22,6 +22,16 @@ namespace nd4j {
             NativeOpExcutioner::execPairwiseTransform(_opNum, _x->buffer(), _x->shapeInfo(), _y->buffer(), _y->shapeInfo(), _z->buffer(), _z->shapeInfo(), nullptr);
         }
 
+        std::string orders() {
+            std::string result;
+            result += _x->ordering();
+            result += "/";
+            result += _y->ordering();
+            result += "/";
+            result += _z == nullptr ? _x->ordering() : _z->ordering();
+            return result;
+        }
+
         OpBenchmark* clone() override  {
             return new PairwiseBenchmark((pairwise::Ops) _opNum, _x, _y, _z);
         }

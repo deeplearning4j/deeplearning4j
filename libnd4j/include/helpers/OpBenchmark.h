@@ -12,9 +12,9 @@ namespace nd4j {
     class ND4J_EXPORT OpBenchmark {
     protected:
         int _opNum;
-        NDArray *_x;
-        NDArray *_y;
-        NDArray *_z;
+        NDArray *_x = nullptr;
+        NDArray *_y = nullptr;
+        NDArray *_z = nullptr;
         std::vector<int> _axis;
     public:
         OpBenchmark() = default;
@@ -30,6 +30,8 @@ namespace nd4j {
 
         NDArray& x();
         int opNum();
+
+        virtual std::string orders() = 0;
 
         virtual void executeOnce() = 0;
 

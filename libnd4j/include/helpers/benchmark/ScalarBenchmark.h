@@ -14,6 +14,19 @@ namespace nd4j {
             //
         }
 
+        ~ScalarBenchmark(){
+            if (_x != _y && _x != _z && _y != _z) {
+                delete _x;
+                delete _y;
+                delete _z;
+            } else if (_x == _y && _x == _z) {
+                delete _x;
+            } else if (_x == _z) {
+                delete _x;
+                delete _y;
+            }
+        }
+
         ScalarBenchmark(scalar::Ops op) : OpBenchmark() {
             _opNum = (int) op;
         }
@@ -23,12 +36,22 @@ namespace nd4j {
         }
 
         void executeOnce() override {
-            NativeOpExcutioner::execScalar(_opNum, _x->buffer(), _x->shapeInfo(), _z->buffer(), _z->shapeInfo(), _y->buffer(), _y->shapeInfo(), nullptr);
+            if (_z == nullptr)
+                NativeOpExcutioner::execScalar(_opNum, _x->buffer(), _x->shapeInfo(), _x->buffer(), _x->shapeInfo(), _y->buffer(), _y->shapeInfo(), nullptr);
+            else
+                NativeOpExcutioner::execScalar(_opNum, _x->buffer(), _x->shapeInfo(), _z->buffer(), _z->shapeInfo(), _y->buffer(), _y->shapeInfo(), nullptr);
         }
 
+        std::string orders() {
+            std::string result;
+            result += _x->ordering();
+            result += "/";
+            result += _z == nullptr ? _x->ordering() : _z->ordering();
+            return result;
+        }
 
         OpBenchmark* clone() override  {
-            return new ScalarBenchmark((scalar::Ops) _opNum, _x, _y, _z);
+            return new ScalarBenchmark((scalar::Ops) _opNum, _x == nullptr ? _x : _x->dup() , _y == nullptr ? _y : _y->dup(), _z == nullptr ? _z : _z->dup());
         }
     };
 }

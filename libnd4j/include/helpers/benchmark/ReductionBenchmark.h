@@ -26,6 +26,14 @@ namespace nd4j {
             NativeOpExcutioner::execReduceFloat(_opNum, _x->buffer(), _x->shapeInfo(), nullptr,  _z->buffer(), _z->shapeInfo(), _axis.data(), _axis.size(), nullptr, nullptr);
         }
 
+        std::string orders() {
+            std::string result;
+            result += _x->ordering();
+            result += "/";
+            result += _z == nullptr ? _x->ordering() : _z->ordering();
+            return result;
+        }
+
         OpBenchmark* clone() override  {
             return new ReductionBenchmark((reduce::FloatOps) _opNum, _x, _z, _axis);
         }

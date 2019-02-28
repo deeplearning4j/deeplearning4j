@@ -5,16 +5,16 @@
 #include "../benchmark/Parameters.h"
 
 namespace nd4j {
-    Parameters* Parameters::addIntParam(std::string &string, int param) {
+    Parameters* Parameters::addIntParam(std::string string, int param) {
         _intParams[string] = param;
         return this;
     }
 
-    int Parameters::getIntParam(std::string &string) {
-        if (_intParams.count(string))
+    int Parameters::getIntParam(std::string string) const {
+        if (_intParams.count(string) == 0)
             throw std::runtime_error("Not available intParameter requested");
 
-        return _intParams[string];
+        return _intParams.at(string);
     }
 
     Parameters* Parameters::addIntParam(std::initializer_list<std::string> strings, std::initializer_list<int> params) {
@@ -30,7 +30,7 @@ namespace nd4j {
         return this;
     }
 
-    Parameters* Parameters::addBoolParam(std::string &string, bool param) {
+    Parameters* Parameters::addBoolParam(std::string string, bool param) {
         _boolParams[string] = param;
         return this;
     }
@@ -48,7 +48,7 @@ namespace nd4j {
         return this;
     }
 
-    Parameters* Parameters::addArrayParam(std::string &string, std::initializer_list<int> param) {
+    Parameters* Parameters::addArrayParam(std::string string, std::initializer_list<int> param) {
         _arrayParams[string] = std::vector<int>(param);
         return this;
     }
@@ -66,17 +66,17 @@ namespace nd4j {
         return this;
     }
 
-    bool Parameters::getBoolParam(std::string &string) {
-        if (_boolParams.count(string))
+    bool Parameters::getBoolParam(std::string string) const {
+        if (_boolParams.count(string) == 0)
             throw std::runtime_error("Not available boolParameter requested");
 
-        return _boolParams[string];
+        return _boolParams.at(string);
     }
 
-    std::vector<int> Parameters::getArrayParam(std::string &string) {
-        if (_arrayParams.count(string))
+    std::vector<int> Parameters::getArrayParam(std::string string) const {
+        if (_arrayParams.count(string) == 0)
             throw std::runtime_error("Not available arrayParameter requested");
 
-        return _arrayParams[string];
+        return _arrayParams.at(string);
     }
 }

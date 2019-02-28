@@ -56,9 +56,10 @@ namespace nd4j {
         // opNum, DataType, Shape, average time, median time
         auto t = DataTypeUtils::asString(benchmark.x().dataType());
         auto s = ShapeUtils::shapeAsString(&benchmark.x());
+        auto o = benchmark.orders();
 
         // printing out stuff
-        nd4j_printf("%i\t%s\t%s\t%lld\t%lld\n", benchmark.opNum(), t.c_str(), s.c_str(), nd4j::math::nd4j_floor<double, Nd4jLong>(sumT), median);
+        nd4j_printf("%i\t%s\t%s\t%s\t%lld\t%lld\n", benchmark.opNum(), t.c_str(), s.c_str(), o.c_str(), nd4j::math::nd4j_floor<double, Nd4jLong>(sumT), median);
     }
 
     void BenchmarkHelper::benchmarkScalarOperation(scalar::Ops op, double value, NDArray &x, NDArray &z) {
@@ -104,7 +105,7 @@ namespace nd4j {
             nd4j_printf("%s\n", msg);
         }
 
-        nd4j_printf("OpNum\tDataType\tShape\tavg (us)\tmedian (us)\n","");
+        nd4j_printf("OpNum\tDataType\tShape\tOrders\tavg (us)\tmedian (us)\n","");
 
         for (auto v:benchmarks)
             benchmarkOperation(*v);
@@ -113,7 +114,7 @@ namespace nd4j {
     }
 
     void BenchmarkHelper::runScalarSuit() {
-        nd4j_printf("OpNum\tDataType\tShape\tavg (us)\tmedian (us)\n","");
+        nd4j_printf("OpNum\tDataType\tShape\tOrders\tavg (us)\tmedian (us)\n","");
 
         std::initializer_list<std::initializer_list<Nd4jLong>> shapes = {{100}, {32, 256}, {32, 150, 200}, {32, 3, 244, 244}, {32, 64, 128, 256}};
         std::initializer_list<nd4j::DataType> dataTypes = {nd4j::DataType::FLOAT32, nd4j::DataType::DOUBLE};
@@ -129,7 +130,7 @@ namespace nd4j {
     }
 
 
-    std::vector<OpBenchmark*> BenchmarkHelper::buildOperations(ScalarBenchmark *op, const std::function<void (ResultSet&, ResultSet&)>& func) {
+    void BenchmarkHelper::runOperationSuit(ScalarBenchmark *op, const std::function<void (ResultSet&, ResultSet&)>& func, const char *message) {
         ResultSet x;
         x.setNonRemovable();
         ResultSet z;
@@ -151,8 +152,11 @@ namespace nd4j {
             result.emplace_back(clone);
         }
 
-        return result;
+        runOperationSuit(result, message);
+
+        // removing everything
+        for (auto v:result) {
+            delete reinterpret_cast<ScalarBenchmark*>(v);
+        }
     }
-    //template std::vector<OpBenchmark*> BenchmarkHelper::buildOperations<float>(ScalarBenchmark *op, const std::function<void (float&, float&)>& func);
-    //template std::vector<OpBenchmark*> BenchmarkHelper::buildOperations<ResultSet>(ScalarBenchmark *op, const std::function<void (ResultSet&, ResultSet&)>& func);
 }
