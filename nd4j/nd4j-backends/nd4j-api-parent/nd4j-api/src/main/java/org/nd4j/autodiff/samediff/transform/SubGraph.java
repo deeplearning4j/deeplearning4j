@@ -67,7 +67,7 @@ public class SubGraph {
             boolean allInSubgraph = true;
             if(inputsFor != null){
                 for(String opOwnName : inputsFor) {
-                    if (!sameDiff.getFunctionById(opOwnName)){
+                    if (!inSubgraph(sameDiff.getFunctionById(opOwnName))){
                         allInSubgraph = false;
                         break;
                     }
@@ -81,13 +81,23 @@ public class SubGraph {
         return outputs();
     }
 
-    public SDVariable inputs(){
-
+    public List<SDVariable> inputs(){
+        //Inputs: the SDVariables that are inputs to this subgraph are those used by any of the differential functions
+        // (root or child nodes) that are NOT outputs of any of the child nodes
 
         return null;
     }
 
     public boolean inSubgraph(DifferentialFunction df){
-
+        if(rootNode == df)
+            return true;
+        if(childNodes != null){
+            for(DifferentialFunction d : childNodes){
+                if(d == df){
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 }
