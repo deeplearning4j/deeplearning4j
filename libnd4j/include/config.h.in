@@ -3,6 +3,10 @@
 
 #cmakedefine HAVE_MKLDNN
 
+#cmakedefine MKLDNN_PATH "@MKLDNN_PATH@"
+
 #cmakedefine HAVE_OPENBLAS
+
+#cmakedefine OPENBLAS_PATH "@OPENBLAS_PATH@"
 
 #endif

@@ -180,6 +180,12 @@ GraphUtils::runPreprocessor(char const* input, char const* output) {
     args.emplace_back(std::string("-I../include/cnpy"));
         args.emplace_back(std::string("-I../include/graph"));
     args.emplace_back(std::string("-I../include/ops/declarable"));
+#ifdef MKLDNN_PATH
+    args.emplace_back(std::string("-I" MKLDNN_PATH "/include"));
+#endif
+#ifdef OPENBLAS_PATH
+    args.emplace_back(std::string("-I" OPENBLAS_PATH "/include"));
+#endif
     args.emplace_back(input);
 
     std::string preprocessorCmd(cxx);
