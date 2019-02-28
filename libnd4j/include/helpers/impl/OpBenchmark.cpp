@@ -33,5 +33,19 @@ namespace nd4j {
         return _opNum;
     }
 
+    void OpBenchmark::setOpNum(int opNum) {
+        _opNum = opNum;
+    }
 
+    void OpBenchmark::setX(NDArray *array) {
+        _x = array;
+    }
+
+    void OpBenchmark::setY(NDArray *array) {
+        _y = array;
+    }
+
+    void OpBenchmark::setZ(NDArray *array) {
+        _z = array;
+    }
 }

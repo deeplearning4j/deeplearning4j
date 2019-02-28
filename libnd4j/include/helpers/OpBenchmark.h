@@ -22,6 +22,11 @@ namespace nd4j {
         OpBenchmark(NDArray *x, NDArray *z);
         OpBenchmark(NDArray *x, NDArray *z, std::initializer_list<int> axis);
 
+        void setOpNum(int opNum);
+        void setX(NDArray *array);
+        void setY(NDArray *array);
+        void setZ(NDArray *array);
+
         NDArray& x();
         int opNum();
         virtual void executeOnce() = 0;

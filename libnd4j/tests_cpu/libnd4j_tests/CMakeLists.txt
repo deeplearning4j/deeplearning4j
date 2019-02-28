@@ -3,6 +3,7 @@ project(dev_tests)
 set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/../../cmake" ${CMAKE_MODULE_PATH})
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../lib/googletest-release-1.8.0 ${CMAKE_CURRENT_BINARY_DIR}/lib/googletest-release-1.8.0)
 set(gtest_SOURCE_DIR ../lib/googletest-release-1.8.0)
+add_definitions(-D__STANDALONE_BUILD__=true)
 
 include_directories(${gtest_SOURCE_DIR}/include ${gtest_SOURCE_DIR})
 include_directories(../../include ../../layers ../../include/helpers ../../include/array ../../include/memory ../../include/loops ../../include/graph ../../include/ops ../../include/types ../../include/cnpy ../../blas)
