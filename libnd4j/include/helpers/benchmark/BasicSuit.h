@@ -18,34 +18,16 @@
  * @author raver119@gmail.com
  */
 
-#ifndef LIBND4J_BENCHMARKHELPER_H
-#define LIBND4J_BENCHMARKHELPER_H
-
-
-#include <ops/declarable/DeclarableOp.h>
-#include <NDArray.h>
+#ifndef DEV_TESTS_BASICSUIT_H
+#define DEV_TESTS_BASICSUIT_H
 
 namespace nd4j {
-
-    class BenchmarkHelper {
-    private:
-        unsigned int _wIterations;
-        unsigned int _rIterations;
-
+    class BasicSuit {
     protected:
-        void benchmarkScalarOperation(scalar::Ops op, double value, NDArray &x, NDArray &z);
 
-        void benchmarkDeclarableOp(nd4j::ops::DeclarableOp &op, Context &context);
-
-        void benchmarkGEMM(char orderA, std::initializer_list<Nd4jLong> shapeA, char orderB, std::initializer_list<Nd4jLong> shapeB, char orderC, std::initializer_list<Nd4jLong> shapeC);
     public:
-        BenchmarkHelper(unsigned int warmUpIterations = 10, unsigned int runIterations = 100);
 
-        void runScalarSuit();
-
-        void runAllSuits();
     };
 }
 
-
-#endif //DEV_TESTS_BENCHMARKHELPER_H
+#endif //DEV_TESTS_BASICSUIT_H

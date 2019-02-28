@@ -30,11 +30,8 @@ namespace nd4j {
         _rIterations = runIterations;
     }
 
-    void BenchmarkHelper::benchmarkScalarOperation(scalar::Ops op, double value, std::initializer_list<Nd4jLong> shape, nd4j::DataType dataTypeX) {
-        auto x = NDArrayFactory::create('c', shape, dataTypeX);
-        auto y = NDArrayFactory::create(dataTypeX, value);
-        auto z = NDArrayFactory::create('c', shape, dataTypeX);
-        x.assign(119.f);
+    void BenchmarkHelper::benchmarkScalarOperation(scalar::Ops op, double value, NDArray &x, NDArray &z) {
+        auto y = NDArrayFactory::create(x.dataType(), value);
 
         for (uint i = 0; i < _wIterations; i++)
             NativeOpExcutioner::execScalar(op, x.buffer(), x.shapeInfo(), z.buffer(), z.shapeInfo(), y.buffer(), y.shapeInfo(), nullptr);
@@ -59,7 +56,7 @@ namespace nd4j {
         Nd4jLong median = timings[_rIterations / 2];
 
         // opNum, DataType, Shape, average time, median time
-        auto t = DataTypeUtils::asString(dataTypeX);
+        auto t = DataTypeUtils::asString(x.dataType());
         auto s = ShapeUtils::shapeAsString(&x);
 
         // printing out stuff
@@ -77,7 +74,7 @@ namespace nd4j {
         for (const auto &d:dataTypes) {
             for (const auto &o:ops) {
                 for (const auto &s:shapes) {
-                    benchmarkScalarOperation(o, 2.0, s, d);
+                    //benchmarkScalarOperation(o, 2.0, s, d);
                 }
             }
         }
