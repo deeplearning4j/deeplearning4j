@@ -496,6 +496,7 @@ public class InferenceSession extends AbstractSession<INDArray,DifferentialFunct
             SDVariable[] args = df.args();
             for(SDVariable v : args){
                 Variable var = sameDiff.getVariables().get(v.getVarName());
+                //Nested enter case:
                 DifferentialFunction inputVarFn = (var.getOutputOfOp() == null ? null : sameDiff.getOps().get(var.getOutputOfOp()).getOp());
                 if(inputVarFn instanceof Enter && ((Enter)inputVarFn).isConstant()){
                     anyConstEnterInputs = true;
@@ -505,6 +506,7 @@ public class InferenceSession extends AbstractSession<INDArray,DifferentialFunct
                 }
             }
 
+            int constEnterInputCount = 0;
             if(anyConstEnterInputs){
                 /*
                 2019/01/26: AB
@@ -541,14 +543,9 @@ public class InferenceSession extends AbstractSession<INDArray,DifferentialFunct
                     if(found)
                         continue;
 
-                    //Resolve missing constant
-                    if(constEnterInputs == null)
-                        constEnterInputs = new HashSet<>();
-                    constEnterInputs.add(s);
+                    constEnterInputCount++;
                 }
             }
-
-            int constEnterInputCount = anyConstEnterInputs ? constEnterInputs.size() : 0;
 
             if(numArgs > 1){
                 //Might be due to repeated inputs

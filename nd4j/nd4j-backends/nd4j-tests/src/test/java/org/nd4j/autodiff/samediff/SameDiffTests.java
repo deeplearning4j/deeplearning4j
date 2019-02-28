@@ -177,7 +177,7 @@ public class SameDiffTests {
     @Test
     public void testSum() {
         SameDiff sameDiff = SameDiff.create();
-        INDArray arr = Transforms.sigmoid(Nd4j.linspace(1, 4, 4)).reshape(1,4);
+        INDArray arr = Transforms.sigmoid(Nd4j.linspace(1, 4, 4, DataType.FLOAT)).reshape(1,4);
         SDVariable x = sameDiff.var("x", arr);
         SDVariable result = sameDiff.sum(x, 1); //[1,4].sum(1) == [1,1]
 
@@ -985,7 +985,7 @@ public class SameDiffTests {
     @Test
     public void testSumGradient() {
         SameDiff sameDiff = SameDiff.create();
-        SDVariable twoByTwo = sameDiff.var("initial", Nd4j.linspace(1, 4, 4).reshape(2, 2));
+        SDVariable twoByTwo = sameDiff.var("initial", Nd4j.linspace(1, 4, 4, DataType.FLOAT).reshape(2, 2));
         SDVariable sum = sameDiff.sum(twoByTwo, Integer.MAX_VALUE);
         sameDiff.execBackwards(Collections.emptyMap());
         SameDiff grad = sameDiff.getFunction("grad");
@@ -2579,14 +2579,14 @@ public class SameDiffTests {
         SDVariable out = sd.math().tanh("tanh", z);
         ExternalErrorsFunction fn = sd.f().externalErrors(out);
 
-        INDArray inA = Nd4j.linspace(1,15,15).reshape(3,5);
-        INDArray wA = Nd4j.linspace(1,20,20).reshape(5,4);
-        INDArray bA = Nd4j.linspace(1,4,4);
+        INDArray inA = Nd4j.linspace(1,15,15, DataType.FLOAT).reshape(3,5);
+        INDArray wA = Nd4j.linspace(1,20,20, DataType.FLOAT).reshape(5,4);
+        INDArray bA = Nd4j.linspace(1,4,4, DataType.FLOAT);
         in.setArray(inA);
         w.setArray(wA);
         b.setArray(bA);
 
-        INDArray grad = Nd4j.linspace(1,12,12).reshape(3,4);
+        INDArray grad = Nd4j.linspace(1,12,12, DataType.FLOAT).reshape(3,4);
         fn.updateVariable("tanh", grad);
 
         log.info("--------------- sd.execAndEndResult() ---------------");

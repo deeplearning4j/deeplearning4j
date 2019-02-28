@@ -41,13 +41,13 @@ OmpLaunchHelper::OmpLaunchHelper(const Nd4jLong N, float desiredNumThreads) {
             if(desiredNumThreads == -1)
                 desiredNumThreads = omp_get_max_threads();
             else if(desiredNumThreads < 1) 
-                desiredNumThreads == 1;
+                desiredNumThreads = 1;
             else
                 desiredNumThreads = nd4j::math::nd4j_min<int>(omp_get_max_threads(), desiredNumThreads);
         #else
             desiredNumThreads = 1;
         #endif
-        _numThreads = nd4j::math::nd4j_min<int>(N / maxItersPerThread, desiredNumThreads);
+        _numThreads = nd4j::math::nd4j_min<int>(N / maxItersPerThread, desiredNumThreads);        
     }
 
     _itersPerThread = N / _numThreads;
