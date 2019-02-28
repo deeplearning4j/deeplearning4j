@@ -18,8 +18,25 @@ namespace nd4j {
             _opNum = (int) op;
         }
 
+        TransformBenchmark(transform::StrictOps op) : OpBenchmark() {
+            _opNum = (int) op;
+        }
+
+        ~TransformBenchmark(){
+
+            if (_x == _z) {
+                delete _x;
+            } else {
+                delete _x;
+                delete _z;
+            }
+        }
+
         void executeOnce() override {
-            NativeOpExcutioner::execTransformStrict(_opNum, _x->buffer(), _x->shapeInfo(),  _z->buffer(), _z->shapeInfo(), nullptr, nullptr, nullptr);
+            if (_z != nullptr)
+                NativeOpExcutioner::execTransformStrict(_opNum, _x->buffer(), _x->shapeInfo(),  _z->buffer(), _z->shapeInfo(), nullptr, nullptr, nullptr);
+            else
+                NativeOpExcutioner::execTransformStrict(_opNum, _x->buffer(), _x->shapeInfo(),  _x->buffer(), _x->shapeInfo(), nullptr, nullptr, nullptr);
         }
 
         std::string orders() {

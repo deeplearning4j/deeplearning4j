@@ -54,6 +54,7 @@ namespace nd4j {
         void runOperationSuit(std::vector<OpBenchmark*> &benchmarks, const char *msg = nullptr);
 
         void runOperationSuit(ScalarBenchmark *op, const std::function<void (ResultSet &, ResultSet &)>& func, const char *message = nullptr);
+        void runOperationSuit(TransformBenchmark *op, const std::function<void (ResultSet &, ResultSet &)>& func, const char *message = nullptr);
 
         void runScalarSuit();
 

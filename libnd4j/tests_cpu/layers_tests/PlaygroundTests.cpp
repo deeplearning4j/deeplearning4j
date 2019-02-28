@@ -56,8 +56,7 @@ TEST_F(PlaygroundTests, Test_OpBenchmark_1) {
     helper.runOperationSuit({&sb1, &sb2}, "ScalarAdd");
 }
 
-#define GENERATE_XYZ(...) [__VA_ARGS__] (ResultSet &x, ResultSet &x, ResultSet &z)
-#define GENERATE_XZ(...) [__VA_ARGS__] (ResultSet &x, ResultSet &z)
+
 
 TEST_F(PlaygroundTests, Test_OpBenchmark_2) {
     BenchmarkHelper helper;
@@ -67,11 +66,10 @@ TEST_F(PlaygroundTests, Test_OpBenchmark_2) {
 
     ScalarBenchmark sb(scalar::Multiply);
 
-
     // Y will be shared
     sb.setY(NDArrayFactory::create_<float>(scalar));
 
-    auto generator = GENERATE_XZ(parameters) {
+    auto generator = GENERATE_XZ() {
         // operands go together line by line
         x.push_back(NDArrayFactory::create_<float>('c', {100, 100}));
         z.push_back(NDArrayFactory::create_<float>('c', {100, 100}));
@@ -90,12 +88,17 @@ TEST_F(PlaygroundTests, Test_OpBenchmark_2) {
             z.push_back(NDArrayFactory::create_<float>('f', {1000, 1000}));
         }
 
-        //another way to call inplace
+        //another way to call inplace op
         x.push_back(NDArrayFactory::create_<float>('c', {100, 100}));
         z.push_back(nullptr);
     };
 
-    helper.runOperationSuit(&sb, generator, "LambdaTest");
+    helper.runOperationSuit(&sb, generator, "ScalarTest");
+
+    TransformBenchmark tb(transform::StrictOps::Tanh);
+
+    // we can use the same generator, since the same number of operands used
+    helper.runOperationSuit(&tb, generator, "TransformTest");
 }
 
 /*

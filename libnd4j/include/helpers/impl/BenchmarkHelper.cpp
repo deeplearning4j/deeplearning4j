@@ -159,4 +159,34 @@ namespace nd4j {
             delete reinterpret_cast<ScalarBenchmark*>(v);
         }
     }
+
+    void BenchmarkHelper::runOperationSuit(TransformBenchmark *op, const std::function<void (ResultSet&, ResultSet&)>& func, const char *message) {
+        ResultSet x;
+        x.setNonRemovable();
+        ResultSet z;
+        z.setNonRemovable();
+        func(x, z);
+        std::vector<OpBenchmark*> result;
+
+        if (x.size() != z.size())
+            throw std::runtime_error("ScalarBenchmark: number of X and Z arrays should match");
+
+        for (int e = 0; e < x.size(); e++) {
+            auto x_ = x.at(e);
+            auto z_ = z.at(e);
+
+            auto clone = op->clone();
+            clone->setX(x_);
+            clone->setZ(z_);
+
+            result.emplace_back(clone);
+        }
+
+        runOperationSuit(result, message);
+
+        // removing everything
+        for (auto v:result) {
+            delete reinterpret_cast<TransformBenchmark*>(v);
+        }
+    }
 }
