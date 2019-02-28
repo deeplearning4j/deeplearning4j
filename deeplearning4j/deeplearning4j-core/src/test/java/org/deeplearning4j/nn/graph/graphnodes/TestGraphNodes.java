@@ -613,7 +613,7 @@ public class TestGraphNodes {
         GraphVertex dotProduct = new DotProductVertex(null, "test_vertex", -1);
 
         INDArray in1 = Nd4j.rand(5, 2);
-        INDArray in2 = Nd4j.rand(5, 2);
+        INDArray in2 = Nd4j.rand(2, 5);
 
         dotProduct.setInputs(in1, in2);
         INDArray out = dotProduct.doForward(false, LayerWorkspaceMgr.noWorkspaces());

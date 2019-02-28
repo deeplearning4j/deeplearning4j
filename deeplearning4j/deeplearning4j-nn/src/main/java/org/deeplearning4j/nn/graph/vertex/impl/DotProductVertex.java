@@ -8,6 +8,8 @@ import org.deeplearning4j.nn.graph.vertex.BaseGraphVertex;
 import org.deeplearning4j.nn.graph.vertex.VertexIndices;
 import org.deeplearning4j.nn.workspace.ArrayType;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
+import org.nd4j.base.Preconditions;
+import org.nd4j.evaluation.meta.Prediction;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.reduce3.Dot;
@@ -52,6 +54,7 @@ public class DotProductVertex extends BaseGraphVertex {
     public INDArray doForward(boolean training, LayerWorkspaceMgr workspaceMgr) {
         INDArray a = inputs[0];
         INDArray b = inputs[1];
+        Preconditions.checkState(a.rows() == b.columns() || a.columns() == b.rows());
         try(MemoryWorkspace ws = workspaceMgr.notifyScopeBorrowed(ArrayType.ACTIVATIONS)) {
             INDArray result = Nd4j.getExecutioner().exec(new Dot(a,b));
             return result;
@@ -67,11 +70,17 @@ public class DotProductVertex extends BaseGraphVertex {
 
     @Override
     public void setBackpropGradientsViewArray(INDArray backpropGradientsViewArray) {
-
+        if (backpropGradientsViewArray != null)
+            throw new RuntimeException("Vertex does not have gradients; gradients view array cannot be set here");
     }
 
     @Override
     public Pair<INDArray, MaskState> feedForwardMaskArrays(INDArray[] maskArrays, MaskState currentMaskState, int minibatchSize) {
-        return null;
+        //No op
+        if (maskArrays == null || maskArrays.length == 0) {
+            return null;
+        }
+
+        return new Pair<>(maskArrays[0], currentMaskState);
     }
 }
