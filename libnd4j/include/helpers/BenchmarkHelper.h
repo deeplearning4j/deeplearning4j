@@ -22,6 +22,7 @@
 #define LIBND4J_BENCHMARKHELPER_H
 
 
+#include <benchmark/OpBenchmark.h>
 #include <ops/declarable/DeclarableOp.h>
 #include <NDArray.h>
 
@@ -33,6 +34,8 @@ namespace nd4j {
         unsigned int _rIterations;
 
     protected:
+        void benchmarkOperation(OpBenchmark &benchmark);
+
         void benchmarkScalarOperation(scalar::Ops op, double value, NDArray &x, NDArray &z);
 
         void benchmarkDeclarableOp(nd4j::ops::DeclarableOp &op, Context &context);

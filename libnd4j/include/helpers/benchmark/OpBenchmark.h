@@ -23,6 +23,14 @@ namespace nd4j {
             _z = z;
         }
 
+        NDArray& x() {
+            return *_x;
+        }
+
+        int opNum() {
+            return _opNum;
+        }
+
         OpBenchmark(NDArray *x, NDArray *z) {
             _x = x;
             _z = z;
@@ -32,6 +40,9 @@ namespace nd4j {
             _x = x;
             _z = z;
             _axis = axis;
+
+            if (_axis.size() > 1)
+                std::sort(_axis.begin(), _axis.end());
         }
 
         virtual void executeOnce();

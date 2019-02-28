@@ -30,6 +30,37 @@ namespace nd4j {
         _rIterations = runIterations;
     }
 
+    void BenchmarkHelper::benchmarkOperation(OpBenchmark &benchmark) {
+
+        for (uint i = 0; i < _wIterations; i++)
+            benchmark.executeOnce();
+
+        std::vector<Nd4jLong> timings(_rIterations);
+        double sumT = 0.0;
+
+        for (uint i = 0; i < _rIterations; i++) {
+            auto timeStart = std::chrono::system_clock::now();
+
+            benchmark.executeOnce();
+
+            auto timeEnd = std::chrono::system_clock::now();
+            auto loopTime = std::chrono::duration_cast<std::chrono::microseconds> ((timeEnd - timeStart)).count();
+            timings[i] = loopTime;
+            sumT += loopTime;
+        }
+        sumT /= _rIterations;
+
+        std::sort(timings.begin(), timings.end());
+        Nd4jLong median = timings[_rIterations / 2];
+
+        // opNum, DataType, Shape, average time, median time
+        auto t = DataTypeUtils::asString(benchmark.x().dataType());
+        auto s = ShapeUtils::shapeAsString(&benchmark.x());
+
+        // printing out stuff
+        nd4j_printf("%i\t%s\t%s\t%lld\t%lld\n", benchmark.opNum(), t.c_str(), s.c_str(), nd4j::math::nd4j_floor<double, Nd4jLong>(sumT), median);
+    }
+
     void BenchmarkHelper::benchmarkScalarOperation(scalar::Ops op, double value, NDArray &x, NDArray &z) {
         auto y = NDArrayFactory::create(x.dataType(), value);
 
