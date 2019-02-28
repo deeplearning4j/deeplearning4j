@@ -29,6 +29,8 @@
 #include <ops/ops.h>
 #include <OmpLaunchHelper.h>
 
+#include <helpers/BenchmarkHelper.h>
+
 using namespace nd4j;
 using namespace nd4j::graph;
 
@@ -42,6 +44,14 @@ public:
         fflush(stdout);
     }
 };
+
+TEST_F(PlaygroundTests, Test_OpBenchmark) {
+    BenchmarkHelper helper;
+
+    ScalarBenchmark sb(scalar::Add, NDArrayFactory::create_<float>('c', {1000, 1000}), NDArrayFactory::create_<float>(1.0f), NDArrayFactory::create_<float>('c', {1000, 1000}));
+
+    helper.runOperationSuit({&sb}, "message");
+}
 
 /*
 TEST_F(PlaygroundTests, Test_Reduce_Mechanics) {

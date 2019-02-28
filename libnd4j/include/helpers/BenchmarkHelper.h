@@ -22,7 +22,11 @@
 #define LIBND4J_BENCHMARKHELPER_H
 
 
-#include <benchmark/OpBenchmark.h>
+#include <helpers/OpBenchmark.h>
+#include <helpers/benchmark/ScalarBenchmark.h>
+#include <helpers/benchmark/TransformBenchmark.h>
+#include <helpers/benchmark/ReductionBenchmark.h>
+#include <helpers/benchmark/PairwiseBenchmark.h>
 #include <ops/declarable/DeclarableOp.h>
 #include <NDArray.h>
 
@@ -43,6 +47,9 @@ namespace nd4j {
         void benchmarkGEMM(char orderA, std::initializer_list<Nd4jLong> shapeA, char orderB, std::initializer_list<Nd4jLong> shapeB, char orderC, std::initializer_list<Nd4jLong> shapeC);
     public:
         BenchmarkHelper(unsigned int warmUpIterations = 10, unsigned int runIterations = 100);
+
+        void runOperationSuit(std::initializer_list<OpBenchmark*> benchmarks, const char *msg = nullptr);
+        void runOperationSuit(std::vector<OpBenchmark*> &benchmarks, const char *msg = nullptr);
 
         void runScalarSuit();
 

@@ -94,6 +94,23 @@ namespace nd4j {
         nd4j_printf("%i\t%s\t%s\t%lld\t%lld\n", op, t.c_str(), s.c_str(), nd4j::math::nd4j_floor<double, Nd4jLong>(sumT), median);
     }
 
+    void BenchmarkHelper::runOperationSuit(std::initializer_list<OpBenchmark*> benchmarks, const char *msg) {
+        std::vector<OpBenchmark*> ops(benchmarks);
+        runOperationSuit(ops, msg);
+    }
+
+    void BenchmarkHelper::runOperationSuit(std::vector<OpBenchmark*> &benchmarks, const char *msg) {
+        if (msg != nullptr) {
+            nd4j_printf("%s", msg);
+        }
+
+        nd4j_printf("OpNum\tDataType\tShape\tavg (us)\tmedian (us)\n","");
+
+        for (auto v:benchmarks)
+            benchmarkOperation(*v);
+
+        nd4j_printf("\n","");
+    }
 
     void BenchmarkHelper::runScalarSuit() {
         nd4j_printf("OpNum\tDataType\tShape\tavg (us)\tmedian (us)\n","");
