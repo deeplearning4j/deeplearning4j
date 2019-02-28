@@ -292,6 +292,7 @@ public class CBOW<T extends SequenceElement> implements ElementsLearningAlgorith
                 maxWinWordsCols = curr;
         }
         int[][] inputWindowWords = new int[items.size()][maxWinWordsCols];
+        int[][] inputWordsStatuses = new int[items.size()][maxWinWordsCols];
 
         long[] randoms = new long[items.size()];
         double[] alphas = new double[items.size()];
@@ -301,12 +302,19 @@ public class CBOW<T extends SequenceElement> implements ElementsLearningAlgorith
 
             T currentWord = items.get(cnt).getWord();
             currentWordIndexes[cnt] = currentWord.getIndex();
+
             int[] windowWords = items.get(cnt).getWindowWords().clone();
+            boolean[] windowStatuses = items.get(cnt).getWordStatuses().clone();
+
             for (int i = 0; i < maxWinWordsCols; ++i) {
-                if (i < windowWords.length)
+                if (i < windowWords.length) {
                     inputWindowWords[cnt][i] = windowWords[i];
-                else
+                    inputWordsStatuses[cnt][i] = windowStatuses[i] ? 1 : 0;
+                }
+                else {
                     inputWindowWords[cnt][i] = -1;
+                    inputWordsStatuses[cnt][i] = -1;
+                }
             }
 
             long randomValue = items.get(cnt).getRandomValue();
@@ -365,6 +373,7 @@ public class CBOW<T extends SequenceElement> implements ElementsLearningAlgorith
         INDArray currentWordIndexesArray = Nd4j.createFromArray(currentWordIndexes);
         INDArray alphasArray = Nd4j.createFromArray(alphas);
         INDArray windowWordsArray = Nd4j.createFromArray(inputWindowWords);
+        INDArray wordsStatusesArray = Nd4j.createFromArray(inputWordsStatuses);
         INDArray codesArray = Nd4j.createFromArray(inputCodes);
         INDArray indicesArray = Nd4j.createFromArray(inputIndices);
         INDArray numLabelsArray = Nd4j.createFromArray(numLabels);
@@ -406,6 +415,7 @@ public class CBOW<T extends SequenceElement> implements ElementsLearningAlgorith
         T currentWord = sentence.get(i);
 
         List<Integer> intsList = new ArrayList<>();
+        List<Boolean> statusesList = new ArrayList<>();
         for (int a = b; a < end; a++) {
             if (a != currentWindow) {
                 int c = i - currentWindow + a;
@@ -413,20 +423,23 @@ public class CBOW<T extends SequenceElement> implements ElementsLearningAlgorith
                     T lastWord = sentence.get(c);
 
                     intsList.add(lastWord.getIndex());
+                    statusesList.add(lastWord.isLocked());
                 }
             }
         }
 
         int[] windowWords = new int[intsList.size()];
+        boolean[] statuses = new boolean[intsList.size()];
         for (int x = 0; x < windowWords.length; x++) {
             windowWords[x] = intsList.get(x);
+            statuses[x] = statusesList.get(x);
         }
 
         // we don't allow inference from main loop here
         if (batchSize <= 1)
             iterateSample(currentWord, windowWords, nextRandom, alpha, false, 0, true, null);
         else {
-            batchSequences.put(currentWord, windowWords, nextRandom.get(), alpha);
+            batchSequences.put(currentWord, windowWords, statuses, nextRandom.get(), alpha);
         }
 
         if (batches != null && batches.get() != null && batches.get().size() >= configuration.getBatchSize()) {

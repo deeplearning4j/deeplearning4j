@@ -2,13 +2,17 @@ package org.deeplearning4j.models.embeddings.learning.impl.elements;
 
 import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;
 import org.nd4j.linalg.api.ops.aggregates.Batch;
+import org.nd4j.linalg.primitives.Pair;
 
 import java.util.concurrent.atomic.AtomicLong;
 
 public class BatchItem<T extends SequenceElement>  {
     private T word;
     private T lastWord;
+
     private int[] windowWords; // CBOW only
+    private boolean[] wordStatuses;
+
     private long randomValue;
     private double alpha;
     private int windowWordsLength;
@@ -22,21 +26,23 @@ public class BatchItem<T extends SequenceElement>  {
         this.alpha = alpha;
     }
 
-    public BatchItem(T word, int[] windowWords, long randomValue, double alpha, int numLabel) {
+    public BatchItem(T word, int[] windowWords, boolean[] wordStatuses, long randomValue, double alpha, int numLabel) {
         this.word = word;
         this.lastWord = lastWord;
         this.randomValue = randomValue;
         this.alpha = alpha;
         this.numLabel = numLabel;
         this.windowWords = windowWords.clone();
+        this.wordStatuses = wordStatuses.clone();
     }
 
-    public BatchItem(T word, int[] windowWords, long randomValue, double alpha) {
+    public BatchItem(T word, int[] windowWords, boolean[] wordStatuses, long randomValue, double alpha) {
         this.word = word;
         this.lastWord = lastWord;
         this.randomValue = randomValue;
         this.alpha = alpha;
         this.windowWords = windowWords.clone();
+        this.wordStatuses = wordStatuses.clone();
     }
 
     public T getWord() {
@@ -59,10 +65,6 @@ public class BatchItem<T extends SequenceElement>  {
         return randomValue;
     }
 
-    public void setRandomValue(long randomValue) {
-        this.randomValue = randomValue;
-    }
-
     public double getAlpha() {
         return alpha;
     }
@@ -75,15 +77,11 @@ public class BatchItem<T extends SequenceElement>  {
         return windowWords;
     }
 
-    public void setWindowWords(int[] windowWords) {
-        this.windowWords = windowWords;
+    public boolean[] getWordStatuses() {
+        return wordStatuses;
     }
 
     public int getNumLabel() {
         return numLabel;
-    }
-
-    public void setNumLabel(int numLabel) {
-        this.numLabel = numLabel;
     }
 }
