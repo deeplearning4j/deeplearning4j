@@ -21,6 +21,10 @@ namespace nd4j {
         void executeOnce() override {
             NativeOpExcutioner::execTransformStrict(_opNum, _x->buffer(), _x->shapeInfo(),  _z->buffer(), _z->shapeInfo(), nullptr, nullptr, nullptr);
         }
+
+        OpBenchmark* clone() override  {
+            return new TransformBenchmark((transform::StrictOps) _opNum, _x, _z);
+        }
     };
 }
 

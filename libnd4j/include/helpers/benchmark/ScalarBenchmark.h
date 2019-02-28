@@ -14,12 +14,21 @@ namespace nd4j {
             //
         }
 
+        ScalarBenchmark(scalar::Ops op) : OpBenchmark() {
+            _opNum = (int) op;
+        }
+
         ScalarBenchmark(scalar::Ops op, NDArray *x, NDArray *y, NDArray *z) : OpBenchmark(x, y, z) {
             _opNum = (int) op;
         }
 
         void executeOnce() override {
             NativeOpExcutioner::execScalar(_opNum, _x->buffer(), _x->shapeInfo(), _z->buffer(), _z->shapeInfo(), _y->buffer(), _y->shapeInfo(), nullptr);
+        }
+
+
+        OpBenchmark* clone() override  {
+            return new ScalarBenchmark((scalar::Ops) _opNum, _x, _y, _z);
         }
     };
 }

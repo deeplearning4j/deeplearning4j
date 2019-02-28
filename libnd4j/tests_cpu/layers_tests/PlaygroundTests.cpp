@@ -56,20 +56,32 @@ TEST_F(PlaygroundTests, Test_OpBenchmark_1) {
     helper.runOperationSuit({&sb1, &sb2}, "ScalarAdd");
 }
 
+#define GENERATE_SCALAR(...) [__VA_ARGS__] (ResultSet &x, ResultSet &z)
+
 TEST_F(PlaygroundTests, Test_OpBenchmark_2) {
-    /*
-    ScalarBenchmark sb3;
-    auto generator = GENERATOR(params) {
-        std::vector<NDArray*> results;
+    BenchmarkHelper helper;
+    Parameters parameters;
+    float scalar = 2.0f;
 
-        for (int e = 2; e < 32; e *= e)
-            results.emplace_back(NDArrayFactory::create('c', {e, e}));
+    ScalarBenchmark sb(scalar::Multiply);
 
-        return results;
+    // Y will be shared
+    sb.setY(NDArrayFactory::create_<float>(scalar));
+
+    auto generator = GENERATE_SCALAR() {
+        x.push_back(NDArrayFactory::create_<float>('c', {100, 100}));
+        z.push_back(NDArrayFactory::create_<float>('c', {100, 100}));
+
+        x.push_back(NDArrayFactory::create_<float>('c', {1000, 1000}));
+        z.push_back(NDArrayFactory::create_<float>('c', {1000, 1000}));
+
+        auto shared = NDArrayFactory::create_<float>('c', {256, 768});
+        x.push_back(shared);
+        z.push_back(shared);
     };
-    auto list = BenchmarkHelper::buildOperations(sb3, generator);
-    */
 
+    auto list = helper.buildOperations(&sb, generator);
+    helper.runOperationSuit(list, "LambdaTest");
 }
 
 /*

@@ -21,6 +21,10 @@ namespace nd4j {
         void executeOnce() override {
             NativeOpExcutioner::execPairwiseTransform(_opNum, _x->buffer(), _x->shapeInfo(), _y->buffer(), _y->shapeInfo(), _z->buffer(), _z->shapeInfo(), nullptr);
         }
+
+        OpBenchmark* clone() override  {
+            return new PairwiseBenchmark((pairwise::Ops) _opNum, _x, _y, _z);
+        }
     };
 }
 

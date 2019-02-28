@@ -127,4 +127,32 @@ namespace nd4j {
             }
         }
     }
+
+
+    std::vector<OpBenchmark*> BenchmarkHelper::buildOperations(ScalarBenchmark *op, const std::function<void (ResultSet&, ResultSet&)>& func) {
+        ResultSet x;
+        x.setNonRemovable();
+        ResultSet z;
+        z.setNonRemovable();
+        func(x, z);
+        std::vector<OpBenchmark*> result;
+
+        if (x.size() != z.size())
+            throw std::runtime_error("ScalarBenchmark: number of X and Z arrays should match");
+
+        for (int e = 0; e < x.size(); e++) {
+            auto x_ = x.at(e);
+            auto z_ = z.at(e);
+
+            auto clone = op->clone();
+            clone->setX(x_);
+            clone->setZ(z_);
+
+            result.emplace_back(clone);
+        }
+
+        return result;
+    }
+    //template std::vector<OpBenchmark*> BenchmarkHelper::buildOperations<float>(ScalarBenchmark *op, const std::function<void (float&, float&)>& func);
+    //template std::vector<OpBenchmark*> BenchmarkHelper::buildOperations<ResultSet>(ScalarBenchmark *op, const std::function<void (ResultSet&, ResultSet&)>& func);
 }

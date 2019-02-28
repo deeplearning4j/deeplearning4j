@@ -29,6 +29,8 @@
 #include <helpers/benchmark/PairwiseBenchmark.h>
 #include <ops/declarable/DeclarableOp.h>
 #include <NDArray.h>
+#include <benchmark/Parameters.h>
+#include <array/ResultSet.h>
 
 namespace nd4j {
 
@@ -51,9 +53,10 @@ namespace nd4j {
         void runOperationSuit(std::initializer_list<OpBenchmark*> benchmarks, const char *msg = nullptr);
         void runOperationSuit(std::vector<OpBenchmark*> &benchmarks, const char *msg = nullptr);
 
-        #ifndef __JAVACPP_HACK__
-           // void std::vector<OpBenchmark*> buildOperations(OpBenchmark *op, std::function<std::vector<>>(T)>& func);
-        #endif
+        //#ifndef __JAVACPP_HACK__
+        //template <typename T>
+        std::vector<OpBenchmark*> buildOperations(ScalarBenchmark *op, const std::function<void (ResultSet &, ResultSet &)>& func);
+        //#endif
 
         void runScalarSuit();
 

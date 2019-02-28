@@ -18,8 +18,16 @@ namespace nd4j {
             _opNum = (int) op;
         }
 
+        ReductionBenchmark(reduce::FloatOps op, NDArray *x, NDArray *z, std::vector<int> axis) : OpBenchmark(x, z, axis) {
+            _opNum = (int) op;
+        }
+
         void executeOnce() override {
             NativeOpExcutioner::execReduceFloat(_opNum, _x->buffer(), _x->shapeInfo(), nullptr,  _z->buffer(), _z->shapeInfo(), _axis.data(), _axis.size(), nullptr, nullptr);
+        }
+
+        OpBenchmark* clone() override  {
+            return new ReductionBenchmark((reduce::FloatOps) _opNum, _x, _z, _axis);
         }
     };
 }
