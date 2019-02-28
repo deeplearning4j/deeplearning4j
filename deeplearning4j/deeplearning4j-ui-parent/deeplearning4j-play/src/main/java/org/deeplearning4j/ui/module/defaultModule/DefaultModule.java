@@ -39,20 +39,17 @@ import static play.mvc.Results.redirect;
  */
 public class DefaultModule implements UIModule {
     private final boolean multiSession;
-    private final Supplier<String> addressSupplier;
 
     public DefaultModule() {
-        this(false, null);
+        this(false);
     }
 
     /**
      *
      * @param multiSession multi-session mode
-     * @param addressSupplier supplier for server address (server address in PlayUIServer gets initialized after modules)
      */
-    public DefaultModule(boolean multiSession, Supplier<String> addressSupplier) {
+    public DefaultModule(boolean multiSession) {
         this.multiSession = multiSession;
-        this.addressSupplier = addressSupplier;
     }
 
     @Override
@@ -64,9 +61,7 @@ public class DefaultModule implements UIModule {
     public List<Route> getRoutes() {
         //TODO
         //        Route r = new Route("/", HttpMethod.GET, FunctionType.Supplier, () -> ok(org.deeplearning4j.ui.views.html.defaultPage.DefaultPage.apply()));
-        Route r = multiSession ? new Route("/", HttpMethod.GET, FunctionType.Supplier,
-                () -> ok("UI server is in multi-session mode. You can find a training session at "
-                        + addressSupplier.get() + "/train/:sessionId (See console for attached training session ID.)"))
+        Route r = multiSession ? new Route("/", HttpMethod.GET, FunctionType.Supplier, () -> redirect("/train"))
                 : new Route("/", HttpMethod.GET, FunctionType.Supplier, () -> redirect("/train/overview"));
 
         return Collections.singletonList(r);

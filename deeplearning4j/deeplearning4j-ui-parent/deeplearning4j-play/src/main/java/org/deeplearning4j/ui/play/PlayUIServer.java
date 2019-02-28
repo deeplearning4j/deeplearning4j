@@ -180,10 +180,8 @@ public class PlayUIServer extends UIServer {
         }
         routingDsl.GET("/assets/*file").routeTo(FunctionUtil.function(new Assets(ASSETS_ROOT_DIRECTORY)));
 
-        Supplier<String> addressSupplier = () -> getAddress();
-
-        uiModules.add(new DefaultModule(multiSession, addressSupplier)); //For: navigation page "/"
-        uiModules.add(new TrainModule(multiSession, statsStorageLoader, addressSupplier));
+        uiModules.add(new DefaultModule(multiSession)); //For: navigation page "/"
+        uiModules.add(new TrainModule(multiSession, statsStorageLoader, this::getAddress));
         uiModules.add(new ConvolutionalListenerModule());
         uiModules.add(new TsneModule());
         uiModules.add(new SameDiffModule());

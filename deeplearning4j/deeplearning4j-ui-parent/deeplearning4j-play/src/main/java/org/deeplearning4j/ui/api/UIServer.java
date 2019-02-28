@@ -67,11 +67,13 @@ public abstract class UIServer {
             playUIServer.runMain(new String[] {});
             uiServer = playUIServer;
         } else if (multiSession && !uiServer.isMultiSession()) {
-            throw new RuntimeException("Cannot return multi-session instance. " +
-                    "UIServer has already started in single-session mode at " + uiServer.getAddress());
+            throw new RuntimeException("Cannot return multi-session instance." +
+                    " UIServer has already started in single-session mode at " + uiServer.getAddress() +
+                    " You may stop the UI server instance, and start a new one.");
         } else if (!multiSession && uiServer.isMultiSession()) {
-            throw new RuntimeException("Cannot return single-session instance. " +
-                    "UIServer has already started in multi-session mode at " + uiServer.getAddress());
+            throw new RuntimeException("Cannot return single-session instance." +
+                    " UIServer has already started in multi-session mode at " + uiServer.getAddress() +
+                    " You may stop the UI server instance, and start a new one.");
         }
         return uiServer;
     }

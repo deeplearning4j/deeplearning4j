@@ -139,7 +139,7 @@ public class TrainModule implements UIModule {
         r0 = new Route("/train/multisession", HttpMethod.GET, FunctionType.Supplier, () -> ok(multiSession ? "true" : "false"));
 
         if (multiSession) {
-            r0a = new Route("/train", HttpMethod.GET, FunctionType.Supplier, () -> redirect("/"));
+            r0a = new Route("/train", HttpMethod.GET, FunctionType.Supplier, this::listSessions);
             r0b = new Route("/train/:sessionId", HttpMethod.GET, FunctionType.Function,
                     (sessionId) -> redirect("/train/" + sessionId + "/overview"));
             r2 = new Route("/train/:sessionId/overview", HttpMethod.GET, FunctionType.Function,
@@ -185,6 +185,38 @@ public class TrainModule implements UIModule {
 
 
         return Arrays.asList(r0, r0a, r0b, r2, r2a, r3, r3a, r3b, r4, r4a, r6b, r6d, r7a);
+    }
+
+    /**
+     * List training sessions
+     * @return HTML list of training sessions
+     */
+    private Result listSessions() {
+        StringBuilder sb = new StringBuilder("<!DOCTYPE html>\n" +
+                "<html lang=\"en\">\n" +
+                "<head>\n" +
+                "        <meta charset=\"utf-8\">\n" +
+                "        <title>Training sessions - DL4J Training UI</title>\n" +
+                "    </head>\n" +
+                "\n" +
+                "    <body>\n" +
+                "        <h1>DL4J Training UI</h1>\n" +
+                "        <p>UI server is in multi-session mode." +
+                " To visualize a training session, please select one from the following list.</p>\n" +
+                "        <h2>List of attached training sessions</h2>\n");
+        if (!knownSessionIDs.isEmpty()) {
+            sb.append("        <ul>");
+            for (String sessionId : knownSessionIDs.keySet()) {
+                sb.append("            <li><a href=\"train/" + sessionId + "\">" + sessionId + "</a></li>\n");
+            }
+            sb.append("        </ul>");
+        } else {
+            sb.append("No training session attached.");
+        }
+
+        sb.append("    </body>\n" +
+                "</html>\n");
+        return ok(sb.toString()).as("text/html; charset=utf-8");
     }
 
     /**
