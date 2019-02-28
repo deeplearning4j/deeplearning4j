@@ -6,8 +6,13 @@ import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.graph.vertex.BaseGraphVertex;
 import org.deeplearning4j.nn.graph.vertex.VertexIndices;
+import org.deeplearning4j.nn.workspace.ArrayType;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
+import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.impl.reduce3.Dot;
+import org.nd4j.linalg.api.ops.impl.reduce3.EuclideanDistance;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
 
 import java.util.Arrays;
@@ -47,7 +52,10 @@ public class DotProductVertex extends BaseGraphVertex {
     public INDArray doForward(boolean training, LayerWorkspaceMgr workspaceMgr) {
         INDArray a = inputs[0];
         INDArray b = inputs[1];
-        return null;
+        try(MemoryWorkspace ws = workspaceMgr.notifyScopeBorrowed(ArrayType.ACTIVATIONS)) {
+            INDArray result = Nd4j.getExecutioner().exec(new Dot(a,b));
+            return result;
+        }
     }
 
     @Override
