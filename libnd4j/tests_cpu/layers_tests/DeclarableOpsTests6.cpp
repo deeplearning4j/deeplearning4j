@@ -81,6 +81,51 @@ TEST_F(DeclarableOpsTests6, Test_StridedSlice_Once_Again_2) {
     delete result;
 }
 
+TEST_F(DeclarableOpsTests6, Test_StridedSlice_Once_Again_3) {
+    auto matrix = NDArrayFactory::create<double>(10);
+    auto b = NDArrayFactory::create<double>(0);
+    auto e = NDArrayFactory::create<double>(0);
+    auto s = NDArrayFactory::create<double>(1.0);
+
+    //auto exp = NDArrayFactory::create<double>('c', {2}, {1.0f, 2.0f});
+
+    //matrix.linspace(1);
+
+    nd4j::ops::strided_slice op;
+    auto result = op.execute({&matrix, &b, &e, &s}, {}, {0, 0, 0, 0, 1});
+    ASSERT_EQ(Status::OK(), result->status());
+
+    auto z = result->at(0);
+    z->printShapeInfo("SS OS shape");
+    ASSERT_TRUE(z->isEmpty());
+    //ASSERT_EQ(exp, *z);
+
+    delete result;
+}
+
+TEST_F(DeclarableOpsTests6, Test_StridedSlice_Once_Again_4) {
+    auto matrix = NDArrayFactory::create<double>('c', {1}, {10});
+    auto b = NDArrayFactory::create<double>('c', {1}, {0.});
+    auto e = NDArrayFactory::create<double>('c', {1}, {0.});
+    auto s = NDArrayFactory::create<double>('c', {1}, {1.0});
+
+    //auto exp = NDArrayFactory::create<double>('c', {2}, {1.0f, 2.0f});
+
+    //matrix.linspace(1);
+
+    nd4j::ops::strided_slice op;
+    auto result = op.execute({&matrix, &b, &e, &s}, {}, {0, 0, 0, 0, 1});
+    ASSERT_EQ(Status::OK(), result->status());
+
+    auto z = result->at(0);
+    z->printShapeInfo("SS OS shape");
+    ASSERT_TRUE(z->isEmpty());
+    //ASSERT_EQ(exp, *z);
+
+    delete result;
+}
+
+
 TEST_F(DeclarableOpsTests6, Test_Simple_Scalar_1) {
     auto x = NDArrayFactory::create<double>('c', {1, 1}, {2.0f});
     auto exp = NDArrayFactory::create<double>('c', {1, 1}, {4.0f});

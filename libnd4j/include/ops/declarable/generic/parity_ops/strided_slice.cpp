@@ -286,6 +286,10 @@ namespace nd4j {
 
         CUSTOM_OP_IMPL(strided_slice, 1, 1, false, 0, 5) {
             auto x = INPUT_VARIABLE(0);
+            auto z = OUTPUT_VARIABLE(0);
+            if (z->isEmpty()) {
+                return ND4J_STATUS_OK;
+            }
 
             int begin_mask = INT_ARG(0);
             int ellipsis_mask = INT_ARG(1);
@@ -387,7 +391,6 @@ namespace nd4j {
 
             auto sub = x->subarray(indices);
 
-            auto z = OUTPUT_VARIABLE(0);
             z->assign(sub);
 
             delete sub;
@@ -473,9 +476,16 @@ namespace nd4j {
             // FIXME: remove this, once we bring in 1D NDArrays 
             vectorize(input_shape);
             bool result = _preprocess_strided_slice(nullptr, &shape, input_shape, begin, end, strides, begin_mask, ellipsis_mask, end_mask, new_axis_mask, shrink_axis_mask, &is_identity, &is_simple_slice, &is_dim0);
-
-            ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(shape.size()), Nd4jLong);
-            shape::shapeBuffer(shape.size(), ArrayOptions::dataType(inShape), shape.data(), newShape);
+            if (shape.size()) {
+                ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(shape.size()), Nd4jLong);
+                shape::shapeBuffer(shape.size(), ArrayOptions::dataType(inShape), shape.data(), newShape);
+                //if (input_shape[0] == 0)
+                //    ArrayOptions::setPropertyBit(newShape, nd4j::ArrayType::EMPTY);
+            }
+            else {
+                newShape = ShapeBuilders::createScalarShapeInfo(ArrayOptions::dataType(inShape), block.workspace());
+                ArrayOptions::setPropertyBit(newShape, ARRAY_EMPTY);
+            }
 
             return SHAPELIST(newShape);
         }
