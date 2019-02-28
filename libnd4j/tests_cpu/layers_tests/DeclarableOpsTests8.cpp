@@ -3428,6 +3428,37 @@ TYPED_TEST(TypedDeclarableOpsTests8, LrnTest_4) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+TYPED_TEST(TypedDeclarableOpsTests8, LrnTest_4_119) {
+    int iterations = 100;
+    auto x = NDArrayFactory::create<TypeParam>('c', {8, 32, 64, 64});
+    auto z = NDArrayFactory::create<TypeParam>('c', {8, 32, 64, 64});
+    x.linspace(1);
+
+    nd4j::ops::lrn op;
+
+    op.execute({&x}, {&z}, {1.0, 1.0, 0.5}, {2}, {}, false, nd4j::DataType::DOUBLE);
+
+    auto timeStart = std::chrono::system_clock::now();
+
+    for (int e = 0; e < iterations; e++)
+        op.execute({&x}, {&z}, {1.0, 1.0, 0.5}, {2}, {}, false, nd4j::DataType::DOUBLE);
+
+    auto timeEnd = std::chrono::system_clock::now();
+    auto spanTime = std::chrono::duration_cast<std::chrono::microseconds> ((timeEnd - timeStart) / iterations).count();
+    auto ttlTime = std::chrono::duration_cast<std::chrono::milliseconds> ((timeEnd - timeStart)).count();
+
+
+    //ASSERT_EQ(Status::OK(), results);
+
+    nd4j_printf("avg time: %lld ms\n", spanTime);
+
+//    ASSERT_TRUE(exp.isSameShape(out));
+//    out->printIndexedBuffer("LRN out");
+//    exp.printIndexedBuffer("LRN exp");
+//    ASSERT_TRUE(exp.equalsTo(out));
+}
+
+////////////////////////////////////////////////////////////////////////////////
 TYPED_TEST(TypedDeclarableOpsTests8, LrnTest_5) {
 
     auto x = NDArrayFactory::create<TypeParam>('f', {8, 32, 64, 64});

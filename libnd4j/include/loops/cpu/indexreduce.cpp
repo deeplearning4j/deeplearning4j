@@ -65,7 +65,7 @@ Nd4jLong IndexReduce<X>::execScalar(void *vx, Nd4jLong *xShapeInfo, void *vextra
     {                
         auto local = OpType::startingIndexValue(x);
         auto threadNum = omp_get_thread_num();                    
-        Nd4jLong threadOffset = info.getThreadOffset(threadNum);     
+        Nd4jLong threadOffset = info.getThreadOffset(threadNum);
         
         #pragma omp simd
         for (Nd4jLong i = 0; i < info.getItersPerThread(threadNum); i++) {            

@@ -62,7 +62,7 @@ namespace ops {
 
         auto ts = NDArrayFactory::create(delta, block.getWorkspace());
         // FIXME: delta should be NDArray scalar
-        helpers::_adjust_saturation(input, output, &ts, isNHWC);
+        helpers::adjust_saturation(input, output, &ts, isNHWC);
 
         return Status::OK();
     }

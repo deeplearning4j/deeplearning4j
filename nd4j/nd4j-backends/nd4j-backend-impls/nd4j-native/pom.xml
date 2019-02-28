@@ -194,6 +194,28 @@
                         <artifactId>nd4j-native-api</artifactId>
                         <version>${project.version}</version>
                     </dependency>
+                    <dependency>
+                        <groupId>org.bytedeco.javacpp-presets</groupId>
+                        <artifactId>openblas</artifactId>
+                        <version>${openblas.version}-${javacpp-presets.version}</version>
+                    </dependency>
+                    <dependency>
+                        <groupId>org.bytedeco.javacpp-presets</groupId>
+                        <artifactId>openblas</artifactId>
+                        <version>${openblas.version}-${javacpp-presets.version}</version>
+                        <classifier>${dependency.platform}</classifier>
+                    </dependency>
+                    <dependency>
+                        <groupId>org.bytedeco.javacpp-presets</groupId>
+                        <artifactId>mkl-dnn</artifactId>
+                        <version>${mkl-dnn.javacpp.version}</version>
+                    </dependency>
+                    <dependency>
+                        <groupId>org.bytedeco.javacpp-presets</groupId>
+                        <artifactId>mkl-dnn</artifactId>
+                        <version>${mkl-dnn.javacpp.version}</version>
+                        <classifier>${dependency.platform2}</classifier>
+                    </dependency>
                 </dependencies>
                 <configuration>
                     <properties>${javacpp.platform.properties}</properties>
@@ -219,6 +241,7 @@
                         <classPath>${project.build.outputDirectory}</classPath>
                     </classPaths>
                     <includePaths>
+                        <includePath>${libnd4jhome}/blasbuild/cpu/include</includePath>
                         <includePath>${libnd4jhome}/blas</includePath>
                         <includePath>${libnd4jhome}/include</includePath>
                         <includePath>${libnd4jhome}/include/helpers</includePath>

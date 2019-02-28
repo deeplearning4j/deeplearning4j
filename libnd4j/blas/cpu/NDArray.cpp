@@ -564,7 +564,7 @@ std::vector<int64_t> NDArray::getShapeAsFlatVector() {
 
 
     template<typename T>
-    void NDArray::applyPairwiseLambda(NDArray* other, const std::function<T(T, T)>& func, NDArray* target) {
+    void NDArray::applyPairwiseLambda(const NDArray* other, const std::function<T(T, T)>& func, NDArray* target) {
         if (target == nullptr)
             target = this;
 
@@ -616,16 +616,16 @@ std::vector<int64_t> NDArray::getShapeAsFlatVector() {
             }
         }
     }
-    template void NDArray::applyPairwiseLambda(NDArray* other, const std::function<double (double, double)>& func, NDArray* target);
-    template void NDArray::applyPairwiseLambda(NDArray* other, const std::function<float (float, float)>& func, NDArray* target);
-    template void NDArray::applyPairwiseLambda(NDArray* other, const std::function<float16 (float16, float16)>& func, NDArray* target);
-    template void NDArray::applyPairwiseLambda(NDArray* other, const std::function<bfloat16 (bfloat16, bfloat16)>& func, NDArray* target);
-    template void NDArray::applyPairwiseLambda(NDArray* other, const std::function<Nd4jLong (Nd4jLong, Nd4jLong)>& func, NDArray* target);
-    template void NDArray::applyPairwiseLambda(NDArray* other, const std::function<int (int, int)>& func, NDArray* target);
-    template void NDArray::applyPairwiseLambda(NDArray* other, const std::function<int16_t (int16_t, int16_t)>& func, NDArray* target);
-    template void NDArray::applyPairwiseLambda(NDArray* other, const std::function<uint8_t (uint8_t, uint8_t)>& func, NDArray* target);
-    template void NDArray::applyPairwiseLambda(NDArray* other, const std::function<int8_t (int8_t, int8_t)>& func, NDArray* target);
-    template void NDArray::applyPairwiseLambda(NDArray* other, const std::function<bool (bool, bool)>& func, NDArray* target);
+    template void NDArray::applyPairwiseLambda(const NDArray* other, const std::function<double (double, double)>& func, NDArray* target);
+    template void NDArray::applyPairwiseLambda(const NDArray* other, const std::function<float (float, float)>& func, NDArray* target);
+    template void NDArray::applyPairwiseLambda(const NDArray* other, const std::function<float16 (float16, float16)>& func, NDArray* target);
+    template void NDArray::applyPairwiseLambda(const NDArray* other, const std::function<bfloat16 (bfloat16, bfloat16)>& func, NDArray* target);
+    template void NDArray::applyPairwiseLambda(const NDArray* other, const std::function<Nd4jLong (Nd4jLong, Nd4jLong)>& func, NDArray* target);
+    template void NDArray::applyPairwiseLambda(const NDArray* other, const std::function<int (int, int)>& func, NDArray* target);
+    template void NDArray::applyPairwiseLambda(const NDArray* other, const std::function<int16_t (int16_t, int16_t)>& func, NDArray* target);
+    template void NDArray::applyPairwiseLambda(const NDArray* other, const std::function<uint8_t (uint8_t, uint8_t)>& func, NDArray* target);
+    template void NDArray::applyPairwiseLambda(const NDArray* other, const std::function<int8_t (int8_t, int8_t)>& func, NDArray* target);
+    template void NDArray::applyPairwiseLambda(const NDArray* other, const std::function<bool (bool, bool)>& func, NDArray* target);
 
 
 ////////////////////////////////////////////////////////////////////////
@@ -2505,27 +2505,22 @@ template void NDArray::applyScalar(nd4j::scalar::Ops op, const bool scalar, NDAr
         nd4j_debug("Requested length in reshape: %i; Existing length: %i;\n", arrLength, this->lengthOf());
         throw std::runtime_error("Bad shape!");
     }
-
-    int shapeLength = shape::shapeInfoLength(rank);
-    // remember old values
+    
+    Nd4jLong *shapeInfoNew;
+    ALLOCATE(shapeInfoNew, _workspace, shape::shapeInfoLength(rank), Nd4jLong);
 
     // we can do this only if there was no permute applied, or there are no weird strides
-    if (shape::canReshape(this->rankOf(), this->_shapeInfo, shape.size(), shape.data(), order == 'f')) {
-        Nd4jLong *shapeInfoNew;
-        ALLOCATE(shapeInfoNew, _workspace, shape::shapeInfoLength(rank), Nd4jLong);
-
-        shape::reshapeCF(this->rankOf(), this->_shapeInfo, shape.size(), shape.data(), order == 'f', shapeInfoNew);
-
+    if (shape::reshapeCF(this->rankOf(), this->_shapeInfo, shape.size(), shape.data(), order == 'f', shapeInfoNew)) {
+        
         if (_isShapeAlloc)
             RELEASE(_shapeInfo, _workspace);
 
         ArrayOptions::setDataType(shapeInfoNew, this->dataType());
         _shapeInfo = shapeInfoNew;
         _isShapeAlloc = true;
-    } else {
-        Nd4jLong *shapeInfoNew;
-        ALLOCATE(shapeInfoNew, _workspace, shape::shapeInfoLength(rank), Nd4jLong);
-
+    } 
+    else {
+    
         if (order == 'c')
             shape::shapeBuffer(shape.size(), dataType(), shape.data(), shapeInfoNew);
         else
@@ -2538,11 +2533,8 @@ template void NDArray::applyScalar(nd4j::scalar::Ops op, const bool scalar, NDAr
 
         if (_isBuffAlloc)
             RELEASE(_buffer, _workspace);
-
-
         if (_isShapeAlloc)
             RELEASE(_shapeInfo, _workspace);
-
 
         _buffer = newBuffer;
         _shapeInfo = shapeInfoNew;
@@ -2632,7 +2624,7 @@ template void NDArray::applyScalar(nd4j::scalar::Ops op, const bool scalar, NDAr
         if(result.ordering() == 'c') {           //  ews == 1 always here
 //#pragma omp parallel for simd if(resultLen > Environment::getInstance()->elementwiseThreshold()) schedule(guided)
             for(Nd4jLong i=0;  i<resultLen; ++i) {
-                auto yOffset = shape::subArrayIndex(newShapeInfo, _shapeInfo, i);
+                auto yOffset = shape::subArrayOffset(i, newShapeInfo, _shapeInfo);
                 BUILD_SINGLE_SELECTOR(xType, this->template templatedAssign, (newBuff, i, this->_buffer, yOffset), LIBND4J_TYPES);
 
             }
@@ -2643,7 +2635,7 @@ template void NDArray::applyScalar(nd4j::scalar::Ops op, const bool scalar, NDAr
             for(int i=0;  i<resultLen; ++i) {
 
                 auto xOffset = result.getOffset(i);
-                auto yOffset = shape::subArrayIndex(newShapeInfo, _shapeInfo, i);
+                auto yOffset = shape::subArrayOffset(i, newShapeInfo, _shapeInfo);
                 BUILD_SINGLE_SELECTOR(xType, this->template templatedAssign, (newBuff, xOffset, this->_buffer, yOffset), LIBND4J_TYPES);
             }
         }
@@ -2670,14 +2662,14 @@ template void NDArray::applyScalar(nd4j::scalar::Ops op, const bool scalar, NDAr
         if(target.ordering() == 'c' && ews == 1) {           //  ews == 1 always here
 #pragma omp parallel for simd if(targetLen > Environment::getInstance()->elementwiseThreshold()) schedule(guided)
             for(Nd4jLong i=0;  i<targetLen; ++i) {
-                auto yOffset = shape::subArrayIndex(target._shapeInfo, _shapeInfo, i);
+                auto yOffset = shape::subArrayOffset(i, target._shapeInfo, _shapeInfo);
                 BUILD_DOUBLE_SELECTOR(target._dataType, _dataType, templatedDoubleAssign, (target._buffer, i, _buffer, yOffset), LIBND4J_TYPES, LIBND4J_TYPES);
             }
         }
         else if(target.ordering() == 'c' && ews > 1) {
 #pragma omp parallel for simd if(targetLen > Environment::getInstance()->elementwiseThreshold()) schedule(guided)
             for(int i=0;  i<targetLen; ++i) {
-                auto yOffset = shape::subArrayIndex(target._shapeInfo, _shapeInfo, i);
+                auto yOffset = shape::subArrayOffset(i, target._shapeInfo, _shapeInfo);
                 BUILD_DOUBLE_SELECTOR(target._dataType, _dataType, templatedDoubleAssign, (target._buffer, i*ews, _buffer, yOffset), LIBND4J_TYPES, LIBND4J_TYPES);
             }
         }
@@ -2686,7 +2678,7 @@ template void NDArray::applyScalar(nd4j::scalar::Ops op, const bool scalar, NDAr
             for(int i=0;  i<targetLen; ++i) {
 
                 auto xOffset = target.getOffset(i);
-                auto yOffset = shape::subArrayIndex(target._shapeInfo, _shapeInfo, i);
+                auto yOffset = shape::subArrayOffset(i, target._shapeInfo, _shapeInfo);
                 BUILD_DOUBLE_SELECTOR(target._dataType, _dataType, templatedDoubleAssign, (target._buffer, xOffset, _buffer, yOffset), LIBND4J_TYPES, LIBND4J_TYPES);
             }
         }
@@ -2707,14 +2699,14 @@ template void NDArray::applyScalar(nd4j::scalar::Ops op, const bool scalar, NDAr
         if(target.ordering() == 'c' && ews == 1) {           //  ews == 1 always here
 #pragma omp parallel for simd if(targetLen > Environment::getInstance()->elementwiseThreshold()) schedule(guided)
             for (int i = 0; i < targetLen; ++i) {
-                auto yOffset = shape::subArrayIndex(target._shapeInfo, _shapeInfo, i);
+                auto yOffset = shape::subArrayOffset(i, target._shapeInfo, _shapeInfo);
                 BUILD_DOUBLE_SELECTOR(target._dataType, _dataType, templatedDoubleAssign, (target._buffer, i, _buffer, yOffset), LIBND4J_TYPES, LIBND4J_TYPES);
             }
         }
         else if(target.ordering() == 'c' && ews > 1) {
 #pragma omp parallel for simd if(targetLen > Environment::getInstance()->elementwiseThreshold()) schedule(guided)
             for(int i=0;  i<targetLen; ++i) {
-                auto yOffset = shape::subArrayIndex(target._shapeInfo, _shapeInfo, i);
+                auto yOffset = shape::subArrayOffset(i, target._shapeInfo, _shapeInfo);
                 BUILD_DOUBLE_SELECTOR(target._dataType, _dataType, templatedDoubleAssign, (target._buffer, i*ews, _buffer, yOffset), LIBND4J_TYPES, LIBND4J_TYPES);
             }
         }
@@ -2724,7 +2716,7 @@ template void NDArray::applyScalar(nd4j::scalar::Ops op, const bool scalar, NDAr
             for(int i=0;  i<targetLen; ++i) {
 
                 auto xOffset = target.getOffset(i);
-                auto yOffset = shape::subArrayIndex(target._shapeInfo, _shapeInfo, i);
+                auto yOffset = shape::subArrayOffset(i, target._shapeInfo, _shapeInfo);
                 BUILD_DOUBLE_SELECTOR(target._dataType, _dataType, templatedDoubleAssign, (target._buffer, xOffset, _buffer, yOffset), LIBND4J_TYPES, LIBND4J_TYPES);
             }
         }
@@ -4057,16 +4049,19 @@ template void NDArray::pIdx(const Nd4jLong* indices, const bool value);
         Nd4jLong *newShape;
         ALLOCATE(newShape, _workspace, shape::shapeInfoLength(rank), Nd4jLong);
         memcpy(newShape, _shapeInfo, shape::shapeInfoByteLength(rank));
-        newShape[shape::shapeInfoLength(rank) - 2] = 0;
 
         auto shapeOf = shape::shapeOf(newShape);
         auto stridesOf = shape::stride(newShape);
 
         Nd4jLong offset = 0;
         Nd4jLong first, last;
-        for (int d = 0; d < rank; ++d) {
+        bool continuous = false;
+        int current = rank - 1;
+
+        for (int d = rank - 1; d >= 0; --d) {
+
             // building new shape first
-            if (idx[2*d] != idx[2*d+1]) {
+            if (idx[2*d] != idx[2*d+1]) {                                
 
                 first = idx[2*d]   >= 0 ? idx[2*d]   : idx[2*d]   + sizeAt(d) + 1;
                 last  = idx[2*d+1] >= 0 ? idx[2*d+1] : idx[2*d+1] + sizeAt(d) + 1;
@@ -4075,7 +4070,12 @@ template void NDArray::pIdx(const Nd4jLong* indices, const bool value);
                 // for offset we're taking only the first index
                 offset += first * stridesOf[d];
             }
+            else
+                continuous = current-- == d;
         }
+
+        // evaluate ews
+        newShape[2 * rank + 2] = (continuous && ordering() == 'c') ? ews() : 0;
 
         NDArray result(bufferWithOffset(offset), newShape, _workspace, false, true);
 
