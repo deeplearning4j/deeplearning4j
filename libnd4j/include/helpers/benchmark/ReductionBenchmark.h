@@ -2,6 +2,7 @@
 // Created by raver on 2/28/2019.
 //
 
+#include <helpers/StringUtils.h>
 #include "../OpBenchmark.h"
 
 #ifndef DEV_TESTS_REDUCEBENCHMARK_H
@@ -44,6 +45,21 @@ namespace nd4j {
         ~ReductionBenchmark(){
             delete _x;
             delete _z;
+        }
+
+        std::string axis() {
+            if (_axis.empty())
+                return "ALL";
+            else {
+                std::string result;
+                for (auto v:_axis) {
+                    auto s = StringUtils::valueToString<int>(v);
+                    result += s;
+                    result += ",";
+                }
+
+                return result;
+            }
         }
 
         OpBenchmark* clone() override  {

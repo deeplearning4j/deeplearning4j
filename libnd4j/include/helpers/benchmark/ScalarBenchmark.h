@@ -50,6 +50,10 @@ namespace nd4j {
             return result;
         }
 
+        std::string axis() {
+            return "N/A";
+        }
+
         OpBenchmark* clone() override  {
             return new ScalarBenchmark((scalar::Ops) _opNum, _x == nullptr ? _x : _x->dup() , _y == nullptr ? _y : _y->dup(), _z == nullptr ? _z : _z->dup());
         }

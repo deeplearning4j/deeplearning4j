@@ -33,6 +33,7 @@ namespace nd4j {
         NDArray& x();
         int opNum();
 
+        virtual std::string axis() = 0;
         virtual std::string orders() = 0;
 
         virtual void executeOnce() = 0;

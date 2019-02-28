@@ -39,6 +39,10 @@ namespace nd4j {
                 NativeOpExcutioner::execTransformStrict(_opNum, _x->buffer(), _x->shapeInfo(),  _x->buffer(), _x->shapeInfo(), nullptr, nullptr, nullptr);
         }
 
+        std::string axis() {
+            return "N/A";
+        }
+
         std::string orders() {
             std::string result;
             result += _x->ordering();
