@@ -87,7 +87,7 @@ public class TestPythonTransformProcess {
     }
 
     @Test
-    public void testPythonFilter()throws Exception{
+    public void testPythonFilter(){
         Schema schema = new Schema.Builder().addColumnInteger("column").build();
 
         Condition condition = new PythonCondition(
