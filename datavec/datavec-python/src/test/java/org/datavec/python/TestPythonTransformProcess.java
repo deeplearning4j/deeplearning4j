@@ -1,6 +1,12 @@
 package org.datavec.python;
 
 import org.datavec.api.transform.TransformProcess;
+import org.datavec.api.transform.condition.Condition;
+import org.datavec.api.transform.condition.ConditionOp;
+import org.datavec.api.transform.condition.column.IntegerColumnCondition;
+import org.datavec.api.transform.filter.ConditionFilter;
+import org.datavec.api.transform.filter.Filter;
+import org.datavec.api.writable.IntWritable;
 import org.datavec.api.writable.NDArrayWritable;
 import org.datavec.api.writable.Writable;
 import org.datavec.api.transform.schema.Schema;
@@ -11,8 +17,11 @@ import org.nd4j.linalg.factory.Nd4j;
 
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 
 public class TestPythonTransformProcess {
@@ -74,6 +83,26 @@ public class TestPythonTransformProcess {
         assertEquals(arr1, ((NDArrayWritable)outputs.get(0)).get());
         assertEquals(arr2, ((NDArrayWritable)outputs.get(1)).get());
         assertEquals(expectedOutput,((NDArrayWritable)outputs.get(2)).get());
+
+    }
+
+    @Test
+    public void testPythonFilter()throws Exception{
+        Schema schema = new Schema.Builder().addColumnInteger("column").build();
+
+        Condition condition = new PythonCondition(
+                "f = lambda: column < 0"
+        );
+
+        condition.setInputSchema(schema);
+
+        Filter filter = new ConditionFilter(condition);
+
+        assertFalse(filter.removeExample(Collections.singletonList((Writable) new IntWritable(10))));
+        assertFalse(filter.removeExample(Collections.singletonList((Writable) new IntWritable(1))));
+        assertFalse(filter.removeExample(Collections.singletonList((Writable) new IntWritable(0))));
+        assertTrue(filter.removeExample(Collections.singletonList((Writable) new IntWritable(-1))));
+        assertTrue(filter.removeExample(Collections.singletonList((Writable) new IntWritable(-10))));
 
     }
 }

@@ -30,6 +30,14 @@ public class PythonTransform implements Transform{
     private Schema inputSchema;
     private Schema outputSchema;
 
+
+    public PythonTransform(String code, PythonVariables pyInputs, PythonVariables pyOutputs) throws Exception{
+        this.code = code;
+        this.pyInputs = pyInputs;
+        this.pyOutputs = pyOutputs;
+        parseSetupAndExecCode();
+    }
+
     @Override
     public void setInputSchema(Schema inputSchema){
         this.inputSchema = inputSchema;
@@ -114,7 +122,13 @@ public class PythonTransform implements Transform{
             PythonVariables.Type pyType = pyInputs.getType(name);
             switch (pyType){
                 case INT:
-                    ret.addInt(name, ((LongWritable)w).get());
+                    if (w instanceof LongWritable){
+                        ret.addInt(name, ((LongWritable)w).get());
+                    }
+                    else{
+                        ret.addInt(name, ((IntWritable)w).get());
+                    }
+
                     break;
                 case FLOAT:
                     ret.addFloat(name, ((DoubleWritable)w).get());
