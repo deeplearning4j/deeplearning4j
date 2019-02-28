@@ -72,10 +72,11 @@ TEST_F(PlaygroundTests, Test_OpBenchmark_2) {
     sb.setY(NDArrayFactory::create_<float>(scalar));
 
     auto generator = GENERATE_XZ(parameters) {
+        // operands go together line by line
         x.push_back(NDArrayFactory::create_<float>('c', {100, 100}));
         z.push_back(NDArrayFactory::create_<float>('c', {100, 100}));
 
-        x.push_back(NDArrayFactory::create_<float>('c', {1000, 1000}));
+        x.push_back(NDArrayFactory::create_<float>('f', {1000, 1000}));
         z.push_back(NDArrayFactory::create_<float>('c', {1000, 1000}));
 
         // only share within single op call. do not cross share
@@ -83,10 +84,15 @@ TEST_F(PlaygroundTests, Test_OpBenchmark_2) {
         x.push_back(shared);
         z.push_back(shared);
 
+        // using bool param here
         if (parameters.getBoolParam("fOrder")) {
             x.push_back(NDArrayFactory::create_<float>('c', {1000, 1000}));
             z.push_back(NDArrayFactory::create_<float>('f', {1000, 1000}));
         }
+
+        //another way to call inplace
+        x.push_back(NDArrayFactory::create_<float>('c', {100, 100}));
+        z.push_back(nullptr);
     };
 
     helper.runOperationSuit(&sb, generator, "LambdaTest");
