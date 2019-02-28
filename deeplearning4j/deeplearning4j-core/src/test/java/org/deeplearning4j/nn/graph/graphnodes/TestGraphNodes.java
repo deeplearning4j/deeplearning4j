@@ -606,4 +606,18 @@ public class TestGraphNodes {
 
         String toString = out[0].toString();
     }
+
+    @Test
+    public void testDotProductNode() {
+        Nd4j.getRandom().setSeed(12345);
+        GraphVertex dotProduct = new DotProductVertex(null, "test_vertex", -1);
+
+        INDArray in1 = Nd4j.rand(5, 2);
+        INDArray in2 = Nd4j.rand(5, 2);
+
+        dotProduct.setInputs(in1, in2);
+        INDArray out = dotProduct.doForward(false, LayerWorkspaceMgr.noWorkspaces());
+
+        Pair<Gradient, INDArray[]> p = dotProduct.doBackward(false, LayerWorkspaceMgr.noWorkspaces());
+    }
 }
