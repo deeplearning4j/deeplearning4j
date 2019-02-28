@@ -460,7 +460,7 @@ namespace nd4j {
                 const auto numIndices = indices.isEmpty() ? 0 : indices.sizeAt(1);
 
 //
-#pragma omp parallel for num_threads(numThreads) private(sneu1, sneu1e) default(shared) schedule(static)
+//#pragma omp parallel for num_threads(numThreads) private(sneu1, sneu1e) default(shared) schedule(static)
                 for (int e = 0; e < numTargets; e++){
                     T* neu1 = vectorLength <= 600 ? sneu1 : new T[vectorLength];
                     T* neu1e = vectorLength <= 600 ? sneu1e : new T[vectorLength];
@@ -495,7 +495,9 @@ namespace nd4j {
                         actualContext++;
                     }
 
-                    actualContext += (infVector != nullptr ? 1 : 0);
+                    if (infVector != nullptr)
+                        actualContext++;
+
                     if (actualContext > 1) {
                         #pragma omp simd
                         for (int i = 0; i < vectorLength; i++)
@@ -592,13 +594,15 @@ namespace nd4j {
             void cbow(NDArray &syn0, NDArray &syn1, NDArray &syn1Neg, NDArray &expTable, NDArray &negTable, NDArray &target, NDArray &ngStarter, int nsRounds, NDArray &context, NDArray &indices, NDArray &codes, NDArray &alpha, NDArray &randomValue, NDArray &numLabels, NDArray &inferenceVector, const bool trainWords, int numWorkers) {
                 auto xType = syn0.dataType();
 
-                // single round case
                 if (context.isVector() || context.isScalar()) {
+                    // single round case
+                    //nd4j_printf("Row exec\n","");
                     auto hsRounds = codes.lengthOf();
 
-                    BUILD_SINGLE_SELECTOR(xType, cbow_, (syn0.buffer(), syn1.buffer(), syn1Neg.buffer(), expTable.buffer(), negTable.buffer(), inferenceVector.buffer(), target.isEmpty() ? -1 : target.e<int>(0), ngStarter.isEmpty() ? -1 : ngStarter.e<int>(0), reinterpret_cast<int *>(context.buffer()), reinterpret_cast<int *>(indices.buffer()), reinterpret_cast<int8_t *>(codes.buffer()), alpha.e<double>( 0), randomValue.e<Nd4jLong>(0), (int) context.lengthOf(), hsRounds, nsRounds, (int) syn0.sizeAt(0), (int) syn0.sizeAt(1), (int) expTable.lengthOf(), (int) negTable.lengthOf(), numLabels.e<int>(0), trainWords), FLOAT_TYPES);
+                    BUILD_SINGLE_SELECTOR(xType, cbow_, (syn0.buffer(), syn1.buffer(), syn1Neg.buffer(), expTable.buffer(), negTable.buffer(), inferenceVector.buffer(), target.isEmpty() ? -1 : target.e<int>(0), ngStarter.isEmpty() ? -1 : ngStarter.e<int>(0), reinterpret_cast<int *>(context.buffer()), reinterpret_cast<int *>(indices.buffer()), reinterpret_cast<int8_t *>(codes.buffer()), alpha.e<double>( 0), randomValue.e<Nd4jLong>(0), (int) context.lengthOf(), hsRounds, nsRounds, (int) syn0.sizeAt(0), (int) syn0.sizeAt(1), (int) expTable.lengthOf(), (int) negTable.lengthOf(), numLabels.isEmpty() ? 0 : numLabels.e<int>(0), trainWords), FLOAT_TYPES);
                 } else if (context.isMatrix()) {
                     // batch mode
+                    //nd4j_printf("Batch exec\n","");
 
                     BUILD_SINGLE_SELECTOR(xType, cbowBatchExec_, (syn0, syn1, syn1Neg, expTable.buffer(), negTable.buffer(), nullptr, context, target, ngStarter, indices, codes, alpha, randomValue, numLabels, nsRounds, syn0.sizeAt(0), syn0.sizeAt(1), expTable.lengthOf(), negTable.isEmpty() ? 0 : negTable.lengthOf(), trainWords, numWorkers), FLOAT_TYPES);
                 } else
