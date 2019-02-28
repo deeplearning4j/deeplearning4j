@@ -1832,4 +1832,30 @@ public class TransformOpValidation extends BaseOpValidation {
         assertEquals(random, output);
 
     }
+
+    @Test
+    public void testStandardizeNoDeviation() {
+        final INDArray random = Nd4j.rand(new int[]{10, 4});
+        for (int i = 0; i < 4; i++) {
+            random.putScalar(1,i, 7);
+        }
+
+        final int[] axis = new int[]{1};
+        final INDArray means = random.mean(axis);
+        final INDArray std = random.std(false, axis);
+        std.addi(std.eq(0).castTo(DataType.DOUBLE));
+
+        final INDArray res = random.subColumnVector(means).divColumnVector(std);
+        final INDArray expOut = res.norm1();
+
+        SameDiff sd = SameDiff.create();
+        SDVariable sdA = sd.var("a", random);
+        SDVariable t = sd.math.standardize(sdA, axis);
+        t.norm1("out");
+
+        String err = OpValidation.validate(new TestCase(sd)
+                .expectedOutput("out", expOut)
+                .gradientCheck(true));
+        assertNull(err, err);
+    }
 }

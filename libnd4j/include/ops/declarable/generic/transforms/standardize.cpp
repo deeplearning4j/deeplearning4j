@@ -47,11 +47,12 @@ namespace ops  {
             shape::checkDimensions(input->rankOf(), axis);
 
             auto means = input->reduceAlongDims(reduce::Mean, axis, true);
-            auto stddev = *input->varianceAlongDimension(variance::SummaryStatsStandardDeviation, false, axis);
-            stddev.reshapei(means.getShapeAsVector());
+            auto stdev = *input->varianceAlongDimension(variance::SummaryStatsStandardDeviation, false, axis);
+            stdev.reshapei(means.getShapeAsVector());
 
             input->applyTrueBroadcast(nd4j::BroadcastOpsTuple::Subtract(), &means, output, false);
-            output->applyTrueBroadcast(nd4j::BroadcastOpsTuple::Divide(), &stddev, output, false);
+            output->applyTrueBroadcast(nd4j::BroadcastOpsTuple::Divide(), &stdev, output, false);
+            output->applyScalar(nd4j::scalar::ReplaceNans, 0, output, nullptr);
         }
    
         return Status::OK();
@@ -94,7 +95,6 @@ namespace ops  {
             auto dldx_u = *meanBp.execute({input, &dldu_sum}, {}, longAxis)->at(0);
             *output += dldx_u;
 
-
             // (eps * (means - input) / (stdev * stdev))
             NDArray tmp(eps);
             means.applyTrueBroadcast(nd4j::BroadcastOpsTuple::Subtract(), input, &tmp, false);
@@ -106,6 +106,8 @@ namespace ops  {
             nd4j::ops::reduce_stdev_bp stdevBp;
             auto dldx_s = *stdevBp.execute({input, &dlds_sum}, {}, longAxis)->at(0);
             *output += dldx_s;
+
+            output->applyScalar(nd4j::scalar::ReplaceNans, 0, output, nullptr);
         }
 
         return Status::OK();

@@ -39,6 +39,7 @@ import org.nd4j.linalg.ops.transforms.Transforms;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 import static org.junit.Assert.assertEquals;
@@ -1093,4 +1094,35 @@ public class LayerOpValidation extends BaseOpValidation {
 
         assertEquals(res, output);
     }
+
+    @Test
+    public void testLayerNormNoDeviation() {
+        final INDArray random = Nd4j.rand(new int[]{10, 4});
+        for (int i = 0; i < 4; i++) {
+            random.putScalar(1,i, 7);
+        }
+
+        final INDArray standardized = Nd4j.emptyLike(random);
+        Nd4j.getExecutioner().exec(new Standardize(random, standardized, 1));
+
+        final INDArray gain = Nd4j.rand(new int[]{1, 4});
+        final INDArray bias = Nd4j.rand(new int[]{1, 4});
+        final INDArray res = standardized.mulRowVector(gain).addRowVector(bias);
+        final INDArray expOut = res.norm1();
+
+        final int[] axis = new int[]{1};
+        SameDiff sd = SameDiff.create();
+        SDVariable sdInput = sd.var("input", standardized);
+        SDVariable sdGain = sd.var("gain", gain);
+        SDVariable sdBias = sd.var("bias", bias);
+        SDVariable out = sd.nn.layerNorm(sdInput, sdGain, sdBias, axis);
+        out.norm1("out");
+
+        String err = OpValidation.validate(new TestCase(sd)
+                .expectedOutput("out", expOut)
+                .gradCheckMask(Collections.singletonMap("input", random.neq(7)))
+                .gradientCheck(true));
+        assertNull(err, err);
+    }
+
 }
