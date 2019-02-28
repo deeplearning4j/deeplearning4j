@@ -241,7 +241,7 @@ NDArray* MmulHelper::mmulMxV(const NDArray* A, const NDArray* X, nd4j::NDArray* 
     const bool AX(aType == xType), AY(aType == yType), AXY(AX && AY);
     const bool hasGemv = BlasHelper::getInstance()->hasGEMV(aType);
     
-    // choose appropriate cuda gemm api depending on data types    
+    // choose appropriate gemm api depending on data types    
     if(AXY && hasGemv && aType == DataType::DOUBLE) {
         BlasHelper::getInstance()->dgemv()(blasOrder, CblasNoTrans, M, N, alpha,       (double*)pA->getBuffer(), lda, (double*)X->getBuffer(), incx, beta,        (double*)Y->getBuffer(), incy);
     }
@@ -265,16 +265,16 @@ NDArray* MmulHelper::dot(const NDArray* X, const NDArray* Y, nd4j::NDArray* Z, c
     int xLenDim(0), yLenDim(0);
 
     if(!shape::isCommonVector(X->getShapeInfo(), xLenDim))
-        throw std::runtime_error("MmulHelper::dot cuda: X array must be vector !");
+        throw std::runtime_error("MmulHelper::dot: X array must be vector !");
     if(!shape::isCommonVector(Y->getShapeInfo(), yLenDim))
-        throw std::runtime_error("MmulHelper::dot cuda: Y array must be vector !");
+        throw std::runtime_error("MmulHelper::dot: Y array must be vector !");
     if(Z != nullptr && !Z->isScalar())
-        throw std::runtime_error("MmulHelper::dot cuda: Z array must be scalar !");
+        throw std::runtime_error("MmulHelper::dot: Z array must be scalar !");
 
     const auto length = X->lengthOf();
 
     if(Y->lengthOf() != length)
-        throw std::runtime_error("MmulHelper::dot cuda: lengths of input vectors are different !");
+        throw std::runtime_error("MmulHelper::dot: lengths of input vectors are different !");
 
     if(Z == nullptr)        
         Z = new NDArray(DataTypeUtils::pickPairwiseResultType(X->dataType(), Y->dataType()));
@@ -363,10 +363,8 @@ nd4j::NDArray* MmulHelper::mmul(const nd4j::NDArray* A, const nd4j::NDArray* B, 
     const bool isAVector = shape::isCommonVector(A->getShapeInfo(), lenDim);
     const bool isBVector = shape::isCommonVector(B->getShapeInfo(), lenDim);
 
-    printf("%i\n", isAVector);
-    printf("%i\n", isBVector);
     // dot product of 2 vectors
-    if(isAVector && isBVector && (aRank != 2 || aRank == 2 && (A->isSameShape(B) || bRank == 1 && A->sizeAt(1) == 1)))  // (1x4 * 1*4) or (4x1 * 4x1) or (4x1 * 4)
+    if(isAVector && isBVector && (aRank != 2 || aRank == 2 && (A->isSameShape(B) || bRank == 1 && A->sizeAt(1) == 1)))  // (1x1x1 * 1x1) or (1x4 * 1*4) or (4x1 * 4x1) or (4x1 * 4)
         return dot(A, B, C, alpha, beta);
 
     // matrix x matrix
@@ -380,50 +378,6 @@ nd4j::NDArray* MmulHelper::mmul(const nd4j::NDArray* A, const nd4j::NDArray* B, 
     // batched matrix multiplication
     return mmulNxN(A, B, C, alpha, beta, outOrder);
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 //////////////////////////////////////////////////////////////////////////
 nd4j::NDArray* nd4j::MmulHelper::tensorDot(const nd4j::NDArray* A, const nd4j::NDArray* B, const std::initializer_list<int>& axesA, const std::initializer_list<int>& axesB) {
