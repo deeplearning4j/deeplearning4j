@@ -29,6 +29,7 @@ namespace nd4j {
 
         NDArray& x();
         int opNum();
+
         virtual void executeOnce() = 0;
     };
 }

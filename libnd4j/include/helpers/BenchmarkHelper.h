@@ -51,6 +51,10 @@ namespace nd4j {
         void runOperationSuit(std::initializer_list<OpBenchmark*> benchmarks, const char *msg = nullptr);
         void runOperationSuit(std::vector<OpBenchmark*> &benchmarks, const char *msg = nullptr);
 
+        #ifndef __JAVACPP_HACK__
+           // void std::vector<OpBenchmark*> buildOperations(OpBenchmark *op, std::function<std::vector<>>(T)>& func);
+        #endif
+
         void runScalarSuit();
 
         void runAllSuits();

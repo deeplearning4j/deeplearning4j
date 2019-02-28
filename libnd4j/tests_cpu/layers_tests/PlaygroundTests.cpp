@@ -45,12 +45,31 @@ public:
     }
 };
 
-TEST_F(PlaygroundTests, Test_OpBenchmark) {
+TEST_F(PlaygroundTests, Test_OpBenchmark_1) {
     BenchmarkHelper helper;
 
-    ScalarBenchmark sb(scalar::Add, NDArrayFactory::create_<float>('c', {1000, 1000}), NDArrayFactory::create_<float>(1.0f), NDArrayFactory::create_<float>('c', {1000, 1000}));
+    ScalarBenchmark sb1(scalar::Add, NDArrayFactory::create_<float>('c', {100, 100}), NDArrayFactory::create_<float>(1.0f), NDArrayFactory::create_<float>('c', {100, 100}));
+    ScalarBenchmark sb2(scalar::Add, NDArrayFactory::create_<float>('c', {1000, 1000}), NDArrayFactory::create_<float>(1.0f), NDArrayFactory::create_<float>('c', {1000, 1000}));
 
-    helper.runOperationSuit({&sb}, "ScalarAdd");
+
+
+    helper.runOperationSuit({&sb1, &sb2}, "ScalarAdd");
+}
+
+TEST_F(PlaygroundTests, Test_OpBenchmark_2) {
+    /*
+    ScalarBenchmark sb3;
+    auto generator = GENERATOR(params) {
+        std::vector<NDArray*> results;
+
+        for (int e = 2; e < 32; e *= e)
+            results.emplace_back(NDArrayFactory::create('c', {e, e}));
+
+        return results;
+    };
+    auto list = BenchmarkHelper::buildOperations(sb3, generator);
+    */
+
 }
 
 /*
