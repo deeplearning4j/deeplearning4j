@@ -12,30 +12,73 @@ namespace nd4j {
     class OpBenchmark {
     protected:
         int _opNum;
+        NDArray *_x;
+        NDArray *_y;
+        NDArray *_z;
+        std::vector<int> _axis;
     public:
-        virtual void executeOnce(NDArray *x, NDArray *y, NDArray *z);
+        OpBenchmark(NDArray *x, NDArray *y, NDArray *z) {
+            _x = x;
+            _y = y;
+            _z = z;
+        }
+
+        OpBenchmark(NDArray *x, NDArray *z) {
+            _x = x;
+            _z = z;
+        }
+
+        OpBenchmark(NDArray *x, NDArray *z, std::initializer_list<int> axis) {
+            _x = x;
+            _z = z;
+            _axis = axis;
+        }
+
+        virtual void executeOnce();
     };
 
 
     class ScalarBenchmark : OpBenchmark {
     public:
-        ScalarBenchmark(scalar::Ops op) : OpBenchmark() {
+        ScalarBenchmark(scalar::Ops op, NDArray *x, NDArray *y, NDArray *z) : OpBenchmark(x, y, z) {
             _opNum = (int) op;
         }
 
-        void executeOnce(NDArray *x, NDArray *y, NDArray *z) override {
-            NativeOpExcutioner::execScalar(_opNum, x->buffer(), x->shapeInfo(), z->buffer(), z->shapeInfo(), y->buffer(), y->shapeInfo(), nullptr);
+        void executeOnce() override {
+            NativeOpExcutioner::execScalar(_opNum, _x->buffer(), _x->shapeInfo(), _z->buffer(), _z->shapeInfo(), _y->buffer(), _y->shapeInfo(), nullptr);
         }
     };
 
     class PairwiseBenchmark : OpBenchmark {
     public:
-        PairwiseBenchmark(pairwise::Ops op) : OpBenchmark() {
+        PairwiseBenchmark(pairwise::Ops op, NDArray *x, NDArray *y, NDArray *z) : OpBenchmark(x, y, z) {
             _opNum = (int) op;
         }
 
-        void executeOnce(NDArray *x, NDArray *y, NDArray *z) override {
-            NativeOpExcutioner::execPairwiseTransform(_opNum, x->buffer(), x->shapeInfo(), y->buffer(), y->shapeInfo(), z->buffer(), z->shapeInfo(), nullptr);
+        void executeOnce() override {
+            NativeOpExcutioner::execPairwiseTransform(_opNum, _x->buffer(), _x->shapeInfo(), _y->buffer(), _y->shapeInfo(), _z->buffer(), _z->shapeInfo(), nullptr);
+        }
+    };
+
+    class TransformBenchmark : OpBenchmark {
+    public:
+        TransformBenchmark(transform::StrictOps op, NDArray *x, NDArray *z) : OpBenchmark(x, z) {
+            _opNum = (int) op;
+        }
+
+        void executeOnce() override {
+            NativeOpExcutioner::execTransformStrict(_opNum, _x->buffer(), _x->shapeInfo(),  _z->buffer(), _z->shapeInfo(), nullptr, nullptr, nullptr);
+        }
+    };
+
+    class ReductionBenchmark : OpBenchmark {
+    public:
+        ReductionBenchmark(reduce::FloatOps op, NDArray *x, NDArray *z, std::initializer_list<int> axis) : OpBenchmark(x, z, axis) {
+            _opNum = (int) op;
+        }
+
+        void executeOnce() override {
+            NativeOpExcutioner::execReduceFloat(_opNum, _x->buffer(), _x->shapeInfo(), nullptr,  _z->buffer(), _z->shapeInfo(), _axis.data(), _axis.size(), nullptr, nullptr);
         }
     };
 }
