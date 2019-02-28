@@ -56,7 +56,8 @@ TEST_F(PlaygroundTests, Test_OpBenchmark_1) {
     helper.runOperationSuit({&sb1, &sb2}, "ScalarAdd");
 }
 
-#define GENERATE_SCALAR(...) [__VA_ARGS__] (ResultSet &x, ResultSet &z)
+#define GENERATE_XYZ(...) [__VA_ARGS__] (ResultSet &x, ResultSet &x, ResultSet &z)
+#define GENERATE_XZ(...) [__VA_ARGS__] (ResultSet &x, ResultSet &z)
 
 TEST_F(PlaygroundTests, Test_OpBenchmark_2) {
     BenchmarkHelper helper;
@@ -68,7 +69,7 @@ TEST_F(PlaygroundTests, Test_OpBenchmark_2) {
     // Y will be shared
     sb.setY(NDArrayFactory::create_<float>(scalar));
 
-    auto generator = GENERATE_SCALAR() {
+    auto generator = GENERATE_XZ() {
         x.push_back(NDArrayFactory::create_<float>('c', {100, 100}));
         z.push_back(NDArrayFactory::create_<float>('c', {100, 100}));
 
