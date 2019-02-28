@@ -18,6 +18,26 @@ namespace nd4j {
             _opNum = (int) op;
         }
 
+        PairwiseBenchmark(pairwise::Ops op) : OpBenchmark() {
+            _opNum = (int) op;
+        }
+
+        ~PairwiseBenchmark(){
+            if (_x != _y && _x != _z && _y != _z) {
+                delete _x;
+                delete _y;
+                delete _z;
+            } else if (_x == _y && _x == _z) {
+                delete _x;
+            } else if (_x == _z) {
+                delete _x;
+                delete _y;
+            } else if (_y == _z) {
+                delete _x;
+                delete _y;
+            }
+        }
+
         void executeOnce() override {
             NativeOpExcutioner::execPairwiseTransform(_opNum, _x->buffer(), _x->shapeInfo(), _y->buffer(), _y->shapeInfo(), _z->buffer(), _z->shapeInfo(), nullptr);
         }

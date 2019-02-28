@@ -99,6 +99,21 @@ TEST_F(PlaygroundTests, Test_OpBenchmark_2) {
 
     // we can use the same generator, since the same number of operands used
     helper.runOperationSuit(&tb, generator, "TransformTest");
+
+
+    PairwiseBenchmark pb(pairwise::Pow);
+
+    auto generatorXYZ = GENERATE_XYZ() {
+        x.push_back(NDArrayFactory::create_<float>('f', {100, 1000}));
+        y.push_back(NDArrayFactory::create_<float>('c', {100, 1000}));
+        z.push_back(NDArrayFactory::create_<float>('c', {100, 1000}));
+
+        x.push_back(NDArrayFactory::create_<float>('f', {100, 1000}));
+        y.push_back(NDArrayFactory::create_<float>('f', {100, 1000}));
+        z.push_back(NDArrayFactory::create_<float>('f', {100, 1000}));
+    };
+
+    helper.runOperationSuit(&pb, generatorXYZ, "PairwiseTest");
 }
 
 /*

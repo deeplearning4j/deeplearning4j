@@ -1538,7 +1538,7 @@
 #define ILAMBDA_TT(X, Y, ...) [__VA_ARGS__] (Nd4jLong _idx, T X, T Y) -> T
 
 // stuff for benchmarks
-#define GENERATE_XYZ() [&] (ResultSet &x, ResultSet &x, ResultSet &z)
+#define GENERATE_XYZ() [&] (ResultSet &x, ResultSet &y, ResultSet &z)
 #define GENERATE_XZ() [&] (ResultSet &x, ResultSet &z)
 
 #endif
