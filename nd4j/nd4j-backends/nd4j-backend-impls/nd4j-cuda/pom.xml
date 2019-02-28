@@ -118,6 +118,7 @@
                         <classPath>${project.build.outputDirectory}</classPath>
                     </classPaths>
                     <includePaths>
+                        <includePath>${libnd4jhome}/blasbuild/cuda/include</includePath>
                         <includePath>${libnd4jhome}/blas</includePath>
                         <includePath>${libnd4jhome}/include</includePath>
                         <includePath>${libnd4jhome}/include/helpers</includePath>
