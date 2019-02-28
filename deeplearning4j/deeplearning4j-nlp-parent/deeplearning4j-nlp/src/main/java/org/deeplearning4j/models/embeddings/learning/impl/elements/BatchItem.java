@@ -1,10 +1,6 @@
 package org.deeplearning4j.models.embeddings.learning.impl.elements;
 
 import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;
-import org.nd4j.linalg.api.ops.aggregates.Batch;
-import org.nd4j.linalg.primitives.Pair;
-
-import java.util.concurrent.atomic.AtomicLong;
 
 public class BatchItem<T extends SequenceElement>  {
     private T word;

@@ -157,7 +157,7 @@ public class DM<T extends SequenceElement> implements SequenceLearningAlgorithm<
         int batchSize = configuration.getBatchSize();
         if (batchSize == 1 || isInference) {
             // pass for underlying
-            cbow.iterateSample(currentWord, windowWords, nextRandom, alpha, isInference, labels == null ? 0 : labels.size(),
+            cbow.iterateSample(currentWord, windowWords, statuses, nextRandom, alpha, isInference, labels == null ? 0 : labels.size(),
                     configuration.isTrainElementsVectors(), inferenceVector);
         }
         else {

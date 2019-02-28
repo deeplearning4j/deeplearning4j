@@ -186,7 +186,7 @@ public class CBOW<T extends SequenceElement> implements ElementsLearningAlgorith
         return false;
     }
 
-    public void iterateSample(T currentWord, int[] windowWords, AtomicLong nextRandom, double alpha,
+    public void iterateSample(T currentWord, int[] windowWords, boolean[] wordStatuses, AtomicLong nextRandom, double alpha,
                               boolean isInference, int numLabels, boolean trainWords, INDArray inferenceVector) {
         int[] idxSyn1 = null;
         byte[] codes = null;
@@ -437,7 +437,7 @@ public class CBOW<T extends SequenceElement> implements ElementsLearningAlgorith
 
         // we don't allow inference from main loop here
         if (batchSize <= 1)
-            iterateSample(currentWord, windowWords, nextRandom, alpha, false, 0, true, null);
+            iterateSample(currentWord, windowWords, statuses, nextRandom, alpha, false, 0, true, null);
         else {
             batchSequences.put(currentWord, windowWords, statuses, nextRandom.get(), alpha);
         }
