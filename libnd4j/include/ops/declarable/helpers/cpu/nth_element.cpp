@@ -25,7 +25,7 @@ namespace ops {
 namespace helpers {
 
     template <typename T>
-    void nthElementFunctor_(NDArray* input, NDArray* nVal, NDArray* output) {
+    void nthElementFunctor_(NDArray* input, NDArray* nVal, NDArray* output, bool reverse) {
         Nd4jLong n = nVal->e<Nd4jLong>(0);
         // TODO: fix using std::nth_element to use typename T instead float or avoid use double with this op.
         if (input->isVector()) {
@@ -58,11 +58,11 @@ namespace helpers {
             }
         }
     }
-    void nthElementFunctor(graph::LaunchContext* context, NDArray* input, NDArray* n, NDArray* output) {
-    BUILD_SINGLE_SELECTOR(input->dataType(), nthElementFunctor_, (input, n, output), LIBND4J_TYPES);
+    void nthElementFunctor(graph::LaunchContext* context, NDArray* input, NDArray* n, NDArray* output, bool reverse) {
+    BUILD_SINGLE_SELECTOR(input->dataType(), nthElementFunctor_, (input, n, output, reverse), LIBND4J_TYPES);
 
     }
-    BUILD_SINGLE_TEMPLATE(template void nthElementFunctor_, (NDArray* input, NDArray* n, NDArray* output), LIBND4J_TYPES);
+    BUILD_SINGLE_TEMPLATE(template void nthElementFunctor_, (NDArray* input, NDArray* n, NDArray* output, bool reverse), LIBND4J_TYPES);
     
 }
 }
