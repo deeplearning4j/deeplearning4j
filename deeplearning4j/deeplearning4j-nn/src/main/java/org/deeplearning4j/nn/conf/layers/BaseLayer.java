@@ -35,7 +35,6 @@ import org.nd4j.linalg.learning.regularization.WeightDecay;
 
 import java.io.Serializable;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 
 /**
@@ -49,6 +48,7 @@ public abstract class BaseLayer extends Layer implements Serializable, Cloneable
     protected IActivation activationFn;
     protected IWeightInit weightInitFn;
     protected double biasInit;
+    protected double gainInit;
     protected List<Regularization> regularization;
     protected List<Regularization> regularizationBias;
     protected IUpdater iUpdater;
@@ -64,6 +64,7 @@ public abstract class BaseLayer extends Layer implements Serializable, Cloneable
         this.activationFn = builder.activationFn;
         this.weightInitFn = builder.weightInitFn;
         this.biasInit = builder.biasInit;
+        this.gainInit = builder.gainInit;
         this.regularization = builder.regularization;
         this.regularizationBias = builder.regularizationBias;
         this.iUpdater = builder.iupdater;
@@ -83,6 +84,7 @@ public abstract class BaseLayer extends Layer implements Serializable, Cloneable
         this.setIUpdater(null);
         this.setWeightInitFn(null);
         this.setBiasInit(Double.NaN);
+        this.setGainInit(Double.NaN);
         this.regularization = null;
         this.regularizationBias = null;
         this.setGradientNormalization(GradientNormalization.None);
@@ -168,6 +170,12 @@ public abstract class BaseLayer extends Layer implements Serializable, Cloneable
          *
          */
         protected double biasInit = Double.NaN;
+
+        /**
+         * Gain initialization value, for layers with Layer Normalization. Defaults to 1
+         *
+         */
+        protected double gainInit = Double.NaN;
 
         /**
          * Regularization for the parameters (excluding biases).
@@ -276,6 +284,16 @@ public abstract class BaseLayer extends Layer implements Serializable, Cloneable
          */
         public T biasInit(double biasInit) {
             this.biasInit = biasInit;
+            return (T) this;
+        }
+
+        /**
+         * Gain initialization value, for layers with Layer Normalization. Defaults to 1
+         *
+         * @param gainInit Value to use for initializing gain
+         */
+        public T gainInit(double gainInit) {
+            this.gainInit = gainInit;
             return (T) this;
         }
 

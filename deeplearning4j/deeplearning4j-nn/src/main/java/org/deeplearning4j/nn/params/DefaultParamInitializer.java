@@ -42,6 +42,7 @@ public class DefaultParamInitializer implements ParamInitializer {
 
     public final static String WEIGHT_KEY = "W";
     public final static String BIAS_KEY = "b";
+    public final static String GAIN_KEY = "g";
 
     @Override
     public long numParams(NeuralNetConfiguration conf) {
@@ -53,21 +54,22 @@ public class DefaultParamInitializer implements ParamInitializer {
         FeedForwardLayer layerConf = (FeedForwardLayer) l;
         val nIn = layerConf.getNIn();
         val nOut = layerConf.getNOut();
-        return (nIn * nOut + (hasBias(l) ? nOut : 0)); //weights + bias
+        return (nIn * nOut + (hasBias(l) ? nOut : 0) + (hasLayerNorm(l) ? nOut : 0)); //weights + bias + gain
     }
 
     @Override
     public List<String> paramKeys(Layer layer) {
-        if(hasBias(layer)){
-            return Arrays.asList(WEIGHT_KEY, BIAS_KEY);
-        } else {
-            return weightKeys(layer);
-        }
-
+        final ArrayList<String> keys = new ArrayList<>(3);
+        keys.addAll(weightKeys(layer));
+        keys.addAll(biasKeys(layer));
+        return keys;
     }
 
     @Override
     public List<String> weightKeys(Layer layer) {
+        if(hasLayerNorm(layer)){
+            return Arrays.asList(WEIGHT_KEY, GAIN_KEY);
+        }
         return Collections.singletonList(WEIGHT_KEY);
     }
 
@@ -80,9 +82,10 @@ public class DefaultParamInitializer implements ParamInitializer {
         }
     }
 
+
     @Override
     public boolean isWeightParam(Layer layer, String key) {
-        return WEIGHT_KEY.equals(key);
+        return weightKeys(layer).contains(key);
     }
 
     @Override
@@ -113,12 +116,20 @@ public class DefaultParamInitializer implements ParamInitializer {
         params.put(WEIGHT_KEY, createWeightMatrix(conf, weightView, initializeParams));
         conf.addVariable(WEIGHT_KEY);
 
-
+        long offset = nWeightParams;
         if(hasBias(layerConf)){
             INDArray biasView = paramsView.get(NDArrayIndex.point(0),
-                    NDArrayIndex.interval(nWeightParams, nWeightParams + nOut));
+                    NDArrayIndex.interval(offset, offset + nOut));
             params.put(BIAS_KEY, createBias(conf, biasView, initializeParams));
             conf.addVariable(BIAS_KEY);
+            offset += nOut;
+        }
+
+        if(hasLayerNorm(layerConf)){
+            INDArray gainView = paramsView.get(NDArrayIndex.point(0),
+                    NDArrayIndex.interval(offset, offset + nOut));
+            params.put(GAIN_KEY, createGain(conf, gainView, initializeParams));
+            conf.addVariable(GAIN_KEY);
         }
 
         return params;
@@ -138,10 +149,18 @@ public class DefaultParamInitializer implements ParamInitializer {
         Map<String, INDArray> out = new LinkedHashMap<>();
         out.put(WEIGHT_KEY, weightGradientView);
 
+        long offset = nWeightParams;
         if(hasBias(layerConf)){
             INDArray biasView = gradientView.get(NDArrayIndex.point(0),
-                    NDArrayIndex.interval(nWeightParams, nWeightParams + nOut)); //Already a row vector
+                    NDArrayIndex.interval(offset, offset + nOut)); //Already a row vector
             out.put(BIAS_KEY, biasView);
+            offset += nOut;
+        }
+
+        if(hasLayerNorm(layerConf)){
+            INDArray gainView = gradientView.get(NDArrayIndex.point(0),
+                    NDArrayIndex.interval(offset, offset + nOut)); //Already a row vector
+            out.put(GAIN_KEY, gainView);
         }
 
         return out;
@@ -160,6 +179,20 @@ public class DefaultParamInitializer implements ParamInitializer {
             biasParamView.assign(ret);
         }
         return biasParamView;
+    }
+
+    protected INDArray createGain(NeuralNetConfiguration conf, INDArray gainParamView, boolean initializeParameters) {
+        org.deeplearning4j.nn.conf.layers.FeedForwardLayer layerConf =
+                (org.deeplearning4j.nn.conf.layers.FeedForwardLayer) conf.getLayer();
+        return createGain(layerConf.getNOut(), layerConf.getGainInit(), gainParamView, initializeParameters);
+    }
+
+    protected INDArray createGain(long nOut, double gainInit, INDArray gainParamView, boolean initializeParameters) {
+        if (initializeParameters) {
+            INDArray ret = Nd4j.valueArrayOf(new long[] {1, nOut}, gainInit);
+            gainParamView.assign(ret);
+        }
+        return gainParamView;
     }
 
 
@@ -201,5 +234,12 @@ public class DefaultParamInitializer implements ParamInitializer {
             return ((EmbeddingSequenceLayer)layer).hasBias();
         }
         return true;
+    }
+
+    protected boolean hasLayerNorm(Layer layer){
+        if(layer instanceof DenseLayer){
+            return ((DenseLayer) layer).hasLayerNorm();
+        }
+        return false;
     }
 }
