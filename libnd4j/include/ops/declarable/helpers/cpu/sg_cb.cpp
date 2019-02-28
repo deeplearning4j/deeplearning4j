@@ -460,7 +460,7 @@ namespace nd4j {
                 const auto numIndices = indices.isEmpty() ? 0 : indices.sizeAt(1);
 
 //
-//#pragma omp parallel for num_threads(numThreads) private(sneu1, sneu1e) default(shared) schedule(static)
+#pragma omp parallel for num_threads(numThreads) private(sneu1, sneu1e) default(shared) schedule(static)
                 for (int e = 0; e < numTargets; e++){
                     T* neu1 = vectorLength <= 600 ? sneu1 : new T[vectorLength];
                     T* neu1e = vectorLength <= 600 ? sneu1e : new T[vectorLength];
