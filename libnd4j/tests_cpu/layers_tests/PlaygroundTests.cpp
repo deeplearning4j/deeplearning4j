@@ -50,7 +50,7 @@ TEST_F(PlaygroundTests, Test_OpBenchmark) {
 
     ScalarBenchmark sb(scalar::Add, NDArrayFactory::create_<float>('c', {1000, 1000}), NDArrayFactory::create_<float>(1.0f), NDArrayFactory::create_<float>('c', {1000, 1000}));
 
-    helper.runOperationSuit({&sb}, "message");
+    helper.runOperationSuit({&sb}, "ScalarAdd");
 }
 
 /*

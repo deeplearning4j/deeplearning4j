@@ -101,7 +101,7 @@ namespace nd4j {
 
     void BenchmarkHelper::runOperationSuit(std::vector<OpBenchmark*> &benchmarks, const char *msg) {
         if (msg != nullptr) {
-            nd4j_printf("%s", msg);
+            nd4j_printf("%s\n", msg);
         }
 
         nd4j_printf("OpNum\tDataType\tShape\tavg (us)\tmedian (us)\n","");

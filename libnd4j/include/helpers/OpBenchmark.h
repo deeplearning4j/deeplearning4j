@@ -17,6 +17,7 @@ namespace nd4j {
         NDArray *_z;
         std::vector<int> _axis;
     public:
+        OpBenchmark() = default;
         OpBenchmark(NDArray *x, NDArray *y, NDArray *z);
         OpBenchmark(NDArray *x, NDArray *z);
         OpBenchmark(NDArray *x, NDArray *z, std::initializer_list<int> axis);

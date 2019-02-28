@@ -10,6 +10,10 @@
 namespace nd4j {
     class ND4J_EXPORT ReductionBenchmark : public OpBenchmark {
     public:
+        ReductionBenchmark() : OpBenchmark() {
+            //
+        }
+
         ReductionBenchmark(reduce::FloatOps op, NDArray *x, NDArray *z, std::initializer_list<int> axis) : OpBenchmark(x, z, axis) {
             _opNum = (int) op;
         }

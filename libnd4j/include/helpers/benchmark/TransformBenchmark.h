@@ -10,6 +10,10 @@
 namespace nd4j {
     class ND4J_EXPORT TransformBenchmark : public OpBenchmark {
     public:
+        TransformBenchmark() : OpBenchmark() {
+            //
+        }
+
         TransformBenchmark(transform::StrictOps op, NDArray *x, NDArray *z) : OpBenchmark(x, z) {
             _opNum = (int) op;
         }

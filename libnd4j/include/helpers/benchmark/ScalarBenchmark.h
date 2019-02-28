@@ -10,6 +10,10 @@
 namespace nd4j {
     class ND4J_EXPORT ScalarBenchmark : public OpBenchmark {
     public:
+        ScalarBenchmark() : OpBenchmark() {
+            //
+        }
+
         ScalarBenchmark(scalar::Ops op, NDArray *x, NDArray *y, NDArray *z) : OpBenchmark(x, y, z) {
             _opNum = (int) op;
         }
