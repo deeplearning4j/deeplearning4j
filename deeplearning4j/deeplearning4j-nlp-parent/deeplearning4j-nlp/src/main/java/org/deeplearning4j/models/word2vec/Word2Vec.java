@@ -687,6 +687,9 @@ public class Word2Vec extends SequenceVectors<VocabWord> {
             ret.elementsLearningAlgorithm = this.elementsLearningAlgorithm;
             ret.sequenceLearningAlgorithm = this.sequenceLearningAlgorithm;
 
+            ret.intersectModel = this.intersectVectors;
+            ret.lockFactor = this.lockFactor;
+
             this.configuration.setLearningRate(this.learningRate);
             this.configuration.setLayersSize(layerSize);
             this.configuration.setHugeModelExpected(hugeModelExpected);
