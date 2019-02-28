@@ -18,6 +18,8 @@
 // Created by GS <sgazeos@gmail.com> 3/7/2018
 //
 
+#include "config.h"
+
 #include <graph/GraphUtils.h>
 #include <cstdlib>
 #include <cstdio>
@@ -169,6 +171,8 @@ GraphUtils::runPreprocessor(char const* input, char const* output) {
     args.emplace_back(std::string("-std=c++11"));
     args.emplace_back(std::string("-o"));
     args.emplace_back(output);
+    args.emplace_back(std::string("-I../blasbuild/cpu/include"));
+    args.emplace_back(std::string("-I../blasbuild/cuda/include"));
     args.emplace_back(std::string("-I../include"));
     args.emplace_back(std::string("-I../blas"));
     args.emplace_back(std::string("-I../include/ops"));
@@ -178,6 +182,12 @@ GraphUtils::runPreprocessor(char const* input, char const* output) {
     args.emplace_back(std::string("-I../include/cnpy"));
         args.emplace_back(std::string("-I../include/graph"));
     args.emplace_back(std::string("-I../include/ops/declarable"));
+#ifdef MKLDNN_PATH
+    args.emplace_back(std::string("-I" MKLDNN_PATH "/include"));
+#endif
+#ifdef OPENBLAS_PATH
+    args.emplace_back(std::string("-I" OPENBLAS_PATH "/include"));
+#endif
     args.emplace_back(input);
 
     std::string preprocessorCmd(cxx);

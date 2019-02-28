@@ -15,24 +15,25 @@
  ******************************************************************************/
 
 //
-//  @author sgazeos@gmail.com
+// @author Yurii Shyrma, created on 25.02.2018
 //
-#ifndef __LRN_H_HELPERS__
-#define __LRN_H_HELPERS__
-#include <op_boilerplate.h>
-#include <NDArray.h>
-#include <graph/Context.h>
 
-namespace nd4j {
-namespace ops {
+#ifndef LIBND4J_BATCHNORM_H
+#define LIBND4J_BATCHNORM_H
+
+#include <ops/declarable/helpers/helpers.h>
+
+namespace nd4j    {
+namespace ops     {
 namespace helpers {
 
-    int lrnFunctor(nd4j::graph::Context& block, NDArray* input, NDArray* output, int depth, double bias, double alpha, double beta);
 
-    int lrnFunctorEx(nd4j::graph::Context& block, NDArray* input, NDArray* output, NDArray* unitScale, NDArray* scale, int depth, double bias, double alpha, double beta);
-    int lrnFunctorEx(nd4j::graph::Context& block, NDArray* input, NDArray* output, NDArray* scale, int depth, double bias, double alpha, double beta);
+	void batchnorm(const NDArray* input, const NDArray* mean, const NDArray* variance, const NDArray* gamma, const NDArray* beta, NDArray* output, const std::vector<int>& axes, const double epsilon);
+    
 
 }
 }
 }
-#endif
+
+
+#endif //LIBND4J_BATCHNORM_H

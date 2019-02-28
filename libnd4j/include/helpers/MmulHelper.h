@@ -48,7 +48,10 @@ namespace nd4j {
 
         static nd4j::NDArray* tensorDot(const nd4j::NDArray* A, const nd4j::NDArray* B, const std::vector<int>& axesA, const std::vector<int>& axesB);
 
-        static void tensorDot(const nd4j::NDArray* a, const nd4j::NDArray* b, nd4j::NDArray* c, const std::vector<int>& axes_a, const std::vector<int>& axes_b, const std::vector<int>& permutForC = {});
+        static void tensorDot(const nd4j::NDArray* a, const nd4j::NDArray* b, nd4j::NDArray* c, const std::vector<int>& axes_a, const std::vector<int>& axes_b, const std::vector<int>& permutForC = {}, char aOrder = 'a', char bOrder = 'a', char cOrder = 'a');
+
+        static void tensorDot(const nd4j::NDArray* a, const nd4j::NDArray* b, nd4j::NDArray* c, const char aOrder, const char bOrder, const char cOrder, const std::vector<Nd4jLong>& aShape, const std::vector<Nd4jLong>& bShape, const std::vector<int>& permutForC = {});
+
 
 #ifndef __JAVACPP_HACK__
         /**

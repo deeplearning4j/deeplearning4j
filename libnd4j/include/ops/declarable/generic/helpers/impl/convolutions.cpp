@@ -19,6 +19,7 @@
 //
 
 #include <ops/declarable/generic/helpers/convolutions.h>
+#include<ops/declarable/helpers/addBias.h>
 #include <ops/declarable/helpers/im2col.h>
 #include <ops/declarable/helpers/col2im.h>
 #include <NDArrayFactory.h>
@@ -644,21 +645,35 @@ static void conv2d_(nd4j::graph::Context& block, const NDArray* input, const NDA
     if(!isNCHW)
         input = input->permute({0, 3, 1, 2});                                       // [bS, iH, iW, iC] -> [bS, iC, iH, iW] if NHWC
     else
-        permutForOutput = {0, indOoH, indOoH+1, indIOioC};                          // [bS, oC, oH, oW] -> [bS, oH, oW, oC]
+        // permutForOutput = {0, indOoH, indOoH+1, indIOioC};                          // [bS, oC, oH, oW] -> [bS, oH, oW, oC]
+        permutForOutput = {0, 3, 1, 2};                                             // [bS, oH, oW, oC] -> [bS, oC, oH, oW]
 
-    NDArray columns(input->ordering(), {bS, iC, kH, kW, oH, oW}, input->dataType(), input->getWorkspace());
+    NDArray col('c', {bS, oH, oW, kH, kW, iC}, input->dataType(), input->getWorkspace());
+    NDArray* colP = col.permute({0, 5, 3, 4, 1, 2});            // {bS, iC, kH, kW, oH, oW}    
+    NDArray mmulResult('f', {bS*oH*oW, oC}, output->dataType(), output->getWorkspace());
 
     //----- calculation of output -----//
     graph::LaunchContext ctx;
-    helpers::im2col(ctx, *input, columns, kH, kW, sH, sW, pH, pW, dH, dW, NDArrayFactory::create(0.f, input->getWorkspace()));  // [bS, iC, iH, iW] is convoluted to [bS, iC, kH, kW, oH, oW]
-    MmulHelper::tensorDot(&columns, weights, output, {1,2,3}, {indWiC, indWkH, indWkH+1}, permutForOutput); // [bS, iC, kH, kW, oH, oW] x [kH, kW, iC, oC]/[oC, iC, kH, kW] = [bS, oH, oW, oC]
+    helpers::im2col(ctx, *input, *colP, kH, kW, sH, sW, pH, pW, dH, dW, NDArrayFactory::create(0.f, input->getWorkspace()));  // [bS, iC, iH, iW] is convoluted to [bS, iC, kH, kW, oH, oW]        
+    MmulHelper::tensorDot(&col, weights, &mmulResult, {3,4,5}, {0,1,2}, {}, col.ordering(), weights->ordering(), mmulResult.ordering()); // [bS, oH, oW, kH, kW, iC] x [kH, kW, iC, oC] = [bS, oH, oW, oC]
+
+    //----- assign outTemp to output  -----//
+    if(isNCHW) {
+        mmulResult.reshapei({bS, oH, oW, oC});
+        mmulResult.permutei(permutForOutput);
+    }
+    output->assign(mmulResult);
 
     //----- add biases if required -----//
     if(bias)
-        output->applyBroadcast(broadcast::Add, {indIOioC}, bias);
+        // output->applyBroadcast(broadcast::Add, {indIOioC}, bias);
+        helpers::addBias(*output, *bias, isNCHW);
+
 
     if(!isNCHW)
         delete input;
+
+    delete colP;    
 }
 
 //////////////////////////////////////////////////////////////////////////

@@ -15,24 +15,25 @@
  ******************************************************************************/
 
 //
-//  @author sgazeos@gmail.com
+// @author Yurii Shyrma, created on 26.02.2018
 //
-#ifndef __LRN_H_HELPERS__
-#define __LRN_H_HELPERS__
-#include <op_boilerplate.h>
-#include <NDArray.h>
-#include <graph/Context.h>
 
-namespace nd4j {
-namespace ops {
+#ifndef LIBND4J_ADDBIAS_H
+#define LIBND4J_ADDBIAS_H
+
+#include <ops/declarable/helpers/helpers.h>
+
+namespace nd4j    {
+namespace ops     {
 namespace helpers {
 
-    int lrnFunctor(nd4j::graph::Context& block, NDArray* input, NDArray* output, int depth, double bias, double alpha, double beta);
 
-    int lrnFunctorEx(nd4j::graph::Context& block, NDArray* input, NDArray* output, NDArray* unitScale, NDArray* scale, int depth, double bias, double alpha, double beta);
-    int lrnFunctorEx(nd4j::graph::Context& block, NDArray* input, NDArray* output, NDArray* scale, int depth, double bias, double alpha, double beta);
+	void addBias(NDArray& input, const NDArray& bias, const bool isNCHW);
+    
 
 }
 }
 }
-#endif
+
+
+#endif // LIBND4J_ADDBIAS_H

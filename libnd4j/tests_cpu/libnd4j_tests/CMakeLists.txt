@@ -95,6 +95,14 @@ else()
     message("OPENMP NOT FOUND")
 endif()
 
+if ("${OPENBLAS}" OR CMAKE_BUILD_TYPE STREQUAL "Release")
+    find_package(BLAS)
+    if (BLAS_FOUND)
+        message("Found external BLAS implementation...")
+        add_definitions(-D__EXTERNAL_BLAS__=true)
+    endif()
+endif()
+
 file(GLOB_RECURSE TYPES_SOURCES false ../../include/types/*.cpp ../../include/types/*.h)
 file(GLOB_RECURSE ARRAY_SOURCES false ../../include/array/*.cpp ../../include/array/*.h)
 file(GLOB_RECURSE MEMORY_SOURCES false ../../include/memory/*.cpp ../../include/memory/*.h)
@@ -131,5 +139,5 @@ add_executable(runtests ${LOOPS_SOURCES} ../../blas/cpu/NativeOps.cpp ../../blas
     ${MEMORY_SOURCES} ${GRAPH_SOURCES} ${CUSTOMOPS_SOURCES} ${INDEXING_SOURCES} ${HELPERS_SOURCES}  ${CUSTOMOPS_HELPERS_SOURCES}
     ${OPS_SOURCES} ${TEST_SOURCES})
 
-target_link_libraries(runtests gtest gtest_main)
+target_link_libraries(runtests gtest gtest_main ${BLAS_LIBRARIES})
 
