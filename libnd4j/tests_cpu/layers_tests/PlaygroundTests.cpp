@@ -26,6 +26,7 @@
 #include <graph/profiling/GraphProfilingHelper.h>
 #include <type_conversions.h>
 #include <helpers/threshold.h>
+#include <helpers/MmulHelper.h>
 #include <ops/ops.h>
 #include <OmpLaunchHelper.h>
 
@@ -1225,83 +1226,8 @@ TEST_F(PlaygroundTests, batchnorm_1) {
     printf("duration %ld\n", duration);
 }
 
-////////////////////////////////////////////////////////////////////////////
-// MXK x KxN = MxN
-static void usualGemm(const char cOrder, const bool transA, const bool transB, const int M, const int N, const int K, const double alpha, const void* vA, const int lda, const void* vB, const int ldb, const double beta, void* vC, const int ldc) {
 
-    float* A = reinterpret_cast<float*>(const_cast<void*>(vA));
-    float* B = reinterpret_cast<float*>(const_cast<void*>(vB));
-    float* C = reinterpret_cast<float*>(vC);
-    float alphaZ(alpha), betaZ(beta);
 
-    Nd4jLong strideArow, strideAcol, strideBrow, strideBcol, strideCrow, strideCcol;
-
-    if(cOrder == 'f') {
-        strideCrow = 1;
-        strideCcol = ldc;
-
-        if(transA) { strideArow = lda; strideAcol = 1; } else { strideArow = 1; strideAcol = lda; }
-        if(transB) { strideBrow = ldb; strideBcol = 1; } else { strideBrow = 1; strideBcol = ldb; }
-    }
-    else {
-        strideCrow = ldc;
-        strideCcol = 1;
-
-        if(transA) { strideArow = 1; strideAcol = lda; } else { strideArow = lda; strideAcol = 1; }
-        if(transB) { strideBrow = 1; strideBcol = ldb; } else { strideBrow = ldb; strideBcol = 1; }
-    }
-
-    #pragma omp parallel for schedule(guided)
-    for(int row = 0; row < M; ++row) {
-       for(int col = 0; col < N; ++col) {
-            float* a = A + row * strideArow;
-            float* b = B + col * strideBcol;
-            float* c = C + row * strideCrow + col * strideCcol;
-            float val = 0;
-            #pragma omp simd
-            for(int i = 0; i < K; ++i)
-                val = val + a[i*strideAcol] * b[i*strideBrow];
-            *c = alphaZ * val + betaZ * *c;
-       }
-    }
-}
-
-/////////////////////////////////////////////////////////////////////
-TEST_F(PlaygroundTests, gemm_1) {
-
-	// MXK x KxN = MxN
-    const int M = 2048;
-    const int K = 512;
-    const int N = 1024;
-
-    NDArray a('c', {M, K}, nd4j::DataType::FLOAT32);
-    NDArray b('f', {K, N}, nd4j::DataType::FLOAT32);
-    NDArray c('f', {M, N}, nd4j::DataType::FLOAT32);
-
-    a.linspace(-100, 0.01);
-    b.linspace(-200, 0.01);
-
-    double temp;
-    for (int i = 0; i < 100; ++i)
-    	temp = temp * temp;
-
-    auto timeStart = std::chrono::system_clock::now();
-
-	usualGemm(c.ordering(), false, false, M, N, K, 1., a.getBuffer(), K, b.getBuffer(), K, 0., c.buffer(), M);
-
-    auto timeEnd = std::chrono::system_clock::now();
-    auto duration = std::chrono::duration_cast<std::chrono::microseconds> ((timeEnd - timeStart) / N).count();
-    printf("duration my %ld\n", duration);
-
-    //***********************
-
-    timeStart = std::chrono::system_clock::now();
-
-    nd4j::blas::GEMM<float, float, float>::op('f', CblasTrans, CblasNoTrans, M, N, K, 1., a.getBuffer(), K, b.getBuffer(), K, 0., c.buffer(), M);
-    timeEnd = std::chrono::system_clock::now();
-    duration = std::chrono::duration_cast<std::chrono::microseconds> ((timeEnd - timeStart) / N).count();
-    printf("duration raver %ld\n", duration);
-}
 
 //////////////////////////////////////////////////////////////////////
 TEST_F(PlaygroundTests, softmax_1) {
@@ -1326,5 +1252,168 @@ TEST_F(PlaygroundTests, softmax_1) {
     auto duration = std::chrono::duration_cast<std::chrono::microseconds> ((timeEnd - timeStart) / N).count();
     printf("duration %ld\n", duration);
 
+}
+
+
+int FORCEINLINE linearIndexC2(int rows, int cols, int r, int c) {
+             return (r * cols + c);
+         }
+
+int FORCEINLINE linearIndexF2(int rows, int cols, int r, int c) {
+             return (c * rows + r);
+         }
+
+//////////////////////////////////////////////////////////////////////////////
+// MXK x KxN = MxN
+template <typename T1, typename T2, typename T3>
+static void usualGemm(const char cOrder, const bool transA, const bool transB, const uint M, const uint N, const uint K, const double alpha, const void* vA, const uint lda, const void* vB, const uint ldb, const double beta, void* vC, const uint ldc) {
+
+    T1* A = reinterpret_cast<T1*>(const_cast<void*>(vA));
+    T2* B = reinterpret_cast<T2*>(const_cast<void*>(vB));
+    T3* C = reinterpret_cast<T3*>(vC);
+    T3 alphaZ(alpha), betaZ(beta);
+
+    const bool flagC = cOrder == 'f';
+    const bool flagA = (flagC && transA) || (!flagC && !transA);
+    const bool flagB = (flagC && transB) || (!flagC && !transB);
+
+    #pragma omp parallel for if(M*N > Environment::getInstance()->elementwiseThreshold()) schedule(guided) collapse(2)    
+    for(uint row = 0; row < M; ++row) {
+       for(uint col = 0; col < N; ++col) {
+            
+            T3* c = flagC ? (C + row + col * ldc) : (C + row * ldc + col);       		
+            T3 val = 0;  
+
+			#pragma omp simd			
+            for(uint i = 0; i < K; ++i) {
+            	T3 a = flagA ? *(A + row * lda + i) : *(A + row + i * lda);
+            	T3 b = flagB ? *(B + col + i * ldb) : *(B + col * ldb + i);            	
+               	val += alphaZ * a * b;
+            }
+            
+            if(betaZ)
+            	*c = val + betaZ * *c;
+            else
+            	*c = val;
+       }
+    }
+}
+
+//////////////////////////////////////////////////////////////////////////////
+// MXK x KxN = MxN
+template <typename T1, typename T2, typename T3>
+static NDArray* mmulMxM2(const NDArray* A, const NDArray* B, NDArray* C, const double alpha, const double beta, const char outOrder) {
+
+    if(A->rankOf() != 2)
+        throw std::runtime_error("MmulHelper::mmulMxM: rank of A array is not equal 2 !");
+    if(B->rankOf() != 2)
+        throw std::runtime_error("MmulHelper::mmulMxM: rank of B array is not equal 2 !");    
+
+    const auto M     = A->sizeAt(0);
+    const auto K     = A->sizeAt(1);
+    const auto N     = B->sizeAt(1);
+    const auto bRows = B->sizeAt(0);
+    
+    if(C != nullptr && C->rankOf() != 2)
+        throw std::runtime_error("MmulHelper::mmulMxM: rank of C array is not equal 2 !");
+    if(bRows != K)
+        throw std::runtime_error("MmulHelper::mmulMxM: B array has wrong number of rows !");
+    if(C != nullptr && C->sizeAt(0) != M)
+        throw std::runtime_error("MmulHelper::mmulMxM: C array has wrong number of rows !");
+    if(C != nullptr && C->sizeAt(1) != N)
+        throw std::runtime_error("MmulHelper::mmulMxM: C array has wrong number of columns !");
+
+    if(C == nullptr)
+        C = new NDArray(outOrder, {M,N}, DataTypeUtils::pickPairwiseResultType(A->dataType(), B->dataType()));
+
+    NDArray *pA(const_cast<NDArray*>(A)), *pB(const_cast<NDArray*>(B)), *pC(const_cast<NDArray*>(C));    
+
+    const auto cOrder = C->ordering();
+
+    if(A->ews() != 1) {    	
+        pA = pA->dup(cOrder);
+        printf("dup A \n");
+    }
+    if(B->ews() != 1) {    	
+        pB = pB->dup(cOrder);
+        printf("dup B \n");
+    }
+    if(C->ews() != 1) {
+        pC = pC->dup(cOrder);
+        printf("dup C \n");
+    }
+
+    const auto aOrder = pA->ordering();
+    const auto bOrder = pB->ordering();    
+
+    const bool transA = aOrder != cOrder;
+    const bool transB = bOrder != cOrder;
+    
+    const CBLAS_ORDER blasOrder  = cOrder == 'f' ? CblasColMajor : CblasRowMajor;    
+    const CBLAS_TRANSPOSE transAblas = transA ? CblasTrans : CblasNoTrans;
+    const CBLAS_TRANSPOSE transBblas = transB ? CblasTrans : CblasNoTrans;
+
+    const int lda = aOrder == 'f' ? M : K;
+    const int ldb = bOrder == 'f' ? K : N;
+    const int ldc = cOrder == 'f' ? M : N;    
+
+    const auto aType = pA->dataType();
+    const auto bType = pB->dataType();
+    const auto cType = pC->dataType();
+
+    const bool AB(aType == bType), AC(aType == cType), ABC(AB && AC);
+       
+    usualGemm<T1,T2,T3>(cOrder, transA, transB, M, N, K, alpha, pA->getBuffer(), lda, pB->getBuffer(), ldb, beta, pC->buffer(), ldc);
+
+    if(pC != C) {
+        C->assign(pC);
+        delete pC;
+    }
+    if(pA != A)
+        delete pA;
+    if(pB != B)
+        delete pB;
+
+    return C;
+}
+
+
+/////////////////////////////////////////////////////////////////////
+TEST_F(PlaygroundTests, gemm_1) {
+
+	// MXK x KxN = MxN
+    const int M = 2048;
+    const int K = 512;
+    const int N = 1024;
+
+    NDArray a('c', {M, K}, nd4j::DataType::FLOAT32);
+    NDArray b('f', {K, N}, nd4j::DataType::FLOAT32);
+    NDArray c1('c', {M, N}, nd4j::DataType::FLOAT32);
+    NDArray c2('c', {M, N}, nd4j::DataType::FLOAT32);
+
+    a.linspace(-100, 0.01);
+    b.linspace(-200, 0.01);
+
+    double temp;
+    for (int i = 0; i < 1000; ++i)
+    	temp = temp * temp;
+
+    MmulHelper::mmulMxM<float, float, float>(&a, &b, &c2);
+    auto timeStart = std::chrono::system_clock::now();
+    
+    MmulHelper::mmulMxM<float, float, float>(&a, &b, &c2);
+    auto timeEnd = std::chrono::system_clock::now();
+    auto duration = std::chrono::duration_cast<std::chrono::microseconds> ((timeEnd - timeStart) / N).count();
+    printf("duration raver %ld\n", duration);
+
+    //////////
+mmulMxM2<float,float,float>(&a, &b, &c1, 1., 0., c1.ordering());
+    timeStart = std::chrono::system_clock::now();
+	mmulMxM2<float,float,float>(&a, &b, &c1, 1., 0., c1.ordering());
+    timeEnd = std::chrono::system_clock::now();
+    duration = std::chrono::duration_cast<std::chrono::microseconds> ((timeEnd - timeStart) / N).count();
+    printf("duration my %ld\n", duration);
+
+    ASSERT_TRUE(c1.equalsTo(c2));
 }
 */

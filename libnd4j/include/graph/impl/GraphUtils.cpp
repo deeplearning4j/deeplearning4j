@@ -18,7 +18,7 @@
 // Created by GS <sgazeos@gmail.com> 3/7/2018
 //
 
-#include "config.h"
+// #include "config.h"
 
 #include <graph/GraphUtils.h>
 #include <cstdlib>

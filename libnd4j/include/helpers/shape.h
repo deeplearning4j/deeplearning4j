@@ -368,6 +368,8 @@ namespace shape {
 
     ND4J_EXPORT _CUDA_HD bool isLikeVector(Nd4jLong *shapeInfo, int& posOfNonUnityDim);
 
+    ND4J_EXPORT _CUDA_HD bool isCommonVector(Nd4jLong *shapeInfo, int& posOfNonUnityDim);
+
     ND4J_EXPORT _CUDA_HD bool isRowVector(const Nd4jLong *shapeInfo);
 
     ND4J_EXPORT _CUDA_HD bool isColumnVector(Nd4jLong *shapeInfo);
@@ -2487,7 +2489,19 @@ template <typename T>
         
         return numOfNonUnity == 1 && shapeInfo[0] > 2;
     }
+    
+    INLINEDEF _CUDA_HD bool isCommonVector(Nd4jLong *shapeInfo, int& posOfNonUnityDim) {
 
+        int numOfNonUnity = 0;
+        for(int i = 1; i <= shapeInfo[0]; ++i) {
+            if(shapeInfo[i] != 1) {
+                ++numOfNonUnity;
+                posOfNonUnityDim = i-1;
+            }
+        }
+        return numOfNonUnity == 1;
+    }
+    
     INLINEDEF _CUDA_H Nd4jLong* detachShape(Nd4jLong *originalShape) {
         Nd4jLong *newShape = new Nd4jLong[shape::shapeInfoLength(originalShape)];
         memcpy(newShape, originalShape, shape::shapeInfoByteLength(originalShape));
