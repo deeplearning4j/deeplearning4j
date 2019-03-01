@@ -29,6 +29,8 @@
 #include <ops/ops.h>
 #include <OmpLaunchHelper.h>
 
+#include <helpers/BenchmarkHelper.h>
+
 using namespace nd4j;
 using namespace nd4j::graph;
 
@@ -42,6 +44,178 @@ public:
         fflush(stdout);
     }
 };
+
+TEST_F(PlaygroundTests, Test_OpBenchmark_1) {
+
+    BenchmarkHelper helper;
+
+    ScalarBenchmark sb1(scalar::Add, "add", NDArrayFactory::create_<float>('c', {100, 100}), NDArrayFactory::create_<float>(1.0f), NDArrayFactory::create_<float>('c', {100, 100}));
+    ScalarBenchmark sb2(scalar::Add, "add", NDArrayFactory::create_<float>('c', {1000, 1000}), NDArrayFactory::create_<float>(1.0f), NDArrayFactory::create_<float>('c', {1000, 1000}));
+
+    helper.runOperationSuit({&sb1, &sb2}, "ScalarAdd");
+}
+
+
+
+TEST_F(PlaygroundTests, Test_OpBenchmark_2) {
+
+    BenchmarkHelper helper;
+    Parameters parameters;
+    parameters.addBoolParam("fOrder", true);
+    float scalar = 2.0f;
+
+    ScalarBenchmark sb(scalar::Multiply);
+
+    // Y will be shared
+    sb.setY(NDArrayFactory::create_<float>(scalar));
+
+    auto generator = GENERATE_XZ() {
+        // operands go together line by line
+        x.push_back(NDArrayFactory::create_<float>('c', {100, 100}));
+        z.push_back(NDArrayFactory::create_<float>('c', {100, 100}));
+
+        x.push_back(NDArrayFactory::create_<float>('f', {1000, 1000}));
+        z.push_back(NDArrayFactory::create_<float>('c', {1000, 1000}));
+
+        // only share within single op call. do not cross share
+        auto shared = NDArrayFactory::create_<float>('c', {256, 768});
+        x.push_back(shared);
+        z.push_back(shared);
+
+        // using bool param here
+        if (parameters.getBoolParam("fOrder")) {
+            x.push_back(NDArrayFactory::create_<float>('c', {1000, 1000}));
+            z.push_back(NDArrayFactory::create_<float>('f', {1000, 1000}));
+        }
+
+        //another way to call inplace op
+        x.push_back(NDArrayFactory::create_<float>('c', {100, 100}));
+        z.push_back(nullptr);
+    };
+
+    helper.runOperationSuit(&sb, generator, "ScalarTest");
+
+    TransformBenchmark tb(transform::StrictOps::Tanh);
+
+    // we can use the same generator, since the same number of operands used
+    helper.runOperationSuit(&tb, generator, "TransformTest");
+
+
+    PairwiseBenchmark pb(pairwise::Pow, "pow test");
+
+    auto generatorXYZ = GENERATE_XYZ() {
+        x.push_back(NDArrayFactory::create_<float>('f', {100, 1000}));
+        y.push_back(NDArrayFactory::create_<float>('c', {100, 1000}));
+        z.push_back(NDArrayFactory::create_<float>('c', {100, 1000}));
+
+        x.push_back(NDArrayFactory::create_<float>('f', {100, 1000}));
+        y.push_back(NDArrayFactory::create_<float>('f', {100, 1000}));
+        z.push_back(NDArrayFactory::create_<float>('f', {100, 1000}));
+    };
+
+    helper.runOperationSuit(&pb, generatorXYZ, "PairwiseTest");
+
+    auto generatorReductionAxis = GENERATE_XYZ() {
+        x.push_back(NDArrayFactory::create_<float>('c', {100, 1000}));
+
+        // axis goes to y here
+        y.push_back(NDArrayFactory::create_<int>('c', {1}, {(int) 0}));
+        z.push_back(NDArrayFactory::create_<float>('c', {1000}));
+
+        x.push_back(NDArrayFactory::create_<float>('c', {100, 1000}));
+        y.push_back(NDArrayFactory::create_<int>('c', {1}, {1}));
+        z.push_back(NDArrayFactory::create_<float>('c', {100}));
+
+        // scalar case
+        x.push_back(NDArrayFactory::create_<float>('c', {100, 1000}));
+        y.push_back(nullptr);
+        z.push_back(NDArrayFactory::create_<float>(0.0f));
+    };
+
+
+    ReductionBenchmark rb(reduce::FloatOps::Mean);
+
+    helper.runOperationSuit(&rb, generatorReductionAxis, "ReductionAlongDimensionTest");
+}
+
+TEST_F(PlaygroundTests, Test_OpBenchmark_3) {
+
+    TransformBenchmark tb(transform::StrictOps::Tanh);
+    PredefinedParameters a("alpha", {2, 3, 4});
+    PredefinedParameters b("beta", {9, 15, 27});
+
+    ParametersBatch batch({&a, &b});
+
+    auto parameters = batch.parameters();
+    ASSERT_EQ(9, parameters.size());
+
+    auto params_0 = parameters[0];
+    ASSERT_EQ(2, params_0.getIntParam("alpha"));
+    ASSERT_EQ(9, params_0.getIntParam("beta"));
+
+    auto params_1 = parameters[1];
+    ASSERT_EQ(2, params_1.getIntParam("alpha"));
+    ASSERT_EQ(15, params_1.getIntParam("beta"));
+
+    auto params_3 = parameters[3];
+    ASSERT_EQ(3, params_3.getIntParam("alpha"));
+    ASSERT_EQ(9, params_3.getIntParam("beta"));
+}
+
+TEST_F(PlaygroundTests, Test_OpBenchmark_4) {
+
+    BenchmarkHelper helper;
+
+    PairwiseBenchmark pb(pairwise::Ops::Add, "PWT ADD");
+    TransformBenchmark tb(transform::StrictOps::Tanh);
+    ScalarBenchmark sb(scalar::Multiply);
+    sb.setY(NDArrayFactory::create_<float>(119.0f));
+
+    PredefinedParameters a("alpha", {2, 3, 4});
+    PredefinedParameters b("beta", {9, 15, 27});
+    ParametersBatch batch({&a, &b});
+
+    auto generator = PARAMETRIC_XZ() {
+        // operands go together line by line
+        x.push_back(NDArrayFactory::create_<float>('c', {p.getIntParam("alpha") , p.getIntParam("beta")}));
+        z.push_back(NDArrayFactory::create_<float>('c', {p.getIntParam("alpha"), p.getIntParam("beta")}));
+    };
+
+    auto generatorXYZ = PARAMETRIC_XYZ() {
+        // operands go together line by line
+        x.push_back(NDArrayFactory::create_<float>('c', {p.getIntParam("alpha") , p.getIntParam("beta")}));
+        y.push_back(NDArrayFactory::create_<float>('f', {p.getIntParam("alpha") , p.getIntParam("beta")}));
+        z.push_back(NDArrayFactory::create_<float>('c', {p.getIntParam("alpha"), p.getIntParam("beta")}));
+    };
+
+    helper.runOperationSuit(&tb, generator, batch, "TransformTanh");
+    helper.runOperationSuit(&sb, generator, batch, "ScalarMultiply");
+    helper.runOperationSuit(&pb, generatorXYZ, batch, "PairwiseAdd");
+}
+
+
+TEST_F(PlaygroundTests, Test_OpBenchmark_5) {
+    BenchmarkHelper helper;
+
+    TransformBenchmark tb(transform::StrictOps::Sigmoid);
+    IntParameters length("length", 100, 500, 100);
+    BoolParameters inplace("inplace");
+
+    ParametersBatch batch({&length, &inplace});
+
+    auto generator = PARAMETRIC_XZ() {
+        // operands go together line by line
+        auto arr = NDArrayFactory::create_<float>('c', {p.getIntParam("length")});
+        x.push_back(arr);
+        if(p.getIntParam("inplace") == 1){
+            z.push_back(arr);
+        } else {
+            z.push_back(NDArrayFactory::create_<float>('c', {p.getIntParam("length")}));
+        }
+    };
+
+    helper.runOperationSuit(&tb, generator, batch, "Transform_Sigmoid");
+}
 
 /*
 TEST_F(PlaygroundTests, Test_Reduce_Mechanics) {
