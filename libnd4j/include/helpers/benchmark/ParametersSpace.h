@@ -31,6 +31,10 @@ namespace nd4j {
         ParametersSpace() = default;
         ~ParametersSpace() = default;
 
+        std::string name() {
+            return _name;
+        }
+
         virtual std::vector<int> evaluate() = 0;
     };
 }

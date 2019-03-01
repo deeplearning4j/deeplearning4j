@@ -142,16 +142,24 @@ TEST_F(PlaygroundTests, Test_OpBenchmark_3) {
 
     TransformBenchmark tb(transform::StrictOps::Tanh);
     PredefinedParameters a("alpha", {2, 3, 4});
-    PredefinedParameters b("beta", {9, 4, 3});
+    PredefinedParameters b("beta", {9, 15, 27});
 
     ParametersBatch batch({&a, &b});
 
     auto parameters = batch.parameters();
     ASSERT_EQ(9, parameters.size());
 
-    auto params = parameters[0];
-    ASSERT_EQ(2, params.getIntParam("alpha"));
-    ASSERT_EQ(9, params.getIntParam("beta"));
+    auto params_0 = parameters[0];
+    ASSERT_EQ(2, params_0.getIntParam("alpha"));
+    ASSERT_EQ(9, params_0.getIntParam("beta"));
+
+    auto params_1 = parameters[1];
+    ASSERT_EQ(2, params_1.getIntParam("alpha"));
+    ASSERT_EQ(15, params_1.getIntParam("beta"));
+
+    auto params_3 = parameters[3];
+    ASSERT_EQ(3, params_3.getIntParam("alpha"));
+    ASSERT_EQ(9, params_3.getIntParam("beta"));
 }
 
 /*
