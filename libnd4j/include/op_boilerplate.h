@@ -1541,4 +1541,7 @@
 #define GENERATE_XYZ() [&] (ResultSet &x, ResultSet &y, ResultSet &z)
 #define GENERATE_XZ() [&] (ResultSet &x, ResultSet &z)
 
+#define PARAMETRIC_XYZ() [&] (Parameters &p, ResultSet &x, ResultSet &y, ResultSet &z)
+#define PARAMETRIC_XZ() [&] (Parameters &p, ResultSet &x, ResultSet &z)
+
 #endif

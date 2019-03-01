@@ -162,6 +162,20 @@ TEST_F(PlaygroundTests, Test_OpBenchmark_3) {
     ASSERT_EQ(9, params_3.getIntParam("beta"));
 }
 
+TEST_F(PlaygroundTests, Test_OpBenchmark_4) {
+
+    TransformBenchmark tb(transform::StrictOps::Tanh);
+    PredefinedParameters a("alpha", {2, 3, 4});
+    PredefinedParameters b("beta", {9, 15, 27});
+
+    auto generator = PARAMETRIC_XZ() {
+        // operands go together line by line
+        x.push_back(NDArrayFactory::create_<float>('c', {p.getIntParam("alpha") , p.getIntParam("beta")}));
+        z.push_back(NDArrayFactory::create_<float>('c', {p.getIntParam("alpha"), p.getIntParam("beta")}));
+    };
+
+}
+
 /*
 TEST_F(PlaygroundTests, Test_Reduce_Mechanics) {
     auto length = 8192;
