@@ -20,6 +20,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.apache.commons.lang3.builder.Diff;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
@@ -78,14 +79,35 @@ public class SubGraph {
             }
         }
 
-        return outputs();
+        return filteredOutputs;
     }
 
     public List<SDVariable> inputs(){
         //Inputs: the SDVariables that are inputs to this subgraph are those used by any of the differential functions
         // (root or child nodes) that are NOT outputs of any of the child nodes
 
-        return null;
+        Set<SDVariable> outputsOfSubgraphNodes = new HashSet<>();
+        for(DifferentialFunction df : allFunctionsInSubgraph()){
+            SDVariable[] outputVars = df.outputVariables();
+            if(outputVars != null){
+                Collections.addAll(outputsOfSubgraphNodes, outputVars);
+            }
+        }
+
+        List<SDVariable> inputs = new ArrayList<>();
+        for(DifferentialFunction df : allFunctionsInSubgraph()){
+            SDVariable[] args = df.args();
+            if(args != null){
+                for(SDVariable arg : args){
+                    if(!outputsOfSubgraphNodes.contains(arg)){
+                        inputs.add(arg);
+                    }
+                }
+            }
+        }
+
+
+        return inputs;
     }
 
     public boolean inSubgraph(DifferentialFunction df){
@@ -99,5 +121,14 @@ public class SubGraph {
             }
         }
         return false;
+    }
+
+    public List<DifferentialFunction> allFunctionsInSubgraph(){
+        List<DifferentialFunction> out = new ArrayList<>();
+        out.add(rootNode);
+        if(childNodes != null){
+            out.addAll(childNodes);
+        }
+        return out;
     }
 }
