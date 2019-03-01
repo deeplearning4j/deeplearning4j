@@ -352,6 +352,36 @@ template <typename T>
     BUILD_SINGLE_TEMPLATE(template int cholesky_, (NDArray* input, NDArray* output, bool inplace), FLOAT_TYPES);
     BUILD_SINGLE_TEMPLATE(template int _inverse, (NDArray* input, NDArray* output), FLOAT_TYPES);
 
+    template <typename T>
+    int logdetFunctor_(NDArray* input, NDArray* output) {
+        std::unique_ptr<NDArray> tempOutput(input->dup());
+        int res = cholesky_<T>(input, tempOutput.get(), false);
+        if (res != ND4J_STATUS_OK)
+            return res;
+        auto n = input->sizeAt(-1);
+        auto totalCount = output->lengthOf() / n;
+        std::vector<T> d(n);
+        std::unique_ptr<ResultSet> matricies(tempOutput->allTensorsAlongDimension({input->rankOf()-2, input->rankOf() - 1}));
+        //std::unique_ptr<ResultSet> matricies(tempOutput->allTensorsAlongDimension({input->rankOf()-2, input->rankOf() - 1}));
+        for (Nd4jLong e = 0; e < totalCount; e++) {
+
+            d[0] = input->e<T>(0, 0);
+            for (size_t i = 1; i < d.size(); ++i) {
+                d[i] = input->e<T>(i, i);
+                auto sum = 0;
+                for (size_t k = 0; k < i; k++) {
+                    sum += (matricies->at(e)->t<T>(i, k) * d[k] * matricies->at(e)->t<T>(k, i));
+                }
+                d[i] -= sum;
+                output->t<T>(e) += nd4j::math::nd4j_log<T,T>(d[i]);
+            }
+        }
+    }
+
+    int logdetFunctor(NDArray* input, NDArray* output) {
+        BUILD_SINGLE_SELECTOR(input->dataType(), return logdetFunctor_, (input, output), FLOAT_TYPES);
+    }
+
 }
 }
 }
