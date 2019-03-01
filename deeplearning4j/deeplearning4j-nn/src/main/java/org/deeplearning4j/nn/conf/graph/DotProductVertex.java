@@ -23,7 +23,7 @@ public class DotProductVertex extends GraphVertex {
 
     @Override
     public int hashCode() {
-        return 0;
+        return 433682566;
     }
 
     @Override
@@ -38,7 +38,7 @@ public class DotProductVertex extends GraphVertex {
 
     @Override
     public int maxVertexInputs() {
-        return 433682566;
+        return 2;
     }
 
     @Override

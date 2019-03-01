@@ -56,16 +56,16 @@ public class DotProductVertex extends BaseGraphVertex {
         INDArray b = inputs[1];
         Preconditions.checkState(a.rows() == b.columns() || a.columns() == b.rows());
         try(MemoryWorkspace ws = workspaceMgr.notifyScopeBorrowed(ArrayType.ACTIVATIONS)) {
-            INDArray result = Nd4j.getExecutioner().exec(new Dot(a,b));
+            INDArray result = Nd4j.getExecutioner().exec(new Dot(a,b,
+                            graph.getConfiguration().getDimensions().toIntVector()));
             return result;
         }
     }
 
     @Override
     public Pair<Gradient, INDArray[]> doBackward(boolean tbptt, LayerWorkspaceMgr workspaceMgr) {
-        INDArray a = inputs[0];
-        INDArray b = inputs[1];
-        return null;
+
+        return new Pair<>(null, new INDArray[] {inputs[1], inputs[0]});
     }
 
     @Override

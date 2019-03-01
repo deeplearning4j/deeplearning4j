@@ -37,6 +37,7 @@ import org.deeplearning4j.util.OutputLayerUtil;
 import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.activations.IActivation;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.shade.jackson.databind.JsonNode;
 import org.nd4j.shade.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
@@ -108,6 +109,8 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
 
     protected int[] topologicalOrder;
     protected List<String> topologicalOrderStr;
+
+    protected INDArray dimensions;
 
     /**
      * @return YAML representation of configuration
