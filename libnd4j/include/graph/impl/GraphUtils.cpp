@@ -18,7 +18,9 @@
 // Created by GS <sgazeos@gmail.com> 3/7/2018
 //
 
+#ifndef __STANDALONE_BUILD__
 #include "config.h"
+#endif
 
 #include <graph/GraphUtils.h>
 #include <cstdlib>

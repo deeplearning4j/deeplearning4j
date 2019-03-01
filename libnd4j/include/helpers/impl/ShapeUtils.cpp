@@ -551,6 +551,23 @@ Nd4jLong* ShapeUtils::evalTileShapeInfo(const NDArray& arr, const std::vector<Nd
         return result;
     }
 
+    std::string ShapeUtils::strideAsString(const NDArray* array) {
+        std::string result;
+
+        auto shapeBuffer = array->getShapeInfo();   //Nd4jLong*
+        int rank = (int)*shapeBuffer;
+        result.append("[");
+        for (int e = 0; e < rank; e++) {
+            if (e > 0)
+                result.append(",");
+            Nd4jLong stride = *(shapeBuffer + rank+1+e);
+            result += flatbuffers::NumToString(stride);
+        }
+        result.append("]");
+
+        return result;
+    }
+
     std::string ShapeUtils::shapeAsString(const std::vector<Nd4jLong>& shape) {
         std::string result;
 
