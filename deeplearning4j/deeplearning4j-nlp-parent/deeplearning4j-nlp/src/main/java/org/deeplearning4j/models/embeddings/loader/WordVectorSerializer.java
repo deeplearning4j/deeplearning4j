@@ -2832,7 +2832,7 @@ public class WordVectorSerializer {
                 // TODO: avoid hard code
                 String type = Files.probeContentType(Paths.get(file.getAbsolutePath()));
                 stream = new DataInputStream(new BufferedInputStream(/*GzipUtils.isCompressedFilename(file.getName()*/
-                                                                    "application/gzip".equals(type)
+                                                                    type.contains("gzip")
                                 ? new GZIPInputStream(new FileInputStream(file)) : new FileInputStream(file)));
 
                 numWords = Integer.parseInt(readString(stream));
