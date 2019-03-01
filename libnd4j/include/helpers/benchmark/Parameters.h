@@ -17,6 +17,7 @@
 //
 // @author raver119@gmail.com
 //
+
 #ifndef DEV_TESTS_PARAMETERS_H
 #define DEV_TESTS_PARAMETERS_H
 
