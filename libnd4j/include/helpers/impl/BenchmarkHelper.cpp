@@ -65,13 +65,14 @@ namespace nd4j {
         // opNum, DataType, Shape, average time, median time
         auto t = DataTypeUtils::asString(benchmark.x().dataType());
         auto s = ShapeUtils::shapeAsString(&benchmark.x());
+        auto strides = benchmark.strides();
         auto o = benchmark.orders();
         auto a = benchmark.axis();
         auto inpl = benchmark.inplace();
 
         // printing out stuff
-        nd4j_printf("%s\t%i\t%i\t%i\t%s\t%s\t%s\t%s\t%s\t%lld\t%lld\t%lld\t%lld\t%.2f\n", benchmark.testName().c_str(), benchmark.opNum(),
-                _wIterations, _rIterations, t.c_str(), inpl.c_str(), s.c_str(), a.c_str(), o.c_str(),
+        nd4j_printf("%s\t%i\t%i\t%i\t%s\t%s\t%s\t%s\t%s\t%s\t%lld\t%lld\t%lld\t%lld\t%.2f\n", benchmark.testName().c_str(), benchmark.opNum(),
+                _wIterations, _rIterations, t.c_str(), inpl.c_str(), s.c_str(), strides.c_str(), a.c_str(), o.c_str(),
                 nd4j::math::nd4j_floor<double, Nd4jLong>(sumT), median, min, max, stdev);
     }
 
@@ -119,7 +120,7 @@ namespace nd4j {
         inpl += (x == z ? "true" : "false");
 
         // printing out stuff
-        nd4j_printf("%s\t%i\t%i\t%i\t%s\t%s\t%s\t%s\tn/a\t%lld\t%lld\t%lld\t%lld\t%.2f\n", testName, op,
+        nd4j_printf("%s\t%i\t%i\t%i\t%s\t%s\t%s\t%s\t%s\tn/a\t%lld\t%lld\t%lld\t%lld\t%.2f\n", testName, op,
                     _wIterations, _rIterations, t.c_str(), inpl.c_str(), s.c_str(), stride.c_str(), o.c_str(),
                     nd4j::math::nd4j_floor<double, Nd4jLong>(sumT), median, min, max, stdev);
     }

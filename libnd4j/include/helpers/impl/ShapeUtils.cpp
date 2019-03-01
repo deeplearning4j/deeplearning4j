@@ -560,7 +560,8 @@ Nd4jLong* ShapeUtils::evalTileShapeInfo(const NDArray& arr, const std::vector<Nd
         for (int e = 0; e < rank; e++) {
             if (e > 0)
                 result.append(",");
-            result += flatbuffers::NumToString(*(array + rank+1+e));
+            Nd4jLong stride = *(shapeBuffer + rank+1+e);
+            result += flatbuffers::NumToString(stride);
         }
         result.append("]");
 
