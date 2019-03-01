@@ -30,6 +30,7 @@
 #include <ops/declarable/DeclarableOp.h>
 #include <NDArray.h>
 #include <benchmark/Parameters.h>
+#include <benchmark/IntPowerParameters.h>
 #include <array/ResultSet.h>
 
 namespace nd4j {
