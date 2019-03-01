@@ -25,6 +25,8 @@ namespace nd4j {
 namespace ops {
 namespace helpers {
 
+#include <xmmintrin.h>
+
 #ifdef HAVE_MKLDNN
 using namespace mkldnn;
 
@@ -96,23 +98,41 @@ static void getMKLDNNMemoryDescLrn(const NDArray* src, const NDArray* diff_src,
 #endif
     nd4j_debug("MKL-DNN is not used for lrn!\n", 0);
 
-        T tbias = static_cast<T>(bias);
-        T tbeta = static_cast<T>(beta);
+        const T tbias = static_cast<T>(bias);
+        const T tbeta = static_cast<T>(beta);
 
         if (output->ews() == 1 && input->ews() == 1 && input->ordering() == 'c' && output->ordering() == 'c') {
 
-#pragma omp parallel for simd schedule(guided) collapse(2)
+#pragma omp parallel for simd schedule(guided)
             for (int c = 0; c < chunkCount; c++) {
-                for (int e = 0; e < lastDim; e++) {
-                    int begin = nd4j::math::nd4j_max<int>(0, e - depth);
-                    int end = nd4j::math::nd4j_min<int>(depth + e + 1, lastDim);
-                    T quadSum = 0.f;
-                    int shift = c * lastDim;
-                    auto iX = inputBuffer + shift;
+                const int shift = c * lastDim;
+                auto iX = inputBuffer + shift;
+                T quadSum = 0.f;
 
-                    for (int pos = begin; pos < end; ++pos) {
-                        T val = iX[pos];
+                for (int e = 0; e < lastDim; e++) {
+                    const int begin = nd4j::math::nd4j_max<int>(0, e - depth);
+                    const int end = nd4j::math::nd4j_min<int>(depth + e + 1, lastDim);
+
+                    if (begin == 0) {
+                        // at the beginning of rolling window we always read everything
+                        quadSum = 0;
+                        for (int pos = begin; pos < end; ++pos) {
+                            T val = iX[pos];
+                            quadSum += val * val;
+                        }
+                   } else if (end == lastDim) {
+                        // at the end of the window we do the same
+                        quadSum = 0;
+                        for (int pos = begin; pos < end; ++pos) {
+                            T val = iX[pos];
+                            quadSum += val * val;
+                        }
+                    } else {
+                        // at any other window we add last value and subtract previous last value
+                        T prev = iX[begin - 1];
+                        T val = iX[end];
                         quadSum += val * val;
+                        quadSum -= prev * prev;
                     }
 
                     T dividor = nd4j::math::nd4j_pow<T, T, T>(tbias + alpha * quadSum, tbeta);
