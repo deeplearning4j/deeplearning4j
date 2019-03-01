@@ -21,7 +21,9 @@
 #ifndef NATIVEOPERATIONS_CBLAS_H
 #define NATIVEOPERATIONS_CBLAS_H
 
-// #include "config.h"
+#ifndef __STANDALONE_BUILD__
+#include "config.h"
+#endif
 
 #ifdef __MKL_CBLAS_H__
 // CBLAS from MKL is already included
