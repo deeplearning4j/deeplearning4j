@@ -66,6 +66,18 @@ namespace nd4j {
             return result;
         }
 
+        std::string strides() override {
+            std::string result;
+            result += ShapeUtils::strideAsString(_x);
+            result += "/";
+            result += _z == nullptr ? ShapeUtils::strideAsString(_x) : ShapeUtils::strideAsString(_z);
+            return result;
+        }
+
+        std::string inplace() override {
+            return _x == _z ? "true" : "false";
+        }
+
         OpBenchmark* clone() override  {
             return new TransformBenchmark((transform::StrictOps) _opNum, _testName, _x, _z);
         }

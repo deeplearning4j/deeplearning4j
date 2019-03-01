@@ -58,6 +58,16 @@ namespace nd4j {
             return result;
         }
 
+        std::string strides() override {
+            std::string result;
+            result += ShapeUtils::strideAsString(_x);
+            return result;
+        }
+
+        std::string inplace() override {
+            return "n/a";
+        }
+
         ~ReductionBenchmark(){
             delete _x;
             delete _z;

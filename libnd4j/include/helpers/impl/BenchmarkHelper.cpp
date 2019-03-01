@@ -31,7 +31,7 @@ namespace nd4j {
     }
 
     void BenchmarkHelper::printHeader() {
-        nd4j_printf("TestName\tOpNum\tDataType\tShape\tAxis\tOrders\tavg (us)\tmedian (us)\tmin (us)\tmax (us)\tstdev (us)\n","");
+        nd4j_printf("TestName\tOpNum\tWarmup\tNumIter\tDataType\tInplace\tShape\tStrides\tAxis\tOrders\tavg (us)\tmedian (us)\tmin (us)\tmax (us)\tstdev (us)\n","");
     }
 
     void BenchmarkHelper::benchmarkOperation(OpBenchmark &benchmark) {
@@ -67,9 +67,11 @@ namespace nd4j {
         auto s = ShapeUtils::shapeAsString(&benchmark.x());
         auto o = benchmark.orders();
         auto a = benchmark.axis();
+        auto inpl = benchmark.inplace();
 
         // printing out stuff
-        nd4j_printf("%s\t%i\t%s\t%s\t%s\t%s\t%lld\t%lld\t%lld\t%lld\t%.2f\n", benchmark.testName().c_str(), benchmark.opNum(), t.c_str(), s.c_str(), a.c_str(),  o.c_str(),
+        nd4j_printf("%s\t%i\t%i\t%i\t%s\t%s\t%s\t%s\t%s\t%lld\t%lld\t%lld\t%lld\t%.2f\n", benchmark.testName().c_str(), benchmark.opNum(),
+                _wIterations, _rIterations, t.c_str(), inpl.c_str(), s.c_str(), a.c_str(), o.c_str(),
                 nd4j::math::nd4j_floor<double, Nd4jLong>(sumT), median, min, max, stdev);
     }
 
@@ -106,10 +108,20 @@ namespace nd4j {
         // opNum, DataType, Shape, average time, median time
         auto t = DataTypeUtils::asString(x.dataType());
         auto s = ShapeUtils::shapeAsString(&x);
+        auto stride = ShapeUtils::strideAsString(&x);
+        stride += "/";
+        stride += ShapeUtils::strideAsString(&z);
+        std::string o;
+        o += x.ordering();
+        o += "/";
+        o += z.ordering();
+        std::string inpl;
+        inpl += (x == z ? "true" : "false");
 
         // printing out stuff
-        nd4j_printf("%s\t%i\t%s\t%s\t%lld\t%lld\t%lld\t%lld\t%.2f\n", testName.c_str(), op, t.c_str(), s.c_str(), nd4j::math::nd4j_floor<double, Nd4jLong>(sumT),
-                median, min, max, stdev);
+        nd4j_printf("%s\t%i\t%i\t%i\t%s\t%s\t%s\t%s\tn/a\t%lld\t%lld\t%lld\t%lld\t%.2f\n", testName, op,
+                    _wIterations, _rIterations, t.c_str(), inpl.c_str(), s.c_str(), stride.c_str(), o.c_str(),
+                    nd4j::math::nd4j_floor<double, Nd4jLong>(sumT), median, min, max, stdev);
     }
 
     void BenchmarkHelper::runOperationSuit(std::initializer_list<OpBenchmark*> benchmarks, const char *msg) {
@@ -118,7 +130,7 @@ namespace nd4j {
     }
 
     void BenchmarkHelper::runOperationSuit(std::vector<OpBenchmark*> &benchmarks, bool postHeaders, const char *msg) {
-        if (msg != nullptr) {
+        if (msg != nullptr && postHeaders) {
             nd4j_printf("%s\n", msg);
         }
 

@@ -7,6 +7,7 @@
 
 #include <NativeOpExcutioner.h>
 #include <NDArray.h>
+#include <helpers/ShapeUtils.h>
 
 namespace nd4j {
     class ND4J_EXPORT OpBenchmark {
@@ -38,6 +39,8 @@ namespace nd4j {
 
         virtual std::string axis() = 0;
         virtual std::string orders() = 0;
+        virtual std::string strides() = 0;
+        virtual std::string inplace() = 0;
 
         virtual void executeOnce() = 0;
 

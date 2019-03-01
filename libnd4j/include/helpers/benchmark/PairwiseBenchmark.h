@@ -63,6 +63,16 @@ namespace nd4j {
             return "N/A";
         }
 
+        std::string inplace() override {
+            std::string result;
+            result += (_x == _y ? "x==y" : "x!=y");
+            result += "/";
+            result += (_x == _z ? "x==z" : "x!=z");
+            result += "/";
+            result += (_y == _z ? "y==z" : "y!=z");
+            return result;
+        }
+
         std::string orders() override {
             std::string result;
             result += _x->ordering();
@@ -70,6 +80,16 @@ namespace nd4j {
             result += _y->ordering();
             result += "/";
             result += _z == nullptr ? _x->ordering() : _z->ordering();
+            return result;
+        }
+
+        std::string strides() override {
+            std::string result;
+            result += ShapeUtils::strideAsString(_x);
+            result += "/";
+            result += ShapeUtils::strideAsString(_y);
+            result += "/";
+            result += _z == nullptr ? ShapeUtils::strideAsString(_x) : ShapeUtils::strideAsString(_z);
             return result;
         }
 
