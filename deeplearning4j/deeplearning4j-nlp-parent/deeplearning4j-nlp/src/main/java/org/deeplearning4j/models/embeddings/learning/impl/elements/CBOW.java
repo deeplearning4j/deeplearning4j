@@ -225,6 +225,15 @@ public class CBOW<T extends SequenceElement> implements ElementsLearningAlgorith
         boolean useHS = configuration.isUseHierarchicSoftmax();
         boolean useNegative = configuration.getNegative() > 0;
 
+        int[] inputStatuses = new int[windowWords.length];
+        for (int i = 0; i < windowWords.length; ++i) {
+            if (i < wordStatuses.length)
+                inputStatuses[i] = wordStatuses[i] ? 1 : 0;
+            else
+                inputStatuses[i] = -1;
+        }
+        INDArray indStatuses = Nd4j.createFromArray(inputStatuses);
+
         CbowRound cbow = null;
 
         if (useHS && useNegative) {
