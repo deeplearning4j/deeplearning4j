@@ -164,9 +164,12 @@ TEST_F(PlaygroundTests, Test_OpBenchmark_3) {
 
 TEST_F(PlaygroundTests, Test_OpBenchmark_4) {
 
+    BenchmarkHelper helper;
+
     TransformBenchmark tb(transform::StrictOps::Tanh);
     PredefinedParameters a("alpha", {2, 3, 4});
     PredefinedParameters b("beta", {9, 15, 27});
+    ParametersBatch batch({&a, &b});
 
     auto generator = PARAMETRIC_XZ() {
         // operands go together line by line
@@ -174,6 +177,7 @@ TEST_F(PlaygroundTests, Test_OpBenchmark_4) {
         z.push_back(NDArrayFactory::create_<float>('c', {p.getIntParam("alpha"), p.getIntParam("beta")}));
     };
 
+    helper.runOperationSuit(&tb, generator, batch, "TransformTanh");
 }
 
 /*

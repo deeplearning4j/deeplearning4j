@@ -65,7 +65,7 @@ namespace nd4j {
         auto a = benchmark.axis();
 
         // printing out stuff
-        nd4j_printf("%s\t%i\t%s\t%s\t%s\t%s\t%lld\t%lld\t%lld\t%lld\t%.2f\n", benchmark.testName(), benchmark.opNum(), t.c_str(), s.c_str(), a.c_str(),  o.c_str(),
+        nd4j_printf("%s\t%i\t%s\t%s\t%s\t%s\t%lld\t%lld\t%lld\t%lld\t%.2f\n", benchmark.testName().c_str(), benchmark.opNum(), t.c_str(), s.c_str(), a.c_str(),  o.c_str(),
                 nd4j::math::nd4j_floor<double, Nd4jLong>(sumT), median, min, max, stdev);
     }
 
@@ -104,7 +104,7 @@ namespace nd4j {
         auto s = ShapeUtils::shapeAsString(&x);
 
         // printing out stuff
-        nd4j_printf("%s\t%i\t%s\t%s\t%lld\t%lld\t%lld\t%lld\t%.2f\n", testName, op, t.c_str(), s.c_str(), nd4j::math::nd4j_floor<double, Nd4jLong>(sumT),
+        nd4j_printf("%s\t%i\t%s\t%s\t%lld\t%lld\t%lld\t%lld\t%.2f\n", testName.c_str(), op, t.c_str(), s.c_str(), nd4j::math::nd4j_floor<double, Nd4jLong>(sumT),
                 median, min, max, stdev);
     }
 
@@ -113,12 +113,13 @@ namespace nd4j {
         runOperationSuit(ops, msg);
     }
 
-    void BenchmarkHelper::runOperationSuit(std::vector<OpBenchmark*> &benchmarks, const char *msg) {
+    void BenchmarkHelper::runOperationSuit(std::vector<OpBenchmark*> &benchmarks, bool postHeaders, const char *msg) {
         if (msg != nullptr) {
             nd4j_printf("%s\n", msg);
         }
 
-        nd4j_printf("TestName\tOpNum\tDataType\tShape\tAxis\tOrders\tavg (us)\tmedian (us)\tmin (us)\tmax (us)\tstdev (us)\n","");
+        if (postHeaders)
+            nd4j_printf("TestName\tOpNum\tDataType\tShape\tAxis\tOrders\tavg (us)\tmedian (us)\tmin (us)\tmax (us)\tstdev (us)\n","");
 
         for (auto v:benchmarks)
             benchmarkOperation(*v);
@@ -170,6 +171,48 @@ namespace nd4j {
         // removing everything
         for (auto v:result) {
             delete reinterpret_cast<ScalarBenchmark*>(v);
+        }
+    }
+
+    void BenchmarkHelper::runOperationSuit(TransformBenchmark *op, const std::function<void (Parameters &, ResultSet &, ResultSet &)>& func, ParametersBatch &parametersBatch, const char *message) {
+
+        auto parameters = parametersBatch.parameters();
+
+        if (message != nullptr) {
+            nd4j_printf("%s", message);
+        }
+
+        nd4j_printf("TestName\tOpNum\tDataType\tShape\tAxis\tOrders\tavg (us)\tmedian (us)\tmin (us)\tmax (us)\tstdev (us)\n","");
+
+        for (auto &p: parameters) {
+
+            ResultSet x;
+            x.setNonRemovable();
+            ResultSet z;
+            z.setNonRemovable();
+            func(p, x, z);
+            std::vector<OpBenchmark *> result;
+
+            if (x.size() != z.size())
+                throw std::runtime_error("TransformBenchmark: number of X and Z arrays should match");
+
+            for (int e = 0; e < x.size(); e++) {
+                auto x_ = x.at(e);
+                auto z_ = z.at(e);
+
+                auto clone = op->clone();
+                clone->setX(x_);
+                clone->setZ(z_);
+
+                result.emplace_back(clone);
+            }
+
+            runOperationSuit(result, false);
+
+            // removing everything
+            for (auto v:result) {
+                delete reinterpret_cast<TransformBenchmark*>(v);
+            }
         }
     }
 

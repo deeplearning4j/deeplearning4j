@@ -55,13 +55,16 @@ namespace nd4j {
         BenchmarkHelper(unsigned int warmUpIterations = 10, unsigned int runIterations = 100);
 
         void runOperationSuit(std::initializer_list<OpBenchmark*> benchmarks, const char *msg = nullptr);
-        void runOperationSuit(std::vector<OpBenchmark*> &benchmarks, const char *msg = nullptr);
+        void runOperationSuit(std::vector<OpBenchmark*> &benchmarks, bool postHeaders, const char *msg = nullptr);
 
         void runOperationSuit(ScalarBenchmark *op, const std::function<void (ResultSet &, ResultSet &)>& func, const char *message = nullptr);
         void runOperationSuit(TransformBenchmark *op, const std::function<void (ResultSet &, ResultSet &)>& func, const char *message = nullptr);
         void runOperationSuit(ReductionBenchmark *op, const std::function<void (ResultSet &, ResultSet &)>& func, const char *message = nullptr);
         void runOperationSuit(ReductionBenchmark *op, const std::function<void (ResultSet &, ResultSet &, ResultSet &)>& func, const char *message = nullptr);
         void runOperationSuit(PairwiseBenchmark *op, const std::function<void (ResultSet &, ResultSet &, ResultSet &)>& func, const char *message = nullptr);
+
+
+        void runOperationSuit(TransformBenchmark *op, const std::function<void (Parameters &, ResultSet &, ResultSet &)>& func, ParametersBatch &parametersBatch, const char *message = nullptr);
 
         void runScalarSuit();
 
