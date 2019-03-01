@@ -25,8 +25,6 @@ namespace nd4j {
 namespace ops {
 namespace helpers {
 
-#include <xmmintrin.h>
-
 #ifdef HAVE_MKLDNN
 using namespace mkldnn;
 
