@@ -193,6 +193,43 @@ TEST_F(PlaygroundTests, Test_OpBenchmark_4) {
     helper.runOperationSuit(&pb, generatorXYZ, batch, "PairwiseAdd");
 }
 
+
+TEST_F(PlaygroundTests, Test_OpBenchmark_5) {
+
+    BenchmarkHelper helper;
+
+    nd4j_printf("BEFORE\n","");
+    TransformBenchmark tb(transform::StrictOps::Sigmoid);
+    nd4j_printf("IntParams\n","");
+    IntParameters length("length", 100, 500, 100);
+    nd4j_printf("BoolParams\n","");
+    BoolParameters inplace("inplace");
+
+    nd4j_printf("Batch\n","");
+    ParametersBatch batch({&length, &inplace});
+
+    nd4j_printf("Parametric\n","");
+    auto generator = PARAMETRIC_XZ() {
+        // operands go together line by line
+        nd4j_printf("ARR\n","");
+        NDArray arr = NDArrayFactory::create_<float>('c', {p.getIntParam("length")});
+        nd4j_printf("Push back\n","");
+        x.push_back(&arr);
+        if(p.getIntParam("inplace") == 1){
+            nd4j_printf("Push back z1\n","");
+            z.push_back(&arr);
+        } else {
+            nd4j_printf("Push back z2\n","");
+            z.push_back(NDArrayFactory::create_<float>('c', {p.getIntParam("length")}));
+        }
+        nd4j_printf("End generator\n","");
+    };
+
+    nd4j_printf("Run\n","");
+    helper.runOperationSuit(&tb, generator, batch, "Transform_Sigmoid");
+    nd4j_printf("Complete\n","");
+}
+
 /*
 TEST_F(PlaygroundTests, Test_Reduce_Mechanics) {
     auto length = 8192;

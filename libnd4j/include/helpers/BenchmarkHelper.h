@@ -33,6 +33,8 @@
 #include <benchmark/PredefinedParameters.h>
 #include <benchmark/ParametersBatch.h>
 #include <benchmark/ParametersSpace.h>
+#include <benchmark/BoolParameters.h>
+#include <benchmark/IntParameters.h>
 #include <benchmark/IntPowerParameters.h>
 #include <array/ResultSet.h>
 

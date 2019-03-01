@@ -18,8 +18,8 @@
 // @author raver119@gmail.com
 //
 
-#ifndef DEV_TESTS_INTPOWERPARAMETERS_H
-#define DEV_TESTS_INTPOWERPARAMETERS_H
+#ifndef DEV_TESTS_BOOLPARAMETERS_H
+#define DEV_TESTS_BOOLPARAMETERS_H
 
 #include <map>
 #include <vector>
@@ -28,27 +28,18 @@
 #include "ParametersSpace.h"
 
 namespace nd4j {
-    class IntPowerParameters : public ParametersSpace {
+    class BoolParameters : public ParametersSpace {
     protected:
-        int _base;
-        int _start;
-        int _stop;
-        int _step;
 
     public:
-        IntPowerParameters(std::string name, int base, int start, int stop, int step = 1) : ParametersSpace() {
-            _base = base;
-            _start = start;
-            _stop = stop;
-            _step = step;
+        BoolParameters(std::string name) : ParametersSpace() {
             _name = name;
         }
 
         std::vector<int> evaluate() override {
             std::vector<int> result;
-            for (int e = _start; e < _stop; e += _step) {
-               result.emplace_back(nd4j::math::nd4j_pow<double, double, int>(_base, e));
-            }
+            result.emplace_back(0);
+            result.emplace_back(1);
             return result;
         }
     };
