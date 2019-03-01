@@ -100,7 +100,39 @@ static void getMKLDNNMemoryDescLrn(const NDArray* src, const NDArray* diff_src,
         T tbeta = static_cast<T>(beta);
 
         if (output->ews() == 1 && input->ews() == 1 && input->ordering() == 'c' && output->ordering() == 'c') {
+        Nd4jLong backStep = 0;
+        Nd4jLong localStep = 0;
+        int oldBegin = -1;
+        int oldEnd = -1;
+        T quadSum = 0.f;
+//#pragma omp parallel for schedule(guided)
+        for (Nd4jLong i = 0; i < input->lengthOf(); i++) {
+            int e = i % lastDim;
+            int pack = i / lastDim;
+            int begin = nd4j::math::nd4j_max<int>(0, e - depth);
+            int end = nd4j::math::nd4j_min<int>(depth + e + 1, lastDim);
 
+            if (oldBegin != begin && oldEnd != end) {
+                quadSum = 0;
+                for (int pos = begin + pack * lastDim; pos < end + pack * lastDim; ++pos) {
+                    T val = inputBuffer[pos];
+                    quadSum += val * val;
+                }
+            }
+            else if (oldBegin != begin) {
+                T val = inputBuffer[oldBegin + pack * lastDim];
+                quadSum -= val * val;
+            }
+            else if (oldEnd != end) {
+                T val = inputBuffer[oldEnd + pack * lastDim];
+                quadSum += val * val;
+            }
+            outputBuffer[i] = quadSum;
+            oldEnd = end;
+            oldBegin = begin;
+        }
+
+        output->printBuffer("Out buf prep");
 #pragma omp parallel for simd schedule(guided) collapse(2)
             for (int c = 0; c < chunkCount; c++) {
                 for (int e = 0; e < lastDim; e++) {
@@ -110,17 +142,16 @@ static void getMKLDNNMemoryDescLrn(const NDArray* src, const NDArray* diff_src,
                     int shift = c * lastDim;
                     auto iX = inputBuffer + shift;
 
-                    for (int pos = begin; pos < end; ++pos) {
-                        T val = iX[pos];
-                        quadSum += val * val;
-                    }
+//                    for (int pos = begin; pos < end; ++pos) {
+//                        T val = iX[pos];
+//                        quadSum += val * val;
+//                    }
 
-                    T dividor = nd4j::math::nd4j_pow<T, T, T>(tbias + alpha * quadSum, tbeta);
+                    T dividor = nd4j::math::nd4j_pow<T, T, T>(tbias + alpha * outputBuffer[shift + e], tbeta);
                     outputBuffer[shift + e] = iX[e] / dividor;
                 }
             }
         } else {
-
 #pragma omp parallel for schedule(guided)
             for (int c = 0; c < chunkCount; c++) {
                 for (int e = 0; e < lastDim; e++) {
@@ -130,7 +161,7 @@ static void getMKLDNNMemoryDescLrn(const NDArray* src, const NDArray* diff_src,
                     int shift = c * lastDim;
 #pragma omp simd reduction(sumT:quadSum)
                     for (int pos = begin; pos < end; ++pos) {
-                        T val =inputBuffer[shape::getIndexOffset(shift + pos, input->getShapeInfo(), input->lengthOf())];
+                        T val = inputBuffer[shape::getIndexOffset(shift + pos, input->getShapeInfo(), input->lengthOf())];
                         quadSum += val * val;
                     }
 
