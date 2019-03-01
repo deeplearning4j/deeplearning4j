@@ -138,7 +138,7 @@ public class DenseLayer extends FeedForwardLayer {
          */
         private boolean hasLayerNorm = false;
         public Builder hasLayerNorm(boolean hasLayerNorm){
-            this.hasLayerNorm = true;
+            this.hasLayerNorm = hasLayerNorm;
             return this;
         }
 

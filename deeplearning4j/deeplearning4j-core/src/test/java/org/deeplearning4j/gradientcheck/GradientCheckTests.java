@@ -745,7 +745,7 @@ public class GradientCheckTests extends BaseDL4JTest {
                             double scoreAfter = mln.score();
                             //Can't test in 'characteristic mode of operation' if not learning
                             String msg = "testGradMLP2LayerIrisSimple() - score did not (sufficiently) decrease during learning - activationFn="
-                                    + afn + ", lossFn=" + lf + ", outputActivation=" + outputActivation
+                                    + afn + ", lossFn=" + lf + ", layerNorm=" + layerNorm + ", outputActivation=" + outputActivation
                                     + ", doLearningFirst=" + doLearningFirst + " (before=" + scoreBefore
                                     + ", scoreAfter=" + scoreAfter + ")";
                             //assertTrue(msg, scoreAfter < 0.8 * scoreBefore);
@@ -754,7 +754,7 @@ public class GradientCheckTests extends BaseDL4JTest {
                         if (PRINT_RESULTS) {
                             System.out.println("testGradientMLP2LayerIrisSimpleRandom() - activationFn=" + afn + ", lossFn="
                                     + lf + ", outputActivation=" + outputActivation + ", doLearningFirst="
-                                    + doLearningFirst);
+                                    + doLearningFirst + ", layerNorm=" + layerNorm);
                             for (int j = 0; j < mln.getnLayers(); j++)
                                 System.out.println("Layer " + j + " # params: " + mln.getLayer(j).numParams());
                         }
@@ -763,7 +763,7 @@ public class GradientCheckTests extends BaseDL4JTest {
                                 DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels);
 
                         String msg = "testGradMLP2LayerIrisSimple() - activationFn=" + afn + ", lossFn=" + lf
-                                + ", outputActivation=" + outputActivation + ", doLearningFirst=" + doLearningFirst;
+                                + ", outputActivation=" + outputActivation + ", doLearningFirst=" + doLearningFirst + ", layerNorm=" + layerNorm;
                         assertTrue(msg, gradOK);
                         TestUtils.testModelSerialization(mln);
                     }
