@@ -359,23 +359,18 @@ template <typename T>
         if (res != ND4J_STATUS_OK)
             return res;
         auto n = input->sizeAt(-1);
-        auto totalCount = output->lengthOf() / n;
+        auto totalCount = output->lengthOf();
         std::vector<T> d(n);
         std::unique_ptr<ResultSet> matricies(tempOutput->allTensorsAlongDimension({input->rankOf()-2, input->rankOf() - 1}));
-        //std::unique_ptr<ResultSet> matricies(tempOutput->allTensorsAlongDimension({input->rankOf()-2, input->rankOf() - 1}));
+        std::unique_ptr<ResultSet> inputMatricies(input->allTensorsAlongDimension({input->rankOf()-2, input->rankOf() - 1}));
         for (Nd4jLong e = 0; e < totalCount; e++) {
 
-            d[0] = input->e<T>(0, 0);
-            for (size_t i = 1; i < d.size(); ++i) {
-                d[i] = input->e<T>(i, i);
-                auto sum = 0;
-                for (size_t k = 0; k < i; k++) {
-                    sum += (matricies->at(e)->t<T>(i, k) * d[k] * matricies->at(e)->t<T>(k, i));
-                }
-                d[i] -= sum;
-                output->t<T>(e) += nd4j::math::nd4j_log<T,T>(d[i]);
+            //d[0] = inputMatricies->at(e)->t<T>(0, 0);
+            for (size_t i = 0; i < n; ++i) {
+                output->t<T>(e) += nd4j::math::nd4j_log<T,T>(nd4j::math::nd4j_pow<T,T,T>(matricies->at(e)->t<T>(i, i), T(2)));
             }
         }
+        return ND4J_STATUS_OK;
     }
 
     int logdetFunctor(NDArray* input, NDArray* output) {
