@@ -148,10 +148,10 @@ public class DM<T extends SequenceElement> implements SequenceLearningAlgorithm<
             }
 
         int[] windowWords = new int[intsList.size()];
-        boolean[] statuses = new boolean[statusesList.size()];
+        boolean[] statuses = new boolean[intsList.size()];
         for (int x = 0; x < windowWords.length; x++) {
             windowWords[x] = intsList.get(x);
-            statuses[x] = statusesList.get(x);
+            statuses[x] = false;
         }
 
         int batchSize = configuration.getBatchSize();
