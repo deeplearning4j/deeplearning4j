@@ -3429,7 +3429,7 @@ TYPED_TEST(TypedDeclarableOpsTests8, LrnTest_4) {
 
 ////////////////////////////////////////////////////////////////////////////////
 TYPED_TEST(TypedDeclarableOpsTests8, LrnTest_4_119) {
-    int iterations = 100;
+    int iterations = 1000;
     auto x = NDArrayFactory::create<TypeParam>('c', {8, 32, 64, 64});
     auto z = NDArrayFactory::create<TypeParam>('c', {8, 32, 64, 64});
     x.linspace(1);
