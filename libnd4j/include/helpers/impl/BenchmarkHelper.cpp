@@ -355,6 +355,50 @@ namespace nd4j {
         }
     }
 
+    void BenchmarkHelper::runOperationSuit(PairwiseBenchmark *op, const std::function<void (Parameters &, ResultSet&, ResultSet&, ResultSet &)>& func, ParametersBatch &parametersBatch, const char *message) {
+        auto parameters = parametersBatch.parameters();
+
+        if (message != nullptr) {
+            nd4j_printf("%s\n", message);
+        }
+
+        printHeader();
+
+        for (auto &p: parameters) {
+            ResultSet x;
+            x.setNonRemovable();
+            ResultSet y;
+            y.setNonRemovable();
+            ResultSet z;
+            z.setNonRemovable();
+            func(p, x, y, z);
+            std::vector<OpBenchmark*> result;
+
+            if (x.size() != z.size() || x.size() != y.size())
+                throw std::runtime_error("PairwiseBenchmark: number of X and Z arrays should match");
+
+            for (int e = 0; e < x.size(); e++) {
+                auto x_ = x.at(e);
+                auto y_ = y.at(e);
+                auto z_ = z.at(e);
+
+                auto clone = op->clone();
+                clone->setX(x_);
+                clone->setY(y_);
+                clone->setZ(z_);
+
+                result.emplace_back(clone);
+            }
+
+            runOperationSuit(result, false);
+
+            // removing everything
+            for (auto v:result) {
+                delete reinterpret_cast<PairwiseBenchmark*>(v);
+            }
+        }
+    }
+
     void BenchmarkHelper::runOperationSuit(PairwiseBenchmark *op, const std::function<void (ResultSet&, ResultSet&, ResultSet &)>& func, const char *message) {
         ResultSet x;
         x.setNonRemovable();

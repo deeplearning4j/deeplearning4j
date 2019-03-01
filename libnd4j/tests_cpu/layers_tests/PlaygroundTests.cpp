@@ -166,6 +166,7 @@ TEST_F(PlaygroundTests, Test_OpBenchmark_4) {
 
     BenchmarkHelper helper;
 
+    PairwiseBenchmark pb(pairwise::Ops::Add, "PWT ADD");
     TransformBenchmark tb(transform::StrictOps::Tanh);
     ScalarBenchmark sb(scalar::Multiply);
     sb.setY(NDArrayFactory::create_<float>(119.0f));
@@ -180,8 +181,16 @@ TEST_F(PlaygroundTests, Test_OpBenchmark_4) {
         z.push_back(NDArrayFactory::create_<float>('c', {p.getIntParam("alpha"), p.getIntParam("beta")}));
     };
 
+    auto generatorXYZ = PARAMETRIC_XYZ() {
+        // operands go together line by line
+        x.push_back(NDArrayFactory::create_<float>('c', {p.getIntParam("alpha") , p.getIntParam("beta")}));
+        y.push_back(NDArrayFactory::create_<float>('f', {p.getIntParam("alpha") , p.getIntParam("beta")}));
+        z.push_back(NDArrayFactory::create_<float>('c', {p.getIntParam("alpha"), p.getIntParam("beta")}));
+    };
+
     helper.runOperationSuit(&tb, generator, batch, "TransformTanh");
     helper.runOperationSuit(&sb, generator, batch, "ScalarMultiply");
+    helper.runOperationSuit(&pb, generatorXYZ, batch, "PairwiseAdd");
 }
 
 /*
