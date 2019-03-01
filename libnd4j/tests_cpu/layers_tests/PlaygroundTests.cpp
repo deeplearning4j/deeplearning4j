@@ -212,12 +212,12 @@ TEST_F(PlaygroundTests, Test_OpBenchmark_5) {
     auto generator = PARAMETRIC_XZ() {
         // operands go together line by line
         nd4j_printf("ARR\n","");
-        NDArray arr = NDArrayFactory::create_<float>('c', {p.getIntParam("length")});
+        auto arr = NDArrayFactory::create_<float>('c', {p.getIntParam("length")});
         nd4j_printf("Push back\n","");
-        x.push_back(&arr);
+        x.push_back(arr);
         if(p.getIntParam("inplace") == 1){
             nd4j_printf("Push back z1\n","");
-            z.push_back(&arr);
+            z.push_back(arr);
         } else {
             nd4j_printf("Push back z2\n","");
             z.push_back(NDArrayFactory::create_<float>('c', {p.getIntParam("length")}));
