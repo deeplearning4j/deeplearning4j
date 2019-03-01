@@ -103,7 +103,7 @@ static void getMKLDNNMemoryDescLrn(const NDArray* src, const NDArray* diff_src,
 
         if (output->ews() == 1 && input->ews() == 1 && input->ordering() == 'c' && output->ordering() == 'c') {
 
-#pragma omp parallel for simd schedule(guided, 4)
+#pragma omp parallel for simd schedule(guided)
             for (int c = 0; c < chunkCount; c++) {
                 const int shift = c * lastDim;
                 auto iX = inputBuffer + shift;
