@@ -48,8 +48,8 @@ public:
 TEST_F(PlaygroundTests, Test_OpBenchmark_1) {
     BenchmarkHelper helper;
 
-    ScalarBenchmark sb1(scalar::Add, NDArrayFactory::create_<float>('c', {100, 100}), NDArrayFactory::create_<float>(1.0f), NDArrayFactory::create_<float>('c', {100, 100}));
-    ScalarBenchmark sb2(scalar::Add, NDArrayFactory::create_<float>('c', {1000, 1000}), NDArrayFactory::create_<float>(1.0f), NDArrayFactory::create_<float>('c', {1000, 1000}));
+    ScalarBenchmark sb1(scalar::Add, "add", NDArrayFactory::create_<float>('c', {100, 100}), NDArrayFactory::create_<float>(1.0f), NDArrayFactory::create_<float>('c', {100, 100}));
+    ScalarBenchmark sb2(scalar::Add, "add", NDArrayFactory::create_<float>('c', {1000, 1000}), NDArrayFactory::create_<float>(1.0f), NDArrayFactory::create_<float>('c', {1000, 1000}));
 
 
 

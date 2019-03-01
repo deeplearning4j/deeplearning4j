@@ -14,7 +14,7 @@ namespace nd4j {
             //
         }
 
-        TransformBenchmark(transform::StrictOps op, NDArray *x, NDArray *z) : OpBenchmark(x, z) {
+        TransformBenchmark(transform::StrictOps op, std::string testName, NDArray *x, NDArray *z) : OpBenchmark(testName, x, z) {
             _opNum = (int) op;
         }
 
@@ -52,7 +52,7 @@ namespace nd4j {
         }
 
         OpBenchmark* clone() override  {
-            return new TransformBenchmark((transform::StrictOps) _opNum, _x, _z);
+            return new TransformBenchmark((transform::StrictOps) _opNum, _testName, _x, _z);
         }
     };
 }

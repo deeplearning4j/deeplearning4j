@@ -14,7 +14,7 @@ namespace nd4j {
             //
         }
 
-        PairwiseBenchmark(pairwise::Ops op, NDArray *x, NDArray *y, NDArray *z) : OpBenchmark(x, y, z) {
+        PairwiseBenchmark(pairwise::Ops op, std::string testName, NDArray *x, NDArray *y, NDArray *z) : OpBenchmark(testName, x, y, z) {
             _opNum = (int) op;
         }
 
@@ -57,7 +57,7 @@ namespace nd4j {
         }
 
         OpBenchmark* clone() override  {
-            return new PairwiseBenchmark((pairwise::Ops) _opNum, _x, _y, _z);
+            return new PairwiseBenchmark((pairwise::Ops) _opNum, _testName, _x, _y, _z);
         }
     };
 }

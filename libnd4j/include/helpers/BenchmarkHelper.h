@@ -42,9 +42,9 @@ namespace nd4j {
     protected:
         void benchmarkOperation(OpBenchmark &benchmark);
 
-        void benchmarkScalarOperation(scalar::Ops op, double value, NDArray &x, NDArray &z);
+        void benchmarkScalarOperation(scalar::Ops op, std::string testName, double value, NDArray &x, NDArray &z);
 
-        void benchmarkDeclarableOp(nd4j::ops::DeclarableOp &op, Context &context);
+        void benchmarkDeclarableOp(nd4j::ops::DeclarableOp &op, std::string testName, Context &context);
 
         void benchmarkGEMM(char orderA, std::initializer_list<Nd4jLong> shapeA, char orderB, std::initializer_list<Nd4jLong> shapeB, char orderC, std::initializer_list<Nd4jLong> shapeC);
     public:

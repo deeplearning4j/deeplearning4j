@@ -31,7 +31,7 @@ namespace nd4j {
             _opNum = (int) op;
         }
 
-        ScalarBenchmark(scalar::Ops op, NDArray *x, NDArray *y, NDArray *z) : OpBenchmark(x, y, z) {
+        ScalarBenchmark(scalar::Ops op, std::string testName, NDArray *x, NDArray *y, NDArray *z) : OpBenchmark(testName, x, y, z) {
             _opNum = (int) op;
         }
 
@@ -55,7 +55,7 @@ namespace nd4j {
         }
 
         OpBenchmark* clone() override  {
-            return new ScalarBenchmark((scalar::Ops) _opNum, _x == nullptr ? _x : _x->dup() , _y == nullptr ? _y : _y->dup(), _z == nullptr ? _z : _z->dup());
+            return new ScalarBenchmark((scalar::Ops) _opNum, _testName, _x == nullptr ? _x : _x->dup() , _y == nullptr ? _y : _y->dup(), _z == nullptr ? _z : _z->dup());
         }
     };
 }
