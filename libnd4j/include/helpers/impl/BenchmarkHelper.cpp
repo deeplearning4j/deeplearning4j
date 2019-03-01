@@ -30,6 +30,10 @@ namespace nd4j {
         _rIterations = runIterations;
     }
 
+    void BenchmarkHelper::printHeader() {
+        nd4j_printf("TestName\tOpNum\tDataType\tShape\tAxis\tOrders\tavg (us)\tmedian (us)\tmin (us)\tmax (us)\tstdev (us)\n","");
+    }
+
     void BenchmarkHelper::benchmarkOperation(OpBenchmark &benchmark) {
 
         for (uint i = 0; i < _wIterations; i++)
@@ -119,7 +123,7 @@ namespace nd4j {
         }
 
         if (postHeaders)
-            nd4j_printf("TestName\tOpNum\tDataType\tShape\tAxis\tOrders\tavg (us)\tmedian (us)\tmin (us)\tmax (us)\tstdev (us)\n","");
+            printHeader();
 
         for (auto v:benchmarks)
             benchmarkOperation(*v);
@@ -128,7 +132,7 @@ namespace nd4j {
     }
 
     void BenchmarkHelper::runScalarSuit() {
-        nd4j_printf("TestName\tOpNum\tDataType\tShape\tAxis\tOrders\tavg (us)\tmedian (us)\n","");
+        printHeader();
 
         std::initializer_list<std::initializer_list<Nd4jLong>> shapes = {{100}, {32, 256}, {32, 150, 200}, {32, 3, 244, 244}, {32, 64, 128, 256}};
         std::initializer_list<nd4j::DataType> dataTypes = {nd4j::DataType::FLOAT32, nd4j::DataType::DOUBLE};
@@ -143,6 +147,45 @@ namespace nd4j {
         }
     }
 
+    void BenchmarkHelper::runOperationSuit(ScalarBenchmark *op, const std::function<void (Parameters &, ResultSet&, ResultSet&)>& func, ParametersBatch &parametersBatch, const char *message) {
+        auto parameters = parametersBatch.parameters();
+
+        if (message != nullptr) {
+            nd4j_printf("%s\n", message);
+        }
+
+        printHeader();
+
+        for (auto &p: parameters) {
+            ResultSet x;
+            x.setNonRemovable();
+            ResultSet z;
+            z.setNonRemovable();
+            func(p, x, z);
+            std::vector<OpBenchmark*> result;
+
+            if (x.size() != z.size())
+                throw std::runtime_error("ScalarBenchmark: number of X and Z arrays should match");
+
+            for (int e = 0; e < x.size(); e++) {
+                auto x_ = x.at(e);
+                auto z_ = z.at(e);
+
+                auto clone = op->clone();
+                clone->setX(x_);
+                clone->setZ(z_);
+
+                result.emplace_back(clone);
+            }
+
+            runOperationSuit(result, false);
+
+            // removing everything
+            for (auto v:result) {
+                delete reinterpret_cast<ScalarBenchmark*>(v);
+            }
+        }
+    }
 
     void BenchmarkHelper::runOperationSuit(ScalarBenchmark *op, const std::function<void (ResultSet&, ResultSet&)>& func, const char *message) {
         ResultSet x;
@@ -179,13 +222,12 @@ namespace nd4j {
         auto parameters = parametersBatch.parameters();
 
         if (message != nullptr) {
-            nd4j_printf("%s", message);
+            nd4j_printf("%s\n", message);
         }
 
-        nd4j_printf("TestName\tOpNum\tDataType\tShape\tAxis\tOrders\tavg (us)\tmedian (us)\tmin (us)\tmax (us)\tstdev (us)\n","");
+        printHeader();
 
         for (auto &p: parameters) {
-
             ResultSet x;
             x.setNonRemovable();
             ResultSet z;

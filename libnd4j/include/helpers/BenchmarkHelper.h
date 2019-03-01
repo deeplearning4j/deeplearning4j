@@ -51,6 +51,8 @@ namespace nd4j {
         void benchmarkDeclarableOp(nd4j::ops::DeclarableOp &op, std::string testName, Context &context);
 
         void benchmarkGEMM(char orderA, std::initializer_list<Nd4jLong> shapeA, char orderB, std::initializer_list<Nd4jLong> shapeB, char orderC, std::initializer_list<Nd4jLong> shapeC);
+
+        void printHeader();
     public:
         BenchmarkHelper(unsigned int warmUpIterations = 10, unsigned int runIterations = 100);
 
@@ -65,6 +67,10 @@ namespace nd4j {
 
 
         void runOperationSuit(TransformBenchmark *op, const std::function<void (Parameters &, ResultSet &, ResultSet &)>& func, ParametersBatch &parametersBatch, const char *message = nullptr);
+        void runOperationSuit(ScalarBenchmark *op, const std::function<void (Parameters &, ResultSet &, ResultSet &)>& func, ParametersBatch &parametersBatch, const char *message = nullptr);
+        void runOperationSuit(ReductionBenchmark *op, const std::function<void (Parameters &, ResultSet &, ResultSet &)>& func, ParametersBatch &parametersBatch, const char *message = nullptr);
+        void runOperationSuit(ReductionBenchmark *op, const std::function<void (Parameters &, ResultSet &, ResultSet &, ResultSet &)>& func, ParametersBatch &parametersBatch, const char *message = nullptr);
+        void runOperationSuit(PairwiseBenchmark *op, const std::function<void (Parameters &, ResultSet &, ResultSet &, ResultSet &)>& func, ParametersBatch &parametersBatch, const char *message = nullptr);
 
         void runScalarSuit();
 

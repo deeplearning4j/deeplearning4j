@@ -167,6 +167,9 @@ TEST_F(PlaygroundTests, Test_OpBenchmark_4) {
     BenchmarkHelper helper;
 
     TransformBenchmark tb(transform::StrictOps::Tanh);
+    ScalarBenchmark sb(scalar::Multiply);
+    sb.setY(NDArrayFactory::create_<float>(119.0f));
+
     PredefinedParameters a("alpha", {2, 3, 4});
     PredefinedParameters b("beta", {9, 15, 27});
     ParametersBatch batch({&a, &b});
@@ -178,6 +181,7 @@ TEST_F(PlaygroundTests, Test_OpBenchmark_4) {
     };
 
     helper.runOperationSuit(&tb, generator, batch, "TransformTanh");
+    helper.runOperationSuit(&sb, generator, batch, "ScalarMultiply");
 }
 
 /*
