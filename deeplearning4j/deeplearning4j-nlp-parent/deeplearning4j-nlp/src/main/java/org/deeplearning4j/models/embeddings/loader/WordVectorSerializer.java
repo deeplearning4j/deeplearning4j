@@ -2827,17 +2827,27 @@ public class WordVectorSerializer {
         protected int vectorLength;
         protected AtomicInteger idxCounter = new AtomicInteger(0);
 
+
         protected BinaryReader(@NonNull File file) {
             try {
-                // TODO: avoid hard code
-                String type = Files.probeContentType(Paths.get(file.getAbsolutePath()));
-                stream = new DataInputStream(new BufferedInputStream(/*GzipUtils.isCompressedFilename(file.getName()*/
-                                                                    type.contains("gzip")
-                                ? new GZIPInputStream(new FileInputStream(file)) : new FileInputStream(file)));
-
+                // Try to read as GZip
+                stream = new DataInputStream(new BufferedInputStream(new GZIPInputStream(new FileInputStream(file))));
+            }
+            catch (IOException e) {
+                try {
+                    // Failed to read as Gzip, assuming it's not compressed binary format
+                    stream = new DataInputStream(new BufferedInputStream(new FileInputStream(file)));
+                } catch (Exception e1) {
+                    throw new RuntimeException(e1);
+                }
+            }
+            catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+            try {
                 numWords = Integer.parseInt(readString(stream));
                 vectorLength = Integer.parseInt(readString(stream));
-            } catch (Exception e) {
+            } catch (IOException e) {
                 throw new RuntimeException(e);
             }
         }
