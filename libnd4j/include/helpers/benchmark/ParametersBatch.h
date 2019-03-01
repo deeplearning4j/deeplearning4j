@@ -59,7 +59,7 @@ namespace nd4j {
                 xShape[e] = values.size();
             }
 
-            nd4j_printf("Total Iterations: %i\n", totalIterations);
+            //nd4j_printf("Total Iterations: %i\n", totalIterations);
 
 
 

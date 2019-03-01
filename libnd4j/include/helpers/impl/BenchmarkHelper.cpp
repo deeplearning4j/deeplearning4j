@@ -120,7 +120,7 @@ namespace nd4j {
         inpl += (x == z ? "true" : "false");
 
         // printing out stuff
-        nd4j_printf("%s\t%i\t%i\t%i\t%s\t%s\t%s\t%s\t%s\tn/a\t%lld\t%lld\t%lld\t%lld\t%.2f\n", testName, op,
+        nd4j_printf("%s\t%i\t%i\t%i\t%s\t%s\t%s\t%s\t%s\tn/a\t%lld\t%lld\t%lld\t%lld\t%.2f\n", testName.c_str(), op,
                     _wIterations, _rIterations, t.c_str(), inpl.c_str(), s.c_str(), stride.c_str(), o.c_str(),
                     nd4j::math::nd4j_floor<double, Nd4jLong>(sumT), median, min, max, stdev);
     }
@@ -132,7 +132,7 @@ namespace nd4j {
 
     void BenchmarkHelper::runOperationSuit(std::vector<OpBenchmark*> &benchmarks, bool postHeaders, const char *msg) {
         if (msg != nullptr && postHeaders) {
-            nd4j_printf("%s\n", msg);
+            nd4j_printf("\n%s\n", msg);
         }
 
         if (postHeaders)
@@ -140,8 +140,6 @@ namespace nd4j {
 
         for (auto v:benchmarks)
             benchmarkOperation(*v);
-
-        nd4j_printf("\n","");
     }
 
     void BenchmarkHelper::runScalarSuit() {
@@ -164,7 +162,7 @@ namespace nd4j {
         auto parameters = parametersBatch.parameters();
 
         if (message != nullptr) {
-            nd4j_printf("%s\n", message);
+            nd4j_printf("\n%s\n", message);
         }
 
         printHeader();
@@ -235,7 +233,7 @@ namespace nd4j {
         auto parameters = parametersBatch.parameters();
 
         if (message != nullptr) {
-            nd4j_printf("%s\n", message);
+            nd4j_printf("\n%s\n", message);
         }
 
         printHeader();
@@ -305,7 +303,7 @@ namespace nd4j {
         auto parameters = parametersBatch.parameters();
 
         if (message != nullptr) {
-            nd4j_printf("%s\n", message);
+            nd4j_printf("\n%s\n", message);
         }
 
         printHeader();
@@ -375,7 +373,7 @@ namespace nd4j {
         auto parameters = parametersBatch.parameters();
 
         if (message != nullptr) {
-            nd4j_printf("%s\n", message);
+            nd4j_printf("\n%s\n", message);
         }
 
         printHeader();
@@ -459,7 +457,7 @@ namespace nd4j {
         auto parameters = parametersBatch.parameters();
 
         if (message != nullptr) {
-            nd4j_printf("%s\n", message);
+            nd4j_printf("\n%s\n", message);
         }
 
         printHeader();
