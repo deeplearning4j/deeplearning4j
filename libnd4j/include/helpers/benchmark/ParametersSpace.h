@@ -24,12 +24,12 @@
 #include <vector>
 
 namespace nd4j {
-    class ParameterSpace {
+    class ParametersSpace {
     protected:
         std::string _name;
     public:
-        ParameterSpace() = default;
-        ~ParameterSpace() = default;
+        ParametersSpace() = default;
+        ~ParametersSpace() = default;
 
         virtual std::vector<int> evaluate() = 0;
     };

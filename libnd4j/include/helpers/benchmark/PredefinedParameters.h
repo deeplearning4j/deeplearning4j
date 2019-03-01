@@ -21,18 +21,18 @@
 #ifndef DEV_TESTS_PREDEFINEDPARAMETERS_H
 #define DEV_TESTS_PREDEFINEDPARAMETERS_H
 
-#include "ParameterSpace.h"
+#include "ParametersSpace.h"
 
 namespace nd4j {
-    class PredefinedParameters : public ParameterSpace{
+    class PredefinedParameters : public ParametersSpace{
         std::vector<int> _params;
     public:
-        PredefinedParameters(std::string name, std::initializer_list<int> parameters) : ParameterSpace() {
+        PredefinedParameters(std::string name, std::initializer_list<int> parameters) : ParametersSpace() {
             _name = name;
             _params = parameters;
         }
 
-        PredefinedParameters(std::string name, std::vector<int> parameters) : ParameterSpace() {
+        PredefinedParameters(std::string name, std::vector<int> parameters) : ParametersSpace() {
             _name = name;
             _params = parameters;
         }

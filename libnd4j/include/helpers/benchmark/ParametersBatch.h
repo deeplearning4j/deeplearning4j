@@ -21,25 +21,27 @@
 #ifndef DEV_TESTS_PARAMETERSBATCH_H
 #define DEV_TESTS_PARAMETERSBATCH_H
 
-#include "ParameterSpace.h"
+#include "ParametersSpace.h"
 #include <vector>
 
 namespace nd4j {
     class ParametersBatch {
     protected:
-        std::vector<ParameterSpace*> _spaces;
+        std::vector<ParametersSpace*> _spaces;
     public:
         ParametersBatch() = default;
-        ParametersBatch(std::initializer_list<ParameterSpace*> spaces) {
+        ParametersBatch(std::initializer_list<ParametersSpace*> spaces) {
             _spaces = spaces;
         }
 
-        ParametersBatch(std::vector<ParameterSpace*> spaces) {
+        ParametersBatch(std::vector<ParametersSpace*> spaces) {
             _spaces = spaces;
         }
 
 
-        std::vector<ParameterSpace*>
+        std::vector<Parameters> parameters() {
+
+        }
     };
 }
 

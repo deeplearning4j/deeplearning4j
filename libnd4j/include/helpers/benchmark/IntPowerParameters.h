@@ -25,10 +25,10 @@
 #include <vector>
 #include <string>
 #include "Parameters.h"
-#include "ParameterSpace.h"
+#include "ParametersSpace.h"
 
 namespace nd4j {
-    class IntPowerParameters : public ParameterSpace {
+    class IntPowerParameters : public ParametersSpace {
     protected:
         int _base;
         int _start;
@@ -36,7 +36,7 @@ namespace nd4j {
         int _step;
 
     public:
-        IntPowerParameters(std::string name, int base, int start, int stop, int step = 1) : ParameterSpace() {
+        IntPowerParameters(std::string name, int base, int start, int stop, int step = 1) : ParametersSpace() {
             _base = base;
             _start = start;
             _stop = stop;

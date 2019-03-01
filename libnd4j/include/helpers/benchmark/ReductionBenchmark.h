@@ -50,7 +50,7 @@ namespace nd4j {
                 NativeOpExcutioner::execReduceFloat(_opNum, _x->buffer(), _x->shapeInfo(), nullptr,  _z->buffer(), _z->shapeInfo(), _axis.data(), _axis.size(), nullptr, nullptr);
         }
 
-        std::string orders() {
+        std::string orders() override {
             std::string result;
             result += _x->ordering();
             result += "/";
@@ -63,7 +63,7 @@ namespace nd4j {
             delete _z;
         }
 
-        std::string axis() {
+        std::string axis() override {
             if (_axis.empty())
                 return "ALL";
             else {

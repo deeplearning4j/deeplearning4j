@@ -59,11 +59,11 @@ namespace nd4j {
             NativeOpExcutioner::execPairwiseTransform(_opNum, _x->buffer(), _x->shapeInfo(), _y->buffer(), _y->shapeInfo(), _z->buffer(), _z->shapeInfo(), nullptr);
         }
 
-        std::string axis() {
+        std::string axis() override {
             return "N/A";
         }
 
-        std::string orders() {
+        std::string orders() override {
             std::string result;
             result += _x->ordering();
             result += "/";

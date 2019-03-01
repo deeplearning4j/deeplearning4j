@@ -57,7 +57,7 @@ namespace nd4j {
                 NativeOpExcutioner::execScalar(_opNum, _x->buffer(), _x->shapeInfo(), _z->buffer(), _z->shapeInfo(), _y->buffer(), _y->shapeInfo(), nullptr);
         }
 
-        std::string orders() {
+        std::string orders() override {
             std::string result;
             result += _x->ordering();
             result += "/";
@@ -65,7 +65,7 @@ namespace nd4j {
             return result;
         }
 
-        std::string axis() {
+        std::string axis() override {
             return "N/A";
         }
 

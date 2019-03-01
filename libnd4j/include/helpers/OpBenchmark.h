@@ -12,7 +12,7 @@ namespace nd4j {
     class ND4J_EXPORT OpBenchmark {
     protected:
         int _opNum;
-        std::string _testName = nullptr;
+        std::string _testName;
         NDArray *_x = nullptr;
         NDArray *_y = nullptr;
         NDArray *_z = nullptr;

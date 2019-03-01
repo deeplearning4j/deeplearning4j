@@ -46,6 +46,7 @@ public:
 };
 
 TEST_F(PlaygroundTests, Test_OpBenchmark_1) {
+
     BenchmarkHelper helper;
 
     ScalarBenchmark sb1(scalar::Add, "add", NDArrayFactory::create_<float>('c', {100, 100}), NDArrayFactory::create_<float>(1.0f), NDArrayFactory::create_<float>('c', {100, 100}));
@@ -57,6 +58,7 @@ TEST_F(PlaygroundTests, Test_OpBenchmark_1) {
 
 
 TEST_F(PlaygroundTests, Test_OpBenchmark_2) {
+
     BenchmarkHelper helper;
     Parameters parameters;
     parameters.addBoolParam("fOrder", true);
@@ -137,27 +139,19 @@ TEST_F(PlaygroundTests, Test_OpBenchmark_2) {
 }
 
 TEST_F(PlaygroundTests, Test_OpBenchmark_3) {
-    BenchmarkHelper helper;
-    Parameters parameters;
-    /*
-     * //TODO Doesn't work with current design
-    parameters.addBoolParam({"xc","yc"},{true,false});
-    //TODO is there a way to do this without an explicit list?
-    parameters.addIntParam({"rows","cols"}, {2,4,8,16,32,64,128});
 
-    auto generator = GENERATE_XYZ() {
-        char orderX = parameters.getBoolParam("xc") ? 'c' : 'f';
-        char orderY = parameters.getBoolParam("yc") ? 'c' : 'f';
-        int rows = parameters.getIntParam("rows");
-        int cols = parameters.getIntParam("cols");
-        x.push_back(NDArrayFactory::create_<float>(orderX, {rows, cols}));
-        y.push_back(NDArrayFactory::create_<float>(orderY, {rows, cols}));
-        z.push_back(NDArrayFactory::create_<float>('c', {rows, cols}));
-    };
+    TransformBenchmark tb(transform::StrictOps::Tanh);
+    PredefinedParameters a("alpha", {2, 3, 4});
+    PredefinedParameters b("beta", {9, 4, 3});
 
-    PairwiseBenchmark pb(nd4j::pairwise::Add, "add_orders_test");
-    helper.runOperationSuit(&pb, generator, "Test Suite");
-     */
+    ParametersBatch batch({&a, &b});
+
+    auto parameters = batch.parameters();
+    ASSERT_EQ(9, parameters.size());
+
+    auto params = parameters[0];
+    ASSERT_EQ(2, params.getIntParam("alpha"));
+    ASSERT_EQ(9, params.getIntParam("beta"));
 }
 
 /*
