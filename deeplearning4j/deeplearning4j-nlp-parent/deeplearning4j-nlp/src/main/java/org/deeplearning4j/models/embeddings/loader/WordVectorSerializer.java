@@ -67,6 +67,8 @@ import org.nd4j.util.OneTimeLogger;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -2674,7 +2676,7 @@ public class WordVectorSerializer {
      */
     public static WordVectors loadStaticModel(InputStream inputStream) throws IOException {
 
-        File tmpFile = DL4JFileUtils.createTempFile("word2vec"+System.currentTimeMillis(), "tmp");
+        File tmpFile = DL4JFileUtils.createTempFile("word2vec"+System.currentTimeMillis(), ".tmp");
         FileUtils.copyInputStreamToFile(inputStream, tmpFile);
         try {
             return loadStaticModel(tmpFile);
@@ -2827,7 +2829,10 @@ public class WordVectorSerializer {
 
         protected BinaryReader(@NonNull File file) {
             try {
-                stream = new DataInputStream(new BufferedInputStream(GzipUtils.isCompressedFilename(file.getName())
+                // TODO: avoid hard code
+                String type = Files.probeContentType(Paths.get(file.getAbsolutePath()));
+                stream = new DataInputStream(new BufferedInputStream(/*GzipUtils.isCompressedFilename(file.getName()*/
+                                                                    "application/gzip".equals(type)
                                 ? new GZIPInputStream(new FileInputStream(file)) : new FileInputStream(file)));
 
                 numWords = Integer.parseInt(readString(stream));
