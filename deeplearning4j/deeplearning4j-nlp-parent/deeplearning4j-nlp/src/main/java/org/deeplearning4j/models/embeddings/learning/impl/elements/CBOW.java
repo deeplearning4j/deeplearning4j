@@ -232,12 +232,13 @@ public class CBOW<T extends SequenceElement> implements ElementsLearningAlgorith
             else
                 inputStatuses[i] = -1;
         }
-        INDArray indStatuses = Nd4j.createFromArray(inputStatuses);
+        INDArray wordsStatuses = Nd4j.createFromArray(inputStatuses);
 
         CbowRound cbow = null;
 
         if (useHS && useNegative) {
             cbow = new CbowRound(Nd4j.scalar(currentWord.getIndex()), Nd4j.createFromArray(windowWords),
+                    wordsStatuses,
                     Nd4j.scalar(currentWord.getIndex()),
                     syn0.get(), syn1.get(), syn1Neg.get(),
                     expTable.get(), table.get(), Nd4j.createFromArray(idxSyn1), Nd4j.createFromArray(codes),
@@ -248,13 +249,13 @@ public class CBOW<T extends SequenceElement> implements ElementsLearningAlgorith
                     workers);
         }
         else if (useHS) {
-            cbow = new CbowRound(currentWord.getIndex(), windowWords,
+            cbow = new CbowRound(currentWord.getIndex(), windowWords, wordsStatuses.toIntVector(),
                     syn0.get(), syn1.get(),
                     expTable.get(), idxSyn1, codes, alpha, nextRandom.get(),
                     inferenceVector != null ? inferenceVector : Nd4j.empty(syn0.get().dataType()), 0);
         }
         else if (useNegative) {
-            cbow = new CbowRound(currentWord.getIndex(), windowWords, currentWord.getIndex(),
+            cbow = new CbowRound(currentWord.getIndex(), windowWords, wordsStatuses.toIntVector(), currentWord.getIndex(),
                     syn0.get(), syn1Neg.get(),
                     expTable.get(), table.get(), (int)negative, alpha, nextRandom.get(),
                     inferenceVector != null ? inferenceVector : Nd4j.empty(syn0.get().dataType()), 0);
@@ -387,7 +388,7 @@ public class CBOW<T extends SequenceElement> implements ElementsLearningAlgorith
         INDArray indicesArray = Nd4j.createFromArray(inputIndices);
         INDArray numLabelsArray = Nd4j.createFromArray(numLabels);
 
-        CbowRound cbow = new CbowRound(currentWordIndexesArray, windowWordsArray,
+        CbowRound cbow = new CbowRound(currentWordIndexesArray, windowWordsArray, wordsStatusesArray,
                 currentWordIndexesArray,
                 syn0.get(),
                 useHS? syn1.get() : Nd4j.empty(syn0.get().dataType()),
