@@ -3264,7 +3264,7 @@ TYPED_TEST(TypedDeclarableOpsTests8, LrnTest_02) {
 
     ASSERT_EQ(Status::OK(), results->status());
     //ASSERT_TRUE(exp.isSameShape(out));
-    out->printIndexedBuffer("LRN out");
+    //out->printIndexedBuffer("LRN out");
 //    exp.printIndexedBuffer("LRN exp");
     ASSERT_TRUE(exp.equalsTo(out));
 
