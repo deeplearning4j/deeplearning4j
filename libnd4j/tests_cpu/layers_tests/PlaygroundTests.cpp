@@ -51,8 +51,6 @@ TEST_F(PlaygroundTests, Test_OpBenchmark_1) {
     ScalarBenchmark sb1(scalar::Add, "add", NDArrayFactory::create_<float>('c', {100, 100}), NDArrayFactory::create_<float>(1.0f), NDArrayFactory::create_<float>('c', {100, 100}));
     ScalarBenchmark sb2(scalar::Add, "add", NDArrayFactory::create_<float>('c', {1000, 1000}), NDArrayFactory::create_<float>(1.0f), NDArrayFactory::create_<float>('c', {1000, 1000}));
 
-
-
     helper.runOperationSuit({&sb1, &sb2}, "ScalarAdd");
 }
 
@@ -101,7 +99,7 @@ TEST_F(PlaygroundTests, Test_OpBenchmark_2) {
     helper.runOperationSuit(&tb, generator, "TransformTest");
 
 
-    PairwiseBenchmark pb(pairwise::Pow);
+    PairwiseBenchmark pb(pairwise::Pow, "pow test");
 
     auto generatorXYZ = GENERATE_XYZ() {
         x.push_back(NDArrayFactory::create_<float>('f', {100, 1000}));
@@ -136,6 +134,30 @@ TEST_F(PlaygroundTests, Test_OpBenchmark_2) {
     ReductionBenchmark rb(reduce::FloatOps::Mean);
 
     helper.runOperationSuit(&rb, generatorReductionAxis, "ReductionAlongDimensionTest");
+}
+
+TEST_F(PlaygroundTests, Test_OpBenchmark_3) {
+    BenchmarkHelper helper;
+    Parameters parameters;
+    /*
+     * //TODO Doesn't work with current design
+    parameters.addBoolParam({"xc","yc"},{true,false});
+    //TODO is there a way to do this without an explicit list?
+    parameters.addIntParam({"rows","cols"}, {2,4,8,16,32,64,128});
+
+    auto generator = GENERATE_XYZ() {
+        char orderX = parameters.getBoolParam("xc") ? 'c' : 'f';
+        char orderY = parameters.getBoolParam("yc") ? 'c' : 'f';
+        int rows = parameters.getIntParam("rows");
+        int cols = parameters.getIntParam("cols");
+        x.push_back(NDArrayFactory::create_<float>(orderX, {rows, cols}));
+        y.push_back(NDArrayFactory::create_<float>(orderY, {rows, cols}));
+        z.push_back(NDArrayFactory::create_<float>('c', {rows, cols}));
+    };
+
+    PairwiseBenchmark pb(nd4j::pairwise::Add, "add_orders_test");
+    helper.runOperationSuit(&pb, generator, "Test Suite");
+     */
 }
 
 /*

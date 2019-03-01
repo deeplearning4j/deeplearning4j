@@ -18,8 +18,9 @@ namespace nd4j {
             _opNum = (int) op;
         }
 
-        PairwiseBenchmark(pairwise::Ops op) : OpBenchmark() {
+        PairwiseBenchmark(pairwise::Ops op, std::string name) : OpBenchmark() {
             _opNum = (int) op;
+            _testName = name;
         }
 
         ~PairwiseBenchmark(){
