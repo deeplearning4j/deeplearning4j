@@ -69,7 +69,7 @@ public class Word2VecTests {
         File googleModelTextFile = new ClassPathResource("word2vecserialization/google_news_30.txt").getFile();
         googleModel = WordVectorSerializer.readWord2VecModel(googleModelTextFile);
         inputFile = new ClassPathResource("/big/raw_sentences.txt").getFile();
-        inputFile2 = new ClassPathResource("/big/raw_sentences.txt").getFile();
+        inputFile2 = new ClassPathResource("/big/raw_sentences_2.txt").getFile();
 
         File ptwt = new File(System.getProperty("java.io.tmpdir"), "testing_word2vec_serialization.txt");
 
@@ -244,8 +244,8 @@ public class Word2VecTests {
     @Test
     public void testRunWord2Vec() throws Exception {
         // Strip white space before and after for each line
-        val shakespear = new ClassPathResource("big/rnj.txt");
-        //SentenceIterator iter = new BasicLineIterator(shakespear.getFile());
+        /*val shakespear = new ClassPathResource("big/rnj.txt");
+        SentenceIterator iter = new BasicLineIterator(shakespear.getFile());*/
         SentenceIterator iter = new BasicLineIterator(inputFile.getAbsolutePath());
         // Split on white spaces in the line to get words
         TokenizerFactory t = new DefaultTokenizerFactory();
