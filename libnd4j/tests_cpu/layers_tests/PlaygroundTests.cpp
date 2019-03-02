@@ -26,8 +26,10 @@
 #include <graph/profiling/GraphProfilingHelper.h>
 #include <type_conversions.h>
 #include <helpers/threshold.h>
+#include <helpers/MmulHelper.h>
 #include <ops/ops.h>
 #include <OmpLaunchHelper.h>
+#include <GradCheck.h>
 
 #include <helpers/BenchmarkHelper.h>
 
@@ -1399,83 +1401,8 @@ TEST_F(PlaygroundTests, batchnorm_1) {
     printf("duration %ld\n", duration);
 }
 
-////////////////////////////////////////////////////////////////////////////
-// MXK x KxN = MxN
-static void usualGemm(const char cOrder, const bool transA, const bool transB, const int M, const int N, const int K, const double alpha, const void* vA, const int lda, const void* vB, const int ldb, const double beta, void* vC, const int ldc) {
 
-    float* A = reinterpret_cast<float*>(const_cast<void*>(vA));
-    float* B = reinterpret_cast<float*>(const_cast<void*>(vB));
-    float* C = reinterpret_cast<float*>(vC);
-    float alphaZ(alpha), betaZ(beta);
 
-    Nd4jLong strideArow, strideAcol, strideBrow, strideBcol, strideCrow, strideCcol;
-
-    if(cOrder == 'f') {
-        strideCrow = 1;
-        strideCcol = ldc;
-
-        if(transA) { strideArow = lda; strideAcol = 1; } else { strideArow = 1; strideAcol = lda; }
-        if(transB) { strideBrow = ldb; strideBcol = 1; } else { strideBrow = 1; strideBcol = ldb; }
-    }
-    else {
-        strideCrow = ldc;
-        strideCcol = 1;
-
-        if(transA) { strideArow = 1; strideAcol = lda; } else { strideArow = lda; strideAcol = 1; }
-        if(transB) { strideBrow = 1; strideBcol = ldb; } else { strideBrow = ldb; strideBcol = 1; }
-    }
-
-    #pragma omp parallel for schedule(guided)
-    for(int row = 0; row < M; ++row) {
-       for(int col = 0; col < N; ++col) {
-            float* a = A + row * strideArow;
-            float* b = B + col * strideBcol;
-            float* c = C + row * strideCrow + col * strideCcol;
-            float val = 0;
-            #pragma omp simd
-            for(int i = 0; i < K; ++i)
-                val = val + a[i*strideAcol] * b[i*strideBrow];
-            *c = alphaZ * val + betaZ * *c;
-       }
-    }
-}
-
-/////////////////////////////////////////////////////////////////////
-TEST_F(PlaygroundTests, gemm_1) {
-
-	// MXK x KxN = MxN
-    const int M = 2048;
-    const int K = 512;
-    const int N = 1024;
-
-    NDArray a('c', {M, K}, nd4j::DataType::FLOAT32);
-    NDArray b('f', {K, N}, nd4j::DataType::FLOAT32);
-    NDArray c('f', {M, N}, nd4j::DataType::FLOAT32);
-
-    a.linspace(-100, 0.01);
-    b.linspace(-200, 0.01);
-
-    double temp;
-    for (int i = 0; i < 100; ++i)
-    	temp = temp * temp;
-
-    auto timeStart = std::chrono::system_clock::now();
-
-	usualGemm(c.ordering(), false, false, M, N, K, 1., a.getBuffer(), K, b.getBuffer(), K, 0., c.buffer(), M);
-
-    auto timeEnd = std::chrono::system_clock::now();
-    auto duration = std::chrono::duration_cast<std::chrono::microseconds> ((timeEnd - timeStart) / N).count();
-    printf("duration my %ld\n", duration);
-
-    //***********************
-
-    timeStart = std::chrono::system_clock::now();
-
-    nd4j::blas::GEMM<float, float, float>::op('f', CblasTrans, CblasNoTrans, M, N, K, 1., a.getBuffer(), K, b.getBuffer(), K, 0., c.buffer(), M);
-    timeEnd = std::chrono::system_clock::now();
-    duration = std::chrono::duration_cast<std::chrono::microseconds> ((timeEnd - timeStart) / N).count();
-    printf("duration raver %ld\n", duration);
-}
 
 //////////////////////////////////////////////////////////////////////
 TEST_F(PlaygroundTests, softmax_1) {
@@ -1501,4 +1428,5 @@ TEST_F(PlaygroundTests, softmax_1) {
     printf("duration %ld\n", duration);
 
 }
+
 */

@@ -2514,8 +2514,7 @@ template void NDArray::applyScalar(nd4j::scalar::Ops op, const bool scalar, NDAr
         
         if (_isShapeAlloc)
             RELEASE(_shapeInfo, _workspace);
-
-        ArrayOptions::setDataType(shapeInfoNew, this->dataType());
+        
         _shapeInfo = shapeInfoNew;
         _isShapeAlloc = true;
     } 
@@ -2524,7 +2523,7 @@ template void NDArray::applyScalar(nd4j::scalar::Ops op, const bool scalar, NDAr
         if (order == 'c')
             shape::shapeBuffer(shape.size(), dataType(), shape.data(), shapeInfoNew);
         else
-            shape::shapeBufferFortran(shape.size(), dataType(), shape.data(), shapeInfoNew);
+            shape::shapeBufferFortran(shape.size(), dataType(), shape.data(), shapeInfoNew);        
 
         int8_t *newBuffer;
         ALLOCATE(newBuffer, _workspace, this->lengthOf() * sizeOfT(), int8_t);
