@@ -26,7 +26,7 @@ namespace nd4j {
 namespace ops {
 namespace helpers {
 
-    void nthElementFunctor(NDArray* input, NDArray* n, NDArray* output);
+    void nthElementFunctor(NDArray* input, NDArray* n, NDArray* output, bool reverse);
 
 }
 }

@@ -16,6 +16,9 @@
 
 package org.deeplearning4j.earlystopping.trainer;
 
+import org.deeplearning4j.datasets.iterator.AsyncDataSetIterator;
+import org.deeplearning4j.datasets.iterator.AsyncMultiDataSetIterator;
+import org.deeplearning4j.datasets.iterator.AsyncShieldDataSetIterator;
 import org.deeplearning4j.earlystopping.EarlyStoppingConfiguration;
 import org.deeplearning4j.earlystopping.EarlyStoppingResult;
 import org.deeplearning4j.earlystopping.listener.EarlyStoppingListener;
@@ -63,6 +66,13 @@ public abstract class BaseEarlyStoppingTrainer<T extends Model> implements IEarl
 
     protected BaseEarlyStoppingTrainer(EarlyStoppingConfiguration<T> earlyStoppingConfiguration, T model,
                                        DataSetIterator train, MultiDataSetIterator trainMulti, EarlyStoppingListener<T> listener) {
+        if(train != null && train.asyncSupported()){
+            train = new AsyncDataSetIterator(train);
+        }
+        if(trainMulti != null && trainMulti.asyncSupported()){
+            trainMulti = new AsyncMultiDataSetIterator(trainMulti);
+        }
+
         this.esConfig = earlyStoppingConfiguration;
         this.model = model;
         this.train = train;

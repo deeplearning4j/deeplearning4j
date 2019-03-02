@@ -407,7 +407,7 @@ public class WorkspaceTests extends BaseDL4JTest {
             MultiLayerNetwork net = new MultiLayerNetwork(conf);
             net.init();
 
-            INDArray input = Nd4j.linspace(1, 3, 3).reshape(1,3);
+            INDArray input = Nd4j.linspace(1, 3, 3, Nd4j.dataType()).reshape(1,3);
             INDArray out = net.output(input);
             INDArray out2 = net.output(input);
 

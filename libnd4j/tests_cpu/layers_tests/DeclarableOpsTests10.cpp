@@ -1031,6 +1031,27 @@ TEST_F(DeclarableOpsTests10, NTH_Element_Test_4) {
 
     delete results;
 }
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests10, NTH_Element_Test_5) {
+
+    NDArray input = NDArrayFactory::create<float>('c', {2, 2, 3});
+    NDArray n = NDArrayFactory::create<int>(2);
+    NDArray exp = NDArrayFactory::create<float>('c', {2,2}, {1.f, 4.f, 7.f, 10.f});
+
+    input.linspace(1.f);
+
+    nd4j::ops::nth_element op;
+    auto results = op.execute({&input, &n}, {}, {1});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray* output = results->at(0);
+
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+
+    delete results;
+}
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests10, broadcast_to_test1) {

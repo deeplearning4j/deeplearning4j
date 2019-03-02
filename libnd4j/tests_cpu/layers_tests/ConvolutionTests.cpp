@@ -134,6 +134,9 @@ TYPED_TEST(TypedConvolutionTests, TestAvgFF_TF) {
 
     auto z = result->at(0);
 
+    z->printIndexedBuffer("z");
+    exp.printIndexedBuffer("e");
+
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
@@ -884,7 +887,7 @@ TEST_F(ConvolutionTests, TestDeconv_ff_2) {
 
 TYPED_TEST(TypedConvolutionTests, Test_Conv1D_ff_1) {
     auto input = NDArrayFactory::create<TypeParam>('c', {2, 2, 6});
-    auto weights = NDArrayFactory::create<TypeParam>('c', {3, 2, 2});
+    auto weights = NDArrayFactory::create<TypeParam>('c', {2, 2, 3}, {1,5,9,3,7,11,2,6,10,4,8,12});
     auto bias = NDArrayFactory::create<TypeParam>('c', {1, 3});
     auto expFF = NDArrayFactory::create<TypeParam>('c', {2, 3, 5}, {59.0, 69.0, 79.0, 89.0, 99.0, 132.0, 158.0, 184.0, 210.0, 236.0, 205.0, 247.0, 289.0, 331.0, 373.0, 179.0, 189.0, 199.0, 209.0, 219.0, 444.0, 470.0, 496.0, 522.0, 548.0, 709.0, 751.0, 793.0, 835.0, 877.0});
     auto expEps = NDArrayFactory::create<TypeParam>('c', {2, 2, 6}, {130.0, 293.0, 326.0, 359.0, 392.0, 220.0, 166.0, 371.0, 416.0, 461.0, 506.0, 280.0, 355.0, 788.0, 821.0, 854.0, 887.0, 490.0, 481.0, 1046.0, 1091.0, 1136.0, 1181.0, 640.0});
@@ -892,11 +895,8 @@ TYPED_TEST(TypedConvolutionTests, Test_Conv1D_ff_1) {
     auto expGB = NDArrayFactory::create<TypeParam>('c', {1, 3}, {105.0, 155.0, 205.0});
 
     expGW.permutei({2,1,0});
-
-    input.linspace(1);
-    weights.linspace(1);
+    input.linspace(1);    
     bias.linspace(1);
-    weights.permutei({2,1,0});
 
     nd4j::ops::conv1d op;
     auto result_FF = op.execute({&input, &weights, &bias}, {}, {2, 1, 0, 0});
@@ -936,11 +936,9 @@ TYPED_TEST(TypedConvolutionTests, Test_Conv1D_ff_1) {
 
 TYPED_TEST(TypedConvolutionTests, Test_Conv1D_ff_2) {
     auto input = NDArrayFactory::create<TypeParam>('c', {2, 2, 6});
-    auto weights = NDArrayFactory::create<TypeParam>('c', {3, 2, 2});
+    auto weights = NDArrayFactory::create<TypeParam>('c', {2, 2, 3}, {1,5,9,3,7,11,2,6,10,4,8,12});
 
     input.linspace(1);
-    weights.linspace(1);
-    weights.permutei({2,1,0});
 
     nd4j::ops::conv1d op;
     auto result = op.execute({&input, &weights}, {}, {2, 1, 0, 1});
@@ -1893,7 +1891,6 @@ TYPED_TEST(TypedConvolutionTests, pointwise_conv2d_test1) {
     auto* output = results->at(0);
 
     ASSERT_EQ(Status::OK(), results->status());
-
     ASSERT_TRUE(expOutput.isSameShape(output));
     ASSERT_TRUE(expOutput.equalsTo(output));    
     

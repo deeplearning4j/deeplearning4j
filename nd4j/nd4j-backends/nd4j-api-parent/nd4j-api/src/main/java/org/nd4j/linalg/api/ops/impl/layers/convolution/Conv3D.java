@@ -49,6 +49,7 @@ import java.util.*;
 public class Conv3D extends DynamicCustomOp {
 
     protected Conv3DConfig config;
+    private static final String INVALID_CONFIGURATION = "Invalid Conv3D configuration : sW = %s pH = %s dW = %s ";
 
     public Conv3D() {
     }
@@ -64,6 +65,9 @@ public class Conv3D extends DynamicCustomOp {
         if (outputs != null)
             addOutputArgument(outputs);
         this.config = conv3DConfig;
+        Preconditions.checkState(config.getSW() >= 1 && config.getPH() >= 0 && config.getDW() >= 1,
+                                    INVALID_CONFIGURATION,
+                                    config.getSW(), config.getPH(), config.getDW());
         addArgs();
 
 
