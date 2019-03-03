@@ -291,6 +291,7 @@ public class PythonExecutioner {
 
 
     public void exec(String code){
+        /*
         try{
             log.info("CPython: PyThreadState_Swap()");
             PyThreadState_Swap(interpreters.get(currentInterpreter));
@@ -298,28 +299,12 @@ public class PythonExecutioner {
         }
         catch (Exception e){
             log.error(e.toString());
-        }
+        }*/
+
         log.info("CPython: PyRun_SimpleStringFlag()");
         log.info(code);
         PyRun_SimpleStringFlags(code, null);
         log.info("Exec done");
-    }
-
-    public void exec(List<String> code){
-        String x = "";
-        for (String line: code){
-            x += line + "\n";
-        }
-        exec(x);
-    }
-
-
-    public void exec(String[] code){
-        String x = "";
-        for (String line: code){
-            x += line + "\n";
-        }
-        exec(x);
     }
 
     public void exec(String code, PythonVariables pyInputs, PythonVariables pyOutputs) throws Exception{
