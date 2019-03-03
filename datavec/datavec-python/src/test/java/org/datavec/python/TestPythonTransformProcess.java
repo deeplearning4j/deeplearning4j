@@ -2,8 +2,6 @@ package org.datavec.python;
 
 import org.datavec.api.transform.TransformProcess;
 import org.datavec.api.transform.condition.Condition;
-import org.datavec.api.transform.condition.ConditionOp;
-import org.datavec.api.transform.condition.column.IntegerColumnCondition;
 import org.datavec.api.transform.filter.ConditionFilter;
 import org.datavec.api.transform.filter.Filter;
 import org.datavec.api.writable.IntWritable;

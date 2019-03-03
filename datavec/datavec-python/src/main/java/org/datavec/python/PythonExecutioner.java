@@ -255,7 +255,13 @@ public class PythonExecutioner {
         if (pyOutputs == null){
             return;
         }
+        exec(getOutputCheckCode(pyOutputs));
+        String errorMessage = evalSTRING("__error_message");
+        if (errorMessage.length() > 0){
+            throw new RuntimeException(errorMessage);
+        }
         try{
+
             for (String varName: pyOutputs.getVariables()){
                 PythonVariables.Type type = pyOutputs.getType(varName);
                 if (type == PythonVariables.Type.STR){
@@ -325,42 +331,6 @@ public class PythonExecutioner {
             code = RestrictedPython.getSafeCode(code);
         }
         exec(inputCode + code);
-        _readOutputs(pyOutputs);
-    }
-
-    public void exec(List<String> code, PythonVariables pyInputs, PythonVariables pyOutputs)throws Exception{
-        String inputCode = inputCode(pyInputs);
-        String x = "";
-        for (String line: code){
-            if(line.charAt(line.length() - 1) != '\n'){
-                x += line + '\n';
-            }
-            else{
-                x += line;
-            }
-        }
-        if (restricted){
-            x = RestrictedPython.getSafeCode(x);
-        }
-        exec(inputCode + x);
-        _readOutputs(pyOutputs);
-    }
-
-    public void exec(String[] code, PythonVariables pyInputs, PythonVariables pyOutputs)throws Exception{
-        String inputCode = inputCode(pyInputs);
-        String x = "";
-        for (String line: code){
-            if(line.charAt(line.length() - 1) != '\n'){
-                x += line + '\n';
-            }
-            else{
-                x += line;
-            }
-        }
-        if (restricted){
-            x = RestrictedPython.getSafeCode(x);
-        }
-        exec(inputCode + x);
         _readOutputs(pyOutputs);
     }
 
@@ -579,4 +549,36 @@ public class PythonExecutioner {
        return ret;
     }
 
+    private String getOutputCheckCode(PythonVariables pyOutputs){
+        // make sure all outputs exist and are of expected types
+        // helps avoid JVM crashes (most of the time)
+        String code= "__error_message=''\n";
+        String checkVarExists = "if '%s' not in locals(): __error_message += '%s not found.'\n";
+        String checkVarType = "if not isinstance(%s, %s): __error_message += '%s is not of required type.'\n";
+        for (String varName: pyOutputs.getVariables()){
+            PythonVariables.Type type = pyOutputs.getType(varName);
+            code += String.format(checkVarExists, varName, varName);
+            switch(type){
+                case INT:
+                    code += String.format(checkVarType, varName, "int", varName);
+                    break;
+                case STR:
+                    code += String.format(checkVarType, varName, "str", varName);
+                    break;
+                case FLOAT:
+                    code += String.format(checkVarType, varName, "float", varName);
+                    break;
+                case BOOL:
+                    code += String.format(checkVarType, varName, "bool", varName);
+                    break;
+                case NDARRAY:
+                    code += String.format(checkVarType, varName, "np.ndarray", varName);
+                    break;
+                case LIST:
+                    code += String.format(checkVarType, varName, "list", varName);
+                    break;
+            }
+        }
+        return code;
+    }
 }

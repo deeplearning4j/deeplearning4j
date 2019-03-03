@@ -47,6 +47,9 @@ public class PythonTransform implements Transform{
             // FixMe: Do no suppress this
             System.out.println(e.toString());
         }
+        if (outputSchema == null){
+            outputSchema = inputSchema;
+        }
 
     }
 
@@ -79,12 +82,13 @@ public class PythonTransform implements Transform{
         PythonVariables pyInputs = getPyInputsFromWritables(writables);
         try{
             PythonVariables pyOutputs = PythonExecutioner.getInstance().exec(this, pyInputs);
+            return getWritablesFromPyOutputs(pyOutputs);
         }
         catch (Exception e){
             // FixMe: Do no suppress this
             System.out.println(e.toString());
         }
-        return getWritablesFromPyOutputs(pyOutputs);
+        return null;
 
     }
 
@@ -190,15 +194,6 @@ public class PythonTransform implements Transform{
     }
     public PythonTransform(String code) throws Exception{
         this.code = code;
-        parseSetupAndExecCode();
-        this.name = UUID.randomUUID().toString();
-    }
-    public PythonTransform(String[] code) throws Exception{
-        String x = "";
-        for (String line: code){
-            x += line + "\n";
-        }
-        this.code = x;
         parseSetupAndExecCode();
         this.name = UUID.randomUUID().toString();
     }
