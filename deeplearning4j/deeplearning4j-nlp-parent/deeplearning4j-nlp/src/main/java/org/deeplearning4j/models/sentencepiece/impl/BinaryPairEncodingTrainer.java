@@ -23,6 +23,7 @@ import org.deeplearning4j.models.sentencepiece.SubwordVocabulary;
 import org.deeplearning4j.models.sentencepiece.impl.bpe.Position;
 import org.deeplearning4j.models.sentencepiece.impl.bpe.Symbol;
 import org.deeplearning4j.models.sentencepiece.interfaces.Trainer;
+import org.nd4j.base.Preconditions;
 
 import java.util.*;
 
@@ -145,6 +146,40 @@ public class BinaryPairEncodingTrainer extends AbstractTrainer implements Traine
     }
 
     protected Symbol getPairSymbol(Symbol left, Symbol right) {
-        return null;
+        if (left == null || right == null || left.isUnknown() || right.isUnknown()) {
+            return null;
+        }
+
+        val fp = Symbol.fingerprintCat(left.getFingerprint(), right.getFingerprint());
+        if (symbolsCache.containsKey(fp))
+            return symbolsCache.get(fp);
+
+        Preconditions.checkArgument(!left.getChars().isEmpty(), "Left chars list is empty");
+        Preconditions.checkArgument(!right.getChars().isEmpty(), "Right chars list is empty");
+
+        val ut = new ArrayList<Integer>();
+        for (val c : left.getChars())
+            ut.add(c);
+
+        for (val c : right.getChars())
+            ut.add(c);
+
+        // Do not make an invalid piece.
+        if (!isValidSentencePiece(ut))
+            return null;
+
+        val s = Symbol.builder()
+                .fingerprint(fp)
+                .left(left)
+                .right(right)
+                .chars(ut)
+                .build();
+
+        allocated.add(s);
+
+        Preconditions.checkArgument(!symbolsCache.containsKey(fp), "Duplicate key found!");
+        symbolsCache.put(fp, s);
+
+        return s;
     }
 }

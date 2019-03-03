@@ -25,4 +25,8 @@ import java.util.List;
 @Slf4j
 public abstract class AbstractTrainer implements Trainer {
     protected List<Sentence> sentences = new ArrayList<>();
+
+    protected boolean isValidSentencePiece(List<Integer> piece) {
+        return false;
+    }
 }
