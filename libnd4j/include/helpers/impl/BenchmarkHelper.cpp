@@ -57,8 +57,8 @@ namespace nd4j {
         std::sort(timings.begin(), timings.end());
         Nd4jLong median = timings[_rIterations / 2];
 
-        NDArray n = NDArrayFactory::create(timings, nullptr);
-        double stdev = n.varianceNumber(nd4j::variance::SummaryStatsStandardDeviation, false).e<double>(0);
+        NDArray n = NDArrayFactory::create(timings, LaunchContext::defaultContext());
+        double stdev = 0.0; //n.varianceNumber(nd4j::variance::SummaryStatsStandardDeviation, false).e<double>(0);
         Nd4jLong min = n.reduceNumber(nd4j::reduce::Min).e<Nd4jLong>(0);
         Nd4jLong max = n.reduceNumber(nd4j::reduce::Max).e<Nd4jLong>(0);
 

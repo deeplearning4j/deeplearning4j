@@ -19,6 +19,7 @@
 //
 
 #include <helpers/StringUtils.h>
+#include <helpers/TAD.h>
 #include "../OpBenchmark.h"
 
 #ifndef DEV_TESTS_REDUCEBENCHMARK_H
@@ -51,7 +52,16 @@ namespace nd4j {
                 NativeOpExecutioner::execReduceFloatScalar(LaunchContext::defaultContext(), _opNum, _x->buffer(), _x->shapeInfo(), _x->specialBuffer(), _x->specialShapeInfo(), nullptr, _z->buffer(), _z->shapeInfo(), _z->specialBuffer(), _z->specialShapeInfo());
             else {
                 auto dims = reinterpret_cast<int *>(manager.replicatePointer(_axis.data(), _axis.size() * sizeof(int)));
-                NativeOpExecutioner::execReduceFloat(LaunchContext::defaultContext(), _opNum, _x->buffer(), _x->shapeInfo(), _x->specialBuffer(), _x->specialShapeInfo(), nullptr, _z->buffer(), _z->shapeInfo(), _z->specialBuffer(), _z->specialShapeInfo(), dims, _axis.size(), nullptr, nullptr);
+
+                shape::TAD tad;
+                tad.init(_x->shapeInfo(), _axis.data(), _axis.size());
+                tad.createTadOnlyShapeInfo();
+                tad.createOffsets();
+
+                auto tadOnlyShapeInfo = reinterpret_cast<Nd4jLong *>(manager.replicatePointer(tad.tadOnlyShapeInfo, shape::shapeInfoByteLength(tad.tadOnlyShapeInfo)));
+                auto tadOffsets = reinterpret_cast<Nd4jLong *>(manager.replicatePointer(tad.tadOffsets, tad.numTads * sizeof(Nd4jLong)));
+
+                NativeOpExecutioner::execReduceFloat(LaunchContext::defaultContext(), _opNum, _x->buffer(), _x->shapeInfo(), _x->specialBuffer(), _x->specialShapeInfo(), nullptr, _z->buffer(), _z->shapeInfo(), _z->specialBuffer(), _z->specialShapeInfo(), dims, _axis.size(), tadOnlyShapeInfo, tadOffsets);
             }
 
             manager.synchronize();

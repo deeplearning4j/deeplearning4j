@@ -95,7 +95,7 @@ TEST_F(PlaygroundTests, Test_OpBenchmark_2) {
         z.push_back(nullptr);
     };
 
-    helper.runOperationSuit(&sb, generator, "ScalarTest");
+    //helper.runOperationSuit(&sb, generator, "ScalarTest");
 
     TransformBenchmark tb(transform::StrictOps::Tanh);
 
