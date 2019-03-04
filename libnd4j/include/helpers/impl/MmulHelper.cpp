@@ -48,13 +48,13 @@ nd4j::NDArray* nd4j::MmulHelper::tensorDot(const nd4j::NDArray* a, const nd4j::N
     
     // check whether reshape is necessary
     if(!aPR->isSameShape(shapeAt))
-        aPR->reshapei('c', shapeAt);
+        aPR->reshapei( shapeAt);
     if(!bPR->isSameShape(shapeBt))
-        bPR->reshapei('c', shapeBt);
+        bPR->reshapei( shapeBt);
 
     NDArray* c = mmul(aPR, bPR, nullptr, 1.0, 0.0);
 
-    c->reshapei('c', outShape);
+    c->reshapei(outShape);
 
     delete aPR;
     delete bPR;
@@ -254,7 +254,7 @@ nd4j::NDArray* MmulHelper::mmul(const nd4j::NDArray* A, const nd4j::NDArray* B, 
     const bool isBVector = shape::isCommonVector(B->getShapeInfo(), lenDim);
 
     // dot product of 2 vectors
-    if(isAVector && isBVector && (aRank != 2 || aRank == 2 && (A->isSameShape(B) || bRank == 1 && A->sizeAt(1) == 1)))  // (1x4 * 1*4) or (4x1 * 4x1) or (4x1 * 4)
+    if(isAVector && isBVector && (aRank != 2 || aRank == 2 && (A->isSameShape(B) || bRank == 1 && A->sizeAt(1) == 1)))  // (1x1x1 * 1x1) or (1x4 * 1*4) or (4x1 * 4x1) or (4x1 * 4)
         return dot(A, B, C, alpha, beta);
 
     // matrix x matrix
