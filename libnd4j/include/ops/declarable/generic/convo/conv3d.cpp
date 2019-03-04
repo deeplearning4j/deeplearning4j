@@ -102,10 +102,10 @@ CUSTOM_OP_IMPL(conv3dnew, 2, 1, false, 0, 13) {
             if (bias != nullptr) {
                 auto conv_bias_memory = mkldnn::memory(conv_prim_desc.bias_primitive_desc(), bias->buffer());
                 streams[0].setMemory({conv_src_memory, conv_weights_memory, conv_bias_memory, conv_dst_memory});
-                streams[0].setOperation(convolution_forward(conv_prim_desc, conv_src_memory, conv_weights_memory, conv_bias_memory, conv_dst_memory));
+                streams[0].addOperation(convolution_forward(conv_prim_desc, conv_src_memory, conv_weights_memory, conv_bias_memory, conv_dst_memory));
             } else {
                 streams[0].setMemory({conv_src_memory, conv_weights_memory, conv_dst_memory});
-                streams[0].setOperation(convolution_forward(conv_prim_desc, conv_src_memory, conv_weights_memory, conv_dst_memory));
+                streams[0].addOperation(convolution_forward(conv_prim_desc, conv_src_memory, conv_weights_memory, conv_dst_memory));
             }
         }
 
@@ -310,10 +310,10 @@ CUSTOM_OP_IMPL(conv3dnew_bp, 3, 2, false, 0, 13) {
                 if (gradB != nullptr) {
                     auto convW_bias_memory = mkldnn::memory(convW_prim_desc.diff_bias_primitive_desc(), gradB->buffer());
                     streams[0].setMemory({convW_src_memory, convW_dst_memory, convW_weights_memory, convW_bias_memory});
-                    streams[0].setOperation(convolution_backward_weights(convW_prim_desc, convW_src_memory, convW_dst_memory, convW_weights_memory, convW_bias_memory));
+                    streams[0].addOperation(convolution_backward_weights(convW_prim_desc, convW_src_memory, convW_dst_memory, convW_weights_memory, convW_bias_memory));
                 } else {
                     streams[0].setMemory({convW_src_memory, convW_dst_memory, convW_weights_memory});
-                    streams[0].setOperation(convolution_backward_weights(convW_prim_desc, convW_src_memory, convW_dst_memory, convW_weights_memory));
+                    streams[0].addOperation(convolution_backward_weights(convW_prim_desc, convW_src_memory, convW_dst_memory, convW_weights_memory));
                 }
             }
 
@@ -328,7 +328,7 @@ CUSTOM_OP_IMPL(conv3dnew_bp, 3, 2, false, 0, 13) {
                 auto convI_weights_memory = mkldnn::memory(convI_prim_desc.weights_primitive_desc(), weights->buffer());
                 auto convI_dst_memory = mkldnn::memory(convI_prim_desc.diff_dst_primitive_desc(), gradO->buffer());
                 streams[1].setMemory({convI_dst_memory, convI_weights_memory, convI_src_memory});
-                streams[1].setOperation(convolution_backward_data(convI_prim_desc, convI_dst_memory, convI_weights_memory, convI_src_memory));
+                streams[1].addOperation(convolution_backward_data(convI_prim_desc, convI_dst_memory, convI_weights_memory, convI_src_memory));
             }
         }
 

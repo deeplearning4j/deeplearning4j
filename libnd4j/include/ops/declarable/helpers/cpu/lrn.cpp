@@ -87,7 +87,7 @@ static void getMKLDNNMemoryDescLrn(const NDArray* src, const NDArray* diff_src,
             auto lrn_src_memory = mkldnn::memory(lrn_prim_desc.src_primitive_desc(), input->buffer());
             auto lrn_dst_memory = mkldnn::memory(lrn_prim_desc.dst_primitive_desc(), output->buffer());
             streams[0].setMemory({lrn_src_memory, lrn_dst_memory});
-            streams[0].setOperation(lrn_forward(lrn_prim_desc, lrn_src_memory, lrn_dst_memory));
+            streams[0].addOperation(lrn_forward(lrn_prim_desc, lrn_src_memory, lrn_dst_memory));
         }
 
         streams[0].submitAndWait();
@@ -189,7 +189,7 @@ static void getMKLDNNMemoryDescLrn(const NDArray* src, const NDArray* diff_src,
             auto lrn_src_memory = mkldnn::memory(lrn_prim_desc.src_primitive_desc(), input->buffer());
             auto lrn_dst_memory = mkldnn::memory(lrn_prim_desc.dst_primitive_desc(), output->buffer());
             streams[0].setMemory({lrn_src_memory, lrn_dst_memory});
-            streams[0].setOperation(lrn_forward(lrn_prim_desc, lrn_src_memory, lrn_dst_memory));
+            streams[0].addOperation(lrn_forward(lrn_prim_desc, lrn_src_memory, lrn_dst_memory));
         }
 
         streams[0].submitAndWait();
@@ -294,7 +294,7 @@ static void getMKLDNNMemoryDescLrn(const NDArray* src, const NDArray* diff_src,
             auto lrn_dst_memory = mkldnn::memory(lrn_back_prim_desc.diff_dst_primitive_desc(), scale->buffer());
             auto lrn_diff_src_memory = mkldnn::memory(lrn_back_prim_desc.diff_src_primitive_desc(), output->buffer());
             streams[0].setMemory({lrn_src_memory, lrn_dst_memory, lrn_diff_src_memory});
-            streams[0].setOperation(lrn_backward(lrn_back_prim_desc, lrn_src_memory, lrn_dst_memory, lrn_diff_src_memory));
+            streams[0].addOperation(lrn_backward(lrn_back_prim_desc, lrn_src_memory, lrn_dst_memory, lrn_diff_src_memory));
         }
 
         streams[0].submitAndWait();

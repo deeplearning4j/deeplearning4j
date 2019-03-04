@@ -225,11 +225,11 @@ CUSTOM_OP_IMPL(batchnorm_new, 3, 1, false, 1, 2) {
             if (applyScale || applyOffset) {
                 auto batchnorm_weights_memory = mkldnn::memory(batchnorm_prim_desc.weights_primitive_desc(), weights.buffer());
                 streams[0].setMemory({batchnorm_src_memory, batchnorm_mean_memory, batchnorm_variance_memory, batchnorm_weights_memory, batchnorm_dst_memory});
-                streams[0].setOperation(batch_normalization_forward(batchnorm_prim_desc, (mkldnn::primitive::at)batchnorm_src_memory,
+                streams[0].addOperation(batch_normalization_forward(batchnorm_prim_desc, (mkldnn::primitive::at)batchnorm_src_memory,
                         (mkldnn::primitive::at)batchnorm_mean_memory, (mkldnn::primitive::at)batchnorm_variance_memory, (mkldnn::primitive::at)batchnorm_weights_memory, batchnorm_dst_memory));
             } else {
                 streams[0].setMemory({batchnorm_src_memory, batchnorm_mean_memory, batchnorm_variance_memory, batchnorm_dst_memory});
-                streams[0].setOperation(batch_normalization_forward(batchnorm_prim_desc, (mkldnn::primitive::at)batchnorm_src_memory,
+                streams[0].addOperation(batch_normalization_forward(batchnorm_prim_desc, (mkldnn::primitive::at)batchnorm_src_memory,
                         (mkldnn::primitive::at)batchnorm_mean_memory, (mkldnn::primitive::at)batchnorm_variance_memory, batchnorm_dst_memory));
             }
         }
