@@ -626,16 +626,19 @@ public class TestGraphNodes {
 
         dotProduct.setInputs(in1, in2);
         out = dotProduct.doForward(false, LayerWorkspaceMgr.noWorkspaces());
-
+        assertArrayEquals(new long[]{1}, out.shape());
         assertEquals(1, out.rows());
         assertEquals(1, out.columns());
 
-        in1 = Nd4j.rand(1,3,2);
-        in2 = Nd4j.rand(1,3,2);
+        in1 = Nd4j.rand(new int[]{1,3,2});
+        in2 = Nd4j.rand(new int[]{1,3,2});
         int[] dim2 = new int[]{1,2};
         dotProduct.setInputs(in1, in2);
         ((DotProductVertex) dotProduct).setDimensions(dim2);
         out = dotProduct.doForward(false, LayerWorkspaceMgr.noWorkspaces());
+        assertArrayEquals(new long[]{1}, out.shape());
+        assertEquals(1, out.rows());
+        assertEquals(1, out.columns());
 
 
         //Pair<Gradient, INDArray[]> p = dotProduct.doBackward(false, LayerWorkspaceMgr.noWorkspaces());
