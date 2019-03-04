@@ -27,6 +27,12 @@ if (CUDA_BLAS)
 	include_directories(${CUDA_INCLUDE_DIRS})
 	add_definitions(-D__CUDABLAS__=true)
 
+    if(WIN32)
+        message("CUDA on Windows: enabling /EHsc")
+        SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /EHsc /FS")
+        SET_TARGET_PROPERTIES(${LIBND4J_NAME} PROPERTIES COMPILER_FLAGS "/EHsc")
+    endif()
+
     list(APPEND CUDA_NVCC_FLAGS -DCUDA_10 ${EXPM} -w -G -g --cudart=static --expt-extended-lambda -arch=compute_${COMPUTE} -code=sm_${COMPUTE})
 endif()
 
