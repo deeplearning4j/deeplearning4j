@@ -59,6 +59,7 @@ public class VocabConstructor<T extends SequenceElement> {
     private boolean enableScavenger = false;
     private T unk;
     private boolean allowParallelBuilder = true;
+    private boolean lockf = false;
 
     protected static final Logger log = LoggerFactory.getLogger(VocabConstructor.class);
 
@@ -102,6 +103,7 @@ public class VocabConstructor<T extends SequenceElement> {
     public long getNumberOfSequences() {
         return seqCount.get();
     }
+
 
     /**
      * This method transfers existing vocabulary into current one
@@ -175,17 +177,17 @@ public class VocabConstructor<T extends SequenceElement> {
         return cache;
     }
 
+
     public VocabCache<T> transferVocabulary(@NonNull VocabCache<T> vocabCache, boolean buildHuffman) {
         val result = cache != null ? cache : new AbstractCache.Builder<T>().build();
 
         for (val v: vocabCache.tokens()) {
-            result.addToken(v);
-
-            // optionally transferring indices
-            if (v.getIndex() >= 0)
-                result.addWordToIndex(v.getIndex(), v.getLabel());
-            else
-                result.addWordToIndex(result.numWords(), v.getLabel());
+                result.addToken(v);
+                // optionally transferring indices
+                if (v.getIndex() >= 0)
+                    result.addWordToIndex(v.getIndex(), v.getLabel());
+                else
+                    result.addWordToIndex(result.numWords(), v.getLabel());
         }
 
         if (buildHuffman) {
@@ -410,6 +412,11 @@ public class VocabConstructor<T extends SequenceElement> {
         }
 
         if (buildHuffmanTree) {
+            // and now we're building Huffman tree
+            val huffman = new Huffman(cache.vocabWords());
+            huffman.build();
+            huffman.applyIndexes(cache);
+
             if (limit > 0) {
                 // we want to sort labels before truncating them, so we'll keep most important words
                 val words = new ArrayList<T>(cache.vocabWords());
@@ -421,11 +428,6 @@ public class VocabConstructor<T extends SequenceElement> {
                         cache.removeElement(element.getLabel());
                 }
             }
-
-            // and now we're building Huffman tree
-            val huffman = new Huffman(cache.vocabWords());
-            huffman.build();
-            huffman.applyIndexes(cache);
         }
 
         executorService.shutdown();
@@ -467,6 +469,7 @@ public class VocabConstructor<T extends SequenceElement> {
         private boolean enableScavenger = false;
         private T unk;
         private boolean allowParallelBuilder = true;
+        private boolean lockf = false;
 
         public Builder() {
 
@@ -586,8 +589,14 @@ public class VocabConstructor<T extends SequenceElement> {
             constructor.enableScavenger = this.enableScavenger;
             constructor.unk = this.unk;
             constructor.allowParallelBuilder = this.allowParallelBuilder;
+            constructor.lockf = this.lockf;
 
             return constructor;
+        }
+
+        public Builder<T> setLockFactor(boolean lockf) {
+            this.lockf = lockf;
+            return this;
         }
     }
 
