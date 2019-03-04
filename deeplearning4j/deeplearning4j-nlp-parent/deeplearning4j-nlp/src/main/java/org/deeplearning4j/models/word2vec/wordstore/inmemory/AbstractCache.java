@@ -425,6 +425,21 @@ public class AbstractCache<T extends SequenceElement> implements VocabCache<T> {
         return ret;
     }
 
+    public void addToken(T element, boolean lockf) {
+        T oldElement = vocabulary.putIfAbsent(element.getStorageId(), element);
+        if (oldElement == null) {
+            //putIfAbsent added our element
+            if (element.getLabel() != null) {
+                extendedVocabulary.put(element.getLabel(), element);
+            }
+            oldElement = element;
+        } else {
+            oldElement.incrementSequencesCount(element.getSequencesCount());
+            oldElement.increaseElementFrequency((int) element.getElementFrequency());
+        }
+        totalWordCount.addAndGet((long) oldElement.getElementFrequency());
+    }
+
     /**
      * Returns SequenceElement for specified label. The same as wordFor() method.
      *

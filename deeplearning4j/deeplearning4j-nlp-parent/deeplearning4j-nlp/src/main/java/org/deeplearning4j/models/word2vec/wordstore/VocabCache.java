@@ -264,4 +264,5 @@ public interface VocabCache<T extends SequenceElement> extends Serializable {
      * @param element SequenceElement to be removed
      */
     void removeElement(T element);
+
 }

@@ -301,7 +301,7 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
     private double skipGram(int i, List<T> sentence, int b, AtomicLong nextRandom, double alpha, int currentWindow,
                             BatchSequences<T> batchSequences) {
         final T word = sentence.get(i);
-        if (word == null || sentence.isEmpty())
+        if (word == null || sentence.isEmpty() || word.isLocked())
             return 0.0;
 
         double score = 0.0;
