@@ -87,6 +87,7 @@ namespace nd4j {
         static std::string shapeAsString(const std::vector<Nd4jLong>& shape);
         static std::string shapeAsString(const Nd4jLong* shapeInfo);
         static std::string shapeAsString(const int rank, const Nd4jLong* shapeInfo);
+        static std::string strideAsString(const NDArray* array);
 
         // evaluate shapeInfo for diagonal array which is made using input arr elements as diagonal
         static Nd4jLong* evalDiagShapeInfo(const Nd4jLong* shapeInfo, nd4j::memory::Workspace* workspace);

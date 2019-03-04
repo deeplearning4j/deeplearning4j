@@ -49,18 +49,6 @@
       ]
     },
     {
-      "page": "computationgraph.md",
-      "class": [
-        "deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/graph/ComputationGraph.java"
-      ]
-    },
-    {
-      "page": "multilayernetwork.md",
-      "class": [
-        "deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/multilayer/MultiLayerNetwork.java"
-      ]
-    },
-    {
       "page": "layers.md",
       "class": [
         "deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/conf/layers/OutputLayer.java",
@@ -115,9 +103,7 @@
         "deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/conf/layers/Deconvolution2D.java",
         "deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/conf/layers/convolutional/Cropping1D.java",
         "deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/conf/layers/convolutional/Cropping2D.java",
-        "deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/conf/layers/convolutional/Cropping3D.java",
-        "deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/conf/layers/DepthwiseConvolution2D.java",
-        "deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/conf/layers/SeparableConvolution2D.java"
+        "deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/conf/layers/convolutional/Cropping3D.java"
       ]
     },
     {
@@ -182,6 +168,18 @@
         "deeplearning4j-nn/src/main/java/org/deeplearning4j/earlystopping/termination/MaxEpochsTerminationCondition.java",
         "deeplearning4j-nn/src/main/java/org/deeplearning4j/earlystopping/termination/MaxScoreIterationTerminationCondition.java",
         "deeplearning4j-nn/src/main/java/org/deeplearning4j/earlystopping/termination/MaxTimeIterationTerminationCondition.java"
+      ]
+    },
+    {
+      "page": "computationgraph.md",
+      "class": [
+        "deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/graph/ComputationGraph.java"
+      ]
+    },
+    {
+      "page": "multilayernetwork.md",
+      "class": [
+        "deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/multilayer/MultiLayerNetwork.java"
       ]
     }
   ]

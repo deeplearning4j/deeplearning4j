@@ -130,6 +130,24 @@ namespace nd4j {
         return false;
     }
 
+    bool BlasHelper::hasGEMV(const nd4j::DataType dtype) const {
+        if(dtype == DataType::FLOAT32) {
+            #ifdef __EXTERNAL_BLAS__
+                return true;
+            #else
+                return _hasSgemv;
+            #endif
+        }
+        if(dtype == DataType::DOUBLE) {
+            #ifdef __EXTERNAL_BLAS__
+                return true;
+            #else
+                return _hasDgemv;
+            #endif
+        }
+        return false;        
+    }
+
     template <>
     bool BlasHelper::hasGEMM<float>() {
 #ifdef __EXTERNAL_BLAS__
@@ -185,6 +203,24 @@ namespace nd4j {
 
     template <>
     bool BlasHelper::hasGEMM<Nd4jLong>() {
+        return false;
+    }
+
+    bool BlasHelper:: hasGEMM(const nd4j::DataType dtype) const {
+        if(dtype == DataType::FLOAT32) {
+            #ifdef __EXTERNAL_BLAS__
+                return true;
+            #else
+                return _hasSgemm;
+            #endif
+        }
+        if(dtype == DataType::DOUBLE) {
+            #ifdef __EXTERNAL_BLAS__
+                return true;
+            #else
+                return _hasDgemm;
+            #endif
+        }
         return false;
     }
 
