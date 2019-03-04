@@ -64,6 +64,10 @@ public class DotProductVertex extends BaseGraphVertex {
         Preconditions.checkState(Arrays.equals(a.shape(), b.shape()));
         try(MemoryWorkspace ws = workspaceMgr.notifyScopeBorrowed(ArrayType.ACTIVATIONS)) {
             INDArray result = Nd4j.getExecutioner().exec(new Dot(a,b, dimensions));
+            if (result.rank() == 1) {
+                result.reshape(-1, 1);
+                System.out.println(result.rank());
+            }
             return result;
         }
     }

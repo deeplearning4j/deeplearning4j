@@ -640,7 +640,8 @@ public class TestGraphNodes {
         assertEquals(1, out.rows());
         assertEquals(1, out.columns());
 
-
-        //Pair<Gradient, INDArray[]> p = dotProduct.doBackward(false, LayerWorkspaceMgr.noWorkspaces());
+        Pair<Gradient, INDArray[]> p = dotProduct.doBackward(false, LayerWorkspaceMgr.noWorkspaces());
+        assertEquals(in2, p.getSecond()[0]);
+        assertEquals(in1, p.getSecond()[1]);
     }
 }
