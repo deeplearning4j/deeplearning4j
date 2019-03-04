@@ -1134,14 +1134,10 @@ TEST_F(NDArrayTest, TestMmulHelper_ND_1) {
         b.p(e, e+1);
 
     NDArray exp(_expB, _expS);
-    exp.triggerAllocationFlag(false, false);
-
+    
     auto c = MmulHelper::mmul(&a, &b);
 
-    ASSERT_TRUE(exp.isSameShapeStrict(c));
-    //c->printShapeInfo("Result shape");
-    //c->printBuffer("Result buffer");
-
+    ASSERT_TRUE(exp.isSameShape(c));
     ASSERT_TRUE(exp.equalsTo(c));
 
     delete c;
@@ -1161,14 +1157,10 @@ TEST_F(NDArrayTest, TestMmulHelper_ND_2) {
         b.p(e, e+1);
 
     NDArray exp(_expB, _expS);
-    exp.triggerAllocationFlag(false, false);
 
     auto c = MmulHelper::mmul(&a, &b);
 
-    ASSERT_TRUE(exp.isSameShapeStrict(c));
-    //c->printShapeInfo("Result shape");
-    //c->printBuffer("Result buffer");
-    //exp.printBuffer("Expctd buffer");
+    ASSERT_TRUE(exp.isSameShape(c));
     ASSERT_TRUE(exp.equalsTo(c, 1e1));
 
     delete c;

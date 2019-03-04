@@ -165,7 +165,7 @@ namespace functions {
                     tad->createTadOnlyShapeInfo();
                     tad->createOffsets();
 
-                    nd4j_printf("Calculating TAD\n","");
+                    //nd4j_printf("Calculating TAD\n","");
 
                     if (tad->dimensionLength < 1) {
                         delete tad;
