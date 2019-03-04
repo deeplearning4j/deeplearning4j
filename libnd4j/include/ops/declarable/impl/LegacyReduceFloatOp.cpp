@@ -117,7 +117,7 @@ namespace nd4j {
                     REQUIRE_TRUE(dims.size() > 0, 0, "Some dimensions required for reduction!");
 
                     shape::TAD tad;
-                    tad.(x->getShapeInfo(), dims.data(), dims.size());
+                    tad.init(x->getShapeInfo(), dims.data(), dims.size());
                     tad.createTadOnlyShapeInfo();
                     tad.createOffsets();
 

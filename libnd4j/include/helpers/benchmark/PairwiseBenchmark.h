@@ -23,6 +23,8 @@
 #ifndef DEV_TESTS_PAIRWISEBENCHMARK_H
 #define DEV_TESTS_PAIRWISEBENCHMARK_H
 
+using namespace nd4j::graph;
+
 namespace nd4j {
     class ND4J_EXPORT PairwiseBenchmark : public OpBenchmark {
     public:
@@ -56,7 +58,11 @@ namespace nd4j {
         }
 
         void executeOnce() override {
-            NativeOpExcutioner::execPairwiseTransform(_opNum, _x->buffer(), _x->shapeInfo(), _y->buffer(), _y->shapeInfo(), _z->buffer(), _z->shapeInfo(), nullptr);
+            PointersManager manager(LaunchContext::defaultContext(), "PairwiseBM");
+
+            NativeOpExecutioner::execPairwiseTransform(LaunchContext::defaultContext(), _opNum, _x->buffer(), _x->shapeInfo(), _x->specialBuffer(), _x->specialShapeInfo(), _y->buffer(), _y->shapeInfo(), _y->specialBuffer(), _y->specialShapeInfo(), _z->buffer(), _z->shapeInfo(), _z->specialBuffer(), _z->specialShapeInfo(), nullptr);
+
+            manager.synchronize();
         }
 
         std::string axis() override {

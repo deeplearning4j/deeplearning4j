@@ -22,6 +22,8 @@
 #ifndef DEV_TESTS_TRANSFORMBENCHMARK_H
 #define DEV_TESTS_TRANSFORMBENCHMARK_H
 
+using namespace nd4j::graph;
+
 namespace nd4j {
     class ND4J_EXPORT TransformBenchmark : public OpBenchmark {
     public:
@@ -48,10 +50,13 @@ namespace nd4j {
         }
 
         void executeOnce() override {
+            PointersManager manager(LaunchContext::defaultContext(), "TransformBM");
             if (_z != nullptr)
-                NativeOpExcutioner::execTransformStrict(_opNum, _x->buffer(), _x->shapeInfo(),  _z->buffer(), _z->shapeInfo(), nullptr, nullptr, nullptr);
+                NativeOpExecutioner::execTransformStrict(LaunchContext::defaultContext(), _opNum, _x->buffer(), _x->shapeInfo(), _x->specialBuffer(), _x->specialShapeInfo(), _z->buffer(), _z->shapeInfo(), _z->specialBuffer(), _z->specialShapeInfo(), nullptr, nullptr, nullptr);
             else
-                NativeOpExcutioner::execTransformStrict(_opNum, _x->buffer(), _x->shapeInfo(),  _x->buffer(), _x->shapeInfo(), nullptr, nullptr, nullptr);
+                NativeOpExecutioner::execTransformStrict(LaunchContext::defaultContext(), _opNum, _x->buffer(), _x->shapeInfo(), _x->specialBuffer(), _x->specialShapeInfo(), _x->buffer(), _x->shapeInfo(), _x->specialBuffer(), _x->specialShapeInfo(), nullptr, nullptr, nullptr);
+
+            manager.synchronize();
         }
 
         std::string axis() override {

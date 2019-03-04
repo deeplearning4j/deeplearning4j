@@ -24,6 +24,8 @@
 #ifndef DEV_TESTS_REDUCEBENCHMARK_H
 #define DEV_TESTS_REDUCEBENCHMARK_H
 
+using namespace nd4j::graph;
+
 namespace nd4j {
     class ND4J_EXPORT ReductionBenchmark : public OpBenchmark {
     public:
@@ -44,10 +46,15 @@ namespace nd4j {
         }
 
         void executeOnce() override {
+            PointersManager manager(LaunchContext::defaultContext(), "reductionBM");
             if (_z->isScalar())
-                NativeOpExcutioner::execReduceFloatScalar(_opNum, _x->buffer(), _x->shapeInfo(), nullptr, _z->buffer(), _z->shapeInfo());
-            else
-                NativeOpExcutioner::execReduceFloat(_opNum, _x->buffer(), _x->shapeInfo(), nullptr,  _z->buffer(), _z->shapeInfo(), _axis.data(), _axis.size(), nullptr, nullptr);
+                NativeOpExecutioner::execReduceFloatScalar(LaunchContext::defaultContext(), _opNum, _x->buffer(), _x->shapeInfo(), _x->specialBuffer(), _x->specialShapeInfo(), nullptr, _z->buffer(), _z->shapeInfo(), _z->specialBuffer(), _z->specialShapeInfo());
+            else {
+                auto dims = reinterpret_cast<int *>(manager.replicatePointer(_axis.data(), _axis.size() * sizeof(int)));
+                NativeOpExecutioner::execReduceFloat(LaunchContext::defaultContext(), _opNum, _x->buffer(), _x->shapeInfo(), _x->specialBuffer(), _x->specialShapeInfo(), nullptr, _z->buffer(), _z->shapeInfo(), _z->specialBuffer(), _z->specialShapeInfo(), dims, _axis.size(), nullptr, nullptr);
+            }
+
+            manager.synchronize();
         }
 
         std::string orders() override {

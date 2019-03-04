@@ -31,6 +31,8 @@ namespace helpers {
 
     void logSoftMaxForVector(graph::LaunchContext* context, const NDArray &input, NDArray &output);
 
+    void softmax(graph::LaunchContext* context, const NDArray &input, NDArray &output, const int dimension);
+
     void logSoftmax(graph::LaunchContext* context, const NDArray &input, NDArray &output, const int dimension);
 
     void softmaxDerivative(graph::LaunchContext* context, const NDArray& input, NDArray& output, const int dimension);

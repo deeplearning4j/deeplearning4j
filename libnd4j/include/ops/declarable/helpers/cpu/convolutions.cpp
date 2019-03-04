@@ -474,13 +474,13 @@ static void conv2d_(nd4j::graph::LaunchContext& block, const NDArray* input, con
         // permutForOutput = {0, indOoH, indOoH+1, indIOioC};                          // [bS, oC, oH, oW] -> [bS, oH, oW, oC]
         permutForOutput = {0, 3, 1, 2};                                             // [bS, oH, oW, oC] -> [bS, oC, oH, oW]
 
-    NDArray col('c', {bS, oH, oW, kH, kW, iC}, input->dataType(), input->getWorkspace());
+    NDArray col('c', {bS, oH, oW, kH, kW, iC}, input->dataType(), &block);
     NDArray* colP = col.permute({0, 5, 3, 4, 1, 2});            // {bS, iC, kH, kW, oH, oW}
-    NDArray mmulResult('f', {bS*oH*oW, oC}, output->dataType(), output->getWorkspace());
+    NDArray mmulResult('f', {bS*oH*oW, oC}, output->dataType(), &block);
 
     //----- calculation of output -----//
     graph::LaunchContext ctx;
-    helpers::im2col(ctx, *input, *colP, kH, kW, sH, sW, pH, pW, dH, dW, NDArrayFactory::create(0.f, input->getWorkspace()));  // [bS, iC, iH, iW] is convoluted to [bS, iC, kH, kW, oH, oW]
+    helpers::im2col(ctx, *input, *colP, kH, kW, sH, sW, pH, pW, dH, dW, NDArrayFactory::create(0.f, &block));  // [bS, iC, iH, iW] is convoluted to [bS, iC, kH, kW, oH, oW]
     MmulHelper::tensorDot(&col, weights, &mmulResult, {3,4,5}, {0,1,2}, {}); // [bS, oH, oW, kH, kW, iC] x [kH, kW, iC, oC] = [bS, oH, oW, oC]
 
     //----- assign outTemp to output  -----//

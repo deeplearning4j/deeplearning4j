@@ -2546,7 +2546,8 @@ template void NDArray::operator/=(const bool scalar);
         auto tadLength = shape::tadLength(_shapeInfo, copy.data(), copy.size());
         auto numTads = _length / tadLength;
 
-        std::unique_ptr<shape::TAD> tad(new shape::TAD(_shapeInfo, copy.data(), copy.size()));
+        std::unique_ptr<shape::TAD> tad(new shape::TAD());
+        tad->init(_shapeInfo, copy.data(), copy.size());
         tad->createTadOnlyShapeInfo();
         tad->createOffsets();
 
@@ -2682,7 +2683,8 @@ Nd4jLong NDArray::getOffset(const Nd4jLong i) const {
 
         auto numTads = _length / shape::tadLength(_shapeInfo, copy.data(), copy.size());
 
-        std::unique_ptr<shape::TAD> tad(new shape::TAD(_shapeInfo, copy.data(), copy.size()));
+        std::unique_ptr<shape::TAD> tad(new shape::TAD());
+        tad->init(_shapeInfo, copy.data(), copy.size());
         tad->createTadOnlyShapeInfo();
         tad->createOffsets();        
                         

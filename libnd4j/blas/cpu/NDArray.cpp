@@ -1601,7 +1601,8 @@ NDArray::NDArray(const char order, const std::vector<Nd4jLong> &shape, nd4j::Dat
         if (tadLength != tadArray->lengthOf())
             throw std::runtime_error("NDArray::applyBroadcast method: tad length mismatch !");
 
-        shape::TAD tad(this->_shapeInfo, copy.data(), copy.size());
+        shape::TAD tad;
+        tad.init(this->_shapeInfo, copy.data(), copy.size());
         tad.createTadOnlyShapeInfo();
         tad.createOffsets();
 
@@ -1635,7 +1636,8 @@ NDArray::NDArray(const char order, const std::vector<Nd4jLong> &shape, nd4j::Dat
         if (tadLength != tadArray->lengthOf())
             throw std::runtime_error("Tad length mismatch");
 
-        shape::TAD tad(this->_shapeInfo, copy.data(), copy.size());
+        shape::TAD tad;
+        tad.init(this->_shapeInfo, copy.data(), copy.size());
         tad.createTadOnlyShapeInfo();
         tad.createOffsets();
 
@@ -1675,7 +1677,8 @@ NDArray::NDArray(const char order, const std::vector<Nd4jLong> &shape, nd4j::Dat
             if (dimensions.size() > 1)
                 std::sort(copy.begin(), copy.end());
 
-            shape::TAD tad(_shapeInfo, copy.data(), copy.size());
+            shape::TAD tad;
+            tad.init(_shapeInfo, copy.data(), copy.size());
             tad.createTadOnlyShapeInfo();
             tad.createOffsets();
 
@@ -1704,7 +1707,8 @@ NDArray::NDArray(const char order, const std::vector<Nd4jLong> &shape, nd4j::Dat
         if (rankOf() == copy.size()) {
             NativeOpExecutioner::execIndexReduceScalar(_context, op, _buffer, _shapeInfo, _bufferD, _shapeInfoD, extraParams != nullptr ? const_cast<ExtraArguments*>(extraParams)->argumentsAsT(this->dataType()) : nullptr, result->getBuffer(), result->getShapeInfo(), result->getSpecialBuffer(), result->getSpecialShapeInfo());
         } else {
-            shape::TAD tad(_shapeInfo, copy.data(), copy.size());
+            shape::TAD tad;
+            tad.init(_shapeInfo, copy.data(), copy.size());
             tad.createTadOnlyShapeInfo();
             tad.createOffsets();
 
@@ -1759,11 +1763,13 @@ NDArray::NDArray(const char order, const std::vector<Nd4jLong> &shape, nd4j::Dat
         shape::checkDimensions(other->rankOf(), copy);
 
         // create tads
-        shape::TAD tadX(_shapeInfo, copy.data(), copy.size());
+        shape::TAD tadX;
+        tadX.init(_shapeInfo, copy.data(), copy.size());
         tadX.createTadOnlyShapeInfo();
         tadX.createOffsets();
 
-        shape::TAD tadY(other->_shapeInfo, copy.data(), copy.size());
+        shape::TAD tadY;
+        tadY.init(other->_shapeInfo, copy.data(), copy.size());
         tadY.createTadOnlyShapeInfo();
         tadY.createOffsets();
 

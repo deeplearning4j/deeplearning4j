@@ -79,8 +79,8 @@ namespace nd4j {
     void BenchmarkHelper::benchmarkScalarOperation(scalar::Ops op, std::string testName, double value, NDArray &x, NDArray &z) {
         auto y = NDArrayFactory::create(x.dataType(), value);
 
-        for (uint i = 0; i < _wIterations; i++)
-            NativeOpExcutioner::execScalar(op, x.buffer(), x.shapeInfo(), z.buffer(), z.shapeInfo(), y.buffer(), y.shapeInfo(), nullptr);
+        //for (uint i = 0; i < _wIterations; i++)
+            //NativeOpExecutioner::execScalar(op, x.buffer(), x.shapeInfo(), z.buffer(), z.shapeInfo(), y.buffer(), y.shapeInfo(), nullptr);
 
 
         std::vector<Nd4jLong> timings(_rIterations);
@@ -89,7 +89,7 @@ namespace nd4j {
         for (uint i = 0; i < _rIterations; i++) {
             auto timeStart = std::chrono::system_clock::now();
 
-            NativeOpExcutioner::execScalar(op, x.buffer(), x.shapeInfo(), z.buffer(), z.shapeInfo(), y.buffer(), y.shapeInfo(), nullptr);
+            //NativeOpExecutioner::execScalar(op, x.buffer(), x.shapeInfo(), z.buffer(), z.shapeInfo(), y.buffer(), y.shapeInfo(), nullptr);
 
             auto timeEnd = std::chrono::system_clock::now();
             auto loopTime = std::chrono::duration_cast<std::chrono::microseconds> ((timeEnd - timeStart)).count();

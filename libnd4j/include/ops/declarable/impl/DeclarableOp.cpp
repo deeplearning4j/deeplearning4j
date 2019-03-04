@@ -205,7 +205,7 @@ namespace nd4j {
                             if (Environment::getInstance()->isDebugAndVerbose())
                                 shape::printShapeInfoLinear("Going to create variable with shape", out);
 
-                            auto outArr = new NDArray(out, true, workspace);
+                            auto outArr = new NDArray(out, true, ctx.launchContext());
 
                             ctx.pushNDArrayToVariableSpace(pair, outArr);
                         } else {
@@ -229,7 +229,7 @@ namespace nd4j {
                         auto idx = cnt++;
                         if (fout.size() <= idx) {
                             // array doesnt exist
-                            auto outArr = new NDArray(out, true, workspace);
+                            auto outArr = new NDArray(out, true, ctx.launchContext());
                             ctx.setOutputArray(idx, outArr, true);
                         } else {
                             auto array = fout[idx];

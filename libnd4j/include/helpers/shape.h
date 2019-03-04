@@ -481,7 +481,7 @@ namespace shape {
  * Returns the stride portion of an information
  * buffer
  */
-    ND4J_EXPORT _CUDA_HD Nd4jLong *stride(const Nd4jLong *buffer);
+    ND4J_EXPORT _CUDA_HD Nd4jLong *stride(Nd4jLong *buffer);
 
 /**
  * Compute the length of the given shape
@@ -3484,20 +3484,6 @@ template <typename T>
     INLINEDEF _CUDA_HD Nd4jLong getOffset(Nd4jLong baseOffset, const Nd4jLong *shape,  const Nd4jLong *stride,  const Nd4jLong *indices, int rank) {
         Nd4jLong offset = baseOffset;
         for(int i = 0; i < rank; i++) {
-//             if(indices[i] >= shape[i] && shape[i] != 1) {
-// #ifdef __CUDA_ARCH__
-//                 printf("D: Index %i [%lld] must not be >= shape[%lld].\n", i,indices[i],shape[i]);
-// #else
-//                 printf("H: Index %i [%lld] must not be >= shape[%lld].\n", i, (long long) indices[i], (long long) shape[i]);
-// #endif
-
-#ifdef __CUDA_ARCH__
-                //if (threadIdx.x == 0 && blockIdx.x == 0)
-                //    printShapeInfoLinear("getOffsetFailed", rank, shape, stride);
-#endif
-                return -1;
-            }
-
             if(shape[i] != 1)
                 offset += indices[i] * stride[i];
         }

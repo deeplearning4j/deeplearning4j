@@ -52,11 +52,13 @@ namespace nd4j {
 
                 std::sort(dims.begin(), dims.end());
 
-                shape::TAD tadX(x->getShapeInfo(), dims.data(), dims.size());
+                shape::TAD tadX;
+                tadX.init(x->getShapeInfo(), dims.data(), dims.size());
                 tadX.createTadOnlyShapeInfo();
                 tadX.createOffsets();
 
-                shape::TAD tadY(x->getShapeInfo(), dims.data(), dims.size());
+                shape::TAD tadY;
+                tadY.init(x->getShapeInfo(), dims.data(), dims.size());
                 tadY.createTadOnlyShapeInfo();
                 tadY.createOffsets();
 

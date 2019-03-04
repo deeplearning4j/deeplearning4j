@@ -27,7 +27,7 @@ namespace ops {
 namespace helpers {
 
     template <typename T>
-    void nthElementFunctor_(NDArray* input, NDArray* nVal, NDArray* output) {
+    void nthElementFunctor_(NDArray* input, NDArray* nVal, NDArray* output, bool reverse) {
         Nd4jLong n = nVal->e<Nd4jLong>(0);
         NDArray sortedVals(*input);
         if (input->isVector()) {
@@ -59,7 +59,7 @@ namespace helpers {
         }
     }
 
-    void nthElementFunctor(NDArray* input, NDArray* n, NDArray* output, bool reverse) {
+    void nthElementFunctor(graph::LaunchContext *launchContext, NDArray* input, NDArray* n, NDArray* output, bool reverse) {
     BUILD_SINGLE_SELECTOR(input->dataType(), nthElementFunctor_, (input, n, output, reverse), LIBND4J_TYPES);
 
     }

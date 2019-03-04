@@ -130,7 +130,7 @@ namespace nd4j {
         return false;
     }
 
-    bool BlasHelper::hasGEMV(const nd4j::DataType dtype) const {
+    bool BlasHelper::hasGEMV(const nd4j::DataType dtype) {
         if(dtype == DataType::FLOAT32)
             return hasGEMV<float>();
         if(dtype == DataType::DOUBLE)
@@ -196,7 +196,7 @@ namespace nd4j {
         return false;
     }
 
-    bool BlasHelper:: hasGEMM(const nd4j::DataType dtype) const {
+    bool BlasHelper:: hasGEMM(const nd4j::DataType dtype) {
         if(dtype == DataType::FLOAT32)
             return hasGEMM<float>();
         if(dtype == DataType::DOUBLE)
