@@ -44,8 +44,7 @@ public class PythonTransform implements Transform{
         try{
             pyInputs = schemaToPythonVariables(inputSchema);
         }catch (Exception e){
-            // FixMe: Do no suppress this
-            System.out.println(e.toString());
+            throw new RuntimeException(e);
         }
         if (outputSchema == null){
             outputSchema = inputSchema;
@@ -85,11 +84,8 @@ public class PythonTransform implements Transform{
             return getWritablesFromPyOutputs(pyOutputs);
         }
         catch (Exception e){
-            // FixMe: Do no suppress this
-            System.out.println(e.toString());
+            throw new RuntimeException(e);
         }
-        return null;
-
     }
 
     @Override
