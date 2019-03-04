@@ -70,16 +70,21 @@ namespace nd4j {
             double bias = T_ARG(0);
             int depth = INT_ARG(0);
 
-            std::unique_ptr<NDArray> unitScale(errors->dup('c'));
+            //std::unique_ptr<NDArray> unitScale(errors->dup('c'));
             std::unique_ptr<NDArray> scale(errors->dup('c'));
 
-            REQUIRE_TRUE(ND4J_STATUS_OK == helpers::lrnFunctorEx(block, input, output, unitScale.get(), scale.get(), (long)depth, bias, alpha, beta), 0, "lrn_bp: Failed to get lrn for given input." );
+            REQUIRE_TRUE(ND4J_STATUS_OK == helpers::lrnFunctorEx(block, input, output, scale.get(), depth, bias, alpha, beta), 0, "lrn_bp: Failed to get lrn for given input." );
 
-            errors->applyPairwiseTransform(pairwise::Multiply, scale.get(), scale.get(), nullptr);
-            output->applyPairwiseTransform(pairwise::Multiply, input, output, nullptr);
-            unitScale->applyScalar(scalar::Multiply, 2.0f * alpha * beta, unitScale.get(), nullptr);
-            output->applyPairwiseTransform(pairwise::Divide, unitScale.get(), output, nullptr);
-            scale->applyPairwiseTransform(pairwise::Subtract, output, output, nullptr);
+            output->applyPairwiseTransform(pairwise::Divide, input, output, nullptr);
+            output->applyPairwiseTransform(pairwise::Multiply, scale.get(), output, nullptr);
+            output->applyPairwiseTransform(pairwise::Multiply, errors, output, nullptr);
+//            errors->applyPairwiseTransform(pairwise::Multiply, scale.get(), scale.get(), nullptr);
+//            output->applyPairwiseTransform(pairwise::Multiply, input, output, nullptr);
+//            output->printBuffer("Output stage 1");
+//            unitScale->applyScalar(scalar::Multiply, 2.0 * alpha * (beta), nullptr, nullptr);
+//            output->printBuffer("Output stage 2");
+//            scale->applyPairwiseTransform(pairwise::Subtract, output, output, nullptr);
+//            output->printBuffer("Output stage 3");
 
             return Status::OK();
         }

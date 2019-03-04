@@ -247,8 +247,8 @@ TEST_F(NDArrayTest, TestTad3) {
 
 TEST_F(NDArrayTest, TestPermuteReshape1) {
     NDArray array('c', {2, 2, 5, 5}, nd4j::DataType::FLOAT32);
-    int pShape[] = {4, 2, 5, 5, 2, 25, 5, 1, 50, 8192, -1, 99};
-    int rShape[] = {3, 2, 25, 2, 25, 1, 50, 8192, -1, 99};
+    int pShape[] = {4, 2, 5, 5, 2, 25, 5, 1, 50, 8192, 0, 99};
+    int rShape[] = {3, 2, 25, 2, 25, 1, 50, 8192, 0, 99};
 
     array.permutei({1, 2, 3, 0});
 
@@ -264,7 +264,7 @@ TEST_F(NDArrayTest, TestPermuteReshape1) {
 
 TEST_F(NDArrayTest, TestPermuteReshape2) {
     auto array = NDArrayFactory::create<float>('c', {2, 2, 5, 5, 6, 6});
-    int pShape[] = {6, 2, 2, 6, 6, 5, 5, 900, 1800, 6, 1, 180, 36, 8192, -1, 99};
+    int pShape[] = {6, 2, 2, 6, 6, 5, 5, 900, 1800, 6, 1, 180, 36, 8192, 0, 99};
     int rShape[] = {3, 2, 72, 25, 1800, 25, 1, 8192, 1, 99};
 
 
@@ -822,11 +822,11 @@ TEST_F(NDArrayTest, TestTile6)
 TEST_F(NDArrayTest, TestMmulHelper1) {
     auto xBuffer = new float[3]{1.f, 2.f, 3.f};
     auto xShape = new Nd4jLong[8] {2, 1, 3, 1, 1, 8192, 1, 99};
-    auto x = new NDArray(xBuffer, xShape);   
+    auto x = new NDArray(xBuffer, xShape);
 
     auto yBuffer = new float[3]{2.f, 4.f, 6.f};
     auto yShape = new Nd4jLong[8] {2, 1, 3, 1, 1, 8192, 1, 99};
-    auto y = new NDArray(yBuffer, yShape);    
+    auto y = new NDArray(yBuffer, yShape);
 
     auto z = MmulHelper::mmul(x, y);
 
@@ -849,7 +849,7 @@ TEST_F(NDArrayTest, TestPermuteReshapeMmul1) {
 
     Nd4jLong _expS[] = {2, 3, 3, 1, 3, 8192, 1, 102};
     float _expB[] = {231.0, 252.0, 273.0, 537.0, 594.0, 651.0, 843.0, 936.0, 1029.0};
-    NDArray exp(_expB, _expS);     
+    NDArray exp(_expB, _expS);
 
     for (int e = 0; e < x.lengthOf(); e++)
         x.p(e, e+1);
@@ -875,7 +875,7 @@ TEST_F(NDArrayTest, TestPermuteReshapeMmul2) {
     Nd4jLong _expS[] = {2, 3, 3, 1, 3, 8192, 1, 102};
     float _expB[] = {231.0, 252.0, 273.0, 537.0, 594.0, 651.0, 843.0, 936.0, 1029.0};
     NDArray exp(_expB, _expS);
-    
+
     for (int e = 0; e < x.lengthOf(); e++)
         x.p(e, e+1);
 
@@ -906,7 +906,7 @@ TEST_F(NDArrayTest, TestPermuteReshapeMmul3) {
     Nd4jLong _expS[] = {2, 8, 2, 1, 8, 8192, 1, 102};
     float _expB[] = {1624.0, 1858.0, 2092.0, 2326.0, 5368.0, 5602.0, 5836.0, 6070.0, 4504.0, 5170.0, 5836.0, 6502.0, 15160.0, 15826.0, 16492.0, 17158.0};
     NDArray exp(_expB, _expS);
-    
+
     for (int e = 0; e < x.lengthOf(); e++)
         x.p(e, e+1);
 
@@ -933,7 +933,7 @@ TEST_F(NDArrayTest, TestPermuteReshapeMmul4) {
 
     Nd4jLong _expS[] = {2, 8, 2, 1, 8, 8192, 1, 102};
     float _expB[] = {1624.0, 1858.0, 2092.0, 2326.0, 5368.0, 5602.0, 5836.0, 6070.0, 4504.0, 5170.0, 5836.0, 6502.0, 15160.0, 15826.0, 16492.0, 17158.0};
-    NDArray exp(_expB, _expS);    
+    NDArray exp(_expB, _expS);
 
     for (int e = 0; e < x.lengthOf(); e++)
         x.p(e, e+1);
@@ -964,16 +964,16 @@ TEST_F(NDArrayTest, TestMmulHelper2) {
     auto xBuffer = new float[15]{1.f, 2.f, 3.f, 4.f, 5.f, 6.f, 7.f, 8.f, 9.f, 10.f, 11.f, 12.f, 13.f, 14.f, 15.f};
     auto xShape = new Nd4jLong[8] {2, 5, 3, 3, 1, 8192, 1, 99};
     auto x = new NDArray(xBuffer, xShape, graph::LaunchContext::defaultContext(), true, true);
-    
+
 
     auto yBuffer = new float[3]{2.f, 4.f, 6.f};
     auto yShape = new Nd4jLong[8] {2, 3, 1, 1, 1, 8192, 1, 99};
-    auto y = new NDArray(yBuffer, yShape, graph::LaunchContext::defaultContext(), true, true);    
+    auto y = new NDArray(yBuffer, yShape, graph::LaunchContext::defaultContext(), true, true);
 
     auto z = NDArrayFactory::create_<float>('f', {5, 1});
 
     auto expBuffer = new float[5]{28.00,  64.00,  100.00,  136.00,  172.00};
-    auto exp = new NDArray(expBuffer, z->getShapeInfo(), graph::LaunchContext::defaultContext(), true, false);    
+    auto exp = new NDArray(expBuffer, z->getShapeInfo(), graph::LaunchContext::defaultContext(), true, false);
 
     //nd4j::blas::GEMV<float>::op('f',  x->rows(), x->columns(), 1.0f, x->getBuffer(), y->rows(), y->getBuffer(), 1, 0.0, z->getBuffer(), 1);
 
@@ -1160,8 +1160,7 @@ TEST_F(NDArrayTest, TestMmulHelper_ND_1) {
     for (int e = 0; e < b.lengthOf(); e++)
         b.p(e, e+1);
 
-    NDArray exp(_expB, _expS);    
-
+    NDArray exp(_expB, _expS);
     auto c = MmulHelper::mmul(&a, &b);
 
     ASSERT_TRUE(exp.isSameShape(c));
@@ -1207,7 +1206,7 @@ TEST_F(NDArrayTest, TestNegSize1) {
 TEST_F(NDArrayTest, Permute1) {  
     
     Nd4jLong shape1[] = {3, 5, 10, 15, 150, 15, 1, 8192, 1, 99};
-	Nd4jLong shape2[] = {3, 15, 5, 10, 1, 150, 15, 8192, -1, 99};
+	Nd4jLong shape2[] = {3, 15, 5, 10, 1, 150, 15, 8192, 0, 99};
     const std::initializer_list<int> perm = {2, 0, 1};    
     
     NDArray arr1(shape1,true);
@@ -1224,7 +1223,7 @@ TEST_F(NDArrayTest, Permute1) {
 TEST_F(NDArrayTest, Permute2) {
     
     Nd4jLong shape1[] = {3, 5, 10, 15, 150, 15, 1, 8192, 1, 99};
-	Nd4jLong shape2[] = {3, 15, 5, 10, 1, 150, 15, 8192, -1, 99};
+	Nd4jLong shape2[] = {3, 15, 5, 10, 1, 150, 15, 8192, 0, 99};
     const std::initializer_list<int> perm = {2, 0, 1};    
     
     NDArray arr1(shape1,true);
@@ -1781,7 +1780,7 @@ TEST_F(NDArrayTest, TestTensorDotAgain_1) {
     double _expB[] = {96.0,  116.0,  136.0,  156.0,  256.0,  276.0,  296.0,  316.0,  102.0,  124.0,  146.0,  168.0,    278.0,  300.0,  322.0,  344.0,  108.0,  132.0,  156.0,  180.0,  300.0,  324.0,  348.0,  372.0,    114.0,  140.0,  166.0,  192.0,  322.0,  348.0,  374.0,  400.0,  120.0,  148.0,  176.0,  204.0,    344.0,  372.0,  400.0,  428.0,  126.0,  156.0,  186.0,  216.0,  366.0,  396.0,  426.0,  456.0,    132.0,  164.0,  196.0,  228.0,  388.0,  420.0,  452.0,  484.0,  138.0,  172.0,  206.0,  240.0,    410.0,  444.0,  478.0,  512.0,  144.0,  180.0,  216.0,  252.0,  432.0,  468.0,  504.0,  540.0,    150.0,  188.0,  226.0,  264.0,  454.0,  492.0,  530.0,  568.0,  156.0,  196.0,  236.0,  276.0,    476.0,  516.0,  556.0,  596.0,  162.0,  204.0,  246.0,  288.0,  498.0,  540.0,  582.0,  624.0,    168.0,  212.0,  256.0,  300.0,  520.0,  564.0,  608.0,  652.0,  174.0,  220.0,  266.0,  312.0,    542.0,  588.0,  634.0,  680.0,  180.0,  228.0,  276.0,  324.0,  564.0,  612.0,  660.0,  708.0,    186.0,  236.0,  286.0,  336.0,  586.0,  636.0,  686.0,  736.0,  192.0,  244.0,  296.0,  348.0,    608.0,  660.0,  712.0,  764.0,  198.0,  252.0,  306.0,  360.0,  630.0,  684.0,  738.0,  792.0};
 
     Nd4jLong _expS[] = {6, 2, 3, 3, 2, 2, 2, 72, 24, 8, 4, 2, 1, 16384, 1, 99};
-    NDArray exp(_expB, _expS, graph::LaunchContext::defaultContext(), false, false);    
+    NDArray exp(_expB, _expS, graph::LaunchContext::defaultContext(), false, false);
 
     auto input = NDArrayFactory::create<double>('c', {B, iC, iY, iX});
     auto weights = NDArrayFactory::create<double>('c', {iC, oC, kY, kX});
@@ -1804,8 +1803,8 @@ TEST_F(NDArrayTest, TestTensorDotAgain_1) {
 //////////////////////////////////////////////////////////////////////
 TEST_F(NDArrayTest, TestBroadcast_1) {
     double _expB[] = {1.000000, 1.000000, 1.000000, 1.000000, 2.000000, 2.000000, 2.000000, 2.000000, 3.000000, 3.000000, 3.000000, 3.000000, 1.000000, 1.000000, 1.000000, 1.000000, 2.000000, 2.000000, 2.000000, 2.000000, 3.000000, 3.000000, 3.000000, 3.000000};
-    Nd4jLong _expS[] = {4, 2, 3, 2, 2, 12, 4, 2, 1, 16384, 1, 99};    
-    NDArray exp(_expB, _expS, graph::LaunchContext::defaultContext(), false, false);    
+    Nd4jLong _expS[] = {4, 2, 3, 2, 2, 12, 4, 2, 1, 16384, 1, 99};
+    NDArray exp(_expB, _expS, graph::LaunchContext::defaultContext(), false, false);
 
     auto input = NDArrayFactory::create<double>('c',{ 2, 3, 2, 2});
     auto bias = NDArrayFactory::create<double>('c', {1, 3});

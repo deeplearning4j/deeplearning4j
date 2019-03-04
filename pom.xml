@@ -173,11 +173,6 @@
                 <updatePolicy>daily</updatePolicy>  <!-- Optional, update daily -->
             </snapshots>
         </repository>
-        <repository>
-            <id>scala-tools.org</id>
-            <name>Scala-Tools Maven2 Repository</name>
-            <url>http://scala-tools.org/repo-releases</url>
-        </repository>
     </repositories>
 
     <pluginRepositories>
@@ -204,11 +199,6 @@
                 <enabled>true</enabled>
                 <updatePolicy>daily</updatePolicy>  <!-- Optional, update daily -->
             </snapshots>
-        </pluginRepository>
-        <pluginRepository>
-            <id>scala-tools.org</id>
-            <name>Scala-Tools Maven2 Repository</name>
-            <url>http://scala-tools.org/repo-releases</url>
         </pluginRepository>
     </pluginRepositories>
 
@@ -359,7 +349,7 @@
         <fbs.version>1.2.0-3f79e055</fbs.version>
         <threadly.version>4.10.0</threadly.version>
 
-        <flatbuffers.version>1.9.0</flatbuffers.version>
+        <flatbuffers.version>1.10.0</flatbuffers.version>
         <grpc.version>1.14.0</grpc.version>
         <javax.version>1.2</javax.version>
         <jaxb.version>2.3.0</jaxb.version>

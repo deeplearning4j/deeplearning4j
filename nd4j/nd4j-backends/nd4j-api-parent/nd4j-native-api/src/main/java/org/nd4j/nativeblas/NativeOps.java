@@ -1088,6 +1088,8 @@ public abstract class NativeOps extends Pointer {
 
     public abstract String getAllOperations();
 
+    public abstract int execCustomOp(PointerPointer extraPointers, long opHashCode, Pointer context);
+
     public abstract int execCustomOp(PointerPointer extraPointers, long opHashCode, PointerPointer inputBuffers, PointerPointer inputShapes, int numInput, PointerPointer outputBuffers, PointerPointer outputShapes, int numOutputs, DoublePointer tArgs, int numTArgs, @Cast("Nd4jLong *") LongPointer iArgs, int numIArgs, @Cast("bool *") BooleanPointer bArgs, int numBArgs, boolean isInplace);
 
     public abstract Pointer calculateOutputShapes(PointerPointer extraPointers, long hash, PointerPointer inputShapes, int numInputShapes, DoublePointer tArgs, int numTArgs, @Cast("Nd4jLong *") LongPointer iArgs, int numIArgs);
@@ -1126,6 +1128,12 @@ public abstract class NativeOps extends Pointer {
     // this method executes op that requires scope to be present: if/while/cond/whatever
     public abstract int execCustomOpWithScope(PointerPointer extraPointers, Pointer state, long opHash, long[] scopes, int numScopes, PointerPointer inputBuffers, PointerPointer inputShapes, int numInputs, PointerPointer outputBuffers, PointerPointer outputShapes, int numOutputs);
 
+    public abstract void scatterUpdate(PointerPointer extraPointers, int opCode, int numOfUpdates,
+                                       Pointer hX, @Cast("Nd4jLong *") LongPointer hXShapeInfo, @Cast("Nd4jLong *") LongPointer hxOffsets,
+                                       Pointer dX, @Cast("Nd4jLong *") LongPointer dXShapeInfo, @Cast("Nd4jLong *") LongPointer dxOffsets,
+                                       Pointer hY, @Cast("Nd4jLong *") LongPointer hYShapeInfo, @Cast("Nd4jLong *") LongPointer hyOffsets,
+                                       Pointer dY, @Cast("Nd4jLong *") LongPointer dYShapeInfo, @Cast("Nd4jLong *") LongPointer dyOffsets,
+                                       IntPointer hIndices, IntPointer dIndices);
 
     //public abstract void fillUtf8String(PointerPointer extraPointers, String[] string, int numStrings, Pointer buffer);
     public abstract Pointer createUtf8String(PointerPointer extraPointers, String string, int length);

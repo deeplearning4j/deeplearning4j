@@ -4,6 +4,7 @@ message("Starting up tests build")
 set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/../../cmake" ${CMAKE_MODULE_PATH})
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../lib/googletest-release-1.8.0 ${CMAKE_CURRENT_BINARY_DIR}/lib/googletest-release-1.8.0)
 set(gtest_SOURCE_DIR ../lib/googletest-release-1.8.0)
+add_definitions(-D__STANDALONE_BUILD__=true)
 
 include_directories(${gtest_SOURCE_DIR}/include ${gtest_SOURCE_DIR})
 include_directories(../../include ../../layers ../../include/helpers ../../include/array ../../include/exceptions ../../include/memory ../../include/loops ../../include/graph ../../include/ops ../../include/types ../../include/cnpy ../../blas)
@@ -38,6 +39,7 @@ elseif(WIN32)
 	endif()
 else()
     if ("${_RELEASE}" OR CMAKE_BUILD_TYPE STREQUAL "Release")
+        message("Release build for tests")
         set(CMAKE_CXX_FLAGS  "-O3 -fPIC -std=c++11 -fassociative-math -funsafe-math-optimizations")
         if(${CMAKE_SYSTEM_PROCESSOR} MATCHES "ppc64*")
             set(CMAKE_CXX_FLAGS " ${CMAKE_CXX_FLAGS} -mcpu=native")
@@ -49,10 +51,6 @@ else()
         if (NOT CUDA_BLAS)
             set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address")
         endif()
-    endif()
-
-    if (${F16C})
-        set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -mf16c -D__F16C__=true")
     endif()
 
     if (${F16C})
@@ -104,6 +102,14 @@ else()
     message("OPENMP NOT FOUND")
 endif()
 
+if ("${OPENBLAS}" OR CMAKE_BUILD_TYPE STREQUAL "Release")
+    find_package(BLAS)
+    if (BLAS_FOUND)
+        message("Found external BLAS implementation...")
+        add_definitions(-D__EXTERNAL_BLAS__=true)
+    endif()
+endif()
+
 file(GLOB_RECURSE EXCEPTIONS_SOURCES false ../../include/exceptions/*.cpp ../../include/exceptions/*.h)
 file(GLOB_RECURSE TYPES_SOURCES false ../../include/types/*.cpp ../../include/types/*.h)
 file(GLOB_RECURSE ARRAY_SOURCES false ../../include/array/*.cpp ../../include/array/*.h)
@@ -141,5 +147,5 @@ add_executable(runtests ${LOOPS_SOURCES} ../../blas/cpu/NativeOps.cpp ../../blas
     ${MEMORY_SOURCES} ${GRAPH_SOURCES} ${CUSTOMOPS_SOURCES} ${EXCEPTIONS_SOURCES} ${INDEXING_SOURCES} ${HELPERS_SOURCES}  ${CUSTOMOPS_HELPERS_SOURCES}
     ${OPS_SOURCES} ${TEST_SOURCES})
 
-target_link_libraries(runtests gtest gtest_main)
+target_link_libraries(runtests gtest gtest_main ${BLAS_LIBRARIES})
 

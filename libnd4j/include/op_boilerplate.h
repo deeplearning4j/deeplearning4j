@@ -1473,7 +1473,7 @@
 #define CHECK_STASH(NAME)   block.getStash()->checkStash(block.getNodeId(), NAME);
 #define UNSTASH(NAME)       block.getStash()->extractArray(block.getNodeId(), NAME);
 
-#define INPUT_VARIABLE(INDEX)     reinterpret_cast<nd4j::NDArray *>(block.getVariable(INDEX)->getNDArray())
+#define INPUT_VARIABLE(INDEX)     block.array(INDEX)
 #define OUTPUT_VARIABLE(INDEX)    reinterpret_cast<nd4j::NDArray *>(this->getZ(block, INDEX))
 
 #define INPUT_LIST(INDEX)     reinterpret_cast<nd4j::NDArrayList *>(block.getVariable(INDEX)->getNDArrayList())
@@ -1545,5 +1545,12 @@
 
 #define ILAMBDA_T(X, ...) [__VA_ARGS__] (Nd4jLong _idx, T X) -> T
 #define ILAMBDA_TT(X, Y, ...) [__VA_ARGS__] (Nd4jLong _idx, T X, T Y) -> T
+
+// stuff for benchmarks
+#define GENERATE_XYZ() [&] (ResultSet &x, ResultSet &y, ResultSet &z)
+#define GENERATE_XZ() [&] (ResultSet &x, ResultSet &z)
+
+#define PARAMETRIC_XYZ() [&] (Parameters &p, ResultSet &x, ResultSet &y, ResultSet &z)
+#define PARAMETRIC_XZ() [&] (Parameters &p, ResultSet &x, ResultSet &z)
 
 #endif

@@ -37,78 +37,69 @@ nd4j::NDArray* nd4j::MmulHelper::tensorDot(const nd4j::NDArray* A, const nd4j::N
 
 //////////////////////////////////////////////////////////////////////////
 nd4j::NDArray* nd4j::MmulHelper::tensorDot(const nd4j::NDArray* a, const nd4j::NDArray* b, const std::vector<int>& axes_0, const std::vector<int>& axes_1) {
+
     std::vector<int> permutAt, permutBt;
     std::vector<Nd4jLong> shapeAt, shapeBt;        
+
     auto outShape = ShapeUtils::evalShapeForTensorDot(a, b, axes_0, axes_1, permutAt, permutBt, shapeAt, shapeBt);
-    NDArray* aPR(const_cast<NDArray*>(a)), *bPR(const_cast<NDArray*>(b));
-    aPR = a->permute(permutAt);        
-    bPR = b->permute(permutBt);
+
+    NDArray* aPR = a->permute(permutAt);
+    NDArray* bPR = b->permute(permutBt);
     
     // check whether reshape is necessary
-    if(!aPR->isSameShape(shapeAt)) {
-        if(aPR == a)
-            aPR = a->reshape('c', shapeAt);
-        else 
-            aPR->reshapei('c', shapeAt);
-    }
-    if(!bPR->isSameShape(shapeBt)) {
-        if(bPR == b)
-            bPR = b->reshape('c', shapeBt);
-        else 
-            bPR->reshapei('c', shapeBt);                
-    }
+    if(!aPR->isSameShape(shapeAt))
+        aPR->reshapei('c', shapeAt);
+    if(!bPR->isSameShape(shapeBt))
+        bPR->reshapei('c', shapeBt);
+
     NDArray* c = mmul(aPR, bPR, nullptr, 1.0, 0.0);
+
     c->reshapei('c', outShape);
-    
-    if(aPR != a)
-        delete aPR;        
-    if(bPR != b)
-        delete bPR;
+
+    delete aPR;
+    delete bPR;
+
     return c;
 }
 
 
 //////////////////////////////////////////////////////////////////////////
 void nd4j::MmulHelper::tensorDot(const nd4j::NDArray* a, const nd4j::NDArray* b, nd4j::NDArray* c, const std::vector<int>& axes_a, const std::vector<int>& axes_b, const std::vector<int>& permutForC) {
+
     std::vector<int> permutAt, permutBt;
     std::vector<Nd4jLong> shapeAt, shapeBt;
-    auto outShape = ShapeUtils::evalShapeForTensorDot(a, b, axes_a, axes_b, permutAt, permutBt, shapeAt, shapeBt);
-    NDArray *aPR(const_cast<NDArray*>(a)), *bPR(const_cast<NDArray*>(b)), *cP(c), *cPR(c);
+    ShapeUtils::evalShapeForTensorDot(a, b, axes_a, axes_b, permutAt, permutBt, shapeAt, shapeBt);
+
+    NDArray *cP(c), *cPR(c);
+
     // check whether permutation is required
     if(!permutForC.empty())
-        cP = c->permute(permutForC);            
-    
-    aPR = a->permute(permutAt);        
-    bPR = b->permute(permutBt);    
-    // check whether reshape is necessary        
-    if(!aPR->isSameShape(shapeAt)) {
-        if(aPR == a)
-            aPR = a->reshape('c', shapeAt);
-        else 
-            aPR->reshapei('c', shapeAt);
-    }
-    if(!bPR->isSameShape(shapeBt)) {
-        if(bPR == b)
-            bPR = b->reshape('c', shapeBt);
-        else 
-            bPR->reshapei('c', shapeBt);                
-    }
+        cP = c->permute(permutForC);
+
+    auto aPR = a->permute(permutAt);
+    auto bPR = b->permute(permutBt);
+
+    // check whether reshape is necessary
+    if(!aPR->isSameShape(shapeAt))
+            aPR->reshapei(shapeAt);
+    if(!bPR->isSameShape(shapeBt))
+            bPR->reshapei(shapeBt);
+
     if(!cP->isSameShape({aPR->sizeAt(0), bPR->sizeAt(1)}))
-        cPR = cP->reshape('c', {aPR->sizeAt(0), bPR->sizeAt(1)});
+        cPR = cP->reshape(cP->ordering(), {aPR->sizeAt(0), bPR->sizeAt(1)});
             
     mmul(aPR, bPR, cPR, 1.0, 0.0);
-    if(cPR->getBuffer() != cP->getBuffer())                     // this means both permute and reshape have been performed on c, cP always points on c->getBuffer()
-        cP->assign(cPR);                        
+    if(cPR->getBuffer() != cP->getBuffer())          // this means both permute and reshape have been performed on c, cP always points on c->getBuffer()
+        cP->assign(cPR);
     
     if(cPR != c)
         delete cPR;
-    if(aPR != a)
-        delete aPR;        
-    if(bPR != b)
-        delete bPR;
     if(cP != c)
         delete cP;
+    delete aPR;
+    delete bPR;
 }
+
 
 #ifndef __JAVACPP_HACK__
 //////////////////////////////////////////////////////////////////////////
@@ -341,6 +332,11 @@ nd4j::NDArray* MmulHelper::mmul(const nd4j::NDArray* A, const nd4j::NDArray* B, 
         if(zT != z)
             delete zT;
     }
+
+BUILD_TRIPLE_TEMPLATE(template void usualGemm, (const char cOrder, const bool transA, const bool transB, const int M, const int N, const int K, const double alpha, const void* A, const int lda, const void* B, const int ldb, const double beta, void* C, const int ldc), LIBND4J_TYPES, FLOAT_TYPES, FLOAT_TYPES);
+BUILD_TRIPLE_TEMPLATE(template void usualGemv, (const char aOrder, const int M, const int N, const double alpha, const void* A, const int lda, const void* B, const int incx, const double beta, void* C, const int incy), LIBND4J_TYPES, FLOAT_TYPES, FLOAT_TYPES);
+BUILD_TRIPLE_TEMPLATE(template void usualDot,  (const Nd4jLong length, const double alpha, const void* vX, const Nd4jLong incx, const void* vY, const Nd4jLong incy, const double beta, void* vZ), LIBND4J_TYPES, FLOAT_TYPES, FLOAT_TYPES);
+
 }
 
 #endif

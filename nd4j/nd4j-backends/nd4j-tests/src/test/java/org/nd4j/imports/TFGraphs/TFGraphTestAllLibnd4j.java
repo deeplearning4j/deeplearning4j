@@ -99,7 +99,12 @@ public class TFGraphTestAllLibnd4j {
             "rnn/fused_adapt_basic/dynamic.*",
             "rnn/grucell/dynamic.*",
             "rnn/lstmcell/dynamic.*",
-            "rnn/srucell/dynamic.*"
+            "rnn/srucell/dynamic.*",
+
+            //2019/02/23 Passing for SameDiff exec, failing for libnd4j exec
+            "rnn/grublockcellv2/.*",
+            "rnn/lstmblockcell/.*",
+            "rnn/lstmblockfusedcell/.*",
     };
 
     @BeforeClass

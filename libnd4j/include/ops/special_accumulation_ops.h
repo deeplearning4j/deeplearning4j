@@ -33,6 +33,7 @@ namespace simdOps {
     public:
         static const bool requiresSpecialAccumulation = true;
 
+        constexpr static functions::ReduceType reduceType = functions::ReduceType::SUM;
 
         op_def static T startingValue(T *input) {
             return (T) 0.0f;
@@ -151,7 +152,8 @@ namespace simdOps {
             shape::TAD *tad = nullptr;
 
             if (tadOnlyShapeInfo == nullptr || tadOffsets == nullptr) {
-                tad = new shape::TAD(xShapeInfo, dimension, dimensionLength);
+                tad = new shape::TAD();
+                tad->init(xShapeInfo, dimension, dimensionLength);
                 tad->createTadOnlyShapeInfo();
                 tad->createOffsets();
 

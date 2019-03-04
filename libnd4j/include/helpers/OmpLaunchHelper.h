@@ -46,8 +46,8 @@ class OmpLaunchHelper {
         static int betterThreads(Nd4jLong N, int maxThreads);
 
         int _numThreads;
-		int _itersPerThread;
-		int _remainder;
+		unsigned int _itersPerThread;
+        unsigned int _remainder;
 };
 
 ////////////////////////////////////////////////////////////////////////////////

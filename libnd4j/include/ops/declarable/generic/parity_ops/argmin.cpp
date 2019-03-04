@@ -77,7 +77,8 @@ namespace nd4j {
                 return SHAPELIST(ShapeBuilders::createScalarShapeInfo(block.workspace()));
             }
 
-            shape::TAD tad(inputShape->at(0), dims.data(), dims.size());
+            shape::TAD tad;
+            tad.init(inputShape->at(0), dims.data(), dims.size());
             tad.createTadOnlyShapeInfo();
 
             Nd4jLong tadLength = shape::tadLength(inputShape->at(0), dims.data(), dims.size());

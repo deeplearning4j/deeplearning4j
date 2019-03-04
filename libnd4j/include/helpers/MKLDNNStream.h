@@ -21,6 +21,10 @@
 #ifndef LIBND4J_MKLDNNSTREAM_H
 #define LIBND4J_MKLDNNSTREAM_H
 
+#ifndef __STANDALONE_BUILD__
+#include "config.h"
+#endif
+
 #ifdef HAVE_MKLDNN
 #include <mkldnn.hpp>
 

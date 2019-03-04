@@ -45,7 +45,8 @@ namespace nd4j {
 
             int opNum = block.opNum() < 0 ? this->_opNum : block.opNum();
 
-            shape::TAD tad(x->shapeInfo(), dims.data(), dims.size());
+            shape::TAD tad;
+            tad.init(x->shapeInfo(), dims.data(), dims.size());
             tad.createTadOnlyShapeInfo();
             tad.createOffsets();
             Nd4jLong tadLen = shape::length(tad.tadOnlyShapeInfo);
@@ -63,7 +64,8 @@ namespace nd4j {
                         z->buffer(), z->shapeInfo(), z->specialBuffer(), z->specialShapeInfo(), pDims, dims.size(), pTadShape, pTadOffsets, pTadShape, pTadOffsets);
             else {
                 // this is rare, but possible use case - X and Z might have different shapes/strides/orders. In this case we prepare and pass separate TAD info
-                shape::TAD tadZ(z->shapeInfo(), dims.data(), dims.size());
+                shape::TAD tadZ;
+                tadZ.init(z->shapeInfo(), dims.data(), dims.size());
                 tadZ.createTadOnlyShapeInfo();
                 tadZ.createOffsets();
 

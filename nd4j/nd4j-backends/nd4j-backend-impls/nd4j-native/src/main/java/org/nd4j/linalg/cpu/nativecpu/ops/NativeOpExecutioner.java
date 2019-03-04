@@ -42,6 +42,7 @@ import org.nd4j.linalg.api.ops.aggregates.Aggregate;
 import org.nd4j.linalg.api.ops.aggregates.Batch;
 import org.nd4j.linalg.api.ops.executioner.DefaultOpExecutioner;
 import org.nd4j.linalg.api.ops.executioner.OpStatus;
+import org.nd4j.linalg.api.ops.impl.scatter.ScatterUpdate;
 import org.nd4j.linalg.api.ops.impl.summarystats.Variance;
 import org.nd4j.linalg.api.ops.impl.transforms.any.IsMax;
 import org.nd4j.linalg.api.ops.performance.PerformanceTracker;
@@ -2010,5 +2011,34 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
     @Override
     public boolean isExperimentalMode() {
         return experimentalMode.get();
+    }
+
+    @Override
+    public void scatterUpdate(ScatterUpdate.UpdateOp op, @NonNull INDArray array, @NonNull INDArray indices, @NonNull INDArray updates, @NonNull int[] axis) {
+        val tadX = tadManager.getTADOnlyShapeInfo(array, axis);
+        val tadY = tadManager.getTADOnlyShapeInfo(updates, axis);
+
+        if (tadY.getSecond().length() != indices.length())
+            throw new IllegalStateException("Number of updates doesn't match number of indices. Bad dimensions used?");
+
+        loop.scatterUpdate(null, op.ordinal(), (int) indices.length(),
+                array.data().addressPointer(), (LongPointer) tadX.getFirst().addressPointer(), (LongPointer) tadX.getSecond().addressPointer(), null, null, null,
+                updates.data().addressPointer(), (LongPointer) tadY.getFirst().addressPointer(), (LongPointer) tadY.getSecond().addressPointer(), null, null, null,
+                (IntPointer) indices.data().addressPointer(), null);
+    }
+
+    @Override
+    public OpContext buildContext() {
+        return new CpuOpContext();
+    }
+
+    @Override
+    public INDArray[] exec(CustomOp op, @NonNull OpContext context) {
+        loop.execCustomOp(null, op.opHash(), context.contextPointer());
+
+        if (context.getOutputArrays().isEmpty())
+            return new INDArray[0];
+        else
+            return context.getOutputArrays().toArray(new INDArray[context.getOutputArrays().size()]);
     }
 }

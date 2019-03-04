@@ -128,6 +128,9 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         //Infer mask array from labels. Mask array is 1_i^B in YOLO paper - i.e., whether an object is present in that
         // grid location or not. Here: we are using the fact that class labels are one-hot, and assume that values are
         // all 0s if no class label is present
+        Preconditions.checkState(labels.rank() == 4, "Expected labels array to be rank 4 with shape [minibatch, 4+numClasses, H, W]. Got labels array with shape %ndShape", labels);
+        Preconditions.checkState(labels.size(1) > 0, "Invalid labels array: labels.size(1) must be > 4. labels array should be rank 4 with shape [minibatch, 4+numClasses, H, W]. Got labels array with shape %ndShape", labels);
+
         val size1 = labels.size(1);
         INDArray classLabels = labels.get(all(), interval(4,size1), all(), all());   //Shape: [minibatch, nClasses, H, W]
         INDArray maskObjectPresent = classLabels.sum(Nd4j.createUninitialized(nhw, 'c'), 1);//.castTo(DataType.BOOL); //Shape: [minibatch, H, W]
@@ -168,7 +171,7 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         //Exponential for w/h (for: boxPrior * exp(input))      ->      Predicted WH in grid units (0 to 13 usually)
         INDArray predictedWHPreExp = input5.get(all(), all(), interval(2,4), all(), all());
         INDArray predictedWH = Transforms.exp(predictedWHPreExp, true);
-        Broadcast.mul(predictedWH, layerConf().getBoundingBoxes(), predictedWH, 1, 2);  //Box priors: [b, 2]; predictedWH: [mb, b, 2, h, w]
+        Broadcast.mul(predictedWH, layerConf().getBoundingBoxes().castTo(predictedWH.dataType()), predictedWH, 1, 2);  //Box priors: [b, 2]; predictedWH: [mb, b, 2, h, w]
 
         //Apply sqrt to W/H in preparation for loss function
         INDArray predictedWHSqrt = Transforms.sqrt(predictedWH, true);
@@ -433,8 +436,8 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         int gridW = (int) labelTL.size(3);
         //Add grid positions to the predicted XY values (to get predicted XY in terms of grid cell units in image,
         // from (0 to 1 in grid cell) format)
-        INDArray linspaceX = Nd4j.linspace(0, gridW-1, gridW);
-        INDArray linspaceY = Nd4j.linspace(0, gridH-1, gridH);
+        INDArray linspaceX = Nd4j.linspace(0, gridW-1, gridW, Nd4j.dataType());
+        INDArray linspaceY = Nd4j.linspace(0, gridH-1, gridH, Nd4j.dataType());
         INDArray grid = Nd4j.createUninitialized(new int[]{2, gridH, gridW}, 'c');
         INDArray gridX = grid.get(point(0), all(), all());
         INDArray gridY = grid.get(point(1), all(), all());

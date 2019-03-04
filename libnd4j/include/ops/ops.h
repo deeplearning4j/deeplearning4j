@@ -24,8 +24,9 @@
 #include <vector>
 #include <Environment.h>
 #include <loops/summarystatsreduce.h>
+#include <loops/ReduceType.h>
 
-#define MIN 1e-12
+#define MIN_V 1e-12
 #define MAX_FLOAT 1e37
 #define MIN_FLOAT 1e-37
 #define MAX_INT 2147483647
@@ -78,17 +79,39 @@
 #define SELU_LAMBDA 1.0507009873554804934193349852946
 
 #ifdef _OPENMP
-#pragma omp declare reduction(maxT : float,double,float16,bfloat16 :              \
+#pragma omp declare reduction(maxTF : float,double,float16,bfloat16 :              \
                 omp_out = nd4j::math::nd4j_max(omp_in, omp_out) )\
                 initializer (omp_priv=-MAX_FLOAT)
 
-#pragma omp declare reduction(minT : float,double,float16,bfloat16 :              \
+#pragma omp declare reduction(minTF : float,double,float16,bfloat16 :              \
                 omp_out = nd4j::math::nd4j_min(omp_in, omp_out) )\
                 initializer (omp_priv=MAX_FLOAT)
+
+#pragma omp declare reduction(maxT : float,double,float16,bfloat16,int,Nd4jLong,Nd4jULong,int8_t,uint8_t,bool,int16_t,uint16_t,uint32_t :              \
+                omp_out = nd4j::math::nd4j_max(omp_in, omp_out) )\
+                initializer (omp_priv=0)
+
+#pragma omp declare reduction(minT : float,double,float16,bfloat16,int,Nd4jLong,Nd4jULong,int8_t,uint8_t,bool,int16_t,uint16_t,uint32_t :              \
+                omp_out = nd4j::math::nd4j_min(omp_in, omp_out) )\
+                initializer (omp_priv=0)
+
+#pragma omp declare reduction(amaxT : float,double,float16,bfloat16,int,Nd4jLong,Nd4jULong,int8_t,uint8_t,bool,int16_t,uint16_t,uint32_t :              \
+                omp_out = nd4j::math::nd4j_max(nd4j::math::nd4j_abs(omp_in), nd4j::math::nd4j_abs(omp_out)) )
+
+#pragma omp declare reduction(aminT : float,double,float16,bfloat16,int,Nd4jLong,Nd4jULong,int8_t,uint8_t,bool,int16_t,uint16_t,uint32_t :              \
+                omp_out = nd4j::math::nd4j_min(nd4j::math::nd4j_abs(omp_in), nd4j::math::nd4j_abs(omp_out)) )
+
+#pragma omp declare reduction(asumT : float,double,float16,bfloat16,int,Nd4jLong,Nd4jULong,int8_t,uint8_t,bool,int16_t,uint16_t,uint32_t :              \
+                omp_out = nd4j::math::nd4j_abs(omp_in) + nd4j::math::nd4j_abs(omp_out))\
+                initializer (omp_priv=0)
 
 #pragma omp declare reduction(sumT : float,double,float16,bfloat16,int,Nd4jLong,Nd4jULong,int8_t,uint8_t,bool,int16_t,uint16_t,uint32_t :              \
                 omp_out = omp_in + omp_out)\
                 initializer (omp_priv=0)
+
+#pragma omp declare reduction(prodT : float,double,float16,bfloat16,int,Nd4jLong,Nd4jULong,int8_t,uint8_t,bool,int16_t,uint16_t,uint32_t :              \
+                omp_out = omp_in * omp_out)\
+                initializer (omp_priv=1)
 #endif
 
 
@@ -837,7 +860,7 @@ namespace simdOps {
 	    op_def static Z op(X d1, X d2) {
             X diff = d1 - d2;
             X absDiff = nd4j::math::nd4j_abs<X>(diff);
-            if (absDiff <= static_cast<X>(MIN))
+            if (absDiff <= static_cast<X>(MIN_V))
                 return static_cast<Z>(1);
             return static_cast<Z>(0);
 	    }
@@ -1502,8 +1525,8 @@ namespace simdOps {
 			X _v = (X) d2;
 			if (d1 > _v)
 				return _v;
-			else if (d1 < _v)
-				return _v;
+			else if (d1 < -_v)
+				return -_v;
 			else return d1;
 		}
 	};
@@ -2385,7 +2408,39 @@ namespace simdOps {
 		}
 	};
 
+    template <typename X>
+    class ReduceSameBenchmarkOp {
+    public:
+        no_op_exec_special_accumulation_same
+        no_op_exec_special_accumulation_same_cuda
 
+        const static functions::ReduceType reduceType = functions::ReduceType::SUM;
+
+        op_def static X startingValue(const X *input) {
+            return static_cast<X>(0.0f);
+        }
+
+        op_def static X merge(X old, X opOutput, X *extraParams) {
+            return opOutput + old;
+        }
+
+        op_def static X update(X old, X opOutput, X *extraParams) {
+            return opOutput + old;
+        }
+
+        op_def static X op(X d1, X *extraParams) {
+            auto f1 = static_cast<float>(d1);
+            return static_cast<X>(nd4j::math::nd4j_pow<float,float,float>(f1, 3)
+                   + nd4j::math::nd4j_log<float,float>(f1) * nd4j::math::nd4j_sin<float,float>(f1)
+                     / nd4j::math::nd4j_tanh<float,float>(static_cast<float>(M_E) * static_cast<float>(M_PI) * f1)
+                     * nd4j::math::nd4j_sqrt<float,float>(static_cast<float>(M_PI) / f1)
+                   - nd4j::math::nd4j_atan<float,float>(static_cast<float>(M_E) / f1));
+        }
+
+        op_def static X postProcess(X reduction, Nd4jLong n, X *extraParams) {
+            return reduction;
+        }
+    };
 
 
     template <typename X, typename Z>
@@ -2393,6 +2448,8 @@ namespace simdOps {
     public:
         no_op_exec_special_accumulation
         no_op_exec_special_accumulation_cuda
+
+        const static functions::ReduceType reduceType = functions::ReduceType::SUM;
 
         op_def static X startingValue(const X *input) {
             return static_cast<X>(0);
@@ -2422,6 +2479,8 @@ namespace simdOps {
         no_op_exec_special_accumulation
         no_op_exec_special_accumulation_cuda
 
+        const static functions::ReduceType reduceType = functions::ReduceType::SUM;
+
         op_def static X startingValue(const X *input) {
             return static_cast<X>(0);
         }
@@ -2449,6 +2508,8 @@ namespace simdOps {
     public:
         no_op_exec_special_accumulation
         no_op_exec_special_accumulation_cuda
+
+        const static functions::ReduceType reduceType = functions::ReduceType::SUM;
 
         op_def static X startingValue(const X *input) {
             return static_cast<X>(0);
@@ -2478,6 +2539,8 @@ namespace simdOps {
         no_op_exec_special_accumulation_same
         no_op_exec_special_accumulation_same_cuda
 
+        const static functions::ReduceType reduceType = functions::ReduceType::ASUM;
+
         op_def static X startingValue(const X *input) {
             return static_cast<X>(0);
         }
@@ -2505,6 +2568,8 @@ namespace simdOps {
     public:
         no_op_exec_special_accumulation_long
         no_op_exec_special_accumulation_cuda
+
+        const static functions::ReduceType reduceType = functions::ReduceType::ASUM;
 
         op_def static Z startingValue(const X *input) {
             return static_cast<Z>(0);
@@ -2534,6 +2599,8 @@ namespace simdOps {
         no_op_exec_special_accumulation_long
         no_op_exec_special_accumulation_cuda
 
+        const static functions::ReduceType reduceType = functions::ReduceType::SUM;
+
         op_def static Z startingValue(const X *input) {
             return static_cast<Z>(0.0f);
         }
@@ -2560,6 +2627,8 @@ namespace simdOps {
 	public:
         no_op_exec_special_accumulation_same
         no_op_exec_special_accumulation_same_cuda
+
+        const static functions::ReduceType reduceType = functions::ReduceType::PRODUCT;
 
 		op_def static X startingValue(const X *input) {
 			return static_cast<X>(1);
@@ -2589,6 +2658,8 @@ namespace simdOps {
 		no_op_exec_special_accumulation
 		no_op_exec_special_accumulation_cuda
 
+        const static functions::ReduceType reduceType = functions::ReduceType::SUM;
+
 		op_def static X startingValue(const X *input) {
 			return static_cast<X>(0.0f);
 		}
@@ -2617,6 +2688,8 @@ namespace simdOps {
         no_op_exec_special_accumulation
         no_op_exec_special_accumulation_cuda
 
+        const static functions::ReduceType reduceType = functions::ReduceType::PRODUCT;
+
         op_def static X startingValue(const X *input) {
             return static_cast<X>(1);
         }
@@ -2644,6 +2717,8 @@ namespace simdOps {
         no_op_exec_special_accumulation
         no_op_exec_special_accumulation_cuda
 
+        const static functions::ReduceType reduceType = functions::ReduceType::SUM;
+
 		op_def static X startingValue(const X *input) {
 			return static_cast<X>(0);
 		}
@@ -2665,12 +2740,48 @@ namespace simdOps {
 		}
 	};
 
+    template <typename X, typename Z>
+    class ReduceFloatBenchmarkOp {
+    public:
+        no_op_exec_special_accumulation
+        no_op_exec_special_accumulation_cuda
+
+        const static functions::ReduceType reduceType = functions::ReduceType::SUM;
+
+        op_def static X startingValue(const X *input) {
+            return static_cast<X>(0);
+        }
+
+        op_def static Z merge(X old, X opOutput, Z *extraParams) {
+            return opOutput + old;
+        }
+
+        op_def static Z update(X old, X opOutput, Z *extraParams) {
+            return opOutput + old;
+        }
+
+        op_def static Z op(X d1, Z *extraParams) {
+            auto f1 = static_cast<float>(d1);
+            return static_cast<Z>(nd4j::math::nd4j_pow<float,float,float>(f1, 3)
+                    + nd4j::math::nd4j_log<float,float>(f1) * nd4j::math::nd4j_sin<float,float>(f1)
+                    / nd4j::math::nd4j_tanh<float,float>(static_cast<float>(M_E) * static_cast<float>(M_PI) * f1)
+                    * nd4j::math::nd4j_sqrt<float,float>(static_cast<float>(M_PI) / f1)
+                    - nd4j::math::nd4j_atan<float,float>(static_cast<float>(M_E) / f1));
+        }
+
+        op_def static Z postProcess(X reduction, Nd4jLong n, Z *extraParams) {
+            return (Z) reduction / (Z) n;
+        }
+    };
+
 
     template <typename X, typename Z>
     class AMean {
     public:
         no_op_exec_special_accumulation
         no_op_exec_special_accumulation_cuda
+
+        const static functions::ReduceType reduceType = functions::ReduceType::SUM;
 
         op_def static X startingValue(const X *input) {
             return static_cast<X>(0);
@@ -2681,7 +2792,7 @@ namespace simdOps {
         }
 
         op_def static X update(X old, X opOutput, Z *extraParams) {
-            return nd4j::math::nd4j_abs<X>(opOutput) + nd4j::math::nd4j_abs<X>(old);
+            return opOutput + old;
         }
 
         op_def static Z op(X d1, Z *extraParams) {
@@ -2698,6 +2809,8 @@ namespace simdOps {
 	public:
         no_op_exec_special_accumulation_same
         no_op_exec_special_accumulation_same_cuda
+
+        const static functions::ReduceType reduceType = functions::ReduceType::MAX;
 
 		op_def static X startingValue(const X *input) {
 			return input[0];
@@ -2798,6 +2911,8 @@ namespace simdOps {
         no_op_exec_special_accumulation_same
         no_op_exec_special_accumulation_same_cuda
 
+        const static functions::ReduceType reduceType = functions::ReduceType::AMAX;
+
         op_def static X startingValue(const X *input) {
             return input[0];
         }
@@ -2835,6 +2950,8 @@ namespace simdOps {
         no_op_exec_special_accumulation_same
         no_op_exec_special_accumulation_same_cuda
 
+        const static functions::ReduceType reduceType = functions::ReduceType::AMIN;
+
 		op_def static X startingValue(const X *input) {
 			return input[0];
 		}
@@ -2870,6 +2987,8 @@ namespace simdOps {
     public:
         no_op_exec_special_accumulation_same
         no_op_exec_special_accumulation_same_cuda
+
+        const static functions::ReduceType reduceType = functions::ReduceType::MIN;
 
         op_def static X startingValue(const X *input) {
             return input[0];
@@ -2908,6 +3027,8 @@ namespace simdOps {
         no_op_exec_special_accumulation
         no_op_exec_special_accumulation_cuda
 
+        const static functions::ReduceType reduceType = functions::ReduceType::SUM;
+
 		op_def static X startingValue(const X *input) {
 			return static_cast<X>(0);
 		}
@@ -2938,6 +3059,8 @@ namespace simdOps {
         no_op_exec_special_accumulation
         no_op_exec_special_accumulation_cuda
 
+        const static functions::ReduceType reduceType = functions::ReduceType::SUM;
+
 		op_def static X startingValue(const X *input) {
 			return static_cast<X>(0);
 		}
@@ -2967,6 +3090,8 @@ namespace simdOps {
         no_op_exec_special_accumulation
         no_op_exec_special_accumulation_cuda
 
+        const static functions::ReduceType reduceType = functions::ReduceType::SUM;
+
 		op_def static X startingValue(const X *input) {
 			return static_cast<X>(0);
 		}
@@ -2994,6 +3119,8 @@ namespace simdOps {
 	public:
         no_op_exec_special_accumulation
         no_op_exec_special_accumulation_cuda
+
+        const static functions::ReduceType reduceType = functions::ReduceType::SUM;
 
 		op_def static X startingValue(const X *input) {
 			return static_cast<X>(0);
@@ -3024,6 +3151,8 @@ namespace simdOps {
         no_op_exec_special_accumulation
         no_op_exec_special_accumulation_cuda
 
+        const static functions::ReduceType reduceType = functions::ReduceType::SUM;
+
 		op_def static X startingValue(const X *input) {
 			return static_cast<X>(0);
 		}
@@ -3050,6 +3179,8 @@ namespace simdOps {
 	public:
         no_op_exec_special_accumulation
         no_op_exec_special_accumulation_cuda
+
+        const static functions::ReduceType reduceType = functions::ReduceType::SUM;
 
 		op_def static X startingValue(const X *input) {
 			return static_cast<X>(0);
@@ -3079,6 +3210,8 @@ namespace simdOps {
 	public:
         no_op_exec_special_accumulation
         no_op_exec_special_accumulation_cuda
+
+        const static functions::ReduceType reduceType = functions::ReduceType::SUM;
 
 		op_def static X startingValue(const X *input) {
 			return static_cast<X>(0.0f);
@@ -3114,6 +3247,8 @@ namespace simdOps {
 	public:
         no_op_exec_special_accumulation
         no_op_exec_special_accumulation_cuda
+
+        const static functions::ReduceType reduceType = functions::ReduceType::SUM;
 
 		op_def static X startingValue(const X *input) {
 			return static_cast<X>(0.0f);

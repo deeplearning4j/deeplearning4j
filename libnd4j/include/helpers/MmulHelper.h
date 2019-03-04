@@ -27,20 +27,20 @@ namespace nd4j {
     class MmulHelper {
 
     private:
-        
-        // multiptication N-dimensions tensor on other N-dimensions one        
+
+        // multiptication N-dimensions tensor on other N-dimensions one
         static nd4j::NDArray* mmulNxN(const nd4j::NDArray* A, const nd4j::NDArray* B, nd4j::NDArray* C, const double alpha = 1.0, const double beta = 0.0, const char outOrder = 'f');
 
         // dot product of vectors (X * Y) = Z[0]
         static nd4j::NDArray* dot(const nd4j::NDArray* X, const nd4j::NDArray* Y, nd4j::NDArray* Z, const double alpha = 1.0, const double beta = 0.0);
 
-        // multiptication Matrix to Matrix        
+        // multiptication Matrix to Matrix
         static nd4j::NDArray* mmulMxM(const nd4j::NDArray* A, const nd4j::NDArray* B, nd4j::NDArray* C, double alpha = 1.0, double beta = 0.0, const char outOrder = 'f');
 
-        // multiptication Matrix to vector        
+        // multiptication Matrix to vector
         static nd4j::NDArray* mmulMxV(const nd4j::NDArray* A, const nd4j::NDArray* B, nd4j::NDArray* C, double alpha = 1.0, double beta = 0.0, const char outOrder = 'f');
-                
-    public:                
+
+    public:
 
         static nd4j::NDArray* mmul(const nd4j::NDArray* A, const nd4j::NDArray* B, nd4j::NDArray* C = nullptr, const double alpha = 1.0, const double beta = 0.0, const char outOrder = 'f');
 
@@ -49,6 +49,7 @@ namespace nd4j {
         static nd4j::NDArray* tensorDot(const nd4j::NDArray* A, const nd4j::NDArray* B, const std::vector<int>& axesA, const std::vector<int>& axesB);
 
         static void tensorDot(const nd4j::NDArray* a, const nd4j::NDArray* b, nd4j::NDArray* c, const std::vector<int>& axes_a, const std::vector<int>& axes_b, const std::vector<int>& permutForC = {});
+
 
 #ifndef __JAVACPP_HACK__
         /**

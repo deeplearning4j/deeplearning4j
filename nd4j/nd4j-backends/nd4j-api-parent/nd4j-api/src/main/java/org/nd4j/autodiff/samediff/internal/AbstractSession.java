@@ -185,10 +185,16 @@ public abstract class AbstractSession<T, O> {
                 }
                 if(missingCount <= 10){
                     sb.append(". Missing variables: ");
+                    sb.append(missing);
                 } else {
                     sb.append(". First 10 missing variables: ");
+                    Iterator<String> iter = missing.iterator();
+                    for( int i=0; i<10 && iter.hasNext(); i++ ){
+                        if(i > 0)
+                            sb.append(",");
+                        sb.append(iter.next());
+                    }
                 }
-                sb.append(missing);
                 String s = sb.toString();
                 throw new IllegalStateException(s);
             }

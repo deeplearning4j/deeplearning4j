@@ -133,6 +133,7 @@ public class TrainingConfig {
         private List<String> dataSetFeatureMaskMapping;
         private List<String> dataSetLabelMaskMapping;
         private List<String> trainableParams;   //Will be inferred automatically if null
+        private boolean skipValidation = false;
 
         /**
          * Set the updater (such as {@link org.nd4j.linalg.learning.config.Adam}, {@link org.nd4j.linalg.learning.config.Nesterovs}
@@ -342,12 +343,19 @@ public class TrainingConfig {
             return this;
         }
 
+        public Builder skipBuilderValidation(boolean skip){
+            this.skipValidation = skip;
+            return this;
+        }
+
         public TrainingConfig build(){
-            Preconditions.checkState(updater != null, "Updater (optimizer) must not be null. Use updater(IUpdater) to set an updater");
-            Preconditions.checkState(dataSetFeatureMapping != null, "No DataSet feature mapping has been provided. A " +
-                    "mapping between DataSet array positions and variables/placeholders must be provided - use  dateSetFeatureMapping(...) to set this");
-            Preconditions.checkState(dataSetLabelMapping != null, "No DataSet label mapping has been provided. A " +
-                    "mapping between DataSet array positions and variables/placeholders must be provided - use  dateSetLabelMapping(...) to set this");
+            if(!skipValidation) {
+                Preconditions.checkState(updater != null, "Updater (optimizer) must not be null. Use updater(IUpdater) to set an updater");
+                Preconditions.checkState(dataSetFeatureMapping != null, "No DataSet feature mapping has been provided. A " +
+                        "mapping between DataSet array positions and variables/placeholders must be provided - use  dateSetFeatureMapping(...) to set this");
+                Preconditions.checkState(dataSetLabelMapping != null, "No DataSet label mapping has been provided. A " +
+                        "mapping between DataSet array positions and variables/placeholders must be provided - use  dateSetLabelMapping(...) to set this");
+            }
 
             return new TrainingConfig(updater, regularization, minimize, dataSetFeatureMapping, dataSetLabelMapping,
                     dataSetFeatureMaskMapping, dataSetLabelMaskMapping, trainableParams);

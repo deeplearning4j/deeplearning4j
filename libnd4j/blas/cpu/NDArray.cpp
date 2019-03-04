@@ -1132,7 +1132,7 @@ NDArray::NDArray(const char order, const std::vector<Nd4jLong> &shape, nd4j::Dat
 
 
     template<typename T>
-    void NDArray::applyPairwiseLambda(NDArray* other, const std::function<T(T, T)>& func, NDArray* target) {
+    void NDArray::applyPairwiseLambda(const NDArray* other, const std::function<T(T, T)>& func, NDArray* target) {
         if (target == nullptr)
             target = this;
 
@@ -1184,16 +1184,16 @@ NDArray::NDArray(const char order, const std::vector<Nd4jLong> &shape, nd4j::Dat
             }
         }
     }
-    template void NDArray::applyPairwiseLambda(NDArray* other, const std::function<double (double, double)>& func, NDArray* target);
-    template void NDArray::applyPairwiseLambda(NDArray* other, const std::function<float (float, float)>& func, NDArray* target);
-    template void NDArray::applyPairwiseLambda(NDArray* other, const std::function<float16 (float16, float16)>& func, NDArray* target);
-    template void NDArray::applyPairwiseLambda(NDArray* other, const std::function<bfloat16 (bfloat16, bfloat16)>& func, NDArray* target);
-    template void NDArray::applyPairwiseLambda(NDArray* other, const std::function<Nd4jLong (Nd4jLong, Nd4jLong)>& func, NDArray* target);
-    template void NDArray::applyPairwiseLambda(NDArray* other, const std::function<int (int, int)>& func, NDArray* target);
-    template void NDArray::applyPairwiseLambda(NDArray* other, const std::function<int16_t (int16_t, int16_t)>& func, NDArray* target);
-    template void NDArray::applyPairwiseLambda(NDArray* other, const std::function<uint8_t (uint8_t, uint8_t)>& func, NDArray* target);
-    template void NDArray::applyPairwiseLambda(NDArray* other, const std::function<int8_t (int8_t, int8_t)>& func, NDArray* target);
-    template void NDArray::applyPairwiseLambda(NDArray* other, const std::function<bool (bool, bool)>& func, NDArray* target);
+    template void NDArray::applyPairwiseLambda(const NDArray* other, const std::function<double (double, double)>& func, NDArray* target);
+    template void NDArray::applyPairwiseLambda(const NDArray* other, const std::function<float (float, float)>& func, NDArray* target);
+    template void NDArray::applyPairwiseLambda(const NDArray* other, const std::function<float16 (float16, float16)>& func, NDArray* target);
+    template void NDArray::applyPairwiseLambda(const NDArray* other, const std::function<bfloat16 (bfloat16, bfloat16)>& func, NDArray* target);
+    template void NDArray::applyPairwiseLambda(const NDArray* other, const std::function<Nd4jLong (Nd4jLong, Nd4jLong)>& func, NDArray* target);
+    template void NDArray::applyPairwiseLambda(const NDArray* other, const std::function<int (int, int)>& func, NDArray* target);
+    template void NDArray::applyPairwiseLambda(const NDArray* other, const std::function<int16_t (int16_t, int16_t)>& func, NDArray* target);
+    template void NDArray::applyPairwiseLambda(const NDArray* other, const std::function<uint8_t (uint8_t, uint8_t)>& func, NDArray* target);
+    template void NDArray::applyPairwiseLambda(const NDArray* other, const std::function<int8_t (int8_t, int8_t)>& func, NDArray* target);
+    template void NDArray::applyPairwiseLambda(const NDArray* other, const std::function<bool (bool, bool)>& func, NDArray* target);
 
 
 ////////////////////////////////////////////////////////////////////////
@@ -1931,7 +1931,8 @@ void NDArray::reduceAlongDimension(nd4j::reduce::FloatOps op, NDArray* target, c
         //target->_buffer[0] = functions::reduce::ReduceFloatFunction<T>::template execScalar<OpName>(_buffer, _shapeInfo, extras);
         NativeOpExecutioner::execReduceFloatScalar(_context, op, this->getBuffer(), this->getShapeInfo(), this->getSpecialBuffer(), this->getSpecialShapeInfo(), nullptr, target->buffer(), target->shapeInfo(), target->specialBuffer(), target->specialShapeInfo());
     else {
-        shape::TAD tad(_shapeInfo, copy.data(), copy.size());
+        shape::TAD tad;
+        tad.init(_shapeInfo, copy.data(), copy.size());
         tad.createTadOnlyShapeInfo();
         tad.createOffsets();
 
@@ -1960,7 +1961,8 @@ void NDArray::reduceAlongDimension(nd4j::reduce::SameOps op, NDArray* target, co
         //target->_buffer[0] = functions::reduce::ReduceFloatFunction<T>::template execScalar<OpName>(_buffer, _shapeInfo, extras);
         NativeOpExecutioner::execReduceSameScalar(_context, op, this->getBuffer(), this->getShapeInfo(), this->getSpecialBuffer(), this->getSpecialShapeInfo(), nullptr, target->buffer(), target->shapeInfo(), target->specialBuffer(), target->specialShapeInfo());
     else {
-        shape::TAD tad(_shapeInfo, copy.data(), copy.size());
+        shape::TAD tad;
+        tad.init(_shapeInfo, copy.data(), copy.size());
         tad.createTadOnlyShapeInfo();
         tad.createOffsets();
 
@@ -1989,7 +1991,8 @@ void NDArray::reduceAlongDimension(nd4j::reduce::BoolOps op, NDArray* target, co
         //target->_buffer[0] = functions::reduce::ReduceFloatFunction<T>::template execScalar<OpName>(_buffer, _shapeInfo, extras);
         NativeOpExecutioner::execReduceBoolScalar(_context, op, this->getBuffer(), this->getShapeInfo(), this->getSpecialBuffer(), this->getSpecialShapeInfo(), nullptr, target->buffer(), target->shapeInfo(), target->specialBuffer(), target->specialShapeInfo());
     else {
-        shape::TAD tad(_shapeInfo, copy.data(), copy.size());
+        shape::TAD tad;
+        tad.init(_shapeInfo, copy.data(), copy.size());
         tad.createTadOnlyShapeInfo();
         tad.createOffsets();
 
@@ -2018,7 +2021,8 @@ void NDArray::reduceAlongDimension(nd4j::reduce::LongOps op, NDArray* target, co
         //target->_buffer[0] = functions::reduce::ReduceFloatFunction<T>::template execScalar<OpName>(_buffer, _shapeInfo, extras);
         NativeOpExecutioner::execReduceLongScalar(_context, op, this->getBuffer(), this->getShapeInfo(), this->getSpecialBuffer(), this->getSpecialShapeInfo(), nullptr, target->buffer(), target->shapeInfo(), target->specialBuffer(), target->specialShapeInfo());
     else {
-        shape::TAD tad(_shapeInfo, copy.data(), copy.size());
+        shape::TAD tad;
+        tad.init(_shapeInfo, copy.data(), copy.size());
         tad.createTadOnlyShapeInfo();
         tad.createOffsets();
 
@@ -2147,7 +2151,8 @@ void NDArray::reduceAlongDimension(nd4j::reduce::LongOps op, NDArray* target, co
         if (index >= numTads)
             throw std::runtime_error("Can't get index higher than total number of TADs");
 
-        shape::TAD tad(this->_shapeInfo, copy.data(), copy.size());
+        shape::TAD tad;
+        tad.init(this->_shapeInfo, copy.data(), copy.size());
         tad.createTadOnlyShapeInfo();
         tad.createOffsets();
 
@@ -2228,7 +2233,8 @@ NDArray NDArray::e(const Nd4jLong i) const {
 
         int dimension[1] = {1};
 
-        std::unique_ptr<shape::TAD> tad(new shape::TAD(_shapeInfo, dimension, 1));
+        std::unique_ptr<shape::TAD> tad(new shape::TAD());
+        tad->init(_shapeInfo, dimension, 1);
         tad->createTadOnlyShapeInfo();
         tad->createOffsets();
 
@@ -2247,7 +2253,8 @@ NDArray NDArray::e(const Nd4jLong i) const {
 
         int dimension[1] = {1};
 
-        std::unique_ptr<shape::TAD> tad(new shape::TAD(_shapeInfo, dimension, 1));
+        std::unique_ptr<shape::TAD> tad(new shape::TAD());
+        tad->init(_shapeInfo, dimension, 1);
         tad->createTadOnlyShapeInfo();
         tad->createOffsets();
 
@@ -2266,7 +2273,8 @@ NDArray NDArray::e(const Nd4jLong i) const {
 
         int dimension[1] = {1};
 
-        std::unique_ptr<shape::TAD> tad(new shape::TAD(_shapeInfo, dimension, 1));
+        std::unique_ptr<shape::TAD> tad(new shape::TAD());
+        tad->init(_shapeInfo, dimension, 1);
         tad->createTadOnlyShapeInfo();
         tad->createOffsets();
 
@@ -2287,7 +2295,8 @@ NDArray NDArray::e(const Nd4jLong i) const {
 
         int dimension[1] = {1};
 
-        std::unique_ptr<shape::TAD> tad(new shape::TAD(_shapeInfo, dimension, 1));
+        std::unique_ptr<shape::TAD> tad(new shape::TAD());
+        tad->init(_shapeInfo, dimension, 1);
         tad->createTadOnlyShapeInfo();
         tad->createOffsets();
 
@@ -2306,7 +2315,8 @@ NDArray NDArray::e(const Nd4jLong i) const {
 
         int dimension[1] = {1};
 
-        std::unique_ptr<shape::TAD> tad(new shape::TAD(_shapeInfo, dimension, 1));
+        std::unique_ptr<shape::TAD> tad(new shape::TAD());
+        tad->init(_shapeInfo, dimension, 1);
         tad->createTadOnlyShapeInfo();
         tad->createOffsets();
 
@@ -2324,7 +2334,8 @@ NDArray NDArray::e(const Nd4jLong i) const {
 
         int dimension[1] = {0};
 
-        std::unique_ptr<shape::TAD> tad(new shape::TAD(_shapeInfo, dimension, 1));
+        std::unique_ptr<shape::TAD> tad(new shape::TAD());
+        tad->init(_shapeInfo, dimension, 1);
         tad->createTadOnlyShapeInfo();
         tad->createOffsets();
 
@@ -2341,7 +2352,8 @@ NDArray NDArray::e(const Nd4jLong i) const {
 
         int dimension[1] = {0};
 
-        std::unique_ptr<shape::TAD> tad(new shape::TAD(_shapeInfo, dimension, 1));
+        std::unique_ptr<shape::TAD> tad(new shape::TAD());
+        tad->init(_shapeInfo, dimension, 1);
         tad->createTadOnlyShapeInfo();
         tad->createOffsets();
 
@@ -2358,7 +2370,8 @@ NDArray NDArray::e(const Nd4jLong i) const {
 
         int dimension[1] = {0};
 
-        std::unique_ptr<shape::TAD> tad(new shape::TAD(_shapeInfo, dimension, 1));
+        std::unique_ptr<shape::TAD> tad(new shape::TAD());
+        tad->init(_shapeInfo, dimension, 1);
         tad->createTadOnlyShapeInfo();
         tad->createOffsets();
 

@@ -435,6 +435,16 @@ public class DifferentialFunctionFactory {
         return deconv2D.outputVariable();
     }
 
+    public SDVariable deconv3d(SDVariable input, SDVariable weights, SDVariable bias, DeConv3DConfig config) {
+        DeConv3D d = new DeConv3D(sameDiff(), input, weights, bias, config);
+        return d.outputVariable();
+    }
+
+    public SDVariable[] deconv3dDerivative(SDVariable input, SDVariable weights, SDVariable bias, SDVariable grad, DeConv3DConfig config) {
+        DeConv3DDerivative d = new DeConv3DDerivative(sameDiff(), input, weights, bias, grad, config);
+        return d.outputVariables();
+    }
+
     /**
      * Conv3d operation.
      *
@@ -1127,8 +1137,12 @@ public class DifferentialFunctionFactory {
         return new SwishDerivative(sameDiff(), iX, false).outputVariable();
     }
 
-    public SDVariable geluDerivative(SDVariable iX) {
-        return new GELUDerivative(sameDiff(), iX, false).outputVariable();
+    public SDVariable gelu(SDVariable iX, boolean precise) {
+        return new GELU(sameDiff(), iX, false, precise).outputVariable();
+    }
+
+    public SDVariable geluDerivative(SDVariable iX, boolean precise) {
+        return new GELUDerivative(sameDiff(), iX, false, precise).outputVariable();
     }
 
     public SDVariable sign(SDVariable iX) {

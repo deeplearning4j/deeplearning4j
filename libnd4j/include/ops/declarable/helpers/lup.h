@@ -34,6 +34,7 @@ namespace helpers {
 
     int inverse(graph::LaunchContext* context, NDArray* input, NDArray* output);
 
+    bool checkCholeskyInput(NDArray const* input);
     int cholesky(graph::LaunchContext* context, NDArray* input, NDArray* output, bool inplace = false);
 }
 }

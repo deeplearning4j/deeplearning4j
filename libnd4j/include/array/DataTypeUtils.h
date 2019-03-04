@@ -30,6 +30,7 @@
 #include <Environment.h>
 #include <ArrayOptions.h> 
 #include <templatemath.h>
+#include <shape.h>
 #include <helpers/logger.h>
 
 namespace nd4j {
@@ -77,6 +78,9 @@ namespace nd4j {
 
         template <typename T1, typename T2>
         FORCEINLINE static std::vector<T2> convertVector(const std::vector<T1> &vector);
+
+        template <typename T>
+        FORCEINLINE static bool castShapeInfo(const Nd4jLong *originalShapeInfo, T *newShapeInfo);
     };
 
 
@@ -313,6 +317,20 @@ FORCEINLINE std::string DataTypeUtils::asString(DataType dataType) {
         default:
             throw new std::runtime_error("Unknown data type used");
     }
+}
+
+
+template <typename T>
+FORCEINLINE bool DataTypeUtils::castShapeInfo(const Nd4jLong *originalShapeInfo, T *newShapeInfo) {
+    
+    for (int e = 0; e < shape::shapeInfoLength(originalShapeInfo); e++) {
+        if (originalShapeInfo[e] < static_cast<Nd4jLong>(DataTypeUtils::max<T>())) {
+            newShapeInfo[e] = static_cast<T>(originalShapeInfo[e]);
+        } else
+            return false;
+    }
+
+    return true;
 }
 
 ///////////////////////////////////////////////////////////////////

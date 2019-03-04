@@ -95,9 +95,9 @@ public class CompareTrainingImplementations extends BaseDL4JTest {
                 SDVariable b1 = sd.zero("b1", 1, 3);
 
                 SDVariable z0 = in.mmul(w0).add(b0);
-                SDVariable a0 = sd.tanh(z0);
+                SDVariable a0 = sd.nn().tanh(z0);
                 SDVariable z1 = a0.mmul(w1).add("prediction", b1);
-                SDVariable a1 = sd.softmax("softmax", z1);
+                SDVariable a1 = sd.nn().softmax("softmax", z1);
 
                 SDVariable diff = sd.f().squaredDifference(a1, label);
                 SDVariable lossMse = diff.mean();

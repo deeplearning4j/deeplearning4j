@@ -110,7 +110,7 @@ namespace helpers {
         *b = bb + m;
     }
 
-    void _adjust_saturation(graph::LaunchContext* context, NDArray *input, NDArray *output, NDArray *delta, bool isNHWC);
+    void adjust_saturation(graph::LaunchContext* context, NDArray *input, NDArray *output, NDArray *delta, bool isNHWC);
 }
 }
 }

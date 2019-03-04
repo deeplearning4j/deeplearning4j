@@ -657,7 +657,7 @@ TEST_F(NDArrayTest2, Test_toIndexedString_1) {
 TEST_F(NDArrayTest2, permute_test4) {
             
     Nd4jLong arr1ShapeInfo[] = {6, 1, 1, 4, 3, 2, 2,    48, 48, 12, 4,  2,  1, 8192, 1,  99};
-    Nd4jLong arr2ShapeInfo[] = {6, 1, 2, 2, 1, 4, 3,    48, 2,  1,  48, 12, 4, 8192, -1, 99};
+    Nd4jLong arr2ShapeInfo[] = {6, 1, 2, 2, 1, 4, 3,    48, 2,  1,  48, 12, 4, 8192, 0, 99};
 
 
     auto arr1Buffer = new float[786432];
@@ -840,3 +840,12 @@ TEST_F(NDArrayTest2, scalar_set_test2) {
     ASSERT_TRUE(exp.equalsTo(arr));
 }
 
+TEST_F(NDArrayTest2, big_dup_test) {
+    auto arr = NDArrayFactory::linspace<float>(1.0f, 10000000.0f, 100000000);
+    auto dup = arr->dup('c');
+
+    ASSERT_EQ(*arr, *dup);
+
+    delete arr;
+    delete dup;
+}

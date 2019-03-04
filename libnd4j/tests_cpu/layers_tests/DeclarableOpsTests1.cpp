@@ -268,11 +268,7 @@ TEST_F(DeclarableOpsTests1, TestTensorDot3) {
         reinterpret_cast<float*>(y->getBuffer())[i] = i + 1;
     }
 
-    auto exp = NDArrayFactory::create_<float>('f', {2, 2});
-    // exp->p(0, 1090.0);
-    // exp->p(1, 2818.0);
-    // exp->p(2, 1168.0);
-    // exp->p(3, 3040.0);
+    auto exp = NDArrayFactory::create_<float>('f', {2, 2});   
     reinterpret_cast<float*>(exp->getBuffer())[0] = 1090.0;
     reinterpret_cast<float*>(exp->getBuffer())[1] = 2818.0;
     reinterpret_cast<float*>(exp->getBuffer())[2] = 1168.0;
@@ -297,7 +293,7 @@ TEST_F(DeclarableOpsTests1, TestTensorDot3) {
 
     auto z = variableSpace->getVariable(1)->getNDArray();
 
-    //z->printBuffer("Result: ");
+    // z->printIndexedBuffer("Result: ");
 
     ASSERT_TRUE(exp->equalsTo(z));
 
@@ -1928,7 +1924,7 @@ TEST_F(DeclarableOpsTests1, Transpose2) {
 TEST_F(DeclarableOpsTests1, Permute1) {
 
     Nd4jLong shapeX[]   = {3, 5, 10, 15, 150, 15, 1, 0, 1, 99};
-    Nd4jLong shapeExp[] = {3, 15, 5, 10, 1, 150, 15, 0, -1, 99};
+    Nd4jLong shapeExp[] = {3, 15, 5, 10, 1, 150, 15, 0, 0, 99};
     const std::vector<int> perm = {2, 0, 1};
     ArrayOptions::setDataType(shapeX, nd4j::DataType::FLOAT32);
     ArrayOptions::setDataType(shapeExp, nd4j::DataType::FLOAT32);
@@ -1960,7 +1956,7 @@ TEST_F(DeclarableOpsTests1, Permute1) {
 TEST_F(DeclarableOpsTests1, Permute2) {      
 
     Nd4jLong shapeX[]   = {3, 5, 10, 15, 150, 15, 1, 0, 1, 99};
-    Nd4jLong shapeExp[] = {3, 15, 5, 10, 1, 150, 15, 0, -1, 99};
+    Nd4jLong shapeExp[] = {3, 15, 5, 10, 1, 150, 15, 0, 0, 99};
     const std::vector<int> perm = {2, 0, 1};
 
     ArrayOptions::setDataType(shapeX, nd4j::DataType::FLOAT32);

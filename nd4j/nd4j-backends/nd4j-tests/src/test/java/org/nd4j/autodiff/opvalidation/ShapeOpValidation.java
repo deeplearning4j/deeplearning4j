@@ -505,21 +505,21 @@ public class ShapeOpValidation extends BaseOpValidation {
                     switch (t) {
                         case 0:
                             name = "mergeAdd";
-                            merge = sd.mergeAdd(arr);
+                            merge = sd.math().mergeAdd(arr);
                             for( int i=1; i<numArrays; i++ ){
                                 exp.addi(arr[i].getArr().dup());
                             }
                             break;
                         case 1:
                             name = "mergeMax";
-                            merge = sd.mergeMax(arr);
+                            merge = sd.math().mergeMax(arr);
                             for( int i=1; i<numArrays; i++ ){
                                 exp = Transforms.max(exp, arr[i].getArr(), true);
                             }
                             break;
                         case 2:
                             name = "mergeAvg";
-                            merge = sd.mergeAvg(arr);
+                            merge = sd.math().mergeAvg(arr);
                             for( int i=1; i<numArrays; i++ ){
                                 exp.addi(arr[i].getArr().dup());
                             }
@@ -698,7 +698,7 @@ public class ShapeOpValidation extends BaseOpValidation {
                     }
 
                     //for gradient check, need to combine to single scalar output...
-                    SDVariable merged = sd.mergeAvg(unstacked);
+                    SDVariable merged = sd.math().mergeAvg(unstacked);
 
                     if (ArrayUtil.prodLong(stackedShape) == 1 || ArrayUtil.prodLong(shape) == 1) {
                         SDVariable loss = sd.sum("loss", merged);
@@ -1385,7 +1385,7 @@ public class ShapeOpValidation extends BaseOpValidation {
                 names.add("meshgrid-" + i);
             }
 
-            SDVariable[] meshgrid = sd.meshgrid(names, false, arr);
+            SDVariable[] meshgrid = sd.math().meshgrid(names, false, arr);
 
             TestCase tc = new TestCase(sd);
 
@@ -1850,19 +1850,19 @@ public class ShapeOpValidation extends BaseOpValidation {
             SDVariable dist;
             switch (s){
                 case "euclidean":
-                    dist = sd.euclideanDistance(s, ySd, xSd, 0);
+                    dist = sd.math().euclideanDistance(s, ySd, xSd, 0);
                     break;
                 case "manhattan":
-                    dist = sd.manhattanDistance(s, ySd, xSd, 0);
+                    dist = sd.math().manhattanDistance(s, ySd, xSd, 0);
                     break;
                 case "cosinesim":
-                    dist = sd.cosineSimilarity(s, ySd, xSd, 0);
+                    dist = sd.math().cosineSimilarity(s, ySd, xSd, 0);
                     break;
                 case "cosinedist":
-                    dist = sd.cosineDistance(s, ySd, xSd, 0);
+                    dist = sd.math().cosineDistance(s, ySd, xSd, 0);
                     break;
                 case "jaccard":
-                    dist = sd.jaccardDistance(s, ySd, xSd, 0);
+                    dist = sd.math().jaccardDistance(s, ySd, xSd, 0);
                     break;
                 default:
                     throw new RuntimeException();

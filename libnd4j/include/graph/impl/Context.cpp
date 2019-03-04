@@ -99,9 +99,14 @@ namespace nd4j {
             this->_iArgs.clear();
             this->_tArgs.clear();
             this->_inputs.clear();
+            this->_fastpath_in.clear();
+            this->_fastpath_out.clear();
 #ifdef HAVE_MKLDNN
             this->_mkldnnStreams.clear();
 #endif
+
+            for (auto v:_handles)
+                delete v;
         }
 
         bool Context::hasWorkspaceProvided() {
@@ -121,6 +126,18 @@ namespace nd4j {
 
         void Context::forgetWorkspace() {
             _workspace = nullptr;
+        }
+
+        std::vector<NDArray*>& Context::fastpath_in() {
+            return _fastpath_in;
+        }
+
+        std::vector<NDArray*>& Context::fastpath_out() {
+            return _fastpath_out;
+        }
+
+        bool Context::isFastPath() {
+            return !_fastpath_in.empty();
         }
 
         VariableSpace *Context::getVariableSpace() {
@@ -322,6 +339,20 @@ namespace nd4j {
             return false;
         }
 
+        NDArray* Context::getNDArray(int idx) {
+            return array(idx);
+        }
+
+        NDArray* Context::array(int idx) {
+            // we check for fastpath first
+            if (!_fastpath_in.empty() && _fastpath_in.size() > idx) {
+                return _fastpath_in[idx];
+            }
+
+            // if no luck for fastpath - return whatever is available
+            return getVariable(idx)->getNDArray();
+        }
+
         nd4j::memory::Workspace *Context::fWorkspace() {
             return workspace();
         }
@@ -337,6 +368,75 @@ namespace nd4j {
         LaunchContext* Context::launchContext() {
             //FIXME: we need proper context to be shared here
             return LaunchContext::defaultContext();
+        }
+
+        unsigned long Context::width() {
+            if (!_fastpath_in.empty())
+                return _fastpath_in.size();
+            else
+                return _inputs.size();
+        }
+
+        void Context::setInputArray(int index, NDArray *array, bool removable) {
+            if (_fastpath_in.size() < index + 1)
+                _fastpath_in.resize(index+1);
+
+            _fastpath_in[index] = array;
+            if (removable)
+                _handles.emplace_back(array);
+        }
+
+        void Context::setInputArray(int index, void *buffer, void *shapeInfo, void *specialBuffer, void *specialShapeInfo) {
+            auto array = new NDArray(buffer, reinterpret_cast<Nd4jLong *>(shapeInfo));
+            array->triggerAllocationFlag(false, false);
+
+            if (_fastpath_in.size() < index + 1)
+                _fastpath_in.resize(index+1);
+
+            _fastpath_in[index] = array;
+            _handles.emplace_back(array);
+        }
+
+        void Context::setOutputArray(int index, NDArray *array, bool removable) {
+            if (_fastpath_out.size() < index + 1)
+                _fastpath_out.resize(index+1);
+
+            _fastpath_out[index] = array;
+
+            if (removable)
+                _handles.emplace_back(array);
+        }
+
+        void Context::setOutputArray(int index, void *buffer, void *shapeInfo, void *specialBuffer, void *specialShapeInfo) {
+            if (_fastpath_out.size() < index + 1)
+                _fastpath_out.resize(index+1);
+
+            auto array = new NDArray(buffer, reinterpret_cast<Nd4jLong *>(shapeInfo));
+            array->triggerAllocationFlag(false, false);
+
+            _fastpath_out[index] = array;
+            _handles.emplace_back(array);
+        }
+
+        void Context::setTArguments(double *arguments, int numberOfArguments) {
+            _tArgs.clear();
+            _tArgs.reserve(numberOfArguments);
+            for (int e = 0; e < numberOfArguments; e++)
+                _tArgs.push_back(arguments[e]);
+        }
+
+        void Context::setIArguments(Nd4jLong *arguments, int numberOfArguments) {
+            _iArgs.clear();
+            _iArgs.reserve(numberOfArguments);
+            for (int e = 0; e < numberOfArguments; e++)
+                _iArgs.push_back(arguments[e]);
+        }
+
+        void Context::setBArguments(bool *arguments, int numberOfArguments) {
+            _bArgs.clear();
+            _bArgs.reserve(numberOfArguments);
+            for (int e = 0; e < numberOfArguments; e++)
+                _bArgs.push_back(arguments[e]);
         }
     }
 }

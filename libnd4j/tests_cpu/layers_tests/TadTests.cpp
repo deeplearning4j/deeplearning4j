@@ -55,7 +55,8 @@ TEST_F(TadTests, Test4DTad1) {
 
 
     int dim = 1;
-    shape::TAD tad(arrayBad->getShapeInfo(), &dim, 1);
+    shape::TAD tad;
+    tad.init(arrayBad->getShapeInfo(), &dim, 1);
     tad.createTadOnlyShapeInfo();
     tad.createOffsets();
 
@@ -97,7 +98,8 @@ TEST_F(TadTests, TestShapeTad_1) {
     Nd4jLong tadLength = shape::tadLength(input.getShapeInfo(), dimensions.data(), dimensions.size());
     Nd4jLong numTads = input.lengthOf() / tadLength;
     
-    shape::TAD tad(input.getShapeInfo(), dimensions.data(), dimensions.size());
+    shape::TAD tad;
+    tad.init(input.getShapeInfo(), dimensions.data(), dimensions.size());
     tad.createTadOnlyShapeInfo();
     tad.createOffsets();
 
@@ -117,7 +119,8 @@ TEST_F(TadTests, TestShapeTad_1) {
 TEST_F(TadTests, TadNoAxis_1) {
     auto array = NDArrayFactory::create<float>('c', {2, 3});
 
-    shape::TAD tad(array.shapeInfo(), nullptr, 0);
+    shape::TAD tad;
+    tad.init(array.shapeInfo(), nullptr, 0);
     tad.createTadOnlyShapeInfo();
     tad.createOffsets();
 
@@ -165,12 +168,58 @@ TEST_F(TadTests, TadEdgeCase_2) {
     delete tad;
 }
 
+
+TEST_F(TadTests, test_Tad_Ews_optimization_1) {
+    shape::TAD xTad;
+
+    std::array<int,2> array = {1,2};
+    ASSERT_TRUE(xTad.dimensionsDescending(3, array.data(), array.size()));
+}
+
+TEST_F(TadTests, test_Tad_Ews_optimization_2) {
+    shape::TAD xTad;
+
+    std::array<int,2> array = {0,2};
+    ASSERT_FALSE(xTad.dimensionsDescending(3, array.data(), array.size()));
+}
+
+TEST_F(TadTests, test_Tad_Ews_optimization_3) {
+    shape::TAD xTad;
+
+    std::array<int,1> array = {1};
+    ASSERT_TRUE(xTad.dimensionsDescending(2, array.data(), array.size()));
+}
+
+TEST_F(TadTests, test_Tad_Ews_optimization_4) {
+    shape::TAD xTad;
+
+    std::array<int,1> array = {0};
+    ASSERT_TRUE(xTad.dimensionsDescending(1, array.data(), array.size()));
+}
+
+TEST_F(TadTests, test_Tad_Ews_optimization_5) {
+    shape::TAD xTad;
+
+    std::array<int,2> array = {2,3};
+    ASSERT_TRUE(xTad.dimensionsDescending(4, array.data(), array.size()));
+}
+
+TEST_F(TadTests, test_TAD_empty_dims_1) {
+    Nd4jLong xShape[8] = {2, 150, 1, 3, 1, 16384, 3, 99};
+    shape::TAD xTad;
+    xTad.init(xShape, reinterpret_cast<int*>(112L), 0);
+    xTad.createTadOnlyShapeInfo();
+    xTad.createOffsets();
+    nd4j_printf("numTads: %i\n", (int) xTad.numTads);
+    shape::printShapeInfoLinear("TAD shape", xTad.tadOnlyShapeInfo);
+}
+
 /////////////////////////////////////////////////////////////////
 TEST_F(TadTests, outerArrayIndexes_1) {
 
     NDArray x('c', {2,3,4,5}, nd4j::DataType::FLOAT32);
     Nd4jLong maxIdxs[120];
-    
+
     NDArray y1('c', {3,5}, nd4j::DataType::FLOAT32);
     const std::vector<int> dimsToExclude1 = {0,2};
     const int n1[] = {20,25,30,35,  80,85,90,95};
@@ -286,7 +335,7 @@ TEST_F(TadTests, outerArrayIndexes_1) {
     const int n12[] = {0,2,4,5,7,9,10,12,14,15,17,19,60,62,64,65,67,69,70,72,74,75,77,79};
     minIdx = 0;
 
-    N = shape::outerArrayIndexes(maxIdxs, minIdx, x.getShapeInfo(), y12.getShapeInfo(), dimsToExclude12.data());    
+    N = shape::outerArrayIndexes(maxIdxs, minIdx, x.getShapeInfo(), y12.getShapeInfo(), dimsToExclude12.data());
     for(int i = 0; i < N; ++i)
         ASSERT_TRUE(n12[i] == maxIdxs[i]);
 
@@ -299,7 +348,7 @@ TEST_F(TadTests, outerArrayIndexes_1) {
     for(int i = 0; i < N; ++i)
         ASSERT_TRUE(n13[i] == maxIdxs[i]);
 
-    NDArray y14('c', {4,5}, nd4j::DataType::FLOAT32);    
+    NDArray y14('c', {4,5}, nd4j::DataType::FLOAT32);
     const int n14[] = {12,32,52,  72,92,112};
     minIdx = 12;
 
@@ -308,15 +357,15 @@ TEST_F(TadTests, outerArrayIndexes_1) {
     for(int i = 0; i < N; ++i)
         ASSERT_TRUE(n14[i] == maxIdxs[i]);
 
-    NDArray y15('c', {3,4,5}, nd4j::DataType::FLOAT32);    
+    NDArray y15('c', {3,4,5}, nd4j::DataType::FLOAT32);
     const int n15[] = {11, 71};
     minIdx = 11;
 
     N = shape::outerArrayIndexes(maxIdxs, minIdx, x.getShapeInfo(), y15.getShapeInfo(), nullptr);
     ASSERT_TRUE(N == x.lengthOf()/y15.lengthOf());
     for(int i = 0; i < N; ++i)
-        ASSERT_TRUE(n15[i] == maxIdxs[i]);    
-}    
+        ASSERT_TRUE(n15[i] == maxIdxs[i]);
+}
 
 
 

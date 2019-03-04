@@ -71,6 +71,7 @@ public class WordVectorSerializerTest {
     public TemporaryFolder testDir = new TemporaryFolder();
 
     private File textFile, binaryFile, textFile2;
+    private File fastTextRaw, fastTextZip, fastTextGzip;
     String pathToWriteto;
 
     private Logger logger = LoggerFactory.getLogger(WordVectorSerializerTest.class);
@@ -87,6 +88,19 @@ public class WordVectorSerializerTest {
         }
         pathToWriteto = new ClassPathResource("word2vecserialization/testing_word2vec_serialization.txt").getFile()
                         .getAbsolutePath();
+        if (fastTextRaw == null) {
+            fastTextRaw = new ClassPathResource("word2vecserialization/fast_text.vec").getFile();
+        }
+        if (fastTextZip == null) {
+            File dir = testDir.newFolder();
+            fastTextZip = new File(dir, "fast_text.vec.zip");
+            FileUtils.copyFile(new ClassPathResource("word2vecserialization/fast_text.vec.zip").getFile(), fastTextZip);
+        }
+        if (fastTextGzip == null) {
+            File dir = testDir.newFolder();
+            fastTextGzip = new File(dir, "fast_text.vec.gz");
+            FileUtils.copyFile(new ClassPathResource("word2vecserialization/fast_text.vec.gz").getFile(), fastTextGzip);
+        }
         FileUtils.deleteDirectory(new File("word2vec-index"));
     }
 
@@ -585,6 +599,21 @@ public class WordVectorSerializerTest {
         assertEquals(arrayLive, arrayStatic);
     }
 
+    @Test
+    public void testStaticLoaderFromStream() throws Exception {
+
+        logger.info("Executor name: {}", Nd4j.getExecutioner().getClass().getSimpleName());
+
+        WordVectors vectorsLive = WordVectorSerializer.readWord2VecModel(binaryFile);
+        WordVectors vectorsStatic = WordVectorSerializer.loadStaticModel(new FileInputStream(binaryFile));
+
+        INDArray arrayLive = vectorsLive.getWordVectorMatrix("Morgan_Freeman");
+        INDArray arrayStatic = vectorsStatic.getWordVectorMatrix("Morgan_Freeman");
+
+        assertNotEquals(null, arrayLive);
+        assertEquals(arrayLive, arrayStatic);
+    }
+
     /**
      * This method tests CSV file loading as static model
      *
@@ -802,4 +831,20 @@ public class WordVectorSerializerTest {
         assertEquals(wordB, WordVectorSerializer.decodeB64(wordB));
 
     }
+
+    @Test
+    public void testFastText() {
+
+        File[] files = {fastTextRaw, fastTextZip, fastTextGzip};
+        for (File file : files) {
+            try {
+                Word2Vec word2Vec = WordVectorSerializer.readAsCsv(file);
+                assertEquals(99,  word2Vec.getVocab().numWords());
+
+            } catch (Exception e) {
+                fail("Failure for input file " + file.getAbsolutePath() + " " + e.getMessage());
+            }
+        }
+    }
+
 }

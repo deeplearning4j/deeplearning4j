@@ -179,7 +179,7 @@ namespace randomOps {
 
                         if (prob <= cumProb || f == yLength - 1) {
                             z[e * zEWS] = x[f * xEWS];
-                            f += yLength;
+                            break;
                         }
                     }
                 }
@@ -201,9 +201,9 @@ namespace randomOps {
 
                         if (prob <= cumProb || f == yLength - 1) {                        
                             
-                            Nd4jLong xOffset2 = shape::getIndexOffset(f, xShapeBuffer, xLength);
+                            auto xOffset2 = shape::getIndexOffset(f, xShapeBuffer, xLength);
                             z[zOffset2] = x[xOffset2];
-                            f += yLength;
+                            break;
                         }
                     }
                 }

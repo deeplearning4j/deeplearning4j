@@ -249,7 +249,7 @@ public class Nd4jTest extends BaseNd4jTest {
 
     @Test
     public void testNumpyWrite() throws Exception {
-        INDArray linspace = Nd4j.linspace(1,4,4);
+        INDArray linspace = Nd4j.linspace(1,4,4, Nd4j.dataType());
         File tmpFile = new File(System.getProperty("java.io.tmpdir"),"nd4j-numpy-tmp-" + UUID.randomUUID().toString() + ".bin");
         tmpFile.deleteOnExit();
         Nd4j.writeAsNumpy(linspace,tmpFile);
@@ -261,7 +261,7 @@ public class Nd4jTest extends BaseNd4jTest {
 
     @Test
     public void testNpyByteArray() throws Exception {
-        INDArray linspace = Nd4j.linspace(1,4,4);
+        INDArray linspace = Nd4j.linspace(1,4,4, Nd4j.dataType());
         byte[] bytes = Nd4j.toNpyByteArray(linspace);
         INDArray fromNpy = Nd4j.createNpyFromByteArray(bytes);
         assertEquals(linspace,fromNpy);

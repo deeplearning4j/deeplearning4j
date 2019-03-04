@@ -270,26 +270,11 @@ Nd4jLong* ShapeUtils::evalReduceShapeInfo(const char order, std::vector<int>& di
 
 
     //////////////////////////////////////////////////////////////////////////
-// evaluate shapeInfo of permuted array
+    // evaluate shapeInfo of permuted array
     Nd4jLong* ShapeUtils::evalPermShapeInfo(const Nd4jLong *dimensions, const int rank, const NDArray& arr, nd4j::memory::Workspace* workspace) {
 
-        if (!arr.nonNull())
-            throw std::runtime_error("ShapeUtils::evalPermShapeInfo static method: wrong arguments in pn/termute method: either array is nullptr!");
-
-        if (rank != arr.rankOf())
-            throw std::runtime_error("ShapeUtils::evalPermShapeInfo static method: wrong arguments in pn/termute method: rank is not suitable!");
-
-        auto shapeInfoLength = shape::shapeInfoLength(rank);
-        // allocate memory for new array - shapeInfo
-
-        Nd4jLong *shapeInfoNew = nullptr;
-        ALLOCATE(shapeInfoNew, workspace, shapeInfoLength, Nd4jLong);
-        // copy arr _shapeInfo into new array
-        memcpy(shapeInfoNew, arr.getShapeInfo(), shape::shapeInfoByteLength(rank));
-        // perform buffer permutation
-        shape::doPermuteShapeInfo(shapeInfoNew, dimensions);
-        ArrayOptions::setDataType(shapeInfoNew, arr.dataType());
-        return shapeInfoNew;
+        std::vector<int> dims(dimensions, dimensions + rank);
+        return evalPermShapeInfo(dims.data(), rank, arr, workspace);
     }
 
 //////////////////////////////////////////////////////////////////////////
@@ -560,6 +545,23 @@ Nd4jLong* ShapeUtils::evalTileShapeInfo(const NDArray& arr, const std::vector<Nd
             result += flatbuffers::NumToString(array->sizeAt(e));
             if (e < array->rankOf() - 1)
                 result.append(", ");
+        }
+        result.append("]");
+
+        return result;
+    }
+
+    std::string ShapeUtils::strideAsString(const NDArray* array) {
+        std::string result;
+
+        auto shapeBuffer = array->getShapeInfo();   //Nd4jLong*
+        int rank = (int)*shapeBuffer;
+        result.append("[");
+        for (int e = 0; e < rank; e++) {
+            if (e > 0)
+                result.append(",");
+            Nd4jLong stride = *(shapeBuffer + rank+1+e);
+            result += flatbuffers::NumToString(stride);
         }
         result.append("]");
 
@@ -890,8 +892,8 @@ void ShapeUtils::evalIdxRangesForSubArr(const Nd4jLong subArrIdx,  const Nd4jLon
 
     for(int i = 0; i < subArrRank; ++i) {
         int currIdx = 2 * dimsToExclude[i];
-        idxRanges[currIdx]    = indexes[i];
-        idxRanges[currIdx +1] = indexes[i] + 1;
+        idxRanges[currIdx]     = indexes[i];
+        idxRanges[currIdx + 1] = indexes[i] + 1;
     }
 }
 

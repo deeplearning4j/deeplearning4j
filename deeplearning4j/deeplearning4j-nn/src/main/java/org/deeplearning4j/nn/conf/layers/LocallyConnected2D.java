@@ -198,7 +198,7 @@ public class LocallyConnected2D extends SameDiffLayer {
 
         if (hasBias) {
             SDVariable b = paramTable.get(ConvolutionParamInitializer.BIAS_KEY);
-            SDVariable biasAddedResult = sameDiff.biasAdd(permutedResult, b);
+            SDVariable biasAddedResult = sameDiff.nn().biasAdd(permutedResult, b);
             return activation.asSameDiff("out", sameDiff, biasAddedResult);
         } else {
             return activation.asSameDiff("out", sameDiff, permutedResult);

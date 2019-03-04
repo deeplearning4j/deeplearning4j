@@ -40,6 +40,15 @@ import java.util.Map;
  */
 
 public class ScatterUpdate extends DynamicCustomOp {
+    public static enum UpdateOp {
+        ADD,
+        SUBTRACT,
+        MULTIPLY,
+        DIVIDE,
+        REVERSE_SUBTRACT,
+        REVERSE_DIVIDE,
+        ASSIGN
+    }
 
     public ScatterUpdate(SameDiff sameDiff, SDVariable ref, SDVariable indices, SDVariable updates) {
         super(null, sameDiff, new SDVariable[]{ref, indices, updates}, false);

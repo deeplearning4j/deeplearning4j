@@ -27,15 +27,9 @@ namespace nd4j {
 namespace ops {
 namespace helpers {
 
-    template<typename T>
-    void _softMaxForVector(graph::LaunchContext* context, void *input, Nd4jLong *xShapeInfo, void *output, Nd4jLong *zShapeInfo);
-
     void softMaxForVector(graph::LaunchContext* context, const NDArray &input, NDArray &output);
 
-    template<typename T>
-    void _logSoftMaxForVector(graph::LaunchContext* context, void *input, Nd4jLong *xShapeInfo, void *output, Nd4jLong *zShapeInfo);    
-
-    void softmax(graph::LaunchContext* context, const NDArray &input, NDArray &output, const int dimension);
+    void logSoftMaxForVector(graph::LaunchContext* context, const NDArray &input, NDArray &output);
 
     void logSoftmax(graph::LaunchContext* context, const NDArray &input, NDArray &output, const int dimension);
 
