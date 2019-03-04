@@ -16,6 +16,7 @@
 
 package org.deeplearning4j.models;
 
+import com.google.common.io.Files;
 import com.google.common.primitives.Doubles;
 import lombok.val;
 import org.apache.commons.io.FileUtils;
