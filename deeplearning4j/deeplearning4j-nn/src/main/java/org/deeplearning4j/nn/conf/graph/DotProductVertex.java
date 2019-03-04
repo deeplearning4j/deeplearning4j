@@ -8,9 +8,9 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 
 public class DotProductVertex extends GraphVertex {
 
-    private INDArray dimensions;
+    private int[] dimensions;
 
-    DotProductVertex(INDArray dimensions) {
+    DotProductVertex(int[] dimensions) {
         this.dimensions = dimensions;
     }
 

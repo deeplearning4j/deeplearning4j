@@ -21,19 +21,19 @@ import java.util.Arrays;
 
 public class DotProductVertex extends BaseGraphVertex {
 
-    private INDArray dimensions;
+    private int[] dimensions;
 
-    public DotProductVertex(ComputationGraph graph, String name, int vertexIndex, INDArray dimensions) {
+    public DotProductVertex(ComputationGraph graph, String name, int vertexIndex, int[] dimensions) {
         this(graph, name, vertexIndex, null, null, dimensions);
     }
 
     public DotProductVertex(ComputationGraph graph, String name, int vertexIndex, VertexIndices[] inputVertices,
-                             VertexIndices[] outputVertices, INDArray dimensions) {
+                             VertexIndices[] outputVertices, int[] dimensions) {
         super(graph, name, vertexIndex, inputVertices, outputVertices);
         this.dimensions = dimensions;
     }
 
-    public void setDimensions(INDArray dimensions) {
+    public void setDimensions(int[] dimensions) {
         this.dimensions = dimensions;
     }
 
@@ -61,10 +61,9 @@ public class DotProductVertex extends BaseGraphVertex {
     public INDArray doForward(boolean training, LayerWorkspaceMgr workspaceMgr) {
         INDArray a = inputs[0];
         INDArray b = inputs[1];
-        Preconditions.checkState(a.rows() == b.columns() || a.columns() == b.rows());
+        Preconditions.checkState(Arrays.equals(a.shape(), b.shape()));
         try(MemoryWorkspace ws = workspaceMgr.notifyScopeBorrowed(ArrayType.ACTIVATIONS)) {
-            INDArray result = Nd4j.getExecutioner().exec(new Dot(a,b,
-                            dimensions.toIntVector()));
+            INDArray result = Nd4j.getExecutioner().exec(new Dot(a,b, dimensions));
             return result;
         }
     }
