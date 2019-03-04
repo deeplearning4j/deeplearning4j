@@ -78,11 +78,13 @@ namespace helpers {
     template <typename T>
     static void _extractPatches(graph::LaunchContext* context, NDArray* images, NDArray* output, int sizeRow, int sizeCol, int stradeRow, int stradeCol, int rateRow, int rateCol, bool theSame){
         std::array<int, 3> restDims = {1, 2, 3};
-        shape::TAD xTad(images->getShapeInfo(), restDims.data(), 3);
+        shape::TAD xTad;
+        xTad.init(images->getShapeInfo(), restDims.data(), 3);
         xTad.createTadOnlyShapeInfo();
         xTad.createOffsets();
 
-        shape::TAD zTad(output->getShapeInfo(), restDims.data(), 3);
+        shape::TAD zTad;
+        zTad.init(output->getShapeInfo(), restDims.data(), 3);
         zTad.createTadOnlyShapeInfo();
         zTad.createOffsets();
 

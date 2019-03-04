@@ -99,6 +99,10 @@ namespace helpers {
         BUILD_SINGLE_SELECTOR(input->dataType(), return _inverse, (input, output), FLOAT_TYPES);
     }
 
+    bool checkCholeskyInput(graph::LaunchContext* context, NDArray const* input) {
+        return false;
+    }
+
     template <typename T>
     int cholesky_(NDArray* input, NDArray* output, bool inplace) {
         return Status::OK();

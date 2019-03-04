@@ -78,7 +78,8 @@ static void ismax_(graph::LaunchContext* context, const NDArray* input, NDArray*
         int* dimension = nullptr;
         int dimensionLength = dimensions.size();
         std::vector<int> copy(dimensions);
-        shape::TAD tadOutput(input->getShapeInfo(), copy.data(), copy.size());
+        shape::TAD tadOutput;
+        tadOutput.init(input->getShapeInfo(), copy.data(), copy.size());
         tadOutput.createTadOnlyShapeInfo();
         tadOutput.createOffsets();
 

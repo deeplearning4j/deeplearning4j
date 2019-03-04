@@ -15,30 +15,25 @@
  ******************************************************************************/
 
 //
-//  @author raver119@gmail.com
+// @author Yurii Shyrma, created on 25.02.2018
 //
 
-#include <ops/declarable/helpers/lrn.h>
-#include <Status.h>
 
-namespace nd4j {
-namespace ops {
+#include<ops/declarable/helpers/batchnorm.h>
+#include <helpers/ShapeUtils.h>
+#include <OmpLaunchHelper.h>
+
+namespace nd4j 	  {
+namespace ops 	  {
 namespace helpers {
 
-    // FIXME: double
-    int lrnFunctor(nd4j::graph::Context& block, NDArray* input, NDArray* output, int depth, double bias, double alpha, double beta) {
-        return Status::OK();
-    }
 
-    int lrnFunctorEx(nd4j::graph::Context& block, NDArray* input, NDArray* output, NDArray* unitScale, NDArray* scale, int depth, double bias, double alpha, double beta) {
+//////////////////////////////////////////////////////////////////////////
+void batchnorm(const NDArray* input, const NDArray* mean, const NDArray* variance, const NDArray* gamma, const NDArray* beta, NDArray* output, const std::vector<int>& axes, const double epsilon) {
 
-        return Status::OK();
-    }
-
-    int lrnFunctorEx(nd4j::graph::Context& block, NDArray* input, NDArray* output, NDArray* scale, int depth, double bias, double alpha, double beta) {
-        return Status::OK();
-    }
+}
 
 }
 }
 }
+

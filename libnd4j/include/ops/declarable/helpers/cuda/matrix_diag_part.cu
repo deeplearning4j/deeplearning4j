@@ -67,14 +67,16 @@ namespace helpers {
         //printf("Repeat delta %lld, numTads %lld\n", repeatDelta, numTads);
         //tadOnlyInputShapeInfo, tadInputOffsets, tadOnlyOutputShapeInfo, tadOutputOffsets;
         std::vector<int> outputDims({output->rankOf() - 1});
-        shape::TAD tadOutput(output->getShapeInfo(), outputDims.data(), outputDims.size());
+        shape::TAD tadOutput;
+        tadOutput.init(output->getShapeInfo(), outputDims.data(), outputDims.size());
         tadOutput.createTadOnlyShapeInfo();
         tadOutput.createOffsets();
         if (!input->isActualOnDeviceSide())
             input->syncToDevice();
 
         std::vector<int> inputDims({input->rankOf() - 2, input->rankOf() - 1});
-        shape::TAD tadInput(input->getShapeInfo(), inputDims.data(), inputDims.size());
+        shape::TAD tadInput;
+        tadInput.init(input->getShapeInfo(), inputDims.data(), inputDims.size());
         tadInput.createTadOnlyShapeInfo();
         tadInput.createOffsets();
         if (!input->isActualOnDeviceSide())

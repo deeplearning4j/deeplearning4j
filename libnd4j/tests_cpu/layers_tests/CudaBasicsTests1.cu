@@ -430,12 +430,14 @@ TEST_F(CudaBasicsTests1, execReduce3_3) {
     std::vector<int> dimensions = {0};
 
     // evaluate xTad data 
-    shape::TAD xTad(x.getShapeInfo(), dimensions.data(), dimensions.size());
+    shape::TAD xTad;
+    xTad.init(x.getShapeInfo(), dimensions.data(), dimensions.size());
     xTad.createTadOnlyShapeInfo();
     xTad.createOffsets();
 
     // evaluate yTad data
-    shape::TAD yTad(y.getShapeInfo(), dimensions.data(), dimensions.size());    	    
+    shape::TAD yTad;
+    yTad.init(y.getShapeInfo(), dimensions.data(), dimensions.size());
     yTad.createTadOnlyShapeInfo();
     yTad.createOffsets();
 
@@ -494,12 +496,14 @@ TEST_F(CudaBasicsTests1, execReduce3_4) {
     std::vector<int> dimensions = {1};
 
     // evaluate xTad data 
-    shape::TAD xTad(x.getShapeInfo(), dimensions.data(), dimensions.size());
+    shape::TAD xTad;
+    xTad.init(x.getShapeInfo(), dimensions.data(), dimensions.size());
     xTad.createTadOnlyShapeInfo();
     xTad.createOffsets();
 
     // evaluate yTad data
-    shape::TAD yTad(y.getShapeInfo(), dimensions.data(), dimensions.size());    	    
+    shape::TAD yTad;
+    yTad.init(y.getShapeInfo(), dimensions.data(), dimensions.size());
     yTad.createTadOnlyShapeInfo();
     yTad.createOffsets();
 
@@ -558,12 +562,14 @@ TEST_F(CudaBasicsTests1, execReduce3_5) {
     std::vector<int> dimensions = {1};
 
     // evaluate xTad data 
-    shape::TAD xTad(x.getShapeInfo(), dimensions.data(), dimensions.size());
+    shape::TAD xTad;
+    xTad.init(x.getShapeInfo(), dimensions.data(), dimensions.size());
     xTad.createTadOnlyShapeInfo();
     xTad.createOffsets();
 
     // evaluate yTad data
-    shape::TAD yTad(y.getShapeInfo(), dimensions.data(), dimensions.size());    	    
+    shape::TAD yTad;
+    yTad.init(y.getShapeInfo(), dimensions.data(), dimensions.size());
     yTad.createTadOnlyShapeInfo();
     yTad.createOffsets();
 
@@ -622,12 +628,14 @@ TEST_F(CudaBasicsTests1, execReduce3All_1) {
     std::vector<int> dimensions = {0};
 
     // evaluate xTad data 
-    shape::TAD xTad(x.getShapeInfo(), dimensions.data(), dimensions.size());
+    shape::TAD xTad;
+    xTad.init(x.getShapeInfo(), dimensions.data(), dimensions.size());
     xTad.createTadOnlyShapeInfo();
     xTad.createOffsets();
 
     // evaluate yTad data
-    shape::TAD yTad(y.getShapeInfo(), dimensions.data(), dimensions.size());    	    
+    shape::TAD yTad;
+    yTad.init(y.getShapeInfo(), dimensions.data(), dimensions.size());
     yTad.createTadOnlyShapeInfo();
     yTad.createOffsets();
 
@@ -686,12 +694,14 @@ TEST_F(CudaBasicsTests1, execReduce3All_2) {
     std::vector<int> dimensions = {0};
 
     // evaluate xTad data 
-    shape::TAD xTad(x.getShapeInfo(), dimensions.data(), dimensions.size());
+    shape::TAD xTad;
+    xTad.init(x.getShapeInfo(), dimensions.data(), dimensions.size());
     xTad.createTadOnlyShapeInfo();
     xTad.createOffsets();
 
     // evaluate yTad data
-    shape::TAD yTad(y.getShapeInfo(), dimensions.data(), dimensions.size());    	    
+    shape::TAD yTad;
+    yTad.init(y.getShapeInfo(), dimensions.data(), dimensions.size());
     yTad.createTadOnlyShapeInfo();
     yTad.createOffsets();
 
@@ -749,7 +759,8 @@ TEST_F(CudaBasicsTests1, execIndexReduce_1) {
     std::vector<int> dimensions = {1};          
 
     // evaluate xTad data 
-    shape::TAD xTad(x.getShapeInfo(), dimensions.data(), dimensions.size());
+    shape::TAD xTad;
+    xTad.init(x.getShapeInfo(), dimensions.data(), dimensions.size());
     xTad.createTadOnlyShapeInfo();
     xTad.createOffsets();
 
@@ -809,7 +820,8 @@ TEST_F(CudaBasicsTests1, execIndexReduce_2) {
     std::vector<int> dimensions = {1,2};     
 
     // evaluate xTad data 
-    shape::TAD xTad(x.getShapeInfo(), dimensions.data(), dimensions.size());
+    shape::TAD xTad;
+    xTad.init(x.getShapeInfo(), dimensions.data(), dimensions.size());
     xTad.createTadOnlyShapeInfo();
     xTad.createOffsets();
 
@@ -870,7 +882,8 @@ TEST_F(CudaBasicsTests1, execIndexReduce_3) {
     std::vector<int> dimensions = {0,2,3};
 
     // evaluate xTad data 
-    shape::TAD xTad(x.getShapeInfo(), dimensions.data(), dimensions.size());
+    shape::TAD xTad;
+    xTad.init(x.getShapeInfo(), dimensions.data(), dimensions.size());
     xTad.createTadOnlyShapeInfo();
     xTad.createOffsets();
 
@@ -999,7 +1012,8 @@ TEST_F(CudaBasicsTests1, execScalar_3) {
     std::vector<int> dimensions = {1};
 
     // evaluate xTad data 
-    shape::TAD xTad(x.getShapeInfo(), dimensions.data(), dimensions.size());
+    shape::TAD xTad;
+    xTad.init(x.getShapeInfo(), dimensions.data(), dimensions.size());
     xTad.createTadOnlyShapeInfo();
     xTad.createOffsets();
 
@@ -1089,7 +1103,8 @@ TEST_F(CudaBasicsTests1, execScalarBool_2) {
     std::vector<int> dimensions = {1};
 
     // evaluate xTad data 
-    shape::TAD xTad(x.getShapeInfo(), dimensions.data(), dimensions.size());
+    shape::TAD xTad;
+    xTad.init(x.getShapeInfo(), dimensions.data(), dimensions.size());
     xTad.createTadOnlyShapeInfo();
     xTad.createOffsets();
 
@@ -1149,7 +1164,8 @@ TEST_F(CudaBasicsTests1, execBroadcast_1) {
     std::vector<int> dimensions = {1};
 
     // evaluate xTad data 
-    shape::TAD xTad(x.getShapeInfo(), dimensions.data(), dimensions.size());
+    shape::TAD xTad;
+    xTad.init(x.getShapeInfo(), dimensions.data(), dimensions.size());
     xTad.createTadOnlyShapeInfo();
     xTad.createOffsets();
 
@@ -1208,7 +1224,8 @@ TEST_F(CudaBasicsTests1, execBroadcast_2) {
     std::vector<int> dimensions = {0,2};
 
     // evaluate xTad data 
-    shape::TAD xTad(x.getShapeInfo(), dimensions.data(), dimensions.size());
+    shape::TAD xTad;
+    xTad.init(x.getShapeInfo(), dimensions.data(), dimensions.size());
     xTad.createTadOnlyShapeInfo();
     xTad.createOffsets();
 
@@ -1264,7 +1281,8 @@ TEST_F(CudaBasicsTests1, execBroadcastBool_1) {
     std::vector<int> dimensions = {1};
 
     // evaluate xTad data 
-    shape::TAD xTad(x.getShapeInfo(), dimensions.data(), dimensions.size());
+    shape::TAD xTad;
+    xTad.init(x.getShapeInfo(), dimensions.data(), dimensions.size());
     xTad.createTadOnlyShapeInfo();
     xTad.createOffsets();
 
@@ -1320,7 +1338,8 @@ TEST_F(CudaBasicsTests1, execBroadcastBool_2) {
     std::vector<int> dimensions = {0,2};
 
     // evaluate xTad data 
-    shape::TAD xTad(x.getShapeInfo(), dimensions.data(), dimensions.size());
+    shape::TAD xTad;
+    xTad.init(x.getShapeInfo(), dimensions.data(), dimensions.size());
     xTad.createTadOnlyShapeInfo();
     xTad.createOffsets();
 
@@ -1759,7 +1778,8 @@ TEST_F(CudaBasicsTests1, execReduceFloat_1) {
     std::vector<int> dimensions = {0,2};
 
     // evaluate xTad data 
-    shape::TAD xTad(x.getShapeInfo(), dimensions.data(), dimensions.size());
+    shape::TAD xTad;
+    xTad.init(x.getShapeInfo(), dimensions.data(), dimensions.size());
     xTad.createTadOnlyShapeInfo();
     xTad.createOffsets();
 
@@ -1812,7 +1832,8 @@ TEST_F(CudaBasicsTests1, execReduceFloat_2) {
     std::vector<int> dimensions = {1};
 
     // evaluate xTad data 
-    shape::TAD xTad(x.getShapeInfo(), dimensions.data(), dimensions.size());
+    shape::TAD xTad;
+    xTad.init(x.getShapeInfo(), dimensions.data(), dimensions.size());
     xTad.createTadOnlyShapeInfo();
     xTad.createOffsets();
 
@@ -1867,7 +1888,8 @@ TEST_F(CudaBasicsTests1, execReduceSame_1) {
     std::vector<int> dimensions = {0,2};
 
     // evaluate xTad data 
-    shape::TAD xTad(x.getShapeInfo(), dimensions.data(), dimensions.size());
+    shape::TAD xTad;
+    xTad.init(x.getShapeInfo(), dimensions.data(), dimensions.size());
     xTad.createTadOnlyShapeInfo();
     xTad.createOffsets();
 
@@ -1920,7 +1942,8 @@ TEST_F(CudaBasicsTests1, execReduceSame_2) {
     std::vector<int> dimensions = {1};
 
     // evaluate xTad data 
-    shape::TAD xTad(x.getShapeInfo(), dimensions.data(), dimensions.size());
+    shape::TAD xTad;
+    xTad.init(x.getShapeInfo(), dimensions.data(), dimensions.size());
     xTad.createTadOnlyShapeInfo();
     xTad.createOffsets();
 
@@ -1975,7 +1998,8 @@ TEST_F(CudaBasicsTests1, execReduceBool_1) {
     std::vector<int> dimensions = {0,2};
 
     // evaluate xTad data 
-    shape::TAD xTad(x.getShapeInfo(), dimensions.data(), dimensions.size());
+    shape::TAD xTad;
+    xTad.init(x.getShapeInfo(), dimensions.data(), dimensions.size());
     xTad.createTadOnlyShapeInfo();
     xTad.createOffsets();
 
@@ -2028,7 +2052,8 @@ TEST_F(CudaBasicsTests1, execReduceBool_2) {
     std::vector<int> dimensions = {1};
 
     // evaluate xTad data 
-    shape::TAD xTad(x.getShapeInfo(), dimensions.data(), dimensions.size());
+    shape::TAD xTad;
+    xTad.init(x.getShapeInfo(), dimensions.data(), dimensions.size());
     xTad.createTadOnlyShapeInfo();
     xTad.createOffsets();
 
@@ -2083,7 +2108,8 @@ TEST_F(CudaBasicsTests1, execReduceLong_1) {
     std::vector<int> dimensions = {0,2};
 
     // evaluate xTad data 
-    shape::TAD xTad(x.getShapeInfo(), dimensions.data(), dimensions.size());
+    shape::TAD xTad;
+    xTad.init(x.getShapeInfo(), dimensions.data(), dimensions.size());
     xTad.createTadOnlyShapeInfo();
     xTad.createOffsets();
 
@@ -2136,7 +2162,8 @@ TEST_F(CudaBasicsTests1, execReduceLong_2) {
     std::vector<int> dimensions = {1};
 
     // evaluate xTad data 
-    shape::TAD xTad(x.getShapeInfo(), dimensions.data(), dimensions.size());
+    shape::TAD xTad;
+    xTad.init(x.getShapeInfo(), dimensions.data(), dimensions.size());
     xTad.createTadOnlyShapeInfo();
     xTad.createOffsets();
 
@@ -2486,7 +2513,8 @@ TEST_F(CudaBasicsTests1, execReduce3TAD_1) {
     std::vector<int> dimensions = {0,1};
 
     // evaluate xTad data 
-    shape::TAD xTad(x.getShapeInfo(), dimensions.data(), dimensions.size());
+    shape::TAD xTad;
+    xTad.init(x.getShapeInfo(), dimensions.data(), dimensions.size());
     xTad.createTadOnlyShapeInfo();
     xTad.createOffsets();
 
@@ -2541,7 +2569,8 @@ TEST_F(CudaBasicsTests1, execReduce3TAD_2) {
     std::vector<int> dimensions = {0,2};
 
     // evaluate xTad data 
-    shape::TAD xTad(x.getShapeInfo(), dimensions.data(), dimensions.size());
+    shape::TAD xTad;
+    xTad.init(x.getShapeInfo(), dimensions.data(), dimensions.size());
     xTad.createTadOnlyShapeInfo();
     xTad.createOffsets();
 
@@ -2596,7 +2625,8 @@ TEST_F(CudaBasicsTests1, execReduce3TAD_3) {
     std::vector<int> dimensions = {2};
 
     // evaluate xTad data 
-    shape::TAD xTad(x.getShapeInfo(), dimensions.data(), dimensions.size());
+    shape::TAD xTad;
+    xTad.init(x.getShapeInfo(), dimensions.data(), dimensions.size());
     xTad.createTadOnlyShapeInfo();
     xTad.createOffsets();
 
@@ -2651,7 +2681,8 @@ TEST_F(CudaBasicsTests1, execReduce3TAD_4) {
     std::vector<int> dimensions = {0,1,2};
 
     // evaluate xTad data 
-    shape::TAD xTad(x.getShapeInfo(), dimensions.data(), dimensions.size());
+    shape::TAD xTad;
+    xTad.init(x.getShapeInfo(), dimensions.data(), dimensions.size());
     xTad.createTadOnlyShapeInfo();
     xTad.createOffsets();
 
@@ -2738,7 +2769,8 @@ TEST_F(CudaBasicsTests1, execSummaryStats_2) {
     std::vector<int> dimensions = {0,2};
 
     // evaluate xTad data 
-    shape::TAD xTad(x.getShapeInfo(), dimensions.data(), dimensions.size());
+    shape::TAD xTad;
+    xTad.init(x.getShapeInfo(), dimensions.data(), dimensions.size());
     xTad.createTadOnlyShapeInfo();
     xTad.createOffsets();
 
@@ -2791,7 +2823,8 @@ TEST_F(CudaBasicsTests1, execSummaryStats_3) {
     std::vector<int> dimensions = {1};
 
     // evaluate xTad data 
-    shape::TAD xTad(x.getShapeInfo(), dimensions.data(), dimensions.size());
+    shape::TAD xTad;
+    xTad.init(x.getShapeInfo(), dimensions.data(), dimensions.size());
     xTad.createTadOnlyShapeInfo();
     xTad.createOffsets();
 

@@ -75,6 +75,18 @@ void lstmTimeLoop(graph::LaunchContext* context, const NDArray* x, const NDArray
 
 }
 
+    void lstmBlockTimeLoop(const NDArray* maxSeqLength, const NDArray* xSeq, const NDArray* c0, const NDArray* y0,
+                           const NDArray* W, const NDArray* Wci, const NDArray* Wcf, const NDArray* Wco, const NDArray* b,
+                           const NDArray* iSeq, const NDArray* cSeq, const NDArray* fSeq, const NDArray* oSeq, const NDArray* zSeq,
+                           const NDArray* hSeq, const NDArray* ySeq, const std::vector<double>& params, const int dataFormat) {
+        //
+    }
+
+    void lstmBlockCell(const NDArray* xt, const NDArray* cLast, const NDArray* yLast,
+                       const NDArray* W, const NDArray* Wci, const NDArray* Wcf, const NDArray* Wco, const NDArray* b,
+                       NDArray* i, NDArray* c, NDArray* f, NDArray* o, NDArray* z, NDArray* h, NDArray* y, const std::vector<double>& params) {
+        //
+    }
 
 }
 }

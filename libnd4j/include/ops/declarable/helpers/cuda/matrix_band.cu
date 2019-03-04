@@ -78,13 +78,15 @@ namespace helpers {
         std::vector<int> lastDims({input->rankOf() - 2, input->rankOf() - 1});
         std::vector<int> dimsToExclude = ShapeUtils::evalDimsToExclude(input->rankOf(), lastDims);
         const Nd4jLong numTads = ShapeUtils::getNumOfSubArrs(input->getShapeInfo(), dimsToExclude);
-        shape::TAD tadInput(input->getShapeInfo(), lastDims.data(), lastDims.size());
+        shape::TAD tadInput;
+        tadInput.init(input->getShapeInfo(), lastDims.data(), lastDims.size());
         tadInput.createTadOnlyShapeInfo();
         tadInput.createOffsets();
         if (!input->isActualOnDeviceSide())
             input->syncToDevice();
 
-        shape::TAD tadOutput(output->getShapeInfo(), lastDims.data(), lastDims.size());
+        shape::TAD tadOutput;
+        tadOutput.init(output->getShapeInfo(), lastDims.data(), lastDims.size());
         tadOutput.createTadOnlyShapeInfo();
         tadOutput.createOffsets();
         if (!input->isActualOnDeviceSide())

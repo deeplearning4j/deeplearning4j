@@ -80,7 +80,8 @@ namespace helpers {
 			}
 
             std::vector<int> axis = ShapeUtils::evalDimsToExclude(outArr->rankOf(), {dim});
-            shape::TAD tadOutput(outArr->shapeInfo(), axis.data(), axis.size());
+            shape::TAD tadOutput;
+            tadOutput.init(outArr->shapeInfo(), axis.data(), axis.size());
             tadOutput.createTadOnlyShapeInfo();
             tadOutput.createOffsets();
 

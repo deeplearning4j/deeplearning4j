@@ -716,7 +716,8 @@ TEST_F(NDArrayCudaBasicsTests, TestRawBroadcast_2) {
     std::vector<int> dimensions = {0,2};
 
     // evaluate xTad data
-    shape::TAD xTad(x.getShapeInfo(), dimensions.data(), dimensions.size());
+    shape::TAD xTad;
+    xTad.init(x.getShapeInfo(), dimensions.data(), dimensions.size());
     xTad.createTadOnlyShapeInfo();
     xTad.createOffsets();
 
@@ -777,7 +778,8 @@ TEST_F(NDArrayCudaBasicsTests, TestRawBroadcast_3) {
     std::vector<int> dimensions = {0,2};
 
     // evaluate xTad data
-    shape::TAD xTad(x.getShapeInfo(), dimensions.data(), dimensions.size());
+    shape::TAD xTad;
+    xTad.init(x.getShapeInfo(), dimensions.data(), dimensions.size());
     xTad.createTadOnlyShapeInfo();
     xTad.createOffsets();
 
@@ -979,7 +981,8 @@ TEST_F(NDArrayCudaBasicsTests, TestBroadcastRaw_1) {
     std::vector<int> dimensions = {1};
 
     // evaluate xTad data
-    shape::TAD xTad(x.getShapeInfo(), dimensions.data(), dimensions.size());
+    shape::TAD xTad;
+    xTad.init(x.getShapeInfo(), dimensions.data(), dimensions.size());
     xTad.createTadOnlyShapeInfo();
     xTad.createOffsets();
 
