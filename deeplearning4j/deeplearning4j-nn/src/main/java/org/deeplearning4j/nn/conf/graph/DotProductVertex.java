@@ -8,12 +8,15 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 
 public class DotProductVertex extends GraphVertex {
 
-    DotProductVertex() {
+    private INDArray dimensions;
+
+    DotProductVertex(INDArray dimensions) {
+        this.dimensions = dimensions;
     }
 
     @Override
     public GraphVertex clone() {
-        return new DotProductVertex();
+        return new DotProductVertex(this.dimensions);
     }
 
     @Override
@@ -43,7 +46,7 @@ public class DotProductVertex extends GraphVertex {
 
     @Override
     public org.deeplearning4j.nn.graph.vertex.GraphVertex instantiate(ComputationGraph graph, String name, int idx, INDArray paramsView, boolean initializeParams) {
-        return new org.deeplearning4j.nn.graph.vertex.impl.DotProductVertex(graph, name, idx);
+        return new org.deeplearning4j.nn.graph.vertex.impl.DotProductVertex(graph, name, idx, this.dimensions);
     }
 
     @Override

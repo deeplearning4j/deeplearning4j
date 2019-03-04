@@ -21,13 +21,20 @@ import java.util.Arrays;
 
 public class DotProductVertex extends BaseGraphVertex {
 
-    public DotProductVertex(ComputationGraph graph, String name, int vertexIndex) {
-        this(graph, name, vertexIndex, null, null);
+    private INDArray dimensions;
+
+    public DotProductVertex(ComputationGraph graph, String name, int vertexIndex, INDArray dimensions) {
+        this(graph, name, vertexIndex, null, null, dimensions);
     }
 
     public DotProductVertex(ComputationGraph graph, String name, int vertexIndex, VertexIndices[] inputVertices,
-                             VertexIndices[] outputVertices) {
+                             VertexIndices[] outputVertices, INDArray dimensions) {
         super(graph, name, vertexIndex, inputVertices, outputVertices);
+        this.dimensions = dimensions;
+    }
+
+    public void setDimensions(INDArray dimensions) {
+        this.dimensions = dimensions;
     }
 
     @Override
@@ -57,7 +64,7 @@ public class DotProductVertex extends BaseGraphVertex {
         Preconditions.checkState(a.rows() == b.columns() || a.columns() == b.rows());
         try(MemoryWorkspace ws = workspaceMgr.notifyScopeBorrowed(ArrayType.ACTIVATIONS)) {
             INDArray result = Nd4j.getExecutioner().exec(new Dot(a,b,
-                            graph.getConfiguration().getDimensions().toIntVector()));
+                            dimensions.toIntVector()));
             return result;
         }
     }
