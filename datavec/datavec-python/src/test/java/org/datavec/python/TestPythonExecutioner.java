@@ -23,8 +23,10 @@ public class TestPythonExecutioner {
 
         String code = "z = x + ' ' + y";
 
+        PythonTransform pt = new PythonTransform(code, pyInputs, pyOutputs);
+        pyOutputs = pyExec.safeExec(pt, pyInputs);
 
-        pyExec.exec(code, pyInputs, pyOutputs);
+        //pyExec.safeExec(code, pyInputs, pyOutputs);
 
         String z = pyOutputs.getStrValue("z");
 
@@ -37,7 +39,7 @@ public class TestPythonExecutioner {
 
     @Test
     public void testInt()throws Exception{
-        PythonExecutioner pyExec = new PythonExecutioner();
+        PythonExecutioner pyExec = PythonExecutioner.getInstance();
         PythonVariables pyInputs = new PythonVariables();
         PythonVariables pyOutputs = new PythonVariables();
 
@@ -48,7 +50,11 @@ public class TestPythonExecutioner {
 
         pyOutputs.addInt("z");
 
-        pyExec.exec(code, pyInputs, pyOutputs);
+
+        PythonTransform pt = new PythonTransform(code, pyInputs, pyOutputs);
+        pyOutputs = pyExec.safeExec(pt, pyInputs);
+
+        //pyExec.safeExec(code, pyInputs, pyOutputs);
 
         long z = pyOutputs.getIntValue("z");
 
@@ -60,7 +66,7 @@ public class TestPythonExecutioner {
 
     @Test
     public void testList() throws Exception{
-        PythonExecutioner pyExec = new PythonExecutioner();
+        PythonExecutioner pyExec = PythonExecutioner.getInstance();
         PythonVariables pyInputs = new PythonVariables();
         PythonVariables pyOutputs = new PythonVariables();
 
@@ -74,7 +80,11 @@ public class TestPythonExecutioner {
 
         pyOutputs.addList("z");
 
-        pyExec.exec(code, pyInputs, pyOutputs);
+
+        PythonTransform pt = new PythonTransform(code, pyInputs, pyOutputs);
+        pyOutputs = pyExec.safeExec(pt, pyInputs);
+
+        //pyExec.safeExec(code, pyInputs, pyOutputs);
 
         Object[] z = pyOutputs.getListValue("z");
 
@@ -93,7 +103,7 @@ public class TestPythonExecutioner {
 
     @Test
     public void testNDArrayFloat()throws Exception{
-        PythonExecutioner pyExec = new PythonExecutioner();
+        PythonExecutioner pyExec = PythonExecutioner.getInstance();
         PythonVariables pyInputs = new PythonVariables();
         PythonVariables pyOutputs = new PythonVariables();
 
@@ -102,27 +112,23 @@ public class TestPythonExecutioner {
         pyOutputs.addNDArray("z");
 
         String code = "z = x + y";
+        PythonTransform pt = new PythonTransform(code, pyInputs, pyOutputs);
+        pyOutputs = pyExec.safeExec(pt, pyInputs);
 
-        pyExec.exec(code, pyInputs, pyOutputs);
+        //pyExec.safeExec(code, pyInputs, pyOutputs);
+
 
         INDArray z = pyOutputs.getNDArrayValue("z").getND4JArray();
 
         assertEquals(6.0, z.sum().getDouble(0), 1e-5);
 
 
-        pyExec.exec(code, pyInputs, pyOutputs);
-
-        z = pyOutputs.getNDArrayValue("z").getND4JArray();
-
-        assertEquals(6.0, z.sum().getDouble(0), 1e-5);
-
-        pyExec.free();
 
     }
 
     @Test
     public void testNDArrayDouble()throws Exception{
-        PythonExecutioner pyExec = new PythonExecutioner();
+        PythonExecutioner pyExec = PythonExecutioner.getInstance();
         PythonVariables pyInputs = new PythonVariables();
         PythonVariables pyOutputs = new PythonVariables();
 
@@ -132,7 +138,11 @@ public class TestPythonExecutioner {
 
         String code = "z = x + y";
 
-        pyExec.exec(code, pyInputs, pyOutputs);
+
+        PythonTransform pt = new PythonTransform(code, pyInputs, pyOutputs);
+        pyOutputs = pyExec.safeExec(pt, pyInputs);
+
+        //pyExec.safeExec(code, pyInputs, pyOutputs);
 
         INDArray z = pyOutputs.getNDArrayValue("z").getND4JArray();
 
@@ -143,7 +153,7 @@ public class TestPythonExecutioner {
 
     @Test
     public void testNDArrayShort()throws Exception{
-        PythonExecutioner pyExec = new PythonExecutioner();
+        PythonExecutioner pyExec = PythonExecutioner.getInstance();
         PythonVariables pyInputs = new PythonVariables();
         PythonVariables pyOutputs = new PythonVariables();
 
@@ -153,7 +163,11 @@ public class TestPythonExecutioner {
 
         String code = "z = x + y";
 
-        pyExec.exec(code, pyInputs, pyOutputs);
+
+        PythonTransform pt = new PythonTransform(code, pyInputs, pyOutputs);
+        pyOutputs = pyExec.safeExec(pt, pyInputs);
+
+        //pyExec.safeExec(code, pyInputs, pyOutputs);
 
         INDArray z = pyOutputs.getNDArrayValue("z").getND4JArray();
 
@@ -165,7 +179,7 @@ public class TestPythonExecutioner {
 
     @Test
     public void testNDArrayInt()throws Exception{
-        PythonExecutioner pyExec = new PythonExecutioner();
+        PythonExecutioner pyExec = PythonExecutioner.getInstance();
         PythonVariables pyInputs = new PythonVariables();
         PythonVariables pyOutputs = new PythonVariables();
 
@@ -175,7 +189,11 @@ public class TestPythonExecutioner {
 
         String code = "z = x + y";
 
-        pyExec.exec(code, pyInputs, pyOutputs);
+
+        PythonTransform pt = new PythonTransform(code, pyInputs, pyOutputs);
+        pyOutputs = pyExec.safeExec(pt, pyInputs);
+
+        //pyExec.safeExec(code, pyInputs, pyOutputs);
 
         INDArray z = pyOutputs.getNDArrayValue("z").getND4JArray();
 
@@ -186,7 +204,7 @@ public class TestPythonExecutioner {
 
     @Test
     public void testNDArrayLong()throws Exception{
-        PythonExecutioner pyExec = new PythonExecutioner();
+        PythonExecutioner pyExec = PythonExecutioner.getInstance();
         PythonVariables pyInputs = new PythonVariables();
         PythonVariables pyOutputs = new PythonVariables();
 
@@ -196,7 +214,11 @@ public class TestPythonExecutioner {
 
         String code = "z = x + y";
 
-        pyExec.exec(code, pyInputs, pyOutputs);
+
+        PythonTransform pt = new PythonTransform(code, pyInputs, pyOutputs);
+        pyOutputs = pyExec.safeExec(pt, pyInputs);
+
+        //pyExec.safeExec(code, pyInputs, pyOutputs);
 
         INDArray z = pyOutputs.getNDArrayValue("z").getND4JArray();
 

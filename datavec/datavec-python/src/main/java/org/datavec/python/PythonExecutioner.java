@@ -42,6 +42,7 @@ public class PythonExecutioner {
             if (currentInterpreter != null){
                 PyThreadState_Swap(null);
                 currentInterpreter = null;
+                return;
             }
         }
         if (currentInterpreter != null && currentInterpreter.equals(name)){
@@ -54,6 +55,7 @@ public class PythonExecutioner {
             init();
         }
         else{
+            Py_Initialize();
             log.info("CPython: Py_NewInterpreter()");
             PyThreadState threadState = Py_NewInterpreter();
             interpreters.put(name, threadState);
@@ -65,7 +67,7 @@ public class PythonExecutioner {
     }
 
     public void deleteInterpreter(String name){
-        if (!interpreters.containsKey(name)){
+        if (name != null && !interpreters.containsKey(name)){
             return;
         }
         String temp = currentInterpreter;
@@ -348,7 +350,7 @@ public class PythonExecutioner {
         safeExecFlag = true;
         exec(transform.getExecCode(), null, transform.getOutputs());
         safeExecFlag = false;
-        deleteInterpreter(transform.getName());
+        //deleteInterpreter(transform.getName());
         return transform.getOutputs();
     }
 
@@ -357,7 +359,7 @@ public class PythonExecutioner {
         safeExecFlag = true;
         exec(transform.getExecCode(), inputs, transform.getOutputs());
         safeExecFlag = false;
-        deleteInterpreter(transform.getName());
+        //deleteInterpreter(transform.getName());
         return transform.getOutputs();
     }
 

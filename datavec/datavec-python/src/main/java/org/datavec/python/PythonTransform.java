@@ -39,6 +39,7 @@ public class PythonTransform implements Transform{
         this.pyInputs = pyInputs;
         this.pyOutputs = pyOutputs;
         parseSetupAndExecCode();
+        this.name = UUID.randomUUID().toString();
     }
 
     @Override
