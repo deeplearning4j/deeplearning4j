@@ -31,18 +31,19 @@ namespace helpers {
         std::unique_ptr<ResultSet> listOfOutputs(output->allTensorsAlongDimension(restDims));
         // 3D matricies - 2D matricies of vectors (if last dim is greater than 1)
         //int e = 0;
-        //int ksizeRowsEffective = sizeRow + (sizeRow - 1) * (rateRow - 1);
-        //int ksizeColsEffective = sizeCol + (sizeCol - 1) * (rateCol - 1);
-        //int ksize = ksizeRowsEffective * ksizeColsEffective;
+        int ksizeRowsEffective = sizeRow + (sizeRow - 1) * (rateRow - 1);
+        int ksizeColsEffective = sizeCol + (sizeCol - 1) * (rateCol - 1);
+        int ksize = ksizeRowsEffective * ksizeColsEffective;
         int batchCount = listOfMatricies->size(); //lengthOf() / ksize;
         Nd4jLong lastDim = images->sizeAt(3);
         Nd4jLong rowDim = images->sizeAt(1);
         Nd4jLong colDim = images->sizeAt(2);
-
+        Nd4jLong outputLastDim = ksize * lastDim;
 #pragma omp parallel for
         for (Nd4jLong e = 0; e < batchCount; ++e) {
             auto patch = listOfMatricies->at(e);
             auto outMatrix = listOfOutputs->at(e);
+            auto patchBorder = patch->sizeAt(0);
             //int startRow = 0;
             //int startCol = 0;
             Nd4jLong pos = 0;
@@ -50,8 +51,9 @@ namespace helpers {
             for (int j = 0; j < colDim; j += stradeCol)
                 for (int l = 0; l < sizeRow; l++)
                 for (int m = 0; m < sizeCol; m++) {
+                    //for (Nd4jLong pos = 0; pos < outputLastDim; pos++)
                 for (Nd4jLong k = 0; k < lastDim; ++k) {
-                    if (l + i < rowDim  && m + j < colDim && i + rateRow * l < patch->sizeAt(0)) // && i + rateRow * l < sizeRow && j + m * rateCol < sizeCol
+                    if (l + i < rowDim  && m + j < colDim && i + rateRow * l < patchBorder) // && i + rateRow * l < sizeRow && j + m * rateCol < sizeCol
                         outMatrix->p<T>(pos, patch->e<T>(i + rateRow * l, j + m * rateCol, k));
                     pos++;
                     if (pos >= outMatrix->lengthOf()) {

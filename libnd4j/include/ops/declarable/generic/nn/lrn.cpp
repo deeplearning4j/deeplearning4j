@@ -70,13 +70,13 @@ namespace nd4j {
             double bias = T_ARG(0);
             int depth = INT_ARG(0);
 
-            //std::unique_ptr<NDArray> unitScale(errors->dup('c'));
+            std::unique_ptr<NDArray> unitScale(errors->dup('c'));
             std::unique_ptr<NDArray> scale(errors->dup('c'));
 
             REQUIRE_TRUE(ND4J_STATUS_OK == helpers::lrnFunctorEx(block, input, output, scale.get(), depth, bias, alpha, beta), 0, "lrn_bp: Failed to get lrn for given input." );
 
-            output->applyPairwiseTransform(pairwise::Divide, input, output, nullptr);
-            output->applyPairwiseTransform(pairwise::Multiply, scale.get(), output, nullptr);
+            output->applyPairwiseTransform(pairwise::Divide, input, unitScale.get(), nullptr);
+            unitScale->applyPairwiseTransform(pairwise::Multiply, scale.get(), output, nullptr);
             output->applyPairwiseTransform(pairwise::Multiply, errors, output, nullptr);
 //            errors->applyPairwiseTransform(pairwise::Multiply, scale.get(), scale.get(), nullptr);
 //            output->applyPairwiseTransform(pairwise::Multiply, input, output, nullptr);
