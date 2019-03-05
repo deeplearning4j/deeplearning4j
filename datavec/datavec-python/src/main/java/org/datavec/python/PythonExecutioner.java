@@ -291,16 +291,6 @@ public class PythonExecutioner {
 
 
     public void exec(String code){
-        /*
-        try{
-            log.info("CPython: PyThreadState_Swap()");
-            PyThreadState_Swap(interpreters.get(currentInterpreter));
-            init();
-        }
-        catch (Exception e){
-            log.error(e.toString());
-        }*/
-
         log.info("CPython: PyRun_SimpleStringFlag()");
         log.info(code);
         PyRun_SimpleStringFlags(code, null);
