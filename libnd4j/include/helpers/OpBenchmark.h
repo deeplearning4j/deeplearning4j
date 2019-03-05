@@ -25,6 +25,8 @@ namespace nd4j {
         OpBenchmark(std::string name, NDArray *x, NDArray *z);
         OpBenchmark(std::string name, NDArray *x, NDArray *z, std::initializer_list<int> axis);
         OpBenchmark(std::string name, NDArray *x, NDArray *z, std::vector<int> axis);
+        OpBenchmark(std::string name, NDArray *x, NDArray *y, NDArray *z, std::initializer_list<int> axis);
+        OpBenchmark(std::string name, NDArray *x, NDArray *y, NDArray *z, std::vector<int> axis);
 
         void setOpNum(int opNum);
         void setTestName(std::string testName);
@@ -37,10 +39,13 @@ namespace nd4j {
         NDArray& x();
         int opNum();
         std::string testName();
+        std::vector<int> getAxis();
 
+        virtual std::string dataType();
         virtual std::string axis() = 0;
         virtual std::string orders() = 0;
         virtual std::string strides() = 0;
+        virtual std::string shape();
         virtual std::string inplace() = 0;
 
         virtual void executeOnce() = 0;

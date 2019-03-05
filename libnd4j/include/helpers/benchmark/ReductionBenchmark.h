@@ -29,6 +29,8 @@ using namespace nd4j::graph;
 
 namespace nd4j {
     class ND4J_EXPORT ReductionBenchmark : public OpBenchmark {
+    protected:
+        int _opType;        //0=Float, 1=Same
     public:
         ReductionBenchmark() : OpBenchmark() {
             //
@@ -36,14 +38,34 @@ namespace nd4j {
 
         ReductionBenchmark(reduce::FloatOps op, std::string testName, NDArray *x, NDArray *z, std::initializer_list<int> axis) : OpBenchmark(testName, x, z, axis) {
             _opNum = (int) op;
+            _opType = 0;
         }
 
         ReductionBenchmark(reduce::FloatOps op) : OpBenchmark() {
             _opNum = (int) op;
+            _opType = 0;
+        }
+
+        ReductionBenchmark(reduce::FloatOps op, std::string testName) : OpBenchmark() {
+            _opNum = (int) op;
+            _opType = 0;
+            _testName = testName;
+        }
+
+        ReductionBenchmark(reduce::SameOps op) : OpBenchmark() {
+            _opNum = (int) op;
+            _opType = 1;
+        }
+
+        ReductionBenchmark(reduce::SameOps op, std::string testName) : OpBenchmark() {
+            _opNum = (int) op;
+            _opType = 1;
+            _testName = testName;
         }
 
         ReductionBenchmark(reduce::FloatOps op, std::string testName, NDArray *x, NDArray *z, std::vector<int> axis) : OpBenchmark(testName ,x, z, axis) {
             _opNum = (int) op;
+            _opType = 0;
         }
 
         void executeOnce() override {

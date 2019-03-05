@@ -48,6 +48,11 @@ namespace nd4j {
             _opNum = (int) op;
         }
 
+        ScalarBenchmark(scalar::Ops op, std::string testName) : OpBenchmark() {
+            _opNum = (int) op;
+            _testName = testName;
+        }
+
         ScalarBenchmark(scalar::Ops op, std::string testName, NDArray *x, NDArray *y, NDArray *z) : OpBenchmark(testName, x, y, z) {
             _opNum = (int) op;
         }

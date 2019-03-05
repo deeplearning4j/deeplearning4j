@@ -36,6 +36,7 @@ namespace helpers {
 
     bool checkCholeskyInput(graph::LaunchContext* context, NDArray const* input);
     int cholesky(graph::LaunchContext* context, NDArray* input, NDArray* output, bool inplace = false);
+    int logdetFunctor(graph::LaunchContext* context, NDArray* input, NDArray* output);
 }
 }
 }
