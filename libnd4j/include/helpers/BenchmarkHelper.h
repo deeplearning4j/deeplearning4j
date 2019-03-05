@@ -27,7 +27,11 @@
 #include <helpers/benchmark/TransformBenchmark.h>
 #include <helpers/benchmark/ReductionBenchmark.h>
 #include <helpers/benchmark/PairwiseBenchmark.h>
+#include <helpers/benchmark/DeclarableBenchmark.h>
+#include <helpers/benchmark/MatrixBenchmark.h>
+#include <helpers/benchmark/BroadcastBenchmark.h>
 #include <ops/declarable/DeclarableOp.h>
+#include <graph/Context.h>
 #include <NDArray.h>
 #include <benchmark/Parameters.h>
 #include <benchmark/PredefinedParameters.h>
@@ -72,7 +76,12 @@ namespace nd4j {
         void runOperationSuit(ScalarBenchmark *op, const std::function<void (Parameters &, ResultSet &, ResultSet &)>& func, ParametersBatch &parametersBatch, const char *message = nullptr);
         void runOperationSuit(ReductionBenchmark *op, const std::function<void (Parameters &, ResultSet &, ResultSet &)>& func, ParametersBatch &parametersBatch, const char *message = nullptr);
         void runOperationSuit(ReductionBenchmark *op, const std::function<void (Parameters &, ResultSet &, ResultSet &, ResultSet &)>& func, ParametersBatch &parametersBatch, const char *message = nullptr);
+        void runOperationSuit(BroadcastBenchmark *op, const std::function<void (Parameters &, ResultSet &, ResultSet &, ResultSet &)>& func, ParametersBatch &parametersBatch, const char *message = nullptr);
         void runOperationSuit(PairwiseBenchmark *op, const std::function<void (Parameters &, ResultSet &, ResultSet &, ResultSet &)>& func, ParametersBatch &parametersBatch, const char *message = nullptr);
+        void runOperationSuit(MatrixBenchmark *op, const std::function<void (Parameters &, ResultSet &, ResultSet &, ResultSet &)>& func, ParametersBatch &parametersBatch, const char *message = nullptr);
+
+        void runOperationSuit(DeclarableBenchmark *op, const std::function<Context* (Parameters &)>& func, ParametersBatch &parametersBatch, const char *message = nullptr);
+
 
         void runScalarSuit();
 
