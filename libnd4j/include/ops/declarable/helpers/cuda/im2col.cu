@@ -35,7 +35,7 @@ __global__ static void im2colCuda(const void *in, void *out,
                                   const int pH, const int pW, 
                                   const int dH, const int dW, 
                                   const double zeroPadValD) {
-        
+
     T zeroPadVal = static_cast<T>(zeroPadValD); //Value to use when value is padding. Usually 0 but not always
     const auto im  = reinterpret_cast<const T*>(in);
           auto col = reinterpret_cast<T*>(out);    
@@ -49,7 +49,7 @@ __global__ static void im2colCuda(const void *in, void *out,
         colStrides = shape::stride(outShapeInfo);
         imStrides = shape::stride(inShapeInfo);
         iH = inShapeInfo[3];
-        iW = inShapeInfo[4];
+        iW = inShapeInfo[4];        
     }
 
     __syncthreads();
@@ -57,7 +57,7 @@ __global__ static void im2colCuda(const void *in, void *out,
     const int colRank = 6;
     Nd4jLong colIndices[colRank];   // rank of output
     
-    const auto colInd = blockIdx.x * gridDim.x + threadIdx.x;
+    const auto colInd = blockIdx.x * blockDim.x + threadIdx.x;    
     
     if(colInd >= colLen) return;
 
@@ -86,9 +86,9 @@ static void im2colCudaLauncher(const int blocksPerGrid, const int threadsPerBloc
 void im2col(nd4j::graph::LaunchContext& context, const NDArray& in, NDArray& out, const int kH, const int kW, const int sH, const int sW, const int pH, const int pW, const int dH, const int dW, const NDArray& arrZeroPadVal) {
 
     if(!in.isActualOnDeviceSide()) in.syncToDevice();
-
+    
     const int threadsPerBlock = MAX_NUM_THREADS;
-    const int blocksPerGrid = (out.lengthOf() + threadsPerBlock - 1) / threadsPerBlock;    // ceil
+    const int blocksPerGrid = (out.lengthOf() + threadsPerBlock - 1) / threadsPerBlock;    
 
     BUILD_SINGLE_SELECTOR(out.dataType(), im2colCudaLauncher, (blocksPerGrid, threadsPerBlock, context, in.getSpecialBuffer(), out.getSpecialBuffer(), in.getSpecialShapeInfo(), out.getSpecialShapeInfo(), kH, kW, sH, sW, pH, pW, dH, dW, arrZeroPadVal.e<double>(0)), FLOAT_TYPES);
 

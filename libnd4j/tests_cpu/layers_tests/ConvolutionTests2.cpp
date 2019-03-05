@@ -43,8 +43,10 @@ public:
 //////////////////////////////////////////////////////////////////////
 TEST_F(ConvolutionTests2, im2col_1) {
 
-    int bS=2, iH=4,iW=3,  iC=4,oC=3,  kH=3,kW=2,  sH=1,sW=1,  pH=0,pW=0,  dH=1,dW=1;
-    int       oH=2,oW=2;
+    int bS=2, iH=4,iW=3,  iC=4,  kH=3,kW=2,  sH=1,sW=1,  pH=0,pW=0,  dH=1,dW=1;
+    int oH = (iH - (kH + (kH-1)*(dH-1)) + 2*pH)/sH + 1; // VALID
+    int oW = (iW - (kW + (kW-1)*(dW-1)) + 2*pW)/sW + 1; // VALID
+
     int paddingMode = 0;             // 1-SAME, 0-VALID;    
 
     NDArray image('c', {bS, iC, iH, iW}, nd4j::DataType::DOUBLE);
@@ -75,3 +77,5 @@ TEST_F(ConvolutionTests2, im2col_1) {
 
 #endif //LIBND4J_CONVOLUTIONTESTS_H
 
+
+    
