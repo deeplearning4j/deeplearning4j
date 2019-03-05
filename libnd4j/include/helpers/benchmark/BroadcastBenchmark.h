@@ -67,10 +67,30 @@ BroadcastBenchmark(broadcast::Ops op, std::string name, std::initializer_list<in
 }
 
 void executeOnce() override {
-//TODO: TAD pointers
-NativeOpExcutioner::execBroadcast(_opNum, _x->buffer(), _x->shapeInfo(), _y->buffer(), _y->shapeInfo(), _z->buffer(), _z->shapeInfo(),
-        _axis.data(), _axis.size(), /*Nd4jLong *tadOnlyShapeInfo*/ nullptr, /*Nd4jLong *tadOffsets*/ nullptr,
-/*Nd4jLong *tadOnlyShapeInfoZ*/ nullptr, /*Nd4jLong *tadOffsetsZ*/ nullptr);
+    PointersManager manager(LaunchContext::defaultContext(), "BroadcastBM");
+
+    auto axis = reinterpret_cast<int *>(manager.replicatePointer(_axis.data(), _axis.size()));
+
+    shape::TAD tadX;
+    tadX.init(_x->shapeInfo(), _axis.data(), _axis.size());
+    tadX.createTadOnlyShapeInfo();
+    tadX.createOffsets();
+
+    shape::TAD tadZ;
+    tadZ.init(_z->shapeInfo(), _axis.data(), _axis.size());
+    tadZ.createTadOnlyShapeInfo();
+    tadZ.createOffsets();
+
+    auto tadShapeInfoX = reinterpret_cast<Nd4jLong *>(manager.replicatePointer(tadX.tadOnlyShapeInfo, shape::shapeInfoByteLength(tadX.tadOnlyShapeInfo)));
+    auto tadShapeInfoZ = reinterpret_cast<Nd4jLong *>(manager.replicatePointer(tadZ.tadOnlyShapeInfo, shape::shapeInfoByteLength(tadZ.tadOnlyShapeInfo)));
+
+    auto tadOffsetsX = reinterpret_cast<Nd4jLong *>(manager.replicatePointer(tadX.tadOffsets, tadX.numTads * sizeof(Nd4jLong)));
+    auto tadOffsetsZ = reinterpret_cast<Nd4jLong *>(manager.replicatePointer(tadZ.tadOffsets, tadZ.numTads * sizeof(Nd4jLong)));
+
+    NativeOpExecutioner::execBroadcast(LaunchContext::defaultContext(), _opNum, _x->buffer(), _x->shapeInfo(), _x->specialBuffer(), _x->specialShapeInfo(), _y->buffer(), _y->shapeInfo(), _y->specialBuffer(), _y->specialShapeInfo(), _z->buffer(), _z->shapeInfo(), _z->specialBuffer(), _z->specialShapeInfo(), axis, _axis.size(),
+            /*Nd4jLong *tadOnlyShapeInfo*/ tadShapeInfoX, /*Nd4jLong *tadOffsets*/ tadOffsetsX, /*Nd4jLong *tadOnlyShapeInfoZ*/ tadShapeInfoZ, /*Nd4jLong *tadOffsetsZ*/ tadOffsetsZ);
+
+    manager.synchronize();
 }
 
 std::string axis() override {
