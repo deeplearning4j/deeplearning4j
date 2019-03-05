@@ -29,7 +29,8 @@ namespace helpers {
 using namespace mkldnn;
 
 static void getMKLDNNMemoryDescLrn(const NDArray* src, const NDArray* diff_src,
-        mkldnn::memory::desc* lrn_src_md, mkldnn::memory::desc* lrn_diff_src_md, int axis) {
+        mkldnn::memory::desc* lrn_src_md, mkldnn::memory::desc* lrn_diff_src_md,
+        mkldnn::memory::desc* user_src_md, mkldnn::memory::desc* user_diff_src_md, int axis) {
     const Nd4jLong* shape = src->getShapeInfo();
     long rank = shape[0];
     long dim1 = axis; // MKL-DNN supports only 1 axis, which has to be the "channel" one
@@ -39,23 +40,26 @@ static void getMKLDNNMemoryDescLrn(const NDArray* src, const NDArray* diff_src,
 
     auto type = mkldnn::memory::data_type::f32;
     auto format = axis == 1 ? mkldnn::memory::format::nchw : mkldnn::memory::format::nhwc;
+    auto supposed_to_be_any_format = format; // doesn't work with "any"
 
     if (src != nullptr && src->getBuffer() != nullptr && lrn_src_md != nullptr) {
-        *lrn_src_md = mkldnn::memory::desc({ lrn_src_tz }, type, format);
-        // lrn_src_md->data.format = mkldnn_blocked; // unsupported for lrn, leave nchw or nhwc for now
-        lrn_src_md->data.layout_desc.blocking.strides[0][0] = src->stridesOf()[0];
-        lrn_src_md->data.layout_desc.blocking.strides[0][1] = src->stridesOf()[dim1];
-        lrn_src_md->data.layout_desc.blocking.strides[0][2] = rank > 2 ? src->stridesOf()[dim2] : 1;
-        lrn_src_md->data.layout_desc.blocking.strides[0][3] = rank > 3 ? src->stridesOf()[dim3] : 1;
+        *lrn_src_md = mkldnn::memory::desc({ lrn_src_tz }, type, supposed_to_be_any_format);
+        *user_src_md = mkldnn::memory::desc({ lrn_src_tz }, type, format);
+        user_src_md->data.format = mkldnn_blocked;
+        user_src_md->data.layout_desc.blocking.strides[0][0] = src->stridesOf()[0];
+        user_src_md->data.layout_desc.blocking.strides[0][1] = src->stridesOf()[dim1];
+        user_src_md->data.layout_desc.blocking.strides[0][2] = rank > 2 ? src->stridesOf()[dim2] : 1;
+        user_src_md->data.layout_desc.blocking.strides[0][3] = rank > 3 ? src->stridesOf()[dim3] : 1;
     }
 
     if (diff_src != nullptr && diff_src->getBuffer() != nullptr && lrn_diff_src_md != nullptr) {
-        *lrn_diff_src_md = mkldnn::memory::desc({ lrn_src_tz }, type, format);
-        // lrn_diff_src_md->data.format = mkldnn_blocked; // unsupported for lrn, leave nchw or nhwc for now
-        lrn_diff_src_md->data.layout_desc.blocking.strides[0][0] = diff_src->stridesOf()[0];
-        lrn_diff_src_md->data.layout_desc.blocking.strides[0][1] = diff_src->stridesOf()[dim1];
-        lrn_diff_src_md->data.layout_desc.blocking.strides[0][2] = rank > 2 ? diff_src->stridesOf()[dim2] : 1;
-        lrn_diff_src_md->data.layout_desc.blocking.strides[0][3] = rank > 3 ? diff_src->stridesOf()[dim3] : 1;
+        *lrn_diff_src_md = mkldnn::memory::desc({ lrn_src_tz }, type, supposed_to_be_any_format);
+        *user_diff_src_md = mkldnn::memory::desc({ lrn_src_tz }, type, format);
+        user_diff_src_md->data.format = mkldnn_blocked;
+        user_diff_src_md->data.layout_desc.blocking.strides[0][0] = diff_src->stridesOf()[0];
+        user_diff_src_md->data.layout_desc.blocking.strides[0][1] = diff_src->stridesOf()[dim1];
+        user_diff_src_md->data.layout_desc.blocking.strides[0][2] = rank > 2 ? diff_src->stridesOf()[dim2] : 1;
+        user_diff_src_md->data.layout_desc.blocking.strides[0][3] = rank > 3 ? diff_src->stridesOf()[dim3] : 1;
     }
 }
 #endif
@@ -77,17 +81,40 @@ static void getMKLDNNMemoryDescLrn(const NDArray* src, const NDArray* diff_src,
 
         if (streams[0].checkAndReset({input}, {output}, {bias, alpha, beta}, {depth})) {
             mkldnn_memory_desc_t empty;
-            mkldnn::memory::desc lrn_src_md(empty);
+            mkldnn::memory::desc lrn_src_md(empty), user_src_md(empty);
 
-            getMKLDNNMemoryDescLrn(input, nullptr, &lrn_src_md, nullptr, input->rankOf() - 1);
+            getMKLDNNMemoryDescLrn(input, nullptr, &lrn_src_md, nullptr, &user_src_md, nullptr, input->rankOf() - 1);
 
             auto lrn_desc = lrn_forward::desc(prop_kind::forward_inference, lrn_across_channels, lrn_src_md, (2 * depth + 1), alpha * (2 * depth + 1), beta, bias);
 
-            auto lrn_prim_desc = lrn_forward::primitive_desc(lrn_desc, streams[0].getEngine());
-            auto lrn_src_memory = mkldnn::memory(lrn_prim_desc.src_primitive_desc(), input->buffer());
-            auto lrn_dst_memory = mkldnn::memory(lrn_prim_desc.dst_primitive_desc(), output->buffer());
-            streams[0].setMemory({lrn_src_memory, lrn_dst_memory});
+            auto engine = streams[0].getEngine();
+            auto lrn_prim_desc = lrn_forward::primitive_desc(lrn_desc, engine);
+            auto user_src_memory = mkldnn::memory({user_src_md, engine}, input->buffer());
+            auto user_dst_memory = mkldnn::memory({user_src_md, engine}, output->buffer());
+
+            auto lrn_src_memory = user_src_memory;
+            streams[0].addMemory(user_src_memory);
+            if (mkldnn::memory::primitive_desc(lrn_prim_desc.src_primitive_desc())
+                    != user_src_memory.get_primitive_desc()) {
+                lrn_src_memory = mkldnn::memory(lrn_prim_desc.src_primitive_desc());
+                streams[0].addMemory(lrn_src_memory);
+                streams[0].addOperation(reorder(user_src_memory, lrn_src_memory));
+            }
+
+            auto lrn_dst_memory = user_dst_memory;
+            streams[0].addMemory(user_dst_memory);
+            if (mkldnn::memory::primitive_desc(lrn_prim_desc.dst_primitive_desc())
+                    != user_dst_memory.get_primitive_desc()) {
+                lrn_dst_memory = mkldnn::memory(lrn_prim_desc.dst_primitive_desc());
+                streams[0].addMemory(lrn_dst_memory);
+            }
+
             streams[0].addOperation(lrn_forward(lrn_prim_desc, lrn_src_memory, lrn_dst_memory));
+
+            if (mkldnn::memory::primitive_desc(lrn_prim_desc.dst_primitive_desc())
+                    != user_dst_memory.get_primitive_desc()) {
+                streams[0].addOperation(reorder(lrn_dst_memory, user_dst_memory));
+            }
         }
 
         streams[0].submitAndWait();
@@ -179,17 +206,40 @@ static void getMKLDNNMemoryDescLrn(const NDArray* src, const NDArray* diff_src,
 
         if (streams[0].checkAndReset({input}, {output}, {bias, alpha, beta}, {depth})) {
             mkldnn_memory_desc_t empty;
-            mkldnn::memory::desc lrn_src_md(empty);
+            mkldnn::memory::desc lrn_src_md(empty), user_src_md(empty);
 
-            getMKLDNNMemoryDescLrn(input, nullptr, &lrn_src_md, nullptr, input->rankOf() - 1);
+            getMKLDNNMemoryDescLrn(input, nullptr, &lrn_src_md, nullptr, &user_src_md, nullptr, input->rankOf() - 1);
 
             auto lrn_desc = lrn_forward::desc(prop_kind::forward_inference, lrn_across_channels, lrn_src_md, (2 * depth + 1), alpha * (2 * depth + 1), beta, bias);
 
-            auto lrn_prim_desc = lrn_forward::primitive_desc(lrn_desc, streams[0].getEngine());
-            auto lrn_src_memory = mkldnn::memory(lrn_prim_desc.src_primitive_desc(), input->buffer());
-            auto lrn_dst_memory = mkldnn::memory(lrn_prim_desc.dst_primitive_desc(), output->buffer());
-            streams[0].setMemory({lrn_src_memory, lrn_dst_memory});
+            auto engine = streams[0].getEngine();
+            auto lrn_prim_desc = lrn_forward::primitive_desc(lrn_desc, engine);
+            auto user_src_memory = mkldnn::memory({user_src_md, engine}, input->buffer());
+            auto user_dst_memory = mkldnn::memory({user_src_md, engine}, output->buffer());
+
+            auto lrn_src_memory = user_src_memory;
+            streams[0].addMemory(user_src_memory);
+            if (mkldnn::memory::primitive_desc(lrn_prim_desc.src_primitive_desc())
+                    != user_src_memory.get_primitive_desc()) {
+                lrn_src_memory = mkldnn::memory(lrn_prim_desc.src_primitive_desc());
+                streams[0].addMemory(lrn_src_memory);
+                streams[0].addOperation(reorder(user_src_memory, lrn_src_memory));
+            }
+
+            auto lrn_dst_memory = user_dst_memory;
+            streams[0].addMemory(user_dst_memory);
+            if (mkldnn::memory::primitive_desc(lrn_prim_desc.dst_primitive_desc())
+                    != user_dst_memory.get_primitive_desc()) {
+                lrn_dst_memory = mkldnn::memory(lrn_prim_desc.dst_primitive_desc());
+                streams[0].addMemory(lrn_dst_memory);
+            }
+
             streams[0].addOperation(lrn_forward(lrn_prim_desc, lrn_src_memory, lrn_dst_memory));
+
+            if (mkldnn::memory::primitive_desc(lrn_prim_desc.dst_primitive_desc())
+                    != user_dst_memory.get_primitive_desc()) {
+                streams[0].addOperation(reorder(lrn_dst_memory, user_dst_memory));
+            }
         }
 
         streams[0].submitAndWait();
@@ -271,8 +321,7 @@ static void getMKLDNNMemoryDescLrn(const NDArray* src, const NDArray* diff_src,
         halfDepth = nd4j::math::nd4j_max(halfDepth, 0);
         const int channel =  input->sizeAt(1);
 
-#ifdef HAVE_MKLDNN_DISABLED
-//XXX: need to get output to match exactly with MKL-DNN
+#ifdef HAVE_MKLDNN
     if (block.isUseMKLDNN() && nd4j::MKLDNNStream::isSupported({input, scale, output})) {
         std::vector<nd4j::MKLDNNStream>& streams = block.getMKLDNNStreams();
         if (streams.empty()) {
@@ -281,20 +330,52 @@ static void getMKLDNNMemoryDescLrn(const NDArray* src, const NDArray* diff_src,
 
         if (streams[0].checkAndReset({input, scale}, {output}, {bias, alpha, beta}, {depth})) {
             mkldnn_memory_desc_t empty;
-            mkldnn::memory::desc lrn_src_md(empty), lrn_diff_src_md(empty);
+            mkldnn::memory::desc lrn_src_md(empty), lrn_diff_src_md(empty), user_src_md(empty), user_diff_src_md(empty);
 
-            getMKLDNNMemoryDescLrn(input, scale, &lrn_src_md, &lrn_diff_src_md, 1);
+            getMKLDNNMemoryDescLrn(input, scale, &lrn_src_md, &lrn_diff_src_md, &user_src_md, &user_diff_src_md, 1);
 
             auto lrn_desc = lrn_forward::desc(prop_kind::forward, lrn_across_channels, lrn_src_md, (2 * halfDepth + 1), alpha * (2 * halfDepth + 1), beta, bias);
             auto lrn_back_desc = lrn_backward::desc(lrn_across_channels, lrn_src_md, lrn_diff_src_md, (2 * halfDepth + 1), alpha * (2 * halfDepth + 1), beta, bias);
 
-            auto lrn_prim_desc = lrn_forward::primitive_desc(lrn_desc, streams[0].getEngine());
-            auto lrn_back_prim_desc = lrn_backward::primitive_desc(lrn_back_desc, streams[0].getEngine(), lrn_prim_desc);
-            auto lrn_src_memory = mkldnn::memory(lrn_prim_desc.src_primitive_desc(), input->buffer());
-            auto lrn_dst_memory = mkldnn::memory(lrn_back_prim_desc.diff_dst_primitive_desc(), scale->buffer());
-            auto lrn_diff_src_memory = mkldnn::memory(lrn_back_prim_desc.diff_src_primitive_desc(), output->buffer());
-            streams[0].setMemory({lrn_src_memory, lrn_dst_memory, lrn_diff_src_memory});
+            auto engine = streams[0].getEngine();
+            auto lrn_prim_desc = lrn_forward::primitive_desc(lrn_desc, engine);
+            auto lrn_back_prim_desc = lrn_backward::primitive_desc(lrn_back_desc, engine, lrn_prim_desc);
+            auto user_src_memory = mkldnn::memory({user_src_md, engine}, input->buffer());
+            auto user_dst_memory = mkldnn::memory({user_diff_src_md, engine}, scale->buffer());
+            auto user_diff_src_memory = mkldnn::memory({user_src_md, engine}, output->buffer());
+
+            auto lrn_src_memory = user_src_memory;
+            streams[0].addMemory(user_src_memory);
+            if (mkldnn::memory::primitive_desc(lrn_prim_desc.src_primitive_desc())
+                    != user_src_memory.get_primitive_desc()) {
+                lrn_src_memory = mkldnn::memory(lrn_prim_desc.src_primitive_desc());
+                streams[0].addMemory(lrn_src_memory);
+                streams[0].addOperation(reorder(user_src_memory, lrn_src_memory));
+            }
+
+            auto lrn_diff_src_memory = user_diff_src_memory;
+            streams[0].addMemory(user_diff_src_memory);
+            if (mkldnn::memory::primitive_desc(lrn_back_prim_desc.diff_src_primitive_desc())
+                    != user_diff_src_memory.get_primitive_desc()) {
+                lrn_diff_src_memory = mkldnn::memory(lrn_back_prim_desc.diff_src_primitive_desc());
+                streams[0].addMemory(lrn_diff_src_memory);
+            }
+
+            auto lrn_dst_memory = user_dst_memory;
+            streams[0].addMemory(user_dst_memory);
+            if (mkldnn::memory::primitive_desc(lrn_back_prim_desc.diff_dst_primitive_desc())
+                    != user_dst_memory.get_primitive_desc()) {
+                lrn_dst_memory = mkldnn::memory(lrn_back_prim_desc.diff_dst_primitive_desc());
+                streams[0].addMemory(lrn_dst_memory);
+                streams[0].addOperation(reorder(user_dst_memory, lrn_dst_memory));
+            }
+
             streams[0].addOperation(lrn_backward(lrn_back_prim_desc, lrn_src_memory, lrn_dst_memory, lrn_diff_src_memory));
+
+            if (mkldnn::memory::primitive_desc(lrn_back_prim_desc.diff_src_primitive_desc())
+                    != user_diff_src_memory.get_primitive_desc()) {
+                streams[0].addOperation(reorder(lrn_diff_src_memory, user_diff_src_memory));
+            }
         }
 
         streams[0].submitAndWait();
