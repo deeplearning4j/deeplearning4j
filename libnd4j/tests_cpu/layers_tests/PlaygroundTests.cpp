@@ -1462,44 +1462,66 @@ TEST_F(PlaygroundTests, im2col_1) {
     int oW = (iW - (kW + (kW-1)*(dW-1)) + 2*pW)/sW + 1; // VALID
 
     NDArray image('c', {bS, iC, iH, iW}, nd4j::DataType::FLOAT32);
-    NDArray column1('c', {bS, iC, kH, kW, oH, oW}, nd4j::DataType::FLOAT32);
-    NDArray column2('c', {bS, iC, kH, kW, oH, oW}, nd4j::DataType::FLOAT32);    
+    NDArray column('c', {bS, iC, kH, kW, oH, oW}, nd4j::DataType::FLOAT32);    
     
     nd4j::graph::LaunchContext* context = image.getContext();
     NDArray padValue (nd4j::DataType::FLOAT32, context); // scalar =0
 
+    image.linspace(1, 1);    
+    
+    const int N = 20;
+
+    // warm up
+    nd4j::ops::helpers::im2col(*context, image, column, kH, kW, sH, sW, pH, pW, dH, dW, padValue);   // warm up        
+
+    // ---------------------------------------- //
+
+    auto timeStart1 = std::chrono::system_clock::now();
+
+    for (int i = 0; i < N ; i++) {
+        nd4j::ops::helpers::im2col(*context, image, column, kH, kW, sH, sW, pH, pW, dH, dW, padValue);        
+        cudaStreamSynchronize(*context->getCudaStream());
+    }
+
+    auto timeEnd1 = std::chrono::system_clock::now();
+    auto duration1 = std::chrono::duration_cast<std::chrono::microseconds> ((timeEnd1 - timeStart1) / N).count();
+    printf("duration my %ld\n", duration1);
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(PlaygroundTests, im2col_2) {
+    
+    // int bS=32, iH=244,iW=244,  iC=3,  kH=3,kW=3,  sH=1,sW=1,  pH=0,pW=0,  dH=1,dW=1;
+    int bS=2, iH=4,iW=4,  iC=3,  kH=3,kW=3,  sH=1,sW=1,  pH=0,pW=0,  dH=1,dW=1;
+    int oH = (iH - (kH + (kH-1)*(dH-1)) + 2*pH)/sH + 1; // VALID
+    int oW = (iW - (kW + (kW-1)*(dW-1)) + 2*pW)/sW + 1; // VALID
+
+    NDArray image('c', {bS, iC, iH, iW}, nd4j::DataType::FLOAT32);    
+    NDArray column('c', {bS, iC, kH, kW, oH, oW}, nd4j::DataType::FLOAT32);    
+    
+    nd4j::graph::LaunchContext* context = image.getContext();
+
     image.linspace(1, 1);
     ExtraArguments extras(std::vector<double>({(double)kH, (double)kW, (double)sH, (double)sW, (double)pH, (double)pW, (double)dH, (double)dW, 0., 0.}));
-    
-    const int N = 100;    
-    nd4j::ops::helpers::im2col(*context, image, column1, kH, kW, sH, sW, pH, pW, dH, dW, padValue);   // warm up        
+       
+    const int N = 20;
+
+    // warm up 
+    void* params = extras.argumentsAsT(column.dataType());
+    NativeOpExecutioner::execTransformSame(context, nd4j::transform::Im2col, nullptr, image.getShapeInfo(), image.getSpecialBuffer(), image.getSpecialShapeInfo(), nullptr, column.getShapeInfo(), column.getSpecialBuffer(), column.getSpecialShapeInfo(), params, nullptr, nullptr);
 
     // ---------------------------------------- //
+    auto timeStart2 = std::chrono::system_clock::now();
 
-    auto timeStart = std::chrono::system_clock::now();
-
-    // for (int i = 0; i < N ; i++)
-        nd4j::ops::helpers::im2col(*context, image, column1, kH, kW, sH, sW, pH, pW, dH, dW, padValue);        
-
-    auto timeEnd = std::chrono::system_clock::now();
-    auto duration = std::chrono::duration_cast<std::chrono::microseconds> ((timeEnd - timeStart) / N).count();
-    printf("duration my %ld\n", duration);
-
-    // ---------------------------------------- //
-
-    timeStart = std::chrono::system_clock::now();
-
-    // for (int i = 0; i < N ; i++)
-        // image.applyTransform(nd4j::transform::Im2col, &column2, &extras);
+    for (int i = 0; i < N ; i++) {        
         NativeOpExecutioner::execTransformSame(context, nd4j::transform::Im2col, 
                                                 nullptr, image.getShapeInfo(), image.getSpecialBuffer(),   image.getSpecialShapeInfo(), 
-                                                nullptr, column2.getShapeInfo(), column2.getSpecialBuffer(), column2.getSpecialShapeInfo(), 
-                                                extras.argumentsAsT(column2.dataType()),
-                                                nullptr, nullptr);
+                                                nullptr, column.getShapeInfo(), column.getSpecialBuffer(), column.getSpecialShapeInfo(), 
+                                                params,
+                                                nullptr, nullptr);        
+    }
 
-    timeEnd = std::chrono::system_clock::now();
-    duration = std::chrono::duration_cast<std::chrono::microseconds> ((timeEnd - timeStart) / N).count();
-    printf("duration old %ld\n", duration);
-
-    ASSERT_TRUE(column1.equalsTo(column2));
+    auto timeEnd2 = std::chrono::system_clock::now();
+    auto duration2 = std::chrono::duration_cast<std::chrono::microseconds> ((timeEnd2 - timeStart2) / N).count();
+    printf("duration old %ld\n", duration2);
 }

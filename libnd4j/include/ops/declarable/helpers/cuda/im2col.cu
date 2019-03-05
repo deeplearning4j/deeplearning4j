@@ -40,35 +40,39 @@ __global__ static void im2colCuda(const void *in, void *out,
     const auto im  = reinterpret_cast<const T*>(in);
           auto col = reinterpret_cast<T*>(out);    
 
-    __shared__ Nd4jLong colLen, *colStrides, *imStrides, *colShape;
-    __shared__ int iH, iW;
+    __shared__ Nd4jLong colLen, *colStrides, *imStrides, *colShape, *colIndices;
+    __shared__ int iH, iW, colRank;
     
     if (threadIdx.x == 0) {
-        colLen  = shape::length(outShapeInfo);
+        
+        extern __shared__ unsigned char shmem[];
+        colIndices = reinterpret_cast<Nd4jLong*>(shmem);
+
+        colRank = shape::rank(outShapeInfo);
+        colLen = shape::length(outShapeInfo);        
         colShape = shape::shapeOf(const_cast<Nd4jLong*>(outShapeInfo));
         colStrides = shape::stride(outShapeInfo);
         imStrides = shape::stride(inShapeInfo);
         iH = inShapeInfo[3];
-        iW = inShapeInfo[4];        
+        iW = inShapeInfo[4];
     }
 
-    __syncthreads();
-
-    const int colRank = 6;
-    Nd4jLong colIndices[colRank];   // rank of output
+    __syncthreads();  
     
-    const auto colInd = blockIdx.x * blockDim.x + threadIdx.x;    
+    const auto colInd  = blockIdx.x * blockDim.x + threadIdx.x;
     
     if(colInd >= colLen) return;
+    
+    const auto indexes = colIndices + threadIdx.x * colRank;    
 
-    shape::ind2subC(colRank, colShape, colInd, colLen, colIndices);
+    shape::ind2subC(colRank, colShape, colInd, colLen, indexes);
 
-    const auto imh = (-pH + colIndices[2] * dH) + colIndices[4]*sH;
-    const auto imw = (-pW + colIndices[3] * dW) + colIndices[5]*sW;
+    const auto imh = (-pH + indexes[2] * dH) + indexes[4] * sH;
+    const auto imw = (-pW + indexes[3] * dW) + indexes[5] * sW;
                                                                         
-    const auto colBuff = col + colIndices[0]*colStrides[0] + colIndices[1]*colStrides[1] + colIndices[2]*colStrides[2] + colIndices[3]*colStrides[3] + colIndices[4]*colStrides[4] + colIndices[5]*colStrides[5];
-    const auto imBuff  = im  + colIndices[0]*imStrides[0]  + colIndices[1]*imStrides[1]  + imh*imStrides[2] + imw*imStrides[3]; 
-                                                    
+    const auto colBuff = col + indexes[0]*colStrides[0] + indexes[1]*colStrides[1] + indexes[2]*colStrides[2] + indexes[3]*colStrides[3] + indexes[4]*colStrides[4] + indexes[5]*colStrides[5];
+    const auto imBuff  = im  + indexes[0]*imStrides[0]  + indexes[1]*imStrides[1]  + imh*imStrides[2] + imw*imStrides[3]; 
+
     if (static_cast<unsigned>(imh) >= static_cast<unsigned>(iH) || static_cast<unsigned>(imw) >= static_cast<unsigned>(iW))
         *colBuff = zeroPadVal;
     else 
@@ -79,7 +83,7 @@ __global__ static void im2colCuda(const void *in, void *out,
 //////////////////////////////////////////////////////////////////////////
 template <typename T>            
 static void im2colCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, nd4j::graph::LaunchContext& context, const void *in, void *out, const Nd4jLong *inShapeInfo, const Nd4jLong *outShapeInfo, int kY, int kX, int sH, int sW, int pH, int pW, int dH, int dW, double zeroPadVal) {
-       im2colCuda<T><<<blocksPerGrid, threadsPerBlock, 1024, *context.getCudaStream()>>>(in, out, inShapeInfo, outShapeInfo, kY, kX, sH, sW, pH, pW, dH, dW, zeroPadVal);
+    im2colCuda<T><<<blocksPerGrid, threadsPerBlock, threadsPerBlock * sizeof(Nd4jLong) * 6 /* rank of out = 6 */, *context.getCudaStream()>>>(in, out, inShapeInfo, outShapeInfo, kY, kX, sH, sW, pH, pW, dH, dW, zeroPadVal);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -87,7 +91,7 @@ void im2col(nd4j::graph::LaunchContext& context, const NDArray& in, NDArray& out
 
     if(!in.isActualOnDeviceSide()) in.syncToDevice();
     
-    const int threadsPerBlock = MAX_NUM_THREADS;
+    const int threadsPerBlock = 512;
     const int blocksPerGrid = (out.lengthOf() + threadsPerBlock - 1) / threadsPerBlock;    
 
     BUILD_SINGLE_SELECTOR(out.dataType(), im2colCudaLauncher, (blocksPerGrid, threadsPerBlock, context, in.getSpecialBuffer(), out.getSpecialBuffer(), in.getSpecialShapeInfo(), out.getSpecialShapeInfo(), kH, kW, sH, sW, pH, pW, dH, dW, arrZeroPadVal.e<double>(0)), FLOAT_TYPES);
