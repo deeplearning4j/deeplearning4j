@@ -97,7 +97,7 @@ TEST_F(PlaygroundTests, Test_OpBenchmark_2) {
 
     helper.runOperationSuit(&sb, generator, "ScalarTest");
 
-    TransformBenchmark tb(transform::StrictOps::Tanh);
+    TransformBenchmark tb(transform::StrictOps::Tanh, "tanh");
 
     // we can use the same generator, since the same number of operands used
     helper.runOperationSuit(&tb, generator, "TransformTest");
@@ -137,12 +137,12 @@ TEST_F(PlaygroundTests, Test_OpBenchmark_2) {
 
     ReductionBenchmark rb(reduce::FloatOps::Mean);
 
-    helper.runOperationSuit(&rb, generatorReductionAxis, "ReductionAlongDimensionTest");
+    helper.runOperationSuit(&rb, (const std::function<void (ResultSet &, ResultSet &, ResultSet &)>)(generatorReductionAxis), "ReductionAlongDimensionTest");
 }
 
 TEST_F(PlaygroundTests, Test_OpBenchmark_3) {
 
-    TransformBenchmark tb(transform::StrictOps::Tanh);
+    TransformBenchmark tb(transform::StrictOps::Tanh, "tanh");
     PredefinedParameters a("alpha", {2, 3, 4});
     PredefinedParameters b("beta", {9, 15, 27});
 
@@ -169,7 +169,7 @@ TEST_F(PlaygroundTests, Test_OpBenchmark_4) {
     BenchmarkHelper helper;
 
     PairwiseBenchmark pb(pairwise::Ops::Add, "PWT ADD");
-    TransformBenchmark tb(transform::StrictOps::Tanh);
+    TransformBenchmark tb(transform::StrictOps::Tanh, "tanh");
     ScalarBenchmark sb(scalar::Multiply);
     sb.setY(NDArrayFactory::create_<float>(119.0f));
 
@@ -199,7 +199,7 @@ TEST_F(PlaygroundTests, Test_OpBenchmark_4) {
 TEST_F(PlaygroundTests, Test_OpBenchmark_5) {
     BenchmarkHelper helper;
 
-    TransformBenchmark tb(transform::StrictOps::Sigmoid);
+    TransformBenchmark tb(transform::StrictOps::Sigmoid, "sigmoid");
     IntParameters length("length", 100, 500, 100);
     BoolParameters inplace("inplace");
 
@@ -217,6 +217,28 @@ TEST_F(PlaygroundTests, Test_OpBenchmark_5) {
     };
 
     helper.runOperationSuit(&tb, generator, batch, "Transform_Sigmoid");
+}
+
+#define PARAMETRIC_D() [&] (Parameters &p) -> Context*
+
+TEST_F(PlaygroundTests, Test_OpBenchmark_6) {
+    BenchmarkHelper helper;
+    nd4j::ops::softmax op;
+    DeclarableBenchmark db(op, "SoftMaxTest");
+
+    PredefinedParameters a("alpha", {128, 256});
+    PredefinedParameters b("beta", {1024, 2048});
+    ParametersBatch batch({&a, &b});
+
+    auto generator = PARAMETRIC_D() {
+        auto ctx = new Context(1);
+
+        ctx->setInputArray(0, NDArrayFactory::create_<float>('c', {p.getIntParam("alpha"), p.getIntParam("beta")}));
+        ctx->setOutputArray(0, NDArrayFactory::create_<float>('c', {p.getIntParam("alpha"), p.getIntParam("beta")}));
+        return ctx;
+    };
+
+    helper.runOperationSuit(&db, generator, batch, "parametrized softmax test");
 }
 
 /*
