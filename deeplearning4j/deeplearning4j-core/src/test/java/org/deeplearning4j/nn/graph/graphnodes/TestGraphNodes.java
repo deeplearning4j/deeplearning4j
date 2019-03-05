@@ -615,16 +615,17 @@ public class TestGraphNodes {
         GraphVertex dotProduct = new DotProductVertex(null, "test_vertex", -1, dim1);
 
         int[] data1 = new int[]{2,2,2}, data2 = new int[]{3,3,3};
-        INDArray in1 = Nd4j.createFromArray(data1);
-        INDArray in2 = Nd4j.createFromArray(data2);
+        INDArray in1 = Nd4j.createFromArray(data1).reshape(-1,1);
+        INDArray in2 = Nd4j.createFromArray(data2).reshape(-1,1);
         dotProduct.setInputs(in1, in2);
 
         INDArray out = dotProduct.doForward(false, LayerWorkspaceMgr.noWorkspaces());
-        assertTrue(out.isScalar());
+        assertEquals(3, out.columns());
+        assertEquals(1, out.rows());
+        assertEquals(6.0000, out.getDouble(0), 1e-5);
 
         dotProduct.setEpsilon(out);
         Pair<Gradient, INDArray[]> p = dotProduct.doBackward(false, LayerWorkspaceMgr.noWorkspaces());
-        assertArrayEquals(new long[]{1,3}, p.getSecond()[0].shape());
     }
 
     @Test
