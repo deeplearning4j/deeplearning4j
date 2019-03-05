@@ -7,6 +7,11 @@ import org.datavec.api.writable.*;
 
 import java.util.List;
 
+/**
+ * Lets a condition be defined as a python method f that takes no arguments
+ * and returns a boolean indicating whether or not to filter a row.
+ * The values of all columns in current row is available as gobal variables to f.
+ */
 public class PythonCondition implements Condition {
 
     private Schema inputSchema;
@@ -90,8 +95,7 @@ public class PythonCondition implements Condition {
             );
         }
         catch (Exception e){
-            // FixMe: do not suppress this
-            System.out.println(e);
+            throw new RuntimeException(e);
         }
 
 

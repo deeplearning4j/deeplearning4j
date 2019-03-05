@@ -20,6 +20,9 @@ import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 
+/**
+ * Row-wise Transform that applies arbitrary python code on each row
+ */
 public class PythonTransform implements Transform{
     private String setupCode;
     private String execCode;
