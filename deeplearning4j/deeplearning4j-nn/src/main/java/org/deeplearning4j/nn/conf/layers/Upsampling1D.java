@@ -164,6 +164,7 @@ public class Upsampling1D extends BaseUpsamplingLayer {
             if(size.length == 2){
                 if(size[0] == size[1]) {
                     setSize(new int[]{size[0]});
+                    return;
                 } else {
                     Preconditions.checkArgument(false,
                             "When given a length 2 array for size, "

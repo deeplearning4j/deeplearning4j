@@ -310,6 +310,46 @@ public class ConvolutionLayer extends FeedForwardLayer {
 
             return new ConvolutionLayer(this);
         }
+
+        /**
+         * Set kernel size for 3D convolutions in (depth, height, width) order
+         *
+         * @param kernelSize kernel size
+         */
+        @Override
+        public void setKernelSize(int... kernelSize) {
+            this.kernelSize = ValidationUtils.validate2NonNegative(kernelSize, "kernelSize");
+        }
+
+        /**
+         * Set stride size for 3D convolutions in (depth, height, width) order
+         *
+         * @param stride kernel size
+         */
+        @Override
+        public void setStride(int... stride) {
+            this.stride = ValidationUtils.validate2NonNegative(stride, "stride");
+        }
+
+        /**
+         * Set padding size for 3D convolutions in (depth, height, width) order
+         *
+         * @param padding kernel size
+         */
+        @Override
+        public void setPadding(int... padding) {
+            this.padding = ValidationUtils.validate2NonNegative(padding, "padding");
+        }
+
+        /**
+         * Set dilation size for 3D convolutions in (depth, height, width) order
+         *
+         * @param dilation kernel size
+         */
+        @Override
+        public void setDilation(int... dilation) {
+            this.dilation = ValidationUtils.validate2NonNegative(dilation, "dilation");
+        }
     }
 
     @Getter

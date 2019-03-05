@@ -122,7 +122,7 @@ public class Convolution1DLayer extends ConvolutionLayer {
 
         public Builder() {
             this(0, 1, 0);
-            this.setKernelSize(null);
+            this.setKernelSize((int[]) null);
         }
 
         /**
@@ -152,9 +152,9 @@ public class Convolution1DLayer extends ConvolutionLayer {
             this.stride = new int[] {1, 1};
             this.padding = new int[] {0, 0};
 
-            this.setKernelSize(new int[]{kernelSize});
-            this.setStride(new int[]{stride});
-            this.setPadding(new int[]{padding});
+            this.setKernelSize(kernelSize);
+            this.setStride(stride);
+            this.setPadding(padding);
         }
 
         /**
@@ -163,7 +163,7 @@ public class Convolution1DLayer extends ConvolutionLayer {
          * @param kernelSize the length of the kernel
          */
         public Builder kernelSize(int kernelSize) {
-            this.setKernelSize(new int[]{kernelSize});
+            this.setKernelSize(kernelSize);
             return this;
         }
 
@@ -173,7 +173,7 @@ public class Convolution1DLayer extends ConvolutionLayer {
          * @param stride Stride
          */
         public Builder stride(int stride) {
-            this.setStride(new int[]{stride});
+            this.setStride(stride);
             return this;
         }
 
@@ -183,7 +183,7 @@ public class Convolution1DLayer extends ConvolutionLayer {
          * @param padding Padding value
          */
         public Builder padding(int padding) {
-            this.setPadding(new int[]{padding});
+            this.setPadding(padding);
             return this;
         }
 

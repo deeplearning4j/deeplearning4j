@@ -68,11 +68,11 @@ public class GlobalPoolingLayer extends NoParamLayer {
 
     private GlobalPoolingLayer(Builder builder) {
         super(builder);
-        this.setPoolingType(builder.poolingType);
-        this.setPoolingDimensions(builder.poolingDimensions);
-        this.setCollapseDimensions(builder.collapseDimensions);
-        this.setPnorm(builder.pnorm);
-        this.setLayerName(builder.layerName);
+        this.poolingType = builder.poolingType;
+        this.poolingDimensions = builder.poolingDimensions;
+        this.collapseDimensions = builder.collapseDimensions;
+        this.pnorm = builder.pnorm;
+        this.layerName = builder.layerName;
     }
 
     public GlobalPoolingLayer() {

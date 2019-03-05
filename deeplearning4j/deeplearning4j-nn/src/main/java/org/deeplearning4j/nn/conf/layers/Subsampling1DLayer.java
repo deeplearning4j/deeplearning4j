@@ -173,10 +173,16 @@ public class Subsampling1DLayer extends SubsamplingLayer {
         public Builder(org.deeplearning4j.nn.conf.layers.PoolingType poolingType, int kernelSize, int stride,
                         int padding) {
             super(poolingType, new int[] {kernelSize, 1}, new int[] {stride, 1}, new int[] {padding, 0});
+            this.kernelSize = new int[] {kernelSize, 1};
+            this.stride = new int[] {stride, 1};
+            this.padding = new int[] {padding, 0};
         }
 
         public Builder(PoolingType poolingType, int kernelSize, int stride, int padding) {
             super(poolingType, new int[] {kernelSize, 1}, new int[] {stride, 1}, new int[] {padding, 0});
+            this.kernelSize = new int[] {kernelSize, 1};
+            this.stride = new int[] {stride, 1};
+            this.padding = new int[] {padding, 0};
         }
 
         @SuppressWarnings("unchecked")
@@ -197,7 +203,7 @@ public class Subsampling1DLayer extends SubsamplingLayer {
          * @param kernelSize kernel size
          */
         public Subsampling1DLayer.Builder kernelSize(int kernelSize) {
-            this.setKernelSize(new int[]{kernelSize});
+            this.setKernelSize(kernelSize);
             return this;
         }
 
@@ -207,7 +213,7 @@ public class Subsampling1DLayer extends SubsamplingLayer {
          * @param stride stride value
          */
         public Subsampling1DLayer.Builder stride(int stride) {
-            this.setStride(new int[]{stride});
+            this.setStride(stride);
             return this;
         }
 
@@ -217,7 +223,7 @@ public class Subsampling1DLayer extends SubsamplingLayer {
          * @param padding padding value
          */
         public Subsampling1DLayer.Builder padding(int padding) {
-            this.setPadding(new int[]{padding});
+            this.setPadding(padding);
             return this;
         }
 

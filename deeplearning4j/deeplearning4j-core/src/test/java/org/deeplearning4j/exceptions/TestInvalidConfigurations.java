@@ -402,7 +402,7 @@ public class TestInvalidConfigurations extends BaseDL4JTest {
         new SubsamplingLayer.Builder().kernelSize(3, 3).stride(1, 1, 1).build();
     }
 
-    @Test(expected = IllegalStateException.class)
+    @Test(expected = IllegalArgumentException.class)
     public void testSubsamplingInvalidPadding() {
         new SubsamplingLayer.Builder().kernelSize(3, 3).stride(1, 1).padding(-1, 0).build();
     }

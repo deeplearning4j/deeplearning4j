@@ -254,6 +254,7 @@ public class LocallyConnected1D extends SameDiffLayer {
          * Input filter size for this locally connected 1D layer
          *
          */
+        @Setter(AccessLevel.NONE)t
         private int inputSize;
 
         /**
@@ -345,8 +346,7 @@ public class LocallyConnected1D extends SameDiffLayer {
          * @return Builder
          */
         public Builder setInputSize(int inputSize) {
-            ;
-            this.setInputSize(inputSize);
+            this.inputSize = inputSize;
             return this;
         }
 
