@@ -24,17 +24,47 @@
 
 namespace nd4j {
     class ND4J_EXPORT TransformBenchmark : public OpBenchmark {
+
+    protected:
+        int _opType;        // 0=StrictOps, 1=Same, 2=Any, 3=Float
+
     public:
         TransformBenchmark() : OpBenchmark() {
             //
         }
 
-        TransformBenchmark(transform::StrictOps op, std::string testName, NDArray *x, NDArray *z) : OpBenchmark(testName, x, z) {
-            _opNum = (int) op;
+        TransformBenchmark(int opNum, int opType, std::string testName, NDArray *x, NDArray *z) : OpBenchmark(testName, x, z) {
+            _opNum = opNum;
+            _opType = opType;
         }
 
-        TransformBenchmark(transform::StrictOps op) : OpBenchmark() {
+        TransformBenchmark(transform::StrictOps op, std::string testName, NDArray *x, NDArray *z) : OpBenchmark(testName, x, z) {
             _opNum = (int) op;
+            _opType = 0;
+        }
+
+        TransformBenchmark(transform::StrictOps op, std::string name) : OpBenchmark() {
+            _opNum = (int) op;
+            _opType = 0;
+            _testName = name;
+        }
+
+        TransformBenchmark(transform::SameOps op, std::string name) : OpBenchmark() {
+            _opNum = (int) op;
+            _opType = 1;
+            _testName = name;
+        }
+
+        TransformBenchmark(transform::AnyOps op, std::string name) : OpBenchmark() {
+            _opNum = (int) op;
+            _opType = 2;
+            _testName = name;
+        }
+
+        TransformBenchmark(transform::FloatOps op, std::string name) : OpBenchmark() {
+            _opNum = (int) op;
+            _opType = 3;
+            _testName = name;
         }
 
         ~TransformBenchmark(){
@@ -48,10 +78,30 @@ namespace nd4j {
         }
 
         void executeOnce() override {
-            if (_z != nullptr)
-                NativeOpExcutioner::execTransformStrict(_opNum, _x->buffer(), _x->shapeInfo(),  _z->buffer(), _z->shapeInfo(), nullptr, nullptr, nullptr);
-            else
-                NativeOpExcutioner::execTransformStrict(_opNum, _x->buffer(), _x->shapeInfo(),  _x->buffer(), _x->shapeInfo(), nullptr, nullptr, nullptr);
+            if(_opType == 0){
+                if (_z != nullptr)
+                    NativeOpExcutioner::execTransformStrict(_opNum, _x->buffer(), _x->shapeInfo(),  _z->buffer(), _z->shapeInfo(), nullptr, nullptr, nullptr);
+                else
+                    NativeOpExcutioner::execTransformStrict(_opNum, _x->buffer(), _x->shapeInfo(),  _x->buffer(), _x->shapeInfo(), nullptr, nullptr, nullptr);
+            } else if(_opType == 1){
+                if (_z != nullptr){
+                    NativeOpExcutioner::execTransformSame(_opNum, _x->buffer(), _x->shapeInfo(), _z->buffer(), _z->shapeInfo(), nullptr, nullptr, nullptr);
+                } else {
+                    NativeOpExcutioner::execTransformSame(_opNum, _x->buffer(), _x->shapeInfo(), _z->buffer(), _z->shapeInfo(), nullptr, nullptr, nullptr);
+                }
+            } else if(_opType == 2){
+                if (_z != nullptr){
+                    NativeOpExcutioner::execTransformAny(_opNum, _x->buffer(), _x->shapeInfo(), _z->buffer(), _z->shapeInfo(), nullptr, nullptr, nullptr);
+                } else {
+                    NativeOpExcutioner::execTransformAny(_opNum, _x->buffer(), _x->shapeInfo(), _z->buffer(), _z->shapeInfo(), nullptr, nullptr, nullptr);
+                }
+            } else {
+                if (_z != nullptr){
+                    NativeOpExcutioner::execTransformFloat(_opNum, _x->buffer(), _x->shapeInfo(), _z->buffer(), _z->shapeInfo(), nullptr, nullptr, nullptr);
+                } else {
+                    NativeOpExcutioner::execTransformFloat(_opNum, _x->buffer(), _x->shapeInfo(), _z->buffer(), _z->shapeInfo(), nullptr, nullptr, nullptr);
+                }
+            }
         }
 
         std::string axis() override {
@@ -79,7 +129,7 @@ namespace nd4j {
         }
 
         OpBenchmark* clone() override  {
-            return new TransformBenchmark((transform::StrictOps) _opNum, _testName, _x, _z);
+            return new TransformBenchmark(_opNum, _opType, _testName, _x, _z);
         }
     };
 }

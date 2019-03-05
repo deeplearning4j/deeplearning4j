@@ -341,6 +341,25 @@ TEST_F(DeclarableOpsTests10, Where_SGO_Test_4) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests10, Where_SGO_Test_5) {
+    auto input = NDArrayFactory::create<float>('c', {5}, {1, 0, 0, 2, 3});
+    //auto expIdx({0., 1., 0., 2., 0., 3., 4., 1., 4., 1.});
+    auto exp = NDArrayFactory::create<Nd4jLong>('c', {3, 1}, {0, 3, 4});
+
+    nd4j::ops::Where op;
+    auto res = op.execute({&input}, {}, {});
+    ASSERT_TRUE(res->status() == ND4J_STATUS_OK);
+    auto resA = res->at(0);
+    //ASSERT_TRUE(resA->isEmpty());
+    resA->printIndexedBuffer("Result A");
+    //resA->printShapeInfo("ShapeA");
+    ASSERT_TRUE(exp.equalsTo(resA));
+    ASSERT_TRUE(exp.isSameShape(resA));
+//    ASSERT_TRUE(expIdx.equalsTo(res->at(1)));
+    delete res;
+}
+
+////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests10, WhereNP_SGO_Test_4) {
     auto input = NDArrayFactory::create<bool>('c', {5, 1}, {false, false, false, false, false});
     //auto expIdx({0., 1., 0., 2., 0., 3., 4., 1., 4., 1.});
@@ -1047,6 +1066,27 @@ TEST_F(DeclarableOpsTests10, NTH_Element_Test_5) {
 
     NDArray* output = results->at(0);
 
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+
+    delete results;
+}
+
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests10, NTH_Element_Test_6) {
+
+    NDArray input = NDArrayFactory::create<float>('c', {12});
+    NDArray n = NDArrayFactory::create<int>(0);
+    NDArray exp = NDArrayFactory::create(1.f);//NDArrayFactory::create<float>('c', {2,2}, {1.f, 4.f, 7.f, 10.f});
+
+    input.linspace(1.f);
+
+    nd4j::ops::nth_element op;
+    auto results = op.execute({&input, &n}, {}, {0});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray* output = results->at(0);
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));
 

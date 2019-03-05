@@ -26,6 +26,8 @@
 
 namespace nd4j {
     class ND4J_EXPORT ReductionBenchmark : public OpBenchmark {
+    protected:
+        int _opType;        //0=Float, 1=Same
     public:
         ReductionBenchmark() : OpBenchmark() {
             //
@@ -33,21 +35,48 @@ namespace nd4j {
 
         ReductionBenchmark(reduce::FloatOps op, std::string testName, NDArray *x, NDArray *z, std::initializer_list<int> axis) : OpBenchmark(testName, x, z, axis) {
             _opNum = (int) op;
+            _opType = 0;
         }
 
         ReductionBenchmark(reduce::FloatOps op) : OpBenchmark() {
             _opNum = (int) op;
+            _opType = 0;
+        }
+
+        ReductionBenchmark(reduce::FloatOps op, std::string testName) : OpBenchmark() {
+            _opNum = (int) op;
+            _opType = 0;
+            _testName = testName;
+        }
+
+        ReductionBenchmark(reduce::SameOps op) : OpBenchmark() {
+            _opNum = (int) op;
+            _opType = 1;
+        }
+
+        ReductionBenchmark(reduce::SameOps op, std::string testName) : OpBenchmark() {
+            _opNum = (int) op;
+            _opType = 1;
+            _testName = testName;
         }
 
         ReductionBenchmark(reduce::FloatOps op, std::string testName, NDArray *x, NDArray *z, std::vector<int> axis) : OpBenchmark(testName ,x, z, axis) {
             _opNum = (int) op;
+            _opType = 0;
         }
 
         void executeOnce() override {
-            if (_z->isScalar())
-                NativeOpExcutioner::execReduceFloatScalar(_opNum, _x->buffer(), _x->shapeInfo(), nullptr, _z->buffer(), _z->shapeInfo());
-            else
-                NativeOpExcutioner::execReduceFloat(_opNum, _x->buffer(), _x->shapeInfo(), nullptr,  _z->buffer(), _z->shapeInfo(), _axis.data(), _axis.size(), nullptr, nullptr);
+            if(_opType == 0){
+                if (_z->isScalar())
+                    NativeOpExcutioner::execReduceFloatScalar(_opNum, _x->buffer(), _x->shapeInfo(), nullptr, _z->buffer(), _z->shapeInfo());
+                else
+                    NativeOpExcutioner::execReduceFloat(_opNum, _x->buffer(), _x->shapeInfo(), nullptr,  _z->buffer(), _z->shapeInfo(), _axis.data(), _axis.size(), nullptr, nullptr);
+            } else {
+                if (_z->isScalar())
+                    NativeOpExcutioner::execReduceSameScalar(_opNum, _x->buffer(), _x->shapeInfo(), nullptr, _z->buffer(), _z->shapeInfo());
+                else
+                    NativeOpExcutioner::execReduceSame(_opNum, _x->buffer(), _x->shapeInfo(), nullptr,  _z->buffer(), _z->shapeInfo(), _axis.data(), _axis.size(), nullptr, nullptr);
+            }
         }
 
         std::string orders() override {

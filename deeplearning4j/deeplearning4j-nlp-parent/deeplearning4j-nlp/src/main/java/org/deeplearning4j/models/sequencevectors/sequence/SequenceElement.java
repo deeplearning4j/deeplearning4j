@@ -83,6 +83,10 @@ public abstract class SequenceElement implements Comparable<SequenceElement>, Se
     @Setter
     protected Long storageId;
 
+    @Getter
+    @Setter
+    protected boolean isLocked;
+
     /**
      * This method should return string representation of this SequenceElement, so it can be used for
      *
