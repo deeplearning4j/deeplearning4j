@@ -12,8 +12,10 @@ import org.nd4j.base.Preconditions;
 import org.nd4j.evaluation.meta.Prediction;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastMulOp;
 import org.nd4j.linalg.api.ops.impl.reduce3.Dot;
 import org.nd4j.linalg.api.ops.impl.reduce3.EuclideanDistance;
+import org.nd4j.linalg.factory.Broadcast;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
 
@@ -75,7 +77,6 @@ public class DotProductVertex extends BaseGraphVertex {
             INDArray result = Nd4j.getExecutioner().exec(new Dot(a,b, dimensions));
             if (result.rank() < 2) {
                 result.reshape(-1, 1);
-                System.out.println(result.rank());
             }
             return result;
         }
@@ -83,8 +84,22 @@ public class DotProductVertex extends BaseGraphVertex {
 
     @Override
     public Pair<Gradient, INDArray[]> doBackward(boolean tbptt, LayerWorkspaceMgr workspaceMgr) {
+        long epsLength = epsilon.length();
+        if (epsLength == 1) {
+            return new Pair<>(null, new INDArray[]{inputs[1].mul(epsilon), inputs[0].mul(epsilon)});
+        }
+        else {
+            INDArray output0 = Nd4j.createUninitialized(inputs[0].shape());
+            INDArray output1 = Nd4j.createUninitialized(inputs[1].shape());
 
-        return new Pair<>(null, new INDArray[] {inputs[1], inputs[0]});
+            BroadcastMulOp op0 = new BroadcastMulOp(epsilon, inputs[1], output1, dimensions);
+            BroadcastMulOp op1 = new BroadcastMulOp(epsilon, inputs[0], output0, dimensions);
+
+            Nd4j.getExecutioner().exec(op0);
+            Nd4j.getExecutioner().exec(op1);
+
+            return new Pair<>(null, new INDArray[]{output1, output0});
+        }
     }
 
     @Override
