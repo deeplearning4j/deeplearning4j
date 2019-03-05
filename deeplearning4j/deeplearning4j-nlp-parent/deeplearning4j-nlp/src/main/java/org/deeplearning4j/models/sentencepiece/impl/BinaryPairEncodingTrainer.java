@@ -36,11 +36,6 @@ public class BinaryPairEncodingTrainer extends AbstractTrainer implements Traine
     // probably not needed in Java impl
     protected List<Symbol> allocated = new ArrayList<>();
 
-    @Override
-    public SubwordVocabulary buildVocabulary(Iterator<String> iterator) {
-        return null;
-    }
-
     protected void computeFrequency(Symbol symbol) {
         if (symbol.getFrequency() > 0) {  // if freq == 0, re-computation is required.
             return;
@@ -142,7 +137,24 @@ public class BinaryPairEncodingTrainer extends AbstractTrainer implements Traine
 
 
     protected Symbol getCharSymbol(int c) {
-        return null;
+        val freq = requiredChars.getOrDefault(Integer.valueOf(c), 1L);
+        Preconditions.checkArgument(freq > 0, "Frequency must have positive value");
+
+        if (symbolsCache.containsKey(Long.valueOf(c)))
+            return symbolsCache.get(Long.valueOf(c));
+
+        val s = new Symbol();
+        s.setUnknown(unknownChar == c);
+        s.setFingerprint(c);
+        s.getChars().add(c);
+        s.setFrequency(freq);
+
+        if (!symbolsCache.containsKey(s.getFingerprint()))
+            symbolsCache.put(s.getFingerprint(), s);
+        else
+            throw new IllegalStateException();
+
+        return s;
     }
 
     protected Symbol getPairSymbol(Symbol left, Symbol right) {
@@ -181,5 +193,9 @@ public class BinaryPairEncodingTrainer extends AbstractTrainer implements Traine
         symbolsCache.put(fp, s);
 
         return s;
+    }
+
+    protected void train() {
+        //
     }
 }

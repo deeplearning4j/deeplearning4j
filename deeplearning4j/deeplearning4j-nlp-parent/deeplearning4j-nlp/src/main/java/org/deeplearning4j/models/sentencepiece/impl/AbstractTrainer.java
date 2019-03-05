@@ -17,14 +17,33 @@
 package org.deeplearning4j.models.sentencepiece.impl;
 
 import lombok.extern.slf4j.Slf4j;
+import org.deeplearning4j.models.sentencepiece.SubwordVocabulary;
 import org.deeplearning4j.models.sentencepiece.interfaces.Trainer;
+import org.nd4j.linalg.primitives.Pair;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 @Slf4j
 public abstract class AbstractTrainer implements Trainer {
+    // corpus
     protected List<Sentence> sentences = new ArrayList<>();
+
+    // charmap
+    protected Map<Integer, Long> requiredChars = new HashMap<>();
+
+    protected List<Pair<String, Float>> finalPieces = new ArrayList<>();
+
+    protected int unknownChar;
+
+    /**
+     *
+     */
+    protected abstract void train();
+
+    @Override
+    public SubwordVocabulary buildVocabulary(Iterator<String> iterator) {
+        return null;
+    }
 
     protected boolean isValidSentencePiece(List<Integer> piece) {
         return false;
