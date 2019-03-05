@@ -58,7 +58,7 @@ namespace nd4j {
         Nd4jLong median = timings[_rIterations / 2];
 
         NDArray n = NDArrayFactory::create(timings, LaunchContext::defaultContext());
-        double stdev = 0.0; //n.varianceNumber(nd4j::variance::SummaryStatsStandardDeviation, false).e<double>(0);
+        double stdev = n.varianceNumber(nd4j::variance::SummaryStatsStandardDeviation, false).e<double>(0);
         Nd4jLong min = n.reduceNumber(nd4j::reduce::Min).e<Nd4jLong>(0);
         Nd4jLong max = n.reduceNumber(nd4j::reduce::Max).e<Nd4jLong>(0);
 
@@ -344,9 +344,11 @@ namespace nd4j {
         x.setNonRemovable();
         ResultSet z;
         z.setNonRemovable();
+        nd4j_printf("Step A%i\n",0);
         func(x, z);
         std::vector<OpBenchmark*> result;
 
+        nd4j_printf("Step A%i\n",1);
         if (x.size() != z.size())
             throw std::runtime_error("ReductionBenchmark: number of X and Z arrays should match");
 
@@ -358,6 +360,7 @@ namespace nd4j {
             clone->setX(x_);
             clone->setZ(z_);
 
+            nd4j_printf("Step A%i\n",2);
             result.emplace_back(clone);
         }
 
@@ -385,6 +388,7 @@ namespace nd4j {
             y.setNonRemovable();
             ResultSet z;
             z.setNonRemovable();
+            nd4j_printf("Step %i\n",0);
             func(p, x, y, z);
             std::vector<OpBenchmark*> result;
 
@@ -400,10 +404,13 @@ namespace nd4j {
                 clone->setX(x_);
                 clone->setZ(z_);
 
+                nd4j_printf("Step %i\n",1);
+
                 if (y_ != nullptr) {
                     clone->setAxis(y_->asVectorT<int>());
                     delete y_;
                 }
+                nd4j_printf("Step %i\n",2);
                 result.emplace_back(clone);
             }
 

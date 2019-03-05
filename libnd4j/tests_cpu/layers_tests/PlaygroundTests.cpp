@@ -95,7 +95,7 @@ TEST_F(PlaygroundTests, Test_OpBenchmark_2) {
         z.push_back(nullptr);
     };
 
-    //helper.runOperationSuit(&sb, generator, "ScalarTest");
+    helper.runOperationSuit(&sb, generator, "ScalarTest");
 
     TransformBenchmark tb(transform::StrictOps::Tanh);
 
@@ -121,11 +121,11 @@ TEST_F(PlaygroundTests, Test_OpBenchmark_2) {
         x.push_back(NDArrayFactory::create_<float>('c', {100, 1000}));
 
         // axis goes to y here
-        y.push_back(NDArrayFactory::create_<int>('c', {1}, {(int) 0}));
+        y.push_back(NDArrayFactory::create_<int>(0));
         z.push_back(NDArrayFactory::create_<float>('c', {1000}));
 
         x.push_back(NDArrayFactory::create_<float>('c', {100, 1000}));
-        y.push_back(NDArrayFactory::create_<int>('c', {1}, {1}));
+        y.push_back(NDArrayFactory::create_<int>(1));
         z.push_back(NDArrayFactory::create_<float>('c', {100}));
 
         // scalar case

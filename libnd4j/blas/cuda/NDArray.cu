@@ -631,8 +631,8 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
     template <typename T>
     std::vector<T> NDArray::asVectorT() {
         std::vector<T> result(this->lengthOf());
+        lazyAllocateBuffer();
 
-#pragma omp parallel for simd
         for (int e = 0; e < this->lengthOf(); e++)
             result[e] = this->e<T>(e);
 

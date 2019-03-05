@@ -48,7 +48,8 @@ namespace nd4j {
 
         void executeOnce() override {
             PointersManager manager(LaunchContext::defaultContext(), "reductionBM");
-            if (_z->isScalar())
+            //nd4j_printf("reducing...\n","");
+            if (_z->isScalar() || _y == nullptr)
                 NativeOpExecutioner::execReduceFloatScalar(LaunchContext::defaultContext(), _opNum, _x->buffer(), _x->shapeInfo(), _x->specialBuffer(), _x->specialShapeInfo(), nullptr, _z->buffer(), _z->shapeInfo(), _z->specialBuffer(), _z->specialShapeInfo());
             else {
                 auto dims = reinterpret_cast<int *>(manager.replicatePointer(_axis.data(), _axis.size() * sizeof(int)));

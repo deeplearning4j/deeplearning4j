@@ -171,9 +171,13 @@ template void NDArrayFactory::memcpyFromVector(void *ptr, const std::vector<int8
         ALLOCATE_SPECIAL(specialShape, context->getWorkspace(), shape::shapeInfoLength(res->shapeInfo()), Nd4jLong);
         ALLOCATE_SPECIAL(specialBuffer, context->getWorkspace(), sizeof(DataTypeUtils::fromT<T>()), int8_t);
         res->setSpecialBuffers(specialBuffer, specialShape);
-        res->assign(scalar);
-        cudaMemcpy(specialShape, res->shapeInfo(), shape::shapeInfoByteLength(res->shapeInfo()), cudaMemcpyHostToDevice);
-        cudaMemcpy(specialBuffer, res->buffer(), sizeof(T), cudaMemcpyHostToDevice); // only one element
+
+        res->bufferAsT<T>()[0] = scalar;
+
+        cudaMemcpyAsync(specialShape, res->shapeInfo(), shape::shapeInfoByteLength(res->shapeInfo()), cudaMemcpyHostToDevice, *context->getCudaStream());
+        cudaMemcpyAsync(specialBuffer, res->buffer(), sizeof(T), cudaMemcpyHostToDevice, *context->getCudaStream()); // only one element
+        cudaStreamSynchronize(*context->getCudaStream());
+
         res->tickWriteDevice();
         res->tickReadHost();
 
@@ -243,8 +247,10 @@ template void NDArrayFactory::memcpyFromVector(void *ptr, const std::vector<int8
         ALLOCATE_SPECIAL(specialBuffer, context->getWorkspace(), bufferSize, int8_t);
 
         res.bufferAsT<T>()[0] = scalar;
-        cudaMemcpy(specialShape, res.shapeInfo(), shapeSize * sizeof(Nd4jLong), cudaMemcpyHostToDevice);
-        cudaMemcpy(specialBuffer, res.buffer(), bufferSize, cudaMemcpyHostToDevice); // only one element
+        cudaMemcpyAsync(specialShape, res.shapeInfo(), shapeSize * sizeof(Nd4jLong), cudaMemcpyHostToDevice, *context->getCudaStream());
+        cudaMemcpyAsync(specialBuffer, res.buffer(), bufferSize, cudaMemcpyHostToDevice, *context->getCudaStream()); // only one element
+        cudaStreamSynchronize(*context->getCudaStream());
+
         res.setSpecialBuffers(specialBuffer, specialShape);
         res.tickWriteDevice();
         res.tickReadHost();
