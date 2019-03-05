@@ -608,7 +608,7 @@ public class TestGraphNodes {
     }
 
     @Test
-    public void testDotProductNode() {
+    public void testDotProductNode1D() {
         Nd4j.getRandom().setSeed(12345);
 
         int[] dim1 = new int[]{1};
@@ -616,30 +616,56 @@ public class TestGraphNodes {
 
         INDArray in1 = Nd4j.rand(1,3);
         INDArray in2 = Nd4j.rand(1,3);
-
         dotProduct.setInputs(in1, in2);
+
         INDArray out = dotProduct.doForward(false, LayerWorkspaceMgr.noWorkspaces());
         assertTrue(out.isScalar());
 
-        in1 = Nd4j.rand(1,3);
-        in2 = Nd4j.rand(1,3);
+        dotProduct.setEpsilon(out);
+        Pair<Gradient, INDArray[]> p = dotProduct.doBackward(false, LayerWorkspaceMgr.noWorkspaces());
+        assertEquals(in2, out.mul(p.getSecond()[0]));
+        assertEquals(in1, out.mul(p.getSecond()[1]));
+    }
+
+    @Test
+    public void testDotProductNode2D() {
+        Nd4j.getRandom().setSeed(12345);
+
+        int[] dim1 = new int[]{1};
+        GraphVertex dotProduct = new DotProductVertex(null, "test_vertex", -1, dim1);
+
+        INDArray in1 = Nd4j.rand(2,3);
+        INDArray in2 = Nd4j.rand(2,3);
 
         dotProduct.setInputs(in1, in2);
-        out = dotProduct.doForward(false, LayerWorkspaceMgr.noWorkspaces());
+        INDArray out = dotProduct.doForward(false, LayerWorkspaceMgr.noWorkspaces());
+        assertArrayEquals(new long[]{2}, out.shape());
+        assertEquals(1, out.rows());
+        assertEquals(2, out.columns());
+
+        dotProduct.setEpsilon(out);
+        Pair<Gradient, INDArray[]> p = dotProduct.doBackward(false, LayerWorkspaceMgr.noWorkspaces());
+        assertEquals(in2, p.getSecond()[0]);
+        assertEquals(in1, p.getSecond()[1]);
+    }
+
+    @Test
+    public void testDotProductNode3D() {
+        Nd4j.getRandom().setSeed(12345);
+
+        int[] dim1 = new int[]{1,2};
+        GraphVertex dotProduct = new DotProductVertex(null, "test_vertex", -1, dim1);
+
+        INDArray in1 = Nd4j.rand(new long[]{1,2,3});
+        INDArray in2 = Nd4j.rand(new long[]{1,2,3});
+
+        dotProduct.setInputs(in1, in2);
+        INDArray out = dotProduct.doForward(false, LayerWorkspaceMgr.noWorkspaces());
         assertArrayEquals(new long[]{1}, out.shape());
         assertEquals(1, out.rows());
         assertEquals(1, out.columns());
 
-        in1 = Nd4j.rand(new int[]{1,3,2});
-        in2 = Nd4j.rand(new int[]{1,3,2});
-        int[] dim2 = new int[]{1,2};
-        dotProduct.setInputs(in1, in2);
-        ((DotProductVertex) dotProduct).setDimensions(dim2);
-        out = dotProduct.doForward(false, LayerWorkspaceMgr.noWorkspaces());
-        assertArrayEquals(new long[]{1}, out.shape());
-        assertEquals(1, out.rows());
-        assertEquals(1, out.columns());
-
+        dotProduct.setEpsilon(out);
         Pair<Gradient, INDArray[]> p = dotProduct.doBackward(false, LayerWorkspaceMgr.noWorkspaces());
         assertEquals(in2, p.getSecond()[0]);
         assertEquals(in1, p.getSecond()[1]);
