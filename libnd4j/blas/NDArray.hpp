@@ -2705,20 +2705,23 @@ Nd4jLong NDArray::getOffset(const Nd4jLong i) const {
 
 ////////////////////////////////////////////////////////////////////////
     // operator returns sub-array with buffer pointing at this->_buffer + certain offset
-    NDArray NDArray::operator()(const std::vector<Nd4jLong>& idx, bool keepUnitiesInShape)  const {
-
+    NDArray NDArray::operator()(const std::vector<Nd4jLong>& idx, bool keepUnitiesInShape) const {
+        
         const int rank = rankOf();
         Nd4jLong *newShape = ShapeBuilders::copyShapeInfo(_shapeInfo, true, _context->getWorkspace());        
-        newShape[shape::shapeInfoLength(rank) - 2] = -1;
 
         auto shapeOf = shape::shapeOf(newShape);
         auto stridesOf = shape::stride(newShape);
 
         Nd4jLong offset = 0;
         Nd4jLong first, last;
-        for (int d = 0; d < rank; ++d) {
+        bool continuous = false;
+        int current = rank - 1;
+
+        for (int d = rank - 1; d >= 0; --d) {
+
             // building new shape first
-            if (idx[2*d] != idx[2*d+1]) {
+            if (idx[2*d] != idx[2*d+1]) {                                
 
                 first = idx[2*d]   >= 0 ? idx[2*d]   : idx[2*d]   + sizeAt(d) + 1;
                 last  = idx[2*d+1] >= 0 ? idx[2*d+1] : idx[2*d+1] + sizeAt(d) + 1;
@@ -2727,15 +2730,20 @@ Nd4jLong NDArray::getOffset(const Nd4jLong i) const {
                 // for offset we're taking only the first index
                 offset += first * stridesOf[d];
             }
+            else
+                continuous = current-- == d;
         }
 
-        #ifdef __CUDABLAS__
+        // evaluate ews
+        newShape[2 * rank + 2] = (continuous && ordering() == 'c') ? ews() : 0;
+
+          #ifdef __CUDABLAS__
             makeBothBuffersActual();
             NDArray result(bufferWithOffset(offset), specialBufferWithOffset(offset), newShape, _context, false, false, true);
         
         #else            
-            NDArray result(bufferWithOffset(offset), newShape, _context, false, true);
-        #endif
+            NDArray result(bufferWithOffset(offset), newShape, _context, false, true);            
+        #endif        
 
         if(!keepUnitiesInShape) {
 
@@ -2751,6 +2759,7 @@ Nd4jLong NDArray::getOffset(const Nd4jLong i) const {
             // if(nonUnitDims.size() != result.rankOf())
             //     result.reshapei(nonUnitDims);
         }
+
         return result;
     }
 
