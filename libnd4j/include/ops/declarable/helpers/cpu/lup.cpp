@@ -373,7 +373,7 @@ template <typename T>
         return ND4J_STATUS_OK;
     }
 
-    int logdetFunctor(NDArray* input, NDArray* output) {
+    int logdetFunctor(graph::LaunchContext* context, NDArray* input, NDArray* output) {
         BUILD_SINGLE_SELECTOR(input->dataType(), return logdetFunctor_, (input, output), FLOAT_TYPES);
     }
 

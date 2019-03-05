@@ -114,6 +114,10 @@ namespace helpers {
     BUILD_SINGLE_TEMPLATE(template int cholesky_, (NDArray* input, NDArray* output, bool inplace), FLOAT_TYPES);
     BUILD_SINGLE_TEMPLATE(template int _inverse, (NDArray* input, NDArray* output), FLOAT_TYPES);
 
+
+    int logdetFunctor(graph::LaunchContext* context, NDArray* input, NDArray* output) {
+        return 119;
+    }
 }
 }
 }
