@@ -57,11 +57,12 @@ namespace nd4j {
                 info._negativeCount = input->e<double>(0) < 0?1:0;
                 info._infCount = nd4j::math::nd4j_isinf(input->e<double>(0));
                 info._nanCount = nd4j::math::nd4j_isnan(input->e<double>(0));
+#pragma omp parallel for schedule(guided)
                 for (Nd4jLong e = 1; e < input->lengthOf(); e++) {
                         info._minValue = nd4j::math::nd4j_min(input->e<double>(e), info._minValue);
                         info._maxValue = nd4j::math::nd4j_max(input->e<double>(e), info._maxValue);
                         info._meanValue += input->e<double>(e);
-                        info._stdDevValue = nd4j::math::nd4j_sqrt<double, double>((info._meanValue/(e + 1) - input->e<double>(e)) * (info._meanValue/(e + 1) - input->e<double>(e))/e); //info._minValue;
+                        info._stdDevValue += (info._meanValue/(e + 1) - input->e<double>(e)) * (info._meanValue/(e + 1) - input->e<double>(e)); //info._minValue;
                         info._zeroCount += nd4j::math::nd4j_abs(input->e<double>(e)) > 0.00001? 0: 1;
                         info._positiveCount += input->e<double>(e) > 0?1:0;
                         info._negativeCount += input->e<double>(e) < 0?1:0;
@@ -70,6 +71,7 @@ namespace nd4j {
 
                 }
                 info._meanValue /= input->lengthOf();
+                info._stdDevValue = math::nd4j_sqrt<double, double>(info._stdDevValue / (input->lengthOf() - 1));
         }
         // else - no statistics for empty
 
