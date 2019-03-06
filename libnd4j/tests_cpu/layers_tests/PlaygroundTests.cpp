@@ -32,6 +32,7 @@
 #include <GradCheck.h>
 #include <ops/declarable/helpers/im2col.h>
 #include <helpers/BenchmarkHelper.h>
+#include <ops/declarable/helpers/scatter.h>
 
 using namespace nd4j;
 using namespace nd4j::graph;
@@ -1525,4 +1526,30 @@ TEST_F(PlaygroundTests, im2col_2) {
     auto timeEnd2 = std::chrono::system_clock::now();
     auto duration2 = std::chrono::duration_cast<std::chrono::microseconds> ((timeEnd2 - timeStart2) / N).count();
     printf("duration old %ld\n", duration2);
+}
+
+TEST_F(PlaygroundTests, test_scatter_119) {
+    auto output = NDArrayFactory::create<float>('c', {65536, 512});
+    auto updates = NDArrayFactory::create<float>('c', {65536, 512});
+    auto indices = NDArrayFactory::create<int>('c', {65536});
+
+    int p = 0;
+    for (int e = 65534; e >= 0; e--)
+        indices.p(p++, e);
+
+    indices.syncToDevice();
+
+    int N = 10;
+
+    auto timeStart1 = std::chrono::system_clock::now();
+
+    for (int i = 0; i < N ; i++) {
+        helpers::scatter(LaunchContext::defaultContext(), pairwise::CopyPws, indices, updates, output, false);
+        // FIXME: do not use cuda methods in generic code
+        //cudaStreamSynchronize(*context->getCudaStream());
+    }
+
+    auto timeEnd1 = std::chrono::system_clock::now();
+    auto duration1 = std::chrono::duration_cast<std::chrono::milliseconds> ((timeEnd1 - timeStart1) / N).count();
+    printf("duration my %ld\n", duration1);
 }

@@ -58,25 +58,26 @@ namespace nd4j {
                             const auto yOffset = shape::getIndexOffset(i, yShapeInfo, arrLenY);
 
                             switch (opCode) {
-                                case 0:
+                                case pairwise::Add:
                                     x[xOffset] += y[yOffset];
                                     break;
-                                case 1:
+                                case pairwise::Subtract:
                                     x[xOffset] -= y[yOffset];
                                     break;
-                                case 2:
+                                case pairwise::Multiply:
                                     x[xOffset] *= y[yOffset];
                                     break;
-                                case 3:
+                                case pairwise::Divide:
                                     x[xOffset] /= y[yOffset];
                                     break;
-                                case 4:
+                                case pairwise::ReverseSubtract:
                                     x[xOffset] = y[yOffset] - x[xOffset];
                                     break;
-                                case 5:
+                                case pairwise::ReverseDivide:
                                     x[xOffset] = y[yOffset] / x[xOffset];
                                     break;
-                                case 6:
+                                case pairwise::Copy2:
+                                case pairwise::CopyPws:
                                     x[xOffset] = y[yOffset];
                                     break;
                                 default:
@@ -100,25 +101,26 @@ namespace nd4j {
                             const auto yOffset = shape::getIndexOffset(i, yShapeInfo, arrLenY);
 
                             switch (opCode) {
-                                case 0:
+                                case pairwise::Add:
                                     x[xOffset] += y[yOffset];
                                     break;
-                                case 1:
+                                case pairwise::Subtract:
                                     x[xOffset] -= y[yOffset];
                                     break;
-                                case 2:
+                                case pairwise::Multiply:
                                     x[xOffset] *= y[yOffset];
                                     break;
-                                case 3:
+                                case pairwise::Divide:
                                     x[xOffset] /= y[yOffset];
                                     break;
-                                case 4:
+                                case pairwise::ReverseSubtract:
                                     x[xOffset] = y[yOffset] - x[xOffset];
                                     break;
-                                case 5:
+                                case pairwise::ReverseDivide:
                                     x[xOffset] = y[yOffset] / x[xOffset];
                                     break;
-                                case 6:
+                                case pairwise::Copy2:
+                                case pairwise::CopyPws:
                                     x[xOffset] = y[yOffset];
                                     break;
                                 default:
