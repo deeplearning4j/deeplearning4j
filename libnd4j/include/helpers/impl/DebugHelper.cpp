@@ -23,7 +23,7 @@
 #include <NDArrayFactory.h>
 
 namespace nd4j {
-    DebugHelper debugStatistics(NDArray* input) {
+    DebugHelper DebugHelper::debugStatistics(NDArray* input) {
         DebugHelper info;
 
         info._minValue = 0.;
@@ -41,13 +41,35 @@ namespace nd4j {
                 info._meanValue = info._minValue;
                 info._stdDevValue = info._minValue;
                 info._zeroCount = nd4j::math::nd4j_abs(input->e<double>(0)) > 0.00001? 0: 1;
-                info._positiveCount = input->e<double>(0) > 0;
-                info._negativeCount = input->e<double>(0) < 0;
+                info._positiveCount = input->e<double>(0) > 0?1:0;
+                info._negativeCount = input->e<double>(0) < 0?1:0;
                 info._infCount = nd4j::math::nd4j_isinf(input->e<double>(0));
                 info._nanCount = nd4j::math::nd4j_isnan(input->e<double>(0));
         }
         else if (input->lengthOf() > 0) {
                 // TO DO: here processing for all elements with array
+                info._minValue = input->e<double>(0);
+                info._maxValue = input->e<double>(0);
+                info._meanValue = input->e<double>(0);
+                info._stdDevValue = 0.; //info._minValue;
+                info._zeroCount = nd4j::math::nd4j_abs(input->e<double>(0)) > 0.00001? 0: 1;
+                info._positiveCount = input->e<double>(0) > 0?1:0;
+                info._negativeCount = input->e<double>(0) < 0?1:0;
+                info._infCount = nd4j::math::nd4j_isinf(input->e<double>(0));
+                info._nanCount = nd4j::math::nd4j_isnan(input->e<double>(0));
+                for (Nd4jLong e = 1; e < input->lengthOf(); e++) {
+                        info._minValue = nd4j::math::nd4j_min(input->e<double>(e), info._minValue);
+                        info._maxValue = nd4j::math::nd4j_max(input->e<double>(e), info._maxValue);
+                        info._meanValue += input->e<double>(e);
+                        info._stdDevValue = nd4j::math::nd4j_sqrt<double, double>((info._meanValue/(e + 1) - input->e<double>(e)) * (info._meanValue/(e + 1) - input->e<double>(e))/e); //info._minValue;
+                        info._zeroCount += nd4j::math::nd4j_abs(input->e<double>(e)) > 0.00001? 0: 1;
+                        info._positiveCount += input->e<double>(e) > 0?1:0;
+                        info._negativeCount += input->e<double>(e) < 0?1:0;
+                        info._infCount += nd4j::math::nd4j_isinf(input->e<double>(e));
+                        info._nanCount += nd4j::math::nd4j_isnan(input->e<double>(e));
+
+                }
+                info._meanValue /= input->lengthOf();
         }
         // else - no statistics for empty
 
