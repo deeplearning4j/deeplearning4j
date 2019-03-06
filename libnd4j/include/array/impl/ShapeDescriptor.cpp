@@ -20,50 +20,105 @@
 
 #include "../ShapeDescriptor.h"
 
-namespace nd4j {
-    ShapeDescriptor::ShapeDescriptor(DataType type, char order, std::vector<Nd4jLong> &shape) {
-        _dataType = type;
-        _order = order;
-        _shape = shape;
+using namespace nd4j;
 
+//////////////////////////////////////////////////////////////////////////
+// equal to operator
+bool ShapeDescriptor::operator==(const ShapeDescriptor& other) const {
+    
+    if(_empty != other._empty)
+        return false;
+    if(_empty == true)
+        return true;
+    if(_empty != other._empty)
+        return false;
+    if(_rank != other._rank)
+        return false;
+    if(_order != other._order)
+        return false;
+    if(_dataType != other._dataType)
+        return false;
+    if(_ews != other._ews)
+        return false;
 
-        // TODO:: calculate strides here
+    for(int i = 0; i < _rank; ++i)
+        if(_shape[i] != other._shape[i])
+            return false;
 
-        if (_shape.empty())
-            _empty = true;
-        else {
-            for (auto v:_shape) {
-                if (v == 0) {
-                    _empty = true;
-                    break;
-                }
+    for(int i = 0; i < _rank; ++i)
+        if(_strides[i] != other._strides[i])
+            return false;
+
+    return true;
+}
+
+//////////////////////////////////////////////////////////////////////////
+// less than operator
+bool ShapeDescriptor::operator<(const ShapeDescriptor& other) const {
+    
+    if(_empty == true && other._empty == true)
+        return false;
+    if(_empty == false && other._empty == true)
+        return false;
+    if(_rank > other._rank)
+        return false;    
+    
+    if(_rank == other._rank) {
+                
+        if(_shape > other._shape)
+            return false;
+                
+        if(_strides > other._strides)
+            return false;
+    }
+
+    if(_ews > other._ews)
+        return false;
+    if(_order > other._order)
+        return false;
+
+    return !(*this == other);
+}
+
+//////////////////////////////////////////////////////////////////////////
+ShapeDescriptor::ShapeDescriptor(DataType type, char order, std::vector<Nd4jLong> &shape): _dataType(type), _order(order), _shape(shape) {
+
+    // TODO:: calculate strides here
+
+    if (_shape.empty())
+        _empty = true;
+    else {
+        for (auto v:_shape) {
+            if (v == 0) {
+                _empty = true;
+                break;
             }
         }
     }
+}
 
-    ShapeDescriptor::ShapeDescriptor(DataType type, char order, std::vector<Nd4jLong> &shape, std::vector<Nd4jLong> &strides, Nd4jLong ews) : ShapeDescriptor(type, order, shape, strides) {
-        _ews = ews;
+//////////////////////////////////////////////////////////////////////////
+ShapeDescriptor::ShapeDescriptor(DataType type, char order, std::vector<Nd4jLong> &shape, std::vector<Nd4jLong> &strides, Nd4jLong ews): ShapeDescriptor(type, order, shape, strides) { 
+    _ews = ews;
+}
+
+//////////////////////////////////////////////////////////////////////////
+ShapeDescriptor::ShapeDescriptor(DataType type, char order, std::vector<Nd4jLong> &shape, std::vector<Nd4jLong> &strides): _dataType(type), _order(order), _shape(shape) {
+
+    if (strides.empty()) {
+        // TODO:: calculate strides here
+    } 
+    else {
+        _strides = strides;
     }
 
-    ShapeDescriptor::ShapeDescriptor(DataType type, char order, std::vector<Nd4jLong> &shape, std::vector<Nd4jLong> &strides) {
-        _dataType = type;
-        _order = order;
-        _shape = shape;
-
-        if (strides.empty()) {
-            // TODO:: calculate strides here
-        } else {
-            _strides = strides;
-        }
-
-        if (_shape.empty())
-            _empty = true;
-        else {
-            for (auto v:_shape) {
-                if (v == 0) {
-                    _empty = true;
-                    break;
-                }
+    if (_shape.empty())
+        _empty = true;
+    else {
+        for (auto v:_shape) {
+            if (v == 0) {
+                _empty = true;
+                break;
             }
         }
     }

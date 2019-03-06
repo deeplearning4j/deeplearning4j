@@ -28,7 +28,9 @@
 #include <DataType.h>
 
 namespace nd4j {
-    class ND4J_EXPORT ShapeDescriptor {
+
+class ND4J_EXPORT ShapeDescriptor {
+
     private:
         int _rank = 0;
         std::vector<Nd4jLong> _shape;
@@ -37,12 +39,27 @@ namespace nd4j {
         char _order = 'c';
         DataType _dataType;
         bool _empty = false;
+
     public:
         explicit ShapeDescriptor(DataType type, char order, std::vector<Nd4jLong> &shape);
         explicit ShapeDescriptor(DataType type, char order, std::vector<Nd4jLong> &shape, std::vector<Nd4jLong> &strides);
         explicit ShapeDescriptor(DataType type, char order, std::vector<Nd4jLong> &shape, std::vector<Nd4jLong> &strides, Nd4jLong ews);
         ~ShapeDescriptor() = default;
-    };
+
+        // we use default copy assignment operator
+        ShapeDescriptor& operator=(const ShapeDescriptor& other) = default;
+        
+        // we use default move assignment operator        
+        ShapeDescriptor& operator=(ShapeDescriptor&& other) noexcept = default;
+
+        // equal to operator
+        bool operator==(const ShapeDescriptor &other) const;        
+        
+        // less than operator
+        bool operator<(const ShapeDescriptor &other) const;
+};
+
+
 }
 
 
