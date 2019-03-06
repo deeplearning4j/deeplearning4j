@@ -49,7 +49,9 @@ import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.linalg.primitives.Pair;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 
 import static org.junit.Assert.*;
@@ -673,10 +675,16 @@ public class TestGraphNodes {
         dotProduct.setInputs(in1, in2);
         INDArray out = dotProduct.doForward(false, LayerWorkspaceMgr.noWorkspaces());
         assertArrayEquals(new long[]{3,1,3}, out.shape());
+        INDArray indices = Nd4j.createFromArray(new int[]{0,1,2});
+        assertEquals(Nd4j.createFromArray(new float[][][]{{{12,12,12}},{{12,12,12}},{{12,12,12}}}), out.get(indices));
 
         dotProduct.setEpsilon(out);
         Pair<Gradient, INDArray[]> p = dotProduct.doBackward(false, LayerWorkspaceMgr.noWorkspaces());
         assertArrayEquals(new long[]{3,2,3}, p.getSecond()[0].shape());
+        assertEquals(Nd4j.createFromArray(new float[][][]{{{36,36,36},{36,36,36}},{{36,36,36},{36,36,36}},{{36,36,36},{36,36,36}}}),
+                p.getSecond()[0].get(indices));
+        assertEquals(Nd4j.createFromArray(new float[][][]{{{24,24,24},{24,24,24}},{{24,24,24},{24,24,24}},{{24,24,24},{24,24,24}}}),
+                p.getSecond()[1].get(indices));
     }
 
     @Test
@@ -701,5 +709,11 @@ public class TestGraphNodes {
         dotProduct.setEpsilon(out);
         Pair<Gradient, INDArray[]> p = dotProduct.doBackward(false, LayerWorkspaceMgr.noWorkspaces());
         assertArrayEquals(new long[]{3,2,3,2}, p.getSecond()[0].shape());
+
+        INDArray indices = Nd4j.createFromArray(new int[]{0,0,0,0});
+        assertEquals(Nd4j.createFromArray(new float[][][]{{{216,216},{216,216},{216,216}},{{216,216},{216,216},{216,216}}}),
+                p.getSecond()[0].get(indices).slice(0));
+        assertEquals(Nd4j.createFromArray(new float[][][]{{{144,144},{144,144},{144,144}},{{144,144},{144,144},{144,144}}}),
+                p.getSecond()[1].get(indices).slice(0));
     }
 }

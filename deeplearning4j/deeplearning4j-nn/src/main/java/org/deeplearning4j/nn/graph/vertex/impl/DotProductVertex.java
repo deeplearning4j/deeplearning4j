@@ -1,5 +1,6 @@
 package org.deeplearning4j.nn.graph.vertex.impl;
 
+import com.google.common.primitives.Ints;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.gradient.Gradient;
@@ -19,7 +20,9 @@ import org.nd4j.linalg.factory.Broadcast;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 public class DotProductVertex extends BaseGraphVertex {
 
@@ -71,12 +74,14 @@ public class DotProductVertex extends BaseGraphVertex {
                 break;
             }
         }
-        Preconditions.checkState(validDimensions);
-
+        Preconditions.checkState(validDimensions && (a.rank() <= 4), "Operation not supported for rank %d", a.rank());
         try(MemoryWorkspace ws = workspaceMgr.notifyScopeBorrowed(ArrayType.ACTIVATIONS)) {
             INDArray result = Nd4j.getExecutioner().exec(new Dot(a,b, dimensions));
-            if (result.rank() < 2) {
-                result.reshape(-1, 1);
+            if (a.rank() == 3 && result.rank() == 2) {
+                return result.reshape(inputs[0].size(0), 1, -1);
+            }
+            else if (result.rank() <= 2) {
+                return result.reshape(-1, 1);
             }
             return result;
         }
@@ -89,11 +94,22 @@ public class DotProductVertex extends BaseGraphVertex {
             return new Pair<>(null, new INDArray[]{inputs[1].mul(epsilon), inputs[0].mul(epsilon)});
         }
         else {
-            INDArray output0 = Nd4j.createUninitialized(inputs[0].shape());
-            INDArray output1 = Nd4j.createUninitialized(inputs[1].shape());
+            INDArray output0 = Nd4j.createUninitialized(inputs[1].dataType(), inputs[1].shape());
+            INDArray output1 = Nd4j.createUninitialized(inputs[0].dataType(), inputs[0].shape());
 
-            BroadcastMulOp op0 = new BroadcastMulOp(epsilon, inputs[1], output1, dimensions);
-            BroadcastMulOp op1 = new BroadcastMulOp(epsilon, inputs[0], output0, dimensions);
+            List<Integer> allDims = new ArrayList<>();
+            for (int i = 0; i < inputs[0].rank(); ++i) {
+                allDims.add(i);
+            }
+            List<Integer> provided = new ArrayList<>();
+            for (int i : dimensions) {
+                provided.add(i);
+            }
+            allDims.removeAll(provided);
+            int[] inverted = Ints.toArray(allDims);
+
+            BroadcastMulOp op0 = new BroadcastMulOp(inputs[1], epsilon, output1, inverted);
+            BroadcastMulOp op1 = new BroadcastMulOp(inputs[0], epsilon, output0, inverted);
 
             Nd4j.getExecutioner().exec(op0);
             Nd4j.getExecutioner().exec(op1);
