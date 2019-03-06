@@ -18,21 +18,25 @@
 //  @author raver119@gmail.com
 //
 
-#ifndef DEV_TESTS_SCATTER_H
-#define DEV_TESTS_SCATTER_H
+#include <ops/declarable/helpers/scatter.h>
+#include <numeric>
+#include <helpers/ShapeUtils.h>
 
-#include <NDArray.h>
 
 namespace nd4j {
     namespace ops {
         namespace helpers {
-            void scatter(graph::LaunchContext *context, pairwise::Ops op, const NDArray& indices, const NDArray& updates, NDArray& output, const bool lock);
+            void scatter(graph::LaunchContext *context, pairwise::Ops op, const NDArray& indices, const NDArray& updates, NDArray& output, const bool lock) {
 
-            void scatterND(graph::LaunchContext *context, pairwise::Ops op, const NDArray& indices, const NDArray& updates, NDArray& output, const bool lock);
+            }
 
-            void scatterForLoss(graph::LaunchContext *context, const NDArray& indices, const NDArray& updates, NDArray& output, const bool calcGrad);
+            void scatterND(graph::LaunchContext *context, pairwise::Ops op, const NDArray& indices, const NDArray& updates, NDArray& output, const bool lock) {
+
+            }
+
+            void scatterForLoss(graph::LaunchContext *context, const NDArray& indices, const NDArray& updates, NDArray& output, const bool calcGrad) {
+
+            }
         }
     }
 }
-
-#endif //DEV_TESTS_SCATTER_H

@@ -54,7 +54,7 @@ CUSTOM_OP_IMPL(sparse_softmax_cross_entropy_loss_with_logits, 2, 1, false, 0, 0)
     auto logitsExp = (*logits - maxAlongDim).transform(transform::Exp, nullptr);
     auto logSoftMax = ( logitsExp / logitsExp.reduceAlongDims(reduce::Sum, dimension, true) ).transform(transform::Log);
 
-    ScatterHelper::scatterForLoss(*labels, -logSoftMax, *output, false);
+    helpers::scatterForLoss(block.launchContext(), *labels, -logSoftMax, *output, false);
 
     return Status::OK();
 }
@@ -124,7 +124,7 @@ CUSTOM_OP_IMPL(sparse_softmax_cross_entropy_loss_with_logits_grad, 2, 1, false, 
     dLdp->assign(softmax);
 
     // subtract unities at appropriate indexes of dLdp array    
-    ScatterHelper::scatterForLoss(*labels, *dLdp, *labels /*actually third array is unnecessary for gradient calculation*/, true);
+    helpers::scatterForLoss(block.launchContext(), *labels, *dLdp, *labels /*actually third array is unnecessary for gradient calculation*/, true);
 
     return Status::OK();
 }

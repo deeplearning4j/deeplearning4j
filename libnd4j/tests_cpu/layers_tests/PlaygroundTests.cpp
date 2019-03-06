@@ -1479,8 +1479,9 @@ TEST_F(PlaygroundTests, im2col_1) {
     auto timeStart1 = std::chrono::system_clock::now();
 
     for (int i = 0; i < N ; i++) {
-        nd4j::ops::helpers::im2col(*context, image, column, kH, kW, sH, sW, pH, pW, dH, dW, padValue);        
-        cudaStreamSynchronize(*context->getCudaStream());
+        nd4j::ops::helpers::im2col(*context, image, column, kH, kW, sH, sW, pH, pW, dH, dW, padValue);
+        // FIXME: do not use cuda methods in generic code
+        //cudaStreamSynchronize(*context->getCudaStream());
     }
 
     auto timeEnd1 = std::chrono::system_clock::now();
