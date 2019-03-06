@@ -32,24 +32,16 @@ namespace nd4j {
             __global__ static void scatterCuda(const int opCode, const int numOfSubArrs,
                                                      void* vx, const Nd4jLong *xShapeInfo, const Nd4jLong *xOffsets,
                                                      void* vy, const Nd4jLong *yShapeInfo, const Nd4jLong *yOffsets,
-                                                     const int* indexes) {
+                                                     const int* indexes, unsigned int arrLenX, unsigned int arrLenY) {
 
                 __shared__ T *x, *y;
-                __shared__ Nd4jLong arrLenX, arrLenY;
 
                 if (locking) {
-
-                    if (threadIdx.x == 0) {
-                        arrLenX = shape::length(xShapeInfo);
-                        arrLenY = shape::length(yShapeInfo);
-                    }
-                    __syncthreads();
 
                     for (int e = 0; e < numOfSubArrs; e++) {
 
                         const auto xIndex = indexes[e];
-                        const bool isOwner =
-                                xIndex < gridDim.x ? blockIdx.x == xIndex : blockIdx.x == xIndex % gridDim.x;
+                        const bool isOwner = xIndex < gridDim.x ? blockIdx.x == xIndex : blockIdx.x == xIndex % gridDim.x;
 
                         if (!isOwner)
                             continue;
@@ -59,9 +51,6 @@ namespace nd4j {
                             y = reinterpret_cast<T *>(vy) + yOffsets[e];
                         }
                         __syncthreads();
-
-                        if (arrLenX != arrLenY)
-                            return;
 
                         for (Nd4jLong i = threadIdx.x; i < arrLenX; i += blockDim.x) {
 
@@ -97,24 +86,14 @@ namespace nd4j {
                         __syncthreads();
                     }
                 } else {
-                    if (threadIdx.x == 0) {
-                        arrLenX = shape::length(xShapeInfo);
-                        arrLenY = shape::length(yShapeInfo);
-                    }
-                    __syncthreads();
-
                     for (int e = blockIdx.x; e < numOfSubArrs; e+= gridDim.x) {
 
-                        const auto xIndex = indexes[e];
-
                         if (threadIdx.x == 0) {
+                            const auto xIndex = indexes[e];
                             x = reinterpret_cast<T *>(vx) + xOffsets[xIndex];
                             y = reinterpret_cast<T *>(vy) + yOffsets[e];
                         }
                         __syncthreads();
-
-                        if (arrLenX != arrLenY)
-                            return;
 
                         for (Nd4jLong i = threadIdx.x; i < arrLenX; i += blockDim.x) {
                             const auto xOffset = shape::getIndexOffset(i, xShapeInfo, arrLenX);
@@ -174,11 +153,17 @@ namespace nd4j {
 
                 NDArray::prepareSpecialUse({&output}, {&updates, &indices});
 
+                unsigned int tadLengthX = shape::length(tadX.tadOnlyShapeInfo);
+                unsigned int tadLengthY = shape::length(tadY.tadOnlyShapeInfo);
+                if (tadLengthX != tadLengthY)
+                    throw std::runtime_error("scatter: Lengths of TADs must be equal");
+
+                auto blockSize = nd4j::math::nd4j_max<int>(32, nd4j::math::nd4j_min<int>(tadLengthX, 1024));
 
                 if (lock)
-                    scatterCuda<T, true><<<512, 512, 1024, *context->getCudaStream()>>>(op, indices.lengthOf(), output.getSpecialBuffer(), psX, poX, updates.getSpecialBuffer(), psY, poY, reinterpret_cast<int *>(indices.getSpecialBuffer()));
+                    scatterCuda<T, true><<<512, blockSize, 1024, *context->getCudaStream()>>>(op, indices.lengthOf(), output.getSpecialBuffer(), psX, poX, updates.getSpecialBuffer(), psY, poY, reinterpret_cast<int *>(indices.getSpecialBuffer()), tadLengthX, tadLengthY);
                 else
-                    scatterCuda<T, false><<<512, 512, 1024, *context->getCudaStream()>>>(op, indices.lengthOf(), output.getSpecialBuffer(), psX, poX, updates.getSpecialBuffer(), psY, poY, reinterpret_cast<int *>(indices.getSpecialBuffer()));
+                    scatterCuda<T, false><<<512, blockSize, 1024, *context->getCudaStream()>>>(op, indices.lengthOf(), output.getSpecialBuffer(), psX, poX, updates.getSpecialBuffer(), psY, poY, reinterpret_cast<int *>(indices.getSpecialBuffer()), tadLengthX, tadLengthY);
 
                 NDArray::registerSpecialUse({&output}, {&updates, &indices});
                 manager.synchronize();
