@@ -41,6 +41,10 @@ namespace nd4j {
         }
     }
 
+    ShapeDescriptor::ShapeDescriptor(DataType type, char order, std::vector<Nd4jLong> &shape, std::vector<Nd4jLong> &strides, Nd4jLong ews) : ShapeDescriptor(type, order, shape, strides) {
+        _ews = ews;
+    }
+
     ShapeDescriptor::ShapeDescriptor(DataType type, char order, std::vector<Nd4jLong> &shape, std::vector<Nd4jLong> &strides) {
         _dataType = type;
         _order = order;

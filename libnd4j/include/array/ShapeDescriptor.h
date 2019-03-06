@@ -33,12 +33,14 @@ namespace nd4j {
         int _rank = 0;
         std::vector<Nd4jLong> _shape;
         std::vector<Nd4jLong> _strides;
+        Nd4jLong _ews = 1;
         char _order = 'c';
         DataType _dataType;
         bool _empty = false;
     public:
         explicit ShapeDescriptor(DataType type, char order, std::vector<Nd4jLong> &shape);
         explicit ShapeDescriptor(DataType type, char order, std::vector<Nd4jLong> &shape, std::vector<Nd4jLong> &strides);
+        explicit ShapeDescriptor(DataType type, char order, std::vector<Nd4jLong> &shape, std::vector<Nd4jLong> &strides, Nd4jLong ews);
         ~ShapeDescriptor() = default;
     };
 }
