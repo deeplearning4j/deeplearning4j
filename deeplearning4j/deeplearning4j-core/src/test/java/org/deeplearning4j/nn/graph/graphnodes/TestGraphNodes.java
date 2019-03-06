@@ -638,35 +638,42 @@ public class TestGraphNodes {
         int[] dim1 = new int[]{1};
         GraphVertex dotProduct = new DotProductVertex(null, "test_vertex", -1, dim1);
 
-        int[] data1 = new int[]{2,2,2,2,2,2}, data2 = new int[]{3,3,3,3,3,3};
+        float[] data1 = new float[]{2,2,2,2,2,2}, data2 = new float[]{3,3,3,3,3,3};
         INDArray in1 = Nd4j.createFromArray(data1).reshape(3, 2);
         INDArray in2 = Nd4j.createFromArray(data2).reshape(3, 2);
 
         dotProduct.setInputs(in1, in2);
         INDArray out = dotProduct.doForward(false, LayerWorkspaceMgr.noWorkspaces());
-        assertEquals(1, out.rows());
-        assertEquals(3, out.columns());
+        assertEquals(3, out.rows());
+        assertEquals(1, out.columns());
         assertArrayEquals(new int[]{12,12,12}, out.toIntVector());
 
         dotProduct.setEpsilon(out);
-        //Pair<Gradient, INDArray[]> p = dotProduct.doBackward(false, LayerWorkspaceMgr.noWorkspaces());
+        Pair<Gradient, INDArray[]> p = dotProduct.doBackward(false, LayerWorkspaceMgr.noWorkspaces());
+        assertArrayEquals(new long[]{3,2}, p.getSecond()[0].shape());
+        assertArrayEquals(new float[][]{{36, 36},{36,36},{36,36}}, p.getSecond()[0].toFloatMatrix());
+        assertArrayEquals(new float[][]{{24, 24},{24,24},{24,24}}, p.getSecond()[1].toFloatMatrix());
     }
 
     @Test
     public void testDotProductNode3D() {
         Nd4j.getRandom().setSeed(12345);
 
-        int[] dim1 = new int[]{1,2};
+        int[] dim1 = new int[]{1};
         GraphVertex dotProduct = new DotProductVertex(null, "test_vertex", -1, dim1);
 
-        INDArray in1 = Nd4j.rand(new long[]{1,2,3});
-        INDArray in2 = Nd4j.rand(new long[]{1,2,3});
+        float[] data1 = new float[18], data2 = new float[18];
+        for (int i = 0; i < 18; ++i) {
+            data1[i] = 2;
+            data2[i] = 3;
+        }
+        INDArray in1 = Nd4j.createFromArray(data1).reshape(new int[]{3,2,3});
+        INDArray in2 = Nd4j.createFromArray(data2).reshape(new int[]{3,2,3});
 
         dotProduct.setInputs(in1, in2);
         INDArray out = dotProduct.doForward(false, LayerWorkspaceMgr.noWorkspaces());
-        assertArrayEquals(new long[]{1}, out.shape());
-        assertEquals(1, out.rows());
-        assertEquals(1, out.columns());
+
+        assertArrayEquals(new long[]{3,1,3}, out.shape());
 
         dotProduct.setEpsilon(out);
         Pair<Gradient, INDArray[]> p = dotProduct.doBackward(false, LayerWorkspaceMgr.noWorkspaces());
