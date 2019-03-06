@@ -19,6 +19,7 @@
 //
 
 #include "../ShapeDescriptor.h"
+#include <shape.h>
 
 using namespace nd4j;
 
@@ -100,6 +101,21 @@ ShapeDescriptor::ShapeDescriptor(DataType type, char order, std::vector<Nd4jLong
 //////////////////////////////////////////////////////////////////////////
 ShapeDescriptor::ShapeDescriptor(DataType type, char order, std::vector<Nd4jLong> &shape, std::vector<Nd4jLong> &strides, Nd4jLong ews): ShapeDescriptor(type, order, shape, strides) { 
     _ews = ews;
+}
+
+ShapeDescriptor::ShapeDescriptor(Nd4jLong *shapeInfo) {
+    _order = shape::order(shapeInfo);
+    _ews = shape::elementWiseStride(shapeInfo);
+    _rank = shape::rank(shapeInfo);
+    _dataType = ArrayOptions::dataType(shapeInfo);
+
+    _empty = shape::isEmpty(shapeInfo);
+
+    for (int e = 0; e < _rank; e++)
+        _shape.emplace_back(shapeInfo[e + 1]);
+
+    for (int e = 0; e < _rank; e++)
+        _shape.emplace_back(shapeInfo[e + 1 + _rank]);
 }
 
 //////////////////////////////////////////////////////////////////////////

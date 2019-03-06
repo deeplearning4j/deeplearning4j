@@ -41,6 +41,7 @@ class ND4J_EXPORT ShapeDescriptor {
         bool _empty = false;
 
     public:
+        explicit ShapeDescriptor(Nd4jLong *shapeInfo);
         explicit ShapeDescriptor(DataType type, char order, std::vector<Nd4jLong> &shape);
         explicit ShapeDescriptor(DataType type, char order, std::vector<Nd4jLong> &shape, std::vector<Nd4jLong> &strides);
         explicit ShapeDescriptor(DataType type, char order, std::vector<Nd4jLong> &shape, std::vector<Nd4jLong> &strides, Nd4jLong ews);
