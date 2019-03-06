@@ -210,7 +210,6 @@ __device__ void ReduceFloatFunction<X,Z>::execScalarCuda(void *vx, Nd4jLong *xSh
 
             if (threadIdx.x == 0) {
                 z[0] = OpType::postProcess(sPartials[0], len, extraParams);
-                printCudaDevice<float>(z, 1);
             }
         }
     }
