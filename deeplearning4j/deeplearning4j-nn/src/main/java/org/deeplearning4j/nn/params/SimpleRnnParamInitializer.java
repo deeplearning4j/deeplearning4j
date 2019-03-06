@@ -56,7 +56,7 @@ public class SimpleRnnParamInitializer implements ParamInitializer {
         SimpleRnn c = (SimpleRnn)layer;
         val nIn = c.getNIn();
         val nOut = c.getNOut();
-        return nIn * nOut + nOut * nOut + nOut + (hasLayerNorm(layer) ? nOut : 0);
+        return nIn * nOut + nOut * nOut + nOut + (hasLayerNorm(layer) ? 2 * nOut : 0);
     }
 
     @Override
@@ -162,7 +162,7 @@ public class SimpleRnnParamInitializer implements ParamInitializer {
         m.put(BIAS_KEY, b);
         if(hasLayerNorm){
             pos += nOut;
-            INDArray g = in.get(point(0), interval(pos, pos + nOut));
+            INDArray g = in.get(point(0), interval(pos, pos + 2 * nOut));
             m.put(GAIN_KEY, g);
         }
         return m;
