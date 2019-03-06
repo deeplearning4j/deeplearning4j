@@ -99,25 +99,12 @@ public class LSTM extends AbstractLSTM {
     }
 
     @NoArgsConstructor
-    @Getter
-    @Setter
     public static class Builder extends AbstractLSTM.Builder<Builder> {
 
 
         @SuppressWarnings("unchecked")
         public LSTM build() {
             return new LSTM(this);
-        }
-
-
-        /**
-         * If true (default = false): enable layer normalization on this layer
-         *
-         */
-        private boolean hasLayerNorm = false;
-        public LSTM.Builder hasLayerNorm(boolean hasLayerNorm){
-            this.hasLayerNorm = hasLayerNorm;
-            return this;
         }
     }
 

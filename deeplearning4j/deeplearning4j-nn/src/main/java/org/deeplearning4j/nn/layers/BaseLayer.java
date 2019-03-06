@@ -435,8 +435,8 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
     }
 
     /**
-     * Does this layer support and is it enabled layer normalization? Only Dense, SimpleRNN and LSTM Layers support
-     * layer normalization. However LSTM does not support Layer Normalization when using CuDNN.
+     * Does this layer support and is it enabled layer normalization? Only Dense and SimpleRNN Layers support
+     * layer normalization.
      *
      * @return True if layer normalization is enabled on this layer, false otherwise
      */
