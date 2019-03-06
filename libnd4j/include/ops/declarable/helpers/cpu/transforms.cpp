@@ -610,7 +610,7 @@ static void gather_(NDArray* input, const NDArray* indices, NDArray* output, con
 
             std::vector<int> dimsOut(indices->rankOf());
             std::iota(dimsOut.begin(), dimsOut.end(), axis);   // fill with axis, axis+1, ... axis+indices->rankOf()-1
-            const Nd4jLong numOfSubArrs = ShapeUtils::getNumOfSubArrs(output->getShapeInfo(), dimsOut);
+            const Nd4jLong numOfSubArrs = indices->lengthOf();
 #pragma omp parallel for if(numOfSubArrs > Environment::getInstance()->elementwiseThreshold()) schedule(guided)
             for(int i = 0; i < numOfSubArrs; ++i) {
                 NDArray subArrOut = (*output)(i, dimsOut);
@@ -626,7 +626,7 @@ static void gather_(NDArray* input, const NDArray* indices, NDArray* output, con
             output->assign((*input)(intArgs[1], {axis}));
         }
         else { // vector case
-            const Nd4jLong numOfSubArrs = ShapeUtils::getNumOfSubArrs(output->getShapeInfo(), {axis});
+            const Nd4jLong numOfSubArrs = intArgs.size() - 1;
 #pragma omp parallel for if(numOfSubArrs > Environment::getInstance()->elementwiseThreshold()) schedule(guided)
             for(int i = 0; i < numOfSubArrs; ++i) {
                 NDArray subArrOut = (*output)(i, {axis});

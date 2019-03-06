@@ -2759,9 +2759,14 @@ Nd4jLong NDArray::getOffset(const Nd4jLong i) const {
     }
     
     ////////////////////////////////////////////////////////////////////////
-    void NDArray::getSubArrShapeAndOffsets(const Nd4jLong numOfSubArrs, const std::vector<int>& dimsToExclude, Nd4jLong* subArrShapeInfo, Nd4jLong* subArrOffsets, bool keepUnitiesInShape)  const {
-                       
-        const int rank = rankOf();        
+    void NDArray::getSubArrShapeAndOffsets(const Nd4jLong numOfSubArrs, const std::vector<int>& dimsToExclude, Nd4jLong* subArrShapeInfo, Nd4jLong* subArrOffsets, bool keepUnitiesInShape) const {
+
+        const int rank = rankOf();
+
+        // allocate memory 
+        ALLOCATE(subArrShapeInfo, _context->getWorkspace(), shape::shapeInfoLength(rank - dimsToExclude.size()), Nd4jLong);
+        ALLOCATE(subArrOffsets,   _context->getWorkspace(), numOfSubArrs, Nd4jLong);
+                               
         Nd4jLong *outShapeInfo = ShapeBuilders::copyShapeInfo(_shapeInfo, true, _context->getWorkspace());        
         auto shapeOf = shape::shapeOf(outShapeInfo);
         auto stridesOf = shape::stride(outShapeInfo);
