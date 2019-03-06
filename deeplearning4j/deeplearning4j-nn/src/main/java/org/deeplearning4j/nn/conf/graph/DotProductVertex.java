@@ -9,6 +9,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 public class DotProductVertex extends GraphVertex {
 
     private int[] dimensions;
+    private boolean keepDimensions;
 
     DotProductVertex(int[] dimensions) {
         this.dimensions = dimensions;
