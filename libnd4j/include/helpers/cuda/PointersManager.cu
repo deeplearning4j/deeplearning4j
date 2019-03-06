@@ -75,7 +75,7 @@ PointersManager::~PointersManager() {
 ////////////////////////////////////////////////////////////////////////
 template<typename T>
 __device__ void PointersManager::printDevContentOnDev(const void* pDev, const Nd4jLong len, const int tid = 0) const {
-
+    printf("device print out\n");
     if(blockIdx.x * blockDim.x + threadIdx.x != tid) return;
     for(Nd4jLong i = 0; i < len; ++i)
         printf("%f, ", (double)reinterpret_cast<T*>(pDev)[i] );
@@ -85,7 +85,7 @@ __device__ void PointersManager::printDevContentOnDev(const void* pDev, const Nd
 ////////////////////////////////////////////////////////////////////////
 template<typename T>
 void PointersManager::printDevContentOnHost(const void* pDev, const Nd4jLong len) const {
-    
+    printf("host print out\n");
     void* pHost = operator new(sizeof(T) * len);
 
     cudaMemcpyAsync(pHost, pDev, sizeof(T) * len, cudaMemcpyDeviceToHost, *_context->getCudaStream());
