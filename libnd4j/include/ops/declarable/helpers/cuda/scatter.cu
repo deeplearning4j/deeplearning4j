@@ -28,66 +28,126 @@
 namespace nd4j {
     namespace ops {
         namespace helpers {
-            template<typename T>
+            template<typename T, bool locking>
             __global__ static void scatterCuda(const int opCode, const int numOfSubArrs,
                                                      void* vx, const Nd4jLong *xShapeInfo, const Nd4jLong *xOffsets,
                                                      void* vy, const Nd4jLong *yShapeInfo, const Nd4jLong *yOffsets,
-                                                     const int* indexes, const bool locking) {
+                                                     const int* indexes) {
 
                 __shared__ T *x, *y;
                 __shared__ Nd4jLong arrLenX, arrLenY;
 
-                for (int e = 0; e < numOfSubArrs; e++ ) {
-
-                    const auto xIndex = indexes[e];
-                    const bool isOwner = xIndex < gridDim.x ? blockIdx.x == xIndex : blockIdx.x == xIndex % gridDim.x;
-
-                    if (!isOwner)
-                        continue;
+                if (locking) {
 
                     if (threadIdx.x == 0) {
-                        x = reinterpret_cast<T*>(vx) + xOffsets[xIndex];
-                        y = reinterpret_cast<T*>(vy) + yOffsets[e];
                         arrLenX = shape::length(xShapeInfo);
                         arrLenY = shape::length(yShapeInfo);
                     }
                     __syncthreads();
 
-                    if (arrLenX != arrLenY)
-                        return;
+                    for (int e = 0; e < numOfSubArrs; e++) {
 
-                    for (Nd4jLong i = threadIdx.x; i < arrLenX; i += blockDim.x) {
+                        const auto xIndex = indexes[e];
+                        const bool isOwner =
+                                xIndex < gridDim.x ? blockIdx.x == xIndex : blockIdx.x == xIndex % gridDim.x;
 
-                        const auto xOffset = shape::getIndexOffset(i, xShapeInfo, arrLenX);
-                        const auto yOffset = shape::getIndexOffset(i, yShapeInfo, arrLenY);
+                        if (!isOwner)
+                            continue;
 
-                        switch (opCode) {
-                            case 0:
-                                x[xOffset] += y[yOffset];
-                                break;
-                            case 1:
-                                x[xOffset] -= y[yOffset];
-                                break;
-                            case 2:
-                                x[xOffset] *= y[yOffset];
-                                break;
-                            case 3:
-                                x[xOffset] /= y[yOffset];
-                                break;
-                            case 4:
-                                x[xOffset] = y[yOffset] - x[xOffset];
-                                break;
-                            case 5:
-                                x[xOffset] = y[yOffset] / x[xOffset];
-                                break;
-                            case 6:
-                                x[xOffset] = y[yOffset];
-                                break;
-                            default:
-                                continue;
+                        if (threadIdx.x == 0) {
+                            x = reinterpret_cast<T *>(vx) + xOffsets[xIndex];
+                            y = reinterpret_cast<T *>(vy) + yOffsets[e];
                         }
+                        __syncthreads();
+
+                        if (arrLenX != arrLenY)
+                            return;
+
+                        for (Nd4jLong i = threadIdx.x; i < arrLenX; i += blockDim.x) {
+
+                            const auto xOffset = shape::getIndexOffset(i, xShapeInfo, arrLenX);
+                            const auto yOffset = shape::getIndexOffset(i, yShapeInfo, arrLenY);
+
+                            switch (opCode) {
+                                case 0:
+                                    x[xOffset] += y[yOffset];
+                                    break;
+                                case 1:
+                                    x[xOffset] -= y[yOffset];
+                                    break;
+                                case 2:
+                                    x[xOffset] *= y[yOffset];
+                                    break;
+                                case 3:
+                                    x[xOffset] /= y[yOffset];
+                                    break;
+                                case 4:
+                                    x[xOffset] = y[yOffset] - x[xOffset];
+                                    break;
+                                case 5:
+                                    x[xOffset] = y[yOffset] / x[xOffset];
+                                    break;
+                                case 6:
+                                    x[xOffset] = y[yOffset];
+                                    break;
+                                default:
+                                    continue;
+                            }
+                        }
+                        __syncthreads();
+                    }
+                } else {
+                    if (threadIdx.x == 0) {
+                        arrLenX = shape::length(xShapeInfo);
+                        arrLenY = shape::length(yShapeInfo);
                     }
                     __syncthreads();
+
+                    for (int e = blockIdx.x; e < numOfSubArrs; e+= gridDim.x) {
+
+                        const auto xIndex = indexes[e];
+
+                        if (threadIdx.x == 0) {
+                            x = reinterpret_cast<T *>(vx) + xOffsets[xIndex];
+                            y = reinterpret_cast<T *>(vy) + yOffsets[e];
+                        }
+                        __syncthreads();
+
+                        if (arrLenX != arrLenY)
+                            return;
+
+                        for (Nd4jLong i = threadIdx.x; i < arrLenX; i += blockDim.x) {
+                            const auto xOffset = shape::getIndexOffset(i, xShapeInfo, arrLenX);
+                            const auto yOffset = shape::getIndexOffset(i, yShapeInfo, arrLenY);
+
+                            switch (opCode) {
+                                case 0:
+                                    x[xOffset] += y[yOffset];
+                                    break;
+                                case 1:
+                                    x[xOffset] -= y[yOffset];
+                                    break;
+                                case 2:
+                                    x[xOffset] *= y[yOffset];
+                                    break;
+                                case 3:
+                                    x[xOffset] /= y[yOffset];
+                                    break;
+                                case 4:
+                                    x[xOffset] = y[yOffset] - x[xOffset];
+                                    break;
+                                case 5:
+                                    x[xOffset] = y[yOffset] / x[xOffset];
+                                    break;
+                                case 6:
+                                    x[xOffset] = y[yOffset];
+                                    break;
+                                default:
+                                    continue;
+                            }
+                        }
+                        __syncthreads();
+                    }
                 }
             }
 
@@ -114,7 +174,11 @@ namespace nd4j {
 
                 NDArray::prepareSpecialUse({&output}, {&updates, &indices});
 
-                scatterCuda<T><<<512, 512, 1024, *context->getCudaStream()>>>(op, indices.lengthOf(), output.getSpecialBuffer(), psX, poX, updates.getSpecialBuffer(), psY, poY, reinterpret_cast<int *>(indices.getSpecialBuffer()), lock);
+
+                if (lock)
+                    scatterCuda<T, true><<<512, 512, 1024, *context->getCudaStream()>>>(op, indices.lengthOf(), output.getSpecialBuffer(), psX, poX, updates.getSpecialBuffer(), psY, poY, reinterpret_cast<int *>(indices.getSpecialBuffer()));
+                else
+                    scatterCuda<T, false><<<512, 512, 1024, *context->getCudaStream()>>>(op, indices.lengthOf(), output.getSpecialBuffer(), psX, poX, updates.getSpecialBuffer(), psY, poY, reinterpret_cast<int *>(indices.getSpecialBuffer()));
 
                 NDArray::registerSpecialUse({&output}, {&updates, &indices});
                 manager.synchronize();
