@@ -19,6 +19,7 @@
 //
 
 #include <NDArrayFactory.h>
+#include <ConstantHelper.h>
 
 namespace nd4j {
 

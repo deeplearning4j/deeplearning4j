@@ -20,6 +20,7 @@
 
 #include <NDArrayFactory.h>
 #include <exceptions/cuda_exception.h>
+#include <ConstantHelper.h>
 
 namespace nd4j {
 
