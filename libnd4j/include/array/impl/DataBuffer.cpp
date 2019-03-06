@@ -15,38 +15,22 @@
  ******************************************************************************/
 
 //
-//  @author raver119@gmail.com
+// @author raver119@gmail.com
 //
 
-#ifndef DEV_TESTS_CONSTANTSHAPEHELPER_H
-#define DEV_TESTS_CONSTANTSHAPEHELPER_H
-
-#include <dll.h>
-#include <pointercast.h>
-#include <map>
-#include <mutex>
-#include <ShapeDescriptor.h>
-#include <DataBuffer.h>
+#include "../DataBuffer.h"
 
 namespace nd4j {
+    DataBuffer::DataBuffer(Nd4jPointer primary, Nd4jPointer special) {
+        _primaryBuffer = primary;
+        _specialBuffer = special;
+    }
 
-    class ND4J_EXPORT ConstantShapeHelper {
-    private:
-        static ConstantShapeHelper *_INSTANCE;
+    Nd4jPointer DataBuffer::primary() {
+        return _primaryBuffer;
+    }
 
-        std::mutex _mutex;
-        std::map<int, std::map<ShapeDescriptor, DataBuffer>> _cache;
-
-
-        ConstantShapeHelper();
-    public:
-        ~ConstantShapeHelper() = default;
-
-        ConstantShapeHelper* getInstance();
-
-        DataBuffer& bufferForShapeInfo(ShapeDescriptor &descriptor);
-        DataBuffer& bufferForShapeInfo(const Nd4jLong *shapeInfo);
-    };
+    Nd4jPointer DataBuffer::special() {
+        return _specialBuffer;
+    }
 }
-
-#endif //DEV_TESTS_CONSTANTSHAPEHELPER_H
