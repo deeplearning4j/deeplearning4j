@@ -30,6 +30,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.*;
 import org.nd4j.linalg.api.ops.aggregates.Aggregate;
 import org.nd4j.linalg.api.ops.aggregates.Batch;
+import org.nd4j.linalg.api.ops.impl.scatter.ScatterUpdate;
 import org.nd4j.linalg.api.ops.impl.summarystats.Variance;
 import org.nd4j.linalg.api.rng.Random;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
@@ -693,6 +694,11 @@ public class DefaultOpExecutioner implements OpExecutioner {
         throw new UnsupportedOperationException();
     }
 
+    @Override
+    public void scatterUpdate(ScatterUpdate.UpdateOp op, INDArray array, INDArray indices, INDArray updates, int[] axis) {
+        throw new UnsupportedOperationException();
+    }
+
 
     /**
      * Get the information about the op in a String representation, for throwing more useful exceptions (mainly for debugging)
@@ -753,5 +759,15 @@ public class DefaultOpExecutioner implements OpExecutioner {
     @Override
     public boolean isExperimentalMode() {
         return false;
+    }
+
+    @Override
+    public OpContext buildContext() {
+        throw new UnsupportedOperationException("OpContext is available only on native backends");
+    }
+
+    @Override
+    public INDArray[] exec(CustomOp op, OpContext context) {
+        throw new UnsupportedOperationException();
     }
 }

@@ -343,7 +343,7 @@ void NativeOpExcutioner::execScalar(int opNum, void *x, Nd4jLong *xShapeInfo, vo
     auto zType = nd4j::ArrayOptions::dataType(resultShapeInfo);
     if (!nd4j::Environment::getInstance()->isExperimentalBuild()) {
         if ((yType != xType && yType != nd4j::DataType::BOOL) || zType != xType){
-            throw nd4j::datatype_exception::build("NativeOps::execScalar both operands must have same data type", xType, yType);
+            throw nd4j::datatype_exception::build("NativeOpExecutioner::execScalar both operands must have same data type", xType, yType);
         }
     }
 
@@ -365,7 +365,7 @@ void NativeOpExcutioner::execScalar(int opNum, void *x, Nd4jLong *xShapeInfo, vo
 
     if (!nd4j::Environment::getInstance()->isExperimentalBuild())
         if ((yType != xType && yType != nd4j::DataType::BOOL) || xType != zType)
-            throw nd4j::datatype_exception::build("NativeOps::execScalar both operands must have same data type", xType, yType);
+            throw nd4j::datatype_exception::build("NativeOpExecutioner::execScalar both operands must have same data type", xType, yType);
 
 #ifdef __ND4J_EXPERIMENTAL__
     BUILD_PAIRWISE_SELECTOR(xType, yType, zType, functions::scalar::ScalarTransform, ::transform(opNum, x, xShapeInfo, extraParams, z, zShapeInfo, scalars, dimension, dimensionLength, tadShapeInfo, tadOffsets, tadShapeInfoZ, tadOffsetsZ), LIBND4J_TYPES, LIBND4J_TYPES);
@@ -390,7 +390,7 @@ void NativeOpExcutioner::execScalarBool(int opNum, void *x, Nd4jLong *xShapeInfo
 
     if (!nd4j::Environment::getInstance()->isExperimentalBuild())
         if (yType != xType || nd4j::DataType::BOOL != zType)
-            throw nd4j::datatype_exception::build("NativeOps::execScalarBool both operands must have same data type", xType, yType);
+            throw nd4j::datatype_exception::build("NativeOpExecutioner::execScalarBool both operands must have same data type", xType, yType);
 
     BUILD_DOUBLE_SELECTOR(xType, zType, functions::scalar::ScalarBoolTransform, ::transform(opNum, x, xShapeInfo, extraParams, z, zShapeInfo, scalars, dimension, dimensionLength, tadShapeInfo, tadOffsets, tadShapeInfoZ, tadOffsetsZ), LIBND4J_TYPES, BOOL_TYPES);
 }
@@ -479,7 +479,11 @@ void NativeOpExcutioner::execTransformAny(int opNum, void *dx, Nd4jLong *xShapeI
     auto xType = nd4j::ArrayOptions::dataType(xShapeInfo);
     auto zType = nd4j::ArrayOptions::dataType(resultShapeInfo);
 
-    BUILD_DOUBLE_SELECTOR(xType, zType, functions::transform::TransformAny, ::exec(opNum, dx, xShapeInfo, result, resultShapeInfo, extraParams, tadShapeInfo, tadOffsets), LIBND4J_TYPES, LIBND4J_TYPES);
+    if (opNum == nd4j::transform::Assign && xType == zType && shape::elementWiseStride(xShapeInfo) == 1 && shape::elementWiseStride(resultShapeInfo) == 1 && shape::order(xShapeInfo) == shape::order(resultShapeInfo) && shape::equalsTypesAndShapesSoft(xShapeInfo, resultShapeInfo)) {
+        memcpy(result, dx, nd4j::DataTypeUtils::sizeOf(xType) * shape::length(xShapeInfo));
+    } else {
+        BUILD_DOUBLE_SELECTOR(xType, zType, functions::transform::TransformAny, ::exec(opNum, dx, xShapeInfo, result, resultShapeInfo, extraParams, tadShapeInfo, tadOffsets), LIBND4J_TYPES, LIBND4J_TYPES);
+    }
 }
 
 void NativeOpExcutioner::execTransformSame(int opNum, void *dx, Nd4jLong *xShapeInfo, void *result, Nd4jLong *resultShapeInfo, void *extraParams, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {

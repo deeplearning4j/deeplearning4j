@@ -34,6 +34,7 @@ import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -385,6 +386,7 @@ public class AbstractCache<T extends SequenceElement> implements VocabCache<T> {
      * @param by
      */
     public void setTotalDocCount(long by) {
+
         documentsCounter.set(by);
     }
 
@@ -405,7 +407,25 @@ public class AbstractCache<T extends SequenceElement> implements VocabCache<T> {
      * @param element the word to add
      */
     @Override
-    public void addToken(T element) {
+    public boolean addToken(T element) {
+        boolean ret = false;
+        T oldElement = vocabulary.putIfAbsent(element.getStorageId(), element);
+        if (oldElement == null) {
+            //putIfAbsent added our element
+            if (element.getLabel() != null) {
+                extendedVocabulary.put(element.getLabel(), element);
+            }
+            oldElement = element;
+            ret = true;
+        } else {
+            oldElement.incrementSequencesCount(element.getSequencesCount());
+            oldElement.increaseElementFrequency((int) element.getElementFrequency());
+        }
+        totalWordCount.addAndGet((long) oldElement.getElementFrequency());
+        return ret;
+    }
+
+    public void addToken(T element, boolean lockf) {
         T oldElement = vocabulary.putIfAbsent(element.getStorageId(), element);
         if (oldElement == null) {
             //putIfAbsent added our element
@@ -455,11 +475,14 @@ public class AbstractCache<T extends SequenceElement> implements VocabCache<T> {
      * @param vocabCache
      */
     public void importVocabulary(@NonNull VocabCache<T> vocabCache) {
+        AtomicBoolean added = new AtomicBoolean(false);
         for (T element : vocabCache.vocabWords()) {
-            this.addToken(element);
+            if (this.addToken(element))
+                added.set(true);
         }
         //logger.info("Current state: {}; Adding value: {}", this.documentsCounter.get(), vocabCache.totalNumberOfDocs());
-        this.documentsCounter.addAndGet(vocabCache.totalNumberOfDocs());
+        if (added.get())
+            this.documentsCounter.addAndGet(vocabCache.totalNumberOfDocs());
     }
 
     @Override

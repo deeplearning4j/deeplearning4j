@@ -44,6 +44,7 @@ import org.nd4j.linalg.api.ops.aggregates.Aggregate;
 import org.nd4j.linalg.api.ops.aggregates.Batch;
 import org.nd4j.linalg.api.ops.executioner.DefaultOpExecutioner;
 import org.nd4j.linalg.api.ops.executioner.OpStatus;
+import org.nd4j.linalg.api.ops.impl.scatter.ScatterUpdate;
 import org.nd4j.linalg.api.ops.impl.summarystats.Variance;
 import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.CopyOp;
 import org.nd4j.linalg.api.ops.performance.PerformanceTracker;
@@ -2624,6 +2625,44 @@ public class CudaExecutioner extends DefaultOpExecutioner {
     @Override
     public boolean isExperimentalMode() {
         return experimentalMode.get();
+    }
+
+    @Override
+    public void scatterUpdate(ScatterUpdate.UpdateOp op, @NonNull INDArray array, @NonNull INDArray indices, @NonNull INDArray updates, @NonNull int[] axis) {
+        CudaContext context = AtomicAllocator.getInstance().getFlowController().prepareAction(array, indices, updates);
+
+        val tadX = tadManager.getTADOnlyShapeInfo(array, axis);
+        val tadY = tadManager.getTADOnlyShapeInfo(updates, axis);
+
+        if (tadY.getSecond().length() != indices.length())
+            throw new IllegalStateException("Number of updates doesn't match number of indices. Bad dimensions used?");
+
+        if (extraz.get() == null)
+            extraz.set(new PointerPointer(32));
+
+        val stuff = extraz.get().put(null, context.getOldStream());
+
+        nativeOps.scatterUpdate(stuff, op.ordinal(), (int) indices.length(),
+                null, (LongPointer) AtomicAllocator.getInstance().getHostPointer(tadX.getFirst()), null, AtomicAllocator.getInstance().getPointer(array, context), (LongPointer) AtomicAllocator.getInstance().getPointer(tadX.getFirst()), (LongPointer) AtomicAllocator.getInstance().getPointer(tadX.getSecond()),
+                null, (LongPointer) AtomicAllocator.getInstance().getHostPointer(tadY.getFirst()), null, AtomicAllocator.getInstance().getPointer(updates, context), (LongPointer) AtomicAllocator.getInstance().getPointer(tadY.getFirst()), (LongPointer) AtomicAllocator.getInstance().getPointer(tadY.getSecond()),
+                null, (IntPointer) AtomicAllocator.getInstance().getPointer(indices, context));
+
+        AtomicAllocator.getInstance().getFlowController().registerAction(context, array, indices, updates);
+    }
+
+    @Override
+    public OpContext buildContext() {
+        return new CudaOpContext();
+    }
+
+    @Override
+    public INDArray[] exec(CustomOp op, OpContext context) {
+        nativeOps.execCustomOp(null, op.opHash(), context.contextPointer());
+
+        if (context.getOutputArrays().isEmpty())
+            return new INDArray[0];
+        else
+            return context.getOutputArrays().toArray(new INDArray[context.getOutputArrays().size()]);
     }
 }
 

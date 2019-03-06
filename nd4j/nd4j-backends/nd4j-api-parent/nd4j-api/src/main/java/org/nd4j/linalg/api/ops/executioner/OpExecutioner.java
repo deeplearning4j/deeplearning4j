@@ -16,12 +16,14 @@
 
 package org.nd4j.linalg.api.ops.executioner;
 
+import lombok.NonNull;
 import org.bytedeco.javacpp.Pointer;
 import org.nd4j.linalg.api.buffer.Utf8Buffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.*;
 import org.nd4j.linalg.api.ops.aggregates.Aggregate;
 import org.nd4j.linalg.api.ops.aggregates.Batch;
+import org.nd4j.linalg.api.ops.impl.scatter.ScatterUpdate;
 import org.nd4j.linalg.api.ops.impl.summarystats.Variance;
 import org.nd4j.linalg.api.rng.Random;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
@@ -339,6 +341,14 @@ public interface OpExecutioner {
 
     INDArray[] exec(CustomOp op);
 
+    /**
+     * This method executes op with given context
+     * @param op
+     * @param context
+     * @return method returns output arrays defined within context
+     */
+    INDArray[] exec(CustomOp op, OpContext context);
+
     List<LongShapeDescriptor> calculateOutputShape(CustomOp op);
 
     /**
@@ -385,5 +395,22 @@ public interface OpExecutioner {
      * @param index
      * @return
      */
-    String getString(Utf8Buffer buffer, long index);;
+    String getString(Utf8Buffer buffer, long index);
+
+    /**
+     * Temporary hook
+     * @param op
+     * @param array
+     * @param indices
+     * @param updates
+     * @param axis
+     */
+    @Deprecated
+    void scatterUpdate(ScatterUpdate.UpdateOp op, @NonNull INDArray array, @NonNull INDArray indices, @NonNull INDArray updates, int[] axis);
+
+    /**
+     * This method returns OpContext which can be used (and reused) to execute custom ops
+     * @return
+     */
+    OpContext buildContext();
 }

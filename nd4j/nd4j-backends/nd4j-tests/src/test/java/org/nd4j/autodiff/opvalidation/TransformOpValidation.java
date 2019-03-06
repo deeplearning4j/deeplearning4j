@@ -794,7 +794,7 @@ public class TransformOpValidation extends BaseOpValidation {
                     ia = Nd4j.rand(DataType.DOUBLE, ia.shape());
                     ia.diviRowVector(ia.norm2(0)).muli(clip);  //Norm2 is now 'clip' (i.e., exactly at threshold
                     //System.out.println(ia.norm2(0));
-                    ia.muliColumnVector(Nd4j.linspace(0.9, 1.1, ia.size(0), DataType.DOUBLE).transpose());
+                    ia.muliColumnVector(Nd4j.linspace(0.9, 1.1, ia.size(0), DataType.DOUBLE).reshape(ia.size(0), 1));
                     //System.out.println(ia.norm2(0));
 
                     INDArray expOut49 = Nd4j.create(DataType.DOUBLE, ia.shape());

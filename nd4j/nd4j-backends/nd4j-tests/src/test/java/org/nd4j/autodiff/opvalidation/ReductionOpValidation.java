@@ -740,7 +740,7 @@ public class ReductionOpValidation extends BaseOpValidation {
     @Test
     public void testMomentsOp() {
         int[] axes = new int[]{0};
-        INDArray input = Nd4j.linspace(1, 12, 12).reshape(3, 4);
+            INDArray input = Nd4j.linspace(1, 12, 12).reshape(3, 4);
 
         INDArray outMean = Nd4j.createUninitialized(new long[]{4});
         INDArray outVar = Nd4j.createUninitialized(new long[]{4});

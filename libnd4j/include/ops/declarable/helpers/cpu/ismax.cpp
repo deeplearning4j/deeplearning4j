@@ -122,7 +122,8 @@ static void ismax_(const NDArray* input, NDArray* output, const std::vector<int>
         //moving all dimensions (in sorted order)
         //to the back.
         //permuted version of the input shape info for setting up the tad problem
-        shape::TAD tad(input->getShapeInfo(), const_cast<int*>(dimensions.data()), dimensionsLength);
+        shape::TAD tad;
+        tad.init(input->getShapeInfo(), const_cast<int*>(dimensions.data()), dimensionsLength);
         tad.createTadOnlyShapeInfo();
         tad.createOffsets();
 

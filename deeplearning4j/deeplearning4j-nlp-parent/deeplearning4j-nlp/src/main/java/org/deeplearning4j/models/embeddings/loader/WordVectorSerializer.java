@@ -67,6 +67,8 @@ import org.nd4j.util.OneTimeLogger;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -2672,11 +2674,23 @@ public class WordVectorSerializer {
      * @param file File should point to previously saved w2v model
      * @return
      */
+    public static WordVectors loadStaticModel(InputStream inputStream) throws IOException {
+
+        File tmpFile = DL4JFileUtils.createTempFile("word2vec"+System.currentTimeMillis(), ".tmp");
+        FileUtils.copyInputStreamToFile(inputStream, tmpFile);
+        try {
+            return loadStaticModel(tmpFile);
+        } finally {
+            tmpFile.delete();
+        }
+
+    }
+
     // TODO: this method needs better name :)
-    public static WordVectors loadStaticModel(File file) {
+    public static WordVectors loadStaticModel(@NonNull File file) {
         if (!file.exists() || file.isDirectory())
             throw new RuntimeException(
-                            new FileNotFoundException("File [" + file.getAbsolutePath() + "] was not found"));
+                    new FileNotFoundException("File [" + file.getAbsolutePath() + "] was not found"));
 
         int originalFreq = Nd4j.getMemoryManager().getOccasionalGcFrequency();
         boolean originalPeriodic = Nd4j.getMemoryManager().isPeriodicGcActive();
@@ -2813,14 +2827,27 @@ public class WordVectorSerializer {
         protected int vectorLength;
         protected AtomicInteger idxCounter = new AtomicInteger(0);
 
+
         protected BinaryReader(@NonNull File file) {
             try {
-                stream = new DataInputStream(new BufferedInputStream(GzipUtils.isCompressedFilename(file.getName())
-                                ? new GZIPInputStream(new FileInputStream(file)) : new FileInputStream(file)));
-
+                // Try to read as GZip
+                stream = new DataInputStream(new BufferedInputStream(new GZIPInputStream(new FileInputStream(file))));
+            }
+            catch (IOException e) {
+                try {
+                    // Failed to read as Gzip, assuming it's not compressed binary format
+                    stream = new DataInputStream(new BufferedInputStream(new FileInputStream(file)));
+                } catch (Exception e1) {
+                    throw new RuntimeException(e1);
+                }
+            }
+            catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+            try {
                 numWords = Integer.parseInt(readString(stream));
                 vectorLength = Integer.parseInt(readString(stream));
-            } catch (Exception e) {
+            } catch (IOException e) {
                 throw new RuntimeException(e);
             }
         }
@@ -2949,6 +2976,101 @@ public class WordVectorSerializer {
         File file = new File(path);
         Word2Vec word2Vec = readWord2Vec(file, readExtendedTables);
         return word2Vec;
+    }
+
+    public static <T extends SequenceElement>  void writeLookupTable(WeightLookupTable<T> weightLookupTable,
+                                                                     @NonNull File file) throws IOException {
+        try (BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(file),
+                                                                                StandardCharsets.UTF_8))) {
+            int numWords = weightLookupTable.getVocabCache().numWords();
+            int layersSize = weightLookupTable.layerSize();
+            long totalNumberOfDocs = weightLookupTable.getVocabCache().totalNumberOfDocs();
+
+            String format = "%d %d %d\n";
+            String header = String.format(format, numWords, layersSize, totalNumberOfDocs);
+
+            writer.write(header);
+
+            String row = "";
+            for (int j = 0; j < weightLookupTable.getVocabCache().words().size(); ++j) {
+                String label =  weightLookupTable.getVocabCache().wordAtIndex(j);
+                row += label + " ";
+                int freq = weightLookupTable.getVocabCache().wordFrequency(label);
+                int rows = ((InMemoryLookupTable)weightLookupTable).getSyn0().rows();
+                int cols = ((InMemoryLookupTable)weightLookupTable).getSyn0().columns();
+                row += freq + " " + rows + " " + cols + " ";
+
+                for (int r = 0; r < rows; ++r) {
+                    //row += " ";
+                    for (int c = 0; c < cols; ++c) {
+                        row += ((InMemoryLookupTable) weightLookupTable).getSyn0().getDouble(r, c) + " ";
+                    }
+                    //row += " ";
+                }
+                row += "\n";
+            }
+            writer.write(row);
+        }
+    }
+
+    public static <T extends SequenceElement> WeightLookupTable<T> readLookupTable(File file)
+            throws IOException {
+        return readLookupTable(new FileInputStream(file));
+    }
+
+    public static <T extends SequenceElement> WeightLookupTable<T> readLookupTable(InputStream stream)
+            throws IOException {
+        WeightLookupTable<T> weightLookupTable = null;
+        AbstractCache<VocabWord> vocabCache = new AbstractCache<>();
+        final int startSyn0 = 4;
+        boolean headerRead = false;
+        int numWords = -1, layerSize = -1, totalNumberOfDocs = -1;
+        try {
+            INDArray syn0 = null;
+            int index = 0;
+            for (String line : IOUtils.readLines(stream)) {
+                String[] tokens = line.split(" ");
+                if (!headerRead) {
+                    // reading header as "NUM_WORDS VECTOR_SIZE NUM_DOCS"
+                    numWords = Integer.parseInt(tokens[0]);
+                    layerSize = Integer.parseInt(tokens[1]);
+                    totalNumberOfDocs = Integer.parseInt(tokens[2]);
+                    log.debug("Reading header - words: {}, layerSize: {}, totalNumberOfDocs: {}",
+                            numWords, layerSize, totalNumberOfDocs);
+                    headerRead = true;
+                    weightLookupTable = new InMemoryLookupTable.Builder().cache(vocabCache).vectorLength(layerSize).build();
+                } else {
+                    String label = decodeB64(tokens[0]);
+                    int freq = Integer.parseInt(tokens[1]);
+                    int rows = Integer.parseInt(tokens[2]);
+                    int cols = Integer.parseInt(tokens[3]);
+
+                    if (syn0 == null)
+                        syn0  = Nd4j.createUninitialized(rows, cols);
+
+                    int i = startSyn0;
+                    for (int r = 0; r < rows; ++r) {
+                        double[] vector = new double[cols];
+                        for (int c = 0;  c < cols; ++c) {
+                            vector[c] = Double.parseDouble(tokens[i]);
+                            ++i;
+                        }
+                        syn0.putRow(r, Nd4j.create(vector));
+                    }
+
+                    VocabWord vw = new VocabWord(freq, label);
+                    vw.setIndex(index);
+                    weightLookupTable.getVocabCache().addToken((T)vw);
+                    weightLookupTable.getVocabCache().addWordToIndex(index, label);
+                    ++index;
+                }
+            }
+            ((InMemoryLookupTable<T>) weightLookupTable).setSyn0(syn0);
+        }
+        finally {
+            stream.close();
+        }
+        return weightLookupTable;
     }
 
     public static Word2Vec readWord2Vec(@NonNull File file, boolean readExtendedTables)

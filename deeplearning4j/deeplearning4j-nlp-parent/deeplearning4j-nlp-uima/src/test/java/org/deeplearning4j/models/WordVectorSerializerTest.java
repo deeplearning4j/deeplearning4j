@@ -16,6 +16,7 @@
 
 package org.deeplearning4j.models;
 
+import com.google.common.io.Files;
 import com.google.common.primitives.Doubles;
 import lombok.val;
 import org.apache.commons.io.FileUtils;
@@ -591,6 +592,21 @@ public class WordVectorSerializerTest {
 
         WordVectors vectorsLive = WordVectorSerializer.readWord2VecModel(binaryFile);
         WordVectors vectorsStatic = WordVectorSerializer.loadStaticModel(binaryFile);
+
+        INDArray arrayLive = vectorsLive.getWordVectorMatrix("Morgan_Freeman");
+        INDArray arrayStatic = vectorsStatic.getWordVectorMatrix("Morgan_Freeman");
+
+        assertNotEquals(null, arrayLive);
+        assertEquals(arrayLive, arrayStatic);
+    }
+
+    @Test
+    public void testStaticLoaderFromStream() throws Exception {
+
+        logger.info("Executor name: {}", Nd4j.getExecutioner().getClass().getSimpleName());
+
+        WordVectors vectorsLive = WordVectorSerializer.readWord2VecModel(binaryFile);
+        WordVectors vectorsStatic = WordVectorSerializer.loadStaticModel(new FileInputStream(binaryFile));
 
         INDArray arrayLive = vectorsLive.getWordVectorMatrix("Morgan_Freeman");
         INDArray arrayStatic = vectorsStatic.getWordVectorMatrix("Morgan_Freeman");

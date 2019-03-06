@@ -332,8 +332,10 @@ public class InMemoryLookupCache implements VocabCache<VocabWord>, Serializable 
     }
 
     @Override
-    public synchronized void addToken(VocabWord word) {
-        tokens.put(word.getLabel(), word);
+    public synchronized boolean addToken(VocabWord word) {
+        if (null == tokens.put(word.getLabel(), word))
+            return true;
+        return false;
     }
 
     @Override
