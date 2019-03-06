@@ -71,7 +71,7 @@ namespace nd4j {
                 output->assign(input);
 
             // ScatterHelper<T>::template scatterApply<simdOps::Subtract<T>>(output, indices, updates);        
-            ScatterHelper::scatter(pairwise::Subtract, *indices, *updates, *output, lock);
+            helpers::scatter(pairwise::Subtract, *indices, *updates, *output, lock);
 
             return Status::OK();
         }

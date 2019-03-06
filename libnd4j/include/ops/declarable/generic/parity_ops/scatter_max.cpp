@@ -70,7 +70,7 @@ OP_IMPL(scatter_max, 3, 1, true) {
     if (!block.isInplace())
             output->assign(input);
 
-    ScatterHelper::scatter(pairwise::MaxPairwise, *indices, *updates, *output, lock);
+        helpers::scatter(pairwise::MaxPairwise, *indices, *updates, *output, lock);
     return Status::OK();
 }
 DECLARE_SYN(ScatterMax, scatter_max);

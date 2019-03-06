@@ -15,25 +15,22 @@
  ******************************************************************************/
 
 //
-// @author raver119@gmail.com
-// @author Yurii Shyrma (iuriish@yahoo.com)
+//  @author raver119@gmail.com
 //
 
-#ifndef LIBND4J_SCATTERHELPER_H
-#define LIBND4J_SCATTERHELPER_H
-
-#include <pointercast.h>
-#include <op_boilerplate.h>
-#include <NDArray.h>
-#include <numeric>
-#include <ops/declarable/helpers/scatter.h>
-
+#ifndef DEV_TESTS_SCATTER_H
+#define DEV_TESTS_SCATTER_H
 
 namespace nd4j {
-namespace ops {
+    namespace ops {
+        namespace helpers {
+            void scatter(pairwise::Ops op, const NDArray& indices, const NDArray& updates, NDArray& output, const bool lock);
 
+            void scatterND(pairwise::Ops op, const NDArray& indices, const NDArray& updates, NDArray& output, const bool lock);
 
+            void scatterForLoss(const NDArray& indices, const NDArray& updates, NDArray& output, const bool calcGrad);
+        }
+    }
 }
-}
 
-#endif
+#endif //DEV_TESTS_SCATTER_H
