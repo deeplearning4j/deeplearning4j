@@ -142,16 +142,48 @@ __host__ static void concatCudaLauncher(const int numOfArrs, const cudaStream_t 
 
 
     ////////////////////////////////////////////////////////////////////////
-    template<typename T>
-    static void gather_(graph::LaunchContext* context, NDArray* input, const NDArray* indices, NDArray* output, const std::vector<int>& intArgs) {
+    // template<typename T>
+    // __global__ static void gatherCuda(, NDArray* input, const NDArray* indices, NDArray* output, const std::vector<int>& intArgs) {
 
-    }
+    // }
 
-    void gather(graph::LaunchContext* context, NDArray* input, const NDArray* indices, NDArray* output, const std::vector<int>& intArgs) {
-        BUILD_SINGLE_SELECTOR(input->dataType(), gather_, (context, input, indices, output, intArgs), LIBND4J_TYPES);
-    }
+void gather(graph::LaunchContext* context, NDArray* input, const NDArray* indices, NDArray* output, const std::vector<int>& intArgs) {
+        
+    // int axis = intArgs.size() > 0 ? intArgs[0] : 0;
+    // const int inputRank = input->rankOf();
+    // if(axis < 0)
+    //     axis += inputRank;
 
-    BUILD_SINGLE_TEMPLATE(template void gather_, (graph::LaunchContext* context, NDArray* input, const NDArray* indices, NDArray* output, const std::vector<int>& intArgs), LIBND4J_TYPES);
+    // const int numOfIntArgs = intArgs.size();
+
+    // if (indices != nullptr && indices->isScalar()) {
+
+    //     if(input->rankOf() <= 1) { //For scalar indices, rank 0 or 1 input: can't do tensor along dimension 0 as this is whole array... instead, we want to get a scalar
+    //         auto idx = indices->e<Nd4jLong>(0);
+    //         auto scalarNDArray = input->e(idx);
+    //         output->assign(scalarNDArray);
+    //     } 
+    //     else {                
+    //         NDArray inSubArr = (*input)(indices->e<Nd4jLong>(0), {axis});
+    //         output->assign(inSubArr);
+    //     }
+    // } 
+    // else if (indices == nullptr && numOfIntArgs == 2) { // scalar case
+    //     output->assign((*input)(intArgs[1], {axis}));
+    // }
+    // else {
+
+    //     NDArray* pIndices(nullptr)
+
+    
+    // }
+            // BUILD_SINGLE_SELECTOR(input->dataType(), gather_, (context, input, indices, output, intArgs), LIBND4J_TYPES);
+}    
+
+
+
+
+    // BUILD_SINGLE_TEMPLATE(template void gather_, (graph::LaunchContext* context, NDArray* input, const NDArray* indices, NDArray* output, const std::vector<int>& intArgs), LIBND4J_TYPES);
 
     //////////////////////////////////////////////////////////////////////////
     void eye(graph::LaunchContext* context, NDArray& output) {

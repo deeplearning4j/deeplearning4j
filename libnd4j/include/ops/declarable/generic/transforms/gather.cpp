@@ -47,7 +47,8 @@ CUSTOM_OP_IMPL(gather, 1, 1, false, 0, -2) {
     std::vector<int> intArgs;
     if (block.width() > 2) {
     	intArgs = INPUT_VARIABLE(2)->template asVectorT<int>();
-    } else {
+    } 
+    else {
 		if (numOfIntArgs == 0)
 			intArgs.emplace_back(0);
 		else
@@ -61,7 +62,16 @@ CUSTOM_OP_IMPL(gather, 1, 1, false, 0, -2) {
 
 	// input validation
     REQUIRE_TRUE(intArgs[0] < inputRank, 0, "GATHER op: input axis must be smaller than input array rank, but got %i and %i correspondingly!", intArgs[0], inputRank);
-    REQUIRE_TRUE(indices || numOfIntArgs > 1, 0, "GATHER op: indices should be provided either as additional input array or as IntArguments !");
+    REQUIRE_TRUE(indices != nullptr || numOfIntArgs > 1, 0, "GATHER op: indices should be provided either as additional input array or as IntArguments !");
+
+	if (indices != nullptr) {
+		for(int i = 0; i < indices->lengthOf(); ++i)            
+            REQUIRE_TRUE(indices->e<Nd4jLong>(i) < input->sizeAt(intArgs[0]), 0, "GATHER op: indices array contains wrong elements, each element must be smaller than corresponding dimension of input array !");
+	}
+	else {
+		for(int i = 1; i < numOfIntArgs; ++i)            
+            REQUIRE_TRUE(intArgs[i] < input->sizeAt(intArgs[0]), 0, "GATHER op: some of indexes is larger than corresponding shape of input array !");
+	}
 
 	helpers::gather(block.launchContext(), input, indices, output, intArgs);
 
@@ -102,19 +112,15 @@ DECLARE_SHAPE_FN(gather) {
     REQUIRE_TRUE(axis < inputRank, 0, "GATHER op: input axis must be smaller than input array rank, but got %i and %i correspondingly!", axis, inputRank);
 
 	bool isEmpty = false;
+	
 	if (block.width() > 1) {
 		auto indicesShapeInfo = inputShape->at(1);
     
     	int indicesRank = shape::rank(indicesShapeInfo);
-        
-    	// if(shape::isScalar(indicesShapeInfo))
-    	// 	indicesRank = 0;
-    	// else if(shape::isVector(indicesShapeInfo))
-    	// 	indicesRank = 1;
-
+      
     	int outputRank = inputRank + indicesRank - 1;
-        if(INPUT_VARIABLE(1)->isEmpty()){
-			//Empty indices -> empty output
+        
+        if(INPUT_VARIABLE(1)->isEmpty()) { 			//Empty indices -> empty output
             outputRank = 0;
             isEmpty = true;
         }
@@ -133,9 +139,9 @@ DECLARE_SHAPE_FN(gather) {
 
     	for(int i = axis+1; i < inputRank; ++i)
     		outputShapeInfo[shapeIdx++] = inputShapeInfo[i+1];
-	
-//    	shape::updateStrides(outputShapeInfo, shape::order(inputShapeInfo));
-	} else if (block.numI() > 1) {
+	} 
+	else if (block.numI() > 1) {
+
 		int indicesRank = block.numI() == 2 ? 0 : 1;
 
 		int outputRank = inputRank + indicesRank - 1;

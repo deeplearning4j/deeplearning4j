@@ -1772,23 +1772,10 @@ template void NDArray::pIdx(const Nd4jLong* indices, const bool value);
             return varianceAlongDimension(op, biasCorrected, std::vector<int>(dimensions));
     }
 
-
-
     void NDArray::varianceAlongDimension(nd4j::variance::Ops op,const NDArray *target, const bool biasCorrected, const std::initializer_list<int>& dimensions) {
          varianceAlongDimension(op, target, biasCorrected, std::vector<int>(dimensions));
     }
-
-   
-
-    ////////////////////////////////////////////////////////////////////////
-    NDArray NDArray::operator()(const Nd4jLong subArrIdx, const std::vector<int>& dimsToExclude, bool keepUnitiesInShape)  const {
-        std::vector<Nd4jLong> idxRanges(2 * rankOf());
-        
-        ShapeUtils::evalIdxRangesForSubArr(subArrIdx, _shapeInfo, dimsToExclude, idxRanges.data());
-
-        return (*this)(idxRanges, keepUnitiesInShape);
-    }
-      
+       
     ////////////////////////////////////////////////////////////////////////
     // addition operator array + array
     NDArray NDArray::operator+(const NDArray& other) const {
@@ -2737,10 +2724,9 @@ Nd4jLong NDArray::getOffset(const Nd4jLong i) const {
         // evaluate ews
         newShape[2 * rank + 2] = (continuous && ordering() == 'c') ? ews() : 0;
 
-          #ifdef __CUDABLAS__
+        #ifdef __CUDABLAS__
             makeBothBuffersActual();
-            NDArray result(bufferWithOffset(offset), specialBufferWithOffset(offset), newShape, _context, false, false, true);
-        
+            NDArray result(bufferWithOffset(offset), specialBufferWithOffset(offset), newShape, _context, false, false, true);        
         #else            
             NDArray result(bufferWithOffset(offset), newShape, _context, false, true);            
         #endif        
@@ -2761,6 +2747,65 @@ Nd4jLong NDArray::getOffset(const Nd4jLong i) const {
         }
 
         return result;
+    }
+
+    ////////////////////////////////////////////////////////////////////////
+    NDArray NDArray::operator()(const Nd4jLong subArrIdx, const std::vector<int>& dimsToExclude, bool keepUnitiesInShape)  const {
+        std::vector<Nd4jLong> idxRanges(2 * rankOf());
+        
+        ShapeUtils::evalIdxRangesForSubArr(subArrIdx, _shapeInfo, dimsToExclude, idxRanges.data());
+
+        return (*this)(idxRanges, keepUnitiesInShape);
+    }
+    
+    ////////////////////////////////////////////////////////////////////////
+    void NDArray::getSubArrShapeAndOffsets(const Nd4jLong numOfSubArrs, const std::vector<int>& dimsToExclude, Nd4jLong* subArrShapeInfo, Nd4jLong* subArrOffsets, bool keepUnitiesInShape)  const {
+                       
+        const int rank = rankOf();        
+        Nd4jLong *outShapeInfo = ShapeBuilders::copyShapeInfo(_shapeInfo, true, _context->getWorkspace());        
+        auto shapeOf = shape::shapeOf(outShapeInfo);
+        auto stridesOf = shape::stride(outShapeInfo);
+
+        std::vector<Nd4jLong> idx(2 * rank);                        
+        bool continuous = false;
+        int current = rank - 1;
+    
+        // iterations for first subArray, subArrShapeInfo evaluation
+        ShapeUtils::evalIdxRangesForSubArr(0, _shapeInfo, dimsToExclude, idx.data());
+        subArrOffsets[0] = 0;
+        for (int j = rank - 1; j >= 0; --j) {
+                
+            if (idx[2*j] != idx[2*j + 1]) {
+                shapeOf[j] = 1;
+                subArrOffsets[0] += idx[2*j] * stridesOf[j];
+            }
+            else
+                continuous = current-- == j;
+        }
+
+        // evaluate ews
+        outShapeInfo[2 * rank + 2] = (continuous && ordering() == 'c') ? ews() : 0;
+
+        // remove unities from outShapeInfo if such are present
+        if(!keepUnitiesInShape) {
+            std::vector<Nd4jLong> shapeNoUnities = ShapeUtils::evalDimsWithoutUnities(outShapeInfo);           
+            shape::reshapeCF(rank, outShapeInfo, shapeNoUnities.size(), shapeNoUnities.data(), ordering() == 'f', subArrShapeInfo);
+        }
+        else
+            memcpy(subArrShapeInfo, outShapeInfo, shape::shapeInfoLength(rank)*sizeof(Nd4jLong));
+        
+        // iterations for rest of subArrays, continue calculation of subArrOffsets
+        for(Nd4jLong i = 1; i < numOfSubArrs; ++i) {
+            
+            ShapeUtils::evalIdxRangesForSubArr(i, _shapeInfo, dimsToExclude, idx.data());                                
+            subArrOffsets[i] = 0;
+
+            for (int j = rank - 1; j >= 0; --j)                 
+                if (idx[2*j] != idx[2*j + 1])                 
+                    subArrOffsets[i] += idx[2*j] * stridesOf[j];            
+        }
+
+        RELEASE(outShapeInfo, _context->getWorkspace());
     }
 
 

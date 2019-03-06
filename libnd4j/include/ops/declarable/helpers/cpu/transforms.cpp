@@ -590,39 +590,26 @@ static void gather_(NDArray* input, const NDArray* indices, NDArray* output, con
 
     const int numOfIntArgs = intArgs.size();
 
-    if (indices != nullptr) {        
+    if (indices != nullptr) {  
 
-        for(int i = 0; i < indices->lengthOf(); ++i)
-            if(indices->e<Nd4jLong>(i) >= input->sizeAt(axis))
-                throw std::runtime_error("helpers::gather function: indices array contains wrong elements, each element must be smaller than corresponding dimension of input array !");
-    
         // first case: indices consist of only one scalar
         if(indices->isScalar()) {
+
             if(input->rankOf() <= 1){
                 //For scalar indices, rank 0 or 1 input: can't do tensor along dimension 0 as this is whole array... instead, we want to get a scalar
 				auto idx = indices->e<Nd4jLong>(0);
 				auto scalarNDArray = input->e(idx);
                 output->assign(scalarNDArray);
-            } else {
-                std::vector<int> dimensions = ShapeUtils::evalDimsToExclude(input->rankOf(), {axis});
-                shape::TAD tad;
-                tad.init(input->getShapeInfo(), dimensions.data(), dimensions.size());
-                tad.createTadOnlyShapeInfo();
-                tad.createOffsets();
-                auto tadArr = NDArray(reinterpret_cast<void *>(reinterpret_cast<T*>(input->getBuffer()) + tad.tadOffsets[indices->e<Nd4jLong>(0)]), tad.tadOnlyShapeInfo, output->getContext());
-                output->assign(&tadArr);
+            } 
+            else {                
+                NDArray inSubArr = (*input)(indices->e<Nd4jLong>(0), {axis});
+                output->assign(inSubArr);
 			}
-        }
-        else if (input->rankOf() == 1 && indices->isVector()) {
-            // special case
-#pragma omp parallel for if(indices->lengthOf() > Environment::getInstance()->elementwiseThreshold()) schedule(guided)     
-            for (int e = 0; e < indices->lengthOf(); e++)
-                output->p(e, input->e<T>(indices->e<Nd4jLong>(e)));
         }
         else {
 
             std::vector<int> dimsOut(indices->rankOf());
-            std::iota(dimsOut.begin(), dimsOut.end(), axis);   // fill with axis, axis+1, ... indices->rankOf()-1
+            std::iota(dimsOut.begin(), dimsOut.end(), axis);   // fill with axis, axis+1, ... axis+indices->rankOf()-1
             const Nd4jLong numOfSubArrs = ShapeUtils::getNumOfSubArrs(output->getShapeInfo(), dimsOut);
 #pragma omp parallel for if(numOfSubArrs > Environment::getInstance()->elementwiseThreshold()) schedule(guided)
             for(int i = 0; i < numOfSubArrs; ++i) {
@@ -633,11 +620,7 @@ static void gather_(NDArray* input, const NDArray* indices, NDArray* output, con
         }
     } 
     else {
-        
-        for(int i = 1; i < numOfIntArgs; ++i)
-            if(intArgs[i] >= input->sizeAt(axis))
-                throw std::runtime_error("helpers::gather function: some of input indexes is larger than corresponding shape of input array !");
-
+                
         // we only allow scalar/vector case here
         if (numOfIntArgs == 2) { // scalar case
             output->assign((*input)(intArgs[1], {axis}));

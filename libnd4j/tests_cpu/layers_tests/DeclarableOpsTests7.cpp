@@ -542,23 +542,6 @@ TEST_F(DeclarableOpsTests7, Test_Dynamic_Partition_119_1) {
 }
 
 
-TEST_F(DeclarableOpsTests7, Test_Gather_Vector_Case_119) {
-    auto input = NDArrayFactory::create<double>('c', {4}, {2.f, 3.f, 4.f, 5.f});
-    auto indices = NDArrayFactory::create<int>('c', {2}, {0, 2});
-    auto exp = NDArrayFactory::create<double>('c', {2}, {2.f, 4.f});
-
-    nd4j::ops::gather op;
-    auto result = op.execute({&input, &indices}, {}, {});
-    ASSERT_EQ(Status::OK(), result->status());
-
-    auto z = result->at(0);
-
-    ASSERT_TRUE(exp.isSameShape(z));
-    ASSERT_TRUE(exp.equalsTo(z));
-
-    delete result;
-}
-
 TEST_F(DeclarableOpsTests7, Test_SequenceMask_1) {
     auto input = NDArrayFactory::create<double>('c', {4, 4},   {1.f, 2.f, 3.f, 4.f, 5.f, 6.f, 7.f, 8.f, 9.f, 10.f, 11.f, 12.f, 13.f, 14.f, 15.f, 16.f});
     auto exp = NDArrayFactory::create<double>('c', {4, 4, 16}, {1.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f,  0.f,  0.f,  0.f,  0.f,  0.f,  0.f, 0.f,1.f, 1.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f,  0.f,  0.f,  0.f,  0.f,  0.f,  0.f, 0.f,

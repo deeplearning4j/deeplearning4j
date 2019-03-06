@@ -143,20 +143,6 @@ TEST_F(DeclarableOpsTests6, Test_Simple_Scalar_1) {
     delete result;
 }
 
-
-TEST_F(DeclarableOpsTests6, Test_gather_Edge_1) {
-    auto x = NDArrayFactory::create<double>('c', {2, 4, 3, 2});
-    auto indices = NDArrayFactory::create<int>('c', {2}, {1, 0});
-
-    nd4j::ops::gather op;
-    auto result = op.execute({&x, &indices}, {}, {-2});
-    ASSERT_EQ(Status::OK(), result->status());
-
-    auto z = result->at(0);
-
-    delete result;
-}
-
 TEST_F(DeclarableOpsTests6, Test_gatherNd_Edge_1) {
     auto x = NDArrayFactory::create<double>('c', {2, 4, 2, 2});
     auto indices = NDArrayFactory::create<int>('c', {3, 3}, {0,2,1, 0,1,0, 1,3,1});
@@ -1179,39 +1165,6 @@ TEST_F(DeclarableOpsTests6, ReluLayer_1) {
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
-
-    delete result;
-}
-
-TEST_F(DeclarableOpsTests6, Test_Gather_Discrepancy_119) {
-    auto x = NDArrayFactory::create<double>('c', {2, 2}, {1, 2, 3, 4});
-    auto indices = NDArrayFactory::create<int>('c', {2}, {1, 0});
-    auto e = NDArrayFactory::create<double>('c', {2, 2}, {3, 4, 1, 2});
-
-    nd4j::ops::gather op;
-    auto result = op.execute({&x, &indices}, {}, {0});
-    ASSERT_EQ(Status::OK(), result->status());
-
-    auto z = result->at(0);
-
-    ASSERT_TRUE(e.isSameShape(z));
-    ASSERT_TRUE(e.equalsTo(z));
-
-    delete result;
-}
-
-TEST_F(DeclarableOpsTests6, Test_Gather_Discrepancy_119_2) {
-    auto x = NDArrayFactory::create<double>('c', {2, 2}, {1, 2, 3, 4});
-    auto e = NDArrayFactory::create<double>('c', {2, 2}, {3, 4, 1, 2});
-
-    nd4j::ops::gather op;
-    auto result = op.execute({&x}, {}, {0, 1, 0});
-    ASSERT_EQ(Status::OK(), result->status());
-
-    auto z = result->at(0);
-
-    ASSERT_TRUE(e.isSameShape(z));
-    ASSERT_TRUE(e.equalsTo(z));
 
     delete result;
 }
