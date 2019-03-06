@@ -38,6 +38,7 @@
 #endif
 
 namespace nd4j {
+    class NDArray;
     class DebugHelper {
     public:
 
@@ -72,6 +73,19 @@ namespace nd4j {
             }
         }
 #endif
+    public:
+
+       double _minValue;
+       double _maxValue;
+       double _meanValue;
+       double _stdDevValue;
+       Nd4jLong _zeroCount;
+       Nd4jLong _positiveCount;
+       Nd4jLong _negativeCount;
+       Nd4jLong _infCount;
+       Nd4jLong _nanCount;
+    public:
+        static DebugHelper debugStatistics(NDArray* input);
     };
 }
 

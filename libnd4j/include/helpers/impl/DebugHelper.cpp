@@ -19,7 +19,38 @@
 //
 
 #include <helpers/DebugHelper.h>
+#include <NDArray.h>
+#include <NDArrayFactory.h>
 
 namespace nd4j {
+    DebugHelper debugStatistics(NDArray* input) {
+        DebugHelper info;
 
+        info._minValue = 0.;
+        info._maxValue = -1;
+        info._meanValue = 0.;
+        info._stdDevValue = 1.;
+        info._zeroCount = 0;
+        info._positiveCount = 0;
+        info._negativeCount = 0;
+        info._infCount = 0;
+        info._nanCount = 0;
+        if (input->lengthOf() == 1) { // scalar case
+                info._minValue = input->e<double>(0);
+                info._maxValue = info._minValue;
+                info._meanValue = info._minValue;
+                info._stdDevValue = info._minValue;
+                info._zeroCount = nd4j::math::nd4j_abs(input->e<double>(0)) > 0.00001? 0: 1;
+                info._positiveCount = input->e<double>(0) > 0;
+                info._negativeCount = input->e<double>(0) < 0;
+                info._infCount = nd4j::math::nd4j_isinf(input->e<double>(0));
+                info._nanCount = nd4j::math::nd4j_isnan(input->e<double>(0));
+        }
+        else if (input->lengthOf() > 0) {
+                // TO DO: here processing for all elements with array
+        }
+        // else - no statistics for empty
+
+        return info;
+    }
 }
