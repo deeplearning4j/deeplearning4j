@@ -84,12 +84,6 @@ namespace nd4j {
 
             auto z = _z == nullptr ? _x : _z;
 
-            nd4j_printf("HST: x ptr: %p; z ptr: %p\n", _x->shapeInfo(), _z->shapeInfo());
-            nd4j_printf("DEV: x ptr: %p; z ptr: %p\n", _x->specialShapeInfo(), _z->specialShapeInfo());
-
-            //manager.printDevContentOnDev<Nd4jLong>(_x->specialShapeInfo(), shape::shapeInfoLength(_x->rankOf()), 0);
-            manager.printDevContentOnDev<Nd4jLong>(_z->specialShapeInfo(), shape::shapeInfoLength(_z->rankOf()), 0);
-
             switch (_opType) {
                 case 0:
                     NativeOpExecutioner::execTransformStrict(LaunchContext::defaultContext(), _opNum, _x->buffer(), _x->shapeInfo(), _x->specialBuffer(), _x->specialShapeInfo(), z->buffer(), z->shapeInfo(), z->specialBuffer(), z->specialShapeInfo(), nullptr, nullptr, nullptr);

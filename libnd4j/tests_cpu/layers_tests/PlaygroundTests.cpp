@@ -77,15 +77,8 @@ TEST_F(PlaygroundTests, Test_OpBenchmark_2) {
 
     auto generator = GENERATE_XZ() {
         // operands go together line by line
-        auto x_ = NDArrayFactory::create_<float>('c', {100, 1000});
-        ShapeDescriptor descriptor(nd4j::DataType::FLOAT32, 'c', {100, 1000});
-        auto buffer = ConstantShapeHelper::getInstance()->bufferForShapeInfo(descriptor);
-        nd4j_printf("A: b host: %p; b dev: %p\n", buffer.primary(), buffer.special());
-        nd4j_printf("A: x host: %p; x dev: %p\n", x_->shapeInfo(), x_->specialShapeInfo());
-        auto z_ = NDArrayFactory::create_<float>('c', {100, 1000});
-        nd4j_printf("A: z host: %p; z dev: %p\n", z_->shapeInfo(), z_->specialShapeInfo());
-        x.push_back(x_);
-        z.push_back(z_);
+        x.push_back(NDArrayFactory::create_<float>('c', {100, 100}));
+        z.push_back(NDArrayFactory::create_<float>('c', {100, 100}));
 /*
         x.push_back(NDArrayFactory::create_<float>('c', {1000, 1000}));
         z.push_back(NDArrayFactory::create_<float>('c', {1000, 1000}));

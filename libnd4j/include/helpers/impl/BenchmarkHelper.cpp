@@ -311,9 +311,6 @@ namespace nd4j {
             auto x_ = x.at(e);
             auto z_ = z.at(e);
 
-            nd4j_printf("B HST: x ptr: %p; z ptr: %p\n", x_->shapeInfo(), z_->shapeInfo());
-            nd4j_printf("B DEV: x ptr: %p; z ptr: %p\n", x_->specialShapeInfo(), z_->specialShapeInfo());
-
             auto clone = op->clone();
             clone->setX(x_);
             clone->setZ(z_);
