@@ -76,7 +76,7 @@ namespace nd4j {
 
                     _mutex.unlock();
 
-                    return buffer;
+                    return _cache[deviceId][descriptor1];
                 }
                 case 2:
                 default: {
