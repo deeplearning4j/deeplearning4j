@@ -19,6 +19,10 @@
 #ifndef __NDARRAY__HPP__
 #define __NDARRAY__HPP__
 
+#include <array/ShapeDescriptor.h>
+#include <ConstantShapeHelper.h>
+#include <helpers/ConstantShapeHelper.h>
+
 namespace nd4j {
 
     template <>
@@ -33,7 +37,6 @@ namespace nd4j {
         view->_shapeInfo = _shapeInfo;
         view->_buffer = _buffer;
         view->_context = _context;
-        view->_isShapeAlloc = false;
         view->_isBuffAlloc = false;
 
         return view;
@@ -49,7 +52,7 @@ namespace nd4j {
     }
     BUILD_SINGLE_TEMPLATE(template NDArray* NDArray::asT, (), LIBND4J_TYPES);
 
-////////////////////////////////////////////////////////////////////////
+/////////////////   7///////////////////////////////////////////////////////
 // move constructor
 NDArray::NDArray(NDArray&& other) noexcept {
 
@@ -59,7 +62,6 @@ NDArray::NDArray(NDArray&& other) noexcept {
     _context      = other._context;
     _bufferD      = other._bufferD;
     _shapeInfoD   = other._shapeInfoD;
-    _isShapeAlloc = other._isShapeAlloc;
     _isBuffAlloc  = other._isBuffAlloc;
     _dataType     = other._dataType;
 
@@ -82,7 +84,6 @@ NDArray::NDArray(nd4j::graph::LaunchContext* context) {
     _shapeInfo = nullptr;
     _shapeInfoD = nullptr;
     _isBuffAlloc = false;                                  // indicate that memory for array is passed from outside
-    _isShapeAlloc = false;
     _context = context;
     _length = 0;
 }
@@ -90,13 +91,11 @@ NDArray::NDArray(nd4j::graph::LaunchContext* context) {
 ////////////////////////////////////////////////////////////////////////
 // default constructor
  NDArray::NDArray() {
-
     _isBuffAlloc = false;                                  // indicate that memory for array is passed from outside
-    _isShapeAlloc = false;
 }
 
 std::pair<bool, bool> NDArray::isShapeOwner() {
-    std::pair<bool, bool> result(_isShapeAlloc, _isShapeDAlloc);
+    std::pair<bool, bool> result(false, false);
     return result;
 }
 
@@ -120,14 +119,14 @@ NDArray::NDArray(void *buffer, Nd4jLong *shapeInfo, graph::LaunchContext* contex
     if ((int) shapeInfo[0] > MAX_RANK)
         throw std::invalid_argument("NDArray constructor: rank of NDArray can't exceed 32 !");
 
-     if(!isShapeAlloc) 
-        setShapeInfo(ShapeBuilders::copyShapeInfo(shapeInfo, true, _context->getWorkspace()));
-    else 
-        setShapeInfo(shapeInfo);
+
+    ShapeDescriptor descriptor(shapeInfo);
+    auto constantBuffer = ConstantShapeHelper::getInstance()->bufferForShapeInfo(descriptor);
+    setShapeInfo(ShapeBuilders::copyShapeInfo(shapeInfo, true, _context->getWorkspace()));
+
 
     _context = context;
     _isAttached = _context->getWorkspace() != nullptr;
-    _isShapeAlloc = true;
 
     if (this->isEmpty()) {
         _length = 0;
@@ -167,7 +166,6 @@ NDArray::NDArray(void *buffer, void* bufferD, Nd4jLong *shapeInfo, graph::Launch
         setShapeInfo(shapeInfo);
     
     _context = context;
-    _isShapeAlloc = true;
 
     if (this->isEmpty()) {
         _length = 0;        
@@ -450,10 +448,8 @@ NDArray& NDArray::operator=(NDArray&& other) noexcept {
     if(_context->getWorkspace() == nullptr) {
             
         if(_isBuffAlloc) delete []_buffer;
-        if(_isShapeAlloc) delete []_shapeInfo;
 
         if(_isBuffDAlloc)  RELEASE_SPECIAL(_bufferD, nullptr);
-        if(_isShapeDAlloc) RELEASE_SPECIAL(_shapeInfoD, nullptr);
     }
 
     _isView       = other._isView;
@@ -462,7 +458,6 @@ NDArray& NDArray::operator=(NDArray&& other) noexcept {
     _context      = other._context;
     _bufferD      = other._bufferD;
     _shapeInfoD   = other._shapeInfoD;
-    _isShapeAlloc = other._isShapeAlloc;
     _isBuffAlloc  = other._isBuffAlloc;
     _dataType     = other._dataType;
     _length       = other._length;
@@ -501,9 +496,6 @@ void NDArray::replacePointers(void *buffer, Nd4jLong *shapeInfo, const bool rele
     this->_shapeInfo = shapeInfo;
 
     if (releaseExisting) {
-        if (_isShapeAlloc && _context->getWorkspace() == nullptr)
-            delete[] _shapeInfo;
-
         if (_isBuffAlloc && _context->getWorkspace() == nullptr)
             delete[] _buffer;
     }
@@ -594,7 +586,6 @@ void NDArray::replacePointers(void *buffer, Nd4jLong *shapeInfo, const bool rele
 
         auto result = new NDArray(newBuffer, newShapeInfo, nullptr);
         result->_isBuffAlloc = true;
-        result->_isShapeAlloc = true;
         result->setContext(nd4j::graph::LaunchContext::defaultContext());
 
 //        auto d1 = this->dataType();
@@ -1317,11 +1308,11 @@ NDArray NDArray::transp() const {
         else
             shape::shapeBufferFortran(dimensions.size(), dataType(), dimensions.data(), newShape);
 
-        if (_isShapeAlloc)
-            RELEASE(_shapeInfo, _context->getWorkspace());
+        ShapeDescriptor descriptor(newShape);
+        auto buffer = ConstantShapeHelper::getInstance()->bufferForShapeInfo(descriptor);
 
-        _shapeInfo = newShape;
-        _isShapeAlloc = true;
+        _shapeInfo = reinterpret_cast<Nd4jLong *>(buffer.primary());
+        RELEASE(newShape, _context->getWorkspace());
     }
 
 //////////////////////////////////////////////////////////////////////////
@@ -1465,7 +1456,6 @@ NDArray NDArray::transp() const {
         target._shapeInfo = shapeInfoNew;
         // don't forget to indicate that memory for new array was allocated
         target._isBuffAlloc = false;
-        target._isShapeAlloc = true;
         //target._isView = true;
     }
 
@@ -1483,7 +1473,6 @@ NDArray NDArray::transp() const {
         target._shapeInfo = shapeInfoNew;
         // don't forget to indicate that memory for new array was allocated
         target._isBuffAlloc = false;
-        target._isShapeAlloc = true;
         //target._isView = true;
 
     }
@@ -1700,7 +1689,6 @@ template void NDArray::pIdx(const Nd4jLong* indices, const bool value);
         }
 
         auto result = new NDArray(bufferWithOffset(offset), newShape, this->_context);
-        result->_isShapeAlloc = true;
 
         for (auto v: idx) {
             delete v;
@@ -1735,7 +1723,6 @@ template void NDArray::pIdx(const Nd4jLong* indices, const bool value);
         }
 
         auto result = new NDArray(bufferWithOffset(offset), newShape, this->_context);
-        result->_isShapeAlloc = true;
 
         return result;
     }

@@ -50,9 +50,9 @@ class PointersManager {
         template<typename T>
         void printDevContentOnHost(const void* pDev, const Nd4jLong len) const;
         
-#ifdef __CUDACC__
+#ifdef __CUDABLAS__
         template<typename T>
-        __device__ void printDevContentOnDev(const void* pDev, const Nd4jLong len, const int tid) const;
+        void printDevContentOnDev(void* pDev, Nd4jLong len, int tid = 0);
 #endif
 
 };

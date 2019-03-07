@@ -33,6 +33,7 @@
 #include <ops/declarable/helpers/im2col.h>
 #include <helpers/BenchmarkHelper.h>
 #include <ops/declarable/helpers/scatter.h>
+#include <helpers/ConstantShapeHelper.h>
 
 using namespace nd4j;
 using namespace nd4j::graph;
@@ -67,16 +68,25 @@ TEST_F(PlaygroundTests, Test_OpBenchmark_2) {
     parameters.addBoolParam("fOrder", true);
     float scalar = 2.0f;
 
+    auto fa = NDArrayFactory::create<int>(1);
+
     ScalarBenchmark sb(scalar::Multiply);
 
     // Y will be shared
-    sb.setY(NDArrayFactory::create_<float>(scalar));
+    //sb.setY(NDArrayFactory::create_<float>(scalar));
 
     auto generator = GENERATE_XZ() {
         // operands go together line by line
-        x.push_back(NDArrayFactory::create_<float>('c', {100, 100}));
-        z.push_back(NDArrayFactory::create_<float>('c', {100, 100}));
-
+        auto x_ = NDArrayFactory::create_<float>('c', {100, 1000});
+        ShapeDescriptor descriptor(nd4j::DataType::FLOAT32, 'c', {100, 1000});
+        auto buffer = ConstantShapeHelper::getInstance()->bufferForShapeInfo(descriptor);
+        nd4j_printf("A: b host: %p; b dev: %p\n", buffer.primary(), buffer.special());
+        nd4j_printf("A: x host: %p; x dev: %p\n", x_->shapeInfo(), x_->specialShapeInfo());
+        auto z_ = NDArrayFactory::create_<float>('c', {100, 1000});
+        nd4j_printf("A: z host: %p; z dev: %p\n", z_->shapeInfo(), z_->specialShapeInfo());
+        x.push_back(x_);
+        z.push_back(z_);
+/*
         x.push_back(NDArrayFactory::create_<float>('c', {1000, 1000}));
         z.push_back(NDArrayFactory::create_<float>('c', {1000, 1000}));
 
@@ -94,11 +104,13 @@ TEST_F(PlaygroundTests, Test_OpBenchmark_2) {
         //another way to call inplace op
         x.push_back(NDArrayFactory::create_<float>('c', {100, 100}));
         z.push_back(nullptr);
+        */
     };
 
-    helper.runOperationSuit(&sb, generator, "ScalarTest");
+    //helper.runOperationSuit(&sb, generator, "ScalarTest");
 
     TransformBenchmark tb(transform::StrictOps::Tanh, "tanh");
+
 
     // we can use the same generator, since the same number of operands used
     helper.runOperationSuit(&tb, generator, "TransformTest");

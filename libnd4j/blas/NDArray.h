@@ -129,9 +129,7 @@ namespace nd4j {
         /**
         *  indicates whether user allocates memory for _buffer/_shapeInfo by himself, in opposite case the memory must be allocated from outside
         */  
-        bool _isShapeAlloc = false;                    
         bool _isBuffAlloc = false;
-        bool _isShapeDAlloc = false;
         bool _isBuffDAlloc = false;
 
         // indicates if array's buffer is within workspace
@@ -1518,14 +1516,11 @@ namespace nd4j {
     //////////////////////////////////////////////////////////////////////////
     void NDArray::triggerAllocationFlag(bool bufferAllocated, bool shapeAllocated) {
         _isBuffAlloc = bufferAllocated;
-        _isShapeAlloc = shapeAllocated;
         _isBuffDAlloc = bufferAllocated? bufferAllocated: _isBuffDAlloc;
-        _isShapeDAlloc = shapeAllocated? shapeAllocated: _isShapeDAlloc;
     }
     //////////////////////////////////////////////////////////////////////////
     void NDArray::triggerSpecialAllocationFlag(bool bufferAllocated, bool shapeAllocated) {
         _isBuffDAlloc = bufferAllocated;
-        _isShapeDAlloc = shapeAllocated;
     }
 
     //////////////////////////////////////////////////////////////////////////

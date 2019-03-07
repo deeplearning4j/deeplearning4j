@@ -23,6 +23,7 @@
 #include <ConstantShapeHelper.h>
 #include <ShapeDescriptor.h>
 #include <DataBuffer.h>
+#include <helpers/PointersManager.h>
 
 using namespace nd4j;
 using namespace nd4j::ops;
@@ -78,6 +79,12 @@ TEST_F(ConstantShapeHelperTests, basic_test_3) {
     ASSERT_FALSE(p.first);
     ASSERT_FALSE(p.second);
 
+    ASSERT_TRUE(array->shapeInfo() != nullptr);
+
+#ifdef __CUDABLAS__
+    ASSERT_TRUE(array->specialShapeInfo() != nullptr);
+#endif
+
     delete array;
 }
 
@@ -90,6 +97,14 @@ TEST_F(ConstantShapeHelperTests, basic_test_4) {
     auto p = dup->isShapeOwner();
     ASSERT_FALSE(p.first);
     ASSERT_FALSE(p.second);
+
+    ASSERT_TRUE(dup->shapeInfo() != nullptr);
+
+#ifdef __CUDABLAS__
+    ASSERT_TRUE(dup->specialShapeInfo() != nullptr);
+    PointersManager manager(graph::LaunchContext::defaultContext(), "test");
+    manager.printDevContentOnDev<Nd4jLong>(dup->specialShapeInfo(), shape::shapeInfoLength(2), 0);
+#endif
 
     delete array;
     delete dup;
