@@ -1553,3 +1553,33 @@ TEST_F(PlaygroundTests, test_scatter_119) {
     auto duration1 = std::chrono::duration_cast<std::chrono::milliseconds> ((timeEnd1 - timeStart1) / N).count();
     nd4j_printf("duration my %ld\n", duration1);
 }
+
+TEST_F(PlaygroundTests, test_scatter_120) {
+    auto output = NDArrayFactory::create_<float>('c', {65536, 512});
+    auto updates = NDArrayFactory::create_<float>('c', {65536, 512});
+    auto indices = NDArrayFactory::create_<int>('c', {65536});
+
+    int p = 0;
+    for (int e = 65534; e >= 0; e--)
+        indices->p(p++, e);
+
+    indices->syncToDevice();
+
+    int N = 10;
+
+    auto timeStart1 = std::chrono::system_clock::now();
+
+    for (int i = 0; i < N ; i++) {
+        helpers::scatter(LaunchContext::defaultContext(), pairwise::CopyPws, *indices, *updates, *output, false);
+        // FIXME: do not use cuda methods in generic code
+        //cudaStreamSynchronize(*context->getCudaStream());
+    }
+
+    auto timeEnd1 = std::chrono::system_clock::now();
+    auto duration1 = std::chrono::duration_cast<std::chrono::milliseconds> ((timeEnd1 - timeStart1) / N).count();
+    nd4j_printf("duration my %ld\n", duration1);
+
+    delete output;
+    delete indices;
+    delete updates;
+}

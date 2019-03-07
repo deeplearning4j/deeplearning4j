@@ -194,8 +194,11 @@ NDArray::NDArray(const char order, const std::vector<Nd4jLong> &shape, nd4j::Dat
 
     _context = context;
 
-    setShapeInfo(ShapeBuilders::createShapeInfo(dtype, order, shape, _context->getWorkspace()));
-    _isShapeAlloc = true;
+    ShapeDescriptor descriptor(dtype, order, shape);
+    auto buffer = ConstantShapeHelper::getInstance()->bufferForShapeInfo(descriptor);
+
+    setShapeInfo(reinterpret_cast<Nd4jLong *>(buffer.primary()));
+    _isShapeAlloc = false;
 
     ALLOCATE_SPECIAL(_bufferD, _context->getWorkspace(), _length * sizeOfT(), int8_t);
     cudaMemset(_bufferD, '\0', _length * sizeOfT()); // zero all memory
