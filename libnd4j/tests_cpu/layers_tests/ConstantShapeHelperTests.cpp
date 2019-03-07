@@ -70,3 +70,27 @@ TEST_F(ConstantShapeHelperTests, basic_test_2) {
     ASSERT_FALSE(p.first);
     ASSERT_FALSE(p.second);
 }
+
+TEST_F(ConstantShapeHelperTests, basic_test_3) {
+    auto array = NDArrayFactory::create_<float>('c', {128});
+
+    auto p = array->isShapeOwner();
+    ASSERT_FALSE(p.first);
+    ASSERT_FALSE(p.second);
+
+    delete array;
+}
+
+
+TEST_F(ConstantShapeHelperTests, basic_test_4) {
+    auto array = NDArrayFactory::create_<float>('c', {128, 256});
+
+    auto dup = array->dup('f');
+
+    auto p = dup->isShapeOwner();
+    ASSERT_FALSE(p.first);
+    ASSERT_FALSE(p.second);
+
+    delete array;
+    delete dup;
+}

@@ -77,7 +77,7 @@ TEST_F(PlaygroundTests, Test_OpBenchmark_2) {
         x.push_back(NDArrayFactory::create_<float>('c', {100, 100}));
         z.push_back(NDArrayFactory::create_<float>('c', {100, 100}));
 
-        x.push_back(NDArrayFactory::create_<float>('f', {1000, 1000}));
+        x.push_back(NDArrayFactory::create_<float>('c', {1000, 1000}));
         z.push_back(NDArrayFactory::create_<float>('c', {1000, 1000}));
 
         // only share within single op call. do not cross share
@@ -88,7 +88,7 @@ TEST_F(PlaygroundTests, Test_OpBenchmark_2) {
         // using bool param here
         if (parameters.getBoolParam("fOrder")) {
             x.push_back(NDArrayFactory::create_<float>('c', {1000, 1000}));
-            z.push_back(NDArrayFactory::create_<float>('f', {1000, 1000}));
+            z.push_back(NDArrayFactory::create_<float>('c', {1000, 1000}));
         }
 
         //another way to call inplace op

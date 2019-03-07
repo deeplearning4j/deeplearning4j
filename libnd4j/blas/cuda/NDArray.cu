@@ -133,7 +133,9 @@ NDArray::NDArray(Nd4jLong* shapeInfo, const nd4j::DataType dtype, const bool cop
     _context = context;        
 
     if(!isShapeAlloc) {
-        setShapeInfo(ShapeBuilders::copyShapeInfo(shapeInfo, copyStrides, _context->getWorkspace()), dtype);
+        auto buffer = ConstantShapeHelper::getInstance()->bufferForShapeInfo(shapeInfo);
+
+        setShapeInfo(reinterpret_cast<Nd4jLong *>(buffer.primary()));
     }
     else {
         setShapeInfo(shapeInfo, dtype);        
@@ -141,7 +143,7 @@ NDArray::NDArray(Nd4jLong* shapeInfo, const nd4j::DataType dtype, const bool cop
             shape::updateStrides(_shapeInfo, shape::order(shapeInfo));         
     }
 
-    _isShapeAlloc = true;
+    _isShapeAlloc = false;
    
     ALLOCATE_SPECIAL(_bufferD, _context->getWorkspace(), _length * sizeOfT(), int8_t);
     cudaMemset(_bufferD, 0, _length * sizeOfT());
@@ -1061,9 +1063,12 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
 
         char order = newOrder == 'a' ? ordering() : newOrder;
 
-        auto outShapeInfo = ShapeBuilders::createShapeInfo(_dataType, order, getShapeAsVector(), _context->getWorkspace());        
-        auto result = new NDArray(outShapeInfo, true, _context, true);
+        ShapeDescriptor descriptor(_dataType, order, getShapeAsVector());
+        auto outShapeInfo = ConstantShapeHelper::getInstance()->bufferForShapeInfo(descriptor);
+
+        auto result = new NDArray(reinterpret_cast<Nd4jLong *>(outShapeInfo.primary()), true, _context, false);
         result->assign(*this);
+
 
         return result;
     }
@@ -2262,10 +2267,12 @@ NDArray::~NDArray() noexcept {
         RELEASE(_buffer, _context->getWorkspace());
 
     if (_isShapeDAlloc) {
+        nd4j_printf("Releasing device shape\n","");
         RELEASE_SPECIAL(_shapeInfoD, _context->getWorkspace());
     }
 
     if (_isShapeAlloc) {
+        nd4j_printf("Releasing host shape\n","");
         RELEASE(_shapeInfo, _context->getWorkspace());
     }
 
