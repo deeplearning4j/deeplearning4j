@@ -124,3 +124,11 @@ TEST_F(ConstantShapeHelperTests, basic_test_5) {
 
     delete arrayB;
 }
+
+TEST_F(ConstantShapeHelperTests, basic_test_6) {
+    ShapeDescriptor descriptorA(nd4j::DataType::INT32, 'c', {});
+    ShapeDescriptor descriptorB(nd4j::DataType::FLOAT32, 'c', {10, 10});
+
+    ASSERT_FALSE(descriptorA < descriptorB);
+    ASSERT_FALSE(descriptorB < descriptorA);
+}

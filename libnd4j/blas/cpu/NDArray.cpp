@@ -180,7 +180,7 @@ NDArray::NDArray(const char order, const std::vector<Nd4jLong> &shape, nd4j::Dat
 
 ////////////////////////////////////////////////////////////////////////
 // creates new NDArray using shape information from "shapeInfo" array, set all elements in new array to be zeros
-    NDArray::NDArray(Nd4jLong* shapeInfo, const nd4j::DataType dtype, const bool copyStrides, nd4j::graph::LaunchContext* context, const bool isShapeAlloc) {
+    NDArray::NDArray(Nd4jLong* shapeInfo, const nd4j::DataType dtype, const bool copyStrides, nd4j::graph::LaunchContext* context) {
 
         if (shapeInfo == nullptr)
             throw std::runtime_error("NDArray constructor: can't be initalized without shapeinfo");
@@ -748,7 +748,7 @@ NDArray::NDArray(const char order, const std::vector<Nd4jLong> &shape, nd4j::Dat
             ShapeDescriptor descriptor(dataType(), order, shape);
             auto constantBuffer = ConstantShapeHelper::getInstance()->bufferForShapeInfo(descriptor);
 
-            NDArray temp(reinterpret_cast<Nd4jLong *>(constantBuffer.primary()), true, _context, true);
+            NDArray temp(reinterpret_cast<Nd4jLong *>(constantBuffer.primary()), true, _context);
             this->applyTransform(transform::Copy, &temp, nullptr);
             *this = std::move(temp);
         }
@@ -914,7 +914,7 @@ NDArray::NDArray(const char order, const std::vector<Nd4jLong> &shape, nd4j::Dat
 
         auto newShape = ShapeUtils::evalReduceShapeInfo('c', copy, *this, false, false, _context->getWorkspace());
         ArrayOptions::setDataType(newShape, DataTypeUtils::pickFloatingType(_dataType));
-        auto result = new NDArray(newShape, true, _context, true);
+        auto result = new NDArray(newShape, true, _context);
 
         if(rankOf() == copy.size() || copy.empty())
             NativeOpExecutioner::execSummaryStatsScalar(_context, op, _buffer, _shapeInfo, _bufferD, _shapeInfoD, nullptr, result->buffer(), result->shapeInfo(), result->specialBuffer(), result->specialShapeInfo(), biasCorrected);
@@ -1738,7 +1738,7 @@ NDArray::NDArray(const char order, const std::vector<Nd4jLong> &shape, nd4j::Dat
         // create shapeInfo for scalar
         auto newShape = ShapeBuilders::createScalarShapeInfo(DataTypeUtils::pickFloatingType(_dataType), _context->getWorkspace());
         // create output array (scalar)
-        auto result = new NDArray(newShape, true, _context, true);
+        auto result = new NDArray(newShape, true, _context);
         // create dynamic array of extra parameters if array extraParams is empty (==nullptr)
         void* params = extraParams != nullptr ? const_cast<ExtraArguments*>(extraParams)->argumentsAsT(this->dataType()) : nullptr;
         if(params == nullptr) {
@@ -1788,7 +1788,7 @@ NDArray::NDArray(const char order, const std::vector<Nd4jLong> &shape, nd4j::Dat
         newShape[2] = tadY.numTads;
         ShapeUtils::updateStridesAndType(newShape, DataTypeUtils::pickFloatingType(_dataType), 'c');
         // create output array
-        auto result = new NDArray(newShape, true, _context, true);
+        auto result = new NDArray(newShape, true, _context);
         // create dynamic array of extra parameters if array extraParams is empty (==nullptr)
         void* params = extraParams != nullptr ? const_cast<ExtraArguments*>(extraParams)->argumentsAsT(this->dataType()) : nullptr;
         if(params == nullptr) {
@@ -1821,7 +1821,7 @@ NDArray::NDArray(const char order, const std::vector<Nd4jLong> &shape, nd4j::Dat
 
         auto newShape = ShapeUtils::evalReduceShapeInfo('c', copy, *this, false, false, _context->getWorkspace());
         ArrayOptions::setDataType(newShape, DataTypeUtils::pickFloatingType(_dataType));
-        auto result = new NDArray(newShape, true, _context, true);
+        auto result = new NDArray(newShape, true, _context);
         // create temporary dynamic array of extra parameters if array extraParams is empty (==nullptr)
         void* params = extraParams != nullptr ? const_cast<ExtraArguments*>(extraParams)->argumentsAsT(this->dataType()) : nullptr;
         if(params == nullptr) {
