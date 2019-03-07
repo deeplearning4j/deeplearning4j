@@ -41,11 +41,20 @@ class ND4J_EXPORT ShapeDescriptor {
         bool _empty = false;
 
     public:
-        explicit ShapeDescriptor(Nd4jLong *shapeInfo);
+        explicit ShapeDescriptor(const ShapeDescriptor &other);
+        explicit ShapeDescriptor(const Nd4jLong *shapeInfo);
         explicit ShapeDescriptor(DataType type, char order, std::vector<Nd4jLong> &shape);
         explicit ShapeDescriptor(DataType type, char order, std::vector<Nd4jLong> &shape, std::vector<Nd4jLong> &strides);
         explicit ShapeDescriptor(DataType type, char order, std::vector<Nd4jLong> &shape, std::vector<Nd4jLong> &strides, Nd4jLong ews);
         ~ShapeDescriptor() = default;
+
+        int rank();
+        Nd4jLong ews();
+        char order();
+        DataType dataType();
+        bool isEmpty();
+        std::vector<Nd4jLong>& shape();
+        std::vector<Nd4jLong>& strides();
 
         // we use default copy assignment operator
         ShapeDescriptor& operator=(const ShapeDescriptor& other) = default;

@@ -40,7 +40,7 @@ namespace nd4j {
     public:
         ~ConstantHelper() = default;
 
-        ConstantHelper* getInstance();
+        static ConstantHelper* getInstance();
 
         void* replicatePointer(void *src, size_t numBytes, memory::Workspace *workspace = nullptr);
     };

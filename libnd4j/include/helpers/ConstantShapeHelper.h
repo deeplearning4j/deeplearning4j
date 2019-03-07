@@ -42,10 +42,12 @@ namespace nd4j {
     public:
         ~ConstantShapeHelper() = default;
 
-        ConstantShapeHelper* getInstance();
+        static ConstantShapeHelper* getInstance();
 
         DataBuffer& bufferForShapeInfo(ShapeDescriptor &descriptor);
         DataBuffer& bufferForShapeInfo(const Nd4jLong *shapeInfo);
+
+        bool checkBufferExistanceForShapeInfo(ShapeDescriptor &descriptor);
     };
 }
 

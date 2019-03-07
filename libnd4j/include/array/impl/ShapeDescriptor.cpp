@@ -103,7 +103,7 @@ ShapeDescriptor::ShapeDescriptor(DataType type, char order, std::vector<Nd4jLong
     _ews = ews;
 }
 
-ShapeDescriptor::ShapeDescriptor(Nd4jLong *shapeInfo) {
+ShapeDescriptor::ShapeDescriptor(const Nd4jLong *shapeInfo) {
     _order = shape::order(shapeInfo);
     _ews = shape::elementWiseStride(shapeInfo);
     _rank = shape::rank(shapeInfo);
@@ -115,7 +115,44 @@ ShapeDescriptor::ShapeDescriptor(Nd4jLong *shapeInfo) {
         _shape.emplace_back(shapeInfo[e + 1]);
 
     for (int e = 0; e < _rank; e++)
-        _shape.emplace_back(shapeInfo[e + 1 + _rank]);
+        _strides.emplace_back(shapeInfo[e + 1 + _rank]);
+}
+
+int ShapeDescriptor::rank() {
+    return _rank;
+}
+
+Nd4jLong ShapeDescriptor::ews() {
+    return _ews;
+}
+
+char ShapeDescriptor::order() {
+    return _order;
+}
+
+DataType ShapeDescriptor::dataType() {
+    return _dataType;
+}
+
+bool ShapeDescriptor::isEmpty() {
+    return _empty;
+}
+std::vector<Nd4jLong>& ShapeDescriptor::shape() {
+    return _shape;
+}
+
+std::vector<Nd4jLong>& ShapeDescriptor::strides() {
+    return _strides;
+}
+
+ShapeDescriptor::ShapeDescriptor(const ShapeDescriptor &other) {
+    _rank = other._rank;
+    _ews = other._ews;
+    _empty = other._empty;
+    _dataType = other._dataType;
+    _order = other._order;
+    _shape = other._shape;
+    _strides = other._strides;
 }
 
 //////////////////////////////////////////////////////////////////////////
