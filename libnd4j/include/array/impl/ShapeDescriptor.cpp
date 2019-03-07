@@ -77,7 +77,7 @@ bool ShapeDescriptor::operator<(const ShapeDescriptor& other) const {
 }
 
 //////////////////////////////////////////////////////////////////////////
-ShapeDescriptor::ShapeDescriptor(DataType type, const char order, const std::vector<Nd4jLong> &shape): _dataType(type), _order(order), _shape(shape) {
+ShapeDescriptor::ShapeDescriptor(const DataType type, const char order, const std::vector<Nd4jLong> &shape): _dataType(type), _order(order), _shape(shape) {
     _rank = shape.size();
     _ews = 1;
     // TODO:: calculate strides here
@@ -95,7 +95,7 @@ ShapeDescriptor::ShapeDescriptor(DataType type, const char order, const std::vec
 }
 
 //////////////////////////////////////////////////////////////////////////
-ShapeDescriptor::ShapeDescriptor(DataType type, char order, std::initializer_list<Nd4jLong> &shape): _dataType(type), _order(order), _shape(shape) {
+ShapeDescriptor::ShapeDescriptor(const DataType type, const char order, const std::initializer_list<Nd4jLong> &shape): _dataType(type), _order(order), _shape(shape) {
     _rank = shape.size();
     _ews = 1;
 
@@ -114,7 +114,7 @@ ShapeDescriptor::ShapeDescriptor(DataType type, char order, std::initializer_lis
 }
 
 //////////////////////////////////////////////////////////////////////////
-ShapeDescriptor::ShapeDescriptor(DataType type, char order, std::vector<Nd4jLong> &shape, std::vector<Nd4jLong> &strides, Nd4jLong ews): ShapeDescriptor(type, order, shape, strides) { 
+ShapeDescriptor::ShapeDescriptor(const DataType type, const char order, const std::vector<Nd4jLong> &shape, const std::vector<Nd4jLong> &strides, const Nd4jLong ews): ShapeDescriptor(type, order, shape, strides) { 
     _ews = ews;
 }
 
@@ -171,7 +171,7 @@ ShapeDescriptor::ShapeDescriptor(const ShapeDescriptor &other) {
 }
 
 //////////////////////////////////////////////////////////////////////////
-ShapeDescriptor::ShapeDescriptor(DataType type, char order, std::vector<Nd4jLong> &shape, std::vector<Nd4jLong> &strides): _dataType(type), _order(order), _shape(shape) {
+ShapeDescriptor::ShapeDescriptor(const DataType type, const char order, const std::vector<Nd4jLong> &shape, const std::vector<Nd4jLong> &strides): _dataType(type), _order(order), _shape(shape) {
 
     if (strides.empty()) {
         // TODO:: calculate strides here
