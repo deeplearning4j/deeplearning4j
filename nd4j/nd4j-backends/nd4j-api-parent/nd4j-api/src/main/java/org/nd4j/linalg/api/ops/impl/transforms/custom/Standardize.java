@@ -31,17 +31,24 @@ public class Standardize extends DynamicCustomOp {
 
     public Standardize(SameDiff sameDiff, SDVariable i_v, int... dimensions) {
         super(null, sameDiff, new SDVariable[]{i_v}, false);
-        this.dimensions = dimensions;
-        addIArgument(dimensions);
+        setDimensions(dimensions);
     }
 
     public Standardize(INDArray input, INDArray result, int... dimensions){
         super("standardize", new INDArray[]{input}, new INDArray[]{result});
-        this.dimensions = dimensions;
-        addIArgument(dimensions);
+        setDimensions(dimensions);
     }
 
     public Standardize() {
+    }
+
+    @Override
+    public void setDimensions(int[] dimensions) {
+        Preconditions.checkArgument(dimensions != null, "Standardize: You have to provide dimensions");
+        Preconditions.checkArgument(dimensions.length > 0, "Standardize: You have to provide dimensions");
+
+        this.dimensions = dimensions;
+        addIArgument(dimensions);
     }
 
     @Override

@@ -44,26 +44,34 @@ public class LayerNorm extends DynamicCustomOp {
 
     public LayerNorm(SameDiff sameDiff, SDVariable input, SDVariable gain, SDVariable bias, int... dimensions) {
         super(null, sameDiff, new SDVariable[] {input, gain, bias}, false);
-        this.dimensions = dimensions;
-        addIArgument(dimensions);
+        Preconditions.checkArgument(bias != null, "LayerNorm: Use constructor without bias argument if bias is null / not available.");
+        setDimensions(dimensions);
     }
 
     public LayerNorm(SameDiff sameDiff, SDVariable input, SDVariable gain, int... dimensions) {
         super(null, sameDiff, new SDVariable[] {input, gain}, false);
         noBias = true;
-        this.dimensions = dimensions;
-        addIArgument(dimensions);
+        setDimensions(dimensions);
     }
 
     public LayerNorm(INDArray input, INDArray gain, INDArray bias, INDArray result, int... dimensions) {
         super("layer_norm", new INDArray[]{input, gain, bias}, new INDArray[]{result});
-        this.dimensions = dimensions;
-        addIArgument(dimensions);
+        Preconditions.checkArgument(bias != null, "LayerNorm: Use different constructor if bias is null.");
+
+        setDimensions(dimensions);
     }
 
     public LayerNorm(INDArray input, INDArray gain, INDArray result, int... dimensions) {
         super("layer_norm", new INDArray[]{input, gain}, new INDArray[]{result});
         noBias = true;
+        setDimensions(dimensions);
+    }
+
+    @Override
+    public void setDimensions(int[] dimensions) {
+        Preconditions.checkArgument(dimensions != null, "LayerNorm: You have to provide dimensions");
+        Preconditions.checkArgument(dimensions.length > 0, "LayerNorm: You have to provide dimensions");
+
         this.dimensions = dimensions;
         addIArgument(dimensions);
     }

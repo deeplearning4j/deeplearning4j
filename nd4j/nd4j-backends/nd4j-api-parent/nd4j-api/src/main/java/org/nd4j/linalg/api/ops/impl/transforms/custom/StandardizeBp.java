@@ -30,17 +30,24 @@ public class StandardizeBp extends DynamicCustomOp {
 
     public StandardizeBp(SameDiff sameDiff, SDVariable i_v, SDVariable grad, int... dimensions) {
         super(null, sameDiff, new SDVariable[]{i_v, grad}, false);
-        this.dimensions = dimensions;
-        addIArgument(dimensions);
+        setDimensions(dimensions);
     }
 
     public StandardizeBp(INDArray input, INDArray eps, INDArray result, int... dimensions){
         super("standardize_bp", new INDArray[]{input, eps}, new INDArray[]{result});
-        this.dimensions = dimensions;
-        addIArgument(dimensions);
+        setDimensions(dimensions);
     }
 
     public StandardizeBp() {
+    }
+
+    @Override
+    public void setDimensions(int[] dimensions) {
+        Preconditions.checkArgument(dimensions != null, "StandardizeBp: You have to provide dimensions");
+        Preconditions.checkArgument(dimensions.length > 0, "StandardizeBp: You have to provide dimensions");
+
+        this.dimensions = dimensions;
+        addIArgument(dimensions);
     }
 
     @Override

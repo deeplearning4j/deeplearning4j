@@ -43,27 +43,36 @@ public class LayerNormBp extends DynamicCustomOp {
 
     public LayerNormBp(SameDiff sameDiff, SDVariable input, SDVariable gain, SDVariable bias, SDVariable gradient, int... dimensions) {
         super(null, sameDiff, new SDVariable[] {input, gain, bias, gradient}, false);
-        this.dimensions = dimensions;
-        addIArgument(dimensions);
+        Preconditions.checkArgument(bias != null, "LayerNormBp: Use constructor without bias argument if bias is null / not available.");
+
+        setDimensions(dimensions);
     }
 
     public LayerNormBp(INDArray input, INDArray gain, INDArray bias, INDArray grad, INDArray dLdx, INDArray dLdg, INDArray dLdb, int... dimensions) {
         super("layer_norm_bp", new INDArray[]{input, gain, bias, grad}, new INDArray[]{dLdx, dLdg, dLdb});
-        this.dimensions = dimensions;
-        addIArgument(dimensions);
+        Preconditions.checkArgument(bias != null, "LayerNormBp: Use constructor without bias argument if bias is null / not available.");
+
+        setDimensions(dimensions);
     }
 
 
     public LayerNormBp(SameDiff sameDiff, SDVariable input, SDVariable gain, SDVariable gradient, int... dimensions) {
         super(null, sameDiff, new SDVariable[] {input, gain, gradient}, false);
         noBias = true;
-        this.dimensions = dimensions;
-        addIArgument(dimensions);
+        setDimensions(dimensions);
     }
 
     public LayerNormBp(INDArray input, INDArray gain, INDArray grad, INDArray dLdx, INDArray dLdg, int... dimensions) {
         super("layer_norm_bp", new INDArray[]{input, gain, grad}, new INDArray[]{dLdx, dLdg});
         noBias = true;
+        setDimensions(dimensions);
+    }
+
+    @Override
+    public void setDimensions(int[] dimensions) {
+        Preconditions.checkArgument(dimensions != null, "LayerNormBp: You have to provide dimensions");
+        Preconditions.checkArgument(dimensions.length > 0, "LayerNormBp: You have to provide dimensions");
+
         this.dimensions = dimensions;
         addIArgument(dimensions);
     }
