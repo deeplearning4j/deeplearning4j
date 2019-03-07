@@ -28,6 +28,7 @@ import org.nd4j.linalg.api.ops.impl.summarystats.Variance;
 import org.nd4j.linalg.api.rng.Random;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.cache.TADManager;
+import org.nd4j.linalg.profiler.OpProfiler;
 
 import java.util.List;
 import java.util.Map;
@@ -242,6 +243,13 @@ public interface OpExecutioner {
      * @param mode
      */
     void setProfilingMode(ProfilingMode mode);
+
+    /**
+     * This method stores specified configuration.
+     *
+     * @param config
+     */
+    void setProfilingConfig(OpProfiler.Config config);
 
     /**
      * Ths method returns current profiling

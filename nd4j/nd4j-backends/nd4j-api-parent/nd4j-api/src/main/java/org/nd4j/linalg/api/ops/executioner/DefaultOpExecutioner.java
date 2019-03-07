@@ -249,6 +249,11 @@ public class DefaultOpExecutioner implements OpExecutioner {
     }
 
     @Override
+    public void setProfilingConfig(OpProfiler.Config config) {
+        OpProfiler.getInstance().setConfig(config);
+    }
+
+    @Override
     public ProfilingMode getProfilingMode() {
         return profilingMode;
     }
