@@ -2171,6 +2171,8 @@ public class SDMath extends SDOps {
     /**
      * Standardize input variable along given axis
      *
+     * @see #standardize(String, SDVariable, int...)
+     *
      * @param x Input variable
      * @return Output variable
      */
@@ -2180,6 +2182,18 @@ public class SDMath extends SDOps {
 
     /**
      * Standardize input variable along given axis
+     * <p>
+     * out = (x - mean) / stdev
+     * <p>
+     * with mean and stdev being calculated along the given dimension.
+     *
+     * <p>
+     * For example: given x as a mini batch of the shape [numExamples, exampleLength]:
+     * <ul>
+     *  <li>use dimension 1 too use the statistics (mean, stdev) for each example</li>
+     *  <li>use dimension 0 if you want to use the statistics for each column across all examples</li>
+     *  <li>use dimensions 0,1 if you want to use the statistics across all columns and examples</li>
+     * </ul>
      *
      * @param name Name of the output variable
      * @param x    Input variable
