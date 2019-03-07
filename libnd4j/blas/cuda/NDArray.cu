@@ -76,7 +76,7 @@ NDArray::NDArray(const NDArray& other) {
     
     _context = other._context;    
     
-    setShapeInfo(reinterpret_cast<Nd4jLong *>(other.getShapeInfo()));
+    setShapeInfo(other.getShapeInfo());
 
     ALLOCATE_SPECIAL(_bufferD, _context->getWorkspace(), _length * sizeOfT(), int8_t);
     _isBuffDAlloc = true;
@@ -155,10 +155,7 @@ NDArray::NDArray(const char order, const std::vector<Nd4jLong> &shape, const std
 
     _context = context;
 
-    ShapeDescriptor descriptor(dtype, order, shape);
-    auto buffer = ConstantShapeHelper::getInstance()->bufferForShapeInfo(descriptor);
-    setShapeInfo(reinterpret_cast<Nd4jLong *>(buffer.primary()));
-
+    setShapeInfo(ShapeDescriptor(dtype, order, shape));
 
     if (_length != data.size()) {
         nd4j_printf("NDArray constructor: data size [%i] doesn't match shape length [%i]\n", data.size(), _length);
@@ -203,9 +200,8 @@ NDArray::NDArray(const char order, const std::vector<Nd4jLong> &shape, nd4j::Dat
 NDArray::NDArray(const NDArray *other, const bool copyStrides, nd4j::graph::LaunchContext* context) {
 
     _context = context;
-
-    auto buffer = ConstantShapeHelper::getInstance()->bufferForShapeInfo(other->_shapeInfo);
-    setShapeInfo(reinterpret_cast<Nd4jLong *>(buffer.primary()));
+    
+    setShapeInfo(other->_shapeInfo);
 
     ALLOCATE_SPECIAL(_bufferD, _context->getWorkspace(), _length * sizeOfT(), int8_t);
     _isBuffDAlloc = true;    
@@ -224,9 +220,7 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
     
     _context = context;
 
-    ShapeDescriptor descriptor(dtype, order, shape);
-    auto constantBuffer = ConstantShapeHelper::getInstance()->bufferForShapeInfo(descriptor);
-    setShapeInfo(reinterpret_cast<Nd4jLong *>(constantBuffer.primary()));
+    setShapeInfo(ShapeDescriptor(dtype, order, shape));
 
     _buffer = reinterpret_cast<int8_t *>(buffer);
     
@@ -261,10 +255,7 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
         _context= other._context;
         _buffer = nullptr;
 
-        ShapeDescriptor descriptor(other._shapeInfo);
-        auto buffer = ConstantShapeHelper::getInstance()->bufferForShapeInfo(descriptor);
-
-        setShapeInfo(reinterpret_cast<Nd4jLong *>(buffer.primary()));
+        setShapeInfo(other._shapeInfo);
 
         ALLOCATE_SPECIAL(_bufferD, _context->getWorkspace(), _length * sizeOfT(), int8_t);
         _isBuffDAlloc = true;        

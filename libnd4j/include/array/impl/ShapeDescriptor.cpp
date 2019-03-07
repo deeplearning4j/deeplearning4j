@@ -51,8 +51,6 @@ bool ShapeDescriptor::operator==(const ShapeDescriptor& other) const {
 // less than operator
 bool ShapeDescriptor::operator<(const ShapeDescriptor& other) const {
     
-    if(_empty == true && other._empty == true)
-        return false;
     if(_empty == false && other._empty == true)
         return false;
     if(_rank > other._rank)
