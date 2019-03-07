@@ -62,3 +62,11 @@ TEST_F(ConstantShapeHelperTests, basic_test_1) {
     shape::printShapeInfoLinear("0", reinterpret_cast<Nd4jLong *>(buffer.primary()));
     shape::printShapeInfoLinear("1", reinterpret_cast<Nd4jLong *>(buffer2.primary()));
 }
+
+TEST_F(ConstantShapeHelperTests, basic_test_2) {
+    auto array = NDArrayFactory::create<float>('c', {128});
+
+    auto p = array.isShapeOwner();
+    ASSERT_FALSE(p.first);
+    ASSERT_FALSE(p.second);
+}

@@ -186,7 +186,14 @@ namespace nd4j {
         */
         NDArray(nd4j::graph::LaunchContext* context);
 
-				
+
+        /**
+         * This method returns 2 bool values stating if shapes were allocated
+         * @return
+         */
+        std::pair<bool, bool> isShapeOwner();
+
+
         /**
 		*  constructor creates new NDArray using shape information from "shapeInfo", set all elements in new array to zeros, if copyStrides is true then use stride values from "shapeInfo", else calculate strides independently 
         */

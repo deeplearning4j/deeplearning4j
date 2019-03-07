@@ -60,7 +60,8 @@ namespace nd4j {
                     auto hPtr = descriptor.isEmpty() ? ShapeBuilders::emptyShapeInfo(descriptor.dataType()) : ShapeBuilders::createScalarShapeInfo(descriptor.dataType());
                     auto dPtr = ConstantHelper::getInstance()->replicatePointer(hPtr, shape::shapeInfoByteLength(hPtr));
                     DataBuffer buffer(hPtr, dPtr);
-                    _cache[deviceId][descriptor] = buffer;
+                    ShapeDescriptor descriptor1(descriptor);
+                    _cache[deviceId][descriptor1] = buffer;
 
                     _mutex.unlock();
 
@@ -70,7 +71,8 @@ namespace nd4j {
                     auto hPtr = ShapeBuilders::createVectorShapeInfo(descriptor.dataType(), descriptor.shape()[0]);
                     auto dPtr = ConstantHelper::getInstance()->replicatePointer(hPtr, shape::shapeInfoByteLength(hPtr));
                     DataBuffer buffer(hPtr, dPtr);
-                    _cache[deviceId][descriptor] = buffer;
+                    ShapeDescriptor descriptor1(descriptor);
+                    _cache[deviceId][descriptor1] = buffer;
 
                     _mutex.unlock();
 
@@ -81,7 +83,8 @@ namespace nd4j {
                     auto hPtr = ShapeBuilders::createShapeInfo(descriptor.dataType(), descriptor.order(), descriptor.shape());
                     auto dPtr = ConstantHelper::getInstance()->replicatePointer(hPtr, shape::shapeInfoByteLength(hPtr));
                     DataBuffer buffer(hPtr, dPtr);
-                    _cache[deviceId][descriptor] = buffer;
+                    ShapeDescriptor descriptor1(descriptor);
+                    _cache[deviceId][descriptor1] = buffer;
 
                     _mutex.unlock();
 

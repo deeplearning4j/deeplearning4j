@@ -45,6 +45,7 @@
 #include <loops/special_kernels.h>
 #include <PointersManager.h>
 #include "../NDArray.hpp"
+#include <ConstantShapeHelper.h>
 
 namespace nd4j {
 
@@ -2257,12 +2258,13 @@ NDArray::~NDArray() noexcept {
     if (_isBuffAlloc)
         RELEASE(_buffer, _context->getWorkspace());
 
-    if (_isShapeAlloc)
-        RELEASE(_shapeInfo, _context->getWorkspace());
-
-
-    if (_isShapeDAlloc)
+    if (_isShapeDAlloc) {
         RELEASE_SPECIAL(_shapeInfoD, _context->getWorkspace());
+    }
+
+    if (_isShapeAlloc) {
+        RELEASE(_shapeInfo, _context->getWorkspace());
+    }
 
     if (_isBuffDAlloc)
         RELEASE_SPECIAL(_bufferD, _context->getWorkspace());
@@ -2286,9 +2288,9 @@ void NDArray::setShapeInfo(Nd4jLong *shapeInfo) {
             _length = shape::length(shapeInfo);
         
         _dataType = ArrayOptions::dataType(shapeInfo);
-        ALLOCATE_SPECIAL(_shapeInfoD, _context->getWorkspace(), shape::shapeInfoLength(_shapeInfo), Nd4jLong);
-        _isShapeDAlloc = true;
-        syncShape();
+        auto buffer = ConstantShapeHelper::getInstance()->bufferForShapeInfo(shapeInfo);
+        _shapeInfoD = reinterpret_cast<Nd4jLong *>(buffer.special());
+        _isShapeDAlloc = false;
     } 
     else {
         _dataType = nd4j::DataType::INHERIT;    
