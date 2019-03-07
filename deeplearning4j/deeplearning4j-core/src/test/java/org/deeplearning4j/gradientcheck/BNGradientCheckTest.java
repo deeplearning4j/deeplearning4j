@@ -161,6 +161,9 @@ public class BNGradientCheckTest extends BaseDL4JTest {
         Nd4j.getExecutioner().setProfilingConfig(ProfilerConfig.builder()
                 .notOptimalArguments(true)
                 .notOptimalTAD(true)
+                .checkForINF(true)
+                .checkForNAN(true)
+                .checkElapsedTime(true)
                 .build());
 
         Activation[] activFns = {Activation.SIGMOID, Activation.TANH, Activation.IDENTITY};

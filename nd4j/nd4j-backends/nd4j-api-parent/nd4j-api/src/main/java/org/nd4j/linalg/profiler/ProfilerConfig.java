@@ -10,4 +10,9 @@ public class ProfilerConfig {
     private boolean notOptimalArguments;
     private boolean notOptimalTAD;
     private boolean nativeStatistics;
+    private boolean checkForNAN;
+    private boolean checkForINF;
+    private boolean stackTrace;
+    private boolean checkElapsedTime;
+    private boolean checkWorkspaces;
 }

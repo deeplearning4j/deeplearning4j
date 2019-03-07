@@ -352,57 +352,35 @@ public class DefaultOpExecutioner implements OpExecutioner {
     }
 
     public long profilingHookIn(CustomOp op) {
-        switch (profilingMode) {
-            case ALL:
-                OpProfiler.getInstance().processOpCall(op);
-                break;
-            case METHODS:
-                break;
-            case OPERATIONS:
-                OpProfiler.getInstance().processOpCall(op);
-                break;
-            case SCOPE_PANIC:
-                checkForWorkspaces(op);
-                return 0L;
-            case DISABLED:
-            default:
-                return 0L;
+
+        OpProfiler.getInstance().processOpCall(op);
+
+        if (OpProfiler.getInstance().getConfig().isCheckWorkspaces()) {
+           checkForWorkspaces(op);
         }
 
         return System.nanoTime();
     }
 
     public void profilingHookOut(Op op, long timeStart) {
-        switch (profilingMode) {
-            case ALL:
-                OpProfiler.getInstance().processStackCall(op, timeStart);
-                OpProfiler.getInstance().timeOpCall(op, timeStart);
-                break;
-            case METHODS:
-                OpProfiler.getInstance().processStackCall(op, timeStart);
-                break;
-            case OPERATIONS:
-                OpProfiler.getInstance().timeOpCall(op, timeStart);
-                break;
-            case NAN_PANIC:
-                OpExecutionerUtil.checkForNaN(op);
-                break;
-            case INF_PANIC:
-                OpExecutionerUtil.checkForInf(op);
-                break;
-            case ANY_PANIC:
-                OpExecutionerUtil.checkForNaN(op);
-                OpExecutionerUtil.checkForInf(op);
-                break;
-            case DISABLED:
-            default:
-                break;
-        }
 
-        if (Nd4j.getExecutioner().isVerbose()) {
-            if (op.z() != null)
-                log.info("Op name: {}; Z shapeInfo: {}; Z values: {}", op.opName(), op.z().shapeInfoJava(), firstX(op.z(), 10));
-        }
+       if (OpProfiler.getInstance().getConfig().isStackTrace()) {
+          OpProfiler.getInstance().processStackCall(op, timeStart);
+       }
+       if (OpProfiler.getInstance().getConfig().isCheckElapsedTime()) {
+          OpProfiler.getInstance().timeOpCall(op, timeStart);
+       }
+       if (OpProfiler.getInstance().getConfig().isCheckForNAN()) {
+          OpExecutionerUtil.checkForNaN(op);
+       }
+       if (OpProfiler.getInstance().getConfig().isCheckForINF()) {
+          OpExecutionerUtil.checkForInf(op);
+       }
+
+       if (Nd4j.getExecutioner().isVerbose()) {
+           if (op.z() != null)
+               log.info("Op name: {}; Z shapeInfo: {}; Z values: {}", op.opName(), op.z().shapeInfoJava(), firstX(op.z(), 10));
+       }
     }
 
 
