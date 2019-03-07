@@ -42,6 +42,7 @@ namespace nd4j {
         std::vector<Nd4jLong> timings(_rIterations);
         double sumT = 0.0;
 
+        nd4j_printf("step %i\n", 0);
         for (uint i = 0; i < _rIterations; i++) {
             auto timeStart = std::chrono::system_clock::now();
 
@@ -52,15 +53,25 @@ namespace nd4j {
             timings[i] = loopTime;
             sumT += loopTime;
         }
+        nd4j_printf("step %i\n", 1);
         sumT /= _rIterations;
 
         std::sort(timings.begin(), timings.end());
         Nd4jLong median = timings[_rIterations / 2];
 
         NDArray n = NDArrayFactory::create(timings, LaunchContext::defaultContext());
+
+        nd4j_printf("step %i\n", 2);
         double stdev = n.varianceNumber(nd4j::variance::SummaryStatsStandardDeviation, false).e<double>(0);
+
+        nd4j_printf("step %i\n", 3);
+
         Nd4jLong min = n.reduceNumber(nd4j::reduce::Min).e<Nd4jLong>(0);
+
+        nd4j_printf("step %i\n", 4);
         Nd4jLong max = n.reduceNumber(nd4j::reduce::Max).e<Nd4jLong>(0);
+
+        nd4j_printf("step %i\n", 5);
 
         // opNum, DataType, Shape, average time, median time
         auto t = benchmark.dataType();

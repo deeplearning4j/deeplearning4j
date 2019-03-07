@@ -600,9 +600,13 @@ void NDArray::replacePointers(void *buffer, Nd4jLong *shapeInfo, const bool rele
     }
 
     NDArray NDArray::varianceNumber(nd4j::variance::Ops op, bool biasCorrected) {
+        nd4j_printf("sdz\n","");
         NDArray res(DataTypeUtils::pickFloatingType(dataType()), _context);
+        nd4j_printf("sdf\n","");
         if (!isActualOnDeviceSide())
             syncToDevice();
+
+        nd4j_printf("sda\n","");
 
         res.tickWriteDevice();
         NativeOpExecutioner::execSummaryStatsScalar(_context, op,this->getBuffer(), this->getShapeInfo(), this->getSpecialBuffer(), this->getSpecialShapeInfo(), nullptr, res.buffer(), res.shapeInfo(), res.specialBuffer(), res.specialShapeInfo(), biasCorrected);

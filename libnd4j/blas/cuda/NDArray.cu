@@ -112,13 +112,17 @@ void NDArray::lazyAllocateBuffer() const {
 // scalar constructor
 NDArray::NDArray(nd4j::DataType dtype, nd4j::graph::LaunchContext* context) {
 
-    setShapeInfo(ShapeBuilders::createScalarShapeInfo(dtype, context->getWorkspace()));
+    auto shapeInfo = ShapeBuilders::createScalarShapeInfo(dtype, context->getWorkspace());
+    auto buffer = ConstantShapeHelper::getInstance()->bufferForShapeInfo(shapeInfo);
+    setShapeInfo(reinterpret_cast<Nd4jLong *>(buffer.primary()));
 
     ALLOCATE_SPECIAL(_bufferD, context->getWorkspace(), sizeOfT(), int8_t);
     _isBuffDAlloc = true;
     cudaMemset(_bufferD, 0, sizeOfT());    
     
     tickWriteDevice();
+
+    RELEASE(shapeInfo, context->getWorkspace());
 }
 
 ////////////////////////////////////////////////////////////////////////
