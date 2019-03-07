@@ -23,7 +23,6 @@ import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.weights.IWeightInit;
 import org.deeplearning4j.nn.weights.WeightInitUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 
 import java.util.*;
@@ -175,8 +174,7 @@ public class DefaultParamInitializer implements ParamInitializer {
 
     protected INDArray createBias(long nOut, double biasInit, INDArray biasParamView, boolean initializeParameters) {
         if (initializeParameters) {
-            INDArray ret = Nd4j.valueArrayOf(new long[] {1, nOut}, biasInit);
-            biasParamView.assign(ret);
+            biasParamView.assign(biasInit);
         }
         return biasParamView;
     }
@@ -189,8 +187,7 @@ public class DefaultParamInitializer implements ParamInitializer {
 
     protected INDArray createGain(long nOut, double gainInit, INDArray gainParamView, boolean initializeParameters) {
         if (initializeParameters) {
-            INDArray ret = Nd4j.valueArrayOf(new long[] {1, nOut}, gainInit);
-            gainParamView.assign(ret);
+            gainParamView.assign(gainInit);
         }
         return gainParamView;
     }
