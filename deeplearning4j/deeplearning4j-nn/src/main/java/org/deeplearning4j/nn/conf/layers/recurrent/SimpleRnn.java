@@ -17,6 +17,9 @@
 package org.deeplearning4j.nn.conf.layers.recurrent;
 
 import lombok.Data;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -44,8 +47,11 @@ import java.util.Map;
 @Data
 public class SimpleRnn extends BaseRecurrentLayer {
 
+    private boolean hasLayerNorm = false;
+
     protected SimpleRnn(Builder builder) {
         super(builder);
+        this.hasLayerNorm = builder.hasLayerNorm;
     }
 
     private SimpleRnn() {
@@ -78,12 +84,29 @@ public class SimpleRnn extends BaseRecurrentLayer {
         return null;
     }
 
+    public boolean hasLayerNorm(){
+        return hasLayerNorm;
+    }
+
+    @NoArgsConstructor
+    @Getter
+    @Setter
     public static class Builder extends BaseRecurrentLayer.Builder<Builder> {
 
 
         @Override
         public SimpleRnn build() {
             return new SimpleRnn(this);
+        }
+
+        /**
+         * If true (default = false): enable layer normalization on this layer
+         *
+         */
+        private boolean hasLayerNorm = false;
+        public SimpleRnn.Builder hasLayerNorm(boolean hasLayerNorm){
+            this.hasLayerNorm = hasLayerNorm;
+            return this;
         }
     }
 }
