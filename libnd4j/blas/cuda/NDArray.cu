@@ -2299,7 +2299,7 @@ void NDArray::setShapeInfo(const Nd4jLong *shapeInfo, const nd4j::DataType dtype
 //////////////////////////////////////////////////////////////////////////
 void NDArray::setShapeInfo(const ShapeDescriptor& descriptor) {
 
-    auto shapeBuffer = ConstantShapeHelper::getInstance()->bufferForShapeInfo(descriptor);
+    auto shapeBuffer = ConstantShapeHelper::getInstance()->bufferForShapeInfo(const_cast<ShapeDescriptor &>(descriptor));
 
     _shapeInfo  = reinterpret_cast<Nd4jLong *>(shapeBuffer.primary());
     _shapeInfoD = reinterpret_cast<Nd4jLong *>(shapeBuffer.special());

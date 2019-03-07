@@ -50,7 +50,7 @@ namespace nd4j {
         return _INSTANCE;
     }
 
-    DataBuffer& ConstantShapeHelper::bufferForShapeInfo(const ShapeDescriptor &descriptor) {
+    DataBuffer& ConstantShapeHelper::bufferForShapeInfo(ShapeDescriptor &descriptor) {
         int deviceId = 0;
 
         _mutex.lock();
