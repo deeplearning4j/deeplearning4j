@@ -36,10 +36,11 @@ namespace helpers {
         int ksize = ksizeRowsEffective * ksizeColsEffective;
         int batchCount = listOfMatricies->size(); //lengthOf() / ksize;
         Nd4jLong lastDim = images->sizeAt(3);
+        Nd4jLong outLastDim = output->sizeAt(3);
         Nd4jLong rowDim = images->sizeAt(1);
         Nd4jLong colDim = images->sizeAt(2);
         Nd4jLong outputLastDim = ksize * lastDim;
-#pragma omp parallel for
+//#pragma omp parallel for
         for (Nd4jLong e = 0; e < batchCount; ++e) {
             auto patch = listOfMatricies->at(e);
             auto outMatrix = listOfOutputs->at(e);
@@ -53,10 +54,14 @@ namespace helpers {
                 for (int m = 0; m < sizeCol; m++) {
                     //for (Nd4jLong pos = 0; pos < outputLastDim; pos++)
                 for (Nd4jLong k = 0; k < lastDim; ++k) {
-                    if (l + i < rowDim  && m + j < colDim && i + rateRow * l < patchBorder) // && i + rateRow * l < sizeRow && j + m * rateCol < sizeCol
-                        outMatrix->p<T>(pos, patch->e<T>(i + rateRow * l, j + m * rateCol, k));
-                    pos++;
-                    if (pos >= outMatrix->lengthOf()) {
+
+                    //if (l + i < rowDim  && m + j < colDim && i + rateRow * l < patchBorder) // && i + rateRow * l < sizeRow && j + m * rateCol < sizeCol
+//                    outMatrix->p<T>(i, j, pos++, patch->e<T>(i + rateRow * l, j + m * rateCol, k));
+                    outMatrix->p<T>(pos++, patch->e<T>(i + rateRow * l, j + m * rateCol, k));
+                    //pos++;
+//                    if (pos >= outLastDim)
+//                        pos = 0;
+                    if (pos >= outMatrix->lengthOf()) { // stop looping and try next batch
                         k = lastDim; m = sizeCol; l = sizeRow; j = colDim; i = rowDim;
                     }
                 }
