@@ -110,17 +110,24 @@ void NDArray::lazyAllocateBuffer() const {
 // scalar constructor
 NDArray::NDArray(nd4j::DataType dtype, nd4j::graph::LaunchContext* context) {
 
+    nd4j_printf("Step A%i\n", 0);
     auto shapeInfo = ShapeBuilders::createScalarShapeInfo(dtype, context->getWorkspace());
+    nd4j_printf("Step A%i\n", 1);
     auto buffer = ConstantShapeHelper::getInstance()->bufferForShapeInfo(shapeInfo);
+    nd4j_printf("Step A%i\n", 2);
     setShapeInfo(reinterpret_cast<Nd4jLong *>(buffer.primary()));
+    nd4j_printf("Step A%i\n", 3);
 
     ALLOCATE_SPECIAL(_bufferD, context->getWorkspace(), sizeOfT(), int8_t);
     _isBuffDAlloc = true;
-    cudaMemset(_bufferD, 0, sizeOfT());    
+    nd4j_printf("Step A%i\n", 4);
+    cudaMemset(_bufferD, 0, sizeOfT());
+    nd4j_printf("Step A%i\n", 5);
     
     tickWriteDevice();
-
+        nd4j_printf("Step A%i\n", 6);
     RELEASE(shapeInfo, context->getWorkspace());
+        nd4j_printf("Step A%i\n", 7);
 }
 
 ////////////////////////////////////////////////////////////////////////

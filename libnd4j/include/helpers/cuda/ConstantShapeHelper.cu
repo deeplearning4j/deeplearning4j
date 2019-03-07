@@ -52,22 +52,35 @@ namespace nd4j {
     DataBuffer& ConstantShapeHelper::bufferForShapeInfo(ShapeDescriptor &descriptor) {
         int deviceId = 0;
 
+        nd4j_printf("Step B%i\n", -2);
         _mutex.lock();
 
+        nd4j_printf("Step B%i\n", -1);
+
         if (_cache[deviceId].count(descriptor) == 0) {
+            nd4j_printf("Step B%i\n", -5);
             switch (descriptor.rank()) {
                 case 0: {
+                    nd4j_printf("Step B%i\n", 0);
                     auto hPtr = descriptor.isEmpty() ? ShapeBuilders::emptyShapeInfo(descriptor.dataType()) : ShapeBuilders::createScalarShapeInfo(descriptor.dataType());
+                    nd4j_printf("Step B%i\n", 1);
                     auto dPtr = ConstantHelper::getInstance()->replicatePointer(hPtr, shape::shapeInfoByteLength(hPtr));
+                    nd4j_printf("Step B%i\n", 2);
                     DataBuffer buffer(hPtr, dPtr);
+                    nd4j_printf("Step B%i\n", 3);
                     ShapeDescriptor descriptor1(descriptor);
+                    nd4j_printf("Step B%i\n", 4);
                     _cache[deviceId][descriptor1] = buffer;
 
+                    nd4j_printf("Step B%i\n", 5);
                     _mutex.unlock();
+
+                    nd4j_printf("Step B%i\n", 6);
 
                     return _cache[deviceId][descriptor1];
                 }
                 case 1: {
+                    nd4j_printf("Step B%i\n", 10);
                     auto hPtr = ShapeBuilders::createVectorShapeInfo(descriptor.dataType(), descriptor.shape()[0]);
                     auto dPtr = ConstantHelper::getInstance()->replicatePointer(hPtr, shape::shapeInfoByteLength(hPtr));
                     DataBuffer buffer(hPtr, dPtr);
@@ -80,6 +93,7 @@ namespace nd4j {
                 }
                 case 2:
                 default: {
+                    nd4j_printf("Step B%i\n", 20);
                     auto hPtr = ShapeBuilders::createShapeInfo(descriptor.dataType(), descriptor.order(), descriptor.shape());
                     auto dPtr = ConstantHelper::getInstance()->replicatePointer(hPtr, shape::shapeInfoByteLength(hPtr));
                     DataBuffer buffer(hPtr, dPtr);
@@ -92,7 +106,10 @@ namespace nd4j {
                 }
             }
         } else {
+            nd4j_printf("Step B%i\n", 30);
             _mutex.unlock();
+
+            nd4j_printf("Step B%i\n", 31);
 
             return _cache[deviceId].at(descriptor);
         }

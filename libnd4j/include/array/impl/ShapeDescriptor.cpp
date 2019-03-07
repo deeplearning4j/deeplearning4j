@@ -41,7 +41,6 @@ bool ShapeDescriptor::operator==(const ShapeDescriptor& other) const {
     if(_shape != other._shape)
         return false;
 
-
     if(_strides != other._strides)
         return false;
 
@@ -57,7 +56,9 @@ bool ShapeDescriptor::operator<(const ShapeDescriptor& other) const {
     if(_empty == false && other._empty == true)
         return false;
     if(_rank > other._rank)
-        return false;    
+        return false;
+    if (_dataType > other._dataType)
+        return false;
     
     if(_rank == other._rank) {
                 
@@ -80,7 +81,12 @@ bool ShapeDescriptor::operator<(const ShapeDescriptor& other) const {
 ShapeDescriptor::ShapeDescriptor(const DataType type, const char order, const std::vector<Nd4jLong> &shape): _dataType(type), _order(order), _shape(shape) {
     _rank = shape.size();
     _ews = 1;
-    // TODO:: calculate strides here
+    _strides.resize(shape.size());
+
+    if (order == 'c')
+        shape::calcStrides(_shape.data(), shape.size(), _strides.data());
+    else
+        shape::calcStridesFortran(_shape.data(), shape.size(), _strides.data());
 
     if (_shape.empty())
         _empty = true;
@@ -99,7 +105,10 @@ ShapeDescriptor::ShapeDescriptor(const DataType type, const char order, const st
     _rank = shape.size();
     _ews = 1;
 
-    // TODO:: calculate strides here
+    if (order == 'c')
+        shape::calcStrides(_shape.data(), shape.size(), _strides.data());
+    else
+        shape::calcStridesFortran(_shape.data(), shape.size(), _strides.data());
 
     if (_shape.empty())
         _empty = true;
@@ -173,8 +182,11 @@ ShapeDescriptor::ShapeDescriptor(const ShapeDescriptor &other) {
 //////////////////////////////////////////////////////////////////////////
 ShapeDescriptor::ShapeDescriptor(const DataType type, const char order, const std::vector<Nd4jLong> &shape, const std::vector<Nd4jLong> &strides): _dataType(type), _order(order), _shape(shape) {
 
-    if (strides.empty()) {
-        // TODO:: calculate strides here
+    if (strides.empty() && !shape.empty()) {
+        if (order == 'c')
+            shape::calcStrides(_shape.data(), shape.size(), _strides.data());
+        else
+            shape::calcStridesFortran(_shape.data(), shape.size(), _strides.data());
     } 
     else {
         _strides = strides;

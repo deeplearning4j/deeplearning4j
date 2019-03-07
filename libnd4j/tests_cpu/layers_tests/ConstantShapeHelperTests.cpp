@@ -109,3 +109,15 @@ TEST_F(ConstantShapeHelperTests, basic_test_4) {
     delete array;
     delete dup;
 }
+
+
+TEST_F(ConstantShapeHelperTests, basic_test_5) {
+    auto arrayA = NDArrayFactory::create<int>(1);
+    auto arrayB = NDArrayFactory::create_<float>('c', {128, 256});
+
+    arrayA.printShapeInfo("A");
+    arrayB->printShapeInfo("B");
+    ASSERT_NE(arrayA.dataType(), arrayB->dataType());
+
+    delete arrayB;
+}
