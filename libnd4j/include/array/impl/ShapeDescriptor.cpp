@@ -51,28 +51,24 @@ bool ShapeDescriptor::operator==(const ShapeDescriptor& other) const {
 // less than operator
 bool ShapeDescriptor::operator<(const ShapeDescriptor& other) const {
     
-    if(_empty == true && other._empty == true)
-        return false;
-    if(_empty == false && other._empty == true)
+    if(_empty > other._empty)
         return false;
     if(_rank > other._rank)
         return false;
     if (_dataType > other._dataType)
         return false;
+    if(_ews > other._ews)
+        return false;
+    if(_order > other._order)
+        return false;
     
     if(_rank == other._rank) {
-                
         if(_shape > other._shape)
             return false;
                 
         if(_strides > other._strides)
             return false;
     }
-
-    if(_ews > other._ews)
-        return false;
-    if(_order > other._order)
-        return false;
 
     return !(*this == other);
 }
@@ -105,6 +101,7 @@ ShapeDescriptor::ShapeDescriptor(const DataType type, const char order, const st
     _rank = shape.size();
     _ews = 1;
 
+    _strides.resize(shape.size());
     if (order == 'c')
         shape::calcStrides(_shape.data(), shape.size(), _strides.data());
     else
@@ -183,6 +180,7 @@ ShapeDescriptor::ShapeDescriptor(const ShapeDescriptor &other) {
 ShapeDescriptor::ShapeDescriptor(const DataType type, const char order, const std::vector<Nd4jLong> &shape, const std::vector<Nd4jLong> &strides): _dataType(type), _order(order), _shape(shape) {
 
     if (strides.empty() && !shape.empty()) {
+        _strides.resize(shape.size());
         if (order == 'c')
             shape::calcStrides(_shape.data(), shape.size(), _strides.data());
         else

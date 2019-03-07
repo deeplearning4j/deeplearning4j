@@ -117,6 +117,8 @@ TEST_F(ConstantShapeHelperTests, basic_test_5) {
 
     arrayA.printShapeInfo("A");
     arrayB->printShapeInfo("B");
+    ASSERT_EQ(0, arrayA.rankOf());
+    ASSERT_EQ(2, arrayB->rankOf());
     ASSERT_NE(arrayA.dataType(), arrayB->dataType());
 
     delete arrayB;
