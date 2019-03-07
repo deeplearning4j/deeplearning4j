@@ -22,6 +22,7 @@ import org.deeplearning4j.nn.layers.normalization.LocalResponseNormalizationHelp
 import org.deeplearning4j.nn.workspace.ArrayType;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.OpContext;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.LocalResponseNormalization;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.LocalResponseNormalizationDerivative;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.LocalResponseNormalizationConfig;
@@ -37,6 +38,9 @@ import java.util.Map;
  * @author Alex Black
  */
 public class MKLDNNLocalResponseNormalizationHelper extends BaseMKLDNNHelper implements LocalResponseNormalizationHelper {
+
+    protected OpContext context;
+
     @Override
     public boolean checkSupported(double k, double n, double alpha, double beta) {
         return BaseMKLDNNHelper.mklDnnEnabled();
@@ -45,22 +49,20 @@ public class MKLDNNLocalResponseNormalizationHelper extends BaseMKLDNNHelper imp
     @Override
     public Pair<Gradient, INDArray> backpropGradient(INDArray input, INDArray epsilon, double k, double n, double alpha, double beta, LayerWorkspaceMgr workspaceMgr) {
         INDArray gradAtInput = workspaceMgr.createUninitialized(ArrayType.ACTIVATION_GRAD, input.dataType(), input.shape());
-        gradAtInput.assign(0);
 
-        LocalResponseNormalizationConfig conf = LocalResponseNormalizationConfig.builder()
-                .alpha(alpha)
-                .beta(beta)
-                .bias(k)
-                .depth((int)n)   //Adjacent kernel maps
-                .build();
+        if(context == null){
+            context = Nd4j.getExecutioner().buildContext();
+            context.setTArguments(k, alpha, beta);
+            context.setIArguments((int)n);
+        }
 
-        LocalResponseNormalizationDerivative op = LocalResponseNormalizationDerivative.derivativeBuilder()
-                .config(conf)
-                .inputs(new INDArray[]{input, epsilon})
-                .outputs(new INDArray[]{gradAtInput})
-                .build();
+        LocalResponseNormalization op = new LocalResponseNormalization();
 
-        Nd4j.exec(op);
+        context.setInputArray(0, input);
+        context.setInputArray(0, epsilon);
+        context.setOutputArray(0, gradAtInput);
+
+        Nd4j.exec(op, context);
         Gradient g = new DefaultGradient();
         return new Pair<>(g, gradAtInput);
     }
@@ -69,20 +71,18 @@ public class MKLDNNLocalResponseNormalizationHelper extends BaseMKLDNNHelper imp
     public INDArray activate(INDArray x, boolean training, double k, double n, double alpha, double beta, LayerWorkspaceMgr workspaceMgr) {
         INDArray out = workspaceMgr.createUninitialized(ArrayType.ACTIVATIONS, x.dataType(), x.shape());
 
-        LocalResponseNormalizationConfig conf = LocalResponseNormalizationConfig.builder()
-                .alpha(alpha)
-                .beta(beta)
-                .bias(k)
-                .depth((int)n)   //Adjacent kernel maps
-                .build();
+        if(context == null){
+            context = Nd4j.getExecutioner().buildContext();
+            context.setTArguments(k, alpha, beta);
+            context.setIArguments((int)n);
+        }
 
-        LocalResponseNormalization op = LocalResponseNormalization.builder()
-                .config(conf)
-                .inputs(new INDArray[]{x})
-                .outputs(new INDArray[]{out})
-                .build();
+        context.setInputArray(0, x);
+        context.setOutputArray(0, out);
 
-        Nd4j.exec(op);
+        LocalResponseNormalization op = new LocalResponseNormalization();
+
+        Nd4j.exec(op, context);
         return out;
     }
 

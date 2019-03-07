@@ -158,7 +158,7 @@ public class ValidateMKLDNN extends BaseDL4JTest {
             netWithout.init();
 
             LayerHelperValidationUtil.TestCase tc = LayerHelperValidationUtil.TestCase.builder()
-                    .allowHelpersForClasses(Arrays.<Class<?>>asList(org.deeplearning4j.nn.layers.normalization.BatchNormalization.class))
+                    .allowHelpersForClasses(Collections.<Class<?>>singletonList(org.deeplearning4j.nn.layers.normalization.BatchNormalization.class))
                     .testForward(true)
                     .testScore(true)
                     .testBackward(true)
@@ -172,9 +172,8 @@ public class ValidateMKLDNN extends BaseDL4JTest {
         }
     }
 
-    @Test @Ignore
+    @Test
     public void validateLRN() {
-        //2019-02-14 AB - Ignored: LRN backprop is broken: https://github.com/deeplearning4j/deeplearning4j/issues/6958 issue 20
 
         //Only run test if using nd4j-native backend
         assumeTrue(Nd4j.getBackend().getClass().getName().toLowerCase().contains("native"));
@@ -188,7 +187,7 @@ public class ValidateMKLDNN extends BaseDL4JTest {
         double[] a = new double[]{1e-4, 1e-4, 1e-3, 1e-3};
         double[] b = new double[]{0.75, 0.9, 0.6, 0.75};
         double[] n = new double[]{5, 3, 2, 4};
-        double[] k = new double[]{2, 3, 1.5, 2};
+        double[] k = new double[]{2, 2.5, 1.5, 2};
 
         for (int minibatch : new int[]{1, 3}) {
             for( int i=0; i<a.length; i++ ) {
@@ -236,11 +235,13 @@ public class ValidateMKLDNN extends BaseDL4JTest {
                         .labels(l)
                         .data(new SingletonDataSetIterator(new DataSet(f, l)))
                         //Very infrequent minor differences - as far as I can tell, just numerical precision issues...
-                        .minAbsError(1e-4)
-                        .maxRelError(2e-4)
+                        .minAbsError(1e-3)
+                        .maxRelError(1e-2)
                         .build();
 
                 LayerHelperValidationUtil.validateMLN(netWith, tc);
+
+                System.out.println("/////////////////////////////////////////////////////////////////////////////");
             }
         }
     }

@@ -127,7 +127,7 @@ public class LayerHelperValidationUtil {
                         double d2 = arr2.dup('c').getDouble(idx);
                         System.out.println("Different values at index " + idx + ": " + d1 + ", " + d2 + " - RE = " + maxRE);
                     }
-                    assertTrue(s + layerName + " - max RE: " + maxRE, maxRE < t.getMaxRelError());
+                    assertTrue(s + layerName + "activations - max RE: " + maxRE, maxRE < t.getMaxRelError());
                     log.info("Forward pass, max relative error: " + layerName + " - " + maxRE);
                 }
 
@@ -190,7 +190,8 @@ public class LayerHelperValidationUtil {
                 } else {
                     System.out.println("OK: " + p);
                 }
-                assertTrue("Gradients are not equal: " + p, maxRE < t.getMaxRelError());
+                assertTrue("Gradients are not equal: " + p + " - highest relative error = " + maxRE + " > max relative error = " + t.getMaxRelError(),
+                        maxRE < t.getMaxRelError());
             }
         }
 
@@ -261,7 +262,7 @@ public class LayerHelperValidationUtil {
             try {
                 if (keepAndAssertPresent) {
                     Object o = f.get(l);
-                    assertNotNull(o);
+                    assertNotNull("Expect helper to be present for layer: " + l.getClass(), o);
                 } else {
                     f.set(l, null);
                     Integer i = map.get(l.getClass());
