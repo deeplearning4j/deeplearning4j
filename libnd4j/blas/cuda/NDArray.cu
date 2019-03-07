@@ -740,20 +740,15 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
             Nd4jLong *shapeInfoNew;            
             ALLOCATE(shapeInfoNew, _context->getWorkspace(), shape::shapeInfoLength(rank), Nd4jLong);            
             shape::reshapeCF(this->rankOf(), this->_shapeInfo, shape.size(), shape.data(), order == 'f', shapeInfoNew);
-
-            ShapeDescriptor descriptor(shapeInfoNew);
-            auto buffer = ConstantShapeHelper::getInstance()->bufferForShapeInfo(descriptor);
-
-            setShapeInfo(reinterpret_cast<Nd4jLong *>(buffer.primary()), dataType());
+            
+            setShapeInfo(shapeInfoNew);
 
             RELEASE(shapeInfoNew, _context->getWorkspace());
         } 
         else {
-            ShapeDescriptor descriptor(dataType(), order, shape);
-            auto buffer = ConstantShapeHelper::getInstance()->bufferForShapeInfo(descriptor);
 
-            Nd4jLong *shapeInfoNew = reinterpret_cast<Nd4jLong *>(buffer.primary());
-            NDArray temp(shapeInfoNew, true, _context, true);            
+            Nd4jLong *shapeInfoNew = ShapeBuilders::createShapeInfo(dataType(), order, shape, _context->getWorkspace());            
+            NDArray temp(shapeInfoNew, true, _context);
             this->applyTransform(transform::Copy, &temp, nullptr);            
             temp.tickWriteDevice();
             *this = std::move(temp);
@@ -1043,7 +1038,7 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
         ShapeDescriptor descriptor(_dataType, order, getShapeAsVector());
         auto outShapeInfo = ConstantShapeHelper::getInstance()->bufferForShapeInfo(descriptor);
 
-        auto result = new NDArray(reinterpret_cast<Nd4jLong *>(outShapeInfo.primary()), true, _context, false);
+        auto result = new NDArray(reinterpret_cast<Nd4jLong *>(outShapeInfo.primary()), true, _context);
         result->assign(*this);
 
 
@@ -1952,7 +1947,7 @@ NDArray NDArray::e(const Nd4jLong i) const {
 
         auto newShape = ShapeUtils::evalReduceShapeInfo('c', copy, *this, false, false, _context->getWorkspace());
         ArrayOptions::setDataType(newShape, nd4j::INT64);
-        auto result = new NDArray(newShape, true, _context, true);
+        auto result = new NDArray(newShape, true, _context);
 
         void* params = extraParams != nullptr ? const_cast<ExtraArguments*>(extraParams)->argumentsAsT(this->dataType()) : nullptr;        
 
@@ -2016,7 +2011,7 @@ NDArray NDArray::e(const Nd4jLong i) const {
         // create shapeInfo for scalar
         auto newShape = ShapeBuilders::createScalarShapeInfo(DataTypeUtils::pickFloatingType(_dataType), _context->getWorkspace());
         // create output array (scalar)
-        auto result = new NDArray(newShape, true, _context, true);
+        auto result = new NDArray(newShape, true, _context);
         // create dynamic array of extra parameters if array extraParams is empty (==nullptr)
         void* params = extraParams != nullptr ? const_cast<ExtraArguments*>(extraParams)->argumentsAsT(this->dataType()) : nullptr;        
 
@@ -2051,7 +2046,7 @@ NDArray NDArray::e(const Nd4jLong i) const {
 
         auto newShape = ShapeUtils::evalReduceShapeInfo('c', copy, *this, false, false, _context->getWorkspace());
         ArrayOptions::setDataType(newShape, DataTypeUtils::pickFloatingType(_dataType));
-        auto result = new NDArray(newShape, true, _context, true);
+        auto result = new NDArray(newShape, true, _context);
         // create temporary dynamic array of extra parameters if array extraParams is empty (==nullptr)
         void* params = extraParams != nullptr ? const_cast<ExtraArguments*>(extraParams)->argumentsAsT(this->dataType()) : nullptr;
 
@@ -2152,7 +2147,7 @@ NDArray NDArray::e(const Nd4jLong i) const {
         newShape[2] = yTad.numTads;
         ShapeUtils::updateStridesAndType(newShape, DataTypeUtils::pickFloatingType(_dataType), 'c');
         // create output array
-        auto result = new NDArray(newShape, true, _context, true);
+        auto result = new NDArray(newShape, true, _context);
 
         NDArray::prepareSpecialUse({result}, {const_cast<NDArray*>(this), const_cast<NDArray*>(other)});
 
@@ -2328,7 +2323,7 @@ void NDArray::setShapeInfo(const ShapeDescriptor& descriptor) {
 
         auto newShape = ShapeUtils::evalReduceShapeInfo('c', copy, *this, false, false, _context->getWorkspace());
         ArrayOptions::setDataType(newShape, DataTypeUtils::pickFloatingType(_dataType));
-        auto result = new NDArray(newShape, true, _context, true);
+        auto result = new NDArray(newShape, true, _context);
 
         NDArray::prepareSpecialUse({result}, {this});
 
@@ -2854,7 +2849,7 @@ void NDArray::reduceAlongDimension(nd4j::reduce::LongOps op, NDArray* target, co
         tad.createOffsets();
 
         // FIXME MISTAKE PRESENT
-        auto array = new NDArray(tad.tadOnlyShapeInfo, true, _context, false);
+        auto array = new NDArray(tad.tadOnlyShapeInfo, true, _context);
         //cudaFree(array->_bufferD);
         array->_bufferD = (int8_t*)specialBufferWithOffset(tad.tadOffsets[index]); //, array->lengthOf() * DataTypeUtils::sizeOf(dataType()), cudaMemcpyDeviceToDevice);        
         array->_isBuffDAlloc = false;        

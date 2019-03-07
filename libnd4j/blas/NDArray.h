@@ -196,7 +196,7 @@ namespace nd4j {
         /**
 		*  constructor creates new NDArray using shape information from "shapeInfo", set all elements in new array to zeros, if copyStrides is true then use stride values from "shapeInfo", else calculate strides independently 
         */
-		NDArray(Nd4jLong* shapeInfo, const bool copyStrides = false, nd4j::graph::LaunchContext* context = graph::LaunchContext::defaultContext(), const bool isShapeAlloc = false);
+		NDArray(Nd4jLong* shapeInfo, const bool copyStrides = false, nd4j::graph::LaunchContext* context = graph::LaunchContext::defaultContext());
 
         /**
         *  constructor creates new NDArray using shape information from "shapeInfo", set all elements in new array to be zeros, if copyStrides is true then use stride values from "shapeInfo", else calculate strides independently
