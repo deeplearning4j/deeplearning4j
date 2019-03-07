@@ -1165,8 +1165,8 @@ namespace nd4j {
         /**
         *  set _shapeInfo
         */
-        void setShapeInfo(Nd4jLong *shapeInfo);
-        void setShapeInfo(Nd4jLong *shapeInfo, const nd4j::DataType dtype);
+        void setShapeInfo(const Nd4jLong *shapeInfo);
+        void setShapeInfo(const Nd4jLong *shapeInfo, const nd4j::DataType dtype);
 
         /**
         *  returns absolute offset which corresponds to given sequential index

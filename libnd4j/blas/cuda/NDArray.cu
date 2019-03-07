@@ -75,10 +75,8 @@ void NDArray::operator delete(void* p) {
 NDArray::NDArray(const NDArray& other) {
     
     _context = other._context;    
-
-    auto buffer = ConstantShapeHelper::getInstance()->bufferForShapeInfo(other.getShapeInfo());
-    setShapeInfo(reinterpret_cast<Nd4jLong *>(buffer.primary()));
-
+    
+    setShapeInfo(reinterpret_cast<Nd4jLong *>(other.getShapeInfo()));
 
     ALLOCATE_SPECIAL(_bufferD, _context->getWorkspace(), _length * sizeOfT(), int8_t);
     _isBuffDAlloc = true;
@@ -2276,49 +2274,51 @@ NDArray::~NDArray() noexcept {
 }
 
 //////////////////////////////////////////////////////////////////////////
-void NDArray::setShapeInfo(Nd4jLong *shapeInfo) {
-
-    _shapeInfo = shapeInfo;
+void NDArray::setShapeInfo(const Nd4jLong *shapeInfo) {
 
     if (shapeInfo != nullptr) {
 
-        if(ArrayOptions::arrayType(shapeInfo) == ArrayType::EMPTY)
+        ShapeDescriptor descriptor(shapeInfo);
+        auto shapeBuffer = ConstantShapeHelper::getInstance()->bufferForShapeInfo(descriptor);
+
+        _shapeInfo  = reinterpret_cast<Nd4jLong *>(shapeBuffer.primary());
+        _shapeInfoD = reinterpret_cast<Nd4jLong *>(shapeBuffer.special());
+
+        if(descriptor.dataType() == ArrayType::EMPTY)
             _length = 0;
         else
             _length = shape::length(shapeInfo);
         
-        _dataType = ArrayOptions::dataType(shapeInfo);
-        auto buffer = ConstantShapeHelper::getInstance()->bufferForShapeInfo(shapeInfo);
-        _shapeInfoD = reinterpret_cast<Nd4jLong *>(buffer.special());
+        _dataType = descriptor.dataType();        
     }
     else {
         _dataType = nd4j::DataType::INHERIT;    
-        _shapeInfoD = nullptr;
+        _shapeInfoD = _shapeInfo = nullptr;
     }
 }
 
 ////////////////////////////////////////////////////////////////////////
-void NDArray::setShapeInfo(Nd4jLong *shapeInfo, const nd4j::DataType dtype) {
-
-    _shapeInfo = shapeInfo;
+void NDArray::setShapeInfo(const Nd4jLong *shapeInfo, const nd4j::DataType dtype) {
 
     if (shapeInfo != nullptr) {
 
-        ArrayOptions::setDataType(_shapeInfo, dtype);
+        Nd4jLong* shapeInfoTemp = ShapeBuilders::copyShapeInfoAndType(shapeInfo, dtype, true, _context->getWorkspace());
+        ShapeDescriptor descriptor(shapeInfoTemp);
+        auto shapeBuffer = ConstantShapeHelper::getInstance()->bufferForShapeInfo(descriptor);
 
-        if(ArrayOptions::arrayType(_shapeInfo) == ArrayType::EMPTY)
+        _shapeInfo  = reinterpret_cast<Nd4jLong *>(shapeBuffer.primary());
+        _shapeInfoD = reinterpret_cast<Nd4jLong *>(shapeBuffer.special());
+
+        if(descriptor.dataType() == ArrayType::EMPTY)
             _length = 0;
         else
-            _length = shape::length(shapeInfo);
+            _length = shape::length(shapeInfoTemp);
 
         _dataType = dtype;
-        ShapeDescriptor descriptor(shapeInfo);
-        auto buffer = ConstantShapeHelper::getInstance()->bufferForShapeInfo(descriptor);
-        _shapeInfoD = reinterpret_cast<Nd4jLong *>(buffer.special());
     } 
     else {
         _dataType = nd4j::DataType::INHERIT;    
-        _shapeInfoD = nullptr;
+        _shapeInfoD = _shapeInfo = nullptr;
     }
 }
 
