@@ -50,8 +50,6 @@ TEST_F(GraphTests, SingleInput1) {
     auto x = NDArrayFactory::create_<float>('c', {5, 5});
     x->assign(-2.0f);
 
-    x->printIndexedBuffer("x");
-
     graph->getVariableSpace()->putVariable(-1, x);
 
     auto nodeA = new Node(OpType_TRANSFORM_SAME, transform::Abs, 1, {-1}, {2});

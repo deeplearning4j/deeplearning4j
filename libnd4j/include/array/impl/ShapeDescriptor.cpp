@@ -50,7 +50,8 @@ bool ShapeDescriptor::operator==(const ShapeDescriptor& other) const {
 //////////////////////////////////////////////////////////////////////////
 // less than operator
 bool ShapeDescriptor::operator<(const ShapeDescriptor& other) const {
-    
+/*
+
     if(_empty > other._empty)
         return false;
     if(_rank > other._rank)
@@ -71,6 +72,8 @@ bool ShapeDescriptor::operator<(const ShapeDescriptor& other) const {
 
 
     return !(*this == other);
+    */
+    return std::tie(_empty, _rank, _dataType, _ews, _order, _shape, _strides) < std::tie(other._empty, other._rank, other._dataType, other._ews, other._order, other._shape, other._strides);
 }
 
 //////////////////////////////////////////////////////////////////////////

@@ -73,19 +73,13 @@ TEST_F(PlaygroundTests, Test_OpBenchmark_2) {
     ScalarBenchmark sb(scalar::Multiply);
 
     // Y will be shared
-    //sb.setY(NDArrayFactory::create_<float>(scalar));
+    sb.setY(NDArrayFactory::create_<float>(scalar));
 
     auto generator = GENERATE_XZ() {
         // operands go together line by line
-        auto x_ = NDArrayFactory::create_<float>('c', {100, 100});
-        auto z_ = NDArrayFactory::create_<float>('c', {100, 100});
+        x.push_back(NDArrayFactory::create_<float>('c', {100, 100}));
+        z.push_back(NDArrayFactory::create_<float>('c', {100, 100}));
 
-        x_->printShapeInfo("x t");
-        z_->printShapeInfo("z t");
-
-        x.push_back(x_);
-        z.push_back(z_);
-/*
         x.push_back(NDArrayFactory::create_<float>('c', {1000, 1000}));
         z.push_back(NDArrayFactory::create_<float>('c', {1000, 1000}));
 
@@ -103,17 +97,16 @@ TEST_F(PlaygroundTests, Test_OpBenchmark_2) {
         //another way to call inplace op
         x.push_back(NDArrayFactory::create_<float>('c', {100, 100}));
         z.push_back(nullptr);
-        */
+
     };
 
-    //helper.runOperationSuit(&sb, generator, "ScalarTest");
+    helper.runOperationSuit(&sb, generator, "ScalarTest");
 
     TransformBenchmark tb(transform::StrictOps::Tanh, "tanh");
 
 
     // we can use the same generator, since the same number of operands used
     helper.runOperationSuit(&tb, generator, "TransformTest");
-
 
     PairwiseBenchmark pb(pairwise::Pow, "pow test");
 
@@ -127,7 +120,7 @@ TEST_F(PlaygroundTests, Test_OpBenchmark_2) {
         z.push_back(NDArrayFactory::create_<float>('f', {100, 1000}));
     };
 
-    //helper.runOperationSuit(&pb, generatorXYZ, "PairwiseTest");
+    helper.runOperationSuit(&pb, generatorXYZ, "PairwiseTest");
 
     auto generatorReductionAxis = GENERATE_XYZ() {
         x.push_back(NDArrayFactory::create_<float>('c', {100, 1000}));
@@ -149,7 +142,7 @@ TEST_F(PlaygroundTests, Test_OpBenchmark_2) {
 
     ReductionBenchmark rb(reduce::FloatOps::Mean);
 
-    //helper.runOperationSuit(&rb, (const std::function<void (ResultSet &, ResultSet &, ResultSet &)>)(generatorReductionAxis), "ReductionAlongDimensionTest");
+    helper.runOperationSuit(&rb, (const std::function<void (ResultSet &, ResultSet &, ResultSet &)>)(generatorReductionAxis), "ReductionAlongDimensionTest");
 }
 
 TEST_F(PlaygroundTests, Test_OpBenchmark_3) {

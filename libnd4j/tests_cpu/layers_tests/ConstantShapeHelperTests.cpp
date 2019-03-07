@@ -130,5 +130,5 @@ TEST_F(ConstantShapeHelperTests, basic_test_6) {
     ShapeDescriptor descriptorB(nd4j::DataType::FLOAT32, 'c', {10, 10});
 
     ASSERT_FALSE(descriptorA < descriptorB);
-    ASSERT_FALSE(descriptorB < descriptorA);
+    ASSERT_TRUE(descriptorB < descriptorA);
 }

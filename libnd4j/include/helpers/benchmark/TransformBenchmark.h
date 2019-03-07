@@ -84,9 +84,6 @@ namespace nd4j {
 
             auto z = _z == nullptr ? _x : _z;
 
-            _x->printShapeInfo("x");
-            z->printShapeInfo("z");
-
             switch (_opType) {
                 case 0:
                     NativeOpExecutioner::execTransformStrict(LaunchContext::defaultContext(), _opNum, _x->buffer(), _x->shapeInfo(), _x->specialBuffer(), _x->specialShapeInfo(), z->buffer(), z->shapeInfo(), z->specialBuffer(), z->specialShapeInfo(), nullptr, nullptr, nullptr);
@@ -101,8 +98,6 @@ namespace nd4j {
                     NativeOpExecutioner::execTransformFloat(LaunchContext::defaultContext(), _opNum, _x->buffer(), _x->shapeInfo(), _x->specialBuffer(), _x->specialShapeInfo(), z->buffer(), z->shapeInfo(), z->specialBuffer(), z->specialShapeInfo(), nullptr, nullptr, nullptr);
                     break;
             }
-
-
 
             manager.synchronize();
         }
