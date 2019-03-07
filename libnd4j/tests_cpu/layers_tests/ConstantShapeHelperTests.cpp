@@ -36,6 +36,9 @@ public:
 TEST_F(ConstantShapeHelperTests, basic_test_1) {
     auto ptr = ShapeBuilders::createShapeInfo(nd4j::DataType::BFLOAT16, 'f', {5, 10, 15});
     ShapeDescriptor descriptor(ptr);
+    ShapeDescriptor descriptor2(ptr);
+
+    ASSERT_EQ(descriptor, descriptor2);
 
     ASSERT_EQ(1, descriptor.ews());
     ASSERT_EQ(3, descriptor.rank());
@@ -48,4 +51,9 @@ TEST_F(ConstantShapeHelperTests, basic_test_1) {
     auto buffer = ConstantShapeHelper::getInstance()->bufferForShapeInfo(descriptor);
 
     ASSERT_TRUE(ConstantShapeHelper::getInstance()->checkBufferExistanceForShapeInfo(descriptor));
+
+    auto buffer2 = ConstantShapeHelper::getInstance()->bufferForShapeInfo(descriptor2);
+
+    ASSERT_TRUE(buffer.primary() == buffer2.primary());
+    ASSERT_TRUE(buffer.special() == buffer2.special());
 }
