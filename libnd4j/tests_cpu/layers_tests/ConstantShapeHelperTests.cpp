@@ -112,6 +112,7 @@ TEST_F(ConstantShapeHelperTests, basic_test_4) {
 
 
 TEST_F(ConstantShapeHelperTests, basic_test_5) {
+    
     auto arrayA = NDArrayFactory::create<int>(1);
     auto arrayB = NDArrayFactory::create_<float>('c', {128, 256});
 

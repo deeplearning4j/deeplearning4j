@@ -61,7 +61,7 @@ bool ShapeDescriptor::operator<(const ShapeDescriptor& other) const {
         return false;
     if(_order > other._order)
         return false;
-    
+
 
     if(_shape > other._shape)
         return false;
@@ -139,23 +139,23 @@ ShapeDescriptor::ShapeDescriptor(const Nd4jLong *shapeInfo) {
         _strides.emplace_back(shapeInfo[e + 1 + _rank]);
 }
 
-int ShapeDescriptor::rank() {
+int ShapeDescriptor::rank() const {
     return _rank;
 }
 
-Nd4jLong ShapeDescriptor::ews() {
+Nd4jLong ShapeDescriptor::ews() const {
     return _ews;
 }
 
-char ShapeDescriptor::order() {
+char ShapeDescriptor::order() const {
     return _order;
 }
 
-DataType ShapeDescriptor::dataType() {
+DataType ShapeDescriptor::dataType() const {
     return _dataType;
 }
 
-bool ShapeDescriptor::isEmpty() {
+bool ShapeDescriptor::isEmpty() const {
     return _empty;
 }
 std::vector<Nd4jLong>& ShapeDescriptor::shape() {

@@ -101,8 +101,8 @@ std::pair<bool, bool> NDArray::isShapeOwner() {
 
 ////////////////////////////////////////////////////////////////////////
 // creates new NDArray using shape information from "shapeInfo" array, set all elements in new array to be zeros, set dtype as array type
-NDArray::NDArray(Nd4jLong* shapeInfo, const bool copyStrides, nd4j::graph::LaunchContext* context, const bool isShapeAlloc): 
-                NDArray(shapeInfo, ArrayOptions::dataType(shapeInfo), copyStrides, context, isShapeAlloc) {    
+NDArray::NDArray(Nd4jLong* shapeInfo, const bool copyStrides, nd4j::graph::LaunchContext* context): 
+                NDArray(shapeInfo, ArrayOptions::dataType(shapeInfo), copyStrides, context) {
 }   
 
 ////////////////////////////////////////////////////////////////////////
@@ -734,7 +734,7 @@ NDArray NDArray::reduceAlongDims(nd4j::reduce::FloatOps op, const std::vector<in
     if(!isR())
         ArrayOptions::setDataType(newShape, Environment::getInstance()->defaultFloatDataType());
 
-    NDArray result(newShape, true, _context, true);
+    NDArray result(newShape, true, _context);
     if (!isActualOnDeviceSide())
         syncToDevice();
 
@@ -752,7 +752,7 @@ NDArray NDArray::reduceAlongDims(nd4j::reduce::SameOps op, const std::vector<int
 
     auto newShape = ShapeUtils::evalReduceShapeInfo('c', copy, *this, keepDims, supportOldShapes, _context->getWorkspace());
 
-    NDArray result(newShape, true, _context, true);
+    NDArray result(newShape, true, _context);
     if (!isActualOnDeviceSide())
         syncToDevice();
 
@@ -772,7 +772,7 @@ NDArray NDArray::reduceAlongDims(nd4j::reduce::BoolOps op, const std::vector<int
     if(!isB())
         ArrayOptions::setDataType(newShape, DataType::BOOL);
 
-    NDArray result(newShape, true, _context, true);
+    NDArray result(newShape, true, _context);
     if (!isActualOnDeviceSide())
         syncToDevice();
 
@@ -792,7 +792,7 @@ NDArray NDArray::reduceAlongDims(nd4j::reduce::LongOps op, const std::vector<int
     if(_dataType != DataType::INT64)
         ArrayOptions::setDataType(newShape, DataType::INT64);
 
-    NDArray result(newShape, true, _context, true);
+    NDArray result(newShape, true, _context);
     if (!isActualOnDeviceSide())
         syncToDevice();
 
@@ -2439,7 +2439,7 @@ template void NDArray::operator/=(const bool scalar);
     ////////////////////////////////////////////////////////////////////////
     NDArray NDArray::tileToShape(const Nd4jLong* shapeInfo) {
 
-        NDArray result(const_cast<Nd4jLong*>(shapeInfo), false, _context, false);
+        NDArray result(const_cast<Nd4jLong*>(shapeInfo), false, _context);
         tile(result);
         return result;
     }

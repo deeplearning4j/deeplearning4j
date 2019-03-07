@@ -50,11 +50,11 @@ class ND4J_EXPORT ShapeDescriptor {
         explicit ShapeDescriptor(const DataType type, const char order, const std::vector<Nd4jLong> &shape, const std::vector<Nd4jLong> &strides, const Nd4jLong ews);
         ~ShapeDescriptor() = default;
 
-        int rank();
-        Nd4jLong ews();
-        char order();
-        DataType dataType();
-        bool isEmpty();
+        int rank() const;
+        Nd4jLong ews() const;
+        char order() const;
+        DataType dataType() const;
+        bool isEmpty() const;
         std::vector<Nd4jLong>& shape();
         std::vector<Nd4jLong>& strides();
 
