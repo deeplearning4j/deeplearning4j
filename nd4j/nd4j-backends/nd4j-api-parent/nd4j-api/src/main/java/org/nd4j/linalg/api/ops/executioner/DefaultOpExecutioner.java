@@ -244,6 +244,7 @@ public class DefaultOpExecutioner implements OpExecutioner {
     }
 
 
+    @Deprecated
     @Override
     public void setProfilingMode(ProfilingMode mode) {
         profilingMode = mode;
@@ -330,7 +331,8 @@ public class DefaultOpExecutioner implements OpExecutioner {
         return workspaces;
     }
 
-    public long profilingHookIn(Op op) {
+    @Deprecated
+    public long profilingHookInLegacy(CustomOp op) {
         switch (profilingMode) {
             case ALL:
                 OpProfiler.getInstance().processOpCall(op);
@@ -351,40 +353,8 @@ public class DefaultOpExecutioner implements OpExecutioner {
         return System.nanoTime();
     }
 
-    public long profilingHookIn(CustomOp op) {
-
-        OpProfiler.getInstance().processOpCall(op);
-
-        if (OpProfiler.getInstance().getConfig().isCheckWorkspaces()) {
-           checkForWorkspaces(op);
-        }
-
-        return System.nanoTime();
-    }
-
-    public void profilingHookOut(Op op, long timeStart) {
-
-       if (OpProfiler.getInstance().getConfig().isStackTrace()) {
-          OpProfiler.getInstance().processStackCall(op, timeStart);
-       }
-       if (OpProfiler.getInstance().getConfig().isCheckElapsedTime()) {
-          OpProfiler.getInstance().timeOpCall(op, timeStart);
-       }
-       if (OpProfiler.getInstance().getConfig().isCheckForNAN()) {
-          OpExecutionerUtil.checkForNaN(op);
-       }
-       if (OpProfiler.getInstance().getConfig().isCheckForINF()) {
-          OpExecutionerUtil.checkForInf(op);
-       }
-
-       if (Nd4j.getExecutioner().isVerbose()) {
-           if (op.z() != null)
-               log.info("Op name: {}; Z shapeInfo: {}; Z values: {}", op.opName(), op.z().shapeInfoJava(), firstX(op.z(), 10));
-       }
-    }
-
-
-    public void profilingHookOut(CustomOp op, long timeStart) {
+    @Deprecated
+    public void profilingHookOutLegacy(Op op, long timeStart) {
         switch (profilingMode) {
             case ALL:
                 OpProfiler.getInstance().processStackCall(op, timeStart);
@@ -410,8 +380,54 @@ public class DefaultOpExecutioner implements OpExecutioner {
             default:
                 break;
         }
+
+
+        if (Nd4j.getExecutioner().isVerbose()) {
+            if (OpProfiler.getInstance().getConfig().isStackTrace()) {
+                if (op.z() != null) OpProfiler.getInstance().processStackCall(op, timeStart);
+                log.info("Op name: {}; Z shapeInfo: {}; Z values: {}", op.opName(), op.z().shapeInfoJava(), firstX(op.z(), 10));
+            }
+        }
+        if (OpProfiler.getInstance().getConfig().isCheckElapsedTime()) {
+            OpProfiler.getInstance().timeOpCall(op, timeStart);
+        }
     }
 
+
+    public long profilingHookIn(CustomOp op) {
+
+        if (OpProfiler.getInstance().getConfig().isStackTrace() ||
+            OpProfiler.getInstance().getConfig().isCheckElapsedTime()) {
+            OpProfiler.getInstance().processOpCall(op);
+        }
+
+        if (OpProfiler.getInstance().getConfig().isCheckWorkspaces()) {
+            checkForWorkspaces(op);
+        }
+
+        return System.nanoTime();
+    }
+
+    public void profilingHookOut(Op op, long timeStart) {
+
+        if (OpProfiler.getInstance().getConfig().isStackTrace()) {
+            OpProfiler.getInstance().processStackCall(op, timeStart);
+        }
+        if (OpProfiler.getInstance().getConfig().isCheckElapsedTime()) {
+            OpProfiler.getInstance().timeOpCall(op, timeStart);
+        }
+        if (OpProfiler.getInstance().getConfig().isCheckForNAN()) {
+            OpExecutionerUtil.checkForNaN(op);
+        }
+        if (OpProfiler.getInstance().getConfig().isCheckForINF()) {
+            OpExecutionerUtil.checkForInf(op);
+        }
+
+        if (Nd4j.getExecutioner().isVerbose()) {
+            if (op.z() != null)
+                log.info("Op name: {}; Z shapeInfo: {}; Z values: {}", op.opName(), op.z().shapeInfoJava(), firstX(op.z(), 10));
+        }
+    }
 
     /**
      * Validate the data types

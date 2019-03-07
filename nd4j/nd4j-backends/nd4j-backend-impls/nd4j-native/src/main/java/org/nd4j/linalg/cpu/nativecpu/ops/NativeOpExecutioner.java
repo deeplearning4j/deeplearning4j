@@ -1741,7 +1741,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                 throw e;
         }
 
-        profilingHookOut(op, st);
+        profilingHookOut((Op)op, st);
         return op.outputArguments();
     }
 
