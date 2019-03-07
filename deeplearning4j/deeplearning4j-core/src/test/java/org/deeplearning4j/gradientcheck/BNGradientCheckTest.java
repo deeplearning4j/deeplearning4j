@@ -43,6 +43,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.config.NoOp;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.linalg.profiler.OpProfiler;
+import org.nd4j.linalg.profiler.ProfilerConfig;
 
 import java.util.Arrays;
 import java.util.HashSet;
@@ -157,10 +158,9 @@ public class BNGradientCheckTest extends BaseDL4JTest {
     @Test
     public void testGradientBNWithCNNandSubsamplingcCnfigurableProfiler() {
 
-        Nd4j.getExecutioner().setProfilingConfig(new OpProfiler.ConfigBuilder()
-                .mixedOrder(true)
-                .nonEwsAccess(true)
-                .tadStridedAccess(true)
+        Nd4j.getExecutioner().setProfilingConfig(ProfilerConfig.builder()
+                .notOptimalArguments(true)
+                .notOptimalTAD(true)
                 .build());
 
         Activation[] activFns = {Activation.SIGMOID, Activation.TANH, Activation.IDENTITY};
@@ -370,6 +370,7 @@ public class BNGradientCheckTest extends BaseDL4JTest {
                 }
             }
         }
+        OpProfiler.getInstance().printOutDashboard();
     }
 
 

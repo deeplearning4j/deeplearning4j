@@ -29,6 +29,7 @@ import org.nd4j.linalg.api.rng.Random;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.cache.TADManager;
 import org.nd4j.linalg.profiler.OpProfiler;
+import org.nd4j.linalg.profiler.ProfilerConfig;
 
 import java.util.List;
 import java.util.Map;
@@ -249,7 +250,7 @@ public interface OpExecutioner {
      *
      * @param config
      */
-    void setProfilingConfig(OpProfiler.Config config);
+    void setProfilingConfig(ProfilerConfig config);
 
     /**
      * Ths method returns current profiling

@@ -1,0 +1,13 @@
+package org.nd4j.linalg.profiler;
+
+import lombok.Builder;
+import lombok.Data;
+
+@Data
+@Builder
+public class ProfilerConfig {
+
+    private boolean notOptimalArguments;
+    private boolean notOptimalTAD;
+    private boolean nativeStatistics;
+}

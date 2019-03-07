@@ -41,6 +41,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.AtomicBoolean;
 import org.nd4j.linalg.primitives.Optional;
 import org.nd4j.linalg.profiler.OpProfiler;
+import org.nd4j.linalg.profiler.ProfilerConfig;
 
 import java.util.*;
 
@@ -249,7 +250,7 @@ public class DefaultOpExecutioner implements OpExecutioner {
     }
 
     @Override
-    public void setProfilingConfig(OpProfiler.Config config) {
+    public void setProfilingConfig(ProfilerConfig config) {
         OpProfiler.getInstance().setConfig(config);
     }
 

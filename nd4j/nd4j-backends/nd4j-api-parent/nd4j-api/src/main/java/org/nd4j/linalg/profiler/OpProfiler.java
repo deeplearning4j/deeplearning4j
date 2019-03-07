@@ -16,9 +16,7 @@
 
 package org.nd4j.linalg.profiler;
 
-import lombok.Data;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -255,21 +253,23 @@ public class OpProfiler {
 
         updatePairs(op.opName(), opClass);
 
-        PenaltyCause[] causes = processOperands(op.x(), op.y(), op.z());
-        for (PenaltyCause cause : causes) {
-            switch (cause) {
-                case NON_EWS_ACCESS:
-                    nonEwsAggregator.incrementCount();
-                    break;
-                case STRIDED_ACCESS:
-                    stridedAggregator.incrementCount();
-                    break;
-                case MIXED_ORDER:
-                    mixedOrderAggregator.incrementCount();
-                    break;
-                case NONE:
-                default:
-                    break;
+        if (config.isNotOptimalArguments()) {
+            PenaltyCause[] causes = processOperands(op.x(), op.y(), op.z());
+            for (PenaltyCause cause : causes) {
+                switch (cause) {
+                    case NON_EWS_ACCESS:
+                        nonEwsAggregator.incrementCount();
+                        break;
+                    case STRIDED_ACCESS:
+                        stridedAggregator.incrementCount();
+                        break;
+                    case MIXED_ORDER:
+                        mixedOrderAggregator.incrementCount();
+                        break;
+                    case NONE:
+                    default:
+                        break;
+                }
             }
         }
 
@@ -316,18 +316,20 @@ public class OpProfiler {
     public void processOpCall(Op op, DataBuffer... tadBuffers) {
         processOpCall(op);
 
-        PenaltyCause[] causes = processTADOperands(tadBuffers);
-        for (PenaltyCause cause : causes) {
-            switch (cause) {
-                case TAD_NON_EWS_ACCESS:
-                    tadNonEwsAggregator.incrementCount();
-                    break;
-                case TAD_STRIDED_ACCESS:
-                    tadStridedAggregator.incrementCount();
-                    break;
-                case NONE:
-                default:
-                    break;
+        if (config.isNotOptimalArguments()) {
+            PenaltyCause[] causes = processTADOperands(tadBuffers);
+            for (PenaltyCause cause : causes) {
+                switch (cause) {
+                    case TAD_NON_EWS_ACCESS:
+                        tadNonEwsAggregator.incrementCount();
+                        break;
+                    case TAD_STRIDED_ACCESS:
+                        tadStridedAggregator.incrementCount();
+                        break;
+                    case NONE:
+                    default:
+                        break;
+                }
             }
         }
     }
@@ -704,88 +706,5 @@ public class OpProfiler {
     }
 
     @Setter
-    private Config config;
-
-    public static class Config {
-        @Getter
-        @Setter
-        private boolean nonEWSAccess;
-
-        @Getter
-        @Setter
-        private boolean stridedAccess;
-
-        @Getter
-        @Setter
-        private boolean mixedOrder;
-
-        @Getter
-        @Setter
-        private boolean tadNonEwsAccess;
-
-        @Getter
-        @Setter
-        private boolean tadStridedAccess;
-
-        @Getter
-        @Setter
-        private boolean nativeStatistics;
-    }
-
-    public static class ConfigBuilder {
-
-        private boolean nonEWSAccess;
-        private boolean stridedAccess;
-        private boolean mixedOrder;
-        private boolean tadNonEwsAccess;
-        private boolean tadStridedAccess;
-        private boolean nativeStatistics;
-
-        public ConfigBuilder() {
-        }
-
-        public ConfigBuilder nonEwsAccess(boolean use) {
-            nonEWSAccess = use;
-            return this;
-        }
-
-        public ConfigBuilder stridedAccess(boolean use) {
-            stridedAccess = use;
-            return this;
-        }
-
-        public ConfigBuilder mixedOrder(boolean use) {
-            mixedOrder = use;
-            return this;
-        }
-
-        public ConfigBuilder tadNonEwsAccess(boolean use) {
-            tadNonEwsAccess = use;
-            return this;
-        }
-
-        public ConfigBuilder tadStridedAccess(boolean use) {
-            tadStridedAccess = use;
-            return this;
-        }
-
-        public ConfigBuilder nativeStatistics(boolean use) {
-            nativeStatistics = use;
-            return this;
-        }
-
-        public Config build() {
-            Config config = new Config();
-
-            config.mixedOrder = this.mixedOrder;
-            config.nonEWSAccess = this.nonEWSAccess;
-            config.stridedAccess = this.stridedAccess;
-            config.tadNonEwsAccess = this.tadNonEwsAccess;
-            config.tadStridedAccess = this.tadStridedAccess;
-            config.nativeStatistics = this.nativeStatistics;
-
-            return config;
-        }
-    }
-
+    private ProfilerConfig config;
 }
