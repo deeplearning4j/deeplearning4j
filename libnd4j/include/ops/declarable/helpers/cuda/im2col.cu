@@ -92,7 +92,7 @@ void im2col(nd4j::graph::LaunchContext& context, const NDArray& in, NDArray& out
     if(!in.isActualOnDeviceSide()) in.syncToDevice();
     
     const int threadsPerBlock = 512;
-    const int blocksPerGrid = (out.lengthOf() + threadsPerBlock - 1) / threadsPerBlock;    
+    const int blocksPerGrid = (out.lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
 
     BUILD_SINGLE_SELECTOR(out.dataType(), im2colCudaLauncher, (blocksPerGrid, threadsPerBlock, context, in.getSpecialBuffer(), out.getSpecialBuffer(), in.getSpecialShapeInfo(), out.getSpecialShapeInfo(), kH, kW, sH, sW, pH, pW, dH, dW, arrZeroPadVal.e<double>(0)), FLOAT_TYPES);
 

@@ -141,89 +141,6 @@ __host__ static void concatCudaLauncher(const int numOfArrs, const cudaStream_t 
     BUILD_SINGLE_TEMPLATE(template void gatherND_, (graph::LaunchContext* context, NDArray& input, NDArray& indices, NDArray& output), LIBND4J_TYPES);
 
 
-//////////////////////////////////////////////////////////////////////
-template<typename X, typename Y, typename Z>
-__global__ static void gatherCuda(const int numOfSubArrs, 
-                                    const void* vx, const Nd4jLong* xShapeInfo, const Nd4jLong* xOffsets,
-                                    const void* vy, const Nd4jLong* yShapeInfo,
-                                    const void* vz, const Nd4jLong* zShapeInfo, const Nd4jLong* zOffsets) {
-
-    Y* y = reinterpret_cast<Y*>(vy);
-    __shared__ X* x;
-    __shared__ Z* z;
-    
-    const Nd4jLong len = shape::length(xShapeInfo);
-
-    for (int i = blockIdx.x; i < numOfSubArrs; i += gridDim.x) {
-        
-        if (threadIdx.x == 0) {
-                        
-            x = reinterpret_cast<X*>(vx) + xOffsets[ y[shape::getIndexOffset(i, yShapeInfo, numOfSubArrs)] ];
-            z = reinterpret_cast<Z*>(vz) + zOffsets[i];
-        }
-        __syncthreads();
-
-        for (int j = threadIdx.x; j < len; j += blockDim.x) 
-            z[shape::getIndexOffset(j, zShapeInfo, len)] = x[shape::getIndexOffset(j, xShapeInfo, len)];
-
-        __syncthreads();
-    }
-}
-
-template<typename T>
-__host__ static void gatherCudaLauncher(const int numOfSubArrs, const cudaStream_t *stream, const void* vx, const Nd4jLong* xShapeInfo, void* vz, const Nd4jLong* zShapeInfo, const Nd4jLong* offsets) {
-
-    // concatCuda<T><<<512, 256, 1024, *stream>>>(numOfArrs, pVx, pxShapeInfo, pVz, pzShapeInfo);
-}
-
-
-void gather(graph::LaunchContext* context, NDArray* input, const NDArray* indices, NDArray* output, const std::vector<int>& intArgs) {
-        
-    const int inputRank = input->rankOf();
-    int axis = intArgs.size() > 0 ? intArgs[0] : 0;    
-    if(axis < 0)
-        axis += inputRank;
-
-    const int numOfIntArgs = intArgs.size();
-
-    if (indices == nullptr && numOfIntArgs == 2) { // scalar case
-        output->assign((*input)(intArgs[1], {axis}));
-    }
-    else if (indices != nullptr && indices->isScalar()) {
-
-        if(input->rankOf() <= 1) { //For scalar indices, rank 0 or 1 input: can't do tensor along dimension 0 as this is whole array... instead, we want to get a scalar
-            auto idx = indices->e<Nd4jLong>(0);
-            auto scalarNDArray = input->e(idx);
-            output->assign(scalarNDArray);
-        } 
-        else {                
-            NDArray inSubArr = (*input)(indices->e<Nd4jLong>(0), {axis});
-            output->assign(inSubArr);
-        }
-    }    
-    else {
-
-        NDArray* pIndices = const_cast<NDArray*>(indices);
-        if(indices == nullptr)          
-            pIndices = new NDArray(input->ordering(), {numOfIntArgs-1}, std::vector<double>(intArgs.begin() + 1, intArgs.end()), DataType::INT64, input->getContext());
-        
-        std::vector<int> dimsOut(pIndices->rankOf());
-        std::iota(dimsOut.begin(), dimsOut.end(), axis);   // fill with axis, axis+1, ... axis+pIndices->rankOf()-1
-        
-        const Nd4jLong numOfSubArrs = pIndices->lengthOf();
-        
-        Nd4jLong *outSubArrShapeInfo(nullptr), *inSubArrShapeInfo(nullptr), *outSubArrOffsets(nullptr), *inSubArrOffsets(nullptr);        
-        input-> getSubArrShapeAndOffsets(numOfSubArrs, {axis},  inSubArrShapeInfo,  inSubArrOffsets);
-        output->getSubArrShapeAndOffsets(numOfSubArrs, dimsOut, outSubArrShapeInfo, outSubArrOffsets);
-
-        // NDArray::prepareSpecialUse({output}, {input, pIndices});
-        // BUILD_TRIPLE_SELECTOR(...................);
-        if(indices == nullptr)
-            delete pIndices;
-    }        
-}    
-
-// BUILD_SINGLE_TEMPLATE(template void gather_, (graph::LaunchContext* context, NDArray* input, const NDArray* indices, NDArray* output, const std::vector<int>& intArgs), LIBND4J_TYPES);
 
     //////////////////////////////////////////////////////////////////////////
     void eye(graph::LaunchContext* context, NDArray& output) {
@@ -585,6 +502,7 @@ void concat(graph::LaunchContext* context, const std::vector<NDArray*>& inArrs, 
 
 
 BUILD_SINGLE_TEMPLATE(template void concatCudaLauncher, (const int numOfArrs, const cudaStream_t *stream, void* pVx, void* pxShapeInfo, void* pVz, void* pzShapeInfo), LIBND4J_TYPES);
+
 
 }
 }
