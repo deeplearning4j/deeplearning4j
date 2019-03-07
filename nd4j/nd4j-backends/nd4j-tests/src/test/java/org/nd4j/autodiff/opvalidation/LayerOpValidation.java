@@ -1018,7 +1018,7 @@ public class LayerOpValidation extends BaseOpValidation {
     @Test
     public void testLayerNorm() {
         final INDArray random = Nd4j.rand(new int[]{10, 4});
-        final INDArray standardized = Nd4j.emptyLike(random);
+        final INDArray standardized = random.ulike();
         Nd4j.getExecutioner().exec(new Standardize(random, standardized, 1));
 
         final INDArray gain = Nd4j.rand(new int[]{1, 4});
@@ -1043,7 +1043,7 @@ public class LayerOpValidation extends BaseOpValidation {
     @Test
     public void testLayerNormOP() {
         final INDArray random = Nd4j.rand(new int[]{10, 4});
-        final INDArray standardized = Nd4j.emptyLike(random);
+        final INDArray standardized = random.ulike();
         Nd4j.getExecutioner().exec(new Standardize(random, standardized, 1));
 
         final INDArray gain = Nd4j.rand(new int[]{1, 4});
@@ -1059,7 +1059,7 @@ public class LayerOpValidation extends BaseOpValidation {
     @Test
     public void testLayerNormNoBias() {
         final INDArray random = Nd4j.rand(new int[]{10, 4});
-        final INDArray standardized = Nd4j.emptyLike(random);
+        final INDArray standardized = random.ulike();
         Nd4j.getExecutioner().exec(new Standardize(random, standardized, 1));
 
         final INDArray gain = Nd4j.rand(new int[]{1, 4});
@@ -1082,7 +1082,7 @@ public class LayerOpValidation extends BaseOpValidation {
     @Test
     public void testLayerNormOPNoBias() {
         final INDArray random = Nd4j.rand(new int[]{10, 4});
-        final INDArray standardized = Nd4j.emptyLike(random);
+        final INDArray standardized = random.ulike();
         Nd4j.getExecutioner().exec(new Standardize(random, standardized, 1));
 
         final INDArray gain = Nd4j.rand(new int[]{1, 4});
@@ -1101,7 +1101,7 @@ public class LayerOpValidation extends BaseOpValidation {
             random.putScalar(1,i, 7);
         }
 
-        final INDArray standardized = Nd4j.emptyLike(random);
+        final INDArray standardized = random.ulike();
         Nd4j.getExecutioner().exec(new Standardize(random, standardized, 1));
 
         final INDArray gain = Nd4j.rand(new int[]{1, 4});
