@@ -866,8 +866,17 @@ TEST_F(NDArrayTest2, debugHelperTest_1) {
             91.,  82.,  37.,  64.,    -3,  0, 73.,  28.,    119.,  12., 112.,  13.,    140., 110., 160., 107.}, nd4j::DataType::DOUBLE);
 
     DebugHelper info = DebugHelper::debugStatistics(&testArray);
-    //DebugHelper exp = {}
+    DebugHelper exp; // = {}
+    exp._minValue = -119;
+    exp._maxValue = 160.;
+    exp._meanValue = 51.328906;
+    exp._stdDevValue = 51.984133;
+    exp._zeroCount = 3;
+    exp._negativeCount = 7;
+    exp._positiveCount = 118;
+    exp._infCount = 0;
+    exp._nanCount = 0;
     printf("%lf %lf %lf %lf\n", info._minValue, info._maxValue, info._meanValue, info._stdDevValue);
     printf("%lld %lld %lld %lld %lld\n", info._zeroCount, info._negativeCount, info._positiveCount, info._infCount, info._nanCount);
-
+    ASSERT_EQ(exp, info);
 }
