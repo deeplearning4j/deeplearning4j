@@ -33,4 +33,9 @@ namespace nd4j {
     Nd4jPointer DataBuffer::special() {
         return _specialBuffer;
     }
+
+    DataBuffer::DataBuffer(const DataBuffer &other) {
+        _primaryBuffer = other._primaryBuffer;
+        _specialBuffer = other._specialBuffer;
+    }
 }

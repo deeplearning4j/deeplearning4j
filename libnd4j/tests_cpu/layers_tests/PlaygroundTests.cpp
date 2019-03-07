@@ -1551,5 +1551,5 @@ TEST_F(PlaygroundTests, test_scatter_119) {
 
     auto timeEnd1 = std::chrono::system_clock::now();
     auto duration1 = std::chrono::duration_cast<std::chrono::milliseconds> ((timeEnd1 - timeStart1) / N).count();
-    printf("duration my %ld\n", duration1);
+    nd4j_printf("duration my %ld\n", duration1);
 }

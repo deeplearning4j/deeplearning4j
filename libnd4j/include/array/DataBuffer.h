@@ -31,11 +31,15 @@ namespace nd4j {
         Nd4jPointer _specialBuffer = nullptr;
     public:
         DataBuffer(Nd4jPointer primary, Nd4jPointer special = nullptr);
+        DataBuffer(const DataBuffer &other);
         explicit DataBuffer() = default;
         ~DataBuffer() = default;
 
         Nd4jPointer primary();
         Nd4jPointer special();
+
+        DataBuffer& operator=(const DataBuffer& other) = default;
+        DataBuffer& operator=(DataBuffer&& other) noexcept = default;
     };
 }
 

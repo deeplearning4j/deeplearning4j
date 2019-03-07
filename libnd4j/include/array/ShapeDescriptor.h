@@ -26,6 +26,7 @@
 #include <dll.h>
 #include <pointercast.h>
 #include <DataType.h>
+#include <initializer_list>
 
 namespace nd4j {
 
@@ -43,7 +44,8 @@ class ND4J_EXPORT ShapeDescriptor {
     public:
         explicit ShapeDescriptor(const ShapeDescriptor &other);
         explicit ShapeDescriptor(const Nd4jLong *shapeInfo);
-        explicit ShapeDescriptor(DataType type, char order, std::vector<Nd4jLong> &shape);
+        explicit ShapeDescriptor(DataType type, char order, std::initializer_list<Nd4jLong> &shape);
+        explicit ShapeDescriptor(DataType type, const char order, const std::vector<Nd4jLong> &shape);
         explicit ShapeDescriptor(DataType type, char order, std::vector<Nd4jLong> &shape, std::vector<Nd4jLong> &strides);
         explicit ShapeDescriptor(DataType type, char order, std::vector<Nd4jLong> &shape, std::vector<Nd4jLong> &strides, Nd4jLong ews);
         ~ShapeDescriptor() = default;

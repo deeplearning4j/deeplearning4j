@@ -54,6 +54,11 @@ TEST_F(ConstantShapeHelperTests, basic_test_1) {
 
     auto buffer2 = ConstantShapeHelper::getInstance()->bufferForShapeInfo(descriptor2);
 
+
+    ASSERT_TRUE(buffer.primary() != nullptr);
     ASSERT_TRUE(buffer.primary() == buffer2.primary());
     ASSERT_TRUE(buffer.special() == buffer2.special());
+
+    shape::printShapeInfoLinear("0", reinterpret_cast<Nd4jLong *>(buffer.primary()));
+    shape::printShapeInfoLinear("1", reinterpret_cast<Nd4jLong *>(buffer2.primary()));
 }

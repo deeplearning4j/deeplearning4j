@@ -91,11 +91,8 @@ namespace nd4j {
         } else {
             _mutex.unlock();
 
-            return _cache[deviceId][descriptor];
+            return _cache[deviceId].at(descriptor);
         }
-
-        DataBuffer buffer;
-        return buffer;
     }
 
     DataBuffer& ConstantShapeHelper::bufferForShapeInfo(const Nd4jLong *shapeInfo) {

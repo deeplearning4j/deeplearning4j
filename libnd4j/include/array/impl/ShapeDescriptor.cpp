@@ -26,11 +26,7 @@ using namespace nd4j;
 //////////////////////////////////////////////////////////////////////////
 // equal to operator
 bool ShapeDescriptor::operator==(const ShapeDescriptor& other) const {
-    
-    if(_empty != other._empty)
-        return false;
-    if(_empty == true)
-        return true;
+
     if(_empty != other._empty)
         return false;
     if(_rank != other._rank)
@@ -42,13 +38,12 @@ bool ShapeDescriptor::operator==(const ShapeDescriptor& other) const {
     if(_ews != other._ews)
         return false;
 
-    for(int i = 0; i < _rank; ++i)
-        if(_shape[i] != other._shape[i])
-            return false;
+    if(_shape != other._shape)
+        return false;
 
-    for(int i = 0; i < _rank; ++i)
-        if(_strides[i] != other._strides[i])
-            return false;
+
+    if(_strides != other._strides)
+        return false;
 
     return true;
 }
@@ -82,7 +77,27 @@ bool ShapeDescriptor::operator<(const ShapeDescriptor& other) const {
 }
 
 //////////////////////////////////////////////////////////////////////////
-ShapeDescriptor::ShapeDescriptor(DataType type, char order, std::vector<Nd4jLong> &shape): _dataType(type), _order(order), _shape(shape) {
+ShapeDescriptor::ShapeDescriptor(DataType type, const char order, const std::vector<Nd4jLong> &shape): _dataType(type), _order(order), _shape(shape) {
+    _rank = shape.size();
+    _ews = 1;
+    // TODO:: calculate strides here
+
+    if (_shape.empty())
+        _empty = true;
+    else {
+        for (auto v:_shape) {
+            if (v == 0) {
+                _empty = true;
+                break;
+            }
+        }
+    }
+}
+
+//////////////////////////////////////////////////////////////////////////
+ShapeDescriptor::ShapeDescriptor(DataType type, char order, std::initializer_list<Nd4jLong> &shape): _dataType(type), _order(order), _shape(shape) {
+    _rank = shape.size();
+    _ews = 1;
 
     // TODO:: calculate strides here
 

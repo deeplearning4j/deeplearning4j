@@ -23,6 +23,7 @@
 #include <helpers/ShapeUtils.h>
 #include <helpers/PointersManager.h>
 #include <TAD.h>
+#include <ConstantShapeHelper.h>
 
 
 namespace nd4j {
@@ -135,7 +136,7 @@ namespace nd4j {
 
             template <typename T>
             void scatter_(graph::LaunchContext *context, pairwise::Ops op, const NDArray& indices, const NDArray& updates, NDArray& output, const bool lock) {
-                int axis = 0;
+                int axis = 1;
                 shape::TAD tadX;
                 tadX.init(output.getShapeInfo(), &axis, 1);
                 tadX.createTadOnlyShapeInfo();
@@ -146,12 +147,18 @@ namespace nd4j {
                 tadY.createTadOnlyShapeInfo();
                 tadY.createOffsets();
 
+                auto bX = ConstantShapeHelper::getInstance()->bufferForShapeInfo(tadX.tadOnlyShapeInfo);
+                auto bY = ConstantShapeHelper::getInstance()->bufferForShapeInfo(tadY.tadOnlyShapeInfo);
+                auto psX = reinterpret_cast<Nd4jLong *>(bX.special());
+                auto psY = reinterpret_cast<Nd4jLong *>(bY.special());
+
                 PointersManager manager(context, "scatter");
-                auto psX = reinterpret_cast<Nd4jLong *>(manager.replicatePointer(tadX.tadOnlyShapeInfo, shape::shapeInfoByteLength(tadX.tadOnlyShapeInfo)));
-                auto psY = reinterpret_cast<Nd4jLong *>(manager.replicatePointer(tadY.tadOnlyShapeInfo, shape::shapeInfoByteLength(tadY.tadOnlyShapeInfo)));
+                //auto psX = reinterpret_cast<Nd4jLong *>(manager.replicatePointer(tadX.tadOnlyShapeInfo, shape::shapeInfoByteLength(tadX.tadOnlyShapeInfo)));
+                //auto psY = reinterpret_cast<Nd4jLong *>(manager.replicatePointer(tadY.tadOnlyShapeInfo, shape::shapeInfoByteLength(tadY.tadOnlyShapeInfo)));
 
                 auto poX = reinterpret_cast<Nd4jLong *>(manager.replicatePointer(tadX.tadOffsets, tadX.numTads * sizeof(Nd4jLong)));
                 auto poY = reinterpret_cast<Nd4jLong *>(manager.replicatePointer(tadY.tadOffsets, tadY.numTads * sizeof(Nd4jLong)));
+
 
                 NDArray::prepareSpecialUse({&output}, {&updates, &indices});
 
