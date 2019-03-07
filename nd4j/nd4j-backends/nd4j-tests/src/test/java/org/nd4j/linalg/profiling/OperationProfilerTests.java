@@ -31,6 +31,7 @@ import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.profiler.OpProfiler;
+import org.nd4j.linalg.profiler.ProfilerConfig;
 
 import java.util.Arrays;
 
@@ -45,6 +46,7 @@ public class OperationProfilerTests {
 
     @Before
     public void setUp() {
+        Nd4j.getExecutioner().setProfilingConfig(ProfilerConfig.builder().build());
         Nd4j.getExecutioner().setProfilingMode(OpExecutioner.ProfilingMode.OPERATIONS);
         OpProfiler.getInstance().reset();
     }

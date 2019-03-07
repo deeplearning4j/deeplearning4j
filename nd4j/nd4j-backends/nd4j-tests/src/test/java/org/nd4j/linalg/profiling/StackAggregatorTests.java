@@ -25,6 +25,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.profiler.OpProfiler;
+import org.nd4j.linalg.profiler.ProfilerConfig;
 import org.nd4j.linalg.profiler.data.StackAggregator;
 import org.nd4j.linalg.profiler.data.primitives.StackDescriptor;
 
@@ -39,6 +40,7 @@ public class StackAggregatorTests {
 
     @Before
     public void setUp() {
+        Nd4j.getExecutioner().setProfilingConfig(ProfilerConfig.builder().stackTrace(true).build());
         Nd4j.getExecutioner().setProfilingMode(OpExecutioner.ProfilingMode.ALL);
         OpProfiler.getInstance().reset();
     }
@@ -102,7 +104,7 @@ public class StackAggregatorTests {
 
         Nd4j.getExecutioner().commit();
 
-        StackAggregator aggregator = OpProfiler.getInstance().getMixedOrderAggregator();
+        /*StackAggregator aggregator = OpProfiler.getInstance().getMixedOrderAggregator();
 
         StackDescriptor descriptor = aggregator.getLastDescriptor();
 
@@ -111,7 +113,7 @@ public class StackAggregatorTests {
         assertEquals(2, aggregator.getTotalEventsNumber());
         assertEquals(2, aggregator.getUniqueBranchesNumber());
 
-        aggregator.renderTree();
+        aggregator.renderTree();*/
     }
 
     @Test

@@ -164,6 +164,8 @@ public class BNGradientCheckTest extends BaseDL4JTest {
                 .checkForINF(true)
                 .checkForNAN(true)
                 .checkElapsedTime(true)
+                .stackTrace(true)
+                .checkWorkspaces(true)
                 .build());
 
         Activation[] activFns = {Activation.SIGMOID, Activation.TANH, Activation.IDENTITY};

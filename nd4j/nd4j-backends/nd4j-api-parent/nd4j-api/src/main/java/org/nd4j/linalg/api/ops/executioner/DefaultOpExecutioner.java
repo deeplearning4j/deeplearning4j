@@ -260,24 +260,6 @@ public class DefaultOpExecutioner implements OpExecutioner {
         return profilingMode;
     }
 
-    public long profilingHookIn(Op op, DataBuffer... tadBuffers) {
-        switch (profilingMode) {
-            case ALL:
-                OpProfiler.getInstance().processOpCall(op, tadBuffers);
-                break;
-            case METHODS:
-                break;
-            case OPERATIONS:
-                OpProfiler.getInstance().processOpCall(op, tadBuffers);
-                break;
-            case DISABLED:
-            default:
-                return 0L;
-        }
-
-        return System.nanoTime();
-    }
-
     protected void checkWorkspace(String opName, INDArray array) {
         if (array.isAttached()) {
             val ws = array.data().getParentWorkspace();
@@ -331,7 +313,30 @@ public class DefaultOpExecutioner implements OpExecutioner {
         return workspaces;
     }
 
-    public long profilingHookInLegacy(CustomOp op) {
+    @Deprecated
+    public long profilingHookIn(Op op, DataBuffer... tadBuffers) {
+        switch (profilingMode) {
+            case ALL:
+                OpProfiler.getInstance().processOpCall(op, tadBuffers);
+                break;
+            case METHODS:
+                break;
+            case OPERATIONS:
+                OpProfiler.getInstance().processOpCall(op, tadBuffers);
+                break;
+            case SCOPE_PANIC:
+                checkForWorkspaces(op);
+                return 0L;
+            case DISABLED:
+            default:
+                return 0L;
+        }
+
+        return System.nanoTime();
+    }
+
+    @Deprecated
+    public long profilingHookIn(CustomOp op) {
         switch (profilingMode) {
             case ALL:
                 OpProfiler.getInstance().processOpCall(op);
@@ -352,7 +357,8 @@ public class DefaultOpExecutioner implements OpExecutioner {
         return System.nanoTime();
     }
 
-    public void profilingHookOutLegacy(Op op, long timeStart) {
+    @Deprecated
+    public void profilingHookOut(Op op, long timeStart) {
         switch (profilingMode) {
             case ALL:
                 OpProfiler.getInstance().processStackCall(op, timeStart);
@@ -385,8 +391,8 @@ public class DefaultOpExecutioner implements OpExecutioner {
         }
     }
 
-
-    public void profilingHookOutLegacy(CustomOp op, long timeStart) {
+    @Deprecated
+    public void profilingHookOut(CustomOp op, long timeStart) {
         switch (profilingMode) {
             case ALL:
                 OpProfiler.getInstance().processStackCall(op, timeStart);
@@ -415,7 +421,7 @@ public class DefaultOpExecutioner implements OpExecutioner {
     }
 
 
-    public long profilingHookIn(CustomOp op) {
+    public long profilingConfigurableHookIn(CustomOp op) {
 
         if (OpProfiler.getInstance().getConfig().isStackTrace() ||
             OpProfiler.getInstance().getConfig().isCheckElapsedTime()) {
@@ -429,7 +435,21 @@ public class DefaultOpExecutioner implements OpExecutioner {
         return System.nanoTime();
     }
 
-    public void profilingHookOut(Op op, long timeStart) {
+    public long profilingConfigurableHookIn(Op op, DataBuffer... tadBuffers) {
+        if (OpProfiler.getInstance().getConfig().isStackTrace() ||
+            OpProfiler.getInstance().getConfig().isCheckElapsedTime()) {
+            OpProfiler.getInstance().processOpCall(op);
+        }
+
+        if (OpProfiler.getInstance().getConfig().isNotOptimalTAD()) {
+            OpProfiler.getInstance().processOpCall(op, tadBuffers);
+        }
+
+        return System.nanoTime();
+    }
+
+
+    public void profilingConfigurableHookOut(Op op, long timeStart) {
 
         if (OpProfiler.getInstance().getConfig().isStackTrace()) {
             OpProfiler.getInstance().processStackCall(op, timeStart);
@@ -450,7 +470,7 @@ public class DefaultOpExecutioner implements OpExecutioner {
         }
     }
 
-    public void profilingHookOut(CustomOp op, long timeStart) {
+    public void profilingConfigurableHookOut(CustomOp op, long timeStart) {
 
         if (OpProfiler.getInstance().getConfig().isStackTrace()) {
             OpProfiler.getInstance().processStackCall(op, timeStart);
