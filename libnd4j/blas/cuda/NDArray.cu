@@ -2220,16 +2220,21 @@ NDArray NDArray::e(const Nd4jLong i) const {
     }
 
     void NDArray::prepareSpecialUse(const std::initializer_list<const NDArray*>& writeList, const std::initializer_list<const NDArray*>& readList, bool synchronizeWritables) {
-        for (auto a:writeList) {
+        
+        for (auto a : writeList) {
+        
             if (synchronizeWritables && !a->isActualOnDeviceSide())
                 a->syncToDevice();
 
             a->tickWriteDevice();
         }
 
-        for (auto a:readList) {
+        for (auto a : readList) {
+            
             if (!a->isActualOnDeviceSide())
                 a->syncToDevice();
+            
+            a->tickReadDevice();
         }
     }
 

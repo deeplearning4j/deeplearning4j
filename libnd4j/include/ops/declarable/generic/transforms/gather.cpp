@@ -22,7 +22,7 @@
 #if NOT_EXCLUDED(OP_gather)
 
 #include <ops/declarable/CustomOperations.h>
-#include<ops/declarable/helpers/transforms.h>
+#include<ops/declarable/helpers/gather.h>
 
 
 namespace nd4j {

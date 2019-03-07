@@ -176,7 +176,7 @@ namespace nd4j {
                 else
                     scatterCuda<T, false><<<512, blockSize, 1024, *context->getCudaStream()>>>(op, indices.lengthOf(), output.getSpecialBuffer(), psX, poX, updates.getSpecialBuffer(), psY, poY, reinterpret_cast<int *>(indices.getSpecialBuffer()), tadLengthX, tadLengthY);
 
-                NDArray::registerSpecialUse({&output}, {&updates, &indices});
+                // NDArray::registerSpecialUse({&output}, {&updates, &indices});
                 manager.synchronize();
             }
 
