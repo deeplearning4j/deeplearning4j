@@ -1805,35 +1805,6 @@ public class TransformOpValidation extends BaseOpValidation {
     }
 
     @Test
-    public void testStandardizeNoAxis() {
-        final INDArray random = Nd4j.rand(new int[]{10, 4});
-
-
-        final INDArray expOut = random.norm1();
-
-        SameDiff sd = SameDiff.create();
-        SDVariable sdA = sd.var("a", random);
-        SDVariable t = sd.math.standardize(sdA);
-        t.norm1("out");
-
-        String err = OpValidation.validate(new TestCase(sd)
-                .expectedOutput("out", expOut)
-                .gradientCheck(true));
-        assertNull(err, err);
-    }
-
-    @Test
-    public void testStandardizeOPNoAxis() {
-        final INDArray random = Nd4j.rand(new int[]{10, 4});
-
-        final INDArray output = Nd4j.emptyLike(random);
-        Nd4j.getExecutioner().exec(new Standardize(random, output));
-
-        assertEquals(random, output);
-
-    }
-
-    @Test
     public void testStandardizeNoDeviation() {
         final INDArray random = Nd4j.rand(new int[]{10, 4});
         for (int i = 0; i < 4; i++) {
