@@ -26,6 +26,7 @@ import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.deeplearning4j.util.ConvolutionUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.api.ops.OpContext;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.AvgPooling2D;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.MaxPooling2D;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.Pooling2D;
@@ -33,6 +34,7 @@ import org.nd4j.linalg.api.ops.impl.layers.convolution.Pooling2DDerivative;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Pooling2DConfig;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.linalg.util.ArrayUtil;
 
 import java.util.Collections;
 import java.util.Map;
@@ -43,6 +45,9 @@ import java.util.Map;
  * @author Alex Black
  */
 public class MKLDNNSubsamplingHelper implements SubsamplingHelper {
+
+    protected OpContext context;
+
     @Override
     public boolean checkSupported() {
         return BaseMKLDNNHelper.mklDnnEnabled();
@@ -103,34 +108,25 @@ public class MKLDNNSubsamplingHelper implements SubsamplingHelper {
         long[] outShape = new long[]{input.size(0), input.size(1), outSize[0], outSize[1]};
         INDArray output = workspaceMgr.createUninitialized(ArrayType.ACTIVATIONS, input.dataType(), outShape);
 
-        input = input.dup();
-
-        Pooling2DConfig conf = Pooling2DConfig.builder()
-                .isSameMode(convolutionMode == ConvolutionMode.Same)
-                .kH(kernel[0]).kW(kernel[1])
-                .sH(strides[0]).sW(strides[1])
-                .dH(dilation[0]).dW(dilation[1])
-                .pH(pad[0]).pW(pad[1])
-                .isNHWC(false)
-                .build();
+        if(context == null){
+            context = Nd4j.getExecutioner().buildContext();
+            context.setIArguments(
+                    kernel[0], kernel[1],
+                    strides[0], strides[1],
+                    pad[0], pad[1],
+                    dilation[0], dilation[1],
+                    ArrayUtil.fromBoolean(convolutionMode == ConvolutionMode.Same),
+                    0,  //Extra - not used?
+                    0); //0 = NCHW
+        }
 
         DynamicCustomOp op;
         switch (poolingType){
             case MAX:
-                conf.setType(Pooling2D.Pooling2DType.MAX);
-                op = MaxPooling2D.builder()
-                        .arrayInput(input)
-                        .arrayOutput(output)
-                        .config(conf)
-                        .build();
+                op = new MaxPooling2D();
                 break;
             case AVG:
-                conf.setType(Pooling2D.Pooling2DType.AVG);
-                op = AvgPooling2D.builder()
-                        .arrayInput(input)
-                        .arrayOutput(output)
-                        .config(conf)
-                        .build();
+                op = new AvgPooling2D();
                 break;
             case SUM:
             case PNORM:
@@ -138,7 +134,13 @@ public class MKLDNNSubsamplingHelper implements SubsamplingHelper {
                 return null;
         }
 
-        Nd4j.getExecutioner().exec(op);
+        context.getInputArrays().clear();
+        context.getOutputArrays().clear();
+
+        context.setInputArray(0, input);
+        context.setOutputArray(0, output);
+
+        Nd4j.exec(op, context);
         return output;
     }
 

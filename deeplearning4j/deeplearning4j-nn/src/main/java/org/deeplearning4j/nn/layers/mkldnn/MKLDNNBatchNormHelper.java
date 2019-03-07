@@ -22,11 +22,13 @@ import org.deeplearning4j.nn.workspace.ArrayType;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.OpContext;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.BatchNorm;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.BatchNormDerivative;
 import org.nd4j.linalg.api.ops.impl.summarystats.Variance;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.linalg.util.ArrayUtil;
 
 import java.util.Collections;
 import java.util.Map;
@@ -40,6 +42,7 @@ public class MKLDNNBatchNormHelper implements BatchNormalizationHelper {
     private static final int[] RANK2_DIMS = {0};
     private static final int[] RANK4_DIMS = {0,2,3};
 
+    protected OpContext context;
     private INDArray meanCache;
     private INDArray varCache;
 
@@ -78,6 +81,15 @@ public class MKLDNNBatchNormHelper implements BatchNormalizationHelper {
     public INDArray preOutput(INDArray x, boolean training, int[] shape, INDArray gamma, INDArray beta, INDArray mean, INDArray var,
                               double decay, double eps, LayerWorkspaceMgr workspaceMgr) {
 
+        if(context == null){
+            context = Nd4j.getExecutioner().buildContext();
+            context.setIArguments(
+                    ArrayUtil.fromBoolean(gamma != null),
+                    ArrayUtil.fromBoolean(beta != null),
+                    1);   //Axis
+            context.setTArguments(eps);
+        }
+
         //Mean and variance: args here are *global*. Depending on train/test mode we might need to use batch mean/var
         INDArray m, v;
         if(training){
@@ -98,18 +110,21 @@ public class MKLDNNBatchNormHelper implements BatchNormalizationHelper {
         }
 
         //Note: batchnorm op expects rank 1 inputs for mean/var etc, not rank 2 shape [1,x]
-        INDArray[] input = gamma == null ? new INDArray[]{x, m, v} : new INDArray[]{x, m, v, gamma.reshape(gamma.length()), beta.reshape(beta.length())};
-        INDArray out = workspaceMgr.createUninitialized(ArrayType.ACTIVATIONS, x.dataType(), x.shape());
+        context.getInputArrays().clear();
+        context.getOutputArrays().clear();
+        context.setInputArray(0, x);
+        context.setInputArray(1, m);
+        context.setInputArray(2, v);
+        if(gamma != null && beta != null) {
+            context.setInputArray(3, gamma.rank() == 2 ? gamma.reshape(gamma.length()) : gamma);
+            context.setInputArray(4, beta.rank() == 2 ? beta.reshape(beta.length()) : beta);
+        }
 
-        BatchNorm bn = BatchNorm.builder()
-                .applyBeta(beta != null)
-                .applyGamma(gamma != null)
-                .axis(new int[]{1})     //4d: is channels: NCHW; 2d: is nIn - axis 1 in both cases
-                .epsilon(eps)
-                .inputArrays(input)
-                .outputArrays(new INDArray[]{out})
-                .build();
-        Nd4j.exec(bn);
+        INDArray out = workspaceMgr.createUninitialized(ArrayType.ACTIVATIONS, x.dataType(), x.shape());
+        context.setOutputArray(0, out);
+
+        BatchNorm bn = new BatchNorm();
+        Nd4j.exec(bn, context);
         return out;
     }
 
