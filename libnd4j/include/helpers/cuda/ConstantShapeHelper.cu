@@ -65,7 +65,7 @@ namespace nd4j {
 
                     _mutex.unlock();
 
-                    return buffer;
+                    return _cache[deviceId][descriptor1];
                 }
                 case 1: {
                     auto hPtr = ShapeBuilders::createVectorShapeInfo(descriptor.dataType(), descriptor.shape()[0]);
@@ -88,7 +88,7 @@ namespace nd4j {
 
                     _mutex.unlock();
 
-                    return buffer;
+                    return _cache[deviceId][descriptor1];
                 }
             }
         } else {
