@@ -73,7 +73,7 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
     public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon, LayerWorkspaceMgr workspaceMgr) {
         assertInputSet(true);
         //If this layer is layer L, then epsilon is (w^(L+1)*(d^(L+1))^T) (or equivalent)
-        Pair<INDArray, INDArray> zAndPreNorm = preOutputWithPreNorm(true, workspaceMgr);
+        Pair<INDArray, INDArray> zAndPreNorm = preOutputWithPreNorm(true, true, workspaceMgr);
         INDArray z = zAndPreNorm.getFirst(); //Note: using preOutput(INDArray) can't be used as this does a setInput(input) and resets the 'appliedDropout' flag
         INDArray preNorm = zAndPreNorm.getSecond();
         INDArray delta = layerConf().getActivationFn().backprop(z, epsilon).getFirst(); //TODO handle activation function params
@@ -94,7 +94,7 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
 
         INDArray epsilonNext = workspaceMgr.createUninitialized(ArrayType.ACTIVATION_GRAD, new long[]{W.size(0), delta.size(0)}, 'f');
         if(hasLayerNorm()) {
-            INDArray g = getParamWithNoise(DefaultParamInitializer.GAIN_KEY, true, workspaceMgr);
+            INDArray g = getParam(DefaultParamInitializer.GAIN_KEY);
 
             INDArray dldg = gradientViews.get(DefaultParamInitializer.GAIN_KEY);
             Nd4j.getExecutioner().exec(new LayerNormBp(preNorm, g, delta, delta, dldg, 1));
@@ -290,15 +290,15 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
     }
 
     protected INDArray preOutput(boolean training, LayerWorkspaceMgr workspaceMgr) {
-        return preOutputWithPreNorm(training, workspaceMgr).getFirst();
+        return preOutputWithPreNorm(training, false, workspaceMgr).getFirst();
     }
 
-    protected Pair<INDArray, INDArray> preOutputWithPreNorm(boolean training, LayerWorkspaceMgr workspaceMgr) {
-        assertInputSet(false);
+    protected Pair<INDArray, INDArray> preOutputWithPreNorm(boolean training, boolean forBackprop, LayerWorkspaceMgr workspaceMgr) {
+        assertInputSet(forBackprop);
         applyDropOutIfNecessary(training, workspaceMgr);
         INDArray W = getParamWithNoise(DefaultParamInitializer.WEIGHT_KEY, training, workspaceMgr);
         INDArray b = getParamWithNoise(DefaultParamInitializer.BIAS_KEY, training, workspaceMgr);
-        INDArray g = getParamWithNoise(DefaultParamInitializer.GAIN_KEY, training, workspaceMgr);
+        INDArray g = (hasLayerNorm() ? getParam(DefaultParamInitializer.GAIN_KEY) : null);
 
         //Input validation:
         if (input.rank() != 2 || input.columns() != W.rows()) {
@@ -319,7 +319,7 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
 
         INDArray preNorm = ret;
         if(hasLayerNorm()){
-            preNorm = ret.dup();
+            preNorm = (forBackprop ? ret.dup(ret.ordering()) : ret);
             Nd4j.getExecutioner().exec(new LayerNorm(preNorm, g, ret, 1));
         }
 
