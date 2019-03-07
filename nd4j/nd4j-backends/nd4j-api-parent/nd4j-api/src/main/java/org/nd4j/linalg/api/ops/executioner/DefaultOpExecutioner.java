@@ -331,7 +331,6 @@ public class DefaultOpExecutioner implements OpExecutioner {
         return workspaces;
     }
 
-    @Deprecated
     public long profilingHookInLegacy(CustomOp op) {
         switch (profilingMode) {
             case ALL:
@@ -353,7 +352,6 @@ public class DefaultOpExecutioner implements OpExecutioner {
         return System.nanoTime();
     }
 
-    @Deprecated
     public void profilingHookOutLegacy(Op op, long timeStart) {
         switch (profilingMode) {
             case ALL:
@@ -381,15 +379,38 @@ public class DefaultOpExecutioner implements OpExecutioner {
                 break;
         }
 
-
         if (Nd4j.getExecutioner().isVerbose()) {
-            if (OpProfiler.getInstance().getConfig().isStackTrace()) {
-                if (op.z() != null) OpProfiler.getInstance().processStackCall(op, timeStart);
+            if (op.z() != null)
                 log.info("Op name: {}; Z shapeInfo: {}; Z values: {}", op.opName(), op.z().shapeInfoJava(), firstX(op.z(), 10));
-            }
         }
-        if (OpProfiler.getInstance().getConfig().isCheckElapsedTime()) {
-            OpProfiler.getInstance().timeOpCall(op, timeStart);
+    }
+
+
+    public void profilingHookOutLegacy(CustomOp op, long timeStart) {
+        switch (profilingMode) {
+            case ALL:
+                OpProfiler.getInstance().processStackCall(op, timeStart);
+                OpProfiler.getInstance().timeOpCall(op, timeStart);
+                break;
+            case METHODS:
+                OpProfiler.getInstance().processStackCall(op, timeStart);
+                break;
+            case OPERATIONS:
+                OpProfiler.getInstance().timeOpCall(op, timeStart);
+                break;
+            case NAN_PANIC:
+                OpExecutionerUtil.checkForNaN(op);
+                break;
+            case INF_PANIC:
+                OpExecutionerUtil.checkForInf(op);
+                break;
+            case ANY_PANIC:
+                OpExecutionerUtil.checkForNaN(op);
+                OpExecutionerUtil.checkForInf(op);
+                break;
+            case DISABLED:
+            default:
+                break;
         }
     }
 
@@ -426,6 +447,22 @@ public class DefaultOpExecutioner implements OpExecutioner {
         if (Nd4j.getExecutioner().isVerbose()) {
             if (op.z() != null)
                 log.info("Op name: {}; Z shapeInfo: {}; Z values: {}", op.opName(), op.z().shapeInfoJava(), firstX(op.z(), 10));
+        }
+    }
+
+    public void profilingHookOut(CustomOp op, long timeStart) {
+
+        if (OpProfiler.getInstance().getConfig().isStackTrace()) {
+            OpProfiler.getInstance().processStackCall(op, timeStart);
+        }
+        if (OpProfiler.getInstance().getConfig().isCheckElapsedTime()) {
+            OpProfiler.getInstance().timeOpCall(op, timeStart);
+        }
+        if (OpProfiler.getInstance().getConfig().isCheckForNAN()) {
+            OpExecutionerUtil.checkForNaN(op);
+        }
+        if (OpProfiler.getInstance().getConfig().isCheckForINF()) {
+            OpExecutionerUtil.checkForInf(op);
         }
     }
 
