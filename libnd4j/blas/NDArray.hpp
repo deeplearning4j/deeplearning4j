@@ -102,7 +102,7 @@ std::pair<bool, bool> NDArray::isShapeOwner() {
 ////////////////////////////////////////////////////////////////////////
 // creates new NDArray using shape information from "shapeInfo" array, set all elements in new array to be zeros, set dtype as array type
 NDArray::NDArray(Nd4jLong* shapeInfo, const bool copyStrides, nd4j::graph::LaunchContext* context, const bool isShapeAlloc): 
-                NDArray(shapeInfo, ArrayOptions::dataType(shapeInfo), copyStrides, context, isShapeAlloc) {    
+                NDArray(shapeInfo, ArrayOptions::dataType(shapeInfo), copyStrides, context) {
 }   
 
 ////////////////////////////////////////////////////////////////////////

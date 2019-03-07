@@ -44,7 +44,7 @@ namespace nd4j {
 
         static ConstantShapeHelper* getInstance();
 
-        DataBuffer& bufferForShapeInfo(ShapeDescriptor &descriptor);
+        DataBuffer& bufferForShapeInfo(const ShapeDescriptor &descriptor);
         DataBuffer& bufferForShapeInfo(const Nd4jLong *shapeInfo);
 
         bool checkBufferExistanceForShapeInfo(ShapeDescriptor &descriptor);

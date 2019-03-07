@@ -110,29 +110,21 @@ void NDArray::lazyAllocateBuffer() const {
 // scalar constructor
 NDArray::NDArray(nd4j::DataType dtype, nd4j::graph::LaunchContext* context) {
 
-    nd4j_printf("Step A%i\n", 0);
     auto shapeInfo = ShapeBuilders::createScalarShapeInfo(dtype, context->getWorkspace());
-    nd4j_printf("Step A%i\n", 1);
-    auto buffer = ConstantShapeHelper::getInstance()->bufferForShapeInfo(shapeInfo);
-    nd4j_printf("Step A%i\n", 2);
-    setShapeInfo(reinterpret_cast<Nd4jLong *>(buffer.primary()));
-    nd4j_printf("Step A%i\n", 3);
+    setShapeInfo(shapeInfo);
 
     ALLOCATE_SPECIAL(_bufferD, context->getWorkspace(), sizeOfT(), int8_t);
     _isBuffDAlloc = true;
-    nd4j_printf("Step A%i\n", 4);
-    cudaMemset(_bufferD, 0, sizeOfT());
-    nd4j_printf("Step A%i\n", 5);
+    cudaMemset(_bufferD, 0, sizeOfT());    
     
     tickWriteDevice();
-        nd4j_printf("Step A%i\n", 6);
+
     RELEASE(shapeInfo, context->getWorkspace());
-        nd4j_printf("Step A%i\n", 7);
 }
 
 ////////////////////////////////////////////////////////////////////////
 // creates new NDArray using shape information from "shapeInfo" array, set all elements in new array to be zeros
-NDArray::NDArray(Nd4jLong* shapeInfo, const nd4j::DataType dtype, const bool copyStrides, nd4j::graph::LaunchContext* context, const bool isShapeAlloc) {
+NDArray::NDArray(Nd4jLong* shapeInfo, const nd4j::DataType dtype, const bool copyStrides, nd4j::graph::LaunchContext* context) {
     
     if (shapeInfo == nullptr)
         throw std::runtime_error("NDArray constructor: can't be initalized without shapeinfo");
@@ -142,16 +134,8 @@ NDArray::NDArray(Nd4jLong* shapeInfo, const nd4j::DataType dtype, const bool cop
 
     _context = context;        
 
-    if(!isShapeAlloc) {
-        auto buffer = ConstantShapeHelper::getInstance()->bufferForShapeInfo(shapeInfo);
-
-        setShapeInfo(reinterpret_cast<Nd4jLong *>(buffer.primary()));
-    }
-    else {
-        setShapeInfo(shapeInfo, dtype);        
-        if(!copyStrides)
-            shape::updateStrides(_shapeInfo, shape::order(shapeInfo));         
-    }
+    auto shapeInfoTemp = ShapeBuilders::copyShapeInfoAndType(shapeInfo, dtype, copyStrides, _context->getWorkspace());
+    setShapeInfo(shapeInfoTemp);
 
     ALLOCATE_SPECIAL(_bufferD, _context->getWorkspace(), _length * sizeOfT(), int8_t);
     cudaMemset(_bufferD, 0, _length * sizeOfT());
@@ -204,12 +188,9 @@ NDArray::NDArray(const char order, const std::vector<Nd4jLong> &shape, nd4j::Dat
     if ((int) shape.size() > MAX_RANK)
         throw std::invalid_argument("Rank of NDArray can't exceed 32");
 
-    _context = context;
+    _context = context;    
 
-    ShapeDescriptor descriptor(dtype, order, shape);
-    auto buffer = ConstantShapeHelper::getInstance()->bufferForShapeInfo(descriptor);
-
-    setShapeInfo(reinterpret_cast<Nd4jLong *>(buffer.primary()));
+    setShapeInfo(ShapeDescriptor(dtype, order, shape));
 
     ALLOCATE_SPECIAL(_bufferD, _context->getWorkspace(), _length * sizeOfT(), int8_t);
     cudaMemset(_bufferD, '\0', _length * sizeOfT()); // zero all memory
@@ -2327,6 +2308,22 @@ void NDArray::setShapeInfo(const Nd4jLong *shapeInfo, const nd4j::DataType dtype
         _dataType = nd4j::DataType::INHERIT;    
         _shapeInfoD = _shapeInfo = nullptr;
     }
+}
+
+//////////////////////////////////////////////////////////////////////////
+void NDArray::setShapeInfo(const ShapeDescriptor& descriptor) {
+
+    auto shapeBuffer = ConstantShapeHelper::getInstance()->bufferForShapeInfo(descriptor);
+
+    _shapeInfo  = reinterpret_cast<Nd4jLong *>(shapeBuffer.primary());
+    _shapeInfoD = reinterpret_cast<Nd4jLong *>(shapeBuffer.special());
+
+    if(descriptor.dataType() == ArrayType::EMPTY)
+        _length = 0;
+    else
+        _length = shape::length(_shapeInfo);
+        
+    _dataType = descriptor.dataType();
 }
 
 ////////////////////////////////////////////////////////////////////////

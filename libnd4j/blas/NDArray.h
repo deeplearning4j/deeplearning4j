@@ -36,6 +36,7 @@
 #include <ops/BroadcastBoolOpsTuple.h>
 #include <array/ExtraArguments.h>
 #include <Status.h>
+#include <ShapeDescriptor.h>
 
 
 namespace nd4j {
@@ -201,7 +202,7 @@ namespace nd4j {
         *  constructor creates new NDArray using shape information from "shapeInfo", set all elements in new array to be zeros, if copyStrides is true then use stride values from "shapeInfo", else calculate strides independently
         *  set dtype as array type
         */
-        NDArray(Nd4jLong* shapeInfo, const nd4j::DataType dtype, const bool copyStrides = false, nd4j::graph::LaunchContext* context = graph::LaunchContext::defaultContext(), const bool isShapeAlloc = false);
+        NDArray(Nd4jLong* shapeInfo, const nd4j::DataType dtype, const bool copyStrides = false, nd4j::graph::LaunchContext* context = graph::LaunchContext::defaultContext());
 
         /**
         *  this constructor creates new array using shape information contained in vector argument
@@ -1167,6 +1168,7 @@ namespace nd4j {
         */
         void setShapeInfo(const Nd4jLong *shapeInfo);
         void setShapeInfo(const Nd4jLong *shapeInfo, const nd4j::DataType dtype);
+        void setShapeInfo(const ShapeDescriptor& descriptor);
 
         /**
         *  returns absolute offset which corresponds to given sequential index
