@@ -136,14 +136,16 @@ namespace nd4j {
 
             template <typename T>
             void scatter_(graph::LaunchContext *context, pairwise::Ops op, const NDArray& indices, const NDArray& updates, NDArray& output, const bool lock) {
-                int axis = 1;
+                std::vector<int> dims = {0};
+                auto inverted = ShapeUtils::evalDimsToExclude(output.rankOf(), dims);
+
                 shape::TAD tadX;
-                tadX.init(output.getShapeInfo(), &axis, 1);
+                tadX.init(output.getShapeInfo(), inverted.data(), inverted.size());
                 tadX.createTadOnlyShapeInfo();
                 tadX.createOffsets();
 
                 shape::TAD tadY;
-                tadY.init(updates.getShapeInfo(), &axis, 1);
+                tadY.init(updates.getShapeInfo(), inverted.data(), inverted.size());
                 tadY.createTadOnlyShapeInfo();
                 tadY.createOffsets();
 
