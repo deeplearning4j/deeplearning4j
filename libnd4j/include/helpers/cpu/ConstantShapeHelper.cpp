@@ -15,26 +15,15 @@
  ******************************************************************************/
 
 //
-// @author raver119@gmail.com
+//  @author raver119@gmail.com
 //
 
 #include "../ConstantShapeHelper.h"
-#include <exceptions/cuda_exception.h>
-#include <ShapeDescriptor.h>
+#include <logger.h>
 #include <ShapeBuilders.h>
-#include <ConstantHelper.h>
+#include <ShapeUtils.h>
 
 namespace nd4j {
-    static int getCurrentDevice() {
-        int dev = 0;
-        auto res = cudaGetDevice(&dev);
-
-        if (res != 0)
-            throw cuda_exception::build("cudaGetDevice failed", res);
-
-        return dev;
-    }
-
     ConstantShapeHelper::ConstantShapeHelper() {
         _cache.resize(32);
         for (int e = 0; e < 32; e++) {
@@ -62,29 +51,20 @@ namespace nd4j {
             nd4j_printf("Step B%i\n", -5);
             switch (descriptor.rank()) {
                 case 0: {
-                    nd4j_printf("Step B%i\n", 0);
                     auto hPtr = descriptor.isEmpty() ? ShapeBuilders::emptyShapeInfo(descriptor.dataType()) : ShapeBuilders::createScalarShapeInfo(descriptor.dataType());
-                    nd4j_printf("Step B%i\n", 1);
-                    auto dPtr = ConstantHelper::getInstance()->replicatePointer(hPtr, shape::shapeInfoByteLength(hPtr));
-                    nd4j_printf("Step B%i\n", 2);
-                    DataBuffer buffer(hPtr, dPtr);
-                    nd4j_printf("Step B%i\n", 3);
+                    DataBuffer buffer(hPtr, nullptr);
                     ShapeDescriptor descriptor1(descriptor);
-                    nd4j_printf("Step B%i\n", 4);
+
                     _cache[deviceId][descriptor1] = buffer;
 
-                    nd4j_printf("Step B%i\n", 5);
                     _mutex.unlock();
-
-                    nd4j_printf("Step B%i\n", 6);
 
                     return _cache[deviceId][descriptor1];
                 }
                 case 1: {
                     nd4j_printf("Step B%i\n", 10);
                     auto hPtr = ShapeBuilders::createVectorShapeInfo(descriptor.dataType(), descriptor.shape()[0]);
-                    auto dPtr = ConstantHelper::getInstance()->replicatePointer(hPtr, shape::shapeInfoByteLength(hPtr));
-                    DataBuffer buffer(hPtr, dPtr);
+                    DataBuffer buffer(hPtr, nullptr);
                     ShapeDescriptor descriptor1(descriptor);
                     _cache[deviceId][descriptor1] = buffer;
 
@@ -96,8 +76,7 @@ namespace nd4j {
                 default: {
                     nd4j_printf("Step B%i\n", 20);
                     auto hPtr = ShapeBuilders::createShapeInfo(descriptor.dataType(), descriptor.order(), descriptor.shape());
-                    auto dPtr = ConstantHelper::getInstance()->replicatePointer(hPtr, shape::shapeInfoByteLength(hPtr));
-                    DataBuffer buffer(hPtr, dPtr);
+                    DataBuffer buffer(hPtr, nullptr);
                     ShapeDescriptor descriptor1(descriptor);
                     _cache[deviceId][descriptor1] = buffer;
 
@@ -123,7 +102,7 @@ namespace nd4j {
 
     bool ConstantShapeHelper::checkBufferExistanceForShapeInfo(ShapeDescriptor &descriptor) {
         bool result;
-        int deviceId = getCurrentDevice();
+        int deviceId = 0;
         _mutex.lock();
 
         if (_cache[deviceId].count(descriptor) == 0)

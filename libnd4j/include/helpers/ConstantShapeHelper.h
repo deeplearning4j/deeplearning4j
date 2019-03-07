@@ -25,6 +25,7 @@
 #include <pointercast.h>
 #include <map>
 #include <mutex>
+#include <vector>
 #include <ShapeDescriptor.h>
 #include <DataBuffer.h>
 
@@ -35,7 +36,7 @@ namespace nd4j {
         static ConstantShapeHelper *_INSTANCE;
 
         std::mutex _mutex;
-        std::map<int, std::map<ShapeDescriptor, DataBuffer>> _cache;
+        std::vector<std::map<ShapeDescriptor, DataBuffer>> _cache;
 
 
         ConstantShapeHelper();

@@ -62,13 +62,13 @@ bool ShapeDescriptor::operator<(const ShapeDescriptor& other) const {
     if(_order > other._order)
         return false;
     
-    if(_rank == other._rank) {
-        if(_shape > other._shape)
-            return false;
+
+    if(_shape > other._shape)
+        return false;
                 
-        if(_strides > other._strides)
-            return false;
-    }
+    if(_strides > other._strides)
+        return false;
+
 
     return !(*this == other);
 }
