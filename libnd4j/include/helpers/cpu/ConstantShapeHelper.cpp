@@ -42,56 +42,22 @@ namespace nd4j {
     DataBuffer& ConstantShapeHelper::bufferForShapeInfo(ShapeDescriptor &descriptor) {
         int deviceId = 0;
 
-        nd4j_printf("Step B%i\n", -2);
         _mutex.lock();
 
-        nd4j_printf("Step B%i\n", -1);
-
         if (_cache[deviceId].count(descriptor) == 0) {
-            nd4j_printf("Step B%i\n", -5);
-            switch (descriptor.rank()) {
-                case 0: {
-                    auto hPtr = descriptor.isEmpty() ? ShapeBuilders::emptyShapeInfo(descriptor.dataType()) : ShapeBuilders::createScalarShapeInfo(descriptor.dataType());
-                    DataBuffer buffer(hPtr, nullptr);
-                    ShapeDescriptor descriptor1(descriptor);
-
-                    _cache[deviceId][descriptor1] = buffer;
-
-                    _mutex.unlock();
-
-                    return _cache[deviceId][descriptor1];
-                }
-                case 1: {
-                    nd4j_printf("Step B%i\n", 10);
-                    auto hPtr = ShapeBuilders::createVectorShapeInfo(descriptor.dataType(), descriptor.shape()[0]);
-                    DataBuffer buffer(hPtr, nullptr);
-                    ShapeDescriptor descriptor1(descriptor);
-                    _cache[deviceId][descriptor1] = buffer;
-
-                    _mutex.unlock();
-
-                    return _cache[deviceId][descriptor1];
-                }
-                case 2:
-                default: {
-                    nd4j_printf("Step B%i\n", 20);
-                    auto hPtr = ShapeBuilders::createShapeInfo(descriptor.dataType(), descriptor.order(), descriptor.shape());
-                    DataBuffer buffer(hPtr, nullptr);
-                    ShapeDescriptor descriptor1(descriptor);
-                    _cache[deviceId][descriptor1] = buffer;
-
-                    _mutex.unlock();
-
-                    return _cache[deviceId][descriptor1];
-                }
-            }
-        } else {
-            nd4j_printf("Step B%i\n", 30);
+            auto hPtr = descriptor.toShapeInfo();
+            DataBuffer buffer(hPtr, nullptr);
+            ShapeDescriptor descriptor1(descriptor);
+            _cache[deviceId][descriptor1] = buffer;
+            DataBuffer &r = _cache[deviceId][descriptor1];
             _mutex.unlock();
 
-            nd4j_printf("Step B%i\n", 31);
+            return r;
+        } else {
+            DataBuffer &r = _cache[deviceId].at(descriptor);
+            _mutex.unlock();
 
-            return _cache[deviceId].at(descriptor);
+            return r;
         }
     }
 
