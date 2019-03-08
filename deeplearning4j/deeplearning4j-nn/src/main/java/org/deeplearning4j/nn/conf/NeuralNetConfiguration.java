@@ -471,6 +471,7 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
         protected IActivation activationFn = new ActivationSigmoid();
         protected IWeightInit weightInitFn = new WeightInitXavier();
         protected double biasInit = 0.0;
+        protected double gainInit = 1.0;
         protected List<Regularization> regularization = new ArrayList<>();
         protected List<Regularization> regularizationBias = new ArrayList<>();
         protected IDropout idropOut;
@@ -1253,6 +1254,8 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
                     bLayer.setWeightInitFn(weightInitFn);
                 if (Double.isNaN(bLayer.getBiasInit()))
                     bLayer.setBiasInit(biasInit);
+                if (Double.isNaN(bLayer.getGainInit()))
+                    bLayer.setGainInit(gainInit);
 
                 //Configure weight noise:
                 if(weightNoise != null && ((BaseLayer) layer).getWeightNoise() == null){
