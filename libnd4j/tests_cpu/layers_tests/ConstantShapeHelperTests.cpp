@@ -144,3 +144,15 @@ TEST_F(ConstantShapeHelperTests, basic_test_7) {
 
     delete array;
 }
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(ConstantShapeHelperTests, ShapeDescriptor_1) {
+    
+    Nd4jLong shapeInfo1[] = {4, 2, 5, 5, 2, 25, 5, 1, 50, 8192, 0, 99};
+    Nd4jLong shapeInfo2[] = {4, 2, 5, 5, 2, 50, 10, 2, 1, 8192, 1, 99};
+
+    ShapeDescriptor descr1(shapeInfo1);
+    ShapeDescriptor descr2(shapeInfo2);
+
+    ASSERT_FALSE(descr1 == descr2);
+}
