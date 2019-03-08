@@ -30,6 +30,7 @@ import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
@@ -48,6 +49,7 @@ public class ValidateMKLDNN extends BaseDL4JTest {
     public void validateConvSubsampling() throws Exception {
         //Only run test if using nd4j-native backend
         assumeTrue(Nd4j.getBackend().getClass().getName().toLowerCase().contains("native"));
+        Nd4j.setDefaultDataTypes(DataType.FLOAT, DataType.FLOAT);
         Nd4j.getRandom().setSeed(12345);
 
         int[] inputSize = {-1, 3, 16, 16};
@@ -58,8 +60,8 @@ public class ValidateMKLDNN extends BaseDL4JTest {
                     for (int[] stride : new int[][]{{1, 1}, {2, 2}}) {
 
                         inputSize[0] = minibatch;
-                        INDArray f = Nd4j.rand(Nd4j.defaultFloatingPointType(), inputSize);
-                        INDArray l = TestUtils.randomOneHot(minibatch, 10);
+                        INDArray f = Nd4j.rand(DataType.FLOAT, inputSize);
+                        INDArray l = TestUtils.randomOneHot(minibatch, 10).castTo(DataType.FLOAT);
 
                         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                                 .updater(new Adam(0.01))
@@ -116,6 +118,7 @@ public class ValidateMKLDNN extends BaseDL4JTest {
     public void validateBatchNorm() {
         //Only run test if using nd4j-native backend
         assumeTrue(Nd4j.getBackend().getClass().getName().toLowerCase().contains("native"));
+        Nd4j.setDefaultDataTypes(DataType.FLOAT, DataType.FLOAT);
         Nd4j.getRandom().setSeed(12345);
 
         int[] inputSize = {-1, 3, 16, 16};
@@ -177,6 +180,7 @@ public class ValidateMKLDNN extends BaseDL4JTest {
 
         //Only run test if using nd4j-native backend
         assumeTrue(Nd4j.getBackend().getClass().getName().toLowerCase().contains("native"));
+        Nd4j.setDefaultDataTypes(DataType.FLOAT, DataType.FLOAT);
         Nd4j.getRandom().setSeed(12345);
 
         int[] inputSize = {-1, 3, 16, 16};

@@ -35,6 +35,7 @@ import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv2DConfig;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.util.ArrayUtil;
+import org.nd4j.nativeblas.Nd4jCpu;
 
 import java.util.Collections;
 import java.util.Map;
@@ -47,6 +48,7 @@ import java.util.Map;
 public class MKLDNNConvHelper implements ConvolutionHelper {
 
     protected OpContext context;
+    protected OpContext contextBwd;
 
     @Override
     public boolean checkSupported() {
@@ -67,9 +69,9 @@ public class MKLDNNConvHelper implements ConvolutionHelper {
                     kernel, strides, dilation);
         }
 
-        if(context == null){
-            context = Nd4j.getExecutioner().buildContext();
-            context.setIArguments(kernel[0], kernel[1],
+        if(contextBwd == null){
+            contextBwd = Nd4j.getExecutioner().buildContext();
+            contextBwd.setIArguments(kernel[0], kernel[1],
                     strides[0], strides[1],
                     pad[0], pad[1],
                     dilation[0], dilation[1],
@@ -82,17 +84,19 @@ public class MKLDNNConvHelper implements ConvolutionHelper {
 
         INDArray[] inputsArr = biasGradView == null ? new INDArray[]{input, weightsPermute, delta} : new INDArray[]{input, weightsPermute, bias, delta};
         INDArray[] outputArr = biasGradView == null ? new INDArray[]{gradAtInput, weightGradViewPermute} : new INDArray[]{gradAtInput, weightGradViewPermute, biasGradView};
-        context.getInputArrays().clear();
-        context.getOutputArrays().clear();
+        contextBwd.getInputArrays().clear();
+        contextBwd.getOutputArrays().clear();
         for( int i=0; i<inputsArr.length; i++ ){
-            context.setInputArray(i, inputsArr[i]);
+            contextBwd.setInputArray(i, inputsArr[i]);
         }
         for( int i=0; i<outputArr.length; i++ ){
-            context.setOutputArray(i, outputArr[i]);
+            contextBwd.setOutputArray(i, outputArr[i]);
         }
 
         Conv2DDerivative op = new Conv2DDerivative();
-        Nd4j.exec(op, context);
+        Nd4j.exec(op, contextBwd);
+        contextBwd.getInputArrays().clear();
+        contextBwd.getOutputArrays().clear();
 
         Gradient g = new DefaultGradient();
         if(biasGradView != null) {
@@ -116,7 +120,7 @@ public class MKLDNNConvHelper implements ConvolutionHelper {
             outSize = ConvolutionUtils.getOutputSize(input, kernel, strides, pad, convolutionMode, dilation); //Also performs validation
         }
 
-        if(context == null){
+        if(context == null || true){
             context = Nd4j.getExecutioner().buildContext();
             context.setIArguments(kernel[0], kernel[1],
                     strides[0], strides[1],
@@ -142,6 +146,8 @@ public class MKLDNNConvHelper implements ConvolutionHelper {
         context.setOutputArray(0, out);
         Conv2D op = new Conv2D();
         Nd4j.exec(op, context);
+        context.getInputArrays().clear();
+        context.getOutputArrays().clear();
 
         return out;
     }
