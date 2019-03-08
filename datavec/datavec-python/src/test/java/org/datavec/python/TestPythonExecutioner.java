@@ -118,7 +118,7 @@ public class TestPythonExecutioner {
         //pyExec.safeExec(code, pyInputs, pyOutputs);
 
 
-        INDArray z = pyOutputs.getNDArrayValue("z").getND4JArray();
+        INDArray z = pyOutputs.getNDArrayValue("z").getNd4jArray();
 
         assertEquals(6.0, z.sum().getDouble(0), 1e-5);
 
@@ -144,7 +144,7 @@ public class TestPythonExecutioner {
 
         //pyExec.safeExec(code, pyInputs, pyOutputs);
 
-        INDArray z = pyOutputs.getNDArrayValue("z").getND4JArray();
+        INDArray z = pyOutputs.getNDArrayValue("z").getNd4jArray();
 
         assertEquals(6.0, z.sum().getDouble(0), 1e-5);
         pyExec.free();
@@ -169,7 +169,7 @@ public class TestPythonExecutioner {
 
         //pyExec.safeExec(code, pyInputs, pyOutputs);
 
-        INDArray z = pyOutputs.getNDArrayValue("z").getND4JArray();
+        INDArray z = pyOutputs.getNDArrayValue("z").getNd4jArray();
 
         assertEquals(6.0, z.sum().getDouble(0), 1e-5);
         pyExec.free();
@@ -195,7 +195,7 @@ public class TestPythonExecutioner {
 
         //pyExec.safeExec(code, pyInputs, pyOutputs);
 
-        INDArray z = pyOutputs.getNDArrayValue("z").getND4JArray();
+        INDArray z = pyOutputs.getNDArrayValue("z").getNd4jArray();
 
         assertEquals(6.0, z.sum().getDouble(0), 1e-5);
         pyExec.free();
@@ -220,7 +220,7 @@ public class TestPythonExecutioner {
 
         //pyExec.safeExec(code, pyInputs, pyOutputs);
 
-        INDArray z = pyOutputs.getNDArrayValue("z").getND4JArray();
+        INDArray z = pyOutputs.getNDArrayValue("z").getNd4jArray();
 
         assertEquals(6.0, z.sum().getDouble(0), 1e-5);
         pyExec.free();

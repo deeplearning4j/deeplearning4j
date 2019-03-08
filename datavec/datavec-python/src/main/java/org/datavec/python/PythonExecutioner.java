@@ -223,24 +223,24 @@ public class PythonExecutioner {
                 shapeStr += ")";
                 String code;
                 String ctype;
-                if (npArr.getDType() == DataType.FLOAT){
+                if (npArr.getDtype() == DataType.FLOAT){
 
                     ctype = "ctypes.c_float";
                 }
-                else if (npArr.getDType() == DataType.DOUBLE){
+                else if (npArr.getDtype() == DataType.DOUBLE){
                     ctype = "ctypes.c_double";
                 }
-                else if (npArr.getDType() == DataType.SHORT){
+                else if (npArr.getDtype() == DataType.SHORT){
                     ctype = "ctypes.c_int16";
                 }
-                else if (npArr.getDType() == DataType.INT){
+                else if (npArr.getDtype() == DataType.INT){
                     ctype = "ctypes.c_int32";
                 }
-                else if (npArr.getDType() == DataType.LONG){
+                else if (npArr.getDtype() == DataType.LONG){
                     ctype = "ctypes.c_int64";
                 }
                 else{
-                    throw new Exception("Unsupported data type: " + npArr.getDType().toString() + ".");
+                    throw new Exception("Unsupported data type: " + npArr.getDtype().toString() + ".");
                 }
 
                 code = "__arr_converter(" + String.valueOf(npArr.getAddress()) + "," + shapeStr + "," + ctype + ")";

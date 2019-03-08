@@ -1,5 +1,6 @@
 package org.datavec.python;
 
+import lombok.Getter;
 import org.apache.commons.lang3.ArrayUtils;
 import org.bytedeco.javacpp.Pointer;
 import org.json.simple.JSONArray;
@@ -18,7 +19,7 @@ import org.nd4j.linalg.api.buffer.DataType;
 
 import java.util.ArrayList;
 
-
+@Getter
 public class NumpyArray {
 
     private static NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
@@ -57,26 +58,6 @@ public class NumpyArray {
             nd4jArray = nd4jArray.dup();
             this.address = nd4jArray.data().address();
         }
-    }
-
-    public long getAddress() {
-        return address;
-    }
-
-    public long[] getShape() {
-        return shape;
-    }
-
-    public long[] getStrides() {
-        return strides;
-    }
-
-    public DataType getDType() {
-        return dtype;
-    }
-
-    public INDArray getND4JArray() {
-        return nd4jArray;
     }
 
     private void setND4JArray(){

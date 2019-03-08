@@ -170,7 +170,7 @@ public class PythonTransform implements Transform{
                     out.add((Writable) new Text(pyOuts.getStrValue(name)));
                     break;
                 case NDARRAY:
-                    out.add((Writable) new NDArrayWritable(pyOuts.getNDArrayValue(name).getND4JArray()));
+                    out.add((Writable) new NDArrayWritable(pyOuts.getNDArrayValue(name).getNd4jArray()));
                     break;
             }
         }
