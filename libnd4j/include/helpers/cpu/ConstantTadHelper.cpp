@@ -34,6 +34,14 @@ namespace nd4j {
         return _INSTANCE;
     }
 
+    TadPack& ConstantTadHelper::tadForDimensions(Nd4jLong *originalShape, int dimensions) {
+        return tadForDimensions(originalShape, &dimensions, 1);
+    }
+
+    TadPack& ConstantTadHelper::tadForDimensions(Nd4jLong *originalShape, const std::vector<int> &dimensions) {
+        return tadForDimensions(originalShape, const_cast<int *>(dimensions.data()), dimensions.size());
+    }
+
     TadPack& ConstantTadHelper::tadForDimensions(Nd4jLong *originalShape, int* dimensions, int dimLength) {
         TadDescriptor tadDescriptor(originalShape, dimensions, dimLength);
         return tadForDimensions(tadDescriptor);
