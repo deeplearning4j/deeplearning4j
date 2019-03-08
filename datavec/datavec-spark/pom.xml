@@ -302,11 +302,6 @@
             <scope>test</scope>
         </dependency>
 
-        <dependency>
-            <groupId>org.datavec</groupId>
-            <artifactId>datavec-python</artifactId>
-            <version>1.0.0-SNAPSHOT</version>
-        </dependency>
     </dependencies>
 
 
