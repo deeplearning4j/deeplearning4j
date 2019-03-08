@@ -9,6 +9,7 @@
 #include <NDArray.h>
 #include <helpers/ShapeUtils.h>
 #include <PointersManager.h>
+#include <helpers/ConstantTadHelper.h>
 
 namespace nd4j {
     class ND4J_EXPORT OpBenchmark {

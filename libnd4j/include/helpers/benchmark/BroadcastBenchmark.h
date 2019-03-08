@@ -69,26 +69,17 @@ BroadcastBenchmark(broadcast::Ops op, std::string name, std::initializer_list<in
 void executeOnce() override {
     PointersManager manager(LaunchContext::defaultContext(), "BroadcastBM");
 
-    auto axis = reinterpret_cast<int *>(manager.replicatePointer(_axis.data(), _axis.size()));
+    auto packX = ConstantTadHelper::getInstance()->tadForDimensions(_x->shapeInfo(), _axis);
+    auto packZ = ConstantTadHelper::getInstance()->tadForDimensions(_z->shapeInfo(), _axis);
 
-    shape::TAD tadX;
-    tadX.init(_x->shapeInfo(), _axis.data(), _axis.size());
-    tadX.createTadOnlyShapeInfo();
-    tadX.createOffsets();
+    auto tadOnlyShapeInfo = Environment::getInstance()->isCPU() ? packX.primaryShapeInfo() : packX.specialShapeInfo();
+    auto tadOffsets = Environment::getInstance()->isCPU() ? packX.primaryOffsets() : packX.specialOffsets();
 
-    shape::TAD tadZ;
-    tadZ.init(_z->shapeInfo(), _axis.data(), _axis.size());
-    tadZ.createTadOnlyShapeInfo();
-    tadZ.createOffsets();
+    auto tadOnlyShapeInfoZ = Environment::getInstance()->isCPU() ? packZ.primaryShapeInfo() : packZ.specialShapeInfo();
+    auto tadOffsetsZ = Environment::getInstance()->isCPU() ? packZ.primaryOffsets() : packZ.specialOffsets();
 
-    auto tadShapeInfoX = reinterpret_cast<Nd4jLong *>(manager.replicatePointer(tadX.tadOnlyShapeInfo, shape::shapeInfoByteLength(tadX.tadOnlyShapeInfo)));
-    auto tadShapeInfoZ = reinterpret_cast<Nd4jLong *>(manager.replicatePointer(tadZ.tadOnlyShapeInfo, shape::shapeInfoByteLength(tadZ.tadOnlyShapeInfo)));
-
-    auto tadOffsetsX = reinterpret_cast<Nd4jLong *>(manager.replicatePointer(tadX.tadOffsets, tadX.numTads * sizeof(Nd4jLong)));
-    auto tadOffsetsZ = reinterpret_cast<Nd4jLong *>(manager.replicatePointer(tadZ.tadOffsets, tadZ.numTads * sizeof(Nd4jLong)));
-
-    NativeOpExecutioner::execBroadcast(LaunchContext::defaultContext(), _opNum, _x->buffer(), _x->shapeInfo(), _x->specialBuffer(), _x->specialShapeInfo(), _y->buffer(), _y->shapeInfo(), _y->specialBuffer(), _y->specialShapeInfo(), _z->buffer(), _z->shapeInfo(), _z->specialBuffer(), _z->specialShapeInfo(), axis, _axis.size(),
-            /*Nd4jLong *tadOnlyShapeInfo*/ tadShapeInfoX, /*Nd4jLong *tadOffsets*/ tadOffsetsX, /*Nd4jLong *tadOnlyShapeInfoZ*/ tadShapeInfoZ, /*Nd4jLong *tadOffsetsZ*/ tadOffsetsZ);
+    NativeOpExecutioner::execBroadcast(LaunchContext::defaultContext(), _opNum, _x->buffer(), _x->shapeInfo(), _x->specialBuffer(), _x->specialShapeInfo(), _y->buffer(), _y->shapeInfo(), _y->specialBuffer(), _y->specialShapeInfo(), _z->buffer(), _z->shapeInfo(), _z->specialBuffer(), _z->specialShapeInfo(), nullptr, _axis.size(),
+            /*Nd4jLong **/ tadOnlyShapeInfo, /*Nd4jLong */ tadOffsets, /*Nd4jLong */ tadOnlyShapeInfoZ, /*Nd4jLong */ tadOffsetsZ);
 
     manager.synchronize();
 }

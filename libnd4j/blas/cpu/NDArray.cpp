@@ -1729,7 +1729,7 @@ NDArray::NDArray(const char order, const std::vector<Nd4jLong> &shape, nd4j::Dat
         auto packY = ConstantTadHelper::getInstance()->tadForDimensions(other->_shapeInfo, copy);
 
         // check tads shapes
-        if(!shape::equalsSoft(tadX.tadOnlyShapeInfo, tadY.tadOnlyShapeInfo))
+        if(!shape::equalsSoft(packX.primaryShapeInfo(), packY.primaryShapeInfo()))
             throw std::runtime_error("NDArray::applyAllReduce3 method: the shapes of array tads are different !");
 
         // set newShape for output array

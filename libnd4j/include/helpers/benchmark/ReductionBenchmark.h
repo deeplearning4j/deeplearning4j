@@ -77,20 +77,15 @@ namespace nd4j {
                 else
                     NativeOpExecutioner::execReduceSameScalar(LaunchContext::defaultContext(), _opNum, _x->buffer(), _x->shapeInfo(), _x->specialBuffer(), _x->specialShapeInfo(), nullptr, _z->buffer(), _z->shapeInfo(), _z->specialBuffer(), _z->specialShapeInfo());
             else {
-                auto dims = reinterpret_cast<int *>(manager.replicatePointer(_axis.data(), _axis.size() * sizeof(int)));
+                auto pack = ConstantTadHelper::getInstance()->tadForDimensions(_x->shapeInfo(), _axis);
 
-                shape::TAD tad;
-                tad.init(_x->shapeInfo(), _axis.data(), _axis.size());
-                tad.createTadOnlyShapeInfo();
-                tad.createOffsets();
-
-                auto tadOnlyShapeInfo = reinterpret_cast<Nd4jLong *>(manager.replicatePointer(tad.tadOnlyShapeInfo, shape::shapeInfoByteLength(tad.tadOnlyShapeInfo)));
-                auto tadOffsets = reinterpret_cast<Nd4jLong *>(manager.replicatePointer(tad.tadOffsets, tad.numTads * sizeof(Nd4jLong)));
+                auto tadOnlyShapeInfo = Environment::getInstance()->isCPU() ? pack.primaryShapeInfo() : pack.specialShapeInfo();
+                auto tadOffsets = Environment::getInstance()->isCPU() ? pack.primaryOffsets() : pack.specialOffsets();
 
                 if (_opType == 0)
-                    NativeOpExecutioner::execReduceFloat(LaunchContext::defaultContext(), _opNum, _x->buffer(), _x->shapeInfo(), _x->specialBuffer(), _x->specialShapeInfo(), nullptr, _z->buffer(), _z->shapeInfo(), _z->specialBuffer(), _z->specialShapeInfo(), dims, _axis.size(), tadOnlyShapeInfo, tadOffsets);
+                    NativeOpExecutioner::execReduceFloat(LaunchContext::defaultContext(), _opNum, _x->buffer(), _x->shapeInfo(), _x->specialBuffer(), _x->specialShapeInfo(), nullptr, _z->buffer(), _z->shapeInfo(), _z->specialBuffer(), _z->specialShapeInfo(), nullptr, _axis.size(), tadOnlyShapeInfo, tadOffsets);
                 else
-                    NativeOpExecutioner::execReduceSame(LaunchContext::defaultContext(), _opNum, _x->buffer(), _x->shapeInfo(), _x->specialBuffer(), _x->specialShapeInfo(), nullptr, _z->buffer(), _z->shapeInfo(), _z->specialBuffer(), _z->specialShapeInfo(), dims, _axis.size(), tadOnlyShapeInfo, tadOffsets);
+                    NativeOpExecutioner::execReduceSame(LaunchContext::defaultContext(), _opNum, _x->buffer(), _x->shapeInfo(), _x->specialBuffer(), _x->specialShapeInfo(), nullptr, _z->buffer(), _z->shapeInfo(), _z->specialBuffer(), _z->specialShapeInfo(), nullptr, _axis.size(), tadOnlyShapeInfo, tadOffsets);
             }
 
             manager.synchronize();
