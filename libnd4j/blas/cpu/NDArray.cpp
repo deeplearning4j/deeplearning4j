@@ -1841,6 +1841,10 @@ NDArray::NDArray(const char order, const std::vector<Nd4jLong> &shape, nd4j::Dat
         return result;
     }
 
+    void* NDArray::specialBufferWithOffset(Nd4jLong offset) const {
+        return nullptr;
+    }
+
 //////////////////////////////////////////////////////////////////////////
     void NDArray::setShapeInfo(const Nd4jLong *shapeInfo) {
         ShapeDescriptor descriptor(shapeInfo);
