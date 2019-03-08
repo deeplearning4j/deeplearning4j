@@ -135,7 +135,12 @@ public class PythonTransform implements Transform{
 
                     break;
                 case FLOAT:
-                    ret.addFloat(name, ((DoubleWritable)w).get());
+                    if (w instanceof DoubleWritable){
+                        ret.addFloat(name, ((DoubleWritable)w).get());
+                    }
+                    else{
+                        ret.addFloat(name, ((FloatWritable)w).get());
+                    }
                     break;
                 case STR:
                     ret.addStr(name, ((Text)w).toString());
@@ -172,6 +177,11 @@ public class PythonTransform implements Transform{
         return out;
     }
 
+    /**
+     * Code between `#<SETUP>` and `#</SETUP>` tags will be
+     * executed only once, while the rest of the code will be executed
+     * per transaction.
+     */
     private void parseSetupAndExecCode() throws Exception{
         String startTag = "#<SETUP>";
         String endTag = "#</SETUP>";

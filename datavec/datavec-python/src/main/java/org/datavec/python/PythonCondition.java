@@ -19,8 +19,10 @@ public class PythonCondition implements Condition {
     private PythonVariables pyInputs;
     private PythonTransform pythonTransform;
     private String code;
+
+
     public PythonCondition(String pythonCode){
-     code = pythonCode;
+        code = pythonCode;
     }
 
     private PythonVariables schemaToPythonVariables(Schema schema) throws Exception{
@@ -138,9 +140,8 @@ public class PythonCondition implements Condition {
             return ret;
         }
         catch (Exception e){
-            System.out.println(e);
+            throw new RuntimeException(e);
         }
-        return true;
 
     }
 
