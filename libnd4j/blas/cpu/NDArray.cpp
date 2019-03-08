@@ -727,31 +727,21 @@ NDArray::NDArray(const char order, const std::vector<Nd4jLong> &shape, nd4j::Dat
             throw std::runtime_error("Bad shape!");
         }
 
-        int shapeLength = shape::shapeInfoLength(rank);
-        // remember old values
+        Nd4jLong *shapeInfoNew;
+        ALLOCATE(shapeInfoNew, _context->getWorkspace(), shape::shapeInfoLength(rank), Nd4jLong);
 
         // we can do this only if there was no permute applied, or there are no weird strides
-        if (shape::canReshape(this->rankOf(), this->_shapeInfo, shape.size(), shape.data(), order == 'f')) {
-            Nd4jLong *shapeInfoNew;
-            ALLOCATE(shapeInfoNew, _context->getWorkspace(), shape::shapeInfoLength(rank), Nd4jLong);
-
-            shape::reshapeCF(this->rankOf(), this->_shapeInfo, shape.size(), shape.data(), order == 'f', shapeInfoNew);
-
-            ShapeDescriptor descriptor(shapeInfoNew);
-            auto constantBuffer = ConstantShapeHelper::getInstance()->bufferForShapeInfo(descriptor);
-
-            setShapeInfo(reinterpret_cast<Nd4jLong *>(constantBuffer.primary()), dataType());
-
-            RELEASE(shapeInfoNew, _context->getWorkspace());
+        if (shape::reshapeCF(this->rankOf(), this->_shapeInfo, shape.size(), shape.data(), order == 'f', shapeInfoNew)) {        
+            setShapeInfo(shapeInfoNew);
         }
         else {
-            ShapeDescriptor descriptor(dataType(), order, shape);
-            auto constantBuffer = ConstantShapeHelper::getInstance()->bufferForShapeInfo(descriptor);
 
-            NDArray temp(reinterpret_cast<Nd4jLong *>(constantBuffer.primary()), true, _context);
+            NDArray temp(order, shape, dataType(), _context);
             this->applyTransform(transform::Copy, &temp, nullptr);
             *this = std::move(temp);
         }
+
+        RELEASE(shapeInfoNew, _context->getWorkspace());
 
         return true;
     }
