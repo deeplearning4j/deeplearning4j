@@ -2259,7 +2259,7 @@ void NDArray::setShapeInfo(const Nd4jLong *shapeInfo) {
         else
             _length = shape::length(shapeInfo);
         
-        _dataType = descriptor.dataType();        
+        _dataType = descriptor.dataType();
     }
     else {
         _dataType = nd4j::DataType::INHERIT;    

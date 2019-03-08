@@ -129,6 +129,7 @@ ShapeDescriptor::ShapeDescriptor(const DataType type, const char order, const st
 }
 
 ShapeDescriptor::ShapeDescriptor(const Nd4jLong *shapeInfo) {
+    
     _order = shape::order(shapeInfo);
     _ews = shape::elementWiseStride(shapeInfo);
     _rank = shape::rank(shapeInfo);

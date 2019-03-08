@@ -73,10 +73,7 @@ NDArray::NDArray(const NDArray& other) {
 
     _context = other._context;
 
-    ShapeDescriptor descriptor(other._shapeInfo);
-    auto constantBuffer = ConstantShapeHelper::getInstance()->bufferForShapeInfo(descriptor);
-
-    setShapeInfo(reinterpret_cast<Nd4jLong *>(constantBuffer.primary()));
+    setShapeInfo(other._shapeInfo);
     ALLOCATE(_buffer, other._context->getWorkspace(), _length * other.sizeOfT(), int8_t);
 
     triggerAllocationFlag(true, true);
@@ -1805,17 +1802,20 @@ NDArray::NDArray(const char order, const std::vector<Nd4jLong> &shape, nd4j::Dat
 
 //////////////////////////////////////////////////////////////////////////
     void NDArray::setShapeInfo(const Nd4jLong *shapeInfo) {
-        ShapeDescriptor descriptor(shapeInfo);
-        auto constantBuffer = ConstantShapeHelper::getInstance()->bufferForShapeInfo(descriptor);
-        _shapeInfo = reinterpret_cast<Nd4jLong *>(constantBuffer.primary());
-
+        
         if (shapeInfo != nullptr) {
+
+            ShapeDescriptor descriptor(shapeInfo);
+            auto shapeBuffer = ConstantShapeHelper::getInstance()->bufferForShapeInfo(descriptor);
+            
+            _shapeInfo  = reinterpret_cast<Nd4jLong *>(shapeBuffer.primary());            
+
             if(ArrayOptions::arrayType(_shapeInfo) == ArrayType::EMPTY)
                 _length = 0;
             else
                 _length = shape::length(_shapeInfo);
 
-            _dataType = ArrayOptions::dataType(_shapeInfo);
+            _dataType = descriptor.dataType();
         }
         else {
             _dataType = nd4j::DataType::INHERIT;
@@ -1846,13 +1846,9 @@ NDArray::NDArray(const char order, const std::vector<Nd4jLong> &shape, nd4j::Dat
 
 //////////////////////////////////////////////////////////////////////////
     bool NDArray::permutei(const int* dimensions, const int rank) {
-
-        // check if current object is _shapeInfo owner
-        auto shapeInfo = ShapeUtils::evalPermShapeInfo(dimensions, rank, *this, _context->getWorkspace());
-
-        ShapeDescriptor descriptor(shapeInfo);
-        auto constantBuffer = ConstantShapeHelper::getInstance()->bufferForShapeInfo(descriptor);
-        _shapeInfo = reinterpret_cast<Nd4jLong *>(constantBuffer.primary());
+        
+        auto shapeInfo = ShapeUtils::evalPermShapeInfo(dimensions, rank, *this, _context->getWorkspace());        
+        setShapeInfo(shapeInfo);
 
         RELEASE(shapeInfo, _context->getWorkspace());
 
@@ -1861,12 +1857,9 @@ NDArray::NDArray(const char order, const std::vector<Nd4jLong> &shape, nd4j::Dat
 
     //////////////////////////////////////////////////////////////////////////
     bool NDArray::permutei(const Nd4jLong* dimensions, const int rank) {
-        // check if current object is _shapeInfo owner
-        auto shapeInfo = ShapeUtils::evalPermShapeInfo(dimensions, rank, *this, _context->getWorkspace());
 
-        ShapeDescriptor descriptor(shapeInfo);
-        auto constantBuffer = ConstantShapeHelper::getInstance()->bufferForShapeInfo(descriptor);
-        _shapeInfo = reinterpret_cast<Nd4jLong *>(constantBuffer.primary());
+        auto shapeInfo = ShapeUtils::evalPermShapeInfo(dimensions, rank, *this, _context->getWorkspace());
+        setShapeInfo(shapeInfo);
 
         RELEASE(shapeInfo, _context->getWorkspace());
 
