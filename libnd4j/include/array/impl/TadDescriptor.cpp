@@ -22,12 +22,24 @@
 #include "../TadDescriptor.h"
 
 namespace nd4j {
-    TadDescriptor::TadDescriptor(const Nd4jLong *originalShape, const int *dimensions, const int length) {
+    TadDescriptor::TadDescriptor(const TadDescriptor &other) {
+        _originalShape = other._originalShape;
+        _axis = other._axis;
+    }
 
+    TadDescriptor::TadDescriptor(const Nd4jLong *originalShape, const int *dimensions, const int length) {
+        ShapeDescriptor descriptor(originalShape);
+
+        _axis.resize(length);
+        for (int e = 0; e < length; e++)
+            _axis[e] = dimensions[e];
+
+        _originalShape = descriptor;
     }
 
     TadDescriptor::TadDescriptor(const ShapeDescriptor &descriptor, const std::vector<int> &dimensions) {
-
+        _originalShape = descriptor;
+        _axis = dimensions;
     }
 
     bool TadDescriptor::operator==(const TadDescriptor &other) const {
@@ -37,5 +49,13 @@ namespace nd4j {
 
     bool TadDescriptor::operator<(const TadDescriptor &other) const {
         return std::tie(_originalShape, _axis) < std::tie(other._originalShape, other._axis);
+    }
+
+    std::vector<int>& TadDescriptor::axis() {
+        return _axis;
+    }
+
+    ShapeDescriptor& TadDescriptor::originalShape() {
+        return _originalShape;
     }
 }

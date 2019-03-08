@@ -70,6 +70,8 @@ class ND4J_EXPORT ShapeDescriptor {
         
         // less than operator
         bool operator<(const ShapeDescriptor &other) const;
+
+        Nd4jLong* toShapeInfo();
 };
 
 

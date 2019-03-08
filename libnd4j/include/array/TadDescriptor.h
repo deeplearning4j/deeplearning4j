@@ -32,6 +32,7 @@ namespace nd4j {
     public:
         explicit TadDescriptor(const Nd4jLong *originalShape, const int *dimensions, const int length);
         explicit TadDescriptor(const ShapeDescriptor &descriptor, const std::vector<int> &dimensions);
+        explicit TadDescriptor(const TadDescriptor &other);
         ~TadDescriptor() = default;
 
         // we use default copy assignment operator
@@ -45,6 +46,9 @@ namespace nd4j {
 
         // less than operator
         bool operator<(const TadDescriptor &other) const;
+
+        std::vector<int>& axis();
+        ShapeDescriptor& originalShape();
     };
 }
 

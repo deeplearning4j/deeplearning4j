@@ -25,18 +25,30 @@
 #include <dll.h>
 #include <pointercast.h>
 #include <map>
+#include <vector>
 #include <mutex>
-#include <ShapeDescriptor.h>
-#include <DataBuffer.h>
+#include <array/ShapeDescriptor.h>
+#include <array/TadDescriptor.h>
+#include <array/DataBuffer.h>
+#include <array/TadPack.h>
 
 namespace nd4j {
     class ND4J_EXPORT ConstantTadHelper {
     private:
         static ConstantTadHelper *_INSTANCE;
 
+        std::mutex _mutex;
+        std::vector<std::map<TadDescriptor, TadPack>> _cache;
+
         ConstantTadHelper();
     public:
         ~ConstantTadHelper() = default;
+
+        static ConstantTadHelper* getInstance();
+
+        TadPack& tadForDimensions(Nd4jLong *originalShape, int* dimensions, int dimLength);
+        TadPack& tadForDimensions(ShapeDescriptor &descriptor, std::vector<int> &dimensions);
+        TadPack& tadForDimensions(TadDescriptor &descriptor);
     };
 }
 

@@ -20,6 +20,7 @@
 
 #include "../ShapeDescriptor.h"
 #include <shape.h>
+#include <ShapeBuilders.h>
 
 using namespace nd4j;
 
@@ -50,30 +51,30 @@ bool ShapeDescriptor::operator==(const ShapeDescriptor& other) const {
 //////////////////////////////////////////////////////////////////////////
 // less than operator
 bool ShapeDescriptor::operator<(const ShapeDescriptor& other) const {
-/*
-
-    if(_empty > other._empty)
-        return false;
-    if(_rank > other._rank)
-        return false;
-    if (_dataType > other._dataType)
-        return false;
-    if(_ews > other._ews)
-        return false;
-    if(_order > other._order)
-        return false;
-
-
-    if(_shape > other._shape)
-        return false;
-                
-    if(_strides > other._strides)
-        return false;
-
-
-    return !(*this == other);
-    */
     return std::tie(_empty, _rank, _dataType, _ews, _order, _shape, _strides) < std::tie(other._empty, other._rank, other._dataType, other._ews, other._order, other._shape, other._strides);
+}
+
+Nd4jLong* ShapeDescriptor::toShapeInfo() {
+    if (_empty)
+        return ShapeBuilders::emptyShapeInfo(_dataType);
+
+
+    switch (_rank) {
+        case 0:
+            return ShapeBuilders::createScalarShapeInfo(_dataType);
+        case 1:
+            return ShapeBuilders::createVectorShapeInfo(_dataType, _shape[0]);
+        default: {
+            auto shapeInfo = ShapeBuilders::createShapeInfo(_dataType, _order, _shape);
+
+            for (int e = 0; e < _rank; e++)
+                shapeInfo[e + 1 + _rank] = _strides[e];
+
+            shapeInfo[2 + _rank * 2] = _ews;
+
+            return shapeInfo;
+        }
+    }
 }
 
 //////////////////////////////////////////////////////////////////////////
