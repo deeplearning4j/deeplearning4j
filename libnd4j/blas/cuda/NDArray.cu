@@ -1748,53 +1748,20 @@ NDArray NDArray::e(const Nd4jLong i) const {
         if(!result->isSameShape(this))
             throw std::invalid_argument("NDArray::applyBroadcast method: this and target arrays must have the same shape !");
 
-        std::vector<int> copy(dimensions);
+        auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(_shapeInfo, dimensions);
+        auto packZ = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(result->_shapeInfo, dimensions);
 
-        //if (dimensions.size() > 1)
-        //    std::sort(copy.begin(), copy.end());
+        auto tadLength = shape::length(packX.primaryShapeInfo());
 
-        Nd4jLong tadLength = shape::tadLength(this->_shapeInfo, copy.data(), (int) copy.size());
         if (tadLength != tadArray->lengthOf())
             throw std::runtime_error("NDArray::applyBroadcast method: tad length mismatch !");
 
-        shape::TAD tad;
-        tad.init(this->_shapeInfo, copy.data(), copy.size());
-        tad.createTadOnlyShapeInfo();
-        tad.createOffsets();
-        if (!this->isActualOnDeviceSide())
-            this->syncToDevice();
+        NDArray::prepareSpecialUse({result}, {this, tadArray});
 
-        if (!tadArray->isActualOnDeviceSide())
-            tadArray->syncToDevice();
+        NativeOpExecutioner::execBroadcast(_context, op, this->_buffer, this->_shapeInfo, this->_bufferD, this->_shapeInfoD, tadArray->_buffer, tadArray->_shapeInfo, tadArray->_bufferD, tadArray->_shapeInfoD, result->_buffer, result->_shapeInfo, result->_bufferD, result->_shapeInfoD,
+                                           const_cast<int *>(dimensions.data()), (int)dimensions.size(), packX.specialShapeInfo(), packX.specialOffsets(), packZ.specialShapeInfo(), packZ.specialOffsets());
 
-        // prepare input arrays for prepareDataForCuda function
-        std::vector<std::pair<void*,size_t>> hostData;
-        hostData.emplace_back(copy.data(), copy.size() * sizeof(int));							// 0 -- dimensions
-        hostData.emplace_back(tad.tadOnlyShapeInfo, shape::shapeInfoByteLength(tad.tadOnlyShapeInfo));	// 1 -- xTadShapeInfo
-        hostData.emplace_back(tad.tadOffsets, tad.numTads * sizeof(Nd4jLong));							// 2 -- xTadOffsets
-        std::vector<void*> devicePtrs(hostData.size(), nullptr);
-
-        // create cuda stream and LaunchContext
-        cudaError_t cudaResult;
-        //cudaStream_t stream;
-        //cudaResult = cudaStreamCreate(&stream);	ASSERT_EQ(0, cudaResult);
-        //cudaStream_t* stream = this->getContext()->getCudaStream();
-        // allocate required amount of global device memory and copy host data to it
-//    cudaResult = allocateDeviceMem(*pLc, devicePtrs, hostData);	ASSERT_EQ(0, cudaResult);
-        for(int i = 0; i < devicePtrs.size(); ++i) {
-
-            cudaResult = cudaMalloc(reinterpret_cast<void **>(&devicePtrs[i]), hostData[i].second);
-            if(cudaResult != 0) throw cuda_exception::build("Cannot allocate memory for tads on device", cudaResult);
-            cudaResult = cudaMemcpy(devicePtrs[i], hostData[i].first, hostData[i].second, cudaMemcpyHostToDevice);
-            if(cudaResult != 0) throw cuda_exception::build("Cannot copy memory block for tads on device", cudaResult);
-        }
-
-        //NDArray::registerSpecialUse({result}, {this, tadArray});
-
-        // call cuda kernel which calculates result
-        // TODO: eventually we want separate tads here
-        NativeOpExecutioner::execBroadcast(_context, op, this->_buffer, this->_shapeInfo, this->_bufferD, this->_shapeInfoD, tadArray->_buffer, tadArray->_shapeInfo, tadArray->_bufferD, tadArray->_shapeInfoD, result->_buffer, result->_shapeInfo, result->_bufferD, result->_shapeInfoD, (int*)devicePtrs[0], (int)copy.size(), (Nd4jLong*)devicePtrs[1], (Nd4jLong*)devicePtrs[2], nullptr, nullptr);
-        result->tickWriteDevice();
+        NDArray::registerSpecialUse({result}, {this, tadArray});
     }
 
     //////////////////////////////////////////////////////////////////////////
@@ -1814,52 +1781,21 @@ NDArray NDArray::e(const Nd4jLong i) const {
         if(_dataType != tadArray->_dataType)
             throw std::invalid_argument("NDArray::applyBroadcast bool method: this and tad arrays must have the same type !");
 
-        std::vector<int> copy(dimensions);
+        auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(_shapeInfo, dimensions);
+        auto packZ = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(result->_shapeInfo, dimensions);
 
-        if (dimensions.size() > 1)
-            std::sort(copy.begin(), copy.end());
-
-        Nd4jLong tadLength = shape::tadLength(this->_shapeInfo, copy.data(), (int) copy.size());
+        auto tadLength = shape::length(packX.primaryShapeInfo());
         if (tadLength != tadArray->lengthOf())
             throw std::runtime_error("Tad length mismatch");
 
-        shape::TAD tad;
-        tad.init(this->_shapeInfo, copy.data(), copy.size());
-        tad.createTadOnlyShapeInfo();
-        tad.createOffsets();
-        if (!this->isActualOnDeviceSide())
-            this->syncToDevice();
+        NDArray::prepareSpecialUse({result}, {this, tadArray});
 
-        if (!tadArray->isActualOnDeviceSide())
-            tadArray->syncToDevice();
-        // prepare input arrays for prepareDataForCuda function
-        std::vector<std::pair<void*,size_t>> hostData;
-        hostData.emplace_back(copy.data(), copy.size() * sizeof(int));							// 0 -- dimensions
-        hostData.emplace_back(tad.tadOnlyShapeInfo, shape::shapeInfoByteLength(tad.tadOnlyShapeInfo));	// 1 -- xTadShapeInfo
-        hostData.emplace_back(tad.tadOffsets, tad.numTads * sizeof(Nd4jLong));							// 2 -- xTadOffsets
-        std::vector<void*> devicePtrs(hostData.size(), nullptr);
-
-        // create cuda stream and LaunchContext
-        cudaError_t cudaResult;
-        //cudaStream_t stream;
-        //cudaResult = cudaStreamCreate(&stream);	ASSERT_EQ(0, cudaResult);
-        cudaStream_t* stream = this->getContext()->getCudaStream();
-        // allocate required amount of global device memory and copy host data to it
-//    cudaResult = allocateDeviceMem(*pLc, devicePtrs, hostData);	ASSERT_EQ(0, cudaResult);
-        for(int i = 0; i < devicePtrs.size(); ++i) {
-
-            cudaResult = cudaMalloc(reinterpret_cast<void **>(&devicePtrs[i]), hostData[i].second);
-            if(cudaResult != 0) throw cuda_exception::build("Cannot allocate memory for tads on device", cudaResult);
-            cudaMemcpyAsync(devicePtrs[i], hostData[i].first, hostData[i].second, cudaMemcpyHostToDevice, *stream);
-        }
-
-        // call cuda kernel which calculates result
-        //NDArray::registerSpecialUse({result}, {this, tadArray});
-        // TODO: eventually we want separate tads here
         NativeOpExecutioner::execBroadcastBool(_context, op, this->_buffer, this->_shapeInfo, this->_bufferD, this->_shapeInfoD,
                                                tadArray->_buffer, tadArray->_shapeInfo, tadArray->_bufferD, tadArray->_shapeInfoD,
-                                               result->_buffer, result->_shapeInfo, result->_bufferD, result->_shapeInfoD, (int*)devicePtrs[0], (int)copy.size(), (Nd4jLong*)devicePtrs[1], (Nd4jLong*)devicePtrs[2], nullptr, nullptr);
-        result->tickWriteDevice();
+                                               result->_buffer, result->_shapeInfo, result->_bufferD, result->_shapeInfoD,
+                                               nullptr, (int)dimensions.size(), packX.specialShapeInfo(), packX.specialOffsets(), packZ.specialShapeInfo(), packZ.specialOffsets());
+
+        NDArray::registerSpecialUse({result}, {this, tadArray});
     }
 
     //////////////////////////////////////////////////////////////////////////
@@ -1888,46 +1824,20 @@ NDArray NDArray::e(const Nd4jLong i) const {
         
         void* params = extraParams != nullptr ? const_cast<ExtraArguments*>(extraParams)->argumentsAsT(this->dataType()) : nullptr;
 
+        NDArray::prepareSpecialUse({target}, {this});
+
         if (target->isScalar()) {
             //target->_buffer[0] = functions::indexreduce::IndexReduce<T>::template execScalar<OpName>(_buffer, _shapeInfo, const_cast<T*>(extraParams));
             NativeOpExecutioner::execIndexReduceScalar(_context, op, _buffer, _shapeInfo, _bufferD, _shapeInfoD, params, target->_buffer, target->_shapeInfo, target->_bufferD, target->_shapeInfoD);
-
-            auto cudaResult = cudaStreamSynchronize(*_context->getCudaStream());        
-            if (cudaResult != 0) throw cuda_exception::build("NDArray::applyIndexReduce cuda failed !", cudaResult);            
-        } 
+        }
         else {
 
             std::vector<int> copy(dimensions);
             shape::checkDimensions(rankOf(), copy);
 
-            shape::TAD xTad;
-            xTad.init(_shapeInfo, copy.data(), copy.size());
-            xTad.createTadOnlyShapeInfo();
-            xTad.createOffsets();
+            auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(_shapeInfo, copy);
 
-            // device memory allocation for tads
-            Nd4jLong *xTadShapeInfo, *xTadOffsets;
-            int* dims;
-            
-            auto cudaResult = cudaMalloc(reinterpret_cast<void **>(&dims), copy.size() * sizeof(int));
-            if (cudaResult != 0) throw cuda_exception::build("NDArray::applyIndexReduce cuda memory allocation failed !", cudaResult);
-            
-            cudaResult = cudaMalloc(reinterpret_cast<void **>(&xTadShapeInfo), shape::shapeInfoByteLength(xTad.tadOnlyShapeInfo));
-            if (cudaResult != 0) throw cuda_exception::build("NDArray::applyIndexReduce cuda memory allocation failed !", cudaResult);
-            
-            cudaResult = cudaMalloc(reinterpret_cast<void **>(&xTadOffsets), xTad.numTads * sizeof(Nd4jLong));
-            if (cudaResult != 0) throw cuda_exception::build("NDArray::applyIndexReduce cuda memory allocation failed !", cudaResult);
-
-            cudaMemcpyAsync(dims, copy.data(), copy.size() * sizeof(int), cudaMemcpyHostToDevice, *_context->getCudaStream());
-            cudaMemcpyAsync(xTadShapeInfo, xTad.tadOnlyShapeInfo, shape::shapeInfoByteLength(xTad.tadOnlyShapeInfo), cudaMemcpyHostToDevice, *_context->getCudaStream());
-            cudaMemcpyAsync(xTadOffsets, xTad.tadOffsets, xTad.numTads * sizeof(Nd4jLong), cudaMemcpyHostToDevice, *_context->getCudaStream());
-
-            NativeOpExecutioner::execIndexReduce(_context, op, _buffer, _shapeInfo, _bufferD, _shapeInfoD, params,target->_buffer, target->_shapeInfo, target->_bufferD, target->_shapeInfoD,dims, copy.size(),xTadShapeInfo, xTadOffsets);
-
-            cudaResult = cudaStreamSynchronize(*_context->getCudaStream());        
-            if (cudaResult != 0) throw cuda_exception::build("NDArray::applyIndexReduce cuda failed !", cudaResult);
-
-            cudaFree(dims); cudaFree(xTadShapeInfo); cudaFree(xTadOffsets);
+            NativeOpExecutioner::execIndexReduce(_context, op, _buffer, _shapeInfo, _bufferD, _shapeInfoD, params,target->_buffer, target->_shapeInfo, target->_bufferD, target->_shapeInfoD, nullptr, copy.size(), packX.specialShapeInfo(), packX.specialOffsets());
         }
         NDArray::registerSpecialUse({target}, {this});
     }
@@ -1945,48 +1855,28 @@ NDArray NDArray::e(const Nd4jLong i) const {
         ArrayOptions::setDataType(newShape, nd4j::INT64);
         auto result = new NDArray(newShape, true, _context);
 
-        void* params = extraParams != nullptr ? const_cast<ExtraArguments*>(extraParams)->argumentsAsT(this->dataType()) : nullptr;        
+        void* params = extraParams != nullptr ? const_cast<ExtraArguments*>(extraParams)->argumentsAsT(this->dataType()) : nullptr;
+
+        NDArray::prepareSpecialUse({result}, {this});
 
         if (rankOf() == copy.size()) {
             NativeOpExecutioner::execIndexReduceScalar(_context, op, _buffer, _shapeInfo, _bufferD, _shapeInfoD, params, result->_buffer, result->_shapeInfo, result->_bufferD, result->_shapeInfoD);
 
-            auto cudaResult = cudaStreamSynchronize(*_context->getCudaStream());        
-            if (cudaResult != 0) throw cuda_exception::build("NDArray::applyIndexReduce cuda failed !", cudaResult);            
-        } 
-        else {            
-
-            shape::TAD xTad;
-            xTad.init(_shapeInfo, copy.data(), copy.size());
-            xTad.createTadOnlyShapeInfo();
-            xTad.createOffsets();
-
-            // device memory allocation for tads
-            Nd4jLong *xTadShapeInfo, *xTadOffsets;
-            int* dims;
-            
-            auto cudaResult = cudaMalloc(reinterpret_cast<void **>(&dims), copy.size() * sizeof(int));
-            if (cudaResult != 0) throw cuda_exception::build("NDArray::applyIndexReduce cuda memory allocation failed !", cudaResult);
-            
-            cudaResult = cudaMalloc(reinterpret_cast<void **>(&xTadShapeInfo), shape::shapeInfoByteLength(xTad.tadOnlyShapeInfo));
-            if (cudaResult != 0) throw cuda_exception::build("NDArray::applyIndexReduce cuda memory allocation failed !", cudaResult);
-            
-            cudaResult = cudaMalloc(reinterpret_cast<void **>(&xTadOffsets), xTad.numTads * sizeof(Nd4jLong));
-            if (cudaResult != 0) throw cuda_exception::build("NDArray::applyIndexReduce cuda memory allocation failed !", cudaResult);
-
-            cudaMemcpyAsync(dims, copy.data(), copy.size() * sizeof(int), cudaMemcpyHostToDevice, *_context->getCudaStream());
-            cudaMemcpyAsync(xTadShapeInfo, xTad.tadOnlyShapeInfo, shape::shapeInfoByteLength(xTad.tadOnlyShapeInfo), cudaMemcpyHostToDevice, *_context->getCudaStream());
-            cudaMemcpyAsync(xTadOffsets, xTad.tadOffsets, xTad.numTads * sizeof(Nd4jLong), cudaMemcpyHostToDevice, *_context->getCudaStream());
+            auto cudaResult = cudaStreamSynchronize(*_context->getCudaStream());
+            if (cudaResult != 0)
+                throw cuda_exception::build("NDArray::applyIndexReduce cuda failed !", cudaResult);
+        }
+        else {
+            auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(_shapeInfo, copy);
 
             NativeOpExecutioner::execIndexReduce(_context, op, _buffer, _shapeInfo, _bufferD, _shapeInfoD,
                                                 params,
                                                 result->_buffer, result->_shapeInfo, result->_bufferD, result->_shapeInfoD,
-                                                dims, copy.size(),
-                                                xTadShapeInfo, xTadOffsets);
+                                                nullptr, copy.size(),
+                                                packX.specialShapeInfo(), packX.specialOffsets());
 
-            cudaResult = cudaStreamSynchronize(*_context->getCudaStream());        
+            auto cudaResult = cudaStreamSynchronize(*_context->getCudaStream());
             if (cudaResult != 0) throw cuda_exception::build("NDArray::applyIndexReduce cuda failed !", cudaResult);
-
-            cudaFree(dims); cudaFree(xTadShapeInfo); cudaFree(xTadOffsets);
         }
         
         NDArray::registerSpecialUse({result}, {this});
@@ -2034,72 +1924,35 @@ NDArray NDArray::e(const Nd4jLong i) const {
         shape::checkDimensions(rankOf(), copy);
         shape::checkDimensions(other->rankOf(), copy);
 
-        if(!isActualOnDeviceSide()) 
-            syncToDevice();
-
-        if(!other->isActualOnDeviceSide())
-            other->syncToDevice();
-
         auto newShape = ShapeUtils::evalReduceShapeInfo('c', copy, *this, false, false, _context->getWorkspace());
         ArrayOptions::setDataType(newShape, DataTypeUtils::pickFloatingType(_dataType));
         auto result = new NDArray(newShape, true, _context);
         // create temporary dynamic array of extra parameters if array extraParams is empty (==nullptr)
         void* params = extraParams != nullptr ? const_cast<ExtraArguments*>(extraParams)->argumentsAsT(this->dataType()) : nullptr;
 
+        NDArray::prepareSpecialUse({result}, {this, other});
+
         // perform calculations
         if(rankOf() == copy.size() && other->rankOf() == copy.size()) {
             NativeOpExecutioner::execReduce3Scalar(_context, op, _buffer, _shapeInfo, _bufferD, _shapeInfoD, params, other->_buffer, other->_shapeInfo, other->_bufferD, other->_shapeInfoD, result->_buffer, result->shapeInfo(), result->specialBuffer(), result->specialShapeInfo());
-            auto cudaResult = cudaStreamSynchronize(*_context->getCudaStream());        
-            if (cudaResult != 0) throw cuda_exception::build("NDArray::applyReduce3 cuda failed !", cudaResult);
+
+            auto cudaResult = cudaStreamSynchronize(*_context->getCudaStream());
+            if (cudaResult != 0)
+                throw cuda_exception::build("NDArray::applyReduce3 cuda failed !", cudaResult);
         }
         else {
-            
-            // evaluate xTad data 
-            shape::TAD xTad;
-            xTad.init(_shapeInfo, copy.data(), copy.size());
-            xTad.createTadOnlyShapeInfo();
-            xTad.createOffsets();
 
-            // evaluate yTad data
-            shape::TAD yTad;
-            yTad.init(other->_shapeInfo, copy.data(), copy.size());
-            yTad.createTadOnlyShapeInfo();
-            yTad.createOffsets();
+            auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(_shapeInfo, copy);
+            auto packY = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(other->getShapeInfo(), copy);
 
-            if(!shape::equalsSoft(xTad.tadOnlyShapeInfo, yTad.tadOnlyShapeInfo) || (xTad.numTads != yTad.numTads && xTad.numTads != 1 && yTad.numTads != 1))
+            if(!shape::equalsSoft(packX.primaryShapeInfo(), packY.primaryShapeInfo()) || (packX.numberOfTads() != packY.numberOfTads() && packX.numberOfTads() != 1 && packY.numberOfTads() != 1))
                 throw std::runtime_error("NDArray::applyReduce3 cuda method: arrays tads are inconsistent !");
 
-            // device memory allocation for tads
-            Nd4jLong *xTadShapeInfo, *xTadOffsets, *yTadShapeInfo, *yTadOffsets;
-            int *dims;
+            NativeOpExecutioner::execReduce3(_context, op, _buffer, _shapeInfo, _bufferD, _shapeInfoD, params, other->_buffer, other->_shapeInfo, other->_bufferD, other->_shapeInfoD, result->_buffer, result->_shapeInfo, result->_bufferD, result->_shapeInfoD, nullptr, copy.size(), packX.specialShapeInfo(), packX.specialOffsets(),  packY.specialShapeInfo(), packY.specialOffsets());
 
-            auto cudaResult = cudaMalloc(reinterpret_cast<void **>(&dims), copy.size() * sizeof(int));
-            if (cudaResult != 0) throw cuda_exception::build("NDArray::applyReduce3 cuda memory allocation failed !", cudaResult);
-            
-            cudaResult = cudaMalloc(reinterpret_cast<void **>(&xTadShapeInfo), shape::shapeInfoByteLength(xTad.tadOnlyShapeInfo));
-            if (cudaResult != 0) throw cuda_exception::build("NDArray::applyReduce3 cuda memory allocation failed !", cudaResult);
-
-            cudaResult = cudaMalloc(reinterpret_cast<void **>(&yTadShapeInfo), shape::shapeInfoByteLength(yTad.tadOnlyShapeInfo));
-            if (cudaResult != 0) throw cuda_exception::build("NDArray::applyReduce3 cuda memory allocation failed !", cudaResult);
-
-            cudaResult = cudaMalloc(reinterpret_cast<void **>(&xTadOffsets), xTad.numTads * sizeof(Nd4jLong));
-            if (cudaResult != 0) throw cuda_exception::build("NDArray::applyReduce3 cuda memory allocation failed !", cudaResult);
-
-            cudaResult = cudaMalloc(reinterpret_cast<void **>(&yTadOffsets), yTad.numTads * sizeof(Nd4jLong));
-            if (cudaResult != 0) throw cuda_exception::build("NDArray::applyReduce3 cuda memory allocation failed !", cudaResult);
-
-            cudaMemcpyAsync(dims, copy.data(), copy.size() * sizeof(int), cudaMemcpyHostToDevice, *_context->getCudaStream());
-            cudaMemcpyAsync(xTadShapeInfo, xTad.tadOnlyShapeInfo, shape::shapeInfoByteLength(xTad.tadOnlyShapeInfo), cudaMemcpyHostToDevice, *_context->getCudaStream());
-            cudaMemcpyAsync(yTadShapeInfo, yTad.tadOnlyShapeInfo, shape::shapeInfoByteLength(yTad.tadOnlyShapeInfo), cudaMemcpyHostToDevice, *_context->getCudaStream());
-            cudaMemcpyAsync(xTadOffsets, xTad.tadOffsets, xTad.numTads * sizeof(Nd4jLong), cudaMemcpyHostToDevice, *_context->getCudaStream());
-            cudaMemcpyAsync(yTadOffsets, yTad.tadOffsets, yTad.numTads * sizeof(Nd4jLong), cudaMemcpyHostToDevice, *_context->getCudaStream());
-
-            NativeOpExecutioner::execReduce3(_context, op, _buffer, _shapeInfo, _bufferD, _shapeInfoD, params, other->_buffer, other->_shapeInfo, other->_bufferD, other->_shapeInfoD, result->_buffer, result->_shapeInfo, result->_bufferD, result->_shapeInfoD, dims, copy.size(), xTadShapeInfo, xTadOffsets,  yTadShapeInfo, yTadOffsets);
-
-            cudaResult = cudaStreamSynchronize(*_context->getCudaStream());        
-            if (cudaResult != 0) throw cuda_exception::build("NDArray::applyReduce3 cuda failed !", cudaResult);
-
-            cudaFree(dims); cudaFree(xTadShapeInfo); cudaFree(xTadOffsets); cudaFree(yTadShapeInfo); cudaFree(yTadOffsets);            
+            auto cudaResult = cudaStreamSynchronize(*_context->getCudaStream());
+            if (cudaResult != 0)
+                throw cuda_exception::build("NDArray::applyReduce3 cuda failed !", cudaResult);
         }        
 
         NDArray::registerSpecialUse({result}, {this, other});
@@ -2119,68 +1972,35 @@ NDArray NDArray::e(const Nd4jLong i) const {
         std::vector<int> copy(dimensions);
         shape::checkDimensions(rankOf(), copy);
         shape::checkDimensions(other->rankOf(), copy);
-        
-        // create tads
-        shape::TAD xTad;
-        xTad.init(_shapeInfo, copy.data(), copy.size());
-        xTad.createTadOnlyShapeInfo();
-        xTad.createOffsets();
 
-        shape::TAD yTad;
-        yTad.init(other->_shapeInfo, copy.data(), copy.size());
-        yTad.createTadOnlyShapeInfo();
-        yTad.createOffsets();
+        auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(getShapeInfo(), copy);
+        auto packY = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(other->getShapeInfo(), copy);
 
         // check tads shapes
-        if(!shape::equalsSoft(xTad.tadOnlyShapeInfo, yTad.tadOnlyShapeInfo))
+        if(!shape::equalsSoft(packX.primaryShapeInfo(), packY.primaryShapeInfo()))
             throw std::runtime_error("NDArray::applyAllReduce3 method: the shapes of array tads are different !");
 
         // set newShape for output array
         Nd4jLong *newShape = nullptr;
         ALLOCATE(newShape, _context->getWorkspace(), 8, Nd4jLong);
         newShape[0] = 2;        // output rank is always equal to 2 for execAll case
-        newShape[1] = xTad.numTads;
-        newShape[2] = yTad.numTads;
+        newShape[1] = packX.numberOfTads();
+        newShape[2] = packY.numberOfTads();
         ShapeUtils::updateStridesAndType(newShape, DataTypeUtils::pickFloatingType(_dataType), 'c');
         // create output array
         auto result = new NDArray(newShape, true, _context);
+        RELEASE(newShape, _context->getWorkspace());
 
         NDArray::prepareSpecialUse({result}, {const_cast<NDArray*>(this), const_cast<NDArray*>(other)});
 
         // create dynamic array of extra parameters if array extraParams is empty (==nullptr)
         void* params = extraParams != nullptr ? const_cast<ExtraArguments*>(extraParams)->argumentsAsT(this->dataType()) : nullptr;
 
-         // device memory allocation for tads
-        Nd4jLong *xTadShapeInfo, *xTadOffsets, *yTadShapeInfo, *yTadOffsets;
-        int *dims;     
-        
-        auto cudaResult = cudaMalloc(reinterpret_cast<void **>(&dims), copy.size() * sizeof(int));
-        if (cudaResult != 0) throw cuda_exception::build("NDArray::applyAllReduce3 cuda memory allocation failed !", cudaResult);
+        NativeOpExecutioner::execReduce3All(_context, op, _buffer, _shapeInfo, _bufferD, _shapeInfoD, params,other->_buffer, other->_shapeInfo, other->_bufferD, other->_shapeInfoD,result->_buffer,result->_shapeInfo, result->_bufferD, result->_shapeInfoD,
+                                            nullptr, copy.size(), packX.specialShapeInfo(), packX.specialOffsets(), packY.specialShapeInfo(), packY.specialOffsets());
 
-        cudaResult = cudaMalloc(reinterpret_cast<void **>(&xTadShapeInfo), shape::shapeInfoByteLength(xTad.tadOnlyShapeInfo));
-        if (cudaResult != 0) throw cuda_exception::build("NDArray::applyAllReduce3 cuda memory allocation failed !", cudaResult);
-
-        cudaResult = cudaMalloc(reinterpret_cast<void **>(&yTadShapeInfo), shape::shapeInfoByteLength(yTad.tadOnlyShapeInfo));
-        if (cudaResult != 0) throw cuda_exception::build("NDArray::applyAllReduce3 cuda memory allocation failed !", cudaResult);
-
-        cudaResult = cudaMalloc(reinterpret_cast<void **>(&xTadOffsets), xTad.numTads * sizeof(Nd4jLong));
-        if (cudaResult != 0) throw cuda_exception::build("NDArray::applyAllReduce3 cuda memory allocation failed !", cudaResult);
-
-        cudaResult = cudaMalloc(reinterpret_cast<void **>(&yTadOffsets), yTad.numTads * sizeof(Nd4jLong));
-        if (cudaResult != 0) throw cuda_exception::build("NDArray::applyAllReduce3 cuda memory allocation failed !", cudaResult);
-
-        cudaMemcpyAsync(dims, copy.data(), copy.size() * sizeof(int), cudaMemcpyHostToDevice, *_context->getCudaStream());
-        cudaMemcpyAsync(xTadShapeInfo, xTad.tadOnlyShapeInfo, shape::shapeInfoByteLength(xTad.tadOnlyShapeInfo), cudaMemcpyHostToDevice, *_context->getCudaStream());
-        cudaMemcpyAsync(yTadShapeInfo, yTad.tadOnlyShapeInfo, shape::shapeInfoByteLength(yTad.tadOnlyShapeInfo), cudaMemcpyHostToDevice, *_context->getCudaStream());
-        cudaMemcpyAsync(xTadOffsets, xTad.tadOffsets, xTad.numTads * sizeof(Nd4jLong), cudaMemcpyHostToDevice, *_context->getCudaStream());
-        cudaMemcpyAsync(yTadOffsets, yTad.tadOffsets, yTad.numTads * sizeof(Nd4jLong), cudaMemcpyHostToDevice, *_context->getCudaStream());
-
-        NativeOpExecutioner::execReduce3All(_context, op, _buffer, _shapeInfo, _bufferD, _shapeInfoD, params,other->_buffer, other->_shapeInfo, other->_bufferD, other->_shapeInfoD,result->_buffer,result->_shapeInfo, result->_bufferD, result->_shapeInfoD,dims, copy.size(), xTadShapeInfo, xTadOffsets, yTadShapeInfo, yTadOffsets);
-
-        cudaResult = cudaStreamSynchronize(*_context->getCudaStream());        
+        auto cudaResult = cudaStreamSynchronize(*_context->getCudaStream());
         if (cudaResult != 0) throw cuda_exception::build("NDArray::applyAllReduce3 cuda failed !", cudaResult);
-
-        cudaFree(dims); cudaFree(xTadShapeInfo); cudaFree(xTadOffsets); cudaFree(yTadShapeInfo); cudaFree(yTadOffsets);            
 
         NDArray::registerSpecialUse({result}, {this, other});
         
@@ -2256,39 +2076,22 @@ NDArray::~NDArray() noexcept {
         auto newShape = ShapeUtils::evalReduceShapeInfo('c', copy, *this, false, false, _context->getWorkspace());
         ArrayOptions::setDataType(newShape, DataTypeUtils::pickFloatingType(_dataType));
         auto result = new NDArray(newShape, true, _context);
+        RELEASE(newShape, _context->getWorkspace());
 
         NDArray::prepareSpecialUse({result}, {this});
 
         if(rankOf() == copy.size() || copy.empty())
             NativeOpExecutioner::execSummaryStatsScalar(_context, op, _buffer, _shapeInfo, _bufferD, _shapeInfoD, nullptr, result->buffer(), result->shapeInfo(), result->specialBuffer(), result->specialShapeInfo(), biasCorrected);
         else {
-            Nd4jLong *xTadShapeInfo;
-            Nd4jLong *xTadOffsets;
-            int *tmp;
-            ALLOCATE_SPECIAL(tmp, _context->getWorkspace(), copy.size(), int);
+            auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(this->getShapeInfo(), copy);
 
-            cudaMemcpyAsync(tmp, copy.data(), copy.size() * sizeof(int), cudaMemcpyHostToDevice, *_context->getCudaStream());
-            shape::TAD tad;
-            tad.init(this->getShapeInfo(), copy.data(), copy.size());
-            tad.createTadOnlyShapeInfo();
-            tad.createOffsets();
-            ALLOCATE_SPECIAL(xTadOffsets, _context->getWorkspace(), tad.numTads, Nd4jLong);
-            ALLOCATE_SPECIAL(xTadShapeInfo, _context->getWorkspace(), shape::shapeInfoLength(tad.tadOnlyShapeInfo), Nd4jLong);
-
-            cudaMemcpyAsync(xTadOffsets, tad.tadOffsets, tad.numTads * sizeof(Nd4jLong), cudaMemcpyHostToDevice, *_context->getCudaStream());
-            cudaMemcpyAsync(xTadShapeInfo, tad.tadOnlyShapeInfo, shape::shapeInfoByteLength(tad.tadOnlyShapeInfo), cudaMemcpyHostToDevice, *_context->getCudaStream());
-
-            NativeOpExecutioner::execSummaryStats(_context, op, _buffer, _shapeInfo, _bufferD, _shapeInfoD, nullptr, result->_buffer, result->_shapeInfo, result->_bufferD, result->_shapeInfoD, tmp, copy.size(), xTadShapeInfo, xTadOffsets, biasCorrected);
+            NativeOpExecutioner::execSummaryStats(_context, op, _buffer, _shapeInfo, _bufferD, _shapeInfoD, nullptr, result->_buffer, result->_shapeInfo, result->_bufferD, result->_shapeInfoD,
+                                                  nullptr, copy.size(), packX.specialShapeInfo(), packX.specialOffsets(), biasCorrected);
 
             auto res = cudaStreamSynchronize(*_context->getCudaStream());
             if (res != 0)
                 throw cuda_exception::build("varianceAlongDimension failed", res);
-
-            RELEASE_SPECIAL(tmp, _context->getWorkspace());
-            RELEASE_SPECIAL(xTadShapeInfo, _context->getWorkspace());
-            RELEASE_SPECIAL(xTadOffsets, _context->getWorkspace());
         }
-
 
         NDArray::registerSpecialUse({result}, {this});
 
@@ -2300,38 +2103,25 @@ NDArray::~NDArray() noexcept {
             throw std::runtime_error("NDArray::varianceAlongDimension: you can't use this method on String array!");
 
         std::vector<int> copy(dimensions);
-        if (copy.size() > 1)
-            std::sort(copy.begin(), copy.end());
 
         if (!target->isR())
             throw std::runtime_error("NDArray::varianceAlongDimension: target array must have FLOAT type");
 
+        NDArray::prepareSpecialUse({target}, {this});
+
         if(rankOf() == copy.size() || copy.empty())
             NativeOpExecutioner::execSummaryStatsScalar(_context, op, _buffer, _shapeInfo, _bufferD, _shapeInfoD, nullptr, target->getBuffer(), target->getShapeInfo(), target->getSpecialBuffer(), target->getSpecialShapeInfo(), biasCorrected);
         else {
-            Nd4jLong *xTadShapeInfo;
-            Nd4jLong *xTadOffsets;
-            int *tmp;
-            ALLOCATE_SPECIAL(tmp, _context->getWorkspace(), copy.size(), int);
+            auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(this->getShapeInfo(), copy);
 
-            cudaMemcpyAsync(tmp, copy.data(), copy.size() * sizeof(int), cudaMemcpyHostToDevice, *_context->getCudaStream());
-            shape::TAD tad;
-            tad.init(this->getShapeInfo(), copy.data(), copy.size());
-            tad.createTadOnlyShapeInfo();
-            tad.createOffsets();
-            ALLOCATE_SPECIAL(xTadOffsets, _context->getWorkspace(), tad.numTads, Nd4jLong);
-            ALLOCATE_SPECIAL(xTadShapeInfo, _context->getWorkspace(), shape::shapeInfoLength(tad.tadOnlyShapeInfo), Nd4jLong);
-
-            NativeOpExecutioner::execSummaryStats(_context, op, _buffer, _shapeInfo, _bufferD, _shapeInfoD, nullptr, target->_buffer, target->_shapeInfo, target->_bufferD, target->_shapeInfoD, tmp, copy.size(), xTadShapeInfo, xTadOffsets, biasCorrected);
+            NativeOpExecutioner::execSummaryStats(_context, op, _buffer, _shapeInfo, _bufferD, _shapeInfoD, nullptr, target->_buffer, target->_shapeInfo, target->_bufferD, target->_shapeInfoD, nullptr, copy.size(), packX.specialShapeInfo(), packX.specialOffsets(), biasCorrected);
 
             auto res = cudaStreamSynchronize(*_context->getCudaStream());
             if (res != 0)
                 throw cuda_exception::build("varianceAlongDimension failed", res);
-
-            RELEASE_SPECIAL(tmp, _context->getWorkspace());
-            RELEASE_SPECIAL(xTadShapeInfo, _context->getWorkspace());
-            RELEASE_SPECIAL(xTadOffsets, _context->getWorkspace());
         }
+
+        NDArray::registerSpecialUse({target}, {this});
     }
 
 ////////////////////////////////////////////////////////////////////////
@@ -2414,43 +2204,25 @@ void NDArray::reduceAlongDimension(nd4j::reduce::FloatOps op, NDArray* target, c
         RELEASE(newShape, _context->getWorkspace());
     }
 
+    NDArray::prepareSpecialUse({target}, {this});
+
     if(rankOf() == copy.size() || copy.empty()) {        
         NativeOpExecutioner::execReduceFloatScalar(_context, op, _buffer, _shapeInfo, _bufferD, _shapeInfoD,nullptr, target->_buffer, target->_shapeInfo, target->_bufferD, target->_shapeInfoD);        
 
         auto cudaResult = cudaStreamSynchronize(*_context->getCudaStream());
-        if (cudaResult != 0) throw cuda_exception::build("NDArray::reduceAlongDimension FloatOps cuda failed !", cudaResult);
+        if (cudaResult != 0)
+            throw cuda_exception::build("NDArray::reduceAlongDimension FloatOps cuda failed !", cudaResult);
     }
     else {
+        auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(this->getShapeInfo(), copy);
 
-        shape::TAD xTad;
-        xTad.init(_shapeInfo, copy.data(), copy.size());
-        xTad.createTadOnlyShapeInfo();
-        xTad.createOffsets();
+        NativeOpExecutioner::execReduceFloat(_context, op, _buffer, _shapeInfo, _bufferD, _shapeInfoD, nullptr, target->_buffer, target->_shapeInfo, target->_bufferD, target->_shapeInfoD, nullptr, copy.size(), packX.specialShapeInfo(), packX.specialOffsets());
 
-         // device memory allocation for tads
-        Nd4jLong *xTadShapeInfo, *xTadOffsets;
-        int *dims;     
-        
-        auto cudaResult = cudaMalloc(reinterpret_cast<void **>(&dims), copy.size() * sizeof(int));
-        if (cudaResult != 0) throw cuda_exception::build("NDArray::reduceAlongDimension FloatOps cuda memory allocation failed !", cudaResult);
-
-        cudaResult = cudaMalloc(reinterpret_cast<void **>(&xTadShapeInfo), shape::shapeInfoByteLength(xTad.tadOnlyShapeInfo));
-        if (cudaResult != 0) throw cuda_exception::build("NDArray::reduceAlongDimension FloatOps cuda memory allocation failed !", cudaResult);
-
-        cudaResult = cudaMalloc(reinterpret_cast<void **>(&xTadOffsets), xTad.numTads * sizeof(Nd4jLong));
-        if (cudaResult != 0) throw cuda_exception::build("NDArray::reduceAlongDimension FloatOps cuda memory allocation failed !", cudaResult);
-
-        cudaMemcpyAsync(dims, copy.data(), copy.size() * sizeof(int), cudaMemcpyHostToDevice, *_context->getCudaStream());  
-        cudaMemcpyAsync(xTadShapeInfo, xTad.tadOnlyShapeInfo, shape::shapeInfoByteLength(xTad.tadOnlyShapeInfo), cudaMemcpyHostToDevice, *_context->getCudaStream());
-        cudaMemcpyAsync(xTadOffsets, xTad.tadOffsets, xTad.numTads * sizeof(Nd4jLong), cudaMemcpyHostToDevice, *_context->getCudaStream());
-
-        NativeOpExecutioner::execReduceFloat(_context, op, _buffer, _shapeInfo, _bufferD, _shapeInfoD, nullptr, target->_buffer, target->_shapeInfo, target->_bufferD, target->_shapeInfoD, dims, copy.size(), xTadShapeInfo, xTadOffsets);
-
-        cudaResult = cudaStreamSynchronize(*_context->getCudaStream());
-        if (cudaResult != 0) throw cuda_exception::build("NDArray::reduceAlongDimension FloatOps cuda failed !", cudaResult);
-
-        cudaFree(dims); cudaFree(xTadShapeInfo); cudaFree(xTadOffsets);
+        auto cudaResult = cudaStreamSynchronize(*_context->getCudaStream());
+        if (cudaResult != 0)
+            throw cuda_exception::build("NDArray::reduceAlongDimension FloatOps cuda failed !", cudaResult);
     }
+
     NDArray::registerSpecialUse({target}, {this});
 }
 
@@ -2473,6 +2245,8 @@ void NDArray::reduceAlongDimension(nd4j::reduce::SameOps op, NDArray* target, co
         RELEASE(newShape, _context->getWorkspace());
     }
 
+    NDArray::prepareSpecialUse({target}, {this});
+
     if(rankOf() == copy.size() || copy.empty()) {        
         NativeOpExecutioner::execReduceSameScalar(_context, op, _buffer, _shapeInfo, _bufferD, _shapeInfoD, nullptr, target->_buffer, target->_shapeInfo, target->_bufferD, target->_shapeInfoD);        
 
@@ -2480,35 +2254,13 @@ void NDArray::reduceAlongDimension(nd4j::reduce::SameOps op, NDArray* target, co
         if (cudaResult != 0) throw cuda_exception::build("NDArray::reduceAlongDimension SameOps cuda failed !", cudaResult);
     }
     else {
+        auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(this->getShapeInfo(), copy);
 
-        shape::TAD xTad;
-        xTad.init(_shapeInfo, copy.data(), copy.size());
-        xTad.createTadOnlyShapeInfo();
-        xTad.createOffsets();
+        NativeOpExecutioner::execReduceSame(_context, op, _buffer, _shapeInfo, _bufferD, _shapeInfoD, nullptr, target->_buffer, target->_shapeInfo, target->_bufferD, target->_shapeInfoD, nullptr, copy.size(), packX.specialShapeInfo(), packX.specialOffsets());
 
-         // device memory allocation for tads
-        Nd4jLong *xTadShapeInfo, *xTadOffsets;
-        int *dims;     
-        
-        auto cudaResult = cudaMalloc(reinterpret_cast<void **>(&dims), copy.size() * sizeof(int));
-        if (cudaResult != 0) throw cuda_exception::build("NDArray::reduceAlongDimension SameOps cuda memory allocation failed !", cudaResult);
-
-        cudaResult = cudaMalloc(reinterpret_cast<void **>(&xTadShapeInfo), shape::shapeInfoByteLength(xTad.tadOnlyShapeInfo));
-        if (cudaResult != 0) throw cuda_exception::build("NDArray::reduceAlongDimension SameOps cuda memory allocation failed !", cudaResult);
-
-        cudaResult = cudaMalloc(reinterpret_cast<void **>(&xTadOffsets), xTad.numTads * sizeof(Nd4jLong));
-        if (cudaResult != 0) throw cuda_exception::build("NDArray::reduceAlongDimension SameOps cuda memory allocation failed !", cudaResult);
-
-        cudaMemcpyAsync(dims, copy.data(), copy.size() * sizeof(int), cudaMemcpyHostToDevice, *_context->getCudaStream());  
-        cudaMemcpyAsync(xTadShapeInfo, xTad.tadOnlyShapeInfo, shape::shapeInfoByteLength(xTad.tadOnlyShapeInfo), cudaMemcpyHostToDevice, *_context->getCudaStream());
-        cudaMemcpyAsync(xTadOffsets, xTad.tadOffsets, xTad.numTads * sizeof(Nd4jLong), cudaMemcpyHostToDevice, *_context->getCudaStream());
-
-        NativeOpExecutioner::execReduceSame(_context, op, _buffer, _shapeInfo, _bufferD, _shapeInfoD, nullptr, target->_buffer, target->_shapeInfo, target->_bufferD, target->_shapeInfoD, dims, copy.size(), xTadShapeInfo, xTadOffsets);
-
-        cudaResult = cudaStreamSynchronize(*_context->getCudaStream());
-        if (cudaResult != 0) throw cuda_exception::build("NDArray::reduceAlongDimension SameOps cuda failed !", cudaResult);
-
-        cudaFree(dims); cudaFree(xTadShapeInfo); cudaFree(xTadOffsets);
+        auto cudaResult = cudaStreamSynchronize(*_context->getCudaStream());
+        if (cudaResult != 0)
+            throw cuda_exception::build("NDArray::reduceAlongDimension SameOps cuda failed !", cudaResult);
     }
     NDArray::registerSpecialUse({target}, {this});
 }
@@ -2532,6 +2284,8 @@ void NDArray::reduceAlongDimension(nd4j::reduce::BoolOps op, NDArray* target, co
         RELEASE(newShape, _context->getWorkspace());
     }
 
+    NDArray::prepareSpecialUse({target}, {this});
+
     if(rankOf() == copy.size() || copy.empty()) {        
         NativeOpExecutioner::execReduceBoolScalar(_context, op, _buffer, _shapeInfo, _bufferD, _shapeInfoD, nullptr, target->_buffer, target->_shapeInfo, target->_bufferD, target->_shapeInfoD);        
 
@@ -2539,35 +2293,13 @@ void NDArray::reduceAlongDimension(nd4j::reduce::BoolOps op, NDArray* target, co
         if (cudaResult != 0) throw cuda_exception::build("NDArray::reduceAlongDimension BoolOps cuda failed !", cudaResult);
     }
     else {
+        auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(this->getShapeInfo(), copy);
 
-        shape::TAD xTad;
-        xTad.init(_shapeInfo, copy.data(), copy.size());
-        xTad.createTadOnlyShapeInfo();
-        xTad.createOffsets();
+        NativeOpExecutioner::execReduceBool(_context, op, _buffer, _shapeInfo, _bufferD, _shapeInfoD, nullptr, target->_buffer, target->_shapeInfo, target->_bufferD, target->_shapeInfoD, nullptr, copy.size(), packX.specialShapeInfo(), packX.specialOffsets());
 
-         // device memory allocation for tads
-        Nd4jLong *xTadShapeInfo, *xTadOffsets;
-        int *dims;     
-        
-        auto cudaResult = cudaMalloc(reinterpret_cast<void **>(&dims), copy.size() * sizeof(int));
-        if (cudaResult != 0) throw cuda_exception::build("NDArray::reduceAlongDimension BoolOps cuda memory allocation failed !", cudaResult);
-
-        cudaResult = cudaMalloc(reinterpret_cast<void **>(&xTadShapeInfo), shape::shapeInfoByteLength(xTad.tadOnlyShapeInfo));
-        if (cudaResult != 0) throw cuda_exception::build("NDArray::reduceAlongDimension BoolOps cuda memory allocation failed !", cudaResult);
-
-        cudaResult = cudaMalloc(reinterpret_cast<void **>(&xTadOffsets), xTad.numTads * sizeof(Nd4jLong));
-        if (cudaResult != 0) throw cuda_exception::build("NDArray::reduceAlongDimension BoolOps cuda memory allocation failed !", cudaResult);
-
-        cudaMemcpyAsync(dims, copy.data(), copy.size() * sizeof(int), cudaMemcpyHostToDevice, *_context->getCudaStream());  
-        cudaMemcpyAsync(xTadShapeInfo, xTad.tadOnlyShapeInfo, shape::shapeInfoByteLength(xTad.tadOnlyShapeInfo), cudaMemcpyHostToDevice, *_context->getCudaStream());
-        cudaMemcpyAsync(xTadOffsets, xTad.tadOffsets, xTad.numTads * sizeof(Nd4jLong), cudaMemcpyHostToDevice, *_context->getCudaStream());
-
-        NativeOpExecutioner::execReduceBool(_context, op, _buffer, _shapeInfo, _bufferD, _shapeInfoD, nullptr, target->_buffer, target->_shapeInfo, target->_bufferD, target->_shapeInfoD, dims, copy.size(), xTadShapeInfo, xTadOffsets);
-
-        cudaResult = cudaStreamSynchronize(*_context->getCudaStream());
-        if (cudaResult != 0) throw cuda_exception::build("NDArray::reduceAlongDimension BoolOps cuda failed !", cudaResult);
-
-        cudaFree(dims); cudaFree(xTadShapeInfo); cudaFree(xTadOffsets);
+        auto cudaResult = cudaStreamSynchronize(*_context->getCudaStream());
+        if (cudaResult != 0)
+            throw cuda_exception::build("NDArray::reduceAlongDimension BoolOps cuda failed !", cudaResult);
     }
     NDArray::registerSpecialUse({target}, {this});
 }
@@ -2591,6 +2323,8 @@ void NDArray::reduceAlongDimension(nd4j::reduce::LongOps op, NDArray* target, co
         RELEASE(newShape, _context->getWorkspace());
     }
 
+    NDArray::prepareSpecialUse({target}, {this});
+
     if(rankOf() == copy.size() || copy.empty()) {        
         NativeOpExecutioner::execReduceLongScalar(_context, op, _buffer, _shapeInfo, _bufferD, _shapeInfoD, nullptr, target->_buffer, target->_shapeInfo, target->_bufferD, target->_shapeInfoD);        
 
@@ -2598,35 +2332,13 @@ void NDArray::reduceAlongDimension(nd4j::reduce::LongOps op, NDArray* target, co
         if (cudaResult != 0) throw cuda_exception::build("NDArray::reduceAlongDimension LongOps cuda failed !", cudaResult);
     }
     else {
+        auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(this->getShapeInfo(), copy);
 
-        shape::TAD xTad;
-        xTad.init(_shapeInfo, copy.data(), copy.size());
-        xTad.createTadOnlyShapeInfo();
-        xTad.createOffsets();
+        NativeOpExecutioner::execReduceLong(_context, op, _buffer, _shapeInfo, _bufferD, _shapeInfoD, nullptr, target->_buffer, target->_shapeInfo, target->_bufferD, target->_shapeInfoD, nullptr, copy.size(), packX.specialShapeInfo(), packX.specialOffsets());
 
-         // device memory allocation for tads
-        Nd4jLong *xTadShapeInfo, *xTadOffsets;
-        int *dims;     
-        
-        auto cudaResult = cudaMalloc(reinterpret_cast<void **>(&dims), copy.size() * sizeof(int));
-        if (cudaResult != 0) throw cuda_exception::build("NDArray::reduceAlongDimension LongOps cuda memory allocation failed !", cudaResult);
-
-        cudaResult = cudaMalloc(reinterpret_cast<void **>(&xTadShapeInfo), shape::shapeInfoByteLength(xTad.tadOnlyShapeInfo));
-        if (cudaResult != 0) throw cuda_exception::build("NDArray::reduceAlongDimension LongOps cuda memory allocation failed !", cudaResult);
-
-        cudaResult = cudaMalloc(reinterpret_cast<void **>(&xTadOffsets), xTad.numTads * sizeof(Nd4jLong));
-        if (cudaResult != 0) throw cuda_exception::build("NDArray::reduceAlongDimension LongOps cuda memory allocation failed !", cudaResult);
-
-        cudaMemcpyAsync(dims, copy.data(), copy.size() * sizeof(int), cudaMemcpyHostToDevice, *_context->getCudaStream());  
-        cudaMemcpyAsync(xTadShapeInfo, xTad.tadOnlyShapeInfo, shape::shapeInfoByteLength(xTad.tadOnlyShapeInfo), cudaMemcpyHostToDevice, *_context->getCudaStream());
-        cudaMemcpyAsync(xTadOffsets, xTad.tadOffsets, xTad.numTads * sizeof(Nd4jLong), cudaMemcpyHostToDevice, *_context->getCudaStream());
-
-        NativeOpExecutioner::execReduceLong(_context, op, _buffer, _shapeInfo, _bufferD, _shapeInfoD, nullptr, target->_buffer, target->_shapeInfo, target->_bufferD, target->_shapeInfoD, dims, copy.size(), xTadShapeInfo, xTadOffsets);
-
-        cudaResult = cudaStreamSynchronize(*_context->getCudaStream());
-        if (cudaResult != 0) throw cuda_exception::build("NDArray::reduceAlongDimension LongOps cuda failed !", cudaResult);
-
-        cudaFree(dims); cudaFree(xTadShapeInfo); cudaFree(xTadOffsets);
+        auto cudaResult = cudaStreamSynchronize(*_context->getCudaStream());
+        if (cudaResult != 0)
+            throw cuda_exception::build("NDArray::reduceAlongDimension LongOps cuda failed !", cudaResult);
     }
     NDArray::registerSpecialUse({target}, {this});
 }
@@ -2775,19 +2487,9 @@ void NDArray::reduceAlongDimension(nd4j::reduce::LongOps op, NDArray* target, co
         if (index >= numTads)
             throw std::runtime_error("Can't get index higher than total number of TADs");
 
-        shape::TAD tad;
-        tad.init(this->_shapeInfo, copy.data(), copy.size());
-        tad.createTadOnlyShapeInfo();
-        tad.createOffsets();
+        auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(this->getShapeInfo(), copy);
 
-        // FIXME MISTAKE PRESENT
-        auto array = new NDArray(tad.tadOnlyShapeInfo, true, _context);
-        //cudaFree(array->_bufferD);
-        array->_bufferD = (int8_t*)specialBufferWithOffset(tad.tadOffsets[index]); //, array->lengthOf() * DataTypeUtils::sizeOf(dataType()), cudaMemcpyDeviceToDevice);        
-        array->_isBuffDAlloc = false;        
-        array->_isView = true;
-
-        return array;
+        return new NDArray(bufferWithOffset(packX.primaryOffsets()[index]), specialBufferWithOffset(packX.primaryOffsets()[index]),  packX.primaryShapeInfo(), _context);
     }
 
 //////////////////////////////////////////////////////////////////////////
@@ -2800,34 +2502,14 @@ void NDArray::reduceAlongDimension(nd4j::reduce::LongOps op, NDArray* target, co
         if(target->_dataType !=  DataTypeUtils::pickPairwiseResultType(_dataType, row->_dataType) && !(isR() && row->isR() && target->isR()))
             throw std::invalid_argument("NDArray::addRowVector: wrong type of target array !");
 
-        int dimension[1] = {1};
+        int dimension = 1;
 
-        std::unique_ptr<shape::TAD> tad(new shape::TAD());
-        tad->init(_shapeInfo, dimension, 1);
-        tad->createTadOnlyShapeInfo();
-        tad->createOffsets();
-        std::vector<std::pair<void*,size_t>> hostData;
-        hostData.emplace_back(dimension, sizeof(int));							// 0 -- dimensions
-        hostData.emplace_back(tad->tadOnlyShapeInfo, shape::shapeInfoByteLength(tad->tadOnlyShapeInfo));	// 1 -- xTadShapeInfo
-        hostData.emplace_back(tad->tadOffsets, tad->numTads * sizeof(Nd4jLong));							// 2 -- xTadOffsets
-        std::vector<void*> devicePtrs(hostData.size(), nullptr);
+        auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(this->getShapeInfo(), dimension);
 
-        // create cuda stream and LaunchContext
-        cudaError_t cudaResult;
-        //cudaStream_t stream;
-        //cudaResult = cudaStreamCreate(&stream);	ASSERT_EQ(0, cudaResult);
-        cudaStream_t* stream = this->getContext()->getCudaStream();
-        // allocate required amount of global device memory and copy host data to it
-//    cudaResult = allocateDeviceMem(*pLc, devicePtrs, hostData);	ASSERT_EQ(0, cudaResult);
-        for(int i = 0; i < devicePtrs.size(); ++i) {
+        NDArray::prepareSpecialUse({target}, {this, row});
 
-            cudaResult = cudaMalloc(reinterpret_cast<void **>(&devicePtrs[i]), hostData[i].second);
-            if(cudaResult != 0) throw cuda_exception::build("Cannot allocate memory for tads on device", cudaResult);
-            cudaMemcpy(devicePtrs[i], hostData[i].first, hostData[i].second, cudaMemcpyHostToDevice);
-        }
-
+        NativeOpExecutioner::execBroadcast(_context, nd4j::broadcast::Ops::Add, _buffer, _shapeInfo, _bufferD, _shapeInfoD, row->_buffer, row->_shapeInfo, row->_bufferD, row->_shapeInfoD, target->getBuffer(), target->getShapeInfo(), target->getSpecialBuffer(), target->getSpecialShapeInfo(), nullptr, 1, packX.specialShapeInfo(), packX.specialOffsets(), nullptr, nullptr);
         NDArray::registerSpecialUse({target}, {this, row});
-        NativeOpExecutioner::execBroadcast(_context, nd4j::broadcast::Ops::Add, _buffer, _shapeInfo, _bufferD, _shapeInfoD, row->_buffer, row->_shapeInfo, row->_bufferD, row->_shapeInfoD, target->getBuffer(), target->getShapeInfo(), target->getSpecialBuffer(), target->getSpecialShapeInfo(), (int*)devicePtrs[0], 1, (Nd4jLong*)devicePtrs[1], (Nd4jLong*)devicePtrs[2], nullptr, nullptr);
     }
 
 //////////////////////////////////////////////////////////////////////////
@@ -2840,35 +2522,15 @@ void NDArray::reduceAlongDimension(nd4j::reduce::LongOps op, NDArray* target, co
         if(target->_dataType !=  DataTypeUtils::pickPairwiseResultType(_dataType, row->_dataType))
             throw std::invalid_argument("NDArray::subRowVector: wrong type of target array !");
 
-        int dimension[1] = {1};
+        int dimension = 1;
 
-        std::unique_ptr<shape::TAD> tad(new shape::TAD());
-        tad->init(_shapeInfo, dimension, 1);
-        tad->createTadOnlyShapeInfo();
-        tad->createOffsets();
+        auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(this->getShapeInfo(), dimension);
 
-        std::vector<std::pair<void*,size_t>> hostData;
-        hostData.emplace_back(dimension, sizeof(int));							// 0 -- dimensions
-        hostData.emplace_back(tad->tadOnlyShapeInfo, shape::shapeInfoByteLength(tad->tadOnlyShapeInfo));	// 1 -- xTadShapeInfo
-        hostData.emplace_back(tad->tadOffsets, tad->numTads * sizeof(Nd4jLong));							// 2 -- xTadOffsets
-        std::vector<void*> devicePtrs(hostData.size(), nullptr);
+        NDArray::prepareSpecialUse({target}, {this, row});
 
-        // create cuda stream and LaunchContext
-        cudaError_t cudaResult;
-        //cudaStream_t stream;
-        //cudaResult = cudaStreamCreate(&stream);	ASSERT_EQ(0, cudaResult);
-        cudaStream_t* stream = this->getContext()->getCudaStream();
-        // allocate required amount of global device memory and copy host data to it
-//    cudaResult = allocateDeviceMem(*pLc, devicePtrs, hostData);	ASSERT_EQ(0, cudaResult);
-        for(int i = 0; i < devicePtrs.size(); ++i) {
-
-            cudaResult = cudaMalloc(reinterpret_cast<void **>(&devicePtrs[i]), hostData[i].second);
-            if(cudaResult != 0) throw cuda_exception::build("Cannot allocate memory for tads on device", cudaResult);
-            cudaMemcpy(devicePtrs[i], hostData[i].first, hostData[i].second, cudaMemcpyHostToDevice);
-        }
+        NativeOpExecutioner::execBroadcast(_context, nd4j::broadcast::Ops::Subtract, _buffer, _shapeInfo, _bufferD, _shapeInfoD, row->_buffer, row->_shapeInfo, row->_bufferD, row->_shapeInfoD, target->getBuffer(), target->getShapeInfo(), target->getSpecialBuffer(), target->getSpecialShapeInfo(), nullptr, 1, packX.specialShapeInfo(), packX.specialOffsets(), nullptr, nullptr);
 
         NDArray::registerSpecialUse({target}, {this, row});
-        NativeOpExecutioner::execBroadcast(_context, nd4j::broadcast::Ops::Subtract, _buffer, _shapeInfo, _bufferD, _shapeInfoD, row->_buffer, row->_shapeInfo, row->_bufferD, row->_shapeInfoD, target->getBuffer(), target->getShapeInfo(), target->getSpecialBuffer(), target->getSpecialShapeInfo(), (int*)devicePtrs[0], 1, (Nd4jLong*)devicePtrs[1], (Nd4jLong*)devicePtrs[2], nullptr, nullptr);
     }
 
 //////////////////////////////////////////////////////////////////////////
@@ -2881,34 +2543,15 @@ void NDArray::reduceAlongDimension(nd4j::reduce::LongOps op, NDArray* target, co
         if(target->_dataType !=  DataTypeUtils::pickPairwiseResultType(_dataType, row->_dataType))
             throw std::invalid_argument("NDArray::mulRowVector: wrong type of target array !");
 
-        int dimension[1] = {1};
+        int dimension = 1;
 
-        std::unique_ptr<shape::TAD> tad(new shape::TAD());
-        tad->init(_shapeInfo, dimension, 1);
-        tad->createTadOnlyShapeInfo();
-        tad->createOffsets();
-        std::vector<std::pair<void*,size_t>> hostData;
-        hostData.emplace_back(dimension, sizeof(int));							// 0 -- dimensions
-        hostData.emplace_back(tad->tadOnlyShapeInfo, shape::shapeInfoByteLength(tad->tadOnlyShapeInfo));	// 1 -- xTadShapeInfo
-        hostData.emplace_back(tad->tadOffsets, tad->numTads * sizeof(Nd4jLong));							// 2 -- xTadOffsets
-        std::vector<void*> devicePtrs(hostData.size(), nullptr);
+        auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(this->getShapeInfo(), dimension);
 
-        // create cuda stream and LaunchContext
-        cudaError_t cudaResult;
-        //cudaStream_t stream;
-        //cudaResult = cudaStreamCreate(&stream);	ASSERT_EQ(0, cudaResult);
-        cudaStream_t* stream = this->getContext()->getCudaStream();
-        // allocate required amount of global device memory and copy host data to it
-//    cudaResult = allocateDeviceMem(*pLc, devicePtrs, hostData);	ASSERT_EQ(0, cudaResult);
-        for(int i = 0; i < devicePtrs.size(); ++i) {
+        NDArray::prepareSpecialUse({target}, {this, row});
 
-            cudaResult = cudaMalloc(reinterpret_cast<void **>(&devicePtrs[i]), hostData[i].second);
-            if(cudaResult != 0) throw cuda_exception::build("Cannot allocate memory for tads on device", cudaResult);
-            cudaMemcpy(devicePtrs[i], hostData[i].first, hostData[i].second, cudaMemcpyHostToDevice);
-        }
+        NativeOpExecutioner::execBroadcast(_context, nd4j::broadcast::Ops::Multiply, _buffer, _shapeInfo, _bufferD, _shapeInfoD, row->_buffer, row->_shapeInfo, row->_bufferD, row->_shapeInfoD, target->getBuffer(), target->getShapeInfo(), target->getSpecialBuffer(), target->getSpecialShapeInfo(), nullptr, 1, packX.specialShapeInfo(), packX.specialOffsets(), nullptr, nullptr);
 
         NDArray::registerSpecialUse({target}, {this, row});
-        NativeOpExecutioner::execBroadcast(_context, nd4j::broadcast::Ops::Multiply, _buffer, _shapeInfo, _bufferD, _shapeInfoD, row->_buffer, row->_shapeInfo, row->_bufferD, row->_shapeInfoD, target->getBuffer(), target->getShapeInfo(), target->getSpecialBuffer(), target->getSpecialShapeInfo(), (int*)devicePtrs[0], 1, (Nd4jLong*)devicePtrs[1], (Nd4jLong*)devicePtrs[2], nullptr, nullptr);
     }
 
 //////////////////////////////////////////////////////////////////////////
@@ -2923,35 +2566,15 @@ void NDArray::reduceAlongDimension(nd4j::reduce::LongOps op, NDArray* target, co
         if(target->_dataType !=  DataTypeUtils::pickPairwiseResultType(_dataType, row->_dataType))
             throw std::invalid_argument("NDArray::divRowVector: wrong type of target array !");
 
-        int dimension[1] = {1};
+        int dimension = 1;
 
-        std::unique_ptr<shape::TAD> tad(new shape::TAD());
-        tad->init(_shapeInfo, dimension, 1);
-        tad->createTadOnlyShapeInfo();
-        tad->createOffsets();
-        std::vector<std::pair<void*,size_t>> hostData;
-        hostData.emplace_back(dimension, sizeof(int));							// 0 -- dimensions
-        hostData.emplace_back(tad->tadOnlyShapeInfo, shape::shapeInfoByteLength(tad->tadOnlyShapeInfo));	// 1 -- xTadShapeInfo
-        hostData.emplace_back(tad->tadOffsets, tad->numTads * sizeof(Nd4jLong));							// 2 -- xTadOffsets
-        std::vector<void*> devicePtrs(hostData.size(), nullptr);
+        auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(this->getShapeInfo(), dimension);
 
-        // create cuda stream and LaunchContext
-        cudaError_t cudaResult;
-        //cudaStream_t stream;
-        //cudaResult = cudaStreamCreate(&stream);	ASSERT_EQ(0, cudaResult);
-        cudaStream_t* stream = this->getContext()->getCudaStream();
-        // allocate required amount of global device memory and copy host data to it
-//    cudaResult = allocateDeviceMem(*pLc, devicePtrs, hostData);	ASSERT_EQ(0, cudaResult);
-        for(int i = 0; i < devicePtrs.size(); ++i) {
+        NDArray::prepareSpecialUse({target}, {this, row});
 
-            cudaResult = cudaMalloc(reinterpret_cast<void **>(&devicePtrs[i]), hostData[i].second);
-            if(cudaResult != 0) throw cuda_exception::build("Cannot allocate memory for tads on device", cudaResult);
-            cudaMemcpy(devicePtrs[i], hostData[i].first, hostData[i].second, cudaMemcpyHostToDevice);
-        }
+        NativeOpExecutioner::execBroadcast(_context, nd4j::broadcast::Divide, _buffer, _shapeInfo, _bufferD, _shapeInfoD, row->_buffer, row->_shapeInfo, row->_bufferD, row->_shapeInfoD, target->getBuffer(), target->getShapeInfo(), target->getSpecialBuffer(), target->getSpecialShapeInfo(), nullptr, 1, packX.specialShapeInfo(), packX.specialOffsets(), nullptr, nullptr);
+
         NDArray::registerSpecialUse({target}, {this, row});
-
-        NativeOpExecutioner::execBroadcast(_context, nd4j::broadcast::Divide, _buffer, _shapeInfo, _bufferD, _shapeInfoD, row->_buffer, row->_shapeInfo, row->_bufferD, row->_shapeInfoD, target->getBuffer(), target->getShapeInfo(), target->getSpecialBuffer(), target->getSpecialShapeInfo(), (int*)devicePtrs[0], 1, (Nd4jLong*)devicePtrs[1], (Nd4jLong*)devicePtrs[2], nullptr, nullptr);
-
     }
 
 //////////////////////////////////////////////////////////////////////////
@@ -2963,34 +2586,15 @@ void NDArray::reduceAlongDimension(nd4j::reduce::LongOps op, NDArray* target, co
         if (rankOf() != 2 || !row->isRowVector() || columns() != row->lengthOf())
             throw std::invalid_argument("NDArray::addiRowVector: wrong arguments !");
 
-        int dimension[1] = {1};
+        int dimension = 1;
 
-        std::unique_ptr<shape::TAD> tad(new shape::TAD());
-        tad->init(_shapeInfo, dimension, 1);
-        tad->createTadOnlyShapeInfo();
-        tad->createOffsets();
+        auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(this->getShapeInfo(), dimension);
 
-        std::vector<std::pair<void*,size_t>> hostData;
-        hostData.emplace_back(dimension, sizeof(int));							// 0 -- dimensions
-        hostData.emplace_back(tad->tadOnlyShapeInfo, shape::shapeInfoByteLength(tad->tadOnlyShapeInfo));	// 1 -- xTadShapeInfo
-        hostData.emplace_back(tad->tadOffsets, tad->numTads * sizeof(Nd4jLong));							// 2 -- xTadOffsets
-        std::vector<void*> devicePtrs(hostData.size(), nullptr);
+        NDArray::prepareSpecialUse({this}, {row});
 
-        // create cuda stream and LaunchContext
-        cudaError_t cudaResult;
-        //cudaStream_t stream;
-        //cudaResult = cudaStreamCreate(&stream);	ASSERT_EQ(0, cudaResult);
-        cudaStream_t* stream = this->getContext()->getCudaStream();
-        // allocate required amount of global device memory and copy host data to it
-//    cudaResult = allocateDeviceMem(*pLc, devicePtrs, hostData);	ASSERT_EQ(0, cudaResult);
-        for(int i = 0; i < devicePtrs.size(); ++i) {
+        NativeOpExecutioner::execBroadcast(_context, nd4j::broadcast::Ops::Add, _buffer, _shapeInfo, _bufferD, _shapeInfoD, row->_buffer, row->_shapeInfo, row->_bufferD, row->_shapeInfoD, this->buffer(), this->shapeInfo(), this->specialBuffer(), this->specialShapeInfo(), nullptr, 1, packX.specialShapeInfo(), packX.specialOffsets(), nullptr, nullptr);
 
-            cudaResult = cudaMalloc(reinterpret_cast<void **>(&devicePtrs[i]), hostData[i].second);
-            if(cudaResult != 0) throw cuda_exception::build("Cannot allocate memory for tads on device", cudaResult);
-            cudaMemcpy(devicePtrs[i], hostData[i].first, hostData[i].second, cudaMemcpyHostToDevice);
-        }
         NDArray::registerSpecialUse({this}, {row});
-        NativeOpExecutioner::execBroadcast(_context, nd4j::broadcast::Ops::Add, _buffer, _shapeInfo, _bufferD, _shapeInfoD, row->_buffer, row->_shapeInfo, row->_bufferD, row->_shapeInfoD, this->buffer(), this->shapeInfo(), this->specialBuffer(), this->specialShapeInfo(), (int*)devicePtrs[0], 1, (Nd4jLong*)devicePtrs[1], (Nd4jLong*)devicePtrs[2], nullptr, nullptr);
     }
 
 //////////////////////////////////////////////////////////////////////////
@@ -3002,34 +2606,15 @@ void NDArray::reduceAlongDimension(nd4j::reduce::LongOps op, NDArray* target, co
         if(target->_dataType !=  DataTypeUtils::pickPairwiseResultType(_dataType, column->_dataType))
             throw std::invalid_argument("NDArray::addColumnVector: wrong type of target array !");
 
-        int dimension[1] = {0};
+        int dimension = 0;
 
-        std::unique_ptr<shape::TAD> tad(new shape::TAD());
-        tad->init(_shapeInfo, dimension, 1);
-        tad->createTadOnlyShapeInfo();
-        tad->createOffsets();
-        std::vector<std::pair<void*,size_t>> hostData;
-        hostData.emplace_back(dimension, sizeof(int));							// 0 -- dimensions
-        hostData.emplace_back(tad->tadOnlyShapeInfo, shape::shapeInfoByteLength(tad->tadOnlyShapeInfo));	// 1 -- xTadShapeInfo
-        hostData.emplace_back(tad->tadOffsets, tad->numTads * sizeof(Nd4jLong));							// 2 -- xTadOffsets
-        std::vector<void*> devicePtrs(hostData.size(), nullptr);
+        auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(this->getShapeInfo(), dimension);
 
-        // create cuda stream and LaunchContext
-        cudaError_t cudaResult;
-        //cudaStream_t stream;
-        //cudaResult = cudaStreamCreate(&stream);	ASSERT_EQ(0, cudaResult);
-        cudaStream_t* stream = this->getContext()->getCudaStream();
-        // allocate required amount of global device memory and copy host data to it
-//    cudaResult = allocateDeviceMem(*pLc, devicePtrs, hostData);	ASSERT_EQ(0, cudaResult);
-        for(int i = 0; i < devicePtrs.size(); ++i) {
+        NDArray::prepareSpecialUse({target}, {this, column});
 
-            cudaResult = cudaMalloc(reinterpret_cast<void **>(&devicePtrs[i]), hostData[i].second);
-            if(cudaResult != 0) throw cuda_exception::build("Cannot allocate memory for tads on device", cudaResult);
-            cudaMemcpy(devicePtrs[i], hostData[i].first, hostData[i].second, cudaMemcpyHostToDevice);
-        }
+        NativeOpExecutioner::execBroadcast(_context, nd4j::broadcast::Ops::Add, _buffer, _shapeInfo, _bufferD, _shapeInfoD, column->_buffer, column->_shapeInfo, column->_bufferD, column->_shapeInfoD, target->getBuffer(), target->getShapeInfo(), target->getSpecialBuffer(), target->getSpecialShapeInfo(), nullptr, 1, packX.specialShapeInfo(), packX.specialOffsets(), nullptr, nullptr);
 
         NDArray::registerSpecialUse({target}, {this, column});
-        NativeOpExecutioner::execBroadcast(_context, nd4j::broadcast::Ops::Add, _buffer, _shapeInfo, _bufferD, _shapeInfoD, column->_buffer, column->_shapeInfo, column->_bufferD, column->_shapeInfoD, target->getBuffer(), target->getShapeInfo(), target->getSpecialBuffer(), target->getSpecialShapeInfo(), (int*)devicePtrs[0], 1, (Nd4jLong*)devicePtrs[1], (Nd4jLong*)devicePtrs[2], nullptr, nullptr);
     }
 
 //////////////////////////////////////////////////////////////////////////
@@ -3040,34 +2625,15 @@ void NDArray::reduceAlongDimension(nd4j::reduce::LongOps op, NDArray* target, co
         if (rankOf() != 2 || !column->isColumnVector() || rows() != column->lengthOf())
             throw std::invalid_argument("NDArray::addiColumnVector: wrong arguments !");
 
-        int dimension[1] = {0};
+        int dimension = 0;
 
-        std::unique_ptr<shape::TAD> tad(new shape::TAD());
-        tad->init(_shapeInfo, dimension, 1);
-        tad->createTadOnlyShapeInfo();
-        tad->createOffsets();
-        std::vector<std::pair<void*,size_t>> hostData;
-        hostData.emplace_back(dimension, sizeof(int));							// 0 -- dimensions
-        hostData.emplace_back(tad->tadOnlyShapeInfo, shape::shapeInfoByteLength(tad->tadOnlyShapeInfo));	// 1 -- xTadShapeInfo
-        hostData.emplace_back(tad->tadOffsets, tad->numTads * sizeof(Nd4jLong));							// 2 -- xTadOffsets
-        std::vector<void*> devicePtrs(hostData.size(), nullptr);
+        auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(this->getShapeInfo(), dimension);
 
-        // create cuda stream and LaunchContext
-        cudaError_t cudaResult;
-        //cudaStream_t stream;
-        //cudaResult = cudaStreamCreate(&stream);	ASSERT_EQ(0, cudaResult);
-        cudaStream_t* stream = this->getContext()->getCudaStream();
-        // allocate required amount of global device memory and copy host data to it
-//    cudaResult = allocateDeviceMem(*pLc, devicePtrs, hostData);	ASSERT_EQ(0, cudaResult);
-        for(int i = 0; i < devicePtrs.size(); ++i) {
+        NDArray::prepareSpecialUse({this}, {column});
 
-            cudaResult = cudaMalloc(reinterpret_cast<void **>(&devicePtrs[i]), hostData[i].second);
-            if(cudaResult != 0) throw cuda_exception::build("Cannot allocate memory for tads on device", cudaResult);
-            cudaMemcpy(devicePtrs[i], hostData[i].first, hostData[i].second, cudaMemcpyHostToDevice);
-        }
+        NativeOpExecutioner::execBroadcast(_context, nd4j::broadcast::Ops::Add, _buffer, _shapeInfo, _bufferD, _shapeInfoD, column->_buffer, column->_shapeInfo, column->_bufferD, column->_shapeInfoD, this->buffer(), this->shapeInfo(), this->specialBuffer(), this->specialShapeInfo(), nullptr, 1, packX.specialShapeInfo(), packX.specialOffsets(), nullptr, nullptr);
 
         NDArray::registerSpecialUse({this}, {column});
-        NativeOpExecutioner::execBroadcast(_context, nd4j::broadcast::Ops::Add, _buffer, _shapeInfo, _bufferD, _shapeInfoD, column->_buffer, column->_shapeInfo, column->_bufferD, column->_shapeInfoD, this->buffer(), this->shapeInfo(), this->specialBuffer(), this->specialShapeInfo(), (int*)devicePtrs[0], 1, (Nd4jLong*)devicePtrs[1], (Nd4jLong*)devicePtrs[2], nullptr, nullptr);
     }
 
 //////////////////////////////////////////////////////////////////////////
@@ -3078,33 +2644,15 @@ void NDArray::reduceAlongDimension(nd4j::reduce::LongOps op, NDArray* target, co
         if (rankOf() != 2 || !column->isColumnVector() || rows() != column->lengthOf())
             throw std::invalid_argument("NDArray::muliColumnVector: wrong arguments !");
 
-        int dimension[1] = {0};
+        int dimension = 0;
 
-        std::unique_ptr<shape::TAD> tad(new shape::TAD());
-        tad->init(_shapeInfo, dimension, 1);
-        tad->createTadOnlyShapeInfo();
-        tad->createOffsets();
-        std::vector<std::pair<void*,size_t>> hostData;
-        hostData.emplace_back(dimension, sizeof(int));							// 0 -- dimensions
-        hostData.emplace_back(tad->tadOnlyShapeInfo, shape::shapeInfoByteLength(tad->tadOnlyShapeInfo));	// 1 -- xTadShapeInfo
-        hostData.emplace_back(tad->tadOffsets, tad->numTads * sizeof(Nd4jLong));							// 2 -- xTadOffsets
-        std::vector<void*> devicePtrs(hostData.size(), nullptr);
+        auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(this->getShapeInfo(), dimension);
 
-        // create cuda stream and LaunchContext
-        cudaError_t cudaResult;
-        //cudaStream_t stream;
-        //cudaResult = cudaStreamCreate(&stream);	ASSERT_EQ(0, cudaResult);
-        cudaStream_t* stream = this->getContext()->getCudaStream();
-        // allocate required amount of global device memory and copy host data to it
-//    cudaResult = allocateDeviceMem(*pLc, devicePtrs, hostData);	ASSERT_EQ(0, cudaResult);
-        for(int i = 0; i < devicePtrs.size(); ++i) {
+        NDArray::prepareSpecialUse({this}, {column});
 
-            cudaResult = cudaMalloc(reinterpret_cast<void **>(&devicePtrs[i]), hostData[i].second);
-            if(cudaResult != 0) throw cuda_exception::build("Cannot allocate memory for tads on device", cudaResult);
-            cudaMemcpy(devicePtrs[i], hostData[i].first, hostData[i].second, cudaMemcpyHostToDevice);
-        }
+        NativeOpExecutioner::execBroadcast(_context, nd4j::broadcast::Ops::Multiply, _buffer, _shapeInfo, _bufferD, _shapeInfoD, column->_buffer, column->_shapeInfo, column->_bufferD, column->_shapeInfoD, this->buffer(), this->shapeInfo(), this->specialBuffer(), this->specialShapeInfo(), nullptr, 1, packX.specialShapeInfo(), packX.specialOffsets(), nullptr, nullptr);
+
         NDArray::registerSpecialUse({this}, {column});
-        NativeOpExecutioner::execBroadcast(_context, nd4j::broadcast::Ops::Multiply, _buffer, _shapeInfo, _bufferD, _shapeInfoD, column->_buffer, column->_shapeInfo, column->_bufferD, column->_shapeInfoD, this->buffer(), this->shapeInfo(), this->specialBuffer(), this->specialShapeInfo(), (int*)devicePtrs[0], 1, (Nd4jLong*)devicePtrs[1], (Nd4jLong*)devicePtrs[2], nullptr, nullptr);
     }
     
 
@@ -3217,51 +2765,14 @@ void NDArray::reduceAlongDimension(nd4j::reduce::LongOps op, NDArray* target, co
         //printf("Repeat delta %lld, numTads %lld\n", repeatDelta, numTads);
         //tadOnlyInputShapeInfo, tadInputOffsets, tadOnlyOutputShapeInfo, tadOutputOffsets;
         std::vector<int> copy({dimension});
-        shape::TAD tadInput;
-        tadInput.init(this->_shapeInfo, copy.data(), copy.size());
-        tadInput.createTadOnlyShapeInfo();
-        tadInput.createOffsets();
-        if (!this->isActualOnDeviceSide())
-            this->syncToDevice();
 
-        shape::TAD tadOutput;
-        tadOutput.init(ret->_shapeInfo, copy.data(), copy.size());
-        tadOutput.createTadOnlyShapeInfo();
-        tadOutput.createOffsets();
-        if (!this->isActualOnDeviceSide())
-            this->syncToDevice();
+        auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(this->getShapeInfo(), copy);
+        auto packZ = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(ret->getShapeInfo(), copy);
 
-        // prepare input arrays for prepareDataForCuda function
-        std::vector<std::pair<void*,size_t>> hostData;
-        hostData.emplace_back(tadInput.tadOnlyShapeInfo, shape::shapeInfoByteLength(tadInput.tadOnlyShapeInfo));	// 1 -- xTadShapeInfo
-        hostData.emplace_back(tadInput.tadOffsets, tadInput.numTads * sizeof(Nd4jLong));							// 2 -- xTadOffsets
-        hostData.emplace_back(tadOutput.tadOnlyShapeInfo, shape::shapeInfoByteLength(tadOutput.tadOnlyShapeInfo));	// 1 -- xTadShapeInfo
-        hostData.emplace_back(tadOutput.tadOffsets, tadOutput.numTads * sizeof(Nd4jLong));							// 2 -- xTadOffsets
-        std::vector<Nd4jLong*> devicePtrs(hostData.size(), nullptr);
+        NDArray::prepareSpecialUse({ret}, {this});
 
-        // create cuda stream and LaunchContext
-        cudaError_t cudaResult;
-        //cudaStream_t stream;
-        //cudaResult = cudaStreamCreate(&stream);	ASSERT_EQ(0, cudaResult);
-        //cudaStream_t* stream = this->getContext()->getCudaStream();
-        // allocate required amount of global device memory and copy host data to it
-//    cudaResult = allocateDeviceMem(*pLc, devicePtrs, hostData);	ASSERT_EQ(0, cudaResult);
-        for(int i = 0; i < devicePtrs.size(); ++i) {
-            cudaResult = cudaMalloc(&devicePtrs[i], hostData[i].second);
-            if(cudaResult != 0) throw cuda_exception::build("repeat: Cannot allocate memory for tads on device", cudaResult);
-            cudaResult = cudaMemcpy(devicePtrs[i], hostData[i].first, hostData[i].second, cudaMemcpyHostToDevice);
-            if(cudaResult != 0) throw cuda_exception::build("repeat: Cannot copy memory block for tads on device", cudaResult);
-        }
         auto stream = _context->getCudaStream();
-        BUILD_SINGLE_SELECTOR(_dataType, repeatKernelH, (_bufferD, ret->_bufferD, numTads, lengthOf(), ret->lengthOf(), (Nd4jLong*)devicePtrs[0], (Nd4jLong*)devicePtrs[1], (Nd4jLong*)devicePtrs[2], (Nd4jLong*)devicePtrs[3], *stream), LIBND4J_TYPES);
-
-        for(int i = 0; i < devicePtrs.size(); ++i) {
-            cudaResult = cudaFree(devicePtrs[i]);
-            if(cudaResult != 0)
-                throw cuda_exception::build("repeat: Cannot deallocate memory for tads on device", cudaResult);
-//            cudaResult = cudaMemcpy(devicePtrs[i], hostData[i].first, hostData[i].second, cudaMemcpyHostToDevice);
-//            if(cudaResult != 0) throw cuda_exception::build("Cannot copy memory block for tads on device", cudaResult);
-        }
+        BUILD_SINGLE_SELECTOR(_dataType, repeatKernelH, (_bufferD, ret->_bufferD, numTads, lengthOf(), ret->lengthOf(), packX.specialShapeInfo(), packX.specialOffsets(), packZ.specialShapeInfo(), packZ.specialOffsets(), *stream), LIBND4J_TYPES);
 
         return ret;
     }
@@ -3286,54 +2797,16 @@ void NDArray::reduceAlongDimension(nd4j::reduce::LongOps op, NDArray* target, co
         const Nd4jLong numTads = ShapeUtils::getNumOfSubArrs(_shapeInfo, dimsToExclude);
 
         std::vector<int> copy({dimension});
-        shape::TAD tadInput;
-        tadInput.init(this->_shapeInfo, copy.data(), copy.size());
-        tadInput.createTadOnlyShapeInfo();
-        tadInput.createOffsets();
-        if (!this->isActualOnDeviceSide())
-            this->syncToDevice();
+        auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(this->getShapeInfo(), copy);
+        auto packZ = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(target.getShapeInfo(), copy);
 
-        shape::TAD tadOutput;
-        tadOutput.init(target._shapeInfo, copy.data(), copy.size());
-        tadOutput.createTadOnlyShapeInfo();
-        tadOutput.createOffsets();
-        if (!this->isActualOnDeviceSide())
-            this->syncToDevice();
-        if (!target.isActualOnDeviceSide())
-            target.syncToDevice();
-        // prepare input arrays for prepareDataForCuda function
-        std::vector<std::pair<void*,size_t>> hostData;
-        hostData.emplace_back(tadInput.tadOnlyShapeInfo, shape::shapeInfoByteLength(tadInput.tadOnlyShapeInfo));	// 1 -- xTadShapeInfo
-        hostData.emplace_back(tadInput.tadOffsets, tadInput.numTads * sizeof(Nd4jLong));							// 2 -- xTadOffsets
-        hostData.emplace_back(tadOutput.tadOnlyShapeInfo, shape::shapeInfoByteLength(tadOutput.tadOnlyShapeInfo));	// 1 -- xTadShapeInfo
-        hostData.emplace_back(tadOutput.tadOffsets, tadOutput.numTads * sizeof(Nd4jLong));							// 2 -- xTadOffsets
-        std::vector<Nd4jLong*> devicePtrs(hostData.size(), nullptr);
+        NDArray::prepareSpecialUse({&target}, {this});
 
-        // create cuda stream and LaunchContext
-        cudaError_t cudaResult;
-        //cudaStream_t stream;
-        //cudaResult = cudaStreamCreate(&stream);	ASSERT_EQ(0, cudaResult);
-        //cudaStream_t* stream = this->getContext()->getCudaStream();
-        // allocate required amount of global device memory and copy host data to it
-//    cudaResult = allocateDeviceMem(*pLc, devicePtrs, hostData);	ASSERT_EQ(0, cudaResult);
-        for(int i = 0; i < devicePtrs.size(); ++i) {
-            cudaResult = cudaMalloc(&devicePtrs[i], hostData[i].second);
-            if(cudaResult != 0) throw cuda_exception::build("repeat: Cannot allocate memory for tads on device", cudaResult);
-            cudaResult = cudaMemcpy(devicePtrs[i], hostData[i].first, hostData[i].second, cudaMemcpyHostToDevice);
-            if(cudaResult != 0) throw cuda_exception::build("repeat: Cannot copy memory block for tads on device", cudaResult);
-        }
         auto stream = _context->getCudaStream();
-        //BUILD_SINGLE_SELECTOR(_dataType, repeatKernelH, (_bufferD, target._bufferD, numTads, lengthOf(), (Nd4jLong*)devicePtrs[0], (Nd4jLong*)devicePtrs[1], (Nd4jLong*)devicePtrs[2], (Nd4jLong*)devicePtrs[3], *stream), LIBND4J_TYPES);
-        BUILD_DOUBLE_SELECTOR(target._dataType, _dataType, repeatKernelHH, (_bufferD, target._bufferD, numTads, lengthOf(), (Nd4jLong*)devicePtrs[0], (Nd4jLong*)devicePtrs[1], (Nd4jLong*)devicePtrs[2], (Nd4jLong*)devicePtrs[3], *stream), LIBND4J_TYPES, LIBND4J_TYPES);
-        for(int i = 0; i < devicePtrs.size(); ++i) {
-            cudaResult = cudaFree(devicePtrs[i]);
-            if(cudaResult != 0) throw cuda_exception::build("repeat: Cannot deallocate memory for tads on device", cudaResult);
-        }
+        BUILD_DOUBLE_SELECTOR(target._dataType, _dataType, repeatKernelHH, (_bufferD, target._bufferD, numTads, lengthOf(), packX.specialShapeInfo(), packX.specialOffsets(), packZ.specialShapeInfo(), packZ.specialOffsets(), *stream), LIBND4J_TYPES, LIBND4J_TYPES);
+
+        NDArray::registerSpecialUse({&target}, {this});
     }
-
- 
-
-
 } // end namespace nd4j
 
 

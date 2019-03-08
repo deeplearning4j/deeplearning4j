@@ -51,51 +51,25 @@ namespace nd4j {
     }
 
     DataBuffer& ConstantShapeHelper::bufferForShapeInfo(ShapeDescriptor &descriptor) {
-        int deviceId = 0;
+        int deviceId = getCurrentDevice();
 
         _mutex.lock();
 
         if (_cache[deviceId].count(descriptor) == 0) {
-            switch (descriptor.rank()) {
-                case 0: {
-                    auto hPtr = descriptor.isEmpty() ? ShapeBuilders::emptyShapeInfo(descriptor.dataType()) : ShapeBuilders::createScalarShapeInfo(descriptor.dataType());
-                    auto dPtr = ConstantHelper::getInstance()->replicatePointer(hPtr, shape::shapeInfoByteLength(hPtr));
-                    DataBuffer buffer(hPtr, dPtr);
-                    ShapeDescriptor descriptor1(descriptor);
-                    _cache[deviceId][descriptor1] = buffer;
-
-                    _mutex.unlock();
-
-                    return _cache[deviceId][descriptor1];
-                }
-                case 1: {
-                    auto hPtr = ShapeBuilders::createVectorShapeInfo(descriptor.dataType(), const_cast<ShapeDescriptor&>(descriptor).shape()[0]);
-                    auto dPtr = ConstantHelper::getInstance()->replicatePointer(hPtr, shape::shapeInfoByteLength(hPtr));
-                    DataBuffer buffer(hPtr, dPtr);
-                    ShapeDescriptor descriptor1(descriptor);
-                    _cache[deviceId][descriptor1] = buffer;
-
-                    _mutex.unlock();
-
-                    return _cache[deviceId][descriptor1];
-                }
-                case 2:
-                default: {
-                    auto hPtr = ShapeBuilders::createShapeInfo(descriptor.dataType(), descriptor.order(), const_cast<ShapeDescriptor&>(descriptor).shape());
-                    auto dPtr = ConstantHelper::getInstance()->replicatePointer(hPtr, shape::shapeInfoByteLength(hPtr));
-                    DataBuffer buffer(hPtr, dPtr);
-                    ShapeDescriptor descriptor1(descriptor);
-                    _cache[deviceId][descriptor1] = buffer;
-
-                    _mutex.unlock();
-
-                    return _cache[deviceId][descriptor1];
-                }
-            }
-        } else {
+            auto hPtr = descriptor.toShapeInfo();
+            auto dPtr = ConstantHelper::getInstance()->replicatePointer(hPtr, shape::shapeInfoByteLength(hPtr));
+            DataBuffer buffer(hPtr, dPtr);
+            ShapeDescriptor descriptor1(descriptor);
+            _cache[deviceId][descriptor1] = buffer;
+            DataBuffer &r = _cache[deviceId][descriptor1];
             _mutex.unlock();
 
-            return _cache[deviceId].at(descriptor);
+            return r;
+        } else {
+            DataBuffer &r = _cache[deviceId].at(descriptor);
+            _mutex.unlock();
+
+            return r;
         }
     }
 
