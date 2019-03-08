@@ -21,9 +21,10 @@
 #include "../TadPack.h"
 
 namespace nd4j {
-    TadPack::TadPack(DataBuffer &shapes, DataBuffer &offets) {
+    TadPack::TadPack(DataBuffer &shapes, DataBuffer &offets, Nd4jLong numTads) {
         _tadShape = shapes;
         _tadOffsets = offets;
+        _numTads = numTads;
     }
 
     Nd4jLong* TadPack::primaryShapeInfo() {
@@ -39,5 +40,9 @@ namespace nd4j {
 
     Nd4jLong* TadPack::specialOffsets() {
         return reinterpret_cast<Nd4jLong *>(_tadOffsets.special());
+    }
+
+    Nd4jLong TadPack::numberOfTads() {
+        return _numTads;
     }
 }

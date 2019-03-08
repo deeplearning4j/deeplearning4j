@@ -79,7 +79,7 @@ namespace nd4j {
             DataBuffer shapesBuffer(sPtr, ssPtr);
             DataBuffer offsetsBuffer(oPtr, soPtr);
 
-            TadPack t(shapesBuffer, offsetsBuffer);
+            TadPack t(shapesBuffer, offsetsBuffer, tad.numTads);
             _cache[deviceId][descriptor] = t;
 
             TadPack &r = _cache[deviceId][descriptor];

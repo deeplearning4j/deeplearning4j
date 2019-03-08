@@ -28,8 +28,9 @@ namespace nd4j {
     private:
         DataBuffer _tadShape;
         DataBuffer _tadOffsets;
+        Nd4jLong _numTads;
     public:
-        explicit TadPack(DataBuffer &shapes, DataBuffer &offets);
+        explicit TadPack(DataBuffer &shapes, DataBuffer &offets, Nd4jLong numTads);
         TadPack() = default;
         ~TadPack() = default;
 
@@ -38,6 +39,8 @@ namespace nd4j {
 
         Nd4jLong* specialShapeInfo();
         Nd4jLong* specialOffsets();
+
+        Nd4jLong numberOfTads();
     };
 }
 

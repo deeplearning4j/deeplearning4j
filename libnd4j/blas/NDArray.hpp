@@ -21,7 +21,8 @@
 
 #include <array/ShapeDescriptor.h>
 #include <ConstantShapeHelper.h>
-#include <helpers/ConstantShapeHelper.h>
+#include <ConstantShapeHelper.h>
+#include <ConstantTadHelper.h>
 
 namespace nd4j {
 
@@ -2523,23 +2524,10 @@ template void NDArray::operator/=(const bool scalar);
         if (indices.size() == 0)
             return result;
 
-        std::vector<int> copy(dimensions);
+        auto pack = ConstantTadHelper::getInstance()->tadForDimensions(_shapeInfo, const_cast<int*>(dimensions.data()), dimensions.size());
 
-        // we need to sort dimensions (?)
-        if (dimensions.size() > 1)
-            std::sort (copy.begin(), copy.end());
-
-        auto tadLength = shape::tadLength(_shapeInfo, copy.data(), copy.size());
+        auto tadLength = shape::length(pack.primaryShapeInfo());
         auto numTads = _length / tadLength;
-
-        std::unique_ptr<shape::TAD> tad(new shape::TAD());
-        tad->init(_shapeInfo, copy.data(), copy.size());
-        tad->createTadOnlyShapeInfo();
-        tad->createOffsets();
-
-        // FIXME: why we're not using workspaces here?
-        Nd4jLong* shapeInfo = new Nd4jLong[shape::shapeInfoLength(tad->tadOnlyShapeInfo[0])];
-        std::memcpy(shapeInfo, tad->tadOnlyShapeInfo, shape::shapeInfoByteLength(tad->tadOnlyShapeInfo));
 
         for (auto idx: indices) {
             if (idx >= numTads) {
@@ -2547,15 +2535,9 @@ template void NDArray::operator/=(const bool scalar);
                 throw std::runtime_error("Bad index");
             }
 
-            auto array = new NDArray(bufferWithOffset(tad->tadOffsets[idx]), shapeInfo);
+            auto array = new NDArray(bufferWithOffset(pack.primaryOffsets()[idx]), specialBufferWithOffset(pack.primaryOffsets()[idx]), pack.primaryShapeInfo());
             result->push_back(array);
         }
-
-        // if we have no indices - just delete shapeInfo
-        if (result->size() > 0)
-            result->at(0)->triggerAllocationFlag(false, true);
-        else
-            delete[] shapeInfo;
 
         return result;
     }
@@ -2658,31 +2640,19 @@ Nd4jLong NDArray::getOffset(const Nd4jLong i) const {
         if(dimensions.size() == 0)
             return result;
 
-        std::vector<int> copy(dimensions);
-
-        // we need to sort dimensions (?)
-        if (dimensions.size() > 1)
-            std::sort (copy.begin(), copy.end());
-
-        if(copy.back() >= rankOf())
+        if(dimensions.size() >= rankOf())
             throw std::runtime_error("NDArray::allTensorsAlongDimension static function: all input dimensions must be smaller than rank of input array !");
 
-        auto numTads = _length / shape::tadLength(_shapeInfo, copy.data(), copy.size());
 
-        std::unique_ptr<shape::TAD> tad(new shape::TAD());
-        tad->init(_shapeInfo, copy.data(), copy.size());
-        tad->createTadOnlyShapeInfo();
-        tad->createOffsets();        
-                        
+        auto pack = ConstantTadHelper::getInstance()->tadForDimensions(_shapeInfo, const_cast<int*>(dimensions.data()), dimensions.size());
+        auto numTads = _length / shape::length(pack.primaryShapeInfo());
+
         for (int idx = 0; idx < numTads; idx++ ) {
+            // FIXME: why is this? why are we allocating this?
+            lazyAllocateBuffer();
+            makeBothBuffersActual();
+            auto array = new NDArray(bufferWithOffset(pack.primaryOffsets()[idx]), specialBufferWithOffset(pack.primaryOffsets()[idx]), pack.primaryShapeInfo(), _context, false, false, false);
 
-            #ifdef __CUDABLAS__
-                lazyAllocateBuffer();
-                makeBothBuffersActual();
-                auto array = new NDArray(bufferWithOffset(tad->tadOffsets[idx]), specialBufferWithOffset(tad->tadOffsets[idx]), tad->tadOnlyShapeInfo, _context, false, false, false);
-            #else
-                auto array = new NDArray(bufferWithOffset(tad->tadOffsets[idx]), tad->tadOnlyShapeInfo, _context, false, false);
-            #endif            
             result->push_back(array);
         }
 
