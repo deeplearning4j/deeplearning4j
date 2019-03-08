@@ -123,7 +123,7 @@ NDArray::NDArray(void *buffer, Nd4jLong *shapeInfo, graph::LaunchContext* contex
     _context = context;
     _isAttached = _context->getWorkspace() != nullptr;
 
-    setShapeInfo(ShapeDescriptor(shapeInfo));    
+    setShapeInfo(shapeInfo);    
 
     if (this->isEmpty()) {
         _length = 0;
@@ -159,7 +159,7 @@ NDArray::NDArray(void *buffer, void* bufferD, Nd4jLong *shapeInfo, graph::Launch
      
     _context = context;
 
-    setShapeInfo(shapeInfo);    
+    setShapeInfo(shapeInfo);
     
     if (this->isEmpty()) {
         _length = 0;        
@@ -1598,9 +1598,7 @@ template void NDArray::pIdx(const Nd4jLong* indices, const bool value);
         auto shapeOf = shape::shapeOf(newShape);
         auto stridesOf = shape::stride(newShape);
 
-        Nd4jLong offset = 0;
-
-        //shape::printShapeInfoLinear(newShape);
+        Nd4jLong offset = 0;        
 
         for (int d = 0; d < idx.size(); d++) {
             // building new shape first
@@ -2671,7 +2669,9 @@ Nd4jLong NDArray::getOffset(const Nd4jLong i) const {
             // if(nonUnitDims.size() != result.rankOf())
             //     result.reshapei(nonUnitDims);
         }
-
+        
+        RELEASE(newShape, _context->getWorkspace());
+        
         return result;
     }
 
@@ -2685,7 +2685,7 @@ Nd4jLong NDArray::getOffset(const Nd4jLong i) const {
     }
     
     ////////////////////////////////////////////////////////////////////////
-    void NDArray::getSubArrShapeAndOffsets(const Nd4jLong numOfSubArrs, const std::vector<int>& dimsToExclude, Nd4jLong* subArrShapeInfo, Nd4jLong* subArrOffsets, bool keepUnitiesInShape) const {
+    void NDArray::getSubArrShapeAndOffsets(const Nd4jLong numOfSubArrs, const std::vector<int>& dimsToExclude, Nd4jLong* &subArrShapeInfo, Nd4jLong* &subArrOffsets, bool keepUnitiesInShape) const {
 
         const int rank = rankOf();
 
@@ -2693,7 +2693,7 @@ Nd4jLong NDArray::getOffset(const Nd4jLong i) const {
         ALLOCATE(subArrShapeInfo, _context->getWorkspace(), shape::shapeInfoLength(rank - dimsToExclude.size()), Nd4jLong);
         ALLOCATE(subArrOffsets,   _context->getWorkspace(), numOfSubArrs, Nd4jLong);
                                
-        Nd4jLong *outShapeInfo = ShapeBuilders::copyShapeInfo(_shapeInfo, true, _context->getWorkspace());        
+        Nd4jLong *outShapeInfo = ShapeBuilders::copyShapeInfo(_shapeInfo, true, _context->getWorkspace());
         auto shapeOf = shape::shapeOf(outShapeInfo);
         auto stridesOf = shape::stride(outShapeInfo);
 
@@ -2720,7 +2720,7 @@ Nd4jLong NDArray::getOffset(const Nd4jLong i) const {
         // remove unities from outShapeInfo if such are present
         if(!keepUnitiesInShape) {
             std::vector<Nd4jLong> shapeNoUnities = ShapeUtils::evalDimsWithoutUnities(outShapeInfo);           
-            shape::reshapeCF(rank, outShapeInfo, shapeNoUnities.size(), shapeNoUnities.data(), ordering() == 'f', subArrShapeInfo);
+            shape::reshapeCF(rank, outShapeInfo, shapeNoUnities.size(), shapeNoUnities.data(), ordering() == 'f', subArrShapeInfo);            
         }
         else
             memcpy(subArrShapeInfo, outShapeInfo, shape::shapeInfoLength(rank)*sizeof(Nd4jLong));
@@ -2734,7 +2734,7 @@ Nd4jLong NDArray::getOffset(const Nd4jLong i) const {
             for (int j = rank - 1; j >= 0; --j)                 
                 if (idx[2*j] != idx[2*j + 1])                 
                     subArrOffsets[i] += idx[2*j] * stridesOf[j];            
-        }
+        }            
 
         RELEASE(outShapeInfo, _context->getWorkspace());
     }

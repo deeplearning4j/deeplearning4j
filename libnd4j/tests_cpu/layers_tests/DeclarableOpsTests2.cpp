@@ -56,9 +56,9 @@ TEST_F(DeclarableOpsTests2, gather_1) {
 
 TEST_F(DeclarableOpsTests2, gather_2) {
     
-    auto input    = NDArrayFactory::create<float>('c', {2,3,4}, {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24});
+    NDArray input('c', {2,3,4}, {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24});
     //auto indices ('c', {1,6},   {0,1, 2,2, 1,2});
-    auto expected = NDArrayFactory::create<float>('c', {2,6,4}, {1, 2, 3, 4, 5, 6, 7, 8, 9,10,11,12, 9,10,11,12, 5, 6, 7, 8, 9,10,11,12, 13,14,15,16, 17,18,19,20, 21,22,23,24, 21,22,23,24, 17,18,19,20, 21,22,23,24});
+    NDArray expected('c', {2,6,4}, {1, 2, 3, 4, 5, 6, 7, 8, 9,10,11,12, 9,10,11,12, 5, 6, 7, 8, 9,10,11,12, 13,14,15,16, 17,18,19,20, 21,22,23,24, 21,22,23,24, 17,18,19,20, 21,22,23,24});
 
     nd4j::ops::gather op;
 
@@ -78,9 +78,9 @@ TEST_F(DeclarableOpsTests2, gather_2) {
 ////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests2, gather_3) {
     
-    auto input    = NDArrayFactory::create<float>('c', {2,3,4}, {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24});
-    auto indices  = NDArrayFactory::create<int>('c', {1,1},   {2});
-    auto expected = NDArrayFactory::create<float>('c', {2,1,1,4}, {9,10,11,12,21,22,23,24});
+    NDArray input   ('c', {2,3,4}, {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24});
+    NDArray indices ('c', {1,1},   {2}, nd4j::DataType::INT32);
+    NDArray expected('c', {2,1,1,4}, {9,10,11,12,21,22,23,24});
 
     nd4j::ops::gather op;
 
@@ -98,9 +98,9 @@ TEST_F(DeclarableOpsTests2, gather_3) {
 
 TEST_F(DeclarableOpsTests2, gather_4) {
     
-    auto input    = NDArrayFactory::create<float>('c', {2,3,4}, {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24});
+    NDArray input('c', {2,3,4}, {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24});
     //auto indices ('c', {1,1},   {2});
-    auto expected = NDArrayFactory::create<float>('c', {2,4}, {9,10,11,12,21,22,23,24});
+    NDArray expected('c', {2,4}, {9,10,11,12,21,22,23,24});
 
     nd4j::ops::gather op;
 
@@ -119,9 +119,9 @@ TEST_F(DeclarableOpsTests2, gather_4) {
 ////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests2, gather_5) {
     
-    auto input    = NDArrayFactory::create<float>('c', {2,3,4},   {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24});
-    auto indices  = NDArrayFactory::create<Nd4jLong>('c', {2,3},     {0, 1, 2, 2, 1,2} );
-    auto expected = NDArrayFactory::create<float>('c', {2,2,3,4}, {1, 2, 3, 4, 5, 6, 7, 8, 9,10,11,12,  9,10,11,12, 5, 6, 7, 8, 9,10,11,12, 13,14,15,16,17,18,19,20,21,22,23,24, 21,22,23,24,17,18,19,20,21,22,23,24});
+    NDArray input   ('c', {2,3,4},   {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24});
+    NDArray indices ('c', {2,3},     {0, 1, 2, 2, 1,2}, nd4j::DataType::INT32);
+    NDArray expected('c', {2,2,3,4}, {1, 2, 3, 4, 5, 6, 7, 8, 9,10,11,12,  9,10,11,12, 5, 6, 7, 8, 9,10,11,12, 13,14,15,16,17,18,19,20,21,22,23,24, 21,22,23,24,17,18,19,20,21,22,23,24});
 
     nd4j::ops::gather op;
 
@@ -141,9 +141,9 @@ TEST_F(DeclarableOpsTests2, gather_5) {
 ////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests2, gather_6) {
     
-    auto input    = NDArrayFactory::create<float>('c', {3,3,4},   {1, 2, 3, 4, 5, 6, 7, 8, 9,10,11,12, 13,14,15,16,17,18,19,20,21,22,23,24, 25,26,27,28,29,30,31,32,33,34,35,36});
-    auto indices  = NDArrayFactory::create<Nd4jLong>('c', {2,3},     {0, 1, 2, 2, 1,2} );
-    auto expected = NDArrayFactory::create<float>('c', {2,3,3,4}, {1, 2, 3, 4, 5, 6, 7, 8, 9,10,11,12, 13,14,15,16,17,18,19,20,21,22,23,24, 25,26,27,28,29,30,31,32,33,34,35,36, 25,26,27,28,29,30,31,32,33,34,35,36, 13,14,15,16,17,18,19,20,21,22,23,24, 25,26,27,28,29,30,31,32,33,34,35,36});
+    NDArray input   ('c', {3,3,4},   {1, 2, 3, 4, 5, 6, 7, 8, 9,10,11,12, 13,14,15,16,17,18,19,20,21,22,23,24, 25,26,27,28,29,30,31,32,33,34,35,36});
+    NDArray indices ('c', {2,3},     {0, 1, 2, 2, 1,2}, nd4j::DataType::INT32);
+    NDArray expected('c', {2,3,3,4}, {1, 2, 3, 4, 5, 6, 7, 8, 9,10,11,12, 13,14,15,16,17,18,19,20,21,22,23,24, 25,26,27,28,29,30,31,32,33,34,35,36, 25,26,27,28,29,30,31,32,33,34,35,36, 13,14,15,16,17,18,19,20,21,22,23,24, 25,26,27,28,29,30,31,32,33,34,35,36});
 
     nd4j::ops::gather op;
 
@@ -163,9 +163,9 @@ TEST_F(DeclarableOpsTests2, gather_6) {
 ////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests2, gather_7) {
     
-    auto input    = NDArrayFactory::create<float>('c', {2,3,4},   {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24});
-    auto indices  = NDArrayFactory::create<Nd4jLong>('c', {2,3},     {0, 1, 2, 2, 1,2} );
-    auto expected = NDArrayFactory::create<float>('c', {2,3,2,3}, {1, 2, 3, 3, 2, 3, 5, 6, 7, 7, 6, 7, 9,10,11,11,10,11, 13,14,15,15,14,15, 17,18,19,19,18,19, 21,22,23,23,22,23});
+    NDArray input   ('c', {2,3,4},   {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24});
+    NDArray indices ('c', {2,3},     {0, 1, 2, 2, 1,2}, nd4j::DataType::INT64);
+    NDArray expected('c', {2,3,2,3}, {1, 2, 3, 3, 2, 3, 5, 6, 7, 7, 6, 7, 9,10,11,11,10,11, 13,14,15,15,14,15, 17,18,19,19,18,19, 21,22,23,23,22,23});
 
     nd4j::ops::gather op;
 
@@ -205,8 +205,8 @@ TEST_F(DeclarableOpsTests2, gather_8) {
 
 ////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests2, gather_9) {
-    auto x = NDArrayFactory::create<double>('c', {2, 4, 3, 2});
-    auto indices = NDArrayFactory::create<int>('c', {2}, {1, 0});
+    NDArray x('c', {2, 4, 3, 2}, nd4j::DataType::FLOAT32);
+    NDArray indices('c', {2}, {1, 0}, nd4j::DataType::INT32);
 
     nd4j::ops::gather op;
     auto result = op.execute({&x, &indices}, {}, {-2});
@@ -219,8 +219,8 @@ TEST_F(DeclarableOpsTests2, gather_9) {
 
 ////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests2, gather_10) {
-    auto x = NDArrayFactory::create<double>('c', {2, 2}, {1, 2, 3, 4});
-    auto e = NDArrayFactory::create<double>('c', {2, 2}, {3, 4, 1, 2});
+    NDArray x('c', {2, 2}, {1, 2, 3, 4});
+    NDArray e('c', {2, 2}, {3, 4, 1, 2});
 
     nd4j::ops::gather op;
     auto result = op.execute({&x}, {}, {0, 1, 0});
@@ -236,9 +236,10 @@ TEST_F(DeclarableOpsTests2, gather_10) {
 
 ////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests2, gather_11) {
-    auto x = NDArrayFactory::create<double>('c', {2, 2}, {1, 2, 3, 4});
-    auto indices = NDArrayFactory::create<int>('c', {2}, {1, 0});
-    auto e = NDArrayFactory::create<double>('c', {2, 2}, {3, 4, 1, 2});
+    
+    NDArray x('c', {2, 2}, {1, 2, 3, 4});
+    NDArray indices('c', {2}, {1, 0}, nd4j::DataType::INT64);
+    NDArray e('c', {2, 2}, {3, 4, 1, 2});
 
     nd4j::ops::gather op;
     auto result = op.execute({&x, &indices}, {}, {0});
@@ -255,9 +256,9 @@ TEST_F(DeclarableOpsTests2, gather_11) {
 ////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests2, gather_12) {
     
-    auto input = NDArrayFactory::create<double>('c', {4}, {2.f, 3.f, 4.f, 5.f});
-    auto indices = NDArrayFactory::create<int>('c', {2}, {0, 2});
-    auto exp = NDArrayFactory::create<double>('c', {2}, {2.f, 4.f});
+    NDArray input('c', {4}, {2.f, 3.f, 4.f, 5.f});
+    NDArray indices('c', {2}, {0, 2}, nd4j::DataType::INT32);
+    NDArray exp('c', {2}, {2.f, 4.f});
 
     nd4j::ops::gather op;
     auto result = op.execute({&input, &indices}, {}, {});
