@@ -19,9 +19,82 @@
 //
 
 #include "../ConstantTadHelper.h"
+#include <TAD.h>
+#include <ConstantHelper.h>
+#include <exceptions/cuda_exception.h>
+#include <graph/LaunchContext.h>
 
 namespace nd4j {
     ConstantTadHelper::ConstantTadHelper() {
-
+        std::map<TadDescriptor, TadPack> pack;
+        _cache.emplace_back(pack);
     }
+
+    ConstantTadHelper* ConstantTadHelper::getInstance() {
+        if (!_INSTANCE)
+            _INSTANCE = new ConstantTadHelper();
+
+        return _INSTANCE;
+    }
+
+    TadPack& ConstantTadHelper::tadForDimensions(Nd4jLong *originalShape, int* dimensions, int dimLength) {
+        TadDescriptor tadDescriptor(originalShape, dimensions, dimLength);
+        return tadForDimensions(tadDescriptor);
+    }
+
+    TadPack& ConstantTadHelper::tadForDimensions(ShapeDescriptor &descriptor, std::vector<int> &dimensions) {
+        TadDescriptor tadDescriptor(descriptor, dimensions);
+        return tadForDimensions(tadDescriptor);
+    }
+
+    TadPack& ConstantTadHelper::tadForDimensions(TadDescriptor &descriptor) {
+        const int deviceId = 0;
+
+        _mutex.lock();
+
+        if (_cache[deviceId].count(descriptor) == 0) {
+            auto shapeInfo = descriptor.originalShape().toShapeInfo();
+            shape::TAD tad;
+            tad.init(shapeInfo, descriptor.axis().data(), descriptor.axis().size());
+            tad.createTadOnlyShapeInfo();
+            tad.createOffsets();
+
+            auto sPtr = new Nd4jLong[shape::shapeInfoLength(tad.tadOnlyShapeInfo)];
+            auto oPtr = new Nd4jLong[tad.numTads];
+
+            memcpy(sPtr, tad.tadOnlyShapeInfo, shape::shapeInfoByteLength(tad.tadOnlyShapeInfo));
+            memcpy(oPtr, tad.tadOffsets, tad.numTads * sizeof(Nd4jLong));
+
+            auto ssPtr = ConstantHelper::getInstance()->replicatePointer(sPtr, shape::shapeInfoByteLength(tad.tadOnlyShapeInfo));
+            Nd4jPointer soPtr;
+            auto res = cudaMalloc(reinterpret_cast<void**>(&soPtr),  tad.numTads * sizeof(Nd4jLong));
+            if (res != 0)
+                throw cuda_exception::build("Memory allocation for tadOffsets failed", res);
+
+            cudaMemcpyAsync(soPtr, tad.tadOffsets, tad.numTads * sizeof(Nd4jLong), cudaMemcpyHostToDevice, *graph::LaunchContext::defaultContext()->getCudaSpecialStream());
+            res = cudaStreamSynchronize(*graph::LaunchContext::defaultContext()->getCudaSpecialStream());
+            if (res != 0)
+                throw cuda_exception::build("tadOffsets copy failed", res);
+
+            DataBuffer shapesBuffer(sPtr, ssPtr);
+            DataBuffer offsetsBuffer(oPtr, soPtr);
+
+            TadPack t(shapesBuffer, offsetsBuffer);
+            _cache[deviceId][descriptor] = t;
+
+            TadPack &r = _cache[deviceId][descriptor];
+            _mutex.unlock();
+
+            delete[] shapeInfo;
+
+            return r;
+        } else {
+            TadPack &r = _cache[deviceId][descriptor];
+            _mutex.unlock();
+
+            return r;
+        }
+    }
+
+    nd4j::ConstantTadHelper* nd4j::ConstantTadHelper::_INSTANCE = 0;
 }

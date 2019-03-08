@@ -19,6 +19,7 @@
 //
 
 
+#include <algorithm>
 #include "../TadDescriptor.h"
 
 namespace nd4j {
@@ -34,12 +35,18 @@ namespace nd4j {
         for (int e = 0; e < length; e++)
             _axis[e] = dimensions[e];
 
+        if (length > 1)
+            std::sort(_axis.begin(), _axis.end());
+
         _originalShape = descriptor;
     }
 
     TadDescriptor::TadDescriptor(const ShapeDescriptor &descriptor, const std::vector<int> &dimensions) {
         _originalShape = descriptor;
         _axis = dimensions;
+
+        if (_axis.size() > 1)
+            std::sort(_axis.begin(), _axis.end());
     }
 
     bool TadDescriptor::operator==(const TadDescriptor &other) const {

@@ -48,7 +48,6 @@ namespace nd4j {
         const int deviceId = 0;
 
         _mutex.lock();
-
         if (_cache[deviceId].count(descriptor) == 0) {
             auto shapeInfo = descriptor.originalShape().toShapeInfo();
             shape::TAD tad;
