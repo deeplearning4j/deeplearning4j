@@ -1801,50 +1801,6 @@ NDArray::NDArray(const char order, const std::vector<Nd4jLong> &shape, nd4j::Dat
     }
 
 //////////////////////////////////////////////////////////////////////////
-    void NDArray::setShapeInfo(const Nd4jLong *shapeInfo) {
-        
-        if (shapeInfo != nullptr) {
-
-            ShapeDescriptor descriptor(shapeInfo);
-            auto shapeBuffer = ConstantShapeHelper::getInstance()->bufferForShapeInfo(descriptor);
-            
-            _shapeInfo  = reinterpret_cast<Nd4jLong *>(shapeBuffer.primary());            
-
-            if(ArrayOptions::arrayType(_shapeInfo) == ArrayType::EMPTY)
-                _length = 0;
-            else
-                _length = shape::length(_shapeInfo);
-
-            _dataType = descriptor.dataType();
-        }
-        else {
-            _dataType = nd4j::DataType::INHERIT;
-        }
-    }
-
-    //////////////////////////////////////////////////////////////////////////
-    void NDArray::setShapeInfo(const Nd4jLong *shapeInfo, const nd4j::DataType dtype) {
-        ShapeDescriptor descriptor(shapeInfo);
-        auto constantBuffer = ConstantShapeHelper::getInstance()->bufferForShapeInfo(descriptor);
-        _shapeInfo = reinterpret_cast<Nd4jLong *>(constantBuffer.primary());
-
-        if (shapeInfo != nullptr) {
-
-             ArrayOptions::setDataType(_shapeInfo, dtype);
-
-            if(ArrayOptions::arrayType(_shapeInfo) == ArrayType::EMPTY)
-                _length = 0;
-            else
-                _length = shape::length(shapeInfo);
-
-            _dataType = dtype;
-        }
-        else {
-            _dataType = nd4j::DataType::INHERIT;
-        }
-    }
-
-//////////////////////////////////////////////////////////////////////////
     bool NDArray::permutei(const int* dimensions, const int rank) {
         
         auto shapeInfo = ShapeUtils::evalPermShapeInfo(dimensions, rank, *this, _context->getWorkspace());        

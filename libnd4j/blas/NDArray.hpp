@@ -2782,6 +2782,77 @@ Nd4jLong NDArray::getOffset(const Nd4jLong i) const {
         RELEASE(outShapeInfo, _context->getWorkspace());
     }
 
+//////////////////////////////////////////////////////////////////////////
+void NDArray::setShapeInfo(const Nd4jLong *shapeInfo) {
+        
+    if (shapeInfo != nullptr) {
+
+        ShapeDescriptor descriptor(shapeInfo);
+        auto shapeBuffer = ConstantShapeHelper::getInstance()->bufferForShapeInfo(descriptor);
+            
+        _shapeInfo  = reinterpret_cast<Nd4jLong *>(shapeBuffer.primary());
+        #ifdef __CUDABLAS__
+            _shapeInfoD = reinterpret_cast<Nd4jLong *>(shapeBuffer.special());
+        #endif          
+
+        if(ArrayOptions::arrayType(_shapeInfo) == ArrayType::EMPTY)
+            _length = 0;
+        else
+            _length = shape::length(_shapeInfo);
+
+        _dataType = ArrayOptions::dataType(_shapeInfo);
+    }
+    else {
+        _dataType = nd4j::DataType::INHERIT;
+        _shapeInfoD = _shapeInfo = nullptr;        
+    }
+}
+
+////////////////////////////////////////////////////////////////////////
+void NDArray::setShapeInfo(const Nd4jLong *shapeInfo, const nd4j::DataType dtype) {
+
+    if (shapeInfo != nullptr) {
+
+        Nd4jLong* shapeInfoTemp = ShapeBuilders::copyShapeInfoAndType(shapeInfo, dtype, true, _context->getWorkspace());
+        ShapeDescriptor descriptor(shapeInfoTemp);
+        auto shapeBuffer = ConstantShapeHelper::getInstance()->bufferForShapeInfo(descriptor);
+
+        _shapeInfo  = reinterpret_cast<Nd4jLong *>(shapeBuffer.primary());
+        #ifdef __CUDABLAS__
+            _shapeInfoD = reinterpret_cast<Nd4jLong *>(shapeBuffer.special());
+        #endif
+
+        if(ArrayOptions::arrayType(_shapeInfo) == ArrayType::EMPTY)
+            _length = 0;
+        else
+            _length = shape::length(_shapeInfo);        
+
+        _dataType = dtype;
+    } 
+    else {
+        _dataType = nd4j::DataType::INHERIT;            
+        _shapeInfoD = _shapeInfo = nullptr;
+    }
+}
+
+
+//////////////////////////////////////////////////////////////////////////
+void NDArray::setShapeInfo(const ShapeDescriptor& descriptor) {
+
+    auto shapeBuffer = ConstantShapeHelper::getInstance()->bufferForShapeInfo(const_cast<ShapeDescriptor &>(descriptor));
+
+    _shapeInfo  = reinterpret_cast<Nd4jLong *>(shapeBuffer.primary());
+    #ifdef __CUDABLAS__
+        _shapeInfoD = reinterpret_cast<Nd4jLong *>(shapeBuffer.special());
+    #endif
+
+    if(ArrayOptions::arrayType(_shapeInfo) == ArrayType::EMPTY)
+        _length = 0;
+    else
+        _length = shape::length(_shapeInfo);
+
+    _dataType = ArrayOptions::dataType(_shapeInfo);
+}
 
 /*
 #ifndef __CLION_IDE__
