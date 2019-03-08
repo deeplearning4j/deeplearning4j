@@ -189,17 +189,18 @@ public class ValidateMKLDNN extends BaseDL4JTest {
         ConvolutionMode cm = ConvolutionMode.Truncate;
 
         double[] a = new double[]{1e-4, 1e-4, 1e-3, 1e-3};
-        double[] b = new double[]{0.75, 0.9, 0.6, 0.75};
-        double[] n = new double[]{5, 3, 2, 4};
-        double[] k = new double[]{2, 2.5, 1.5, 2};
+        double[] b = new double[]{0.75, 0.9, 0.75, 0.75};
+        double[] n = new double[]{5, 3, 3, 4};
+        double[] k = new double[]{2, 2.5, 2.75, 2};
 
         for (int minibatch : new int[]{1, 3}) {
             for( int i=0; i<a.length; i++ ) {
+                System.out.println("+++++ MINIBATCH = " + minibatch + ", TEST=" + i + " +++++");
 
 
                 inputSize[0] = minibatch;
-                INDArray f = Nd4j.rand(Nd4j.defaultFloatingPointType(), inputSize).muli(4);
-                INDArray l = TestUtils.randomOneHot(minibatch, 10);
+                INDArray f = Nd4j.rand(Nd4j.defaultFloatingPointType(), inputSize);
+                INDArray l = TestUtils.randomOneHot(minibatch, 10).castTo(DataType.FLOAT);
 
                 MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                         .updater(new Adam(0.01))
