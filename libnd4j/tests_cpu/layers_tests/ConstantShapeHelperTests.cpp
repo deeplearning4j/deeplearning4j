@@ -132,3 +132,15 @@ TEST_F(ConstantShapeHelperTests, basic_test_6) {
     ASSERT_FALSE(descriptorA < descriptorB);
     ASSERT_TRUE(descriptorB < descriptorA);
 }
+
+TEST_F(ConstantShapeHelperTests, basic_test_7) {
+    auto array = NDArrayFactory::create_<float>('c', {32, 256});
+
+    IndicesList indices({NDIndex::all(), NDIndex::interval(0,1)});
+    auto strided = array->subarray(indices);
+    strided->assign(1.0f);
+
+    strided->printIndexedBuffer("column");
+
+    delete array;
+}

@@ -1652,9 +1652,10 @@ template void NDArray::pIdx(const Nd4jLong* indices, const bool value);
             }
         }
 
-        //shape::printShapeInfoLinear(newShape);
+        auto constantBuffer = ConstantShapeHelper::getInstance()->bufferForShapeInfo(newShape);
+        RELEASE(newShape, _context->getWorkspace());
 
-        auto result = new NDArray(bufferWithOffset(offset), newShape, this->_context, false, true);        
+        auto result = new NDArray(nullptr, specialBufferWithOffset(offset), reinterpret_cast<Nd4jLong *>(constantBuffer.primary()), this->_context, false, false);
 
         return result;
     }
