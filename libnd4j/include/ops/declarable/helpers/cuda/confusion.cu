@@ -79,7 +79,7 @@ namespace helpers {
 //            (*arrs->at(label)).p<T>(pred, value);
 //        }
 
-        ind dimension = 1;
+        int dimension = 1;
 
         auto pack = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(output->shapeInfo(), dimension);
 

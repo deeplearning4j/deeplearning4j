@@ -24,7 +24,7 @@
 #include <cuda_exception.h>
 #include <TAD.h>
 #include <PointersManager.h>
-#include <helpers/ConstantTadHelper.h>
+#include <ConstantTadHelper.h>
 
 namespace nd4j {
 namespace ops {
@@ -85,10 +85,13 @@ namespace helpers {
 
             auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(outArr->getShapeInfo(), axis);
 
-            PointersManager manager(context, "helpers::stack");
 
-            // FIXME: and what's going to happen once lengthOf() is above 1024? :)
+            PointersManager manager(context, "helpers::stack");
+            auto dInBuffers = (void **) manager.replicatePointer(inputList.data(), inputList.size() * sizeof(Nd4jLong*));
+            auto dInShapeInfo = (void **) manager.replicatePointer(inputShapeList.data(), inputShapeList.size() * sizeof(Nd4jLong*));
+
             dim3 launchDims(inArrs.size(), inArrs[0]->lengthOf(), 1024);
+
 			stackKernel<T><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>((void**)dInBuffers, (void**)dInShapeInfo, inputList.size(), inArrs[0]->lengthOf(), outArr->specialBuffer(), packX.specialShapeInfo(), packX.specialOffsets()); //, dTadShape, dTadOffsets);
             manager.synchronize();
 		}

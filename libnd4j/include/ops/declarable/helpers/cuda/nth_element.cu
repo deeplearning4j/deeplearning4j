@@ -22,6 +22,7 @@
 #include <TAD.h>
 #include <PointersManager.h>
 #include <NativeOps.h>
+#include <helpers/ConstantTadHelper.h>
 
 namespace nd4j {
 namespace ops {
@@ -64,13 +65,12 @@ namespace helpers {
             }
             else { // rank greater than 1
                 std::vector<int> lastDims({input->rankOf() - 1});// = ShapeUtils::evalDimsToExclude(input->rankOf(), {input->rankOf() - 1});
-                shape::TAD tadSorted;
-                tadSorted.init(sortedVals.shapeInfo(), lastDims.data(), lastDims.size());
-                tadSorted.createTadOnlyShapeInfo();
-                tadSorted.createOffsets();
+
+                auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(sortedVals.getShapeInfo(), lastDims);
+
                 PointersManager manager(context, "helpers::nth_element");
-                auto pTadShape = (Nd4jLong *) manager.replicatePointer(tadSorted.tadOnlyShapeInfo, shape::shapeInfoByteLength(tadSorted.tadOnlyShapeInfo));
-                auto pTadOffsets = (Nd4jLong *) manager.replicatePointer(tadSorted.tadOffsets, tadSorted.numTads * sizeof(Nd4jLong));
+                auto pTadShape = packX.specialShapeInfo();
+                auto pTadOffsets = packX.specialOffsets();
                 auto pLastDimData = (int*) manager.replicatePointer(lastDims.data(), lastDims.size() * sizeof(int));
 
                 NativeOps ops;

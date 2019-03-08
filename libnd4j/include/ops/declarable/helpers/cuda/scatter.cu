@@ -23,7 +23,8 @@
 #include <helpers/ShapeUtils.h>
 #include <helpers/PointersManager.h>
 #include <TAD.h>
-#include <ConstantShapeHelper.h>
+#include <helpers/ConstantShapeHelper.h>
+#include <helpers/ConstantTadHelper.h>
 
 
 namespace nd4j {
@@ -139,33 +140,21 @@ namespace nd4j {
                 std::vector<int> dims = {0};
                 auto inverted = ShapeUtils::evalDimsToExclude(output.rankOf(), dims);
 
-                shape::TAD tadX;
-                tadX.init(output.getShapeInfo(), inverted.data(), inverted.size());
-                tadX.createTadOnlyShapeInfo();
-                tadX.createOffsets();
+                auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(output.getShapeInfo(), inverted);
+                auto packY = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(updates.getShapeInfo(), inverted);
 
-                shape::TAD tadY;
-                tadY.init(updates.getShapeInfo(), inverted.data(), inverted.size());
-                tadY.createTadOnlyShapeInfo();
-                tadY.createOffsets();
-
-                auto bX = ConstantShapeHelper::getInstance()->bufferForShapeInfo(tadX.tadOnlyShapeInfo);
-                auto bY = ConstantShapeHelper::getInstance()->bufferForShapeInfo(tadY.tadOnlyShapeInfo);
-                auto psX = reinterpret_cast<Nd4jLong *>(bX.special());
-                auto psY = reinterpret_cast<Nd4jLong *>(bY.special());
+                auto psX = packX.specialShapeInfo();
+                auto psY = packY.specialShapeInfo();
 
                 PointersManager manager(context, "scatter");
-                //auto psX = reinterpret_cast<Nd4jLong *>(manager.replicatePointer(tadX.tadOnlyShapeInfo, shape::shapeInfoByteLength(tadX.tadOnlyShapeInfo)));
-                //auto psY = reinterpret_cast<Nd4jLong *>(manager.replicatePointer(tadY.tadOnlyShapeInfo, shape::shapeInfoByteLength(tadY.tadOnlyShapeInfo)));
 
-                auto poX = reinterpret_cast<Nd4jLong *>(manager.replicatePointer(tadX.tadOffsets, tadX.numTads * sizeof(Nd4jLong)));
-                auto poY = reinterpret_cast<Nd4jLong *>(manager.replicatePointer(tadY.tadOffsets, tadY.numTads * sizeof(Nd4jLong)));
-
+                auto poX = packX.specialOffsets();
+                auto poY = packY.specialOffsets();
 
                 NDArray::prepareSpecialUse({&output}, {&updates, &indices});
 
-                unsigned int tadLengthX = shape::length(tadX.tadOnlyShapeInfo);
-                unsigned int tadLengthY = shape::length(tadY.tadOnlyShapeInfo);
+                unsigned int tadLengthX = shape::length(packX.primaryShapeInfo());
+                unsigned int tadLengthY = shape::length(packY.primaryShapeInfo());
                 if (tadLengthX != tadLengthY)
                     throw std::runtime_error("scatter: Lengths of TADs must be equal");
 
@@ -176,7 +165,7 @@ namespace nd4j {
                 else
                     scatterCuda<T, false><<<512, blockSize, 1024, *context->getCudaStream()>>>(op, indices.lengthOf(), output.getSpecialBuffer(), psX, poX, updates.getSpecialBuffer(), psY, poY, reinterpret_cast<int *>(indices.getSpecialBuffer()), tadLengthX, tadLengthY);
 
-                // NDArray::registerSpecialUse({&output}, {&updates, &indices});
+                 NDArray::registerSpecialUse({&output}, {&updates, &indices});
                 manager.synchronize();
             }
 
