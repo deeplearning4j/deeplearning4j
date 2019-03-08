@@ -2685,8 +2685,9 @@ Nd4jLong NDArray::getOffset(const Nd4jLong i) const {
     }
     
     ////////////////////////////////////////////////////////////////////////
-    void NDArray::getSubArrShapeAndOffsets(const Nd4jLong numOfSubArrs, const std::vector<int>& dimsToExclude, Nd4jLong* &subArrShapeInfo, Nd4jLong* &subArrOffsets, bool keepUnitiesInShape) const {
+    void NDArray::getSubArrShapeAndOffsets(const std::vector<int>& dimsToExclude, Nd4jLong* &subArrShapeInfo, Nd4jLong* &subArrOffsets, bool keepUnitiesInShape) const {
 
+        const Nd4jLong numOfSubArrs = ShapeUtils::getNumOfSubArrs(_shapeInfo, dimsToExclude);
         const int rank = rankOf();
 
         // allocate memory 
@@ -2719,7 +2720,7 @@ Nd4jLong NDArray::getOffset(const Nd4jLong i) const {
 
         // remove unities from outShapeInfo if such are present
         if(!keepUnitiesInShape) {
-            std::vector<Nd4jLong> shapeNoUnities = ShapeUtils::evalDimsWithoutUnities(outShapeInfo);           
+            std::vector<Nd4jLong> shapeNoUnities = ShapeUtils::evalDimsWithoutUnities(outShapeInfo);
             shape::reshapeCF(rank, outShapeInfo, shapeNoUnities.size(), shapeNoUnities.data(), ordering() == 'f', subArrShapeInfo);            
         }
         else
