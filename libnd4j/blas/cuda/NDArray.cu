@@ -79,7 +79,7 @@ NDArray::NDArray(const NDArray& other) {
     setShapeInfo(other.getShapeInfo());
 
     ALLOCATE_SPECIAL(_bufferD, _context->getWorkspace(), _length * sizeOfT(), int8_t);
-    _isBuffDAlloc = true;
+    triggerAllocationFlag(true);
 
     if(other.isActualOnHostSide()) {
         auto res = cudaMemcpy(_bufferD, other._buffer, _length * sizeOfT(), cudaMemcpyHostToDevice);
@@ -102,7 +102,7 @@ void NDArray::lazyAllocateBuffer() const {
         NDArray* constThis = const_cast<NDArray*>(this);
         // ALLOCATE(constThis->_buffer, _context->getWorkspace(), this->lengthOf() * this->sizeOfT(), int8_t);
         ALLOCATE(constThis->_buffer, _context->getWorkspace(), (getOffset(_length - 1) + 1) * sizeOfT(), int8_t);
-        constThis->_isBuffAlloc = true;
+        constThis->triggerAllocationFlag(true);
     }
 }   
 
@@ -163,7 +163,7 @@ NDArray::NDArray(const char order, const std::vector<Nd4jLong> &shape, const std
     }
 
     ALLOCATE(_buffer, _context->getWorkspace(), _length * DataTypeUtils::sizeOf(dtype), int8_t);
-    _isBuffAlloc = true;
+    triggerAllocationFlag(true);
     
     ALLOCATE_SPECIAL(_bufferD, _context->getWorkspace(), _length * DataTypeUtils::sizeOf(dtype), int8_t);
     _isBuffDAlloc = true;    
@@ -3139,7 +3139,7 @@ void NDArray::reduceAlongDimension(nd4j::reduce::LongOps op, NDArray* target, co
         int8_t * newBuff = nullptr;
         ALLOCATE(newBuff, _context->getWorkspace(), shape::length(newShapeInfo) * sizeOfT(), int8_t);
         // assign new shape and new buffer to resulting array
-        NDArray result(newBuff, newShapeInfo, _context, true, true);
+        NDArray result(newBuff, newShapeInfo, _context, true);
 //        if (!isActualOnHostSide())
 //            syncToHost();
         // fill newBuff, loop through all elements of newBuff

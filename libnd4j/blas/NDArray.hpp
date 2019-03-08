@@ -108,7 +108,7 @@ NDArray::NDArray(Nd4jLong* shapeInfo, const bool copyStrides, nd4j::graph::Launc
 
 ////////////////////////////////////////////////////////////////////////
 // do not allocate memory, memory for array is passed from outside
-NDArray::NDArray(void *buffer, Nd4jLong *shapeInfo, graph::LaunchContext* context, const bool isBuffAlloc, const bool isShapeAlloc) {
+NDArray::NDArray(void *buffer, Nd4jLong *shapeInfo, graph::LaunchContext* context, const bool isBuffAlloc) {
 
     if (ArrayOptions::arrayType(shapeInfo) != ArrayType::EMPTY)
     if (buffer == nullptr)
@@ -120,14 +120,10 @@ NDArray::NDArray(void *buffer, Nd4jLong *shapeInfo, graph::LaunchContext* contex
     if ((int) shapeInfo[0] > MAX_RANK)
         throw std::invalid_argument("NDArray constructor: rank of NDArray can't exceed 32 !");
 
-
-    ShapeDescriptor descriptor(shapeInfo);
-    auto constantBuffer = ConstantShapeHelper::getInstance()->bufferForShapeInfo(descriptor);
-    setShapeInfo(ShapeBuilders::copyShapeInfo(shapeInfo, true, _context->getWorkspace()));
-
-
     _context = context;
     _isAttached = _context->getWorkspace() != nullptr;
+
+    setShapeInfo(ShapeDescriptor(shapeInfo));    
 
     if (this->isEmpty()) {
         _length = 0;
@@ -136,7 +132,7 @@ NDArray::NDArray(void *buffer, Nd4jLong *shapeInfo, graph::LaunchContext* contex
     }
     else {        
         _buffer = reinterpret_cast<int8_t *>(buffer);            
-        _isBuffAlloc = isBuffAlloc;
+        triggerAllocationFlag(isBuffAlloc);
         #ifdef __CUDABLAS__
             ALLOCATE_SPECIAL(_bufferD, _context->getWorkspace(), _length * sizeOfT(), int8_t);
             cudaMemcpy(_bufferD, _buffer, _length * sizeOfT(), cudaMemcpyHostToDevice);
@@ -150,7 +146,7 @@ NDArray::NDArray(void *buffer, Nd4jLong *shapeInfo, graph::LaunchContext* contex
 ////////////////////////////////////////////////////////////////////////
 // do not allocate memory, memory for array is passed from outside
 // we suppose the content of both (device and host) buffers is identical 
-NDArray::NDArray(void *buffer, void* bufferD, Nd4jLong *shapeInfo, graph::LaunchContext* context, const bool isBuffAlloc, const bool isBuffDAlloc, const bool isShapeAlloc) {
+NDArray::NDArray(void *buffer, void* bufferD, Nd4jLong *shapeInfo, graph::LaunchContext* context, const bool isBuffAlloc, const bool isBuffDAlloc) {
 
     if (buffer == nullptr && bufferD == nullptr)
         throw std::runtime_error("NDArray constructor: can't be initalized with both nullptr buffers !");
@@ -160,21 +156,18 @@ NDArray::NDArray(void *buffer, void* bufferD, Nd4jLong *shapeInfo, graph::Launch
 
     if ((int) shapeInfo[0] > MAX_RANK)
         throw std::invalid_argument("NDArray constructor cuda: rank of NDArray can't exceed 32");
-
-     if(!isShapeAlloc) 
-        setShapeInfo(ShapeBuilders::copyShapeInfo(shapeInfo, true, _context->getWorkspace()));
-    else 
-        setShapeInfo(shapeInfo);
-    
+     
     _context = context;
 
+    setShapeInfo(shapeInfo);    
+    
     if (this->isEmpty()) {
         _length = 0;        
     }
     else {
          if(buffer != nullptr) {
             _buffer = reinterpret_cast<int8_t *>(buffer);        
-            _isBuffAlloc = isBuffAlloc;            
+            triggerAllocationFlag(isBuffAlloc);
             tickReadHost();
         }        
         if(bufferD != nullptr) {
@@ -586,7 +579,7 @@ void NDArray::replacePointers(void *buffer, Nd4jLong *shapeInfo, const bool rele
             newShapeInfo = shape::shapeBuffer(rankOf(), dataType(), shapeOf());
 
         auto result = new NDArray(newBuffer, newShapeInfo, nullptr);
-        result->_isBuffAlloc = true;
+        result->triggerAllocationFlag(true);
         result->setContext(nd4j::graph::LaunchContext::defaultContext());
 
 //        auto d1 = this->dataType();
@@ -957,25 +950,6 @@ NDArray *NDArray::reduceAlongDimension(nd4j::reduce::LongOps op, const std::init
     }
 
 
-
-/*
-    template<typename T>
-    template<typename OpName>
-    void NDArray<T>::applyRandom(nd4j::random::RandomBuffer *buffer, NDArray<T>* y, NDArray<T>* z, T* extraArgs) {
-        Nd4jPointer state = (Nd4jPointer) buffer;
-        if (y == nullptr && z == nullptr) {
-            // we're executing indexed z here
-            functions::random::RandomFunction<T>::template execTransform<OpName>(state, this->buffer(), this->shapeInfo(), extraArgs);
-        } else if (y == nullptr && z != nullptr) {
-            // XZ case
-            functions::random::RandomFunction<T>::template execTransform<OpName>(state, this->buffer(), this->shapeInfo(), z->buffer(), z->shapeInfo(), extraArgs);
-        } else if (y != nullptr && z != nullptr) {
-            // XYZ case
-            functions::random::RandomFunction<T>::template execTransform<OpName>(state, this->buffer(), this->shapeInfo(), y->buffer(), y->shapeInfo(), z->buffer(), z->shapeInfo(), extraArgs);
-        }
-    }
-    */
-
     Nd4jLong NDArray::tensorsAlongDimension(std::initializer_list<int> dimensions) const {
         return tensorsAlongDimension(std::vector<int>(dimensions));
     }
@@ -1185,7 +1159,7 @@ NDArray *NDArray::reduceAlongDimension(nd4j::reduce::LongOps op, const std::init
     NDArray* NDArray::transpose() const {
         
         Nd4jLong* newShapeInfo = ShapeBuilders::copyShapeInfo(_shapeInfo, true, _context->getWorkspace());        
-        auto newArr = new NDArray(_buffer, _bufferD, newShapeInfo, _context, false, false, true);
+        auto newArr = new NDArray(_buffer, _bufferD, newShapeInfo, _context, false, false);
         newArr->transposei();
 
         return newArr;
@@ -1199,7 +1173,7 @@ NDArray NDArray::transp() const {
     ALLOCATE(newShapeInfo , _context->getWorkspace(), shapeInfoLength, Nd4jLong);
     memcpy(newShapeInfo, _shapeInfo, shapeInfoLength*sizeof(Nd4jLong));
 
-    NDArray newArr(_buffer, newShapeInfo, _context, false, true);
+    NDArray newArr(_buffer, newShapeInfo, _context, false);
 
     newArr.transposei();
 
@@ -1221,7 +1195,7 @@ NDArray NDArray::transp() const {
 
     target._buffer = _buffer;
     // don't forget to indicate that memory for new array was allocated
-    target._isBuffAlloc = false;
+    target.triggerAllocationFlag(false);
     target._isView = true;
 
     RELEASE(correctShape, _context->getWorkspace());
@@ -1309,10 +1283,8 @@ NDArray NDArray::transp() const {
         else
             shape::shapeBufferFortran(dimensions.size(), dataType(), dimensions.data(), newShape);
 
-        ShapeDescriptor descriptor(newShape);
-        auto buffer = ConstantShapeHelper::getInstance()->bufferForShapeInfo(descriptor);
+        setShapeInfo(newShape);
 
-        _shapeInfo = reinterpret_cast<Nd4jLong *>(buffer.primary());
         RELEASE(newShape, _context->getWorkspace());
     }
 
@@ -1342,7 +1314,7 @@ NDArray NDArray::transp() const {
     NDArray* NDArray::reshape(const char order, const std::vector<Nd4jLong>& shape) const {
 
         Nd4jLong* newShapeInfo = ShapeBuilders::copyShapeInfo(_shapeInfo, true, _context->getWorkspace());                    
-        auto newArr = new NDArray(_buffer, _bufferD, newShapeInfo, _context, false, false, true);        
+        auto newArr = new NDArray(_buffer, _bufferD, newShapeInfo, _context, false, false);
         newArr->reshapei(order, shape);
 
         return newArr;
@@ -1406,7 +1378,7 @@ NDArray NDArray::transp() const {
         // evaluate shapeInfo for output (permuted) array ret        
         auto shapeInfoPermuted = ShapeUtils::evalPermShapeInfo(dimensions, rank, *this, _context->getWorkspace());
         // create array to be returned        
-        auto ret = new NDArray(_buffer, _bufferD, shapeInfoPermuted, _context, false, false, true);
+        auto ret = new NDArray(_buffer, _bufferD, shapeInfoPermuted, _context, false, false);
 	    ret->_isView = true;
 
         return ret;
@@ -1454,10 +1426,8 @@ NDArray NDArray::transp() const {
         auto shapeInfoNew = ShapeUtils::evalPermShapeInfo(dimensions, rank, *this, target._context->getWorkspace());
 
         target._buffer = _buffer;
-        target._shapeInfo = shapeInfoNew;
-        // don't forget to indicate that memory for new array was allocated
-        target._isBuffAlloc = false;
-        //target._isView = true;
+        target.setShapeInfo(shapeInfoNew);
+        target.triggerAllocationFlag(false);
     }
 
     void NDArray::permute(const Nd4jLong *dimensions, const int rank, NDArray& target) const {
@@ -1471,11 +1441,8 @@ NDArray NDArray::transp() const {
         auto shapeInfoNew = ShapeUtils::evalPermShapeInfo(dimensions, rank, *this, target._context->getWorkspace());
 
         target._buffer = _buffer;
-        target._shapeInfo = shapeInfoNew;
-        // don't forget to indicate that memory for new array was allocated
-        target._isBuffAlloc = false;
-        //target._isView = true;
-
+        target.setShapeInfo(shapeInfoNew);
+        target.triggerAllocationFlag(false);
     }
 
 //////////////////////////////////////////////////////////////////////////
@@ -1653,10 +1620,7 @@ template void NDArray::pIdx(const Nd4jLong* indices, const bool value);
             }
         }
 
-        auto constantBuffer = ConstantShapeHelper::getInstance()->bufferForShapeInfo(newShape);
-        RELEASE(newShape, _context->getWorkspace());
-
-        auto result = new NDArray(bufferWithOffset(offset), specialBufferWithOffset(offset), reinterpret_cast<Nd4jLong *>(constantBuffer.primary()), this->_context, false, false);
+        auto result = new NDArray(bufferWithOffset(offset), specialBufferWithOffset(offset), newShape, this->_context, false, false);
 
         return result;
     }
@@ -1690,10 +1654,7 @@ template void NDArray::pIdx(const Nd4jLong* indices, const bool value);
             ++d;
         }
 
-        auto constantBuffer = ConstantShapeHelper::getInstance()->bufferForShapeInfo(newShape);
-        RELEASE(newShape, _context->getWorkspace());
-
-        auto result = new NDArray(bufferWithOffset(offset), specialBufferWithOffset(offset), reinterpret_cast<Nd4jLong *>(constantBuffer.primary()), this->_context);
+        auto result = new NDArray(bufferWithOffset(offset), specialBufferWithOffset(offset), newShape, this->_context);
 
         for (auto v: idx) {
             delete v;
@@ -1727,10 +1688,7 @@ template void NDArray::pIdx(const Nd4jLong* indices, const bool value);
             }
         }
 
-        auto constantBuffer = ConstantShapeHelper::getInstance()->bufferForShapeInfo(newShape);
-        RELEASE(newShape, _context->getWorkspace());
-
-        auto result = new NDArray(bufferWithOffset(offset), specialBufferWithOffset(offset), reinterpret_cast<Nd4jLong *>(constantBuffer.primary()), this->_context);
+        auto result = new NDArray(bufferWithOffset(offset), specialBufferWithOffset(offset), newShape, this->_context);
 
         return result;
     }
@@ -2037,7 +1995,6 @@ ND4J_EXPORT NDArray operator-(const int& scalar, const NDArray& arr) {
     NDArray::registerSpecialUse({&result}, {&arr, &tmp});
     return result;
 }
-
 
 ////////////////////////////////////////////////////////////////////////
 ND4J_EXPORT NDArray operator/(const bfloat16& scalar, const NDArray& arr) {
@@ -2487,7 +2444,7 @@ template void NDArray::operator/=(const bool scalar);
         int8_t* buffer(nullptr);
         ALLOCATE(buffer, _context->getWorkspace(), _length * sizeOfT(), int8_t);
         auto result = new NDArray(buffer, newShape, _context);
-        result->triggerAllocationFlag(true, true);
+        result->triggerAllocationFlag(true);        
 
         return result;
     }
@@ -2512,7 +2469,7 @@ template void NDArray::operator/=(const bool scalar);
         ArrayOptions::setPropertyBit(shapeInfo, ARRAY_QUANTIZED);
 
         auto result = new NDArray(buffer, shapeInfo, array->getContext());
-        result->triggerAllocationFlag(true, true);
+        result->triggerAllocationFlag(true);
 
         return result;
     }
@@ -2621,7 +2578,7 @@ Nd4jLong NDArray::getOffset(const Nd4jLong i) const {
 
         ArrayOptions::setDataType(outShapeInfo, this->dataType());
 
-        auto result = new NDArray(_buffer, outShapeInfo, _context, false, true);
+        auto result = new NDArray(_buffer, outShapeInfo, _context, false);
         result->_bufferD = _bufferD;
         result->_isBuffDAlloc = false;
 
@@ -2651,7 +2608,7 @@ Nd4jLong NDArray::getOffset(const Nd4jLong i) const {
             // FIXME: why is this? why are we allocating this?
             lazyAllocateBuffer();
             makeBothBuffersActual();
-            auto array = new NDArray(bufferWithOffset(pack.primaryOffsets()[idx]), specialBufferWithOffset(pack.primaryOffsets()[idx]), pack.primaryShapeInfo(), _context, false, false, false);
+            auto array = new NDArray(bufferWithOffset(pack.primaryOffsets()[idx]), specialBufferWithOffset(pack.primaryOffsets()[idx]), pack.primaryShapeInfo(), _context, false, false);
 
             result->push_back(array);
         }
@@ -2695,9 +2652,9 @@ Nd4jLong NDArray::getOffset(const Nd4jLong i) const {
 
         #ifdef __CUDABLAS__
             makeBothBuffersActual();
-            NDArray result(bufferWithOffset(offset), specialBufferWithOffset(offset), newShape, _context, false, false, true);        
+            NDArray result(bufferWithOffset(offset), specialBufferWithOffset(offset), newShape, _context, false, false);
         #else            
-            NDArray result(bufferWithOffset(offset), newShape, _context, false, true);            
+            NDArray result(bufferWithOffset(offset), newShape, _context, false);
         #endif        
 
         if(!keepUnitiesInShape) {
