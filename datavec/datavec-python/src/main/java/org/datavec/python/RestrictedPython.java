@@ -6,6 +6,10 @@ import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
 
+/**
+ * Wraps the python code using the RestrictedPython library
+ * See https://github.com/zopefoundation/RestrictedPython
+ */
 public class RestrictedPython {
 
     private static String escapeStr(String str){
@@ -27,7 +31,7 @@ public class RestrictedPython {
 
 
     public static String getSafeCode(String code) throws IOException{
-        String safeCode =readTXT(new ClassPathResource("restricted_python.py").getFilename());
+        String safeCode = readTXT(new ClassPathResource("restricted_python.py").getFilename());
         safeCode = safeCode.replace("<user-code>", escapeStr(code));
         return safeCode;
     }

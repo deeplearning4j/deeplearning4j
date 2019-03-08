@@ -48,6 +48,12 @@ public class PythonVariables {
 
     }
 
+
+    /**
+     *
+     * @param name Name of the variable
+     * @param type Type of the variable
+     */
     public void add(String name, Type type){
         switch (type){
             case BOOL:
@@ -73,6 +79,13 @@ public class PythonVariables {
         }
     }
 
+    /**
+     *
+     * @param name name of the variable
+     * @param type type of the variable
+     * @param value value of the variable (must be instance of expected type)
+     * @throws Exception
+     */
     public void add (String name, Type type, Object value) throws Exception{
         add(name, type);
         setValue(name, value);
@@ -162,6 +175,12 @@ public class PythonVariables {
         fileVars.put(name, value);
     }
 
+    /**
+     *
+     * @param name name of the variable
+     * @param value new value for the variable
+     * @throws Exception
+     */
     public void setValue(String name, Object value) throws Exception{
         Type type = vars.get(name);
         if (type == Type.BOOL){
