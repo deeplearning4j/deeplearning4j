@@ -959,7 +959,7 @@ namespace nd4j {
         * subArrOffsets      - output argument, contains successive sub-arrays offsets from original this-buffer
         * keepUnitiesInShape - if false then eliminate unities from sub-array shapeInfo, for example {1,a,1,b} -> {a,b}
         */ 
-        void getSubArrShapeAndOffsets(const Nd4jLong numOfSubArrs, const std::vector<int>& dimsToExclude, Nd4jLong* subArrShapeInfo, Nd4jLong* subArrOffsets, bool keepUnitiesInShape = false) const;
+        void getSubArrShapeAndOffsets(const Nd4jLong numOfSubArrs, const std::vector<int>& dimsToExclude, Nd4jLong* &subArrShapeInfo, Nd4jLong* &subArrOffsets, bool keepUnitiesInShape = false) const;
 
         /**
         *  addition operator: array + other

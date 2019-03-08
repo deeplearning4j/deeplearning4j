@@ -88,7 +88,7 @@ void gather(graph::LaunchContext* context, const NDArray* input, const NDArray* 
             output->assign(scalarNDArray);
         } 
         else {                
-            NDArray inSubArr = (*input)(indices->e<Nd4jLong>(0), {axis});
+            NDArray inSubArr = (*input)(indices->e<Nd4jLong>(0), {axis});            
             output->assign(inSubArr);
         }
     }    
@@ -102,22 +102,22 @@ void gather(graph::LaunchContext* context, const NDArray* input, const NDArray* 
         std::iota(dimsOut.begin(), dimsOut.end(), axis);   // fill with axis, axis+1, ... axis+pIndices->rankOf()-1
         
         const Nd4jLong numOfSubArrs = pIndices->lengthOf();
-        // printf("!!!!!!!!!! %lld\n", numOfSubArrs);
 
         Nd4jLong *outSubArrShapeInfo(nullptr), *inSubArrShapeInfo(nullptr), *outSubArrOffsets(nullptr), *inSubArrOffsets(nullptr);        
-        // input-> getSubArrShapeAndOffsets(numOfSubArrs, {axis},  inSubArrShapeInfo,  inSubArrOffsets);
-        // output->getSubArrShapeAndOffsets(numOfSubArrs, dimsOut, outSubArrShapeInfo, outSubArrOffsets);
+        input-> getSubArrShapeAndOffsets(numOfSubArrs, {axis},  inSubArrShapeInfo,  inSubArrOffsets);
+        output->getSubArrShapeAndOffsets(numOfSubArrs, dimsOut, outSubArrShapeInfo, outSubArrOffsets);
 
-        // PointersManager manager(context, "gather");
-        // auto xShapeInfo = reinterpret_cast<Nd4jLong*>(manager.replicatePointer(inSubArrShapeInfo,  shape::shapeInfoByteLength(inSubArrShapeInfo)));
-        // auto zShapeInfo = reinterpret_cast<Nd4jLong*>(manager.replicatePointer(outSubArrShapeInfo, shape::shapeInfoByteLength(outSubArrShapeInfo)));
-        // auto xOffsets   = reinterpret_cast<Nd4jLong*>(manager.replicatePointer(inSubArrOffsets,    numOfSubArrs * sizeof(Nd4jLong)));
-        // auto zOffsets   = reinterpret_cast<Nd4jLong*>(manager.replicatePointer(outSubArrOffsets,   numOfSubArrs * sizeof(Nd4jLong)));
+        PointersManager manager(context, "gather");
+        auto xShapeInfo = reinterpret_cast<Nd4jLong*>(manager.replicatePointer(inSubArrShapeInfo,  shape::shapeInfoByteLength(inSubArrShapeInfo)));
+        auto zShapeInfo = reinterpret_cast<Nd4jLong*>(manager.replicatePointer(outSubArrShapeInfo, shape::shapeInfoByteLength(outSubArrShapeInfo)));
+        auto xOffsets   = reinterpret_cast<Nd4jLong*>(manager.replicatePointer(inSubArrOffsets,    numOfSubArrs * sizeof(Nd4jLong)));
+        auto zOffsets   = reinterpret_cast<Nd4jLong*>(manager.replicatePointer(outSubArrOffsets,   numOfSubArrs * sizeof(Nd4jLong)));
                 
-        // NDArray::prepareSpecialUse({output}, {input, pIndices});        
-        // BUILD_TRIPLE_SELECTOR(input->dataType(), pIndices->dataType(), output->dataType(), gatherCudaLauncher, (context->getCudaStream(), numOfSubArrs, input->getSpecialBuffer(), xShapeInfo, xOffsets, pIndices->getSpecialBuffer(), pIndices->getSpecialShapeInfo(), output->getSpecialBuffer(), zShapeInfo, zOffsets ), NUMERIC_TYPES, INTEGER_TYPES, NUMERIC_TYPES);
+        NDArray::prepareSpecialUse({output}, {input, pIndices});
+        BUILD_TRIPLE_SELECTOR(input->dataType(), pIndices->dataType(), output->dataType(), gatherCudaLauncher, (context->getCudaStream(), numOfSubArrs, input->getSpecialBuffer(), xShapeInfo, xOffsets, pIndices->getSpecialBuffer(), pIndices->getSpecialShapeInfo(), output->getSpecialBuffer(), zShapeInfo, zOffsets ), NUMERIC_TYPES, INTEGER_TYPES, NUMERIC_TYPES);
+        NDArray::registerSpecialUse({output}, {input, pIndices});
 
-        // manager.synchronize();
+        manager.synchronize();
 
         if(indices == nullptr)
             delete pIndices;

@@ -441,7 +441,7 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
                 throw std::runtime_error("NDArray::applyTrueBroadcast method: the shapes of this and other arrays are not suitable for broadcast operation !");
             if(!shape::equalsTypesAndShapesSoft(target->getShapeInfo(), newShapeInfo))
                 throw std::runtime_error("NDArray::applyTrueBroadcast method: the shape or type of target array is wrong !");
-            shape::printShapeInfo(newShapeInfo);
+
             // if workspace is not null - do not call delete.
             if (_context->getWorkspace() == nullptr)
                 delete[] newShapeInfo;
@@ -476,14 +476,10 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
 
         std::vector<int> sameDims = ShapeUtils::getDimsWithSameShape(*target, *pMin);
         //max->syncToDevice();
-        //pMin->syncToDevice(); // tile has a problem with syncing data to device
-        //pMin->printBuffer("MIN BUFFER");
-        //min->printBuffer("Min buffer");
-        //max->printBuffer("MAX BUFFER");
+        //pMin->syncToDevice(); // tile has a problem with syncing data to device        
 //        if (sameDims.size() == max->rankOf()) {
 //            target->syncToDevice();
 //            max->applyPairwiseTransform(op.p, pMin, target, extraArgs);
-//            target->printBuffer("TARGET");
 //        }
         if(max == this) {
             pTarget->applyBroadcast(op.b, sameDims, pMin, target, extraArgs);
@@ -3214,7 +3210,6 @@ void NDArray::reduceAlongDimension(nd4j::reduce::LongOps op, NDArray* target, co
         auto repeatDelta = shape::prodLong(newShape.data(), rank) / this->lengthOf();
         std::vector<int> dimsToExclude = ShapeUtils::evalDimsToExclude(rankOf(), {dimension});
         const Nd4jLong numTads = ShapeUtils::getNumOfSubArrs(_shapeInfo, dimsToExclude); //this->tensorsAlongDimension({dimension});
-        //printf("Repeat delta %lld, numTads %lld\n", repeatDelta, numTads);
         //tadOnlyInputShapeInfo, tadInputOffsets, tadOnlyOutputShapeInfo, tadOutputOffsets;
         std::vector<int> copy({dimension});
         shape::TAD tadInput;

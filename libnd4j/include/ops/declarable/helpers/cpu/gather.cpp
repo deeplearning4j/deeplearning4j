@@ -46,7 +46,7 @@ void gather(nd4j::graph::LaunchContext* context, const NDArray* input, const NDA
                 auto scalarNDArray = input->e(idx);
                 output->assign(scalarNDArray);
             } 
-            else {                
+            else {
                 NDArray inSubArr = (*input)(indices->e<Nd4jLong>(0), {axis});
                 output->assign(inSubArr);
             }
