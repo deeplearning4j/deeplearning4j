@@ -1655,7 +1655,7 @@ template void NDArray::pIdx(const Nd4jLong* indices, const bool value);
         auto constantBuffer = ConstantShapeHelper::getInstance()->bufferForShapeInfo(newShape);
         RELEASE(newShape, _context->getWorkspace());
 
-        auto result = new NDArray(nullptr, specialBufferWithOffset(offset), reinterpret_cast<Nd4jLong *>(constantBuffer.primary()), this->_context, false, false);
+        auto result = new NDArray(bufferWithOffset(offset), specialBufferWithOffset(offset), reinterpret_cast<Nd4jLong *>(constantBuffer.primary()), this->_context, false, false);
 
         return result;
     }
