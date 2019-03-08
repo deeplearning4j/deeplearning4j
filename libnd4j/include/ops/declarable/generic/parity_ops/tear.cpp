@@ -55,19 +55,19 @@ namespace nd4j {
             std::vector<int> dims(*block.getIArguments());
             std::sort(dims.begin(), dims.end());
 
-            shape::TAD tad;
-            tad.init(inShape, dims.data(), (int) dims.size());
-            tad.createTadOnlyShapeInfo();
-            Nd4jLong numTads = shape::length(inShape) / shape::tadLength(inShape, dims.data(), (int) dims.size());
+            auto pack = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(inShape, dims);
+
+            auto numTads = pack.numberOfTads();
 
             auto result = SHAPELIST();
             for (int e = 0; e < numTads; e++) {
                 Nd4jLong *newShape;
-                ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(tad.tadOnlyShapeInfo), Nd4jLong);
+                ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(pack.primaryShapeInfo()), Nd4jLong);
                 if (shape::order(inShape) == 'c')
-                    shape::shapeBuffer(shape::rank(tad.tadOnlyShapeInfo), block.dataType(), shape::shapeOf(tad.tadOnlyShapeInfo), newShape);
+                    shape::shapeBuffer(shape::rank(pack.primaryShapeInfo()), block.dataType(), shape::shapeOf(pack.primaryShapeInfo()), newShape);
                 else
-                    shape::shapeBufferFortran(shape::rank(tad.tadOnlyShapeInfo), block.dataType(), shape::shapeOf(tad.tadOnlyShapeInfo), newShape);
+                    shape::shapeBufferFortran(shape::rank(pack.primaryShapeInfo()), block.dataType(), shape::shapeOf(pack.primaryShapeInfo()), newShape);
+                
                 result->push_back(newShape);
             }
 

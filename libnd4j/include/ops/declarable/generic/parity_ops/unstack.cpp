@@ -87,14 +87,13 @@ namespace nd4j {
                 return result;
             }
 
-            shape::TAD tad;
-            tad.init(inShape, dims.data(), (int) dims.size());
-            tad.createTadOnlyShapeInfo();
-            Nd4jLong numTads = shape::length(inShape) / shape::tadLength(inShape, dims.data(), (int) dims.size());
 
-            std::vector<Nd4jLong> shape(shape::rank(tad.tadOnlyShapeInfo));
-            for (int e = 0; e < shape::rank(tad.tadOnlyShapeInfo); e++)
-                shape[e] = shape::shapeOf(tad.tadOnlyShapeInfo)[e];
+            auto pack = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(inShape, dims);
+            auto numTads = pack.numberOfTads();
+
+            std::vector<Nd4jLong> shape(shape::rank(pack.primaryShapeInfo()));
+            for (int e = 0; e < shape::rank(pack.primaryShapeInfo()); e++)
+                shape[e] = shape::shapeOf(pack.primaryShapeInfo())[e];
 
             // remove leading and trailing 1
             if (inShape[0] == 2 && shape.size() == 2) {

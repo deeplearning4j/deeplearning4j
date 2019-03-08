@@ -47,7 +47,8 @@
 #include <helpers/ShapeBuilders.h>
 #include <NDArrayFactory.h>
 #include <helpers/OpTracker.h>
-
+#include <ConstantShapeHelper.h>
+#include <ConstantTadHelper.h>
 
 
 namespace nd4j {

@@ -77,12 +77,10 @@ namespace nd4j {
                 return SHAPELIST(ShapeBuilders::createScalarShapeInfo(block.workspace()));
             }
 
-            shape::TAD tad;
-            tad.init(inputShape->at(0), dims.data(), dims.size());
-            tad.createTadOnlyShapeInfo();
+            auto pack = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(inputShape->at(0), dims);
 
-            Nd4jLong tadLength = shape::tadLength(inputShape->at(0), dims.data(), dims.size());
-            Nd4jLong numTads = shape::length(inputShape->at(0)) /  tadLength;
+            auto tadLength = shape::length(pack.primaryShapeInfo());
+            auto numTads = pack.numberOfTads();
 
             auto newShape = ShapeUtils::evalReduceShapeInfo('c', dims, in, false, false, block.getWorkspace());
             ArrayOptions::setDataType(newShape, DataType::INT64);

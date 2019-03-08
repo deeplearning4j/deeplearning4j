@@ -22,6 +22,7 @@
 
 #include <helpers/TAD.h>
 #include<ops/declarable/helpers/ismax.h>
+#include <helpers/ConstantTadHelper.h>
 
 namespace nd4j 	  {
 namespace ops 	  {
@@ -122,16 +123,13 @@ static void ismax_(const NDArray* input, NDArray* output, const std::vector<int>
         //moving all dimensions (in sorted order)
         //to the back.
         //permuted version of the input shape info for setting up the tad problem
-        shape::TAD tad;
-        tad.init(input->getShapeInfo(), const_cast<int*>(dimensions.data()), dimensionsLength);
-        tad.createTadOnlyShapeInfo();
-        tad.createOffsets();
+        auto pack = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(input->getShapeInfo(), dimensions);
 
-        Nd4jLong *tadShapeShapeInfo = tad.tadOnlyShapeInfo;
-        Nd4jLong* tadOffsets = tad.tadOffsets;
+        auto tadLength = shape::length(pack.primaryShapeInfo());
+        auto tads = pack.numberOfTads();
 
-        int tadLength = shape::tadLength(input->getShapeInfo(), const_cast<int*>(dimensions.data()), dimensionsLength);
-        int tads = input->lengthOf() / tadLength;
+        auto tadShapeShapeInfo = pack.primaryShapeInfo();
+        auto tadOffsets = pack.primaryOffsets();
 
         int tadsPerThread = tads / TAD_THRESHOLD;
         int num_threads = nd4j::math::nd4j_max<int>(1, tadsPerThread);
