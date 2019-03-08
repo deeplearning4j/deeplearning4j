@@ -50,7 +50,7 @@ TEST_F(TadTests, Test4DTad1) {
 
     arrayBad->setBuffer(arraySource->getBuffer());
     arrayBad->setShapeInfo(badShape.data());
-    arrayBad->triggerAllocationFlag(false, false);
+    arrayBad->triggerAllocationFlag(false);
     //arrayBad->printShapeInfo("Bad shapeBuffer: ");
 
 

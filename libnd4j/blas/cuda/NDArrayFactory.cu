@@ -57,7 +57,7 @@ namespace nd4j {
         res.setSpecialBuffers(specialBuffer, specialShape);
         res.setContext(context == nullptr ? nd4j::graph::LaunchContext::defaultContext() : context);
 
-        res.triggerAllocationFlag(true, true);
+        res.triggerAllocationFlag(true);
 
         return res;
     }
@@ -84,7 +84,7 @@ namespace nd4j {
         res->setSpecialBuffers(specialBuffer, specialShape);
         res->setContext(context == nullptr ? nd4j::graph::LaunchContext::defaultContext() : context);
 
-        res->triggerAllocationFlag(true, true);
+        res->triggerAllocationFlag(true);
 
         return res;
     }
@@ -166,7 +166,7 @@ template void NDArrayFactory::memcpyFromVector(void *ptr, const std::vector<int8
 
         res->setShapeInfo(ShapeBuilders::createScalarShapeInfo(DataTypeUtils::fromT<T>(), context->getWorkspace()));
         res->setBuffer(buffer);
-        res->triggerAllocationFlag(true, true);
+        res->triggerAllocationFlag(true);
         res->setContext(context == nullptr ? nd4j::graph::LaunchContext::defaultContext() : context);
         int8_t* specialBuffer = nullptr;
         Nd4jLong* specialShape = nullptr;
@@ -207,7 +207,7 @@ template void NDArrayFactory::memcpyFromVector(void *ptr, const std::vector<int8
 
         //res.setShapeInfo(ShapeBuilders::createScalarShapeInfo(DataTypeUtils::fromT<T>(), workspace));
         res.setBuffer(buffer);
-        res.triggerAllocationFlag(true, true);
+        res.triggerAllocationFlag(true);
         res.setContext(context);
 
         res.p(0, scalar);
@@ -240,7 +240,7 @@ template void NDArrayFactory::memcpyFromVector(void *ptr, const std::vector<int8
         res.setShapeInfo(ShapeBuilders::createScalarShapeInfo(DataTypeUtils::fromT<T>(), context->getWorkspace()));
         size_t shapeSize = shape::shapeInfoLength(res.shapeInfo());
         res.setBuffer(buffer);
-        res.triggerAllocationFlag(true, true);
+        res.triggerAllocationFlag(true);
         res.setContext(context == nullptr ? nd4j::graph::LaunchContext::defaultContext() : context);
         int8_t* specialBuffer = nullptr;
         Nd4jLong* specialShape = nullptr;
@@ -292,7 +292,7 @@ NDArray* NDArrayFactory::create_(const char order, const std::vector<Nd4jLong> &
     ALLOCATE(buffer, context->getWorkspace(), bufferSize, int8_t);
     result->setBuffer(buffer);
     result->setContext(context == nullptr ? nd4j::graph::LaunchContext::defaultContext() : context);
-    result->triggerAllocationFlag(true, true);
+    result->triggerAllocationFlag(true);
     memcpyFromVector(result->getBuffer(), data);        // old memcpy_
 
     int8_t* specialBuffer = nullptr;
@@ -400,7 +400,7 @@ template NDArray* NDArrayFactory::create_(const char order, const std::vector<Nd
         res->setBuffer(buffer);
         res->setContext(context == nullptr ? nd4j::graph::LaunchContext::defaultContext() : context);
         res->setSpecialBuffers(specialBuffer, specialShapeInfo);
-        res->triggerAllocationFlag(true, true);
+        res->triggerAllocationFlag(true);
 
         // tick this before potential assign call, to avoid additional sync before assign
         res->tickWriteDevice();
@@ -463,7 +463,7 @@ NDArray NDArrayFactory::create(const char order, const std::vector<Nd4jLong> &sh
     res.tickWriteDevice();
     res.setContext(context);
     res.setSpecialBuffers(specialBuffer, reinterpret_cast<Nd4jLong *>(shapeBuffer.special()));
-    res.triggerAllocationFlag(true, false);
+    res.triggerAllocationFlag(true);
 
     return res;
 }
@@ -481,7 +481,7 @@ NDArray NDArrayFactory::create(nd4j::DataType dtype, nd4j::graph::LaunchContext*
     res.setBuffer(buffer);
     res.setContext(context == nullptr ? nd4j::graph::LaunchContext::defaultContext() : context);
     res.setShapeInfo(ShapeBuilders::createScalarShapeInfo(dtype, context->getWorkspace()));
-    res.triggerAllocationFlag(true, true);
+    res.triggerAllocationFlag(true);
     int8_t* specialBuffer = nullptr;
     Nd4jLong* specialShapeInfo = nullptr;
     size_t shapeSize = shape::shapeInfoLength(res.shapeInfo());
@@ -523,7 +523,7 @@ NDArray NDArrayFactory::create(const std::vector<T> &values, nd4j::graph::Launch
 
     res.setSpecialBuffers(specialBuffer, specialShapeInfo);
 
-    res.triggerAllocationFlag(true, true);
+    res.triggerAllocationFlag(true);
     res.setContext(context);
     res.tickWriteDevice();
     res.tickReadHost();
@@ -546,7 +546,7 @@ template NDArray NDArrayFactory::create(const std::vector<bool> &values, nd4j::g
         auto shapeInfo = ShapeBuilders::createScalarShapeInfo(DataTypeUtils::fromT<T>(), context->getWorkspace());
         ArrayOptions::setPropertyBit(shapeInfo, ARRAY_EMPTY);
         auto result = new NDArray(nullptr, shapeInfo, context);
-        result->triggerAllocationFlag(false, true);
+        result->triggerAllocationFlag(false);
 
         return result;
     }
@@ -558,7 +558,7 @@ template NDArray NDArrayFactory::create(const std::vector<bool> &values, nd4j::g
 
         auto shapeInfo = ShapeBuilders::createScalarShapeInfo(dataType, context->getWorkspace());
         ArrayOptions::setPropertyBit(shapeInfo, ARRAY_EMPTY);
-        auto result = new NDArray(nullptr, shapeInfo, context, false, true);
+        auto result = new NDArray(nullptr, shapeInfo, context, false);
 
         return result;
     }
@@ -574,7 +574,7 @@ template NDArray NDArrayFactory::create(const std::vector<bool> &values, nd4j::g
         auto shapeInfo = ShapeBuilders::createScalarShapeInfo(dataType, context->getWorkspace());
         ArrayOptions::setPropertyBit(shapeInfo, ARRAY_EMPTY);
         NDArray result(nullptr, shapeInfo, context);
-        result.triggerAllocationFlag(false, true);
+        result.triggerAllocationFlag(false);
 
         return result;
     }
@@ -609,7 +609,7 @@ template NDArray NDArrayFactory::create(const std::vector<bool> &values, nd4j::g
         cudaMemcpy(res.specialShapeInfo(), res.shapeInfo(), shapeSize, cudaMemcpyHostToDevice);
         res.tickWriteDevice();
         res.tickReadHost();
-        res.triggerAllocationFlag(true, true);
+        res.triggerAllocationFlag(true);
         return res;
     }
     template NDArray NDArrayFactory::create(const char order, const std::vector<Nd4jLong> &shape, const std::vector<double> &data, nd4j::graph::LaunchContext* context);
@@ -640,7 +640,7 @@ NDArray NDArrayFactory::create(T* buffer, const char order, const std::initializ
     result.setBuffer(reinterpret_cast<int8_t*>(buffer));
     result.setShapeInfo(reinterpret_cast<Nd4jLong *>(shapeBuffer.primary()));
     result.setContext(context == nullptr ? nd4j::graph::LaunchContext::defaultContext() : context);
-    result.triggerAllocationFlag(false, false);
+    result.triggerAllocationFlag(false);
 
     int8_t* specialBuffer = nullptr;
     ALLOCATE_SPECIAL(specialBuffer, context->getWorkspace(), shape::length(result.shapeInfo()) * sizeof(T), int8_t);
@@ -724,7 +724,7 @@ template NDArray NDArrayFactory::create(int16_t* buffer, const char order, const
         res.setBuffer(buffer);
         res.setContext(context == nullptr ? nd4j::graph::LaunchContext::defaultContext() : context);
 
-        res.triggerAllocationFlag(true, true);
+        res.triggerAllocationFlag(true);
 
         return res;
     }
@@ -747,7 +747,7 @@ template NDArray NDArrayFactory::create(int16_t* buffer, const char order, const
         res->setBuffer(buffer);
         res->setContext(context == nullptr ? nd4j::graph::LaunchContext::defaultContext() : context);
 
-        res->triggerAllocationFlag(true, true);
+        res->triggerAllocationFlag(true);
 
         return res;
     }

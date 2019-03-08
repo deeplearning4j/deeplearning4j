@@ -2037,7 +2037,7 @@ nd4j::ShapeList* _calculateOutputShapes(Nd4jPointer* extraPointers, nd4j::ops::D
         void *buffer_ = nd4j::ArrayOptions::arrayType(shape_) == ArrayType::EMPTY ? nullptr : inputBuffers[e];
 
         auto array = new nd4j::NDArray(buffer_, shape_);
-        array->triggerAllocationFlag(false, false);
+        array->triggerAllocationFlag(false);
 
         // block should contain references to proper variable
         varSpace.putVariable(1, e, array);
@@ -2140,7 +2140,7 @@ Nd4jStatus realExec(nd4j::ops::DeclarableOp* op, Nd4jPointer* extraPointers, Nd4
             outputs[e] = array;
 
             // and we want to release shape copy once we're done
-            array->triggerAllocationFlag(false, true);
+            array->triggerAllocationFlag(false);
         }
 
     for (int e = 0; e < numIArgs; e++)

@@ -119,7 +119,7 @@ namespace nd4j {
                 zShape[7] = 99;
             } else {
                 auto array = new NDArray(nullptr, xShape, block.getVariableSpace()->launchContext());
-                array->triggerAllocationFlag(false, false);
+                array->triggerAllocationFlag(false);
 
                 xShape = ShapeUtils::evalReduceShapeInfo('c', *block.getIArguments(), *array, false, true);
 

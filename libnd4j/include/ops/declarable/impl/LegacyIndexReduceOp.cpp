@@ -55,7 +55,7 @@ namespace nd4j {
             } else if (block.getAxis()->size()){
                 // in this case we're building proper shape for reduction
                 auto array = INPUT_VARIABLE(0); //new NDArray(nullptr, inShape, block.getWorkspace());
-                //array->triggerAllocationFlag(false, false);
+                //array->triggerAllocationFlag(false);
 
                 newShape = ShapeUtils::evalReduceShapeInfo('c', *block.getAxis(), *array, false, true, block.workspace());
 
@@ -87,7 +87,7 @@ namespace nd4j {
                 } else {
                     // in this case we're building proper shape for reduction
                     auto array = INPUT_VARIABLE(0); //new NDArray(nullptr, inShape, block.getWorkspace());
-                    //array->triggerAllocationFlag(false, false);
+                    //array->triggerAllocationFlag(false);
 
                     newShape = ShapeUtils::evalReduceShapeInfo('c', axis, *array, false, true, block.workspace());
                 }

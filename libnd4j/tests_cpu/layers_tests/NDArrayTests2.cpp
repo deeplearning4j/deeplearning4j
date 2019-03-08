@@ -37,7 +37,7 @@ TEST_F(NDArrayTest2, Test_ByteVector_1) {
 
     auto vec = x.asByteVector();
 
-    auto restored = new NDArray((float *)vec.data(), x.shapeInfo(), x.getContext(), false, false);
+    auto restored = new NDArray((float *)vec.data(), x.shapeInfo(), x.getContext(), false);
     
 
     ASSERT_TRUE(x.equalsTo(restored));
@@ -51,7 +51,7 @@ TEST_F(NDArrayTest2, Test_ByteVector_2) {
 
     auto vec = x.asByteVector();
 
-    auto restored = new NDArray((bfloat16 *)vec.data(), x.shapeInfo(), x.getContext(), false, false);
+    auto restored = new NDArray((bfloat16 *)vec.data(), x.shapeInfo(), x.getContext(), false);
     
     ASSERT_TRUE(x.equalsTo(restored));
 
@@ -64,7 +64,7 @@ TEST_F(NDArrayTest2, Test_ByteVector_3) {
 
     auto vec = x.asByteVector();
 
-    auto restored = new NDArray((double *)vec.data(), x.shapeInfo(), x.getContext(), false, false);    
+    auto restored = new NDArray((double *)vec.data(), x.shapeInfo(), x.getContext(), false);    
 
     ASSERT_TRUE(x.equalsTo(restored));
 

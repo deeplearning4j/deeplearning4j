@@ -95,9 +95,8 @@ namespace nd4j {
 
             BUILD_SINGLE_SELECTOR(dtype, DataTypeConversions, ::convertType(newBuffer, (void *)flatArray->buffer()->data(), dtype, ByteOrderUtils::fromFlatByteOrder(flatArray->byteOrder()),  length), LIBND4J_TYPES);
 
-            auto array = new NDArray(newBuffer, newShape);
-            //array->printIndexedBuffer("restored");
-            array->triggerAllocationFlag(true, true);
+            auto array = new NDArray(newBuffer, newShape);            
+            array->triggerAllocationFlag(true);
 
             return array;
         }
