@@ -21,6 +21,7 @@
 #include <ops/declarable/LegacyStatsOp.h>
 #include <helpers/ShapeUtils.h>
 #include <helpers/TAD.h>
+#include <helpers/ConstantTadHelper.h>
 
 
 namespace nd4j {
@@ -54,22 +55,15 @@ namespace nd4j {
                     if (dims[e] < 0)
                         dims[e] += x->rankOf();
 
-                if (dims.size() > 1)
-                    std::sort(dims.begin(), dims.end());
-
                 REQUIRE_TRUE(dims.size() > 0, 0, "Some dimensions requuired for reduction!");
 
-                shape::TAD tad;
-                tad.init(x->getShapeInfo(), dims.data(), dims.size());
-                tad.createTadOnlyShapeInfo();
-                tad.createOffsets();
+                auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(x->getShapeInfo(), dims);
 
-                auto pDims = (int *) manager.replicatePointer(dims.data(), dims.size() * sizeof(int));
-                auto pTadShape = (Nd4jLong *) manager.replicatePointer(tad.tadOnlyShapeInfo, shape::shapeInfoByteLength(tad.tadOnlyShapeInfo));
-                auto pTadOffsets = (Nd4jLong *) manager.replicatePointer(tad.tadOffsets, tad.numTads * sizeof(Nd4jLong));
+                auto pTadShape = Environment::getInstance()->isCPU() ? packX.primaryShapeInfo() : packX.specialShapeInfo(); //(Nd4jLong *) manager.replicatePointer(tad.tadOnlyShapeInfo, shape::shapeInfoByteLength(tad.tadOnlyShapeInfo));
+                auto pTadOffsets = Environment::getInstance()->isCPU() ? packX.primaryOffsets() : packX.specialOffsets(); //(Nd4jLong *) manager.replicatePointer(tad.tadOffsets, tad.numTads * sizeof(Nd4jLong));
 
                 NativeOpExecutioner::execSummaryStats(block.launchContext(), opNum, x->getBuffer(), x->getShapeInfo(), x->specialBuffer(), x->specialShapeInfo(), extras.argumentsAsT(z->dataType()),
-                        z->getBuffer(), z->getShapeInfo(), z->specialBuffer(), z->specialShapeInfo(), pDims, (int) dims.size(), pTadShape, pTadOffsets, biasCorrected);
+                        z->getBuffer(), z->getShapeInfo(), z->specialBuffer(), z->specialShapeInfo(), dims.data(), (int) dims.size(), pTadShape, pTadOffsets, biasCorrected);
             }
 
             manager.synchronize();

@@ -22,6 +22,7 @@
 #include <helpers/TAD.h>
 #include <ops/declarable/helpers/axis.h>
 #include <helpers/ShapeUtils.h>
+#include <helpers/ConstantTadHelper.h>
 
 namespace nd4j {
     namespace ops {
@@ -45,37 +46,30 @@ namespace nd4j {
 
             int opNum = block.opNum() < 0 ? this->_opNum : block.opNum();
 
-            shape::TAD tad;
-            tad.init(x->shapeInfo(), dims.data(), dims.size());
-            tad.createTadOnlyShapeInfo();
-            tad.createOffsets();
-            Nd4jLong tadLen = shape::length(tad.tadOnlyShapeInfo);
+            auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(x->getShapeInfo(), dims);
+
+            auto tadLen = shape::length(packX.primaryShapeInfo());
             REQUIRE_TRUE(tadLen == y->lengthOf(), 0, "Length of broadcast TAD should be equal to length of Y operand, but got [%i] vs [%i]",tadLen, (int) y->lengthOf());
 
             PointersManager manager(block.launchContext(),"LegacyBroadcastOp");
-            auto pDims = (int *) manager.replicatePointer(dims.data(), dims.size() * sizeof(int));
-            auto pTadShape = (Nd4jLong *) manager.replicatePointer(tad.tadOnlyShapeInfo, shape::shapeInfoByteLength(tad.tadOnlyShapeInfo));
-            auto pTadOffsets = (Nd4jLong *) manager.replicatePointer(tad.tadOffsets, tad.numTads * sizeof(Nd4jLong));
-
+            auto pTadShape = Environment::getInstance()->isCPU() ? packX.primaryShapeInfo() : packX.specialShapeInfo(); //(Nd4jLong *) manager.replicatePointer(tad.tadOnlyShapeInfo, shape::shapeInfoByteLength(tad.tadOnlyShapeInfo));
+            auto pTadOffsets = Environment::getInstance()->isCPU() ? packX.primaryOffsets() : packX.specialOffsets(); //(Nd4jLong *) manager.replicatePointer(tad.tadOffsets, tad.numTads * sizeof(Nd4jLong));
 
             if (x == z)
                 NativeOpExecutioner::execBroadcast(block.launchContext(), opNum, x->buffer(), x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
                         y->buffer(), y->shapeInfo(), y->specialBuffer(), y->specialShapeInfo(),
-                        z->buffer(), z->shapeInfo(), z->specialBuffer(), z->specialShapeInfo(), pDims, dims.size(), pTadShape, pTadOffsets, pTadShape, pTadOffsets);
+                        z->buffer(), z->shapeInfo(), z->specialBuffer(), z->specialShapeInfo(), dims.data(), dims.size(), pTadShape, pTadOffsets, pTadShape, pTadOffsets);
             else {
                 // this is rare, but possible use case - X and Z might have different shapes/strides/orders. In this case we prepare and pass separate TAD info
-                shape::TAD tadZ;
-                tadZ.init(z->shapeInfo(), dims.data(), dims.size());
-                tadZ.createTadOnlyShapeInfo();
-                tadZ.createOffsets();
+                auto packZ = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(z->getShapeInfo(), dims);
 
-                auto zTadShape = (Nd4jLong *) manager.replicatePointer(tadZ.tadOnlyShapeInfo, shape::shapeInfoByteLength(tadZ.tadOnlyShapeInfo));
-                auto zTadOffsets = (Nd4jLong *) manager.replicatePointer(tadZ.tadOffsets, tadZ.numTads * sizeof(Nd4jLong));
+                auto zTadShape = Environment::getInstance()->isCPU() ? packZ.primaryShapeInfo() : packZ.specialShapeInfo(); //(Nd4jLong *) manager.replicatePointer(tadZ.tadOnlyShapeInfo, shape::shapeInfoByteLength(tadZ.tadOnlyShapeInfo));
+                auto zTadOffsets = Environment::getInstance()->isCPU() ? packZ.primaryOffsets() : packZ.specialOffsets(); //(Nd4jLong *) manager.replicatePointer(tadZ.tadOffsets, tadZ.numTads * sizeof(Nd4jLong));
 
                 NativeOpExecutioner::execBroadcast(block.launchContext(), opNum, x->buffer(), x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
                         y->buffer(), y->shapeInfo(), y->specialBuffer(), y->specialShapeInfo(),
                         z->buffer(), z->shapeInfo(), z->specialBuffer(), z->specialShapeInfo(),
-                        pDims, dims.size(), pTadShape, pTadOffsets, zTadShape, zTadOffsets);
+                        dims.data(), dims.size(), pTadShape, pTadOffsets, zTadShape, zTadOffsets);
             }
 
             manager.synchronize();

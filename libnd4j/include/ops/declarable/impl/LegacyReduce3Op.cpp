@@ -21,6 +21,7 @@
 #include <ops/declarable/LegacyReduce3Op.h>
 #include <helpers/ShapeUtils.h>
 #include <helpers/TAD.h>
+#include <helpers/ConstantTadHelper.h>
 
 namespace nd4j {
     namespace ops {
@@ -50,32 +51,22 @@ namespace nd4j {
                     if (dims[e] < 0)
                         dims[e] += x->rankOf();
 
-                std::sort(dims.begin(), dims.end());
-
-                shape::TAD tadX;
-                tadX.init(x->getShapeInfo(), dims.data(), dims.size());
-                tadX.createTadOnlyShapeInfo();
-                tadX.createOffsets();
-
-                shape::TAD tadY;
-                tadY.init(x->getShapeInfo(), dims.data(), dims.size());
-                tadY.createTadOnlyShapeInfo();
-                tadY.createOffsets();
+                auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(x->getShapeInfo(), dims);
+                auto packZ = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(z->getShapeInfo(), dims);
 
                 REQUIRE_TRUE(dims.size() > 0, 0, "Some dimensions requuired for reduction!");
 
-                auto pDims = (int *) manager.replicatePointer(dims.data(), dims.size() * sizeof(int));
-                auto xTadShape = (Nd4jLong *) manager.replicatePointer(tadX.tadOnlyShapeInfo, shape::shapeInfoByteLength(tadX.tadOnlyShapeInfo));
-                auto xTadOffsets = (Nd4jLong *) manager.replicatePointer(tadX.tadOffsets, tadX.numTads * sizeof(Nd4jLong));
+                auto xTadShape = Environment::getInstance()->isCPU() ? packX.primaryShapeInfo() : packX.specialShapeInfo(); //(Nd4jLong *) manager.replicatePointer(tadX.tadOnlyShapeInfo, shape::shapeInfoByteLength(tadX.tadOnlyShapeInfo));
+                auto xTadOffsets = Environment::getInstance()->isCPU() ? packX.primaryOffsets() : packX.specialOffsets(); //(Nd4jLong *) manager.replicatePointer(tadX.tadOffsets, tadX.numTads * sizeof(Nd4jLong));
 
-                auto yTadShape = (Nd4jLong *) manager.replicatePointer(tadY.tadOnlyShapeInfo, shape::shapeInfoByteLength(tadY.tadOnlyShapeInfo));
-                auto yTadOffsets = (Nd4jLong *) manager.replicatePointer(tadY.tadOffsets, tadY.numTads * sizeof(Nd4jLong));
+                auto yTadShape = Environment::getInstance()->isCPU() ? packZ.primaryShapeInfo() : packZ.specialOffsets(); //(Nd4jLong *) manager.replicatePointer(tadY.tadOnlyShapeInfo, shape::shapeInfoByteLength(tadY.tadOnlyShapeInfo));
+                auto yTadOffsets = Environment::getInstance()->isCPU() ? packZ.primaryOffsets() : packZ.specialOffsets(); //(Nd4jLong *) manager.replicatePointer(tadY.tadOffsets, tadY.numTads * sizeof(Nd4jLong));
 
                 NativeOpExecutioner::execReduce3(block.launchContext(), opNum, x->buffer(), x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
                         extras.argumentsAsT(z->dataType()),
                         y->buffer(), y->shapeInfo(), y->specialBuffer(), y->specialShapeInfo(),
                         z->buffer(), z->shapeInfo(), z->specialBuffer(), z->specialShapeInfo(),
-                        pDims, dims.size(), xTadShape, xTadOffsets, yTadShape, yTadOffsets);
+                        dims.data(), dims.size(), xTadShape, xTadOffsets, yTadShape, yTadOffsets);
             }
 
             manager.synchronize();

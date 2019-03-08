@@ -22,6 +22,7 @@
 #include <helpers/TAD.h>
 #include <helpers/ShapeUtils.h>
 #include <Status.h>
+#include <helpers/ConstantTadHelper.h>
 
 namespace nd4j {
     namespace ops {
@@ -71,24 +72,17 @@ namespace nd4j {
                         if (dims[e] < 0)
                             dims[e] += x->rankOf();
 
-                    if (dims.size() > 1)
-                        std::sort(dims.begin(), dims.end());
-
                     REQUIRE_TRUE(dims.size() > 0, 0, "Some dimensions required for reduction!");
 
-                    shape::TAD tad;
-                    tad.init(x->getShapeInfo(), dims.data(), dims.size());
-                    tad.createTadOnlyShapeInfo();
-                    tad.createOffsets();
+                    auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(x->getShapeInfo(), dims);
 
-                    auto pDims = manager.replicatePointer(dims.data(), dims.size() * sizeof(int));
-                    auto pTadShape = manager.replicatePointer(tad.tadOnlyShapeInfo, shape::shapeInfoByteLength(tad.tadOnlyShapeInfo));
-                    auto pTadOffsets = manager.replicatePointer(tad.tadOffsets, tad.numTads * sizeof(Nd4jLong));
+                    auto pTadShape = Environment::getInstance()->isCPU() ? packX.primaryShapeInfo() : packX.specialShapeInfo(); //manager.replicatePointer(tad.tadOnlyShapeInfo, shape::shapeInfoByteLength(tad.tadOnlyShapeInfo));
+                    auto pTadOffsets = Environment::getInstance()->isCPU() ? packX.primaryOffsets() : packX.specialOffsets(); //manager.replicatePointer(tad.tadOffsets, tad.numTads * sizeof(Nd4jLong));
 
                     NativeOpExecutioner::execReduceBool(block.launchContext(), opNum, x->getBuffer(), x->getShapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
                             extras.argumentsAsT(x->dataType()),
                             z->getBuffer(), z->getShapeInfo(), z->specialBuffer(), z->specialShapeInfo(),
-                            reinterpret_cast<int *>(pDims), (int) dims.size(), reinterpret_cast<Nd4jLong *>(pTadShape), reinterpret_cast<Nd4jLong *>(pTadOffsets));
+                            dims.data(), (int) dims.size(), reinterpret_cast<Nd4jLong *>(pTadShape), reinterpret_cast<Nd4jLong *>(pTadOffsets));
                 }
 
                 STORE_RESULT(*z);
@@ -116,17 +110,13 @@ namespace nd4j {
 
                     REQUIRE_TRUE(dims.size() > 0, 0, "Some dimensions required for reduction!");
 
-                    shape::TAD tad;
-                    tad.init(x->getShapeInfo(), dims.data(), dims.size());
-                    tad.createTadOnlyShapeInfo();
-                    tad.createOffsets();
+                    auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(x->getShapeInfo(), dims);
 
-                    auto pDims = (int *) manager.replicatePointer(dims.data(), dims.size() * sizeof(int));
-                    auto pTadShape = (Nd4jLong *) manager.replicatePointer(tad.tadOnlyShapeInfo, shape::shapeInfoByteLength(tad.tadOnlyShapeInfo));
-                    auto pTadOffsets = (Nd4jLong *) manager.replicatePointer(tad.tadOffsets, tad.numTads * sizeof(Nd4jLong));
+                    auto pTadShape = Environment::getInstance()->isCPU() ? packX.primaryShapeInfo() : packX.specialShapeInfo(); //(Nd4jLong *) manager.replicatePointer(tad.tadOnlyShapeInfo, shape::shapeInfoByteLength(tad.tadOnlyShapeInfo));
+                    auto pTadOffsets = Environment::getInstance()->isCPU() ? packX.primaryOffsets() : packX.specialOffsets(); //(Nd4jLong *) manager.replicatePointer(tad.tadOffsets, tad.numTads * sizeof(Nd4jLong));
 
                     NativeOpExecutioner::execReduceBool(block.launchContext(), opNum, x->getBuffer(), x->getShapeInfo(), x->specialBuffer(), x->specialShapeInfo(), extras.argumentsAsT(x->dataType()),
-                            z->getBuffer(), z->getShapeInfo(), z->specialBuffer(), z->specialShapeInfo(), pDims, (int) dims.size(), pTadShape, pTadOffsets);
+                            z->getBuffer(), z->getShapeInfo(), z->specialBuffer(), z->specialShapeInfo(), dims.data(), (int) dims.size(), pTadShape, pTadOffsets);
                 }
             }
 

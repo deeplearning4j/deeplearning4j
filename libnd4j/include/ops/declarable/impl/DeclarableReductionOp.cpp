@@ -22,6 +22,7 @@
 #include <ops/declarable/DeclarableOp.h>
 #include <helpers/TAD.h>
 #include <helpers/ShapeUtils.h>
+#include <helpers/ConstantTadHelper.h>
 
 namespace nd4j {
     namespace ops {
@@ -55,25 +56,10 @@ namespace nd4j {
 
             // special case - output is scalar
             if (dims.size() == 0 || (dims.size() == 1 && dims.at(0) == MAX_INT)) {
-                Nd4jLong* newShape;
-                ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(0), Nd4jLong);
-
-                newShape[0] = 0;
-                newShape[1] = 0;
-                newShape[2] = 1;
-                newShape[3] = 99;
-
-                ArrayOptions::setDataType(newShape, block.dataType());
+                auto newShape = ShapeBuilders::createScalarShapeInfo(block.dataType(), block.getWorkspace());
 
                 return SHAPELIST(newShape);
             }
-
-            shape::TAD tad;
-            tad.init(inputShape->at(0), dims.data(), dims.size());
-            tad.createTadOnlyShapeInfo();
-
-            Nd4jLong tadLength = shape::tadLength(inputShape->at(0), dims.data(), dims.size());
-            Nd4jLong numTads = shape::length(inputShape->at(0)) /  tadLength;
 
             auto newShape = ShapeUtils::evalReduceShapeInfo('c', dims, inputShape->at(0), false, false, block.getWorkspace());
             ArrayOptions::setDataType(newShape, block.dataType());
