@@ -114,7 +114,10 @@ namespace nd4j {
         }
 
         OpBenchmark* clone() override  {
-            return new MatrixBenchmark(_alpha, _beta, _testName, _x, _y, _z);
+            MatrixBenchmark* mb = new MatrixBenchmark(_alpha, _beta, _testName, _x, _y, _z);
+            mb->_tA = _tA;
+            mb->_tB = _tB;
+            return mb;
         }
     };
 }
