@@ -104,8 +104,8 @@ void gather(graph::LaunchContext* context, const NDArray* input, const NDArray* 
         const Nd4jLong numOfSubArrs = pIndices->lengthOf();
 
         Nd4jLong *outSubArrShapeInfo(nullptr), *inSubArrShapeInfo(nullptr), *outSubArrOffsets(nullptr), *inSubArrOffsets(nullptr);        
-        input-> getSubArrShapeAndOffsets(numOfSubArrs, {axis},  inSubArrShapeInfo,  inSubArrOffsets);
-        output->getSubArrShapeAndOffsets(numOfSubArrs, dimsOut, outSubArrShapeInfo, outSubArrOffsets);
+        input-> getSubArrShapeAndOffsets({axis},  inSubArrShapeInfo,  inSubArrOffsets);
+        output->getSubArrShapeAndOffsets(dimsOut, outSubArrShapeInfo, outSubArrOffsets);
 
         PointersManager manager(context, "gather");
         auto xShapeInfo = reinterpret_cast<Nd4jLong*>(manager.replicatePointer(inSubArrShapeInfo,  shape::shapeInfoByteLength(inSubArrShapeInfo)));
