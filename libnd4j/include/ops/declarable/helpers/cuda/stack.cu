@@ -24,6 +24,7 @@
 #include <cuda_exception.h>
 #include <TAD.h>
 #include <PointersManager.h>
+#include <helpers/ConstantTadHelper.h>
 
 namespace nd4j {
 namespace ops {
@@ -80,20 +81,15 @@ namespace helpers {
 			}
 
             std::vector<int> axis = ShapeUtils::evalDimsToExclude(outArr->rankOf(), {dim});
-            shape::TAD tadOutput;
-            tadOutput.init(outArr->shapeInfo(), axis.data(), axis.size());
-            tadOutput.createTadOnlyShapeInfo();
-            tadOutput.createOffsets();
+
+
+            auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(outArr->getShapeInfo(), axis);
 
             PointersManager manager(context, "helpers::stack");
-            auto pTadShape = (Nd4jLong *) manager.replicatePointer(tadOutput.tadOnlyShapeInfo, shape::shapeInfoByteLength(tadOutput.tadOnlyShapeInfo));
-            auto pTadOffsets = (Nd4jLong *) manager.replicatePointer(tadOutput.tadOffsets, tadOutput.numTads * sizeof(Nd4jLong));
-            auto dInBuffers = (void **) manager.replicatePointer(inputList.data(), inputList.size() * sizeof(Nd4jLong*));
-            auto dInShapeInfo = (void **) manager.replicatePointer(inputShapeList.data(), inputShapeList.size() * sizeof(Nd4jLong*));
 
+            // FIXME: and what's going to happen once lengthOf() is above 1024? :)
             dim3 launchDims(inArrs.size(), inArrs[0]->lengthOf(), 1024);
-
-			stackKernel<T><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>((void**)dInBuffers, (void**)dInShapeInfo, inputList.size(), inArrs[0]->lengthOf(), outArr->specialBuffer(), pTadShape, pTadOffsets); //, dTadShape, dTadOffsets);
+			stackKernel<T><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>((void**)dInBuffers, (void**)dInShapeInfo, inputList.size(), inArrs[0]->lengthOf(), outArr->specialBuffer(), packX.specialShapeInfo(), packX.specialOffsets()); //, dTadShape, dTadOffsets);
             manager.synchronize();
 		}
 	}

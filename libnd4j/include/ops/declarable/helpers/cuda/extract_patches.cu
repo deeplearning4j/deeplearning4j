@@ -15,6 +15,7 @@
  ******************************************************************************/
 
 //
+//  @author raver119@gmail.com
 //  @author sgazeos@gmail.com
 //
 
@@ -22,6 +23,7 @@
 #include <helpers/PointersManager.h>
 #include <helpers/TAD.h>
 #include <array>
+#include <helpers/ConstantTadHelper.h>
 
 namespace nd4j {
 namespace ops {
@@ -78,27 +80,18 @@ namespace helpers {
     template <typename T>
     static void _extractPatches(graph::LaunchContext* context, NDArray* images, NDArray* output, int sizeRow, int sizeCol, int stradeRow, int stradeCol, int rateRow, int rateCol, bool theSame){
         std::array<int, 3> restDims = {1, 2, 3};
-        shape::TAD xTad;
-        xTad.init(images->getShapeInfo(), restDims.data(), 3);
-        xTad.createTadOnlyShapeInfo();
-        xTad.createOffsets();
 
-        shape::TAD zTad;
-        zTad.init(output->getShapeInfo(), restDims.data(), 3);
-        zTad.createTadOnlyShapeInfo();
-        zTad.createOffsets();
+        auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(images->getShapeInfo(), restDims.data(), restDims.size());
+        auto packZ = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(output->getShapeInfo(), restDims.data(), restDims.size());
+
 
         PointersManager manager(context, "helpers::extractPatches");
-        auto pxTadShape = (Nd4jLong *) manager.replicatePointer(xTad.tadOnlyShapeInfo, shape::shapeInfoByteLength(xTad.tadOnlyShapeInfo));
-        auto pzTadShape = (Nd4jLong *) manager.replicatePointer(zTad.tadOnlyShapeInfo, shape::shapeInfoByteLength(zTad.tadOnlyShapeInfo));
-        auto pxTadOffsets = (Nd4jLong *) manager.replicatePointer(xTad.tadOffsets, xTad.numTads * sizeof(Nd4jLong));
-        auto pzTadOffsets = (Nd4jLong *) manager.replicatePointer(zTad.tadOffsets, zTad.numTads * sizeof(Nd4jLong));
 
         int lastDim = images->sizeAt(3);
         int rowDim = images->sizeAt(1);
         int colDim = images->sizeAt(2);
 
-        globalExtractPatches_<T><<<512, 512, 1024, *context->getCudaStream()>>>(images->getSpecialBuffer(), pxTadShape, pxTadOffsets, output->getSpecialBuffer(), pzTadShape, pzTadOffsets, xTad.numTads, sizeRow, sizeCol, stradeRow, stradeCol, rateRow, rateCol, theSame, lastDim, rowDim, colDim);
+        globalExtractPatches_<T><<<512, 512, 1024, *context->getCudaStream()>>>(images->getSpecialBuffer(), packX.specialShapeInfo(), packX.specialOffsets(), output->getSpecialBuffer(), packZ.specialShapeInfo(), packZ.specialOffsets(), packX.numberOfTads(), sizeRow, sizeCol, stradeRow, stradeCol, rateRow, rateCol, theSame, lastDim, rowDim, colDim);
 
         output->tickWriteDevice();
 

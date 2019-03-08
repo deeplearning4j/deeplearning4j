@@ -22,6 +22,7 @@
 #include <cuda_exception.h>
 #include <TAD.h>
 #include <PointersManager.h>
+#include <helpers/ConstantTadHelper.h>
 
 namespace nd4j {
 namespace ops {
@@ -78,15 +79,12 @@ namespace helpers {
 //            (*arrs->at(label)).p<T>(pred, value);
 //        }
 
-        std::vector<int> axis({1}); // = ShapeUtils::evalDimsToExclude(outArr->rankOf(), {dim});
-        shape::TAD tadOutput;
-        tadOutput.init(output->shapeInfo(), axis.data(), axis.size());
-        tadOutput.createTadOnlyShapeInfo();
-        tadOutput.createOffsets();
+        ind dimension = 1;
+
+        auto pack = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(output->shapeInfo(), dimension);
+
 
         PointersManager manager(context, "helpers::confusion");
-        auto pTadShape = (Nd4jLong *) manager.replicatePointer(tadOutput.tadOnlyShapeInfo, shape::shapeInfoByteLength(tadOutput.tadOnlyShapeInfo));
-        auto pTadOffsets = (Nd4jLong *) manager.replicatePointer(tadOutput.tadOffsets, tadOutput.numTads * sizeof(Nd4jLong));
 
         Nd4jLong* labelsLongBuffer = labels->dataType() == nd4j::DataType::INT64?(Nd4jLong*)labels->specialBuffer():nullptr;
         Nd4jLong* predictionLongBuffer = predictions->dataType() == nd4j::DataType::INT64?(Nd4jLong*)predictions->specialBuffer():nullptr;
@@ -111,7 +109,7 @@ namespace helpers {
         dim3 launchDims(32, 32, 1024);
         auto stream = context->getCudaStream();
         confusionFunctorKernel<T><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(labelsLongBuffer, predictionLongBuffer,
-                bufferLength, weights != nullptr? weights->getSpecialBuffer():nullptr, output->specialBuffer(), pTadShape, pTadOffsets);
+                bufferLength, weights != nullptr? weights->getSpecialBuffer():nullptr, output->specialBuffer(), pack.specialShapeInfo(), pack.specialOffsets());
 
         if (predictionLongBuffer != predictions->getSpecialBuffer()) {
             cudaError_t err = cudaFree(predictionLongBuffer);

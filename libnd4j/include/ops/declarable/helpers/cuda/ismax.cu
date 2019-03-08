@@ -26,6 +26,7 @@
 #include <helpers/DebugHelper.h>
 #include <cuda_exception.h>
 #include <PointersManager.h>
+#include <helpers/ConstantTadHelper.h>
 
 namespace nd4j 	  {
 namespace ops 	  {
@@ -78,10 +79,9 @@ static void ismax_(graph::LaunchContext* context, const NDArray* input, NDArray*
         int* dimension = nullptr;
         int dimensionLength = dimensions.size();
         std::vector<int> copy(dimensions);
-        shape::TAD tadOutput;
-        tadOutput.init(input->getShapeInfo(), copy.data(), copy.size());
-        tadOutput.createTadOnlyShapeInfo();
-        tadOutput.createOffsets();
+
+        auto packZ = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(input->getShapeInfo(), copy.data(), copy.size());
+
 
         auto indexMaxArr = input->applyIndexReduce(indexreduce::IndexMax, dimensions);
         //indexMaxArr->printIndexedBuffer("Index max!!!");
@@ -92,14 +92,11 @@ static void ismax_(graph::LaunchContext* context, const NDArray* input, NDArray*
 
         dim3 launchDims(256, 256, 16384);
         dimension = (int *) manager.replicatePointer(dimensions.data(), dimensions.size() * sizeof(int));
-        auto pTadShape = (Nd4jLong *) manager.replicatePointer(tadOutput.tadOnlyShapeInfo, shape::shapeInfoByteLength(tadOutput.tadOnlyShapeInfo));
-        auto pTadOffsets = (Nd4jLong *) manager.replicatePointer(tadOutput.tadOffsets, tadOutput.numTads * sizeof(Nd4jLong));
 
         // at this point, all IMax indexes are gathered, and we execute filler
-        BUILD_SINGLE_SELECTOR(zType, fillDimensionalIsMaxGeneric, (launchDims, stream, indexMaxArr->specialBuffer(), output->specialBuffer(), output->specialShapeInfo(), pTadShape, dimension, dimensionLength, pTadOffsets), LIBND4J_TYPES);
+        BUILD_SINGLE_SELECTOR(zType, fillDimensionalIsMaxGeneric, (launchDims, stream, indexMaxArr->specialBuffer(), output->specialBuffer(), output->specialShapeInfo(), packZ.specialShapeInfo(), dimension, dimensionLength, packZ.specialOffsets()), LIBND4J_TYPES);
         manager.synchronize();
 
-        nd4j::DebugHelper::checkErrorCode(stream, "Legacy IsMax(...) failed");
         delete indexMaxArr;
     }
 }

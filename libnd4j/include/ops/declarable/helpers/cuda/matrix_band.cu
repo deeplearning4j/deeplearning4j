@@ -21,6 +21,7 @@
 #include <TAD.h>
 #include <cuda_exception.h>
 #include <ShapeUtils.h>
+#include <helpers/ConstantTadHelper.h>
 
 namespace nd4j {
 namespace ops {
@@ -77,51 +78,21 @@ namespace helpers {
 
         std::vector<int> lastDims({input->rankOf() - 2, input->rankOf() - 1});
         std::vector<int> dimsToExclude = ShapeUtils::evalDimsToExclude(input->rankOf(), lastDims);
-        const Nd4jLong numTads = ShapeUtils::getNumOfSubArrs(input->getShapeInfo(), dimsToExclude);
-        shape::TAD tadInput;
-        tadInput.init(input->getShapeInfo(), lastDims.data(), lastDims.size());
-        tadInput.createTadOnlyShapeInfo();
-        tadInput.createOffsets();
+
+        auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(input->getShapeInfo(), lastDims);
+        auto packZ = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(output->getShapeInfo(), lastDims);
+
+        const Nd4jLong numTads = packX.numberOfTads();
+
         if (!input->isActualOnDeviceSide())
             input->syncToDevice();
 
-        shape::TAD tadOutput;
-        tadOutput.init(output->getShapeInfo(), lastDims.data(), lastDims.size());
-        tadOutput.createTadOnlyShapeInfo();
-        tadOutput.createOffsets();
         if (!input->isActualOnDeviceSide())
             input->syncToDevice();
-
-        // prepare input arrays for prepareDataForCuda function
-        std::vector<std::pair<void*,size_t>> hostData;
-        hostData.emplace_back(tadInput.tadOnlyShapeInfo, shape::shapeInfoByteLength(tadInput.tadOnlyShapeInfo));	// 1 -- xTadShapeInfo
-        hostData.emplace_back(tadInput.tadOffsets, tadInput.numTads * sizeof(Nd4jLong));							// 2 -- xTadOffsets
-        hostData.emplace_back(tadOutput.tadOnlyShapeInfo, shape::shapeInfoByteLength(tadOutput.tadOnlyShapeInfo));	// 1 -- xTadShapeInfo
-        hostData.emplace_back(tadOutput.tadOffsets, tadOutput.numTads * sizeof(Nd4jLong));							// 2 -- xTadOffsets
-        std::vector<Nd4jLong*> tadsDevice(hostData.size(), nullptr);
-
-        // create cuda stream and LaunchContext
-        cudaError_t cudaResult;
-        //cudaStream_t stream;
-        //cudaResult = cudaStreamCreate(&stream);	ASSERT_EQ(0, cudaResult);
-        //cudaStream_t* stream = this->getContext()->getCudaStream();
-        // allocate required amount of global device memory and copy host data to it
-//    cudaResult = allocateDeviceMem(*pLc, devicePtrs, hostData);	ASSERT_EQ(0, cudaResult);
-        for(int i = 0; i < tadsDevice.size(); ++i) {
-            cudaResult = cudaMalloc(reinterpret_cast<void **>(&tadsDevice[i]), hostData[i].second);
-            if(cudaResult != 0) throw cuda_exception::build("Cannot allocate memory for tads on device", cudaResult);
-            cudaResult = cudaMemcpy(tadsDevice[i], hostData[i].first, hostData[i].second, cudaMemcpyHostToDevice);
-            if(cudaResult != 0) throw cuda_exception::build("Cannot copy memory block for tads on device", cudaResult);
-        }
 
         matrixBandKernel<T><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(input->getSpecialBuffer(),
                 input->getSpecialShapeInfo(), output->getSpecialBuffer(), output->getSpecialShapeInfo(),
-                lowerBand, upperBand, tadsDevice[0], tadsDevice[1], tadsDevice[2], tadsDevice[3], numTads, input->lengthOf());
-
-        for(int i = 0; i < tadsDevice.size(); ++i) {
-            cudaResult = cudaFree(tadsDevice[i]);
-            if(cudaResult != 0) throw cuda_exception::build("Cannot release memory block for tads on device", cudaResult);
-        }
+                lowerBand, upperBand, packX.specialShapeInfo(), packX.specialOffsets(), packZ.specialShapeInfo(), packZ.specialOffsets(), numTads, input->lengthOf());
     }
 
     void matrixBandPart(graph::LaunchContext* context, NDArray* input, NDArray* output, Nd4jLong lowerBand, Nd4jLong upperBand) {
