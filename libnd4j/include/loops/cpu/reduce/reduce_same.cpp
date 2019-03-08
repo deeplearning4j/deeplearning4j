@@ -24,6 +24,7 @@
 #include <loops/reduce_same.h>
 #include <loops/legacy_ops.h>
 #include <OmpLaunchHelper.h>
+#include <helpers/ConstantTadHelper.h>
 
 using namespace simdOps;
 
@@ -159,21 +160,15 @@ namespace functions {
 
                 auto tadOnlyShapeInfo = tadShapeInfo;
                 auto tadOffsets = tadOffset;
-                shape::TAD *tad = nullptr;
 
                 if (tadOnlyShapeInfo == nullptr || tadOffsets == nullptr) {
-                    tad = new shape::TAD();
-                    tad->init(xShapeInfo, dimension, dimensionLength);
-                    tad->createTadOnlyShapeInfo();
-                    tad->createOffsets();
-
-                    if (tad->dimensionLength < 1) {
-                        delete tad;
+                    if (dimensionLength < 0)
                         return;
-                    }
 
-                    tadOnlyShapeInfo = tad->tadOnlyShapeInfo;
-                    tadOffsets = tad->tadOffsets;
+                    auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(xShapeInfo, dimension, dimensionLength);
+
+                    tadOnlyShapeInfo = packX.primaryShapeInfo();
+                    tadOffsets = packX.primaryOffsets();
                 }
 
                 const auto tadLength = shape::tadLength(xShapeInfo, dimension, dimensionLength);
@@ -215,9 +210,6 @@ namespace functions {
                         z[i] = OpType::postProcess(start, tadLength, extraParams);;
                     }
                 }
-                
-                if (tad != nullptr)
-                    delete tad;
             }
 
 

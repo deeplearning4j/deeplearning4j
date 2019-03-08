@@ -23,6 +23,7 @@
 #include <loops/summarystatsreduce.h>
 #include <helpers/shape.h>
 #include <helpers/TAD.h>
+#include <helpers/ConstantTadHelper.h>
 
 using namespace simdOps;
 
@@ -120,30 +121,25 @@ namespace functions {
                 return;
             }
 
-
-            shape::TAD tad;
-            tad.init(xShapeInfo, dimension, dimensionLength);
-            tad.createTadOnlyShapeInfo();
-            tad.createOffsets();
-
-            //no-op
-            if (tad.dimensionLength < 1)
+            if (dimensionLength < 1)
                 return;
+
+            auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(xShapeInfo, dimension, dimensionLength);
 
             int resultLength = shape::length(resultShapeInfoBuffer);
             //pre squeezed: this is for keeping the pointer to the original
             //shape information for tad offset
             //the squeezed information doesn't render the right strides for
             //tad offset
-            if (resultLength == 1 || dimensionLength == shape::rank(xShapeInfo) || tad.wholeThing) {
+            if (resultLength == 1 || dimensionLength == shape::rank(xShapeInfo) || packX.numberOfTads() == 1) {
                 z[0] = execScalar<OpType>(biasCorrected, x, xShapeInfo, extraParams);
                 return;
             }
 
-            auto tadShapeShapeInfo = tad.tadOnlyShapeInfo;
-            auto tadLength = shape::length(tad.tadOnlyShapeInfo);
-            auto tadEWS = shape::elementWiseStride(tad.tadOnlyShapeInfo);
-            auto tadOrder = shape::order(tad.tadOnlyShapeInfo);
+            auto tadShapeShapeInfo = packX.primaryShapeInfo();
+            auto tadLength = shape::length(packX.primaryShapeInfo());
+            auto tadEWS = shape::elementWiseStride(packX.primaryShapeInfo());
+            auto tadOrder = shape::order(packX.primaryShapeInfo());
 
             uint tadShapeShapeInfoCast[MAX_RANK];
             const bool canCast = tadEWS == 1 && tadOrder == 'c' ? false : nd4j::DataTypeUtils::castShapeInfo<uint>(tadShapeShapeInfo, tadShapeShapeInfoCast);
@@ -151,7 +147,7 @@ namespace functions {
 #pragma omp parallel for schedule(guided) default(shared)
             for (int r = 0; r < resultLength; r++) {
                         
-            auto tadOffsetForBlock = tad.tadOffsets[r];
+            auto tadOffsetForBlock = packX.primaryOffsets()[r];
             auto tx = x + tadOffsetForBlock;
             SummaryStatsData<X> comp;
             comp.initWithValue(tx[0]);

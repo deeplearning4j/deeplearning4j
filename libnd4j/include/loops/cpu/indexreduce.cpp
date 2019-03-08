@@ -21,6 +21,7 @@
 #include "../indexreduce.h"
 #include <op_boilerplate.h>
 #include <types/types.h>
+#include <helpers/ConstantTadHelper.h>
 #include "../legacy_ops.h"
 
 using namespace simdOps;
@@ -102,21 +103,15 @@ void IndexReduce<X>::exec(void *vx, Nd4jLong *xShapeInfo,
 
     auto tadOnlyShapeInfo = tadShapeInfo;
     Nd4jLong *tadOffsets = tadOffset;
-    shape::TAD *tad = nullptr;
 
     if (tadOnlyShapeInfo == nullptr || tadOffsets == nullptr) {
-        tad = new shape::TAD();
-        tad->init(xShapeInfo, dimension, dimensionLength);
-        tad->createTadOnlyShapeInfo();
-        tad->createOffsets();
-
-        if (tad->dimensionLength < 1) {
-            delete tad;
+        if (dimensionLength < 1)
             return;
-        }
 
-        tadOnlyShapeInfo = tad->tadOnlyShapeInfo;
-        tadOffsets = tad->tadOffsets;
+        auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(xShapeInfo, dimension, dimensionLength);
+
+        tadOnlyShapeInfo = packX.primaryShapeInfo();
+        tadOffsets = packX.primaryOffsets();
     }
 
     int tadLength = shape::tadLength(xShapeInfo, dimension, dimensionLength);
