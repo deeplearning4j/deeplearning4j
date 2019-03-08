@@ -1689,7 +1689,10 @@ template void NDArray::pIdx(const Nd4jLong* indices, const bool value);
             ++d;
         }
 
-        auto result = new NDArray(bufferWithOffset(offset), newShape, this->_context);
+        auto constantBuffer = ConstantShapeHelper::getInstance()->bufferForShapeInfo(newShape);
+        RELEASE(newShape, _context->getWorkspace());
+
+        auto result = new NDArray(bufferWithOffset(offset), specialBufferWithOffset(offset), reinterpret_cast<Nd4jLong *>(constantBuffer.primary()), this->_context);
 
         for (auto v: idx) {
             delete v;
@@ -1723,7 +1726,10 @@ template void NDArray::pIdx(const Nd4jLong* indices, const bool value);
             }
         }
 
-        auto result = new NDArray(bufferWithOffset(offset), newShape, this->_context);
+        auto constantBuffer = ConstantShapeHelper::getInstance()->bufferForShapeInfo(newShape);
+        RELEASE(newShape, _context->getWorkspace());
+
+        auto result = new NDArray(bufferWithOffset(offset), specialBufferWithOffset(offset), reinterpret_cast<Nd4jLong *>(constantBuffer.primary()), this->_context);
 
         return result;
     }
