@@ -6816,6 +6816,10 @@ public static final int PREALLOC_SIZE = 33554432;
     @Namespace("shape") public static native @Cast("bool") boolean isLikeVector(@Cast("Nd4jLong*") LongBuffer shapeInfo, @ByRef IntBuffer posOfNonUnityDim);
     @Namespace("shape") public static native @Cast("bool") boolean isLikeVector(@Cast("Nd4jLong*") long[] shapeInfo, @ByRef int[] posOfNonUnityDim);
 
+    @Namespace("shape") public static native @Cast("bool") boolean isCommonVector(@Cast("Nd4jLong*") LongPointer shapeInfo, @ByRef IntPointer posOfNonUnityDim);
+    @Namespace("shape") public static native @Cast("bool") boolean isCommonVector(@Cast("Nd4jLong*") LongBuffer shapeInfo, @ByRef IntBuffer posOfNonUnityDim);
+    @Namespace("shape") public static native @Cast("bool") boolean isCommonVector(@Cast("Nd4jLong*") long[] shapeInfo, @ByRef int[] posOfNonUnityDim);
+
     @Namespace("shape") public static native @Cast("bool") boolean isRowVector(@Cast("const Nd4jLong*") LongPointer shapeInfo);
     @Namespace("shape") public static native @Cast("bool") boolean isRowVector(@Cast("const Nd4jLong*") LongBuffer shapeInfo);
     @Namespace("shape") public static native @Cast("bool") boolean isRowVector(@Cast("const Nd4jLong*") long[] shapeInfo);
@@ -8351,6 +8355,145 @@ public static final int PREALLOC_SIZE = 33554432;
 
 ////////////////////////////////////////////////////////////////////////// 
 // copy-past from java hasDefaultStridesForShape function
+
+// INLINEDEF _CUDA_H bool reshapeCF(const int oldRank, Nd4jLong* oldShape, const int newRank, Nd4jLong* newShapeOf, bool isFOrder, Nd4jLong* target) {
+//         int oldnd;
+//         Nd4jLong* olddims = shape::copyOf(oldRank, shape::shapeOf(oldShape));
+//         Nd4jLong* oldstrides = shape::copyOf(oldRank, shape::stride(oldShape));
+//         int np, op, last_stride;
+//         int oi, oj, ok, ni, nj, nk;
+//         Nd4jLong* newStrides = new Nd4jLong[newRank];
+//         oldnd = 0;
+
+//         /*
+//          * Remove axes with dimension 1 from the old array. They have no effect
+//          * but would need special cases since their strides do not matter.
+//          */
+//         for (oi = 0; oi < oldRank; oi++) {
+//             if (shape::shapeOf(oldShape)[oi] != 1) {
+//                 olddims[oldnd] = shape::shapeOf(oldShape)[oi];
+//                 oldstrides[oldnd] = shape::stride(oldShape)[oi];
+//                 oldnd++;
+//             }
+//         }
+
+//         np = 1;
+//         for (ni = 0; ni < newRank; ni++) {
+//             np *= newShapeOf[ni];
+//         }
+//         op = 1;
+//         for (oi = 0; oi < oldnd; oi++) {
+//             op *= olddims[oi];
+//         }
+//         if (np != op) {
+//             /* different total sizes; no hope */
+//             delete[] olddims;
+//             delete[] oldstrides;
+//             delete[] newStrides;
+
+//             return false;
+//         }
+
+//         if (np == 0) {
+//             /* the current code does not handle 0-sized arrays, so give up */
+//             delete[] olddims;
+//             delete[] oldstrides;
+//             delete[] newStrides;
+
+//             return false;
+//         }
+
+//         /* oi to oj and ni to nj give the axis ranges currently worked with */
+//         oi = 0;
+//         oj = 1;
+//         ni = 0;
+//         nj = 1;
+
+//         while (ni < newRank && oi < oldnd) {
+//             np = newShapeOf[ni];
+//             op = olddims[oi];
+
+//             while (np != op) {
+//                 if (np < op) {
+//                     /* Misses trailing 1s, these are handled later */
+//                     np *= newShapeOf[nj++];
+//                 } else {
+//                     op *= olddims[oj++];
+//                 }
+//             }
+
+//             /* Check whether the original axes can be combined */
+//             for (ok = oi; ok < oj - 1; ok++) {
+//                 if (isFOrder) {
+//                     if (oldstrides[ok + 1] != olddims[ok] * oldstrides[ok]) {
+//                         /* not contiguous enough */
+//                         delete[] olddims;
+//                         delete[] oldstrides;
+//                         delete[] newStrides;
+
+//                         return false;
+//                     }
+//                 } else {
+//                     /* C order */
+//                     if (oldstrides[ok] != olddims[ok + 1] * oldstrides[ok + 1]) {
+//                         /* not contiguous enough */
+//                         delete[] olddims;
+//                         delete[] oldstrides;
+//                         delete[] newStrides;
+
+//                         return false;
+//                     }
+//                 }
+//             }
+
+//             /* Calculate new strides for all axes currently worked with */
+//             if (isFOrder) {
+//                 newStrides[ni] = oldstrides[oi];
+//                 for (nk = ni + 1; nk < nj; nk++) {
+//                     newStrides[nk] = newStrides[nk - 1] * newShapeOf[nk - 1];
+//                 }
+//             } else {
+//                 /* C order */
+//                 newStrides[nj - 1] = oldstrides[oj - 1];
+//                 for (nk = nj - 1; nk > ni; nk--) {
+//                     newStrides[nk - 1] = newStrides[nk] * newShapeOf[nk];
+//                 }
+//             }
+//             ni = nj++;
+//             oi = oj++;
+//         }
+
+//         if (ni >= 1) {
+//             last_stride = newStrides[ni - 1];
+//         } else {
+//             last_stride = shape::elementWiseStride(oldShape);
+//         }
+//         if (isFOrder && ni >= 1) {
+//             last_stride *= newShapeOf[ni - 1];
+//         }
+//         for (nk = ni; nk < newRank; nk++) {
+//             newStrides[nk] = last_stride;
+//         }
+
+//         target[0] = newRank;
+//         int cnt = 1;
+//         for (int e = 0; e < newRank; e++)
+//             target[cnt++] = newShapeOf[e];
+
+//         for (int e = 0; e < newRank; e++)
+//             target[cnt++] = newStrides[e];
+
+//         target[shape::shapeInfoLength(newRank) - 3] = 0;
+//         target[shape::shapeInfoLength(newRank) - 2] = 0;
+//         target[shape::shapeInfoLength(newRank) - 1] = isFOrder ? 102 : 99;
+//         nd4j::ArrayOptions::setDataType(target, nd4j::ArrayOptions::dataType(oldShape));
+
+//         delete[] olddims;
+//         delete[] oldstrides;
+//         delete[] newStrides;
+
+//         return true;
+//     }
 
     // this function checks the consistence of dimensions with array rank (negative dimensions, too large dimensions, too big number of dimensions)
     // also it sorts input array of dimensions, this operation is also necessary for creating TAD object
@@ -10670,6 +10813,13 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 
 // #define ILAMBDA_T(X, ...) [__VA_ARGS__] (Nd4jLong _idx, T X) -> T
 // #define ILAMBDA_TT(X, Y, ...) [__VA_ARGS__] (Nd4jLong _idx, T X, T Y) -> T
+
+// stuff for benchmarks
+// #define GENERATE_XYZ() [&] (ResultSet &x, ResultSet &y, ResultSet &z)
+// #define GENERATE_XZ() [&] (ResultSet &x, ResultSet &z)
+
+// #define PARAMETRIC_XYZ() [&] (Parameters &p, ResultSet &x, ResultSet &y, ResultSet &z)
+// #define PARAMETRIC_XZ() [&] (Parameters &p, ResultSet &x, ResultSet &z)
 
 // #endif
 
@@ -18160,6 +18310,35 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 //         #endif
 
         /**
+         * logdet op. Logarithm of the determinant of hermitian positive matricies.
+         *
+         * input params:
+         *    0 - the tensor with dimension (x * y * z * ::: * M * M)
+         *
+         * return value:
+         *    tensor with dimension (x * y * z * ::: *) with log determinant for all
+         * M x M matricies
+         */
+
+//         #if NOT_EXCLUDED(OP_logdet)
+        @Namespace("nd4j::ops") public static class logdet extends DeclarableCustomOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public logdet(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public logdet(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public logdet position(long position) {
+                return (logdet)super.position(position);
+            }
+        
+                                                                                    public logdet() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
+                                                                                }
+//         #endif
+        
+        /**
          * matrix_inverse op. - make inverse for all 2D square matricies found in the input tensor
          *
          * input params:
@@ -20658,6 +20837,21 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
             }
         
                                                                                     public matmul() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
+                                                                                }
+        @Namespace("nd4j::ops") public static class matmul_bp extends DeclarableCustomOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public matmul_bp(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public matmul_bp(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public matmul_bp position(long position) {
+                return (matmul_bp)super.position(position);
+            }
+        
+                                                                                    public matmul_bp() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
                                                                                     public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
                                                                                 }

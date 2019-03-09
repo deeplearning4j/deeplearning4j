@@ -184,36 +184,8 @@ public class Mmul extends DynamicCustomOp {
 
 
     @Override
-    public List<SDVariable> doDiff(List<SDVariable> i_v1) {
-        List<SDVariable> ret = new ArrayList<>();
-        SDVariable dLdOut = i_v1.get(0);
-        /*
-        In: x=[a,b], y=[b,c]
-        tX  tY  tZ  x       y       z       dz          dLdx                                    dLdy
-        F   F   F   [a,b]   [b,c]   [a,c]   [a,c]       [a,c]*[b,c]T = [a,b]        x*yT        [a,b]T*[a,c] = [b,c]        xT*y
-        T   F   F   [b,a]   [b,c]   [a,c]   [a,c]       ([a,c]*[b,c]T)T = [b,a]     (x*yT)T     [b,a]*[a,c] = [b,c]         x*y
-        F   T   F   [a,b]   [c,b]   [a,c]   [a,c]       ([a,c]*[c,b]) = [a,b]       x*y         [a,b]T*[a,c] = [b,c] ->T    xT*y
-        T   T   F   [b,a]   [c,b]   [a,c]   [a,c]       ([a,c]*[c,b])T = [b,a]      (x*y)T      [b,a]*[a,c] = [b,c]  ->T    x*y
-        F   F   T   [a,b]   [b,c]   [c,a]   [c,a]
-
-         */
-
-        //If x=[a,b] and y=[b,c] then x*y=[a,c] - no transpose case
-        SDVariable dLdx = sameDiff.mmul(dLdOut, rarg(), MMulTranspose.builder() //No transpose: [a,c]*[b,c]^T = [a,b]
-                .transposeA(mt.isTransposeResult()) //Transpose gradient if fwd result was transposed
-                .transposeB(!mt.isTransposeB())
-                .transposeResult(mt.isTransposeA())
-                .build());
-
-        SDVariable dLdy = sameDiff.mmul(larg(), dLdOut, MMulTranspose.builder() //No transpose: [a,b]^T * [a,c] = [b,c]
-                .transposeA(!mt.isTransposeA())
-                .transposeB(mt.isTransposeResult()) //Transpose gradient if fwd result was transposed
-                .transposeResult(mt.isTransposeB())
-                .build());
-
-        ret.add(dLdx);
-        ret.add(dLdy);
-        return ret;
+    public List<SDVariable> doDiff(List<SDVariable> gradients) {
+        return sameDiff.f().mmulBp(larg(),rarg(), gradients.get(0), mt);
     }
 
 

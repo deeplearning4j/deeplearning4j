@@ -43,6 +43,7 @@ namespace nd4j {
          */
         #if NOT_EXCLUDED(OP_matmul)
         DECLARE_CUSTOM_OP(matmul, 2, 1, false, 0, -2);
+        DECLARE_CUSTOM_OP(matmul_bp, 3, 2, false, 0, -2);
         #endif
 
         /**

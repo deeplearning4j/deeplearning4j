@@ -1510,6 +1510,10 @@ public class DifferentialFunctionFactory {
         return mmul(x, y, MMulTranspose.allFalse());
     }
 
+    public List<SDVariable> mmulBp(SDVariable x, SDVariable y, SDVariable eps, MMulTranspose mt) {
+        return Arrays.asList(new MmulBp(sameDiff(), x, y, eps, mt).outputVariables());
+    }
+
     public SDVariable[] batchMmul(SDVariable[] matricesA,
                                 SDVariable[] matricesB) {
         return batchMmul(matricesA, matricesB, false, false);
@@ -2227,7 +2231,5 @@ public class DifferentialFunctionFactory {
     public String toString() {
         return "DifferentialFunctionFactory{methodNames=" + methodNames + "}";
     }
-
-
 
 }
