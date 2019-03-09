@@ -1,7 +1,11 @@
 package org.nd4j.imports.TFGraphs;
 
+import org.junit.Ignore;
 import org.junit.Test;
+import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.autodiff.samediff.transform.*;
+import org.nd4j.base.Preconditions;
 import org.nd4j.graph.ui.LogFileWriter;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
 import org.nd4j.imports.tensorflow.TFImportOverride;
@@ -12,41 +16,12 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;
 
 import java.io.File;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class BERTGraphTest {
-
-    @Test
-    public void writeBertUI() throws Exception {
-        File f = new File("C:/Temp/TF_Graphs/mrpc_output/frozen/bert_mrpc_frozen.pb");
-        int minibatchSize = 4;
-
-        Map<String, TFImportOverride> m = new HashMap<>();
-        m.put("IteratorGetNext", (inputs, controlDepInputs, nodeDef, initWith, attributesForNode, graph) -> {
-            //Return 3 placeholders called "IteratorGetNext:0", "IteratorGetNext:1", "IteratorGetNext:3" instead of the training iterator
-            return Arrays.asList(
-                    initWith.placeHolder("IteratorGetNext", DataType.INT, minibatchSize, 128),
-                    initWith.placeHolder("IteratorGetNext:1", DataType.INT, minibatchSize, 128),
-                    initWith.placeHolder("IteratorGetNext:4", DataType.INT, minibatchSize, 128)
-            );
-        });
-
-        //Skip the "IteratorV2" op - we don't want or need this
-        TFOpImportFilter filter = (nodeDef, initWith, attributesForNode, graph) -> {
-            return "IteratorV2".equals(nodeDef.getName());
-        };
-
-        SameDiff sd = TFGraphMapper.getInstance().importGraph(f, m, filter);
-
-        LogFileWriter w = new LogFileWriter(new File("C:/Temp/BERT_UI.bin"));
-        long bytesWritten = w.writeGraphStructure(sd);
-        long bytesWritten2 = w.writeFinishStaticMarker();
-
-    }
 
     @Test
     public void testBert(){
@@ -71,6 +46,84 @@ public class BERTGraphTest {
         TFOpImportFilter filter = (nodeDef, initWith, attributesForNode, graph) -> { return "IteratorV2".equals(nodeDef.getName()); };
 
         SameDiff sd = TFGraphMapper.getInstance().importGraph(f, m, filter);
+
+        /*
+        Modify the network to remove hard-coded dropout operations for inference.
+        This is a little ugly as Tensorflow/BERT's dropout is implemented as a set of discrete operations - random, mul, div, floor, etc.
+        We need to select all instances of this subgraph, and then remove them from the graph entirely.
+
+        Note that in general there are two ways to define subgraphs (larger than 1 operation) for use in GraphTransformUtil
+        (a) withInputSubgraph - the input must match this predicate, AND it is added to the subgraph (i.e., matched and is selected to be part of the subgraph)
+        (b) withInputMatching - the input must match this predicate, BUT it is NOT added to the subgraph (i.e., must match only)
+
+        In effect, this predicate will match the set of directly connected operations with the following structure:
+        (.../dropout/div, .../dropout/Floor) -> (.../dropout/mul)
+        (.../dropout/add) -> (.../dropout/Floor)
+        (.../dropout/random_uniform) -> (.../dropout/add)
+        (.../dropout/random_uniform/mul) -> (.../dropout/random_uniform)
+        (.../dropout/random_uniform/RandomUniform, .../dropout/random_uniform/sub) -> (.../dropout/random_uniform/mul)
+
+        Then, for all subgraphs that match this predicate, we will process them (in this case, simply replace the entire subgraph by passing the input to the output)
+
+        How do you work out the appropriate subgraph to replace?
+        The simplest approach is to visualize the graph - either in TensorBoard or using SameDiff UI.
+        See writeBertUI() in this file, then open DL4J UI and go to localhost:9000/samediff
+        */
+        SubGraphPredicate p = SubGraphPredicate.withRoot(OpPredicate.nameMatches(".*/dropout/mul"))     //.../dropout/mul is the output variable, post dropout
+                .withInputCount(2)
+                .withInputSubgraph(0, SubGraphPredicate.withRoot(OpPredicate.nameMatches(".*/dropout/div")))        //.../dropout/div is the first input. "withInputS
+                .withInputSubgraph(1, SubGraphPredicate.withRoot(OpPredicate.nameMatches(".*/dropout/Floor"))
+                        .withInputSubgraph(0, SubGraphPredicate.withRoot(OpPredicate.nameMatches(".*/dropout/add"))
+                                .withInputSubgraph(1, SubGraphPredicate.withRoot(OpPredicate.nameMatches(".*/dropout/random_uniform"))
+                                        .withInputSubgraph(0, SubGraphPredicate.withRoot(OpPredicate.nameMatches(".*/dropout/random_uniform/mul"))
+                                                .withInputSubgraph(0, SubGraphPredicate.withRoot(OpPredicate.nameMatches(".*/dropout/random_uniform/RandomUniform")))
+                                                .withInputSubgraph(1, SubGraphPredicate.withRoot(OpPredicate.nameMatches(".*/dropout/random_uniform/sub")))
+
+                                        )
+                                )
+                        )
+                );
+
+        List<SubGraph> subGraphs = GraphTransformUtil.getSubgraphsMatching(sd, p);
+        int subGraphCount = subGraphs.size();
+        assertTrue("Subgraph count: " + subGraphCount, subGraphCount > 0);
+
+
+        /*
+        Create the subgraph processor.
+        The subgraph processor is applied to each subgraph - i.e., it defines what we should replace it with.
+        It's a 2-step process:
+        (1) The SubGraphProcessor is applied to define the replacement subgraph (add any new operations, and define the new outputs, etc).
+            In this case, we aren't adding any new ops - so we'll just pass the "real" input (pre dropout activations) to the output.
+            Note that the number of returned outputs must match the existing number of outputs (1 in this case).
+            Immediately after SubgraphProcessor.processSubgraph returns, both the existing subgraph (to be replaced) and new subgraph (just added)
+            exist in parallel.
+        (2) The existing subgraph is then removed from the graph, leaving only the new subgraph (as defined in processSubgraph method)
+            in its place.
+
+         */
+        sd = GraphTransformUtil.replaceSubgraphsMatching(sd, p, new SubGraphProcessor() {
+            @Override
+            public List<SDVariable> processSubgraph(SameDiff sd, SubGraph subGraph) {
+                List<SDVariable> inputs = subGraph.inputs();    //Get inputs to the subgraph
+                //Find pre-dropout input variable:
+                SDVariable newOut = null;
+                for(SDVariable v : inputs){
+                    if(v.getVarName().endsWith("/BiasAdd") || v.getVarName().endsWith("/Softmax") || v.getVarName().endsWith("/add_1") || v.getVarName().endsWith("/Tanh")){
+                        newOut = v;
+                        break;
+                    }
+                }
+
+                if(newOut != null){
+                    //Pass this input variable as the new output
+                    return Collections.singletonList(newOut);
+                }
+
+                throw new RuntimeException("No pre-dropout input variable found");
+            }
+        });
+
 
         /*
         Output during inference:
@@ -144,8 +197,9 @@ public class BERTGraphTest {
 
         Map<String, INDArray> out = sd.exec(placeholderValues, "loss/Softmax");
         INDArray softmax = out.get("loss/Softmax");
-        System.out.println("OUTPUT - Softmax");
-        System.out.println(softmax);
+//        System.out.println("OUTPUT - Softmax");
+//        System.out.println(softmax);
+//        System.out.println(Arrays.toString(softmax.data().asFloat()));
 
         INDArray exp0 = Nd4j.createFromArray(0.99860954f, 0.0013904407f).reshape(1, 2);
         INDArray exp1 = Nd4j.createFromArray(0.0005442508f, 0.99945575f).reshape(1, 2);
@@ -156,6 +210,34 @@ public class BERTGraphTest {
         assertEquals(exp1, softmax.getRow(1));
         assertEquals(exp2, softmax.getRow(2));
         assertEquals(exp3, softmax.getRow(3));
+    }
+
+    @Test @Ignore
+    public void writeBertUI() throws Exception {
+        //Test used to generate graph for visualization to work out appropriate subgraph structure to replace
+        File f = new File("C:/Temp/TF_Graphs/mrpc_output/frozen/bert_mrpc_frozen.pb");
+        int minibatchSize = 4;
+
+        Map<String, TFImportOverride> m = new HashMap<>();
+        m.put("IteratorGetNext", (inputs, controlDepInputs, nodeDef, initWith, attributesForNode, graph) -> {
+            //Return 3 placeholders called "IteratorGetNext:0", "IteratorGetNext:1", "IteratorGetNext:3" instead of the training iterator
+            return Arrays.asList(
+                    initWith.placeHolder("IteratorGetNext", DataType.INT, minibatchSize, 128),
+                    initWith.placeHolder("IteratorGetNext:1", DataType.INT, minibatchSize, 128),
+                    initWith.placeHolder("IteratorGetNext:4", DataType.INT, minibatchSize, 128)
+            );
+        });
+
+        //Skip the "IteratorV2" op - we don't want or need this
+        TFOpImportFilter filter = (nodeDef, initWith, attributesForNode, graph) -> {
+            return "IteratorV2".equals(nodeDef.getName());
+        };
+
+        SameDiff sd = TFGraphMapper.getInstance().importGraph(f, m, filter);
+
+        LogFileWriter w = new LogFileWriter(new File("C:/Temp/BERT_UI.bin"));
+        long bytesWritten = w.writeGraphStructure(sd);
+        long bytesWritten2 = w.writeFinishStaticMarker();
     }
 
 }
