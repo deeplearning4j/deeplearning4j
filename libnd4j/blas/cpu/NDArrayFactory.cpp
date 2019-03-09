@@ -20,6 +20,7 @@
 
 #include <NDArrayFactory.h>
 #include <ConstantHelper.h>
+#include <helpers/ConstantShapeHelper.h>
 
 namespace nd4j {
 
@@ -159,12 +160,16 @@ template void NDArrayFactory::memcpyFromVector(void *ptr, const std::vector<int8
         int8_t *buffer;
         ALLOCATE(buffer, context->getWorkspace(), 1 * sizeof(T), int8_t);
 
-        res->setShapeInfo(ShapeBuilders::createScalarShapeInfo(DataTypeUtils::fromT<T>(), context->getWorkspace()));
+        auto shapeinfo = ShapeBuilders::createScalarShapeInfo(DataTypeUtils::fromT<T>(), context->getWorkspace());
+
+        res->setContext(context);
+        res->setShapeInfo(shapeinfo);
         res->setBuffer(buffer);
         res->triggerAllocationFlag(true);
-        res->setContext(context);
 
         res->assign(scalar);
+
+        RELEASE(shapeinfo, context->getWorkspace());
 
         return res;
     }
@@ -221,12 +226,16 @@ template void NDArrayFactory::memcpyFromVector(void *ptr, const std::vector<int8
         int8_t *buffer;
         ALLOCATE(buffer, context->getWorkspace(), 1 * sizeof(T), int8_t);
 
-        res.setShapeInfo(ShapeBuilders::createScalarShapeInfo(DataTypeUtils::fromT<T>(), context->getWorkspace()));
+        auto shape = ShapeBuilders::createScalarShapeInfo(DataTypeUtils::fromT<T>(), context->getWorkspace());
+
+        res.setContext(context);
+        res.setShapeInfo(shape);
         res.setBuffer(buffer);
         res.triggerAllocationFlag(true);
-        res.setContext(context);
 
         res.bufferAsT<T>()[0] = scalar;
+
+        RELEASE(shape, context->getWorkspace());
 
         return res;
     }
@@ -409,8 +418,10 @@ NDArray NDArrayFactory::create(const char order, const std::vector<Nd4jLong> &sh
         context = nd4j::graph::LaunchContext::defaultContext();
 
     res.setAttached(context->getWorkspace() != nullptr);
+    ShapeDescriptor descriptor(dtype, order, shape);
+    auto constantBuffer = ConstantShapeHelper::getInstance()->bufferForShapeInfo(descriptor);
 
-    res.setShapeInfo(ShapeBuilders::createShapeInfo(dtype, order, shape, context->getWorkspace()));
+    res.setShapeInfo(constantBuffer.primaryAsT<Nd4jLong>());
     
     int8_t *buffer = nullptr;
     ALLOCATE(buffer, context->getWorkspace(), res.lengthOf() * DataTypeUtils::sizeOfElement(dtype), int8_t);

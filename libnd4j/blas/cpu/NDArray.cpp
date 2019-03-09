@@ -1505,7 +1505,7 @@ NDArray& NDArray::operator=(const NDArray& other) {
             throw std::invalid_argument("NDArray::applyBroadcast method: this and target arrays must have the same shape !");
 
         auto pack = ConstantTadHelper::getInstance()->tadForDimensions(_shapeInfo, dimensions);
-        auto packZ = ConstantTadHelper::getInstance()->tadForDimensions(target->_shapeInfo, dimensions);
+        auto packZ = ConstantTadHelper::getInstance()->tadForDimensions(result->_shapeInfo, dimensions);
 
         auto tadLength = shape::length(pack.primaryShapeInfo());
         if (tadLength != tadArray->lengthOf())
@@ -1532,7 +1532,7 @@ NDArray& NDArray::operator=(const NDArray& other) {
             throw std::invalid_argument("NDArray::applyBroadcast bool method: this and tad arrays must have the same type !");
 
         auto pack = ConstantTadHelper::getInstance()->tadForDimensions(_shapeInfo, dimensions);
-        auto packZ = ConstantTadHelper::getInstance()->tadForDimensions(target->_shapeInfo, dimensions);
+        auto packZ = ConstantTadHelper::getInstance()->tadForDimensions(result->_shapeInfo, dimensions);
 
         auto tadLength = shape::length(pack.primaryShapeInfo());
         if (tadLength != tadArray->lengthOf())
@@ -2216,6 +2216,7 @@ NDArray NDArray::e(const Nd4jLong i) const {
             }
         }
         result.tickWriteHost();
+        RELEASE(newShapeInfo, _context->getWorkspace());
         return result;
     }
 

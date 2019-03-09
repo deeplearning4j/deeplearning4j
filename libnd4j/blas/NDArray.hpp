@@ -1620,6 +1620,7 @@ template void NDArray::pIdx(const Nd4jLong* indices, const bool value);
 
         auto result = new NDArray(bufferWithOffset(offset), specialBufferWithOffset(offset), newShape, this->_context, false, false);
 
+        RELEASE(newShape, _context->getWorkspace());
         return result;
     }
     
@@ -1658,6 +1659,7 @@ template void NDArray::pIdx(const Nd4jLong* indices, const bool value);
             delete v;
         }
 
+        RELEASE(newShape, _context->getWorkspace());
         return result;
     }
 
@@ -1688,6 +1690,7 @@ template void NDArray::pIdx(const Nd4jLong* indices, const bool value);
 
         auto result = new NDArray(bufferWithOffset(offset), specialBufferWithOffset(offset), newShape, this->_context);
 
+        RELEASE(newShape, _context->getWorkspace());
         return result;
     }
 

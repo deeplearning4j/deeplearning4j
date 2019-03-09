@@ -140,9 +140,10 @@ TEST_F(ConstantShapeHelperTests, basic_test_7) {
     auto strided = array->subarray(indices);
     strided->assign(1.0f);
 
-    strided->printIndexedBuffer("column");
+    //strided->printIndexedBuffer("column");
 
     delete array;
+    delete strided;
 }
 
 //////////////////////////////////////////////////////////////////////

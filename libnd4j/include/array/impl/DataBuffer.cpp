@@ -38,4 +38,22 @@ namespace nd4j {
         _primaryBuffer = other._primaryBuffer;
         _specialBuffer = other._specialBuffer;
     }
+
+    template <typename T>
+    T* DataBuffer::primaryAsT() {
+        return reinterpret_cast<T*>(_primaryBuffer);
+    }
+    template float* DataBuffer::primaryAsT();
+    template double* DataBuffer::primaryAsT();
+    template int* DataBuffer::primaryAsT();
+    template Nd4jLong* DataBuffer::primaryAsT();
+
+    template <typename T>
+    T* DataBuffer::specialAsT() {
+        return reinterpret_cast<T*>(_specialBuffer);
+    }
+    template float* DataBuffer::specialAsT();
+    template double* DataBuffer::specialAsT();
+    template int* DataBuffer::specialAsT();
+    template Nd4jLong* DataBuffer::specialAsT();
 }

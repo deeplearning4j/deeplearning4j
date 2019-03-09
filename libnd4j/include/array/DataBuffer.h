@@ -40,6 +40,13 @@ namespace nd4j {
 
         DataBuffer& operator=(const DataBuffer& other) = default;
         DataBuffer& operator=(DataBuffer&& other) noexcept = default;
+
+
+        template <typename T>
+        T* primaryAsT();
+
+        template <typename T>
+        T* specialAsT();
     };
 }
 

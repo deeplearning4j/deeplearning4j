@@ -50,6 +50,11 @@ namespace nd4j {
         return _INSTANCE;
     }
 
+    DataBuffer& ConstantShapeHelper::bufferForShapeInfo(nd4j::DataType dataType, char order, const std::vector<Nd4jLong> &shape) {
+        ShapeDescriptor descriptor(dataType, order, shape);
+        return bufferForShapeInfo(descriptor);
+    }
+
     DataBuffer& ConstantShapeHelper::bufferForShapeInfo(ShapeDescriptor &descriptor) {
         int deviceId = getCurrentDevice();
 
