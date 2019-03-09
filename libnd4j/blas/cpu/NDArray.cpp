@@ -142,7 +142,11 @@ NDArray::NDArray(const NDArray *other, const bool copyStrides, nd4j::graph::Laun
 
     ALLOCATE(_buffer, _context->getWorkspace(), other->_length * DataTypeUtils::sizeOf(other->dataType()), int8_t);
 
-    setShapeInfo(ShapeDescriptor(other->_shapeInfo));
+    if (copyStrides)
+        setShapeInfo(ShapeDescriptor(other->_shapeInfo));
+    else {
+        setShapeInfo(ShapeDescriptor(other->dataType(), other->dataType(), other->getShapeAsVector()));
+    }
     
     triggerAllocationFlag(true);
 }
@@ -177,8 +181,12 @@ NDArray::NDArray(Nd4jLong* shapeInfo, const nd4j::DataType dtype, const bool cop
 
     _context = context;
     _isAttached = _context->getWorkspace() != nullptr;
-    
-    setShapeInfo(shapeInfo);
+
+    if (copyStrides)
+        setShapeInfo(ShapeDescriptor(shapeInfo));
+    else {
+        setShapeInfo(ShapeDescriptor(dtype, shape::order(shapeInfo), shape::shapeOf(shapeInfo), shape::rank(shapeInfo)));
+    }
 
     if (this->isEmpty()) {
         _length = 0;
@@ -1326,7 +1334,7 @@ NDArray& NDArray::operator=(const NDArray& other) {
     }
 
     void NDArray::applyTransform(nd4j::transform::SameOps op, NDArray *target, ExtraArguments *extraParams) {
-        nd4j_printf("Same op %i transform:\n", (int)op);
+        //nd4j_printf("Same op %i transform:\n", (int)op);
         if (isS())
             throw std::runtime_error("NDArray::applyTransform SameOps: you can't use this method on String array!");
 

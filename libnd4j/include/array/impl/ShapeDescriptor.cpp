@@ -77,6 +77,32 @@ Nd4jLong* ShapeDescriptor::toShapeInfo() {
     }
 }
 
+ShapeDescriptor::ShapeDescriptor(const DataType type, const char order, const Nd4jLong *shape, const int rank) {
+    _rank = rank;
+    _ews = 1;
+    _shape.resize(rank);
+    _strides.resize(rank);
+
+    for (int e = 0; e < rank; e++)
+        _shape[e] = shape[e];
+
+    if (order == 'c')
+        shape::calcStrides(_shape.data(), _shape.size(), _strides.data());
+    else
+        shape::calcStridesFortran(_shape.data(), _shape.size(), _strides.data());
+
+    if (_shape.empty())
+        _empty = true;
+    else {
+        for (auto v:_shape) {
+            if (v == 0) {
+                _empty = true;
+                break;
+            }
+        }
+    }
+}
+
 //////////////////////////////////////////////////////////////////////////
 ShapeDescriptor::ShapeDescriptor(const DataType type, const char order, const std::vector<Nd4jLong> &shape): _dataType(type), _order(order), _shape(shape) {
     _rank = shape.size();

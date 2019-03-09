@@ -578,7 +578,7 @@ TEST_F(ConvolutionTests, Test_im2col_col2im_1) {
 
     int oY, oX;
     x.syncToDevice();
-    ASSERT_TRUE(x.isActualOnDeviceSide());
+    //ASSERT_TRUE(x.isActualOnDeviceSide());
     ASSERT_TRUE(x.isActualOnHostSide());
     //x.printBuffer("x", 64);
 
