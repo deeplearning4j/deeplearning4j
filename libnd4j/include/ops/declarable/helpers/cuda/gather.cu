@@ -22,6 +22,7 @@
 #include <ops/declarable/helpers/gather.h>
 #include <numeric>
 #include <PointersManager.h>
+#include <ShapeUtils.h>
 
 namespace nd4j    {
 namespace ops     {
@@ -45,8 +46,8 @@ __global__ static void gatherCuda(const int numOfSubArrs,
         
         if (threadIdx.x == 0) {
                         
-            x = reinterpret_cast<const X*>(vx) + xOffsets[ y[shape::getIndexOffset(i, yShapeInfo, numOfSubArrs)] ];
-            z = reinterpret_cast<Z*>(vz) + zOffsets[i];
+            x = reinterpret_cast<const X*>(vx) + xOffsets[y[shape::getIndexOffset(i, yShapeInfo, numOfSubArrs)]];
+            z = reinterpret_cast<Z*>(vz) + zOffsets[i];            
         }
         __syncthreads();
 
@@ -110,8 +111,8 @@ void gather(graph::LaunchContext* context, const NDArray* input, const NDArray* 
         PointersManager manager(context, "gather");
         auto xShapeInfo = reinterpret_cast<Nd4jLong*>(manager.replicatePointer(inSubArrShapeInfo,  shape::shapeInfoByteLength(inSubArrShapeInfo)));
         auto zShapeInfo = reinterpret_cast<Nd4jLong*>(manager.replicatePointer(outSubArrShapeInfo, shape::shapeInfoByteLength(outSubArrShapeInfo)));
-        auto xOffsets   = reinterpret_cast<Nd4jLong*>(manager.replicatePointer(inSubArrOffsets,    numOfSubArrs * sizeof(Nd4jLong)));
-        auto zOffsets   = reinterpret_cast<Nd4jLong*>(manager.replicatePointer(outSubArrOffsets,   numOfSubArrs * sizeof(Nd4jLong)));
+        auto xOffsets   = reinterpret_cast<Nd4jLong*>(manager.replicatePointer(inSubArrOffsets,    (input->lengthOf()  / shape::length(inSubArrShapeInfo))  * sizeof(Nd4jLong)));
+        auto zOffsets   = reinterpret_cast<Nd4jLong*>(manager.replicatePointer(outSubArrOffsets,   (output->lengthOf() / shape::length(outSubArrShapeInfo)) * sizeof(Nd4jLong)));
                 
         NDArray::prepareSpecialUse({output}, {input, pIndices});
         BUILD_TRIPLE_SELECTOR(input->dataType(), pIndices->dataType(), output->dataType(), gatherCudaLauncher, (context->getCudaStream(), numOfSubArrs, input->getSpecialBuffer(), xShapeInfo, xOffsets, pIndices->getSpecialBuffer(), pIndices->getSpecialShapeInfo(), output->getSpecialBuffer(), zShapeInfo, zOffsets ), NUMERIC_TYPES, INTEGER_TYPES, NUMERIC_TYPES);
