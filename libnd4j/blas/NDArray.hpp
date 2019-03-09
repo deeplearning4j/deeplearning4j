@@ -2598,7 +2598,7 @@ Nd4jLong NDArray::getOffset(const Nd4jLong i) const {
         if(dimensions.size() == 0)
             return result;
 
-        if(dimensions.size() >= rankOf())
+        if(dimensions.back() >= rankOf())
             throw std::runtime_error("NDArray::allTensorsAlongDimension static function: all input dimensions must be smaller than rank of input array !");
 
 
