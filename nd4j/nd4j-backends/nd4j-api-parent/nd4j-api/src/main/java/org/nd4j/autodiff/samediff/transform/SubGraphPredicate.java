@@ -78,8 +78,21 @@ public class SubGraphPredicate extends OpPredicate {
         Preconditions.checkState(matches(sd, rootFn), "Root function does not match predicate");
 
         List<DifferentialFunction> childNodes = new ArrayList<>();
-        if(root instanceof SubGraphPredicate){
+        //Need to work out child nodes
+        if(!opInputSubgraphPredicates.isEmpty()){
+            for(Map.Entry<Integer,OpPredicate> entry : opInputSubgraphPredicates.entrySet()){
+                OpPredicate p2 = entry.getValue();
+                SDVariable arg = rootFn.arg(entry.getKey());
+                DifferentialFunction df = sd.getVariableOutputFunction(arg.getVarName());
+                if(df != null){
+                    childNodes.add(df);
 
+                    if(p2 instanceof SubGraphPredicate){
+                        SubGraph sg = ((SubGraphPredicate) p2).getSubGraph(sd, df);
+                        childNodes.addAll(sg.childNodes);
+                    }
+                }
+            }
         }
 
         SubGraph sg = SubGraph.builder()
