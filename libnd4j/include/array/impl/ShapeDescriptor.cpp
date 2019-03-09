@@ -60,8 +60,11 @@ Nd4jLong* ShapeDescriptor::toShapeInfo() {
 
 
     switch (_rank) {
-        case 0:
-            return ShapeBuilders::createScalarShapeInfo(_dataType);
+        case 0: {
+            auto shapeInfo = ShapeBuilders::createScalarShapeInfo(_dataType);
+            shapeInfo[2] = _ews;
+            return shapeInfo;
+        }
         case 1: {
             auto shapeInfo = ShapeBuilders::createVectorShapeInfo(_dataType, _shape[0]);
             shapeInfo[2 + _rank * 2] = _ews;
