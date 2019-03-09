@@ -1762,7 +1762,6 @@ void NDArray::reduceAlongDimension(nd4j::reduce::FloatOps op, NDArray* target, c
         throw std::invalid_argument("NDArray::reduceAlongDimension FloatOps: requires target array to be present and have type form real space!");
 
     std::vector<int> copy(dimensions);
-    shape::checkDimensions(rankOf(), copy);
 
     if(checkTargetShape) {
         auto newShape = ShapeUtils::evalReduceShapeInfo(target->ordering(), copy, *this, keepDims, supportOldShapes, _context->getWorkspace());

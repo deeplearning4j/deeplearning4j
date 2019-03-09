@@ -83,9 +83,7 @@ Nd4jLong* ShapeDescriptor::toShapeInfo() {
     }
 }
 
-ShapeDescriptor::ShapeDescriptor(const DataType type, const char order, const Nd4jLong *shape, const int rank) {
-    _rank = rank;
-    _ews = 1;
+ShapeDescriptor::ShapeDescriptor(const DataType type, const char order, const Nd4jLong *shape, const int rank) :  _dataType(type), _order(order), _rank(rank), _ews(1){
     _shape.resize(rank);
     _strides.resize(rank);
 
