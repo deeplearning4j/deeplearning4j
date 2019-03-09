@@ -22,67 +22,64 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.internal.SameDiffOp;
 import org.nd4j.autodiff.samediff.internal.Variable;
-import org.nd4j.autodiff.samediff.ops.SDOps;
 import org.nd4j.base.Preconditions;
-import org.nd4j.linalg.function.Consumer;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 
+/**
+ * GraphTransformUtil provides a number of utility methods to modify graphs - replacing nodes and subgraphs, etc.<br>
+ * See the individual methods for futher details
+ *
+ * @author Alex Black
+ */
 public class GraphTransformUtil {
 
-    private GraphTransformUtil(){ }
-
-    public static List<SubGraph> getSubgraphsMatching(SameDiff sd, SubGraphPredicate p){
-
-        List<SubGraph> out = new ArrayList<>();
-        for(DifferentialFunction df : sd.functions()){
-            if(p.matches(sd, df)){
-                SubGraph sg = p.getSubGraph(sd, df);
-                out.add(sg);
-            }
-        }
-
-        return out;
+    private GraphTransformUtil() {
     }
 
-    public static SameDiff replaceSubgraphsMatching(@NonNull SameDiff sd, @NonNull SubGraphPredicate p, @NonNull SubGraphProcessor processor){
+    /**
+     * Find all of the subgraphs that match the specified SubGraphPredicate and then replace them with a different subgraph.<br>
+     * Note that the original SameDiff instance is not modified; a copy is made, which is then modified and returned.
+     * <br>
+     * Note: For each subgraph to be replaced by SubGraphProcessor, its replacement should have the same number of output
+     * SDVariables.
+     *
+     * @param sd        SameDiff instance to copy and modify
+     * @param p         SubGraphPredicate to define and select the subgraphs that should be modified or replaced
+     * @param processor SubGraphProcessor is used to define how the subgraphs (selected by the SubGraphPredicate) should
+     *                  be modified/replaced
+     * @return A SameDiff instance that has been modified
+     */
+    public static SameDiff replaceSubgraphsMatching(@NonNull SameDiff sd, @NonNull SubGraphPredicate p, @NonNull SubGraphProcessor processor) {
         //Make a copy so that if the transform fails part way through, we don't leave user with broken graph
         sd = sd.dup();
 
         List<SubGraph> subgraphs = getSubgraphsMatching(sd, p);
 
-        for(SubGraph sg : subgraphs){
+        for (SubGraph sg : subgraphs) {
             List<SDVariable> newOutputs = processor.processSubgraph(sd, sg);
             List<SDVariable> oldOutputs = sg.outputs();
             Preconditions.checkState(oldOutputs.size() == newOutputs.size(), "Error applying subgraph processor: " +
                     "different number of outputs for subgraph (%s) vs. returned by preprocessor (%s)", oldOutputs.size(), newOutputs.size());
 
-            /*
-            Now that we've processed subgraph to add new components, let's remove the old DifferentialFunction instances that
-            comprise the subgraph. We've got a few things to fix up:
-            1. Variable objects - any references to the old DifferentialFunction
-            2. SameDiffOp objects - any references
-            4. Clear out sessions etc, if required
-            5. Validate graph structure
-            */
-
-
             //Step 1: replace the old outputs with new outputs
             //So for initial graph (x -> y -> z) and post application of processor we now have (x -> (y, A); y->z),
             // we want to end up with (x -> A -> z)
             List<DifferentialFunction> allSubGraphFns = sg.allFunctionsInSubgraph();
-            for(int i=0; i<oldOutputs.size(); i++ ){
+            for (int i = 0; i < oldOutputs.size(); i++) {
                 String oldOutVarName = oldOutputs.get(i).getVarName();
                 String newOutVarName = newOutputs.get(i).getVarName();
                 Preconditions.checkState(!oldOutVarName.equals(newOutVarName), "Reusing old variables not yet implemented");
 
                 //Update inputs for ops: if X->opA, and now Y->opA, then X.inputsForOps contains "opA"; Y.inputsForOps should be updated
                 List<String> oldInputsForOps = sd.getVariables().get(oldOutVarName).getInputsForOp();
-                if(oldInputsForOps != null){
+                if (oldInputsForOps != null) {
                     List<String> newInputsForOps = new ArrayList<>();
-                    for(String s : oldInputsForOps){
+                    for (String s : oldInputsForOps) {
                         DifferentialFunction df = sd.getFunctionById(s);
-                        if(!allSubGraphFns.contains(df)){
+                        if (!allSubGraphFns.contains(df)) {
                             newInputsForOps.add(s);
                         }
                     }
@@ -91,29 +88,29 @@ public class GraphTransformUtil {
 
 
                 //Basically: anywhere that oldName exists, newName should be substituted
-                for(Variable v : sd.getVariables().values()){
+                for (Variable v : sd.getVariables().values()) {
                     // if control dep v -> oldOutput exists, replace it
-                    if(v.getControlDepsForVar() != null){
+                    if (v.getControlDepsForVar() != null) {
                         List<String> cds = v.getControlDepsForVar();
                         int idx;
-                        while( (idx = cds.indexOf(oldOutVarName)) > 0){
+                        while ((idx = cds.indexOf(oldOutVarName)) > 0) {
                             cds.set(idx, newOutVarName);
                         }
                     }
 
-                    if(v.getControlDeps() != null){
+                    if (v.getControlDeps() != null) {
                         List<String> cds = v.getControlDeps();
                         //Control dependency oldOutput -> v exists, replace it
                         int idx;
-                        while( (idx= cds.indexOf(oldOutVarName)) > 0){
+                        while ((idx = cds.indexOf(oldOutVarName)) > 0) {
                             cds.set(idx, newOutVarName);
                         }
                     }
                 }
 
-                for(SameDiffOp op : sd.getOps().values()){
+                for (SameDiffOp op : sd.getOps().values()) {
                     List<String> inputsToOp = op.getInputsToOp();
-                    if(inputsToOp != null) {
+                    if (inputsToOp != null) {
                         int idx;
                         while ((idx = inputsToOp.indexOf(oldOutVarName)) >= 0) {
                             //Previous Op.inputs = {oldVarName, ...} - now {newVarName, ...}
@@ -123,7 +120,7 @@ public class GraphTransformUtil {
 
                     //Don't need to modify outputsOfOp - old outputs are only on functions to be removed anyway
                     List<String> controlDeps = op.getControlDeps();
-                    if(controlDeps != null){
+                    if (controlDeps != null) {
                         int idx;
                         while ((idx = controlDeps.indexOf(oldOutVarName)) >= 0) {
                             //Previous Op.inputs = {oldVarName, ...} - now {newVarName, ...}
@@ -135,17 +132,17 @@ public class GraphTransformUtil {
 
             //Step 2: Update input variables: if X -> (subgraph) exists, then X.inputsForOp needs to be updated
             List<SDVariable> inputs = sg.inputs();
-            for(SDVariable v : inputs){
+            for (SDVariable v : inputs) {
                 Variable var = sd.getVariables().get(v.getVarName());
-                if(var.getInputsForOp() != null){
+                if (var.getInputsForOp() != null) {
                     List<String> newInputsForOp = new ArrayList<>(var.getInputsForOp());
-                    for(String opName : var.getInputsForOp()){
+                    for (String opName : var.getInputsForOp()) {
                         //Two possibilities here:
                         // (1) variable is (was) input to op that has been removed - just remove from list
                         // (2) variable is now connected directly as an output: (A->B->C) becomes (A->C)
                         // For the latter case, this
                         DifferentialFunction df = sd.getFunctionById(opName);
-                        if(allSubGraphFns.contains(df)){
+                        if (allSubGraphFns.contains(df)) {
                             newInputsForOp.remove(opName);
                         }
                     }
@@ -155,14 +152,14 @@ public class GraphTransformUtil {
 
 
             //Step 3: Remove the old variables and old functions
-            Map<String,SameDiffOp> ops = sd.getOps();
-            Map<String,Variable> vars = sd.getVariables();
+            Map<String, SameDiffOp> ops = sd.getOps();
+            Map<String, Variable> vars = sd.getVariables();
 
-            for(DifferentialFunction df : sg.allFunctionsInSubgraph()){
+            for (DifferentialFunction df : sg.allFunctionsInSubgraph()) {
                 ops.remove(df.getOwnName());
                 SDVariable[] outputs = df.outputVariables();
-                if(outputs != null){
-                    for(SDVariable v : outputs){
+                if (outputs != null) {
+                    for (SDVariable v : outputs) {
                         vars.remove(v.getVarName());
                     }
                 }
@@ -172,4 +169,22 @@ public class GraphTransformUtil {
         return sd;
     }
 
+    /**
+     * Get a list of all the subgraphs that match the specified predicate
+     *
+     * @param sd SameDiff instance to get the subgraphs for
+     * @param p  Subgraph predicate. This defines the subgraphs that should be selected in the SameDiff instance
+     * @return Subgraphs
+     */
+    public static List<SubGraph> getSubgraphsMatching(SameDiff sd, SubGraphPredicate p) {
+        List<SubGraph> out = new ArrayList<>();
+        for (DifferentialFunction df : sd.functions()) {
+            if (p.matches(sd, df)) {
+                SubGraph sg = p.getSubGraph(sd, df);
+                out.add(sg);
+            }
+        }
+
+        return out;
+    }
 }

@@ -19,11 +19,26 @@ package org.nd4j.autodiff.samediff.transform;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
 
+/**
+ * An OpPredicate defines whether an operation ({@link DifferentialFunction}) matches or not.<br>
+ * Used mainly in {@link org.nd4j.autodiff.functions.DifferentialFunctionFactory}
+ *
+ * @author Alex Black
+ */
 public abstract class OpPredicate {
 
+    /**
+     *
+     * @param sameDiff SameDiff instance the function belongs to
+     * @param function
+     * @return Returns whether the specific function matches the predicate
+     */
     public abstract boolean matches(SameDiff sameDiff, DifferentialFunction function);
 
 
+    /**
+     * Return true if the operation own (user specified) name equals the specified name
+     */
     public static OpPredicate nameEquals(final String name){
         return new OpPredicate() {
             @Override
@@ -33,6 +48,9 @@ public abstract class OpPredicate {
         };
     }
 
+    /**
+     * Return true if the operation name (i.e., "add", "mul", etc - not the user specified name) equals the specified name
+     */
     public static OpPredicate opNameEquals(final String opName){
         return new OpPredicate() {
             @Override
@@ -42,6 +60,9 @@ public abstract class OpPredicate {
         };
     }
 
+    /**
+     * Return true if the operation own (user specified) name matches the specified regular expression
+     */
     public static OpPredicate nameMatches(final String regex){
         return new OpPredicate() {
             @Override
@@ -51,6 +72,9 @@ public abstract class OpPredicate {
         };
     }
 
+    /**
+     * Return true if the operation name (i.e., "add", "mul", etc - not the user specified name) matches the specified regular expression
+     */
     public static OpPredicate opNameMatches(final String regex){
         return new OpPredicate() {
             @Override
@@ -60,6 +84,9 @@ public abstract class OpPredicate {
         };
     }
 
+    /**
+     * Return true if the operation class is equal to the specified class
+     */
     public static OpPredicate classEquals(final Class<?> c){
         return new OpPredicate() {
             @Override
