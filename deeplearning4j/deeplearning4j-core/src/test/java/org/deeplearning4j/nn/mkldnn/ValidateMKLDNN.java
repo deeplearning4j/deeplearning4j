@@ -175,7 +175,7 @@ public class ValidateMKLDNN extends BaseDL4JTest {
         }
     }
 
-    @Test
+    @Test @Ignore   //https://github.com/deeplearning4j/deeplearning4j/issues/7272
     public void validateLRN() {
 
         //Only run test if using nd4j-native backend
