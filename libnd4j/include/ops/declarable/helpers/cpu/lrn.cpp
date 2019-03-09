@@ -28,9 +28,9 @@ namespace helpers {
 #ifdef HAVE_MKLDNN
 using namespace mkldnn;
 
-static void getMKLDNNMemoryDescLrn(const NDArray* src, const NDArray* diff_src,
-        mkldnn::memory::desc* lrn_src_md, mkldnn::memory::desc* lrn_diff_src_md,
-        mkldnn::memory::desc* user_src_md, mkldnn::memory::desc* user_diff_src_md, int axis) {
+static void getMKLDNNMemoryDescLrn(const NDArray* src, const NDArray* diff_src, const NDArray* dst,
+        mkldnn::memory::desc* lrn_src_md, mkldnn::memory::desc* lrn_diff_src_md, mkldnn::memory::desc* lrn_dst_md,
+        mkldnn::memory::desc* user_src_md, mkldnn::memory::desc* user_diff_src_md, mkldnn::memory::desc* user_dst_md, int axis) {
     const Nd4jLong* shape = src->getShapeInfo();
     long rank = shape[0];
     long dim1 = axis; // MKL-DNN supports only 1 axis, which has to be the "channel" one
@@ -61,6 +61,16 @@ static void getMKLDNNMemoryDescLrn(const NDArray* src, const NDArray* diff_src,
         user_diff_src_md->data.layout_desc.blocking.strides[0][2] = rank > 2 ? diff_src->stridesOf()[dim2] : 1;
         user_diff_src_md->data.layout_desc.blocking.strides[0][3] = rank > 3 ? diff_src->stridesOf()[dim3] : 1;
     }
+
+    if (dst != nullptr && dst->getBuffer() != nullptr && lrn_dst_md != nullptr) {
+        *lrn_dst_md = mkldnn::memory::desc({ lrn_src_tz }, type, supposed_to_be_any_format);
+        *user_dst_md = mkldnn::memory::desc({ lrn_src_tz }, type, format);
+        user_dst_md->data.format = mkldnn_blocked;
+        user_dst_md->data.layout_desc.blocking.strides[0][0] = dst->stridesOf()[0];
+        user_dst_md->data.layout_desc.blocking.strides[0][1] = dst->stridesOf()[dim1];
+        user_dst_md->data.layout_desc.blocking.strides[0][2] = rank > 2 ? dst->stridesOf()[dim2] : 1;
+        user_dst_md->data.layout_desc.blocking.strides[0][3] = rank > 3 ? dst->stridesOf()[dim3] : 1;
+    }
 }
 #endif
 
@@ -79,18 +89,18 @@ static void getMKLDNNMemoryDescLrn(const NDArray* src, const NDArray* diff_src,
             streams.push_back(MKLDNNStream("lrn"));
         }
 
-        if (streams[0].checkAndReset({input}, {output}, {bias, alpha, beta}, {depth})) {
+        if (streams[0].checkAndReset({input}, {output}, {(float)bias, (float)alpha, (float)beta}, {depth})) {
             mkldnn_memory_desc_t empty;
-            mkldnn::memory::desc lrn_src_md(empty), user_src_md(empty);
+            mkldnn::memory::desc lrn_src_md(empty), lrn_dst_md(empty), user_src_md(empty), user_dst_md(empty);
 
-            getMKLDNNMemoryDescLrn(input, nullptr, &lrn_src_md, nullptr, &user_src_md, nullptr, input->rankOf() - 1);
+            getMKLDNNMemoryDescLrn(input, nullptr, output, &lrn_src_md, nullptr, &lrn_dst_md, &user_src_md, nullptr, &user_dst_md, input->rankOf() - 1);
 
             auto lrn_desc = lrn_forward::desc(prop_kind::forward_inference, lrn_across_channels, lrn_src_md, (2 * depth + 1), alpha * (2 * depth + 1), beta, bias);
 
             auto engine = streams[0].getEngine();
             auto lrn_prim_desc = lrn_forward::primitive_desc(lrn_desc, engine);
             auto user_src_memory = mkldnn::memory({user_src_md, engine}, input->buffer());
-            auto user_dst_memory = mkldnn::memory({user_src_md, engine}, output->buffer());
+            auto user_dst_memory = mkldnn::memory({user_dst_md, engine}, output->buffer());
 
             auto lrn_src_memory = user_src_memory;
             streams[0].addMemory(user_src_memory);
@@ -204,18 +214,18 @@ static void getMKLDNNMemoryDescLrn(const NDArray* src, const NDArray* diff_src,
             streams.push_back(MKLDNNStream("lrn"));
         }
 
-        if (streams[0].checkAndReset({input}, {output}, {bias, alpha, beta}, {depth})) {
+        if (streams[0].checkAndReset({input}, {output}, {(float)bias, (float)alpha, (float)beta}, {depth})) {
             mkldnn_memory_desc_t empty;
-            mkldnn::memory::desc lrn_src_md(empty), user_src_md(empty);
+            mkldnn::memory::desc lrn_src_md(empty), lrn_dst_md(empty), user_src_md(empty), user_dst_md(empty);
 
-            getMKLDNNMemoryDescLrn(input, nullptr, &lrn_src_md, nullptr, &user_src_md, nullptr, input->rankOf() - 1);
+            getMKLDNNMemoryDescLrn(input, nullptr, output, &lrn_src_md, nullptr, &lrn_dst_md, &user_src_md, nullptr, &user_dst_md, input->rankOf() - 1);
 
             auto lrn_desc = lrn_forward::desc(prop_kind::forward_inference, lrn_across_channels, lrn_src_md, (2 * depth + 1), alpha * (2 * depth + 1), beta, bias);
 
             auto engine = streams[0].getEngine();
             auto lrn_prim_desc = lrn_forward::primitive_desc(lrn_desc, engine);
             auto user_src_memory = mkldnn::memory({user_src_md, engine}, input->buffer());
-            auto user_dst_memory = mkldnn::memory({user_src_md, engine}, output->buffer());
+            auto user_dst_memory = mkldnn::memory({user_dst_md, engine}, output->buffer());
 
             auto lrn_src_memory = user_src_memory;
             streams[0].addMemory(user_src_memory);
@@ -328,11 +338,11 @@ static void getMKLDNNMemoryDescLrn(const NDArray* src, const NDArray* diff_src,
             streams.push_back(MKLDNNStream("lrn_bp"));
         }
 
-        if (streams[0].checkAndReset({input, scale}, {output}, {bias, alpha, beta}, {depth})) {
+        if (streams[0].checkAndReset({input, scale}, {output}, {(float)bias, (float)alpha, (float)beta}, {depth})) {
             mkldnn_memory_desc_t empty;
-            mkldnn::memory::desc lrn_src_md(empty), lrn_diff_src_md(empty), user_src_md(empty), user_diff_src_md(empty);
+            mkldnn::memory::desc lrn_src_md(empty), lrn_diff_src_md(empty), lrn_dst_md(empty), user_src_md(empty), user_diff_src_md(empty), user_dst_md(empty);
 
-            getMKLDNNMemoryDescLrn(input, scale, &lrn_src_md, &lrn_diff_src_md, &user_src_md, &user_diff_src_md, 1);
+            getMKLDNNMemoryDescLrn(input, scale, output, &lrn_src_md, &lrn_diff_src_md, &lrn_dst_md, &user_src_md, &user_diff_src_md, &user_dst_md, 1);
 
             auto lrn_desc = lrn_forward::desc(prop_kind::forward, lrn_across_channels, lrn_src_md, (2 * halfDepth + 1), alpha * (2 * halfDepth + 1), beta, bias);
             auto lrn_back_desc = lrn_backward::desc(lrn_across_channels, lrn_src_md, lrn_diff_src_md, (2 * halfDepth + 1), alpha * (2 * halfDepth + 1), beta, bias);
@@ -342,7 +352,7 @@ static void getMKLDNNMemoryDescLrn(const NDArray* src, const NDArray* diff_src,
             auto lrn_back_prim_desc = lrn_backward::primitive_desc(lrn_back_desc, engine, lrn_prim_desc);
             auto user_src_memory = mkldnn::memory({user_src_md, engine}, input->buffer());
             auto user_dst_memory = mkldnn::memory({user_diff_src_md, engine}, scale->buffer());
-            auto user_diff_src_memory = mkldnn::memory({user_src_md, engine}, output->buffer());
+            auto user_diff_src_memory = mkldnn::memory({user_dst_md, engine}, output->buffer());
 
             auto lrn_src_memory = user_src_memory;
             streams[0].addMemory(user_src_memory);
