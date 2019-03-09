@@ -1,5 +1,6 @@
 package org.nd4j.imports.TFGraphs;
 
+import lombok.extern.slf4j.Slf4j;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.autodiff.samediff.SDVariable;
@@ -14,24 +15,56 @@ import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;
+import org.nd4j.resources.Downloader;
+import org.nd4j.util.ArchiveUtils;
 
 import java.io.File;
+import java.net.URL;
 import java.util.*;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
+@Slf4j
 public class BERTGraphTest {
 
     @Test
-    public void testBert(){
+    public void testBert() throws Exception {
+
+        String url = "https://deeplearning4jblob.blob.core.windows.net/testresources/bert_mrpc_frozen_v1.zip";
+        File saveDir = new File(TFGraphTestZooModels.getBaseModelDir(), ".nd4jtests/bert_mrpc_frozen_v1");
+        saveDir.mkdirs();
+
+        File localFile = new File(saveDir, "bert_mrpc_frozen_v1.zip");
+        String md5 = "7cef8bbe62e701212472f77a0361f443";
+
+        if(localFile.exists() && !Downloader.checkMD5OfFile(md5, localFile)) {
+            log.info("Deleting local file: does not match MD5. {}", localFile.getAbsolutePath());
+            localFile.delete();
+        }
+
+        if (!localFile.exists()) {
+            log.info("Starting resource download from: {} to {}", url, localFile.getAbsolutePath());
+            Downloader.download("BERT MRPC", new URL(url), localFile, md5, 3);
+        }
+
+        //Extract
+        File f = new File(saveDir, "bert_mrpc_frozen.pb");
+        if(!f.exists() || !Downloader.checkMD5OfFile("93d82bca887625632578df37ea3d3ca5", f)){
+            if(f.exists()) {
+                f.delete();
+            }
+            ArchiveUtils.zipExtractSingleFile(localFile, f, "bert_mrpc_frozen.pb");
+        }
+
         /*
-        Important node: BERT model uses a FIXED (hardcoded) minibatch size, not dynamic as most models use
+        Important node: This BERT model uses a FIXED (hardcoded) minibatch size, not dynamic as most models use
          */
-//        File f = new File("C:\\Temp\\TF_Graphs\\mrpc_output\\BERT_uncased_L-12_H-768_A-12_mrpc_frozen.pb");
-        File f = new File("C:/Temp/TF_Graphs/mrpc_output/frozen/bert_mrpc_frozen.pb");
         int minibatchSize = 4;
 
+        /*
+         * Define: Op import overrides. This is used to skip the IteratorGetNext node and instead crate some placeholders
+         */
         Map<String, TFImportOverride> m = new HashMap<>();
         m.put("IteratorGetNext", (inputs, controlDepInputs, nodeDef, initWith, attributesForNode, graph) -> {
             //Return 3 placeholders called "IteratorGetNext:0", "IteratorGetNext:1", "IteratorGetNext:3" instead of the training iterator
@@ -101,6 +134,9 @@ public class BERTGraphTest {
         (2) The existing subgraph is then removed from the graph, leaving only the new subgraph (as defined in processSubgraph method)
             in its place.
 
+         Note that the order of the outputs you return matters!
+         If the original outputs are [A,B,C] and you return output variables [X,Y,Z], then anywhere "A" was used as input
+         will now use "X"; similarly Y replaces B, and Z replaces C.
          */
         sd = GraphTransformUtil.replaceSubgraphsMatching(sd, p, new SubGraphProcessor() {
             @Override
