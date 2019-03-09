@@ -16,23 +16,22 @@
 
 package org.nd4j.imports.graphmapper;
 
-import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 
-import java.util.List;
 import java.util.Map;
 
+/**
+ * Define whether the operation should be skipped during import
+ */
 public interface OpImportFilter<GRAPH_TYPE, NODE_TYPE, ATTR_TYPE> {
 
     /**
      * If true: the op should be skipped for import, and its output variables should not be created. If false: the op should be imported
-     * @param inputs
-     * @param controlDepInputs
-     * @param nodeDef
-     * @param initWith
-     * @param attributesForNode
-     * @param graph
-     * @return
+     * @param nodeDef           Node
+     * @param initWith          SameDiff instance
+     * @param attributesForNode Attributes for the node
+     * @param graph             Graph to import from
+     * @return True if the op should be skipped during import
      */
     boolean skipOp(NODE_TYPE nodeDef, SameDiff initWith, Map<String,ATTR_TYPE> attributesForNode, GRAPH_TYPE graph);
 

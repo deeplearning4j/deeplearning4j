@@ -252,6 +252,7 @@ public interface GraphMapper<GRAPH_TYPE,NODE_TYPE,ATTR_TYPE,TENSOR_TYPE> {
      * Map a node in to the import state covering the {@link SameDiff} instance
      * @param tfNode the node to map
      * @param importState the current import state
+     * @param opFilter    Optional filter for skipping operations
      */
     void mapNodeType(NODE_TYPE tfNode, ImportState<GRAPH_TYPE,TENSOR_TYPE> importState,
                      OpImportOverride<GRAPH_TYPE,NODE_TYPE,ATTR_TYPE> opImportOverride,

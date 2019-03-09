@@ -22,4 +22,5 @@ import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
 
 public interface TFOpImportFilter extends OpImportFilter<GraphDef, NodeDef, AttrValue> {
+    
 }
