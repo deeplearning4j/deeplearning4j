@@ -788,7 +788,7 @@ TEST_F(NDArrayTest2, allTensorsAlongDimension_test1) {
 ////////////////////////////////////////////////////////////////////
 TEST_F(NDArrayTest2, scalar_get_test1) {
     
-    NDArray scalar1('c', {0}, {20.}, nd4j::DataType::FLOAT32);
+    auto scalar1 = NDArrayFactory::create(20.f);
 
     NDArray arr('c', {2,2}, {0., 10., 20., 30.}, nd4j::DataType::FLOAT32);
 
@@ -802,7 +802,7 @@ TEST_F(NDArrayTest2, scalar_get_test1) {
 ////////////////////////////////////////////////////////////////////
 TEST_F(NDArrayTest2, scalar_get_test2) {
     
-    NDArray scalar1('c', {0}, {20.}, nd4j::DataType::FLOAT32);
+    auto scalar1 = NDArrayFactory::create(20.f);
 
     NDArray arr('f', {2,2}, {0., 10., 20., 30.}, nd4j::DataType::FLOAT32);
 
@@ -816,7 +816,7 @@ TEST_F(NDArrayTest2, scalar_get_test2) {
 ////////////////////////////////////////////////////////////////////
 TEST_F(NDArrayTest2, scalar_set_test1) {
     
-    NDArray scalar1('c', {0}, {20.}, nd4j::DataType::FLOAT32);
+    NDArray scalar1 = NDArrayFactory::create(20.f);
 
     NDArray arr('c', {2,2}, {0., 10., -20., 30.}, nd4j::DataType::FLOAT32);
     NDArray exp('c', {2,2}, {0., 10.,  20., 30.}, nd4j::DataType::FLOAT32);
@@ -830,7 +830,7 @@ TEST_F(NDArrayTest2, scalar_set_test1) {
 ////////////////////////////////////////////////////////////////////
 TEST_F(NDArrayTest2, scalar_set_test2) {
     
-    NDArray scalar1('c', {0}, {20.}, nd4j::DataType::FLOAT32);
+    NDArray scalar1 = NDArrayFactory::create(20.f);
 
     NDArray arr('f', {2,2}, {0., 10., -20., 30.}, nd4j::DataType::FLOAT32);
     NDArray exp('f', {2,2}, {0., 10.,  20., 30.}, nd4j::DataType::FLOAT32);

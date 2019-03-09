@@ -95,14 +95,11 @@ ShapeDescriptor::ShapeDescriptor(const DataType type, const char order, const Nd
     else
         shape::calcStridesFortran(_shape.data(), _shape.size(), _strides.data());
 
-    if (_shape.empty())
-        _empty = true;
-    else {
-        for (auto v:_shape) {
-            if (v == 0) {
-                _empty = true;
-                break;
-            }
+
+    for (auto v:_shape) {
+        if (v == 0) {
+            _empty = true;
+            break;
         }
     }
 }
@@ -118,14 +115,11 @@ ShapeDescriptor::ShapeDescriptor(const DataType type, const char order, const st
     else
         shape::calcStridesFortran(_shape.data(), shape.size(), _strides.data());
 
-    if (_shape.empty())
-        _empty = true;
-    else {
-        for (auto v:_shape) {
-            if (v == 0) {
-                _empty = true;
-                break;
-            }
+
+    for (auto v:_shape) {
+        if (v == 0) {
+            _empty = true;
+            break;
         }
     }
 }
@@ -141,14 +135,10 @@ ShapeDescriptor::ShapeDescriptor(const DataType type, const char order, const st
     else
         shape::calcStridesFortran(_shape.data(), shape.size(), _strides.data());
 
-    if (_shape.empty())
-        _empty = true;
-    else {
-        for (auto v:_shape) {
-            if (v == 0) {
-                _empty = true;
-                break;
-            }
+    for (auto v:_shape) {
+        if (v == 0) {
+            _empty = true;
+            break;
         }
     }
 }
@@ -225,14 +215,11 @@ ShapeDescriptor::ShapeDescriptor(const DataType type, const char order, const st
         _strides = strides;
     }
 
-    if (_shape.empty())
-        _empty = true;
-    else {
-        for (auto v:_shape) {
-            if (v == 0) {
-                _empty = true;
-                break;
-            }
+
+    for (auto v:_shape) {
+        if (v == 0) {
+            _empty = true;
+            break;
         }
     }
 }
