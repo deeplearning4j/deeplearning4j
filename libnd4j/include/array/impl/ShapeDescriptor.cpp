@@ -148,6 +148,11 @@ ShapeDescriptor::ShapeDescriptor(const DataType type, const char order, const st
     _ews = ews;
 }
 
+ShapeDescriptor::ShapeDescriptor(const DataType type, const Nd4jLong length) : _dataType(type), _ews(1), _order('c'), _rank(1), _empty(false) {
+    _shape = {length};
+    _strides = {1};
+}
+
 ShapeDescriptor::ShapeDescriptor(const Nd4jLong *shapeInfo) {
     
     _order = shape::order(shapeInfo);

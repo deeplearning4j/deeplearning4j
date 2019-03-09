@@ -367,7 +367,8 @@ template NDArray* NDArrayFactory::create_(const char order, const std::vector<Nd
         int8_t *buffer = nullptr;
         ALLOCATE(buffer, context->getWorkspace(), length * sizeof(T), int8_t);
 
-        res->setShapeInfo(ShapeBuilders::createVectorShapeInfo(DataTypeUtils::fromT<T>(), length, context->getWorkspace()));
+        //ShapeBuilders::createVectorShapeInfo(DataTypeUtils::fromT<T>(), length, context->getWorkspace())
+        res->setShapeInfo(ShapeDescriptor(DataTypeUtils::fromT<T>(), length));
         res->setBuffer(buffer);
         res->setContext(context);
         res->triggerAllocationFlag(true);

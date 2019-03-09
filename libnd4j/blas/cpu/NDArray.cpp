@@ -787,7 +787,7 @@ NDArray& NDArray::operator=(const NDArray& other) {
 
             RELEASE(newBuffer, this->_context->getWorkspace());
 
-            this->_shapeInfo = newShape;
+            setShapeInfo(newShape);
         } else {
             NativeOpExecutioner::execTransformSame(nullptr, transform::Copy, _buffer, _shapeInfo, nullptr, nullptr, newBuffer, newShape, nullptr, nullptr, nullptr, nullptr, nullptr);
 
@@ -797,8 +797,10 @@ NDArray& NDArray::operator=(const NDArray& other) {
             this->_buffer = newBuffer;
             triggerAllocationFlag(true);
 
-            this->_shapeInfo = newShape;
+            setShapeInfo(this->_shapeInfo = newShape);
         }
+
+        RELEASE(newShape, _context->getWorkspace());
     }
 
     void NDArray::applyPairwiseTransform(nd4j::pairwise::Ops op, const NDArray* other, NDArray *target, ExtraArguments *extraParams) const{
@@ -936,6 +938,8 @@ NDArray& NDArray::operator=(const NDArray& other) {
 
         auto result = new NDArray(outBuffer, outShapeInfo, _context, true);
         result->assign(this);
+
+        RELEASE(outShapeInfo, _context->getWorkspace());
 
         return result;
     }

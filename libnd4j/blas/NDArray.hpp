@@ -1381,6 +1381,7 @@ NDArray NDArray::transp() const {
         auto ret = new NDArray(_buffer, _bufferD, shapeInfoPermuted, _context, false, false);
 	    ret->_isView = true;
 
+	    RELEASE(shapeInfoPermuted, _context->getWorkspace());
         return ret;
     }
 
