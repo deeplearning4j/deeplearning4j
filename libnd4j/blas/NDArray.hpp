@@ -2728,17 +2728,17 @@ Nd4jLong NDArray::getOffset(const Nd4jLong i) const {
         }
         else
             memcpy(subArrShapeInfo, outShapeInfo, shape::shapeInfoLength(rank)*sizeof(Nd4jLong));
-        
+
         // iterations for rest of subArrays, continue calculation of subArrOffsets
         for(Nd4jLong i = 1; i < numOfSubArrs; ++i) {
-            
+
             ShapeUtils::evalIdxRangesForSubArr(i, _shapeInfo, dimsToExclude, idx.data());                                
             subArrOffsets[i] = 0;
 
-            for (int j = rank - 1; j >= 0; --j)                 
-                if (idx[2*j] != idx[2*j + 1])                 
-                    subArrOffsets[i] += idx[2*j] * stridesOf[j];            
-        }            
+            for (int j = rank - 1; j >= 0; --j)
+                if (idx[2*j] != idx[2*j + 1])
+                    subArrOffsets[i] += idx[2*j] * stridesOf[j];
+        }
 
         RELEASE(outShapeInfo, _context->getWorkspace());
     }
