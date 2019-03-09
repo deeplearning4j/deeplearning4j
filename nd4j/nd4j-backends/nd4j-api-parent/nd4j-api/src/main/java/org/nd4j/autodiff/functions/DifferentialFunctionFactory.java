@@ -1115,6 +1115,10 @@ public class DifferentialFunctionFactory {
         return new SoftMax(sameDiff(), new SDVariable[]{iX}).outputVariable();
     }
 
+    public SDVariable softmax(SDVariable iX, int dimension) {
+        return new SoftMax(sameDiff(), new SDVariable[]{iX}, dimension).outputVariable();
+    }
+
 
     public SDVariable hardTanh(SDVariable iX) {
         return new HardTanh(sameDiff(), iX, false).outputVariable();

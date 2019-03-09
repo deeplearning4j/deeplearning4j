@@ -23,7 +23,6 @@ import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.BaseDynamicTransformOp;
 
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -44,10 +43,11 @@ public class SoftMax extends BaseDynamicTransformOp {
         super();
     }
 
+    private int dimension = 1;
+
     public SoftMax(SameDiff sameDiff, SDVariable[] args) {
         super(sameDiff, args, false);
     }
-
 
     public SoftMax(SameDiff sameDiff, SDVariable[] args, boolean inPlace) {
         super(sameDiff, args, inPlace);
@@ -56,6 +56,25 @@ public class SoftMax extends BaseDynamicTransformOp {
     public SoftMax(INDArray input, INDArray result){
         super(new INDArray[]{input}, new INDArray[]{result});
     }
+
+    public SoftMax(SameDiff sameDiff, SDVariable[] args, int dimension) {
+        super(sameDiff, args, false);
+        this.dimension = dimension;
+        addIArgument(dimension);
+    }
+
+    public SoftMax(SameDiff sameDiff, SDVariable[] args, int dimension, boolean inPlace) {
+        super(sameDiff, args, inPlace);
+        this.dimension = dimension;
+        addIArgument(dimension);
+    }
+
+    public SoftMax(INDArray input, INDArray result, int dimension){
+        super(new INDArray[]{input}, new INDArray[]{result});
+        this.dimension = dimension;
+        addIArgument(dimension);
+    }
+
 
     @Override
     public String opName() {
@@ -76,7 +95,7 @@ public class SoftMax extends BaseDynamicTransformOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
-        SDVariable ret = f().softmaxDerivative(arg(), i_v.get(0), 1);
+        SDVariable ret = f().softmaxDerivative(arg(), i_v.get(0), this.dimension);
         return Collections.singletonList(ret);
     }
 
