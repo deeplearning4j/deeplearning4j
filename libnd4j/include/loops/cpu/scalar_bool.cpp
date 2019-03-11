@@ -67,7 +67,7 @@ namespace functions {
                 auto oZ = z + tadOffsetsZ[r];
                 auto oX = x + tadOffsets[r];
 
-                #pragma omp simd
+                PRAGMA_OMP_SIMD
                 for (int f = 0; f < tadLength; f++) 
                     oZ[f * zEws] = OpType::op(oX[f * tadEws], scalars[r], extraParams);                
             }
@@ -154,8 +154,9 @@ namespace functions {
                 #pragma omp parallel num_threads(info._numThreads) if (info._numThreads > 1) default(shared)
                 {
                     auto threadNum = omp_get_thread_num();                    
-                    Nd4jLong threadOffset = info.getThreadOffset(threadNum);                            
-                    #pragma omp simd
+                    Nd4jLong threadOffset = info.getThreadOffset(threadNum);
+
+                    PRAGMA_OMP_SIMD
                     for (unsigned int i = 0; i < info.getItersPerThread(threadNum); i++) {
                         auto offset = shape::indexOffset(i + threadOffset, xShapeInfo, xShapeInfoCast, len, canCastX);
                         z[offset] = OpType::op(x[offset], scalar, extraParams);
@@ -170,8 +171,9 @@ namespace functions {
                 #pragma omp parallel num_threads(info._numThreads) if (info._numThreads > 1) default(shared)
                 {
                     auto threadNum = omp_get_thread_num();                    
-                    Nd4jLong threadOffset = info.getThreadOffset(threadNum);                            
-                    #pragma omp simd
+                    Nd4jLong threadOffset = info.getThreadOffset(threadNum);
+
+                    PRAGMA_OMP_SIMD
                     for (unsigned int i = 0; i < info.getItersPerThread(threadNum); i++) {
                         auto xOffset = shape::indexOffset(i + threadOffset, xShapeInfo, xShapeInfoCast, len, canCastX);
                         auto zOffset = shape::indexOffset(i + threadOffset, zShapeInfo, zShapeInfoCast, len, canCastZ);
@@ -203,9 +205,9 @@ namespace functions {
                     auto threadNum = omp_get_thread_num();         
                     auto threadOffset = info.getThreadOffset(threadNum);
                     auto xi = x + xEws * threadOffset;
-                    auto zi = z + zEws * threadOffset;        
-                    
-                    #pragma omp simd
+                    auto zi = z + zEws * threadOffset;
+
+                    PRAGMA_OMP_SIMD
                     for (unsigned int i = 0; i < info.getItersPerThread(threadNum); i++)
                         zi[i * zEws] = OpType::op(xi[i * xEws], scalar, extraParams);
                 }

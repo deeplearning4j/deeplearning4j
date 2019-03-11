@@ -142,8 +142,7 @@ static T gausLegQuad(const T a, const T b, const T x) {
 	}	
 
 	// Gauss-Legendre
-#pragma omp declare reduction (add : double,float,float16,bfloat16 : omp_out += omp_in) initializer(omp_priv = (T)0.)
-#pragma omp simd private(t) reduction(add:sum)
+#pragma omp simd private(t) reduction(sumT:sum)
 	for (int i = 0; i < 18; ++i) {	
 		t = x + (upLim - x) * (T)abscissas[i];
 		sum += (T)weights[i] * math::nd4j_exp<T,T>(amu * (math::nd4j_log<T,T>(t) - lnrat) + bmu * (math::nd4j_log<T,T>((T)1. - t) - lnratm));

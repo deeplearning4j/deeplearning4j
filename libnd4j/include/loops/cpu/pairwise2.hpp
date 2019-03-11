@@ -78,7 +78,8 @@ namespace functions {
                     auto xi = x + threadOffset;
                     auto yi = y + threadOffset;
                     auto zi = z + threadOffset;
-                    #pragma omp simd
+
+                    PRAGMA_OMP_SIMD
                     for (Nd4jLong i = 0; i < info.getItersPerThread(threadNum); i++) 
                         zi[i] = OpType::op(xi[i], yi[i], extraParams);
                 }
@@ -92,7 +93,8 @@ namespace functions {
                     auto xi = x + xEws*threadOffset;
                     auto yi = y + yEws*threadOffset;
                     auto zi = z + zEws*threadOffset;
-                    #pragma omp simd
+
+                    PRAGMA_OMP_SIMD
                     for (Nd4jLong i = 0; i < info.getItersPerThread(threadNum); i++) 
                         zi[i*zEws] = OpType::op(xi[i*xEws], yi[i*yEws], extraParams);
                 }

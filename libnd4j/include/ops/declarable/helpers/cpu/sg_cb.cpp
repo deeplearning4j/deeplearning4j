@@ -59,14 +59,16 @@ namespace nd4j {
                 g = (static_cast<T>(1.0f) - static_cast<T>(code) - f) * (T) alpha;
 
                 // axpy1
-#pragma omp simd
+
+                PRAGMA_OMP_SIMD
                 for (int e = 0; e < vectorLength; e++) {
                     neu1e[e] = g * syn1[e] + neu1e[e];
                 }
 
                 // axpy2
                 if (!isInference) {
-#pragma omp simd
+
+                    PRAGMA_OMP_SIMD
                     for (int e = 0; e < vectorLength; e++) {
                         syn1[e] = g * syn0[e] + syn1[e];
                     }
@@ -104,7 +106,7 @@ namespace nd4j {
                 }
 
                 // axpy1
-                #pragma omp simd
+                PRAGMA_OMP_SIMD
                 for (int e = 0; e < vectorLength; e++) {
                     neu1e[e] = g * syn1Neg[e] + neu1e[e];
                 }
@@ -112,7 +114,7 @@ namespace nd4j {
                 // axpy2
                 if (!isInference) {
 
-                    #pragma omp simd
+                    PRAGMA_OMP_SIMD
                     for (int e = 0; e < vectorLength; e++) {
                         syn1Neg[e] = g * syn0[e] + syn1Neg[e];
                     }
@@ -137,7 +139,7 @@ namespace nd4j {
                 for (int c = 0; c < contextWidth; c++) {
                     T *syn0word = syn0 + (context[c] * vectorLength);
 
-                    #pragma omp simd
+                    PRAGMA_OMP_SIMD
                     for (int i = 0; i < vectorLength; i++) {
                         neu1[i] += syn0word[i];
                     }
@@ -146,7 +148,7 @@ namespace nd4j {
                 // for inference we add additional inference vector
                 if (infVector != nullptr) {
 
-                    #pragma omp simd
+                    PRAGMA_OMP_SIMD
                     for (int i = 0; i < vectorLength; i++) {
                         neu1[i] += infVector[i];
                     }
@@ -156,7 +158,7 @@ namespace nd4j {
                 // average neu1
                 if (contextWidth > 0) {
 
-                    #pragma omp simd
+                    PRAGMA_OMP_SIMD
                     for (int i = 0; i < vectorLength; i++) {
                         neu1[i] /= contextWidth + (infVector != nullptr ? 1 : 0);
                     }
@@ -200,14 +202,14 @@ namespace nd4j {
 
                         T *syn0word = syn0 + (context[c] * vectorLength);
 
-                        #pragma omp simd
+                        PRAGMA_OMP_SIMD
                         for (int i = 0; i < vectorLength; i++) {
                             syn0word[i] += neu1e[i];
                         }
                     }
                 } else {
 
-                    #pragma omp simd
+                    PRAGMA_OMP_SIMD
                     for (int i = 0; i < vectorLength; i++) {
                         infVector[i] += neu1e[i];
                     }
@@ -267,12 +269,12 @@ namespace nd4j {
                 }
 
                 if (infVector == nullptr) {
-#pragma omp simd
+                    PRAGMA_OMP_SIMD
                     for (int e = 0; e < vectorLength; e++) {
                         syn0row[e] += neu1e[e];
                     }
                 } else {
-#pragma omp simd
+                    PRAGMA_OMP_SIMD
                     for (int e = 0; e < vectorLength; e++) {
                         infVector[e] += neu1e[e];
                     }
@@ -423,7 +425,7 @@ namespace nd4j {
                             }
                         }
 
-                        #pragma omp simd
+                                PRAGMA_OMP_SIMD
                         for (int e = 0; e < vectorLength; e++)
                             syn0row[e] += neu1e[e];
 
@@ -492,7 +494,7 @@ namespace nd4j {
 
                         T *syn0word = syn0 + (cContext * vectorLength);
 
-                        #pragma omp simd
+                        PRAGMA_OMP_SIMD
                         for (int i = 0; i < vectorLength; i++)
                             neu1[i] += syn0word[i];
 
@@ -503,7 +505,7 @@ namespace nd4j {
                         actualContext++;
 
                     if (actualContext > 1) {
-                        #pragma omp simd
+                        PRAGMA_OMP_SIMD
                         for (int i = 0; i < vectorLength; i++)
                             neu1[i] /= actualContext;
                     }
@@ -565,7 +567,7 @@ namespace nd4j {
                         T *syn0word = syn0 + (cContext * vectorLength);
 
 
-                        #pragma omp simd
+                        PRAGMA_OMP_SIMD
                         for (int i = 0; i < vectorLength; i++)
                             syn0word[i] += neu1e[i];
                     }

@@ -877,7 +877,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
 				end = span * (tid + 1);
 				if (end > length) end = length;
 
-#pragma omp simd
+				PRAGMA_OMP_SIMD
 				for (int x = start; x < end; x++) {
 					int idx = (int) ((dx[x] - min_val) / binSize);
 					if (idx < 0)
@@ -890,7 +890,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
 
 #pragma omp critical
 				{
-#pragma omp simd
+                    PRAGMA_OMP_SIMD
 					for (int x = 0; x < numBins; x++) {
 						result[x] += bins[x];
 					}
@@ -1441,7 +1441,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
 							sum += result[i];
 						}
 
-#pragma omp simd
+                        PRAGMA_OMP_SIMD
 						for (int i = 0; i < length; i++) {
 							result[i] /= sum;
 						}
@@ -1561,7 +1561,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
 				//compute the row wise maxes
 				auto maxResult = new X[shape[0]];
 
-#pragma omp simd
+                PRAGMA_OMP_SIMD
 				for (int i = 0; i < shape[0]; i++)
 					maxResult[i] = 0.0;
 
@@ -1604,7 +1604,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
 						sum += result[i];
 					}
 
-#pragma omp simd
+                    PRAGMA_OMP_SIMD
 					for (int i = 0; i < length; i++) {
 						result[i] /= sum;
 						result[i] = nd4j::math::nd4j_log<X, X>(result[i]);
@@ -1738,9 +1738,10 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
 				auto len = shape::length(xShapeBuffer);
 				//compute the row wise maxes
 				auto maxResult = new X[shape[0]];
-#pragma omp simd
+
+                PRAGMA_OMP_SIMD
 				for (int i = 0; i < shape[0]; i++)
-					maxResult[i] = 0.0;
+					maxResult[i] = 0.0f;
 
 				Nd4jLong maxShape[2] = { shape[0], 1 };
 				auto maxResultShapeBuffer = shape::shapeBuffer(2, nd4j::DataTypeUtils::fromT<X>(), maxShape);
@@ -1760,14 +1761,14 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
 
 				if (resultEleStide >= 1) {
 					if (resultEleStide == 1) {
-#pragma omp simd
+                        PRAGMA_OMP_SIMD
 						for (int i = 0; i < len; i++) {
 							result[i] = result[i] * (static_cast<X>(1.0f) - result[i]);
 						}
 
 					}
 					else {
-#pragma omp simd
+                        PRAGMA_OMP_SIMD
 						for (int i = 0; i < len; i++) {
 							result[i * resultEleStide] = result[i * resultEleStide] * (static_cast<X>(1.0f) - result[i * resultEleStide]);
 						}
@@ -1830,12 +1831,12 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
 						sum += result[i * elementWiseStride];
 					}
 
-#pragma omp simd
+                    PRAGMA_OMP_SIMD
 					for (int i = 0; i < length; i++) {
 						result[i * elementWiseStride] /= sum;
 					}
 
-#pragma omp simd
+                    PRAGMA_OMP_SIMD
 					for (int i = 0; i < length; i++) {
 						result[i * elementWiseStride] = result[i * elementWiseStride] * ((X) 1.0f - result[i * elementWiseStride]);
 					}
@@ -2241,7 +2242,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
                 auto dimensionLength = (int) extraParams[0];
                 auto dimension = new int[dimensionLength];
 
-#pragma omp simd
+                PRAGMA_OMP_SIMD
                 for (int i = 0; i < dimensionLength; i++) {
                     dimension[i] = (int) extraParams[i + 1];
                 }

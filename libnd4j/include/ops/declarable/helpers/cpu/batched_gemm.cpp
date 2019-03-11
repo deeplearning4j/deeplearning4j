@@ -99,7 +99,7 @@ namespace nd4j {
                             for (int n = 0; n < N; ++n) {
                                 T c_mnp = 0;
 
-                                #pragma omp simd
+                                PRAGMA_OMP_SIMD
                                 for (int k = 0; k < K; ++k)
                                     c_mnp += A[tA == CblasNoTrans ? (m + k * ldA) : (m * ldA + k)] * B[tB == CblasNoTrans ? (k + n * ldB) : (k * ldB + n)];
 

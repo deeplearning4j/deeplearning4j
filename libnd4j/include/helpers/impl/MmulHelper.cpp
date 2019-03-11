@@ -48,9 +48,9 @@ static void usualGemm(const char cOrder, const bool transA, const bool transB, c
        for(uint col = 0; col < N; ++col) {
             
             T3* c = flagC ? (C + row + col * ldc) : (C + row * ldc + col);
-            T3 val = 0;  
+            T3 val = 0;
 
-            #pragma omp simd
+           PRAGMA_OMP_SIMD
             for(uint i = 0; i < K; ++i) {
                 T3 a = flagA ? *(A + row * lda + i) : *(A + row + i * lda);
                 T3 b = flagB ? *(B + col + i * ldb) : *(B + col * ldb + i);             
@@ -83,7 +83,7 @@ static void usualGemv(const char aOrder, const int M, const int N, const double 
         T3* y = Y + row * incy;
         T3 val = 0;
 
-        #pragma omp simd
+        PRAGMA_OMP_SIMD
         for(int i = 0; i < N; ++i) {
             T3 a = flagA ? *(A + row + i * lda) : *(A + row * lda + i);
             T3 x = *(X + i * incx);

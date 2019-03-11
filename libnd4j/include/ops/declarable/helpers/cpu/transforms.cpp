@@ -1174,7 +1174,7 @@ static void concat_(const std::vector<NDArray*>& inArrs, NDArray& output, const 
                 T *z = outBuff + r * lenOfFirstArr;
                 T *x = inArrs[r]->bufferAsT<T>();
 
-#pragma omp simd
+                PRAGMA_OMP_SIMD
                 for (Nd4jLong e = 0; e < lenOfFirstArr; e++)
                     z[e] = x[e];
             }

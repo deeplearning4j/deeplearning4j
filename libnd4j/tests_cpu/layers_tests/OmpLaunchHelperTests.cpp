@@ -93,8 +93,11 @@ TEST_F(OmpLaunchHelperTests, loop_test1) {
     {                        
         auto threadNum = omp_get_thread_num();
         auto xi = x + info.getThreadOffset(threadNum);
-#pragma omp simd
-        for (Nd4jLong i = 0; i < info.getItersPerThread(threadNum); i++)
+
+        auto ulen = static_cast<unsigned int>(info.getItersPerThread(threadNum));
+
+        PRAGMA_OMP_SIMD
+        for (Nd4jLong i = 0; i < ulen; i++)
             xi[i] = xi[i] + 1;
     }
     

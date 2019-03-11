@@ -86,8 +86,8 @@ static void batchnorm_(const NDArray* input, const NDArray* mean, const NDArray*
                 auto offsetSmall = shape::indexOffset(j, meanShapeInfo, meanShapeInfoCast, lenSmall, canCastMean);            
                 // calculate offset for input and output (all of them have the same shape)
                 shape::outerArrayOffsets(inOffsets, j, inShapeInfo, meanShapeInfo, dimsToExclude.data());
-    
-                #pragma omp simd
+
+                PRAGMA_OMP_SIMD
                 for (Nd4jLong i = 0; i < step; ++i) {                    
                     auto offsetBig = inOffsets[i];
                     outBuff[offsetBig] = (inBuff[offsetBig] - meanBuff[offsetSmall]) * sigmaBuff[offsetSmall] + betaBuff[offsetSmall];
@@ -114,8 +114,8 @@ static void batchnorm_(const NDArray* input, const NDArray* mean, const NDArray*
                 auto offsetSmall = shape::indexOffset(j, meanShapeInfo, meanShapeInfoCast, lenSmall, canCastMean);            
                 // calculate offset for input and output (all of them have the same shape)
                 shape::outerArrayOffsets(inOffsets, j, inShapeInfo, meanShapeInfo, dimsToExclude.data());
-    
-                #pragma omp simd
+
+                PRAGMA_OMP_SIMD
                 for (Nd4jLong i = 0; i < step; ++i) {                    
                     auto offsetBig = inOffsets[i];
                     outBuff[offsetBig] = (inBuff[offsetBig] - meanBuff[offsetSmall]) * sigmaBuff[offsetSmall];

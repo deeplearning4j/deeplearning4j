@@ -1252,13 +1252,13 @@ void pullRowsGeneric(void *vx,
 
         if (xEWS == 1 && zEWS == 1) {
 
-#pragma omp simd
+            PRAGMA_OMP_SIMD
             for (int i = 0; i < tadLength; i++ ) {
                 rZ[i] = rX[i];
             }
         } else if (xEWS >= 1 && zEWS >= 1) {
 
-#pragma omp simd
+            PRAGMA_OMP_SIMD
             for (int i = 0; i < tadLength; i++ ) {
                 rZ[i * zEWS] = rX[i * xEWS];
             }
@@ -1310,12 +1310,14 @@ void tearGeneric(void *vx,
         auto s = hX + tadOffsets[i];
 
         if (zEWS == 1 && tadEWS == 1) {
-#pragma omp simd
+
+            PRAGMA_OMP_SIMD
             for (Nd4jLong j = 0; j < tadLength; j++) {
                 hZ[j] = s[j];
             }
         } else if (zEWS > 0 && tadEWS > 0) {
-#pragma omp simd
+
+            PRAGMA_OMP_SIMD
             for (Nd4jLong j = 0; j < tadLength; j++) {
                 hZ[j * zEWS] = s[j * tadEWS];
             }
@@ -1442,7 +1444,7 @@ void shuffleGeneric(void **hX, Nd4jLong **hXShapeInfo, void **dz, Nd4jLong **hZS
 
             if (tadEWS == 1) {
 
-#pragma omp simd
+                PRAGMA_OMP_SIMD
                 for (Nd4jLong i = 0; i < tadLength; i++) {
                     nd4j::math::nd4j_swap<T>(rX[i], rY[i]);
                 }
@@ -1874,7 +1876,7 @@ FORCEINLINE int estimateThresholdGeneric(Nd4jPointer *extraPointers, Nd4jPointer
         if (stop > N)
             stop = N;
 
-#pragma omp simd
+        PRAGMA_OMP_SIMD
         for (int e = start; e < stop; e++) {
             auto v = nd4j::math::nd4j_abs<T>(buffer[e]);
             if (v >= threshold)

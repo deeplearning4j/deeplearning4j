@@ -65,9 +65,9 @@ namespace functions {
                 #pragma omp parallel num_threads(info._numThreads) if (info._numThreads > 1) default(shared)
                 {                
                     auto threadNum = omp_get_thread_num();
-                    Nd4jLong threadOffset = info.getThreadOffset(threadNum);        
-                     
-                    #pragma omp simd
+                    Nd4jLong threadOffset = info.getThreadOffset(threadNum);
+
+                    PRAGMA_OMP_SIMD
                     for (Nd4jLong i = 0; i < info.getItersPerThread(threadNum); i++)  {                        
                         
                         auto offset = shape::indexOffset(i + threadOffset, xShapeInfo, xShapeInfoCast, length, canCastX);
@@ -85,9 +85,9 @@ namespace functions {
                 #pragma omp parallel num_threads(info._numThreads) if (info._numThreads > 1) default(shared)
                 {                
                     auto threadNum = omp_get_thread_num();
-                    Nd4jLong threadOffset = info.getThreadOffset(threadNum);        
-                     
-                    #pragma omp simd
+                    Nd4jLong threadOffset = info.getThreadOffset(threadNum);
+
+                    PRAGMA_OMP_SIMD
                     for (Nd4jLong i = 0; i < info.getItersPerThread(threadNum); i++)  {                        
                         
                         auto offset  = shape::indexOffset(i + threadOffset, xShapeInfo, xShapeInfoCast, length, canCastX);
@@ -106,9 +106,9 @@ namespace functions {
                 #pragma omp parallel num_threads(info._numThreads) if (info._numThreads > 1) default(shared)
                 {                
                     auto threadNum = omp_get_thread_num();
-                    Nd4jLong threadOffset = info.getThreadOffset(threadNum);        
-                     
-                    #pragma omp simd
+                    Nd4jLong threadOffset = info.getThreadOffset(threadNum);
+
+                    PRAGMA_OMP_SIMD
                     for (Nd4jLong i = 0; i < info.getItersPerThread(threadNum); i++)  {                        
                         
                         auto offset  = shape::indexOffset(i + threadOffset, xShapeInfo, xShapeInfoCast, length, canCastX);
@@ -127,9 +127,9 @@ namespace functions {
                 #pragma omp parallel num_threads(info._numThreads) if (info._numThreads > 1) default(shared)
                 {                
                     auto threadNum = omp_get_thread_num();
-                    Nd4jLong threadOffset = info.getThreadOffset(threadNum);        
-                     
-                    #pragma omp simd
+                    Nd4jLong threadOffset = info.getThreadOffset(threadNum);
+
+                    PRAGMA_OMP_SIMD
                     for (Nd4jLong i = 0; i < info.getItersPerThread(threadNum); i++)  {                        
                         
                         auto xOffset = shape::indexOffset(i + threadOffset, xShapeInfo, xShapeInfoCast, length, canCastX);
@@ -150,9 +150,9 @@ namespace functions {
                 #pragma omp parallel num_threads(info._numThreads) if (info._numThreads > 1) default(shared)
                 {                
                     auto threadNum = omp_get_thread_num();
-                    Nd4jLong threadOffset = info.getThreadOffset(threadNum);        
-                     
-                    #pragma omp simd
+                    Nd4jLong threadOffset = info.getThreadOffset(threadNum);
+
+                    PRAGMA_OMP_SIMD
                     for (Nd4jLong i = 0; i < info.getItersPerThread(threadNum); i++)  {                        
                         
                         auto xOffset = shape::indexOffset(i + threadOffset, xShapeInfo, xShapeInfoCast, length, canCastX);
@@ -195,9 +195,9 @@ namespace functions {
                 #pragma omp parallel num_threads(info._numThreads) if (info._numThreads > 1) default(shared)
                 {                
                     auto threadNum = omp_get_thread_num();
-                    Nd4jLong threadOffset = info.getThreadOffset(threadNum);        
-                     
-                    #pragma omp simd
+                    Nd4jLong threadOffset = info.getThreadOffset(threadNum);
+
+                    PRAGMA_OMP_SIMD
                     for (Nd4jLong i = 0; i < info.getItersPerThread(threadNum); i++)  {
                         auto offset = shape::indexOffset(i + threadOffset, xShapeInfo, xShapeInfoCast, length, canCastX);                        
                         z[offset] = OpClass::op(x[offset], i, length, rng, extraArguments);
@@ -212,9 +212,9 @@ namespace functions {
                 #pragma omp parallel num_threads(info._numThreads) if (info._numThreads > 1) default(shared)
                 {                
                     auto threadNum = omp_get_thread_num();
-                    Nd4jLong threadOffset = info.getThreadOffset(threadNum);        
-                     
-                    #pragma omp simd
+                    Nd4jLong threadOffset = info.getThreadOffset(threadNum);
+
+                    PRAGMA_OMP_SIMD
                     for (Nd4jLong i = 0; i < info.getItersPerThread(threadNum); i++)  {
                         auto xOffset = shape::indexOffset(i + threadOffset, xShapeInfo, xShapeInfoCast, length, canCastX);
                         auto zOffset = shape::indexOffset(i + threadOffset, zShapeInfo, zShapeInfoCast, length, canCastZ);
@@ -246,9 +246,9 @@ namespace functions {
             #pragma omp parallel num_threads(info._numThreads) if (info._numThreads > 1) default(shared)
             {                
                 auto threadNum = omp_get_thread_num();
-                Nd4jLong threadOffset = info.getThreadOffset(threadNum);        
-                     
-                #pragma omp simd
+                Nd4jLong threadOffset = info.getThreadOffset(threadNum);
+
+                PRAGMA_OMP_SIMD
                 for (Nd4jLong i = 0; i < info.getItersPerThread(threadNum); i++)  {                        
                     auto offset = shape::indexOffset(i + threadOffset, zShapeInfo, zShapeInfoCast, length, canCastZ);
                     z[offset] = OpClass::op(i+threadOffset, length, rng, extraArguments);

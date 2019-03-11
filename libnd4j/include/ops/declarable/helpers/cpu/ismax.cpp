@@ -164,7 +164,8 @@ static void ismax_(const NDArray* input, NDArray* output, const std::vector<int>
                                 maxValue = rX[i];
                             }
                         }
-#pragma omp simd
+
+                        PRAGMA_OMP_SIMD
                         for (int i = 0; i < tadLength; i++) {
                             rZ[i] = maxIdx == i ? (T) 1.0 : (T) 0.0;
                         }
@@ -177,7 +178,8 @@ static void ismax_(const NDArray* input, NDArray* output, const std::vector<int>
                                 maxValue = rX[i * tadEWS];
                             }
                         }
-#pragma omp simd
+
+                        PRAGMA_OMP_SIMD
                         for (int i = 0; i < tadLength; i++) {
                             rZ[i * zEWS] = maxIdx == i ? (T) 1.0 : (T) 0.0;
                         }

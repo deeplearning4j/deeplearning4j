@@ -66,8 +66,8 @@ Nd4jLong IndexReduce<X>::execScalar(void *vx, Nd4jLong *xShapeInfo, void *vextra
         auto local = OpType::startingIndexValue(x);
         auto threadNum = omp_get_thread_num();                    
         Nd4jLong threadOffset = info.getThreadOffset(threadNum);
-        
-        #pragma omp simd
+
+        PRAGMA_OMP_SIMD
         for (Nd4jLong i = 0; i < info.getItersPerThread(threadNum); i++) {            
             auto offset = shape::indexOffset(threadOffset + i, xShapeInfo, xShapeInfoCast, len, canCastX);
             IndexValue<X> curr(x[offset], threadOffset + i);
@@ -131,7 +131,7 @@ void IndexReduce<X>::exec(void *vx, Nd4jLong *xShapeInfo,
         auto offset = tadOffsets[i];
         auto indexValue = OpType::startingIndexValue(&x[offset]);
 
-        #pragma omp simd
+        PRAGMA_OMP_SIMD
         for(int j = 0; j < tadLength; j++) {
             auto xOffset = offset + shape::indexOffset(j, tadOnlyShapeInfo, tadOnlyShapeInfoCast, tadLength, canCastX);
             IndexValue<X> comp(x[xOffset], j);

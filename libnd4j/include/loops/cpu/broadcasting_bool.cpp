@@ -122,7 +122,7 @@ namespace functions {
                                         
                         // TODO: cover this codebranch with tests
                         // all this stuff already happens within thread
-                        #pragma omp simd
+                        PRAGMA_OMP_SIMD
                         for (int f = 0; f < tadLength; f++) {
                             auto offset = shape::indexOffset(f, tadShapeShapeInfo, tadShapeShapeInfoCast, tadLength, canCastX);
                             oZ[offset] = OpType::op(oX[offset], y[offset]);
@@ -141,8 +141,8 @@ namespace functions {
                     
                         auto oZ = z + tadOffsetZ[i];
                         auto oX = x + tadOffsets[i];
-                                        
-                        #pragma omp simd
+
+                        PRAGMA_OMP_SIMD
                         for (int f = 0; f < tadLength; f++) {
                             auto offset  = shape::indexOffset(f, tadShapeShapeInfo, tadShapeShapeInfoCast, tadLength, canCastX);
                             auto zOffset = shape::indexOffset(f, tadShapeInfoZ, tadShapeInfoZCast, lenZ, canCastZ);
@@ -162,8 +162,8 @@ namespace functions {
                     
                         auto oZ = z + tadOffsetZ[i];
                         auto oX = x + tadOffsets[i];
-                        
-                        #pragma omp simd
+
+                        PRAGMA_OMP_SIMD
                         for (int f = 0; f < tadLength; f++) {
                             auto offset  = shape::indexOffset(f, tadShapeShapeInfo, tadShapeShapeInfoCast, tadLength, canCastX);
                             auto yOffset = shape::indexOffset(f, yShapeInfo, yShapeInfoCast, lenY, canCastY);
@@ -183,8 +183,8 @@ namespace functions {
                     
                         auto oZ = z + tadOffsetZ[i];
                         auto oX = x + tadOffsets[i];
-                                        
-                        #pragma omp simd
+
+                        PRAGMA_OMP_SIMD
                         for (int f = 0; f < tadLength; f++) {
                             auto xOffset  = shape::indexOffset(f, tadShapeShapeInfo, tadShapeShapeInfoCast, tadLength, canCastX);
                             auto offset = shape::indexOffset(f, yShapeInfo, yShapeInfoCast, lenY, canCastY);
@@ -206,8 +206,8 @@ namespace functions {
                     
                         auto oZ = z + tadOffsetZ[i];
                         auto oX = x + tadOffsets[i];
-                                        
-                        #pragma omp simd
+
+                        PRAGMA_OMP_SIMD
                         for (int f = 0; f < tadLength; f++) {
                             auto xOffset  = shape::indexOffset(f, tadShapeShapeInfo, tadShapeShapeInfoCast, tadLength, canCastX);
                             auto yOffset = shape::indexOffset(f, yShapeInfo, yShapeInfoCast, lenY, canCastY);

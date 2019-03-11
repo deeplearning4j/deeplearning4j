@@ -75,7 +75,7 @@ namespace functions {
                     auto tz = z + threadOffset;
                     auto tx = x + threadOffset;
 
-                    #pragma omp simd
+                    PRAGMA_OMP_SIMD
                     for (unsigned int i = 0; i < info.getItersPerThread(threadNum); i++)
                         tz[i] = OpType::op(tx[i], extraParams);
                 }
@@ -86,9 +86,9 @@ namespace functions {
 #pragma omp parallel num_threads(info._numThreads) if (info._numThreads > 1) default(shared)
                 {
                     auto threadNum = omp_get_thread_num();
-                    auto threadOffset = info.getThreadOffset(threadNum);                        
+                    auto threadOffset = info.getThreadOffset(threadNum);
 
-                    #pragma omp simd
+                    PRAGMA_OMP_SIMD
                     for (unsigned int i = 0; i < info.getItersPerThread(threadNum); i++) {
                         auto offset = shape::indexOffset(i + threadOffset, zShapeInfo, xShapeInfoCast, len, canCastX);
                         z[offset] = OpType::op(x[offset], extraParams);
@@ -107,7 +107,7 @@ namespace functions {
                     auto threadNum = omp_get_thread_num();
                     auto threadOffset = info.getThreadOffset(threadNum);
 
-                    #pragma omp simd
+                    PRAGMA_OMP_SIMD
                     for (unsigned int i = 0; i < info.getItersPerThread(threadNum); i++) {
                         auto xOffset = shape::indexOffset(i + threadOffset, xShapeInfo, xShapeInfoCast, len, canCastX);
                         auto zOffset = shape::indexOffset(i + threadOffset, zShapeInfo, zShapeInfoCast, len, canCastZ);
