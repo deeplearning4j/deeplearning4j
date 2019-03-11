@@ -201,8 +201,11 @@ NDArray::NDArray(const NDArray *other, const bool copyStrides, nd4j::graph::Laun
 
     _context = context;
     
-    setShapeInfo(other->_shapeInfo);
-
+    if (copyStrides)
+        setShapeInfo(ShapeDescriptor(other->_shapeInfo));
+    else
+        setShapeInfo(ShapeDescriptor(other->dataType(), other->ordering(), other->getShapeAsVector()));
+    
     ALLOCATE_SPECIAL(_bufferD, _context->getWorkspace(), _length * sizeOfT(), int8_t);
     _isBuffDAlloc = true;    
 

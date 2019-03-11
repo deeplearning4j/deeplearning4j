@@ -2866,24 +2866,20 @@ TEST_F(DeclarableOpsTests1, sru_old_test1) {
     const int bS = 2;
     const int K = 3;    
     const int N = 4;
-    double expStateBuff[] =  {0.847983, 0.874549, 0.896109, 0.913715, 0.847983, 0.874549, 0.896109, 0.913715, 0.847983, 0.874549, 0.896109, 0.913715, 0.847983, 0.874549, 0.896109, 0.913715, 0.847983, 0.874549, 0.896109, 0.913715, 0.847983, 0.874549, 0.896109, 0.913715};
-    double expOutputBuff[] = {1.090533, 1.174509, 1.252403, 1.324656, 1.090533, 1.174509, 1.252403, 1.324656, 1.090533, 1.174509, 1.252403, 1.324656, 1.090533, 1.174509, 1.252403, 1.324656, 1.090533, 1.174509, 1.252403, 1.324656, 1.090533, 1.174509, 1.252403, 1.324656};
 
-    auto input = NDArrayFactory::create<double>('c', {bS,K,N});
-    auto weights = NDArrayFactory::create<double>('c', {3*K,K});
-    auto bias = NDArrayFactory::create<double>('c', {1,2*K});
-    auto init = NDArrayFactory::create<double>('c', {bS,K});
-    auto mask = NDArrayFactory::create<double>('c', {bS,K});
-    auto expState = NDArrayFactory::create<double>('c', {bS,K,N});
-    auto expOut = NDArrayFactory::create<double>('c', {bS,K,N});
+    NDArray input('c', {bS,K,N}, nd4j::DataType::DOUBLE);
+    NDArray weights('c', {3*K,K}, nd4j::DataType::DOUBLE);
+    NDArray bias('c', {1,2*K}, nd4j::DataType::DOUBLE);
+    NDArray init('c', {bS,K}, nd4j::DataType::DOUBLE);
+    NDArray mask('c', {bS,K}, nd4j::DataType::DOUBLE);
+    NDArray expState('c', {bS,K,N}, {0.847983, 0.874549, 0.896109, 0.913715, 0.847983, 0.874549, 0.896109, 0.913715, 0.847983, 0.874549, 0.896109, 0.913715, 0.847983, 0.874549, 0.896109, 0.913715, 0.847983, 0.874549, 0.896109, 0.913715, 0.847983, 0.874549, 0.896109, 0.913715}, nd4j::DataType::DOUBLE);
+    NDArray expOut('c', {bS,K,N}, {1.090533, 1.174509, 1.252403, 1.324656, 1.090533, 1.174509, 1.252403, 1.324656, 1.090533, 1.174509, 1.252403, 1.324656, 1.090533, 1.174509, 1.252403, 1.324656, 1.090533, 1.174509, 1.252403, 1.324656, 1.090533, 1.174509, 1.252403, 1.324656}, nd4j::DataType::DOUBLE);
    
     input.assign(1.5);
     weights.assign(0.5); 
     bias.assign(0.3) ;
     init.assign(1.);
     mask.assign(1.);
-    expState.setBuffer(expStateBuff);
-    expOut.setBuffer(expOutputBuff);    
 
     nd4j::ops::sru_old op;
     auto  results = op.execute({&input, &weights, &bias, &init, &mask}, {}, {});
@@ -2892,8 +2888,8 @@ TEST_F(DeclarableOpsTests1, sru_old_test1) {
     auto state  = results->at(0);
     auto output = results->at(1);
     // state->printBuffer();
-    expState.printIndexedBuffer("EXP STATE");
-    state->printIndexedBuffer("OUT STATE");
+    // expState.printIndexedBuffer("EXP STATE");
+    // state->printIndexedBuffer("OUT STATE");
     ASSERT_TRUE(expState.equalsTo(state));
     ASSERT_TRUE(expOut.equalsTo(output));
     
@@ -2906,24 +2902,20 @@ TEST_F(DeclarableOpsTests1, sru_test1) {
     const int bS = 2;
     const int K = 3;    
     const int N = 4;
-    double expOutputBuff[] = {0.847983, 0.874549, 0.896109, 0.913715, 0.847983, 0.874549, 0.896109, 0.913715, 0.847983, 0.874549, 0.896109, 0.913715, 0.847983, 0.874549, 0.896109, 0.913715, 0.847983, 0.874549, 0.896109, 0.913715, 0.847983, 0.874549, 0.896109, 0.913715};
-    double expStateBuff[]  = {1.090533, 1.174509, 1.252403, 1.324656, 1.090533, 1.174509, 1.252403, 1.324656, 1.090533, 1.174509, 1.252403, 1.324656, 1.090533, 1.174509, 1.252403, 1.324656, 1.090533, 1.174509, 1.252403, 1.324656, 1.090533, 1.174509, 1.252403, 1.324656};
-
-    auto input = NDArrayFactory::create<double>('c', {bS,K,N});
-    auto weights = NDArrayFactory::create<double>('c', {3*K,K});
-    auto bias = NDArrayFactory::create<double>('c', {2*K});
-    auto init = NDArrayFactory::create<double>('c', {bS,K});
-    auto mask = NDArrayFactory::create<double>('c', {bS,K});
-    auto expState = NDArrayFactory::create<double>('c', {bS,K,N});
-    auto expOut = NDArrayFactory::create<double>('c', {bS,K,N});
+    
+    NDArray input('c', {bS,K,N}, nd4j::DataType::DOUBLE);
+    NDArray weights('c', {3*K,K}, nd4j::DataType::DOUBLE);
+    NDArray bias('c', {2*K}, nd4j::DataType::DOUBLE);
+    NDArray init('c', {bS,K}, nd4j::DataType::DOUBLE);
+    NDArray mask('c', {bS,K}, nd4j::DataType::DOUBLE);
+    NDArray expState('c', {bS,K,N}, {1.090533, 1.174509, 1.252403, 1.324656, 1.090533, 1.174509, 1.252403, 1.324656, 1.090533, 1.174509, 1.252403, 1.324656, 1.090533, 1.174509, 1.252403, 1.324656, 1.090533, 1.174509, 1.252403, 1.324656, 1.090533, 1.174509, 1.252403, 1.324656}, nd4j::DataType::DOUBLE);
+    NDArray expOut('c', {bS,K,N}, {0.847983, 0.874549, 0.896109, 0.913715, 0.847983, 0.874549, 0.896109, 0.913715, 0.847983, 0.874549, 0.896109, 0.913715, 0.847983, 0.874549, 0.896109, 0.913715, 0.847983, 0.874549, 0.896109, 0.913715, 0.847983, 0.874549, 0.896109, 0.913715}, nd4j::DataType::DOUBLE);
    
     input.assign(1.5);
     weights.assign(0.5); 
     bias.assign(0.3) ;
     init.assign(1.);
     mask.assign(1.);
-    expState.setBuffer(expStateBuff);
-    expOut.setBuffer(expOutputBuff);    
 
     nd4j::ops::sru op;
     auto results = op.execute({&input, &weights, &bias, &init, &mask}, {}, {});
@@ -2934,7 +2926,7 @@ TEST_F(DeclarableOpsTests1, sru_test1) {
 
     ASSERT_TRUE(expState.equalsTo(state));
     ASSERT_TRUE(expOut.equalsTo(output));
-    
+
     delete results;
 }
 

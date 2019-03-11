@@ -144,9 +144,8 @@ NDArray::NDArray(const NDArray *other, const bool copyStrides, nd4j::graph::Laun
 
     if (copyStrides)
         setShapeInfo(ShapeDescriptor(other->_shapeInfo));
-    else {
-        setShapeInfo(ShapeDescriptor(other->dataType(), other->dataType(), other->getShapeAsVector()));
-    }
+    else
+        setShapeInfo(ShapeDescriptor(other->dataType(), other->ordering(), other->getShapeAsVector()));
     
     triggerAllocationFlag(true);
 }
@@ -797,7 +796,7 @@ NDArray& NDArray::operator=(const NDArray& other) {
             this->_buffer = newBuffer;
             triggerAllocationFlag(true);
 
-            setShapeInfo(this->_shapeInfo = newShape);
+            setShapeInfo(newShape);
         }
 
         RELEASE(newShape, _context->getWorkspace());
