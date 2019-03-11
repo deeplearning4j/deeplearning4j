@@ -65,6 +65,7 @@
 #ifndef OP_BOILERPLATE_HH
 #define OP_BOILERPLATE_HH
 
+#include <openmp_pragmas.h>
 #include <type_boilerplate.h>
 
 #ifdef __CUDACC__
