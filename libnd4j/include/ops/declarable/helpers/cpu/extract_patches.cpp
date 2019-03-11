@@ -55,10 +55,11 @@ namespace helpers {
                     //for (Nd4jLong pos = 0; pos < outputLastDim; pos++)
                 for (Nd4jLong k = 0; k < lastDim; ++k) {
 
-                    //if (l + i < rowDim  && m + j < colDim && i + rateRow * l < patchBorder) // && i + rateRow * l < sizeRow && j + m * rateCol < sizeCol
+//                    if (l + i < rowDim  && m + j < colDim && i + rateRow * l < patchBorder) // && i + rateRow * l < sizeRow && j + m * rateCol < sizeCol
 //                    outMatrix->p<T>(i, j, pos++, patch->e<T>(i + rateRow * l, j + m * rateCol, k));
-                    outMatrix->p<T>(pos++, patch->e<T>(i + rateRow * l, j + m * rateCol, k));
-                    //pos++;
+                    if (j + m * rateCol < colDim && i + l * rateRow < rowDim) // && i + rateRow * l < sizeRow && j + m * rateCol < sizeCol
+                        outMatrix->p<T>(pos, patch->e<T>(i + rateRow * l, j + m * rateCol, k));
+                    pos++;
 //                    if (pos >= outLastDim)
 //                        pos = 0;
                     if (pos >= outMatrix->lengthOf()) { // stop looping and try next batch

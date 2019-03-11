@@ -2423,8 +2423,8 @@ TEST_F(DeclarableOpsTests7, TestExtractImagePatches_SGO_10) {
            43., 44., 45., 46., 47., 48., 55., 56., 57., 58., 59., 60., 67., 68., 69., 70., 71., 72.});
 // ----------------------------------------------------------------
     nd4j::ops::extract_image_patches op;
-    x.printIndexedBuffer("Images");
-    x.printBuffer("Images linear");
+    //x.printIndexedBuffer("Images");
+    //x.printBuffer("Images linear");
     auto result = op.execute({&x}, {}, {3,3, 1,1, 1,1, 0}); // equiv TF ksizes=[1,2,2,1], strides=[1,1,1,1], rates=[1,1,1,1], padding="VALID"
     ASSERT_EQ(result->status(), Status::OK());
     auto output = result->at(0);
