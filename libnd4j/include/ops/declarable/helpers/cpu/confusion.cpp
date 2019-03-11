@@ -29,7 +29,7 @@ namespace helpers {
     void _confusionFunctor(NDArray* labels, NDArray* predictions, NDArray* weights, NDArray* output) {
         std::unique_ptr<ResultSet> arrs(output->allTensorsAlongDimension({1}));
 
-#pragma omp parallel for if(labels->lengthOf() > Environment::getInstance()->elementwiseThreshold()) schedule(static)                    
+        PRAGMA_OMP_PARALLEL_FOR_IF(labels->lengthOf() > Environment::getInstance()->elementwiseThreshold())
         for (int j = 0; j < labels->lengthOf(); ++j){
             auto label = labels->e<Nd4jLong>(j);
             auto pred = predictions->e<Nd4jLong>(j);

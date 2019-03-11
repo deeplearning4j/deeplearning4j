@@ -750,7 +750,7 @@ namespace shape {
 
     INLINEDEF void TAD::createOffsets() {
         this->tadOffsets = new Nd4jLong[this->numTads];
-#pragma omp parallel for if (this->numTads > 128) schedule(static) proc_bind(close) default(shared)
+        PRAGMA_OMP_PARALLEL_FOR_IF(this->numTads > 128)
         for(int i = 0; i < this->numTads; i++) {
             this->tadOffsets[i] = this->tadOffset(i);
         }

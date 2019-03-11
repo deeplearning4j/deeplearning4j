@@ -161,7 +161,7 @@ namespace helpers {
             int status = topKFunctor(input, values, indices.get(), k, true);
 
             if (status == ND4J_STATUS_OK) {
-#pragma omp parallel for if(target->lengthOf() > Environment::getInstance()->elementwiseThreshold()) schedule(static)
+                PRAGMA_OMP_PARALLEL_FOR_IF(target->lengthOf() > Environment::getInstance()->tadThreshold())
                 for (int e = 0; e < target->lengthOf(); e++) {
                     bool found = false;
                     for (int j = 0; j < k; j++) {

@@ -398,7 +398,8 @@ static void getMKLDNNMemoryDescLrn(const NDArray* src, const NDArray* diff_src, 
         std::unique_ptr<NDArray> sumPart(activitySqr->dup('c'));
 
         input->applyPairwiseTransform(pairwise::Multiply, input, activitySqr.get(), nullptr);
-#pragma omp parallel for if (halfDepth + 1 > Environment::getInstance()->elementwiseThreshold()) schedule(static)         
+
+        PRAGMA_OMP_PARALLEL_FOR_IF(halfDepth + 1 > Environment::getInstance()->tadThreshold())
         for (int i = 1; i < halfDepth + 1; i++) {
             IndicesList indA({NDIndex::all(), NDIndex::interval(i, channel), NDIndex::all(), NDIndex::all()});
             IndicesList indB({NDIndex::all(), NDIndex::interval(0, channel - i), NDIndex::all(), NDIndex::all()});

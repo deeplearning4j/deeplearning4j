@@ -4760,7 +4760,7 @@ template void NDArray::operator/=(const bool scalar);
                 minDim = shape[i];
 
         float v = 1.0f;
-#pragma omp parallel for if(minDim > Environment::getInstance()->elementwiseThreshold()) schedule(guided)
+        PRAGMA_OMP_PARALLEL_FOR_IF(minDim > Environment::getInstance()->tadThreshold())
         for(int i = 0; i < minDim; ++i)
             templatedSet<float>(_buffer, i*offset, this->dataType(), &v);
     }
@@ -4874,7 +4874,7 @@ template void NDArray::operator/=(const bool scalar);
         switch(direction) {
             
             case 'u':                           // fill upper triangular block
-#pragma omp parallel for if(rows > Environment::getInstance()->elementwiseThreshold()) schedule(guided) collapse (2)
+                PRAGMA_OMP_PARALLEL_FOR_SIMD_COLLAPSE(2)
                 for(Nd4jLong i = 0; i < rows; ++i)
                     for(Nd4jLong j = 0; j < cols; ++j)
                         if (i + diag <= j)
@@ -4882,7 +4882,7 @@ template void NDArray::operator/=(const bool scalar);
                 break;
 
             case 'l':                           // fill lower triangular block
-#pragma omp parallel for if(rows > Environment::getInstance()->elementwiseThreshold()) schedule(guided) collapse (2)
+                PRAGMA_OMP_PARALLEL_FOR_SIMD_COLLAPSE(2)
                 for(Nd4jLong i = 0; i < rows; ++i)
                     for(Nd4jLong j = 0; j < cols; ++j)
                         if (i + diag >= j)

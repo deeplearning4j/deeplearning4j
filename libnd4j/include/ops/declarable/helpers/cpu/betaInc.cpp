@@ -198,7 +198,7 @@ template<typename T>
 NDArray betaIncT(const NDArray& a, const NDArray& b, const NDArray& x) {
 	auto result = NDArray(&x, false, x.getWorkspace());
 
-#pragma omp parallel for if(x.lengthOf() > Environment::getInstance()->elementwiseThreshold()) schedule(guided)
+    PRAGMA_OMP_PARALLEL_FOR_IF(x.lengthOf() > Environment::getInstance()->elementwiseThreshold())
 	for(int i = 0; i < x.lengthOf(); ++i) {
 		result.p(i, betaIncTA<T>(a.e<T>(i), b.e<T>(i), x.e<T>(i)));
 	}

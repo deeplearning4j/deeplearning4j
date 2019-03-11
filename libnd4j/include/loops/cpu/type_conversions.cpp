@@ -175,7 +175,7 @@ namespace nd4j {
         // we use 3 as offset, since first 12 bytes are occupied with header
         int flimit = limit + 4;
 
-#pragma omp parallel for if(flimit > Environment::getInstance()->elementwiseThreshold()) schedule(guided)
+        PRAGMA_OMP_PARALLEL_FOR_IF(flimit > Environment::getInstance()->elementwiseThreshold())
         for (int e = 4; e < flimit; e++) {
             int el = x[e];
             int ael = nd4j::math::nd4j_abs<int>(el) - 1;

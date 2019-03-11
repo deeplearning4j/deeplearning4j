@@ -32,7 +32,7 @@ namespace helpers {
 
         nd4j::graph::RandomGenerator nodeRng(3019L, seed);
 
-        #pragma omp parallel for if (input->lengthOf() > Environment::getInstance()->elementwiseThreshold()) schedule(static)
+        PRAGMA_OMP_PARALLEL_FOR_IF(input->lengthOf() > Environment::getInstance()->elementwiseThreshold())
         for (Nd4jLong e = 0; e < input->lengthOf(); ++e) {
             float val = nodeRng.relativeT(e, T(0.f), T(1.f));
 //                nd4j_printf("Random value is %f.\n", val);
@@ -125,7 +125,7 @@ namespace helpers {
         //input->template applyRandom<randomOps::AlphaDropOut<T>>(rng, nullptr, output, probValueArr);
         nd4j::graph::RandomGenerator nodeRng(3019L, seed);
 
-#pragma omp parallel for if (input->lengthOf() > Environment::getInstance()->elementwiseThreshold()) schedule(static)
+        PRAGMA_OMP_PARALLEL_FOR_IF(input->lengthOf() > Environment::getInstance()->elementwiseThreshold())
         for (Nd4jLong e = 0; e < input->lengthOf(); ++e) {
             float randVal = nodeRng.relativeT(e, T(0.f), T(1.f));
             float xVal = input->e<float>(e);

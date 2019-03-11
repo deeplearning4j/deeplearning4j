@@ -42,7 +42,7 @@ static int _matrixDiag(const NDArray* input, NDArray* output) {
     }
     int lastDimension = input->sizeAt(-1);
     // TODO: tune this properlys
-#pragma omp parallel for if(listOut->size() > Environment::getInstance()->elementwiseThreshold()) schedule(static)
+    PRAGMA_OMP_PARALLEL_FOR_IF(listOut->size() > Environment::getInstance()->tadThreshold())
     // condition is hold: listOut->size() == listDiag->size()
     for(int i = 0; i < listOut->size(); ++i)       
         for (int e = 0; e < lastDimension; e++)

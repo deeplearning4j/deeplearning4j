@@ -49,17 +49,18 @@ namespace helpers {
     static void _invertLowerMatrix(NDArray* inputMatrix, NDArray* invertedMatrix) {
         int n = inputMatrix->rows();
         invertedMatrix->assign(0.f);
-#pragma omp parallel for if(n > Environment::getInstance()->elementwiseThreshold()) schedule(static)
+
+        PRAGMA_OMP_PARALLEL_FOR_IF(n > Environment::getInstance()->elementwiseThreshold())
         for (int i = 0; i < n; i++)
             invertedMatrix->p(i, i, 1.0f);
 
         if (inputMatrix->isIdentityMatrix()) return;
 
-#pragma omp parallel for if(n > Environment::getInstance()->elementwiseThreshold()) schedule(static)
+        PRAGMA_OMP_PARALLEL_FOR_IF(n > Environment::getInstance()->elementwiseThreshold())
         for (int i = 1; i < n; i++)
             invertedMatrix->p(i, i - 1,  -inputMatrix->e<T>(i, i - 1));
 
-#pragma omp parallel for if(n > Environment::getInstance()->elementwiseThreshold()) schedule(static)
+        PRAGMA_OMP_PARALLEL_FOR_SIMD_COLLAPSE(2)
         for (int i = 2; i < n; i++) {
             for (int j = i - 2; j > -1; --j) 
                 for (int k = 0; k < i; k++) 
@@ -82,15 +83,15 @@ namespace helpers {
             return;
         }
 
-#pragma omp parallel for if(n > Environment::getInstance()->elementwiseThreshold()) schedule(static)
+        PRAGMA_OMP_PARALLEL_FOR_IF(n > Environment::getInstance()->elementwiseThreshold())
         for (int i = 0; i < n; i++)
             invertedMatrix->p(i, i, invertedMatrix->e<T>(i, i) / inputMatrix->e<T>(i, i));
 
-#pragma omp parallel for if(n > Environment::getInstance()->elementwiseThreshold()) schedule(static)
+        PRAGMA_OMP_PARALLEL_FOR_IF(n > Environment::getInstance()->elementwiseThreshold())
         for (int i = 0; i < n - 1; i++)
             invertedMatrix->p(i, i + 1, invertedMatrix->e<T>(i, i+1) - (inputMatrix->e<T>(i, i + 1) * invertedMatrix->e<T>(i + 1, i + 1) / inputMatrix->e<T>(i, i)));
 
-#pragma omp parallel for if(n > Environment::getInstance()->elementwiseThreshold()) schedule(static)
+        PRAGMA_OMP_PARALLEL_FOR_SIMD_COLLAPSE(2)
         for (int i = n - 2; i > - 1; i--) {
             for (int j = i + 2; j < n; j++) 
                 for (int k = i; k < n; k++) 

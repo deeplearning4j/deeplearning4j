@@ -1414,7 +1414,7 @@ void shuffleGeneric(void **hX, Nd4jLong **hXShapeInfo, void **dz, Nd4jLong **hZS
     auto dX = reinterpret_cast<T **>(hX);
     auto dZ = reinterpret_cast<T **>(dz);
 
-#pragma omp parallel for if (N > 1) default(shared)
+    PRAGMA_OMP_PARALLEL_FOR_IF(N > 1)
     for (int f = 0; f < N; f++) {
         auto hX = reinterpret_cast<T *>(dX[f]);
         //auto hZ = reinterpret_cast<T *>(dZ[f]);
@@ -1451,8 +1451,8 @@ void shuffleGeneric(void **hX, Nd4jLong **hXShapeInfo, void **dz, Nd4jLong **hZS
 
             } 
             else {
-                
-#pragma omp parallel for schedule(guided) if (N == 1 && tadLength > 512)
+
+                PRAGMA_OMP_PARALLEL_FOR_IF(N == 1 && tadLength > 512)
                 for (Nd4jLong i = 0; i < tadLength; i++) {                    
                     auto offset = shape::getIndexOffset(i, tadOnlyShapeInfo[f], tadLength);                    
                     nd4j::math::nd4j_swap<T>(hX[offset + oldOffset], hX[offset + newOffset]);

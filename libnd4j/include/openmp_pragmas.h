@@ -31,7 +31,8 @@
 #define PRAGMA_OMP_CRITICAL _Pragma(OMP_STRINGIFY(omp critical))
 #define PRAGMA_OMP_SIMD _Pragma(OMP_STRINGIFY(omp simd))
 #define PRAGMA_OMP_PARALLEL(args) _Pragma(OMP_STRINGIFY(omp parallel args default(shared)))
-#define PRAGMA_OMP_PARALLEL_FOR(args) _Pragma(OMP_STRINGIFY(omp parallel for args default(shared)))
+#define PRAGMA_OMP_PARALLEL_FOR _Pragma(OMP_STRINGIFY(omp parallel for default(shared)))
+#define PRAGMA_OMP_PARALLEL_FOR_IF(args) _Pragma(OMP_STRINGIFY(omp parallel for if(args) default(shared)))
 #define PRAGMA_OMP_PARALLEL_FOR_SIMD _Pragma(OMP_STRINGIFY(omp parallel for simd default(shared)))
 #define PRAGMA_OMP_PARALLEL_FOR_SIMD_COLLAPSE(loops) _Pragma(OMP_STRINGIFY(omp parallel for simd default(shared) collapse(loops)))
 

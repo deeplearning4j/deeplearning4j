@@ -30,18 +30,18 @@ namespace nd4j {
                 if (sourceDimsLen) {
                     std::vector<int> sourceDims(sourceDimsLen);
 
-#pragma omp parallel for if(sourceDims.size() > Environment::getInstance()->elementwiseThreshold()) schedule(static)
+                    PRAGMA_OMP_PARALLEL_FOR_IF(sourceDims.size() > Environment::getInstance()->tadThreshold())
                     for (int i = sourceDimsLen; i > 0; i--)
                         sourceDims[sourceDimsLen - i] = input->rankOf() - i;
 
                     std::unique_ptr<ResultSet> listOfTensors(input->allTensorsAlongDimension(sourceDims));
 
-#pragma omp parallel for if(outputList.size() > Environment::getInstance()->elementwiseThreshold()) schedule(static)
+                    PRAGMA_OMP_PARALLEL_FOR_IF(outputList.size() > Environment::getInstance()->tadThreshold())
                     for (unsigned int i = 0; i < outputList.size(); i++) {
                         outputs[i].first = outputList[i];
                         std::vector<int> outDims(outputs[i].first->rankOf() - 1);
 
-#pragma omp parallel for if(outputs[i].first->rankOf() > Environment::getInstance()->elementwiseThreshold()) schedule(static)
+                        PRAGMA_OMP_SIMD
                         for (int k = 1; k < outputs[i].first->rankOf(); k++)
                             outDims[k - 1] = k;
 
@@ -50,14 +50,14 @@ namespace nd4j {
 
                         outputs[i].second = 0;
 
-#pragma omp parallel for if(indices->lengthOf() > Environment::getInstance()->elementwiseThreshold()) schedule(static)
+                        PRAGMA_OMP_PARALLEL_FOR_IF(indices->lengthOf() > Environment::getInstance()->elementwiseThreshold())
                         for (int e = 0; e < indices->lengthOf(); ++e)
                             if ((*indices).e<Nd4jLong>(e) == i)
                                 listOutForCurrent->at(outputs[i].second++)->assign(listOfTensors->at(e));
                     }
 
                 } else
-#pragma omp parallel for if(outputList.size() > Environment::getInstance()->elementwiseThreshold()) schedule(static)
+                    PRAGMA_OMP_PARALLEL_FOR_IF(outputList.size() > Environment::getInstance()->tadThreshold()) schedule(static)
                     for (unsigned int i = 0; i < outputList.size(); i++) {
                         outputs[i].first = outputList[i];
                         outputs[i].second = 0;
@@ -154,7 +154,6 @@ namespace nd4j {
 
                         outputs[i].second = 0;
 
-//#pragma omp parallel for if(indices->lengthOf() > Environment::getInstance()->elementwiseThreshold()) schedule(static)
                         for (int e = 0; e < indices->lengthOf(); ++e)
                             if (indices->e<Nd4jLong>(e) == i)
                                 listOfTensors->at(e)->assign(listOutForCurrent->at(outputs[i].second++));
@@ -162,7 +161,7 @@ namespace nd4j {
                 }
                 else { // one-dimensional case
                     auto output = outputList[0];
-#pragma omp parallel for if(outputList.size() > Environment::getInstance()->elementwiseThreshold()) schedule(static)
+                    PRAGMA_OMP_PARALLEL_FOR_IF(outputList.size() > Environment::getInstance()->tadThreshold())
                     for (unsigned int i = 0; i < inputGradientList.size(); i++) {
                         outputs[i].first = inputGradientList[i];
                         outputs[i].second = 0;

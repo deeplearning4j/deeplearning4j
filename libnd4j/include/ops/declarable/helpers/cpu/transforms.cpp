@@ -74,7 +74,7 @@ static void triuBP_(const NDArray& input, const NDArray& gradO, NDArray& gradI, 
     auto dOdI = NDArray(&gradO);                // dO/dI
     helpers::triu(input, dOdI, diagonal);
 
-#pragma omp parallel for if(dOdI.lengthOf() > Environment::getInstance()->elementwiseThreshold()) schedule(guided)     
+    PRAGMA_OMP_PARALLEL_FOR_IF(dOdI.lengthOf() > Environment::getInstance()->elementwiseThreshold())
     for(int i = 0; i < dOdI.lengthOf(); ++i) {
         if(dOdI.e<T>(i) != (T)0.f)
             dOdI.p(i,  T(1.f));

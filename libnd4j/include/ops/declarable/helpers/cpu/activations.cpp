@@ -252,7 +252,7 @@ void softmax(const NDArray& input, NDArray& output, const int dimension) {
         const Nd4jLong* inputShapeInfo = input.getShapeInfo();
         const Nd4jLong* alphaShapeInfo = alpha.getShapeInfo();
 
-#pragma omp parallel for if(inputLen > Environment::getInstance()->elementwiseThreshold()) schedule(guided)
+        PRAGMA_OMP_PARALLEL_FOR_IF(inputLen > Environment::getInstance()->elementwiseThreshold())
         for(Nd4jLong i = 0; i < inputLen; ++i) {
              // FIXME: double!
             double x = input.e<double>(i);
