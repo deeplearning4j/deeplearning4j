@@ -888,7 +888,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
 					bins[idx]++;
 				}
 
-#pragma omp critical
+                PRAGMA_OMP_CRITICAL
 				{
                     PRAGMA_OMP_SIMD
 					for (int x = 0; x < numBins; x++) {
@@ -1971,7 +1971,8 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
 							}
 							result[i] = static_cast<Z>(0);
 						}
-#pragma omp critical
+
+PRAGMA_OMP_CRITICAL
 {
 						if (currMax < currMaxLocal) {
 							currMax = currMaxLocal;
@@ -2016,7 +2017,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
 							}
 						}
 
-#pragma omp critical
+PRAGMA_OMP_CRITICAL
 {
 						if (currMax < currMaxLocal) {
 							currMax = currMaxLocal;
@@ -2178,7 +2179,8 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
 								result[i] = static_cast<Z>(0);
 
 							}
-#pragma omp critical
+
+							PRAGMA_OMP_CRITICAL
                             {
 							    if (currMax < currMaxLocal) {
 								    currMax = currMaxLocal;
@@ -2222,7 +2224,8 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
 
 								result[i] = static_cast<Z>(0);
 							}
-#pragma omp critical
+
+PRAGMA_OMP_CRITICAL
 {
 							if (currMax < currMaxLocal) {
 								currMax = currMaxLocal;

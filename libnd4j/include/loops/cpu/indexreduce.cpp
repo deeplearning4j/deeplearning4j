@@ -73,8 +73,8 @@ Nd4jLong IndexReduce<X>::execScalar(void *vx, Nd4jLong *xShapeInfo, void *vextra
             IndexValue<X> curr(x[offset], threadOffset + i);
             local = OpType::update(local, curr, extraParams);
         }
-        
-        #pragma omp critical
+
+        PRAGMA_OMP_CRITICAL
         startingIndex = OpType::update(startingIndex, local, extraParams);        
     }    
     return startingIndex.index;

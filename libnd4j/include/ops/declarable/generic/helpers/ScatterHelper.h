@@ -126,8 +126,11 @@ class ScatterHelper {
                     
                     Nd4jLong idx = indices.e<Nd4jLong>(i);
                     NDArray out = output({idx, idx+1});
-                    #pragma omp critical               
-                    out.applyPairwiseTransform(op, updates.e(i), nullptr);
+
+                    PRAGMA_OMP_CRITICAL
+                    {
+                        out.applyPairwiseTransform(op, updates.e(i), nullptr);
+                    }
                 }
             }
             else {      // outRank > 1
@@ -145,8 +148,11 @@ class ScatterHelper {
 
                     NDArray outSubArr = output(indices.e<Nd4jLong>(i), std::vector<int>({0}));
                     NDArray updSubArr = updates(i, dimsToExcludeUpd);
-                    #pragma omp critical
-                    outSubArr.applyPairwiseTransform(op, updSubArr, nullptr);   
+
+                    PRAGMA_OMP_CRITICAL
+                    {
+                        outSubArr.applyPairwiseTransform(op, updSubArr, nullptr);
+                    }
                 }
             }
         }
@@ -168,8 +174,10 @@ static FORCEINLINE void scatterND(pairwise::Ops op, const NDArray& indices, cons
 
             Nd4jLong idx = indices.e<Nd4jLong>(i);
             NDArray out = output({idx, idx+1});
-            #pragma omp critical
-            out.applyPairwiseTransform(op, updates.e(i), nullptr);
+            PRAGMA_OMP_CRITICAL
+            {
+                out.applyPairwiseTransform(op, updates.e(i), nullptr);
+            }
         }
     } 
     else {
@@ -192,8 +200,11 @@ static FORCEINLINE void scatterND(pairwise::Ops op, const NDArray& indices, cons
 
             NDArray outSubArr = output(idxRangeOut);
             NDArray updSubArr = updates(i, dimsToExcludeUpd);
-            #pragma omp critical
-            outSubArr.applyPairwiseTransform(op, updSubArr, nullptr);
+
+            PRAGMA_OMP_CRITICAL
+            {
+                outSubArr.applyPairwiseTransform(op, updSubArr, nullptr);
+            }
         }        
     }
 }

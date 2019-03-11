@@ -65,7 +65,8 @@ static void ismax_(const NDArray* input, NDArray* output, const std::vector<int>
                             }
                             output->p<T>(i, 0.f);
                         }
-#pragma omp critical
+
+                        PRAGMA_OMP_CRITICAL
                         {
                             if (currMax < currMaxLocal) {
                                 currMax = currMaxLocal;
@@ -102,7 +103,8 @@ static void ismax_(const NDArray* input, NDArray* output, const std::vector<int>
                             }
                             output->p<T>(i, 0.f);
                         }
-#pragma omp critical
+
+                        PRAGMA_OMP_CRITICAL
                         {
                             if (currMax < currMaxLocal) {
                                 currMax = currMaxLocal;

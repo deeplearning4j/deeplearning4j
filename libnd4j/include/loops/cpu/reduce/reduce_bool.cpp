@@ -224,8 +224,8 @@ namespace functions {
 
                         for (Nd4jLong i = 0; i < info.getItersPerThread(threadNum); i++)                                
                             local = OpType::update(local, OpType::op(xi[i], extraParams), extraParams);
-                            
-                        #pragma omp critical
+
+                        PRAGMA_OMP_CRITICAL
                         startingVal = OpType::update(startingVal, local, extraParams);        
                     }
                 }
@@ -240,8 +240,8 @@ namespace functions {
 
                         for (Nd4jLong i = 0; i < info.getItersPerThread(threadNum); i++)                                
                             local = OpType::update(local, OpType::op(xi[i*xEws], extraParams), extraParams);
-                            
-                        #pragma omp critical
+
+                        PRAGMA_OMP_CRITICAL
                         startingVal = OpType::update(startingVal, local, extraParams);        
                     }                    
                 }
