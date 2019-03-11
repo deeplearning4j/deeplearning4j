@@ -92,7 +92,7 @@ public class StackAggregatorTests {
         assertTrue(descriptor.getStackTrace()[descriptor.size() - 1].getClassName().contains("StackAggregatorTests"));
     }
 
-    @Test
+    /*@Test
     public void testTrailingFrames2() {
         INDArray x = Nd4j.create(new int[] {10, 10}, 'f');
         INDArray y = Nd4j.create(new int[] {10, 10}, 'c');
@@ -104,7 +104,7 @@ public class StackAggregatorTests {
 
         Nd4j.getExecutioner().commit();
 
-        /*StackAggregator aggregator = OpProfiler.getInstance().getMixedOrderAggregator();
+        StackAggregator aggregator = OpProfiler.getInstance().getMixedOrderAggregator();
 
         StackDescriptor descriptor = aggregator.getLastDescriptor();
 
@@ -113,8 +113,8 @@ public class StackAggregatorTests {
         assertEquals(2, aggregator.getTotalEventsNumber());
         assertEquals(2, aggregator.getUniqueBranchesNumber());
 
-        aggregator.renderTree();*/
-    }
+        aggregator.renderTree();
+    }*/
 
     @Test
     @Ignore
