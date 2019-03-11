@@ -2449,7 +2449,7 @@ TEST_F(DeclarableOpsTests7, TestExtractImagePatches_SGO_11) {
 //Images shape is  (1, 3, 3, 4)
 //[1, 1, 1, 1]
 //[1, 3, 2, 1]
-    auto exp = NDArrayFactory::create<double>('c', {1, 8, 8, 8}, {
+    auto exp = NDArrayFactory::create<double>('c', {1, 4, 4, 8}, {
             1,   2,   3,   4,  17,  18,  19,  20,   5,   6,   7,   8,  21,  22,  23,  24,   9,  10,
             11, 12,  25,  26,  27,  28,  13,  14,  15,  16,  29,  30,  31,  32,  33,  34,  35,  36,
             49,  50,  51,  52,  37,  38,  39,  40,  53,  54,  55,  56,  41,  42,  43,  44,  57,  58,
@@ -2485,7 +2485,7 @@ TEST_F(DeclarableOpsTests7, TestExtractImagePatches_SGO_12) {
 //Images shape is  (1, 3, 3, 4)
 //[1, 1, 1, 1]
 //[1, 3, 2, 1]
-    auto exp = NDArrayFactory::create<double>('c', {1, 8, 8, 8}, {
+    auto exp = NDArrayFactory::create<double>('c', {1, 4, 4, 8}, {
             1.,   2.,   3.,   4.,  17.,  18.,   19.,  20.,   5.,   6.,   7.,   8.,  21.,  22.,
             23.,  24.,   9.,  10.,  11.,  12.,  25.,  26.,  27.,  28.,  13.,  14.,  15.,  16.,
             29.,  30.,  31.,  32.,  33.,  34.,  35.,  36.,  49.,  50.,  51.,  52.,  37.,  38.,
