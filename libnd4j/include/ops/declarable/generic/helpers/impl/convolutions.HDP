@@ -95,12 +95,12 @@ void ConvolutionUtils<T>::avgPool3DBP(NDArray<T>& gradO, NDArray<T>& gradI, cons
             /* local pointers */
             T *ip = pI + s*iStride0 + k*iStride1;
             T *op = pO + s*oStride0 + k*oStride1;
-            
-#pragma omp parallel for simd                
+
+            PRAGMA_OMP_PARALLEL_FOR_SIMD
             for (int i = 0; i < iStride1; i++)
                 *(ip + i) = 0;
 
-#pragma omp parallel for if(oStride1 > Environment::getInstance()->elementwiseThreshold()) schedule(guided) collapse(3)
+            PRAGMA_OMP_PARALLEL_FOR_SIMD_COLLAPSE(3)
             /* loop over output */
             for (int ti = 0; ti < oD; ti++) {
                 for (int i = 0; i < oH; i++) {
@@ -170,12 +170,13 @@ void ConvolutionUtils<T>::avgPool3D(NDArray<T>& input, NDArray<T>& output, const
             /* local pointers. */
             T *ip = in  + s*inStride0  + k*inStride1;
             T *op = out + s*outStride0 + k*outStride1;
-#pragma omp parallel for simd
+
+            PRAGMA_OMP_PARALLEL_FOR_SIMD
             for (int i = 0; i < outStride1; ++i)
                 *(op + i) = static_cast<T>(0.);
 
             /* loop over output */
-#pragma omp parallel for if(outStride1 > Environment::getInstance()->elementwiseThreshold()) schedule(guided) collapse(3)
+            PRAGMA_OMP_PARALLEL_FOR_SIMD_COLLAPSE(3)
             for (int ti = 0; ti < oD; ti++) {
                 for (int i = 0; i < oH; i++) {
                     for (int j = 0; j < oW; j++) {

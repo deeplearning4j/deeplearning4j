@@ -29,10 +29,11 @@
 #define OMP_SUMT sumT
 #define OMP_REDUCTION(args) reduction(args)
 #define PRAGMA_OMP_CRITICAL _Pragma(OMP_STRINGIFY(omp critical))
-#define PRAGMA_OMP_SIMD(args) _Pragma(OMP_STRINGIFY(omp simd args))
-#define PRAGMA_OMP_PARALLEL(args) _Pragma(OMP_STRINGIFY(omp parallel args))
-#define PRAGMA_OMP_PARALLEL_FOR(args) _Pragma(OMP_STRINGIFY(omp parallel for args))
-#define PRAGMA_OMP_PARALLEL_FOR_SIMD(args) _Pragma(OMP_STRINGIFY(omp parallel for simd args))
+#define PRAGMA_OMP_SIMD _Pragma(OMP_STRINGIFY(omp simd))
+#define PRAGMA_OMP_PARALLEL(args) _Pragma(OMP_STRINGIFY(omp parallel args default(shared)))
+#define PRAGMA_OMP_PARALLEL_FOR(args) _Pragma(OMP_STRINGIFY(omp parallel for args default(shared)))
+#define PRAGMA_OMP_PARALLEL_FOR_SIMD _Pragma(OMP_STRINGIFY(omp parallel for simd default(shared)))
+#define PRAGMA_OMP_PARALLEL_FOR_SIMD_COLLAPSE(loops) _Pragma(OMP_STRINGIFY(omp parallel for simd default(shared) collapse(loops)))
 
 
 #endif //DEV_TESTS_OPENMP_PRAGMAS_H

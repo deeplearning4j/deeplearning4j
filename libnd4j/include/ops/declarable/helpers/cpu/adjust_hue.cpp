@@ -36,7 +36,7 @@ namespace helpers {
         int stridesDim = isNHWC ? 2 : 0;
         if (isNHWC) {
             // for NHWC our rgb values are stored one by one
-            #pragma omp parallel for simd
+            PRAGMA_OMP_PARALLEL_FOR_SIMD
             for (int e = 0; e < tuples; e++) {
                 auto i = bIn + e * numChannels;
                 auto o = bOut + e * numChannels;
@@ -65,7 +65,7 @@ namespace helpers {
             auto outputG = reinterpret_cast<T *>(tadsChannelsOut->at(1)->buffer());
             auto outputB = reinterpret_cast<T *>(tadsChannelsOut->at(2)->buffer());
 
-            #pragma omp parallel for simd 
+            PRAGMA_OMP_PARALLEL_FOR_SIMD
             for (int e = 0; e < tuples; e++) {
                 auto _ri = bufferR + e;
                 auto _gi = bufferG + e;

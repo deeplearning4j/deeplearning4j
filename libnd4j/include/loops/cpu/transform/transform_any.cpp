@@ -87,7 +87,7 @@ void _CUDA_H TransformAny<X, Z>::exec(void *vx, Nd4jLong *xShapeInfo,
         const auto zStride0 = shape::stride(zShapeInfo)[0];
         const auto zStride1 = shape::stride(zShapeInfo)[1];
 
-        #pragma omp parallel for simd schedule(guided) proc_bind(close)
+        PRAGMA_OMP_PARALLEL_FOR_SIMD
         for (int i0 = 0; i0 < xShapeInfo[1]; ++i0) 
             for (int i1 = 0; i1 < xShapeInfo[2]; ++i1) 
                 z[i0 * zStride0 + i1 * zStride1] = OpType::op(x[i0 * xStride0 + i1 * xStride1], extraParams);
@@ -103,7 +103,7 @@ void _CUDA_H TransformAny<X, Z>::exec(void *vx, Nd4jLong *xShapeInfo,
         const auto zStride1 = shape::stride(zShapeInfo)[1];
         const auto zStride2 = shape::stride(zShapeInfo)[2];
 
-        #pragma omp parallel for simd schedule(guided) proc_bind(close) collapse(2)
+        PRAGMA_OMP_PARALLEL_FOR_SIMD_COLLAPSE(2)
         for (int i0 = 0; i0 < xShapeInfo[1]; ++i0) 
             for (int i1 = 0; i1 < xShapeInfo[2]; ++i1)
                 for (int i2 = 0; i2 < xShapeInfo[3]; ++i2)
@@ -122,7 +122,7 @@ void _CUDA_H TransformAny<X, Z>::exec(void *vx, Nd4jLong *xShapeInfo,
         const auto zStride2 = shape::stride(zShapeInfo)[2];
         const auto zStride3 = shape::stride(zShapeInfo)[3];
 
-        #pragma omp parallel for simd schedule(guided) proc_bind(close) collapse(3)
+        PRAGMA_OMP_PARALLEL_FOR_SIMD_COLLAPSE(3)
         for (int i0 = 0; i0 < xShapeInfo[1]; ++i0) 
             for (int i1 = 0; i1 < xShapeInfo[2]; ++i1)
                 for (int i2 = 0; i2 < xShapeInfo[3]; ++i2)
@@ -144,7 +144,7 @@ void _CUDA_H TransformAny<X, Z>::exec(void *vx, Nd4jLong *xShapeInfo,
         const auto zStride3 = shape::stride(zShapeInfo)[3];
         const auto zStride4 = shape::stride(zShapeInfo)[4];
 
-        #pragma omp parallel for simd schedule(guided) proc_bind(close) collapse(4)
+        PRAGMA_OMP_PARALLEL_FOR_SIMD_COLLAPSE(4)
         for (int i0 = 0; i0 < xShapeInfo[1]; ++i0) 
             for (int i1 = 0; i1 < xShapeInfo[2]; ++i1)
                 for (int i2 = 0; i2 < xShapeInfo[3]; ++i2)

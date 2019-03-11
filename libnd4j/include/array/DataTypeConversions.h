@@ -50,7 +50,7 @@ namespace nd4j {
                             else
                                 TypeCast::convertGeneric<T2, T>(nullptr, tmp, length, buffer);
 #else
-#pragma omp parallel for simd schedule(guided)
+                PRAGMA_OMP_PARALLEL_FOR_SIMD
                 for (Nd4jLong e = 0; e < length; e++)
                     buffer[e] = canKeep ? static_cast<T>(tmp[e]) : BitwiseUtils::swap_bytes<T>(static_cast<T>(tmp[e]));
 #endif
@@ -105,7 +105,7 @@ namespace nd4j {
                             else
                                 TypeCast::convertGeneric<float, T>(nullptr, tmp, length, buffer);
 #else
-#pragma omp parallel for simd schedule(guided)
+                            PRAGMA_OMP_PARALLEL_FOR_SIMD
                             for (Nd4jLong e = 0; e < length; e++)
                                 buffer[e] = canKeep ? static_cast<T>(tmp[e]) : BitwiseUtils::swap_bytes<T>(static_cast<T>(tmp[e]));
 #endif

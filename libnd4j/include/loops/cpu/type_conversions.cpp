@@ -82,7 +82,7 @@ namespace nd4j {
         auto amin = nd4j::math::nd4j_abs<float>(min);
 
         // now we actually apply quantization
-#pragma omp parallel for simd
+        PRAGMA_OMP_PARALLEL_FOR_SIMD
         for (Nd4jLong e = 0; e < N; e++) {
             rz[e] = static_cast<char>(nd4j::math::nd4j_round<float,char>(1.0f * x[e] / nd4j::math::nd4j_max<float>(amax, amin) * max_byte));
         }

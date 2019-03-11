@@ -52,8 +52,8 @@ static void softMaxForVector_(void *input, Nd4jLong *inShapeInfo, void *output, 
                 outBuff[i] = nd4j::math::nd4j_exp<T, T>(inBuff[i] - max);
                 sum += outBuff[i];
             }
-            
-            #pragma omp simd
+
+            PRAGMA_OMP_SIMD
             for (int i = 0; i < length; i++)
                 outBuff[i] /= sum;
         }
@@ -69,8 +69,8 @@ static void softMaxForVector_(void *input, Nd4jLong *inShapeInfo, void *output, 
                 outBuff[i * outEWS] = r;
                 sum += r;
             }
-            
-            #pragma omp simd
+
+            PRAGMA_OMP_SIMD
             for (int i = 0; i < length; i++)
                 outBuff[i * outEWS] /= sum;
         }

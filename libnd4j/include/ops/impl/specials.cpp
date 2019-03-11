@@ -83,7 +83,7 @@ void SpecialMethods<T>::concatCpuGeneric(int dimension, int numArrays, Nd4jPoint
     int _threads = 4;
 #endif
 
-#pragma omp parallel for simd num_threads(_threads) schedule(guided) default(shared) proc_bind(close)
+        PRAGMA_OMP_PARALLEL_FOR_SIMD
         for (Nd4jLong i = 0; i < length; i++) {
 
             for (Nd4jLong ar = 0; ar < n; ar++) {
@@ -112,7 +112,7 @@ void SpecialMethods<T>::concatCpuGeneric(int dimension, int numArrays, Nd4jPoint
             //code branch for absent Z
             z = x[0];
 
-#pragma omp simd
+            PRAGMA_OMP_SIMD
             for (Nd4jLong i = 0; i < length; i++) {
                 z[i] /= n;
             }
@@ -124,7 +124,7 @@ void SpecialMethods<T>::concatCpuGeneric(int dimension, int numArrays, Nd4jPoint
             int _threads = 4;
 #endif
 
-#pragma omp parallel for simd num_threads(_threads) schedule(guided) default(shared) proc_bind(close)
+            PRAGMA_OMP_PARALLEL_FOR_SIMD
             for (Nd4jLong i = 0; i < length; i++) {
 
                 for (Nd4jLong ar = 1; ar < n; ar++) {
@@ -133,7 +133,6 @@ void SpecialMethods<T>::concatCpuGeneric(int dimension, int numArrays, Nd4jPoint
             }
 
             // instead of doing element-wise propagation, we just issue memcpy to propagate data
-#pragma omp parallel for num_threads(_threads) default(shared) proc_bind(close)
             for (Nd4jLong ar = 1; ar < n; ar++) {
                 memcpy(x[ar], z, length * sizeof(T));
             }
@@ -151,7 +150,7 @@ void SpecialMethods<T>::concatCpuGeneric(int dimension, int numArrays, Nd4jPoint
             int _threads = 4;
 #endif
 
-#pragma omp parallel for simd num_threads(_threads) schedule(guided) default(shared) proc_bind(close)
+            PRAGMA_OMP_PARALLEL_FOR_SIMD
             for (Nd4jLong i = 0; i < length; i++) {
 
                 for (Nd4jLong ar = 0; ar < n; ar++) {
@@ -160,7 +159,6 @@ void SpecialMethods<T>::concatCpuGeneric(int dimension, int numArrays, Nd4jPoint
             }
 
             // instead of doing element-wise propagation, we just issue memcpy to propagate data
-#pragma omp parallel for num_threads(_threads) default(shared) proc_bind(close)
             for (Nd4jLong ar = 0; ar < n; ar++) {
                 memcpy(x[ar], z, length * sizeof(T));
             }

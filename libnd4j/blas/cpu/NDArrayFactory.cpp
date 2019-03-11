@@ -19,6 +19,7 @@
 //
 
 #include <NDArrayFactory.h>
+#include <openmp_pragmas.h>
 
 namespace nd4j {
 
@@ -300,7 +301,7 @@ template NDArray* NDArrayFactory::create_(const char order, const std::vector<Nd
         auto t1 = static_cast<T>(1.0f);
         auto tn = static_cast<T>(numElements);
 
-#pragma omp parallel for simd default(shared)
+        PRAGMA_OMP_PARALLEL_FOR_SIMD
         for (Nd4jLong e = 0; e < numElements; e++) {
             T step = (T) e / (tn - t1);
             b[e] = (from * (t1 - step) + step * to);

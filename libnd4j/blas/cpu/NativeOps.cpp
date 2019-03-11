@@ -892,13 +892,15 @@ void flattenGeneric(Nd4jPointer *extraPointers,
         }
         else if (resultEleStride >= 1 && inputEleStride >= 1) {
             if (len < ELEMENT_THRESHOLD) {
-#pragma omp simd
+
+                PRAGMA_OMP_SIMD
                 for (int i = 0; i < len; i++) {
                     hZ[i * resultEleStride] = input[i * inputEleStride];
                 }
             }
             else {
-#pragma omp parallel for simd
+
+                PRAGMA_OMP_PARALLEL_FOR_SIMD
                 for (int i = 0; i < len; i++) {
                     hZ[i * resultEleStride] = input[i * inputEleStride];
                 }
