@@ -2442,6 +2442,80 @@ TEST_F(DeclarableOpsTests7, TestExtractImagePatches_SGO_10) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests7, TestExtractImagePatches_SGO_11) {
+    auto x = NDArrayFactory::create<double>('c', {1, 8, 8, 2});
+    x.linspace(1);
+
+//Images shape is  (1, 3, 3, 4)
+//[1, 1, 1, 1]
+//[1, 3, 2, 1]
+    auto exp = NDArrayFactory::create<double>('c', {1, 8, 8, 8}, {
+            1,   2,   3,   4,  17,  18,  19,  20,   5,   6,   7,   8,  21,  22,  23,  24,   9,  10,
+            11, 12,  25,  26,  27,  28,  13,  14,  15,  16,  29,  30,  31,  32,  33,  34,  35,  36,
+            49,  50,  51,  52,  37,  38,  39,  40,  53,  54,  55,  56,  41,  42,  43,  44,  57,  58,
+            59,  60,  45,  46,  47,  48,  61,  62,  63,  64,  65,  66,  67,  68,  81,  82,  83,  84,
+            69,  70,  71,  72,  85,  86,  87,  88,  73,  74,  75,  76,  89,  90,  91,  92,  77,  78,
+            79,  80, 93,  94,  95,  96, 97,  98,  99, 100, 113, 114, 115, 116, 101, 102, 103, 104,
+            117, 118, 119, 120, 105, 106, 107, 108, 121, 122, 123, 124, 109, 110, 111, 112, 125, 126,
+            127, 128});
+// ----------------------------------------------------------------
+    nd4j::ops::extract_image_patches op;
+
+    auto result = op.execute({&x}, {}, {2,2, 2,2, 1,1, 1}); // equiv TF ksizes=[1,2,2,1], strides=[1,1,1,1], rates=[1,1,1,1], padding="VALID"
+    ASSERT_EQ(result->status(), Status::OK());
+    auto output = result->at(0);
+//    output->printBuffer("Output");
+//    exp.printBuffer("Expect");
+//    for (Nd4jLong e = 0; e < exp.lengthOf(); e++)
+//        if (exp.e<double>(e) != output->e<double>(e))
+//            printf("%lld ", e);
+//    printf("\n");
+    //result->at(1)->printBuffer("OUtput2");
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests7, TestExtractImagePatches_SGO_12) {
+    auto x = NDArrayFactory::create<double>('c', {1, 8, 8, 2});
+    x.linspace(1);
+
+//Images shape is  (1, 3, 3, 4)
+//[1, 1, 1, 1]
+//[1, 3, 2, 1]
+    auto exp = NDArrayFactory::create<double>('c', {1, 8, 8, 8}, {
+            1.,   2.,   3.,   4.,  17.,  18.,   19.,  20.,   5.,   6.,   7.,   8.,  21.,  22.,
+            23.,  24.,   9.,  10.,  11.,  12.,  25.,  26.,  27.,  28.,  13.,  14.,  15.,  16.,
+            29.,  30.,  31.,  32.,  33.,  34.,  35.,  36.,  49.,  50.,  51.,  52.,  37.,  38.,
+            39.,  40.,  53.,  54.,  55.,  56.,  41.,  42.,  43.,  44.,  57.,  58.,  59.,  60.,
+            45.,  46.,  47.,  48.,  61.,  62.,  63.,  64.,  65.,  66.,  67.,  68.,  81.,  82.,
+            83.,  84.,  69.,  70.,  71.,  72.,  85.,  86.,  87.,  88.,  73.,  74.,  75.,  76.,
+            89.,  90.,  91.,  92.,  77.,  78.,  79.,  80.,  93.,  94.,  95.,  96.,  97.,  98.,
+            99., 100., 113., 114., 115., 116., 101., 102., 103., 104., 117., 118., 119., 120.,
+            105., 106., 107., 108., 121., 122., 123., 124., 109., 110., 111., 112., 125., 126.,
+            127., 128.});
+// ----------------------------------------------------------------
+    nd4j::ops::extract_image_patches op;
+
+    auto result = op.execute({&x}, {}, {2,2, 1,1, 2,2, 1}); // equiv TF ksizes=[1,2,2,1], strides=[1,1,1,1], rates=[1,1,1,1], padding="SAME"
+    ASSERT_EQ(result->status(), Status::OK());
+    auto output = result->at(0);
+//    output->printBuffer("Output");
+//    exp.printBuffer("Expect");
+//    for (Nd4jLong e = 0; e < exp.lengthOf(); e++)
+//        if (exp.e<double>(e) != output->e<double>(e))
+//            printf("%lld ", e);
+//    printf("\n");
+    //result->at(1)->printBuffer("OUtput2");
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests7, TestRoll_1) {
     auto x = NDArrayFactory::create<double>('c', {2, 2, 4, 2}, {
     11.11, 11.12, 11.21, 11.22, 11.31, 11.32, 11.41, 11.42,     12.11, 12.12, 12.21, 12.22, 12.31, 12.32, 12.41, 12.42,
