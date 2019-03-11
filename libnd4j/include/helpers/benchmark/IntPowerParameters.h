@@ -47,7 +47,7 @@ namespace nd4j {
         std::vector<int> evaluate() override {
             std::vector<int> result;
             for (int e = _start; e <= _stop; e += _step) {
-                result.emplace_back(nd4j::math::nd4j_pow<double, double, int>(_base, e));
+               result.emplace_back(nd4j::math::nd4j_pow<double, double, int>(_base, e));
             }
             return result;
         }

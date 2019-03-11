@@ -45,7 +45,7 @@ namespace nd4j {
         std::vector<int> evaluate() override {
             std::vector<int> result;
             for (int e = _start; e <= _stop; e += _step) {
-                result.emplace_back(e);
+               result.emplace_back(e);
             }
             return result;
         }

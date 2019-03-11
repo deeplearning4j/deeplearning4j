@@ -355,7 +355,8 @@
         (33, LogPoissonLossFull) , \
         (34, AMaxPairwise), \
         (35, AMinPairwise) ,\
-        (36, TruncateMod)
+        (36, TruncateMod), \
+        (37, ReplaceNans)
 
 
 
