@@ -91,8 +91,8 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
             helper = new MKLDNNBatchNormHelper();
             log.debug("Created MKLDNNBatchNormHelper");
         }
-        if (helper != null && !helper.checkSupported(layerConf().getEps())) {
-            log.debug("Removed helper {} as not supported with epsilon {}", helper.getClass(), layerConf().getEps());
+        if (helper != null && !helper.checkSupported(layerConf().getEps(), layerConf().isLockGammaBeta())) {
+            log.debug("Removed helper {} as not supported with epsilon {}, lockGammaBeta={}", helper.getClass(), layerConf().getEps(), layerConf().isLockGammaBeta());
             helper = null;
         }
     }
@@ -229,6 +229,15 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
         INDArray batchMean;
         INDArray batchVar;
         if (epsilon.rank() == 2) {
+            if(xHat == null && helper != null){
+                INDArray mean = helper.getMeanCache();
+                std = Transforms.sqrt(helper.getVarCache().addi(layerConf().getEps()));
+                xMu =  Nd4j.createUninitialized(input.shape(), input.ordering());
+                xMu = Nd4j.getExecutioner().exec(new BroadcastSubOp(input, mean, xMu, 1));
+                xHat =  Nd4j.createUninitialized(input.shape(), input.ordering());
+                xHat = Nd4j.getExecutioner().exec(new BroadcastDivOp(xMu, std,xHat, 1));
+            }
+
             //TODO: handle fixed beta/gamma case...
             INDArray dBeta = epsilon.sum(0); //dL/dBeta = sum_examples dL/dOut
             INDArray dGamma = epsilon.mul(xHat).sum(0); //dL/dGamma = sum_examples dL/dOut .* xHat
@@ -361,6 +370,10 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
 
         //TODO could optimize this
         nextEpsilon = workspaceMgr.leverageTo(ArrayType.ACTIVATION_GRAD, nextEpsilon);
+
+        xHat = null;
+        xMu = null;
+
         return new Pair<>(retGradient, nextEpsilon);
     }
 

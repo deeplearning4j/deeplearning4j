@@ -24,7 +24,6 @@ import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.OpContext;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.BatchNorm;
-import org.nd4j.linalg.api.ops.impl.layers.convolution.BatchNormDerivative;
 import org.nd4j.linalg.api.ops.impl.summarystats.Variance;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
@@ -47,8 +46,8 @@ public class MKLDNNBatchNormHelper implements BatchNormalizationHelper {
     private INDArray varCache;
 
     @Override
-    public boolean checkSupported(double eps) {
-        return BaseMKLDNNHelper.mklDnnEnabled();
+    public boolean checkSupported(double eps, boolean fixedGammaBeta) {
+        return !fixedGammaBeta && BaseMKLDNNHelper.mklDnnEnabled();
     }
 
     @Override
