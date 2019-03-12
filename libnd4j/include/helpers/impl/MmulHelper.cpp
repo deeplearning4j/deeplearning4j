@@ -639,7 +639,7 @@ NDArray* nd4j::MmulHelper::tensorDot(const nd4j::NDArray* a, const nd4j::NDArray
 
             const Nd4jLong numOfSubArrs = ShapeUtils::getNumOfSubArrs(xT->getShapeInfo(), dimsToExclude);
 
-            PRAGMA_OMP_PARALLEL_FOR
+            //PRAGMA_OMP_PARALLEL_FOR
             for(Nd4jLong i = 0; i < numOfSubArrs; ++i) {
                 auto xSubArr = (*xT)(i, dimsToExclude);
                 auto ySubArr = (*yT)(i, dimsToExclude);
