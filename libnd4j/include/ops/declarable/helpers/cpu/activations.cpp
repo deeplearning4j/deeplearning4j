@@ -168,7 +168,7 @@ static void softmax_(const NDArray& input, NDArray& output, const int dimension)
 
         if(subArr.ews() == 1 && subArr.ordering() == 'c') {
 
-            #pragma omp parallel for simd schedule(guided) firstprivate(idxRanges)
+            PRAGMA_OMP_PARALLEL_FOR_SIMD_ARGS(firstprivate(idxRanges))
             for (uint i = 0; i < numOfSubArrs; ++i) {
             
                 ShapeUtils::evalIdxRangesForSubArr(i, input.getShapeInfo(), dimsToExclude, idxRanges.data());
@@ -200,7 +200,7 @@ static void softmax_(const NDArray& input, NDArray& output, const int dimension)
         uint inShapeInfoCast[MAX_RANK];
         bool canCast = nd4j::DataTypeUtils::castShapeInfo(subArr.getShapeInfo(), inShapeInfoCast);
 
-        #pragma omp parallel for simd schedule(guided) firstprivate(idxRanges)
+        PRAGMA_OMP_PARALLEL_FOR_SIMD_ARGS(firstprivate(idxRanges))
         for (uint i = 0; i < numOfSubArrs; ++i) {
             
             ShapeUtils::evalIdxRangesForSubArr(i, input.getShapeInfo(), dimsToExclude, idxRanges.data());

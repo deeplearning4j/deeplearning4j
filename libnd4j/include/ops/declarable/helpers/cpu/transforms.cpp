@@ -295,7 +295,7 @@ void pad_(const int mode, const NDArray& input, const NDArray& paddings, NDArray
 
         numOfSubArrs = ShapeUtils::getNumOfSubArrs(output.getShapeInfo(), dimsToExclude);
 
-#pragma omp parallel for schedule(guided) firstprivate(outIdxOuter, outIdxInner)
+        PRAGMA_OMP_PARALLEL_FOR_ARGS(firstprivate(outIdxOuter, outIdxInner))
         for(Nd4jLong j = 0; j < numOfSubArrs; ++j) {
 
             NDArray outSubArr = output(j, dimsToExclude);
@@ -873,7 +873,7 @@ static void clipByNorm_(NDArray& input, NDArray& output, const std::vector<int>&
             const Nd4jLong numOfSubArrs = ShapeUtils::getNumOfSubArrs(input.getShapeInfo(), dimsToExclude);
             std::vector<Nd4jLong> idxRanges(rank * 2);
 
-#pragma omp parallel for schedule(guided) firstprivate(idxRanges)
+            PRAGMA_OMP_PARALLEL_FOR_ARGS(firstprivate(idxRanges))
             for(Nd4jLong i = 0; i < numOfSubArrs; ++i) {
 
                 ShapeUtils::evalIdxRangesForSubArr(i, input.getShapeInfo(), dimsToExclude, idxRanges.data());
@@ -1102,7 +1102,7 @@ static void mirrorPad_(const NDArray& input, const NDArray& paddings, NDArray& o
 
         std::vector<Nd4jLong> inIdx(rank), outIdx(rank);
 
-#pragma omp parallel for if(outLen > Environment::getInstance()->elementwiseThreshold()) schedule(guided) firstprivate(inIdx, outIdx)
+        PRAGMA_OMP_PARALLEL_FOR_ARGS(firstprivate(inIdx, outIdx))
         for(int i = 0; i < outLen; ++i) {
 
             shape::ind2subC(rank, output.shapeOf(), i, outIdx.data());

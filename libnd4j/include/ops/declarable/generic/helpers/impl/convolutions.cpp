@@ -240,7 +240,7 @@ static void vol2col_(const NDArray& volume, NDArray& columns, const int sD, cons
 
 if (volume.ordering() == 'c' &&  columns.ordering() == 'c' && shape::strideDescendingCAscendingF(volume.getShapeInfo()) && shape::strideDescendingCAscendingF(columns.getShapeInfo()))
 
-#pragma omp parallel for schedule(static) proc_bind(close) private(col, vol, volDep, volRow, volCol)
+    PRAGMA_OMP_PARALLEL_FOR_ARGS(private(col, vol, volDep, volRow, volCol) collapse(2))
     for (int b = 0; b < bS; b++) {
         for (int c = 0; c < iC; ++c) {        
             for (int kDep = 0; kDep < kD; ++kDep) { 
@@ -355,9 +355,9 @@ static void col2vol_(const NDArray& columns, NDArray& volume, const int sD, cons
     T* col, *vol;
     int volDep, volRow, volCol;
 
-if (volume.ordering() == 'c' &&  columns.ordering() == 'c' && shape::strideDescendingCAscendingF(volume.getShapeInfo()) && shape::strideDescendingCAscendingF(columns.getShapeInfo())) 
+if (volume.ordering() == 'c' &&  columns.ordering() == 'c' && shape::strideDescendingCAscendingF(volume.getShapeInfo()) && shape::strideDescendingCAscendingF(columns.getShapeInfo()))
 
-#pragma omp parallel for schedule(static) proc_bind(close) private(col, vol, volDep, volRow, volCol)    
+    PRAGMA_OMP_PARALLEL_FOR_ARGS(private(col, vol, volDep, volRow, volCol) collapse(2))
     for (int b = 0; b < bS; b++) {        
         for (int c = 0; c < iC; ++c) {        
             for (int kDep = 0; kDep < kD; ++kDep) { 
@@ -1134,13 +1134,12 @@ static void upsampling2d_(const NDArray& input, NDArray& output, const int facto
     const int size0 = input.sizeAt(dimIH) * input.sizeAt(dimIH+1);
     // const int size1 = factorH * factorW;
 
-#pragma omp parallel for if(size0 > Environment::getInstance()->elementwiseThreshold()) schedule(guided) collapse(2) firstprivate(indIn, indOut) 
+    PRAGMA_OMP_PARALLEL_FOR_ARGS(collapse(2) firstprivate(indIn, indOut))
     for(int ih = 0; ih < input.sizeAt(dimIH); ++ih) {
         for(int iw = 0; iw < input.sizeAt(dimIH+1); ++iw) {
             indIn[j0] = ih; indIn[j1] = ih+1; 
             indIn[j2] = iw; indIn[j3] = iw+1; 
 
-// #pragma omp parallel for if(size1 > Environment::getInstance()->elementwiseThreshold()) schedule(guided) collapse(2) firstprivate(indOut) 
             for(int fh = 0; fh < factorH; ++fh) {
                 for(int fw = 0; fw < factorW; ++fw) {
                     
@@ -1168,7 +1167,7 @@ static void upsampling3d_(const NDArray& input, NDArray& output, const int facto
     const int size0 = input.sizeAt(dimID) * input.sizeAt(dimID+1) * input.sizeAt(dimID+2);
     // const int size1 = factorD * factorH * factorW;
 
-#pragma omp parallel for if(size0 > Environment::getInstance()->elementwiseThreshold()) schedule(guided) collapse(2) firstprivate(indIn, indOut) 
+    PRAGMA_OMP_PARALLEL_FOR_ARGS(collapse(2) firstprivate(indIn, indOut))
     for(int id = 0; id < input.sizeAt(dimID); ++id) {
         for(int ih = 0; ih < input.sizeAt(dimID+1); ++ih) {
             for(int iw = 0; iw < input.sizeAt(dimID+2); ++iw) {
@@ -1176,7 +1175,6 @@ static void upsampling3d_(const NDArray& input, NDArray& output, const int facto
                 indIn[j2] = ih; indIn[j3] = ih+1;
                 indIn[j4] = iw; indIn[j5] = iw+1;
 
-// #pragma omp parallel for if(size1 > Environment::getInstance()->elementwiseThreshold()) schedule(guided) collapse(2) firstprivate(indOut) 
             for(int fd = 0; fd < factorD; ++fd) {
                 for(int fh = 0; fh < factorH; ++fh) {
                     for(int fw = 0; fw < factorW; ++fw) {
@@ -1208,7 +1206,7 @@ static void upsampling2dBP_(const NDArray& gradO, NDArray& gradI, const bool isN
     const int j1 = j0+1, j2 = j0+2, j3 = j0+3;
     const int size0 = gradI.sizeAt(dimIH) * gradI.sizeAt(dimIH+1);
 
-#pragma omp parallel for if(size0 > Environment::getInstance()->elementwiseThreshold()) schedule(guided) collapse(2) firstprivate(indIn, indOut) 
+    PRAGMA_OMP_PARALLEL_FOR_ARGS(collapse(2) firstprivate(indIn, indOut))
     for(int ih = 0; ih < gradI.sizeAt(dimIH); ++ih) {
         for(int iw = 0; iw < gradI.sizeAt(dimIH+1); ++iw) {
             indIn[j0] = ih; indIn[j1] = ih+1; 
@@ -1246,7 +1244,7 @@ static void upsampling3dBP_(const NDArray& gradO, NDArray& gradI, const bool isN
     const int j1 = j0+1, j2 = j0+2, j3 = j0+3, j4 = j0+4, j5 = j0+5;;
     const int size0 = gradI.sizeAt(dimID) * gradI.sizeAt(dimID+1) * gradI.sizeAt(dimID+2);
 
-#pragma omp parallel for if(size0 > Environment::getInstance()->elementwiseThreshold()) schedule(guided) collapse(3) firstprivate(indOut, indIn) 
+    PRAGMA_OMP_PARALLEL_FOR_ARGS(collapse(3) firstprivate(indOut, indIn))
     for(int id = 0; id < gradI.sizeAt(dimID); ++id) {
         for(int ih = 0; ih < gradI.sizeAt(dimID+1); ++ih) {
             for(int iw = 0; iw < gradI.sizeAt(dimID+2); ++iw) {
@@ -1485,7 +1483,7 @@ static void pooling2d_(nd4j::graph::Context& block, const NDArray& input, NDArra
     T *pIn;
 
     if(poolingMode == 0) {        // max 
-#pragma omp parallel for schedule(guided) private(pIn, hstart, wstart, hend, wend) collapse(2)
+        PRAGMA_OMP_PARALLEL_FOR_ARGS(private(pIn, hstart, wstart, hend, wend) collapse(2))
         for(int b = 0; b < bS; ++b) {
             for(int c = 0; c < iC; ++c) {                                                            
                 for(int oh = 0; oh < oH; ++oh) {
@@ -1528,7 +1526,7 @@ static void pooling2d_(nd4j::graph::Context& block, const NDArray& input, NDArra
     }
 /*************************************************************************/    
     else if(poolingMode == 1) {      // avg
-#pragma omp parallel for schedule(guided) private(pIn, hstart, wstart, hend, wend) collapse(2)
+        PRAGMA_OMP_PARALLEL_FOR_ARGS(private(pIn, hstart, wstart, hend, wend) collapse(2))
         for(int b = 0; b < bS; ++b) {
             for(int c = 0; c < iC; ++c) {                                                            
                 for(int oh = 0; oh < oH; ++oh) {
@@ -1580,7 +1578,7 @@ static void pooling2d_(nd4j::graph::Context& block, const NDArray& input, NDArra
     }    
 /*************************************************************************/    
     else if(poolingMode == 2) {  // pnorm
-#pragma omp parallel for schedule(guided) private(pIn, hstart, wstart, hend, wend) collapse(2)
+        PRAGMA_OMP_PARALLEL_FOR_ARGS(private(pIn, hstart, wstart, hend, wend) collapse(2))
         for(int b = 0; b < bS; ++b) {
             for(int c = 0; c < iC; ++c) {                                                            
                 for(int oh = 0; oh < oH; ++oh) {
@@ -1729,7 +1727,7 @@ static void pooling3d_(nd4j::graph::Context& block, const NDArray& input, NDArra
     T sum, *pIn;
 
     if(poolingMode == 0) {        // max 
-#pragma omp parallel for schedule(guided) private(pIn, sum, dstart, hstart, wstart, dend, hend, wend)
+        PRAGMA_OMP_PARALLEL_FOR_ARGS(private(pIn, sum, dstart, hstart, wstart, dend, hend, wend))
         for(int b = 0; b < bS; ++b) {
             for(int c = 0; c < iC; ++c) {                                            
                 for(int od = 0; od < oD; ++od) {
@@ -1783,7 +1781,7 @@ static void pooling3d_(nd4j::graph::Context& block, const NDArray& input, NDArra
     }  
 /*************************************************************************/    
     else if(poolingMode == 1) {     // avg
-#pragma omp parallel for schedule(guided) private(pIn, sum, dstart, hstart, wstart, dend, hend, wend)        
+        PRAGMA_OMP_PARALLEL_FOR_ARGS(private(pIn, sum, dstart, hstart, wstart, dend, hend, wend))
         for(int b = 0; b < bS; ++b) {
             for(int c = 0; c < iC; ++c) {                                            
                 for(int od = 0; od < oD; ++od) {
@@ -1840,7 +1838,7 @@ static void pooling3d_(nd4j::graph::Context& block, const NDArray& input, NDArra
     }
 /*************************************************************************/    
     else if(poolingMode == 2) {  // pnorm
-#pragma omp parallel for schedule(guided) private(pIn, sum, dstart, hstart, wstart, dend, hend, wend)    
+        PRAGMA_OMP_PARALLEL_FOR_ARGS(private(pIn, sum, dstart, hstart, wstart, dend, hend, wend))
         for(int b = 0; b < bS; ++b) {
             for(int c = 0; c < iC; ++c) {                                            
                 for(int od = 0; od < oD; ++od) {
@@ -2041,7 +2039,7 @@ static void pooling2dBP_(nd4j::graph::Context& block, const NDArray& input, cons
     T sum, valO, *pIn, *pgI;
 
     if(poolingMode == 0) {        // max 
-#pragma omp parallel for schedule(guided) private(pIn, valO, sum, hstart, wstart, hend, wend, maxKH, maxKW)
+        PRAGMA_OMP_PARALLEL_FOR_ARGS(private(pIn, valO, sum, hstart, wstart, hend, wend, maxKH, maxKW))
         for(int b = 0; b < bS; ++b) {
             for(int c = 0; c < iC; ++c) {                                            
                 for(int oh = 0; oh < oH; ++oh) {
@@ -2088,7 +2086,7 @@ static void pooling2dBP_(nd4j::graph::Context& block, const NDArray& input, cons
     }  
 /*************************************************************************/    
     else if(poolingMode == 1) {     // avg        
-#pragma omp parallel for schedule(guided) private(pgI, valO, hstart, wstart, hend, wend)        
+        PRAGMA_OMP_PARALLEL_FOR_ARGS(private(pgI, valO, hstart, wstart, hend, wend))
         for(int b = 0; b < bS; ++b) {
             for(int c = 0; c < iC; ++c) {                                            
                 for(int oh = 0; oh < oH; ++oh) {
@@ -2132,7 +2130,7 @@ static void pooling2dBP_(nd4j::graph::Context& block, const NDArray& input, cons
     }
 /*************************************************************************/    
     else if(poolingMode == 2) {  // pnorm
-#pragma omp parallel for schedule(guided) private(pIn, valO, pgI, sum, hstart, wstart, hend, wend)    
+        PRAGMA_OMP_PARALLEL_FOR_ARGS(private(pIn, valO, pgI, sum, hstart, wstart, hend, wend))
         for(int b = 0; b < bS; ++b) {
             for(int c = 0; c < iC; ++c) {                                            
                 for(int oh = 0; oh < oH; ++oh) {
@@ -2337,7 +2335,7 @@ static void pooling3dBP_(nd4j::graph::Context& block, const NDArray& input, cons
     T sum, valO, *pIn, *pgI;
 
     if(poolingMode == 0) {        // max 
-#pragma omp parallel for schedule(guided) private(pIn, valO, sum, dstart, hstart, wstart, dend, hend, wend, maxKD, maxKH, maxKW)
+        PRAGMA_OMP_PARALLEL_FOR_ARGS(private(pIn, valO, sum, dstart, hstart, wstart, dend, hend, wend, maxKD, maxKH, maxKW))
         for(int b = 0; b < bS; ++b) {
             for(int c = 0; c < iC; ++c) {                                            
                 for(int od = 0; od < oD; ++od) {
@@ -2396,7 +2394,7 @@ static void pooling3dBP_(nd4j::graph::Context& block, const NDArray& input, cons
     }  
 /*************************************************************************/    
     else if(poolingMode == 1) {     // avg        
-#pragma omp parallel for schedule(guided) private(pgI, valO, dstart, hstart, wstart, dend, hend, wend)        
+        PRAGMA_OMP_PARALLEL_FOR_ARGS(private(pgI, valO, dstart, hstart, wstart, dend, hend, wend))
         for(int b = 0; b < bS; ++b) {
             for(int c = 0; c < iC; ++c) {                                            
                 for(int od = 0; od < oD; ++od) {
@@ -2451,7 +2449,7 @@ static void pooling3dBP_(nd4j::graph::Context& block, const NDArray& input, cons
     }
 /*************************************************************************/    
     else if(poolingMode == 2) {  // pnorm
-#pragma omp parallel for schedule(guided) private(pIn, pgI, valO, sum, dstart, hstart, wstart, dend, hend, wend)    
+        PRAGMA_OMP_PARALLEL_FOR_ARGS(private(pIn, pgI, valO, sum, dstart, hstart, wstart, dend, hend, wend))
         for(int b = 0; b < bS; ++b) {
             for(int c = 0; c < iC; ++c) {                                            
                 for(int od = 0; od < oD; ++od) {

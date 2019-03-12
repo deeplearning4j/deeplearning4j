@@ -372,7 +372,7 @@ namespace nd4j {
                     auto bIndices = indices.bufferAsT<int>();
                     auto bCodes = codes.bufferAsT<int8_t>();
 
-#pragma omp parallel for num_threads(numThreads) private(sneu1e) default(shared) schedule(static)
+                    PRAGMA_OMP_PARALLEL_FOR_ARGS(num_threads(numThreads) private(sneu1e))
                     for (int t = 0; t < numTargets; t++) {
                         T* neu1e = vectorLength <= 600 ? sneu1e : new T[vectorLength];
                         memset(neu1e, 0, vectorLength * sizeof(T));
@@ -463,12 +463,10 @@ namespace nd4j {
                 const auto bStarters = negStarters.bufferAsT<int>();
                 const auto numIndices = indices.isEmpty() ? 0 : indices.sizeAt(1);
 
-//
-#pragma omp parallel for num_threads(numThreads) private(sneu1, sneu1e) default(shared) schedule(static)
+                PRAGMA_OMP_PARALLEL_FOR_ARGS(num_threads(numThreads) private(sneu1, sneu1e))
                 for (int e = 0; e < numTargets; e++){
                     T* neu1 = vectorLength <= 600 ? sneu1 : new T[vectorLength];
                     T* neu1e = vectorLength <= 600 ? sneu1e : new T[vectorLength];
-
 
                     // every threads rolls over own targets
 
