@@ -20,6 +20,7 @@ import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.normalization.BatchNormalizationHelper;
 import org.deeplearning4j.nn.workspace.ArrayType;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.OpContext;
@@ -79,6 +80,8 @@ public class MKLDNNBatchNormHelper implements BatchNormalizationHelper {
     @Override
     public INDArray preOutput(INDArray x, boolean training, int[] shape, INDArray gamma, INDArray beta, INDArray mean, INDArray var,
                               double decay, double eps, LayerWorkspaceMgr workspaceMgr) {
+        if(x.dataType() != DataType.FLOAT)
+            return null;    //MKL-DNN only supports float
 
         if(context == null){
             context = Nd4j.getExecutioner().buildContext();
