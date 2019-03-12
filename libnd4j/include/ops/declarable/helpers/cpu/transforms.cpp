@@ -1232,7 +1232,7 @@ static void tileBP_(const NDArray& gradO /*input*/, NDArray& gradI /*output*/, c
     if(gradIEWS == 1)
         memset(gradIBuff, 0, gradILen * sizeof(T));
     else {
-        PRAGMA_OMP_PARALLEL_FOR_SIMD
+        //PRAGMA_OMP_PARALLEL_FOR_SIMD
         for (int i = 0; i < gradILen * gradIEWS; i += gradIEWS)
             gradIBuff[i] = static_cast<T>(0.f);
     }
@@ -1240,7 +1240,7 @@ static void tileBP_(const NDArray& gradO /*input*/, NDArray& gradI /*output*/, c
 
     if(gradO.ordering() == 'c' && gradOEWS == 1) {
 
-        PRAGMA_OMP_PARALLEL_FOR_SIMD
+        //PRAGMA_OMP_PARALLEL_FOR_SIMD
         for(Nd4jLong i=0;  i<gradOLen; ++i) {
             auto idx = shape::subArrayIndex(i, gradO.getShapeInfo(), gradI.getShapeInfo());
             gradI.p(idx, gradI.e<T>(idx) + gradOBuff[i]);
@@ -1248,7 +1248,7 @@ static void tileBP_(const NDArray& gradO /*input*/, NDArray& gradI /*output*/, c
     }
     else if(gradO.ordering() == 'c' && gradOEWS > 1) {
 
-        PRAGMA_OMP_PARALLEL_FOR_SIMD
+        //PRAGMA_OMP_PARALLEL_FOR_SIMD
         for(Nd4jLong i=0;  i<gradOLen; ++i) {
             auto idx = shape::subArrayIndex(i, gradO.getShapeInfo(), gradI.getShapeInfo());
             gradI.p(idx, gradI.e<T>(idx) + gradOBuff[i * gradOEWS]);
@@ -1256,7 +1256,7 @@ static void tileBP_(const NDArray& gradO /*input*/, NDArray& gradI /*output*/, c
     }
     else {
 
-        PRAGMA_OMP_PARALLEL_FOR_SIMD
+        //PRAGMA_OMP_PARALLEL_FOR_SIMD
         for(Nd4jLong i=0;  i<gradOLen; ++i) {
 
             auto fidx = shape::subArrayIndex(i, gradO.getShapeInfo(), gradI.getShapeInfo());
