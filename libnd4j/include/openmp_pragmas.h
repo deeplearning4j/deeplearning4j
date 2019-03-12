@@ -21,7 +21,7 @@
 #ifndef DEV_TESTS_OPENMP_PRAGMAS_H
 #define DEV_TESTS_OPENMP_PRAGMAS_H
 
-#if defined(_WIN32) && defined(__CUDABLAS__)
+#if (defined(_WIN32) && defined(__CUDABLAS__)) || defined(__JAVACPP_HACK__)
 
 #define OMP_STRINGIFY(args)
 #define OMP_IF(args)
