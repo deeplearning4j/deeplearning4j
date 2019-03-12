@@ -72,13 +72,15 @@ static void triuBP_(const NDArray& input, const NDArray& gradO, NDArray& gradI, 
 
     auto dOdI = NDArray(&gradO);                // dO/dI
     helpers::triu(input, dOdI, diagonal);
+    int dLen = dOdI.lengthOf();
 
-    PRAGMA_OMP_PARALLEL_FOR_IF(dOdI.lengthOf() > Environment::getInstance()->elementwiseThreshold())
-    for(int i = 0; i < dOdI.lengthOf(); ++i) {
+    PRAGMA_OMP_PARALLEL_FOR_IF(dLen > Environment::getInstance()->elementwiseThreshold())
+    for(int i = 0; i < dLen; ++i) {
         if(dOdI.e<T>(i) != (T)0.f)
             dOdI.p(i,  T(1.f));
     }
 
+    // FIXME: !!!
     gradI.assign(dOdI * gradO);                          // chain rule: dLoss/dI = dO/dI * dLoss/dO 
 }
 

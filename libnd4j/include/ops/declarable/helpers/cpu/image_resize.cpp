@@ -159,9 +159,10 @@ namespace helpers {
                                     ys.data());
         computeInterpolationWeights(outWidth, inWidth, widthScale, xs.data());
 
+        int xsSize = xs.size();
         // Scale x interpolation weights to avoid a multiplication during iteration.
         PRAGMA_OMP_PARALLEL_FOR_SIMD
-        for (int i = 0; i < xs.size(); ++i) {
+        for (int i = 0; i < xsSize; ++i) {
             xs[i].bottomIndex *= channels;
             xs[i].topIndex *= channels;
         }

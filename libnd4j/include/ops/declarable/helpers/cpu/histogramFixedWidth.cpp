@@ -43,8 +43,10 @@ void histogramFixedWidth_(const NDArray& input, const NDArray& range, NDArray& o
     const T secondEdge     = leftEdge + binWidth;
     const T lastButOneEdge = rightEdge - binWidth;
 
+    Nd4jLong inputLength = input.lengthOf();
+
     PRAGMA_OMP_PARALLEL_FOR
-    for(Nd4jLong i = 0; i < input.lengthOf(); ++i) {
+    for(Nd4jLong i = 0; i < inputLength; ++i) {
 
         const T value = input.e<T>(i);
 

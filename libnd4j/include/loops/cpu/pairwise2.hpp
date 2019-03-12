@@ -78,9 +78,10 @@ namespace functions {
                     auto xi = x + threadOffset;
                     auto yi = y + threadOffset;
                     auto zi = z + threadOffset;
+                    auto ulen = static_cast<unsigned int>(info.getItersPerThread(threadNum));
 
                     PRAGMA_OMP_SIMD
-                    for (Nd4jLong i = 0; i < info.getItersPerThread(threadNum); i++) 
+                    for (Nd4jLong i = 0; i < ulen; i++)
                         zi[i] = OpType::op(xi[i], yi[i], extraParams);
                 }
             }
@@ -93,9 +94,10 @@ namespace functions {
                     auto xi = x + xEws*threadOffset;
                     auto yi = y + yEws*threadOffset;
                     auto zi = z + zEws*threadOffset;
+                    auto ulen = static_cast<unsigned int>(info.getItersPerThread(threadNum));
 
                     PRAGMA_OMP_SIMD
-                    for (Nd4jLong i = 0; i < info.getItersPerThread(threadNum); i++) 
+                    for (Nd4jLong i = 0; i < ulen; i++)
                         zi[i*zEws] = OpType::op(xi[i*xEws], yi[i*yEws], extraParams);
                 }
             }

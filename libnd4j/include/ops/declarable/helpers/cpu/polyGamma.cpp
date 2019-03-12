@@ -73,8 +73,10 @@ static void _polyGamma(const NDArray& n, const NDArray& x, NDArray& output) {
 
 	NDArray& result = output;
 
-	PRAGMA_OMP_PARALLEL_FOR_IF(x.lengthOf() > Environment::getInstance()->elementwiseThreshold())
-	for(int i = 0; i < x.lengthOf(); ++i)
+	int xLen = x.lengthOf();
+
+	PRAGMA_OMP_PARALLEL_FOR_IF(xLen > Environment::getInstance()->elementwiseThreshold())
+	for(int i = 0; i < xLen; ++i)
 		result.p(i, polyGamma<T>(n.e<int>(i), x.e<T>(i)));
 }
 

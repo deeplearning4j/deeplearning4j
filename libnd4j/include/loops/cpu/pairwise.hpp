@@ -79,8 +79,10 @@ namespace functions {
                     auto yi = y + threadOffset;
                     auto zi = z + threadOffset;
 
+                    auto ulen = static_cast<unsigned int>(info.getItersPerThread(threadNum));
+
                     PRAGMA_OMP_SIMD
-                    for (unsigned int i = 0; i < info.getItersPerThread(threadNum); i++)
+                    for (unsigned int i = 0; i < ulen; i++)
                         zi[i] = OpType::op(xi[i], yi[i], extraParams);
                 }
             }
@@ -94,8 +96,10 @@ namespace functions {
                     auto yi = y + yEws*threadOffset;
                     auto zi = z + zEws*threadOffset;
 
+                    auto ulen = static_cast<unsigned int>(info.getItersPerThread(threadNum));
+
                     PRAGMA_OMP_SIMD
-                    for (unsigned int i = 0; i < info.getItersPerThread(threadNum); i++)
+                    for (unsigned int i = 0; i < ulen; i++)
                         zi[i*zEws] = OpType::op(xi[i*xEws], yi[i*yEws], extraParams);
                 }
             }
@@ -157,8 +161,10 @@ namespace functions {
                         auto threadNum = omp_get_thread_num();
                         auto threadOffset = info.getThreadOffset(threadNum);
 
+                        auto ulen = static_cast<unsigned int>(info.getItersPerThread(threadNum));
+
                         PRAGMA_OMP_SIMD
-                        for(unsigned int i = 0; i < info.getItersPerThread(threadNum); i++)  {
+                        for(unsigned int i = 0; i < ulen; i++)  {
                             auto offset = shape::indexOffset(i + threadOffset, xShapeInfo, xShapeInfoCast, n, canCastX);
                             z[offset] = OpType::op(x[offset], y[0], extraParams);
                         }
@@ -172,9 +178,10 @@ namespace functions {
                     {                
                         auto threadNum = omp_get_thread_num();
                         auto threadOffset = info.getThreadOffset(threadNum);
+                        auto ulen = static_cast<unsigned int>(info.getItersPerThread(threadNum));
 
                         PRAGMA_OMP_SIMD
-                        for(unsigned int i = 0; i < info.getItersPerThread(threadNum); i++)  {
+                        for(unsigned int i = 0; i < ulen; i++)  {
                             auto xOffset = shape::indexOffset(i + threadOffset, xShapeInfo, xShapeInfoCast, n, canCastX);
                             auto zOffset = shape::indexOffset(i + threadOffset, zShapeInfo, zShapeInfoCast, n, canCastZ);
                             z[zOffset] = OpType::op(x[xOffset], y[0], extraParams);
@@ -209,9 +216,10 @@ namespace functions {
                     {                
                         auto threadNum = omp_get_thread_num();
                         auto threadOffset = info.getThreadOffset(threadNum);
+                        auto ulen = static_cast<unsigned int>(info.getItersPerThread(threadNum));
 
                         PRAGMA_OMP_SIMD
-                        for (unsigned int i = 0; i < info.getItersPerThread(threadNum); i++)  {
+                        for (unsigned int i = 0; i < ulen; i++)  {
                             auto offset = shape::indexOffset(i + threadOffset, xShapeInfo, xShapeInfoCast, n, canCastX);
                             z[offset] = OpType::op(x[offset], y[offset], extraParams);
                         }
@@ -228,9 +236,10 @@ namespace functions {
                     {                
                         auto threadNum = omp_get_thread_num();
                         auto threadOffset = info.getThreadOffset(threadNum);
+                        auto ulen = static_cast<unsigned int>(info.getItersPerThread(threadNum));
 
                         PRAGMA_OMP_SIMD
-                        for (unsigned int i = 0; i < info.getItersPerThread(threadNum); i++)  {
+                        for (unsigned int i = 0; i < ulen; i++)  {
                             auto offset  = shape::indexOffset(i + threadOffset, xShapeInfo, xShapeInfoCast, n, canCastX);
                             auto zOffset = shape::indexOffset(i + threadOffset, zShapeInfo, zShapeInfoCast, n, canCastZ);
                             z[zOffset] = OpType::op(x[offset], y[offset], extraParams);
@@ -248,9 +257,10 @@ namespace functions {
                     {                
                         auto threadNum = omp_get_thread_num();
                         auto threadOffset = info.getThreadOffset(threadNum);
+                        auto ulen = static_cast<unsigned int>(info.getItersPerThread(threadNum));
 
                         PRAGMA_OMP_SIMD
-                        for (unsigned int i = 0; i < info.getItersPerThread(threadNum); i++)  {
+                        for (unsigned int i = 0; i < ulen; i++)  {
                             auto offset  = shape::indexOffset(i + threadOffset, xShapeInfo, xShapeInfoCast, n, canCastX);
                             auto yOffset = shape::indexOffset(i + threadOffset, yShapeInfo, yShapeInfoCast, n, canCastY);
                             z[offset] = OpType::op(x[offset], y[yOffset], extraParams);
@@ -268,9 +278,10 @@ namespace functions {
                     {                
                         auto threadNum = omp_get_thread_num();
                         auto threadOffset = info.getThreadOffset(threadNum);
+                        auto ulen = static_cast<unsigned int>(info.getItersPerThread(threadNum));
 
                         PRAGMA_OMP_SIMD
-                        for (unsigned int i = 0; i < info.getItersPerThread(threadNum); i++)  {
+                        for (unsigned int i = 0; i < ulen; i++)  {
                             auto xOffset = shape::indexOffset(i + threadOffset, xShapeInfo, xShapeInfoCast, n, canCastX);
                             auto offset  = shape::indexOffset(i + threadOffset, yShapeInfo, yShapeInfoCast, n, canCastY);
                             z[offset] = OpType::op(x[xOffset], y[offset], extraParams);
@@ -290,9 +301,10 @@ namespace functions {
                     {                
                         auto threadNum = omp_get_thread_num();
                         auto threadOffset = info.getThreadOffset(threadNum);
+                        auto ulen = static_cast<unsigned int>(info.getItersPerThread(threadNum));
 
                         PRAGMA_OMP_SIMD
-                        for (unsigned int i = 0; i < info.getItersPerThread(threadNum); i++)  {
+                        for (unsigned int i = 0; i < ulen; i++)  {
                             auto xOffset = shape::indexOffset(i + threadOffset, xShapeInfo, xShapeInfoCast, n, canCastX);
                             auto yOffset = shape::indexOffset(i + threadOffset, yShapeInfo, yShapeInfoCast, n, canCastY);
                             auto zOffset = shape::indexOffset(i + threadOffset, zShapeInfo, zShapeInfoCast, n, canCastZ);

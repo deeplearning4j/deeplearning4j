@@ -253,10 +253,11 @@ namespace functions {
                 {
                     auto local = OpType::startingValue(x);
                     auto threadNum = omp_get_thread_num();
-                    Nd4jLong threadOffset = info.getThreadOffset(threadNum);
+                    auto threadOffset = info.getThreadOffset(threadNum);
                     auto xi = x + threadOffset;
+                    auto ulen = static_cast<unsigned int>(info.getItersPerThread(threadNum));
 
-                    for (Nd4jLong i = 0; i < info.getItersPerThread(threadNum); i++)
+                    for (Nd4jLong i = 0; i < ulen; i++)
                         local = OpType::update(local, OpType::op(xi[i], extraParams), extraParams);
 
                     PRAGMA_OMP_CRITICAL
@@ -269,10 +270,11 @@ namespace functions {
                 {
                     auto local = OpType::startingValue(x);
                     auto threadNum = omp_get_thread_num();
-                    Nd4jLong threadOffset = info.getThreadOffset(threadNum);
+                    auto threadOffset = info.getThreadOffset(threadNum);
                     auto xi = x + xEws*threadOffset;
+                    auto ulen = static_cast<unsigned int>(info.getItersPerThread(threadNum));
 
-                    for (Nd4jLong i = 0; i < info.getItersPerThread(threadNum); i++)
+                    for (Nd4jLong i = 0; i < ulen; i++)
                         local = OpType::update(local, OpType::op(xi[i*xEws], extraParams), extraParams);
 
                     PRAGMA_OMP_CRITICAL

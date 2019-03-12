@@ -36,8 +36,10 @@ namespace nd4j {
 
                     std::unique_ptr<ResultSet> listOfTensors(input->allTensorsAlongDimension(sourceDims));
 
-                    PRAGMA_OMP_PARALLEL_FOR_IF(outputList.size() > Environment::getInstance()->tadThreshold())
-                    for (unsigned int i = 0; i < outputList.size(); i++) {
+                    unsigned int outSize = outputList.size();
+
+                    PRAGMA_OMP_PARALLEL_FOR_IF(outSize > Environment::getInstance()->tadThreshold())
+                    for (unsigned int i = 0; i < outSize; i++) {
                         outputs[i].first = outputList[i];
                         std::vector<int> outDims(outputs[i].first->rankOf() - 1);
 
@@ -56,15 +58,18 @@ namespace nd4j {
                                 listOutForCurrent->at(outputs[i].second++)->assign(listOfTensors->at(e));
                     }
 
-                } else
-                    PRAGMA_OMP_PARALLEL_FOR_IF(outputList.size() > Environment::getInstance()->tadThreshold())
-                    for (unsigned int i = 0; i < outputList.size(); i++) {
+                } else {
+                    unsigned int outSize = outputList.size();
+
+                    PRAGMA_OMP_PARALLEL_FOR_IF(outSize > Environment::getInstance()->tadThreshold())
+                    for (unsigned int i = 0; i < outSize; i++) {
                         outputs[i].first = outputList[i];
                         outputs[i].second = 0;
                         for (int e = 0; e < indices->lengthOf(); ++e)
                             if (indices->e<Nd4jLong>(e) == i)
                                 outputs[i].first->p(outputs[i].second++, input->e<T>(e));
                     }
+                }
             }
             template <typename T>
             static int _dynamicStitchFunctor(std::vector<NDArray*> const& inputs, std::vector<NDArray*> const& indices, NDArray* output){
@@ -158,8 +163,10 @@ namespace nd4j {
                 }
                 else { // one-dimensional case
                     auto output = outputList[0];
-                    PRAGMA_OMP_PARALLEL_FOR_IF(outputList.size() > Environment::getInstance()->tadThreshold())
-                    for (unsigned int i = 0; i < inputGradientList.size(); i++) {
+                    unsigned int gradsSize = inputGradientList.size();
+
+                    PRAGMA_OMP_PARALLEL_FOR_IF(gradsSize > Environment::getInstance()->tadThreshold())
+                    for (unsigned int i = 0; i < gradsSize; i++) {
                         outputs[i].first = inputGradientList[i];
                         outputs[i].second = 0;
                         for (int e = 0; e < indices->lengthOf(); ++e)

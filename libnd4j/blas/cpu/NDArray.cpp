@@ -2417,7 +2417,8 @@ template void NDArray::applyScalar(nd4j::scalar::Ops op, const bool scalar, NDAr
 
     void NDArray::enforce(std::vector<Nd4jLong> &dimensions, char o) {
         Nd4jLong prod = 1;
-        for (int e = 0; e < dimensions.size(); e++)
+        int dimSize = dimensions.size();
+        for (int e = 0; e < dimSize; e++)
             prod *= dimensions[e];
 
         if (prod != this->lengthOf()) {
@@ -2468,7 +2469,8 @@ template void NDArray::applyScalar(nd4j::scalar::Ops op, const bool scalar, NDAr
     int numberNegativesOnes = 0;
 
     Nd4jLong* shape_ = shape.data();
-    for (int i = 0; i < (int) shape.size(); i++) {
+    int shapeSize = shape.size();
+    for (int i = 0; i < shapeSize; i++) {
         if (shape[i] < 0) {
             if (numberNegativesOnes >= 1)
                 throw std::runtime_error("Only one dimension can be negative at once");
@@ -2483,7 +2485,7 @@ template void NDArray::applyScalar(nd4j::scalar::Ops op, const bool scalar, NDAr
             Nd4jLong realShape = nd4j::math::nd4j_abs<int>(lengthOf() / shapeLength);
             auto thisNewShape = new Nd4jLong[shape.size()];
 
-            for (int j = 0; j < (int) shape.size(); j++) 
+            for (int j = 0; j < shapeSize; j++)
                 if (i != j) 
                     thisNewShape[j] = shape_[j];
                 else
@@ -2809,16 +2811,17 @@ template void NDArray::applyScalar(nd4j::scalar::Ops op, const bool scalar, NDAr
         for (int i = 0; i < numTads; i++) {
             auto thisTensor = (*this)(i, dimsToExclude);
             auto retTensor = target(i, dimsToExclude);
+            int tensorLength = thisTensor.lengthOf();
             int retIdx = 0;
             if (isR()) {
-                for (int k = 0; k < thisTensor.lengthOf(); k++) {
+                for (int k = 0; k < tensorLength; k++) {
                     auto s = thisTensor.e<double>(k);
                     for (int j = 0; j < repeatDelta; j++) {
                         retTensor.p<double>(retIdx++, s);
                     }
                 }
             } else {
-                for (int k = 0; k < thisTensor.lengthOf(); k++) {
+                for (int k = 0; k < tensorLength; k++) {
                     auto s = thisTensor.e<Nd4jLong>(k);
                     for (int j = 0; j < repeatDelta; j++) {
                         retTensor.p<Nd4jLong>(retIdx++, s);
@@ -2875,8 +2878,9 @@ template void NDArray::applyScalar(nd4j::scalar::Ops op, const bool scalar, NDAr
     bool NDArray::permutei(const std::initializer_list<Nd4jLong>& dimensions) {
         std::vector<Nd4jLong> vec(dimensions);
         std::vector<int> ivec(dimensions.size());
+        int vecSize = vec.size();
 
-        for (int e = 0; e < vec.size(); e++)
+        for (int e = 0; e < vecSize; e++)
             ivec[e] = static_cast<int>(vec[e]);
 
         return permutei(ivec);
@@ -2886,7 +2890,8 @@ template void NDArray::applyScalar(nd4j::scalar::Ops op, const bool scalar, NDAr
     bool NDArray::permutei(const std::vector<Nd4jLong>& dimensions) {
         std::vector<int> ivec(dimensions.size());
 
-        for (int e = 0; e < dimensions.size(); e++)
+        int dimSize = dimensions.size();
+        for (int e = 0; e < dimSize; e++)
             ivec[e] = dimensions[e];
 
         return permutei(ivec.data(), ivec.size());
@@ -3663,7 +3668,8 @@ template void NDArray::pIdx(const Nd4jLong* indices, const bool value);
     NDArray* NDArray::subarray(IndicesList& idx, std::vector<Nd4jLong>& strides) const {
         auto raw = subarray(idx);
 
-        for (int e = 0; e < strides.size(); e++)
+        int stridesSize = strides.size();
+        for (int e = 0; e < stridesSize; e++)
             raw->stridesOf()[e] *= strides[e];
 
         return raw;
@@ -3694,7 +3700,8 @@ template void NDArray::pIdx(const Nd4jLong* indices, const bool value);
 
         //shape::printShapeInfoLinear(newShape);
 
-        for (int d = 0; d < idx.size(); d++) {
+        int idxSize = idx.size();
+        for (int d = 0; d < idxSize; d++) {
             // building new shape first
             auto index = idx.at(d);
             if (index->isAll()) {
@@ -3773,7 +3780,8 @@ template void NDArray::pIdx(const Nd4jLong* indices, const bool value);
         auto stridesOf = shape::stride(newShape);
 
         Nd4jLong offset = 0;
-        for (int d = 0; d < idx.size(); ++d) {
+        int idxSize = idx.size()
+        for (int d = 0; d < idxSize; ++d) {
             // building new shape first
             if (!idx[d].empty()) {
                 if (idx[d].size() != 2)

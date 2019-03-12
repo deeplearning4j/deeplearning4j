@@ -1121,9 +1121,12 @@ static void upsampling2d_(const NDArray& input, NDArray& output, const int facto
     const int size0 = input.sizeAt(dimIH) * input.sizeAt(dimIH+1);
     // const int size1 = factorH * factorW;
 
+    int iT = input.sizeAt(dimIH);
+    int iH = input.sizeAt(dimIH + 1);
+
     PRAGMA_OMP_PARALLEL_FOR_ARGS(collapse(2) firstprivate(indIn, indOut))
-    for(int ih = 0; ih < input.sizeAt(dimIH); ++ih) {
-        for(int iw = 0; iw < input.sizeAt(dimIH+1); ++iw) {
+    for(int ih = 0; ih < iT; ++ih) {
+        for(int iw = 0; iw < iH; ++iw) {
             indIn[j0] = ih; indIn[j1] = ih+1; 
             indIn[j2] = iw; indIn[j3] = iw+1; 
 
@@ -1154,10 +1157,14 @@ static void upsampling3d_(const NDArray& input, NDArray& output, const int facto
     const int size0 = input.sizeAt(dimID) * input.sizeAt(dimID+1) * input.sizeAt(dimID+2);
     // const int size1 = factorD * factorH * factorW;
 
+    int l0 = input.sizeAt(dimID);
+    int l1 = input.sizeAt(dimID + 1);
+    int l2 = input.sizeAt(dimID + 2);
+
     PRAGMA_OMP_PARALLEL_FOR_ARGS(collapse(2) firstprivate(indIn, indOut))
-    for(int id = 0; id < input.sizeAt(dimID); ++id) {
-        for(int ih = 0; ih < input.sizeAt(dimID+1); ++ih) {
-            for(int iw = 0; iw < input.sizeAt(dimID+2); ++iw) {
+    for(int id = 0; id < l0; ++id) {
+        for(int ih = 0; ih < l1; ++ih) {
+            for(int iw = 0; iw < l2; ++iw) {
                 indIn[j0] = id; indIn[j1] = id+1;
                 indIn[j2] = ih; indIn[j3] = ih+1;
                 indIn[j4] = iw; indIn[j5] = iw+1;
@@ -1193,9 +1200,12 @@ static void upsampling2dBP_(const NDArray& gradO, NDArray& gradI, const bool isN
     const int j1 = j0+1, j2 = j0+2, j3 = j0+3;
     const int size0 = gradI.sizeAt(dimIH) * gradI.sizeAt(dimIH+1);
 
+    int l0 = gradI.sizeAt(dimIH);
+    int l1 = gradI.sizeAt(dimIH + 1);
+
     PRAGMA_OMP_PARALLEL_FOR_ARGS(collapse(2) firstprivate(indIn, indOut))
-    for(int ih = 0; ih < gradI.sizeAt(dimIH); ++ih) {
-        for(int iw = 0; iw < gradI.sizeAt(dimIH+1); ++iw) {
+    for(int ih = 0; ih < l0; ++ih) {
+        for(int iw = 0; iw < l1; ++iw) {
             indIn[j0] = ih; indIn[j1] = ih+1; 
             indIn[j2] = iw; indIn[j3] = iw+1; 
             NDArray subGradI = gradI(indIn);
@@ -1231,10 +1241,14 @@ static void upsampling3dBP_(const NDArray& gradO, NDArray& gradI, const bool isN
     const int j1 = j0+1, j2 = j0+2, j3 = j0+3, j4 = j0+4, j5 = j0+5;;
     const int size0 = gradI.sizeAt(dimID) * gradI.sizeAt(dimID+1) * gradI.sizeAt(dimID+2);
 
+    int l0 = gradI.sizeAt(dimID);
+    int l1 = gradI.sizeAt(dimID + 1);
+    int l2 = gradI.sizeAt(dimID + 2);
+
     PRAGMA_OMP_PARALLEL_FOR_ARGS(collapse(3) firstprivate(indOut, indIn))
-    for(int id = 0; id < gradI.sizeAt(dimID); ++id) {
-        for(int ih = 0; ih < gradI.sizeAt(dimID+1); ++ih) {
-            for(int iw = 0; iw < gradI.sizeAt(dimID+2); ++iw) {
+    for(int id = 0; id < l0; ++id) {
+        for(int ih = 0; ih < l1; ++ih) {
+            for(int iw = 0; iw < l2; ++iw) {
                 indIn[j0] = id; indIn[j1] = id+1;
                 indIn[j2] = ih; indIn[j3] = ih+1;
                 indIn[j4] = iw; indIn[j5] = iw+1;

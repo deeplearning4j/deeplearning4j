@@ -85,7 +85,8 @@ void NDArrayFactory::memcpyFromVector(void *ptr, const std::vector<T> &vector) {
 template <>
 void NDArrayFactory::memcpyFromVector(void *ptr, const std::vector<bool> &vector) {
     auto p = reinterpret_cast<bool *>(ptr);
-    for (Nd4jLong e = 0; e < vector.size(); e++) 
+    Nd4jLong vectorSize = vector.size();
+    for (Nd4jLong e = 0; e < vectorSize; e++)
         p[e] = vector[e];       
 }
 
@@ -581,7 +582,8 @@ template NDArray NDArrayFactory::create(int16_t* buffer, const char order, const
         ALLOCATE(buffer, workspace, sizeof(utf8string*) * res.lengthOf(), int8_t);
 
         auto us = reinterpret_cast<utf8string**>(buffer);
-        for (int e = 0; e < res.lengthOf(); e++)
+        int resLen = res.lengthOf();
+        for (int e = 0; e < resLen; e++)
             us[e] = new utf8string(string[e]);
 
         res.setBuffer(buffer);

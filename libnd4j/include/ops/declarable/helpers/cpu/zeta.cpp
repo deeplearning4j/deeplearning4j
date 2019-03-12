@@ -115,9 +115,10 @@ template <typename T>
 static NDArray zeta_(const NDArray& x, const NDArray& q, NDArray* output) {
 
 	//auto result = NDArray(&x, false, x.getWorkspace());
+	int xLen = x.lengthOf();
 
-	PRAGMA_OMP_PARALLEL_FOR_IF(x.lengthOf() > Environment::getInstance()->elementwiseThreshold())
-	for(int i = 0; i < x.lengthOf(); ++i)
+	PRAGMA_OMP_PARALLEL_FOR_IF(xLen > Environment::getInstance()->elementwiseThreshold())
+	for(int i = 0; i < xLen; ++i)
 		output->p(i, zeta<T>(x.e<T>(i), q.e<T>(i)));
 
 	return *output;

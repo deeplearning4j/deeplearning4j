@@ -353,8 +353,8 @@ FORCEINLINE T DataTypeUtils::eps() {
     template <typename T1, typename T2>
     FORCEINLINE std::vector<T2> DataTypeUtils::convertVector(const std::vector<T1> &vector) {
         std::vector<T2> result(vector.size());
-
-        for (Nd4jLong e = 0; e < vector.size(); e++)
+        Nd4jLong vecSize = vector.size();
+        for (Nd4jLong e = 0; e < vecSize; e++)
             result[e] = static_cast<T2>(vector[e]);
 
         return result;

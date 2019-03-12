@@ -162,12 +162,12 @@ void _CUDA_H TransformAny<X, Z>::exec(void *vx, Nd4jLong *xShapeInfo,
         {
             auto threadNum = omp_get_thread_num();
             auto threadOffset = info.getThreadOffset(threadNum);
-
+            auto ulen = static_cast<unsigned int>(info.getItersPerThread(threadNum));
             auto tz = z + threadOffset;
             auto tx = x + threadOffset;
 
             PRAGMA_OMP_SIMD
-            for (unsigned int i = 0; i < info.getItersPerThread(threadNum); i++)
+            for (unsigned int i = 0; i < ulen; i++)
                 tz[i] = OpType::op(tx[i], extraParams);
         }
     } 
@@ -181,11 +181,11 @@ void _CUDA_H TransformAny<X, Z>::exec(void *vx, Nd4jLong *xShapeInfo,
         {
             auto threadNum = omp_get_thread_num();
             auto threadOffset = info.getThreadOffset(threadNum);
-
+            auto ulen = static_cast<unsigned int>(info.getItersPerThread(threadNum));
             auto tz = z + threadOffset;
 
             PRAGMA_OMP_SIMD
-            for (unsigned int i = 0; i < info.getItersPerThread(threadNum); i++)
+            for (unsigned int i = 0; i < ulen; i++)
                 tz[i] = OpType::op(x[shape::indexOffset(i + threadOffset, xShapeInfo, xShapeInfoCast, len, canCastX)], extraParams);
         }
     } 
@@ -198,9 +198,10 @@ void _CUDA_H TransformAny<X, Z>::exec(void *vx, Nd4jLong *xShapeInfo,
         {
             auto threadNum = omp_get_thread_num();
             auto threadOffset = info.getThreadOffset(threadNum);
+            auto ulen = static_cast<unsigned int>(info.getItersPerThread(threadNum));
 
             PRAGMA_OMP_SIMD
-            for (unsigned int i = 0; i < info.getItersPerThread(threadNum); i++) {
+            for (unsigned int i = 0; i < ulen; i++) {
                 auto offset = shape::indexOffset(i + threadOffset, xShapeInfo, xShapeInfoCast, len, canCastX);
                 z[offset] = OpType::op(x[offset], extraParams);
             }
@@ -218,9 +219,10 @@ void _CUDA_H TransformAny<X, Z>::exec(void *vx, Nd4jLong *xShapeInfo,
         {
             auto threadNum = omp_get_thread_num();
             auto threadOffset = info.getThreadOffset(threadNum);
+            auto ulen = static_cast<unsigned int>(info.getItersPerThread(threadNum));
 
             PRAGMA_OMP_SIMD
-            for (unsigned int i = 0; i < info.getItersPerThread(threadNum); i++) {
+            for (unsigned int i = 0; i < ulen; i++) {
                 auto xOffset = shape::indexOffset(i + threadOffset, xShapeInfo, xShapeInfoCast, len, canCastX);
                 auto zOffset = shape::indexOffset(i + threadOffset, zShapeInfo, zShapeInfoCast, len, canCastZ);
                 z[zOffset] = OpType::op(x[xOffset], extraParams);

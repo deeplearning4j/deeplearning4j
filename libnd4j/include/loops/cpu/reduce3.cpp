@@ -126,8 +126,10 @@ void Reduce3<X,Z>::exec(void *vx, Nd4jLong *xShapeInfo,
             {                
                 auto threadNum = omp_get_thread_num();         
                 auto threadOffset = info.getThreadOffset(threadNum);
+                auto ulen = static_cast<unsigned int>(info.getItersPerThread(threadNum));
 
-                for (Nd4jLong i = 0; i < info.getItersPerThread(threadNum); i++) {
+                PRAGMA_OMP_SIMD
+                for (Nd4jLong i = 0; i < ulen; i++) {
                     auto offset = shape::indexOffset(i + threadOffset, xShapeInfo, xShapeInfoCast, zLen, canCastX);
                     z[offset] = OpType::update(z[offset], OpType::op(x[offset], y[offset], extraParamsVals), extraParamsVals);
                 }
@@ -144,8 +146,9 @@ void Reduce3<X,Z>::exec(void *vx, Nd4jLong *xShapeInfo,
             {                
                 auto threadNum = omp_get_thread_num();         
                 auto threadOffset = info.getThreadOffset(threadNum);
+                auto ulen = static_cast<unsigned int>(info.getItersPerThread(threadNum));
 
-                for (Nd4jLong i = 0; i < info.getItersPerThread(threadNum); i++) {
+                for (Nd4jLong i = 0; i < ulen; i++) {
                     auto offset  = shape::indexOffset(i + threadOffset, xShapeInfo, xShapeInfoCast, zLen, canCastX);
                     auto zOffset = shape::indexOffset(i + threadOffset, zShapeInfo, zShapeInfoCast, zLen, canCastZ);
                     z[zOffset] = OpType::update(z[zOffset], OpType::op(x[offset], y[offset], extraParamsVals), extraParamsVals);
@@ -163,8 +166,10 @@ void Reduce3<X,Z>::exec(void *vx, Nd4jLong *xShapeInfo,
             {                
                 auto threadNum = omp_get_thread_num();         
                 auto threadOffset = info.getThreadOffset(threadNum);
+                auto ulen = static_cast<unsigned int>(info.getItersPerThread(threadNum));
 
-                for (Nd4jLong i = 0; i < info.getItersPerThread(threadNum); i++) {
+                PRAGMA_OMP_SIMD
+                for (Nd4jLong i = 0; i < ulen; i++) {
                     auto offset  = shape::indexOffset(i + threadOffset, xShapeInfo, xShapeInfoCast, zLen, canCastX);
                     auto yOffset = shape::indexOffset(i + threadOffset, yShapeInfo, yShapeInfoCast, zLen, canCastY);
                     z[offset] = OpType::update(z[offset], OpType::op(x[offset], y[yOffset], extraParamsVals), extraParamsVals);
@@ -182,8 +187,10 @@ void Reduce3<X,Z>::exec(void *vx, Nd4jLong *xShapeInfo,
             {                
                 auto threadNum = omp_get_thread_num();         
                 auto threadOffset = info.getThreadOffset(threadNum);
+                auto ulen = static_cast<unsigned int>(info.getItersPerThread(threadNum));
 
-                for (Nd4jLong i = 0; i < info.getItersPerThread(threadNum); i++) {
+                PRAGMA_OMP_SIMD
+                for (Nd4jLong i = 0; i < ulen; i++) {
                     auto xOffset = shape::indexOffset(i + threadOffset, xShapeInfo, xShapeInfoCast, zLen, canCastX);
                     auto offset  = shape::indexOffset(i + threadOffset, yShapeInfo, yShapeInfoCast, zLen, canCastY);
                     z[offset] = OpType::update(z[offset], OpType::op(x[xOffset], y[offset], extraParamsVals), extraParamsVals);
@@ -203,8 +210,10 @@ void Reduce3<X,Z>::exec(void *vx, Nd4jLong *xShapeInfo,
             {                
                 auto threadNum = omp_get_thread_num();         
                 auto threadOffset = info.getThreadOffset(threadNum);
+                auto ulen = static_cast<unsigned int>(info.getItersPerThread(threadNum));
 
-                for (Nd4jLong i = 0; i < info.getItersPerThread(threadNum); i++) {
+                PRAGMA_OMP_SIMD
+                for (Nd4jLong i = 0; i < ulen; i++) {
                     auto xOffset = shape::indexOffset(i + threadOffset, xShapeInfo, xShapeInfoCast, zLen, canCastX);
                     auto yOffset = shape::indexOffset(i + threadOffset, yShapeInfo, yShapeInfoCast, zLen, canCastY);
                     auto zOffset = shape::indexOffset(i + threadOffset, zShapeInfo, zShapeInfoCast, zLen, canCastZ);
