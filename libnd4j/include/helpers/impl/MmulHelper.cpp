@@ -43,14 +43,14 @@ static void usualGemm(const char cOrder, const bool transA, const bool transB, c
     const bool flagA = (flagC && transA) || (!flagC && !transA);
     const bool flagB = (flagC && transB) || (!flagC && !transB);   
 
-    #pragma omp parallel for if(M*N > Environment::getInstance()->elementwiseThreshold()) schedule(guided) collapse(2)    
+    PRAGMA_OMP_PARALLEL_FOR_COLLAPSE(2)
     for(uint row = 0; row < M; ++row) {
        for(uint col = 0; col < N; ++col) {
             
             T3* c = flagC ? (C + row + col * ldc) : (C + row * ldc + col);
-            T3 val = 0;  
+            T3 val = 0;
 
-            #pragma omp simd
+           PRAGMA_OMP_SIMD
             for(uint i = 0; i < K; ++i) {
                 T3 a = flagA ? *(A + row * lda + i) : *(A + row + i * lda);
                 T3 b = flagB ? *(B + col + i * ldb) : *(B + col * ldb + i);             
@@ -77,13 +77,13 @@ static void usualGemv(const char aOrder, const int M, const int N, const double 
     
     const bool flagA = aOrder == 'f';
 
-    #pragma omp parallel for if(M > Environment::getInstance()->elementwiseThreshold()) schedule(guided)
+    PRAGMA_OMP_PARALLEL_FOR_IF(M > Environment::getInstance()->tadThreshold())
     for(int row = 0; row < M; ++row) {
                         
         T3* y = Y + row * incy;
         T3 val = 0;
 
-        #pragma omp simd
+        PRAGMA_OMP_SIMD
         for(int i = 0; i < N; ++i) {
             T3 a = flagA ? *(A + row + i * lda) : *(A + row * lda + i);
             T3 x = *(X + i * incx);
@@ -108,7 +108,7 @@ static void usualDot(const Nd4jLong length, const double alpha, const void* vX, 
     T3 alphaZ(alpha), betaZ(beta);
 
     T3 sum = 0;
-    #pragma omp parallel for if(length > Environment::getInstance()->elementwiseThreshold()) schedule(guided) reduction(sumT:sum)
+    PRAGMA_OMP_PARALLEL_FOR_ARGS(reduction(sumT:sum))
     for(int i = 0; i < length; ++i)
         sum = sum + X[i * incx] * Y[i * incy];        
     
@@ -330,7 +330,6 @@ NDArray* MmulHelper::mmulNxN(const NDArray* A, const NDArray* B, NDArray* C, con
     const Nd4jLong numOfSubArrs = ShapeUtils::getNumOfSubArrs(C->getShapeInfo(), dimsToExclude);
     std::vector<Nd4jLong> idxRanges(2 * C->rankOf());
 
-// #pragma omp parallel for schedule(guided) firstprivate(idxRanges)
         for(Nd4jLong i = 0; i < numOfSubArrs; ++i) {
 
             ShapeUtils::evalIdxRangesForSubArr(i, C->getShapeInfo(), dimsToExclude, idxRanges.data());
@@ -640,7 +639,7 @@ NDArray* nd4j::MmulHelper::tensorDot(const nd4j::NDArray* a, const nd4j::NDArray
 
             const Nd4jLong numOfSubArrs = ShapeUtils::getNumOfSubArrs(xT->getShapeInfo(), dimsToExclude);
 
-//#pragma omp parallel for schedule(guided)
+            //PRAGMA_OMP_PARALLEL_FOR
             for(Nd4jLong i = 0; i < numOfSubArrs; ++i) {
                 auto xSubArr = (*xT)(i, dimsToExclude);
                 auto ySubArr = (*yT)(i, dimsToExclude);

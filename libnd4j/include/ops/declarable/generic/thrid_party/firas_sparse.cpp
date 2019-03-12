@@ -65,7 +65,7 @@ namespace nd4j {
 
             std::unique_ptr<ResultSet> rows(x->allTensorsAlongDimension({1}));
 
-#pragma omp parallel for schedule(dynamic) proc_bind(close)
+            PRAGMA_OMP_PARALLEL_FOR
             for (int r = 0; r < batchSize; r++) {
                 auto row = rows->at(r);
 

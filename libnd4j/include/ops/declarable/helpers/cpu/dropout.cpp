@@ -31,15 +31,14 @@ namespace helpers {
     static void dropoutSimple(NDArray const* input, NDArray* output, double probValue, int seed) {
 
         nd4j::graph::RandomGenerator nodeRng(3019L, seed);
+        int inLen = input->lengthOf();
 
-        #pragma omp parallel for if (input->lengthOf() > Environment::getInstance()->elementwiseThreshold()) schedule(static)
-        for (Nd4jLong e = 0; e < input->lengthOf(); ++e) {
+        PRAGMA_OMP_PARALLEL_FOR_IF(inLen > Environment::getInstance()->elementwiseThreshold())
+        for (Nd4jLong e = 0; e < inLen; ++e) {
             float val = nodeRng.relativeT(e, T(0.f), T(1.f));
-//                nd4j_printf("Random value is %f.\n", val);
 
             if (val < probValue)
                 output->p<T>(e, input->e<T>(e) / probValue);
-///                else
         }
     }
     BUILD_SINGLE_TEMPLATE(template void dropoutSimple, (NDArray const* input, NDArray* output, double probValue, int seed), FLOAT_TYPES);
@@ -61,7 +60,6 @@ namespace helpers {
 
             bool fit = true;
 
-#pragma omp parallel
             for( int i = 0; fit && (i < dims.size()); i++ ) {
                 dims[i] = reduceShape->e<Nd4jLong>(i);
                 for (int e = 0; fit && (e < input->rankOf()); ++e)
@@ -125,7 +123,7 @@ namespace helpers {
         //input->template applyRandom<randomOps::AlphaDropOut<T>>(rng, nullptr, output, probValueArr);
         nd4j::graph::RandomGenerator nodeRng(3019L, seed);
 
-#pragma omp parallel for if (input->lengthOf() > Environment::getInstance()->elementwiseThreshold()) schedule(static)
+        PRAGMA_OMP_PARALLEL_FOR_IF(input->lengthOf() > Environment::getInstance()->elementwiseThreshold())
         for (Nd4jLong e = 0; e < input->lengthOf(); ++e) {
             float randVal = nodeRng.relativeT(e, T(0.f), T(1.f));
             float xVal = input->e<float>(e);

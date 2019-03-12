@@ -38,8 +38,10 @@ namespace nd4j {
                     }
 
                     // we just create empty array here
+                    int s0 = shapeInfo.at(0);
+
                     std::vector<Nd4jLong> shape;
-                    for (int i = 0; i < shapeInfo.at(0); i++) {
+                    for (int i = 0; i < s0; i++) {
                         shape.emplace_back(shapeInfo.at(i + 1));
                     }
 

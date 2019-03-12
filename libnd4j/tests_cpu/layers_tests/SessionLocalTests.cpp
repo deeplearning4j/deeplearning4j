@@ -36,14 +36,14 @@ TEST_F(SessionLocalTests, BasicTests_1) {
     VariableSpace variableSpace;
     SessionLocalStorage storage(&variableSpace, nullptr);
 
-#pragma omp parallel for num_threads(4)
+    PRAGMA_OMP_PARALLEL_FOR_THREADS(4)
     for (int e = 0; e < 4; e++) {
         storage.startSession();
     }
 
     ASSERT_EQ(4, storage.numberOfSessions());
 
-#pragma omp parallel for num_threads(4)
+    PRAGMA_OMP_PARALLEL_FOR_THREADS(4)
     for (int e = 0; e < 4; e++) {
         storage.endSession();
     }
@@ -60,7 +60,7 @@ TEST_F(SessionLocalTests, BasicTests_2) {
 
     variableSpace.putVariable(-1, alpha);
 
-#pragma omp parallel for num_threads(4)
+    PRAGMA_OMP_PARALLEL_FOR_THREADS(4)
     for (int e = 0; e < 4; e++) {
         storage.startSession();
 

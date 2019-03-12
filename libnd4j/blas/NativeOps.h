@@ -1308,8 +1308,9 @@ public:
  */
     Nd4jPointer shapeBufferForNumpy(Nd4jPointer npyArray) {
         cnpy::NpyArray arr = cnpy::loadNpyFromPointer(reinterpret_cast<char *>(npyArray));
-        auto shape = new unsigned int[arr.shape.size()];
-        for(unsigned int i = 0; i < arr.shape.size(); i++) {
+        unsigned int shapeSize = arr.shape.size();
+        auto shape = new unsigned int[shapeSize];
+        for(unsigned int i = 0; i < shapeSize; i++) {
             shape[i] = arr.shape[i];
         }
 

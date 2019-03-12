@@ -41,23 +41,33 @@ void histogramFixedWidth_(const NDArray& input, const NDArray& range, NDArray& o
 
     const T binWidth       = (rightEdge - leftEdge ) / nbins;
     const T secondEdge     = leftEdge + binWidth;
-    const T lastButOneEdge = rightEdge - binWidth;    
+    const T lastButOneEdge = rightEdge - binWidth;
 
-#pragma omp parallel for schedule(guided)
-    for(Nd4jLong i = 0; i < input.lengthOf(); ++i) {
+    Nd4jLong inputLength = input.lengthOf();
+
+    PRAGMA_OMP_PARALLEL_FOR
+    for(Nd4jLong i = 0; i < inputLength; ++i) {
 
         const T value = input.e<T>(i);
 
-        if(value < secondEdge)
-#pragma omp critical            
-            output.p<Nd4jLong>(0, output.e<Nd4jLong>(0) + 1);
-        else if(value >= lastButOneEdge)
-#pragma omp critical
-            output.p<Nd4jLong>(nbins-1, output.e<Nd4jLong>(nbins-1) + 1);
-        else {
+        if(value < secondEdge) {
+
+            PRAGMA_OMP_CRITICAL
+            {
+                output.p<Nd4jLong>(0, output.e<Nd4jLong>(0) + 1);
+            }
+        } else if(value >= lastButOneEdge) {
+            PRAGMA_OMP_CRITICAL
+            {
+                output.p<Nd4jLong>(nbins - 1, output.e<Nd4jLong>(nbins - 1) + 1);
+            }
+        } else {
             Nd4jLong currInd = static_cast<Nd4jLong>((value - leftEdge) / binWidth);
-#pragma omp critical
-            output.p<Nd4jLong>(currInd, output.e<Nd4jLong>(currInd) + 1);            
+
+            PRAGMA_OMP_CRITICAL
+            {
+                output.p<Nd4jLong>(currInd, output.e<Nd4jLong>(currInd) + 1);
+            }
         }
     }
 }
