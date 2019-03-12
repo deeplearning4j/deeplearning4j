@@ -2540,9 +2540,10 @@ void NativeOps::scatterUpdate(Nd4jPointer *extraPointers, int opCode, int numOfS
     }
 }
 
-void NativeOps::inspectArray(Nd4jPointer *extraPointers, Nd4jPointer buffer, Nd4jLong *shapeInfo, Nd4jPointer specialBuffer, Nd4jLong *specialShapeInfo, nd4j::DebugInfo *debugInfo) {
+void NativeOps::inspectArray(Nd4jPointer *extraPointers, Nd4jPointer buffer, Nd4jLong *shapeInfo, Nd4jPointer specialBuffer, Nd4jLong *specialShapeInfo, Nd4jPointer debugInfo) {
+    auto p = reinterpret_cast<nd4j::DebugInfo*>(debugInfo);
     NDArray array(buffer, shapeInfo, nullptr);
-    nd4j::DebugHelper::retrieveDebugStatistics(debugInfo, &array);
+    nd4j::DebugHelper::retrieveDebugStatistics(p, &array);
 }
 
 BUILD_SINGLE_TEMPLATE(template void flattenGeneric,(Nd4jPointer*, int, char, void*, Nd4jLong*, void*, Nd4jLong*), LIBND4J_TYPES);

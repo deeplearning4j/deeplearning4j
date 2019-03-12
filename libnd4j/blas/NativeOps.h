@@ -1631,7 +1631,7 @@ public:
                       void* dY, Nd4jLong* dYShapeInfo, Nd4jLong* dYOffsets,
                       int* hIindexes, int* dIindexes);
 
-    void inspectArray(Nd4jPointer *extraPointers, Nd4jPointer buffer, Nd4jLong *shapeInfo, Nd4jPointer specialBuffer, Nd4jLong *specialShapeInfo, nd4j::DebugInfo *debugInfo);
+    void inspectArray(Nd4jPointer *extraPointers, Nd4jPointer buffer, Nd4jLong *shapeInfo, Nd4jPointer specialBuffer, Nd4jLong *specialShapeInfo, Nd4jPointer debugInfo);
 };
 
 
