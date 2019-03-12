@@ -35,7 +35,7 @@ namespace nd4j {
     }
 
     Nd4jLong* TadPack::specialShapeInfo() {
-        return reinterpret_cast<Nd4jLong *>(_tadOffsets.special());
+        return reinterpret_cast<Nd4jLong *>(_tadShape.special());
     }
 
     Nd4jLong* TadPack::specialOffsets() {

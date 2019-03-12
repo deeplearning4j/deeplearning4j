@@ -689,7 +689,7 @@ void NDArray::replacePointers(void *buffer, Nd4jLong *shapeInfo, const bool rele
 
     void* NDArray::bufferWithOffset(Nd4jLong offset) const {
         
-        return _buffer + (offset * sizeOfT());
+        return _buffer != nullptr ? _buffer + (offset * sizeOfT()) : nullptr;
     }
 
 //////////////////////////////////////////////////////////////////////////

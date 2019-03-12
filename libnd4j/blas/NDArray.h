@@ -1517,7 +1517,6 @@ namespace nd4j {
     //////////////////////////////////////////////////////////////////////////
     void NDArray::triggerAllocationFlag(bool bufferAllocated) {
         _isBuffAlloc = bufferAllocated;
-        _isBuffDAlloc = bufferAllocated ? bufferAllocated : _isBuffDAlloc;
     }
     //////////////////////////////////////////////////////////////////////////
     void NDArray::triggerSpecialAllocationFlag(bool bufferAllocated, bool shapeAllocated) {

@@ -2472,7 +2472,7 @@ void NDArray::reduceAlongDimension(nd4j::reduce::LongOps op, NDArray* target, co
 
 //////////////////////////////////////////////////////////////////////////
     void* NDArray::specialBufferWithOffset(Nd4jLong offset) const {
-        return _bufferD + (offset * sizeOfT());
+        return _bufferD != nullptr ? _bufferD + (offset * sizeOfT()) : nullptr;
     }
 
 //////////////////////////////////////////////////////////////////////////    
@@ -2488,7 +2488,10 @@ void NDArray::reduceAlongDimension(nd4j::reduce::LongOps op, NDArray* target, co
 
         auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(this->getShapeInfo(), copy);
 
-        return new NDArray(bufferWithOffset(packX.primaryOffsets()[index]), specialBufferWithOffset(packX.primaryOffsets()[index]),  packX.primaryShapeInfo(), _context);
+        auto array = new NDArray(bufferWithOffset(packX.primaryOffsets()[index]), specialBufferWithOffset(packX.primaryOffsets()[index]), packX.primaryShapeInfo(), _context);
+        array->_isView = true;
+
+        return array;
     }
 
 //////////////////////////////////////////////////////////////////////////
