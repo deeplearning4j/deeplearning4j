@@ -6322,6 +6322,10 @@ public class Nd4jTestsC extends BaseNd4jTest {
         assertEquals(exp, arrayX);
     }
 
+    @Test
+    public void testBugMeshgridOnDoubleArray() {
+        Nd4j.meshgrid(Nd4j.create(new double[] { 1, 2, 3 }), Nd4j.create(new double[] { 4, 5, 6 }));
+    }
 
     @Test
     public void testMeshGrid(){
