@@ -65,8 +65,8 @@ public class GraphTransformUtilTests {
         SDVariable ph1 = sd.placeHolder("ph1", DataType.FLOAT, -1, 4);
         SDVariable ph2 = sd.placeHolder("ph2", DataType.FLOAT, -1, 4);
 
-        INDArray p1 = Nd4j.ones(1, 4);
-        INDArray p2 = Nd4j.ones(1, 4).mul(3);
+        INDArray p1 = Nd4j.ones(DataType.FLOAT, 1, 4);
+        INDArray p2 = Nd4j.ones(DataType.FLOAT, 1, 4).mul(3);
         ph1.setArray(p1);
         ph2.setArray(p2);
 
