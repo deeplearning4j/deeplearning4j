@@ -26,6 +26,7 @@ import org.deeplearning4j.nn.workspace.ArrayType;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.deeplearning4j.util.ConvolutionUtils;
 import org.nd4j.linalg.activations.IActivation;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.OpContext;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.Conv2D;
@@ -57,6 +58,9 @@ public class MKLDNNConvHelper implements ConvolutionHelper {
                                                      INDArray biasGradView, INDArray weightGradView, IActivation afn, ConvolutionLayer.AlgoMode mode,
                                                      ConvolutionLayer.BwdFilterAlgo bwdFilterAlgo, ConvolutionLayer.BwdDataAlgo bwdDataAlgo, ConvolutionMode convolutionMode,
                                                      int[] dilation, LayerWorkspaceMgr workspaceMgr) {
+        if(input.dataType() != DataType.FLOAT || weights.dataType() != DataType.FLOAT)
+            return null;    //MKL-DNN only supports floating point dtype
+
         //Note: conv2d op expects [kH, kW, iC, oC] weights... DL4J conv uses [oC, iC, kH, kW]
         INDArray weightsPermute = weights.permute(2,3,1,0);
         INDArray weightGradViewPermute = weightGradView.permute(2,3,1,0);
@@ -106,6 +110,8 @@ public class MKLDNNConvHelper implements ConvolutionHelper {
 
     @Override
     public INDArray preOutput(INDArray input, INDArray weights, INDArray bias, int[] kernel, int[] strides, int[] pad, ConvolutionLayer.AlgoMode mode, ConvolutionLayer.FwdAlgo fwdAlgo, ConvolutionMode convolutionMode, int[] dilation, LayerWorkspaceMgr workspaceMgr) {
+        if(input.dataType() != DataType.FLOAT || weights.dataType() != DataType.FLOAT)
+            return null;    //MKL-DNN only supports floating point dtype
 
         int inH = (int)input.size(2);
         int inW = (int)input.size(3);
