@@ -114,7 +114,7 @@ public class CudnnBatchNormalizationHelper extends BaseCudnnHelper implements Ba
     private INDArray varCache;
     private double eps;
 
-    public boolean checkSupported(double eps) {
+    public boolean checkSupported(double eps, boolean isFixedGammaBeta) {
         boolean supported = checkSupported();
         if (eps < CUDNN_BN_MIN_EPSILON) {
             supported = false;

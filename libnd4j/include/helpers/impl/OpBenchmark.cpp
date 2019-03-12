@@ -89,6 +89,10 @@ namespace nd4j {
         return _axis;
     }
 
+    std::string OpBenchmark::extra() {
+        return "N/A";
+    }
+
     std::string OpBenchmark::shape() {
         if (_x != nullptr)
             return ShapeUtils::shapeAsString(_x);

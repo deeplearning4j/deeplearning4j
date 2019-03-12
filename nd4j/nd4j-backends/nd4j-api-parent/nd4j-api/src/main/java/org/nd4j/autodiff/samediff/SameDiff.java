@@ -1347,7 +1347,9 @@ public class SameDiff extends SDBaseOps {
      */
     public SameDiff dup() {
         Cloner cloner = newCloner();
-        val clone = cloner.deepClone(this);
+        SameDiff clone = cloner.deepClone(this);
+        //TODO don't clone sessions in the first place!
+        clone.sessions.clear();
         return clone;
     }
 

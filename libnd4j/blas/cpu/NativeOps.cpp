@@ -892,13 +892,15 @@ void flattenGeneric(Nd4jPointer *extraPointers,
         }
         else if (resultEleStride >= 1 && inputEleStride >= 1) {
             if (len < ELEMENT_THRESHOLD) {
-#pragma omp simd
+
+                PRAGMA_OMP_SIMD
                 for (int i = 0; i < len; i++) {
                     hZ[i * resultEleStride] = input[i * inputEleStride];
                 }
             }
             else {
-#pragma omp parallel for simd
+
+                PRAGMA_OMP_PARALLEL_FOR_SIMD
                 for (int i = 0; i < len; i++) {
                     hZ[i * resultEleStride] = input[i * inputEleStride];
                 }
@@ -917,7 +919,8 @@ void flattenGeneric(Nd4jPointer *extraPointers,
         shape::TAD tad;
         tad.init(inputShapeInfo,&dimension,dimensionLength);
         tad.createTadOnlyShapeInfo();
-#pragma omp  parallel for schedule(guided) default(shared)
+
+        PRAGMA_OMP_PARALLEL_FOR
         for(int i = 0; i < numTads; i++) {
 
             Nd4jLong resultOffset;
@@ -1240,7 +1243,7 @@ void pullRowsGeneric(void *vx,
     int _threads = nd4j::math::nd4j_max<int>(1, elementsPerThread);
     _threads = nd4j::math::nd4j_min<int>(_threads, omp_get_max_threads());
 
-#pragma omp parallel for num_threads(_threads) if (n > 1) schedule(guided) default(shared)
+    PRAGMA_OMP_PARALLEL_FOR_THREADS(_threads)
     for (int idx = 0; idx < n; idx++) {
         auto xTadOffsetForBlock = tadOffsets[indexes[idx]];
         auto zTadOffsetForBlock = zTadOffsets[idx];
@@ -1250,13 +1253,13 @@ void pullRowsGeneric(void *vx,
 
         if (xEWS == 1 && zEWS == 1) {
 
-#pragma omp simd
+            PRAGMA_OMP_SIMD
             for (int i = 0; i < tadLength; i++ ) {
                 rZ[i] = rX[i];
             }
         } else if (xEWS >= 1 && zEWS >= 1) {
 
-#pragma omp simd
+            PRAGMA_OMP_SIMD
             for (int i = 0; i < tadLength; i++ ) {
                 rZ[i * zEWS] = rX[i * xEWS];
             }
@@ -1302,18 +1305,20 @@ void tearGeneric(void *vx,
     auto zEWS = shape::elementWiseStride(hZShapeInfo);
     auto numTads = shape::length(hXShapeInfo) / tadLength;
 
-#pragma omp parallel for schedule(guided) default(shared)
+    PRAGMA_OMP_PARALLEL_FOR
     for (Nd4jLong i = 0; i < numTads; i++) {
         auto hZ = reinterpret_cast<T *>(targets[i]);
         auto s = hX + tadOffsets[i];
 
         if (zEWS == 1 && tadEWS == 1) {
-#pragma omp simd
+
+            PRAGMA_OMP_SIMD
             for (Nd4jLong j = 0; j < tadLength; j++) {
                 hZ[j] = s[j];
             }
         } else if (zEWS > 0 && tadEWS > 0) {
-#pragma omp simd
+
+            PRAGMA_OMP_SIMD
             for (Nd4jLong j = 0; j < tadLength; j++) {
                 hZ[j * zEWS] = s[j * tadEWS];
             }
@@ -1410,7 +1415,7 @@ void shuffleGeneric(void **hX, Nd4jLong **hXShapeInfo, void **dz, Nd4jLong **hZS
     auto dX = reinterpret_cast<T **>(hX);
     auto dZ = reinterpret_cast<T **>(dz);
 
-#pragma omp parallel for if (N > 1) default(shared)
+    PRAGMA_OMP_PARALLEL_FOR_IF(N > 1)
     for (int f = 0; f < N; f++) {
         auto hX = reinterpret_cast<T *>(dX[f]);
         //auto hZ = reinterpret_cast<T *>(dZ[f]);
@@ -1440,15 +1445,15 @@ void shuffleGeneric(void **hX, Nd4jLong **hXShapeInfo, void **dz, Nd4jLong **hZS
 
             if (tadEWS == 1) {
 
-#pragma omp simd
+                PRAGMA_OMP_SIMD
                 for (Nd4jLong i = 0; i < tadLength; i++) {
                     nd4j::math::nd4j_swap<T>(rX[i], rY[i]);
                 }
 
             } 
             else {
-                
-#pragma omp parallel for schedule(guided) if (N == 1 && tadLength > 512)
+
+                PRAGMA_OMP_PARALLEL_FOR_IF(N == 1 && tadLength > 512)
                 for (Nd4jLong i = 0; i < tadLength; i++) {                    
                     auto offset = shape::getIndexOffset(i, tadOnlyShapeInfo[f], tadLength);                    
                     nd4j::math::nd4j_swap<T>(hX[offset + oldOffset], hX[offset + newOffset]);
@@ -1643,7 +1648,7 @@ void NativeOps::_batchExecutor(Nd4jPointer *extraPointers,
                                         maxReals);
 
     // special case here, we prefer spread arrangement here, all threads are detached from each other
-#pragma omp parallel for num_threads(_threads) schedule(guided) proc_bind(spread) default(shared)
+    PRAGMA_OMP_PARALLEL_FOR_THREADS(_threads)
     for (int i = 0; i < numAggregates; i++) {
         auto intArrays = new int *[maxIntArrays];
 
@@ -1864,7 +1869,7 @@ FORCEINLINE int estimateThresholdGeneric(Nd4jPointer *extraPointers, Nd4jPointer
     int span = (N / 6) + 8;
     int cnt = 0;
 
-#pragma omp parallel reduction(+:cnt)
+    PRAGMA_OMP_PARALLEL_ARGS(reduction(+:cnt))
     {
         int tid = omp_get_thread_num();
         int start = span * tid;
@@ -1872,7 +1877,7 @@ FORCEINLINE int estimateThresholdGeneric(Nd4jPointer *extraPointers, Nd4jPointer
         if (stop > N)
             stop = N;
 
-#pragma omp simd
+        PRAGMA_OMP_SIMD
         for (int e = start; e < stop; e++) {
             auto v = nd4j::math::nd4j_abs<T>(buffer[e]);
             if (v >= threshold)
@@ -2487,7 +2492,7 @@ void NativeOps::scatterUpdate(Nd4jPointer *extraPointers, int opCode, int numOfS
 
     int numThreads = omp_get_max_threads();
 
-    #pragma omp parallel default(shared)
+    PRAGMA_OMP_PARALLEL_ARGS(num_threads(numThreads))
     {
         for (int i = 0; i < numOfSubArrs; ++i) {
 

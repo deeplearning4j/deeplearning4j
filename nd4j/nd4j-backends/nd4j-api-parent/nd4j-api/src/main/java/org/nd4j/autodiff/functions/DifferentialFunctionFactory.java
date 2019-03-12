@@ -563,6 +563,30 @@ public class DifferentialFunctionFactory {
         return new VarianceBp(sameDiff(), stdInput, gradient, biasCorrected, keepDims, dimensions).outputVariable();
     }
 
+    public SDVariable standardize(SDVariable i_x, int... dimensions) {
+        return new Standardize(sameDiff(), i_x, dimensions).outputVariable();
+    }
+
+    public SDVariable standardizeBp(SDVariable stdInput, SDVariable gradient, int... dimensions) {
+        return new StandardizeBp(sameDiff(), stdInput, gradient, dimensions).outputVariable();
+    }
+
+    public SDVariable layerNorm(SDVariable input, SDVariable gain, SDVariable bias, int... dimensions) {
+        return new LayerNorm(sameDiff(), input, gain, bias, dimensions).outputVariable();
+    }
+
+    public SDVariable[] layerNormBp(SDVariable input, SDVariable gain, SDVariable bias, SDVariable gradient, int... dimensions) {
+        return new LayerNormBp(sameDiff(), input, gain, bias, gradient, dimensions).outputVariables();
+    }
+
+    public SDVariable layerNorm(SDVariable input, SDVariable gain, int... dimensions) {
+        return new LayerNorm(sameDiff(), input, gain, dimensions).outputVariable();
+    }
+
+    public SDVariable[] layerNormBp(SDVariable input, SDVariable gain, SDVariable gradient, int... dimensions) {
+        return new LayerNormBp(sameDiff(), input, gain, gradient, dimensions).outputVariables();
+    }
+
     public SDVariable squaredNorm(SDVariable input, boolean keepDims, int... dimensions) {
         return new SquaredNorm(sameDiff(), input, keepDims, dimensions).outputVariable();
     }
@@ -2199,6 +2223,7 @@ public class DifferentialFunctionFactory {
     public String toString() {
         return "DifferentialFunctionFactory{methodNames=" + methodNames + "}";
     }
+
 
 
 }

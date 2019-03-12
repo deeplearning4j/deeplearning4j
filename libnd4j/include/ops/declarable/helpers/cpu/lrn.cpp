@@ -28,9 +28,9 @@ namespace helpers {
 #ifdef HAVE_MKLDNN
 using namespace mkldnn;
 
-static void getMKLDNNMemoryDescLrn(const NDArray* src, const NDArray* diff_src,
-        mkldnn::memory::desc* lrn_src_md, mkldnn::memory::desc* lrn_diff_src_md,
-        mkldnn::memory::desc* user_src_md, mkldnn::memory::desc* user_diff_src_md, int axis) {
+static void getMKLDNNMemoryDescLrn(const NDArray* src, const NDArray* diff_src, const NDArray* dst,
+        mkldnn::memory::desc* lrn_src_md, mkldnn::memory::desc* lrn_diff_src_md, mkldnn::memory::desc* lrn_dst_md,
+        mkldnn::memory::desc* user_src_md, mkldnn::memory::desc* user_diff_src_md, mkldnn::memory::desc* user_dst_md, int axis) {
     const Nd4jLong* shape = src->getShapeInfo();
     long rank = shape[0];
     long dim1 = axis; // MKL-DNN supports only 1 axis, which has to be the "channel" one
@@ -61,6 +61,16 @@ static void getMKLDNNMemoryDescLrn(const NDArray* src, const NDArray* diff_src,
         user_diff_src_md->data.layout_desc.blocking.strides[0][2] = rank > 2 ? diff_src->stridesOf()[dim2] : 1;
         user_diff_src_md->data.layout_desc.blocking.strides[0][3] = rank > 3 ? diff_src->stridesOf()[dim3] : 1;
     }
+
+    if (dst != nullptr && dst->getBuffer() != nullptr && lrn_dst_md != nullptr) {
+        *lrn_dst_md = mkldnn::memory::desc({ lrn_src_tz }, type, supposed_to_be_any_format);
+        *user_dst_md = mkldnn::memory::desc({ lrn_src_tz }, type, format);
+        user_dst_md->data.format = mkldnn_blocked;
+        user_dst_md->data.layout_desc.blocking.strides[0][0] = dst->stridesOf()[0];
+        user_dst_md->data.layout_desc.blocking.strides[0][1] = dst->stridesOf()[dim1];
+        user_dst_md->data.layout_desc.blocking.strides[0][2] = rank > 2 ? dst->stridesOf()[dim2] : 1;
+        user_dst_md->data.layout_desc.blocking.strides[0][3] = rank > 3 ? dst->stridesOf()[dim3] : 1;
+    }
 }
 #endif
 
@@ -79,18 +89,18 @@ static void getMKLDNNMemoryDescLrn(const NDArray* src, const NDArray* diff_src,
             streams.push_back(MKLDNNStream("lrn"));
         }
 
-        if (streams[0].checkAndReset({input}, {output}, {bias, alpha, beta}, {depth})) {
+        if (streams[0].checkAndReset({input}, {output}, {(float)bias, (float)alpha, (float)beta}, {depth})) {
             mkldnn_memory_desc_t empty;
-            mkldnn::memory::desc lrn_src_md(empty), user_src_md(empty);
+            mkldnn::memory::desc lrn_src_md(empty), lrn_dst_md(empty), user_src_md(empty), user_dst_md(empty);
 
-            getMKLDNNMemoryDescLrn(input, nullptr, &lrn_src_md, nullptr, &user_src_md, nullptr, input->rankOf() - 1);
+            getMKLDNNMemoryDescLrn(input, nullptr, output, &lrn_src_md, nullptr, &lrn_dst_md, &user_src_md, nullptr, &user_dst_md, input->rankOf() - 1);
 
             auto lrn_desc = lrn_forward::desc(prop_kind::forward_inference, lrn_across_channels, lrn_src_md, (2 * depth + 1), alpha * (2 * depth + 1), beta, bias);
 
             auto engine = streams[0].getEngine();
             auto lrn_prim_desc = lrn_forward::primitive_desc(lrn_desc, engine);
             auto user_src_memory = mkldnn::memory({user_src_md, engine}, input->buffer());
-            auto user_dst_memory = mkldnn::memory({user_src_md, engine}, output->buffer());
+            auto user_dst_memory = mkldnn::memory({user_dst_md, engine}, output->buffer());
 
             auto lrn_src_memory = user_src_memory;
             streams[0].addMemory(user_src_memory);
@@ -128,7 +138,7 @@ static void getMKLDNNMemoryDescLrn(const NDArray* src, const NDArray* diff_src,
 
         if (output->ews() == 1 && input->ews() == 1 && input->ordering() == 'c' && output->ordering() == 'c') {
 
-#pragma omp parallel for simd schedule(guided)
+            PRAGMA_OMP_PARALLEL_FOR_SIMD
             for (int c = 0; c < chunkCount; c++) {
                 const int shift = c * lastDim;
                 auto iX = inputBuffer + shift;
@@ -166,14 +176,15 @@ static void getMKLDNNMemoryDescLrn(const NDArray* src, const NDArray* diff_src,
             }
         } else {
 
-#pragma omp parallel for schedule(guided)
+            PRAGMA_OMP_PARALLEL_FOR_COLLAPSE(2)
             for (int c = 0; c < chunkCount; c++) {
                 for (int e = 0; e < lastDim; e++) {
                     int begin = nd4j::math::nd4j_max(0, e - depth);
                     int end = nd4j::math::nd4j_min(depth + e + 1, lastDim);
                     T quadSum = 0;
                     int shift = c * lastDim;
-#pragma omp simd reduction(sumT:quadSum)
+
+                    PRAGMA_OMP_SIMD_SUM(quadSum)
                     for (int pos = begin; pos < end; ++pos) {
                         T val = inputBuffer[shape::getIndexOffset(shift + pos, input->getShapeInfo(), input->lengthOf())];
                         quadSum += val * val;
@@ -204,18 +215,18 @@ static void getMKLDNNMemoryDescLrn(const NDArray* src, const NDArray* diff_src,
             streams.push_back(MKLDNNStream("lrn"));
         }
 
-        if (streams[0].checkAndReset({input}, {output}, {bias, alpha, beta}, {depth})) {
+        if (streams[0].checkAndReset({input}, {output}, {(float)bias, (float)alpha, (float)beta}, {depth})) {
             mkldnn_memory_desc_t empty;
-            mkldnn::memory::desc lrn_src_md(empty), user_src_md(empty);
+            mkldnn::memory::desc lrn_src_md(empty), lrn_dst_md(empty), user_src_md(empty), user_dst_md(empty);
 
-            getMKLDNNMemoryDescLrn(input, nullptr, &lrn_src_md, nullptr, &user_src_md, nullptr, input->rankOf() - 1);
+            getMKLDNNMemoryDescLrn(input, nullptr, output, &lrn_src_md, nullptr, &lrn_dst_md, &user_src_md, nullptr, &user_dst_md, input->rankOf() - 1);
 
             auto lrn_desc = lrn_forward::desc(prop_kind::forward_inference, lrn_across_channels, lrn_src_md, (2 * depth + 1), alpha * (2 * depth + 1), beta, bias);
 
             auto engine = streams[0].getEngine();
             auto lrn_prim_desc = lrn_forward::primitive_desc(lrn_desc, engine);
             auto user_src_memory = mkldnn::memory({user_src_md, engine}, input->buffer());
-            auto user_dst_memory = mkldnn::memory({user_src_md, engine}, output->buffer());
+            auto user_dst_memory = mkldnn::memory({user_dst_md, engine}, output->buffer());
 
             auto lrn_src_memory = user_src_memory;
             streams[0].addMemory(user_src_memory);
@@ -255,7 +266,7 @@ static void getMKLDNNMemoryDescLrn(const NDArray* src, const NDArray* diff_src,
 
         if (output->ews() == 1 && input->ews() == 1 && input->ordering() == 'c' && output->ordering() == 'c') {
 
-#pragma omp parallel for simd schedule(static, 16) collapse(2)
+            PRAGMA_OMP_PARALLEL_FOR_SIMD_COLLAPSE(2)
             for (int c = 0; c < chunkCount; c++) {
                 for (int e = 0; e < lastDim; e++) {
                     int begin = nd4j::math::nd4j_max<int>(0, e - depth);
@@ -276,7 +287,7 @@ static void getMKLDNNMemoryDescLrn(const NDArray* src, const NDArray* diff_src,
                 }
             }
         } else {
-#pragma omp parallel for schedule(guided)
+            PRAGMA_OMP_PARALLEL_FOR_COLLAPSE(2)
             for (int c = 0; c < chunkCount; c++) {
                 for (int e = 0; e < lastDim; e++) {
                     int begin = nd4j::math::nd4j_max(0, e - depth);
@@ -284,7 +295,7 @@ static void getMKLDNNMemoryDescLrn(const NDArray* src, const NDArray* diff_src,
                     T quadSum = 0;
                     int shift = c * lastDim;
 
-#pragma omp simd reduction(sumT:quadSum)
+                    PRAGMA_OMP_SIMD_SUM(quadSum)
                     for (int pos = begin; pos < end; ++pos) {
                         T val = inputBuffer[shape::getIndexOffset(shift + pos, input->getShapeInfo(), totalLength)]; //listInput->at(c)->t<T>(pos);
                         quadSum += val * val;
@@ -328,11 +339,11 @@ static void getMKLDNNMemoryDescLrn(const NDArray* src, const NDArray* diff_src,
             streams.push_back(MKLDNNStream("lrn_bp"));
         }
 
-        if (streams[0].checkAndReset({input, scale}, {output}, {bias, alpha, beta}, {depth})) {
+        if (streams[0].checkAndReset({input, scale}, {output}, {(float)bias, (float)alpha, (float)beta}, {depth})) {
             mkldnn_memory_desc_t empty;
-            mkldnn::memory::desc lrn_src_md(empty), lrn_diff_src_md(empty), user_src_md(empty), user_diff_src_md(empty);
+            mkldnn::memory::desc lrn_src_md(empty), lrn_diff_src_md(empty), lrn_dst_md(empty), user_src_md(empty), user_diff_src_md(empty), user_dst_md(empty);
 
-            getMKLDNNMemoryDescLrn(input, scale, &lrn_src_md, &lrn_diff_src_md, &user_src_md, &user_diff_src_md, 1);
+            getMKLDNNMemoryDescLrn(input, scale, output, &lrn_src_md, &lrn_diff_src_md, &lrn_dst_md, &user_src_md, &user_diff_src_md, &user_dst_md, 1);
 
             auto lrn_desc = lrn_forward::desc(prop_kind::forward, lrn_across_channels, lrn_src_md, (2 * halfDepth + 1), alpha * (2 * halfDepth + 1), beta, bias);
             auto lrn_back_desc = lrn_backward::desc(lrn_across_channels, lrn_src_md, lrn_diff_src_md, (2 * halfDepth + 1), alpha * (2 * halfDepth + 1), beta, bias);
@@ -342,7 +353,7 @@ static void getMKLDNNMemoryDescLrn(const NDArray* src, const NDArray* diff_src,
             auto lrn_back_prim_desc = lrn_backward::primitive_desc(lrn_back_desc, engine, lrn_prim_desc);
             auto user_src_memory = mkldnn::memory({user_src_md, engine}, input->buffer());
             auto user_dst_memory = mkldnn::memory({user_diff_src_md, engine}, scale->buffer());
-            auto user_diff_src_memory = mkldnn::memory({user_src_md, engine}, output->buffer());
+            auto user_diff_src_memory = mkldnn::memory({user_dst_md, engine}, output->buffer());
 
             auto lrn_src_memory = user_src_memory;
             streams[0].addMemory(user_src_memory);
@@ -388,7 +399,8 @@ static void getMKLDNNMemoryDescLrn(const NDArray* src, const NDArray* diff_src,
         std::unique_ptr<NDArray> sumPart(activitySqr->dup('c'));
 
         input->applyPairwiseTransform(pairwise::Multiply, input, activitySqr.get(), nullptr);
-#pragma omp parallel for if (halfDepth + 1 > Environment::getInstance()->elementwiseThreshold()) schedule(static)         
+
+        PRAGMA_OMP_PARALLEL_FOR_IF(halfDepth + 1 > Environment::getInstance()->tadThreshold())
         for (int i = 1; i < halfDepth + 1; i++) {
             IndicesList indA({NDIndex::all(), NDIndex::interval(i, channel), NDIndex::all(), NDIndex::all()});
             IndicesList indB({NDIndex::all(), NDIndex::interval(0, channel - i), NDIndex::all(), NDIndex::all()});
@@ -405,13 +417,6 @@ static void getMKLDNNMemoryDescLrn(const NDArray* src, const NDArray* diff_src,
             tmp2->applyPairwiseTransform(pairwise::Add, *addVal2.get(), nullptr);
         }
 
-        /*
-         *  // taken from java
-            unitScale = sumPart.mul(alpha).addi(k).leverageTo(ComputationGraph.workspaceExternal);
-            // y = x * unitScale**-beta
-            scale = Transforms.pow(unitScale, -beta).leverageTo(ComputationGraph.workspaceExternal);
-            activations = input.mul(scale).leverageTo(ComputationGraph.workspaceExternal);
-         */
         if (unitScale != nullptr && scale != nullptr) {
             sumPart->applyScalar(scalar::Multiply, alpha, unitScale, nullptr);
             unitScale->applyScalar(scalar::Add, bias);
