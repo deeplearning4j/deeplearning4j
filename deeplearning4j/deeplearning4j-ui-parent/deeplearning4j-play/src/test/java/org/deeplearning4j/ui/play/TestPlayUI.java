@@ -33,6 +33,7 @@ import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 import org.deeplearning4j.ui.api.UIServer;
 import org.deeplearning4j.ui.stats.StatsListener;
 import org.deeplearning4j.ui.storage.InMemoryStatsStorage;
+import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
@@ -49,6 +50,10 @@ import static org.junit.Assert.assertTrue;
  */
 @Ignore
 public class TestPlayUI {
+    @Before
+    public void setUp() throws Exception {
+        UIServer.stopInstance();
+    }
 
     @Test
     @Ignore

@@ -28,6 +28,7 @@ import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 import org.deeplearning4j.ui.api.UIServer;
 import org.deeplearning4j.ui.stats.StatsListener;
 import org.deeplearning4j.ui.storage.InMemoryStatsStorage;
+import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
@@ -50,16 +51,19 @@ import static org.junit.Assert.*;
  */
 @Ignore
 public class TestPlayUIMultiSession {
+    @Before
+    public void setUp() throws Exception {
+        UIServer.stopInstance();
+    }
 
     @Test
-    @Ignore
     public void testUIMultiSession() {
 
         UIServer uIServer = UIServer.getInstance(true, null);
         HashMap<Thread, StatsStorage> statStorageForThread = new HashMap<>();
         HashMap<Thread, String> sessionIdForThread = new HashMap<>();
 
-        for (int session = 0; session < 100; session++) {
+        for (int session = 0; session < 10; session++) {
 
             StatsStorage ss = new InMemoryStatsStorage();
 
@@ -122,7 +126,6 @@ public class TestPlayUIMultiSession {
     }
 
     @Test
-    @Ignore
     public void testUIAutoAttach() throws Exception {
         HashMap<String, StatsStorage> statsStorageForSession = new HashMap<>();
 
@@ -170,7 +173,6 @@ public class TestPlayUIMultiSession {
             assertEquals(Http.Status.OK, conn.getResponseCode());
             assertTrue(uIServer.isAttached(statsStorageForSession.get(sessionId)));
         }
-
     }
 
     @Test
@@ -232,6 +234,7 @@ public class TestPlayUIMultiSession {
         UIServer uiServer = UIServer.getInstance();
         assertFalse(uiServer.isMultiSession());
         UIServer.getInstance(true, null);
+
     }
 
     @Test (expected = RuntimeException.class)
