@@ -53,13 +53,14 @@ static void addBias_(NDArray& input, const NDArray& bias, const bool isNCHW) {
 
         const int oHoW = oH*oW;
 
-        #pragma omp parallel for schedule(guided) collapse(2)
+        PRAGMA_OMP_PARALLEL_FOR_COLLAPSE(2)
         for (int i = 0; i < bS; ++i) {
             for (int c = 0; c < oC; ++c) {
                 
                 auto biasOffset = shape::indexOffset(c, bias.getShapeInfo(), biasShapeInfoCast, oC, canCastBias);
                 auto inOffset = i * stride0 + c * stride1;
-                #pragma omp simd
+
+                PRAGMA_OMP_SIMD
                 for (uint k = 0; k < oHoW; ++k)
                     inBuff[inOffset + k] += static_cast<X>(biasBuff[biasOffset]);
             }
@@ -69,12 +70,12 @@ static void addBias_(NDArray& input, const NDArray& bias, const bool isNCHW) {
         
         oC = input.sizeAt(3);
         oH = input.sizeAt(1);
-        oW = input.sizeAt(2);   
+        oW = input.sizeAt(2);
 
-        #pragma omp parallel for schedule(guided)
-        for (int i = 0; i < bS*oH*oW; ++i) {            
-                                                            
-            #pragma omp simd
+        PRAGMA_OMP_PARALLEL_FOR
+        for (int i = 0; i < bS*oH*oW; ++i) {
+
+            PRAGMA_OMP_SIMD
             for (int c = 0; c < oC; ++c) {
                 auto biasOffset = shape::indexOffset(c, bias.getShapeInfo(), biasShapeInfoCast, oC, canCastBias);
                 inBuff[i * oC + c] += static_cast<X>(biasBuff[biasOffset]);

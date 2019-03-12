@@ -29,7 +29,6 @@ namespace helpers {
                          std::vector<int> const &axes) {
         std::vector<int> dimensions; //(input->rankOf() - axes.size());
 
-//#pragma omp parallel for if (input->rankOf() >  Environment::getInstance()->elementwiseThreshold()) schedule(static)        
         for (Nd4jLong e = 0; e < input->rankOf(); e++) {
             if (std::find(axes.begin(), axes.end(), e) == axes.end()) {
                 dimensions.emplace_back(e);
@@ -37,7 +36,7 @@ namespace helpers {
         }
         std::unique_ptr<ResultSet> outList(output->allTensorsAlongDimension(dimensions));
         std::unique_ptr<ResultSet> inList(input->allTensorsAlongDimension(dimensions));
-//#pragma omp parallel for if (outList->size() > Environment::getInstance()->elementwiseThreshold()) schedule(static) 
+
         for (Nd4jLong e = 0; e < outList->size(); ++e) {
             outList->at(e)->assign(epsilon);
             outList->at(e)->applyPairwiseTransform(pairwise::Multiply, *tempProd, nullptr);

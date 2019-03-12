@@ -36,13 +36,13 @@ import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 public interface ConvolutionHelper extends LayerHelper {
     boolean checkSupported();
 
-    Pair<Gradient, INDArray> backpropGradient(INDArray input, INDArray weights, INDArray delta, int[] kernel,
-                    int[] strides, int[] pad, INDArray biasGradView, INDArray weightGradView, IActivation afn,
-                    AlgoMode mode, BwdFilterAlgo bwdFilterAlgo, BwdDataAlgo bwdDataAlgo,
-                    ConvolutionMode convolutionMode, int[] dilation, LayerWorkspaceMgr workspaceMgr);
+    Pair<Gradient, INDArray> backpropGradient(INDArray input, INDArray weights, INDArray bias, INDArray delta, int[] kernel,
+                                              int[] strides, int[] pad, INDArray biasGradView, INDArray weightGradView, IActivation afn,
+                                              AlgoMode mode, BwdFilterAlgo bwdFilterAlgo, BwdDataAlgo bwdDataAlgo,
+                                              ConvolutionMode convolutionMode, int[] dilation, LayerWorkspaceMgr workspaceMgr);
 
     INDArray preOutput(INDArray input, INDArray weights, INDArray bias, int[] kernel, int[] strides, int[] pad,
                        AlgoMode mode, FwdAlgo fwdAlgo, ConvolutionMode convolutionMode, int[] dilation, LayerWorkspaceMgr workspaceMgr);
 
-    INDArray activate(INDArray z, IActivation afn);
+    INDArray activate(INDArray z, IActivation afn, boolean training);
 }
