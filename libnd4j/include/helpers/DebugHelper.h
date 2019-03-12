@@ -73,30 +73,6 @@ namespace nd4j {
             }
         }
 #endif
-    friend bool operator==(DebugHelper const& first, DebugHelper const& second) {
-        first._minValue    ==   second._minValue &&
-        first._maxValue    ==   second._maxValue &&
-        first._meanValue   ==   second._meanValue &&
-        first._stdDevValue ==   second._stdDevValue &&
-        first._zeroCount   ==   second._zeroCount &&
-        first._positiveCount == second._positiveCount &&
-        first._negativeCount == second._negativeCount &&
-        first._infCount ==      second._infCount &&
-        first._nanCount ==      second._nanCount;
-
-    }
-    public:
-
-       double _minValue;
-       double _maxValue;
-       double _meanValue;
-       double _stdDevValue;
-       Nd4jLong _zeroCount;
-       Nd4jLong _positiveCount;
-       Nd4jLong _negativeCount;
-       Nd4jLong _infCount;
-       Nd4jLong _nanCount;
-    public:
         static DebugInfo debugStatistics(NDArray const* input);
         static void retrieveDebugStatistics(DebugInfo* statistics, NDArray const* input);
     };

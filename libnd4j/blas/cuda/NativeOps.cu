@@ -3820,3 +3820,8 @@ void NativeOps::scatterUpdate(Nd4jPointer *extraPointers, int opCode, int numOfS
     BUILD_SINGLE_SELECTOR(type, scatterUpdateCudaLauncher, (stream, opCode, numOfSubArrs, dX, dXShapeInfo, dXOffsets, dY, dYShapeInfo, dYOffsets, dIndexes), LIBND4J_TYPES);
 }
 
+void NativeOps::inspectArray(Nd4jPointer *extraPointers, Nd4jPointer buffer, Nd4jLong *shapeInfo, Nd4jPointer specialBuffer, Nd4jLong *specialShapeInfo, nd4j::DebugInfo *debugInfo) {
+    NDArray array(buffer, shapeInfo, nullptr);
+    nd4j::DebugHelper::retrieveDebugStatistics(debugInfo, &array);
+}
+

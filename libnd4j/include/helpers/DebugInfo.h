@@ -26,7 +26,7 @@
 #include <Environment.h>
 #include <StringUtils.h>
 #include <string>
-
+#include <dll.h>
 
 #ifdef __CUDACC__
 
@@ -38,7 +38,7 @@
 #endif
 
 namespace nd4j {
-    struct DebugInfo {
+    struct ND4J_EXPORT DebugInfo {
        double _minValue;
        double _maxValue;
        double _meanValue;
