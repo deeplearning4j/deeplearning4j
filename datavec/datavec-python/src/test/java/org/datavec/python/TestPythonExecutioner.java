@@ -23,16 +23,11 @@ public class TestPythonExecutioner {
 
         String code = "z = x + ' ' + y";
 
-        PythonTransform pt = new PythonTransform(code, pyInputs, pyOutputs);
-        pyOutputs = pyExec.safeExec(pt, pyInputs);
-
-        //pyExec.safeExec(code, pyInputs, pyOutputs);
+        pyExec.exec(code, pyInputs, pyOutputs);
 
         String z = pyOutputs.getStrValue("z");
 
         System.out.println(z);
-
-        pyExec.free();
 
         assertEquals("Hello World", z);
     }
@@ -51,14 +46,9 @@ public class TestPythonExecutioner {
         pyOutputs.addInt("z");
 
 
-        PythonTransform pt = new PythonTransform(code, pyInputs, pyOutputs);
-        pyOutputs = pyExec.safeExec(pt, pyInputs);
-
-        //pyExec.safeExec(code, pyInputs, pyOutputs);
+        pyExec.exec(code, pyInputs, pyOutputs);
 
         long z = pyOutputs.getIntValue("z");
-
-        pyExec.free();
 
         assertEquals(30, z);
 
@@ -81,14 +71,9 @@ public class TestPythonExecutioner {
         pyOutputs.addList("z");
 
 
-        PythonTransform pt = new PythonTransform(code, pyInputs, pyOutputs);
-        pyOutputs = pyExec.safeExec(pt, pyInputs);
-
-        //pyExec.safeExec(code, pyInputs, pyOutputs);
+       pyExec.exec(code, pyInputs, pyOutputs);
 
         Object[] z = pyOutputs.getListValue("z");
-
-        pyExec.free();
 
         assertEquals(z.length, x.length + y.length);
 
