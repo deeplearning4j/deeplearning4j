@@ -23,13 +23,13 @@
 #include <NDArrayFactory.h>
 
 namespace nd4j {
-    DebugHelper DebugHelper::debugStatistics(NDArray* input) {
-        DebugHelper info;
+    DebugInfo DebugHelper::debugStatistics(NDArray const* input) {
+        DebugInfo info;
         DebugHelper::retrieveDebugStatistics(&info, input);
         return info;
     }
     void 
-    DebugHelper::retrieveDebugStatistics(DebugHelper* info, NDArray* input) {
+    DebugHelper::retrieveDebugStatistics(DebugInfo* info, NDArray const* input) {
         if (nullptr == info)
                 return;
         

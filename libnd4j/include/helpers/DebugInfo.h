@@ -38,12 +38,19 @@
 #endif
 
 namespace nd4j {
-    class NDArray;
-    class DebugInfo {
-    public:
+    struct DebugInfo {
+       double _minValue;
+       double _maxValue;
+       double _meanValue;
+       double _stdDevValue;
+       Nd4jLong _zeroCount;
+       Nd4jLong _positiveCount;
+       Nd4jLong _negativeCount;
+       Nd4jLong _infCount;
+       Nd4jLong _nanCount;
+    };
 
-    // cuda-specific debug functions
-    friend bool operator==(DebugInfo const& first, DebugInfo const& second) {
+    FORCEINLINE bool operator==(DebugInfo const& first, DebugInfo const& second) {
         first._minValue    ==   second._minValue &&
         first._maxValue    ==   second._maxValue &&
         first._meanValue   ==   second._meanValue &&
@@ -55,21 +62,7 @@ namespace nd4j {
         first._nanCount ==      second._nanCount;
 
     }
-    public:
 
-       double _minValue;
-       double _maxValue;
-       double _meanValue;
-       double _stdDevValue;
-       Nd4jLong _zeroCount;
-       Nd4jLong _positiveCount;
-       Nd4jLong _negativeCount;
-       Nd4jLong _infCount;
-       Nd4jLong _nanCount;
-    public:
-        static DebugInfo debugStatistics(NDArray const* input);
-        static void retrieveDebugStatistics(DebugInfo* statistics, NDArray const* input);
-    };
 }
 
 

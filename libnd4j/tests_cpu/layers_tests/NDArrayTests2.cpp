@@ -21,7 +21,7 @@
 #include "testlayers.h"
 #include <memory>
 #include <NDArray.h>
-#include <DebugInfo.h>
+#include <DebugHelper.h>
 using namespace nd4j;
 
 //////////////////////////////////////////////////////////////////////
@@ -865,7 +865,7 @@ TEST_F(NDArrayTest2, debugInfoTest_1) {
             31.,  22.,  87.,  44.,     55.,  46.,  73.,  28.,    119.,  12., 112.,  13.,     14., 114.,  16., 117.,
             91.,  82.,  37.,  64.,    -3,  0, 73.,  28.,    119.,  12., 112.,  13.,    140., 110., 160., 107.}, nd4j::DataType::DOUBLE);
 
-    DebugInfo info = DebugInfo::debugStatistics(&testArray);
+    DebugInfo info = DebugHelper::debugStatistics(&testArray);
     DebugInfo exp; // = {}
     exp._minValue = -119;
     exp._maxValue = 160.;
@@ -903,7 +903,7 @@ TEST_F(NDArrayTest2, debugInfoTest_2) {
     exp._positiveCount = 118;
     exp._infCount = 0;
     exp._nanCount = 0;
-    DebugInfo::retrieveDebugStatistics(&info, &testArray);
+    DebugHelper::retrieveDebugStatistics(&info, &testArray);
     //printf("%lf %lf %lf %lf\n", info._minValue, info._maxValue, info._meanValue, info._stdDevValue);
     //printf("%lld %lld %lld %lld %lld\n", info._zeroCount, info._negativeCount, info._positiveCount, info._infCount, info._nanCount);
     ASSERT_EQ(exp, info);
