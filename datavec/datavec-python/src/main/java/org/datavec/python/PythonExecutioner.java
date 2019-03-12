@@ -16,6 +16,7 @@ import org.bytedeco.javacpp.*;
 import static org.bytedeco.javacpp.python.*;
 
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.ndarray.INDArray;
 
 @Slf4j
 public class PythonExecutioner {
@@ -29,6 +30,8 @@ public class PythonExecutioner {
     private String currentInterpreter =  null;
     private static PythonExecutioner pythonExecutioner;
     private boolean safeExecFlag = false;
+
+    private List<INDArray> _refs = new ArrayList<>();
 
     public static PythonExecutioner getInstance(){
         // do not use constructor
@@ -216,6 +219,7 @@ public class PythonExecutioner {
             inputCode += converter;
             for(String varName: VarNames){
                 NumpyArray npArr = ndInputs.get(varName);
+                npArr = npArr.copy();
                 String shapeStr = "(";
                 for (long d: npArr.getShape()){
                     shapeStr += String.valueOf(d) + ",";
@@ -295,7 +299,10 @@ public class PythonExecutioner {
     public void exec(String code){
         log.info("CPython: PyRun_SimpleStringFlag()");
         log.info(code);
+        System.out.println("about to exec...");
+        System.out.println(code);
         PyRun_SimpleStringFlags(code, null);
+        System.out.println("exec done");
         log.info("Exec done");
     }
 

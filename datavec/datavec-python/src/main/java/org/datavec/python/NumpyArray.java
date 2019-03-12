@@ -40,6 +40,10 @@ public class NumpyArray {
 
         }
     }
+
+    public NumpyArray copy(){
+        return new NumpyArray(nd4jArray.dup());
+    }
     public NumpyArray(long address, long[] shape, long strides[]){
         this(address, shape, strides, false);
     }
