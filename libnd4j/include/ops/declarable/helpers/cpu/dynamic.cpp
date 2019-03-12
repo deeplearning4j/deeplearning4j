@@ -43,8 +43,10 @@ namespace nd4j {
                         outputs[i].first = outputList[i];
                         std::vector<int> outDims(outputs[i].first->rankOf() - 1);
 
+                        int r = outputs[i].first->rankOf();
+
                         PRAGMA_OMP_SIMD
-                        for (int k = 1; k < outputs[i].first->rankOf(); k++)
+                        for (int k = 1; k < r; k++)
                             outDims[k - 1] = k;
 
                         std::unique_ptr<ResultSet> listOutForCurrent(

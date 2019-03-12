@@ -31,15 +31,14 @@ namespace helpers {
     static void dropoutSimple(NDArray const* input, NDArray* output, double probValue, int seed) {
 
         nd4j::graph::RandomGenerator nodeRng(3019L, seed);
+        int inLen = input->lengthOf();
 
-        PRAGMA_OMP_PARALLEL_FOR_IF(input->lengthOf() > Environment::getInstance()->elementwiseThreshold())
-        for (Nd4jLong e = 0; e < input->lengthOf(); ++e) {
+        PRAGMA_OMP_PARALLEL_FOR_IF(inLen > Environment::getInstance()->elementwiseThreshold())
+        for (Nd4jLong e = 0; e < inLen; ++e) {
             float val = nodeRng.relativeT(e, T(0.f), T(1.f));
-//                nd4j_printf("Random value is %f.\n", val);
 
             if (val < probValue)
                 output->p<T>(e, input->e<T>(e) / probValue);
-///                else
         }
     }
     BUILD_SINGLE_TEMPLATE(template void dropoutSimple, (NDArray const* input, NDArray* output, double probValue, int seed), FLOAT_TYPES);

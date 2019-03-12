@@ -90,10 +90,11 @@ namespace helpers {
         if (array->rankOf() == 4) {
             auto tadsIn = array->allTensorsAlongDimension({0});
             auto tadsOut = output->allTensorsAlongDimension({0});
+            int tSize = tadsIn->size();
 
             // FIXME: template selector should be moved out of loop
             PRAGMA_OMP_PARALLEL_FOR
-            for (int e = 0; e < tadsIn->size(); e++) {
+            for (int e = 0; e < tSize; e++) {
                 BUILD_SINGLE_SELECTOR(xType, adjust_saturation_single_, (tadsIn->at(e), tadsOut->at(e), d, isNHWC);, FLOAT_TYPES);
             }
             
