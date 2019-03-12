@@ -319,120 +319,23 @@ public class PythonExecutioner {
     }
 
     private void setupTransform(PythonTransform transform){
-        String name = transform.getName();
-        if (!interpreters.containsKey(name)){
-            setInterpreter(name);
-            String setupCode = transform.getSetupCode();
-            if (setupCode != null) {
-                exec(setupCode);
-            }
-        }
-        else{
-            setInterpreter(name);
-        }
+        setInterpreter(transform.getName());
     }
     public PythonVariables exec(PythonTransform transform) throws Exception{
         setupTransform(transform);
         if (transform.getInputs() != null && transform.getInputs().getVariables().length > 0){
             throw new Exception("Required inputs not provided.");
         }
-        exec(transform.getExecCode(), null, transform.getOutputs());
+        exec(transform.getCode(), null, transform.getOutputs());
         return transform.getOutputs();
     }
 
     public PythonVariables exec(PythonTransform transform, PythonVariables inputs)throws Exception{
         setupTransform(transform);
-        exec(transform.getExecCode(), inputs, transform.getOutputs());
+        exec(transform.getCode(), inputs, transform.getOutputs());
         return transform.getOutputs();
     }
 
-
-
-    // safe exec
-    public PythonVariables safeExec(PythonTransform transform) throws Exception{
-        setupTransform(transform);
-        if (transform.getInputs() != null && transform.getInputs().getVariables().length > 0){
-            throw new Exception("Required inputs not provided.");
-        }
-        safeExecFlag = true;
-        exec(transform.getExecCode(), null, transform.getOutputs());
-        safeExecFlag = false;
-        //deleteInterpreter(transform.getName());
-        return transform.getOutputs();
-    }
-
-    public PythonVariables safeExec(PythonTransform transform, PythonVariables inputs)throws Exception{
-        setupTransform(transform);
-        safeExecFlag = true;
-        exec(transform.getExecCode(), inputs, transform.getOutputs());
-        safeExecFlag = false;
-        //deleteInterpreter(transform.getName());
-        return transform.getOutputs();
-    }
-
-    public PythonVariables batchedExec(PythonTransform transform, PythonVariables inputs) throws Exception{
-        String[] varNames = inputs.getVariables();
-        Map<Integer, PythonVariables> inputBatches = new HashMap<>();
-        for (String varNameAndIdx: varNames){
-            String[]  split = varNameAndIdx.split(Pattern.quote("["));
-            String varName = split[0];
-            int batchId = Integer.parseInt(split[1].split(Pattern.quote("]"))[0]);
-            if (!inputBatches.containsKey(batchId)){
-                inputBatches.put(batchId, new PythonVariables());
-            }
-            inputBatches.get(batchId).add(varName, inputs.getType(varNameAndIdx), inputs.getValue(varNameAndIdx));
-        }
-        PythonVariables outputs = new PythonVariables();
-        for (int batch=0; batch < inputBatches.size(); batch++){
-            PythonVariables batchOutput = exec(transform, inputBatches.get(batch));
-            for (String varName: batchOutput.getVariables()){
-                outputs.add(varName + "[" + batch + "]", batchOutput.getType(varName), batchOutput.getValue(varName));
-            }
-        }
-        return outputs;
-    }
-
-
-    public PythonVariables batchedSafeExec(PythonTransform transform, PythonVariables inputs) throws Exception{
-        String[] varNames = inputs.getVariables();
-        Map<Integer, PythonVariables> inputBatches = new HashMap<>();
-        for (String varNameAndIdx: varNames){
-            String[]  split = varNameAndIdx.split(Pattern.quote("["));
-            String varName = split[0];
-            int batchId = Integer.parseInt(split[1].split(Pattern.quote("]"))[0]);
-            if (!inputBatches.containsKey(batchId)){
-                inputBatches.put(batchId, new PythonVariables());
-            }
-            inputBatches.get(batchId).add(varName, inputs.getType(varNameAndIdx), inputs.getValue(varNameAndIdx));
-        }
-        PythonVariables outputs = new PythonVariables();
-        for (int batch=0; batch < inputBatches.size(); batch++){
-            safeExecFlag = true;
-            PythonVariables batchOutput = exec(transform, inputBatches.get(batch));
-            safeExecFlag = false;
-            for (String varName: batchOutput.getVariables()){
-                outputs.add(varName + "[" + batch + "]", batchOutput.getType(varName), batchOutput.getValue(varName));
-            }
-        }
-        deleteInterpreter(transform.getName());
-        return outputs;
-    }
-
-    private static String read(String path){
-        try{
-            File file = new File(path);
-            FileInputStream fis = new FileInputStream(file);
-            byte[] data = new byte[(int) file.length()];
-            fis.read(data);
-            fis.close();
-            String str = new String(data, "UTF-8");
-            return str;
-        }
-        catch (Exception e){
-            return "";
-        }
-
-    }
 
     public String evalSTRING(String varName){
         PyObject xObj = PyDict_GetItemString(globals, varName);

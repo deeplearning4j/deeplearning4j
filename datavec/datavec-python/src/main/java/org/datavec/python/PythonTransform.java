@@ -24,8 +24,6 @@ import java.util.concurrent.ExecutionException;
  * Row-wise Transform that applies arbitrary python code on each row
  */
 public class PythonTransform implements Transform{
-    private String setupCode;
-    private String execCode;
     private String code;
     private PythonVariables pyInputs;
     private PythonVariables pyOutputs;
@@ -38,7 +36,6 @@ public class PythonTransform implements Transform{
         this.code = code;
         this.pyInputs = pyInputs;
         this.pyOutputs = pyOutputs;
-        parseSetupAndExecCode();
         this.name = UUID.randomUUID().toString();
     }
 
@@ -84,7 +81,8 @@ public class PythonTransform implements Transform{
     public List<Writable> map(List<Writable> writables){
         PythonVariables pyInputs = getPyInputsFromWritables(writables);
         try{
-            PythonVariables pyOutputs = PythonExecutioner.getInstance().exec(this, pyInputs);
+            PythonExecutioner pyExec = PythonExecutioner.getInstance();
+            pyExec.exec(code, pyInputs, pyOutputs);
             return getWritablesFromPyOutputs(pyOutputs);
         }
         catch (Exception e){
@@ -177,34 +175,9 @@ public class PythonTransform implements Transform{
         return out;
     }
 
-    /**
-     * Code between `#<SETUP>` and `#</SETUP>` tags will be
-     * executed only once, while the rest of the code will be executed
-     * per transaction.
-     */
-    private void parseSetupAndExecCode() throws Exception{
-        String startTag = "#<SETUP>";
-        String endTag = "#</SETUP>";
-        if (code.contains(startTag) && code.contains(endTag)){
-            String[] sp1 = code.split(startTag);
-            if (sp1.length > 2){
-                throw new Exception("Only 1 <SETUP> tag allowed.");
-            }
-            String sp2[] = sp1[1].split(endTag);
-            if (sp2.length > 2){
-                throw new Exception("Only 1 </SETUP> tag allowed.");
-            }
-            setupCode = sp2[0];
-            execCode = sp2[1];
-        }
-        else{
-            execCode = code;
-            setupCode = null;
-        }
-    }
+
     public PythonTransform(String code) throws Exception{
         this.code = code;
-        parseSetupAndExecCode();
         this.name = UUID.randomUUID().toString();
     }
     private PythonVariables schemaToPythonVariables(Schema schema) throws Exception{
@@ -237,7 +210,6 @@ public class PythonTransform implements Transform{
 
     public PythonTransform(String code, Schema outputSchema) throws Exception{
         this.code = code;
-        parseSetupAndExecCode();
         this.name = UUID.randomUUID().toString();
         this.outputSchema = outputSchema;
         this.pyOutputs = schemaToPythonVariables(outputSchema);
@@ -248,13 +220,6 @@ public class PythonTransform implements Transform{
         return name;
     }
 
-    public String getExecCode(){
-        return execCode;
-    }
-
-    public String getSetupCode(){
-        return setupCode;
-    }
     public String getCode(){
         return code;
     }
