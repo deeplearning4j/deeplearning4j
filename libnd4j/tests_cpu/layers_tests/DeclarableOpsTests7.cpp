@@ -2521,8 +2521,8 @@ TEST_F(DeclarableOpsTests7, TestExtractImagePatches_SGO_12) {
     auto result = op.execute({&x}, {}, {2,2, 1,1, 2,2, 1}); // equiv TF ksizes=[1,2,2,1], strides=[1,1,1,1], rates=[1,2,2,1], padding="SAME"
     ASSERT_EQ(result->status(), Status::OK());
     auto output = result->at(0);
-    output->printShapeInfo("Output shape");
-    output->printBuffer("Output");
+    //output->printShapeInfo("Output shape");
+    output->printIndexedBuffer("Output");
 //    exp.printBuffer("Expect");
 //    for (Nd4jLong e = 0; e < exp.lengthOf(); e++)
 //        if (exp.e<double>(e) != output->e<double>(e))

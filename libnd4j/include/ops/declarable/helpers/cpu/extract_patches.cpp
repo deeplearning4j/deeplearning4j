@@ -50,20 +50,36 @@ namespace helpers {
             Nd4jLong pos = 0;
             for (int i = 0; i < rowDim; i += stradeRow)
             for (int j = 0; j < colDim; j += stradeCol)
-                for (int l = 0; l < sizeRow; l++)
-                for (int m = 0; m < sizeCol; m++) {
+                for (int l = 0; l < ksizeRowsEffective; l++)
+                for (int m = 0; m < ksizeColsEffective; m++) {
                     //for (Nd4jLong pos = 0; pos < outputLastDim; pos++)
                 for (Nd4jLong k = 0; k < lastDim; ++k) {
-
+                    if (theSame) {
+                        if (j + m * rateCol < colDim &&
+                            i + l * rateRow < rowDim)
+                            outMatrix->p<T>(i, j, pos, patch->e<T>(i + rateRow * l, j + m * rateCol, k));
+                        pos ++; //= ksize;
+                        if (pos >= outLastDim) {
+                            pos = 0;
+                            break;
+                        }
+                    }
+                    else {
 //                    if (l + i < rowDim  && m + j < colDim && i + rateRow * l < patchBorder) // && i + rateRow * l < sizeRow && j + m * rateCol < sizeCol
-//                    outMatrix->p<T>(i, j, pos++, patch->e<T>(i + rateRow * l, j + m * rateCol, k));
-                    if (j + m * rateCol < colDim && i + l * rateRow < rowDim) // && i + rateRow * l < sizeRow && j + m * rateCol < sizeCol
-                        outMatrix->p<T>(pos, patch->e<T>(i + rateRow * l, j + m * rateCol, k));
-                    pos++;
+//                        outMatrix->p<T>(i, j, pos, patch->e<T>(i + rateRow * l, j + m * rateCol, k));
+                        if (j + m * rateCol < colDim &&
+                            i + l * rateRow < rowDim) // && i + rateRow * l < sizeRow && j + m * rateCol < sizeCol
+                            outMatrix->p<T>(pos++, patch->e<T>(i + rateRow * l, j + m * rateCol, k));
+                        //pos++;
 //                    if (pos >= outLastDim)
 //                        pos = 0;
-                    if (pos >= outMatrix->lengthOf()) { // stop looping and try next batch
-                        k = lastDim; m = sizeCol; l = sizeRow; j = colDim; i = rowDim;
+                        if (pos >= outMatrix->lengthOf()) { // stop looping and try next batch
+                            k = lastDim;
+                            m = sizeCol;
+                            l = sizeRow;
+                            j = colDim;
+                            i = rowDim;
+                        }
                     }
                 }
             }
