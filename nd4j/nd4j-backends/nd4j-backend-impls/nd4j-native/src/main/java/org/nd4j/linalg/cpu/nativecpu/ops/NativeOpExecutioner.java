@@ -37,6 +37,7 @@ import org.nd4j.linalg.api.concurrency.AffinityManager;
 import org.nd4j.linalg.api.environment.Nd4jEnvironment;
 import org.nd4j.linalg.api.memory.pointers.PagedPointer;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ndarray.INDArrayStatistics;
 import org.nd4j.linalg.api.ops.*;
 import org.nd4j.linalg.api.ops.aggregates.Aggregate;
 import org.nd4j.linalg.api.ops.aggregates.Batch;
@@ -2040,5 +2041,24 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             return new INDArray[0];
         else
             return context.getOutputArrays().toArray(new INDArray[context.getOutputArrays().size()]);
+    }
+
+    @Override
+    public INDArrayStatistics inspectArray(INDArray array) {
+        val debugInfo = new Nd4jCpu.DebugInfo();
+
+        loop.inspectArray(null, array.data().addressPointer(), (LongPointer) array.shapeInfoDataBuffer().addressPointer(), null, null, debugInfo);
+
+        return INDArrayStatistics.builder()
+                .minValue(debugInfo._minValue())
+                .maxValue(debugInfo._maxValue())
+                .meanValue(debugInfo._meanValue())
+                .stdDevValue(debugInfo._stdDevValue())
+                .countInf(debugInfo._infCount())
+                .countNaN(debugInfo._nanCount())
+                .countNegative(debugInfo._negativeCount())
+                .countPositive(debugInfo._positiveCount())
+                .countZero(debugInfo._zeroCount())
+                .build();
     }
 }

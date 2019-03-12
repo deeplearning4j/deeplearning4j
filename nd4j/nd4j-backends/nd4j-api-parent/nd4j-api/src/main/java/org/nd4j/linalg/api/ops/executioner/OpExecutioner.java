@@ -20,6 +20,7 @@ import lombok.NonNull;
 import org.bytedeco.javacpp.Pointer;
 import org.nd4j.linalg.api.buffer.Utf8Buffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ndarray.INDArrayStatistics;
 import org.nd4j.linalg.api.ops.*;
 import org.nd4j.linalg.api.ops.aggregates.Aggregate;
 import org.nd4j.linalg.api.ops.aggregates.Batch;
@@ -422,4 +423,10 @@ public interface OpExecutioner {
      * @return
      */
     OpContext buildContext();
+
+    /**
+     *
+     * @param array
+     */
+    INDArrayStatistics inspectArray(INDArray array);
 }

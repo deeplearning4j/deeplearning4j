@@ -7073,6 +7073,17 @@ public class Nd4jTestsC extends BaseNd4jTest {
     }
 
     @Test
+    public void testStatistics_1() {
+        val array = Nd4j.createFromArray(new float[] {-1.0f, 0.0f, 1.0f});
+        val stats = Nd4j.getExecutioner().inspectArray(array);
+
+        assertEquals(1, stats.getCountPositive());
+        assertEquals(1, stats.getCountNegative());
+        assertEquals(1, stats.getCountZero());
+        assertEquals(0.0f, stats.getMeanValue(), 1e-5);
+    }
+
+    @Test
     public void testINDArrayMmulWithTranspose(){
         Nd4j.getRandom().setSeed(12345);
         INDArray a = Nd4j.rand(2,5);

@@ -27,6 +27,7 @@ import org.nd4j.linalg.api.buffer.Utf8Buffer;
 import org.nd4j.linalg.api.environment.Nd4jEnvironment;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ndarray.INDArrayStatistics;
 import org.nd4j.linalg.api.ops.*;
 import org.nd4j.linalg.api.ops.aggregates.Aggregate;
 import org.nd4j.linalg.api.ops.aggregates.Batch;
@@ -825,6 +826,11 @@ public class DefaultOpExecutioner implements OpExecutioner {
 
     @Override
     public INDArray[] exec(CustomOp op, OpContext context) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public INDArrayStatistics inspectArray(INDArray array) {
         throw new UnsupportedOperationException();
     }
 }
