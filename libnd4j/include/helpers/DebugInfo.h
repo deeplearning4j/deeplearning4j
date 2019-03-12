@@ -26,7 +26,7 @@
 #include <Environment.h>
 #include <StringUtils.h>
 #include <string>
-
+#include <templatemath.h>
 
 #ifdef __CUDACC__
 
@@ -51,10 +51,10 @@ namespace nd4j {
     };
 
     FORCEINLINE bool operator==(DebugInfo const& first, DebugInfo const& second) {
-        first._minValue    ==   second._minValue &&
-        first._maxValue    ==   second._maxValue &&
-        first._meanValue   ==   second._meanValue &&
-        first._stdDevValue ==   second._stdDevValue &&
+        nd4j::math::nd4j_abs(first._minValue - second._minValue) < 0.000001 &&
+        nd4j::math::nd4j_abs(first._maxValue  -   second._maxValue) < 0.000001  &&
+        nd4j::math::nd4j_abs(first._meanValue -  second._meanValue) < 0.000001  &&
+        nd4j::math::nd4j_abs(first._stdDevValue - second._stdDevValue) < 0.000001  &&
         first._zeroCount   ==   second._zeroCount &&
         first._positiveCount == second._positiveCount &&
         first._negativeCount == second._negativeCount &&
