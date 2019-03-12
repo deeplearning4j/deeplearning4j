@@ -21,6 +21,32 @@
 #ifndef DEV_TESTS_OPENMP_PRAGMAS_H
 #define DEV_TESTS_OPENMP_PRAGMAS_H
 
+#if defined(_WIN32) && defined(__CUDABLAS__)
+
+#define OMP_STRINGIFY(args)
+#define OMP_IF(args)
+#define OMP_SCHEDULE(args)
+#define OMP_MAXT
+#define OMP_SUMT
+#define OMP_REDUCTION(args)
+#define PRAGMA_OMP_CRITICAL
+#define PRAGMA_OMP_SIMD
+#define PRAGMA_OMP_SIMD_ARGS(args)
+#define PRAGMA_OMP_SIMD_SUM(args)
+#define PRAGMA_OMP_SIMD_MAX(args)
+#define PRAGMA_OMP_PARALLEL
+#define PRAGMA_OMP_PARALLEL_ARGS(args)
+#define PRAGMA_OMP_PARALLEL_THREADS(args)
+#define PRAGMA_OMP_PARALLEL_FOR
+#define PRAGMA_OMP_PARALLEL_FOR_ARGS(args)
+#define PRAGMA_OMP_PARALLEL_FOR_IF(args)
+#define PRAGMA_OMP_PARALLEL_FOR_COLLAPSE(loops)
+#define PRAGMA_OMP_PARALLEL_FOR_THREADS(args)
+#define PRAGMA_OMP_PARALLEL_FOR_SIMD
+#define PRAGMA_OMP_PARALLEL_FOR_SIMD_ARGS(args)
+#define PRAGMA_OMP_PARALLEL_FOR_SIMD_COLLAPSE(loops)
+
+#else
 
 #define OMP_STRINGIFY(args) #args
 #define OMP_IF(args) if(args)
@@ -45,5 +71,6 @@
 #define PRAGMA_OMP_PARALLEL_FOR_SIMD_ARGS(args) _Pragma(OMP_STRINGIFY(omp parallel for simd args default(shared)))
 #define PRAGMA_OMP_PARALLEL_FOR_SIMD_COLLAPSE(loops) _Pragma(OMP_STRINGIFY(omp parallel for simd default(shared) collapse(loops)))
 
+#endif
 
 #endif //DEV_TESTS_OPENMP_PRAGMAS_H
