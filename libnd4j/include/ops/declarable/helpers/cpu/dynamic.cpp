@@ -133,19 +133,16 @@ namespace nd4j {
                 if (sourceDimsLen) { // multidimensional case
                     std::vector<int> sourceDims(sourceDimsLen);
 
-//#pragma omp parallel for if(sourceDims.size() > Environment::getInstance()->elementwiseThreshold()) schedule(static)
                     for (int i = sourceDimsLen; i > 0; i--)
                         sourceDims[sourceDimsLen - i] = input->rankOf() - i;
 
                     std::unique_ptr<ResultSet> listOfTensors(outputList[0]->allTensorsAlongDimension(sourceDims));
 
-//#pragma omp parallel for if(outputList.size() > Environment::getInstance()->elementwiseThreshold()) schedule(static)
                     for (unsigned int i = 0; i < inputGradientList.size(); i++) {
                         outputs[i].first = inputGradientList[i];
                         if (outputs[i].first->rankOf() < 1) continue; // skip empty gradient outs
                         std::vector<int> outDims(outputs[i].first->rankOf() - 1);
 
-//#pragma omp parallel for if(outputs[i].first->rankOf() > Environment::getInstance()->elementwiseThreshold()) schedule(static)
                         for (int k = 1; k < outputs[i].first->rankOf(); k++)
                             outDims[k - 1] = k;
 

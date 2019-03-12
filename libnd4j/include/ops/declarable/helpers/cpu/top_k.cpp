@@ -47,8 +47,6 @@ namespace helpers {
         const Nd4jLong numOfSubArrs = ShapeUtils::getNumOfSubArrs(input->getShapeInfo(), dimsToExclude);
 
             if (k == 1) {
-                int pos = 0;
-//#pragma omp parallel for if(numOfSubArrs > Environment::getInstance()->elementwiseThreshold()) schedule(static)
                 for (Nd4jLong e = 0; e < numOfSubArrs; ++e) {
                     auto trial = (*input)(e, dimsToExclude);
                     //int maxPos = //lastDimList->at(e)->argMax();
@@ -69,16 +67,8 @@ namespace helpers {
             else { 
                 int nextPos = 0;
 
-//#pragma omp parallel for if(lastDimList->size() > Environment::getInstance()->elementwiseThreshold()) schedule(static)
                 for (Nd4jLong e = 0; e < numOfSubArrs; ++e) {
                     auto trial = (*input)(e, dimsToExclude);
-
-                    //auto trialTo = lastDimList->at(e); // a vector to be search
-                    //nd4j_printf("%i: ", e);
-                    //trial.printIndexedBuffer("TRIAL:");
-                    //trialTo->printIndexedBuffer("TOTRI:");
-                    //std::vector<Nd4jLong> topIndices(k);
-                    //std::vector<T> topValues(k);
 
                     // fill up the first k elements
                     NDArray topValues = NDArrayFactory::create<T>('c', {k});

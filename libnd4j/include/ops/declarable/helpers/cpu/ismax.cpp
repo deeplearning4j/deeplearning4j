@@ -43,7 +43,7 @@ static void ismax_(const NDArray* input, NDArray* output, const std::vector<int>
                 int maxIdx = 0;
                 T currMax = input->e<T>(0);
                 if (length < ELEMENT_THRESHOLD) {
-//#pragma omp simd reduction(max:maxIdx,currMax)
+
                     for (int i = 0; i < length; i++) {
                         if (currMax < input->e<T>(i)) {
                             currMax = input->e<T>(i);
@@ -53,11 +53,11 @@ static void ismax_(const NDArray* input, NDArray* output, const std::vector<int>
                     }
                 }
                 else {
-#pragma omp parallel proc_bind(AFFINITY) default(shared)
+
                     {
                         int maxIdxLocal = maxIdx;
                         T currMaxLocal = currMax;
-//#pragma omp simd reduction(max:maxIdxLocal,currMaxLocal)
+
                         for (int i = 0; i < length; i++) {
                             if (currMaxLocal < input->e<T>(i)) {
                                 currMaxLocal = input->e<T>(i);
@@ -81,7 +81,7 @@ static void ismax_(const NDArray* input, NDArray* output, const std::vector<int>
                 int maxIdx = 0;
                 T currMax = input->e<T>(0);
                 if (length < ELEMENT_THRESHOLD) {
-//#pragma omp parallel for reduction(max:maxIdx,currMax) proc_bind(AFFINITY)
+
                     for (int i = 0; i < length; i++) {
                         if (currMax < input->e<T>(i*eleStride)) {
                             currMax = input->e<T>(i*eleStride);
@@ -91,11 +91,10 @@ static void ismax_(const NDArray* input, NDArray* output, const std::vector<int>
                     }
                 }
                 else {
-#pragma omp parallel proc_bind(AFFINITY) default(shared)
+
                     {
                         int maxIdxLocal = maxIdx;
                         T currMaxLocal = currMax;
-//#pragma omp parallel for reduction(max:maxIdx,currMax)  proc_bind(AFFINITY)
                         for (int i = 0; i < length; i++) {
                             if (currMaxLocal < input->e<T>(i*eleStride)) {
                                 currMaxLocal = input->e<T>(i*eleStride);

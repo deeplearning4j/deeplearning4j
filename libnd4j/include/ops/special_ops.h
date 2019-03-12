@@ -1430,12 +1430,10 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
 				if (elementWiseStride >= 1 && resultElementWiseStride >= 1) {
 					if (elementWiseStride == 1 && resultElementWiseStride == 1) {
 
-//#pragma omp simd reduction(maxT:max)
 						for (int i = 0; i < length; i++) {
 							max = nd4j::math::nd4j_max<X>(max, dx[i]);
 						}
 
-//#pragma omp parallel for simd reduction(sumT:sum)
 						for (int i = 0; i < length; i++) {
                             result[i] = nd4j::math::nd4j_exp<X,X>(dx[i] - max);
 							sum += result[i];
@@ -1448,19 +1446,16 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
 					}
 					else {
 
-//#pragma omp simd reduction(maxT:max)
 						for (int i = 0; i < length; i++) {
 							max = nd4j::math::nd4j_max<X>(max, dx[i * elementWiseStride]);
 						}
 
-//#pragma omp parallel for simd reduction(sumT:sum)
 						for (int i = 0; i < length; i++) {
                             auto r = nd4j::math::nd4j_exp<X, X>(dx[i * elementWiseStride] - max);
                             result[i * resultElementWiseStride] = r;
 							sum += r;
 						}
 
-//#pragma omp simd
 						for (int i = 0; i < length; i++) {
 							result[i * resultElementWiseStride] /= sum;
 						}
@@ -1593,12 +1588,12 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
 				auto elementWiseStride = shape::elementWiseStride(xShapeBuffer);
                 auto length = shape::length(xShapeBuffer);
 				if (elementWiseStride == 1) {
-//#pragma omp simd reduction(maxT:max)
+
 					for (int i = 0; i < length; i++) {
 						max = nd4j::math::nd4j_max<X>(max, result[i]);
 					}
 
-//#pragma omp simd reduction(sumT:sum)
+
 					for (int i = 0; i < length; i++) {
 						result[i] = nd4j::math::nd4j_exp<X, X>(dx[i] - max);
 						sum += result[i];
@@ -1611,18 +1606,15 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
 					}
 				}
 				else if (elementWiseStride > 1) {
-//#pragma omp simd reduction(maxT:max)
 					for (int i = 0; i < length; i++) {
 						max = nd4j::math::nd4j_max<X>(max, result[i * elementWiseStride]);
 					}
 
-//#pragma omp simd reduction(sumT:sum)
 					for (int i = 0; i < length; i++) {
 						result[i * elementWiseStride] = nd4j::math::nd4j_exp<X, X>(dx[i * elementWiseStride] - max);
 						sum += result[i * elementWiseStride];
 					}
 
-//#pragma omp simd
 					for (int i = 0; i < length; i++) {
 						result[i * elementWiseStride] /= sum;
 						result[i * elementWiseStride] = nd4j::math::nd4j_log<X, X>(result[i * elementWiseStride]);
@@ -1795,36 +1787,29 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
 				auto length = shape::length(xShapeBuffer);
 				if (elementWiseStride == 1) {
 
-//#pragma omp simd reduction(maxT:max)
 					for (int i = 0; i < length; i++) {
 						max = nd4j::math::nd4j_max<X>(max, result[i]);
 					}
 
-//#pragma omp simd reduction(sumT:sum)
 					for (int i = 0; i < length; i++) {
 						result[i] -= max;
 						result[i] = nd4j::math::nd4j_exp<X, X>(result[i]);
 						sum += result[i];
 					}
 
-//#pragma omp simd
 					for (int i = 0; i < length; i++) {
 						result[i] /= sum;
 					}
 
-//#pragma omp simd
                     for (int i = 0; i < length; i++) {
                         result[i] = result[i] * ((X) 1.0f - result[i]);
                     }
                 } else if (elementWiseStride >= 1) {
 
-//#pragma omp simd reduction(maxT:max)
 					for (int i = 0; i < length; i++) {
 						max = nd4j::math::nd4j_max<X>(max, result[i * elementWiseStride]);
 					}
 
-
-//#pragma omp simd reduction(sumT:sum)
 					for (int i = 0; i < length; i++) {
 						result[i * elementWiseStride] -= max;
 						result[i * elementWiseStride] = nd4j::math::nd4j_exp<X, X>(result[i * elementWiseStride]);
@@ -1940,7 +1925,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
 					if (length < ELEMENT_THRESHOLD) {
 						int maxIdx = 0;
                         auto currMax = dx[0];
-//#pragma omp simd reduction (max:maxIdx,currMax)
+
 						for (int i = 0; i < length; i++) {
 							if (currMax < dx[i]) {
 								currMax = dx[i];
@@ -1958,12 +1943,11 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
 						int maxIdx = 0;
 						auto currMax = dx[0];
 
-#pragma omp parallel proc_bind(AFFINITY)
+
 {
 						int maxIdxLocal = maxIdx;
 						auto currMaxLocal = currMax;
 
-//#pragma omp simd reduction(max:maxIdxLocal,currMaxLocal)
 						for (int i = 0; i < length; i++) {
 							if (currMaxLocal < dx[i]) {
 								currMaxLocal = dx[i];
@@ -1988,7 +1972,7 @@ PRAGMA_OMP_CRITICAL
 					if (length < ELEMENT_THRESHOLD) {
 						int maxIdx = 0;
                         auto currMax = dx[0];
-//#pragma omp simd reduction(max:maxIdx,currMax)
+
 						for (int i = 0; i < length; i++) {
 							result[i * resultEleStride] = static_cast<Z>(0);
 							if (currMax < dx[i * eleStride]) {
@@ -2004,11 +1988,11 @@ PRAGMA_OMP_CRITICAL
 						int maxIdx = 0;
 						auto currMax = dx[0];
 
-#pragma omp parallel proc_bind(AFFINITY) default(shared)
+
 {
 						int maxIdxLocal = maxIdx;
 						auto currMaxLocal = currMax;
-//#pragma omp simd reduction(max:maxIdxLocal,currMaxLocal)
+
 						for (int i = 0; i < length; i++) {
 							result[i * resultEleStride] = static_cast<Z>(0);
 							if (currMaxLocal < dx[i * eleStride]) {
@@ -2153,7 +2137,6 @@ PRAGMA_OMP_CRITICAL
 						auto currMax = dx[0];
 						if (length < ELEMENT_THRESHOLD) {
 
-//#pragma omp simd reduction(max:maxIdx,currMax)
 							for (int i = 0; i < length; i++) {
 								if (currMax < dx[i]) {
 									currMax = dx[i];
@@ -2169,7 +2152,7 @@ PRAGMA_OMP_CRITICAL
 {
 							int maxIdxLocal = maxIdx;
 							auto currMaxLocal = currMax;
-//#pragma omp simd reduction(max:maxIdxLocal,currMaxLocal)
+
 							for (int i = 0; i < length; i++) {
 								if (currMaxLocal < dx[i]) {
 									currMaxLocal = dx[i];
@@ -2199,7 +2182,7 @@ PRAGMA_OMP_CRITICAL
 						int maxIdx = 0;
 						auto currMax = dx[0];
 						if (length < ELEMENT_THRESHOLD) {
-//#pragma omp parallel for reduction(max:maxIdx,currMax) proc_bind(AFFINITY)
+
 							for (int i = 0; i < length; i++) {
 								if (currMax < dx[i * eleStride]) {
 									currMax = dx[i * eleStride];
@@ -2210,12 +2193,11 @@ PRAGMA_OMP_CRITICAL
 							}
 						}
 						else {
-#pragma omp parallel proc_bind(AFFINITY) default(shared)
+
 {
 							int maxIdxLocal = maxIdx;
 							auto currMaxLocal = currMax;
 
-//#pragma omp parallel for reduction(max:maxIdx,currMax)  proc_bind(AFFINITY)
 							for (int i = 0; i < length; i++) {
 								if (currMaxLocal < dx[i * eleStride]) {
 									currMaxLocal = dx[i * eleStride];
@@ -2290,7 +2272,7 @@ PRAGMA_OMP_CRITICAL
                             auto maxValue = rX[0];
                             int maxIdx = 0;
                             if (tadEWS == 1 && zEWS == 1) {
-//#pragma omp simd reduction(max:maxValue,maxIdx)
+
                                 for (int i = 0; i < tadLength; i++) {
                                     if (rX[i] > maxValue) {
                                         maxIdx = i;
@@ -2298,14 +2280,13 @@ PRAGMA_OMP_CRITICAL
                                     }
                                 }
 
-//#pragma omp simd
+
                                 for (int i = 0; i < tadLength; i++) {
                                     rZ[i] = static_cast<Z>(maxIdx == i);
                                 }
 
                             } else {
 
-//#pragma omp parallel for reduction(max:maxValue,maxIdx) default(shared)
                                 for (int i = 0; i < tadLength; i++) {
                                     if (rX[i * tadEWS] > maxValue) {
                                         maxIdx = i;
@@ -2313,7 +2294,6 @@ PRAGMA_OMP_CRITICAL
                                     }
                                 }
 
-//#pragma omp simd
                                 for (int i = 0; i < tadLength; i++) {
                                     rZ[i * zEWS] = static_cast<Z>(maxIdx == i);
                                 }

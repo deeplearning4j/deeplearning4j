@@ -74,7 +74,6 @@ namespace helpers {
                 counts->p(e, countsMap[valuesVector[e]]);
         }
 
-//#pragma omp parallel for if(indices->lengthOf() > Environment::getInstance()->elementwiseThreshold()) schedule(static)
         for (int e = 0; e < indices->lengthOf(); e++) {
             auto posI = std::find(valuesVector.begin(), valuesVector.end(), input->e<T>(e));
             auto dist = std::distance(valuesVector.begin(), posI);

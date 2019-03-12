@@ -242,7 +242,6 @@ namespace nd4j {
         math_def inline Z nd4j_dot(X *x, Y *y, int length) {
             Z dot = (Z)0.0f;
 
-//#pragma omp simd reduction(+:dot)
 			for(int e = 0; e < length; e++) {
 				dot += static_cast<Z>(x[e]) * static_cast<Z>(y[e]);
 			}

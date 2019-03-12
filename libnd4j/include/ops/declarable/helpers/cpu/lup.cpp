@@ -120,7 +120,7 @@ namespace helpers {
         T pivotValue; // = T(0.0);
         int pivot; // = -1;
         int swapCount = 0;
-//#pragma omp parallel for if(rowNum > Environment::getInstance()->elementwiseThreshold()) schedule(static)
+
         for(int i = 0; i < rowNum; i++ ) {
             pivotValue = T(0.0);
             pivot = -1;
@@ -147,9 +147,7 @@ namespace helpers {
                 }
             }
         }
-        // nd4j_printf("Pivot: %i, Pivot value: %f.\n", pivot, pivotValue);
-//#pragma omp parallel for
-// if(rowNum > Environment::getInstance()->elementwiseThreshold()) schedule(static)
+
         for (int e = 0; e < rowNum; e++) {
             // nd4j_printf("Compound matrix diag %i %f.\n", e, (*compoundMatrix)(e, e));
             determinant *= compoundMatrix->e<T>(e, e);
@@ -173,7 +171,7 @@ namespace helpers {
         Nd4jLong n2 = n * n;
 
         auto matrix = NDArrayFactory::create(input->ordering(), {n, n}, input->dataType(), input->getWorkspace()); //, block.getWorkspace());
-//#pragma omp parallel for if(output->lengthOf() > Environment::getInstance()->elementwiseThreshold()) schedule(static)
+
         for (int e = 0; e < output->lengthOf(); e++) {
             for (int k = e * n2, row = 0; k < (e + 1) * n2; ++k, ++row) {
                 matrix.p(row, input->e<T>(k));
@@ -198,7 +196,7 @@ template <typename T>
         Nd4jLong n2 = n * n;
 
         NDArray matrix = NDArrayFactory::create(input->ordering(), {n, n}, input->dataType(), input->getWorkspace()); //, block.getWorkspace());
-//#pragma omp parallel for if(output->lengthOf() > Environment::getInstance()->elementwiseThreshold()) schedule(static)
+
         for (int e = 0; e < output->lengthOf(); e++) {
             for (int k = e * n2, row = 0; k < (e + 1) * n2; ++k, ++row) {
                 matrix.p(row, input->e<T>(k));
