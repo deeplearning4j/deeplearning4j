@@ -57,11 +57,11 @@ namespace helpers {
                     if (theSame) {
                         if (j + m * rateCol < colDim &&
                             i + l * rateRow < rowDim)
-                            outMatrix->p<T>(i, j, pos, patch->e<T>(i + rateRow * l, j + m * rateCol, k));
-                        pos ++; //= ksize;
+                            outMatrix->p<T>(i, j, pos++, patch->e<T>(i + rateRow * l, j + m * rateCol, k));
+//                        pos ++; //= ksize;
                         if (pos >= outLastDim) {
                             pos = 0;
-                            break;
+                            //break;
                         }
                     }
                     else {
