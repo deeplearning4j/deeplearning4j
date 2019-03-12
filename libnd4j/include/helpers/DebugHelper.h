@@ -98,6 +98,7 @@ namespace nd4j {
        Nd4jLong _nanCount;
     public:
         static DebugHelper debugStatistics(NDArray* input);
+        static void retrieveDebugStatistics(DebugHelper* statistics, NDArray* input);
     };
 }
 
