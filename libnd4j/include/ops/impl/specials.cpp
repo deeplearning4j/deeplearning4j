@@ -237,7 +237,7 @@ void SpecialMethods<T>::concatCpuGeneric(int dimension, int numArrays, Nd4jPoint
         auto array = reinterpret_cast<T *>(varray);
         int cutoff = 1000;
 
-#pragma omp parallel num_threads(numThreads)
+        PRAGMA_OMP_PARALLEL_THREADS(numThreads)
         {
 #pragma omp single nowait
             {
@@ -285,7 +285,7 @@ void SpecialMethods<T>::concatCpuGeneric(int dimension, int numArrays, Nd4jPoint
         Nd4jLong xTadLength = shape::tadLength(xShapeInfo, dimension, dimensionLength);
         int numTads = xLength / xTadLength;
 
-#pragma omp parallel for
+        PRAGMA_OMP_PARALLEL_FOR
         for (int r = 0; r < numTads; r++) {
             T *dx = x + tadOffsets[r];
 

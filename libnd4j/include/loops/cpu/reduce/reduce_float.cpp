@@ -249,7 +249,7 @@ namespace functions {
 
             if (xEws == 1) {
 
-#pragma omp parallel num_threads(info._numThreads) if (info._numThreads > 1) default(shared)
+                PRAGMA_OMP_PARALLEL_THREADS(info._numThreads)
                 {
                     auto local = OpType::startingValue(x);
                     auto threadNum = omp_get_thread_num();
@@ -265,7 +265,7 @@ namespace functions {
             }
             else {
 
-#pragma omp parallel num_threads(info._numThreads) if (info._numThreads > 1) default(shared)
+                PRAGMA_OMP_PARALLEL_THREADS(info._numThreads)
                 {
                     auto local = OpType::startingValue(x);
                     auto threadNum = omp_get_thread_num();

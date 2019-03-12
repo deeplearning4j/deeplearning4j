@@ -88,8 +88,8 @@ TEST_F(OmpLaunchHelperTests, loop_test1) {
     Nd4jLong desiredNumThreads = 2;
     int x[N] = {0};
 
-    OmpLaunchHelper info(N, desiredNumThreads);    
-#pragma omp parallel num_threads(info._numThreads) if (info._numThreads > 1) default(shared)
+    OmpLaunchHelper info(N, desiredNumThreads);
+    PRAGMA_OMP_PARALLEL_THREADS(info._numThreads)
     {                        
         auto threadNum = omp_get_thread_num();
         auto xi = x + info.getThreadOffset(threadNum);

@@ -66,7 +66,7 @@ namespace functions {
 
             if (shape::elementWiseStride(xShapeInfo) == 1 && shape::elementWiseStride(zShapeInfo) == 1 && shape::order(xShapeInfo) == shape::order(zShapeInfo)) {
 
-#pragma omp parallel num_threads(info._numThreads) if (info._numThreads > 1) default(shared)
+                PRAGMA_OMP_PARALLEL_THREADS(info._numThreads)
                 {
                     auto threadNum = omp_get_thread_num();
                     auto threadOffset = info.getThreadOffset(threadNum);
@@ -82,7 +82,7 @@ namespace functions {
                 uint xShapeInfoCast[MAX_RANK];
                 bool canCastX = nd4j::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
 
-#pragma omp parallel num_threads(info._numThreads) if (info._numThreads > 1) default(shared)
+                PRAGMA_OMP_PARALLEL_THREADS(info._numThreads)
                 {
                     auto threadNum = omp_get_thread_num();
                     auto threadOffset = info.getThreadOffset(threadNum);
@@ -101,7 +101,7 @@ namespace functions {
                 uint zShapeInfoCast[MAX_RANK];
                 bool canCastZ = nd4j::DataTypeUtils::castShapeInfo(zShapeInfo, zShapeInfoCast);
 
-#pragma omp parallel num_threads(info._numThreads) if (info._numThreads > 1) default(shared)
+                PRAGMA_OMP_PARALLEL_THREADS(info._numThreads)
                 {
                     auto threadNum = omp_get_thread_num();
                     auto threadOffset = info.getThreadOffset(threadNum);

@@ -69,7 +69,7 @@ static void batchnorm_(const NDArray* input, const NDArray* mean, const NDArray*
 
     if(beta != nullptr) {
         const T* betaBuff  = beta->bufferAsT<T>();
-        #pragma omp parallel num_threads(info._numThreads) if (info._numThreads > 1) default(shared)
+        PRAGMA_OMP_PARALLEL_THREADS(info._numThreads)
         {                        
             const auto threadNum = omp_get_thread_num();
             Nd4jLong* inOffsets = new Nd4jLong[step];
@@ -97,7 +97,7 @@ static void batchnorm_(const NDArray* input, const NDArray* mean, const NDArray*
         }    
     }
     else {
-        #pragma omp parallel num_threads(info._numThreads) if (info._numThreads > 1) default(shared)
+        PRAGMA_OMP_PARALLEL_THREADS(info._numThreads)
         {                        
             const auto threadNum = omp_get_thread_num();
             Nd4jLong* inOffsets = new Nd4jLong[step];

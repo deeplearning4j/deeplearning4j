@@ -866,7 +866,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
 			T binSize = (max_val - min_val) / (numBins);
 
 
-#pragma omp parallel num_threads(_threads) if (_threads > 1) proc_bind(close) default(shared)
+            PRAGMA_OMP_PARALLEL_THREADS(_threads)
 			{
 				int tid, start, end;
 

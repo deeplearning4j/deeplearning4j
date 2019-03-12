@@ -60,8 +60,8 @@ Nd4jLong IndexReduce<X>::execScalar(void *vx, Nd4jLong *xShapeInfo, void *vextra
 
     uint xShapeInfoCast[MAX_RANK];
     bool canCastX = nd4j::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
-                        
-    #pragma omp parallel num_threads(info._numThreads) if (info._numThreads > 1) default(shared)
+
+    PRAGMA_OMP_PARALLEL_THREADS(info._numThreads)
     {                
         auto local = OpType::startingIndexValue(x);
         auto threadNum = omp_get_thread_num();                    

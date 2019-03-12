@@ -115,7 +115,7 @@ namespace nd4j {
         int flimit = limit + 4;
         volatile int cnt = 4;
         volatile bool flag = false;
-#pragma omp parallel num_threads(threads) default(shared)
+        PRAGMA_OMP_PARALLEL_THREADS(threads)
         {
             int tid = omp_get_thread_num();
             int start = span * tid;

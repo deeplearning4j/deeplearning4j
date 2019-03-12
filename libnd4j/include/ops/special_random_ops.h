@@ -437,7 +437,7 @@ namespace randomOps {
             auto span = (zLength / _threads) + 8;
 
             nd4j::graph::RandomGenerator* rng = reinterpret_cast<nd4j::graph::RandomGenerator*>(state);
-#pragma omp parallel num_threads(_threads) if (_threads > 1) proc_bind(spread)
+            PRAGMA_OMP_PARALLEL_THREADS(_threads)
             {
                 int tid = omp_get_thread_num();
                 auto start = span * tid;
@@ -560,7 +560,7 @@ namespace randomOps {
 
             //nd4j::random::RandomBuffer *buffer = reinterpret_cast<nd4j::random::RandomBuffer *> (state);
             nd4j::graph::RandomGenerator* rng = reinterpret_cast<nd4j::graph::RandomGenerator*>(state);
-#pragma omp parallel num_threads(_threads) if (_threads > 1) proc_bind(spread)
+            PRAGMA_OMP_PARALLEL_THREADS(_threads)
             {
                 int tid = omp_get_thread_num();
                 Nd4jLong start = span * tid;
@@ -937,7 +937,7 @@ namespace randomOps {
             const T stddev = extraArguments[1];
             const T epsilon = static_cast<T>(1e-5);
 
-#pragma omp parallel num_threads(_threads) if (_threads > 1) proc_bind(spread)
+            PRAGMA_OMP_PARALLEL_THREADS(_threads)
             {
                 int tid = omp_get_thread_num();
                 Nd4jLong start = span * tid;
@@ -945,6 +945,7 @@ namespace randomOps {
                 if (end > middle)
                     end = middle;
 
+                PRAGMA_OMP_SIMD
                 for (Nd4jLong e = start; e < end; e++) {
                     auto epm = e + middle;
 

@@ -151,8 +151,8 @@ namespace functions {
             nd4j::OmpLaunchHelper info(len);
                                
             if(shape::haveSameOffsets(xShapeInfo, zShapeInfo)) {
-                        
-                #pragma omp parallel num_threads(info._numThreads) if (info._numThreads > 1) default(shared)
+
+                PRAGMA_OMP_PARALLEL_THREADS(info._numThreads)
                 {
                     auto threadNum = omp_get_thread_num();                    
                     Nd4jLong threadOffset = info.getThreadOffset(threadNum);
@@ -168,8 +168,8 @@ namespace functions {
                 
                 uint zShapeInfoCast[MAX_RANK];
                 const bool canCastZ = nd4j::DataTypeUtils::castShapeInfo<uint>(zShapeInfo, zShapeInfoCast);
-                
-                #pragma omp parallel num_threads(info._numThreads) if (info._numThreads > 1) default(shared)
+
+                PRAGMA_OMP_PARALLEL_THREADS(info._numThreads)
                 {
                     auto threadNum = omp_get_thread_num();                    
                     Nd4jLong threadOffset = info.getThreadOffset(threadNum);
@@ -201,7 +201,7 @@ namespace functions {
                 auto extraParams = reinterpret_cast<X *>(vextraParams);
 
                 nd4j::OmpLaunchHelper info(len);
-                #pragma omp parallel num_threads(info._numThreads) if (info._numThreads > 1) default(shared)
+                PRAGMA_OMP_PARALLEL_THREADS(info._numThreads)
                 {                
                     auto threadNum = omp_get_thread_num();         
                     auto threadOffset = info.getThreadOffset(threadNum);

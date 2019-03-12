@@ -144,7 +144,7 @@ static void ismax_(const NDArray* input, NDArray* output, const std::vector<int>
 
         int span = (tads / num_threads) + 8;
 
-#pragma omp parallel num_threads(num_threads) if (num_threads>1) proc_bind(AFFINITY)
+        PRAGMA_OMP_PARALLEL_THREADS(num_threads)
         {
             int tid = omp_get_thread_num();
             int start = span * tid;
@@ -159,7 +159,6 @@ static void ismax_(const NDArray* input, NDArray* output, const std::vector<int>
                     T maxValue = rX[0];
                     int maxIdx = 0;
                     if (tadEWS == 1 && zEWS == 1) {
-//#pragma omp simd reduction(max:maxValue,maxIdx)
                         for (int i = 0; i < tadLength; i++) {
                             if (rX[i] > maxValue) {
                                 maxIdx = i;
@@ -173,7 +172,6 @@ static void ismax_(const NDArray* input, NDArray* output, const std::vector<int>
                         }
                     } 
                     else {
-//#pragma omp parallel for reduction(max:maxValue,maxIdx) default(shared)
                         for (int i = 0; i < tadLength; i++) {
                             if (rX[i * tadEWS] > maxValue) {
                                 maxIdx = i;

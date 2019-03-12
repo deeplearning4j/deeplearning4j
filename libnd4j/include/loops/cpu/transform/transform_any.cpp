@@ -158,7 +158,7 @@ void _CUDA_H TransformAny<X, Z>::exec(void *vx, Nd4jLong *xShapeInfo,
 
     if (xEws == 1 && zEws == 1 && xOrder == zOrder) {
 
-        #pragma omp parallel num_threads(info._numThreads) if (info._numThreads > 1) default(shared)
+        PRAGMA_OMP_PARALLEL_THREADS(info._numThreads)
         {
             auto threadNum = omp_get_thread_num();
             auto threadOffset = info.getThreadOffset(threadNum);
@@ -177,7 +177,7 @@ void _CUDA_H TransformAny<X, Z>::exec(void *vx, Nd4jLong *xShapeInfo,
         uint xShapeInfoCast[MAX_RANK];
         bool canCastX = nd4j::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
 
-        #pragma omp parallel num_threads(info._numThreads) if (info._numThreads > 1) default(shared)
+        PRAGMA_OMP_PARALLEL_THREADS(info._numThreads)
         {
             auto threadNum = omp_get_thread_num();
             auto threadOffset = info.getThreadOffset(threadNum);
@@ -194,7 +194,7 @@ void _CUDA_H TransformAny<X, Z>::exec(void *vx, Nd4jLong *xShapeInfo,
         uint xShapeInfoCast[MAX_RANK];
         bool canCastX = nd4j::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
 
-        #pragma omp parallel num_threads(info._numThreads) if (info._numThreads > 1) default(shared)
+        PRAGMA_OMP_PARALLEL_THREADS(info._numThreads)
         {
             auto threadNum = omp_get_thread_num();
             auto threadOffset = info.getThreadOffset(threadNum);
@@ -214,7 +214,7 @@ void _CUDA_H TransformAny<X, Z>::exec(void *vx, Nd4jLong *xShapeInfo,
         bool canCastX = nd4j::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
         bool canCastZ = nd4j::DataTypeUtils::castShapeInfo(zShapeInfo, zShapeInfoCast);
 
-        #pragma omp parallel num_threads(info._numThreads) if (info._numThreads > 1) default(shared)
+        PRAGMA_OMP_PARALLEL_THREADS(info._numThreads)
         {
             auto threadNum = omp_get_thread_num();
             auto threadOffset = info.getThreadOffset(threadNum);
