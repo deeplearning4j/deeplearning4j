@@ -1869,7 +1869,7 @@ FORCEINLINE int estimateThresholdGeneric(Nd4jPointer *extraPointers, Nd4jPointer
     int span = (N / 6) + 8;
     int cnt = 0;
 
-    PRAGMA_OMP_PARALLEL(reduction(+:cnt))
+    PRAGMA_OMP_PARALLEL_ARGS(reduction(+:cnt))
     {
         int tid = omp_get_thread_num();
         int start = span * tid;
@@ -2492,7 +2492,7 @@ void NativeOps::scatterUpdate(Nd4jPointer *extraPointers, int opCode, int numOfS
 
     int numThreads = omp_get_max_threads();
 
-    PRAGMA_OMP_PARALLEL(num_threads(numThreads))
+    PRAGMA_OMP_PARALLEL_ARGS(num_threads(numThreads))
     {
         for (int i = 0; i < numOfSubArrs; ++i) {
 
