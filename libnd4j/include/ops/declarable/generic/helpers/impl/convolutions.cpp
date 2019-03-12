@@ -270,9 +270,9 @@ if (volume.ordering() == 'c' &&  columns.ordering() == 'c' && shape::strideDesce
         }
     }  
 
-else 
+else
 
-#pragma omp parallel for schedule(static) proc_bind(close) private(vol, col, volDep, volRow, volCol)    
+    PRAGMA_OMP_PARALLEL_FOR_ARGS(private(vol, col, volDep, volRow, volCol))
     for (int b = 0; b < bS; b++) {
         for (int colD = 0; colD < oD; ++colD) {
             for (int colH = 0; colH < oH; ++colH) {
@@ -338,19 +338,6 @@ static void col2vol_(const NDArray& columns, NDArray& volume, const int sD, cons
 
     // initial zeroing of volume content
     memset(volBuff, 0, volume.lengthOf() * sizeof(T));
-//     const Nd4jLong volEWS = volume.ews();
-//     const auto volLen = volume.lengthOf();
-//     if(volEWS == 1)
-//         memset(volBuff, 0, volLen * sizeof(T));
-//     else if(volEWS > 1) {
-// #pragma omp parallel for schedule(static) proc_bind(close)
-//         for (Nd4jLong i = 0; i < volLen * volEWS; i += volEWS)
-//             volBuff[i] = static_cast<T>(0.f);
-//     }
-//     else {        
-//         for (Nd4jLong i = 0; i < volLen; i++)
-//             volBuff[shape::getIndexOffset(i, volume.getShapeInfo(), volLen)] = static_cast<T>(0.f);
-//     }
 
     T* col, *vol;
     int volDep, volRow, volCol;
@@ -385,9 +372,9 @@ if (volume.ordering() == 'c' &&  columns.ordering() == 'c' && shape::strideDesce
         }
     }  
 
-else 
+else
 
-#pragma omp parallel for schedule(static) proc_bind(close) private(vol, col, volDep, volRow, volCol)    
+    PRAGMA_OMP_PARALLEL_FOR_ARGS(private(vol, col, volDep, volRow, volCol))
     for (int b = 0; b < bS; b++) {
         for (int colD = 0; colD < oD; ++colD) {
             for (int colH = 0; colH < oH; ++colH) {

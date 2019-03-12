@@ -919,7 +919,8 @@ void flattenGeneric(Nd4jPointer *extraPointers,
         shape::TAD tad;
         tad.init(inputShapeInfo,&dimension,dimensionLength);
         tad.createTadOnlyShapeInfo();
-#pragma omp  parallel for schedule(guided) default(shared)
+
+        PRAGMA_OMP_PARALLEL_FOR
         for(int i = 0; i < numTads; i++) {
 
             Nd4jLong resultOffset;
@@ -1868,7 +1869,7 @@ FORCEINLINE int estimateThresholdGeneric(Nd4jPointer *extraPointers, Nd4jPointer
     int span = (N / 6) + 8;
     int cnt = 0;
 
-#pragma omp parallel reduction(+:cnt)
+    PRAGMA_OMP_PARALLEL(reduction(+:cnt))
     {
         int tid = omp_get_thread_num();
         int start = span * tid;
@@ -2491,7 +2492,7 @@ void NativeOps::scatterUpdate(Nd4jPointer *extraPointers, int opCode, int numOfS
 
     int numThreads = omp_get_max_threads();
 
-    #pragma omp parallel default(shared)
+    PRAGMA_OMP_PARALLEL(num_threads(numThreads))
     {
         for (int i = 0; i < numOfSubArrs; ++i) {
 

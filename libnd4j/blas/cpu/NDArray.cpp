@@ -5036,7 +5036,7 @@ template void NDArray::operator/=(const bool scalar);
 
         double sum = 0.;
 
-#pragma omp parallel for reduction(sumT:sum) if(minDim > Environment::getInstance()->elementwiseThreshold()) schedule(guided)
+        PRAGMA_OMP_PARALLEL_FOR_ARGS(reduction(sumT:sum)
         for(int i = 0; i < minDim; ++i)
             sum += e<double>(i*offset);
 

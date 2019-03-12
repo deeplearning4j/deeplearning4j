@@ -387,7 +387,7 @@ void Reduce3<X,Z>::exec(void *vx, Nd4jLong *xShapeInfo,
                 uint yShapeInfoCast[MAX_RANK];
                 bool canCastY = nd4j::DataTypeUtils::castShapeInfo(yTad.tadOnlyShapeInfo, yShapeInfoCast);
 
-#pragma omp  parallel for schedule(guided) num_threads(num_threads) if (num_threads > 1) proc_bind(AFFINITY) default(shared)
+                PRAGMA_OMP_PARALLEL_FOR_THREADS(num_threads)
                 for (unsigned int i = 0; i < zLen; i++) {
                 
                     auto xOffset = xTad.tadOffsets[i];
@@ -435,7 +435,7 @@ void Reduce3<X,Z>::exec(void *vx, Nd4jLong *xShapeInfo,
 
     if(shape::haveSameOffsets(tadShapeInfo, yShapeInfo)) {
 
-        #pragma  omp parallel for proc_bind(AFFINITY) default(shared)
+        PRAGMA_OMP_PARALLEL_FOR
         for (Nd4jLong r = 0; r < tads; r++) {
             
             Nd4jLong offset = tadOffsets[r];
@@ -465,7 +465,7 @@ void Reduce3<X,Z>::exec(void *vx, Nd4jLong *xShapeInfo,
         uint yShapeInfoCast[MAX_RANK];
         bool canCastY = nd4j::DataTypeUtils::castShapeInfo(yShapeInfo, yShapeInfoCast);
 
-#pragma  omp parallel for proc_bind(AFFINITY) default(shared)
+        PRAGMA_OMP_PARALLEL_FOR
         for (Nd4jLong r = 0; r < tads; r++) {
             
             Nd4jLong offset = tadOffsets[r];
@@ -521,7 +521,7 @@ void Reduce3<X,Z>:: execAll(void *vx, Nd4jLong *xShapeInfo,
     
     if (shape::haveSameOffsets(xTadShapeInfo, yTadShapeInfo) ) {
         
-        #pragma  omp parallel for proc_bind(AFFINITY) default(shared)
+        PRAGMA_OMP_PARALLEL_FOR
         for (Nd4jLong r = 0; r < xTads; r++) {
         
             Nd4jLong xOffset = xOffsets[r];
@@ -558,7 +558,7 @@ void Reduce3<X,Z>:: execAll(void *vx, Nd4jLong *xShapeInfo,
         uint yTadShapeInfoCast[MAX_RANK];
         bool canCastY = canCastX ? nd4j::DataTypeUtils::castShapeInfo(yTadShapeInfo, yTadShapeInfoCast) : false;
         
-        #pragma  omp parallel for proc_bind(AFFINITY) default(shared)
+        PRAGMA_OMP_PARALLEL_FOR
         for (Nd4jLong r = 0; r < xTads; r++) {
         
             Nd4jLong xOffset = xOffsets[r];

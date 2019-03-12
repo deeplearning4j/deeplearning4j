@@ -965,7 +965,7 @@ static void clipByNormBP_(const NDArray& input, const NDArray& gradO, NDArray& g
         const Nd4jLong numOfSubArrs = ShapeUtils::getNumOfSubArrs(input.getShapeInfo(), dimsToExclude);
         std::vector<Nd4jLong> idxRanges(rank * 2);
 
-#pragma omp parallel for schedule(guided) firstprivate(idxRanges)
+        PRAGMA_OMP_PARALLEL_FOR_ARGS(firstprivate(idxRanges))
         for(Nd4jLong i = 0; i < numOfSubArrs; ++i) {
 
             ShapeUtils::evalIdxRangesForSubArr(i, input.getShapeInfo(), dimsToExclude, idxRanges.data());

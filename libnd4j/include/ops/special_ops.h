@@ -304,7 +304,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
     T sum, *pIn;
 
     if(poolingMode == 0) {        // max 
-#pragma omp parallel for schedule(guided) private(pIn, sum, hstart, wstart, hend, wend)  collapse(2)
+        PRAGMA_OMP_PARALLEL_FOR_ARGS(private(pIn, sum, hstart, wstart, hend, wend) collapse(2))
         for(int b = 0; b < bS; ++b) {
             for(int c = 0; c < iC; ++c) {                                                            
                 for(int oh = 0; oh < oH; ++oh) {
@@ -347,7 +347,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
     }
 /*************************************************************************/    
     else if(poolingMode == 1) {      // avg
-#pragma omp parallel for schedule(guided) private(pIn, sum, hstart, wstart, hend, wend) collapse(2)
+        PRAGMA_OMP_PARALLEL_FOR_ARGS(private(pIn, sum, hstart, wstart, hend, wend) collapse(2))
         for(int b = 0; b < bS; ++b) {
             for(int c = 0; c < iC; ++c) {                                                            
                 for(int oh = 0; oh < oH; ++oh) {
@@ -393,7 +393,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
     }    
 /*************************************************************************/    
     else if(poolingMode == 2) {  // pnorm
-#pragma omp parallel for schedule(guided) private(pIn, sum, hstart, wstart, hend, wend) collapse(2)
+        PRAGMA_OMP_PARALLEL_FOR_ARGS(private(pIn, sum, hstart, wstart, hend, wend) collapse(2))
         for(int b = 0; b < bS; ++b) {
             for(int c = 0; c < iC; ++c) {                                                            
                 for(int oh = 0; oh < oH; ++oh) {
@@ -641,7 +641,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
             
             if (shape::order(imShapeBuffer) == 'c' &&  shape::order(colShapeBuffer) == 'c' && shape::strideDescendingCAscendingF(imShapeBuffer) && shape::strideDescendingCAscendingF(colShapeBuffer)) {
 
-#pragma omp parallel for schedule(static) proc_bind(close) private(col, im, imRow, imCol)
+                PRAGMA_OMP_PARALLEL_FOR_ARGS(private(col, im, imRow, imCol) collapse(2))
                 for (int b = 0; b < bS; b++) {
                     for (int c = 0; c < iC; ++c) {        
                         for (int kRow = 0; kRow < kH; ++kRow) {                        
@@ -667,8 +667,8 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
                 }  
             }
             else {
- 
-#pragma omp parallel for schedule(static) proc_bind(close) private(im, col, imRow, imCol)    
+
+                PRAGMA_OMP_PARALLEL_FOR_ARGS(private(im, col, imRow, imCol) collapse(2))
                 for (int b = 0; b < bS; b++) {
                     for (int colH = 0; colH < oH; ++colH) {
                         for (int colW = 0; colW < oW; ++colW) {
@@ -845,23 +845,6 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
 			// get min over input
             T min_val = extraParams[1];
             T max_val = extraParams[2];
-
-            /*
-#pragma omp parallel for simd num_threads(_threads) if (_threads > 1) reduction(min:min_val) proc_bind(close)
-            for (int x = 0; x < length; x++) {
-				if (min_val > dx[x])
-					min_val = dx[x];
-			}
-
-			// get max over input
-			T max_val = (T) MIN_FLOAT;
-
-#pragma omp parallel for simd num_threads(_threads) if (_threads > 1) reduction(max:max_val) proc_bind(close)
-			for (int x = 0; x < length; x++) {
-				if (max_val < dx[x])
-					max_val = dx[x];
-			}
-            */
 
 			T binSize = (max_val - min_val) / (numBins);
 
@@ -1068,8 +1051,8 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
             int imRow, imCol;
 
             if (shape::order(colShapeBuffer) == 'c' &&  shape::order(imShapeBuffer) == 'c' && shape::strideDescendingCAscendingF(colShapeBuffer) && shape::strideDescendingCAscendingF(imShapeBuffer)) {
-            
-#pragma omp parallel for schedule(static) proc_bind(close) private(col, im, imRow, imCol)
+
+                PRAGMA_OMP_PARALLEL_FOR_ARGS(private(col, im, imRow, imCol) collapse(2))
                 for (int b = 0; b < bS; b++) {        
                     for (int c = 0; c < iC; ++c) {                    
                         for (int kRow = 0; kRow < kH; ++kRow) {                        
@@ -1094,7 +1077,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
             }
             else {
 
-#pragma omp parallel for schedule(static) proc_bind(close) private(im, col, imRow, imCol)
+                PRAGMA_OMP_PARALLEL_FOR_ARGS(private(im, col, imRow, imCol))
                 for (int b = 0; b < bS; b++) {        
                     for (int colH = 0; colH < oH; ++colH) {
                         for (int colW = 0; colW < oW; ++colW) {
@@ -1915,11 +1898,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
 			auto resultEleStride = shape::elementWiseStride(zShapeBuffer);
 			auto xOrder = shape::order(xShapeBuffer);
 			auto resultOrder = shape::order(zShapeBuffer);
-/*
-			int tadsPerThread = tads / TAD_THRESHOLD;
-			int num_threads = nd4j::math::nd4j_max<int>(1, tadsPerThread);
-			num_threads = nd4j::math::nd4j_min<int>(num_threads, omp_get_max_threads());
-*/
+
 			if (xOrder == resultOrder && xOrder == 'c') {
 				if (eleStride == 1 && resultEleStride == 1) {
 					if (length < ELEMENT_THRESHOLD) {

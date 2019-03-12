@@ -484,10 +484,12 @@ namespace helpers {
 
             for (auto fi = idxs.begin(); fi != idxs.end(); ++fi) {
                 double sumValue = input->e<double>(fi->second.at(0));
-#pragma omp parallel for reduction(+:sumValue) schedule(static)
+
+                PRAGMA_OMP_PARALLEL_FOR_SIMD_ARGS(reduction(+:sumValue))
                 for (size_t idx = 1; idx < fi->second.size(); ++idx) {
                     sumValue += input->e<double>(fi->second.at(idx));
                 }
+
                 output->p(fi->first, sumValue / fi->second.size());
             }
         }

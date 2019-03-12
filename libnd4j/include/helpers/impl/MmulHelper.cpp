@@ -108,7 +108,7 @@ static void usualDot(const Nd4jLong length, const double alpha, const void* vX, 
     T3 alphaZ(alpha), betaZ(beta);
 
     T3 sum = 0;
-    #pragma omp parallel for if(length > Environment::getInstance()->elementwiseThreshold()) schedule(guided) reduction(sumT:sum)
+    PRAGMA_OMP_PARALLEL_FOR_ARGS(reduction(sumT:sum))
     for(int i = 0; i < length; ++i)
         sum = sum + X[i * incx] * Y[i * incy];        
     

@@ -39,7 +39,7 @@ static FORCEINLINE T getFactorial(const int n) {
 
 	T result = (T)1.f;
 
-#pragma omp parallel for simd reduction(prodT : result) schedule(static)
+    PRAGMA_OMP_PARALLEL_FOR_SIMD_ARGS(reduction(prodT : result))
 	for(int i = 2; i <= n; ++i)
 		result *= i;
 	
@@ -71,13 +71,11 @@ static FORCEINLINE T polyGamma(const int n, const T x) {
 template <typename T>
 static void _polyGamma(const NDArray& n, const NDArray& x, NDArray& output) {
 
-	NDArray& result = output; //NDArray(&x, false, x.getWorkspace());
+	NDArray& result = output;
 
 	PRAGMA_OMP_PARALLEL_FOR_IF(x.lengthOf() > Environment::getInstance()->elementwiseThreshold())
 	for(int i = 0; i < x.lengthOf(); ++i)
 		result.p(i, polyGamma<T>(n.e<int>(i), x.e<T>(i)));
-
-//	return result;
 }
 
 	void polyGamma(const NDArray& n, const NDArray& x, NDArray& output) {

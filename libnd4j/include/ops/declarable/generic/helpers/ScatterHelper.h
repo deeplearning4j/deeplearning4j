@@ -94,8 +94,8 @@ static FORCEINLINE void scatterND(pairwise::Ops op, const NDArray& indices, cons
         PRAGMA_OMP_PARALLEL_FOR_IF(!lock)
         for(Nd4jLong i = 0; i < indLen; ++i) {
 
-            Nd4jLong idx = indices.e<Nd4jLong>(i);
-            NDArray out = output({idx, idx+1});
+            auto idx = indices.e<Nd4jLong>(i);
+            auto out = output({idx, idx+1});
             PRAGMA_OMP_CRITICAL
             {
                 out.applyPairwiseTransform(op, updates.e(i), nullptr);
@@ -109,7 +109,7 @@ static FORCEINLINE void scatterND(pairwise::Ops op, const NDArray& indices, cons
         std::iota(dimsToExcludeUpd.begin(), dimsToExcludeUpd.end(), 0);
         std::vector<Nd4jLong> idxRangeOut(2*outRank, 0);
 
-#pragma omp parallel for if(!lock) schedule(guided) firstprivate(idxRangeOut)
+        PRAGMA_OMP_PARALLEL_FOR_ARGS(if(!lock) firstprivate(idxRangeOut))
         for(Nd4jLong i = 0; i < indLen/indLastDim; ++i) {
             
             auto indSubArr = indices(i, dimsToExcludeInd);

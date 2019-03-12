@@ -61,7 +61,6 @@ namespace helpers {
 
             bool fit = true;
 
-#pragma omp parallel
             for( int i = 0; fit && (i < dims.size()); i++ ) {
                 dims[i] = reduceShape->e<Nd4jLong>(i);
                 for (int e = 0; fit && (e < input->rankOf()); ++e)

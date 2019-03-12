@@ -295,7 +295,7 @@ static void getMKLDNNMemoryDescLrn(const NDArray* src, const NDArray* diff_src, 
                     T quadSum = 0;
                     int shift = c * lastDim;
 
-#pragma omp simd reduction(sumT:quadSum)
+                    PRAGMA_OMP_SIMD_SUM(quadSum)
                     for (int pos = begin; pos < end; ++pos) {
                         T val = inputBuffer[shape::getIndexOffset(shift + pos, input->getShapeInfo(), totalLength)]; //listInput->at(c)->t<T>(pos);
                         quadSum += val * val;
@@ -417,13 +417,6 @@ static void getMKLDNNMemoryDescLrn(const NDArray* src, const NDArray* diff_src, 
             tmp2->applyPairwiseTransform(pairwise::Add, *addVal2.get(), nullptr);
         }
 
-        /*
-         *  // taken from java
-            unitScale = sumPart.mul(alpha).addi(k).leverageTo(ComputationGraph.workspaceExternal);
-            // y = x * unitScale**-beta
-            scale = Transforms.pow(unitScale, -beta).leverageTo(ComputationGraph.workspaceExternal);
-            activations = input.mul(scale).leverageTo(ComputationGraph.workspaceExternal);
-         */
         if (unitScale != nullptr && scale != nullptr) {
             sumPart->applyScalar(scalar::Multiply, alpha, unitScale, nullptr);
             unitScale->applyScalar(scalar::Add, bias);

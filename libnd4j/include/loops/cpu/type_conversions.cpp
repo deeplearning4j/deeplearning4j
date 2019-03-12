@@ -53,7 +53,7 @@ namespace nd4j {
         T mn = DataTypeUtils::max<T>();
         T mx = -DataTypeUtils::max<T>();
 
-#pragma omp parallel for if(N > Environment::getInstance()->elementwiseThreshold()) reduction(minTF:mn), reduction(maxTF:mx)
+//#pragma omp parallel for if(N > Environment::getInstance()->elementwiseThreshold()) reduction(minTF:mn), reduction(maxTF:mx)
         for (Nd4jLong e = 0; e < N; e++) {
             T v = x[e];
             if (v < mn)
@@ -62,8 +62,6 @@ namespace nd4j {
             if (v > mx)
                 mx = v;
         }
-
-        nd4j_printf("min: [%f]; max: [%f]\n", (float) mn, (float) mx);
 
         // we shift by 2 fp32 elements
         auto rz = z + 8;
