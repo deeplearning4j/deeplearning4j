@@ -524,7 +524,7 @@ namespace helpers {
 
             for (auto fi = idxs.begin(); fi != idxs.end(); ++fi) {
                 double sumValue = input->e<double>(fi->second.at(0));
-#pragma omp parallel for reduction(+:sumValue) schedule(static)
+                PRAGMA_OMP_PARALLEL_FOR_ARGS(reduction(+:sumValue))
                 for (Nd4jLong idx = 1; idx < fi->second.size(); ++idx) {
                     sumValue += input->e<double>(fi->second.at(idx));
                 }

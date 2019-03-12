@@ -54,7 +54,6 @@ void triu(const NDArray& input, NDArray& output, const int diagonal) {
             auto inTads  = input.allTensorsAlongDimension({rank-2, rank-1});
             auto outTads = output.allTensorsAlongDimension({rank-2, rank-1});
 
-// #pragma omp parallel for schedule(guided) if(inTads->size() > Environment::getInstance()->elementwiseThreshold()) 
             for(int i = 0; i < inTads->size(); ++i) {
                 auto inSubArr = inTads->at(i);
                 auto outSubArr = outTads->at(i);
@@ -499,7 +498,6 @@ void invertPermutation(const NDArray& input, NDArray& output) {
     std::set<int> uniqueElems;
     const int length = input.lengthOf();    
 
-// #pragma omp parallel for if(length > Environment::getInstance()->elementwiseThreshold()) schedule(static)         
     for(int i = 0; i < length; ++i) {
         
         int elem = input.e<int>(i);

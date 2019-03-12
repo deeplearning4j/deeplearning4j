@@ -2127,7 +2127,7 @@ PRAGMA_OMP_CRITICAL
 							}
 						}
 						else {
-#pragma omp parallel proc_bind(AFFINITY) default(shared)
+PRAGMA_OMP_PARALLEL
 {
 							int maxIdxLocal = maxIdx;
 							auto currMaxLocal = currMax;

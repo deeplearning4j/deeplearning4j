@@ -151,7 +151,6 @@ static void _reverseSequence(const NDArray* input, const NDArray* seqLengths, ND
         auto inSubArrsSet  = input->allTensorsAlongDimension(dimensions);
         auto outSubArrsSet = output->allTensorsAlongDimension(dimensions);
 
-// #pragma omp parallel for schedule(guided)  if(inSubArrsSet->size() > Environment::getInstance()->elementwiseThreshold()) 
         for(int i = 0; i < inSubArrsSet->size(); ++i) {
 
             Nd4jLong numOfElemsToReverse = seqLengths->e<Nd4jLong>(i);

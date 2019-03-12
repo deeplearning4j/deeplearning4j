@@ -745,79 +745,9 @@ namespace randomOps {
                         z[e] = mean + nd4j::DataTypeUtils::min<T>();
                 }
             }
-            /*
-            const T two_pi = static_cast<T>(2.0f) * static_cast<T>(3.14159265358979323846);
 
-            Nd4jLong zLength = shape::length(zShapeBuffer);
-            auto yEWS = shape::elementWiseStride(yShapeBuffer);
-            auto zEWS = shape::elementWiseStride(zShapeBuffer);
-
-            auto middle = zLength % 2 == 0 ? zLength / 2 : zLength / 2 + 1;
-
-            int elementsPerThread = middle / TAD_THRESHOLD;
-            int _threads = nd4j::math::nd4j_max<int>(1, elementsPerThread);
-            _threads = nd4j::math::nd4j_min<int>(_threads, omp_get_max_threads());
-
-            int span = (middle / _threads) + 8;
-            // we're enforcing even chunks, since it's mandatory for this algorithm
-            span -= span % 2;
-
-//            nd4j::random::RandomBuffer *buffer = reinterpret_cast<nd4j::random::RandomBuffer *> (state);
-            nd4j::graph::RandomGenerator* rng = reinterpret_cast<nd4j::graph::RandomGenerator*>(state);
-
-            T mean = extraArguments[0];
-            T stddev = extraArguments[1];
-
-#pragma omp parallel num_threads(_threads) if (_threads > 1) proc_bind(spread)
-            {
-                int tid = omp_get_thread_num();
-                Nd4jLong start = span * tid; 
-                Nd4jLong end = span * (tid + 1);
-                if (end >  middle) {
-                    end = middle;
-                }
-    
-                T z0, z1;
-                T u0, u1;
-                T result0, result1, lnu0, lnu1;
-
-                T ds = nd4j::math::nd4j_abs<T>(stddev) * (T) 2.0f;
-
-                for (Nd4jLong e = start; e < end; e++) {
-                   
-                    //
-                    // Since box-muller transform expects non-zero u0 value, we'll just use rng with boundaries
-                    ///
-                    Nd4jLong generation0 = 0;
-                    auto epm = e + middle;
-                    T realMean0 = y == z ? mean : y[e * yEWS];
-                    T realMean1 = y == z ? mean : y[epm * yEWS];
-                    T aRealMean0 = nd4j::math::nd4j_abs<T>(realMean0);
-                    T aRealMean1 = nd4j::math::nd4j_abs<T>(realMean1);
-//                    do
-                    {
-                        u0 = rng->relativeT<T>(e + generation0, static_cast<T>(1e-6f), static_cast<T>(1.0f));
-                        u1 = rng->relativeT<T>((epm + generation0), static_cast<T>(1e-6f), static_cast<T>(1.0f));
-                        lnu0 = nd4j::math::nd4j_sqrt<T,T>(static_cast<T>(-2.0f) * nd4j::math::nd4j_log<T,T>(u0));
-                        lnu1 = two_pi * u1;
-                        z0 = lnu0 * nd4j::math::nd4j_cos<T,T>(lnu1);
-                        z1 = lnu0 * nd4j::math::nd4j_sin<T,T>(lnu1);
-
-                        result0 = z0 * stddev + realMean0;
-                        result1 = z1 * stddev + realMean1;
-                        generation0 += zLength;
-                    }
-                    if (aRealMean0 + nd4j::math::nd4j_abs<T>(result0) > ds || aRealMean1 + nd4j::math::nd4j_abs<T>(result1) > ds) {
-                        result0 = mean;
-                    }
-                    z[e*zEWS] = result0;
-                    if(epm < zLength)
-                        z[epm * zEWS] = result1;
-                }                            
-            }
             // update rng state
             rng->rewindH(zLength);
-*/
         }
     };
 

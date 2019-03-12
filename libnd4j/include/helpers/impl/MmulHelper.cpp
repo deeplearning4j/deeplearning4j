@@ -330,7 +330,6 @@ NDArray* MmulHelper::mmulNxN(const NDArray* A, const NDArray* B, NDArray* C, con
     const Nd4jLong numOfSubArrs = ShapeUtils::getNumOfSubArrs(C->getShapeInfo(), dimsToExclude);
     std::vector<Nd4jLong> idxRanges(2 * C->rankOf());
 
-// #pragma omp parallel for schedule(guided) firstprivate(idxRanges)
         for(Nd4jLong i = 0; i < numOfSubArrs; ++i) {
 
             ShapeUtils::evalIdxRangesForSubArr(i, C->getShapeInfo(), dimsToExclude, idxRanges.data());

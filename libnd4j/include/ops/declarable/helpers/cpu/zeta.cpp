@@ -47,8 +47,6 @@ static FORCEINLINE T zetaSlow(const T x, const T q) {
 
 	T item;
 	T result = (T)0.;
-// #pragma omp declare reduction (add : double,float,float16 : omp_out += omp_in) initializer(omp_priv = (T)0.)
-// #pragma omp simd private(item) reduction(add:result)
 	for(int i = 0; i < maxIter; ++i) {		
 		
 		item = math::nd4j_pow((q + i),-x);
