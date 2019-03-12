@@ -73,7 +73,7 @@ void _CUDA_H TransformAny<X, Z>::exec(void *vx, Nd4jLong *xShapeInfo,
         const auto xStride0 = shape::stride(xShapeInfo)[0];
         const auto zStride0 = shape::stride(zShapeInfo)[0];
 
-        #pragma omp parallel for schedule(guided) proc_bind(close)
+        PRAGMA_OMP_PARALLEL_FOR
         for (int i0 = 0; i0 < len; ++i0) 
             z[i0 * zStride0] = OpType::op(x[i0 * xStride0], extraParams);
         

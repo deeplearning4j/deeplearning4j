@@ -1919,8 +1919,8 @@ static void pooling2dBP_(nd4j::graph::Context& block, const NDArray& input, cons
         for (Nd4jLong i = 0; i < gradILen * gradIEWS; i += gradIEWS)
             gI[i] = static_cast<T>(0.f);
     }
-    else {        
-#pragma omp parallel for schedule(static) proc_bind(close)
+    else {
+        PRAGMA_OMP_PARALLEL_FOR_SIMD
         for (Nd4jLong i = 0; i < gradILen; i++) 
             gI[shape::getIndexOffset(i, gradI.getShapeInfo(), gradILen)] = static_cast<T>(0.f);        
     }
@@ -2201,12 +2201,12 @@ static void pooling3dBP_(nd4j::graph::Context& block, const NDArray& input, cons
         memset(gI, 0, gradILen * sizeof(T));
     }
     else if (gradIEWS > 1) {
-#pragma omp parallel for schedule(static) proc_bind(close)
+        PRAGMA_OMP_PARALLEL_FOR
         for (Nd4jLong i = 0; i < gradILen * gradIEWS; i += gradIEWS)
             gI[i] = static_cast<T>(0.f);
     }
-    else {        
-#pragma omp parallel for schedule(static) proc_bind(close)
+    else {
+        PRAGMA_OMP_PARALLEL_FOR
         for (Nd4jLong i = 0; i < gradILen; i++)             
             gI[shape::getIndexOffset(i, gradI.getShapeInfo(), gradILen)] = static_cast<T>(0.f);        
     }

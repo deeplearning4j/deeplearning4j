@@ -236,7 +236,7 @@ void pad_(const int mode, const NDArray& input, const NDArray& paddings, NDArray
 
     NDArray outSubArr0 = output(outIdx[0], true);
 
-#pragma omp parallel for schedule(guided)
+    PRAGMA_OMP_PARALLEL_FOR
     for(Nd4jLong j = 0; j < numOfSubArrs; ++j) {
 
         NDArray outSubArr1   = outSubArr0(j, dimsToExclude);
@@ -692,7 +692,7 @@ void scatterUpdate(NDArray& input, NDArray& updates, const std::vector<int>* int
     for (; e < intArgs->size(); e++)
         indices.push_back((*intArgs)[e]);
 
-#pragma omp parallel for schedule(guided) proc_bind(close)
+    PRAGMA_OMP_PARALLEL_FOR
     for (Nd4jLong i = 0; i < indices.size(); ++i) {
                 
         auto inSubArr  = input(indices[i], dimsToExclude, true);
@@ -848,7 +848,7 @@ static void clipByNorm_(NDArray& input, NDArray& output, const std::vector<int>&
             std::vector<int> dimsToExclude = ShapeUtils::evalDimsToExclude(rank, dimensions);
             const Nd4jLong numOfSubArrs = ShapeUtils::getNumOfSubArrs(input.getShapeInfo(), dimsToExclude);
 
-#pragma omp parallel for schedule(guided) 
+            PRAGMA_OMP_PARALLEL_FOR
             for(Nd4jLong i = 0; i < numOfSubArrs; ++i) {
                 if (norm2.e<T>(i) > clipNorm.e<T>(0)) {
                     
@@ -1169,7 +1169,7 @@ static void concat_(const std::vector<NDArray*>& inArrs, NDArray& output, const 
         
         if (numOfArrs >= 8) {
 
-#pragma omp parallel for schedule(guided)
+            PRAGMA_OMP_PARALLEL_FOR
             for (int r = 0; r < numOfArrs; r++) {
 
                 T *z = outBuff + r * lenOfFirstArr;

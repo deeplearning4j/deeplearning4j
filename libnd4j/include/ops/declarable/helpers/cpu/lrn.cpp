@@ -176,7 +176,7 @@ static void getMKLDNNMemoryDescLrn(const NDArray* src, const NDArray* diff_src, 
             }
         } else {
 
-#pragma omp parallel for schedule(guided)
+            PRAGMA_OMP_PARALLEL_FOR_COLLAPSE(2)
             for (int c = 0; c < chunkCount; c++) {
                 for (int e = 0; e < lastDim; e++) {
                     int begin = nd4j::math::nd4j_max(0, e - depth);
@@ -286,7 +286,7 @@ static void getMKLDNNMemoryDescLrn(const NDArray* src, const NDArray* diff_src, 
                 }
             }
         } else {
-#pragma omp parallel for schedule(guided)
+            PRAGMA_OMP_PARALLEL_FOR_COLLAPSE(2)
             for (int c = 0; c < chunkCount; c++) {
                 for (int e = 0; e < lastDim; e++) {
                     int begin = nd4j::math::nd4j_max(0, e - depth);

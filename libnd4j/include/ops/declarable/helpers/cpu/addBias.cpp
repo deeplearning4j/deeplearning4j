@@ -53,7 +53,7 @@ static void addBias_(NDArray& input, const NDArray& bias, const bool isNCHW) {
 
         const int oHoW = oH*oW;
 
-        #pragma omp parallel for schedule(guided) collapse(2)
+        PRAGMA_OMP_PARALLEL_FOR_COLLAPSE(2)
         for (int i = 0; i < bS; ++i) {
             for (int c = 0; c < oC; ++c) {
                 
@@ -70,9 +70,9 @@ static void addBias_(NDArray& input, const NDArray& bias, const bool isNCHW) {
         
         oC = input.sizeAt(3);
         oH = input.sizeAt(1);
-        oW = input.sizeAt(2);   
+        oW = input.sizeAt(2);
 
-        #pragma omp parallel for schedule(guided)
+        PRAGMA_OMP_PARALLEL_FOR
         for (int i = 0; i < bS*oH*oW; ++i) {
 
             PRAGMA_OMP_SIMD

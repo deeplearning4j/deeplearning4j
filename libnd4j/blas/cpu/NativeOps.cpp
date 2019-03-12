@@ -1304,7 +1304,7 @@ void tearGeneric(void *vx,
     auto zEWS = shape::elementWiseStride(hZShapeInfo);
     auto numTads = shape::length(hXShapeInfo) / tadLength;
 
-#pragma omp parallel for schedule(guided) default(shared)
+    PRAGMA_OMP_PARALLEL_FOR
     for (Nd4jLong i = 0; i < numTads; i++) {
         auto hZ = reinterpret_cast<T *>(targets[i]);
         auto s = hX + tadOffsets[i];

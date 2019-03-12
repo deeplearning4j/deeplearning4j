@@ -3138,7 +3138,7 @@ template void NDArray::applyScalar(nd4j::scalar::Ops op, const bool scalar, NDAr
             auto dimsToExclude = ShapeUtils::evalDimsToExclude(target->rankOf(), sameDims);
             const auto numOfSubArrs = ShapeUtils::getNumOfSubArrs(target->_shapeInfo, dimsToExclude);
 
-#pragma omp parallel for schedule(guided)
+            PRAGMA_OMP_PARALLEL_FOR
             for(Nd4jLong i = 0; i < numOfSubArrs; ++i) {
                 NDArray targetSubArr = (*target)(i, dimsToExclude);
                 if (pTarget == target)
@@ -3235,8 +3235,8 @@ template void NDArray::applyScalar(nd4j::scalar::Ops op, const bool scalar, NDAr
         else {
             auto dimsToExclude = ShapeUtils::evalDimsToExclude(target->rankOf(), sameDims);
             const auto numOfSubArrs = ShapeUtils::getNumOfSubArrs(target->_shapeInfo, dimsToExclude);
-        
-#pragma omp parallel for schedule(guided)
+
+            PRAGMA_OMP_PARALLEL_FOR
             for(Nd4jLong i = 0; i < numOfSubArrs; ++i) {
                 auto targetSubArr = (*target)(i, dimsToExclude);
                 if(pTarget == target)

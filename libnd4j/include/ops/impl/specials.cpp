@@ -305,7 +305,7 @@ void SpecialMethods<T>::concatCpuGeneric(int dimension, int numArrays, Nd4jPoint
         float threshold = fb.f_;
 
 
-#pragma omp parallel for schedule(guided) proc_bind(close)
+        PRAGMA_OMP_PARALLEL_FOR
         for (Nd4jLong e = 4; e < lim; e++) {
 
             for (int bitId = 0; bitId < 16; bitId++) {

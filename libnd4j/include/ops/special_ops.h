@@ -1256,7 +1256,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
 			// two step phase here
 			if (dx == result) {
 				if (xEWS == 1) {
-#pragma omp parallel for schedule(guided)
+                    PRAGMA_OMP_PARALLEL_FOR_SIMD
                     for (Nd4jLong e = 0; e < xLength / 2; e++) {
                         Nd4jLong idx = sLength - e;
                         auto tmp = dx[e];
@@ -1264,7 +1264,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
                         dx[idx] = tmp;
                     }
 				} else if (xEWS > 1) {
-#pragma omp parallel for schedule(guided)
+                    PRAGMA_OMP_PARALLEL_FOR_SIMD
                     for (Nd4jLong e = 0; e < xLength / 2; e++) {
                         Nd4jLong idx1 = (sLength - e) * xEWS;
                         Nd4jLong idx2 =  e * xEWS;
@@ -1274,8 +1274,8 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
                     }
 				} 
                 else {
-                    
-#pragma omp parallel for schedule(guided)
+
+                    PRAGMA_OMP_PARALLEL_FOR_SIMD
                     for (Nd4jLong e = 0; e < xLength / 2; e++) {                        
                         auto xOffset = shape::getIndexOffset(e, xShapeBuffer, xLength);
                         auto zOffset = shape::getIndexOffset(sLength - e, xShapeBuffer, xLength);
@@ -1289,19 +1289,19 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
 				auto zOrder = shape::order(zShapeBuffer);
 
 				if (xEWS == 1 && zEWS == 1 && xOrder == zOrder) {
-#pragma omp parallel for schedule(guided)
+                    PRAGMA_OMP_PARALLEL_FOR_SIMD
 					for (Nd4jLong e = 0; e < xLength; e++) {
 						result[sLength - e] = dx[e];
 					}
 				} else if (xEWS >= 1 && zEWS >= 1 && xOrder == zOrder) {
-#pragma omp parallel for schedule(guided)
+                    PRAGMA_OMP_PARALLEL_FOR_SIMD
 					for (Nd4jLong e = 0; e < xLength; e++) {
 						result[(sLength - e) * zEWS] = dx[e * xEWS];
 					}
 				} 
                 else {
 
-#pragma omp parallel for schedule(guided)
+                    PRAGMA_OMP_PARALLEL_FOR_SIMD
 					for (Nd4jLong e = 0; e < xLength; e++) {
 						auto xOffset = shape::getIndexOffset(e, xShapeBuffer, xLength);
                         auto zOffset = shape::getIndexOffset(sLength - e, zShapeBuffer, xLength);
