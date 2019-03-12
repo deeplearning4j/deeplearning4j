@@ -22,7 +22,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 public class PythonExecutioner {
     private String name;
     private Pointer namePtr;
-    private boolean restricted = false;
     private PyObject module;
     private PyObject globals;
     private JSONParser parser = new JSONParser();
@@ -31,7 +30,6 @@ public class PythonExecutioner {
     private static PythonExecutioner pythonExecutioner;
     private boolean safeExecFlag = false;
 
-    private List<INDArray> _refs = new ArrayList<>();
 
     public static PythonExecutioner getInstance(){
         // do not use constructor
@@ -91,13 +89,6 @@ public class PythonExecutioner {
 
     }
 
-    public void setRestricted(boolean restricted) {
-        this.restricted = restricted;
-    }
-
-    public boolean getRestricted(){
-        return restricted;
-    }
 
     public PythonExecutioner(String name){
         this.name = name;
@@ -310,9 +301,6 @@ public class PythonExecutioner {
         String inputCode = inputCode(pyInputs);
         if (code.charAt(code.length() - 1) != '\n'){
             code += '\n';
-        }
-        if(restricted){
-            code = RestrictedPython.getSafeCode(code);
         }
         exec(inputCode + code);
         _readOutputs(pyOutputs);
