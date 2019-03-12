@@ -21,7 +21,7 @@
 #include "testlayers.h"
 #include <memory>
 #include <NDArray.h>
-#include <DebugHelper.h>
+#include <DebugInfo.h>
 using namespace nd4j;
 
 //////////////////////////////////////////////////////////////////////
@@ -854,7 +854,7 @@ TEST_F(NDArrayTest2, big_dup_test) {
     delete dup;
 }
 
-TEST_F(NDArrayTest2, debugHelperTest_1) {
+TEST_F(NDArrayTest2, debugInfoTest_1) {
     NDArray testArray('c', {2, 4, 4, 4}, {
             91.,  82.,  37.,  64.,     55.,  46.,  73.,  28.,    119.,  12., 112.,  13.,     14., 114.,  16., 117.,
             51.,  42.,  67.,  24.,     15.,  56.,  93.,  28.,    109.,  82.,  12., 113.,    114.,  14., 116.,  11.,
@@ -865,8 +865,8 @@ TEST_F(NDArrayTest2, debugHelperTest_1) {
             31.,  22.,  87.,  44.,     55.,  46.,  73.,  28.,    119.,  12., 112.,  13.,     14., 114.,  16., 117.,
             91.,  82.,  37.,  64.,    -3,  0, 73.,  28.,    119.,  12., 112.,  13.,    140., 110., 160., 107.}, nd4j::DataType::DOUBLE);
 
-    DebugHelper info = DebugHelper::debugStatistics(&testArray);
-    DebugHelper exp; // = {}
+    DebugInfo info = DebugInfo::debugStatistics(&testArray);
+    DebugInfo exp; // = {}
     exp._minValue = -119;
     exp._maxValue = 160.;
     exp._meanValue = 51.328906;
@@ -881,7 +881,7 @@ TEST_F(NDArrayTest2, debugHelperTest_1) {
     ASSERT_EQ(exp, info);
 }
 
-TEST_F(NDArrayTest2, debugHelperTest_2) {
+TEST_F(NDArrayTest2, debugInfoTest_2) {
     NDArray testArray('c', {2, 4, 4, 4}, {
             91.,  82.,  37.,  64.,     55.,  46.,  73.,  28.,    119.,  12., 112.,  13.,     14., 114.,  16., 117.,
             51.,  42.,  67.,  24.,     15.,  56.,  93.,  28.,    109.,  82.,  12., 113.,    114.,  14., 116.,  11.,
@@ -892,8 +892,8 @@ TEST_F(NDArrayTest2, debugHelperTest_2) {
             31.,  22.,  87.,  44.,     55.,  46.,  73.,  28.,    119.,  12., 112.,  13.,     14., 114.,  16., 117.,
             91.,  82.,  37.,  64.,    -3,  0, 73.,  28.,    119.,  12., 112.,  13.,    140., 110., 160., 107.}, nd4j::DataType::DOUBLE);
 
-    DebugHelper info;
-    DebugHelper exp; // = {}
+    DebugInfo info;
+    DebugInfo exp; // = {}
     exp._minValue = -119;
     exp._maxValue = 160.;
     exp._meanValue = 51.328906;
@@ -903,7 +903,7 @@ TEST_F(NDArrayTest2, debugHelperTest_2) {
     exp._positiveCount = 118;
     exp._infCount = 0;
     exp._nanCount = 0;
-    DebugHelper::retrieveDebugStatistics(&info, &testArray);
+    DebugInfo::retrieveDebugStatistics(&info, &testArray);
     //printf("%lf %lf %lf %lf\n", info._minValue, info._maxValue, info._meanValue, info._stdDevValue);
     //printf("%lld %lld %lld %lld %lld\n", info._zeroCount, info._negativeCount, info._positiveCount, info._infCount, info._nanCount);
     ASSERT_EQ(exp, info);

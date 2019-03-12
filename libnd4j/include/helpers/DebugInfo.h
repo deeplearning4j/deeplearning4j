@@ -1,0 +1,76 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
+//
+// Created by GS aka shugeo <sgazeos@gmail.com> on 3/12/19.
+//
+
+#ifndef LIBND4J__DEBUG_INFO_HELPER__H
+#define LIBND4J__DEBUG_INFO_HELPER__H
+
+#include <pointercast.h>
+#include <op_boilerplate.h>
+#include <Environment.h>
+#include <StringUtils.h>
+#include <string>
+
+
+#ifdef __CUDACC__
+
+#include <cuda.h>
+#include <driver_types.h>
+#include <cuda_runtime_api.h>
+#include <helper_cuda.h>
+
+#endif
+
+namespace nd4j {
+    class NDArray;
+    class DebugInfo {
+    public:
+
+    // cuda-specific debug functions
+    friend bool operator==(DebugInfo const& first, DebugInfo const& second) {
+        first._minValue    ==   second._minValue &&
+        first._maxValue    ==   second._maxValue &&
+        first._meanValue   ==   second._meanValue &&
+        first._stdDevValue ==   second._stdDevValue &&
+        first._zeroCount   ==   second._zeroCount &&
+        first._positiveCount == second._positiveCount &&
+        first._negativeCount == second._negativeCount &&
+        first._infCount ==      second._infCount &&
+        first._nanCount ==      second._nanCount;
+
+    }
+    public:
+
+       double _minValue;
+       double _maxValue;
+       double _meanValue;
+       double _stdDevValue;
+       Nd4jLong _zeroCount;
+       Nd4jLong _positiveCount;
+       Nd4jLong _negativeCount;
+       Nd4jLong _infCount;
+       Nd4jLong _nanCount;
+    public:
+        static DebugInfo debugStatistics(NDArray const* input);
+        static void retrieveDebugStatistics(DebugInfo* statistics, NDArray const* input);
+    };
+}
+
+
+#endif //LIBND4J_DEBUGHELPER_H
