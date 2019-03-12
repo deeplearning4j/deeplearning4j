@@ -98,7 +98,7 @@ static void trace_(const NDArray& input, NDArray& output) {
 
     auto setOfSubArrs = input.allTensorsAlongDimension({inRank-2, inRank-1});
 
-#pragma omp parallel for if(setOfSubArrs->size() > Environment::getInstance()->elementwiseThreshold()) schedule(guided)     
+    PRAGMA_OMP_PARALLEL_FOR_IF(setOfSubArrs->size() > Environment::getInstance()->tadThreshold())
     for(int i = 0; i < setOfSubArrs->size(); ++i)
         output.p(i, setOfSubArrs->at(i)->getTrace());
 
@@ -127,7 +127,7 @@ void randomShuffle_(NDArray& input, NDArray& output, nd4j::random::RandomBuffer&
                 
         // apply Fisher-Yates shuffle 
         if(isInplace) {
-#pragma omp parallel for if((firstDim-1) > Environment::getInstance()->elementwiseThreshold()) schedule(guided)       
+            PRAGMA_OMP_PARALLEL_FOR_IF((firstDim-1) > Environment::getInstance()->tadThreshold())
             for(int i = firstDim-1; i > 0; --i) {
                 int r = rng.nextInt(0, i);
                 if(i == r)
@@ -143,7 +143,7 @@ void randomShuffle_(NDArray& input, NDArray& output, nd4j::random::RandomBuffer&
             std::vector<int> indices(firstDim);        
             std::iota(indices.begin(), indices.end(), 0);        
             output.p<T>(Nd4jLong(0), input.e<T>(0));
-#pragma omp parallel for if((firstDim-1) > Environment::getInstance()->elementwiseThreshold()) schedule(guided)       
+            PRAGMA_OMP_PARALLEL_FOR_IF((firstDim-1) > Environment::getInstance()->tadThreshold())
             for(int i = firstDim-1; i > 0; --i) {
                 int r = rng.nextInt(0, i);
                 output.p(i, input.e<T>(indices[r]));
@@ -164,7 +164,7 @@ void randomShuffle_(NDArray& input, NDArray& output, nd4j::random::RandomBuffer&
 
         // apply Fisher-Yates shuffle
         if(isInplace) {
-#pragma omp parallel for if((firstDim-1) > Environment::getInstance()->elementwiseThreshold()) schedule(guided)        
+            PRAGMA_OMP_PARALLEL_FOR_IF((firstDim-1) > Environment::getInstance()->elementwiseThreshold())
             for(int i = firstDim-1; i > 0; --i) {
                 int r = rng.nextInt(0, i);
                 if(i == r)
@@ -178,7 +178,7 @@ void randomShuffle_(NDArray& input, NDArray& output, nd4j::random::RandomBuffer&
             std::vector<int> indices(firstDim);        
             std::iota(indices.begin(), indices.end(), 0);        
             bool isZeroShuffled = false;
-#pragma omp parallel for if((firstDim-1) > Environment::getInstance()->elementwiseThreshold()) schedule(guided)       
+            PRAGMA_OMP_PARALLEL_FOR_IF((firstDim-1) > Environment::getInstance()->tadThreshold())
             for(int i = firstDim-1; i > 0; --i) {
                 int r = rng.nextInt(0, i);
                 subArrsListOut->at(i)->assign(subArrsListIn->at(indices[r]));
@@ -615,7 +615,7 @@ static void gather_(NDArray* input, const NDArray* indices, NDArray* output, con
         }
         else if (input->rankOf() == 1 && indices->isVector()) {
             // special case
-#pragma omp parallel for if(indices->lengthOf() > Environment::getInstance()->elementwiseThreshold()) schedule(guided)     
+            PRAGMA_OMP_PARALLEL_FOR_IF(indices->lengthOf() > Environment::getInstance()->tadThreshold())
             for (int e = 0; e < indices->lengthOf(); e++)
                 output->p(e, input->e<T>(indices->e<Nd4jLong>(e)));
         }        
@@ -623,8 +623,8 @@ static void gather_(NDArray* input, const NDArray* indices, NDArray* output, con
             
             std::vector<int> dimsOut(indices->rankOf());            
             std::iota(dimsOut.begin(), dimsOut.end(), axis);   // fill with axis, axis+1, ... indices->rankOf()-1
-            const Nd4jLong numOfSubArrs = ShapeUtils::getNumOfSubArrs(output->getShapeInfo(), dimsOut);            
-#pragma omp parallel for if(numOfSubArrs > Environment::getInstance()->elementwiseThreshold()) schedule(guided)             
+            const Nd4jLong numOfSubArrs = ShapeUtils::getNumOfSubArrs(output->getShapeInfo(), dimsOut);
+            PRAGMA_OMP_PARALLEL_FOR_IF(numOfSubArrs > Environment::getInstance()->tadThreshold())
             for(int i = 0; i < numOfSubArrs; ++i) {
                 NDArray subArrOut = (*output)(i, dimsOut);
                 NDArray subArrIn  = (*input)(indices->e<Nd4jLong>(i), {axis});
@@ -644,7 +644,7 @@ static void gather_(NDArray* input, const NDArray* indices, NDArray* output, con
         } 
         else { // vector case
             const Nd4jLong numOfSubArrs = ShapeUtils::getNumOfSubArrs(output->getShapeInfo(), {axis});
-#pragma omp parallel for if(numOfSubArrs > Environment::getInstance()->elementwiseThreshold()) schedule(guided)             
+            PRAGMA_OMP_PARALLEL_FOR_IF(numOfSubArrs > Environment::getInstance()->tadThreshold())
             for(int i = 0; i < numOfSubArrs; ++i) {
                 NDArray subArrOut = (*output)(i, {axis});
                 NDArray subArrIn  = (*input)(intArgs[i+1], {axis});
@@ -666,7 +666,7 @@ void eye(NDArray& output) {
     const int rank = output.rankOf();
     auto arrs = output.allTensorsAlongDimension({rank-2, rank-1});
 
-#pragma omp parallel for if(arrs->size() > Environment::getInstance()->elementwiseThreshold()) schedule(guided)
+    PRAGMA_OMP_PARALLEL_FOR_IF(arrs->size() > Environment::getInstance()->tadThreshold())
     for(int i = 0; i < arrs->size(); ++i)
         arrs->at(i)->setIdentity();
     
@@ -736,7 +736,7 @@ static void mergeMaxIndex_(const std::vector<NDArray*>& inArrs, NDArray& output)
     const Nd4jLong numArgs = inArrs.size();
     auto x = inArrs[0];
 
-#pragma omp parallel for if(x->lengthOf() > Environment::getInstance()->elementwiseThreshold()) schedule(guided)
+    PRAGMA_OMP_PARALLEL_FOR_IF(x->lengthOf() > Environment::getInstance()->elementwiseThreshold())
     for (Nd4jLong e = 0; e < x->lengthOf(); e++) {
         T max = -DataTypeUtils::max<T>();
         Nd4jLong idx = 0;
@@ -765,7 +765,7 @@ static void mergeMax_(const std::vector<NDArray*>& inArrs, NDArray& output) {
     const Nd4jLong numArgs = inArrs.size();
     auto x = inArrs[0];
 
-#pragma omp parallel for if(x->lengthOf() > Environment::getInstance()->elementwiseThreshold()) schedule(guided) proc_bind(close)
+    PRAGMA_OMP_PARALLEL_FOR_IF(x->lengthOf() > Environment::getInstance()->elementwiseThreshold())
      for (Nd4jLong e = 0; e < x->lengthOf(); e++) {
         T max = -DataTypeUtils::max<T>();
         for (int i = 0; i < numArgs; i++) {
@@ -789,8 +789,8 @@ static void mergeAvg_(const std::vector<NDArray*>& inArrs, NDArray& output) {
     const Nd4jLong numArgs = inArrs.size();
     const T factor = 1.f / numArgs;
     auto x = inArrs[0];
-        
-#pragma omp parallel for if(x->lengthOf() > Environment::getInstance()->elementwiseThreshold()) schedule(guided) proc_bind(close)
+
+    PRAGMA_OMP_PARALLEL_FOR_IF(x->lengthOf() > Environment::getInstance()->elementwiseThreshold())
     for (Nd4jLong e = 0; e < x->lengthOf(); e++) {
         T sum = 0.;
         for (int i = 0; i < numArgs; i++) { 
@@ -812,8 +812,8 @@ static void mergeAdd_(const std::vector<NDArray*>& inArrs, NDArray& output) {
     
     const Nd4jLong numArgs = inArrs.size();
     auto x = inArrs[0];
-        
-#pragma omp parallel for if(x->lengthOf() > Environment::getInstance()->elementwiseThreshold()) schedule(guided) proc_bind(close)
+
+    PRAGMA_OMP_PARALLEL_FOR_IF(x->lengthOf() > Environment::getInstance()->elementwiseThreshold())
     for (Nd4jLong e = 0; e < x->lengthOf(); e++) {
         
         T sum = (T) 0.f;
@@ -1101,6 +1101,7 @@ static void mirrorPad_(const NDArray& input, const NDArray& paddings, NDArray& o
     else {
 
         std::vector<Nd4jLong> inIdx(rank), outIdx(rank);
+
 #pragma omp parallel for if(outLen > Environment::getInstance()->elementwiseThreshold()) schedule(guided) firstprivate(inIdx, outIdx)
         for(int i = 0; i < outLen; ++i) {
 

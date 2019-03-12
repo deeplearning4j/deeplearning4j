@@ -67,7 +67,7 @@ namespace helpers {
             }
         }
 
-#pragma omp parallel for if(values->lengthOf() > Environment::getInstance()->elementwiseThreshold()) schedule(static)
+        PRAGMA_OMP_PARALLEL_FOR_IF(values->lengthOf() > Environment::getInstance()->elementwiseThreshold())
         for (int e = 0; e < values->lengthOf(); e++) {
             values->p(e, static_cast<T>(valuesVector[e]));
             if (counts != nullptr) 

@@ -118,7 +118,7 @@ static NDArray zeta_(const NDArray& x, const NDArray& q, NDArray* output) {
 
 	//auto result = NDArray(&x, false, x.getWorkspace());
 
-#pragma omp parallel for if(x.lengthOf() > Environment::getInstance()->elementwiseThreshold()) schedule(guided)	
+	PRAGMA_OMP_PARALLEL_FOR_IF(x.lengthOf() > Environment::getInstance()->elementwiseThreshold())
 	for(int i = 0; i < x.lengthOf(); ++i)
 		output->p(i, zeta<T>(x.e<T>(i), q.e<T>(i)));
 
