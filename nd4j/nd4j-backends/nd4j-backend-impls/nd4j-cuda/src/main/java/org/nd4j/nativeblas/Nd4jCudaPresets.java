@@ -120,7 +120,7 @@ public class Nd4jCudaPresets implements InfoMapper {
                         "short[]"));
 
         infoMap.put(new Info("__CUDACC__", "MAX_UINT", "HAVE_MKLDNN").define(false))
-               .put(new Info("__JAVACPP_HACK__", "LIBND4J_ALL_OPS").define(true))
+               .put(new Info("__JAVACPP_HACK__", "LIBND4J_ALL_OPS","__CUDABLAS__").define(true))
                .put(new Info("std::initializer_list", "cnpy::NpyArray", "nd4j::NDArray::applyLambda", "nd4j::NDArray::applyPairwiseLambda",
                              "nd4j::graph::FlatResult", "nd4j::graph::FlatVariable").skip())
                .put(new Info("std::string").annotations("@StdString").valueTypes("BytePointer", "String")
