@@ -257,4 +257,13 @@ public class TestPlayUI {
         uiServer.detach(ss);
         assertTrue(uiServer.getStatsStorageInstances().isEmpty());
     }
+
+    @Test
+    public void testUIServerStop() {
+        UIServer uiServer = UIServer.getInstance(true, null);
+        assertTrue(uiServer.isMultiSession());
+        uiServer.stop();
+        uiServer = UIServer.getInstance(false, null);
+        assertFalse(uiServer.isMultiSession());
+    }
 }

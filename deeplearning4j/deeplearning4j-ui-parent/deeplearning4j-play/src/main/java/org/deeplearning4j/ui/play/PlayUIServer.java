@@ -81,6 +81,7 @@ public class PlayUIServer extends UIServer {
     public static final String ASSETS_ROOT_DIRECTORY = "deeplearning4jUiAssets/";
 
     private Server server;
+    private boolean stopped;
     private final BlockingQueue<StatsStorageEvent> eventQueue = new LinkedBlockingQueue<>();
     private List<Pair<StatsStorage, StatsStorageListener>> listeners = new CopyOnWriteArrayList<>();
     private List<StatsStorage> statsStorageInstances = new CopyOnWriteArrayList<>();
@@ -280,6 +281,8 @@ public class PlayUIServer extends UIServer {
                 System.exit(1);
             }
         }
+
+        setStopped(false);
     }
 
     @Override
@@ -416,8 +419,11 @@ public class PlayUIServer extends UIServer {
 
     @Override
     public void stop() {
-        if (server != null)
+        if (server != null) {
             server.stop();
+            setStopped(true);
+        }
+
     }
 
 

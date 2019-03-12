@@ -58,7 +58,7 @@ public abstract class UIServer {
      */
     public static synchronized UIServer getInstance(boolean multiSession, Function<String, StatsStorage> statsStorageProvider)
         throws RuntimeException {
-        if (uiServer == null) {
+        if (uiServer == null || uiServer.isStopped()) {
             PlayUIServer playUIServer = new PlayUIServer(PlayUIServer.DEFAULT_UI_PORT, multiSession);
             playUIServer.setMultiSession(multiSession);
             if (statsStorageProvider != null) {
@@ -77,6 +77,8 @@ public abstract class UIServer {
         }
         return uiServer;
     }
+
+    public abstract boolean isStopped();
 
     /**
      * Check if the instance initialized with one of the factory methods
