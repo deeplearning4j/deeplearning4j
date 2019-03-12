@@ -51,7 +51,8 @@ namespace helpers {
             SpecialMethods<T>::sortTadGeneric(sortedVals.buffer(), sortedVals.shapeInfo(), lastDims.data(), lastDims.size(), tadSorted.tadOnlyShapeInfo, tadSorted.tadOffsets, reverse);
 
             std::unique_ptr<ResultSet> rows(input->allTensorsAlongDimension(lastDims));
-#pragma omp parallel for
+
+            PRAGMA_OMP_PARALLEL_FOR
             for (Nd4jLong e = 0; e < output->lengthOf(); e++) {
                 auto row = rows->at(e);
                 output->p(e, row->e<T>(n));

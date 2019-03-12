@@ -176,8 +176,7 @@ namespace nd4j {
         std::vector<int> axis = ShapeUtils::convertAxisToTadTarget(shape.size(), {_axis});
         auto tads = array->allTensorsAlongDimension(axis);
 
-        // just for lulz
-#pragma omp parallel for
+        PRAGMA_OMP_PARALLEL_FOR
         for (int e = 0; e < indices.size(); e++)
             tads->at(e)->assign(_chunks[indices[e]]);
 

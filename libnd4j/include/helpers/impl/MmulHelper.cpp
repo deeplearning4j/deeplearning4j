@@ -43,7 +43,7 @@ static void usualGemm(const char cOrder, const bool transA, const bool transB, c
     const bool flagA = (flagC && transA) || (!flagC && !transA);
     const bool flagB = (flagC && transB) || (!flagC && !transB);   
 
-    #pragma omp parallel for if(M*N > Environment::getInstance()->elementwiseThreshold()) schedule(guided) collapse(2)    
+    PRAGMA_OMP_PARALLEL_FOR_COLLAPSE(2)
     for(uint row = 0; row < M; ++row) {
        for(uint col = 0; col < N; ++col) {
             
@@ -77,7 +77,7 @@ static void usualGemv(const char aOrder, const int M, const int N, const double 
     
     const bool flagA = aOrder == 'f';
 
-    #pragma omp parallel for if(M > Environment::getInstance()->elementwiseThreshold()) schedule(guided)
+    PRAGMA_OMP_PARALLEL_FOR_IF(M > Environment::getInstance()->tadThreshold())
     for(int row = 0; row < M; ++row) {
                         
         T3* y = Y + row * incy;

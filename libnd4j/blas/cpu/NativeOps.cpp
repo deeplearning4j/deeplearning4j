@@ -1647,7 +1647,7 @@ void NativeOps::_batchExecutor(Nd4jPointer *extraPointers,
                                         maxReals);
 
     // special case here, we prefer spread arrangement here, all threads are detached from each other
-#pragma omp parallel for num_threads(_threads) schedule(guided) proc_bind(spread) default(shared)
+    PRAGMA_OMP_PARALLEL_FOR_THREADS(_threads)
     for (int i = 0; i < numAggregates; i++) {
         auto intArrays = new int *[maxIntArrays];
 

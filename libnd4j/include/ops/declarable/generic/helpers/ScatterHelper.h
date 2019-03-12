@@ -108,20 +108,19 @@ static FORCEINLINE void scatterND(pairwise::Ops op, const NDArray& indices, cons
         std::vector<int> dimsToExcludeUpd(indRank - 1);
         std::iota(dimsToExcludeUpd.begin(), dimsToExcludeUpd.end(), 0);
         std::vector<Nd4jLong> idxRangeOut(2*outRank, 0);
- 
-// #pragma omp parallel for if(indLen/indLastDim > Environment::getInstance()->elementwiseThreshold()) schedule(guided) firstprivate(idxRangeOut)
+
 #pragma omp parallel for if(!lock) schedule(guided) firstprivate(idxRangeOut)
         for(Nd4jLong i = 0; i < indLen/indLastDim; ++i) {
             
-            NDArray indSubArr = indices(i, dimsToExcludeInd);
+            auto indSubArr = indices(i, dimsToExcludeInd);
 
             for(Nd4jLong j = 0; j < indLastDim; ++j) {
                 idxRangeOut[2*j] = indSubArr.e<Nd4jLong>(j);
                 idxRangeOut[2*j + 1] = idxRangeOut[2*j] + 1;
             }
 
-            NDArray outSubArr = output(idxRangeOut);
-            NDArray updSubArr = updates(i, dimsToExcludeUpd);
+            auto outSubArr = output(idxRangeOut);
+            auto updSubArr = updates(i, dimsToExcludeUpd);
 
             PRAGMA_OMP_CRITICAL
             {

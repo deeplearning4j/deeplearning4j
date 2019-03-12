@@ -88,7 +88,7 @@ namespace nd4j {
                     CBLAS_TRANSPOSE tA = (CBLAS_TRANSPOSE) transA;
                     CBLAS_TRANSPOSE tB = (CBLAS_TRANSPOSE) transB;
 
-#pragma omp parallel for
+                    PRAGMA_OMP_PARALLEL_FOR
                     for (int p = 0; p < vA.size(); ++p) {
                         auto A = reinterpret_cast<T*>(vA.at(p)->buffer());
                         auto B = reinterpret_cast<T*>(vB.at(p)->buffer());

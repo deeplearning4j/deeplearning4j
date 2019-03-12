@@ -114,8 +114,7 @@ namespace nd4j {
         auto result = new NDArray(ordering(), getShapeAsVector(), DataTypeUtils::fromT<T>());
         auto l = this->lengthOf();
 
-        // FIXME: we want to avoid put/get indexed scalars here really
-#pragma omp parallel for
+        PRAGMA_OMP_PARALLEL_FOR
         for (int e = 0; e < l; e++) {
             result->p(e, this->e<T>(e));
         }

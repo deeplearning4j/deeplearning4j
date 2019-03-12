@@ -32,7 +32,7 @@ namespace nd4j {
             auto source = reinterpret_cast<T *>(vsource);
 
             // handle transpose in parallel
-#pragma omp parallel for proc_bind(close)
+            PRAGMA_OMP_PARALLEL_FOR_COLLAPSE(2)
             for (int r = 0; r < rows; r++) {
                 for (int c = 0; c < cols; c++) {
                     int zIdx = orderTarget == CblasRowMajor ? linearIndexC(rows, cols, r, c) : linearIndexF(rows, cols, r, c);

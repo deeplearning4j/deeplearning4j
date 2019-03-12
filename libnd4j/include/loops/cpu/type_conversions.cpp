@@ -204,7 +204,7 @@ namespace nd4j {
             }
         } else {
 
-#pragma omp parallel for
+            PRAGMA_OMP_PARALLEL_FOR
             for (int i = 0; i < N; i++) {
                 // FIXME: get rid of through-float though
                 z[i] = static_cast<T>(static_cast<float>(x[i]));

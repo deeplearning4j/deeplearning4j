@@ -325,25 +325,25 @@ namespace randomOps {
 
             const T epsilon = static_cast<T>(1e-5);
 
-#pragma omp parallel for num_threads(_threads) if (_threads > 1) proc_bind(spread)
-                for (Nd4jLong e = 0; e < middle; e++) {
-                    auto epm = e + middle;
+            PRAGMA_OMP_PARALLEL_FOR_THREADS(_threads)
+            for (Nd4jLong e = 0; e < middle; e++) {
+                auto epm = e + middle;
 
-                    // we need to get random values
-                    T r0 = rng->relativeT<T>(e, epsilon, static_cast<T>(1.0f));
-                    T r1 = rng->relativeT<T>(epm, epsilon, static_cast<T>(1.0f));
+                // we need to get random values
+                T r0 = rng->relativeT<T>(e, epsilon, static_cast<T>(1.0f));
+                T r1 = rng->relativeT<T>(epm, epsilon, static_cast<T>(1.0f));
 
-                    T realMean0 = y == z ? mean : y[e * yEWS];
+                T realMean0 = y == z ? mean : y[e * yEWS];
 
-                    auto z0 =  (nd4j::math::nd4j_sqrt<T,T>(static_cast<T>(-2.0f) * nd4j::math::nd4j_log<T,T>(r0)) * nd4j::math::nd4j_cos<T,T>(two_pi * r1)) * stddev + realMean0;
-                    z[e * zEWS] = z0;
+                auto z0 =  (nd4j::math::nd4j_sqrt<T,T>(static_cast<T>(-2.0f) * nd4j::math::nd4j_log<T,T>(r0)) * nd4j::math::nd4j_cos<T,T>(two_pi * r1)) * stddev + realMean0;
+                z[e * zEWS] = z0;
 
-                    if (epm < zLength) {
-                        T realMean1 = y == z ? mean : y[epm * yEWS];
-                        auto z1 = (nd4j::math::nd4j_sqrt<T,T>(static_cast<T>(-2.0f) * nd4j::math::nd4j_log<T,T>(r0)) * nd4j::math::nd4j_sin<T,T>(two_pi * r1)) * stddev + realMean1;
-                        z[epm * zEWS] = z1;
-                    }
+                if (epm < zLength) {
+                    T realMean1 = y == z ? mean : y[epm * yEWS];
+                    auto z1 = (nd4j::math::nd4j_sqrt<T,T>(static_cast<T>(-2.0f) * nd4j::math::nd4j_log<T,T>(r0)) * nd4j::math::nd4j_sin<T,T>(two_pi * r1)) * stddev + realMean1;
+                    z[epm * zEWS] = z1;
                 }
+            }
 
             // update rng state
             rng->rewindH(zLength);
