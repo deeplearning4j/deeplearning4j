@@ -3780,7 +3780,7 @@ template void NDArray::pIdx(const Nd4jLong* indices, const bool value);
         auto stridesOf = shape::stride(newShape);
 
         Nd4jLong offset = 0;
-        int idxSize = idx.size()
+        int idxSize = idx.size();
         for (int d = 0; d < idxSize; ++d) {
             // building new shape first
             if (!idx[d].empty()) {
