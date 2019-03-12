@@ -183,7 +183,8 @@ static void getMKLDNNMemoryDescLrn(const NDArray* src, const NDArray* diff_src, 
                     int end = nd4j::math::nd4j_min(depth + e + 1, lastDim);
                     T quadSum = 0;
                     int shift = c * lastDim;
-#pragma omp simd reduction(sumT:quadSum)
+
+                    PRAGMA_OMP_SIMD_SUM(quadSum)
                     for (int pos = begin; pos < end; ++pos) {
                         T val = inputBuffer[shape::getIndexOffset(shift + pos, input->getShapeInfo(), input->lengthOf())];
                         quadSum += val * val;

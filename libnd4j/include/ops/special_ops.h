@@ -2275,7 +2275,7 @@ PRAGMA_OMP_CRITICAL
 
                 int span = (tads / num_threads) + 8;
 
-#pragma omp parallel num_threads(num_threads) if (num_threads>1) proc_bind(AFFINITY)
+                PRAGMA_OMP_PARALLEL_THREADS(num_threads)
                 {
                     int tid = omp_get_thread_num();
                     int start = span * tid;

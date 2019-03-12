@@ -151,8 +151,8 @@ namespace functions {
                 const bool canCastX = nd4j::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
                                     
                 if(shape::haveSameOffsets(xShapeInfo, zShapeInfo)) {
-                    
-                    #pragma omp parallel num_threads(info._numThreads) if (info._numThreads > 1) default(shared)
+
+                    PRAGMA_OMP_PARALLEL_THREADS(info._numThreads)
                     {                
                         auto threadNum = omp_get_thread_num();
                         auto threadOffset = info.getThreadOffset(threadNum);
@@ -205,7 +205,7 @@ namespace functions {
                     uint xShapeInfoCast[MAX_RANK];
                     bool canCastX = nd4j::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
 
-                    #pragma omp parallel num_threads(info._numThreads) if (info._numThreads > 1) default(shared)
+                    PRAGMA_OMP_PARALLEL_THREADS(info._numThreads)
                     {                
                         auto threadNum = omp_get_thread_num();
                         auto threadOffset = info.getThreadOffset(threadNum);
@@ -264,7 +264,7 @@ namespace functions {
                     bool canCastX = nd4j::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
                     bool canCastY = nd4j::DataTypeUtils::castShapeInfo(yShapeInfo, yShapeInfoCast);
 
-                    #pragma omp parallel num_threads(info._numThreads) if (info._numThreads > 1) default(shared)
+                    PRAGMA_OMP_PARALLEL_THREADS(info._numThreads)
                     {                
                         auto threadNum = omp_get_thread_num();
                         auto threadOffset = info.getThreadOffset(threadNum);

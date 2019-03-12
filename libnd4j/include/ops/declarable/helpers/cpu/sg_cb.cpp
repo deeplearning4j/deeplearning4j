@@ -40,7 +40,6 @@ namespace nd4j {
                 T f(0.0f);
 
                 // dot
-#pragma omp simd reduction(sumT:dot)
                 for (int e = 0; e < vectorLength; e++) {
                     dot += syn0[e] * syn1[e];
                 }
@@ -85,7 +84,6 @@ namespace nd4j {
                 T dot = (T) 0.0f;
                 T g = (T) 0.0f;
 
-                #pragma omp simd reduction(sumT:dot)
                 for (int e = 0; e < vectorLength; e++) {
                     dot += syn0[e] * syn1Neg[e];
                 }

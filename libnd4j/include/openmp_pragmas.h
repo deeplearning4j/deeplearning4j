@@ -30,6 +30,8 @@
 #define OMP_REDUCTION(args) reduction(args)
 #define PRAGMA_OMP_CRITICAL _Pragma(OMP_STRINGIFY(omp critical))
 #define PRAGMA_OMP_SIMD _Pragma(OMP_STRINGIFY(omp simd))
+#define PRAGMA_OMP_SIMD_SUM(args) _Pragma(OMP_STRINGIFY(omp simd reduction(sumT:args)))
+#define PRAGMA_OMP_SIMD_MAX(args) _Pragma(OMP_STRINGIFY(omp simd reduction(maxTF:args)))
 #define PRAGMA_OMP_PARALLEL(args) _Pragma(OMP_STRINGIFY(omp parallel args default(shared)))
 #define PRAGMA_OMP_PARALLEL_THREADS(args) _Pragma(OMP_STRINGIFY(omp parallel num_threads(args) if(args > 1) default(shared)))
 #define PRAGMA_OMP_PARALLEL_FOR _Pragma(OMP_STRINGIFY(omp parallel for default(shared)))

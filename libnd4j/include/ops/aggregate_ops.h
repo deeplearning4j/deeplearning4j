@@ -418,7 +418,7 @@ namespace aggregateOps {
 
             int vectorLength = indexArguments[0];
 
-#pragma omp simd reduction(sumT:dot)
+            PRAGMA_OMP_SIMD_SUM(dot)
             for (int x = 0; x < vectorLength; x++) {
                 dot += vecX[x] * vecY[x];
             }
