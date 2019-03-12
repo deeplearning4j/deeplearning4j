@@ -72,6 +72,7 @@ import org.bytedeco.javacpp.tools.InfoMapper;
                         "ops/declarable/BooleanOp.h",
                         "ops/declarable/LogicOp.h",
                         "ops/declarable/OpRegistrator.h",
+                        "helpers/DebugInfo.h",
                         "ops/declarable/CustomOperations.h"},
                         exclude = {"ops/declarable/headers/activations.h",
                                 "ops/declarable/headers/boolean.h",
