@@ -60,7 +60,7 @@ namespace helpers {
         for (int i = 1; i < n; i++)
             invertedMatrix->p(i, i - 1,  -inputMatrix->e<T>(i, i - 1));
 
-        PRAGMA_OMP_PARALLEL_FOR_SIMD_COLLAPSE(2)
+        PRAGMA_OMP_PARALLEL_FOR_SIMD
         for (int i = 2; i < n; i++) {
             for (int j = i - 2; j > -1; --j) 
                 for (int k = 0; k < i; k++) 
@@ -91,7 +91,7 @@ namespace helpers {
         for (int i = 0; i < n - 1; i++)
             invertedMatrix->p(i, i + 1, invertedMatrix->e<T>(i, i+1) - (inputMatrix->e<T>(i, i + 1) * invertedMatrix->e<T>(i + 1, i + 1) / inputMatrix->e<T>(i, i)));
 
-        PRAGMA_OMP_PARALLEL_FOR_SIMD_COLLAPSE(2)
+        PRAGMA_OMP_PARALLEL_FOR_SIMD
         for (int i = n - 2; i > - 1; i--) {
             for (int j = i + 2; j < n; j++) 
                 for (int k = i; k < n; k++) 

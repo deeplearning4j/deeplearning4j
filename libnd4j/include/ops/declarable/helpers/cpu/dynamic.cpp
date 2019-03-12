@@ -57,7 +57,7 @@ namespace nd4j {
                     }
 
                 } else
-                    PRAGMA_OMP_PARALLEL_FOR_IF(outputList.size() > Environment::getInstance()->tadThreshold()) schedule(static)
+                    PRAGMA_OMP_PARALLEL_FOR_IF(outputList.size() > Environment::getInstance()->tadThreshold())
                     for (unsigned int i = 0; i < outputList.size(); i++) {
                         outputs[i].first = outputList[i];
                         outputs[i].second = 0;

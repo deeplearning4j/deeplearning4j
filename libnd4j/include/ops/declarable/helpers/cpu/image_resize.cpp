@@ -95,7 +95,7 @@ namespace helpers {
 
         T *output_y_ptr = reinterpret_cast<T *>(output->buffer());
 
-        PRAGMA_OMP_PARALLEL_FOR_SIMD_COLLAPSE(2)
+        PRAGMA_OMP_PARALLEL_FOR_SIMD
         for (Nd4jLong b = 0; b < batchSize; ++b) {
             for (Nd4jLong y = 0; y < outHeight; ++y) {
                 const T *ys_input_lower_ptr = input_b_ptr + ys[y].bottomIndex * inRowSize;
