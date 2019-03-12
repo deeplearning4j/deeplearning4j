@@ -1242,7 +1242,7 @@ void pullRowsGeneric(void *vx,
     int _threads = nd4j::math::nd4j_max<int>(1, elementsPerThread);
     _threads = nd4j::math::nd4j_min<int>(_threads, omp_get_max_threads());
 
-#pragma omp parallel for num_threads(_threads) if (n > 1) schedule(guided) default(shared)
+    PRAGMA_OMP_PARALLEL_FOR_THREADS(_threads)
     for (int idx = 0; idx < n; idx++) {
         auto xTadOffsetForBlock = tadOffsets[indexes[idx]];
         auto zTadOffsetForBlock = zTadOffsets[idx];

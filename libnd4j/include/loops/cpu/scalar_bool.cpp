@@ -60,8 +60,9 @@ namespace functions {
                 printf("ScalarBoolTransform<X, Z>::transform: super-bad loop visited. Shouldn't ever happen\n");
             }
             
-            int num_threads = nd4j::math::nd4j_min<int>(numTads, omp_get_max_threads());            
-            #pragma omp parallel for schedule(guided) num_threads(num_threads) if (num_threads > 1) proc_bind(AFFINITY) default(shared)
+            int num_threads = nd4j::math::nd4j_min<int>(numTads, omp_get_max_threads());
+
+            PRAGMA_OMP_PARALLEL_FOR_THREADS(num_threads)
             for (unsigned int r = 0; r < numTads; r++) {
                 
                 auto oZ = z + tadOffsetsZ[r];

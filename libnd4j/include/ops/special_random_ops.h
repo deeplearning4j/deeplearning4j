@@ -161,7 +161,7 @@ namespace randomOps {
             _threads = nd4j::math::nd4j_min<int>(_threads, omp_get_max_threads());
 
             if (zEWS >= 1 && xEWS >= 1 && yEWS >= 1) {
-#pragma omp parallel for num_threads(_threads) if (_threads > 1) schedule(guided)
+                PRAGMA_OMP_PARALLEL_FOR_THREADS(_threads)
                 for (Nd4jLong e = 0; e < zLength; e++) {
                     T prob = rng->relativeT<T>(e);
                     T cumProb = (T) 0.0f;
@@ -176,9 +176,9 @@ namespace randomOps {
                     }
                 }
             } 
-            else {            
+            else {
 
-#pragma omp parallel for num_threads(_threads) if (_threads > 1) schedule(guided)
+                PRAGMA_OMP_PARALLEL_FOR_THREADS(_threads)
                 for (Nd4jLong i = 0; i < zLength; i++) {
 
                     auto zOffset2 = shape::getIndexOffset(i, zShapeBuffer, zLength);
@@ -735,7 +735,7 @@ namespace randomOps {
 
             const T epsilon = static_cast<T>(1e-5);
 
-#pragma omp parallel for num_threads(_threads) if (_threads > 1) proc_bind(spread)
+            PRAGMA_OMP_PARALLEL_FOR_THREADS(_threads)
             for (Nd4jLong e = 0; e < zLength; ++e) {
                 if (z[e] > mean + ds || z[e] < mean - ds) {
                     z[e] = step(rng, mean, stddev, e, middle, z[e]);// = e > 0 ? z[e - 1] : mean; // + stddev;

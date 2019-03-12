@@ -114,7 +114,7 @@ namespace functions {
                     uint tadShapeShapeInfoCast[MAX_RANK];
                     bool canCastX = nd4j::DataTypeUtils::castShapeInfo(tadShapeShapeInfo, tadShapeShapeInfoCast);
 
-#pragma omp parallel for schedule(guided) num_threads(_threads) if (_threads > 1) proc_bind(AFFINITY) default(shared)
+                    PRAGMA_OMP_PARALLEL_FOR_THREADS(_threads)
                     for (int i = 0; i < tads; i++) {
                     
                         auto oZ = z + tadOffsetZ[i];
@@ -136,7 +136,7 @@ namespace functions {
                     bool canCastX = nd4j::DataTypeUtils::castShapeInfo(tadShapeShapeInfo, tadShapeShapeInfoCast);
                     bool canCastZ = nd4j::DataTypeUtils::castShapeInfo(tadShapeInfoZ, tadShapeInfoZCast);
 
-#pragma omp parallel for schedule(guided) num_threads(_threads) if (_threads > 1) proc_bind(AFFINITY) default(shared)
+                    PRAGMA_OMP_PARALLEL_FOR_THREADS(_threads)
                     for (int i = 0; i < tads; i++) {
                     
                         auto oZ = z + tadOffsetZ[i];
@@ -178,7 +178,7 @@ namespace functions {
                     bool canCastX = nd4j::DataTypeUtils::castShapeInfo(tadShapeShapeInfo, tadShapeShapeInfoCast);
                     bool canCastY = nd4j::DataTypeUtils::castShapeInfo(yShapeInfo, yShapeInfoCast);
 
-#pragma omp parallel for schedule(guided) num_threads(_threads) if (_threads > 1) proc_bind(AFFINITY) default(shared)
+                    PRAGMA_OMP_PARALLEL_FOR_THREADS(_threads)
                     for (int i = 0; i < tads; i++) {
                     
                         auto oZ = z + tadOffsetZ[i];
@@ -201,7 +201,7 @@ namespace functions {
                     bool canCastY = nd4j::DataTypeUtils::castShapeInfo(yShapeInfo, yShapeInfoCast);
                     bool canCastZ = nd4j::DataTypeUtils::castShapeInfo(tadShapeInfoZ, tadShapeInfoZCast);
 
-#pragma omp parallel for schedule(guided) num_threads(_threads) if (_threads > 1) proc_bind(AFFINITY) default(shared)
+                    PRAGMA_OMP_PARALLEL_FOR_THREADS(_threads)
                     for (int i = 0; i < tads; i++) {
                     
                         auto oZ = z + tadOffsetZ[i];

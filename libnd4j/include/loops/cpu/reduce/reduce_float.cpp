@@ -191,7 +191,7 @@ namespace functions {
 
                 if (tadEWS == 1 && shape::order(tadOnlyShapeInfo) == 'c') {
 
-#pragma omp parallel for schedule(guided) num_threads(num_threads) if(num_threads>1) proc_bind(AFFINITY) default(shared)
+                    PRAGMA_OMP_PARALLEL_FOR_THREADS(num_threads)
                     for (int i = 0; i < resultLength; i++) {
 
                         auto tx = x + tadOffsets[i];
@@ -204,7 +204,7 @@ namespace functions {
                     }
                 } else {
 
-#pragma omp parallel for schedule(guided) num_threads(num_threads) if(num_threads>1) proc_bind(AFFINITY) default(shared)
+                    PRAGMA_OMP_PARALLEL_FOR_THREADS(num_threads)
                     for (int i = 0; i < resultLength; i++) {
 
                         auto tx = x + tadOffsets[i];

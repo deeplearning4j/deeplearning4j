@@ -125,7 +125,7 @@ void IndexReduce<X>::exec(void *vx, Nd4jLong *xShapeInfo,
     uint tadOnlyShapeInfoCast[MAX_RANK];                    
     bool canCastX = nd4j::DataTypeUtils::castShapeInfo(tadOnlyShapeInfo, tadOnlyShapeInfoCast);
 
-    #pragma omp parallel for schedule(guided) num_threads(numThreads) if (numThreads > 1) proc_bind(AFFINITY) default(shared)        
+    PRAGMA_OMP_PARALLEL_FOR_THREADS(numThreads)
     for(Nd4jLong i = 0; i < zLen; i++) {
 
         auto offset = tadOffsets[i];
