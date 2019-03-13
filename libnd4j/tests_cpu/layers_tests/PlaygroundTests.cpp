@@ -241,6 +241,7 @@ TEST_F(PlaygroundTests, Test_OpBenchmark_6) {
     helper.runOperationSuit(&db, generator, batch, "parametrized softmax test");
 }
 
+/*
 TEST_F(PlaygroundTests, Test_Strided_Stuff) {
     auto array = NDArrayFactory::create<float>('c', {1048576, 1024});
     auto strided = array.subarray({NDIndex::all(), NDIndex::interval(3, 4)});
@@ -262,7 +263,7 @@ TEST_F(PlaygroundTests, Test_Strided_Stuff) {
     delete strided;
 }
 
-/*
+
 TEST_F(PlaygroundTests, StridedReductionsNoEWS) {
     nd4j_printf("SETTING ELEMENTWISE THRESHOLD AND TAD THRESHOLD TO 1/1","");
     nd4j::Environment::getInstance()->setElementwiseThreshold(1);
