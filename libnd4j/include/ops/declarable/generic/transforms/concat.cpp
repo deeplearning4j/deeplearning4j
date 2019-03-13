@@ -380,23 +380,21 @@ DECLARE_SHAPE_FN(concat) {
             for (int e = 0; e < block.width() - 1; e++) {
                 auto originalChunk = INPUT_VARIABLE(e);
                 auto epsilonChunk = OUTPUT_VARIABLE(e);
-                IndicesList indices;
+                std::vector<Nd4jLong> indices(2 * epsilonNext->rankOf());
 
                 int width = originalChunk->sizeAt(axis);            
 
                 for (int e = 0; e < epsilonNext->rankOf(); e++) {
                     if (e == axis)
-                        indices.push_back(NDIndex::interval(startPos, startPos + width));
+                        indices[2*e + 1] = (indices[2*e] = startPos) + width;                    
                     else
-                        indices.push_back(NDIndex::all());
+                        indices[2*e + 1] = indices[2*e] = 0;
                 }
 
-                auto subarray = epsilonNext->subarray(indices);
+                auto subarray = (*epsilonNext)(indices, true);
                 epsilonChunk->assign(subarray);
 
-                startPos += width;
-
-                delete subarray;
+                startPos += width;                
             }
 
             return ND4J_STATUS_OK;

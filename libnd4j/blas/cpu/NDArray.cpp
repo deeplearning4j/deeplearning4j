@@ -2517,34 +2517,16 @@ template void NDArray::applyScalar(nd4j::scalar::Ops op, const bool scalar, NDAr
 
     // we can do this only if there was no permute applied, or there are no weird strides
     if (shape::reshapeCF(this->rankOf(), this->_shapeInfo, shape.size(), shape.data(), order == 'f', shapeInfoNew)) {
-        
-        if (_isShapeAlloc)
-            RELEASE(_shapeInfo, _workspace);
-        
-        _shapeInfo = shapeInfoNew;
+
+        setShapeInfo(shapeInfoNew);
         _isShapeAlloc = true;
     } 
     else {
-    
-        if (order == 'c')
-            shape::shapeBuffer(shape.size(), dataType(), shape.data(), shapeInfoNew);
-        else
-            shape::shapeBufferFortran(shape.size(), dataType(), shape.data(), shapeInfoNew);        
 
-        int8_t *newBuffer;
-        ALLOCATE(newBuffer, _workspace, this->lengthOf() * sizeOfT(), int8_t);
-
-        NativeOpExcutioner::execTransformSame(transform::Copy, _buffer, _shapeInfo, newBuffer, shapeInfoNew, nullptr, nullptr, nullptr);
-
-        if (_isBuffAlloc)
-            RELEASE(_buffer, _workspace);
-        if (_isShapeAlloc)
-            RELEASE(_shapeInfo, _workspace);
-
-        _buffer = newBuffer;
-        _shapeInfo = shapeInfoNew;
-        _isShapeAlloc = true;
-        _isBuffAlloc = true;
+        NDArray temp(order, shape, dataType(), _workspace);
+        this->applyTransform(transform::Copy, &temp, nullptr);
+        *this = std::move(temp);
+        RELEASE(shapeInfoNew, _workspace);
     }
 
     return true;
@@ -3662,141 +3644,7 @@ template void NDArray::pIdx(const Nd4jLong* indices, const int value);
 template void NDArray::pIdx(const Nd4jLong* indices, const int8_t value);
 template void NDArray::pIdx(const Nd4jLong* indices, const uint8_t value);
 template void NDArray::pIdx(const Nd4jLong* indices, const int16_t value);
-template void NDArray::pIdx(const Nd4jLong* indices, const bool value);
-
-    ////////////////////////////////////////////////////////////////////////
-    NDArray* NDArray::subarray(IndicesList& idx, std::vector<Nd4jLong>& strides) const {
-        auto raw = subarray(idx);
-
-        int stridesSize = strides.size();
-        for (int e = 0; e < stridesSize; e++)
-            raw->stridesOf()[e] *= strides[e];
-
-        return raw;
-    }
-
-    ////////////////////////////////////////////////////////////////////////
-    NDArray* NDArray::subarray(IndicesList& idx) const {
-        auto xType = this->dataType();
-        // scalar subarray edge case
-        if (idx.isScalar()) {
-            auto pnt = idx.at(0)->getIndices().at(0);
-            //return new NDArray('c', {1, 1}, {this->e(pnt)});
-            BUILD_SINGLE_SELECTOR(xType, return NDArrayFactory::create_, (this->e<float>(pnt), this->_workspace), LIBND4J_TYPES);
-        }
-
-        if (idx.size() != this->rankOf())
-            throw std::runtime_error("Number of indices should match");
-
-        Nd4jLong* newShape;
-        ALLOCATE(newShape, _workspace, shape::shapeInfoLength(this->rankOf()), Nd4jLong);
-        memcpy(newShape, this->_shapeInfo, shape::shapeInfoByteLength(this->rankOf()));
-        newShape[shape::shapeInfoLength(this->rankOf()) - 2] = 0;
-
-        auto shapeOf = shape::shapeOf(newShape);
-        auto stridesOf = shape::stride(newShape);
-
-        Nd4jLong offset = 0;
-
-        //shape::printShapeInfoLinear(newShape);
-
-        int idxSize = idx.size();
-        for (int d = 0; d < idxSize; d++) {
-            // building new shape first
-            auto index = idx.at(d);
-            if (index->isAll()) {
-                // shape is unchanged  for this dimension
-            } else {
-                // size at this dimension equals to either 1 or interval
-                shapeOf[d] = index->getIndices().size();
-
-                // for offset we're taking only the first index
-                auto first = index->getIndices().at(0);
-                offset += first * stridesOf[d];
-
-                shape::stride(newShape)[d] *= index->stride();
-                nd4j_debug("dimension_ [%i] stride [%i]\n", d, index->stride());
-            }
-        }
-
-        //shape::printShapeInfoLinear(newShape);
-
-        auto result = new NDArray(bufferWithOffset(offset), newShape, this->_workspace);
-        result->_isShapeAlloc = true;
-
-        return result;
-    }
-    
-    ////////////////////////////////////////////////////////////////////////
-    NDArray* NDArray::subarray(const std::initializer_list<NDIndex*>& idx) const {
-        if (idx.size() != this->rankOf())
-            throw std::runtime_error("NDArray::subarray: number of indices should match the array rank");
-
-        Nd4jLong *newShape;
-        ALLOCATE(newShape, _workspace, shape::shapeInfoLength(this->rankOf()), Nd4jLong);
-        memcpy(newShape, this->_shapeInfo, shape::shapeInfoByteLength(this->rankOf()));
-        newShape[shape::shapeInfoLength(this->rankOf()) - 2] = 0;
-
-        auto shapeOf = shape::shapeOf(newShape);
-        auto stridesOf = shape::stride(newShape);
-
-        Nd4jLong offset = 0;
-        int d = 0;
-        for (const auto& index : idx) {
-            // building new shape first
-            if (index->isAll()) {
-                // shape is unchanged  for this dimension
-            } else {
-                // size at this dimension equals to either 1 or interval
-                shapeOf[d] = index->getIndices().size();
-                // for offset we're taking only the first index
-                auto first = index->getIndices().at(0);
-                offset += first * stridesOf[d];
-            }
-            ++d;
-        }
-
-        auto result = new NDArray(bufferWithOffset(offset), newShape, this->_workspace);
-        result->_isShapeAlloc = true;
-
-        for (auto v: idx) {
-            delete v;
-        }
-
-        return result;
-    }
-
-    ////////////////////////////////////////////////////////////////////////
-    NDArray* NDArray::subarray(const Intervals& idx) const {
-        if (idx.size() != this->rankOf())
-            throw std::runtime_error("NDArray::subarray: number of indices should match the rank of array!");
-
-        Nd4jLong *newShape;
-        ALLOCATE(newShape, _workspace, shape::shapeInfoLength(this->rankOf()), Nd4jLong);
-        memcpy(newShape, this->_shapeInfo, shape::shapeInfoByteLength(this->rankOf()));
-        newShape[shape::shapeInfoLength(this->rankOf()) - 2] = 0;
-
-        auto shapeOf = shape::shapeOf(newShape);
-        auto stridesOf = shape::stride(newShape);
-
-        Nd4jLong offset = 0;
-        int idxSize = idx.size();
-        for (int d = 0; d < idxSize; ++d) {
-            // building new shape first
-            if (!idx[d].empty()) {
-                if (idx[d].size() != 2)
-                    throw std::runtime_error("NDArray::subarray: the interval must contain only two numbers {first, last} !");
-                shapeOf[d] = idx[d][1] - idx[d][0];
-                // for offset we're taking only the first index
-                offset += idx[d][0] * stridesOf[d];
-            }
-        }
-
-        auto result = new NDArray(bufferWithOffset(offset), newShape, this->_workspace);
-        result->_isShapeAlloc = true;
-
-        return result;
-    }
+template void NDArray::pIdx(const Nd4jLong* indices, const bool value);    
 
 
     NDArray* NDArray::asT(DataType dtype) {
@@ -4059,7 +3907,7 @@ template void NDArray::pIdx(const Nd4jLong* indices, const bool value);
 
     ////////////////////////////////////////////////////////////////////////
     // operator returns sub-array with buffer pointing at this->_buffer + certain offset
-    NDArray NDArray::operator()(const std::vector<Nd4jLong>& idx, bool keepUnitiesInShape)  const {
+    NDArray NDArray::operator()(const std::vector<Nd4jLong>& idx, const bool keepUnitiesInShape, const bool isStrided)  const {
 
         const int rank = rankOf();
         Nd4jLong *newShape;
@@ -4070,44 +3918,67 @@ template void NDArray::pIdx(const Nd4jLong* indices, const bool value);
         auto stridesOf = shape::stride(newShape);
 
         Nd4jLong offset = 0;
-        Nd4jLong first, last;
-        bool continuous = false;
+        Nd4jLong first, last, stride;
+        bool continuous(false), allStidesUnities(true);
         int current = rank - 1;
 
-        for (int d = rank - 1; d >= 0; --d) {
+        if(isStrided) {
 
-            // building new shape first
-            if (idx[2*d] != idx[2*d+1]) {                                
+            // if (idx.size() == 3 && (idx[1] - idx[0]) == 1) {
+            //     printf("!!!!!!!\n");
+            //     // auto pnt = idx.at(0)->getIndices().at(0);
+            //     //return new NDArray('c', {1, 1}, {this->e(pnt)});
+            //     BUILD_SINGLE_SELECTOR(dataType(), return NDArrayFactory::create_, (this->e<float>(idx[0]), this->_workspace), LIBND4J_TYPES);
+            // }
 
-                first = idx[2*d]   >= 0 ? idx[2*d]   : idx[2*d]   + sizeAt(d) + 1;
-                last  = idx[2*d+1] >= 0 ? idx[2*d+1] : idx[2*d+1] + sizeAt(d) + 1;
+            for (int d = rank - 1; d >= 0; --d) {
+            
+                if (idx[3*d] != idx[3*d+1]) {                                
 
-                shapeOf[d] = last - first;
-                // for offset we're taking only the first index
-                offset += first * stridesOf[d];
+                    first = idx[3*d]   >= 0 ? idx[3*d]   : idx[3*d]   + sizeAt(d) + 1;
+                    last  = idx[3*d+1] >= 0 ? idx[3*d+1] : idx[3*d+1] + sizeAt(d) + 1;
+                    
+                    offset += first * stridesOf[d];
+                    stridesOf[d] *= idx[3*d+2];                   
+                    shapeOf[d] = (last - first + idx[3*d+2] - 1) / idx[3*d+2];      // ceil (last - first) / idx[3*d+2];                    
+
+                    allStidesUnities &= (idx[3*d+2] == 1);                    
+                }
+                else
+                    continuous = current-- == d;
             }
-            else
-                continuous = current-- == d;
         }
+        else {
 
+            for (int d = rank - 1; d >= 0; --d) {
+            
+                if (idx[2*d] != idx[2*d+1]) {                                
+
+                    first = idx[2*d]   >= 0 ? idx[2*d]   : idx[2*d]   + sizeAt(d) + 1;
+                    last  = idx[2*d+1] >= 0 ? idx[2*d+1] : idx[2*d+1] + sizeAt(d) + 1;
+
+                    shapeOf[d] = last - first;                    
+                    offset += first * stridesOf[d];
+                }
+                else
+                    continuous = current-- == d;
+            }
+        }
+       
         // evaluate ews
-        newShape[2 * rank + 2] = (continuous && ordering() == 'c') ? ews() : 0;
+        newShape[2 * rank + 2] = (continuous && allStidesUnities && ordering() == 'c') ? ews() : 0;
 
         NDArray result(bufferWithOffset(offset), newShape, _workspace, false, true);
 
         if(!keepUnitiesInShape) {
-
+            const int coeff = isStrided ? 3 : 2;
             std::vector<Nd4jLong> nonUnitDims;
             for (int d = 0; d < rank; ++d) {
-                if(!(idx[2*d] != idx[2*d+1] && newShape[d+1] == 1))
+                if(!(idx[coeff*d] != idx[coeff*d+1] && newShape[d+1] == 1))
                     nonUnitDims.push_back(newShape[d+1]);
             }
             if(nonUnitDims.size() != rank)
                 result.reshapei(nonUnitDims);
-
-            // std::vector<Nd4jLong> nonUnitDims = ShapeUtils<T>::evalDimsWithoutUnities(newShape);
-            // if(nonUnitDims.size() != result.rankOf())
-            //     result.reshapei(nonUnitDims);
         }
 
         return result;
@@ -4736,14 +4607,7 @@ template void NDArray::operator/=(const bool scalar);
         NDArray result(*ptr);
         delete ptr;
         return result;
-    }
-
-    ////////////////////////////////////////////////////////////////////////
-    void NDArray::assign(const NDArray& other, const Intervals& idx) {
-        auto subarr = this->subarray(idx);
-        subarr->assign(&other);
-        delete subarr;
-    }
+    }    
 
     ////////////////////////////////////////////////////////////////////////
     void NDArray::setIdentity() {

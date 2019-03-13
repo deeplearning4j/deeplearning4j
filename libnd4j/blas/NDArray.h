@@ -279,15 +279,7 @@ namespace nd4j {
         /**
         *  creates array which is view of this array
         */
-        NDArray* getView();
-
-        /**
-        *  creates array which points on certain sub-range of this array, sub-range is defined by given indices
-        */
-        NDArray* subarray(IndicesList& indices) const;
-        NDArray* subarray(IndicesList& indices, std::vector<Nd4jLong>& strides) const;
-        NDArray* subarray(const std::initializer_list<NDIndex*>& idx) const;
-        NDArray* subarray(const Intervals& idx) const;
+        NDArray* getView();        
 
         /**
         *  cast array elements to given dtype
@@ -881,8 +873,10 @@ namespace nd4j {
         *  idx - intervals of indexes which define the subarrays to point on, idx has form {dim0Start,dim0End,  dim1Start,dim1End, ....} and length (2 * this->rankOf())
         *        when (dimStart == dimEnd) then whole range will be used for current dimension
         *  keepUnitiesInShape - if false then eliminate unities from resulting array shape, for example {1,a,1,b} -> {a,b}
+        *  isStrided - if true then idx has length (3 * this->rankOf()) and contains additional stride numbers which correspond to stride between dimStart and dimEnd,
+        *              so structure of idx is like {dim0Start,dim0End,dim0Stride,    dim1Start,dim1End,dim1Stride, ....}
         */
-        NDArray operator()(const std::vector<Nd4jLong>& idx, bool keepUnitiesInShape = false)  const;
+        NDArray operator()(const std::vector<Nd4jLong>& idx, const bool keepUnitiesInShape = false, const bool isStrided = false)  const;
 
         /**
         *  evaluates subarray with buffer pointing at this->_buffer and offset defined by given sequential index subArrIdx and dimensions in dimsToExclude
@@ -1012,14 +1006,7 @@ namespace nd4j {
         *  left - input array
         *  right - input array
         */
-        friend NDArray mmul(const NDArray& left, const NDArray& right);
-
-        /**
-        *  this method assigns elements of other array to the subarray of this array defined by given intervals
-        *  other - input array to assign elements from
-        *  idx - intervals of indexes which define the subarray
-        */ 
-        void assign(const NDArray& other, const Intervals& idx);
+        friend NDArray mmul(const NDArray& left, const NDArray& right);        
 
         /**
         *  return vector containing _buffer as flat binary array

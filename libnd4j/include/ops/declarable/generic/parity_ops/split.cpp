@@ -67,27 +67,27 @@ namespace ops {
 
         int pos = 0;
         int split = input->sizeAt(axis) / num_splits;
+        std::vector<Nd4jLong> indices(2 * input->rankOf());
+        
         for (int e = 0; e < num_splits; e++) {
+            
             auto out = OUTPUT_VARIABLE(e);
-
-            IndicesList indices;
+            
             for (int d = 0; d < input->rankOf(); d++) {
-                if (d == axis)
-                    indices.push_back(NDIndex::interval(pos, pos + split));
+                if (d == axis) {
+                    indices[2*d]     = pos;
+                    indices[2*d + 1] = pos + split; 
+                }
                 else 
-                    indices.push_back(NDIndex::all());
+                    indices[2*d] = indices[2*d + 1] = 0;
             }
 
-            auto sub = input->subarray(indices);
+            auto sub = (*input)(indices, true);
             
             out->assign(sub);
 
-            delete sub;
-
             pos += split;
         }
-
-
 
         return Status::OK();
     }

@@ -244,14 +244,14 @@ TEST_F(PlaygroundTests, Test_OpBenchmark_6) {
 /*
 TEST_F(PlaygroundTests, Test_Strided_Stuff) {
     auto array = NDArrayFactory::create<float>('c', {1048576, 1024});
-    auto strided = array.subarray({NDIndex::all(), NDIndex::interval(3, 4)});
+    auto strided = array({0,0, 3, 4}, true);
     auto z = NDArrayFactory::create<float>(0.0f);
     //strided->shapeInfo()[shape::shapeInfoLength(strided->rankOf()) - 2] = 1024;
 
     int N = 1000;
     auto timeStart = std::chrono::system_clock::now();
     for (int e = 0; e < N; e++)
-        NativeOpExcutioner::execReduceSameScalar(reduce::Sum, strided->buffer(), strided->shapeInfo(), nullptr, z.buffer(), z.shapeInfo());
+        NativeOpExcutioner::execReduceSameScalar(reduce::ReduceSameBenchmarkOp, strided.buffer(), strided.shapeInfo(), nullptr, z.buffer(), z.shapeInfo());
 
     auto timeEnd = std::chrono::system_clock::now();
     auto spanTime = std::chrono::duration_cast<std::chrono::microseconds> ((timeEnd - timeStart) / N).count();
@@ -260,119 +260,53 @@ TEST_F(PlaygroundTests, Test_Strided_Stuff) {
     nd4j_printf("average time: %lld us;\n", spanTime);
     nd4j_printf("total time: %lld ms;\n", ttlTime);
 
-    delete strided;
 }
+*/
 
-
+/*
 TEST_F(PlaygroundTests, StridedReductionsNoEWS) {
     nd4j_printf("SETTING ELEMENTWISE THRESHOLD AND TAD THRESHOLD TO 1/1","");
     nd4j::Environment::getInstance()->setElementwiseThreshold(1);
     nd4j::Environment::getInstance()->setTadThreshold(1);
     BenchmarkHelper helper;
-
     IntPowerParameters stride("stride", 2, 0, 10);          //2^0=1, ..., 2^10=1024
-
     ParametersBatch batch({&stride});
-
     //This is an edge case: technically an EWS *should* be available here
     auto generator1 = PARAMETRIC_XYZ() {
         auto stride = p.getIntParam("stride");
         auto arr = NDArrayFactory::create_<float>('c', {1048576 + (stride == 1 ? 0 : 1), stride});
-
         NDArray* strided;
         if(stride == 1){
             strided = arr;
-        } else {
-            IndicesList indices({NDIndex::interval(0,1048576), NDIndex::interval(0,1)});
-            strided = arr->subarray(indices);        //All rows, first column
+        } else {            
+            strided = new NDArray((*arr)({0,1048576, 0,1}, true));        //All rows, first column
         }
-
         strided->assign(1.0);
         x.push_back(strided);
         y.push_back(nullptr);
         z.push_back(NDArrayFactory::create_<float>(0.0f));
     };
-
     ReductionBenchmark rbSum(reduce::SameOps::Sum, "stridedSum");
     helper.runOperationSuit(&rbSum, (const std::function<void (Parameters &, ResultSet &, ResultSet &, ResultSet &)>)(generator1), batch, "Strided Sum - No EWS Test 1");
-
-
     //No EWS defined for this case
     auto generator2 = PARAMETRIC_XYZ() {
         auto stride = p.getIntParam("stride");
         auto arr = NDArrayFactory::create_<float>('c', {(stride == 1 ? 1 : 2) * 1024, 1024, stride});
-
         NDArray* strided;
         if(stride == 1){
             strided = arr;
-        } else {
-            IndicesList indices({NDIndex::interval(0,2*1024,2), NDIndex::all(), NDIndex::interval(0,1)});
-            strided = arr->subarray(indices);
+        } else {            
+            strided = new NDArray((*arr)({0,2*1024,2,  0,0,0,  0,1,1}, true, true));
         }
-
         strided->assign(1.0);
         x.push_back(strided);
         y.push_back(nullptr);
         z.push_back(NDArrayFactory::create_<float>(0.0f));
     };
-
     ReductionBenchmark rbSum2(reduce::SameOps::Sum, "stridedSumNoEWS");
     helper.runOperationSuit(&rbSum2, (const std::function<void (Parameters &, ResultSet &, ResultSet &, ResultSet &)>)(generator2), batch, "Strided Sum - No EWS Test 2");
 }
 */
-/*
-TEST_F(PlaygroundTests, Test_Reduce_Mechanics) {
-    auto length = 8192;
-    auto x = new double[length];
-    double finalVal = 0.0;
-    for (int e = 0; e < length; e++) {
-        x[e] = 1.0;
-    }
-
-    BlockInformation info(length, 1024);
-    auto blocks = new double[info.threads];
-
-    printf("num_threads: [%i]\n", info.threads);
-
-#pragma omp parallel num_threads(info.threads) if (info.threads > 1) proc_bind(AFFINITY) default(shared)
-    {
-        double local = 0.0;
-        for (int i = omp_get_thread_num(); i < info.chunks; i += info.threads) {
-            Nd4jLong newOffset = (i * info.items);
-            auto chunk = x + newOffset;
-            Nd4jLong itemsToLoop = info.items;
-            if (i * info.items >= length) {
-                break;
-            }
-
-            //handle modulo case
-            if (newOffset + info.items >= length) {
-                itemsToLoop = length - newOffset;
-            }
-
-// FIXME: proper reduction should be used here
-            for (Nd4jLong j = 0; j < itemsToLoop && i * info.items + j < length; j++) {
-                auto curr = simdOps::Mean<double,double>::op(chunk[j], nullptr);
-                local = simdOps::Mean<double,double>::update(local, curr, nullptr);
-            }
-
-        }
-
-        blocks[omp_get_thread_num()] = local;
-    }
-
-// FIXME: proper reduction should be used here
-    for (int i = 0; i < info.threads; i++) {
-        finalVal = simdOps::Mean<double,double>::update(finalVal, blocks[i], nullptr);
-    }
-
-
-    finalVal = simdOps::Mean<double,double>::postProcess(finalVal, length, nullptr);
-    delete[] blocks;
-    delete[] x;
-    printf("result: [%f]\n", (float) finalVal);
-    ASSERT_NEAR(1.0, finalVal, 1e-5);
-}
 
 TEST_F(PlaygroundTests, LambdaTest_1) {
     auto array = NDArrayFactory::create<float>('c', {8192, 1024});
@@ -1352,6 +1286,7 @@ TEST_F(PlaygroundTests, test_assign_float) {
 
 }
 
+/*
 TEST_F(PlaygroundTests, test_manual_loop) {
     const unsigned int len = 32 * 128 * 256 * 256;
     auto array = new float[len];
@@ -1383,6 +1318,7 @@ TEST_F(PlaygroundTests, test_manual_loop) {
     delete[] array;
     delete[] z;
 }
+*/
 
 TEST_F(PlaygroundTests, test_col2im_permuted_1) {
     auto x = NDArrayFactory::create<float>('c', {8, 64, 55, 55, 3, 3});
@@ -1423,7 +1359,8 @@ TEST_F(PlaygroundTests, test_col2im_permuted_1) {
 
     ASSERT_EQ(z0, z1);
 }
-/*
+
+
 TEST_F(PlaygroundTests, test_addi_assign) {
     int iterations = 1;
     auto x = NDArrayFactory::create<float>('c', {1000000000});
@@ -1444,6 +1381,7 @@ TEST_F(PlaygroundTests, test_addi_assign) {
     nd4j_printf("Bandwidth: %f GB/s\n", bw);
 }
 
+/*
 /////////////////////////////////////////////////////////////////////
 TEST_F(PlaygroundTests, conv2d_1) {
 
@@ -1473,6 +1411,7 @@ TEST_F(PlaygroundTests, conv2d_1) {
     auto duration = std::chrono::duration_cast<std::chrono::microseconds> ((timeEnd - timeStart) / N).count();
     printf("duration %ld\n", duration);
 }
+*/
 
 /////////////////////////////////////////////////////////////////////
 TEST_F(PlaygroundTests, batchnorm_1) {
@@ -1530,4 +1469,3 @@ TEST_F(PlaygroundTests, softmax_1) {
 
 }
 
-*/
