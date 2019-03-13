@@ -2635,14 +2635,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
 
     protected void init(int[] shape, int[] stride) {
-
-        //default row vector
-        if (shape.length == 1) {
-            init(new int[] {1, shape[0]}, new int[] {1, stride[0]});
-        }
-
         //null character
-        if (ordering() == '\u0000') {
+        if (shapeInformation == null || jvmShapeInfo == null || ordering() == '\u0000') {
             //Shape.setOrder(shapeInfo(), Nd4j.order());
             val si = Nd4j.getShapeInfoProvider().createShapeInformation(ArrayUtil.toLongArray(shape), ArrayUtil.toLongArray(stride), 1, Nd4j.order(), this.dataType());
             setShapeInformation(si);
@@ -2651,14 +2645,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     }
 
     protected void init(long[] shape, long[] stride) {
-
-        //default row vector
-        if (shape.length == 1) {
-            init(new long[] {1, shape[0]}, new long[] {1, stride[0]});
-        }
-
         //null character
-        if (ordering() == '\u0000') {
+        if (shapeInformation == null || jvmShapeInfo == null || ordering() == '\u0000') {
             val si = Nd4j.getShapeInfoProvider().createShapeInformation(shape,stride, 1, Nd4j.order(), this.dataType());
             setShapeInformation(si);
         }
