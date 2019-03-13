@@ -61,9 +61,9 @@ namespace nd4j {
             auto _maxValue = input->e<double>(0);
             auto _meanValue = input->e<double>(0);
             auto _stdDevValue = 0.; //info->_minValue;
-            auto _zeroCount = nd4j::math::nd4j_abs(input->e<double>(0)) > 0.00001? 0: 1;
-            auto _positiveCount = input->e<double>(0) > 0?1:0;
-            auto _negativeCount = input->e<double>(0) < 0?1:0;
+            auto _zeroCount = nd4j::math::nd4j_abs(input->e<double>(0)) > 0.00001? 0L : 1L;
+            auto _positiveCount = input->e<double>(0) > 0? 1L : 0L;
+            auto _negativeCount = input->e<double>(0) < 0? 1L : 0L;
             auto _infCount = nd4j::math::nd4j_isinf(input->e<double>(0)) ? 1L : 0L;
             auto _nanCount = nd4j::math::nd4j_isnan(input->e<double>(0)) ? 1L : 0L;
 
