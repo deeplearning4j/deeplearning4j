@@ -290,10 +290,7 @@ public class PythonExecutioner {
     public void exec(String code){
         log.info("CPython: PyRun_SimpleStringFlag()");
         log.info(code);
-        System.out.println("about to exec...");
-        System.out.println(code);
         PyRun_SimpleStringFlags(code, null);
-        System.out.println("exec done");
         log.info("Exec done");
     }
 
