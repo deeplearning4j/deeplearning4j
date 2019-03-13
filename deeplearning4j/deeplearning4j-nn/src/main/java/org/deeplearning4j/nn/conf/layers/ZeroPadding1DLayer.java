@@ -137,7 +137,7 @@ public class ZeroPadding1DLayer extends NoParamLayer {
          * @param padding Padding value for left and right. Must be length 1 or 2 array.
          */
         public void setPadding(int... padding) {
-            this.padding = ValidationUtils.validate2NonNegative(padding, "padding");
+            this.padding = ValidationUtils.validate2NonNegative(padding, false, "padding");
         }
 
 

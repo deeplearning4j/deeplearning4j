@@ -166,22 +166,22 @@ public class DepthwiseConvolution2D extends ConvolutionLayer {
 
         @Override
         public void setKernelSize(int... kernelSize) {
-            this.kernelSize = ValidationUtils.validate2NonNegative(kernelSize, "kernelSize");
+            this.kernelSize = ValidationUtils.validate2NonNegative(kernelSize, false, "kernelSize");
         }
 
         @Override
         public void setStride(int... stride) {
-            this.stride = ValidationUtils.validate2NonNegative(stride, "stride");
+            this.stride = ValidationUtils.validate2NonNegative(stride, false, "stride");
         }
 
         @Override
         public void setPadding(int... padding) {
-            this.padding = ValidationUtils.validate2NonNegative(padding, "padding");
+            this.padding = ValidationUtils.validate2NonNegative(padding, false, "padding");
         }
 
         @Override
         public void setDilation(int... dilation) {
-            this.dilation = ValidationUtils.validate2NonNegative(dilation, "dilation");
+            this.dilation = ValidationUtils.validate2NonNegative(dilation, false, "dilation");
         }
 
         @Override

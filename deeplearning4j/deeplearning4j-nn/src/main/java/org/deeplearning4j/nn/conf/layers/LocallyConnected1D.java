@@ -254,7 +254,7 @@ public class LocallyConnected1D extends SameDiffLayer {
          * Input filter size for this locally connected 1D layer
          *
          */
-        @Setter(AccessLevel.NONE)t
+        @Setter(AccessLevel.NONE)
         private int inputSize;
 
         /**

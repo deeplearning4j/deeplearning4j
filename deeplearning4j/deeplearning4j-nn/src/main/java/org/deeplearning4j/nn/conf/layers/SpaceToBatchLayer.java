@@ -162,7 +162,7 @@ public class SpaceToBatchLayer extends NoParamLayer {
          * dimensions
          */
         public void setBlocks(int... blocks) {
-            this.blocks = ValidationUtils.validate2NonNegative(blocks, "blocks");
+            this.blocks = ValidationUtils.validate2NonNegative(blocks, false, "blocks");
         }
 
         /**

@@ -121,9 +121,9 @@ public class ValidationUtils {
      * @param paramName The param name, for error reporting
      * @return An int array of length 2 that represents the input
      */
-    public static int[] validate2NonNegative(int[] data, String paramName) {
+    public static int[] validate2NonNegative(int[] data, boolean allowSz1, String paramName) {
         validateNonNegative(data, paramName);
-        return validate2(data, paramName);
+        return validate2(data, allowSz1, paramName);
     }
 
     /**
@@ -136,14 +136,20 @@ public class ValidationUtils {
      * @param paramName The param name, for error reporting
      * @return An int array of length 2 that represents the input
      */
-    public static int[] validate2(int[] data, String paramName){
+    public static int[] validate2(int[] data, boolean allowSz1, String paramName){
         if(data == null) {
             return null;
         }
 
-        Preconditions.checkArgument(data.length == 1 || data.length == 2,
-                "Need either 1 or 2 %s values, got %s values: %s",
-                       paramName, data.length, data);
+
+        if(allowSz1){
+            Preconditions.checkArgument(data.length == 1 || data.length == 2,
+                    "Need either 1 or 2 %s values, got %s values: %s",
+                    paramName, data.length, data);
+        } else {
+            Preconditions.checkArgument(data.length == 2,"Need 2 %s values, got %s values: %s",
+                    paramName, data.length, data);
+        }
 
         if(data.length == 1){
             return new int[]{data[0], data[0]};

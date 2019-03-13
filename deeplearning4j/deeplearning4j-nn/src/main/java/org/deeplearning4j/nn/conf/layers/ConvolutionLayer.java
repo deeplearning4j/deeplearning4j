@@ -318,7 +318,7 @@ public class ConvolutionLayer extends FeedForwardLayer {
          */
         @Override
         public void setKernelSize(int... kernelSize) {
-            this.kernelSize = ValidationUtils.validate2NonNegative(kernelSize, "kernelSize");
+            this.kernelSize = ValidationUtils.validate2NonNegative(kernelSize, false, "kernelSize");
         }
 
         /**
@@ -328,7 +328,7 @@ public class ConvolutionLayer extends FeedForwardLayer {
          */
         @Override
         public void setStride(int... stride) {
-            this.stride = ValidationUtils.validate2NonNegative(stride, "stride");
+            this.stride = ValidationUtils.validate2NonNegative(stride, false, "stride");
         }
 
         /**
@@ -338,7 +338,7 @@ public class ConvolutionLayer extends FeedForwardLayer {
          */
         @Override
         public void setPadding(int... padding) {
-            this.padding = ValidationUtils.validate2NonNegative(padding, "padding");
+            this.padding = ValidationUtils.validate2NonNegative(padding, false, "padding");
         }
 
         /**
@@ -348,7 +348,7 @@ public class ConvolutionLayer extends FeedForwardLayer {
          */
         @Override
         public void setDilation(int... dilation) {
-            this.dilation = ValidationUtils.validate2NonNegative(dilation, "dilation");
+            this.dilation = ValidationUtils.validate2NonNegative(dilation, false, "dilation");
         }
     }
 

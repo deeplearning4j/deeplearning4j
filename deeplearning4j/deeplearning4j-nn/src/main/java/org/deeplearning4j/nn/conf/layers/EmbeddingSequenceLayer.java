@@ -179,7 +179,7 @@ public class EmbeddingSequenceLayer extends FeedForwardLayer {
                 nIn(shape[0]);
                 nOut(shape[1]);
             }
-            super.weightInit(weightInit);
+            this.weightInitFn = weightInit;
         }
 
         /**

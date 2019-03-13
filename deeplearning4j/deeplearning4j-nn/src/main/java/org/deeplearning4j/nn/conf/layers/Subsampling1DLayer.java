@@ -172,17 +172,16 @@ public class Subsampling1DLayer extends SubsamplingLayer {
 
         public Builder(org.deeplearning4j.nn.conf.layers.PoolingType poolingType, int kernelSize, int stride,
                         int padding) {
-            super(poolingType, new int[] {kernelSize, 1}, new int[] {stride, 1}, new int[] {padding, 0});
-            this.kernelSize = new int[] {kernelSize, 1};
-            this.stride = new int[] {stride, 1};
-            this.padding = new int[] {padding, 0};
+            setKernelSize(kernelSize);
+            setPadding(padding);
+            setStride(stride);
         }
 
         public Builder(PoolingType poolingType, int kernelSize, int stride, int padding) {
-            super(poolingType, new int[] {kernelSize, 1}, new int[] {stride, 1}, new int[] {padding, 0});
-            this.kernelSize = new int[] {kernelSize, 1};
-            this.stride = new int[] {stride, 1};
-            this.padding = new int[] {padding, 0};
+            this.poolingType = poolingType.toPoolingType();
+            setKernelSize(kernelSize);
+            setStride(stride);
+            setPadding(padding);
         }
 
         @SuppressWarnings("unchecked")

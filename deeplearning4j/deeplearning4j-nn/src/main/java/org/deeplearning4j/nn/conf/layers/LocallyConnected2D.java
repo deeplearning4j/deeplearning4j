@@ -283,28 +283,28 @@ public class LocallyConnected2D extends SameDiffLayer {
          * @param kernel Kernel size for the layer. Must be 2 values (height/width)
          */
         public void setKernel(int... kernel) {
-            this.kernel = ValidationUtils.validate2NonNegative(kernel, "kernel");
+            this.kernel = ValidationUtils.validate2NonNegative(kernel, false, "kernel");
         }
 
         /**
          * @param stride Stride for the layer. Must be 2 values (height/width)
          */
         public void setStride(int... stride) {
-            this.stride = ValidationUtils.validate2NonNegative(stride, "stride");
+            this.stride = ValidationUtils.validate2NonNegative(stride, false, "stride");
         }
 
         /**
          * @param padding Padding for the layer. Not used if {@link ConvolutionMode#Same} is set. Must be 2 values (height/width)
          */
         public void setPadding(int... padding) {
-            this.padding = ValidationUtils.validate2NonNegative(padding, "padding");
+            this.padding = ValidationUtils.validate2NonNegative(padding, false, "padding");
         }
 
         /**
          * @param dilation Dilation for the layer. Must be 2 values (height/width)
          */
         public void setDilation(int... dilation) {
-            this.dilation = ValidationUtils.validate2NonNegative(dilation, "dilation");
+            this.dilation = ValidationUtils.validate2NonNegative(dilation, false, "dilation");
         }
 
         /**
@@ -386,7 +386,7 @@ public class LocallyConnected2D extends SameDiffLayer {
          * @return Builder
          */
         public Builder setInputSize(int... inputSize) {
-            this.inputSize = ValidationUtils.validate2(inputSize, "inputSize");
+            this.inputSize = ValidationUtils.validate2(inputSize, false, "inputSize");
             return this;
         }
 
