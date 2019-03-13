@@ -4475,6 +4475,11 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public INDArray reshape(char order, long... newShape) {
+        return reshape(order, false, newShape);
+    }
+
+    @Override
+    public INDArray reshape(char order, boolean enforceView, long... newShape){
         Nd4j.getCompressor().autoDecompress(this);
 
         // special case for empty reshape
@@ -4537,6 +4542,11 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             // kinda strange get/set usage
             //  reshapeAttempt.setOrder(Shape.getOrder(reshapeAttempt));
             return reshapeAttempt;
+        }
+
+        if(enforceView){
+            throw new ND4JIllegalStateException("Unable to reshape array as view, called with enforceView=true. " +
+                    "Use enforceView=false to return a copy instead, or call reshape on a non-strided array. Array shape info: " + this.shapeInfoToString().replaceAll("\n",""));
         }
 
 

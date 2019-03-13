@@ -2031,7 +2031,26 @@ public interface INDArray extends Serializable, AutoCloseable {
      */
     INDArray reshape(char order, long... newShape);
 
+    /**
+     * Reshapes the ndarray (can't change the length of the ndarray). Typically this will be a view, unless reshaping
+     * without copying is impossible.
+     *
+     * @param newShape the new shape of the ndarray
+     * @return the reshaped ndarray
+     */
     INDArray reshape(char order, int... newShape);
+
+    /**
+     * Reshapes the ndarray (note: it's not possible to change the length of the ndarray).
+     * Typically this will be a view, unless reshaping without copying (i.e., returning a view) is impossible.<br>
+     * In that case, the behaviour will depend on the enforceView argument:
+     * enforceView == true: throw an exception<br>
+     * enforceView == false: return a copy<br>
+     *
+     * @param newShape the new shape of the ndarray
+     * @return the reshaped ndarray
+     */
+    INDArray reshape(char order, boolean enforceView, long... newShape);
 
 
     /**

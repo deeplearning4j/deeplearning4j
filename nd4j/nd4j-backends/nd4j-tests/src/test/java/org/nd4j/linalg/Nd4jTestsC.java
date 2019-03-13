@@ -7364,6 +7364,29 @@ public class Nd4jTestsC extends BaseNd4jTest {
         log.info("Average time: {} ms", (timeEnd - timeStart) / (double) iterations / (double) 1000 / (double) 1000);
     }
 
+    @Test
+    public void testZerosRank1() {
+        Nd4j.zeros(new int[] { 2 }, DataType.DOUBLE);
+    }
+
+    @Test
+    public void testReshapeEnforce(){
+
+        INDArray arr = Nd4j.create(new long[]{2,2}, 'c');
+        INDArray arr2 = arr.reshape('c', true, 4, 1);
+
+        INDArray arr1a = Nd4j.create(new long[]{2,3}, 'c').get(NDArrayIndex.all(), NDArrayIndex.interval(0,2));
+        INDArray arr3 = arr1a.reshape('c', false, 4,1);
+        assertFalse(arr3.isView());     //Should be copy
+
+        try{
+            INDArray arr4 = arr1a.reshape('c', true, 4,1);
+            fail("Expected exception");
+        } catch (ND4JIllegalStateException e){
+            assertTrue(e.getMessage(), e.getMessage().contains("Unable to reshape array as view"));
+        }
+    }
+
     ///////////////////////////////////////////////////////
     protected static void fillJvmArray3D(float[][][] arr) {
         int cnt = 1;
