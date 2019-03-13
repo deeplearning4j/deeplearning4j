@@ -71,8 +71,8 @@ namespace nd4j {
             for (Nd4jLong e = 1; e < input->lengthOf(); e++) {
                 auto current = input->e<double>(e);
 
-                _minValue = nd4j::math::nd4j_min(current, info->_minValue);
-                _maxValue = nd4j::math::nd4j_max(current, info->_maxValue);
+                _minValue = nd4j::math::nd4j_min(current, _minValue);
+                _maxValue = nd4j::math::nd4j_max(current, _maxValue);
                 _meanValue += current;
 
                 _zeroCount += nd4j::math::nd4j_abs(current) > 0.00001 ? 0 : 1;
@@ -83,15 +83,13 @@ namespace nd4j {
             }
             *info = {_minValue, _maxValue, _meanValue / input->lengthOf(), _stdDevValue, _zeroCount, _positiveCount, _negativeCount, _infCount, _nanCount};
 
-            info->_stdDevValue = 0; //math::nd4j_sqrt<double, double>(info->_stdDevValue / (input->lengthOf() - 1));
-#pragma omp parallel for schedule (static)
+            double stdDevValue = 0; //math::nd4j_sqrt<double, double>(info->_stdDevValue / (input->lengthOf() - 1));
+#pragma omp parallel for schedule (static) reduction(+:stdDevValue)
             for (Nd4jLong e = 0; e < input->lengthOf(); e++) {
                 double current = input->e<double>(e);
-#pragma omp critical
-                info->_stdDevValue += (info->_meanValue - current) * (info->_meanValue - current); //info->_minValue;
+                stdDevValue += (info->_meanValue - current) * (info->_meanValue - current); //info->_minValue;
             }
-            info->_stdDevValue /= input->lengthOf();
-            info->_stdDevValue = math::nd4j_sqrt<double, double>(info->_stdDevValue);
+            info->_stdDevValue = math::nd4j_sqrt<double, double>(stdDevValue / input->lengthOf());
         }
 // else - no statistics for empty
     }
