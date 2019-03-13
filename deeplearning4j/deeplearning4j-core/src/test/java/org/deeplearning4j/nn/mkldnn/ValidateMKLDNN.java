@@ -36,7 +36,6 @@ import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.config.Adam;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
-import org.nd4j.nativeblas.Nd4jCpu;
 
 import java.util.Arrays;
 import java.util.Collections;
