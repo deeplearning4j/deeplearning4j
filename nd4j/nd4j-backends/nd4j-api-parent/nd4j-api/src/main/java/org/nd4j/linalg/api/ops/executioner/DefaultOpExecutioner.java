@@ -464,6 +464,15 @@ public class DefaultOpExecutioner implements OpExecutioner {
         if (OpProfiler.getInstance().getConfig().isCheckForINF()) {
             OpExecutionerUtil.checkForInf(op);
         }
+        if (OpProfiler.getInstance().getConfig().isNativeStatistics()) {
+            if (op.z() != null) {
+                INDArrayStatistics stat = inspectArray(op.z());
+                log.info("Op name: {}; Z shapeInfo: {}; Z values: {} min:{} max:{} mean:{} stdev:{} pos:{}, neg:{} zero:{} inf:{} nan:{}",
+                        op.opName(), op.z().shapeInfoJava(), stat.getMinValue(), stat.getMaxValue(), stat.getMeanValue(),
+                        stat.getStdDevValue(), stat.getCountPositive(), stat.getCountNegative(),
+                        stat.getCountZero(), stat.getCountInf(), stat.getCountNaN());
+            }
+        }
 
         if (Nd4j.getExecutioner().isVerbose()) {
             if (op.z() != null)
