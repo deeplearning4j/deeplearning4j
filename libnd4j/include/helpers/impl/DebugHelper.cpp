@@ -21,6 +21,8 @@
 #include <helpers/DebugHelper.h>
 #include <NDArray.h>
 #include <NDArrayFactory.h>
+#include <ops/declarable/headers/parity_ops.h>
+#include <helpers/DebugInfo.h>
 
 namespace nd4j {
     DebugInfo DebugHelper::debugStatistics(NDArray const* input) {
@@ -64,24 +66,37 @@ namespace nd4j {
             info->_negativeCount = input->e<double>(0) < 0?1:0;
             info->_infCount = nd4j::math::nd4j_isinf(input->e<double>(0));
             info->_nanCount = nd4j::math::nd4j_isnan(input->e<double>(0));
-        #pragma omp parallel for schedule(guided)
+
+//#pragma omp parallel for schedule(guided)
             for (Nd4jLong e = 1; e < input->lengthOf(); e++) {
                     double current = input->e<double>(e);
-
+//#pragma simd (sumT:info)
+                {
                     info->_minValue = nd4j::math::nd4j_min(current, info->_minValue);
                     info->_maxValue = nd4j::math::nd4j_max(current, info->_maxValue);
                     info->_meanValue += current;
-                    info->_stdDevValue += (info->_meanValue / (e + 1) - current) *
-                                          (info->_meanValue / (e + 1) - current); //info->_minValue;
+
+//                    info->_stdDevValue += (info->_meanValue / e - current) *
+//                                          (info->_meanValue / e - current); //info->_minValue;
 
                     info->_zeroCount += nd4j::math::nd4j_abs(current) > 0.00001 ? 0 : 1;
                     info->_positiveCount += current > 0 ? 1 : 0;
                     info->_negativeCount += current < 0 ? 1 : 0;
                     info->_infCount += nd4j::math::nd4j_isinf(current);
                     info->_nanCount += nd4j::math::nd4j_isnan(current);
+                }
             }
             info->_meanValue /= input->lengthOf();
-            info->_stdDevValue = math::nd4j_sqrt<double, double>(info->_stdDevValue / (input->lengthOf() - 1));
+
+            info->_stdDevValue = 0; //math::nd4j_sqrt<double, double>(info->_stdDevValue / (input->lengthOf() - 1));
+//#pragma omp parallel for schedule (static)
+            for (Nd4jLong e = 0; e < input->lengthOf(); e++) {
+                double current = input->e<double>(e);
+//#pragma simd (sumT:info)
+                info->_stdDevValue += (info->_meanValue - current) * (info->_meanValue - current); //info->_minValue;
+            }
+            info->_stdDevValue /= input->lengthOf();
+            info->_stdDevValue = math::nd4j_sqrt<double, double>(info->_stdDevValue);
         }
 // else - no statistics for empty
     }
