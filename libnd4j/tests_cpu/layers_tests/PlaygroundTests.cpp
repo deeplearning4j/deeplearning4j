@@ -250,7 +250,7 @@ TEST_F(PlaygroundTests, Test_Strided_Stuff) {
     int N = 1000;
     auto timeStart = std::chrono::system_clock::now();
     for (int e = 0; e < N; e++)
-        NativeOpExcutioner::execReduceSameScalar(reduce::ReduceSameBenchmarkOp, strided->buffer(), strided->shapeInfo(), nullptr, z.buffer(), z.shapeInfo());
+        NativeOpExcutioner::execReduceSameScalar(reduce::Sum, strided->buffer(), strided->shapeInfo(), nullptr, z.buffer(), z.shapeInfo());
 
     auto timeEnd = std::chrono::system_clock::now();
     auto spanTime = std::chrono::duration_cast<std::chrono::microseconds> ((timeEnd - timeStart) / N).count();
