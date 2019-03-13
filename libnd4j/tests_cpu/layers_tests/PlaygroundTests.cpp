@@ -240,6 +240,28 @@ TEST_F(PlaygroundTests, Test_OpBenchmark_6) {
 
     helper.runOperationSuit(&db, generator, batch, "parametrized softmax test");
 }
+
+TEST_F(PlaygroundTests, Test_Strided_Stuff) {
+    auto array = NDArrayFactory::create<float>('c', {1048576, 1024});
+    auto strided = array.subarray({NDIndex::all(), NDIndex::interval(3, 4)});
+    auto z = NDArrayFactory::create<float>(0.0f);
+    //strided->shapeInfo()[shape::shapeInfoLength(strided->rankOf()) - 2] = 1024;
+
+    int N = 1000;
+    auto timeStart = std::chrono::system_clock::now();
+    for (int e = 0; e < N; e++)
+        NativeOpExcutioner::execReduceSameScalar(reduce::Sum, strided->buffer(), strided->shapeInfo(), nullptr, z.buffer(), z.shapeInfo());
+
+    auto timeEnd = std::chrono::system_clock::now();
+    auto spanTime = std::chrono::duration_cast<std::chrono::microseconds> ((timeEnd - timeStart) / N).count();
+    auto ttlTime = std::chrono::duration_cast<std::chrono::microseconds> ((timeEnd - timeStart)).count();
+
+    nd4j_printf("average time: %lld us;\n", spanTime);
+    nd4j_printf("total time: %lld ms;\n", ttlTime);
+
+    delete strided;
+}
+
 /*
 TEST_F(PlaygroundTests, StridedReductionsNoEWS) {
     nd4j_printf("SETTING ELEMENTWISE THRESHOLD AND TAD THRESHOLD TO 1/1","");
