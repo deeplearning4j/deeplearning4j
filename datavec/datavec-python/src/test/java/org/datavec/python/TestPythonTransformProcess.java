@@ -12,6 +12,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -163,6 +164,59 @@ public class TestPythonTransformProcess {
         assertFalse(filter.removeExample(Collections.singletonList((Writable) new IntWritable(0))));
         assertTrue(filter.removeExample(Collections.singletonList((Writable) new IntWritable(-1))));
         assertTrue(filter.removeExample(Collections.singletonList((Writable) new IntWritable(-10))));
+
+    }
+
+    @Test
+    public void testPythonFilterAndTransform() throws Exception{
+        Schema.Builder schemaBuilder = new Schema.Builder();
+        schemaBuilder
+                .addColumnInteger("col1")
+                .addColumnFloat("col2")
+                .addColumnString("col3")
+                .addColumnDouble("col4");
+
+        Schema initialSchema = schemaBuilder.build();
+        schemaBuilder.addColumnString("col6");
+        Schema finalSchema = schemaBuilder.build();
+
+        Condition condition = new PythonCondition(
+                "f = lambda: col1 < 0 and col2 > 10.0"
+        );
+
+        condition.setInputSchema(initialSchema);
+
+        Filter filter = new ConditionFilter(condition);
+
+        String pythonCode = "col6 = str(col1 + col2)";
+        TransformProcess tp = new TransformProcess.Builder(initialSchema).transform(
+                new PythonTransform(
+                        pythonCode,
+                        finalSchema
+                )
+        ).filter(
+                filter
+        ).build();
+
+        List<List<Writable>> inputs = new ArrayList<>();
+        inputs.add(
+                Arrays.asList((Writable) new IntWritable(5),
+                        new FloatWritable(3.0f),
+                        new Text("abcd"),
+                        new DoubleWritable(2.1))
+        );
+        inputs.add(
+                Arrays.asList((Writable) new IntWritable(-3),
+                        new FloatWritable(3.0f),
+                        new Text("abcd"),
+                        new DoubleWritable(2.1))
+        );
+        inputs.add(
+                Arrays.asList((Writable) new IntWritable(5),
+                        new FloatWritable(11.2f),
+                        new Text("abcd"),
+                        new DoubleWritable(2.1))
+        );
 
     }
 }

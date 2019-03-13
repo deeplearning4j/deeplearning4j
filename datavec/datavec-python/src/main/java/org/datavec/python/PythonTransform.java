@@ -1,5 +1,7 @@
 package org.datavec.python;
 
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.datavec.api.transform.ColumnType;
 import org.datavec.api.transform.Transform;
 import org.datavec.api.transform.schema.Schema;
@@ -8,6 +10,7 @@ import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
+import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
 
 import javax.annotation.Nullable;
 
@@ -23,6 +26,9 @@ import java.util.concurrent.ExecutionException;
 /**
  * Row-wise Transform that applies arbitrary python code on each row
  */
+
+@NoArgsConstructor
+@Data
 public class PythonTransform implements Transform{
     private String code;
     private PythonVariables pyInputs;

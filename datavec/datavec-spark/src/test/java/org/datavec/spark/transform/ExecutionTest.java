@@ -28,6 +28,7 @@ import org.datavec.api.writable.IntWritable;
 import org.datavec.api.writable.Text;
 import org.datavec.api.writable.Writable;
 import org.datavec.spark.BaseSparkTest;
+import org.datavec.python.PythonTransform;
 import org.junit.Test;
 
 import java.util.*;
@@ -230,5 +231,42 @@ public class ExecutionTest extends BaseSparkTest {
         assertEquals(3, c1.size());
         assertTrue(c1.contains(new Text("state0")) && c1.contains(new Text("state1")) && c1.contains(new Text("state2")));
     }
+
+    @Test
+    public void testPythonExecution() throws Exception {
+        Schema schema = new Schema.Builder().addColumnInteger("col0")
+                .addColumnCategorical("col1", "state0", "state1", "state2").addColumnDouble("col2").build();
+
+        String pythonCode = "col1 = ['state0', 'state1', 'state2'].index(col1)\ncol2 += 10.0";
+        TransformProcess tp = new TransformProcess.Builder(schema).transform(
+          new PythonTransform(
+                pythonCode,
+                  schema
+          )
+        ).build();
+        List<List<Writable>> inputData = new ArrayList<>();
+        inputData.add(Arrays.<Writable>asList(new IntWritable(0), new Text("state2"), new DoubleWritable(0.1)));
+        inputData.add(Arrays.<Writable>asList(new IntWritable(1), new Text("state1"), new DoubleWritable(1.1)));
+        inputData.add(Arrays.<Writable>asList(new IntWritable(2), new Text("state0"), new DoubleWritable(2.1)));
+
+        JavaRDD<List<Writable>> rdd = sc.parallelize(inputData);
+
+        List<List<Writable>> out = new ArrayList<>(SparkTransformExecutor.execute(rdd, tp).collect());
+
+        Collections.sort(out, new Comparator<List<Writable>>() {
+            @Override
+            public int compare(List<Writable> o1, List<Writable> o2) {
+                return Integer.compare(o1.get(0).toInt(), o2.get(0).toInt());
+            }
+        });
+
+        List<List<Writable>> expected = new ArrayList<>();
+        expected.add(Arrays.<Writable>asList(new IntWritable(0), new IntWritable(2), new DoubleWritable(10.1)));
+        expected.add(Arrays.<Writable>asList(new IntWritable(1), new IntWritable(1), new DoubleWritable(11.1)));
+        expected.add(Arrays.<Writable>asList(new IntWritable(2), new IntWritable(0), new DoubleWritable(12.1)));
+
+        assertEquals(expected, out);
+    }
+
 
 }
