@@ -5923,7 +5923,7 @@ public class Nd4j {
         }
         for (int i = 0; i < shape.length; i++) {
             if (repeat[i] != 1) {
-                tile = tile.reshape(-1, n).repeat(0, new int[] {repeat[i]});
+                tile = tile.reshape(-1, n).repeat(0, repeat[i]);
             }
 
             long in = shape[i];

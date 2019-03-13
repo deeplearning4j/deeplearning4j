@@ -885,11 +885,8 @@ public interface INDArray extends Serializable, AutoCloseable {
      *
      * @param dimension the dimension to repeat
      * @param repeats the number of elements to repeat on each element
-     * @return
+     * @return Repeated array
      */
-    @Deprecated
-    INDArray repeat(int dimension, int... repeats);
-
     INDArray repeat(int dimension, long... repeats);
 
 

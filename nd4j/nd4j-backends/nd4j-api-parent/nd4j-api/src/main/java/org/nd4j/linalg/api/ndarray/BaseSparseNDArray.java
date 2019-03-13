@@ -849,11 +849,6 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
     }
 
     @Override
-    public INDArray repeat(int dimension, int... repeats) {
-        return null;
-    }
-
-    @Override
     public INDArray putRow(long row, INDArray toPut) {
         return null;
     }

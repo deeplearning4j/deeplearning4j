@@ -36,6 +36,8 @@ import org.nd4j.linalg.api.instrumentation.Instrumentation;
 import org.nd4j.linalg.api.iter.FirstAxisIterator;
 import org.nd4j.linalg.api.iter.NdIndexIterator;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
+import org.nd4j.linalg.api.ops.CustomOp;
+import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.impl.reduce.bool.All;
 import org.nd4j.linalg.api.ops.impl.reduce.bool.Any;
 import org.nd4j.linalg.api.ops.impl.reduce.floating.*;
@@ -59,6 +61,7 @@ import org.nd4j.linalg.api.ops.impl.transforms.same.Negative;
 import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.*;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.*;
 import org.nd4j.linalg.api.ops.performance.PerformanceTracker;
+import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.api.shape.options.ArrayOptionsHelper;
 import org.nd4j.linalg.exception.*;
@@ -4321,48 +4324,19 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     }
 
     @Override
-    public INDArray repeat(int dimension, int... repeats) {
-        return repeat(dimension, ArrayUtil.toLongArray(repeats));
-    }
-
-    @Override
     public INDArray repeat(int dimension, long... repeats) {
         Nd4j.getCompressor().autoDecompress(this);
+        CustomOp op = DynamicCustomOp.builder("repeat")
+                .addInputs(this)
+                .addIntegerArguments(ArrayUtil.toInts(repeats))     //TODO int cast
+                .build();
+        op.addIArgument(dimension); //Native op: last iarg is dimension
 
-
-        if (dimension < 0)
-            dimension += rank();
-
-        if (repeats.length < rank()) {
-            if (dimension > 0)
-                repeats = Longs.concat(ArrayUtil.nTimes((long) rank() - repeats.length, 1), repeats);
-                //append rather than prepend for dimension == 0
-            else
-                repeats = Longs.concat(repeats, ArrayUtil.nTimes((long) rank() - repeats.length, 1));
-
-        }
-
-        long[] newShape = new long[rank()];
-
-        for (int i = 0; i < newShape.length; i++)
-            newShape[i] = size(i) * repeats[i];
-
-        INDArray ret = Nd4j.create(this.dataType(), newShape);
-
-        //number of times to repeat each value
-        long repeatDelta = ArrayUtil.prod(newShape) / length();
-        for (int i = 0; i < tensorsAlongDimension(dimension); i++) {
-            INDArray thisTensor = tensorAlongDimension(i, dimension);
-            INDArray retTensor = ret.tensorAlongDimension(i, dimension);
-            int retIdx = 0;
-            for (int k = 0; k < thisTensor.length(); k++) {
-                for (int j = 0; j < repeatDelta; j++) {
-                    retTensor.putScalar(retIdx++, thisTensor.getDouble(k));
-                }
-            }
-        }
-
-        return ret;
+        LongShapeDescriptor l = op.calculateOutputShape().get(0);
+        INDArray out = Nd4j.create(l);
+        op.addOutputArgument(out);
+        Nd4j.exec(op);
+        return out;
     }
 
 

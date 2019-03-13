@@ -7387,6 +7387,48 @@ public class Nd4jTestsC extends BaseNd4jTest {
         }
     }
 
+    @Test
+    public void testRepeatSimple(){
+
+        INDArray arr = Nd4j.createFromArray(new double[][]{
+                {1,2,3},{4,5,6}});
+
+        INDArray r0 = arr.repeat(0, 2);
+
+        INDArray exp0 = Nd4j.createFromArray(new double[][]{
+                {1,2,3},
+                {1,2,3},
+                {4,5,6},
+                {4,5,6}});
+
+        assertEquals(exp0, r0);
+
+
+        INDArray r1 = arr.repeat(1, 2);
+        INDArray exp1 = Nd4j.createFromArray(new double[][]{
+                {1,1,2,2,3,3},{4,4,5,5,6,6}});
+        assertEquals(exp1, r1);
+    }
+
+    @Test
+    public void testRepeatStrided() {
+
+        // Create a 2D array (shape 5x5)
+        INDArray array = Nd4j.arange(25).reshape(5, 5);
+
+        // Get first column (shape 5x1)
+        INDArray slice = array.get(NDArrayIndex.all(), NDArrayIndex.point(0));
+
+        // Repeat column on sliced array (shape 5x3)
+        INDArray repeatedSlice = slice.repeat(1, (long) 3);
+
+        // Same thing but copy array first
+        INDArray repeatedDup = slice.dup().repeat(1, (long) 3);
+
+        // Check result
+        assertEquals(repeatedSlice, repeatedDup);
+    }
+
     ///////////////////////////////////////////////////////
     protected static void fillJvmArray3D(float[][][] arr) {
         int cnt = 1;
