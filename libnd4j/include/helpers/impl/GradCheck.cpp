@@ -32,15 +32,15 @@ void GradCheck::fillGradArrays(const LossFunc loss, const std::vector<NDArray*>&
 	// fill input gradient arrays in accordance to type of loss function	
 	switch(loss) {
 
-		case MEAN: 
-#pragma omp parallel for if(numInGradArrs > 1) schedule(guided)
+		case MEAN:
+            PRAGMA_OMP_PARALLEL_FOR_IF(numInGradArrs > 1)
 			for(int i = 0; i < numInGradArrs; ++i) 				
 				*gradArrs[i] = 1. / gradArrs[i]->lengthOf();			
 			break;
 
-		case SUM: 
-#pragma omp parallel for if(numInGradArrs > 1) schedule(guided)		
-			for(int i = 0; i < numInGradArrs; ++i) 
+		case SUM:
+            PRAGMA_OMP_PARALLEL_FOR_IF(numInGradArrs > 1)
+			for(int i = 0; i < numInGradArrs; ++i)
 				*gradArrs[i] = 1.;
 			break;
 			 

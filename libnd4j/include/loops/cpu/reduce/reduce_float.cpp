@@ -165,7 +165,7 @@ namespace functions {
                     tad->createTadOnlyShapeInfo();
                     tad->createOffsets();
 
-                    nd4j_printf("Calculating TAD\n","");
+                    //nd4j_printf("Calculating TAD\n","");
 
                     if (tad->dimensionLength < 1) {
                         delete tad;
@@ -191,7 +191,7 @@ namespace functions {
 
                 if (tadEWS == 1 && shape::order(tadOnlyShapeInfo) == 'c') {
 
-#pragma omp parallel for schedule(guided) num_threads(num_threads) if(num_threads>1) proc_bind(AFFINITY) default(shared)
+                    PRAGMA_OMP_PARALLEL_FOR_THREADS(num_threads)
                     for (int i = 0; i < resultLength; i++) {
 
                         auto tx = x + tadOffsets[i];
@@ -204,7 +204,7 @@ namespace functions {
                     }
                 } else {
 
-#pragma omp parallel for schedule(guided) num_threads(num_threads) if(num_threads>1) proc_bind(AFFINITY) default(shared)
+                    PRAGMA_OMP_PARALLEL_FOR_THREADS(num_threads)
                     for (int i = 0; i < resultLength; i++) {
 
                         auto tx = x + tadOffsets[i];
@@ -249,33 +249,35 @@ namespace functions {
 
             if (xEws == 1) {
 
-#pragma omp parallel num_threads(info._numThreads) if (info._numThreads > 1) default(shared)
+                PRAGMA_OMP_PARALLEL_THREADS(info._numThreads)
                 {
                     auto local = OpType::startingValue(x);
                     auto threadNum = omp_get_thread_num();
-                    Nd4jLong threadOffset = info.getThreadOffset(threadNum);
+                    auto threadOffset = info.getThreadOffset(threadNum);
                     auto xi = x + threadOffset;
+                    auto ulen = static_cast<unsigned int>(info.getItersPerThread(threadNum));
 
-                    for (Nd4jLong i = 0; i < info.getItersPerThread(threadNum); i++)
+                    for (Nd4jLong i = 0; i < ulen; i++)
                         local = OpType::update(local, OpType::op(xi[i], extraParams), extraParams);
 
-                    #pragma omp critical
+                    PRAGMA_OMP_CRITICAL
                     startingVal = OpType::update(startingVal, local, extraParams);
                 }
             }
             else {
 
-#pragma omp parallel num_threads(info._numThreads) if (info._numThreads > 1) default(shared)
+                PRAGMA_OMP_PARALLEL_THREADS(info._numThreads)
                 {
                     auto local = OpType::startingValue(x);
                     auto threadNum = omp_get_thread_num();
-                    Nd4jLong threadOffset = info.getThreadOffset(threadNum);
+                    auto threadOffset = info.getThreadOffset(threadNum);
                     auto xi = x + xEws*threadOffset;
+                    auto ulen = static_cast<unsigned int>(info.getItersPerThread(threadNum));
 
-                    for (Nd4jLong i = 0; i < info.getItersPerThread(threadNum); i++)
+                    for (Nd4jLong i = 0; i < ulen; i++)
                         local = OpType::update(local, OpType::op(xi[i*xEws], extraParams), extraParams);
 
-                    #pragma omp critical
+                    PRAGMA_OMP_CRITICAL
                     startingVal = OpType::update(startingVal, local, extraParams);
                 }
             }

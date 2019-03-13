@@ -98,7 +98,7 @@ public class LSTM extends AbstractLSTM {
         return LSTMHelpers.getMemoryReport(this, inputType);
     }
 
-    @AllArgsConstructor
+    @NoArgsConstructor
     public static class Builder extends AbstractLSTM.Builder<Builder> {
 
 

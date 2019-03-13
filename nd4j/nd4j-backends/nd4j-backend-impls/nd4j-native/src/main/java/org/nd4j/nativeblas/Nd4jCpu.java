@@ -2625,6 +2625,8 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
     public native int execCustomOp(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jLong") long hash, @Cast("Nd4jPointer*") PointerPointer inputBuffers, @Cast("Nd4jPointer*") PointerPointer inputShapes, int numInputs, @Cast("Nd4jPointer*") PointerPointer outputBuffers, @Cast("Nd4jPointer*") PointerPointer outputShapes, int numOutputs, DoublePointer tArgs, int numTArgs, @Cast("Nd4jLong*") LongPointer iArgs, int numIArgs, @Cast("bool*") boolean[] bArgs, int numBArgs, @Cast("bool") boolean isInplace);
     public native int execCustomOp(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jLong") long hash, @Cast("Nd4jPointer*") PointerPointer inputBuffers, @Cast("Nd4jPointer*") PointerPointer inputShapes, int numInputs, @Cast("Nd4jPointer*") PointerPointer outputBuffers, @Cast("Nd4jPointer*") PointerPointer outputShapes, int numOutputs, DoubleBuffer tArgs, int numTArgs, @Cast("Nd4jLong*") LongBuffer iArgs, int numIArgs, @Cast("bool*") BooleanPointer bArgs, int numBArgs, @Cast("bool") boolean isInplace);
     public native int execCustomOp(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jLong") long hash, @Cast("Nd4jPointer*") PointerPointer inputBuffers, @Cast("Nd4jPointer*") PointerPointer inputShapes, int numInputs, @Cast("Nd4jPointer*") PointerPointer outputBuffers, @Cast("Nd4jPointer*") PointerPointer outputShapes, int numOutputs, double[] tArgs, int numTArgs, @Cast("Nd4jLong*") long[] iArgs, int numIArgs, @Cast("bool*") boolean[] bArgs, int numBArgs, @Cast("bool") boolean isInplace);
+    public native int execCustomOp(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jLong") long hash, @Cast("Nd4jPointer") Pointer opContext);
+
     public native ShapeList calculateOutputShapes(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jLong") long hash, @Cast("Nd4jPointer*") PointerPointer inputShapes, int numInputShapes, DoublePointer tArgs, int numTArgs, @Cast("Nd4jLong*") LongPointer iArgs, int numIArgs);
     public native ShapeList calculateOutputShapes(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jLong") long hash, @Cast("Nd4jPointer*") PointerPointer inputShapes, int numInputShapes, DoubleBuffer tArgs, int numTArgs, @Cast("Nd4jLong*") LongBuffer iArgs, int numIArgs);
     public native ShapeList calculateOutputShapes(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jLong") long hash, @Cast("Nd4jPointer*") PointerPointer inputShapes, int numInputShapes, double[] tArgs, int numTArgs, @Cast("Nd4jLong*") long[] iArgs, int numIArgs);
@@ -5998,6 +6000,7 @@ NDArray& NDArray::operator()(const Nd4jLong* idx) {
 // #define LIBND4J_CONTEXT_H
 
 // #include <vector>
+// #include <NDArray.h>
 // #include <graph/Variable.h>
 // #include <graph/VariableSpace.h>
 // #include <graph/ContextPrototype.h>
@@ -6008,7 +6011,6 @@ NDArray& NDArray::operator()(const Nd4jLong* idx) {
 
 // CUDA-specific includes
 // #ifdef __CUDACC__
-
 // #endif
         /**
          * This class defines input desired for any given node/operation within graph
@@ -6099,9 +6101,18 @@ NDArray& NDArray::operator()(const Nd4jLong* idx) {
             public native Variable getVariable(int idx);
             public native Variable variable(int idx);
 
+            /**
+             * This method is shortcut to getVariable(int idx);
+             *
+             * + it check fastpath for array availability (preferred)
+             * @return
+             */
+            public native NDArray getNDArray(int idx);
+            public native NDArray array(int idx);
+
 
             /**
-             * This method fetches variable from Workspace DIRECTLY
+             * This method fetches variable from VariableSpace DIRECTLY
              * @param p
              * @return
              */
@@ -6124,6 +6135,35 @@ NDArray& NDArray::operator()(const Nd4jLong* idx) {
 
             public native Variable ensureVariable(int idx/*=0*/);
             public native Variable ensureVariable();
+
+            public native @Cast("unsigned long") long width();
+
+            // methods used in java interop
+            /**
+             * This method checks, if Context uses fastpath variable access
+             * @return
+             */
+            public native @Cast("bool") boolean isFastPath();
+
+// #ifndef __JAVACPP_HACK__
+// #endif
+
+            public native void setInputArray(int index, NDArray array, @Cast("bool") boolean removable/*=false*/);
+            public native void setInputArray(int index, NDArray array);
+            public native void setInputArray(int index, Pointer buffer, Pointer shapeInfo, Pointer specialBuffer, Pointer specialShapeInfo);
+
+            public native void setOutputArray(int index, NDArray array, @Cast("bool") boolean removable/*=false*/);
+            public native void setOutputArray(int index, NDArray array);
+            public native void setOutputArray(int index, Pointer buffer, Pointer shapeInfo, Pointer specialBuffer, Pointer specialShapeInfo);
+
+            public native void setTArguments(DoublePointer arguments, int numberOfArguments);
+            public native void setTArguments(DoubleBuffer arguments, int numberOfArguments);
+            public native void setTArguments(double[] arguments, int numberOfArguments);
+            public native void setIArguments(@Cast("Nd4jLong*") LongPointer arguments, int numberOfArguments);
+            public native void setIArguments(@Cast("Nd4jLong*") LongBuffer arguments, int numberOfArguments);
+            public native void setIArguments(@Cast("Nd4jLong*") long[] arguments, int numberOfArguments);
+            public native void setBArguments(@Cast("bool*") BooleanPointer arguments, int numberOfArguments);
+            public native void setBArguments(@Cast("bool*") boolean[] arguments, int numberOfArguments);
         }
     
 
@@ -6466,9 +6506,9 @@ public static final int PREALLOC_SIZE = 33554432;
     @Namespace("shape") public static native @Cast("bool") boolean canReshape(int oldRank, @Cast("Nd4jLong*") LongBuffer oldShape, int newRank, @Cast("Nd4jLong*") LongBuffer newShape, @Cast("bool") boolean isFOrder);
     @Namespace("shape") public static native @Cast("bool") boolean canReshape(int oldRank, @Cast("Nd4jLong*") long[] oldShape, int newRank, @Cast("Nd4jLong*") long[] newShape, @Cast("bool") boolean isFOrder);
 
-    @Namespace("shape") public static native @Cast("bool") boolean reshapeCF(int oldRank, @Cast("Nd4jLong*") LongPointer oldShape, int newRank, @Cast("Nd4jLong*") LongPointer newShape, @Cast("bool") boolean isFOrder, @Cast("Nd4jLong*") LongPointer target);
-    @Namespace("shape") public static native @Cast("bool") boolean reshapeCF(int oldRank, @Cast("Nd4jLong*") LongBuffer oldShape, int newRank, @Cast("Nd4jLong*") LongBuffer newShape, @Cast("bool") boolean isFOrder, @Cast("Nd4jLong*") LongBuffer target);
-    @Namespace("shape") public static native @Cast("bool") boolean reshapeCF(int oldRank, @Cast("Nd4jLong*") long[] oldShape, int newRank, @Cast("Nd4jLong*") long[] newShape, @Cast("bool") boolean isFOrder, @Cast("Nd4jLong*") long[] target);
+    @Namespace("shape") public static native @Cast("bool") boolean reshapeCF(int oldRank, @Cast("const Nd4jLong*") LongPointer oldShapeInfo, int newRank, @Cast("const Nd4jLong*") LongPointer newShape, @Cast("const bool") boolean isFOrder, @Cast("Nd4jLong*") LongPointer newShapeInfo);
+    @Namespace("shape") public static native @Cast("bool") boolean reshapeCF(int oldRank, @Cast("const Nd4jLong*") LongBuffer oldShapeInfo, int newRank, @Cast("const Nd4jLong*") LongBuffer newShape, @Cast("const bool") boolean isFOrder, @Cast("Nd4jLong*") LongBuffer newShapeInfo);
+    @Namespace("shape") public static native @Cast("bool") boolean reshapeCF(int oldRank, @Cast("const Nd4jLong*") long[] oldShapeInfo, int newRank, @Cast("const Nd4jLong*") long[] newShape, @Cast("const bool") boolean isFOrder, @Cast("Nd4jLong*") long[] newShapeInfo);
 
     /**
     * Get the shape info buffer
@@ -7300,9 +7340,9 @@ public static final int PREALLOC_SIZE = 33554432;
     @Namespace("shape") public static native int prod(@Cast("Nd4jLong*") LongBuffer data, int length);
     @Namespace("shape") public static native int prod(@Cast("Nd4jLong*") long[] data, int length);
 
-    @Namespace("shape") public static native @Cast("Nd4jLong") long prodLong( @Cast("Nd4jLong*") LongPointer data, int length);
-    @Namespace("shape") public static native @Cast("Nd4jLong") long prodLong( @Cast("Nd4jLong*") LongBuffer data, int length);
-    @Namespace("shape") public static native @Cast("Nd4jLong") long prodLong( @Cast("Nd4jLong*") long[] data, int length);
+    @Namespace("shape") public static native @Cast("Nd4jLong") long prodLong(@Cast("const Nd4jLong*") LongPointer data, int length);
+    @Namespace("shape") public static native @Cast("Nd4jLong") long prodLong(@Cast("const Nd4jLong*") LongBuffer data, int length);
+    @Namespace("shape") public static native @Cast("Nd4jLong") long prodLong(@Cast("const Nd4jLong*") long[] data, int length);
 
     /**
      * Returns the rear most left over item not present in
@@ -7333,9 +7373,9 @@ public static final int PREALLOC_SIZE = 33554432;
 * @param indices the indices to iterate over
 * @return the double at the specified index
 */
-    @Namespace("shape") public static native @Cast("Nd4jLong") long getOffset(@Cast("Nd4jLong") long baseOffset,  @Cast("Nd4jLong*") LongPointer shape,  @Cast("Nd4jLong*") LongPointer stride,  @Cast("const Nd4jLong*") LongPointer indices,int rank);
-    @Namespace("shape") public static native @Cast("Nd4jLong") long getOffset(@Cast("Nd4jLong") long baseOffset,  @Cast("Nd4jLong*") LongBuffer shape,  @Cast("Nd4jLong*") LongBuffer stride,  @Cast("const Nd4jLong*") LongBuffer indices,int rank);
-    @Namespace("shape") public static native @Cast("Nd4jLong") long getOffset(@Cast("Nd4jLong") long baseOffset,  @Cast("Nd4jLong*") long[] shape,  @Cast("Nd4jLong*") long[] stride,  @Cast("const Nd4jLong*") long[] indices,int rank);
+    @Namespace("shape") public static native @Cast("Nd4jLong") long getOffset(@Cast("Nd4jLong") long baseOffset, @Cast("const Nd4jLong*") LongPointer shape, @Cast("const Nd4jLong*") LongPointer stride,  @Cast("const Nd4jLong*") LongPointer indices,int rank);
+    @Namespace("shape") public static native @Cast("Nd4jLong") long getOffset(@Cast("Nd4jLong") long baseOffset, @Cast("const Nd4jLong*") LongBuffer shape, @Cast("const Nd4jLong*") LongBuffer stride,  @Cast("const Nd4jLong*") LongBuffer indices,int rank);
+    @Namespace("shape") public static native @Cast("Nd4jLong") long getOffset(@Cast("Nd4jLong") long baseOffset, @Cast("const Nd4jLong*") long[] shape, @Cast("const Nd4jLong*") long[] stride,  @Cast("const Nd4jLong*") long[] indices,int rank);
 
     @Namespace("shape") public static native @Cast("Nd4jLong*") LongPointer createShapeInfo(@Cast("Nd4jLong*") LongPointer shape, @Cast("Nd4jLong*") LongPointer stride, int rank);
     @Namespace("shape") public static native @Cast("Nd4jLong*") LongBuffer createShapeInfo(@Cast("Nd4jLong*") LongBuffer shape, @Cast("Nd4jLong*") LongBuffer stride, int rank);
@@ -7394,9 +7434,9 @@ public static final int PREALLOC_SIZE = 33554432;
   * @param numIndices the number of total indices (typically prod of shape(
   * @return the mapped indexes along each dimension
   */
-    @Namespace("shape") public static native @Cast("Nd4jLong*") LongPointer ind2subC(int rank, @Cast("Nd4jLong*") LongPointer shape, @Cast("Nd4jLong") long index);
-    @Namespace("shape") public static native @Cast("Nd4jLong*") LongBuffer ind2subC(int rank, @Cast("Nd4jLong*") LongBuffer shape, @Cast("Nd4jLong") long index);
-    @Namespace("shape") public static native @Cast("Nd4jLong*") long[] ind2subC(int rank, @Cast("Nd4jLong*") long[] shape, @Cast("Nd4jLong") long index);
+    @Namespace("shape") public static native @Cast("Nd4jLong*") LongPointer ind2subC(int rank, @Cast("const Nd4jLong*") LongPointer shape, @Cast("Nd4jLong") long index);
+    @Namespace("shape") public static native @Cast("Nd4jLong*") LongBuffer ind2subC(int rank, @Cast("const Nd4jLong*") LongBuffer shape, @Cast("Nd4jLong") long index);
+    @Namespace("shape") public static native @Cast("Nd4jLong*") long[] ind2subC(int rank, @Cast("const Nd4jLong*") long[] shape, @Cast("Nd4jLong") long index);
     /**
   * Convert a linear index to
   * the equivalent nd index
@@ -7405,9 +7445,9 @@ public static final int PREALLOC_SIZE = 33554432;
   * @param numIndices the number of total indices (typically prod of shape(
   * @return the mapped indexes along each dimension
   */
-    @Namespace("shape") public static native @Cast("Nd4jLong*") LongPointer ind2subC(int rank, @Cast("Nd4jLong*") LongPointer shape, @Cast("Nd4jLong") long index, @Cast("Nd4jLong") long numIndices);
-    @Namespace("shape") public static native @Cast("Nd4jLong*") LongBuffer ind2subC(int rank, @Cast("Nd4jLong*") LongBuffer shape, @Cast("Nd4jLong") long index, @Cast("Nd4jLong") long numIndices);
-    @Namespace("shape") public static native @Cast("Nd4jLong*") long[] ind2subC(int rank, @Cast("Nd4jLong*") long[] shape, @Cast("Nd4jLong") long index, @Cast("Nd4jLong") long numIndices);
+    @Namespace("shape") public static native @Cast("Nd4jLong*") LongPointer ind2subC(int rank, @Cast("const Nd4jLong*") LongPointer shape, @Cast("Nd4jLong") long index, @Cast("Nd4jLong") long numIndices);
+    @Namespace("shape") public static native @Cast("Nd4jLong*") LongBuffer ind2subC(int rank, @Cast("const Nd4jLong*") LongBuffer shape, @Cast("Nd4jLong") long index, @Cast("Nd4jLong") long numIndices);
+    @Namespace("shape") public static native @Cast("Nd4jLong*") long[] ind2subC(int rank, @Cast("const Nd4jLong*") long[] shape, @Cast("Nd4jLong") long index, @Cast("Nd4jLong") long numIndices);
 
     /**
    * Convert a linear index to
@@ -7417,9 +7457,9 @@ public static final int PREALLOC_SIZE = 33554432;
    * @param numIndices the number of total indices (typically prod of shape(
    * @return the mapped indexes along each dimension
    */
-    @Namespace("shape") public static native void ind2subC(int rank, @Cast("Nd4jLong*") LongPointer shape, @Cast("Nd4jLong") long index, @Cast("Nd4jLong") long numIndices, @Cast("Nd4jLong*") LongPointer out);
-    @Namespace("shape") public static native void ind2subC(int rank, @Cast("Nd4jLong*") LongBuffer shape, @Cast("Nd4jLong") long index, @Cast("Nd4jLong") long numIndices, @Cast("Nd4jLong*") LongBuffer out);
-    @Namespace("shape") public static native void ind2subC(int rank, @Cast("Nd4jLong*") long[] shape, @Cast("Nd4jLong") long index, @Cast("Nd4jLong") long numIndices, @Cast("Nd4jLong*") long[] out);
+    @Namespace("shape") public static native void ind2subC(int rank, @Cast("const Nd4jLong*") LongPointer shape, @Cast("Nd4jLong") long index, @Cast("Nd4jLong") long numIndices, @Cast("Nd4jLong*") LongPointer out);
+    @Namespace("shape") public static native void ind2subC(int rank, @Cast("const Nd4jLong*") LongBuffer shape, @Cast("Nd4jLong") long index, @Cast("Nd4jLong") long numIndices, @Cast("Nd4jLong*") LongBuffer out);
+    @Namespace("shape") public static native void ind2subC(int rank, @Cast("const Nd4jLong*") long[] shape, @Cast("Nd4jLong") long index, @Cast("Nd4jLong") long numIndices, @Cast("Nd4jLong*") long[] out);
 
 /**
      * Convert a linear index to
@@ -7430,9 +7470,9 @@ public static final int PREALLOC_SIZE = 33554432;
      * @param index the index to map
      * @return the mapped indexes along each dimension
      */
-    @Namespace("shape") public static native void ind2subC(int rank, @Cast("Nd4jLong*") LongPointer shape, @Cast("Nd4jLong") long index, @Cast("Nd4jLong*") LongPointer out);
-    @Namespace("shape") public static native void ind2subC(int rank, @Cast("Nd4jLong*") LongBuffer shape, @Cast("Nd4jLong") long index, @Cast("Nd4jLong*") LongBuffer out);
-    @Namespace("shape") public static native void ind2subC(int rank, @Cast("Nd4jLong*") long[] shape, @Cast("Nd4jLong") long index, @Cast("Nd4jLong*") long[] out);
+    @Namespace("shape") public static native void ind2subC(int rank, @Cast("const Nd4jLong*") LongPointer shape, @Cast("Nd4jLong") long index, @Cast("Nd4jLong*") LongPointer out);
+    @Namespace("shape") public static native void ind2subC(int rank, @Cast("const Nd4jLong*") LongBuffer shape, @Cast("Nd4jLong") long index, @Cast("Nd4jLong*") LongBuffer out);
+    @Namespace("shape") public static native void ind2subC(int rank, @Cast("const Nd4jLong*") long[] shape, @Cast("Nd4jLong") long index, @Cast("Nd4jLong*") long[] out);
 
     /**
   * Convert the given index (such as 1,1)
@@ -7442,9 +7482,9 @@ public static final int PREALLOC_SIZE = 33554432;
   * @return the linear index given the shape
   * and indices
   */
-    @Namespace("shape") public static native int sub2Ind(int rank, @Cast("Nd4jLong*") LongPointer shape, @Cast("Nd4jLong*") LongPointer indices);
-    @Namespace("shape") public static native int sub2Ind(int rank, @Cast("Nd4jLong*") LongBuffer shape, @Cast("Nd4jLong*") LongBuffer indices);
-    @Namespace("shape") public static native int sub2Ind(int rank, @Cast("Nd4jLong*") long[] shape, @Cast("Nd4jLong*") long[] indices);
+    @Namespace("shape") public static native @Cast("Nd4jLong") long sub2Ind(int rank, @Cast("const Nd4jLong*") LongPointer shape, @Cast("const Nd4jLong*") LongPointer indices);
+    @Namespace("shape") public static native @Cast("Nd4jLong") long sub2Ind(int rank, @Cast("const Nd4jLong*") LongBuffer shape, @Cast("const Nd4jLong*") LongBuffer indices);
+    @Namespace("shape") public static native @Cast("Nd4jLong") long sub2Ind(int rank, @Cast("const Nd4jLong*") long[] shape, @Cast("const Nd4jLong*") long[] indices);
 
    /**
    * increment n-dimensional array by one iteration by changing coord appropriately  
@@ -7553,12 +7593,53 @@ public static final int PREALLOC_SIZE = 33554432;
     @Namespace("shape") public static native void checkDimensions(int rank, @StdVector IntBuffer dimensions);
     @Namespace("shape") public static native void checkDimensions(int rank, @StdVector int[] dimensions);
 
+    // function calculates linear index of array min, min is sub-array of max, index to be returned is min-array's index and corresponds to maxIdx of max array
+    // dimsToExclude - should be sorted in increasing order
+    @Namespace("shape") public static native @Cast("Nd4jLong") long subArrayIndex(@Cast("const Nd4jLong") long maxIdx, @Cast("const Nd4jLong*") LongPointer maxShapeInfo, @Cast("const Nd4jLong*") LongPointer minShapeInfo, @Const IntPointer dimsToExclude/*=nullptr*/);
+    @Namespace("shape") public static native @Cast("Nd4jLong") long subArrayIndex(@Cast("const Nd4jLong") long maxIdx, @Cast("const Nd4jLong*") LongPointer maxShapeInfo, @Cast("const Nd4jLong*") LongPointer minShapeInfo);
+    @Namespace("shape") public static native @Cast("Nd4jLong") long subArrayIndex(@Cast("const Nd4jLong") long maxIdx, @Cast("const Nd4jLong*") LongBuffer maxShapeInfo, @Cast("const Nd4jLong*") LongBuffer minShapeInfo, @Const IntBuffer dimsToExclude/*=nullptr*/);
+    @Namespace("shape") public static native @Cast("Nd4jLong") long subArrayIndex(@Cast("const Nd4jLong") long maxIdx, @Cast("const Nd4jLong*") LongBuffer maxShapeInfo, @Cast("const Nd4jLong*") LongBuffer minShapeInfo);
+    @Namespace("shape") public static native @Cast("Nd4jLong") long subArrayIndex(@Cast("const Nd4jLong") long maxIdx, @Cast("const Nd4jLong*") long[] maxShapeInfo, @Cast("const Nd4jLong*") long[] minShapeInfo, @Const int[] dimsToExclude/*=nullptr*/);
+    @Namespace("shape") public static native @Cast("Nd4jLong") long subArrayIndex(@Cast("const Nd4jLong") long maxIdx, @Cast("const Nd4jLong*") long[] maxShapeInfo, @Cast("const Nd4jLong*") long[] minShapeInfo);
 
-    // return absolute index of array min, min is sub-array of max, index to be returned is min index and corresponds to maxIdx of max array
-    @Namespace("shape") public static native @Cast("Nd4jLong") long subArrayIndex(@Cast("const Nd4jLong*") LongPointer maxShapeInfo, @Cast("const Nd4jLong*") LongPointer minShapeInfo, int maxIdx);
-    @Namespace("shape") public static native @Cast("Nd4jLong") long subArrayIndex(@Cast("const Nd4jLong*") LongBuffer maxShapeInfo, @Cast("const Nd4jLong*") LongBuffer minShapeInfo, int maxIdx);
-    @Namespace("shape") public static native @Cast("Nd4jLong") long subArrayIndex(@Cast("const Nd4jLong*") long[] maxShapeInfo, @Cast("const Nd4jLong*") long[] minShapeInfo, int maxIdx);
+    // function calculates absolute offset of min array, min is sub-array of max, offset to be returned corresponds to maxIdx of max array
+    // dimsToExclude - should be sorted in increasing order
+    @Namespace("shape") public static native @Cast("Nd4jLong") long subArrayOffset(@Cast("const Nd4jLong") long maxIdx, @Cast("const Nd4jLong*") LongPointer maxShapeInfo, @Cast("const Nd4jLong*") LongPointer minShapeInfo, @Const IntPointer dimsToExclude/*=nullptr*/);
+    @Namespace("shape") public static native @Cast("Nd4jLong") long subArrayOffset(@Cast("const Nd4jLong") long maxIdx, @Cast("const Nd4jLong*") LongPointer maxShapeInfo, @Cast("const Nd4jLong*") LongPointer minShapeInfo);
+    @Namespace("shape") public static native @Cast("Nd4jLong") long subArrayOffset(@Cast("const Nd4jLong") long maxIdx, @Cast("const Nd4jLong*") LongBuffer maxShapeInfo, @Cast("const Nd4jLong*") LongBuffer minShapeInfo, @Const IntBuffer dimsToExclude/*=nullptr*/);
+    @Namespace("shape") public static native @Cast("Nd4jLong") long subArrayOffset(@Cast("const Nd4jLong") long maxIdx, @Cast("const Nd4jLong*") LongBuffer maxShapeInfo, @Cast("const Nd4jLong*") LongBuffer minShapeInfo);
+    @Namespace("shape") public static native @Cast("Nd4jLong") long subArrayOffset(@Cast("const Nd4jLong") long maxIdx, @Cast("const Nd4jLong*") long[] maxShapeInfo, @Cast("const Nd4jLong*") long[] minShapeInfo, @Const int[] dimsToExclude/*=nullptr*/);
+    @Namespace("shape") public static native @Cast("Nd4jLong") long subArrayOffset(@Cast("const Nd4jLong") long maxIdx, @Cast("const Nd4jLong*") long[] maxShapeInfo, @Cast("const Nd4jLong*") long[] minShapeInfo);
 
+    // max array is outer for min array, min array is sub-array of max array
+    // function calculates the coordinates of min array (and saves them into minIdxs) given coordinates of max array (already stored in maxIdxs)
+    // dimsToExclude - should be sorted in increasing order
+    @Namespace("shape") public static native void maxIndToMinInd(@Cast("Nd4jLong*") LongPointer maxIdxs, @Cast("Nd4jLong*") LongPointer minIdxs, @Cast("const Nd4jLong*") LongPointer maxShapeInfo, @Cast("const Nd4jLong*") LongPointer minShapeInfo, @Const IntPointer dimsToExclude/*=nullptr*/);
+    @Namespace("shape") public static native void maxIndToMinInd(@Cast("Nd4jLong*") LongPointer maxIdxs, @Cast("Nd4jLong*") LongPointer minIdxs, @Cast("const Nd4jLong*") LongPointer maxShapeInfo, @Cast("const Nd4jLong*") LongPointer minShapeInfo);
+    @Namespace("shape") public static native void maxIndToMinInd(@Cast("Nd4jLong*") LongBuffer maxIdxs, @Cast("Nd4jLong*") LongBuffer minIdxs, @Cast("const Nd4jLong*") LongBuffer maxShapeInfo, @Cast("const Nd4jLong*") LongBuffer minShapeInfo, @Const IntBuffer dimsToExclude/*=nullptr*/);
+    @Namespace("shape") public static native void maxIndToMinInd(@Cast("Nd4jLong*") LongBuffer maxIdxs, @Cast("Nd4jLong*") LongBuffer minIdxs, @Cast("const Nd4jLong*") LongBuffer maxShapeInfo, @Cast("const Nd4jLong*") LongBuffer minShapeInfo);
+    @Namespace("shape") public static native void maxIndToMinInd(@Cast("Nd4jLong*") long[] maxIdxs, @Cast("Nd4jLong*") long[] minIdxs, @Cast("const Nd4jLong*") long[] maxShapeInfo, @Cast("const Nd4jLong*") long[] minShapeInfo, @Const int[] dimsToExclude/*=nullptr*/);
+    @Namespace("shape") public static native void maxIndToMinInd(@Cast("Nd4jLong*") long[] maxIdxs, @Cast("Nd4jLong*") long[] minIdxs, @Cast("const Nd4jLong*") long[] maxShapeInfo, @Cast("const Nd4jLong*") long[] minShapeInfo);
+
+    // calculate indexes of max-array, these output indexes correspond to one minIdx index of min-array which is sub-array of max-array
+    // dimsToExclude - should be sorted in increasing order
+    @Namespace("shape") public static native int outerArrayIndexes(@Cast("Nd4jLong*") LongPointer maxIdxs, @Cast("const Nd4jLong") long minIdx, @Cast("const Nd4jLong*") LongPointer maxShapeInfo, @Cast("const Nd4jLong*") LongPointer minShapeInfo, @Const IntPointer dimsToExclude/*=nullptr*/);
+    @Namespace("shape") public static native int outerArrayIndexes(@Cast("Nd4jLong*") LongPointer maxIdxs, @Cast("const Nd4jLong") long minIdx, @Cast("const Nd4jLong*") LongPointer maxShapeInfo, @Cast("const Nd4jLong*") LongPointer minShapeInfo);
+    @Namespace("shape") public static native int outerArrayIndexes(@Cast("Nd4jLong*") LongBuffer maxIdxs, @Cast("const Nd4jLong") long minIdx, @Cast("const Nd4jLong*") LongBuffer maxShapeInfo, @Cast("const Nd4jLong*") LongBuffer minShapeInfo, @Const IntBuffer dimsToExclude/*=nullptr*/);
+    @Namespace("shape") public static native int outerArrayIndexes(@Cast("Nd4jLong*") LongBuffer maxIdxs, @Cast("const Nd4jLong") long minIdx, @Cast("const Nd4jLong*") LongBuffer maxShapeInfo, @Cast("const Nd4jLong*") LongBuffer minShapeInfo);
+    @Namespace("shape") public static native int outerArrayIndexes(@Cast("Nd4jLong*") long[] maxIdxs, @Cast("const Nd4jLong") long minIdx, @Cast("const Nd4jLong*") long[] maxShapeInfo, @Cast("const Nd4jLong*") long[] minShapeInfo, @Const int[] dimsToExclude/*=nullptr*/);
+    @Namespace("shape") public static native int outerArrayIndexes(@Cast("Nd4jLong*") long[] maxIdxs, @Cast("const Nd4jLong") long minIdx, @Cast("const Nd4jLong*") long[] maxShapeInfo, @Cast("const Nd4jLong*") long[] minShapeInfo);
+
+    // calculate offsets of max-array, these output offsets correspond to one minIdx index of min-array which is sub-array of max-array
+    // dimsToExclude - should be sorted in increasing order
+    @Namespace("shape") public static native int outerArrayOffsets(@Cast("Nd4jLong*") LongPointer maxOffsets, @Cast("const Nd4jLong") long minIdx, @Cast("const Nd4jLong*") LongPointer maxShapeInfo, @Cast("const Nd4jLong*") LongPointer minShapeInfo, @Const IntPointer dimsToExclude/*=nullptr*/);
+    @Namespace("shape") public static native int outerArrayOffsets(@Cast("Nd4jLong*") LongPointer maxOffsets, @Cast("const Nd4jLong") long minIdx, @Cast("const Nd4jLong*") LongPointer maxShapeInfo, @Cast("const Nd4jLong*") LongPointer minShapeInfo);
+    @Namespace("shape") public static native int outerArrayOffsets(@Cast("Nd4jLong*") LongBuffer maxOffsets, @Cast("const Nd4jLong") long minIdx, @Cast("const Nd4jLong*") LongBuffer maxShapeInfo, @Cast("const Nd4jLong*") LongBuffer minShapeInfo, @Const IntBuffer dimsToExclude/*=nullptr*/);
+    @Namespace("shape") public static native int outerArrayOffsets(@Cast("Nd4jLong*") LongBuffer maxOffsets, @Cast("const Nd4jLong") long minIdx, @Cast("const Nd4jLong*") LongBuffer maxShapeInfo, @Cast("const Nd4jLong*") LongBuffer minShapeInfo);
+    @Namespace("shape") public static native int outerArrayOffsets(@Cast("Nd4jLong*") long[] maxOffsets, @Cast("const Nd4jLong") long minIdx, @Cast("const Nd4jLong*") long[] maxShapeInfo, @Cast("const Nd4jLong*") long[] minShapeInfo, @Const int[] dimsToExclude/*=nullptr*/);
+    @Namespace("shape") public static native int outerArrayOffsets(@Cast("Nd4jLong*") long[] maxOffsets, @Cast("const Nd4jLong") long minIdx, @Cast("const Nd4jLong*") long[] maxShapeInfo, @Cast("const Nd4jLong*") long[] minShapeInfo);
+
+   
     @Namespace("shape") public static native void shapeOldScalar(@Cast("nd4j::DataType") int dtype, @Cast("Nd4jLong*const") LongPointer buffer, byte order);
     @Namespace("shape") public static native void shapeOldScalar(@Cast("nd4j::DataType") int dtype, @Cast("Nd4jLong*const") LongBuffer buffer, byte order);
     @Namespace("shape") public static native void shapeOldScalar(@Cast("nd4j::DataType") int dtype, @Cast("Nd4jLong*const") long[] buffer, byte order);
@@ -7680,7 +7761,6 @@ public static final int PREALLOC_SIZE = 33554432;
 * Compute the real linear indices for the given shape and stride
 */
 
-
 /**
 * Convert the given index (such as 1,1)
 * to a linear index
@@ -7752,7 +7832,7 @@ public static final int PREALLOC_SIZE = 33554432;
  * the equivalent nd index
  * @param shape the shape of the dimensions
  * @param index the index to map
- * @param numIndices the number of total indices (typically prod of shape(
+ * @param arrLen the number of total indices (typically prod of shape(
  * @return the mapped indexes along each dimension
  */
 
@@ -8276,8 +8356,16 @@ public static final int PREALLOC_SIZE = 33554432;
     // also it sorts input array of dimensions, this operation is also necessary for creating TAD object
 
 
+// max array is outer for min array, min array is sub-array of max array
+    // function calculates the coordinates of min array (and saves them into minIdxs) given coordinates of max array (already stored in maxIdxs)
 
-    // return absolute index of array min, min is sub-array of max, index to be returned is min's index and corresponds to maxIdx of max array
+    //////////////////////////////////////////////////////////////////////
+
+    //////////////////////////////////////////////////////////////////////
+
+    //////////////////////////////////////////////////////////////////////
+
+    //////////////////////////////////////////////////////////////////////
 
 
 
@@ -9070,6 +9158,7 @@ public static final int ALL_INTS =INT64;
 public static final int ALL_FLOATS =DOUBLE;
 
 // #endif //TESTS_CPU_TYPE_BOILERPLATE_H
+
 
 // Parsed from op_boilerplate.h
 
@@ -10515,7 +10604,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 // #define CHECK_STASH(NAME)   block.getStash()->checkStash(block.getNodeId(), NAME);
 // #define UNSTASH(NAME)       block.getStash()->extractArray(block.getNodeId(), NAME);
 
-// #define INPUT_VARIABLE(INDEX)     reinterpret_cast<nd4j::NDArray *>(block.getVariable(INDEX)->getNDArray())
+// #define INPUT_VARIABLE(INDEX)     block.array(INDEX)
 // #define OUTPUT_VARIABLE(INDEX)    reinterpret_cast<nd4j::NDArray *>(this->getZ(block, INDEX))
 
 // #define INPUT_LIST(INDEX)     reinterpret_cast<nd4j::NDArrayList *>(block.getVariable(INDEX)->getNDArrayList())
@@ -14963,7 +15052,116 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
                                                                                 }
 //         #endif
 
-    
+
+    //////////////////////////////////////////////////////////////////////////
+    /**
+       * Implementation of operation for LSTM cell with optional peep hole connections:
+       *    S. Hochreiter and J. Schmidhuber. "Long Short-Term Memory". Neural Computation
+       *    and 
+       *    https://research.google.com/pubs/archive/43905.pdf
+       *    Hasim Sak, Andrew Senior, and Francoise Beaufays. "Long short-term memory recurrent neural network architectures for large scale acoustic modeling." INTERSPEECH, 2014.
+	   * See also: https://arxiv.org/pdf/1503.04069.pdf
+       *
+       * Input arrays: 
+       *    0: input [bS, inSize] at time t
+       *    1: previous cell state  [bS, numUnits], time t-1
+       *    2: previous output [bS, numUnits], time t-1
+       *    3: Weights - concatenated (input-to-hidden, hidden-to-hidden weights)  weights, [(inSize+numUnits), 4*numUnits]
+       *    4: weights - cell peephole (t-1) connections to input modulation gate, [numUnits]
+       *    5: weights - cell peephole (t-1) connections to forget gate, [numUnits]
+       *    6: weights - cell peephole (t) connections to output gate, [numUnits]
+       *    7: biases, shape [4*numUnits]
+       * 
+       *  Input integer arguments:
+       *    0: if not zero, provide peephole connections
+       *
+       *  Input float arguments:
+       *    0: the bias added to forget gates in order to reduce the scale of forgetting in the beginning of the training
+	   *    1: clipping value for cell state, if it is not equal to zero, then cell state is clipped
+       *  
+       * Output arrays: 
+       *    0: i      - Input modulation gate activations [bS, numUnits]
+       *    1: c (cs) - Cell state (pre tanh) [bs, numUnits] (cs)
+       *    2: f      - Output - forget gate activations [bs, numUnits]
+       *    3: o      - Output - output gate activations [bs, numUnits]
+       *    4: z (ci) - Output - block input [bs, numUnits]
+       *    5: h (co) - Cell state, post tanh [bs, numUnits]
+       *    6: y (h)  - Current cell output [bS, numUnits], time t
+       */                  
+//         #if NOT_EXCLUDED(OP_lstmBlockCell)
+        @Namespace("nd4j::ops") public static class lstmBlockCell extends DeclarableCustomOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public lstmBlockCell(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public lstmBlockCell(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public lstmBlockCell position(long position) {
+                return (lstmBlockCell)super.position(position);
+            }
+        
+                                                                                    public lstmBlockCell() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
+                                                                                }
+//         #endif
+
+    //////////////////////////////////////////////////////////////////////////
+    /**
+       * Implementation of operation for LSTM layer with optional peep hole connections.
+       * See lstmBlockCell for details. lstmBlockCell is used internally for computation.
+       * This method expects as input (and returns as output) sequences in one of 3 formats, depending on the data format arg:
+       * dataFormat = 0 -> TNS: shape [timeLength, numExamples, inOutSize] - sometimes referred to as "time major"
+       * dataFormat = 1 -> NST: shape [numExamples, inOutSize, timeLength]
+       * dataFormat = 2 -> NTS: shape [numExamples, timeLength, inOutSize] - TF "time_major=false" layout
+       *
+       *
+       * Input arrays:
+       *    0: max sequence length; long/int64 scalar
+       *    1: input [seqLength, bS, inSize] at time t
+       *    2: previous/initial cell state  [bS, numUnits]
+       *    3: previous/initial output [bS, numUnits]
+       *    4: Weights - concatenated (input-to-hidden, hidden-to-hidden weights)  weights, [(inSize+numUnits), 4*numUnits]
+       *    5: weights - cell peephole (t-1) connections to input modulation gate, [numUnits]
+       *    6: weights - cell peephole (t-1) connections to forget gate, [numUnits]
+       *    7: weights - cell peephole (t) connections to output gate, [numUnits]
+       *    8: biases, Shape [4*numUnits]
+       *
+       *  Input integer arguments:
+       *    0: if not zero, provide peephole connections
+       *    1: Data format - 0=TNS=[seqLen,mb,size]; 1=NST=[mb,size,seqLen]; 2=NTS=[mb,seqLen,size]
+       *
+       *  Input float arguments:
+       *    0: the bias added to forget gates in order to reduce the scale of forgetting in the beginning of the training
+       *    1: clipping value for cell state, if it is not equal to zero, then cell state is clipped
+       *
+       * Output arrays:
+       *    0: i      - Input modulation gate activations, rank 3, shape as per dataFormat
+       *    1: c (cs) - Cell state (pre tanh), rank 3, shape as per dataFormat
+       *    2: f      - Output - forget gate activations, rank 3, shape as per dataFormat
+       *    3: o      - Output - output gate activations, rank 3, shape as per dataFormat
+       *    4: z (ci) - Output - block input, rank 3, shape as per dataFormat
+       *    5: h (co) - Cell state, post tanh, rank 3, shape as per dataFormat
+       *    6: y (h)  - Current cell output, rank 3, shape as per dataFormat
+       */
+//         #if NOT_EXCLUDED(OP_lstmBlock)
+        @Namespace("nd4j::ops") public static class lstmBlock extends DeclarableCustomOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public lstmBlock(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public lstmBlock(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public lstmBlock position(long position) {
+                return (lstmBlock)super.position(position);
+            }
+        
+                                                                                    public lstmBlock() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
+                                                                                }
+//         #endif
+		
     //////////////////////////////////////////////////////////////////////////
     /**
        * Implementation of operations for Simple Recurrent Unit cell: "Training RNNs as Fast as CNNs" Tao Lei, Yu Zhang, Yoav Artzi
@@ -15006,12 +15204,16 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
        * Input arrays: 
        *    0: input with shape [batchSize x inSize], batchSize - batch size, inSize - number of features
        *    1: previous cell output [batchSize x numUnits],  that is at previous time step t-1
-       *    2: input-to-hidden  weights, [inSize   x 3*numUnits] 
-       *    3: hidden-to-hidden weights, [numUnits x 3*numUnits] 
-       *    4: biases, [3*numUnits]        
+       *    2: RU weights - [(nIn+nOut), 2*numUnits] - reset and update gates (input/recurrent weights)
+       *    3: C weights - [(nIn+nOut), numUnits] - cell gate (input/recurrent weights)
+       *    4: reset and update biases, [2*numUnits] - reset and update gates
+       *    5: cell biases, [numUnits]
        *  
        * Output arrays: 
-       *    0: current cell output [batchSize x numUnits], that is at current time step t       
+       *    0: Reset gate output [bS, numUnits]
+       *    1: Update gate output [bS, numUnits]
+       *    2: Cell gate output [bS, numUnits]
+       *    3: Current cell output [bS, numUnits]
        */                  
 //         #if NOT_EXCLUDED(OP_gruCell)
         @Namespace("nd4j::ops") public static class gruCell extends DeclarableCustomOp {
@@ -15964,6 +16166,43 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 //         #endif
 
 
+        /**
+         * standardizes input array to be zero mean unit variance along the given axis
+         *
+         *
+         */
+//         #if NOT_EXCLUDED(OP_standardize)
+                @Namespace("nd4j::ops") public static class standardize extends DeclarableOp {
+                    static { Loader.load(); }
+                    /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+                    public standardize(Pointer p) { super(p); }
+                    /** Native array allocator. Access with {@link Pointer#position(long)}. */
+                    public standardize(long size) { super((Pointer)null); allocateArray(size); }
+                    private native void allocateArray(long size);
+                    @Override public standardize position(long position) {
+                        return (standardize)super.position(position);
+                    }
+                
+                                                                                    public standardize() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
+                                                                                }
+                @Namespace("nd4j::ops") public static class standardize_bp extends DeclarableCustomOp {
+                    static { Loader.load(); }
+                    /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+                    public standardize_bp(Pointer p) { super(p); }
+                    /** Native array allocator. Access with {@link Pointer#position(long)}. */
+                    public standardize_bp(long size) { super((Pointer)null); allocateArray(size); }
+                    private native void allocateArray(long size);
+                    @Override public standardize_bp position(long position) {
+                        return (standardize_bp)super.position(position);
+                    }
+                
+                                                                                    public standardize_bp() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
+                                                                                }
+//         #endif
     
 
 
@@ -20318,6 +20557,46 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
                                                                                     private native void allocate();
                                                                                     public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
                                                                                 }
+
+        /**
+         * applies layer normalization to input
+         * y = g * standardize(x) + b
+         *
+         * see nd4j::ops::standardize
+         *
+         */
+//         #if NOT_EXCLUDED(OP_layer_norm)
+                @Namespace("nd4j::ops") public static class layer_norm extends DeclarableOp {
+                    static { Loader.load(); }
+                    /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+                    public layer_norm(Pointer p) { super(p); }
+                    /** Native array allocator. Access with {@link Pointer#position(long)}. */
+                    public layer_norm(long size) { super((Pointer)null); allocateArray(size); }
+                    private native void allocateArray(long size);
+                    @Override public layer_norm position(long position) {
+                        return (layer_norm)super.position(position);
+                    }
+                
+                                                                                    public layer_norm() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
+                                                                                }
+                @Namespace("nd4j::ops") public static class layer_norm_bp extends DeclarableCustomOp {
+                    static { Loader.load(); }
+                    /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+                    public layer_norm_bp(Pointer p) { super(p); }
+                    /** Native array allocator. Access with {@link Pointer#position(long)}. */
+                    public layer_norm_bp(long size) { super((Pointer)null); allocateArray(size); }
+                    private native void allocateArray(long size);
+                    @Override public layer_norm_bp position(long position) {
+                        return (layer_norm_bp)super.position(position);
+                    }
+                
+                                                                                    public layer_norm_bp() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
+                                                                                }
+//         #endif
 
     
 

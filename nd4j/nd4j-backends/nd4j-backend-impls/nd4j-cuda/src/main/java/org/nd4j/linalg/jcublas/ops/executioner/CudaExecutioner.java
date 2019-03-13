@@ -2649,6 +2649,21 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
         AtomicAllocator.getInstance().getFlowController().registerAction(context, array, indices, updates);
     }
+
+    @Override
+    public OpContext buildContext() {
+        return new CudaOpContext();
+    }
+
+    @Override
+    public INDArray[] exec(CustomOp op, OpContext context) {
+        nativeOps.execCustomOp(null, op.opHash(), context.contextPointer());
+
+        if (context.getOutputArrays().isEmpty())
+            return new INDArray[0];
+        else
+            return context.getOutputArrays().toArray(new INDArray[context.getOutputArrays().size()]);
+    }
 }
 
 

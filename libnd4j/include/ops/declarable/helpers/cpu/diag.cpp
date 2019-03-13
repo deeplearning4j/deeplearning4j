@@ -32,9 +32,9 @@ namespace helpers {
 template <typename T>
 static void _diagFunctor(const NDArray* input, NDArray* output) {
 
-    const int inLength = input->lengthOf();    
+    const int inLength = input->lengthOf();
 
-#pragma omp parallel for if(inLength > Environment::getInstance()->elementwiseThreshold()) schedule(static)         
+    PRAGMA_OMP_PARALLEL_FOR_IF(inLength > Environment::getInstance()->elementwiseThreshold())
     for(int i = 0; i < inLength; ++i)
         (*output).p<T>(i * (inLength + 1), (*input).e<T>(i));
 }

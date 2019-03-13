@@ -343,7 +343,7 @@ void NativeOpExcutioner::execScalar(int opNum, void *x, Nd4jLong *xShapeInfo, vo
     auto zType = nd4j::ArrayOptions::dataType(resultShapeInfo);
     if (!nd4j::Environment::getInstance()->isExperimentalBuild()) {
         if ((yType != xType && yType != nd4j::DataType::BOOL) || zType != xType){
-            throw nd4j::datatype_exception::build("NativeOps::execScalar both operands must have same data type", xType, yType);
+            throw nd4j::datatype_exception::build("NativeOpExecutioner::execScalar both operands must have same data type", xType, yType);
         }
     }
 
@@ -365,7 +365,7 @@ void NativeOpExcutioner::execScalar(int opNum, void *x, Nd4jLong *xShapeInfo, vo
 
     if (!nd4j::Environment::getInstance()->isExperimentalBuild())
         if ((yType != xType && yType != nd4j::DataType::BOOL) || xType != zType)
-            throw nd4j::datatype_exception::build("NativeOps::execScalar both operands must have same data type", xType, yType);
+            throw nd4j::datatype_exception::build("NativeOpExecutioner::execScalar both operands must have same data type", xType, yType);
 
 #ifdef __ND4J_EXPERIMENTAL__
     BUILD_PAIRWISE_SELECTOR(xType, yType, zType, functions::scalar::ScalarTransform, ::transform(opNum, x, xShapeInfo, extraParams, z, zShapeInfo, scalars, dimension, dimensionLength, tadShapeInfo, tadOffsets, tadShapeInfoZ, tadOffsetsZ), LIBND4J_TYPES, LIBND4J_TYPES);
@@ -390,7 +390,7 @@ void NativeOpExcutioner::execScalarBool(int opNum, void *x, Nd4jLong *xShapeInfo
 
     if (!nd4j::Environment::getInstance()->isExperimentalBuild())
         if (yType != xType || nd4j::DataType::BOOL != zType)
-            throw nd4j::datatype_exception::build("NativeOps::execScalarBool both operands must have same data type", xType, yType);
+            throw nd4j::datatype_exception::build("NativeOpExecutioner::execScalarBool both operands must have same data type", xType, yType);
 
     BUILD_DOUBLE_SELECTOR(xType, zType, functions::scalar::ScalarBoolTransform, ::transform(opNum, x, xShapeInfo, extraParams, z, zShapeInfo, scalars, dimension, dimensionLength, tadShapeInfo, tadOffsets, tadShapeInfoZ, tadOffsetsZ), LIBND4J_TYPES, BOOL_TYPES);
 }

@@ -40,6 +40,7 @@ import org.nd4j.linalg.api.ops.impl.transforms.comparison.OldMax;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.OldMin;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.GreaterThanOrEqual;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.LessThanOrEqual;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.Standardize;
 import org.nd4j.linalg.api.ops.impl.transforms.floating.RSqrt;
 import org.nd4j.linalg.api.ops.impl.transforms.strict.*;
 import org.nd4j.linalg.api.ops.random.impl.BernoulliDistribution;
@@ -793,7 +794,7 @@ public class TransformOpValidation extends BaseOpValidation {
                     ia = Nd4j.rand(DataType.DOUBLE, ia.shape());
                     ia.diviRowVector(ia.norm2(0)).muli(clip);  //Norm2 is now 'clip' (i.e., exactly at threshold
                     //System.out.println(ia.norm2(0));
-                    ia.muliColumnVector(Nd4j.linspace(0.9, 1.1, ia.size(0), DataType.DOUBLE).transpose());
+                    ia.muliColumnVector(Nd4j.linspace(0.9, 1.1, ia.size(0), DataType.DOUBLE).reshape(ia.size(0), 1));
                     //System.out.println(ia.norm2(0));
 
                     INDArray expOut49 = Nd4j.create(DataType.DOUBLE, ia.shape());
@@ -1765,5 +1766,67 @@ public class TransformOpValidation extends BaseOpValidation {
             return true;
         //Note that "boolean" ops are inherit
         return false;
+    }
+
+    @Test
+    public void testStandardize() {
+        final INDArray random = Nd4j.rand(new int[]{10, 4});
+
+        final int[] axis = new int[]{1};
+        final INDArray means = random.mean(axis);
+        final INDArray std = random.std(false, axis);
+        final INDArray res = random.subColumnVector(means).divColumnVector(std);
+        final INDArray expOut = res.norm1();
+
+        SameDiff sd = SameDiff.create();
+        SDVariable sdA = sd.var("a", random);
+        SDVariable t = sd.math.standardize(sdA, axis);
+        t.norm1("out");
+
+        String err = OpValidation.validate(new TestCase(sd)
+                .expectedOutput("out", expOut)
+                .gradientCheck(true));
+        assertNull(err, err);
+    }
+
+    @Test
+    public void testStandardizeOP() {
+        final INDArray random = Nd4j.rand(new int[]{10, 4});
+
+        final int[] axis = new int[]{1};
+        final INDArray means = random.mean(axis);
+        final INDArray std = random.std(false, axis);
+        final INDArray res = random.subColumnVector(means).divColumnVector(std);
+
+        final INDArray output = Nd4j.emptyLike(res);
+        Nd4j.getExecutioner().exec(new Standardize(random, output, 1));
+
+        assertEquals(res, output);
+    }
+
+    @Test
+    public void testStandardizeNoDeviation() {
+        final INDArray random = Nd4j.rand(new int[]{10, 4});
+        for (int i = 0; i < 4; i++) {
+            random.putScalar(1,i, 7);
+        }
+
+        final int[] axis = new int[]{1};
+        final INDArray means = random.mean(axis);
+        final INDArray std = random.std(false, axis);
+        std.addi(std.eq(0).castTo(DataType.DOUBLE));
+
+        final INDArray res = random.subColumnVector(means).divColumnVector(std);
+        final INDArray expOut = res.norm1();
+
+        SameDiff sd = SameDiff.create();
+        SDVariable sdA = sd.var("a", random);
+        SDVariable t = sd.math.standardize(sdA, axis);
+        t.norm1("out");
+
+        String err = OpValidation.validate(new TestCase(sd)
+                .expectedOutput("out", expOut)
+                .gradientCheck(true));
+        assertNull(err, err);
     }
 }

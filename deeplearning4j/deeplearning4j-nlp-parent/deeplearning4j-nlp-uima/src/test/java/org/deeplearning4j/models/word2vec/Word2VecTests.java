@@ -60,6 +60,7 @@ public class Word2VecTests {
     private static final Logger log = LoggerFactory.getLogger(Word2VecTests.class);
 
     private File inputFile;
+    private File inputFile2;
     private String pathToWriteto;
     private WordVectors googleModel;
 
@@ -68,6 +69,7 @@ public class Word2VecTests {
         File googleModelTextFile = new ClassPathResource("word2vecserialization/google_news_30.txt").getFile();
         googleModel = WordVectorSerializer.readWord2VecModel(googleModelTextFile);
         inputFile = new ClassPathResource("/big/raw_sentences.txt").getFile();
+        inputFile2 = new ClassPathResource("/big/raw_sentences_2.txt").getFile();
 
         File ptwt = new File(System.getProperty("java.io.tmpdir"), "testing_word2vec_serialization.txt");
 
@@ -242,9 +244,9 @@ public class Word2VecTests {
     @Test
     public void testRunWord2Vec() throws Exception {
         // Strip white space before and after for each line
-        val shakespear = new ClassPathResource("big/rnj.txt");
-        SentenceIterator iter = new BasicLineIterator(shakespear.getFile());
-        //SentenceIterator iter = new BasicLineIterator(inputFile.getAbsolutePath());
+        /*val shakespear = new ClassPathResource("big/rnj.txt");
+        SentenceIterator iter = new BasicLineIterator(shakespear.getFile());*/
+        SentenceIterator iter = new BasicLineIterator(inputFile.getAbsolutePath());
         // Split on white spaces in the line to get words
         TokenizerFactory t = new DefaultTokenizerFactory();
         t.setTokenPreProcessor(new CommonPreprocessor());
@@ -725,6 +727,72 @@ public class Word2VecTests {
         INDArray matrix = vec.getWordVectors(labels);
         for (int i = 0; i < labels.size(); ++i)
             assertEquals(matrix.getRow(i), vec.getWordVectorMatrix("UNKNOWN"));
+    }
+
+    @Test
+    public void weightsNotUpdated_WhenLocked() throws Exception {
+
+        SentenceIterator iter = new BasicLineIterator(inputFile.getAbsolutePath());
+
+        Word2Vec vec1 = new Word2Vec.Builder().minWordFrequency(1).iterations(3).batchSize(64).layerSize(100)
+                .stopWords(new ArrayList<String>()).seed(42).learningRate(0.025).minLearningRate(0.001)
+                .sampling(0).elementsLearningAlgorithm(new SkipGram<VocabWord>())
+                .epochs(1).windowSize(5).allowParallelTokenization(true)
+                .workers(1)
+                .iterate(iter)
+                .modelUtils(new BasicModelUtils<VocabWord>()).build();
+
+        vec1.fit();
+
+        iter = new BasicLineIterator(inputFile2.getAbsolutePath());
+        Word2Vec vec2 = new Word2Vec.Builder().minWordFrequency(1).iterations(3).batchSize(32).layerSize(100)
+                .stopWords(new ArrayList<String>()).seed(32).learningRate(0.021).minLearningRate(0.001)
+                .sampling(0).elementsLearningAlgorithm(new SkipGram<VocabWord>())
+                .epochs(1).windowSize(5).allowParallelTokenization(true)
+                .workers(1)
+                .iterate(iter)
+                .intersectModel(vec1, true)
+                .modelUtils(new BasicModelUtils<VocabWord>()).build();
+
+        vec2.fit();
+
+        assertEquals(vec1.getWordVectorMatrix("put"), vec2.getWordVectorMatrix("put"));
+        assertEquals(vec1.getWordVectorMatrix("part"), vec2.getWordVectorMatrix("part"));
+        assertEquals(vec1.getWordVectorMatrix("made"), vec2.getWordVectorMatrix("made"));
+        assertEquals(vec1.getWordVectorMatrix("money"), vec2.getWordVectorMatrix("money"));
+    }
+
+    @Test
+    public void weightsNotUpdated_WhenLocked_CBOW() throws Exception {
+
+        SentenceIterator iter = new BasicLineIterator(inputFile.getAbsolutePath());
+
+        Word2Vec vec1 = new Word2Vec.Builder().minWordFrequency(1).iterations(3).batchSize(2).layerSize(100)
+                .stopWords(new ArrayList<String>()).seed(42).learningRate(0.025).minLearningRate(0.001)
+                .sampling(0).elementsLearningAlgorithm(new CBOW<VocabWord>())
+                .epochs(1).windowSize(5).allowParallelTokenization(true)
+                .workers(1)
+                .iterate(iter)
+                .modelUtils(new BasicModelUtils<VocabWord>()).build();
+
+        vec1.fit();
+
+        iter = new BasicLineIterator(inputFile2.getAbsolutePath());
+        Word2Vec vec2 = new Word2Vec.Builder().minWordFrequency(1).iterations(3).batchSize(1).layerSize(100)
+                .stopWords(new ArrayList<String>()).seed(32).learningRate(0.021).minLearningRate(0.001)
+                .sampling(0).elementsLearningAlgorithm(new CBOW<VocabWord>())
+                .epochs(1).windowSize(5).allowParallelTokenization(true)
+                .workers(1)
+                .iterate(iter)
+                .intersectModel(vec1, true)
+                .modelUtils(new BasicModelUtils<VocabWord>()).build();
+
+        vec2.fit();
+
+        assertEquals(vec1.getWordVectorMatrix("put"), vec2.getWordVectorMatrix("put"));
+        assertEquals(vec1.getWordVectorMatrix("part"), vec2.getWordVectorMatrix("part"));
+        assertEquals(vec1.getWordVectorMatrix("made"), vec2.getWordVectorMatrix("made"));
+        assertEquals(vec1.getWordVectorMatrix("money"), vec2.getWordVectorMatrix("money"));
     }
 
     private static void printWords(String target, Collection<String> list, Word2Vec vec) {

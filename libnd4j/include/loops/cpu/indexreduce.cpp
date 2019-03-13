@@ -60,21 +60,22 @@ Nd4jLong IndexReduce<X>::execScalar(void *vx, Nd4jLong *xShapeInfo, void *vextra
 
     uint xShapeInfoCast[MAX_RANK];
     bool canCastX = nd4j::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
-                        
-    #pragma omp parallel num_threads(info._numThreads) if (info._numThreads > 1) default(shared)
+
+    PRAGMA_OMP_PARALLEL_THREADS(info._numThreads)
     {                
         auto local = OpType::startingIndexValue(x);
         auto threadNum = omp_get_thread_num();                    
-        Nd4jLong threadOffset = info.getThreadOffset(threadNum);     
-        
-        #pragma omp simd
-        for (Nd4jLong i = 0; i < info.getItersPerThread(threadNum); i++) {            
+        Nd4jLong threadOffset = info.getThreadOffset(threadNum);
+
+        auto ulen = static_cast<unsigned int>(info.getItersPerThread(threadNum));
+
+        for (unsigned int i = 0; i < ulen; i++) {
             auto offset = shape::indexOffset(threadOffset + i, xShapeInfo, xShapeInfoCast, len, canCastX);
             IndexValue<X> curr(x[offset], threadOffset + i);
             local = OpType::update(local, curr, extraParams);
         }
-        
-        #pragma omp critical
+
+        PRAGMA_OMP_CRITICAL
         startingIndex = OpType::update(startingIndex, local, extraParams);        
     }    
     return startingIndex.index;
@@ -125,13 +126,13 @@ void IndexReduce<X>::exec(void *vx, Nd4jLong *xShapeInfo,
     uint tadOnlyShapeInfoCast[MAX_RANK];                    
     bool canCastX = nd4j::DataTypeUtils::castShapeInfo(tadOnlyShapeInfo, tadOnlyShapeInfoCast);
 
-    #pragma omp parallel for schedule(guided) num_threads(numThreads) if (numThreads > 1) proc_bind(AFFINITY) default(shared)        
+    PRAGMA_OMP_PARALLEL_FOR_THREADS(numThreads)
     for(Nd4jLong i = 0; i < zLen; i++) {
 
         auto offset = tadOffsets[i];
         auto indexValue = OpType::startingIndexValue(&x[offset]);
 
-        #pragma omp simd
+        PRAGMA_OMP_SIMD
         for(int j = 0; j < tadLength; j++) {
             auto xOffset = offset + shape::indexOffset(j, tadOnlyShapeInfo, tadOnlyShapeInfoCast, tadLength, canCastX);
             IndexValue<X> comp(x[xOffset], j);

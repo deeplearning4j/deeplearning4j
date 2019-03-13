@@ -278,6 +278,7 @@ TEST_F(NlpTests, basic_cb_hs_test_1) {
     auto target = NDArrayFactory::create<int>(0);
     auto ngStarter = NDArrayFactory::empty<int>();
     auto context = NDArrayFactory::create<int>('c', {3}, {0, 1, 2});
+    auto locked = NDArrayFactory::create<int>('c', {3});
     auto indices = NDArrayFactory::create<int>('c', {2}, {4, 5});
     auto codes = NDArrayFactory::create<int8_t>('c', {2}, {1, 1});
     auto syn0 = NDArrayFactory::create<float>('c', {100, 10});
@@ -296,7 +297,7 @@ TEST_F(NlpTests, basic_cb_hs_test_1) {
     auto inferenceVector = NDArrayFactory::empty<float>();
 
     nd4j::ops::cbow op;
-    auto result = op.execute({&target, &ngStarter, &context, &indices, &codes, &syn0, &syn1, &syn1Neg, &expTable, &negTable, &alpha, &randomValue, &numWords, &inferenceVector}, {}, {}, {true}, true);
+    auto result = op.execute({&target, &ngStarter, &context, &indices, &codes, &syn0, &syn1, &syn1Neg, &expTable, &negTable, &alpha, &randomValue, &numWords, &locked, &inferenceVector}, {}, {}, {true}, true);
     ASSERT_EQ(Status::OK(), result->status());
 
     auto row_s0_0 = syn0.subarray({NDIndex::point(0), NDIndex::all()});
@@ -347,6 +348,7 @@ TEST_F(NlpTests, basic_cb_ns_test_1) {
     auto target = NDArrayFactory::create<int>(0);
     auto ngStarter = NDArrayFactory::create<int>(6);
     auto context = NDArrayFactory::create<int>('c', {3}, {0, 1, 2});
+    auto locked = NDArrayFactory::create<int>('c', {3});
     auto indices = NDArrayFactory::empty<int>();
     auto codes = NDArrayFactory::empty<int8_t>();
     auto syn0 = NDArrayFactory::create<float>('c', {100, 10});
@@ -366,7 +368,7 @@ TEST_F(NlpTests, basic_cb_ns_test_1) {
     auto inferenceVector = NDArrayFactory::empty<float>();
 
     nd4j::ops::cbow op;
-    auto result = op.execute({&target, &ngStarter, &context, &indices, &codes, &syn0, &syn1, &syn1Neg, &expTable, &negTable, &alpha, &randomValue, &numWords, &inferenceVector}, {}, {1, 2, 0}, {true}, true);
+    auto result = op.execute({&target, &ngStarter, &context, &indices, &codes, &syn0, &syn1, &syn1Neg, &expTable, &negTable, &alpha, &randomValue, &numWords, &locked, &inferenceVector}, {}, {1, 2, 0}, {true}, true);
     ASSERT_EQ(Status::OK(), result->status());
 
     auto row_s0_0 = syn0.subarray({NDIndex::point(0), NDIndex::all()});
@@ -508,6 +510,7 @@ TEST_F(NlpTests, test_cbow_hs_batch_1) {
     auto target = NDArrayFactory::create<int>(0);
     auto ngStarter = NDArrayFactory::empty<int>();
     auto context = NDArrayFactory::create<int>('c', {2, 3}, {0, 1, 2,  100, 101, 102});
+    auto locked = NDArrayFactory::create<int>('c', {2, 3});
     auto indices = NDArrayFactory::create<int>('c', {2, 2}, {4, 5, 40, 50});
     auto codes = NDArrayFactory::create<int8_t>('c', {2, 2}, {1, 1, 1, 1});
     auto syn0 = NDArrayFactory::create<float>('c', {244, 10});
@@ -526,7 +529,7 @@ TEST_F(NlpTests, test_cbow_hs_batch_1) {
     auto inferenceVector = NDArrayFactory::empty<float>();
 
     nd4j::ops::cbow op;
-    auto result = op.execute({&target, &ngStarter, &context, &indices, &codes, &syn0, &syn1, &syn1Neg, &expTable, &negTable, &alpha, &randomValue, &numWords, &inferenceVector}, {}, {}, {true}, true);
+    auto result = op.execute({&target, &ngStarter, &context, &indices, &codes, &syn0, &syn1, &syn1Neg, &expTable, &negTable, &alpha, &randomValue, &numWords, &locked, &inferenceVector}, {}, {}, {true}, true);
     ASSERT_EQ(Status::OK(), result->status());
 
     auto exp0 = NDArrayFactory::create<float>('c', {1, 10});

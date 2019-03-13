@@ -268,11 +268,7 @@ TEST_F(DeclarableOpsTests1, TestTensorDot3) {
         reinterpret_cast<float*>(y->getBuffer())[i] = i + 1;
     }
 
-    auto exp = NDArrayFactory::create_<float>('f', {2, 2});
-    // exp->p(0, 1090.0);
-    // exp->p(1, 2818.0);
-    // exp->p(2, 1168.0);
-    // exp->p(3, 3040.0);
+    auto exp = NDArrayFactory::create_<float>('f', {2, 2});   
     reinterpret_cast<float*>(exp->getBuffer())[0] = 1090.0;
     reinterpret_cast<float*>(exp->getBuffer())[1] = 2818.0;
     reinterpret_cast<float*>(exp->getBuffer())[2] = 1168.0;
@@ -297,7 +293,7 @@ TEST_F(DeclarableOpsTests1, TestTensorDot3) {
 
     auto z = variableSpace->getVariable(1)->getNDArray();
 
-    //z->printBuffer("Result: ");
+    // z->printIndexedBuffer("Result: ");
 
     ASSERT_TRUE(exp->equalsTo(z));
 

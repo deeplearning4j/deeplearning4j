@@ -73,7 +73,6 @@ void rnnTimeLoop(const NDArray* x, const NDArray* Wx, const NDArray* Wh, const N
         *hFinal = 0.;   
 
     BlasHelper::getInstance();          // to avoid memory leak in pragma parallel loops
-// #pragma omp parallel for schedule(guided) collapse(2) if(bS > Environment::getInstance()->elementwiseThreshold())  
     // loop through batch of inputs           
     for (int e = 0; e < bS; ++e) {                  
         // loop through time steps

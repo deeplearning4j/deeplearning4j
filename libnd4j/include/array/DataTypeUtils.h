@@ -80,7 +80,7 @@ namespace nd4j {
         FORCEINLINE static std::vector<T2> convertVector(const std::vector<T1> &vector);
 
         template <typename T>
-        FORCEINLINE static bool castShapeInfo(Nd4jLong *originalShapeInfo, T *newShapeInfo);
+        FORCEINLINE static bool castShapeInfo(const Nd4jLong *originalShapeInfo, T *newShapeInfo);
     };
 
 
@@ -321,7 +321,7 @@ FORCEINLINE std::string DataTypeUtils::asString(DataType dataType) {
 
 
 template <typename T>
-FORCEINLINE bool DataTypeUtils::castShapeInfo(Nd4jLong *originalShapeInfo, T *newShapeInfo) {
+FORCEINLINE bool DataTypeUtils::castShapeInfo(const Nd4jLong *originalShapeInfo, T *newShapeInfo) {
     
     for (int e = 0; e < shape::shapeInfoLength(originalShapeInfo); e++) {
         if (originalShapeInfo[e] < static_cast<Nd4jLong>(DataTypeUtils::max<T>())) {
@@ -353,8 +353,8 @@ FORCEINLINE T DataTypeUtils::eps() {
     template <typename T1, typename T2>
     FORCEINLINE std::vector<T2> DataTypeUtils::convertVector(const std::vector<T1> &vector) {
         std::vector<T2> result(vector.size());
-
-        for (Nd4jLong e = 0; e < vector.size(); e++)
+        Nd4jLong vecSize = vector.size();
+        for (Nd4jLong e = 0; e < vecSize; e++)
             result[e] = static_cast<T2>(vector[e]);
 
         return result;

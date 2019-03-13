@@ -27,28 +27,29 @@ namespace nd4j {
     class MmulHelper {
 
     private:
-        // helpers for helper 
-        // multiptication N-dimensions tensor on other N-dimensions one
-        //template <typename X, typename Y, typename Z>
-        static nd4j::NDArray* mmulNxN(nd4j::NDArray* A, nd4j::NDArray* B, nd4j::NDArray* C, double alpha = 1.0, double beta = 0.0);
-        // multiptication Matrix to vector
-        template <typename X, typename Y, typename Z>
-        static nd4j::NDArray* mmulMxV(nd4j::NDArray* A, nd4j::NDArray* B, nd4j::NDArray* C, double alpha = 1.0, double beta = 0.0);
-        // multiptication Matrix to Matrix
-        template <typename X, typename Y, typename Z>
-        static nd4j::NDArray* mmulMxM(nd4j::NDArray* A, nd4j::NDArray* B, nd4j::NDArray* C, double alpha = 1.0, double beta = 0.0);
+        
+        // multiptication N-dimensions tensor on other N-dimensions one        
+        static nd4j::NDArray* mmulNxN(const nd4j::NDArray* A, const nd4j::NDArray* B, nd4j::NDArray* C, const double alpha = 1.0, const double beta = 0.0, const char outOrder = 'f');
 
-        template <typename X, typename Y, typename Z>
-        static void _dot(void* vA, void* vB, void* vC, Nd4jLong length);
+        // dot product of vectors (X * Y) = Z[0]
+        static nd4j::NDArray* dot(const nd4j::NDArray* X, const nd4j::NDArray* Y, nd4j::NDArray* Z, const double alpha = 1.0, const double beta = 0.0);
+        
+        // multiptication Matrix to vector
+        static nd4j::NDArray* mmulMxV(const nd4j::NDArray* A, const nd4j::NDArray* B, nd4j::NDArray* C, double alpha = 1.0, double beta = 0.0, const char outOrder = 'f');
+        
+        // multiptication Matrix to Matrix        
+        static nd4j::NDArray* mmulMxM(const nd4j::NDArray* A, const nd4j::NDArray* B, nd4j::NDArray* C, double alpha = 1.0, double beta = 0.0, const char outOrder = 'f');
+        
     public:
 
-        static nd4j::NDArray* mmul(nd4j::NDArray* A, nd4j::NDArray* B, nd4j::NDArray* C = nullptr, double alpha = 1.0, double beta = 0.0);
+        static nd4j::NDArray* mmul(const nd4j::NDArray* A, const nd4j::NDArray* B, nd4j::NDArray* C = nullptr, const double alpha = 1.0, const double beta = 0.0, const char outOrder = 'f');
 
         static nd4j::NDArray* tensorDot(const nd4j::NDArray* A, const nd4j::NDArray* B, const std::initializer_list<int>& axesA, const std::initializer_list<int>& axesB = {});
 
         static nd4j::NDArray* tensorDot(const nd4j::NDArray* A, const nd4j::NDArray* B, const std::vector<int>& axesA, const std::vector<int>& axesB);
 
         static void tensorDot(const nd4j::NDArray* a, const nd4j::NDArray* b, nd4j::NDArray* c, const std::vector<int>& axes_a, const std::vector<int>& axes_b, const std::vector<int>& permutForC = {});
+
 
 #ifndef __JAVACPP_HACK__
         /**
@@ -57,8 +58,6 @@ namespace nd4j {
         static void tensorDot(const nd4j::NDArray* a, const nd4j::NDArray* b, nd4j::NDArray* c, const std::vector<std::vector<Nd4jLong>>& modifA, const std::vector<std::vector<Nd4jLong>>& modifB, const std::vector<std::vector<Nd4jLong>>& modifC);
         static nd4j::NDArray* tensorDot(const nd4j::NDArray* a, const nd4j::NDArray* b, const std::vector<std::vector<Nd4jLong>>& modifA, const std::vector<std::vector<Nd4jLong>>& modifB);
 #endif
-
-        static NDArray* simpleMMul(const nd4j::NDArray* a, const nd4j::NDArray* b, nd4j::NDArray* c , const double alpha = 1.0, const double beta = 1.0);
 
         static void matmul(const nd4j::NDArray* x, const nd4j::NDArray* y, nd4j::NDArray* z, const bool transX, const bool transY);
     };

@@ -1308,8 +1308,9 @@ public:
  */
     Nd4jPointer shapeBufferForNumpy(Nd4jPointer npyArray) {
         cnpy::NpyArray arr = cnpy::loadNpyFromPointer(reinterpret_cast<char *>(npyArray));
-        auto shape = new unsigned int[arr.shape.size()];
-        for(unsigned int i = 0; i < arr.shape.size(); i++) {
+        unsigned int shapeSize = arr.shape.size();
+        auto shape = new unsigned int[shapeSize];
+        for(unsigned int i = 0; i < shapeSize; i++) {
             shape[i] = arr.shape[i];
         }
 
@@ -1587,6 +1588,8 @@ public:
 
     // customOp executioner
     int execCustomOp(Nd4jPointer* extraPointers, Nd4jLong hash, Nd4jPointer* inputBuffers, Nd4jPointer* inputShapes, int numInputs, Nd4jPointer* outputBuffers, Nd4jPointer* outputShapes, int numOutputs, double* tArgs, int numTArgs, Nd4jLong *iArgs, int numIArgs, bool* bArgs, int numBArgs, bool isInplace);
+    int execCustomOp(Nd4jPointer* extraPointers, Nd4jLong hash, Nd4jPointer opContext);
+
     nd4j::ShapeList* calculateOutputShapes(Nd4jPointer* extraPointers, Nd4jLong hash, Nd4jPointer* inputShapes, int numInputShapes, double* tArgs, int numTArgs, Nd4jLong *iArgs, int numIArgs);
     nd4j::ShapeList* calculateOutputShapes(Nd4jPointer* extraPointers, Nd4jLong hash, Nd4jPointer* inputBuffers, Nd4jPointer* inputShapes, int numInputShapes, double* tArgs, int numTArgs, Nd4jLong *iArgs, int numIArgs, bool *bArgs, int numBArgs);
 
