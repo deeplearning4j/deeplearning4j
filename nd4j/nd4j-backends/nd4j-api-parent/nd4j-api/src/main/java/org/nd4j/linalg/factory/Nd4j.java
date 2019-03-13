@@ -5387,16 +5387,6 @@ public class Nd4j {
     }
 
     /**
-     * Empty like
-     *
-     * @param arr the array to create the ones like
-     * @return ones in the shape of the given array
-     */
-    public static INDArray emptyLike(INDArray arr) {
-        return create(arr.shape());
-    }
-
-    /**
      * Ones like
      *
      * @param arr the array to create the ones like
