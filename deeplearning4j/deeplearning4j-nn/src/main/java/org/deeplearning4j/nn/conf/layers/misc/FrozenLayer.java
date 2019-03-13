@@ -167,7 +167,7 @@ public class FrozenLayer extends Layer {
         private Layer layer;
 
         public Builder layer(Layer layer) {
-            this.layer = layer;
+            this.setLayer(layer);
             return this;
         }
 

@@ -23,12 +23,14 @@ import org.deeplearning4j.ui.api.HttpMethod;
 import org.deeplearning4j.ui.api.Route;
 import org.deeplearning4j.ui.api.UIModule;
 import org.deeplearning4j.ui.i18n.I18NResource;
+import org.nd4j.linalg.function.Supplier;
 
 import java.io.File;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
+import static play.mvc.Results.ok;
 import static play.mvc.Results.redirect;
 
 /**
@@ -36,6 +38,20 @@ import static play.mvc.Results.redirect;
  * @author Alex Black
  */
 public class DefaultModule implements UIModule {
+    private final boolean multiSession;
+
+    public DefaultModule() {
+        this(false);
+    }
+
+    /**
+     *
+     * @param multiSession multi-session mode
+     */
+    public DefaultModule(boolean multiSession) {
+        this.multiSession = multiSession;
+    }
+
     @Override
     public List<String> getCallbackTypeIDs() {
         return Collections.emptyList();
@@ -45,7 +61,8 @@ public class DefaultModule implements UIModule {
     public List<Route> getRoutes() {
         //TODO
         //        Route r = new Route("/", HttpMethod.GET, FunctionType.Supplier, () -> ok(org.deeplearning4j.ui.views.html.defaultPage.DefaultPage.apply()));
-        Route r = new Route("/", HttpMethod.GET, FunctionType.Supplier, () -> redirect("/train/overview"));
+        Route r = multiSession ? new Route("/", HttpMethod.GET, FunctionType.Supplier, () -> redirect("/train"))
+                : new Route("/", HttpMethod.GET, FunctionType.Supplier, () -> redirect("/train/overview"));
 
         return Collections.singletonList(r);
     }

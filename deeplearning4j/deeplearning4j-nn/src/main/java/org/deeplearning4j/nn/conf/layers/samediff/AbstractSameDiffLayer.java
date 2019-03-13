@@ -339,7 +339,7 @@ public abstract class AbstractSameDiffLayer extends Layer {
          * @param regularization Regularization to apply for the network parameters/weights (excluding biases)
          */
         public Builder regularization(List<Regularization> regularization) {
-            this.regularization = regularization;
+            this.setRegularization(regularization);
             return this;
         }
 
@@ -349,7 +349,7 @@ public abstract class AbstractSameDiffLayer extends Layer {
          * @param regularizationBias Regularization to apply for the network biases only
          */
         public Builder regularizationBias(List<Regularization> regularizationBias) {
-            this.regularizationBias = regularizationBias;
+            this.setRegularizationBias(regularizationBias);
             return this;
         }
 
@@ -360,7 +360,7 @@ public abstract class AbstractSameDiffLayer extends Layer {
          * @param updater Updater to use
          */
         public T updater(IUpdater updater) {
-            this.updater = updater;
+            this.setUpdater(updater);
             return (T) this;
         }
 
@@ -371,7 +371,7 @@ public abstract class AbstractSameDiffLayer extends Layer {
          * @param biasUpdater Updater to use for bias parameters
          */
         public T biasUpdater(IUpdater biasUpdater) {
-            this.biasUpdater = biasUpdater;
+            this.setBiasUpdater(biasUpdater);
             return (T) this;
         }
     }
