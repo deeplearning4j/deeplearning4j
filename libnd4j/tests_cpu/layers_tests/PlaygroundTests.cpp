@@ -240,7 +240,7 @@ TEST_F(PlaygroundTests, Test_OpBenchmark_6) {
 
     helper.runOperationSuit(&db, generator, batch, "parametrized softmax test");
 }
-
+/*
 TEST_F(PlaygroundTests, StridedReductionsNoEWS) {
     nd4j_printf("SETTING ELEMENTWISE THRESHOLD AND TAD THRESHOLD TO 1/1","");
     nd4j::Environment::getInstance()->setElementwiseThreshold(1);
@@ -296,7 +296,7 @@ TEST_F(PlaygroundTests, StridedReductionsNoEWS) {
     ReductionBenchmark rbSum2(reduce::SameOps::Sum, "stridedSumNoEWS");
     helper.runOperationSuit(&rbSum2, (const std::function<void (Parameters &, ResultSet &, ResultSet &, ResultSet &)>)(generator2), batch, "Strided Sum - No EWS Test 2");
 }
-
+*/
 /*
 TEST_F(PlaygroundTests, Test_Reduce_Mechanics) {
     auto length = 8192;

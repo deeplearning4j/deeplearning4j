@@ -97,9 +97,9 @@ namespace functions {
 
                     for (int e = 0; e < omp_get_max_threads(); e++)
                         start = OpType::update(start, intermediate[e], extraParams);
-                    
-                    return OpType::postProcess(start, shape::length(xShapeInfo), extraParams);
+
                     delete[] intermediate;
+                    return OpType::postProcess(start, shape::length(xShapeInfo), extraParams);
                 }
             }
 
