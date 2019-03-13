@@ -63,6 +63,7 @@ namespace functions {
                     start = OpType::update(start, intermediate[e], extraParams);
 
                 z[0] = OpType::postProcess(start, shape::length(xShapeInfo), extraParams);
+                delete[] intermediate;
             }
         }
 
@@ -98,6 +99,7 @@ namespace functions {
                         start = OpType::update(start, intermediate[e], extraParams);
                     
                     return OpType::postProcess(start, shape::length(xShapeInfo), extraParams);
+                    delete[] intermediate;
                 }
             }
 

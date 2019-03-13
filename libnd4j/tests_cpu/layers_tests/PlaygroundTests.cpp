@@ -241,6 +241,62 @@ TEST_F(PlaygroundTests, Test_OpBenchmark_6) {
     helper.runOperationSuit(&db, generator, batch, "parametrized softmax test");
 }
 
+TEST_F(PlaygroundTests, StridedReductionsNoEWS) {
+    nd4j_printf("SETTING ELEMENTWISE THRESHOLD AND TAD THRESHOLD TO 1/1","");
+    nd4j::Environment::getInstance()->setElementwiseThreshold(1);
+    nd4j::Environment::getInstance()->setTadThreshold(1);
+    BenchmarkHelper helper;
+
+    IntPowerParameters stride("stride", 2, 0, 10);          //2^0=1, ..., 2^10=1024
+
+    ParametersBatch batch({&stride});
+
+    //This is an edge case: technically an EWS *should* be available here
+    auto generator1 = PARAMETRIC_XYZ() {
+        auto stride = p.getIntParam("stride");
+        auto arr = NDArrayFactory::create_<float>('c', {1048576 + (stride == 1 ? 0 : 1), stride});
+
+        NDArray* strided;
+        if(stride == 1){
+            strided = arr;
+        } else {
+            IndicesList indices({NDIndex::interval(0,1048576), NDIndex::interval(0,1)});
+            strided = arr->subarray(indices);        //All rows, first column
+        }
+
+        strided->assign(1.0);
+        x.push_back(strided);
+        y.push_back(nullptr);
+        z.push_back(NDArrayFactory::create_<float>(0.0f));
+    };
+
+    ReductionBenchmark rbSum(reduce::SameOps::Sum, "stridedSum");
+    helper.runOperationSuit(&rbSum, (const std::function<void (Parameters &, ResultSet &, ResultSet &, ResultSet &)>)(generator1), batch, "Strided Sum - No EWS Test 1");
+
+
+    //No EWS defined for this case
+    auto generator2 = PARAMETRIC_XYZ() {
+        auto stride = p.getIntParam("stride");
+        auto arr = NDArrayFactory::create_<float>('c', {(stride == 1 ? 1 : 2) * 1024, 1024, stride});
+
+        NDArray* strided;
+        if(stride == 1){
+            strided = arr;
+        } else {
+            IndicesList indices({NDIndex::interval(0,2*1024,2), NDIndex::all(), NDIndex::interval(0,1)});
+            strided = arr->subarray(indices);
+        }
+
+        strided->assign(1.0);
+        x.push_back(strided);
+        y.push_back(nullptr);
+        z.push_back(NDArrayFactory::create_<float>(0.0f));
+    };
+
+    ReductionBenchmark rbSum2(reduce::SameOps::Sum, "stridedSumNoEWS");
+    helper.runOperationSuit(&rbSum2, (const std::function<void (Parameters &, ResultSet &, ResultSet &, ResultSet &)>)(generator2), batch, "Strided Sum - No EWS Test 2");
+}
+
 /*
 TEST_F(PlaygroundTests, Test_Reduce_Mechanics) {
     auto length = 8192;
