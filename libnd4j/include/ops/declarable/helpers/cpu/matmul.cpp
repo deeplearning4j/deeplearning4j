@@ -40,7 +40,7 @@ namespace nd4j {
                 auto B = reinterpret_cast<Y *>(vB->buffer());
                 auto C = reinterpret_cast<Z *>(vC->buffer());
 
-#pragma omp parallel for simd collapse(2)
+                PRAGMA_OMP_PARALLEL_FOR_SIMD_COLLAPSE(2)
                 for (int m = 0; m < M; ++m) {
                     for (int n = 0; n < N; ++n) {
                         Z c_mnp = 0;

@@ -43,7 +43,7 @@ static void ismax_(const NDArray* input, NDArray* output, const std::vector<int>
                 int maxIdx = 0;
                 T currMax = input->e<T>(0);
                 if (length < ELEMENT_THRESHOLD) {
-//#pragma omp simd reduction(max:maxIdx,currMax)
+
                     for (int i = 0; i < length; i++) {
                         if (currMax < input->e<T>(i)) {
                             currMax = input->e<T>(i);
@@ -53,11 +53,11 @@ static void ismax_(const NDArray* input, NDArray* output, const std::vector<int>
                     }
                 }
                 else {
-#pragma omp parallel proc_bind(AFFINITY) default(shared)
+
                     {
                         int maxIdxLocal = maxIdx;
                         T currMaxLocal = currMax;
-//#pragma omp simd reduction(max:maxIdxLocal,currMaxLocal)
+
                         for (int i = 0; i < length; i++) {
                             if (currMaxLocal < input->e<T>(i)) {
                                 currMaxLocal = input->e<T>(i);
@@ -65,7 +65,8 @@ static void ismax_(const NDArray* input, NDArray* output, const std::vector<int>
                             }
                             output->p<T>(i, 0.f);
                         }
-#pragma omp critical
+
+                        PRAGMA_OMP_CRITICAL
                         {
                             if (currMax < currMaxLocal) {
                                 currMax = currMaxLocal;
@@ -80,7 +81,7 @@ static void ismax_(const NDArray* input, NDArray* output, const std::vector<int>
                 int maxIdx = 0;
                 T currMax = input->e<T>(0);
                 if (length < ELEMENT_THRESHOLD) {
-//#pragma omp parallel for reduction(max:maxIdx,currMax) proc_bind(AFFINITY)
+
                     for (int i = 0; i < length; i++) {
                         if (currMax < input->e<T>(i*eleStride)) {
                             currMax = input->e<T>(i*eleStride);
@@ -90,11 +91,10 @@ static void ismax_(const NDArray* input, NDArray* output, const std::vector<int>
                     }
                 }
                 else {
-#pragma omp parallel proc_bind(AFFINITY) default(shared)
+
                     {
                         int maxIdxLocal = maxIdx;
                         T currMaxLocal = currMax;
-//#pragma omp parallel for reduction(max:maxIdx,currMax)  proc_bind(AFFINITY)
                         for (int i = 0; i < length; i++) {
                             if (currMaxLocal < input->e<T>(i*eleStride)) {
                                 currMaxLocal = input->e<T>(i*eleStride);
@@ -102,7 +102,8 @@ static void ismax_(const NDArray* input, NDArray* output, const std::vector<int>
                             }
                             output->p<T>(i, 0.f);
                         }
-#pragma omp critical
+
+                        PRAGMA_OMP_CRITICAL
                         {
                             if (currMax < currMaxLocal) {
                                 currMax = currMaxLocal;
@@ -142,7 +143,7 @@ static void ismax_(const NDArray* input, NDArray* output, const std::vector<int>
 
         int span = (tads / num_threads) + 8;
 
-#pragma omp parallel num_threads(num_threads) if (num_threads>1) proc_bind(AFFINITY)
+        PRAGMA_OMP_PARALLEL_THREADS(num_threads)
         {
             int tid = omp_get_thread_num();
             int start = span * tid;
@@ -157,27 +158,27 @@ static void ismax_(const NDArray* input, NDArray* output, const std::vector<int>
                     T maxValue = rX[0];
                     int maxIdx = 0;
                     if (tadEWS == 1 && zEWS == 1) {
-//#pragma omp simd reduction(max:maxValue,maxIdx)
                         for (int i = 0; i < tadLength; i++) {
                             if (rX[i] > maxValue) {
                                 maxIdx = i;
                                 maxValue = rX[i];
                             }
                         }
-#pragma omp simd
+
+                        PRAGMA_OMP_SIMD
                         for (int i = 0; i < tadLength; i++) {
                             rZ[i] = maxIdx == i ? (T) 1.0 : (T) 0.0;
                         }
                     } 
                     else {
-//#pragma omp parallel for reduction(max:maxValue,maxIdx) default(shared)
                         for (int i = 0; i < tadLength; i++) {
                             if (rX[i * tadEWS] > maxValue) {
                                 maxIdx = i;
                                 maxValue = rX[i * tadEWS];
                             }
                         }
-#pragma omp simd
+
+                        PRAGMA_OMP_SIMD
                         for (int i = 0; i < tadLength; i++) {
                             rZ[i * zEWS] = maxIdx == i ? (T) 1.0 : (T) 0.0;
                         }

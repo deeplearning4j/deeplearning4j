@@ -28,9 +28,10 @@ namespace helpers {
     template <typename T>
     void _confusionFunctor(NDArray* labels, NDArray* predictions, NDArray* weights, NDArray* output) {
         std::unique_ptr<ResultSet> arrs(output->allTensorsAlongDimension({1}));
+        int lLen = labels->lengthOf();
 
-#pragma omp parallel for if(labels->lengthOf() > Environment::getInstance()->elementwiseThreshold()) schedule(static)                    
-        for (int j = 0; j < labels->lengthOf(); ++j){
+        PRAGMA_OMP_PARALLEL_FOR_IF(lLen > Environment::getInstance()->elementwiseThreshold())
+        for (int j = 0; j < lLen; ++j){
             auto label = labels->e<Nd4jLong>(j);
             auto pred = predictions->e<Nd4jLong>(j);
             T value = (weights == nullptr ? (T)1.0f : weights->e<T>(j));

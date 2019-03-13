@@ -88,8 +88,10 @@ namespace nd4j {
                     CBLAS_TRANSPOSE tA = (CBLAS_TRANSPOSE) transA;
                     CBLAS_TRANSPOSE tB = (CBLAS_TRANSPOSE) transB;
 
-#pragma omp parallel for
-                    for (int p = 0; p < vA.size(); ++p) {
+                    int vaSize = vA.size();
+
+                    PRAGMA_OMP_PARALLEL_FOR
+                    for (int p = 0; p < vaSize; ++p) {
                         auto A = reinterpret_cast<T*>(vA.at(p)->buffer());
                         auto B = reinterpret_cast<T*>(vB.at(p)->buffer());
                         auto C = reinterpret_cast<T*>(vC.at(p)->buffer());
@@ -99,7 +101,7 @@ namespace nd4j {
                             for (int n = 0; n < N; ++n) {
                                 T c_mnp = 0;
 
-                                #pragma omp simd
+                                PRAGMA_OMP_SIMD
                                 for (int k = 0; k < K; ++k)
                                     c_mnp += A[tA == CblasNoTrans ? (m + k * ldA) : (m * ldA + k)] * B[tB == CblasNoTrans ? (k + n * ldB) : (k * ldB + n)];
 

@@ -1834,7 +1834,7 @@ __device__ INLINEDEF Nd4jLong *cuMalloc(Nd4jLong *buffer, long size) {
 template <typename T>
  INLINEDEF _CUDA_HD void fill(T* buffer, T value, Nd4jLong length) {
 
-#pragma omp simd
+    PRAGMA_OMP_SIMD
      for (int e = 0; e < length; e++)
         buffer[e] = value;
  }

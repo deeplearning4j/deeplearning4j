@@ -4880,8 +4880,12 @@ public class Nd4j {
     }
 
     public static INDArray createUninitialized(DataType type, long[] shape, char ordering) {
-        if (shape.length == 0)
+        if (shape.length == 0) {
+            if(type == DataType.UTF8){
+                return scalar("");
+            }
             return scalar(type, 0);
+        }
 
         checkShapeValues(shape);
 
