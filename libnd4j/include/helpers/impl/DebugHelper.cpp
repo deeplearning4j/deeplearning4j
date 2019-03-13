@@ -71,8 +71,8 @@ namespace nd4j {
             for (Nd4jLong e = 1; e < input->lengthOf(); e++) {
                 auto current = input->e<double>(e);
 
-                _minValue = nd4j::math::nd4j_min(current, info->_minValue);
-                _maxValue = nd4j::math::nd4j_max(current, info->_maxValue);
+                _minValue = nd4j::math::nd4j_min(current, _minValue);
+                _maxValue = nd4j::math::nd4j_max(current, _maxValue);
                 _meanValue += current;
 
                 _zeroCount += nd4j::math::nd4j_abs(current) > 0.00001 ? 0 : 1;
