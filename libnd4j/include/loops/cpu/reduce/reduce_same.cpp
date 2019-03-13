@@ -47,11 +47,12 @@ namespace functions {
                 z[0] = execScalar<OpType>(x, xEws, length, extraParams);
             }
             else {
-
                 X start = OpType::startingValue(x);
+                uint xShapeInfoCast[MAX_RANK];
+                bool canCastX = nd4j::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
 
                 for(Nd4jLong i = 0; i < length; ++i)                     
-                    start = OpType::update(start, OpType::op(x[shape::getIndexOffset(i, xShapeInfo, length)], extraParams), extraParams);                
+                    start = OpType::update(start, OpType::op(x[shape::indexOffset(i, xShapeInfo, xShapeInfoCast, length, canCastX)], extraParams), extraParams);
 
                 z[0] = OpType::postProcess(start, shape::length(xShapeInfo), extraParams);
             }
@@ -74,11 +75,13 @@ namespace functions {
                 }
                 else {
                     X start = OpType::startingValue(x);
+                    auto intermediate = new X[nd4j::math::nd4j_max<int>(1, omp_get_max_threads())];
                     uint xShapeInfoCast[MAX_RANK];
                     bool canCastX = nd4j::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
 
-                    for(Nd4jLong i = 0; i < length; ++i)                     
-                        start = OpType::update(start, OpType::op(x[shape::indexOffset(i, xShapeInfo, xShapeInfoCast, length, canCastX)], extraParams), extraParams);
+                    //PRAGMA_OMP_PARALLEL_FOR_SIMD
+                    for(Nd4jLong i = 0; i < length; ++i)
+                        intermediate[omp_get_thread_num()] = OpType::update(intermediate[omp_get_thread_num()], OpType::op(x[shape::indexOffset(i, xShapeInfo, xShapeInfoCast, length, canCastX)], extraParams), extraParams);
                     
                     return OpType::postProcess(start, shape::length(xShapeInfo), extraParams);
                 }
