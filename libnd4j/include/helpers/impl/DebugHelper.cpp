@@ -67,32 +67,37 @@ namespace nd4j {
             info->_infCount = nd4j::math::nd4j_isinf(input->e<double>(0));
             info->_nanCount = nd4j::math::nd4j_isnan(input->e<double>(0));
 
-//#pragma omp parallel for schedule(guided)
+#pragma omp parallel for schedule(guided)
             for (Nd4jLong e = 1; e < input->lengthOf(); e++) {
-                    double current = input->e<double>(e);
-//#pragma simd (sumT:info)
-                {
-                    info->_minValue = nd4j::math::nd4j_min(current, info->_minValue);
-                    info->_maxValue = nd4j::math::nd4j_max(current, info->_maxValue);
-                    info->_meanValue += current;
+                double current = input->e<double>(e);
+#pragma omp critical
+                info->_minValue = nd4j::math::nd4j_min(current, info->_minValue);
+#pragma omp critical
+                info->_maxValue = nd4j::math::nd4j_max(current, info->_maxValue);
+#pragma omp critical
+                info->_meanValue += current;
 
 //                    info->_stdDevValue += (info->_meanValue / e - current) *
 //                                          (info->_meanValue / e - current); //info->_minValue;
 
-                    info->_zeroCount += nd4j::math::nd4j_abs(current) > 0.00001 ? 0 : 1;
-                    info->_positiveCount += current > 0 ? 1 : 0;
-                    info->_negativeCount += current < 0 ? 1 : 0;
-                    info->_infCount += nd4j::math::nd4j_isinf(current);
-                    info->_nanCount += nd4j::math::nd4j_isnan(current);
-                }
+#pragma omp critical
+                info->_zeroCount += nd4j::math::nd4j_abs(current) > 0.00001 ? 0 : 1;
+#pragma omp critical
+                info->_positiveCount += current > 0 ? 1 : 0;
+#pragma omp critical
+                info->_negativeCount += current < 0 ? 1 : 0;
+#pragma omp critical
+                info->_infCount += nd4j::math::nd4j_isinf(current);
+#pragma omp critical
+                info->_nanCount += nd4j::math::nd4j_isnan(current);
             }
             info->_meanValue /= input->lengthOf();
 
             info->_stdDevValue = 0; //math::nd4j_sqrt<double, double>(info->_stdDevValue / (input->lengthOf() - 1));
-//#pragma omp parallel for schedule (static)
+#pragma omp parallel for schedule (static)
             for (Nd4jLong e = 0; e < input->lengthOf(); e++) {
                 double current = input->e<double>(e);
-//#pragma simd (sumT:info)
+#pragma omp critical
                 info->_stdDevValue += (info->_meanValue - current) * (info->_meanValue - current); //info->_minValue;
             }
             info->_stdDevValue /= input->lengthOf();
