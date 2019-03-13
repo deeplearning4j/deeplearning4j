@@ -73,11 +73,12 @@ namespace functions {
                     return execScalar<OpType>(x, xEws, length, extraParams);
                 }
                 else {
-
                     X start = OpType::startingValue(x);
+                    uint xShapeInfoCast[MAX_RANK];
+                    bool canCastX = nd4j::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
 
                     for(Nd4jLong i = 0; i < length; ++i)                     
-                        start = OpType::update(start, OpType::op(x[shape::getIndexOffset(i, xShapeInfo, length)], extraParams), extraParams);                                                    
+                        start = OpType::update(start, OpType::op(x[shape::indexOffset(i, xShapeInfo, xShapeInfoCast, length, canCastX)], extraParams), extraParams);
                     
                     return OpType::postProcess(start, shape::length(xShapeInfo), extraParams);
                 }
