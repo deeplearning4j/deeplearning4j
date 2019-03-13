@@ -52,7 +52,7 @@ namespace nd4j {
     };
 
     FORCEINLINE bool operator==(DebugInfo const& first, DebugInfo const& second) {
-        nd4j::math::nd4j_abs(first._minValue - second._minValue) < 0.000001 &&
+        return nd4j::math::nd4j_abs(first._minValue - second._minValue) < 0.000001 &&
         nd4j::math::nd4j_abs(first._maxValue  -   second._maxValue) < 0.000001  &&
         nd4j::math::nd4j_abs(first._meanValue -  second._meanValue) < 0.000001  &&
         nd4j::math::nd4j_abs(first._stdDevValue - second._stdDevValue) < 0.000001  &&

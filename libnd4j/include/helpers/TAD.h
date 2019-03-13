@@ -751,7 +751,6 @@ namespace shape {
     INLINEDEF void TAD::createOffsets() {
         this->tadOffsets = new Nd4jLong[this->numTads];
         uint nT = this->numTads;
-        PRAGMA_OMP_PARALLEL_FOR_IF(nT > 128)
         for(int i = 0; i < nT; i++) {
             this->tadOffsets[i] = this->tadOffset(i);
         }
