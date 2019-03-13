@@ -37,6 +37,7 @@ import org.nd4j.linalg.api.ops.impl.reduce.NormalizeMoments;
 import org.nd4j.linalg.api.ops.impl.reduce.floating.AMean;
 import org.nd4j.linalg.api.ops.impl.reduce.same.ASum;
 import org.nd4j.linalg.api.ops.impl.reduce3.*;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.SoftMax;
 import org.nd4j.linalg.checkutil.NDArrayCreationUtil;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
@@ -1055,5 +1056,30 @@ public class ReductionOpValidation extends BaseOpValidation {
 
             sd.execBackwards(Collections.emptyMap());
         }
+    }
+
+    @Test
+    public void testDotProductAttention(){
+        final INDArray keys = Nd4j.rand(new int[]{10, 4, 3});
+        final INDArray values = Nd4j.rand(new int[]{10, 4, 3});
+        final INDArray query = Nd4j.rand(new int[]{10, 4, 1});
+
+        final INDArray exec = Nd4j.matmul(keys, query, true, false, false)
+                .divi(Math.sqrt(keys.size(1)));
+        Nd4j.exec(new SoftMax(exec, exec, 1));
+        final INDArray finalOut = Nd4j.matmul(values, exec).norm1();
+
+        SameDiff sd = SameDiff.create();
+        SDVariable sdQ = sd.var("q", query);
+        SDVariable sdK = sd.var("k", keys);
+        SDVariable sdV = sd.var("v", values);
+
+        SDVariable t = sd.nn.dotProductAttention(sdQ, sdK, sdV, true);
+        t.norm1("out");
+
+        String err = OpValidation.validate(new TestCase(sd)
+                    .expectedOutput("out", finalOut)
+                    .gradientCheck(true));
+        assertNull(err, err);
     }
 }

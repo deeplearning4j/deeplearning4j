@@ -1543,6 +1543,17 @@ public class DifferentialFunctionFactory {
         return new TensorMmul(sameDiff(), x, y, dimensions).outputVariable();
     }
 
+    public SDVariable dotProductAttention(SDVariable queries, SDVariable keys, SDVariable values, boolean scaled) {
+        return new DotProductAttention(sameDiff(), queries, keys, values, scaled, false).outputVariable();
+    }
+
+    public List<SDVariable> dotProductAttention(SDVariable queries, SDVariable keys, SDVariable values, boolean scaled, boolean withWeights) {
+        return Arrays.asList(new DotProductAttention(sameDiff(), queries, keys, values, scaled, withWeights).outputVariables());
+    }
+    public List<SDVariable> dotProductAttentionBp(SDVariable queries, SDVariable keys, SDVariable values, SDVariable gradient,  boolean scaled) {
+        return Arrays.asList(new DotProductAttentionBp(sameDiff(), queries, keys, values, gradient, scaled).outputVariables());
+    }
+
 
     public SDVariable softmaxDerivative(SDVariable functionInput, SDVariable wrt, Integer dimension) {
         validateDifferentialFunctionsameDiff(functionInput);
@@ -2231,5 +2242,4 @@ public class DifferentialFunctionFactory {
     public String toString() {
         return "DifferentialFunctionFactory{methodNames=" + methodNames + "}";
     }
-
 }

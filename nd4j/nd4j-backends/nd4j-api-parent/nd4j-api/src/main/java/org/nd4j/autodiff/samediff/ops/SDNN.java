@@ -3,6 +3,10 @@ package org.nd4j.autodiff.samediff.ops;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+
 /**
  * SameDiff general neural network operations<br>
  * Accessible via {@link SameDiff#math()}<br>
@@ -700,5 +704,70 @@ public class SDNN extends SDOps {
     public SDVariable layerNorm(String name, SDVariable input, SDVariable gain, int... dimensions) {
         SDVariable result = f().layerNorm(input, gain, dimensions);
         return updateVariableNameAndReference(result, name);
+    }
+
+    /**
+     * This operation performs dot product attention on the given timeseries input with the given queries
+     * @see #dotProductAttention(String, SDVariable, SDVariable, SDVariable, boolean, boolean)
+     */
+    public SDVariable dotProductAttention(SDVariable queries, SDVariable keys, SDVariable values, boolean scaled){
+        return dotProductAttention(null, queries, keys, values, scaled);
+    }
+
+    /**
+     * This operation performs dot product attention on the given timeseries input with the given queries
+     * @see #dotProductAttention(String, SDVariable, SDVariable, SDVariable, boolean, boolean)
+     */
+    public SDVariable dotProductAttention(String name, SDVariable queries, SDVariable keys, SDVariable values, boolean scaled){
+        final SDVariable result = f().dotProductAttention(queries, keys, values, scaled);
+        return updateVariableNameAndReference(result, name);
+    }
+
+    /**
+     * This operation performs dot product attention on the given timeseries input with the given queries
+     * @see #dotProductAttention(String, SDVariable, SDVariable, SDVariable, boolean, boolean)
+     */
+    public List<SDVariable> dotProductAttention(SDVariable queries, SDVariable keys, SDVariable values, boolean scaled, boolean withWeights){
+        return dotProductAttention(null, queries, keys, values, scaled, withWeights);
+    }
+
+
+    /**
+     * This operation performs dot product attention on the given timeseries input with the given queries
+     * out = sum(similarity(k_i, q) * v_i)
+     *
+     * similarity(k, q) = softmax(k * q) where x * q is the dot product of x and q
+     *
+     * Optionally with normalization step:
+     * similarity(k, q) = softmax(k * q / sqrt(size(q))
+     *
+     * See also "Attention is all you need" (https://arxiv.org/abs/1706.03762, p. 4, eq. 1)
+     *
+     * Note: This supports multiple queries at once, if only one query is available the queries vector still has to
+     * be 3D but can have queryCount = 1
+     *
+     * Note: keys and values usually is the same array. If you want to use it as the same array, simply pass it for
+     * both.
+     *
+     * @param queries input 3D array "queries" of shape [batchSize, featureKeys, queryCount]
+     * @param keys input 3D array "keys" of shape [batchSize, featureKeys, timesteps]
+     * @param values input 3D array "values" of shape [batchSize, featureValues, timesteps]
+     * @param scaled normalization, false -> do not apply normalization, true -> apply normalization
+     * @param withWeights return attention weights as well, false -> only one output, true -> two outputs
+     *
+     * Output Arrays:
+     * @return [ Attention result arrays of shape [batchSize, featureValues, queryCount],
+     *           (optionally) Attention Weights of shape [batchSize, timesteps, queryCount]]
+     */
+    public List<SDVariable> dotProductAttention(String name, SDVariable queries, SDVariable keys, SDVariable values, boolean scaled, boolean withWeights){
+        List<SDVariable> result = f().dotProductAttention(queries, keys, values, scaled, withWeights);
+        if(withWeights){
+            return Collections.singletonList(updateVariableNameAndReference(result.get(0), name));
+        }else{
+            return Arrays.asList(
+                    updateVariableNameAndReference(result.get(0), name),
+                    updateVariableNameAndReference(result.get(1), name+":weights")
+            );
+        }
     }
 }
