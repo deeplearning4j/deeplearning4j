@@ -1479,3 +1479,12 @@ TEST_F(PlaygroundTests, subarr_1) {
     subArr1.printShapeInfo("subArr1");
     subArr2.printShapeInfo("subArr2");
 }
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(PlaygroundTests, subarr_2) {
+
+    NDArray x('c', {10, 5}, nd4j::DataType::FLOAT32);
+    auto subArr1 = x.subarray({NDIndex::all(), NDIndex::point(2)});
+
+    subArr1->printShapeInfo("subArr1");
+}
