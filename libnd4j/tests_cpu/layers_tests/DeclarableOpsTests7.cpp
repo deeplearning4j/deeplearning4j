@@ -2459,6 +2459,38 @@ TEST_F(DeclarableOpsTests7, TestExtractImagePatches_SGO_010) {
     auto output = result->at(0);
     output->printBuffer("OutputValid");
     exp.printBuffer("ExpectValid");
+//    for (Nd4jLong e = 0; e < exp.lengthOf(); e++)
+//        if (exp.e<double>(e) != output->e<double>(e))
+//            printf("%lld ", e);
+//    printf("\n");
+    //result->at(1)->printBuffer("OUtput2");
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+
+    delete result;
+}
+TEST_F(DeclarableOpsTests7, TestExtractImagePatches_SGO_010_1) {
+    auto x = NDArrayFactory::create<double>('c', {1, 4, 4, 1});
+    x.linspace(1);
+
+//Images shape is  (1, 3, 3, 4)
+//[1, 1, 1, 1]
+//[1, 3, 2, 1]
+    auto exp = NDArrayFactory::create<double>('c', {1, 4, 4, 4}, {
+            1,  2,  5,  6,  2,  3,  6,  7,  3,  4,  7,  8,  4,  0,  8,  0,  5,  6,  9, 10,  6,  7, 10, 11,
+            7,  8, 11, 12,  8,  0, 12,  0,  9, 10, 13, 14, 10, 11, 14, 15, 11, 12, 15, 16, 12,  0, 16,  0,
+            13, 14,  0,  0, 14, 15,  0,  0, 15, 16,  0,  0, 16,  0,  0,  0});
+// ----------------------------------------------------------------
+    nd4j::ops::extract_image_patches op;
+    //x.printIndexedBuffer("Images");
+    //x.printBuffer("Images linear");
+    auto result = op.execute({&x}, {}, {2,2, 1,1, 1,1, 1}); // equiv TF ksizes=[1,2,2,1], strides=[1,1,1,1], rates=[1,1,1,1], padding="VALID"
+    ASSERT_EQ(result->status(), Status::OK());
+    auto output = result->at(0);
+    output->printBuffer("OutputSame");
+    exp.printBuffer("ExpectSame");
+    exp.printIndexedBuffer("Expect Same Formatted");
+    output->printIndexedBuffer("Output Same Formatted");
     for (Nd4jLong e = 0; e < exp.lengthOf(); e++)
         if (exp.e<double>(e) != output->e<double>(e))
             printf("%lld ", e);

@@ -46,7 +46,26 @@ namespace helpers {
             auto patch = listOfMatricies->at(batch);
             auto outMatrix = listOfOutputs->at(batch);
             //auto patchBorder = patch->sizeAt(0);
-            if (theSame) {
+            if (theSame) { // SAME case
+                for (Nd4jLong i = 0; i < outRowDim; i++) {
+                    for (Nd4jLong j = 0; j < outColDim; j++) {
+                        Nd4jLong pos = 0;
+                        //for (Nd4jLong k = 0; k < outputLastDim; k++) {
+                        auto rowStart = i * strideRow;
+                        auto colStart = j * strideCol;
+                        auto rowEnd = rowStart + sizeRow * rateRow;
+                        auto colEnd = colStart + sizeCol * rateCol;
+                        auto pixel = 0LL;
+                        for (auto row = rowStart; row < rowEnd; row += rateRow)
+                            for (auto col = colStart; col < colEnd; col += rateCol)
+                                for (auto pixel = 0; pixel < lastDim; pixel++) {
+                                    if (row < rowDim && col < colDim)
+                                    outMatrix->p<T>(i, j, pos, patch->e<T>(row, col, pixel));
+                                    pos++;
+                                }
+                        //}
+                    }
+                }
 
             } else { // VALID case
                 for (Nd4jLong i = 0; i < outRowDim; i++) {
