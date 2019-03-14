@@ -57,7 +57,7 @@ public class RnnLossLayer extends FeedForwardLayer {
 
     private RnnLossLayer(Builder builder) {
         super(builder);
-        this.lossFn = builder.lossFn;
+        this.setLossFn(builder.lossFn);
     }
 
     @Override
@@ -125,7 +125,7 @@ public class RnnLossLayer extends FeedForwardLayer {
          * @param lossFunction Loss function for the loss layer
          */
         public Builder(ILossFunction lossFunction) {
-            this.lossFn = lossFunction;
+            this.setLossFn(lossFunction);
         }
 
         @Override
@@ -138,6 +138,18 @@ public class RnnLossLayer extends FeedForwardLayer {
         @SuppressWarnings("unchecked")
         public Builder nOut(int nOut) {
             throw new UnsupportedOperationException("Ths layer has no parameters, thus nIn will always equal nOut.");
+        }
+
+        @Override
+        public void setNIn(int nIn){
+            throw new UnsupportedOperationException(
+                    "This layer has no parameters, thus nIn will always equal nOut.");
+        }
+
+        @Override
+        public void setNOut(int nOut){
+            throw new UnsupportedOperationException(
+                    "This layer has no parameters, thus nIn will always equal nOut.");
         }
 
         @Override

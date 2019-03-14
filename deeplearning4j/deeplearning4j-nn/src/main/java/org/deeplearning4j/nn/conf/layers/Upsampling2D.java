@@ -24,6 +24,7 @@ import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
 import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.deeplearning4j.nn.conf.serde.legacyformat.LegacyIntArrayDeserializer;
 import org.deeplearning4j.optimize.api.TrainingListener;
+import org.deeplearning4j.util.ValidationUtils;
 import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.shade.jackson.databind.annotation.JsonDeserialize;
@@ -145,7 +146,7 @@ public class Upsampling2D extends BaseUpsamplingLayer {
          */
         public Builder size(int size) {
 
-            this.size = new int[] {size, size};
+            this.setSize(new int[] {size, size});
             return this;
         }
 
@@ -156,9 +157,7 @@ public class Upsampling2D extends BaseUpsamplingLayer {
          * @param size upsampling size in height and width dimensions
          */
         public Builder size(int[] size) {
-            Preconditions.checkArgument(size.length == 2);
-
-            this.size = size;
+            this.setSize(size);
             return this;
         }
 
@@ -169,8 +168,8 @@ public class Upsampling2D extends BaseUpsamplingLayer {
         }
 
         @Override
-        public void setSize(int[] size) {
-            size(size);
+        public void setSize(int... size) {
+            this.size = ValidationUtils.validate2NonNegative(size, false, "size");
         }
     }
 

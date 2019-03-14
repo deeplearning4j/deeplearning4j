@@ -146,7 +146,7 @@ public class ActivationLayer extends NoParamLayer {
          * @param activationFunction Activation function for the layer
          */
         public Builder activation(IActivation activationFunction) {
-            this.activationFn = activationFunction;
+            this.setActivationFn(activationFunction);
             return this;
         }
 

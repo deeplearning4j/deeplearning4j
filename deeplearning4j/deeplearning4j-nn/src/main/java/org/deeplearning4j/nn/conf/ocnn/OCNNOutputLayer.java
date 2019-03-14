@@ -191,7 +191,7 @@ public class OCNNOutputLayer extends BaseOutputLayer {
          * @param configureR true if we should use the initial {@link #initialRValue}
          */
         public Builder configureR(boolean configureR) {
-            this.configureR = configureR;
+            this.setConfigureR(configureR);
             return this;
         }
 
@@ -203,7 +203,7 @@ public class OCNNOutputLayer extends BaseOutputLayer {
          * @param initialRValue the int
          */
         public Builder initialRValue(double initialRValue) {
-            this.initialRValue = initialRValue;
+            this.setInitialRValue(initialRValue);
             return this;
         }
 
@@ -215,7 +215,7 @@ public class OCNNOutputLayer extends BaseOutputLayer {
          * update
          */
         public Builder windowSize(int windowSize) {
-            this.windowSize = windowSize;
+            this.setWindowSize(windowSize);
             return this;
         }
 
@@ -226,7 +226,7 @@ public class OCNNOutputLayer extends BaseOutputLayer {
          * @param nu the nu for ocnn
          */
         public Builder nu(double nu) {
-            this.nu = nu;
+            this.setNu(nu);
             return this;
         }
 
@@ -236,7 +236,7 @@ public class OCNNOutputLayer extends BaseOutputLayer {
          * @param activation the activation function to sue
          */
         public Builder activation(IActivation activation) {
-            this.activation = activation;
+            this.setActivation(activation);
             return this;
         }
 
@@ -247,7 +247,7 @@ public class OCNNOutputLayer extends BaseOutputLayer {
          * @param hiddenLayerSize the hidden layer size to use with ocnn
          */
         public Builder hiddenLayerSize(int hiddenLayerSize) {
-            this.hiddenLayerSize = hiddenLayerSize;
+            this.setHiddenLayerSize(hiddenLayerSize);
             return this;
         }
 
@@ -255,6 +255,12 @@ public class OCNNOutputLayer extends BaseOutputLayer {
         public Builder nOut(int nOut) {
             throw new UnsupportedOperationException(
                             "Unable to specify number of outputs with ocnn. Outputs are fixed to 1.");
+        }
+
+        @Override
+        public void setNOut(int nOut){
+            throw new UnsupportedOperationException(
+                    "Unable to specify number of outputs with ocnn. Outputs are fixed to 1.");
         }
 
         @Override

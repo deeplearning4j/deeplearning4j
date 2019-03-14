@@ -55,28 +55,33 @@ function renderModelPage(firstLoad) {
 }
 
 function executeModelUpdate(){
-    if(selectedVertex >= 0) {
-        $.ajax({
-            url: "/train/model/data/" + selectedVertex,
-            async: true,
-            error: function (query, status, error) {
-                console.log("Error getting data: " + error);
-            },
-            success: function (data) {
-                lastUpdateSessionModel = currSession;
-                lastUpdateTimeModel = data["updateTimestamp"];
-                setZeroState(false);
-                renderLayerTable(data);
-                renderMeanMagChart(data);
-                renderActivationsChart(data);
-                renderLearningRateChart(data);
-                renderParametersHistogram(data);
-                renderUpdatesHistogram(data);
-            }
-        });
-    } else {
-        setZeroState(true);
-    }
+    getSessionSettings(function(){
+        if(selectedVertex >= 0) {
+            var modelDataUrl = multiSession ? "/train/" + currSession + "/model/data/" + selectedVertex
+            : "/train/model/data/" + selectedVertex;
+            $.ajax({
+                url: modelDataUrl,
+                async: true,
+                error: function (query, status, error) {
+                    console.log("Error getting data: " + error);
+                },
+                success: function (data) {
+                    lastUpdateSessionModel = currSession;
+                    lastUpdateTimeModel = data["updateTimestamp"];
+                    setZeroState(false);
+                    renderLayerTable(data);
+                    renderMeanMagChart(data);
+                    renderActivationsChart(data);
+                    renderLearningRateChart(data);
+                    renderParametersHistogram(data);
+                    renderUpdatesHistogram(data);
+                }
+            });
+        } else {
+            setZeroState(true);
+        }
+    });
+
 }
 
 /* ---------- Zero State ---------- */
