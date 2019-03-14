@@ -280,9 +280,10 @@ static void getMKLDNNMemoryDescLrn(const NDArray* src, const NDArray* diff_src, 
                     }
                     T aSum = alpha * quadSum;
                     T tXe = iX[e];
-                    scaleBuffer[shift + e] = one - (tXe * tXe * 2 * tbeta) / (tbias + aSum);
+                    //scaleBuffer[shift + e] = (2. * alpha * tbeta) * tXe * tXe / math::nd4j_pow<T,T,T>(tbias + aSum, 1 + beta);
                     T dividor = nd4j::math::nd4j_pow<T, T, T>(tbias + aSum, tbeta);
                     outputBuffer[shift + e] = tXe / dividor;
+                    scaleBuffer[shift + e] = outputBuffer[shift + e] * outputBuffer[shift + e] * (2. * alpha * tbeta) *  math::nd4j_pow<T,T,T>(tbias + aSum, tbeta - 1);
                 }
             }
         } else {
