@@ -2132,8 +2132,8 @@ public class Nd4j {
         Preconditions.checkArgument(x.isVectorOrScalar(), "X must be a vector");
         Preconditions.checkArgument(y.isVectorOrScalar(), "Y must be a vector");
 
-        INDArray xOut = Nd4j.createUninitialized(y.length(), x.length());
-        INDArray yOut = Nd4j.createUninitialized(y.length(), x.length());
+        INDArray xOut = Nd4j.createUninitialized(x.dataType(), y.length(), x.length());
+        INDArray yOut = Nd4j.createUninitialized(y.dataType(), y.length(), x.length());
 
         CustomOp op = DynamicCustomOp.builder("meshgrid")
                 .addInputs(x, y)

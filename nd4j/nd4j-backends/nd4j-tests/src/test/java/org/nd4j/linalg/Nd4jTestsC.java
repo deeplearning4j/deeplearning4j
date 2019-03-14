@@ -6322,6 +6322,10 @@ public class Nd4jTestsC extends BaseNd4jTest {
         assertEquals(exp, arrayX);
     }
 
+    @Test
+    public void testBugMeshgridOnDoubleArray() {
+        Nd4j.meshgrid(Nd4j.create(new double[] { 1, 2, 3 }), Nd4j.create(new double[] { 4, 5, 6 }));
+    }
 
     @Test
     public void testMeshGrid(){
@@ -7066,6 +7070,17 @@ public class Nd4jTestsC extends BaseNd4jTest {
         Nd4j.scatterUpdate(ScatterUpdate.UpdateOp.ADD, array, indices, updates, 0);
 
         assertEquals(exp, array);
+    }
+
+    @Test
+    public void testStatistics_1() {
+        val array = Nd4j.createFromArray(new float[] {-1.0f, 0.0f, 1.0f});
+        val stats = Nd4j.getExecutioner().inspectArray(array);
+
+        assertEquals(1, stats.getCountPositive());
+        assertEquals(1, stats.getCountNegative());
+        assertEquals(1, stats.getCountZero());
+        assertEquals(0.0f, stats.getMeanValue(), 1e-5);
     }
 
     @Test

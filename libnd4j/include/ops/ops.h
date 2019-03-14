@@ -2464,7 +2464,8 @@ namespace simdOps {
         }
 
         op_def static Z op(X d1, Z *extraParams) {
-            return nd4j::math::nd4j_pow<X, X, Z>(d1, static_cast<X>(2)) * nd4j::math::nd4j_log<X, Z>(nd4j::math::nd4j_pow<X, X, Z>(d1, static_cast<X>(2.0f)));
+            auto p = d1 * d1;
+            return p * nd4j::math::nd4j_log<X, Z>(p);
         }
 
         op_def static Z postProcess(X reduction, Nd4jLong n, Z *extraParams) {
