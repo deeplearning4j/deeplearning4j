@@ -133,7 +133,7 @@ public abstract class FeedForwardLayer extends BaseLayer {
          * @param nIn Number of inputs for the layer
          */
         public T nIn(int nIn) {
-            this.nIn = nIn;
+            this.setNIn(nIn);
             return (T) this;
         }
 
@@ -145,7 +145,7 @@ public abstract class FeedForwardLayer extends BaseLayer {
          */
         public T nIn(long nIn) {
             // FIXME: int cast
-            this.nIn = (int) nIn;
+            this.setNIn((int) nIn);
             return (T) this;
         }
 
@@ -156,7 +156,7 @@ public abstract class FeedForwardLayer extends BaseLayer {
          * @param nOut Number of outputs / layer size
          */
         public T nOut(int nOut) {
-            this.nOut = nOut;
+            this.setNOut(nOut);
             return (T) this;
         }
 
@@ -167,7 +167,7 @@ public abstract class FeedForwardLayer extends BaseLayer {
          * @param nOut Number of outputs / layer size
          */
         public T nOut(long nOut) {
-            this.nOut = (int) nOut;
+            this.setNOut((int) nOut);
             return (T) this;
         }
 

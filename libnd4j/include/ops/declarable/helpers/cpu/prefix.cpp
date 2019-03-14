@@ -103,7 +103,6 @@ namespace nd4j {
                 auto zTads = z->allTensorsAlongDimension(dims);
                 auto t = xTads->size();
 
-// #pragma omp parallel for schedule(guided)
                 for (int e = 0; e < t; e++) {
                     auto tx = xTads->at(e);
                     auto tz = zTads->at(e);

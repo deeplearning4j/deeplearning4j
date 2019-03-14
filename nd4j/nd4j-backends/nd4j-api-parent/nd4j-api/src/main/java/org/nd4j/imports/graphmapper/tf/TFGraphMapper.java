@@ -34,6 +34,7 @@ import org.nd4j.imports.descriptors.properties.PropertyMapping;
 import org.nd4j.imports.descriptors.tensorflow.TensorflowDescriptorParser;
 import org.nd4j.imports.graphmapper.BaseGraphMapper;
 import org.nd4j.imports.graphmapper.ImportState;
+import org.nd4j.imports.graphmapper.OpImportFilter;
 import org.nd4j.imports.graphmapper.OpImportOverride;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.controlflow.IfImportState;
@@ -480,7 +481,9 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
     }
 
     @Override
-    public void mapNodeType(NodeDef tfNode, ImportState<GraphDef,NodeDef> importState, OpImportOverride<GraphDef, NodeDef, AttrValue> importOverride) {
+    public void mapNodeType(NodeDef tfNode, ImportState<GraphDef,NodeDef> importState,
+                            OpImportOverride<GraphDef, NodeDef, AttrValue> importOverride,
+                            OpImportFilter<GraphDef, NodeDef, AttrValue> opFilter) {
         if (shouldSkip(tfNode) || alreadySeen(tfNode) || isVariableNode(tfNode)) {
             return;
         }
@@ -530,19 +533,38 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
                     SDVariable v = diff.getVariable(name);
                     //At this point, all placeholders, variables and constants should have been imported
                     //This: this should be an array type variable (i.e., activations)
+                    //Edge case is we've skipped op X, and this input is missing for (X -> this)
                     if (v == null) {
-                        //First: try to work out the datatype of this input node
-                        //Given we haven't already imported it at this point, it must be the 2nd or later output of an op
+                        //Check 'op skip' edge case
+                        boolean shouldSkip = false;
+                        if(opFilter != null){
+                            //Get the input node
+                            List<NodeDef> l = importState.getGraph().getNodeList();
+                            NodeDef inputNodeDef = null;
+                            for(NodeDef nd : l){
+                                if(inName.equals(nd.getName())){
+                                    inputNodeDef = nd;
+                                    break;
+                                }
+                            }
+                            Preconditions.checkState(inputNodeDef != null, "Could not find node with name \"%s\"", inName);
+                            shouldSkip = true;
+                        }
 
-                        String inputOpName = varNameToOpName(inName);
-                        NodeDef inputOp = importState.getVariables().get(inputOpName);
-                        int outputIdx = varNameToOpOutputNumber(name);
-                        org.nd4j.linalg.api.buffer.DataType dt = dataTypeForTensor(inputOp, outputIdx);
-                        if (dt == org.nd4j.linalg.api.buffer.DataType.UNKNOWN)
-                            dt = null;    //Infer it later
+                        if(!shouldSkip) {
+                            //First: try to work out the datatype of this input node
+                            //Given we haven't already imported it at this point, it must be the 2nd or later output of an op
+
+                            String inputOpName = varNameToOpName(inName);
+                            NodeDef inputOp = importState.getVariables().get(inputOpName);
+                            int outputIdx = varNameToOpOutputNumber(name);
+                            org.nd4j.linalg.api.buffer.DataType dt = dataTypeForTensor(inputOp, outputIdx);
+                            if (dt == org.nd4j.linalg.api.buffer.DataType.UNKNOWN)
+                                dt = null;    //Infer it later
 
 
-                        v = diff.var(name, VariableType.ARRAY, null, dt, (long[]) null);
+                            v = diff.var(name, VariableType.ARRAY, null, dt, (long[]) null);
+                        }
                     }
 
                     if(controlDep){

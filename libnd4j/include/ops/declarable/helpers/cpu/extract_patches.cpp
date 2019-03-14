@@ -48,6 +48,7 @@ namespace helpers {
         if (sizeCol < 3 && rateCol == 1)
             colCast = 0;
         //Nd4jLong outputLastDim = output->sizeAt(3);
+       PRAGMA_OMP_PARALLEL_FOR
         for (Nd4jLong batch = 0; batch < batchCount; batch++) {
             auto patch = listOfMatricies->at(batch);
             auto outMatrix = listOfOutputs->at(batch);

@@ -128,7 +128,7 @@ public class DenseLayer extends FeedForwardLayer {
          * @param hasBias If true: include bias parameters in this model
          */
         public Builder hasBias(boolean hasBias) {
-            this.hasBias = hasBias;
+            this.setHasBias(hasBias);
             return this;
         }
 

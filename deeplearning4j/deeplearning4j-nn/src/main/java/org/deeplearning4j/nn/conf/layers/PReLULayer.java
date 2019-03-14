@@ -142,7 +142,7 @@ public class PReLULayer extends BaseLayer {
          * @param shape shape of input data
          */
         public Builder inputShape(long... shape) {
-            this.inputShape = shape;
+            this.setInputShape(shape);
             return this;
         }
 
@@ -156,7 +156,7 @@ public class PReLULayer extends BaseLayer {
          * @return Builder
          */
         public Builder sharedAxes(long... axes) {
-            this.sharedAxes = axes;
+            this.setSharedAxes(axes);
             return this;
         }
 

@@ -19,6 +19,7 @@ package org.deeplearning4j.ui.play.misc;
 import play.libs.F;
 import play.mvc.Result;
 
+import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -34,6 +35,10 @@ public class FunctionUtil {
     }
 
     public static <T> F.Function<T, Result> function(Function<T, Result> function) {
+        return function::apply;
+    }
+
+    public static <T,U> F.Function2<T, U, Result> biFunction(BiFunction<T, U, Result> function) {
         return function::apply;
     }
 

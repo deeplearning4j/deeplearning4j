@@ -84,8 +84,8 @@ void HHcolPivQR::_evalData() {
 
         if(k != biggestColIndex) {
         
-            auto temp1 = _qr.subarray({{}, {k,k+1}});
-            auto temp2 = _qr.subarray({{}, {biggestColIndex, biggestColIndex+1}});
+            auto temp1 = new NDArray(_qr({0,0, k,k+1}, true));
+            auto temp2 = new NDArray(_qr({0,0, biggestColIndex,biggestColIndex+1}, true));
             auto temp3 = *temp1;
             temp1->assign(temp2);
             temp2->assign(temp3);
@@ -108,7 +108,7 @@ void HHcolPivQR::_evalData() {
         }
         
         T normX;
-        NDArray* qrBlock = _qr.subarray({{k, rows}, {k,k+1}});
+        NDArray* qrBlock = new NDArray(_qr({k,rows, k,k+1}, true));
         T c;
         Householder<T>::evalHHmatrixDataI(*qrBlock, c, normX);
         _coeffs.p<T>(k, c);
@@ -121,8 +121,8 @@ void HHcolPivQR::_evalData() {
             maxPivot = max;
         
         if(k < rows && (k+1) < cols) {
-            qrBlock = _qr.subarray({{k, rows},{k+1, cols}});
-            auto tail = _qr.subarray({{k+1, rows}, {k, k+1}});
+            qrBlock   = new NDArray(_qr({k,  rows,  k+1,cols}, true));
+            auto tail = new NDArray(_qr({k+1,rows,  k, k+1},   true));
             Householder<T>::mulLeft(*qrBlock, *tail, _coeffs.e<T>(k));
             delete qrBlock;
             delete tail;
@@ -153,8 +153,8 @@ void HHcolPivQR::_evalData() {
     for(int k = 0; k < _diagSize; ++k) {
 
         int idx = transp.e<int>(k);
-        auto temp1 = _permut.subarray({{}, {k, k+1}});
-        auto temp2 = _permut.subarray({{}, {idx, idx+1}});
+        auto temp1 = new NDArray(_permut({0,0, k, k+1},    true));
+        auto temp2 = new NDArray(_permut({0,0, idx,idx+1}, true));
         auto  temp3 = *temp1;
         temp1->assign(temp2);
         temp2->assign(temp3);

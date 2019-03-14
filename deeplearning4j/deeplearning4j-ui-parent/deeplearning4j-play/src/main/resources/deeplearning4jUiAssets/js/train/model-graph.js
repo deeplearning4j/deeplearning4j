@@ -1,13 +1,16 @@
 function renderModelGraph(){
-    $.ajax({
-        url: "/train/model/graph",
-        async: true,
-        error: function (query, status, error) {
-            console.log("Error getting data: " + error);
-        },
-        success: function (data) {
-            createGraph(data);
-        }
+    getSessionSettings(function(){
+        var modelGraphUrl = multiSession ? "/train/" + currSession + "/model/graph" : "/train/model/graph";
+        $.ajax({
+            url: modelGraphUrl,
+            async: true,
+            error: function (query, status, error) {
+                console.log("Error getting data: " + error);
+            },
+            success: function (data) {
+                createGraph(data);
+            }
+        });
     });
 }
 

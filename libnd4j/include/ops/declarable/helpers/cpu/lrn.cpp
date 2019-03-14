@@ -138,7 +138,7 @@ static void getMKLDNNMemoryDescLrn(const NDArray* src, const NDArray* diff_src, 
 
         if (output->ews() == 1 && input->ews() == 1 && input->ordering() == 'c' && output->ordering() == 'c') {
 
-#pragma omp parallel for simd schedule(guided)
+            PRAGMA_OMP_PARALLEL_FOR_SIMD
             for (int c = 0; c < chunkCount; c++) {
                 const int shift = c * lastDim;
                 auto iX = inputBuffer + shift;
@@ -176,14 +176,15 @@ static void getMKLDNNMemoryDescLrn(const NDArray* src, const NDArray* diff_src, 
             }
         } else {
 
-#pragma omp parallel for schedule(guided)
+            PRAGMA_OMP_PARALLEL_FOR_COLLAPSE(2)
             for (int c = 0; c < chunkCount; c++) {
                 for (int e = 0; e < lastDim; e++) {
                     int begin = nd4j::math::nd4j_max(0, e - depth);
                     int end = nd4j::math::nd4j_min(depth + e + 1, lastDim);
                     T quadSum = 0;
                     int shift = c * lastDim;
-#pragma omp simd reduction(sumT:quadSum)
+
+                    PRAGMA_OMP_SIMD_SUM(quadSum)
                     for (int pos = begin; pos < end; ++pos) {
                         T val = inputBuffer[shape::getIndexOffset(shift + pos, input->getShapeInfo(), input->lengthOf())];
                         quadSum += val * val;
@@ -265,7 +266,7 @@ static void getMKLDNNMemoryDescLrn(const NDArray* src, const NDArray* diff_src, 
 
         if (output->ews() == 1 && input->ews() == 1 && input->ordering() == 'c' && output->ordering() == 'c') {
 
-#pragma omp parallel for simd schedule(static, 16) collapse(2)
+            PRAGMA_OMP_PARALLEL_FOR_SIMD_COLLAPSE(2)
             for (int c = 0; c < chunkCount; c++) {
                 for (int e = 0; e < lastDim; e++) {
                     int begin = nd4j::math::nd4j_max<int>(0, e - depth);
@@ -287,7 +288,7 @@ static void getMKLDNNMemoryDescLrn(const NDArray* src, const NDArray* diff_src, 
                 }
             }
         } else {
-#pragma omp parallel for schedule(guided)
+            PRAGMA_OMP_PARALLEL_FOR_COLLAPSE(2)
             for (int c = 0; c < chunkCount; c++) {
                 for (int e = 0; e < lastDim; e++) {
                     int begin = nd4j::math::nd4j_max(0, e - depth);
@@ -295,7 +296,7 @@ static void getMKLDNNMemoryDescLrn(const NDArray* src, const NDArray* diff_src, 
                     T quadSum = 0;
                     int shift = c * lastDim;
 
-#pragma omp simd reduction(sumT:quadSum)
+                    PRAGMA_OMP_SIMD_SUM(quadSum)
                     for (int pos = begin; pos < end; ++pos) {
                         T val = inputBuffer[shape::getIndexOffset(shift + pos, input->getShapeInfo(), totalLength)]; //listInput->at(c)->t<T>(pos);
                         quadSum += val * val;
@@ -399,30 +400,24 @@ static void getMKLDNNMemoryDescLrn(const NDArray* src, const NDArray* diff_src, 
         std::unique_ptr<NDArray> sumPart(activitySqr->dup('c'));
 
         input->applyPairwiseTransform(pairwise::Multiply, input, activitySqr.get(), nullptr);
-#pragma omp parallel for if (halfDepth + 1 > Environment::getInstance()->elementwiseThreshold()) schedule(static)         
+
+        PRAGMA_OMP_PARALLEL_FOR_IF(halfDepth + 1 > Environment::getInstance()->tadThreshold())
         for (int i = 1; i < halfDepth + 1; i++) {
-            IndicesList indA({NDIndex::all(), NDIndex::interval(i, channel), NDIndex::all(), NDIndex::all()});
-            IndicesList indB({NDIndex::all(), NDIndex::interval(0, channel - i), NDIndex::all(), NDIndex::all()});
+            std::vector<Nd4jLong> indA = {0,0, i,channel, 0,0, 0,0};
+            std::vector<Nd4jLong> indB = {0,0, 0,channel-i, 0,0, 0,0};
 
-            std::unique_ptr<NDArray> tmp(sumPart->subarray(indA));
-            std::unique_ptr<NDArray> addVal(activitySqr->subarray(indB));
+            NDArray tmp = (*sumPart)(indA, true);
+            NDArray addVal = (*activitySqr)(indB, true);
 
-            tmp->applyPairwiseTransform(pairwise::Add, *addVal.get(), nullptr);
+            tmp.applyPairwiseTransform(pairwise::Add, &addVal, nullptr);
 
 
-            std::unique_ptr<NDArray> tmp2(sumPart->subarray(indB));
-            std::unique_ptr<NDArray> addVal2(activitySqr->subarray(indA));
+            NDArray tmp2 = (*sumPart)(indB, true);
+            NDArray addVal2 = (*activitySqr)(indA, true);
 
-            tmp2->applyPairwiseTransform(pairwise::Add, *addVal2.get(), nullptr);
+            tmp2.applyPairwiseTransform(pairwise::Add, &addVal2, nullptr);
         }
 
-        /*
-         *  // taken from java
-            unitScale = sumPart.mul(alpha).addi(k).leverageTo(ComputationGraph.workspaceExternal);
-            // y = x * unitScale**-beta
-            scale = Transforms.pow(unitScale, -beta).leverageTo(ComputationGraph.workspaceExternal);
-            activations = input.mul(scale).leverageTo(ComputationGraph.workspaceExternal);
-         */
         if (unitScale != nullptr && scale != nullptr) {
             sumPart->applyScalar(scalar::Multiply, alpha, unitScale, nullptr);
             unitScale->applyScalar(scalar::Add, bias);

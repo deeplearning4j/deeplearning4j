@@ -25,34 +25,42 @@ function renderSystemPage(firstLoad) {
 }
 
 function executeSystemUpdate(){
-    $.ajax({
-        url: "/train/system/data",
-        async: true,
-        error: function (query, status, error) {
-            console.log("Error getting data: " + error);
-        },
-        success: function (data) {
-            lastUpdateSessionSystem = currSession;
-            lastUpdateTimeSystem = data["updateTimestamp"];
-            renderSystemMemoryChart(data);
-            renderSystemInformation(data);
-            renderGPULayout(data);
-           renderGpuMemoryChart(data);
-        }
+    getSessionSettings(function(){
+        var systemDataUrl = multiSession ? "/train/" + currSession + "/system/data" : "/train/system/data";
+        $.ajax({
+            url: systemDataUrl,
+            async: true,
+            error: function (query, status, error) {
+                console.log("Error getting data: " + error);
+            },
+            success: function (data) {
+                lastUpdateSessionSystem = currSession;
+                lastUpdateTimeSystem = data["updateTimestamp"];
+                renderSystemMemoryChart(data);
+                renderSystemInformation(data);
+                renderGPULayout(data);
+               renderGpuMemoryChart(data);
+            }
+        });
     });
+
 }
 
 function renderTabs() {
-    $.ajax({
-        url: "/train/system/data",
-        async: true,
-        error: function (query, status, error) {
-            console.log("Error getting data: " + error);
-        },
-        success: function (data) {
-            renderMultipleTabs(data);
-        }
+    getSessionSettings(function(){
+        var systemDataUrl = multiSession ? "/train/" + currSession + "/system/data" : "/train/system/data";
+        $.ajax({
+            url: systemDataUrl,
+            async: true,
+            error: function (query, status, error) {
+                console.log("Error getting data: " + error);
+            },
+            success: function (data) {
+                renderMultipleTabs(data);
+            }
+        });
     });
+
 }
 
 /* ---------- System Memory Utilization Chart ---------- */
@@ -337,7 +345,7 @@ function renderMultipleTabs(data) {
 
     /* Generate Tabs Depending on nMachines.length*/
     for (i = 0; i < nMachines.length; i++)  {
-        $('#systemTab').append("<li id=\"" + nMachines[i] + "\"><a href=\"javascript:void();\">Machine " + nMachines[i] + "</a></li>");
+        $('#systemTab').append("<li id=\"" + nMachines[i] + "\"><a href=\"javascript:void(0);\">Machine " + nMachines[i] + "</a></li>");
     }
 }
 

@@ -117,14 +117,12 @@ void Householder<T>::evalHHmatrixDataI(const NDArray& x, T& coeff, T& normX) {
 	evalHHmatrixData(x, tail, coeff, normX);
 
 	if(x.isRowVector()) {
-		auto temp = x.subarray({{}, {num, x.sizeAt(1)}});
-		temp->assign(tail);
-		delete temp;
+		auto temp = x({0,0,  num, x.sizeAt(1)}, true);
+		temp.assign(tail);		
 	}
 	else {		
-		auto temp = x.subarray({{num, x.sizeAt(0)}, {}});
-		temp->assign(tail);
-		delete temp;
+		auto temp = x({num,x.sizeAt(0), 0,0}, true);
+		temp.assign(tail);
 	}
 }
 
@@ -140,7 +138,7 @@ void Householder<T>::mulLeft(NDArray& matrix, const NDArray& tail, const T coeff
   	
   	else if(coeff != (T)0.f) {
 
-  		auto bottomPart =  matrix.subarray({{1, matrix.sizeAt(0)}, {}});
+  		auto bottomPart = new NDArray(matrix({1,matrix.sizeAt(0), 0,0}, true));
 		auto bottomPartCopy = *bottomPart;
 
 		if(tail.isColumnVector()) {
@@ -148,26 +146,24 @@ void Householder<T>::mulLeft(NDArray& matrix, const NDArray& tail, const T coeff
 			auto column = tail;
 			auto row = tail.transpose();
     		auto resultingRow = mmul(*row, bottomPartCopy);
-    		auto fistRow = matrix.subarray({{0,1}, {}});
-    		resultingRow += *fistRow;        	
-    		*fistRow -= resultingRow * coeff;	
+    		auto fistRow = matrix({0,1, 0,0}, true);
+    		resultingRow += fistRow;        	
+    		fistRow -= resultingRow * coeff;	
     		*bottomPart -= mmul(column, resultingRow) * coeff;    		
 
 			delete row;
-			delete fistRow;
 		}
 		else {
 			
 			auto row = tail;
 			auto column = tail.transpose();
     		auto resultingRow = mmul(row, bottomPartCopy);
-    		auto fistRow = matrix.subarray({{0,1}, {}});
-    		resultingRow += *fistRow;        	
-    		*fistRow -= resultingRow * coeff;
+    		auto fistRow = matrix({0,1, 0,0}, true);
+    		resultingRow += fistRow;
+    		fistRow -= resultingRow * coeff;
     		*bottomPart -= mmul(*column, resultingRow) * coeff;    	
 
 			delete column;
-			delete fistRow;
 		}	    	    	
 		delete bottomPart;
 	}
@@ -186,9 +182,9 @@ void Householder<T>::mulRight(NDArray& matrix, const NDArray& tail, const T coef
   	
   	else if(coeff != (T)0.f) {
 
-  		auto rightPart =  matrix.subarray({{}, {1, matrix.sizeAt(1)}});
+  		auto rightPart = new NDArray(matrix({0,0, 1,matrix.sizeAt(1)}, true));
 		auto rightPartCopy = *rightPart;
-		auto fistCol = matrix.subarray({{},{0,1}});
+		auto fistCol = new NDArray(matrix({0,0, 0,1}, true));
 
   		if(tail.isColumnVector()) {
 
