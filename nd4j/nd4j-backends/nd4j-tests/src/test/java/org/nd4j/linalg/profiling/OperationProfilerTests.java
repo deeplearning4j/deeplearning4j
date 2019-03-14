@@ -35,8 +35,7 @@ import org.nd4j.linalg.profiler.ProfilerConfig;
 
 import java.util.Arrays;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 /**
  * @author raver119@gmail.com
@@ -46,7 +45,6 @@ public class OperationProfilerTests {
 
     @Before
     public void setUp() {
-        Nd4j.getExecutioner().setProfilingConfig(ProfilerConfig.builder().build());
         Nd4j.getExecutioner().setProfilingMode(OpExecutioner.ProfilingMode.OPERATIONS);
         OpProfiler.getInstance().reset();
     }
@@ -402,5 +400,19 @@ public class OperationProfilerTests {
         }
     }
 
+    @Test
+    public void testExtendedStatistics() {
+        Nd4j.getExecutioner().setProfilingConfig(ProfilerConfig.builder().nativeStatistics(true).build());
+
+        INDArray array = Nd4j.ones(10);
+        val stats = OpProfiler.getInstance().getStatistics();
+
+        assertEquals(10, stats.getCountPositive());
+        assertEquals(0, stats.getCountNegative());
+        assertEquals(0, stats.getCountZero());
+        assertEquals(0, stats.getCountInf());
+        assertEquals(0, stats.getCountNaN());
+        assertEquals(1.0f, stats.getMeanValue(), 1e-5);
+    }
 
 }

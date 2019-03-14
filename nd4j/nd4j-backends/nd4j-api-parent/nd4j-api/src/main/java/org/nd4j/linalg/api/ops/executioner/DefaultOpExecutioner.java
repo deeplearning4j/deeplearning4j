@@ -248,7 +248,36 @@ public class DefaultOpExecutioner implements OpExecutioner {
     @Deprecated
     @Override
     public void setProfilingMode(ProfilingMode mode) {
+
         profilingMode = mode;
+        ProfilerConfig config = null;
+        switch (profilingMode) {
+            case ALL:
+                config = ProfilerConfig.builder().checkWorkspaces(true).checkElapsedTime(true).stackTrace(true).build();
+                break;
+            case METHODS:
+                config = ProfilerConfig.builder().stackTrace(true).build();
+                break;
+            case OPERATIONS:
+                config = ProfilerConfig.builder().stackTrace(true).checkElapsedTime(true).build();
+                break;
+            case SCOPE_PANIC:
+                config = ProfilerConfig.builder().checkWorkspaces(true).build();
+                break;
+            case ANY_PANIC:
+                config = ProfilerConfig.builder().checkForINF(true).checkForNAN(true).build();
+                break;
+            case INF_PANIC:
+                config = ProfilerConfig.builder().checkForINF(true).build();
+                break;
+            case NAN_PANIC:
+                config = ProfilerConfig.builder().checkForNAN(true).build();
+                break;
+            default:
+                config = ProfilerConfig.builder().build();
+                break;
+        }
+        OpProfiler.getInstance().setConfig(config);
     }
 
     @Override
@@ -445,6 +474,9 @@ public class DefaultOpExecutioner implements OpExecutioner {
         if (OpProfiler.getInstance().getConfig().isNotOptimalTAD()) {
             OpProfiler.getInstance().processOpCall(op, tadBuffers);
         }
+        if (OpProfiler.getInstance().getConfig().isCheckWorkspaces()) {
+            checkForWorkspaces(op);
+        }
 
         return System.nanoTime();
     }
@@ -467,6 +499,7 @@ public class DefaultOpExecutioner implements OpExecutioner {
         if (OpProfiler.getInstance().getConfig().isNativeStatistics()) {
             if (op.z() != null) {
                 INDArrayStatistics stat = inspectArray(op.z());
+                OpProfiler.getInstance().setStatistics(stat);
                 log.info("Op name: {}; Z shapeInfo: {}; Z values: {} min:{} max:{} mean:{} stdev:{} pos:{}, neg:{} zero:{} inf:{} nan:{}",
                         op.opName(), op.z().shapeInfoJava(), stat.getMinValue(), stat.getMaxValue(), stat.getMeanValue(),
                         stat.getStdDevValue(), stat.getCountPositive(), stat.getCountNegative(),

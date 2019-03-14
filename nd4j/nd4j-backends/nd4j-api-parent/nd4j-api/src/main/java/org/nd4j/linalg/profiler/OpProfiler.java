@@ -20,6 +20,7 @@ import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ndarray.INDArrayStatistics;
 import org.nd4j.linalg.api.ops.*;
 import org.nd4j.linalg.profiler.data.StackAggregator;
 import org.nd4j.linalg.profiler.data.StringAggregator;
@@ -57,6 +58,9 @@ public class OpProfiler {
     private AtomicLong invocationsCount = new AtomicLong(0);
     private static OpProfiler ourInstance = new OpProfiler();
 
+
+    @Getter
+    private INDArrayStatistics statistics = new INDArrayStatistics();
 
     @Getter
     private StringAggregator classAggergator = new StringAggregator();
@@ -157,6 +161,7 @@ public class OpProfiler {
 
         orderCounter.reset();
         listeners.clear();
+        statistics = INDArrayStatistics.builder().build();
     }
 
 

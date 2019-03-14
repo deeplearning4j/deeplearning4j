@@ -188,7 +188,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
         PointerPointer dummy = extraz.get().put(hostTadShapeInfo, hostTadOffsets);
 
-        long st = profilingHookIn(op, tadBuffers.getFirst());
+        long st = profilingConfigurableHookIn(op, tadBuffers.getFirst());
 
         Pointer x = op.x().data().addressPointer();
         Pointer z = op.z().data().addressPointer();
@@ -215,7 +215,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                         null);
             }
 
-        profilingHookOut(op, st);
+        profilingConfigurableHookOut(op, st);
         return op.z();
     }
 
@@ -347,7 +347,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         //  FIXME: we need something better then 3rd element being non-null here...
         PointerPointer dummy = extraz.get().put(hostTadShapeInfo, hostTadOffsets, tvf ? hostTadOffsets : null);
 
-        long st = profilingHookIn(op, tadBuffers.getFirst());
+        long st = profilingConfigurableHookIn(op, tadBuffers.getFirst());
 
         /**
          * Note because dimension arrays don't change,
@@ -619,7 +619,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
     }
 
     public INDArray exec(ScalarOp op) {
-        long st = profilingHookIn(op);
+        long st = profilingConfigurableHookIn(op);
 
         //validateDataType(Nd4j.dataType(), op);
 
@@ -662,7 +662,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                 throw new ND4JIllegalStateException("Unknown op type: [" + op.getOpType() +"]");
         }
 
-        profilingHookOut(op, st);
+        profilingConfigurableHookOut(op, st);
 
         return op.z();
     }
@@ -729,9 +729,9 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             dummy.put(0, tad);
             dummy.put(1, off);
 
-            st = profilingHookIn(op, tadBuffers.getFirst());
+            st = profilingConfigurableHookIn(op, tadBuffers.getFirst());
         } else
-            st = profilingHookIn(op);
+            st = profilingConfigurableHookIn(op);
 
             if (op.y() != null) {
 
@@ -858,11 +858,11 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
             }
 
-        profilingHookOut(op, st);
+        profilingConfigurableHookOut(op, st);
     }
 
     public INDArray exec(BroadcastOp op) {
-        long st = profilingHookIn(op);
+        long st = profilingConfigurableHookIn(op);
 
         op.validateDataTypes(experimentalMode.get());
 
@@ -1224,7 +1224,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             throw new IllegalStateException(
                     "You should use one of NativeRandom classes for NativeOperations execution. Op class: " + op.getClass().getName());
 
-        long st = profilingHookIn(op);
+        long st = profilingConfigurableHookIn(op);
 
         //validateDataType(Nd4j.dataType(), op);
 
@@ -1256,7 +1256,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                         op.extraArgsDataBuff(op.z().dataType()).addressPointer());
         }
 
-        profilingHookOut(op, st);
+        profilingConfigurableHookOut(op, st);
 
         return op.z();
     }
@@ -1601,7 +1601,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
      */
     @Override
     public INDArray[] exec(@NonNull CustomOp op) {
-        long st = profilingHookIn(op);
+        long st = profilingConfigurableHookIn(op);
 
         if (op.numOutputArguments() == 0 && !op.isInplaceCall()) {
             try {
@@ -1742,7 +1742,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                 throw e;
         }
 
-        profilingHookOut(op, st);
+        profilingConfigurableHookOut(op, st);
         return op.outputArguments();
     }
 
