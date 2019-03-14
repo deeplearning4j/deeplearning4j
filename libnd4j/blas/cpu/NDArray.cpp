@@ -5125,6 +5125,10 @@ Nd4jLong NDArray::getOffset(const Nd4jLong i) const {
             ++d;
         }
 
+        // release NDIndices
+        for (auto i: idx)
+            delete i;
+
         return new NDArray((*this)(indexes, true, true));
     }
 
