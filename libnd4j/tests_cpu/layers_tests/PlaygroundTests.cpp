@@ -1487,4 +1487,7 @@ TEST_F(PlaygroundTests, subarr_2) {
     auto subArr1 = x.subarray({NDIndex::all(), NDIndex::point(2)});
 
     subArr1->printShapeInfo("subArr1");
+
+    ASSERT_EQ(5, subArr1->ews());
+    delete subArr1;
 }

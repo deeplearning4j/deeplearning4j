@@ -854,3 +854,51 @@ TEST_F(NDArrayTest2, big_dup_test) {
     delete arr;
     delete dup;
 }
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(NDArrayTest2, test_subarray_ews_1) {
+
+    NDArray x('c', {10, 5}, nd4j::DataType::FLOAT32);
+    auto subArr1 = x.subarray({NDIndex::all(), NDIndex::point(2)});
+
+    subArr1->printShapeInfo("subArr1");
+
+    ASSERT_EQ(5, subArr1->ews());
+    delete subArr1;
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(NDArrayTest2, test_subarray_ews_2) {
+
+    NDArray x('f', {10, 5}, nd4j::DataType::FLOAT32);
+    auto subArr1 = x.subarray({NDIndex::all(), NDIndex::point(2)});
+
+    subArr1->printShapeInfo("subArr1");
+
+    ASSERT_EQ(1, subArr1->ews());
+    delete subArr1;
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(NDArrayTest2, test_subarray_ews_3) {
+
+    NDArray x('c', {10, 5}, nd4j::DataType::FLOAT32);
+    auto subArr1 = x.subarray({NDIndex::point(2), NDIndex::all()});
+
+    subArr1->printShapeInfo("subArr1");
+
+    ASSERT_EQ(1, subArr1->ews());
+    delete subArr1;
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(NDArrayTest2, test_subarray_ews_4) {
+
+    NDArray x('f', {10, 5}, nd4j::DataType::FLOAT32);
+    auto subArr1 = x.subarray({NDIndex::point(2), NDIndex::all()});
+
+    subArr1->printShapeInfo("subArr1");
+
+    ASSERT_EQ(10, subArr1->ews());
+    delete subArr1;
+}
