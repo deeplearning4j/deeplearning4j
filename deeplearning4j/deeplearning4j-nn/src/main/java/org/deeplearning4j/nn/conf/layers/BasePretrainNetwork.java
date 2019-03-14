@@ -54,12 +54,12 @@ public abstract class BasePretrainNetwork extends FeedForwardLayer {
         public Builder() {}
 
         public T lossFunction(LossFunctions.LossFunction lossFunction) {
-            this.lossFunction = lossFunction;
+            this.setLossFunction(lossFunction);
             return (T) this;
         }
 
         public T visibleBiasInit(double visibleBiasInit) {
-            this.visibleBiasInit = visibleBiasInit;
+            this.setVisibleBiasInit(visibleBiasInit);
             return (T) this;
         }
 

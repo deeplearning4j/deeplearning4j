@@ -101,6 +101,8 @@ public class RepeatVector extends FeedForwardLayer {
 
 
     @NoArgsConstructor
+    @Getter
+    @Setter
     public static class Builder<T extends Builder<T>> extends FeedForwardLayer.Builder<T> {
 
         private int n = 1; // no repetition by default
@@ -118,11 +120,11 @@ public class RepeatVector extends FeedForwardLayer {
          * @param n upsampling size in height and width dimensions
          */
         public void setRepetitionFactor(int n) {
-            this.n = n;
+            this.setN(n);
         }
 
         public Builder(int n) {
-            this.n = n;
+            this.setN(n);
         }
 
         /**
@@ -131,7 +133,7 @@ public class RepeatVector extends FeedForwardLayer {
          * @param n upsampling size in height and width dimensions
          */
         public Builder repetitionFactor(int n) {
-            this.n = n;
+            this.setN(n);
             return this;
         }
 

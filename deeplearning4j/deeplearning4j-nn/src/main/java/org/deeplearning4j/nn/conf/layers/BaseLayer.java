@@ -229,7 +229,7 @@ public abstract class BaseLayer extends Layer implements Serializable, Cloneable
          * @param activationFunction Activation function to use for the layer
          */
         public T activation(IActivation activationFunction) {
-            this.activationFn = activationFunction;
+            this.setActivationFn(activationFunction);
             return (T) this;
         }
 
@@ -248,7 +248,7 @@ public abstract class BaseLayer extends Layer implements Serializable, Cloneable
          * @see IWeightInit
          */
         public T weightInit(IWeightInit weightInit) {
-            this.weightInitFn = weightInit;
+            this.setWeightInitFn(weightInit);
             return (T) this;
         }
 
@@ -263,7 +263,7 @@ public abstract class BaseLayer extends Layer implements Serializable, Cloneable
                                 "Not supported!, Use weightInit(Distribution distribution) instead!");
             }
 
-            this.weightInitFn = weightInit.getWeightInitFunction();
+            this.setWeightInitFn(weightInit.getWeightInitFunction());
             return (T) this;
         }
 
@@ -283,7 +283,7 @@ public abstract class BaseLayer extends Layer implements Serializable, Cloneable
          * @param biasInit Value to use for initializing biases
          */
         public T biasInit(double biasInit) {
-            this.biasInit = biasInit;
+            this.setBiasInit(biasInit);
             return (T) this;
         }
 
@@ -420,7 +420,7 @@ public abstract class BaseLayer extends Layer implements Serializable, Cloneable
          * @param regularization Regularization to apply for the network parameters/weights (excluding biases)
          */
         public Builder regularization(List<Regularization> regularization) {
-            this.regularization = regularization;
+            this.setRegularization(regularization);
             return this;
         }
 
@@ -430,7 +430,7 @@ public abstract class BaseLayer extends Layer implements Serializable, Cloneable
          * @param regularizationBias Regularization to apply for the network biases only
          */
         public Builder regularizationBias(List<Regularization> regularizationBias) {
-            this.regularizationBias = regularizationBias;
+            this.setRegularizationBias(regularizationBias);
             return this;
         }
 
@@ -452,7 +452,7 @@ public abstract class BaseLayer extends Layer implements Serializable, Cloneable
          * @param updater Updater to use
          */
         public T updater(IUpdater updater) {
-            this.iupdater = updater;
+            this.setIupdater(updater);
             return (T) this;
         }
 
@@ -463,7 +463,7 @@ public abstract class BaseLayer extends Layer implements Serializable, Cloneable
          * @param biasUpdater Updater to use for bias parameters
          */
         public T biasUpdater(IUpdater biasUpdater) {
-            this.biasUpdater = biasUpdater;
+            this.setBiasUpdater(biasUpdater);
             return (T) this;
         }
 
@@ -474,7 +474,7 @@ public abstract class BaseLayer extends Layer implements Serializable, Cloneable
          * @see GradientNormalization
          */
         public T gradientNormalization(GradientNormalization gradientNormalization) {
-            this.gradientNormalization = gradientNormalization;
+            this.setGradientNormalization(gradientNormalization);
             return (T) this;
         }
 
@@ -485,7 +485,7 @@ public abstract class BaseLayer extends Layer implements Serializable, Cloneable
          * clipping.
          */
         public T gradientNormalizationThreshold(double threshold) {
-            this.gradientNormalizationThreshold = threshold;
+            this.setGradientNormalizationThreshold(threshold);
             return (T) this;
         }
 
@@ -496,8 +496,10 @@ public abstract class BaseLayer extends Layer implements Serializable, Cloneable
          * @param weightNoise Weight noise instance to use
          */
         public T weightNoise(IWeightNoise weightNoise) {
-            this.weightNoise = weightNoise;
+            this.setWeightNoise(weightNoise);
             return (T) this;
         }
+        
+        
     }
 }

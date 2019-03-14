@@ -248,7 +248,7 @@ public class Bidirectional extends Layer {
         }
 
         public Builder mode(Mode mode) {
-            this.mode = mode;
+            this.setMode(mode);
             return this;
         }
 
@@ -259,7 +259,7 @@ public class Bidirectional extends Layer {
                                 + "config must extend BaseRecurrentLayer or LastTimeStep " + "Got class: "
                                 + layer.getClass());
             }
-            this.layer = layer;
+            this.setLayer(layer);
             return this;
         }
 
