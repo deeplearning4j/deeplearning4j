@@ -31,9 +31,9 @@ namespace helpers {
         std::unique_ptr<ResultSet> listOfOutputs(output->allTensorsAlongDimension(restDims));
         // 3D matricies - 2D matricies of vectors (if last dim is greater than 1)
         //int e = 0;
-        int ksizeRowsEffective = sizeRow + (sizeRow - 1) * (rateRow - 1);
-        int ksizeColsEffective = sizeCol + (sizeCol - 1) * (rateCol - 1);
-        int ksize = ksizeRowsEffective * ksizeColsEffective;
+        const int ksizeRowsEffective = sizeRow + (sizeRow - 1) * (rateRow - 1);
+        const int ksizeColsEffective = sizeCol + (sizeCol - 1) * (rateCol - 1);
+        const int ksize = ksizeRowsEffective * ksizeColsEffective;
         int batchCount = listOfMatricies->size(); //lengthOf() / ksize;
         Nd4jLong lastDim = images->sizeAt(3);
         Nd4jLong outLastDim = output->sizeAt(3);
@@ -41,7 +41,13 @@ namespace helpers {
         Nd4jLong colDim = images->sizeAt(2);
         Nd4jLong outRowDim = output->sizeAt(1);
         Nd4jLong outColDim = output->sizeAt(2);
-        Nd4jLong outputLastDim = output->sizeAt(3);
+        auto rowCast = 1; //(sizeRow - 1)*rateRow < outRowDim/sizeRow  ?0:1;///(ksize * lastDim > rowDim * ksizeColsEffective + lastDim?1:0);
+        auto colCast = 1; //colDim / ksizeColsEffective +2 <= sizeCol?0:1;//(ksize * lastDim > ksizeRowsEffective * colDim + lastDim?1:0);
+        if (sizeRow < 3 && rateRow == 1)
+            rowCast = 0;
+        if (sizeCol < 3 && rateCol == 1)
+            colCast = 0;
+        //Nd4jLong outputLastDim = output->sizeAt(3);
         for (Nd4jLong batch = 0; batch < batchCount; batch++) {
             auto patch = listOfMatricies->at(batch);
             auto outMatrix = listOfOutputs->at(batch);
@@ -51,15 +57,15 @@ namespace helpers {
                     for (Nd4jLong j = 0; j < outColDim; j++) {
                         Nd4jLong pos = 0;
                         //for (Nd4jLong k = 0; k < outputLastDim; k++) {
-                        auto rowStart = i * strideRow;
-                        auto colStart = j * strideCol;
+                        auto rowStart = i * strideRow - rowCast;
+                        auto colStart = j * strideCol - colCast;
                         auto rowEnd = rowStart + sizeRow * rateRow;
                         auto colEnd = colStart + sizeCol * rateCol;
                         auto pixel = 0LL;
                         for (auto row = rowStart; row < rowEnd; row += rateRow)
                             for (auto col = colStart; col < colEnd; col += rateCol)
                                 for (auto pixel = 0; pixel < lastDim; pixel++) {
-                                    if (row < rowDim && col < colDim)
+                                    if (row >=0 && col >= 0 && row < rowDim && col < colDim)
                                     outMatrix->p<T>(i, j, pos, patch->e<T>(row, col, pixel));
                                     pos++;
                                 }

@@ -2687,11 +2687,11 @@ TEST_F(DeclarableOpsTests7, TestExtractImagePatches_SGO_13) {
     auto output = result->at(0);
     output->printShapeInfo("Output shape");
     output->printBuffer("Output");
-//    exp.printBuffer("Expect");
-//    for (Nd4jLong e = 0; e < exp.lengthOf(); e++)
-//        if (exp.e<double>(e) != output->e<double>(e))
-//            printf("%lld ", e);
-//    printf("\n");
+    exp.printBuffer("Expect");
+    for (Nd4jLong e = 0; e < exp.lengthOf(); e++)
+        if (exp.e<double>(e) != output->e<double>(e))
+            printf("%lld ", e);
+    printf("\n");
     //result->at(1)->printBuffer("OUtput2");
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));
