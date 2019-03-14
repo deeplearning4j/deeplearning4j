@@ -244,6 +244,7 @@ public interface OpExecutioner {
      *
      * @param mode
      */
+    @Deprecated
     void setProfilingMode(ProfilingMode mode);
 
     /**
@@ -258,6 +259,7 @@ public interface OpExecutioner {
      *
      * @return
      */
+    @Deprecated
     ProfilingMode getProfilingMode();
 
 

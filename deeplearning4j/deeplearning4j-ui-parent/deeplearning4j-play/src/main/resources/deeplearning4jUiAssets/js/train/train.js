@@ -2,92 +2,139 @@
 function languageSelect(languageCode, redirect){
     //language code: iso639 code
 
+    var languageSettingUrl = multiSession ? "/setlang/" + currSession + "/" + languageCode : "/setlang/" + languageCode;
     $.ajax({
-        url: "/setlang/" + languageCode,
+        url: languageSettingUrl,
         async: true,
         error: function (query, status, error) {
             console.log("Error getting data: " + error);
         },
         success: function (data) {
-            window.location.replace('/train/' + redirect)
+            redirectUrl = multiSession ? '/train/' + currSession + "/" + redirect : '/train/' + redirect;
+            window.location.replace(redirectUrl);
         }
     });
 }
 
+var multiSession = null;
 var currSession = "";
 var currWorkerIdx = 0;
 var prevNumWorkers = 0;
-function updateSessionWorkerSelect(){
 
+function doUpdateSessionWorkerSelect() {
+    var sessionInfoUrl = multiSession ? "/train/" + currSession + "/info" : "/train/sessions/info";
     $.ajax({
-        url: "/train/sessions/current",
+        url: sessionInfoUrl,
         async: true,
         error: function (query, status, error) {
             console.log("Error getting data: " + error);
         },
         success: function (data) {
-            currSession = data;
+            var keys = Object.keys(data);
+                if(keys.length > 1) {   //only show session selector if there are multiple sessions
 
-            $.ajax({
-                url: "/train/sessions/info",
-                async: true,
-                error: function (query, status, error) {
-                    console.log("Error getting data: " + error);
-                },
-                success: function (data) {
-                    var keys = Object.keys(data);
-                    if(keys.length > 1) {   //only show session selector if there are multiple sessions
+                    var elem = $("#sessionSelect");
+                    elem.empty();
 
-                        var elem = $("#sessionSelect");
-                        elem.empty();
-
-                        var currSelectedIdx = 0;
-                        for (var i = 0; i < keys.length; i++) {
-                            if(keys[i] == currSession){
-                                currSelectedIdx = i;
-                            }
-                            elem.append("<option value='" + keys[i] + "'>" + keys[i] + "</option>");
+                    var currSelectedIdx = 0;
+                    for (var i = 0; i < keys.length; i++) {
+                        if(keys[i] == currSession){
+                            currSelectedIdx = i;
                         }
-
-                        $("#sessionSelect option[value='" + keys[currSelectedIdx] +"']").attr("selected", "selected");
-                        $("#sessionSelectDiv").show();
-                    } else {
-                        $("#sessionSelectDiv").hide();
+                        elem.append("<option value='" + keys[i] + "'>" + keys[i] + "</option>");
                     }
 
-                    //Set up worker selection...
-                    if(data[currSession]){
-                        var numWorkers = data[currSession]["numWorkers"];
-                        var workers = data[currSession]["workers"];
+                    $("#sessionSelect option[value='" + keys[currSelectedIdx] +"']").attr("selected", "selected");
+                    $("#sessionSelectDiv").show();
+                } else {
+                    $("#sessionSelectDiv").hide();
+                }
 
-                        var elem = $("#workerSelect");
-                        elem.empty();
+                //Set up worker selection...
+                if(data[currSession]){
+                    var numWorkers = data[currSession]["numWorkers"];
+                    var workers = data[currSession]["workers"];
 
-                        if(numWorkers > 1){
-//                        if(numWorkers >= 0){    //For testing
-                            for(var i=0; i<workers.length; i++){
-                                elem.append("<option value='" + i + "'>" + workers[i] + "</option>");
-                            }
+                    var elem = $("#workerSelect");
+                    elem.empty();
 
-                            $("#workerSelect option[value='" + currWorkerIdx +"']").attr("selected", "selected");
-                            $("#workerSelectDiv").show();
-                        } else {
-                            $("#workerSelectDiv").hide();
+                    if(numWorkers > 1){
+            //                        if(numWorkers >= 0){    //For testing
+                        for(var i=0; i<workers.length; i++){
+                            elem.append("<option value='" + i + "'>" + workers[i] + "</option>");
                         }
 
-                        // if workers change then reset
-                        if(prevNumWorkers != numWorkers) {
-                            if(numWorkers==0) {
-                                $("#workerSelect").val("0");
-                                selectNewWorker();
-                            }
-                            else selectNewWorker();
+                        $("#workerSelect option[value='" + currWorkerIdx +"']").attr("selected", "selected");
+                        $("#workerSelectDiv").show();
+                    } else {
+                        $("#workerSelectDiv").hide();
+                    }
+
+                    // if workers change then reset
+                    if(prevNumWorkers != numWorkers) {
+                        if(numWorkers==0) {
+                            $("#workerSelect").val("0");
+                            selectNewWorker();
                         }
+                        else selectNewWorker();
                     }
                 }
-            });
-        }
+            }
     });
+}
+
+function getSessionIdFromUrl() {
+    // path is like /train/:sessionId/overview
+    var sessionIdRegexp = /\/train\/([^\/]+)\/(.*)/g;
+    var match = sessionIdRegexp.exec(window.location.pathname)
+    return match[1];
+}
+
+function getCurrSession(callback) {
+    if (multiSession) {
+        if (currSession == "") {
+            // get only once
+            currSession = getSessionIdFromUrl();
+        }
+        callback();
+    } else {
+        $.ajax({
+            url: "/train/sessions/current",
+            async: true,
+            error: function (query, status, error) {
+                console.log("Error getting data: " + error);
+            },
+            success: function (data) {
+                currSession = data;
+                callback();
+            }
+        });
+    }
+}
+
+
+function getSessionSettings(callback) {
+    // load only once
+    if (multiSession != null) {
+        getCurrSession(callback);
+    } else {
+        $.ajax({
+            url: "/train/multisession",
+            async: true,
+            error: function (query, status, error) {
+                console.log("Error getting data: " + error);
+            },
+            success: function (data) {
+                multiSession = data == "true";
+                getCurrSession(callback);
+            }
+        });
+    }
+
+}
+
+function updateSessionWorkerSelect(){
+    getSessionSettings(doUpdateSessionWorkerSelect);
 }
 
 function selectNewSession(){
@@ -125,7 +172,6 @@ function selectNewWorker(){
         });
     }
 }
-
 
 function formatBytes(bytes, precision){
     var index = 0;

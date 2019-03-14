@@ -21,7 +21,7 @@
 #ifndef DEV_TESTS_OPENMP_PRAGMAS_H
 #define DEV_TESTS_OPENMP_PRAGMAS_H
 
-#if defined(_WIN32) && defined(__CUDABLAS__)
+#if defined(_MSC_VER)
 
 #define OMP_STRINGIFY(args)
 #define OMP_IF(args)

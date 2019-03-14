@@ -357,7 +357,7 @@ public class TestInvalidConfigurations extends BaseDL4JTest {
         new ConvolutionLayer.Builder().kernelSize(3, 0).build();
     }
 
-    @Test(expected = IllegalStateException.class)
+    @Test(expected = IllegalArgumentException.class)
     public void testCnnInvalidKernel2() {
         new ConvolutionLayer.Builder().kernelSize(2, 2, 2).build();
     }
@@ -367,17 +367,17 @@ public class TestInvalidConfigurations extends BaseDL4JTest {
         new ConvolutionLayer.Builder().kernelSize(3, 3).stride(0, 1).build();
     }
 
-    @Test(expected = IllegalStateException.class)
+    @Test(expected = IllegalArgumentException.class)
     public void testCnnInvalidStride2() {
         new ConvolutionLayer.Builder().kernelSize(3, 3).stride(1).build();
     }
 
-    @Test(expected = IllegalStateException.class)
+    @Test(expected = IllegalArgumentException.class)
     public void testCnnInvalidPadding() {
         new ConvolutionLayer.Builder().kernelSize(3, 3).stride(1, 1).padding(-1, 0).build();
     }
 
-    @Test(expected = IllegalStateException.class)
+    @Test(expected = IllegalArgumentException.class)
     public void testCnnInvalidPadding2() {
         new ConvolutionLayer.Builder().kernelSize(3, 3).stride(1, 1).padding(0, 0, 0).build();
     }
@@ -387,7 +387,7 @@ public class TestInvalidConfigurations extends BaseDL4JTest {
         new SubsamplingLayer.Builder().kernelSize(3, 0).build();
     }
 
-    @Test(expected = RuntimeException.class)
+    @Test(expected = IllegalArgumentException.class)
     public void testSubsamplingInvalidKernel2() {
         new SubsamplingLayer.Builder().kernelSize(2).build();
     }
@@ -402,7 +402,7 @@ public class TestInvalidConfigurations extends BaseDL4JTest {
         new SubsamplingLayer.Builder().kernelSize(3, 3).stride(1, 1, 1).build();
     }
 
-    @Test(expected = IllegalStateException.class)
+    @Test(expected = IllegalArgumentException.class)
     public void testSubsamplingInvalidPadding() {
         new SubsamplingLayer.Builder().kernelSize(3, 3).stride(1, 1).padding(-1, 0).build();
     }

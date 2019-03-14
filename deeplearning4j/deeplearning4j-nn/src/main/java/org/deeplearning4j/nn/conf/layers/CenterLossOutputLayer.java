@@ -155,7 +155,7 @@ public class CenterLossOutputLayer extends BaseOutputLayer {
         protected boolean gradientCheck = false;
 
         public Builder(){
-            this.activationFn = new ActivationSoftmax();
+            this.setActivationFn(new ActivationSoftmax());
         }
 
         public Builder(LossFunction lossFunction) {
@@ -163,21 +163,21 @@ public class CenterLossOutputLayer extends BaseOutputLayer {
         }
 
         public Builder(ILossFunction lossFunction) {
-            this.lossFn = lossFunction;
+            this.setLossFn(lossFunction);
         }
 
         public Builder alpha(double alpha) {
-            this.alpha = alpha;
+            this.setAlpha(alpha);
             return this;
         }
 
         public Builder lambda(double lambda) {
-            this.lambda = lambda;
+            this.setLambda(lambda);
             return this;
         }
 
         public Builder gradientCheck(boolean isGradientCheck) {
-            this.gradientCheck = isGradientCheck;
+            this.setGradientCheck(isGradientCheck);
             return this;
         }
 
