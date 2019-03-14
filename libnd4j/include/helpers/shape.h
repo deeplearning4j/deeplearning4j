@@ -92,13 +92,13 @@ namespace shape {
 
 
 
-    ND4J_EXPORT _CUDA_HD bool shapeEquals(int shape1Rank,Nd4jLong *shape1,int shape2Rank,Nd4jLong *shape2);
+    ND4J_EXPORT _CUDA_HD bool shapeEquals(const int shape1Rank, const Nd4jLong *shape1, const int shape2Rank, const Nd4jLong *shape2);
 
     ND4J_EXPORT _CUDA_HD Nd4jLong* detachShape(Nd4jLong *originalShape);
 
     ND4J_EXPORT _CUDA_HD Nd4jLong* copyShape(Nd4jLong *originalShape);
 
-    ND4J_EXPORT _CUDA_HD bool shapeEquals(Nd4jLong *shapeInfo1,Nd4jLong *shapeInfo2);
+    ND4J_EXPORT _CUDA_HD bool shapeEquals(const Nd4jLong *shapeInfo1, const Nd4jLong *shapeInfo2);
 
     ND4J_EXPORT _CUDA_HD bool strideEquals(int shape1Rank,Nd4jLong *shape1,int shape2Rank,Nd4jLong *shape2);
 
@@ -1163,7 +1163,7 @@ __device__ INLINEDEF Nd4jLong *cuMalloc(Nd4jLong *buffer, long size) {
     }
 
 
-    INLINEDEF _CUDA_HD bool shapeEquals(int shape1Rank,Nd4jLong *shape1,int shape2Rank,Nd4jLong *shape2) {
+    INLINEDEF _CUDA_HD bool shapeEquals(const int shape1Rank, const Nd4jLong *shape1, const int shape2Rank, const Nd4jLong *shape2) {
         if(shape1Rank != shape2Rank)
             return false;
         //rank not equals
@@ -1175,8 +1175,8 @@ __device__ INLINEDEF Nd4jLong *cuMalloc(Nd4jLong *buffer, long size) {
         return true;
     }
 
-    INLINEDEF _CUDA_HD bool shapeEquals(Nd4jLong *shapeInfo1,Nd4jLong *shapeInfo2) {
-        return shape::shapeEquals(shape::rank(shapeInfo1),shape::shapeOf(shapeInfo1),shape::rank(shapeInfo2),shape::shapeOf(shapeInfo2));
+    INLINEDEF _CUDA_HD bool shapeEquals(const Nd4jLong *shapeInfo1, const Nd4jLong *shapeInfo2) {
+        return shape::shapeEquals(shape::rank(shapeInfo1), shape::shapeOf(const_cast<Nd4jLong*>(shapeInfo1)), shape::rank(shapeInfo2), shape::shapeOf(const_cast<Nd4jLong*>(shapeInfo2)));
     }
 
     INLINEDEF _CUDA_HD bool strideEquals(int shape1Rank,Nd4jLong *shape1,int shape2Rank,Nd4jLong *shape2) {
