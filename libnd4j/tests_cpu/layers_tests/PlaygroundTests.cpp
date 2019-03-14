@@ -220,7 +220,7 @@ TEST_F(PlaygroundTests, Test_OpBenchmark_5) {
 }
 
 #define PARAMETRIC_D() [&] (Parameters &p) -> Context*
-
+/*
 TEST_F(PlaygroundTests, Test_OpBenchmark_6) {
     BenchmarkHelper helper;
     nd4j::ops::softmax op;
@@ -240,6 +240,7 @@ TEST_F(PlaygroundTests, Test_OpBenchmark_6) {
 
     helper.runOperationSuit(&db, generator, batch, "parametrized softmax test");
 }
+*/
 
 /*
 TEST_F(PlaygroundTests, Test_Strided_Stuff) {
