@@ -137,7 +137,7 @@ namespace nd4j {
         /**
         *   return shape without unities, for example if shape is [1,2,1,3] then [2,3] will be returned
         *   if unities are not present in given shapeInfo then exactly identical shape will be returned, for example [2,3] -> [2,3]
-        *   edge case: if given shape is [1,1,1,...,1] (all dims are unities) then output will be [1]
+        *   edge case: if given shape is [1,1,1,...,1] (all dims are unities) then output will be empty and corresponds to scalar case
         */
         static std::vector<Nd4jLong> evalDimsWithoutUnities(const Nd4jLong* shapeInfo);
 

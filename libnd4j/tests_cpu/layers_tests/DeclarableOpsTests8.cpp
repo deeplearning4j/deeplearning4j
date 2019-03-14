@@ -330,7 +330,7 @@ TEST_F(DeclarableOpsTests8, reduceStDev_test8) {
     auto output = result->at(0);    
 
     ASSERT_EQ(ND4J_STATUS_OK, result->status());    
-    output->printBuffer("Reduced STDDEV");
+    // output->printBuffer("Reduced STDDEV");
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));
 
@@ -348,7 +348,7 @@ TEST_F(DeclarableOpsTests8, reduceStDev_test08) {
     auto output = result->at(0);
 
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
-    output->printBuffer("Reduced STDDEV08");
+    // output->printBuffer("Reduced STDDEV08");
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));
 
@@ -748,7 +748,7 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_Sum_03) {
 
     ASSERT_EQ(Status::OK(), result->status());
     auto z = result->at(0);
-    z->printIndexedBuffer("Result is ");
+    // z->printIndexedBuffer("Result is ");
     ASSERT_TRUE(exp.equalsTo(z));
     delete result;
 }
@@ -2340,7 +2340,7 @@ TEST_F(DeclarableOpsTests8, reduceMeanBP_test1) {
     ASSERT_EQ(ND4J_STATUS_OK, result->status());    
     auto output = result->at(0);
 
-    output->printShapeInfo("o");
+    // output->printShapeInfo("o");
 
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));
@@ -3457,7 +3457,8 @@ TYPED_TEST(TypedDeclarableOpsTests8, LrnTest_3) {
 ////////////////////////////////////////////////////////////////////////////////
 TYPED_TEST(TypedDeclarableOpsTests8, LrnTest_4) {
 
-    auto x = NDArrayFactory::create<TypeParam>('c', {8, 32, 64, 64});
+    // auto x = NDArrayFactory::create<TypeParam>('c', {8, 32, 64, 64});
+    auto x = NDArrayFactory::create<TypeParam>('c', {2, 8, 16, 16});
     x.linspace(1);
 
     nd4j::ops::lrn op;
@@ -3476,8 +3477,10 @@ TYPED_TEST(TypedDeclarableOpsTests8, LrnTest_4) {
 ////////////////////////////////////////////////////////////////////////////////
 TYPED_TEST(TypedDeclarableOpsTests8, LrnTest_4_119) {
     int iterations = 1000;
-    auto x = NDArrayFactory::create<TypeParam>('c', {8, 32, 64, 64});
-    auto z = NDArrayFactory::create<TypeParam>('c', {8, 32, 64, 64});
+    // auto x = NDArrayFactory::create<TypeParam>('c', {8, 32, 64, 64});
+    // auto z = NDArrayFactory::create<TypeParam>('c', {8, 32, 64, 64});
+    auto x = NDArrayFactory::create<TypeParam>('c', {2, 8, 16, 16});
+    auto z = NDArrayFactory::create<TypeParam>('c', {2, 8, 16, 16});
     x.linspace(1);
 
     nd4j::ops::lrn op;
@@ -3541,8 +3544,8 @@ auto exp = NDArrayFactory::create<double>('c', {3,3,5,5}, {
         
     ASSERT_EQ(Status::OK(), results->status());
 //    ASSERT_TRUE(exp.isSameShape(out));
-    out->printBuffer("LRN BP out");
-    exp.printBuffer("LRN BP exp");
+    // out->printBuffer("LRN BP out");
+    // exp.printBuffer("LRN BP exp");
     ASSERT_TRUE(exp.equalsTo(out));    
     
     delete results;
