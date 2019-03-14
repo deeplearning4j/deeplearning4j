@@ -50,24 +50,18 @@ namespace nd4j {
             }
 
             auto result = NDArrayFactory::create_('c', shape, list->dataType());
+            std::vector<Nd4jLong> indicesList((list->readRaw(0)->rankOf() + 1) * 2, 0);
             int skipPosition = 0;
             for (int e = 0; e < indices->lengthOf(); e++) {
                 auto idx = indices->e<int>(e);
                 auto array = list->readRaw(idx);
-                
-                IndicesList indicesList;
+                                
                 // first dimension
-                indicesList.push_back(NDIndex::interval(skipPosition, skipPosition + 1));
+                indicesList[0] = skipPosition;
+                indicesList[1] = skipPosition++ + 1;                
 
-                for (int d = 0; d < array->rankOf(); d++)
-                    indicesList.push_back(NDIndex::all());
-
-                auto subarray = result->subarray(indicesList);
-                subarray->assign(array);
-
-                skipPosition++;
-
-                delete subarray;
+                auto subarray = (*result)(indicesList, true);
+                subarray.assign(array);
             }
 
             //OVERWRITE_RESULT(result);

@@ -847,7 +847,8 @@ TEST_F(NDArrayTest2, scalar_set_test2) {
 }
 
 TEST_F(NDArrayTest2, big_dup_test) {
-    auto arr = NDArrayFactory::linspace<float>(1.0f, 10000000.0f, 100000000);
+    // auto arr = NDArrayFactory::linspace<float>(1.0f, 10000000.0f, 100000000);
+    auto arr = NDArrayFactory::linspace<float>(1.0f, 1000.0f, 10000);
     auto dup = arr->dup('c');
 
     ASSERT_EQ(*arr, *dup);
@@ -922,4 +923,52 @@ TEST_F(NDArrayTest2, debugInfoTest_2) {
     //printf("%lf %lf %lf %lf\n", info._minValue, info._maxValue, info._meanValue, info._stdDevValue);
     //printf("%lld %lld %lld %lld %lld\n", info._zeroCount, info._negativeCount, info._positiveCount, info._infCount, info._nanCount);
     ASSERT_EQ(exp, info);
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(NDArrayTest2, test_subarray_ews_1) {
+
+    NDArray x('c', {10, 5}, nd4j::DataType::FLOAT32);
+    auto subArr1 = x.subarray({NDIndex::all(), NDIndex::point(2)});
+
+    subArr1->printShapeInfo("subArr1");
+
+    ASSERT_EQ(5, subArr1->ews());
+    delete subArr1;
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(NDArrayTest2, test_subarray_ews_2) {
+
+    NDArray x('f', {10, 5}, nd4j::DataType::FLOAT32);
+    auto subArr1 = x.subarray({NDIndex::all(), NDIndex::point(2)});
+
+    subArr1->printShapeInfo("subArr1");
+
+    ASSERT_EQ(1, subArr1->ews());
+    delete subArr1;
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(NDArrayTest2, test_subarray_ews_3) {
+
+    NDArray x('c', {10, 5}, nd4j::DataType::FLOAT32);
+    auto subArr1 = x.subarray({NDIndex::point(2), NDIndex::all()});
+
+    subArr1->printShapeInfo("subArr1");
+
+    ASSERT_EQ(1, subArr1->ews());
+    delete subArr1;
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(NDArrayTest2, test_subarray_ews_4) {
+
+    NDArray x('f', {10, 5}, nd4j::DataType::FLOAT32);
+    auto subArr1 = x.subarray({NDIndex::point(2), NDIndex::all()});
+
+    subArr1->printShapeInfo("subArr1");
+
+    ASSERT_EQ(10, subArr1->ews());
+    delete subArr1;
 }
