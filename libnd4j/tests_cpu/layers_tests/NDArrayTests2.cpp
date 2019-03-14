@@ -21,6 +21,8 @@
 #include "testlayers.h"
 #include <memory>
 #include <NDArray.h>
+#include <DebugHelper.h>
+#include <ops/declarable/headers/parity_ops.h>
 
 using namespace nd4j;
 
@@ -853,6 +855,74 @@ TEST_F(NDArrayTest2, big_dup_test) {
 
     delete arr;
     delete dup;
+}
+
+TEST_F(NDArrayTest2, debugInfoTest_1) {
+    NDArray testArray('c', {2, 4, 4, 4}, {
+            91.,  82.,  37.,  64.,     55.,  46.,  73.,  28.,    119.,  12., 112.,  13.,     14., 114.,  16., 117.,
+            51.,  42.,  67.,  24.,     15.,  56.,  93.,  28.,    109.,  82.,  12., 113.,    114.,  14., 116.,  11.,
+            31.,  22.,  87.,  44.,     55.,  46.,  73.,  28.,    -119.,  12., 112.,  13.,     14., 114.,  16., 117.,
+            91.,  -82.,  37.,  64.,    -55.1,  0,  73.,  28.,    -119.,  12., 112.,  13.,     14., 114., 16.2, 117.,
+            91.,  -82.,  37.,  64.,     55.,  46.,  73.,  28.,    -119.,  12., 112.,  13.,     14., 114.,  16., 117.,
+            51.,  42.,  67.,  24.,     15.,  0.,  93.,  28.,    109.,  82.,  12., 113.,    114.,  14., 116.,  11.,
+            31.,  22.,  87.,  44.,     55.,  46.,  73.,  28.,    119.,  12., 112.,  13.,     14., 114.,  16., 117.,
+            91.,  82.,  37.,  64.,    -3,  0, 73.,  28.,    119.,  12., 112.,  13.,    140., 110., 160., 107.}, nd4j::DataType::DOUBLE);
+    NDArray res(nd4j::DataType::DOUBLE);
+    DebugInfo info = DebugHelper::debugStatistics(&testArray);
+    DebugInfo exp; // = {}
+    nd4j::ops::reduce_min minOp;
+    nd4j::ops::reduce_mean meanOp;
+    nd4j::ops::reduce_max maxOp;
+    nd4j::ops::reduce_stdev stdevOp;
+
+    minOp.execute({&testArray}, {&res}, {}, {}, {});
+    exp._minValue = res.e<double>(0);
+    meanOp.execute({&testArray}, {&res}, {}, {}, {});
+    exp._meanValue = res.e<double>(0);
+    maxOp.execute({&testArray}, {&res}, {}, {}, {});
+    exp._maxValue = res.e<double>(0);
+    stdevOp.execute({&testArray}, {&res}, {}, {}, {});
+    exp._stdDevValue = res.e<double>(0);
+    exp._zeroCount = 3;
+    exp._negativeCount = 7;
+    exp._positiveCount = 118;
+    exp._infCount = 0;
+    exp._nanCount = 0;
+    printf("Output statistics %lf %lf %lf %lf\n", info._minValue, info._maxValue, info._meanValue, info._stdDevValue);
+    printf("Expect statistics %lf %lf %lf %lf\n", exp._minValue, exp._maxValue, exp._meanValue, exp._stdDevValue);
+    printf("%lld %lld %lld %lld %lld\n", info._zeroCount, info._negativeCount, info._positiveCount, info._infCount, info._nanCount);
+    ASSERT_EQ(exp, info);
+}
+
+TEST_F(NDArrayTest2, debugInfoTest_2) {
+    NDArray testArray('c', {2, 4, 4, 4}, {
+            91.,  82.,  37.,  64.,     55.,  46.,  73.,  28.,    119.,  12., 112.,  13.,     14., 114.,  16., 117.,
+            51.,  42.,  67.,  24.,     15.,  56.,  93.,  28.,    109.,  82.,  12., 113.,    114.,  14., 116.,  11.,
+            31.,  22.,  87.,  44.,     55.,  46.,  73.,  28.,    -119.,  12., 112.,  13.,     14., 114.,  16., 117.,
+            91.,  -82.,  37.,  64.,    -55.1,  0,  73.,  28.,    -119.,  12., 112.,  13.,     14., 114., 16.2, 117.,
+            91.,  -82.,  37.,  64.,     55.,  46.,  73.,  28.,    -119.,  12., 112.,  13.,     14., 114.,  16., 117.,
+            51.,  42.,  67.,  24.,     15.,  0.,  93.,  28.,    109.,  82.,  12., 113.,    114.,  14., 116.,  11.,
+            31.,  22.,  87.,  44.,     55.,  46.,  73.,  28.,    119.,  12., 112.,  13.,     14., 114.,  16., 117.,
+            91.,  82.,  37.,  64.,    -3,  0, 73.,  28.,    119.,  12., 112.,  13.,    140., 110., 160., 107.}, nd4j::DataType::DOUBLE);
+
+    DebugInfo info;
+    DebugInfo exp; // = {}
+    exp._minValue = -119;
+    exp._maxValue = 160.;
+    exp._meanValue = 51.328906;
+    exp._stdDevValue = 52.385694;
+    exp._zeroCount = 3;
+    exp._negativeCount = 7;
+    exp._positiveCount = 118;
+    exp._infCount = 0;
+    exp._nanCount = 0;
+    DebugHelper::retrieveDebugStatistics(&info, &testArray);
+    printf("Output statistics %lf %lf %lf %lf\n", info._minValue, info._maxValue, info._meanValue, info._stdDevValue);
+    printf("Expect statistics %lf %lf %lf %lf\n", exp._minValue, exp._maxValue, exp._meanValue, exp._stdDevValue);
+    printf("%lld %lld %lld %lld %lld\n", info._zeroCount, info._negativeCount, info._positiveCount, info._infCount, info._nanCount);
+    //printf("%lf %lf %lf %lf\n", info._minValue, info._maxValue, info._meanValue, info._stdDevValue);
+    //printf("%lld %lld %lld %lld %lld\n", info._zeroCount, info._negativeCount, info._positiveCount, info._infCount, info._nanCount);
+    ASSERT_EQ(exp, info);
 }
 
 //////////////////////////////////////////////////////////////////////
