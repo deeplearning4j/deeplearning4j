@@ -500,7 +500,7 @@ public class DefaultOpExecutioner implements OpExecutioner {
             if (op.z() != null) {
                 INDArrayStatistics stat = inspectArray(op.z());
                 OpProfiler.getInstance().setStatistics(stat);
-                log.info("Op name: {}; Z shapeInfo: {}; Z values: {} min:{} max:{} mean:{} stdev:{} pos:{}, neg:{} zero:{} inf:{} nan:{}",
+                log.info("Op name: {}; Z shapeInfo: {}; Statistics: min:{} max:{} mean:{} stdev:{} pos:{}, neg:{} zero:{} inf:{} nan:{}",
                         op.opName(), op.z().shapeInfoJava(), stat.getMinValue(), stat.getMaxValue(), stat.getMeanValue(),
                         stat.getStdDevValue(), stat.getCountPositive(), stat.getCountNegative(),
                         stat.getCountZero(), stat.getCountInf(), stat.getCountNaN());
