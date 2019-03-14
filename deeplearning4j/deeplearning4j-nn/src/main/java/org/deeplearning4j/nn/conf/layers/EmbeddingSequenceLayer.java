@@ -139,7 +139,7 @@ public class EmbeddingSequenceLayer extends FeedForwardLayer {
          * @param hasBias If true: include bias parameters in this layer
          */
         public Builder hasBias(boolean hasBias) {
-            this.hasBias = hasBias;
+            this.setHasBias(hasBias);
             return this;
         }
 
@@ -150,7 +150,7 @@ public class EmbeddingSequenceLayer extends FeedForwardLayer {
          * @return Builder
          */
         public Builder inputLength(int inputLength) {
-            this.inputLength = inputLength;
+            this.setInputLength(inputLength);
             return this;
         }
 
@@ -162,18 +162,24 @@ public class EmbeddingSequenceLayer extends FeedForwardLayer {
          * @return Builder
          */
         public Builder inferInputLength(boolean inferInputLength) {
-            this.inferInputLength = inferInputLength;
+            this.setInferInputLength(inferInputLength);
             return this;
         }
 
         @Override
         public Builder weightInit(IWeightInit weightInit) {
+            this.setWeightInitFn(weightInit);
+            return this;
+        }
+
+        @Override
+        public void setWeightInitFn(IWeightInit weightInit){
             if(weightInit instanceof WeightInitEmbedding){
                 long[] shape = ((WeightInitEmbedding) weightInit).shape();
                 nIn(shape[0]);
                 nOut(shape[1]);
             }
-            return super.weightInit(weightInit);
+            this.weightInitFn = weightInit;
         }
 
         /**

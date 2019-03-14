@@ -188,9 +188,9 @@ public class LocalResponseNormalization extends Layer {
         }
 
         public Builder(double k, double alpha, double beta) {
-            this.k = k;
-            this.alpha = alpha;
-            this.beta = beta;
+            this.setK(k);
+            this.setAlpha(alpha);
+            this.setBeta(beta);
         }
 
         public Builder() {}
@@ -201,7 +201,7 @@ public class LocalResponseNormalization extends Layer {
          * @param k Scaling constant
          */
         public Builder k(double k) {
-            this.k = k;
+            this.setK(k);
             return this;
         }
 
@@ -211,7 +211,7 @@ public class LocalResponseNormalization extends Layer {
          * @param n Number of adjacent kernel maps
          */
         public Builder n(double n) {
-            this.n = n;
+            this.setN(n);
             return this;
         }
 
@@ -221,7 +221,7 @@ public class LocalResponseNormalization extends Layer {
          * @param alpha Scaling constant
          */
         public Builder alpha(double alpha) {
-            this.alpha = alpha;
+            this.setAlpha(alpha);
             return this;
         }
 
@@ -231,7 +231,7 @@ public class LocalResponseNormalization extends Layer {
          * @param beta Scaling constant
          */
         public Builder beta(double beta) {
-            this.beta = beta;
+            this.setBeta(beta);
             return this;
         }
 
@@ -243,7 +243,7 @@ public class LocalResponseNormalization extends Layer {
          * @param allowFallback Whether fallback to non-CuDNN implementation should be used
          */
         public Builder cudnnAllowFallback(boolean allowFallback) {
-            this.cudnnAllowFallback = allowFallback;
+            this.setCudnnAllowFallback(allowFallback);
             return this;
         }
 

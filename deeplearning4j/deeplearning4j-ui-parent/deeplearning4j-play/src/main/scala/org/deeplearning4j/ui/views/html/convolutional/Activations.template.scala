@@ -136,8 +136,8 @@ Seq[Any](format.raw/*1.1*/("""<!DOCTYPE html>
 object Activations extends Activations_Scope0.Activations
               /*
                   -- GENERATED --
-                  DATE: Sat Mar 09 18:24:08 AEDT 2019
-                  SOURCE: c:/DL4J/Git/deeplearning4j/deeplearning4j/deeplearning4j-ui-parent/deeplearning4j-play/src/main/views/org/deeplearning4j/ui/views/convolutional/Activations.scala.html
+                  DATE: Tue Mar 12 10:28:37 CET 2019
+                  SOURCE: D:/ANNE_project/anne_src/dl4j_printomi/deeplearning4j/deeplearning4j/deeplearning4j-ui-parent/deeplearning4j-play/src/main/views/org/deeplearning4j/ui/views/convolutional/Activations.scala.html
                   HASH: 737c883e3423bc9418a902e2be77b980877156af
                   MATRIX: 657->0|1724->1098|1766->1112|2253->1571|2282->1572|2324->1586|2482->1717|2511->1718|2550->1730|2582->1734|2611->1735|2653->1749|2775->1844|2804->1845|2843->1857|2878->1864|2907->1865|2949->1879|3136->2039|3165->2040|3204->2052|3242->2062|3271->2063|3313->2077|3435->2172|3464->2173|3501->2183|3614->2268|3643->2269|3685->2283|3850->2421|3879->2422
                   LINES: 25->1|49->25|50->26|60->36|60->36|61->37|65->41|65->41|67->43|67->43|67->43|68->44|71->47|71->47|73->49|73->49|73->49|74->50|79->55|79->55|81->57|81->57|81->57|82->58|85->61|85->61|86->62|89->65|89->65|90->66|92->68|92->68

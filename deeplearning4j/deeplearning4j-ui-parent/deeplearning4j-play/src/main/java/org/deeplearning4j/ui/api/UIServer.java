@@ -16,9 +16,11 @@
 
 package org.deeplearning4j.ui.api;
 
+import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.api.storage.StatsStorage;
 import org.deeplearning4j.api.storage.StatsStorageRouter;
 import org.deeplearning4j.ui.play.PlayUIServer;
+import org.nd4j.linalg.function.Function;
 
 import java.util.List;
 
@@ -27,6 +29,7 @@ import java.util.List;
  *
  * @author Alex Black
  */
+@Slf4j
 public abstract class UIServer {
 
     private static UIServer uiServer;
@@ -36,15 +39,64 @@ public abstract class UIServer {
      * Singleton pattern - all calls to getInstance() will return the same UI instance.
      *
      * @return UI instance for this JVM
+     * @throws RuntimeException if the instance has already started in a different mode (multi/single-session)
      */
-    public static synchronized UIServer getInstance() {
-        if (uiServer == null) {
-            PlayUIServer playUIServer = new PlayUIServer();
-            playUIServer.runMain(new String[] {"--uiPort", String.valueOf(PlayUIServer.DEFAULT_UI_PORT)});
+    public static synchronized UIServer getInstance() throws RuntimeException {
+        return getInstance(false, null);
+    }
+
+    /**
+     * Get (and, initialize if necessary) the UI server.
+     * Singleton pattern - all calls to getInstance() will return the same UI instance.
+     * @param multiSession in multi-session mode, multiple training sessions can be visualized in separate browser tabs.
+     *                     <br/>URL path will include session ID as a parameter, i.e.: /train becomes /train/:sessionId
+     * @param statsStorageProvider function that returns a StatsStorage containing the given session ID.
+     *                             <br/>Use this to auto-attach StatsStorage if an unknown session ID is passed
+     *                             as URL path parameter in multi-session mode, or leave it {@code null}.
+     * @return UI instance for this JVM
+     * @throws RuntimeException if the instance has already started in a different mode (multi/single-session)
+     */
+    public static synchronized UIServer getInstance(boolean multiSession, Function<String, StatsStorage> statsStorageProvider)
+        throws RuntimeException {
+        if (uiServer == null || uiServer.isStopped()) {
+            PlayUIServer playUIServer = new PlayUIServer(PlayUIServer.DEFAULT_UI_PORT, multiSession);
+            playUIServer.setMultiSession(multiSession);
+            if (statsStorageProvider != null) {
+                playUIServer.autoAttachStatsStorageBySessionId(statsStorageProvider);
+            }
+            playUIServer.runMain(new String[] {});
             uiServer = playUIServer;
+        } else if (!uiServer.isStopped()) {
+            if (multiSession && !uiServer.isMultiSession()) {
+                throw new RuntimeException("Cannot return multi-session instance." +
+                        " UIServer has already started in single-session mode at " + uiServer.getAddress() +
+                        " You may stop the UI server instance, and start a new one.");
+            } else if (!multiSession && uiServer.isMultiSession()) {
+                throw new RuntimeException("Cannot return single-session instance." +
+                        " UIServer has already started in multi-session mode at " + uiServer.getAddress() +
+                        " You may stop the UI server instance, and start a new one.");
+            }
         }
         return uiServer;
     }
+
+    /**
+     * Stop UIServer instance, if already running
+     */
+    public static void stopInstance() {
+        if (uiServer != null) {
+            uiServer.stop();
+        }
+    }
+
+    public abstract boolean isStopped();
+
+    /**
+     * Check if the instance initialized with one of the factory methods
+     * ({@link #getInstance()} or {@link #getInstance(boolean, Function)}) is in multi-session mode
+     * @return {@code true} if the instance is in multi-session
+     */
+    public abstract boolean isMultiSession();
 
     /**
      * Get the address of the UI
