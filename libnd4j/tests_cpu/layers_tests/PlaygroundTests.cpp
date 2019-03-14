@@ -1469,3 +1469,13 @@ TEST_F(PlaygroundTests, softmax_1) {
 
 }
 
+//////////////////////////////////////////////////////////////////////
+TEST_F(PlaygroundTests, subarr_1) {
+    
+    NDArray x('c', {10, 5}, nd4j::DataType::FLOAT32);
+    NDArray subArr1 = x({0,0,  3,4});
+    NDArray subArr2 = x({0,0,  3,4}, true);
+
+    subArr1.printShapeInfo("subArr1");
+    subArr2.printShapeInfo("subArr2");
+}
