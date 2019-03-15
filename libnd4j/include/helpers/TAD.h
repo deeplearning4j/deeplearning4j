@@ -453,6 +453,11 @@ namespace shape {
             this->tadOnlyShapeInfo[shape::shapeInfoLength(this->tadOnlyShapeInfo) - 2] = this->originalShapeInfo[shape::shapeInfoLength(this->originalShapeInfo) - 2];
         }
 
+        // do not swap order if positive elementwise stride preserved
+        if (shape::elementWiseStride(this->tadOnlyShapeInfo) >= 1) {
+            this->tadOnlyShapeInfo[shape::shapeInfoLength(this->tadOnlyShapeInfo) - 1] = shape::order(this->originalShapeInfo);
+        }
+
         if (this->tadShape != nullptr)
             delete[] this->tadShape;
 

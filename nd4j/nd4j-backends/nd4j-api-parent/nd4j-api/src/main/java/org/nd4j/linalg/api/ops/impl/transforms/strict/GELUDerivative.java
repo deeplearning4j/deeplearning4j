@@ -31,13 +31,13 @@ import java.util.List;
  */
 public class GELUDerivative extends BaseTransformStrictOp {
 
-    public GELUDerivative(SameDiff sameDiff, SDVariable i_v, boolean inPlace, boolean precise) {
+    public GELUDerivative(SameDiff sameDiff, SDVariable i_v, boolean inPlace) {
         super(sameDiff, i_v, inPlace);
     }
 
     public GELUDerivative() {}
 
-    public GELUDerivative(INDArray x, INDArray z, boolean precise) {
+    public GELUDerivative(INDArray x, INDArray z) {
         super(x, z);
     }
 

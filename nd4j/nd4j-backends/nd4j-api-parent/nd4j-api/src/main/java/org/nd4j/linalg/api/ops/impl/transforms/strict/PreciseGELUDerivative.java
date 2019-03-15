@@ -37,7 +37,7 @@ public class PreciseGELUDerivative extends BaseTransformStrictOp {
 
     public PreciseGELUDerivative() {}
 
-    public PreciseGELUDerivative(INDArray x, INDArray z, boolean precise) {
+    public PreciseGELUDerivative(INDArray x, INDArray z) {
         super(x, z);
     }
 
