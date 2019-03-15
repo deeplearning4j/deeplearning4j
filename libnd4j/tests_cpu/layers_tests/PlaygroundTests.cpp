@@ -30,6 +30,7 @@
 #include <ops/ops.h>
 #include <OmpLaunchHelper.h>
 #include <GradCheck.h>
+#include <Loops.h>
 
 #include <helpers/BenchmarkHelper.h>
 
@@ -47,6 +48,7 @@ public:
     }
 };
 
+/*
 TEST_F(PlaygroundTests, Test_OpBenchmark_1) {
 
     BenchmarkHelper helper;
@@ -240,6 +242,7 @@ TEST_F(PlaygroundTests, Test_OpBenchmark_6) {
 
     helper.runOperationSuit(&db, generator, batch, "parametrized softmax test");
 }
+*/
 
 /*
 TEST_F(PlaygroundTests, Test_Reduce_Mechanics) {
@@ -1452,3 +1455,61 @@ TEST_F(PlaygroundTests, softmax_1) {
 }
 
 */
+
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(PlaygroundTests, loops_1) {
+    
+    const int N = 100;
+    NDArray x('c', {16, 32, 64, 64}, nd4j::DataType::FLOAT32);
+    NDArray z1('c', {32}, nd4j::DataType::FLOAT32);
+    NDArray z2('c', {32}, nd4j::DataType::FLOAT32);
+    std::vector<int> dimsToExclude = {0,2,3};
+    std::vector<int> tadDims = {1};
+    x.linspace(0.01);
+
+    // warm up
+    for (int i = 0; i < 1000; ++i)
+        32*512;
+
+    //****************************************************//
+    auto timeStart1 = std::chrono::system_clock::now();
+    for (int i = 0; i < N ; i++)    
+        x.reduceAlongDimension(nd4j::reduce::Mean, &z1, dimsToExclude);
+    auto timeEnd1  = std::chrono::system_clock::now();
+    auto duration1 = std::chrono::duration_cast<std::chrono::microseconds> ((timeEnd1 - timeStart1) / N).count();
+    
+    
+    //****************************************************//
+    Nd4jLong *tadShapeInfo(nullptr), *tadOffsets(nullptr);
+    x.getSubArrShapeAndOffsets(tadDims, tadShapeInfo, tadOffsets);
+
+    // shape::printShapeInfoLinear(tadShapeInfo);
+    // shape::printIntArray(tadOffsets, 32);    
+
+    auto timeStart2 = std::chrono::system_clock::now();
+    for (int i = 0; i < N ; i++)    
+        Loops::loopTadXZ<float, float>(x.bufferAsT<float>(), tadShapeInfo, tadOffsets, 
+                                       z2.bufferAsT<float>(), z2.getShapeInfo(), 
+                                       nullptr, 
+                                       &simdOps::Mean<float,float>::startingValue,
+                                       &simdOps::Mean<float,float>::update,
+                                       &simdOps::Mean<float,float>::op,
+                                       &simdOps::Mean<float,float>::postProcess);
+
+
+    auto timeEnd2  = std::chrono::system_clock::now();
+    auto duration2 = std::chrono::duration_cast<std::chrono::microseconds> ((timeEnd2 - timeStart2) / N).count();
+
+    RELEASE(tadShapeInfo, x.getWorkspace());
+    RELEASE(tadOffsets, x.getWorkspace());
+
+    // z1.printIndexedBuffer("z1 ");
+    // z2.printIndexedBuffer("z2 ");
+
+    ASSERT_TRUE(z1.equalsTo(z2));
+
+    printf("duration old: %ld\n", duration1);
+    printf("duration new: %ld\n", duration2);
+
+}

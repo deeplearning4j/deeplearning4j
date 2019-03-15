@@ -5208,6 +5208,55 @@ Nd4jLong NDArray::getOffset(const Nd4jLong i) const {
     return shape::getIndexOffset(i, _shapeInfo, _length);
 }
 
+////////////////////////////////////////////////////////////////////////
+void NDArray::getSubArrShapeAndOffsets(const std::vector<int>& dimsToExclude, Nd4jLong* &subArrShapeInfo, Nd4jLong* &subArrOffsets, bool keepUnitiesInShape) const {
+
+    const Nd4jLong numOfSubArrs = ShapeUtils::getNumOfSubArrs(_shapeInfo, dimsToExclude);
+    const int rank = rankOf();        
+    const int dimsSize = dimsToExclude.size();        
+
+    // allocate memory 
+    ALLOCATE(subArrShapeInfo, _workspace, shape::shapeInfoLength(rank - dimsSize), Nd4jLong);
+    ALLOCATE(subArrOffsets,   _workspace, numOfSubArrs, Nd4jLong);        
+
+    Nd4jLong *outShapeInfo = ShapeBuilders::copyShapeInfo(_shapeInfo, true, _workspace);        
+    std::vector<Nd4jLong> shape(dimsSize), strides(dimsSize);
+
+    bool continuous = false;
+    int current(rank - 1), counter(0), vectorDim;
+
+    for(int i = rank - 1, j = dimsSize - 1; i >= 0; --i) {
+        if(j >= 0 && i == dimsToExclude[j]) {
+            strides[j] = shape::stride(outShapeInfo)[i];
+            shape[j--] = shape::shapeOf(outShapeInfo)[i];
+            shape::shapeOf(outShapeInfo)[i] = 1;                
+        }
+        else {
+            continuous = current-- == i;
+            if(!counter++) vectorDim = i;
+        }
+    }        
+
+    // evaluate ews
+    if(counter == 1)
+        outShapeInfo[2 * rank + 2] = shape::stride(outShapeInfo)[vectorDim];
+    else
+        outShapeInfo[2 * rank + 2] = (continuous && ordering() == 'c') ? ews() : 0;
+
+    // calculation of sub-array offsets (subArrOffsets)
+    shape::calcSubArrOffsets(numOfSubArrs, dimsSize, shape.data(), strides.data(), subArrOffsets);
+        
+    // remove unities from outShapeInfo if required 
+    if(!keepUnitiesInShape) {
+        std::vector<Nd4jLong> shapeNoUnities = ShapeUtils::evalDimsWithoutUnities(outShapeInfo);
+        shape::reshapeCF(rank, outShapeInfo, shapeNoUnities.size(), shapeNoUnities.data(), ordering() == 'f', subArrShapeInfo);            
+    }
+    else
+        memcpy(subArrShapeInfo, outShapeInfo, shape::shapeInfoLength(rank)*sizeof(Nd4jLong));
+        
+    RELEASE(outShapeInfo, _workspace);
+}
+
     //BUILD_DOUBLE_TEMPLATE(template void NDArray::templatedSet, (void *buffer, const Nd4jLong *indices, Y value), LIBND4J_TYPES, LIBND4J_TYPES);
 /*
 #ifndef __CLION_IDE__

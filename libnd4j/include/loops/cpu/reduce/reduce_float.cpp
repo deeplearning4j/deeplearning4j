@@ -202,7 +202,7 @@ namespace functions {
                         z[i] = OpType::postProcess(start, tadLength, extraParams);;
                     }
                 } else {
-
+                    
                     PRAGMA_OMP_PARALLEL_FOR_THREADS(num_threads)
                     for (int i = 0; i < resultLength; i++) {
 
