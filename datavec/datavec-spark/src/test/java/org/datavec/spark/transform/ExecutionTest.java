@@ -235,13 +235,15 @@ public class ExecutionTest extends BaseSparkTest {
     @Test
     public void testPythonExecution() throws Exception {
         Schema schema = new Schema.Builder().addColumnInteger("col0")
-                .addColumnCategorical("col1", "state0", "state1", "state2").addColumnDouble("col2").build();
+                .addColumnString("col1").addColumnDouble("col2").build();
 
+        Schema finalSchema = new Schema.Builder().addColumnInteger("col0")
+                .addColumnInteger("col1").addColumnDouble("col2").build();
         String pythonCode = "col1 = ['state0', 'state1', 'state2'].index(col1)\ncol2 += 10.0";
         TransformProcess tp = new TransformProcess.Builder(schema).transform(
           new PythonTransform(
                 pythonCode,
-                  schema
+                  finalSchema
           )
         ).build();
         List<List<Writable>> inputData = new ArrayList<>();
