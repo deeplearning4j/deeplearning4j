@@ -219,6 +219,17 @@ TEST_F(PlaygroundTests, Test_OpBenchmark_5) {
     helper.runOperationSuit(&tb, generator, batch, "Transform_Sigmoid");
 }
 
+TEST_F(PlaygroundTests, Test_Something_5) {
+    auto x = NDArrayFactory::create<float>('c', {100, 10});
+    auto y = NDArrayFactory::create<float>('c', {10});
+    auto z = NDArrayFactory::create<float>('c', {100, 10});
+    std::vector<int> axis = {1};
+
+    NativeOpExcutioner::execBroadcast(broadcast::Add, x.buffer(), x.shapeInfo(), y.buffer(), y.shapeInfo(), z.buffer(), z.shapeInfo(),
+                                      axis.data(), axis.size(), /*Nd4jLong *tadOnlyShapeInfo*/ nullptr, /*Nd4jLong *tadOffsets*/ nullptr,
+            /*Nd4jLong *tadOnlyShapeInfoZ*/ nullptr, /*Nd4jLong *tadOffsetsZ*/ nullptr);
+}
+
 #define PARAMETRIC_D() [&] (Parameters &p) -> Context*
 /*
 TEST_F(PlaygroundTests, Test_OpBenchmark_6) {
