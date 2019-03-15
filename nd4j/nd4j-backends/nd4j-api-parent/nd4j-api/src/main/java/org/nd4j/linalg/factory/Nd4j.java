@@ -56,6 +56,7 @@ import org.nd4j.linalg.api.ops.executioner.DefaultOpExecutioner;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.api.ops.impl.indexaccum.IMax;
 import org.nd4j.linalg.api.ops.impl.indexaccum.IMin;
+import org.nd4j.linalg.api.ops.impl.reduce.TensorMmul;
 import org.nd4j.linalg.api.ops.impl.scatter.ScatterUpdate;
 import org.nd4j.linalg.api.ops.impl.shape.Diag;
 import org.nd4j.linalg.api.ops.impl.shape.DiagPart;
@@ -847,76 +848,20 @@ public class Nd4j {
      * @return
      */
     public static INDArray tensorMmul(INDArray a, INDArray b, int[][] axes) {
-        int validationLength = Math.min(axes[0].length, axes[1].length);
-        for (int i = 0; i < validationLength; i++) {
-            if (a.size(axes[0][i]) != b.size(axes[1][i]))
-                throw new IllegalArgumentException("Size of the given axes at each dimension must be the same size.");
-            if (axes[0][i] < 0)
-                axes[0][i] += a.rank();
-            if (axes[1][i] < 0)
-                axes[1][i] += b.rank();
+        CustomOp op = DynamicCustomOp.builder("tensordot")
+                .addInputs(a, b)
+                .addIntegerArguments(axes[0].length)
+                .addIntegerArguments(axes[0])
+                .addIntegerArguments(axes[1].length)
+                .addIntegerArguments(axes[1])
+                .build();
 
-        }
+        List<LongShapeDescriptor> l = op.calculateOutputShape();
+        INDArray out = Nd4j.create(l.get(0));
+        op.addOutputArgument(out);
+        Nd4j.exec(op);
 
-        List<Integer> listA = new ArrayList<>();
-        for (int i = 0; i < a.rank(); i++) {
-            if (!Ints.contains(axes[0], i))
-                listA.add(i);
-        }
-
-        int[] newAxesA = Ints.concat(Ints.toArray(listA), axes[0]);
-
-
-        List<Integer> listB = new ArrayList<>();
-        for (int i = 0; i < b.rank(); i++) {
-            if (!Ints.contains(axes[1], i))
-                listB.add(i);
-        }
-
-        int[] newAxesB = Ints.concat(axes[1], Ints.toArray(listB));
-
-        int n2 = 1;
-        int aLength = Math.min(a.rank(), axes[0].length);
-        for (int i = 0; i < aLength; i++) {
-            n2 *= a.size(axes[0][i]);
-        }
-
-        //if listA and listB are empty these donot initialize.
-        //so initializing with {1} which will then get overriden if not empty
-        long[] newShapeA = {-1, n2};
-        long[] oldShapeA;
-        if (listA.size() == 0) {
-            oldShapeA = new long[] {1};
-        } else {
-            oldShapeA = Longs.toArray(listA);
-            for (int i = 0; i < oldShapeA.length; i++)
-                oldShapeA[i] = a.size((int) oldShapeA[i]);
-        }
-
-        int n3 = 1;
-        int bNax = Math.min(b.rank(), axes[1].length);
-        for (int i = 0; i < bNax; i++) {
-            n3 *= b.size(axes[1][i]);
-        }
-
-
-        long[] newShapeB = {n3, -1};
-        long[] oldShapeB;
-        if (listB.size() == 0) {
-            oldShapeB = new long[] {1};
-        } else {
-            oldShapeB = Longs.toArray(listB);
-            for (int i = 0; i < oldShapeB.length; i++)
-                oldShapeB[i] = b.size((int) oldShapeB[i]);
-        }
-
-
-        INDArray at = a.permute(newAxesA).reshape(newShapeA);
-        INDArray bt = b.permute(newAxesB).reshape(newShapeB);
-        INDArray ret = at.mmul(bt);
-
-        long[] aPlusB = Longs.concat(oldShapeA, oldShapeB);
-        return ret.reshape(aPlusB);
+        return out;
     }
 
     /**
