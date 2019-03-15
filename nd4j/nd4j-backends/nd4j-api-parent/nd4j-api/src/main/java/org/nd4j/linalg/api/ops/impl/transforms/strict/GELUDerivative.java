@@ -33,14 +33,12 @@ public class GELUDerivative extends BaseTransformStrictOp {
 
     public GELUDerivative(SameDiff sameDiff, SDVariable i_v, boolean inPlace, boolean precise) {
         super(sameDiff, i_v, inPlace);
-        this.extraArgs = new Object[]{precise ? 1.0 : 0.0};
     }
 
     public GELUDerivative() {}
 
     public GELUDerivative(INDArray x, INDArray z, boolean precise) {
         super(x, z);
-        this.extraArgs = new Object[]{precise ? 1.0 : 0.0};
     }
 
     public GELUDerivative(INDArray x) {

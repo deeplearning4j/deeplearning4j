@@ -67,6 +67,8 @@ import org.nd4j.util.OneTimeLogger;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -2674,7 +2676,7 @@ public class WordVectorSerializer {
      */
     public static WordVectors loadStaticModel(InputStream inputStream) throws IOException {
 
-        File tmpFile = DL4JFileUtils.createTempFile("word2vec"+System.currentTimeMillis(), "tmp");
+        File tmpFile = DL4JFileUtils.createTempFile("word2vec"+System.currentTimeMillis(), ".tmp");
         FileUtils.copyInputStreamToFile(inputStream, tmpFile);
         try {
             return loadStaticModel(tmpFile);
@@ -2825,14 +2827,27 @@ public class WordVectorSerializer {
         protected int vectorLength;
         protected AtomicInteger idxCounter = new AtomicInteger(0);
 
+
         protected BinaryReader(@NonNull File file) {
             try {
-                stream = new DataInputStream(new BufferedInputStream(GzipUtils.isCompressedFilename(file.getName())
-                                ? new GZIPInputStream(new FileInputStream(file)) : new FileInputStream(file)));
-
+                // Try to read as GZip
+                stream = new DataInputStream(new BufferedInputStream(new GZIPInputStream(new FileInputStream(file))));
+            }
+            catch (IOException e) {
+                try {
+                    // Failed to read as Gzip, assuming it's not compressed binary format
+                    stream = new DataInputStream(new BufferedInputStream(new FileInputStream(file)));
+                } catch (Exception e1) {
+                    throw new RuntimeException(e1);
+                }
+            }
+            catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+            try {
                 numWords = Integer.parseInt(readString(stream));
                 vectorLength = Integer.parseInt(readString(stream));
-            } catch (Exception e) {
+            } catch (IOException e) {
                 throw new RuntimeException(e);
             }
         }

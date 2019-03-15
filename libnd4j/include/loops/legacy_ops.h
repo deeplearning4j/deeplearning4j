@@ -161,7 +161,9 @@
         (51, Expm1), \
         (52, ATanh) ,\
         (53, GELU) ,\
-        (54, GELUDerivative)
+        (54, GELUDerivative), \
+        (55, PreciseGELU) ,\
+        (56, PreciseGELUDerivative)
 
 // these ops return one of FLOAT data types
 #define TRANSFORM_FLOAT_OPS \
@@ -355,7 +357,8 @@
         (33, LogPoissonLossFull) , \
         (34, AMaxPairwise), \
         (35, AMinPairwise) ,\
-        (36, TruncateMod)
+        (36, TruncateMod), \
+        (37, ReplaceNans)
 
 
 

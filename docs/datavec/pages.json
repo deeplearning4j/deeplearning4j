@@ -26,7 +26,6 @@
       "page": "readers.md",
       "class": [
         "datavec-data/datavec-data-image/src/main/java/org/datavec/image/recordreader/ImageRecordReader.java",
-        "datavec-data/datavec-data-image/src/main/java/org/datavec/image/recordreader/VideoRecordReader.java",
         "datavec-data/datavec-data-audio/src/main/java/org/datavec/audio/recordreader/NativeAudioRecordReader.java",
         "datavec-data/datavec-data-audio/src/main/java/org/datavec/audio/recordreader/WavFileRecordReader.java",
         "datavec-data/datavec-data-nlp/src/main/java/org/datavec/nlp/reader/TfidfRecordReader.java",

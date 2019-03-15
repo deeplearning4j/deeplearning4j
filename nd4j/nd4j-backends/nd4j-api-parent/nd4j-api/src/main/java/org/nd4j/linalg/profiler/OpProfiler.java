@@ -16,11 +16,11 @@
 
 package org.nd4j.linalg.profiler;
 
-import lombok.Data;
-import lombok.Getter;
+import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ndarray.INDArrayStatistics;
 import org.nd4j.linalg.api.ops.*;
 import org.nd4j.linalg.profiler.data.StackAggregator;
 import org.nd4j.linalg.profiler.data.StringAggregator;
@@ -58,6 +58,9 @@ public class OpProfiler {
     private AtomicLong invocationsCount = new AtomicLong(0);
     private static OpProfiler ourInstance = new OpProfiler();
 
+
+    @Getter
+    private INDArrayStatistics statistics = new INDArrayStatistics();
 
     @Getter
     private StringAggregator classAggergator = new StringAggregator();
@@ -158,6 +161,7 @@ public class OpProfiler {
 
         orderCounter.reset();
         listeners.clear();
+        statistics = INDArrayStatistics.builder().build();
     }
 
 
@@ -254,21 +258,23 @@ public class OpProfiler {
 
         updatePairs(op.opName(), opClass);
 
-        PenaltyCause[] causes = processOperands(op.x(), op.y(), op.z());
-        for (PenaltyCause cause : causes) {
-            switch (cause) {
-                case NON_EWS_ACCESS:
-                    nonEwsAggregator.incrementCount();
-                    break;
-                case STRIDED_ACCESS:
-                    stridedAggregator.incrementCount();
-                    break;
-                case MIXED_ORDER:
-                    mixedOrderAggregator.incrementCount();
-                    break;
-                case NONE:
-                default:
-                    break;
+        if (config.isNotOptimalArguments()) {
+            PenaltyCause[] causes = processOperands(op.x(), op.y(), op.z());
+            for (PenaltyCause cause : causes) {
+                switch (cause) {
+                    case NON_EWS_ACCESS:
+                        nonEwsAggregator.incrementCount();
+                        break;
+                    case STRIDED_ACCESS:
+                        stridedAggregator.incrementCount();
+                        break;
+                    case MIXED_ORDER:
+                        mixedOrderAggregator.incrementCount();
+                        break;
+                    case NONE:
+                    default:
+                        break;
+                }
             }
         }
 
@@ -318,15 +324,15 @@ public class OpProfiler {
         PenaltyCause[] causes = processTADOperands(tadBuffers);
         for (PenaltyCause cause : causes) {
             switch (cause) {
-                case TAD_NON_EWS_ACCESS:
-                    tadNonEwsAggregator.incrementCount();
-                    break;
-                case TAD_STRIDED_ACCESS:
-                    tadStridedAggregator.incrementCount();
-                    break;
-                case NONE:
-                default:
-                    break;
+               case TAD_NON_EWS_ACCESS:
+                  tadNonEwsAggregator.incrementCount();
+                   break;
+               case TAD_STRIDED_ACCESS:
+                  tadStridedAggregator.incrementCount();
+                  break;
+               case NONE:
+               default:
+                   break;
             }
         }
     }
@@ -336,7 +342,7 @@ public class OpProfiler {
      *
      * @return
      */
-    public StackAggregator getMixedOrderAggregator() {
+    protected StackAggregator getMixedOrderAggregator() {
         // FIXME: remove this method, or make it protected
         return mixedOrderAggregator;
     }
@@ -701,4 +707,7 @@ public class OpProfiler {
     public void processMemoryAccess() {
 
     }
+
+    @Setter
+    private ProfilerConfig config;
 }

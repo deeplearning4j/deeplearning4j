@@ -185,6 +185,15 @@ namespace nd4j {
         #endif
 
 
+        /**
+         * standardizes input array to be zero mean unit variance along the given axis
+         *
+         *
+         */
+        #if NOT_EXCLUDED(OP_standardize)
+                DECLARE_CONFIGURABLE_OP(standardize, 1, 1, true, 0, -2);
+                DECLARE_CUSTOM_OP(standardize_bp, 2, 1, false, 0, -2);
+        #endif
     }
 }
 

@@ -142,10 +142,9 @@ static T gausLegQuad(const T a, const T b, const T x) {
 	}	
 
 	// Gauss-Legendre
-#pragma omp declare reduction (add : double,float,float16,bfloat16 : omp_out += omp_in) initializer(omp_priv = (T)0.)
-#pragma omp simd private(t) reduction(add:sum)
+    PRAGMA_OMP_SIMD_SUM(sum)
 	for (int i = 0; i < 18; ++i) {	
-		t = x + (upLim - x) * (T)abscissas[i];
+		auto t = x + (upLim - x) * (T)abscissas[i];
 		sum += (T)weights[i] * math::nd4j_exp<T,T>(amu * (math::nd4j_log<T,T>(t) - lnrat) + bmu * (math::nd4j_log<T,T>((T)1. - t) - lnratm));
 	}
 	if (std::is_same<T, double>::value) {
@@ -198,9 +197,10 @@ static T betaIncTA(T a, T b, T x) {
 template<typename T>
 NDArray betaIncT(const NDArray& a, const NDArray& b, const NDArray& x) {
 	auto result = NDArray(&x, false, x.getWorkspace());
+	int xLen = x.lengthOf();
 
-#pragma omp parallel for if(x.lengthOf() > Environment::getInstance()->elementwiseThreshold()) schedule(guided)
-	for(int i = 0; i < x.lengthOf(); ++i) {
+    PRAGMA_OMP_PARALLEL_FOR_IF(xLen > Environment::getInstance()->elementwiseThreshold())
+	for(int i = 0; i < xLen; ++i) {
 		result.p(i, betaIncTA<T>(a.e<T>(i), b.e<T>(i), x.e<T>(i)));
 	}
 

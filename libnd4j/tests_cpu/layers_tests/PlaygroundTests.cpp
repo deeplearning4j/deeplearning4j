@@ -26,8 +26,10 @@
 #include <graph/profiling/GraphProfilingHelper.h>
 #include <type_conversions.h>
 #include <helpers/threshold.h>
+#include <helpers/MmulHelper.h>
 #include <ops/ops.h>
 #include <OmpLaunchHelper.h>
+#include <GradCheck.h>
 
 #include <helpers/BenchmarkHelper.h>
 
@@ -95,7 +97,7 @@ TEST_F(PlaygroundTests, Test_OpBenchmark_2) {
 
     helper.runOperationSuit(&sb, generator, "ScalarTest");
 
-    TransformBenchmark tb(transform::StrictOps::Tanh);
+    TransformBenchmark tb(transform::StrictOps::Tanh, "tanh");
 
     // we can use the same generator, since the same number of operands used
     helper.runOperationSuit(&tb, generator, "TransformTest");
@@ -135,12 +137,12 @@ TEST_F(PlaygroundTests, Test_OpBenchmark_2) {
 
     ReductionBenchmark rb(reduce::FloatOps::Mean);
 
-    helper.runOperationSuit(&rb, generatorReductionAxis, "ReductionAlongDimensionTest");
+    helper.runOperationSuit(&rb, (const std::function<void (ResultSet &, ResultSet &, ResultSet &)>)(generatorReductionAxis), "ReductionAlongDimensionTest");
 }
 
 TEST_F(PlaygroundTests, Test_OpBenchmark_3) {
 
-    TransformBenchmark tb(transform::StrictOps::Tanh);
+    TransformBenchmark tb(transform::StrictOps::Tanh, "tanh");
     PredefinedParameters a("alpha", {2, 3, 4});
     PredefinedParameters b("beta", {9, 15, 27});
 
@@ -167,7 +169,7 @@ TEST_F(PlaygroundTests, Test_OpBenchmark_4) {
     BenchmarkHelper helper;
 
     PairwiseBenchmark pb(pairwise::Ops::Add, "PWT ADD");
-    TransformBenchmark tb(transform::StrictOps::Tanh);
+    TransformBenchmark tb(transform::StrictOps::Tanh, "tanh");
     ScalarBenchmark sb(scalar::Multiply);
     sb.setY(NDArrayFactory::create_<float>(119.0f));
 
@@ -197,7 +199,7 @@ TEST_F(PlaygroundTests, Test_OpBenchmark_4) {
 TEST_F(PlaygroundTests, Test_OpBenchmark_5) {
     BenchmarkHelper helper;
 
-    TransformBenchmark tb(transform::StrictOps::Sigmoid);
+    TransformBenchmark tb(transform::StrictOps::Sigmoid, "sigmoid");
     IntParameters length("length", 100, 500, 100);
     BoolParameters inplace("inplace");
 
@@ -217,59 +219,95 @@ TEST_F(PlaygroundTests, Test_OpBenchmark_5) {
     helper.runOperationSuit(&tb, generator, batch, "Transform_Sigmoid");
 }
 
+#define PARAMETRIC_D() [&] (Parameters &p) -> Context*
 /*
-TEST_F(PlaygroundTests, Test_Reduce_Mechanics) {
-    auto length = 8192;
-    auto x = new double[length];
-    double finalVal = 0.0;
-    for (int e = 0; e < length; e++) {
-        x[e] = 1.0;
-    }
+TEST_F(PlaygroundTests, Test_OpBenchmark_6) {
+    BenchmarkHelper helper;
+    nd4j::ops::softmax op;
+    DeclarableBenchmark db(op, "SoftMaxTest");
 
-    BlockInformation info(length, 1024);
-    auto blocks = new double[info.threads];
+    PredefinedParameters a("alpha", {128, 256});
+    PredefinedParameters b("beta", {1024, 2048});
+    ParametersBatch batch({&a, &b});
 
-    printf("num_threads: [%i]\n", info.threads);
+    auto generator = PARAMETRIC_D() {
+        auto ctx = new Context(1);
 
-#pragma omp parallel num_threads(info.threads) if (info.threads > 1) proc_bind(AFFINITY) default(shared)
-    {
-        double local = 0.0;
-        for (int i = omp_get_thread_num(); i < info.chunks; i += info.threads) {
-            Nd4jLong newOffset = (i * info.items);
-            auto chunk = x + newOffset;
-            Nd4jLong itemsToLoop = info.items;
-            if (i * info.items >= length) {
-                break;
-            }
+        ctx->setInputArray(0, NDArrayFactory::create_<float>('c', {p.getIntParam("alpha"), p.getIntParam("beta")}));
+        ctx->setOutputArray(0, NDArrayFactory::create_<float>('c', {p.getIntParam("alpha"), p.getIntParam("beta")}));
+        return ctx;
+    };
 
-            //handle modulo case
-            if (newOffset + info.items >= length) {
-                itemsToLoop = length - newOffset;
-            }
-
-// FIXME: proper reduction should be used here
-            for (Nd4jLong j = 0; j < itemsToLoop && i * info.items + j < length; j++) {
-                auto curr = simdOps::Mean<double,double>::op(chunk[j], nullptr);
-                local = simdOps::Mean<double,double>::update(local, curr, nullptr);
-            }
-
-        }
-
-        blocks[omp_get_thread_num()] = local;
-    }
-
-// FIXME: proper reduction should be used here
-    for (int i = 0; i < info.threads; i++) {
-        finalVal = simdOps::Mean<double,double>::update(finalVal, blocks[i], nullptr);
-    }
-
-
-    finalVal = simdOps::Mean<double,double>::postProcess(finalVal, length, nullptr);
-    delete[] blocks;
-    delete[] x;
-    printf("result: [%f]\n", (float) finalVal);
-    ASSERT_NEAR(1.0, finalVal, 1e-5);
+    helper.runOperationSuit(&db, generator, batch, "parametrized softmax test");
 }
+*/
+
+/*
+TEST_F(PlaygroundTests, Test_Strided_Stuff) {
+    auto array = NDArrayFactory::create<float>('c', {1048576, 1024});
+    auto strided = array({0,0, 3, 4}, true);
+    auto z = NDArrayFactory::create<float>(0.0f);
+    //strided->shapeInfo()[shape::shapeInfoLength(strided->rankOf()) - 2] = 1024;
+
+    int N = 1000;
+    auto timeStart = std::chrono::system_clock::now();
+    for (int e = 0; e < N; e++)
+        NativeOpExcutioner::execReduceSameScalar(reduce::ReduceSameBenchmarkOp, strided.buffer(), strided.shapeInfo(), nullptr, z.buffer(), z.shapeInfo());
+
+    auto timeEnd = std::chrono::system_clock::now();
+    auto spanTime = std::chrono::duration_cast<std::chrono::microseconds> ((timeEnd - timeStart) / N).count();
+    auto ttlTime = std::chrono::duration_cast<std::chrono::microseconds> ((timeEnd - timeStart)).count();
+
+    nd4j_printf("average time: %lld us;\n", spanTime);
+    nd4j_printf("total time: %lld ms;\n", ttlTime);
+
+}
+*/
+
+/*
+TEST_F(PlaygroundTests, StridedReductionsNoEWS) {
+    nd4j_printf("SETTING ELEMENTWISE THRESHOLD AND TAD THRESHOLD TO 1/1","");
+    nd4j::Environment::getInstance()->setElementwiseThreshold(1);
+    nd4j::Environment::getInstance()->setTadThreshold(1);
+    BenchmarkHelper helper;
+    IntPowerParameters stride("stride", 2, 0, 10);          //2^0=1, ..., 2^10=1024
+    ParametersBatch batch({&stride});
+    //This is an edge case: technically an EWS *should* be available here
+    auto generator1 = PARAMETRIC_XYZ() {
+        auto stride = p.getIntParam("stride");
+        auto arr = NDArrayFactory::create_<float>('c', {1048576 + (stride == 1 ? 0 : 1), stride});
+        NDArray* strided;
+        if(stride == 1){
+            strided = arr;
+        } else {            
+            strided = new NDArray((*arr)({0,1048576, 0,1}, true));        //All rows, first column
+        }
+        strided->assign(1.0);
+        x.push_back(strided);
+        y.push_back(nullptr);
+        z.push_back(NDArrayFactory::create_<float>(0.0f));
+    };
+    ReductionBenchmark rbSum(reduce::SameOps::Sum, "stridedSum");
+    helper.runOperationSuit(&rbSum, (const std::function<void (Parameters &, ResultSet &, ResultSet &, ResultSet &)>)(generator1), batch, "Strided Sum - No EWS Test 1");
+    //No EWS defined for this case
+    auto generator2 = PARAMETRIC_XYZ() {
+        auto stride = p.getIntParam("stride");
+        auto arr = NDArrayFactory::create_<float>('c', {(stride == 1 ? 1 : 2) * 1024, 1024, stride});
+        NDArray* strided;
+        if(stride == 1){
+            strided = arr;
+        } else {            
+            strided = new NDArray((*arr)({0,2*1024,2,  0,0,0,  0,1,1}, true, true));
+        }
+        strided->assign(1.0);
+        x.push_back(strided);
+        y.push_back(nullptr);
+        z.push_back(NDArrayFactory::create_<float>(0.0f));
+    };
+    ReductionBenchmark rbSum2(reduce::SameOps::Sum, "stridedSumNoEWS");
+    helper.runOperationSuit(&rbSum2, (const std::function<void (Parameters &, ResultSet &, ResultSet &, ResultSet &)>)(generator2), batch, "Strided Sum - No EWS Test 2");
+}
+*/
 
 TEST_F(PlaygroundTests, LambdaTest_1) {
     auto array = NDArrayFactory::create<float>('c', {8192, 1024});
@@ -1249,6 +1287,7 @@ TEST_F(PlaygroundTests, test_assign_float) {
 
 }
 
+/*
 TEST_F(PlaygroundTests, test_manual_loop) {
     const unsigned int len = 32 * 128 * 256 * 256;
     auto array = new float[len];
@@ -1280,6 +1319,7 @@ TEST_F(PlaygroundTests, test_manual_loop) {
     delete[] array;
     delete[] z;
 }
+*/
 
 TEST_F(PlaygroundTests, test_col2im_permuted_1) {
     auto x = NDArrayFactory::create<float>('c', {8, 64, 55, 55, 3, 3});
@@ -1320,7 +1360,8 @@ TEST_F(PlaygroundTests, test_col2im_permuted_1) {
 
     ASSERT_EQ(z0, z1);
 }
-/*
+
+
 TEST_F(PlaygroundTests, test_addi_assign) {
     int iterations = 1;
     auto x = NDArrayFactory::create<float>('c', {1000000000});
@@ -1341,6 +1382,7 @@ TEST_F(PlaygroundTests, test_addi_assign) {
     nd4j_printf("Bandwidth: %f GB/s\n", bw);
 }
 
+/*
 /////////////////////////////////////////////////////////////////////
 TEST_F(PlaygroundTests, conv2d_1) {
 
@@ -1370,6 +1412,7 @@ TEST_F(PlaygroundTests, conv2d_1) {
     auto duration = std::chrono::duration_cast<std::chrono::microseconds> ((timeEnd - timeStart) / N).count();
     printf("duration %ld\n", duration);
 }
+*/
 
 /////////////////////////////////////////////////////////////////////
 TEST_F(PlaygroundTests, batchnorm_1) {
@@ -1399,83 +1442,8 @@ TEST_F(PlaygroundTests, batchnorm_1) {
     printf("duration %ld\n", duration);
 }
 
-////////////////////////////////////////////////////////////////////////////
-// MXK x KxN = MxN
-static void usualGemm(const char cOrder, const bool transA, const bool transB, const int M, const int N, const int K, const double alpha, const void* vA, const int lda, const void* vB, const int ldb, const double beta, void* vC, const int ldc) {
 
-    float* A = reinterpret_cast<float*>(const_cast<void*>(vA));
-    float* B = reinterpret_cast<float*>(const_cast<void*>(vB));
-    float* C = reinterpret_cast<float*>(vC);
-    float alphaZ(alpha), betaZ(beta);
 
-    Nd4jLong strideArow, strideAcol, strideBrow, strideBcol, strideCrow, strideCcol;
-
-    if(cOrder == 'f') {
-        strideCrow = 1;
-        strideCcol = ldc;
-
-        if(transA) { strideArow = lda; strideAcol = 1; } else { strideArow = 1; strideAcol = lda; }
-        if(transB) { strideBrow = ldb; strideBcol = 1; } else { strideBrow = 1; strideBcol = ldb; }
-    }
-    else {
-        strideCrow = ldc;
-        strideCcol = 1;
-
-        if(transA) { strideArow = 1; strideAcol = lda; } else { strideArow = lda; strideAcol = 1; }
-        if(transB) { strideBrow = 1; strideBcol = ldb; } else { strideBrow = ldb; strideBcol = 1; }
-    }
-
-    #pragma omp parallel for schedule(guided)
-    for(int row = 0; row < M; ++row) {
-       for(int col = 0; col < N; ++col) {
-            float* a = A + row * strideArow;
-            float* b = B + col * strideBcol;
-            float* c = C + row * strideCrow + col * strideCcol;
-            float val = 0;
-            #pragma omp simd
-            for(int i = 0; i < K; ++i)
-                val = val + a[i*strideAcol] * b[i*strideBrow];
-            *c = alphaZ * val + betaZ * *c;
-       }
-    }
-}
-
-/////////////////////////////////////////////////////////////////////
-TEST_F(PlaygroundTests, gemm_1) {
-
-	// MXK x KxN = MxN
-    const int M = 2048;
-    const int K = 512;
-    const int N = 1024;
-
-    NDArray a('c', {M, K}, nd4j::DataType::FLOAT32);
-    NDArray b('f', {K, N}, nd4j::DataType::FLOAT32);
-    NDArray c('f', {M, N}, nd4j::DataType::FLOAT32);
-
-    a.linspace(-100, 0.01);
-    b.linspace(-200, 0.01);
-
-    double temp;
-    for (int i = 0; i < 100; ++i)
-    	temp = temp * temp;
-
-    auto timeStart = std::chrono::system_clock::now();
-
-	usualGemm(c.ordering(), false, false, M, N, K, 1., a.getBuffer(), K, b.getBuffer(), K, 0., c.buffer(), M);
-
-    auto timeEnd = std::chrono::system_clock::now();
-    auto duration = std::chrono::duration_cast<std::chrono::microseconds> ((timeEnd - timeStart) / N).count();
-    printf("duration my %ld\n", duration);
-
-    //***********************
-
-    timeStart = std::chrono::system_clock::now();
-
-    nd4j::blas::GEMM<float, float, float>::op('f', CblasTrans, CblasNoTrans, M, N, K, 1., a.getBuffer(), K, b.getBuffer(), K, 0., c.buffer(), M);
-    timeEnd = std::chrono::system_clock::now();
-    duration = std::chrono::duration_cast<std::chrono::microseconds> ((timeEnd - timeStart) / N).count();
-    printf("duration raver %ld\n", duration);
-}
 
 //////////////////////////////////////////////////////////////////////
 TEST_F(PlaygroundTests, softmax_1) {
@@ -1501,4 +1469,26 @@ TEST_F(PlaygroundTests, softmax_1) {
     printf("duration %ld\n", duration);
 
 }
-*/
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(PlaygroundTests, subarr_1) {
+    
+    NDArray x('c', {10, 5}, nd4j::DataType::FLOAT32);
+    NDArray subArr1 = x({0,0,  3,4});
+    NDArray subArr2 = x({0,0,  3,4}, true);
+
+    subArr1.printShapeInfo("subArr1");
+    subArr2.printShapeInfo("subArr2");
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(PlaygroundTests, subarr_2) {
+
+    NDArray x('c', {10, 5}, nd4j::DataType::FLOAT32);
+    auto subArr1 = x.subarray({NDIndex::all(), NDIndex::point(2)});
+
+    subArr1->printShapeInfo("subArr1");
+
+    ASSERT_EQ(5, subArr1->ews());
+    delete subArr1;
+}

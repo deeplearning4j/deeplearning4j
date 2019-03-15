@@ -18,16 +18,15 @@ package org.deeplearning4j.nn.layers.convolution;
 
 
 import org.deeplearning4j.exception.DL4JInvalidInputException;
-import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.conf.CacheMode;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
-import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.layers.BaseLayer;
 import org.deeplearning4j.nn.layers.LayerHelper;
+import org.deeplearning4j.nn.layers.mkldnn.MKLDNNConvHelper;
 import org.deeplearning4j.nn.params.ConvolutionParamInitializer;
 import org.deeplearning4j.util.ConvolutionUtils;
 import org.nd4j.linalg.activations.IActivation;
@@ -44,7 +43,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Arrays;
-import java.util.Properties;
 
 
 /**
@@ -93,6 +91,13 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
                             + "For more information, please refer to: https://deeplearning4j.org/docs/latest/deeplearning4j-config-cudnn", t);
                 }
             }
+        } else if("CPU".equalsIgnoreCase(backend)){
+            helper = new MKLDNNConvHelper();
+            log.debug("Created MKLDNNConvHelper, layer {}", layerConf().getLayerName());
+        }
+        if (helper != null && !helper.checkSupported()) {
+            log.debug("Removed helper {} as not supported", helper.getClass());
+            helper = null;
         }
     }
 
@@ -105,6 +110,7 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
     public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon, LayerWorkspaceMgr workspaceMgr) {
         assertInputSet(true);
         INDArray weights = getParamWithNoise(ConvolutionParamInitializer.WEIGHT_KEY, true, workspaceMgr);
+        INDArray bias = getParamWithNoise(ConvolutionParamInitializer.BIAS_KEY, true, workspaceMgr);
 
         // FIXME: int cast
         int miniBatch = (int) input.size(0);
@@ -159,10 +165,10 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
 
             Pair<Gradient, INDArray> ret = null;
             try {
-                ret = helper.backpropGradient(input, weights, delta, kernel, strides, pad,
-                        biasGradView, weightGradView, afn, layerConf().getCudnnAlgoMode(),
-                        layerConf().getCudnnBwdFilterAlgo(), layerConf().getCudnnBwdDataAlgo(), convolutionMode,
-                        dilation, workspaceMgr);
+                ret = helper.backpropGradient(input, weights, bias, delta, kernel, strides,
+                        pad, biasGradView, weightGradView, afn,
+                        layerConf().getCudnnAlgoMode(), layerConf().getCudnnBwdFilterAlgo(), layerConf().getCudnnBwdDataAlgo(),
+                        convolutionMode, dilation, workspaceMgr);
             } catch (Exception e){
                 if(e.getMessage().contains("Failed to allocate")){
                    //This is a memory exception - don't fallback to built-in implementation
@@ -347,7 +353,7 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
                 ret = helper.preOutput(input, weights, bias, kernel, strides, pad, layerConf().getCudnnAlgoMode(),
                         layerConf().getCudnnFwdAlgo(), convolutionMode, dilation, workspaceMgr);
             } catch (Exception e){
-                if(e.getMessage().contains("Failed to allocate")){
+                if(e.getMessage() != null && e.getMessage().contains("Failed to allocate")){
                     //This is a memory exception - don't fallback to built-in implementation
                     throw e;
                 }
@@ -432,7 +438,7 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         IActivation afn = layerConf().getActivationFn();
 
         if (helper != null && Shape.strideDescendingCAscendingF(z)) {
-            INDArray ret = helper.activate(z, layerConf().getActivationFn());
+            INDArray ret = helper.activate(z, layerConf().getActivationFn(), training);
             if (ret != null) {
                 return ret;
             }

@@ -49,21 +49,22 @@ namespace helpers {
     static void _invertLowerMatrix(NDArray* inputMatrix, NDArray* invertedMatrix) {
         int n = inputMatrix->rows();
         invertedMatrix->assign(0.f);
-#pragma omp parallel for if(n > Environment::getInstance()->elementwiseThreshold()) schedule(static)
+
+        PRAGMA_OMP_PARALLEL_FOR_IF(n > Environment::getInstance()->elementwiseThreshold())
         for (int i = 0; i < n; i++)
             invertedMatrix->p(i, i, 1.0f);
 
         if (inputMatrix->isIdentityMatrix()) return;
 
-#pragma omp parallel for if(n > Environment::getInstance()->elementwiseThreshold()) schedule(static)
+        PRAGMA_OMP_PARALLEL_FOR_IF(n > Environment::getInstance()->elementwiseThreshold())
         for (int i = 1; i < n; i++)
             invertedMatrix->p(i, i - 1,  -inputMatrix->e<T>(i, i - 1));
 
-#pragma omp parallel for if(n > Environment::getInstance()->elementwiseThreshold()) schedule(static)
+        //PRAGMA_OMP_PARALLEL_FOR_SIMD
         for (int i = 2; i < n; i++) {
             for (int j = i - 2; j > -1; --j) 
                 for (int k = 0; k < i; k++) 
-                    invertedMatrix->p(i, j, invertedMatrix->e<T>(i, j) - (invertedMatrix->e<T>(k, j) * inputMatrix->e<T>(i, k)));
+                    invertedMatrix->t<T>(i, j) -= (invertedMatrix->t<T>(k, j) * inputMatrix->t<T>(i, k));
         }
     }
 
@@ -82,19 +83,19 @@ namespace helpers {
             return;
         }
 
-#pragma omp parallel for if(n > Environment::getInstance()->elementwiseThreshold()) schedule(static)
+        PRAGMA_OMP_PARALLEL_FOR_IF(n > Environment::getInstance()->elementwiseThreshold())
         for (int i = 0; i < n; i++)
             invertedMatrix->p(i, i, invertedMatrix->e<T>(i, i) / inputMatrix->e<T>(i, i));
 
-#pragma omp parallel for if(n > Environment::getInstance()->elementwiseThreshold()) schedule(static)
+        PRAGMA_OMP_PARALLEL_FOR_IF(n > Environment::getInstance()->elementwiseThreshold())
         for (int i = 0; i < n - 1; i++)
             invertedMatrix->p(i, i + 1, invertedMatrix->e<T>(i, i+1) - (inputMatrix->e<T>(i, i + 1) * invertedMatrix->e<T>(i + 1, i + 1) / inputMatrix->e<T>(i, i)));
 
-#pragma omp parallel for if(n > Environment::getInstance()->elementwiseThreshold()) schedule(static)
+//        PRAGMA_OMP_PARALLEL_FOR_SIMD
         for (int i = n - 2; i > - 1; i--) {
             for (int j = i + 2; j < n; j++) 
                 for (int k = i; k < n; k++) 
-                    invertedMatrix->p(i, j, invertedMatrix->e<T>(i, j) - ((invertedMatrix->e<T>(k, j) * inputMatrix->e<T>(i, k) / inputMatrix->e<T>(i, i))));
+                    invertedMatrix->t<T>(i, j) -= ((invertedMatrix->t<T>(k, j) * inputMatrix->t<T>(i, k) / inputMatrix->t<T>(i, i)));
         }
     }
 
@@ -119,7 +120,7 @@ namespace helpers {
         T pivotValue; // = T(0.0);
         int pivot; // = -1;
         int swapCount = 0;
-//#pragma omp parallel for if(rowNum > Environment::getInstance()->elementwiseThreshold()) schedule(static)
+
         for(int i = 0; i < rowNum; i++ ) {
             pivotValue = T(0.0);
             pivot = -1;
@@ -146,9 +147,7 @@ namespace helpers {
                 }
             }
         }
-        // nd4j_printf("Pivot: %i, Pivot value: %f.\n", pivot, pivotValue);
-//#pragma omp parallel for
-// if(rowNum > Environment::getInstance()->elementwiseThreshold()) schedule(static)
+
         for (int e = 0; e < rowNum; e++) {
             // nd4j_printf("Compound matrix diag %i %f.\n", e, (*compoundMatrix)(e, e));
             determinant *= compoundMatrix->e<T>(e, e);
@@ -172,7 +171,7 @@ namespace helpers {
         Nd4jLong n2 = n * n;
 
         auto matrix = NDArrayFactory::create(input->ordering(), {n, n}, input->dataType(), input->getWorkspace()); //, block.getWorkspace());
-//#pragma omp parallel for if(output->lengthOf() > Environment::getInstance()->elementwiseThreshold()) schedule(static)
+
         for (int e = 0; e < output->lengthOf(); e++) {
             for (int k = e * n2, row = 0; k < (e + 1) * n2; ++k, ++row) {
                 matrix.p(row, input->e<T>(k));
@@ -197,7 +196,7 @@ template <typename T>
         Nd4jLong n2 = n * n;
 
         NDArray matrix = NDArrayFactory::create(input->ordering(), {n, n}, input->dataType(), input->getWorkspace()); //, block.getWorkspace());
-//#pragma omp parallel for if(output->lengthOf() > Environment::getInstance()->elementwiseThreshold()) schedule(static)
+
         for (int e = 0; e < output->lengthOf(); e++) {
             for (int k = e * n2, row = 0; k < (e + 1) * n2; ++k, ++row) {
                 matrix.p(row, input->e<T>(k));
@@ -351,6 +350,31 @@ template <typename T>
     }    
     BUILD_SINGLE_TEMPLATE(template int cholesky_, (NDArray* input, NDArray* output, bool inplace), FLOAT_TYPES);
     BUILD_SINGLE_TEMPLATE(template int _inverse, (NDArray* input, NDArray* output), FLOAT_TYPES);
+
+    template <typename T>
+    int logdetFunctor_(NDArray* input, NDArray* output) {
+        std::unique_ptr<NDArray> tempOutput(input->dup());
+        int res = cholesky_<T>(input, tempOutput.get(), false);
+        if (res != ND4J_STATUS_OK)
+            return res;
+        auto n = input->sizeAt(-1);
+        auto totalCount = output->lengthOf();
+        std::vector<T> d(n);
+        std::unique_ptr<ResultSet> matricies(tempOutput->allTensorsAlongDimension({input->rankOf()-2, input->rankOf() - 1}));
+        std::unique_ptr<ResultSet> inputMatricies(input->allTensorsAlongDimension({input->rankOf()-2, input->rankOf() - 1}));
+        for (Nd4jLong e = 0; e < totalCount; e++) {
+
+            //d[0] = inputMatricies->at(e)->t<T>(0, 0);
+            for (size_t i = 0; i < n; ++i) {
+                output->t<T>(e) += nd4j::math::nd4j_log<T,T>(nd4j::math::nd4j_pow<T,T,T>(matricies->at(e)->t<T>(i, i), T(2)));
+            }
+        }
+        return ND4J_STATUS_OK;
+    }
+
+    int logdetFunctor(NDArray* input, NDArray* output) {
+        BUILD_SINGLE_SELECTOR(input->dataType(), return logdetFunctor_, (input, output), FLOAT_TYPES);
+    }
 
 }
 }

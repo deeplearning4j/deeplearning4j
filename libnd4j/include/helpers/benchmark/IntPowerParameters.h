@@ -46,7 +46,7 @@ namespace nd4j {
 
         std::vector<int> evaluate() override {
             std::vector<int> result;
-            for (int e = _start; e < _stop; e += _step) {
+            for (int e = _start; e <= _stop; e += _step) {
                result.emplace_back(nd4j::math::nd4j_pow<double, double, int>(_base, e));
             }
             return result;
@@ -54,4 +54,4 @@ namespace nd4j {
     };
 }
 
-#endif //DEV_TESTS_PARAMETERSPACE_H
+#endif //DEV_TESTS_INTPOWERPARAMETERS_H

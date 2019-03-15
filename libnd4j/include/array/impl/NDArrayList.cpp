@@ -117,7 +117,9 @@ namespace nd4j {
         std::vector<double> targs;
         std::vector<Nd4jLong> iargs({0});
         std::vector<bool> bargs;
-        for (int e = 0; e < _elements.load(); e++)
+        int numElements = _elements.load();
+
+        for (int e = 0; e < numElements; e++)
             inputs.emplace_back(_chunks[e]);
 
         iargs.push_back(_axis);
@@ -175,10 +177,10 @@ namespace nd4j {
         auto array = new NDArray('c', shape, _chunks[0]->dataType(), _workspace);
         std::vector<int> axis = ShapeUtils::convertAxisToTadTarget(shape.size(), {_axis});
         auto tads = array->allTensorsAlongDimension(axis);
+        int indicesSize = indices.size();
 
-        // just for lulz
-#pragma omp parallel for
-        for (int e = 0; e < indices.size(); e++)
+        PRAGMA_OMP_PARALLEL_FOR
+        for (int e = 0; e < indicesSize; e++)
             tads->at(e)->assign(_chunks[indices[e]]);
 
         delete tads;

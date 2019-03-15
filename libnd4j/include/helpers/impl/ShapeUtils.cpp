@@ -85,7 +85,8 @@ std::vector<Nd4jLong> ShapeUtils::evalShapeForTensorDot(const Nd4jLong* aShapeIn
         oldShapeA.emplace_back(1);
     } else {
         oldShapeA.resize(list_A.size());
-        for (int i = 0; i < (int) oldShapeA.size(); i++)
+        int osa = oldShapeA.size();
+        for (int i = 0; i < osa; i++)
             oldShapeA[i] = aShapeInfo[list_A[i] + 1];
     }
     
@@ -98,8 +99,9 @@ std::vector<Nd4jLong> ShapeUtils::evalShapeForTensorDot(const Nd4jLong* aShapeIn
     if (list_B.empty()) {
         oldShapeB.emplace_back(1);
     } else {
-        oldShapeB.resize(list_B.size()); 
-        for (int i = 0; i < (int) oldShapeB.size(); i++)
+        oldShapeB.resize(list_B.size());
+        int osb = oldShapeB.size();
+        for (int i = 0; i < osb; i++)
             oldShapeB[i] = bShapeInfo[list_B[i] + 1];
     }
     
@@ -530,8 +532,9 @@ Nd4jLong* ShapeUtils::evalTileShapeInfo(const NDArray& arr, const std::vector<Nd
 
     std::vector<Nd4jLong> ShapeUtils::pullShapeFromShapeInfo(Nd4jLong *shapeInfo) {
         std::vector<Nd4jLong> shape(shape::rank(shapeInfo));
+        int shapeSize = shape.size();
 
-        for (int e = 0; e < shape.size(); e++)
+        for (int e = 0; e < shapeSize; e++)
             shape[e] = shape::shapeOf(shapeInfo)[e];
 
         return shape;
@@ -903,10 +906,7 @@ std::vector<Nd4jLong> ShapeUtils::evalDimsWithoutUnities(const Nd4jLong* shapeIn
     std::vector<Nd4jLong> result;
     for(int i = 1; i <= shapeInfo[0]; ++i)
         if(shapeInfo[i] != 1)
-            result.push_back(shapeInfo[i]);
-
-    if(result.size() == 0)  // shape consists of unities only 
-        return std::vector<Nd4jLong>(1,1);  // return [1]
+            result.push_back(shapeInfo[i]);    
 
     return result;
 }
