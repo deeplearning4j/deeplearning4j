@@ -239,8 +239,8 @@ __global__ static void execEncoderKernelP3(void *dx, int *offsets, Nd4jLong N, v
 //////////////////////////////////////////////////////////////////////////
 template<typename T>
 __host__ void encoderKernelP3Generic(dim3 &launchDims, cudaStream_t *stream, void *dx, int *offsets, Nd4jLong N, void *dz) {
-
-    execEncoderKernelP3<T><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(dx, offsets, N, dz);
+// TODO: this has a problem with sm75, so commented
+//    execEncoderKernelP3<T><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(dx, offsets, N, dz);
 }
 BUILD_SINGLE_TEMPLATE(template void ND4J_EXPORT encoderKernelP3Generic, (dim3 &launchDims, cudaStream_t *stream, void *dx, int *offsets, Nd4jLong N, void *dz), LIBND4J_TYPES);
 
