@@ -2197,7 +2197,9 @@ namespace simdOps {
 		no_op_exec_special_cuda
 
 		op_def static Z op(X d1, Y d2, Z *params) {
-			return nd4j::math::nd4j_leakyrelu<X,Z>(d1, d2);
+		    auto val = static_cast<Z>(d1);
+		    auto alpha = static_cast<Z>(d2);
+		    return val < 0.0f ? alpha * val : val;
 		}
 	};
 
