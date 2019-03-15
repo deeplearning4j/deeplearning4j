@@ -96,6 +96,7 @@ import java.util.Scanner;
                                               "ops/declarable/headers/bitwise.h",
                                               "ops/declarable/headers/loss.h",
                                               "ops/declarable/headers/datatypes.h",
+                                              "helpers/DebugInfo.h",
                                               "ops/declarable/headers/third_party.h"},
                                    exclude = {"ops/declarable/headers/activations.h",
                                               "ops/declarable/headers/boolean.h",

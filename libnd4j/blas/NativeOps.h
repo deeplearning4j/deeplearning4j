@@ -69,6 +69,7 @@ bool verbose = false;
 #include <graph/GraphState.h>
 #include <graph/execution/LogicExecutor.h>
 #include <graph/ResultWrapper.h>
+#include <DebugInfo.h>
 
 class ND4J_EXPORT NativeOps {
 
@@ -1630,6 +1631,7 @@ public:
                       void* dY, Nd4jLong* dYShapeInfo, Nd4jLong* dYOffsets,
                       int* hIindexes, int* dIindexes);
 
+    void inspectArray(Nd4jPointer *extraPointers, Nd4jPointer buffer, Nd4jLong *shapeInfo, Nd4jPointer specialBuffer, Nd4jLong *specialShapeInfo, Nd4jPointer debugInfo);
 };
 
 

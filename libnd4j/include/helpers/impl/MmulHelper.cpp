@@ -176,12 +176,15 @@ NDArray* MmulHelper::mmulMxM(const NDArray* A, const NDArray* B, NDArray* C, con
     // we'll use platform-specific gemm here eventually. maybe tomorrow.
     // TODO: put proper _gemm here
     if (ABC && hasGemm && aType == DataType::FLOAT32) {
+        nd4j_debug("MMUL: Using provided BLAS impl\n","");
         BlasHelper::getInstance()->sgemm()(blasOrder, transAblas, transBblas, M, N, K, (float) alpha, reinterpret_cast<float *>(pA->getBuffer()), lda, reinterpret_cast<float *>(pB->getBuffer()), ldb, (float) beta, reinterpret_cast<float *>(pC->getBuffer()), ldc);
     }
     else if (ABC && hasGemm && aType == DataType::DOUBLE) {
+        nd4j_debug("MMUL: Using provided BLAS impl\n","");
         BlasHelper::getInstance()->dgemm()(blasOrder, transAblas, transBblas, M, N, K, (double) alpha, reinterpret_cast<double *>(pA->getBuffer()), lda, reinterpret_cast<double *>(pB->getBuffer()), ldb, (double) beta, reinterpret_cast<double *>(pC->getBuffer()), ldc);
     }
     else {
+        nd4j_debug("MMUL: Using fallback BLAS impl\n","");
         BUILD_TRIPLE_SELECTOR(aType, bType, cType, usualGemm, (cOrder, transA, transB, M, N, K, alpha, pA->getBuffer(), lda, pB->getBuffer(), ldb, beta, pC->getBuffer(), ldc), LIBND4J_TYPES, FLOAT_TYPES, FLOAT_TYPES);
     }    
 

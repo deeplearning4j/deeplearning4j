@@ -24,6 +24,7 @@
 #include <loops/reduce_same.h>
 #include <loops/legacy_ops.h>
 #include <OmpLaunchHelper.h>
+#include <chrono>
 
 using namespace simdOps;
 
@@ -40,18 +41,32 @@ namespace functions {
             auto z = reinterpret_cast<X *>(vz);
             auto extraParams = reinterpret_cast<X *>(vextraParams);
 
-            const Nd4jLong length = shape::length(xShapeInfo);
-            auto xEws = shape::elementWiseStride(xShapeInfo);
+            const auto length = shape::length(xShapeInfo);
+            const auto xEws = shape::elementWiseStride(xShapeInfo);
+            const int rank = shape::rank(xShapeInfo);
+
 
             if (xEws >= 1) {
                 z[0] = execScalar<OpType>(x, xEws, length, extraParams);
             }
             else {
-
                 X start = OpType::startingValue(x);
+                const int maxThreads = nd4j::math::nd4j_min<int>(256, omp_get_max_threads());
+                X intermediate[256];
 
-                for(Nd4jLong i = 0; i < length; ++i)                     
-                    start = OpType::update(start, OpType::op(x[shape::getIndexOffset(i, xShapeInfo, length)], extraParams), extraParams);                
+                for (int e = 0; e < maxThreads; e++)
+                    intermediate[e] = start;
+
+                uint xShapeInfoCast[MAX_RANK];
+                const bool canCastX = nd4j::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
+
+                PRAGMA_OMP_PARALLEL_FOR_SIMD_ARGS(num_threads(maxThreads))
+                for(Nd4jLong i = 0; i < length; ++i)
+                    intermediate[omp_get_thread_num()] = OpType::update(intermediate[omp_get_thread_num()], OpType::op(x[shape::indexOffset(i, xShapeInfo, xShapeInfoCast, length, canCastX)], extraParams), extraParams);
+
+
+                for (int e = 0; e < maxThreads; e++)
+                    start = OpType::update(start, intermediate[e], extraParams);
 
                 z[0] = OpType::postProcess(start, shape::length(xShapeInfo), extraParams);
             }
@@ -67,18 +82,29 @@ namespace functions {
                 auto extraParams = reinterpret_cast<X *>(vextraParams);
 
                 const Nd4jLong length = shape::length(xShapeInfo);
-                auto xEws = shape::elementWiseStride(xShapeInfo);
+                const auto xEws = shape::elementWiseStride(xShapeInfo);
 
                 if (xEws >= 1) {
                     return execScalar<OpType>(x, xEws, length, extraParams);
                 }
                 else {
-
                     X start = OpType::startingValue(x);
+                    const int maxThreads = nd4j::math::nd4j_min<int>(256, omp_get_max_threads());
+                    X intermediate[256];
 
-                    for(Nd4jLong i = 0; i < length; ++i)                     
-                        start = OpType::update(start, OpType::op(x[shape::getIndexOffset(i, xShapeInfo, length)], extraParams), extraParams);                                                    
-                    
+                    for (int e = 0; e < maxThreads; e++)
+                        intermediate[e] = start;
+
+                    uint xShapeInfoCast[MAX_RANK];
+                    const bool canCastX = nd4j::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
+
+                    PRAGMA_OMP_PARALLEL_FOR_SIMD_ARGS(num_threads(maxThreads))
+                    for(Nd4jLong i = 0; i < length; ++i)
+                        intermediate[omp_get_thread_num()] = OpType::update(intermediate[omp_get_thread_num()], OpType::op(x[shape::indexOffset(i, xShapeInfo, xShapeInfoCast, length, canCastX)], extraParams), extraParams);
+
+                    for (int e = 0; e < maxThreads; e++)
+                        start = OpType::update(start, intermediate[e], extraParams);
+
                     return OpType::postProcess(start, shape::length(xShapeInfo), extraParams);
                 }
             }

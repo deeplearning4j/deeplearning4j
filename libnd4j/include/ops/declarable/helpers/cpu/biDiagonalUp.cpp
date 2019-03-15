@@ -61,7 +61,7 @@ BiDiagonalUp::BiDiagonalUp(const NDArray& matrix): _HHmatrix(nd4j::NDArrayFactor
 		for(int i = 0; i < cols-1; ++i ) {
 
 			// evaluate Householder matrix nullifying columns
-			column = _HHmatrix.subarray({{i,   rows}, {i, i+1}});
+			column = new NDArray(_HHmatrix({i,rows,  i,i+1}, true));
 
             _x = _HHmatrix.e<T>(i,i);
             _y = _HHbidiag.e<T>(i,i);
@@ -72,7 +72,7 @@ BiDiagonalUp::BiDiagonalUp(const NDArray& matrix): _HHmatrix(nd4j::NDArrayFactor
             _HHbidiag.p<T>(i, i, _y);
 
 			// multiply corresponding matrix block on householder matrix from the left: P * bottomRightCorner
-			bottomRightCorner =  _HHmatrix.subarray({{i, rows}, {i+1, cols}});	// {i, cols}
+			bottomRightCorner =  new NDArray(_HHmatrix({i,rows,  i+1,cols}, true));	// {i, cols}
 			Householder<T>::mulLeft(*bottomRightCorner, _HHmatrix({i+1,rows, i,i+1}, true), _HHmatrix.e<T>(i,i));
 
 			delete bottomRightCorner;
@@ -82,8 +82,7 @@ BiDiagonalUp::BiDiagonalUp(const NDArray& matrix): _HHmatrix(nd4j::NDArrayFactor
 				continue; 										// do not apply right multiplying at last iteration
 
 			// evaluate Householder matrix nullifying rows
-			row  = _HHmatrix.subarray({{i, i+1}, {i+1, cols}});
-
+			row  = new NDArray(_HHmatrix({i,i+1,  i+1,cols}, true));
 
             _x = _HHmatrix.e<T>(i,i+1);
             _y = _HHbidiag.e<T>(i,i+1);
@@ -94,7 +93,7 @@ BiDiagonalUp::BiDiagonalUp(const NDArray& matrix): _HHmatrix(nd4j::NDArrayFactor
             _HHbidiag.p<T>(i, i+1, _y);
 
 			// multiply corresponding matrix block on householder matrix from the right: bottomRightCorner * P
-			bottomRightCorner = _HHmatrix.subarray({{i+1, rows}, {i+1, cols}});  // {i, rows}
+			bottomRightCorner = new NDArray(_HHmatrix({i+1,rows,  i+1,cols}, true));  // {i, rows}
 
 			Householder<T>::mulRight(*bottomRightCorner, _HHmatrix({i,i+1, i+2,cols}, true), _HHmatrix.e<T>(i,i+1));
 
@@ -102,7 +101,7 @@ BiDiagonalUp::BiDiagonalUp(const NDArray& matrix): _HHmatrix(nd4j::NDArrayFactor
 			delete row;
 		}
 
-		row  = _HHmatrix.subarray({{cols-2, cols-1}, {cols-1, cols}});
+		row  = new NDArray(_HHmatrix({cols-2,cols-1, cols-1,cols}, true));
 
 		_x = _HHmatrix.e<T>(cols-2,cols-1);
 		_y = _HHbidiag.e<T>(cols-2,cols-1);
@@ -114,7 +113,7 @@ BiDiagonalUp::BiDiagonalUp(const NDArray& matrix): _HHmatrix(nd4j::NDArrayFactor
 
 		delete row;
 
-		column = _HHmatrix.subarray({{cols-1, rows}, {cols-1, cols}});
+		column = new NDArray(_HHmatrix({cols-1,rows, cols-1,cols}, true));
 
 		_x = _HHmatrix.e<T>(cols-1,cols-1);
 		_y = _HHbidiag.e<T>(cols-1,cols-1);

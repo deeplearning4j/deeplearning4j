@@ -906,10 +906,7 @@ std::vector<Nd4jLong> ShapeUtils::evalDimsWithoutUnities(const Nd4jLong* shapeIn
     std::vector<Nd4jLong> result;
     for(int i = 1; i <= shapeInfo[0]; ++i)
         if(shapeInfo[i] != 1)
-            result.push_back(shapeInfo[i]);
-
-    if(result.size() == 0)  // shape consists of unities only 
-        return std::vector<Nd4jLong>(1,1);  // return [1]
+            result.push_back(shapeInfo[i]);    
 
     return result;
 }
