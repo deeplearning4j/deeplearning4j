@@ -19,6 +19,11 @@ import org.nd4j.linalg.api.buffer.DataType;
 
 import java.util.ArrayList;
 
+/**
+ * Wrapper around INDArray for initializing from numpy array
+ *
+ * @author Fariz Rahman
+ */
 @Getter
 public class NumpyArray {
 

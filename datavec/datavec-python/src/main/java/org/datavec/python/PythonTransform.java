@@ -25,6 +25,8 @@ import java.util.concurrent.ExecutionException;
 
 /**
  * Row-wise Transform that applies arbitrary python code on each row
+ *
+ * @author Fariz Rahman
  */
 
 @NoArgsConstructor

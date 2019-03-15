@@ -18,6 +18,11 @@ import static org.bytedeco.javacpp.python.*;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
+/**
+ *  Python executioner
+ *
+ *  @author Fariz Rahman
+ */
 @Slf4j
 public class PythonExecutioner {
     private String name;

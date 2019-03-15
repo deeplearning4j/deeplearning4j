@@ -12,6 +12,12 @@ import org.nd4j.linalg.factory.Nd4j;
 import javax.annotation.Nullable;
 import java.util.*;
 
+/**
+ * Holds python variable names, types and values.
+ * Also handles mapping from java types to python types.
+ *
+ * @author Fariz Rahman
+ */
 
 @Data
 public class PythonVariables {

@@ -11,7 +11,9 @@ import java.util.List;
 /**
  * Lets a condition be defined as a python method f that takes no arguments
  * and returns a boolean indicating whether or not to filter a row.
- * The values of all columns in current row is available as gobal variables to f.
+ * The values of all columns in current row are available as global variables to f.
+ *
+ * @author Fariz Rahman
  */
 public class PythonCondition implements Condition {
 
