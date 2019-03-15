@@ -3416,16 +3416,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         /**
         *  creates array which is view of this array
         */
-        public native NDArray getView();
-
-        /**
-        *  creates array which points on certain sub-range of this array, sub-range is defined by given indices
-        */
-        public native NDArray subarray(@ByRef IndicesList indices);
-        public native NDArray subarray(@ByRef IndicesList indices, @Cast("Nd4jLong*") @StdVector LongPointer strides);
-        public native NDArray subarray(@ByRef IndicesList indices, @Cast("Nd4jLong*") @StdVector LongBuffer strides);
-        public native NDArray subarray(@ByRef IndicesList indices, @Cast("Nd4jLong*") @StdVector long[] strides);
-        public native NDArray subarray(@Const @ByRef Intervals idx);
+        public native NDArray getView();        
 
         /**
         *  cast array elements to given dtype
@@ -3806,12 +3797,14 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         *  idx - intervals of indexes which define the subarrays to point on, idx has form {dim0Start,dim0End,  dim1Start,dim1End, ....} and length (2 * this->rankOf())
         *        when (dimStart == dimEnd) then whole range will be used for current dimension
         *  keepUnitiesInShape - if false then eliminate unities from resulting array shape, for example {1,a,1,b} -> {a,b}
+        *  isStrided - if true then idx has length (3 * this->rankOf()) and contains additional stride numbers which correspond to stride between dimStart and dimEnd,
+        *              so structure of idx is like {dim0Start,dim0End,dim0Stride,    dim1Start,dim1End,dim1Stride, ....}
         */
-        public native @ByVal @Name("operator ()") NDArray apply(@Cast("Nd4jLong*") @StdVector LongPointer idx, @Cast("bool") boolean keepUnitiesInShape/*=false*/);
+        public native @ByVal @Name("operator ()") NDArray apply(@Cast("Nd4jLong*") @StdVector LongPointer idx, @Cast("const bool") boolean keepUnitiesInShape/*=false*/, @Cast("const bool") boolean isStrided/*=false*/);
         public native @ByVal @Name("operator ()") NDArray apply(@Cast("Nd4jLong*") @StdVector LongPointer idx);
-        public native @ByVal @Name("operator ()") NDArray apply(@Cast("Nd4jLong*") @StdVector LongBuffer idx, @Cast("bool") boolean keepUnitiesInShape/*=false*/);
+        public native @ByVal @Name("operator ()") NDArray apply(@Cast("Nd4jLong*") @StdVector LongBuffer idx, @Cast("const bool") boolean keepUnitiesInShape/*=false*/, @Cast("const bool") boolean isStrided/*=false*/);
         public native @ByVal @Name("operator ()") NDArray apply(@Cast("Nd4jLong*") @StdVector LongBuffer idx);
-        public native @ByVal @Name("operator ()") NDArray apply(@Cast("Nd4jLong*") @StdVector long[] idx, @Cast("bool") boolean keepUnitiesInShape/*=false*/);
+        public native @ByVal @Name("operator ()") NDArray apply(@Cast("Nd4jLong*") @StdVector long[] idx, @Cast("const bool") boolean keepUnitiesInShape/*=false*/, @Cast("const bool") boolean isStrided/*=false*/);
         public native @ByVal @Name("operator ()") NDArray apply(@Cast("Nd4jLong*") @StdVector long[] idx);
 
         /**
@@ -3929,14 +3922,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         *  left - input array
         *  right - input array
         */
-        
-
-        /**
-        *  this method assigns elements of other array to the subarray of this array defined by given intervals
-        *  other - input array to assign elements from
-        *  idx - intervals of indexes which define the subarray
-        */ 
-        public native void assign(@Const @ByRef NDArray other, @Const @ByRef Intervals idx);
+                
 
         /**
         *  return vector containing _buffer as flat binary array
@@ -4169,6 +4155,14 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         *  k - depth
         *  value - scalar value to assign
         */
+
+        /**
+        *  creates array which points on certain sub-range of this array, sub-range is defined by given indices
+        */
+        
+        
+        
+        
 
         /**
         *  returns true if array is 2D
