@@ -30,29 +30,39 @@ class Loops {
 
     private:
 
-        //////////////////////////////////////////////////////////////////////////////
-        static std::string deduceKindOfLoopXYZ(const Nd4jLong* xShapeInfo, const Nd4jLong* yShapeInfo, const Nd4jLong* zShapeInfo);
+        enum LoopKind {EWS1, EWSNONZERO, RANK1, RANK2, RANK3, RANK4, RANK5, X_EWSNONZERO, Z_EWSNONZERO, COMMON};
 
         //////////////////////////////////////////////////////////////////////////////
-        template<typename X, typename Y, typename Z> 
-        static void loopXYZ(const std::string& info, 
-                            const X* x, const Nd4jLong* xShapeInfo,
-                            const Y* y, const Nd4jLong* yShapeInfo,
-                            const Z* z, const Nd4jLong* zShapeInfo,
-                            const Z* extraParams,
-                            std::function<Z(X,Y,Z*)> op);
+        static LoopKind deduceKindOfLoopXYZ(const Nd4jLong* xShapeInfo, const Nd4jLong* yShapeInfo, const Nd4jLong* zShapeInfo);
+
+        //////////////////////////////////////////////////////////////////////////////
+        static LoopKind deduceKindOfLoopXZ(const Nd4jLong* xShapeInfo, const Nd4jLong* zShapeInfo);
+
+        //////////////////////////////////////////////////////////////////////////////
+        static LoopKind deduceKindOfLoopTadXZ(const Nd4jLong* tadShapeInfo, const Nd4jLong* zShapeInfo);
+
+        
 
     public:
 
         //////////////////////////////////////////////////////////////////////////////
         template<typename X, typename Y, typename Z> 
-        static void runLoopXYZ(const X* x, const Nd4jLong* xShapeInfo,
-                               const Y* y, const Nd4jLong* yShapeInfo,
-                               const Z* z, const Nd4jLong* zShapeInfo,
-                               const Z* extraParams,
-                               std::function<Z(X,Y,Z*)> op);
+        static void loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
+                            const Y* y, const Nd4jLong* yShapeInfo,
+                                  Z* z, const Nd4jLong* zShapeInfo,
+                                  Z* extraParams,
+                            std::function<Z(X,Y,Z*)> op);
 
-
+        //////////////////////////////////////////////////////////////////////////////
+        template<typename X, typename Z> 
+        static void loopTadXZ(const X* x, const Nd4jLong* tadShapeInfo, const Nd4jLong* tadOffsets,
+                                    Z* z, const Nd4jLong* zShapeInfo,
+                                    Z* extraParams,
+                              std::function<X(const X*)>      startVal, 
+                              std::function<Z(X,X,Z*)>        update,
+                              std::function<Z(X,Z*)>          op,
+                              std::function<Z(X,Nd4jLong,Z*)> postPr);
+        
 
 };
 }

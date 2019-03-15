@@ -368,7 +368,7 @@ namespace shape {
 
     ND4J_EXPORT _CUDA_HD bool isLikeVector(Nd4jLong *shapeInfo, int& posOfNonUnityDim);
 
-    ND4J_EXPORT _CUDA_HD bool isCommonVector(Nd4jLong *shapeInfo, int& posOfNonUnityDim);
+    ND4J_EXPORT _CUDA_HD bool isCommonVector(const Nd4jLong *shapeInfo, int& posOfNonUnityDim);
 
     ND4J_EXPORT _CUDA_HD bool isRowVector(const Nd4jLong *shapeInfo);
 
@@ -481,7 +481,7 @@ namespace shape {
  * Returns the stride portion of an information
  * buffer
  */
-    ND4J_EXPORT _CUDA_HD Nd4jLong *stride(Nd4jLong *buffer);
+    ND4J_EXPORT _CUDA_HD Nd4jLong *stride(const Nd4jLong *buffer);
 
 /**
  * Compute the length of the given shape
@@ -2490,7 +2490,7 @@ template <typename T>
         return numOfNonUnity == 1 && shapeInfo[0] > 2;
     }
     
-    INLINEDEF _CUDA_HD bool isCommonVector(Nd4jLong *shapeInfo, int& posOfNonUnityDim) {
+    INLINEDEF _CUDA_HD bool isCommonVector(const Nd4jLong *shapeInfo, int& posOfNonUnityDim) {
 
         if(rank(shapeInfo) > 0 && length(shapeInfo) == 1)
             return true;
@@ -2797,8 +2797,8 @@ template <typename T>
  * Returns the stride portion of an information
  * buffer
  */
-    INLINEDEF _CUDA_HD Nd4jLong *stride( Nd4jLong *buffer) {
-        return buffer + (1 + rank(buffer));
+    INLINEDEF _CUDA_HD Nd4jLong *stride(const Nd4jLong *buffer) {
+        return const_cast<Nd4jLong*>(buffer) + (1 + rank(buffer));
     }
 
     INLINEDEF _CUDA_HD bool isEmpty(const Nd4jLong *shapeInfo) {

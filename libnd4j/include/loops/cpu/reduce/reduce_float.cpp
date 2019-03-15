@@ -177,8 +177,7 @@ namespace functions {
                 }
 
 
-                const int tadLength = shape::tadLength(xShapeInfo, dimension, dimensionLength);
-                auto numTads = shape::length(xShapeInfo) / tadLength;
+                const int tadLength = shape::tadLength(xShapeInfo, dimension, dimensionLength);                
                 auto tadEWS = shape::elementWiseStride(tadOnlyShapeInfo);
                 auto order = shape::order(tadOnlyShapeInfo);
 
@@ -214,7 +213,7 @@ namespace functions {
                             auto xOffset = shape::indexOffset(j, tadOnlyShapeInfo, castTadOnlyShapeInfo, tadLength, canCast);
                             start = OpType::update(start, OpType::op(tx[xOffset], extraParams), extraParams);
                         }
-                        z[i] = OpType::postProcess(start, tadLength, extraParams);;
+                        z[i] = OpType::postProcess(start, tadLength, extraParams);
                     }
                 }
 

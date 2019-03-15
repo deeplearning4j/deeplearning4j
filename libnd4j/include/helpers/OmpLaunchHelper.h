@@ -30,7 +30,7 @@ namespace nd4j {
 
 class OmpLaunchHelper {
 	
-	public:				
+    public:				
         
 		OmpLaunchHelper() = delete;
         
