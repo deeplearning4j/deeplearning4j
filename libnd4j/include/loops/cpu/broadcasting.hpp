@@ -108,11 +108,11 @@ namespace functions {
                 int tadsPerThread = tads / TAD_THRESHOLD;
                 int _threads = nd4j::math::nd4j_max<int>(1, tadsPerThread);
                 _threads = nd4j::math::nd4j_min<int>(_threads, omp_get_max_threads());
+                auto xEws = shape::elementWiseStride(tadShapeShapeInfo);
+                auto yEws = shape::elementWiseStride(yShapeInfo);
+                auto zEws = shape::elementWiseStride(tadShapeInfoZ);
 
-                if (shape::order(tadShapeShapeInfo) == shape::order(yShapeInfo) && shape::order(tadShapeInfoZ) == shape::order(yShapeInfo)) {
-                    auto xEws = shape::elementWiseStride(tadShapeShapeInfo);
-                    auto yEws = shape::elementWiseStride(yShapeInfo);
-                    auto zEws = shape::elementWiseStride(tadShapeInfoZ);
+                if (shape::order(tadShapeShapeInfo) == shape::order(yShapeInfo) && shape::order(tadShapeInfoZ) == shape::order(yShapeInfo) && xEws > 0 && yEws > 0 && zEws > 0) {
 
                     if (xEws == 1 && yEws == 1 && zEws == 1) {
                         PRAGMA_OMP_PARALLEL_FOR_THREADS(_threads)
