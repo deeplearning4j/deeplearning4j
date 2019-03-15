@@ -2383,12 +2383,12 @@ TEST_F(DeclarableOpsTests7, TestExtractImagePatches_SGO_9) {
     auto result = op.execute({&x}, {}, {3,3, 1,1, 1,1, 1}); // equiv TF ksizes=[1,2,2,1], strides=[1,1,1,1], rates=[1,1,1,1], padding="SAME"
     ASSERT_EQ(result->status(), Status::OK());
     auto output = result->at(0);
-    output->printBuffer("OutputSame");
-    exp.printBuffer("ExpectSame");
-    for (Nd4jLong e = 0; e < exp.lengthOf(); e++)
-        if (exp.e<double>(e) != output->e<double>(e))
-            printf("%lld ", e);
-    printf("\n");
+//    output->printBuffer("OutputSame");
+//    exp.printBuffer("ExpectSame");
+//    for (Nd4jLong e = 0; e < exp.lengthOf(); e++)
+//        if (exp.e<double>(e) != output->e<double>(e))
+//            printf("%lld ", e);
+//    printf("\n");
     //result->at(1)->printBuffer("OUtput2");
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));
@@ -2424,8 +2424,8 @@ TEST_F(DeclarableOpsTests7, TestExtractImagePatches_SGO_9_1) {
     auto result = op.execute({&x}, {}, {2,2, 1,1, 1,1, 1}); // equiv TF ksizes=[1,2,2,1], strides=[1,1,1,1], rates=[1,1,1,1], padding="SAME"
     ASSERT_EQ(result->status(), Status::OK());
     auto output = result->at(0);
-    output->printBuffer("OutputSame");
-    exp.printBuffer("ExpectSame");
+//    output->printBuffer("OutputSame");
+//    exp.printBuffer("ExpectSame");
 //    for (Nd4jLong e = 0; e < exp.lengthOf(); e++)
 //        if (exp.e<double>(e) != output->e<double>(e))
 //            printf("%lld ", e);
@@ -2471,12 +2471,12 @@ TEST_F(DeclarableOpsTests7, TestExtractImagePatches_SGO_10) {
     auto result = op.execute({&x}, {}, {3,3, 1,1, 1,1, 0}); // equiv TF ksizes=[1,2,2,1], strides=[1,1,1,1], rates=[1,1,1,1], padding="VALID"
     ASSERT_EQ(result->status(), Status::OK());
     auto output = result->at(0);
-    output->printBuffer("OutputValid");
-    exp.printBuffer("ExpectValid");
-    for (Nd4jLong e = 0; e < exp.lengthOf(); e++)
-        if (exp.e<double>(e) != output->e<double>(e))
-            printf("%lld ", e);
-    printf("\n");
+//    output->printBuffer("OutputValid");
+//    exp.printBuffer("ExpectValid");
+//    for (Nd4jLong e = 0; e < exp.lengthOf(); e++)
+//        if (exp.e<double>(e) != output->e<double>(e))
+//            printf("%lld ", e);
+//    printf("\n");
     //result->at(1)->printBuffer("OUtput2");
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));
@@ -2500,8 +2500,8 @@ TEST_F(DeclarableOpsTests7, TestExtractImagePatches_SGO_010) {
     auto result = op.execute({&x}, {}, {2,2, 1,1, 1,1, 0}); // equiv TF ksizes=[1,2,2,1], strides=[1,1,1,1], rates=[1,1,1,1], padding="VALID"
     ASSERT_EQ(result->status(), Status::OK());
     auto output = result->at(0);
-    output->printBuffer("OutputValid");
-    exp.printBuffer("ExpectValid");
+//    output->printBuffer("OutputValid");
+//    exp.printBuffer("ExpectValid");
 //    for (Nd4jLong e = 0; e < exp.lengthOf(); e++)
 //        if (exp.e<double>(e) != output->e<double>(e))
 //            printf("%lld ", e);
@@ -2530,14 +2530,14 @@ TEST_F(DeclarableOpsTests7, TestExtractImagePatches_SGO_010_1) {
     auto result = op.execute({&x}, {}, {2,2, 1,1, 1,1, 1}); // equiv TF ksizes=[1,2,2,1], strides=[1,1,1,1], rates=[1,1,1,1], padding="VALID"
     ASSERT_EQ(result->status(), Status::OK());
     auto output = result->at(0);
-    output->printBuffer("OutputSame");
-    exp.printBuffer("ExpectSame");
-    exp.printIndexedBuffer("Expect Same Formatted");
-    output->printIndexedBuffer("Output Same Formatted");
-    for (Nd4jLong e = 0; e < exp.lengthOf(); e++)
-        if (exp.e<double>(e) != output->e<double>(e))
-            printf("%lld ", e);
-    printf("\n");
+//    output->printBuffer("OutputSame");
+//    exp.printBuffer("ExpectSame");
+//    exp.printIndexedBuffer("Expect Same Formatted");
+//    output->printIndexedBuffer("Output Same Formatted");
+//    for (Nd4jLong e = 0; e < exp.lengthOf(); e++)
+//        if (exp.e<double>(e) != output->e<double>(e))
+//            printf("%lld ", e);
+//    printf("\n");
     //result->at(1)->printBuffer("OUtput2");
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));
@@ -2562,12 +2562,12 @@ TEST_F(DeclarableOpsTests7, TestExtractImagePatches_SGO_011) {
     auto result = op.execute({&x}, {}, {2,2, 1,1, 2,2, 0}); // equiv TF ksizes=[1,2,2,1], strides=[1,1,1,1], rates=[1,1,1,1], padding="VALID"
     ASSERT_EQ(result->status(), Status::OK());
     auto output = result->at(0);
-    output->printBuffer("OutputValid");
-    exp.printBuffer("ExpectValid");
-    for (Nd4jLong e = 0; e < exp.lengthOf(); e++)
-        if (exp.e<double>(e) != output->e<double>(e))
-            printf("%lld ", e);
-    printf("\n");
+//    output->printBuffer("OutputValid");
+//    exp.printBuffer("ExpectValid");
+//    for (Nd4jLong e = 0; e < exp.lengthOf(); e++)
+//        if (exp.e<double>(e) != output->e<double>(e))
+//            printf("%lld ", e);
+//    printf("\n");
     //result->at(1)->printBuffer("OUtput2");
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));
@@ -2656,7 +2656,7 @@ TEST_F(DeclarableOpsTests7, TestExtractImagePatches_SGO_12) {
     ASSERT_EQ(result->status(), Status::OK());
     auto output = result->at(0);
     //output->printShapeInfo("Output shape");
-    output->printIndexedBuffer("Output");
+//    output->printIndexedBuffer("Output");
 //    exp.printBuffer("Expect");
 //    for (Nd4jLong e = 0; e < exp.lengthOf(); e++)
 //        if (exp.e<double>(e) != output->e<double>(e))
@@ -2685,13 +2685,13 @@ TEST_F(DeclarableOpsTests7, TestExtractImagePatches_SGO_13) {
     auto result = op.execute({&x}, {}, {2,2, 1,1, 1,1, 1}); // equiv TF ksizes=[1,2,2,1], strides=[1,1,1,1], rates=[1,1,1,1], padding="SAME"
     ASSERT_EQ(result->status(), Status::OK());
     auto output = result->at(0);
-    output->printShapeInfo("Output shape");
-    output->printBuffer("Output");
-    exp.printBuffer("Expect");
-    for (Nd4jLong e = 0; e < exp.lengthOf(); e++)
-        if (exp.e<double>(e) != output->e<double>(e))
-            printf("%lld ", e);
-    printf("\n");
+//    output->printShapeInfo("Output shape");
+//    output->printBuffer("Output");
+//    exp.printBuffer("Expect");
+//    for (Nd4jLong e = 0; e < exp.lengthOf(); e++)
+//        if (exp.e<double>(e) != output->e<double>(e))
+//            printf("%lld ", e);
+//    printf("\n");
     //result->at(1)->printBuffer("OUtput2");
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));

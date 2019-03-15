@@ -43,9 +43,9 @@ namespace helpers {
         Nd4jLong outColDim = output->sizeAt(2);
         auto rowCast = 1; //(sizeRow - 1)*rateRow < outRowDim/sizeRow  ?0:1;///(ksize * lastDim > rowDim * ksizeColsEffective + lastDim?1:0);
         auto colCast = 1; //colDim / ksizeColsEffective +2 <= sizeCol?0:1;//(ksize * lastDim > ksizeRowsEffective * colDim + lastDim?1:0);
-        if (sizeRow < 3 && rateRow == 1)
+        if (sizeRow * rateRow < 3)
             rowCast = 0;
-        if (sizeCol < 3 && rateCol == 1)
+        if (sizeCol * rateCol < 3)
             colCast = 0;
         //Nd4jLong outputLastDim = output->sizeAt(3);
        PRAGMA_OMP_PARALLEL_FOR
