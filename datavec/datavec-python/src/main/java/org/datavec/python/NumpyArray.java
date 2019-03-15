@@ -17,23 +17,15 @@
 package org.datavec.python;
 
 import lombok.Getter;
-import org.apache.commons.lang3.ArrayUtils;
 import org.bytedeco.javacpp.Pointer;
-import org.json.simple.JSONArray;
-import org.json.simple.JSONObject;
 import org.nd4j.linalg.api.buffer.DataBuffer;
-import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.bytedeco.javacpp.FloatPointer;
-import org.bytedeco.javacpp.DoublePointer;
-import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.nativeblas.NativeOps;
 import org.nd4j.nativeblas.NativeOpsHolder;
 import org.nd4j.linalg.api.buffer.DataType;
 
 
-import java.util.ArrayList;
 
 /**
  * Wrapper around INDArray for initializing from numpy array

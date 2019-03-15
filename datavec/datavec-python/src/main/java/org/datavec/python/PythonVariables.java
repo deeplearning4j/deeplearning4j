@@ -17,15 +17,10 @@
 package org.datavec.python;
 
 import lombok.Data;
-import lombok.NoArgsConstructor;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
-import org.json.simple.parser.ParseException;
-import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.factory.Nd4j;
 
-import javax.annotation.Nullable;
 import java.util.*;
 
 /**

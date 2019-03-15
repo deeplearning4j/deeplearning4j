@@ -20,7 +20,6 @@ import org.datavec.api.transform.ColumnType;
 import org.datavec.api.transform.condition.Condition;
 import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.writable.*;
-import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.List;
 

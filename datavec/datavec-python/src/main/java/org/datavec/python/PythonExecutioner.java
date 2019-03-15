@@ -16,14 +16,9 @@
 
 package org.datavec.python;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.lang.reflect.Array;
-import java.util.ArrayList;
+
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.regex.Pattern;
 
 import lombok.extern.slf4j.Slf4j;
 import org.json.simple.JSONArray;
@@ -32,7 +27,6 @@ import org.bytedeco.javacpp.*;
 import static org.bytedeco.javacpp.python.*;
 
 import org.nd4j.linalg.api.buffer.DataType;
-import org.nd4j.linalg.api.ndarray.INDArray;
 
 /**
  *  Python executioner
