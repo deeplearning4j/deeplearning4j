@@ -199,64 +199,29 @@ namespace functions {
                     tadOffsets = tad->tadOffsets;
                 }
 
+                auto _sv = [&] (const X *x) -> X {
+                    return OpType::startingValue(x);
+                };
 
-                const int tadLength = shape::tadLength(xShapeInfo, dimension, dimensionLength);                
-                auto tadEWS = shape::elementWiseStride(tadOnlyShapeInfo);
-                auto order = shape::order(tadOnlyShapeInfo);
+                auto _op = [&] (X x, Z *e) -> Z {
+                    return OpType::op(x, e);
+                };
 
-                int tadsPerThread = resultLength / TAD_THRESHOLD;
-                int num_threads = nd4j::math::nd4j_max<int>(1, tadsPerThread);
-                num_threads = nd4j::math::nd4j_min<int>(num_threads, omp_get_max_threads());
+                auto _up = [&] (Z o, Z n, Z *e) -> Z {
+                    return OpType::update(o, n, e);
+                };
 
-                uint castTadOnlyShapeInfo[MAX_RANK];
-                const bool canCast = nd4j::DataTypeUtils::castShapeInfo<uint>(tadOnlyShapeInfo, castTadOnlyShapeInfo);
+                auto _pp = [&] (Z o, Nd4jLong n, Z *e) -> Z {
+                    return OpType::postProcess(o, n, e);
+                };
 
-                if (tadEWS == 1 && shape::order(tadOnlyShapeInfo) == 'c') {
-
-                    PRAGMA_OMP_PARALLEL_FOR_THREADS(num_threads)
-                    for (int i = 0; i < resultLength; i++) {
-
-                        auto tx = x + tadOffsets[i];
-                        auto start = OpType::startingValue(tx);
-
-                        for (int j = 0; j < tadLength; j++)
-                            start = OpType::update(start, OpType::op(tx[j], extraParams), extraParams);
-
-                        z[i] = OpType::postProcess(start, tadLength, extraParams);;
-                    }
-                } else {
-
-                    auto _sv = [&] (const X *x) -> X {
-                        return OpType::startingValue(x);
-                    };
-
-                    auto _op = [&] (X x, Z *e) -> Z {
-                        return OpType::op(x, e);
-                    };
-
-                    auto _up = [&] (X o, X n, Z *e) -> Z {
-                        return OpType::update(o, n, e);
-                    };
-
-                    auto _pp = [&] (X o, Nd4jLong n, Z *e) -> Z {
-                        return OpType::postProcess(o, n, e);
-                    };
-
-                    nd4j::Loops::loopTadXZ<X, Z>(const_cast<const X*>(x), const_cast<const Nd4jLong *>(tadOnlyShapeInfo), const_cast<const Nd4jLong *>(tadOffsets),
+                nd4j::Loops::loopTadXZ<X, Z, Z>(const_cast<const X*>(x), const_cast<const Nd4jLong *>(tadOnlyShapeInfo), const_cast<const Nd4jLong *>(tadOffsets),
                                                    z, const_cast<const Nd4jLong *>(resultShapeInfoBuffer),
                                                    extraParams,
                                                    _sv,
                                                    _up,
                                                    _op,
                                                    _pp);
-                                                   /*
-                                                   &OpType::startingValue,
-                                                   &OpType::update,
-                                                   &OpType::op,
-                                                   &OpType::postProcess);
-                                                    */
-                }
-
 
                 if (tad != nullptr)
                     delete tad;

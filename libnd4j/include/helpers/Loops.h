@@ -53,15 +53,15 @@ namespace nd4j {
                             std::function<Z(X,Y,Z*)> op);
 
         //////////////////////////////////////////////////////////////////////////////
-        template<typename X, typename Z>
+        template<typename X, typename Z, typename E>
         FORCEINLINE static void loopTadXZ(const X* x, const Nd4jLong* tadShapeInfo, const Nd4jLong* tadOffsets,
                                     Z* z, const Nd4jLong* zShapeInfo,
-                                    Z* extraParams,
+                                    E* extraParams,
                               std::function<X(const X*)>      startVal, 
-                              std::function<Z(X,X,Z*)>        update,
-                              std::function<Z(X,Z*)>          op,
-                              std::function<Z(X,Nd4jLong,Z*)> postPr);
-        
+                              std::function<Z(Z,Z,E*)>        update,
+                              std::function<Z(X,E*)>          op,
+                              std::function<Z(Z,Nd4jLong,E*)> postPr);
+
 
     };
 
@@ -386,14 +386,14 @@ namespace nd4j {
 
 
 //////////////////////////////////////////////////////////////////////////////
-    template<typename X, typename Z>
-    FORCEINLINE void Loops::loopTadXZ(const X* x, const Nd4jLong* tadShapeInfo, const Nd4jLong* tadOffsets,
-                          Z* z, const Nd4jLong* zShapeInfo,
-                          Z* extraParams,
-                          std::function<X(const X*)>      startVal,
-                          std::function<Z(X,X,Z*)>        update,
-                          std::function<Z(X,Z*)>          op,
-                          std::function<Z(X,Nd4jLong,Z*)> postPr) {
+    template<typename X, typename Z, typename E>
+    FORCEINLINE  void Loops::loopTadXZ(const X* x, const Nd4jLong* tadShapeInfo, const Nd4jLong* tadOffsets,
+                                      Z* z, const Nd4jLong* zShapeInfo,
+                                      E* extraParams,
+                                      std::function<X(const X*)>      startVal,
+                                      std::function<Z(Z,Z,E*)>        update,
+                                      std::function<Z(X,E*)>          op,
+                                      std::function<Z(Z,Nd4jLong,E*)> postPr) {
 
         const LoopKind kindOfLoop = Loops::deduceKindOfLoopTadXZ(tadShapeInfo, zShapeInfo);
 
