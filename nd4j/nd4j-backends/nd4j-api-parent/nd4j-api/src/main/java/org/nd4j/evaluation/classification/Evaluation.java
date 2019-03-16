@@ -323,6 +323,9 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
         this.axis = axis;
     }
 
+    /**
+     * Get the axis - see {@link #setAxis(int)} for details
+     */
     public int getAxis(){
         return axis;
     }
@@ -352,9 +355,7 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
      */
     @Override
     public void eval(INDArray labels, INDArray predictions, INDArray mask, final List<? extends Serializable> recordMetaData) {
-
         Triple<INDArray,INDArray, INDArray> p = BaseEvaluation.reshapeAndExtractNotMasked(labels, predictions, mask, axis);
-
         if(p == null){
             //All values masked out; no-op
             return;

@@ -183,7 +183,26 @@ public abstract class BaseEvaluation<T extends BaseEvaluation> implements IEvalu
             } else {
                 //2 possible cases: per-output masking, and per example masking
                 if (mask.rank() == 1 || mask.isColumnVector()) {
-                    return reshapeSameShapeTo2d(axis, labels, predictions, null);
+                    int notMaskedCount = mask.neq(0.0).castTo(DataType.INT).sumNumber().intValue();
+                    if (notMaskedCount == 0) {
+                        //All steps masked - nothing left to evaluate
+                        return null;
+                    }
+                    if (notMaskedCount == mask.length()) {
+                        //No masked steps - returned as-is
+                        return new Triple<>(labels, predictions, null);
+                    }
+                    int[] arr = mask.toIntVector();
+                    int[] idxs = new int[notMaskedCount];
+                    int pos = 0;
+                    for (int i = 0; i < arr.length; i++) {
+                        if (arr[i] != 0) {
+                            idxs[pos++] = i;
+                        }
+                    }
+                    INDArray retLabel = Nd4j.pullRows(labels, 1, idxs, 'c');
+                    INDArray retPredictions = Nd4j.pullRows(predictions, 1, idxs, 'c');
+                    return new Triple<>(retLabel, retPredictions, null);
                 } else {
                     Preconditions.checkState(labels.equalShapes(mask), "If a mask array is present for 2d data, it must either be a vector (column vector)" +
                             " or have shape equal to the labels (for per-output masking, when supported). Got labels shape %ndShape, mask shape %ndShape",
@@ -247,6 +266,11 @@ public abstract class BaseEvaluation<T extends BaseEvaluation> implements IEvalu
     }
 
     @Override
+    public void eval(INDArray labels, INDArray networkPredictions) {
+        eval(labels, networkPredictions, null, null);
+    }
+
+    @Override
     public void eval(@NonNull INDArray labels, @NonNull final INDArray predictions, final List<? extends Serializable> recordMetaData) {
         eval(labels, predictions, null, recordMetaData);
     }
@@ -254,24 +278,6 @@ public abstract class BaseEvaluation<T extends BaseEvaluation> implements IEvalu
     @Override
     public void eval(INDArray labels, INDArray networkPredictions, INDArray maskArray) {
         eval(labels, networkPredictions, maskArray, null);
-        /*
-        if (maskArray == null) {
-            if (labels.rank() == 3) {
-                evalTimeSeries(labels, networkPredictions, maskArray);
-            } else {
-                eval(labels, networkPredictions);
-            }
-            return;
-        }
-        if (labels.rank() == 3 && maskArray.rank() == 2) {
-            //Per-output masking
-            evalTimeSeries(labels, networkPredictions, maskArray);
-            return;
-        }
-
-        throw new UnsupportedOperationException(
-                this.getClass().getSimpleName() + " does not support per-output masking");
-        */
     }
 
     @Override
