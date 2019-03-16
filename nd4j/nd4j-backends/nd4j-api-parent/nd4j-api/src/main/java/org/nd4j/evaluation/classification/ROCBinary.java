@@ -27,6 +27,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.shade.jackson.databind.annotation.JsonSerialize;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -82,6 +83,11 @@ public class ROCBinary extends BaseEvaluation<ROCBinary> {
     @Override
     public void eval(INDArray labels, INDArray networkPredictions) {
         eval(labels, networkPredictions, (INDArray) null);
+    }
+
+    @Override
+    public void eval(INDArray labels, INDArray networkPredictions, INDArray maskArray, List<? extends Serializable> recordMetaData) {
+        throw new UnsupportedOperationException("Not yet implemented");
     }
 
     @Override

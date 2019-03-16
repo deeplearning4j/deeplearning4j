@@ -41,6 +41,7 @@ import org.nd4j.shade.jackson.databind.annotation.JsonSerialize;
 import java.io.Serializable;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 import static org.nd4j.linalg.indexing.NDArrayIndex.all;
@@ -343,6 +344,11 @@ public class ROC extends BaseEvaluation<ROC> {
         auprc = null;
         rocCurve = null;
         prCurve = null;
+    }
+
+    @Override
+    public void eval(INDArray labels, INDArray networkPredictions, INDArray maskArray, List<? extends Serializable> recordMetaData) {
+        throw new UnsupportedOperationException("Not yet implemented");
     }
 
     /**

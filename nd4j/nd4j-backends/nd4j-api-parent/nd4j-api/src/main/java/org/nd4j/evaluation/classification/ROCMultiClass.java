@@ -25,6 +25,7 @@ import org.nd4j.evaluation.serde.ROCArraySerializer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.shade.jackson.databind.annotation.JsonSerialize;
 
+import java.io.Serializable;
 import java.util.Arrays;
 import java.util.List;
 
@@ -169,6 +170,11 @@ public class ROCMultiClass extends BaseEvaluation<ROCMultiClass> {
             INDArray label = labels.getColumn(i);
             underlying[i].eval(label, prob);
         }
+    }
+
+    @Override
+    public void eval(INDArray labels, INDArray networkPredictions, INDArray maskArray, List<? extends Serializable> recordMetaData) {
+        throw new UnsupportedOperationException("Not yet implemented");
     }
 
     /**
