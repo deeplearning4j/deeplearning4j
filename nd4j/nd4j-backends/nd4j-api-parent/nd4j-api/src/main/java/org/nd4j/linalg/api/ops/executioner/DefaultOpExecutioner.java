@@ -27,6 +27,7 @@ import org.nd4j.linalg.api.buffer.Utf8Buffer;
 import org.nd4j.linalg.api.environment.Nd4jEnvironment;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ndarray.INDArrayStatistics;
 import org.nd4j.linalg.api.ops.*;
 import org.nd4j.linalg.api.ops.aggregates.Aggregate;
 import org.nd4j.linalg.api.ops.aggregates.Batch;
@@ -41,6 +42,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.AtomicBoolean;
 import org.nd4j.linalg.primitives.Optional;
 import org.nd4j.linalg.profiler.OpProfiler;
+import org.nd4j.linalg.profiler.ProfilerConfig;
 
 import java.util.*;
 
@@ -243,32 +245,50 @@ public class DefaultOpExecutioner implements OpExecutioner {
     }
 
 
+    @Deprecated
     @Override
     public void setProfilingMode(ProfilingMode mode) {
+
         profilingMode = mode;
+        ProfilerConfig config = null;
+        switch (profilingMode) {
+            case ALL:
+                config = ProfilerConfig.builder().checkWorkspaces(true).checkElapsedTime(true).stackTrace(true).build();
+                break;
+            case METHODS:
+                config = ProfilerConfig.builder().stackTrace(true).build();
+                break;
+            case OPERATIONS:
+                config = ProfilerConfig.builder().stackTrace(true).checkElapsedTime(true).build();
+                break;
+            case SCOPE_PANIC:
+                config = ProfilerConfig.builder().checkWorkspaces(true).build();
+                break;
+            case ANY_PANIC:
+                config = ProfilerConfig.builder().checkForINF(true).checkForNAN(true).build();
+                break;
+            case INF_PANIC:
+                config = ProfilerConfig.builder().checkForINF(true).build();
+                break;
+            case NAN_PANIC:
+                config = ProfilerConfig.builder().checkForNAN(true).build();
+                break;
+            default:
+                config = ProfilerConfig.builder().build();
+                break;
+        }
+        OpProfiler.getInstance().setConfig(config);
     }
 
+    @Override
+    public void setProfilingConfig(ProfilerConfig config) {
+        OpProfiler.getInstance().setConfig(config);
+    }
+
+    @Deprecated
     @Override
     public ProfilingMode getProfilingMode() {
         return profilingMode;
-    }
-
-    public long profilingHookIn(Op op, DataBuffer... tadBuffers) {
-        switch (profilingMode) {
-            case ALL:
-                OpProfiler.getInstance().processOpCall(op, tadBuffers);
-                break;
-            case METHODS:
-                break;
-            case OPERATIONS:
-                OpProfiler.getInstance().processOpCall(op, tadBuffers);
-                break;
-            case DISABLED:
-            default:
-                return 0L;
-        }
-
-        return System.nanoTime();
     }
 
     protected void checkWorkspace(String opName, INDArray array) {
@@ -324,15 +344,16 @@ public class DefaultOpExecutioner implements OpExecutioner {
         return workspaces;
     }
 
-    public long profilingHookIn(Op op) {
+    @Deprecated
+    public long profilingHookIn(Op op, DataBuffer... tadBuffers) {
         switch (profilingMode) {
             case ALL:
-                OpProfiler.getInstance().processOpCall(op);
+                OpProfiler.getInstance().processOpCall(op, tadBuffers);
                 break;
             case METHODS:
                 break;
             case OPERATIONS:
-                OpProfiler.getInstance().processOpCall(op);
+                OpProfiler.getInstance().processOpCall(op, tadBuffers);
                 break;
             case SCOPE_PANIC:
                 checkForWorkspaces(op);
@@ -345,6 +366,7 @@ public class DefaultOpExecutioner implements OpExecutioner {
         return System.nanoTime();
     }
 
+    @Deprecated
     public long profilingHookIn(CustomOp op) {
         switch (profilingMode) {
             case ALL:
@@ -366,6 +388,7 @@ public class DefaultOpExecutioner implements OpExecutioner {
         return System.nanoTime();
     }
 
+    @Deprecated
     public void profilingHookOut(Op op, long timeStart) {
         switch (profilingMode) {
             case ALL:
@@ -399,7 +422,7 @@ public class DefaultOpExecutioner implements OpExecutioner {
         }
     }
 
-
+    @Deprecated
     public void profilingHookOut(CustomOp op, long timeStart) {
         switch (profilingMode) {
             case ALL:
@@ -428,6 +451,93 @@ public class DefaultOpExecutioner implements OpExecutioner {
         }
     }
 
+
+    public long profilingConfigurableHookIn(CustomOp op) {
+        if (OpProfiler.getInstance().getConfig() == null)
+            return System.nanoTime();
+
+        if (OpProfiler.getInstance().getConfig().isStackTrace() ||
+            OpProfiler.getInstance().getConfig().isCheckElapsedTime()) {
+            OpProfiler.getInstance().processOpCall(op);
+        }
+
+        if (OpProfiler.getInstance().getConfig().isCheckWorkspaces()) {
+            checkForWorkspaces(op);
+        }
+
+        return System.nanoTime();
+    }
+
+    public long profilingConfigurableHookIn(Op op, DataBuffer... tadBuffers) {
+        if (OpProfiler.getInstance().getConfig() == null)
+            return System.nanoTime();
+
+        if (OpProfiler.getInstance().getConfig().isStackTrace() ||
+            OpProfiler.getInstance().getConfig().isCheckElapsedTime()) {
+            OpProfiler.getInstance().processOpCall(op);
+        }
+
+        if (OpProfiler.getInstance().getConfig().isNotOptimalTAD()) {
+            OpProfiler.getInstance().processOpCall(op, tadBuffers);
+        }
+        if (OpProfiler.getInstance().getConfig().isCheckWorkspaces()) {
+            checkForWorkspaces(op);
+        }
+
+        return System.nanoTime();
+    }
+
+
+    public void profilingConfigurableHookOut(Op op, long timeStart) {
+        if (OpProfiler.getInstance().getConfig() == null)
+            return;
+
+        if (OpProfiler.getInstance().getConfig().isStackTrace()) {
+            OpProfiler.getInstance().processStackCall(op, timeStart);
+        }
+        if (OpProfiler.getInstance().getConfig().isCheckElapsedTime()) {
+            OpProfiler.getInstance().timeOpCall(op, timeStart);
+        }
+        if (OpProfiler.getInstance().getConfig().isCheckForNAN()) {
+            OpExecutionerUtil.checkForNaN(op);
+        }
+        if (OpProfiler.getInstance().getConfig().isCheckForINF()) {
+            OpExecutionerUtil.checkForInf(op);
+        }
+        if (OpProfiler.getInstance().getConfig().isNativeStatistics()) {
+            if (op.z() != null) {
+                INDArrayStatistics stat = inspectArray(op.z());
+                OpProfiler.getInstance().setStatistics(stat);
+                log.info("Op name: {}; Z shapeInfo: {}; Statistics: min:{} max:{} mean:{} stdev:{} pos:{}, neg:{} zero:{} inf:{} nan:{}",
+                        op.opName(), op.z().shapeInfoJava(), stat.getMinValue(), stat.getMaxValue(), stat.getMeanValue(),
+                        stat.getStdDevValue(), stat.getCountPositive(), stat.getCountNegative(),
+                        stat.getCountZero(), stat.getCountInf(), stat.getCountNaN());
+            }
+        }
+
+        if (Nd4j.getExecutioner().isVerbose()) {
+            if (op.z() != null)
+                log.info("Op name: {}; Z shapeInfo: {}; Z values: {}", op.opName(), op.z().shapeInfoJava(), firstX(op.z(), 10));
+        }
+    }
+
+    public void profilingConfigurableHookOut(CustomOp op, long timeStart) {
+        if (OpProfiler.getInstance().getConfig() == null)
+            return;
+
+        if (OpProfiler.getInstance().getConfig().isStackTrace()) {
+            OpProfiler.getInstance().processStackCall(op, timeStart);
+        }
+        if (OpProfiler.getInstance().getConfig().isCheckElapsedTime()) {
+            OpProfiler.getInstance().timeOpCall(op, timeStart);
+        }
+        if (OpProfiler.getInstance().getConfig().isCheckForNAN()) {
+            OpExecutionerUtil.checkForNaN(op);
+        }
+        if (OpProfiler.getInstance().getConfig().isCheckForINF()) {
+            OpExecutionerUtil.checkForInf(op);
+        }
+    }
 
     /**
      * Validate the data types
@@ -768,6 +878,11 @@ public class DefaultOpExecutioner implements OpExecutioner {
 
     @Override
     public INDArray[] exec(CustomOp op, OpContext context) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public INDArrayStatistics inspectArray(INDArray array) {
         throw new UnsupportedOperationException();
     }
 }

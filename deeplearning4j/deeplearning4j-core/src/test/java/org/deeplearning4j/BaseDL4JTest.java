@@ -24,6 +24,7 @@ import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.profiler.ProfilerConfig;
 
 import static org.junit.Assert.assertNull;
 
@@ -51,6 +52,7 @@ public class BaseDL4JTest {
     @Before
     public void beforeTest(){
         Nd4j.getExecutioner().setProfilingMode(getProfilingMode());
+        Nd4j.getExecutioner().setProfilingConfig(ProfilerConfig.builder().build());
         Nd4j.setDefaultDataTypes(getDataType(), getDefaultFPDataType());
     }
 

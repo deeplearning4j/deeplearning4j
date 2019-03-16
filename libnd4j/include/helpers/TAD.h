@@ -453,6 +453,11 @@ namespace shape {
             this->tadOnlyShapeInfo[shape::shapeInfoLength(this->tadOnlyShapeInfo) - 2] = this->originalShapeInfo[shape::shapeInfoLength(this->originalShapeInfo) - 2];
         }
 
+        // do not swap order if positive elementwise stride preserved
+        if (shape::elementWiseStride(this->tadOnlyShapeInfo) >= 1) {
+            this->tadOnlyShapeInfo[shape::shapeInfoLength(this->tadOnlyShapeInfo) - 1] = shape::order(this->originalShapeInfo);
+        }
+
         if (this->tadShape != nullptr)
             delete[] this->tadShape;
 
@@ -751,10 +756,9 @@ namespace shape {
     INLINEDEF void TAD::createOffsets() {
         this->tadOffsets = new Nd4jLong[this->numTads];
         uint nT = this->numTads;
-        PRAGMA_OMP_PARALLEL_FOR_IF(nT > 128)
-        for(int i = 0; i < nT; i++) {
+        PRAGMA_OMP_PARALLEL_FOR_SIMD
+        for(uint i = 0; i < nT; i++)
             this->tadOffsets[i] = this->tadOffset(i);
-        }
     }
 
 

@@ -402,19 +402,19 @@ static void getMKLDNNMemoryDescLrn(const NDArray* src, const NDArray* diff_src, 
 
         PRAGMA_OMP_PARALLEL_FOR_IF(halfDepth + 1 > Environment::getInstance()->tadThreshold())
         for (int i = 1; i < halfDepth + 1; i++) {
-            IndicesList indA({NDIndex::all(), NDIndex::interval(i, channel), NDIndex::all(), NDIndex::all()});
-            IndicesList indB({NDIndex::all(), NDIndex::interval(0, channel - i), NDIndex::all(), NDIndex::all()});
+            std::vector<Nd4jLong> indA = {0,0, i,channel, 0,0, 0,0};
+            std::vector<Nd4jLong> indB = {0,0, 0,channel-i, 0,0, 0,0};
 
-            std::unique_ptr<NDArray> tmp(sumPart->subarray(indA));
-            std::unique_ptr<NDArray> addVal(activitySqr->subarray(indB));
+            NDArray tmp = (*sumPart)(indA, true);
+            NDArray addVal = (*activitySqr)(indB, true);
 
-            tmp->applyPairwiseTransform(pairwise::Add, *addVal.get(), nullptr);
+            tmp.applyPairwiseTransform(pairwise::Add, &addVal, nullptr);
 
 
-            std::unique_ptr<NDArray> tmp2(sumPart->subarray(indB));
-            std::unique_ptr<NDArray> addVal2(activitySqr->subarray(indA));
+            NDArray tmp2 = (*sumPart)(indB, true);
+            NDArray addVal2 = (*activitySqr)(indA, true);
 
-            tmp2->applyPairwiseTransform(pairwise::Add, *addVal2.get(), nullptr);
+            tmp2.applyPairwiseTransform(pairwise::Add, &addVal2, nullptr);
         }
 
         if (unitScale != nullptr && scale != nullptr) {

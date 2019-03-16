@@ -451,6 +451,7 @@ bool verbose = false;
 // #include <graph/GraphState.h>
 // #include <graph/execution/LogicExecutor.h>
 // #include <graph/ResultWrapper.h>
+// #include <DebugInfo.h>
 
 public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
     static { Loader.load(); }
@@ -2693,6 +2694,9 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
                           Pointer dY, @Cast("Nd4jLong*") long[] dYShapeInfo, @Cast("Nd4jLong*") long[] dYOffsets,
                           int[] hIindexes, int[] dIindexes);
 
+    public native void inspectArray(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jPointer") Pointer buffer, @Cast("Nd4jLong*") LongPointer shapeInfo, @Cast("Nd4jPointer") Pointer specialBuffer, @Cast("Nd4jLong*") LongPointer specialShapeInfo, @Cast("Nd4jPointer") Pointer debugInfo);
+    public native void inspectArray(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jPointer") Pointer buffer, @Cast("Nd4jLong*") LongBuffer shapeInfo, @Cast("Nd4jPointer") Pointer specialBuffer, @Cast("Nd4jLong*") LongBuffer specialShapeInfo, @Cast("Nd4jPointer") Pointer debugInfo);
+    public native void inspectArray(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jPointer") Pointer buffer, @Cast("Nd4jLong*") long[] shapeInfo, @Cast("Nd4jPointer") Pointer specialBuffer, @Cast("Nd4jLong*") long[] specialShapeInfo, @Cast("Nd4jPointer") Pointer debugInfo);
 }
 
 
@@ -3412,16 +3416,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         /**
         *  creates array which is view of this array
         */
-        public native NDArray getView();
-
-        /**
-        *  creates array which points on certain sub-range of this array, sub-range is defined by given indices
-        */
-        public native NDArray subarray(@ByRef IndicesList indices);
-        public native NDArray subarray(@ByRef IndicesList indices, @Cast("Nd4jLong*") @StdVector LongPointer strides);
-        public native NDArray subarray(@ByRef IndicesList indices, @Cast("Nd4jLong*") @StdVector LongBuffer strides);
-        public native NDArray subarray(@ByRef IndicesList indices, @Cast("Nd4jLong*") @StdVector long[] strides);
-        public native NDArray subarray(@Const @ByRef Intervals idx);
+        public native NDArray getView();        
 
         /**
         *  cast array elements to given dtype
@@ -3802,12 +3797,14 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         *  idx - intervals of indexes which define the subarrays to point on, idx has form {dim0Start,dim0End,  dim1Start,dim1End, ....} and length (2 * this->rankOf())
         *        when (dimStart == dimEnd) then whole range will be used for current dimension
         *  keepUnitiesInShape - if false then eliminate unities from resulting array shape, for example {1,a,1,b} -> {a,b}
+        *  isStrided - if true then idx has length (3 * this->rankOf()) and contains additional stride numbers which correspond to stride between dimStart and dimEnd,
+        *              so structure of idx is like {dim0Start,dim0End,dim0Stride,    dim1Start,dim1End,dim1Stride, ....}
         */
-        public native @ByVal @Name("operator ()") NDArray apply(@Cast("Nd4jLong*") @StdVector LongPointer idx, @Cast("bool") boolean keepUnitiesInShape/*=false*/);
+        public native @ByVal @Name("operator ()") NDArray apply(@Cast("Nd4jLong*") @StdVector LongPointer idx, @Cast("const bool") boolean keepUnitiesInShape/*=false*/, @Cast("const bool") boolean isStrided/*=false*/);
         public native @ByVal @Name("operator ()") NDArray apply(@Cast("Nd4jLong*") @StdVector LongPointer idx);
-        public native @ByVal @Name("operator ()") NDArray apply(@Cast("Nd4jLong*") @StdVector LongBuffer idx, @Cast("bool") boolean keepUnitiesInShape/*=false*/);
+        public native @ByVal @Name("operator ()") NDArray apply(@Cast("Nd4jLong*") @StdVector LongBuffer idx, @Cast("const bool") boolean keepUnitiesInShape/*=false*/, @Cast("const bool") boolean isStrided/*=false*/);
         public native @ByVal @Name("operator ()") NDArray apply(@Cast("Nd4jLong*") @StdVector LongBuffer idx);
-        public native @ByVal @Name("operator ()") NDArray apply(@Cast("Nd4jLong*") @StdVector long[] idx, @Cast("bool") boolean keepUnitiesInShape/*=false*/);
+        public native @ByVal @Name("operator ()") NDArray apply(@Cast("Nd4jLong*") @StdVector long[] idx, @Cast("const bool") boolean keepUnitiesInShape/*=false*/, @Cast("const bool") boolean isStrided/*=false*/);
         public native @ByVal @Name("operator ()") NDArray apply(@Cast("Nd4jLong*") @StdVector long[] idx);
 
         /**
@@ -3925,14 +3922,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         *  left - input array
         *  right - input array
         */
-        
-
-        /**
-        *  this method assigns elements of other array to the subarray of this array defined by given intervals
-        *  other - input array to assign elements from
-        *  idx - intervals of indexes which define the subarray
-        */ 
-        public native void assign(@Const @ByRef NDArray other, @Const @ByRef Intervals idx);
+                
 
         /**
         *  return vector containing _buffer as flat binary array
@@ -4165,6 +4155,14 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         *  k - depth
         *  value - scalar value to assign
         */
+
+        /**
+        *  creates array which points on certain sub-range of this array, sub-range is defined by given indices
+        */
+        
+        
+        
+        
 
         /**
         *  returns true if array is 2D
@@ -6816,6 +6814,10 @@ public static final int PREALLOC_SIZE = 33554432;
     @Namespace("shape") public static native @Cast("bool") boolean isLikeVector(@Cast("Nd4jLong*") LongBuffer shapeInfo, @ByRef IntBuffer posOfNonUnityDim);
     @Namespace("shape") public static native @Cast("bool") boolean isLikeVector(@Cast("Nd4jLong*") long[] shapeInfo, @ByRef int[] posOfNonUnityDim);
 
+    @Namespace("shape") public static native @Cast("bool") boolean isCommonVector(@Cast("Nd4jLong*") LongPointer shapeInfo, @ByRef IntPointer posOfNonUnityDim);
+    @Namespace("shape") public static native @Cast("bool") boolean isCommonVector(@Cast("Nd4jLong*") LongBuffer shapeInfo, @ByRef IntBuffer posOfNonUnityDim);
+    @Namespace("shape") public static native @Cast("bool") boolean isCommonVector(@Cast("Nd4jLong*") long[] shapeInfo, @ByRef int[] posOfNonUnityDim);
+
     @Namespace("shape") public static native @Cast("bool") boolean isRowVector(@Cast("const Nd4jLong*") LongPointer shapeInfo);
     @Namespace("shape") public static native @Cast("bool") boolean isRowVector(@Cast("const Nd4jLong*") LongBuffer shapeInfo);
     @Namespace("shape") public static native @Cast("bool") boolean isRowVector(@Cast("const Nd4jLong*") long[] shapeInfo);
@@ -8352,6 +8354,145 @@ public static final int PREALLOC_SIZE = 33554432;
 ////////////////////////////////////////////////////////////////////////// 
 // copy-past from java hasDefaultStridesForShape function
 
+// INLINEDEF _CUDA_H bool reshapeCF(const int oldRank, Nd4jLong* oldShape, const int newRank, Nd4jLong* newShapeOf, bool isFOrder, Nd4jLong* target) {
+//         int oldnd;
+//         Nd4jLong* olddims = shape::copyOf(oldRank, shape::shapeOf(oldShape));
+//         Nd4jLong* oldstrides = shape::copyOf(oldRank, shape::stride(oldShape));
+//         int np, op, last_stride;
+//         int oi, oj, ok, ni, nj, nk;
+//         Nd4jLong* newStrides = new Nd4jLong[newRank];
+//         oldnd = 0;
+
+//         /*
+//          * Remove axes with dimension 1 from the old array. They have no effect
+//          * but would need special cases since their strides do not matter.
+//          */
+//         for (oi = 0; oi < oldRank; oi++) {
+//             if (shape::shapeOf(oldShape)[oi] != 1) {
+//                 olddims[oldnd] = shape::shapeOf(oldShape)[oi];
+//                 oldstrides[oldnd] = shape::stride(oldShape)[oi];
+//                 oldnd++;
+//             }
+//         }
+
+//         np = 1;
+//         for (ni = 0; ni < newRank; ni++) {
+//             np *= newShapeOf[ni];
+//         }
+//         op = 1;
+//         for (oi = 0; oi < oldnd; oi++) {
+//             op *= olddims[oi];
+//         }
+//         if (np != op) {
+//             /* different total sizes; no hope */
+//             delete[] olddims;
+//             delete[] oldstrides;
+//             delete[] newStrides;
+
+//             return false;
+//         }
+
+//         if (np == 0) {
+//             /* the current code does not handle 0-sized arrays, so give up */
+//             delete[] olddims;
+//             delete[] oldstrides;
+//             delete[] newStrides;
+
+//             return false;
+//         }
+
+//         /* oi to oj and ni to nj give the axis ranges currently worked with */
+//         oi = 0;
+//         oj = 1;
+//         ni = 0;
+//         nj = 1;
+
+//         while (ni < newRank && oi < oldnd) {
+//             np = newShapeOf[ni];
+//             op = olddims[oi];
+
+//             while (np != op) {
+//                 if (np < op) {
+//                     /* Misses trailing 1s, these are handled later */
+//                     np *= newShapeOf[nj++];
+//                 } else {
+//                     op *= olddims[oj++];
+//                 }
+//             }
+
+//             /* Check whether the original axes can be combined */
+//             for (ok = oi; ok < oj - 1; ok++) {
+//                 if (isFOrder) {
+//                     if (oldstrides[ok + 1] != olddims[ok] * oldstrides[ok]) {
+//                         /* not contiguous enough */
+//                         delete[] olddims;
+//                         delete[] oldstrides;
+//                         delete[] newStrides;
+
+//                         return false;
+//                     }
+//                 } else {
+//                     /* C order */
+//                     if (oldstrides[ok] != olddims[ok + 1] * oldstrides[ok + 1]) {
+//                         /* not contiguous enough */
+//                         delete[] olddims;
+//                         delete[] oldstrides;
+//                         delete[] newStrides;
+
+//                         return false;
+//                     }
+//                 }
+//             }
+
+//             /* Calculate new strides for all axes currently worked with */
+//             if (isFOrder) {
+//                 newStrides[ni] = oldstrides[oi];
+//                 for (nk = ni + 1; nk < nj; nk++) {
+//                     newStrides[nk] = newStrides[nk - 1] * newShapeOf[nk - 1];
+//                 }
+//             } else {
+//                 /* C order */
+//                 newStrides[nj - 1] = oldstrides[oj - 1];
+//                 for (nk = nj - 1; nk > ni; nk--) {
+//                     newStrides[nk - 1] = newStrides[nk] * newShapeOf[nk];
+//                 }
+//             }
+//             ni = nj++;
+//             oi = oj++;
+//         }
+
+//         if (ni >= 1) {
+//             last_stride = newStrides[ni - 1];
+//         } else {
+//             last_stride = shape::elementWiseStride(oldShape);
+//         }
+//         if (isFOrder && ni >= 1) {
+//             last_stride *= newShapeOf[ni - 1];
+//         }
+//         for (nk = ni; nk < newRank; nk++) {
+//             newStrides[nk] = last_stride;
+//         }
+
+//         target[0] = newRank;
+//         int cnt = 1;
+//         for (int e = 0; e < newRank; e++)
+//             target[cnt++] = newShapeOf[e];
+
+//         for (int e = 0; e < newRank; e++)
+//             target[cnt++] = newStrides[e];
+
+//         target[shape::shapeInfoLength(newRank) - 3] = 0;
+//         target[shape::shapeInfoLength(newRank) - 2] = 0;
+//         target[shape::shapeInfoLength(newRank) - 1] = isFOrder ? 102 : 99;
+//         nd4j::ArrayOptions::setDataType(target, nd4j::ArrayOptions::dataType(oldShape));
+
+//         delete[] olddims;
+//         delete[] oldstrides;
+//         delete[] newStrides;
+
+//         return true;
+//     }
+
     // this function checks the consistence of dimensions with array rank (negative dimensions, too large dimensions, too big number of dimensions)
     // also it sorts input array of dimensions, this operation is also necessary for creating TAD object
 
@@ -9229,6 +9370,7 @@ public static final int ALL_FLOATS =DOUBLE;
 // #ifndef OP_BOILERPLATE_HH
 // #define OP_BOILERPLATE_HH
 
+// #include <openmp_pragmas.h>
 // #include <type_boilerplate.h>
 
 // #ifdef __CUDACC__
@@ -10670,6 +10812,13 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 
 // #define ILAMBDA_T(X, ...) [__VA_ARGS__] (Nd4jLong _idx, T X) -> T
 // #define ILAMBDA_TT(X, Y, ...) [__VA_ARGS__] (Nd4jLong _idx, T X, T Y) -> T
+
+// stuff for benchmarks
+// #define GENERATE_XYZ() [&] (ResultSet &x, ResultSet &y, ResultSet &z)
+// #define GENERATE_XZ() [&] (ResultSet &x, ResultSet &z)
+
+// #define PARAMETRIC_XYZ() [&] (Parameters &p, ResultSet &x, ResultSet &y, ResultSet &z)
+// #define PARAMETRIC_XZ() [&] (Parameters &p, ResultSet &x, ResultSet &z)
 
 // #endif
 
@@ -18160,6 +18309,35 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 //         #endif
 
         /**
+         * logdet op. Logarithm of the determinant of hermitian positive matricies.
+         *
+         * input params:
+         *    0 - the tensor with dimension (x * y * z * ::: * M * M)
+         *
+         * return value:
+         *    tensor with dimension (x * y * z * ::: *) with log determinant for all
+         * M x M matricies
+         */
+
+//         #if NOT_EXCLUDED(OP_logdet)
+        @Namespace("nd4j::ops") public static class logdet extends DeclarableCustomOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public logdet(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public logdet(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public logdet position(long position) {
+                return (logdet)super.position(position);
+            }
+        
+                                                                                    public logdet() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
+                                                                                }
+//         #endif
+        
+        /**
          * matrix_inverse op. - make inverse for all 2D square matricies found in the input tensor
          *
          * input params:
@@ -21902,6 +22080,75 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 
 
 // #endif
+
+// Parsed from helpers/DebugInfo.h
+
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
+//
+// Created by GS aka shugeo <sgazeos@gmail.com> on 3/12/19.
+//
+
+// #ifndef LIBND4J__DEBUG_INFO_HELPER__H
+// #define LIBND4J__DEBUG_INFO_HELPER__H
+
+// #include <pointercast.h>
+// #include <op_boilerplate.h>
+// #include <Environment.h>
+// #include <StringUtils.h>
+// #include <string>
+// #include <dll.h>
+// #include <templatemath.h>
+
+// #ifdef __CUDACC__
+
+// #endif
+    @Namespace("nd4j") public static class DebugInfo extends Pointer {
+        static { Loader.load(); }
+        /** Default native constructor. */
+        public DebugInfo() { super((Pointer)null); allocate(); }
+        /** Native array allocator. Access with {@link Pointer#position(long)}. */
+        public DebugInfo(long size) { super((Pointer)null); allocateArray(size); }
+        /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+        public DebugInfo(Pointer p) { super(p); }
+        private native void allocate();
+        private native void allocateArray(long size);
+        @Override public DebugInfo position(long position) {
+            return (DebugInfo)super.position(position);
+        }
+    
+       public native double _minValue(); public native DebugInfo _minValue(double _minValue);
+       public native double _maxValue(); public native DebugInfo _maxValue(double _maxValue);
+       public native double _meanValue(); public native DebugInfo _meanValue(double _meanValue);
+       public native double _stdDevValue(); public native DebugInfo _stdDevValue(double _stdDevValue);
+       public native @Cast("Nd4jLong") long _zeroCount(); public native DebugInfo _zeroCount(long _zeroCount);
+       public native @Cast("Nd4jLong") long _positiveCount(); public native DebugInfo _positiveCount(long _positiveCount);
+       public native @Cast("Nd4jLong") long _negativeCount(); public native DebugInfo _negativeCount(long _negativeCount);
+       public native @Cast("Nd4jLong") long _infCount(); public native DebugInfo _infCount(long _infCount);
+       public native @Cast("Nd4jLong") long _nanCount(); public native DebugInfo _nanCount(long _nanCount);
+    }
+
+    @Namespace("nd4j") public static native @Cast("bool") @Name("operator ==") boolean equals(@Const @ByRef DebugInfo first, @Const @ByRef DebugInfo second);
+
+
+
+
+// #endif //LIBND4J_DEBUGHELPER_H
+
 
 // Parsed from ops/declarable/headers/third_party.h
 

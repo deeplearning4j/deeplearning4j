@@ -131,7 +131,7 @@ namespace nd4j {
             }
         }
 
-        bool _preprocess_strided_slice(IndicesList* indicesList, std::vector<Nd4jLong>* final_shape, std::vector<Nd4jLong>& input_shape, std::vector<int>& begin, std::vector<int>& end, std::vector<int>& strides, int begin_mask, int ellipsis_mask, int end_mask, int new_axis_mask, int shrink_axis_mask, bool* is_identity, bool* is_simple_slice, bool* slice_dim0) {
+        bool _preprocess_strided_slice(std::vector<Nd4jLong>* indicesList, std::vector<Nd4jLong>* final_shape, std::vector<Nd4jLong>& input_shape, std::vector<int>& begin, std::vector<int>& end, std::vector<int>& strides, int begin_mask, int ellipsis_mask, int end_mask, int new_axis_mask, int shrink_axis_mask, bool* is_identity, bool* is_simple_slice, bool* slice_dim0) {
             std::vector<int> preshape;
 
             bool ellipsis_seen = false;
@@ -252,10 +252,22 @@ namespace nd4j {
                     }
                 
                     if (indicesList != nullptr) {
-                        if (interval_length > 1)
-                            indicesList->push_back(NDIndex::interval(begin_idx, end_idx, stride_idx));
-                        else if (interval_length == 1)
-                            indicesList->push_back(NDIndex::point(begin_idx));
+                        if (interval_length > 1) {
+                            indicesList->push_back(begin_idx);
+                            indicesList->push_back(end_idx);
+                            indicesList->push_back(stride_idx);
+                            // (*indicesList)[3*e]   = begin_idx;
+                            // (*indicesList)[3*e+1] = end_idx;
+                            // (*indicesList)[3*e+2] = stride_idx;
+                        }
+                        else if (interval_length == 1) {                            
+                            indicesList->push_back(begin_idx);
+                            indicesList->push_back(begin_idx + 1);
+                            indicesList->push_back(1);
+                            // (*indicesList)[3*e]   = begin_idx;
+                            // (*indicesList)[3*e+1] = begin_idx + 1;
+                            // (*indicesList)[3*e+2] = 1;
+                        }
                     }
 
                     preshape.emplace_back(size_i);
@@ -378,8 +390,9 @@ namespace nd4j {
                 ++e;
             }
 
-            IndicesList indices;
-            auto input_shape = x->getShapeAsVector();
+            
+            std::vector<Nd4jLong> indices;
+            auto input_shape = x->getShapeAsVector();            
             std::vector<Nd4jLong> final_shape;
             bool is_identity;
             bool is_simple_slice;
@@ -389,11 +402,13 @@ namespace nd4j {
             vectorize(input_shape);
             REQUIRE_TRUE(_preprocess_strided_slice(&indices, &final_shape, input_shape, begin, end, strides, begin_mask, ellipsis_mask, end_mask, new_axis_mask, shrink_axis_mask, &is_identity, &is_simple_slice, &is_dim0), 0, "StridedSlice: shape calculation failed");
 
-            auto sub = x->subarray(indices);
-
-            z->assign(sub);
-
-            delete sub;
+            if(indices.size() == 3 && (indices[1] - indices[0]) == 1) {
+                z->assign(x->e<float>(indices[0]));
+            }
+            else {
+                auto sub = (*x)(indices, true, true);
+                z->assign(sub);
+            }
 
             return Status::OK();
         }
@@ -584,8 +599,8 @@ namespace nd4j {
                 ++e;
             }
     
-            IndicesList indices;
             auto input_shape = x->getShapeAsVector();
+            std::vector<Nd4jLong> indices;
             std::vector<Nd4jLong> final_shape;
             bool is_identity;
             bool is_simple_slice;
@@ -595,9 +610,13 @@ namespace nd4j {
             vectorize(input_shape);
             REQUIRE_TRUE(_preprocess_strided_slice(&indices, &final_shape, input_shape, begin, end, strides, begin_mask, ellipsis_mask, end_mask, new_axis_mask, shrink_axis_mask, &is_identity, &is_simple_slice, &is_dim0), 0, "StridedSliceBP: shape calculation failed");
 
-            auto sub = output->subarray(indices);
-            sub->assign(epsNext);
-            delete sub;
+            if(indices.size() == 3 && (indices[1] - indices[0]) == 1) {
+                output->p(indices[0], *epsNext);
+            }
+            else {
+                auto sub = (*output)(indices, true, true);
+                sub.assign(epsNext);
+            }           
 
             return Status::OK();
         }
