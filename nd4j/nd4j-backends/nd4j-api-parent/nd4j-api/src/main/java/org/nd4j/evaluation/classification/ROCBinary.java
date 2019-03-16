@@ -138,8 +138,8 @@ public class ROCBinary extends BaseEvaluation<ROCBinary> {
 
         int[] perExampleNonMaskedIdxs = null;
         for (int i = 0; i < n; i++) {
-            INDArray prob = predictions2d.getColumn(i);
-            INDArray label = labels2d.getColumn(i);
+            INDArray prob = predictions2d.getColumn(i).reshape(predictions2d.size(0), 1);
+            INDArray label = labels2d.getColumn(i).reshape(labels2d.size(0), 1);
             if (maskArray != null) {
                 //If mask array is present, pull out the non-masked rows only
                 INDArray m;

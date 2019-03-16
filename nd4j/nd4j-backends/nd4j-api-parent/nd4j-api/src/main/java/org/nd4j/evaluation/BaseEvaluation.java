@@ -239,7 +239,8 @@ public abstract class BaseEvaluation<T extends BaseEvaluation> implements IEvalu
                 }
             }
         } else {
-            throw new IllegalStateException("Unknown array type passed to evaluation: labels array rank " + labels.rank() + " with shape " + labels.shapeInfoToString());
+            throw new IllegalStateException("Unknown array type passed to evaluation: labels array rank " + labels.rank()
+                    + " with shape " + labels.shapeInfoToString() + ". Labels and predictions must always be rank 2 or higher, with leading dimension being minibatch dimension");
         }
     }
 

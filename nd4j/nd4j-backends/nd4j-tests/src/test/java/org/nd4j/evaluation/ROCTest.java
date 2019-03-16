@@ -576,11 +576,11 @@ public class ROCTest extends BaseNd4jTest {
             String msg = "Steps = " + steps;
             //area: 1.0
             ROC r = new ROC(steps);
-            INDArray zero = Nd4j.zeros(1);
-            INDArray one = Nd4j.ones(1);
-            r.eval(zero, Nd4j.create(new double[] {0.25}));
-            r.eval(one, Nd4j.create(new double[] {0.33}));
-            r.eval(one, Nd4j.create(new double[] {0.66}));
+            INDArray zero = Nd4j.zeros(1,1);
+            INDArray one = Nd4j.ones(1,1);
+            r.eval(zero, Nd4j.create(new double[] {0.25}).reshape(1,1));
+            r.eval(one, Nd4j.create(new double[] {0.33}).reshape(1,1));
+            r.eval(one, Nd4j.create(new double[] {0.66}).reshape(1,1));
 
             PrecisionRecallCurve prc = r.getPrecisionRecallCurve();
 
@@ -1009,7 +1009,6 @@ public class ROCTest extends BaseNd4jTest {
             //NCHW
             INDArray labels = Nd4j.create(DataType.FLOAT, mb, c, h, w);
             Nd4j.exec(new BernoulliDistribution(labels, 0.5));
-            Random r = new Random(12345);
 
             INDArray predictions = Nd4j.rand(DataType.FLOAT, mb, c, h, w);
 
@@ -1017,8 +1016,6 @@ public class ROCTest extends BaseNd4jTest {
             ROCBinary e4d = new ROCBinary();
 
             ROC r2d = new ROC();
-            ROC r4d = new ROC();
-
             e4d.eval(labels, predictions);
 
             for (int i = 0; i < mb; i++) {
@@ -1038,6 +1035,12 @@ public class ROCTest extends BaseNd4jTest {
             }
 
             assertEquals(e2d, e4d);
+
+            if(c == 1){
+                ROC r4d = new ROC();
+                r4d.eval(labels, predictions);
+                assertEquals(r2d, r4d);
+            }
 
 
             //NHWC, etc
@@ -1074,6 +1077,13 @@ public class ROCTest extends BaseNd4jTest {
 
                 e.eval(labels, predictions);
                 assertEquals(e2d, e);
+
+                if(c == 1){
+                    ROC r2 = new ROC();
+                    r2.setAxis(i);
+                    r2.eval(labels, predictions);
+                    assertEquals(r2d, r2);
+                }
             }
         }
     }
