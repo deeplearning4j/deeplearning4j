@@ -228,8 +228,8 @@ TEST_F(PlaygroundTests, Test_Something_5) {
     std::vector<int> axis = {1};
 
     NativeOpExcutioner::execBroadcast(broadcast::Add, x.buffer(), x.shapeInfo(), y.buffer(), y.shapeInfo(), z.buffer(), z.shapeInfo(),
-                                      axis.data(), axis.size(), /*Nd4jLong *tadOnlyShapeInfo*/ nullptr, /*Nd4jLong *tadOffsets*/ nullptr,
-            /*Nd4jLong *tadOnlyShapeInfoZ*/ nullptr, /*Nd4jLong *tadOffsetsZ*/ nullptr);
+                                      axis.data(), axis.size(), nullptr, nullptr,
+            nullptr, nullptr);
 }
 
 #define PARAMETRIC_D() [&] (Parameters &p) -> Context*
@@ -1513,6 +1513,7 @@ TEST_F(PlaygroundTests, loops_1) {
     NDArray x('c', {16, 32, 64, 64}, nd4j::DataType::FLOAT32);
     NDArray z1('c', {32}, nd4j::DataType::FLOAT32);
     NDArray z2('c', {32}, nd4j::DataType::FLOAT32);
+    NDArray z3('c', {32}, nd4j::DataType::FLOAT32);
     std::vector<int> dimsToExclude = {0,2,3};
     std::vector<int> tadDims = {1};
     x.linspace(0.01);
@@ -1528,6 +1529,12 @@ TEST_F(PlaygroundTests, loops_1) {
     auto timeEnd1  = std::chrono::system_clock::now();
     auto duration1 = std::chrono::duration_cast<std::chrono::microseconds> ((timeEnd1 - timeStart1) / N).count();
 
+
+    auto timeStartE = std::chrono::system_clock::now();
+    for (int i = 0; i < N ; i++)
+        x.reduceAlongDimension(nd4j::reduce::Sum, &z3, dimsToExclude);
+    auto timeEndE  = std::chrono::system_clock::now();
+    auto durationE = std::chrono::duration_cast<std::chrono::microseconds> ((timeEndE - timeStartE) / N).count();
 
     //****************************************************//
     Nd4jLong *tadShapeInfo(nullptr), *tadOffsets(nullptr);
@@ -1560,5 +1567,6 @@ TEST_F(PlaygroundTests, loops_1) {
 
     printf("duration old: %ld\n", duration1);
     printf("duration new: %ld\n", duration2);
+    printf("duration E: %ld\n", durationE);
 
 }

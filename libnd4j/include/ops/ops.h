@@ -2736,11 +2736,11 @@ namespace simdOps {
 			return static_cast<X>(0);
 		}
 
-		op_def static Z merge(X old, X opOutput, Z *extraParams) {
+		op_def static Z merge(Z old, Z opOutput, Z *extraParams) {
 			return opOutput + old;
 		}
 
-		op_def static Z update(X old, X opOutput, Z *extraParams) {
+		op_def static Z update(Z old, Z opOutput, Z *extraParams) {
 			return opOutput + old;
 		}
 
@@ -2748,7 +2748,7 @@ namespace simdOps {
 			return d1;
 		}
 
-		op_def static Z postProcess(X reduction, Nd4jLong n, Z *extraParams) {
+		op_def static Z postProcess(Z reduction, Nd4jLong n, Z *extraParams) {
 			return (Z) reduction / (Z) n;
 		}
 	};
@@ -3419,7 +3419,7 @@ namespace simdOps {
             //delete[] extraParams;
         }
 
-        op_def static Y startingValue(X *input) {
+        op_def static Y startingValue(const X *input) {
             return static_cast<Y>(0.0f);
         }
 
@@ -3466,7 +3466,7 @@ namespace simdOps {
             //delete[] extraParams;
         }
 
-        op_def static Y startingValue(X *input) {
+        op_def static Y startingValue(const X *input) {
             return static_cast<Y>(0.0f);
         }
 
@@ -3522,7 +3522,7 @@ namespace simdOps {
 			//delete[] * extraParamsRef;
 		}
 
-		op_def static Y startingValue(X *input) {
+		op_def static Y startingValue(const X *input) {
 			return static_cast<Y>(0.0f);
 		}
 
@@ -3570,7 +3570,7 @@ namespace simdOps {
             //no-op
         }
 
-        op_def static Z startingValue(X *input) {
+        op_def static Z startingValue(const X *input) {
             return static_cast<Z>(0.0f);
         }
 
@@ -3617,7 +3617,7 @@ namespace simdOps {
 			//no-op
 		}
 
-		op_def static Y startingValue(X *input) {
+		op_def static Y startingValue(const X *input) {
 			return static_cast<Y>(0.0f);
 		}
 
@@ -3663,7 +3663,7 @@ namespace simdOps {
 			//no-op
 		}
 
-		op_def static Y startingValue(X *input) {
+		op_def static Y startingValue(const X *input) {
 			return static_cast<Y>(0.0f);
 		}
 
@@ -3736,7 +3736,7 @@ namespace simdOps {
 			return reduction;
 		}
 
-		static _CUDA_HD inline X startingValue(X *input) {
+		static _CUDA_HD inline X startingValue(const X *input) {
 			return 0;
 		}
 
@@ -3783,7 +3783,7 @@ namespace simdOps {
             return old;
         }
 
-        static _CUDA_HD inline X startingValue(X *input) {
+        static _CUDA_HD inline X startingValue(const X *input) {
             return -nd4j::DataTypeUtils::max<X>();
         }
 
@@ -3842,7 +3842,7 @@ namespace simdOps {
             return old;
         }
 
-        static _CUDA_HD inline X startingValue(X *input) {
+        static _CUDA_HD inline X startingValue(const X *input) {
             return -nd4j::DataTypeUtils::max<X>();
         }
 
@@ -3910,7 +3910,7 @@ namespace simdOps {
 			return reduction;
 		}
 
-        static _CUDA_HD inline X startingValue(X *input) {
+        static _CUDA_HD inline X startingValue(const X *input) {
 			return -nd4j::DataTypeUtils::max<X>();
 		}
 
@@ -3936,7 +3936,7 @@ namespace simdOps {
 			return val;
 		}
 
-		static _CUDA_HD inline X startingValue(X *input) {
+		static _CUDA_HD inline X startingValue(const X *input) {
 			return nd4j::DataTypeUtils::max<X>();
 		}
 
@@ -3992,7 +3992,7 @@ namespace simdOps {
 			return val;
 		}
 
-        static _CUDA_HD inline X startingValue(X *input) {
+        static _CUDA_HD inline X startingValue(const X *input) {
 			return nd4j::DataTypeUtils::max<X>();
 		}
 

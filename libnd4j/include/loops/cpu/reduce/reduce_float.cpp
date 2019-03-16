@@ -24,6 +24,7 @@
 #include <loops/reduce_float.h>
 #include <loops/legacy_ops.h>
 #include <OmpLaunchHelper.h>
+#include <helpers/Loops.h>
 
 using namespace simdOps;
 
@@ -224,19 +225,36 @@ namespace functions {
                         z[i] = OpType::postProcess(start, tadLength, extraParams);;
                     }
                 } else {
-                    
-                    PRAGMA_OMP_PARALLEL_FOR_THREADS(num_threads)
-                    for (int i = 0; i < resultLength; i++) {
 
-                        auto tx = x + tadOffsets[i];
-                        auto start = OpType::startingValue(tx);
+                    auto _sv = [&] (const X *x) -> X {
+                        return OpType::startingValue(x);
+                    };
 
-                        for (int j = 0; j < tadLength; j++) {
-                            auto xOffset = shape::indexOffset(j, tadOnlyShapeInfo, castTadOnlyShapeInfo, tadLength, canCast);
-                            start = OpType::update(start, OpType::op(tx[xOffset], extraParams), extraParams);
-                        }
-                        z[i] = OpType::postProcess(start, tadLength, extraParams);
-                    }
+                    auto _op = [&] (X x, Z *e) -> Z {
+                        return OpType::op(x, e);
+                    };
+
+                    auto _up = [&] (X o, X n, Z *e) -> Z {
+                        return OpType::update(o, n, e);
+                    };
+
+                    auto _pp = [&] (X o, Nd4jLong n, Z *e) -> Z {
+                        return OpType::postProcess(o, n, e);
+                    };
+
+                    nd4j::Loops::loopTadXZ<X, Z>(const_cast<const X*>(x), const_cast<const Nd4jLong *>(tadOnlyShapeInfo), const_cast<const Nd4jLong *>(tadOffsets),
+                                                   z, const_cast<const Nd4jLong *>(resultShapeInfoBuffer),
+                                                   extraParams,
+                                                   _sv,
+                                                   _up,
+                                                   _op,
+                                                   _pp);
+                                                   /*
+                                                   &OpType::startingValue,
+                                                   &OpType::update,
+                                                   &OpType::op,
+                                                   &OpType::postProcess);
+                                                    */
                 }
 
 
