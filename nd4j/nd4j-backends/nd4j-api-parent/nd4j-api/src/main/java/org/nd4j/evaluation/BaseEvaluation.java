@@ -208,7 +208,7 @@ public abstract class BaseEvaluation<T extends BaseEvaluation> implements IEvalu
                             " or have shape equal to the labels (for per-output masking, when supported). Got labels shape %ndShape, mask shape %ndShape",
                             labels, mask);
                     //Assume evaluation instances with per-output masking will handle that themselves (or throw exception if not supported)
-                    return new Triple<>(labels, predictions, null);
+                    return new Triple<>(labels, predictions, mask);
                 }
             }
         } else if (labels.rank() == 3 || labels.rank() == 4 || labels.rank() == 5) {

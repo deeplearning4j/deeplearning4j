@@ -1016,6 +1016,9 @@ public class ROCTest extends BaseNd4jTest {
             ROCBinary e2d = new ROCBinary();
             ROCBinary e4d = new ROCBinary();
 
+            ROC r2d = new ROC();
+            ROC r4d = new ROC();
+
             e4d.eval(labels, predictions);
 
             for (int i = 0; i < mb; i++) {
@@ -1027,6 +1030,9 @@ public class ROCTest extends BaseNd4jTest {
                         rowPredictions = rowPredictions.reshape(1, rowLabel.length());
 
                         e2d.eval(rowLabel, rowPredictions);
+                        if(c == 1){
+                            r2d.eval(rowLabel, rowPredictions);
+                        }
                     }
                 }
             }
