@@ -1082,4 +1082,29 @@ public class ReductionOpValidation extends BaseOpValidation {
                     .gradientCheck(true));
         assertNull(err, err);
     }
+
+    @Test
+    public void testDotProductAttentionMultiHeadInput(){
+        final INDArray keys = Nd4j.rand(new int[]{2, 5, 4, 3});
+        final INDArray values = Nd4j.rand(new int[]{2, 5, 4, 3});
+        final INDArray query = Nd4j.rand(new int[]{2, 5, 4, 1});
+
+        final INDArray exec = Nd4j.matmul(keys, query, true, false, false)
+                .divi(Math.sqrt(keys.size(-2)));
+        Nd4j.exec(new SoftMax(exec, exec, -2));
+        final INDArray finalOut = Nd4j.matmul(values, exec).norm1();
+
+        SameDiff sd = SameDiff.create();
+        SDVariable sdQ = sd.var("q", query);
+        SDVariable sdK = sd.var("k", keys);
+        SDVariable sdV = sd.var("v", values);
+
+        SDVariable t = sd.nn.dotProductAttention(sdQ, sdK, sdV, true);
+        t.norm1("out");
+
+        String err = OpValidation.validate(new TestCase(sd)
+                .expectedOutput("out", finalOut)
+                .gradientCheck(true));
+        assertNull(err, err);
+    }
 }

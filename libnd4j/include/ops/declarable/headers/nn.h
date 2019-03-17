@@ -220,17 +220,17 @@ namespace nd4j {
          * both.
          *
          * Expected arguments:
-         * q: input 3D array "queries" of shape [batchSize, featureKeys, queryCount]
-         * k: input 3D array "keys" of shape [batchSize, featureKeys, timesteps]
-         * v: input 3D array "values" of shape [batchSize, featureValues, timesteps]
+         * q: input 3D array "queries" of shape [batchSize, featureKeys, queryCount] or 4D array of shape [batchSize, numHeads, featureKeys, queryCount]
+         * k: input 3D array "keys" of shape [batchSize, featureKeys, timesteps] or 4D array of shape [batchSize, numHeads, featureKeys, timesteps]
+         * v: input 3D array "values" of shape [batchSize, featureValues, timesteps] or 4D array of shape [batchSize, numHeads, featureValues, timesteps]
          *
          * integer input arguments:
          * 0: normalization, may have two values: zero -> do not apply normalization, one -> apply normalization
          * 1: withWeights, may have two values: zero -> do not return weights, one -> return weights
          *
          * Output Arrays:
-         * 0: Attention result arrays of shape [batchSize, featureValues, queryCount]
-         * 1: OPTIONAL; Attention weights of shape [batchSize, timesteps, queryCount]
+         * 0: Attention result arrays of shape [batchSize, featureValues, queryCount] or [batchSize, numHeads, featureValues, queryCount]
+         * 1: OPTIONAL; Attention weights of shape [batchSize, timesteps, queryCount] or [batchSize, numHeads, timesteps, queryCount]
          */
         #if NOT_EXCLUDED(OP_dot_product_attention)
                 DECLARE_CUSTOM_OP(dot_product_attention, 3, -1, false, 0, 2);

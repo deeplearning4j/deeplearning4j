@@ -749,15 +749,21 @@ public class SDNN extends SDOps {
      * Note: keys and values usually is the same array. If you want to use it as the same array, simply pass it for
      * both.
      *
+     * Note: Queries, keys and values must either be all rank 3 or all rank 4 arrays. Mixing them doesn't work. The
+     * output rank will depend on the input rank.
+     *
      * @param queries input 3D array "queries" of shape [batchSize, featureKeys, queryCount]
+     *                or 4D array of shape [batchSize, numHeads, featureKeys, queryCount]
      * @param keys input 3D array "keys" of shape [batchSize, featureKeys, timesteps]
+     *             or 4D array of shape [batchSize, numHeads, featureKeys, timesteps]
      * @param values input 3D array "values" of shape [batchSize, featureValues, timesteps]
+     *               or 4D array of shape [batchSize, numHeads, featureValues, timesteps]
      * @param scaled normalization, false -> do not apply normalization, true -> apply normalization
      * @param withWeights return attention weights as well, false -> only one output, true -> two outputs
      *
      * Output Arrays:
-     * @return [ Attention result arrays of shape [batchSize, featureValues, queryCount],
-     *           (optionally) Attention Weights of shape [batchSize, timesteps, queryCount]]
+     * @return [ Attention result arrays of shape [batchSize, featureValues, queryCount] or [batchSize, numHeads, featureValues, queryCount],
+     *           (optionally) Attention Weights of shape [batchSize, timesteps, queryCount] or [batchSize, numHeads, timesteps, queryCount]]
      */
     public List<SDVariable> dotProductAttention(String name, SDVariable queries, SDVariable keys, SDVariable values, boolean scaled, boolean withWeights){
         List<SDVariable> result = f().dotProductAttention(queries, keys, values, scaled, withWeights);

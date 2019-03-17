@@ -38,37 +38,42 @@ namespace ops  {
         if(INT_ARG(1)){
             weights = OUTPUT_VARIABLE(1);
         }else{
-            weights = NDArrayFactory::create_('c', {queries->sizeAt(0), values->sizeAt(2), queries->sizeAt(2)}, values->dataType(), block.workspace());
+            auto weightShape = ShapeUtils::evalShapeForMatmul(keys->getShapeInfo(), queries->getShapeInfo(), true, false);
+            weights = NDArrayFactory::create_('c', weightShape, values->dataType(), block.workspace());
         }
 
         int normalization = INT_ARG(0);
 
-        REQUIRE_TRUE(queries->rankOf() == 3 && keys->rankOf() == 3 && values->rankOf() == 3, 0,
-                "dot_product_attention: Queries, Keys and Values must be 3D arrays. "
-                "But got queries = %s, keys = %s, values = %s", ShapeUtils::shapeAsString(queries).c_str(),
-                ShapeUtils::shapeAsString(keys).c_str(), ShapeUtils::shapeAsString(values).c_str());
+        REQUIRE_TRUE(queries->rankOf() == keys->rankOf() && keys->rankOf() == values->rankOf(), 0,
+                     "dot_product_attention: Queries, Keys and Values must have same rank. "
+                     "But got queries = %s, keys = %s, values = %s", ShapeUtils::shapeAsString(queries).c_str(),
+                     ShapeUtils::shapeAsString(keys).c_str(), ShapeUtils::shapeAsString(values).c_str());
+
+        REQUIRE_TRUE(queries->rankOf() == 3 || queries->rankOf() == 4, 0,
+                     "dot_product_attention: Queries, Keys and Values must be 3D arrays for single headed attention "
+                     "or 4D arrays for multi headed attention. But got rank = %i", queries->rankOf());
 
         REQUIRE_TRUE(queries->sizeAt(0) == keys->sizeAt(0) && keys->sizeAt(0) == values->sizeAt(0), 0,
                 "dot_product_attention: Queries, Keys and Values must have the same mini batch size. "
                 "But got queries = %i, keys = %i, values = %i", queries->sizeAt(0), keys->sizeAt(0), values->sizeAt(0));
 
-        REQUIRE_TRUE(queries->sizeAt(1) == keys->sizeAt(1), 0,
+        REQUIRE_TRUE(queries->sizeAt(-2) == keys->sizeAt(-2), 0,
                 "dot_product_attention: Queries and Keys must have the same feature size. "
-                "But got queries = %i, keys = %i", queries->sizeAt(1), keys->sizeAt(1));
+                "But got queries = %i, keys = %i", queries->sizeAt(-2), keys->sizeAt(-2));
 
-        REQUIRE_TRUE(keys->sizeAt(2) == values->sizeAt(2), 0,
+        REQUIRE_TRUE(keys->sizeAt(-1) == values->sizeAt(-1), 0,
                 "dot_product_attention: Keys and Values must have the same timestep length. "
-                "But got keys = %i, values = %i", keys->sizeAt(2), values->sizeAt(2));
+                "But got keys = %i, values = %i", keys->sizeAt(-1), values->sizeAt(-1));
 
         nd4j::ops::matmul mmul;
         mmul.execute({keys, queries}, {weights}, {}, {1}, {});
         if(normalization) {
-            *weights /= sqrt((double)keys->sizeAt(1));
+            *weights /= sqrt((double)keys->sizeAt(-2));
         }
 
         nd4j::ops::softmax softmax;
 
-        softmax.execute({weights}, {weights}, {}, {1}, {}, true);
+        softmax.execute({weights}, {weights}, {}, {-2}, {}, true);
 
         mmul.execute({values, weights}, {output}, {}, {}, {});
 
@@ -83,12 +88,15 @@ namespace ops  {
 
     DECLARE_SHAPE_FN(dot_product_attention) {
         auto query_shape = inputShape->at(0);
+        auto keys_shape = inputShape->at(1);
         auto values_shape = inputShape->at(2);
 
-        Nd4jLong *output_shape = ShapeBuilders::createShapeInfo(nd4j::ArrayOptions::dataType(values_shape), 'c', {shape::sizeAt(query_shape, 0), shape::sizeAt(values_shape, 1), shape::sizeAt(query_shape, 2)}, block.workspace());
+        Nd4jLong *weights_shape = ShapeBuilders::createShapeInfo(nd4j::ArrayOptions::dataType(values_shape), 'c',
+                                                                 ShapeUtils::evalShapeForMatmul(keys_shape, query_shape, true, false), block.workspace());
+        Nd4jLong *output_shape = ShapeBuilders::createShapeInfo(nd4j::ArrayOptions::dataType(values_shape), 'c',
+                                                                ShapeUtils::evalShapeForMatmul(values_shape, weights_shape, false, false), block.workspace());
 
         if(INT_ARG(1)){
-            Nd4jLong *weights_shape = ShapeBuilders::createShapeInfo(nd4j::ArrayOptions::dataType(values_shape), 'c', {shape::sizeAt(query_shape, 0), shape::sizeAt(values_shape, 2), shape::sizeAt(query_shape, 2)}, block.workspace());
             return SHAPELIST(output_shape, weights_shape);
         }else{
             return SHAPELIST(output_shape);
@@ -109,27 +117,31 @@ namespace ops  {
         int normalization = INT_ARG(0);
 
 
-        REQUIRE_TRUE(queries->rankOf() == 3 && keys->rankOf() == 3 && values->rankOf() == 3, 0,
-                     "dot_product_attention: Queries, Keys and Values must be 3D arrays. "
+       REQUIRE_TRUE(queries->rankOf() == keys->rankOf() && keys->rankOf() == values->rankOf(), 0,
+                     "dot_product_attention: Queries, Keys and Values must have same rank. "
                      "But got queries = %s, keys = %s, values = %s", ShapeUtils::shapeAsString(queries).c_str(),
                      ShapeUtils::shapeAsString(keys).c_str(), ShapeUtils::shapeAsString(values).c_str());
+
+        REQUIRE_TRUE(queries->rankOf() == 3 || queries->rankOf() == 4, 0,
+                     "dot_product_attention: Queries, Keys and Values must be 3D arrays for single headed attention "
+                     "or 4D arrays for multi headed attention. But got rank = %i", queries->rankOf());
 
         REQUIRE_TRUE(queries->sizeAt(0) == keys->sizeAt(0) && keys->sizeAt(0) == values->sizeAt(0), 0,
                      "dot_product_attention: Queries, Keys and Values must have the same mini batch size. "
                      "But got queries = %i, keys = %i, values = %i", queries->sizeAt(0), keys->sizeAt(0), values->sizeAt(0));
 
-        REQUIRE_TRUE(queries->sizeAt(1) == keys->sizeAt(1), 0,
+        REQUIRE_TRUE(queries->sizeAt(-2) == keys->sizeAt(-2), 0,
                      "dot_product_attention: Queries and Keys must have the same feature size. "
-                     "But got queries = %i, keys = %i", queries->sizeAt(1), keys->sizeAt(1));
+                     "But got queries = %i, keys = %i", queries->sizeAt(-2), keys->sizeAt(-2));
 
-        REQUIRE_TRUE(keys->sizeAt(2) == values->sizeAt(2), 0,
+        REQUIRE_TRUE(keys->sizeAt(-1) == values->sizeAt(-1), 0,
                      "dot_product_attention: Keys and Values must have the same timestep length. "
-                     "But got keys = %i, values = %i", keys->sizeAt(2), values->sizeAt(2));
+                     "But got keys = %i, values = %i", keys->sizeAt(-1), values->sizeAt(-1));
 
 
         double factor;
         if(normalization)
-            factor = sqrt((double)keys->sizeAt(1));
+            factor = sqrt((double)keys->sizeAt(-2));
 
         nd4j::ops::matmul mmul;
         auto preSoftmax = mmul.execute({keys, queries}, {}, {1}, {})->at(0);
@@ -138,14 +150,14 @@ namespace ops  {
 
 
         nd4j::ops::softmax softmax;
-        auto weights = softmax.execute({preSoftmax}, {}, {1}, {})->at(0);
+        auto weights = softmax.execute({preSoftmax}, {}, {-2}, {})->at(0);
 
         nd4j::ops::matmul_bp mmul_bp;
         NDArray dLdw(weights->getShapeInfo(), block.workspace());
         mmul_bp.execute({values, weights, eps}, {dLdv, &dLdw}, {}, {}, {});
 
         nd4j::ops::softmax_bp softmax_bp;
-        auto dLds = softmax_bp.execute({preSoftmax, &dLdw}, {}, {1}, {})->at(0);
+        auto dLds = softmax_bp.execute({preSoftmax, &dLdw}, {}, {-2}, {})->at(0);
 
         if(normalization)
             *dLds /= factor;
