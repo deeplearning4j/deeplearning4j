@@ -22,13 +22,16 @@
 #include <logger.h>
 #include <exceptions/cuda_exception.h>
 
+#ifdef __CUDABLAS__
+#include <cublas_v2.h>
+#endif
+
 namespace nd4j {
 namespace graph {
 
 LaunchContext* LaunchContext::sDefaultContext = nullptr;
 
 #ifdef __CUDABLAS__
-#include <cublas_v2.h>
 
 ////////////////////////////////////////////////////////////////////////
 LaunchContext::LaunchContext(cudaStream_t *cudaStream, void* reductionPointer, void* scalarPointer, int* allocationPointer)  {
