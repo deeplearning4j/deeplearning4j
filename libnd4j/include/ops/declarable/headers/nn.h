@@ -237,6 +237,39 @@ namespace nd4j {
                 DECLARE_CUSTOM_OP(dot_product_attention_bp, 4, 3, false, 0, 1);
         #endif
 
+
+        /**
+         * This performs multi-headed dot product attention on the given timeseries input
+         * out = concat(head_1, head_2, ..., head_n) * Wo
+         * head_i = dot_product_attention(Wq_i*q, Wk_i*k, Wv_i*v)
+         *
+         * Optionally with normalization when calculating the attention for each head.
+         *
+         * See also "Attention is all you need" (https://arxiv.org/abs/1706.03762, pp. 4,5, "3.2.2 Multi-Head Attention")
+         *
+         * This makes use of dot_product_attention OP support for rank 4 inputs.
+         *
+         * Expected arguments:
+         * q: input 3D array "queries" of shape [batchSize, featureKeys, queryCount]
+         * k: input 3D array "keys" of shape [batchSize, featureKeys, timesteps]
+         * v: input 3D array "values" of shape [batchSize, featureValues, timesteps]
+         * Wq: input query projection weights of shape [numHeads, projectedKeys, featureKeys]
+         * Wk: input key projection weights of shape [numHeads, projectedKeys, featureKeys]
+         * Wv: input value projection weights of shape [numHeads, projectedValues, featureValues]
+         * Wo: output projection weights of shape [numHeads * projectedValues, outSize]
+         *
+         * integer input arguments:
+         * 0: normalization, may have two values: zero -> do not apply normalization, one -> apply normalization
+         * 1: withWeights, may have two values: zero -> do not return weights, one -> return weights
+         *
+         * Output Arrays:
+         * 0: Attention result arrays of shape [batchSize, outSize, queryCount]
+         * 1: OPTIONAL; Attention weights of shape [batchSize, numHeads, timesteps, queryCount]
+         */
+        #if NOT_EXCLUDED(OP_multi_head_dot_product_attention)
+                DECLARE_CUSTOM_OP(multi_head_dot_product_attention, 7, -1, false, 0, 2);
+                DECLARE_CUSTOM_OP(multi_head_dot_product_attention_bp, 8, 7, false, 0, 1);
+        #endif
     }
 }
 

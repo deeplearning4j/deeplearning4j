@@ -30,6 +30,7 @@ import org.nd4j.autodiff.validation.OpValidation;
 import org.nd4j.autodiff.validation.TestCase;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.impl.indexaccum.IAMax;
 import org.nd4j.linalg.api.ops.impl.indexaccum.IAMin;
 import org.nd4j.linalg.api.ops.impl.reduce.Moments;
@@ -1105,6 +1106,56 @@ public class ReductionOpValidation extends BaseOpValidation {
         String err = OpValidation.validate(new TestCase(sd)
                 .expectedOutput("out", finalOut)
                 .gradientCheck(true));
+        assertNull(err, err);
+    }
+
+
+
+    @Test
+    public void testMultiHeadedDotProductAttention(){
+        final INDArray k = Nd4j.rand(new int[]{10, 4, 5});
+        final INDArray v = Nd4j.rand(new int[]{10, 4, 5});
+        final INDArray q = Nd4j.rand(new int[]{10, 4, 2});
+
+        final INDArray Wk = Nd4j.rand(new int[]{2, 3, 4});
+        final INDArray Wv = Nd4j.rand(new int[]{2, 3, 4});
+        final INDArray Wq = Nd4j.rand(new int[]{2, 3, 4});
+        final INDArray Wo = Nd4j.rand(new int[]{2* 3, 8});
+
+        final INDArray kP = Nd4j.tensorMmul(k, Wk, new int[][]{{1}, {2}}).permutei(0, 2, 3, 1);
+        final INDArray vP = Nd4j.tensorMmul(v, Wv, new int[][]{{1}, {2}}).permutei(0, 2, 3, 1);
+        final INDArray qP = Nd4j.tensorMmul(q, Wq, new int[][]{{1}, {2}}).permutei(0, 2, 3, 1);
+
+        final DynamicCustomOp dot_product_attention = DynamicCustomOp
+                .builder("dot_product_attention")
+                .addInputs(qP, kP, vP)
+                .addIntegerArguments(1, 0)
+                .build();
+
+        final INDArray[] outputs = Nd4j.exec(dot_product_attention);
+        final INDArray attOut = outputs[0].permutei(0, 3, 1, 2).reshape(k.size(0), q.size(2), Wv.size(0) * Wv.size(1));
+
+        final INDArray out = Nd4j.tensorMmul(attOut, Wo, new int[][]{{2}, {0}}).permutei(0, 2, 1);
+        final INDArray finalOut = out.norm2();
+
+
+        SameDiff sd = SameDiff.create();
+        SDVariable sdQ = sd.var("q", q);
+        SDVariable sdK = sd.var("k", k);
+        SDVariable sdV = sd.var("v", v);
+        SDVariable sdWq = sd.var("Wq", Wq);
+        SDVariable sdWk = sd.var("Wk", Wk);
+        SDVariable sdWv = sd.var("Wv", Wv);
+        SDVariable sdWo = sd.var("Wo", Wo);
+
+
+        SDVariable t = sd.nn.multiHeadDotProductAttention(sdQ, sdK, sdV, sdWq, sdWk, sdWv, sdWo, true);
+        t.norm2("out");
+
+        String err = OpValidation.validate(new TestCase(sd)
+                .expectedOutput("out", finalOut)
+                .gradientCheck(true));
+
         assertNull(err, err);
     }
 }

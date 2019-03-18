@@ -24,63 +24,50 @@ import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 
 
 /**
- * (optionally scaled) dot product attention
+ * (optionally scaled) multi head dot product attention Backprop
  *
- * See also "Attention is all you need" (https://arxiv.org/abs/1706.03762, p. 4, eq. 1)
+ * See also "Attention is all you need" (https://arxiv.org/abs/1706.03762, pp. 4,5, "3.2.2 Multi-Head Attention")
  *
  * @author Paul Dubs
  */
 @NoArgsConstructor
-public class DotProductAttention extends DynamicCustomOp {
-    private boolean withWeights;
+public class MultiHeadDotProductAttentionBp extends DynamicCustomOp {
+
     private boolean scaled;
 
-    public DotProductAttention(SameDiff sameDiff, SDVariable queries, SDVariable keys, SDVariable values, boolean scaled, boolean withWeights) {
-        super(null, sameDiff, new SDVariable[] {queries, keys, values}, false);
+    public MultiHeadDotProductAttentionBp(SameDiff sameDiff, SDVariable queries, SDVariable keys, SDVariable values,
+                                                             SDVariable Wq, SDVariable Wk, SDVariable Wv, SDVariable Wo,
+                                          SDVariable eps, boolean scaled) {
+        super(null, sameDiff, new SDVariable[] {queries, keys, values, Wq, Wk, Wv, Wo, eps}, false);
         this.scaled = scaled;
-        this.withWeights = withWeights;
         addIArgument(scaled ? 1 : 0);
-        addIArgument(withWeights ? 1 : 0);
     }
 
     @Override
     public String opName() {
-        return "dot_product_attention";
+        return "multi_head_dot_product_attention_bp";
     }
 
     @Override
-    public List<SDVariable> doDiff(List<SDVariable> gradient) {
-        return sameDiff.f().dotProductAttentionBp(arg(0), arg(1), arg(2), gradient.get(0), scaled);
+    public List<SDVariable> doDiff(List<SDVariable> grad){
+        throw new UnsupportedOperationException("Differentiation of " + getClass().getName() + " not supported");
     }
 
     @Override
     public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes){
-        Preconditions.checkState(dataTypes != null && dataTypes.size() == 3, "Expected exactly 3 input datatypes, got %s", dataTypes);
+        Preconditions.checkState(dataTypes != null && dataTypes.size() == 8, "Expected exactly 4 input datatypes, got %s", dataTypes);
         DataType first = dataTypes.get(0);
-        for( int i=0; i<3; i++ ) {
+        for( int i=0; i<8; i++ ) {
             Preconditions.checkState(dataTypes.get(i).isFPType(), "Input %s datatype must be a floating point type, got datypes %s", dataTypes);
             if(i > 0){
                 Preconditions.checkState(first == dataTypes.get(i), "All datatypes must be same type, got input datatypes %s", dataTypes);
             }
         }
-        if(withWeights){
-            return Arrays.asList(first, first);
-        }else{
-            return Collections.singletonList(first);
-        }
-    }
 
-    @Override
-    public int getNumOutputs() {
-        if(withWeights){
-            return 2;
-        }else{
-            return 1;
-        }
+        return Arrays.asList(first, first, first, first, first, first, first);
     }
 }

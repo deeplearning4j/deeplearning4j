@@ -50,8 +50,8 @@ namespace ops  {
                      ShapeUtils::shapeAsString(keys).c_str(), ShapeUtils::shapeAsString(values).c_str());
 
         REQUIRE_TRUE(queries->rankOf() == 3 || queries->rankOf() == 4, 0,
-                     "dot_product_attention: Queries, Keys and Values must be 3D arrays for single headed attention "
-                     "or 4D arrays for multi headed attention. But got rank = %i", queries->rankOf());
+                     "dot_product_attention: Queries, Keys and Values must be rank 3 arrays for single headed attention "
+                     "or rank 4 arrays for multi headed attention. But got rank = %i", queries->rankOf());
 
         REQUIRE_TRUE(queries->sizeAt(0) == keys->sizeAt(0) && keys->sizeAt(0) == values->sizeAt(0), 0,
                 "dot_product_attention: Queries, Keys and Values must have the same mini batch size. "
@@ -123,8 +123,8 @@ namespace ops  {
                      ShapeUtils::shapeAsString(keys).c_str(), ShapeUtils::shapeAsString(values).c_str());
 
         REQUIRE_TRUE(queries->rankOf() == 3 || queries->rankOf() == 4, 0,
-                     "dot_product_attention: Queries, Keys and Values must be 3D arrays for single headed attention "
-                     "or 4D arrays for multi headed attention. But got rank = %i", queries->rankOf());
+                     "dot_product_attention: Queries, Keys and Values must be rank 3 arrays for single headed attention "
+                     "or rank 4 arrays for multi headed attention. But got rank = %i", queries->rankOf());
 
         REQUIRE_TRUE(queries->sizeAt(0) == keys->sizeAt(0) && keys->sizeAt(0) == values->sizeAt(0), 0,
                      "dot_product_attention: Queries, Keys and Values must have the same mini batch size. "

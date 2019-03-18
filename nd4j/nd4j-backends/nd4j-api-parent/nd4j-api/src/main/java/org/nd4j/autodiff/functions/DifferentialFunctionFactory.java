@@ -1550,10 +1550,22 @@ public class DifferentialFunctionFactory {
     public List<SDVariable> dotProductAttention(SDVariable queries, SDVariable keys, SDVariable values, boolean scaled, boolean withWeights) {
         return Arrays.asList(new DotProductAttention(sameDiff(), queries, keys, values, scaled, withWeights).outputVariables());
     }
+
     public List<SDVariable> dotProductAttentionBp(SDVariable queries, SDVariable keys, SDVariable values, SDVariable gradient,  boolean scaled) {
         return Arrays.asList(new DotProductAttentionBp(sameDiff(), queries, keys, values, gradient, scaled).outputVariables());
     }
 
+    public SDVariable multiHeadDotProductAttention(SDVariable queries, SDVariable keys, SDVariable values,SDVariable Wq, SDVariable Wk, SDVariable Wv, SDVariable Wo, boolean scaled) {
+        return new MultiHeadDotProductAttention(sameDiff(), queries, keys, values, Wq, Wk, Wv, Wo, scaled, false).outputVariable();
+    }
+
+    public List<SDVariable> multiHeadDotProductAttention(SDVariable queries, SDVariable keys, SDVariable values,SDVariable Wq, SDVariable Wk, SDVariable Wv, SDVariable Wo, boolean scaled, boolean withWeights) {
+        return Arrays.asList(new MultiHeadDotProductAttention(sameDiff(), queries, keys, values, Wq, Wk, Wv, Wo, scaled, withWeights).outputVariables());
+    }
+
+    public List<SDVariable> multiHeadDotProductAttentionBp(SDVariable queries, SDVariable keys, SDVariable values,SDVariable Wq, SDVariable Wk, SDVariable Wv, SDVariable Wo, SDVariable gradient,  boolean scaled) {
+        return Arrays.asList(new MultiHeadDotProductAttentionBp(sameDiff(), queries, keys, values, Wq, Wk, Wv, Wo, gradient, scaled).outputVariables());
+    }
 
     public SDVariable softmaxDerivative(SDVariable functionInput, SDVariable wrt, Integer dimension) {
         validateDifferentialFunctionsameDiff(functionInput);

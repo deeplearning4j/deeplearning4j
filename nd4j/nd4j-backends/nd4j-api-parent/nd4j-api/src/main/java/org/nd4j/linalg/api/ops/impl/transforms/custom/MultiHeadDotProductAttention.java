@@ -29,19 +29,21 @@ import java.util.List;
 
 
 /**
- * (optionally scaled) dot product attention
+ * (optionally scaled) multi head dot product attention
  *
- * See also "Attention is all you need" (https://arxiv.org/abs/1706.03762, p. 4, eq. 1)
+ * See also "Attention is all you need" (https://arxiv.org/abs/1706.03762, pp. 4,5, "3.2.2 Multi-Head Attention")
  *
  * @author Paul Dubs
  */
 @NoArgsConstructor
-public class DotProductAttention extends DynamicCustomOp {
+public class MultiHeadDotProductAttention extends DynamicCustomOp {
     private boolean withWeights;
     private boolean scaled;
 
-    public DotProductAttention(SameDiff sameDiff, SDVariable queries, SDVariable keys, SDVariable values, boolean scaled, boolean withWeights) {
-        super(null, sameDiff, new SDVariable[] {queries, keys, values}, false);
+    public MultiHeadDotProductAttention(SameDiff sameDiff, SDVariable queries, SDVariable keys, SDVariable values,
+                                                           SDVariable Wq, SDVariable Wk, SDVariable Wv, SDVariable Wo,
+                                        boolean scaled, boolean withWeights) {
+        super(null, sameDiff, new SDVariable[] {queries, keys, values, Wq, Wk, Wv, Wo}, false);
         this.scaled = scaled;
         this.withWeights = withWeights;
         addIArgument(scaled ? 1 : 0);
@@ -50,19 +52,19 @@ public class DotProductAttention extends DynamicCustomOp {
 
     @Override
     public String opName() {
-        return "dot_product_attention";
+        return "multi_head_dot_product_attention";
     }
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> gradient) {
-        return sameDiff.f().dotProductAttentionBp(arg(0), arg(1), arg(2), gradient.get(0), scaled);
+        return sameDiff.f().multiHeadDotProductAttentionBp(arg(0), arg(1), arg(2), arg(3), arg(4), arg(5), arg(6), gradient.get(0), scaled);
     }
 
     @Override
     public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes){
-        Preconditions.checkState(dataTypes != null && dataTypes.size() == 3, "Expected exactly 3 input datatypes, got %s", dataTypes);
+        Preconditions.checkState(dataTypes != null && dataTypes.size() == 7, "Expected exactly 7 input datatypes, got %s", dataTypes);
         DataType first = dataTypes.get(0);
-        for( int i=0; i<3; i++ ) {
+        for( int i=0; i<7; i++ ) {
             Preconditions.checkState(dataTypes.get(i).isFPType(), "Input %s datatype must be a floating point type, got datypes %s", dataTypes);
             if(i > 0){
                 Preconditions.checkState(first == dataTypes.get(i), "All datatypes must be same type, got input datatypes %s", dataTypes);
