@@ -1587,3 +1587,29 @@ TEST_F(PlaygroundTests, test_scatter_120) {
     delete indices;
     delete updates;
 }
+
+/*
+//////////////////////////////////////////////////////////////////////
+TEST_F(PlaygroundTests, mmulMxM_1) {
+    
+    const int numOfIters = 100;
+
+    const Nd4jLong M = 1024;
+    const Nd4jLong K = 1024;
+    const Nd4jLong N = 1024;
+
+    NDArray a('f', {M,K}, nd4j::DataType::FLOAT32);
+    NDArray b('f', {K,N}, nd4j::DataType::FLOAT32);
+    NDArray c('c', {M,N}, nd4j::DataType::FLOAT32);    
+
+
+    auto timeStart = std::chrono::system_clock::now();
+
+    for (int i = 0; i < numOfIters; ++i)
+        nd4j::MmulHelper::mmul(&a, &b, &c, 1., 0.); 
+    
+    auto timeEnd = std::chrono::system_clock::now();
+    auto duration1 = std::chrono::duration_cast<std::chrono::microseconds> ((timeEnd - timeStart) / numOfIters).count();
+    printf("duration  %ld\n", duration1);
+}
+*/
