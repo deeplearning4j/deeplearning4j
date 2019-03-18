@@ -200,7 +200,7 @@ NDArray* MmulHelper::mmulMxM(const NDArray* A, const NDArray* B, NDArray* C, dou
     auto handle = A->getContext()->getCublasHandle();
     auto stream = A->getContext()->getCudaStream();
 
-    status = cublasSetStream_v2(*handle, *stream);
+    auto status = cublasSetStream_v2(*handle, *stream);
     if (status != CUBLAS_STATUS_SUCCESS) throw cuda_exception::build("MmulHelper::mmulMxM cuda failed !", status);
 
     const bool AB(aType == bType), AC(aType == cType), ABC(AB && AC);
