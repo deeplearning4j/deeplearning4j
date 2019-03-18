@@ -237,7 +237,7 @@ public class OpProfiler {
         String opClass = getOpClass(op);
         classCounter.incrementCount(opClass);
 
-        if (op.x().data().address() == lastZ && op.z() == op.x() && op.y() == null) {
+        if(op.x() == null || op.x().data().address() == lastZ && op.z() == op.x() && op.y() == null) {
             // we have possible shift here
             matchingCounter.incrementCount(prevOpMatching + " -> " + opClass);
             matchingCounterDetailed.incrementCount(prevOpMatchingDetailed + " -> " + opClass + " " + op.opName());

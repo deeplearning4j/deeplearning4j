@@ -219,6 +219,9 @@ public abstract class BaseEvaluation<T extends BaseEvaluation> implements IEvalu
                     if(mask.rank() == 2){
                         //Per time step masking
                         Pair<INDArray,INDArray> p = EvaluationUtils.extractNonMaskedTimeSteps(labels, predictions, mask);
+                        if(p == null){
+                            return null;
+                        }
                         return new Triple<>(p.getFirst(), p.getSecond(), null);
                     } else {
                         //Per output mask
