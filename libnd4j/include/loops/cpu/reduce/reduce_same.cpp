@@ -203,29 +203,13 @@ namespace functions {
                     tadOffsets = tad->tadOffsets;
                 }
 
-            auto _sv = [&] (const X *x) -> X {
-                return OpType::startingValue(x);
-            };
+                auto sv = [&] (const X *x) -> X { return OpType::startingValue(x); };
+                auto op = [&] (X x, X *e) -> X { return OpType::op(x, e); };
+                auto up = [&] (X o, X n, X *e) -> X { return OpType::update(o, n, e); };
+                auto pp = [&] (X o, Nd4jLong n, X *e) -> X { return OpType::postProcess(o, n, e); };
 
-            auto _op = [&] (X x, X *e) -> X {
-                return OpType::op(x, e);
-            };
-
-            auto _up = [&] (X o, X n, X *e) -> X {
-                return OpType::update(o, n, e);
-            };
-
-            auto _pp = [&] (X o, Nd4jLong n, X *e) -> X {
-                return OpType::postProcess(o, n, e);
-            };
-
-            nd4j::Loops::loopTadXZ<X, X, X>(const_cast<const X*>(x), const_cast<const Nd4jLong *>(tadOnlyShapeInfo), const_cast<const Nd4jLong *>(tadOffsets),
-                                            z, const_cast<const Nd4jLong *>(zShapeInfo),
-                                            extraParams,
-                                            _sv,
-                                            _up,
-                                            _op,
-                                            _pp);
+                nd4j::Loops::loopTadXZ<X, X, X>(x,tadOnlyShapeInfo, tadOffsets, z, zShapeInfo, extraParams, sv, up, op, pp);
+            
                 if (tad != nullptr)
                     delete tad;
             }

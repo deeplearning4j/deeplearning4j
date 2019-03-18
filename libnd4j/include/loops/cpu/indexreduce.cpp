@@ -20,6 +20,7 @@
 
 #include "../indexreduce.h"
 #include <op_boilerplate.h>
+#include <Loops.h>
 #include <types/types.h>
 #include "../legacy_ops.h"
 
@@ -140,26 +141,34 @@ void IndexReduce<X>::exec(void *vx, Nd4jLong *xShapeInfo,
         tadOffsets = tad->tadOffsets;
     }
 
-    int tadLength = shape::tadLength(xShapeInfo, dimension, dimensionLength);
-    int numThreads = nd4j::math::nd4j_min<int>(zLen, omp_get_max_threads());
+    auto funcSV = [&] (X *x)                                    -> IndexValue<X> { return OpType::startingIndexValue(x); };    
+    auto funcUP = [&] (IndexValue<X>& a, IndexValue<X> b, X *e) -> IndexValue<X> { return OpType::update(a, b, e);  };
+    
+    nd4j::Loops::loopIndexTadXZ<X,X>(x, tadOnlyShapeInfo, tadOffsets, z, zShapeInfo, extraParams, funcSV, funcUP);
+    
+    if (tad != nullptr)
+        delete tad;
 
-    uint tadOnlyShapeInfoCast[MAX_RANK];                    
-    bool canCastX = nd4j::DataTypeUtils::castShapeInfo(tadOnlyShapeInfo, tadOnlyShapeInfoCast);
+    // int tadLength = shape::tadLength(xShapeInfo, dimension, dimensionLength);
+    // int numThreads = nd4j::math::nd4j_min<int>(zLen, omp_get_max_threads());
 
-    PRAGMA_OMP_PARALLEL_FOR_THREADS(numThreads)
-    for(Nd4jLong i = 0; i < zLen; i++) {
+    // uint tadOnlyShapeInfoCast[MAX_RANK];                    
+    // bool canCastX = nd4j::DataTypeUtils::castShapeInfo(tadOnlyShapeInfo, tadOnlyShapeInfoCast);
 
-        auto offset = tadOffsets[i];
-        auto indexValue = OpType::startingIndexValue(&x[offset]);
+    // PRAGMA_OMP_PARALLEL_FOR_THREADS(numThreads)
+    // for(Nd4jLong i = 0; i < zLen; i++) {
 
-        PRAGMA_OMP_SIMD
-        for(int j = 0; j < tadLength; j++) {
-            auto xOffset = offset + shape::indexOffset(j, tadOnlyShapeInfo, tadOnlyShapeInfoCast, tadLength, canCastX);
-            IndexValue<X> comp(x[xOffset], j);
-            indexValue = OpType::update(indexValue,comp,extraParams);
-        }
-        z[i] = indexValue.index;
-    }    
+    //     auto offset = tadOffsets[i];
+    //     auto indexValue = OpType::startingIndexValue(&x[offset]);
+
+    //     PRAGMA_OMP_SIMD
+    //     for(int j = 0; j < tadLength; j++) {
+    //         auto xOffset = offset + shape::indexOffset(j, tadOnlyShapeInfo, tadOnlyShapeInfoCast, tadLength, canCastX);
+    //         IndexValue<X> comp(x[xOffset], j);
+    //         indexValue = OpType::update(indexValue,comp,extraParams);
+    //     }
+    //     z[i] = indexValue.index;
+    // }    
 }
 
 

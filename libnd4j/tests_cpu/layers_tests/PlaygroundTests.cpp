@@ -1509,7 +1509,7 @@ TEST_F(PlaygroundTests, subarr_2) {
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(PlaygroundTests, loops_1) {
 
-    const int N = 100;
+    const int N = 1;
     NDArray x('c', {16, 32, 64, 64}, nd4j::DataType::FLOAT32);
     NDArray z1('c', {32}, nd4j::DataType::FLOAT32);
     NDArray z2('c', {32}, nd4j::DataType::FLOAT32);
@@ -1570,3 +1570,4 @@ TEST_F(PlaygroundTests, loops_1) {
     printf("duration E: %ld\n", durationE);
 
 }
+
