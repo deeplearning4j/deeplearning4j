@@ -2218,12 +2218,11 @@ public class Nd4jTestsC extends BaseNd4jTest {
 
     @Test
     public void testTensorDot() {
-        INDArray oneThroughSixty = Nd4j.arange(60).reshape(3, 4, 5);
-        INDArray oneThroughTwentyFour = Nd4j.arange(24).reshape(4, 3, 2);
+        INDArray oneThroughSixty = Nd4j.arange(60).reshape(3, 4, 5).castTo(DataType.DOUBLE);
+        INDArray oneThroughTwentyFour = Nd4j.arange(24).reshape(4, 3, 2).castTo(DataType.DOUBLE);
         INDArray result = Nd4j.tensorMmul(oneThroughSixty, oneThroughTwentyFour, new int[][] {{1, 0}, {0, 1}});
         assertArrayEquals(new long[] {5, 2}, result.shape());
-        INDArray assertion = Nd4j
-                .create(new double[][] {{4400, 4730}, {4532, 4874}, {4664, 5018}, {4796, 5162}, {4928, 5306}});
+        INDArray assertion = Nd4j.create(new double[][] {{4400, 4730}, {4532, 4874}, {4664, 5018}, {4796, 5162}, {4928, 5306}});
         assertEquals(assertion, result);
 
         INDArray w = Nd4j.valueArrayOf(new long[] {2, 1, 2, 2}, 0.5);

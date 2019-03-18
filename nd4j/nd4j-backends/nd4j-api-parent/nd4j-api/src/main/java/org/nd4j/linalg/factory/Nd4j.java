@@ -857,7 +857,7 @@ public class Nd4j {
                 .build();
 
         List<LongShapeDescriptor> l = op.calculateOutputShape();
-        INDArray out = Nd4j.create(l.get(0));
+        INDArray out = Nd4j.create(l.get(0).asDataType(a.dataType()));
         op.addOutputArgument(out);
         Nd4j.exec(op);
 
