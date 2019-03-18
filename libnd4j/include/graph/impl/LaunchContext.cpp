@@ -28,6 +28,7 @@ namespace graph {
 LaunchContext* LaunchContext::sDefaultContext = nullptr;
 
 #ifdef __CUDABLAS__
+#include <cublas_v2.h>
 
 ////////////////////////////////////////////////////////////////////////
 LaunchContext::LaunchContext(cudaStream_t *cudaStream, void* reductionPointer, void* scalarPointer, int* allocationPointer)  {
@@ -72,7 +73,7 @@ LaunchContext::LaunchContext() {
         throw cuda_exception::build("Failed to create special CUDA stream with launch context", err);
 
     _cublasHandle = new cublasHandle_t();
-    auto status = cublasCreate_v2(_cublasHandle); // initialize CUBLAS context
+    auto status = cublasCreate_v2(reinterpret_cast<cublasHandle_t *>(_cublasHandle)); // initialize CUBLAS context
     if (status != CUBLAS_STATUS_SUCCESS)
         throw cuda_exception::build("cuBLAS handle creation failed !", status);
 

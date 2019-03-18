@@ -21,17 +21,20 @@
 #ifndef LIBND4J_CUDACONTEXT_H
 #define LIBND4J_CUDACONTEXT_H
 
-#include <dll.h>
-#include <op_boilerplate.h>
-#include <memory/Workspace.h>
 
 #ifdef __CUDABLAS__
 #include <cuda.h>
 #include <cuda_runtime_api.h>
 #include <cuda_runtime.h>
 #include <cuda_device_runtime_api.h>
-#include <cublas_v2.h>
 #endif
+
+
+#include <dll.h>
+#include <op_boilerplate.h>
+#include <memory/Workspace.h>
+
+
 
 namespace nd4j  {
 namespace graph {
@@ -45,7 +48,7 @@ class ND4J_EXPORT LaunchContext {
 		int* _allocationPointer;		
 		cudaStream_t *_cudaStream = nullptr;
 		cudaStream_t *_cudaSpecialStream = nullptr;
-		cublasHandle_t *_cublasHandle = nullptr;
+		void *_cublasHandle = nullptr;
 #endif		
 	nd4j::memory::Workspace* _workspace = nullptr;
     int _deviceID = 0;
@@ -61,7 +64,7 @@ class ND4J_EXPORT LaunchContext {
 
 		FORCEINLINE int* getAllocationPointer() const {return _allocationPointer;};
 
-		FORCEINLINE cublasHandle_t* getCublasHandle() const {return _cublasHandle;};
+		FORCEINLINE void* getCublasHandle() const {return _cublasHandle;};
 		FORCEINLINE cudaStream_t* getCudaStream() const {return _cudaStream;};
 		FORCEINLINE cudaStream_t* getCudaSpecialStream() const {return _cudaSpecialStream;};
 

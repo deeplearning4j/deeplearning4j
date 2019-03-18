@@ -197,7 +197,7 @@ NDArray* MmulHelper::mmulMxM(const NDArray* A, const NDArray* B, NDArray* C, dou
     if(!pB->isActualOnDeviceSide()) pB->syncToDevice();
     if(!pC->isActualOnDeviceSide()) pC->syncToDevice();
 
-    auto handle = A->getContext()->getCublasHandle();
+    auto handle = reinterpret_cast<cublasHandle_t *>(A->getContext()->getCublasHandle());
     auto stream = A->getContext()->getCudaStream();
 
     auto status = cublasSetStream_v2(*handle, *stream);
@@ -304,28 +304,24 @@ NDArray* MmulHelper::mmulMxV(const NDArray* A, const NDArray* X, nd4j::NDArray* 
 
     if(!pA->isActualOnDeviceSide()) pA->syncToDevice();
     if(!X->isActualOnDeviceSide())  X->syncToDevice();
-    if(!Y->isActualOnDeviceSide())  Y->syncToDevice();    
+    if(!Y->isActualOnDeviceSide())  Y->syncToDevice();
 
-    cublasStatus_t status;
-    cublasHandle_t handle;
 
-    cudaStream_t* stream = A->getContext()->getCudaStream();
+    auto handle = reinterpret_cast<cublasHandle_t *>(A->getContext()->getCublasHandle());
+    auto stream = A->getContext()->getCudaStream();
 
-    status = cublasCreate_v2(&handle); // initialize CUBLAS context
-    if (status != CUBLAS_STATUS_SUCCESS) throw cuda_exception::build("MmulHelper::mmulMxV cuda failed !", status);
-
-    status = cublasSetStream_v2(handle, *stream);
+    auto status = cublasSetStream_v2(*handle, *stream);
     if (status != CUBLAS_STATUS_SUCCESS) throw cuda_exception::build("MmulHelper::mmulMxV cuda failed !", status);
 
     const bool AX(aType == xType), AY(aType == yType), AXY(AX && AY);
     
     // choose appropriate cuda gemm api depending on data types    
     if(AXY && aType == DataType::DOUBLE) {
-        status = cublasDgemv(handle, transAblas, lda, lta, &alpha, (double*)pA->getSpecialBuffer(), lda, (double*)X->getSpecialBuffer(), incx, &beta, (double*)Y->getSpecialBuffer(), incy);
+        status = cublasDgemv(*handle, transAblas, lda, lta, &alpha, (double*)pA->getSpecialBuffer(), lda, (double*)X->getSpecialBuffer(), incx, &beta, (double*)Y->getSpecialBuffer(), incy);
     }
     else if(AXY && aType == DataType::FLOAT32) {        
         float alphaF(alpha), betaF(beta);
-        status = cublasSgemv(handle, transAblas, lda, lta, &alphaF, (float*)pA->getSpecialBuffer(), lda, (float*)X->getSpecialBuffer(), incx, &betaF, (float*)Y->getSpecialBuffer(), incy);
+        status = cublasSgemv(*handle, transAblas, lda, lta, &alphaF, (float*)pA->getSpecialBuffer(), lda, (float*)X->getSpecialBuffer(), incx, &betaF, (float*)Y->getSpecialBuffer(), incy);
     }
     else {
         dim3 threadsPerBlock(M);
@@ -341,8 +337,6 @@ NDArray* MmulHelper::mmulMxV(const NDArray* A, const NDArray* X, nd4j::NDArray* 
 
     auto cudaResult = cudaStreamSynchronize(*stream);
     if (cudaResult != 0) throw cuda_exception::build("MmulHelper::mmulMxV cuda failed !", cudaResult);
-   
-    cublasDestroy(handle);    
 
     pA->tickReadDevice();
     X->tickReadDevice();
