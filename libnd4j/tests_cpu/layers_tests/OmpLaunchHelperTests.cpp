@@ -108,3 +108,41 @@ TEST_F(OmpLaunchHelperTests, loop_test1) {
     #endif
     
 }
+
+TEST_F(OmpLaunchHelperTests, test_tad_threads_1) {
+    Nd4jLong numTads = 16;
+    Nd4jLong tadLength = 16;
+
+//    nd4j_printf("TT: [%i]; ET: [%i];\n", Environment::getInstance()->tadThreshold(), Environment::getInstance()->elementwiseThreshold());
+    ASSERT_EQ(1, OmpLaunchHelper::tadThreads(tadLength, numTads));
+}
+
+TEST_F(OmpLaunchHelperTests, test_tad_threads_2) {
+    Nd4jLong numTads = 2;
+    Nd4jLong tadLength = Environment::getInstance()->elementwiseThreshold();
+
+    ASSERT_EQ(2, OmpLaunchHelper::tadThreads(tadLength, numTads));
+}
+
+TEST_F(OmpLaunchHelperTests, test_tad_threads_3) {
+    Nd4jLong numTads = 2;
+    Nd4jLong tadLength = 128;
+
+    ASSERT_EQ(1, OmpLaunchHelper::tadThreads(tadLength, numTads));
+}
+
+TEST_F(OmpLaunchHelperTests, test_tad_threads_4) {
+    Nd4jLong numTads = 4;
+    Nd4jLong tadLength = 64;
+
+    ASSERT_EQ(1, OmpLaunchHelper::tadThreads(tadLength, numTads));
+}
+
+TEST_F(OmpLaunchHelperTests, test_tad_threads_5) {
+    auto exp = omp_get_max_threads();
+
+    Nd4jLong numTads = exp;
+    Nd4jLong tadLength = Environment::getInstance()->elementwiseThreshold();
+
+    ASSERT_EQ(exp, OmpLaunchHelper::tadThreads(tadLength, numTads));
+}
