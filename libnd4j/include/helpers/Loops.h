@@ -413,9 +413,7 @@ namespace nd4j {
         const Nd4jLong* tadShape  = shape::shapeOf(const_cast<Nd4jLong*>(tadShapeInfo));
         const Nd4jLong* tadStride = shape::stride(const_cast<Nd4jLong*>(tadShapeInfo));
 
-        int tadsPerThread = zLen / TAD_THRESHOLD;
-        int numThreads = nd4j::math::nd4j_max<int>(1, tadsPerThread);
-        numThreads = nd4j::math::nd4j_min<int>(numThreads, omp_get_max_threads());
+        int numThreads = OmpLaunchHelper::tadThreads(tadLen, zLen);
 
 
         switch (kindOfLoop) {

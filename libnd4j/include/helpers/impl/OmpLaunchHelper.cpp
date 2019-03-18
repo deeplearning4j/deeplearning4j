@@ -101,7 +101,7 @@ Nd4jLong OmpLaunchHelper::betterSpan(Nd4jLong N) {
         if (totalLength < Environment::getInstance()->elementwiseThreshold())
             return 1;
 
-        // by default we're spawning as many threads we can wrt number of tads
+        // by default we're spawning as many threads we can, but not more than number of TADs
         return nd4j::math::nd4j_min<int>(numTads, maxThreads);
     }
 }
