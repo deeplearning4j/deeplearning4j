@@ -92,13 +92,13 @@ namespace shape {
 
 
 
-    ND4J_EXPORT _CUDA_HD bool shapeEquals(int shape1Rank,Nd4jLong *shape1,int shape2Rank,Nd4jLong *shape2);
+    ND4J_EXPORT _CUDA_HD bool shapeEquals(const int shape1Rank, const Nd4jLong *shape1, const int shape2Rank, const Nd4jLong *shape2);
 
     ND4J_EXPORT _CUDA_HD Nd4jLong* detachShape(Nd4jLong *originalShape);
 
     ND4J_EXPORT _CUDA_HD Nd4jLong* copyShape(Nd4jLong *originalShape);
 
-    ND4J_EXPORT _CUDA_HD bool shapeEquals(Nd4jLong *shapeInfo1,Nd4jLong *shapeInfo2);
+    ND4J_EXPORT _CUDA_HD bool shapeEquals(const Nd4jLong *shapeInfo1, const Nd4jLong *shapeInfo2);
 
     ND4J_EXPORT _CUDA_HD bool strideEquals(int shape1Rank,Nd4jLong *shape1,int shape2Rank,Nd4jLong *shape2);
 
@@ -368,7 +368,7 @@ namespace shape {
 
     ND4J_EXPORT _CUDA_HD bool isLikeVector(Nd4jLong *shapeInfo, int& posOfNonUnityDim);
 
-    ND4J_EXPORT _CUDA_HD bool isCommonVector(Nd4jLong *shapeInfo, int& posOfNonUnityDim);
+    ND4J_EXPORT _CUDA_HD bool isCommonVector(const Nd4jLong *shapeInfo, int& posOfNonUnityDim);
 
     ND4J_EXPORT _CUDA_HD bool isRowVector(const Nd4jLong *shapeInfo);
 
@@ -481,7 +481,7 @@ namespace shape {
  * Returns the stride portion of an information
  * buffer
  */
-    ND4J_EXPORT _CUDA_HD Nd4jLong *stride(Nd4jLong *buffer);
+    ND4J_EXPORT _CUDA_HD Nd4jLong *stride(const Nd4jLong *buffer);
 
 /**
  * Compute the length of the given shape
@@ -1066,6 +1066,9 @@ namespace shape {
     // dimsToExclude - should be sorted in increasing order
     ND4J_EXPORT _CUDA_HD int outerArrayOffsets(Nd4jLong* maxOffsets, const Nd4jLong minIdx, const Nd4jLong* maxShapeInfo, const Nd4jLong* minShapeInfo, const int* dimsToExclude = nullptr);
 
+    // calculates offsets for numOfSubArrs sub-arrays, shape in this context means dominions excluded from outer array 
+    // rank is equal to size of shape
+    ND4J_EXPORT void calcSubArrOffsets(const Nd4jLong numOfSubArrs, const int rank, const Nd4jLong* shape, const Nd4jLong* strides, Nd4jLong* subArrOffsets);
    
     ND4J_EXPORT _CUDA_HD void shapeOldScalar(nd4j::DataType dtype, Nd4jLong* const buffer, const char order);
 
@@ -1163,7 +1166,7 @@ __device__ INLINEDEF Nd4jLong *cuMalloc(Nd4jLong *buffer, long size) {
     }
 
 
-    INLINEDEF _CUDA_HD bool shapeEquals(int shape1Rank,Nd4jLong *shape1,int shape2Rank,Nd4jLong *shape2) {
+    INLINEDEF _CUDA_HD bool shapeEquals(const int shape1Rank, const Nd4jLong *shape1, const int shape2Rank, const Nd4jLong *shape2) {
         if(shape1Rank != shape2Rank)
             return false;
         //rank not equals
@@ -1175,8 +1178,8 @@ __device__ INLINEDEF Nd4jLong *cuMalloc(Nd4jLong *buffer, long size) {
         return true;
     }
 
-    INLINEDEF _CUDA_HD bool shapeEquals(Nd4jLong *shapeInfo1,Nd4jLong *shapeInfo2) {
-        return shape::shapeEquals(shape::rank(shapeInfo1),shape::shapeOf(shapeInfo1),shape::rank(shapeInfo2),shape::shapeOf(shapeInfo2));
+    INLINEDEF _CUDA_HD bool shapeEquals(const Nd4jLong *shapeInfo1, const Nd4jLong *shapeInfo2) {
+        return shape::shapeEquals(shape::rank(shapeInfo1), shape::shapeOf(const_cast<Nd4jLong*>(shapeInfo1)), shape::rank(shapeInfo2), shape::shapeOf(const_cast<Nd4jLong*>(shapeInfo2)));
     }
 
     INLINEDEF _CUDA_HD bool strideEquals(int shape1Rank,Nd4jLong *shape1,int shape2Rank,Nd4jLong *shape2) {
@@ -2490,7 +2493,7 @@ template <typename T>
         return numOfNonUnity == 1 && shapeInfo[0] > 2;
     }
     
-    INLINEDEF _CUDA_HD bool isCommonVector(Nd4jLong *shapeInfo, int& posOfNonUnityDim) {
+    INLINEDEF _CUDA_HD bool isCommonVector(const Nd4jLong *shapeInfo, int& posOfNonUnityDim) {
 
         if(rank(shapeInfo) > 0 && length(shapeInfo) == 1)
             return true;
@@ -2797,8 +2800,8 @@ template <typename T>
  * Returns the stride portion of an information
  * buffer
  */
-    INLINEDEF _CUDA_HD Nd4jLong *stride( Nd4jLong *buffer) {
-        return buffer + (1 + rank(buffer));
+    INLINEDEF _CUDA_HD Nd4jLong *stride(const Nd4jLong *buffer) {
+        return const_cast<Nd4jLong*>(buffer) + (1 + rank(buffer));
     }
 
     INLINEDEF _CUDA_HD bool isEmpty(const Nd4jLong *shapeInfo) {
@@ -4598,6 +4601,66 @@ INLINEDEF _CUDA_HD bool areStridesDefault(const Nd4jLong* shapeInfo) {
         for (Nd4jLong e = 0; e < length; e++)
                 to[e] = (T2) from[e];
     };
+
+//////////////////////////////////////////////////////////////////////
+INLINEDEF void calcSubArrOffsets(const Nd4jLong numOfSubArrs, const int rank, const Nd4jLong* shape, const Nd4jLong* strides, Nd4jLong* subArrOffsets) {
+
+    // set offset for first sub-array, it is equal to zero always        
+    subArrOffsets[0] = 0; 
+
+    // choose whether to parallelize or not
+    if(numOfSubArrs > 1024 /*Environment::getInstance()->elementwiseThreshold()*/) {
+
+        #pragma omp parallel  // PRAGMA_OMP_PARALLEL_ARGS(private(indexes)) 
+        {
+            Nd4jLong* indexes = new Nd4jLong[rank];
+
+            #pragma omp for simd schedule(guided) // PRAGMA_OMP_PARALLEL_FOR
+            for (Nd4jLong i = 1; i < numOfSubArrs; ++i) {
+                    
+                shape::ind2subC(rank, shape, i, indexes);
+                subArrOffsets[i] = 0;
+                for (int j = 0; j < rank; ++j)
+                    if(shape[j] != 1)                   
+                        subArrOffsets[i] += indexes[j] * strides[j];
+            }                
+            delete []indexes;
+        }            
+    }
+    else {
+
+        Nd4jLong rankMinusOne = rank - 1;
+        Nd4jLong i = 1, j = rankMinusOne;
+        Nd4jLong* idx        = new Nd4jLong[rank];
+        Nd4jLong* currOffset = new Nd4jLong[rank];
+        memset(idx,        0, sizeof(Nd4jLong) * rank);
+        memset(currOffset, 0, sizeof(Nd4jLong) * rank);
+
+        // nested loops - calculation of sub-array offsets (subArrOffsets)
+        while(j >= 0) {
+
+            if(shape[j] == 1) { --j; continue; } // ignore dimensions equal to unity
+            
+            if(j == rankMinusOne) {         // last dimension
+                for(idx[j] = 1; idx[j] < shape[j]; ++idx[j]) 
+                subArrOffsets[i++] = subArrOffsets[i-1] + strides[j];
+                --j;
+            }
+            else if(idx[j] < shape[j] - 1) {
+                currOffset[j] += strides[j];
+                subArrOffsets[i++] = j ? currOffset[j] + currOffset[j-1] : currOffset[j];                
+                ++idx[j];
+                j = rankMinusOne;
+            }
+            else
+                currOffset[j--] = idx[j] = 0;
+        }
+
+        delete []idx;
+        delete []currOffset;
+    }
+}
+
 
 }
 

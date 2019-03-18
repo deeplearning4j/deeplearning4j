@@ -25,6 +25,7 @@
 #include <loops/legacy_ops.h>
 #include <OmpLaunchHelper.h>
 #include <chrono>
+#include <helpers/Loops.h>
 
 using namespace simdOps;
 
@@ -202,46 +203,29 @@ namespace functions {
                     tadOffsets = tad->tadOffsets;
                 }
 
-                const auto tadLength = shape::tadLength(xShapeInfo, dimension, dimensionLength);
-                auto numTads = shape::length(xShapeInfo) / tadLength;
-                auto tadEWS = shape::elementWiseStride(tadOnlyShapeInfo);
+            auto _sv = [&] (const X *x) -> X {
+                return OpType::startingValue(x);
+            };
 
-                int tadsPerThread = zLength / TAD_THRESHOLD;
-                int num_threads = nd4j::math::nd4j_max<int>(1, tadsPerThread);
-                num_threads = nd4j::math::nd4j_min<int>(num_threads, omp_get_max_threads());
+            auto _op = [&] (X x, X *e) -> X {
+                return OpType::op(x, e);
+            };
 
-                uint castTadOnlyShapeInfo[MAX_RANK];
-                const bool canCast = nd4j::DataTypeUtils::castShapeInfo<uint>(tadOnlyShapeInfo, castTadOnlyShapeInfo);
+            auto _up = [&] (X o, X n, X *e) -> X {
+                return OpType::update(o, n, e);
+            };
 
-                if (tadEWS == 1 && shape::order(tadOnlyShapeInfo) == 'c') {
+            auto _pp = [&] (X o, Nd4jLong n, X *e) -> X {
+                return OpType::postProcess(o, n, e);
+            };
 
-                    PRAGMA_OMP_PARALLEL_FOR_THREADS(num_threads)
-                    for (int i = 0; i < zLength; i++) {
-
-                        auto tx = x + tadOffsets[i];
-                        auto start = OpType::startingValue(tx);
-
-                        for (unsigned int j = 0; j < tadLength; j++)
-                            start = OpType::update(start, OpType::op(tx[j], extraParams), extraParams);
-
-                        z[i] = OpType::postProcess(start, tadLength, extraParams);;
-                    }
-                } else {
-
-                    PRAGMA_OMP_PARALLEL_FOR_THREADS(num_threads)
-                    for (int i = 0; i < zLength; i++) {
-
-                        auto tx = x + tadOffsets[i];
-                        auto start = OpType::startingValue(tx);
-
-                        for (unsigned int j = 0; j < tadLength; j++) {
-                            auto xOffset = shape::indexOffset(j, tadOnlyShapeInfo, castTadOnlyShapeInfo, tadLength, canCast);
-                            start = OpType::update(start, OpType::op(tx[xOffset], extraParams), extraParams);
-                        }
-                        z[i] = OpType::postProcess(start, tadLength, extraParams);;
-                    }
-                }
-                
+            nd4j::Loops::loopTadXZ<X, X, X>(const_cast<const X*>(x), const_cast<const Nd4jLong *>(tadOnlyShapeInfo), const_cast<const Nd4jLong *>(tadOffsets),
+                                            z, const_cast<const Nd4jLong *>(zShapeInfo),
+                                            extraParams,
+                                            _sv,
+                                            _up,
+                                            _op,
+                                            _pp);
                 if (tad != nullptr)
                     delete tad;
             }
