@@ -55,29 +55,49 @@ Nd4jLong IndexReduce<X>::execScalar(void *vx, Nd4jLong *xShapeInfo, void *vextra
 
     //T startingVal = OpType::startingValue(x);
     auto startingIndex = OpType::startingIndexValue(x);
-    Nd4jLong len = shape::length(xShapeInfo);
+    auto len = shape::length(xShapeInfo);
+    auto xEws = shape::elementWiseStride(xShapeInfo);
     nd4j::OmpLaunchHelper info(len);
 
     uint xShapeInfoCast[MAX_RANK];
     bool canCastX = nd4j::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
 
-    PRAGMA_OMP_PARALLEL_THREADS(info._numThreads)
-    {                
-        auto local = OpType::startingIndexValue(x);
-        auto threadNum = omp_get_thread_num();                    
-        Nd4jLong threadOffset = info.getThreadOffset(threadNum);
+    if (xEws == 1) {
+        PRAGMA_OMP_PARALLEL_THREADS(info._numThreads)
+        {
+            auto local = OpType::startingIndexValue(x);
+            auto threadNum = omp_get_thread_num();
+            auto threadOffset = info.getThreadOffset(threadNum);
 
-        auto ulen = static_cast<unsigned int>(info.getItersPerThread(threadNum));
+            auto ulen = info.getItersPerThread(threadNum);
 
-        for (unsigned int i = 0; i < ulen; i++) {
-            auto offset = shape::indexOffset(threadOffset + i, xShapeInfo, xShapeInfoCast, len, canCastX);
-            IndexValue<X> curr(x[offset], threadOffset + i);
-            local = OpType::update(local, curr, extraParams);
+            for (Nd4jLong i = 0; i < ulen; i++) {
+                IndexValue<X> curr(x[i + threadOffset], i + threadOffset);
+                local = OpType::update(local, curr, extraParams);
+            }
+
+            PRAGMA_OMP_CRITICAL
+            startingIndex = OpType::update(startingIndex, local, extraParams);
         }
+    } else {
+        PRAGMA_OMP_PARALLEL_THREADS(info._numThreads)
+        {
+            auto local = OpType::startingIndexValue(x);
+            auto threadNum = omp_get_thread_num();
+            auto threadOffset = info.getThreadOffset(threadNum);
 
-        PRAGMA_OMP_CRITICAL
-        startingIndex = OpType::update(startingIndex, local, extraParams);        
-    }    
+            auto ulen = info.getItersPerThread(threadNum);
+
+            for (Nd4jLong i = 0; i < ulen; i++) {
+                auto offset = shape::indexOffset(threadOffset + i, xShapeInfo, xShapeInfoCast, len, canCastX);
+                IndexValue<X> curr(x[offset], threadOffset + i);
+                local = OpType::update(local, curr, extraParams);
+            }
+
+            PRAGMA_OMP_CRITICAL
+            startingIndex = OpType::update(startingIndex, local, extraParams);
+        }
+    }
     return startingIndex.index;
 }
 
