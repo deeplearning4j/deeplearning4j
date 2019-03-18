@@ -71,9 +71,14 @@ LaunchContext::LaunchContext() {
     if (err != 0)
         throw cuda_exception::build("Failed to create special CUDA stream with launch context", err);
 
+    _cublasHandle = new cublasHandle_t();
+    auto status = cublasCreate_v2(_cublasHandle); // initialize CUBLAS context
+    if (status != CUBLAS_STATUS_SUCCESS)
+        throw cuda_exception::build("cuBLAS handle creation failed !", status);
+
     auto res = cudaStreamSynchronize(*_cudaStream);
     if (res != 0)
-        throw std::runtime_error("sync failed");
+        throw cuda_exception::build("Initial sync failed", res);
 
     res = cudaMalloc(reinterpret_cast<void**>(&_reductionPointer), 1024 * 1024 * 8);
     if (res != 0)

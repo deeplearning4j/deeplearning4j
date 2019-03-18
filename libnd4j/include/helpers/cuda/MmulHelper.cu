@@ -197,15 +197,10 @@ NDArray* MmulHelper::mmulMxM(const NDArray* A, const NDArray* B, NDArray* C, dou
     if(!pB->isActualOnDeviceSide()) pB->syncToDevice();
     if(!pC->isActualOnDeviceSide()) pC->syncToDevice();
 
-    cublasStatus_t status;
-    cublasHandle_t handle;
+    auto handle = A->getContext()->getCublasHandle();
+    auto stream = A->getContext()->getCudaStream();
 
-    cudaStream_t* stream = A->getContext()->getCudaStream();
-
-    status = cublasCreate_v2(&handle); // initialize CUBLAS context
-    if (status != CUBLAS_STATUS_SUCCESS) throw cuda_exception::build("MmulHelper::mmulMxM cuda failed !", status);
-
-    status = cublasSetStream_v2(handle, *stream);
+    status = cublasSetStream_v2(*handle, *stream);
     if (status != CUBLAS_STATUS_SUCCESS) throw cuda_exception::build("MmulHelper::mmulMxM cuda failed !", status);
 
     const bool AB(aType == bType), AC(aType == cType), ABC(AB && AC);
@@ -246,8 +241,6 @@ NDArray* MmulHelper::mmulMxM(const NDArray* A, const NDArray* B, NDArray* C, dou
 
     auto cudaResult = cudaStreamSynchronize(*stream);
     if (cudaResult != 0) throw cuda_exception::build("MmulHelper::mmulMxM cuda failed !", cudaResult);
-   
-    cublasDestroy(handle);    
 
     pA->tickReadDevice();
     pB->tickReadDevice();

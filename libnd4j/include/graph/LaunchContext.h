@@ -30,6 +30,7 @@
 #include <cuda_runtime_api.h>
 #include <cuda_runtime.h>
 #include <cuda_device_runtime_api.h>
+#include <cublas_v2.h>
 #endif
 
 namespace nd4j  {
@@ -43,7 +44,8 @@ class ND4J_EXPORT LaunchContext {
 		void* _scalarPointer;
 		int* _allocationPointer;		
 		cudaStream_t *_cudaStream = nullptr;
-		cudaStream_t* _cudaSpecialStream = nullptr;
+		cudaStream_t *_cudaSpecialStream = nullptr;
+		cublasHandle_t *_cublasHandle = nullptr;
 #endif		
 	nd4j::memory::Workspace* _workspace = nullptr;
     int _deviceID = 0;
@@ -59,6 +61,7 @@ class ND4J_EXPORT LaunchContext {
 
 		FORCEINLINE int* getAllocationPointer() const {return _allocationPointer;};
 
+		FORCEINLINE cublasHandle_t* getCublasHandle() const {return _cublasHandle;};
 		FORCEINLINE cudaStream_t* getCudaStream() const {return _cudaStream;};
 		FORCEINLINE cudaStream_t* getCudaSpecialStream() const {return _cudaSpecialStream;};
 
