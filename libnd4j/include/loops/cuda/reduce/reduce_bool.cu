@@ -110,7 +110,7 @@ __device__ void ReduceBoolFunction<X,Z>::transformCudaXD( void *vx, Nd4jLong *xS
     if (threadIdx.x == 0) {
         extern __shared__ unsigned char shmem[];
         sPartials = reinterpret_cast<Z*>(shmem);
-        tadLength = shape::tadLength(xShapeInfo, dimension, dimensionLength);        
+        tadLength = shape::length(tadOnlyShapeInfo); //tadLength(xShapeInfo, dimension, dimensionLength);
         numTads = shape::length(xShapeInfo) / tadLength;        
     }
     __syncthreads();

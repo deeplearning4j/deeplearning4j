@@ -116,7 +116,7 @@ __device__ void ReduceSameFunction<X>::transformCudaXD( void *vx, Nd4jLong *xSha
     if (threadIdx.x == 0) {
         extern __shared__ unsigned char shmem[];
         sPartials = reinterpret_cast<X*>(shmem);
-        tadLength = shape::tadLength(xShapeInfo, dimension, dimensionLength);
+        tadLength = shape::length(tadOnlyShapeInfo); //tadLength(xShapeInfo, dimension, dimensionLength);
         numTads = shape::length(xShapeInfo) / tadLength;        
     }
     __syncthreads();
