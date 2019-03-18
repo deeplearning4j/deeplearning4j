@@ -39,7 +39,7 @@ static FORCEINLINE T getFactorial(const int n) {
 
 	T result = (T)1.f;
 
-    PRAGMA_OMP_PARALLEL_FOR_SIMD_ARGS(reduction(prodT : result))
+    PRAGMA_OMP_PARALLEL_FOR_SIMD_REDUCTION(prodT : result)
 	for(int i = 2; i <= n; ++i)
 		result *= i;
 	

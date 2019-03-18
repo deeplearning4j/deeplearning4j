@@ -61,7 +61,7 @@ namespace functions {
                 uint xShapeInfoCast[MAX_RANK];
                 const bool canCastX = nd4j::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
 
-                PRAGMA_OMP_PARALLEL_FOR_SIMD_ARGS(num_threads(maxThreads))
+                PRAGMA_OMP_PARALLEL_FOR_SIMD_THREADS(maxThreads)
                 for(Nd4jLong i = 0; i < length; ++i)
                     intermediate[omp_get_thread_num()] = OpType::update(intermediate[omp_get_thread_num()], OpType::op(x[shape::indexOffset(i, xShapeInfo, xShapeInfoCast, length, canCastX)], extraParams), extraParams);
 
@@ -99,7 +99,7 @@ namespace functions {
                     uint xShapeInfoCast[MAX_RANK];
                     const bool canCastX = nd4j::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
 
-                    PRAGMA_OMP_PARALLEL_FOR_SIMD_ARGS(num_threads(maxThreads))
+                    PRAGMA_OMP_PARALLEL_FOR_SIMD_THREADS(maxThreads)
                     for(Nd4jLong i = 0; i < length; ++i)
                         intermediate[omp_get_thread_num()] = OpType::update(intermediate[omp_get_thread_num()], OpType::op(x[shape::indexOffset(i, xShapeInfo, xShapeInfoCast, length, canCastX)], extraParams), extraParams);
 
