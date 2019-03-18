@@ -21,10 +21,7 @@
 #include <graph/LaunchContext.h>
 #include <logger.h>
 #include <exceptions/cuda_exception.h>
-
-#ifdef __CUDABLAS__
-#include <cublas_v2.h>
-#endif
+#include <helpers/cublasHelper.h>
 
 namespace nd4j {
 namespace graph {
@@ -75,10 +72,7 @@ LaunchContext::LaunchContext() {
     if (err != 0)
         throw cuda_exception::build("Failed to create special CUDA stream with launch context", err);
 
-    _cublasHandle = new cublasHandle_t();
-    auto status = cublasCreate_v2(reinterpret_cast<cublasHandle_t *>(_cublasHandle)); // initialize CUBLAS context
-    if (status != CUBLAS_STATUS_SUCCESS)
-        throw cuda_exception::build("cuBLAS handle creation failed !", status);
+    _cublasHandle = cublas::handle();
 
     auto res = cudaStreamSynchronize(*_cudaStream);
     if (res != 0)
