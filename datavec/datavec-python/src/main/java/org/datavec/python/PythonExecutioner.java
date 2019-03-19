@@ -41,62 +41,58 @@ public class PythonExecutioner {
     private PyObject globals;
     private JSONParser parser = new JSONParser();
     private Map<String, PyThreadState> interpreters = new HashMap<String, PyThreadState>();
-    private String currentInterpreter =  null;
+    private String defaultInterpreter = "_main";
+    private String currentInterpreter =  defaultInterpreter;
     private static PythonExecutioner pythonExecutioner;
     private boolean safeExecFlag = false;
 
+    
 
     public static PythonExecutioner getInstance(){
         // do not use constructor
         if (pythonExecutioner == null){
             pythonExecutioner = new PythonExecutioner();
+            log.info("===created new executioner===");
         }
         return pythonExecutioner;
     }
     public void setInterpreter(String name){
-        if (name == null){
-            if (currentInterpreter != null){
-                PyThreadState_Swap(null);
-                currentInterpreter = null;
-                return;
-            }
-        }
-        if (currentInterpreter != null && currentInterpreter.equals(name)){
+        if (name == null){ // switch to default interpreter
+            currentInterpreter = defaultInterpreter;
             return;
         }
-        else if (interpreters.containsKey(name)){
-            PyThreadState threadState = interpreters.get(name);
-            log.info("CPython: PyThreadState_Swap()");
-            PyThreadState_Swap(threadState);
-            init();
-        }
-        else{
-            Py_Initialize();
+
+        if (!interpreters.containsKey(name)){
             log.info("CPython: Py_NewInterpreter()");
-            PyThreadState threadState = Py_NewInterpreter();
-            interpreters.put(name, threadState);
-            log.info("CPython: PyThreadState_Swap()");
-            PyThreadState_Swap(threadState);
-            init();
+            interpreters.put(name, Py_NewInterpreter());
         }
         currentInterpreter = name;
     }
 
     public void deleteInterpreter(String name){
-        if (name != null && !interpreters.containsKey(name)){
+        if (name == null || name == defaultInterpreter){
             return;
         }
-        String temp = currentInterpreter;
-        setInterpreter(name);
+
+        PyThreadState ts = interpreters.get(name);
+        if (ts == null){
+            return;
+        }
+
+        boolean isDeletingCurrentInterpreter = currentInterpreter == name;
+
+        log.info("CPython: PyThreadState_Swap()");
+        PyThreadState_Swap(ts);
         log.info("CPython: Py_EndInterpreter()");
-        Py_EndInterpreter(interpreters.get(name));
-        interpreters.remove(name);
-        if (temp == name){
-            setInterpreter(null);
+        Py_EndInterpreter(ts);
+
+
+        if (isDeletingCurrentInterpreter){
+            currentInterpreter = defaultInterpreter;
         }
-        else{
-            setInterpreter(temp);
-        }
+        log.info("CPython: PyThreadState_Swap()");
+        PyThreadState_Swap(interpreters.get(defaultInterpreter));
+
     }
 
     public PyObject getGlobals(){
@@ -120,13 +116,17 @@ public class PythonExecutioner {
         log.info("CPython: Py_DecodeLocale()");
         namePtr = Py_DecodeLocale(name, null);
         log.info("CPython: Py_SetProgramName()");
-
+        Py_SetProgramName(namePtr);
         log.info("CPython: Py_Initialize()");
         Py_Initialize();
+        log.info("CPython: PyEval_InitThreads()");
+        PyEval_InitThreads();
         log.info("CPython: PyImport_AddModule()");
         module = PyImport_AddModule("__main__");
         log.info("CPython: PyModule_GetDict()");
         globals = PyModule_GetDict(module);
+        log.info("CPython: PyThreadState_Get()");
+        interpreters.put(defaultInterpreter, PyThreadState_Get());
     }
 
     public void free(){
@@ -301,12 +301,44 @@ public class PythonExecutioner {
     }
 
 
-
+    /**
+     * Executes python code. Also manages python thread state.
+     * @param code
+     */
     public void exec(String code){
-        log.info("CPython: PyRun_SimpleStringFlag()");
-        log.info(code);
-        PyRun_SimpleStringFlags(code, null);
-        log.info("Exec done");
+        if (currentInterpreter != defaultInterpreter){
+            log.info("CPython: PyEval_AcquireLock()");
+            PyEval_AcquireLock();
+            PyThreadState ts = interpreters.get(currentInterpreter);
+            log.info("CPython: PyThreadState.interp()");
+            PyInterpreterState is = ts.interp();
+            log.info("CPython: PyThreadState_New()");
+            ts = PyThreadState_New(is);
+            PyThreadState_Swap(ts);
+
+            log.info("CPython: PyRun_SimpleStringFlag()");
+            log.info(code);
+            PyRun_SimpleStringFlags(code, null);
+            log.info("Exec done");
+
+            log.info("CPython: PyThreadState_Swap()");
+            PyThreadState_Swap(null);
+            log.info("CPython: PyThreadState_Clear()");
+            PyThreadState_Clear(ts);
+            log.info("CPython: PyThreadState_Delete()");
+            PyThreadState_Delete(ts);
+            log.info("CPython: PyEval_ReleaseLock()");
+            PyEval_ReleaseLock();
+
+        }
+        else{
+            log.info("CPython: PyRun_SimpleStringFlag()");
+            log.info(code);
+            PyRun_SimpleStringFlags(code, null);
+            log.info("Exec done");
+        }
+
+
     }
 
     public void exec(String code, PythonVariables pyInputs, PythonVariables pyOutputs) throws Exception{

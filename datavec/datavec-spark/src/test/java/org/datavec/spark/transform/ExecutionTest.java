@@ -249,7 +249,7 @@ public class ExecutionTest extends BaseSparkTest {
         List<List<Writable>> inputData = new ArrayList<>();
         inputData.add(Arrays.<Writable>asList(new IntWritable(0), new Text("state2"), new DoubleWritable(0.1)));
         inputData.add(Arrays.<Writable>asList(new IntWritable(1), new Text("state1"), new DoubleWritable(1.1)));
-        inputData.add(Arrays.<Writable>asList(new IntWritable(2), new Text("state0"), new DoubleWritable(2.1)));
+        //inputData.add(Arrays.<Writable>asList(new IntWritable(2), new Text("state0"), new DoubleWritable(2.1)));
 
         JavaRDD<List<Writable>> rdd = sc.parallelize(inputData);
 
@@ -265,7 +265,7 @@ public class ExecutionTest extends BaseSparkTest {
         List<List<Writable>> expected = new ArrayList<>();
         expected.add(Arrays.<Writable>asList(new IntWritable(0), new IntWritable(2), new DoubleWritable(10.1)));
         expected.add(Arrays.<Writable>asList(new IntWritable(1), new IntWritable(1), new DoubleWritable(11.1)));
-        expected.add(Arrays.<Writable>asList(new IntWritable(2), new IntWritable(0), new DoubleWritable(12.1)));
+        //expected.add(Arrays.<Writable>asList(new IntWritable(2), new IntWritable(0), new DoubleWritable(12.1)));
 
         assertEquals(expected, out);
     }
