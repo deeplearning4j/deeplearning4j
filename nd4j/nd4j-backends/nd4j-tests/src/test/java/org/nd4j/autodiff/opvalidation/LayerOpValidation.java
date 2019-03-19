@@ -1050,7 +1050,7 @@ public class LayerOpValidation extends BaseOpValidation {
         final INDArray bias = Nd4j.rand(new int[]{1, 4});
         final INDArray res = standardized.mulRowVector(gain).addRowVector(bias);
 
-        final INDArray output = Nd4j.emptyLike(res);
+        final INDArray output = Nd4j.zerosLike(res);
         Nd4j.getExecutioner().exec(new LayerNorm(standardized, gain, bias, output, 1));
 
         assertEquals(res, output);
@@ -1088,7 +1088,7 @@ public class LayerOpValidation extends BaseOpValidation {
         final INDArray gain = Nd4j.rand(new int[]{1, 4});
         final INDArray res = standardized.mulRowVector(gain);
 
-        final INDArray output = Nd4j.emptyLike(res);
+        final INDArray output = Nd4j.zerosLike(res);
         Nd4j.getExecutioner().exec(new LayerNorm(standardized, gain, output, 1));
 
         assertEquals(res, output);

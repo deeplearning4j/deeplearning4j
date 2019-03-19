@@ -1168,7 +1168,7 @@ public class DifferentialFunctionFactory {
         if (precise)
             return new PreciseGELUDerivative(sameDiff(), iX, false, precise).outputVariable();
         else
-            return new GELUDerivative(sameDiff(), iX, false, precise).outputVariable();
+            return new GELUDerivative(sameDiff(), iX, false).outputVariable();
     }
 
     public SDVariable sign(SDVariable iX) {

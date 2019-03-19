@@ -19,14 +19,17 @@ package org.nd4j.evaluation.classification;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.val;
+import org.nd4j.base.Preconditions;
 import org.nd4j.evaluation.BaseEvaluation;
 import org.nd4j.evaluation.curves.PrecisionRecallCurve;
 import org.nd4j.evaluation.curves.RocCurve;
 import org.nd4j.evaluation.serde.ROCArraySerializer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.primitives.Triple;
 import org.nd4j.shade.jackson.databind.annotation.JsonSerialize;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -53,6 +56,9 @@ public class ROCBinary extends BaseEvaluation<ROCBinary> {
     private boolean rocRemoveRedundantPts;
     private List<String> labels;
 
+    @EqualsAndHashCode.Exclude      //Exclude axis: otherwise 2 Evaluation instances could contain identical stats and fail equality
+    protected int axis = 1;
+
     public ROCBinary() {
         this(0);
     }
@@ -73,6 +79,28 @@ public class ROCBinary extends BaseEvaluation<ROCBinary> {
         this.rocRemoveRedundantPts = rocRemoveRedundantPts;
     }
 
+    /**
+     * Set the axis for evaluation - this is the dimension along which the probability (and label independent binary classes) are present.<br>
+     * For DL4J, this can be left as the default setting (axis = 1).<br>
+     * Axis should be set as follows:<br>
+     * For 2D (OutputLayer), shape [minibatch, numClasses] - axis = 1<br>
+     * For 3D, RNNs/CNN1D (DL4J RnnOutputLayer), NCW format, shape [minibatch, numClasses, sequenceLength] - axis = 1<br>
+     * For 3D, RNNs/CNN1D (DL4J RnnOutputLayer), NWC format, shape [minibatch, sequenceLength, numClasses] - axis = 2<br>
+     * For 4D, CNN2D (DL4J CnnLossLayer), NCHW format, shape [minibatch, channels, height, width] - axis = 1<br>
+     * For 4D, CNN2D, NHWC format, shape [minibatch, height, width, channels] - axis = 3<br>
+     *
+     * @param axis Axis to use for evaluation
+     */
+    public void setAxis(int axis){
+        this.axis = axis;
+    }
+
+    /**
+     * Get the axis - see {@link #setAxis(int)} for details
+     */
+    public int getAxis(){
+        return axis;
+    }
 
     @Override
     public void reset() {
@@ -80,27 +108,27 @@ public class ROCBinary extends BaseEvaluation<ROCBinary> {
     }
 
     @Override
-    public void eval(INDArray labels, INDArray networkPredictions) {
-        eval(labels, networkPredictions, (INDArray) null);
-    }
+    public void eval(INDArray labels, INDArray predictions, INDArray mask, List<? extends Serializable> recordMetaData) {
+        Triple<INDArray,INDArray, INDArray> p = BaseEvaluation.reshapeAndExtractNotMasked(labels, predictions, mask, axis);
+        INDArray labels2d = p.getFirst();
+        INDArray predictions2d = p.getSecond();
+        INDArray maskArray = p.getThird();
 
-    @Override
-    public void eval(INDArray labels, INDArray networkPredictions, INDArray maskArray) {
-        if (underlying != null && underlying.length != labels.size(1)) {
+        if (underlying != null && underlying.length != labels2d.size(1)) {
             throw new IllegalStateException("Labels array does not match stored state size. Expected labels array with "
-                            + "size " + underlying.length + ", got labels array with size " + labels.size(1));
+                            + "size " + underlying.length + ", got labels array with size " + labels2d.size(1));
         }
 
-        if (labels.rank() == 3) {
-            evalTimeSeries(labels, networkPredictions, maskArray);
+        if (labels2d.rank() == 3) {
+            evalTimeSeries(labels2d, predictions2d, maskArray);
             return;
         }
 
-        if(labels.dataType() != networkPredictions.dataType())
-            labels = labels.castTo(networkPredictions.dataType());
+        if(labels2d.dataType() != predictions2d.dataType())
+            labels2d = labels2d.castTo(predictions2d.dataType());
 
         // FIXME: int cast
-        int n = (int) labels.size(1);
+        int n = (int) labels2d.size(1);
         if (underlying == null) {
             underlying = new ROC[n];
             for (int i = 0; i < n; i++) {
@@ -110,8 +138,8 @@ public class ROCBinary extends BaseEvaluation<ROCBinary> {
 
         int[] perExampleNonMaskedIdxs = null;
         for (int i = 0; i < n; i++) {
-            INDArray prob = networkPredictions.getColumn(i);
-            INDArray label = labels.getColumn(i);
+            INDArray prob = predictions2d.getColumn(i).reshape(predictions2d.size(0), 1);
+            INDArray label = labels2d.getColumn(i).reshape(labels2d.size(0), 1);
             if (maskArray != null) {
                 //If mask array is present, pull out the non-masked rows only
                 INDArray m;
