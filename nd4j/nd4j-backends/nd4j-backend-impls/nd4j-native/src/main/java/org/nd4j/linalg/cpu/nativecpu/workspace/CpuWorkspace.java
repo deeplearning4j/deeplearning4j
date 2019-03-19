@@ -31,6 +31,8 @@ import org.nd4j.linalg.api.memory.pointers.PagedPointer;
 import org.nd4j.linalg.api.memory.pointers.PointersPair;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.memory.abstracts.Nd4jWorkspace;
+import org.nd4j.linalg.memory.deallocation.Deallocatable;
+import org.nd4j.linalg.memory.deallocation.Deallocator;
 import org.nd4j.nativeblas.NativeOps;
 import org.nd4j.nativeblas.NativeOpsHolder;
 
@@ -40,7 +42,7 @@ import org.nd4j.nativeblas.NativeOpsHolder;
  * @author raver119@gmail.com
  */
 @Slf4j
-public class CpuWorkspace extends Nd4jWorkspace {
+public class CpuWorkspace extends Nd4jWorkspace implements Deallocatable {
 
     protected LongPointer mmap;
 
@@ -55,6 +57,21 @@ public class CpuWorkspace extends Nd4jWorkspace {
     public CpuWorkspace(@NonNull WorkspaceConfiguration configuration, @NonNull String workspaceId, Integer deviceId) {
         super(configuration, workspaceId);
         this.deviceId = deviceId;
+    }
+
+
+    public String getUniqueId() {
+        return "Workspace_" + getId();
+    }
+
+    @Override
+    public Deallocator deallocator() {
+        return new Deallocator() {
+            @Override
+            public void deallocate() {
+                log.info("Deallocator invoked!");
+            }
+        };
     }
 
     @Override

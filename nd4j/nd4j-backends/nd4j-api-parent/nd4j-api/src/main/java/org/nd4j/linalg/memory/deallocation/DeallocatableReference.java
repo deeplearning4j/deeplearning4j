@@ -27,13 +27,13 @@ import java.lang.ref.WeakReference;
  */
 @Data
 public class DeallocatableReference extends WeakReference<Deallocatable> {
-    private long id;
+    private String id;
     private Deallocator deallocator;
 
     public DeallocatableReference(Deallocatable referent, ReferenceQueue<? super Deallocatable> q) {
         super(referent, q);
 
-        this.id = referent.getId();
+        this.id = referent.getUniqueId();
         this.deallocator = referent.deallocator();
     }
 }

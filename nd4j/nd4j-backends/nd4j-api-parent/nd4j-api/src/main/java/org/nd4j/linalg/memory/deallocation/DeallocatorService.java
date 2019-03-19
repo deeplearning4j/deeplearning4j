@@ -17,19 +17,24 @@
 package org.nd4j.linalg.memory.deallocation;
 
 import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.lang.ref.ReferenceQueue;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * This class provides unified management for Deallocatable resources
  *
  * @author raver119@gmail.com
  */
+@Slf4j
 public class DeallocatorService {
     private Thread[] deallocatorThreads;
     private ReferenceQueue<Deallocatable>[] queues;
+    private Map<String, DeallocatableReference> referenceMap = new ConcurrentHashMap<>();
 
     public DeallocatorService() {
         // we need to have at least 2 threads, but for CUDA we'd need at least numDevices threads, due to thread->device affinity
@@ -37,7 +42,9 @@ public class DeallocatorService {
         int numThreads = Math.max(2, numDevices);
 
         deallocatorThreads = new Thread[numThreads];
+        queues = new ReferenceQueue[numThreads];
         for (int e = 0; e < numThreads; e++) {
+            log.info("Starting deallocator thread {}", e + 1);
             queues[e] = new ReferenceQueue<>();
 
             // attaching queue to its own thread
@@ -51,8 +58,13 @@ public class DeallocatorService {
         }
     }
 
+    public void pickObject(@NonNull Deallocatable deallocatable) {
+        val reference = new DeallocatableReference(deallocatable, queues[0]);
+        referenceMap.put(deallocatable.getUniqueId(), reference);
+    }
 
-    private static class DeallocatorServiceThread extends Thread implements Runnable {
+
+    private class DeallocatorServiceThread extends Thread implements Runnable {
         private ReferenceQueue<Deallocatable> queue;
 
         private DeallocatorServiceThread(@NonNull ReferenceQueue<Deallocatable> queue) {
@@ -70,6 +82,8 @@ public class DeallocatorService {
 
                     // invoking deallocator
                     reference.getDeallocator().deallocate();
+                    referenceMap.remove(reference.getId());
+                    log.info("Deallocated something...");
                 } catch (InterruptedException e) {
                     canRun = false;
                 } catch (Exception e) {

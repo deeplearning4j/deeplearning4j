@@ -26,7 +26,7 @@ public interface Deallocatable {
      * This method returns unique ID for this instance
      * @return
      */
-    long getId();
+    String getUniqueId();
 
     /**
      * This method returns deallocator associated with this instance

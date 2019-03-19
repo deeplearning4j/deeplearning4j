@@ -60,6 +60,11 @@ public class CudaWorkspaceManager extends BasicWorkspaceManager {
     }
 
     @Override
+    protected void pickReference(MemoryWorkspace workspace) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public MemoryWorkspace createNewWorkspace() {
         ensureThreadExistense();
 
