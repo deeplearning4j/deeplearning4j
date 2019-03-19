@@ -441,7 +441,8 @@ public class EvaluationBinary extends BaseEvaluation<EvaluationBinary> {
      * @return fpr as a double
      */
     public double falsePositiveRate(int classLabel) {
-        return recall(classLabel);
+        assertIndex(classLabel);
+        return falsePositiveRate(classLabel, DEFAULT_EDGE_VALUE);
     }
 
     /**
