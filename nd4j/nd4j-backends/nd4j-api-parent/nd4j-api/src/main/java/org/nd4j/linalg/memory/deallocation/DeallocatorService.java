@@ -19,6 +19,7 @@ package org.nd4j.linalg.memory.deallocation;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import org.apache.commons.lang3.RandomUtils;
 import org.nd4j.linalg.api.memory.Deallocatable;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -45,7 +46,7 @@ public class DeallocatorService {
         deallocatorThreads = new Thread[numThreads];
         queues = new ReferenceQueue[numThreads];
         for (int e = 0; e < numThreads; e++) {
-            log.info("Starting deallocator thread {}", e + 1);
+            log.debug("Starting deallocator thread {}", e + 1);
             queues[e] = new ReferenceQueue<>();
 
             // attaching queue to its own thread
@@ -61,9 +62,25 @@ public class DeallocatorService {
         }
     }
 
-    public void pickObject(@NonNull Deallocatable deallocatable) {
-        val reference = new DeallocatableReference(deallocatable, queues[0]);
+    /**
+     * This method adds Deallocatable object instance to tracking system
+     *
+     * @param deallocatable object to track
+     * @param bucketId ID of the bucked. In multi-device systems each object is tied to own device, with 1:1 mapping
+     */
+    public void pickObject(@NonNull Deallocatable deallocatable, int bucketId) {
+        val reference = new DeallocatableReference(deallocatable, queues[bucketId]);
         referenceMap.put(deallocatable.getUniqueId(), reference);
+    }
+
+    /**
+     * This method adds Deallocatable object instance to tracking system
+     *
+     * @param deallocatable object to track
+     */
+    public void pickObject(@NonNull Deallocatable deallocatable) {
+        // using rng here, to spread load among buckets
+        pickObject(deallocatable, RandomUtils.nextInt(0, queues.length));
     }
 
 
@@ -86,7 +103,6 @@ public class DeallocatorService {
                     // invoking deallocator
                     reference.getDeallocator().deallocate();
                     referenceMap.remove(reference.getId());
-                    log.info("Deallocated something...");
                 } catch (InterruptedException e) {
                     canRun = false;
                 } catch (Exception e) {
