@@ -91,6 +91,7 @@ public class EvaluationBinaryTest extends BaseNd4jTest {
             assertEquals(e.precision(1), eb.precision(i), eps);
             assertEquals(e.recall(1), eb.recall(i), eps);
             assertEquals(e.f1(1), eb.f1(i), eps);
+            assertEquals(e.falsePositiveRate(1), eb.falsePositiveRate(i), eps);
 
             assertEquals(tpCount, eb.truePositives(i));
             assertEquals(tnCount, eb.trueNegatives(i));
