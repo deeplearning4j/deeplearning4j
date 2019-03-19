@@ -28,6 +28,10 @@
 
 #include<ops/declarable/helpers/lstm.h>
 #include<ops/declarable/helpers/lstmBlock.h>
+#include <ops/declarable/CustomOperations.h>
+#include<ops/declarable/helpers/transforms.h>
+#include <array/NDArrayList.h>
+#include <iterator>
 
 namespace nd4j 	  {
 namespace ops 	  {
