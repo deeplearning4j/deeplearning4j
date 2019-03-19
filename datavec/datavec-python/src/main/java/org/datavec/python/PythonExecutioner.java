@@ -35,28 +35,19 @@ import org.nd4j.linalg.api.buffer.DataType;
  */
 @Slf4j
 public class PythonExecutioner {
-    private String name;
-    private Pointer namePtr;
-    private PyObject module;
-    private PyObject globals;
-    private JSONParser parser = new JSONParser();
-    private Map<String, PyThreadState> interpreters = new HashMap<String, PyThreadState>();
-    private String defaultInterpreter = "_main";
-    private String currentInterpreter =  defaultInterpreter;
-    private static PythonExecutioner pythonExecutioner;
-    private boolean safeExecFlag = false;
+    private static Pointer namePtr;
+    private static PyObject module;
+    private static PyObject globals;
+    private static JSONParser parser = new JSONParser();
+    private static Map<String, PyThreadState> interpreters = new HashMap<String, PyThreadState>();
+    private static String defaultInterpreter = "_main";
+    private static String currentInterpreter =  defaultInterpreter;
+    private static boolean safeExecFlag = false;
 
-    
-
-    public static PythonExecutioner getInstance(){
-        // do not use constructor
-        if (pythonExecutioner == null){
-            pythonExecutioner = new PythonExecutioner();
-            log.info("===created new executioner===");
-        }
-        return pythonExecutioner;
+    static {
+        init();
     }
-    public void setInterpreter(String name){
+    public static void setInterpreter(String name){
         if (name == null){ // switch to default interpreter
             currentInterpreter = defaultInterpreter;
             return;
@@ -69,7 +60,7 @@ public class PythonExecutioner {
         currentInterpreter = name;
     }
 
-    public void deleteInterpreter(String name){
+    public static void deleteInterpreter(String name){
         if (name == null || name == defaultInterpreter){
             return;
         }
@@ -95,26 +86,10 @@ public class PythonExecutioner {
 
     }
 
-    public PyObject getGlobals(){
-        return globals;
 
-    }
-
-
-    public PythonExecutioner(String name){
-        this.name = name;
-        init();
-    }
-
-
-    public  PythonExecutioner(){
-        this.name = PythonExecutioner.class.getSimpleName();
-        init();
-    }
-
-    public void init(){
+    public static void init(){
         log.info("CPython: Py_DecodeLocale()");
-        namePtr = Py_DecodeLocale(name, null);
+        namePtr = Py_DecodeLocale("pythonExecutioner", null);
         log.info("CPython: Py_SetProgramName()");
         Py_SetProgramName(namePtr);
         log.info("CPython: Py_Initialize()");
@@ -129,7 +104,7 @@ public class PythonExecutioner {
         interpreters.put(defaultInterpreter, PyThreadState_Get());
     }
 
-    public void free(){
+    public static void free(){
         log.info("CPython: Py_FinalizeEx()");
         if (Py_FinalizeEx() < 0) {
             throw new RuntimeException("Python execution failed.");
@@ -139,7 +114,7 @@ public class PythonExecutioner {
     }
 
 
-    private String jArrayToPyString(Object[] array){
+    private static String jArrayToPyString(Object[] array){
         String str = "[";
         for (int i=0; i < array.length; i++){
             Object obj = array[i];
@@ -161,12 +136,12 @@ public class PythonExecutioner {
         return str;
     }
 
-    private String escapeStr(String str){
+    private static String escapeStr(String str){
         str = str.replace("\\", "\\\\");
         str = str.replace("\"\"\"", "\\\"\\\"\\\"");
         return str;
     }
-    private String inputCode(PythonVariables pyInputs)throws Exception{
+    private static String inputCode(PythonVariables pyInputs)throws Exception{
         String inputCode = "loc={};";
         if (pyInputs == null){
             return inputCode;
@@ -263,7 +238,7 @@ public class PythonExecutioner {
         return inputCode;
     }
 
-    private void _readOutputs(PythonVariables pyOutputs){
+    private static void _readOutputs(PythonVariables pyOutputs){
         if (pyOutputs == null){
             return;
         }
@@ -300,8 +275,7 @@ public class PythonExecutioner {
 
     }
 
-
-    private void _enterSubInterpreter() {
+    private static void _enterSubInterpreter() {
         if (currentInterpreter != defaultInterpreter) {
             log.info("CPython: PyEval_AcquireLock()");
 
@@ -319,7 +293,7 @@ public class PythonExecutioner {
         }
     }
 
-    private void _exitSubInterpreter(){
+    private static void _exitSubInterpreter(){
         if (currentInterpreter != defaultInterpreter){
             PyThreadState ts = interpreters.get(currentInterpreter);
             log.info("CPython: PyThreadState_Swap()");
@@ -339,7 +313,7 @@ public class PythonExecutioner {
      * Executes python code. Also manages python thread state.
      * @param code
      */
-    public void exec(String code){
+    public static void exec(String code){
         _enterSubInterpreter();
         log.info("CPython: PyRun_SimpleStringFlag()");
         log.info(code);
@@ -348,7 +322,7 @@ public class PythonExecutioner {
         _exitSubInterpreter();
     }
 
-    public void exec(String code, PythonVariables pyOutputs){
+    public static void exec(String code, PythonVariables pyOutputs){
         _enterSubInterpreter();
         log.info("CPython: PyRun_SimpleStringFlag()");
         log.info(code);
@@ -358,7 +332,7 @@ public class PythonExecutioner {
         _exitSubInterpreter();
     }
 
-    public void exec(String code, PythonVariables pyInputs, PythonVariables pyOutputs) throws Exception{
+    public static void exec(String code, PythonVariables pyInputs, PythonVariables pyOutputs) throws Exception{
         String inputCode = inputCode(pyInputs);
         if (code.charAt(code.length() - 1) != '\n'){
             code += '\n';
@@ -366,10 +340,10 @@ public class PythonExecutioner {
         exec(inputCode + code, pyOutputs);
     }
 
-    private void setupTransform(PythonTransform transform){
+    private static void setupTransform(PythonTransform transform){
         setInterpreter(transform.getName());
     }
-    public PythonVariables exec(PythonTransform transform) throws Exception{
+    public static PythonVariables exec(PythonTransform transform) throws Exception{
         setupTransform(transform);
         if (transform.getInputs() != null && transform.getInputs().getVariables().length > 0){
             throw new Exception("Required inputs not provided.");
@@ -378,14 +352,14 @@ public class PythonExecutioner {
         return transform.getOutputs();
     }
 
-    public PythonVariables exec(PythonTransform transform, PythonVariables inputs)throws Exception{
+    public static PythonVariables exec(PythonTransform transform, PythonVariables inputs)throws Exception{
         setupTransform(transform);
         exec(transform.getCode(), inputs, transform.getOutputs());
         return transform.getOutputs();
     }
 
 
-    public String evalSTRING(String varName){
+    public static String evalSTRING(String varName){
         PyObject xObj = PyDict_GetItemString(globals, varName);
         PyObject bytes = PyUnicode_AsEncodedString(xObj, "UTF-8", "strict");
         BytePointer bp = PyBytes_AsString(bytes);
@@ -395,19 +369,19 @@ public class PythonExecutioner {
         return ret;
     }
 
-    public long evalINTEGER(String varName){
+    public static long evalINTEGER(String varName){
         PyObject xObj = PyDict_GetItemString(globals, varName);
         long ret = PyLong_AsLongLong(xObj);
         return ret;
     }
 
-    public double evalFLOAT(String varName){
+    public static double evalFLOAT(String varName){
         PyObject xObj = PyDict_GetItemString(globals, varName);
         double ret = PyFloat_AsDouble(xObj);
         return ret;
     }
 
-    public Object[] evalLIST(String varName) throws Exception{
+    public static Object[] evalLIST(String varName) throws Exception{
         PyObject xObj = PyDict_GetItemString(globals, varName);
         PyObject strObj = PyObject_Str(xObj);
         PyObject bytes = PyUnicode_AsEncodedString(strObj, "UTF-8", "strict");
@@ -419,7 +393,7 @@ public class PythonExecutioner {
         return jsonArray.toArray();
     }
 
-    public NumpyArray evalNDARRAY(String varName) throws Exception{
+    public static NumpyArray evalNDARRAY(String varName) throws Exception{
         PyObject xObj = PyDict_GetItemString(globals, varName);
         PyObject arrayInterface = PyObject_GetAttrString(xObj, "__array_interface__");
         PyObject data = PyDict_GetItemString(arrayInterface, "data");
@@ -484,7 +458,7 @@ public class PythonExecutioner {
        return ret;
     }
 
-    private String getOutputCheckCode(PythonVariables pyOutputs){
+    private static String getOutputCheckCode(PythonVariables pyOutputs){
         // make sure all outputs exist and are of expected types
         // helps avoid JVM crashes (most of the time)
         String code= "__error_message=''\n";
