@@ -88,4 +88,20 @@ Nd4jLong OmpLaunchHelper::betterSpan(Nd4jLong N) {
         }
     }
 
+    int OmpLaunchHelper::tadThreads(Nd4jLong tadLength, Nd4jLong numTads) {
+        auto maxThreads = omp_get_max_threads();
+
+        // if there's only 1 thread allowed - nothing to do here
+        if (maxThreads <= 1)
+            return 1;
+
+        auto totalLength = tadLength * numTads;
+
+        // if array is tiny - no need to spawn any threeds
+        if (totalLength < Environment::getInstance()->elementwiseThreshold())
+            return 1;
+
+        // by default we're spawning as many threads we can, but not more than number of TADs
+        return nd4j::math::nd4j_min<int>(numTads, maxThreads);
+    }
 }

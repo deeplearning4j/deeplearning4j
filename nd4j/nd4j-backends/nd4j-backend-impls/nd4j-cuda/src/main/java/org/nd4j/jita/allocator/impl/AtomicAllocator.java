@@ -324,6 +324,9 @@ public class AtomicAllocator implements Allocator {
      */
     @Override
     public Pointer getHostPointer(INDArray array) {
+        if (array.isEmpty())
+            return null;
+
         synchronizeHostData(array);
         return memoryHandler.getHostPointer(array.data());
     }
@@ -346,6 +349,9 @@ public class AtomicAllocator implements Allocator {
      */
     @Override
     public void synchronizeHostData(INDArray array) {
+        if (array.isEmpty())
+            return;
+
         DataBuffer buffer =
                         array.data().originalDataBuffer() == null ? array.data() : array.data().originalDataBuffer();
         synchronizeHostData(buffer);

@@ -4890,7 +4890,7 @@ template void NDArray::operator/=(const bool scalar);
 
         double sum = 0.;
 
-        PRAGMA_OMP_PARALLEL_FOR_ARGS(reduction(sumT:sum))
+        PRAGMA_OMP_PARALLEL_FOR_REDUCTION(sumT:sum)
         for(int i = 0; i < minDim; ++i)
             sum += e<double>(i*offset);
 
