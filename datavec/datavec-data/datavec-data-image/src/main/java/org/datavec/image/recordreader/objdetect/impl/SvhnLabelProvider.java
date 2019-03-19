@@ -24,7 +24,8 @@ import org.bytedeco.javacpp.PointerPointer;
 import org.datavec.image.recordreader.objdetect.ImageObject;
 import org.datavec.image.recordreader.objdetect.ImageObjectLabelProvider;
 
-import static org.bytedeco.javacpp.hdf5.*;
+import org.bytedeco.hdf5.*;
+import static org.bytedeco.hdf5.global.hdf5.*;
 
 import java.io.File;
 import java.io.IOException;

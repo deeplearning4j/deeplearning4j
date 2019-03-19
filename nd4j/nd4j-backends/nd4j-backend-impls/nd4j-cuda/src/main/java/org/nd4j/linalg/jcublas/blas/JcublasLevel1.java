@@ -43,8 +43,10 @@ import org.nd4j.nativeblas.Nd4jBlas;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.bytedeco.javacpp.cublas.*;
-import static org.bytedeco.javacpp.cuda.CUstream_st;
+import org.bytedeco.cuda.cudart.*;
+import org.bytedeco.cuda.cublas.*;
+import static org.bytedeco.cuda.global.cudart.*;
+import static org.bytedeco.cuda.global.cublas.*;
 
 /**
  * @author Adam Gibson

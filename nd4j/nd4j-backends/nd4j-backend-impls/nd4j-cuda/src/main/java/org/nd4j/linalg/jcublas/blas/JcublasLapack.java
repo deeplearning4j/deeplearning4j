@@ -16,8 +16,6 @@
 
 package org.nd4j.linalg.jcublas.blas;
 
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import lombok.extern.slf4j.Slf4j;
 import org.bytedeco.javacpp.DoublePointer;
 import org.bytedeco.javacpp.FloatPointer;
@@ -41,10 +39,12 @@ import org.nd4j.linalg.jcublas.context.CudaContext;
 import org.nd4j.nativeblas.NativeOps;
 import org.nd4j.nativeblas.NativeOpsHolder;
 
-import static org.bytedeco.javacpp.cuda.CUstream_st;
-import static org.bytedeco.javacpp.cusolver.*;
-import static org.bytedeco.javacpp.cublas.* ;
-
+import org.bytedeco.cuda.cudart.*;
+import org.bytedeco.cuda.cublas.*;
+import org.bytedeco.cuda.cusolver.*;
+import static org.bytedeco.cuda.global.cudart.*;
+import static org.bytedeco.cuda.global.cublas.*;
+import static org.bytedeco.cuda.global.cusolver.*;
 
 /**
  * JCublas lapack

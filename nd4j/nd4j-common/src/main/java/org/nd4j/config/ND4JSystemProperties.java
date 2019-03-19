@@ -90,13 +90,13 @@ public class ND4JSystemProperties {
      * However, MKL is liked with by default (when available) so setting this option explicitly is not usually required.
      * For more details, see <a href="https://github.com/bytedeco/javacpp-presets/tree/master/openblas#documentation">https://github.com/bytedeco/javacpp-presets/tree/master/openblas#documentation</a>
      */
-    public static final String ND4J_CPU_LOAD_OPENBLAS = "org.bytedeco.javacpp.openblas.load";
+    public static final String ND4J_CPU_LOAD_OPENBLAS = "org.bytedeco.openblas.load";
     /**
      * Applicability: nd4j-native backend, when multiple BLAS libraries are available<br>
      * Description: This system property can be used to control which BLAS library is loaded and used by ND4J.
      * Similar to {@link #ND4J_CPU_LOAD_OPENBLAS} but when this is set, LAPACK will not be loaded
      */
-    public static final String ND4J_CPU_LOAD_OPENBLAS_NOLAPACK = "org.bytedeco.javacpp.openblas_nolapack.load";
+    public static final String ND4J_CPU_LOAD_OPENBLAS_NOLAPACK = "org.bytedeco.openblas_nolapack.load";
     /**
      * Applicability: nd4j-parameter-server, dl4j-spark (gradient sharing training master)<br>
      * Description: Aeros in a high-performance communication library used in distributed computing contexts in some

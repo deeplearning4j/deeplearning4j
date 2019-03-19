@@ -17,10 +17,9 @@
 package org.nd4j.linalg.cpu.nativecpu.blas;
 
 import lombok.extern.slf4j.Slf4j;
-import org.bytedeco.javacpp.mkl_rt;
 import org.nd4j.nativeblas.Nd4jBlas;
 
-import static org.bytedeco.javacpp.openblas_nolapack.*;
+import static org.bytedeco.openblas.global.openblas_nolapack.*;
 
 /**
  * Implementation of Nd4jBlas with OpenBLAS/MKL

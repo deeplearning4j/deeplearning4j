@@ -26,9 +26,12 @@ import org.nd4j.linalg.compression.BasicNDArrayCompressor;
 
 import java.io.IOException;
 
-import static org.bytedeco.javacpp.avcodec.AV_CODEC_ID_H264;
-import static org.bytedeco.javacpp.opencv_core.*;
-import static org.bytedeco.javacpp.opencv_imgproc.*;
+import org.bytedeco.ffmpeg.avcodec.*;
+import org.bytedeco.opencv.opencv_core.*;
+import org.bytedeco.opencv.opencv_imgproc.*;
+import static org.bytedeco.ffmpeg.global.avcodec.*;
+import static org.bytedeco.opencv.global.opencv_core.*;
+import static org.bytedeco.opencv.global.opencv_imgproc.*;
 
 /**
  * @author rubenfiszel (ruben.fiszel@epfl.ch) on 7/27/16.
