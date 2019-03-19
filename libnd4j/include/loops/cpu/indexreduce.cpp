@@ -141,10 +141,7 @@ void IndexReduce<X>::exec(void *vx, Nd4jLong *xShapeInfo,
         tadOffsets = tad->tadOffsets;
     }
 
-    auto funcSV = [&] (X *x)                                    -> IndexValue<X> { return OpType::startingIndexValue(x); };    
-    auto funcUP = [&] (IndexValue<X>& a, IndexValue<X> b, X *e) -> IndexValue<X> { return OpType::update(a, b, e);  };
-    
-    nd4j::Loops::loopIndexTadXZ<X,X>(x, tadOnlyShapeInfo, tadOffsets, z, zShapeInfo, extraParams, funcSV, funcUP);
+    nd4j::Loops::loopIndexTadXZ<X, OpType>(x, tadOnlyShapeInfo, tadOffsets, z, zShapeInfo, extraParams);
     
     if (tad != nullptr)
         delete tad;

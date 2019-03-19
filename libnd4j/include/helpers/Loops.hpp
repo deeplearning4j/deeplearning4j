@@ -28,143 +28,6 @@
 
 
 namespace nd4j {
-    //////////////////////////////////////////////////////////////////////////////
-    Loops::LoopKind Loops::deduceKindOfLoopXYZ(const Nd4jLong* tadShapeInfo, const Nd4jLong* yShapeInfo, const Nd4jLong* zShapeInfo) {
-
-        const int xRank = shape::rank(tadShapeInfo);
-
-        const Nd4jLong xEws = shape::elementWiseStride(tadShapeInfo);
-        const Nd4jLong yEws = shape::elementWiseStride(yShapeInfo);
-        const Nd4jLong zEws = shape::elementWiseStride(zShapeInfo);
-
-        int temp;
-        const bool xVector = shape::isCommonVector(tadShapeInfo, temp);
-        const bool yVector = shape::isCommonVector(yShapeInfo, temp);
-        const bool zVector = shape::isCommonVector(zShapeInfo, temp);
-
-        const char xOrder = shape::order(tadShapeInfo);
-        const char yOrder = shape::order(yShapeInfo);
-        const char zOrder = shape::order(zShapeInfo);
-
-        const bool shapesSame = shape::shapeEquals(tadShapeInfo, yShapeInfo) && shape::shapeEquals(tadShapeInfo, zShapeInfo);
-
-        if (xEws == 1 && yEws == 1 && zEws == 1 && ((xOrder == yOrder && xOrder == zOrder) || ((xVector || xOrder == 'c') && (yVector || yOrder == 'c') && (zVector || zOrder == 'c'))))
-            return EWS1;
-
-        if(xEws > 0 && yEws > 0 && zEws > 0     && ((xOrder == yOrder && xOrder == zOrder) || ((xVector || xOrder == 'c') && (yVector || yOrder == 'c') && (zVector || zOrder == 'c'))))
-            return EWSNONZERO;
-
-        if(xRank == 1 && shapesSame)
-            return RANK1;
-
-        if(xRank == 2 && shapesSame)
-            return RANK2;
-
-        if(xRank == 3 && shapesSame)
-            return RANK3;
-
-        if(xRank == 4 && shapesSame)
-            return RANK4;
-
-        if(xRank == 5 && shapesSame)
-            return RANK5;
-
-        return COMMON;
-    }
-
-//////////////////////////////////////////////////////////////////////////////
-    Loops::LoopKind Loops::deduceKindOfLoopXZ(const Nd4jLong* tadShapeInfo, const Nd4jLong* zShapeInfo) {
-
-
-        const int xRank = shape::rank(tadShapeInfo);
-
-        const Nd4jLong xEws = shape::elementWiseStride(tadShapeInfo);
-        const Nd4jLong zEws = shape::elementWiseStride(zShapeInfo);
-
-        const char xOrder = shape::order(tadShapeInfo);
-        const char zOrder = shape::order(zShapeInfo);
-
-        int temp;
-        const bool xVector = shape::isCommonVector(tadShapeInfo, temp);
-        const bool zVector = shape::isCommonVector(zShapeInfo, temp);
-
-        const bool shapesSame = shape::shapeEquals(tadShapeInfo, zShapeInfo);
-
-        if(xEws == 1 && zEws == 1 && ((xOrder == zOrder) || ((xVector || xOrder == 'c') && (zVector || zOrder == 'c'))))
-            return EWS1;
-
-        if(xEws > 0 && zEws > 0   && ((xOrder == zOrder) || ((xVector || xOrder == 'c') && (zVector || zOrder == 'c'))))
-            return EWSNONZERO;
-
-        if(xRank == 1 && shapesSame)
-            return RANK1;
-
-        if(xRank == 2 && shapesSame)
-            return RANK2;
-
-        if(xRank == 3 && shapesSame)
-            return RANK3;
-
-        if(xRank == 4 && shapesSame)
-            return RANK4;
-
-        if(xRank == 5 && shapesSame)
-            return RANK5;
-
-        if(xEws > 0 && (xOrder == 'c' || xVector) && zEws == 0)
-            return X_EWSNONZERO;
-
-        if(zEws > 0 && (zOrder == 'c' || zVector) && xEws == 0)
-            return Z_EWSNONZERO;
-
-        return COMMON;
-    }
-
-//////////////////////////////////////////////////////////////////////////////
-    Loops::LoopKind Loops::deduceKindOfLoopTadXZ(const Nd4jLong* tadShapeInfo, const Nd4jLong* zShapeInfo) {
-
-        const int xRank = shape::rank(tadShapeInfo);
-
-        const Nd4jLong tadEws = shape::elementWiseStride(tadShapeInfo);
-        const Nd4jLong zEws = shape::elementWiseStride(zShapeInfo);
-
-        const char xOrder = shape::order(tadShapeInfo);
-        const char zOrder = shape::order(zShapeInfo);
-
-        int temp;
-        const bool xVector = shape::isCommonVector(tadShapeInfo, temp);
-        const bool zVector = shape::isCommonVector(zShapeInfo, temp);
-
-        if(tadEws == 1 && zEws == 1 && ((xOrder == zOrder) || ((xVector || xOrder == 'c') && (zVector || zOrder == 'c'))))
-            return EWS1;
-
-        if(tadEws > 0 && zEws > 0   && ((xOrder == zOrder) || ((xVector || xOrder == 'c') && (zVector || zOrder == 'c'))))
-            return EWSNONZERO;
-
-        if(xRank == 1 && zEws == 1 && (zVector || zOrder == 'c'))
-            return RANK1;
-
-        if(xRank == 2 && zEws == 1 && (zVector || zOrder == 'c'))
-            return RANK2;
-
-        if(xRank == 3 && zEws == 1 && (zVector || zOrder == 'c'))
-            return RANK3;
-
-        if(xRank == 4 && zEws == 1 && (zVector || zOrder == 'c'))
-            return RANK4;
-
-        if(xRank == 5 && zEws == 1 && (zVector || zOrder == 'c'))
-            return RANK5;
-
-        if(tadEws > 0 && (xVector || xOrder == 'c') && zEws == 0)
-            return X_EWSNONZERO;
-
-        if(zEws > 0 && (zOrder == 'c' || zVector) && tadEws == 0)
-            return Z_EWSNONZERO;
-
-        return COMMON;
-    }
-
 
 //////////////////////////////////////////////////////////////////////////////
     template<typename X, typename Y, typename Z>
@@ -346,14 +209,10 @@ namespace nd4j {
 
 
 //////////////////////////////////////////////////////////////////////////////
-    template<typename X, typename Z, typename E>
+    template<typename X, typename Z, typename E, typename OpType>
      void Loops::loopTadXZ(const X* x, const Nd4jLong* tadShapeInfo, const Nd4jLong* tadOffsets,
                                        Z* z, const Nd4jLong* zShapeInfo,
-                                       E* extraParams,
-                                       std::function<X(const X*)>      startVal,
-                                       std::function<Z(Z,Z,E*)>        update,
-                                       std::function<Z(X,E*)>          op,
-                                       std::function<Z(Z,Nd4jLong,E*)> postPr) {
+                                       E* extraParams) {
 
         const LoopKind kindOfLoop = Loops::deduceKindOfLoopTadXZ(tadShapeInfo, zShapeInfo);
 
@@ -377,12 +236,12 @@ namespace nd4j {
                 for (uint i = 0; i < zLen; i++) {
 
                     auto tad = x + tadOffsets[i];
-                    auto start = startVal(tad);
+                    auto start = OpType::startingValue(tad);
 
                     for (uint j = 0; j < tadLen; j++)
-                        start = update(start, op(tad[j], extraParams), extraParams);
+                        start = OpType::update(start, OpType::op(tad[j], extraParams), extraParams);
 
-                    z[i] = postPr(start, tadLen, extraParams);
+                    z[i] = OpType::postProcess(start, tadLen, extraParams);
                 }
             }
                 break;
@@ -393,12 +252,12 @@ namespace nd4j {
                 for (uint i = 0; i < zLen; i++) {
 
                     auto tad = x + tadOffsets[i];
-                    auto start = startVal(tad);
+                    auto start = OpType::startingValue(tad);
 
                     for (uint j = 0; j < tadLen; j++)
-                        start = update(start, op(tad[j * tadEws], extraParams), extraParams);
+                        start = OpType::update(start, OpType::op(tad[j * tadEws], extraParams), extraParams);
 
-                    z[i * zEws] = postPr(start, tadLen, extraParams);
+                    z[i * zEws] = OpType::postProcess(start, tadLen, extraParams);
                 }
             }
                 break;
@@ -409,12 +268,12 @@ namespace nd4j {
                 for (uint i = 0; i < zLen; i++) {
 
                     auto tad = x + tadOffsets[i];
-                    auto start = startVal(tad);
+                    auto start = OpType::startingValue(tad);
 
                     for (uint i0 = 0; i0 < tadLen; ++i0)
-                        start = update(start, op(tad[i0 * tadStride[0]], extraParams), extraParams);
+                        start = OpType::update(start, OpType::op(tad[i0 * tadStride[0]], extraParams), extraParams);
 
-                    z[i] = postPr(start, tadLen, extraParams);
+                    z[i] = OpType::postProcess(start, tadLen, extraParams);
                 }
             }
                 break;
@@ -426,13 +285,13 @@ namespace nd4j {
                 for (uint i = 0; i < zLen; ++i) {
 
                     auto tad = x + tadOffsets[i];
-                    auto start = startVal(tad);
+                    auto start = OpType::startingValue(tad);
 
                     for (uint i0 = 0; i0 < tadShape[0]; ++i0)
                         for (uint i1 = 0; i1 < tadShape[1]; ++i1)
-                            start = update(start, op(tad[i0*tadStride[0] + i1*tadStride[1]], extraParams), extraParams);
+                            start = OpType::update(start, OpType::op(tad[i0*tadStride[0] + i1*tadStride[1]], extraParams), extraParams);
 
-                    z[i] = postPr(start, tadLen, extraParams);
+                    z[i] = OpType::postProcess(start, tadLen, extraParams);
                 }
             }
                 break;
@@ -444,14 +303,14 @@ namespace nd4j {
                 for (uint i = 0; i < zLen; ++i) {
 
                     auto tad = x + tadOffsets[i];
-                    auto start = startVal(tad);
+                    auto start = OpType::startingValue(tad);
 
                     for (uint i0 = 0; i0 < tadShape[0]; ++i0)
                         for (uint i1 = 0; i1 < tadShape[1]; ++i1)
                             for (uint i2 = 0; i2 < tadShape[2]; ++i2)
-                                start = update(start, op(tad[i0*tadStride[0] + i1*tadStride[1] + i2*tadStride[2]], extraParams), extraParams);
+                                start = OpType::update(start, OpType::op(tad[i0*tadStride[0] + i1*tadStride[1] + i2*tadStride[2]], extraParams), extraParams);
 
-                    z[i] = postPr(start, tadLen, extraParams);
+                    z[i] = OpType::postProcess(start, tadLen, extraParams);
                 }
             }
                 break;
@@ -463,15 +322,15 @@ namespace nd4j {
                 for (uint i = 0; i < zLen; ++i) {
 
                     auto tad = x + tadOffsets[i];
-                    auto start = startVal(tad);
+                    auto start = OpType::startingValue(tad);
 
                     for (uint i0 = 0; i0 < tadShape[0]; ++i0)
                         for (uint i1 = 0; i1 < tadShape[1]; ++i1)
                             for (uint i2 = 0; i2 < tadShape[2]; ++i2)
                                 for (uint i3 = 0; i3 < tadShape[3]; ++i3)
-                                    start = update(start, op(tad[i0*tadStride[0] + i1*tadStride[1] + i2*tadStride[2] + i3*tadStride[3]], extraParams), extraParams);
+                                    start = OpType::update(start, OpType::op(tad[i0*tadStride[0] + i1*tadStride[1] + i2*tadStride[2] + i3*tadStride[3]], extraParams), extraParams);
 
-                    z[i] = postPr(start, tadLen, extraParams);
+                    z[i] = OpType::postProcess(start, tadLen, extraParams);
                 }
             }
                 break;
@@ -482,16 +341,16 @@ namespace nd4j {
                 for (uint i = 0; i < zLen; ++i) {
 
                     auto tad = x + tadOffsets[i];
-                    auto start = startVal(tad);
+                    auto start = OpType::startingValue(tad);
 
                     for (uint i0 = 0; i0 < tadShape[0]; ++i0)
                         for (uint i1 = 0; i1 < tadShape[1]; ++i1)
                             for (uint i2 = 0; i2 < tadShape[2]; ++i2)
                                 for (uint i3 = 0; i3 < tadShape[3]; ++i3)
                                     for (uint i4 = 0; i4 < tadShape[4]; ++i4)
-                                        start = update(start, op(tad[i0*tadStride[0] + i1*tadStride[1] + i2*tadStride[2] + i3*tadStride[3] + i4*tadStride[4] ], extraParams), extraParams);
+                                        start = OpType::update(start, OpType::op(tad[i0*tadStride[0] + i1*tadStride[1] + i2*tadStride[2] + i3*tadStride[3] + i4*tadStride[4] ], extraParams), extraParams);
 
-                    z[i] = postPr(start, tadLen, extraParams);
+                    z[i] = OpType::postProcess(start, tadLen, extraParams);
                 }
             }
                 break;
@@ -505,13 +364,13 @@ namespace nd4j {
                 for (uint i = 0; i < zLen; i++) {
 
                     auto tad = x + tadOffsets[i];
-                    auto start = startVal(tad);
+                    auto start = OpType::startingValue(tad);
 
                     for (uint j = 0; j < tadLen; j++)
-                        start = update(start, op(tad[j * tadEws], extraParams), extraParams);
+                        start = OpType::update(start, OpType::op(tad[j * tadEws], extraParams), extraParams);
 
                     auto zOffset = shape::indexOffset(i, zShapeInfo, castZShapeInfo, zLen, canCastZ);
-                    z[zOffset] = postPr(start, tadLen, extraParams);
+                    z[zOffset] = OpType::postProcess(start, tadLen, extraParams);
                 }
             }
                 break;
@@ -526,14 +385,14 @@ namespace nd4j {
                 for (uint i = 0; i < zLen; i++) {
 
                     auto tad = x + tadOffsets[i];
-                    auto start = startVal(tad);
+                    auto start = OpType::startingValue(tad);
 
                     for (uint j = 0; j < tadLen; j++) {
                         auto tadOffset = shape::indexOffset(j, tadShapeInfo, castTadShapeInfo, tadLen, canCastTad);
-                        start = update(start, op(tad[tadOffset], extraParams), extraParams);
+                        start = OpType::update(start, OpType::op(tad[tadOffset], extraParams), extraParams);
                     }
 
-                    z[i * zEws] = postPr(start, tadLen, extraParams);
+                    z[i * zEws] = OpType::postProcess(start, tadLen, extraParams);
                 }
             }
                 break;
@@ -550,27 +409,25 @@ namespace nd4j {
                 for (uint i = 0; i < zLen; i++) {
 
                     auto tad = x + tadOffsets[i];
-                    auto start = startVal(tad);
+                    auto start = OpType::startingValue(tad);
 
                     for (uint j = 0; j < tadLen; j++) {
                         auto tadOffset = shape::indexOffset(j, tadShapeInfo, castTadShapeInfo, tadLen, canCastTad);
-                        start = update(start, op(tad[tadOffset], extraParams), extraParams);
+                        start = OpType::update(start, OpType::op(tad[tadOffset], extraParams), extraParams);
                     }
 
                     auto zOffset = shape::indexOffset(i, zShapeInfo, castZShapeInfo, zLen, canCastZ);
-                    z[zOffset] = postPr(start, tadLen, extraParams);
+                    z[zOffset] = OpType::postProcess(start, tadLen, extraParams);
                 }
             }
         }
     }
 
 //////////////////////////////////////////////////////////////////////////////
-    template<typename X, typename E>
+    template<typename X, typename OpType>
     void Loops::loopIndexTadXZ(const X* x, const Nd4jLong* tadShapeInfo, const Nd4jLong* tadOffsets,
                                             Nd4jLong* z, const Nd4jLong* zShapeInfo,
-                                            E* extraParams,
-                                            std::function<functions::indexreduce::IndexValue<X>(X*)> startVal,
-                                            std::function<functions::indexreduce::IndexValue<X>(functions::indexreduce::IndexValue<X>&, functions::indexreduce::IndexValue<X>, E*)> update) {
+                                            X* extraParams) {
 
         const LoopKind kindOfLoop = Loops::deduceKindOfLoopTadXZ(tadShapeInfo, zShapeInfo);
 
@@ -595,10 +452,12 @@ namespace nd4j {
                 for (uint i = 0; i < zLen; i++) {
 
                     auto tad = const_cast<X*>(x) + tadOffsets[i];
-                    auto indexValue = startVal(tad);
+                    auto indexValue = OpType::startingIndexValue(tad);
 
-                    for (uint j = 0; j < tadLen; j++)
-                        indexValue = update(indexValue, functions::indexreduce::IndexValue<X>(tad[j], j), extraParams);
+                    for (uint j = 0; j < tadLen; j++) {
+                        functions::indexreduce::IndexValue<X> comp(tad[j], j);
+                        indexValue = OpType::update(indexValue, comp, extraParams);
+                    }
 
                     z[i] = indexValue.index;
                 }
@@ -611,10 +470,12 @@ namespace nd4j {
                 for (uint i = 0; i < zLen; i++) {
 
                     auto tad = const_cast<X*>(x) + tadOffsets[i];
-                    auto indexValue = startVal(tad);
+                    auto indexValue = OpType::startingIndexValue(tad);
 
-                    for (uint j = 0; j < tadLen; j++)
-                        indexValue = update(indexValue, functions::indexreduce::IndexValue<X>(tad[j * tadEws], j), extraParams);
+                    for (uint j = 0; j < tadLen; j++) {
+                        functions::indexreduce::IndexValue<X> comp(tad[j * tadEws], j);
+                        indexValue = OpType::update(indexValue, comp, extraParams);
+                    }
 
                     z[i * zEws] = indexValue.index;
                 }
@@ -627,11 +488,11 @@ namespace nd4j {
                 for (uint i = 0; i < zLen; i++) {
 
                     auto tad = const_cast<X*>(x) + tadOffsets[i];
-                    auto indexValue = startVal(tad);
+                    auto indexValue = OpType::startingIndexValue(tad);
 
                     for (uint i0 = 0; i0 < tadLen; ++i0) {
                         functions::indexreduce::IndexValue<X> comp(tad[i0 * tadStride[0]], i0);
-                        indexValue = update(indexValue, comp, extraParams);
+                        indexValue = OpType::update(indexValue, comp, extraParams);
                     }
 
                     z[i] = indexValue.index;
@@ -649,7 +510,7 @@ namespace nd4j {
                 for (uint i = 0; i < zLen; ++i) {
 
                     auto tad = const_cast<X*>(x) + tadOffsets[i];
-                    auto indexValue = startVal(tad);
+                    auto indexValue = OpType::startingIndexValue(tad);
 
                     for (uint i0 = 0; i0 < tadShape[0]; ++i0) {
                         for (uint i1 = 0; i1 < tadShape[1]; ++i1) {
@@ -657,7 +518,7 @@ namespace nd4j {
                             const auto tadIndex  = i0 * newStride[0] + i1;
 
                             functions::indexreduce::IndexValue<X> comp(tad[tadOffset], tadIndex);
-                            indexValue = update(indexValue, comp, extraParams);
+                            indexValue = OpType::update(indexValue, comp, extraParams);
                         }
                     }
                     z[i] = indexValue.index;
@@ -675,7 +536,7 @@ namespace nd4j {
                 for (uint i = 0; i < zLen; ++i) {
 
                     auto tad = const_cast<X*>(x) + tadOffsets[i];
-                    auto indexValue = startVal(tad);
+                    auto indexValue = OpType::startingIndexValue(tad);
 
                     for (uint i0 = 0; i0 < tadShape[0]; ++i0) {
                         for (uint i1 = 0; i1 < tadShape[1]; ++i1) {
@@ -683,7 +544,7 @@ namespace nd4j {
                                 const auto tadOffset = i0 * tadStride[0] + i1 * tadStride[1] + i2 * tadStride[2];
                                 const auto tadIndex  = i0 * newStride[0] + i1 * newStride[1] + i2;
                                 functions::indexreduce::IndexValue<X> comp(tad[tadOffset], tadIndex);
-                                indexValue = update(indexValue, comp, extraParams);
+                                indexValue = OpType::update(indexValue, comp, extraParams);
                             }
                         }
                     }
@@ -702,7 +563,7 @@ namespace nd4j {
                 for (uint i = 0; i < zLen; ++i) {
 
                     auto tad = const_cast<X*>(x) + tadOffsets[i];
-                    auto indexValue = startVal(tad);
+                    auto indexValue = OpType::startingIndexValue(tad);
 
                     for (uint i0 = 0; i0 < tadShape[0]; ++i0) {
                         for (uint i1 = 0; i1 < tadShape[1]; ++i1) {
@@ -711,7 +572,7 @@ namespace nd4j {
                                     const auto tadOffset = i0 * tadStride[0] + i1 * tadStride[1] + i2 * tadStride[2] + i3 * tadStride[3];
                                     const auto tadIndex  = i0 * newStride[0] + i1 * newStride[1] + i2 * newStride[2] + i3;
                                     functions::indexreduce::IndexValue<X> comp(tad[tadOffset], tadIndex);
-                                    indexValue = update(indexValue, comp, extraParams);
+                                    indexValue = OpType::update(indexValue, comp, extraParams);
                                 }
                             }
                         }
@@ -731,7 +592,7 @@ namespace nd4j {
                 for (uint i = 0; i < zLen; ++i) {
 
                     auto tad = const_cast<X*>(x) + tadOffsets[i];
-                    auto indexValue = startVal(tad);
+                    auto indexValue = OpType::startingIndexValue(tad);
 
                     for (uint i0 = 0; i0 < tadShape[0]; ++i0) {
                         for (uint i1 = 0; i1 < tadShape[1]; ++i1) {
@@ -741,7 +602,7 @@ namespace nd4j {
                                         const auto tadOffset = i0 * tadStride[0] + i1 * tadStride[1] + i2 * tadStride[2] + i3 * tadStride[3] + i4 * tadStride[4];
                                         const auto tadIndex  = i0 * newStride[0] + i1 * newStride[1] + i2 * newStride[2] + i3 * newStride[3] + i4;
                                         functions::indexreduce::IndexValue<X> comp(tad[tadOffset], tadIndex);
-                                        indexValue = update(indexValue, comp, extraParams);
+                                        indexValue = OpType::update(indexValue, comp, extraParams);
                                     }
                                 }
                             }
@@ -762,10 +623,12 @@ namespace nd4j {
                 for (uint i = 0; i < zLen; i++) {
 
                     auto tad = const_cast<X*>(x) + tadOffsets[i];
-                    auto indexValue = startVal(tad);
+                    auto indexValue = OpType::startingIndexValue(tad);
 
-                    for (uint j = 0; j < tadLen; j++)
-                        indexValue = update(indexValue, functions::indexreduce::IndexValue<X>(tad[j * tadEws], j), extraParams);
+                    for (uint j = 0; j < tadLen; j++) {
+                        functions::indexreduce::IndexValue<X> comp(tad[j * tadEws], j);
+                        indexValue = OpType::update(indexValue, comp, extraParams);
+                    }
 
                     auto zOffset = shape::indexOffset(i, zShapeInfo, castZShapeInfo, zLen, canCastZ);
                     z[zOffset] = indexValue.index;
@@ -783,11 +646,12 @@ namespace nd4j {
                 for (uint i = 0; i < zLen; i++) {
 
                     auto tad = const_cast<X*>(x) + tadOffsets[i];
-                    auto indexValue = startVal(tad);
+                    auto indexValue = OpType::startingIndexValue(tad);
 
                     for (uint j = 0; j < tadLen; j++) {
                         auto tadOffset = shape::indexOffset(j, tadShapeInfo, castTadShapeInfo, tadLen, canCastTad);
-                        indexValue = update(indexValue, functions::indexreduce::IndexValue<X>(tad[tadOffset], j), extraParams);
+                        functions::indexreduce::IndexValue<X> comp(tad[tadOffset], j);
+                        indexValue = OpType::update(indexValue, comp, extraParams);
                     }
                     z[i * zEws] = indexValue.index;
                 }
@@ -806,11 +670,12 @@ namespace nd4j {
                 for (uint i = 0; i < zLen; i++) {
 
                     auto tad = const_cast<X*>(x) + tadOffsets[i];
-                    auto indexValue = startVal(tad);
+                    auto indexValue = OpType::startingIndexValue(tad);
 
                     for (uint j = 0; j < tadLen; j++) {
                         auto tadOffset = shape::indexOffset(j, tadShapeInfo, castTadShapeInfo, tadLen, canCastTad);
-                        indexValue = update(indexValue, functions::indexreduce::IndexValue<X>(tad[tadOffset], j), extraParams);
+                        functions::indexreduce::IndexValue<X> comp(tad[tadOffset], j);
+                        indexValue = OpType::update(indexValue, comp, extraParams);
                     }
 
                     auto zOffset = shape::indexOffset(i, zShapeInfo, castZShapeInfo, zLen, canCastZ);
@@ -820,6 +685,7 @@ namespace nd4j {
         }
     }
 
+/*
     template<typename X>
     void Loops::_loopIndexTadXZ(const void* vx, const Nd4jLong* tadShapeInfo, const Nd4jLong* tadOffsets, Nd4jLong* z, const Nd4jLong* zShapeInfo, void* vextraParams) {
         auto x = reinterpret_cast<const X *>(vx);
@@ -831,28 +697,7 @@ namespace nd4j {
         nd4j::Loops::loopIndexTadXZ<X,X>(x, tadShapeInfo, tadOffsets, z, zShapeInfo, e, funcSV, funcUP);
     }
     BUILD_SINGLE_TEMPLATE(template void Loops::_loopIndexTadXZ, (const void* vx, const Nd4jLong* tadShapeInfo, const Nd4jLong* tadOffsets, Nd4jLong* z, const Nd4jLong* zShapeInfo, void* vextraParams), LIBND4J_TYPES);
-
-
-    template<typename X, typename Z>
-    void Loops::_loopTadXZ(const void* vx, const Nd4jLong* tadShapeInfo, const Nd4jLong* tadOffsets, void* vz, const Nd4jLong* zShapeInfo, void* vextraParams) {
-        auto x = reinterpret_cast<const X *>(vx);
-        auto z = reinterpret_cast<Z *>(vz);
-        auto xe = reinterpret_cast<X *>(vextraParams);
-        auto ze = reinterpret_cast<Z *>(vextraParams);
-
-        auto sv = [&] (const X *x)            -> X { return static_cast<X>(0); };
-        auto zop = [&] (X x, Z *e)             -> Z { return static_cast<Z>(x); };
-        auto xop = [&] (X x, X *e)             -> Z { return static_cast<Z>(x); };
-        auto zup = [&] (Z o, Z n, Z *e)        -> Z { return o; };
-        auto zpp = [&] (Z o, Nd4jLong n, Z *e) -> Z { return o; };
-        auto xup = [&] (Z o, Z n, X *e)        -> Z { return o; };
-        auto xpp = [&] (Z o, Nd4jLong n, X *e) -> Z { return o; };
-
-        Loops::loopTadXZ<X, Z, Z>(x, tadShapeInfo, tadOffsets, z, zShapeInfo, ze, sv, zup, zop, zpp);
-        Loops::loopTadXZ<X, Z, X>(x, tadShapeInfo, tadOffsets, z, zShapeInfo, xe, sv, xup, xop, xpp);
-    }
-
-    BUILD_DOUBLE_TEMPLATE(template void Loops::_loopTadXZ, (const void* vx, const Nd4jLong* tadShapeInfo, const Nd4jLong* tadOffsets, void* vz, const Nd4jLong* zShapeInfo, void* vextraParams) , LIBND4J_TYPES, LIBND4J_TYPES);
+    */
 }
 
 

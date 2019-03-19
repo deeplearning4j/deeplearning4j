@@ -44,13 +44,6 @@ namespace nd4j {
 
         //////////////////////////////////////////////////////////////////////////////
         static LoopKind deduceKindOfLoopTadXZ(const Nd4jLong* tadShapeInfo, const Nd4jLong* zShapeInfo);
-
-        template<typename X, typename Z>
-        static void _loopTadXZ(const void* x, const Nd4jLong* tadShapeInfo, const Nd4jLong* tadOffsets, void* z, const Nd4jLong* zShapeInfo, void* extraParams);
-
-        template<typename X>
-        static void _loopIndexTadXZ(const void* x, const Nd4jLong* tadShapeInfo, const Nd4jLong* tadOffsets, Nd4jLong* z, const Nd4jLong* zShapeInfo, void* extraParams);
-
     public:
         //////////////////////////////////////////////////////////////////////////////
         template<typename X, typename Y, typename Z> 
@@ -61,22 +54,14 @@ namespace nd4j {
                             std::function<Z(X,Y,Z*)> op);
 
         //////////////////////////////////////////////////////////////////////////////
-        template<typename X, typename Z, typename E>
+        template<typename X, typename Z, typename E, typename OpType>
         static void loopTadXZ(const X* x, const Nd4jLong* tadShapeInfo, const Nd4jLong* tadOffsets,
                                                 Z* z, const Nd4jLong* zShapeInfo,
-                                                E* extraParams,
-                                                std::function<X(const X*)>      startVal, 
-                                                std::function<Z(Z,Z,E*)>        update,
-                                                std::function<Z(X,E*)>          op,
-                                                std::function<Z(Z,Nd4jLong,E*)> postPr);
+                                                E* extraParams);
 
         //////////////////////////////////////////////////////////////////////////////
-        template<typename X, typename E>
-        static void loopIndexTadXZ(const X* x, const Nd4jLong* tadShapeInfo, const Nd4jLong* tadOffsets,
-                                              Nd4jLong* z, const Nd4jLong* zShapeInfo,
-                                              E* extraParams,
-                                              std::function<functions::indexreduce::IndexValue<X>(X*)> startVal, 
-                                              std::function<functions::indexreduce::IndexValue<X>(functions::indexreduce::IndexValue<X>&, functions::indexreduce::IndexValue<X>, E*)> update);
+        template<typename X,typename OpType>
+        static void loopIndexTadXZ(const X* x, const Nd4jLong* tadShapeInfo, const Nd4jLong* tadOffsets, Nd4jLong* z, const Nd4jLong* zShapeInfo, X* extraParams);
     };
 }
 
