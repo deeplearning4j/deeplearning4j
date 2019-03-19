@@ -24,8 +24,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.json.simple.JSONArray;
 import org.json.simple.parser.JSONParser;
 import org.bytedeco.javacpp.*;
-import static org.bytedeco.javacpp.python.*;
-
+import org.bytedeco.cpython.*;
+import static org.bytedeco.cpython.global.python.*;
 import org.nd4j.linalg.api.buffer.DataType;
 
 /**
@@ -120,7 +120,7 @@ public class PythonExecutioner {
         log.info("CPython: Py_Initialize()");
         Py_Initialize();
         log.info("CPython: PyEval_InitThreads()");
-        PyEval_InitThreads();
+        //PyEval_InitThreads();
         log.info("CPython: PyImport_AddModule()");
         module = PyImport_AddModule("__main__");
         log.info("CPython: PyModule_GetDict()");
@@ -301,26 +301,27 @@ public class PythonExecutioner {
     }
 
 
-    /**
-     * Executes python code. Also manages python thread state.
-     * @param code
-     */
-    public void exec(String code){
-        if (currentInterpreter != defaultInterpreter){
+    private void _enterSubInterpreter() {
+        if (currentInterpreter != defaultInterpreter) {
             log.info("CPython: PyEval_AcquireLock()");
-            PyEval_AcquireLock();
+
+            //PyEval_RestoreThread();
+            //PyEval_AcquireLock();
             PyThreadState ts = interpreters.get(currentInterpreter);
+
+            PyEval_RestoreThread(ts); // ?
+
             log.info("CPython: PyThreadState.interp()");
             PyInterpreterState is = ts.interp();
             log.info("CPython: PyThreadState_New()");
             ts = PyThreadState_New(is);
             PyThreadState_Swap(ts);
+        }
+    }
 
-            log.info("CPython: PyRun_SimpleStringFlag()");
-            log.info(code);
-            PyRun_SimpleStringFlags(code, null);
-            log.info("Exec done");
-
+    private void _exitSubInterpreter(){
+        if (currentInterpreter != defaultInterpreter){
+            PyThreadState ts = interpreters.get(currentInterpreter);
             log.info("CPython: PyThreadState_Swap()");
             PyThreadState_Swap(null);
             log.info("CPython: PyThreadState_Clear()");
@@ -328,17 +329,33 @@ public class PythonExecutioner {
             log.info("CPython: PyThreadState_Delete()");
             PyThreadState_Delete(ts);
             log.info("CPython: PyEval_ReleaseLock()");
-            PyEval_ReleaseLock();
+            PyEval_SaveThread();
 
+            //PyEval_ReleaseLock();
         }
-        else{
-            log.info("CPython: PyRun_SimpleStringFlag()");
-            log.info(code);
-            PyRun_SimpleStringFlags(code, null);
-            log.info("Exec done");
-        }
+    }
 
+    /**
+     * Executes python code. Also manages python thread state.
+     * @param code
+     */
+    public void exec(String code){
+        _enterSubInterpreter();
+        log.info("CPython: PyRun_SimpleStringFlag()");
+        log.info(code);
+        PyRun_SimpleStringFlags(code, null);
+        log.info("Exec done");
+        _exitSubInterpreter();
+    }
 
+    public void exec(String code, PythonVariables pyOutputs){
+        _enterSubInterpreter();
+        log.info("CPython: PyRun_SimpleStringFlag()");
+        log.info(code);
+        PyRun_SimpleStringFlags(code, null);
+        log.info("Exec done");
+        _readOutputs(pyOutputs);
+        _exitSubInterpreter();
     }
 
     public void exec(String code, PythonVariables pyInputs, PythonVariables pyOutputs) throws Exception{
@@ -346,8 +363,7 @@ public class PythonExecutioner {
         if (code.charAt(code.length() - 1) != '\n'){
             code += '\n';
         }
-        exec(inputCode + code);
-        _readOutputs(pyOutputs);
+        exec(inputCode + code, pyOutputs);
     }
 
     private void setupTransform(PythonTransform transform){

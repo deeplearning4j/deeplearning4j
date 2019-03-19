@@ -153,6 +153,7 @@ public class PythonCondition implements Condition {
         PythonVariables inputs = getPyInputsFromWritables(list);
         try{
             PythonExecutioner pyExec = PythonExecutioner.getInstance();
+            pyExec.setInterpreter(pythonTransform.getName());
             pyExec.exec(pythonTransform.getCode(), inputs, pythonTransform.getOutputs());
             boolean ret = pythonTransform.getOutputs().getIntValue("out") != 0;
             return ret;

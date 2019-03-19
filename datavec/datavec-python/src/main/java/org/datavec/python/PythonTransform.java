@@ -93,6 +93,7 @@ public class PythonTransform implements Transform{
         PythonVariables pyInputs = getPyInputsFromWritables(writables);
         try{
             PythonExecutioner pyExec = PythonExecutioner.getInstance();
+            pyExec.setInterpreter(name);
             pyExec.exec(code, pyInputs, pyOutputs);
             return getWritablesFromPyOutputs(pyOutputs);
         }

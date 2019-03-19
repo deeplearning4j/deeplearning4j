@@ -35,7 +35,7 @@
             <version>1.1</version>
         </dependency>
         <dependency>
-            <groupId>org.bytedeco.javacpp-presets</groupId>
+            <groupId>org.bytedeco</groupId>
             <artifactId>cpython-platform</artifactId>
             <version>${cpython-platform.version}</version>
         </dependency>
