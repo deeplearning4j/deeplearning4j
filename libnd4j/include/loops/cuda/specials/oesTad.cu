@@ -38,7 +38,7 @@ void oesTadKernel(void *vx, Nd4jLong *xShapeInfo,
     __shared__ T *dx;
     if (threadIdx.x == 0) {
         xLength = shape::length(xShapeInfo);
-        xTadLength = shape::tadLength(xShapeInfo, dimension, dimensionLength);
+        xTadLength = shape::length(tadShapeInfo);//shape::tadLength(xShapeInfo, dimension, dimensionLength);
         numTads = xLength / xTadLength;
 
         extern __shared__ unsigned char shrd[];

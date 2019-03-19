@@ -114,7 +114,7 @@ void IndexReduce<X>::exec(void *vx, Nd4jLong *xShapeInfo,
         tadOffsets = packX.primaryOffsets();
     }
 
-    int tadLength = shape::tadLength(xShapeInfo, dimension, dimensionLength);
+    int tadLength = shape::length(tadOnlyShapeInfo);//shape::tadLength(xShapeInfo, dimension, dimensionLength);
     int numThreads = nd4j::math::nd4j_min<int>(zLen, omp_get_max_threads());
 
     uint tadOnlyShapeInfoCast[MAX_RANK];                    

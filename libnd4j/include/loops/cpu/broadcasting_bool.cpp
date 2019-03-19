@@ -91,7 +91,7 @@ namespace functions {
                 }
 
                 //int *resultStride = shape::stride(tadShapeShapeInfo);
-                auto tadLength = shape::tadLength(xShapeInfo, dimension, dimensionLength);
+                auto tadLength = shape::length(tadShapeInfo);//shape::tadLength(xShapeInfo, dimension, dimensionLength);
                 auto tads = shape::length(xShapeInfo) / tadLength;
 
                 if (tadShapeInfoZ == nullptr) {
