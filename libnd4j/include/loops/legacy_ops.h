@@ -284,7 +284,6 @@
         (8, Entropy) ,\
         (9, LogEntropy) ,\
         (10, ShannonEntropy) ,\
-        (11, LogSumExp), \
         (12, ReduceFloatBenchmarkOp)
 
 

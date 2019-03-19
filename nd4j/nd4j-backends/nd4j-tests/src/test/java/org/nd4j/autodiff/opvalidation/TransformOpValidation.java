@@ -1798,7 +1798,7 @@ public class TransformOpValidation extends BaseOpValidation {
         final INDArray std = random.std(false, axis);
         final INDArray res = random.subColumnVector(means).divColumnVector(std);
 
-        final INDArray output = Nd4j.emptyLike(res);
+        final INDArray output = Nd4j.zerosLike(res);
         Nd4j.getExecutioner().exec(new Standardize(random, output, 1));
 
         assertEquals(res, output);

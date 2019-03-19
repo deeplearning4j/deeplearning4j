@@ -25,6 +25,7 @@
 #include <loops/legacy_ops.h>
 #include <OmpLaunchHelper.h>
 #include <chrono>
+#include <helpers/Loops.h>
 
 using namespace simdOps;
 
@@ -60,7 +61,7 @@ namespace functions {
                 uint xShapeInfoCast[MAX_RANK];
                 const bool canCastX = nd4j::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
 
-                PRAGMA_OMP_PARALLEL_FOR_SIMD_ARGS(num_threads(maxThreads))
+                PRAGMA_OMP_PARALLEL_FOR_SIMD_THREADS(maxThreads)
                 for(Nd4jLong i = 0; i < length; ++i)
                     intermediate[omp_get_thread_num()] = OpType::update(intermediate[omp_get_thread_num()], OpType::op(x[shape::indexOffset(i, xShapeInfo, xShapeInfoCast, length, canCastX)], extraParams), extraParams);
 
@@ -98,7 +99,7 @@ namespace functions {
                     uint xShapeInfoCast[MAX_RANK];
                     const bool canCastX = nd4j::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
 
-                    PRAGMA_OMP_PARALLEL_FOR_SIMD_ARGS(num_threads(maxThreads))
+                    PRAGMA_OMP_PARALLEL_FOR_SIMD_THREADS(maxThreads)
                     for(Nd4jLong i = 0; i < length; ++i)
                         intermediate[omp_get_thread_num()] = OpType::update(intermediate[omp_get_thread_num()], OpType::op(x[shape::indexOffset(i, xShapeInfo, xShapeInfoCast, length, canCastX)], extraParams), extraParams);
 
@@ -202,46 +203,8 @@ namespace functions {
                     tadOffsets = tad->tadOffsets;
                 }
 
-                const auto tadLength = shape::tadLength(xShapeInfo, dimension, dimensionLength);
-                auto numTads = shape::length(xShapeInfo) / tadLength;
-                auto tadEWS = shape::elementWiseStride(tadOnlyShapeInfo);
-
-                int tadsPerThread = zLength / TAD_THRESHOLD;
-                int num_threads = nd4j::math::nd4j_max<int>(1, tadsPerThread);
-                num_threads = nd4j::math::nd4j_min<int>(num_threads, omp_get_max_threads());
-
-                uint castTadOnlyShapeInfo[MAX_RANK];
-                const bool canCast = nd4j::DataTypeUtils::castShapeInfo<uint>(tadOnlyShapeInfo, castTadOnlyShapeInfo);
-
-                if (tadEWS == 1 && shape::order(tadOnlyShapeInfo) == 'c') {
-
-                    PRAGMA_OMP_PARALLEL_FOR_THREADS(num_threads)
-                    for (int i = 0; i < zLength; i++) {
-
-                        auto tx = x + tadOffsets[i];
-                        auto start = OpType::startingValue(tx);
-
-                        for (unsigned int j = 0; j < tadLength; j++)
-                            start = OpType::update(start, OpType::op(tx[j], extraParams), extraParams);
-
-                        z[i] = OpType::postProcess(start, tadLength, extraParams);;
-                    }
-                } else {
-
-                    PRAGMA_OMP_PARALLEL_FOR_THREADS(num_threads)
-                    for (int i = 0; i < zLength; i++) {
-
-                        auto tx = x + tadOffsets[i];
-                        auto start = OpType::startingValue(tx);
-
-                        for (unsigned int j = 0; j < tadLength; j++) {
-                            auto xOffset = shape::indexOffset(j, tadOnlyShapeInfo, castTadOnlyShapeInfo, tadLength, canCast);
-                            start = OpType::update(start, OpType::op(tx[xOffset], extraParams), extraParams);
-                        }
-                        z[i] = OpType::postProcess(start, tadLength, extraParams);;
-                    }
-                }
-                
+                 nd4j::Loops::loopTadXZ<X, X, X, OpType>(x, tadOnlyShapeInfo, tadOffsets, z, zShapeInfo, extraParams);
+            
                 if (tad != nullptr)
                     delete tad;
             }

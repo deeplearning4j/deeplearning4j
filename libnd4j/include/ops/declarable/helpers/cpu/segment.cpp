@@ -485,7 +485,7 @@ namespace helpers {
             for (auto fi = idxs.begin(); fi != idxs.end(); ++fi) {
                 double sumValue = input->e<double>(fi->second.at(0));
 
-                PRAGMA_OMP_PARALLEL_FOR_SIMD_ARGS(reduction(+:sumValue))
+                PRAGMA_OMP_PARALLEL_FOR_SIMD_REDUCTION(+:sumValue)
                 for (size_t idx = 1; idx < fi->second.size(); ++idx) {
                     sumValue += input->e<double>(fi->second.at(idx));
                 }
@@ -524,7 +524,7 @@ namespace helpers {
 
             for (auto fi = idxs.begin(); fi != idxs.end(); ++fi) {
                 double sumValue = input->e<double>(fi->second.at(0));
-                PRAGMA_OMP_PARALLEL_FOR_ARGS(reduction(+:sumValue))
+                PRAGMA_OMP_PARALLEL_FOR_REDUCTION(+:sumValue)
                 for (Nd4jLong idx = 1; idx < fi->second.size(); ++idx) {
                     sumValue += input->e<double>(fi->second.at(idx));
                 }
