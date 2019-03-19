@@ -4157,13 +4157,18 @@ INLINEDEF _CUDA_HD bool areStridesDefault(const Nd4jLong* shapeInfo) {
         
         const int newOrder = isFOrder ? 102 : 99;
         const int oldOrder = oldShapeInfo[2 * oldRank + 3];
+        bool usualReshapeForForder = false;
         newShapeInfo[0] = newRank;
         memcpy(newShapeInfo + 1, newShape, newRank * sizeof(Nd4jLong));
 
         if(newOrder == oldOrder && shape::elementWiseStride(oldShapeInfo) == 1) {
-            shape::updateStrides(newShapeInfo, newOrder);
-            newShapeInfo[2 * newRank + 1] = oldShapeInfo[2 * oldRank + 1]; // type
-            return true;
+            if(newOrder == 99) {
+                shape::updateStrides(newShapeInfo, newOrder);
+                newShapeInfo[2 * newRank + 1] = oldShapeInfo[2 * oldRank + 1]; // type
+                return true;
+            }
+            else                            // we can't perform simple reshaping of array with f order and therefore we enforce recalculation of strides in c order manner
+                usualReshapeForForder = true;
         }
 
         Nd4jLong* newStrides = shape::stride(newShapeInfo);
@@ -4171,7 +4176,7 @@ INLINEDEF _CUDA_HD bool areStridesDefault(const Nd4jLong* shapeInfo) {
         const Nd4jLong* oldStrides = shape::stride(const_cast<Nd4jLong*>(oldShapeInfo));        
         int oldStart(0), oldStop(1), newStart(0), newStop(1), newDim, oldDim;
 
-        if(isFOrder) {
+        if(isFOrder && !usualReshapeForForder) {
 
             while (newStart < newRank && oldStart < oldRank) {
                 newDim = newShape[newStart];
@@ -4226,7 +4231,7 @@ INLINEDEF _CUDA_HD bool areStridesDefault(const Nd4jLong* shapeInfo) {
         }        
         
         newShapeInfo[2 * newRank + 3] = newOrder;    // order
-        newShapeInfo[2 * newRank + 2] = (newOrder == oldOrder) ? shape::elementWiseStride(oldShapeInfo) : 0;    // ews        
+        newShapeInfo[2 * newRank + 2] = (newOrder != oldOrder || usualReshapeForForder) ? 0 : shape::elementWiseStride(oldShapeInfo);    // ews
         newShapeInfo[2 * newRank + 1] = oldShapeInfo[2 * oldRank + 1]; // type
 
         return true;

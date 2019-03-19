@@ -43,6 +43,7 @@
 
 namespace nd4j {
 
+
     void* NDArray::operator new(size_t i) {
         if (nd4j::memory::MemoryRegistrator::getInstance()->hasWorkspaceAttached()) {
             nd4j::memory::Workspace* ws = nd4j::memory::MemoryRegistrator::getInstance()->getWorkspace();
@@ -2118,11 +2119,8 @@ NDArray NDArray::transp() const {
         if (this->dataType() != other->dataType())
             return false;
 
-        if (lengthOf() != other->lengthOf()) {
-            auto t = lengthOf();
-            auto o = other->lengthOf();
+        if (lengthOf() != other->lengthOf())
             return false;
-        }
 
         // we need to be able to compare [1, len] to [len]
         if ((rankOf() == 1 && other->rankOf() == 2) || (rankOf() == 2 && other->rankOf() == 1)) {
@@ -2401,12 +2399,12 @@ template void NDArray::applyScalar(nd4j::scalar::Ops op, const bool scalar, NDAr
         return reshapei(order, vShape);
     }
 
-    bool NDArray::reshapei(const std::initializer_list<Nd4jLong>& shape) {
-        return reshapei('c', shape);
+    bool NDArray::reshapei(const std::initializer_list<Nd4jLong>& shape) {        
+        return reshapei(ordering(), shape);
     }
 
     bool NDArray::reshapei(const std::vector<Nd4jLong>& shape) {
-        return reshapei('c', shape);
+        return reshapei(ordering(), shape);
     }
 
 //////////////////////////////////////////////////////////////////////////
