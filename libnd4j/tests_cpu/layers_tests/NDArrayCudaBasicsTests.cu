@@ -2018,47 +2018,72 @@ TEST_F(NDArrayCudaBasicsTests, subarray_1)
     
 
     NDArray x0 = x(0, {1,2});
-    for(int i = 0; i < shape::shapeInfoLength(x0.rankOf()); ++i)
-        ASSERT_TRUE(x0.getShapeInfo()[i] == shapeExpX0[i]);
-    for(int i = 0; i < x0.lengthOf(); ++i)
-        ASSERT_TRUE(x0.e<float>(i) == buffExpX0[i]);
+    NDArray xExp(buffExpX0, shapeExpX0);
+    ASSERT_TRUE(xExp.isSameShape(x0));
+    ASSERT_TRUE(xExp.equalsTo(x0));
+//    for(int i = 0; i < shape::shapeInfoLength(x0.rankOf()); ++i)
+//        ASSERT_TRUE(x0.getShapeInfo()[i] == shapeExpX0[i]);
+//    for(int i = 0; i < x0.lengthOf(); ++i)
+//        ASSERT_TRUE(x0.e<float>(i) == buffExpX0[i]);
 
     NDArray x1 = x(1, {1,2});
-    for(int i = 0; i < shape::shapeInfoLength(x1.rankOf()); ++i)
-        ASSERT_TRUE(x1.getShapeInfo()[i] == shapeExpX1[i]);
-    for(int i = 0; i < x1.lengthOf(); ++i)
-        ASSERT_TRUE(x1.e<float>(i) == buffExpX1[i]);
+    NDArray x1Exp(buffExpX1, shapeExpX1);
+    ASSERT_TRUE(x1Exp.isSameShape(x1));
+    ASSERT_TRUE(x1Exp.equalsTo(x1));
+
+//    for(int i = 0; i < shape::shapeInfoLength(x1.rankOf()); ++i)
+//        ASSERT_TRUE(x1.getShapeInfo()[i] == shapeExpX1[i]);
+//    for(int i = 0; i < x1.lengthOf(); ++i)
+//        ASSERT_TRUE(x1.e<float>(i) == buffExpX1[i]);
 
     NDArray x2 = x(0, {1,2}, true);
-    for(int i = 0; i < shape::shapeInfoLength(x2.rankOf()); ++i)
-        ASSERT_TRUE(x2.getShapeInfo()[i] == shapeExpX2[i]);
-    for(int i = 0; i < x2.lengthOf(); ++i)
-        ASSERT_TRUE(x2.e<float>(i) == buffExpX2[i]);
+    NDArray x2Exp(buffExpX2, shapeExpX2);
+    ASSERT_TRUE(x2Exp.isSameShape(x2));
+    x2.printBuffer("X2");
+    x2Exp.printBuffer("X2 EXPECT");
+    ASSERT_TRUE(x2Exp.equalsTo(x2));
+//    for(int i = 0; i < shape::shapeInfoLength(x2.rankOf()); ++i)
+//        ASSERT_TRUE(x2.getShapeInfo()[i] == shapeExpX2[i]);
+//    for(int i = 0; i < x2.lengthOf(); ++i)
+//        ASSERT_TRUE(x2.e<float>(i) == buffExpX2[i]);
     
     NDArray x3 = x(2, {1});
-    for(int i = 0; i < shape::shapeInfoLength(x3.rankOf()); ++i)
-        ASSERT_TRUE(x3.getShapeInfo()[i] == shapeExpX3[i]);
-    for(int i = 0; i < x3.lengthOf(); ++i)
-        ASSERT_TRUE(x3.e<float>(i) == buffExpX3[i]);
+    NDArray x3Exp(buffExpX3, shapeExpX3);
+    ASSERT_TRUE(x3Exp.isSameShape(x3));
+    ASSERT_TRUE(x3Exp.equalsTo(x3));
+//    for(int i = 0; i < shape::shapeInfoLength(x3.rankOf()); ++i)
+//        ASSERT_TRUE(x3.getShapeInfo()[i] == shapeExpX3[i]);
+//    for(int i = 0; i < x3.lengthOf(); ++i)
+//        ASSERT_TRUE(x3.e<float>(i) == buffExpX3[i]);
 
     NDArray x4 = x(2, {1}, true);
-    for(int i = 0; i < shape::shapeInfoLength(x4.rankOf()); ++i)
-        ASSERT_TRUE(x4.getShapeInfo()[i] == shapeExpX4[i]);
-    for(int i = 0; i < x4.lengthOf(); ++i)
-        ASSERT_TRUE(x4.e<float>(i) == buffExpX4[i]);
+    NDArray x4Exp(buffExpX4, shapeExpX4);
+    ASSERT_TRUE(x4Exp.isSameShape(x4));
+    ASSERT_TRUE(x4Exp.equalsTo(x4));
+//    for(int i = 0; i < shape::shapeInfoLength(x4.rankOf()); ++i)
+//        ASSERT_TRUE(x4.getShapeInfo()[i] == shapeExpX4[i]);
+//    for(int i = 0; i < x4.lengthOf(); ++i)
+//        ASSERT_TRUE(x4.e<float>(i) == buffExpX4[i]);
 
     NDArray x5 = x(3, {2});
-    for(int i = 0; i < shape::shapeInfoLength(x5.rankOf()); ++i)
-        ASSERT_TRUE(x5.getShapeInfo()[i] == shapeExpX5[i]);
-    for(int i = 0; i < x5.lengthOf(); ++i)
-        ASSERT_TRUE(x5.e<float>(i) == buffExpX5[i]);
+    NDArray x5Exp(buffExpX5, shapeExpX5);
+    ASSERT_TRUE(x5Exp.isSameShape(x5));
+    ASSERT_TRUE(x5Exp.equalsTo(x5));
+
+//    for(int i = 0; i < shape::shapeInfoLength(x5.rankOf()); ++i)
+//        ASSERT_TRUE(x5.getShapeInfo()[i] == shapeExpX5[i]);
+//    for(int i = 0; i < x5.lengthOf(); ++i)
+//        ASSERT_TRUE(x5.e<float>(i) == buffExpX5[i]);
 
     // ******************* //
     NDArray y0 = y(0, {1,2});
-    for(int i = 0; i < shape::shapeInfoLength(y0.rankOf()); ++i)
-        ASSERT_TRUE(y0.getShapeInfo()[i] == shapeExpY0[i]);
-    for(int i = 0; i < y0.lengthOf(); ++i)
-        ASSERT_TRUE(y0.e<float>(i) == buffExpY0[i]);
+    NDArray y0Exp(buffExpY0, shapeExpY0);
+    ASSERT_TRUE(y0Exp.isSameShape(y0));
+    ASSERT_TRUE(y0Exp.equalsTo(y0));
+//    for(int i = 0; i < shape::shapeInfoLength(y0.rankOf()); ++i)
+//        ASSERT_TRUE(y0.getShapeInfo()[i] == shapeExpY0[i]);
+//    for(int i = 0; i < y0.lengthOf(); ++i)
+//        ASSERT_TRUE(y0.e<float>(i) == buffExpY0[i]);
 
     NDArray y1 = y(1, {1,2});
     for(int i = 0; i < shape::shapeInfoLength(y1.rankOf()); ++i)
