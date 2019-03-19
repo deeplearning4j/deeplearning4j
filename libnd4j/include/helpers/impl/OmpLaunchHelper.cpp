@@ -89,7 +89,11 @@ Nd4jLong OmpLaunchHelper::betterSpan(Nd4jLong N) {
     }
 
     int OmpLaunchHelper::tadThreads(Nd4jLong tadLength, Nd4jLong numTads) {
+#ifdef _OPENMP
         auto maxThreads = omp_get_max_threads();
+#else
+        auto maxThreads = 1;
+#endif
 
         // if there's only 1 thread allowed - nothing to do here
         if (maxThreads <= 1)
