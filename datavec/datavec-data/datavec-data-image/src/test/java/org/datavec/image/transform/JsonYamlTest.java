@@ -55,7 +55,7 @@ public class JsonYamlTest {
                         // Note : you will get "java.lang.NoClassDefFoundError: Could not initialize class org.bytedeco.javacpp.avutil"
                         // it needs to add the below dependency
                         // <dependency>
-                        //     <groupId>org.bytedeco.javacpp-presets</groupId>
+                        //     <groupId>org.bytedeco</groupId>
                         //     <artifactId>ffmpeg-platform</artifactId>
                         // </dependency>
                         // FFmpeg has license issues, be careful to use it

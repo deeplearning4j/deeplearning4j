@@ -35,10 +35,10 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Semaphore;
 
-import static org.bytedeco.javacpp.cublas.cublasContext;
-import static org.bytedeco.javacpp.cublas.cublasCreate_v2;
-import static org.bytedeco.javacpp.cusolver.cusolverDnContext;
-import static org.bytedeco.javacpp.cusolver.cusolverDnCreate;
+import org.bytedeco.cuda.cublas.*;
+import org.bytedeco.cuda.cusolver.*;
+import static org.bytedeco.cuda.global.cublas.*;
+import static org.bytedeco.cuda.global.cusolver.*;
 
 /**
  * This is context pool implementation, addressing shared cublas allocations together with shared stream pools

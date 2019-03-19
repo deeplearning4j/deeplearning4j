@@ -29,30 +29,30 @@ import java.util.List;
  *
  * @author Adam Gibson
  */
-public class GELUDerivative extends BaseTransformStrictOp {
+public class PreciseGELUDerivative extends BaseTransformStrictOp {
 
-    public GELUDerivative(SameDiff sameDiff, SDVariable i_v, boolean inPlace) {
+    public PreciseGELUDerivative(SameDiff sameDiff, SDVariable i_v, boolean inPlace, boolean precise) {
         super(sameDiff, i_v, inPlace);
     }
 
-    public GELUDerivative() {}
+    public PreciseGELUDerivative() {}
 
-    public GELUDerivative(INDArray x, INDArray z) {
+    public PreciseGELUDerivative(INDArray x, INDArray z) {
         super(x, z);
     }
 
-    public GELUDerivative(INDArray x) {
+    public PreciseGELUDerivative(INDArray x) {
         super(x);
     }
 
     @Override
     public int opNum() {
-        return 54;
+        return 56;
     }
 
     @Override
     public String opName() {
-        return "_geluderivative";
+        return "_precise_geluderivative";
     }
 
     @Override

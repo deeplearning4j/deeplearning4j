@@ -29,7 +29,7 @@ import java.io.File;
 import java.nio.ShortBuffer;
 import java.util.List;
 
-import static org.bytedeco.javacpp.avcodec.AV_CODEC_ID_VORBIS;
+import static org.bytedeco.ffmpeg.global.avcodec.AV_CODEC_ID_VORBIS;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 

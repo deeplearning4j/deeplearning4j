@@ -26,8 +26,8 @@ import org.nd4j.shade.jackson.annotation.JsonProperty;
 
 import java.util.Random;
 
-import static org.bytedeco.javacpp.opencv_core.Mat;
-import static org.bytedeco.javacpp.opencv_core.Rect;
+import org.bytedeco.opencv.opencv_core.*;
+import static org.bytedeco.opencv.global.opencv_core.*;
 
 /**
  * Randomly crops an image to a desired output size. Will determine if

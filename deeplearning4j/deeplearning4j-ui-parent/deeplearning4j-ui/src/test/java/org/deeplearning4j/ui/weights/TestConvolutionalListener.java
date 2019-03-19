@@ -24,6 +24,7 @@ import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.conf.layers.SubsamplingLayer;
+import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
@@ -72,10 +73,18 @@ public class TestConvolutionalListener {
         net.init();
         net.setListeners(new ConvolutionalIterationListener(1), new ScoreIterationListener(1));
 
-        for (int i = 0; i < 50; i++) {
+        for (int i = 0; i < 10; i++) {
             net.fit(mnistTrain.next());
             Thread.sleep(1000);
         }
+
+        ComputationGraph cg = net.toComputationGraph();
+        cg.setListeners(new ConvolutionalIterationListener(1), new ScoreIterationListener(1));
+        for (int i = 0; i < 10; i++) {
+            cg.fit(mnistTrain.next());
+            Thread.sleep(1000);
+        }
+
 
 
         Thread.sleep(100000);

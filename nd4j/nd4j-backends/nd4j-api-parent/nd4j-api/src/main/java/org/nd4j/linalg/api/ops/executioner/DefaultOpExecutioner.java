@@ -285,6 +285,7 @@ public class DefaultOpExecutioner implements OpExecutioner {
         OpProfiler.getInstance().setConfig(config);
     }
 
+    @Deprecated
     @Override
     public ProfilingMode getProfilingMode() {
         return profilingMode;
@@ -452,6 +453,8 @@ public class DefaultOpExecutioner implements OpExecutioner {
 
 
     public long profilingConfigurableHookIn(CustomOp op) {
+        if (OpProfiler.getInstance().getConfig() == null)
+            return System.nanoTime();
 
         if (OpProfiler.getInstance().getConfig().isStackTrace() ||
             OpProfiler.getInstance().getConfig().isCheckElapsedTime()) {
@@ -466,6 +469,9 @@ public class DefaultOpExecutioner implements OpExecutioner {
     }
 
     public long profilingConfigurableHookIn(Op op, DataBuffer... tadBuffers) {
+        if (OpProfiler.getInstance().getConfig() == null)
+            return System.nanoTime();
+
         if (OpProfiler.getInstance().getConfig().isStackTrace() ||
             OpProfiler.getInstance().getConfig().isCheckElapsedTime()) {
             OpProfiler.getInstance().processOpCall(op);
@@ -483,6 +489,8 @@ public class DefaultOpExecutioner implements OpExecutioner {
 
 
     public void profilingConfigurableHookOut(Op op, long timeStart) {
+        if (OpProfiler.getInstance().getConfig() == null)
+            return;
 
         if (OpProfiler.getInstance().getConfig().isStackTrace()) {
             OpProfiler.getInstance().processStackCall(op, timeStart);
@@ -514,6 +522,8 @@ public class DefaultOpExecutioner implements OpExecutioner {
     }
 
     public void profilingConfigurableHookOut(CustomOp op, long timeStart) {
+        if (OpProfiler.getInstance().getConfig() == null)
+            return;
 
         if (OpProfiler.getInstance().getConfig().isStackTrace()) {
             OpProfiler.getInstance().processStackCall(op, timeStart);

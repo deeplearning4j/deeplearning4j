@@ -35,7 +35,7 @@ namespace simdOps {
 
         constexpr static functions::ReduceType reduceType = functions::ReduceType::SUM;
 
-        op_def static T startingValue(T *input) {
+        op_def static T startingValue(const T *input) {
             return (T) 0.0f;
         }
 

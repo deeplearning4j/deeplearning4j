@@ -28,7 +28,8 @@ import org.nd4j.shade.jackson.annotation.JsonProperty;
 
 import java.util.Random;
 
-import static org.bytedeco.javacpp.opencv_core.*;
+import org.bytedeco.opencv.opencv_core.*;
+import static org.bytedeco.opencv.global.opencv_core.*;
 
 /**
  * Boxes images to a given width and height without changing their aspect ratios,
