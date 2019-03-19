@@ -42,6 +42,7 @@ public class PythonExecutioner {
     private static Map<String, PyThreadState> interpreters = new HashMap<String, PyThreadState>();
     private static String defaultInterpreter = "_main";
     private static String currentInterpreter =  defaultInterpreter;
+    private static boolean currentInterpreterEnabled = false;
     private static boolean safeExecFlag = false;
 
     static {
@@ -276,25 +277,28 @@ public class PythonExecutioner {
     }
 
     private static void _enterSubInterpreter() {
-        if (currentInterpreter != defaultInterpreter) {
-            log.info("CPython: PyEval_AcquireLock()");
+        if (!currentInterpreterEnabled && currentInterpreter != defaultInterpreter) {
+            //log.info("CPython: PyEval_AcquireLock()");
 
             //PyEval_RestoreThread();
-            //PyEval_AcquireLock();
+            PyEval_AcquireLock();
             PyThreadState ts = interpreters.get(currentInterpreter);
 
-            PyEval_RestoreThread(ts); // ?
-
             log.info("CPython: PyThreadState.interp()");
+
             PyInterpreterState is = ts.interp();
             log.info("CPython: PyThreadState_New()");
             ts = PyThreadState_New(is);
+            log.info("CPython: PyThreadState_Swap()");
             PyThreadState_Swap(ts);
+
+            currentInterpreterEnabled = true;
         }
     }
 
     private static void _exitSubInterpreter(){
-        if (currentInterpreter != defaultInterpreter){
+        if (currentInterpreterEnabled && currentInterpreter != defaultInterpreter){
+
             PyThreadState ts = interpreters.get(currentInterpreter);
             log.info("CPython: PyThreadState_Swap()");
             PyThreadState_Swap(null);
@@ -303,9 +307,10 @@ public class PythonExecutioner {
             log.info("CPython: PyThreadState_Delete()");
             PyThreadState_Delete(ts);
             log.info("CPython: PyEval_ReleaseLock()");
-            PyEval_SaveThread();
 
-            //PyEval_ReleaseLock();
+
+            PyEval_ReleaseLock();
+            currentInterpreterEnabled = false;
         }
     }
 

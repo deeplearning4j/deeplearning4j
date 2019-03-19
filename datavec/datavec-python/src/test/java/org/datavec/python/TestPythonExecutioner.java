@@ -100,6 +100,7 @@ public class TestPythonExecutioner {
 
     @Test
     public void testNDArrayFloat()throws Exception{
+        PythonExecutioner.init();
         PythonVariables pyInputs = new PythonVariables();
         PythonVariables pyOutputs = new PythonVariables();
 
@@ -119,6 +120,7 @@ public class TestPythonExecutioner {
 
     @Test
     public void testNDArrayDouble()throws Exception {
+        PythonExecutioner.init();
         PythonVariables pyInputs = new PythonVariables();
         PythonVariables pyOutputs = new PythonVariables();
 
@@ -136,6 +138,7 @@ public class TestPythonExecutioner {
 
     @Test
     public void testNDArrayShort()throws Exception{
+        PythonExecutioner.init();
         PythonVariables pyInputs = new PythonVariables();
         PythonVariables pyOutputs = new PythonVariables();
 
@@ -154,6 +157,7 @@ public class TestPythonExecutioner {
 
     @Test
     public void testNDArrayInt()throws Exception{
+        PythonExecutioner.init();
         PythonVariables pyInputs = new PythonVariables();
         PythonVariables pyOutputs = new PythonVariables();
 
@@ -172,6 +176,7 @@ public class TestPythonExecutioner {
 
     @Test
     public void testNDArrayLong()throws Exception{
+        PythonExecutioner.init();
         PythonVariables pyInputs = new PythonVariables();
         PythonVariables pyOutputs = new PythonVariables();
 
