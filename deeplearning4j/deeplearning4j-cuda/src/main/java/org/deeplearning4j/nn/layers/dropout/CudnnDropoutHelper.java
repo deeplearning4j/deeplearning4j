@@ -30,8 +30,10 @@ import org.nd4j.linalg.jcublas.context.CudaContext;
 import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.util.StringUtils;
 
-import static org.bytedeco.javacpp.cudnn.*;
-import static org.bytedeco.javacpp.cudnn.cudnnDestroyTensorDescriptor;
+import org.bytedeco.cuda.cudart.*;
+import org.bytedeco.cuda.cudnn.*;
+import static org.bytedeco.cuda.global.cudart.*;
+import static org.bytedeco.cuda.global.cudnn.*;
 
 /**
  * CuDNN dropout helper
@@ -59,11 +61,11 @@ public class CudnnDropoutHelper extends BaseCudnnHelper implements DropoutHelper
             }
         }
 
-        private cudnn.cudnnTensorStruct xTensorDesc = new cudnn.cudnnTensorStruct();    //Input
-        private cudnn.cudnnTensorStruct dxTensorDesc = new cudnn.cudnnTensorStruct();   //Grad at input
-        private cudnn.cudnnTensorStruct yTensorDesc = new cudnn.cudnnTensorStruct();    //Output
-        private cudnn.cudnnTensorStruct dyTensorDesc = new cudnn.cudnnTensorStruct();   //Grad at output
-        private cudnn.cudnnDropoutStruct dropoutDesc = new cudnn.cudnnDropoutStruct();
+        private cudnnTensorStruct xTensorDesc = new cudnnTensorStruct();    //Input
+        private cudnnTensorStruct dxTensorDesc = new cudnnTensorStruct();   //Grad at input
+        private cudnnTensorStruct yTensorDesc = new cudnnTensorStruct();    //Output
+        private cudnnTensorStruct dyTensorDesc = new cudnnTensorStruct();   //Grad at output
+        private cudnnDropoutStruct dropoutDesc = new cudnnDropoutStruct();
 
         public CudnnDropoutContext() {
             createHandles();
@@ -72,11 +74,11 @@ public class CudnnDropoutHelper extends BaseCudnnHelper implements DropoutHelper
 
         public CudnnDropoutContext(CudnnDropoutContext c) {
             super(c);
-            xTensorDesc = new cudnn.cudnnTensorStruct(c.xTensorDesc);
-            dxTensorDesc = new cudnn.cudnnTensorStruct(c.dxTensorDesc);
-            yTensorDesc = new cudnn.cudnnTensorStruct(c.yTensorDesc);
-            dyTensorDesc = new cudnn.cudnnTensorStruct(c.dyTensorDesc);
-            dropoutDesc = new cudnn.cudnnDropoutStruct(c.dropoutDesc);
+            xTensorDesc = new cudnnTensorStruct(c.xTensorDesc);
+            dxTensorDesc = new cudnnTensorStruct(c.dxTensorDesc);
+            yTensorDesc = new cudnnTensorStruct(c.yTensorDesc);
+            dyTensorDesc = new cudnnTensorStruct(c.dyTensorDesc);
+            dropoutDesc = new cudnnDropoutStruct(c.dropoutDesc);
         }
 
         @Override
@@ -187,7 +189,7 @@ public class CudnnDropoutHelper extends BaseCudnnHelper implements DropoutHelper
         Pointer xPtr = allocator.getPointer(input, context);
         Pointer yPtr = allocator.getPointer(resultArray, context);
 
-        checkCudnn(cudnnSetStream(cudnnContext, new cuda.CUstream_st(context.getOldStream())));
+        checkCudnn(cudnnSetStream(cudnnContext, new CUstream_st(context.getOldStream())));
         checkCudnn(cudnnDropoutForward(cudnnContext, cudnnContext.dropoutDesc, cudnnContext.xTensorDesc, xPtr,
                 cudnnContext.yTensorDesc, yPtr, mask, mask.capacity()));
 

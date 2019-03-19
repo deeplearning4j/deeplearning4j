@@ -18,7 +18,8 @@ package org.nd4j.linalg.jcublas.blas;
 
 import org.nd4j.nativeblas.Nd4jBlas;
 
-import static org.bytedeco.javacpp.cublas.*;
+import org.bytedeco.cuda.cublas.*;
+import static org.bytedeco.cuda.global.cublas.*;
 
 /**
  * Implementation of Nd4jBlas for cuBLAS

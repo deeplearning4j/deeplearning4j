@@ -101,19 +101,19 @@
         </dependency>
 
         <dependency>
-            <groupId>org.bytedeco.javacpp-presets</groupId>
+            <groupId>org.bytedeco</groupId>
             <artifactId>opencv-platform</artifactId>
             <version>${opencv.version}-${javacpp-presets.version}</version>
         </dependency>
 
         <dependency>
-            <groupId>org.bytedeco.javacpp-presets</groupId>
+            <groupId>org.bytedeco</groupId>
             <artifactId>leptonica-platform</artifactId>
             <version>${leptonica.version}-${javacpp-presets.version}</version>
         </dependency>
 
         <dependency>
-            <groupId>org.bytedeco.javacpp-presets</groupId>
+            <groupId>org.bytedeco</groupId>
             <artifactId>hdf5-platform</artifactId>
             <version>${hdf5.version}-${javacpp-presets.version}</version>
         </dependency>
@@ -140,7 +140,7 @@
             <id>test-nd4j-native</id>
         </profile>
         <profile>
-            <id>test-nd4j-cuda-10.0</id>
+            <id>test-nd4j-cuda-10.1</id>
         </profile>
     </profiles>
 
