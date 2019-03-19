@@ -17,6 +17,7 @@
 package org.nd4j.linalg.cpu.nativecpu.workspace;
 
 import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
@@ -30,6 +31,7 @@ import org.nd4j.linalg.memory.provider.BasicWorkspaceManager;
 /**
  * @author raver119@gmail.com
  */
+@Slf4j
 public class CpuWorkspaceManager extends BasicWorkspaceManager {
 
     public CpuWorkspaceManager() {
@@ -122,7 +124,6 @@ public class CpuWorkspaceManager extends BasicWorkspaceManager {
 
     @Override
     protected void pickReference(MemoryWorkspace w) {
-        val workspace = (CpuWorkspace) w;
-        Nd4j.getDeallocatorService().pickObject(workspace);
+        Nd4j.getDeallocatorService().pickObject(w);
     }
 }

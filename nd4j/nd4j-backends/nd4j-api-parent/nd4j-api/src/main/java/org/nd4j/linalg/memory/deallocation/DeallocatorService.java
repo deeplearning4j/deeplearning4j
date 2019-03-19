@@ -19,6 +19,7 @@ package org.nd4j.linalg.memory.deallocation;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import org.nd4j.linalg.api.memory.Deallocatable;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.lang.ref.ReferenceQueue;
@@ -55,6 +56,8 @@ public class DeallocatorService {
             // optionally setting up affinity
             if (numDevices > 1)
                 Nd4j.getAffinityManager().attachThreadToDevice(deallocatorThreads[e], e);
+
+            deallocatorThreads[e].start();
         }
     }
 

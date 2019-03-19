@@ -14,16 +14,24 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.nd4j.linalg.memory.deallocation;
+package org.nd4j.linalg.cpu.nativecpu.workspace;
+
+import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
+import org.nd4j.linalg.api.memory.Deallocator;
 
 /**
- * This interface describes callback which will be executed from unified reference tracking system context
- *
+ * Deallocator implementation for CpuWorkspace
  * @author raver119@gmail.com
  */
-public interface Deallocator {
-    /**
-     * This method does actual deallocation
-     */
-    void deallocate();
+@Slf4j
+public class CpuWorkspaceDeallocator implements Deallocator {
+    public CpuWorkspaceDeallocator(@NonNull CpuWorkspace workspace) {
+        //
+    }
+
+    @Override
+    public void deallocate() {
+        log.info("Deallocating CPU workspace");
+    }
 }

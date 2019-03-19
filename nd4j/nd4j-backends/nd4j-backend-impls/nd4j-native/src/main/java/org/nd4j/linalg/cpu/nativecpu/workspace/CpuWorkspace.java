@@ -20,8 +20,6 @@ import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.bytedeco.javacpp.LongPointer;
-import org.bytedeco.javacpp.Pointer;
-import org.bytedeco.javacpp.PointerPointer;
 import org.nd4j.linalg.api.memory.AllocationsTracker;
 import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
 import org.nd4j.linalg.api.memory.enums.AllocationKind;
@@ -31,8 +29,8 @@ import org.nd4j.linalg.api.memory.pointers.PagedPointer;
 import org.nd4j.linalg.api.memory.pointers.PointersPair;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.memory.abstracts.Nd4jWorkspace;
-import org.nd4j.linalg.memory.deallocation.Deallocatable;
-import org.nd4j.linalg.memory.deallocation.Deallocator;
+import org.nd4j.linalg.api.memory.Deallocatable;
+import org.nd4j.linalg.api.memory.Deallocator;
 import org.nd4j.nativeblas.NativeOps;
 import org.nd4j.nativeblas.NativeOpsHolder;
 
@@ -66,12 +64,15 @@ public class CpuWorkspace extends Nd4jWorkspace implements Deallocatable {
 
     @Override
     public Deallocator deallocator() {
+        /*
         return new Deallocator() {
             @Override
             public void deallocate() {
                 log.info("Deallocator invoked!");
             }
         };
+        */
+         return new CpuWorkspaceDeallocator(this);
     }
 
     @Override

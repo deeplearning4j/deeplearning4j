@@ -828,7 +828,7 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
     public String toString() {
         return "Nd4jWorkspace{" + "id='" + id + '\'' + ", currentSize=" + currentSize.get() + '}';
     }
-
+/*
     @Data
     public static class GarbageWorkspaceReference extends WeakReference<MemoryWorkspace> {
         private PointersPair pointersPair;
@@ -850,4 +850,5 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
             this.key = id + "_" + threadId;
         }
     }
+    */
 }

@@ -14,7 +14,7 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.nd4j.linalg.memory.deallocation;
+package org.nd4j.linalg.api.memory;
 
 /**
  * This interface describes resource trackable via unified deallocation system

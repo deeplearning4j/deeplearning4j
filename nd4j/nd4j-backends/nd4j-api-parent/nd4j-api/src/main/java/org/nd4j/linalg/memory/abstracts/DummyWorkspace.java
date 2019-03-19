@@ -18,6 +18,7 @@ package org.nd4j.linalg.memory.abstracts;
 
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.memory.Deallocator;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
 import org.nd4j.linalg.api.memory.enums.MemoryKind;
@@ -259,5 +260,20 @@ public class DummyWorkspace implements MemoryWorkspace {
     @Override
     public long getCurrentOffset() {
         return 0;
+    }
+
+    @Override
+    public String getUniqueId() {
+        return java.util.UUID.randomUUID().toString();
+    }
+
+    @Override
+    public Deallocator deallocator() {
+        return new Deallocator() {
+            @Override
+            public void deallocate() {
+                // no-op
+            }
+        };
     }
 }
