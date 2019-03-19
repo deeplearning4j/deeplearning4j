@@ -17,6 +17,7 @@
 package org.nd4j.linalg.serde;
 
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.junit.After;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -77,6 +78,20 @@ public class BasicSerDeTests extends BaseNd4jTest {
 
 
         Nd4j.setDataType(initialType);
+    }
+
+    @Test
+    public void testHalfSerde_1() throws Exception {
+        val array = Nd4j.create(DataType.HALF, 3, 4);
+        array.assign(1.0f);
+
+        val bos = new ByteArrayOutputStream();
+
+        Nd4j.write(bos, array);
+
+        val restored = Nd4j.read(new ByteArrayInputStream(bos.toByteArray()));
+
+        assertEquals(array, restored);
     }
 
     @Override
