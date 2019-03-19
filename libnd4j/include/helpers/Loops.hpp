@@ -684,20 +684,6 @@ namespace nd4j {
             }
         }
     }
-
-/*
-    template<typename X>
-    void Loops::_loopIndexTadXZ(const void* vx, const Nd4jLong* tadShapeInfo, const Nd4jLong* tadOffsets, Nd4jLong* z, const Nd4jLong* zShapeInfo, void* vextraParams) {
-        auto x = reinterpret_cast<const X *>(vx);
-        auto e = reinterpret_cast<X *>(vextraParams);
-
-        auto funcSV = [&] (X *x)                                    -> functions::indexreduce::IndexValue<X> { return functions::indexreduce::IndexValue<X>(0, 0); };
-        auto funcUP = [&] (functions::indexreduce::IndexValue<X>& a, functions::indexreduce::IndexValue<X> b, X *e) -> functions::indexreduce::IndexValue<X> { return a;  };
-
-        nd4j::Loops::loopIndexTadXZ<X,X>(x, tadShapeInfo, tadOffsets, z, zShapeInfo, e, funcSV, funcUP);
-    }
-    BUILD_SINGLE_TEMPLATE(template void Loops::_loopIndexTadXZ, (const void* vx, const Nd4jLong* tadShapeInfo, const Nd4jLong* tadOffsets, Nd4jLong* z, const Nd4jLong* zShapeInfo, void* vextraParams), LIBND4J_TYPES);
-    */
 }
 
 
