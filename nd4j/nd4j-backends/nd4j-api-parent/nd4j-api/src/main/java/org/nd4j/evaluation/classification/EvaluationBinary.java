@@ -32,6 +32,7 @@ import org.nd4j.linalg.lossfunctions.serde.RowVectorSerializer;
 import org.nd4j.shade.jackson.databind.annotation.JsonDeserialize;
 import org.nd4j.shade.jackson.databind.annotation.JsonSerialize;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -118,6 +119,11 @@ public class EvaluationBinary extends BaseEvaluation<EvaluationBinary> {
     @Override
     public void eval(INDArray labels, INDArray networkPredictions) {
         eval(labels, networkPredictions, (INDArray) null);
+    }
+
+    @Override
+    public void eval(INDArray labels, INDArray networkPredictions, INDArray maskArray, List<? extends Serializable> recordMetaData) {
+        throw new UnsupportedOperationException("Not yet implemented");
     }
 
     @Override
@@ -441,7 +447,8 @@ public class EvaluationBinary extends BaseEvaluation<EvaluationBinary> {
      * @return fpr as a double
      */
     public double falsePositiveRate(int classLabel) {
-        return recall(classLabel);
+        assertIndex(classLabel);
+        return falsePositiveRate(classLabel, DEFAULT_EDGE_VALUE);
     }
 
     /**

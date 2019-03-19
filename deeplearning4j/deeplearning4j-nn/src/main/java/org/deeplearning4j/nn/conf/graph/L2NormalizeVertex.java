@@ -17,6 +17,7 @@
 package org.deeplearning4j.nn.conf.graph;
 
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.val;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.inputs.InvalidInputTypeException;
@@ -37,6 +38,7 @@ import org.nd4j.shade.jackson.annotation.JsonProperty;
  * @author Alex Black (AlexDBlack)
  */
 @Data
+@EqualsAndHashCode(callSuper = false)
 public class L2NormalizeVertex extends GraphVertex {
     public static final double DEFAULT_EPS = 1e-8;
 
@@ -57,18 +59,6 @@ public class L2NormalizeVertex extends GraphVertex {
     @Override
     public L2NormalizeVertex clone() {
         return new L2NormalizeVertex(dimension, eps);
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (!(o instanceof L2NormalizeVertex))
-            return false;
-        return ((L2NormalizeVertex) o).dimension == dimension;
-    }
-
-    @Override
-    public int hashCode() {
-        return 123081189;
     }
 
     @Override

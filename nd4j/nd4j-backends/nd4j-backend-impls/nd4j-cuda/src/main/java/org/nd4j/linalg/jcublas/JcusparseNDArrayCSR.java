@@ -102,6 +102,11 @@ public class JcusparseNDArrayCSR extends BaseSparseNDArrayCSR {
     }
 
     @Override
+    public INDArray reshape(char order, boolean enforceView, long... newShape) {
+        return null;
+    }
+
+    @Override
     public INDArray reshape(int[] shape) {
         return null;
     }
