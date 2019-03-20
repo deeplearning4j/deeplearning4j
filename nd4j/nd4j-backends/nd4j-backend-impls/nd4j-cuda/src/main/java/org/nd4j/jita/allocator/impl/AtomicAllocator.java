@@ -52,6 +52,7 @@ import org.nd4j.linalg.jcublas.context.CudaContext;
 import org.nd4j.nativeblas.NativeOpsHolder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.nd4j.linalg.jcublas.buffer.BaseCudaDataBuffer;
 
 import java.lang.ref.ReferenceQueue;
 import java.util.Map;
@@ -467,6 +468,7 @@ public class AtomicAllocator implements Allocator {
 
         GarbageBufferReference reference =
                         new GarbageBufferReference((BaseDataBuffer) buffer, queueMap.get(bucketId), point);
+	Nd4j.getDeallocatorService().pickObject((BaseCudaDataBuffer)buffer);
         point.attachReference(reference);
         point.setDeviceId(-1);
 
