@@ -63,7 +63,7 @@ import java.util.Collection;
  * @author Adam Gibson
  * @author raver119@gmail.com
  */
-public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCudaBuffer {
+public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCudaBuffer, Deallocatable {
 
     @Getter
     protected transient AllocationPoint allocationPoint;
@@ -1680,4 +1680,18 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
                 >>> 126 - val ));   // div by 2^(1-(exp-127+15)) and >> 13 | exp=0
     }
     */
+
+    @Override
+    public String getUniqueId() {
+        return  "BaseCudaDataBuffer";
+    }
+
+    /**
+     * This method returns deallocator associated with this instance
+     * @return
+     */
+    @Override
+    public Deallocator deallocator() {
+        return new CudaWorkspaceDeallocator(this);
+    }
 }
