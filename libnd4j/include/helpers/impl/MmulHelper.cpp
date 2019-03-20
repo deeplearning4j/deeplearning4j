@@ -108,8 +108,8 @@ static void usualDot(const Nd4jLong length, const double alpha, const void* vX, 
     T3 alphaZ(alpha), betaZ(beta);
 
     T3 sum = 0;
-    PRAGMA_OMP_PARALLEL_FOR_ARGS(reduction(sumT:sum))
-    for(int i = 0; i < length; ++i)
+    PRAGMA_OMP_PARALLEL_FOR_SIMD_REDUCTION(sumT:sum)
+    for(unsigned int i = 0; i < length; ++i)
         sum = sum + X[i * incx] * Y[i * incy];        
     
     *Z = alphaZ * sum + betaZ * *Z;

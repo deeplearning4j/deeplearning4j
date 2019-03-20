@@ -6593,6 +6593,9 @@ public static final int PREALLOC_SIZE = 33554432;
     @Namespace("shape") public static native void updateStrides(@Cast("Nd4jLong*") LongPointer shape, byte order);
     @Namespace("shape") public static native void updateStrides(@Cast("Nd4jLong*") LongBuffer shape, byte order);
     @Namespace("shape") public static native void updateStrides(@Cast("Nd4jLong*") long[] shape, byte order);
+    @Namespace("shape") public static native void updateStrides(int rank, @Cast("const Nd4jLong*") LongPointer shapeOnly, @Cast("Nd4jLong*") LongPointer stridesOnly, byte order);
+    @Namespace("shape") public static native void updateStrides(int rank, @Cast("const Nd4jLong*") LongBuffer shapeOnly, @Cast("Nd4jLong*") LongBuffer stridesOnly, byte order);
+    @Namespace("shape") public static native void updateStrides(int rank, @Cast("const Nd4jLong*") long[] shapeOnly, @Cast("Nd4jLong*") long[] stridesOnly, byte order);
 
 
 // check whether input dimensions are permuted, not permuted dimensions order have to be 0,....,rank-1
@@ -7750,6 +7753,10 @@ public static final int PREALLOC_SIZE = 33554432;
  * @param startNum the start number for the strides
  * @return the strides for a matrix of n dimensions
  */
+
+//////////////////////////////////////////////////////////////////////    
+
+//////////////////////////////////////////////////////////////////////    
 
 
 // check whether input dimensions are permuted, not permuted dimensions order have to be 0,....,rank-1
