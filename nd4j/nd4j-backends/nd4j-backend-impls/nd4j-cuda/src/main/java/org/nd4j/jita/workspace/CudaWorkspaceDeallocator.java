@@ -14,7 +14,7 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.nd4j.linalg.cpu.nativecpu.workspace;
+package org.nd4j.jita.workspace;
 
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
