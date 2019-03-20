@@ -15,6 +15,8 @@ public class CudaDeallocator implements Deallocator {
 
     public CudaDeallocator(@NonNull BaseCudaDataBuffer buffer) {
         this.point = buffer.getAllocationPoint();
+        if (this.point == null)
+            throw new RuntimeException();
     }
 
     @Override

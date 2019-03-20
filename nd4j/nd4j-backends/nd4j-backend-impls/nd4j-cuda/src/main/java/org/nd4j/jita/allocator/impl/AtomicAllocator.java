@@ -468,7 +468,6 @@ public class AtomicAllocator implements Allocator {
 
         GarbageBufferReference reference =
                         new GarbageBufferReference((BaseDataBuffer) buffer, queueMap.get(bucketId), point);*/
-	    Nd4j.getDeallocatorService().pickObject((BaseCudaDataBuffer)buffer);
         //point.attachReference(reference);
         point.setDeviceId(-1);
 
