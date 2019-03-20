@@ -25,11 +25,15 @@ import org.nd4j.jita.allocator.enums.CudaConstants;
 import org.nd4j.jita.allocator.impl.AllocationPoint;
 import org.nd4j.jita.allocator.impl.AllocationShape;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
+import org.nd4j.jita.allocator.impl.CudaDeallocator;
 import org.nd4j.jita.allocator.pointers.CudaPointer;
+import org.nd4j.jita.workspace.CudaWorkspaceDeallocator;
 import org.nd4j.linalg.api.buffer.BaseDataBuffer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
+import org.nd4j.linalg.api.memory.Deallocatable;
+import org.nd4j.linalg.api.memory.Deallocator;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.performance.PerformanceTracker;
@@ -1692,6 +1696,6 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
      */
     @Override
     public Deallocator deallocator() {
-        return new CudaWorkspaceDeallocator(this);
+        return new CudaDeallocator(this);
     }
 }
