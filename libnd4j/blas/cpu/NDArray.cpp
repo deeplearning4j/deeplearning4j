@@ -3644,7 +3644,7 @@ template void NDArray::pIdx(const Nd4jLong* indices, const int value);
 template void NDArray::pIdx(const Nd4jLong* indices, const int8_t value);
 template void NDArray::pIdx(const Nd4jLong* indices, const uint8_t value);
 template void NDArray::pIdx(const Nd4jLong* indices, const int16_t value);
-template void NDArray::pIdx(const Nd4jLong* indices, const bool value);    
+template void NDArray::pIdx(const Nd4jLong* indices, const bool value);
 
 
     NDArray* NDArray::asT(DataType dtype) {
@@ -3917,20 +3917,20 @@ template void NDArray::pIdx(const Nd4jLong* indices, const bool value);
         auto shapeOf = shape::shapeOf(newShape);
         auto stridesOf = shape::stride(newShape);
 
-        Nd4jLong offset = 0;        
+        Nd4jLong offset = 0;
         bool continuous(false), allDimsUnities(true);
         int current(rank - 1), counter(0), vectorDim, n(isStrided ? 3 : 2), first, last, stride;
 
         for (int d = rank - 1; d >= 0; --d) {
-            
-            if (idx[n * d] != idx[n * d + 1]) {                    
+
+            if (idx[n * d] != idx[n * d + 1]) {
 
                 first  = idx[n * d]     >= 0 ? idx[n * d]     : idx[n * d]     + sizeAt(d) + 1;
-                last   = idx[n * d + 1] >= 0 ? idx[n * d + 1] : idx[n * d + 1] + sizeAt(d) + 1;                                        
+                last   = idx[n * d + 1] >= 0 ? idx[n * d + 1] : idx[n * d + 1] + sizeAt(d) + 1;
                 stride = isStrided           ? idx[n * d + 2] : 1;
 
                 shapeOf[d] = (last - first + stride - 1) / stride;      // ceil (last - first) / stride;
-                offset += first * stridesOf[d];                
+                offset += first * stridesOf[d];
                 if(shapeOf[d] != 1) {
                     allDimsUnities = false;
                     stridesOf[d] *= stride;
@@ -3942,8 +3942,8 @@ template void NDArray::pIdx(const Nd4jLong* indices, const bool value);
                 if(!counter++) vectorDim = d;
             }
         }
-        
-        // evaluate ews        
+
+        // evaluate ews
         if(counter == 1 && allDimsUnities)
             newShape[2 * rank + 2] = stridesOf[vectorDim];
         else
@@ -4589,7 +4589,7 @@ template void NDArray::operator/=(const bool scalar);
         NDArray result(*ptr);
         delete ptr;
         return result;
-    }    
+    }
 
     ////////////////////////////////////////////////////////////////////////
     void NDArray::setIdentity() {
@@ -4890,7 +4890,7 @@ template void NDArray::operator/=(const bool scalar);
 
         double sum = 0.;
 
-        PRAGMA_OMP_PARALLEL_FOR_ARGS(reduction(sumT:sum))
+        PRAGMA_OMP_PARALLEL_FOR_REDUCTION(sumT:sum)
         for(int i = 0; i < minDim; ++i)
             sum += e<double>(i*offset);
 
@@ -5056,7 +5056,7 @@ Nd4jLong NDArray::getOffset(const Nd4jLong i) const {
 
 ////////////////////////////////////////////////////////////////////////
     NDArray* NDArray::subarray(IndicesList& idx) const {
-        
+
         // auto xType = this->dataType();
         // // scalar subarray edge case
         // if (idx.isScalar()) {
@@ -5068,17 +5068,17 @@ Nd4jLong NDArray::getOffset(const Nd4jLong i) const {
         const int idxSize = idx.size();
         if (idxSize != this->rankOf())
             throw std::runtime_error("Number of indices should match");
-                
+
         std::vector<Nd4jLong> indexes(3 * idxSize);
 
-        // convert IndicesList to vector        
+        // convert IndicesList to vector
         for (int d = 0; d < idxSize; ++d) {
-            
+
             if (idx.at(d)->isAll()) {
                 indexes[3 * d]     = 0;                             // first
                 indexes[3 * d + 1] = 0;                             // last
                 indexes[3 * d + 2] = 1;                             // stride
-            } 
+            }
             else if (idx.at(d)->isPoint()) {
                 indexes[3 * d]     = idx.at(d)->getIndices().at(0); // first
                 indexes[3 * d + 1] = indexes[3 * d] + 1;            // last
@@ -5090,23 +5090,23 @@ Nd4jLong NDArray::getOffset(const Nd4jLong i) const {
                 indexes[3 * d + 2] = idx.at(d)->getIndices().at(2); // stride
             }
         }
-        
+
         return new NDArray((*this)(indexes, true, true));
     }
 
 ////////////////////////////////////////////////////////////////////////
     NDArray* NDArray::subarray(const std::initializer_list<NDIndex*>& idx) const {
-        
+
         const int idxSize = idx.size();
         if (idxSize != this->rankOf())
             throw std::runtime_error("NDArray::subarray: number of indices should match the array rank");
 
         std::vector<Nd4jLong> indexes(3 * idxSize);
 
-        // convert NDIndex to vector  
+        // convert NDIndex to vector
         int d = 0;
         for (const auto& item : idx) {
-            
+
             if (item->isAll()) {
                 indexes[3 * d]     = 0;                         // first
                 indexes[3 * d + 1] = 0;                         // last
@@ -5134,23 +5134,23 @@ Nd4jLong NDArray::getOffset(const Nd4jLong i) const {
 
     ////////////////////////////////////////////////////////////////////////
     NDArray* NDArray::subarray(const Intervals& idx) const {
-        
+
         const int idxSize = idx.size();
         if (idxSize != this->rankOf())
             throw std::runtime_error("NDArray::subarray: number of indices should match the rank of array!");
 
         std::vector<Nd4jLong> indexes(2 * idxSize);
 
-        // convert Intervals to vector  
+        // convert Intervals to vector
         for (int d = 0; d < idxSize; ++d) {
-             
+
              if (idx[d].empty()) {
                 indexes[2 * d]     = 0; // first
-                indexes[2 * d + 1] = 0; // last                
-            } 
+                indexes[2 * d + 1] = 0; // last
+            }
             else {
                 indexes[2 * d]     = idx[d][0]; // first
-                indexes[2 * d + 1] = idx[d][1]; // last                
+                indexes[2 * d + 1] = idx[d][1]; // last
             }
         }
 
@@ -5158,6 +5158,55 @@ Nd4jLong NDArray::getOffset(const Nd4jLong i) const {
     }
 
 
+
+////////////////////////////////////////////////////////////////////////
+void NDArray::getSubArrShapeAndOffsets(const std::vector<int>& dimsToExclude, Nd4jLong* &subArrShapeInfo, Nd4jLong* &subArrOffsets, bool keepUnitiesInShape) const {
+
+    const Nd4jLong numOfSubArrs = ShapeUtils::getNumOfSubArrs(_shapeInfo, dimsToExclude);
+    const int rank = rankOf();
+    const int dimsSize = dimsToExclude.size();
+
+    // allocate memory
+    ALLOCATE(subArrShapeInfo, _workspace, shape::shapeInfoLength(rank - dimsSize), Nd4jLong);
+    ALLOCATE(subArrOffsets,   _workspace, numOfSubArrs, Nd4jLong);
+
+    Nd4jLong *outShapeInfo = ShapeBuilders::copyShapeInfo(_shapeInfo, true, _workspace);
+    std::vector<Nd4jLong> shape(dimsSize), strides(dimsSize);
+
+    bool continuous = false;
+    int current(rank - 1), counter(0), vectorDim;
+
+    for(int i = rank - 1, j = dimsSize - 1; i >= 0; --i) {
+        if(j >= 0 && i == dimsToExclude[j]) {
+            strides[j] = shape::stride(outShapeInfo)[i];
+            shape[j--] = shape::shapeOf(outShapeInfo)[i];
+            shape::shapeOf(outShapeInfo)[i] = 1;
+        }
+        else {
+            continuous = current-- == i;
+            if(!counter++) vectorDim = i;
+        }
+    }
+
+    // evaluate ews
+    if(counter == 1)
+        outShapeInfo[2 * rank + 2] = shape::stride(outShapeInfo)[vectorDim];
+    else
+        outShapeInfo[2 * rank + 2] = (continuous && ordering() == 'c') ? ews() : 0;
+
+    // calculation of sub-array offsets (subArrOffsets)
+    shape::calcSubArrOffsets(numOfSubArrs, dimsSize, shape.data(), strides.data(), subArrOffsets);
+
+    // remove unities from outShapeInfo if required
+    if(!keepUnitiesInShape) {
+        std::vector<Nd4jLong> shapeNoUnities = ShapeUtils::evalDimsWithoutUnities(outShapeInfo);
+        shape::reshapeCF(rank, outShapeInfo, shapeNoUnities.size(), shapeNoUnities.data(), ordering() == 'f', subArrShapeInfo);
+    }
+    else
+        memcpy(subArrShapeInfo, outShapeInfo, shape::shapeInfoLength(rank)*sizeof(Nd4jLong));
+
+    RELEASE(outShapeInfo, _workspace);
+}
 
     //BUILD_DOUBLE_TEMPLATE(template void NDArray::templatedSet, (void *buffer, const Nd4jLong *indices, Y value), LIBND4J_TYPES, LIBND4J_TYPES);
 /*

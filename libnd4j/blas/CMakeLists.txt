@@ -243,8 +243,8 @@ if(CUDA_BLAS)
 
         if(WIN32)
             message("CUDA on Windows: enabling /EHsc")
-            SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /EHsc")
-            SET_TARGET_PROPERTIES(${LIBND4J_NAME} PROPERTIES COMPILER_FLAGS "/EHsc")
+            SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /EHsc /bigobj")
+            SET_TARGET_PROPERTIES(${LIBND4J_NAME} PROPERTIES COMPILER_FLAGS "/EHsc /bigobj")
         endif()
 
         set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/cuda)

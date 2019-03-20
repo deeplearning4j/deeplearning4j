@@ -3819,6 +3819,22 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         public native @ByVal @Name("operator ()") NDArray apply(@Cast("const Nd4jLong") long subArrIdx, @StdVector IntBuffer dimsToExclude);
         public native @ByVal @Name("operator ()") NDArray apply(@Cast("const Nd4jLong") long subArrIdx, @StdVector int[] dimsToExclude, @Cast("bool") boolean keepUnitiesInShape/*=false*/);
         public native @ByVal @Name("operator ()") NDArray apply(@Cast("const Nd4jLong") long subArrIdx, @StdVector int[] dimsToExclude);
+        
+        /**
+        * processes whole set of sub-arrays 
+        * evaluates shapeInfo of sub-arrays (all sub-arrays have the same shapeInfo) and their buffer offsets (each sub-array has its own unique offset from original this-buffer)         
+        * dimsToExclude - MUST BE SORTED, dimensions to evaluate sub-array along, i.e. when shape is [2,3,4,5] and dimsToExclude={0,2}, then there will be 8 sub-arrays with shape [3,5], and subArrIdx must be in range [0,7]
+        *                 if dimsToExclude is empty then idxRanges containing all zeros (means whole array) will be returned.
+        * subArrShapeInfo    - output argument, contains shapeInfo common for all sub-arrays
+        * subArrOffsets      - output argument, contains successive sub-arrays offsets from original this-buffer
+        * keepUnitiesInShape - if false then eliminate unities from sub-array shapeInfo, for example {1,a,1,b} -> {a,b}
+        */ 
+        public native void getSubArrShapeAndOffsets(@StdVector IntPointer dimsToExclude, @Cast("Nd4jLong*&") @ByPtrRef LongPointer subArrShapeInfo, @Cast("Nd4jLong*&") @ByPtrRef LongPointer subArrOffsets, @Cast("bool") boolean keepUnitiesInShape/*=false*/);
+        public native void getSubArrShapeAndOffsets(@StdVector IntPointer dimsToExclude, @Cast("Nd4jLong*&") @ByPtrRef LongPointer subArrShapeInfo, @Cast("Nd4jLong*&") @ByPtrRef LongPointer subArrOffsets);
+        public native void getSubArrShapeAndOffsets(@StdVector IntBuffer dimsToExclude, @Cast("Nd4jLong*&") @ByPtrRef LongBuffer subArrShapeInfo, @Cast("Nd4jLong*&") @ByPtrRef LongBuffer subArrOffsets, @Cast("bool") boolean keepUnitiesInShape/*=false*/);
+        public native void getSubArrShapeAndOffsets(@StdVector IntBuffer dimsToExclude, @Cast("Nd4jLong*&") @ByPtrRef LongBuffer subArrShapeInfo, @Cast("Nd4jLong*&") @ByPtrRef LongBuffer subArrOffsets);
+        public native void getSubArrShapeAndOffsets(@StdVector int[] dimsToExclude, @Cast("Nd4jLong*&") @ByPtrRef long[] subArrShapeInfo, @Cast("Nd4jLong*&") @ByPtrRef long[] subArrOffsets, @Cast("bool") boolean keepUnitiesInShape/*=false*/);
+        public native void getSubArrShapeAndOffsets(@StdVector int[] dimsToExclude, @Cast("Nd4jLong*&") @ByPtrRef long[] subArrShapeInfo, @Cast("Nd4jLong*&") @ByPtrRef long[] subArrOffsets);
 
         /**
         *  addition operator: array + other
@@ -6443,9 +6459,9 @@ public static final int PREALLOC_SIZE = 33554432;
 
 
 
-    @Namespace("shape") public static native @Cast("bool") boolean shapeEquals(int shape1Rank,@Cast("Nd4jLong*") LongPointer shape1,int shape2Rank,@Cast("Nd4jLong*") LongPointer shape2);
-    @Namespace("shape") public static native @Cast("bool") boolean shapeEquals(int shape1Rank,@Cast("Nd4jLong*") LongBuffer shape1,int shape2Rank,@Cast("Nd4jLong*") LongBuffer shape2);
-    @Namespace("shape") public static native @Cast("bool") boolean shapeEquals(int shape1Rank,@Cast("Nd4jLong*") long[] shape1,int shape2Rank,@Cast("Nd4jLong*") long[] shape2);
+    @Namespace("shape") public static native @Cast("bool") boolean shapeEquals(int shape1Rank, @Cast("const Nd4jLong*") LongPointer shape1, int shape2Rank, @Cast("const Nd4jLong*") LongPointer shape2);
+    @Namespace("shape") public static native @Cast("bool") boolean shapeEquals(int shape1Rank, @Cast("const Nd4jLong*") LongBuffer shape1, int shape2Rank, @Cast("const Nd4jLong*") LongBuffer shape2);
+    @Namespace("shape") public static native @Cast("bool") boolean shapeEquals(int shape1Rank, @Cast("const Nd4jLong*") long[] shape1, int shape2Rank, @Cast("const Nd4jLong*") long[] shape2);
 
     @Namespace("shape") public static native @Cast("Nd4jLong*") LongPointer detachShape(@Cast("Nd4jLong*") LongPointer originalShape);
     @Namespace("shape") public static native @Cast("Nd4jLong*") LongBuffer detachShape(@Cast("Nd4jLong*") LongBuffer originalShape);
@@ -6455,9 +6471,9 @@ public static final int PREALLOC_SIZE = 33554432;
     @Namespace("shape") public static native @Cast("Nd4jLong*") LongBuffer copyShape(@Cast("Nd4jLong*") LongBuffer originalShape);
     @Namespace("shape") public static native @Cast("Nd4jLong*") long[] copyShape(@Cast("Nd4jLong*") long[] originalShape);
 
-    @Namespace("shape") public static native @Cast("bool") boolean shapeEquals(@Cast("Nd4jLong*") LongPointer shapeInfo1,@Cast("Nd4jLong*") LongPointer shapeInfo2);
-    @Namespace("shape") public static native @Cast("bool") boolean shapeEquals(@Cast("Nd4jLong*") LongBuffer shapeInfo1,@Cast("Nd4jLong*") LongBuffer shapeInfo2);
-    @Namespace("shape") public static native @Cast("bool") boolean shapeEquals(@Cast("Nd4jLong*") long[] shapeInfo1,@Cast("Nd4jLong*") long[] shapeInfo2);
+    @Namespace("shape") public static native @Cast("bool") boolean shapeEquals(@Cast("const Nd4jLong*") LongPointer shapeInfo1, @Cast("const Nd4jLong*") LongPointer shapeInfo2);
+    @Namespace("shape") public static native @Cast("bool") boolean shapeEquals(@Cast("const Nd4jLong*") LongBuffer shapeInfo1, @Cast("const Nd4jLong*") LongBuffer shapeInfo2);
+    @Namespace("shape") public static native @Cast("bool") boolean shapeEquals(@Cast("const Nd4jLong*") long[] shapeInfo1, @Cast("const Nd4jLong*") long[] shapeInfo2);
 
     @Namespace("shape") public static native @Cast("bool") boolean strideEquals(int shape1Rank,@Cast("Nd4jLong*") LongPointer shape1,int shape2Rank,@Cast("Nd4jLong*") LongPointer shape2);
     @Namespace("shape") public static native @Cast("bool") boolean strideEquals(int shape1Rank,@Cast("Nd4jLong*") LongBuffer shape1,int shape2Rank,@Cast("Nd4jLong*") LongBuffer shape2);
@@ -6577,6 +6593,9 @@ public static final int PREALLOC_SIZE = 33554432;
     @Namespace("shape") public static native void updateStrides(@Cast("Nd4jLong*") LongPointer shape, byte order);
     @Namespace("shape") public static native void updateStrides(@Cast("Nd4jLong*") LongBuffer shape, byte order);
     @Namespace("shape") public static native void updateStrides(@Cast("Nd4jLong*") long[] shape, byte order);
+    @Namespace("shape") public static native void updateStrides(int rank, @Cast("const Nd4jLong*") LongPointer shapeOnly, @Cast("Nd4jLong*") LongPointer stridesOnly, byte order);
+    @Namespace("shape") public static native void updateStrides(int rank, @Cast("const Nd4jLong*") LongBuffer shapeOnly, @Cast("Nd4jLong*") LongBuffer stridesOnly, byte order);
+    @Namespace("shape") public static native void updateStrides(int rank, @Cast("const Nd4jLong*") long[] shapeOnly, @Cast("Nd4jLong*") long[] stridesOnly, byte order);
 
 
 // check whether input dimensions are permuted, not permuted dimensions order have to be 0,....,rank-1
@@ -6814,9 +6833,9 @@ public static final int PREALLOC_SIZE = 33554432;
     @Namespace("shape") public static native @Cast("bool") boolean isLikeVector(@Cast("Nd4jLong*") LongBuffer shapeInfo, @ByRef IntBuffer posOfNonUnityDim);
     @Namespace("shape") public static native @Cast("bool") boolean isLikeVector(@Cast("Nd4jLong*") long[] shapeInfo, @ByRef int[] posOfNonUnityDim);
 
-    @Namespace("shape") public static native @Cast("bool") boolean isCommonVector(@Cast("Nd4jLong*") LongPointer shapeInfo, @ByRef IntPointer posOfNonUnityDim);
-    @Namespace("shape") public static native @Cast("bool") boolean isCommonVector(@Cast("Nd4jLong*") LongBuffer shapeInfo, @ByRef IntBuffer posOfNonUnityDim);
-    @Namespace("shape") public static native @Cast("bool") boolean isCommonVector(@Cast("Nd4jLong*") long[] shapeInfo, @ByRef int[] posOfNonUnityDim);
+    @Namespace("shape") public static native @Cast("bool") boolean isCommonVector(@Cast("const Nd4jLong*") LongPointer shapeInfo, @ByRef IntPointer posOfNonUnityDim);
+    @Namespace("shape") public static native @Cast("bool") boolean isCommonVector(@Cast("const Nd4jLong*") LongBuffer shapeInfo, @ByRef IntBuffer posOfNonUnityDim);
+    @Namespace("shape") public static native @Cast("bool") boolean isCommonVector(@Cast("const Nd4jLong*") long[] shapeInfo, @ByRef int[] posOfNonUnityDim);
 
     @Namespace("shape") public static native @Cast("bool") boolean isRowVector(@Cast("const Nd4jLong*") LongPointer shapeInfo);
     @Namespace("shape") public static native @Cast("bool") boolean isRowVector(@Cast("const Nd4jLong*") LongBuffer shapeInfo);
@@ -6943,9 +6962,9 @@ public static final int PREALLOC_SIZE = 33554432;
  * Returns the stride portion of an information
  * buffer
  */
-    @Namespace("shape") public static native @Cast("Nd4jLong*") LongPointer stride(@Cast("Nd4jLong*") LongPointer buffer);
-    @Namespace("shape") public static native @Cast("Nd4jLong*") LongBuffer stride(@Cast("Nd4jLong*") LongBuffer buffer);
-    @Namespace("shape") public static native @Cast("Nd4jLong*") long[] stride(@Cast("Nd4jLong*") long[] buffer);
+    @Namespace("shape") public static native @Cast("Nd4jLong*") LongPointer stride(@Cast("const Nd4jLong*") LongPointer buffer);
+    @Namespace("shape") public static native @Cast("Nd4jLong*") LongBuffer stride(@Cast("const Nd4jLong*") LongBuffer buffer);
+    @Namespace("shape") public static native @Cast("Nd4jLong*") long[] stride(@Cast("const Nd4jLong*") long[] buffer);
 
 /**
  * Compute the length of the given shape
@@ -7641,6 +7660,11 @@ public static final int PREALLOC_SIZE = 33554432;
     @Namespace("shape") public static native int outerArrayOffsets(@Cast("Nd4jLong*") long[] maxOffsets, @Cast("const Nd4jLong") long minIdx, @Cast("const Nd4jLong*") long[] maxShapeInfo, @Cast("const Nd4jLong*") long[] minShapeInfo, @Const int[] dimsToExclude/*=nullptr*/);
     @Namespace("shape") public static native int outerArrayOffsets(@Cast("Nd4jLong*") long[] maxOffsets, @Cast("const Nd4jLong") long minIdx, @Cast("const Nd4jLong*") long[] maxShapeInfo, @Cast("const Nd4jLong*") long[] minShapeInfo);
 
+    // calculates offsets for numOfSubArrs sub-arrays, shape in this context means dominions excluded from outer array 
+    // rank is equal to size of shape
+    @Namespace("shape") public static native void calcSubArrOffsets(@Cast("const Nd4jLong") long numOfSubArrs, int rank, @Cast("const Nd4jLong*") LongPointer shape, @Cast("const Nd4jLong*") LongPointer strides, @Cast("Nd4jLong*") LongPointer subArrOffsets);
+    @Namespace("shape") public static native void calcSubArrOffsets(@Cast("const Nd4jLong") long numOfSubArrs, int rank, @Cast("const Nd4jLong*") LongBuffer shape, @Cast("const Nd4jLong*") LongBuffer strides, @Cast("Nd4jLong*") LongBuffer subArrOffsets);
+    @Namespace("shape") public static native void calcSubArrOffsets(@Cast("const Nd4jLong") long numOfSubArrs, int rank, @Cast("const Nd4jLong*") long[] shape, @Cast("const Nd4jLong*") long[] strides, @Cast("Nd4jLong*") long[] subArrOffsets);
    
     @Namespace("shape") public static native void shapeOldScalar(@Cast("nd4j::DataType") int dtype, @Cast("Nd4jLong*const") LongPointer buffer, byte order);
     @Namespace("shape") public static native void shapeOldScalar(@Cast("nd4j::DataType") int dtype, @Cast("Nd4jLong*const") LongBuffer buffer, byte order);
@@ -7729,6 +7753,10 @@ public static final int PREALLOC_SIZE = 33554432;
  * @param startNum the start number for the strides
  * @return the strides for a matrix of n dimensions
  */
+
+//////////////////////////////////////////////////////////////////////    
+
+//////////////////////////////////////////////////////////////////////    
 
 
 // check whether input dimensions are permuted, not permuted dimensions order have to be 0,....,rank-1
@@ -8507,6 +8535,9 @@ public static final int PREALLOC_SIZE = 33554432;
     //////////////////////////////////////////////////////////////////////
 
     //////////////////////////////////////////////////////////////////////
+
+//////////////////////////////////////////////////////////////////////
+
 
 
 

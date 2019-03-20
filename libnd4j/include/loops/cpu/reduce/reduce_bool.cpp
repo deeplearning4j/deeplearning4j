@@ -24,6 +24,7 @@
 #include <loops/reduce_bool.h>
 #include <loops/legacy_ops.h>
 #include <OmpLaunchHelper.h>
+#include <helpers/Loops.h>
 
 using namespace simdOps;
 
@@ -57,7 +58,7 @@ namespace functions {
                 uint xShapeInfoCast[MAX_RANK];
                 const bool canCastX = nd4j::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
 
-                PRAGMA_OMP_PARALLEL_FOR_SIMD_ARGS(num_threads(maxThreads))
+                PRAGMA_OMP_PARALLEL_FOR_SIMD_THREADS(maxThreads)
                 for(Nd4jLong i = 0; i < length; ++i)
                     intermediate[omp_get_thread_num()] = OpType::update(intermediate[omp_get_thread_num()], OpType::op(x[shape::indexOffset(i, xShapeInfo, xShapeInfoCast, length, canCastX)], extraParams), extraParams);
 
@@ -128,12 +129,12 @@ namespace functions {
                              Nd4jLong *xShapeInfo,
                              void *extraParams,
                              void *z,
-                             Nd4jLong *resultShapeInfoBuffer,
+                             Nd4jLong *zShapeInfo,
                              int *dimension,
                              int dimensionLength,
                              Nd4jLong *tadShapeInfo,
                              Nd4jLong *tadOffset) {
-                DISPATCH_BY_OPNUM_TT(exec, PARAMS(x, xShapeInfo, extraParams, z, resultShapeInfoBuffer, dimension, dimensionLength, tadShapeInfo, tadOffset), REDUCE_BOOL_OPS);
+                DISPATCH_BY_OPNUM_TT(exec, PARAMS(x, xShapeInfo, extraParams, z, zShapeInfo, dimension, dimensionLength, tadShapeInfo, tadOffset), REDUCE_BOOL_OPS);
         }
 
         template <typename X, typename Z>
@@ -142,7 +143,7 @@ namespace functions {
                              Nd4jLong *xShapeInfo,
                              void *vextraParams,
                              void *vresult,
-                             Nd4jLong *resultShapeInfoBuffer,
+                             Nd4jLong *zShapeInfo,
                              int *dimension,
                              int dimensionLength,
                              Nd4jLong *tadShapeInfo,
@@ -152,7 +153,7 @@ namespace functions {
                 auto z = reinterpret_cast<Z *>(vresult);
                 auto extraParams = reinterpret_cast<X *>(vextraParams);
 
-                auto resultLength = shape::length(resultShapeInfoBuffer);
+                auto resultLength = shape::length(zShapeInfo);
 
                 //pre squeezed: this is for keeping the pointer to the original
                 //shape information for tad offset
@@ -183,30 +184,7 @@ namespace functions {
                     tadOffsets = tad->tadOffsets;
                 }
 
-
-                const auto tadLength = shape::tadLength(xShapeInfo, dimension, dimensionLength);
-                auto numTads = shape::length(xShapeInfo) / tadLength;
-                auto tadEWS = shape::elementWiseStride(tadOnlyShapeInfo);
-
-                int tadsPerThread = resultLength / TAD_THRESHOLD;
-                int num_threads = nd4j::math::nd4j_max<int>(1, tadsPerThread);
-                num_threads = nd4j::math::nd4j_min<int>(num_threads, omp_get_max_threads());
-
-                uint castTadOnlyShapeInfo[MAX_RANK];
-                const bool canCast = nd4j::DataTypeUtils::castShapeInfo<uint>(tadOnlyShapeInfo, castTadOnlyShapeInfo);
-
-                PRAGMA_OMP_PARALLEL_FOR_THREADS(num_threads)
-                for (int i = 0; i < resultLength; i++) {
-                    
-                    auto tx = x + tadOffsets[i];
-                    auto start = OpType::startingValue(tx);
-
-                    for (int j = 0; j < tadLength; j++) {                 
-                        auto xOffset = shape::indexOffset(j, tadOnlyShapeInfo, castTadOnlyShapeInfo, tadLength, canCast);
-                        start = OpType::update(start, OpType::op(tx[xOffset], extraParams), extraParams);
-                    }
-                    z[i] = OpType::postProcess(start, tadLength, extraParams);;
-                }
+                nd4j::Loops::loopTadXZ<X, Z, X, OpType>(x, tadOnlyShapeInfo, tadOffsets, z, zShapeInfo, extraParams);
                 
                 if (tad != nullptr)
                     delete tad;
