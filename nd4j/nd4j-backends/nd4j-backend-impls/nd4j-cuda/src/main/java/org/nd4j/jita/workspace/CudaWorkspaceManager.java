@@ -60,8 +60,8 @@ public class CudaWorkspaceManager extends BasicWorkspaceManager {
     }
 
     @Override
-    protected void pickReference(MemoryWorkspace workspace) {
-        throw new UnsupportedOperationException();
+    protected void pickReference(MemoryWorkspace w) {
+        Nd4j.getDeallocatorService().pickObject(w);
     }
 
     @Override
