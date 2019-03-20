@@ -127,8 +127,6 @@ public class AtomicAllocator implements Allocator {
     private final Ring zeroLong = new LockedRing(30);
     private final Ring zeroShort = new LockedRing(30);
 
-    private final Map<Integer, ReferenceQueue<BaseDataBuffer>> queueMap = new ConcurrentHashMap<>();
-
     private ConstantHandler constantHandler = Nd4j.getConstantHandler();
     private AtomicLong useTracker = new AtomicLong(System.currentTimeMillis());
 

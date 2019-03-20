@@ -232,6 +232,8 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
         this.offset = 0;
         this.originalOffset = 0;
 
+        Nd4j.getDeallocatorService().pickObject(this);
+
         switch (dataType()) {
             case DOUBLE:
                 this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), length, 0).asDoublePointer();
@@ -1537,7 +1539,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
     @Override
     public String getUniqueId() {
-        return  "BaseCudaDataBuffer";
+        return "BCDB_" + allocationPoint.getObjectId();
     }
 
     /**
