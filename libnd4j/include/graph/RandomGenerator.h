@@ -139,8 +139,11 @@ namespace nd4j {
 
         FORCEINLINE RandomGenerator::RandomGenerator(Nd4jLong rootSeed, Nd4jLong nodeSeed) {
             // this seed is used graph-level state
-            if (rootSeed == 0)
-                rootSeed = currentMilliseconds();
+            if (rootSeed == 0){
+                auto s = std::chrono::system_clock::now().time_since_epoch();
+                rootSeed  = std::chrono::duration_cast<std::chrono::milliseconds>(s).count();
+            }
+
 
             // graph-level state is just first seed
             _rootState._long = rootSeed;
