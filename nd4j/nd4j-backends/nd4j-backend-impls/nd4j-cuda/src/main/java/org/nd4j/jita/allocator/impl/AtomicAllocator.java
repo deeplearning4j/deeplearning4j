@@ -115,7 +115,7 @@ public class AtomicAllocator implements Allocator {
         here we have handles for garbage collector threads
         ThreadId, GarbageCollector
      */
-    private Map<Integer, UnifiedGarbageCollectorThread> collectorsUnified = new ConcurrentHashMap<>();
+    //private Map<Integer, UnifiedGarbageCollectorThread> collectorsUnified = new ConcurrentHashMap<>();
 
     private final AtomicBoolean shouldStop = new AtomicBoolean(false);
 
@@ -148,8 +148,8 @@ public class AtomicAllocator implements Allocator {
 
         this.memoryHandler.init(configuration, this);
 
-        initDeviceCollectors();
-        initHostCollectors();
+        /*initDeviceCollectors();
+        initHostCollectors();*/
         this.protector = ConstantProtector.getInstance();
 
     }
@@ -185,7 +185,7 @@ public class AtomicAllocator implements Allocator {
     /**
      * This method executes preconfigured number of host memory garbage collectors
      */
-    protected void initHostCollectors() {
+    /*protected void initHostCollectors() {
         for (int i = 0; i < configuration.getNumberOfGcThreads(); i++) {
             ReferenceQueue<BaseDataBuffer> queue = new ReferenceQueue<>();
 
@@ -199,14 +199,14 @@ public class AtomicAllocator implements Allocator {
             uThread.start();
 
             collectorsUnified.put(i, uThread);
-            /*
+            *
             ZeroGarbageCollectorThread zThread = new ZeroGarbageCollectorThread((long) i, shouldStop);
             zThread.start();
             
             collectorsZero.put((long) i, zThread);
-            */
+            *
         }
-    }
+    }*/
 
     /**
      * This method executes garbage collectors for each special device (i.e. CUDA GPUs) present in system
@@ -468,7 +468,7 @@ public class AtomicAllocator implements Allocator {
 
         GarbageBufferReference reference =
                         new GarbageBufferReference((BaseDataBuffer) buffer, queueMap.get(bucketId), point);
-	Nd4j.getDeallocatorService().pickObject((BaseCudaDataBuffer)buffer);
+	    Nd4j.getDeallocatorService().pickObject((BaseCudaDataBuffer)buffer);
         point.attachReference(reference);
         point.setDeviceId(-1);
 
@@ -704,7 +704,7 @@ public class AtomicAllocator implements Allocator {
         return freeSpace.get();
     }
 
-    private class UnifiedGarbageCollectorThread extends Thread implements Runnable {
+    /*private class UnifiedGarbageCollectorThread extends Thread implements Runnable {
         private final ReferenceQueue<BaseDataBuffer> queue;
         private int threadId;
         private int deviceId;
@@ -779,7 +779,7 @@ public class AtomicAllocator implements Allocator {
                 }
             }
         }
-    }
+    }*/
 
     /**
      * This class implements garbage collector for memory allocated on host system.
