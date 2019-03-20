@@ -391,4 +391,16 @@ public class CudaWorkspace extends Nd4jWorkspace {
         context.getSpecialStream().synchronize();
         */
     }
+
+    protected PointersPair workspace() {
+        return workspace;
+    }
+
+    protected Queue<PointersPair> pinnedPointers() {
+        return pinnedAllocations;
+    }
+
+    protected List<PointersPair> externalPointers() {
+        return externalAllocations;
+    }
 }
