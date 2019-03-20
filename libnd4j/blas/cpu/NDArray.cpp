@@ -2400,11 +2400,11 @@ template void NDArray::applyScalar(nd4j::scalar::Ops op, const bool scalar, NDAr
     }
 
     bool NDArray::reshapei(const std::initializer_list<Nd4jLong>& shape) {        
-        return reshapei(ordering(), shape);
+        return reshapei('c', shape);
     }
 
     bool NDArray::reshapei(const std::vector<Nd4jLong>& shape) {
-        return reshapei(ordering(), shape);
+        return reshapei('c', shape);
     }
 
 //////////////////////////////////////////////////////////////////////////
@@ -2447,17 +2447,13 @@ template void NDArray::applyScalar(nd4j::scalar::Ops op, const bool scalar, NDAr
 // set new order and shape in case of suitable array length 
     bool NDArray::reshapei(const char order, const std::vector<Nd4jLong>& cshape) {
 
+    // if we use reshapeC it doesn't make sense to reshape from c order to f order
+    if(ordering() == 'c' && order == 'f')
+        throw std::invalid_argument("NDArray::reshapei(order, shape): if we use reshapeC it doesn't make sense to reshape from c order to f order !");
+
     // check firstly whether cshape is identical to shape of array, if yes then reshape is unnecessary 
-    if(order == ordering() && rankOf() == cshape.size()) {
-        bool areShapesSame = true;
-        for(int i = 0; i < cshape.size(); ++i)
-            if(cshape[i] != sizeAt(i)) {
-                areShapesSame = false;
-                break;
-            }
-        if(areShapesSame)
-            return areShapesSame;        
-    }
+    if(order == ordering() && shape::shapeEquals(rankOf(), shapeOf(), cshape.size(), cshape.data()))         
+        return true;
 
     std::vector<Nd4jLong> shape(cshape);
     int rank = shape.size();
@@ -2514,7 +2510,7 @@ template void NDArray::applyScalar(nd4j::scalar::Ops op, const bool scalar, NDAr
     ALLOCATE(shapeInfoNew, _workspace, shape::shapeInfoLength(rank), Nd4jLong);
 
     // we can do this only if there was no permute applied, or there are no weird strides
-    if (shape::reshapeCF(this->rankOf(), this->_shapeInfo, shape.size(), shape.data(), order == 'f', shapeInfoNew)) {
+    if (shape::reshapeC(this->rankOf(), this->_shapeInfo, shape.size(), shape.data(), shapeInfoNew)) {
 
         setShapeInfo(shapeInfoNew);
         _isShapeAlloc = true;
@@ -3942,8 +3938,8 @@ template void NDArray::pIdx(const Nd4jLong* indices, const bool value);
         }
 
         // evaluate ews
-        if(counter == 1 && allDimsUnities)
-            newShape[2 * rank + 2] = stridesOf[vectorDim];
+        if(counter == 1 && allDimsUnities)            
+            newShape[2 * rank + 2] = stridesOf[vectorDim];        
         else
             newShape[2 * rank + 2] = (continuous && ordering() == 'c') ? ews() : 0;
 
@@ -5198,7 +5194,7 @@ void NDArray::getSubArrShapeAndOffsets(const std::vector<int>& dimsToExclude, Nd
     // remove unities from outShapeInfo if required
     if(!keepUnitiesInShape) {
         std::vector<Nd4jLong> shapeNoUnities = ShapeUtils::evalDimsWithoutUnities(outShapeInfo);
-        shape::reshapeCF(rank, outShapeInfo, shapeNoUnities.size(), shapeNoUnities.data(), ordering() == 'f', subArrShapeInfo);
+        shape::reshapeC(rank, outShapeInfo, shapeNoUnities.size(), shapeNoUnities.data(), subArrShapeInfo);
     }
     else
         memcpy(subArrShapeInfo, outShapeInfo, shape::shapeInfoLength(rank)*sizeof(Nd4jLong));

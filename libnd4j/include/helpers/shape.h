@@ -128,7 +128,7 @@ namespace shape {
 
     ND4J_EXPORT _CUDA_HD bool canReshape(const int oldRank, Nd4jLong* oldShape, const int newRank, Nd4jLong* newShape, bool isFOrder);
 
-    ND4J_EXPORT _CUDA_HD bool reshapeCF(const int oldRank, const Nd4jLong* oldShapeInfo, const int newRank, const Nd4jLong* newShape, const bool isFOrder, Nd4jLong* newShapeInfo);
+    ND4J_EXPORT _CUDA_HD bool reshapeC(const int oldRank, const Nd4jLong* oldShapeInfo, const int newRank, const Nd4jLong* newShape, Nd4jLong* newShapeInfo);
 
     /**
     * Get the shape info buffer
@@ -506,6 +506,11 @@ namespace shape {
  * for this shape information buffer
  */
     ND4J_EXPORT _CUDA_HD char order(const Nd4jLong *buffer);
+
+/**
+ * Returns the type
+ */
+    ND4J_EXPORT _CUDA_HD Nd4jLong type(const Nd4jLong* shapeInfo);
 
 /**
  * Returns the element wise stride for this information
@@ -2866,6 +2871,13 @@ template <typename T>
     }
 
 /**
+ * Returns type
+ */
+    INLINEDEF _CUDA_HD Nd4jLong type(const Nd4jLong *shapeInfo) {        
+        return shapeInfo[2 * shapeInfo[0] + 1];
+    }
+
+/**
  * Returns the element wise stride for this information
  * buffer
  */
@@ -4014,7 +4026,7 @@ INLINEDEF _CUDA_HD bool areStridesDefault(const Nd4jLong* shapeInfo) {
     return result;
 }
 
-// INLINEDEF _CUDA_H bool reshapeCF(const int oldRank, Nd4jLong* oldShape, const int newRank, Nd4jLong* newShapeOf, bool isFOrder, Nd4jLong* target) {
+// INLINEDEF _CUDA_H bool reshapeC(const int oldRank, Nd4jLong* oldShape, const int newRank, Nd4jLong* newShapeOf, bool isFOrder, Nd4jLong* target) {
 //         int oldnd;
 //         Nd4jLong* olddims = shape::copyOf(oldRank, shape::shapeOf(oldShape));
 //         Nd4jLong* oldstrides = shape::copyOf(oldRank, shape::stride(oldShape));
@@ -4153,89 +4165,70 @@ INLINEDEF _CUDA_HD bool areStridesDefault(const Nd4jLong* shapeInfo) {
 //         return true;
 //     }
 
-    INLINEDEF _CUDA_H bool reshapeCF(const int oldRank, const Nd4jLong* oldShapeInfo, const int newRank, const Nd4jLong* newShape, const bool isFOrder, Nd4jLong* newShapeInfo) {
-        
-        const int newOrder = isFOrder ? 102 : 99;
-        const int oldOrder = oldShapeInfo[2 * oldRank + 3];
-        bool usualReshapeForForder = false;
+INLINEDEF _CUDA_H bool reshapeC(const int oldRank, const Nd4jLong* oldShapeInfo, const int newRank, const Nd4jLong* newShape, Nd4jLong* newShapeInfo) {
+
+        // PLEASE NOTE !: reshaping not-permuted (ews=1) array in f order (except insertion/elimination of unities) will definitely cause allocation of new buffer for array elements
+        // also this function takes into account identical shapes automatically, namely in that case oldShapeInfo is completely copied to newShapeInfo 
+
+        // const int newOrder = isFOrder ? 102 : 99;
+        // const int oldOrder = oldShapeInfo[2 * oldRank + 3];
+                
         newShapeInfo[0] = newRank;
         memcpy(newShapeInfo + 1, newShape, newRank * sizeof(Nd4jLong));
-
-        if(newOrder == oldOrder && shape::elementWiseStride(oldShapeInfo) == 1) {
-            if(newOrder == 99) {
-                shape::updateStrides(newShapeInfo, newOrder);
-                newShapeInfo[2 * newRank + 1] = oldShapeInfo[2 * oldRank + 1]; // type
-                return true;
-            }
-            else                            // we can't perform simple reshaping of array with f order and therefore we enforce recalculation of strides in c order manner
-                usualReshapeForForder = true;
-        }
 
         Nd4jLong* newStrides = shape::stride(newShapeInfo);
         const Nd4jLong* oldShape = shape::shapeOf(const_cast<Nd4jLong*>(oldShapeInfo));
         const Nd4jLong* oldStrides = shape::stride(const_cast<Nd4jLong*>(oldShapeInfo));        
         int oldStart(0), oldStop(1), newStart(0), newStop(1), newDim, oldDim;
-
-        if(isFOrder && !usualReshapeForForder) {
-
-            while (newStart < newRank && oldStart < oldRank) {
-                newDim = newShape[newStart];
-                oldDim = oldShape[oldStart];
-
-                while (newDim != oldDim)
-                    if (newDim < oldDim) newDim *= newShape[newStop++];                
-                    else                 oldDim *= oldShape[oldStop++];
-                            
-                /* Check whether the original axes can be combined */
-                for (int i = oldStart; i < oldStop - 1; i++) {
-                    if(oldShape[i] == 1) {     // take into account strides like {...,1,1,...} correctly
-                        ++oldStart;
-                        continue;
-                    }
-                    if(oldStrides[i + 1] != oldShape[i] * oldStrides[i])
-                        return false;       // not contiguous enough
-                }
-
-                /* Calculate new strides for all axes currently worked with */            
-                newStrides[newStart] = oldStrides[oldStart];
-                for (int i = newStart + 1; i < newStop; i++) 
-                    newStrides[i] = newStrides[i - 1] * newShape[i - 1];                
-            
-                newStart = newStop++;
-                oldStart = oldStop++;
-            }
-        }
-        else {
-
-            while (newStart < newRank && oldStart < oldRank) {
-                newDim = newShape[newStart];
-                oldDim = oldShape[oldStart];
-
-            while (newDim != oldDim) 
-                if (newDim < oldDim) newDim *= newShape[newStop++];
-                else                 oldDim *= oldShape[oldStop++];
-            
-                /* Check whether the original axes can be combined */
-                for (int i = oldStart; i < oldStop - 1; i++) 
-                    if (oldShape[i] != 1 && oldStrides[i] != oldShape[i + 1] * oldStrides[i + 1]) 
-                        return false;       /* not contiguous enough */
-
-                /* Calculate new strides for all axes currently worked with */                        
-                newStrides[newStop - 1] = oldStrides[oldStop - 1];
-                for (int i = newStop - 1; i > newStart; i--) 
-                    newStrides[i - 1] = newStrides[i] * newShape[i];                            
-                
-                newStart = newStop++;
-                oldStart = oldStop++;
-            }
-        }        
         
-        newShapeInfo[2 * newRank + 3] = newOrder;    // order
-        newShapeInfo[2 * newRank + 2] = (newOrder != oldOrder || usualReshapeForForder) ? 0 : shape::elementWiseStride(oldShapeInfo);    // ews
-        newShapeInfo[2 * newRank + 1] = oldShapeInfo[2 * oldRank + 1]; // type
+        
+        while (newStart < newRank && oldStart < oldRank) {
+            
+            newDim = newShape[newStart];
+            oldDim = oldShape[oldStart];
+
+            while (newDim != oldDim)
+                if (newDim < oldDim) newDim *= newShape[newStop++];                
+                else                 oldDim *= oldShape[oldStop++];
+
+            // ------ Check whether the original axes can be combined ------ //
+            for (int i = oldStart; i < oldStop - 1; i++) {
+                    
+                if(oldShape[i] == 1) {                         // ignore strides like {...,1,1,...} 
+                    // if(oldOrder == 102) ++oldStart; 
+                    continue; 
+                }   
+                    
+                // if(oldOrder == 102 && oldStrides[i + 1] != oldShape[i] * oldStrides[i])  
+                //     return false;       // not contiguous enough
+                if(/*oldOrder == 99 && */ oldStrides[i] != oldShape[i + 1] * oldStrides[i + 1]) 
+                    return false;       // not contiguous enough
+            }
+
+            // ------ Calculate new strides for all axes currently worked with ------ //
+            // if(isFOrder) {
+            //     newStrides[newStart] = oldStrides[oldStart];
+            //     for (int i = newStart + 1; i < newStop; ++i) 
+            //         newStrides[i] = newStrides[i - 1] * newShape[i - 1];
+            // }
+            // else {
+                newStrides[newStop - 1] = oldStrides[oldStop - 1];
+                for (int i = newStop - 1; i > newStart; --i) 
+                    newStrides[i - 1] = newStrides[i] * newShape[i];     
+            // }
+            
+            newStart = newStop++;
+            oldStart = oldStop++;
+        }
+        
+        newShapeInfo[2 * newRank + 3] = shape::order(oldShapeInfo);    // order
+        newShapeInfo[2 * newRank + 2] = shape::elementWiseStride(oldShapeInfo);    // ews
+        newShapeInfo[2 * newRank + 1] = shape::type(oldShapeInfo);    // type
 
         return true;
     }
+
+
 
     INLINEDEF _CUDA_H bool canReshape(const int oldRank, Nd4jLong* oldShape, const int newRank, Nd4jLong* newShapeOf, bool isFOrder) {
         int oldnd;

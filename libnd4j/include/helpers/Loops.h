@@ -424,7 +424,7 @@ namespace nd4j {
                     for (uint j = 0; j < tadLen; j++)
                         start = update(start, op(tad[j], extraParams), extraParams);
 
-                    z[i] = postPr(start, tadLen, extraParams);;
+                    z[i] = postPr(start, tadLen, extraParams);
                 }
             }
                 break;
@@ -440,7 +440,7 @@ namespace nd4j {
                     for (uint j = 0; j < tadLen; j++)
                         start = update(start, op(tad[j * tadEws], extraParams), extraParams);
 
-                    z[i * zEws] = postPr(start, tadLen, extraParams);;
+                    z[i * zEws] = postPr(start, tadLen, extraParams);
                 }
             }
                 break;
@@ -456,7 +456,7 @@ namespace nd4j {
                     for (uint i0 = 0; i0 < tadLen; ++i0)
                         start = update(start, op(tad[i0 * tadStride[0]], extraParams), extraParams);
 
-                    z[i] = postPr(start, tadLen, extraParams);;
+                    z[i] = postPr(start, tadLen, extraParams);
                 }
             }
                 break;
@@ -474,7 +474,7 @@ namespace nd4j {
                         for (uint i1 = 0; i1 < tadShape[1]; ++i1)
                             start = update(start, op(tad[i0*tadStride[0] + i1*tadStride[1]], extraParams), extraParams);
 
-                    z[i] = postPr(start, tadLen, extraParams);;
+                    z[i] = postPr(start, tadLen, extraParams);
                 }
             }
                 break;
@@ -493,7 +493,7 @@ namespace nd4j {
                             for (uint i2 = 0; i2 < tadShape[2]; ++i2)
                                 start = update(start, op(tad[i0*tadStride[0] + i1*tadStride[1] + i2*tadStride[2]], extraParams), extraParams);
 
-                    z[i] = postPr(start, tadLen, extraParams);;
+                    z[i] = postPr(start, tadLen, extraParams);
                 }
             }
                 break;
@@ -513,7 +513,7 @@ namespace nd4j {
                                 for (uint i3 = 0; i3 < tadShape[3]; ++i3)
                                     start = update(start, op(tad[i0*tadStride[0] + i1*tadStride[1] + i2*tadStride[2] + i3*tadStride[3]], extraParams), extraParams);
 
-                    z[i] = postPr(start, tadLen, extraParams);;
+                    z[i] = postPr(start, tadLen, extraParams);
                 }
             }
                 break;
@@ -533,7 +533,7 @@ namespace nd4j {
                                     for (uint i4 = 0; i4 < tadShape[4]; ++i4)
                                         start = update(start, op(tad[i0*tadStride[0] + i1*tadStride[1] + i2*tadStride[2] + i3*tadStride[3] + i4*tadStride[4] ], extraParams), extraParams);
 
-                    z[i] = postPr(start, tadLen, extraParams);;
+                    z[i] = postPr(start, tadLen, extraParams);
                 }
             }
                 break;
