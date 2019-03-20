@@ -37,7 +37,6 @@ import org.nd4j.linalg.memory.abstracts.Nd4jWorkspace;
 import org.nd4j.nativeblas.NativeOpsHolder;
 import org.nd4j.nativeblas.Nd4jCuda;
 import org.nd4j.linalg.api.memory.Deallocator;
-import org.nd4j.linalg.api.memory.CudaWorkspaceDeallocator;
 
 
 /**
