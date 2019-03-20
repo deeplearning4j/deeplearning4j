@@ -1,9 +1,12 @@
 package org.nd4j.jita.allocator.impl;
 
 import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
 import org.nd4j.linalg.jcublas.buffer.BaseCudaDataBuffer;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import org.nd4j.linalg.api.memory.Deallocator;
+
 
 @Slf4j
 public class CudaDeallocator implements Deallocator {
