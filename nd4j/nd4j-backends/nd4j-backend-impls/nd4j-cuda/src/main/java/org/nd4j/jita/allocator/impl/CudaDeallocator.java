@@ -1,5 +1,8 @@
 package org.nd4j.jita.allocator.impl;
 
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+
 @Slf4j
 public class CudaWorkspaceDeallocator implements Deallocator {
 
@@ -16,15 +19,15 @@ public class CudaWorkspaceDeallocator implements Deallocator {
     public void deallocate() {
         log.trace("Deallocating CUDA memory");
         // skipping any allocation that is coming from workspace
-        /*if (point.isAttached()) {
+        if (point.isAttached()) {
             // TODO: remove allocation point as well?
             if (!allocationsMap.containsKey(point.getObjectId()))
                 throw new RuntimeException();
 
-            getFlowController().waitTillReleased(point);
+            AtomicAllocator.getInstance().getFlowController().waitTillReleased(point);
 
-            getFlowController().getEventsProvider().storeEvent(point.getLastWriteEvent());
-            getFlowController().getEventsProvider().storeEvent(point.getLastReadEvent());
+            AtomicAllocator.getInstance().getFlowController().getEventsProvider().storeEvent(point.getLastWriteEvent());
+            AtomicAllocator.getInstance().getFlowController().getEventsProvider().storeEvent(point.getLastReadEvent());
 
             allocationsMap.remove(point.getObjectId());
 
@@ -34,12 +37,12 @@ public class CudaWorkspaceDeallocator implements Deallocator {
 
         //log.info("Purging {} bytes...", AllocationUtils.getRequiredMemory(point.getShape()));
         if (point.getAllocationStatus() == AllocationStatus.HOST) {
-            purgeZeroObject(point.getBucketId(), point.getObjectId(), point, false);
+            AtomicAllocator.getInstance().purgeZeroObject(point.getBucketId(), point.getObjectId(), point, false);
         } else if (point.getAllocationStatus() == AllocationStatus.DEVICE) {
-            purgeDeviceObject(0L, point.getDeviceId(), point.getObjectId(), point, false);
+            AtomicAllocator.getInstance().purgeDeviceObject(0L, point.getDeviceId(), point.getObjectId(), point, false);
 
             // and we deallocate host memory, since object is dereferenced
-            purgeZeroObject(point.getBucketId(), point.getObjectId(), point, false);
-        }*/
+            AtomicAllocator.getInstance().purgeZeroObject(point.getBucketId(), point.getObjectId(), point, false);
+        }
     }
 }
