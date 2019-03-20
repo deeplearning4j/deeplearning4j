@@ -1034,8 +1034,10 @@ public class AtomicAllocator implements Allocator {
 
     @Override
     public AllocationPoint getAllocationPoint(INDArray array) {
-        DataBuffer buffer =
-                        array.data().originalDataBuffer() == null ? array.data() : array.data().originalDataBuffer();
+        if (array.isEmpty())
+            return null;
+
+        DataBuffer buffer = array.data().originalDataBuffer() == null ? array.data() : array.data().originalDataBuffer();
         return getAllocationPoint(buffer);
     }
 

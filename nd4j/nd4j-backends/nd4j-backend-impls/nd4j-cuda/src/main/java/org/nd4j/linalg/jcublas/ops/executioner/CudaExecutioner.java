@@ -2452,8 +2452,11 @@ public class CudaExecutioner extends DefaultOpExecutioner {
             inputBuffers.put(cnt + inputArgs.length, AtomicAllocator.getInstance().getPointer(in, context));
             inputShapes.put(cnt+ inputArgs.length, dp);
 
-            if (op.isInplaceCall())
-                AtomicAllocator.getInstance().getAllocationPoint(in).tickHostWrite();
+            if (op.isInplaceCall()) {
+                val ap = AtomicAllocator.getInstance().getAllocationPoint(in);
+                if (ap != null)
+                    ap.tickHostWrite();
+            }
 
             cnt++;
         }
@@ -2470,7 +2473,10 @@ public class CudaExecutioner extends DefaultOpExecutioner {
             outputBuffers.put(cnt + outputArgs.length,  AtomicAllocator.getInstance().getPointer(out, context));
             outputShapes.put(cnt + outputArgs.length,  AtomicAllocator.getInstance().getPointer(out.shapeInfoDataBuffer(), context));
 
-            AtomicAllocator.getInstance().getAllocationPoint(out).tickHostWrite();
+            val ap = AtomicAllocator.getInstance().getAllocationPoint(out);
+
+            if (ap != null)
+                ap.tickHostWrite();
 
             cnt++;
         }
