@@ -44,7 +44,7 @@ public class CudaWorkspaceDeallocator implements Deallocator {
 
     @Override
     public void deallocate() {
-        log.info("Deallocating CUDA workspace");
+        log.trace("Deallocating CUDA workspace");
 
         // purging workspace planes
         if (pointersPair != null) {

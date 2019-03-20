@@ -44,7 +44,7 @@ public class CpuWorkspaceDeallocator implements Deallocator {
 
     @Override
     public void deallocate() {
-        log.info("Deallocating CPU workspace");
+        log.trace("Deallocating CPU workspace");
 
         // purging workspace planes
         if (pointersPair != null) {
