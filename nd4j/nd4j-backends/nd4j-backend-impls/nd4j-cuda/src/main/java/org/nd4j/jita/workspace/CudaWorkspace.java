@@ -413,4 +413,8 @@ public class CudaWorkspace extends Nd4jWorkspace {
         return new CudaWorkspaceDeallocator(this);
     }
 
+    @Override
+    public String getUniqueId() {
+        return "Workspace_" + getId();
+    }
 }
