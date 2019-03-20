@@ -2,6 +2,7 @@ package org.nd4j.jita.allocator.impl;
 
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+import org.nd4j.jita.allocator.enums.AllocationStatus;
 import org.nd4j.linalg.jcublas.buffer.BaseCudaDataBuffer;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -11,12 +12,9 @@ import org.nd4j.linalg.api.memory.Deallocator;
 public class CudaDeallocator implements Deallocator {
 
     private AllocationPoint point;
-    private Map<Long, AllocationPoint> allocationsMap = new ConcurrentHashMap<>();
 
-    public CudaDeallocator(@NonNull BaseCudaDataBuffer buffer,
-                           @NonNull AllocationsMap allocationsMap) {
+    public CudaDeallocator(@NonNull BaseCudaDataBuffer buffer) {
         this.point = buffer.getAllocationPoint();
-        this.allocationsMap = allocationsMap;
     }
 
     @Override
@@ -25,7 +23,7 @@ public class CudaDeallocator implements Deallocator {
         // skipping any allocation that is coming from workspace
         if (point.isAttached()) {
             // TODO: remove allocation point as well?
-            if (!allocationsMap.containsKey(point.getObjectId()))
+            if (!AtomicAllocator.getInstance().allocationsMap().containsKey(point.getObjectId()))
                 throw new RuntimeException();
 
             AtomicAllocator.getInstance().getFlowController().waitTillReleased(point);
@@ -33,7 +31,7 @@ public class CudaDeallocator implements Deallocator {
             AtomicAllocator.getInstance().getFlowController().getEventsProvider().storeEvent(point.getLastWriteEvent());
             AtomicAllocator.getInstance().getFlowController().getEventsProvider().storeEvent(point.getLastReadEvent());
 
-            allocationsMap.remove(point.getObjectId());
+            AtomicAllocator.getInstance().allocationsMap().remove(point.getObjectId());
 
             return;
         }

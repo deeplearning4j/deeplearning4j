@@ -153,6 +153,10 @@ public class AtomicAllocator implements Allocator {
 
     }
 
+    protected Map<Long, AllocationPoint> allocationsMap(){
+        return allocationsMap;
+    }
+
     public void applyConfiguration() {
         //log.info("Applying CUDA configuration...");
 
