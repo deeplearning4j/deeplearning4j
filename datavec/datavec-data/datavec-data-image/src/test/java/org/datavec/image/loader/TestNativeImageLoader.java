@@ -16,6 +16,7 @@
 
 package org.datavec.image.loader;
 
+import lombok.val;
 import org.apache.commons.io.IOUtils;
 import org.bytedeco.javacpp.Loader;
 import org.bytedeco.javacpp.indexer.UByteIndexer;
@@ -24,7 +25,9 @@ import org.bytedeco.javacv.Java2DFrameConverter;
 import org.bytedeco.javacv.OpenCVFrameConverter;
 import org.datavec.image.data.ImageWritable;
 import org.junit.Test;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.io.ClassPathResource;
 
 import java.awt.image.BufferedImage;
@@ -188,6 +191,46 @@ public class TestNativeImageLoader {
         assertEquals(1, array4.rows());
         assertEquals(h2 * w2 * ch2, array4.columns());
         assertNotEquals(0.0, array4.sum().getDouble(0), 0.0);
+    }
+
+    @Test
+    public void testDataTypes_1() throws Exception {
+        val dtypes = new DataType[]{DataType.FLOAT, DataType.HALF, DataType.SHORT, DataType.INT};
+
+        val dt = Nd4j.dataType();
+
+        for (val dtype: dtypes) {
+            Nd4j.setDataType(dtype);
+            int w3 = 123, h3 = 77, ch3 = 3;
+            val loader = new NativeImageLoader(h3, w3, ch3);
+            File f3 = new ClassPathResource("datavec-data-image/testimages/class0/2.jpg").getFile();
+            ImageWritable iw3 = loader.asWritable(f3);
+
+            val array = loader.asMatrix(iw3);
+
+            assertEquals(dtype, array.dataType());
+        }
+
+        Nd4j.setDataType(dt);
+    }
+
+    @Test
+    public void testDataTypes_2() throws Exception {
+        val dtypes = new DataType[]{DataType.FLOAT, DataType.HALF, DataType.SHORT, DataType.INT};
+
+        val dt = Nd4j.dataType();
+
+        for (val dtype: dtypes) {
+            Nd4j.setDataType(dtype);
+            int w3 = 123, h3 = 77, ch3 = 3;
+            val loader = new NativeImageLoader(h3, w3, 1);
+            File f3 = new ClassPathResource("datavec-data-image/testimages/class0/2.jpg").getFile();
+            val array = loader.asMatrix(f3);
+
+            assertEquals(dtype, array.dataType());
+        }
+
+        Nd4j.setDataType(dt);
     }
 
     @Test
