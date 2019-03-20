@@ -1,10 +1,12 @@
 package org.nd4j.jita.allocator.impl;
 
+import lombok.NonNull;
+import org.nd4j.linalg.jcublas.buffer.BaseCudaDataBuffer;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Slf4j
-public class CudaWorkspaceDeallocator implements Deallocator {
+public class CudaDeallocator implements Deallocator {
 
     private AllocationPoint point;
     private Map<Long, AllocationPoint> allocationsMap = new ConcurrentHashMap<>();
