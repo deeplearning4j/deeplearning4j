@@ -389,7 +389,40 @@ __host__ static void concatCudaLauncher(const int numOfArrs, const cudaStream_t 
     //////////////////////////////////////////////////////////////////////////
     template<typename T>
     static void clipByAveraged_(graph::LaunchContext* context, NDArray& input, NDArray& output, const std::vector<int>& dimensions, const NDArray& clipNorm, const bool isInplace) {
-
+        auto cn = clipNorm.e<T>(0);
+        if (dimensions.size() == 0) {
+            // all-reduce
+            T n2 = input.reduceNumber(reduce::Norm2).e<T>(0) / input.lengthOf();
+            if (n2 <= cn) {
+                if (!isInplace)
+                    output.assign(input);
+            }
+            else {
+                const T factor = cn / n2;
+                //auto lambda = LAMBDA_T(_x, factor) { return _x * factor; };
+                //input.applyLambda<T>(lambda, &output);
+                output.assign(input * factor);
+            }
+        }
+        else {
+            // along dimension
+            auto norm2 = input.reduceAlongDims(reduce::Norm2, dimensions, false);
+            if (!isInplace)
+                output.assign(input);
+            auto tads = output.allTensorsAlongDimension(dimensions);
+            auto outTads = output.allTensorsAlongDimension(dimensions);
+            // TODO: make this CUDA-compliant somehow
+            for (int e = 0; e < tads->size(); e++) {
+                T n2 = norm2.e<T>(e) / tads->at(e)->lengthOf();
+                const T factor = cn / n2;
+                if (n2 > cn) {
+                    //auto lambda = LAMBDA_T(_x, factor) {return _x * factor;};
+                    tads->at(e)->applyScalar(scalar::Multiply, factor, outTads->at(e));//applyLambda<T>(lambda, &output);
+                }
+            }
+            delete tads;
+            delete outTads;
+        }
     }
 
     void clipByAveraged(graph::LaunchContext* context, NDArray& input, NDArray& output, const std::vector<int>& dimensions, const NDArray& clipNorm, const bool isInplace) {
