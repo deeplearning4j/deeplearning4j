@@ -463,13 +463,13 @@ public class AtomicAllocator implements Allocator {
             point.setConstant(true);
         }
         */
-        int numBuckets = configuration.getNumberOfGcThreads();
+        /*int numBuckets = configuration.getNumberOfGcThreads();
         int bucketId = RandomUtils.nextInt(0, numBuckets);
 
         GarbageBufferReference reference =
-                        new GarbageBufferReference((BaseDataBuffer) buffer, queueMap.get(bucketId), point);
+                        new GarbageBufferReference((BaseDataBuffer) buffer, queueMap.get(bucketId), point);*/
 	    Nd4j.getDeallocatorService().pickObject((BaseCudaDataBuffer)buffer);
-        point.attachReference(reference);
+        //point.attachReference(reference);
         point.setDeviceId(-1);
 
         if (buffer.isAttached()) {
