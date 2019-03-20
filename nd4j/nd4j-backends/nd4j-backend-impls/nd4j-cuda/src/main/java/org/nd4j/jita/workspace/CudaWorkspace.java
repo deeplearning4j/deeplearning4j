@@ -36,6 +36,9 @@ import org.nd4j.linalg.jcublas.context.CudaContext;
 import org.nd4j.linalg.memory.abstracts.Nd4jWorkspace;
 import org.nd4j.nativeblas.NativeOpsHolder;
 import org.nd4j.nativeblas.Nd4jCuda;
+import org.nd4j.linalg.api.memory.Deallocator;
+import org.nd4j.linalg.api.memory.CudaWorkspaceDeallocator;
+
 
 /**
  * CUDA-aware MemoryWorkspace implementation
@@ -403,4 +406,10 @@ public class CudaWorkspace extends Nd4jWorkspace {
     protected List<PointersPair> externalPointers() {
         return externalAllocations;
     }
+
+    @Override
+    public Deallocator deallocator() {
+        return new CudaWorkspaceDeallocator(this);
+    }
+
 }
