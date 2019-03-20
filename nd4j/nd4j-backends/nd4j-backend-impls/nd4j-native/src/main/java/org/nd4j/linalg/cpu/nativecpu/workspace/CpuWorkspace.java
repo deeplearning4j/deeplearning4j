@@ -34,6 +34,9 @@ import org.nd4j.linalg.api.memory.Deallocator;
 import org.nd4j.nativeblas.NativeOps;
 import org.nd4j.nativeblas.NativeOpsHolder;
 
+import java.util.List;
+import java.util.Queue;
+
 /**
  * CPU-only MemoryWorkspace implementation
  *
@@ -178,5 +181,17 @@ public class CpuWorkspace extends Nd4jWorkspace implements Deallocatable {
     @Override
     protected void resetWorkspace() {
         //Pointer.memset(workspace.getHostPointer(), 0, currentSize.get() + SAFETY_OFFSET);
+    }
+
+    protected PointersPair workspace() {
+        return workspace;
+    }
+
+    protected Queue<PointersPair> pinnedPointers() {
+        return pinnedAllocations;
+    }
+
+    protected List<PointersPair> externalPointers() {
+        return externalAllocations;
     }
 }
