@@ -1078,3 +1078,27 @@ TEST_F(NDArrayTest2, subarray_1) {
         ASSERT_TRUE(y5.e<float>(i) == buffExpY5[i]);
         
 }
+
+TEST_F(NDArrayTest2, test_subarray_interval_1) {
+
+    NDArray x('f', {10, 10}, nd4j::DataType::FLOAT32);
+    auto subArr1 = x.subarray({NDIndex::all(), NDIndex::interval(0,9)});
+
+    subArr1->printShapeInfo("subArr1");
+
+    ASSERT_EQ(10, subArr1->sizeAt(0));
+    ASSERT_EQ(9, subArr1->sizeAt(1));
+    delete subArr1;
+}
+
+TEST_F(NDArrayTest2, test_subarray_interval_2) {
+
+    NDArray x('c', {10, 10}, nd4j::DataType::FLOAT32);
+    auto subArr1 = x.subarray({NDIndex::all(), NDIndex::interval(0,9)});
+
+    subArr1->printShapeInfo("subArr1");
+
+    ASSERT_EQ(10, subArr1->sizeAt(0));
+    ASSERT_EQ(9, subArr1->sizeAt(1));
+    delete subArr1;
+}

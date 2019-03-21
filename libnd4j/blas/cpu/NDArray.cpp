@@ -5092,6 +5092,11 @@ Nd4jLong NDArray::getOffset(const Nd4jLong i) const {
                 indexes[3 * d + 1] = indexes[3 * d] + 1;            // last
                 indexes[3 * d + 2] = 1;                             // stride
             }
+            else if (idx.at(d)->isInterval()) {
+                indexes[3 * d]     = idx.at(d)->getIndices().at(0); // first
+                indexes[3 * d + 1] = idx.at(d)->getIndices().size();// last
+                indexes[3 * d + 2] = idx.at(d)->stride();           // stride
+            }
             else {
                 indexes[3 * d]     = idx.at(d)->getIndices().at(0); // first
                 indexes[3 * d + 1] = idx.at(d)->getIndices().at(1); // last
@@ -5116,19 +5121,24 @@ Nd4jLong NDArray::getOffset(const Nd4jLong i) const {
         for (const auto& item : idx) {
 
             if (item->isAll()) {
-                indexes[3 * d]     = 0;                         // first
-                indexes[3 * d + 1] = 0;                         // last
-                indexes[3 * d + 2] = 1;                         // stride
+                indexes[3 * d]     = 0;                             // first
+                indexes[3 * d + 1] = 0;                             // last
+                indexes[3 * d + 2] = 1;                             // stride
             }
             else if (item->isPoint()) {
-                indexes[3 * d]     = item->getIndices().at(0);  // first
-                indexes[3 * d + 1] = indexes[3 * d] + 1;        // last
-                indexes[3 * d + 2] = 1;                         // stride
+                indexes[3 * d]     = item->getIndices().at(0);      // first
+                indexes[3 * d + 1] = indexes[3 * d] + 1;            // last
+                indexes[3 * d + 2] = 1;                             // stride
+            }
+            else if (item->isInterval()) {
+                indexes[3 * d]     = item->getIndices().at(0);      // first
+                indexes[3 * d + 1] = item->getIndices().size();     // last
+                indexes[3 * d + 2] = item->stride();                // stride
             }
             else {
-                indexes[3 * d]     = item->getIndices().at(0);  // first
-                indexes[3 * d + 1] = item->getIndices().at(1);  // last
-                indexes[3 * d + 2] = item->getIndices().at(2);  // stride
+                indexes[3 * d]     = item->getIndices().at(0);      // first
+                indexes[3 * d + 1] = item->getIndices().at(1);      // last
+                indexes[3 * d + 2] = item->getIndices().at(2);      // stride
             }
             ++d;
         }
