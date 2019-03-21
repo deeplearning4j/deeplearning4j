@@ -34,8 +34,8 @@ namespace nd4j {
         NDIndex() = default;
         ~NDIndex() = default;
 
-        bool isAll();
-        bool isPoint();
+        bool isAll() const;
+        bool isPoint() const ;
         virtual bool isInterval();
 
         std::vector<Nd4jLong>& getIndices();
