@@ -5127,10 +5127,6 @@ Nd4jLong NDArray::getOffset(const Nd4jLong i) const {
         int d = 0;
         for (const auto& item : idx) {
 
-            printf("%s\n",typeid(*item).name());
-            printf("%s\n",typeid(NDIndexInterval()).name());
-            
-
             if (item->isAll()) {
                 indexes[3 * d]     = 0;                             // first
                 indexes[3 * d + 1] = 0;                             // last
