@@ -1179,14 +1179,29 @@ void NDArray::replacePointers(void *buffer, Nd4jLong *shapeInfo, const bool rele
 
     char order = newOrder == 'a' ? ordering() : newOrder;
 
-    auto outShapeInfo = ShapeBuilders::createShapeInfo(_dataType, order, getShapeAsVector(), _workspace);
-    void* outBuffer = nullptr;
-    ALLOCATE(outBuffer, _workspace, _length * sizeOfT(), int8_t);
+    if (isEmpty()) {
+        return NDArrayFactory::empty_(this->dataType(), this->_workspace);
+    }
 
-    auto result = new NDArray(outBuffer, outShapeInfo, _workspace, true, true);
-    result->assign(this);
+    // for now string arrays require special treatment
+    if (this->dataType() == DataType::UTF8) {
+        std::vector<std::string> strings(_length);
+        for (int e = 0; e < _length; e++)
+            strings[e] = this->e<std::string>(e);
 
-    return result;
+        auto result = NDArrayFactory::string_(order, this->getShapeAsVector(), strings, _workspace);
+        return result;
+    } else {
+
+        auto outShapeInfo = ShapeBuilders::createShapeInfo(_dataType, order, getShapeAsVector(), _workspace);
+        void *outBuffer = nullptr;
+        ALLOCATE(outBuffer, _workspace, _length * sizeOfT(), int8_t);
+
+        auto result = new NDArray(outBuffer, outShapeInfo, _workspace, true, true);
+        result->assign(this);
+
+        return result;
+    }
 }
 
     NDArray NDArray::varianceNumber(nd4j::variance::Ops op, bool biasCorrected) {
