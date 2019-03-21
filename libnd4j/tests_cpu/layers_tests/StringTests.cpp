@@ -89,4 +89,6 @@ TEST_F(StringTests, Basic_dup_1) {
 
     ASSERT_EQ(f, z0);
     ASSERT_EQ(f, z1);
+
+    delete dup;
 }
