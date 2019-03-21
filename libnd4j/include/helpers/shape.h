@@ -184,6 +184,7 @@ namespace shape {
     ND4J_EXPORT _CUDA_HD Nd4jLong* calcStrides(Nd4jLong *shape, int rank, Nd4jLong* ret);
 
     ND4J_EXPORT _CUDA_HD void updateStrides(Nd4jLong *shape, const char order);
+    ND4J_EXPORT _CUDA_HD void updateStrides(const int rank, const Nd4jLong *shapeOnly, Nd4jLong *stridesOnly, const char order);
 
 
 // check whether input dimensions are permuted, not permuted dimensions order have to be 0,....,rank-1
@@ -1483,26 +1484,45 @@ __device__ INLINEDEF Nd4jLong *cuMalloc(Nd4jLong *buffer, long size) {
         return calcStrides(shape, rank, 1, ret);
     }
 
-    INLINEDEF _CUDA_HD void updateStrides(Nd4jLong *shape, const char order) {
-        int rank = shape[0];
+//////////////////////////////////////////////////////////////////////    
+    INLINEDEF _CUDA_HD void updateStrides(Nd4jLong *shapeInfo, const char order) {
+        int rank = shapeInfo[0];
         int doubleRank = 2*rank;
         
         if (rank > 0) {
             if (order == 'c') {
-                shape[doubleRank] = 1;          // set unity as last stride for c order
+                shapeInfo[doubleRank] = 1;          // set unity as last stride for c order
                 for (int j = 1; j < rank; ++j) {
-                    shape[doubleRank - j] = shape[doubleRank - j + 1] * shape[rank + 1 - j];
+                    shapeInfo[doubleRank - j] = shapeInfo[doubleRank - j + 1] * shapeInfo[rank + 1 - j];
                 }
             } else {
-                shape[rank + 1] = 1;             // set unity as first stride for f order
+                shapeInfo[rank + 1] = 1;             // set unity as first stride for f order
                 for (int j = rank + 1; j < doubleRank; ++j) {
-                    shape[j + 1] = shape[j] * shape[j - rank];
+                    shapeInfo[j + 1] = shapeInfo[j] * shapeInfo[j - rank];
                 }
             }
         }
-        // set last 2 elements in shape
-        shape[doubleRank + 2] = 1;
-        shape[doubleRank + 3] = (int)order;
+        // set last 2 elements in shapeInfo
+        shapeInfo[doubleRank + 2] = 1;
+        shapeInfo[doubleRank + 3] = (int)order;
+    }
+
+//////////////////////////////////////////////////////////////////////    
+    INLINEDEF _CUDA_HD void updateStrides(const int rank, const Nd4jLong *shapeOnly, Nd4jLong *stridesOnly, const char order) {
+        
+        if (rank > 0) {
+            if (order == 'c') {
+                stridesOnly[rank - 1] = 1;          // set unity as last stride for c order
+                for (int j = 1; j < rank; ++j)
+                    stridesOnly[rank - 1 - j] = stridesOnly[rank - j] * shapeOnly[rank - j];
+            } 
+            else {
+                stridesOnly[0] = 1;             // set unity as first stride for f order
+                for (int j = 1; j < rank; ++j) {
+                    stridesOnly[j] = stridesOnly[j - 1] * shapeOnly[j - 1];
+                }
+            }
+        }
     }
 
 
