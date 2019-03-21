@@ -996,3 +996,14 @@ TEST_F(NDArrayTest2, test_subarray_interval_2) {
     ASSERT_EQ(9, subArr1->sizeAt(1));
     delete subArr1;
 }
+
+TEST_F(NDArrayTest2, test_subarray_3d_cf) {
+    NDArray f('f', {10, 20, 30}, nd4j::DataType::FLOAT32);
+    NDArray c('c', {10, 20, 30}, nd4j::DataType::FLOAT32);
+
+    auto subarrayF = f({0,0, 0,0, 2,3}, true);
+    subarrayF.printShapeInfo("F subarray shapeInfo");
+
+    auto subarrayC = c({2,3, 0,0, 0,0}, true);
+    subarrayC.printShapeInfo("C subarray shapeInfo");
+}
