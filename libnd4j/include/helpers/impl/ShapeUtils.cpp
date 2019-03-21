@@ -356,7 +356,7 @@ Nd4jLong* ShapeUtils::evalReduceShapeInfo(const char order, std::vector<int>& di
 //////////////////////////////////////////////////////////////////////////
 static std::vector<int> evalDimsToExclude(const int rank, const std::vector<int>& dimensions) {
 
-    return evalDimsToExclude(rank, dimensions.size(), dimensions.data());
+    return ShapeUtils::evalDimsToExclude(rank, dimensions.size(), dimensions.data());
 }
 
 //////////////////////////////////////////////////////////////////////////

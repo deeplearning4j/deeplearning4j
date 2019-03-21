@@ -234,10 +234,11 @@ namespace nd4j {
 
             //*********************************************//
             case EWS1_SMALLARR2DX: {                
-                const xLen = zLen * tadLen;                
+                const auto xLen = zLen * tadLen;                
                 for (uint i = 0; i < xLen; ++i) {                
-                    const auto zOffset = shape::subArrayOffset(i, xShapeInfo, zShapeInfo, dimsToExclude);
-                    z[zOffset] = OpType::update(i % tadLen ? z[zOffset] : OpType::startingIndexValue(x), OpType::op(x[i], extraParams), extraParams);
+                    const auto zOffset = shape::subArrayOffset(i, xShapeInfo, zShapeInfo, dimsToExclude);                    
+                    auto startVal = i % tadLen ? z[zOffset] : static_cast<Z>(OpType::startingValue(x));
+                    z[zOffset] = OpType::update(startVal, OpType::op(x[i], extraParams), extraParams);
                 }
             }
                 break;

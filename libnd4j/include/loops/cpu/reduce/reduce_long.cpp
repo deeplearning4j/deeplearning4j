@@ -20,6 +20,7 @@
 //
 
 #include <types/types.h>
+#include <ShapeUtils.h>
 #include <op_boilerplate.h>
 #include <loops/reduce_long.h>
 #include <loops/legacy_ops.h>
@@ -131,12 +132,12 @@ namespace functions {
                              Nd4jLong *xShapeInfo,
                              void *extraParams,
                              void *z,
-                             Nd4jLong *zShapeBuffer,
+                             Nd4jLong *zShapeInfo,
                              int *dimension,
                              int dimensionLength,
                              Nd4jLong *tadShapeInfo,
                              Nd4jLong *tadOffset) {
-                DISPATCH_BY_OPNUM_TT(exec, PARAMS(x, xShapeInfo, extraParams, z, zShapeBuffer, dimension, dimensionLength, tadShapeInfo, tadOffset), REDUCE_LONG_OPS);
+                DISPATCH_BY_OPNUM_TT(exec, PARAMS(x, xShapeInfo, extraParams, z, zShapeInfo, dimension, dimensionLength, tadShapeInfo, tadOffset), REDUCE_LONG_OPS);
         }
 
         template <typename X, typename Z>
@@ -145,7 +146,7 @@ namespace functions {
                              Nd4jLong *xShapeInfo,
                              void *vextraParams,
                              void *vresult,
-                             Nd4jLong *zShapeBuffer,
+                             Nd4jLong *zShapeInfo,
                              int *dimension,
                              int dimensionLength,
                              Nd4jLong *tadShapeInfo,
@@ -155,7 +156,7 @@ namespace functions {
                 auto z = reinterpret_cast<Z *>(vresult);
                 auto extraParams = reinterpret_cast<X *>(vextraParams);
 
-                auto resultLength = shape::length(zShapeBuffer);
+                auto resultLength = shape::length(zShapeInfo);
 
                 //pre squeezed: this is for keeping the pointer to the original
                 //shape information for tad offset
@@ -168,7 +169,7 @@ namespace functions {
                 }
 
                 if (OpType::requiresSpecialAccumulation) {
-                    OpType::execSpecial(x, xShapeInfo, extraParams, z, zShapeBuffer, dimension, dimensionLength, tadShapeInfo, tadOffset);
+                    OpType::execSpecial(x, xShapeInfo, extraParams, z, zShapeInfo, dimension, dimensionLength, tadShapeInfo, tadOffset);
                     return;
                 }
 
@@ -191,9 +192,9 @@ namespace functions {
                     tadOffsets = tad->tadOffsets;
                 }
                 
-                std::vector<int> dimsToExclude = ShapeUtils::evalDimsToExclude(xShapeInfo[0], dimensionLength, dimension);
+                std::vector<int> dimsToExclude = nd4j::ShapeUtils::evalDimsToExclude(xShapeInfo[0], dimensionLength, dimension);
                 
-                nd4j::Loops::loopTadXZ<X, Z, X, OpType>(x, xShapeInfo, z, zShapeInfo,  tadOnlyShapeInfo, tadOffsets, dimsToExclude.data() extraParams); 
+                nd4j::Loops::loopTadXZ<X, Z, X, OpType>(x, xShapeInfo, z, zShapeInfo,  tadOnlyShapeInfo, tadOffsets, dimsToExclude.data(), extraParams); 
                 
                 if (tad != nullptr)
                     delete tad;

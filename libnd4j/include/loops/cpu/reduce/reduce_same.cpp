@@ -20,6 +20,7 @@
 //
 
 #include <types/types.h>
+#include <ShapeUtils.h>
 #include <op_boilerplate.h>
 #include <loops/reduce_same.h>
 #include <loops/legacy_ops.h>
@@ -203,9 +204,9 @@ namespace functions {
                     tadOffsets = tad->tadOffsets;
                 }
                 
-                std::vector<int> dimsToExclude = ShapeUtils::evalDimsToExclude(xShapeInfo[0], dimensionLength, dimension);
+                std::vector<int> dimsToExclude = nd4j::ShapeUtils::evalDimsToExclude(xShapeInfo[0], dimensionLength, dimension);
                 
-                nd4j::Loops::loopTadXZ<X, X, X, OpType>(x, xShapeInfo, z, zShapeInfo,  tadOnlyShapeInfo, tadOffsets, dimsToExclude.data() extraParams);
+                nd4j::Loops::loopTadXZ<X, X, X, OpType>(x, xShapeInfo, z, zShapeInfo,  tadOnlyShapeInfo, tadOffsets, dimsToExclude.data(), extraParams);
              
                 if (tad != nullptr)
                     delete tad;
