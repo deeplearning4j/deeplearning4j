@@ -52,6 +52,7 @@ namespace helpers {
             linearStatus = shape::elementWiseStride(inputShape);
             inputArr = reinterpret_cast<T*>(input);
         }
+        __syncthreads();
 
         for (Nd4jLong e = tid; e < numOfElemsToReverse / 2; e += step) {
             if (linearStatus == 1) {
@@ -92,22 +93,36 @@ namespace helpers {
         }
         __syncthreads();
 
-        for (Nd4jLong e = tid; e < numOfElemsToReverse; e += step) {
-            if (linearStatus == 1) {
-                auto idx = numOfElemsToReverse - e - 1;
-                outputArr[idx] = inputArr[e];
-            }
-            else if (linearStatus > 1) {
-                auto idx1 = (numOfElemsToReverse - e - 1) * linearStatus;
-                Nd4jLong idx2 =  e * linearStatus;
-                outputArr[idx1] = inputArr[idx2];
+        for (Nd4jLong e = tid; e < length; e += step) {
+            if (e < numOfElemsToReverse ) {
+                if (linearStatus == 1) {
+                    auto idx = numOfElemsToReverse - e - 1;
+                    outputArr[idx] = inputArr[e];
+                } else if (linearStatus > 1) {
+                    auto idx1 = (numOfElemsToReverse - e - 1) * linearStatus;
+                    Nd4jLong idx2 = e * linearStatus;
+                    outputArr[idx1] = inputArr[idx2];
+                } else {
+                    auto inOffset = shape::getIndexOffset(e, inputShape, length);
+                    auto outOffset = shape::getIndexOffset(numOfElemsToReverse - e - 1, outputShape, length);
+                    outputArr[outOffset] = inputArr[inOffset];
+                }
             }
             else {
-                auto inOffset  = shape::getIndexOffset(e, inputShape, length);
-                auto outOffset = shape::getIndexOffset(numOfElemsToReverse - e - 1, outputShape, length);
-                outputArr[outOffset] = inputArr[inOffset];
+                if (linearStatus == 1) {
+                    outputArr[e] = inputArr[e];
+                } else if (linearStatus > 1) {
+                    auto idx1 = e * linearStatus;
+                    Nd4jLong idx2 = e * linearStatus;
+                    outputArr[idx1] = inputArr[idx2];
+                } else {
+                    auto inOffset = shape::getIndexOffset(e, inputShape, length);
+                    auto outOffset = shape::getIndexOffset(e, outputShape, length);
+                    outputArr[outOffset] = inputArr[inOffset];
+                }
             }
         }
+
         //printf("\n");
     }
 
@@ -128,12 +143,59 @@ namespace helpers {
 
     ///////////////////////////////////////////////////////////////////
     template <typename T>
-    static void _reverseSequence(const NDArray* input, const NDArray* seqLengths, NDArray* output, int seqDim, const int batchDim){
+    static void _reverseSequence(graph::LaunchContext* context, const NDArray* input, const NDArray* seqLengths, NDArray* output, int seqDim, const int batchDim){
+        int posOfNonUnityDim = -1;
+        seqLengths->syncToHost();
+        auto stream = context->getCudaStream();
+        if (!input->isActualOnDeviceSide())
+            input->syncToDevice();
 
+        if(input->isVector() || shape::isLikeVector(input->getShapeInfo(), posOfNonUnityDim) || seqLengths->lengthOf() == 1) {
+            int numOfElemsToReverse = seqLengths->e<int>(0);
+//            printf("Length %d\n", numOfElemsToReverse);
+//            input->printBuffer("INPUT");
+            if((seqDim == 0 && input->sizeAt(0) == 1) || (batchDim == posOfNonUnityDim))
+                output->assign(input);
+            else
+                reverseArrayKernel<T><<<256, 512, 8192, *stream>>>(input->getSpecialBuffer(), input->getSpecialShapeInfo(), output->specialBuffer(), output->specialShapeInfo(), numOfElemsToReverse);//helpers::reverseArray<T>(context, const_cast<NDArray*>(input), output, numOfElemsToReverse);
+        }
+        else {
+
+            if(seqDim > batchDim)
+                --seqDim;
+
+            std::vector<int> dimensions = ShapeUtils::evalDimsToExclude(input->rankOf(), {batchDim});
+
+            auto inSubArrsSet  = input->allTensorsAlongDimension(dimensions);
+            auto outSubArrsSet = output->allTensorsAlongDimension(dimensions);
+
+// #pragma omp parallel for schedule(guided)  if(inSubArrsSet->size() > Environment::getInstance()->elementwiseThreshold())
+            for(int i = 0; i < inSubArrsSet->size(); ++i) {
+
+                int numOfElemsToReverse = seqLengths->e<int>(i);
+
+                if(numOfElemsToReverse == 0 || numOfElemsToReverse == 1) {
+                    outSubArrsSet->at(i)->assign(inSubArrsSet->at(i));
+                }
+                else {
+                    auto inInnerSet  = inSubArrsSet->at(i)->allTensorsAlongDimension({seqDim});
+                    auto outInnerSet = outSubArrsSet->at(i)->allTensorsAlongDimension({seqDim});
+                    for(int j = 0; j < inInnerSet->size(); ++j)
+                        reverseArray<T>(context, inInnerSet->at(j), outInnerSet->at(j), numOfElemsToReverse);
+
+                    delete inInnerSet;
+                    delete outInnerSet;
+                }
+            }
+            delete inSubArrsSet;
+            delete outSubArrsSet;
+        }
+        input->tickReadDevice();
+        output->tickWriteDevice();
     }
 
     void reverseSequence(graph::LaunchContext* context, const NDArray* input, const NDArray* seqLengths, NDArray* output, int seqDim, const int batchDim) {
-        BUILD_SINGLE_SELECTOR(input->dataType(), _reverseSequence, (input, seqLengths, output, seqDim, batchDim), LIBND4J_TYPES);
+        BUILD_SINGLE_SELECTOR(input->dataType(), _reverseSequence, (context, input, seqLengths, output, seqDim, batchDim), LIBND4J_TYPES);
     }
 
     //////////////////////////////////////////////////////////////////////////
