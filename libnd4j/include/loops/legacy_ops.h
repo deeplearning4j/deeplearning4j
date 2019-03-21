@@ -230,7 +230,8 @@
         (41, Step), \
         (42, LstmClip), \
         (43, TruncateMod) ,\
-        (44, ReversePow)
+        (44, SquaredReverseSubtract) ,\
+        (45, ReversePow)
 
 
 

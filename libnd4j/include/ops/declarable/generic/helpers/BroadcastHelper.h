@@ -49,6 +49,8 @@ namespace nd4j {
                     if (z->isSameShape(y)) {
                         if (op.s == scalar::Add || op.s == scalar::Multiply ) {
                             y->applyScalarArr(op.s, x, z, nullptr);
+                        } else if (op.s == scalar::SquaredSubtract) {
+                            y->applyScalarArr(scalar::SquaredReverseSubtract, x, z, nullptr);
                         } else if (op.s == scalar::Subtract) {
                             y->applyScalarArr(scalar::ReverseSubtract, x, z, nullptr);
                         } else if (op.s == scalar::Divide) {
