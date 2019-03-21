@@ -143,10 +143,11 @@ public class KDTree implements Serializable {
 
     private void knn(KDNode node, INDArray point, HyperRect rect, double dist, List<Pair<Double, INDArray>> best,
                     int _disc) {
-        if (node == null || rect.minDistance(point) > dist)
+        if (node == null || rect == null || rect.minDistance(point) > dist)
             return;
         int _discNext = (_disc + 1) % dims;
-        double distance = Nd4j.getExecutioner().execAndReturn(new EuclideanDistance(point, Nd4j.scalar(0.0))).getFinalResult()
+        double distance = Nd4j.getExecutioner().execAndReturn(new EuclideanDistance(point,
+                /*Nd4j.scalar(0.0))*/ Nd4j.zeros(point.dataType(), point.shape()))).getFinalResult()
                         .doubleValue();
         if (distance <= dist) {
             best.add(Pair.of(distance, node.getPoint()));

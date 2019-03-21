@@ -105,4 +105,28 @@ public class KDTreeTest {
 
     }
 
+    @Test
+    public void testKNN() {
+        int n = 10;
+        // make a KD-tree of dimension {#n}
+        KDTree kdTree = new KDTree(n);
+        for (int i = -1; i < n; i++) {
+            // Insert a unit vector along each dimension
+            List<Double> vec = new ArrayList<>(n);
+            // i = -1 ensures the origin is in the Tree
+            for (int k = 0; k < n; k++) {
+                vec.add((k == i) ? 1.0 : 0.0);
+            }
+            INDArray indVec = Nd4j.create(Nd4j.createBuffer(Doubles.toArray(vec)));
+            kdTree.insert(indVec);
+        }
+        Random rand = new Random();
+        // random point in the Hypercube
+        List<Double> pt = new ArrayList(n);
+        for (int k = 0; k < n; k++) {
+            pt.add(rand.nextDouble() * 10.0);
+        }
+        List<Pair<Double, INDArray>> list = kdTree.knn(Nd4j.create(Nd4j.createBuffer(Doubles.toArray(pt))), 20.0);
+    }
+
 }
