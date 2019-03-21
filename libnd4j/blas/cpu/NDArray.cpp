@@ -1179,6 +1179,10 @@ void NDArray::replacePointers(void *buffer, Nd4jLong *shapeInfo, const bool rele
 
     char order = newOrder == 'a' ? ordering() : newOrder;
 
+    if (isEmpty()) {
+        return NDArrayFactory::empty_(this->dataType(), this->_workspace);
+    }
+
     // for now string arrays require special treatment
     if (this->dataType() == DataType::UTF8) {
         std::vector<std::string> strings(_length);
