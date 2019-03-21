@@ -58,11 +58,11 @@ namespace nd4j {
             this->_indices.push_back(e);
     }
 
-    bool nd4j::NDIndex::isAll() const {
+    bool nd4j::NDIndex::isAll() {
         return _indices.size() == 1 && _indices.at(0) == -1;
     }
 
-    bool nd4j::NDIndex::isPoint() const {
+    bool nd4j::NDIndex::isPoint() {
         return _indices.size() == 1 && _indices.at(0) >= 0;
     }
 
