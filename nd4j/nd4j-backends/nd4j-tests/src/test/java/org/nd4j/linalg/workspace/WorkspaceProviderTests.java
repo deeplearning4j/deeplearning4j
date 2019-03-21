@@ -965,7 +965,7 @@ public class WorkspaceProviderTests extends BaseNd4jTest {
     @Test
     public void testWorkspaceGc_1() throws Exception {
 
-        for (int e = 0; e < 10000; e++) {
+        for (int e = 0; e < 10; e++) {
             val f = e;
             val t = new Thread(new Runnable() {
                 @Override
