@@ -53,6 +53,10 @@ namespace nd4j {
                             y->applyScalarArr(scalar::ReverseSubtract, x, z, nullptr);
                         } else if (op.s == scalar::Divide) {
                             y->applyScalarArr(scalar::ReverseDivide, x, z, nullptr);
+                        } else if (op.s == scalar::ReverseSubtract) {
+                            y->applyScalarArr(scalar::Subtract, x, z, nullptr);
+                        } else if (op.s == scalar::ReverseDivide) {
+                            y->applyScalarArr(scalar::Divide, x, z, nullptr);
                         } else {
                             z->assign(x);
                             z->applyPairwiseTransform(op.p, *y, extraArgs);
