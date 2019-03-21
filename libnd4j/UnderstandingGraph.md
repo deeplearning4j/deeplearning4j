@@ -78,9 +78,9 @@ Despite being simple - it still provides you with time spent in various parts of
 
 ```c++
 Environment::getInstance()->setProfiling(true);
-auto graph = GraphExecutioner<float>::importFromFlatBuffers("./resources/ae_00.fb");
+auto graph = GraphExecutioner::importFromFlatBuffers("./resources/ae_00.fb");
 
-auto profile = GraphProfilingHelper<float>::profile(graph, 1000);
+auto profile = GraphProfilingHelper::profile(graph, 1000);
 profile->printOut();
 
 delete graph;
