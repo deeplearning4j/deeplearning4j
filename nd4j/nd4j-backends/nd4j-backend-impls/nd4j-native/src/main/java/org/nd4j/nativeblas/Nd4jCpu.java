@@ -20798,6 +20798,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
          * q: input 3D array "queries" of shape [batchSize, featureKeys, queryCount] or 4D array of shape [batchSize, numHeads, featureKeys, queryCount]
          * k: input 3D array "keys" of shape [batchSize, featureKeys, timesteps] or 4D array of shape [batchSize, numHeads, featureKeys, timesteps]
          * v: input 3D array "values" of shape [batchSize, featureValues, timesteps] or 4D array of shape [batchSize, numHeads, featureValues, timesteps]
+         * mask: OPTIONAL; array that defines which values should be skipped of shape [batchSize, timesteps]
          *
          * integer input arguments:
          * 0: normalization, may have two values: zero -> do not apply normalization, one -> apply normalization
@@ -20860,6 +20861,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
          * Wk: input key projection weights of shape [numHeads, projectedKeys, featureKeys]
          * Wv: input value projection weights of shape [numHeads, projectedValues, featureValues]
          * Wo: output projection weights of shape [numHeads * projectedValues, outSize]
+         * mask: OPTIONAL; array that defines which values should be skipped of shape [batchSize, timesteps]
          *
          * integer input arguments:
          * 0: normalization, may have two values: zero -> do not apply normalization, one -> apply normalization

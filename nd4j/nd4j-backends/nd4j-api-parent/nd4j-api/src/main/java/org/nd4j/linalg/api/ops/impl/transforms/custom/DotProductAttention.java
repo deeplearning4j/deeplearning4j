@@ -40,8 +40,9 @@ public class DotProductAttention extends DynamicCustomOp {
     private boolean withWeights;
     private boolean scaled;
 
-    public DotProductAttention(SameDiff sameDiff, SDVariable queries, SDVariable keys, SDVariable values, boolean scaled, boolean withWeights) {
-        super(null, sameDiff, new SDVariable[] {queries, keys, values}, false);
+
+    public DotProductAttention(SameDiff sameDiff, SDVariable queries, SDVariable keys, SDVariable values, SDVariable mask, boolean scaled, boolean withWeights) {
+        super(null, sameDiff, mask == null ? new SDVariable[] {queries, keys, values} : new SDVariable[] {queries, keys, values, mask}, false);
         this.scaled = scaled;
         this.withWeights = withWeights;
         addIArgument(scaled ? 1 : 0);
@@ -55,14 +56,14 @@ public class DotProductAttention extends DynamicCustomOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> gradient) {
-        return sameDiff.f().dotProductAttentionBp(arg(0), arg(1), arg(2), gradient.get(0), scaled);
+        return sameDiff.f().dotProductAttentionBp(arg(0), arg(1), arg(2), gradient.get(0), args().length > 3 ? arg(3) : null, scaled);
     }
 
     @Override
     public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes){
-        Preconditions.checkState(dataTypes != null && dataTypes.size() == 3, "Expected exactly 3 input datatypes, got %s", dataTypes);
+        Preconditions.checkState(dataTypes != null && (dataTypes.size() == 3 || dataTypes.size() == 4), "Expected exactly 3 or 4 input datatypes, got %s", dataTypes);
         DataType first = dataTypes.get(0);
-        for( int i=0; i<3; i++ ) {
+        for( int i=0; i<dataTypes.size(); i++ ) {
             Preconditions.checkState(dataTypes.get(i).isFPType(), "Input %s datatype must be a floating point type, got datypes %s", dataTypes);
             if(i > 0){
                 Preconditions.checkState(first == dataTypes.get(i), "All datatypes must be same type, got input datatypes %s", dataTypes);

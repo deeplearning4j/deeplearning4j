@@ -131,9 +131,9 @@ public class SelfAttentionLayer extends SameDiffLayer {
             val Wv = paramTable.get(WEIGHT_KEY_VALUE_PROJECTION);
             val Wo = paramTable.get(WEIGHT_KEY_OUT_PROJECTION);
 
-            return sameDiff.nn.multiHeadDotProductAttention(getLayerName(), layerInput, layerInput, layerInput, Wq, Wk, Wv, Wo, true);
+            return sameDiff.nn.multiHeadDotProductAttention(getLayerName(), layerInput, layerInput, layerInput, Wq, Wk, Wv, Wo, null, true);
         }else{
-            return sameDiff.nn.dotProductAttention(getLayerName(), layerInput, layerInput, layerInput, true);
+            return sameDiff.nn.dotProductAttention(getLayerName(), layerInput, layerInput, layerInput, null, true);
         }
     }
 

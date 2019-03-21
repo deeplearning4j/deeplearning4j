@@ -1543,28 +1543,28 @@ public class DifferentialFunctionFactory {
         return new TensorMmul(sameDiff(), x, y, dimensions).outputVariable();
     }
 
-    public SDVariable dotProductAttention(SDVariable queries, SDVariable keys, SDVariable values, boolean scaled) {
-        return new DotProductAttention(sameDiff(), queries, keys, values, scaled, false).outputVariable();
+    public SDVariable dotProductAttention(SDVariable queries, SDVariable keys, SDVariable values, SDVariable mask, boolean scaled) {
+        return new DotProductAttention(sameDiff(), queries, keys, values, mask, scaled, false).outputVariable();
     }
 
-    public List<SDVariable> dotProductAttention(SDVariable queries, SDVariable keys, SDVariable values, boolean scaled, boolean withWeights) {
-        return Arrays.asList(new DotProductAttention(sameDiff(), queries, keys, values, scaled, withWeights).outputVariables());
+    public List<SDVariable> dotProductAttention(SDVariable queries, SDVariable keys, SDVariable values, SDVariable mask, boolean scaled, boolean withWeights) {
+        return Arrays.asList(new DotProductAttention(sameDiff(), queries, keys, values, mask, scaled, withWeights).outputVariables());
     }
 
-    public List<SDVariable> dotProductAttentionBp(SDVariable queries, SDVariable keys, SDVariable values, SDVariable gradient,  boolean scaled) {
-        return Arrays.asList(new DotProductAttentionBp(sameDiff(), queries, keys, values, gradient, scaled).outputVariables());
+    public List<SDVariable> dotProductAttentionBp(SDVariable queries, SDVariable keys, SDVariable values, SDVariable gradient, SDVariable mask,  boolean scaled) {
+        return Arrays.asList(new DotProductAttentionBp(sameDiff(), queries, keys, values, gradient, mask, scaled).outputVariables());
     }
 
-    public SDVariable multiHeadDotProductAttention(SDVariable queries, SDVariable keys, SDVariable values,SDVariable Wq, SDVariable Wk, SDVariable Wv, SDVariable Wo, boolean scaled) {
-        return new MultiHeadDotProductAttention(sameDiff(), queries, keys, values, Wq, Wk, Wv, Wo, scaled, false).outputVariable();
+    public SDVariable multiHeadDotProductAttention(SDVariable queries, SDVariable keys, SDVariable values, SDVariable Wq, SDVariable Wk, SDVariable Wv, SDVariable Wo, SDVariable mask, boolean scaled) {
+        return new MultiHeadDotProductAttention(sameDiff(), queries, keys, values, Wq, Wk, Wv, Wo, mask, scaled, false).outputVariable();
     }
 
-    public List<SDVariable> multiHeadDotProductAttention(SDVariable queries, SDVariable keys, SDVariable values,SDVariable Wq, SDVariable Wk, SDVariable Wv, SDVariable Wo, boolean scaled, boolean withWeights) {
-        return Arrays.asList(new MultiHeadDotProductAttention(sameDiff(), queries, keys, values, Wq, Wk, Wv, Wo, scaled, withWeights).outputVariables());
+    public List<SDVariable> multiHeadDotProductAttention(SDVariable queries, SDVariable keys, SDVariable values,SDVariable Wq, SDVariable Wk, SDVariable Wv, SDVariable Wo, SDVariable mask, boolean scaled, boolean withWeights) {
+        return Arrays.asList(new MultiHeadDotProductAttention(sameDiff(), queries, keys, values, Wq, Wk, Wv, Wo, mask, scaled, withWeights).outputVariables());
     }
 
-    public List<SDVariable> multiHeadDotProductAttentionBp(SDVariable queries, SDVariable keys, SDVariable values,SDVariable Wq, SDVariable Wk, SDVariable Wv, SDVariable Wo, SDVariable gradient,  boolean scaled) {
-        return Arrays.asList(new MultiHeadDotProductAttentionBp(sameDiff(), queries, keys, values, Wq, Wk, Wv, Wo, gradient, scaled).outputVariables());
+    public List<SDVariable> multiHeadDotProductAttentionBp(SDVariable queries, SDVariable keys, SDVariable values,SDVariable Wq, SDVariable Wk, SDVariable Wv, SDVariable Wo, SDVariable gradient, SDVariable mask,  boolean scaled) {
+        return Arrays.asList(new MultiHeadDotProductAttentionBp(sameDiff(), queries, keys, values, Wq, Wk, Wv, Wo, gradient, mask, scaled).outputVariables());
     }
 
     public SDVariable softmaxDerivative(SDVariable functionInput, SDVariable wrt, Integer dimension) {

@@ -42,8 +42,12 @@ public class MultiHeadDotProductAttention extends DynamicCustomOp {
 
     public MultiHeadDotProductAttention(SameDiff sameDiff, SDVariable queries, SDVariable keys, SDVariable values,
                                                            SDVariable Wq, SDVariable Wk, SDVariable Wv, SDVariable Wo,
+                                                           SDVariable mask,
                                         boolean scaled, boolean withWeights) {
-        super(null, sameDiff, new SDVariable[] {queries, keys, values, Wq, Wk, Wv, Wo}, false);
+        super(null, sameDiff,
+                mask == null ? new SDVariable[] {queries, keys, values, Wq, Wk, Wv, Wo}
+                : new SDVariable[] {queries, keys, values, Wq, Wk, Wv, Wo, mask},
+                false);
         this.scaled = scaled;
         this.withWeights = withWeights;
         addIArgument(scaled ? 1 : 0);
@@ -57,14 +61,14 @@ public class MultiHeadDotProductAttention extends DynamicCustomOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> gradient) {
-        return sameDiff.f().multiHeadDotProductAttentionBp(arg(0), arg(1), arg(2), arg(3), arg(4), arg(5), arg(6), gradient.get(0), scaled);
+        return sameDiff.f().multiHeadDotProductAttentionBp(arg(0), arg(1), arg(2), arg(3), arg(4), arg(5), arg(6), gradient.get(0), args().length > 7 ? arg(7) : null, scaled);
     }
 
     @Override
     public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes){
-        Preconditions.checkState(dataTypes != null && dataTypes.size() == 7, "Expected exactly 7 input datatypes, got %s", dataTypes);
+        Preconditions.checkState(dataTypes != null && (dataTypes.size() == 7 || dataTypes.size() == 8), "Expected 7 or 8 input datatypes, got %s", dataTypes);
         DataType first = dataTypes.get(0);
-        for( int i=0; i<7; i++ ) {
+        for( int i=0; i<dataTypes.size(); i++ ) {
             Preconditions.checkState(dataTypes.get(i).isFPType(), "Input %s datatype must be a floating point type, got datypes %s", dataTypes);
             if(i > 0){
                 Preconditions.checkState(first == dataTypes.get(i), "All datatypes must be same type, got input datatypes %s", dataTypes);

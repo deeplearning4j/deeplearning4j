@@ -708,27 +708,27 @@ public class SDNN extends SDOps {
 
     /**
      * This operation performs dot product attention on the given timeseries input with the given queries
-     * @see #dotProductAttention(String, SDVariable, SDVariable, SDVariable, boolean, boolean)
+     * @see #dotProductAttention(String, SDVariable, SDVariable, SDVariable, SDVariable, boolean, boolean)
      */
-    public SDVariable dotProductAttention(SDVariable queries, SDVariable keys, SDVariable values, boolean scaled){
-        return dotProductAttention(null, queries, keys, values, scaled);
+    public SDVariable dotProductAttention(SDVariable queries, SDVariable keys, SDVariable values, SDVariable mask, boolean scaled){
+        return dotProductAttention(null, queries, keys, values, mask, scaled);
     }
 
     /**
      * This operation performs dot product attention on the given timeseries input with the given queries
-     * @see #dotProductAttention(String, SDVariable, SDVariable, SDVariable, boolean, boolean)
+     * @see #dotProductAttention(String, SDVariable, SDVariable, SDVariable, SDVariable, boolean, boolean)
      */
-    public SDVariable dotProductAttention(String name, SDVariable queries, SDVariable keys, SDVariable values, boolean scaled){
-        final SDVariable result = f().dotProductAttention(queries, keys, values, scaled);
+    public SDVariable dotProductAttention(String name, SDVariable queries, SDVariable keys, SDVariable values, SDVariable mask, boolean scaled){
+        final SDVariable result = f().dotProductAttention(queries, keys, values, mask, scaled);
         return updateVariableNameAndReference(result, name);
     }
 
     /**
      * This operation performs dot product attention on the given timeseries input with the given queries
-     * @see #dotProductAttention(String, SDVariable, SDVariable, SDVariable, boolean, boolean)
+     * @see #dotProductAttention(String, SDVariable, SDVariable, SDVariable, SDVariable, boolean, boolean)
      */
-    public List<SDVariable> dotProductAttention(SDVariable queries, SDVariable keys, SDVariable values, boolean scaled, boolean withWeights){
-        return dotProductAttention(null, queries, keys, values, scaled, withWeights);
+    public List<SDVariable> dotProductAttention(SDVariable queries, SDVariable keys, SDVariable values, SDVariable mask, boolean scaled, boolean withWeights){
+        return dotProductAttention(null, queries, keys, values, mask, scaled, withWeights);
     }
 
 
@@ -758,6 +758,7 @@ public class SDNN extends SDOps {
      *             or 4D array of shape [batchSize, numHeads, featureKeys, timesteps]
      * @param values input 3D array "values" of shape [batchSize, featureValues, timesteps]
      *               or 4D array of shape [batchSize, numHeads, featureValues, timesteps]
+     * @param mask OPTIONAL; array that defines which values should be skipped of shape [batchSize, timesteps]
      * @param scaled normalization, false -> do not apply normalization, true -> apply normalization
      * @param withWeights return attention weights as well, false -> only one output, true -> two outputs
      *
@@ -765,8 +766,8 @@ public class SDNN extends SDOps {
      * @return [ Attention result arrays of shape [batchSize, featureValues, queryCount] or [batchSize, numHeads, featureValues, queryCount],
      *           (optionally) Attention Weights of shape [batchSize, timesteps, queryCount] or [batchSize, numHeads, timesteps, queryCount]]
      */
-    public List<SDVariable> dotProductAttention(String name, SDVariable queries, SDVariable keys, SDVariable values, boolean scaled, boolean withWeights){
-        List<SDVariable> result = f().dotProductAttention(queries, keys, values, scaled, withWeights);
+    public List<SDVariable> dotProductAttention(String name, SDVariable queries, SDVariable keys, SDVariable values, SDVariable mask, boolean scaled, boolean withWeights){
+        List<SDVariable> result = f().dotProductAttention(queries, keys, values, mask, scaled, withWeights);
         if(withWeights){
             return Collections.singletonList(updateVariableNameAndReference(result.get(0), name));
         }else{
@@ -779,27 +780,27 @@ public class SDNN extends SDOps {
 
     /**
      * This performs multi-headed dot product attention on the given timeseries input
-     * @see #multiHeadDotProductAttention(String, SDVariable, SDVariable, SDVariable, SDVariable, SDVariable, SDVariable, SDVariable, boolean, boolean)
+     * @see #multiHeadDotProductAttention(String, SDVariable, SDVariable, SDVariable, SDVariable, SDVariable, SDVariable, SDVariable, SDVariable, boolean, boolean)
      */
-    public SDVariable multiHeadDotProductAttention(SDVariable queries, SDVariable keys, SDVariable values, SDVariable Wq, SDVariable Wk, SDVariable Wv, SDVariable Wo, boolean scaled){
-        return multiHeadDotProductAttention(null, queries, keys, values, Wq, Wk, Wv, Wo, scaled);
+    public SDVariable multiHeadDotProductAttention(SDVariable queries, SDVariable keys, SDVariable values, SDVariable Wq, SDVariable Wk, SDVariable Wv, SDVariable Wo, SDVariable mask, boolean scaled){
+        return multiHeadDotProductAttention(null, queries, keys, values, Wq, Wk, Wv, Wo, mask, scaled);
     }
 
     /**
      * This performs multi-headed dot product attention on the given timeseries input
-     * @see #multiHeadDotProductAttention(String, SDVariable, SDVariable, SDVariable, SDVariable, SDVariable, SDVariable, SDVariable, boolean, boolean)
+     * @see #multiHeadDotProductAttention(String, SDVariable, SDVariable, SDVariable, SDVariable, SDVariable, SDVariable, SDVariable, SDVariable, boolean, boolean)
      */
-    public SDVariable multiHeadDotProductAttention(String name, SDVariable queries, SDVariable keys, SDVariable values, SDVariable Wq, SDVariable Wk, SDVariable Wv, SDVariable Wo, boolean scaled){
-        final SDVariable result = f().multiHeadDotProductAttention(queries, keys, values, Wq, Wk, Wv, Wo, scaled);
+    public SDVariable multiHeadDotProductAttention(String name, SDVariable queries, SDVariable keys, SDVariable values, SDVariable Wq, SDVariable Wk, SDVariable Wv, SDVariable Wo, SDVariable mask, boolean scaled){
+        final SDVariable result = f().multiHeadDotProductAttention(queries, keys, values, Wq, Wk, Wv, Wo, mask, scaled);
         return updateVariableNameAndReference(result, name);
     }
 
     /**
      * This performs multi-headed dot product attention on the given timeseries input
-     * @see #multiHeadDotProductAttention(String, SDVariable, SDVariable, SDVariable, SDVariable, SDVariable, SDVariable, SDVariable, boolean, boolean)
+     * @see #multiHeadDotProductAttention(String, SDVariable, SDVariable, SDVariable, SDVariable, SDVariable, SDVariable, SDVariable, SDVariable, boolean, boolean)
      */
-    public List<SDVariable> multiHeadDotProductAttention(SDVariable queries, SDVariable keys, SDVariable values, SDVariable Wq, SDVariable Wk, SDVariable Wv, SDVariable Wo, boolean scaled, boolean withWeights){
-        return multiHeadDotProductAttention(null, queries, keys, values, Wq, Wk, Wv, Wo, scaled, withWeights);
+    public List<SDVariable> multiHeadDotProductAttention(SDVariable queries, SDVariable keys, SDVariable values, SDVariable Wq, SDVariable Wk, SDVariable Wv, SDVariable Wo, SDVariable mask, boolean scaled, boolean withWeights){
+        return multiHeadDotProductAttention(null, queries, keys, values, Wq, Wk, Wv, Wo, mask, scaled, withWeights);
     }
 
 
@@ -813,7 +814,7 @@ public class SDNN extends SDOps {
      * See also "Attention is all you need" (https://arxiv.org/abs/1706.03762, pp. 4,5, "3.2.2 Multi-Head Attention")
      *
      * This makes use of dot_product_attention OP support for rank 4 inputs.
-     * @see #dotProductAttention(String, SDVariable, SDVariable, SDVariable, boolean, boolean)
+     * @see #dotProductAttention(String, SDVariable, SDVariable, SDVariable, SDVariable, boolean, boolean)
      *
      * @param queries input 3D array "queries" of shape [batchSize, featureKeys, queryCount]
      * @param keys input 3D array "keys" of shape [batchSize, featureKeys, timesteps]
@@ -822,6 +823,7 @@ public class SDNN extends SDOps {
      * @param Wk input key projection weights of shape [numHeads, projectedKeys, featureKeys]
      * @param Wv: input value projection weights of shape [numHeads, projectedValues, featureValues]
      * @param Wo: output projection weights of shape [numHeads * projectedValues, outSize]
+     * @param mask OPTIONAL; array that defines which values should be skipped of shape [batchSize, timesteps]
      * @param scaled normalization, false -> do not apply normalization, true -> apply normalization
      * @param withWeights return attention weights as well, false -> only one output, true -> two outputs
      *
@@ -829,8 +831,8 @@ public class SDNN extends SDOps {
      * @return [ Attention result arrays of shape [batchSize, outSize, queryCount]
      *           (optionally) Attention Weights of shape [batchSize, numHeads, timesteps, queryCount]
      */
-    public List<SDVariable> multiHeadDotProductAttention(String name, SDVariable queries, SDVariable keys, SDVariable values, SDVariable Wq, SDVariable Wk, SDVariable Wv, SDVariable Wo, boolean scaled, boolean withWeights){
-        List<SDVariable> result = f().multiHeadDotProductAttention(queries, keys, values, Wq, Wk, Wv, Wo, scaled, withWeights);
+    public List<SDVariable> multiHeadDotProductAttention(String name, SDVariable queries, SDVariable keys, SDVariable values, SDVariable Wq, SDVariable Wk, SDVariable Wv, SDVariable Wo, SDVariable mask, boolean scaled, boolean withWeights){
+        List<SDVariable> result = f().multiHeadDotProductAttention(queries, keys, values, Wq, Wk, Wv, Wo, mask, scaled, withWeights);
         if(withWeights){
             return Collections.singletonList(updateVariableNameAndReference(result.get(0), name));
         }else{

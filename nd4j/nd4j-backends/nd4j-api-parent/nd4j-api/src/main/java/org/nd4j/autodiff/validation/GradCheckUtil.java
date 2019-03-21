@@ -126,6 +126,10 @@ public class GradCheckUtil {
         //Collect variables to get gradients for - we want placeholders AND variables
         Set<String> gradVarNames = new HashSet<>();
         for(Variable v : sd.getVariables().values()){
+            if(skipVariables != null && skipVariables.contains(v.getVariable().getVarName())){
+                continue;
+            }
+
             if(v.getVariable().getVariableType() == VariableType.VARIABLE || v.getVariable().getVariableType() == VariableType.PLACEHOLDER){
                 SDVariable g = v.getVariable().getGradient();
                 Preconditions.checkNotNull(g, "No gradient variable found for variable %s", v.getVariable());
@@ -140,6 +144,11 @@ public class GradCheckUtil {
                 //This is not an input to the graph
                 continue;
             }
+            
+            if(skipVariables != null && skipVariables.contains(v.getVarName())){
+                continue;
+            }
+
             SDVariable g = sd.grad(v.getVarName());
             if(g == null){
                 throw new IllegalStateException("Null gradient variable for \"" + v.getVarName() + "\"");

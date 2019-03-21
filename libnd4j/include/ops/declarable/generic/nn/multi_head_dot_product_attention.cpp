@@ -35,6 +35,8 @@ namespace ops  {
         auto Wk      = INPUT_VARIABLE(4);
         auto Wv      = INPUT_VARIABLE(5);
         auto Wo      = INPUT_VARIABLE(6);
+        auto mask    = block.width() > 7 ? INPUT_VARIABLE(7) : nullptr;
+
 
         auto output = OUTPUT_VARIABLE(0);
         int normalization = INT_ARG(0);
@@ -98,7 +100,7 @@ namespace ops  {
 
         // Apply Attention
         nd4j::ops::dot_product_attention attention;
-        auto results = attention.execute({projectedQueries, projectedKeys, projectedValues}, {}, {normalization, weights}, {});
+        auto results = attention.execute({projectedQueries, projectedKeys, projectedValues, mask}, {}, {normalization, weights}, {});
 
         if(weights){
             OUTPUT_VARIABLE(1)->assign(results->at(1));
@@ -153,6 +155,7 @@ namespace ops  {
         auto Wv      = INPUT_VARIABLE(5);
         auto Wo      = INPUT_VARIABLE(6);
         auto eps     = INPUT_VARIABLE(7);
+        auto mask    = block.width() > 8 ? INPUT_VARIABLE(8) : nullptr;
 
         auto dLdq  = OUTPUT_VARIABLE(0);
         auto dLdk  = OUTPUT_VARIABLE(1);
@@ -166,7 +169,6 @@ namespace ops  {
 
         auto numHeads = Wk->sizeAt(0);
         auto miniBatchSize = queries->sizeAt(0);
-        auto timeSteps = keys->sizeAt(2);
         auto queryCount = queries->sizeAt(2);
         auto outSize = Wo->sizeAt(1);
         auto projectedValuesSize = Wv->sizeAt(1);
@@ -224,7 +226,7 @@ namespace ops  {
 
         // Apply Attention
         nd4j::ops::dot_product_attention attention;
-        auto results = attention.execute({projectedQueries, projectedKeys, projectedValues}, {}, {normalization, 0}, {});
+        auto results = attention.execute({projectedQueries, projectedKeys, projectedValues, mask}, {}, {normalization, 0}, {});
 
 
         // Project attention results
@@ -244,7 +246,7 @@ namespace ops  {
         dLdPreWo->permutei({0, 2, 3, 1});
 
         nd4j::ops::dot_product_attention_bp attentionBp;
-        auto attnBp = attentionBp.execute({projectedQueries, projectedKeys, projectedValues, dLdPreWo}, {}, {normalization}, {});
+        auto attnBp = attentionBp.execute({projectedQueries, projectedKeys, projectedValues, dLdPreWo, mask}, {}, {normalization}, {});
 
         AttentionHelper::multiHeadProjectBp(queries, Wq, attnBp->at(0), dLdq, dLdWq);
         AttentionHelper::multiHeadProjectBp(keys, Wk, attnBp->at(1), dLdk, dLdWk);

@@ -41,8 +41,12 @@ public class MultiHeadDotProductAttentionBp extends DynamicCustomOp {
 
     public MultiHeadDotProductAttentionBp(SameDiff sameDiff, SDVariable queries, SDVariable keys, SDVariable values,
                                                              SDVariable Wq, SDVariable Wk, SDVariable Wv, SDVariable Wo,
-                                          SDVariable eps, boolean scaled) {
-        super(null, sameDiff, new SDVariable[] {queries, keys, values, Wq, Wk, Wv, Wo, eps}, false);
+                                                             SDVariable eps, SDVariable mask,
+                                          boolean scaled) {
+        super(null, sameDiff,
+                mask == null ? new SDVariable[] {queries, keys, values, Wq, Wk, Wv, Wo, eps}
+                : new SDVariable[] {queries, keys, values, Wq, Wk, Wv, Wo, eps, mask}
+                , false);
         this.scaled = scaled;
         addIArgument(scaled ? 1 : 0);
     }
@@ -59,9 +63,9 @@ public class MultiHeadDotProductAttentionBp extends DynamicCustomOp {
 
     @Override
     public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes){
-        Preconditions.checkState(dataTypes != null && dataTypes.size() == 8, "Expected exactly 4 input datatypes, got %s", dataTypes);
+        Preconditions.checkState(dataTypes != null && (dataTypes.size() == 8 || dataTypes.size() == 9), "Expected 8 or 9 input datatypes, got %s", dataTypes);
         DataType first = dataTypes.get(0);
-        for( int i=0; i<8; i++ ) {
+        for( int i=0; i<dataTypes.size(); i++ ) {
             Preconditions.checkState(dataTypes.get(i).isFPType(), "Input %s datatype must be a floating point type, got datypes %s", dataTypes);
             if(i > 0){
                 Preconditions.checkState(first == dataTypes.get(i), "All datatypes must be same type, got input datatypes %s", dataTypes);

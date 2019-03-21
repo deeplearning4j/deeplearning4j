@@ -32,6 +32,7 @@ namespace ops  {
         auto queries = INPUT_VARIABLE(0);
         auto keys = INPUT_VARIABLE(1);
         auto values = INPUT_VARIABLE(2);
+        auto mask    = block.width() > 3 ? INPUT_VARIABLE(3) : nullptr;
 
         auto output = OUTPUT_VARIABLE(0);
         NDArray* weights;
@@ -71,8 +72,15 @@ namespace ops  {
             *weights /= sqrt((double)keys->sizeAt(-2));
         }
 
-        nd4j::ops::softmax softmax;
+        if(mask != nullptr){
+            if(weights->rankOf() == 4){
+                *weights += (*mask->reshape(mask->ordering(), {mask->sizeAt(0), 1, mask->sizeAt(1), 1}) - 1) * 1e9;
+            }else{
+                *weights += (*mask->reshape(mask->ordering(), {mask->sizeAt(0), mask->sizeAt(1), 1}) - 1) * 1e9;
+            }
+        }
 
+        nd4j::ops::softmax softmax;
         softmax.execute({weights}, {weights}, {}, {-2}, {}, true);
 
         mmul.execute({values, weights}, {output}, {}, {}, {});
@@ -109,6 +117,7 @@ namespace ops  {
         auto keys = INPUT_VARIABLE(1);
         auto values = INPUT_VARIABLE(2);
         auto eps = INPUT_VARIABLE(3);
+        auto mask    = block.width() > 4 ? INPUT_VARIABLE(4) : nullptr;
 
         auto dLdq = OUTPUT_VARIABLE(0);
         auto dLdk = OUTPUT_VARIABLE(1);
@@ -148,7 +157,13 @@ namespace ops  {
         if(normalization)
             *preSoftmax /= factor;
 
-
+        if(mask != nullptr){
+            if(preSoftmax->rankOf() == 4){
+                *preSoftmax += (*mask->reshape(mask->ordering(), {mask->sizeAt(0), 1, mask->sizeAt(1), 1}) - 1) * 1e9;
+            }else{
+                *preSoftmax += (*mask->reshape(mask->ordering(), {mask->sizeAt(0), mask->sizeAt(1), 1}) - 1) * 1e9;
+            }
+        }
         nd4j::ops::softmax softmax;
         auto weights = softmax.execute({preSoftmax}, {}, {-2}, {})->at(0);
 
