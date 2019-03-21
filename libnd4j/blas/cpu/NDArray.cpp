@@ -2445,11 +2445,7 @@ template void NDArray::applyScalar(nd4j::scalar::Ops op, const bool scalar, NDAr
 
 //////////////////////////////////////////////////////////////////////////
 // set new order and shape in case of suitable array length 
-    bool NDArray::reshapei(const char order, const std::vector<Nd4jLong>& cshape) {
-
-    // if we use reshapeC it doesn't make sense to reshape from c order to f order
-    if(ordering() == 'c' && order == 'f')
-        throw std::invalid_argument("NDArray::reshapei(order, shape): if we use reshapeC it doesn't make sense to reshape from c order to f order !");
+    bool NDArray::reshapei(const char order, const std::vector<Nd4jLong>& cshape) {    
 
     // check firstly whether cshape is identical to shape of array, if yes then reshape is unnecessary 
     if(order == ordering() && shape::shapeEquals(rankOf(), shapeOf(), cshape.size(), cshape.data()))         
@@ -2511,6 +2507,9 @@ template void NDArray::applyScalar(nd4j::scalar::Ops op, const bool scalar, NDAr
 
     // we can do this only if there was no permute applied, or there are no weird strides
     if (shape::reshapeC(this->rankOf(), this->_shapeInfo, shape.size(), shape.data(), shapeInfoNew)) {
+        
+        if(ordering() == 'c' && order == 'f')
+            throw std::invalid_argument("NDArray::reshapei(order, shape): in case of reshapeC it doesn't make sense to reshape from c order to f order !");
 
         setShapeInfo(shapeInfoNew);
         _isShapeAlloc = true;
