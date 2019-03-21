@@ -141,7 +141,8 @@ void IndexReduce<X>::exec(void *vx, Nd4jLong *xShapeInfo,
         tadOffsets = tad->tadOffsets;
     }
 
-    nd4j::Loops::loopIndexTadXZ<X, OpType>(x, tadOnlyShapeInfo, tadOffsets, z, zShapeInfo, extraParams);
+    int *dimension, int dimensionLength,
+    nd4j::Loops::loopIndexTadXZ<X, OpType>(x, xShapeInfo, z, zShapeInfo, tadOnlyShapeInfo, tadOffsets, static std::vector<int> evalDimsToExclude(const int rank, const std::vector<int>& dimensions),  extraParams);
     
     if (tad != nullptr)
         delete tad;

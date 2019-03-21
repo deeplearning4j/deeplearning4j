@@ -231,6 +231,16 @@ namespace nd4j {
         switch (kindOfLoop) {
 
             //*********************************************//
+            case EWS1_SMALLARR2DX: {                
+                const xLen = zLen * tadLen;                
+                for (uint i = 0; i < xLen; ++i) {                
+                    const auto zOffset = shape::subArrayOffet(i, xShapeInfo, zShapeInfo, dimsToExclude);
+                    z[zOffset] = OpType::update(i % tadLen ? z[zOffset] : OpType::startingIndexValue(x), OpType::op(x[i], extraParams), extraParams);
+                }
+            }
+                break;
+
+            //*********************************************//
             case EWS1: {
                 PRAGMA_OMP_PARALLEL_FOR_THREADS(numThreads)
                 for (uint i = 0; i < zLen; i++) {

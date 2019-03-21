@@ -20,24 +20,24 @@ using namespace simdOps;
 
 namespace nd4j {
     //////////////////////////////////////////////////////////////////////////////
-    Loops::LoopKind Loops::deduceKindOfLoopXYZ(const Nd4jLong* tadShapeInfo, const Nd4jLong* yShapeInfo, const Nd4jLong* zShapeInfo) {
+    Loops::LoopKind Loops::deduceKindOfLoopXYZ(const Nd4jLong* xShapeInfo, const Nd4jLong* yShapeInfo, const Nd4jLong* zShapeInfo) {
 
-        const int xRank = shape::rank(tadShapeInfo);
+        const int xRank = shape::rank(xShapeInfo);
 
-        const Nd4jLong xEws = shape::elementWiseStride(tadShapeInfo);
+        const Nd4jLong xEws = shape::elementWiseStride(xShapeInfo);
         const Nd4jLong yEws = shape::elementWiseStride(yShapeInfo);
         const Nd4jLong zEws = shape::elementWiseStride(zShapeInfo);
 
         int temp;
-        const bool xVector = shape::isCommonVector(tadShapeInfo, temp);
+        const bool xVector = shape::isCommonVector(xShapeInfo, temp);
         const bool yVector = shape::isCommonVector(yShapeInfo, temp);
         const bool zVector = shape::isCommonVector(zShapeInfo, temp);
 
-        const char xOrder = shape::order(tadShapeInfo);
+        const char xOrder = shape::order(xShapeInfo);
         const char yOrder = shape::order(yShapeInfo);
         const char zOrder = shape::order(zShapeInfo);
 
-        const bool shapesSame = shape::shapeEquals(tadShapeInfo, yShapeInfo) && shape::shapeEquals(tadShapeInfo, zShapeInfo);
+        const bool shapesSame = shape::shapeEquals(xShapeInfo, yShapeInfo) && shape::shapeEquals(xShapeInfo, zShapeInfo);
 
         if (xEws == 1 && yEws == 1 && zEws == 1 && ((xOrder == yOrder && xOrder == zOrder) || ((xVector || xOrder == 'c') && (yVector || yOrder == 'c') && (zVector || zOrder == 'c'))))
             return EWS1;
@@ -64,22 +64,22 @@ namespace nd4j {
     }
 
 //////////////////////////////////////////////////////////////////////////////
-    Loops::LoopKind Loops::deduceKindOfLoopXZ(const Nd4jLong* tadShapeInfo, const Nd4jLong* zShapeInfo) {
+    Loops::LoopKind Loops::deduceKindOfLoopXZ(const Nd4jLong* xShapeInfo, const Nd4jLong* zShapeInfo) {
 
 
-        const int xRank = shape::rank(tadShapeInfo);
+        const int xRank = shape::rank(xShapeInfo);
 
-        const Nd4jLong xEws = shape::elementWiseStride(tadShapeInfo);
+        const Nd4jLong xEws = shape::elementWiseStride(xShapeInfo);
         const Nd4jLong zEws = shape::elementWiseStride(zShapeInfo);
 
-        const char xOrder = shape::order(tadShapeInfo);
+        const char xOrder = shape::order(xShapeInfo);
         const char zOrder = shape::order(zShapeInfo);
 
         int temp;
-        const bool xVector = shape::isCommonVector(tadShapeInfo, temp);
+        const bool xVector = shape::isCommonVector(xShapeInfo, temp);
         const bool zVector = shape::isCommonVector(zShapeInfo, temp);
 
-        const bool shapesSame = shape::shapeEquals(tadShapeInfo, zShapeInfo);
+        const bool shapesSame = shape::shapeEquals(xShapeInfo, zShapeInfo);
 
         if(xEws == 1 && zEws == 1 && ((xOrder == zOrder) || ((xVector || xOrder == 'c') && (zVector || zOrder == 'c'))))
             return EWS1;
@@ -114,7 +114,7 @@ namespace nd4j {
 //////////////////////////////////////////////////////////////////////////////
     Loops::LoopKind Loops::deduceKindOfLoopTadXZ(const Nd4jLong* tadShapeInfo, const Nd4jLong* zShapeInfo) {
 
-        const int xRank = shape::rank(tadShapeInfo);
+        const int tadRank = shape::rank(tadShapeInfo);
 
         const Nd4jLong tadEws = shape::elementWiseStride(tadShapeInfo);
         const Nd4jLong zEws = shape::elementWiseStride(zShapeInfo);
@@ -126,25 +126,29 @@ namespace nd4j {
         const bool xVector = shape::isCommonVector(tadShapeInfo, temp);
         const bool zVector = shape::isCommonVector(zShapeInfo, temp);
 
+        if(shape::length(tadShapeInfo) * shape::length(zShapeInfo) <= Environment::getInstance()->elementwiseThreshold() && tadRank == 2 &&
+            tadEws == 1 && zEws == 1 && ((xOrder == zOrder) || ((xVector || xOrder == 'c') && (zVector || zOrder == 'c'))))
+            return EWS1_SMALLARR2DX;
+
         if(tadEws == 1 && zEws == 1 && ((xOrder == zOrder) || ((xVector || xOrder == 'c') && (zVector || zOrder == 'c'))))
             return EWS1;
 
         if(tadEws > 0 && zEws > 0   && ((xOrder == zOrder) || ((xVector || xOrder == 'c') && (zVector || zOrder == 'c'))))
             return EWSNONZERO;
 
-        if(xRank == 1 && zEws == 1 && (zVector || zOrder == 'c'))
+        if(tadRank == 1 && zEws == 1 && (zVector || zOrder == 'c'))
             return RANK1;
 
-        if(xRank == 2 && zEws == 1 && (zVector || zOrder == 'c'))
+        if(tadRank == 2 && zEws == 1 && (zVector || zOrder == 'c'))
             return RANK2;
 
-        if(xRank == 3 && zEws == 1 && (zVector || zOrder == 'c'))
+        if(tadRank == 3 && zEws == 1 && (zVector || zOrder == 'c'))
             return RANK3;
 
-        if(xRank == 4 && zEws == 1 && (zVector || zOrder == 'c'))
+        if(tadRank == 4 && zEws == 1 && (zVector || zOrder == 'c'))
             return RANK4;
 
-        if(xRank == 5 && zEws == 1 && (zVector || zOrder == 'c'))
+        if(tadRank == 5 && zEws == 1 && (zVector || zOrder == 'c'))
             return RANK5;
 
         if(tadEws > 0 && (xVector || xOrder == 'c') && zEws == 0)
