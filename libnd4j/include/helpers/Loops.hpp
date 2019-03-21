@@ -210,9 +210,11 @@ namespace nd4j {
 
 //////////////////////////////////////////////////////////////////////////////
     template<typename X, typename Z, typename E, typename OpType>
-     void Loops::loopTadXZ(const X* x, const Nd4jLong* tadShapeInfo, const Nd4jLong* tadOffsets,
-                                       Z* z, const Nd4jLong* zShapeInfo,
-                                       E* extraParams) {
+     void Loops::loopTadXZ(const X* x, const Nd4jLong* xShapeInfo,
+                                 Z* z, const Nd4jLong* zShapeInfo,
+                                 const Nd4jLong* tadShapeInfo, const Nd4jLong* tadOffsets,
+                                 const int* dimsToExclude,
+                                 E* extraParams) {
 
         const LoopKind kindOfLoop = Loops::deduceKindOfLoopTadXZ(tadShapeInfo, zShapeInfo);
 
@@ -234,7 +236,7 @@ namespace nd4j {
             case EWS1_SMALLARR2DX: {                
                 const xLen = zLen * tadLen;                
                 for (uint i = 0; i < xLen; ++i) {                
-                    const auto zOffset = shape::subArrayOffet(i, xShapeInfo, zShapeInfo, dimsToExclude);
+                    const auto zOffset = shape::subArrayOffset(i, xShapeInfo, zShapeInfo, dimsToExclude);
                     z[zOffset] = OpType::update(i % tadLen ? z[zOffset] : OpType::startingIndexValue(x), OpType::op(x[i], extraParams), extraParams);
                 }
             }

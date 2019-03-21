@@ -55,9 +55,11 @@ namespace nd4j {
 
         //////////////////////////////////////////////////////////////////////////////
         template<typename X, typename Z, typename E, typename OpType>
-        static void loopTadXZ(const X* x, const Nd4jLong* tadShapeInfo, const Nd4jLong* tadOffsets,
-                                                Z* z, const Nd4jLong* zShapeInfo,
-                                                E* extraParams);
+        static void loopTadXZ(const X* x, const Nd4jLong* xShapeInfo,
+                                    Z* z, const Nd4jLong* zShapeInfo,
+                              const Nd4jLong* tadShapeInfo, const Nd4jLong* tadOffsets,
+                              const int* dimsToExclude,
+                              E* extraParams);
 
         //////////////////////////////////////////////////////////////////////////////
         template<typename X,typename OpType>

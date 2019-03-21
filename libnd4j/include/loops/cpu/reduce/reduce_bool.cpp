@@ -184,7 +184,9 @@ namespace functions {
                     tadOffsets = tad->tadOffsets;
                 }
 
-                nd4j::Loops::loopTadXZ<X, Z, X, OpType>(x, tadOnlyShapeInfo, tadOffsets, z, zShapeInfo, extraParams);
+                std::vector<int> dimsToExclude = ShapeUtils::evalDimsToExclude(xShapeInfo[0], dimensionLength, dimension);
+                
+                nd4j::Loops::loopTadXZ<X, Z, X, OpType>(x, xShapeInfo, z, zShapeInfo,  tadOnlyShapeInfo, tadOffsets, dimsToExclude.data() extraParams);
                 
                 if (tad != nullptr)
                     delete tad;
