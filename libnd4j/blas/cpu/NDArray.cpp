@@ -3926,8 +3926,8 @@ template void NDArray::pIdx(const Nd4jLong* indices, const bool value);
         auto stridesOf = shape::stride(newShape);
 
         Nd4jLong offset = 0;
-        bool continuous(false), allDimsUnities(true);
-        int current(rank - 1), counter(0), vectorDim, n(isStrided ? 3 : 2), first, last, stride;
+        bool continuousC(false), allDimsUnities(true), allStridesUnities(true);
+        int currentC(rank - 1), counter(0), vectorDim, n(isStrided ? 3 : 2), first, last, stride;
 
         for (int d = rank - 1; d >= 0; --d) {
 
@@ -3939,23 +3939,24 @@ template void NDArray::pIdx(const Nd4jLong* indices, const bool value);
 
                 shapeOf[d] = (last - first + stride - 1) / stride;      // ceil (last - first) / stride;
                 offset += first * stridesOf[d];
-                if(shapeOf[d] != 1) {
+
+                if(shapeOf[d] != 1) {                    
                     allDimsUnities = false;
                     stridesOf[d] *= stride;
-                    continuous &= stride == 1;
+                    allStridesUnities &= stride == 1;                    
                 }
             }
-            else {
-                continuous = current-- == d;
-                if(!counter++) vectorDim = d;
+            else {                
+                continuousC = currentC-- == d;
+                if(!counter++)  vectorDim = d;
             }
         }
 
         // evaluate ews
-        if(counter == 1 && allDimsUnities)            
+        if(counter == 1 && allDimsUnities)
             newShape[2 * rank + 2] = stridesOf[vectorDim];        
         else
-            newShape[2 * rank + 2] = (continuous && ordering() == 'c') ? ews() : 0;
+            newShape[2 * rank + 2] = (allStridesUnities && ((continuousC && ordering() == 'c') || (counter == 1 && vectorDim == 0 && ordering() == 'f'))) ? ews() : 0;            
 
         // create resulting sub-array
         NDArray result(bufferWithOffset(offset), newShape, _workspace, false, true);

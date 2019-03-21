@@ -327,7 +327,7 @@ Nd4jLong* ShapeUtils::evalReduceShapeInfo(const char order, std::vector<int>& di
 
 //////////////////////////////////////////////////////////////////////////
 // return new (shorter) sorted dimensions array without dimensions that are present in input vector
-    std::vector<int> ShapeUtils::evalDimsToExclude(const int rank, const int dimsLen, const int* dimensions) {
+std::vector<int> ShapeUtils::evalDimsToExclude(const int rank, const int dimsLen, const int* dimensions) {
 
     std::vector<int> newDimensions;    
     if(dimsLen == 0) {                          // if input vector is empty then return whole shape range
@@ -354,7 +354,7 @@ Nd4jLong* ShapeUtils::evalReduceShapeInfo(const char order, std::vector<int>& di
 }
 
 //////////////////////////////////////////////////////////////////////////
-static std::vector<int> evalDimsToExclude(const int rank, const std::vector<int>& dimensions) {
+std::vector<int> ShapeUtils::evalDimsToExclude(const int rank, const std::vector<int>& dimensions) {
 
     return ShapeUtils::evalDimsToExclude(rank, dimensions.size(), dimensions.data());
 }
