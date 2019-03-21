@@ -53,10 +53,16 @@ namespace nd4j {
                             y->applyScalarArr(scalar::ReverseSubtract, x, z, nullptr);
                         } else if (op.s == scalar::Divide) {
                             y->applyScalarArr(scalar::ReverseDivide, x, z, nullptr);
+                        } else if (op.s == scalar::Pow) {
+                            y->applyScalarArr(scalar::ReversePow, x, z, nullptr);
                         } else if (op.s == scalar::ReverseSubtract) {
                             y->applyScalarArr(scalar::Subtract, x, z, nullptr);
                         } else if (op.s == scalar::ReverseDivide) {
                             y->applyScalarArr(scalar::Divide, x, z, nullptr);
+                        } else if (op.s == scalar::MaxPairwise || op.s == scalar::MinPairwise || op.s == scalar::AMaxPairwise || op.s == scalar::AMinPairwise) {
+                            y->applyScalarArr(op.s, x, z, nullptr);
+                        } else if (op.s == scalar::CopyPws) {
+                            z->assign(y);
                         } else {
                             z->assign(x);
                             z->applyPairwiseTransform(op.p, *y, extraArgs);
