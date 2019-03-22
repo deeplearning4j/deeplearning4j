@@ -334,12 +334,12 @@ namespace functions {
             if (shape::order(tadShapeShapeInfo) == shape::order(xShapeInfo) && shape::order(tadShapeInfoZ) == shape::order(xShapeInfo) && xEws > 0 && yEws > 0 && zEws > 0) {
 
                 if (xEws == 1 && yEws == 1 && zEws == 1) {
-                    PRAGMA_OMP_PARALLEL_FOR_THREADS(_threads)
-                    for (int i = 0; i < tads; i++) {
+                    //PRAGMA_OMP_PARALLEL_FOR_THREADS(_threads)
+                    for (unsigned int i = 0; i < tads; i++) {
                         auto oY = y + tadOffsets[i];
                         auto oZ = z + tadOffsetZ[i];
 
-                        PRAGMA_OMP_SIMD
+                        //PRAGMA_OMP_SIMD
                         for (unsigned int f = 0; f < tadLength; f++)
                             oZ[f] = OpType::op(x[f], oY[f]);
                     }
@@ -354,7 +354,7 @@ namespace functions {
                             oZ[f * zEws] = OpType::op(x[f * xEws], oY[f * yEws]);
                     }
                 }
-            } else if(shape::haveSameOffsets(tadShapeShapeInfo, yShapeInfo) && shape::haveSameOffsets(tadShapeShapeInfo, tadShapeInfoZ)) {
+            } else if(shape::haveSameOffsets(tadShapeShapeInfo, xShapeInfo) && shape::haveSameOffsets(tadShapeShapeInfo, tadShapeInfoZ)) {
 
                 uint tadShapeShapeInfoCast[MAX_RANK];
                 bool canCastX = nd4j::DataTypeUtils::castShapeInfo(tadShapeShapeInfo, tadShapeShapeInfoCast);
@@ -372,7 +372,7 @@ namespace functions {
                     }
                 }
             }
-            else if(shape::haveSameOffsets(tadShapeShapeInfo, yShapeInfo)) {
+            else if(shape::haveSameOffsets(tadShapeShapeInfo, xShapeInfo)) {
 
                 uint tadShapeShapeInfoCast[MAX_RANK];
                 uint tadShapeInfoZCast[MAX_RANK];
@@ -414,7 +414,7 @@ namespace functions {
                     }
                 }
             }
-            else if(shape::haveSameOffsets(yShapeInfo, tadShapeInfoZ)) {
+            else if(shape::haveSameOffsets(xShapeInfo, tadShapeInfoZ)) {
 
                 uint tadShapeShapeInfoCast[MAX_RANK];
                 uint xShapeInfoCast[MAX_RANK];
