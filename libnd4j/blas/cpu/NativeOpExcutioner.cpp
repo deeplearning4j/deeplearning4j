@@ -46,7 +46,7 @@
 #include <loops/random.h>
 #include <pointercast.h>
 #include <graph/exceptions/datatype_exception.h>
-
+#include <loops/BroadcastScalarConverter.h>
 
 
 
@@ -133,9 +133,11 @@ void NativeOpExcutioner::execBroadcast(int opNum, void *x, Nd4jLong *xShapeInfo,
 
     int axis = 0;
     auto isVector = shape::isCommonVector(yShapeInfo, axis);
+    auto isConvertible = nd4j::isConvertibleToScalar((nd4j::broadcast::Ops) opNum);
+    auto scalarOp = nd4j::convertToScalar((nd4j::broadcast::Ops) opNum);
 
     // add column vector case for C ordered columnAdd
-    if (xOrder == 'c' && zOrder == 'c' && xEws == 1 && zEws == 1 && yEws == 1 && xRank == 2 && isVector && dimensionLength == 1 && dimension[0] == 0) {
+    if (xOrder == 'c' && zOrder == 'c' && xEws == 1 && zEws == 1 && yEws == 1 && xRank == 2 && isVector && dimensionLength == 1 && dimension[0] == 0 && isConvertible) {
         // invoke scalar along dimension here
         int newDim = 1;
 
@@ -146,12 +148,12 @@ void NativeOpExcutioner::execBroadcast(int opNum, void *x, Nd4jLong *xShapeInfo,
 
 
 #ifdef __ND4J_EXPERIMENTAL__
-        BUILD_PAIRWISE_SELECTOR(xType, yType, zType, functions::scalar::ScalarTransform, ::transform(opNum, x, xShapeInfo, nullptr, result, resultShapeInfo, y, &newDim, dimensionLength, nullptr, nullptr, nullptr, nullptr), LIBND4J_TYPES, LIBND4J_TYPES);
+        BUILD_PAIRWISE_SELECTOR(xType, yType, zType, functions::scalar::ScalarTransform, ::transform(scalarOp, x, xShapeInfo, nullptr, result, resultShapeInfo, y, &newDim, dimensionLength, nullptr, nullptr, nullptr, nullptr), LIBND4J_TYPES, LIBND4J_TYPES);
 #else
-        BUILD_SINGLE_SELECTOR_THRICE(xType, functions::scalar::ScalarTransform, ::transform(opNum, x, xShapeInfo, nullptr, result, resultShapeInfo, y, &newDim, dimensionLength, tadX.tadOnlyShapeInfo, tadX.tadOffsets, tadX.tadOnlyShapeInfo, tadX.tadOffsets), LIBND4J_TYPES);
+        BUILD_SINGLE_SELECTOR_THRICE(xType, functions::scalar::ScalarTransform, ::transform(scalarOp, x, xShapeInfo, nullptr, result, resultShapeInfo, y, &newDim, dimensionLength, tadX.tadOnlyShapeInfo, tadX.tadOffsets, tadX.tadOnlyShapeInfo, tadX.tadOffsets), LIBND4J_TYPES);
 #endif
 
-    } else if (xOrder == 'f' && zOrder == 'f' && xEws == 1 && zEws == 1 && yEws == 1 && xRank == 2 && isVector && dimensionLength == 1 && dimension[0] == 1) {
+    } else if (xOrder == 'f' && zOrder == 'f' && xEws == 1 && zEws == 1 && yEws == 1 && xRank == 2 && isVector && dimensionLength == 1 && dimension[0] == 1 && isConvertible) {
         // add row vector case for F ordered rowAdd
         int newDim = 0;
 
@@ -162,9 +164,9 @@ void NativeOpExcutioner::execBroadcast(int opNum, void *x, Nd4jLong *xShapeInfo,
 
 
 #ifdef __ND4J_EXPERIMENTAL__
-        BUILD_PAIRWISE_SELECTOR(xType, yType, zType, functions::scalar::ScalarTransform, ::transform(opNum, x, xShapeInfo, nullptr, result, resultShapeInfo, y, &newDim, dimensionLength, nullptr, nullptr, nullptr, nullptr), LIBND4J_TYPES, LIBND4J_TYPES);
+        BUILD_PAIRWISE_SELECTOR(xType, yType, zType, functions::scalar::ScalarTransform, ::transform(scalarOp, x, xShapeInfo, nullptr, result, resultShapeInfo, y, &newDim, dimensionLength, nullptr, nullptr, nullptr, nullptr), LIBND4J_TYPES, LIBND4J_TYPES);
 #else
-        BUILD_SINGLE_SELECTOR_THRICE(xType, functions::scalar::ScalarTransform, ::transform(opNum, x, xShapeInfo, nullptr, result, resultShapeInfo, y, &newDim, dimensionLength, tadX.tadOnlyShapeInfo, tadX.tadOffsets, tadX.tadOnlyShapeInfo, tadX.tadOffsets), LIBND4J_TYPES);
+        BUILD_SINGLE_SELECTOR_THRICE(xType, functions::scalar::ScalarTransform, ::transform(scalarOp, x, xShapeInfo, nullptr, result, resultShapeInfo, y, &newDim, dimensionLength, tadX.tadOnlyShapeInfo, tadX.tadOffsets, tadX.tadOnlyShapeInfo, tadX.tadOffsets), LIBND4J_TYPES);
 #endif
 
     }else {
