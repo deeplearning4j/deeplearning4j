@@ -334,12 +334,12 @@ namespace functions {
             if (shape::order(tadShapeShapeInfo) == shape::order(xShapeInfo) && shape::order(tadShapeInfoZ) == shape::order(xShapeInfo) && xEws > 0 && yEws > 0 && zEws > 0) {
 
                 if (xEws == 1 && yEws == 1 && zEws == 1) {
-                    //PRAGMA_OMP_PARALLEL_FOR_THREADS(_threads)
+                    PRAGMA_OMP_PARALLEL_FOR_THREADS(_threads)
                     for (unsigned int i = 0; i < tads; i++) {
                         auto oY = y + tadOffsets[i];
                         auto oZ = z + tadOffsetZ[i];
 
-                        //PRAGMA_OMP_SIMD
+                        PRAGMA_OMP_SIMD
                         for (unsigned int f = 0; f < tadLength; f++)
                             oZ[f] = OpType::op(x[f], oY[f]);
                     }

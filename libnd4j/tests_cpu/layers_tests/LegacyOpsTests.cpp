@@ -435,9 +435,9 @@ TEST_F(LegacyOpsTests, BroadcastingTests_2) {
 
     shape::printShapeInfoLinear("tad shape", tad.tadOnlyShapeInfo);
 
-    NativeOpExcutioner::execInverseBroadcast(broadcast::Add, x.buffer(), x.shapeInfo(), y.buffer(), y.shapeInfo(), x.buffer(), x.shapeInfo(), &axis, 1, tad.tadOnlyShapeInfo, tad.tadOffsets, tad.tadOnlyShapeInfo, tad.tadOffsets);
+    NativeOpExcutioner::execInverseBroadcast(broadcast::Add, x.buffer(), x.shapeInfo(), y.buffer(), y.shapeInfo(), y.buffer(), y.shapeInfo(), &axis, 1, tad.tadOnlyShapeInfo, tad.tadOffsets, tad.tadOnlyShapeInfo, tad.tadOffsets);
 
-    ASSERT_EQ(e, x);
+    ASSERT_EQ(e, y);
 }
 
 TEST_F(LegacyOpsTests, PowDerivative_1) {
