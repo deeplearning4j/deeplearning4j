@@ -1028,7 +1028,8 @@ namespace shape {
 
     ND4J_EXPORT _CUDA_HD void printShapeInfoLinear(const char *msg, int rank, Nd4jLong *shape, Nd4jLong *strides);
 
-    ND4J_EXPORT _CUDA_HD void printIntArray(Nd4jLong *arr,int length);
+    ND4J_EXPORT _CUDA_HD void printIntArray(const Nd4jLong *arr, const int length);
+    ND4J_EXPORT _CUDA_HD void printIntArray(const int *arr, const int length);
 
     ND4J_EXPORT _CUDA_HD void printArray(float *arr,int length);
 
@@ -3610,9 +3611,17 @@ template <typename T>
         return ret;
     }
 
-    INLINEDEF _CUDA_HD void printIntArray(Nd4jLong *arr,int length) {
+    INLINEDEF _CUDA_HD void printIntArray(const Nd4jLong *arr, const int length) {
         for(int i = 0; i < length; i++) {
             printf(" %lld ", (long long) arr[i]);
+        }
+
+        printf("\n");
+    }
+
+    INLINEDEF _CUDA_HD void printIntArray(const int *arr, const int length) {
+        for(int i = 0; i < length; i++) {
+            printf(" %i ", arr[i]);
         }
 
         printf("\n");

@@ -3081,14 +3081,14 @@ template void NDArray::applyScalar(nd4j::scalar::Ops op, const bool scalar, NDAr
             return;
         }
 
-        const NDArray* min(nullptr), *max(nullptr);
+        NDArray* min(nullptr), *max(nullptr);
         if(this->rankOf() >= other->rankOf()) {
-            max = this;
-            min = other;
+            max = const_cast<NDArray*>(this);
+            min = const_cast<NDArray*>(other);
         }
         else {
-            max = other;
-            min = this;
+            max = const_cast<NDArray*>(other);
+            min = const_cast<NDArray*>(this);
         }
 
         if(checkTargetShape) {
@@ -3105,7 +3105,14 @@ template void NDArray::applyScalar(nd4j::scalar::Ops op, const bool scalar, NDAr
                 delete[] newShapeInfo;
         }
 
+        std::vector<int> maxTadAxes = ShapeUtils::tadAxesForSimpleBroadcast(*max, *min);
+        if(!maxTadAxes.empty()) {
+            max->applyBroadcast(op.b, maxTadAxes, min, target, extraArgs);
+            return;
+        }
+
         NDArray* pTarget = (max->_dataType == target->_dataType) ? target : new NDArray(target->ordering(), target->getShapeAsVector(), max->_dataType, target->_workspace);
+        
         // check whether max array has to be tiled
         if(!max->isSameShape(target)) {
             // evaluate repeating dimensions for tile operation
@@ -3125,10 +3132,9 @@ template void NDArray::applyScalar(nd4j::scalar::Ops op, const bool scalar, NDAr
             product *= repeatMin[i-1];
         }
 
-        auto pMin = const_cast<NDArray *>(min);
+        auto pMin = min;
         if(product != 1 )
             pMin = new NDArray(min->tile(repeatMin));
-
 
         std::vector<int> sameDims = ShapeUtils::getDimsWithSameShape(*target, *pMin);
 
@@ -3181,14 +3187,14 @@ template void NDArray::applyScalar(nd4j::scalar::Ops op, const bool scalar, NDAr
             return;
         }
 
-        const NDArray* min(nullptr), *max(nullptr);
+        NDArray* min(nullptr), *max(nullptr);
         if(this->rankOf() >= other->rankOf()) {
-            max = this;
-            min = other;
+            max = const_cast<NDArray*>(this);
+            min = const_cast<NDArray*>(other);
         }
         else {
-            max = other;
-            min = this;
+            max = const_cast<NDArray*>(other);
+            min = const_cast<NDArray*>(this);
         }
 
         if(checkTargetShape) {
@@ -3203,15 +3209,14 @@ template void NDArray::applyScalar(nd4j::scalar::Ops op, const bool scalar, NDAr
                 delete[] newShapeInfo;
         }
 
-
-        // check if dimensions allow simple broadcast
-        auto hypoDims = ShapeUtils::areShapesBroadcastableDirectly(*this, *other);
-        if (!hypoDims.empty()) {
-            const_cast<NDArray*>(this)->applyBroadcast(op.b, hypoDims, other, target, nullptr);
+        std::vector<int> maxTadAxes = ShapeUtils::tadAxesForSimpleBroadcast(*max, *min);
+        if(!maxTadAxes.empty()) {
+            max->applyBroadcast(op.b, maxTadAxes, min, target, extraArgs);            
             return;
         }
 
-        NDArray* pTarget = (max->_dataType == target->_dataType) ? target : new NDArray(target->ordering(), target->getShapeAsVector(), max->_dataType, target->_workspace);
+        NDArray* pTarget = (max->_dataType == target->_dataType) ? target : new NDArray(target->ordering(), target->getShapeAsVector(), max->_dataType, target->_workspace);        
+        
         // check whether max array has to be tiled
         if(!max->isSameShape(target)) {
             // evaluate repeating dimensions for tile operation
@@ -3232,7 +3237,7 @@ template void NDArray::applyScalar(nd4j::scalar::Ops op, const bool scalar, NDAr
             product *= repeatMin[i-1];
         }
 
-        auto pMin = const_cast<NDArray *>(min);
+        auto pMin = min;
         if(product != 1 )
             pMin = new NDArray(min->tile(repeatMin));
 

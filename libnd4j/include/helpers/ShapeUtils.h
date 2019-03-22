@@ -66,18 +66,15 @@ namespace nd4j {
         static bool areShapesBroadcastable(Nd4jLong* shapeX, Nd4jLong* shapeY);
         static bool areShapesBroadcastable(const std::vector<Nd4jLong>& shape1, const std::vector<Nd4jLong>& shape2);
 
-        /**
-         * This method checks if two arrays is a simple case of broadcast along dimension
-         * @param x
-         * @param y
-         * @return
-         */
-        static std::vector<int> areShapesBroadcastableDirectly(const NDArray &x, const NDArray &y);
-
         // check the possibility of broadcast operation, if true then return shapeInfo of resulting array
         // if evalMinMax == false then array with larger rank has to be passed as first argument
         static bool evalBroadcastShapeInfo(const NDArray& max, const NDArray& min, const bool evalMinMax, Nd4jLong*& resultShapeInfo, nd4j::memory::Workspace* workspace);
         static bool evalBroadcastShapeInfo(Nd4jLong *max, Nd4jLong *min, const bool evalMinMax, Nd4jLong*& resultShapeInfo, nd4j::memory::Workspace* workspace);
+
+        // evaluate sorted vector of max axes to create tads along in case of simple broadcast operation
+        // if simple broadcast is not possible then empty vector is returned
+        // PLEASE NOTE: condition (rank_max >= rank_min) should be satisfied !
+        static std::vector<int> tadAxesForSimpleBroadcast(const NDArray& max, const NDArray& min);
 
         // check the possibility of broadcast operation for set of arrays, if true then return resulting broadcasted shapeInfo
         static bool evalCommonBroadcastShapeInfo(const std::vector<const NDArray*>& arrays, Nd4jLong*& resultShapeInfo, memory::Workspace* workspace = nullptr);
