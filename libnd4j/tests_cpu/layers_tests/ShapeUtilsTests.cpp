@@ -227,6 +227,16 @@ TEST_F(ShapeUtilsTests, test_direct_broadcast_2) {
     ASSERT_EQ(0, dims[0]);
 }
 
+TEST_F(ShapeUtilsTests, test_direct_broadcast_3) {
+    auto x = NDArrayFactory::create<float>('c', {20, 10, 5});
+    auto y = NDArrayFactory::create<float>('c', {5});
+
+    auto dims = ShapeUtils::areShapesBroadcastableDirectly(x, y);
+
+    ASSERT_EQ(1, dims.size());
+    ASSERT_EQ(2, dims[0]);
+}
+
 TEST_F(ShapeUtilsTests, Test_Strings_1) {
     auto x = NDArrayFactory::create<float>('c', {2, 3, 4, 5});
     std::string exp("[2, 3, 4, 5]");

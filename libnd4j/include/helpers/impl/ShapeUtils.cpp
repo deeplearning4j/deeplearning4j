@@ -926,7 +926,7 @@ void ShapeUtils::updateStridesAndType(Nd4jLong* dest, const DataType dtype, cons
 }
 
 std::vector<int> ShapeUtils::areShapesBroadcastableDirectly(const NDArray &x, const NDArray &y) {
-    std::vector<int> result(x.rankOf());
+    std::vector<int> result;
 
     auto tadShape = y.getShapeAsVector();
     auto xShape = x.getShapeAsVector();
@@ -944,7 +944,7 @@ std::vector<int> ShapeUtils::areShapesBroadcastableDirectly(const NDArray &x, co
 
         // that's our target dim for broadcast
         if (dimMatch >= 0)
-            result[0] = dimMatch;
+            result.emplace_back(dimMatch);
     }
 
     return result;
