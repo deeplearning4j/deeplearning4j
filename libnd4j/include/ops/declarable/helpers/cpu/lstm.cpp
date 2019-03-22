@@ -200,8 +200,10 @@ void lstmBlockCell(const NDArray* xt, const NDArray* cLast, const NDArray* yLast
     auto result = concat->execute(inputs, targs, iargs, bargs);
     auto concatOut = result->at(0);
 
-    auto m = mmul(*concatOut, *W);    //mmul: [bs, (nIn+numUnits)]* [(inSize+numUnits), 4*numUnits] = [bs, 4*numUnits]
-    m += (*b);
+    //NDArray* NDArrayFactory::create_( const char order, const std::vector<Nd4jLong> &shape, nd4j::DataType dataType, nd4j::memory::Workspace* workspace) {
+    auto m = NDArrayFactory::create_('c', shape, xt->dataType(), nullptr);
+    MmulHelper::mmul(concatOut, W, m, 1.0f, 0.0f, 'c'); //mmul: [bs, (nIn+numUnits)]* [(inSize+numUnits), 4*numUnits] = [bs, 4*numUnits] - C result array
+    m += (*b);  //addiRowVector
 
     //Note: weights are ordered [inputGate, blockInput, forgetGate, outputGate] to match TF (TF code comments state [i,f,z/ci,o] but behaviour is [i,z,f,o])
     auto zi = m({0,0, 0,            numUnits});      	// z for input modulation gate, [bS, numUnits]
@@ -222,7 +224,6 @@ void lstmBlockCell(const NDArray* xt, const NDArray* cLast, const NDArray* yLast
     PRAGMA_OMP_PARALLEL
     #pragma omp single
         {
-
             #pragma omp task
             zz.applyTransform(transform::Tanh, z);      //z = tanh(zz)
 
