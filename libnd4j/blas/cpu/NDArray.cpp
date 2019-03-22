@@ -3108,6 +3108,7 @@ template void NDArray::applyScalar(nd4j::scalar::Ops op, const bool scalar, NDAr
         std::vector<int> maxTadAxes = ShapeUtils::tadAxesForSimpleBroadcast(*max, *min);
         if(!maxTadAxes.empty()) {
             max->applyBroadcast(op.b, maxTadAxes, min, target, extraArgs);
+            return;
         }
 
         NDArray* pTarget = (max->_dataType == target->_dataType) ? target : new NDArray(target->ordering(), target->getShapeAsVector(), max->_dataType, target->_workspace);
