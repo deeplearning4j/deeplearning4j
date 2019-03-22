@@ -17,6 +17,7 @@
 package org.deeplearning4j.clustering.kdtree;
 
 import com.google.common.primitives.Doubles;
+import lombok.val;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.nd4j.linalg.api.buffer.DataType;
@@ -182,5 +183,12 @@ public class KDTreeTest {
         data = new double[]{8,1};
         kdTree.insert(Nd4j.createFromArray(data));
         assertEquals(6, kdTree.size());
+
+        List<Pair<Double, INDArray>> result = kdTree.knn(Nd4j.createFromArray(data), 10.0);
+        assertEquals(7.0, result.get(0).getSecond().getDouble(0), 1e-5);
+        assertEquals(2.0, result.get(0).getSecond().getDouble(1), 1e-5);
+        assertEquals(9.0, result.get(1).getSecond().getDouble(0), 1e-5);
+        assertEquals(6.0, result.get(1).getSecond().getDouble(1),  1e-5);
+
     }
 }
