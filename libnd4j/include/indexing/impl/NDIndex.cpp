@@ -39,15 +39,15 @@ namespace nd4j {
     }
 
     bool NDIndexAll::isInterval() {
-        false;
+        return false;
     }
 
     bool NDIndexPoint::isInterval() {
-        false;
+        return false;
     }
 
     bool NDIndexInterval::isInterval() {
-        true;
+        return true;
     }
 
 
