@@ -1064,3 +1064,27 @@ TEST_F(NDArrayTest2, test_broadcast_column_4) {
 
     ASSERT_EQ(e, x);
 }
+
+TEST_F(NDArrayTest2, test_not_tiled_1) {
+    auto x = NDArrayFactory::create<float>('c', {4, 12, 128, 128});
+    auto y = NDArrayFactory::create<float>('c', {4, 1, 128, 128});
+    auto e = NDArrayFactory::create<float>('c', {4, 12, 128, 128});
+    y.assign(1.0f);
+    e.assign(1.0f);
+
+    x += y;
+
+    ASSERT_EQ(e, x);
+}
+
+TEST_F(NDArrayTest2, test_not_tiled_2) {
+    auto x = NDArrayFactory::create<float>('c', {4, 128, 768});
+    auto y = NDArrayFactory::create<float>('c', {4, 128, 1});
+    auto e = NDArrayFactory::create<float>('c', {4, 128, 768});
+    y.assign(1.0f);
+    e.assign(1.0f);
+
+    x += y;
+
+    ASSERT_EQ(e, x);
+}
