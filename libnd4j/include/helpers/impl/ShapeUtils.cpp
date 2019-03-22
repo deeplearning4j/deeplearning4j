@@ -925,31 +925,27 @@ void ShapeUtils::updateStridesAndType(Nd4jLong* dest, const DataType dtype, cons
     ArrayOptions::setDataType(dest, dtype);
 }
 
-std::vector<int> ShapeUtils::areShapesBroadcastableDirectly(const NDArray &x, const NDArray &y) {
-    std::vector<int> result;
+////////////////////////////////////////////////////////////////////////////////
+std::vector<int> ShapeUtils::tadAxesForSimpleBroadcast(const NDArray& max, const NDArray& min) {    
 
-    auto tadShape = y.getShapeAsVector();
-    auto xShape = x.getShapeAsVector();
+    const int maxRank = max.rankOf();
+    const int minRank = min.rankOf();
+    const int diff    = maxRank - minRank;
 
-    // most simple case ever
-    if (tadShape.size() == 1) {
-        auto tadSize = tadShape[0];
-        int dimMatch = -1;
-        for (int e = xShape.size() - 1; e >= 0; e--) {
-            if (xShape[e] == tadSize) {
-                dimMatch = e;
-                break;
-            }
-        }
+    if(maxRank < minRank || max.lengthOf() < min.lengthOf())
+        return std::vector<int>();
+    
+    Nd4jLong numOfMinTads(1);
+    std::vector<int> maxTadDims;
 
-        // that's our target dim for broadcast
-        if (dimMatch >= 0) {
-            //result = convertAxisToTadTarget(x.rankOf(), {dimMatch});
-            result.emplace_back(dimMatch);
-        }
+    for(int i = 0; i < minRank; ++i) {
+        if(min.sizeAt(i) == max.sizeAt(diff + i))
+            maxTadDims.push_back(diff + i);
+        else 
+            numOfMinTads *= min.sizeAt(i);
     }
-
-    return result;
+ 
+   return numOfMinTads == 1 ? maxTadDims : std::vector<int>();
 }
 
 }
