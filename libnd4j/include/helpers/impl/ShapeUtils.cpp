@@ -943,8 +943,10 @@ std::vector<int> ShapeUtils::areShapesBroadcastableDirectly(const NDArray &x, co
         }
 
         // that's our target dim for broadcast
-        if (dimMatch >= 0)
+        if (dimMatch >= 0) {
+            //result = convertAxisToTadTarget(x.rankOf(), {dimMatch});
             result.emplace_back(dimMatch);
+        }
     }
 
     return result;

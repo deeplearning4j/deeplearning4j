@@ -52,7 +52,7 @@ void ScalarTransform<X, Y, Z>::transform(void *vx, Nd4jLong *xShapeInfo,
 
     // tad preparation
     int tadEws = shape::elementWiseStride(tadShapeInfo);
-    int zEws = shape::elementWiseStride(tadShapeInfo);
+    int zEws = shape::elementWiseStride(zShapeInfo);
     int tadLength = shape::length(tadShapeInfo);
     int numTads =shape::length(xShapeInfo) / tadLength;
 

@@ -1036,9 +1036,9 @@ TEST_F(NDArrayTest2, test_broadcast_column_2) {
     auto e = NDArrayFactory::create<float>('c', {5, 10});
     e.assign(1.0f);
 
-    // x.applyTrueBroadcast(BroadcastOpsTuple::Add(), y);
-    // x.printShapeInfo();
-    // x.printIndexedBuffer();
+    x.applyTrueBroadcast(BroadcastOpsTuple::Add(), &y, &x, false);
+    x.printShapeInfo();
+    x.printIndexedBuffer();
 
     ASSERT_EQ(e, x);
 }

@@ -131,8 +131,11 @@ void NativeOpExcutioner::execBroadcast(int opNum, void *x, Nd4jLong *xShapeInfo,
     auto yEws = shape::elementWiseStride(yShapeInfo);
     auto zEws = shape::elementWiseStride(resultShapeInfo);
 
+    int axis = 0;
+    auto isVector = shape::isCommonVector(yShapeInfo, axis);
+
     // add column vector case for C ordered columnAdd
-    if (xOrder == 'c' && zOrder == 'c' && xEws == 1 && zEws == 1 && xRank == 2 && yRank == 1 && dimensionLength == 1 && dimension[0] == 0) {
+    if (xOrder == 'c' && zOrder == 'c' && xEws == 1 && zEws == 1 && yEws == 1 && xRank == 2 && isVector && dimensionLength == 1 && dimension[0] == 0) {
         // invoke scalar along dimension here
         int newDim = 1;
 
@@ -148,7 +151,7 @@ void NativeOpExcutioner::execBroadcast(int opNum, void *x, Nd4jLong *xShapeInfo,
         BUILD_SINGLE_SELECTOR_THRICE(xType, functions::scalar::ScalarTransform, ::transform(opNum, x, xShapeInfo, nullptr, result, resultShapeInfo, y, &newDim, dimensionLength, tadX.tadOnlyShapeInfo, tadX.tadOffsets, tadX.tadOnlyShapeInfo, tadX.tadOffsets), LIBND4J_TYPES);
 #endif
 
-    } else if (xOrder == 'f' && zOrder == 'f' && xEws == 1 && zEws == 1 && xRank == 2 && yRank == 1 && dimensionLength == 1 && dimension[0] == 1) {
+    } else if (xOrder == 'f' && zOrder == 'f' && xEws == 1 && zEws == 1 && yEws == 1 && xRank == 2 && isVector && dimensionLength == 1 && dimension[0] == 1) {
         // add row vector case for F ordered rowAdd
         int newDim = 0;
 
