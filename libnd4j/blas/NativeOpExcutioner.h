@@ -94,8 +94,36 @@ public:
                               Nd4jLong *tadOnlyShapeInfoZ,
                               Nd4jLong *tadOffsetsZ);
 
+    static void execInverseBroadcast(int opNum,
+                              void *x,
+                              Nd4jLong *xShapeInfo,
+                              void *y,
+                              Nd4jLong *yShapeInfo,
+                              void *result,
+                              Nd4jLong *resultShapeInfo,
+                              int *dimension,
+                              int dimensionLength,
+                              Nd4jLong *tadOnlyShapeInfo,
+                              Nd4jLong *tadOffsets,
+                              Nd4jLong *tadOnlyShapeInfoZ,
+                              Nd4jLong *tadOffsetsZ);
+
 
     static void execBroadcastBool(int opNum,
+                              void *x,
+                              Nd4jLong *xShapeInfo,
+                              void *y,
+                              Nd4jLong *yShapeInfo,
+                              void *result,
+                              Nd4jLong *resultShapeInfo,
+                              int *dimension,
+                              int dimensionLength,
+                              Nd4jLong *tadOnlyShapeInfo,
+                              Nd4jLong *tadOffsets,
+                              Nd4jLong *tadOnlyShapeInfoZ,
+                              Nd4jLong *tadOffsetsZ);
+
+    static void execInverseBroadcastBool(int opNum,
                               void *x,
                               Nd4jLong *xShapeInfo,
                               void *y,
