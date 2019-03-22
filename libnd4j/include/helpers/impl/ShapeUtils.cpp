@@ -925,6 +925,31 @@ void ShapeUtils::updateStridesAndType(Nd4jLong* dest, const DataType dtype, cons
     ArrayOptions::setDataType(dest, dtype);
 }
 
+std::vector<int> ShapeUtils::areShapesBroadcastableDirectly(const NDArray &x, const NDArray &y) {
+    std::vector<int> result(x.rankOf());
+
+    auto tadShape = y.getShapeAsVector();
+    auto xShape = x.getShapeAsVector();
+
+    // most simple case ever
+    if (tadShape.size() == 1) {
+        auto tadSize = tadShape[0];
+        int dimMatch = -1;
+        for (int e = xShape.size() - 1; e >= 0; e--) {
+            if (xShape[e] == tadSize) {
+                dimMatch = e;
+                break;
+            }
+        }
+
+        // that's our target dim for broadcast
+        if (dimMatch >= 0)
+            result[0] = dimMatch;
+    }
+
+    return result;
+}
+
 }
 
 

@@ -3181,6 +3181,14 @@ template void NDArray::applyScalar(nd4j::scalar::Ops op, const bool scalar, NDAr
             return;
         }
 
+        // check if dimensions allow simple broadcast
+        auto hypoDims = ShapeUtils::areShapesBroadcastableDirectly(*this, *other);
+        if (!hypoDims.empty()) {
+            const_cast<NDArray*>(this)->applyBroadcast(op.b, hypoDims, other, target, nullptr);
+            return;
+        }
+
+
         const NDArray* min(nullptr), *max(nullptr);
         if(this->rankOf() >= other->rankOf()) {
             max = this;

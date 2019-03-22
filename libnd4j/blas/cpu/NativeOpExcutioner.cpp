@@ -128,9 +128,9 @@ void NativeOpExcutioner::execBroadcast(int opNum, void *x, Nd4jLong *xShapeInfo,
     auto zEws = shape::elementWiseStride(resultShapeInfo);
 
     // add column vector case
-    if (xOrder == 'c' && zOrder == 'c' && xEws == 1 && zEws == 1) {
+    //if (xOrder == 'c' && zOrder == 'c' && xEws == 1 && zEws == 1) {
 
-    } else {
+    //} else {
         // default case
 
 #ifdef __ND4J_EXPERIMENTAL__
@@ -138,7 +138,7 @@ void NativeOpExcutioner::execBroadcast(int opNum, void *x, Nd4jLong *xShapeInfo,
 #else
         BUILD_SINGLE_SELECTOR_THRICE(xType, functions::broadcast::Broadcast, ::exec(opNum, x, xShapeInfo, y, yShapeInfo, result, resultShapeInfo, dimension, dimensionLength, tadOnlyShapeInfo, tadOffsets, tadOnlyShapeInfoZ,tadOffsetsZ), LIBND4J_TYPES);
 #endif
-    }
+    //}
 }
 
 void NativeOpExcutioner::execBroadcastBool(int opNum, void *x, Nd4jLong *xShapeInfo, void *y, Nd4jLong *yShapeInfo, void *result, Nd4jLong *resultShapeInfo, int *dimension, int dimensionLength, Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets, Nd4jLong *tadOnlyShapeInfoZ, Nd4jLong *tadOffsetsZ) {
