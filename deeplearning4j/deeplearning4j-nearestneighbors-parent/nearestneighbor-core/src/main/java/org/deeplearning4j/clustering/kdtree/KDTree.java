@@ -325,7 +325,7 @@ public class KDTree implements Serializable {
     }
 
 
-    public static class KDNode {
+    private static class KDNode {
         private INDArray point;
         private KDNode left, right, parent;
 

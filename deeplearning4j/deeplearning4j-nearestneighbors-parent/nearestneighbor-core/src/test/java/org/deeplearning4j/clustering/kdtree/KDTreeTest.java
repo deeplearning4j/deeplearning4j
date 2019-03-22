@@ -91,18 +91,24 @@ public class KDTreeTest {
             lists.add(thisList);
         }
 
-        INDArray toDelete = Nd4j.empty(DataType.DOUBLE);
+        INDArray toDelete = Nd4j.empty(DataType.DOUBLE),
+                 leafToDelete = Nd4j.empty(DataType.DOUBLE);
         for (int i = 0; i < elements; i++) {
             double[] features = Doubles.toArray(lists.get(i));
             INDArray ind = Nd4j.create(features, new long[]{1, features.length}, DataType.FLOAT);
             if (i == 1)
                 toDelete = ind;
+            if (i == elements - 1) {
+                leafToDelete = ind;
+            }
             kdTree.insert(ind);
             assertEquals(i + 1, kdTree.size());
         }
 
         kdTree.delete(toDelete);
         assertEquals(9, kdTree.size());
+        kdTree.delete(leafToDelete);
+        assertEquals(8, kdTree.size());
     }
 
     @Test
@@ -159,4 +165,22 @@ public class KDTreeTest {
         List<Pair<Double, INDArray>> list = kdTree.knn(Nd4j.create(Nd4j.createBuffer(Doubles.toArray(pt))), 20.0);
     }
 
+    @Test
+    public void testSequentialConstruction() {
+        int n = 2;
+        KDTree kdTree = new KDTree(n);
+        double[] data = new double[]{7,2};
+        kdTree.insert(Nd4j.createFromArray(data));
+        data = new double[]{5,4};
+        kdTree.insert(Nd4j.createFromArray(data));
+        data = new double[]{2,3};
+        kdTree.insert(Nd4j.createFromArray(data));
+        data = new double[]{4,7};
+        kdTree.insert(Nd4j.createFromArray(data));
+        data = new double[]{9,6};
+        kdTree.insert(Nd4j.createFromArray(data));
+        data = new double[]{8,1};
+        kdTree.insert(Nd4j.createFromArray(data));
+        assertEquals(6, kdTree.size());
+    }
 }
