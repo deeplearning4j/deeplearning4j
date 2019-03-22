@@ -1179,14 +1179,29 @@ void NDArray::replacePointers(void *buffer, Nd4jLong *shapeInfo, const bool rele
 
     char order = newOrder == 'a' ? ordering() : newOrder;
 
-    auto outShapeInfo = ShapeBuilders::createShapeInfo(_dataType, order, getShapeAsVector(), _workspace);
-    void* outBuffer = nullptr;
-    ALLOCATE(outBuffer, _workspace, _length * sizeOfT(), int8_t);
+    if (isEmpty()) {
+        return NDArrayFactory::empty_(this->dataType(), this->_workspace);
+    }
 
-    auto result = new NDArray(outBuffer, outShapeInfo, _workspace, true, true);
-    result->assign(this);
+    // for now string arrays require special treatment
+    if (this->dataType() == DataType::UTF8) {
+        std::vector<std::string> strings(_length);
+        for (int e = 0; e < _length; e++)
+            strings[e] = this->e<std::string>(e);
 
-    return result;
+        auto result = NDArrayFactory::string_(order, this->getShapeAsVector(), strings, _workspace);
+        return result;
+    } else {
+
+        auto outShapeInfo = ShapeBuilders::createShapeInfo(_dataType, order, getShapeAsVector(), _workspace);
+        void *outBuffer = nullptr;
+        ALLOCATE(outBuffer, _workspace, _length * sizeOfT(), int8_t);
+
+        auto result = new NDArray(outBuffer, outShapeInfo, _workspace, true, true);
+        result->assign(this);
+
+        return result;
+    }
 }
 
     NDArray NDArray::varianceNumber(nd4j::variance::Ops op, bool biasCorrected) {
@@ -5084,6 +5099,11 @@ Nd4jLong NDArray::getOffset(const Nd4jLong i) const {
                 indexes[3 * d + 1] = indexes[3 * d] + 1;            // last
                 indexes[3 * d + 2] = 1;                             // stride
             }
+            else if (idx.at(d)->isInterval()) {
+                indexes[3 * d]     = idx.at(d)->getIndices().at(0); // first
+                indexes[3 * d + 1] = idx.at(d)->getIndices().size();// last
+                indexes[3 * d + 2] = idx.at(d)->stride();           // stride
+            }
             else {
                 indexes[3 * d]     = idx.at(d)->getIndices().at(0); // first
                 indexes[3 * d + 1] = idx.at(d)->getIndices().at(1); // last
@@ -5108,19 +5128,24 @@ Nd4jLong NDArray::getOffset(const Nd4jLong i) const {
         for (const auto& item : idx) {
 
             if (item->isAll()) {
-                indexes[3 * d]     = 0;                         // first
-                indexes[3 * d + 1] = 0;                         // last
-                indexes[3 * d + 2] = 1;                         // stride
+                indexes[3 * d]     = 0;                             // first
+                indexes[3 * d + 1] = 0;                             // last
+                indexes[3 * d + 2] = 1;                             // stride
             }
             else if (item->isPoint()) {
-                indexes[3 * d]     = item->getIndices().at(0);  // first
-                indexes[3 * d + 1] = indexes[3 * d] + 1;        // last
-                indexes[3 * d + 2] = 1;                         // stride
+                indexes[3 * d]     = item->getIndices().at(0);      // first
+                indexes[3 * d + 1] = indexes[3 * d] + 1;            // last
+                indexes[3 * d + 2] = 1;                             // stride
+            }
+            else if (item->isInterval()) {
+                indexes[3 * d]     = item->getIndices().at(0);      // first
+                indexes[3 * d + 1] = item->getIndices().size();     // last
+                indexes[3 * d + 2] = item->stride();                // stride
             }
             else {
-                indexes[3 * d]     = item->getIndices().at(0);  // first
-                indexes[3 * d + 1] = item->getIndices().at(1);  // last
-                indexes[3 * d + 2] = item->getIndices().at(2);  // stride
+                indexes[3 * d]     = item->getIndices().at(0);      // first
+                indexes[3 * d + 1] = item->getIndices().at(1);      // last
+                indexes[3 * d + 2] = item->getIndices().at(2);      // stride
             }
             ++d;
         }
