@@ -219,9 +219,19 @@ void lstmBlockCell(const NDArray* xt, const NDArray* cLast, const NDArray* yLast
         zf += forgetBias;
     }
 
-    zz.applyTransform(transform::Tanh, z);      //z = tanh(zz)
-    zi.applyTransform(transform::Sigmoid, i);   //i = sigmoid(zi)
-    zf.applyTransform(transform::Sigmoid, f);   //f = sigmoid(zf);
+    PRAGMA_OMP_PARALLEL
+    #pragma omp single
+        {
+
+            #pragma omp task
+            zz.applyTransform(transform::Tanh, z);      //z = tanh(zz)
+
+            #pragma omp task
+            zi.applyTransform(transform::Sigmoid, i);   //i = sigmoid(zi)
+
+            #pragma omp task
+            zf.applyTransform(transform::Sigmoid, f);   //f = sigmoid(zf);
+        }
 
 
     //cell state = blockInput .* inputGate + prevCellState .* forgetGate
