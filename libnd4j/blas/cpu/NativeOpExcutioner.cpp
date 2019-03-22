@@ -119,6 +119,10 @@ void NativeOpExcutioner::execBroadcast(int opNum, void *x, Nd4jLong *xShapeInfo,
     if ((yType != xType && yType != nd4j::DataType::BOOL) || xType != zType)
         throw nd4j::datatype_exception::build("NativeOps::execBroadcast both operands must have same data type", xType, yType);
 
+    auto xRank = shape::rank(xShapeInfo);
+    auto yRank = shape::rank(yShapeInfo);
+    auto zRank = shape::rank(resultShapeInfo);
+
     auto xOrder = shape::order(xShapeInfo);
     auto yOrder = shape::order(yShapeInfo);
     auto zOrder = shape::order(resultShapeInfo);
@@ -127,10 +131,40 @@ void NativeOpExcutioner::execBroadcast(int opNum, void *x, Nd4jLong *xShapeInfo,
     auto yEws = shape::elementWiseStride(yShapeInfo);
     auto zEws = shape::elementWiseStride(resultShapeInfo);
 
-    // add column vector case
-    //if (xOrder == 'c' && zOrder == 'c' && xEws == 1 && zEws == 1) {
+    // add column vector case for C ordered columnAdd
+    if (xOrder == 'c' && zOrder == 'c' && xEws == 1 && zEws == 1 && xRank == 2 && yRank == 1 && dimensionLength == 1 && dimension[0] == 0) {
+        // invoke scalar along dimension here
+        int newDim = 1;
 
-    //} else {
+        shape::TAD tadX;
+        tadX.init(xShapeInfo, &newDim, dimensionLength);
+        tadX.createTadOnlyShapeInfo();
+        tadX.createOffsets();
+
+
+#ifdef __ND4J_EXPERIMENTAL__
+        BUILD_PAIRWISE_SELECTOR(xType, yType, zType, functions::scalar::ScalarTransform, ::transform(opNum, x, xShapeInfo, nullptr, result, resultShapeInfo, y, &newDim, dimensionLength, nullptr, nullptr, nullptr, nullptr), LIBND4J_TYPES, LIBND4J_TYPES);
+#else
+        BUILD_SINGLE_SELECTOR_THRICE(xType, functions::scalar::ScalarTransform, ::transform(opNum, x, xShapeInfo, nullptr, result, resultShapeInfo, y, &newDim, dimensionLength, tadX.tadOnlyShapeInfo, tadX.tadOffsets, tadX.tadOnlyShapeInfo, tadX.tadOffsets), LIBND4J_TYPES);
+#endif
+
+    } else if (xOrder == 'f' && zOrder == 'f' && xEws == 1 && zEws == 1 && xRank == 2 && yRank == 1 && dimensionLength == 1 && dimension[0] == 1) {
+        // add row vector case for F ordered rowAdd
+        int newDim = 0;
+
+        shape::TAD tadX;
+        tadX.init(xShapeInfo, &newDim, dimensionLength);
+        tadX.createTadOnlyShapeInfo();
+        tadX.createOffsets();
+
+
+#ifdef __ND4J_EXPERIMENTAL__
+        BUILD_PAIRWISE_SELECTOR(xType, yType, zType, functions::scalar::ScalarTransform, ::transform(opNum, x, xShapeInfo, nullptr, result, resultShapeInfo, y, &newDim, dimensionLength, nullptr, nullptr, nullptr, nullptr), LIBND4J_TYPES, LIBND4J_TYPES);
+#else
+        BUILD_SINGLE_SELECTOR_THRICE(xType, functions::scalar::ScalarTransform, ::transform(opNum, x, xShapeInfo, nullptr, result, resultShapeInfo, y, &newDim, dimensionLength, tadX.tadOnlyShapeInfo, tadX.tadOffsets, tadX.tadOnlyShapeInfo, tadX.tadOffsets), LIBND4J_TYPES);
+#endif
+
+    }else {
         // default case
 
 #ifdef __ND4J_EXPERIMENTAL__
@@ -138,7 +172,7 @@ void NativeOpExcutioner::execBroadcast(int opNum, void *x, Nd4jLong *xShapeInfo,
 #else
         BUILD_SINGLE_SELECTOR_THRICE(xType, functions::broadcast::Broadcast, ::exec(opNum, x, xShapeInfo, y, yShapeInfo, result, resultShapeInfo, dimension, dimensionLength, tadOnlyShapeInfo, tadOffsets, tadOnlyShapeInfoZ,tadOffsetsZ), LIBND4J_TYPES);
 #endif
-    //}
+    }
 }
 
 void NativeOpExcutioner::execBroadcastBool(int opNum, void *x, Nd4jLong *xShapeInfo, void *y, Nd4jLong *yShapeInfo, void *result, Nd4jLong *resultShapeInfo, int *dimension, int dimensionLength, Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets, Nd4jLong *tadOnlyShapeInfoZ, Nd4jLong *tadOffsetsZ) {
