@@ -53,6 +53,7 @@ public class KDTreeTest {
         assertEquals(half, pair.getValue());
     }
 
+    @Test
     public void testInsert() {
         int elements = 10;
         List<Double> digits = Arrays.asList(1.0, 0.0, 2.0, 3.0);
@@ -73,6 +74,35 @@ public class KDTreeTest {
             kdTree.insert(ind);
             assertEquals(i + 1, kdTree.size());
         }
+    }
+
+    @Test
+    public void testDelete() {
+        int elements = 10;
+        List<Double> digits = Arrays.asList(1.0, 0.0, 2.0, 3.0);
+
+        KDTree kdTree = new KDTree(digits.size());
+        List<List<Double>> lists = new ArrayList<>();
+        for (int i = 0; i < elements; i++) {
+            List<Double> thisList = new ArrayList<>(digits.size());
+            for (int k = 0; k < digits.size(); k++) {
+                thisList.add(digits.get(k) + i);
+            }
+            lists.add(thisList);
+        }
+
+        INDArray toDelete = Nd4j.empty(DataType.DOUBLE);
+        for (int i = 0; i < elements; i++) {
+            double[] features = Doubles.toArray(lists.get(i));
+            INDArray ind = Nd4j.create(features, new long[]{1, features.length}, DataType.FLOAT);
+            if (i == 1)
+                toDelete = ind;
+            kdTree.insert(ind);
+            assertEquals(i + 1, kdTree.size());
+        }
+
+        kdTree.delete(toDelete);
+        assertEquals(9, kdTree.size());
     }
 
     @Test

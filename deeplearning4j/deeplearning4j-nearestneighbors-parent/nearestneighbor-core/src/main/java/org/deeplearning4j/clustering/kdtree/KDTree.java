@@ -224,6 +224,9 @@ public class KDTree implements Serializable {
             qd = min(delete.getRight(), disc, _disc);
         } else if (delete.getLeft() != null)
             qd = max(delete.getLeft(), disc, _disc);
+        if (qd == null) {// is leaf
+            return null;
+        }
         delete.point = qd.getKey().point;
         KDNode qFather = qd.getKey().getParent();
         if (qFather.getLeft() == qd.getKey()) {
