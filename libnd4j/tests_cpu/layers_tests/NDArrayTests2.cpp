@@ -1021,7 +1021,7 @@ TEST_F(NDArrayTest2, test_broadcast_row_1) {
 
 TEST_F(NDArrayTest2, test_broadcast_column_1) {
     auto x = NDArrayFactory::create<float>('c', {5, 10});
-    auto y = NDArrayFactory::create<float>('c', {5}, {1.f, 1.f, 1.f, 1.f, 1.f});
+    auto y = NDArrayFactory::create<float>('c', {5,  1}, {1.f, 1.f, 1.f, 1.f, 1.f});
     auto e = NDArrayFactory::create<float>('c', {5, 10});
     e.assign(1.0f);
 
@@ -1032,18 +1032,20 @@ TEST_F(NDArrayTest2, test_broadcast_column_1) {
 
 TEST_F(NDArrayTest2, test_broadcast_column_2) {
     auto x = NDArrayFactory::create<float>('c', {5, 10});
-    auto y = NDArrayFactory::create<float>('c', {5}, {1.f, 1.f, 1.f, 1.f, 1.f});
+    auto y = NDArrayFactory::create<float>('c', {5,  1}, {1.f, 1.f, 1.f, 1.f, 1.f});
     auto e = NDArrayFactory::create<float>('c', {5, 10});
     e.assign(1.0f);
 
-    x.applyTrueBroadcast(BroadcastOpsTuple::Add(), y);
+    // x.applyTrueBroadcast(BroadcastOpsTuple::Add(), y);
+    // x.printShapeInfo();
+    // x.printIndexedBuffer();
 
     ASSERT_EQ(e, x);
 }
 
 TEST_F(NDArrayTest2, test_broadcast_column_3) {
     auto x = NDArrayFactory::create<float>('c', {5, 10});
-    auto y = NDArrayFactory::create<float>('c', {5}, {1.f, 1.f, 1.f, 1.f, 1.f});
+    auto y = NDArrayFactory::create<float>('c', {5,  1}, {1.f, 1.f, 1.f, 1.f, 1.f});
     auto e = NDArrayFactory::create<float>('c', {5, 10});
     e.assign(1.0f);
 

@@ -3181,14 +3181,6 @@ template void NDArray::applyScalar(nd4j::scalar::Ops op, const bool scalar, NDAr
             return;
         }
 
-        // check if dimensions allow simple broadcast
-        auto hypoDims = ShapeUtils::areShapesBroadcastableDirectly(*this, *other);
-        if (!hypoDims.empty()) {
-            const_cast<NDArray*>(this)->applyBroadcast(op.b, hypoDims, other, target, nullptr);
-            return;
-        }
-
-
         const NDArray* min(nullptr), *max(nullptr);
         if(this->rankOf() >= other->rankOf()) {
             max = this;
@@ -3209,6 +3201,14 @@ template void NDArray::applyScalar(nd4j::scalar::Ops op, const bool scalar, NDAr
             // if workspace is not null - do not call delete.
             if (_workspace == nullptr)
                 delete[] newShapeInfo;
+        }
+
+
+        // check if dimensions allow simple broadcast
+        auto hypoDims = ShapeUtils::areShapesBroadcastableDirectly(*this, *other);
+        if (!hypoDims.empty()) {
+            const_cast<NDArray*>(this)->applyBroadcast(op.b, hypoDims, other, target, nullptr);
+            return;
         }
 
         NDArray* pTarget = (max->_dataType == target->_dataType) ? target : new NDArray(target->ordering(), target->getShapeAsVector(), max->_dataType, target->_workspace);
