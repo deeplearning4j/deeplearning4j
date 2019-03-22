@@ -931,11 +931,8 @@ std::vector<int> ShapeUtils::tadAxesForSimpleBroadcast(const NDArray& max, const
     const int maxRank = max.rankOf();
     const int minRank = min.rankOf();
     const int diff    = maxRank - minRank;
-
-    if(maxRank < minRank || max.lengthOf() < min.lengthOf())
-        return std::vector<int>();
     
-    Nd4jLong numOfMinTads(1);
+    Nd4jLong  numOfMinTads(1);
     std::vector<int> maxTadDims;
 
     for(int i = 0; i < minRank; ++i) {

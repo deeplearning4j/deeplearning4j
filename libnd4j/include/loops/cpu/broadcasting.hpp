@@ -357,7 +357,7 @@ namespace functions {
             } else if(shape::haveSameOffsets(tadShapeShapeInfo, xShapeInfo) && shape::haveSameOffsets(tadShapeShapeInfo, tadShapeInfoZ)) {
 
                 uint tadShapeShapeInfoCast[MAX_RANK];
-                bool canCastX = nd4j::DataTypeUtils::castShapeInfo(tadShapeShapeInfo, tadShapeShapeInfoCast);
+                bool canCastY = nd4j::DataTypeUtils::castShapeInfo(tadShapeShapeInfo, tadShapeShapeInfoCast);
 
                 PRAGMA_OMP_PARALLEL_FOR_THREADS(_threads)
                 for (int i = 0; i < tads; i++) {
@@ -367,7 +367,7 @@ namespace functions {
 
                     PRAGMA_OMP_SIMD
                     for (unsigned int f = 0; f < tadLength; f++) {
-                        auto offset = shape::indexOffset(f, tadShapeShapeInfo, tadShapeShapeInfoCast, tadLength, canCastX);
+                        auto offset = shape::indexOffset(f, tadShapeShapeInfo, tadShapeShapeInfoCast, tadLength, canCastY);
                         oZ[offset] = OpType::op(x[offset], oY[offset]);
                     }
                 }
@@ -376,7 +376,7 @@ namespace functions {
 
                 uint tadShapeShapeInfoCast[MAX_RANK];
                 uint tadShapeInfoZCast[MAX_RANK];
-                bool canCastX = nd4j::DataTypeUtils::castShapeInfo(tadShapeShapeInfo, tadShapeShapeInfoCast);
+                bool canCastY = nd4j::DataTypeUtils::castShapeInfo(tadShapeShapeInfo, tadShapeShapeInfoCast);
                 bool canCastZ = nd4j::DataTypeUtils::castShapeInfo(tadShapeInfoZ, tadShapeInfoZCast);
 
                 PRAGMA_OMP_PARALLEL_FOR_THREADS(_threads)
@@ -387,7 +387,7 @@ namespace functions {
 
                     PRAGMA_OMP_SIMD
                     for (int f = 0; f < tadLength; f++) {
-                        auto offset  = shape::indexOffset(f, tadShapeShapeInfo, tadShapeShapeInfoCast, tadLength, canCastX);
+                        auto offset  = shape::indexOffset(f, tadShapeShapeInfo, tadShapeShapeInfoCast, tadLength, canCastY);
                         auto zOffset = shape::indexOffset(f, tadShapeInfoZ, tadShapeInfoZCast, lenZ, canCastZ);
                         oZ[zOffset] = OpType::op(x[offset], oY[offset]);
                     }
