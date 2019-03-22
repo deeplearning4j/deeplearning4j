@@ -309,7 +309,6 @@ public class TrainModule implements UIModule {
                         addressSupplier.get(), s, statsStorage);
             }
             lastUpdateForSession.remove(s);
-            I18NProvider.removeInstance(s);
         }
         getDefaultSession();
     }
