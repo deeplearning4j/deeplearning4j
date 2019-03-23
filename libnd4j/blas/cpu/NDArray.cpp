@@ -43,6 +43,62 @@
 
 namespace nd4j {
 
+//////////////////////////////////////////////////////////////////////
+INLINEDEF static void calcEws(Nd4jLong* shapeInfo, Nd4jLong len = -1) {
+
+    const int rank          = shape::rank(shapeInfo);
+    const Nd4jLong* shape   = shape::shapeOf(shapeInfo);
+    const Nd4jLong* strides = shape::stride(shapeInfo);
+    const char order        = shape::order(shapeInfo);
+    Nd4jLong* ews           = shape::ews(shapeInfo);
+    
+    if(len == -1)   // calculate array length if it is not already set 
+        len = shape::length(shapeInfo);
+        
+    if(len <= 1) {  //  empty, scalar or unity-vector case
+        *ews = 1;
+        return;
+    }
+
+    int nonUnityDim(0);
+    if(shape::isCommonVector(shapeInfo, nonUnityDim)) {        
+        *ews = strides[nonUnityDim];
+        return;
+    }
+
+    // check last(c)/first(f) dimension, it should be equal to 1
+    if((order == 'c' && shape[rank - 1] != 1 && strides[rank - 1] != 1) || (order == 'f' && shape[0] != 1 && strides[0] != 1)) {
+        *ews = 0;
+        return;
+    }
+
+    Nd4jLong correctStride = 1;
+    if(order == 'c') {
+        for (int i = rank - 2; i >= 0 ; i--) {            
+            correctStride *= shape[i + 1];
+            if(shape[i] == 1)
+                continue;
+            if(correctStride != strides[i]) {
+                *ews = 0;
+                return;
+            }
+        }
+    }
+    else {
+        for (int i = 1; i < rank; ++i) {            
+            correctStride *= shape[i - 1];
+            if(shape[i] == 1)
+                continue;
+            if(correctStride != strides[i]) {
+                *ews = 0;
+                return;
+            }
+        }
+    }      
+    
+    *ews = 1;    
+}
+
 
     void* NDArray::operator new(size_t i) {
         if (nd4j::memory::MemoryRegistrator::getInstance()->hasWorkspaceAttached()) {
@@ -3963,9 +4019,8 @@ template void NDArray::pIdx(const Nd4jLong* indices, const bool value);
         auto shapeOf = shape::shapeOf(newShape);
         auto stridesOf = shape::stride(newShape);
 
-        Nd4jLong offset = 0;
-        bool continuousC(false), allDimsUnities(true), allStridesUnities(true);
-        int currentC(rank - 1), counter(0), vectorDim, n(isStrided ? 3 : 2), first, last, stride;
+        Nd4jLong offset(0), subArrLen(1);        
+        int n(isStrided ? 3 : 2), first, last, stride;
 
         for (int d = rank - 1; d >= 0; --d) {
 
@@ -3981,10 +4036,12 @@ template void NDArray::pIdx(const Nd4jLong* indices, const bool value);
                 if(shapeOf[d] != 1)
                     stridesOf[d] *= stride;
             }
+
+            subArrLen *= shapeOf[d];
         }
         
         // check if there is possibility to set ews = 1
-        shape::calcEws(newShape, lengthOf());
+        calcEws(newShape, subArrLen);
 
         // create resulting sub-array
         NDArray result(bufferWithOffset(offset), newShape, _workspace, false, true);
@@ -5219,27 +5276,21 @@ void NDArray::getSubArrShapeAndOffsets(const std::vector<int>& dimsToExclude, Nd
 
     Nd4jLong *outShapeInfo = ShapeBuilders::copyShapeInfo(_shapeInfo, true, _workspace);
     std::vector<Nd4jLong> shape(dimsSize), strides(dimsSize);
+    
+    Nd4jLong subArrLen = 1;
 
-    bool continuous = false;
-    int current(rank - 1), counter(0), vectorDim;
-
-    for(int i = rank - 1, j = dimsSize - 1; i >= 0; --i) {
+    for(int j = dimsSize - 1, i = rank - 1; i >= 0; --i) {
         if(j >= 0 && i == dimsToExclude[j]) {
             strides[j] = shape::stride(outShapeInfo)[i];
             shape[j--] = shape::shapeOf(outShapeInfo)[i];
             shape::shapeOf(outShapeInfo)[i] = 1;
         }
-        else {
-            continuous = current-- == i;
-            if(!counter++) vectorDim = i;
-        }
+        else
+            subArrLen *= shape::shapeOf(outShapeInfo)[i];
     }
 
     // evaluate ews
-    if(counter == 1)
-        outShapeInfo[2 * rank + 2] = shape::stride(outShapeInfo)[vectorDim];
-    else
-        outShapeInfo[2 * rank + 2] = (continuous && ordering() == 'c') ? ews() : 0;
+    calcEws(outShapeInfo, subArrLen);
 
     // calculation of sub-array offsets (subArrOffsets)
     shape::calcSubArrOffsets(numOfSubArrs, dimsSize, shape.data(), strides.data(), subArrOffsets);

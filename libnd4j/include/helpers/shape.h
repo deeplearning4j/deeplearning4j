@@ -4751,6 +4751,7 @@ INLINEDEF void calcEws(Nd4jLong* shapeInfo, Nd4jLong len) {
     const int rank          = shape::rank(shapeInfo);
     const Nd4jLong* shape   = shape::shapeOf(shapeInfo);
     const Nd4jLong* strides = shape::stride(shapeInfo);
+    const char order        = shape::order(shapeInfo);
     Nd4jLong* ews           = shape::ews(shapeInfo);
     
     if(len == -1)   // calculate array length if it is not already set 
@@ -4767,23 +4768,37 @@ INLINEDEF void calcEws(Nd4jLong* shapeInfo, Nd4jLong len) {
         return;
     }
 
-    Nd4jLong* correctStrides = new Nd4jLong[rank];
-    shape::updateStrides(rank, shape, correctStrides, shape::order(shapeInfo));
+    // check last(c)/first(f) dimension, it should be equal to 1
+    if((order == 'c' && shape[rank - 1] != 1 && strides[rank - 1] != 1) || (order == 'f' && shape[0] != 1 && strides[0] == 1)) {
+        *ews = 0;
+        return;
+    }
 
-    for (int i = 0; i < rank; ++i) {
-        
-        if(shape[i] == 1)
-            continue;
-
-        if(correctStrides[i] != strides[i]) {
-            *ews = 0;
-            delete []correctStrides;
-            return;
+    Nd4jLong correctStride = 1;
+    if(order == 'c') {
+        for (int i = rank - 2; i >= 0 ; i--) {
+            if(shape[i + 1] == 1)
+                continue;
+            correctStride *= shape[i + 1];
+            if(correctStride != strides[i]) {
+                *ews = 0;
+                return;
+            }
         }
     }
+    else {
+        for (int i = 1; i < rank; ++i) {
+            if(shape[i - 1] == 1)
+                continue;
+            correctStride *= shape[i - 1];
+            if(correctStride != strides[i]) {
+                *ews = 0;
+                return;
+            }
+        }
+    }      
     
-    *ews = 1;
-    delete []correctStrides;
+    *ews = 1;   
 }
 
 
