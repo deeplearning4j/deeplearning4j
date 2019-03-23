@@ -16,9 +16,7 @@
 
 package org.datavec.spark.transform;
 
-import junit.framework.TestCase;
 import org.apache.spark.api.java.JavaRDD;
-import org.datavec.api.transform.ColumnType;
 import org.datavec.api.transform.MathOp;
 import org.datavec.api.transform.ReduceOp;
 import org.datavec.api.transform.TransformProcess;
@@ -256,7 +254,7 @@ public class ExecutionTest extends BaseSparkTest {
         //Test Benfords law use case:
         TransformProcess tp = new TransformProcess.Builder(s)
                 .firstDigitTransform("double", "fdDouble", FirstDigitTransform.Mode.EXCEPTION_ON_INVALID)
-                .firstDigitTransform("stringNumber", "stringNumber", FirstDigitTransform.Mode.INCLUDE_OTHER_COLUMN)
+                .firstDigitTransform("stringNumber", "stringNumber", FirstDigitTransform.Mode.INCLUDE_OTHER_CATEGORY)
                 .removeAllColumnsExceptFor("stringNumber")
                 .categoricalToOneHot("stringNumber")
                 .reduce(new Reducer.Builder(ReduceOp.Sum).build())
@@ -280,7 +278,7 @@ public class ExecutionTest extends BaseSparkTest {
                 new IntWritable(2),  //7
                 new IntWritable(1),  //8
                 new IntWritable(0),  //9
-                new IntWritable(0)); //Other
+                new IntWritable(1)); //Other
         assertEquals(exp, l);
     }
 

@@ -31,13 +31,32 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
+/**
+ * FirstDigitTransform converts a column to a categorical column, with values being the first digit of the number.<br>
+ * For example, "3.1415" becomes "3" and "2.0" becomes "2".<br>
+ * Negative numbers ignore the sign: "-7.123" becomes "7".<br>
+ * Note that two {@link Mode}s are supported, which determines how non-numerical entries should be handled:<br>
+ * EXCEPTION_ON_INVALID: output has 10 category values ("0", ..., "9"), and any non-numerical values result in an exception<br>
+ * INCLUDE_OTHER_CATEGORY: output has 11 category values ("0", ..., "9", "Other"), all non-numerical values are mapped to "Other"<br>
+ * <br>
+ * FirstDigitTransform is useful (combined with {@link CategoricalToOneHotTransform} and Reductions) to implement
+ * <a href="https://en.wikipedia.org/wiki/Benford%27s_law">Benford's law</a>.
+
+ *
+ * @author Alex Black
+ */
 @JsonIgnoreProperties({"inputSchema", "columnIdx"})
 public class FirstDigitTransform extends BaseTransform {
     public static final String OTHER_CATEGORY = "Other";
 
+    /**
+     * Mode determines how non-numerical entries should be handled:<br>
+     * EXCEPTION_ON_INVALID: output has 10 category values ("0", ..., "9"), and any non-numerical values result in an exception<br>
+     * INCLUDE_OTHER_CATEGORY: output has 11 category values ("0", ..., "9", "Other"), all non-numerical values are mapped to "Other"<br>
+     */
     public enum Mode {
         EXCEPTION_ON_INVALID,
-        INCLUDE_OTHER_COLUMN
+        INCLUDE_OTHER_CATEGORY
     }
 
     protected String inputColumn;
@@ -45,6 +64,11 @@ public class FirstDigitTransform extends BaseTransform {
     protected Mode mode;
     private int columnIdx = -1;
 
+    /**
+     * @param inputColumn  Input column name
+     * @param outputColumn Output column name. If same as input, input column is replaced
+     * @param mode See {@link FirstDigitTransform.Mode}
+     */
     public FirstDigitTransform(@JsonProperty("inputColumn") String inputColumn, @JsonProperty("outputColumn") String outputColumn,
                                @JsonProperty("mode") Mode mode){
         this.inputColumn = inputColumn;
@@ -65,11 +89,11 @@ public class FirstDigitTransform extends BaseTransform {
 
                 String s = w.toString();
                 if (s.isEmpty()) {
-                    if (mode == Mode.INCLUDE_OTHER_COLUMN) {
+                    if (mode == Mode.INCLUDE_OTHER_CATEGORY) {
                         out.add(new Text(OTHER_CATEGORY));
                     } else {
                         throw new IllegalStateException("Encountered empty string in FirstDigitTransform that is set to Mode.EXCEPTION_ON_INVALID." +
-                                " Either data contains an invalid (non-numerical) entry, or set FirstDigitTransform to Mode.INCLUDE_OTHER_COLUMN");
+                                " Either data contains an invalid (non-numerical) entry, or set FirstDigitTransform to Mode.INCLUDE_OTHER_CATEGORY");
                     }
                 } else {
                     char first = s.charAt(0);
@@ -80,7 +104,7 @@ public class FirstDigitTransform extends BaseTransform {
                     if (first >= '0' && first <= '9') {
                         out.add(new Text(String.valueOf(first)));
                     } else {
-                        if (mode == Mode.INCLUDE_OTHER_COLUMN) {
+                        if (mode == Mode.INCLUDE_OTHER_CATEGORY) {
                             out.add(new Text(OTHER_CATEGORY));
                         } else {
                             String s2 = s;
@@ -89,7 +113,7 @@ public class FirstDigitTransform extends BaseTransform {
                             }
                             throw new IllegalStateException("Encountered string \"" + s2 + "\" with non-numerical first character in " +
                                     "FirstDigitTransform that is set to Mode.EXCEPTION_ON_INVALID." +
-                                    " Either data contains an invalid (non-numerical) entry, or set FirstDigitTransform to Mode.INCLUDE_OTHER_COLUMN");
+                                    " Either data contains an invalid (non-numerical) entry, or set FirstDigitTransform to Mode.INCLUDE_OTHER_CATEGORY");
                         }
                     }
                 }
@@ -133,8 +157,8 @@ public class FirstDigitTransform extends BaseTransform {
                 }
 
                 List<String> l = Collections.unmodifiableList(
-                        mode == Mode.INCLUDE_OTHER_COLUMN ?
-                                Arrays.asList("0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "other") :
+                        mode == Mode.INCLUDE_OTHER_CATEGORY ?
+                                Arrays.asList("0", "1", "2", "3", "4", "5", "6", "7", "8", "9", OTHER_CATEGORY) :
                                 Arrays.asList("0", "1", "2", "3", "4", "5", "6", "7", "8", "9"));
 
                 CategoricalMetaData cm = new CategoricalMetaData(outputColumn, l);

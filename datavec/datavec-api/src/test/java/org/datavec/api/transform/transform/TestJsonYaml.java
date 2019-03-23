@@ -146,6 +146,8 @@ public class TestJsonYaml {
                                         .addConstantColumn("testColSeq", ColumnType.Integer, new DoubleWritable(0))
                                         .offsetSequence(Collections.singletonList("testColSeq"), 1, SequenceOffsetTransform.OperationType.InPlace)
                                         .addConstantColumn("someTextCol", ColumnType.String, new Text("some values"))
+                                        .addConstantColumn("testFirstDigit", ColumnType.Double, new DoubleWritable(0))
+                                        .firstDigitTransform("testFirstDigit", "testFirstDigitOut")
                                         .build();
 
         String asJson = tp.toJson();

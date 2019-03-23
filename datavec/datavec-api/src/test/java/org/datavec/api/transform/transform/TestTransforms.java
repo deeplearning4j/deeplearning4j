@@ -57,8 +57,6 @@ import org.joda.time.DateTimeZone;
 import org.junit.Assert;
 import org.junit.Test;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.shade.jackson.core.JsonFactory;
-import org.nd4j.shade.jackson.databind.ObjectMapper;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -1571,7 +1569,7 @@ public class TestTransforms {
 
         TransformProcess tp = new TransformProcess.Builder(s)
                 .firstDigitTransform("double", "fdDouble", FirstDigitTransform.Mode.EXCEPTION_ON_INVALID)
-                .firstDigitTransform("stringNumber", "stringNumber", FirstDigitTransform.Mode.INCLUDE_OTHER_COLUMN)
+                .firstDigitTransform("stringNumber", "stringNumber", FirstDigitTransform.Mode.INCLUDE_OTHER_CATEGORY)
                 .build();
 
         Schema s2 = tp.getFinalSchema();
@@ -1600,7 +1598,7 @@ public class TestTransforms {
         //Test Benfords law use case:
         TransformProcess tp2 = new TransformProcess.Builder(s)
                 .firstDigitTransform("double", "fdDouble", FirstDigitTransform.Mode.EXCEPTION_ON_INVALID)
-                .firstDigitTransform("stringNumber", "stringNumber", FirstDigitTransform.Mode.INCLUDE_OTHER_COLUMN)
+                .firstDigitTransform("stringNumber", "stringNumber", FirstDigitTransform.Mode.INCLUDE_OTHER_CATEGORY)
                 .removeColumns("data", "double")
                 .categoricalToOneHot("fdDouble", "stringNumber")
                 .reduce(new Reducer.Builder(ReduceOp.Sum).build())
