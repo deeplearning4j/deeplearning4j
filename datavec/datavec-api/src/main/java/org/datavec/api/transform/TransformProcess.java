@@ -38,10 +38,7 @@ import org.datavec.api.transform.sequence.trim.SequenceTrimTransform;
 import org.datavec.api.transform.sequence.window.ReduceSequenceByWindowTransform;
 import org.datavec.api.transform.sequence.window.WindowFunction;
 import org.datavec.api.transform.serde.JsonMappers;
-import org.datavec.api.transform.transform.categorical.CategoricalToIntegerTransform;
-import org.datavec.api.transform.transform.categorical.CategoricalToOneHotTransform;
-import org.datavec.api.transform.transform.categorical.IntegerToCategoricalTransform;
-import org.datavec.api.transform.transform.categorical.StringToCategoricalTransform;
+import org.datavec.api.transform.transform.categorical.*;
 import org.datavec.api.transform.transform.column.*;
 import org.datavec.api.transform.transform.condition.ConditionalCopyValueTransform;
 import org.datavec.api.transform.transform.condition.ConditionalReplaceValueTransform;
@@ -1407,6 +1404,14 @@ public class TransformProcess implements Serializable {
         public Builder ndArrayDistanceTransform(String newColumnName, Distance distance, String firstCol,
                                                 String secondCol) {
             return transform(new NDArrayDistanceTransform(newColumnName, distance, firstCol, secondCol));
+        }
+
+        public Builder firstDigitTransform(String inputColumn, String outputColumn){
+            return firstDigitTransform(inputColumn, outputColumn, FirstDigitTransform.Mode.INCLUDE_OTHER_COLUMN);
+        }
+
+        public Builder firstDigitTransform(String inputColumn, String outputColumn, FirstDigitTransform.Mode mode){
+            return transform(new FirstDigitTransform(inputColumn, outputColumn, mode));
         }
 
         /**
