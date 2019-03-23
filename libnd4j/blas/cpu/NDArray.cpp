@@ -3978,23 +3978,13 @@ template void NDArray::pIdx(const Nd4jLong* indices, const bool value);
                 shapeOf[d] = (last - first + stride - 1) / stride;      // ceil (last - first) / stride;
                 offset += first * stridesOf[d];
 
-                if(shapeOf[d] != 1) {                    
-                    allDimsUnities = false;
+                if(shapeOf[d] != 1)
                     stridesOf[d] *= stride;
-                    allStridesUnities &= stride == 1;                    
-                }
-            }
-            else {                
-                continuousC = currentC-- == d;
-                if(!counter++)  vectorDim = d;
             }
         }
-
-        // evaluate ews
-        if(counter == 1 && allDimsUnities)
-            newShape[2 * rank + 2] = stridesOf[vectorDim];        
-        else
-            newShape[2 * rank + 2] = (allStridesUnities && ((continuousC && ordering() == 'c') || (counter == 1 && vectorDim == 0 && ordering() == 'f'))) ? ews() : 0;            
+        
+        // check if there is possibility to set ews = 1
+        shape::calcEws(newShape, lengthOf());
 
         // create resulting sub-array
         NDArray result(bufferWithOffset(offset), newShape, _workspace, false, true);

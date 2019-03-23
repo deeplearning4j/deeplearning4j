@@ -466,6 +466,9 @@ namespace shape {
     ND4J_EXPORT _CUDA_HD int rank(const int *buffer);
     ND4J_EXPORT _CUDA_HD int rank(const unsigned int *buffer);
 
+    // returns pointer on elementWiseStride
+    ND4J_EXPORT _CUDA_HD Nd4jLong* ews(Nd4jLong* shapeInfo);
+
 /**
  * Converts a raw int buffer of the layout:
  * rank
@@ -1078,6 +1081,12 @@ namespace shape {
     ND4J_EXPORT void calcSubArrOffsets(const Nd4jLong numOfSubArrs, const int rank, const Nd4jLong* shape, const Nd4jLong* strides, Nd4jLong* subArrOffsets);
    
     ND4J_EXPORT _CUDA_HD void shapeOldScalar(nd4j::DataType dtype, Nd4jLong* const buffer, const char order);
+
+    // calculate element-wise stride
+    // if array is scalar or unit length vector then ews = 1
+    // if array is common vector then ews = stride of non-unity dimension
+    // if strides are normal set ews = 1, otherwise ews = 0    
+    ND4J_EXPORT _CUDA_HD void calcEws(const Nd4jLong* shapeInfo);
 
 
 
@@ -2790,6 +2799,11 @@ template <typename T>
 
     INLINEDEF _CUDA_HD  int rank(const unsigned int *buffer) {
         return static_cast<int>(buffer[0]);
+    }
+
+
+    INLINEDEF _CUDA_HD Nd4jLong* ews(Nd4jLong* shapeInfo) {
+        return shapeInfo + 2 * shapeInfo[0] + 2;
     }
 
 /**
@@ -4730,6 +4744,48 @@ INLINEDEF void calcSubArrOffsets(const Nd4jLong numOfSubArrs, const int rank, co
         delete []currOffset;
     }
 }
+
+//////////////////////////////////////////////////////////////////////
+INLINEDEF void calcEws(Nd4jLong* shapeInfo, Nd4jLong len) {
+
+    const int rank          = shape::rank(shapeInfo);
+    const Nd4jLong* shape   = shape::shapeOf(shapeInfo);
+    const Nd4jLong* strides = shape::stride(shapeInfo);
+    Nd4jLong* ews           = shape::ews(shapeInfo);
+    
+    if(len == -1)   // calculate array length if it is not already set 
+        len = shape::length(shapeInfo);
+        
+    if(len <= 1) {  //  empty, scalar or unity-vector case
+        *ews = 1;
+        return;
+    }
+
+    int nonUnityDim(0);
+    if(shape::isCommonVector(shapeInfo, nonUnityDim)) {        
+        *ews = strides[nonUnityDim];
+        return;
+    }
+
+    Nd4jLong* correctStrides = new Nd4jLong[rank];
+    shape::updateStrides(rank, shape, correctStrides, shape::order(shapeInfo));
+
+    for (int i = 0; i < rank; ++i) {
+        
+        if(shape[i] == 1)
+            continue;
+
+        if(correctStrides[i] != strides[i]) {
+            *ews = 0;
+            delete []correctStrides;
+            return;
+        }
+    }
+    
+    *ews = 1;
+    delete []correctStrides;
+}
+
 
 
 }

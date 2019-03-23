@@ -649,8 +649,8 @@ TEST_F(DeclarableOpsTests2, absolute_difference_loss_test_2) {
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
     auto *result = results->at(0);    
-    result->printIndexedBuffer("ADL test2");
-    expected.printIndexedBuffer("ADL expec");
+    // result->printIndexedBuffer("ADL test2");
+    // expected.printIndexedBuffer("ADL expec");
     ASSERT_TRUE(expected.isSameShape(result));
     ASSERT_TRUE(expected.equalsTo(result));
 

@@ -1000,7 +1000,7 @@ TEST_F(NDArrayTest2, subarray_1) {
     float    buffExpY3[]  = {5.000000, 11.000000, 17.000000, 23.000000, 6.000000, 12.000000, 18.000000, 24.000000};
     Nd4jLong shapeExpY4[] = {3, 2, 1, 4, 1, 2, 6, 8192, 0, 102};
     float    buffExpY4[]  = {5.000000, 11.000000, 17.000000, 23.000000, 6.000000, 12.000000, 18.000000, 24.000000};
-    Nd4jLong shapeExpY5[] = {2, 2, 3, 1, 2, 8192, 0, 102};
+    Nd4jLong shapeExpY5[] = {2, 2, 3, 1, 2, 8192, 1, 102};
     float    buffExpY5[]  = {19.000000, 21.000000, 23.000000, 20.000000, 22.000000, 24.000000};
     
 
@@ -1102,8 +1102,6 @@ TEST_F(NDArrayTest2, test_subarray_interval_2) {
     ASSERT_EQ(9, subArr1->sizeAt(1));
     delete subArr1;
 }
-<<<<<<< HEAD
-=======
 
 TEST_F(NDArrayTest2, test_subarray_3d_cf) {
     NDArray f('f', {10, 20, 30}, nd4j::DataType::FLOAT32);
@@ -1196,4 +1194,4 @@ TEST_F(NDArrayTest2, test_not_tiled_2) {
 
     ASSERT_EQ(e, x);
 }
->>>>>>> master
+
