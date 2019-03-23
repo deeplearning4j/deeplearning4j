@@ -23,7 +23,7 @@
 namespace nd4j {
 
     bool NDIndex::isInterval() {
-        false;
+        return false;
     }
 
     Nd4jLong NDIndex::stride() {
