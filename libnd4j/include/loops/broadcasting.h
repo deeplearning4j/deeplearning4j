@@ -76,6 +76,20 @@ namespace functions {
 
 #endif
 
+            static void execInverse(int opNum,
+                             void *x,
+                             Nd4jLong *xShapeInfo,
+                             void *y,
+                             Nd4jLong *yShapeInfo,
+                             void *result,
+                             Nd4jLong *resultShapeInfo,
+                             int *dimension,
+                             int dimensionLength,
+                             Nd4jLong *tadShapeInfo,
+                             Nd4jLong *tadOffset,
+                             Nd4jLong *tadShapeInfoZ,
+                             Nd4jLong *tadOffsetZ);
+
             static void exec(int opNum,
                              void *x,
                              Nd4jLong *xShapeInfo,
@@ -103,6 +117,20 @@ namespace functions {
              */
             template<typename OpType>
             static void exec(void *x,
+                             Nd4jLong *xShapeInfo,
+                             void *y,
+                             Nd4jLong *yShapeInfo,
+                             void *result,
+                             Nd4jLong *resultShapeInfo,
+                             int *dimension,
+                             int dimensionLength,
+                             Nd4jLong *tadShapeInfo,
+                             Nd4jLong *tadOffset,
+                             Nd4jLong *tadShapeInfoZ,
+                             Nd4jLong *tadOffsetZ);
+
+            template<typename OpType>
+            static void execInverse(void *x,
                              Nd4jLong *xShapeInfo,
                              void *y,
                              Nd4jLong *yShapeInfo,
