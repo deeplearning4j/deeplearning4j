@@ -18,6 +18,7 @@ package org.deeplearning4j.nn.layers.samediff;
 
 import lombok.val;
 import org.deeplearning4j.nn.api.Layer;
+import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.samediff.AbstractSameDiffLayer;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
@@ -218,7 +219,13 @@ public class SameDiffLayer extends AbstractLayer<AbstractSameDiffLayer> {
                 SDVariable v = sameDiff.var(s, ps);
                 params.put(s, v);
             }
-            SDVariable layerOutput = bl.defineLayer(sameDiff, inputVar, params);
+
+            SDVariable mask = null;
+            if(maskArray != null){
+                mask = sameDiff.constant("mask", maskArray);
+            }
+
+            SDVariable layerOutput = bl.defineLayer(sameDiff, inputVar, params, mask);
             Preconditions.checkNotNull(layerOutput, "Invalid output: layer output is null");
             outputVar = layerOutput;
 
@@ -232,5 +239,15 @@ public class SameDiffLayer extends AbstractLayer<AbstractSameDiffLayer> {
 
             this.outputKey = outputVar.getVarName();
         }
+    }
+
+    @Override
+    public Pair<INDArray, MaskState> feedForwardMaskArray(INDArray maskArray, MaskState currentMaskState, int minibatchSize) {
+        org.deeplearning4j.nn.conf.layers.samediff.SameDiffLayer bl = (org.deeplearning4j.nn.conf.layers.samediff.SameDiffLayer) layerConf();
+
+        this.maskArray = maskArray;
+        this.maskState = currentMaskState;
+
+        return bl.feedForwardMaskArray(maskArray, currentMaskState, minibatchSize);
     }
 }

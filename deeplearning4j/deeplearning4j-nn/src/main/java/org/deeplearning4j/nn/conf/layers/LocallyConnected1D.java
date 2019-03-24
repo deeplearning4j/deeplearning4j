@@ -163,7 +163,7 @@ public class LocallyConnected1D extends SameDiffLayer {
     }
 
     @Override
-    public SDVariable defineLayer(SameDiff sameDiff, SDVariable layerInput, Map<String, SDVariable> paramTable) {
+    public SDVariable defineLayer(SameDiff sameDiff, SDVariable layerInput, Map<String, SDVariable> paramTable, SDVariable mask) {
 
         SDVariable w = paramTable.get(ConvolutionParamInitializer.WEIGHT_KEY); // (outH, featureDim, nOut)
         // System.out.println(Arrays.toString(w.getShape()));

@@ -16,6 +16,7 @@
 package org.deeplearning4j.nn.conf.layers;
 
 import lombok.*;
+import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.samediff.SDLayerParams;
@@ -26,6 +27,7 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.primitives.Pair;
 
 import java.util.Map;
 
@@ -129,7 +131,7 @@ public class LearnedSelfAttentionLayer extends SameDiffLayer {
 
 
     @Override
-    public SDVariable defineLayer(SameDiff sameDiff, SDVariable layerInput, Map<String, SDVariable> paramTable) {
+    public SDVariable defineLayer(SameDiff sameDiff, SDVariable layerInput, Map<String, SDVariable> paramTable, SDVariable mask) {
         val baseQueries = paramTable.get(WEIGHT_QUERIES);
         val queries = sameDiff.f().tile(baseQueries, new int[]{(int) layerInput.getShape()[0], 1, 1});
 
@@ -139,12 +141,17 @@ public class LearnedSelfAttentionLayer extends SameDiffLayer {
             val Wv = paramTable.get(WEIGHT_KEY_VALUE_PROJECTION);
             val Wo = paramTable.get(WEIGHT_KEY_OUT_PROJECTION);
 
-            return sameDiff.nn.multiHeadDotProductAttention(getLayerName(), queries, layerInput, layerInput, Wq, Wk, Wv, Wo, null, true);
+            return sameDiff.nn.multiHeadDotProductAttention(getLayerName(), queries, layerInput, layerInput, Wq, Wk, Wv, Wo, mask, true);
         }else{
-            return sameDiff.nn.dotProductAttention(getLayerName(), queries, layerInput, layerInput, null, true);
+            return sameDiff.nn.dotProductAttention(getLayerName(), queries, layerInput, layerInput, mask, true);
         }
     }
 
+    @Override
+    public Pair<INDArray, MaskState> feedForwardMaskArray(INDArray maskArray, MaskState currentMaskState, int minibatchSize) {
+        // No further mask propagation here, as the results have taken any mask into account, like in a global pooling layer
+        return null;
+    }
 
     public static class Builder extends SameDiffLayer.Builder<LearnedSelfAttentionLayer.Builder> {
 

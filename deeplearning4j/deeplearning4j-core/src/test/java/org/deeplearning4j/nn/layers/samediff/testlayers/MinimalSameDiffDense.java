@@ -27,7 +27,6 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
-import java.util.Collections;
 import java.util.Map;
 
 @Data
@@ -49,7 +48,7 @@ public class MinimalSameDiffDense extends SameDiffLayer {
     }
 
     @Override
-    public SDVariable defineLayer(SameDiff sd, SDVariable layerInput, Map<String, SDVariable> paramTable) {
+    public SDVariable defineLayer(SameDiff sd, SDVariable layerInput, Map<String, SDVariable> paramTable, SDVariable mask) {
         SDVariable weights = paramTable.get(DefaultParamInitializer.WEIGHT_KEY);
         SDVariable bias = paramTable.get(DefaultParamInitializer.BIAS_KEY);
 
