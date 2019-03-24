@@ -59,6 +59,7 @@ namespace nd4j {
                                     Z* z, const Nd4jLong* zShapeInfo,
                               const Nd4jLong* tadShapeInfo, const Nd4jLong* tadOffsets,
                               const int* dimsToExclude,
+                              const int dimsLen,
                               E* extraParams);
 
         //////////////////////////////////////////////////////////////////////////////

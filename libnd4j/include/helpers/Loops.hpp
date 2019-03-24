@@ -214,6 +214,7 @@ namespace nd4j {
                                  Z* z, const Nd4jLong* zShapeInfo,
                                  const Nd4jLong* tadShapeInfo, const Nd4jLong* tadOffsets,
                                  const int* dimsToExclude,
+                                 const int dimsLen,
                                  E* extraParams) {
 
         const LoopKind kindOfLoop = Loops::deduceKindOfLoopTadXZ(tadShapeInfo, zShapeInfo);
@@ -236,9 +237,12 @@ namespace nd4j {
             case EWS1_SMALLARR2DX: {                
                 const auto xLen = zLen * tadLen;                
                 for (uint i = 0; i < xLen; ++i) {                
-                    const auto zOffset = shape::subArrayOffset(i, xShapeInfo, zShapeInfo, dimsToExclude);                    
-                    auto startVal = i % tadLen ? z[zOffset] : static_cast<Z>(OpType::startingValue(x));
+                    const auto zOffset = shape::subArrayOffset(i, xShapeInfo, zShapeInfo, dimsToExclude, dimsLen);
+                    const uint tadInd = i % tadLen;
+                    auto startVal = tadInd ? z[zOffset] : static_cast<Z>(OpType::startingValue(x));
                     z[zOffset] = OpType::update(startVal, OpType::op(x[i], extraParams), extraParams);
+                    if(tadInd == tadLen - 1)
+                        z[zOffset] = OpType::postProcess(z[zOffset], tadLen, extraParams);
                 }
             }
                 break;

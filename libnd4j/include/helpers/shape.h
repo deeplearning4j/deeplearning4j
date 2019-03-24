@@ -1066,7 +1066,8 @@ namespace shape {
     // max array is outer for min array, min array is sub-array of max array
     // function calculates the coordinates of min array (and saves them into minIdxs) given coordinates of max array (already stored in maxIdxs)
     // dimsToExclude - should be sorted in increasing order
-    ND4J_EXPORT _CUDA_HD void maxIndToMinInd(Nd4jLong* maxIdxs, Nd4jLong* minIdxs, const Nd4jLong* maxShapeInfo, const Nd4jLong* minShapeInfo, const int* dimsToExclude = nullptr);
+    // dimsLen - length of dimsToExclude, if not set (= -1), then it is calculated as maxRank - minRank
+    ND4J_EXPORT _CUDA_HD void maxIndToMinInd(Nd4jLong* maxIdxs, Nd4jLong* minIdxs, const Nd4jLong* maxShapeInfo, const Nd4jLong* minShapeInfo, const int* dimsToExclude = nullptr, const int dimsLen = -1);
 
     // calculate indexes of max-array, these output indexes correspond to one minIdx index of min-array which is sub-array of max-array
     // dimsToExclude - should be sorted in increasing order
@@ -4458,44 +4459,98 @@ INLINEDEF _CUDA_H bool reshapeC(const int oldRank, const Nd4jLong* oldShapeInfo,
 
 
 // max array is outer for min array, min array is sub-array of max array
-    // function calculates the coordinates of min array (and saves them into minIdxs) given coordinates of max array (already stored in maxIdxs)
-    INLINEDEF _CUDA_HD void maxIndToMinInd(Nd4jLong* maxIdxs, Nd4jLong* minIdxs, const Nd4jLong* maxShapeInfo, const Nd4jLong* minShapeInfo, const int* dimsToExclude) {
+// function calculates the coordinates of min array (and saves them into minIdxs) given coordinates of max array (already stored in maxIdxs)
+INLINEDEF _CUDA_HD void maxIndToMinInd(Nd4jLong* maxIdxs, Nd4jLong* minIdxs, const Nd4jLong* maxShapeInfo, const Nd4jLong* minShapeInfo, const int* dimsToExclude, int dimsLen) {
 
-        const auto maxRank = shape::rank(maxShapeInfo);
-        const auto minRank = shape::rank(minShapeInfo);
+    const auto maxRank = shape::rank(maxShapeInfo);
+    const auto minRank = shape::rank(minShapeInfo);
 
-        // if(minRank >= maxRank)
-        //     throw std::runtime_error("shape::maxIndToMinInd method: rank of min array should be smaller then rank of max array!");
-        const auto diff = maxRank - minRank;     // the size of dimsToExclude is equal to diff
+    // if(minRank >= maxRank)
+    //     throw std::runtime_error("shape::maxIndToMinInd method: rank of min array should be smaller then rank of max array!");        
+    
+    if(dimsLen == -1)
+        dimsLen = maxRank - minRank;     // if size is not given (= -1) then it is equal to ranks difference        
 
-        if(dimsToExclude == nullptr) { // means dimsToExclude == {0,1,2,...,diff-1}
+    if(maxRank == minRank) {
+            
+        if(dimsToExclude == nullptr) {              // --> means dimsToExclude == {0,1,2,...,dimsLen-1}            
 
-            for(int minI = 0, maxI = diff; maxI < maxRank; ++maxI, ++minI) {
-                if(maxIdxs[maxI] >= minShapeInfo[minI+1])
-                    maxIdxs[maxI] %= minShapeInfo[minI+1];
-                minIdxs[minI] = maxIdxs[maxI];
+            for (int i = 0; i < maxRank; ++i) {
+                    
+                if(i < dimsLen)
+                    minIdxs[i] = maxIdxs[i];
+                else {
+                    if(maxIdxs[i] > minShapeInfo[i + 1])
+                        minIdxs[i] = maxIdxs[i] % minShapeInfo[i + 1];
+                    else if(maxIdxs[i] == minShapeInfo[i + 1])
+                        minIdxs[i] = 0;
+                    else 
+                        minIdxs[i] = maxIdxs[i];
+                }
             }
         }
         else {
 
-            for(int dim = 0, minI = 0, maxI = 0; maxI < maxRank; ++maxI) {
-                if(dim < diff && dimsToExclude[dim] == maxI) {
+            for (int i = 0, dim = 0; i < maxRank; ++i) {
+                    
+                if(dim < dimsLen && dimsToExclude[dim] == i) {                    
+                    minIdxs[i] = maxIdxs[i];
                     ++dim;
                     continue;
                 }
-                ++minI;
-                if(maxIdxs[maxI] >= minShapeInfo[minI])
-                    maxIdxs[maxI] %= minShapeInfo[minI];
-                minIdxs[minI] = maxIdxs[maxI];
-            }
+                    
+                if(maxIdxs[i] > minShapeInfo[i + 1])
+                    minIdxs[i] = maxIdxs[i] % minShapeInfo[i + 1];
+                else if(maxIdxs[i] == minShapeInfo[i + 1])
+                    minIdxs[i] = 0;                        
+                else
+                    minIdxs[i] = maxIdxs[i];                    
+            }                
         }
     }
+    else {
+            
+        if(dimsToExclude == nullptr) {              // --> means dimsToExclude == {0,1,2,...,dimsLen-1}            
+                
+            for (int i = 0; i < minRank; ++i) {
+
+                if(maxIdxs[i + dimsLen] > minShapeInfo[i + 1])
+                    minIdxs[i] = maxIdxs[i + dimsLen] % minShapeInfo[i + 1];
+                else if(maxIdxs[i + dimsLen] == minShapeInfo[i + 1])
+                    minIdxs[i] = 0;
+                else 
+                    minIdxs[i] = maxIdxs[i + dimsLen];
+            }
+        }            
+        else {
+        
+            for (int minI = 0, maxI = 0, dim = 0; maxI < maxRank; ++maxI) {
+                    
+                if(dim < dimsLen && dimsToExclude[dim] == maxI) {
+                    ++dim;
+                    continue;
+                }
+                    
+                if(maxIdxs[maxI] == minShapeInfo[minI + 1])
+                    minIdxs[minI] = 0;
+                else if(maxIdxs[maxI] > minShapeInfo[minI + 1])
+                    minIdxs[minI] = maxIdxs[maxI] % minShapeInfo[minI + 1];                                                
+                else
+                    minIdxs[minI] = maxIdxs[maxI];
+                ++minI;                    
+            }      
+        }            
+    }    
+}
 
     //////////////////////////////////////////////////////////////////////
     INLINEDEF _CUDA_HD Nd4jLong subArrayIndex(const Nd4jLong maxIdx, const Nd4jLong* maxShapeInfo, const Nd4jLong* minShapeInfo, const int* dimsToExclude) {
 
         Nd4jLong maxIdxs[MAX_RANK];
-        ind2subC(shape::rank(maxShapeInfo), const_cast<Nd4jLong *>(maxShapeInfo)+1, const_cast<Nd4jLong&>(maxIdx), maxIdxs);
+        if(shape::order(maxShapeInfo) == 'c')
+            shape::ind2subC(shape::rank(maxShapeInfo), const_cast<Nd4jLong *>(maxShapeInfo)+1, const_cast<Nd4jLong&>(maxIdx), maxIdxs);
+        else
+            shape::ind2sub(shape::rank(maxShapeInfo), const_cast<Nd4jLong *>(maxShapeInfo)+1, const_cast<Nd4jLong&>(maxIdx), maxIdxs);
 
         Nd4jLong minIdxs[MAX_RANK];
         maxIndToMinInd(maxIdxs, minIdxs, maxShapeInfo, minShapeInfo, dimsToExclude);
@@ -4507,7 +4562,10 @@ INLINEDEF _CUDA_H bool reshapeC(const int oldRank, const Nd4jLong* oldShapeInfo,
     INLINEDEF _CUDA_HD Nd4jLong subArrayOffset(const Nd4jLong maxIdx, const Nd4jLong* maxShapeInfo, const Nd4jLong* minShapeInfo, const int* dimsToExclude) {
 
         Nd4jLong maxIdxs[MAX_RANK];
-        ind2subC(shape::rank(maxShapeInfo), const_cast<Nd4jLong *>(maxShapeInfo)+1, const_cast<Nd4jLong&>(maxIdx), maxIdxs);
+        if(shape::order(maxShapeInfo) == 'c')
+            shape::ind2subC(shape::rank(maxShapeInfo), const_cast<Nd4jLong *>(maxShapeInfo)+1, const_cast<Nd4jLong&>(maxIdx), maxIdxs);
+        else
+            shape::ind2sub(shape::rank(maxShapeInfo), const_cast<Nd4jLong *>(maxShapeInfo)+1, const_cast<Nd4jLong&>(maxIdx), maxIdxs);
 
         Nd4jLong minIdxs[MAX_RANK];
         maxIndToMinInd(maxIdxs, minIdxs, maxShapeInfo, minShapeInfo, dimsToExclude);
@@ -4535,7 +4593,10 @@ INLINEDEF _CUDA_H bool reshapeC(const int oldRank, const Nd4jLong* oldShapeInfo,
         int N, minI, maxI;
 
         // calculate min per-dim-indices which corresponds to absolute minIdx index
-        shape::ind2subC(rankMin, minShapeInfo + 1, minIdx, indices);
+        if(order(minShapeInfo) == 'c')
+            shape::ind2subC(rankMin, minShapeInfo + 1, minIdx, indices);
+        else
+            shape::ind2sub(rankMin, const_cast<Nd4jLong*>(minShapeInfo) + 1, minIdx, indices);
 
         // transform storage indices to contain per-dim max indices, purpose - memory saving
         // fill increment array as well
@@ -4611,7 +4672,10 @@ INLINEDEF _CUDA_H bool reshapeC(const int oldRank, const Nd4jLong* oldShapeInfo,
         int N, minI, maxI;
 
         // calculate min per-dim-indices which corresponds to absolute minIdx index
-        shape::ind2subC(rankMin, minShapeInfo + 1, minIdx, indices);
+        if(order(minShapeInfo) == 'c')
+            shape::ind2subC(rankMin, minShapeInfo + 1, minIdx, indices);
+        else
+            shape::ind2sub(rankMin, const_cast<Nd4jLong*>(minShapeInfo) + 1, minIdx, indices);
 
         // transform storage indices to contain per-dim max indices, purpose - memory saving
         // fill increment array as well
