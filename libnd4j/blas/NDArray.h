@@ -1557,7 +1557,8 @@ namespace nd4j {
     bool NDArray::isVector() const {
         if (isEmpty())
             return false;
-
+        if (rankOf() == 1)
+            return true;
         return !isScalar() && shape::isVector(this->_shapeInfo);
     }
 
