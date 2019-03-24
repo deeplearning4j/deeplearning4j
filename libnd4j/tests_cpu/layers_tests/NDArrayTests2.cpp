@@ -1007,3 +1007,84 @@ TEST_F(NDArrayTest2, test_subarray_3d_cf) {
     auto subarrayC = c({2,3, 0,0, 0,0}, true);
     subarrayC.printShapeInfo("C subarray shapeInfo");
 }
+
+TEST_F(NDArrayTest2, test_broadcast_row_1) {
+    auto x = NDArrayFactory::create<float>('c', {10, 5});
+    auto y = NDArrayFactory::create<float>('c', {5}, {1.f, 1.f, 1.f, 1.f, 1.f});
+    auto e = NDArrayFactory::create<float>('c', {10, 5});
+    e.assign(1.0f);
+
+    x += y;
+
+    ASSERT_EQ(e, x);
+}
+
+TEST_F(NDArrayTest2, test_broadcast_column_1) {
+    auto x = NDArrayFactory::create<float>('c', {5, 10});
+    auto y = NDArrayFactory::create<float>('c', {5,  1}, {1.f, 1.f, 1.f, 1.f, 1.f});
+    auto e = NDArrayFactory::create<float>('c', {5, 10});
+    e.assign(1.0f);
+
+    x += y;
+
+    ASSERT_EQ(e, x);
+}
+
+TEST_F(NDArrayTest2, test_broadcast_column_2) {
+    auto x = NDArrayFactory::create<float>('c', {5, 10});
+    auto y = NDArrayFactory::create<float>('c', {5,  1}, {1.f, 1.f, 1.f, 1.f, 1.f});
+    auto e = NDArrayFactory::create<float>('c', {5, 10});
+    e.assign(1.0f);
+
+    x.applyTrueBroadcast(BroadcastOpsTuple::Add(), &y, &x, false);
+    x.printShapeInfo();
+    x.printIndexedBuffer();
+
+    ASSERT_EQ(e, x);
+}
+
+TEST_F(NDArrayTest2, test_broadcast_column_3) {
+    auto x = NDArrayFactory::create<float>('c', {5, 10});
+    auto y = NDArrayFactory::create<float>('c', {5,  1}, {1.f, 1.f, 1.f, 1.f, 1.f});
+    auto e = NDArrayFactory::create<float>('c', {5, 10});
+    e.assign(1.0f);
+
+    x.applyTrueBroadcast(BroadcastOpsTuple::Add(), &y, &x);
+
+    ASSERT_EQ(e, x);
+}
+
+TEST_F(NDArrayTest2, test_broadcast_column_4) {
+    auto x = NDArrayFactory::create<float>('f', {10, 5});
+    auto y = NDArrayFactory::create<float>('f', {5}, {1.f, 1.f, 1.f, 1.f, 1.f});
+    auto e = NDArrayFactory::create<float>('f', {10, 5});
+    e.assign(1.0f);
+
+    x.applyTrueBroadcast(BroadcastOpsTuple::Add(), &y, &x);
+
+    ASSERT_EQ(e, x);
+}
+
+TEST_F(NDArrayTest2, test_not_tiled_1) {
+    auto x = NDArrayFactory::create<float>('c', {4, 12, 128, 128});
+    auto y = NDArrayFactory::create<float>('c', {4, 1, 128, 128});
+    auto e = NDArrayFactory::create<float>('c', {4, 12, 128, 128});
+    y.assign(1.0f);
+    e.assign(1.0f);
+
+    x += y;
+
+    ASSERT_EQ(e, x);
+}
+
+TEST_F(NDArrayTest2, test_not_tiled_2) {
+    auto x = NDArrayFactory::create<float>('c', {4, 128, 768});
+    auto y = NDArrayFactory::create<float>('c', {4, 128, 1});
+    auto e = NDArrayFactory::create<float>('c', {4, 128, 768});
+    y.assign(1.0f);
+    e.assign(1.0f);
+
+    x += y;
+
+    ASSERT_EQ(e, x);
+}

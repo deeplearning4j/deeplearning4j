@@ -925,6 +925,26 @@ void ShapeUtils::updateStridesAndType(Nd4jLong* dest, const DataType dtype, cons
     ArrayOptions::setDataType(dest, dtype);
 }
 
+////////////////////////////////////////////////////////////////////////////////
+std::vector<int> ShapeUtils::tadAxesForSimpleBroadcast(const NDArray& max, const NDArray& min) {    
+
+    const int maxRank = max.rankOf();
+    const int minRank = min.rankOf();
+    const int diff    = maxRank - minRank;
+    
+    Nd4jLong  numOfMinTads(1);
+    std::vector<int> maxTadDims;
+
+    for(int i = 0; i < minRank; ++i) {
+        if(min.sizeAt(i) == max.sizeAt(diff + i))
+            maxTadDims.push_back(diff + i);
+        else 
+            numOfMinTads *= min.sizeAt(i);
+    }
+ 
+   return numOfMinTads == 1 ? maxTadDims : std::vector<int>();
+}
+
 }
 
 

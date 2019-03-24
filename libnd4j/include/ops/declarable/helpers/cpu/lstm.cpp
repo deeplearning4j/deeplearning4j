@@ -33,6 +33,7 @@
 #include <ops/declarable/helpers/legacy_helpers.h>
 #include <array/NDArrayList.h>
 #include <iterator>
+#include <MmulHelper.h>
 
 namespace nd4j 	  {
 namespace ops 	  {
@@ -200,14 +201,17 @@ void lstmBlockCell(const NDArray* xt, const NDArray* cLast, const NDArray* yLast
     auto result = concat->execute(inputs, targs, iargs, bargs);
     auto concatOut = result->at(0);
 
-    auto m = mmul(*concatOut, *W);    //mmul: [bs, (nIn+numUnits)]* [(inSize+numUnits), 4*numUnits] = [bs, 4*numUnits]
-    m += (*b);
+    //NDArray* NDArrayFactory::create_( const char order, const std::vector<Nd4jLong> &shape, nd4j::DataType dataType, nd4j::memory::Workspace* workspace) {
+    std::vector<Nd4jLong> shape = {bS, 4*numUnits};
+    auto m = NDArrayFactory::create_('c', shape, xt->dataType(), nullptr);
+    MmulHelper::mmul(concatOut, W, m, 1.0f, 0.0f, 'c'); //mmul: [bs, (nIn+numUnits)]* [(inSize+numUnits), 4*numUnits] = [bs, 4*numUnits] - C result array
+    *m += (*b);  //addiRowVector
 
     //Note: weights are ordered [inputGate, blockInput, forgetGate, outputGate] to match TF (TF code comments state [i,f,z/ci,o] but behaviour is [i,z,f,o])
-    auto zi = m({0,0, 0,            numUnits});      	// z for input modulation gate, [bS, numUnits]
-    auto zz = m({0,0, numUnits, 2*numUnits});      	    // z for block input, [bS, numUnits]
-    auto zf = m({0,0, 2*numUnits, 3*numUnits});      	// z for forget gate, [bS, numUnits]
-    auto zo = m({0,0, 3*numUnits, 4*numUnits});      	// z for output gate, [bS, numUnits]
+    auto zi = (*m)({0,0, 0,            numUnits});      	// z for input modulation gate, [bS, numUnits]
+    auto zz = (*m)({0,0, numUnits, 2*numUnits});      	    // z for block input, [bS, numUnits]
+    auto zf = (*m)({0,0, 2*numUnits, 3*numUnits});      	// z for forget gate, [bS, numUnits]
+    auto zo = (*m)({0,0, 3*numUnits, 4*numUnits});      	// z for output gate, [bS, numUnits]
 
     if(peephole) {                                              // add peephole connections: z  +  ct_1*Wc
         zi += (*cLast) * (*Wci);       // add peephole connections to input gate
@@ -219,9 +223,18 @@ void lstmBlockCell(const NDArray* xt, const NDArray* cLast, const NDArray* yLast
         zf += forgetBias;
     }
 
-    zz.applyTransform(transform::Tanh, z);      //z = tanh(zz)
-    zi.applyTransform(transform::Sigmoid, i);   //i = sigmoid(zi)
-    zf.applyTransform(transform::Sigmoid, f);   //f = sigmoid(zf);
+    PRAGMA_OMP_PARALLEL
+    #pragma omp single
+        {
+            #pragma omp task
+            zz.applyTransform(transform::Tanh, z);      //z = tanh(zz)
+
+            #pragma omp task
+            zi.applyTransform(transform::Sigmoid, i);   //i = sigmoid(zi)
+
+            #pragma omp task
+            zf.applyTransform(transform::Sigmoid, f);   //f = sigmoid(zf);
+        }
 
 
     //cell state = blockInput .* inputGate + prevCellState .* forgetGate
