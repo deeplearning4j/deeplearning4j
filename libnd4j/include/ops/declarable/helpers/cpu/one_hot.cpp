@@ -53,7 +53,7 @@ namespace nd4j {
                 for (unsigned int e = 0; e < numTads; e++) {
                     auto cO = output + tad.tadOffsets[e];
 
-                    auto idx = static_cast<unsigned int>(indices[e]);
+                    auto idx = static_cast<int>(indices[e]);
                     if (idx < 0 || idx >= tLen) {
                         PRAGMA_OMP_SIMD
                         for (unsigned int t = 0; t < tLen; t++) {
