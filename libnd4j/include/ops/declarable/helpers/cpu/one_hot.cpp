@@ -33,16 +33,17 @@ namespace nd4j {
                 tad.init(zShapeInfo, axis.data(), axis.size());
                 tad.createTadOnlyShapeInfo();
                 tad.createOffsets();
+
                 auto iLen = static_cast<unsigned int>(shape::length(iShapeInfo));
                 auto tLen = static_cast<unsigned int>(shape::length(tad.tadOnlyShapeInfo));
                 auto numTads = static_cast<unsigned int>(tad.numTads);
 
-                nd4j_printf("numTads: [%i]; iLen: [%i]\n", numTads, iLen);
+                //nd4j_printf("numTads: [%i]; iLen: [%i]\n", numTads, iLen);
 
                 if (iLen != numTads)
                     throw std::runtime_error("OneHot: number of TADs should be equal to number of indices");
 
-                if (shape::elementWiseStride(zShapeInfo) != 1 || shape::elementWiseStride(zShapeInfo) != 1)
+                if (shape::elementWiseStride(zShapeInfo) != 1 || shape::elementWiseStride(iShapeInfo) != 1)
                     throw std::runtime_error("OneHot: op expects output and indices to have elementWiseStride to be equal to 1");
 
                 Z zero = static_cast<Z>(off);
