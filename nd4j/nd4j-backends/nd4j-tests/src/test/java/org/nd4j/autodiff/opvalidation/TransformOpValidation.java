@@ -1470,8 +1470,6 @@ public class TransformOpValidation extends BaseOpValidation {
 
     @Test
     public void testMirrorPad(){
-//        OpValidationSuite.ignoreFailing();
-
         INDArray in = Nd4j.linspace(1, 6, 6, DataType.DOUBLE).reshape(2,3);
         INDArray pad = Nd4j.create(new double[][]{{1,1},{2,2}}).castTo(DataType.INT);
 
@@ -1498,8 +1496,6 @@ public class TransformOpValidation extends BaseOpValidation {
 
     @Test
     public void testMirrorPad2(){
-//        OpValidationSuite.ignoreFailing();
-
         INDArray in = Nd4j.linspace(1, 6, 6, DataType.DOUBLE).reshape(2,3);
         INDArray pad = Nd4j.create(new double[][]{{1,1},{2,2}}).castTo(DataType.INT);
 

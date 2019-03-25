@@ -160,6 +160,9 @@ public class BERTGraphTest {
             }
         });
 
+        //Small test / sanity check for asFlatPrint():
+        sd.asFlatPrint();
+
 
         /*
         Output during inference:

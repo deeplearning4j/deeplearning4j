@@ -4121,14 +4121,42 @@ public class SameDiff extends SDBaseOps {
         sb.append("\nExternal variables:\n\n");
         for (int e = 0; e < graph.variablesLength(); e++) {
             val var = graph.variables(e);
-            INDArray ndarray;
+            INDArray ndarray = null;
             try(MemoryWorkspace ws = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()) {
-                ndarray = Nd4j.createFromFlatArray(var.ndarray());
+                FlatArray fa = var.ndarray();
+                if(fa != null) {
+                    ndarray = Nd4j.createFromFlatArray(fa);
+                }
             }
 
             sb.append(var.id().first())
-                    .append(":<").append(var.name()).append("> ")
-                    .append(Arrays.toString(ndarray.shapeInfoDataBuffer().asInt())).append("; Values: ").append(Arrays.toString(ndarray.data().asFloat())).append(";\n");
+                    .append(":<").append(var.name()).append("> ");
+            if(ndarray == null){
+                sb.append("<no array>").append("; Values: ").append("<no array>").append(";\n");
+            } else {
+                sb.append(Arrays.toString(ndarray.shapeInfoDataBuffer().asInt())).append("; Values: ");
+                if(ndarray.data() == null){
+                    //Empty array
+                    sb.append("<empty array>");
+                } else if(ndarray.dataType() == DataType.UTF8) {
+                    sb.append("<string array>");
+                } else {
+                    if(ndarray.length() < 50){
+                        sb.append(Arrays.toString(ndarray.data().asFloat()).replaceAll(" ",""));
+                    } else {
+                        //Array is too long - only tak. last few values...
+                        sb.append("[");
+                        for( int i=0; i<50; i++ ){
+                            if(i > 0)
+                                sb.append(",");
+                            sb.append(ndarray.data().getFloat(i));
+                        }
+                        sb.append("]");
+                    }
+                }
+                sb.append(";\n");
+            }
+
         }
 
         val map = Nd4j.getExecutioner().getCustomOperations();

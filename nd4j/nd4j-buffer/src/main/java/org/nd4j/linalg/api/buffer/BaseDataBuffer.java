@@ -1242,7 +1242,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
             case UBYTE:
                 return ((UByteIndexer) indexer).get(offset() + i);
             default:
-                throw new UnsupportedOperationException();
+                throw new UnsupportedOperationException("Cannot get double value from buffer of type " + dataType());
         }
     }
 
@@ -1268,7 +1268,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
             case BOOL:
                 return  ((BooleanIndexer) indexer).get(offset() + i) ? 1L : 0L;
             default:
-                throw new UnsupportedOperationException("Unsupported data type: " + dataType());
+                throw new UnsupportedOperationException("Cannot get long value from buffer of type " + dataType());
         }
     }
 
@@ -1296,7 +1296,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
             case FLOAT:
                 return (short) ((FloatIndexer) indexer).get(offset() + i);
             default:
-                throw new UnsupportedOperationException();
+                throw new UnsupportedOperationException("Cannot get short value from buffer of type " + dataType());
         }
     }
 
@@ -1331,7 +1331,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
             case FLOAT:
                 return ((FloatIndexer) indexer).get(offset() + i);
             default:
-                throw new UnsupportedOperationException();
+                throw new UnsupportedOperationException("Cannot get float value from buffer of type " + dataType());
         }
     }
 
@@ -1357,7 +1357,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
             case FLOAT:
                 return (int) ((FloatIndexer) indexer).get(offset() + i);
             default:
-                throw new UnsupportedOperationException();
+                throw new UnsupportedOperationException("Cannot get integer value from buffer of type " + dataType());
         }
     }
 
