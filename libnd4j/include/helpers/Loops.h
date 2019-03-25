@@ -28,6 +28,7 @@
 #include <DataTypeUtils.h>
 #include <ops.h>
 #include <indexreduce.h>
+#include <special_ops.h>
 #include <openmp_pragmas.h>
 
 namespace nd4j {
