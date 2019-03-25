@@ -20,7 +20,7 @@ using namespace simdOps;
 
 namespace nd4j {
     template <typename X>
-    class ReduceSameWrapper {
+    class ND4J_EXPORT ReduceSameWrapper {
     public:
         template <typename OpType>
         static void wrapper(const X *x, const Nd4jLong *xShapeInfo, X *z, const Nd4jLong *zShapeInfo, const Nd4jLong *tadShapeInfo, const Nd4jLong *tadOffset, const int* dimsToExclude, const int dimsLen, X *extras) {
@@ -32,4 +32,10 @@ namespace nd4j {
         }
     };
     BUILD_SINGLE_TEMPLATE(template class ReduceSameWrapper, , LIBND4J_TYPES);
+    /*
+    template class ReduceSameWrapper<double>;
+    template class ReduceSameWrapper<float>;
+    template class ReduceSameWrapper<float16>;
+    template class ReduceSameWrapper<bfloat16>;
+     */
 }

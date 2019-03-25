@@ -20,7 +20,7 @@ using namespace simdOps;
 
 namespace nd4j {
     template <typename X, typename Y>
-    class ReduceBoolWrapper {
+    class ND4J_EXPORT ReduceBoolWrapper {
     public:
         template <typename OpType>
         static void wrapper(const X *x, const Nd4jLong* xShapeInfo, Y *z, const Nd4jLong *zShapeInfo, const Nd4jLong *tadShapeInfo, const Nd4jLong *tadOffset, const int* dimsToExclude, const int dimsLen, X *extras) {

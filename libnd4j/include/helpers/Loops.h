@@ -32,7 +32,7 @@
 
 namespace nd4j {
 
-    class Loops {
+    class ND4J_EXPORT Loops {
     private:
         enum LoopKind {SMALLARR2DX, EWS1, EWSNONZERO, RANK1, RANK2, RANK3, RANK4, RANK5, X_EWSNONZERO, Z_EWSNONZERO, COMMON};
 

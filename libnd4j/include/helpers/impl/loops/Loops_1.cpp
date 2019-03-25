@@ -19,7 +19,7 @@
 using namespace simdOps;
 namespace nd4j {
     template<typename X, typename Y>
-    class ReduceLongWrapper {
+    class ND4J_EXPORT ReduceLongWrapper {
     public:
         template<typename OpType>
         static void

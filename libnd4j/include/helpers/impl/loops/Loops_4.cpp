@@ -162,7 +162,7 @@ namespace nd4j {
 
 
     template <typename X>
-    class IndexReduceWrapper {
+    class ND4J_EXPORT IndexReduceWrapper {
     public:
         template <typename OpType>
         static void wrapper(const X *x, const Nd4jLong* xShapeInfo, Nd4jLong *z, const Nd4jLong *zShapeInfo, const Nd4jLong *tadShapeInfo, const Nd4jLong *tadOffset, X *extras) {
