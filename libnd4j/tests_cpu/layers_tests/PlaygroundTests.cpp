@@ -61,9 +61,9 @@ TEST_F(PlaygroundTests, test_small_reductions) {
 
     for (int e = 0; e < iterations; e++) {
         auto x = NDArrayFactory::create<float>('c', {4, 64});
-        auto z = NDArrayFactory::create<float>('c', {4});
+        auto z = NDArrayFactory::create<float>('c', {64});
         x.assign(1.0f);
-        int axis = 1;
+        int axis = 0;
 
         auto tadPack = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(x.shapeInfo(), axis);
 
