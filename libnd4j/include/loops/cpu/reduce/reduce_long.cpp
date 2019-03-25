@@ -26,6 +26,7 @@
 #include <loops/legacy_ops.h>
 #include <OmpLaunchHelper.h>
 #include <helpers/Loops.h>
+#include <helpers/ConstantTadHelper.h>
 
 using namespace simdOps;
 
@@ -175,29 +176,16 @@ namespace functions {
 
                 auto tadOnlyShapeInfo = tadShapeInfo;
                 auto tadOffsets = tadOffset;
-                shape::TAD *tad = nullptr;
 
                 if (tadOnlyShapeInfo == nullptr || tadOffsets == nullptr) {
-                    tad = new shape::TAD();
-                    tad->init(xShapeInfo, dimension, dimensionLength);
-                    tad->createTadOnlyShapeInfo();
-                    tad->createOffsets();
-
-                    if (tad->dimensionLength < 1) {
-                        delete tad;
+                    if (dimensionLength < 1)
                         return;
-                    }
 
-                    tadOnlyShapeInfo = tad->tadOnlyShapeInfo;
-                    tadOffsets = tad->tadOffsets;
+                    auto tadPack = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(xShapeInfo, dimension, dimensionLength);
+                    tadOnlyShapeInfo = tadPack.primaryShapeInfo();
+                    tadOffsets = tadPack.primaryOffsets();
                 }
-                
-                // std::vector<int> dimsToExclude = nd4j::ShapeUtils::evalDimsToExclude(xShapeInfo[0], dimensionLength, dimension);
-                
-                nd4j::Loops::loopTadXZ<X, Z, X, OpType>(x, xShapeInfo, z, zShapeInfo,  tadOnlyShapeInfo, tadOffsets, dimension, dimensionLength, extraParams); 
-                
-                if (tad != nullptr)
-                    delete tad;
+				nd4j::Loops::loopTadXZ<X, Z, X, OpType>(x, xShapeInfo, z, zShapeInfo,  tadOnlyShapeInfo, tadOffsets, dimension, dimensionLength, extraParams); 
             }
 
 

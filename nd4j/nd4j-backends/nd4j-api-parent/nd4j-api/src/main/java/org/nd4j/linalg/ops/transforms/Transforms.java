@@ -466,7 +466,7 @@ public class Transforms {
     }
 
     public static INDArray step(INDArray arr) {
-        return softPlus(arr, true);
+        return step(arr, true);
     }
 
 
@@ -476,7 +476,7 @@ public class Transforms {
 
 
     public static INDArray softsign(INDArray arr) {
-        return softPlus(arr, true);
+        return softsign(arr, true);
     }
 
 
@@ -486,7 +486,7 @@ public class Transforms {
 
 
     public static INDArray softsignDerivative(INDArray arr) {
-        return softPlus(arr, true);
+        return softsignDerivative(arr, true);
     }
 
 
