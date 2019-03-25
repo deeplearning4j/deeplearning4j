@@ -19,6 +19,7 @@
 //
 
 #include <helpers/TAD.h>
+#include <helpers/ConstantTadHelper.h>
 #include "../one_hot.h"
 
 namespace nd4j {
@@ -29,14 +30,11 @@ namespace nd4j {
                 auto output = reinterpret_cast<Z*>(voutput);
                 auto indices = reinterpret_cast<I*>(vindices);
 
-                shape::TAD tad;
-                tad.init(zShapeInfo, axis.data(), axis.size());
-                tad.createTadOnlyShapeInfo();
-                tad.createOffsets();
+                auto tadPack = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(zShapeInfo, axis);
 
                 auto iLen = static_cast<unsigned int>(shape::length(iShapeInfo));
-                auto tLen = static_cast<unsigned int>(shape::length(tad.tadOnlyShapeInfo));
-                auto numTads = static_cast<unsigned int>(tad.numTads);
+                auto tLen = static_cast<unsigned int>(shape::length(tadPack.primaryShapeInfo()));
+                auto numTads = static_cast<unsigned int>(tadPack.numberOfTads());
 
                 //nd4j_printf("numTads: [%i]; iLen: [%i]\n", numTads, iLen);
 
@@ -51,7 +49,7 @@ namespace nd4j {
 
                 PRAGMA_OMP_PARALLEL_FOR
                 for (unsigned int e = 0; e < numTads; e++) {
-                    auto cO = output + tad.tadOffsets[e];
+                    auto cO = output + tadPack.primaryOffsets()[e];
 
                     auto idx = static_cast<int>(indices[e]);
                     if (idx < 0 || idx >= tLen) {
