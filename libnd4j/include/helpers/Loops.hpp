@@ -470,7 +470,9 @@ namespace nd4j {
                                 const Nd4jLong* tadShapeInfo, const Nd4jLong* tadOffsets,                                            
                                 X* extraParams) {
 
-        const LoopKind kindOfLoop = Loops::deduceKindOfLoopTadXZ(xShapeInfo, zShapeInfo, tadShapeInfo);
+        LoopKind kindOfLoop = Loops::deduceKindOfLoopTadXZ(xShapeInfo, zShapeInfo, tadShapeInfo);
+        if(kindOfLoop == SMALLARR2DX)
+            kindOfLoop = EWSNONZERO;
 
         const Nd4jLong zLen   = shape::length(zShapeInfo);
         const Nd4jLong tadLen = shape::length(tadShapeInfo);
