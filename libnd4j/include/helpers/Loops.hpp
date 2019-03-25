@@ -217,7 +217,7 @@ namespace nd4j {
                                  const int dimsLen,
                                  E* extraParams) {
 
-        const LoopKind kindOfLoop = Loops::deduceKindOfLoopTadXZ(tadShapeInfo, zShapeInfo);
+        const LoopKind kindOfLoop = Loops::deduceKindOfLoopTadXZ(xShapeInfo, zShapeInfo, tadShapeInfo);
 
         const Nd4jLong zLen   = shape::length(zShapeInfo);
         const Nd4jLong tadLen = shape::length(tadShapeInfo);
@@ -236,6 +236,8 @@ namespace nd4j {
             //*********************************************//
             
             // case SMALLARR2DX: {
+            //         shape::printShapeInfoLinear(xShapeInfo);
+            //     shape::printShapeInfoLinear(zShapeInfo);
             //     const auto xLen = zLen * tadLen;
             //     for (uint i = 0; i < xLen; ++i) {                
             //         const auto zOffset = shape::subArrayOffset(i, xShapeInfo, zShapeInfo, dimsToExclude, dimsLen);
@@ -244,6 +246,7 @@ namespace nd4j {
             //         z[zOffset] = OpType::update(startVal, OpType::op(x[i], extraParams), extraParams);                    
             //         if(tadInd == tadLen - 1) 
             //             z[zOffset] = OpType::postProcess(z[zOffset], tadLen, extraParams);
+            //         printf("%u - %lld\n", i, zOffset);
             //     }
             // }
 
@@ -259,7 +262,7 @@ namespace nd4j {
                 uint zOffset = 0;
                 for (uint i = 0; i < xLen; ++i) {                    
                     z[zOffset] = OpType::update(z[zOffset], OpType::op(x[i], extraParams), extraParams);
-                    zOffset = zOffset == uZLenMinusOne ? 0 : zOffset + 1;
+                    zOffset = zOffset == (zLen / tadEws) - 1 ? 0 : zOffset + 1;                    
                 }
 
                 for (uint i = 0; i <= uZLenMinusOne; i++)
@@ -462,11 +465,12 @@ namespace nd4j {
 
 //////////////////////////////////////////////////////////////////////////////
     template<typename X, typename OpType>
-    void Loops::loopIndexTadXZ(const X* x, const Nd4jLong* tadShapeInfo, const Nd4jLong* tadOffsets,
-                                            Nd4jLong* z, const Nd4jLong* zShapeInfo,
-                                            X* extraParams) {
+    void Loops::loopIndexTadXZ(const X* x, const Nd4jLong* xShapeInfo,
+                                Nd4jLong* z, const Nd4jLong* zShapeInfo,
+                                const Nd4jLong* tadShapeInfo, const Nd4jLong* tadOffsets,                                            
+                                X* extraParams) {
 
-        const LoopKind kindOfLoop = Loops::deduceKindOfLoopTadXZ(tadShapeInfo, zShapeInfo);
+        const LoopKind kindOfLoop = Loops::deduceKindOfLoopTadXZ(xShapeInfo, zShapeInfo, tadShapeInfo);
 
         const Nd4jLong zLen   = shape::length(zShapeInfo);
         const Nd4jLong tadLen = shape::length(tadShapeInfo);

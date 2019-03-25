@@ -136,7 +136,7 @@ void IndexReduce<X>::exec(void *vx, Nd4jLong *xShapeInfo,
         tadOffsets = tadPack.primaryOffsets();
     }
 
-    nd4j::Loops::loopIndexTadXZ<X, OpType>(x, tadOnlyShapeInfo, tadOffsets, z, zShapeInfo, extraParams);
+    nd4j::Loops::loopIndexTadXZ<X, OpType>(x, xShapeInfo, z, zShapeInfo,  tadOnlyShapeInfo, tadOffsets, extraParams);
 }
 
 

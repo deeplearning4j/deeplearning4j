@@ -112,7 +112,7 @@ namespace nd4j {
     }
 
 //////////////////////////////////////////////////////////////////////////////
-    Loops::LoopKind Loops::deduceKindOfLoopTadXZ(const Nd4jLong* tadShapeInfo, const Nd4jLong* zShapeInfo) {
+    Loops::LoopKind Loops::deduceKindOfLoopTadXZ(const Nd4jLong* xShapeInfo, const Nd4jLong* zShapeInfo, const Nd4jLong* tadShapeInfo) {
 
         const int tadRank = shape::rank(tadShapeInfo);
 
@@ -126,7 +126,7 @@ namespace nd4j {
         const bool xVector = shape::isCommonVector(tadShapeInfo, temp);
         const bool zVector = shape::isCommonVector(zShapeInfo, temp);
 
-        if(shape::length(tadShapeInfo) * shape::length(zShapeInfo) <= Environment::getInstance()->elementwiseThreshold() && tadRank == 2 &&
+        if(shape::length(tadShapeInfo) * shape::length(zShapeInfo) <= Environment::getInstance()->elementwiseThreshold() && shape::rank(xShapeInfo) == 2 &&
             tadEws > 1 && zEws == 1 && ((xOrder == zOrder) || ((xVector || xOrder == 'c') && (zVector || zOrder == 'c'))))
             return SMALLARR2DX;
 
@@ -165,12 +165,12 @@ namespace nd4j {
     class IndexReduceWrapper {
     public:
         template <typename OpType>
-        static void wrapper(const X *x, const Nd4jLong *tadShapeInfo, const Nd4jLong *tadOffset, Nd4jLong *z, const Nd4jLong *zShapeInfo, X *extras) {
-            Loops::loopIndexTadXZ<X, OpType>(x, tadShapeInfo, tadOffset, z, zShapeInfo, extras);
+        static void wrapper(const X *x, const Nd4jLong* xShapeInfo, Nd4jLong *z, const Nd4jLong *zShapeInfo, const Nd4jLong *tadShapeInfo, const Nd4jLong *tadOffset, X *extras) {
+            Loops::loopIndexTadXZ<X, OpType>(x, xShapeInfo, z, zShapeInfo, tadShapeInfo, tadOffset, extras);
         }
 
-        static void wrap(const int opNum, const X *x, const Nd4jLong *tadShapeInfo, const Nd4jLong *tadOffset, Nd4jLong *z, const Nd4jLong *zShapeInfo, X *extras) {
-            DISPATCH_BY_OPNUM_T(wrapper, PARAMS(x, tadShapeInfo, tadOffset, z, zShapeInfo, extras), INDEX_REDUCE_OPS);
+        static void wrap(const int opNum, const X *x, const Nd4jLong* xShapeInfo, Nd4jLong *z, const Nd4jLong *zShapeInfo, const Nd4jLong *tadShapeInfo, const Nd4jLong *tadOffset, X *extras) {
+            DISPATCH_BY_OPNUM_T(wrapper, PARAMS(x, xShapeInfo, z, zShapeInfo, tadShapeInfo, tadOffset, extras), INDEX_REDUCE_OPS);
         }
     };
     BUILD_SINGLE_TEMPLATE(template class IndexReduceWrapper, , LIBND4J_TYPES);
