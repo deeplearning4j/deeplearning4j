@@ -48,7 +48,7 @@ class TransformFloatWrapper {
         //////////////////////////////////////////////////////////////////////////////
         template<typename OpType>
         static void wrapper(const X *x, const Nd4jLong* xShapeInfo, Y *z, const Nd4jLong *zShapeInfo, Y *extras) {
-            Loops::loopXZ<X, Y, OpType>(x, xShapeInfo, z, zShapeInfo, extras);
+            Loops::loopXZ<X, Y, Y, OpType>(x, xShapeInfo, z, zShapeInfo, extras);
         }
 
         //////////////////////////////////////////////////////////////////////////////

@@ -24,28 +24,25 @@ using namespace simdOps;
 
 namespace nd4j {
     
-template<typename X, typename Y>
-class TransformAnyWrapper {
+template<typename X>
+class TransformStrictWrapper {
 
     public:
 
         //////////////////////////////////////////////////////////////////////////////
         template<typename OpType>
-        static void wrapper(const X *x, const Nd4jLong* xShapeInfo, Y *z, const Nd4jLong *zShapeInfo, X *extras) {
-            Loops::loopXZ<X, Y, X, OpType>(x, xShapeInfo, z, zShapeInfo, extras);
+        static void wrapper(const X *x, const Nd4jLong* xShapeInfo, X *z, const Nd4jLong *zShapeInfo, X *extras) {
+            Loops::loopXZ<X, X, X, OpType>(x, xShapeInfo, z, zShapeInfo, extras);
         }
 
         //////////////////////////////////////////////////////////////////////////////
-        static void wrap(const int opNum, const X *x, const Nd4jLong *xShapeInfo, Y *z, const Nd4jLong *zShapeInfo, X *extras) {
-            DISPATCH_BY_OPNUM_TT(wrapper, PARAMS(x, xShapeInfo, z, zShapeInfo, extras), TRANSFORM_ANY_OPS);
+        static void wrap(const int opNum, const X *x, const Nd4jLong *xShapeInfo, X *z, const Nd4jLong *zShapeInfo, X *extras) {
+            DISPATCH_BY_OPNUM_T(wrapper, PARAMS(x, xShapeInfo, z, zShapeInfo, extras), TRANSFORM_STRICT_OPS);
         }
 };
 
 
 
-
-
-
-BUILD_DOUBLE_TEMPLATE(template class TransformAnyWrapper, , LIBND4J_TYPES, LIBND4J_TYPES);
+BUILD_SINGLE_TEMPLATE(template class TransformStrictWrapper, , FLOAT_TYPES);
 
 }

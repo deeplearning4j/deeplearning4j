@@ -81,9 +81,9 @@ namespace nd4j {
                     const auto threadOffset = thredsInfo.getThreadOffset(threadNum);
                     const auto lenPerThread = static_cast<uint>(thredsInfo.getItersPerThread(threadNum));
 
-                    const auto xi = x + threadOffset;
-                    const auto yi = y + threadOffset;
-                          auto zi = z + threadOffset;
+                    const auto xi = x + threadOffset * xEws;
+                    const auto yi = y + threadOffset * yEws;
+                          auto zi = z + threadOffset * zEws;
 
                     PRAGMA_OMP_SIMD
                     for (uint i = 0; i < lenPerThread; i++)
@@ -698,10 +698,10 @@ namespace nd4j {
 
 
 //////////////////////////////////////////////////////////////////////////////
-template<typename X, typename Z, typename OpType>
+template<typename X, typename Z, typename E, typename OpType>
 void Loops::loopXZ(const X* x, const Nd4jLong* xShapeInfo,
                          Z* z, const Nd4jLong* zShapeInfo,
-                    Z* extraParams) {
+                    E* extraParams) {
 
     const LoopKind kindOfLoop = Loops::deduceKindOfLoopXZ(xShapeInfo, zShapeInfo);
 
@@ -716,7 +716,7 @@ void Loops::loopXZ(const X* x, const Nd4jLong* xShapeInfo,
     switch (kindOfLoop) {
 
         //*********************************************//
-        case EWS1: {
+        case EWS1: {            
             PRAGMA_OMP_PARALLEL_THREADS(thredsInfo._numThreads)
             {
                 const auto threadNum = omp_get_thread_num();
@@ -734,7 +734,7 @@ void Loops::loopXZ(const X* x, const Nd4jLong* xShapeInfo,
             break;
 
         //*********************************************//
-        case EWSNONZERO: {
+        case EWSNONZERO: {            
             const uint xEws = shape::elementWiseStride(xShapeInfo);                
             const uint zEws = shape::elementWiseStride(zShapeInfo);
 
@@ -744,8 +744,8 @@ void Loops::loopXZ(const X* x, const Nd4jLong* xShapeInfo,
                 const auto threadOffset = thredsInfo.getThreadOffset(threadNum);
                 const auto lenPerThread = static_cast<uint>(thredsInfo.getItersPerThread(threadNum));
 
-                const auto xi = x + threadOffset;
-                      auto zi = z + threadOffset;
+                const auto xi = x + threadOffset * xEws;
+                      auto zi = z + threadOffset * zEws;
 
                 PRAGMA_OMP_SIMD
                 for (uint i = 0; i < lenPerThread; i++)
@@ -756,7 +756,6 @@ void Loops::loopXZ(const X* x, const Nd4jLong* xShapeInfo,
 
         //*********************************************//
         case Z_EWSNONZERO: {            
-
             const uint zEws = shape::elementWiseStride(zShapeInfo);
             uint castXShapeInfo[MAX_RANK];
             const bool canCastX = nd4j::DataTypeUtils::castShapeInfo<uint>(xShapeInfo, castXShapeInfo);
@@ -767,7 +766,7 @@ void Loops::loopXZ(const X* x, const Nd4jLong* xShapeInfo,
                 const auto threadOffset = thredsInfo.getThreadOffset(threadNum);
                 const auto lenPerThread = static_cast<uint>(thredsInfo.getItersPerThread(threadNum));
                 
-                auto zi = z + threadOffset;
+                auto zi = z + threadOffset * zEws;
 
                 PRAGMA_OMP_SIMD
                 for (uint i = 0; i < lenPerThread; i++) {
@@ -779,8 +778,7 @@ void Loops::loopXZ(const X* x, const Nd4jLong* xShapeInfo,
             break;       
 
         //*********************************************//
-        case RANK1: {                
-
+        case RANK1: {                            
             PRAGMA_OMP_PARALLEL_FOR
             for (uint i0 = 0; i0 < len; ++i0)
                 z[i0 * zStride[0]] = OpType::op(x[i0 * xStride[0]], extraParams);
@@ -788,8 +786,7 @@ void Loops::loopXZ(const X* x, const Nd4jLong* xShapeInfo,
             break;
 
         //*********************************************//
-        case RANK2: {
-
+        case RANK2: {            
             PRAGMA_OMP_PARALLEL_FOR_SIMD
             for (uint i0 = 0; i0 < xShape[0]; ++i0)
                 for (uint i1 = 0; i1 < xShape[1]; ++i1)
@@ -798,8 +795,7 @@ void Loops::loopXZ(const X* x, const Nd4jLong* xShapeInfo,
             break;
 
         //*********************************************//
-        case RANK3: {
-
+        case RANK3: {            
             PRAGMA_OMP_PARALLEL_FOR_SIMD_COLLAPSE(2)
             for (uint i0 = 0; i0 < xShape[0]; ++i0)
                 for (uint i1 = 0; i1 < xShape[1]; ++i1)
@@ -809,8 +805,7 @@ void Loops::loopXZ(const X* x, const Nd4jLong* xShapeInfo,
             break;
 
         //*********************************************//
-        case RANK4: {
-
+        case RANK4: {            
             PRAGMA_OMP_PARALLEL_FOR_SIMD_COLLAPSE(3)
             for (uint i0 = 0; i0 < xShape[0]; ++i0)
                 for (uint i1 = 0; i1 < xShape[1]; ++i1)
@@ -821,8 +816,7 @@ void Loops::loopXZ(const X* x, const Nd4jLong* xShapeInfo,
             break;
 
         //*********************************************//
-        case RANK5: {
-
+        case RANK5: {            
             PRAGMA_OMP_PARALLEL_FOR_SIMD_COLLAPSE(4)
             for (uint i0 = 0; i0 < xShape[0]; ++i0)
                 for (uint i1 = 0; i1 < xShape[1]; ++i1)
@@ -834,7 +828,7 @@ void Loops::loopXZ(const X* x, const Nd4jLong* xShapeInfo,
             break;
 
         //*********************************************//
-        default: {
+        default: {            
             uint xShapeInfoCast[MAX_RANK];
             uint zShapeInfoCast[MAX_RANK];
 

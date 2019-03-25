@@ -56,10 +56,10 @@ namespace nd4j {
                             std::function<Z(X,Y,Z*)> op);
 
         //////////////////////////////////////////////////////////////////////////////
-        template<typename X, typename Z, typename OpType> 
+        template<typename X, typename Z, typename E, typename OpType> 
         static void loopXZ(const X* x, const Nd4jLong* xShapeInfo,
                                   Z* z, const Nd4jLong* zShapeInfo,
-                                  Z* extraParams);
+                                  E* extraParams);
 
 
         //////////////////////////////////////////////////////////////////////////////
