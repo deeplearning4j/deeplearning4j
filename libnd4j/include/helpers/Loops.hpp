@@ -262,7 +262,7 @@ namespace nd4j {
                 uint zOffset = 0;
                 for (uint i = 0; i < xLen; ++i) {                    
                     z[zOffset] = OpType::update(z[zOffset], OpType::op(x[i], extraParams), extraParams);
-                    zOffset = zOffset == (zLen / tadEws) - 1 ? 0 : zOffset + 1;                    
+                    zOffset = zOffset == uZLenMinusOne ? 0 : zOffset + 1;
                 }
 
                 for (uint i = 0; i <= uZLenMinusOne; i++)
