@@ -22,6 +22,7 @@
 #include <loops/broadcasting.h>
 #include <loops/legacy_ops.h>
 #include <types/types.h>
+#include <helpers/ConstantTadHelper.h>
 
 using namespace simdOps;
 
@@ -109,16 +110,12 @@ namespace functions {
                 //permuted version of the x shape info for setting up the tad problem
                 auto tadShapeShapeInfo = tadShapeInfo;
                 auto tadOffsets = tadOffset;
-                shape::TAD *tad = nullptr;
 
                 if (tadShapeInfo == nullptr || tadOffsets == nullptr) {
-                    tad = new shape::TAD();
-                    tad->init(xShapeInfo, dimension, dimensionLength);
-                    tad->createTadOnlyShapeInfo();
-                    tad->createOffsets();
+                    auto tadPack = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(xShapeInfo, dimension, dimensionLength);
 
-                    tadShapeShapeInfo = tad->tadOnlyShapeInfo;
-                    tadOffsets = tad->tadOffsets;
+                    tadShapeShapeInfo = tadPack.primaryShapeInfo();
+                    tadOffsets = tadPack.primaryOffsets();
                 }
 
                 //int *resultStride = shape::stride(tadShapeShapeInfo);                
@@ -268,9 +265,6 @@ namespace functions {
                         }
                     }
                 }
-
-                if (tad != nullptr)
-                    delete tad;
         }
 
 
@@ -300,16 +294,12 @@ namespace functions {
             //permuted version of the x shape info for setting up the tad problem
             auto tadShapeShapeInfo = tadShapeInfo;
             auto tadOffsets = tadOffset;
-            shape::TAD *tad = nullptr;
 
             if (tadShapeInfo == nullptr || tadOffsets == nullptr) {
-                tad = new shape::TAD();
-                tad->init(yShapeInfo, dimension, dimensionLength);
-                tad->createTadOnlyShapeInfo();
-                tad->createOffsets();
+                auto tadPack = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(yShapeInfo, dimension, dimensionLength);
 
-                tadShapeShapeInfo = tad->tadOnlyShapeInfo;
-                tadOffsets = tad->tadOffsets;
+                tadShapeShapeInfo = tadPack.primaryShapeInfo();
+                tadOffsets = tadPack.primaryOffsets();
             }
 
             //int *resultStride = shape::stride(tadShapeShapeInfo);
@@ -459,10 +449,6 @@ namespace functions {
                     }
                 }
             }
-
-            if (tad != nullptr)
-                delete tad;
         }
-
     }
 }
