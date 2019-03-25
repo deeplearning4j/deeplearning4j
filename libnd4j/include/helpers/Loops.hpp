@@ -32,12 +32,17 @@ namespace nd4j {
 //////////////////////////////////////////////////////////////////////////////
     template<typename X, typename Y, typename Z>
     void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
-                                    const Y* y, const Nd4jLong* yShapeInfo,
-                                    Z* z, const Nd4jLong* zShapeInfo,
-                                    Z* extraParams,
-                                    std::function<Z(X,Y,Z*)> op) {
+                        const Y* y, const Nd4jLong* yShapeInfo,
+                        Z* z, const Nd4jLong* zShapeInfo,
+                        Z* extraParams,
+                        std::function<Z(X,Y,Z*)> op) {
 
         const LoopKind kindOfLoop = Loops::deduceKindOfLoopXYZ(xShapeInfo, yShapeInfo, zShapeInfo);
+
+        const Nd4jLong* xShape  = shape::shapeOf(xShapeInfo);
+        const Nd4jLong* xStride = shape::stride(xShapeInfo);
+        const Nd4jLong* yStride = shape::stride(yShapeInfo);
+        const Nd4jLong* zStride = shape::stride(zShapeInfo);
 
         const Nd4jLong len = shape::length(xShapeInfo);
 
@@ -51,11 +56,15 @@ namespace nd4j {
                 {
                     const auto threadNum = omp_get_thread_num();
                     const auto threadOffset = thredsInfo.getThreadOffset(threadNum);
-                    const auto ulen = static_cast<uint>(thredsInfo.getItersPerThread(threadNum));
+                    const auto lenPerThread = static_cast<uint>(thredsInfo.getItersPerThread(threadNum));
+
+                    const auto xi = x + threadOffset;
+                    const auto yi = y + threadOffset;
+                          auto zi = z + threadOffset;
 
                     PRAGMA_OMP_SIMD
-                    for (uint i = 0; i < ulen; i++)
-                        z[i] = op(x[i], y[i], extraParams);
+                    for (uint i = 0; i < lenPerThread; i++)
+                        zi[i] = op(xi[i], yi[i], extraParams);
                 }
             }
                 break;
@@ -70,112 +79,71 @@ namespace nd4j {
                 {
                     const auto threadNum = omp_get_thread_num();
                     const auto threadOffset = thredsInfo.getThreadOffset(threadNum);
-                    const auto ulen = static_cast<uint>(thredsInfo.getItersPerThread(threadNum));
+                    const auto lenPerThread = static_cast<uint>(thredsInfo.getItersPerThread(threadNum));
+
+                    const auto xi = x + threadOffset;
+                    const auto yi = y + threadOffset;
+                          auto zi = z + threadOffset;
 
                     PRAGMA_OMP_SIMD
-                    for (uint i = 0; i < ulen; i++)
-                        z[i*zEws] = op(x[i*xEws], y[i*yEws], extraParams);
+                    for (uint i = 0; i < lenPerThread; i++)
+                        zi[i*zEws] = op(xi[i*xEws], yi[i*yEws], extraParams);
                 }
             }
                 break;
 
                 //*********************************************//
-            case RANK1: {
-                const auto xStride0 = shape::stride(xShapeInfo)[0];
-                const auto yStride0 = shape::stride(yShapeInfo)[0];
-                const auto zStride0 = shape::stride(zShapeInfo)[0];
+            case RANK1: {                
 
                 PRAGMA_OMP_PARALLEL_FOR
                 for (uint i0 = 0; i0 < len; ++i0)
-                    z[i0 * zStride0] = op(x[i0 * xStride0], y[i0 * yStride0], extraParams);
+                    z[i0 * zStride[0]] = op(x[i0 * xStride[0]], y[i0 * yStride[0]], extraParams);
             }
                 break;
 
                 //*********************************************//
-            case RANK2: {
-                const auto xStride0 = shape::stride(xShapeInfo)[0];
-                const auto xStride1 = shape::stride(xShapeInfo)[1];
-                const auto yStride0 = shape::stride(yShapeInfo)[0];
-                const auto yStride1 = shape::stride(yShapeInfo)[1];
-                const auto zStride0 = shape::stride(zShapeInfo)[0];
-                const auto zStride1 = shape::stride(zShapeInfo)[1];
+            case RANK2: {                
 
                 PRAGMA_OMP_PARALLEL_FOR_SIMD
-                for (uint i0 = 0; i0 < xShapeInfo[1]; ++i0)
-                    for (uint i1 = 0; i1 < xShapeInfo[2]; ++i1)
-                        z[i0 * zStride0 + i1 * zStride1] = op(x[i0 * xStride0 + i1 * xStride1], y[i0 * yStride0 + i1 * yStride1], extraParams);
+                for (uint i0 = 0; i0 < xShape[0]; ++i0)
+                    for (uint i1 = 0; i1 < xShape[1]; ++i1)
+                        z[i0 * zStride[0] + i1 * zStride[1]] = op(x[i0 * xStride[0] + i1 * xStride[1]], y[i0 * yStride[0] + i1 * yStride[1]], extraParams);
             }
                 break;
 
                 //*********************************************//
             case RANK3: {
-                const auto xStride0 = shape::stride(xShapeInfo)[0];
-                const auto xStride1 = shape::stride(xShapeInfo)[1];
-                const auto xStride2 = shape::stride(xShapeInfo)[2];
-                const auto yStride0 = shape::stride(yShapeInfo)[0];
-                const auto yStride1 = shape::stride(yShapeInfo)[1];
-                const auto yStride2 = shape::stride(yShapeInfo)[2];
-                const auto zStride0 = shape::stride(zShapeInfo)[0];
-                const auto zStride1 = shape::stride(zShapeInfo)[1];
-                const auto zStride2 = shape::stride(zShapeInfo)[2];
 
                 PRAGMA_OMP_PARALLEL_FOR_SIMD_COLLAPSE(2)
-                for (uint i0 = 0; i0 < xShapeInfo[1]; ++i0)
-                    for (uint i1 = 0; i1 < xShapeInfo[2]; ++i1)
-                        for (uint i2 = 0; i2 < xShapeInfo[3]; ++i2)
-                            z[i0*zStride0+i1*zStride1+i2*zStride2] = op(x[i0*xStride0+i1*xStride1+i2*xStride2], x[i0*yStride0+i1*yStride1+i2*yStride2], extraParams);
+                for (uint i0 = 0; i0 < xShape[0]; ++i0)
+                    for (uint i1 = 0; i1 < xShape[1]; ++i1)
+                        for (uint i2 = 0; i2 < xShape[2]; ++i2)
+                            z[i0*zStride[0]+i1*zStride[1]+i2*zStride[2]] = op(x[i0*xStride[0]+i1*xStride[1]+i2*xStride[2]], y[i0*yStride[0]+i1*yStride[1]+i2*yStride[2]], extraParams);
             }
                 break;
 
                 //*********************************************//
             case RANK4: {
-                const auto xStride0 = shape::stride(xShapeInfo)[0];
-                const auto xStride1 = shape::stride(xShapeInfo)[1];
-                const auto xStride2 = shape::stride(xShapeInfo)[2];
-                const auto xStride3 = shape::stride(xShapeInfo)[3];
-                const auto yStride0 = shape::stride(yShapeInfo)[0];
-                const auto yStride1 = shape::stride(yShapeInfo)[1];
-                const auto yStride2 = shape::stride(yShapeInfo)[2];
-                const auto yStride3 = shape::stride(yShapeInfo)[3];
-                const auto zStride0 = shape::stride(zShapeInfo)[0];
-                const auto zStride1 = shape::stride(zShapeInfo)[1];
-                const auto zStride2 = shape::stride(zShapeInfo)[2];
-                const auto zStride3 = shape::stride(zShapeInfo)[3];
 
                 PRAGMA_OMP_PARALLEL_FOR_SIMD_COLLAPSE(3)
-                for (uint i0 = 0; i0 < xShapeInfo[1]; ++i0)
-                    for (uint i1 = 0; i1 < xShapeInfo[2]; ++i1)
-                        for (uint i2 = 0; i2 < xShapeInfo[3]; ++i2)
-                            for (uint i3 = 0; i3 < xShapeInfo[4]; ++i3)
-                                z[i0*zStride0+i1*zStride1+i2*zStride2+i3*zStride3] = op(x[i0*xStride0+i1*xStride1+i2*xStride2+i3*xStride3], y[i0*yStride0+i1*yStride1+i2*yStride2+i3*yStride3], extraParams);
+                for (uint i0 = 0; i0 < xShape[0]; ++i0)
+                    for (uint i1 = 0; i1 < xShape[1]; ++i1)
+                        for (uint i2 = 0; i2 < xShape[2]; ++i2)
+                            for (uint i3 = 0; i3 < xShape[3]; ++i3)
+                                z[i0*zStride[0]+i1*zStride[1]+i2*zStride[2]+i3*zStride[3]] = op(x[i0*xStride[0]+i1*xStride[1]+i2*xStride[2]+i3*xStride[3]], y[i0*yStride[0]+i1*yStride[1]+i2*yStride[2]+i3*yStride[3]], extraParams);
             }
                 break;
 
                 //*********************************************//
             case RANK5: {
-                const auto xStride0 = shape::stride(xShapeInfo)[0];
-                const auto xStride1 = shape::stride(xShapeInfo)[1];
-                const auto xStride2 = shape::stride(xShapeInfo)[2];
-                const auto xStride3 = shape::stride(xShapeInfo)[3];
-                const auto xStride4 = shape::stride(xShapeInfo)[4];
-                const auto yStride0 = shape::stride(yShapeInfo)[0];
-                const auto yStride1 = shape::stride(yShapeInfo)[1];
-                const auto yStride2 = shape::stride(yShapeInfo)[2];
-                const auto yStride3 = shape::stride(yShapeInfo)[3];
-                const auto yStride4 = shape::stride(yShapeInfo)[4];
-                const auto zStride0 = shape::stride(zShapeInfo)[0];
-                const auto zStride1 = shape::stride(zShapeInfo)[1];
-                const auto zStride2 = shape::stride(zShapeInfo)[2];
-                const auto zStride3 = shape::stride(zShapeInfo)[3];
-                const auto zStride4 = shape::stride(zShapeInfo)[4];
 
                 PRAGMA_OMP_PARALLEL_FOR_SIMD_COLLAPSE(4)
-                for (uint i0 = 0; i0 < xShapeInfo[1]; ++i0)
-                    for (uint i1 = 0; i1 < xShapeInfo[2]; ++i1)
-                        for (uint i2 = 0; i2 < xShapeInfo[3]; ++i2)
-                            for (uint i3 = 0; i3 < xShapeInfo[4]; ++i3)
-                                for (uint i4 = 0; i4 < xShapeInfo[5]; ++i4)
-                                    z[i0*zStride0+i1*zStride1+i2*zStride2+i3*zStride3 + i4*zStride4] = op(x[i0*xStride0+i1*xStride1+i2*xStride2+i3*xStride3+i4*xStride4], y[i0*yStride0+i1*yStride1+i2*yStride2+i3*yStride3+i4*yStride4], extraParams);
+                for (uint i0 = 0; i0 < xShape[0]; ++i0)
+                    for (uint i1 = 0; i1 < xShape[1]; ++i1)
+                        for (uint i2 = 0; i2 < xShape[2]; ++i2)
+                            for (uint i3 = 0; i3 < xShape[3]; ++i3)
+                                for (uint i4 = 0; i4 < xShape[4]; ++i4)
+                                    z[i0*zStride[0]+i1*zStride[1]+i2*zStride[2]+i3*zStride[3]+i4*zStride[4]] = op(x[i0*xStride[0]+i1*xStride[1]+i2*xStride[2]+i3*xStride[3]+i4*xStride[4]], y[i0*yStride[0]+i1*yStride[1]+i2*yStride[2]+i3*yStride[3]+i4*yStride[4]], extraParams);
             }
                 break;
 
@@ -193,14 +161,14 @@ namespace nd4j {
                 {
                     auto threadNum = omp_get_thread_num();
                     auto threadOffset = thredsInfo.getThreadOffset(threadNum);
-                    auto ulen = static_cast<uint>(thredsInfo.getItersPerThread(threadNum));
+                    auto lenPerThread = static_cast<uint>(thredsInfo.getItersPerThread(threadNum));
 
                     PRAGMA_OMP_SIMD
-                    for (uint i = 0; i < ulen; i++) {
-                        auto tadOffset = shape::indexOffset(i + threadOffset, xShapeInfo, xShapeInfoCast, len, canCastX);
+                    for (uint i = 0; i < lenPerThread; i++) {
+                        auto xOffset = shape::indexOffset(i + threadOffset, xShapeInfo, xShapeInfoCast, len, canCastX);
                         auto yOffset = shape::indexOffset(i + threadOffset, yShapeInfo, yShapeInfoCast, len, canCastY);
                         auto zOffset = shape::indexOffset(i + threadOffset, zShapeInfo, zShapeInfoCast, len, canCastZ);
-                        z[zOffset] = op(x[tadOffset], y[yOffset], extraParams);
+                        z[zOffset] = op(x[xOffset], y[yOffset], extraParams);
                     }
                 }
             }
@@ -727,10 +695,172 @@ namespace nd4j {
             }
         }
     }
+
+
+//////////////////////////////////////////////////////////////////////////////
+template<typename X, typename Z, typename OpType>
+void Loops::loopXZ(const X* x, const Nd4jLong* xShapeInfo,
+                         Z* z, const Nd4jLong* zShapeInfo,
+                    Z* extraParams) {
+
+    const LoopKind kindOfLoop = Loops::deduceKindOfLoopXZ(xShapeInfo, zShapeInfo);
+
+    const Nd4jLong* xShape  = shape::shapeOf(const_cast<Nd4jLong*>(xShapeInfo));
+    const Nd4jLong* xStride = shape::stride(const_cast<Nd4jLong*>(xShapeInfo));        
+    const Nd4jLong* zStride = shape::stride(const_cast<Nd4jLong*>(zShapeInfo));
+
+    const Nd4jLong len = shape::length(xShapeInfo);
+
+    OmpLaunchHelper thredsInfo(len);
+
+    switch (kindOfLoop) {
+
+        //*********************************************//
+        case EWS1: {
+            PRAGMA_OMP_PARALLEL_THREADS(thredsInfo._numThreads)
+            {
+                const auto threadNum = omp_get_thread_num();
+                const auto threadOffset = thredsInfo.getThreadOffset(threadNum);
+                const auto lenPerThread = static_cast<uint>(thredsInfo.getItersPerThread(threadNum));
+                
+                const auto xi = x + threadOffset;
+                const auto zi = z + threadOffset;
+
+                PRAGMA_OMP_SIMD
+                for (uint i = 0; i < lenPerThread; i++)
+                    zi[i] = OpType::op(xi[i], extraParams);                        
+            }
+        }
+            break;
+
+        //*********************************************//
+        case EWSNONZERO: {
+            const uint xEws = shape::elementWiseStride(xShapeInfo);                
+            const uint zEws = shape::elementWiseStride(zShapeInfo);
+
+            PRAGMA_OMP_PARALLEL_THREADS(thredsInfo._numThreads)
+            {
+                const auto threadNum = omp_get_thread_num();
+                const auto threadOffset = thredsInfo.getThreadOffset(threadNum);
+                const auto lenPerThread = static_cast<uint>(thredsInfo.getItersPerThread(threadNum));
+
+                const auto xi = x + threadOffset;
+                      auto zi = z + threadOffset;
+
+                PRAGMA_OMP_SIMD
+                for (uint i = 0; i < lenPerThread; i++)
+                    zi[i*zEws] = OpType::op(xi[i*xEws], extraParams);
+            }
+        }
+            break;
+
+        //*********************************************//
+        case Z_EWSNONZERO: {            
+
+            const uint zEws = shape::elementWiseStride(zShapeInfo);
+            uint castXShapeInfo[MAX_RANK];
+            const bool canCastX = nd4j::DataTypeUtils::castShapeInfo<uint>(xShapeInfo, castXShapeInfo);
+
+            PRAGMA_OMP_PARALLEL_THREADS(thredsInfo._numThreads)
+            {
+                const auto threadNum = omp_get_thread_num();
+                const auto threadOffset = thredsInfo.getThreadOffset(threadNum);
+                const auto lenPerThread = static_cast<uint>(thredsInfo.getItersPerThread(threadNum));
+                
+                auto zi = z + threadOffset;
+
+                PRAGMA_OMP_SIMD
+                for (uint i = 0; i < lenPerThread; i++) {
+                    const auto xOffset = shape::indexOffset(i + threadOffset, xShapeInfo, castXShapeInfo, len, canCastX);
+                    zi[i*zEws] = OpType::op(x[xOffset], extraParams);
+                }
+            }
+        }
+            break;       
+
+        //*********************************************//
+        case RANK1: {                
+
+            PRAGMA_OMP_PARALLEL_FOR
+            for (uint i0 = 0; i0 < len; ++i0)
+                z[i0 * zStride[0]] = OpType::op(x[i0 * xStride[0]], extraParams);
+        }
+            break;
+
+        //*********************************************//
+        case RANK2: {
+
+            PRAGMA_OMP_PARALLEL_FOR_SIMD
+            for (uint i0 = 0; i0 < xShape[0]; ++i0)
+                for (uint i1 = 0; i1 < xShape[1]; ++i1)
+                    z[i0 * zStride[0] + i1 * zStride[1]] = OpType::op(x[i0 * xStride[0] + i1 * xStride[1]], extraParams);
+        }
+            break;
+
+        //*********************************************//
+        case RANK3: {
+
+            PRAGMA_OMP_PARALLEL_FOR_SIMD_COLLAPSE(2)
+            for (uint i0 = 0; i0 < xShape[0]; ++i0)
+                for (uint i1 = 0; i1 < xShape[1]; ++i1)
+                    for (uint i2 = 0; i2 < xShape[2]; ++i2)
+                        z[i0*zStride[0]+i1*zStride[1]+i2*zStride[2]] = OpType::op(x[i0*xStride[0]+i1*xStride[1]+i2*xStride[2]], extraParams);
+        }
+            break;
+
+        //*********************************************//
+        case RANK4: {
+
+            PRAGMA_OMP_PARALLEL_FOR_SIMD_COLLAPSE(3)
+            for (uint i0 = 0; i0 < xShape[0]; ++i0)
+                for (uint i1 = 0; i1 < xShape[1]; ++i1)
+                    for (uint i2 = 0; i2 < xShape[2]; ++i2)
+                        for (uint i3 = 0; i3 < xShape[3]; ++i3)
+                            z[i0*zStride[0]+i1*zStride[1]+i2*zStride[2]+i3*zStride[3]] = OpType::op(x[i0*xStride[0]+i1*xStride[1]+i2*xStride[2]+i3*xStride[3]], extraParams);
+        }
+            break;
+
+        //*********************************************//
+        case RANK5: {
+
+            PRAGMA_OMP_PARALLEL_FOR_SIMD_COLLAPSE(4)
+            for (uint i0 = 0; i0 < xShape[0]; ++i0)
+                for (uint i1 = 0; i1 < xShape[1]; ++i1)
+                    for (uint i2 = 0; i2 < xShape[2]; ++i2)
+                        for (uint i3 = 0; i3 < xShape[3]; ++i3)
+                            for (uint i4 = 0; i4 < xShape[4]; ++i4)
+                                z[i0*zStride[0]+i1*zStride[1]+i2*zStride[2]+i3*zStride[3]+i4*zStride[4]] = OpType::op(x[i0*xStride[0]+i1*xStride[1]+i2*xStride[2]+i3*xStride[3]+i4*xStride[4]], extraParams);
+        }
+            break;
+
+        //*********************************************//
+        default: {
+            uint xShapeInfoCast[MAX_RANK];
+            uint zShapeInfoCast[MAX_RANK];
+
+            bool canCastX = DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
+            bool canCastZ = DataTypeUtils::castShapeInfo(zShapeInfo, zShapeInfoCast);
+
+            PRAGMA_OMP_PARALLEL_THREADS(thredsInfo._numThreads)
+            {
+                auto threadNum = omp_get_thread_num();
+                auto threadOffset = thredsInfo.getThreadOffset(threadNum);
+                auto lenPerThread = static_cast<uint>(thredsInfo.getItersPerThread(threadNum));
+
+                PRAGMA_OMP_SIMD
+                for (uint i = 0; i < lenPerThread; i++) {
+                    auto xOffset = shape::indexOffset(i + threadOffset, xShapeInfo, xShapeInfoCast, len, canCastX);
+                    auto zOffset = shape::indexOffset(i + threadOffset, zShapeInfo, zShapeInfoCast, len, canCastZ);
+                    z[zOffset] = OpType::op(x[xOffset], extraParams);
+                }
+            }
+        }
+    }
 }
 
 
 
+}
 //template void Loops::loopTadXZ<double, double>(const double* x, const Nd4jLong* tadShapeInfo, const Nd4jLong* tadOffsets, double* z, const Nd4jLong* zShapeInfo, double* extraParams, std::function<double(const double*)> startVal, std::function<double(double,double,double*)> update, std::function<double(double,double*)> op, std::function<double(double,Nd4jLong,double*)> postPr);
 //template void Loops::loopTadXZ<float, float>(const float* x, const Nd4jLong* tadShapeInfo, const Nd4jLong* tadOffsets, float* z, const Nd4jLong* zShapeInfo, float* extraParams, std::function<float(const float*)> startVal, std::function<float(float,float,float*)> update, std::function<float(float,float*)> op, std::function<float(float,Nd4jLong,float*)> postPr);
 

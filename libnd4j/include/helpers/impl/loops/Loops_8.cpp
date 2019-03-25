@@ -14,34 +14,18 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
+//
+// @author Yurii Shyrma (iuriish@yahoo.com), created on 25.03.2019
+//
+
 #include "helpers/Loops.hpp"
 
 using namespace simdOps;
 
 namespace nd4j {
-
+    
 template<typename X, typename Y>
-class ReduceFloatWrapper {
-
-    public:
-
-        //////////////////////////////////////////////////////////////////////////////
-        template<typename OpType>
-        static void wrapper(const X *x, const Nd4jLong *xShapeInfo, Y *z, const Nd4jLong *zShapeInfo, const Nd4jLong *tadShapeInfo, const Nd4jLong *tadOffset, const int* dimsToexclude, const int dimsLen, Y *extras) {
-            Loops::loopTadXZ<X, Y, Y, OpType>(x, xShapeInfo, z, zShapeInfo, tadShapeInfo, tadOffset, dimsToexclude, dimsLen, extras);
-        }
-
-        //////////////////////////////////////////////////////////////////////////////
-        static void wrap(const int opNum, const X *x, const Nd4jLong *xShapeInfo, Y *z, const Nd4jLong *zShapeInfo, const Nd4jLong *tadShapeInfo, const Nd4jLong *tadOffset, const int* dimsToexclude, const int dimsLen, Y *extras) {
-            DISPATCH_BY_OPNUM_TT(wrapper, PARAMS(x, xShapeInfo, z, zShapeInfo,  tadShapeInfo, tadOffset, dimsToexclude, dimsLen, extras), REDUCE_FLOAT_OPS);
-        }
-};
-
-
-
-
-template<typename X, typename Y>
-class TransformFloatWrapper {
+class TransformAnyWrapper {
 
     public:
 
@@ -53,13 +37,15 @@ class TransformFloatWrapper {
 
         //////////////////////////////////////////////////////////////////////////////
         static void wrap(const int opNum, const X *x, const Nd4jLong *xShapeInfo, Y *z, const Nd4jLong *zShapeInfo, Y *extras) {
-            DISPATCH_BY_OPNUM_TT(wrapper, PARAMS(x, xShapeInfo, z, zShapeInfo, extras), TRANSFORM_FLOAT_OPS);
+            DISPATCH_BY_OPNUM_TT(wrapper, PARAMS(x, xShapeInfo, z, zShapeInfo, extras), TRANSFORM_ANY_OPS);
         }
 };
 
 
 
-BUILD_DOUBLE_TEMPLATE(template class ReduceFloatWrapper, , LIBND4J_TYPES, FLOAT_TYPES_1);
-BUILD_DOUBLE_TEMPLATE(template class TransformFloatWrapper, , LIBND4J_TYPES, FLOAT_TYPES_1);
+
+
+
+BUILD_DOUBLE_TEMPLATE(template class TransformAnyWrapper, , LIBND4J_TYPES, LIBND4J_TYPES);
 
 }

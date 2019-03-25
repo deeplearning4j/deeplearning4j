@@ -485,7 +485,7 @@ namespace shape {
  * Returns the stride portion of an information
  * buffer
  */
-    ND4J_EXPORT _CUDA_HD Nd4jLong *stride(const Nd4jLong *buffer);
+    ND4J_EXPORT _CUDA_HD Nd4jLong *stride(Nd4jLong *buffer);
 
 /**
  * Compute the length of the given shape
@@ -2841,8 +2841,8 @@ template <typename T>
  * Returns the stride portion of an information
  * buffer
  */
-    INLINEDEF _CUDA_HD Nd4jLong *stride(const Nd4jLong *buffer) {
-        return const_cast<Nd4jLong*>(buffer) + (1 + rank(buffer));
+    INLINEDEF _CUDA_HD Nd4jLong *stride(Nd4jLong *buffer) {
+        return buffer + (1 + rank(buffer));
     }
 
     INLINEDEF _CUDA_HD bool isEmpty(const Nd4jLong *shapeInfo) {

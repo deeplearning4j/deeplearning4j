@@ -18,19 +18,25 @@
 
 using namespace simdOps;
 namespace nd4j {
-    template<typename X, typename Y>
-    class ReduceLongWrapper {
+    
+template<typename X, typename Y>
+class ReduceLongWrapper {
+
     public:
+
+        //////////////////////////////////////////////////////////////////////////////
         template<typename OpType>
-        static void
-        wrapper(const X *x, const Nd4jLong *xShapeInfo, Y *z, const Nd4jLong *zShapeInfo,  const Nd4jLong *tadShapeInfo, const Nd4jLong *tadOffset, const int* dimsToExclude, const int dimsLen, X *extras) {
+        static void wrapper(const X *x, const Nd4jLong *xShapeInfo, Y *z, const Nd4jLong *zShapeInfo,  const Nd4jLong *tadShapeInfo, const Nd4jLong *tadOffset, const int* dimsToExclude, const int dimsLen, X *extras) {
             Loops::loopTadXZ<X, Y, X, OpType>(x, xShapeInfo, z, zShapeInfo, tadShapeInfo, tadOffset, dimsToExclude, dimsLen, extras);
         }
 
+        //////////////////////////////////////////////////////////////////////////////
         static void wrap(const int opNum, const X *x, const Nd4jLong *xShapeInfo, Y *z, const Nd4jLong *zShapeInfo, const Nd4jLong *tadShapeInfo, const Nd4jLong *tadOffset, const int* dimsToExclude, const int dimsLen, X *extras) {
             DISPATCH_BY_OPNUM_TT(wrapper, PARAMS(x, xShapeInfo, z, zShapeInfo, tadShapeInfo, tadOffset, dimsToExclude, dimsLen, extras), REDUCE_LONG_OPS);
         }
-    };
+};
 
-    BUILD_DOUBLE_TEMPLATE(template class ReduceLongWrapper, , LIBND4J_TYPES, LONG_TYPES);
+
+
+BUILD_DOUBLE_TEMPLATE(template class ReduceLongWrapper, , LIBND4J_TYPES, LONG_TYPES);
 }

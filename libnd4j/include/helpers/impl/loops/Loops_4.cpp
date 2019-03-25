@@ -19,6 +19,7 @@
 using namespace simdOps;
 
 namespace nd4j {
+
     //////////////////////////////////////////////////////////////////////////////
     Loops::LoopKind Loops::deduceKindOfLoopXYZ(const Nd4jLong* xShapeInfo, const Nd4jLong* yShapeInfo, const Nd4jLong* zShapeInfo) {
 
@@ -63,29 +64,31 @@ namespace nd4j {
         return COMMON;
     }
 
-//////////////////////////////////////////////////////////////////////////////
+    //////////////////////////////////////////////////////////////////////////////
     Loops::LoopKind Loops::deduceKindOfLoopXZ(const Nd4jLong* xShapeInfo, const Nd4jLong* zShapeInfo) {
-
 
         const int xRank = shape::rank(xShapeInfo);
 
         const Nd4jLong xEws = shape::elementWiseStride(xShapeInfo);
         const Nd4jLong zEws = shape::elementWiseStride(zShapeInfo);
 
-        const char xOrder = shape::order(xShapeInfo);
-        const char zOrder = shape::order(zShapeInfo);
-
         int temp;
         const bool xVector = shape::isCommonVector(xShapeInfo, temp);
         const bool zVector = shape::isCommonVector(zShapeInfo, temp);
 
+        const char xOrder = shape::order(xShapeInfo);
+        const char zOrder = shape::order(zShapeInfo);
+
         const bool shapesSame = shape::shapeEquals(xShapeInfo, zShapeInfo);
 
-        if(xEws == 1 && zEws == 1 && ((xOrder == zOrder) || ((xVector || xOrder == 'c') && (zVector || zOrder == 'c'))))
+        if (xEws == 1 && zEws == 1 && ((xOrder == zOrder) || ((xVector || xOrder == 'c') && (zVector || zOrder == 'c'))))
             return EWS1;
 
-        if(xEws > 0 && zEws > 0   && ((xOrder == zOrder) || ((xVector || xOrder == 'c') && (zVector || zOrder == 'c'))))
+        if(xEws > 0 && zEws > 0 && ((xOrder == zOrder) || ((xVector || xOrder == 'c') && (zVector || zOrder == 'c'))))
             return EWSNONZERO;
+
+        if(zEws > 0 && (zVector || zOrder == 'c'))
+            return Z_EWSNONZERO;
 
         if(xRank == 1 && shapesSame)
             return RANK1;
@@ -101,12 +104,6 @@ namespace nd4j {
 
         if(xRank == 5 && shapesSame)
             return RANK5;
-
-        if(xEws > 0 && (xOrder == 'c' || xVector) && zEws == 0)
-            return X_EWSNONZERO;
-
-        if(zEws > 0 && (zOrder == 'c' || zVector) && xEws == 0)
-            return Z_EWSNONZERO;
 
         return COMMON;
     }

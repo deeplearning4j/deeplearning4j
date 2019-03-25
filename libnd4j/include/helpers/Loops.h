@@ -44,6 +44,7 @@ namespace nd4j {
 
         //////////////////////////////////////////////////////////////////////////////
         static LoopKind deduceKindOfLoopTadXZ(const Nd4jLong* xShapeInfo, const Nd4jLong* zShapeInfo, const Nd4jLong* tadShapeInfo);
+    
     public:
         //////////////////////////////////////////////////////////////////////////////
         template<typename X, typename Y, typename Z> 
@@ -52,6 +53,13 @@ namespace nd4j {
                                   Z* z, const Nd4jLong* zShapeInfo,
                                   Z* extraParams,
                             std::function<Z(X,Y,Z*)> op);
+
+        //////////////////////////////////////////////////////////////////////////////
+        template<typename X, typename Z, typename OpType> 
+        static void loopXZ(const X* x, const Nd4jLong* xShapeInfo,
+                                  Z* z, const Nd4jLong* zShapeInfo,
+                                  Z* extraParams);
+
 
         //////////////////////////////////////////////////////////////////////////////
         template<typename X, typename Z, typename E, typename OpType>
