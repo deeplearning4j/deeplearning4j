@@ -70,6 +70,7 @@ bool experimentalSupport = false;
 #include <graph/Context.h>
 #include <graph/ResultWrapper.h>
 #include <helpers/DebugHelper.h>
+#include <helpers/ConstantTadHelper.h>
 
 using namespace nd4j;
 
@@ -917,9 +918,8 @@ void flattenGeneric(Nd4jPointer *extraPointers,
         int rank = shape::rank(inputShapeInfo);
         auto xShape = shape::shapeOf(inputShapeInfo);
         auto tadShape = xShape[dimension];
-        shape::TAD tad;
-        tad.init(inputShapeInfo,&dimension,dimensionLength);
-        tad.createTadOnlyShapeInfo();
+
+        auto tadPack = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(inputShapeInfo, dimension);
 
         PRAGMA_OMP_PARALLEL_FOR
         for(int i = 0; i < numTads; i++) {
@@ -952,7 +952,7 @@ void flattenGeneric(Nd4jPointer *extraPointers,
                 resultOffset = i *  tadShape;
             }
 
-            auto tadOffset = tad.tadOffset(i);
+            auto tadOffset = tadPack.primaryOffsets()[i];
             for( int j = 0; j < tadShape; j++) {
 
                 // TAD are returned in C ordering always
@@ -1201,15 +1201,10 @@ void NativeOps::setGridLimit(int gridSize) {
 }
 
 void NativeOps::tadOnlyShapeInfo(Nd4jLong *hXShapeInfo, int *dimension, int dimensionLength, Nd4jLong *target, Nd4jLong *offsets) {
-    shape::TAD tad;
-    tad.init(hXShapeInfo, dimension, dimensionLength);
-    //tad->setOutputBuffer(target);
-    tad.createTadOnlyShapeInfo();
-    tad.createOffsets();
+    auto tadPack = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(hXShapeInfo, dimension, dimensionLength);
 
-
-    std::memcpy(reinterpret_cast<void *>(target), tad.tadOnlyShapeInfo, shape::shapeInfoByteLength(tad.tadOnlyShapeInfo));
-    std::memcpy(reinterpret_cast<void *>(offsets), tad.tadOffsets, tad.numTads * sizeof(Nd4jLong));
+    std::memcpy(reinterpret_cast<void *>(target), tadPack.primaryShapeInfo(), shape::shapeInfoByteLength(tadPack.primaryShapeInfo()));
+    std::memcpy(reinterpret_cast<void *>(offsets), tadPack.primaryOffsets(), tadPack.numberOfTads() * sizeof(Nd4jLong));
 }
 
 int NativeOps::memcpyConstantAsync(Nd4jLong dst, Nd4jPointer src, Nd4jLong size, int flags, Nd4jPointer reserved) {
