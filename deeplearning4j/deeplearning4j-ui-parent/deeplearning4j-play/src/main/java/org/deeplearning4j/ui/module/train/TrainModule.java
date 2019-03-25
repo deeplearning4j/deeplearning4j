@@ -57,7 +57,16 @@ import play.mvc.Results;
 import java.text.DateFormat;
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
-import java.util.*;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
+import java.util.HashMap;
+import java.util.Set;
+import java.util.HashSet;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Arrays;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -88,7 +97,7 @@ public class TrainModule implements UIModule {
     }
 
     private final int maxChartPoints; //Technically, the way it's set up: won't exceed 2*maxChartPoints
-    private Map<String, StatsStorage> knownSessionIDs = Collections.synchronizedMap(new WeakHashMap<>());
+    private Map<String, StatsStorage> knownSessionIDs = Collections.synchronizedMap(new HashMap<>());
     private String currentSessionID;
     private int currentWorkerIdx;
     private Map<String, AtomicInteger> workerIdxCount = new ConcurrentHashMap<>(); //Key: session ID
@@ -309,7 +318,6 @@ public class TrainModule implements UIModule {
                         addressSupplier.get(), s, statsStorage);
             }
             lastUpdateForSession.remove(s);
-            I18NProvider.removeInstance(s);
         }
         getDefaultSession();
     }
