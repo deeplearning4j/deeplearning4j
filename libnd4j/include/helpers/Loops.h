@@ -34,7 +34,7 @@ namespace nd4j {
 
     class Loops {
     private:
-        enum LoopKind {EWS1, EWSNONZERO, RANK1, RANK2, RANK3, RANK4, RANK5, X_EWSNONZERO, Z_EWSNONZERO, COMMON};
+        enum LoopKind {SMALLARR2DX, EWS1, EWSNONZERO, RANK1, RANK2, RANK3, RANK4, RANK5, X_EWSNONZERO, Z_EWSNONZERO, COMMON};
 
         //////////////////////////////////////////////////////////////////////////////
         static LoopKind deduceKindOfLoopXYZ(const Nd4jLong* xShapeInfo, const Nd4jLong* yShapeInfo, const Nd4jLong* zShapeInfo);
@@ -43,7 +43,7 @@ namespace nd4j {
         static LoopKind deduceKindOfLoopXZ(const Nd4jLong* xShapeInfo, const Nd4jLong* zShapeInfo);
 
         //////////////////////////////////////////////////////////////////////////////
-        static LoopKind deduceKindOfLoopTadXZ(const Nd4jLong* tadShapeInfo, const Nd4jLong* zShapeInfo);
+        static LoopKind deduceKindOfLoopTadXZ(const Nd4jLong* xShapeInfo, const Nd4jLong* zShapeInfo, const Nd4jLong* tadShapeInfo);
     public:
         //////////////////////////////////////////////////////////////////////////////
         template<typename X, typename Y, typename Z> 
@@ -55,13 +55,16 @@ namespace nd4j {
 
         //////////////////////////////////////////////////////////////////////////////
         template<typename X, typename Z, typename E, typename OpType>
-        static void loopTadXZ(const X* x, const Nd4jLong* tadShapeInfo, const Nd4jLong* tadOffsets,
-                                                Z* z, const Nd4jLong* zShapeInfo,
-                                                E* extraParams);
+        static void loopTadXZ(const X* x, const Nd4jLong* xShapeInfo,
+                                    Z* z, const Nd4jLong* zShapeInfo,
+                              const Nd4jLong* tadShapeInfo, const Nd4jLong* tadOffsets,
+                              const int* dimsToExclude,
+                              const int dimsLen,
+                              E* extraParams);
 
         //////////////////////////////////////////////////////////////////////////////
         template<typename X,typename OpType>
-        static void loopIndexTadXZ(const X* x, const Nd4jLong* tadShapeInfo, const Nd4jLong* tadOffsets, Nd4jLong* z, const Nd4jLong* zShapeInfo, X* extraParams);
+        static void loopIndexTadXZ(const X* x, const Nd4jLong* xShapeInfo,  Nd4jLong* z, const Nd4jLong* zShapeInfo, const Nd4jLong* tadShapeInfo, const Nd4jLong* tadOffsets, X* extraParams);
     };
 }
 

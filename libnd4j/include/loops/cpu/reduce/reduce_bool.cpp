@@ -20,6 +20,7 @@
 //
 
 #include <types/types.h>
+#include <ShapeUtils.h>
 #include <op_boilerplate.h>
 #include <loops/reduce_bool.h>
 #include <loops/legacy_ops.h>
@@ -178,7 +179,7 @@ namespace functions {
                     tadOffsets = tadPack.primaryOffsets();
                 }
 
-                nd4j::Loops::loopTadXZ<X, Z, X, OpType>(x, tadOnlyShapeInfo, tadOffsets, z, zShapeInfo, extraParams);
+                nd4j::Loops::loopTadXZ<X, Z, X, OpType>(x, xShapeInfo, z, zShapeInfo,  tadOnlyShapeInfo, tadOffsets, dimension, dimensionLength, extraParams);
             }
 
 

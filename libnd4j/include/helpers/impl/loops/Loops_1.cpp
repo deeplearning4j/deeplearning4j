@@ -23,13 +23,12 @@ namespace nd4j {
     public:
         template<typename OpType>
         static void
-        wrapper(const X *x, const Nd4jLong *tadShapeInfo, const Nd4jLong *tadOffset, Y *z, const Nd4jLong *zShapeInfo, X *extras) {
-            Loops::loopTadXZ<X, Y, X, OpType>(x, tadShapeInfo, tadOffset, z, zShapeInfo, extras);
+        wrapper(const X *x, const Nd4jLong *xShapeInfo, Y *z, const Nd4jLong *zShapeInfo,  const Nd4jLong *tadShapeInfo, const Nd4jLong *tadOffset, const int* dimsToExclude, const int dimsLen, X *extras) {
+            Loops::loopTadXZ<X, Y, X, OpType>(x, xShapeInfo, z, zShapeInfo, tadShapeInfo, tadOffset, dimsToExclude, dimsLen, extras);
         }
 
-        static void wrap(const int opNum, const X *x, const Nd4jLong *tadShapeInfo, const Nd4jLong *tadOffset, Y *z,
-                         const Nd4jLong *zShapeInfo, X *extras) {
-            DISPATCH_BY_OPNUM_TT(wrapper, PARAMS(x, tadShapeInfo, tadOffset, z, zShapeInfo, extras), REDUCE_LONG_OPS);
+        static void wrap(const int opNum, const X *x, const Nd4jLong *xShapeInfo, Y *z, const Nd4jLong *zShapeInfo, const Nd4jLong *tadShapeInfo, const Nd4jLong *tadOffset, const int* dimsToExclude, const int dimsLen, X *extras) {
+            DISPATCH_BY_OPNUM_TT(wrapper, PARAMS(x, xShapeInfo, z, zShapeInfo, tadShapeInfo, tadOffset, dimsToExclude, dimsLen, extras), REDUCE_LONG_OPS);
         }
     };
 

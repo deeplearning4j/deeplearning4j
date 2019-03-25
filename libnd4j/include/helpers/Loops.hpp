@@ -210,11 +210,14 @@ namespace nd4j {
 
 //////////////////////////////////////////////////////////////////////////////
     template<typename X, typename Z, typename E, typename OpType>
-     void Loops::loopTadXZ(const X* x, const Nd4jLong* tadShapeInfo, const Nd4jLong* tadOffsets,
-                                       Z* z, const Nd4jLong* zShapeInfo,
-                                       E* extraParams) {
+     void Loops::loopTadXZ(const X* x, const Nd4jLong* xShapeInfo,
+                                 Z* z, const Nd4jLong* zShapeInfo,
+                                 const Nd4jLong* tadShapeInfo, const Nd4jLong* tadOffsets,
+                                 const int* dimsToExclude,
+                                 const int dimsLen,
+                                 E* extraParams) {
 
-        const LoopKind kindOfLoop = Loops::deduceKindOfLoopTadXZ(tadShapeInfo, zShapeInfo);
+        const LoopKind kindOfLoop = Loops::deduceKindOfLoopTadXZ(xShapeInfo, zShapeInfo, tadShapeInfo);
 
         const Nd4jLong zLen   = shape::length(zShapeInfo);
         const Nd4jLong tadLen = shape::length(tadShapeInfo);
@@ -229,6 +232,43 @@ namespace nd4j {
 
 
         switch (kindOfLoop) {
+
+            //*********************************************//
+            
+            // case SMALLARR2DX: {
+            //         shape::printShapeInfoLinear(xShapeInfo);
+            //     shape::printShapeInfoLinear(zShapeInfo);
+            //     const auto xLen = zLen * tadLen;
+            //     for (uint i = 0; i < xLen; ++i) {                
+            //         const auto zOffset = shape::subArrayOffset(i, xShapeInfo, zShapeInfo, dimsToExclude, dimsLen);
+            //         const uint tadInd = (i / tadEws) % tadLen;
+            //         auto startVal = tadInd ? z[zOffset] : static_cast<Z>(OpType::startingValue(x));                                        
+            //         z[zOffset] = OpType::update(startVal, OpType::op(x[i], extraParams), extraParams);                    
+            //         if(tadInd == tadLen - 1) 
+            //             z[zOffset] = OpType::postProcess(z[zOffset], tadLen, extraParams);
+            //         printf("%u - %lld\n", i, zOffset);
+            //     }
+            // }
+
+            case SMALLARR2DX: {
+                const auto uTadLen        = static_cast<uint>(tadLen);
+                const auto uZLenMinusOne  = static_cast<uint>(zLen - 1);
+                const auto xLen           = static_cast<uint>(zLen * uTadLen);
+                const auto sv             = static_cast<Z>(OpType::startingValue(x));
+
+                for (uint i = 0; i <= uZLenMinusOne; i++)
+                    z[i] = OpType::startingValue(x);
+
+                uint zOffset = 0;
+                for (uint i = 0; i < xLen; ++i) {                    
+                    z[zOffset] = OpType::update(z[zOffset], OpType::op(x[i], extraParams), extraParams);
+                    zOffset = zOffset == uZLenMinusOne ? 0 : zOffset + 1;
+                }
+
+                for (uint i = 0; i <= uZLenMinusOne; i++)
+                    z[i] = OpType::postProcess(z[i], tadLen, extraParams);
+            }
+                break;
 
             //*********************************************//
             case EWS1: {
@@ -425,11 +465,14 @@ namespace nd4j {
 
 //////////////////////////////////////////////////////////////////////////////
     template<typename X, typename OpType>
-    void Loops::loopIndexTadXZ(const X* x, const Nd4jLong* tadShapeInfo, const Nd4jLong* tadOffsets,
-                                            Nd4jLong* z, const Nd4jLong* zShapeInfo,
-                                            X* extraParams) {
+    void Loops::loopIndexTadXZ(const X* x, const Nd4jLong* xShapeInfo,
+                                Nd4jLong* z, const Nd4jLong* zShapeInfo,
+                                const Nd4jLong* tadShapeInfo, const Nd4jLong* tadOffsets,                                            
+                                X* extraParams) {
 
-        const LoopKind kindOfLoop = Loops::deduceKindOfLoopTadXZ(tadShapeInfo, zShapeInfo);
+        LoopKind kindOfLoop = Loops::deduceKindOfLoopTadXZ(xShapeInfo, zShapeInfo, tadShapeInfo);
+        if(kindOfLoop == SMALLARR2DX)
+            kindOfLoop = EWSNONZERO;
 
         const Nd4jLong zLen   = shape::length(zShapeInfo);
         const Nd4jLong tadLen = shape::length(tadShapeInfo);
