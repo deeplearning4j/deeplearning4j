@@ -152,8 +152,7 @@ public class PythonCondition implements Condition {
     public boolean condition(List<Writable> list){
         PythonVariables inputs = getPyInputsFromWritables(list);
         try{
-            //PythonExecutioner.setInterpreter(pythonTransform.getName());
-            PythonExecutioner.exec(pythonTransform.getCode(), inputs, pythonTransform.getOutputs());
+            PythonExecutioner.exec(pythonTransform.getCode(), inputs, pythonTransform.getOutputs(), pythonTransform.getName());
             boolean ret = pythonTransform.getOutputs().getIntValue("out") != 0;
             return ret;
         }

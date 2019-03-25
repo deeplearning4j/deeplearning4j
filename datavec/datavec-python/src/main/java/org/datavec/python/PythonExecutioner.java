@@ -44,11 +44,14 @@ public class PythonExecutioner {
     private static String currentInterpreter =  defaultInterpreter;
     private static boolean currentInterpreterEnabled = false;
     private static boolean safeExecFlag = false;
+    private static PyThreadState defaultThreadState;
+    private static PyThreadState currentThreadState;
+    private static long mainThreadId;
 
     static {
         init();
     }
-    public static void setInterpreter(String name){
+    private static void setInterpreter(String name){
         if (name == null){ // switch to default interpreter
             currentInterpreter = defaultInterpreter;
             return;
@@ -61,7 +64,7 @@ public class PythonExecutioner {
         currentInterpreter = name;
     }
 
-    public static void deleteInterpreter(String name){
+    private static void deleteInterpreter(String name){
         if (name == null || name == defaultInterpreter){
             return;
         }
@@ -89,20 +92,23 @@ public class PythonExecutioner {
 
 
     public static void init(){
+        System.out.println("---init()---");
         log.info("CPython: Py_DecodeLocale()");
         namePtr = Py_DecodeLocale("pythonExecutioner", null);
         log.info("CPython: Py_SetProgramName()");
         Py_SetProgramName(namePtr);
         log.info("CPython: Py_Initialize()");
-        Py_Initialize();
+        Py_InitializeEx(1);
         log.info("CPython: PyEval_InitThreads()");
-        //PyEval_InitThreads();
+        PyEval_InitThreads();
         log.info("CPython: PyImport_AddModule()");
         module = PyImport_AddModule("__main__");
         log.info("CPython: PyModule_GetDict()");
         globals = PyModule_GetDict(module);
         log.info("CPython: PyThreadState_Get()");
         interpreters.put(defaultInterpreter, PyThreadState_Get());
+        System.out.println("---init()---Done-");
+        mainThreadId = Thread.currentThread().getId();
     }
 
     public static void free(){
@@ -243,11 +249,12 @@ public class PythonExecutioner {
         if (pyOutputs == null){
             return;
         }
+        /*
         exec(getOutputCheckCode(pyOutputs));
         String errorMessage = evalSTRING("__error_message");
         if (errorMessage.length() > 0){
             throw new RuntimeException(errorMessage);
-        }
+        }*/
         try{
 
             for (String varName: pyOutputs.getVariables()){
@@ -278,40 +285,68 @@ public class PythonExecutioner {
 
     private static void _enterSubInterpreter() {
         if (!currentInterpreterEnabled && currentInterpreter != defaultInterpreter) {
+
+
             //log.info("CPython: PyEval_AcquireLock()");
 
-            //PyEval_RestoreThread();
-            PyEval_AcquireLock();
+
+
             PyThreadState ts = interpreters.get(currentInterpreter);
+            if (Thread.currentThread().getId() == mainThreadId){
+                PyThreadState_Swap(ts);
+            }
+            else{
+                System.out.println("call from thread: " + Thread.currentThread().getId());
+                defaultThreadState = PyEval_SaveThread();
+                log.info("CPython: PyThreadState.interp()");
 
-            log.info("CPython: PyThreadState.interp()");
+                PyInterpreterState is = ts.interp();
+                log.info("CPython: PyThreadState_New()");
+                ts = PyThreadState_New(is);
+                log.info("CPython: PyThreadState_Swap()");
+                PyThreadState_Swap(ts);
 
-            PyInterpreterState is = ts.interp();
-            log.info("CPython: PyThreadState_New()");
-            ts = PyThreadState_New(is);
-            log.info("CPython: PyThreadState_Swap()");
-            PyThreadState_Swap(ts);
+                PyEval_RestoreThread(ts);
 
+
+
+
+            }
+            currentThreadState = ts;
             currentInterpreterEnabled = true;
+
+            System.out.println("--enter done---");
         }
     }
 
     private static void _exitSubInterpreter(){
         if (currentInterpreterEnabled && currentInterpreter != defaultInterpreter){
 
-            PyThreadState ts = interpreters.get(currentInterpreter);
-            log.info("CPython: PyThreadState_Swap()");
-            PyThreadState_Swap(null);
-            log.info("CPython: PyThreadState_Clear()");
-            PyThreadState_Clear(ts);
-            log.info("CPython: PyThreadState_Delete()");
-            PyThreadState_Delete(ts);
-            log.info("CPython: PyEval_ReleaseLock()");
 
+            if (Thread.currentThread().getId() == mainThreadId){
+                PyThreadState_Swap(null);
 
-            PyEval_ReleaseLock();
+            }
+            else{
+                System.out.println("call from thread: " + Thread.currentThread().getId());
+                PyThreadState ts = currentThreadState;
+                log.info("CPython: PyThreadState_Swap()");
+                PyThreadState_Swap(null);
+
+                PyEval_RestoreThread(defaultThreadState);
+                System.out.println("--exit done--");
+                log.info("CPython: PyThreadState_Clear()");
+                PyThreadState_Clear(ts);
+                log.info("CPython: PyThreadState_Delete()");
+                PyThreadState_Delete(ts);
+                log.info("CPython: PyEval_ReleaseLock()");
+
+            }
+
             currentInterpreterEnabled = false;
+
         }
+
     }
 
     /**
@@ -319,21 +354,37 @@ public class PythonExecutioner {
      * @param code
      */
     public static void exec(String code){
-        _enterSubInterpreter();
         log.info("CPython: PyRun_SimpleStringFlag()");
         log.info(code);
         PyRun_SimpleStringFlags(code, null);
         log.info("Exec done");
-        _exitSubInterpreter();
     }
 
     public static void exec(String code, PythonVariables pyOutputs){
-        _enterSubInterpreter();
+
         log.info("CPython: PyRun_SimpleStringFlag()");
         log.info(code);
         PyRun_SimpleStringFlags(code, null);
         log.info("Exec done");
         _readOutputs(pyOutputs);
+
+    }
+
+    public static void exec(String code, String interpreter){
+        setInterpreter(interpreter);
+        _enterSubInterpreter();
+        exec(code);
+        _exitSubInterpreter();
+    }
+
+    public static void exec(String code, PythonVariables pyOutputs, String interpreter){
+        setInterpreter(interpreter);
+        _enterSubInterpreter();
+
+        exec(code);
+
+       // _readOutputs(pyOutputs);
+        System.out.println("=ok=");
         _exitSubInterpreter();
     }
 
@@ -343,6 +394,14 @@ public class PythonExecutioner {
             code += '\n';
         }
         exec(inputCode + code, pyOutputs);
+    }
+
+    public static void exec(String code, PythonVariables pyInputs, PythonVariables pyOutputs, String interpreter) throws Exception{
+        String inputCode = inputCode(pyInputs);
+        if (code.charAt(code.length() - 1) != '\n'){
+            code += '\n';
+        }
+        exec(inputCode + code, pyOutputs, interpreter);
     }
 
     private static void setupTransform(PythonTransform transform){
