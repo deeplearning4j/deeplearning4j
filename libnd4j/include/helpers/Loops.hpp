@@ -234,22 +234,35 @@ namespace nd4j {
         switch (kindOfLoop) {
 
             //*********************************************//
-            case EWS1_SMALLARR2DX: {
-                const auto uTadLen = static_cast<uint>(tadLen);
-                const auto uZLen = static_cast<uint>(zLen);
-                const auto xLen = uZLen * uTadLen;
-                const auto sv = static_cast<Z>(OpType::startingValue(x));
+            
+            // case SMALLARR2DX: {
+            //     const auto xLen = zLen * tadLen;
+            //     for (uint i = 0; i < xLen; ++i) {                
+            //         const auto zOffset = shape::subArrayOffset(i, xShapeInfo, zShapeInfo, dimsToExclude, dimsLen);
+            //         const uint tadInd = (i / tadEws) % tadLen;
+            //         auto startVal = tadInd ? z[zOffset] : static_cast<Z>(OpType::startingValue(x));                                        
+            //         z[zOffset] = OpType::update(startVal, OpType::op(x[i], extraParams), extraParams);                    
+            //         if(tadInd == tadLen - 1) 
+            //             z[zOffset] = OpType::postProcess(z[zOffset], tadLen, extraParams);
+            //     }
+            // }
 
-                for (uint i = 0; i < uZLen; i++)
+            case SMALLARR2DX: {
+                const auto uTadLen        = static_cast<uint>(tadLen);
+                const auto uZLenMinusOne  = static_cast<uint>(zLen - 1);
+                const auto xLen           = static_cast<uint>(zLen * uTadLen);
+                const auto sv             = static_cast<Z>(OpType::startingValue(x));
+
+                for (uint i = 0; i <= uZLenMinusOne; i++)
                     z[i] = OpType::startingValue(x);
 
                 uint zOffset = 0;
-                for (uint i = 0; i < xLen; ++i) {
+                for (uint i = 0; i < xLen; ++i) {                    
                     z[zOffset] = OpType::update(z[zOffset], OpType::op(x[i], extraParams), extraParams);
-                    zOffset = zOffset >= zLen ? 0 : zOffset + 1;
+                    zOffset = zOffset == uZLenMinusOne ? 0 : zOffset + 1;
                 }
 
-                for (uint i = 0; i < uZLen; i++)
+                for (uint i = 0; i <= uZLenMinusOne; i++)
                     z[i] = OpType::postProcess(z[i], tadLen, extraParams);
             }
                 break;

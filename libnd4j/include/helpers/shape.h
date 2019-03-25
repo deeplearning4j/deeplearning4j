@@ -1030,11 +1030,11 @@ namespace shape {
 
     ND4J_EXPORT _CUDA_HD void printShapeInfo(Nd4jLong *shapeInfo);
 
-    ND4J_EXPORT _CUDA_HD void printShapeInfoLinear(Nd4jLong *shapeInfo);
+    ND4J_EXPORT _CUDA_HD void printShapeInfoLinear(const Nd4jLong *shapeInfo);
 
-    ND4J_EXPORT _CUDA_HD void printShapeInfoLinear(const char *msg, Nd4jLong *shapeInfo);
+    ND4J_EXPORT _CUDA_HD void printShapeInfoLinear(const char *msg, const Nd4jLong *shapeInfo);
 
-    ND4J_EXPORT _CUDA_HD void printShapeInfoLinear(const char *msg, int rank, Nd4jLong *shape, Nd4jLong *strides);
+    ND4J_EXPORT _CUDA_HD void printShapeInfoLinear(const char *msg, int rank, const Nd4jLong *shape, const Nd4jLong *strides);
 
     ND4J_EXPORT _CUDA_HD void printIntArray(const Nd4jLong *arr, const int length);
     ND4J_EXPORT _CUDA_HD void printIntArray(const int *arr, const int length);
@@ -3676,7 +3676,7 @@ template <typename T>
         printf("Order %c\n",shape::order(shapeInfo));
     }
 
-    INLINEDEF _CUDA_HD void printShapeInfoLinear(Nd4jLong *shapeInfo) {
+    INLINEDEF _CUDA_HD void printShapeInfoLinear(const Nd4jLong *shapeInfo) {
         int rank = shape::rank(shapeInfo);
         int lim = shape::shapeInfoLength(rank);
         printf("ShapeInfo: [");
@@ -3693,7 +3693,7 @@ template <typename T>
 #endif
     }
 
-    INLINEDEF _CUDA_HD void printShapeInfoLinear(const char *msg, int rank, Nd4jLong *shape, Nd4jLong *strides) {
+    INLINEDEF _CUDA_HD void printShapeInfoLinear(const char *msg, int rank, const Nd4jLong *shape, const Nd4jLong *strides) {
         printf("%s : [", msg);
         for (int i = 0; i < rank; i++) {
             printf("%lld, ", (long long) shape[i]);
@@ -3712,7 +3712,7 @@ template <typename T>
 #endif
     }
 
-    INLINEDEF _CUDA_HD void printShapeInfoLinear(const char *msg, Nd4jLong *shapeInfo) {
+    INLINEDEF _CUDA_HD void printShapeInfoLinear(const char *msg, const Nd4jLong *shapeInfo) {
         int rank = shape::rank(shapeInfo);
         int lim = shape::shapeInfoLength(rank);
         printf("%s : [", msg);

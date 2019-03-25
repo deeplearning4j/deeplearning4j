@@ -127,8 +127,8 @@ namespace nd4j {
         const bool zVector = shape::isCommonVector(zShapeInfo, temp);
 
         if(shape::length(tadShapeInfo) * shape::length(zShapeInfo) <= Environment::getInstance()->elementwiseThreshold() && tadRank == 2 &&
-            tadEws >= 1 && zEws == 1 && ((xOrder == zOrder) || ((xVector || xOrder == 'c') && (zVector || zOrder == 'c'))))
-            return EWS1_SMALLARR2DX;
+            tadEws > 1 && zEws == 1 && ((xOrder == zOrder) || ((xVector || xOrder == 'c') && (zVector || zOrder == 'c'))))
+            return SMALLARR2DX;
 
         if(tadEws == 1 && zEws == 1 && ((xOrder == zOrder) || ((xVector || xOrder == 'c') && (zVector || zOrder == 'c'))))
             return EWS1;
