@@ -85,7 +85,6 @@ namespace nd4j {
         }
 
         ~DeclarableBenchmark() {
-            nd4j_printf("Releasing DeclarableBenchmark\n","");
             if (_context != nullptr)
                 delete _context;
         }

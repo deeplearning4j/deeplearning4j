@@ -105,7 +105,6 @@ namespace nd4j {
             this->_mkldnnStreams.clear();
 #endif
 
-            nd4j_printf("Releasing context with [%i] handles\n", _handles.size());
             for (auto v:_handles)
                 delete v;
         }
