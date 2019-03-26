@@ -96,7 +96,7 @@ TEST_F(PlaygroundTests, Test_PermutedArray_Operation_1) {
 
     x.permutei({2, 0, 3, 1});
 
-    x.printShapeInfo("x");
+    //x.printShapeInfo("x");
 
     int iterations = 100;
     std::vector<Nd4jLong> results(iterations);
@@ -126,7 +126,7 @@ TEST_F(PlaygroundTests, Test_PermutedArray_Operation_1) {
     std::sort(results.begin(), results.end());
 
     nd4j_printf("Median time: [%lld]; Mean time: [%lld]; Min time: [%lld]; Max time: [%lld]\n", results[results.size() / 2], mean, min, max);
-    
+
 }
 
 /*

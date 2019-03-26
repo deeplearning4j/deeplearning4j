@@ -410,13 +410,22 @@ void Loops::loopXZ(const X* x, const Nd4jLong* xShapeInfo,
                 const auto threadNum = omp_get_thread_num();
                 const auto threadOffset = thredsInfo.getThreadOffset(threadNum);
                 const auto lenPerThread = static_cast<uint>(thredsInfo.getItersPerThread(threadNum));
-                
+
                 auto zi = z + threadOffset * zEws;
 
-                PRAGMA_OMP_SIMD
-                for (uint i = 0; i < lenPerThread; i++) {
-                    const auto xOffset = shape::indexOffset(i + threadOffset, xShapeInfo, castXShapeInfo, len, canCastX);
-                    zi[i*zEws] = OpType::op(x[xOffset], extraParams);
+                if (zEws > 1) {
+
+                    PRAGMA_OMP_SIMD
+                    for (uint i = 0; i < lenPerThread; i++) {
+                        const auto xOffset = shape::indexOffset(i + threadOffset, xShapeInfo, castXShapeInfo, len, canCastX);
+                        zi[i * zEws] = OpType::op(x[xOffset], extraParams);
+                    }
+                } else {
+                    PRAGMA_OMP_SIMD
+                    for (uint i = 0; i < lenPerThread; i++) {
+                        const auto xOffset = shape::indexOffset(i + threadOffset, xShapeInfo, castXShapeInfo, len, canCastX);
+                        zi[i] = OpType::op(x[xOffset], extraParams);
+                    }
                 }
             }
         }
@@ -431,44 +440,87 @@ void Loops::loopXZ(const X* x, const Nd4jLong* xShapeInfo,
             break;
 
         //*********************************************//
-        case RANK2: {            
+        case RANK2: {
+            auto uXShape0 = static_cast<uint>(xShape[0]);
+            auto uXShape1 = static_cast<uint>(xShape[1]);
+
             PRAGMA_OMP_PARALLEL_FOR_SIMD
-            for (uint i0 = 0; i0 < xShape[0]; ++i0)
-                for (uint i1 = 0; i1 < xShape[1]; ++i1)
-                    z[i0 * zStride[0] + i1 * zStride[1]] = OpType::op(x[i0 * xStride[0] + i1 * xStride[1]], extraParams);
+            for (uint i0 = 0; i0 < uXShape0; ++i0) {
+
+                auto z0 = i0 * zStride[0];
+                auto x0 = i0 * xStride[0];
+                for (uint i1 = 0; i1 < uXShape1; ++i1)
+                    z[z0 + i1 * zStride[1]] = OpType::op(x[x0 + i1 * xStride[1]], extraParams);
+            }
         }
             break;
 
         //*********************************************//
-        case RANK3: {            
+        case RANK3: {
+            auto uXShape0 = static_cast<uint>(xShape[0]);
+            auto uXShape1 = static_cast<uint>(xShape[1]);
+            auto uXShape2 = static_cast<uint>(xShape[2]);
+
             PRAGMA_OMP_PARALLEL_FOR_SIMD_COLLAPSE(2)
-            for (uint i0 = 0; i0 < xShape[0]; ++i0)
-                for (uint i1 = 0; i1 < xShape[1]; ++i1)
-                    for (uint i2 = 0; i2 < xShape[2]; ++i2)
-                        z[i0*zStride[0]+i1*zStride[1]+i2*zStride[2]] = OpType::op(x[i0*xStride[0]+i1*xStride[1]+i2*xStride[2]], extraParams);
+            for (uint i0 = 0; i0 < uXShape0; ++i0)
+                for (uint i1 = 0; i1 < uXShape1; ++i1) {
+
+                    auto z0 = i0 * zStride[0] + i1 * zStride[1];
+                    auto x0 = i0 * xStride[0] + i1 * xStride[1];
+
+                    for (uint i2 = 0; i2 < uXShape2; ++i2)
+                        z[z0 + i2 * zStride[2]] = OpType::op(x[x0 + i2 * xStride[2]], extraParams);
+                }
         }
             break;
 
         //*********************************************//
         case RANK4: {
+            auto uXShape0 = static_cast<uint>(xShape[0]);
+            auto uXShape1 = static_cast<uint>(xShape[1]);
+            auto uXShape2 = static_cast<uint>(xShape[2]);
+            auto uXShape3 = static_cast<uint>(xShape[3]);
+
             PRAGMA_OMP_PARALLEL_FOR_SIMD_COLLAPSE(3)
-            for (uint i0 = 0; i0 < xShape[0]; ++i0)
-                for (uint i1 = 0; i1 < xShape[1]; ++i1)
-                    for (uint i2 = 0; i2 < xShape[2]; ++i2)
-                        for (uint i3 = 0; i3 < xShape[3]; ++i3)
-                            z[i0*zStride[0]+i1*zStride[1]+i2*zStride[2]+i3*zStride[3]] = OpType::op(x[i0*xStride[0]+i1*xStride[1]+i2*xStride[2]+i3*xStride[3]], extraParams);
+            for (uint i0 = 0; i0 < uXShape0; ++i0)
+                for (uint i1 = 0; i1 < uXShape1; ++i1)
+                    for (uint i2 = 0; i2 < uXShape2; ++i2) {
+
+                        auto x0 = i0 * xStride[0] + i1 * xStride[1] + i2 * xStride[2];
+                        auto z0 = i0 * zStride[0] + i1 * zStride[1] + i2 * zStride[2];
+
+                        for (uint i3 = 0; i3 < uXShape3; ++i3)
+                            z[z0 + i3 * zStride[3]] = OpType::op(x[x0 + i3 * xStride[3]], extraParams);
+                    }
         }
             break;
 
         //*********************************************//
-        case RANK5: {            
-            PRAGMA_OMP_PARALLEL_FOR_SIMD_COLLAPSE(4)
-            for (uint i0 = 0; i0 < xShape[0]; ++i0)
-                for (uint i1 = 0; i1 < xShape[1]; ++i1)
-                    for (uint i2 = 0; i2 < xShape[2]; ++i2)
-                        for (uint i3 = 0; i3 < xShape[3]; ++i3)
-                            for (uint i4 = 0; i4 < xShape[4]; ++i4)
-                                z[i0*zStride[0]+i1*zStride[1]+i2*zStride[2]+i3*zStride[3]+i4*zStride[4]] = OpType::op(x[i0*xStride[0]+i1*xStride[1]+i2*xStride[2]+i3*xStride[3]+i4*xStride[4]], extraParams);
+        case RANK5: {
+            auto uXShape0 = static_cast<uint>(xShape[0]);
+            auto uXShape1 = static_cast<uint>(xShape[1]);
+            auto uXShape2 = static_cast<uint>(xShape[2]);
+            auto uXShape3 = static_cast<uint>(xShape[3]);
+            auto uXShape4 = static_cast<uint>(xShape[4]);
+
+            PRAGMA_OMP_PARALLEL_FOR_SIMD_COLLAPSE(3)
+            for (uint i0 = 0; i0 < uXShape0; ++i0)
+                for (uint i1 = 0; i1 < uXShape1; ++i1)
+                    for (uint i2 = 0; i2 < uXShape2; ++i2) {
+
+                        auto z0 = i0 * zStride[0] + i1 * zStride[1] + i2 * zStride[2];
+                        auto x0 = i0 * xStride[0] + i1 * xStride[1] + i2 * xStride[2];
+
+                        for (uint i3 = 0; i3 < uXShape3; ++i3) {
+
+                            auto z1 = z0 + i3 * zStride[3];
+                            auto x1 = x0 + i3 * xStride[3];
+
+                            for (uint i4 = 0; i4 < uXShape4; ++i4)
+                                z[z1 + i4 * zStride[4]] = OpType::op(x[x1 + i4 * xStride[4]], extraParams);
+
+                        }
+                    }
         }
             break;
 
