@@ -210,24 +210,26 @@ template<typename T>
 void pad_(const int mode, const NDArray& input, const NDArray& paddings, NDArray& output, NDArray const& padValue) {
 
     const int rank = output.rankOf();
-    std::vector<int> dimsToExclude(rank);
+    const int rankBorder = rank - 1;
+    std::vector<int> dimsToExclude(rankBorder);
     std::iota(dimsToExclude.begin(), dimsToExclude.end(), 0);             // fill with 0, 1, ... rank-1
+    //dimsToExclude.pop_back();
 
-    Nd4jLong numLeft    = paddings.e<Nd4jLong>(rank-1,0);
-    Nd4jLong numRight   = paddings.e<Nd4jLong>(rank-1,1);
-    Nd4jLong inDimSize  = input.sizeAt(rank-1);
-    Nd4jLong outDimSize = output.sizeAt(rank-1);
+    Nd4jLong numLeft    = paddings.e<Nd4jLong>(rankBorder, 0);
+    Nd4jLong numRight   = paddings.e<Nd4jLong>(rankBorder, 1);
+    Nd4jLong inDimSize  = input.sizeAt(rankBorder);
+    Nd4jLong outDimSize = output.sizeAt(rankBorder);
 
-    std::vector<std::vector<Nd4jLong>> outIdx = { std::vector<Nd4jLong>(2*rank), {numLeft, numLeft + inDimSize}, {0, numLeft}, {numLeft + inDimSize, outDimSize} };
+    std::vector<std::vector<Nd4jLong>> outIdx = { std::vector<Nd4jLong>(2 * rank), {numLeft, numLeft + inDimSize}, {0, numLeft}, {numLeft + inDimSize, outDimSize} };
 
-    for(int i = 0; i < rank-1; ++i) {
+    for(int i = 0; i < rankBorder; ++i) {
         outIdx[0][2*i]     = paddings.e<Nd4jLong>(i, 0);
         outIdx[0][2*i + 1] = outIdx[0][2*i] + input.sizeAt(i);
     }
     outIdx[0][2*rank-1] = outIdx[0][2*rank-2] = 0;
 
     // ***** populate innermost sub-arrays firstly ***** //
-    dimsToExclude.pop_back();
+
 
     Nd4jLong startL = mode == 1 ? 1 : 0;                            // REFLECT or SYMMETRIC
     Nd4jLong startR = mode == 1 ? inDimSize-2 : inDimSize-1;        // REFLECT or SYMMETRIC
@@ -257,9 +259,11 @@ void pad_(const int mode, const NDArray& input, const NDArray& paddings, NDArray
         }
         else {                                                              // REFLECT or SYMMETRIC
 
+#pragma omp parallel for schedule(guided)
             for(Nd4jLong k = numLeft-1, e = startL; k >= 0; --k, ++e)     // fill left side
                 outSubArr1.t<T>(k) = inSubArr.t<T>(e);
 
+#pragma omp parallel for schedule(guided)
             for(Nd4jLong k = numLeft + inDimSize, e = startR; k < outDimSize; ++k, --e)     // fill right side
                 outSubArr1.t<T>(k) = inSubArr.t<T>(e);
         }
@@ -269,7 +273,7 @@ void pad_(const int mode, const NDArray& input, const NDArray& paddings, NDArray
     std::vector<Nd4jLong> outIdxInner(2, 0);
     std::vector<Nd4jLong> outIdxOuter(2, 0);
 
-    for(int i = rank - 2; i >= 0; --i) {
+    for(int i = rankBorder - 1; i >= 0; --i) {
 
         dimsToExclude.pop_back();
 
@@ -314,6 +318,7 @@ void pad_(const int mode, const NDArray& input, const NDArray& paddings, NDArray
             }
             else {                                                              // REFLECT or SYMMETRIC
 
+#pragma omp parallel for schedule(guided)
                 for(Nd4jLong k = numLeft-1, e = startL; k >= 0; --k, ++e) {    // fill left side
                     outIdxOuter[0] = k;
                     outIdxOuter[1] = k+1;
@@ -324,6 +329,7 @@ void pad_(const int mode, const NDArray& input, const NDArray& paddings, NDArray
                     outSubArrOuter.assign(outSubArrInner);
                 }
 
+#pragma omp parallel for schedule(guided)
                 for(Nd4jLong k = numLeft + inDimSize, e = startR; k < outDimSize; ++k, --e) {    // fill right side
                     outIdxOuter[0] = k;
                     outIdxOuter[1] = k+1;
