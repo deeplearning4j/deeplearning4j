@@ -389,7 +389,40 @@ __host__ static void concatCudaLauncher(const int numOfArrs, const cudaStream_t 
     //////////////////////////////////////////////////////////////////////////
     template<typename T>
     static void clipByAveraged_(graph::LaunchContext* context, NDArray& input, NDArray& output, const std::vector<int>& dimensions, const NDArray& clipNorm, const bool isInplace) {
-
+        auto cn = clipNorm.e<T>(0);
+        if (dimensions.size() == 0) {
+            // all-reduce
+            T n2 = input.reduceNumber(reduce::Norm2).e<T>(0) / input.lengthOf();
+            if (n2 <= cn) {
+                if (!isInplace)
+                    output.assign(input);
+            }
+            else {
+                const T factor = cn / n2;
+                //auto lambda = LAMBDA_T(_x, factor) { return _x * factor; };
+                //input.applyLambda<T>(lambda, &output);
+                output.assign(input * factor);
+            }
+        }
+        else {
+            // along dimension
+            auto norm2 = input.reduceAlongDims(reduce::Norm2, dimensions, false);
+            if (!isInplace)
+                output.assign(input);
+            auto tads = output.allTensorsAlongDimension(dimensions);
+            auto outTads = output.allTensorsAlongDimension(dimensions);
+            // TODO: make this CUDA-compliant somehow
+            for (int e = 0; e < tads->size(); e++) {
+                T n2 = norm2.e<T>(e) / tads->at(e)->lengthOf();
+                const T factor = cn / n2;
+                if (n2 > cn) {
+                    //auto lambda = LAMBDA_T(_x, factor) {return _x * factor;};
+                    tads->at(e)->applyScalar(scalar::Multiply, factor, outTads->at(e));//applyLambda<T>(lambda, &output);
+                }
+            }
+            delete tads;
+            delete outTads;
+        }
     }
 
     void clipByAveraged(graph::LaunchContext* context, NDArray& input, NDArray& output, const std::vector<int>& dimensions, const NDArray& clipNorm, const bool isInplace) {
@@ -405,10 +438,46 @@ __host__ static void concatCudaLauncher(const int numOfArrs, const cudaStream_t 
     return params[0];
     else return d1;
 */
+    template <typename T>
+    static void __global__ clipByValueKernel(void* input, Nd4jLong* inputShape, void* output, Nd4jLong* outputShape, double leftBound, double rightBound) {
+        __shared__ T* outputBuf;
+        __shared__ T* inputBuf;
+        __shared__ Nd4jLong length;
+        __shared__ bool linearBuffers;
+        if (threadIdx.x == 0) {
+            outputBuf = reinterpret_cast<T *>(output);
+            inputBuf = reinterpret_cast<T *>(input);
+            length = shape::length(inputShape);
+            linearBuffers = shape::elementWiseStride(inputShape) == shape::elementWiseStride(outputShape) && shape::elementWiseStride(inputShape) == 1;
+        }
+        __syncthreads();
+        const auto tid = blockIdx.x * gridDim.x + threadIdx.x;
+        const auto step = gridDim.x * blockDim.x;
+
+        for (Nd4jLong e = tid; e < length; e += step) {
+            if (linearBuffers) {
+                if (inputBuf[e] > rightBound) outputBuf[e] = (T) rightBound;
+                else if (inputBuf[e] < leftBound) outputBuf[e] = (T) leftBound;
+                else outputBuf[e] = inputBuf[e];
+            }
+            else {
+                auto inputOffset = shape::getIndexOffset(e, inputShape, length);
+                auto outputOffset = shape::getIndexOffset(e, outputShape, length);
+                if (inputBuf[inputOffset] > rightBound) outputBuf[outputOffset] = (T) rightBound;
+                else if (inputBuf[inputOffset] < leftBound) outputBuf[outputOffset] = (T) leftBound;
+                else outputBuf[outputOffset] = inputBuf[outputOffset];
+            }
+        }
+    }
 
     template <typename T>
     static void clipByValue_(graph::LaunchContext* context, NDArray& input, double leftBound, double rightBound, NDArray& output) {
-
+        auto stream = context->getCudaStream();
+        if (!input.isActualOnDeviceSide())
+            input.syncToDevice();
+        NDArray::prepareSpecialUse({&output}, {&input});
+        clipByValueKernel<T><<<256, 512, 8192, *stream>>>(input.specialBuffer(), input.specialShapeInfo(), output.specialBuffer(), output.specialShapeInfo(), leftBound, rightBound);
+        NDArray::registerSpecialUse({&output}, {&input});
     }
 
     void clipByValue(graph::LaunchContext* context, NDArray& input, double leftBound, double rightBound, NDArray& output) {

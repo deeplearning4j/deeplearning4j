@@ -220,7 +220,7 @@ namespace functions {
                 else resultLength = 1;
 
                 if (dimensionLength == 1) {
-                    if (dimension == nullptr || dimension[0] == MAX_DIMENSION)
+                    if (resultLength == 1 && (dimension == nullptr || dimension[0] == MAX_DIMENSION))
                         resultScalar = 1;
                     else
                         resultScalar = 0;
@@ -245,7 +245,8 @@ namespace functions {
                 __shared__ int numTads;
 
                 if (threadIdx.x == 0) {
-                    tadLength = shape::tadLength(xShapeInfo, dimension, dimensionLength);
+                    tadLength = shape::length(tadOnlyShapeInfo);
+//                    tadLength = shape::tadLength(xShapeInfo, dimension, dimensionLength);
                     tadEWS = shape::elementWiseStride(tadOnlyShapeInfo);
                     numTads = shape::length(xShapeInfo) / tadLength;
                 }

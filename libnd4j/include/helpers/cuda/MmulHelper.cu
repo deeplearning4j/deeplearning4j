@@ -150,10 +150,10 @@ NDArray* MmulHelper::mmulMxM(const NDArray* A, const NDArray* B, NDArray* C, dou
     if(B->rankOf() != 2)
         throw std::runtime_error("MmulHelper::mmulMxM cuda: rank of B array is not equal 2 !"); 
 
-    const auto M = A->sizeAt(0);
-    const auto K = A->sizeAt(1);
-    const auto N = B->sizeAt(1);
-    const auto bRows = B->sizeAt(0);
+    auto M = A->sizeAt(0);
+    auto K = A->sizeAt(1);
+    auto N = B->sizeAt(1);
+    auto bRows = B->sizeAt(0);
 
     if(C != nullptr && C->rankOf() != 2)
         throw std::runtime_error("MmulHelper::mmulMxM cuda: rank of C array is not equal 2 !");
@@ -167,14 +167,34 @@ NDArray* MmulHelper::mmulMxM(const NDArray* A, const NDArray* B, NDArray* C, dou
     if(C == nullptr)        
         C = new NDArray(outOrder, {M,N}, DataTypeUtils::pickPairwiseResultType(A->dataType(), B->dataType()), A->getContext());
 
-    NDArray *pA(const_cast<NDArray*>(A)), *pB(const_cast<NDArray*>(B)), *pC(const_cast<NDArray*>(C));        
+    NDArray *pA(const_cast<NDArray*>(A)), *pB(const_cast<NDArray*>(B)), *pC(const_cast<NDArray*>(C));
+    std::vector<NDArray*> toDelete;
 
-    if(A->ews() != 1)
+    if(A->ews() != 1) {
         pA = pA->dup('f');
-    if(B->ews() != 1)
+        toDelete.push_back(pA);
+    }
+    if(B->ews() != 1) {
         pB = pB->dup('f');
-    if(C->ews() != 1 || C->ordering() != 'f')
-        pC = pC->dup('f');
+        toDelete.push_back(pB);
+    }
+    if(C->ews() != 1) {
+        pC = pC->dup('f');    
+        toDelete.push_back(pC);
+    }
+
+     if(pC->ordering() != 'f') {
+        auto temp = pA;
+        pA = pB  ->permute({1,0});
+        pB = temp->permute({1,0});
+        pC = pC  ->permute({1,0});        
+        toDelete.push_back(pA);
+        toDelete.push_back(pB);
+        toDelete.push_back(pC);
+        M = pA->sizeAt(0);
+        K = pA->sizeAt(1);
+        N = pB->sizeAt(1);
+    }    
 
     const auto aOrder = pA->ordering();
     const auto bOrder = pB->ordering();    
@@ -206,11 +226,11 @@ NDArray* MmulHelper::mmulMxM(const NDArray* A, const NDArray* B, NDArray* C, dou
     const bool AB(aType == bType), AC(aType == cType), ABC(AB && AC);
 
     // choose appropriate cuda gemm api depending on data types    
-    if(ABC && aType == DataType::DOUBLE) {
+    if(ABC && aType == DataType::DOUBLE) {        
         status = cublasDgemm(*handle, transAblas, transBblas, M, N, K, &alpha, (double*)pA->getSpecialBuffer(), lda, (double*)pB->getSpecialBuffer(), ldb, &beta, (double*)pC->getSpecialBuffer(), ldc);
     }
     else if(ABC && aType == DataType::FLOAT32) {        
-        float alphaF(alpha), betaF(beta);
+        float alphaF(alpha), betaF(beta);        
         status = cublasSgemm(*handle, transAblas, transBblas, M, N, K, &alphaF, (float*)pA->getSpecialBuffer(), lda, (float*)pB->getSpecialBuffer(), ldb, &betaF, (float*)pC->getSpecialBuffer(), ldc);
     }
     else if(ABC && aType == DataType::HALF) {
@@ -246,18 +266,15 @@ NDArray* MmulHelper::mmulMxM(const NDArray* A, const NDArray* B, NDArray* C, dou
     pB->tickReadDevice();
     pC->tickWriteDevice();
 
-    if(pC != C) {
+    if(C->ews() != 1)
         C->assign(pC);
-        delete pC;
-    }
-    if(pA != A)
-        delete pA;
-    if(pB != B)
-        delete pB;
-
+    
+    for(int i = toDelete.size() - 1; i >= 0; --i)
+        delete toDelete[i];
+    
     return C;
 }
-
+ 
 ////////////////////////////////////////////////////////////////////////////
 // MXN x N = M
 NDArray* MmulHelper::mmulMxV(const NDArray* A, const NDArray* X, nd4j::NDArray* Y, const double alpha, const double beta, const char outOrder) {

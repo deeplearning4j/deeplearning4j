@@ -2263,7 +2263,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
 					tadOffsets = tad.tadOffsets;
 				}						                                				
 
-                auto tadLength = shape::tadLength(xShapeBuffer, dimension, dimensionLength);
+                auto tadLength = shape::length(tadShapeInfo);//shape::tadLength(xShapeBuffer, dimension, dimensionLength);
                 auto tads = shape::length(xShapeBuffer) / tadLength;
 
                 int tadsPerThread = tads / TAD_THRESHOLD;

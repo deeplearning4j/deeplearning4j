@@ -106,20 +106,21 @@ ShapeDescriptor::ShapeDescriptor(const DataType type, const char order, const Nd
 
 //////////////////////////////////////////////////////////////////////////
 ShapeDescriptor::ShapeDescriptor(const DataType type, const char order, const std::vector<Nd4jLong> &shape): _dataType(type), _order(order), _shape(shape) {
-    _rank = shape.size();
+    _rank = ((shape.size() == 1 && shape[0] == 0)? 0: shape.size());
     _ews = 1;
-    _strides.resize(shape.size());
 
-    if (order == 'c')
-        shape::calcStrides(_shape.data(), shape.size(), _strides.data());
-    else
-        shape::calcStridesFortran(_shape.data(), shape.size(), _strides.data());
+    if (_rank > 0) {
+        _strides.resize(_rank);
+        if (order == 'c')
+            shape::calcStrides(_shape.data(), shape.size(), _strides.data());
+        else
+            shape::calcStridesFortran(_shape.data(), shape.size(), _strides.data());
 
-
-    for (auto v:_shape) {
-        if (v == 0) {
-            _empty = true;
-            break;
+        for (auto v:_shape) {
+            if (v == 0) {
+                _empty = true;
+                break;
+            }
         }
     }
 }

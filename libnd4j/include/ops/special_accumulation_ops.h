@@ -110,8 +110,8 @@ namespace simdOps {
 				if (threadIdx.x == 0) {
 				    extern __shared__ unsigned char shmem[];
 				    sPartials = (Z *) shmem;
-					tadLength = shape::tadLength(xShapeInfo, dimension, dimensionLength);
-					numTads = shape::length(xShapeInfo) / tadLength;					
+					tadLength = shape::length(tadOnlyShapeInfo);//shape::tadLength(xShapeInfo, dimension, dimensionLength);
+					numTads = shape::length(xShapeInfo) / tadLength;
 				}
 				__syncthreads();				
 
@@ -167,7 +167,7 @@ namespace simdOps {
             }
 
 
-            const Nd4jLong tadLength = shape::tadLength(xShapeInfo, dimension, dimensionLength);
+            const Nd4jLong tadLength = shape::length(tadOnlyShapeInfo);//shape::tadLength(xShapeInfo, dimension, dimensionLength);
             auto numTads = shape::length(xShapeInfo) / tadLength;
             auto tadEWS = shape::elementWiseStride(tadOnlyShapeInfo);
 

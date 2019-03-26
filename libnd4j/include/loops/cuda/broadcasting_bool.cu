@@ -94,7 +94,7 @@ namespace functions {
       
             if (threadIdx.x == 0) {
         
-   	            tadLength = shape::tadLength(xShapeInfo, dimension, dimensionLength);        
+   	            tadLength = shape::length(tadOnlyShapeInfo);//shape::tadLength(xShapeInfo, dimension, dimensionLength);
                 tadEWS = shape::elementWiseStride(tadOnlyShapeInfo);
                 numTads = shape::length(xShapeInfo) / tadLength;
                 yEWS = shape::elementWiseStride(yShapeInfo);

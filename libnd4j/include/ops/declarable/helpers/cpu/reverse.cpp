@@ -27,11 +27,17 @@ namespace nd4j    {
 namespace ops     {
 namespace helpers {
 
-
+template <typename T>
+inline void swap(T* arr, Nd4jLong from, Nd4jLong to) {
+    T tmp = arr[from];
+    arr[from] = arr[to];
+    arr[to] = tmp;
+}
 /////////////////////////////////////////////////////////////////////////////////////
 // this legacy op is written by raver119@gmail.com
+
 template<typename T>
-void reverseArray(graph::LaunchContext* context, void *vinArr, Nd4jLong *inShapeBuffer, void *voutArr, Nd4jLong *outShapeBuffer, int numOfElemsToReverse) {
+static void reverseArray(graph::LaunchContext* context, void *vinArr, Nd4jLong *inShapeBuffer, void *voutArr, Nd4jLong *outShapeBuffer, int numOfElemsToReverse = 0) {
             auto inArr = reinterpret_cast<T *>(vinArr);
             auto outArr = reinterpret_cast<T *>(voutArr);
 
@@ -49,9 +55,10 @@ void reverseArray(graph::LaunchContext* context, void *vinArr, Nd4jLong *inShape
 #pragma omp parallel for schedule(guided)
                     for (Nd4jLong e = 0; e < numOfElemsToReverse / 2; e++) {
                         auto idx = sLength - e;
-                        T tmp = inArr[e];
-                        inArr[e] = inArr[idx];
-                        inArr[idx] = tmp;
+                        swap(inArr, e, idx);
+//                        T tmp = inArr[e];
+//                        inArr[e] = inArr[idx];
+//                        inArr[idx] = tmp;
                     }
                 } 
                 else if (inEWS > 1) {
@@ -59,9 +66,10 @@ void reverseArray(graph::LaunchContext* context, void *vinArr, Nd4jLong *inShape
                     for (Nd4jLong e = 0; e < numOfElemsToReverse / 2; e++) {
                         auto idx1 = (sLength - e) * inEWS;
                         Nd4jLong idx2 =  e * inEWS;
-                        T tmp = inArr[idx2];
-                        inArr[idx2] = inArr[idx1];
-                        inArr[idx1] = tmp;
+//                        T tmp = inArr[idx2];
+//                        inArr[idx2] = inArr[idx1];
+//                        inArr[idx1] = tmp;
+                        swap(inArr, idx1, idx2);
                     }
                 } 
                 else {
@@ -71,7 +79,8 @@ void reverseArray(graph::LaunchContext* context, void *vinArr, Nd4jLong *inShape
                    
                         auto inOffset  = shape::getIndexOffset(e, inShapeBuffer, inLength);
                         auto outOffset = shape::getIndexOffset(sLength - e, inShapeBuffer, inLength);
-                        outArr[outOffset] = inArr[inOffset];
+                        //outArr[outOffset] = inArr[inOffset];
+                        swap(outArr, inOffset, outOffset);
                     }
                 }
             } 

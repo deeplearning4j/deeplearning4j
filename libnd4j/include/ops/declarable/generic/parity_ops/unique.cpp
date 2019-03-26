@@ -45,12 +45,16 @@ namespace nd4j {
 
             int uniqueCount = helpers::uniqueCount(block.launchContext(), source);
 
+            if (uniqueCount == 0) { // empty value Shape
+                valuesShape = ShapeBuilders::createScalarShapeInfo(source->dataType(), block.workspace());
+                ArrayOptions::setPropertyBit(valuesShape, ARRAY_EMPTY);
+            }
+            else {
             // all output shapes are 1D arrays (vectors)
-            valuesShape = ShapeBuilders::createVectorShapeInfo(block.dataType(), uniqueCount, block.workspace());
-            ArrayOptions::setDataType(valuesShape, ArrayOptions::dataType(in));
-
+                valuesShape = ShapeBuilders::createVectorShapeInfo(ArrayOptions::dataType(in), uniqueCount, block.workspace());
+            }
             // second output is always LONG
-            indicesShape = ShapeBuilders::createVectorShapeInfo(nd4j::DataType::INT64, source->lengthOf(), block.workspace());
+            indicesShape = ShapeBuilders::createVectorShapeInfo(nd4j::DataType::INT64, shape::length(in), block.workspace());
 
             //COPY_SHAPE_EX(in, indicesShape, block.getWorkspace());
 

@@ -4182,7 +4182,7 @@ INLINEDEF _CUDA_HD bool areStridesDefault(const Nd4jLong* shapeInfo) {
                         return false;       // not contiguous enough
                 }
 
-                /* Calculate new strides for all axes currently worked with */
+                /* Calculate new strides for all axes currently working with */
                 newStrides[newStart] = oldStrides[oldStart];
                 for (int i = newStart + 1; i < newStop; i++)
                     newStrides[i] = newStrides[i - 1] * newShape[i - 1];
@@ -4197,16 +4197,16 @@ INLINEDEF _CUDA_HD bool areStridesDefault(const Nd4jLong* shapeInfo) {
                 newDim = newShape[newStart];
                 oldDim = oldShape[oldStart];
 
-            while (newDim != oldDim)
-                if (newDim < oldDim) newDim *= newShape[newStop++];
-                else                 oldDim *= oldShape[oldStop++];
+                while (newDim != oldDim)
+                    if (newDim < oldDim) newDim *= newShape[newStop++];
+                    else                 oldDim *= oldShape[oldStop++];
 
                 /* Check whether the original axes can be combined */
                 for (int i = oldStart; i < oldStop - 1; i++)
                     if (oldShape[i] != 1 && oldStrides[i] != oldShape[i + 1] * oldStrides[i + 1])
                         return false;       /* not contiguous enough */
 
-                /* Calculate new strides for all axes currently worked with */
+                /* Calculate new strides for all axes currently working with */
                 newStrides[newStop - 1] = oldStrides[oldStop - 1];
                 for (int i = newStop - 1; i > newStart; i--)
                     newStrides[i - 1] = newStrides[i] * newShape[i];

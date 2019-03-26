@@ -153,8 +153,9 @@ void _CUDA_G summaryStatsReduceT(int op, void *dx, Nd4jLong *xShapeInfo, int xRa
                     resultLength = shape::length(zShapeInfo);
                 else resultLength = 1;
 
+
                 if (dimensionLength == 1) {
-                    if (dimension == nullptr || dimension[0] == MAX_DIMENSION)
+                    if (resultLength == 1 && (dimension == nullptr || dimension[0] == MAX_DIMENSION))
                         resultScalar = 1;
                     else
                         resultScalar = 0;
@@ -188,7 +189,7 @@ void _CUDA_G summaryStatsReduceT(int op, void *dx, Nd4jLong *xShapeInfo, int xRa
                 __shared__ int numTads;
 
                 if (threadIdx.x == 0) {
-                    tadLength = shape::tadLength(xShapeInfo, dimension, dimensionLength);
+                    tadLength = shape::length(tadOnlyShapeInfo);//shape::tadLength(xShapeInfo, dimension, dimensionLength);
                     tadEWS = shape::elementWiseStride(tadOnlyShapeInfo);
                     numTads = shape::length(xShapeInfo) / tadLength;
                 }

@@ -1430,47 +1430,47 @@ TEST_F(HelpersTests1, SVD_test17) {
 // }
 
 
-///////////////////////////////////////////////////////////////////
-TEST_F(HelpersTests1, reverseArray_test1) {
-
-    auto inArr = NDArrayFactory::create<float>('c', {2,5}, {1,2,3,4,5,6,7,8,9,10});
-    auto exp = NDArrayFactory::create<float>('c', {2,5}, {10,9,8,7,6,5,4,3,2,1});
-    auto outArr = NDArrayFactory::create<float>('c', {2,5});
-
-
-    ops::helpers::reverseArray<float>(graph::LaunchContext::defaultContext(), inArr.getBuffer(), inArr.getShapeInfo(), outArr.getBuffer(), outArr.getShapeInfo());
-
-    ASSERT_TRUE(outArr.equalsTo(&exp));    
-    ASSERT_TRUE(outArr.isSameShapeStrict(&exp));
-}
-
-
-///////////////////////////////////////////////////////////////////
-TEST_F(HelpersTests1, reverseArray_test2) {
-
-    auto inArr = NDArrayFactory::create<float>('c', {2,5}, {1,2,3,4,5,6,7,8,9,10});
-    auto exp = NDArrayFactory::create<float>('c', {2,5}, {10,9,8,7,6,5,4,3,2,1});
-
-
-    ops::helpers::reverseArray<float>(graph::LaunchContext::defaultContext(), inArr.getBuffer(), inArr.getShapeInfo(), inArr.getBuffer(), inArr.getShapeInfo());
-
-    ASSERT_TRUE(inArr.equalsTo(&exp));    
-    ASSERT_TRUE(inArr.isSameShapeStrict(&exp));
-}
-
-
-///////////////////////////////////////////////////////////////////
-TEST_F(HelpersTests1, reverseArray_test3) {
-
-    auto inArr = NDArrayFactory::create<float>('c', {2,5}, {1,2,3,4,5,6,7,8,9,10});
-    auto exp = NDArrayFactory::create<float>('c', {2,5}, {5,4,3,2,1,6,7,8,9,10});
-    auto outArr = NDArrayFactory::create<float>('c', {2,5});
-
-    ops::helpers::reverseArray<float>(graph::LaunchContext::defaultContext(), inArr.getBuffer(), inArr.getShapeInfo(), outArr.getBuffer(), outArr.getShapeInfo(), 5);
-
-    ASSERT_TRUE(outArr.equalsTo(&exp));    
-    ASSERT_TRUE(outArr.isSameShapeStrict(&exp));
-}
+/////////////////////////////////////////////////////////////////////
+//TEST_F(HelpersTests1, reverseArray_test1) {
+//
+//    auto inArr = NDArrayFactory::create<float>('c', {2,5}, {1,2,3,4,5,6,7,8,9,10});
+//    auto exp = NDArrayFactory::create<float>('c', {2,5}, {10,9,8,7,6,5,4,3,2,1});
+//    auto outArr = NDArrayFactory::create<float>('c', {2,5});
+//
+//
+//    ops::helpers::reverseArray<float>(graph::LaunchContext::defaultContext(), inArr.getBuffer(), inArr.getShapeInfo(), outArr.getBuffer(), outArr.getShapeInfo());
+//
+//    ASSERT_TRUE(outArr.equalsTo(&exp));
+//    ASSERT_TRUE(outArr.isSameShapeStrict(&exp));
+//}
+//
+//
+/////////////////////////////////////////////////////////////////////
+//TEST_F(HelpersTests1, reverseArray_test2) {
+//
+//    auto inArr = NDArrayFactory::create<float>('c', {2,5}, {1,2,3,4,5,6,7,8,9,10});
+//    auto exp = NDArrayFactory::create<float>('c', {2,5}, {10,9,8,7,6,5,4,3,2,1});
+//
+//
+//    ops::helpers::reverseArray<float>(graph::LaunchContext::defaultContext(), inArr.getBuffer(), inArr.getShapeInfo(), inArr.getBuffer(), inArr.getShapeInfo());
+//
+//    ASSERT_TRUE(inArr.equalsTo(&exp));
+//    ASSERT_TRUE(inArr.isSameShapeStrict(&exp));
+//}
+//
+//
+/////////////////////////////////////////////////////////////////////
+//TEST_F(HelpersTests1, reverseArray_test3) {
+//
+//    auto inArr = NDArrayFactory::create<float>('c', {2,5}, {1,2,3,4,5,6,7,8,9,10});
+//    auto exp = NDArrayFactory::create<float>('c', {2,5}, {5,4,3,2,1,6,7,8,9,10});
+//    auto outArr = NDArrayFactory::create<float>('c', {2,5});
+//
+//    ops::helpers::reverseArray<float>(graph::LaunchContext::defaultContext(), inArr.getBuffer(), inArr.getShapeInfo(), outArr.getBuffer(), outArr.getShapeInfo(), 5);
+//
+//    ASSERT_TRUE(outArr.equalsTo(&exp));
+//    ASSERT_TRUE(outArr.isSameShapeStrict(&exp));
+//}
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(HelpersTests1, rnnCell_test1) {

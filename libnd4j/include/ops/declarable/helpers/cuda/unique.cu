@@ -27,7 +27,7 @@ namespace helpers {
 
     template <typename T>
     static Nd4jLong uniqueCount_(NDArray* input) {
-        Nd4jLong count = 0;
+        Nd4jLong count = input->lengthOf();
         return count;
     }
 

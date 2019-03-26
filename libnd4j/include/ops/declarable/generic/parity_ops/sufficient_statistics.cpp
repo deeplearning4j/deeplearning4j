@@ -40,7 +40,8 @@ namespace nd4j {
 
             input->reduceAlongDimension(reduce::SquaredNorm, squares, axis);
             input->reduceAlongDimension(reduce::Sum, sum, axis);
-            dataCount->assign(input->lengthOf() / sum->lengthOf());
+            auto count = NDArrayFactory::create(input->dataType(), input->lengthOf() / sum->lengthOf());
+            dataCount->assign(count);
             if (block.numT() > 0) {
                 auto shift = OUTPUT_VARIABLE(3);
                 shift->assign(T_ARG(0));
@@ -51,7 +52,7 @@ namespace nd4j {
 
         DECLARE_TYPES(sufficient_statistics) {
             getOpDescriptor()
-                    ->setAllowedInputTypes(0, {DataType::FLOAT8, DataType::HALF, DataType::FLOAT32, DataType::DOUBLE});
+                    ->setAllowedInputTypes(0, {ALL_INTS, ALL_FLOATS});
             getOpDescriptor()
                     ->setAllowedInputTypes(1, {DataType::INT32, DataType::INT64});
             getOpDescriptor()

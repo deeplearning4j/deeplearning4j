@@ -68,16 +68,16 @@ namespace helpers {
 
                 auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(sortedVals.getShapeInfo(), lastDims);
 
-                PointersManager manager(context, "helpers::nth_element");
+                //PointersManager manager(context, "helpers::nth_element");
                 auto pTadShape = packX.specialShapeInfo();
                 auto pTadOffsets = packX.specialOffsets();
-                auto pLastDimData = (int*) manager.replicatePointer(lastDims.data(), lastDims.size() * sizeof(int));
+                //auto pLastDimData = (int*) manager.replicatePointer(lastDims.data(), lastDims.size() * sizeof(int));
 
                 NativeOps ops;
-                ops.sortTad(params, sortedVals.buffer(), sortedVals.shapeInfo(), sortedVals.specialBuffer(), sortedVals.specialShapeInfo(), pLastDimData, lastDims.size(), pTadShape, pTadOffsets, reverse);
+                ops.sortTad(params, sortedVals.buffer(), sortedVals.shapeInfo(), sortedVals.specialBuffer(), sortedVals.specialShapeInfo(), nullptr, lastDims.size(), pTadShape, pTadOffsets, reverse);
                 auto stream = context->getCudaStream();
                 fillUpElementKernel<T><<<32, 64, 1024, *stream>>>(output->specialBuffer(), output->specialShapeInfo(), sortedVals.specialBuffer(), sortedVals.specialShapeInfo(), pTadShape, pTadOffsets, n);
-                manager.synchronize();
+                //manager.synchronize();
         }
     }
     void nthElementFunctor(graph::LaunchContext* context, NDArray* input, NDArray* n, NDArray* output, bool reverse) {

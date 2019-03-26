@@ -816,15 +816,14 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
         if (!isActualOnDeviceSide())
             syncToDevice();
 
-        Nd4jLong *newShape;
-        Nd4jLong* newShapeD;
+        Nd4jLong *theNewShape;
         Nd4jLong rank = this->rankOf();
-        ALLOCATE(newShape, this->_context->getWorkspace(), shape::shapeInfoLength(rank), Nd4jLong);
-        ALLOCATE_SPECIAL(newShapeD, this->_context->getWorkspace(), shape::shapeInfoLength(rank), Nd4jLong);
-
+        ALLOCATE(theNewShape, this->_context->getWorkspace(), shape::shapeInfoLength(rank), Nd4jLong);
+//        ALLOCATE_SPECIAL(newShapeD, this->_context->getWorkspace(), shape::shapeInfoLength(rank), Nd4jLong);
+//
         int8_t *newBuffer = nullptr;
         int8_t* newBufferD;
-        ///ALLOCATE(newBuffer, this->_context->getWorkspace(), this->lengthOf() * sizeOfT(), int8_t);
+        ALLOCATE(newBuffer, this->_context->getWorkspace(), this->lengthOf() * sizeOfT(), int8_t);
         ALLOCATE_SPECIAL(newBufferD, this->_context->getWorkspace(), this->lengthOf() * sizeOfT(), int8_t);
 
         std::vector<Nd4jLong> shape(this->rankOf());
@@ -832,15 +831,15 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
             shape[e] = this->sizeAt(e);
 
         if (order == 'c')
-            shape::shapeBuffer(this->rankOf(), dataType(), shape.data(), newShape);
+            shape::shapeBuffer(this->rankOf(), dataType(), shape.data(), theNewShape);
         else
-            shape::shapeBufferFortran(this->rankOf(), dataType(), shape.data(), newShape);
+            shape::shapeBufferFortran(this->rankOf(), dataType(), shape.data(), theNewShape);
 
-        ShapeDescriptor descriptor(newShape);
-        auto buffer = ConstantShapeHelper::getInstance()->bufferForShapeInfo(descriptor);
-
+        ShapeDescriptor descriptor(theNewShape);
+        auto shapeBuffer = ConstantShapeHelper::getInstance()->bufferForShapeInfo(descriptor);
+        RELEASE(theNewShape, this->_context->getWorkspace());
         if (!isView()) {
-            NativeOpExecutioner::execTransformSame(_context, transform::Copy, _buffer, _shapeInfo, _bufferD, _shapeInfoD, newBuffer, newShape, newBufferD, newShapeD, nullptr, nullptr, nullptr);
+            NativeOpExecutioner::execTransformSame(_context, transform::Copy, _buffer, _shapeInfo, _bufferD, _shapeInfoD, newBuffer, (Nd4jLong*)shapeBuffer.primary(), newBufferD, (Nd4jLong*)shapeBuffer.special(), nullptr, nullptr, nullptr);
             //memcpy(_buffer, newBuffer, this->lengthOf() * sizeOfT());
 
             if (_isBuffAlloc) {
@@ -851,13 +850,13 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
             }
 
             _buffer == nullptr;
-            _shapeInfo = reinterpret_cast<Nd4jLong *>(buffer.primary());
-            setSpecialBuffers(newBufferD, reinterpret_cast<Nd4jLong *>(buffer.special()));
+            _shapeInfo = reinterpret_cast<Nd4jLong *>(shapeBuffer.primary());
+            setSpecialBuffers(newBufferD, reinterpret_cast<Nd4jLong *>(shapeBuffer.special()));
             //this->_buffer = newBuffer;
             this->_isBuffAlloc = false;
             this->_isBuffDAlloc = true;
         } else {
-            NativeOpExecutioner::execTransformSame(_context, transform::Copy, _buffer, _shapeInfo, _bufferD, _shapeInfoD, newBuffer, newShape, newBufferD, newShapeD, nullptr, nullptr, nullptr);
+            NativeOpExecutioner::execTransformSame(_context, transform::Copy, _buffer, _shapeInfo, _bufferD, _shapeInfoD, newBuffer, (Nd4jLong*)shapeBuffer.primary(), newBufferD, (Nd4jLong*)shapeBuffer.special(), nullptr, nullptr, nullptr);
 
             if (_isBuffAlloc)
                 RELEASE(this->_buffer, this->_context->getWorkspace());
@@ -867,8 +866,8 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
 
             _buffer = nullptr;
             //setBuffer(newBuffer);
-            _shapeInfo = reinterpret_cast<Nd4jLong *>(buffer.primary());
-            setSpecialBuffers(newBufferD, reinterpret_cast<Nd4jLong *>(buffer.special()));
+            _shapeInfo = reinterpret_cast<Nd4jLong *>(shapeBuffer.primary());
+            setSpecialBuffers(newBufferD, reinterpret_cast<Nd4jLong *>(shapeBuffer.special()));
             this->_isBuffAlloc = false;
             this->_isBuffDAlloc = true;
         }
@@ -2180,6 +2179,7 @@ NDArray::~NDArray() noexcept {
         auto buffer = ConstantShapeHelper::getInstance()->bufferForShapeInfo(descriptor);
         _shapeInfo = reinterpret_cast<Nd4jLong *>(buffer.primary());
         _shapeInfoD = reinterpret_cast<Nd4jLong *>(buffer.special());
+        RELEASE(shapeInfo, _context->getWorkspace());
 
         return true;
     }

@@ -109,7 +109,7 @@ __device__ void ReduceFloatFunction<X,Z>::transformCudaXD( void *vx, Nd4jLong *x
     if (threadIdx.x == 0) {
         extern __shared__ unsigned char shmem[];
         sPartials = reinterpret_cast<Z*>(shmem);
-        tadLength = shape::tadLength(xShapeInfo, dimension, dimensionLength);        
+        tadLength = shape::length(tadOnlyShapeInfo);//shape::tadLength(xShapeInfo, dimension, dimensionLength);
         numTads = shape::length(xShapeInfo) / tadLength;        
     }
     __syncthreads();

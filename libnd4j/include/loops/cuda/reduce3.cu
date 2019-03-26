@@ -275,8 +275,8 @@ __device__ void Reduce3<X,Z>::transformAll( void *vx, Nd4jLong *xShapeInfo,
 
     //reading initial data
     if (threadIdx.x == 0) {
-		xTadLength = shape::tadLength(xShapeInfo, dimension, dimensionLength);
-        yTadLength = shape::tadLength(yShapeInfo, dimension, dimensionLength);
+		xTadLength = shape::length(xTadShapeInfo);
+        yTadLength = shape::length(yTadShapeInfo);
 
         xTads = shape::length(xShapeInfo) / xTadLength;
         yTads = shape::length(yShapeInfo) / yTadLength;
@@ -361,9 +361,9 @@ __device__ void Reduce3<X,Z>::transform(void *vx, Nd4jLong *xShapeInfo,
 		yTadOnlyShapeInfo = yShapeInfo;		// execReduce3TAD case
 	}
 
-	X* x = reinterpret_cast<X*>(vx);
-	X* y = reinterpret_cast<X*>(vy);
-	Z* z = reinterpret_cast<Z*>(vz);
+	auto x = reinterpret_cast<X*>(vx);
+	auto y = reinterpret_cast<X*>(vy);
+	auto z = reinterpret_cast<Z*>(vz);
 
 	Z startingVal = OpType::startingValue(x);	
 
@@ -383,7 +383,7 @@ __device__ void Reduce3<X,Z>::transform(void *vx, Nd4jLong *xShapeInfo,
         extern __shared__ unsigned char shmem[];
         sPartials = reinterpret_cast<Z*>(shmem);
 
-        tadLen    = shape::tadLength(xShapeInfo, dimension, dimensionLength);
+        tadLen    = shape::length(tadOnlyShapeInfo);
         zLen      = shape::length(zShapeInfo);
         xTadEws   = shape::elementWiseStride(tadOnlyShapeInfo);
         yTadEws   = shape::elementWiseStride(yTadOnlyShapeInfo);        
