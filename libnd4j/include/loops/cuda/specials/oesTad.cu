@@ -72,7 +72,7 @@ void oesTadKernel(void *vx, Nd4jLong *xShapeInfo,
                         }
                     }
                 }
-                __syncthreads();
+               // __syncthreads();
 
                 for (int tid = threadIdx.x; tid < xTadLength; tid += blockDim.x ) {
                     if((tid & 1) && tid < xTadLength - 1) {
@@ -86,7 +86,7 @@ void oesTadKernel(void *vx, Nd4jLong *xShapeInfo,
                         }
                     }
                 }
-                __syncthreads();
+                //__syncthreads();
             }
 
         } else {
@@ -94,7 +94,7 @@ void oesTadKernel(void *vx, Nd4jLong *xShapeInfo,
             for (int e = threadIdx.x; e < xTadLength; e += blockDim.x)
                 shmem[e] = dx[getDevicePosition(tadShapeInfo, e)];
 
-            __syncthreads();
+//            __syncthreads();
 
 
             for(int i=0; i < (xTadLength / 2) + rem; i++) {
@@ -110,7 +110,7 @@ void oesTadKernel(void *vx, Nd4jLong *xShapeInfo,
                             shmem[t0] = temp;
                         }
                     }
-                    __syncthreads();
+//                    __syncthreads();
 
                     if((tid & 1) && tid < xTadLength - 1) {
                         int t0 = tid;
@@ -122,7 +122,7 @@ void oesTadKernel(void *vx, Nd4jLong *xShapeInfo,
                             shmem[t0] = temp;
                         }
                     }
-                    __syncthreads();
+//                    __syncthreads();
                 }
             }
 
@@ -130,10 +130,10 @@ void oesTadKernel(void *vx, Nd4jLong *xShapeInfo,
             for (int e = threadIdx.x; e < xTadLength; e += blockDim.x)
                 dx[getDevicePosition(tadShapeInfo, e)] = shmem[e];
 
-            __syncthreads();
+//            __syncthreads();
         }
 
-        __syncthreads();
+//        __syncthreads();
     }
 }
 
