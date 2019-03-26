@@ -19,7 +19,6 @@ package org.datavec.python;
 
 import java.io.File;
 import java.io.FileInputStream;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.regex.Pattern;
@@ -31,8 +30,6 @@ import org.json.simple.parser.JSONParser;
 import org.bytedeco.javacpp.*;
 import org.bytedeco.cpython.*;
 import static org.bytedeco.cpython.global.python.*;
-
-import org.json.simple.parser.ParseException;
 import org.nd4j.linalg.api.buffer.DataType;
 
 /**
@@ -42,116 +39,16 @@ import org.nd4j.linalg.api.buffer.DataType;
  */
 @Slf4j
 public class PythonExecutioner {
-    private static Pointer namePtr;
     private static PyObject module;
     private static PyObject globals;
     private static JSONParser parser = new JSONParser();
-    private static Map<String, PyThreadState> interpreters = new HashMap<String, PyThreadState>();
-    private static String defaultInterpreter = "_main";
-    private static String currentInterpreter =  defaultInterpreter;
-    private static boolean currentInterpreterEnabled = false;
-    private static PyThreadState currentThreadState;
-    private static PyThreadState defaultThreadState;
-    private static boolean safeExecFlag = false;
     private static Map<Long, Integer> gilStates = new HashMap<>();
-
 
     static {
         init();
     }
 
-    private static String getFunctionalCode(String functionName, String code){
-        String out = String.format("def %s():\n", functionName);
-        for(String line: code.split(Pattern.quote("\n"))){
-            out += "    " + line + "\n";
-        }
-        return out + "\n\n" + functionName + "()\n";
-    }
-
-    private static String getThreadSafeVarName(String varName){
-        long threadId = Thread.currentThread().getId();
-        return varName + "__threadId__" + threadId;
-    }
-
-    private static String getOriginalVarName(String varName){
-        return varName.split(Pattern.quote("__threadId__"))[0];
-    }
-    private static PythonVariables getThreadSafeVariableNames(PythonVariables pyVars){
-
-        PythonVariables pyVars2 = new PythonVariables();
-        for (String varName: pyVars.getVariables()){
-            String safeVarName = getThreadSafeVarName(varName);
-            pyVars2.add(safeVarName, pyVars2.getType(varName));
-            pyVars2.setValue(safeVarName, pyVars.getValue(varName));
-        }
-
-        return pyVars2;
-    }
-
-    private static PythonVariables getOriginalVariableNames(PythonVariables pyVars){
-        PythonVariables pyVars2 = new PythonVariables();
-        for (String varName: pyVars.getVariables()){
-            String origVarName = getOriginalVarName(varName);
-            pyVars2.add(origVarName, pyVars2.getType(varName));
-            pyVars2.setValue(origVarName, pyVars.getValue(varName));
-        }
-
-        return pyVars2;
-    }
-
-    private static String getTempFile(){
-        String ret =  "temp_" + Thread.currentThread().getId() + ".json";
-        log.info(ret);
-        return ret;
-    }
-
-    private static void setInterpreter(String name){
-        if (name == null){ // switch to default interpreter
-            currentInterpreter = defaultInterpreter;
-            return;
-        }
-
-        if (!interpreters.containsKey(name)){
-            //log.info("CPython: Py_NewInterpreter()");
-            //interpreters.put(name, Py_NewInterpreter());
-
-        }
-        currentInterpreter = name;
-    }
-
-    public static void deleteInterpreter(String name){
-        if (name == null || name == defaultInterpreter){
-            return;
-        }
-
-        PyThreadState ts = interpreters.get(name);
-        if (ts == null){
-            return;
-        }
-
-        boolean isDeletingCurrentInterpreter = currentInterpreter == name;
-
-        log.info("CPython: PyThreadState_Swap()");
-        PyThreadState_Swap(ts);
-        log.info("CPython: Py_EndInterpreter()");
-        Py_EndInterpreter(ts);
-
-
-        if (isDeletingCurrentInterpreter){
-            currentInterpreter = defaultInterpreter;
-        }
-        log.info("CPython: PyThreadState_Swap()");
-        PyThreadState_Swap(interpreters.get(defaultInterpreter));
-
-    }
-
-
     public static void init(){
-//        log.info("CPython: Py_DecodeLocale()");
-//        namePtr = Py_DecodeLocale("pythonExecutioner", null);
-//        log.info("CPython: Py_SetProgramName()");
-//        Py_SetProgramName(namePtr);
-
         log.info("CPython: Py_InitializeEx()");
         Py_InitializeEx(1);
         log.info("CPython: PyEval_InitThreads()");
@@ -161,42 +58,13 @@ public class PythonExecutioner {
         log.info("CPython: PyModule_GetDict()");
         globals = PyModule_GetDict(module);
         log.info("CPython: PyThreadState_Get()");
-        //interpreters.put(defaultInterpreter, PyThreadState_Get());
-        defaultThreadState = PyEval_SaveThread();
+        PyEval_SaveThread();
     }
 
     public static void free(){
         Py_Finalize();
     }
 
-
-    private static String jArrayToPyString(Object[] array){
-        String str = "[";
-        for (int i=0; i < array.length; i++){
-            Object obj = array[i];
-            if (obj instanceof Object[]){
-                str += jArrayToPyString((Object[])obj);
-            }
-            else if (obj instanceof String){
-                str += "\"" + obj + "\"";
-            }
-            else{
-                str += obj.toString().replace("\"", "\\\"");
-            }
-            if (i < array.length - 1){
-                str += ",";
-            }
-
-        }
-        str += "]";
-        return str;
-    }
-
-    private static String escapeStr(String str){
-        str = str.replace("\\", "\\\\");
-        str = str.replace("\"\"\"", "\\\"\\\"\\\"");
-        return str;
-    }
     private static String inputCode(PythonVariables pyInputs)throws Exception{
         String inputCode = "loc={};";
         if (pyInputs == null){
@@ -294,13 +162,7 @@ public class PythonExecutioner {
         return inputCode;
     }
 
-    private static long[] jsonArrayToLongArray(JSONArray jsonArray){
-        long[] longs = new long[jsonArray.size()];
-        for (int i=0; i<longs.length; i++){
-            longs[i] = (Long)jsonArray.get(i);
-        }
-        return longs;
-    }
+
     private static void _readOutputs(PythonVariables pyOutputs){
         String json = read(getTempFile());
         File f = new File(getTempFile());
@@ -353,112 +215,22 @@ public class PythonExecutioner {
         catch (Exception e){
             throw new RuntimeException(e);
         }
-
-  /*
-        if (pyOutputs == null){
-            return;
-        }
-
-
-        exec(getOutputCheckCode(pyOutputs));
-        String errorMessage = evalSTRING("__error_message");
-        if (errorMessage.length() > 0){
-            throw new RuntimeException(errorMessage);
-        }
-
-
-        try{
-
-            for (String varName: pyOutputs.getVariables()){
-                PythonVariables.Type type = pyOutputs.getType(varName);
-                if (type == PythonVariables.Type.STR){
-                    pyOutputs.setValue(varName, evalSTRING(varName));
-                }
-                else if(type == PythonVariables.Type.FLOAT){
-                    pyOutputs.setValue(varName, evalFLOAT(varName));
-                }
-                else if(type == PythonVariables.Type.INT){
-                    pyOutputs.setValue(varName, evalINTEGER(varName));
-                }
-                else if (type == PythonVariables.Type.LIST){
-                    Object varVal[] = evalLIST(varName);
-                    pyOutputs.setValue(varName, varVal);
-                }
-                else{
-                    pyOutputs.setValue(varName, evalNDARRAY(varName));
-                }
-            }
-        }
-        catch (Exception e){
-            log.error(e.toString());
-        }
-*/
     }
 
-    private static void _enterSubInterpreter() {
-
-            log.info("---_enterSubInterpreter()---");
-            if (PyGILState_Check() != 1){
-                gilStates.put(Thread.currentThread().getId(), PyGILState_Ensure());
-                log.info("GIL ensured");
-            }
-//            //PyEval_RestoreThread();
-//            PyThreadState ts = interpreters.get(currentInterpreter);
-//            defaultThreadState = PyThreadState_Get();
-//            if (PyGILState_Check() == 0){
-//                System.out.println("gil acquired");
-//                PyEval_AcquireLock();
-//                gilState = PyGILState_Ensure();
-//
-//
-//
-//
-//                log.info("CPython: PyThreadState.interp()");
-//
-//                PyInterpreterState is = ts.interp();
-//                log.info("CPython: PyThreadState_New()");
-//
-//                ts = PyThreadState_New(is);
-//
-//            }
-//            else{
-//                gilState = null;
-//
-//            }
-//            log.info("CPython: PyThreadState_Swap()");
-//            PyThreadState_Swap(ts);
-//            currentThreadState = ts;
-            currentInterpreterEnabled = true;
-
-
-
-
+    private static void acquireGIL(){
+        log.info("---_enterSubInterpreter()---");
+        if (PyGILState_Check() != 1){
+            gilStates.put(Thread.currentThread().getId(), PyGILState_Ensure());
+            log.info("GIL ensured");
+        }
     }
 
-    private static void _exitSubInterpreter(){
-            if (PyGILState_Check() == 1){
-                log.info("Releasing gil...");
-                PyGILState_Release(gilStates.get(Thread.currentThread().getId()));
-                log.info("Gil released.");
-            }
-
-//            if (gilState != null){
-//            PyThreadState ts = currentThreadState;
-//            log.info("CPython: PyThreadState_Swap()");
-//            PyThreadState_Swap(defaultThreadState);
-//            log.info("CPython: PyThreadState_Clear()");
-//            PyThreadState_Clear(ts);
-//            log.info("CPython: PyThreadState_Delete()");
-//            PyThreadState_Delete(ts);
-//            log.info("CPython: PyEval_ReleaseLock()");
-//
-//                System.out.println("gil released");
-//                PyGILState_Release(gilState);
-//                PyEval_ReleaseLock();
-//            }
-//
-//            //PyEval_ReleaseLock();
-           currentInterpreterEnabled = false;
+    private static void releaseGIL(){
+        if (PyGILState_Check() == 1){
+            log.info("Releasing gil...");
+            PyGILState_Release(gilStates.get(Thread.currentThread().getId()));
+            log.info("Gil released.");
+        }
 
     }
 
@@ -467,9 +239,9 @@ public class PythonExecutioner {
      * @param code
      */
     public static void exec(String code){
-        if (currentInterpreterEnabled){
-            code = getFunctionalCode("__f_" + Thread.currentThread().getId(), code);
-        }
+
+        code = getFunctionalCode("__f_" + Thread.currentThread().getId(), code);
+        acquireGIL();
         log.info("CPython: PyRun_SimpleStringFlag()");
         log.info(code);
         int result = PyRun_SimpleStringFlags(code, null);
@@ -478,42 +250,21 @@ public class PythonExecutioner {
             throw new RuntimeException("exec failed");
         }
         log.info("Exec done");
+        releaseGIL();
     }
-    public static void exec(String code, String interpreter){
-        setInterpreter(interpreter);
-        _enterSubInterpreter();
-        exec(code);
-        _exitSubInterpreter();
-    }
+
     public static void exec(String code, PythonVariables pyOutputs){
         exec(code + '\n' + outputCode(pyOutputs));
-        System.out.println("exec done");
         _readOutputs(pyOutputs);
-        System.out.println("read done");
-    }
-    public static void exec(String code, PythonVariables pyOutputs, String interpreter){
-        setInterpreter(interpreter);
-        _enterSubInterpreter();
-        exec(code, pyOutputs);
-        _exitSubInterpreter();
     }
 
     public static void exec(String code, PythonVariables pyInputs, PythonVariables pyOutputs) throws Exception{
         String inputCode = inputCode(pyInputs);
         exec(inputCode + code, pyOutputs);
     }
-    public static void exec(String code, PythonVariables pyInputs, PythonVariables pyOutputs, String interpreter) throws Exception{
-        String inputCode = inputCode(pyInputs);
-        code = inputCode + code;
-        exec(code, pyOutputs, interpreter);
-    }
 
 
-    private static void setupTransform(PythonTransform transform){
-        setInterpreter(transform.getName());
-    }
     public static PythonVariables exec(PythonTransform transform) throws Exception{
-        setupTransform(transform);
         if (transform.getInputs() != null && transform.getInputs().getVariables().length > 0){
             throw new Exception("Required inputs not provided.");
         }
@@ -522,7 +273,6 @@ public class PythonExecutioner {
     }
 
     public static PythonVariables exec(PythonTransform transform, PythonVariables inputs)throws Exception{
-        setupTransform(transform);
         exec(transform.getCode(), inputs, transform.getOutputs());
         return transform.getOutputs();
     }
@@ -635,7 +385,7 @@ public class PythonExecutioner {
         else{
             throw new Exception("Unsupported array type " + dtypeName + ".");
         }
-        NumpyArray ret = new NumpyArray(address, shape, strides, dtype, safeExecFlag);
+        NumpyArray ret = new NumpyArray(address, shape, strides, dtype, true);
         Py_DecRef(arrayInterface);
         Py_DecRef(data);
         Py_DecRef(zero);
@@ -724,5 +474,54 @@ public class PythonExecutioner {
         }
 
     }
+    private static String jArrayToPyString(Object[] array){
+        String str = "[";
+        for (int i=0; i < array.length; i++){
+            Object obj = array[i];
+            if (obj instanceof Object[]){
+                str += jArrayToPyString((Object[])obj);
+            }
+            else if (obj instanceof String){
+                str += "\"" + obj + "\"";
+            }
+            else{
+                str += obj.toString().replace("\"", "\\\"");
+            }
+            if (i < array.length - 1){
+                str += ",";
+            }
 
+        }
+        str += "]";
+        return str;
+    }
+
+    private static String escapeStr(String str){
+        str = str.replace("\\", "\\\\");
+        str = str.replace("\"\"\"", "\\\"\\\"\\\"");
+        return str;
+    }
+
+    private static String getFunctionalCode(String functionName, String code){
+        String out = String.format("def %s():\n", functionName);
+        for(String line: code.split(Pattern.quote("\n"))){
+            out += "    " + line + "\n";
+        }
+        return out + "\n\n" + functionName + "()\n";
+    }
+
+
+    private static String getTempFile(){
+        String ret =  "temp_" + Thread.currentThread().getId() + ".json";
+        log.info(ret);
+        return ret;
+    }
+
+    private static long[] jsonArrayToLongArray(JSONArray jsonArray){
+        long[] longs = new long[jsonArray.size()];
+        for (int i=0; i<longs.length; i++){
+            longs[i] = (Long)jsonArray.get(i);
+        }
+        return longs;
+    }
 }
