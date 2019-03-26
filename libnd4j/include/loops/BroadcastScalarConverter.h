@@ -21,6 +21,7 @@
 #define DEV_TESTS_BROADCASTSCALARCONVERTER_H
 
 #include <op_boilerplate.h>
+#include <stdexcept>
 
 namespace nd4j {
     inline bool isConvertibleToScalar(broadcast::Ops op) {
@@ -47,6 +48,8 @@ namespace nd4j {
             case broadcast::AMinPairwise: return scalar::AMinPairwise;
             case broadcast::AMaxPairwise: return scalar::AMaxPairwise;
             case broadcast::SquaredSubtract: return scalar::SquaredSubtract;
+            default:
+                throw std::runtime_error("Not convertible operation");
         }
     }
 }
