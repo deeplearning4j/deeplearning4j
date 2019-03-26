@@ -20,12 +20,14 @@
 //
 
 #include <types/types.h>
+#include <ShapeUtils.h>
 #include <op_boilerplate.h>
 #include <loops/reduce_same.h>
 #include <loops/legacy_ops.h>
 #include <OmpLaunchHelper.h>
 #include <chrono>
 #include <helpers/Loops.h>
+#include <helpers/ConstantTadHelper.h>
 
 using namespace simdOps;
 
@@ -61,7 +63,7 @@ namespace functions {
                 uint xShapeInfoCast[MAX_RANK];
                 const bool canCastX = nd4j::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
 
-                PRAGMA_OMP_PARALLEL_FOR_SIMD_ARGS(num_threads(maxThreads))
+                PRAGMA_OMP_PARALLEL_FOR_SIMD_THREADS(maxThreads)
                 for(Nd4jLong i = 0; i < length; ++i)
                     intermediate[omp_get_thread_num()] = OpType::update(intermediate[omp_get_thread_num()], OpType::op(x[shape::indexOffset(i, xShapeInfo, xShapeInfoCast, length, canCastX)], extraParams), extraParams);
 
@@ -99,7 +101,7 @@ namespace functions {
                     uint xShapeInfoCast[MAX_RANK];
                     const bool canCastX = nd4j::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
 
-                    PRAGMA_OMP_PARALLEL_FOR_SIMD_ARGS(num_threads(maxThreads))
+                    PRAGMA_OMP_PARALLEL_FOR_SIMD_THREADS(maxThreads)
                     for(Nd4jLong i = 0; i < length; ++i)
                         intermediate[omp_get_thread_num()] = OpType::update(intermediate[omp_get_thread_num()], OpType::op(x[shape::indexOffset(i, xShapeInfo, xShapeInfoCast, length, canCastX)], extraParams), extraParams);
 
@@ -186,48 +188,19 @@ namespace functions {
 
                 auto tadOnlyShapeInfo = tadShapeInfo;
                 auto tadOffsets = tadOffset;
-                shape::TAD *tad = nullptr;
 
                 if (tadOnlyShapeInfo == nullptr || tadOffsets == nullptr) {
-                    tad = new shape::TAD();
-                    tad->init(xShapeInfo, dimension, dimensionLength);
-                    tad->createTadOnlyShapeInfo();
-                    tad->createOffsets();
-
-                    if (tad->dimensionLength < 1) {
-                        delete tad;
+                    if (dimensionLength < 1)
                         return;
-                    }
 
-                    tadOnlyShapeInfo = tad->tadOnlyShapeInfo;
-                    tadOffsets = tad->tadOffsets;
+                    auto tadPack = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(xShapeInfo, dimension, dimensionLength);
+                    tadOnlyShapeInfo = tadPack.primaryShapeInfo();
+                    tadOffsets = tadPack.primaryOffsets();
                 }
 
-            auto _sv = [&] (const X *x) -> X {
-                return OpType::startingValue(x);
-            };
-
-            auto _op = [&] (X x, X *e) -> X {
-                return OpType::op(x, e);
-            };
-
-            auto _up = [&] (X o, X n, X *e) -> X {
-                return OpType::update(o, n, e);
-            };
-
-            auto _pp = [&] (X o, Nd4jLong n, X *e) -> X {
-                return OpType::postProcess(o, n, e);
-            };
-
-            nd4j::Loops::loopTadXZ<X, X, X>(const_cast<const X*>(x), const_cast<const Nd4jLong *>(tadOnlyShapeInfo), const_cast<const Nd4jLong *>(tadOffsets),
-                                            z, const_cast<const Nd4jLong *>(zShapeInfo),
-                                            extraParams,
-                                            _sv,
-                                            _up,
-                                            _op,
-                                            _pp);
-                if (tad != nullptr)
-                    delete tad;
+                nd4j::Loops::loopTadXZ<X, X, X, OpType>(const_cast<const X*>(x), const_cast<const Nd4jLong *>(xShapeInfo), z,
+                                                        const_cast<const Nd4jLong *>(zShapeInfo), const_cast<const Nd4jLong *>(tadOnlyShapeInfo),
+                                                        const_cast<const Nd4jLong *>(tadOffsets), const_cast<const int *>(dimension), dimensionLength, extraParams);
             }
 
 

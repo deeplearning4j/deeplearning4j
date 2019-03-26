@@ -138,3 +138,36 @@ TEST_F(DeclarableOpsTests14, Test_Diag_Zeros_1) {
 
     ASSERT_EQ(exp, z);
 }
+
+TEST_F(DeclarableOpsTests14, Test_scalar_broadcast_1) {
+    auto x = NDArrayFactory::create<float>(1.0f);
+    auto y = NDArrayFactory::create<float>('c', {5, 10});
+    auto e = NDArrayFactory::create<float>('c', {5, 10});
+    e.assign(1.0);
+
+
+    nd4j::ops::add op;
+    auto result = op.execute({&x, &y}, {}, {});
+    ASSERT_EQ(Status::OK(), result->status());
+
+    ASSERT_EQ(e, *result->at(0));
+
+    delete result;
+}
+
+TEST_F(DeclarableOpsTests14, Test_scalar_broadcast_2) {
+    auto x = NDArrayFactory::create<float>(1.0f);
+    auto y = NDArrayFactory::create<float>('c', {5, 10});
+    auto e = NDArrayFactory::create<float>('c', {5, 10});
+    y.assign(2.0f);
+    e.assign(-1.0f);
+
+
+    nd4j::ops::subtract op;
+    auto result = op.execute({&x, &y}, {}, {});
+    ASSERT_EQ(Status::OK(), result->status());
+
+    ASSERT_EQ(e, *result->at(0));
+
+    delete result;
+}

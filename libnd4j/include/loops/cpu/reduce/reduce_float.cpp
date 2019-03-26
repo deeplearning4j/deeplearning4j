@@ -20,11 +20,13 @@
 //
 
 #include <types/types.h>
+#include <ShapeUtils.h>
 #include <op_boilerplate.h>
 #include <loops/reduce_float.h>
 #include <loops/legacy_ops.h>
 #include <OmpLaunchHelper.h>
 #include <helpers/Loops.h>
+#include <helpers/ConstantTadHelper.h>
 
 using namespace simdOps;
 
@@ -58,7 +60,7 @@ namespace functions {
                 uint xShapeInfoCast[MAX_RANK];
                 const bool canCastX = nd4j::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
 
-                PRAGMA_OMP_PARALLEL_FOR_SIMD_ARGS(num_threads(maxThreads))
+                PRAGMA_OMP_PARALLEL_FOR_SIMD_THREADS(maxThreads)
                 for(Nd4jLong i = 0; i < length; ++i)
                     intermediate[omp_get_thread_num()] = OpType::update(intermediate[omp_get_thread_num()], OpType::op(x[shape::indexOffset(i, xShapeInfo, xShapeInfoCast, length, canCastX)], extraParams), extraParams);
 
@@ -128,7 +130,7 @@ namespace functions {
                              Nd4jLong *xShapeInfo,
                              void *extraParams,
                              void *z,
-                             Nd4jLong *resultShapeInfoBuffer,
+                             Nd4jLong *zShapeInfo,
                              int *dimension,
                              int dimensionLength,
                              Nd4jLong *tadShapeInfo,
@@ -137,7 +139,7 @@ namespace functions {
                                                xShapeInfo,
                                                extraParams,
                                                z,
-                                               resultShapeInfoBuffer,
+                                               zShapeInfo,
                                                dimension,
                                                dimensionLength,
                                                tadShapeInfo,
@@ -151,7 +153,7 @@ namespace functions {
                              Nd4jLong *xShapeInfo,
                              void *vextraParams,
                              void *vresult,
-                             Nd4jLong *resultShapeInfoBuffer,
+                             Nd4jLong *zShapeInfo,
                              int *dimension,
                              int dimensionLength,
                              Nd4jLong *tadShapeInfo,
@@ -161,7 +163,7 @@ namespace functions {
                 auto z = reinterpret_cast<Z *>(vresult);
                 auto extraParams = reinterpret_cast<Z *>(vextraParams);
 
-                auto resultLength = shape::length(resultShapeInfoBuffer);
+                auto resultLength = shape::length(zShapeInfo);
 
                 //pre squeezed: this is for keeping the pointer to the original
                 //shape information for tad offset
@@ -174,57 +176,23 @@ namespace functions {
                 }
 
                 if (OpType::requiresSpecialAccumulation) {
-                    OpType::execSpecial(x, xShapeInfo, extraParams, z, resultShapeInfoBuffer, dimension, dimensionLength, tadShapeInfo, tadOffset);
+                    OpType::execSpecial(x, xShapeInfo, extraParams, z, zShapeInfo, dimension, dimensionLength, tadShapeInfo, tadOffset);
                     return;
-                }            
+                }
 
                 auto tadOnlyShapeInfo = tadShapeInfo;
                 auto tadOffsets = tadOffset;
-                shape::TAD *tad = nullptr;
 
                 if (tadOnlyShapeInfo == nullptr || tadOffsets == nullptr) {
-                    tad = new shape::TAD();
-                    tad->init(xShapeInfo, dimension, dimensionLength);
-                    tad->createTadOnlyShapeInfo();
-                    tad->createOffsets();
-
-                    //nd4j_printf("Calculating TAD\n","");
-
-                    if (tad->dimensionLength < 1) {
-                        delete tad;
+                    if (dimensionLength < 1)
                         return;
-                    }
 
-                    tadOnlyShapeInfo = tad->tadOnlyShapeInfo;
-                    tadOffsets = tad->tadOffsets;
+                    auto tadPack = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(xShapeInfo, dimension, dimensionLength);
+                    tadOnlyShapeInfo = tadPack.primaryShapeInfo();
+                    tadOffsets = tadPack.primaryOffsets();
                 }
 
-                auto _sv = [&] (const X *x) -> X {
-                    return OpType::startingValue(x);
-                };
-
-                auto _op = [&] (X x, Z *e) -> Z {
-                    return OpType::op(x, e);
-                };
-
-                auto _up = [&] (Z o, Z n, Z *e) -> Z {
-                    return OpType::update(o, n, e);
-                };
-
-                auto _pp = [&] (Z o, Nd4jLong n, Z *e) -> Z {
-                    return OpType::postProcess(o, n, e);
-                };
-
-                nd4j::Loops::loopTadXZ<X, Z, Z>(const_cast<const X*>(x), const_cast<const Nd4jLong *>(tadOnlyShapeInfo), const_cast<const Nd4jLong *>(tadOffsets),
-                                                   z, const_cast<const Nd4jLong *>(resultShapeInfoBuffer),
-                                                   extraParams,
-                                                   _sv,
-                                                   _up,
-                                                   _op,
-                                                   _pp);
-
-                if (tad != nullptr)
-                    delete tad;
+                nd4j::Loops::loopTadXZ<X, Z, Z, OpType>(x, xShapeInfo, z, zShapeInfo,  tadOnlyShapeInfo, tadOffsets, dimension, dimensionLength, extraParams);
             }
 
 

@@ -20,6 +20,8 @@
 
 #include <ops/declarable/LegacyBroadcastBoolOp.h>
 #include <helpers/TAD.h>
+#include <helpers/ConstantTadHelper.h>
+#include <Status.h>
 
 
 namespace nd4j {
@@ -37,28 +39,22 @@ namespace nd4j {
 
             int opNum = block.opNum() < 0 ? this->_opNum : block.opNum();
 
-            shape::TAD tad;
-            tad.init(x->shapeInfo(), dims.data(), dims.size());
-            tad.createTadOnlyShapeInfo();
-            tad.createOffsets();
+            auto tadPack = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(x->shapeInfo(), dims);
 
-            REQUIRE_TRUE(shape::length(tad.tadOnlyShapeInfo) == y->lengthOf(), 0, "Length of broadcast TAD should be equal to length of Y operand, but got [%i] vs [%i]", (int) shape::length(tad.tadOnlyShapeInfo), (int) y->lengthOf());
+            REQUIRE_TRUE(shape::length(tadPack.primaryShapeInfo()) == y->lengthOf(), 0, "Length of broadcast TAD should be equal to length of Y operand, but got [%i] vs [%i]", (int) shape::length(tadPack.primaryShapeInfo()), (int) y->lengthOf());
 
             if (x == z)
-                NativeOpExcutioner::execBroadcast(opNum, x->buffer(), x->shapeInfo(), y->buffer(), y->shapeInfo(), z->buffer(), z->shapeInfo(), dims.data(), dims.size(), tad.tadOnlyShapeInfo, tad.tadOffsets, tad.tadOnlyShapeInfo, tad.tadOffsets);
+                NativeOpExcutioner::execBroadcast(opNum, x->buffer(), x->shapeInfo(), y->buffer(), y->shapeInfo(), z->buffer(), z->shapeInfo(), dims.data(), dims.size(), tadPack.primaryShapeInfo(), tadPack.primaryOffsets(), tadPack.primaryShapeInfo(), tadPack.primaryOffsets());
             else {
                 // this is rare, but possible use case - X and Z might have different shapes/strides/orders. In this case we prepare and pass separate TAD info
-                shape::TAD tadZ;
-                tadZ.init(z->shapeInfo(), dims.data(), dims.size());
-                tadZ.createTadOnlyShapeInfo();
-                tadZ.createOffsets();
+                auto tadPackZ = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(z->shapeInfo(), dims);
 
-                NativeOpExcutioner::execBroadcast(opNum, x->buffer(), x->shapeInfo(), y->buffer(), y->shapeInfo(), z->buffer(), z->shapeInfo(), dims.data(), dims.size(), tad.tadOnlyShapeInfo, tad.tadOffsets, tadZ.tadOnlyShapeInfo, tadZ.tadOffsets);
+                NativeOpExcutioner::execBroadcast(opNum, x->buffer(), x->shapeInfo(), y->buffer(), y->shapeInfo(), z->buffer(), z->shapeInfo(), dims.data(), dims.size(), tadPack.primaryShapeInfo(), tadPack.primaryOffsets(), tadPackZ.primaryShapeInfo(), tadPackZ.primaryOffsets());
             }
 
             STORE_RESULT(*z);
 
-            return ND4J_STATUS_OK;
+            return Status::OK();
         }
 
         LegacyBroadcastBoolOp::LegacyBroadcastBoolOp() : LegacyOp::LegacyOp(2) {

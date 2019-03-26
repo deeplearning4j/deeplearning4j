@@ -188,25 +188,52 @@ namespace simdOps {
 
 	};
 
+    template <typename X, typename Y, typename Z>
+    class SquaredSubtract {
+    public:
+        op_def static Z op(X d1, Y d2) {
+            auto d = static_cast<Z>(d1 - d2);
+            return d * d;
+        }
+
+        op_def static Z op(X d1, Y d2, Z *params) {
+            auto d = static_cast<Z>(d1 - d2);
+            return d * d;
+        }
+
+        op_def static Z op(X d1) {
+            return d1;
+        }
+
+        // op for MetaOps
+        op_def static Z op(X d1, Y *params) {
+            auto d = static_cast<Z>(d1 - params[0]);
+            return d * d;
+        }
+    };
+
 	template <typename X, typename Y, typename Z>
-	class SquaredSubtract {
+	class SquaredReverseSubtract {
 	public:
-		op_def static Z op(X d1, Y d2) {
-			return nd4j::math::nd4j_pow<Z, float, Z>(static_cast<Z>(d1 - d2), 2.f);
-		}
+        op_def static Z op(X d1, Y d2) {
+            auto d = static_cast<Z>(d2 - d1);
+            return d * d;
+        }
 
-		op_def static Z op(X d1, Y d2, Z *params) {
-			return nd4j::math::nd4j_pow<Z, float, Z>(static_cast<Z>(d1 - d2), 2.f);
-		}
+        op_def static Z op(X d1, Y d2, Z *params) {
+            auto d = static_cast<Z>(d2 - d1);
+            return d * d;
+        }
 
-		op_def static Z op(X d1) {
-			return d1;
-		}
+        op_def static Z op(X d1) {
+            return d1;
+        }
 
-		// op for MetaOps
-		op_def static Z op(X d1, Y *params) {
-			return nd4j::math::nd4j_pow<Z, float, Z>(static_cast<Z>(d1 - params[0]), 2.f);
-		}
+        // op for MetaOps
+        op_def static Z op(X d1, Y *params) {
+            auto d = static_cast<Z>(params[0] - d1);
+            return d * d;
+        }
 	};
 
 	template <typename X, typename Y, typename Z>
@@ -1265,7 +1292,28 @@ namespace simdOps {
 		}
 	};
 
+    template <typename X, typename Y, typename Z>
+    class ReversePow {
+    public:
+        no_op_exec_special
+        no_op_exec_special_cuda
 
+        op_def static Z op(X d1, Z *params) {
+            return nd4j::math::nd4j_pow<X, X, Z>(params[0], d1);
+        }
+
+        op_def static Z op(X d1, Y d2) {
+            return nd4j::math::nd4j_pow<X, Y, Z>(d2, d1);
+        }
+
+        op_def static Z op(X d1, Y d2, Z *params) {
+            return nd4j::math::nd4j_pow<X, Y, Z>(d2, d1);
+        }
+
+        op_def static Z op(X d1) {
+            return d1;
+        }
+    };
 
 	template <typename X, typename Y, typename Z>
 	class Pow {

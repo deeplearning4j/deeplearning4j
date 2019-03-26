@@ -27,7 +27,7 @@ import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 
 import static org.junit.Assert.assertEquals;
-
+import static org.nd4j.evaluation.classification.EvaluationBinary.Metric.*;
 /**
  * Created by Alex on 20/03/2017.
  */
@@ -87,10 +87,13 @@ public class EvaluationBinaryTest extends BaseNd4jTest {
             e.eval(lCol, pCol);
 
             assertEquals(acc, eb.accuracy(i), eps);
-            assertEquals(e.accuracy(), eb.accuracy(i), eps);
-            assertEquals(e.precision(1), eb.precision(i), eps);
-            assertEquals(e.recall(1), eb.recall(i), eps);
-            assertEquals(e.f1(1), eb.f1(i), eps);
+            assertEquals(e.accuracy(), eb.scoreForMetric(ACCURACY, i), eps);
+            assertEquals(e.precision(1), eb.scoreForMetric(PRECISION, i), eps);
+            assertEquals(e.recall(1), eb.scoreForMetric(RECALL, i), eps);
+            assertEquals(e.f1(1), eb.scoreForMetric(F1, i), eps);
+            assertEquals(e.falseAlarmRate(), eb.scoreForMetric(FAR, i), eps);
+            assertEquals(e.falsePositiveRate(1), eb.falsePositiveRate(i), eps);
+
 
             assertEquals(tpCount, eb.truePositives(i));
             assertEquals(tnCount, eb.trueNegatives(i));

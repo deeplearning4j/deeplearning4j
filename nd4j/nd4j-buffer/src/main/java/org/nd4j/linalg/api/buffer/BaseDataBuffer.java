@@ -1281,6 +1281,8 @@ public abstract class BaseDataBuffer implements DataBuffer {
         switch (dataType()) {
             case DOUBLE:
                 return (short) ((DoubleIndexer) indexer).get(offset() + i);
+            case HALF:
+                return (short) ((HalfIndexer) indexer).get(offset() + i);
             case BOOL:
                 return (short) (((BooleanIndexer) indexer).get(offset() + i) ? 1 : 0);
             case INT:
@@ -1941,7 +1943,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
                 AtomicInteger aInt = new AtomicInteger();
                 for (long i = 0; i < length(); i++) {
                     aInt.set(s.readShort());
-                    putByDestinationType(i, aInt, thisType);
+                    putByDestinationType(i, HalfIndexer.toFloat(aInt.get()), thisType);
                 }
             } else if (sourceType == DataType.LONG) {
                 AtomicLong aLong = new AtomicLong();
@@ -1961,6 +1963,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
+
     }
 
     @Override
@@ -1996,7 +1999,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
                 break;
             case HALF:
                 for (long i = 0; i < length(); i++)
-                    out.writeShort(getShort(i));
+                    out.writeShort((short) HalfIndexer.fromFloat(getFloat(i)));
                 break;
             case FLOAT:
                 for (long i = 0; i < length(); i++)

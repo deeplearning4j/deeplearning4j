@@ -33,6 +33,7 @@
 #include <Loops.h>
 
 #include <helpers/BenchmarkHelper.h>
+#include <helpers/ConstantTadHelper.h>
 
 using namespace nd4j;
 using namespace nd4j::graph;
@@ -47,6 +48,46 @@ public:
         fflush(stdout);
     }
 };
+
+TEST_F(PlaygroundTests, test_small_reductions) {
+    auto f = NDArrayFactory::create<float>('c', {1024 ,1024});
+    f.assign(1.0f);
+
+    int iterations = 100;
+    std::vector<Nd4jLong> results(iterations);
+    Nd4jLong mean = 0L;
+    Nd4jLong max = 0L;
+    Nd4jLong min = DataTypeUtils::max<Nd4jLong>();
+
+    for (int e = 0; e < iterations; e++) {
+        auto x = NDArrayFactory::create<float>('c', {4, 64});
+        auto z = NDArrayFactory::create<float>('c', {64});
+        x.assign(1.0f);
+        int axis = 0;
+
+        auto tadPack = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(x.shapeInfo(), axis);
+
+        auto timeStart = std::chrono::system_clock::now();
+
+        NativeOpExcutioner::execReduceFloat(reduce::Mean, x.buffer(), x.shapeInfo(), nullptr, z.buffer(), z.shapeInfo(), &axis, 1, tadPack.primaryShapeInfo(), tadPack.primaryOffsets());
+
+        auto timeEnd = std::chrono::system_clock::now();
+        auto duration = std::chrono::duration_cast<std::chrono::nanoseconds> ((timeEnd - timeStart)).count();
+        results[e] = duration;
+        mean += duration;
+
+        if (duration > max)
+            max = duration;
+
+        if (duration < min)
+            min = duration;
+    }
+
+    mean /= iterations;
+    std::sort(results.begin(), results.end());
+
+    nd4j_printf("Median time: [%lld]; Mean time: [%lld]; Min time: [%lld]; Max time: [%lld]\n", results[results.size() / 2], mean, min, max);
+}
 
 /*
 TEST_F(PlaygroundTests, Test_OpBenchmark_1) {
@@ -1508,8 +1549,8 @@ TEST_F(PlaygroundTests, subarr_2) {
 
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(PlaygroundTests, loops_1) {
-
-    const int N = 100;
+/*
+    const int N = 1;
     NDArray x('c', {16, 32, 64, 64}, nd4j::DataType::FLOAT32);
     NDArray z1('c', {32}, nd4j::DataType::FLOAT32);
     NDArray z2('c', {32}, nd4j::DataType::FLOAT32);
@@ -1522,7 +1563,6 @@ TEST_F(PlaygroundTests, loops_1) {
     for (int i = 0; i < 1000; ++i)
         32*512;
 
-    //****************************************************//
     auto timeStart1 = std::chrono::system_clock::now();
     for (int i = 0; i < N ; i++)
         x.reduceAlongDimension(nd4j::reduce::Mean, &z1, dimsToExclude);
@@ -1536,7 +1576,6 @@ TEST_F(PlaygroundTests, loops_1) {
     auto timeEndE  = std::chrono::system_clock::now();
     auto durationE = std::chrono::duration_cast<std::chrono::microseconds> ((timeEndE - timeStartE) / N).count();
 
-    //****************************************************//
     Nd4jLong *tadShapeInfo(nullptr), *tadOffsets(nullptr);
     x.getSubArrShapeAndOffsets(tadDims, tadShapeInfo, tadOffsets);
 
@@ -1544,6 +1583,7 @@ TEST_F(PlaygroundTests, loops_1) {
     // shape::printIntArray(tadOffsets, 32);
 
     auto timeStart2 = std::chrono::system_clock::now();
+
     for (int i = 0; i < N ; i++)
         Loops::loopTadXZ<float, float, float>(x.bufferAsT<float>(), tadShapeInfo, tadOffsets,
                                        z2.bufferAsT<float>(), z2.getShapeInfo(),
@@ -1568,5 +1608,6 @@ TEST_F(PlaygroundTests, loops_1) {
     printf("duration old: %ld\n", duration1);
     printf("duration new: %ld\n", duration2);
     printf("duration E: %ld\n", durationE);
-
+*/
 }
+

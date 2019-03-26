@@ -108,8 +108,8 @@ static void usualDot(const Nd4jLong length, const double alpha, const void* vX, 
     T3 alphaZ(alpha), betaZ(beta);
 
     T3 sum = 0;
-    PRAGMA_OMP_PARALLEL_FOR_ARGS(reduction(sumT:sum))
-    for(int i = 0; i < length; ++i)
+    PRAGMA_OMP_PARALLEL_FOR_SIMD_REDUCTION(sumT:sum)
+    for(unsigned int i = 0; i < length; ++i)
         sum = sum + X[i * incx] * Y[i * incy];        
     
     *Z = alphaZ * sum + betaZ * *Z;
@@ -401,9 +401,9 @@ nd4j::NDArray* nd4j::MmulHelper::tensorDot(const nd4j::NDArray* a, const nd4j::N
     
     // check whether reshape is necessary
     if(!aPR->isSameShape(shapeAt))
-        aPR->reshapei('c', shapeAt);    
+        aPR->reshapei(shapeAt);
     if(!bPR->isSameShape(shapeBt)) 
-        bPR->reshapei('c', shapeBt);                
+        bPR->reshapei(shapeBt);  
     
     NDArray* c = mmul(aPR, bPR, nullptr, 1.0, 0.0);
 
