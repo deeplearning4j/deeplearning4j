@@ -1195,3 +1195,11 @@ TEST_F(NDArrayTest2, test_not_tiled_2) {
     ASSERT_EQ(e, x);
 }
 
+TEST_F(NDArrayTest2, test_long_sum_1) {
+    auto x = NDArrayFactory::create<Nd4jLong>('c', {2, 2}, {1, 2, 3, 4});
+
+    auto z = x.reduceAlongDims(reduce::Sum, {0});
+
+    z.printIndexedBuffer("z long");
+}
+
