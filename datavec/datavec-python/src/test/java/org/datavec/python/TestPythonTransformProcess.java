@@ -129,8 +129,39 @@ public class TestPythonTransformProcess {
         assertEquals(expectedOutput,((NDArrayWritable)outputs.get(2)).get());
 
     }
-
     @Test
+    public void testNDArray2() throws Exception{
+        long[] shape = new long[]{3, 2};
+        INDArray arr1 = Nd4j.rand(shape);
+        INDArray arr2 = Nd4j.rand(shape);
+
+        INDArray expectedOutput = arr1.add(arr2);
+
+        Schema.Builder schemaBuilder = new Schema.Builder();
+        schemaBuilder
+                .addColumnNDArray("col1", shape)
+                .addColumnNDArray("col2", shape);
+
+        Schema initialSchema = schemaBuilder.build();
+        schemaBuilder.addColumnNDArray("col3", shape);
+        Schema finalSchema = schemaBuilder.build();
+
+        String pythonCode = "col3 = col1 + col2";
+        TransformProcess tp = new TransformProcess.Builder(initialSchema).transform(
+                new PythonTransform(pythonCode, finalSchema)
+        ).build();
+
+        List<Writable> inputs = Arrays.asList(
+                (Writable) new NDArrayWritable(arr1),
+                new NDArrayWritable(arr2)
+        );
+
+        List<Writable> outputs = tp.execute(inputs);
+        assertEquals(arr1, ((NDArrayWritable)outputs.get(0)).get());
+        assertEquals(arr2, ((NDArrayWritable)outputs.get(1)).get());
+        assertEquals(expectedOutput,((NDArrayWritable)outputs.get(2)).get());
+
+    }
     public void testNDArrayMixed() throws Exception{
         long[] shape = new long[]{3, 2};
         INDArray arr1 = Nd4j.rand(DataType.DOUBLE, shape);
