@@ -28,7 +28,6 @@
 #include <DataTypeUtils.h>
 #include <ops.h>
 #include <indexreduce.h>
-#include <special_ops.h>
 #include <openmp_pragmas.h>
 
 namespace nd4j {
@@ -44,7 +43,7 @@ class ND4J_EXPORT ReduceSameWrapper {
 
 
 
-class Loops {
+class ND4J_EXPORT Loops {
 
     private:
         enum LoopKind {SMALLARR2DX, EWS1, EWSNONZERO, RANK1, RANK2, RANK3, RANK4, RANK5, X_EWSNONZERO, Z_EWSNONZERO, COMMON};

@@ -20,43 +20,33 @@ using namespace simdOps;
 
 namespace nd4j {
 
-template <typename X>
-class ReduceSameWrapper {
+    template <typename X>
+    template <typename OpType>
+    void ReduceSameWrapper<X>::wrapper(const X *x, const Nd4jLong *xShapeInfo, X *z, const Nd4jLong *zShapeInfo, const Nd4jLong *tadShapeInfo, const Nd4jLong *tadOffset, const int* dimsToExclude, int dimsLen, X *extras) {
+        nd4j::Loops::loopTadXZ<X, X, X, OpType>(x, xShapeInfo, z, zShapeInfo, tadShapeInfo, tadOffset, dimsToExclude, dimsLen, extras);
+    }
 
-    public:
+    template <typename X>
+    void ReduceSameWrapper<X>::wrap(const int opNum, const X *x, const Nd4jLong* xShapeInfo, X *z, const Nd4jLong *zShapeInfo,  const Nd4jLong *tadShapeInfo, const Nd4jLong *tadOffset, const int* dimsToExclude, int dimsLen, X *extras) {
+        DISPATCH_BY_OPNUM_T(wrapper, PARAMS(x, xShapeInfo, z, zShapeInfo,  tadShapeInfo, tadOffset, dimsToExclude, dimsLen, extras), REDUCE_SAME_OPS);
+    }
+    //BUILD_SINGLE_TEMPLATE(template class ReduceSameWrapper, , FLOAT_TYPES);
+    //BUILD_SINGLE_TEMPLATE(template class ReduceSameWrapper, , INTEGER_TYPES);
 
-        //////////////////////////////////////////////////////////////////////////////
-        template <typename OpType>
-        static void wrapper(const X *x, const Nd4jLong *xShapeInfo, X *z, const Nd4jLong *zShapeInfo, const Nd4jLong *tadShapeInfo, const Nd4jLong *tadOffset, const int* dimsToExclude, const int dimsLen, X *extras) {
-            Loops::loopTadXZ<X, X, X, OpType>(x, xShapeInfo, z, zShapeInfo, tadShapeInfo, tadOffset, dimsToExclude, dimsLen, extras);
-        }
+    template <typename X>
+    void Loops::wrapperX(const int opNum) {
+        X *x = nullptr;
+        Nd4jLong *shape = nullptr;
+        ReduceSameWrapper<X>::wrap(opNum, x, shape, reinterpret_cast<X*>(shape), shape, shape, shape, reinterpret_cast<int*>(shape), 0, reinterpret_cast<X*>(shape));
+    }
 
-        //////////////////////////////////////////////////////////////////////////////
-        static void wrap(const int opNum, const X *x, const Nd4jLong* xShapeInfo, X *z, const Nd4jLong *zShapeInfo,  const Nd4jLong *tadShapeInfo, const Nd4jLong *tadOffset, const int* dimsToExclude, const int dimsLen, X *extras) {
-            DISPATCH_BY_OPNUM_T(wrapper, PARAMS(x, xShapeInfo, z, zShapeInfo,  tadShapeInfo, tadOffset, dimsToExclude, dimsLen, extras), REDUCE_SAME_OPS);
-        }
-};
+    BUILD_SINGLE_TEMPLATE(template void Loops::wrapperX, (const int opNum), LIBND4J_TYPES);
 
+    //template class ReduceSameWrapper<double>;
+    //template class ReduceSameWrapper<float>;
+    //template class ReduceSameWrapper<float16>;
+    //template class ReduceSameWrapper<bfloat16>;
 
-
-template<typename X>
-class TransformSameWrapper {
-
-    public:
-
-        //////////////////////////////////////////////////////////////////////////////
-        template<typename OpType>
-        static void wrapper(const X *x, const Nd4jLong* xShapeInfo, X *z, const Nd4jLong *zShapeInfo, X *extras) {
-            Loops::loopXZ<X, X, X, OpType>(x, xShapeInfo, z, zShapeInfo, extras);
-        }
-
-        //////////////////////////////////////////////////////////////////////////////
-        static void wrap(const int opNum, const X *x, const Nd4jLong *xShapeInfo, X *z, const Nd4jLong *zShapeInfo, X *extras) {
-            DISPATCH_BY_OPNUM_T(wrapper, PARAMS(x, xShapeInfo, z, zShapeInfo, extras), TRANSFORM_SAME_OPS);
-        }
-};
-
-
-BUILD_SINGLE_TEMPLATE(template class ReduceSameWrapper, , LIBND4J_TYPES);
-BUILD_SINGLE_TEMPLATE(template class TransformSameWrapper, , LIBND4J_TYPES);
+    //template void nd4j::Loops::loopTadXZ<bfloat16, bfloat16, bfloat16, simdOps::ASum<bfloat16> >(bfloat16 const*, Nd4jLong const*, bfloat16*, Nd4jLong const*, Nd4jLong const*, Nd4jLong const*, int const*, int, bfloat16*);
+    //template void nd4j::Loops::loopTadXZ<bfloat16, bfloat16, bfloat16, simdOps::AMax<bfloat16> >(bfloat16 const*, Nd4jLong const*, bfloat16*, Nd4jLong const*, Nd4jLong const*, Nd4jLong const*, int const*, int, bfloat16*);
 }
