@@ -178,7 +178,7 @@ namespace nd4j {
                 int w_i_u=0;
                 for(int j=0;j<=5;j++){
                     int b_j =__ballot_sync( t_m, warpTotals[w_l] & pow2i(j) ); //# of the ones in the j'th digit of the warp offsets
-                    w_i_u += (__popc(b_j & t_m)  ) << j;
+                    w_i_u += (__popc(b_j)  << j);
                     //printf("indice %i t_m=%i,j=%i,b_j=%i,w_i_u=%i\n",w_l,t_m,j,b_j,w_i_u);
                 }
                 warpTotals[w_l]=w_i_u;
