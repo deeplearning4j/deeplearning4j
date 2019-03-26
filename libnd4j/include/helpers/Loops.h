@@ -147,8 +147,6 @@ Loops::LoopKind Loops::deduceKindOfLoopXZ(const Nd4jLong* xShapeInfo, const Nd4j
         return EWS1;
     if(xEws > 0 && zEws > 0 && ((xOrder == zOrder) || ((xVector || xOrder == 'c') && (zVector || zOrder == 'c'))))
         return EWSNONZERO;
-    if(zEws > 0 && (zVector || zOrder == 'c'))
-        return Z_EWSNONZERO;
     if(xRank == 1 && shapesSame)
         return RANK1;
     if(xRank == 2 && shapesSame)
@@ -159,6 +157,10 @@ Loops::LoopKind Loops::deduceKindOfLoopXZ(const Nd4jLong* xShapeInfo, const Nd4j
         return RANK4;
     if(xRank == 5 && shapesSame)
         return RANK5;
+    if(xEws > 0 && (xVector || xOrder == 'c'))
+        return X_EWSNONZERO;
+    if(zEws > 0 && (zVector || zOrder == 'c'))
+        return Z_EWSNONZERO;
     return COMMON;
 }
 
@@ -448,7 +450,7 @@ void Loops::loopXZ(const X* x, const Nd4jLong* xShapeInfo,
             break;
 
         //*********************************************//
-        case RANK4: {            
+        case RANK4: {
             PRAGMA_OMP_PARALLEL_FOR_SIMD_COLLAPSE(3)
             for (uint i0 = 0; i0 < xShape[0]; ++i0)
                 for (uint i1 = 0; i1 < xShape[1]; ++i1)
@@ -471,7 +473,7 @@ void Loops::loopXZ(const X* x, const Nd4jLong* xShapeInfo,
             break;
 
         //*********************************************//
-        default: {            
+        default: {
             uint xShapeInfoCast[MAX_RANK];
             uint zShapeInfoCast[MAX_RANK];
 
