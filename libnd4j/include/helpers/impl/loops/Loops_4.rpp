@@ -19,17 +19,18 @@
 using namespace simdOps;
 
 namespace nd4j {
-    template <typename X, typename Y>
-    class ReduceBoolWrapper {
+
+    template <typename X>
+    class ND4J_EXPORT IndexReduceWrapper {
     public:
         template <typename OpType>
-        static void wrapper(const X *x, const Nd4jLong *tadShapeInfo, const Nd4jLong *tadOffset, Y *z, const Nd4jLong *zShapeInfo, X *extras) {
-            Loops::loopTadXZ<X, Y, X, OpType>(x, tadShapeInfo, tadOffset, z, zShapeInfo, extras);
+        static void wrapper(const X *x, const Nd4jLong* xShapeInfo, Nd4jLong *z, const Nd4jLong *zShapeInfo, const Nd4jLong *tadShapeInfo, const Nd4jLong *tadOffset, X *extras) {
+            Loops::loopIndexTadXZ<X, OpType>(x, xShapeInfo, z, zShapeInfo, tadShapeInfo, tadOffset, extras);
         }
 
-        static void wrap(const int opNum, const X *x, const Nd4jLong *tadShapeInfo, const Nd4jLong *tadOffset, Y *z, const Nd4jLong *zShapeInfo, X *extras) {
-            DISPATCH_BY_OPNUM_TT(wrapper, PARAMS(x, tadShapeInfo, tadOffset, z, zShapeInfo, extras), REDUCE_BOOL_OPS);
+        static void wrap(const int opNum, const X *x, const Nd4jLong* xShapeInfo, Nd4jLong *z, const Nd4jLong *zShapeInfo, const Nd4jLong *tadShapeInfo, const Nd4jLong *tadOffset, X *extras) {
+            DISPATCH_BY_OPNUM_T(wrapper, PARAMS(x, xShapeInfo, z, zShapeInfo, tadShapeInfo, tadOffset, extras), INDEX_REDUCE_OPS);
         }
     };
-    BUILD_DOUBLE_TEMPLATE(template class ReduceBoolWrapper, , LIBND4J_TYPES, BOOL_TYPES);
+    BUILD_SINGLE_TEMPLATE(template class IndexReduceWrapper, , LIBND4J_TYPES);
 }

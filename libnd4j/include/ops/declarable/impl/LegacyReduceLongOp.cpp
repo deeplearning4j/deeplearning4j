@@ -22,6 +22,7 @@
 #include <helpers/TAD.h>
 #include <helpers/ShapeUtils.h>
 #include <Status.h>
+#include <helpers/ConstantTadHelper.h>
 
 namespace nd4j {
     namespace ops {
@@ -65,16 +66,14 @@ namespace nd4j {
                         if (dims[e] < 0)
                             dims[e] += x->rankOf();
 
-                    std::sort(dims.begin(), dims.end());
+                    if (dims.size() > 1)
+                        std::sort(dims.begin(), dims.end());
 
                     REQUIRE_TRUE(dims.size() > 0, 0, "Some dimensions required for reduction!");
 
-                    shape::TAD tad;
-                    tad.init(x->getShapeInfo(), dims.data(), dims.size());
-                    tad.createTadOnlyShapeInfo();
-                    tad.createOffsets();
+                    auto tadPack = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(x->shapeInfo(), dims);
 
-                    NativeOpExcutioner::execReduceLong(opNum, x->getBuffer(), x->getShapeInfo(), block.getTArguments()->data(), z->getBuffer(), z->getShapeInfo(), dims.data(), (int) dims.size(), tad.tadOnlyShapeInfo, tad.tadOffsets);
+                    NativeOpExcutioner::execReduceLong(opNum, x->getBuffer(), x->getShapeInfo(), block.getTArguments()->data(), z->getBuffer(), z->getShapeInfo(), dims.data(), (int) dims.size(), tadPack.primaryShapeInfo(), tadPack.primaryOffsets());
                 }
 
                 STORE_RESULT(*z);
@@ -110,14 +109,11 @@ namespace nd4j {
 
                     REQUIRE_TRUE(axis.size() > 0, 0, "Some dimensions required for reduction!");
 
-                    shape::TAD tad;
-                    tad.init(x->getShapeInfo(), axis.data(), axis.size());
-                    tad.createTadOnlyShapeInfo();
-                    tad.createOffsets();
+                    auto tadPack = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(x->shapeInfo(), axis);
 
                     auto z = OUTPUT_VARIABLE(0);
 
-                    NativeOpExcutioner::execReduceLong(opNum, x->getBuffer(), x->getShapeInfo(), block.getTArguments()->data(), z->getBuffer(), z->getShapeInfo(), axis.data(), (int) axis.size(), tad.tadOnlyShapeInfo, tad.tadOffsets);
+                    NativeOpExcutioner::execReduceLong(opNum, x->getBuffer(), x->getShapeInfo(), block.getTArguments()->data(), z->getBuffer(), z->getShapeInfo(), axis.data(), (int) axis.size(), tadPack.primaryShapeInfo(), tadPack.primaryOffsets());
                 }
             }
 

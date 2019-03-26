@@ -229,7 +229,9 @@
         (40, RELU6), \
         (41, Step), \
         (42, LstmClip), \
-        (43, TruncateMod)
+        (43, TruncateMod) ,\
+        (44, SquaredReverseSubtract) ,\
+        (45, ReversePow)
 
 
 

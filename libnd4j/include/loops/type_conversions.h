@@ -166,7 +166,7 @@ namespace nd4j {
             int w_l = tid % warpSize;//thread index within a warp
             int t_m = INT_MAX >> (warpSize-w_l-1); //thread mask (ERROR IN THE PAPER minus one is required)
 
-            int b   = __ballot(pred) & t_m; //balres = number whose ith bit isone if the ith's thread pred is true masked up to the current index in warp
+            int b   = __ballot_sync(t_m, pred); //balres = number whose ith bit isone if the ith's thread pred is true masked up to the current index in warp
             int t_u = __popc(b); // popc count the number of bit one. simply count the number predicated true BEFORE MY INDEX
 
             if(w_l==warpSize-1){
@@ -177,8 +177,8 @@ namespace nd4j {
             if(w_i==0 && w_l<blockDim.x/warpSize){
                 int w_i_u=0;
                 for(int j=0;j<=5;j++){
-                    int b_j =__ballot( warpTotals[w_l] & pow2i(j) ); //# of the ones in the j'th digit of the warp offsets
-                    w_i_u += (__popc(b_j & t_m)  ) << j;
+                    int b_j =__ballot_sync( t_m, warpTotals[w_l] & pow2i(j) ); //# of the ones in the j'th digit of the warp offsets
+                    w_i_u += (__popc(b_j)  << j);
                     //printf("indice %i t_m=%i,j=%i,b_j=%i,w_i_u=%i\n",w_l,t_m,j,b_j,w_i_u);
                 }
                 warpTotals[w_l]=w_i_u;

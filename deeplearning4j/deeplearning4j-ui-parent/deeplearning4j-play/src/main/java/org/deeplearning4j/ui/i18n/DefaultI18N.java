@@ -24,7 +24,11 @@ import org.deeplearning4j.ui.api.UIModule;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.Charset;
-import java.util.*;
+import java.util.Map;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Collections;
+import java.util.ServiceLoader;
 
 /**
  * Default internationalization implementation.<br>
@@ -50,9 +54,11 @@ public class DefaultI18N implements I18N {
     public static final String FALLBACK_LANGUAGE = "en"; //use this if the specified language doesn't have the requested message
 
     private static DefaultI18N instance;
-    private static Map<String, I18N> sessionInstances = Collections.synchronizedMap(new WeakHashMap<>());
+    private static Map<String, I18N> sessionInstances = Collections.synchronizedMap(new HashMap<>());
     private static Throwable languageLoadingException = null;
 
+
+    private String currentLanguage = DEFAULT_LANGUAGE;
     private Map<String, Map<String, String>> messagesByLanguage = new HashMap<>();
 
     /**
@@ -87,8 +93,6 @@ public class DefaultI18N implements I18N {
         return sessionInstances.remove(sessionId);
     }
 
-
-    private String currentLanguage = DEFAULT_LANGUAGE;
 
     private DefaultI18N() {
         loadLanguages();

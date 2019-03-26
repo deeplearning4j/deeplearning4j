@@ -52,8 +52,8 @@ void ScalarTransform<X, Y, Z>::transform(void *vx, Nd4jLong *xShapeInfo,
 
     // tad preparation
     int tadEws = shape::elementWiseStride(tadShapeInfo);
-    int zEws = shape::elementWiseStride(tadShapeInfo);
-    int tadLength = shape::tadLength(xShapeInfo, dimension, dimensionLength);
+    int zEws = shape::elementWiseStride(zShapeInfo);
+    int tadLength = shape::length(tadShapeInfo);
     int numTads =shape::length(xShapeInfo) / tadLength;
 
     if(tadEws < 1 || zEws < 1) {
@@ -63,14 +63,26 @@ void ScalarTransform<X, Y, Z>::transform(void *vx, Nd4jLong *xShapeInfo,
 
     int num_threads = nd4j::math::nd4j_min<int>(numTads, omp_get_max_threads());
 
-    PRAGMA_OMP_PARALLEL_FOR_THREADS(num_threads)
-    for (unsigned int r = 0; r < numTads; r++) {
-        auto oZ = z + tadOffsetsZ[r];
-        auto oX = x + tadOffsets[r];
+    if (tadEws == 1) {
+        PRAGMA_OMP_PARALLEL_FOR_THREADS(num_threads)
+        for (unsigned int r = 0; r < numTads; r++) {
+            auto oZ = z + tadOffsetsZ[r];
+            auto oX = x + tadOffsets[r];
 
-        PRAGMA_OMP_SIMD
-        for (unsigned int f = 0; f < tadLength; f++)
-            oZ[f * zEws] = OpType::op(oX[f * tadEws], scalars[r], extraParams);
+            PRAGMA_OMP_SIMD
+            for (unsigned int f = 0; f < tadLength; f++)
+                oZ[f] = OpType::op(oX[f], scalars[r], extraParams);
+        }
+    } else {
+        PRAGMA_OMP_PARALLEL_FOR_THREADS(num_threads)
+        for (unsigned int r = 0; r < numTads; r++) {
+            auto oZ = z + tadOffsetsZ[r];
+            auto oX = x + tadOffsets[r];
+
+            PRAGMA_OMP_SIMD
+            for (unsigned int f = 0; f < tadLength; f++)
+                oZ[f * zEws] = OpType::op(oX[f * tadEws], scalars[r], extraParams);
+        }
     }
 }
 

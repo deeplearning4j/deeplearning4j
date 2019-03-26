@@ -2143,14 +2143,9 @@ TEST_F(DeclarableOpsTests7, TestExtractImagePatches_3) {
 //[1, 1, 1, 1]
 //[1, 3, 2, 1]
 auto exp = NDArrayFactory::create<double>('c', {3, 1, 2, 6}, {
-     11.,  12.,  13.,   5.,   6.,   7.,
-     15.,  16.,  17.,  35.,  36.,  37.,
-
-      9.,   8.,   7.,  15.,  16.,  17.,
-     49.,  48.,  47., 135., 136., 137.,
-
-    211.,  12.,  13.,  25.,   6.,   7.,
-     15., 216.,  17.,  35.,  36., 327.
+        11.,  12.,  13.,   5.,   6.,   7.,  15.,  16.,  17.,  35.,  36.,  37.,   9.,   8.,
+        7.,  15.,  16.,  17.,  49.,  48.,  47., 135., 136., 137., 211.,  12.,  13.,  25.,
+        6.,   7.,  15., 216.,  17.,  35.,  36., 327.
  });
 // ----------------------------------------------------------------
     nd4j::ops::extract_image_patches op;
@@ -2159,9 +2154,9 @@ auto exp = NDArrayFactory::create<double>('c', {3, 1, 2, 6}, {
     ASSERT_EQ(result->status(), Status::OK());
 //    x.printIndexedBuffer("images");
 //    nd4j_printf("input params: ksize = [1, 2, 1, 1], strides = [1, 3, 2, 1], rates = [1, 2, 2, 1]\n", "");
-//    result->at(0)->printIndexedBuffer("Output");
+    result->at(0)->printBuffer("Output");
     //result->at(0)->printShapeInfo("Out Shape");
-//    exp.printIndexedBuffer("Expect");
+    exp.printBuffer("Expect");
     //exp.printShapeInfo("Exp Shape");
 
     ASSERT_TRUE(exp.isSameShape(result->at(0)));
@@ -2324,6 +2319,373 @@ TEST_F(DeclarableOpsTests7, TestExtractImagePatches_SGO_8) {
     auto result = op.execute({&x}, {}, {2,2, 1,1, 1,1, 1}); // equiv TF ksizes=[1,2,2,1], strides=[1,1,1,1], rates=[1,1,1,1], padding="SAME"
     ASSERT_EQ(result->status(), Status::OK());
     auto output = result->at(0);
+//    output->printBuffer("Output");
+//    exp.printBuffer("Expect");
+//    for (Nd4jLong e = 0; e < exp.lengthOf(); e++)
+//        if (exp.e<double>(e) != output->e<double>(e))
+//            printf("%lld ", e);
+//    printf("\n");
+    //result->at(1)->printBuffer("OUtput2");
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests7, TestExtractImagePatches_SGO_9) {
+    auto x = NDArrayFactory::create<double>('c', {1, 6, 6, 2});
+    x.linspace(1);
+
+//Images shape is  (1, 3, 3, 4)
+//[1, 1, 1, 1]
+//[1, 3, 2, 1]
+    auto exp = NDArrayFactory::create<double>('c', {1, 6, 6, 18}, {
+            0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  1.,  2.,  3.,  4.,  0.,  0., 13., 14., 15., 16.,
+            0.,  0.,  0.,  0.,  0.,  0.,  1.,  2.,  3.,  4.,  5.,  6., 13., 14., 15., 16., 17., 18.,
+            0.,  0.,  0.,  0.,  0.,  0.,  3.,  4.,  5.,  6.,  7.,  8., 15., 16., 17., 18., 19., 20.,
+            0.,  0.,  0.,  0.,  0.,  0.,  5.,  6.,  7.,  8.,  9., 10., 17., 18., 19., 20., 21., 22.,
+            0.,  0.,  0.,  0.,  0.,  0.,  7.,  8.,  9., 10., 11., 12., 19., 20., 21., 22., 23., 24.,
+            0.,  0.,  0.,  0.,  0.,  0.,  9., 10., 11., 12.,  0.,  0., 21., 22., 23., 24.,  0.,  0.,
+            0.,  0.,  1.,  2.,  3.,  4.,  0.,  0., 13., 14., 15., 16.,  0.,  0., 25., 26., 27., 28.,
+            1.,  2.,  3.,  4.,  5.,  6., 13., 14., 15., 16., 17., 18., 25., 26., 27., 28., 29., 30.,
+            3.,  4.,  5.,  6.,  7.,  8., 15., 16., 17., 18., 19., 20., 27., 28., 29., 30., 31., 32.,
+            5.,  6.,  7.,  8.,  9., 10., 17., 18., 19., 20., 21., 22., 29., 30., 31., 32., 33., 34.,
+            7.,  8.,  9., 10., 11., 12., 19., 20., 21., 22., 23., 24., 31., 32., 33., 34., 35., 36.,
+            9., 10., 11., 12.,  0.,  0., 21., 22., 23., 24.,  0.,  0., 33., 34., 35., 36.,  0.,  0.,
+            0.,  0., 13., 14., 15., 16.,  0.,  0., 25., 26., 27., 28.,  0.,  0., 37., 38., 39., 40.,
+           13., 14., 15., 16., 17., 18., 25., 26., 27., 28., 29., 30., 37., 38., 39., 40., 41., 42.,
+           15., 16., 17., 18., 19., 20., 27., 28., 29., 30., 31., 32., 39., 40., 41., 42., 43., 44.,
+           17., 18., 19., 20., 21., 22., 29., 30., 31., 32., 33., 34., 41., 42., 43., 44., 45., 46.,
+           19., 20., 21., 22., 23., 24., 31., 32., 33., 34., 35., 36., 43., 44., 45., 46., 47., 48.,
+           21., 22., 23., 24.,  0.,  0., 33., 34., 35., 36.,  0.,  0., 45., 46., 47., 48.,  0.,  0.,
+            0.,  0., 25., 26., 27., 28.,  0.,  0., 37., 38., 39., 40.,  0.,  0., 49., 50., 51., 52.,
+           25., 26., 27., 28., 29., 30., 37., 38., 39., 40., 41., 42., 49., 50., 51., 52., 53., 54.,
+           27., 28., 29., 30., 31., 32., 39., 40., 41., 42., 43., 44., 51., 52., 53., 54., 55., 56.,
+           29., 30., 31., 32., 33., 34., 41., 42., 43., 44., 45., 46., 53., 54., 55., 56., 57., 58.,
+           31., 32., 33., 34., 35., 36., 43., 44., 45., 46., 47., 48., 55., 56., 57., 58., 59., 60.,
+           33., 34., 35., 36.,  0.,  0., 45., 46., 47., 48.,  0.,  0., 57., 58., 59., 60.,  0.,  0.,
+            0.,  0., 37., 38., 39., 40.,  0.,  0., 49., 50., 51., 52.,  0.,  0., 61., 62., 63., 64.,
+           37., 38., 39., 40., 41., 42., 49., 50., 51., 52., 53., 54., 61., 62., 63., 64., 65., 66.,
+           39., 40., 41., 42., 43., 44., 51., 52., 53., 54., 55., 56., 63., 64., 65., 66., 67., 68.,
+           41., 42., 43., 44., 45., 46., 53., 54., 55., 56., 57., 58., 65., 66., 67., 68., 69., 70.,
+           43., 44., 45., 46., 47., 48., 55., 56., 57., 58., 59., 60., 67., 68., 69., 70., 71., 72.,
+           45., 46., 47., 48.,  0.,  0., 57., 58., 59., 60.,  0.,  0., 69., 70., 71., 72.,  0.,  0.,
+            0.,  0., 49., 50., 51., 52.,  0.,  0., 61., 62., 63., 64.,  0.,  0.,  0.,  0.,  0.,  0.,
+           49., 50., 51., 52., 53., 54., 61., 62., 63., 64., 65., 66.,  0.,  0.,  0.,  0.,  0.,  0.,
+           51., 52., 53., 54., 55., 56., 63., 64., 65., 66., 67., 68.,  0.,  0.,  0.,  0.,  0.,  0.,
+           53., 54., 55., 56., 57., 58., 65., 66., 67., 68., 69., 70.,  0.,  0.,  0.,  0.,  0.,  0.,
+           55., 56., 57., 58., 59., 60., 67., 68., 69., 70., 71., 72.,  0.,  0.,  0.,  0.,  0.,  0.,
+           57., 58., 59., 60.,  0.,  0., 69., 70., 71., 72.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.});
+// ----------------------------------------------------------------
+    nd4j::ops::extract_image_patches op;
+
+    auto result = op.execute({&x}, {}, {3,3, 1,1, 1,1, 1}); // equiv TF ksizes=[1,2,2,1], strides=[1,1,1,1], rates=[1,1,1,1], padding="SAME"
+    ASSERT_EQ(result->status(), Status::OK());
+    auto output = result->at(0);
+//    output->printBuffer("OutputSame");
+//    exp.printBuffer("ExpectSame");
+//    for (Nd4jLong e = 0; e < exp.lengthOf(); e++)
+//        if (exp.e<double>(e) != output->e<double>(e))
+//            printf("%lld ", e);
+//    printf("\n");
+    //result->at(1)->printBuffer("OUtput2");
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests7, TestExtractImagePatches_SGO_9_1) {
+    auto x = NDArrayFactory::create<double>('c', {1, 4, 4, 2}, {1, 116, 2, 116, 3, 116, 4, 116,
+                                                                5, 117, 6, 117, 7, 117, 8, 117,
+                                                                9, 118, 10, 118, 11, 118, 12, 118,
+                                                                13, 119, 14, 119, 15, 119, 16, 119});
+    //x.linspace(1);
+
+//Images shape is  (1, 3, 3, 4)
+//[1, 1, 1, 1]
+//[1, 3, 2, 1]
+    auto exp = NDArrayFactory::create<double>('c', {1, 4, 4, 8}, {
+ 1, 116,   2, 116,   5, 117,   6, 117,   2, 116,   3, 116,   6, 117,   7, 117,   3, 116,
+ 4, 116,   7, 117,   8, 117,   4, 116,   0,   0,   8, 117,   0,   0,   5, 117,   6, 117,
+ 9, 118,  10, 118,   6, 117,   7, 117,  10, 118,  11, 118,   7, 117,   8, 117,  11, 118,
+12, 118,   8, 117,   0,   0,  12, 118,   0,   0,   9, 118,  10, 118,  13, 119,  14, 119,
+10, 118,  11, 118,  14, 119,  15, 119,  11, 118,  12, 118,  15, 119,  16, 119,  12, 118,
+ 0,   0,  16, 119,   0,   0,  13, 119,  14, 119,   0,   0,   0,   0,  14, 119,  15, 119,
+ 0,   0,   0,   0,  15, 119,  16, 119,   0,   0,   0,   0,  16, 119,   0,   0,   0,   0,
+ 0,   0
+
+    });
+// ----------------------------------------------------------------
+    nd4j::ops::extract_image_patches op;
+
+    auto result = op.execute({&x}, {}, {2,2, 1,1, 1,1, 1}); // equiv TF ksizes=[1,2,2,1], strides=[1,1,1,1], rates=[1,1,1,1], padding="SAME"
+    ASSERT_EQ(result->status(), Status::OK());
+    auto output = result->at(0);
+//    output->printBuffer("OutputSame");
+//    exp.printBuffer("ExpectSame");
+//    for (Nd4jLong e = 0; e < exp.lengthOf(); e++)
+//        if (exp.e<double>(e) != output->e<double>(e))
+//            printf("%lld ", e);
+//    printf("\n");
+    //result->at(1)->printBuffer("OUtput2");
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+
+    delete result;
+}
+
+//
+//
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests7, TestExtractImagePatches_SGO_10) {
+    auto x = NDArrayFactory::create<double>('c', {1, 6, 6, 2});
+    x.linspace(1);
+
+//Images shape is  (1, 3, 3, 4)
+//[1, 1, 1, 1]
+//[1, 3, 2, 1]
+    auto exp = NDArrayFactory::create<double>('c', {1, 4, 4, 18}, {
+            1.,  2.,  3.,  4.,  5.,  6., 13., 14., 15., 16., 17., 18., 25., 26., 27., 28., 29., 30.,
+            3.,  4.,  5.,  6.,  7.,  8., 15., 16., 17., 18., 19., 20., 27., 28., 29., 30., 31., 32.,
+            5.,  6.,  7.,  8.,  9., 10., 17., 18., 19., 20., 21., 22., 29., 30., 31., 32., 33., 34.,
+            7.,  8.,  9., 10., 11., 12., 19., 20., 21., 22., 23., 24., 31., 32., 33., 34., 35., 36.,
+           13., 14., 15., 16., 17., 18., 25., 26., 27., 28., 29., 30., 37., 38., 39., 40., 41., 42.,
+           15., 16., 17., 18., 19., 20., 27., 28., 29., 30., 31., 32., 39., 40., 41., 42., 43., 44.,
+           17., 18., 19., 20., 21., 22., 29., 30., 31., 32., 33., 34., 41., 42., 43., 44., 45., 46.,
+           19., 20., 21., 22., 23., 24., 31., 32., 33., 34., 35., 36., 43., 44., 45., 46., 47., 48.,
+           25., 26., 27., 28., 29., 30., 37., 38., 39., 40., 41., 42., 49., 50., 51., 52., 53., 54.,
+           27., 28., 29., 30., 31., 32., 39., 40., 41., 42., 43., 44., 51., 52., 53., 54., 55., 56.,
+           29., 30., 31., 32., 33., 34., 41., 42., 43., 44., 45., 46., 53., 54., 55., 56., 57., 58.,
+           31., 32., 33., 34., 35., 36., 43., 44., 45., 46., 47., 48., 55., 56., 57., 58., 59., 60.,
+           37., 38., 39., 40., 41., 42., 49., 50., 51., 52., 53., 54., 61., 62., 63., 64., 65., 66.,
+           39., 40., 41., 42., 43., 44., 51., 52., 53., 54., 55., 56., 63., 64., 65., 66., 67., 68.,
+           41., 42., 43., 44., 45., 46., 53., 54., 55., 56., 57., 58., 65., 66., 67., 68., 69., 70.,
+           43., 44., 45., 46., 47., 48., 55., 56., 57., 58., 59., 60., 67., 68., 69., 70., 71., 72.});
+// ----------------------------------------------------------------
+    nd4j::ops::extract_image_patches op;
+    //x.printIndexedBuffer("Images");
+    //x.printBuffer("Images linear");
+    auto result = op.execute({&x}, {}, {3,3, 1,1, 1,1, 0}); // equiv TF ksizes=[1,2,2,1], strides=[1,1,1,1], rates=[1,1,1,1], padding="VALID"
+    ASSERT_EQ(result->status(), Status::OK());
+    auto output = result->at(0);
+//    output->printBuffer("OutputValid");
+//    exp.printBuffer("ExpectValid");
+//    for (Nd4jLong e = 0; e < exp.lengthOf(); e++)
+//        if (exp.e<double>(e) != output->e<double>(e))
+//            printf("%lld ", e);
+//    printf("\n");
+    //result->at(1)->printBuffer("OUtput2");
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+
+    delete result;
+}
+TEST_F(DeclarableOpsTests7, TestExtractImagePatches_SGO_010) {
+    auto x = NDArrayFactory::create<double>('c', {1, 4, 4, 1});
+    x.linspace(1);
+
+//Images shape is  (1, 3, 3, 4)
+//[1, 1, 1, 1]
+//[1, 3, 2, 1]
+    auto exp = NDArrayFactory::create<double>('c', {1, 3, 3, 4}, {
+            1,  2,  5,  6,  2,  3,  6,  7,  3,  4,  7,  8,  5,  6,  9, 10,  6,  7, 10, 11,  7,  8, 11, 12,
+            9, 10, 13, 14, 10, 11, 14, 15, 11, 12, 15, 16});
+// ----------------------------------------------------------------
+    nd4j::ops::extract_image_patches op;
+    //x.printIndexedBuffer("Images");
+    //x.printBuffer("Images linear");
+    auto result = op.execute({&x}, {}, {2,2, 1,1, 1,1, 0}); // equiv TF ksizes=[1,2,2,1], strides=[1,1,1,1], rates=[1,1,1,1], padding="VALID"
+    ASSERT_EQ(result->status(), Status::OK());
+    auto output = result->at(0);
+//    output->printBuffer("OutputValid");
+//    exp.printBuffer("ExpectValid");
+//    for (Nd4jLong e = 0; e < exp.lengthOf(); e++)
+//        if (exp.e<double>(e) != output->e<double>(e))
+//            printf("%lld ", e);
+//    printf("\n");
+    //result->at(1)->printBuffer("OUtput2");
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+
+    delete result;
+}
+TEST_F(DeclarableOpsTests7, TestExtractImagePatches_SGO_010_1) {
+    auto x = NDArrayFactory::create<double>('c', {1, 4, 4, 1});
+    x.linspace(1);
+
+//Images shape is  (1, 3, 3, 4)
+//[1, 1, 1, 1]
+//[1, 3, 2, 1]
+    auto exp = NDArrayFactory::create<double>('c', {1, 4, 4, 4}, {
+            1,  2,  5,  6,  2,  3,  6,  7,  3,  4,  7,  8,  4,  0,  8,  0,  5,  6,  9, 10,  6,  7, 10, 11,
+            7,  8, 11, 12,  8,  0, 12,  0,  9, 10, 13, 14, 10, 11, 14, 15, 11, 12, 15, 16, 12,  0, 16,  0,
+            13, 14,  0,  0, 14, 15,  0,  0, 15, 16,  0,  0, 16,  0,  0,  0});
+// ----------------------------------------------------------------
+    nd4j::ops::extract_image_patches op;
+    //x.printIndexedBuffer("Images");
+    //x.printBuffer("Images linear");
+    auto result = op.execute({&x}, {}, {2,2, 1,1, 1,1, 1}); // equiv TF ksizes=[1,2,2,1], strides=[1,1,1,1], rates=[1,1,1,1], padding="VALID"
+    ASSERT_EQ(result->status(), Status::OK());
+    auto output = result->at(0);
+//    output->printBuffer("OutputSame");
+//    exp.printBuffer("ExpectSame");
+//    exp.printIndexedBuffer("Expect Same Formatted");
+//    output->printIndexedBuffer("Output Same Formatted");
+//    for (Nd4jLong e = 0; e < exp.lengthOf(); e++)
+//        if (exp.e<double>(e) != output->e<double>(e))
+//            printf("%lld ", e);
+//    printf("\n");
+    //result->at(1)->printBuffer("OUtput2");
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+
+    delete result;
+}
+
+TEST_F(DeclarableOpsTests7, TestExtractImagePatches_SGO_011) {
+    auto x = NDArrayFactory::create<double>('c', {1, 4, 4, 1});
+    x.linspace(1);
+
+//Images shape is  (1, 3, 3, 4)
+//[1, 1, 1, 1]
+//[1, 3, 2, 1]
+    auto exp = NDArrayFactory::create<double>('c', {1, 2, 2, 4}, {
+            1,  3,  9, 11,  2,  4, 10, 12,  5,  7, 13, 15,  6,  8, 14, 16,
+            });
+// ----------------------------------------------------------------
+    nd4j::ops::extract_image_patches op;
+    //x.printIndexedBuffer("Images");
+    //x.printBuffer("Images linear");
+    auto result = op.execute({&x}, {}, {2,2, 1,1, 2,2, 0}); // equiv TF ksizes=[1,2,2,1], strides=[1,1,1,1], rates=[1,1,1,1], padding="VALID"
+    ASSERT_EQ(result->status(), Status::OK());
+    auto output = result->at(0);
+//    output->printBuffer("OutputValid");
+//    exp.printBuffer("ExpectValid");
+//    for (Nd4jLong e = 0; e < exp.lengthOf(); e++)
+//        if (exp.e<double>(e) != output->e<double>(e))
+//            printf("%lld ", e);
+//    printf("\n");
+    //result->at(1)->printBuffer("OUtput2");
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests7, TestExtractImagePatches_SGO_11) {
+    auto x = NDArrayFactory::create<double>('c', {1, 8, 8, 2});
+    x.linspace(1);
+
+//Images shape is  (1, 3, 3, 4)
+//[1, 1, 1, 1]
+//[1, 3, 2, 1]
+    auto exp = NDArrayFactory::create<double>('c', {1, 4, 4, 8}, {
+            1,   2,   3,   4,  17,  18,  19,  20,   5,   6,   7,   8,  21,  22,  23,  24,   9,  10,
+            11, 12,  25,  26,  27,  28,  13,  14,  15,  16,  29,  30,  31,  32,  33,  34,  35,  36,
+            49,  50,  51,  52,  37,  38,  39,  40,  53,  54,  55,  56,  41,  42,  43,  44,  57,  58,
+            59,  60,  45,  46,  47,  48,  61,  62,  63,  64,  65,  66,  67,  68,  81,  82,  83,  84,
+            69,  70,  71,  72,  85,  86,  87,  88,  73,  74,  75,  76,  89,  90,  91,  92,  77,  78,
+            79,  80, 93,  94,  95,  96, 97,  98,  99, 100, 113, 114, 115, 116, 101, 102, 103, 104,
+            117, 118, 119, 120, 105, 106, 107, 108, 121, 122, 123, 124, 109, 110, 111, 112, 125, 126,
+            127, 128});
+// ----------------------------------------------------------------
+    nd4j::ops::extract_image_patches op;
+
+    auto result = op.execute({&x}, {}, {2,2, 2,2, 1,1, 1}); // equiv TF ksizes=[1,2,2,1], strides=[1,1,1,1], rates=[1,1,1,1], padding="SAME"
+    ASSERT_EQ(result->status(), Status::OK());
+    auto output = result->at(0);
+//    output->printBuffer("Output");
+//    exp.printBuffer("Expect");
+//    for (Nd4jLong e = 0; e < exp.lengthOf(); e++)
+//        if (exp.e<double>(e) != output->e<double>(e))
+//            printf("%lld ", e);
+//    printf("\n");
+    //result->at(1)->printBuffer("OUtput2");
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests7, TestExtractImagePatches_SGO_12) {
+    auto x = NDArrayFactory::create<double>('c', {1, 8, 8, 2});
+    x.linspace(1);
+
+//Images shape is  (1, 3, 3, 4)
+//[1, 1, 1, 1]
+//[1, 3, 2, 1]
+    auto exp = NDArrayFactory::create<double>('c', {1, 8, 8, 8}, {
+              0,   0,   0,   0,   0,   0,  19,  20,   0,   0,   0,   0,  17,  18,  21,  22,   0,   0,
+              0,   0,  19,  20,  23,  24,   0,   0,   0,   0,  21,  22,  25,  26,   0,   0,   0,   0,
+             23,  24,  27,  28,   0,   0,   0,   0,  25,  26,  29,  30,   0,   0,   0,   0,  27,  28,
+             31,  32,   0,   0,   0,   0,  29,  30,   0,   0,   0,   0,   3,   4,   0,   0,  35,  36,
+              1,   2,   5,   6,  33,  34,  37,  38,   3,   4,   7,   8,  35,  36,  39,  40,   5,   6,
+              9,  10,  37,  38,  41,  42,   7,   8,  11,  12,  39,  40,  43,  44,   9,  10,  13,  14,
+             41,  42,  45,  46,  11,  12,  15,  16,  43,  44,  47,  48,  13,  14,   0,   0,  45,  46,
+              0,   0,   0,   0,  19,  20,   0,   0,  51,  52,  17,  18,  21,  22,  49,  50,  53,  54,
+             19,  20,  23,  24,  51,  52,  55,  56,  21,  22,  25,  26,  53,  54,  57,  58,  23,  24,
+             27,  28,  55,  56,  59,  60,  25,  26,  29,  30,  57,  58,  61,  62,  27,  28,  31,  32,
+             59,  60,  63,  64,  29,  30,   0,   0,  61,  62,   0,   0,   0,   0,  35,  36,   0,   0,
+             67,  68,  33,  34,  37,  38,  65,  66,  69,  70,  35,  36,  39,  40,  67,  68,  71,  72,
+             37,  38,  41,  42,  69,  70,  73,  74,  39,  40,  43,  44,  71,  72,  75,  76,  41,  42,
+             45,  46,  73,  74,  77,  78,  43,  44,  47,  48,  75,  76,  79,  80,  45,  46,   0,   0,
+             77,  78,   0,   0,   0,   0,  51,  52,   0,   0,  83,  84,  49,  50,  53,  54,  81,  82,
+             85,  86,  51,  52,  55,  56,  83,  84,  87,  88,  53,  54,  57,  58,  85,  86,  89,  90,
+             55,  56,  59,  60,  87,  88,  91,  92,  57,  58,  61,  62,  89,  90,  93,  94,  59,  60,
+             63,  64,  91,  92,  95,  96,  61,  62,   0,   0,  93,  94,   0,   0,   0,   0,  67,  68,
+              0,   0,  99, 100,  65,  66,  69,  70,  97,  98, 101, 102,  67,  68,  71,  72,  99, 100,
+            103, 104,  69,  70,  73,  74, 101, 102, 105, 106,  71,  72,  75,  76, 103, 104, 107, 108,
+             73,  74,  77,  78, 105, 106, 109, 110,  75,  76,  79,  80, 107, 108, 111, 112,  77,  78,
+              0,   0, 109, 110,   0,   0,   0,   0,  83,  84,   0,   0, 115, 116,  81,  82,  85,  86,
+            113, 114, 117, 118,  83,  84,  87,  88, 115, 116, 119, 120,  85,  86,  89,  90, 117, 118,
+            121, 122,  87,  88,  91,  92, 119, 120, 123, 124,  89,  90,  93,  94, 121, 122, 125, 126,
+             91,  92,  95,  96, 123, 124, 127, 128,  93,  94,   0,   0, 125, 126,   0,   0,   0,   0,
+             99, 100,   0,   0,   0,   0,  97,  98, 101, 102,   0,   0,   0,   0,  99, 100, 103, 104,
+              0,   0,   0,   0, 101, 102, 105, 106,   0,   0,   0,   0, 103, 104, 107, 108,   0,   0,
+              0,   0, 105, 106, 109, 110,   0,   0,   0,   0, 107, 108, 111, 112,   0,   0,   0,   0,
+            109, 110,   0,   0,   0,   0,   0,   0});
+// ----------------------------------------------------------------
+    nd4j::ops::extract_image_patches op;
+
+    auto result = op.execute({&x}, {}, {2,2, 1,1, 2,2, 1}); // equiv TF ksizes=[1,2,2,1], strides=[1,1,1,1], rates=[1,2,2,1], padding="SAME"
+    ASSERT_EQ(result->status(), Status::OK());
+    auto output = result->at(0);
+    //output->printShapeInfo("Output shape");
+//    output->printIndexedBuffer("Output");
+//    exp.printBuffer("Expect");
+//    for (Nd4jLong e = 0; e < exp.lengthOf(); e++)
+//        if (exp.e<double>(e) != output->e<double>(e))
+//            printf("%lld ", e);
+//    printf("\n");
+    //result->at(1)->printBuffer("OUtput2");
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests7, TestExtractImagePatches_SGO_13) {
+    auto x = NDArrayFactory::create<double>('c', {1, 3, 3, 2});
+    x.linspace(1);
+
+    auto exp = NDArrayFactory::create<double>('c', {1, 3, 3, 8}, {
+            1.,  2.,  3.,  4.,  7.,  8.,  9., 10.,  3.,  4.,  5.,  6.,  9., 10., 11., 12.,  5.,  6.,
+            0.,  0., 11., 12.,  0.,  0.,  7.,  8.,  9., 10., 13., 14., 15., 16.,  9., 10., 11., 12.,
+            15., 16., 17., 18., 11., 12.,  0.,  0., 17., 18.,  0.,  0., 13., 14., 15., 16.,  0.,  0.,
+            0.,  0., 15., 16., 17., 18.,  0.,  0.,  0.,  0., 17., 18.,  0.,  0.,  0.,  0.,  0.,  0. });
+// ----------------------------------------------------------------
+    nd4j::ops::extract_image_patches op;
+
+    auto result = op.execute({&x}, {}, {2,2, 1,1, 1,1, 1}); // equiv TF ksizes=[1,2,2,1], strides=[1,1,1,1], rates=[1,1,1,1], padding="SAME"
+    ASSERT_EQ(result->status(), Status::OK());
+    auto output = result->at(0);
+//    output->printShapeInfo("Output shape");
 //    output->printBuffer("Output");
 //    exp.printBuffer("Expect");
 //    for (Nd4jLong e = 0; e < exp.lengthOf(); e++)

@@ -477,11 +477,14 @@ public class NativeImageLoader extends BaseImageLoader {
             for (long k = 0; k < channels; k++) {
                 for (long i = 0; i < rows; i++) {
                     for (long j = 0; j < cols; j++) {
-                        if (channels > 1) {
+                        if (ret.rank() == 3) {
                             ret.putScalar(k, i, j, idx.getDouble(i, j, k));
-                        } else {
+                        } else if (ret.rank() == 4) {
+                            ret.putScalar(1, k, i, j, idx.getDouble(i, j, k));
+                        } else if (ret.rank() == 2) {
                             ret.putScalar(i, j, idx.getDouble(i, j));
-                        }
+                        } else
+                            throw new ND4JIllegalStateException("NativeImageLoader expects 2D, 3D or 4D output array, but " + ret.rank() + "D array was given");
                     }
                 }
             }
