@@ -20,7 +20,7 @@ using namespace simdOps;
 
 namespace nd4j {
     template<typename X, typename Y>
-    class ReduceFloatWrapper {
+    class ND4J_EXPORT ReduceFloatWrapper {
     public:
         template<typename OpType>
         static void

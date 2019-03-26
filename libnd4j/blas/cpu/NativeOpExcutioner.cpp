@@ -135,11 +135,11 @@ void NativeOpExcutioner::execBroadcast(int opNum, void *x, Nd4jLong *xShapeInfo,
     int axis = 0;
     auto isVector = shape::isCommonVector(yShapeInfo, axis);
     auto isConvertible = nd4j::isConvertibleToScalar((nd4j::broadcast::Ops) opNum);
-    auto scalarOp = nd4j::convertToScalar((nd4j::broadcast::Ops) opNum);
 
     // add column vector case for C ordered columnAdd
     if (xOrder == 'c' && zOrder == 'c' && xEws == 1 && zEws == 1 && yEws == 1 && xRank == 2 && isVector && dimensionLength == 1 && dimension[0] == 0 && isConvertible) {
         // invoke scalar along dimension here
+        auto scalarOp = nd4j::convertToScalar((nd4j::broadcast::Ops) opNum);
         int newDim = 1;
         auto tadPack = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(xShapeInfo, newDim);
 
@@ -151,6 +151,7 @@ void NativeOpExcutioner::execBroadcast(int opNum, void *x, Nd4jLong *xShapeInfo,
 
     } else if (xOrder == 'f' && zOrder == 'f' && xEws == 1 && zEws == 1 && yEws == 1 && xRank == 2 && isVector && dimensionLength == 1 && dimension[0] == 1 && isConvertible) {
         // add row vector case for F ordered rowAdd
+        auto scalarOp = nd4j::convertToScalar((nd4j::broadcast::Ops) opNum);
         int newDim = 0;
         auto tadPack = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(xShapeInfo, newDim);
 
