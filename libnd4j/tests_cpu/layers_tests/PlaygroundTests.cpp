@@ -49,6 +49,50 @@ public:
     }
 };
 
+TEST_F(PlaygroundTests, BroadcastOps2d) {
+    BenchmarkHelper helper;
+
+    PredefinedParameters rows("rows", {1024, 1048576});
+    IntPowerParameters cols("cols", 2, 2, 10, 2);      //2^1 to 2^10 in steps of 2 - 2^1=2, ..., 2^10=1024
+    BoolParameters axis("axis");
+    BoolParameters inplace("inplace");
+
+    ParametersBatch batch({&rows, &cols, &axis, &inplace});
+
+    auto generator = PARAMETRIC_D() {
+        nd4j_printf("Entered generator\n","");
+        auto a = p.getIntParam("axis");
+        auto arr = NDArrayFactory::create_<float>('c', {p.getIntParam("rows"), p.getIntParam("cols")});
+        nd4j_printf("Created first array: [%lld, %lld]\n",arr->sizeAt(0), arr->sizeAt(1));
+
+        auto ctx = new Context(1);
+        ctx->setInputArray(0, arr, true);
+        if(a == 0){
+            ctx->setInputArray(1, NDArrayFactory::create_<float>('c', {p.getIntParam("rows"), 1}), true);
+            nd4j_printf("Created second array (a=0): [%lld, %lld]\n",ctx->getNDArray(1)->sizeAt(0), ctx->getNDArray(1)->sizeAt(1));
+        } else {
+            ctx->setInputArray(1, NDArrayFactory::create_<float>('c', {1, p.getIntParam("cols")}), true);
+            nd4j_printf("Created second array (a=1): [%lld, %lld]\n",ctx->getNDArray(1)->sizeAt(0), ctx->getNDArray(1)->sizeAt(1));
+        }
+        if (p.getIntParam("inplace") == 1) {
+            ctx->setOutputArray(0, arr, false);
+            ctx->markInplace(true);
+            nd4j_printf("Set result array (inplace)\n","");
+        } else {
+            auto out = NDArrayFactory::create_<float>('c', {p.getIntParam("rows"), p.getIntParam("cols")});
+            ctx->setOutputArray(0, out, true);
+            nd4j_printf("Created and set result array (not inplace): [%lld, %lld]\n",out->sizeAt(0), out->sizeAt(1));
+        }
+        return ctx;
+    };
+
+    std::string s("add");
+    nd4j::ops::add op;
+    DeclarableBenchmark benchmark(op, "add");
+    nd4j_printf("About to execute\n","");
+    helper.runOperationSuit(&benchmark, generator, batch, "Broadcast (Custom) Add - 2d");
+}
+
 TEST_F(PlaygroundTests, Test_OpBenchmark_1) {
 
     BenchmarkHelper helper;
