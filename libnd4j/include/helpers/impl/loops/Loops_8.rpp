@@ -14,33 +14,18 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
+//
+// @author Yurii Shyrma (iuriish@yahoo.com), created on 25.03.2019
+//
+
 #include "helpers/Loops.hpp"
 
 using namespace simdOps;
 
 namespace nd4j {
-
-template <typename X, typename Y>
-class ReduceBoolWrapper {
-
-    public:
-
-        //////////////////////////////////////////////////////////////////////////////
-        template <typename OpType>
-        static void wrapper(const X *x, const Nd4jLong* xShapeInfo, Y *z, const Nd4jLong *zShapeInfo, const Nd4jLong *tadShapeInfo, const Nd4jLong *tadOffset, const int* dimsToExclude, const int dimsLen, X *extras) {
-            Loops::loopTadXZ<X, Y, X, OpType>(x, xShapeInfo, z, zShapeInfo,  tadShapeInfo, tadOffset, dimsToExclude, dimsLen, extras);
-        }
-
-        //////////////////////////////////////////////////////////////////////////////
-        static void wrap(const int opNum, const X *x, const Nd4jLong* xShapeInfo, Y *z, const Nd4jLong *zShapeInfo,  const Nd4jLong *tadShapeInfo, const Nd4jLong *tadOffset, const int* dimsToExclude, const int dimsLen, X *extras) {
-            DISPATCH_BY_OPNUM_TT(wrapper, PARAMS(x, xShapeInfo, z, zShapeInfo,  tadShapeInfo, tadOffset, dimsToExclude, dimsLen, extras), REDUCE_BOOL_OPS);
-        }
-};
-
-
-
+    
 template<typename X, typename Y>
-class TransformBoolWrapper {
+class TransformAnyWrapper {
 
     public:
 
@@ -52,13 +37,15 @@ class TransformBoolWrapper {
 
         //////////////////////////////////////////////////////////////////////////////
         static void wrap(const int opNum, const X *x, const Nd4jLong *xShapeInfo, Y *z, const Nd4jLong *zShapeInfo, X *extras) {
-            DISPATCH_BY_OPNUM_TT(wrapper, PARAMS(x, xShapeInfo, z, zShapeInfo, extras), TRANSFORM_BOOL_OPS);
+            DISPATCH_BY_OPNUM_TT(wrapper, PARAMS(x, xShapeInfo, z, zShapeInfo, extras), TRANSFORM_ANY_OPS);
         }
 };
 
 
 
 
-BUILD_DOUBLE_TEMPLATE(template class ReduceBoolWrapper, , LIBND4J_TYPES, BOOL_TYPES);
-BUILD_DOUBLE_TEMPLATE(template class TransformBoolWrapper, , LIBND4J_TYPES, BOOL_TYPES);
+
+
+BUILD_DOUBLE_TEMPLATE(template class TransformAnyWrapper, , LIBND4J_TYPES, LIBND4J_TYPES);
+
 }
