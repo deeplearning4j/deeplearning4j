@@ -18,6 +18,7 @@ package org.datavec.api.split;
 
 import java.io.*;
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.LinkedList;
@@ -34,7 +35,7 @@ public class CollectionInputSplit extends BaseInputSplit {
     }
 
     public CollectionInputSplit(Collection<URI> list) {
-        uriStrings = new LinkedList<>();
+        uriStrings = new ArrayList<>(list.size());
         for (URI uri : list) {
             uriStrings.add(uri.toString());
         }

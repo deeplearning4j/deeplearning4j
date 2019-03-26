@@ -74,14 +74,9 @@ public class JacksonLineSequenceRecordReader extends FileRecordReader implements
             throw new NoSuchElementException("No next element");
         }
 
-        File next = iter.next();
-        List<List<Writable>> out;
-        try {
-            out = loadAndClose(new FileInputStream(next));
-        } catch (IOException e){
-            throw new RuntimeException(e);
-        }
-        return new org.datavec.api.records.impl.SequenceRecord(out, new RecordMetaDataURI(next.toURI()));
+        URI next = locationsIterator.next();
+        List<List<Writable>> out = loadAndClose(streamCreatorFn.apply(next));
+        return new org.datavec.api.records.impl.SequenceRecord(out, new RecordMetaDataURI(next));
     }
 
     @Override

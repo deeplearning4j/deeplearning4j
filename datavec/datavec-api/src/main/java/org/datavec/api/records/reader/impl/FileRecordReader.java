@@ -16,7 +16,6 @@
 
 package org.datavec.api.records.reader.impl;
 
-import org.apache.commons.io.FileUtils;
 import org.datavec.api.conf.Configuration;
 import org.datavec.api.records.Record;
 import org.datavec.api.records.metadata.RecordMetaData;
@@ -41,10 +40,12 @@ import java.util.List;
  */
 public class FileRecordReader extends BaseRecordReader {
 
-    protected Iterator<File> iter;
-    protected Iterator<String> locationsIterator;
+//    protected Iterator<File> iter;
+//    protected Iterator<String> locationsIterator;
+    protected Iterator<URI> locationsIterator;
     protected Configuration conf;
-    protected File currentFile;
+//    protected File currentFile;
+    protected URI currentUri;
     protected List<String> labels;
     protected boolean appendLabel = false;
     protected InputSplit inputSplit;
@@ -73,7 +74,7 @@ public class FileRecordReader extends BaseRecordReader {
                     labels.add(labelDir.getName());
             }
         }
-        locationsIterator = split.locationsPathIterator();
+        locationsIterator = split.locationsIterator();
     }
 
     @Override
@@ -89,14 +90,32 @@ public class FileRecordReader extends BaseRecordReader {
         return nextRecord().getRecord();
     }
 
-    private List<Writable> loadFromFile(File next) {
+//    private List<Writable> loadFromFile(File next) {
+//        List<Writable> ret = new ArrayList<>();
+//        try {
+//            ret.add(new Text(FileUtils.readFileToString(next)));
+//            if (appendLabel)
+//                ret.add(new IntWritable(labels.indexOf(next.getParentFile().getName())));
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        }
+//        return ret;
+//    }
+
+    private List<Writable> loadFromStream(URI uri, InputStream next) {
         List<Writable> ret = new ArrayList<>();
         try {
-            ret.add(new Text(FileUtils.readFileToString(next)));
-            if (appendLabel)
-                ret.add(new IntWritable(labels.indexOf(next.getParentFile().getName())));
+            if(!(next instanceof BufferedInputStream)){
+                next = new BufferedInputStream(next);
+            }
+            String s = org.apache.commons.io.IOUtils.toString(next);
+            ret.add(new Text(s));
+            if (appendLabel) {
+                int idx = getLabel(uri);
+                ret.add(new IntWritable(idx));
+            }
         } catch (IOException e) {
-            e.printStackTrace();
+            throw new IllegalStateException("Error reading from input stream: " + uri);
         }
         return ret;
     }
@@ -108,7 +127,14 @@ public class FileRecordReader extends BaseRecordReader {
      * @return The index of the current file's parent directory
      */
     public int getCurrentLabel() {
-        return labels.indexOf(currentFile.getParentFile().getName());
+        return getLabel(currentUri);
+    }
+
+    public int getLabel(URI uri){
+        String s = uri.toString();
+        int lastIdx = Math.max(s.lastIndexOf('/'), s.lastIndexOf('\\'));    //Note: if neither are found, -1 is fine here
+        String name = s.substring(lastIdx+1);
+        return labels.indexOf(name);
     }
 
     public List<String> getLabels() {
@@ -121,15 +147,15 @@ public class FileRecordReader extends BaseRecordReader {
 
     @Override
     public boolean hasNext() {
-        if (iter != null && iter.hasNext()) {
-            return true;
-        }
-        if (!locationsIterator.hasNext()) {
-            return false;
-        }
+//        if (iter != null && iter.hasNext()) {
+//            return true;
+//        }
+//        if (!locationsIterator.hasNext()) {
+//            return false;
+//        }
         // iter is exhausted, set to iterate of the next location
-        this.advanceToNextLocation();
-        return iter != null && iter.hasNext();
+//        this.advanceToNextLocation();
+        return locationsIterator.hasNext();
     }
 
     @Override
@@ -191,42 +217,49 @@ public class FileRecordReader extends BaseRecordReader {
 
     @Override
     public Record nextRecord() {
-        if (iter == null || !iter.hasNext()) {
-            this.advanceToNextLocation();
-        }
-        File next = iter.next();
-        this.currentFile = next;
+//        if (iter == null || !iter.hasNext()) {
+//            this.advanceToNextLocation();
+//        }
+//        File next = iter.next();
+//        this.currentFile = next;
+        URI next = locationsIterator.next();
         invokeListeners(next);
-        List<Writable> ret = loadFromFile(next);
+//        List<Writable> ret = loadFromFile(next);
 
-        return new org.datavec.api.records.impl.Record(ret,
-                new RecordMetaDataURI(next.toURI(), FileRecordReader.class));
+        List<Writable> ret;
+        try(InputStream s = streamCreatorFn.apply(next)) {
+            ret = loadFromStream(next, s);
+        } catch (IOException e){
+            throw new RuntimeException("Error reading from stream for URI: " + next);
+        }
+
+        return new org.datavec.api.records.impl.Record(ret,new RecordMetaDataURI(next, FileRecordReader.class));
     }
 
-    protected File nextFile() {
-        if (iter == null || !iter.hasNext()) {
-            this.advanceToNextLocation();
-        }
-        File next = iter.next();
-        this.currentFile = next;
-        return next;
-    }
+//    protected File nextFile() {
+//        if (iter == null || !iter.hasNext()) {
+//            this.advanceToNextLocation();
+//        }
+//        File next = iter.next();
+//        this.currentFile = next;
+//        return next;
+//    }
 
-    protected void advanceToNextLocation () {
-        //File file;
-        String path = locationsIterator.next(); // should always have file:// preceding
-        if(!path.startsWith("file:")){
-            path = "file:///" + path;
-        }
-        if(path.contains("\\")){
-            path = path.replaceAll("\\\\","/");
-        }
-        File file = new File(URI.create(path));
-        if (file.isDirectory())
-            iter = FileUtils.iterateFiles(file, null, true);
-        else
-            iter = Collections.singletonList(file).iterator();
-    }
+//    protected void advanceToNextLocation () {
+//        //File file;
+//        String path = locationsIterator.next(); // should always have file:// preceding
+//        if(!path.startsWith("file:")){
+//            path = "file:///" + path;
+//        }
+//        if(path.contains("\\")){
+//            path = path.replaceAll("\\\\","/");
+//        }
+//        File file = new File(URI.create(path));
+//        if (file.isDirectory())
+//            iter = FileUtils.iterateFiles(file, null, true);
+//        else
+//            iter = Collections.singletonList(file).iterator();
+//    }
 
     @Override
     public Record loadFromMetaData(RecordMetaData recordMetaData) throws IOException {
@@ -240,8 +273,16 @@ public class FileRecordReader extends BaseRecordReader {
         for (RecordMetaData meta : recordMetaDatas) {
             URI uri = meta.getURI();
 
-            File f = new File(uri);
-            List<Writable> list = loadFromFile(f);
+//            File f = new File(uri);
+//            List<Writable> list = loadFromFile(f);
+
+            List<Writable> list;
+            try(InputStream s = streamCreatorFn.apply(uri)) {
+                list = loadFromStream(uri, s);
+            } catch (IOException e){
+                throw new RuntimeException("Error reading from stream for URI: " + uri);
+            }
+
             out.add(new org.datavec.api.records.impl.Record(list, meta));
         }
 
