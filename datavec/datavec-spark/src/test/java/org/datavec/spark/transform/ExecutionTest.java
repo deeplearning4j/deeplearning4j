@@ -23,13 +23,12 @@ import org.datavec.api.transform.TransformProcess;
 import org.datavec.api.transform.reduce.Reducer;
 import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.transform.schema.SequenceSchema;
-import org.datavec.api.writable.DoubleWritable;
-import org.datavec.api.writable.IntWritable;
-import org.datavec.api.writable.Text;
-import org.datavec.api.writable.Writable;
+import org.datavec.api.writable.*;
 import org.datavec.spark.BaseSparkTest;
 import org.datavec.python.PythonTransform;
 import org.junit.Test;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.*;
 
@@ -270,5 +269,48 @@ public class ExecutionTest extends BaseSparkTest {
         assertEquals(expected, out);
     }
 
+    @Test
+    public void testPythonExecutionWithNDArrays() throws Exception{
+        long[] shape = new long[]{3, 2};
+        Schema schema = new Schema.Builder().addColumnInteger("id").addColumnNDArray("col1", shape)
+                .addColumnNDArray("col2", shape).build();
+
+        Schema finalSchema = new Schema.Builder().addColumnInteger("id").addColumnNDArray("col1", shape)
+                .addColumnNDArray("col2", shape).addColumnNDArray("col3", shape).build();
+
+        String pythonCode = "col3 = col1 + col2";
+        TransformProcess tp = new TransformProcess.Builder(schema).transform(
+                new PythonTransform(
+                        pythonCode,
+                        finalSchema
+                )
+        ).build();
+
+        INDArray zeros = Nd4j.zeros(shape);
+        INDArray ones = Nd4j.ones(shape);
+        INDArray twos = ones.add(ones);
+
+        List<List<Writable>> inputData = new ArrayList<>();
+        inputData.add(Arrays.<Writable>asList(new IntWritable(0), new NDArrayWritable(zeros), new NDArrayWritable(zeros)));
+        inputData.add(Arrays.<Writable>asList(new IntWritable(1), new NDArrayWritable(zeros), new NDArrayWritable(ones)));
+        inputData.add(Arrays.<Writable>asList(new IntWritable(2), new NDArrayWritable(ones), new NDArrayWritable(ones)));
+
+        JavaRDD<List<Writable>> rdd = sc.parallelize(inputData);
+
+        List<List<Writable>> out = new ArrayList<>(SparkTransformExecutor.execute(rdd, tp).collect());
+
+        Collections.sort(out, new Comparator<List<Writable>>() {
+            @Override
+            public int compare(List<Writable> o1, List<Writable> o2) {
+                return Integer.compare(o1.get(0).toInt(), o2.get(0).toInt());
+            }
+        });
+
+        List<List<Writable>> expected = new ArrayList<>();
+        expected.add(Arrays.<Writable>asList(new IntWritable(0), new NDArrayWritable(zeros), new NDArrayWritable(zeros), new NDArrayWritable(zeros)));
+        expected.add(Arrays.<Writable>asList(new IntWritable(1), new NDArrayWritable(zeros), new NDArrayWritable(ones), new NDArrayWritable(ones)));
+        expected.add(Arrays.<Writable>asList(new IntWritable(2), new NDArrayWritable(ones), new NDArrayWritable(ones), new NDArrayWritable(twos)));
+
+    }
 
 }

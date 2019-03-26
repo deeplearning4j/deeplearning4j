@@ -17,13 +17,15 @@
 package org.datavec.python;
 
 
-import java.util.Arrays;
+import java.io.File;
+import java.io.FileInputStream;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.regex.Pattern;
 
 import lombok.extern.slf4j.Slf4j;
 import org.json.simple.JSONArray;
+import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.bytedeco.javacpp.*;
 import org.bytedeco.cpython.*;
@@ -37,121 +39,32 @@ import org.nd4j.linalg.api.buffer.DataType;
  */
 @Slf4j
 public class PythonExecutioner {
-    private static Pointer namePtr;
     private static PyObject module;
     private static PyObject globals;
     private static JSONParser parser = new JSONParser();
-    private static Map<String, PyThreadState> interpreters = new HashMap<String, PyThreadState>();
-    private static String defaultInterpreter = "_main";
-    private static String currentInterpreter =  defaultInterpreter;
-    private static boolean currentInterpreterEnabled = false;
-    private static boolean safeExecFlag = false;
-    private static PyThreadState defaultThreadState;
-    private static PyThreadState currentThreadState;
-    private static long mainThreadId;
-    private static String tempFile = "temp.json";
+    private static Map<Long, Integer> gilStates = new HashMap<>();
 
     static {
         init();
     }
-    private static void setInterpreter(String name){
-        if (name == null){ // switch to default interpreter
-            currentInterpreter = defaultInterpreter;
-            return;
-        }
-
-        if (!interpreters.containsKey(name)){
-            log.info("CPython: Py_NewInterpreter()");
-            interpreters.put(name, Py_NewInterpreter());
-        }
-        currentInterpreter = name;
-    }
-
-    private static void deleteInterpreter(String name){
-        if (name == null || name == defaultInterpreter){
-            return;
-        }
-
-        PyThreadState ts = interpreters.get(name);
-        if (ts == null){
-            return;
-        }
-
-        boolean isDeletingCurrentInterpreter = currentInterpreter == name;
-
-        log.info("CPython: PyThreadState_Swap()");
-        PyThreadState_Swap(ts);
-        log.info("CPython: Py_EndInterpreter()");
-        Py_EndInterpreter(ts);
-
-
-        if (isDeletingCurrentInterpreter){
-            currentInterpreter = defaultInterpreter;
-        }
-        log.info("CPython: PyThreadState_Swap()");
-        PyThreadState_Swap(interpreters.get(defaultInterpreter));
-
-    }
-
 
     public static void init(){
-        System.out.println("---init()---");
-        log.info("CPython: Py_DecodeLocale()");
-        namePtr = Py_DecodeLocale("pythonExecutioner", null);
-        log.info("CPython: Py_SetProgramName()");
-        Py_SetProgramName(namePtr);
-        log.info("CPython: Py_Initialize()");
-        Py_Initialize();
+        log.info("CPython: Py_InitializeEx()");
+        Py_InitializeEx(1);
         log.info("CPython: PyEval_InitThreads()");
-        //PyEval_InitThreads();
+        PyEval_InitThreads();
         log.info("CPython: PyImport_AddModule()");
         module = PyImport_AddModule("__main__");
         log.info("CPython: PyModule_GetDict()");
         globals = PyModule_GetDict(module);
         log.info("CPython: PyThreadState_Get()");
-        //interpreters.put(defaultInterpreter, PyThreadState_Get());
-        System.out.println("---init()---Done-");
-        mainThreadId = Thread.currentThread().getId();
+        PyEval_SaveThread();
     }
 
     public static void free(){
-        log.info("CPython: Py_FinalizeEx()");
-        if (Py_FinalizeEx() < 0) {
-            throw new RuntimeException("Python execution failed.");
-        }
-        log.info("CPython: PyMem_RawFree()");
-        PyMem_RawFree(namePtr);
         Py_Finalize();
     }
 
-
-    private static String jArrayToPyString(Object[] array){
-        String str = "[";
-        for (int i=0; i < array.length; i++){
-            Object obj = array[i];
-            if (obj instanceof Object[]){
-                str += jArrayToPyString((Object[])obj);
-            }
-            else if (obj instanceof String){
-                str += "\"" + obj + "\"";
-            }
-            else{
-                str += obj.toString().replace("\"", "\\\"");
-            }
-            if (i < array.length - 1){
-                str += ",";
-            }
-
-        }
-        str += "]";
-        return str;
-    }
-
-    private static String escapeStr(String str){
-        str = str.replace("\\", "\\\\");
-        str = str.replace("\"\"\"", "\\\"\\\"\\\"");
-        return str;
-    }
     private static String inputCode(PythonVariables pyInputs)throws Exception{
         String inputCode = "loc={};";
         if (pyInputs == null){
@@ -249,135 +162,74 @@ public class PythonExecutioner {
         return inputCode;
     }
 
-    private String outputCode(PythonVariables pyOutputs){
-        if (pyOutputs == null){
-            return "";
-        }
-        String outputCode = "import json;json.dump({";
-        String[] VarNames = pyOutputs.getVariables();
-        boolean ndarrayHelperAdded = false;
-        for (String varName: VarNames){
-            if (pyOutputs.getType(varName) == PythonVariables.Type.NDARRAY){
-                if (! ndarrayHelperAdded){
-                    ndarrayHelperAdded = true;
-                    String helper = "serialize_ndarray_metadata=lambda x:{\"address\":x.__array_interface__['data'][0]" +
-                            ",\"shape\":x.shape,\"strides\":x.strides,\"dtype\":str(x.dtype)};";
-                    outputCode = helper + outputCode;
-                }
-                outputCode += "\"" + varName + "\"" + ":serialize_ndarray_metadata(" + varName + "),";
-
-            }
-            else {
-                outputCode += "\"" + varName + "\"" + ":" + varName + ",";
-            }
-        }
-        outputCode = outputCode.substring(0, outputCode.length() - 1);
-        outputCode += "},open('" + tempFile + "', 'w'));";
-        return outputCode;
-
-    }
 
     private static void _readOutputs(PythonVariables pyOutputs){
-        if (pyOutputs == null){
-            return;
-        }
-        /*
-        exec(getOutputCheckCode(pyOutputs));
-        String errorMessage = evalSTRING("__error_message");
-        if (errorMessage.length() > 0){
-            throw new RuntimeException(errorMessage);
-        }*/
+        String json = read(getTempFile());
+        File f = new File(getTempFile());
+        f.delete();
+        JSONParser p = new JSONParser();
         try{
-
+            JSONObject jobj = (JSONObject) p.parse(json);
             for (String varName: pyOutputs.getVariables()){
                 PythonVariables.Type type = pyOutputs.getType(varName);
-                if (type == PythonVariables.Type.STR){
-                    pyOutputs.setValue(varName, evalSTRING(varName));
-                }
-                else if(type == PythonVariables.Type.FLOAT){
-                    pyOutputs.setValue(varName, evalFLOAT(varName));
-                }
-                else if(type == PythonVariables.Type.INT){
-                    pyOutputs.setValue(varName, evalINTEGER(varName));
+                if (type == PythonVariables.Type.NDARRAY){
+                    JSONObject varValue = (JSONObject)jobj.get(varName);
+                    long address = (Long)varValue.get("address");
+                    JSONArray shapeJson = (JSONArray)varValue.get("shape");
+                    JSONArray stridesJson = (JSONArray)varValue.get("strides");
+                    long[] shape = jsonArrayToLongArray(shapeJson);
+                    long[] strides = jsonArrayToLongArray(stridesJson);
+                    String dtypeName = (String)varValue.get("dtype");
+                    DataType dtype;
+                    if (dtypeName.equals("float64")){
+                        dtype = DataType.DOUBLE;
+                    }
+                    else if (dtypeName.equals("float32")){
+                        dtype = DataType.FLOAT;
+                    }
+                    else if (dtypeName.equals("int16")){
+                        dtype = DataType.SHORT;
+                    }
+                    else if (dtypeName.equals("int32")){
+                        dtype = DataType.INT;
+                    }
+                    else if (dtypeName.equals("int64")){
+                        dtype = DataType.LONG;
+                    }
+                    else{
+                        throw new Exception("Unsupported array type " + dtypeName + ".");
+                    }
+                    pyOutputs.setValue(varName, new NumpyArray(address, shape, strides, dtype, true));
+
+
                 }
                 else if (type == PythonVariables.Type.LIST){
-                    Object varVal[] = evalLIST(varName);
-                    pyOutputs.setValue(varName, varVal);
+                    JSONArray varValue = (JSONArray)jobj.get(varName);
+                    pyOutputs.setValue(varName, varValue.toArray());
                 }
                 else{
-                    pyOutputs.setValue(varName, evalNDARRAY(varName));
+                    pyOutputs.setValue(varName, jobj.get(varName));
                 }
             }
         }
         catch (Exception e){
-            log.error(e.toString());
-        }
-
-    }
-
-    private static void _enterSubInterpreter() {
-        if (!currentInterpreterEnabled && currentInterpreter != defaultInterpreter) {
-
-
-            //log.info("CPython: PyEval_AcquireLock()");
-
-
-
-            PyThreadState ts = interpreters.get(currentInterpreter);
-            if (Thread.currentThread().getId() == mainThreadId){
-                PyThreadState_Swap(ts);
-            }
-            else{
-                System.out.println("call from thread: " + Thread.currentThread().getId());
-                defaultThreadState = PyEval_SaveThread();
-                log.info("CPython: PyThreadState.interp()");
-
-                PyInterpreterState is = ts.interp();
-                log.info("CPython: PyThreadState_New()");
-                ts = PyThreadState_New(is);
-                log.info("CPython: PyThreadState_Swap()");
-                PyThreadState_Swap(ts);
-
-                PyEval_RestoreThread(ts);
-
-
-
-
-            }
-            currentThreadState = ts;
-            currentInterpreterEnabled = true;
-
-            System.out.println("--enter done---");
+            throw new RuntimeException(e);
         }
     }
 
-    private static void _exitSubInterpreter(){
-        if (currentInterpreterEnabled && currentInterpreter != defaultInterpreter){
+    private static void acquireGIL(){
+        log.info("---_enterSubInterpreter()---");
+        if (PyGILState_Check() != 1){
+            gilStates.put(Thread.currentThread().getId(), PyGILState_Ensure());
+            log.info("GIL ensured");
+        }
+    }
 
-
-            if (Thread.currentThread().getId() == mainThreadId){
-                PyThreadState_Swap(null);
-
-            }
-            else{
-                System.out.println("call from thread: " + Thread.currentThread().getId());
-                PyThreadState ts = currentThreadState;
-                log.info("CPython: PyThreadState_Swap()");
-                PyThreadState_Swap(null);
-
-                PyEval_RestoreThread(defaultThreadState);
-                System.out.println("--exit done--");
-                log.info("CPython: PyThreadState_Clear()");
-                PyThreadState_Clear(ts);
-                log.info("CPython: PyThreadState_Delete()");
-                PyThreadState_Delete(ts);
-                log.info("CPython: PyEval_ReleaseLock()");
-
-            }
-
-            currentInterpreterEnabled = false;
-            System.out.println("--exit done--");
-
+    private static void releaseGIL(){
+        if (PyGILState_Check() == 1){
+            log.info("Releasing gil...");
+            PyGILState_Release(gilStates.get(Thread.currentThread().getId()));
+            log.info("Gil released.");
         }
 
     }
@@ -387,71 +239,32 @@ public class PythonExecutioner {
      * @param code
      */
     public static void exec(String code){
+
+        code = getFunctionalCode("__f_" + Thread.currentThread().getId(), code);
+        acquireGIL();
         log.info("CPython: PyRun_SimpleStringFlag()");
         log.info(code);
-        System.out.println("about to exec");
-        PyRun_SimpleStringFlags(code, null);
-        System.out.println("exec done");
+        int result = PyRun_SimpleStringFlags(code, null);
+        if (result != 0){
+            PyErr_Print();
+            throw new RuntimeException("exec failed");
+        }
         log.info("Exec done");
+        releaseGIL();
     }
 
     public static void exec(String code, PythonVariables pyOutputs){
-
-
-        Object[] ndArrayOuts = pyOutputs.getNDArrayVariables().keySet().toArray();
-        if (ndArrayOuts.length > 0){
-            if (code.charAt(code.length() - 1) != '\n'){
-                code += "\n";
-            }
-
-            String[] varNames = Arrays.copyOf(ndArrayOuts, ndArrayOuts.length, String[].class);
-            for (String varName: varNames){
-                code += getNDArrayOutCode(varName);
-            }
-        }
-        exec(code);
+        exec(code + '\n' + outputCode(pyOutputs));
         _readOutputs(pyOutputs);
-        System.out.println("read done");
-
-    }
-
-    public static void exec(String code, String interpreter){
-        setInterpreter(interpreter);
-        _enterSubInterpreter();
-        exec(code);
-        _exitSubInterpreter();
-    }
-
-    public static void exec(String code, PythonVariables pyOutputs, String interpreter){
-        setInterpreter(interpreter);
-        _enterSubInterpreter();
-
-        exec(code, pyOutputs);
-
-        _exitSubInterpreter();
     }
 
     public static void exec(String code, PythonVariables pyInputs, PythonVariables pyOutputs) throws Exception{
         String inputCode = inputCode(pyInputs);
-        if (code.charAt(code.length() - 1) != '\n'){
-            code += '\n';
-        }
         exec(inputCode + code, pyOutputs);
     }
 
-    public static void exec(String code, PythonVariables pyInputs, PythonVariables pyOutputs, String interpreter) throws Exception{
-        String inputCode = inputCode(pyInputs);
-        if (code.charAt(code.length() - 1) != '\n'){
-            code += '\n';
-        }
-        exec(inputCode + code, pyOutputs, interpreter);
-    }
 
-    private static void setupTransform(PythonTransform transform){
-        setInterpreter(transform.getName());
-    }
     public static PythonVariables exec(PythonTransform transform) throws Exception{
-        setupTransform(transform);
         if (transform.getInputs() != null && transform.getInputs().getVariables().length > 0){
             throw new Exception("Required inputs not provided.");
         }
@@ -460,16 +273,16 @@ public class PythonExecutioner {
     }
 
     public static PythonVariables exec(PythonTransform transform, PythonVariables inputs)throws Exception{
-        setupTransform(transform);
         exec(transform.getCode(), inputs, transform.getOutputs());
         return transform.getOutputs();
     }
 
 
     public static String evalSTRING(String varName){
-//        module = PyImport_AddModule("__main__");
-//        log.info("CPython: PyModule_GetDict()");
-//        globals = PyModule_GetDict(module);
+        log.info("CPython: PyImport_AddModule()");
+        module = PyImport_AddModule("__main__");
+        log.info("CPython: PyModule_GetDict()");
+        globals = PyModule_GetDict(module);
         PyObject xObj = PyDict_GetItemString(globals, varName);
         PyObject bytes = PyUnicode_AsEncodedString(xObj, "UTF-8", "strict");
         BytePointer bp = PyBytes_AsString(bytes);
@@ -480,27 +293,30 @@ public class PythonExecutioner {
     }
 
     public static long evalINTEGER(String varName){
-//        module = PyImport_AddModule("__main__");
-//        log.info("CPython: PyModule_GetDict()");
-//        globals = PyModule_GetDict(module);
+        log.info("CPython: PyImport_AddModule()");
+        module = PyImport_AddModule("__main__");
+        log.info("CPython: PyModule_GetDict()");
+        globals = PyModule_GetDict(module);
         PyObject xObj = PyDict_GetItemString(globals, varName);
         long ret = PyLong_AsLongLong(xObj);
         return ret;
     }
 
     public static double evalFLOAT(String varName){
-//        module = PyImport_AddModule("__main__");
-//        log.info("CPython: PyModule_GetDict()");
-//        globals = PyModule_GetDict(module);
+        log.info("CPython: PyImport_AddModule()");
+        module = PyImport_AddModule("__main__");
+        log.info("CPython: PyModule_GetDict()");
+        globals = PyModule_GetDict(module);
         PyObject xObj = PyDict_GetItemString(globals, varName);
         double ret = PyFloat_AsDouble(xObj);
         return ret;
     }
 
     public static Object[] evalLIST(String varName) throws Exception{
-//        module = PyImport_AddModule("__main__");
-//        log.info("CPython: PyModule_GetDict()");
-//        globals = PyModule_GetDict(module);
+        log.info("CPython: PyImport_AddModule()");
+        module = PyImport_AddModule("__main__");
+        log.info("CPython: PyModule_GetDict()");
+        globals = PyModule_GetDict(module);
         PyObject xObj = PyDict_GetItemString(globals, varName);
         PyObject strObj = PyObject_Str(xObj);
         PyObject bytes = PyUnicode_AsEncodedString(strObj, "UTF-8", "strict");
@@ -512,49 +328,44 @@ public class PythonExecutioner {
         return jsonArray.toArray();
     }
 
-    private static long[] longArrayFromTupleString(String str){
-        str = str.replace(" ", "");
-        str = str.substring(1, str.length() - 1);
-        String[] items = str.split(Pattern.quote(","));
-        long[] nums = new long[items.length];
-        for (int i=0; i<nums.length; i++){
-            nums[i] = Long.parseLong(items[i]);
-        }
-        return nums;
-    }
-
-    private static String getNDArrayOutCode(String varName){
-        String code = "__%s_address = %s.__array_interface__['data'][0]\n" +
-                "__%s_shape = str(%s.shape)\n" +
-                "__%s_strides = str(%s.strides)\n" +
-                "__%s_dtype = str(%s.dtype)\n";
-        code = String.format(
-                code,
-                varName, varName, varName,
-                varName, varName, varName,
-                varName, varName
-        );
-
-        return code;
-    }
     public static NumpyArray evalNDARRAY(String varName) throws Exception{
-        System.out.println("evalNDArray()");
+        log.info("CPython: PyImport_AddModule()");
+        module = PyImport_AddModule("__main__");
+        log.info("CPython: PyModule_GetDict()");
+        globals = PyModule_GetDict(module);
+        PyObject xObj = PyDict_GetItemString(globals, varName);
+        PyObject arrayInterface = PyObject_GetAttrString(xObj, "__array_interface__");
+        PyObject data = PyDict_GetItemString(arrayInterface, "data");
+        PyObject zero = PyLong_FromLong(0);
+        PyObject addressObj = PyObject_GetItem(data, zero);
+        long address = PyLong_AsLongLong(addressObj);
+        PyObject shapeObj = PyObject_GetAttrString(xObj, "shape");
+        int ndim = (int)PyObject_Size(shapeObj);
+        PyObject iObj;
+        long shape[] = new long[ndim];
+        for (int i=0; i<ndim; i++){
+            iObj = PyLong_FromLong(i);
+            PyObject sizeObj = PyObject_GetItem(shapeObj, iObj);
+            long size = PyLong_AsLongLong(sizeObj);
+            shape[i] = size;
+            Py_DecRef(iObj);
+        }
 
+        PyObject stridesObj = PyObject_GetAttrString(xObj, "strides");
+        long strides[] = new long[ndim];
+        for (int i=0; i<ndim; i++){
+            iObj = PyLong_FromLong(i);
+            PyObject strideObj = PyObject_GetItem(stridesObj, iObj);
+            long stride = PyLong_AsLongLong(strideObj);
+            strides[i] = stride;
+            Py_DecRef(iObj);
+        }
 
-
-
-
-        long address = evalINTEGER(String.format("__%s_address", varName));
-        System.out.println(address);
-        long [] shape = longArrayFromTupleString(evalSTRING(String.format("__%s_shape", varName)));
-
-        long [] strides = longArrayFromTupleString(evalSTRING(String.format("__%s_strides", varName)));
-        String dtypeName = evalSTRING(String.format("__%s_dtype", varName));
-
-        System.out.println(dtypeName);
-
-
-
+        PyObject dtypeObj = PyObject_GetAttrString(xObj, "dtype");
+        PyObject dtypeNameObj = PyObject_GetAttrString(dtypeObj, "name");
+        PyObject bytes = PyUnicode_AsEncodedString(dtypeNameObj, "UTF-8", "strict");
+        BytePointer bp = PyBytes_AsString(bytes);
+        String dtypeName = bp.getString();
         DataType dtype;
         if (dtypeName.equals("float64")){
             dtype = DataType.DOUBLE;
@@ -574,21 +385,15 @@ public class PythonExecutioner {
         else{
             throw new Exception("Unsupported array type " + dtypeName + ".");
         }
-        NumpyArray ret = new NumpyArray(address, shape, strides, dtype, safeExecFlag);
-
-
-        /*
+        NumpyArray ret = new NumpyArray(address, shape, strides, dtype, true);
         Py_DecRef(arrayInterface);
         Py_DecRef(data);
         Py_DecRef(zero);
         Py_DecRef(addressObj);
         Py_DecRef(shapeObj);
         Py_DecRef(stridesObj);
-        */
 
-
-        System.out.println("evalNDArray()-Done");
-       return ret;
+        return ret;
     }
 
     private static String getOutputCheckCode(PythonVariables pyOutputs){
@@ -622,5 +427,101 @@ public class PythonExecutioner {
             }
         }
         return code;
+    }
+
+    private static  String outputCode(PythonVariables pyOutputs){
+
+        if (pyOutputs == null){
+            return "";
+        }
+        String outputCode = "import json\nwith open('" + getTempFile() + "', 'w') as ___fobj_:json.dump({";
+        String[] VarNames = pyOutputs.getVariables();
+        boolean ndarrayHelperAdded = false;
+        for (String varName: VarNames){
+
+            if (pyOutputs.getType(varName) == PythonVariables.Type.NDARRAY){
+                if (! ndarrayHelperAdded){
+                    ndarrayHelperAdded = true;
+                    String helper = "serialize_ndarray_metadata=lambda x:{\"address\":x.__array_interface__['data'][0]" +
+                            ",\"shape\":x.shape,\"strides\":x.strides,\"dtype\":str(x.dtype)}\n";
+                    outputCode = helper + outputCode;
+                }
+                outputCode += "\"" + varName + "\"" + ":serialize_ndarray_metadata(" + varName + "),";
+
+            }
+            else {
+                outputCode += "\"" + varName + "\"" + ":" + varName + ",";
+            }
+        }
+
+        outputCode = outputCode.substring(0, outputCode.length() - 1);
+        outputCode += "}, ___fobj_)\n";
+        return outputCode;
+
+    }
+    private static String read(String path){
+        try{
+            File file = new File(path);
+            FileInputStream fis = new FileInputStream(file);
+            byte[] data = new byte[(int) file.length()];
+            fis.read(data);
+            fis.close();
+            String str = new String(data, "UTF-8");
+            return str;
+        }
+        catch (Exception e){
+            return "";
+        }
+
+    }
+    private static String jArrayToPyString(Object[] array){
+        String str = "[";
+        for (int i=0; i < array.length; i++){
+            Object obj = array[i];
+            if (obj instanceof Object[]){
+                str += jArrayToPyString((Object[])obj);
+            }
+            else if (obj instanceof String){
+                str += "\"" + obj + "\"";
+            }
+            else{
+                str += obj.toString().replace("\"", "\\\"");
+            }
+            if (i < array.length - 1){
+                str += ",";
+            }
+
+        }
+        str += "]";
+        return str;
+    }
+
+    private static String escapeStr(String str){
+        str = str.replace("\\", "\\\\");
+        str = str.replace("\"\"\"", "\\\"\\\"\\\"");
+        return str;
+    }
+
+    private static String getFunctionalCode(String functionName, String code){
+        String out = String.format("def %s():\n", functionName);
+        for(String line: code.split(Pattern.quote("\n"))){
+            out += "    " + line + "\n";
+        }
+        return out + "\n\n" + functionName + "()\n";
+    }
+
+
+    private static String getTempFile(){
+        String ret =  "temp_" + Thread.currentThread().getId() + ".json";
+        log.info(ret);
+        return ret;
+    }
+
+    private static long[] jsonArrayToLongArray(JSONArray jsonArray){
+        long[] longs = new long[jsonArray.size()];
+        for (int i=0; i<longs.length; i++){
+            longs[i] = (Long)jsonArray.get(i);
+        }
+        return longs;
     }
 }

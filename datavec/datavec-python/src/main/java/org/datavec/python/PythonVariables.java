@@ -58,6 +58,14 @@ public class PythonVariables implements Serializable{
     private Map<Type, Map> maps = new HashMap<Type, Map>();
 
 
+    public PythonVariables copySchema(){
+        PythonVariables ret = new PythonVariables();
+        for (String varName: getVariables()){
+            Type type = getType(varName);
+            ret.add(varName, type);
+        }
+        return ret;
+    }
     public PythonVariables(){
         maps.put(Type.BOOL, boolVars);
         maps.put(Type.STR, strVars);
@@ -202,7 +210,7 @@ public class PythonVariables implements Serializable{
      * @param value new value for the variable
      * @throws Exception
      */
-    public void setValue(String name, Object value) throws Exception{
+    public void setValue(String name, Object value) {
         Type type = vars.get(name);
         if (type == Type.BOOL){
             boolVars.put(name, (Boolean)value);
@@ -227,7 +235,7 @@ public class PythonVariables implements Serializable{
                 ndVars.put(name, new NumpyArray((INDArray) value));
             }
             else{
-                throw new Exception("Unsupported type: " + value.getClass().toString());
+                throw new RuntimeException("Unsupported type: " + value.getClass().toString());
             }
         }
         else if (type == Type.LIST){

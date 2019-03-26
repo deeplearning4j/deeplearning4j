@@ -129,7 +129,6 @@ public class TestPythonTransformProcess {
         assertEquals(expectedOutput,((NDArrayWritable)outputs.get(2)).get());
 
     }
-
     @Test
     public void testNDArray2() throws Exception{
         long[] shape = new long[]{3, 2};

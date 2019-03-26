@@ -92,10 +92,7 @@ public class PythonTransform implements Transform{
     public List<Writable> map(List<Writable> writables){
         PythonVariables pyInputs = getPyInputsFromWritables(writables);
         try{
-
-            //PythonExecutioner.init();
-            PythonExecutioner.exec(code, pyInputs, pyOutputs);//, name);
-            //PythonExecutioner.free();
+            PythonExecutioner.exec(code, pyInputs, pyOutputs);
             return getWritablesFromPyOutputs(pyOutputs);
         }
         catch (Exception e){
