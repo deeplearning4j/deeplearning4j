@@ -40,7 +40,7 @@ namespace nd4j {
 
 
     template <typename T>
-    class SpecialMethods {
+    class ND4J_EXPORT SpecialMethods {
     public:
         static void concatCpuGeneric(int dimension, int numArrays, Nd4jPointer *data, Nd4jPointer *inputShapeInfo, void *result, Nd4jLong *resultShapeInfo);
         static void accumulateGeneric(void **x, void *z, Nd4jLong *zShapeInfo, int n, const Nd4jLong length);
