@@ -1087,7 +1087,7 @@ namespace shape {
     // if array is scalar or unit length vector then ews = 1
     // if array is common vector then ews = stride of non-unity dimension
     // if strides are normal set ews = 1, otherwise ews = 0    
-    ND4J_EXPORT _CUDA_HD void calcEws(const Nd4jLong* shapeInfo, Nd4jLong len);
+    ND4J_EXPORT _CUDA_HD void calcEws(Nd4jLong* shapeInfo, Nd4jLong len);
 
 
 
@@ -4810,7 +4810,7 @@ INLINEDEF void calcSubArrOffsets(const Nd4jLong numOfSubArrs, const int rank, co
 }
 
 //////////////////////////////////////////////////////////////////////
-INLINEDEF void _CUDA_HD calcEws(const Nd4jLong* shapeInfo, Nd4jLong len) {
+INLINEDEF void _CUDA_HD calcEws(Nd4jLong* shapeInfo, Nd4jLong len) {
 
     const int rank          = shape::rank(shapeInfo);
     const Nd4jLong* shape   = shape::shapeOf(shapeInfo);
