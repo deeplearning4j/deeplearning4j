@@ -4810,7 +4810,7 @@ INLINEDEF void calcSubArrOffsets(const Nd4jLong numOfSubArrs, const int rank, co
 }
 
 //////////////////////////////////////////////////////////////////////
-INLINEDEF void _CUDA_HD calcEws(Nd4jLong* shapeInfo, Nd4jLong len) {
+INLINEDEF void _CUDA_HD calcEws(const Nd4jLong* shapeInfo, Nd4jLong len) {
 
     const int rank          = shape::rank(shapeInfo);
     const Nd4jLong* shape   = shape::shapeOf(shapeInfo);
