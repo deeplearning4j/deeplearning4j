@@ -31,6 +31,7 @@ import org.datavec.api.writable.Writable;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -120,7 +121,7 @@ public class ExcelRecordReader extends FileRecordReader {
             Record record = new org.datavec.api.records.impl.Record(ret,
                                     new RecordMetaDataIndex(
                                             currRow.getRowNum(),
-                                            super.currentFile.toURI(),
+                                            super.currentUri,
                                             ExcelRecordReader.class));
             return record;
         }
@@ -132,7 +133,7 @@ public class ExcelRecordReader extends FileRecordReader {
             Record record = new org.datavec.api.records.impl.Record(rowToRecord(currRow),
                                 new RecordMetaDataIndex(
                                     currRow.getRowNum(),
-                                    super.currentFile.toURI(),
+                                    super.currentUri,
                                     ExcelRecordReader.class));
             return record;
 
@@ -140,27 +141,30 @@ public class ExcelRecordReader extends FileRecordReader {
 
 
         //finally extract workbooks from files and iterate over those starting again at top
-        File nextFile = super.nextFile();
-        // Creating a Workbook from an Excel file (.xls or .xlsx)
-        try {
-            if(currWorkBook != null) {
-                currWorkBook.close();
+        try(InputStream is = streamCreatorFn.apply(super.locationsIterator.next())) {
+            // Creating a Workbook from an Excel file (.xls or .xlsx)
+            try {
+                if (currWorkBook != null) {
+                    currWorkBook.close();
+                }
+
+                this.currWorkBook = WorkbookFactory.create(is);
+                this.sheetIterator = currWorkBook.sheetIterator();
+                Sheet sheet = sheetIterator.next();
+                rows = sheet.rowIterator();
+                Row currRow = rows.next();
+                Record record = new org.datavec.api.records.impl.Record(rowToRecord(currRow),
+                        new RecordMetaDataIndex(
+                                currRow.getRowNum(),
+                                super.currentUri,
+                                ExcelRecordReader.class));
+                return record;
+
+            } catch (Exception e) {
+                throw new IllegalStateException("Error processing row", e);
             }
-
-            this.currWorkBook = WorkbookFactory.create(nextFile);
-            this.sheetIterator = currWorkBook.sheetIterator();
-            Sheet sheet = sheetIterator.next();
-            rows = sheet.rowIterator();
-            Row currRow = rows.next();
-            Record record = new org.datavec.api.records.impl.Record(rowToRecord(currRow),
-                    new RecordMetaDataIndex(
-                            currRow.getRowNum(),
-                            super.currentFile.toURI(),
-                            ExcelRecordReader.class));
-            return record;
-
-        } catch (Exception e) {
-            throw new IllegalStateException("Error processing row",e);
+        } catch (IOException e){
+            throw new RuntimeException("Error reading from stream", e);
         }
 
     }

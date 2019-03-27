@@ -133,8 +133,8 @@ public class JacksonRecordReader extends BaseRecordReader {
         URI uri = uris[cursor++];
         invokeListeners(uri);
         String fileAsString;
-        try {
-            fileAsString = IOUtils.toString(streamCreatorFn.apply(uri), charset);
+        try (InputStream s = streamCreatorFn.apply(uri)){
+            fileAsString = IOUtils.toString(s, charset);
         } catch (IOException e) {
             throw new RuntimeException("Error reading URI file", e);
         }

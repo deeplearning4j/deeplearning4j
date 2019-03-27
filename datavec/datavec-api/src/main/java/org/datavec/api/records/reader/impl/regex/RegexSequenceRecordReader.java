@@ -161,8 +161,8 @@ public class RegexSequenceRecordReader extends FileRecordReader implements Seque
         URI next = locationsIterator.next();
 
         String fileContents;
-        try {
-            fileContents = IOUtils.toString(streamCreatorFn.apply(next), charset);
+        try (InputStream s = streamCreatorFn.apply(next)){
+            fileContents = IOUtils.toString(s, charset);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
