@@ -22,16 +22,28 @@
 
 using namespace simdOps;
 
-/*
-template <typename X, typename Y, typename E>
-void nd4j::ReductionLoops<X, Y, E>::wrapLongXZ(const int opNum, const void* vx, const Nd4jLong* xShapeInfo, void* vz, const Nd4jLong* zShapeInfo, const Nd4jLong* tadShapeInfo, const Nd4jLong* tadOffsets, const int* dimsToExclude, const int dimsLen, void* vextraParams) {
-    const auto x = reinterpret_cast<const X *>(vx);
-    auto z = reinterpret_cast<Nd4jLong *>(vz);
-    auto extraParams = reinterpret_cast<X *>(vextraParams);
 
-    DISPATCH_BY_OPNUM_TT(loopTadXZ, PARAMS(x, xShapeInfo, z, zShapeInfo, tadShapeInfo, tadOffsets, dimsToExclude, dimsLen, extraParams), REDUCE_LONG_OPS);
+#include "ReductionLoops.hpp"
+#include <pointercast.h>
+#include <types/types.h>
+
+using namespace simdOps;
+
+namespace nd4j {
+
+    template<typename X, typename Z>
+    template <typename OpType>
+    void ReductionLongLoops<X, Z>::innerloopTadXZ(X * x, Nd4jLong* xShapeInfo, Z *z, Nd4jLong* zShapeInfo, Nd4jLong* tadShapeInfo, Nd4jLong* tadOffsets, X* extraParams) {
+        ReductionLoops<X,Z,X>::template loopTadXZ<OpType>(x, xShapeInfo, z, zShapeInfo, tadShapeInfo, tadOffsets, extraParams);
+    }
+
+    template<typename X, typename Y>
+    void ReductionLongLoops<X, Y>::wrapper(const int opNum, X *x, Nd4jLong *xShapeInfo, Y *z,
+                                            Nd4jLong *zShapeInfo, Nd4jLong *tadShapeInfo,
+                                            Nd4jLong *tadOffsets, X *extraParams) {
+
+        DISPATCH_BY_OPNUM_TT(innerloopTadXZ, PARAMS(x, xShapeInfo, z, zShapeInfo, tadShapeInfo, tadOffsets, extraParams ), REDUCE_LONG_OPS);
+    }
+
+    BUILD_DOUBLE_TEMPLATE(template class ND4J_EXPORT ReductionLongLoops, , LIBND4J_TYPES, LONG_TYPES);
 }
-
-template void nd4j::ReductionLoops<float, Nd4jLong, float> ::wrapLongXZ(const int opNum, const void* vx, const Nd4jLong* xShapeInfo, void* vz, const Nd4jLong* zShapeInfo, const Nd4jLong* tadShapeInfo, const Nd4jLong* tadOffsets, const int* dimsToExclude, const int dimsLen, void* vextraParams);
-
-*/

@@ -26,9 +26,9 @@ using namespace simdOps;
 //////////////////////////////////////////////////////////////////////////////
 template <typename X>
 template <typename OpType>
-void nd4j::IndexReductionLoops<X>::loopIndexTadXZ(const X* x, const Nd4jLong* xShapeInfo,
-                           Nd4jLong* z, const Nd4jLong* zShapeInfo,
-                           const Nd4jLong* tadShapeInfo, const Nd4jLong* tadOffsets,
+void nd4j::IndexReductionLoops<X>::loopIndexTadXZ(X* x, Nd4jLong* xShapeInfo,
+                           Nd4jLong* z, Nd4jLong* zShapeInfo,
+                           Nd4jLong* tadShapeInfo, Nd4jLong* tadOffsets,
                            X* extraParams) {
 
     LoopKind kindOfLoop = nd4j::ReductionLoops<X,X,X>::deduceKindOfLoopTadXZ(xShapeInfo, zShapeInfo, tadShapeInfo);
@@ -279,11 +279,11 @@ void nd4j::IndexReductionLoops<X>::loopIndexTadXZ(const X* x, const Nd4jLong* xS
 }
 
 template <typename X>
-void nd4j::IndexReductionLoops<X>::wrapXZ(const int opNum, const void* vx, const Nd4jLong* xShapeInfo, Nd4jLong* z, const Nd4jLong* zShapeInfo, const Nd4jLong* tadShapeInfo, const Nd4jLong* tadOffsets, void* vextraParams) {
-    const auto x = reinterpret_cast<const X *>(vx);
+void nd4j::IndexReductionLoops<X>::wrapXZ(const int opNum, void* vx, Nd4jLong* xShapeInfo, Nd4jLong* z, Nd4jLong* zShapeInfo, Nd4jLong* tadShapeInfo, Nd4jLong* tadOffsets, void* vextraParams) {
+    auto x = reinterpret_cast<X *>(vx);
     auto extraParams = reinterpret_cast<X *>(vextraParams);
 
     DISPATCH_BY_OPNUM_T(loopIndexTadXZ, PARAMS(x, xShapeInfo, z, zShapeInfo, tadShapeInfo, tadOffsets, extraParams), INDEX_REDUCE_OPS);
 }
 
-BUILD_SINGLE_TEMPLATE(template void nd4j::IndexReductionLoops, ::wrapXZ(const int opNum, const void* vx, const Nd4jLong* xShapeInfo, Nd4jLong* z, const Nd4jLong* zShapeInfo, const Nd4jLong* tadShapeInfo, const Nd4jLong* tadOffsets, void* vextraParams), LIBND4J_TYPES);
+BUILD_SINGLE_TEMPLATE(template void nd4j::IndexReductionLoops, ::wrapXZ(const int opNum, void* vx, Nd4jLong* xShapeInfo, Nd4jLong* z, Nd4jLong* zShapeInfo, Nd4jLong* tadShapeInfo, Nd4jLong* tadOffsets, void* vextraParams), LIBND4J_TYPES);

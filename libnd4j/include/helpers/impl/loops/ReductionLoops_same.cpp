@@ -21,15 +21,26 @@
 #include "ReductionLoops.hpp"
 
 using namespace simdOps;
-/*
-template <typename X, typename Y, typename E>
-void nd4j::ReductionLoops<X, Y, E>::wrapSameXZ(const int opNum, const void* vx, const Nd4jLong* xShapeInfo, void* vz, const Nd4jLong* zShapeInfo, const Nd4jLong* tadShapeInfo, const Nd4jLong* tadOffsets, const int* dimsToExclude, const int dimsLen, void* vextraParams) {
-    const auto x = reinterpret_cast<const X *>(vx);
-    auto z = reinterpret_cast<X *>(vz);
-    auto extraParams = reinterpret_cast<X *>(vextraParams);
 
-    DISPATCH_BY_OPNUM_T(loopTadXZ, PARAMS(x, xShapeInfo, z, zShapeInfo, tadShapeInfo, tadOffsets, dimsToExclude, dimsLen, extraParams), REDUCE_SAME_OPS);
+namespace nd4j {
+
+    template<typename X>
+    template <typename OpType>
+    void ReductionSameLoops<X>::innerloopTadXZ(X* x, Nd4jLong* xShapeInfo, X* z, Nd4jLong* zShapeInfo, Nd4jLong* tadShapeInfo, Nd4jLong* tadOffsets, X* extraParams) {
+        ReductionLoops<X,X,X>::template loopTadXZ<OpType>(x, xShapeInfo, z, zShapeInfo, tadShapeInfo, tadOffsets, extraParams);
+    }
+
+    template<typename X>
+    void ReductionSameLoops<X>::wrapper(const int opNum, X *vx, Nd4jLong *xShapeInfo, X *vz,
+                                           Nd4jLong *zShapeInfo, Nd4jLong *tadShapeInfo,
+                                           Nd4jLong *tadOffsets,
+                                           X *vextraParams) {
+        auto x = reinterpret_cast<X *>(vx);
+        auto z = reinterpret_cast<X *>(vz);
+        auto extraParams = reinterpret_cast<X *>(vextraParams);
+
+        DISPATCH_BY_OPNUM_T(innerloopTadXZ, PARAMS(x, xShapeInfo, z, zShapeInfo, tadShapeInfo, tadOffsets, extraParams), REDUCE_SAME_OPS);
+    }
+
+    BUILD_SINGLE_TEMPLATE(template class ReductionSameLoops, , LIBND4J_TYPES);
 }
-
-template void nd4j::ReductionLoops<float, float, float> ::wrapSameXZ(const int opNum, const void* vx, const Nd4jLong* xShapeInfo, void* vz, const Nd4jLong* zShapeInfo, const Nd4jLong* tadShapeInfo, const Nd4jLong* tadOffsets, const int* dimsToExclude, const int dimsLen, void* vextraParams);
- */

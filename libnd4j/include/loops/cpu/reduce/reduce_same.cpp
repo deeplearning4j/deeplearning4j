@@ -199,9 +199,7 @@ namespace functions {
                 }
 
 
-                nd4j::ReductionSameLoops<X>::template loopTadXZ<OpType>(const_cast<const X*>(x), const_cast<const Nd4jLong *>(xShapeInfo), z,
-                                                        const_cast<const Nd4jLong *>(zShapeInfo), const_cast<const Nd4jLong *>(tadOnlyShapeInfo),
-                                                        const_cast<const Nd4jLong *>(tadOffsets), const_cast<const int *>(dimension), dimensionLength, extraParams);
+                nd4j::ReductionSameLoops<X>::template innerloopTadXZ<OpType>(x, xShapeInfo, z, zShapeInfo, tadOnlyShapeInfo, tadOffsets, extraParams);
             }
 
 

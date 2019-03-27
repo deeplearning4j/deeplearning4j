@@ -26,22 +26,18 @@ namespace nd4j {
 
     template<typename X, typename Z>
     template <typename OpType>
-    void ReductionBoolLoops<X, Z>::innerloopTadXZ(const X* x, const Nd4jLong* xShapeInfo, Z* z, const Nd4jLong* zShapeInfo, const Nd4jLong* tadShapeInfo, const Nd4jLong* tadOffsets, const int* dimsToExclude, const int dimsLen, X* extraParams) {
-        ReductionLoops<X,Z,Z>::template loopTadXZ<OpType>(x, xShapeInfo, z, zShapeInfo, tadShapeInfo, tadOffsets, dimsToExclude, dimsLen, extraParams);
+    void ReductionBoolLoops<X, Z>::innerloopTadXZ(X* x, Nd4jLong* xShapeInfo, Z* z, Nd4jLong* zShapeInfo, Nd4jLong* tadShapeInfo, Nd4jLong* tadOffsets, X* extraParams) {
+        ReductionLoops<X,Z,X>::template loopTadXZ<OpType>(x, xShapeInfo, z, zShapeInfo, tadShapeInfo, tadOffsets, extraParams);
     }
 
     template<typename X, typename Y>
-    void ReductionBoolLoops<X, Y>::wrapper(const int opNum, const X *vx, const Nd4jLong *xShapeInfo, Y *vz,
-                                            const Nd4jLong *zShapeInfo, const Nd4jLong *tadShapeInfo,
-                                            const Nd4jLong *tadOffsets, const int *dimsToExclude,
-                                            const int dimsLen, X *vextraParams) {
-        const auto x = reinterpret_cast<const X *>(vx);
-        auto z = reinterpret_cast<Y *>(vz);
-        auto extraParams = reinterpret_cast<X *>(vextraParams);
-
-        DISPATCH_BY_OPNUM_TT(innerloopTadXZ, PARAMS(x, xShapeInfo, z, zShapeInfo, tadShapeInfo, tadOffsets, dimsToExclude, dimsLen, extraParams), REDUCE_BOOL_OPS);
+    void ReductionBoolLoops<X, Y>::wrapper(const int opNum, X *x, Nd4jLong *xShapeInfo, Y *z,
+                                            Nd4jLong *zShapeInfo, Nd4jLong *tadShapeInfo,
+                                            Nd4jLong *tadOffsets,
+                                            X *extraParams) {
+        DISPATCH_BY_OPNUM_TT(innerloopTadXZ, PARAMS(x, xShapeInfo, z, zShapeInfo, tadShapeInfo, tadOffsets, extraParams), REDUCE_BOOL_OPS);
     }
 
-    BUILD_DOUBLE_TEMPLATE(template class ReductionFloatLoops, , LIBND4J_TYPES, BOOL_TYPES);
+    BUILD_DOUBLE_TEMPLATE(template class ND4J_EXPORT ReductionBoolLoops, , LIBND4J_TYPES, BOOL_TYPES);
 }
 
