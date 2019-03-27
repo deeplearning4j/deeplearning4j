@@ -200,6 +200,8 @@ public class Nd4j {
 
     private final static Logger logger = Logger.getLogger(Nd4j.class.getName());
 
+    protected static final INDArray[] EMPTY_ARRAYS = new INDArray[DataType.values().length];
+
     static {
         fallbackMode = new AtomicBoolean(false);
         Nd4j nd4j = new Nd4j();
@@ -3793,9 +3795,14 @@ public class Nd4j {
      * @return Empty INDArray
      */
     public static INDArray empty(DataType type) {
-        val ret = INSTANCE.empty(type);
-        logCreationIfNecessary(ret);
-        return ret;
+        if(EMPTY_ARRAYS[dataType().ordinal()] == null){
+            try(MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()){
+                val ret = INSTANCE.empty(type);
+                EMPTY_ARRAYS[dataType().ordinal()] = ret;
+                logCreationIfNecessary(ret);
+            }
+        }
+        return EMPTY_ARRAYS[dataType().ordinal()];
     }
 
     /**

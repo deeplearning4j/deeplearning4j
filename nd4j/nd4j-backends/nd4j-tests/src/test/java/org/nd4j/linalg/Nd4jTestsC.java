@@ -7445,6 +7445,18 @@ public class Nd4jTestsC extends BaseNd4jTest {
     }
 
 
+    @Test
+    public void testEmptyArrayReuse(){
+        //Empty arrays are immutable - no point creating them multiple times
+        INDArray ef1 = Nd4j.empty(DataType.FLOAT);
+        INDArray ef2 = Nd4j.empty(DataType.FLOAT);
+        assertTrue(ef1 == ef2);       //Should be exact same object
+
+        INDArray el1 = Nd4j.empty(DataType.LONG);
+        INDArray el2 = Nd4j.empty(DataType.LONG);
+        assertTrue(el1 == el2);       //Should be exact same object
+    }
+
     ///////////////////////////////////////////////////////
     protected static void fillJvmArray3D(float[][][] arr) {
         int cnt = 1;

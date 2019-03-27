@@ -1464,8 +1464,15 @@ public class TransformOpValidation extends BaseOpValidation {
                 .addIntegerArguments(0) //0 = CONSTANT
                 .build();
 
+        INDArray exp = Nd4j.create(new double[]{10, 1, 1, 1, 1, 1, 10});
         OpValidation.validate(new OpTestCase(op)
-                .expectedOutput(0, Nd4j.create(new double[]{10, 1, 1, 1, 1, 1, 10})));
+                .expectedOutput(0, exp));
+
+        SameDiff sd = SameDiff.create();
+        SDVariable s = sd.var("in", in);
+        SDVariable padded = sd.nn().pad(s, sd.constant(pad), 10.0);
+        String err2 = OpValidation.validate(new TestCase(sd).expected(padded, exp).gradientCheck(false));
+        assertNull(err2);
     }
 
 
@@ -1497,7 +1504,7 @@ public class TransformOpValidation extends BaseOpValidation {
 
         SameDiff sd = SameDiff.create();
         SDVariable s = sd.var("in", in);
-        SDVariable padded = sd.nn().pad(in, sd.constant(Nd4j.createFromArray(new int[][]{{1,1},{2,2}})), Pad.Mode.REFLECT);
+        SDVariable padded = sd.nn().pad("pad", s, sd.constant(Nd4j.createFromArray(new int[][]{{1,1},{2,2}})), Pad.Mode.REFLECT, 0.0);
         String err2 = OpValidation.validate(new TestCase(sd).expected(padded, exp).gradientCheck(false));
         assertNull(err2);
     }
