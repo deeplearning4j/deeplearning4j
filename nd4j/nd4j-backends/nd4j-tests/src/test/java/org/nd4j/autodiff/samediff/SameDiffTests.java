@@ -25,6 +25,8 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.nd4j.OpValidationSuite;
 import org.nd4j.autodiff.samediff.impl.DefaultSameDiffConditional;
+import org.nd4j.autodiff.validation.OpValidation;
+import org.nd4j.autodiff.validation.TestCase;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.blas.params.MMulTranspose;
 import org.nd4j.linalg.api.buffer.DataType;
@@ -2756,5 +2758,24 @@ public class SameDiffTests {
 
         //Sanity check on training:
         sd.fit(new SingletonMultiDataSetIterator(new DataSet(inArr,null).toMultiDataSet()), 1);
+    }
+
+    @Test
+    public void testDoubleUseOfArray(){
+        //If array is reused, gradient check will fail
+        INDArray a = Nd4j.rand(DataType.DOUBLE, new int[]{3, 4});
+        SameDiff sd = SameDiff.create();
+        SDVariable a1 = sd.var("a", a);
+        SDVariable a2 = sd.var("b", a);
+        a1.add(a2).norm2("out");
+        String err = OpValidation.validate(new TestCase(sd)
+                .gradientCheck(true));
+        assertNull(err);
+
+        a1.setArray(a);
+        a2.setArray(a);
+        err = OpValidation.validate(new TestCase(sd)
+                .gradientCheck(true));
+        assertNull(err);
     }
 }

@@ -826,6 +826,25 @@ public class SameDiff extends SDBaseOps {
             sessions.put(Thread.currentThread().getId(), new InferenceSession(this));
         }
 
+        boolean duped = false;
+        if(arr.isAttached()) {
+            arr = arr.detach();
+            duped = true;
+        }
+        if(arr.isView()) {
+            arr = arr.dup();
+            duped = true;
+        }
+
+        if(!duped && variable.getVariableType() == VariableType.VARIABLE) {
+            for (DeviceLocalNDArray otherArr : variablesArrays.values()) {
+                if (otherArr.get() == arr) {    //Check for exact same object, to avoid array reuse (can result in unexpected behaviour)
+                    arr = arr.dup();
+                    break;
+                }
+            }
+        }
+
         switch(variable.getVariableType()){
             case VARIABLE:
                 variablesArrays.put(variable.getVarName(), new DeviceLocalNDArray(arr));
@@ -2134,8 +2153,25 @@ public class SameDiff extends SDBaseOps {
         if (arr == null)
             throw new IllegalArgumentException("Array for " + name + " must not be null");
 
-        if(arr.isAttached())
+        boolean duped = false;
+        if(arr.isAttached()) {
             arr = arr.detach();
+            duped = true;
+        }
+        if(arr.isView()) {
+            arr = arr.dup();
+            duped = true;
+        }
+
+        if(!duped) {
+            for (DeviceLocalNDArray otherArr : variablesArrays.values()) {
+                if (otherArr.get() == arr) {    //Check for exact same object, to avoid array reuse (can result in unexpected behaviour)
+                    arr = arr.dup();
+                    break;
+                }
+            }
+        }
+
         SDVariable ret = new SDVariable(name, VariableType.VARIABLE, this, arr.shape(), arr.dataType(), new NDArraySupplierInitScheme(arr));
 
         associateArrayWithVariable(arr, ret);
