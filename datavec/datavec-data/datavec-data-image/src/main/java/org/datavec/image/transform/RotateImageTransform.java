@@ -21,7 +21,6 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
 import org.bytedeco.javacpp.FloatPointer;
-import org.bytedeco.javacpp.opencv_core;
 import org.bytedeco.javacv.OpenCVFrameConverter;
 import org.datavec.image.data.ImageWritable;
 import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
@@ -31,12 +30,14 @@ import org.nd4j.shade.jackson.annotation.JsonProperty;
 import java.nio.FloatBuffer;
 import java.util.Random;
 
-import static org.bytedeco.javacpp.opencv_core.*;
-import static org.bytedeco.javacpp.opencv_imgproc.*;
+import org.bytedeco.opencv.opencv_core.*;
+import org.bytedeco.opencv.opencv_imgproc.*;
+import static org.bytedeco.opencv.global.opencv_core.*;
+import static org.bytedeco.opencv.global.opencv_imgproc.*;
 
 /**
  * Rotates and scales images deterministically or randomly. Calls
- * {@link org.bytedeco.javacpp.opencv_imgproc#warpAffine(Mat, Mat, Mat, Size, int, int, Scalar)}
+ * {@link org.bytedeco.opencv.global.opencv_imgproc#warpAffine(Mat, Mat, Mat, Size, int, int, Scalar)}
  * with given properties (interMode, borderMode, and borderValue).
  *
  * @author saudet
@@ -126,7 +127,7 @@ public class RotateImageTransform extends BaseImageTransform<Mat> {
     public float[] query(float... coordinates) {
         Mat src = new Mat(1, coordinates.length / 2, CV_32FC2, new FloatPointer(coordinates));
         Mat dst = new Mat();
-        opencv_core.transform(src, dst, M);
+        org.bytedeco.opencv.global.opencv_core.transform(src, dst, M);
         FloatBuffer buf = dst.createBuffer();
         float[] transformed = new float[coordinates.length];
         buf.get(transformed);

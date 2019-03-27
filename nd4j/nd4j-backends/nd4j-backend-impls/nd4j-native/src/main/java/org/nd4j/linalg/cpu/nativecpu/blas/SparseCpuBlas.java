@@ -18,8 +18,8 @@ package org.nd4j.linalg.cpu.nativecpu.blas;
 
 import org.nd4j.nativeblas.SparseNd4jBlas;
 
+import static org.bytedeco.mkl.global.mkl_rt.*;
 
-import static org.bytedeco.javacpp.mkl_rt.*;
 /**
  * @author Audrey Loeffel
  */
