@@ -1651,3 +1651,14 @@ TEST_F(PlaygroundTests, loops_1) {
 */
 }
 
+TEST_F(PlaygroundTests, my_1) {
+
+    Nd4jLong xShapeInfo[] = {2, 8, 256, 1024, 1, 8192, 0, 99};
+    Nd4jLong yShapeInfo[] = {2, 8, 256, 256, 1, 8192, 1, 99};
+    float xBuff[8*1024];
+
+    NDArray x(xBuff, xShapeInfo);
+    NDArray y(yShapeInfo, nd4j::DataType::FLOAT32, true);
+
+    x.applyTransform(transform::StrictOps::Sin, &y);
+}
