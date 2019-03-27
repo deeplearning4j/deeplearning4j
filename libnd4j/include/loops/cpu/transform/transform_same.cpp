@@ -57,8 +57,8 @@ namespace functions {
                 OpType::execSpecial(x, xShapeInfo, z, zShapeInfo, extraParams, tadShapeInfo, tadOffsets);
                 return;
             }
-            
-            nd4j::Loops::loopXZ<X, X, X, OpType>(x, xShapeInfo, z, zShapeInfo, extraParams);
+
+            nd4j::TransformLoops<X,X,X>::template loopXZ<OpType>(x, xShapeInfo, z, zShapeInfo, extraParams);
         }
 
         BUILD_SINGLE_TEMPLATE(template class ND4J_EXPORT TransformSame, , LIBND4J_TYPES);
