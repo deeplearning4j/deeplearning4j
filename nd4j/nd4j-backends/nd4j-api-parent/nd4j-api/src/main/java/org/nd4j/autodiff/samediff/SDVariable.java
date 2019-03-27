@@ -701,6 +701,22 @@ public class SDVariable extends DifferentialFunction implements Serializable {
     }
 
     /**
+     * For Kotlin operator interop
+     * @see #add(String, SDVariable)
+     */
+    public SDVariable plus(SDVariable other){
+        return add(other);
+    }
+
+    /**
+     * For Kotlin operator interop
+     * @see #add(String, double)
+     */
+    public SDVariable plus(double other){
+        return add(other);
+    }
+
+    /**
      * See {@link #sub(String, double)}
      */
     public SDVariable sub(double scalar) {
@@ -739,6 +755,22 @@ public class SDVariable extends DifferentialFunction implements Serializable {
     public SDVariable sub(String name, SDVariable x) {
         val result = sameDiff.f().sub(this,x);
         return sameDiff.updateVariableNameAndReference(result,name);
+    }
+
+    /**
+     * For Kotlin operator interop
+     * @see #sub(String, SDVariable)
+     */
+    public SDVariable minus(SDVariable other){
+        return sub(other);
+    }
+
+    /**
+     * For Kotlin operator interop
+     * @see #sub(String, double)
+     */
+    public SDVariable minus(double other){
+        return sub(other);
     }
 
     /**
@@ -822,6 +854,22 @@ public class SDVariable extends DifferentialFunction implements Serializable {
     public SDVariable mul(String name, SDVariable x) {
         val result = sameDiff.f().mul(this, x);
         return sameDiff.updateVariableNameAndReference(result,name);
+    }
+
+    /**
+     * For Kotlin operator interop
+     * @see #mul(String, SDVariable)
+     */
+    public SDVariable times(SDVariable other){
+        return mul(other);
+    }
+
+    /**
+     * For Kotlin operator interop
+     * @see #mul(String, double)
+     */
+    public SDVariable times(double other){
+        return mul(other);
     }
 
     /**
