@@ -727,7 +727,8 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
                 auto uXShape0 = static_cast<uint>(xShape[0]);
                 auto uXShape1 = static_cast<uint>(xShape[1]);
 
-                PRAGMA_OMP_PARALLEL_FOR_SIMD_THREADS(thredsInfo._numThreads)
+                //PRAGMA_OMP_PARALLEL_FOR_SIMD_THREADS(thredsInfo._numThreads)
+                PRAGMA_OMP_PARALLEL_FOR_SIMD
                 for (uint i0 = 0; i0 < uXShape0; ++i0) {
 
                     auto z0 = i0 * zStride[0];
