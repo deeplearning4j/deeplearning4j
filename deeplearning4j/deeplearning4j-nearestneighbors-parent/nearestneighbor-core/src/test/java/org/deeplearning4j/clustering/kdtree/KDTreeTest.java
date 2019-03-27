@@ -19,6 +19,7 @@ package org.deeplearning4j.clustering.kdtree;
 import com.google.common.primitives.Doubles;
 import lombok.val;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -167,7 +168,32 @@ public class KDTreeTest {
     }
 
     @Test
-    public void testSequentialConstruction() {
+    public void testKNN_1() {
+        int n = 2;
+        KDTree kdTree = new KDTree(n);
+
+        double[] data = new double[]{3,3};
+        kdTree.insert(Nd4j.createFromArray(data));
+        data = new double[]{1,1};
+        kdTree.insert(Nd4j.createFromArray(data));
+        data = new double[]{2,2};
+        kdTree.insert(Nd4j.createFromArray(data));
+
+        data = new double[]{0,0};
+        List<Pair<Double, INDArray>> result = kdTree.knn(Nd4j.createFromArray(data), 4.5);
+
+        assertEquals(1.0, result.get(0).getSecond().getDouble(0), 1e-5);
+        assertEquals(1.0, result.get(0).getSecond().getDouble(1), 1e-5);
+
+        assertEquals(2.0, result.get(1).getSecond().getDouble(0), 1e-5);
+        assertEquals(2.0, result.get(1).getSecond().getDouble(1), 1e-5);
+
+        assertEquals(3.0, result.get(2).getSecond().getDouble(0), 1e-5);
+        assertEquals(3.0, result.get(2).getSecond().getDouble(1), 1e-5);
+    }
+
+    @Test
+    public void testKNN_2() {
         int n = 2;
         KDTree kdTree = new KDTree(n);
         double[] data = new double[]{7,2};
@@ -185,10 +211,15 @@ public class KDTreeTest {
         assertEquals(6, kdTree.size());
 
         List<Pair<Double, INDArray>> result = kdTree.knn(Nd4j.createFromArray(data), 10.0);
-        assertEquals(7.0, result.get(0).getSecond().getDouble(0), 1e-5);
-        assertEquals(2.0, result.get(0).getSecond().getDouble(1), 1e-5);
-        assertEquals(9.0, result.get(1).getSecond().getDouble(0), 1e-5);
-        assertEquals(6.0, result.get(1).getSecond().getDouble(1),  1e-5);
+        // reference : [(8.0, 1.0), (7.0, 2.0), (5.0, 4.0), (9.0, 6.0), (2.0, 3.0), (4.0, 7.0)]
+        /*assertEquals(8.0, result.get(0).getSecond().getDouble(0), 1e-5);
+        assertEquals(1.0, result.get(0).getSecond().getDouble(1), 1e-5);
+        assertEquals(7.0, result.get(1).getSecond().getDouble(0), 1e-5);
+        assertEquals(2.0, result.get(1).getSecond().getDouble(1),  1e-5);*/
+
+        for (val pair : result) {
+            System.out.println(pair);
+        }
 
     }
 }
