@@ -22,13 +22,26 @@
 
 using namespace simdOps;
 
-template <typename X, typename Y, typename E>
-void nd4j::ReductionLoops<X, Y, E>::wrapBoolXZ(const int opNum, const void* vx, const Nd4jLong* xShapeInfo, void* vz, const Nd4jLong* zShapeInfo, const Nd4jLong* tadShapeInfo, const Nd4jLong* tadOffsets, const int* dimsToExclude, const int dimsLen, void* vextraParams) {
-    const auto x = reinterpret_cast<const X *>(vx);
-    auto z = reinterpret_cast<Y *>(vz);
-    auto extraParams = reinterpret_cast<X *>(vextraParams);
+namespace nd4j {
 
-    DISPATCH_BY_OPNUM_TT(loopTadXZ, PARAMS(x, xShapeInfo, z, zShapeInfo, tadShapeInfo, tadOffsets, dimsToExclude, dimsLen, extraParams), REDUCE_BOOL_OPS);
+    template<typename X, typename Z>
+    template <typename OpType>
+    void ReductionBoolLoops<X, Z>::innerloopTadXZ(const X* x, const Nd4jLong* xShapeInfo, Z* z, const Nd4jLong* zShapeInfo, const Nd4jLong* tadShapeInfo, const Nd4jLong* tadOffsets, const int* dimsToExclude, const int dimsLen, X* extraParams) {
+        ReductionLoops<X,Z,Z>::template loopTadXZ<OpType>(x, xShapeInfo, z, zShapeInfo, tadShapeInfo, tadOffsets, dimsToExclude, dimsLen, extraParams);
+    }
+
+    template<typename X, typename Y>
+    void ReductionBoolLoops<X, Y>::wrapper(const int opNum, const X *vx, const Nd4jLong *xShapeInfo, Y *vz,
+                                            const Nd4jLong *zShapeInfo, const Nd4jLong *tadShapeInfo,
+                                            const Nd4jLong *tadOffsets, const int *dimsToExclude,
+                                            const int dimsLen, X *vextraParams) {
+        const auto x = reinterpret_cast<const X *>(vx);
+        auto z = reinterpret_cast<Y *>(vz);
+        auto extraParams = reinterpret_cast<X *>(vextraParams);
+
+        DISPATCH_BY_OPNUM_TT(innerloopTadXZ, PARAMS(x, xShapeInfo, z, zShapeInfo, tadShapeInfo, tadOffsets, dimsToExclude, dimsLen, extraParams), REDUCE_BOOL_OPS);
+    }
+
+    BUILD_DOUBLE_TEMPLATE(template class ReductionFloatLoops, , LIBND4J_TYPES, BOOL_TYPES);
 }
 
-template void nd4j::ReductionLoops<float, bool, float> ::wrapBoolXZ(const int opNum, const void* vx, const Nd4jLong* xShapeInfo, void* vz, const Nd4jLong* zShapeInfo, const Nd4jLong* tadShapeInfo, const Nd4jLong* tadOffsets, const int* dimsToExclude, const int dimsLen, void* vextraParams);

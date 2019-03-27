@@ -22,6 +22,7 @@
 
 using namespace simdOps;
 
+/*
 template <typename X, typename Y, typename E>
 void nd4j::ReductionLoops<X, Y, E>::wrapLongXZ(const int opNum, const void* vx, const Nd4jLong* xShapeInfo, void* vz, const Nd4jLong* zShapeInfo, const Nd4jLong* tadShapeInfo, const Nd4jLong* tadOffsets, const int* dimsToExclude, const int dimsLen, void* vextraParams) {
     const auto x = reinterpret_cast<const X *>(vx);
@@ -32,3 +33,5 @@ void nd4j::ReductionLoops<X, Y, E>::wrapLongXZ(const int opNum, const void* vx, 
 }
 
 template void nd4j::ReductionLoops<float, Nd4jLong, float> ::wrapLongXZ(const int opNum, const void* vx, const Nd4jLong* xShapeInfo, void* vz, const Nd4jLong* zShapeInfo, const Nd4jLong* tadShapeInfo, const Nd4jLong* tadOffsets, const int* dimsToExclude, const int dimsLen, void* vextraParams);
+
+*/

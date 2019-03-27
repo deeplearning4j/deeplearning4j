@@ -19,17 +19,75 @@
 //
 
 #include "ReductionLoops.hpp"
+#include <pointercast.h>
+#include <types/types.h>
 
 using namespace simdOps;
 
-template <typename X, typename Y, typename E>
-void nd4j::ReductionLoops<X, Y, E>::wrapFloatXZ(const int opNum, const void* vx, const Nd4jLong* xShapeInfo, void* vz, const Nd4jLong* zShapeInfo, const Nd4jLong* tadShapeInfo, const Nd4jLong* tadOffsets, const int* dimsToExclude, const int dimsLen, void* vextraParams) {
-    const auto x = reinterpret_cast<const X *>(vx);
-    auto z = reinterpret_cast<Y *>(vz);
-    auto extraParams = reinterpret_cast<E *>(vextraParams);
+namespace nd4j {
 
-    DISPATCH_BY_OPNUM_TT(loopTadXZ, PARAMS(x, xShapeInfo, z, zShapeInfo, tadShapeInfo, tadOffsets, dimsToExclude, dimsLen, extraParams), REDUCE_FLOAT_OPS);
+    template<typename X, typename Z>
+    template <typename OpType>
+    void ReductionFloatLoops<X, Z>::innerloopTadXZ(X* x, Nd4jLong* xShapeInfo, Z* z, Nd4jLong* zShapeInfo, Nd4jLong* tadShapeInfo, Nd4jLong* tadOffsets, int* dimsToExclude, int dimsLen, Z* extraParams) {
+        ReductionLoops<X,Z,Z>::template loopTadXZ<OpType>(x, xShapeInfo, z, zShapeInfo, tadShapeInfo, tadOffsets, dimsToExclude, dimsLen, extraParams);
+    }
+
+    template<typename X, typename Y>
+    void ReductionFloatLoops<X, Y>::wrapper(const int opNum, X *vx, Nd4jLong *xShapeInfo, Y *vz,
+                                                  Nd4jLong *zShapeInfo, Nd4jLong *tadShapeInfo,
+                                                  Nd4jLong *tadOffsets, int *dimsToExclude,
+                                                  int dimsLen, Y *vextraParams) {
+        const auto x = reinterpret_cast<X *>(vx);
+        auto z = reinterpret_cast<Y *>(vz);
+        auto extraParams = reinterpret_cast<Y *>(vextraParams);
+
+        DISPATCH_BY_OPNUM_TT(innerloopTadXZ, PARAMS(x, xShapeInfo, z, zShapeInfo, tadShapeInfo, tadOffsets, dimsToExclude, dimsLen, extraParams), REDUCE_FLOAT_OPS);
+    }
+    template class ReductionFloatLoops<float16, float>;
+    template class ReductionFloatLoops<bfloat16, float>;
+    template class ReductionFloatLoops<float, float>;
+    template class ReductionFloatLoops<double, float>;
+    template class ReductionFloatLoops<bool, float>;
+    template class ReductionFloatLoops<int8_t, float>;
+    template class ReductionFloatLoops<uint8_t, float>;
+    template class ReductionFloatLoops<int16_t, float>;
+    template class ReductionFloatLoops<int, float>;
+    template class ReductionFloatLoops<Nd4jLong , float>;
+
+    template class ReductionFloatLoops<float16, double>;
+    template class ReductionFloatLoops<bfloat16, double>;
+    template class ReductionFloatLoops<float, double>;
+    template class ReductionFloatLoops<double, double>;
+    template class ReductionFloatLoops<bool, double>;
+    template class ReductionFloatLoops<int8_t, double>;
+    template class ReductionFloatLoops<uint8_t, double>;
+    template class ReductionFloatLoops<int16_t, double>;
+    template class ReductionFloatLoops<int, double>;
+    template class ReductionFloatLoops<Nd4jLong , double>;
+
+    template class ReductionFloatLoops<float16, bfloat16>;
+    template class ReductionFloatLoops<bfloat16, bfloat16>;
+    template class ReductionFloatLoops<float, bfloat16>;
+    template class ReductionFloatLoops<double, bfloat16>;
+    template class ReductionFloatLoops<bool, bfloat16>;
+    template class ReductionFloatLoops<int8_t, bfloat16>;
+    template class ReductionFloatLoops<uint8_t, bfloat16>;
+    template class ReductionFloatLoops<int16_t, bfloat16>;
+    template class ReductionFloatLoops<int, bfloat16>;
+    template class ReductionFloatLoops<Nd4jLong , bfloat16>;
+
+    template class ReductionFloatLoops<float16, float16>;
+    template class ReductionFloatLoops<bfloat16, float16>;
+    template class ReductionFloatLoops<float, float16>;
+    template class ReductionFloatLoops<double, float16>;
+    template class ReductionFloatLoops<bool, float16>;
+    template class ReductionFloatLoops<int8_t, float16>;
+    template class ReductionFloatLoops<uint8_t, float16>;
+    template class ReductionFloatLoops<int16_t, float16>;
+    template class ReductionFloatLoops<int, float16>;
+    template class ReductionFloatLoops<Nd4jLong , float16>;
+
+
 }
 
-template void nd4j::ReductionLoops<double, float, float> ::wrapFloatXZ(const int opNum, const void* vx, const Nd4jLong* xShapeInfo, void* vz, const Nd4jLong* zShapeInfo, const Nd4jLong* tadShapeInfo, const Nd4jLong* tadOffsets, const int* dimsToExclude, const int dimsLen, void* vextraParams);
-template void nd4j::ReductionLoops<float, float, float> ::wrapFloatXZ(const int opNum, const void* vx, const Nd4jLong* xShapeInfo, void* vz, const Nd4jLong* zShapeInfo, const Nd4jLong* tadShapeInfo, const Nd4jLong* tadOffsets, const int* dimsToExclude, const int dimsLen, void* vextraParams);
+
