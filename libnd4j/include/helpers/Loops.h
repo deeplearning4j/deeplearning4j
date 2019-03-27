@@ -31,32 +31,62 @@
 #include <openmp_pragmas.h>
 
 namespace nd4j {
+    enum LoopKind {SMALLARR2DX, EWS1, EWSNONZERO, RANK1, RANK2, RANK3, RANK4, RANK5, X_EWSNONZERO, Z_EWSNONZERO, COMMON};
 
-template <typename X>
-class ND4J_EXPORT ReduceSameWrapper {
+
+    template <typename X, typename Z, typename E>
+    class ND4J_EXPORT ReductionLoops {
+    private:
+        //////////////////////////////////////////////////////////////////////////////
+        static FORCEINLINE LoopKind deduceKindOfLoopTadXZ(const Nd4jLong* xShapeInfo, const Nd4jLong* zShapeInfo, const Nd4jLong* tadShapeInfo);
+
     public:
+        //////////////////////////////////////////////////////////////////////////////
         template <typename OpType>
-        static void wrapper(const X *x, const Nd4jLong *xShapeInfo, X *z, const Nd4jLong *zShapeInfo, const Nd4jLong *tadShapeInfo, const Nd4jLong *tadOffset, const int* dimsToExclude, int dimsLen, X *extras);
+        static void loopTadXZ(const X* x, const Nd4jLong* xShapeInfo,
+                              Z* z, const Nd4jLong* zShapeInfo,
+                              const Nd4jLong* tadShapeInfo, const Nd4jLong* tadOffsets,
+                              const int* dimsToExclude,
+                              const int dimsLen,
+                              E* extraParams);
+    };
 
-        static void wrap(const int opNum, const X *x, const Nd4jLong* xShapeInfo, X *z, const Nd4jLong *zShapeInfo,  const Nd4jLong *tadShapeInfo, const Nd4jLong *tadOffset, const int* dimsToExclude, int dimsLen, X *extras);
-};
+    template <typename X>
+    class ND4J_EXPORT IndexReductionLoops {
+    private:
+    public:
+        //////////////////////////////////////////////////////////////////////////////
+        template <typename OpType>
+        static void loopIndexTadXZ(const X* x, const Nd4jLong* xShapeInfo,
+                                   Nd4jLong* z, const Nd4jLong* zShapeInfo,
+                                   const Nd4jLong* tadShapeInfo, const Nd4jLong* tadOffsets,
+                                   X* extraParams);
+    };
 
 
+    template <typename X, typename Z, typename E>
+    class ND4J_EXPORT TransformLoops {
+    private:
+        //////////////////////////////////////////////////////////////////////////////
+        static FORCEINLINE LoopKind deduceKindOfLoopXZ(const Nd4jLong* xShapeInfo, const Nd4jLong* zShapeInfo);
+    public:
+
+        //////////////////////////////////////////////////////////////////////////////
+        template<typename OpType>
+        static void loopXZ(const X* x, const Nd4jLong* xShapeInfo,
+                           Z* z, const Nd4jLong* zShapeInfo,
+                           E* extraParams);
+    };
 
 class ND4J_EXPORT Loops {
 
     private:
-        enum LoopKind {SMALLARR2DX, EWS1, EWSNONZERO, RANK1, RANK2, RANK3, RANK4, RANK5, X_EWSNONZERO, Z_EWSNONZERO, COMMON};
 
         //////////////////////////////////////////////////////////////////////////////
         static FORCEINLINE LoopKind deduceKindOfLoopXYZ(const Nd4jLong* xShapeInfo, const Nd4jLong* yShapeInfo, const Nd4jLong* zShapeInfo);
 
-        //////////////////////////////////////////////////////////////////////////////
-        static FORCEINLINE LoopKind deduceKindOfLoopXZ(const Nd4jLong* xShapeInfo, const Nd4jLong* zShapeInfo);
 
-        //////////////////////////////////////////////////////////////////////////////
-        static FORCEINLINE LoopKind deduceKindOfLoopTadXZ(const Nd4jLong* xShapeInfo, const Nd4jLong* zShapeInfo, const Nd4jLong* tadShapeInfo);
-    
+
     public:
         //////////////////////////////////////////////////////////////////////////////
         template<typename X, typename Y, typename Z> 
@@ -66,30 +96,10 @@ class ND4J_EXPORT Loops {
                                   Z* extraParams,
                             std::function<Z(X,Y,Z*)> op);
 
-        //////////////////////////////////////////////////////////////////////////////
-        template<typename X, typename Z, typename E, typename OpType> 
-        static void loopXZ(const X* x, const Nd4jLong* xShapeInfo,
-                                 Z* z, const Nd4jLong* zShapeInfo,
-                                 E* extraParams);
 
-
-        //////////////////////////////////////////////////////////////////////////////
-        template<typename X, typename Z, typename E, typename OpType>
-        static void loopTadXZ(const X* x, const Nd4jLong* xShapeInfo,
-                                    Z* z, const Nd4jLong* zShapeInfo,
-                              const Nd4jLong* tadShapeInfo, const Nd4jLong* tadOffsets,
-                              const int* dimsToExclude,
-                              const int dimsLen,
-                              E* extraParams);
-
-        //////////////////////////////////////////////////////////////////////////////
-        template<typename X,typename OpType>
-        static void loopIndexTadXZ(const X* x, const Nd4jLong* xShapeInfo,  
-                                  Nd4jLong* z, const Nd4jLong* zShapeInfo, 
-                                  const Nd4jLong* tadShapeInfo, const Nd4jLong* tadOffsets, 
-                                  X* extraParams);
 };
 
+/*
 //////////////////////////////////////////////////////////////////////////////
 Loops::LoopKind Loops::deduceKindOfLoopXYZ(const Nd4jLong* xShapeInfo, const Nd4jLong* yShapeInfo, const Nd4jLong* zShapeInfo) {
     
@@ -126,9 +136,11 @@ Loops::LoopKind Loops::deduceKindOfLoopXYZ(const Nd4jLong* xShapeInfo, const Nd4
         return RANK5;
     return COMMON;
 }
+*/
 
 //////////////////////////////////////////////////////////////////////////////
-Loops::LoopKind Loops::deduceKindOfLoopXZ(const Nd4jLong* xShapeInfo, const Nd4jLong* zShapeInfo) {
+template <typename X, typename Z, typename E>
+LoopKind TransformLoops<X, Z, E>::deduceKindOfLoopXZ(const Nd4jLong* xShapeInfo, const Nd4jLong* zShapeInfo) {
 
     const int xRank = shape::rank(xShapeInfo);
     const Nd4jLong xEws = shape::elementWiseStride(xShapeInfo);
@@ -165,7 +177,8 @@ Loops::LoopKind Loops::deduceKindOfLoopXZ(const Nd4jLong* xShapeInfo, const Nd4j
 }
 
 //////////////////////////////////////////////////////////////////////////////
-Loops::LoopKind Loops::deduceKindOfLoopTadXZ(const Nd4jLong* xShapeInfo, const Nd4jLong* zShapeInfo, const Nd4jLong* tadShapeInfo) {
+template <typename X, typename Z, typename E>
+LoopKind ReductionLoops<X, Z, E>::deduceKindOfLoopTadXZ(const Nd4jLong* xShapeInfo, const Nd4jLong* zShapeInfo, const Nd4jLong* tadShapeInfo) {
 
     const int tadRank = shape::rank(tadShapeInfo);
 
