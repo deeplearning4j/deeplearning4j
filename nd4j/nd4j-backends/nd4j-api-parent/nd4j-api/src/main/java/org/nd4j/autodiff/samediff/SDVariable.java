@@ -640,6 +640,26 @@ public class SDVariable extends DifferentialFunction implements Serializable {
 
 
     /**
+     * See {@link #dot(String, SDVariable, int...)}
+     */
+    public SDVariable dot(SDVariable other, int... dimensions){
+        return dot(null, other, dimensions);
+    }
+
+    /**
+     * Matrix dot product: out = dot(this,other, dimensions)
+     *
+     * @param name  Name of the output variable
+     * @param other Other variable to perform matrix multiplication with
+     * @return Output variable (result of mmul)
+     */
+    public SDVariable dot(String name, SDVariable other, int... dimensions){
+        return sameDiff.dot(name, this, other, dimensions);
+    }
+
+
+
+    /**
      * See {@link #add(String, double)}
      */
     public SDVariable add(double scalar) {
@@ -1649,6 +1669,41 @@ public class SDVariable extends DifferentialFunction implements Serializable {
      */
     public SDVariable reshape(SDVariable newShape){
         return sameDiff.reshape(this, newShape);
+    }
+
+    /**
+     * Reshape the current variable to the specified shape. The output variable will have the same values as the
+     * input, but with the specified shape.<br>
+     * Note that prod(shape) must match length(input) == prod(input.shape)
+     *
+     * @param newShape New shape for variable
+     * @return Output variable
+     */
+    public SDVariable reshape(int... newShape){
+        return sameDiff.reshape(this, newShape);
+    }
+
+    /**
+     * Reshape the current variable to the specified shape. The output variable will have the same values as the
+     * input, but with the specified shape.<br>
+     * Note that prod(shape) must match length(input) == prod(input.shape)
+     *
+     * @param newShape New shape for variable
+     * @return Output variable
+     */
+    public SDVariable reshape(long... newShape){
+        return sameDiff.reshape(this, newShape);
+    }
+
+    /**
+     * Permute the dimensions of the current variable according to the specified permutation indices.<br>
+     * Example: if the current variable has shape [a,b,c] and dimensions = [2,0,1] the output has shape [c,a,b]
+     *
+     * @param dimensions The new dimension order
+     * @return Output variable (permuted input)
+     */
+    public SDVariable permute(int... dimensions){
+        return sameDiff.permute(this, dimensions);
     }
 
     /**
