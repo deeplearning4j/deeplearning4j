@@ -1062,10 +1062,10 @@ public class NDArrayTestsFortran extends BaseNd4jTest {
 
     @Test
     public void testGetColumnGetRow() {
-        INDArray row = Nd4j.ones(5).reshape(1, -1);
+        INDArray row = Nd4j.ones(1, 5);
         for (int i = 0; i < 5; i++) {
             INDArray col = row.getColumn(i);
-            assertArrayEquals(col.shape(), new long[] {});
+            assertArrayEquals(col.shape(), new long[] {1,1});
         }
 
         INDArray col = Nd4j.ones(5, 1);

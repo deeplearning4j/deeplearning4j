@@ -60,6 +60,10 @@ public abstract class BaseReduce3Op extends BaseReduceFloatOp {
         this(x, y, z, false, false, (int[])null);
     }
 
+    public BaseReduce3Op(INDArray x, INDArray y, INDArray z, boolean keepDims, int... dimensions){
+        this(x,y,z,keepDims, false);
+    }
+
     public BaseReduce3Op(INDArray x, INDArray y, INDArray z, boolean keepDims, boolean allDistances, int... dimensions){
         super(x, y, z, keepDims, dimensions);
         this.isComplex = allDistances;
