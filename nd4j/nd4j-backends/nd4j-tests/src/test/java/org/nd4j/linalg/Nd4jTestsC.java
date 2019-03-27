@@ -7436,6 +7436,15 @@ public class Nd4jTestsC extends BaseNd4jTest {
         Nd4j.meshgrid(Nd4j.createFromArray(1, 2, 3), Nd4j.createFromArray(4, 5, 6));
     }
 
+    @Test
+    public void testGetColumnRowVector(){
+        INDArray arr = Nd4j.create(1,4);
+        INDArray col = arr.getColumn(0);
+        System.out.println(Arrays.toString(col.shape()));
+        assertArrayEquals(new long[]{1,1}, col.shape());
+    }
+
+
     ///////////////////////////////////////////////////////
     protected static void fillJvmArray3D(float[][][] arr) {
         int cnt = 1;

@@ -4901,9 +4901,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             return this;
         else if (isColumnVector() && c > 0)
             throw new IllegalArgumentException("Illegal index for row");
-        else if(isRowVector()) {
-            return Nd4j.scalar(getDouble(c));
-        }
         return get(NDArrayIndex.all(), NDArrayIndex.point(c));
     }
 
