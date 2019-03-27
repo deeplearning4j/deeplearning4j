@@ -385,12 +385,10 @@ public class FlatBuffersMapper {
                 val ba = (BaseReduceOp) op; //Reduce3 ops are also all BaseAccumulations
                 ba.setDimensions(dimensions);
                 ba.setDimensionz(Shape.ndArrayDimFromInt(dimensions));
-                ba.setNewFormat(true);  //Always "new" format (i.e., rank 0 scalars, not rank 2) for SameDiff-based exec
             } else if(opType == Op.Type.INDEXREDUCE){
                 BaseIndexAccumulation bia = (BaseIndexAccumulation)op;
                 bia.setDimensions(dimensions);
                 bia.setDimensionz(Shape.ndArrayDimFromInt(dimensions));
-                bia.setNewFormat(true);  //Always "new" format (i.e., rank 0 scalars, not rank 2) for SameDiff-based exec
             }
             /*
             Op types that don't need any extra/special mapping:

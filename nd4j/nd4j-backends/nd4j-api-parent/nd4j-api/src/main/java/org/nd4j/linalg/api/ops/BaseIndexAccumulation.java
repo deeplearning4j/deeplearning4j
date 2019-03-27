@@ -43,8 +43,6 @@ import java.util.List;
 @Data
 public abstract class BaseIndexAccumulation extends BaseOp implements IndexAccumulation {
     protected boolean keepDims = false;
-    @Deprecated
-    protected boolean newFormat = false;
 
     public BaseIndexAccumulation(SameDiff sameDiff,
                                  SDVariable i_v,
@@ -64,7 +62,6 @@ public abstract class BaseIndexAccumulation extends BaseOp implements IndexAccum
             throw new IllegalArgumentException("Input not null variable.");
         }
         this.keepDims = keepDims;
-        this.newFormat = true;
         defineDimensions(dimensions);
     }
 
@@ -93,7 +90,6 @@ public abstract class BaseIndexAccumulation extends BaseOp implements IndexAccum
             throw new IllegalArgumentException("Input not null variable.");
         }
         this.keepDims = keepDims;
-        this.newFormat = true;
         defineDimensions(dimensions);
     }
 
@@ -116,7 +112,7 @@ public abstract class BaseIndexAccumulation extends BaseOp implements IndexAccum
         if(x == null)
             return Collections.emptyList();
 
-        long[] reducedShape = Shape.getReducedShape(x.shape(), dimensions, keepDims, newFormat);
+        long[] reducedShape = Shape.getReducedShape(x.shape(), dimensions, keepDims);
         return Collections.singletonList(LongShapeDescriptor.fromShape(reducedShape, DataType.LONG));
     }
 

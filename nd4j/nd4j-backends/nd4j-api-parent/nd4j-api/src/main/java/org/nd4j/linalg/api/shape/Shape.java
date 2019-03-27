@@ -445,6 +445,10 @@ public class Shape {
         return result;
     }
 
+    public static long[] getReducedShape(long[] wholeShape, int[] dimensions, boolean keepDims) {
+        return getReducedShape(wholeShape, dimensions, keepDims, true);
+    }
+
     public static long[] getReducedShape(long[] wholeShape, int[] dimensions, boolean keepDims, boolean newFormat) {
         // we need to normalize dimensions, in case they have negative values or unsorted, or whatever
         dimensions = Shape.normalizeAxis(wholeShape.length, dimensions);

@@ -49,10 +49,6 @@ public abstract class BaseReduceLongOp extends BaseReduceOp implements ReduceLon
         super(x, dimensions);
     }
 
-    public BaseReduceLongOp(INDArray x, INDArray z, boolean newFormat, boolean keepDims, int[] dimensions) {
-        super(x, null, z, newFormat, keepDims, dimensions);
-    }
-
     public BaseReduceLongOp(INDArray x, INDArray z, int... dimensions) {
         super(x, z, dimensions);
     }
@@ -94,7 +90,7 @@ public abstract class BaseReduceLongOp extends BaseReduceOp implements ReduceLon
             return Collections.emptyList();
 
         //Calculate reduction shape. Note that reduction on scalar - returns a scalar
-        long[] reducedShape = x.length() == 0 ? x.shape() : Shape.getReducedShape(x.shape(),dimensions, isKeepDims(), newFormat);
+        long[] reducedShape = x.length() == 0 ? x.shape() : Shape.getReducedShape(x.shape(),dimensions, isKeepDims());
         return Collections.singletonList(LongShapeDescriptor.fromShape(reducedShape, DataType.LONG));
     }
 

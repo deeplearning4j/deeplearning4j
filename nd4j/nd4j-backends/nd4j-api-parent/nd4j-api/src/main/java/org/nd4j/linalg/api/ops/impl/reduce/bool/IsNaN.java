@@ -42,7 +42,7 @@ public class IsNaN extends BaseReduceBoolOp {
     public IsNaN() {}
 
     public IsNaN(INDArray x, INDArray z) {
-        super(x, z, true, false, null);
+        super(x, z, false, null);
     }
 
     public IsNaN(INDArray x) {

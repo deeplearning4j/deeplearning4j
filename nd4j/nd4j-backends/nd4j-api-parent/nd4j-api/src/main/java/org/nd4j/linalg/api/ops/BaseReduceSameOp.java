@@ -46,8 +46,8 @@ public abstract class BaseReduceSameOp extends BaseReduceOp implements ReduceSam
         super(sameDiff, input, dimensions);
     }
 
-    public BaseReduceSameOp(INDArray x, INDArray z, boolean newFormat, boolean keepDims, int[] dimensions) {
-        super(x, null, z, newFormat, keepDims, dimensions);
+    public BaseReduceSameOp(INDArray x, INDArray z, boolean keepDims, int[] dimensions) {
+        super(x, null, z, keepDims, dimensions);
     }
 
     public BaseReduceSameOp(INDArray x, INDArray y, INDArray z, int... dimensions) {
@@ -96,7 +96,7 @@ public abstract class BaseReduceSameOp extends BaseReduceOp implements ReduceSam
             return Collections.emptyList();
 
         //Calculate reduction shape. Note that reduction on scalar - returns a scalar
-        long[] reducedShape = x.length() == 0 ? x.shape() : Shape.getReducedShape(x.shape(),dimensions, isKeepDims(), newFormat);
+        long[] reducedShape = x.length() == 0 ? x.shape() : Shape.getReducedShape(x.shape(),dimensions, isKeepDims());
         return Collections.singletonList(LongShapeDescriptor.fromShape(reducedShape, this.resultType()));
     }
 

@@ -475,10 +475,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         long[] retShape;
         val wholeDims = Shape.wholeArrayDimension(dimension) || op.x().rank() == dimension.length || dimension.length == 0;
         if (wholeDims)
-            if (op.isNewFormat())
-                retShape = new long[0];
-            else
-                retShape = new long[] {1, 1};
+            retShape = new long[0];
         else
             retShape = ArrayUtil.removeIndex(maxShape, dimension);
 
@@ -540,7 +537,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         val dimension = op.dimensions().toIntVector();
         val wholeArray = Shape.wholeArrayDimension(dimension) || dimension.length == 0;
         if (op.z() == null) {
-            long[] retShape = wholeArray ? (op.isNewFormat() ? new long[]{} : new long[]{1, 1}) : ArrayUtil.removeIndex(op.x().shape(), dimension);
+            long[] retShape = wholeArray ? new long[]{} : ArrayUtil.removeIndex(op.x().shape(), dimension);
 
             //ensure vector is proper shape
             if (retShape.length == 1) {

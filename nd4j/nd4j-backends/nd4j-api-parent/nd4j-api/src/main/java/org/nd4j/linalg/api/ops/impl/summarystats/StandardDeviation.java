@@ -112,7 +112,7 @@ public class StandardDeviation extends Variance {
         long[] inputShape = (argShape == null ? x().shape() : argShape);
 
         val ret = new ArrayList<LongShapeDescriptor>(1);
-        val reducedShape = Shape.getReducedShape(inputShape,dimensions, isKeepDims(), newFormat);
+        val reducedShape = Shape.getReducedShape(inputShape,dimensions, isKeepDims());
         ret.add(LongShapeDescriptor.fromShape(reducedShape, resultType()));
         return ret;
     }

@@ -81,12 +81,6 @@ public interface ReduceOp extends Op {
     boolean isKeepDims();
 
     /**
-     * This method returns true if scalar is 0D, false otherwise
-     * @return
-     */
-    boolean isNewFormat();
-
-    /**
      * This method returns datatype for result array wrt given inputs
      * @return
      */
