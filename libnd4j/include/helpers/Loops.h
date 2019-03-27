@@ -716,7 +716,7 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
 
                 //*********************************************//
             case RANK1: {
-                PRAGMA_OMP_PARALLEL_FOR
+                PRAGMA_OMP_PARALLEL_FOR_SIMD_THREADS(thredsInfo._numThreads)
                 for (uint i0 = 0; i0 < len; ++i0)
                     z[i0 * zStride[0]] = OpType::op(x[i0 * xStride[0]], extraParams);
             }
@@ -727,6 +727,7 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
                 auto uXShape0 = static_cast<uint>(xShape[0]);
                 auto uXShape1 = static_cast<uint>(xShape[1]);
 
+                //PRAGMA_OMP_PARALLEL_FOR_SIMD_THREADS(thredsInfo._numThreads)
                 PRAGMA_OMP_PARALLEL_FOR_SIMD
                 for (uint i0 = 0; i0 < uXShape0; ++i0) {
 
@@ -744,7 +745,7 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
                 auto uXShape1 = static_cast<uint>(xShape[1]);
                 auto uXShape2 = static_cast<uint>(xShape[2]);
 
-                PRAGMA_OMP_PARALLEL_FOR_SIMD_COLLAPSE(2)
+                PRAGMA_OMP_PARALLEL_FOR_SIMD_THREADS_COLLAPSE(thredsInfo._numThreads, 2)
                 for (uint i0 = 0; i0 < uXShape0; ++i0)
                     for (uint i1 = 0; i1 < uXShape1; ++i1) {
 
@@ -764,7 +765,7 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
                 auto uXShape2 = static_cast<uint>(xShape[2]);
                 auto uXShape3 = static_cast<uint>(xShape[3]);
 
-                PRAGMA_OMP_PARALLEL_FOR_SIMD_COLLAPSE(3)
+                PRAGMA_OMP_PARALLEL_FOR_SIMD_THREADS_COLLAPSE(thredsInfo._numThreads, 2)
                 for (uint i0 = 0; i0 < uXShape0; ++i0)
                     for (uint i1 = 0; i1 < uXShape1; ++i1)
                         for (uint i2 = 0; i2 < uXShape2; ++i2) {
@@ -786,7 +787,7 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
                 auto uXShape3 = static_cast<uint>(xShape[3]);
                 auto uXShape4 = static_cast<uint>(xShape[4]);
 
-                PRAGMA_OMP_PARALLEL_FOR_SIMD_COLLAPSE(3)
+                PRAGMA_OMP_PARALLEL_FOR_SIMD_THREADS_COLLAPSE(thredsInfo._numThreads, 3)
                 for (uint i0 = 0; i0 < uXShape0; ++i0)
                     for (uint i1 = 0; i1 < uXShape1; ++i1)
                         for (uint i2 = 0; i2 < uXShape2; ++i2) {
