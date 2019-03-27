@@ -290,7 +290,7 @@ public class LogFileWriter {
     }
 
     public long writeHistogramEventDiscrete(String name, long time, int iteration, int epoch, List<String> binLabels, INDArray y) throws IOException {
-        Preconditions.checkState(binLabels != null && y != null && binLabels.size() == y.length(), "Number of bin labels (if present) must " +
+        Preconditions.checkState(binLabels == null || binLabels.size() == y.length(), "Number of bin labels (if present) must " +
                 "be same as Y array length - got %s bins, array shape %ndShape", binLabels.size(), y.length());
         Preconditions.checkState(y.rank() == 1, "Y array must be rank 1, got Y array with shape %ndShape", y);
 
