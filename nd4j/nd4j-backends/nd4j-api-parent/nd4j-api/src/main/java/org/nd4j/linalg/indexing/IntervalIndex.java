@@ -89,6 +89,7 @@ public class IntervalIndex implements INDArrayIndex {
         long oldBegin = begin;
         this.end = oldBegin;
         this.begin = oldEnd;
+        this.stride = -stride;
     }
 
     @Override
