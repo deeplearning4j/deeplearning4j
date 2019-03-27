@@ -3795,14 +3795,14 @@ public class Nd4j {
      * @return Empty INDArray
      */
     public static INDArray empty(DataType type) {
-        if(EMPTY_ARRAYS[dataType().ordinal()] == null){
+        if(EMPTY_ARRAYS[type.ordinal()] == null){
             try(MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()){
                 val ret = INSTANCE.empty(type);
-                EMPTY_ARRAYS[dataType().ordinal()] = ret;
+                EMPTY_ARRAYS[type.ordinal()] = ret;
                 logCreationIfNecessary(ret);
             }
         }
-        return EMPTY_ARRAYS[dataType().ordinal()];
+        return EMPTY_ARRAYS[type.ordinal()];
     }
 
     /**

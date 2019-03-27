@@ -881,8 +881,9 @@ public class DataSetTest extends BaseNd4jTest {
         //The feature mask does not have to be equal to the label mask, just in this ex it should be
         assertEquals(newDs.getLabelsMaskArray(), newDs.getFeaturesMaskArray());
         //System.out.println(newDs);
-        assertEquals(Nd4j.linspace(numExamples + from, numExamples + to - 1, to - from, DataType.DOUBLE),
-                        newDs.getLabelsMaskArray().sum(1));
+        INDArray exp = Nd4j.linspace(numExamples + from, numExamples + to - 1, to - from, DataType.DOUBLE);
+        INDArray act = newDs.getLabelsMaskArray().sum(1);
+        assertEquals(exp, act);
     }
 
     @Test
