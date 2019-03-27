@@ -119,7 +119,9 @@ public class FileRecordReader extends BaseRecordReader {
     public int getLabel(URI uri){
         String s = uri.toString();
         int lastIdx = Math.max(s.lastIndexOf('/'), s.lastIndexOf('\\'));    //Note: if neither are found, -1 is fine here
-        String name = s.substring(lastIdx+1);
+        String sub = s.substring(0, lastIdx);
+        int secondLastIdx = Math.max(sub.lastIndexOf('/'), sub.lastIndexOf('\\'));
+        String name = s.substring(secondLastIdx+1, lastIdx);
         return labels.indexOf(name);
     }
 
@@ -197,7 +199,6 @@ public class FileRecordReader extends BaseRecordReader {
     public Record nextRecord() {
         URI next = locationsIterator.next();
         invokeListeners(next);
-//        List<Writable> ret = loadFromFile(next);
 
         List<Writable> ret;
         try(InputStream s = streamCreatorFn.apply(next)) {
