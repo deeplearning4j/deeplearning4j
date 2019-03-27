@@ -114,7 +114,7 @@ public class KerasConvolution1D extends KerasConvolution {
         if (padding != null)
             builder.padding(padding[0]);
         if (dilationRate != null)
-            builder.dilation(dilationRate);
+            builder.dilation(dilationRate[0]);
         if (biasConstraint != null)
             builder.constrainBias(biasConstraint);
         if (weightConstraint != null)
