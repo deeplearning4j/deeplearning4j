@@ -90,6 +90,31 @@ public class IndexingIterationTests extends BaseNd4jTest {
     }
 
     @Test
+    public void testIntervalReversed() {
+        INDArrayIndex interval = NDArrayIndex.interval(0, 2);
+        interval.reverse();
+        assertTrue(interval.hasNext());
+        assertEquals(2, interval.length());
+        assertEquals(1, interval.next());
+        assertEquals(0, interval.next());
+        assertFalse(interval.hasNext());
+
+    }
+
+    @Test
+    public void testIntervalWithStrideReversed() {
+        INDArrayIndex interval = NDArrayIndex.interval(3, 2, 6);
+        interval.reverse();
+        assertTrue(interval.hasNext());
+        assertEquals(5, interval.length());
+        assertEquals(3, interval.next());
+        assertTrue(interval.hasNext());
+        assertEquals(2, interval.next());
+        assertFalse(interval.hasNext());
+
+    }
+
+    @Test
     public void testNewAxis() {
         INDArrayIndex newAxis = NDArrayIndex.newAxis();
         assertEquals(0, newAxis.length());
