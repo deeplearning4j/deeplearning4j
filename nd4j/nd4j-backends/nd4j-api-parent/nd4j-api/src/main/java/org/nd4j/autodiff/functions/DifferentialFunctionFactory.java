@@ -246,6 +246,10 @@ public class DifferentialFunctionFactory {
     }
 
 
+    public SDVariable pad(SDVariable input, SDVariable padding, Pad.Mode mode, double padValue){
+        return new Pad(sameDiff(), input, padding, mode, padValue).outputVariable();
+    }
+
     /**
      * Local response normalization operation.
      *

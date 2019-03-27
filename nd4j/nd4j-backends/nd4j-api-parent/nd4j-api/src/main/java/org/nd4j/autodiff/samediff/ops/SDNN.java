@@ -2,6 +2,8 @@ package org.nd4j.autodiff.samediff.ops;
 
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.linalg.api.ops.impl.transforms.Pad;
+import org.nd4j.linalg.factory.Nd4j;
 
 /**
  * SameDiff general neural network operations<br>
@@ -700,5 +702,83 @@ public class SDNN extends SDOps {
     public SDVariable layerNorm(String name, SDVariable input, SDVariable gain, int... dimensions) {
         SDVariable result = f().layerNorm(input, gain, dimensions);
         return updateVariableNameAndReference(result, name);
+    }
+
+    /**
+     * See {@link #pad(SDVariable, SDVariable, double)}
+     */
+    public SDVariable pad(SDVariable input, int[][] padding, double constant){
+        return pad(input, sd.constant(Nd4j.createFromArray(padding)), constant);
+    }
+
+    /**
+     * Perform padding on the given array, where padded values are the specified constant.<br>
+     * Example:<br>
+     * Input array:<br>
+     * [1, 2]<br>
+     * [3, 4]<br>
+     * Padding array:<br>
+     * [2, 0]<br>
+     * [1, 1]<br>
+     * Contant = 0<br>
+     * Result:<br>
+     * [0, 0, 0, 0]<br>
+     * [0, 0, 0, 0]<br>
+     * [0, 1, 2, 0]<br>
+     * [0, 3, 4, 0]<br>
+     * <br>
+     *
+     *
+     * @param input    Input array to pad
+     * @param padding  Padding array
+     * @param constant Constant to use for padded values
+     * @return Padded array
+     */
+    public SDVariable pad(SDVariable input, SDVariable padding, double constant){
+        return pad(null, input, padding, Pad.Mode.CONSTANT, constant);
+    }
+
+    /**
+     * As per {@link #pad(SDVariable, SDVariable, double)} but also supports multiple {@link Pad.Mode} modes.<br>
+     * Example:
+     * Input array:<br>
+     * [1, 2]<br>
+     * [3, 4]<br>
+     * [5, 6]<br>
+     * Padding array:<br>
+     * [2, 0]<br>
+     * [1, 1]<br>
+     * Contant = 0<br>
+     * Result: CONSTANT mode<br>
+     * [0, 0, 0, 0]<br>
+     * [0, 0, 0, 0]<br>
+     * [0, 1, 2, 0]<br>
+     * [0, 3, 4, 0]<br>
+     * [0, 5, 6, 0]<br>
+     * <br>
+     * Result: SYMMETRIC mode<br>
+     * [3, 3, 4, 4]<br>
+     * [1, 1, 2, 2]<br>
+     * [1, 1, 2, 2]<br>
+     * [3, 3, 4, 4]<br>
+     * [5, 5, 6, 6]<br>
+     * <br>
+     * Result: REFLECT:<br>
+     * [6, 5, 6, 0]<br>
+     * [2, 3, 4, 3]<br>
+     * [2, 1, 2, 1]<br>
+     * [4, 3, 4, 3]<br>
+     * [6, 5, 6, 5]<br>
+     * <br>
+     * @param outputName
+     * @param input
+     * @param padding
+     * @param mode
+     * @param constant
+     * @return
+     */
+    public SDVariable pad(String outputName, SDVariable input, SDVariable padding, Pad.Mode mode, double constant){
+        SDVariable out = f().pad(input, padding, mode, constant);
+        return updateVariableNameAndReference(out, outputName);
     }
 }

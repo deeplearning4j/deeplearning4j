@@ -36,6 +36,7 @@ import org.nd4j.linalg.api.ops.impl.layers.convolution.SpaceToDepth;
 import org.nd4j.linalg.api.ops.impl.scalar.ScalarFMod;
 import org.nd4j.linalg.api.ops.impl.scalar.ScalarMultiplication;
 import org.nd4j.linalg.api.ops.impl.shape.Cross;
+import org.nd4j.linalg.api.ops.impl.transforms.Pad;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.OldMax;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.OldMin;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.GreaterThanOrEqual;
@@ -1492,6 +1493,13 @@ public class TransformOpValidation extends BaseOpValidation {
             .expectedOutput(0, exp));
 
         assertNull(err);
+
+
+        SameDiff sd = SameDiff.create();
+        SDVariable s = sd.var("in", in);
+        SDVariable padded = sd.nn().pad(in, sd.constant(Nd4j.createFromArray(new int[][]{{1,1},{2,2}})), Pad.Mode.REFLECT);
+        String err2 = OpValidation.validate(new TestCase(sd).expected(padded, exp).gradientCheck(false));
+        assertNull(err2);
     }
 
     @Test
