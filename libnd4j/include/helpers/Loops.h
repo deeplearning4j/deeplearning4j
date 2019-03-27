@@ -106,52 +106,6 @@ namespace nd4j {
         static FORCEINLINE void loopXZ(X* x, Nd4jLong* xShapeInfo, Z* z, Nd4jLong* zShapeInfo, E* extraParams);
     };
 
-    template <typename X, typename Z>
-    class ND4J_EXPORT TransformAnyLoops : public TransformLoops<X,Z,X> {
-    public:
-        static void wrapper(const int opNum, X* x, Nd4jLong* xShapeInfo, Z* z, Nd4jLong* zShapeInfo, X* extraParams);
-
-        template <typename OpType>
-        static void innerloopXZ(X* x, Nd4jLong* xShapeInfo, Z* z, Nd4jLong* zShapeInfo, X* extraParams);
-    };
-
-    template <typename X, typename Z>
-    class ND4J_EXPORT TransformFloatLoops : public TransformLoops<X,Z,Z> {
-    public:
-        static void wrapper(const int opNum, X* x, const Nd4jLong* xShapeInfo, Z* z, const Nd4jLong* zShapeInfo, Z* extraParams);
-
-        template <typename OpType>
-        static void innerloopXZ(X* x, const Nd4jLong* xShapeInfo, Z* z, const Nd4jLong* zShapeInfo, Z* extraParams);
-    };
-
-    template <typename X, typename Z>
-    class ND4J_EXPORT TransformBoolLoops : public TransformLoops<X,Z,X> {
-    public:
-        static void wrapper(const int opNum, X* x, const Nd4jLong* xShapeInfo, Z* z, const Nd4jLong* zShapeInfo, X* extraParams);
-
-        template <typename OpType>
-        static void innerloopXZ(X* x, const Nd4jLong* xShapeInfo, Z* z, const Nd4jLong* zShapeInfo, X* extraParams);
-    };
-
-
-    template <typename X>
-    class ND4J_EXPORT TransformStrictLoops : public TransformLoops<X,X,X> {
-    public:
-        static void wrapper(const int opNum, X* x, const Nd4jLong* xShapeInfo, X* z, const Nd4jLong* zShapeInfo, X* extraParams);
-
-        template <typename OpType>
-        static void innerloopXZ(X* x, const Nd4jLong* xShapeInfo, X* z, const Nd4jLong* zShapeInfo, X* extraParams);
-    };
-
-    template <typename X>
-    class ND4J_EXPORT TransformSametLoops : public TransformLoops<X,X,X> {
-    public:
-        static void wrapper(const int opNum, X* x, const Nd4jLong* xShapeInfo, X* z, const Nd4jLong* zShapeInfo, X* extraParams);
-
-        template <typename OpType>
-        static void innerloopXZ(X* x, const Nd4jLong* xShapeInfo, X* z, const Nd4jLong* zShapeInfo, X* extraParams);
-    };
-
     /*
 class ND4J_EXPORT Loops {
 
