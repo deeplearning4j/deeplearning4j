@@ -17,7 +17,9 @@
 package org.nd4j.linalg.indexing;
 
 import com.google.common.primitives.Longs;
+import java.util.Arrays;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
 
 /**
  * And indexing representing
@@ -72,7 +74,7 @@ public class IntervalIndex implements INDArrayIndex {
 
     @Override
     public boolean hasNext() {
-        return index < end();
+        return stride >= 0 ? index < end : index > end;
     }
 
     @Override
@@ -85,11 +87,22 @@ public class IntervalIndex implements INDArrayIndex {
 
     @Override
     public void reverse() {
+
+        // don't change index if not at the start
+        if (index == begin && stride >= 0){
+            index = end - 1;
+        } else if(index == end && stride < 0){
+            index = begin;
+        }
+
+
+
         long oldEnd = end;
         long oldBegin = begin;
         this.end = oldBegin;
         this.begin = oldEnd;
         this.stride = -stride;
+
     }
 
     @Override
@@ -109,8 +122,15 @@ public class IntervalIndex implements INDArrayIndex {
         }
 
         this.begin = begin;
-        this.index = begin;
         this.end = inclusive ? arr.size(dimension) + 1 : arr.size(dimension);
+
+        if(this.begin > this.end) {
+            this.index = this.end - 1;
+            this.stride = -this.stride;
+        } else {
+            this.index = begin;
+        }
+
         for (long i = begin; i < end; i += stride) {
             length++;
         }
@@ -132,8 +152,15 @@ public class IntervalIndex implements INDArrayIndex {
             end +=  max;
         }
         this.begin = begin;
-        this.index = begin;
         this.end = inclusive ? end + 1 : end;
+
+        if(this.begin > this.end) {
+            this.index = this.end - 1;
+            this.stride = -this.stride;
+        } else {
+            this.index = begin;
+        }
+
         for (long i = begin; i < this.end; i += stride) {
             length++;
         }
@@ -145,8 +172,15 @@ public class IntervalIndex implements INDArrayIndex {
         if(begin < 0 || end < 0)
             throw new IllegalArgumentException("Please pass in an array for negative indices. Unable to determine size for dimension otherwise");
         this.begin = begin;
-        this.index = begin;
         this.end = inclusive ? end + 1 : end;
+
+        if(this.begin > this.end) {
+            this.index = this.end - 1;
+            this.stride = -this.stride;
+        } else {
+            this.index = begin;
+        }
+
         for (long i = begin; i < this.end; i += stride) {
             length++;
         }

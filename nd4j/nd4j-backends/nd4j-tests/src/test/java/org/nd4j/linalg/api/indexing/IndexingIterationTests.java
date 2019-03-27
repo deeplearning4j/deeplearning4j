@@ -108,8 +108,6 @@ public class IndexingIterationTests extends BaseNd4jTest {
         assertTrue(interval.hasNext());
         assertEquals(5, interval.length());
         assertEquals(3, interval.next());
-        assertTrue(interval.hasNext());
-        assertEquals(2, interval.next());
         assertFalse(interval.hasNext());
 
     }
