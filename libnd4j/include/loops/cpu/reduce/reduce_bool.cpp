@@ -179,7 +179,7 @@ namespace functions {
                     tadOffsets = tadPack.primaryOffsets();
                 }
 
-                nd4j::Loops::loopTadXZ<X, Z, X, OpType>(x, xShapeInfo, z, zShapeInfo,  tadOnlyShapeInfo, tadOffsets, dimension, dimensionLength, extraParams);
+                nd4j::ReductionLoops<X,Z,X>::template loopTadXZ<OpType>(x, xShapeInfo, z, zShapeInfo,  tadOnlyShapeInfo, tadOffsets, dimension, dimensionLength, extraParams);
             }
 
 
