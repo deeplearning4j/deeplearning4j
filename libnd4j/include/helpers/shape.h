@@ -485,7 +485,7 @@ namespace shape {
  * Returns the stride portion of an information
  * buffer
  */
-    ND4J_EXPORT _CUDA_HD Nd4jLong *stride(const Nd4jLong *buffer);
+    ND4J_EXPORT _CUDA_HD Nd4jLong *stride(Nd4jLong *buffer);
 
 /**
  * Compute the length of the given shape
@@ -1087,7 +1087,7 @@ namespace shape {
     // if array is scalar or unit length vector then ews = 1
     // if array is common vector then ews = stride of non-unity dimension
     // if strides are normal set ews = 1, otherwise ews = 0    
-    ND4J_EXPORT _CUDA_HD void calcEws(const Nd4jLong* shapeInfo);
+    ND4J_EXPORT _CUDA_HD void calcEws(Nd4jLong* shapeInfo, Nd4jLong len);
 
 
 
@@ -2841,8 +2841,8 @@ template <typename T>
  * Returns the stride portion of an information
  * buffer
  */
-    INLINEDEF _CUDA_HD Nd4jLong *stride(const Nd4jLong *buffer) {
-        return const_cast<Nd4jLong*>(buffer) + (1 + rank(buffer));
+    INLINEDEF _CUDA_HD Nd4jLong *stride(Nd4jLong *buffer) {
+        return buffer + (1 + rank(buffer));
     }
 
     INLINEDEF _CUDA_HD bool isEmpty(const Nd4jLong *shapeInfo) {
@@ -4810,8 +4810,9 @@ INLINEDEF void calcSubArrOffsets(const Nd4jLong numOfSubArrs, const int rank, co
 }
 
 //////////////////////////////////////////////////////////////////////
-INLINEDEF void calcEws(Nd4jLong* shapeInfo, Nd4jLong len) {
+INLINEDEF void _CUDA_HD calcEws(Nd4jLong* shapeInfo, Nd4jLong len) {
 
+   
     const int rank          = shape::rank(shapeInfo);
     const Nd4jLong* shape   = shape::shapeOf(shapeInfo);
     const Nd4jLong* strides = shape::stride(shapeInfo);
@@ -4833,17 +4834,17 @@ INLINEDEF void calcEws(Nd4jLong* shapeInfo, Nd4jLong len) {
     }
 
     // check last(c)/first(f) dimension, it should be equal to 1
-    if((order == 'c' && shape[rank - 1] != 1 && strides[rank - 1] != 1) || (order == 'f' && shape[0] != 1 && strides[0] == 1)) {
+    if((order == 'c' && shape[rank - 1] != 1 && strides[rank - 1] != 1) || (order == 'f' && shape[0] != 1 && strides[0] != 1)) {
         *ews = 0;
         return;
     }
 
     Nd4jLong correctStride = 1;
     if(order == 'c') {
-        for (int i = rank - 2; i >= 0 ; i--) {
-            if(shape[i + 1] == 1)
-                continue;
+        for (int i = rank - 2; i >= 0 ; i--) {            
             correctStride *= shape[i + 1];
+            if(shape[i] == 1)
+                continue;
             if(correctStride != strides[i]) {
                 *ews = 0;
                 return;
@@ -4851,10 +4852,10 @@ INLINEDEF void calcEws(Nd4jLong* shapeInfo, Nd4jLong len) {
         }
     }
     else {
-        for (int i = 1; i < rank; ++i) {
-            if(shape[i - 1] == 1)
-                continue;
+        for (int i = 1; i < rank; ++i) {            
             correctStride *= shape[i - 1];
+            if(shape[i] == 1)
+                continue;
             if(correctStride != strides[i]) {
                 *ews = 0;
                 return;
@@ -4862,7 +4863,7 @@ INLINEDEF void calcEws(Nd4jLong* shapeInfo, Nd4jLong len) {
         }
     }      
     
-    *ews = 1;   
+    *ews = 1;    
 }
 
 

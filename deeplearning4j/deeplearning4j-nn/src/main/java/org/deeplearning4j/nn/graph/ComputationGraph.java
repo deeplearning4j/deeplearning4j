@@ -4195,6 +4195,11 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
             maxLength[i] = header[i].length();
         }
 
+        if(topologicalOrder == null){
+            GraphIndices indices = calculateIndices();
+            topologicalOrder = indices.getTopologicalSortOrder();
+        }
+
         for (int currVertexIdx : topologicalOrder) {
 
             GraphVertex currentVertex = vertices[currVertexIdx];
