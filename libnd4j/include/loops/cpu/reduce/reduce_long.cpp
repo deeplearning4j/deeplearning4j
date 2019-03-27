@@ -185,7 +185,12 @@ namespace functions {
                     tadOnlyShapeInfo = tadPack.primaryShapeInfo();
                     tadOffsets = tadPack.primaryOffsets();
                 }
+
+#ifdef INLINE_LOOPS
+                nd4j::ReductionLoops<X,Z,X>::template loopTadXZ<OpType>(x, xShapeInfo, z, zShapeInfo,  tadOnlyShapeInfo, tadOffsets, extraParams);
+#else
                 nd4j::ReductionLongLoops<X,Z>::template innerloopTadXZ<OpType>(x, xShapeInfo, z, zShapeInfo,  tadOnlyShapeInfo, tadOffsets, extraParams);
+#endif
             }
 
 

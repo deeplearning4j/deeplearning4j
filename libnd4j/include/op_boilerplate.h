@@ -1484,6 +1484,7 @@
 
 // define macros for compiler enforcement to make function inline  
 #ifdef __clang__
+#define INLINE_LOOPS
 #define FORCEINLINE inline 
 #elif _MSC_VER
 #define FORCEINLINE __forceinline
