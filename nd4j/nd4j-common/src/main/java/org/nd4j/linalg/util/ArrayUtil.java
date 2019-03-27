@@ -3401,4 +3401,38 @@ public class ArrayUtil {
         } else
             throw new IllegalStateException("Unknown array type (or not an array): " + current.getClass()); //Should never happen
     }
+
+    /**
+     * Compute the inverse permutation indices for a permutation operation<br>
+     * Example: if input is [2, 0, 1] then output is [1, 2, 0]<br>
+     * The idea is that x.permute(input).permute(invertPermutation(input)) == x
+     *
+     * @param input 1D indices for permutation
+     * @return 1D inverted permutation
+     */
+    public static int[] invertPermutation(int... input){
+        int[] target = new int[input.length];
+
+        for(int i = 0 ; i < input.length ; i++){
+            target[input[i]] = i;
+        }
+
+        return target;
+    }
+
+    /**
+     * @see #invertPermutation(int...)
+     *
+     * @param input 1D indices for permutation
+     * @return 1D inverted permutation
+     */
+    public static long[] invertPermutation(long... input){
+        long[] target = new long[input.length];
+
+        for(int i = 0 ; i < input.length ; i++){
+            target[(int) input[i]] = i;
+        }
+
+        return target;
+    }
 }

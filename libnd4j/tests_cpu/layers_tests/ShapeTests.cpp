@@ -237,7 +237,7 @@ TEST_F(ShapeTests, Test_Edge_1) {
 TEST_F(ShapeTests, Test_Edge_2) {
     auto x = NDArrayFactory::create<float>('c', {1, 4, 1, 3});
 
-    x.reshapei('f', {3, 4});
+    x.reshapei('c', {3, 4});
 
     //x.printShapeInfo("reshape0");
 

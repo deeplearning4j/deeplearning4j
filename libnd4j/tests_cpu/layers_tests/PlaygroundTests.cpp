@@ -33,6 +33,7 @@
 #include <Loops.h>
 
 #include <helpers/BenchmarkHelper.h>
+#include <helpers/ConstantTadHelper.h>
 
 using namespace nd4j;
 using namespace nd4j::graph;
@@ -47,6 +48,86 @@ public:
         fflush(stdout);
     }
 };
+
+TEST_F(PlaygroundTests, test_small_reductions) {
+    auto f = NDArrayFactory::create<float>('c', {1024 ,1024});
+    f.assign(1.0f);
+
+    int iterations = 100;
+    std::vector<Nd4jLong> results(iterations);
+    Nd4jLong mean = 0L;
+    Nd4jLong max = 0L;
+    Nd4jLong min = DataTypeUtils::max<Nd4jLong>();
+
+    for (int e = 0; e < iterations; e++) {
+        auto x = NDArrayFactory::create<float>('c', {4, 64});
+        auto z = NDArrayFactory::create<float>('c', {64});
+        x.assign(1.0f);
+        int axis = 0;
+
+        auto tadPack = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(x.shapeInfo(), axis);
+
+        auto timeStart = std::chrono::system_clock::now();
+
+        NativeOpExcutioner::execReduceFloat(reduce::Mean, x.buffer(), x.shapeInfo(), nullptr, z.buffer(), z.shapeInfo(), &axis, 1, tadPack.primaryShapeInfo(), tadPack.primaryOffsets());
+
+        auto timeEnd = std::chrono::system_clock::now();
+        auto duration = std::chrono::duration_cast<std::chrono::nanoseconds> ((timeEnd - timeStart)).count();
+        results[e] = duration;
+        mean += duration;
+
+        if (duration > max)
+            max = duration;
+
+        if (duration < min)
+            min = duration;
+    }
+
+    mean /= iterations;
+    std::sort(results.begin(), results.end());
+
+    nd4j_printf("Median time: [%lld]; Mean time: [%lld]; Min time: [%lld]; Max time: [%lld]\n", results[results.size() / 2], mean, min, max);
+}
+
+TEST_F(PlaygroundTests, Test_PermutedArray_Operation_1) {
+    auto x = NDArrayFactory::create<float>('c',{64, 32, 4, 32});
+    auto z = NDArrayFactory::create<float>('c', {4, 64, 32, 32});
+    x.assign(1.0f);
+
+    x.permutei({2, 0, 3, 1});
+
+    //x.printShapeInfo("x");
+
+    int iterations = 100;
+    std::vector<Nd4jLong> results(iterations);
+    Nd4jLong mean = 0L;
+    Nd4jLong max = 0L;
+    Nd4jLong min = DataTypeUtils::max<Nd4jLong>();
+
+
+    for (int e = 0; e < iterations; e++) {
+        auto timeStart = std::chrono::system_clock::now();
+
+        NativeOpExcutioner::execTransformStrict(transform::StrictOps::Sin, x.buffer(), x.shapeInfo(), z.buffer(), z.shapeInfo(), nullptr, nullptr, nullptr);
+
+        auto timeEnd = std::chrono::system_clock::now();
+        auto duration = std::chrono::duration_cast<std::chrono::nanoseconds> ((timeEnd - timeStart)).count();
+        results[e] = duration;
+        mean += duration;
+
+        if (duration > max)
+            max = duration;
+
+        if (duration < min)
+            min = duration;
+    }
+
+    mean /= iterations;
+    std::sort(results.begin(), results.end());
+
+    nd4j_printf("Median time: [%lld]; Mean time: [%lld]; Min time: [%lld]; Max time: [%lld]\n", results[results.size() / 2], mean, min, max);
+
+}
 
 /*
 TEST_F(PlaygroundTests, Test_OpBenchmark_1) {

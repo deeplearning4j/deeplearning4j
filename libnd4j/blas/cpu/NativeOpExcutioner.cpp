@@ -46,7 +46,8 @@
 #include <loops/random.h>
 #include <pointercast.h>
 #include <graph/exceptions/datatype_exception.h>
-
+#include <loops/BroadcastScalarConverter.h>
+#include <helpers/ConstantTadHelper.h>
 
 
 
@@ -119,11 +120,74 @@ void NativeOpExcutioner::execBroadcast(int opNum, void *x, Nd4jLong *xShapeInfo,
     if ((yType != xType && yType != nd4j::DataType::BOOL) || xType != zType)
         throw nd4j::datatype_exception::build("NativeOps::execBroadcast both operands must have same data type", xType, yType);
 
+    auto xRank = shape::rank(xShapeInfo);
+    auto yRank = shape::rank(yShapeInfo);
+    auto zRank = shape::rank(resultShapeInfo);
+
+    auto xOrder = shape::order(xShapeInfo);
+    auto yOrder = shape::order(yShapeInfo);
+    auto zOrder = shape::order(resultShapeInfo);
+
+    auto xEws = shape::elementWiseStride(xShapeInfo);
+    auto yEws = shape::elementWiseStride(yShapeInfo);
+    auto zEws = shape::elementWiseStride(resultShapeInfo);
+
+    int axis = 0;
+    auto isVector = shape::isCommonVector(yShapeInfo, axis);
+    auto isConvertible = nd4j::isConvertibleToScalar((nd4j::broadcast::Ops) opNum);
+
+    // add column vector case for C ordered columnAdd
+    if (xOrder == 'c' && zOrder == 'c' && xEws == 1 && zEws == 1 && yEws == 1 && xRank == 2 && isVector && dimensionLength == 1 && dimension[0] == 0 && isConvertible) {
+        // invoke scalar along dimension here
+        auto scalarOp = nd4j::convertToScalar((nd4j::broadcast::Ops) opNum);
+        int newDim = 1;
+        auto tadPack = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(xShapeInfo, newDim);
+
 #ifdef __ND4J_EXPERIMENTAL__
-    BUILD_PAIRWISE_SELECTOR(xType, yType, zType, functions::broadcast::Broadcast, ::exec(opNum, x, xShapeInfo, y, yShapeInfo, result, resultShapeInfo, dimension, dimensionLength, tadOnlyShapeInfo, tadOffsets, tadOnlyShapeInfoZ, tadOffsetsZ), LIBND4J_TYPES, LIBND4J_TYPES);
+        BUILD_PAIRWISE_SELECTOR(xType, yType, zType, functions::scalar::ScalarTransform, ::transform(scalarOp, x, xShapeInfo, nullptr, result, resultShapeInfo, y, &newDim, dimensionLength, tadPack.primaryShapeInfo(), tadPack.primaryOffsets(), tadPack.primaryShapeInfo(), tadPack.primaryOffsets()), LIBND4J_TYPES, LIBND4J_TYPES);
 #else
-    BUILD_SINGLE_SELECTOR_THRICE(xType, functions::broadcast::Broadcast, ::exec(opNum, x, xShapeInfo, y, yShapeInfo, result, resultShapeInfo, dimension, dimensionLength, tadOnlyShapeInfo, tadOffsets, tadOnlyShapeInfoZ, tadOffsetsZ), LIBND4J_TYPES);
+        BUILD_SINGLE_SELECTOR_THRICE(xType, functions::scalar::ScalarTransform, ::transform(scalarOp, x, xShapeInfo, nullptr, result, resultShapeInfo, y, &newDim, dimensionLength, tadPack.primaryShapeInfo(), tadPack.primaryOffsets(), tadPack.primaryShapeInfo(), tadPack.primaryOffsets()), LIBND4J_TYPES);
 #endif
+
+    } else if (xOrder == 'f' && zOrder == 'f' && xEws == 1 && zEws == 1 && yEws == 1 && xRank == 2 && isVector && dimensionLength == 1 && dimension[0] == 1 && isConvertible) {
+        // add row vector case for F ordered rowAdd
+        auto scalarOp = nd4j::convertToScalar((nd4j::broadcast::Ops) opNum);
+        int newDim = 0;
+        auto tadPack = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(xShapeInfo, newDim);
+
+#ifdef __ND4J_EXPERIMENTAL__
+        BUILD_PAIRWISE_SELECTOR(xType, yType, zType, functions::scalar::ScalarTransform, ::transform(scalarOp, x, xShapeInfo, nullptr, result, resultShapeInfo, y, &newDim, dimensionLength, tadPack.primaryShapeInfo(), tadPack.primaryOffsets(), tadPack.primaryShapeInfo(), tadPack.primaryOffsets()), LIBND4J_TYPES, LIBND4J_TYPES);
+#else
+        BUILD_SINGLE_SELECTOR_THRICE(xType, functions::scalar::ScalarTransform, ::transform(scalarOp, x, xShapeInfo, nullptr, result, resultShapeInfo, y, &newDim, dimensionLength, tadPack.primaryShapeInfo(), tadPack.primaryOffsets(), tadPack.primaryShapeInfo(), tadPack.primaryOffsets()), LIBND4J_TYPES);
+#endif
+
+    }else {
+        // default case
+
+#ifdef __ND4J_EXPERIMENTAL__
+        BUILD_PAIRWISE_SELECTOR(xType, yType, zType, functions::broadcast::Broadcast, ::exec(opNum, x, xShapeInfo, y, yShapeInfo, result, resultShapeInfo, dimension, dimensionLength, tadOnlyShapeInfo, tadOffsets, tadOnlyShapeInfoZ, tadOffsetsZ), LIBND4J_TYPES, LIBND4J_TYPES);
+#else
+        BUILD_SINGLE_SELECTOR_THRICE(xType, functions::broadcast::Broadcast, ::exec(opNum, x, xShapeInfo, y, yShapeInfo, result, resultShapeInfo, dimension, dimensionLength, tadOnlyShapeInfo, tadOffsets, tadOnlyShapeInfoZ,tadOffsetsZ), LIBND4J_TYPES);
+#endif
+    }
+}
+
+
+void NativeOpExcutioner::execInverseBroadcast(int opNum, void *x, Nd4jLong *xShapeInfo, void *y, Nd4jLong *yShapeInfo, void *result, Nd4jLong *resultShapeInfo, int *dimension, int dimensionLength, Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets, Nd4jLong *tadOnlyShapeInfoZ, Nd4jLong *tadOffsetsZ) {
+    auto xType = nd4j::ArrayOptions::dataType(xShapeInfo);
+    auto yType = nd4j::ArrayOptions::dataType(yShapeInfo);
+    auto zType = nd4j::ArrayOptions::dataType(resultShapeInfo);
+
+    if (!nd4j::Environment::getInstance()->isExperimentalBuild())
+        if ((yType != xType && yType != nd4j::DataType::BOOL) || xType != zType)
+            throw nd4j::datatype_exception::build("NativeOps::execBroadcast both operands must have same data type", xType, yType);
+
+#ifdef __ND4J_EXPERIMENTAL__
+        BUILD_PAIRWISE_SELECTOR(xType, yType, zType, functions::broadcast::Broadcast, ::execInverse(opNum, x, xShapeInfo, y, yShapeInfo, result, resultShapeInfo, dimension, dimensionLength, tadOnlyShapeInfo, tadOffsets, tadOnlyShapeInfoZ, tadOffsetsZ), LIBND4J_TYPES, LIBND4J_TYPES);
+#else
+        BUILD_SINGLE_SELECTOR_THRICE(xType, functions::broadcast::Broadcast, ::execInverse(opNum, x, xShapeInfo, y, yShapeInfo, result, resultShapeInfo, dimension, dimensionLength, tadOnlyShapeInfo, tadOffsets, tadOnlyShapeInfoZ,tadOffsetsZ), LIBND4J_TYPES);
+#endif
+
 }
 
 void NativeOpExcutioner::execBroadcastBool(int opNum, void *x, Nd4jLong *xShapeInfo, void *y, Nd4jLong *yShapeInfo, void *result, Nd4jLong *resultShapeInfo, int *dimension, int dimensionLength, Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets, Nd4jLong *tadOnlyShapeInfoZ, Nd4jLong *tadOffsetsZ) {
@@ -136,6 +200,18 @@ void NativeOpExcutioner::execBroadcastBool(int opNum, void *x, Nd4jLong *xShapeI
             throw nd4j::datatype_exception::build("NativeOps::execBroadcastBool both operands must have same data type", xType, yType);
 
     BUILD_DOUBLE_SELECTOR(xType, zType, functions::broadcast::BroadcastBool, ::exec(opNum, x, xShapeInfo, y, yShapeInfo, result, resultShapeInfo, dimension, dimensionLength, tadOnlyShapeInfo, tadOffsets, tadOnlyShapeInfoZ, tadOffsetsZ), LIBND4J_TYPES, BOOL_TYPES);
+}
+
+void NativeOpExcutioner::execInverseBroadcastBool(int opNum, void *x, Nd4jLong *xShapeInfo, void *y, Nd4jLong *yShapeInfo, void *result, Nd4jLong *resultShapeInfo, int *dimension, int dimensionLength, Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets, Nd4jLong *tadOnlyShapeInfoZ, Nd4jLong *tadOffsetsZ) {
+    auto xType = nd4j::ArrayOptions::dataType(xShapeInfo);
+    auto yType = nd4j::ArrayOptions::dataType(yShapeInfo);
+    auto zType = nd4j::ArrayOptions::dataType(resultShapeInfo);
+
+    if (!nd4j::Environment::getInstance()->isExperimentalBuild())
+        if (yType != xType || nd4j::DataType::BOOL != zType)
+            throw nd4j::datatype_exception::build("NativeOps::execInverseBroadcastBool both operands must have same data type", xType, yType);
+
+    BUILD_DOUBLE_SELECTOR(xType, zType, functions::broadcast::BroadcastBool, ::execInverse(opNum, x, xShapeInfo, y, yShapeInfo, result, resultShapeInfo, dimension, dimensionLength, tadOnlyShapeInfo, tadOffsets, tadOnlyShapeInfoZ, tadOffsetsZ), LIBND4J_TYPES, BOOL_TYPES);
 }
 
 

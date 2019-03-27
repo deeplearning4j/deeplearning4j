@@ -36,6 +36,7 @@ namespace nd4j {
 
         bool isAll();
         bool isPoint();
+        virtual bool isInterval();
 
         std::vector<Nd4jLong>& getIndices();
         Nd4jLong stride();
@@ -48,7 +49,7 @@ namespace nd4j {
     class ND4J_EXPORT NDIndexAll : public NDIndex {
     public:
         NDIndexAll();
-
+        virtual bool isInterval();
         ~NDIndexAll() = default;
     };
 
@@ -56,14 +57,14 @@ namespace nd4j {
     class ND4J_EXPORT NDIndexPoint : public NDIndex {
     public:
         NDIndexPoint(Nd4jLong point);
-
+        virtual bool isInterval();
         ~NDIndexPoint() = default;
     };
 
     class ND4J_EXPORT NDIndexInterval : public NDIndex {
     public:
         NDIndexInterval(Nd4jLong start, Nd4jLong end, Nd4jLong stride = 1);
-
+        virtual bool isInterval();
         ~NDIndexInterval() = default;
     };
 }

@@ -24,6 +24,7 @@
 #include <loops/transform_float.h>
 #include <op_enums.h>
 #include <loops/transform_strict.h>
+#include <helpers/ConstantTadHelper.h>
 
 #ifdef __CUDACC__
 #include <loops/cuda/inplace_loops/reduce_same_inplace.h>
@@ -2215,13 +2216,11 @@ PRAGMA_OMP_CRITICAL
                 //to the back.
                 //permuted version of the x shape info for setting up the tad problem				
 				auto tadShapeShapeInfo = tadShapeInfo;
-				shape::TAD tad;
-				tad.init(xShapeBuffer, dimension, dimensionLength);
 				if(tadShapeInfo==nullptr) {
-					tad.createTadOnlyShapeInfo();
-					tad.createOffsets();
-					tadShapeShapeInfo = tad.tadOnlyShapeInfo;
-					tadOffsets = tad.tadOffsets;
+                    auto tadPack = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(xShapeBuffer, dimension, dimensionLength);
+
+					tadShapeShapeInfo = tadPack.primaryShapeInfo();
+					tadOffsets = tadPack.primaryOffsets();
 				}						                                				
 
                 auto tadLength = shape::tadLength(xShapeBuffer, dimension, dimensionLength);
