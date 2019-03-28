@@ -60,13 +60,10 @@ public abstract class BaseCodecRecordReader extends FileRecordReader implements 
 
     @Override
     public List<List<Writable>> sequenceRecord() {
-        if (iter == null || !iter.hasNext()) {
-            this.advanceToNextLocation();
-        }
-        File next = iter.next();
+        URI next = locationsIterator.next();
 
-        try {
-            return loadData(next, null);
+        try (InputStream s = streamCreatorFn.apply(next)){
+            return loadData(null, s);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -116,16 +113,16 @@ public abstract class BaseCodecRecordReader extends FileRecordReader implements 
 
     @Override
     public SequenceRecord nextSequence() {
-        File next = this.nextFile();
+        URI next = locationsIterator.next();
 
         List<List<Writable>> list;
-        try {
-            list = loadData(next, null);
+        try (InputStream s = streamCreatorFn.apply(next)){
+            list = loadData(null, s);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
         return new org.datavec.api.records.impl.SequenceRecord(list,
-                        new RecordMetaDataURI(next.toURI(), CodecRecordReader.class));
+                        new RecordMetaDataURI(next, CodecRecordReader.class));
     }
 
     @Override
@@ -137,14 +134,12 @@ public abstract class BaseCodecRecordReader extends FileRecordReader implements 
     public List<SequenceRecord> loadSequenceFromMetaData(List<RecordMetaData> recordMetaDatas) throws IOException {
         List<SequenceRecord> out = new ArrayList<>();
         for (RecordMetaData meta : recordMetaDatas) {
-            File f = new File(meta.getURI());
-
-            List<List<Writable>> list = loadData(f, null);
-            out.add(new org.datavec.api.records.impl.SequenceRecord(list, meta));
+            try (InputStream s = streamCreatorFn.apply(meta.getURI())){
+                List<List<Writable>> list = loadData(null, s);
+                out.add(new org.datavec.api.records.impl.SequenceRecord(list, meta));
+            }
         }
 
         return out;
     }
-
-
 }

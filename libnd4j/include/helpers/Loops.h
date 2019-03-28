@@ -210,38 +210,41 @@ LoopKind TransformLoops<X, Z, E>::deduceKindOfLoopXZ(const Nd4jLong* xShapeInfo,
 template <typename X, typename Z, typename E>
 LoopKind ReductionLoops<X, Z, E>::deduceKindOfLoopTadXZ(Nd4jLong* xShapeInfo, Nd4jLong* zShapeInfo, Nd4jLong* tadShapeInfo) {
 
-    const int tadRank = shape::rank(tadShapeInfo);
+    const int xRank = shape::rank(xShapeInfo);
+    const int tRank = shape::rank(tadShapeInfo);
 
-    const Nd4jLong tadEws = shape::elementWiseStride(tadShapeInfo);
+    const Nd4jLong xEws = shape::elementWiseStride(xShapeInfo);
+    const Nd4jLong tEws = shape::elementWiseStride(tadShapeInfo);
     const Nd4jLong zEws = shape::elementWiseStride(zShapeInfo);
 
-    const char xOrder = shape::order(tadShapeInfo);
+    const char xOrder = shape::order(xShapeInfo);
+    const char tOrder = shape::order(tadShapeInfo);
     const char zOrder = shape::order(zShapeInfo);
 
     int temp;
-    const bool xVector = shape::isCommonVector(tadShapeInfo, temp);
+    const bool tVector = shape::isCommonVector(tadShapeInfo, temp);
     const bool zVector = shape::isCommonVector(zShapeInfo, temp);
 
-    if(shape::length(tadShapeInfo) * shape::length(zShapeInfo) <= Environment::getInstance()->elementwiseThreshold() && shape::rank(xShapeInfo) == 2 &&
-        tadEws > 1 && zEws == 1 && ((xOrder == zOrder) || ((xVector || xOrder == 'c') && (zVector || zOrder == 'c'))))
+    if(shape::length(tadShapeInfo) * shape::length(zShapeInfo) <= Environment::getInstance()->elementwiseThreshold() && shape::rank(xShapeInfo) == 2 && xEws == 1 && xOrder == 'c' && xRank == 2 &&
+        tEws > 1 && zEws == 1 && ((tOrder == zOrder) || ((tVector || tOrder == 'c') && (zVector || zOrder == 'c'))))
         return SMALLARR2DX;
-    if(tadEws == 1 && zEws == 1 && ((xOrder == zOrder) || ((xVector || xOrder == 'c') && (zVector || zOrder == 'c'))))
+    if(tEws == 1 && zEws == 1 && ((tOrder == zOrder) || ((tVector || tOrder == 'c') && (zVector || zOrder == 'c'))))
         return EWS1;
-    if(tadEws > 0 && zEws > 0   && ((xOrder == zOrder) || ((xVector || xOrder == 'c') && (zVector || zOrder == 'c'))))
+    if(tEws > 0 && zEws > 0   && ((tOrder == zOrder) || ((tVector || tOrder == 'c') && (zVector || zOrder == 'c'))))
         return EWSNONZERO;
-    if(tadRank == 1 && zEws == 1 && (zVector || zOrder == 'c'))
+    if(tRank == 1 && zEws == 1 && (zVector || zOrder == 'c'))
         return RANK1;
-    if(tadRank == 2 && zEws == 1 && (zVector || zOrder == 'c'))
+    if(tRank == 2 && zEws == 1 && (zVector || zOrder == 'c'))
         return RANK2;
-    if(tadRank == 3 && zEws == 1 && (zVector || zOrder == 'c'))
+    if(tRank == 3 && zEws == 1 && (zVector || zOrder == 'c'))
         return RANK3;
-    if(tadRank == 4 && zEws == 1 && (zVector || zOrder == 'c'))
+    if(tRank == 4 && zEws == 1 && (zVector || zOrder == 'c'))
         return RANK4;
-    if(tadRank == 5 && zEws == 1 && (zVector || zOrder == 'c'))
+    if(tRank == 5 && zEws == 1 && (zVector || zOrder == 'c'))
         return RANK5;
-    if(tadEws > 0 && (xVector || xOrder == 'c') && zEws == 0)
+    if(tEws > 0 && (tVector || tOrder == 'c') && zEws == 0)
         return X_EWSNONZERO;
-    if(zEws > 0 && (zOrder == 'c' || zVector) && tadEws == 0)
+    if(zEws > 0 && (zOrder == 'c' || zVector) && tEws == 0)
         return Z_EWSNONZERO;
     return COMMON;
 }

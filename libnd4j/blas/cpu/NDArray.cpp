@@ -239,6 +239,9 @@ NDArray::NDArray(const NDArray *other, const bool copyStrides, nd4j::memory::Wor
     setShapeInfo(ShapeBuilders::copyShapeInfo(other->_shapeInfo, copyStrides, workspace));
     _workspace = workspace;
     triggerAllocationFlag(true, true);
+
+    // memcpy is handled within execTransformAny
+    NativeOpExcutioner::execTransformAny(transform::AnyOps::Assign, other->_buffer, other->_shapeInfo, _buffer, _shapeInfo, nullptr, nullptr, nullptr);
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -1173,12 +1176,6 @@ void NDArray::replacePointers(void *buffer, Nd4jLong *shapeInfo, const bool rele
         auto result = new NDArray(newBuffer, newShapeInfo, nullptr);
         result->_isBuffAlloc = true;
         result->_isShapeAlloc = true;
-
-        auto d1 = this->dataType();
-        auto d2 = result->dataType();
-
-        auto s1 = this->sizeOfT();
-        auto s2 = result->sizeOfT();
 
         result->assign(this);
 
@@ -3204,7 +3201,6 @@ template void NDArray::applyScalar(nd4j::scalar::Ops op, const bool scalar, NDAr
         }
         else
             pTarget->assign(max);
-
 
         // check whether min array has to be tiled
         std::vector<Nd4jLong> repeatMin(min->rankOf());

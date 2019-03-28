@@ -128,7 +128,7 @@ public class SameDiff extends SDBaseOps {
 
     //Fields for graph structure and execution
     @Getter     //TODO use package private instead of public getters?
-    private final Map<String,Variable> variables = new HashMap<>();         //TODO concurrent maps required? Or lock?
+    private final Map<String,Variable> variables = new LinkedHashMap<>();         //Use linked hash map to guarantee iteration order based on order they were added. Used in inputs() and flatbuffers serde
     @Getter
     private final Map<String,SameDiffOp> ops = new HashMap<>();
     @Getter
@@ -826,6 +826,25 @@ public class SameDiff extends SDBaseOps {
             sessions.put(Thread.currentThread().getId(), new InferenceSession(this));
         }
 
+        boolean duped = false;
+        if(arr.isAttached()) {
+            arr = arr.detach();
+            duped = true;
+        }
+        if(arr.isView()) {
+            arr = arr.dup();
+            duped = true;
+        }
+
+        if(!duped && variable.getVariableType() == VariableType.VARIABLE) {
+            for (DeviceLocalNDArray otherArr : variablesArrays.values()) {
+                if (otherArr.get() == arr) {    //Check for exact same object, to avoid array reuse (can result in unexpected behaviour)
+                    arr = arr.dup();
+                    break;
+                }
+            }
+        }
+
         switch(variable.getVariableType()){
             case VARIABLE:
                 variablesArrays.put(variable.getVarName(), new DeviceLocalNDArray(arr));
@@ -881,12 +900,12 @@ public class SameDiff extends SDBaseOps {
 
 
     /**
-     * Return the internal variable map
+     * Return a copy of the internal variable map
      *
      * @return Map of variables by name
      */
     public Map<String, SDVariable> variableMap() {
-        Map<String,SDVariable> ret = new HashMap<>();
+        Map<String,SDVariable> ret = new LinkedHashMap<>();
         for(Variable v : variables.values()){
             ret.put(v.getName(), v.getVariable());
         }
@@ -2134,8 +2153,25 @@ public class SameDiff extends SDBaseOps {
         if (arr == null)
             throw new IllegalArgumentException("Array for " + name + " must not be null");
 
-        if(arr.isAttached())
+        boolean duped = false;
+        if(arr.isAttached()) {
             arr = arr.detach();
+            duped = true;
+        }
+        if(arr.isView()) {
+            arr = arr.dup();
+            duped = true;
+        }
+
+        if(!duped) {
+            for (DeviceLocalNDArray otherArr : variablesArrays.values()) {
+                if (otherArr.get() == arr) {    //Check for exact same object, to avoid array reuse (can result in unexpected behaviour)
+                    arr = arr.dup();
+                    break;
+                }
+            }
+        }
+
         SDVariable ret = new SDVariable(name, VariableType.VARIABLE, this, arr.shape(), arr.dataType(), new NDArraySupplierInitScheme(arr));
 
         associateArrayWithVariable(arr, ret);
@@ -4121,14 +4157,42 @@ public class SameDiff extends SDBaseOps {
         sb.append("\nExternal variables:\n\n");
         for (int e = 0; e < graph.variablesLength(); e++) {
             val var = graph.variables(e);
-            INDArray ndarray;
+            INDArray ndarray = null;
             try(MemoryWorkspace ws = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()) {
-                ndarray = Nd4j.createFromFlatArray(var.ndarray());
+                FlatArray fa = var.ndarray();
+                if(fa != null) {
+                    ndarray = Nd4j.createFromFlatArray(fa);
+                }
             }
 
             sb.append(var.id().first())
-                    .append(":<").append(var.name()).append("> ")
-                    .append(Arrays.toString(ndarray.shapeInfoDataBuffer().asInt())).append("; Values: ").append(Arrays.toString(ndarray.data().asFloat())).append(";\n");
+                    .append(":<").append(var.name()).append("> ");
+            if(ndarray == null){
+                sb.append("<no array>").append("; Values: ").append("<no array>").append(";\n");
+            } else {
+                sb.append(Arrays.toString(ndarray.shapeInfoDataBuffer().asInt())).append("; Values: ");
+                if(ndarray.data() == null){
+                    //Empty array
+                    sb.append("<empty array>");
+                } else if(ndarray.dataType() == DataType.UTF8) {
+                    sb.append("<string array>");
+                } else {
+                    if(ndarray.length() < 50){
+                        sb.append(Arrays.toString(ndarray.data().asFloat()).replaceAll(" ",""));
+                    } else {
+                        //Array is too long - only tak. last few values...
+                        sb.append("[");
+                        for( int i=0; i<50; i++ ){
+                            if(i > 0)
+                                sb.append(",");
+                            sb.append(ndarray.data().getFloat(i));
+                        }
+                        sb.append("]");
+                    }
+                }
+                sb.append(";\n");
+            }
+
         }
 
         val map = Nd4j.getExecutioner().getCustomOperations();

@@ -156,15 +156,12 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         val dimension = Shape.normalizeAxis(op.x().rank(), op.dimensions().toIntVector());
 
         boolean keepDims;
-        boolean newFormat;
         if(op instanceof BaseIndexAccumulation) {
             keepDims = ((BaseIndexAccumulation) op).isKeepDims();
-            newFormat = ((BaseIndexAccumulation) op).isNewFormat();
         } else {
             keepDims = false;
-            newFormat = false;
         }
-        long[] retShape = reductionShape(op.x(), dimension, newFormat, keepDims);
+        long[] retShape = reductionShape(op.x(), dimension, true, keepDims);
 
         if(op.z() == null || op.x() == op.z()) {
             val ret = Nd4j.createUninitialized(DataType.LONG, retShape);
@@ -238,16 +235,13 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         long[] maxShape = Shape.getMaxShape(op.x(),op.y());
 
         boolean keepDims;
-        boolean newFormat;
         if(op instanceof BaseReduceOp) {
             keepDims = op.isKeepDims();
-            newFormat = ((BaseReduceOp) op).isNewFormat();
         } else {
             keepDims = false;
-            newFormat = true;
         }
 
-        long[] retShape = reductionShape(op.x(), dimension, newFormat, keepDims);
+        long[] retShape = reductionShape(op.x(), dimension, true, keepDims);
 
         if (op.x().isVector() && op.x().length() == ArrayUtil.prod(retShape) && ArrayUtil.prodLong(retShape) > 1 && op.y() == null)
             return op.noOp();

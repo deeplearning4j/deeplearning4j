@@ -690,9 +690,31 @@ namespace nd4j {
         }
 
 
+        template <typename X>
+        math_def inline X neg_tanh(X val) {
+            X o = static_cast<X>(1.0f);
+            X t = static_cast<X>(2.0f);
+            X e = static_cast<X>(M_E);
+
+            auto p = nd4j::math::nd4j_pow<X, X, X>(e, val * t);
+            return (p - o)/ (p + o);
+        }
+
+        template <typename X>
+        math_def inline X pos_tanh(X val) {
+            X o = static_cast<X>(1.0f);
+            X t = static_cast<X>(-2.0f);
+            X e = static_cast<X>(M_E);
+
+            auto p = nd4j::math::nd4j_pow<X, X, X>(e, val * t);
+            return (o - p) / (o + p);
+        }
+
+
 		template <typename X, typename Z>
 		math_def inline Z nd4j_tanh(X val) {
-            return p_tanh<Z>(static_cast<Z>(val));
+            return val <= 0 ? neg_tanh(val) : pos_tanh(val);
+            //return p_tanh<Z>(static_cast<Z>(val));
 		}
 
         template <typename X, typename Z>
