@@ -39,6 +39,7 @@ import org.nd4j.shade.jackson.databind.SerializationFeature;
 import java.io.File;
 import java.io.StringWriter;
 import java.io.Writer;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 /**
@@ -206,6 +207,6 @@ public class HtmlSequencePlotting {
     public static void createHtmlSequencePlotFile(String title, Schema schema, List<List<Writable>> sequence,
                     File output) throws Exception {
         String s = createHtmlSequencePlots(title, schema, sequence);
-        FileUtils.writeStringToFile(output, s);
+        FileUtils.writeStringToFile(output, s, StandardCharsets.UTF_8);
     }
 }
