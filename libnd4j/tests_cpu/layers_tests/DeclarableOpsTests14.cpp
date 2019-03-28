@@ -97,6 +97,29 @@ TEST_F(DeclarableOpsTests14, Test_Inf_Comparison_2) {
     ASSERT_NE(x, y);
 }
 
+TEST_F(DeclarableOpsTests14, Multiply_test) {
+
+    for(int k=2;k<10;k++){
+        nd4j_printf("k=%d\n", k);
+        NDArray x = NDArrayFactory::create<double>('c', {k, 1});
+        NDArray y = NDArrayFactory::create<double>('c', {k});
+        NDArray e = NDArrayFactory::create<double>('c', {k, k});
+        x.assign(1.0);
+        y.assign(1.0);
+        e.assign(1.0);
+
+        nd4j::ops::multiply op;
+        auto result = op.execute({&x, &y}, {}, {});
+        auto f = result->at(0);
+        NDArray r = f;
+
+        ASSERT_EQ(e, r);
+        ASSERT_EQ(e, *f);
+
+        delete result;
+    }
+}
+
 TEST_F(DeclarableOpsTests14, Test_EvalReductionShape_1) {
     auto x = NDArrayFactory::create<int>('c', {3}, {5, 3, 4});
     auto y = NDArrayFactory::create<int>('c', {1}, {1});
