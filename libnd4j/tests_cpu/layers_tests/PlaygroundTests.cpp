@@ -242,8 +242,7 @@ TEST_F(PlaygroundTests, test_small_transforms_strict) {
                     z.assign(0.0);
 
                     auto timeStart = std::chrono::system_clock::now();
-                    NativeOpExcutioner::execTransformStrict(v._opNum, x.buffer(), x.shapeInfo(), z.buffer(), z.shapeInfo(),
-                                                            nullptr, nullptr, nullptr);
+                    NativeOpExcutioner::execTransformStrict(v._opNum, x.buffer(), x.shapeInfo(), z.buffer(), z.shapeInfo(), nullptr, nullptr, nullptr);
                     auto timeEnd = std::chrono::system_clock::now();
                     auto duration = std::chrono::duration_cast<std::chrono::nanoseconds>((timeEnd - timeStart)).count();
                     results[e] = duration;
@@ -275,7 +274,7 @@ TEST_F(PlaygroundTests, test_small_transforms_strict) {
         }
 
         for (int e = 0; e < ops.size(); e++) {
-            nd4j_printf("Best performance for op [%s] with [%i] threads; Worst number of threads: [%i]; Best time: [%i us], Worst time: [%i us]\n", ops[e]._opName.c_str(), bestThreads[e], worstThreads[e], bestTime[e], worstTime[e]);
+            nd4j_printf("[%s]: Best number of threads [%i] threads; Best time: [%i ns]; Worst number of threads: [%i]; Worst time: [%i ns];\n", ops[e]._opName.c_str(), bestThreads[e], bestTime[e], worstThreads[e], worstTime[e]);
         }
     }
 }
