@@ -3440,6 +3440,19 @@ TEST_F(DeclarableOpsTests1, OneHotTests_5) {
     delete result;
 }
 
+TEST_F(DeclarableOpsTests1, OneHotTests_6) {
+    auto indices = NDArrayFactory::create<float>('c', {3}, {0., 1., 2.});
+    auto e = NDArrayFactory::create<float>('c', {3, 3}, {1., 0., 0., 0., 1., 0., 0., 0., 1.});
+
+    nd4j::ops::onehot op;
+    auto result = op.execute({&indices}, {1.0, 0.0}, {0, 3});
+    auto z = result->at(0);
+
+    ASSERT_EQ(e, *z);
+
+    delete result;
+}
+
 TEST_F(DeclarableOpsTests1, FillAs_1) {
     auto x = NDArrayFactory::create<float>('c', {2, 2});
     x.assign(117);
