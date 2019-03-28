@@ -31,6 +31,7 @@
 #include <OmpLaunchHelper.h>
 #include <GradCheck.h>
 #include <Loops.h>
+#include <OpLists.h>
 
 #include <helpers/BenchmarkHelper.h>
 #include <helpers/ConstantTadHelper.h>
@@ -177,32 +178,42 @@ TEST_F(PlaygroundTests, Test_PermutedArray_Operation_2) {
 
 TEST_F(PlaygroundTests, test_small_transforms_strict) {
 
+    /*
     std::vector<transform::StrictOps> ops({transform::StrictOps::Tanh, transform::StrictOps::Tan, transform::StrictOps::ACos, transform::StrictOps::ACosh, transform::StrictOps::ACoshDerivative,
                                            transform::StrictOps::ASin, transform::StrictOps::ASinh, transform::StrictOps::ASinhDerivative, transform::StrictOps::ATan, transform::StrictOps::ATanh,
                                            transform::StrictOps::Cosh, transform::StrictOps::Cosine, transform::StrictOps::GELU, transform::StrictOps::Log, transform::StrictOps::SELU, transform::StrictOps::Rint,
                                            transform::StrictOps::Erf, transform::StrictOps::Erfc, transform::StrictOps::TanDerivative, transform::StrictOps::TanhDerivative});
+                                           */
 
+    auto ops = OpLists::transformStrict();
 
     Environment::getInstance()->setElementwiseThreshold(1);
     //std::vector<transform::StrictOps> ops({transform::StrictOps::Tanh, transform::StrictOps::Sin});
-    std::vector<int> threads({1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12});
+    //std::vector<int> threads({1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12});
+    std::vector<int> threads({6, 12});
 
     auto r = 1;
     //auto c = 8192;
     int iterations = 100;
 
-    std::vector<int> columns({8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536});
+    std::vector<int> columns({8, 64, 128, 256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536, 131072});
 
     for (const auto c: columns) {
 
         nd4j_printf("Array length: [%i]\n", r * c);
 
+
         std::vector<int> bestThreads(ops.size());
         std::vector<Nd4jLong> bestTime(ops.size());
 
+        std::vector<int> worstThreads(ops.size());
+        std::vector<Nd4jLong> worstTime(ops.size());
+
         for (int e = 0; e < bestTime.size(); e++) {
             bestTime[e] = DataTypeUtils::max<Nd4jLong>();
+            worstTime[e] = 0;
             bestThreads[e] = -1;
+            worstThreads[e] = -1;
         }
 
         for (const auto t:threads) {
@@ -228,7 +239,7 @@ TEST_F(PlaygroundTests, test_small_transforms_strict) {
                     z.assign(0.0);
 
                     auto timeStart = std::chrono::system_clock::now();
-                    NativeOpExcutioner::execTransformStrict(v, x.buffer(), x.shapeInfo(), z.buffer(), z.shapeInfo(),
+                    NativeOpExcutioner::execTransformStrict(v._opNum, x.buffer(), x.shapeInfo(), z.buffer(), z.shapeInfo(),
                                                             nullptr, nullptr, nullptr);
                     auto timeEnd = std::chrono::system_clock::now();
                     auto duration = std::chrono::duration_cast<std::chrono::nanoseconds>((timeEnd - timeStart)).count();
@@ -249,6 +260,11 @@ TEST_F(PlaygroundTests, test_small_transforms_strict) {
                     bestThreads[cnt] = t;
                     bestTime[cnt] = median;
                 }
+
+                if (median > worstTime[cnt]) {
+                    worstThreads[cnt] = t;
+                    worstTime[cnt] = median;
+                }
                 //nd4j_printf("Threads: [%i]; Op: [%i]; Median time: [%lld]; Mean time: [%lld]; Min time: [%lld]; Max time: [%lld]\n", t, (int) v, results[results.size() / 2], mean, min, max);
 
                 cnt++;
@@ -256,7 +272,7 @@ TEST_F(PlaygroundTests, test_small_transforms_strict) {
         }
 
         for (int e = 0; e < ops.size(); e++) {
-            nd4j_printf("Best performance for op [%i] with [%i] threads\n", ops[e], bestThreads[e])
+            nd4j_printf("Best performance for op [%s] with [%i] threads; Worst number of threads: [%i]; Best time: [%i us], Worst time: [%i us]\n", ops[e]._opName.c_str(), bestThreads[e], worstThreads[e], bestTime[e], worstTime[e]);
         }
     }
 }
