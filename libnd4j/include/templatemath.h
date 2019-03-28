@@ -703,10 +703,10 @@ namespace nd4j {
         template <typename X>
         math_def inline X pos_tanh(X val) {
             X o = static_cast<X>(1.0f);
-            X t = static_cast<X>(2.0f);
+            X t = static_cast<X>(-2.0f);
             X e = static_cast<X>(M_E);
 
-            auto p = -nd4j::math::nd4j_pow<X, X, X>(e, val * t);
+            auto p = nd4j::math::nd4j_pow<X, X, X>(e, val * t);
             return (o - p) / (o + p);
         }
 
