@@ -1883,13 +1883,7 @@ namespace simdOps {
 		no_op_exec_special_same_cuda
 
 		op_def static X op(X d1, X *params) {
-			X o = static_cast<X>(1.0f);
-            X t = static_cast<X>(2.0f);
-            X e = static_cast<X>(M_E);
-
-			auto p = nd4j::math::nd4j_pow<X, X, X>(e, d1 * t);
-			return (p - o)/ (p + o);
-			//return nd4j::math::nd4j_tanh<X, X>(d1);
+			return nd4j::math::nd4j_tanh<X, X>(d1);
 		}
 	};
 
