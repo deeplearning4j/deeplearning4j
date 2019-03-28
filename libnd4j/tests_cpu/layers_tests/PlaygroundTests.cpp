@@ -200,8 +200,10 @@ TEST_F(PlaygroundTests, test_small_transforms_strict) {
         std::vector<int> bestThreads(ops.size());
         std::vector<Nd4jLong> bestTime(ops.size());
 
-        for (int e = 0; e < bestTime.size(); e++)
+        for (int e = 0; e < bestTime.size(); e++) {
             bestTime[e] = DataTypeUtils::max<Nd4jLong>();
+            bestThreads[e] = -1;
+        }
 
         for (const auto t:threads) {
 
@@ -254,7 +256,7 @@ TEST_F(PlaygroundTests, test_small_transforms_strict) {
         }
 
         for (int e = 0; e < ops.size(); e++) {
-            nd4j_printf("Best performance for op [%i] with [%i] threads\n", ops[e], threads[bestThreads[e]])
+            nd4j_printf("Best performance for op [%i] with [%i] threads\n", ops[e], bestThreads[e])
         }
     }
 }
