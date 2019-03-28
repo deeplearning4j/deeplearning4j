@@ -574,9 +574,12 @@ NDArray NDArrayFactory::create(T* buffer, const char order, const std::initializ
     result.setAttached(context->getWorkspace() != nullptr);
 
     result.setBuffer(reinterpret_cast<uint8_t*>(buffer));
-    result.setShapeInfo(ShapeBuilders::createShapeInfo(DataTypeUtils::fromT<T>(), order, shape, context->getWorkspace()));
+    Nd4jLong* shapeInfo = ShapeBuilders::createShapeInfo(DataTypeUtils::fromT<T>(), order, shape, context->getWorkspace());
+    result.setShapeInfo(shapeInfo);
     result.setContext(context);
     result.triggerAllocationFlag(false);
+
+    RELEASE(shapeInfo, context->getWorkspace())
     
     return result;
 }

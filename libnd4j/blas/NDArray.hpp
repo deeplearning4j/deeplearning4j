@@ -750,6 +750,8 @@ NDArray NDArray::reduceAlongDims(nd4j::reduce::SameOps op, const std::vector<int
 
     reduceAlongDimension(op, &result, copy, keepDims, supportOldShapes, false);
 
+    RELEASE(newShape, _context->getWorkspace());
+    
     return result;
 }
 
@@ -1317,6 +1319,7 @@ NDArray NDArray::transp() const {
         auto newArr = new NDArray(_buffer, _bufferD, newShapeInfo, _context, false, false);
         newArr->reshapei(order, shape);
 
+        RELEASE(newShapeInfo, _context->getWorkspace());
         return newArr;
     }
 
@@ -2683,6 +2686,9 @@ NDArray NDArray::operator()(const std::vector<Nd4jLong>& idx, const bool keepUni
         if(nonUnitDims.size() != rank)
             result.reshapei(nonUnitDims);
     }
+
+    RELEASE(newShape, _context->getWorkspace());
+
     return result;
 }
 
