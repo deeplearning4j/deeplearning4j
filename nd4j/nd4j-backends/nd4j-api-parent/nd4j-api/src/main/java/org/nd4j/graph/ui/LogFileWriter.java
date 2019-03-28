@@ -4,6 +4,7 @@ import com.google.flatbuffers.FlatBufferBuilder;
 import com.google.flatbuffers.Table;
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
@@ -289,9 +290,9 @@ public class LogFileWriter {
         return append(fbb, fbb2);
     }
 
-    public long writeHistogramEventDiscrete(String name, long time, int iteration, int epoch, List<String> binLabels, INDArray y) throws IOException {
+    public long writeHistogramEventDiscrete(@NonNull String name, long time, int iteration, int epoch, List<String> binLabels, @NonNull INDArray y) throws IOException {
         Preconditions.checkState(binLabels == null || binLabels.size() == y.length(), "Number of bin labels (if present) must " +
-                "be same as Y array length - got %s bins, array shape %ndShape", binLabels.size(), y.length());
+                "be same as Y array length - got %s bins, array shape %ndShape", (binLabels == null ? 0L : binLabels.size()), y.length());
         Preconditions.checkState(y.rank() == 1, "Y array must be rank 1, got Y array with shape %ndShape", y);
 
         //TODO add support for plugin, variable and frame/iter
