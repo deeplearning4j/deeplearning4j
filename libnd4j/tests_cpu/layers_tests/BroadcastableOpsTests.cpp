@@ -521,7 +521,7 @@ TEST_F(BroadcastableOpsTests, Test_Multiply_7) {
 TEST_F(BroadcastableOpsTests, Test_Multiply_8) {
     auto x = NDArrayFactory::create<float>(2.0f);
     auto y = NDArrayFactory::create<float>('c', {1, 1}, {4.f});
-   auto e = NDArrayFactory::create<float>('c', {1, 1}, {8.f});
+    auto e = NDArrayFactory::create<float>('c', {1, 1}, {8.f});
 
     nd4j::ops::multiply op;
     auto result = op.execute({&x, &y}, {}, {}, {});
@@ -533,3 +533,35 @@ TEST_F(BroadcastableOpsTests, Test_Multiply_8) {
 
     delete result;
 }
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(BroadcastableOpsTests, broadcast_add_1) {
+
+    NDArray x('c', {4}, {1,1,1,1});
+    NDArray y('c', {1,4}, {1,2,3,4});
+    NDArray z('c', {1,4}, nd4j::DataType::DOUBLE);
+    NDArray exp('c', {1,4}, {2,3,4,5}, nd4j::DataType::DOUBLE);
+    
+    nd4j::ops::add op;
+    auto status = op.execute({&x, &y}, {&z}, {}, {}, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, status);
+    ASSERT_TRUE(z.equalsTo(exp));
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(BroadcastableOpsTests, broadcast_equals_1) {
+
+    NDArray x('c', {1,4}, {1,2,3,4});
+    NDArray y('c', {3,4}, {0,0,0,0,  1,2,3,4,  1,2,3,4});
+    NDArray z('c', {3,4}, nd4j::DataType::BOOL);
+    NDArray exp('c', {3,4}, {0,0,0,0,  1,1,1,1,  1,1,1,1}, nd4j::DataType::BOOL);
+    
+    nd4j::ops::equals op;
+    auto status = op.execute({&x, &y}, {&z}, {}, {}, {});
+    // z.printIndexedBuffer();
+
+    ASSERT_EQ(ND4J_STATUS_OK, status);
+    ASSERT_TRUE(z.equalsTo(exp));
+}
+

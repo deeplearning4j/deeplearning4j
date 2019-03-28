@@ -2937,7 +2937,7 @@ template void NDArray::applyScalar(nd4j::scalar::Ops op, const bool scalar, NDAr
         auto result = target == nullptr ? this : target;
 
         NDArray *min(nullptr), *max(nullptr);
-        if(lengthOf() >= other->lengthOf()) {
+        if((lengthOf() > other->lengthOf()) || (lengthOf() == other->lengthOf() && rankOf() >= other->rankOf()))  {
             max = this;
             min = const_cast<NDArray*>(other);
         }
@@ -2979,7 +2979,7 @@ template void NDArray::applyScalar(nd4j::scalar::Ops op, const bool scalar, NDAr
         auto result = target == nullptr ? this : target;
 
         NDArray *min(nullptr), *max(nullptr);
-        if(lengthOf() >= other->lengthOf()) {
+        if((lengthOf() > other->lengthOf()) || (lengthOf() == other->lengthOf() && rankOf() >= other->rankOf()))  {
             max = this;
             min = const_cast<NDArray*>(other);
         }
@@ -3001,7 +3001,7 @@ template void NDArray::applyScalar(nd4j::scalar::Ops op, const bool scalar, NDAr
             std::sort(copy.begin(), copy.end());
 
         Nd4jLong tadLength = shape::tadLength(max->_shapeInfo, copy.data(), (int) copy.size());
-        if (tadLength != other->lengthOf())
+        if (tadLength != min->lengthOf())
             throw std::runtime_error("Tad length mismatch");
 
         auto tadPack = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(max->_shapeInfo, copy);
