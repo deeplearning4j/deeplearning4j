@@ -18,6 +18,7 @@ package org.deeplearning4j.clustering.kdtree;
 
 import com.google.common.primitives.Doubles;
 import lombok.val;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -39,9 +40,28 @@ import static org.junit.Assert.assertTrue;
  */
 public class KDTreeTest {
 
+    private KDTree kdTree;
+
     @BeforeClass
     public static void beforeClass(){
         Nd4j.setDataType(DataType.FLOAT);
+    }
+
+    @Before
+    public void setUp() {
+         kdTree = new KDTree(2);
+        double[] data = new double[]{7,2};
+        kdTree.insert(Nd4j.createFromArray(data));
+        data = new double[]{5,4};
+        kdTree.insert(Nd4j.createFromArray(data));
+        data = new double[]{2,3};
+        kdTree.insert(Nd4j.createFromArray(data));
+        data = new double[]{4,7};
+        kdTree.insert(Nd4j.createFromArray(data));
+        data = new double[]{9,6};
+        kdTree.insert(Nd4j.createFromArray(data));
+        data = new double[]{8,1};
+        kdTree.insert(Nd4j.createFromArray(data));
     }
 
     @Test
@@ -168,7 +188,7 @@ public class KDTreeTest {
     }
 
     @Test
-    public void testKNN_1() {
+    public void testKNN_Simple() {
         int n = 2;
         KDTree kdTree = new KDTree(n);
 
@@ -193,33 +213,137 @@ public class KDTreeTest {
     }
 
     @Test
-    public void testKNN_2() {
-        int n = 2;
-        KDTree kdTree = new KDTree(n);
-        double[] data = new double[]{7,2};
-        kdTree.insert(Nd4j.createFromArray(data));
-        data = new double[]{5,4};
-        kdTree.insert(Nd4j.createFromArray(data));
-        data = new double[]{2,3};
-        kdTree.insert(Nd4j.createFromArray(data));
-        data = new double[]{4,7};
-        kdTree.insert(Nd4j.createFromArray(data));
-        data = new double[]{9,6};
-        kdTree.insert(Nd4j.createFromArray(data));
-        data = new double[]{8,1};
-        kdTree.insert(Nd4j.createFromArray(data));
+    public void testKNN_1() {
+
         assertEquals(6, kdTree.size());
 
+        double[] data = new double[]{8,1};
         List<Pair<Double, INDArray>> result = kdTree.knn(Nd4j.createFromArray(data), 10.0);
-        // reference : [(8.0, 1.0), (7.0, 2.0), (5.0, 4.0), (9.0, 6.0), (2.0, 3.0), (4.0, 7.0)]
-        /*assertEquals(8.0, result.get(0).getSecond().getDouble(0), 1e-5);
+        assertEquals(8.0, result.get(0).getSecond().getDouble(0), 1e-5);
         assertEquals(1.0, result.get(0).getSecond().getDouble(1), 1e-5);
         assertEquals(7.0, result.get(1).getSecond().getDouble(0), 1e-5);
-        assertEquals(2.0, result.get(1).getSecond().getDouble(1),  1e-5);*/
+        assertEquals(2.0, result.get(1).getSecond().getDouble(1), 1e-5);
+        assertEquals(5.0, result.get(2).getSecond().getDouble(0), 1e-5);
+        assertEquals(4.0, result.get(2).getSecond().getDouble(1), 1e-5);
+        assertEquals(9.0, result.get(3).getSecond().getDouble(0), 1e-5);
+        assertEquals(6.0, result.get(3).getSecond().getDouble(1), 1e-5);
+        assertEquals(2.0, result.get(4).getSecond().getDouble(0), 1e-5);
+        assertEquals(3.0, result.get(4).getSecond().getDouble(1), 1e-5);
+        assertEquals(4.0, result.get(5).getSecond().getDouble(0), 1e-5);
+        assertEquals(7.0, result.get(5).getSecond().getDouble(1), 1e-5);
+    }
 
-        for (val pair : result) {
-            System.out.println(pair);
-        }
+    @Test
+    public void testKNN_2() {
+        double[] data = new double[]{8, 1};
+        List<Pair<Double, INDArray>> result = kdTree.knn(Nd4j.createFromArray(data), 5.0);
+        assertEquals(8.0, result.get(0).getSecond().getDouble(0), 1e-5);
+        assertEquals(1.0, result.get(0).getSecond().getDouble(1), 1e-5);
+        assertEquals(7.0, result.get(1).getSecond().getDouble(0), 1e-5);
+        assertEquals(2.0, result.get(1).getSecond().getDouble(1), 1e-5);
+        assertEquals(5.0, result.get(2).getSecond().getDouble(0), 1e-5);
+        assertEquals(4.0, result.get(2).getSecond().getDouble(1), 1e-5);
+    }
 
+    @Test
+    public void testKNN_3() {
+
+        double[] data = new double[]{2, 3};
+        val result = kdTree.knn(Nd4j.createFromArray(data), 10.0);
+        assertEquals(2.0, result.get(0).getSecond().getDouble(0), 1e-5);
+        assertEquals(3.0, result.get(0).getSecond().getDouble(1), 1e-5);
+        assertEquals(5.0, result.get(1).getSecond().getDouble(0), 1e-5);
+        assertEquals(4.0, result.get(1).getSecond().getDouble(1), 1e-5);
+        assertEquals(4.0, result.get(2).getSecond().getDouble(0), 1e-5);
+        assertEquals(7.0, result.get(2).getSecond().getDouble(1), 1e-5);
+        assertEquals(7.0, result.get(3).getSecond().getDouble(0), 1e-5);
+        assertEquals(2.0, result.get(3).getSecond().getDouble(1), 1e-5);
+        assertEquals(8.0, result.get(4).getSecond().getDouble(0), 1e-5);
+        assertEquals(1.0, result.get(4).getSecond().getDouble(1), 1e-5);
+        assertEquals(9.0, result.get(5).getSecond().getDouble(0), 1e-5);
+        assertEquals(6.0, result.get(5).getSecond().getDouble(1), 1e-5);
+    }
+
+
+    @Test
+    public void testKNN_4() {
+        double[] data = new double[]{2, 3};
+        val result = kdTree.knn(Nd4j.createFromArray(data), 5.0);
+        assertEquals(2.0, result.get(0).getSecond().getDouble(0), 1e-5);
+        assertEquals(3.0, result.get(0).getSecond().getDouble(1), 1e-5);
+        assertEquals(5.0, result.get(1).getSecond().getDouble(0), 1e-5);
+        assertEquals(4.0, result.get(1).getSecond().getDouble(1), 1e-5);
+        assertEquals(4.0, result.get(2).getSecond().getDouble(0), 1e-5);
+        assertEquals(7.0, result.get(2).getSecond().getDouble(1), 1e-5);
+    }
+
+    @Test
+    public void testKNN_5() {
+        double[] data = new double[]{2, 3};
+        val result = kdTree.knn(Nd4j.createFromArray(data), 20.0);
+        assertEquals(2.0, result.get(0).getSecond().getDouble(0), 1e-5);
+        assertEquals(3.0, result.get(0).getSecond().getDouble(1), 1e-5);
+        assertEquals(5.0, result.get(1).getSecond().getDouble(0), 1e-5);
+        assertEquals(4.0, result.get(1).getSecond().getDouble(1), 1e-5);
+        assertEquals(4.0, result.get(2).getSecond().getDouble(0), 1e-5);
+        assertEquals(7.0, result.get(2).getSecond().getDouble(1), 1e-5);
+        assertEquals(7.0, result.get(3).getSecond().getDouble(0), 1e-5);
+        assertEquals(2.0, result.get(3).getSecond().getDouble(1), 1e-5);
+        assertEquals(8.0, result.get(4).getSecond().getDouble(0), 1e-5);
+        assertEquals(1.0, result.get(4).getSecond().getDouble(1), 1e-5);
+        assertEquals(9.0, result.get(5).getSecond().getDouble(0), 1e-5);
+        assertEquals(6.0, result.get(5).getSecond().getDouble(1), 1e-5);
+    }
+
+    @Test
+    public void test_KNN_6() {
+        double[] data = new double[]{4, 6};
+        val result = kdTree.knn(Nd4j.createFromArray(data), 10.0);
+        assertEquals(4.0, result.get(0).getSecond().getDouble(0), 1e-5);
+        assertEquals(7.0, result.get(0).getSecond().getDouble(1), 1e-5);
+        assertEquals(5.0, result.get(1).getSecond().getDouble(0), 1e-5);
+        assertEquals(4.0, result.get(1).getSecond().getDouble(1), 1e-5);
+        assertEquals(2.0, result.get(2).getSecond().getDouble(0), 1e-5);
+        assertEquals(3.0, result.get(2).getSecond().getDouble(1), 1e-5);
+        assertEquals(7.0, result.get(3).getSecond().getDouble(0), 1e-5);
+        assertEquals(2.0, result.get(3).getSecond().getDouble(1), 1e-5);
+        assertEquals(9.0, result.get(4).getSecond().getDouble(0), 1e-5);
+        assertEquals(6.0, result.get(4).getSecond().getDouble(1), 1e-5);
+        assertEquals(8.0, result.get(5).getSecond().getDouble(0), 1e-5);
+        assertEquals(1.0, result.get(5).getSecond().getDouble(1), 1e-5);
+    }
+
+    @Test
+    public void test_KNN_7() {
+        double[] data = new double[]{4, 6};
+        val result = kdTree.knn(Nd4j.createFromArray(data), 5.0);
+        assertEquals(4.0, result.get(0).getSecond().getDouble(0), 1e-5);
+        assertEquals(7.0, result.get(0).getSecond().getDouble(1), 1e-5);
+        assertEquals(5.0, result.get(1).getSecond().getDouble(0), 1e-5);
+        assertEquals(4.0, result.get(1).getSecond().getDouble(1), 1e-5);
+        assertEquals(2.0, result.get(2).getSecond().getDouble(0), 1e-5);
+        assertEquals(3.0, result.get(2).getSecond().getDouble(1), 1e-5);
+        assertEquals(7.0, result.get(3).getSecond().getDouble(0), 1e-5);
+        assertEquals(2.0, result.get(3).getSecond().getDouble(1), 1e-5);
+        assertEquals(9.0, result.get(4).getSecond().getDouble(0), 1e-5);
+        assertEquals(6.0, result.get(4).getSecond().getDouble(1), 1e-5);
+    }
+
+    @Test
+    public void test_KNN_8() {
+        double[] data = new double[]{4, 6};
+        val result = kdTree.knn(Nd4j.createFromArray(data), 20.0);
+        assertEquals(4.0, result.get(0).getSecond().getDouble(0), 1e-5);
+        assertEquals(7.0, result.get(0).getSecond().getDouble(1), 1e-5);
+        assertEquals(5.0, result.get(1).getSecond().getDouble(0), 1e-5);
+        assertEquals(4.0, result.get(1).getSecond().getDouble(1), 1e-5);
+        assertEquals(2.0, result.get(2).getSecond().getDouble(0), 1e-5);
+        assertEquals(3.0, result.get(2).getSecond().getDouble(1), 1e-5);
+        assertEquals(7.0, result.get(3).getSecond().getDouble(0), 1e-5);
+        assertEquals(2.0, result.get(3).getSecond().getDouble(1), 1e-5);
+        assertEquals(9.0, result.get(4).getSecond().getDouble(0), 1e-5);
+        assertEquals(6.0, result.get(4).getSecond().getDouble(1), 1e-5);
+        assertEquals(8.0, result.get(5).getSecond().getDouble(0), 1e-5);
+        assertEquals(1.0, result.get(5).getSecond().getDouble(1), 1e-5);
     }
 }
