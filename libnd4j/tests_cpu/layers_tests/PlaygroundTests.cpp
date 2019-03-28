@@ -182,8 +182,8 @@ TEST_F(PlaygroundTests, test_small_transforms_strict) {
                                            transform::StrictOps::Erf, transform::StrictOps::Erfc, transform::StrictOps::TanDerivative, transform::StrictOps::TanhDerivative});
 
     auto r = 8;
-    auto c = 256;
-    int iterations = 1000;
+    auto c = 32;
+    int iterations = 10000;
 
     nd4j_printf("Num threads: %i\n", omp_get_max_threads());
 

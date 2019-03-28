@@ -649,9 +649,14 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
 
             //*********************************************//
             case EWS1: {
-                PRAGMA_OMP_PARALLEL_FOR_SIMD
-                for (uint i = 0; i < ulen; i++)
-                    z[i] = OpType::op(x[i], extraParams);
+                if (ulen > Environment::getInstance()->elementwiseThreshold()) {
+                    PRAGMA_OMP_PARALLEL_FOR_SIMD
+                    for (uint i = 0; i < ulen; i++)
+                        z[i] = OpType::op(x[i], extraParams);
+                } else {
+                    for (uint i = 0; i < ulen; i++)
+                        z[i] = OpType::op(x[i], extraParams);
+                }
             }
                 break;
 
@@ -660,9 +665,14 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
                 const uint xEws = shape::elementWiseStride(xShapeInfo);
                 const uint zEws = shape::elementWiseStride(zShapeInfo);
 
-                PRAGMA_OMP_PARALLEL_FOR_SIMD
-                for (uint i = 0; i < ulen; i++)
-                    z[i*zEws] = OpType::op(x[i*xEws], extraParams);
+                if (ulen > Environment::getInstance()->elementwiseThreshold()) {
+                    PRAGMA_OMP_PARALLEL_FOR_SIMD
+                    for (uint i = 0; i < ulen; i++)
+                        z[i * zEws] = OpType::op(x[i * xEws], extraParams);
+                } else {
+                    for (uint i = 0; i < ulen; i++)
+                        z[i * zEws] = OpType::op(x[i * xEws], extraParams);
+                }
 
             }
                 break;
