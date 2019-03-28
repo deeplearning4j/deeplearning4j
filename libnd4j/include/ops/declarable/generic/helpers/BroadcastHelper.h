@@ -32,6 +32,13 @@ namespace nd4j {
         class BroadcastHelper {
         public: 
             static FORCEINLINE NDArray* broadcastApply(nd4j::BroadcastOpsTuple op, NDArray* x, NDArray* y, NDArray* z, void *extraArgs = nullptr) {
+
+                if(x->isEmpty() || y->isEmpty()) {
+                    if(!z->isEmpty())
+                        throw std::runtime_error("BroadcastHelper::broadcastApply: when some of input arrays (or both) is empty, output array must be empty as well !");
+                    return z;
+                }
+
                 std::unique_ptr<NDArray> ptr;
                 if (!Environment::getInstance()->isExperimentalBuild()) {
                     if (y->dataType() != x->dataType()) {
@@ -92,6 +99,12 @@ namespace nd4j {
             }
 
             static FORCEINLINE NDArray* broadcastApply(nd4j::BroadcastBoolOpsTuple op, NDArray* x, NDArray* y, NDArray* z, void *extraArgs = nullptr) {
+
+                if(x->isEmpty() || y->isEmpty()) {
+                    if(!z->isEmpty())
+                        throw std::runtime_error("BroadcastHelper::broadcastApply: when some of input arrays (or both) is empty, output array must be empty as well !");
+                    return z;
+                }
 
                 if (!x->isScalar() && !y->isScalar() && x->isSameShape(y)) {
                     x->applyPairwiseTransform(op.p, y, z, nullptr);

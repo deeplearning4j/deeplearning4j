@@ -80,31 +80,22 @@ std::vector<Nd4jLong> ShapeUtils::evalShapeForTensorDot(const Nd4jLong* aShapeIn
         n2 *= aShapeInfo[axesA[i] + 1];
     shapeAt = {-1, n2};
 
-    std::vector<Nd4jLong> oldShapeA;
-    if (list_A.empty()) {
-        oldShapeA.emplace_back(1);
-    } else {
-        oldShapeA.resize(list_A.size());
-        int osa = oldShapeA.size();
-        for (int i = 0; i < osa; i++)
-            oldShapeA[i] = aShapeInfo[list_A[i] + 1];
-    }
+    std::vector<Nd4jLong> oldShapeA;    
+    oldShapeA.resize(list_A.size());        
+    for (int i = 0; i < oldShapeA.size(); ++i)
+        oldShapeA[i] = aShapeInfo[list_A[i] + 1];
+    
     
     int n3 = 1;
     for (int i = 0; i < axeBsize; i++)
         n3 *= bShapeInfo[axesB[i] + 1];
     shapeBt = {n3, -1};
     
-    std::vector<Nd4jLong> oldShapeB;
-    if (list_B.empty()) {
-        oldShapeB.emplace_back(1);
-    } else {
-        oldShapeB.resize(list_B.size());
-        int osb = oldShapeB.size();
-        for (int i = 0; i < osb; i++)
-            oldShapeB[i] = bShapeInfo[list_B[i] + 1];
-    }
-    
+    std::vector<Nd4jLong> oldShapeB;    
+    oldShapeB.resize(list_B.size());    
+    for (int i = 0; i < oldShapeB.size(); i++)
+        oldShapeB[i] = bShapeInfo[list_B[i] + 1];
+        
     std::vector<Nd4jLong> aPlusB(oldShapeA);
     aPlusB.insert(aPlusB.end(), oldShapeB.begin(), oldShapeB.end());            
     
