@@ -187,7 +187,7 @@ TEST_F(PlaygroundTests, test_small_transforms_strict) {
     //std::vector<transform::StrictOps> ops({transform::StrictOps::Tanh, transform::StrictOps::Sin});
     std::vector<int> threads({1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12});
 
-    auto r = 8;
+    auto r = 1;
     //auto c = 8192;
     int iterations = 100;
 
