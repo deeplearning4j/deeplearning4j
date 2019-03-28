@@ -130,7 +130,7 @@ public class EvaluationCalibrationTest extends BaseNd4jTest {
         int[] expPredictionCount = new int[(int) labels.size(1)];
         INDArray argmax = Nd4j.argMax(arr, 1);
         for (int i = 0; i < argmax.length(); i++) {
-            expPredictionCount[argmax.getInt(i, 0)]++;
+            expPredictionCount[argmax.getInt(i)]++;
         }
 
         assertArrayEquals(expLabelCounts, ec.getLabelCountsEachClass());
@@ -163,7 +163,7 @@ public class EvaluationCalibrationTest extends BaseNd4jTest {
         double binSize = 1.0 / numBins;
 
         for (int i = 0; i < minibatch; i++) {
-            int actualClassIdx = argmaxLabels.getInt(i, 0);
+            int actualClassIdx = argmaxLabels.getInt(i);
             for (int j = 0; j < nClasses; j++) {
                 double labelSubProb = absLabelSubProb.getDouble(i, j);
                 for (int k = 0; k < numBins; k++) {
@@ -205,7 +205,7 @@ public class EvaluationCalibrationTest extends BaseNd4jTest {
         int[] probCountsAllClasses = new int[numBins];
         int[][] probCountsByClass = new int[nClasses][numBins]; //Histogram count of |label[x] - p(x)|; rows x are over classes
         for (int i = 0; i < minibatch; i++) {
-            int actualClassIdx = argmaxLabels.getInt(i, 0);
+            int actualClassIdx = argmaxLabels.getInt(i);
             for (int j = 0; j < nClasses; j++) {
                 double prob = arr.getDouble(i, j);
                 for (int k = 0; k < numBins; k++) {
