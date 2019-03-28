@@ -641,6 +641,7 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
         const Nd4jLong* zStride = shape::stride(const_cast<Nd4jLong*>(zShapeInfo));
 
         const Nd4jLong len = shape::length(xShapeInfo);
+        const uint ulen = static_cast<uint>(len);
 
         OmpLaunchHelper thredsInfo(len);
 
@@ -648,19 +649,9 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
 
             //*********************************************//
             case EWS1: {
-                PRAGMA_OMP_PARALLEL_THREADS(thredsInfo._numThreads)
-                {
-                    const auto threadNum = omp_get_thread_num();
-                    const auto threadOffset = thredsInfo.getThreadOffset(threadNum);
-                    const auto lenPerThread = static_cast<uint>(thredsInfo.getItersPerThread(threadNum));
-
-                    const auto xi = x + threadOffset;
-                    const auto zi = z + threadOffset;
-
-                    PRAGMA_OMP_SIMD
-                    for (uint i = 0; i < lenPerThread; i++)
-                        zi[i] = OpType::op(xi[i], extraParams);
-                }
+                PRAGMA_OMP_PARALLEL_FOR_SIMD
+                for (uint i = 0; i < ulen; i++)
+                    z[i] = OpType::op(x[i], extraParams);
             }
                 break;
 
@@ -669,19 +660,10 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
                 const uint xEws = shape::elementWiseStride(xShapeInfo);
                 const uint zEws = shape::elementWiseStride(zShapeInfo);
 
-                PRAGMA_OMP_PARALLEL_THREADS(thredsInfo._numThreads)
-                {
-                    const auto threadNum = omp_get_thread_num();
-                    const auto threadOffset = thredsInfo.getThreadOffset(threadNum);
-                    const auto lenPerThread = static_cast<uint>(thredsInfo.getItersPerThread(threadNum));
+                PRAGMA_OMP_PARALLEL_FOR_SIMD
+                for (uint i = 0; i < ulen; i++)
+                    z[i*zEws] = OpType::op(x[i*xEws], extraParams);
 
-                    const auto xi = x + threadOffset * xEws;
-                    auto zi = z + threadOffset * zEws;
-
-                    PRAGMA_OMP_SIMD
-                    for (uint i = 0; i < lenPerThread; i++)
-                        zi[i*zEws] = OpType::op(xi[i*xEws], extraParams);
-                }
             }
                 break;
 

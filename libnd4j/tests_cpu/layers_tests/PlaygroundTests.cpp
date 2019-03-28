@@ -176,11 +176,16 @@ TEST_F(PlaygroundTests, Test_PermutedArray_Operation_2) {
 
 
 TEST_F(PlaygroundTests, test_small_transforms_strict) {
-    std::vector<transform::StrictOps> ops({transform::StrictOps::Tanh, transform::StrictOps::Tan, transform::StrictOps::ACos, transform::StrictOps::ACosh, transform::StrictOps::ACoshDerivative, transform::StrictOps::ASin, transform::StrictOps::ASinh, transform::StrictOps::ASinhDerivative});
+    std::vector<transform::StrictOps> ops({transform::StrictOps::Tanh, transform::StrictOps::Tan, transform::StrictOps::ACos, transform::StrictOps::ACosh, transform::StrictOps::ACoshDerivative,
+                                           transform::StrictOps::ASin, transform::StrictOps::ASinh, transform::StrictOps::ASinhDerivative, transform::StrictOps::ATan, transform::StrictOps::ATanh,
+                                           transform::StrictOps::Cosh, transform::StrictOps::Cosine, transform::StrictOps::GELU, transform::StrictOps::Log, transform::StrictOps::SELU, transform::StrictOps::Rint,
+                                           transform::StrictOps::Erf, transform::StrictOps::Erfc, transform::StrictOps::TanDerivative, transform::StrictOps::TanhDerivative});
 
     auto r = 8;
     auto c = 256;
     int iterations = 1000;
+
+    nd4j_printf("Num threads: %i\n", omp_get_max_threads());
 
     for (const auto v:ops) {
 
