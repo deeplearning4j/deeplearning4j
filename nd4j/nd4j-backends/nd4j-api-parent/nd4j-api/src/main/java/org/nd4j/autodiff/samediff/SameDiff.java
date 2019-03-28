@@ -128,7 +128,7 @@ public class SameDiff extends SDBaseOps {
 
     //Fields for graph structure and execution
     @Getter     //TODO use package private instead of public getters?
-    private final Map<String,Variable> variables = new HashMap<>();         //TODO concurrent maps required? Or lock?
+    private final Map<String,Variable> variables = new LinkedHashMap<>();         //Use linked hash map to guarantee iteration order based on order they were added. Used in inputs() and flatbuffers serde
     @Getter
     private final Map<String,SameDiffOp> ops = new HashMap<>();
     @Getter
@@ -900,12 +900,12 @@ public class SameDiff extends SDBaseOps {
 
 
     /**
-     * Return the internal variable map
+     * Return a copy of the internal variable map
      *
      * @return Map of variables by name
      */
     public Map<String, SDVariable> variableMap() {
-        Map<String,SDVariable> ret = new HashMap<>();
+        Map<String,SDVariable> ret = new LinkedHashMap<>();
         for(Variable v : variables.values()){
             ret.put(v.getName(), v.getVariable());
         }
