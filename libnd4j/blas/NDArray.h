@@ -164,9 +164,8 @@ namespace nd4j {
         */
         NDArray(NDArray&& other) noexcept;
 
-
         /**
-        *  constructor, create empty array stored at given workspace
+        *  constructor, create array stored at given workspace
         */
         NDArray(nd4j::memory::Workspace* workspace);
 
@@ -203,9 +202,9 @@ namespace nd4j {
         NDArray(const NDArray *other, const bool copyStrides = false, memory::Workspace* workspace = nullptr);
 
         /**
-        *  this constructor creates scalar and set its value = 0
+        *  this constructor creates scalar(and set its value = 0) or empty array depending on bool argument isScalar
         */
-        NDArray(nd4j::DataType dtype, nd4j::memory::Workspace* workspace = nullptr);
+        NDArray(nd4j::DataType dtype, nd4j::memory::Workspace* workspace = nullptr, const bool isScalar = true);
 
 
         /**

@@ -565,3 +565,18 @@ TEST_F(BroadcastableOpsTests, broadcast_equals_1) {
     ASSERT_TRUE(z.equalsTo(exp));
 }
 
+//////////////////////////////////////////////////////////////////////
+TEST_F(BroadcastableOpsTests, broadcast_empty_1) {
+
+    NDArray y('c', {3,4}, {0,0,0,0,  1,2,3,4,  1,2,3,4});
+    NDArray x(nd4j::DataType::DOUBLE, y.getWorkspace(), false);
+    NDArray z(nd4j::DataType::DOUBLE, y.getWorkspace(), false);
+    NDArray zExp(nd4j::DataType::DOUBLE, y.getWorkspace(), false);
+
+    nd4j::ops::multiply op;
+    auto status = op.execute({&x, &y}, {&z}, {}, {}, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, status);
+    ASSERT_TRUE(z.isSameShape(zExp));
+    ASSERT_TRUE(z.equalsTo(zExp));
+}

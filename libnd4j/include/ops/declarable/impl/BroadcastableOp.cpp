@@ -52,10 +52,9 @@ namespace nd4j {
             } else
                 dtype = nd4j::DataType::BOOL;
 
-            if(shape::isEmpty(x) || shape::isEmpty(y)){
+            if(shape::isEmpty(x) || shape::isEmpty(y)) {
                 //Edge case: broadcasting with empty array gives empty array output (behaviour to match TF for import cases)
-                Nd4jLong* empty = ShapeBuilders::createScalarShapeInfo(dtype, block.getWorkspace());
-                ArrayOptions::setPropertyBit(empty, ARRAY_EMPTY);
+                Nd4jLong* empty = ShapeBuilders::emptyShapeInfo(dtype, block.getWorkspace());
 				shapeList->push_back(empty);
 			} else if (shape::isScalar(x) && shape::isScalar(y)) {
                 if (shape::rank(x) >= shape::rank(y)) {
