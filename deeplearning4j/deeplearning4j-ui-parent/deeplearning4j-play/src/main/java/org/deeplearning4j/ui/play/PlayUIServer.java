@@ -46,7 +46,6 @@ import org.deeplearning4j.ui.storage.InMemoryStatsStorage;
 import org.deeplearning4j.ui.storage.impl.QueueStatsStorageListener;
 import org.deeplearning4j.util.DL4JFileUtils;
 import org.nd4j.linalg.function.Function;
-import org.nd4j.linalg.function.Supplier;
 import org.nd4j.linalg.primitives.Pair;
 import play.Mode;
 import play.api.routing.Router;

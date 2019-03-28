@@ -327,11 +327,10 @@ Nd4jLong* ShapeUtils::evalReduceShapeInfo(const char order, std::vector<int>& di
 
 //////////////////////////////////////////////////////////////////////////
 // return new (shorter) sorted dimensions array without dimensions that are present in input vector
-    std::vector<int> ShapeUtils::evalDimsToExclude(const int rank, const std::vector<int>& dimensions) {
+std::vector<int> ShapeUtils::evalDimsToExclude(const int rank, const int dimsLen, const int* dimensions) {
 
-    std::vector<int> newDimensions;
-    auto size = dimensions.size();
-    if(size == 0) {                          // if input vector is empty then return whole shape range
+    std::vector<int> newDimensions;    
+    if(dimsLen == 0) {                          // if input vector is empty then return whole shape range
         newDimensions.resize(rank);
         std::iota(newDimensions.begin(), newDimensions.end(), 0);   // fill with 0, 1, ... rank-1
     }
@@ -339,7 +338,7 @@ Nd4jLong* ShapeUtils::evalReduceShapeInfo(const char order, std::vector<int>& di
         bool isAbsent;
         for(int i=0; i<rank; ++i) {
             isAbsent = true;
-            for(int j=0; j<size; ++j) {
+            for(int j = 0; j < dimsLen; ++j) {
                 int dim = dimensions[j] >= 0 ? dimensions[j] : dimensions[j] + rank;
                 if(i == dim) {
                     isAbsent = false;
@@ -352,6 +351,12 @@ Nd4jLong* ShapeUtils::evalReduceShapeInfo(const char order, std::vector<int>& di
     }
 
     return newDimensions;
+}
+
+//////////////////////////////////////////////////////////////////////////
+std::vector<int> ShapeUtils::evalDimsToExclude(const int rank, const std::vector<int>& dimensions) {
+
+    return ShapeUtils::evalDimsToExclude(rank, dimensions.size(), dimensions.data());
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -923,6 +928,35 @@ void ShapeUtils::updateStridesAndType(Nd4jLong* dest, const DataType dtype, cons
 
     shape::updateStrides(dest, order);
     ArrayOptions::setDataType(dest, dtype);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+std::vector<int> ShapeUtils::tadAxesForSimpleBroadcast(const NDArray& max, const NDArray& min) {
+
+    const int maxRank = max.rankOf();
+    const int minRank = min.rankOf();
+    const int diff    = maxRank - minRank;
+    
+    Nd4jLong  numOfMinTads(1), numOfMaxTads(1);
+    std::vector<int> maxTadDims;
+
+    for(int i = 0; i < minRank; ++i) {
+        if(min.sizeAt(i) == max.sizeAt(diff + i))
+            maxTadDims.push_back(diff + i);
+        else {
+            numOfMinTads *= min.sizeAt(i);
+            numOfMaxTads *= max.sizeAt(i);
+        }
+    }
+
+    if(min.lengthOf() > max.lengthOf()) {   // in this case tad is max array
+        for(int i = 0; i < diff; ++i)
+            numOfMaxTads *= max.sizeAt(i);
+
+        return numOfMaxTads == 1 ? maxTadDims : std::vector<int>();       
+    }
+ 
+    return numOfMinTads == 1 ? maxTadDims : std::vector<int>();
 }
 
 }

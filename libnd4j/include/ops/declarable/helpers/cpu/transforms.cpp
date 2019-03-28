@@ -25,6 +25,7 @@
 #include <numeric>
 #include <NDArrayFactory.h>
 #include <helpers/TAD.h>
+#include <helpers/ConstantTadHelper.h>
 
 namespace nd4j 	  {
 namespace ops 	  {
@@ -604,12 +605,10 @@ static void gather_(NDArray* input, const NDArray* indices, NDArray* output, con
 				auto scalarNDArray = input->e(idx);
                 output->assign(scalarNDArray);
             } else {
-                std::vector<int> dimensions = ShapeUtils::evalDimsToExclude(input->rankOf(), {axis});
-                shape::TAD tad;
-                tad.init(input->getShapeInfo(), dimensions.data(), dimensions.size());
-                tad.createTadOnlyShapeInfo();
-                tad.createOffsets();
-                auto tadArr = NDArray(reinterpret_cast<void *>(reinterpret_cast<T*>(input->getBuffer()) + tad.tadOffsets[indices->e<Nd4jLong>(0)]), tad.tadOnlyShapeInfo, output->getWorkspace());
+                auto dimensions = ShapeUtils::evalDimsToExclude(input->rankOf(), {axis});
+                auto tadPack = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(input->getShapeInfo(), dimensions);
+
+                auto tadArr = NDArray(reinterpret_cast<void *>(reinterpret_cast<T*>(input->getBuffer()) + tadPack.primaryOffsets()[indices->e<Nd4jLong>(0)]), tadPack.primaryShapeInfo(), output->getWorkspace());
                 output->assign(&tadArr);
 			}
         }

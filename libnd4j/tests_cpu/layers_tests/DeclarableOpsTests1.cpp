@@ -1445,7 +1445,7 @@ TEST_F(DeclarableOpsTests1, Reshapeas1) {
     const std::vector<Nd4jLong> xShape = {5,4,3};
     const std::vector<Nd4jLong> yShape = {3,5,4};
     
-    auto x = NDArrayFactory::create_<float>('c', xShape);
+    auto x = NDArrayFactory::create_<float>('f', xShape);
     auto y = NDArrayFactory::create_<float>('f', yShape);
 
 
@@ -1626,7 +1626,7 @@ TEST_F(DeclarableOpsTests1, Reshape1) {
     const std::vector<Nd4jLong> xShape = {5,4,3};
     const std::vector<Nd4jLong> yShape = {3,5,4};    
     
-    auto x = NDArrayFactory::create_<float>('c', xShape);
+    auto x = NDArrayFactory::create_<float>('f', xShape);
     auto y = NDArrayFactory::create_<float>('f', yShape);
 
     auto variableSpace = new VariableSpace();
@@ -1657,7 +1657,7 @@ TEST_F(DeclarableOpsTests1, Reshape2) {
     const std::vector<Nd4jLong> yShape = {3,5,4};    
     
     auto x = NDArrayFactory::create_<float>('c', xShape);
-    auto y = NDArrayFactory::create_<float>('f', yShape);
+    auto y = NDArrayFactory::create_<float>('c', yShape);
 
     auto variableSpace = new VariableSpace();
     variableSpace->putVariable(-1, x);
@@ -3391,6 +3391,8 @@ TEST_F(DeclarableOpsTests1, OneHotTests_3) {
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
     auto z = result->at(0);
+
+    z->printIndexedBuffer("z");
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
