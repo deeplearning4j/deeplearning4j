@@ -66,12 +66,11 @@ public class EuclideanDistance extends BaseReduce3Op {
     }
 
     public EuclideanDistance(INDArray x, INDArray y, INDArray z, boolean allDistances, int... dimensions) {
-        this(x, y, z, true, false, dimensions);
-        this.isComplex = allDistances;
+        this(x, y, z, false, allDistances, dimensions);
     }
 
-    public EuclideanDistance(INDArray x, INDArray y, INDArray z, boolean newFormat, boolean keepDims, int... dimensions){
-        super(x, y, z, newFormat, keepDims, dimensions);
+    public EuclideanDistance(INDArray x, INDArray y, INDArray z, boolean keepDims, boolean allDistances, int... dimensions){
+        super(x, y, z, keepDims, allDistances, dimensions);
         extraArgs = new Object[]{0.0f, 0.0f};
     }
 

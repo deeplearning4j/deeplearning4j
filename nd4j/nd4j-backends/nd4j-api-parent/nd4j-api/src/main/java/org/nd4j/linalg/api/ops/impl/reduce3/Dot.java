@@ -52,7 +52,7 @@ public class Dot extends BaseReduce3Op {
     }
 
     public Dot(INDArray x, INDArray y, INDArray z, boolean newFormat, boolean keepDims, int... dimensions){
-        super(x, y, z, newFormat, keepDims, dimensions);
+        super(x, y, z, keepDims, false, dimensions);
     }
 
     @Override
