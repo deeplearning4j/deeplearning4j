@@ -176,47 +176,73 @@ TEST_F(PlaygroundTests, Test_PermutedArray_Operation_2) {
 
 
 TEST_F(PlaygroundTests, test_small_transforms_strict) {
+    /*
     std::vector<transform::StrictOps> ops({transform::StrictOps::Tanh, transform::StrictOps::Tan, transform::StrictOps::ACos, transform::StrictOps::ACosh, transform::StrictOps::ACoshDerivative,
                                            transform::StrictOps::ASin, transform::StrictOps::ASinh, transform::StrictOps::ASinhDerivative, transform::StrictOps::ATan, transform::StrictOps::ATanh,
                                            transform::StrictOps::Cosh, transform::StrictOps::Cosine, transform::StrictOps::GELU, transform::StrictOps::Log, transform::StrictOps::SELU, transform::StrictOps::Rint,
                                            transform::StrictOps::Erf, transform::StrictOps::Erfc, transform::StrictOps::TanDerivative, transform::StrictOps::TanhDerivative});
+*/
+
+    Environment::getInstance()->setElementwiseThreshold(1);
+    std::vector<transform::StrictOps> ops({transform::StrictOps::Tanh});
+    std::vector<int> threads({1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12});
+
+    int bestThreads = 0;
+    Nd4jLong bestTime = DataTypeUtils::max<Nd4jLong>();
 
     auto r = 8;
-    auto c = 32;
-    int iterations = 10000;
+    auto c = 1024 * 1024;
+    int iterations = 100;
 
     nd4j_printf("Num threads: %i\n", omp_get_max_threads());
+    for (const auto t:threads) {
 
-    for (const auto v:ops) {
-
-        std::vector<Nd4jLong> results(iterations);
-        Nd4jLong mean = 0L;
-        Nd4jLong max = 0L;
-        Nd4jLong min = DataTypeUtils::max<Nd4jLong>();
-
-        for (int e = 0; e < iterations; e++) {
-            auto x = NDArrayFactory::create<float>('c', {r, c});
-            auto z = NDArrayFactory::create<float>('c', {r, c});
-            x.linspace(0.1, 0.01);
-
-            auto timeStart = std::chrono::system_clock::now();
-            NativeOpExcutioner::execTransformStrict(v, x.buffer(), x.shapeInfo(), z.buffer(), z.shapeInfo(), nullptr, nullptr, nullptr);
-            auto timeEnd = std::chrono::system_clock::now();
-            auto duration = std::chrono::duration_cast<std::chrono::nanoseconds>((timeEnd - timeStart)).count();
-            results[e] = duration;
-            mean += duration;
-
-            if (duration > max)
-                max = duration;
-
-            if (duration < min)
-                min = duration;
+        omp_set_num_threads(t);
+        if (t == 1) {
+            Environment::getInstance()->setElementwiseThreshold(r * c * 2);
+        } else {
+            Environment::getInstance()->setElementwiseThreshold(1);
         }
-        mean /= iterations;
-        std::sort(results.begin(), results.end());
 
-        nd4j_printf("Op: [%i]; Median time: [%lld]; Mean time: [%lld]; Min time: [%lld]; Max time: [%lld]\n", (int) v, results[results.size() / 2], mean, min, max);
+        for (const auto v:ops) {
+
+            std::vector<Nd4jLong> results(iterations);
+            Nd4jLong mean = 0L;
+            Nd4jLong max = 0L;
+            Nd4jLong min = DataTypeUtils::max<Nd4jLong>();
+
+            for (int e = 0; e < iterations; e++) {
+                auto x = NDArrayFactory::create<float>('c', {r, c});
+                auto z = NDArrayFactory::create<float>('c', {r, c});
+                x.linspace(0.1, 0.01);
+                z.assign(0.0);
+
+                auto timeStart = std::chrono::system_clock::now();
+                NativeOpExcutioner::execTransformStrict(v, x.buffer(), x.shapeInfo(), z.buffer(), z.shapeInfo(), nullptr, nullptr, nullptr);
+                auto timeEnd = std::chrono::system_clock::now();
+                auto duration = std::chrono::duration_cast<std::chrono::nanoseconds>((timeEnd - timeStart)).count();
+                results[e] = duration;
+                mean += duration;
+
+                if (duration > max)
+                    max = duration;
+
+                if (duration < min)
+                    min = duration;
+            }
+            mean /= iterations;
+            std::sort(results.begin(), results.end());
+            auto median = results[results.size() / 2];
+
+            if (median < bestTime) {
+                bestThreads = t;
+                bestTime = median;
+            }
+            //nd4j_printf("Op: [%i]; Median time: [%lld]; Mean time: [%lld]; Min time: [%lld]; Max time: [%lld]\n", (int) v, results[results.size() / 2], mean, min, max);
+        }
     }
+
+    nd4j_printf("Best performance with [%i] threads\n", bestThreads)
 }
 
 /*
