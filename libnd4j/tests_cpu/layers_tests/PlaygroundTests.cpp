@@ -174,6 +174,46 @@ TEST_F(PlaygroundTests, Test_PermutedArray_Operation_2) {
 
 }
 
+
+TEST_F(PlaygroundTests, test_small_transforms_strict) {
+    std::vector<transform::StrictOps> ops({transform::StrictOps::Tanh, transform::StrictOps::Tan, transform::StrictOps::ACos, transform::StrictOps::ACosh, transform::StrictOps::ACoshDerivative, transform::StrictOps::ASin, transform::StrictOps::ASinh, transform::StrictOps::ASinhDerivative});
+
+    auto r = 8;
+    auto c = 256;
+    int iterations = 1000;
+
+    for (const auto v:ops) {
+
+        std::vector<Nd4jLong> results(iterations);
+        Nd4jLong mean = 0L;
+        Nd4jLong max = 0L;
+        Nd4jLong min = DataTypeUtils::max<Nd4jLong>();
+
+        for (int e = 0; e < iterations; e++) {
+            auto x = NDArrayFactory::create<float>('c', {r, c});
+            auto z = NDArrayFactory::create<float>('c', {r, c});
+            x.linspace(0.1, 0.01);
+
+            auto timeStart = std::chrono::system_clock::now();
+            NativeOpExcutioner::execTransformStrict(v, x.buffer(), x.shapeInfo(), z.buffer(), z.shapeInfo(), nullptr, nullptr, nullptr);
+            auto timeEnd = std::chrono::system_clock::now();
+            auto duration = std::chrono::duration_cast<std::chrono::nanoseconds>((timeEnd - timeStart)).count();
+            results[e] = duration;
+            mean += duration;
+
+            if (duration > max)
+                max = duration;
+
+            if (duration < min)
+                min = duration;
+        }
+        mean /= iterations;
+        std::sort(results.begin(), results.end());
+
+        nd4j_printf("Op: [%i]; Median time: [%lld]; Mean time: [%lld]; Min time: [%lld]; Max time: [%lld]\n", (int) v, results[results.size() / 2], mean, min, max);
+    }
+}
+
 /*
 TEST_F(PlaygroundTests, Test_OpBenchmark_1) {
 
