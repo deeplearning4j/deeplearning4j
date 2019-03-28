@@ -241,7 +241,7 @@ NDArray::NDArray(const NDArray *other, const bool copyStrides, nd4j::memory::Wor
     triggerAllocationFlag(true, true);
 
     // memcpy is handled within execTransformAny
-    NativeOpExcutioner::execTransformAny(transform::AnyOps::Assign, other->_buffer, other->_shapeInfo, _buffer, _shapeInfo, nullptr, nullptr, nullptr);
+    //NativeOpExcutioner::execTransformAny(transform::AnyOps::Assign, other->_buffer, other->_shapeInfo, _buffer, _shapeInfo, nullptr, nullptr, nullptr);
 }
 
 ////////////////////////////////////////////////////////////////////////

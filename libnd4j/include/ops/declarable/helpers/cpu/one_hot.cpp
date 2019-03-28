@@ -35,8 +35,7 @@ namespace nd4j {
                 auto iLen = static_cast<unsigned int>(shape::length(iShapeInfo));
                 auto tLen = static_cast<unsigned int>(shape::length(tadPack.primaryShapeInfo()));
                 auto numTads = static_cast<unsigned int>(tadPack.numberOfTads());
-
-                //nd4j_printf("numTads: [%i]; iLen: [%i]\n", numTads, iLen);
+                auto tadEws = shape::elementWiseStride(tadPack.primaryShapeInfo());
 
                 if (iLen != numTads)
                     throw std::runtime_error("OneHot: number of TADs should be equal to number of indices");
@@ -47,20 +46,40 @@ namespace nd4j {
                 Z zero = static_cast<Z>(off);
                 Z one = static_cast<Z>(on);
 
-                PRAGMA_OMP_PARALLEL_FOR
-                for (unsigned int e = 0; e < numTads; e++) {
-                    auto cO = output + tadPack.primaryOffsets()[e];
+                if (tadEws >= 1) {
+                    PRAGMA_OMP_PARALLEL_FOR
+                    for (unsigned int e = 0; e < numTads; e++) {
+                        auto cO = output + tadPack.primaryOffsets()[e];
 
-                    auto idx = static_cast<int>(indices[e]);
-                    if (idx < 0 || idx >= tLen) {
-                        PRAGMA_OMP_SIMD
-                        for (unsigned int t = 0; t < tLen; t++) {
-                            cO[t] = zero;
+                        auto idx = static_cast<int>(indices[e]);
+                        if (idx < 0 || idx >= tLen) {
+                            PRAGMA_OMP_SIMD
+                            for (unsigned int t = 0; t < tLen; t++) {
+                                cO[t * tadEws] = zero;
+                            }
+                        } else {
+                            PRAGMA_OMP_SIMD
+                            for (unsigned int t = 0; t < tLen; t++) {
+                                cO[t * tadEws] = idx == t ? one : zero;
+                            }
                         }
-                    } else {
-                        PRAGMA_OMP_SIMD
-                        for (unsigned int t = 0; t < tLen; t++) {
-                            cO[t] = idx == t ? one : zero;
+                    }
+                } else {
+                    PRAGMA_OMP_PARALLEL_FOR
+                    for (unsigned int e = 0; e < numTads; e++) {
+                        auto cO = output + tadPack.primaryOffsets()[e];
+
+                        auto idx = static_cast<int>(indices[e]);
+                        if (idx < 0 || idx >= tLen) {
+                            PRAGMA_OMP_SIMD
+                            for (unsigned int t = 0; t < tLen; t++) {
+                                cO[shape::getIndexOffset(t, tadPack.primaryShapeInfo(), tLen)] = zero;
+                            }
+                        } else {
+                            PRAGMA_OMP_SIMD
+                            for (unsigned int t = 0; t < tLen; t++) {
+                                cO[shape::getIndexOffset(t, tadPack.primaryShapeInfo(), tLen)] = idx == t ? one : zero;
+                            }
                         }
                     }
                 }
