@@ -52,7 +52,7 @@ public class ManhattanDistance extends BaseReduce3Op {
     }
 
     public ManhattanDistance(INDArray x, INDArray y, boolean allDistances, int... dimensions) {
-        this(x, y, null, true, false, dimensions);
+        this(x, y, null, false, allDistances, dimensions);
         this.isComplex = allDistances;
     }
 
@@ -61,12 +61,11 @@ public class ManhattanDistance extends BaseReduce3Op {
     }
 
     public ManhattanDistance(INDArray x, INDArray y, INDArray z, boolean allDistances, int... dimensions) {
-        this(x, y, z, true, false, dimensions);
-        this.isComplex = allDistances;
+        this(x, y, z, false, allDistances, dimensions);
     }
 
-    public ManhattanDistance(INDArray x, INDArray y, INDArray z, boolean newFormat, boolean keepDims, int... dimensions){
-        super(x, y, z, newFormat, keepDims, dimensions);
+    public ManhattanDistance(INDArray x, INDArray y, INDArray z, boolean keepDims, boolean allDistances, int... dimensions){
+        super(x, y, z, keepDims, allDistances, dimensions);
         extraArgs = new Object[]{0.0f, 0.0f};
     }
 

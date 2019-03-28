@@ -49,8 +49,8 @@ public class Prod extends BaseReduceSameOp {
         super(x, null, z, dimensions);
     }
 
-    public Prod(INDArray x, INDArray z, boolean newFormat, boolean keepDims, int... dimensions) {
-        super(x, z, newFormat, keepDims, dimensions);
+    public Prod(INDArray x, INDArray z, boolean keepDims, int... dimensions) {
+        super(x, z, keepDims, dimensions);
     }
 
 

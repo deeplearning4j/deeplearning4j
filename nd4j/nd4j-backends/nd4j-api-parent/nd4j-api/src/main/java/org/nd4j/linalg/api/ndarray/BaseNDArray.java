@@ -4689,7 +4689,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     @Override
     public INDArray sum(boolean keepDim, int... dimension) {
         validateNumericalArray("sum", false);
-        return Nd4j.getExecutioner().exec(new Sum(this, null, true, keepDim, dimension));
+        return Nd4j.getExecutioner().exec(new Sum(this, null, keepDim, dimension));
     }
 
 
@@ -4901,9 +4901,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             return this;
         else if (isColumnVector() && c > 0)
             throw new IllegalArgumentException("Illegal index for row");
-        else if(isRowVector()) {
-            return Nd4j.scalar(getDouble(c));
-        }
         return get(NDArrayIndex.all(), NDArrayIndex.point(c));
     }
 

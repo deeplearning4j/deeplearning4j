@@ -27,6 +27,7 @@ import org.datavec.api.records.reader.impl.FileRecordReader;
 import org.datavec.api.split.InputSplit;
 import org.datavec.api.writable.Text;
 import org.datavec.api.writable.Writable;
+import org.nd4j.base.Preconditions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -156,17 +157,17 @@ public class RegexSequenceRecordReader extends FileRecordReader implements Seque
 
     @Override
     public SequenceRecord nextSequence() {
-        File next = this.nextFile();
+        Preconditions.checkState(hasNext(), "No next element available");
+        URI next = locationsIterator.next();
 
         String fileContents;
-        try {
-            fileContents = FileUtils.readFileToString(next, charset.name());
+        try (InputStream s = streamCreatorFn.apply(next)){
+            fileContents = IOUtils.toString(s, charset);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
-        List<List<Writable>> sequence = loadSequence(fileContents, next.toURI());
-        return new org.datavec.api.records.impl.SequenceRecord(sequence,
-                        new RecordMetaDataURI(next.toURI(), RegexSequenceRecordReader.class));
+        List<List<Writable>> sequence = loadSequence(fileContents, next);
+        return new org.datavec.api.records.impl.SequenceRecord(sequence, new RecordMetaDataURI(next, RegexSequenceRecordReader.class));
     }
 
     @Override

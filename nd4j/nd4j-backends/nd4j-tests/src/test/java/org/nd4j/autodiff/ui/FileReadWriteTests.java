@@ -144,4 +144,22 @@ public class FileReadWriteTests {
             assertEquals(exp, arr);
         }
     }
+
+    @Test
+    public void testNullBinLabels() throws Exception{
+        File dir = testDir.newFolder();
+        File f = new File(dir, "temp.bin");
+        LogFileWriter w = new LogFileWriter(f);
+
+        SameDiff sd = SameDiff.create();
+        SDVariable v = sd.var("variable", DataType.DOUBLE, 3, 4);
+        SDVariable sum = v.sum();
+
+        w.writeGraphStructure(sd);
+        w.writeFinishStaticMarker();
+
+        w.registerEventName("name");
+        INDArray arr = Nd4j.create(1);
+        w.writeHistogramEventDiscrete("name", System.currentTimeMillis(), 0, 0, null, arr);
+    }
 }
