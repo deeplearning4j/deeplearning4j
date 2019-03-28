@@ -19,7 +19,7 @@ set -eu
 
 # cd to the directory containing this script
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-cd $DIR
+cd "$DIR"
 
 export CMAKE_COMMAND="cmake"
 if which cmake3 &> /dev/null; then

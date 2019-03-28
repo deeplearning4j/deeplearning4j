@@ -17,8 +17,18 @@
 package org.datavec.api.records.reader;
 
 import org.datavec.api.records.listener.RecordListener;
+import org.datavec.api.split.InputSplit;
+import org.datavec.api.split.StreamInputSplit;
+import org.datavec.api.split.streams.FileStreamCreatorFunction;
 import org.datavec.api.writable.Writable;
+import org.nd4j.base.Preconditions;
+import org.nd4j.linalg.function.Function;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -31,12 +41,25 @@ import java.util.List;
  */
 public abstract class BaseRecordReader implements RecordReader {
 
+    protected InputSplit inputSplit;
     protected List<RecordListener> listeners = new ArrayList<>();
+    protected Function<URI,InputStream> streamCreatorFn = new FileStreamCreatorFunction();
 
     /** Invokes {@link RecordListener#recordRead(RecordReader, Object)} on all listeners. */
     protected void invokeListeners(Object record) {
         for (RecordListener listener : listeners) {
             listener.recordRead(this, record);
+        }
+    }
+
+    @Override
+    public void initialize(InputSplit split) throws IOException, InterruptedException {
+        this.inputSplit = split;
+        if(split instanceof StreamInputSplit){
+            StreamInputSplit s = (StreamInputSplit)split;
+            if(s.getStreamCreatorFn() != null){
+                this.streamCreatorFn = s.getStreamCreatorFn();
+            }
         }
     }
 

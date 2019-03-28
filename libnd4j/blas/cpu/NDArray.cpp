@@ -44,62 +44,6 @@
 
 namespace nd4j {
 
-//////////////////////////////////////////////////////////////////////
-INLINEDEF static void calcEws(Nd4jLong* shapeInfo, Nd4jLong len = -1) {
-
-    const int rank          = shape::rank(shapeInfo);
-    const Nd4jLong* shape   = shape::shapeOf(shapeInfo);
-    const Nd4jLong* strides = shape::stride(shapeInfo);
-    const char order        = shape::order(shapeInfo);
-    Nd4jLong* ews           = shape::ews(shapeInfo);
-    
-    if(len == -1)   // calculate array length if it is not already set 
-        len = shape::length(shapeInfo);
-        
-    if(len <= 1) {  //  empty, scalar or unity-vector case
-        *ews = 1;
-        return;
-    }
-
-    int nonUnityDim(0);
-    if(shape::isCommonVector(shapeInfo, nonUnityDim)) {        
-        *ews = strides[nonUnityDim];
-        return;
-    }
-
-    // check last(c)/first(f) dimension, it should be equal to 1
-    if((order == 'c' && shape[rank - 1] != 1 && strides[rank - 1] != 1) || (order == 'f' && shape[0] != 1 && strides[0] != 1)) {
-        *ews = 0;
-        return;
-    }
-
-    Nd4jLong correctStride = 1;
-    if(order == 'c') {
-        for (int i = rank - 2; i >= 0 ; i--) {            
-            correctStride *= shape[i + 1];
-            if(shape[i] == 1)
-                continue;
-            if(correctStride != strides[i]) {
-                *ews = 0;
-                return;
-            }
-        }
-    }
-    else {
-        for (int i = 1; i < rank; ++i) {            
-            correctStride *= shape[i - 1];
-            if(shape[i] == 1)
-                continue;
-            if(correctStride != strides[i]) {
-                *ews = 0;
-                return;
-            }
-        }
-    }      
-    
-    *ews = 1;    
-}
-
 
     void* NDArray::operator new(size_t i) {
         if (nd4j::memory::MemoryRegistrator::getInstance()->hasWorkspaceAttached()) {
@@ -234,11 +178,11 @@ NDArray::NDArray(void *buffer, Nd4jLong *shapeInfo, nd4j::memory::Workspace* wor
 }
 
 ////////////////////////////////////////////////////////////////////////
-//constructor, create empty array at given workspace
+//constructor, create array at given workspace
 NDArray::NDArray(nd4j::memory::Workspace* workspace) {
     _buffer    = nullptr;
     _shapeInfo = nullptr;
-    _isBuffAlloc = false;                                  // indicate that memory for array is passed from outside
+    _isBuffAlloc = false;
     _isShapeAlloc = false;
     _workspace = workspace;
     _length = 0;
@@ -295,6 +239,9 @@ NDArray::NDArray(const NDArray *other, const bool copyStrides, nd4j::memory::Wor
     setShapeInfo(ShapeBuilders::copyShapeInfo(other->_shapeInfo, copyStrides, workspace));
     _workspace = workspace;
     triggerAllocationFlag(true, true);
+
+    // memcpy is handled within execTransformAny
+    NativeOpExcutioner::execTransformAny(transform::AnyOps::Assign, other->_buffer, other->_shapeInfo, _buffer, _shapeInfo, nullptr, nullptr, nullptr);
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -368,13 +315,23 @@ NDArray::NDArray(Nd4jLong* shapeInfo, const nd4j::DataType dtype, const bool cop
 }
 
 ////////////////////////////////////////////////////////////////////////
-NDArray::NDArray(nd4j::DataType dtype, nd4j::memory::Workspace* workspace) {
+// creates scalar or empty array depending on bool argument isScalar
+NDArray::NDArray(nd4j::DataType dtype, nd4j::memory::Workspace* workspace, const bool isScalar) {
 
-    setShapeInfo(ShapeBuilders::createScalarShapeInfo(dtype, workspace));
-    ALLOCATE(_buffer, workspace, DataTypeUtils::sizeOfElement(dtype), int8_t);
-    memset(_buffer, 0, DataTypeUtils::sizeOfElement(dtype));
     _workspace = workspace;
-    triggerAllocationFlag(true, true);
+
+    if(isScalar) {
+        setShapeInfo(ShapeBuilders::createScalarShapeInfo(dtype, workspace));
+        ALLOCATE(_buffer, workspace, DataTypeUtils::sizeOfElement(dtype), int8_t);
+        memset(_buffer, 0, DataTypeUtils::sizeOfElement(dtype));    
+        triggerAllocationFlag(true, true);
+    }
+    else {
+        _buffer    = nullptr;
+        _workspace = workspace;    
+        setShapeInfo(ShapeBuilders::emptyShapeInfo(dtype, workspace));            
+        triggerAllocationFlag(false, true);        
+    }
 }
 
 
@@ -1219,12 +1176,6 @@ void NDArray::replacePointers(void *buffer, Nd4jLong *shapeInfo, const bool rele
         auto result = new NDArray(newBuffer, newShapeInfo, nullptr);
         result->_isBuffAlloc = true;
         result->_isShapeAlloc = true;
-
-        auto d1 = this->dataType();
-        auto d2 = result->dataType();
-
-        auto s1 = this->sizeOfT();
-        auto s2 = result->sizeOfT();
 
         result->assign(this);
 
@@ -2987,13 +2938,18 @@ template void NDArray::applyScalar(nd4j::scalar::Ops op, const bool scalar, NDAr
             throw std::runtime_error("NDArray::applyBroadcast: you can't use this method on String array!");
         if(((op == broadcast::Divide || op == broadcast::FloorDiv || op == broadcast::FloorMod) && other->isB()) || (op == broadcast::ReverseDivide && this->isB()))
             throw std::runtime_error("NDArray::applyBroadcast: you can't divide by array!");
+        if(isEmpty() || other->isEmpty()) {
+            if(!target->isEmpty())
+                throw std::runtime_error("NDArray::applyBroadcast method: when some of input arrays (or both) is empty, target array must be empty as well !");
+            return;
+        }
 
         if (dimensions.size() == 0)
             return;
         auto result = target == nullptr ? this : target;
 
         NDArray *min(nullptr), *max(nullptr);
-        if(lengthOf() >= other->lengthOf()) {
+        if((lengthOf() > other->lengthOf()) || (lengthOf() == other->lengthOf() && rankOf() >= other->rankOf()))  {
             max = this;
             min = const_cast<NDArray*>(other);
         }
@@ -3028,6 +2984,11 @@ template void NDArray::applyScalar(nd4j::scalar::Ops op, const bool scalar, NDAr
     void NDArray::applyBroadcast(nd4j::broadcast::BoolOps op, const std::vector<int>& dimensions, const NDArray* other, NDArray* target, void* extraArgs) {
         if (isS())
             throw std::runtime_error("NDArray::applyBroadcast BoolOps: you can't use this method on String array!");
+        if(isEmpty() || other->isEmpty()) {
+            if(!target->isEmpty())
+                throw std::runtime_error("NDArray::applyBroadcast method: when some of input arrays (or both) is empty, target array must be empty as well !");
+            return;
+        }
 
         if (dimensions.size() == 0)
             return;
@@ -3035,7 +2996,7 @@ template void NDArray::applyScalar(nd4j::scalar::Ops op, const bool scalar, NDAr
         auto result = target == nullptr ? this : target;
 
         NDArray *min(nullptr), *max(nullptr);
-        if(lengthOf() >= other->lengthOf()) {
+        if((lengthOf() > other->lengthOf()) || (lengthOf() == other->lengthOf() && rankOf() >= other->rankOf()))  {
             max = this;
             min = const_cast<NDArray*>(other);
         }
@@ -3057,7 +3018,7 @@ template void NDArray::applyScalar(nd4j::scalar::Ops op, const bool scalar, NDAr
             std::sort(copy.begin(), copy.end());
 
         Nd4jLong tadLength = shape::tadLength(max->_shapeInfo, copy.data(), (int) copy.size());
-        if (tadLength != other->lengthOf())
+        if (tadLength != min->lengthOf())
             throw std::runtime_error("Tad length mismatch");
 
         auto tadPack = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(max->_shapeInfo, copy);
@@ -3076,10 +3037,11 @@ template void NDArray::applyScalar(nd4j::scalar::Ops op, const bool scalar, NDAr
         if(target == nullptr || other == nullptr)
             throw std::runtime_error("NDArray::applyTrueBroadcast bool method: target or other = nullptr !");
 
-        if(isEmpty() || other->isEmpty()){
-            //Edge case: broadcastOp(x,empty) -> empty; no-op
-			return;
-		}
+        if(isEmpty() || other->isEmpty()) {
+            if(!target->isEmpty())
+                throw std::runtime_error("NDArray::applyTrueBroadcast method: when some of input arrays (or both) is empty target array must be empty as well !");
+            return;
+        }
         		
         if (isScalar()) {
             NDArray temp(target->_shapeInfo, _dataType, false, _workspace);
@@ -3183,8 +3145,9 @@ template void NDArray::applyScalar(nd4j::scalar::Ops op, const bool scalar, NDAr
         if(((op.s == scalar::Divide || op.s == scalar::FloorDiv || op.s == scalar::FloorMod) && other->isB()) || (op.s == scalar::ReverseDivide && this->isB()))
             throw std::runtime_error("NDArray::applyTrueBroadcast method: you can't divide by bool array !");
 
-        if(isEmpty() || other->isEmpty()){
-            //Edge case: broadcastOp(x,empty) -> empty; no-op
+        if(isEmpty() || other->isEmpty()) {
+            if(!target->isEmpty())
+                throw std::runtime_error("NDArray::applyTrueBroadcast method: when some of input arrays (or both) is empty target array must be empty as well !");
 			return;
 		}
 
@@ -3238,7 +3201,6 @@ template void NDArray::applyScalar(nd4j::scalar::Ops op, const bool scalar, NDAr
         }
         else
             pTarget->assign(max);
-
 
         // check whether min array has to be tiled
         std::vector<Nd4jLong> repeatMin(min->rankOf());
@@ -3953,7 +3915,7 @@ template void NDArray::pIdx(const Nd4jLong* indices, const bool value);
         }
         
         // check if there is possibility to set ews = 1
-        calcEws(newShape, subArrLen);
+        shape::calcEws(newShape, subArrLen);
 
         // create resulting sub-array
         NDArray result(bufferWithOffset(offset), newShape, _workspace, false, true);
@@ -5196,7 +5158,7 @@ void NDArray::getSubArrShapeAndOffsets(const std::vector<int>& dimsToExclude, Nd
     }
 
     // evaluate ews
-    calcEws(outShapeInfo, subArrLen);
+    shape::calcEws(outShapeInfo, subArrLen);
 
     // calculation of sub-array offsets (subArrOffsets)
     shape::calcSubArrOffsets(numOfSubArrs, dimsSize, shape.data(), strides.data(), subArrOffsets);

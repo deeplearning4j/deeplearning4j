@@ -89,6 +89,91 @@ TEST_F(PlaygroundTests, test_small_reductions) {
     nd4j_printf("Median time: [%lld]; Mean time: [%lld]; Min time: [%lld]; Max time: [%lld]\n", results[results.size() / 2], mean, min, max);
 }
 
+TEST_F(PlaygroundTests, Test_PermutedArray_Operation_1) {
+    auto x = NDArrayFactory::create<float>('c',{64, 32, 4, 32});
+    auto z = NDArrayFactory::create<float>('c', {4, 64, 32, 32});
+    x.assign(1.0f);
+
+    x.permutei({2, 0, 3, 1});
+
+    //x.printShapeInfo("x");
+
+    int iterations = 100;
+    std::vector<Nd4jLong> results(iterations);
+    Nd4jLong mean = 0L;
+    Nd4jLong max = 0L;
+    Nd4jLong min = DataTypeUtils::max<Nd4jLong>();
+
+
+    for (int e = 0; e < iterations; e++) {
+        auto timeStart = std::chrono::system_clock::now();
+
+        NativeOpExcutioner::execTransformStrict(transform::StrictOps::Sin, x.buffer(), x.shapeInfo(), z.buffer(), z.shapeInfo(), nullptr, nullptr, nullptr);
+
+        auto timeEnd = std::chrono::system_clock::now();
+        auto duration = std::chrono::duration_cast<std::chrono::nanoseconds> ((timeEnd - timeStart)).count();
+        results[e] = duration;
+        mean += duration;
+
+        if (duration > max)
+            max = duration;
+
+        if (duration < min)
+            min = duration;
+    }
+
+    mean /= iterations;
+    std::sort(results.begin(), results.end());
+
+    nd4j_printf("Median time: [%lld]; Mean time: [%lld]; Min time: [%lld]; Max time: [%lld]\n", results[results.size() / 2], mean, min, max);
+
+}
+
+TEST_F(PlaygroundTests, Test_PermutedArray_Operation_2) {
+
+    //x.printShapeInfo("x");
+
+    int iterations = 100;
+    std::vector<Nd4jLong> results(iterations);
+    Nd4jLong mean = 0L;
+    Nd4jLong max = 0L;
+    Nd4jLong min = DataTypeUtils::max<Nd4jLong>();
+
+
+    for (int e = 0; e < iterations; e++) {
+        Nd4jLong eShapeInfo[] = {2, 8, 256, 256, 1, 8192, 1, 99};
+        Nd4jLong xShapeInfo[] = {2, 8, 256, 1024, 1, 8192, 0, 99};
+        Nd4jLong yShapeInfo[] = {2, 8, 256, 256, 1, 8192, 1, 99};
+        float xBuff[8*1024];
+
+        NDArray x(xBuff, xShapeInfo);
+        //NDArray x(eShapeInfo, nd4j::DataType::FLOAT32, true);
+        NDArray z(yShapeInfo, nd4j::DataType::FLOAT32, true);
+        x.linspace(0.1f, 0.01f);
+
+        auto timeStart = std::chrono::system_clock::now();
+
+        NativeOpExcutioner::execTransformStrict(transform::StrictOps::Tanh, x.buffer(), x.shapeInfo(), z.buffer(), z.shapeInfo(), nullptr, nullptr, nullptr);
+
+        auto timeEnd = std::chrono::system_clock::now();
+        auto duration = std::chrono::duration_cast<std::chrono::nanoseconds> ((timeEnd - timeStart)).count();
+        results[e] = duration;
+        mean += duration;
+
+        if (duration > max)
+            max = duration;
+
+        if (duration < min)
+            min = duration;
+    }
+
+    mean /= iterations;
+    std::sort(results.begin(), results.end());
+
+    nd4j_printf("Median time: [%lld]; Mean time: [%lld]; Min time: [%lld]; Max time: [%lld]\n", results[results.size() / 2], mean, min, max);
+
+}
+
 /*
 TEST_F(PlaygroundTests, Test_OpBenchmark_1) {
 
@@ -1611,3 +1696,14 @@ TEST_F(PlaygroundTests, loops_1) {
 */
 }
 
+TEST_F(PlaygroundTests, my_1) {
+
+    Nd4jLong xShapeInfo[] = {2, 8, 256, 1024, 1, 8192, 0, 99};
+    Nd4jLong yShapeInfo[] = {2, 8, 256, 256, 1, 8192, 1, 99};
+    float xBuff[8*1024];
+
+    NDArray x(xBuff, xShapeInfo);
+    NDArray y(yShapeInfo, nd4j::DataType::FLOAT32, true);
+
+    x.applyTransform(transform::StrictOps::Sin, &y);
+}

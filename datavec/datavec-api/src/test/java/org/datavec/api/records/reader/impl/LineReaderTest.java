@@ -26,7 +26,9 @@ import org.datavec.api.split.FileSplit;
 import org.datavec.api.split.InputSplit;
 import org.datavec.api.split.InputStreamInputSplit;
 import org.datavec.api.writable.Writable;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -48,7 +50,8 @@ import static org.junit.Assert.assertEquals;
  */
 public class LineReaderTest {
 
-    private static Logger log = LoggerFactory.getLogger(LineReaderTest.class);
+    @Rule
+    public TemporaryFolder testDir = new TemporaryFolder();
 
     @Test
     public void testLineReader() throws Exception {
@@ -91,11 +94,7 @@ public class LineReaderTest {
 
     @Test
     public void testLineReaderMetaData() throws Exception {
-        String tempDir = System.getProperty("java.io.tmpdir");
-        File tmpdir = new File(tempDir, "tmpdir-testLineReader");
-        if (tmpdir.exists())
-            tmpdir.delete();
-        tmpdir.mkdir();
+        File tmpdir = testDir.newFolder();
 
         File tmp1 = new File(FilenameUtils.concat(tmpdir.getPath(), "tmp1.txt"));
         File tmp2 = new File(FilenameUtils.concat(tmpdir.getPath(), "tmp2.txt"));
@@ -157,9 +156,7 @@ public class LineReaderTest {
 
     @Test
     public void testLineReaderWithInputStreamInputSplit() throws Exception {
-        String tempDir = System.getProperty("java.io.tmpdir");
-        File tmpdir = new File(tempDir, "tmpdir");
-        tmpdir.mkdir();
+        File tmpdir = testDir.newFolder();
 
         File tmp1 = new File(tmpdir, "tmp1.txt.gz");
 

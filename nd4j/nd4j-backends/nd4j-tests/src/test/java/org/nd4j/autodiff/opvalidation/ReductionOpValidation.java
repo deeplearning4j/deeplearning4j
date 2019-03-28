@@ -919,40 +919,43 @@ public class ReductionOpValidation extends BaseOpValidation {
                 INDArray expOut;
                 SDVariable reduced;
                 String name;
+                System.out.println(i);
                 switch (i) {
                     case 0:
                         reduced = sd.math().manhattanDistance(in, in2, reduceDims);
                         name = "manhattan";
-                        expOut = Nd4j.getExecutioner().exec(new ManhattanDistance(a, b, null, true, false, reduceDims));
+                        expOut = Nd4j.getExecutioner().exec(new ManhattanDistance(a, b, null, false, reduceDims));
                         break;
                     case 1:
                         reduced = sd.math().euclideanDistance(in, in2, reduceDims);
                         name = "euclidean";
-                        expOut = Nd4j.getExecutioner().exec(new EuclideanDistance(a, b, null, true, false, reduceDims));
+                        expOut = Nd4j.getExecutioner().exec(new EuclideanDistance(a, b, null, false, reduceDims));
                         break;
                     case 2:
                         reduced = sd.math().cosineSimilarity(in, in2, reduceDims);
                         name = "cosine";
-                        expOut = Nd4j.getExecutioner().exec(new CosineSimilarity(a, b, null, true, false, reduceDims));
+                        expOut = Nd4j.getExecutioner().exec(new CosineSimilarity(a, b, null, false, reduceDims));
                         break;
                     case 3:
                         reduced = sd.math().jaccardDistance(in, in2, reduceDims);
                         name = "jaccard";
-                        expOut = Nd4j.getExecutioner().exec(new JaccardDistance(a, b, null, true, false, reduceDims));
+                        expOut = Nd4j.getExecutioner().exec(new JaccardDistance(a, b, null, false, reduceDims));
                         break;
                     case 4:
                         reduced = sd.math().hammingDistance(in, in2, reduceDims);
                         name = "hamming";
-                        expOut = Nd4j.getExecutioner().exec(new HammingDistance(a, b, null, true, false, reduceDims));
+                        expOut = Nd4j.getExecutioner().exec(new HammingDistance(a, b, null, false, reduceDims));
                         break;
                     case 5:
                         reduced = sd.math().cosineDistance(in, in2, reduceDims);
                         name = "reduced";
-                        expOut = Nd4j.getExecutioner().exec(new CosineDistance(a, b, null, true, false, reduceDims));
+                        expOut = Nd4j.getExecutioner().exec(new CosineDistance(a, b, null, false, reduceDims));
                         break;
                     default:
                         throw new RuntimeException();
                 }
+                System.out.println(i + " - end");
+
 
                 long[] expShape;
                 if (Arrays.equals(new int[]{0}, reduceDims)) {

@@ -640,6 +640,26 @@ public class SDVariable extends DifferentialFunction implements Serializable {
 
 
     /**
+     * See {@link #dot(String, SDVariable, int...)}
+     */
+    public SDVariable dot(SDVariable other, int... dimensions){
+        return dot(null, other, dimensions);
+    }
+
+    /**
+     * Matrix dot product: out = dot(this,other, dimensions)
+     *
+     * @param name  Name of the output variable
+     * @param other Other variable to perform matrix multiplication with
+     * @return Output variable (result of mmul)
+     */
+    public SDVariable dot(String name, SDVariable other, int... dimensions){
+        return sameDiff.dot(name, this, other, dimensions);
+    }
+
+
+
+    /**
      * See {@link #add(String, double)}
      */
     public SDVariable add(double scalar) {
@@ -681,6 +701,22 @@ public class SDVariable extends DifferentialFunction implements Serializable {
     }
 
     /**
+     * For Kotlin operator interop
+     * @see #add(String, SDVariable)
+     */
+    public SDVariable plus(SDVariable other){
+        return add(other);
+    }
+
+    /**
+     * For Kotlin operator interop
+     * @see #add(String, double)
+     */
+    public SDVariable plus(double other){
+        return add(other);
+    }
+
+    /**
      * See {@link #sub(String, double)}
      */
     public SDVariable sub(double scalar) {
@@ -719,6 +755,22 @@ public class SDVariable extends DifferentialFunction implements Serializable {
     public SDVariable sub(String name, SDVariable x) {
         val result = sameDiff.f().sub(this,x);
         return sameDiff.updateVariableNameAndReference(result,name);
+    }
+
+    /**
+     * For Kotlin operator interop
+     * @see #sub(String, SDVariable)
+     */
+    public SDVariable minus(SDVariable other){
+        return sub(other);
+    }
+
+    /**
+     * For Kotlin operator interop
+     * @see #sub(String, double)
+     */
+    public SDVariable minus(double other){
+        return sub(other);
     }
 
     /**
@@ -802,6 +854,22 @@ public class SDVariable extends DifferentialFunction implements Serializable {
     public SDVariable mul(String name, SDVariable x) {
         val result = sameDiff.f().mul(this, x);
         return sameDiff.updateVariableNameAndReference(result,name);
+    }
+
+    /**
+     * For Kotlin operator interop
+     * @see #mul(String, SDVariable)
+     */
+    public SDVariable times(SDVariable other){
+        return mul(other);
+    }
+
+    /**
+     * For Kotlin operator interop
+     * @see #mul(String, double)
+     */
+    public SDVariable times(double other){
+        return mul(other);
     }
 
     /**
@@ -1649,6 +1717,41 @@ public class SDVariable extends DifferentialFunction implements Serializable {
      */
     public SDVariable reshape(SDVariable newShape){
         return sameDiff.reshape(this, newShape);
+    }
+
+    /**
+     * Reshape the current variable to the specified shape. The output variable will have the same values as the
+     * input, but with the specified shape.<br>
+     * Note that prod(shape) must match length(input) == prod(input.shape)
+     *
+     * @param newShape New shape for variable
+     * @return Output variable
+     */
+    public SDVariable reshape(int... newShape){
+        return sameDiff.reshape(this, newShape);
+    }
+
+    /**
+     * Reshape the current variable to the specified shape. The output variable will have the same values as the
+     * input, but with the specified shape.<br>
+     * Note that prod(shape) must match length(input) == prod(input.shape)
+     *
+     * @param newShape New shape for variable
+     * @return Output variable
+     */
+    public SDVariable reshape(long... newShape){
+        return sameDiff.reshape(this, newShape);
+    }
+
+    /**
+     * Permute the dimensions of the current variable according to the specified permutation indices.<br>
+     * Example: if the current variable has shape [a,b,c] and dimensions = [2,0,1] the output has shape [c,a,b]
+     *
+     * @param dimensions The new dimension order
+     * @return Output variable (permuted input)
+     */
+    public SDVariable permute(int... dimensions){
+        return sameDiff.permute(this, dimensions);
     }
 
     /**
