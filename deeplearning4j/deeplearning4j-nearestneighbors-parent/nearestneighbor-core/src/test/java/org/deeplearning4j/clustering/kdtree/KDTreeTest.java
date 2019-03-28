@@ -26,6 +26,7 @@ import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
+import org.opencv.ml.KNearest;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -345,5 +346,30 @@ public class KDTreeTest {
         assertEquals(6.0, result.get(4).getSecond().getDouble(1), 1e-5);
         assertEquals(8.0, result.get(5).getSecond().getDouble(0), 1e-5);
         assertEquals(1.0, result.get(5).getSecond().getDouble(1), 1e-5);
+    }
+
+    @Test
+    public void testNoDuplicates() {
+        int N = 100;
+        KDTree bigTree = new KDTree(2);
+
+        List<INDArray> points = new ArrayList<>();
+        for (int i = 0; i < N; ++i) {
+            double[] data = new double[]{i, i};
+            points.add(Nd4j.createFromArray(data));
+        }
+
+        for (int i = 0; i < N; ++i) {
+            bigTree.insert(points.get(i));
+        }
+
+        assertEquals(N, bigTree.size());
+
+        INDArray node = Nd4j.empty(DataType.DOUBLE);
+        for (int i = 0; i < N; ++i) {
+            node = bigTree.delete(node.isEmpty() ? points.get(i) : node);
+        }
+
+        assertEquals(0, bigTree.size());
     }
 }

@@ -96,7 +96,7 @@ public class KDTree implements Serializable {
     }
 
 
-    public KDNode delete(INDArray point) {
+    public INDArray delete(INDArray point) {
         KDNode node = root;
         int _disc = 0;
         while (node != null) {
@@ -118,11 +118,11 @@ public class KDTree implements Serializable {
             size--;
             if (size == 1) {
                 rect = new HyperRect(HyperRect.point(point));
-            } else
+            } else if (size == 0)
                 rect = null;
 
         }
-        return node;
+        return node.getPoint();
     }
 
 
@@ -148,7 +148,6 @@ public class KDTree implements Serializable {
         int _discNext = (_disc + 1) % dims;
         double distance = Nd4j.getExecutioner().execAndReturn(new EuclideanDistance(point,node.point)).getFinalResult()
                 .doubleValue();
-        //System.out.println("Inside knn: " + distance + " points : " + point  + " " + node.point);
 
         if (distance <= dist) {
             best.add(Pair.of(distance, node.getPoint()));
