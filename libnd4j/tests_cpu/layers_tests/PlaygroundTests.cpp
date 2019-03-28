@@ -227,6 +227,8 @@ TEST_F(PlaygroundTests, test_small_transforms_strict) {
             int cnt = 0;
             for (const auto &v:ops) {
 
+
+                //nd4j_printf("Trying op [%s]\n", v._opName.c_str());
                 std::vector<Nd4jLong> results(iterations);
                 Nd4jLong mean = 0L;
                 Nd4jLong max = 0L;

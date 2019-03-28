@@ -1738,8 +1738,8 @@ namespace simdOps {
 		no_op_exec_special_same_cuda
 
 		op_def static X op(X d1, X *params) {
-			auto min = params[0];
-			auto max = params[1];
+			auto min = params == nullptr ? static_cast<X>(-1.0f) : params[0];
+			auto max = params == nullptr ? static_cast<X>(1.0f) : params[1];
 			if (static_cast<X>(d1) >= min && static_cast<X>(d1) <= max)
 				return d1;
 			if (min == static_cast<X>(0) && max == static_cast<X>(1)) {
@@ -2406,7 +2406,7 @@ namespace simdOps {
 		no_op_exec_special_same_cuda
 
 		op_def static X op(X d1, X *params) {
-			X k = params[0];
+			X k = params == nullptr ? static_cast<X>(2.0f) : params[0];
 			if (d1 * k > static_cast<X>(- MIN_CUTFOFF))
 				return static_cast<X>(- MIN_CUTFOFF) / k;
 			else if (d1 * k < static_cast<X>(MIN_CUTFOFF))
