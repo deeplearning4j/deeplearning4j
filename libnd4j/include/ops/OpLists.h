@@ -50,7 +50,7 @@ namespace nd4j {
 
             BUILD_OPLIST(ops, TRANSFORM_STRICT_OPS);
 
-            return op;
+            return ops;
         }
     };
 }

@@ -21,7 +21,7 @@
 #ifndef LIBND4J_PLAY_H
 #define LIBND4J_PLAY_H
 
-#include <type_boilerplate.h>
+#include <op_boilerplate.h>
 
 #define DATA_TYPES \
         (DATA_FLOAT, float) ,\
@@ -37,10 +37,17 @@
 
 #define PWT_LIST \
     (float, long, float),\
-    (float, long, long)        
+    (float, long, long)
+
+#define TRANSFORM_STRICT_OPS \
+        (0, SoftMax), \
+        (1, SoftMaxDerivative), \
+        (2, LogSoftMax)
 
 
-BUILD_SINGLE_SELECTOR_THRICE(xType, template class functionName, , DATA_TYPES);
+BUILD_OPLIST(vector, TRANSFORM_STRICT_OPS);
+
+//BUILD_SINGLE_SELECTOR_THRICE(xType, template class functionName, , DATA_TYPES);
 
 //BUILD_PAIRWISE_SELECTOR(xType, yType, zType, functionName, (signature), DATA_TYPES, Y_TYPES);
 

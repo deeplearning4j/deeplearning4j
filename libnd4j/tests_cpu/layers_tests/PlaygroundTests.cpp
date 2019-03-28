@@ -225,7 +225,7 @@ TEST_F(PlaygroundTests, test_small_transforms_strict) {
                 Environment::getInstance()->setElementwiseThreshold(1);
             }
             int cnt = 0;
-            for (const auto v:ops) {
+            for (const auto &v:ops) {
 
                 std::vector<Nd4jLong> results(iterations);
                 Nd4jLong mean = 0L;
