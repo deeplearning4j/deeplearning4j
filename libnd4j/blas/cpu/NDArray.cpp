@@ -3054,6 +3054,16 @@ template void NDArray::applyScalar(nd4j::scalar::Ops op, const bool scalar, NDAr
             return;
         }
 
+        if (other->rankOf() == 1) {
+            int dim = 0;
+            if (shape::isCommonVector(this->_shapeInfo, dim)) {
+                if (this->shapeOf()[dim] == other->lengthOf() && dim == this->rankOf() - 1) {
+                    NativeOpExcutioner::execPairwiseTransform(op.p, this->_buffer, this->_shapeInfo, other->_buffer, other->_shapeInfo, target->_buffer, target->_shapeInfo, extraArgs);
+                    return;
+                }
+            }
+        }
+
         NDArray* min(nullptr), *max(nullptr);
         if(this->rankOf() >= other->rankOf()) {
             max = const_cast<NDArray*>(this);
@@ -3160,6 +3170,17 @@ template void NDArray::applyScalar(nd4j::scalar::Ops op, const bool scalar, NDAr
             const_cast<NDArray*>(this)->applyScalarArr(op.s, other, target, extraArgs);
             return;
         }
+
+        if (other->rankOf() == 1) {
+            int dim = 0;
+            if (shape::isCommonVector(this->_shapeInfo, dim)) {
+                if (this->shapeOf()[dim] == other->lengthOf() && dim == this->rankOf() - 1) {
+                    NativeOpExcutioner::execPairwiseTransform(op.p, this->_buffer, this->_shapeInfo, other->_buffer, other->_shapeInfo, target->_buffer, target->_shapeInfo, extraArgs);
+                    return;
+                }
+            }
+        }
+
 
         NDArray* min(nullptr), *max(nullptr);
         if(this->rankOf() >= other->rankOf()) {
