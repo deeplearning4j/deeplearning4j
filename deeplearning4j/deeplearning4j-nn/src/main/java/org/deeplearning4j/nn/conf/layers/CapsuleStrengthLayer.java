@@ -16,6 +16,37 @@
 
 package org.deeplearning4j.nn.conf.layers;
 
-public class CapsuleStrengthLayer {
-    //TODO
+import org.deeplearning4j.nn.conf.inputs.InputType;
+import org.deeplearning4j.nn.conf.inputs.InputType.InputTypeRecurrent;
+import org.deeplearning4j.nn.conf.inputs.InputType.Type;
+import org.deeplearning4j.nn.conf.layers.samediff.SameDiffLambdaLayer;
+import org.nd4j.autodiff.samediff.SDVariable;
+import org.nd4j.autodiff.samediff.SameDiff;
+
+public class CapsuleStrengthLayer extends SameDiffLambdaLayer {
+    @Override
+    public SDVariable defineLayer(SameDiff SD, SDVariable layerInput) {
+        return SD.norm2("caps_strength", layerInput, 2);
+    }
+
+    @Override
+    public InputType getOutputType(int layerIndex, InputType inputType) {
+
+        if(inputType == null || inputType.getType() != Type.RNN) {
+            throw new IllegalStateException("Invalid input for Capsule Strength layer (layer name = \""
+                    + layerName + "\"): expect RNN input.  Got: " + inputType);
+        }
+
+        InputTypeRecurrent ri = (InputTypeRecurrent) inputType;
+        return InputType.feedForward(ri.getSize());
+    }
+
+    class Builder extends SameDiffLambdaLayer.Builder<Builder>{
+
+        @Override
+        public <E extends Layer> E build() {
+            return (E) new CapsuleStrengthLayer();
+        }
+    }
+
 }
