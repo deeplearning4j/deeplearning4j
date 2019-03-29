@@ -190,21 +190,20 @@ void lstmBlockCell(const NDArray* xt, const NDArray* cLast, const NDArray* yLast
     const int numUnits    = cLast->sizeAt(1);
 
     //Concat inputs: [xt, yt-1]: concat([bs,nIn],[bs,nOut]) -> [bs, (nIn+nOut)]
-    auto concat = new nd4j::ops::concat();
-    std::vector<NDArray*> inputs;
-    std::vector<double> targs;
-    std::vector<Nd4jLong> iargs({1});   //Axis = 1
-    std::vector<bool> bargs;
-    inputs.emplace_back(const_cast<NDArray*>(xt));
-    inputs.emplace_back(const_cast<NDArray*>(yLast));
+    nd4j::ops::concat concat;
+    Context cContext(119);
+    auto concatOut = NDArrayFactory::create(xt->ordering(), {xt->sizeAt(0), xt->sizeAt(1) + yLast->sizeAt(1)}, xt->dataType(), xt->getWorkspace());
+    cContext.setInputArray(0, const_cast<NDArray*>(xt), false);
+    cContext.setInputArray(1, const_cast<NDArray*>(yLast), false);
+    cContext.setOutputArray(0, &concatOut, false);
+    cContext.getIArguments()->emplace_back(1);
 
-    auto result = concat->execute(inputs, targs, iargs, bargs);
-    auto concatOut = result->at(0);
+    concat.execute(&cContext);
 
     //NDArray* NDArrayFactory::create_( const char order, const std::vector<Nd4jLong> &shape, nd4j::DataType dataType, nd4j::memory::Workspace* workspace) {
     std::vector<Nd4jLong> shape = {bS, 4*numUnits};
     auto m = NDArrayFactory::create_('c', shape, xt->dataType(), nullptr);
-    MmulHelper::mmul(concatOut, W, m, 1.0f, 0.0f, 'c'); //mmul: [bs, (nIn+numUnits)]* [(inSize+numUnits), 4*numUnits] = [bs, 4*numUnits] - C result array
+    MmulHelper::mmul(&concatOut, W, m, 1.0f, 0.0f, 'c'); //mmul: [bs, (nIn+numUnits)]* [(inSize+numUnits), 4*numUnits] = [bs, 4*numUnits] - C result array
     *m += (*b);  //addiRowVector
 
     //Note: weights are ordered [inputGate, blockInput, forgetGate, outputGate] to match TF (TF code comments state [i,f,z/ci,o] but behaviour is [i,z,f,o])
@@ -259,8 +258,6 @@ void lstmBlockCell(const NDArray* xt, const NDArray* cLast, const NDArray* yLast
     // current cell output = ot*tanh(ct)
     c->applyTransform(transform::Tanh, h);  //h = tanh(c)
     o->applyPairwiseTransform(pairwise::Multiply, h, y, nullptr);   //y = o * h
-
-    delete result;
 }
 
 
