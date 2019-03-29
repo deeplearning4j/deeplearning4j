@@ -23,6 +23,15 @@ import org.deeplearning4j.nn.conf.layers.samediff.SameDiffLambdaLayer;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 
+/**
+ * An layer to get the "strength" of each capsule, that is, the probability of it being in the input.
+ * This is the vector length or L2 norm of each capsule's output.
+ * The lengths will not exceed one because of the squash function.
+ *
+ * CapsNet is from <a href="http://papers.nips.cc/paper/6975-dynamic-routing-between-capsules.pdf">Dynamic Routing Between Capsules</a>
+ *
+ * @author Ryan Nett
+ */
 public class CapsuleStrengthLayer extends SameDiffLambdaLayer {
     @Override
     public SDVariable defineLayer(SameDiff SD, SDVariable layerInput) {
