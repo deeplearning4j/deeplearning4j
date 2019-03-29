@@ -1317,10 +1317,10 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
      */
     @Override
     public long getMemoryFootprint() {
-        long reqMem = features.lengthLong() * Nd4j.sizeOfDataType();
-        reqMem += labels == null ? 0 : labels.lengthLong() * Nd4j.sizeOfDataType();
-        reqMem += featuresMask == null ? 0 : featuresMask.lengthLong() * Nd4j.sizeOfDataType();
-        reqMem += labelsMask == null ? 0 : labelsMask.lengthLong() * Nd4j.sizeOfDataType();
+        long reqMem = features.length() * Nd4j.sizeOfDataType();
+        reqMem += labels == null ? 0 : labels.length() * Nd4j.sizeOfDataType();
+        reqMem += featuresMask == null ? 0 : featuresMask.length() * Nd4j.sizeOfDataType();
+        reqMem += labelsMask == null ? 0 : labelsMask.length() * Nd4j.sizeOfDataType();
 
         return reqMem;
     }
