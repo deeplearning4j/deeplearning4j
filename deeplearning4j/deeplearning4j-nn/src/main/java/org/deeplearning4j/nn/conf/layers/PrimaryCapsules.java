@@ -186,7 +186,7 @@ public class PrimaryCapsules extends SameDiffLayer {
 
     @Getter
     @Setter
-    class Builder extends SameDiffLayer.Builder<Builder>{
+    public static class Builder extends SameDiffLayer.Builder<Builder>{
 
         @Setter(AccessLevel.NONE)
         private int[] kernelSize = new int[]{9, 9};

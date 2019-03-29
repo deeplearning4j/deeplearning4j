@@ -165,7 +165,7 @@ public class CapsuleLayer extends SameDiffLayer {
     //TODO builder
     @Getter
     @Setter
-    class Builder extends SameDiffLayer.Builder<Builder>{
+    public static class Builder extends SameDiffLayer.Builder<Builder>{
 
         private int capsules;
         private int capsuleDimensions;

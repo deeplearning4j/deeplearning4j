@@ -55,7 +55,7 @@ public class CapsuleStrengthLayer extends SameDiffLambdaLayer {
         return InputType.feedForward(ri.getSize());
     }
 
-    class Builder extends SameDiffLambdaLayer.Builder<Builder>{
+    public static class Builder extends SameDiffLambdaLayer.Builder<Builder>{
 
         @Override
         public <E extends Layer> E build() {
