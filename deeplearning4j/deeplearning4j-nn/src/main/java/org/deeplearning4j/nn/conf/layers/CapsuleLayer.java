@@ -28,6 +28,7 @@ import org.deeplearning4j.nn.conf.layers.samediff.SDLayerParams;
 import org.deeplearning4j.nn.conf.layers.samediff.SameDiffLayer;
 import org.deeplearning4j.util.CapsuleUtils;
 import org.deeplearning4j.util.ValidationUtils;
+import org.nd4j.autodiff.samediff.SDIndex;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
@@ -104,7 +105,7 @@ public class CapsuleLayer extends SameDiffLayer {
                 .reshape(-1, inputCapsules, capsules, capsuleDimensions, 1);
 
         //TODO better way of getting rid of dim 3
-        SDVariable b = SD.zerosLike(uHat).sum(true, 3);
+        SDVariable b = SD.zerosLike(uHat).get(SDIndex.all(), SDIndex.all(), SDIndex.all(), SDIndex.interval(0, 1), SDIndex.interval(0, 1));
 
         //TODO convert to SameDiff.whileLoop?
         for(int i = 0 ; i < routings ; i++){
