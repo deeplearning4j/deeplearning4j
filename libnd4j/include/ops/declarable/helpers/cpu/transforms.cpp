@@ -1199,7 +1199,7 @@ static void concat_(const std::vector<NDArray*>& inArrs, NDArray& output, const 
         indices[i][2 * axis + 1] = indices[i-1][2 * axis + 1] + inArrs[i]->sizeAt(axis);      // index end with (excluding)
     }
 
-    // PRAGMA_OMP_PARALLEL_FOR_SIMD
+    PRAGMA_OMP_PARALLEL_FOR_SIMD
     for(int i = 0; i < numOfArrs; ++i) {
         auto temp = output(indices[i], true);
         nd4j::TransformLoops<T,T,T>::template loopXZ<simdOps::Assign<T,T>, false>(inArrs[i]->bufferAsT<T>(), inArrs[i]->getShapeInfo(), temp.bufferAsT<T>(), temp.getShapeInfo(), nullptr);
