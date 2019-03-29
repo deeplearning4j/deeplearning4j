@@ -25,6 +25,15 @@
 #include "Environment.h"
 #include <helpers/StringUtils.h>
 
+// needed for perf tuning
+#ifdef _OPENMP
+
+#include <NativeOpExcutioner.h>
+#include <ShapeBuilders.h>
+#include <op_enums.h>
+
+#endif
+
 namespace nd4j {
 
     nd4j::Environment::Environment() {
@@ -52,8 +61,48 @@ namespace nd4j {
 #endif
     }
 
-    nd4j::Environment::~Environment() {
+    void Environment::tunePerformance() {
+#ifdef _OPENMP
+        auto length = 262144;
+        auto xBuffer = new float[length];
+        auto zBuffer = new float[length];
+        auto shapeInfo = ShapeBuilders::createVectorShapeInfo(nd4j::DataType::FLOAT32, length);
+        auto scalarShapeInfo = ShapeBuilders::createScalarShapeInfo(nd4j::DataType::FLOAT32);
+        float scalar = 1.0f;
+
+        PRAGMA_OMP_PARALLEL_FOR_SIMD
+        for (int e = 0; e< length; e++)
+            xBuffer[e] = static_cast<float>(e);
+
+        // checking memory limited operations threshold
+        NativeOpExcutioner::execScalar(scalar::Add, xBuffer, shapeInfo, zBuffer, shapeInfo, &scalar, scalarShapeInfo, nullptr);
+
+
+        // checking compute intensive operations
+        NativeOpExcutioner::execTransformStrict(transform::StrictOps::Tanh, xBuffer, shapeInfo, zBuffer, shapeInfo, nullptr, nullptr, nullptr);
+
+
+        delete[] xBuffer;
+        delete[] zBuffer;
+        delete[] shapeInfo;
+        delete[] scalarShapeInfo;
+#endif
+    }
+
+    Environment::~Environment() {
         //
+    }
+
+    int Environment::maxComputeThreads() {
+        return 1;
+    }
+
+    int Environment::maxMemoryThreads() {
+        return 1;
+    }
+
+    int Environment::transformsThreshold() {
+        return 1;
     }
 
     Environment *Environment::getInstance() {

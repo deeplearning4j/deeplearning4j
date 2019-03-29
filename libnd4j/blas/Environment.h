@@ -59,10 +59,16 @@ namespace nd4j{
         bool isDebugAndVerbose();
         void setDebug(bool reallyDebug);
         void setProfiling(bool reallyProfile);
+
+        void tunePerformance();
         
         int tadThreshold();
         void setTadThreshold(int threshold);
 
+        int maxComputeThreads();
+        int maxMemoryThreads();
+
+        int transformsThreshold();
         int elementwiseThreshold();
         void setElementwiseThreshold(int threshold);
 
