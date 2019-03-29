@@ -20,6 +20,7 @@ import java.util.Map;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.inputs.InputType.InputTypeRecurrent;
@@ -39,11 +40,14 @@ import org.nd4j.linalg.factory.Nd4j;
 /**
  * An implementation of the DigiCaps layer from Dynamic Routing Between Capsules
  *
+ * Input should come from a PrimaryCapsules layer and be of shape [mb, inputCaps, inputCapDims]
+ *
  * From <a href="http://papers.nips.cc/paper/6975-dynamic-routing-between-capsules.pdf">Dynamic Routing Between Capsules</a>
  *
  * @author Ryan Nett
  */
 @Data
+@NoArgsConstructor
 @EqualsAndHashCode(callSuper = true)
 public class CapsuleLayer extends SameDiffLayer {
 
@@ -55,7 +59,7 @@ public class CapsuleLayer extends SameDiffLayer {
     private long inputCapsuleDimensions = 0;
     private int capsules;
     private int capsuleDimensions;
-    private int routings;
+    private int routings = 3;
 
     public CapsuleLayer(Builder builder){
         super(builder);
@@ -193,31 +197,64 @@ public class CapsuleLayer extends SameDiffLayer {
             return (E) new CapsuleLayer(this);
         }
 
+        /**
+         * Set the number of capsules to use.
+         * @param capsules
+         * @return
+         */
         public Builder capsules(int capsules){
             this.setCapsules(capsules);
             return this;
         }
 
+        /**
+         * Set the number dimensions of each capsule
+         * @param capsuleDimensions
+         * @return
+         */
         public Builder capsuleDimensions(int capsuleDimensions){
             this.setCapsuleDimensions(capsuleDimensions);
             return this;
         }
 
+        /**
+         * Set the number of dynamic routing iterations to use.
+         * The default is 3 (recommendedded in Dynamic Routing Between Capsules)
+         * @param routings
+         * @return
+         */
         public Builder routings(int routings){
             this.setRoutings(routings);
             return this;
         }
 
+        //TODO can I always assume setNIn is called?  Then don't need the input* methods
+
+        /**
+         * Usually inferred automatically.
+         * @param inputCapsules
+         * @return
+         */
         public Builder inputCapsules(int inputCapsules){
             this.setInputCapsules(inputCapsules);
             return this;
         }
 
+        /**
+         * Usually inferred automatically.
+         * @param inputCapsuleDimensions
+         * @return
+         */
         public Builder inputCapsuleDimensions(int inputCapsuleDimensions){
             this.setInputCapsuleDimensions(inputCapsuleDimensions);
             return this;
         }
 
+        /**
+         * Usually inferred automatically.
+         * @param inputShape
+         * @return
+         */
         public Builder inputShape(int... inputShape){
             int[] input = ValidationUtils.validate2NonNegative(inputShape, false, "inputShape");
             this.setInputCapsules(input[0]);
@@ -225,6 +262,11 @@ public class CapsuleLayer extends SameDiffLayer {
             return this;
         }
 
+        /**
+         * Sets whether to use bias.  False by default.
+         * @param hasBias
+         * @return
+         */
         public Builder hasBias(boolean hasBias){
             this.setHasBias(hasBias);
             return this;

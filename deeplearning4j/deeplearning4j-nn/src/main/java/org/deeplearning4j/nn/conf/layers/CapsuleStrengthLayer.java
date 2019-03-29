@@ -16,6 +16,9 @@
 
 package org.deeplearning4j.nn.conf.layers;
 
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.NoArgsConstructor;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.inputs.InputType.InputTypeRecurrent;
 import org.deeplearning4j.nn.conf.inputs.InputType.Type;
@@ -28,10 +31,15 @@ import org.nd4j.autodiff.samediff.SameDiff;
  * This is the vector length or L2 norm of each capsule's output.
  * The lengths will not exceed one because of the squash function.
  *
+ * Input should come from a Capsule Layer and be of shape [mb, capsules, capsuleDims]
+ *
  * CapsNet is from <a href="http://papers.nips.cc/paper/6975-dynamic-routing-between-capsules.pdf">Dynamic Routing Between Capsules</a>
  *
  * @author Ryan Nett
  */
+@Data
+@NoArgsConstructor
+@EqualsAndHashCode(callSuper = true)
 public class CapsuleStrengthLayer extends SameDiffLambdaLayer {
 
     public CapsuleStrengthLayer(Builder builder){

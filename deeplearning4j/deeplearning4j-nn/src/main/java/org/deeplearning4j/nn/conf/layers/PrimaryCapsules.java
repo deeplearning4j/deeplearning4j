@@ -21,6 +21,7 @@ import lombok.AccessLevel;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.inputs.InputType;
@@ -40,13 +41,14 @@ import org.nd4j.linalg.factory.Nd4j;
 /**
  * An implementation of the PrimaryCaps layer from Dynamic Routing Between Capsules
  *
- * Is a reshaped 2D convolution.
+ * Is a reshaped 2D convolution, and the input should be 2D convolutional ([mb, c, h, w]).
  *
  * From <a href="http://papers.nips.cc/paper/6975-dynamic-routing-between-capsules.pdf">Dynamic Routing Between Capsules</a>
  *
  * @author Ryan Nett
  */
 @Data
+@NoArgsConstructor
 @EqualsAndHashCode(callSuper = true)
 public class PrimaryCapsules extends SameDiffLayer {
 
@@ -281,40 +283,98 @@ public class PrimaryCapsules extends SameDiffLayer {
             this(capsuleDimensions, channels, new int[]{9, 9}, new int[]{2, 2}, new int[]{0, 0}, new int[]{1, 1}, ConvolutionMode.Truncate);
         }
 
+        /**
+         * Sets the kernel size of the 2d convolution
+         *
+         * @see ConvolutionLayer.Builder#kernelSize(int...)
+         * @param kernelSize
+         * @return
+         */
         public Builder kernelSize(int... kernelSize){
             this.setKernelSize(kernelSize);
             return this;
         }
 
+        /**
+         * Sets the stride of the 2d convolution
+         *
+         * @see ConvolutionLayer.Builder#stride(int...)
+         * @param stride
+         * @return
+         */
         public Builder stride(int... stride){
             this.setStride(stride);
             return this;
         }
 
+        /**
+         * Sets the padding of the 2d convolution
+         *
+         * @see ConvolutionLayer.Builder#padding(int...)
+         * @param padding
+         * @return
+         */
         public Builder padding(int... padding){
             this.setPadding(padding);
             return this;
         }
 
+        /**
+         * Sets the dilation of the 2d convolution
+         *
+         * @see ConvolutionLayer.Builder#dilation(int...)
+         * @param dilation
+         * @return
+         */
         public Builder dilation(int... dilation){
             this.setDilation(dilation);
             return this;
         }
 
+        /**
+         * Sets the number of channels to use in the 2d convolution.
+         *
+         * Note that the actual number of channels is channels * capsuleDimensions
+         *
+         * Does the same thing as nOut()
+         *
+         * @param channels
+         * @return
+         */
         public Builder channels(int channels){
             this.channels = channels;
             return this;
         }
 
+        /**
+         * Sets the number of channels to use in the 2d convolution.
+         *
+         * Note that the actual number of channels is channels * capsuleDimensions
+         *
+         * Does the same thing as channels()
+         *
+         * @param nOut
+         * @return
+         */
         public Builder nOut(int nOut){
             return channels(nOut);
         }
 
+        /**
+         * Sets the number of dimensions to use in the capsules.
+         * @param capsuleDimensions
+         * @return
+         */
         public Builder capsuleDimensions(int capsuleDimensions){
             this.capsuleDimensions = capsuleDimensions;
             return this;
         }
 
+        /**
+         * Usually inferred automatically.
+         * @param capsules
+         * @return
+         */
         public Builder capsules(int capsules){
             this.capsules = capsules;
             return this;
@@ -325,20 +385,39 @@ public class PrimaryCapsules extends SameDiffLayer {
             return this;
         }
 
+        /**
+         * The convolution mode to use in the 2d convolution
+         * @param convolutionMode
+         * @return
+         */
         public Builder convolutionMode(ConvolutionMode convolutionMode){
             this.convolutionMode = convolutionMode;
             return this;
         }
 
+        /**
+         * Whether to use a ReLU activation on the 2d convolution
+         * @param useRelu
+         * @return
+         */
         public Builder useReLU(boolean useRelu){
             this.useRelu = useRelu;
             return this;
         }
 
+        /**
+         * Use a ReLU activation on the 2d convolution
+         * @return
+         */
         public Builder useReLU(){
             return useReLU(true);
         }
 
+        /**
+         * Use a LeakyReLU activation on the 2d convolution
+         * @param leak the alpha value for the LeakyReLU activation.
+         * @return
+         */
         public Builder useLeakyReLU(double leak){
             this.useRelu = true;
             this.leak = leak;
