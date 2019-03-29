@@ -3242,9 +3242,8 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         *  move constructor
         */
 
-
         /**
-        *  constructor, create empty array stored at given workspace
+        *  constructor, create array stored at given workspace
         */
         public NDArray(Workspace workspace) { super((Pointer)null); allocate(workspace); }
         private native void allocate(Workspace workspace);
@@ -3338,10 +3337,10 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         private native void allocate(@Const NDArray other, @Cast("const bool") boolean copyStrides/*=false*/, Workspace workspace/*=nullptr*/);
 
         /**
-        *  this constructor creates scalar and set its value = 0
+        *  this constructor creates scalar(and set its value = 0) or empty array depending on bool argument isScalar
         */
-        public NDArray(@Cast("nd4j::DataType") int dtype, Workspace workspace/*=nullptr*/) { super((Pointer)null); allocate(dtype, workspace); }
-        private native void allocate(@Cast("nd4j::DataType") int dtype, Workspace workspace/*=nullptr*/);
+        public NDArray(@Cast("nd4j::DataType") int dtype, Workspace workspace/*=nullptr*/, @Cast("const bool") boolean isScalar/*=true*/) { super((Pointer)null); allocate(dtype, workspace, isScalar); }
+        private native void allocate(@Cast("nd4j::DataType") int dtype, Workspace workspace/*=nullptr*/, @Cast("const bool") boolean isScalar/*=true*/);
         public NDArray(@Cast("nd4j::DataType") int dtype) { super((Pointer)null); allocate(dtype); }
         private native void allocate(@Cast("nd4j::DataType") int dtype);
 
@@ -10897,6 +10896,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 
 // define macros for compiler enforcement to make function inline  
 // #ifdef __clang__
+// #define INLINE_LOOPS
 // #define FORCEINLINE inline 
 // #elif _MSC_VER
 // #define FORCEINLINE __forceinline

@@ -108,6 +108,18 @@ TEST_F(DeclarableOpsTests13, test_argmax_edge_1) {
     delete ctx;
 }
 
+TEST_F(DeclarableOpsTests13, test_add_1) {
+    auto x = NDArrayFactory::create<float>('c', {1, 768});
+    auto y = NDArrayFactory::create<float>('c', {768});
+    auto e = NDArrayFactory::create<float>('c', {1, 768});;
+    y. assign(1.0f);
+    e.assign(1.0f);
+
+    x += y;
+
+    ASSERT_EQ(e, x);
+}
+
 TEST_F(DeclarableOpsTests13, test_listdiff_1) {
     auto x = NDArrayFactory::create<int>('c', {4}, {0, 1, 2, 3});
     auto y = NDArrayFactory::create<int>('c', {2}, {3, 1});
