@@ -269,6 +269,7 @@ TEST_F(DeclarableOpsTests9, tile_bp_test2) {
 
     delete results;
 }
+
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests9, concat_test1) {
 

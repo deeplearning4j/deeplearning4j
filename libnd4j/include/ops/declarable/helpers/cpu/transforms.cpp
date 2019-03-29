@@ -26,6 +26,7 @@
 #include <NDArrayFactory.h>
 #include <helpers/TAD.h>
 #include <helpers/ConstantTadHelper.h>
+#include <Loops.h>
 
 namespace nd4j 	  {
 namespace ops 	  {
@@ -1155,6 +1156,8 @@ static void concat_(const std::vector<NDArray*>& inArrs, NDArray& output, const 
 
         for(int i = 0; i < numOfArrs; i++) {        
             allVectorsOrScalars &= (inArrs[i]->lengthOf() == 1 || inArrs[i]->isCommonVector(nonUnityDim[i]));
+            if(!allVectorsOrScalars)
+                break;
             if(i == 0)  zOffset[0] = 0;
             else        zOffset[i] = zOffset[i - 1] + outEws * inArrs[i - 1]->lengthOf();        
         }
@@ -1167,16 +1170,20 @@ static void concat_(const std::vector<NDArray*>& inArrs, NDArray& output, const 
             for (uint r = 0; r < numOfArrs; r++) {
 
                 const uint arrLen = inArrs[r]->lengthOf();
-                const uint ews    = (arrLen == 1) ? 1 : inArrs[r]->stridesOf()[nonUnityDim[r]];
+                const uint xEws    = (arrLen == 1) ? 1 : inArrs[r]->stridesOf()[nonUnityDim[r]];
 
                 T *z = outBuff + zOffset[r];
                 T *x = inArrs[r]->bufferAsT<T>();
             
-                for (uint e = 0; e < arrLen; e++)
-                    z[e * outEws] = x[e * ews];
+                if(outEws == 1 && xEws == 1)
+                    for (uint e = 0; e < arrLen; e++)
+                        z[e] = x[e];
+                else
+                    for (uint e = 0; e < arrLen; e++)
+                        z[e * outEws] = x[e * xEws];
             }
             return;
-        }    
+        }
     }    
     
     const int rank  = inArrs[0]->rankOf();
@@ -1192,9 +1199,11 @@ static void concat_(const std::vector<NDArray*>& inArrs, NDArray& output, const 
         indices[i][2 * axis + 1] = indices[i-1][2 * axis + 1] + inArrs[i]->sizeAt(axis);      // index end with (excluding)
     }
 
+    // PRAGMA_OMP_PARALLEL_FOR_SIMD
     for(int i = 0; i < numOfArrs; ++i) {
         auto temp = output(indices[i], true);
-        temp.assign(inArrs[i]);
+        nd4j::TransformLoops<T,T,T>::template loopXZ<simdOps::Assign<T,T>, false>(inArrs[i]->bufferAsT<T>(), inArrs[i]->getShapeInfo(), temp.bufferAsT<T>(), temp.getShapeInfo(), nullptr);
+        // temp.assign(inArrs[i]);
     }
 }
 
