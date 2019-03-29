@@ -45,7 +45,6 @@ import org.nd4j.linalg.api.ops.impl.transforms.custom.*;
 import org.nd4j.linalg.api.ops.random.impl.BernoulliDistribution;
 import org.nd4j.linalg.checkutil.NDArrayCreationUtil;
 import org.nd4j.linalg.dataset.DataSet;
-import org.nd4j.linalg.dataset.adapter.SingletonDataSetIterator;
 import org.nd4j.linalg.dataset.adapter.SingletonMultiDataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
@@ -2777,5 +2776,114 @@ public class SameDiffTests {
         err = OpValidation.validate(new TestCase(sd)
                 .gradientCheck(true));
         assertNull(err);
+    }
+
+    @Test
+    public void testMultiGradientRecurrent(){
+        final INDArray input = Nd4j.rand(DataType.DOUBLE, new int[]{3, 4, 2});
+        final INDArray[] output = new INDArray[(int) input.size(2)];
+        for (int i = 0; i < input.size(2); i++) {
+            final INDArray x_i = input.get(NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.point(i));
+
+            output[i] = x_i;
+            if(i > 0){
+                output[i] = output[i].add(Nd4j.squeeze(output[i-1], 2));
+            }
+
+            output[i] = Nd4j.expandDims(output[i], 2);
+        }
+        final INDArray out = Nd4j.concat(2, output).norm2();
+
+
+        SameDiff sd = SameDiff.create();
+        final SDVariable sdInput = sd.var("input", input);
+
+        final long timeSteps = sdInput.getShape()[2];
+        SDVariable[] outputSlices = new SDVariable[(int) timeSteps];
+        SDVariable prev = null;
+        for (int i = 0; i < timeSteps; i++) {
+            final val x_i = sdInput.get(SDIndex.all(), SDIndex.all(), SDIndex.point(i));
+
+            outputSlices[i] = x_i;
+            if(prev != null){
+                outputSlices[i] = outputSlices[i].add(sd.squeeze(prev, 2));
+            }
+
+            outputSlices[i] = sd.expandDims(outputSlices[i], 2);
+            prev = outputSlices[i];
+        }
+
+        SDVariable t = sd.concat(2, outputSlices);
+        t.norm2("out");
+        String err = OpValidation.validate(new TestCase(sd)
+                .testFlatBufferSerialization(TestCase.TestSerialization.BOTH)
+                .expectedOutput("out", out)
+                .gradientCheck(true));
+
+        assertNull(err, err);
+
+    }
+
+    @Test
+    public void testMultiGradientManualRecurrent(){
+        final INDArray input = Nd4j.rand(DataType.DOUBLE, new int[]{3, 4, 2});
+        final INDArray[] output = new INDArray[(int) input.size(2)];
+        for (int i = 0; i < input.size(2); i++) {
+            final INDArray x_i = input.get(NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.point(i));
+
+            output[i] = x_i;
+            if(i > 0){
+                output[i] = output[i].add(Nd4j.squeeze(output[i-1], 2));
+            }
+
+            output[i] = Nd4j.expandDims(output[i], 2);
+        }
+        final INDArray out = Nd4j.concat(2, output).norm2();
+
+
+        SameDiff sd = SameDiff.create();
+        final SDVariable sdInput = sd.var("input", input);
+
+        final long timeSteps = sdInput.getShape()[2];
+        SDVariable[] outputSlices = new SDVariable[(int) timeSteps];
+        final SDVariable[] inputSlices = sd.unstack(new String[]{"X_0", "X_1"}, sdInput, 2);
+
+        final val x_0 = inputSlices[0];
+        outputSlices[0] = x_0;
+        outputSlices[0] = sd.expandDims("X_0-e", outputSlices[0], 2);
+
+
+        final val x_1 = inputSlices[1];
+        outputSlices[1] = x_1;
+        outputSlices[1] = outputSlices[1].add(sd.squeeze("X_0-s", outputSlices[0], 2));
+        outputSlices[1] = sd.expandDims("X_1-e", outputSlices[1], 2);
+
+
+        SDVariable t = sd.concat(2, outputSlices);
+        t.norm2("out");
+        String err = OpValidation.validate(new TestCase(sd)
+                .testFlatBufferSerialization(TestCase.TestSerialization.NONE)
+                .expectedOutput("out", out)
+                .gradientCheck(true));
+
+        assertNull(err, err);
+    }
+
+    @Test
+    public void testMultiGradient(){
+        final INDArray input = Nd4j.rand(DataType.DOUBLE, new int[]{3, 4, 2});
+        SameDiff sd = SameDiff.create();
+        final SDVariable sdInput = sd.var("input", input);
+
+        final SDVariable[] inputSlices = sd.unstack(new String[]{"X_0", "X_1"}, sdInput, 2);
+        final val temp = inputSlices[0].add(inputSlices[1]).div(inputSlices[1]).mul(inputSlices[0]);
+        final val out = temp.add(temp).add(inputSlices[1]);
+        out.norm2("out");
+
+        String err = OpValidation.validate(new TestCase(sd)
+                .testFlatBufferSerialization(TestCase.TestSerialization.BOTH)
+                .gradientCheck(true));
+
+        assertNull(err, err);
     }
 }
