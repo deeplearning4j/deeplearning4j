@@ -2862,7 +2862,7 @@ public class SameDiffTests {
         SDVariable t = sd.concat(2, outputSlices);
         t.norm2("out");
         String err = OpValidation.validate(new TestCase(sd)
-                .testFlatBufferSerialization(TestCase.TestSerialization.NONE)
+                .testFlatBufferSerialization(TestCase.TestSerialization.BOTH)
                 .expectedOutput("out", out)
                 .gradientCheck(true));
 
