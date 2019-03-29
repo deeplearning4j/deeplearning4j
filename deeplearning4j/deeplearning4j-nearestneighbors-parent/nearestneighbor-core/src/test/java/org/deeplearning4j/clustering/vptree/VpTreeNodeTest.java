@@ -18,6 +18,7 @@ package org.deeplearning4j.clustering.vptree;
 
 import org.apache.commons.lang3.ArrayUtils;
 import org.deeplearning4j.clustering.sptree.DataPoint;
+import org.joda.time.Duration;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.nd4j.linalg.api.buffer.DataType;
@@ -28,6 +29,7 @@ import org.nd4j.linalg.primitives.Counter;
 import org.nd4j.linalg.primitives.Pair;
 
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -274,6 +276,29 @@ public class VpTreeNodeTest {
         for (int i = 0; i < results_pattern.length; ++i) {
             assertEquals(results_pattern[i], results.get(0).getPoint().getDouble(i), 1e-5);
         }
+    }
+
+    @Test
+    public void performanceTest() {
+        final int dim = 300;
+        INDArray inputArrray = Nd4j.randn(DataType.DOUBLE, 200000, dim);
+        long start = System.currentTimeMillis();
+        VPTree tree = new VPTree(inputArrray, "euclidean");
+        long end = System.currentTimeMillis();
+        Duration duration = new Duration(start, end);
+        System.out.println("Elapsed time for tree construction " + duration.getStandardSeconds());
+
+        double[] input = new double[dim];
+        for (int i = 0; i < dim; ++i) {
+            input[i] = 0.5;
+        }
+        List<DataPoint> results = new ArrayList<>();
+        List<Double> distances = new ArrayList<>();
+        start = System.currentTimeMillis();
+        tree.search(Nd4j.createFromArray(input), 1, results, distances);
+        end = System.currentTimeMillis();
+        duration = new Duration(start, end);
+        System.out.println("Elapsed time for tree search " + duration.getStandardSeconds());
 
     }
 
