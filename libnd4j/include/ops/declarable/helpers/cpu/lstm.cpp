@@ -261,7 +261,8 @@ void lstmBlockCell(const NDArray* xt, const NDArray* cLast, const NDArray* yLast
         }
 
 
-    if (z->ews() == 1 && i->ews() == 1 && c->ews() == 1 && cLast->ews() == 1 && f->ews() == 1 && h->ews() == 1) {
+    if (z->ews() == 1 && i->ews() == 1 && c->ews() == 1 && cLast->ews() == 1 && f->ews() == 1 && h->ews() == 1 &&
+        z->ordering() == i->ordering() && z->ordering() == c->ordering() && z->ordering() == cLast->ordering() && z->ordering() == f->ordering() && z->ordering() == h->ordering()) {
         //cell state = blockInput .* inputGate + prevCellState .* forgetGate
         BUILD_SINGLE_SELECTOR(z->dataType(), fusedTanh, (z, i, c, cLast, f, h), FLOAT_TYPES);
     } else {
@@ -270,6 +271,7 @@ void lstmBlockCell(const NDArray* xt, const NDArray* cLast, const NDArray* yLast
         auto temp = (*f) * (*cLast);
         *c += temp;                              //c = (i * z) + (zf * (*cLast))
         c->applyTransform(transform::Tanh, h);  //h = tanh(c)
+
     }
 
 
