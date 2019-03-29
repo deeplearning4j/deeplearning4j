@@ -27,6 +27,7 @@
 #include <helpers/TAD.h>
 #include <exceptions/cuda_exception.h>
 #include <PointersManager.h>
+#include <ConstantTadHelper.h>
 
 namespace nd4j 	  {
 namespace ops 	  {
@@ -112,9 +113,100 @@ __host__ static void concatCudaLauncher(const int numOfArrs, const cudaStream_t 
     BUILD_SINGLE_TEMPLATE(template void randomShuffle_, (graph::LaunchContext* context, NDArray& input, NDArray& output, nd4j::random::RandomBuffer& rng, const bool isInplace), LIBND4J_TYPES);
 
     //////////////////////////////////////////////////////////////////////////
+    // Pad kernels
+    //
+    static __global__ void padFillIndicesKernel(Nd4jLong* outIndices, void* paddingBuffer, Nd4jLong* paddingShape, Nd4jLong* inputShape, bool shortType, int rankBorder) {
+        const auto tid = blockIdx.x * gridDim.x + threadIdx.x;
+        const auto step = gridDim.x * blockDim.x;
+
+        for(int i = tid; i < rankBorder; i += step) {
+            Nd4jLong coords[2] = {i, 0};
+            auto pos = shape::getOffset(0, shape::shapeOf(paddingShape), shape::stride(paddingShape), coords, rankBorder + 1);
+            outIndices[2 * i] = shortType?reinterpret_cast<int*>(paddingBuffer)[pos]:reinterpret_cast<Nd4jLong*>(paddingBuffer)[pos];
+            outIndices[2 * i + 1] = outIndices[2 * i] + shape::sizeAt(inputShape, i);
+        }
+    }
+
+    template <typename T>
+    static __global__ void padFillValues(void* outputBuffer, Nd4jLong* outputShape, Nd4jLong* outIndices,
+            void* inputBuffer, Nd4jLong* inputShape,
+            Nd4jLong* inputTadShape, Nd4jLong* inputTadOffsets, Nd4jLong* outputTadShape, Nd4jLong* outputTadOffsets) {
+
+    }
+
     template<typename T>
     void pad_(graph::LaunchContext* context, const int mode, const NDArray& input, const NDArray& paddings, NDArray& output, NDArray const& padValue) {
+        const int rank = output.rankOf();
+        const int rankBorder = rank - 1;
+        std::vector<int> dimsToExclude(rankBorder);
+        std::iota(dimsToExclude.begin(), dimsToExclude.end(), 0);             // fill with 0, 1, ... rank-1
+        //dimsToExclude.pop_back();
 
+        Nd4jLong numLeft    = paddings.e<Nd4jLong>(rankBorder, 0);
+        Nd4jLong numRight   = paddings.e<Nd4jLong>(rankBorder, 1);
+        Nd4jLong inDimSize  = input.sizeAt(rankBorder);
+        Nd4jLong outDimSize = output.sizeAt(rankBorder);
+        Nd4jLong* outIdx = nullptr;
+        cudaError_t err = cudaMalloc(&outIdx, 2 * rank * sizeof(Nd4jLong));
+        if (0 != err) {
+            throw cuda_exception::build("Cannot allocate memory for pad indices", err);
+        }
+        err = cudaMemset(outIdx, 0, 2 * rank * sizeof(Nd4jLong));
+        if (0 != err) {
+            throw cuda_exception::build("Cannot initialize memory for pad indices", err);
+        }
+
+       // dim3 launcDim(16, 32, 512);
+        auto stream = context->getCudaStream();
+        bool shortedType = (paddings.dataType() == DataType::INT32);
+        padFillIndicesKernel<<<16, 32, 512, *stream>>>(outIdx, paddings.getSpecialBuffer(), paddings.getSpecialShapeInfo(), input.getSpecialShapeInfo(), shortedType, rankBorder);
+
+        Nd4jLong numOfSubArrs = ShapeUtils::getNumOfSubArrs(input.getShapeInfo(), dimsToExclude);
+
+        //NDArray outSubArr0 = output(outIdx, true);
+        dim3 launchDim(128, 256, 2048);
+        auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(input.getShapeInfo(), dimsToExclude);
+        auto packZ = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(output.getShapeInfo(), dimsToExclude);
+
+        padFillValues<T><<<launchDim.x, launchDim.y, launchDim.z, *stream>>>(output.specialBuffer(),
+                output.specialShapeInfo(), outIdx, input.getSpecialBuffer(), input.getSpecialShapeInfo(),
+                packX.specialShapeInfo(), packX.specialOffsets(), packZ.specialShapeInfo(), packZ.specialOffsets());
+
+        err = cudaFree(outIdx);
+        if (0 != err) {
+            throw cuda_exception::build("Cannot release memory for pad indices", err);
+        }
+
+//#pragma omp parallel for schedule(guided)
+//        for(Nd4jLong j = 0; j < numOfSubArrs; ++j) {
+//
+//            NDArray outSubArr1   = outSubArr0(j, dimsToExclude);
+//            NDArray inSubArr     = input(j, dimsToExclude);
+//            NDArray outSubArrMid = outSubArr1(outIdx[1]);
+//
+//            outSubArrMid.assign(inSubArr);      // assign middle
+//
+//            if(mode == 0)  { // CONSTANT
+//                if(numLeft != 0) {
+//                    NDArray temp = outSubArr1(outIdx[2]);
+//                    temp.assign(padValue);                        // assign left
+//                }
+//                if(numRight != 0) {
+//                    NDArray temp = outSubArr1(outIdx[3]);
+//                    temp.assign(padValue);                        // assign right
+//                }
+//            }
+//            else {                                                              // REFLECT or SYMMETRIC
+//
+//#pragma omp parallel for schedule(guided)
+//                for(Nd4jLong k = numLeft-1, e = startL; k >= 0; --k, ++e)     // fill left side
+//                    outSubArr1.t<T>(k) = inSubArr.t<T>(e);
+//
+//#pragma omp parallel for schedule(guided)
+//                for(Nd4jLong k = numLeft + inDimSize, e = startR; k < outDimSize; ++k, --e)     // fill right side
+//                    outSubArr1.t<T>(k) = inSubArr.t<T>(e);
+//            }
+//        }
     }
 
     void pad(graph::LaunchContext* context, const int mode, const NDArray& input, const NDArray& paddings, NDArray& output, NDArray const& padValue) {

@@ -172,7 +172,7 @@ namespace nd4j {
             if(w_l==warpSize-1){
                 warpTotals[w_i]=t_u+pred;
             }
-            __syncthreads();
+//            __syncthreads(); // Eliminated due RTX20xx specific
 
             if(w_i==0 && w_l<blockDim.x/warpSize){
                 int w_i_u=0;
@@ -184,7 +184,7 @@ namespace nd4j {
                 warpTotals[w_l]=w_i_u;
             }
 
-            __syncthreads();
+//            __syncthreads();  // Eliminated due RTX20xx specific
 
             if(pred){
                 int idx = t_u + warpTotals[w_i] + bo + 4;
