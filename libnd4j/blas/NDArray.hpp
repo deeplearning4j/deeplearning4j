@@ -1160,9 +1160,10 @@ NDArray *NDArray::reduceAlongDimension(nd4j::reduce::LongOps op, const std::init
 // method makes copy of this array and applies to the copy transpose operation, this array remains unaffected
     NDArray* NDArray::transpose() const {
         
-        Nd4jLong* newShapeInfo = ShapeBuilders::copyShapeInfo(_shapeInfo, true, _context->getWorkspace());        
+        Nd4jLong* newShapeInfo = ShapeBuilders::copyShapeInfo(_shapeInfo, true, _context->getWorkspace());
         auto newArr = new NDArray(_buffer, _bufferD, newShapeInfo, _context, false, false);
         newArr->transposei();
+        RELEASE(newShapeInfo, _context->getWorkspace());
 
         return newArr;
 }

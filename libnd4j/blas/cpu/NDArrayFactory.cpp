@@ -469,7 +469,9 @@ NDArray NDArrayFactory::create(const std::vector<T> &values, nd4j::graph::Launch
 
     res.setAttached(context->getWorkspace() != nullptr);
 
-    res.setShapeInfo(ShapeBuilders::createVectorShapeInfo(DataTypeUtils::fromT<T>(), values.size(), context->getWorkspace()));
+    Nd4jLong* shapeInfo = ShapeBuilders::createVectorShapeInfo(DataTypeUtils::fromT<T>(), values.size(), context->getWorkspace());
+    res.setShapeInfo(shapeInfo);
+    RELEASE(shapeInfo, context->getWorkspace());
         
     int8_t *buffer = nullptr;
     ALLOCATE(buffer, context->getWorkspace(), values.size() * sizeof(T), int8_t);

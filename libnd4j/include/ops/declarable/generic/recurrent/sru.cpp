@@ -123,10 +123,8 @@ DECLARE_SHAPE_FN(sru_logic) {
     int N    = inShape[3];
     char order = (char)(inShape[size-1]);
 
-    Nd4jLong* newShapeInfo1 = nullptr;
-    Nd4jLong* newShapeInfo2 = nullptr;
+    Nd4jLong* newShapeInfo1 = nullptr;    
     ALLOCATE(newShapeInfo1, block.getWorkspace(), size, Nd4jLong);
-    ALLOCATE(newShapeInfo2, block.getWorkspace(), size, Nd4jLong);
     
     newShapeInfo1[0] = rank;        
     newShapeInfo1[1] = bS;
@@ -134,7 +132,8 @@ DECLARE_SHAPE_FN(sru_logic) {
     newShapeInfo1[3] = N;
     
     ShapeUtils::updateStridesAndType(newShapeInfo1, inShape, order);
-    COPY_SHAPE(newShapeInfo1, newShapeInfo2);
+
+    Nd4jLong* newShapeInfo2 = ShapeBuilders::copyShapeInfo(newShapeInfo1, true, block.getWorkspace());
     
     return SHAPELIST(newShapeInfo1, newShapeInfo2);
 }   
@@ -229,10 +228,8 @@ DECLARE_SHAPE_FN(sru_old) {
     int time    = inShape[3];
     char order = (char)(inShape[size-1]);
 
-    Nd4jLong* newShapeInfo1 = nullptr;
-    Nd4jLong* newShapeInfo2 = nullptr;
-    ALLOCATE(newShapeInfo1, block.getWorkspace(), size, Nd4jLong);
-    ALLOCATE(newShapeInfo2, block.getWorkspace(), size, Nd4jLong);
+    Nd4jLong* newShapeInfo1 = nullptr;    
+    ALLOCATE(newShapeInfo1, block.getWorkspace(), size, Nd4jLong);    
 
     newShapeInfo1[0] = rank;
     newShapeInfo1[1] = bS;
@@ -241,7 +238,7 @@ DECLARE_SHAPE_FN(sru_old) {
 
     ShapeUtils::updateStridesAndType(newShapeInfo1, inShape, order);
 
-    COPY_SHAPE(newShapeInfo1, newShapeInfo2)
+    Nd4jLong* newShapeInfo2 = ShapeBuilders::copyShapeInfo(newShapeInfo1, true, block.getWorkspace());    
 
     return SHAPELIST(newShapeInfo1, newShapeInfo2);
 }
@@ -342,9 +339,7 @@ DECLARE_SHAPE_FN(sru) {
     }
 
     Nd4jLong* newShapeInfo1 = nullptr;
-    Nd4jLong* newShapeInfo2 = nullptr;
     ALLOCATE(newShapeInfo1, block.getWorkspace(), shape::shapeInfoLength(rank), Nd4jLong);       // [bS x inSize x time]
-    ALLOCATE(newShapeInfo2, block.getWorkspace(), shape::shapeInfoLength(rank), Nd4jLong);       // [bS x inSize x time]
 
     newShapeInfo1[0] = rank;
     newShapeInfo1[1] = bS;
@@ -353,7 +348,7 @@ DECLARE_SHAPE_FN(sru) {
 
     ShapeUtils::updateStridesAndType(newShapeInfo1, xShapeInfo, shape::order(xShapeInfo));
     
-    COPY_SHAPE(newShapeInfo1,newShapeInfo2)
+    Nd4jLong* newShapeInfo2 = ShapeBuilders::copyShapeInfo(newShapeInfo1, true, block.getWorkspace());
 
     return SHAPELIST(newShapeInfo1, newShapeInfo2);
 }
@@ -829,10 +824,8 @@ DECLARE_SHAPE_FN(sru_bi) {
 
     char order = shape::order(xShapeInfo);
 
-    Nd4jLong* newShapeInfo1 = nullptr;
-    Nd4jLong* newShapeInfo2 = nullptr;
+    Nd4jLong* newShapeInfo1 = nullptr;    
     ALLOCATE(newShapeInfo1, block.getWorkspace(), shape::shapeInfoLength(rank), Nd4jLong);
-    ALLOCATE(newShapeInfo2, block.getWorkspace(), shape::shapeInfoLength(rank), Nd4jLong);
 
     newShapeInfo1[0] = rank;
     newShapeInfo1[1] = time;
@@ -841,8 +834,8 @@ DECLARE_SHAPE_FN(sru_bi) {
 
     ShapeUtils::updateStridesAndType(newShapeInfo1, xShapeInfo, order);
     
-    COPY_SHAPE(newShapeInfo1, newShapeInfo2)
-
+    Nd4jLong* newShapeInfo2 = ShapeBuilders::copyShapeInfo(newShapeInfo1, true, block.getWorkspace());
+    
     return SHAPELIST(newShapeInfo1, newShapeInfo2);
 }
 

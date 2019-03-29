@@ -2141,6 +2141,8 @@ Nd4jStatus realExec(nd4j::ops::DeclarableOp* op, Nd4jPointer* extraPointers, Nd4
 
             // and we want to release shape copy once we're done
             array->triggerAllocationFlag(false);
+
+            delete []shape;
         }
 
     for (int e = 0; e < numIArgs; e++)

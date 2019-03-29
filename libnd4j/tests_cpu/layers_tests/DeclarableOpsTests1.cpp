@@ -1564,7 +1564,7 @@ TEST_F(DeclarableOpsTests1, TestLegacyExecution1) {
     //auto status = nativeOps.execCustomOp(nullptr, hash, inputBuffers, inputShapes, 2, outputBuffers, outputShapes, 1, nullptr, 0, nullptr, 0, false);
     auto status = nativeOps.execCustomOp(nullptr, hash, inputBuffers, inputShapes, 2, outputBuffers, outputShapes, 1, nullptr, 0, nullptr, 0, nullptr, 0, false);
     ASSERT_EQ(ND4J_STATUS_OK, status);
-    z->printIndexedBuffer("Output add");
+    // z->printIndexedBuffer("Output add");
     ASSERT_NEAR(2.0f, y->meanNumber().e<float>(0), 1e-5);
     ASSERT_NEAR(1.0f, x->meanNumber().e<float>(0), 1e-5);
     ASSERT_NEAR(3.0f, z->meanNumber().e<float>(0), 1e-5);
