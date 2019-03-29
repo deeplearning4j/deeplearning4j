@@ -64,6 +64,19 @@ public class CapsuleLayer extends SameDiffLayer {
         this.capsules = builder.capsules;
         this.capsuleDimensions = builder.capsuleDimensions;
         this.routings = builder.routings;
+
+        if(capsules <= 0 || capsuleDimensions <= 0 || routings <= 0){
+            throw new IllegalArgumentException("Invalid configuration for Capsule Layer (layer name = \""
+                    + layerName + "\"): capsules, capsuleDimensions, and routings must be > 0.  Got: "
+                    + capsules + ", " + capsuleDimensions + ", " + routings);
+        }
+
+        if(inputCapsules < 0 || inputCapsuleDimensions < 0){
+            throw new IllegalArgumentException("Invalid configuration for Capsule Layer (layer name = \""
+                    + layerName + "\"): inputCapsules and inputCapsuleDimensions must be >= 0.  Got: "
+                    + inputCapsules + ", " + inputCapsuleDimensions);
+        }
+
     }
 
     @Override
