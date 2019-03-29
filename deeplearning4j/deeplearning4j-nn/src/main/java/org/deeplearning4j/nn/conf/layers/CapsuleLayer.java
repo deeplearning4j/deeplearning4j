@@ -103,9 +103,8 @@ public class CapsuleLayer extends SameDiffLayer {
         SDVariable uHat = weights.times(tiled).sum(true, 3)
                 .reshape(-1, inputCapsules, capsules, capsuleDimensions, 1);
 
-        //TODO use zerosLike instead?
-
-        SDVariable b = SD.expandDims(SD.zerosLike(uHat), 5);
+        //TODO better way of getting rid of dim 3
+        SDVariable b = SD.zerosLike(uHat).sum(true, 3);
 
         //TODO convert to SameDiff.whileLoop?
         for(int i = 0 ; i < routings ; i++){
