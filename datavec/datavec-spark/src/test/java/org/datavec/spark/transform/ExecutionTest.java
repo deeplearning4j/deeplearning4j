@@ -23,6 +23,7 @@ import org.datavec.api.transform.TransformProcess;
 import org.datavec.api.transform.reduce.Reducer;
 import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.transform.schema.SequenceSchema;
+import org.datavec.api.transform.transform.categorical.FirstDigitTransform;
 import org.datavec.api.writable.DoubleWritable;
 import org.datavec.api.writable.IntWritable;
 import org.datavec.api.writable.Text;
@@ -229,6 +230,56 @@ public class ExecutionTest extends BaseSparkTest {
         List<Writable> c1 = l.get("col1");
         assertEquals(3, c1.size());
         assertTrue(c1.contains(new Text("state0")) && c1.contains(new Text("state1")) && c1.contains(new Text("state2")));
+    }
+
+
+    @Test
+    public void testFirstDigitTransformBenfordsLaw(){
+        Schema s = new Schema.Builder()
+                .addColumnString("data")
+                .addColumnDouble("double")
+                .addColumnString("stringNumber")
+                .build();
+
+        List<List<Writable>> in = Arrays.asList(
+                Arrays.<Writable>asList(new Text("a"), new DoubleWritable(3.14159), new Text("8e-4")),
+                Arrays.<Writable>asList(new Text("a2"), new DoubleWritable(3.14159), new Text("7e-4")),
+                Arrays.<Writable>asList(new Text("b"), new DoubleWritable(2.71828), new Text("7e2")),
+                Arrays.<Writable>asList(new Text("c"), new DoubleWritable(1.61803), new Text("6e8")),
+                Arrays.<Writable>asList(new Text("c"), new DoubleWritable(1.61803), new Text("2.0")),
+                Arrays.<Writable>asList(new Text("c"), new DoubleWritable(1.61803), new Text("2.1")),
+                Arrays.<Writable>asList(new Text("c"), new DoubleWritable(1.61803), new Text("2.2")),
+                Arrays.<Writable>asList(new Text("c"), new DoubleWritable(-2), new Text("non numerical")));
+
+        //Test Benfords law use case:
+        TransformProcess tp = new TransformProcess.Builder(s)
+                .firstDigitTransform("double", "fdDouble", FirstDigitTransform.Mode.EXCEPTION_ON_INVALID)
+                .firstDigitTransform("stringNumber", "stringNumber", FirstDigitTransform.Mode.INCLUDE_OTHER_CATEGORY)
+                .removeAllColumnsExceptFor("stringNumber")
+                .categoricalToOneHot("stringNumber")
+                .reduce(new Reducer.Builder(ReduceOp.Sum).build())
+                .build();
+
+        JavaRDD<List<Writable>> rdd = sc.parallelize(in);
+
+
+        List<List<Writable>> out = SparkTransformExecutor.execute(rdd, tp).collect();
+        assertEquals(1, out.size());
+
+        List<Writable> l = out.get(0);
+        List<Writable> exp = Arrays.<Writable>asList(
+                new IntWritable(0),  //0
+                new IntWritable(0),  //1
+                new IntWritable(3),  //2
+                new IntWritable(0),  //3
+                new IntWritable(0),  //4
+                new IntWritable(0),  //5
+                new IntWritable(1),  //6
+                new IntWritable(2),  //7
+                new IntWritable(1),  //8
+                new IntWritable(0),  //9
+                new IntWritable(1)); //Other
+        assertEquals(exp, l);
     }
 
 }

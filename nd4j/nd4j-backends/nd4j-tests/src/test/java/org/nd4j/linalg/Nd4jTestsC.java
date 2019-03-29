@@ -7436,6 +7436,71 @@ public class Nd4jTestsC extends BaseNd4jTest {
         Nd4j.meshgrid(Nd4j.createFromArray(1, 2, 3), Nd4j.createFromArray(4, 5, 6));
     }
 
+    @Test
+    public void testGetColumnRowVector(){
+        INDArray arr = Nd4j.create(1,4);
+        INDArray col = arr.getColumn(0);
+        System.out.println(Arrays.toString(col.shape()));
+        assertArrayEquals(new long[]{1,1}, col.shape());
+    }
+
+
+    @Test
+    public void testEmptyArrayReuse(){
+        //Empty arrays are immutable - no point creating them multiple times
+        INDArray ef1 = Nd4j.empty(DataType.FLOAT);
+        INDArray ef2 = Nd4j.empty(DataType.FLOAT);
+        assertTrue(ef1 == ef2);       //Should be exact same object
+
+        INDArray el1 = Nd4j.empty(DataType.LONG);
+        INDArray el2 = Nd4j.empty(DataType.LONG);
+        assertTrue(el1 == el2);       //Should be exact same object
+    }
+
+    @Test
+    public void testMaxViewF(){
+        INDArray arr = Nd4j.create(DataType.DOUBLE, new long[]{8,2}, 'f').assign(999);
+
+        INDArray view = arr.get(NDArrayIndex.interval(3,5), NDArrayIndex.all());
+        view.assign(Nd4j.createFromArray(new double[][]{{1,2},{3,4}}));
+
+        assertEquals(Nd4j.create(new double[]{3,4}), view.max(0));
+        assertEquals(Nd4j.create(new double[]{2,4}), view.max(1));
+    }
+
+    @Test
+    public void testCreateF(){
+        char origOrder = Nd4j.order();
+        try {
+            Nd4j.factory().setOrder('f');
+
+
+            INDArray arr = Nd4j.createFromArray(new double[][]{{1, 2, 3}, {4, 5, 6}});
+            INDArray arr2 = Nd4j.createFromArray(new float[][]{{1, 2, 3}, {4, 5, 6}});
+            INDArray arr3 = Nd4j.createFromArray(new int[][]{{1, 2, 3}, {4, 5, 6}});
+            INDArray arr4 = Nd4j.createFromArray(new long[][]{{1, 2, 3}, {4, 5, 6}});
+            INDArray arr5 = Nd4j.createFromArray(new short[][]{{1, 2, 3}, {4, 5, 6}});
+            INDArray arr6 = Nd4j.createFromArray(new byte[][]{{1, 2, 3}, {4, 5, 6}});
+
+            INDArray exp = Nd4j.create(2, 3);
+            exp.putScalar(0, 0, 1.0);
+            exp.putScalar(0, 1, 2.0);
+            exp.putScalar(0, 2, 3.0);
+            exp.putScalar(1, 0, 4.0);
+            exp.putScalar(1, 1, 5.0);
+            exp.putScalar(1, 2, 6.0);
+
+            assertEquals(exp, arr);
+            assertEquals(exp.castTo(DataType.FLOAT), arr2);
+            assertEquals(exp.castTo(DataType.INT), arr3);
+            assertEquals(exp.castTo(DataType.LONG), arr4);
+            assertEquals(exp.castTo(DataType.SHORT), arr5);
+            assertEquals(exp.castTo(DataType.BYTE), arr6);
+        } finally {
+            Nd4j.factory().setOrder(origOrder);
+        }
+    }
+
     ///////////////////////////////////////////////////////
     protected static void fillJvmArray3D(float[][][] arr) {
         int cnt = 1;

@@ -168,6 +168,7 @@ public class ValidateMKLDNN extends BaseDL4JTest {
                     .features(f)
                     .labels(l)
                     .data(new SingletonDataSetIterator(new DataSet(f, l)))
+                    .maxRelError(1e-4)
                     .build();
 
             LayerHelperValidationUtil.validateMLN(netWith, tc);

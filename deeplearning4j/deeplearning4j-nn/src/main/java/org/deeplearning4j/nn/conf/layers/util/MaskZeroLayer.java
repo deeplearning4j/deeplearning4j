@@ -110,12 +110,12 @@ public class MaskZeroLayer extends BaseWrapperLayer {
         private double maskValue;
 
         public Builder setUnderlying(Layer underlying) {
-            this.setUnderlying(underlying);
+            this.underlying = underlying;
             return this;
         }
 
         public Builder setMaskValue(double maskValue) {
-            this.setMaskValue(maskValue);
+            this.maskValue = maskValue;
             return this;
         }
 
