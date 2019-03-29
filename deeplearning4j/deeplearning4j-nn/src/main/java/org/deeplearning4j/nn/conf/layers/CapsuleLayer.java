@@ -104,9 +104,8 @@ public class CapsuleLayer extends SameDiffLayer {
                 .reshape(-1, inputCapsules, capsules, capsuleDimensions, 1);
 
         //TODO use zerosLike instead?
-        long miniBatch = input.getShape()[0];
 
-        SDVariable b = SD.zero("b", miniBatch, inputCapsules, capsules, 1, 1);
+        SDVariable b = SD.expandDims(SD.zerosLike(uHat), 5);
 
         //TODO convert to SameDiff.whileLoop?
         for(int i = 0 ; i < routings ; i++){
