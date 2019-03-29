@@ -177,10 +177,11 @@ public class CapsuleLayer extends SameDiffLayer {
         private int inputCapsules = 0;
         private int inputCapsuleDimensions = 0;
 
-        public Builder(int capsules, int capsuleDimensions){
+        public Builder(int capsules, int capsuleDimensions, int routings){
             super();
             this.setCapsules(capsules);
             this.setCapsuleDimensions(capsuleDimensions);
+            this.setRoutings(routings);
         }
 
         @Override

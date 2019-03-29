@@ -164,7 +164,18 @@ public class PrimaryCapsules extends SameDiffLayer {
             throw new IllegalStateException("Invalid input for Primary Capsules layer (layer name = \""
                     + layerName + "\"): expect CNN input.  Got: " + inputType);
         }
-        return InputType.recurrent(capsules, capsuleDimensions);
+
+        if(capsules > 0){
+            return InputType.recurrent(capsules, capsuleDimensions);
+        } else {
+
+            InputTypeConvolutional out = (InputTypeConvolutional) InputTypeUtil
+                    .getOutputTypeCnnLayers(inputType, kernelSize, stride, padding, dilation, convolutionMode,
+                            channels, -1, getLayerName(), PrimaryCapsules.class);
+
+            return InputType.recurrent((int) (out.getChannels() * out.getHeight() * out.getWidth() / capsuleDimensions),
+                    capsuleDimensions);
+        }
     }
 
     @Override
@@ -178,10 +189,14 @@ public class PrimaryCapsules extends SameDiffLayer {
 
         this.inputChannels = (int) ci.getChannels();
 
-        InputTypeConvolutional out = (InputTypeConvolutional) InputTypeUtil.getOutputTypeCnnLayers(inputType, kernelSize, stride, padding, dilation, convolutionMode,
-                channels, -1, getLayerName(), PrimaryCapsules.class);
+        if(channels <= 0 || override) {
 
-        this.capsules = (int) (out.getChannels() * out.getHeight() * out.getWidth() / capsuleDimensions);
+            InputTypeConvolutional out = (InputTypeConvolutional) InputTypeUtil
+                    .getOutputTypeCnnLayers(inputType, kernelSize, stride, padding, dilation, convolutionMode,
+                            channels, -1, getLayerName(), PrimaryCapsules.class);
+
+            this.capsules = (int) (out.getChannels() * out.getHeight() * out.getWidth() / capsuleDimensions);
+        }
     }
 
     @Getter
