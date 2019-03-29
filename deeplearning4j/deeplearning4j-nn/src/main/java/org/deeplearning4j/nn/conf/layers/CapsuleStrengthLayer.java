@@ -33,6 +33,11 @@ import org.nd4j.autodiff.samediff.SameDiff;
  * @author Ryan Nett
  */
 public class CapsuleStrengthLayer extends SameDiffLambdaLayer {
+
+    public CapsuleStrengthLayer(Builder builder){
+        super();
+    }
+
     @Override
     public SDVariable defineLayer(SameDiff SD, SDVariable layerInput) {
         return SD.norm2("caps_strength", layerInput, 2);
@@ -54,7 +59,7 @@ public class CapsuleStrengthLayer extends SameDiffLambdaLayer {
 
         @Override
         public <E extends Layer> E build() {
-            return (E) new CapsuleStrengthLayer();
+            return (E) new CapsuleStrengthLayer(this);
         }
     }
 

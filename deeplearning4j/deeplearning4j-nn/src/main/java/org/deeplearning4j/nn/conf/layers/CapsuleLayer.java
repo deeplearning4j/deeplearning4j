@@ -68,13 +68,15 @@ public class CapsuleLayer extends SameDiffLayer {
 
         if(capsules <= 0 || capsuleDimensions <= 0 || routings <= 0){
             throw new IllegalArgumentException("Invalid configuration for Capsule Layer (layer name = \""
-                    + layerName + "\"): capsules, capsuleDimensions, and routings must be > 0.  Got: "
+                    + layerName + "\"):"
+                    + " capsules, capsuleDimensions, and routings must be > 0.  Got: "
                     + capsules + ", " + capsuleDimensions + ", " + routings);
         }
 
         if(inputCapsules < 0 || inputCapsuleDimensions < 0){
             throw new IllegalArgumentException("Invalid configuration for Capsule Layer (layer name = \""
-                    + layerName + "\"): inputCapsules and inputCapsuleDimensions must be >= 0.  Got: "
+                    + layerName + "\"):"
+                    + " inputCapsules and inputCapsuleDimensions must be >= 0 if set.  Got: "
                     + inputCapsules + ", " + inputCapsuleDimensions);
         }
 
@@ -104,7 +106,6 @@ public class CapsuleLayer extends SameDiffLayer {
         SDVariable uHat = weights.times(tiled).sum(true, 3)
                 .reshape(-1, inputCapsules, capsules, capsuleDimensions, 1);
 
-        //TODO better way of getting rid of dim 3
         SDVariable b = SD.zerosLike(uHat).get(SDIndex.all(), SDIndex.all(), SDIndex.all(), SDIndex.interval(0, 1), SDIndex.interval(0, 1));
 
         //TODO convert to SameDiff.whileLoop?
@@ -144,12 +145,12 @@ public class CapsuleLayer extends SameDiffLayer {
 
     @Override
     public void initializeParameters(Map<String, INDArray> params) {
-        //TODO
         try (MemoryWorkspace ws = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()) {
             for (Map.Entry<String, INDArray> e : params.entrySet()) {
                 if (BIAS_PARAM.equals(e.getKey())) {
                     e.getValue().assign(0);
                 } else if(WEIGHT_PARAM.equals(e.getKey())){
+                    //TODO use weightInit
                     e.getValue().assign(0);
                 }
             }
