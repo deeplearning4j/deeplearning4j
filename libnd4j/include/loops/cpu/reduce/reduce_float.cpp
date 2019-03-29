@@ -192,7 +192,11 @@ namespace functions {
                     tadOffsets = tadPack.primaryOffsets();
                 }
 
-                nd4j::Loops::loopTadXZ<X, Z, Z, OpType>(x, xShapeInfo, z, zShapeInfo,  tadOnlyShapeInfo, tadOffsets, dimension, dimensionLength, extraParams);
+#ifdef INLINE_LOOPS
+                nd4j::ReductionLoops<X,Z,Z>::template loopTadXZ<OpType>(x, xShapeInfo, z, zShapeInfo,  tadOnlyShapeInfo, tadOffsets, extraParams);
+#else
+                nd4j::ReductionFloatLoops<X,Z>::template innerloopTadXZ<OpType>(x, xShapeInfo, z, zShapeInfo,  tadOnlyShapeInfo, tadOffsets, extraParams);
+#endif
             }
 
 

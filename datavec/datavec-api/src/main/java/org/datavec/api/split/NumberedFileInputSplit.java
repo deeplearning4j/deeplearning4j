@@ -122,8 +122,16 @@ public class NumberedFileInputSplit implements InputSplit {
     public URI[] locations() {
         URI[] uris = new URI[(int) length()];
         int x = 0;
-        for (int i = minIdx; i <= maxIdx; i++) {
-            uris[x++] = Paths.get(String.format(baseString, i)).toUri();
+        if(baseString.matches(".*:/.*")){
+            //URI (has scheme)
+            for (int i = minIdx; i <= maxIdx; i++) {
+                uris[x++] = URI.create(String.format(baseString, i));
+            }
+        } else {
+            //File, no scheme
+            for (int i = minIdx; i <= maxIdx; i++) {
+                uris[x++] = new File(String.format(baseString, i)).toURI();
+            }
         }
         return uris;
     }

@@ -118,7 +118,8 @@ import java.util.Scanner;
                                               "cnpy/cnpy.h"
                                    },
                                 compiler = {"cpp11", "nowarnings"}, library = "jnind4jcpu", link = "nd4jcpu",
-                                preloadresource = "org/bytedeco/javacpp/", preload = {"openblas", "openblas_nolapack", "libnd4jcpu"}),
+                                preloadresource = {"org/bytedeco/mkldnn/", "org/bytedeco/openblas/"},
+                                preload = {"openblas", "openblas_nolapack", "libnd4jcpu"}),
                                 @Platform(value = "linux", preload = {"gomp@.1", "iomp5", "mklml_intel", "mkldnn@.0"},
                                                 preloadpath = {"/lib64/", "/lib/", "/usr/lib64/", "/usr/lib/",
                                                                 "/usr/lib/powerpc64-linux-gnu/",

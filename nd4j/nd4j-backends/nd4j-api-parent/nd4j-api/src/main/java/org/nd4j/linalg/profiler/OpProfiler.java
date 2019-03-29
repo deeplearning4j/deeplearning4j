@@ -237,7 +237,7 @@ public class OpProfiler {
         String opClass = getOpClass(op);
         classCounter.incrementCount(opClass);
 
-        if(op.x() == null || op.x().data().address() == lastZ && op.z() == op.x() && op.y() == null) {
+        if(op.x() == null || (op.x() != null && op.x().data().address() == lastZ && op.z() == op.x() && op.y() == null)) {
             // we have possible shift here
             matchingCounter.incrementCount(prevOpMatching + " -> " + opClass);
             matchingCounterDetailed.incrementCount(prevOpMatchingDetailed + " -> " + opClass + " " + op.opName());
@@ -592,20 +592,20 @@ public class OpProfiler {
     public PenaltyCause[] processOperands(INDArray x, INDArray y) {
         List<PenaltyCause> penalties = new ArrayList<>();
 
-        if (x.ordering() != y.ordering()) {
+        if (x != null && x.ordering() != y.ordering()) {
             penalties.add(PenaltyCause.MIXED_ORDER);
         }
 
 
-        if (x.elementWiseStride() < 1) {
+        if (x != null && x.elementWiseStride() < 1) {
             penalties.add(PenaltyCause.NON_EWS_ACCESS);
-        } else if (y.elementWiseStride() < 1) {
+        } else if (y != null && y.elementWiseStride() < 1) {
             penalties.add(PenaltyCause.NON_EWS_ACCESS);
         }
 
-        if (x.elementWiseStride() > 1) {
+        if (x != null && x.elementWiseStride() > 1) {
             penalties.add(PenaltyCause.STRIDED_ACCESS);
-        } else if (y.elementWiseStride() > 1) {
+        } else if (y != null && y.elementWiseStride() > 1) {
             penalties.add(PenaltyCause.STRIDED_ACCESS);
         }
 

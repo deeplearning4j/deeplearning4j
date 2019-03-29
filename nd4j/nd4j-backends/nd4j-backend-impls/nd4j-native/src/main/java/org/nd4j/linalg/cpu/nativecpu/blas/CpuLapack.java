@@ -28,7 +28,7 @@ import org.bytedeco.javacpp.IntPointer;
 
 import org.nd4j.linalg.api.blas.BlasException ;
 
-import static org.bytedeco.javacpp.openblas.*;
+import static org.bytedeco.openblas.global.openblas.*;
 
 /**
  * CPU lapack implementation

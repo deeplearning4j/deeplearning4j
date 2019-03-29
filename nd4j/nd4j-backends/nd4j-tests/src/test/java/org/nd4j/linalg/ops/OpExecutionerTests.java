@@ -636,16 +636,37 @@ public class OpExecutionerTests extends BaseNd4jTest {
 
     @Test
     public void testSum6d2() {
-        INDArray arr6 = Nd4j.linspace(1, 256, 256, DataType.DOUBLE).reshape(1, 1, 4, 4, 4, 4);
-        INDArray arr6s = arr6.sum(2, 3);
+        char origOrder = Nd4j.order();
+        try {
+            for (char order : new char[]{'c', 'f'}) {
+                Nd4j.factory().setOrder(order);
 
-        assertEquals(136, arr6s.getDouble(0), 1e-1);
-        assertEquals(1160, arr6s.getDouble(1), 1e-1);
-        assertEquals(2184, arr6s.getDouble(2), 1e-1);
-        assertEquals(3208, arr6s.getDouble(3), 1e-1);
-        assertEquals(392, arr6s.getDouble(4), 1e-1);
-        assertEquals(1416, arr6s.getDouble(5), 1e-1);
-        assertEquals(2440, arr6s.getDouble(6), 1e-1);
+                INDArray arr6 = Nd4j.linspace(1, 256, 256, DataType.DOUBLE).reshape(1, 1, 4, 4, 4, 4);
+                INDArray arr6s = arr6.sum(2, 3);
+
+                INDArray exp = Nd4j.create(DataType.DOUBLE, 1, 1, 4, 4);
+                for (int i = 0; i < 4; i++) {
+                    for (int j = 0; j < 4; j++) {
+                        double sum = 0;
+                        for (int x = 0; x < 4; x++) {
+                            for (int y = 0; y < 4; y++) {
+                                sum += arr6.getDouble(0, 0, x, y, i, j);
+                            }
+                        }
+
+                        exp.putScalar(0, 0, i, j, sum);
+                    }
+                }
+                assertEquals(exp, arr6s);
+
+                System.out.println("ORDER: " + order);
+                for (int i = 0; i < 6; i++) {
+                    System.out.println(arr6s.getDouble(i));
+                }
+            }
+        } finally {
+            Nd4j.factory().setOrder(origOrder);
+        }
     }
 
 

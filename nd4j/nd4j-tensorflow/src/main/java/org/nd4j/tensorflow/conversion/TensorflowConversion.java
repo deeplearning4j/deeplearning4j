@@ -40,7 +40,8 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Map;
 
-import static org.bytedeco.javacpp.tensorflow.*;
+import org.bytedeco.tensorflow.*;
+import static org.bytedeco.tensorflow.global.tensorflow.*;
 
 /**
  * Interop between nd4j {@link INDArray}

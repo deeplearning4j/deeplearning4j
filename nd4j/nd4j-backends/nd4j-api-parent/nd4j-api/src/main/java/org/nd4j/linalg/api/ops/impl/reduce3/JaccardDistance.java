@@ -49,7 +49,7 @@ public class JaccardDistance extends BaseReduce3Op {
     }
 
     public JaccardDistance(INDArray x, INDArray y, INDArray z, boolean allDistances, int... dimensions) {
-        this(x, y, z, true, false, dimensions);
+        this(x, y, z, false, allDistances, dimensions);
         this.isComplex = allDistances;
     }
 
@@ -62,8 +62,8 @@ public class JaccardDistance extends BaseReduce3Op {
         this.isComplex = allDistances;
     }
 
-    public JaccardDistance(INDArray x, INDArray y, INDArray z, boolean newFormat, boolean keepDims, int... dimensions){
-        super(x, y, z, newFormat, keepDims, dimensions);
+    public JaccardDistance(INDArray x, INDArray y, INDArray z, boolean keepDims, boolean allDistances, int... dimensions){
+        super(x, y, z, keepDims, allDistances, dimensions);
         extraArgs = new Object[]{0.0f, 0.0f};
     }
 

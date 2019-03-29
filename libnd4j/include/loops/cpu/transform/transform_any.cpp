@@ -59,7 +59,7 @@ void _CUDA_H TransformAny<X, Z>::exec(void *vx, Nd4jLong *xShapeInfo,
         return;
     }
 
-    nd4j::Loops::loopXZ<X, Z, X, OpType>(x, xShapeInfo, z, zShapeInfo, extraParams);
+    nd4j::TransformLoops<X,Z,X>::template loopXZ<OpType>(x, xShapeInfo, z, zShapeInfo, extraParams);
 }
 
 
