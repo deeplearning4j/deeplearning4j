@@ -281,7 +281,11 @@ public class VpTreeNodeTest {
     @Test
     public void performanceTest() {
         final int dim = 300;
-        INDArray inputArrray = Nd4j.randn(DataType.DOUBLE, 200000, dim);
+        final int rows = 200000;
+
+        INDArray inputArrray = Nd4j.linspace(DataType.DOUBLE, 0.0, 1.0, rows * dim).reshape(rows, dim);
+
+        //INDArray inputArrray = Nd4j.randn(DataType.DOUBLE, 200000, dim);
         long start = System.currentTimeMillis();
         VPTree tree = new VPTree(inputArrray, "euclidean");
         long end = System.currentTimeMillis();
@@ -290,7 +294,7 @@ public class VpTreeNodeTest {
 
         double[] input = new double[dim];
         for (int i = 0; i < dim; ++i) {
-            input[i] = 0.5;
+            input[i] = 119;
         }
         List<DataPoint> results = new ArrayList<>();
         List<Double> distances = new ArrayList<>();
