@@ -1164,7 +1164,7 @@ static void concat_(const std::vector<NDArray*>& inArrs, NDArray& output, const 
         return;
     }
 
-    if(allC && axis == 0 && allVectors && output.ordering() == 'c') {
+    if(allC && allVectors && output.ordering() == 'c') {
         
         // if (numOfArrs >= 8) {
 
