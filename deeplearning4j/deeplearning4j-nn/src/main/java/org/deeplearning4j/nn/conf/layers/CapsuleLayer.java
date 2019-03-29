@@ -170,12 +170,16 @@ public class CapsuleLayer extends SameDiffLayer {
         private int capsules;
         private int capsuleDimensions;
 
-        private int routings;
+        private int routings = 3;
 
         private boolean hasBias = false;
 
         private int inputCapsules = 0;
         private int inputCapsuleDimensions = 0;
+
+        public Builder(int capsules, int capsuleDimensions){
+            this(capsules, capsuleDimensions, 3);
+        }
 
         public Builder(int capsules, int capsuleDimensions, int routings){
             super();
