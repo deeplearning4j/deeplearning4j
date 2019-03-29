@@ -31,7 +31,6 @@ import org.nd4j.autodiff.execution.conf.ExecutorConfiguration;
 import org.nd4j.autodiff.execution.conf.OutputMode;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.functions.DifferentialFunctionFactory;
-import org.nd4j.autodiff.loss.LossReduce;
 import org.nd4j.autodiff.samediff.internal.*;
 import org.nd4j.autodiff.samediff.ops.*;
 import org.nd4j.autodiff.samediff.serde.FlatBuffersMapper;
@@ -41,7 +40,6 @@ import org.nd4j.base.Preconditions;
 import org.nd4j.evaluation.IEvaluation;
 import org.nd4j.graph.*;
 import org.nd4j.jackson.objectmapper.holder.ObjectMapperHolder;
-import org.nd4j.linalg.api.blas.params.MMulTranspose;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.buffer.factory.DataBufferFactory;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
@@ -53,24 +51,6 @@ import org.nd4j.linalg.api.ops.impl.controlflow.While;
 import org.nd4j.linalg.api.ops.impl.controlflow.compat.Enter;
 import org.nd4j.linalg.api.ops.impl.controlflow.compat.Switch;
 import org.nd4j.linalg.api.ops.impl.layers.ExternalErrorsFunction;
-import org.nd4j.linalg.api.ops.impl.layers.convolution.config.*;
-import org.nd4j.linalg.api.ops.impl.layers.recurrent.GRUCell;
-import org.nd4j.linalg.api.ops.impl.layers.recurrent.LSTMCell;
-import org.nd4j.linalg.api.ops.impl.layers.recurrent.SRU;
-import org.nd4j.linalg.api.ops.impl.layers.recurrent.SRUCell;
-import org.nd4j.linalg.api.ops.impl.layers.recurrent.config.GRUCellConfiguration;
-import org.nd4j.linalg.api.ops.impl.layers.recurrent.config.LSTMCellConfiguration;
-import org.nd4j.linalg.api.ops.impl.layers.recurrent.config.SRUCellConfiguration;
-import org.nd4j.linalg.api.ops.impl.layers.recurrent.config.SRUConfiguration;
-import org.nd4j.linalg.api.ops.impl.loss.LogLoss;
-import org.nd4j.linalg.api.ops.impl.loss.SigmoidCrossEntropyLoss;
-import org.nd4j.linalg.api.ops.impl.loss.SoftmaxCrossEntropyLoss;
-import org.nd4j.linalg.api.ops.impl.reduce3.CosineSimilarity;
-import org.nd4j.linalg.api.ops.impl.reduce3.EuclideanDistance;
-import org.nd4j.linalg.api.ops.impl.reduce3.ManhattanDistance;
-import org.nd4j.linalg.api.ops.impl.shape.ConfusionMatrix;
-import org.nd4j.linalg.api.ops.impl.shape.Eye;
-import org.nd4j.linalg.api.ops.impl.shape.OneHot;
 import org.nd4j.linalg.api.ops.impl.shape.tensorops.TensorArray;
 import org.nd4j.linalg.api.ops.impl.transforms.Assert;
 import org.nd4j.linalg.api.ops.impl.transforms.gradient.GradientBackwardsMarker;
@@ -89,7 +69,6 @@ import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.exception.ND4UnresolvedOutputVariables;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
-import org.nd4j.linalg.indexing.conditions.Condition;
 import org.nd4j.linalg.learning.GradientUpdater;
 import org.nd4j.linalg.learning.regularization.Regularization;
 import org.nd4j.linalg.primitives.AtomicBoolean;
@@ -130,7 +109,7 @@ public class SameDiff extends SDBaseOps {
     @Getter     //TODO use package private instead of public getters?
     private final Map<String,Variable> variables = new LinkedHashMap<>();         //Use linked hash map to guarantee iteration order based on order they were added. Used in inputs() and flatbuffers serde
     @Getter
-    private final Map<String,SameDiffOp> ops = new HashMap<>();
+    private final Map<String,SameDiffOp> ops = new LinkedHashMap<>();
     @Getter
     private final Map<Long,InferenceSession> sessions = new ConcurrentHashMap<>();      //Key: thread ID
 
@@ -3063,6 +3042,17 @@ public class SameDiff extends SDBaseOps {
                     }
                 }
 
+                // Collect all the the ops that have to be traversed before we can conclude that the gradient for
+                // a variable is fully available
+                final HashMap<String, List<String>> prerequisites = new HashMap<>();
+                for (Variable variable : sameDiff.getVariables().values()) {
+                    // Copy the collection, as the original one will be modified during backprop
+                    final List<String> inputsForOp = variable.getInputsForOp();
+                    if(inputsForOp != null) {
+                        prerequisites.put(variable.getName(), new ArrayList<>(inputsForOp));
+                    }
+                }
+
                 int numProcessed = 0;
                 while(availableForDiff.size() > 0){
                     DifferentialFunction df = availableForDiff.remove();
@@ -3103,16 +3093,14 @@ public class SameDiff extends SDBaseOps {
 
                         //We can differentiate this op if output variables all have gradients defined
                         //TODO what about control ops? Need to be handled differently?
-                        boolean allAvaliable = true;
+                        boolean allAvailable = true;
                         SameDiffOp o = sameDiff.ops.get(opName);
                         for(String opOutputs : o.getOutputsOfOp()){
-                            SDVariable g = sameDiff.getVariable(opOutputs).getGradient();
-                            allAvaliable &= (g != null);
-                            if(g == null)
-                                break;
+                            allAvailable &= seenOps.containsAll(prerequisites.get(opOutputs));
+                            if(!allAvailable) break;
                         }
 
-                        if(allAvaliable && !seenOps.contains(o.getOp().getOwnName())) {
+                        if(allAvailable && !seenOps.contains(o.getOp().getOwnName())) {
                             availableForDiff.add(o.getOp());
                             seenOps.add(o.getOp().getOwnName());
                         }

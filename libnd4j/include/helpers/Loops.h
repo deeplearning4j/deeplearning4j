@@ -102,7 +102,7 @@ namespace nd4j {
     public:
 
         //////////////////////////////////////////////////////////////////////////////
-        template<typename OpType>
+        template<typename OpType, bool doParallel>
         static FORCEINLINE void loopXZ(X* x, Nd4jLong* xShapeInfo, Z* z, Nd4jLong* zShapeInfo, E* extraParams);
     };
 
@@ -629,7 +629,7 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
 
     //////////////////////////////////////////////////////////////////////////////
     template <typename X, typename Z, typename E>
-    template <typename OpType>
+    template <typename OpType, bool doParallel>
     void nd4j::TransformLoops<X,Z,E>::loopXZ(X* x, Nd4jLong* xShapeInfo,
                                              Z* z, Nd4jLong* zShapeInfo,
                                              E* extraParams) {
@@ -642,12 +642,13 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
 
         const Nd4jLong len = shape::length(xShapeInfo);
 
-        OmpLaunchHelper thredsInfo(len);
+        OmpLaunchHelper thredsInfo(len, doParallel ? -1 : 1);
 
         switch (kindOfLoop) {
 
             //*********************************************//
             case EWS1: {
+
                 PRAGMA_OMP_PARALLEL_THREADS(thredsInfo._numThreads)
                 {
                     const auto threadNum = omp_get_thread_num();
