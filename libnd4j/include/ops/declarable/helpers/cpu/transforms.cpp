@@ -1166,30 +1166,30 @@ static void concat_(const std::vector<NDArray*>& inArrs, NDArray& output, const 
 
     if(allC && axis == 0 && allVectors && output.ordering() == 'c') {
         
-        if (numOfArrs >= 8) {
+        // if (numOfArrs >= 8) {
 
             PRAGMA_OMP_PARALLEL_FOR
-            for (int r = 0; r < numOfArrs; r++) {
+            for (uint r = 0; r < static_cast<uint>(numOfArrs); r++) {
 
                 T *z = outBuff + r * lenOfFirstArr;
                 T *x = inArrs[r]->bufferAsT<T>();
 
-                PRAGMA_OMP_SIMD
-                for (Nd4jLong e = 0; e < lenOfFirstArr; e++)
+                // PRAGMA_OMP_SIMD
+                for (uint e = 0; e < static_cast<uint>(lenOfFirstArr); e++)
                     z[e] = x[e];
             }
-        } 
-        else {
-            int currBuffer = 0;
-            int currBufferOffset = 0;
-            for (int i = 0; i < output.lengthOf(); i++) {
-                outBuff[i] = inArrs[currBuffer]->bufferAsT<T>()[currBufferOffset++];
-                if (currBufferOffset >= inArrs[currBuffer]->lengthOf()) {
-                    currBuffer++;
-                    currBufferOffset = 0;
-                }
-            }
-        }
+        // } 
+        // else {
+        //     int currBuffer = 0;
+        //     int currBufferOffset = 0;
+        //     for (uint i = 0; i < static_cast<uint>(output.lengthOf()); i++) {
+        //         outBuff[i] = inArrs[currBuffer]->bufferAsT<T>()[currBufferOffset++];
+        //         if (currBufferOffset >= inArrs[currBuffer]->lengthOf()) {
+        //             currBuffer++;
+        //             currBufferOffset = 0;
+        //         }
+        //     }
+        // }
         return;
     }
     
