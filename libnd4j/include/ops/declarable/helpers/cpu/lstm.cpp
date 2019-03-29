@@ -148,6 +148,31 @@ void lstmCell(const NDArray* xt, const NDArray* ht_1, const NDArray* ct_1, const
         ht->assign(&htNoPeepHole);
 }
 
+template <typename T>
+static void fusedTanh(NDArray *z, NDArray *i, NDArray *c, const NDArray *cLast, NDArray *f, NDArray *h) {
+    //cell state = blockInput .* inputGate + prevCellState .* forgetGate
+    /*
+    z->applyPairwiseTransform(pairwise::Multiply, i, c, nullptr);       //c = z * i
+    auto temp = (*f) * (*cLast);
+    *c += temp;                              //c = (i * z) + (zf * (*cLast))
+    c->applyTransform(transform::Tanh, h);  //h = tanh(c)
+     */
+
+    auto uLen = static_cast<uint>(z->lengthOf());
+    auto c_ = c->bufferAsT<T>();
+    auto z_ = z->bufferAsT<T>();
+    auto i_ = i->bufferAsT<T>();
+    auto f_ = f->bufferAsT<T>();
+    auto cLast_ = cLast->bufferAsT<T>();
+    auto h_ = h->bufferAsT<T>();
+
+    PRAGMA_OMP_PARALLEL_FOR_SIMD
+    for (uint e = 0; e < uLen; e++) {
+        c_[e] = z_[e] * i_[e] + (f_[e] * cLast_[e]);
+        h_[e] = nd4j::math::nd4j_tanh<T,T>(c_[e]);
+    }
+}
+
 //////////////////////////////////////////////////////////////////////////
 
 void lstmBlockCell(const NDArray* xt, const NDArray* cLast, const NDArray* yLast,
@@ -236,11 +261,16 @@ void lstmBlockCell(const NDArray* xt, const NDArray* cLast, const NDArray* yLast
         }
 
 
-    //cell state = blockInput .* inputGate + prevCellState .* forgetGate
-    z->applyPairwiseTransform(pairwise::Multiply, i, c, nullptr);       //c = z * i
-    auto temp = (*f) * (*cLast);
-    *c += temp;                              //c = (i * z) + (zf * (*cLast))
-    c->applyTransform(transform::Tanh, h);  //h = tanh(c)
+    if (z->ews() == 1 && i->ews() == 1 && c->ews() == 1 && cLast->ews() == 1 && f->ews() == 1 && h->ews() == 1) {
+        //cell state = blockInput .* inputGate + prevCellState .* forgetGate
+        BUILD_SINGLE_SELECTOR(z->dataType(), fusedTanh, (z, i, c, cLast, f, h), FLOAT_TYPES);
+    } else {
+        //cell state = blockInput .* inputGate + prevCellState .* forgetGate
+        z->applyPairwiseTransform(pairwise::Multiply, i, c, nullptr);       //c = z * i
+        auto temp = (*f) * (*cLast);
+        *c += temp;                              //c = (i * z) + (zf * (*cLast))
+        c->applyTransform(transform::Tanh, h);  //h = tanh(c)
+    }
 
 
     // if clipping value is provided then cell state is clipped by this value prior to the cell output activation
