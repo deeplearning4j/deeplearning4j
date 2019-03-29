@@ -17,12 +17,16 @@ package org.deeplearning4j.nn.conf.layers;
 
 import lombok.*;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
+import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.samediff.SDLayerParams;
 import org.deeplearning4j.nn.conf.layers.samediff.SameDiffLayer;
+import org.deeplearning4j.nn.conf.layers.samediff.SameDiffLayerUtils;
+import org.deeplearning4j.nn.params.SimpleRnnParamInitializer;
 import org.deeplearning4j.nn.weights.WeightInitUtil;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -30,36 +34,49 @@ import org.nd4j.linalg.factory.Nd4j;
 import java.util.Map;
 
 /**
- * Implements Dot Product Self Attention
+ * Implements Recurrent Dot Product Attention
  *
  * Takes in RNN style input in the shape of [batchSize, features, timesteps]
- * and applies dot product attention using each timestep as the query.
+ * and applies dot product attention using the hidden state as the query and
+ * <b>all</b> time steps as keys/values.
  *
+ * a_i = σ(W*x_i + R*attention(a_i, x, x) + b)
+ *
+ * @see org.nd4j.linalg.api.ops.impl.transforms.custom.MultiHeadDotProductAttention
  * @author Paul Dubs
  */
 @Data
 @EqualsAndHashCode(callSuper = true)
-public class SelfAttentionLayer extends SameDiffLayer {
+public class RecurrentAttentionLayer extends SameDiffLayer {
     private long nIn;
     private long nOut;
     private int nHeads;
     private long headSize;
     private boolean projectInput;
+    private Activation activation;
+    private boolean hasBias;
+
+
 
     private static final String WEIGHT_KEY_QUERY_PROJECTION = "Wq";
     private static final String WEIGHT_KEY_KEY_PROJECTION = "Wk";
     private static final String WEIGHT_KEY_VALUE_PROJECTION = "Wv";
     private static final String WEIGHT_KEY_OUT_PROJECTION = "Wo";
+    private static final String WEIGHT_KEY = SimpleRnnParamInitializer.WEIGHT_KEY;
+    private static final String BIAS_KEY = SimpleRnnParamInitializer.BIAS_KEY;
+    private static final String RECURRENT_WEIGHT_KEY = SimpleRnnParamInitializer.RECURRENT_WEIGHT_KEY;
 
-    private SelfAttentionLayer(){/*No arg constructor for serialization*/}
+    private RecurrentAttentionLayer(){/*No arg constructor for serialization*/}
 
-    protected SelfAttentionLayer(Builder builder){
+    protected RecurrentAttentionLayer(Builder builder){
         super(builder);
         nIn = builder.nIn;
         nOut = builder.nOut;
         nHeads = builder.nHeads;
         headSize = builder.headSize == 0 ? nOut / nHeads : builder.headSize;
         projectInput = builder.projectInput;
+        activation = builder.activation;
+        hasBias = builder.hasBias;
     }
 
     @Override
@@ -70,7 +87,7 @@ public class SelfAttentionLayer extends SameDiffLayer {
     @Override
     public void setNIn(InputType inputType, boolean override) {
         if (inputType == null || inputType.getType() != InputType.Type.RNN) {
-            throw new IllegalStateException("Invalid input for Self Attention layer (layer name = \"" + getLayerName()
+            throw new IllegalStateException("Invalid input for Recurrent Attention layer (layer name = \"" + getLayerName()
                     + "\"): expect RNN input type with size > 0. Got: " + inputType);
         }
 
@@ -83,26 +100,29 @@ public class SelfAttentionLayer extends SameDiffLayer {
     @Override
     public InputType getOutputType(int layerIndex, InputType inputType) {
         if (inputType == null || inputType.getType() != InputType.Type.RNN) {
-            throw new IllegalStateException("Invalid input for Self Attention layer (layer index = " + layerIndex
+            throw new IllegalStateException("Invalid input for Recurrent Attention layer (layer index = " + layerIndex
                     + ", layer name = \"" + getLayerName() + "\"): expect RNN input type with size > 0. Got: "
                     + inputType);
         }
 
         InputType.InputTypeRecurrent itr = (InputType.InputTypeRecurrent) inputType;
 
-        if(projectInput){
-            return InputType.recurrent(nOut, itr.getTimeSeriesLength());
-        }else{
-            return InputType.recurrent(nIn, itr.getTimeSeriesLength());
-        }
+
+        return InputType.recurrent(nOut, itr.getTimeSeriesLength());
     }
 
     @Override
     public void defineParameters(SDLayerParams params) {
         params.clear();
 
+        params.addWeightParam(WEIGHT_KEY, nIn, nOut);
+        params.addWeightParam(RECURRENT_WEIGHT_KEY, nOut, nOut);
+        if(hasBias){
+            params.addBiasParam(BIAS_KEY, nOut);
+        }
+
         if(projectInput){
-            params.addWeightParam(WEIGHT_KEY_QUERY_PROJECTION, nHeads, headSize, nIn);
+            params.addWeightParam(WEIGHT_KEY_QUERY_PROJECTION, nHeads, headSize, nOut);
             params.addWeightParam(WEIGHT_KEY_KEY_PROJECTION,   nHeads, headSize, nIn);
             params.addWeightParam(WEIGHT_KEY_VALUE_PROJECTION, nHeads, headSize, nIn);
             params.addWeightParam(WEIGHT_KEY_OUT_PROJECTION, nHeads * headSize, nOut);
@@ -113,32 +133,80 @@ public class SelfAttentionLayer extends SameDiffLayer {
     public void initializeParameters(Map<String, INDArray> params) {
         try (MemoryWorkspace ws = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()) {
             for (Map.Entry<String, INDArray> e : params.entrySet()) {
-                if(e.getKey().equals(WEIGHT_KEY_OUT_PROJECTION)){
-                    WeightInitUtil.initWeights(nIn, headSize, e.getValue().shape(), weightInit, null, 'c', e.getValue());
-                }else{
-                    WeightInitUtil.initWeights(nHeads * headSize, nOut, e.getValue().shape(), weightInit, null, 'c', e.getValue());
+                final String keyName = e.getKey();
+                switch (keyName) {
+                    case WEIGHT_KEY:
+                        WeightInitUtil.initWeights(nIn, nOut, e.getValue().shape(), weightInit, null, 'c', e.getValue());
+                        break;
+                    case RECURRENT_WEIGHT_KEY:
+                        WeightInitUtil.initWeights(nOut, nOut, e.getValue().shape(), weightInit, null, 'c', e.getValue());
+                        break;
+                    case BIAS_KEY:
+                        e.getValue().assign(0);
+                        break;
+                    case WEIGHT_KEY_OUT_PROJECTION:
+                        WeightInitUtil.initWeights(nIn, headSize, e.getValue().shape(), weightInit, null, 'c', e.getValue());
+                        break;
+                    default:
+                        WeightInitUtil.initWeights(nHeads * headSize, nOut, e.getValue().shape(), weightInit, null, 'c', e.getValue());
+                        break;
                 }
             }
         }
     }
 
-
     @Override
-    public SDVariable defineLayer(SameDiff sameDiff, SDVariable layerInput, Map<String, SDVariable> paramTable, SDVariable mask) {
-        if(projectInput){
-            val Wq = paramTable.get(WEIGHT_KEY_QUERY_PROJECTION);
-            val Wk = paramTable.get(WEIGHT_KEY_KEY_PROJECTION);
-            val Wv = paramTable.get(WEIGHT_KEY_VALUE_PROJECTION);
-            val Wo = paramTable.get(WEIGHT_KEY_OUT_PROJECTION);
-
-            return sameDiff.nn.multiHeadDotProductAttention(getLayerName(), layerInput, layerInput, layerInput, Wq, Wk, Wv, Wo, mask, true);
-        }else{
-            return sameDiff.nn.dotProductAttention(getLayerName(), layerInput, layerInput, layerInput, mask, true);
+    public void applyGlobalConfigToLayer(NeuralNetConfiguration.Builder globalConfig) {
+        if (activation == null) {
+            activation = SameDiffLayerUtils.fromIActivation(globalConfig.getActivationFn());
         }
     }
 
+    @Override
+    public SDVariable defineLayer(SameDiff sameDiff, SDVariable layerInput, Map<String, SDVariable> paramTable, SDVariable mask) {
+        final val W = paramTable.get(WEIGHT_KEY);
+        final val R = paramTable.get(RECURRENT_WEIGHT_KEY);
+        final val b = paramTable.get(BIAS_KEY);
 
-    public static class Builder extends SameDiffLayer.Builder<SelfAttentionLayer.Builder> {
+        final long[] inputShape = layerInput.getShape();
+        final val timeSteps = inputShape[2];
+        SDVariable[] outputSlices = new SDVariable[(int) timeSteps];
+        SDVariable[] inputSlices = sameDiff.unstack(layerInput, 2);
+        SDVariable prev = null;
+        for (int i = 0; i < timeSteps; i++) {
+            final val x_i = inputSlices[i];
+            outputSlices[i] = x_i.mmul(W);
+            if(hasBias){
+                outputSlices[i] = outputSlices[i].add(b);
+            }
+
+            if(prev != null){
+                SDVariable attn;
+                if(projectInput){
+                    val Wq = paramTable.get(WEIGHT_KEY_QUERY_PROJECTION);
+                    val Wk = paramTable.get(WEIGHT_KEY_KEY_PROJECTION);
+                    val Wv = paramTable.get(WEIGHT_KEY_VALUE_PROJECTION);
+                    val Wo = paramTable.get(WEIGHT_KEY_OUT_PROJECTION);
+
+                    attn = sameDiff.nn.multiHeadDotProductAttention(getLayerName()+"_attention_"+i, prev, layerInput, layerInput, Wq, Wk, Wv, Wo, mask, true);
+                }else{
+                    attn = sameDiff.nn.dotProductAttention(getLayerName()+"_attention_"+i, prev, layerInput, layerInput, mask, true);
+                }
+
+                attn = sameDiff.squeeze(attn, 2);
+
+                outputSlices[i] = outputSlices[i].add(attn.mmul(R));
+            }
+
+            outputSlices[i] = activation.asSameDiff(sameDiff, outputSlices[i]);
+            outputSlices[i] = sameDiff.expandDims(outputSlices[i], 2);
+            prev = outputSlices[i];
+        }
+        return sameDiff.concat(2, outputSlices);
+    }
+
+
+    public static class Builder extends SameDiffLayer.Builder<RecurrentAttentionLayer.Builder> {
 
         /**
          * Number of inputs to the layer (input size)
@@ -173,7 +241,21 @@ public class SelfAttentionLayer extends SameDiffLayer {
          */
         @Getter
         @Setter
-        private boolean projectInput;
+        private boolean projectInput = true;
+
+        /**
+         * If true (default is true) the layer will have a bias
+         */
+        @Getter
+        @Setter
+        private boolean hasBias = true;
+
+        /**
+         * Activation function for the layer
+         */
+        @Getter
+        @Setter
+        private Activation activation = Activation.TANH;
 
         /**
          * @param nIn Number of inputs to the layer (input size)
@@ -215,14 +297,30 @@ public class SelfAttentionLayer extends SameDiffLayer {
             return this;
         }
 
+        /**
+         * @param hasBias If true (default is true) the layer will have a bias
+         */
+        public Builder hasBias(boolean hasBias) {
+            this.hasBias = hasBias;
+            return this;
+        }
+
+        /**
+         * @param activation Activation function for the layer
+         */
+        public Builder activation(Activation activation) {
+            this.activation = activation;
+            return this;
+        }
+
         @Override
         @SuppressWarnings("unchecked")
-        public SelfAttentionLayer build() {
+        public RecurrentAttentionLayer build() {
             if(!this.projectInput && this.nHeads != 1){ throw new IllegalArgumentException("projectInput must be true when nHeads != 1"); }
             if(!this.projectInput && nIn != nOut){ throw new IllegalArgumentException("nIn must be equal to nOut when projectInput is false"); }
             if(this.projectInput && nOut == 0){ throw new IllegalArgumentException("nOut must be specified when projectInput is true"); }
             if(this.nOut % nHeads != 0 && headSize == 0){ throw new IllegalArgumentException("nOut isn't divided by nHeads cleanly. Specify the headSize manually."); }
-            return new SelfAttentionLayer(this);
+            return new RecurrentAttentionLayer(this);
         }
     }
 }

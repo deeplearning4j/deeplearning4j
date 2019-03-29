@@ -75,7 +75,7 @@ public class LearnedSelfAttentionLayer extends SameDiffLayer {
     @Override
     public void setNIn(InputType inputType, boolean override) {
         if (inputType == null || inputType.getType() != InputType.Type.RNN) {
-            throw new IllegalStateException("Invalid input for RNN layer (layer name = \"" + getLayerName()
+            throw new IllegalStateException("Invalid input for Learned Self Attention layer (layer name = \"" + getLayerName()
                     + "\"): expect RNN input type with size > 0. Got: " + inputType);
         }
 
@@ -88,7 +88,7 @@ public class LearnedSelfAttentionLayer extends SameDiffLayer {
     @Override
     public InputType getOutputType(int layerIndex, InputType inputType) {
         if (inputType == null || inputType.getType() != InputType.Type.RNN) {
-            throw new IllegalStateException("Invalid input for RNN layer (layer index = " + layerIndex
+            throw new IllegalStateException("Invalid input for Learned Self Attention layer (layer index = " + layerIndex
                     + ", layer name = \"" + getLayerName() + "\"): expect RNN input type with size > 0. Got: "
                     + inputType);
         }
