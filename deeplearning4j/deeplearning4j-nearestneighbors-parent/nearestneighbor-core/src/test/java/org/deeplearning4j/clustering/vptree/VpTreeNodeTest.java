@@ -16,6 +16,7 @@
 
 package org.deeplearning4j.clustering.vptree;
 
+import org.apache.commons.lang3.ArrayUtils;
 import org.deeplearning4j.clustering.sptree.DataPoint;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -26,10 +27,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Counter;
 import org.nd4j.linalg.primitives.Pair;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.PriorityQueue;
-import java.util.TreeSet;
+import java.util.*;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -226,6 +224,26 @@ public class VpTreeNodeTest {
     @Test
     public void testVPSearchOverNaturals2D() throws Exception {
         testVPSearchOverNaturalsPD(20, 2, 5);
+    }
+
+    @Test
+    public void testTreeOrder() {
+
+        int N = 10, dim = 1;
+        INDArray dataset = Nd4j.randn(N, dim);
+        double[] rawData = dataset.toDoubleVector();
+        Arrays.sort(dataset.toDoubleVector());
+        dataset = Nd4j.createFromArray(rawData);
+
+        List<DataPoint> points = new ArrayList<>();
+
+        for (int i = 0; i < rawData.length; ++i) {
+            points.add(new DataPoint(i, Nd4j.create(new double[]{rawData[i]})));
+        }
+
+        VPTree tree = new VPTree(points, "euclidean");
+        INDArray points1 = tree.getItems();
+        assertEquals(dataset, points1);
     }
 
     public static void testVPSearchOverNaturalsPD(int nrows, int ncols, int K) throws Exception {
