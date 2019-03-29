@@ -26,6 +26,7 @@
 #include <NDArrayFactory.h>
 #include <helpers/TAD.h>
 #include <helpers/ConstantTadHelper.h>
+#include <Loops.h>
 
 namespace nd4j 	  {
 namespace ops 	  {
@@ -1140,58 +1141,50 @@ static void mirrorPad_(const NDArray& input, const NDArray& paddings, NDArray& o
 template<typename T>
 static void concat_(const std::vector<NDArray*>& inArrs, NDArray& output, const int axis) {
 
-    const int numOfArrs = inArrs.size();
-    bool allC = true;
-    bool allScalar = true;
-    bool allVectors = true;
-    
-    const Nd4jLong lenOfFirstArr = inArrs[0]->lengthOf();
+    const uint numOfArrs = inArrs.size();
 
-    //detect whether all arrays are c ordered or not
-    //Also detect whether they are all scalars
-    for(int i = 0; i < numOfArrs; i++) {
-        allC &= (inArrs[i]->ordering() == 'c');
-        allScalar &= (inArrs[i]->isScalar());
-        allVectors &= (inArrs[i]->isRowVector() && inArrs[i]->lengthOf() == lenOfFirstArr);
-    }
+    int outDim;
+    const bool isOutputVector = output.isCommonVector(outDim);
 
-    T* outBuff = output.bufferAsT<T>();
+    if(isOutputVector || axis == 0) {
 
-    //we are merging all scalars
-    if(allScalar) {
-        for(int i = 0; i < numOfArrs; i++)
-            outBuff[i] = inArrs[i]->bufferAsT<T>()[0];
-        return;
-    }
-
-    if(allC && allVectors && output.ordering() == 'c') {
+        bool allVectorsOrScalars = true;
+        const uint outEws = isOutputVector ? output.stridesOf()[outDim] : output.ews();
         
-        // if (numOfArrs >= 8) {
+        std::vector<int> nonUnityDim(numOfArrs);
+        std::vector<Nd4jLong> zOffset(numOfArrs);
 
-            PRAGMA_OMP_PARALLEL_FOR
-            for (uint r = 0; r < static_cast<uint>(numOfArrs); r++) {
+        for(int i = 0; i < numOfArrs; i++) {        
+            allVectorsOrScalars &= (inArrs[i]->lengthOf() == 1 || inArrs[i]->isCommonVector(nonUnityDim[i]));
+            if(!allVectorsOrScalars)
+                break;
+            if(i == 0)  zOffset[0] = 0;
+            else        zOffset[i] = zOffset[i - 1] + outEws * inArrs[i - 1]->lengthOf();        
+        }
+                        
+        if(allVectorsOrScalars) {
 
-                T *z = outBuff + r * lenOfFirstArr;
+            T* outBuff = output.bufferAsT<T>();
+
+            PRAGMA_OMP_PARALLEL_FOR_SIMD
+            for (uint r = 0; r < numOfArrs; r++) {
+
+                const uint arrLen = inArrs[r]->lengthOf();
+                const uint xEws    = (arrLen == 1) ? 1 : inArrs[r]->stridesOf()[nonUnityDim[r]];
+
+                T *z = outBuff + zOffset[r];
                 T *x = inArrs[r]->bufferAsT<T>();
-
-                // PRAGMA_OMP_SIMD
-                for (uint e = 0; e < static_cast<uint>(lenOfFirstArr); e++)
-                    z[e] = x[e];
+            
+                if(outEws == 1 && xEws == 1)
+                    for (uint e = 0; e < arrLen; e++)
+                        z[e] = x[e];
+                else
+                    for (uint e = 0; e < arrLen; e++)
+                        z[e * outEws] = x[e * xEws];
             }
-        // } 
-        // else {
-        //     int currBuffer = 0;
-        //     int currBufferOffset = 0;
-        //     for (uint i = 0; i < static_cast<uint>(output.lengthOf()); i++) {
-        //         outBuff[i] = inArrs[currBuffer]->bufferAsT<T>()[currBufferOffset++];
-        //         if (currBufferOffset >= inArrs[currBuffer]->lengthOf()) {
-        //             currBuffer++;
-        //             currBufferOffset = 0;
-        //         }
-        //     }
-        // }
-        return;
-    }
+            return;
+        }
+    }    
     
     const int rank  = inArrs[0]->rankOf();
     const int rank2 = 2*rank;
@@ -1206,9 +1199,11 @@ static void concat_(const std::vector<NDArray*>& inArrs, NDArray& output, const 
         indices[i][2 * axis + 1] = indices[i-1][2 * axis + 1] + inArrs[i]->sizeAt(axis);      // index end with (excluding)
     }
 
+    PRAGMA_OMP_PARALLEL_FOR_SIMD
     for(int i = 0; i < numOfArrs; ++i) {
         auto temp = output(indices[i], true);
-        temp.assign(inArrs[i]);
+        nd4j::TransformLoops<T,T,T>::template loopXZ<simdOps::Assign<T,T>, false>(inArrs[i]->bufferAsT<T>(), inArrs[i]->getShapeInfo(), temp.bufferAsT<T>(), temp.getShapeInfo(), nullptr);
+        // temp.assign(inArrs[i]);
     }
 }
 

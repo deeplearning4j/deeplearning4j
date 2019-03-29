@@ -822,3 +822,18 @@ TEST_F(DeclarableOpsTests12, tensormmul_6) {
     delete results;
 
 }
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests12, concat_test10) {
+
+    NDArray x0('c', {1,4,5}, nd4j::DataType::FLOAT32);
+    NDArray x1('c', {2,4,5}, nd4j::DataType::FLOAT32);
+    NDArray  z('f', {3,4,5}, nd4j::DataType::FLOAT32);
+    
+    x0 = 0.;
+    x1 = 1.;
+
+    nd4j::ops::concat op;    
+    auto status = op.execute({&x0, &x1}, {&z}, {}, {0}, {});
+    ASSERT_EQ(ND4J_STATUS_OK, status);
+}

@@ -2530,7 +2530,7 @@ template <typename T>
     }
     
     INLINEDEF _CUDA_HD bool isCommonVector(const Nd4jLong *shapeInfo, int& posOfNonUnityDim) {
-
+        
         if(rank(shapeInfo) > 0 && length(shapeInfo) == 1)
             return true;
 
