@@ -39,10 +39,10 @@ public class CapsuleUtils {
      * @param x The variable to squash
      * @return squash(x)
      */
-    public static SDVariable squash(SameDiff SD, SDVariable x){
-        SDVariable squaredNorm = SD.squaredNorm(x);
+    public static SDVariable squash(SameDiff SD, SDVariable x, int dim){
+        SDVariable squaredNorm = SD.squaredNorm(x, true, dim);
         SDVariable scale = SD.math.sqrt(squaredNorm.plus(1e-7));
-        return x.times(scale).div(squaredNorm.plus(1.0));
+        return x.times(squaredNorm).div(squaredNorm.plus(1.0).times(scale));
     }
 
     /**

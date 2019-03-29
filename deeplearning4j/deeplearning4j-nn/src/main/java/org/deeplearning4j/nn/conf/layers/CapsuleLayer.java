@@ -121,7 +121,7 @@ public class CapsuleLayer extends SameDiffLayer {
                 temp = temp.plus(paramTable.get(BIAS_PARAM));
             }
 
-            SDVariable v = CapsuleUtils.squash(SD, temp);
+            SDVariable v = CapsuleUtils.squash(SD, temp, 3);
 
             if(i == routings - 1){
                 return v;

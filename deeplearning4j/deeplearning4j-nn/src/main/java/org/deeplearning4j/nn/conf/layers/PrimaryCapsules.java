@@ -30,6 +30,7 @@ import org.deeplearning4j.nn.conf.inputs.InputType.Type;
 import org.deeplearning4j.nn.conf.layers.samediff.SDLayerParams;
 import org.deeplearning4j.nn.conf.layers.samediff.SameDiffLayer;
 import org.deeplearning4j.nn.weights.WeightInitUtil;
+import org.deeplearning4j.util.CapsuleUtils;
 import org.deeplearning4j.util.ValidationUtils;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
@@ -130,7 +131,8 @@ public class PrimaryCapsules extends SameDiffLayer {
             }
         }
 
-        return conved.reshape(-1, capsules, capsuleDimensions);
+        SDVariable reshaped = conved.reshape(-1, capsules, capsuleDimensions);
+        return CapsuleUtils.squash(SD, reshaped, 2);
     }
 
     @Override
