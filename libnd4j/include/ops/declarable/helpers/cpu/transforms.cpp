@@ -1140,56 +1140,34 @@ static void mirrorPad_(const NDArray& input, const NDArray& paddings, NDArray& o
 template<typename T>
 static void concat_(const std::vector<NDArray*>& inArrs, NDArray& output, const int axis) {
 
-    const int numOfArrs = inArrs.size();
-    bool allC = true;
-    bool allScalar = true;
-    bool allVectors = true;
-    
-    const Nd4jLong lenOfFirstArr = inArrs[0]->lengthOf();
-
-    //detect whether all arrays are c ordered or not
-    //Also detect whether they are all scalars
-    for(int i = 0; i < numOfArrs; i++) {
-        allC &= (inArrs[i]->ordering() == 'c');
-        allScalar &= (inArrs[i]->isScalar());
-        allVectors &= (inArrs[i]->isRowVector() && inArrs[i]->lengthOf() == lenOfFirstArr);
-    }
-
-    T* outBuff = output.bufferAsT<T>();
-
-    //we are merging all scalars
-    if(allScalar) {
-        for(int i = 0; i < numOfArrs; i++)
-            outBuff[i] = inArrs[i]->bufferAsT<T>()[0];
-        return;
-    }
-
-    if(allC && axis == 0 && allVectors && output.ordering() == 'c') {
+    const uint numOfArrs = inArrs.size();    
+    bool allVectorsOrScalars = true;
         
-        // if (numOfArrs >= 8) {
+    std::vector<int> nonUnityDim(numOfArrs);
+    std::vector<Nd4jLong> zOffset(numOfArrs);     
+    for(int i = 0; i < numOfArrs; i++) {        
+        allVectorsOrScalars &= (inArrs[i]->lengthOf() == 1 || inArrs[i]->isCommonVector(nonUnityDim[i]));
+        if(i == 0)  zOffset[0] = 0;
+        else        zOffset[i] = zOffset[i - 1] + inArrs[i - 1]->lengthOf();        
+    }
 
-            PRAGMA_OMP_PARALLEL_FOR
-            for (uint r = 0; r < static_cast<uint>(numOfArrs); r++) {
+    T* outBuff = output.bufferAsT<T>();    
 
-                T *z = outBuff + r * lenOfFirstArr;
-                T *x = inArrs[r]->bufferAsT<T>();
+    if(allVectorsOrScalars) {                
 
-                // PRAGMA_OMP_SIMD
-                for (uint e = 0; e < static_cast<uint>(lenOfFirstArr); e++)
-                    z[e] = x[e];
-            }
-        // } 
-        // else {
-        //     int currBuffer = 0;
-        //     int currBufferOffset = 0;
-        //     for (uint i = 0; i < static_cast<uint>(output.lengthOf()); i++) {
-        //         outBuff[i] = inArrs[currBuffer]->bufferAsT<T>()[currBufferOffset++];
-        //         if (currBufferOffset >= inArrs[currBuffer]->lengthOf()) {
-        //             currBuffer++;
-        //             currBufferOffset = 0;
-        //         }
-        //     }
-        // }
+        PRAGMA_OMP_PARALLEL_FOR
+        for (uint r = 0; r < numOfArrs; r++) {
+
+            const uint arrLen = inArrs[r]->lengthOf();
+            const uint ews    = (arrLen == 1) ? 1 : inArrs[r]->stridesOf()[nonUnityDim[r]];
+
+            T *z = outBuff + zOffset[r];
+            T *x = inArrs[r]->bufferAsT<T>();
+
+            // PRAGMA_OMP_SIMD
+            for (uint e = 0; e < arrLen; e++)
+                z[e] = x[e * ews];            
+        }
         return;
     }
     

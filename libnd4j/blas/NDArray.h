@@ -1312,6 +1312,13 @@ namespace nd4j {
         FORCEINLINE bool isRowVector() const;
 
         /**
+        *  returns true if all dimensions of array except one are unities, for example: [1,1,n,1], [n,1,1], [n], ...
+        *  posOfNonUnityDim - one dimension with value > 1
+        */
+        FORCEINLINE bool isCommonVector(int& posOfNonUnityDim) const;
+
+
+        /**
         *  returns true if array is scalar
         */
         FORCEINLINE bool isScalar() const;
@@ -1579,6 +1586,12 @@ namespace nd4j {
             return true;
 
         return !isScalar() && shape::isRowVector(this->_shapeInfo);
+    }
+
+    //////////////////////////////////////////////////////////////////////////
+    bool NDArray::isCommonVector(int& posOfNonUnityDim) const {        
+
+        return shape::isCommonVector(_shapeInfo, posOfNonUnityDim);
     }
 
     //////////////////////////////////////////////////////////////////////////
