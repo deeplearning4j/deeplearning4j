@@ -246,6 +246,37 @@ public class VpTreeNodeTest {
         assertEquals(dataset, points1);
     }
 
+    @Test
+    public void testNearestNeighbors() {
+
+        List<DataPoint> points = new ArrayList<>();
+
+        points.add(new DataPoint(0, Nd4j.create(new double[] {0.83494041,  1.70294823, -1.34172191,  0.02350972,
+                                                                    -0.87519361,  0.64401935, -0.5634212,  -1.1274308,
+                                                                    0.19245948, -0.11349026})));
+        points.add(new DataPoint(1, Nd4j.create(new double[] {-0.41115537, -0.7686138,  -0.67923172, 1.01638281,
+                                                                    0.04390801,  0.29753166,  0.78915771, -0.13564866,
+                                                                    -1.06053692, -0.15953041})));
+
+        VPTree tree = new VPTree(points, "euclidean");
+
+        List<DataPoint> results = new ArrayList<>();
+        List<Double> distances = new ArrayList<>();
+
+        final int k = 1;
+        double[] input = new double[]{0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5};
+        tree.search(Nd4j.createFromArray(input), k, results, distances);
+        assertEquals(k, distances.size());
+        assertEquals(2.7755637844503016, distances.get(0), 1e-5);
+
+        double[] results_pattern = new double[]{-0.41115537, -0.7686138 , -0.67923172,  1.01638281,  0.04390801,
+                0.29753166,  0.78915771, -0.13564866, -1.06053692, -0.15953041};
+        for (int i = 0; i < results_pattern.length; ++i) {
+            assertEquals(results_pattern[i], results.get(0).getPoint().getDouble(i), 1e-5);
+        }
+
+    }
+
     public static void testVPSearchOverNaturalsPD(int nrows, int ncols, int K) throws Exception {
         final int queryPoint = 12;
 
