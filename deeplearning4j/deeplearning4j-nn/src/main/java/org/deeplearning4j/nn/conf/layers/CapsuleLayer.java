@@ -27,6 +27,7 @@ import org.deeplearning4j.nn.conf.inputs.InputType.InputTypeRecurrent;
 import org.deeplearning4j.nn.conf.inputs.InputType.Type;
 import org.deeplearning4j.nn.conf.layers.samediff.SDLayerParams;
 import org.deeplearning4j.nn.conf.layers.samediff.SameDiffLayer;
+import org.deeplearning4j.nn.weights.WeightInitUtil;
 import org.deeplearning4j.util.CapsuleUtils;
 import org.deeplearning4j.util.ValidationUtils;
 import org.nd4j.autodiff.samediff.SDIndex;
@@ -154,8 +155,16 @@ public class CapsuleLayer extends SameDiffLayer {
                 if (BIAS_PARAM.equals(e.getKey())) {
                     e.getValue().assign(0);
                 } else if(WEIGHT_PARAM.equals(e.getKey())){
-                    //TODO use weightInit
-                    e.getValue().assign(1);
+                    WeightInitUtil.initWeights(
+                            inputCapsules * inputCapsuleDimensions,
+                            capsules * capsuleDimensions,
+                            new long[]{1, inputCapsules, capsules * capsuleDimensions,
+                                    inputCapsuleDimensions, 1},
+                            this.weightInit,
+                            null,
+                            'c',
+                            e.getValue()
+                    );
                 }
             }
         }
