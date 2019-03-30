@@ -61,7 +61,7 @@ public class BinomialDistributionEx extends BaseRandomOp {
      */
     public BinomialDistributionEx(@NonNull INDArray z, int trials, @NonNull INDArray probabilities) {
         super(z, probabilities, z);
-        if (z.lengthLong() != probabilities.lengthLong())
+        if (z.length() != probabilities.length())
             throw new IllegalStateException("Length of probabilities array should match length of target array");
 
         if (probabilities.elementWiseStride() < 1)

@@ -27,6 +27,7 @@ import org.nd4j.linalg.api.ops.impl.indexaccum.IMax;
 import org.nd4j.linalg.api.ops.impl.reduce3.ManhattanDistance;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.LogSoftMax;
 import org.nd4j.linalg.api.ops.impl.transforms.floating.Sqrt;
+import org.nd4j.linalg.api.ops.impl.transforms.strict.OldLogSoftMax;
 import org.nd4j.linalg.api.ops.impl.transforms.strict.OldSoftMax;
 import org.nd4j.linalg.api.ops.impl.transforms.strict.SoftMaxDerivative;
 import org.nd4j.linalg.factory.Nd4j;
@@ -159,7 +160,7 @@ public class CrashTest extends BaseNd4jTest {
         // logisoftmax, softmax & softmax derivative
         Nd4j.getExecutioner().exec(new OldSoftMax(x));
         Nd4j.getExecutioner().exec(new SoftMaxDerivative(x));
-        Nd4j.getExecutioner().exec(new LogSoftMax(x));
+        Nd4j.getExecutioner().exec(new OldLogSoftMax(x));
 
 
         // BooleanIndexing
