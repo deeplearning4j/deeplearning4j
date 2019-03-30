@@ -155,7 +155,7 @@ public class CapsuleLayer extends SameDiffLayer {
                     e.getValue().assign(0);
                 } else if(WEIGHT_PARAM.equals(e.getKey())){
                     //TODO use weightInit
-                    e.getValue().assign(0);
+                    e.getValue().assign(1);
                 }
             }
         }
