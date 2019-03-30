@@ -70,13 +70,11 @@ public class LossWasserstein extends DifferentialFunction implements ILossFuncti
             boolean average) {
         INDArray scoreArr = scoreArray(labels, preOutput, activationFn, mask);
 
-        double score = scoreArr.sumNumber().doubleValue() / scoreArr.size(1);
-
         if (average) {
-            score /= scoreArr.size(0);
+            return scoreArr.meanNumber().doubleValue();
+        } else {
+            return scoreArr.sumNumber().doubleValue() / scoreArr.size(1);
         }
-
-        return score;
     }
 
     @Override
