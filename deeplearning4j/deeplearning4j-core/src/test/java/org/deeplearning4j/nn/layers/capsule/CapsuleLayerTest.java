@@ -5,18 +5,15 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-import lombok.val;
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.CapsuleLayer;
-import org.deeplearning4j.nn.conf.layers.CapsuleStrengthLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.junit.Test;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
 
 public class CapsuleLayerTest extends BaseDL4JTest {
@@ -80,5 +77,4 @@ public class CapsuleLayerTest extends BaseDL4JTest {
 
         assertArrayEquals(new long[]{64, 10, 16}, shape);
     }
-
 }

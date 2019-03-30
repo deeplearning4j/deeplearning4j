@@ -175,7 +175,6 @@ public class CapsuleLayer extends SameDiffLayer {
         return InputType.recurrent(capsules, capsuleDimensions);
     }
 
-    //TODO builder
     @Getter
     @Setter
     public static class Builder extends SameDiffLayer.Builder<Builder>{
@@ -236,8 +235,6 @@ public class CapsuleLayer extends SameDiffLayer {
             this.setRoutings(routings);
             return this;
         }
-
-        //TODO can I always assume setNIn is called?  Then don't need the input* methods
 
         /**
          * Usually inferred automatically.

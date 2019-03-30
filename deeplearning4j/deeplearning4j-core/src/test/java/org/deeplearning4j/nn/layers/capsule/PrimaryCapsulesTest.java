@@ -1,7 +1,7 @@
 package org.deeplearning4j.nn.layers.capsule;
 
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
@@ -9,7 +9,6 @@ import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
-import org.deeplearning4j.nn.conf.layers.CapsuleLayer;
 import org.deeplearning4j.nn.conf.layers.PrimaryCapsules;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.junit.Test;
@@ -107,5 +106,4 @@ public class PrimaryCapsulesTest extends BaseDL4JTest {
 
         assertArrayEquals(new long[]{64, 160, 8}, shape);
     }
-
 }

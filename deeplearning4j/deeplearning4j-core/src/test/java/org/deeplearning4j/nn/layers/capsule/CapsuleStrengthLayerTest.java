@@ -8,7 +8,6 @@ import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.CapsuleStrengthLayer;
-import org.deeplearning4j.nn.conf.layers.PrimaryCapsules;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.junit.Test;
 import org.nd4j.linalg.api.buffer.DataType;
@@ -49,5 +48,4 @@ public class CapsuleStrengthLayerTest extends BaseDL4JTest {
 
         assertArrayEquals(new long[]{64, 5}, shape);
     }
-
 }

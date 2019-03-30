@@ -70,5 +70,4 @@ public class CapsuleStrengthLayer extends SameDiffLambdaLayer {
             return (E) new CapsuleStrengthLayer(this);
         }
     }
-
 }

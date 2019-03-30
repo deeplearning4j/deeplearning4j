@@ -431,5 +431,4 @@ public class PrimaryCapsules extends SameDiffLayer {
             return (E) new PrimaryCapsules(this);
         }
     }
-
 }

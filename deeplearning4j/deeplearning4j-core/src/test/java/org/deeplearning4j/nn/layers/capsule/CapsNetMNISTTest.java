@@ -3,7 +3,6 @@ package org.deeplearning4j.nn.layers.capsule;
 import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
-import lombok.val;
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
@@ -14,10 +13,8 @@ import org.deeplearning4j.nn.conf.layers.CapsuleStrengthLayer;
 import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
 import org.deeplearning4j.nn.conf.layers.PrimaryCapsules;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
-import org.junit.Assert;
 import org.junit.Test;
 import org.nd4j.evaluation.classification.Evaluation;
-import org.nd4j.linalg.learning.AdamUpdater;
 import org.nd4j.linalg.learning.config.Adam;
 
 public class CapsNetMNISTTest extends BaseDL4JTest {
