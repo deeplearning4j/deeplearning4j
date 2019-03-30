@@ -1,15 +1,23 @@
 package org.deeplearning4j.nn.layers.capsule;
 
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
+import lombok.val;
 import org.deeplearning4j.BaseDL4JTest;
+import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
+import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.CapsuleLayer;
 import org.deeplearning4j.nn.conf.layers.CapsuleStrengthLayer;
+import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.junit.Test;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.dataset.DataSet;
+import org.nd4j.linalg.factory.Nd4j;
 
 public class CapsuleLayerTest extends BaseDL4JTest {
 
@@ -54,6 +62,23 @@ public class CapsuleLayerTest extends BaseDL4JTest {
 
     }
 
-    //TODO model tests
+    @Test
+    public void testLayer(){
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                .seed(123)
+                .list()
+                .layer(new CapsuleLayer.Builder(10, 16, 5).build())
+                .setInputType(InputType.recurrent(10, 8))
+                .build();
+
+        MultiLayerNetwork model = new MultiLayerNetwork(conf);
+        model.init();
+
+        INDArray emptyFeatures = Nd4j.zeros(64, 10, 8);
+
+        long[] shape = model.output(emptyFeatures).shape();
+
+        assertArrayEquals(new long[]{64, 10, 16}, shape);
+    }
 
 }

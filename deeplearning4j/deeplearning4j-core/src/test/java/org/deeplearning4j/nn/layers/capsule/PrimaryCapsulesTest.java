@@ -6,10 +6,16 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import org.deeplearning4j.BaseDL4JTest;
+import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
+import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
+import org.deeplearning4j.nn.conf.layers.CapsuleLayer;
 import org.deeplearning4j.nn.conf.layers.PrimaryCapsules;
+import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.junit.Test;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
 
 public class PrimaryCapsulesTest extends BaseDL4JTest {
 
@@ -20,7 +26,7 @@ public class PrimaryCapsulesTest extends BaseDL4JTest {
 
     @Test
     public void testOutputType(){
-        PrimaryCapsules layer = new PrimaryCapsules.Builder(10, 8)
+        PrimaryCapsules layer = new PrimaryCapsules.Builder(8, 10)
                 .kernelSize(5, 5)
                 .stride(4, 4)
                 .build();
@@ -33,7 +39,7 @@ public class PrimaryCapsulesTest extends BaseDL4JTest {
 
     @Test
     public void testInputType(){
-        PrimaryCapsules layer = new PrimaryCapsules.Builder(10, 8)
+        PrimaryCapsules layer = new PrimaryCapsules.Builder(8, 10)
                 .kernelSize(5, 5)
                 .stride(4, 4)
                 .build();
@@ -48,7 +54,7 @@ public class PrimaryCapsulesTest extends BaseDL4JTest {
 
     @Test
     public void testConfig(){
-        PrimaryCapsules layer1 = new PrimaryCapsules.Builder(10, 8)
+        PrimaryCapsules layer1 = new PrimaryCapsules.Builder(8, 10)
                 .kernelSize(5, 5)
                 .stride(4, 4)
                 .useLeakyReLU(0.5)
@@ -63,13 +69,13 @@ public class PrimaryCapsulesTest extends BaseDL4JTest {
         assertTrue(layer1.isUseRelu());
         assertEquals(0.2, layer1.getLeak());
 
-        PrimaryCapsules layer2 = new PrimaryCapsules.Builder(10, 8)
+        PrimaryCapsules layer2 = new PrimaryCapsules.Builder(8, 10)
                 .kernelSize(5, 5)
                 .stride(4, 4)
                 .build();
         assertFalse(layer2.isUseRelu());
 
-        PrimaryCapsules layer3 = new PrimaryCapsules.Builder(10, 8)
+        PrimaryCapsules layer3 = new PrimaryCapsules.Builder(8, 10)
                 .kernelSize(5, 5)
                 .stride(4, 4)
                 .useReLU()
@@ -79,6 +85,27 @@ public class PrimaryCapsulesTest extends BaseDL4JTest {
 
     }
 
-    //TODO model tests
+    @Test
+    public void testLayer(){
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                .seed(123)
+                .list()
+                .layer(new PrimaryCapsules.Builder(8, 10)
+                        .kernelSize(5, 5)
+                        .stride(4, 4)
+                        .useLeakyReLU(0.5)
+                        .build())
+                .setInputType(InputType.convolutional(20, 20, 20))
+                .build();
+
+        MultiLayerNetwork model = new MultiLayerNetwork(conf);
+        model.init();
+
+        INDArray emptyFeatures = Nd4j.zeros(64, 20, 20, 20);
+
+        long[] shape = model.output(emptyFeatures).shape();
+
+        assertArrayEquals(new long[]{64, 160, 8}, shape);
+    }
 
 }
