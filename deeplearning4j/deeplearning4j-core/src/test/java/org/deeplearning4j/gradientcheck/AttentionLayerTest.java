@@ -19,7 +19,7 @@ import java.util.Random;
 import static org.junit.Assert.assertTrue;
 
 public class AttentionLayerTest extends BaseDL4JTest {
-    private static final boolean PRINT_RESULTS = true;
+    private static final boolean PRINT_RESULTS = false;
     private static final boolean RETURN_ON_FIRST_FAILURE = false;
     private static final double DEFAULT_EPS = 1e-6;
     private static final double DEFAULT_MAX_REL_ERROR = 1e-3;
@@ -156,13 +156,13 @@ public class AttentionLayerTest extends BaseDL4JTest {
     public void testRecurrentAttentionLayer() {
         int nIn = 9;
         int nOut = 5;
-        int tsLength = 2;
+        int tsLength = 4;
         int layerSize = 8;
 
 
         Random r = new Random(12345);
         for (int mb : new int[]{3, 2, 1}) {
-            for (boolean inputMask : new boolean[]{false, true}) {
+            for (boolean inputMask : new boolean[]{true, false}) {
                 INDArray in = Nd4j.rand(new int[]{mb, nIn, tsLength});
                 INDArray labels = Nd4j.create(mb, nOut);
                 for (int i = 0; i < mb; i++) {
