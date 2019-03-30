@@ -47,7 +47,7 @@ namespace helpers {
     void reduceNorm1BP(NDArray* input, NDArray* epsilon, NDArray* tempNorm, NDArray* output, std::vector<int> const& axes, bool keepDims) {
 
         if (epsilon->isScalar()) {
-#pragma omp parallel for
+            PRAGMA_OMP_PARALLEL_FOR
             for (Nd4jLong e = 0; e < input->lengthOf(); ++e)
                 if (input->e<float>(e) > 0.f)
                     output->p(e, epsilon->e<double>(0));

@@ -135,10 +135,14 @@ namespace nd4j {
             auto dtypeX = ArrayOptions::dataType(xShapeInfo);
             auto dtypeY = ArrayOptions::dataType(yShapeInfo);
 
+            auto xOrder = shape::order(xShapeInfo);
+            auto yOrder = shape::order(yShapeInfo);
+            auto zOrder = xOrder == 'c' && yOrder == 'c' ? 'c' : 'f';
+
             // we just pick the higher data type out of X and Y
             auto dtypeZ = dtypeX > dtypeY ? dtypeX : dtypeY;
 
-            auto newShape = ShapeBuilders::createShapeInfo(dtypeZ, 'f', zShapeOnly, block.getWorkspace());
+            auto newShape = ShapeBuilders::createShapeInfo(dtypeZ, zOrder, zShapeOnly, block.getWorkspace());
 
             return SHAPELIST(newShape);
         }

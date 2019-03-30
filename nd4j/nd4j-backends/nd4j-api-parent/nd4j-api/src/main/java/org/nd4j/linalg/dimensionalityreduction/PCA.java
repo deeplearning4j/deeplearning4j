@@ -331,11 +331,8 @@ public class PCA {
         long dlength = in.rows();
         long vlength = in.columns();
 
-        INDArray sum = Nd4j.create(vlength);
         INDArray product = Nd4j.create(vlength, vlength);
-
-        for (int i = 0; i < vlength; i++)
-            sum.getColumn(i).assign(in.getColumn(i).sumNumber().doubleValue() / dlength);
+        INDArray sum = in.sum(0).divi(dlength);
 
         for (int i = 0; i < dlength; i++) {
             INDArray dx1 = in.getRow(i).sub(sum);

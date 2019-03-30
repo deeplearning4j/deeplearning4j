@@ -26,6 +26,7 @@ import org.deeplearning4j.nn.layers.convolution.SeparableConvolution2DLayer;
 import org.deeplearning4j.nn.params.SeparableConvolutionParamInitializer;
 import org.deeplearning4j.optimize.api.TrainingListener;
 import org.deeplearning4j.util.ConvolutionUtils;
+import org.deeplearning4j.util.ValidationUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.util.*;
@@ -190,7 +191,7 @@ public class SeparableConvolution2D extends ConvolutionLayer {
          * @return Builder
          */
         public Builder depthMultiplier(int depthMultiplier) {
-            this.depthMultiplier = depthMultiplier;
+            this.setDepthMultiplier(depthMultiplier);
             return this;
         }
 
@@ -211,7 +212,7 @@ public class SeparableConvolution2D extends ConvolutionLayer {
          * @param constraints Constraints to apply to the point-wise convolution parameters of this layer
          */
         public Builder constrainPointWise(LayerConstraint... constraints) {
-            this.pointWiseConstraints = Arrays.asList(constraints);
+            this.setPointWiseConstraints(Arrays.asList(constraints));
             return this;
         }
 
@@ -221,7 +222,7 @@ public class SeparableConvolution2D extends ConvolutionLayer {
          * @param kernelSize the height and width of the kernel
          */
         public Builder kernelSize(int... kernelSize) {
-            this.kernelSize = kernelSize;
+            this.setKernelSize(kernelSize);
             return this;
         }
 
@@ -231,7 +232,7 @@ public class SeparableConvolution2D extends ConvolutionLayer {
          * @param stride the stride of the kernel (in h/w dimensions)
          */
         public Builder stride(int... stride) {
-            this.stride = stride;
+            this.setStride(stride);
             return this;
         }
 
@@ -241,8 +242,23 @@ public class SeparableConvolution2D extends ConvolutionLayer {
          * @param padding the padding in h/w dimensions
          */
         public Builder padding(int... padding) {
-            this.padding = padding;
+            this.setPadding(padding);
             return this;
+        }
+
+        @Override
+        public void setKernelSize(int... kernelSize){
+            this.kernelSize = ValidationUtils.validate2NonNegative(kernelSize, false, "kernelSize");
+        }
+
+        @Override
+        public void setStride(int... stride){
+            this.stride = ValidationUtils.validate2NonNegative(stride, false, "stride");
+        }
+
+        @Override
+        public void setPadding(int... padding){
+            this.padding = ValidationUtils.validate2NonNegative(padding, false, "padding");
         }
 
         @Override

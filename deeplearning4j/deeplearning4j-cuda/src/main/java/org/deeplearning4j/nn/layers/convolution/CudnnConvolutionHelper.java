@@ -52,8 +52,10 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Map;
 
-import static org.bytedeco.javacpp.cuda.CUstream_st;
-import static org.bytedeco.javacpp.cudnn.*;
+import org.bytedeco.cuda.cudart.*;
+import org.bytedeco.cuda.cudnn.*;
+import static org.bytedeco.cuda.global.cudart.*;
+import static org.bytedeco.cuda.global.cudnn.*;
 import static org.nd4j.linalg.indexing.NDArrayIndex.all;
 import static org.nd4j.linalg.indexing.NDArrayIndex.interval;
 
@@ -128,10 +130,10 @@ public class CudnnConvolutionHelper extends BaseCudnnHelper implements Convoluti
     private CudnnConvolutionContext cudnnContext = new CudnnConvolutionContext();
 
     @Override
-    public Pair<Gradient, INDArray> backpropGradient(INDArray input, INDArray weights, INDArray delta, int[] kernel,
-                    int[] strides, int[] pad, INDArray biasGradView, INDArray weightGradView, IActivation afn,
-                    AlgoMode mode, BwdFilterAlgo bwdFilterAlgo, BwdDataAlgo bwdDataAlgo,
-                    ConvolutionMode convolutionMode, int[] dilation, LayerWorkspaceMgr workspaceMgr) {
+    public Pair<Gradient, INDArray> backpropGradient(INDArray input, INDArray weights, INDArray bias, INDArray delta, int[] kernel,
+                                                     int[] strides, int[] pad, INDArray biasGradView, INDArray weightGradView, IActivation afn,
+                                                     AlgoMode mode, BwdFilterAlgo bwdFilterAlgo, BwdDataAlgo bwdDataAlgo,
+                                                     ConvolutionMode convolutionMode, int[] dilation, LayerWorkspaceMgr workspaceMgr) {
         int code;
 
         val miniBatch = input.size(0);
@@ -529,7 +531,7 @@ public class CudnnConvolutionHelper extends BaseCudnnHelper implements Convoluti
     }
 
     @Override
-    public INDArray activate(INDArray z, IActivation afn) {
+    public INDArray activate(INDArray z, IActivation afn, boolean training) {
         if (Nd4j.getExecutioner() instanceof GridExecutioner)
             ((GridExecutioner) Nd4j.getExecutioner()).flushQueue();
 

@@ -127,7 +127,7 @@ public class GravesBidirectionalLSTM extends BaseRecurrentLayer {
          * dependencies.
          */
         public Builder forgetGateBiasInit(double biasInit) {
-            this.forgetGateBiasInit = biasInit;
+            this.setForgetGateBiasInit(biasInit);
             return this;
         }
 
@@ -158,7 +158,7 @@ public class GravesBidirectionalLSTM extends BaseRecurrentLayer {
          * @param gateActivationFn Activation function for the LSTM gates
          */
         public Builder gateActivationFunction(IActivation gateActivationFn) {
-            this.gateActivationFn = gateActivationFn;
+            this.setGateActivationFn(gateActivationFn);
             return this;
         }
 

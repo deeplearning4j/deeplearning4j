@@ -59,6 +59,7 @@ import org.nd4j.linalg.api.ops.impl.indexaccum.IMax;
 import org.nd4j.linalg.api.ops.impl.indexaccum.IMin;
 import org.nd4j.linalg.api.ops.impl.reduce.Mmul;
 import org.nd4j.linalg.api.ops.impl.scalar.ReplaceNans;
+import org.nd4j.linalg.api.ops.impl.reduce.TensorMmul;
 import org.nd4j.linalg.api.ops.impl.scatter.ScatterUpdate;
 import org.nd4j.linalg.api.ops.impl.shape.Diag;
 import org.nd4j.linalg.api.ops.impl.shape.DiagPart;
@@ -200,6 +201,8 @@ public class Nd4j {
     protected static ReferenceQueue<DataBuffer> bufferQueue = new ReferenceQueue<>();
 
     private final static Logger logger = Logger.getLogger(Nd4j.class.getName());
+
+    protected static final INDArray[] EMPTY_ARRAYS = new INDArray[DataType.values().length];
 
     static {
         fallbackMode = new AtomicBoolean(false);
@@ -849,76 +852,20 @@ public class Nd4j {
      * @return
      */
     public static INDArray tensorMmul(INDArray a, INDArray b, int[][] axes) {
-        int validationLength = Math.min(axes[0].length, axes[1].length);
-        for (int i = 0; i < validationLength; i++) {
-            if (a.size(axes[0][i]) != b.size(axes[1][i]))
-                throw new IllegalArgumentException("Size of the given axes at each dimension must be the same size.");
-            if (axes[0][i] < 0)
-                axes[0][i] += a.rank();
-            if (axes[1][i] < 0)
-                axes[1][i] += b.rank();
+        CustomOp op = DynamicCustomOp.builder("tensordot")
+                .addInputs(a, b)
+                .addIntegerArguments(axes[0].length)
+                .addIntegerArguments(axes[0])
+                .addIntegerArguments(axes[1].length)
+                .addIntegerArguments(axes[1])
+                .build();
 
-        }
+        List<LongShapeDescriptor> l = op.calculateOutputShape();
+        INDArray out = Nd4j.create(l.get(0).asDataType(a.dataType()));
+        op.addOutputArgument(out);
+        Nd4j.exec(op);
 
-        List<Integer> listA = new ArrayList<>();
-        for (int i = 0; i < a.rank(); i++) {
-            if (!Ints.contains(axes[0], i))
-                listA.add(i);
-        }
-
-        int[] newAxesA = Ints.concat(Ints.toArray(listA), axes[0]);
-
-
-        List<Integer> listB = new ArrayList<>();
-        for (int i = 0; i < b.rank(); i++) {
-            if (!Ints.contains(axes[1], i))
-                listB.add(i);
-        }
-
-        int[] newAxesB = Ints.concat(axes[1], Ints.toArray(listB));
-
-        int n2 = 1;
-        int aLength = Math.min(a.rank(), axes[0].length);
-        for (int i = 0; i < aLength; i++) {
-            n2 *= a.size(axes[0][i]);
-        }
-
-        //if listA and listB are empty these donot initialize.
-        //so initializing with {1} which will then get overriden if not empty
-        long[] newShapeA = {-1, n2};
-        long[] oldShapeA;
-        if (listA.size() == 0) {
-            oldShapeA = new long[] {1};
-        } else {
-            oldShapeA = Longs.toArray(listA);
-            for (int i = 0; i < oldShapeA.length; i++)
-                oldShapeA[i] = a.size((int) oldShapeA[i]);
-        }
-
-        int n3 = 1;
-        int bNax = Math.min(b.rank(), axes[1].length);
-        for (int i = 0; i < bNax; i++) {
-            n3 *= b.size(axes[1][i]);
-        }
-
-
-        long[] newShapeB = {n3, -1};
-        long[] oldShapeB;
-        if (listB.size() == 0) {
-            oldShapeB = new long[] {1};
-        } else {
-            oldShapeB = Longs.toArray(listB);
-            for (int i = 0; i < oldShapeB.length; i++)
-                oldShapeB[i] = b.size((int) oldShapeB[i]);
-        }
-
-
-        INDArray at = a.permute(newAxesA).reshape(newShapeA);
-        INDArray bt = b.permute(newAxesB).reshape(newShapeB);
-        INDArray ret = at.mmul(bt);
-
-        long[] aPlusB = Longs.concat(oldShapeA, oldShapeB);
-        return ret.reshape(aPlusB);
+        return out;
     }
 
     /**
@@ -2193,9 +2140,11 @@ public class Nd4j {
     public static INDArray[] meshgrid(@NonNull INDArray x, @NonNull INDArray y){
         Preconditions.checkArgument(x.isVectorOrScalar(), "X must be a vector");
         Preconditions.checkArgument(y.isVectorOrScalar(), "Y must be a vector");
+        if(y.dataType() != x.dataType())
+            y = y.castTo(x.dataType());
 
-        INDArray xOut = Nd4j.createUninitialized(y.length(), x.length());
-        INDArray yOut = Nd4j.createUninitialized(y.length(), x.length());
+        INDArray xOut = Nd4j.createUninitialized(x.dataType(), y.length(), x.length());
+        INDArray yOut = Nd4j.createUninitialized(x.dataType(), y.length(), x.length());
 
         CustomOp op = DynamicCustomOp.builder("meshgrid")
                 .addInputs(x, y)
@@ -3908,9 +3857,14 @@ public class Nd4j {
      * @return Empty INDArray
      */
     public static INDArray empty(DataType type) {
-        val ret = INSTANCE.empty(type);
-        logCreationIfNecessary(ret);
-        return ret;
+        if(EMPTY_ARRAYS[type.ordinal()] == null){
+            try(MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()){
+                val ret = INSTANCE.empty(type);
+                EMPTY_ARRAYS[type.ordinal()] = ret;
+                logCreationIfNecessary(ret);
+            }
+        }
+        return EMPTY_ARRAYS[type.ordinal()];
     }
 
     /**
@@ -4942,8 +4896,12 @@ public class Nd4j {
     }
 
     public static INDArray createUninitialized(DataType type, long[] shape, char ordering) {
-        if (shape.length == 0)
+        if (shape.length == 0) {
+            if(type == DataType.UTF8){
+                return scalar("");
+            }
             return scalar(type, 0);
+        }
 
         checkShapeValues(shape);
 
@@ -5442,16 +5400,6 @@ public class Nd4j {
      */
     public static INDArray zerosLike(INDArray arr) {
         return zeros(arr.dataType(), arr.shape());
-    }
-
-    /**
-     * Empty like
-     *
-     * @param arr the array to create the ones like
-     * @return ones in the shape of the given array
-     */
-    public static INDArray emptyLike(INDArray arr) {
-        return create(arr.shape());
     }
 
     /**
@@ -5991,7 +5939,7 @@ public class Nd4j {
         }
         for (int i = 0; i < shape.length; i++) {
             if (repeat[i] != 1) {
-                tile = tile.reshape(-1, n).repeat(0, new int[] {repeat[i]});
+                tile = tile.reshape(-1, n).repeat(0, repeat[i]);
             }
 
             long in = shape[i];
@@ -6887,7 +6835,8 @@ public class Nd4j {
         Preconditions.checkNotNull(array, "Cannot create INDArray from null Java array");
         if(array.length == 0)
             return Nd4j.empty(DataType.DOUBLE);
-        return create(array, new long[]{array.length}, DataType.DOUBLE);
+        long[] shape = new long[]{array.length};
+        return create(array, shape, ArrayUtil.calcStrides(shape), 'c', DataType.DOUBLE);
     }
 
     /**
@@ -6899,7 +6848,8 @@ public class Nd4j {
         Preconditions.checkNotNull(array, "Cannot create INDArray from null Java array");
         if(array.length == 0)
             return Nd4j.empty(DataType.FLOAT);
-        return create(array, new long[]{array.length}, DataType.FLOAT);
+        long[] shape = new long[]{array.length};
+        return create(array, shape, ArrayUtil.calcStrides(shape), 'c', DataType.FLOAT);
     }
 
     /**
@@ -6911,7 +6861,8 @@ public class Nd4j {
         Preconditions.checkNotNull(array, "Cannot create INDArray from null Java array");
         if(array.length == 0)
             return Nd4j.empty(DataType.INT);
-        return create(array, new long[]{array.length}, DataType.INT);
+        long[] shape = new long[]{array.length};
+        return create(array, shape, ArrayUtil.calcStrides(shape), 'c', DataType.INT);
     }
 
     /**
@@ -6923,7 +6874,8 @@ public class Nd4j {
         Preconditions.checkNotNull(array, "Cannot create INDArray from null Java array");
         if(array.length == 0)
             return Nd4j.empty(DataType.SHORT);
-        return create(array, new long[]{array.length}, DataType.SHORT);
+        long[] shape = new long[]{array.length};
+        return create(array, shape, ArrayUtil.calcStrides(shape), 'c', DataType.SHORT);
     }
 
     /**
@@ -6935,7 +6887,8 @@ public class Nd4j {
         Preconditions.checkNotNull(array, "Cannot create INDArray from null Java array");
         if(array.length == 0)
             return Nd4j.empty(DataType.BYTE);
-        return create(array, new long[]{array.length}, DataType.BYTE);
+        long[] shape = new long[]{array.length};
+        return create(array, shape, ArrayUtil.calcStrides(shape), 'c', DataType.BYTE);
     }
 
     /**
@@ -6947,7 +6900,8 @@ public class Nd4j {
         Preconditions.checkNotNull(array, "Cannot create INDArray from null Java array");
         if(array.length == 0)
             return Nd4j.empty(DataType.LONG);
-        return create(array, new long[]{array.length}, DataType.LONG);
+        long[] shape = new long[]{array.length};
+        return create(array, shape, ArrayUtil.calcStrides(shape), 'c', DataType.LONG);
     }
 
     /**
@@ -6959,7 +6913,8 @@ public class Nd4j {
         Preconditions.checkNotNull(array, "Cannot create INDArray from null Java array");
         if(array.length == 0)
             return Nd4j.empty(DataType.BOOL);
-        return create(array, new long[]{array.length}, DataType.BOOL);
+        long[] shape = new long[]{array.length};
+        return create(array, shape, ArrayUtil.calcStrides(shape), 'c', DataType.BOOL);
     }
 
 ///////////////////
@@ -6974,7 +6929,8 @@ public class Nd4j {
         ArrayUtil.assertNotRagged(array);
         if(array.length == 0 || array[0].length == 0)
             return Nd4j.empty(DataType.DOUBLE);
-        return create(ArrayUtil.flatten(array), new long[]{array.length, array[0].length}, DataType.DOUBLE);
+        long[] shape = new long[]{array.length, array[0].length};
+        return create(ArrayUtil.flatten(array), shape, ArrayUtil.calcStrides(shape), 'c', DataType.DOUBLE);
     }
 
     /**
@@ -6987,7 +6943,8 @@ public class Nd4j {
         ArrayUtil.assertNotRagged(array);
         if(array.length == 0 || array[0].length == 0)
             return Nd4j.empty(DataType.FLOAT);
-        return create(ArrayUtil.flatten(array), new long[]{array.length, array[0].length}, DataType.FLOAT);
+        long[] shape = new long[]{array.length, array[0].length};
+        return create(ArrayUtil.flatten(array), shape, ArrayUtil.calcStrides(shape), 'c', DataType.FLOAT);
     }
 
     /**
@@ -7000,7 +6957,8 @@ public class Nd4j {
         ArrayUtil.assertNotRagged(array);
         if(array.length == 0 || array[0].length == 0)
             return Nd4j.empty(DataType.LONG);
-        return create(ArrayUtil.flatten(array), new long[]{array.length, array[0].length}, DataType.LONG);
+        long[] shape = new long[]{array.length, array[0].length};
+        return create(ArrayUtil.flatten(array), shape, ArrayUtil.calcStrides(shape), 'c', DataType.LONG);
     }
 
     /**
@@ -7013,7 +6971,8 @@ public class Nd4j {
         ArrayUtil.assertNotRagged(array);
         if(array.length == 0 || array[0].length == 0)
             return Nd4j.empty(DataType.INT);
-        return create(ArrayUtil.flatten(array), new long[]{array.length, array[0].length}, DataType.INT);
+        long[] shape = new long[]{array.length, array[0].length};
+        return create(ArrayUtil.flatten(array), shape, ArrayUtil.calcStrides(shape), 'c', DataType.INT);
     }
 
     /**
@@ -7026,7 +6985,8 @@ public class Nd4j {
         ArrayUtil.assertNotRagged(array);
         if(array.length == 0 || array[0].length == 0)
             return Nd4j.empty(DataType.SHORT);
-        return create(ArrayUtil.flatten(array), new long[]{array.length, array[0].length}, DataType.SHORT);
+        long[] shape = new long[]{array.length, array[0].length};
+        return create(ArrayUtil.flatten(array), shape, ArrayUtil.calcStrides(shape), 'c', DataType.SHORT);
     }
 
     /**
@@ -7039,7 +6999,8 @@ public class Nd4j {
         ArrayUtil.assertNotRagged(array);
         if(array.length == 0 || array[0].length == 0)
             return Nd4j.empty(DataType.BYTE);
-        return create(ArrayUtil.flatten(array), new long[]{array.length, array[0].length}, DataType.BYTE);
+        long[] shape = new long[]{array.length, array[0].length};
+        return create(ArrayUtil.flatten(array), shape, ArrayUtil.calcStrides(shape), 'c', DataType.BYTE);
     }
 
     /**
@@ -7052,7 +7013,9 @@ public class Nd4j {
         ArrayUtil.assertNotRagged(array);
         if(array.length == 0 || array[0].length == 0)
             return Nd4j.empty(DataType.BOOL);
-        return create(ArrayUtil.flatten(array), new long[]{array.length, array[0].length}, DataType.BOOL);
+
+        long[] shape = new long[]{array.length, array[0].length};
+        return create(ArrayUtil.flatten(array), shape, ArrayUtil.calcStrides(shape), 'c', DataType.BOOL);
     }
 
 ///////////////////
@@ -7067,7 +7030,8 @@ public class Nd4j {
         ArrayUtil.assertNotRagged(array);
         if(array.length == 0 || array[0].length == 0 || array[0][0].length == 0)
             return Nd4j.empty(DataType.DOUBLE);
-        return create(ArrayUtil.flatten(array), new long[]{array.length, array[0].length, array[0][0].length}, DataType.DOUBLE);
+        long[] shape = new long[]{array.length, array[0].length, array[0][0].length};
+        return create(ArrayUtil.flatten(array), shape, ArrayUtil.calcStrides(shape), 'c', DataType.DOUBLE);
     }
 
     /**
@@ -7080,7 +7044,8 @@ public class Nd4j {
         ArrayUtil.assertNotRagged(array);
         if(array.length == 0 || array[0].length == 0 || array[0][0].length == 0)
             return Nd4j.empty(DataType.FLOAT);
-        return create(ArrayUtil.flatten(array), new long[]{array.length, array[0].length, array[0][0].length}, DataType.FLOAT);
+        long[] shape = new long[]{array.length, array[0].length, array[0][0].length};
+        return create(ArrayUtil.flatten(array), shape, ArrayUtil.calcStrides(shape), 'c', DataType.FLOAT);
     }
 
     /**
@@ -7093,7 +7058,9 @@ public class Nd4j {
         ArrayUtil.assertNotRagged(array);
         if(array.length == 0 || array[0].length == 0 || array[0][0].length == 0)
             return Nd4j.empty(DataType.LONG);
-        return create(ArrayUtil.flatten(array), new long[]{array.length, array[0].length, array[0][0].length}, DataType.LONG);
+
+        long[] shape = new long[]{array.length, array[0].length, array[0][0].length};
+        return create(ArrayUtil.flatten(array), shape, ArrayUtil.calcStrides(shape), 'c', DataType.LONG);
     }
 
     /**
@@ -7106,7 +7073,9 @@ public class Nd4j {
         ArrayUtil.assertNotRagged(array);
         if(array.length == 0 || array[0].length == 0 || array[0][0].length == 0)
             return Nd4j.empty(DataType.INT);
-        return create(ArrayUtil.flatten(array), new long[]{array.length, array[0].length, array[0][0].length}, DataType.INT);
+
+        long[] shape = new long[]{array.length, array[0].length, array[0][0].length};
+        return create(ArrayUtil.flatten(array), shape, ArrayUtil.calcStrides(shape), 'c', DataType.INT);
     }
 
     /**
@@ -7119,7 +7088,8 @@ public class Nd4j {
         ArrayUtil.assertNotRagged(array);
         if(array.length == 0 || array[0].length == 0 || array[0][0].length == 0)
             return Nd4j.empty(DataType.SHORT);
-        return create(ArrayUtil.flatten(array), new long[]{array.length, array[0].length, array[0][0].length}, DataType.SHORT);
+        long[] shape = new long[]{array.length, array[0].length, array[0][0].length};
+        return create(ArrayUtil.flatten(array), shape, ArrayUtil.calcStrides(shape), 'c', DataType.SHORT);
     }
 
     /**
@@ -7132,7 +7102,8 @@ public class Nd4j {
         ArrayUtil.assertNotRagged(array);
         if(array.length == 0 || array[0].length == 0 || array[0][0].length == 0)
             return Nd4j.empty(DataType.BYTE);
-        return create(ArrayUtil.flatten(array), new long[]{array.length, array[0].length, array[0][0].length}, DataType.BYTE);
+        long[] shape = new long[]{array.length, array[0].length, array[0][0].length};
+        return create(ArrayUtil.flatten(array), shape, ArrayUtil.calcStrides(shape), 'c', DataType.BYTE);
     }
 
     /**
@@ -7145,7 +7116,8 @@ public class Nd4j {
         ArrayUtil.assertNotRagged(array);
         if(array.length == 0 || array[0].length == 0 || array[0][0].length == 0)
             return Nd4j.empty(DataType.BOOL);
-        return create(ArrayUtil.flatten(array), new long[]{array.length, array[0].length, array[0][0].length}, DataType.BOOL);
+        long[] shape = new long[]{array.length, array[0].length, array[0][0].length};
+        return create(ArrayUtil.flatten(array), shape, ArrayUtil.calcStrides(shape), 'c', DataType.BOOL);
     }
 
 ///////////////////
@@ -7160,7 +7132,8 @@ public class Nd4j {
         ArrayUtil.assertNotRagged(array);
         if(array.length == 0 || array[0].length == 0 || array[0][0].length == 0 || array[0][0][0].length == 0)
             return Nd4j.empty(DataType.DOUBLE);
-        return create(ArrayUtil.flatten(array), new long[]{array.length, array[0].length, array[0][0].length, array[0][0][0].length}, DataType.DOUBLE);
+        long[] shape = new long[]{array.length, array[0].length, array[0][0].length, array[0][0][0].length};
+        return create(ArrayUtil.flatten(array), shape, ArrayUtil.calcStrides(shape), 'c', DataType.DOUBLE);
     }
 
     /**
@@ -7173,7 +7146,8 @@ public class Nd4j {
         ArrayUtil.assertNotRagged(array);
         if(array.length == 0 || array[0].length == 0 || array[0][0].length == 0 || array[0][0][0].length == 0)
             return Nd4j.empty(DataType.FLOAT);
-        return create(ArrayUtil.flatten(array), new long[]{array.length, array[0].length, array[0][0].length, array[0][0][0].length}, DataType.FLOAT);
+        long[] shape = new long[]{array.length, array[0].length, array[0][0].length, array[0][0][0].length};
+        return create(ArrayUtil.flatten(array), shape, ArrayUtil.calcStrides(shape), 'c', DataType.FLOAT);
     }
 
     /**
@@ -7186,7 +7160,8 @@ public class Nd4j {
         ArrayUtil.assertNotRagged(array);
         if(array.length == 0 || array[0].length == 0 || array[0][0].length == 0 || array[0][0][0].length == 0)
             return Nd4j.empty(DataType.LONG);
-        return create(ArrayUtil.flatten(array), new long[]{array.length, array[0].length, array[0][0].length, array[0][0][0].length}, DataType.LONG);
+        long[] shape = new long[]{array.length, array[0].length, array[0][0].length, array[0][0][0].length};
+        return create(ArrayUtil.flatten(array), shape, ArrayUtil.calcStrides(shape), 'c', DataType.LONG);
     }
 
     /**
@@ -7199,7 +7174,8 @@ public class Nd4j {
         ArrayUtil.assertNotRagged(array);
         if(array.length == 0 || array[0].length == 0 || array[0][0].length == 0 || array[0][0][0].length == 0)
             return Nd4j.empty(DataType.INT);
-        return create(ArrayUtil.flatten(array), new long[]{array.length, array[0].length, array[0][0].length, array[0][0][0].length}, DataType.INT);
+        long[] shape = new long[]{array.length, array[0].length, array[0][0].length, array[0][0][0].length};
+        return create(ArrayUtil.flatten(array), shape, ArrayUtil.calcStrides(shape), 'c', DataType.INT);
     }
 
     /**
@@ -7212,7 +7188,8 @@ public class Nd4j {
         ArrayUtil.assertNotRagged(array);
         if(array.length == 0 || array[0].length == 0 || array[0][0].length == 0 || array[0][0][0].length == 0)
             return Nd4j.empty(DataType.SHORT);
-        return create(ArrayUtil.flatten(array), new long[]{array.length, array[0].length, array[0][0].length, array[0][0][0].length}, DataType.SHORT);
+        long[] shape = new long[]{array.length, array[0].length, array[0][0].length, array[0][0][0].length};
+        return create(ArrayUtil.flatten(array), shape, ArrayUtil.calcStrides(shape), 'c', DataType.SHORT);
     }
 
     /**
@@ -7225,7 +7202,8 @@ public class Nd4j {
         ArrayUtil.assertNotRagged(array);
         if(array.length == 0 || array[0].length == 0 || array[0][0].length == 0 || array[0][0][0].length == 0)
             return Nd4j.empty(DataType.BYTE);
-        return create(ArrayUtil.flatten(array), new long[]{array.length, array[0].length, array[0][0].length, array[0][0][0].length}, DataType.BYTE);
+        long[] shape = new long[]{array.length, array[0].length, array[0][0].length, array[0][0][0].length};
+        return create(ArrayUtil.flatten(array), shape, ArrayUtil.calcStrides(shape), 'c', DataType.BYTE);
     }
 
     /**
@@ -7238,7 +7216,8 @@ public class Nd4j {
         ArrayUtil.assertNotRagged(array);
         if(array.length == 0 || array[0].length == 0 || array[0][0].length == 0 || array[0][0][0].length == 0)
             return Nd4j.empty(DataType.BOOL);
-        return create(ArrayUtil.flatten(array), new long[]{array.length, array[0].length, array[0][0].length, array[0][0][0].length}, DataType.BOOL);
+        long[] shape = new long[]{array.length, array[0].length, array[0][0].length, array[0][0][0].length};
+        return create(ArrayUtil.flatten(array), shape, ArrayUtil.calcStrides(shape), 'c', DataType.BOOL);
     }
 
 ///////////////////

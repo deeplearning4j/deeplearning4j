@@ -23,11 +23,9 @@ import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
-import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.params.DeconvolutionParamInitializer;
 import org.deeplearning4j.util.ConvolutionUtils;
 import org.nd4j.linalg.activations.IActivation;
-import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.CustomOp;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
@@ -261,7 +259,7 @@ public class Deconvolution2DLayer extends ConvolutionLayer {
         IActivation afn = layerConf().getActivationFn();
 
         if (helper != null && Shape.strideDescendingCAscendingF(z)) {
-            INDArray ret = helper.activate(z, layerConf().getActivationFn());
+            INDArray ret = helper.activate(z, layerConf().getActivationFn(), training);
             if (ret != null) {
                 return ret;
             }

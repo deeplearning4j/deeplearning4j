@@ -195,12 +195,12 @@ public class LoneTest extends BaseNd4jTest {
     public void testArgMax() {
         int max = 63;
         INDArray A = Nd4j.linspace(1, max, max).reshape(1, max);
-        int currentArgMax = Nd4j.argMax(A).getInt(0, 0);
+        int currentArgMax = Nd4j.argMax(A).getInt(0);
         assertEquals(max - 1, currentArgMax);
 
         max = 64;
         A = Nd4j.linspace(1, max, max).reshape(1, max);
-        currentArgMax = Nd4j.argMax(A).getInt(0, 0);
+        currentArgMax = Nd4j.argMax(A).getInt(0);
         System.out.println("Returned argMax is " + currentArgMax);
         assertEquals(max - 1, currentArgMax);
     }

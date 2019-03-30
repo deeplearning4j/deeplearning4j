@@ -113,7 +113,7 @@ public abstract class SameDiffLayer extends AbstractSameDiffLayer {
          * @param weightInit Weight initialization to use for the layer
          */
         public T weightInit(WeightInit weightInit) {
-            this.weightInit = weightInit;
+            this.setWeightInit(weightInit);
             return (T) this;
         }
     }

@@ -65,6 +65,7 @@
 #ifndef OP_BOILERPLATE_HH
 #define OP_BOILERPLATE_HH
 
+#include <openmp_pragmas.h>
 #include <type_boilerplate.h>
 
 #ifdef __CUDACC__
@@ -1483,6 +1484,7 @@
 
 // define macros for compiler enforcement to make function inline  
 #ifdef __clang__
+#define INLINE_LOOPS
 #define FORCEINLINE inline 
 #elif _MSC_VER
 #define FORCEINLINE __forceinline
@@ -1543,5 +1545,7 @@
 
 #define PARAMETRIC_XYZ() [&] (Parameters &p, ResultSet &x, ResultSet &y, ResultSet &z)
 #define PARAMETRIC_XZ() [&] (Parameters &p, ResultSet &x, ResultSet &z)
+
+#define PARAMETRIC_D() [&] (Parameters &p) -> Context*
 
 #endif

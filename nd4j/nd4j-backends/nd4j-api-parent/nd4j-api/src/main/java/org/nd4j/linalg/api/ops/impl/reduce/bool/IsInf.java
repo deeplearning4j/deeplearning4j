@@ -42,7 +42,7 @@ public class IsInf extends BaseReduceBoolOp {
     public IsInf() {}
 
     public IsInf(INDArray x, INDArray z) {
-        super(x, z, true, false, null);
+        super(x, z, false, null);
     }
 
     public IsInf(INDArray x) {

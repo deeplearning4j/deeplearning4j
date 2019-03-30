@@ -26,6 +26,7 @@ import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.deeplearning4j.nn.conf.preprocessor.FeedForwardToCnnPreProcessor;
 import org.deeplearning4j.nn.params.EmptyParamInitializer;
 import org.deeplearning4j.optimize.api.TrainingListener;
+import org.deeplearning4j.util.ValidationUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.util.Collection;
@@ -242,7 +243,7 @@ public class GlobalPoolingLayer extends NoParamLayer {
         }
 
         public Builder(PoolingType poolingType) {
-            this.poolingType = poolingType;
+            this.setPoolingType(poolingType);
         }
 
         /**
@@ -253,7 +254,7 @@ public class GlobalPoolingLayer extends NoParamLayer {
          * @param poolingDimensions Pooling dimensions to use
          */
         public Builder poolingDimensions(int... poolingDimensions) {
-            this.poolingDimensions = poolingDimensions;
+            this.setPoolingDimensions(poolingDimensions);
             return this;
         }
 
@@ -261,7 +262,7 @@ public class GlobalPoolingLayer extends NoParamLayer {
          * @param poolingType Pooling type for global pooling
          */
         public Builder poolingType(PoolingType poolingType) {
-            this.poolingType = poolingType;
+            this.setPoolingType(poolingType);
             return this;
         }
 
@@ -281,7 +282,7 @@ public class GlobalPoolingLayer extends NoParamLayer {
          * @param collapseDimensions Whether to collapse the dimensions or not
          */
         public Builder collapseDimensions(boolean collapseDimensions) {
-            this.collapseDimensions = collapseDimensions;
+            this.setCollapseDimensions(collapseDimensions);
             return this;
         }
 
@@ -294,12 +295,13 @@ public class GlobalPoolingLayer extends NoParamLayer {
             if (pnorm <= 0) {
                 throw new IllegalArgumentException("Invalid input: p-norm value must be greater than 0. Got: " + pnorm);
             }
-            this.pnorm = pnorm;
+            this.setPnorm(pnorm);
             return this;
         }
 
         public void setPnorm(int pnorm){
-            pnorm(pnorm);
+            ValidationUtils.validateNonNegative(pnorm, "pnorm");
+            this.pnorm = pnorm;
         }
 
         @SuppressWarnings("unchecked")

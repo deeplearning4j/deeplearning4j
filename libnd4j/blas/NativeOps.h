@@ -69,6 +69,7 @@ bool verbose = false;
 #include <graph/GraphState.h>
 #include <graph/execution/LogicExecutor.h>
 #include <graph/ResultWrapper.h>
+#include <DebugInfo.h>
 
 class ND4J_EXPORT NativeOps {
 
@@ -1308,8 +1309,9 @@ public:
  */
     Nd4jPointer shapeBufferForNumpy(Nd4jPointer npyArray) {
         cnpy::NpyArray arr = cnpy::loadNpyFromPointer(reinterpret_cast<char *>(npyArray));
-        auto shape = new unsigned int[arr.shape.size()];
-        for(unsigned int i = 0; i < arr.shape.size(); i++) {
+        unsigned int shapeSize = arr.shape.size();
+        auto shape = new unsigned int[shapeSize];
+        for(unsigned int i = 0; i < shapeSize; i++) {
             shape[i] = arr.shape[i];
         }
 
@@ -1629,6 +1631,7 @@ public:
                       void* dY, Nd4jLong* dYShapeInfo, Nd4jLong* dYOffsets,
                       int* hIindexes, int* dIindexes);
 
+    void inspectArray(Nd4jPointer *extraPointers, Nd4jPointer buffer, Nd4jLong *shapeInfo, Nd4jPointer specialBuffer, Nd4jLong *specialShapeInfo, Nd4jPointer debugInfo);
 };
 
 

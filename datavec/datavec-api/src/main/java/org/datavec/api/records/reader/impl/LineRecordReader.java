@@ -48,12 +48,11 @@ public class LineRecordReader extends BaseRecordReader {
     protected int splitIndex = 0;
     protected int lineIndex = 0; //Line index within the current split
     protected Configuration conf;
-    protected InputSplit inputSplit;
     protected boolean initialized;
 
     @Override
     public void initialize(InputSplit split) throws IOException, InterruptedException {
-        this.inputSplit = split;
+        super.initialize(split);
         this.iter = getIterator(0);
         this.initialized = true;
     }
@@ -82,7 +81,8 @@ public class LineRecordReader extends BaseRecordReader {
                 lineIndex = 0; //New split opened -> reset line index
                 try {
                     close();
-                    iter = IOUtils.lineIterator(new InputStreamReader(locations[splitIndex].toURL().openStream()));
+//                    iter = IOUtils.lineIterator(new InputStreamReader(locations[splitIndex].toURL().openStream()));
+                    iter = getIterator(splitIndex);
                     onLocationOpen(locations[splitIndex]);
                 } catch (IOException e) {
                     e.printStackTrace();
@@ -113,7 +113,7 @@ public class LineRecordReader extends BaseRecordReader {
                 lineIndex = 0; //New split -> reset line count
                 try {
                     close();
-                    iter = IOUtils.lineIterator(new InputStreamReader(locations[splitIndex].toURL().openStream()));
+                    iter = getIterator(splitIndex);
                     onLocationOpen(locations[splitIndex]);
                 } catch (IOException e) {
                     e.printStackTrace();
@@ -201,14 +201,9 @@ public class LineRecordReader extends BaseRecordReader {
             final Iterator<URI> uriIterator = inputSplit.locationsIterator();
             while(uriIterator.hasNext()) uris.add(uriIterator.next());
 
-            this.locations = uris.toArray(new URI[0]);
+            this.locations = uris.toArray(new URI[uris.size()]);
             if (locations.length > 0) {
-                InputStream inputStream;
-                try {
-                    inputStream = locations[location].toURL().openStream();
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
-                }
+                InputStream inputStream = streamCreatorFn.apply(locations[location]);
                 iterator = IOUtils.lineIterator(new InputStreamReader(inputStream));
             }
         }

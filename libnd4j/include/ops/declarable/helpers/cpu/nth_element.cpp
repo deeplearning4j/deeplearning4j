@@ -21,6 +21,7 @@
 #include <ops/declarable/helpers/nth_element.h>
 #include <TAD.h>
 #include <ShapeUtils.h>
+#include <helpers/ConstantTadHelper.h>
 
 namespace nd4j {
 namespace ops {
@@ -44,15 +45,16 @@ namespace helpers {
         }
         else { // rank greater than 1
             std::vector<int> lastDims({input->rankOf() - 1});// = ShapeUtils::evalDimsToExclude(input->rankOf(), {input->rankOf() - 1});
-            shape::TAD tadSorted;
-            tadSorted.init(sortedVals.shapeInfo(), lastDims.data(), lastDims.size());
-            tadSorted.createTadOnlyShapeInfo();
-            tadSorted.createOffsets();
-            SpecialMethods<T>::sortTadGeneric(sortedVals.buffer(), sortedVals.shapeInfo(), lastDims.data(), lastDims.size(), tadSorted.tadOnlyShapeInfo, tadSorted.tadOffsets, reverse);
+
+            auto tadPack = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(sortedVals.shapeInfo(), lastDims);
+            SpecialMethods<T>::sortTadGeneric(sortedVals.buffer(), sortedVals.shapeInfo(), lastDims.data(), lastDims.size(), tadPack.primaryShapeInfo(), tadPack.primaryOffsets(), reverse);
 
             std::unique_ptr<ResultSet> rows(input->allTensorsAlongDimension(lastDims));
-#pragma omp parallel for
-            for (Nd4jLong e = 0; e < output->lengthOf(); e++) {
+
+            Nd4jLong oL = output->lengthOf();
+
+            PRAGMA_OMP_PARALLEL_FOR
+            for (Nd4jLong e = 0; e < oL; e++) {
                 auto row = rows->at(e);
                 output->p(e, row->e<T>(n));
             }

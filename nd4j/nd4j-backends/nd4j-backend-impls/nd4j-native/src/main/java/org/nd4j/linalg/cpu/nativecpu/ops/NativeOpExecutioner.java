@@ -37,6 +37,7 @@ import org.nd4j.linalg.api.concurrency.AffinityManager;
 import org.nd4j.linalg.api.environment.Nd4jEnvironment;
 import org.nd4j.linalg.api.memory.pointers.PagedPointer;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ndarray.INDArrayStatistics;
 import org.nd4j.linalg.api.ops.*;
 import org.nd4j.linalg.api.ops.aggregates.Aggregate;
 import org.nd4j.linalg.api.ops.aggregates.Batch;
@@ -155,15 +156,12 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         val dimension = Shape.normalizeAxis(op.x().rank(), op.dimensions().toIntVector());
 
         boolean keepDims;
-        boolean newFormat;
         if(op instanceof BaseIndexAccumulation) {
             keepDims = ((BaseIndexAccumulation) op).isKeepDims();
-            newFormat = ((BaseIndexAccumulation) op).isNewFormat();
         } else {
             keepDims = false;
-            newFormat = false;
         }
-        long[] retShape = reductionShape(op.x(), dimension, newFormat, keepDims);
+        long[] retShape = reductionShape(op.x(), dimension, true, keepDims);
 
         if(op.z() == null || op.x() == op.z()) {
             val ret = Nd4j.createUninitialized(DataType.LONG, retShape);
@@ -187,7 +185,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
         PointerPointer dummy = extraz.get().put(hostTadShapeInfo, hostTadOffsets);
 
-        long st = profilingHookIn(op, tadBuffers.getFirst());
+        long st = profilingConfigurableHookIn(op, tadBuffers.getFirst());
 
         Pointer x = op.x().data().addressPointer();
         Pointer z = op.z().data().addressPointer();
@@ -214,7 +212,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                         null);
             }
 
-        profilingHookOut(op, st);
+        profilingConfigurableHookOut(op, st);
         return op.z();
     }
 
@@ -237,16 +235,13 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         long[] maxShape = Shape.getMaxShape(op.x(),op.y());
 
         boolean keepDims;
-        boolean newFormat;
         if(op instanceof BaseReduceOp) {
             keepDims = op.isKeepDims();
-            newFormat = ((BaseReduceOp) op).isNewFormat();
         } else {
             keepDims = false;
-            newFormat = true;
         }
 
-        long[] retShape = reductionShape(op.x(), dimension, newFormat, keepDims);
+        long[] retShape = reductionShape(op.x(), dimension, true, keepDims);
 
         if (op.x().isVector() && op.x().length() == ArrayUtil.prod(retShape) && ArrayUtil.prodLong(retShape) > 1 && op.y() == null)
             return op.noOp();
@@ -346,7 +341,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         //  FIXME: we need something better then 3rd element being non-null here...
         PointerPointer dummy = extraz.get().put(hostTadShapeInfo, hostTadOffsets, tvf ? hostTadOffsets : null);
 
-        long st = profilingHookIn(op, tadBuffers.getFirst());
+        long st = profilingConfigurableHookIn(op, tadBuffers.getFirst());
 
         /**
          * Note because dimension arrays don't change,
@@ -618,7 +613,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
     }
 
     public INDArray exec(ScalarOp op) {
-        long st = profilingHookIn(op);
+        long st = profilingConfigurableHookIn(op);
 
         //validateDataType(Nd4j.dataType(), op);
 
@@ -661,7 +656,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                 throw new ND4JIllegalStateException("Unknown op type: [" + op.getOpType() +"]");
         }
 
-        profilingHookOut(op, st);
+        profilingConfigurableHookOut(op, st);
 
         return op.z();
     }
@@ -728,9 +723,9 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             dummy.put(0, tad);
             dummy.put(1, off);
 
-            st = profilingHookIn(op, tadBuffers.getFirst());
+            st = profilingConfigurableHookIn(op, tadBuffers.getFirst());
         } else
-            st = profilingHookIn(op);
+            st = profilingConfigurableHookIn(op);
 
             if (op.y() != null) {
 
@@ -857,11 +852,11 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
             }
 
-        profilingHookOut(op, st);
+        profilingConfigurableHookOut(op, st);
     }
 
     public INDArray exec(BroadcastOp op) {
-        long st = profilingHookIn(op);
+        long st = profilingConfigurableHookIn(op);
 
         op.validateDataTypes(experimentalMode.get());
 
@@ -1223,7 +1218,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             throw new IllegalStateException(
                     "You should use one of NativeRandom classes for NativeOperations execution. Op class: " + op.getClass().getName());
 
-        long st = profilingHookIn(op);
+        long st = profilingConfigurableHookIn(op);
 
         //validateDataType(Nd4j.dataType(), op);
 
@@ -1255,7 +1250,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                         op.extraArgsDataBuff(op.z().dataType()).addressPointer());
         }
 
-        profilingHookOut(op, st);
+        profilingConfigurableHookOut(op, st);
 
         return op.z();
     }
@@ -1600,7 +1595,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
      */
     @Override
     public INDArray[] exec(@NonNull CustomOp op) {
-        long st = profilingHookIn(op);
+        long st = profilingConfigurableHookIn(op);
 
         if (op.numOutputArguments() == 0 && !op.isInplaceCall()) {
             try {
@@ -1741,7 +1736,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                 throw e;
         }
 
-        profilingHookOut(op, st);
+        profilingConfigurableHookOut(op, st);
         return op.outputArguments();
     }
 
@@ -2040,5 +2035,24 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             return new INDArray[0];
         else
             return context.getOutputArrays().toArray(new INDArray[context.getOutputArrays().size()]);
+    }
+
+    @Override
+    public INDArrayStatistics inspectArray(INDArray array) {
+        val debugInfo = new Nd4jCpu.DebugInfo();
+
+        loop.inspectArray(null, array.data().addressPointer(), (LongPointer) array.shapeInfoDataBuffer().addressPointer(), null, null, debugInfo);
+
+        return INDArrayStatistics.builder()
+                .minValue(debugInfo._minValue())
+                .maxValue(debugInfo._maxValue())
+                .meanValue(debugInfo._meanValue())
+                .stdDevValue(debugInfo._stdDevValue())
+                .countInf(debugInfo._infCount())
+                .countNaN(debugInfo._nanCount())
+                .countNegative(debugInfo._negativeCount())
+                .countPositive(debugInfo._positiveCount())
+                .countZero(debugInfo._zeroCount())
+                .build();
     }
 }

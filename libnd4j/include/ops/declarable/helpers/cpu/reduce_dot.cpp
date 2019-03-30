@@ -38,13 +38,13 @@ namespace helpers {
         std::unique_ptr<ResultSet> yList(inputY->allTensorsAlongDimension(dimensions));
         std::unique_ptr<ResultSet> xList(inputX->allTensorsAlongDimension(dimensions));
                 //output->
-#pragma omp parallel for if (outListX->size() > Environment::getInstance()->elementwiseThreshold()) schedule(static)
+        PRAGMA_OMP_PARALLEL_FOR_IF(outListX->size() > Environment::getInstance()->tadThreshold())
         for (Nd4jLong e = 0; e < outListX->size(); ++e) {
             outListX->at(e)->assign(epsilon);
             outListX->at(e)->applyPairwiseTransform(pairwise::Multiply, yList->at(e), outListX->at(e), nullptr);
         }
 
-#pragma omp parallel for if (outListY->size() > Environment::getInstance()->elementwiseThreshold()) schedule(static)
+        PRAGMA_OMP_PARALLEL_FOR_IF(outListY->size() > Environment::getInstance()->tadThreshold())
         for (Nd4jLong e = 0; e < outListY->size(); ++e) {
             outListY->at(e)->assign(epsilon);
             outListY->at(e)->applyPairwiseTransform(pairwise::Multiply, xList->at(e), outListY->at(e), nullptr);

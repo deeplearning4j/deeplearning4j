@@ -233,33 +233,25 @@ public abstract class Layer implements TrainingConfig, Serializable, Cloneable {
     public abstract LayerMemoryReport getMemoryReport(InputType inputType);
 
     @SuppressWarnings("unchecked")
+    @Getter
+    @Setter
     public abstract static class Builder<T extends Builder<T>> {
 
-        @Getter
-        @Setter
         protected String layerName = null;
 
-        @Getter
-        @Setter
         protected List<LayerConstraint> allParamConstraints;
 
-        @Getter
-        @Setter
         protected List<LayerConstraint> weightConstraints;
 
-        @Getter
-        @Setter
         protected List<LayerConstraint> biasConstraints;
 
-        @Getter
-        @Setter
         protected IDropout iDropout;
 
         /**
          * Layer name assigns layer string name. Allows easier differentiation between layers.
          */
         public T name(String layerName) {
-            this.layerName = layerName;
+            this.setLayerName(layerName);
             return (T) this;
         }
 
@@ -302,7 +294,7 @@ public abstract class Layer implements TrainingConfig, Serializable, Cloneable {
          * {@link org.deeplearning4j.nn.conf.dropout.GaussianNoise} etc
          */
         public T dropOut(IDropout dropout) {
-            this.iDropout = dropout;
+            this.setIDropout(dropout);
             return (T) this;
         }
 
@@ -315,7 +307,7 @@ public abstract class Layer implements TrainingConfig, Serializable, Cloneable {
          * @param constraints Constraints to apply to all parameters of this layer
          */
         public T constrainAllParameters(LayerConstraint... constraints) {
-            this.allParamConstraints = Arrays.asList(constraints);
+            this.setAllParamConstraints(Arrays.asList(constraints));
             return (T) this;
         }
 
@@ -328,7 +320,7 @@ public abstract class Layer implements TrainingConfig, Serializable, Cloneable {
          * @param constraints Constraints to apply to all bias parameters of this layer
          */
         public T constrainBias(LayerConstraint... constraints) {
-            this.biasConstraints = Arrays.asList(constraints);
+            this.setBiasConstraints(Arrays.asList(constraints));
             return (T) this;
         }
 
@@ -341,7 +333,7 @@ public abstract class Layer implements TrainingConfig, Serializable, Cloneable {
          * @param constraints Constraints to apply to all weight parameters of this layer
          */
         public T constrainWeights(LayerConstraint... constraints) {
-            this.weightConstraints = Arrays.asList(constraints);
+            this.setWeightConstraints(Arrays.asList(constraints));
             return (T) this;
         }
 

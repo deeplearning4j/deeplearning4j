@@ -72,6 +72,7 @@ import org.bytedeco.javacpp.tools.InfoMapper;
                         "ops/declarable/BooleanOp.h",
                         "ops/declarable/LogicOp.h",
                         "ops/declarable/OpRegistrator.h",
+                        "helpers/DebugInfo.h",
                         "ops/declarable/CustomOperations.h"},
                         exclude = {"ops/declarable/headers/activations.h",
                                 "ops/declarable/headers/boolean.h",
@@ -119,9 +120,9 @@ public class Nd4jCudaPresets implements InfoMapper {
                         "short[]"));
 
         infoMap.put(new Info("__CUDACC__", "MAX_UINT", "HAVE_MKLDNN").define(false))
-               .put(new Info("__JAVACPP_HACK__", "LIBND4J_ALL_OPS").define(true))
+               .put(new Info("__JAVACPP_HACK__", "LIBND4J_ALL_OPS","__CUDABLAS__").define(true))
                .put(new Info("std::initializer_list", "cnpy::NpyArray", "nd4j::NDArray::applyLambda", "nd4j::NDArray::applyPairwiseLambda",
-                             "nd4j::graph::FlatResult", "nd4j::graph::FlatVariable").skip())
+                             "nd4j::graph::FlatResult", "nd4j::graph::FlatVariable", "nd4j::NDArray::subarray").skip())
                .put(new Info("std::string").annotations("@StdString").valueTypes("BytePointer", "String")
                                            .pointerTypes("@Cast({\"char*\", \"std::string*\"}) BytePointer"))
                .put(new Info("std::pair<int,int>").pointerTypes("IntIntPair").define())

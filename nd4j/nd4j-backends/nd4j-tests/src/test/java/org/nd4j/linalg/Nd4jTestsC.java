@@ -2218,12 +2218,11 @@ public class Nd4jTestsC extends BaseNd4jTest {
 
     @Test
     public void testTensorDot() {
-        INDArray oneThroughSixty = Nd4j.arange(60).reshape(3, 4, 5);
-        INDArray oneThroughTwentyFour = Nd4j.arange(24).reshape(4, 3, 2);
+        INDArray oneThroughSixty = Nd4j.arange(60).reshape(3, 4, 5).castTo(DataType.DOUBLE);
+        INDArray oneThroughTwentyFour = Nd4j.arange(24).reshape(4, 3, 2).castTo(DataType.DOUBLE);
         INDArray result = Nd4j.tensorMmul(oneThroughSixty, oneThroughTwentyFour, new int[][] {{1, 0}, {0, 1}});
         assertArrayEquals(new long[] {5, 2}, result.shape());
-        INDArray assertion = Nd4j
-                .create(new double[][] {{4400, 4730}, {4532, 4874}, {4664, 5018}, {4796, 5162}, {4928, 5306}});
+        INDArray assertion = Nd4j.create(new double[][] {{4400, 4730}, {4532, 4874}, {4664, 5018}, {4796, 5162}, {4928, 5306}});
         assertEquals(assertion, result);
 
         INDArray w = Nd4j.valueArrayOf(new long[] {2, 1, 2, 2}, 0.5);
@@ -6322,6 +6321,10 @@ public class Nd4jTestsC extends BaseNd4jTest {
         assertEquals(exp, arrayX);
     }
 
+    @Test
+    public void testBugMeshgridOnDoubleArray() {
+        Nd4j.meshgrid(Nd4j.create(new double[] { 1, 2, 3 }), Nd4j.create(new double[] { 4, 5, 6 }));
+    }
 
     @Test
     public void testMeshGrid(){
@@ -7069,6 +7072,17 @@ public class Nd4jTestsC extends BaseNd4jTest {
     }
 
     @Test
+    public void testStatistics_1() {
+        val array = Nd4j.createFromArray(new float[] {-1.0f, 0.0f, 1.0f});
+        val stats = Nd4j.getExecutioner().inspectArray(array);
+
+        assertEquals(1, stats.getCountPositive());
+        assertEquals(1, stats.getCountNegative());
+        assertEquals(1, stats.getCountZero());
+        assertEquals(0.0f, stats.getMeanValue(), 1e-5);
+    }
+
+    @Test
     public void testINDArrayMmulWithTranspose(){
         Nd4j.getRandom().setSeed(12345);
         INDArray a = Nd4j.rand(2,5);
@@ -7347,6 +7361,144 @@ public class Nd4jTestsC extends BaseNd4jTest {
         }
         val timeEnd = System.nanoTime();
         log.info("Average time: {} ms", (timeEnd - timeStart) / (double) iterations / (double) 1000 / (double) 1000);
+    }
+
+    @Test
+    public void testZerosRank1() {
+        Nd4j.zeros(new int[] { 2 }, DataType.DOUBLE);
+    }
+
+    @Test
+    public void testReshapeEnforce(){
+
+        INDArray arr = Nd4j.create(new long[]{2,2}, 'c');
+        INDArray arr2 = arr.reshape('c', true, 4, 1);
+
+        INDArray arr1a = Nd4j.create(new long[]{2,3}, 'c').get(NDArrayIndex.all(), NDArrayIndex.interval(0,2));
+        INDArray arr3 = arr1a.reshape('c', false, 4,1);
+        assertFalse(arr3.isView());     //Should be copy
+
+        try{
+            INDArray arr4 = arr1a.reshape('c', true, 4,1);
+            fail("Expected exception");
+        } catch (ND4JIllegalStateException e){
+            assertTrue(e.getMessage(), e.getMessage().contains("Unable to reshape array as view"));
+        }
+    }
+
+    @Test
+    public void testRepeatSimple(){
+
+        INDArray arr = Nd4j.createFromArray(new double[][]{
+                {1,2,3},{4,5,6}});
+
+        INDArray r0 = arr.repeat(0, 2);
+
+        INDArray exp0 = Nd4j.createFromArray(new double[][]{
+                {1,2,3},
+                {1,2,3},
+                {4,5,6},
+                {4,5,6}});
+
+        assertEquals(exp0, r0);
+
+
+        INDArray r1 = arr.repeat(1, 2);
+        INDArray exp1 = Nd4j.createFromArray(new double[][]{
+                {1,1,2,2,3,3},{4,4,5,5,6,6}});
+        assertEquals(exp1, r1);
+    }
+
+    @Test
+    public void testRepeatStrided() {
+
+        // Create a 2D array (shape 5x5)
+        INDArray array = Nd4j.arange(25).reshape(5, 5);
+
+        // Get first column (shape 5x1)
+        INDArray slice = array.get(NDArrayIndex.all(), NDArrayIndex.point(0));
+
+        // Repeat column on sliced array (shape 5x3)
+        INDArray repeatedSlice = slice.repeat(1, (long) 3);
+
+        // Same thing but copy array first
+        INDArray repeatedDup = slice.dup().repeat(1, (long) 3);
+
+        // Check result
+        assertEquals(repeatedSlice, repeatedDup);
+    }
+
+    @Test
+    public void testMeshgridDtypes() {
+        Nd4j.setDefaultDataTypes(DataType.FLOAT, DataType.FLOAT);
+        Nd4j.meshgrid(Nd4j.create(new double[] { 1, 2, 3 }), Nd4j.create(new double[] { 4, 5, 6 }));
+
+        Nd4j.meshgrid(Nd4j.createFromArray(1, 2, 3), Nd4j.createFromArray(4, 5, 6));
+    }
+
+    @Test
+    public void testGetColumnRowVector(){
+        INDArray arr = Nd4j.create(1,4);
+        INDArray col = arr.getColumn(0);
+        System.out.println(Arrays.toString(col.shape()));
+        assertArrayEquals(new long[]{1,1}, col.shape());
+    }
+
+
+    @Test
+    public void testEmptyArrayReuse(){
+        //Empty arrays are immutable - no point creating them multiple times
+        INDArray ef1 = Nd4j.empty(DataType.FLOAT);
+        INDArray ef2 = Nd4j.empty(DataType.FLOAT);
+        assertTrue(ef1 == ef2);       //Should be exact same object
+
+        INDArray el1 = Nd4j.empty(DataType.LONG);
+        INDArray el2 = Nd4j.empty(DataType.LONG);
+        assertTrue(el1 == el2);       //Should be exact same object
+    }
+
+    @Test
+    public void testMaxViewF(){
+        INDArray arr = Nd4j.create(DataType.DOUBLE, new long[]{8,2}, 'f').assign(999);
+
+        INDArray view = arr.get(NDArrayIndex.interval(3,5), NDArrayIndex.all());
+        view.assign(Nd4j.createFromArray(new double[][]{{1,2},{3,4}}));
+
+        assertEquals(Nd4j.create(new double[]{3,4}), view.max(0));
+        assertEquals(Nd4j.create(new double[]{2,4}), view.max(1));
+    }
+
+    @Test
+    public void testCreateF(){
+        char origOrder = Nd4j.order();
+        try {
+            Nd4j.factory().setOrder('f');
+
+
+            INDArray arr = Nd4j.createFromArray(new double[][]{{1, 2, 3}, {4, 5, 6}});
+            INDArray arr2 = Nd4j.createFromArray(new float[][]{{1, 2, 3}, {4, 5, 6}});
+            INDArray arr3 = Nd4j.createFromArray(new int[][]{{1, 2, 3}, {4, 5, 6}});
+            INDArray arr4 = Nd4j.createFromArray(new long[][]{{1, 2, 3}, {4, 5, 6}});
+            INDArray arr5 = Nd4j.createFromArray(new short[][]{{1, 2, 3}, {4, 5, 6}});
+            INDArray arr6 = Nd4j.createFromArray(new byte[][]{{1, 2, 3}, {4, 5, 6}});
+
+            INDArray exp = Nd4j.create(2, 3);
+            exp.putScalar(0, 0, 1.0);
+            exp.putScalar(0, 1, 2.0);
+            exp.putScalar(0, 2, 3.0);
+            exp.putScalar(1, 0, 4.0);
+            exp.putScalar(1, 1, 5.0);
+            exp.putScalar(1, 2, 6.0);
+
+            assertEquals(exp, arr);
+            assertEquals(exp.castTo(DataType.FLOAT), arr2);
+            assertEquals(exp.castTo(DataType.INT), arr3);
+            assertEquals(exp.castTo(DataType.LONG), arr4);
+            assertEquals(exp.castTo(DataType.SHORT), arr5);
+            assertEquals(exp.castTo(DataType.BYTE), arr6);
+        } finally {
+            Nd4j.factory().setOrder(origOrder);
+        }
     }
 
     ///////////////////////////////////////////////////////

@@ -80,29 +80,22 @@ std::vector<Nd4jLong> ShapeUtils::evalShapeForTensorDot(const Nd4jLong* aShapeIn
         n2 *= aShapeInfo[axesA[i] + 1];
     shapeAt = {-1, n2};
 
-    std::vector<Nd4jLong> oldShapeA;
-    if (list_A.empty()) {
-        oldShapeA.emplace_back(1);
-    } else {
-        oldShapeA.resize(list_A.size());
-        for (int i = 0; i < (int) oldShapeA.size(); i++)
-            oldShapeA[i] = aShapeInfo[list_A[i] + 1];
-    }
+    std::vector<Nd4jLong> oldShapeA;    
+    oldShapeA.resize(list_A.size());        
+    for (int i = 0; i < oldShapeA.size(); ++i)
+        oldShapeA[i] = aShapeInfo[list_A[i] + 1];
+    
     
     int n3 = 1;
     for (int i = 0; i < axeBsize; i++)
         n3 *= bShapeInfo[axesB[i] + 1];
     shapeBt = {n3, -1};
     
-    std::vector<Nd4jLong> oldShapeB;
-    if (list_B.empty()) {
-        oldShapeB.emplace_back(1);
-    } else {
-        oldShapeB.resize(list_B.size()); 
-        for (int i = 0; i < (int) oldShapeB.size(); i++)
-            oldShapeB[i] = bShapeInfo[list_B[i] + 1];
-    }
-    
+    std::vector<Nd4jLong> oldShapeB;    
+    oldShapeB.resize(list_B.size());    
+    for (int i = 0; i < oldShapeB.size(); i++)
+        oldShapeB[i] = bShapeInfo[list_B[i] + 1];
+        
     std::vector<Nd4jLong> aPlusB(oldShapeA);
     aPlusB.insert(aPlusB.end(), oldShapeB.begin(), oldShapeB.end());            
     
@@ -325,11 +318,10 @@ Nd4jLong* ShapeUtils::evalReduceShapeInfo(const char order, std::vector<int>& di
 
 //////////////////////////////////////////////////////////////////////////
 // return new (shorter) sorted dimensions array without dimensions that are present in input vector
-    std::vector<int> ShapeUtils::evalDimsToExclude(const int rank, const std::vector<int>& dimensions) {
+std::vector<int> ShapeUtils::evalDimsToExclude(const int rank, const int dimsLen, const int* dimensions) {
 
-    std::vector<int> newDimensions;
-    auto size = dimensions.size();
-    if(size == 0) {                          // if input vector is empty then return whole shape range
+    std::vector<int> newDimensions;    
+    if(dimsLen == 0) {                          // if input vector is empty then return whole shape range
         newDimensions.resize(rank);
         std::iota(newDimensions.begin(), newDimensions.end(), 0);   // fill with 0, 1, ... rank-1
     }
@@ -337,7 +329,7 @@ Nd4jLong* ShapeUtils::evalReduceShapeInfo(const char order, std::vector<int>& di
         bool isAbsent;
         for(int i=0; i<rank; ++i) {
             isAbsent = true;
-            for(int j=0; j<size; ++j) {
+            for(int j = 0; j < dimsLen; ++j) {
                 int dim = dimensions[j] >= 0 ? dimensions[j] : dimensions[j] + rank;
                 if(i == dim) {
                     isAbsent = false;
@@ -350,6 +342,12 @@ Nd4jLong* ShapeUtils::evalReduceShapeInfo(const char order, std::vector<int>& di
     }
 
     return newDimensions;
+}
+
+//////////////////////////////////////////////////////////////////////////
+std::vector<int> ShapeUtils::evalDimsToExclude(const int rank, const std::vector<int>& dimensions) {
+
+    return ShapeUtils::evalDimsToExclude(rank, dimensions.size(), dimensions.data());
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -530,8 +528,9 @@ Nd4jLong* ShapeUtils::evalTileShapeInfo(const NDArray& arr, const std::vector<Nd
 
     std::vector<Nd4jLong> ShapeUtils::pullShapeFromShapeInfo(Nd4jLong *shapeInfo) {
         std::vector<Nd4jLong> shape(shape::rank(shapeInfo));
+        int shapeSize = shape.size();
 
-        for (int e = 0; e < shape.size(); e++)
+        for (int e = 0; e < shapeSize; e++)
             shape[e] = shape::shapeOf(shapeInfo)[e];
 
         return shape;
@@ -903,10 +902,7 @@ std::vector<Nd4jLong> ShapeUtils::evalDimsWithoutUnities(const Nd4jLong* shapeIn
     std::vector<Nd4jLong> result;
     for(int i = 1; i <= shapeInfo[0]; ++i)
         if(shapeInfo[i] != 1)
-            result.push_back(shapeInfo[i]);
-
-    if(result.size() == 0)  // shape consists of unities only 
-        return std::vector<Nd4jLong>(1,1);  // return [1]
+            result.push_back(shapeInfo[i]);    
 
     return result;
 }
@@ -923,6 +919,35 @@ void ShapeUtils::updateStridesAndType(Nd4jLong* dest, const DataType dtype, cons
 
     shape::updateStrides(dest, order);
     ArrayOptions::setDataType(dest, dtype);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+std::vector<int> ShapeUtils::tadAxesForSimpleBroadcast(const NDArray& max, const NDArray& min) {
+
+    const int maxRank = max.rankOf();
+    const int minRank = min.rankOf();
+    const int diff    = maxRank - minRank;
+    
+    Nd4jLong  numOfMinTads(1), numOfMaxTads(1);
+    std::vector<int> maxTadDims;
+
+    for(int i = 0; i < minRank; ++i) {
+        if(min.sizeAt(i) == max.sizeAt(diff + i))
+            maxTadDims.push_back(diff + i);
+        else {
+            numOfMinTads *= min.sizeAt(i);
+            numOfMaxTads *= max.sizeAt(i);
+        }
+    }
+
+    if(min.lengthOf() > max.lengthOf()) {   // in this case tad is max array
+        for(int i = 0; i < diff; ++i)
+            numOfMaxTads *= max.sizeAt(i);
+
+        return numOfMaxTads == 1 ? maxTadDims : std::vector<int>();       
+    }
+ 
+    return numOfMinTads == 1 ? maxTadDims : std::vector<int>();
 }
 
 }

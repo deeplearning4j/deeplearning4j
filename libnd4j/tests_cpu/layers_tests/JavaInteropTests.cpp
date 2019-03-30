@@ -97,17 +97,17 @@ TEST_F(JavaInteropTests, TestShapeExposure3) {
     auto x = NDArrayFactory::create<float>('c', {5, 30});
     auto sizes = NDArrayFactory::create<int>('c', {3}, {4, 15, 11});
 
-    IndicesList list0({NDIndex::all(), NDIndex::interval(0, 4)});
-    IndicesList list1({NDIndex::all(), NDIndex::interval(4, 19)});
-    IndicesList list2({NDIndex::all(), NDIndex::interval(19, 30)});
+    std::vector<Nd4jLong> list0 = {0,0,  0,4};
+    std::vector<Nd4jLong> list1 = {0,0,  4,19};
+    std::vector<Nd4jLong> list2 = {0,0,  19,30};
 
-    auto sub0 = x.subarray(list0);
-    auto sub1 = x.subarray(list1);
-    auto sub2 = x.subarray(list2);
+    auto sub0 = x(list0, true);
+    auto sub1 = x(list1, true);
+    auto sub2 = x(list2, true);
 
-    sub0->assign(0.0f);
-    sub1->assign(1.0f);
-    sub2->assign(2.0f);
+    sub0.assign(0.0f);
+    sub1.assign(1.0f);
+    sub2.assign(2.0f);
 
     Nd4jPointer inputBuffers[] = {x.buffer(), sizes.buffer()};
     Nd4jPointer inputShapes[] = {x.shapeInfo(), sizes.shapeInfo()};
@@ -122,14 +122,10 @@ TEST_F(JavaInteropTests, TestShapeExposure3) {
 
     ASSERT_EQ(3, shapeList->size());
 
-    ASSERT_TRUE(shape::equalsSoft(sub0->shapeInfo(), shapeList->at(0)));
-    ASSERT_TRUE(shape::equalsSoft(sub1->shapeInfo(), shapeList->at(1)));
-    ASSERT_TRUE(shape::equalsSoft(sub2->shapeInfo(), shapeList->at(2)));
-
-    delete sub0;
-    delete sub1;
-    delete sub2;
-
+    ASSERT_TRUE(shape::equalsSoft(sub0.shapeInfo(), shapeList->at(0)));
+    ASSERT_TRUE(shape::equalsSoft(sub1.shapeInfo(), shapeList->at(1)));
+    ASSERT_TRUE(shape::equalsSoft(sub2.shapeInfo(), shapeList->at(2)));
+            
     nativeOps.deleteShapeList((Nd4jPointer) shapeList);
 }
 

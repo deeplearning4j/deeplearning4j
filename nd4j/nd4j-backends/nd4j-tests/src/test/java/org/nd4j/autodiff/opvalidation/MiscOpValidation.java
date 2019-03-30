@@ -41,6 +41,7 @@ import org.nd4j.linalg.api.ops.impl.transforms.custom.CumSum;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.Fill;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
+import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.primitives.Triple;
 import org.nd4j.linalg.util.ArrayUtil;
@@ -1434,5 +1435,72 @@ public class MiscOpValidation extends BaseOpValidation {
         }
 
         assertEquals(failed.toString(), 0, failed.size());
+    }
+
+    @Test
+    public void testExtractImagePatches(){
+        /*
+        tf.reset_default_graph()
+        input = tf.reshape(tf.constant([1,2,3,4,5,6,7,8,9], dtype=tf.float32), [1,3,3,1])
+        patches = tf.image.extract_image_patches(images=input, ksizes=[1,2,2,1], strides=[1,1,1,1], rates=[1,1,1,1], padding="SAME")
+        linear = tf.reshape(patches, [3*3*4])
+        sess = tf.Session()
+        out = sess.run([patches,linear])
+         */
+        INDArray in = Nd4j.linspace(1,9,9, DataType.FLOAT).reshape('c', 1,3,3,1);
+        INDArray out = Nd4j.create(DataType.FLOAT, 1,3,3,4);
+
+        DynamicCustomOp op = DynamicCustomOp.builder("extract_image_patches")
+                .addInputs(in)
+                .addOutputs(out)
+                .addIntegerArguments(
+                        2,2,    //Kernel
+                        1,1,    //Stride
+                        1,1,    //Rates
+                        1       //Same
+                )
+                .build();
+
+        Nd4j.getExecutioner().exec(op);
+
+        INDArray exp = Nd4j.create(DataType.FLOAT, 1,3,3,4);
+        exp.get(NDArrayIndex.point(0), NDArrayIndex.point(0), NDArrayIndex.all(), NDArrayIndex.all())
+                .assign(Nd4j.createFromArray(new double[][]{
+                        {1, 2, 4, 5},
+                        {2, 3, 5, 6},
+                        {3, 0, 6, 0}}));
+
+        exp.get(NDArrayIndex.point(0), NDArrayIndex.point(1), NDArrayIndex.all(), NDArrayIndex.all())
+                .assign(Nd4j.createFromArray(new double[][]{
+                        {4, 5, 7, 8},
+                        {5, 6, 8, 9},
+                        {6, 0, 9, 0}}));
+
+        exp.get(NDArrayIndex.point(0), NDArrayIndex.point(2), NDArrayIndex.all(), NDArrayIndex.all())
+                .assign(Nd4j.createFromArray(new double[][]{
+                        {7, 8, 0, 0},
+                        {8, 9, 0, 0},
+                        {9, 0, 0, 0}}));
+        assertEquals(exp, out);
+    }
+
+    @Test
+    public void testSegmentProdBpSimple(){
+
+        INDArray segmentIdxs = Nd4j.create(new double[]{0,0,0,1,2,2,3,3}, new long[]{8}).castTo(DataType.INT);
+        INDArray data = Nd4j.create(new double[]{5,1,7,2,3,4,1,3}, new long[]{8});
+        INDArray grad = Nd4j.createFromArray(1.0,2.0,3.0,4.0);
+        int numSegments = 4;
+
+        INDArray gradData = data.like();
+        INDArray gradIdxs = segmentIdxs.like();
+
+        DynamicCustomOp op = DynamicCustomOp.builder("unsorted_segment_prod_bp")
+                .addInputs(data,segmentIdxs,grad)
+                .addIntegerArguments(numSegments)
+                .addOutputs(gradData, gradIdxs)
+                .build();
+
+        Nd4j.getExecutioner().exec(op);
     }
 }

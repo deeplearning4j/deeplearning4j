@@ -246,6 +246,10 @@ public class DifferentialFunctionFactory {
     }
 
 
+    public SDVariable pad(SDVariable input, SDVariable padding, Pad.Mode mode, double padValue){
+        return new Pad(sameDiff(), input, padding, mode, padValue).outputVariable();
+    }
+
     /**
      * Local response normalization operation.
      *
@@ -1162,11 +1166,17 @@ public class DifferentialFunctionFactory {
     }
 
     public SDVariable gelu(SDVariable iX, boolean precise) {
-        return new GELU(sameDiff(), iX, false, precise).outputVariable();
+        if (precise)
+            return new PreciseGELU(sameDiff(), iX, false, precise).outputVariable();
+        else
+            return new GELU(sameDiff(), iX, false, precise).outputVariable();
     }
 
     public SDVariable geluDerivative(SDVariable iX, boolean precise) {
-        return new GELUDerivative(sameDiff(), iX, false, precise).outputVariable();
+        if (precise)
+            return new PreciseGELUDerivative(sameDiff(), iX, false, precise).outputVariable();
+        else
+            return new GELUDerivative(sameDiff(), iX, false).outputVariable();
     }
 
     public SDVariable sign(SDVariable iX) {

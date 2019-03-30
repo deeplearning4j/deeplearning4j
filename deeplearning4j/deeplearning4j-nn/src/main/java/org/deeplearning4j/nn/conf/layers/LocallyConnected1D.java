@@ -211,83 +211,67 @@ public class LocallyConnected1D extends SameDiffLayer {
         }
     }
 
+    @Getter
+    @Setter
     public static class Builder extends SameDiffLayer.Builder<Builder> {
 
         /**
          * Number of inputs to the layer (input size)
          */
-        @Getter
-        @Setter
         private int nIn;
 
         /**
          * Number of outputs (output size)
          */
-        @Getter
-        @Setter
         private int nOut;
 
         /**
          * Activation function for the layer
          */
-        @Getter
-        @Setter
         private Activation activation = Activation.TANH;
 
         /**
          * Kernel size for the layer
          */
-        @Getter
-        @Setter
         private int kernel = 2;
 
         /**
          * Stride for the layer
          */
-        @Getter
-        @Setter
         private int stride = 1;
 
         /**
          * Padding for the layer. Not used if {@link ConvolutionMode#Same} is set
          */
-        @Getter
-        @Setter
         private int padding = 0;
 
         /**
          * Dilation for the layer
          */
-        @Getter
-        @Setter
         private int dilation = 1;
 
         /**
          * Input filter size for this locally connected 1D layer
          *
          */
-        @Getter
+        @Setter(AccessLevel.NONE)
         private int inputSize;
 
         /**
          * Convolution mode for the layer. See {@link ConvolutionMode} for details
          */
-        @Getter
-        @Setter
         private ConvolutionMode cm = ConvolutionMode.Same;
 
         /**
          * If true (default is false) the layer will have a bias
          */
-        @Getter
-        @Setter
         private boolean hasBias = true;
 
         /**
          * @param nIn Number of inputs to the layer (input size)
          */
         public Builder nIn(int nIn) {
-            this.nIn = nIn;
+            this.setNIn(nIn);
             return this;
         }
 
@@ -295,7 +279,7 @@ public class LocallyConnected1D extends SameDiffLayer {
          * @param nOut Number of outputs (output size)
          */
         public Builder nOut(int nOut) {
-            this.nOut = nOut;
+            this.setNOut(nOut);
             return this;
         }
 
@@ -303,7 +287,7 @@ public class LocallyConnected1D extends SameDiffLayer {
          * @param activation Activation function for the layer
          */
         public Builder activation(Activation activation) {
-            this.activation = activation;
+            this.setActivation(activation);
             return this;
         }
 
@@ -311,7 +295,7 @@ public class LocallyConnected1D extends SameDiffLayer {
          * @param k Kernel size for the layer
          */
         public Builder kernelSize(int k) {
-            this.kernel = k;
+            this.setKernel(k);
             return this;
         }
 
@@ -319,7 +303,7 @@ public class LocallyConnected1D extends SameDiffLayer {
          * @param s Stride for the layer
          */
         public Builder stride(int s) {
-            this.stride = s;
+            this.setStride(s);
             return this;
         }
 
@@ -327,7 +311,7 @@ public class LocallyConnected1D extends SameDiffLayer {
          * @param p Padding for the layer. Not used if {@link ConvolutionMode#Same} is set
          */
         public Builder padding(int p) {
-            this.padding = p;
+            this.setPadding(p);
             return this;
         }
 
@@ -335,7 +319,7 @@ public class LocallyConnected1D extends SameDiffLayer {
          * @param cm Convolution mode for the layer. See {@link ConvolutionMode} for details
          */
         public Builder convolutionMode(ConvolutionMode cm) {
-            this.cm = cm;
+            this.setCm(cm);
             return this;
         }
 
@@ -343,7 +327,7 @@ public class LocallyConnected1D extends SameDiffLayer {
          * @param d Dilation for the layer
          */
         public Builder dilation(int d) {
-            this.dilation = d;
+            this.setDilation(d);
             return this;
         }
 
@@ -351,7 +335,7 @@ public class LocallyConnected1D extends SameDiffLayer {
          * @param hasBias If true (default is false) the layer will have a bias
          */
         public Builder hasBias(boolean hasBias) {
-            this.hasBias = hasBias;
+            this.setHasBias(hasBias);
             return this;
         }
 
@@ -362,7 +346,6 @@ public class LocallyConnected1D extends SameDiffLayer {
          * @return Builder
          */
         public Builder setInputSize(int inputSize) {
-            ;
             this.inputSize = inputSize;
             return this;
         }

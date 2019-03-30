@@ -36,6 +36,8 @@ import org.nd4j.linalg.api.instrumentation.Instrumentation;
 import org.nd4j.linalg.api.iter.FirstAxisIterator;
 import org.nd4j.linalg.api.iter.NdIndexIterator;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
+import org.nd4j.linalg.api.ops.CustomOp;
+import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.impl.reduce.bool.All;
 import org.nd4j.linalg.api.ops.impl.reduce.bool.Any;
 import org.nd4j.linalg.api.ops.impl.reduce.floating.*;
@@ -59,6 +61,7 @@ import org.nd4j.linalg.api.ops.impl.transforms.same.Negative;
 import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.*;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.*;
 import org.nd4j.linalg.api.ops.performance.PerformanceTracker;
+import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.api.shape.options.ArrayOptionsHelper;
 import org.nd4j.linalg.exception.*;
@@ -2635,14 +2638,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
 
     protected void init(int[] shape, int[] stride) {
-
-        //default row vector
-        if (shape.length == 1) {
-            init(new int[] {1, shape[0]}, new int[] {1, stride[0]});
-        }
-
         //null character
-        if (ordering() == '\u0000') {
+        if (shapeInformation == null || jvmShapeInfo == null || ordering() == '\u0000') {
             //Shape.setOrder(shapeInfo(), Nd4j.order());
             val si = Nd4j.getShapeInfoProvider().createShapeInformation(ArrayUtil.toLongArray(shape), ArrayUtil.toLongArray(stride), 1, Nd4j.order(), this.dataType());
             setShapeInformation(si);
@@ -2651,14 +2648,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     }
 
     protected void init(long[] shape, long[] stride) {
-
-        //default row vector
-        if (shape.length == 1) {
-            init(new long[] {1, shape[0]}, new long[] {1, stride[0]});
-        }
-
         //null character
-        if (ordering() == '\u0000') {
+        if (shapeInformation == null || jvmShapeInfo == null || ordering() == '\u0000') {
             val si = Nd4j.getShapeInfoProvider().createShapeInformation(shape,stride, 1, Nd4j.order(), this.dataType());
             setShapeInformation(si);
         }
@@ -4333,48 +4324,19 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     }
 
     @Override
-    public INDArray repeat(int dimension, int... repeats) {
-        return repeat(dimension, ArrayUtil.toLongArray(repeats));
-    }
-
-    @Override
     public INDArray repeat(int dimension, long... repeats) {
         Nd4j.getCompressor().autoDecompress(this);
+        CustomOp op = DynamicCustomOp.builder("repeat")
+                .addInputs(this)
+                .addIntegerArguments(ArrayUtil.toInts(repeats))     //TODO int cast
+                .build();
+        op.addIArgument(dimension); //Native op: last iarg is dimension
 
-
-        if (dimension < 0)
-            dimension += rank();
-
-        if (repeats.length < rank()) {
-            if (dimension > 0)
-                repeats = Longs.concat(ArrayUtil.nTimes((long) rank() - repeats.length, 1), repeats);
-                //append rather than prepend for dimension == 0
-            else
-                repeats = Longs.concat(repeats, ArrayUtil.nTimes((long) rank() - repeats.length, 1));
-
-        }
-
-        long[] newShape = new long[rank()];
-
-        for (int i = 0; i < newShape.length; i++)
-            newShape[i] = size(i) * repeats[i];
-
-        INDArray ret = Nd4j.create(this.dataType(), newShape);
-
-        //number of times to repeat each value
-        long repeatDelta = ArrayUtil.prod(newShape) / length();
-        for (int i = 0; i < tensorsAlongDimension(dimension); i++) {
-            INDArray thisTensor = tensorAlongDimension(i, dimension);
-            INDArray retTensor = ret.tensorAlongDimension(i, dimension);
-            int retIdx = 0;
-            for (int k = 0; k < thisTensor.length(); k++) {
-                for (int j = 0; j < repeatDelta; j++) {
-                    retTensor.putScalar(retIdx++, thisTensor.getDouble(k));
-                }
-            }
-        }
-
-        return ret;
+        LongShapeDescriptor l = op.calculateOutputShape().get(0);
+        INDArray out = Nd4j.create(l);
+        op.addOutputArgument(out);
+        Nd4j.exec(op);
+        return out;
     }
 
 
@@ -4487,6 +4449,11 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public INDArray reshape(char order, long... newShape) {
+        return reshape(order, false, newShape);
+    }
+
+    @Override
+    public INDArray reshape(char order, boolean enforceView, long... newShape){
         Nd4j.getCompressor().autoDecompress(this);
 
         // special case for empty reshape
@@ -4549,6 +4516,11 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             // kinda strange get/set usage
             //  reshapeAttempt.setOrder(Shape.getOrder(reshapeAttempt));
             return reshapeAttempt;
+        }
+
+        if(enforceView){
+            throw new ND4JIllegalStateException("Unable to reshape array as view, called with enforceView=true. " +
+                    "Use enforceView=false to return a copy instead, or call reshape on a non-strided array. Array shape info: " + this.shapeInfoToString().replaceAll("\n",""));
         }
 
 
@@ -4717,7 +4689,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     @Override
     public INDArray sum(boolean keepDim, int... dimension) {
         validateNumericalArray("sum", false);
-        return Nd4j.getExecutioner().exec(new Sum(this, null, true, keepDim, dimension));
+        return Nd4j.getExecutioner().exec(new Sum(this, null, keepDim, dimension));
     }
 
 
@@ -4929,9 +4901,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             return this;
         else if (isColumnVector() && c > 0)
             throw new IllegalArgumentException("Illegal index for row");
-        else if(isRowVector()) {
-            return Nd4j.scalar(getDouble(c));
-        }
         return get(NDArrayIndex.all(), NDArrayIndex.point(c));
     }
 

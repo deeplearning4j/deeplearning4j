@@ -31,10 +31,9 @@ namespace nd4j {
 namespace ops  {
 
 // return 2d array evaluated though last dimension interval t1-t2
-static NDArray* timestep(const NDArray* const arr, const int t1, const int t2) {
-
-        IndicesList list({ NDIndex::all(), NDIndex::all(), NDIndex::interval(t1,t2)});
-        NDArray* result = arr->subarray(list);
+static NDArray* timestep(const NDArray* arr, const int t1, const int t2) {
+        
+        NDArray* result = new NDArray((*arr)({0,0, 0,0, t1,t2}, true));
         result->reshapei(result->ordering(), {arr->shapeOf()[0], arr->shapeOf()[1]} );
 
         return result;
@@ -101,8 +100,8 @@ CUSTOM_OP_IMPL(sru_logic, 5, 2, false, 0, 0) {
         ht = rt * (gct - xt) + xt;
 
         // save results
-        output->assign(ht, {{}, {}, {t,t+1}} );
-        state->assign (ct, {{}, {}, {t,t+1}} );
+        (*output)({0,0, 0,0, t,t+1}, true).assign(ht);
+        (*state)({0,0, 0,0, t,t+1}, true).assign(ct);
     }    
     
     return Status::OK();
@@ -162,13 +161,12 @@ CUSTOM_OP_IMPL(sru_old, 5, 2, false, 0, 0) {
     const int time      = x->shapeOf()[2];                     // time - number of time steps
 
     // multiplication matrix = matmul(w,x)
-    auto wi = MmulHelper::mmul(w, x, nullptr, 1., 0.);      //       U [bS x 3K x time]
-    // wi.printShapeInfo();
-    auto wiZ = wi->subarray( { NDIndex::all(), NDIndex::interval(0,inSize),     NDIndex::all() } );       // [bS x inSize x time]
-    auto wiF = wi->subarray( { NDIndex::all(), NDIndex::interval(inSize,2*inSize),   NDIndex::all() } );       // forget gate [bS x inSize x time]
-    auto wiR = wi->subarray( { NDIndex::all(), NDIndex::interval(2*inSize,3*inSize), NDIndex::all() } );       // reset gate [bS x inSize x time]
-    auto bF  = b->subarray( { NDIndex::all(), NDIndex::interval(0,inSize)  } );                        // biases for forget gate [1 x inSize]
-    auto bR  = b->subarray( { NDIndex::all(), NDIndex::interval(inSize,2*inSize)} );                        // biases for reset gate [1 x inSize]
+    auto wi = MmulHelper::mmul(w, x, nullptr, 1., 0.);            // U [bS x 3K x time]    
+    auto wiZ = (*wi)({0,0,  0,inSize,          0,0}, true);       // [bS x inSize x time]
+    auto wiF = (*wi)({0,0,  inSize,2*inSize,   0,0}, true);       // forget gate [bS x inSize x time]
+    auto wiR = (*wi)({0,0,  2*inSize,3*inSize, 0,0}, true);       // reset gate [bS x inSize x time]
+    auto bF  = (*b) ({0,0,  0,inSize       }, true);              // biases for forget gate [1 x inSize]
+    auto bR  = (*b) ({0,0,  inSize,2*inSize}, true);              // biases for reset gate [1 x inSize]
 
     NDArray* xt(nullptr), *zt(nullptr), *ft(nullptr), *rt(nullptr), *ct(nullptr), *ht(nullptr);
     auto ct_1 = c0->dup(c0->ordering());
@@ -180,15 +178,15 @@ CUSTOM_OP_IMPL(sru_old, 5, 2, false, 0, 0) {
 
     for (int t = 0; t < time; ++t) {
         xt = timestep(xmt, t, t+1);         // [bS x inSize x time] -> [bS x inSize x 1] -> [bS x inSize]
-        zt = timestep(wiZ, t, t+1);         // [bS x inSize x time] -> [bS x inSize x 1] -> [bS x inSize]
-        ft = timestep(wiF, t, t+1);         // [bS x inSize x time] -> [bS x inSize x 1] -> [bS x inSize]
-        rt = timestep(wiR, t, t+1);         // [bS x inSize x time] -> [bS x inSize x 1] -> [bS x inSize]
+        zt = timestep(&wiZ, t, t+1);        // [bS x inSize x time] -> [bS x inSize x 1] -> [bS x inSize]
+        ft = timestep(&wiF, t, t+1);        // [bS x inSize x time] -> [bS x inSize x 1] -> [bS x inSize]
+        rt = timestep(&wiR, t, t+1);        // [bS x inSize x time] -> [bS x inSize x 1] -> [bS x inSize]
         ct = timestep(state, t, t+1);       // [bS x inSize x time] -> [bS x inSize x 1] -> [bS x inSize]
-        ht = timestep(h, t, t+1);      // [bS x inSize x time] -> [bS x inSize x 1] -> [bS x inSize]
+        ht = timestep(h, t, t+1);           // [bS x inSize x time] -> [bS x inSize x 1] -> [bS x inSize]
 
         // ft = sigmoid(ft + bf), rt = sigmoid(rt + bR)
-        ft->addRowVector(bF, ft);
-        rt->addRowVector(bR, rt);
+        ft->addRowVector(&bF, ft);
+        rt->addRowVector(&bR, rt);
         ft->applyTransform(transform::Sigmoid, ft, nullptr);
         rt->applyTransform(transform::Sigmoid, rt, nullptr);
         // ct = ft * c_t-1 + (1 - ft) * zt,
@@ -209,7 +207,7 @@ CUSTOM_OP_IMPL(sru_old, 5, 2, false, 0, 0) {
         ct_1 = ct;
     }
 
-    delete wiZ; delete wiF; delete wiR; delete wi; delete bF; delete bR; delete ct_1; delete gct; delete xmt;
+    delete wi; delete ct_1; delete gct; delete xmt;
 
     return Status::OK();
 }
@@ -401,16 +399,16 @@ CUSTOM_OP_IMPL(sru_bp, 8, 4, true, 0, 0) {
     // multiplication matrix wi = matmul(w,x), U = WX
     auto wi = MmulHelper::mmul(w, x, nullptr, 1., 0.);      // U [bS x 3K x N]
 
-    auto wiZ = wi->subarray( { NDIndex::all(), NDIndex::interval(0,K),     NDIndex::all() } );       // [bS x K x N]
-    auto wiF = wi->subarray( { NDIndex::all(), NDIndex::interval(K,2*K),   NDIndex::all() } );       // forget gate [bS x K x N]
-    auto wiR = wi->subarray( { NDIndex::all(), NDIndex::interval(2*K,3*K), NDIndex::all() } );       // reset gate [bS x K x N]
-    auto bF  = b->subarray( { NDIndex::all(), NDIndex::interval(0,K)  } );                        // biases for forget gate [1 x K]
-    auto bR  = b->subarray( { NDIndex::all(), NDIndex::interval(K,2*K)} );                        // biases for reset gate [1 x K]
-    auto gradBF = gradBias->subarray( { NDIndex::all(), NDIndex::interval(0,K),   NDIndex::all() } );   // [bS x K x N]
-    auto gradBR = gradBias->subarray( { NDIndex::all(), NDIndex::interval(K,2*K), NDIndex::all() } );   // [bS x K x N]
-    auto gradUZ = gradU->subarray( { NDIndex::all(), NDIndex::interval(0,K),     NDIndex::all() } ); // [bS x K x N]
-    auto gradUF = gradU->subarray( { NDIndex::all(), NDIndex::interval(K,2*K),   NDIndex::all() } ); // [bS x K x N]
-    auto gradUR = gradU->subarray( { NDIndex::all(), NDIndex::interval(2*K,3*K), NDIndex::all() } ); // [bS x K x N]
+    auto wiZ = (*wi)({0,0,  0,K,     0,0}, true);           // [bS x K x N]
+    auto wiF = (*wi)({0,0,  K,2*K,   0,0}, true);           // forget gate [bS x K x N]
+    auto wiR = (*wi)({0,0,  2*K,3*K, 0,0}, true);           // reset gate [bS x K x N]
+    auto bF  = (*b) ({0,0,  0,K  }, true);                  // biases for forget gate [1 x K]
+    auto bR  = (*b) ({0,0,  K,2*K}, true);                  // biases for reset gate [1 x K]
+    auto gradBF = (*gradBias)({0,0,  0,K,     0,0}, true);  // [bS x K x N]
+    auto gradBR = (*gradBias)({0,0,  K,2*K,   0,0}, true);  // [bS x K x N]
+    auto gradUZ = (*gradU)   ({0,0,  0,K,     0,0}, true ); // [bS x K x N]
+    auto gradUF = (*gradU)   ({0,0,  K,2*K,   0,0}, true ); // [bS x K x N]
+    auto gradUR = (*gradU)   ({0,0,  2*K,3*K, 0,0}, true ); // [bS x K x N]
 
 
     NDArray* xt(nullptr), *zt(nullptr), *ft(nullptr), *rt(nullptr), *ct(nullptr), *inGradHt(nullptr), *gradBFt(nullptr),
@@ -419,17 +417,17 @@ CUSTOM_OP_IMPL(sru_bp, 8, 4, true, 0, 0) {
     for (int t = N-1; t >=0 ; --t) {           
         // initialization
         xt = timestep(x, t, t+1);               // [bS x K x N] -> [bS x K x 1] -> [bS x K]
-        zt = timestep(wiZ, t, t+1);                 // [bS x K x N] -> [bS x K x 1] -> [bS x K]
-        ft = timestep(wiF, t, t+1);                 // [bS x K x N] -> [bS x K x 1] -> [bS x K]
-        rt = timestep(wiR, t, t+1);                 // [bS x K x N] -> [bS x K x 1] -> [bS x K]
+        zt = timestep(&wiZ, t, t+1);                 // [bS x K x N] -> [bS x K x 1] -> [bS x K]
+        ft = timestep(&wiF, t, t+1);                 // [bS x K x N] -> [bS x K x 1] -> [bS x K]
+        rt = timestep(&wiR, t, t+1);                 // [bS x K x N] -> [bS x K x 1] -> [bS x K]
         ct = timestep(c, t, t+1);               // [bS x K x N] -> [bS x K x 1] -> [bS x K]
         inGradHt = timestep(inGradH, t, t+1);       // [bS x K x N] -> [bS x K x 1] -> [bS x K]
-        gradBRt  = timestep(gradBR, t, t+1);        // [bS x K x N] -> [bS x K x 1] -> [bS x K]
-        gradBFt  = timestep(gradBF, t, t+1);        // [bS x K x N] -> [bS x K x 1] -> [bS x K]
-        gradHXt  = timestep(gradHX, t, t+1);        // [bS x K x N] -> [bS x K x 1] -> [bS x K]
-        gradUZt  = timestep(gradUZ, t, t+1);        // [bS x K x N] -> [bS x K x 1] -> [bS x K]
-        gradUFt  = timestep(gradUF, t, t+1);        // [bS x K x N] -> [bS x K x 1] -> [bS x K]
-        gradURt  = timestep(gradUR, t, t+1);        // [bS x K x N] -> [bS x K x 1] -> [bS x K]                        
+        gradBRt  = timestep(&gradBR, t, t+1);        // [bS x K x N] -> [bS x K x 1] -> [bS x K]
+        gradBFt  = timestep(&gradBF, t, t+1);        // [bS x K x N] -> [bS x K x 1] -> [bS x K]
+        gradHXt  = timestep(gradHX,  t, t+1);        // [bS x K x N] -> [bS x K x 1] -> [bS x K]
+        gradUZt  = timestep(&gradUZ, t, t+1);        // [bS x K x N] -> [bS x K x 1] -> [bS x K]
+        gradUFt  = timestep(&gradUF, t, t+1);        // [bS x K x N] -> [bS x K x 1] -> [bS x K]
+        gradURt  = timestep(&gradUR, t, t+1);        // [bS x K x N] -> [bS x K x 1] -> [bS x K]                        
 
         if(t != 0)
             ct_1  = timestep(c, t-1, t);        // previous c_{t-1}
@@ -438,8 +436,8 @@ CUSTOM_OP_IMPL(sru_bp, 8, 4, true, 0, 0) {
         
         ///////////////// forward
         // ft = sigmoid(ft + bf), rt = sigmoid(rt + bR)
-        ft->addRowVector(bF, ft);
-        rt->addRowVector(bR, rt);
+        ft->addRowVector(&bF, ft);
+        rt->addRowVector(&bR, rt);
         ft->applyTransform(transform::Sigmoid, nullptr, nullptr);
         rt->applyTransform(transform::Sigmoid, nullptr, nullptr);
         
@@ -507,9 +505,7 @@ CUSTOM_OP_IMPL(sru_bp, 8, 4, true, 0, 0) {
     x->permutei({0, 2, 1});                                               // [bS x N x K]
     MmulHelper::mmul(gradU, x, gradW, 1., 0.);          // [bS x 3K x K]
 
-    delete gradUR; delete gradBF; delete gradUZ; delete gradUF; delete gradBR;
-
-    delete gct;   delete gradU; delete gradHX; delete wiZ; delete wiF; delete wiR; delete bF; delete bR;
+    delete gct;   delete gradU; delete gradHX;
     delete temp1; delete temp2; delete temp3; delete gradCt; delete wi;
     delete gradTanh; delete ftMinus; delete rtMinus; delete weightsT; delete gradBias;
     
@@ -669,14 +665,14 @@ CUSTOM_OP_IMPL(sru_bp_logic, 8, 4, true, 0, 0) {
 
         // c_{t-1}, inGradCt = (gradCt + inGradCt) * ft;
         *inGradCt = (gradCt + *inGradCt) * ft;
-        
+
         // save results        
-        gradBias.assign(gradBFt, {{}, {0,     inSize}, {t,t+1}} );
-        gradBias.assign(gradBRt, {{}, {inSize,   2*inSize}, {t,t+1}} );
-        gradU.assign(gradUZt,    {{}, {0,     inSize}, {t,t+1}} );
-        gradU.assign(gradBFt,    {{}, {inSize,   2*inSize}, {t,t+1}} );
-        gradU.assign(gradBRt,    {{}, {2*inSize, 3*inSize}, {t,t+1}} );
-        gradHX.assign(gradHXt,   {{}, {        }, {t,t+1}} );              
+        gradBias({0,0, 0,inSize, t,t+1}, true).assign(gradBFt);
+        gradBias({0,0, inSize,2*inSize, t,t+1}, true).assign(gradBRt);
+        gradU({0,0, 0,inSize, t,t+1}, true).assign(gradUZt);
+        gradU({0,0, inSize,2*inSize, t,t+1}, true).assign(gradBFt);
+        gradU({0,0, 2*inSize, 3*inSize, t,t+1}, true).assign(gradBRt);
+        gradHX({0,0, 0,0, t,t+1}, true).assign(gradHXt);
     }
 
     // gradInit

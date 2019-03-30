@@ -153,8 +153,14 @@ public class CudaAffinityManager extends BasicAffinityManager {
      */
     @Override
     public void attachThreadToDevice(long threadId, Integer deviceId) {
+        val t = org.apache.commons.lang3.ThreadUtils.findThreadById(threadId);
+        String name = "N/A";
+        if (t != null)
+            name = t.getName();
+
         List<Integer> devices = new ArrayList<>(CudaEnvironment.getInstance().getConfiguration().getAvailableDevices());
-        logger.trace("Manually mapping thread [{}] to device [{}], out of [{}] devices...", threadId, deviceId, devices.size());
+        logger.trace("Manually mapping thread [{} - {}] to device [{}], out of [{}] devices...", threadId,
+                name, deviceId, devices.size());
         affinityMap.put(threadId, deviceId);
     }
 
@@ -175,7 +181,8 @@ public class CudaAffinityManager extends BasicAffinityManager {
                 if (devPtr.get() >= CudaEnvironment.getInstance().getConfiguration().getAvailableDevices().size())
                     devPtr.set(0);
 
-                logger.debug("Mapping thread [{}] to device [{}], out of [{}] devices...", threadId, device,
+                logger.debug("Mapping thread [{} - {}] to device [{}], out of [{}] devices...", threadId,
+                        org.apache.commons.lang3.ThreadUtils.findThreadById(threadId).getName(),
                         CudaEnvironment.getInstance().getConfiguration().getAvailableDevices().size());
             }
         } else {

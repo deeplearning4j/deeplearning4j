@@ -64,7 +64,7 @@ namespace helpers {
 
         int tads = tadsA->size();
 
-#pragma omp parallel for simd schedule(static)
+        PRAGMA_OMP_PARALLEL_FOR_SIMD
         for (int e = 0; e < tads; e++) {
             auto a_ = tadsA->at(e);
             auto b_ = tadsB->at(e);

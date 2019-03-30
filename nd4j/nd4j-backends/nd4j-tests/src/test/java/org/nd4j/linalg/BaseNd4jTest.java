@@ -29,6 +29,7 @@ import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.environment.Nd4jEnvironment;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
+import org.nd4j.linalg.profiler.ProfilerConfig;
 import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.nativeblas.NativeOpsHolder;
 import org.slf4j.Logger;
@@ -54,6 +55,11 @@ public abstract class BaseNd4jTest {
 
     public BaseNd4jTest(String name) {
         this(name, getDefaultBackend());
+    }
+
+    @Before
+    public void beforeTest() {
+        Nd4j.getExecutioner().setProfilingConfig(ProfilerConfig.builder().build());
     }
 
     public BaseNd4jTest(String name, Nd4jBackend backend) {

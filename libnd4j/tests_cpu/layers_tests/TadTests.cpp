@@ -210,6 +210,57 @@ TEST_F(TadTests, test_TAD_empty_dims_1) {
     shape::printShapeInfoLinear("TAD shape", xTad.tadOnlyShapeInfo);
 }
 
+TEST_F(TadTests, test_tad_order_1) {
+    Nd4jLong xShape[8] = {2, 150, 10, 10, 1, 8192, 1, 99};
+    Nd4jLong tShape[8] = {2, 1, 10, 1, 1, 8192, 1, 99};
+    shape::TAD xTad;
+    int dim = 1;
+    xTad.init(xShape, &dim, 1);
+    xTad.createTadOnlyShapeInfo();
+
+    shape::printShapeInfoLinear("tad shape", xTad.tadOnlyShapeInfo);
+    ASSERT_TRUE(shape::equalsStrict(tShape, xTad.tadOnlyShapeInfo));
+}
+
+TEST_F(TadTests, test_tad_order_2) {
+    Nd4jLong xShape[8] = {2, 150, 10, 10, 1, 8192, 1, 99};
+    Nd4jLong tShape[8] = {2, 1, 150, 1, 10, 8192, 10, 99};
+    shape::TAD xTad;
+    int dim = 0;
+    xTad.init(xShape, &dim, 1);
+    xTad.createTadOnlyShapeInfo();
+
+    shape::printShapeInfoLinear("tad shape", xTad.tadOnlyShapeInfo);
+    ASSERT_TRUE(shape::equalsStrict(tShape, xTad.tadOnlyShapeInfo));
+}
+
+
+TEST_F(TadTests, test_tad_order_3) {
+    Nd4jLong xShape[10] = {3, 10, 20, 30, 600 ,30, 1, 8192, 1, 99};
+    Nd4jLong tShape[8] = {2, 1, 30, 1, 1, 8192, 1, 99};
+    shape::TAD xTad;
+    int dim = 2;
+    xTad.init(xShape, &dim, 1);
+    xTad.createTadOnlyShapeInfo();
+
+    shape::printShapeInfoLinear("tad shape", xTad.tadOnlyShapeInfo);
+    ASSERT_TRUE(shape::equalsStrict(tShape, xTad.tadOnlyShapeInfo));
+}
+
+
+TEST_F(TadTests, test_tad_order_4) {
+    Nd4jLong xShape[10] = {3, 10, 20, 30, 600 ,30, 1, 8192, 1, 99};
+    Nd4jLong tShape[8] = {2, 20, 30, 30, 1, 8192, 1, 99};
+    shape::TAD xTad;
+    int dim[2] = {1, 2};
+    xTad.init(xShape, dim, 2);
+    xTad.createTadOnlyShapeInfo();
+
+    shape::printShapeInfoLinear("tad shape", xTad.tadOnlyShapeInfo);
+    ASSERT_TRUE(shape::equalsStrict(tShape, xTad.tadOnlyShapeInfo));
+}
+
+
 /*
  // FIXME: we want this test passing eventually
 TEST_F(TadTests, Tad_1D_1) {

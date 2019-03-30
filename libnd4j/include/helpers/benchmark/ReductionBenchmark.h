@@ -38,6 +38,12 @@ namespace nd4j {
             _opType = 0;
         }
 
+        ReductionBenchmark(reduce::SameOps op, std::string testName, NDArray *x, NDArray *z, std::initializer_list<int> axis) : OpBenchmark(testName, x, z, axis) {
+            _opNum = (int) op;
+            _opType = 1;
+        }
+
+
         ReductionBenchmark(reduce::FloatOps op) : OpBenchmark() {
             _opNum = (int) op;
             _opType = 0;
@@ -63,6 +69,11 @@ namespace nd4j {
         ReductionBenchmark(reduce::FloatOps op, std::string testName, NDArray *x, NDArray *z, std::vector<int> axis) : OpBenchmark(testName ,x, z, axis) {
             _opNum = (int) op;
             _opType = 0;
+        }
+
+        ReductionBenchmark(reduce::SameOps op, std::string testName, NDArray *x, NDArray *z, std::vector<int> axis) : OpBenchmark(testName ,x, z, axis) {
+            _opNum = (int) op;
+            _opType = 1;
         }
 
         void executeOnce() override {
@@ -118,7 +129,10 @@ namespace nd4j {
         }
 
         OpBenchmark* clone() override  {
-            return new ReductionBenchmark((reduce::FloatOps) _opNum, _testName, _x, _z, _axis);
+            if (_opType == 0)
+                return new ReductionBenchmark((reduce::FloatOps) _opNum, _testName, _x, _z, _axis);
+            else
+                return new ReductionBenchmark((reduce::SameOps) _opNum, _testName, _x, _z, _axis);
         }
     };
 }

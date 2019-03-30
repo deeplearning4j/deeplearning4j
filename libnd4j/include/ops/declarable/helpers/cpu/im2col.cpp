@@ -62,7 +62,7 @@ static void im2col_(graph::LaunchContext& context, const NDArray& input,  NDArra
             
     if (shape::order(imShapeBuffer) == 'c' &&  shape::order(colShapeBuffer) == 'c' && shape::strideDescendingCAscendingF(imShapeBuffer) && shape::strideDescendingCAscendingF(colShapeBuffer)) {
 
-#pragma omp parallel for schedule(static) proc_bind(close) private(col, im, imRow, imCol)
+        PRAGMA_OMP_PARALLEL_FOR_SIMD_ARGS(private(col, im, imRow, imCol) collapse(2))
     	for (int b = 0; b < bS; b++) {
         	for (int c = 0; c < iC; ++c) {        
             	for (int kRow = 0; kRow < kH; ++kRow) {                        
@@ -88,8 +88,8 @@ static void im2col_(graph::LaunchContext& context, const NDArray& input,  NDArra
         }  
     }
     else {
- 
-#pragma omp parallel for schedule(static) proc_bind(close) private(im, col, imRow, imCol)    
+
+        PRAGMA_OMP_PARALLEL_FOR_SIMD_ARGS(private(im, col, imRow, imCol) collapse(2))
     	for (int b = 0; b < bS; b++) {
         	for (int colH = 0; colH < oH; ++colH) {
             	for (int colW = 0; colW < oW; ++colW) {

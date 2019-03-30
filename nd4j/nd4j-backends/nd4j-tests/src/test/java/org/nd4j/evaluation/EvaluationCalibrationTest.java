@@ -19,12 +19,17 @@ package org.nd4j.evaluation;
 import org.junit.Test;
 import org.nd4j.evaluation.classification.EvaluationCalibration;
 import org.nd4j.linalg.BaseNd4jTest;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
+import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.ops.transforms.Transforms;
 
 import java.util.Random;
+
+import static org.junit.Assert.assertEquals;
 
 /**
  * Created by Alex on 05/07/2017.
@@ -125,7 +130,7 @@ public class EvaluationCalibrationTest extends BaseNd4jTest {
         int[] expPredictionCount = new int[(int) labels.size(1)];
         INDArray argmax = Nd4j.argMax(arr, 1);
         for (int i = 0; i < argmax.length(); i++) {
-            expPredictionCount[argmax.getInt(i, 0)]++;
+            expPredictionCount[argmax.getInt(i)]++;
         }
 
         assertArrayEquals(expLabelCounts, ec.getLabelCountsEachClass());
@@ -158,7 +163,7 @@ public class EvaluationCalibrationTest extends BaseNd4jTest {
         double binSize = 1.0 / numBins;
 
         for (int i = 0; i < minibatch; i++) {
-            int actualClassIdx = argmaxLabels.getInt(i, 0);
+            int actualClassIdx = argmaxLabels.getInt(i);
             for (int j = 0; j < nClasses; j++) {
                 double labelSubProb = absLabelSubProb.getDouble(i, j);
                 for (int k = 0; k < numBins; k++) {
@@ -200,7 +205,7 @@ public class EvaluationCalibrationTest extends BaseNd4jTest {
         int[] probCountsAllClasses = new int[numBins];
         int[][] probCountsByClass = new int[nClasses][numBins]; //Histogram count of |label[x] - p(x)|; rows x are over classes
         for (int i = 0; i < minibatch; i++) {
-            int actualClassIdx = argmaxLabels.getInt(i, 0);
+            int actualClassIdx = argmaxLabels.getInt(i);
             for (int j = 0; j < nClasses; j++) {
                 double prob = arr.getDouble(i, j);
                 for (int k = 0; k < numBins; k++) {
@@ -230,6 +235,100 @@ public class EvaluationCalibrationTest extends BaseNd4jTest {
             int[] actProbCurrClass = probCurrClass.getBinCounts();
 
             assertArrayEquals(probCountsByClass[i], actProbCurrClass);
+        }
+    }
+
+    @Test
+    public void testSegmentation(){
+        for( int c : new int[]{4, 1}) { //c=1 should be treated as binary classification case
+            Nd4j.getRandom().setSeed(12345);
+            int mb = 3;
+            int h = 3;
+            int w = 2;
+
+            //NCHW
+            INDArray labels = Nd4j.create(DataType.FLOAT, mb, c, h, w);
+            Random r = new Random(12345);
+            for (int i = 0; i < mb; i++) {
+                for (int j = 0; j < h; j++) {
+                    for (int k = 0; k < w; k++) {
+                        if(c == 1){
+                            labels.putScalar(i, 0, j, k, r.nextInt(2));
+                        } else {
+                            int classIdx = r.nextInt(c);
+                            labels.putScalar(i, classIdx, j, k, 1.0);
+                        }
+                    }
+                }
+            }
+
+            INDArray predictions = Nd4j.rand(DataType.FLOAT, mb, c, h, w);
+            if(c > 1) {
+                DynamicCustomOp op = DynamicCustomOp.builder("softmax")
+                        .addInputs(predictions)
+                        .addOutputs(predictions)
+                        .callInplace(true)
+                        .addIntegerArguments(1) //Axis
+                        .build();
+                Nd4j.exec(op);
+            }
+
+            EvaluationCalibration e2d = new EvaluationCalibration();
+            EvaluationCalibration e4d = new EvaluationCalibration();
+
+            e4d.eval(labels, predictions);
+
+            for (int i = 0; i < mb; i++) {
+                for (int j = 0; j < h; j++) {
+                    for (int k = 0; k < w; k++) {
+                        INDArray rowLabel = labels.get(NDArrayIndex.point(i), NDArrayIndex.all(), NDArrayIndex.point(j), NDArrayIndex.point(k));
+                        INDArray rowPredictions = predictions.get(NDArrayIndex.point(i), NDArrayIndex.all(), NDArrayIndex.point(j), NDArrayIndex.point(k));
+                        rowLabel = rowLabel.reshape(1, rowLabel.length());
+                        rowPredictions = rowPredictions.reshape(1, rowLabel.length());
+
+                        e2d.eval(rowLabel, rowPredictions);
+                    }
+                }
+            }
+
+            assertEquals(e2d, e4d);
+
+
+            //NHWC, etc
+            INDArray lOrig = labels;
+            INDArray fOrig = predictions;
+            for (int i = 0; i < 4; i++) {
+                switch (i) {
+                    case 0:
+                        //CNHW - Never really used
+                        labels = lOrig.permute(1, 0, 2, 3).dup();
+                        predictions = fOrig.permute(1, 0, 2, 3).dup();
+                        break;
+                    case 1:
+                        //NCHW
+                        labels = lOrig;
+                        predictions = fOrig;
+                        break;
+                    case 2:
+                        //NHCW - Never really used...
+                        labels = lOrig.permute(0, 2, 1, 3).dup();
+                        predictions = fOrig.permute(0, 2, 1, 3).dup();
+                        break;
+                    case 3:
+                        //NHWC
+                        labels = lOrig.permute(0, 2, 3, 1).dup();
+                        predictions = fOrig.permute(0, 2, 3, 1).dup();
+                        break;
+                    default:
+                        throw new RuntimeException();
+                }
+
+                EvaluationCalibration e = new EvaluationCalibration();
+                e.setAxis(i);
+
+                e.eval(labels, predictions);
+                assertEquals(e2d, e);
+            }
         }
     }
 }

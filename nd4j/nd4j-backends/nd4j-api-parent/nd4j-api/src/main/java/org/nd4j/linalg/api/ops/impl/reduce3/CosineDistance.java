@@ -67,8 +67,8 @@ public class CosineDistance extends BaseReduce3Op {
         this(x, y, null, allDistances, dimension);
     }
 
-    public CosineDistance(INDArray x, INDArray y, INDArray z, boolean newFormat, boolean keepDims, int... dimensions){
-        super(x, y, z, newFormat, keepDims, dimensions);
+    public CosineDistance(INDArray x, INDArray y, INDArray z, boolean keepDims, boolean allDistances, int... dimensions){
+        super(x, y, z, keepDims, allDistances, dimensions);
         extraArgs = new Object[]{0.0f, 0.0f};
     }
 

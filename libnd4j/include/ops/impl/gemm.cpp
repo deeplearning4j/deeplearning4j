@@ -21,6 +21,7 @@
 
 #include <gemm.h>
 #include <types/types.h>
+#include <Environment.h>
 
 namespace nd4j {
     namespace blas {
@@ -31,7 +32,7 @@ namespace nd4j {
             auto source = reinterpret_cast<T *>(vsource);
 
             // handle transpose in parallel
-#pragma omp parallel for proc_bind(close)
+            PRAGMA_OMP_PARALLEL_FOR_COLLAPSE(2)
             for (int r = 0; r < rows; r++) {
                 for (int c = 0; c < cols; c++) {
                     int zIdx = orderTarget == CblasRowMajor ? linearIndexC(rows, cols, r, c) : linearIndexF(rows, cols, r, c);
@@ -62,19 +63,19 @@ namespace nd4j {
 
             if (beta == 0.0) {
                 int length = M*N;
-                if (length <= 8192) {
-#pragma omp simd
+                if (length <= Environment::getInstance()->elementwiseThreshold()) {
+                    PRAGMA_OMP_SIMD
                     for (int r = 0; r < length; r++)
                         C[r] = static_cast<Z>(0.0f);
                 } else {
-#pragma omp parallel for simd
+                    PRAGMA_OMP_PARALLEL_FOR_SIMD
                     for (int r = 0; r < length; r++)
                         C[r] = static_cast<Z>(0.0f);
                 }
             }
 
 
-#pragma omp parallel for simd collapse(2) proc_bind(close)
+            PRAGMA_OMP_PARALLEL_FOR_SIMD_COLLAPSE(2)
             for (int r = 0; r < M; r++) {
                 for (int c = 0; c < N; c++) {
                     int zIdx = linearIndexF(M, N, r, c);
@@ -119,7 +120,7 @@ namespace nd4j {
 
             auto aT = TRANS == CblasTrans ? reinterpret_cast<X *>(nd4j::blas::transpose<X>(CblasColMajor, CblasRowMajor, M, N, reinterpret_cast<void *>(x))) : x;
 
-#pragma omp parallel for proc_bind(close)
+            PRAGMA_OMP_PARALLEL_FOR_SIMD
             for (int r = 0; r < M; r++) {
                 int aIdx = linearIndexC(M, N, r, 0);
                 auto aX = aT + aIdx;

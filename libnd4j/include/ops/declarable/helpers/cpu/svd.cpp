@@ -155,9 +155,8 @@ void SVD<T>::deflation1(int col1, int shift, int ind, int size) {
     rotation.p(1, 1, cos);
 
     if (_calcU) {        
-        auto temp = _u.subarray({{col1, col1 + size + 1}, {}});
-        JacobiSVD<T>::mulRotationOnRight(col1, col1+ind, *temp, rotation);
-        delete temp;
+        auto temp = _u({col1,col1+size+1, 0,0}, true);
+        JacobiSVD<T>::mulRotationOnRight(col1, col1+ind, temp, rotation);        
     }
     else
         JacobiSVD<T>::mulRotationOnRight(col1, col1+ind, _u, rotation);        
@@ -197,17 +196,15 @@ void SVD<T>::deflation2(int col1U , int col1M, int row1W, int col1W, int ind1, i
     rotation.p(1,0, sin);
     
     if (_calcU) {
-        auto temp = _u.subarray({{col1U, col1U + size + 1},{}});
-        JacobiSVD<T>::mulRotationOnRight(col1U+ind1, col1U+ind2, *temp, rotation);
-        delete temp;
+        auto temp = _u({col1U,col1U+size+1, 0,0}, true);
+        JacobiSVD<T>::mulRotationOnRight(col1U+ind1, col1U+ind2, temp, rotation);        
     }
     else
         JacobiSVD<T>::mulRotationOnRight(col1U+ind1, col1U+ind2, _u, rotation);    
     
     if (_calcV)  {
-        auto temp = _v.subarray({{row1W, row1W + size},{}});
-        JacobiSVD<T>::mulRotationOnRight(col1W+ind1, col1W+ind2, *temp, rotation);        
-        delete temp;
+        auto temp = _v({row1W,row1W+size, 0,0}, true);
+        JacobiSVD<T>::mulRotationOnRight(col1W+ind1, col1W+ind2, temp, rotation);
     }
 }
 
@@ -219,7 +216,7 @@ void SVD<T>::deflation(int col1, int col2, int ind, int row1W, int col1W, int sh
     
     const int len = col2 + 1 - col1;
 
-    auto colVec0 = _m.subarray({{col1+shift, col1+shift+len },{col1+shift, col1+shift+1}});
+    auto colVec0 = new NDArray(_m({col1+shift,col1+shift+len, col1+shift,col1+shift+1}, true));
         
     auto diagInterval = _m({col1+shift, col1+shift+len, col1+shift,col1+shift+len}, true).diagonal('c');
   
@@ -317,33 +314,28 @@ void SVD<T>::deflation(int col1, int col2, int ind, int row1W, int col1W, int sh
                 colVec0->p(jac, colVec0->template e<T>(i));
                 colVec0->p(i, _e0);
             }
-      
-            NDArray* temp1 = nullptr, *temp2 = nullptr;
+                  
             if (_calcU) {
-                temp1 = _u.subarray({{col1, col1+len+1},{col1+i,   col1+i+1}});
-                temp2 = _u.subarray({{col1, col1+len+1},{col1+jac, col1+jac+1}});                     
-                auto temp3 = *temp1;
-                temp1->assign(temp2);
-                temp2->assign(temp3);                
+                auto temp1 = _u({col1,col1+len+1, col1+i,  col1+i+1}, true);
+                auto temp2 = _u({col1,col1+len+1, col1+jac,col1+jac+1}, true);                     
+                auto temp3 = temp1;
+                temp1.assign(temp2);
+                temp2.assign(temp3);
             }        
             else {
-                temp1 = _u.subarray({{0, 2},{col1+i,   col1+i+1}});
-                temp2 = _u.subarray({{0, 2},{col1+jac, col1+jac+1}});                
-                auto temp3 = *temp1;
-                temp1->assign(temp2);
-                temp2->assign(temp3);                
+                auto temp1 = _u({0,2, col1+i,   col1+i+1}, true);
+                auto temp2 = _u({0,2, col1+jac, col1+jac+1}, true);                
+                auto temp3 = temp1;
+                temp1.assign(temp2);
+                temp2.assign(temp3);                
             }            
-            delete temp1;
-            delete temp2;
-
+      
             if(_calcV) {
-                temp1 = _v.subarray({{row1W, row1W+len},{col1W+i,   col1W+i+1}});
-                temp2 = _v.subarray({{row1W, row1W+len},{col1W+jac, col1W+jac+1}});               
-                auto temp3 = *temp1;
-                temp1->assign(temp2);
-                temp2->assign(temp3);
-                delete temp1;
-                delete temp2;                
+                auto temp1 = _v({row1W,row1W+len, col1W+i,   col1W+i+1}, true);
+                auto temp2 = _v({row1W,row1W+len, col1W+jac, col1W+jac+1}, true);               
+                auto temp3 = temp1;
+                temp1.assign(temp2);
+                temp2.assign(temp3);                                
             }
       
             const int tI = tInd[i];
@@ -565,12 +557,12 @@ void SVD<T>::calcSingVecs(const NDArray& zhat, const NDArray& diag, const NDArra
   
     for (int k = 0; k < n; ++k) {
         
-        auto colU = U.subarray({{},{k, k+1}});
+        auto colU = new NDArray(U({0,0, k,k+1}, true));
         *colU = 0.;
         NDArray* colV = nullptr;
         
         if (_calcV) {
-            colV = V.subarray({{},{k, k+1}});
+            colV = new NDArray(V({0,0, k,k+1}, true));
             *colV = 0.;
         }
 
@@ -604,10 +596,9 @@ void SVD<T>::calcSingVecs(const NDArray& zhat, const NDArray& diag, const NDArra
             delete colV;
     }
     
-    auto colU = U.subarray({{},{n, n+1}});
-    *colU = 0.;
-    colU->p(n, 1.);
-    delete colU;    
+    auto colU = U({0,0, n,n+1}, true);
+    colU = 0.;
+    colU.p(n, 1.);    
 }
 
 
@@ -655,58 +646,47 @@ void SVD<T>::calcBlockSVD(int col1, int size, NDArray& U, NDArray& singVals, NDA
             singVals.p(i, _e1);
             singVals.p(i+1, _e0);
 
-            auto temp1 = U.subarray({{},{i,i+1}});
-            auto temp2 = U.subarray({{},{i+1,i+2}});
-            auto temp3 = *temp1;
-            temp1->assign(temp2);
-            temp2->assign(temp3);            
-            delete temp1;
-            delete temp2;
+            auto temp1 = U({0,0, i,i+1}, true);
+            auto temp2 = U({0,0, i+1,i+2}, true);
+            auto temp3 = temp1;
+            temp1.assign(temp2);
+            temp2.assign(temp3);            
             
             if(_calcV) {
-                auto temp1 = V.subarray({{},{i,i+1}});
-                auto temp2 = V.subarray({{},{i+1,i+2}});
-                auto temp3 = *temp1;
-                temp1->assign(temp2);
-                temp2->assign(temp3);            
-                delete temp1;
-                delete temp2;                    
+                auto temp1 = V({0,0, i,i+1}, true);
+                auto temp2 = V({0,0, i+1,i+2}, true);
+                auto temp3 = temp1;
+                temp1.assign(temp2);
+                temp2.assign(temp3);            
             }
         }
     }
     
-    auto temp1 = singVals.subarray({{0, curSize},{}});
+    auto temp1 = singVals({0,curSize, 0,0}, true);
     for (int e = 0; e < curSize / 2; ++e) {
-        T tmp = temp1->e<T>(e);
-        temp1->p(e, temp1->e<T>(curSize-1-e));
-        temp1->p(curSize-1-e, tmp);
-    }
-    delete temp1;
+        T tmp = temp1.e<T>(e);
+        temp1.p(e, temp1.e<T>(curSize-1-e));
+        temp1.p(curSize-1-e, tmp);
+    }    
     
-    auto temp2 = U.subarray({{},{0, curSize}});
+    auto temp2 = U({0,0, 0,curSize}, true);
     for(int i = 0; i < curSize/2; ++i) {
-        auto temp3 = temp2->subarray({{},{i,i+1}});
-        auto temp4 = temp2->subarray({{},{curSize-1-i,curSize-i}});
-        auto  temp5 = *temp3;
-        temp3->assign(temp4);
-        temp4->assign(temp5);        
-        delete temp3;
-        delete temp4;
-    }
-    delete temp2;
+        auto temp3 = temp2({0,0, i,i+1}, true);
+        auto temp4 = temp2({0,0, curSize-1-i,curSize-i}, true);
+        auto temp5 = temp3;
+        temp3.assign(temp4);
+        temp4.assign(temp5);
+    }    
     
     if (_calcV) {
-        auto temp2 = V.subarray({{},{0, curSize}});
+        auto temp2 = V({0,0, 0,curSize}, true);
         for(int i = 0; i < curSize/2; ++i) {
-            auto temp3 = temp2->subarray({{}, {i,i+1}});
-            auto temp4 = temp2->subarray({{}, {curSize-1-i,curSize-i}});
-            auto  temp5 = *temp3;
-            temp3->assign(temp4);
-            temp4->assign(temp5);
-            delete temp3;
-            delete temp4;
-        }
-        delete temp2;
+            auto temp3 = temp2({0,0, i,i+1}, true);
+            auto temp4 = temp2({0,0, curSize-1-i,curSize-i}, true);
+            auto temp5 = temp3;
+            temp3.assign(temp4);
+            temp4.assign(temp5);
+        }        
     }     
 }
 
@@ -731,28 +711,23 @@ void SVD<T>::DivideAndConquer(int col1, int col2, int row1W, int col1W, int shif
         JacobiSVD<T> jac(_m({col1,col1+n+1, col1,col1+n}, true), _calcU, _calcV, _fullUV);
         
         if (_calcU) {
-            auto temp = _u.subarray({{col1, col1+n+1},{col1, col1+n+1}});
-            temp->assign(jac._u);            
-            delete temp;
+            auto temp = _u({col1,col1+n+1, col1,col1+n+1}, true);
+            temp.assign(jac._u);                        
         }
         else {
-            auto temp1 = _u.subarray({{0, 1},{col1, col1+n+1}});
-            temp1->assign(jac._u({0,1, 0,0}, true));
-            delete temp1;
-            auto temp2 = _u.subarray({{1, 2},{col1, col1+n+1}});
-            temp2->assign(jac._u({n,n+1, 0,0}, true));    
-            delete temp2;
+            auto temp1 = _u({0,1, col1,col1+n+1}, true);
+            temp1.assign(jac._u({0,1, 0,0}, true));            
+            auto temp2 = _u({1,2, col1,col1+n+1}, true);
+            temp2.assign(jac._u({n,n+1, 0,0}, true));    
         }
     
         if (_calcV) {
-            auto temp = _v.subarray({{row1W, row1W+n},{col1W, col1W+n}});
-            temp->assign(jac._v);
-            delete temp;
+            auto temp = _v({row1W,row1W+n, col1W,col1W+n}, true);
+            temp.assign(jac._v);
         }
             
-        auto temp = _m.subarray({{col1+shift, col1+shift+n+1}, {col1+shift, col1+shift+n}});
-        temp->assign(0.);
-        delete temp;
+        auto temp = _m({col1+shift,col1+shift+n+1, col1+shift,col1+shift+n}, true);
+        temp.assign(0.);        
         auto diag = _m.diagonal('c');
         (*diag)({col1+shift, col1+shift+n, 0,0}, true).assign(jac._s({0,n, 0,0}, true));
         delete diag;        
@@ -805,28 +780,22 @@ void SVD<T>::DivideAndConquer(int col1, int col2, int row1W, int col1W, int shif
   
     if (_calcU) {
     
-        auto temp = _u.subarray({{col1, col1+k+1},{col1+k, col1+k+1}});
-        NDArray q1(*temp);
-        delete temp;
+        auto temp = _u({col1,col1+k+1, col1+k,col1+k+1}, true);
+        NDArray q1(temp);
 
         for (int i = col1 + k - 1; i >= col1; --i) {
-            auto temp = _u.subarray({{col1, col1+k+1}, {i+1, i+2}});
-            temp->assign(_u({col1, col1+k+1, i, i+1}, true));
-            delete temp;
+            auto temp = _u({col1,col1+k+1, i+1,i+2}, true);
+            temp.assign(_u({col1, col1+k+1, i, i+1}, true));
         }
 
-        auto temp1 = _u.subarray({{col1, col1+k+1}, {col1, col1+1}});
-        temp1->assign(q1 * c0);
-        delete temp1;
-        auto temp2 = _u.subarray({{col1, col1+k+1}, {col2+1, col2+2}});
-        temp2->assign(q1 * (-s0));
-        delete temp2;
-        auto temp3 = _u.subarray({{col1+k+1, col1+n+1}, {col1, col1+1}});
-        temp3->assign(_u({col1+k+1, col1+n+1, col2+1, col2+2}, true) * s0);        
-        delete temp3;
-        auto temp4 =_u.subarray({{col1+k+1, col1+n+1}, {col2+1, col2+2}});
-        *temp4 *= c0;
-        delete temp4;
+        auto temp1 = _u({col1,col1+k+1, col1,col1+1}, true);
+        temp1.assign(q1 * c0);
+        auto temp2 = _u({col1,col1+k+1, col2+1,col2+2}, true);
+        temp2.assign(q1 * (-s0));
+        auto temp3 = _u({col1+k+1,col1+n+1, col1, col1+1}, true);
+        temp3.assign(_u({col1+k+1, col1+n+1, col2+1, col2+2}, true) * s0);        
+        auto temp4 =_u({col1+k+1,col1+n+1, col2+1,col2+2}, true);
+        temp4 *= c0;
     } 
     else  {
     
@@ -844,12 +813,10 @@ void SVD<T>::DivideAndConquer(int col1, int col2, int row1W, int col1W, int shif
     }
     
     _m.p(col1 + shift, col1 + shift, r0);
-    auto temp1 = _m.subarray({{col1+shift+1, col1+shift+k+1}, {col1+shift, col1+shift+1}});
-    temp1->assign(l*alphaK);
-    delete temp1;
-    auto temp2 = _m.subarray({{col1+shift+k+1, col1+shift+n}, {col1+shift, col1+shift+1}});
-    temp2->assign(f*betaK);    
-    delete temp2;
+    auto temp1 = _m({col1+shift+1,col1+shift+k+1, col1+shift,col1+shift+1}, true);
+    temp1.assign(l*alphaK);
+    auto temp2 = _m({col1+shift+k+1,col1+shift+n, col1+shift,col1+shift+1}, true);
+    temp2.assign(f*betaK);        
 
     deflation(col1, col2, k, row1W, col1W, shift);
       
@@ -857,31 +824,27 @@ void SVD<T>::DivideAndConquer(int col1, int col2, int row1W, int col1W, int shif
     calcBlockSVD(col1 + shift, n, UofSVD, singVals, VofSVD);    
     
     if(_calcU) {
-        auto pTemp = _u.subarray({{col1, col1+n+1},{col1, col1+n+1}});
-        auto temp = *pTemp;
-        pTemp->assign(mmul(temp, UofSVD));
-        delete pTemp;
+        auto pTemp = _u({col1, col1+n+1, col1,col1+n+1}, true);
+        auto temp = pTemp;
+        pTemp.assign(mmul(temp, UofSVD));        
     }
     else {
-        auto pTemp = _u.subarray({{}, {col1, col1+n+1}});
-        auto temp = *pTemp;
-        pTemp->assign(mmul(temp, UofSVD));
-        delete pTemp;
+        auto pTemp = _u({0,0, col1,col1+n+1}, true);
+        auto temp = pTemp;
+        pTemp.assign(mmul(temp, UofSVD));
     }
   
     if (_calcV) {
-        auto pTemp = _v.subarray({{row1W, row1W+n},{row1W, row1W+n}});
-        auto temp = *pTemp;
-        pTemp->assign(mmul(temp, VofSVD));
-        delete pTemp;
+        auto pTemp = _v({row1W,row1W+n, row1W,row1W+n}, true);
+        auto temp = pTemp;
+        pTemp.assign(mmul(temp, VofSVD));
     }
 
-    auto blockM = _m.subarray({{col1+shift, col1+shift+n},{col1+shift, col1+shift+n}});
-    *blockM = 0.f;
-    auto diag = blockM->diagonal('c');
+    auto blockM = _m({col1+shift,col1+shift+n, col1+shift,col1+shift+n}, true);
+    blockM = 0.f;
+    auto diag = blockM.diagonal('c');
     diag->assign(singVals);
-    delete diag;
-    delete blockM;
+    delete diag;    
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -895,10 +858,9 @@ void SVD<T>::exchangeUV(const HHsequence& hhU, const HHsequence& hhV, const NDAr
         temp1.setIdentity();
         _u = temp1;        
 
-        auto temp2 = _u.subarray({{0, _diagSize},{0, _diagSize}});
-        temp2->assign(V({0,_diagSize, 0,_diagSize}, true));
-        const_cast<HHsequence&>(hhU).mulLeft(_u);
-        delete temp2;
+        auto temp2 = _u({0,_diagSize, 0,_diagSize}, true);
+        temp2.assign(V({0,_diagSize, 0,_diagSize}, true));
+        const_cast<HHsequence&>(hhU).mulLeft(_u);        
     }
     
     if (_calcV) {
@@ -908,10 +870,9 @@ void SVD<T>::exchangeUV(const HHsequence& hhU, const HHsequence& hhV, const NDAr
         temp1.setIdentity();
         _v = temp1;
 
-        auto temp2 = _v.subarray({{0, _diagSize},{0, _diagSize}});
-        temp2->assign(U({0,_diagSize, 0,_diagSize}, true));
-        const_cast<HHsequence&>(hhV).mulLeft(_v);
-        delete temp2;        
+        auto temp2 = _v({0,_diagSize, 0,_diagSize}, true);
+        temp2.assign(U({0,_diagSize, 0,_diagSize}, true));
+        const_cast<HHsequence&>(hhV).mulLeft(_v);        
     }
 }
 
@@ -956,14 +917,12 @@ void SVD<T>::evalData(const NDArray& matrix) {
     _v = 0.;
   
     auto temp1 = biDiag._HHbidiag.transpose();
-    auto temp2 = _m.subarray({{0, _diagSize},{}});
-    temp2->assign(temp1);
-    delete temp1;
-    delete temp2;
+    auto temp2 = _m({0,_diagSize, 0,0}, true);
+    temp2.assign(temp1);
+    delete temp1;    
 
-    auto temp3 = _m.subarray({{_m.sizeAt(0)-1, _m.sizeAt(0)},{}});
-    temp3->assign(0.);
-    delete temp3;
+    auto temp3 = _m({_m.sizeAt(0)-1,_m.sizeAt(0), 0,0}, true);
+    temp3.assign(0.);    
 
     DivideAndConquer(0, _diagSize - 1, 0, 0, 0);      
     
@@ -971,12 +930,11 @@ void SVD<T>::evalData(const NDArray& matrix) {
         T a = math::nd4j_abs<T>(_m.e<T>(i, i));
         _s.p(i, a * scale);
         if (a < almostZero) {            
-            auto temp = _s.subarray({{i+1, _diagSize}, {}});
-            temp->assign(0.);
-            delete temp;
+            auto temp = _s({i+1,_diagSize, 0,0}, true);
+            temp.assign(0.);            
             break;
         }
-        else if (i == _diagSize-1)         
+        else if (i == _diagSize-1)
             break;
     }
     

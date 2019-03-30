@@ -107,7 +107,7 @@ public class LossLayer extends FeedForwardLayer {
          * @param lossFunction Loss function for the loss layer
          */
         public Builder(ILossFunction lossFunction) {
-            this.lossFn = lossFunction;
+            this.setLossFn(lossFunction);
             this.activation(Activation.IDENTITY);
         }
 

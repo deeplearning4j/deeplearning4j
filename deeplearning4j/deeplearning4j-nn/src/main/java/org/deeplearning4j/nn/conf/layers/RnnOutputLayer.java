@@ -110,7 +110,7 @@ public class RnnOutputLayer extends BaseOutputLayer {
 
         public Builder() {
             //Set default activation function to softmax (to match default loss function MCXENT)
-            this.activationFn = new ActivationSoftmax();
+            this.setActivationFn(new ActivationSoftmax());
         }
 
         /**
@@ -119,16 +119,16 @@ public class RnnOutputLayer extends BaseOutputLayer {
         public Builder(LossFunction lossFunction) {
             lossFunction(lossFunction);
             //Set default activation function to softmax (for consistent behaviour with no-arg constructor)
-            this.activationFn = new ActivationSoftmax();
+            this.setActivationFn(new ActivationSoftmax());
         }
 
         /**
          * @param lossFunction Loss function for the output layer
          */
         public Builder(ILossFunction lossFunction) {
-            this.lossFn = lossFunction;
+            this.setLossFn(lossFunction);
             //Set default activation function to softmax (for consistent behaviour with no-arg constructor)
-            this.activationFn = new ActivationSoftmax();
+            this.setActivationFn(new ActivationSoftmax());
         }
 
         @Override

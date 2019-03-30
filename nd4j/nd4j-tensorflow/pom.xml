@@ -41,7 +41,7 @@
             <version>${project.version}</version>
         </dependency>
         <dependency>
-            <groupId>org.bytedeco.javacpp-presets</groupId>
+            <groupId>org.bytedeco</groupId>
             <artifactId>tensorflow</artifactId>
             <version>${tensorflow.javacpp.version}</version>
         </dependency>

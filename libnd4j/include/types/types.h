@@ -34,6 +34,7 @@
 
 
 #define LIBND4J_TYPES \
+        (nd4j::DataType::BFLOAT16, bfloat16),\
         (nd4j::DataType::HALF, float16), \
         (nd4j::DataType::FLOAT32, float), \
         (nd4j::DataType::DOUBLE, double), \
@@ -42,8 +43,7 @@
         (nd4j::DataType::UINT8, uint8_t), \
         (nd4j::DataType::INT16, int16_t), \
         (nd4j::DataType::INT32, int32_t), \
-        (nd4j::DataType::INT64, Nd4jLong), \
-        (nd4j::DataType::BFLOAT16, bfloat16)
+        (nd4j::DataType::INT64, Nd4jLong)
 
 #define LIBND4J_TYPES_EXTENDED \
         (nd4j::DataType::HALF, float16), \
@@ -67,10 +67,10 @@
         (nd4j::DataType::INT64, Nd4jLong)
 
 #define FLOAT_TYPES \
+        (nd4j::DataType::BFLOAT16, bfloat16) ,\
         (nd4j::DataType::HALF, float16), \
         (nd4j::DataType::FLOAT32, float), \
-        (nd4j::DataType::DOUBLE, double), \
-        (nd4j::DataType::BFLOAT16, bfloat16)
+        (nd4j::DataType::DOUBLE, double)
 
 
 #define FLOAT_TYPES_0 \

@@ -70,20 +70,22 @@ namespace nd4j {
             double bias = T_ARG(0);
             int depth = INT_ARG(0);
 
-            //std::unique_ptr<NDArray> unitScale(errors->dup('c'));
-            std::unique_ptr<NDArray> scale(errors->dup('c'));
+            std::unique_ptr<NDArray> unitScale(output->dup('c'));
+            std::unique_ptr<NDArray> scale(output->dup('c'));
 
             REQUIRE_TRUE(ND4J_STATUS_OK == helpers::lrnFunctorEx(block, input, output, scale.get(), depth, bias, alpha, beta), 0, "lrn_bp: Failed to get lrn for given input." );
-
-            output->applyPairwiseTransform(pairwise::Divide, input, output, nullptr);
-            output->applyPairwiseTransform(pairwise::Multiply, scale.get(), output, nullptr);
-            output->applyPairwiseTransform(pairwise::Multiply, errors, output, nullptr);
+            //output->printBuffer("Output stage 0");
+            output->applyPairwiseTransform(pairwise::Divide, input, unitScale.get(), nullptr); // 1/(b + %alpha Sum x_j ^ 2) ^ beta
+            //unitScale->applyPairwiseTransform(pairwise::Multiply, scale.get(), output, nullptr);
+            //output->applyPairwiseTransform(pairwise::Multiply, errors, output, nullptr);
+            //output->applyPairwiseTransform(pairwise::Divide, scale.get(), output, nullptr);
+            unitScale->applyPairwiseTransform(pairwise::Subtract, scale.get(), output, nullptr);
 //            errors->applyPairwiseTransform(pairwise::Multiply, scale.get(), scale.get(), nullptr);
 //            output->applyPairwiseTransform(pairwise::Multiply, input, output, nullptr);
-//            output->printBuffer("Output stage 1");
+            //unitScale->printBuffer("Output stage 1");
 //            unitScale->applyScalar(scalar::Multiply, 2.0 * alpha * (beta), nullptr, nullptr);
-//            output->printBuffer("Output stage 2");
-//            scale->applyPairwiseTransform(pairwise::Subtract, output, output, nullptr);
+           // output->printBuffer("Output stage 2");
+            output->applyPairwiseTransform(pairwise::Multiply, errors, output, nullptr);
 //            output->printBuffer("Output stage 3");
 
             return Status::OK();

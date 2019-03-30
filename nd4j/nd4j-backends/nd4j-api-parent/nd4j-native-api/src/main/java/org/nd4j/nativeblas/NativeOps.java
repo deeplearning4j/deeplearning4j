@@ -1138,4 +1138,7 @@ public abstract class NativeOps extends Pointer {
     //public abstract void fillUtf8String(PointerPointer extraPointers, String[] string, int numStrings, Pointer buffer);
     public abstract Pointer createUtf8String(PointerPointer extraPointers, String string, int length);
     public abstract void deleteUtf8String(PointerPointer extraPointers, Pointer ptr);
+
+
+    public abstract void inspectArray(PointerPointer extraPointers, Pointer buffer, @Cast("Nd4jLong *") LongPointer shapeInfo, Pointer specialBuffer, @Cast("Nd4jLong *") LongPointer specialShapeInfo, @Cast("nd4j::DebugInfo *") Pointer debugInfo);
 }

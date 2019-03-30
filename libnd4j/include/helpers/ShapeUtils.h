@@ -53,7 +53,8 @@ namespace nd4j {
         static bool copyVectorPart(std::vector<int>& target, std::vector<int>& source, int rank, int offset);
 
         // return new (shorter) sorted dimensions array without dimensions that are present in input vector
-        static std::vector<int> evalDimsToExclude(const int rank, const std::vector<int>& dimensions);
+        static std::vector<int> evalDimsToExclude(const int rank, const int dimsLen, const int* dimensions);
+        static std::vector<int> evalDimsToExclude(const int rank, const std::vector<int>& dimensions);        
 
         // this method converts axis, to set of axes for TAD. i.e. for 0 axis of 3D array becomes {1, 2}
         static std::vector<int> convertAxisToTadTarget(int rank, std::vector<int>& axis);
@@ -70,6 +71,11 @@ namespace nd4j {
         // if evalMinMax == false then array with larger rank has to be passed as first argument
         static bool evalBroadcastShapeInfo(const NDArray& max, const NDArray& min, const bool evalMinMax, Nd4jLong*& resultShapeInfo, nd4j::memory::Workspace* workspace);
         static bool evalBroadcastShapeInfo(Nd4jLong *max, Nd4jLong *min, const bool evalMinMax, Nd4jLong*& resultShapeInfo, nd4j::memory::Workspace* workspace);
+
+        // evaluate sorted vector of max axes to create tads along in case of simple broadcast operation
+        // if simple broadcast is not possible then empty vector is returned
+        // PLEASE NOTE: condition (rank_max >= rank_min) should be satisfied !
+        static std::vector<int> tadAxesForSimpleBroadcast(const NDArray& max, const NDArray& min);
 
         // check the possibility of broadcast operation for set of arrays, if true then return resulting broadcasted shapeInfo
         static bool evalCommonBroadcastShapeInfo(const std::vector<const NDArray*>& arrays, Nd4jLong*& resultShapeInfo, memory::Workspace* workspace = nullptr);
@@ -137,7 +143,7 @@ namespace nd4j {
         /**
         *   return shape without unities, for example if shape is [1,2,1,3] then [2,3] will be returned
         *   if unities are not present in given shapeInfo then exactly identical shape will be returned, for example [2,3] -> [2,3]
-        *   edge case: if given shape is [1,1,1,...,1] (all dims are unities) then output will be [1]
+        *   edge case: if given shape is [1,1,1,...,1] (all dims are unities) then output will be empty and corresponds to scalar case
         */
         static std::vector<Nd4jLong> evalDimsWithoutUnities(const Nd4jLong* shapeInfo);
 

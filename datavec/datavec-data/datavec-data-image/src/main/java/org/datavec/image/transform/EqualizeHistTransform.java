@@ -24,9 +24,10 @@ import org.nd4j.shade.jackson.annotation.JsonInclude;
 
 import java.util.Random;
 
-import static org.bytedeco.javacpp.opencv_core.*;
-import static org.bytedeco.javacpp.opencv_imgproc.CV_BGR2GRAY;
-import static org.bytedeco.javacpp.opencv_imgproc.equalizeHist;
+import org.bytedeco.opencv.opencv_core.*;
+import org.bytedeco.opencv.opencv_imgproc.*;
+import static org.bytedeco.opencv.global.opencv_core.*;
+import static org.bytedeco.opencv.global.opencv_imgproc.*;
 
 /**
  * "<a href="https://opencv-srf.blogspot.com/2013/08/histogram-equalization.html">Histogram Equalization</a> equalizes the intensity distribution of an image or flattens the intensity distribution curve.
@@ -40,7 +41,7 @@ public class EqualizeHistTransform extends BaseImageTransform {
 
     /**
      * Color Conversion code
-     * {@link org.bytedeco.javacpp.opencv_imgproc}
+     * {@link org.bytedeco.opencv.global.opencv_imgproc}
      */
     private int conversionCode;
 

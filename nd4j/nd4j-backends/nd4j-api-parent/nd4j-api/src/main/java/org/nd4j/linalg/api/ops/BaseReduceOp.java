@@ -50,13 +50,8 @@ import java.util.Map;
  */
 @Slf4j
 public abstract class BaseReduceOp extends BaseOp implements ReduceOp {
-    protected Number finalResult;
     @Setter @Getter
     protected boolean keepDims = false;
-
-    // flag for tf imported ops, shows that there's probably one more value appended in axis
-    @Setter @Getter @Deprecated
-    protected boolean newFormat = false;
     protected boolean isComplex = false;
 
 
@@ -81,7 +76,6 @@ public abstract class BaseReduceOp extends BaseOp implements ReduceOp {
             throw new IllegalArgumentException("Input not null variable.");
         }
 
-        this.newFormat = true;
         defineDimensions(dimensions);
     }
 
@@ -107,7 +101,6 @@ public abstract class BaseReduceOp extends BaseOp implements ReduceOp {
             throw new IllegalArgumentException("Input not null variable.");
         }
 
-        this.newFormat = true;
         defineDimensions(dimensions);
     }
 
@@ -137,9 +130,8 @@ public abstract class BaseReduceOp extends BaseOp implements ReduceOp {
     public BaseReduceOp() {}
 
 
-    public BaseReduceOp(INDArray x, INDArray y, INDArray z, boolean newFormat, boolean keepDims, int[] dimensions) {
+    public BaseReduceOp(INDArray x, INDArray y, INDArray z, boolean keepDims, int[] dimensions) {
         super(x, y, z);
-        this.newFormat = newFormat;
         this.keepDims = keepDims;
         this.dimensions = dimensions;
         defineDimensions(dimensions);
@@ -154,7 +146,7 @@ public abstract class BaseReduceOp extends BaseOp implements ReduceOp {
     }
 
     public BaseReduceOp(INDArray x, INDArray y, INDArray z, int... dimensions) {
-        this(x, y, z, true, false, dimensions);
+        this(x, y, z, false, dimensions);
     }
 
     public BaseReduceOp(SameDiff sameDiff) {
@@ -180,8 +172,6 @@ public abstract class BaseReduceOp extends BaseOp implements ReduceOp {
 
     @Override
     public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
-        newFormat = true;
-
         if (!attributesForNode.containsKey("axis") && !hasReductionIndices(nodeDef)) {
             this.dimensions = new int[] { Integer.MAX_VALUE };
         }   //Otherwise: dimensions are dynamically set during execution in InferenceSession

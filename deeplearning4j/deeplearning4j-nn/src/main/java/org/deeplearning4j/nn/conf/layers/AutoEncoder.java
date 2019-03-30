@@ -124,7 +124,7 @@ public class AutoEncoder extends BasePretrainNetwork {
          * @param corruptionLevel Corruption level (0 to 1)
          */
         public Builder(double corruptionLevel) {
-            this.corruptionLevel = corruptionLevel;
+            this.setCorruptionLevel(corruptionLevel);
         }
 
         /**
@@ -133,7 +133,7 @@ public class AutoEncoder extends BasePretrainNetwork {
          * @param corruptionLevel Corruption level (0 to 1)
          */
         public Builder corruptionLevel(double corruptionLevel) {
-            this.corruptionLevel = corruptionLevel;
+            this.setCorruptionLevel(corruptionLevel);
             return this;
         }
 
@@ -143,7 +143,7 @@ public class AutoEncoder extends BasePretrainNetwork {
          * @param sparsity Sparsity
          */
         public Builder sparsity(double sparsity) {
-            this.sparsity = sparsity;
+            this.setSparsity(sparsity);
             return this;
         }
 

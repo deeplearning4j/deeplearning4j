@@ -35,7 +35,7 @@ public:
     Nd4jLong shapeInfo[8] = {2,150,3,1,150,16384,1,102};
     int dimension[1] = {1};
     int dimensionLength = 1;
-    Nd4jLong tadShapeInfoAssert[8] = {2,1,3,1,150,16384,150,99};
+    Nd4jLong tadShapeInfoAssert[8] = {2,1,3,1,150,16384,150,102};
 };
 class ThreeDTest : public testing::Test {
 public:

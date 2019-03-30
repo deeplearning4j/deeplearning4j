@@ -16,7 +16,6 @@
 
 package org.deeplearning4j.nn.conf.layers.convolutional;
 
-import com.google.common.base.Preconditions;
 import lombok.*;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -28,6 +27,8 @@ import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
 import org.deeplearning4j.nn.layers.convolution.Cropping2DLayer;
 import org.deeplearning4j.optimize.api.TrainingListener;
 import org.deeplearning4j.util.ConvolutionUtils;
+import org.deeplearning4j.util.ValidationUtils;
+import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.util.Arrays;
@@ -120,21 +121,14 @@ public class Cropping2D extends NoParamLayer {
         /**
          * Cropping amount for top/bottom/left/right (in that order). A length 4 array.
          */
+        @Setter(AccessLevel.NONE)
         private int[] cropping = new int[] {0, 0, 0, 0};
 
         /**
          * @param cropping Cropping amount for top/bottom/left/right (in that order). Must be length 1, 2, or 4 array.
          */
-        public void setCropping(int[] cropping) {
-            Preconditions.checkArgument(cropping.length == 1 || cropping.length == 2 || cropping.length == 4,
-                            "Must have 1, 2, or 4 cropping values - got %s", cropping);
-            if (cropping.length == 1) {
-                this.cropping = new int[] {cropping[0], cropping[0], cropping[0], cropping[0]};
-            } else if (cropping.length == 2) {
-                this.cropping = new int[] {cropping[0], cropping[0], cropping[1], cropping[1]};
-            } else {
-                this.cropping = cropping;
-            }
+        public void setCropping(int... cropping) {
+            this.cropping = ValidationUtils.validate4NonNegative(cropping, "cropping");
         }
 
         public Builder() {
@@ -145,15 +139,7 @@ public class Cropping2D extends NoParamLayer {
          * @param cropping Cropping amount for top/bottom/left/right (in that order). Must be length 4 array.
          */
         public Builder(@NonNull int[] cropping) {
-            Preconditions.checkArgument(cropping.length == 4 || cropping.length == 2,
-                            "Either 2 or 4 cropping values,  i.e. (top/bottom. left/right) or (top, bottom,"
-                                            + " left, right) must be provided. Got " + cropping.length + " values: "
-                                            + Arrays.toString(cropping));
-            if (cropping.length == 2) {
-                this.cropping = new int[] {cropping[0], cropping[0], cropping[1], cropping[1]};
-            } else {
-                this.cropping = cropping;
-            }
+            this.setCropping(cropping);
         }
 
         /**
@@ -171,10 +157,7 @@ public class Cropping2D extends NoParamLayer {
          * @param cropRight Amount of cropping to apply to the right of the input activations
          */
         public Builder(int cropTop, int cropBottom, int cropLeft, int cropRight) {
-            this.cropping = new int[] {cropTop, cropBottom, cropLeft, cropRight};
-            Preconditions.checkArgument(cropTop >= 0 && cropBottom >= 0 && cropLeft >= 0 && cropRight >= 0,
-                            "Invalid arguments: crop dimensions must be > 0. Got [t,b,l,r] = "
-                                            + Arrays.toString(this.cropping));
+            this.setCropping(new int[] {cropTop, cropBottom, cropLeft, cropRight});
         }
 
         public Cropping2D build() {

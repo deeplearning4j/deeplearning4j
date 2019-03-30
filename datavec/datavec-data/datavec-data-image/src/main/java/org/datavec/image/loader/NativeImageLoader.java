@@ -36,10 +36,13 @@ import org.nd4j.linalg.util.ArrayUtil;
 import java.io.*;
 import java.nio.ByteOrder;
 
-import static org.bytedeco.javacpp.lept.*;
-import static org.bytedeco.javacpp.opencv_core.*;
-import static org.bytedeco.javacpp.opencv_imgcodecs.*;
-import static org.bytedeco.javacpp.opencv_imgproc.*;
+import org.bytedeco.leptonica.*;
+import org.bytedeco.opencv.opencv_core.*;
+import org.bytedeco.opencv.opencv_imgproc.*;
+import static org.bytedeco.leptonica.global.lept.*;
+import static org.bytedeco.opencv.global.opencv_core.*;
+import static org.bytedeco.opencv.global.opencv_imgcodecs.*;
+import static org.bytedeco.opencv.global.opencv_imgproc.*;
 
 /**
  * Uses JavaCV to load images. Allowed formats: bmp, gif, jpg, jpeg, jp2, pbm, pgm, ppm, pnm, png, tif, tiff, exr, webp
@@ -474,11 +477,14 @@ public class NativeImageLoader extends BaseImageLoader {
             for (long k = 0; k < channels; k++) {
                 for (long i = 0; i < rows; i++) {
                     for (long j = 0; j < cols; j++) {
-                        if (channels > 1) {
+                        if (ret.rank() == 3) {
                             ret.putScalar(k, i, j, idx.getDouble(i, j, k));
-                        } else {
+                        } else if (ret.rank() == 4) {
+                            ret.putScalar(1, k, i, j, idx.getDouble(i, j, k));
+                        } else if (ret.rank() == 2) {
                             ret.putScalar(i, j, idx.getDouble(i, j));
-                        }
+                        } else
+                            throw new ND4JIllegalStateException("NativeImageLoader expects 2D, 3D or 4D output array, but " + ret.rank() + "D array was given");
                     }
                 }
             }

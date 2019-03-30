@@ -27,6 +27,7 @@
 #include <ops/declarable/LegacyReduceFloatOp.h>
 #include <ops/declarable/LegacyIndexReduceOp.h>
 #include <ops/declarable/LegacyBroadcastOp.h>
+#include <helpers/TAD.h>
 
 using namespace nd4j;
 using namespace nd4j::ops;
@@ -417,6 +418,26 @@ TEST_F(LegacyOpsTests, BroadcastingTests_1) {
         ASSERT_TRUE(row.equalsTo(list->at(e)));
 
     delete list;
+}
+
+TEST_F(LegacyOpsTests, BroadcastingTests_2) {
+    auto x = NDArrayFactory::create<double>('c', {5}, {1, 1, 1, 1, 1});
+    auto y = NDArrayFactory::create<double>('c', {10, 5});
+    auto e = NDArrayFactory::create<double>('c', {10, 5});
+    y.assign(3.0);
+    e.assign(4.0);
+
+    int axis = 1;
+    shape::TAD tad;
+    tad.init(y.shapeInfo(), &axis, 1);
+    tad.createTadOnlyShapeInfo();
+    tad.createOffsets();
+
+    shape::printShapeInfoLinear("tad shape", tad.tadOnlyShapeInfo);
+
+    NativeOpExcutioner::execInverseBroadcast(broadcast::Add, x.buffer(), x.shapeInfo(), y.buffer(), y.shapeInfo(), y.buffer(), y.shapeInfo(), &axis, 1, tad.tadOnlyShapeInfo, tad.tadOffsets, tad.tadOnlyShapeInfo, tad.tadOffsets);
+
+    ASSERT_EQ(e, y);
 }
 
 TEST_F(LegacyOpsTests, PowDerivative_1) {

@@ -18,13 +18,16 @@ package org.nd4j.evaluation.classification;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import org.nd4j.base.Preconditions;
 import org.nd4j.evaluation.BaseEvaluation;
 import org.nd4j.evaluation.curves.PrecisionRecallCurve;
 import org.nd4j.evaluation.curves.RocCurve;
 import org.nd4j.evaluation.serde.ROCArraySerializer;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.primitives.Triple;
 import org.nd4j.shade.jackson.databind.annotation.JsonSerialize;
 
+import java.io.Serializable;
 import java.util.Arrays;
 import java.util.List;
 
@@ -48,6 +51,9 @@ public class ROCMultiClass extends BaseEvaluation<ROCMultiClass> {
     private ROC[] underlying;
     private List<String> labels;
 
+    @EqualsAndHashCode.Exclude      //Exclude axis: otherwise 2 Evaluation instances could contain identical stats and fail equality
+    protected int axis = 1;
+
     public ROCMultiClass() {
         //Default to exact
         this(0);
@@ -67,6 +73,29 @@ public class ROCMultiClass extends BaseEvaluation<ROCMultiClass> {
     public ROCMultiClass(int thresholdSteps, boolean rocRemoveRedundantPts) {
         this.thresholdSteps = thresholdSteps;
         this.rocRemoveRedundantPts = rocRemoveRedundantPts;
+    }
+
+    /**
+     * Set the axis for evaluation - this is the dimension along which the probability (and label classes) are present.<br>
+     * For DL4J, this can be left as the default setting (axis = 1).<br>
+     * Axis should be set as follows:<br>
+     * For 2D (OutputLayer), shape [minibatch, numClasses] - axis = 1<br>
+     * For 3D, RNNs/CNN1D (DL4J RnnOutputLayer), NCW format, shape [minibatch, numClasses, sequenceLength] - axis = 1<br>
+     * For 3D, RNNs/CNN1D (DL4J RnnOutputLayer), NWC format, shape [minibatch, sequenceLength, numClasses] - axis = 2<br>
+     * For 4D, CNN2D (DL4J CnnLossLayer), NCHW format, shape [minibatch, channels, height, width] - axis = 1<br>
+     * For 4D, CNN2D, NHWC format, shape [minibatch, height, width, channels] - axis = 3<br>
+     *
+     * @param axis Axis to use for evaluation
+     */
+    public void setAxis(int axis){
+        this.axis = axis;
+    }
+
+    /**
+     * Get the axis - see {@link #setAxis(int)} for details
+     */
+    public int getAxis(){
+        return axis;
     }
 
     @Override
@@ -127,28 +156,33 @@ public class ROCMultiClass extends BaseEvaluation<ROCMultiClass> {
     }
 
     /**
-     * Evaluate (collect statistics for) the given minibatch of data.
-     * For time series (3 dimensions) use {@link #evalTimeSeries(INDArray, INDArray)} or {@link #evalTimeSeries(INDArray, INDArray, INDArray)}
+     * Evaluate the network, with optional metadata
      *
-     * @param labels      Labels / true outcomes
-     * @param predictions Predictions
+     * @param labels   Data labels
+     * @param predictions        Network predictions
+     * @param recordMetaData Optional; may be null. If not null, should have size equal to the number of outcomes/guesses
+     *
      */
-    public void eval(INDArray labels, INDArray predictions) {
-        if (labels.rank() == 3 && predictions.rank() == 3) {
-            //Assume time series input -> reshape to 2d
-            evalTimeSeries(labels, predictions);
-        }
-        if (labels.rank() > 2 || predictions.rank() > 2 || labels.size(1) != predictions.size(1)) {
-            throw new IllegalArgumentException("Invalid input data shape: labels shape = "
-                            + Arrays.toString(labels.shape()) + ", predictions shape = "
-                            + Arrays.toString(predictions.shape()) + "; require rank 2 array with size(1) == 1 or 2");
+    @Override
+    public void eval(INDArray labels, INDArray predictions, INDArray mask, final List<? extends Serializable> recordMetaData) {
+
+        Triple<INDArray,INDArray, INDArray> p = BaseEvaluation.reshapeAndExtractNotMasked(labels, predictions, mask, axis);
+        if(p == null){
+            //All values masked out; no-op
+            return;
         }
 
-        if(labels.dataType() != predictions.dataType())
-            labels = labels.castTo(predictions.dataType());
+        INDArray labels2d = p.getFirst();
+        INDArray predictions2d = p.getSecond();
+        INDArray maskArray = p.getThird();
+        Preconditions.checkState(maskArray == null, "Per-output masking for ROCMultiClass is not supported");
+
+
+        if(labels2d.dataType() != predictions2d.dataType())
+            labels2d = labels2d.castTo(predictions2d.dataType());
 
         // FIXME: int cast
-        int n = (int) labels.size(1);
+        int n = (int) labels2d.size(1);
         if (underlying == null) {
             underlying = new ROC[n];
             for (int i = 0; i < n; i++) {
@@ -156,17 +190,22 @@ public class ROCMultiClass extends BaseEvaluation<ROCMultiClass> {
             }
         }
 
-        if (underlying.length != labels.size(1)) {
+        if (underlying.length != labels2d.size(1)) {
             throw new IllegalArgumentException(
                             "Cannot evaluate data: number of label classes does not match previous call. " + "Got "
-                                            + labels.size(1) + " labels (from array shape "
-                                            + Arrays.toString(labels.shape()) + ")"
+                                            + labels2d.size(1) + " labels (from array shape "
+                                            + Arrays.toString(labels2d.shape()) + ")"
                                             + " vs. expected number of label classes = " + underlying.length);
         }
 
         for (int i = 0; i < n; i++) {
-            INDArray prob = predictions.getColumn(i); //Probability of class i
-            INDArray label = labels.getColumn(i);
+            INDArray prob = predictions2d.getColumn(i); //Probability of class i
+            INDArray label = labels2d.getColumn(i);
+            //Workaround for: https://github.com/deeplearning4j/deeplearning4j/issues/7305
+            if(prob.rank() == 0)
+                prob = prob.reshape(1,1);
+            if(label.rank() == 0)
+                label = label.reshape(1,1);
             underlying[i].eval(label, prob);
         }
     }

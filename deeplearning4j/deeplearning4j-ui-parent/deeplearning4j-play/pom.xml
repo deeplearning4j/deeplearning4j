@@ -102,7 +102,7 @@
             <id>test-nd4j-native</id>
         </profile>
         <profile>
-            <id>test-nd4j-cuda-10.0</id>
+            <id>test-nd4j-cuda-10.1</id>
         </profile>
 
     </profiles>
@@ -287,16 +287,22 @@
             <version>${jcommander.version}</version>
         </dependency>
 
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-classic</artifactId>    <!-- Version set by deeplearning4j-parent dependency management -->
+            <scope>compile</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>jul-to-slf4j</artifactId>    <!-- Version set by deeplearning4j-parent dependency management -->
+            <scope>compile</scope>
+            <version>1.7.21</version>
+        </dependency>
+
         <!-- Test Scope Dependencies -->
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>              <!-- Version set by deeplearning4j-parent dependency management -->
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>ch.qos.logback</groupId>
-            <artifactId>logback-classic</artifactId>    <!-- Version set by deeplearning4j-parent dependency management -->
             <scope>test</scope>
         </dependency>
 

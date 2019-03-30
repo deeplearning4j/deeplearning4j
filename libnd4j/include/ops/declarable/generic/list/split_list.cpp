@@ -46,34 +46,25 @@ namespace nd4j {
             }
 
             // now let's build subarrays
-            //nd4j_debug("Sizes length: %i\n", sizes->lengthOf());
             int cnt = 0;
+            std::vector<Nd4jLong> indices(2 * array->rankOf(), 0);
             for (int e = 0; e < sizes->lengthOf(); e++) {
                 int c_size = sizes->e<int>(e);
-                IndicesList indices;
-
-                //nd4j_debug("Slice start: [%i]; Slice size: [%i]\n", cnt, c_size);
-
+                
                 REQUIRE_TRUE(c_size > 0, 0, "Slice size should have postive value, but got %i instead", c_size);
                 REQUIRE_TRUE(cnt < array->sizeAt(0) && cnt + c_size <= array->sizeAt(0), 0, "Slices size should NOT be higher then number of TADs of source array. Source size: [%i]; Slice start: [%i]; Slice size: [%i]", array->sizeAt(0), cnt, c_size);
 
                 // we're adding our interval along zeroth dimension
-                indices.push_back(NDIndex::interval(cnt, cnt+c_size));
+                indices[0] = cnt;
+                indices[1] = cnt + c_size;
+                cnt += c_size;
+                
+                auto subarray = (*array)(indices, true);
 
-                // and then we set all other dimensions to All
-                for (int e = 1; e < array->rankOf(); e++)
-                    indices.push_back(NDIndex::all());
-
-
-                auto subarray = array->subarray(indices);
-
-                auto status = list->write(e, subarray->dup(array->ordering()));
+                auto status = list->write(e, subarray.dup(array->ordering()));
+                
                 if (status != ND4J_STATUS_OK)
                     return status;
-
-                delete subarray;
-
-                cnt += c_size;
             }
 
             if (!hasList) {

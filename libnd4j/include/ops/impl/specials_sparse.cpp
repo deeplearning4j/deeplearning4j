@@ -198,7 +198,7 @@ namespace nd4j {
 
             int cutoff = 1000;
 
-#pragma omp parallel num_threads(numThreads) if (numThreads>1)
+            PRAGMA_OMP_PARALLEL_THREADS(numThreads)
             {
 #pragma omp single nowait
                 {

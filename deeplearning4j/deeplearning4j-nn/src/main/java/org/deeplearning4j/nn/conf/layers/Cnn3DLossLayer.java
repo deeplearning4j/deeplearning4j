@@ -133,8 +133,8 @@ public class Cnn3DLossLayer extends FeedForwardLayer {
          * @param format Format of the input/output data. See {@link Convolution3D.DataFormat} for details
          */
         public Builder(@NonNull Convolution3D.DataFormat format) {
-            this.dataFormat = format;
-            this.activationFn = Activation.IDENTITY.getActivationFunction();
+            this.setDataFormat(format);
+            this.setActivationFn(Activation.IDENTITY.getActivationFunction());
         }
 
         @Override
@@ -149,6 +149,18 @@ public class Cnn3DLossLayer extends FeedForwardLayer {
         public Builder nOut(int nOut) {
             throw new UnsupportedOperationException(
                             "Cnn3DLossLayer has no parameters, thus nIn will always equal nOut.");
+        }
+
+        @Override
+        public void setNIn(int nIn){
+            throw new UnsupportedOperationException(
+                    "Cnn3DLossLayer has no parameters, thus nIn will always equal nOut.");
+        }
+
+        @Override
+        public void setNOut(int nOut){
+            throw new UnsupportedOperationException(
+                    "Cnn3DLossLayer has no parameters, thus nIn will always equal nOut.");
         }
 
         @Override

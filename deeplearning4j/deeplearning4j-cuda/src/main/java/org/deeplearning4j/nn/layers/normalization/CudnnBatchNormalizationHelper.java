@@ -48,8 +48,10 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
-import static org.bytedeco.javacpp.cuda.CUstream_st;
-import static org.bytedeco.javacpp.cudnn.*;
+import org.bytedeco.cuda.cudart.*;
+import org.bytedeco.cuda.cudnn.*;
+import static org.bytedeco.cuda.global.cudart.*;
+import static org.bytedeco.cuda.global.cudnn.*;
 
 /**
  * cuDNN-based helper for the batch normalization layer.
@@ -114,7 +116,7 @@ public class CudnnBatchNormalizationHelper extends BaseCudnnHelper implements Ba
     private INDArray varCache;
     private double eps;
 
-    public boolean checkSupported(double eps) {
+    public boolean checkSupported(double eps, boolean isFixedGammaBeta) {
         boolean supported = checkSupported();
         if (eps < CUDNN_BN_MIN_EPSILON) {
             supported = false;

@@ -32,6 +32,7 @@ import org.nd4j.linalg.lossfunctions.serde.RowVectorSerializer;
 import org.nd4j.shade.jackson.databind.annotation.JsonDeserialize;
 import org.nd4j.shade.jackson.databind.annotation.JsonSerialize;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -55,6 +56,9 @@ import java.util.List;
 @EqualsAndHashCode(callSuper = true)
 @Data
 public class EvaluationBinary extends BaseEvaluation<EvaluationBinary> {
+
+    public enum Metric {ACCURACY, F1, PRECISION, RECALL, GMEASURE, MCC, FAR}
+
     public static final int DEFAULT_PRECISION = 4;
     public static final double DEFAULT_EDGE_VALUE = 0.0;
 
@@ -118,6 +122,11 @@ public class EvaluationBinary extends BaseEvaluation<EvaluationBinary> {
     @Override
     public void eval(INDArray labels, INDArray networkPredictions) {
         eval(labels, networkPredictions, (INDArray) null);
+    }
+
+    @Override
+    public void eval(INDArray labels, INDArray networkPredictions, INDArray maskArray, List<? extends Serializable> recordMetaData) {
+        throw new UnsupportedOperationException("Not yet implemented");
     }
 
     @Override
@@ -212,6 +221,12 @@ public class EvaluationBinary extends BaseEvaluation<EvaluationBinary> {
         }
     }
 
+    /**
+     * Merge the other evaluation object into this one. The result is that this {@link #EvaluationBinary}  instance contains the counts
+     * etc from both
+     *
+     * @param other EvaluationBinary object to merge into this one.
+     */
     @Override
     public void merge(EvaluationBinary other) {
         if (other.countTruePositive == null) {
@@ -441,7 +456,8 @@ public class EvaluationBinary extends BaseEvaluation<EvaluationBinary> {
      * @return fpr as a double
      */
     public double falsePositiveRate(int classLabel) {
-        return recall(classLabel);
+        assertIndex(classLabel);
+        return falsePositiveRate(classLabel, DEFAULT_EDGE_VALUE);
     }
 
     /**
@@ -498,6 +514,34 @@ public class EvaluationBinary extends BaseEvaluation<EvaluationBinary> {
             throw new IllegalArgumentException("Invalid input: output number must be between 0 and " + (outputNum - 1)
                             + ". Got index: " + outputNum);
         }
+    }
+
+    /**
+     * Average False Alarm Rate (FAR) (see {@link #falseAlarmRate(int)}) for all labels.
+     *
+     * @return The FAR for all labels.
+     */
+    public double averageFalseAlarmRate() {
+        double ret = 0.0;
+        for (int i = 0; i < numLabels(); i++) {
+            ret += falseAlarmRate(i);
+        }
+
+        ret /= (double) numLabels();
+        return ret;
+    }
+
+    /**
+     * False Alarm Rate (FAR) reflects rate of misclassified to classified records
+     * <a href="http://ro.ecu.edu.au/cgi/viewcontent.cgi?article=1058&context=isw">http://ro.ecu.edu.au/cgi/viewcontent.cgi?article=1058&context=isw</a><br>
+     *
+     * @param outputNum Class index to calculate False Alarm Rate (FAR)
+     * @return The FAR for the outcomes
+     */
+    public double falseAlarmRate(int outputNum) {
+        assertIndex(outputNum);
+
+        return (falsePositiveRate(outputNum) + falseNegativeRate(outputNum)) / 2.0;
     }
 
     /**
@@ -582,6 +626,35 @@ public class EvaluationBinary extends BaseEvaluation<EvaluationBinary> {
         }
 
         return sb.toString();
+    }
+
+    /**
+     * Calculate specific metric (see {@link Metric}) for a given label.
+     *
+     * @param metric The Metric to calculate.
+     * @param outputNum Class index to calculate.
+     *
+     * @return Calculated metric.
+     */
+    public double scoreForMetric(Metric metric, int outputNum){
+        switch (metric){
+            case ACCURACY:
+                return accuracy(outputNum);
+            case F1:
+                return f1(outputNum);
+            case PRECISION:
+                return precision(outputNum);
+            case RECALL:
+                return recall(outputNum);
+            case GMEASURE:
+                return gMeasure(outputNum);
+            case MCC:
+                return matthewsCorrelation(outputNum);
+            case FAR:
+                return falseAlarmRate(outputNum);
+            default:
+                throw new IllegalStateException("Unknown metric: " + metric);
+        }
     }
 
     public static EvaluationBinary fromJson(String json) {
