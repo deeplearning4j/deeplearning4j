@@ -765,6 +765,18 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
         }
 
         /**
+         * Add a layer, with no {@link InputPreProcessor}, with the specified name
+         * and input from the last added layer/vertex.
+         *
+         * @param layerName   Name/label of the layer to add
+         * @param layer       The layer configuration
+         * @see #addLayer(String, Layer, InputPreProcessor, String...)
+         */
+        public GraphBuilder appendLayer(String layerName, Layer layer) {
+            return appendLayer(layerName, layer, null);
+        }
+
+        /**
          * Add a layer, with no {@link InputPreProcessor}, with the specified name and specified inputs.
          *
          * @param layerName   Name/label of the layer to add
@@ -805,6 +817,19 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
             builder.layer(layer);
             addVertex(layerName, new LayerVertex(builder.build(), preProcessor), layerInputs);
             layer.setLayerName(layerName);
+            return this;
+        }
+
+        /**
+         * Add a layer and an {@link InputPreProcessor}, with the specified name
+         * and input from the last added layer/vertex.
+         *
+         * @param layerName    Name/label of the layer to add
+         * @param layer        The layer configuration
+         * @param preProcessor The InputPreProcessor to use with this layer.
+         */
+        public GraphBuilder appendLayer(String layerName, Layer layer, InputPreProcessor preProcessor) {
+            addLayer(layerName, layer, preProcessor, lastAdded);
             return this;
         }
 
@@ -962,6 +987,21 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
 
             this.lastAdded = vertexName;
 
+            return this;
+        }
+
+        /**
+         * Add a {@link GraphVertex} to the network configuration, with input from the last added vertex/layer. A GraphVertex defines forward and backward pass methods,
+         * and can contain a {@link LayerVertex}, a {@link org.deeplearning4j.nn.conf.graph.ElementWiseVertex} to do element-wise
+         * addition/subtraction, a {@link MergeVertex} to combine/concatenate the activations out of multiple layers or vertices,
+         * a {@link org.deeplearning4j.nn.conf.graph.SubsetVertex} to select a subset of the activations out of another layer/GraphVertex.<br>
+         * Custom GraphVertex objects (that extend the abstract {@link GraphVertex} class) may also be used.
+         *
+         * @param vertexName   The name of the GraphVertex to add
+         * @param vertex       The GraphVertex to add
+         */
+        public GraphBuilder appendVertex(String vertexName, GraphVertex vertex) {
+            addVertex(vertexName, vertex, lastAdded);
             return this;
         }
 
