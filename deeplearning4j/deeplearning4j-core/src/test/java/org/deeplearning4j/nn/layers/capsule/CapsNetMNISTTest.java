@@ -17,12 +17,15 @@ import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.junit.Assert;
 import org.junit.Test;
 import org.nd4j.evaluation.classification.Evaluation;
+import org.nd4j.linalg.learning.AdamUpdater;
+import org.nd4j.linalg.learning.config.Adam;
 
 public class CapsNetMNISTTest extends BaseDL4JTest {
     @Test
     public void testCapsNetOnMNIST(){
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                 .seed(123)
+                .updater(new Adam())
                 .list()
                 .layer(new ConvolutionLayer.Builder()
                         .nOut(16)
