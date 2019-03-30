@@ -99,7 +99,7 @@ public class LossWasserstein extends DifferentialFunction implements ILossFuncti
             LossUtil.applyMask(grad, mask);
         }
 
-        return grad;
+        return grad.divi(labels.size(1));
     }
 
     @Override
