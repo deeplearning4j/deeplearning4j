@@ -662,6 +662,8 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
         protected boolean validateOutputConfig = true;
         protected boolean validateTbpttConfig = true;
 
+        protected String lastAdded = null;
+
         public GraphBuilder(NeuralNetConfiguration.Builder globalConfiguration) {
             this.globalConfiguration = globalConfiguration;
         }
@@ -754,8 +756,8 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
          *
          * @param layerName   Name/label of the layer to add
          * @param layer       The layer configuration
-         * @param layerInputs Inputs to this layer (must be 1 or more). Inputs may be other layers, GraphVertex objects,
-         *                    on a combination of the two.
+         * @param layerInputs Inputs to this layer. Inputs may be other layers, GraphVertex objects,
+         *                    on a combination of the two.  If empty, the last added vertex or layer is used.
          * @see #addLayer(String, Layer, InputPreProcessor, String...)
          */
         public GraphBuilder addLayer(String layerName, Layer layer, String... layerInputs) {
@@ -767,8 +769,8 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
          *
          * @param layerName   Name/label of the layer to add
          * @param layer       The layer configuration
-         * @param layerInputs Inputs to this layer (must be 1 or more). Inputs may be other layers, GraphVertex objects,
-         *                    on a combination of the two.
+         * @param layerInputs Inputs to this layer. Inputs may be other layers, GraphVertex objects,
+         *                    on a combination of the two.  If empty, the last added vertex or layer is used.
          * @see #addLayer(String, Layer, InputPreProcessor, String...)
          */
         public GraphBuilder layer(int layerName, Layer layer, String... layerInputs) {
@@ -780,8 +782,8 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
          *
          * @param layerName   Name/label of the layer to add
          * @param layer       The layer configuration
-         * @param layerInputs Inputs to this layer (must be 1 or more). Inputs may be other layers, GraphVertex objects,
-         *                    on a combination of the two.
+         * @param layerInputs Inputs to this layer. Inputs may be other layers, GraphVertex objects,
+         *                    on a combination of the two.  If empty, the last added vertex or layer is used.
          * @see #addLayer(String, Layer, InputPreProcessor, String...)
          */
         public GraphBuilder layer(String layerName, Layer layer, String... layerInputs) {
@@ -794,8 +796,8 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
          * @param layerName    Name/label of the layer to add
          * @param layer        The layer configuration
          * @param preProcessor The InputPreProcessor to use with this layer.
-         * @param layerInputs  Inputs to this layer (must be 1 or more). Inputs may be other layers, GraphVertex objects,
-         *                     on a combination of the two.
+         * @param layerInputs  Inputs to this layer. Inputs may be other layers, GraphVertex objects,
+         *                     on a combination of the two.  If empty, the last added vertex or layer is used.
          */
         public GraphBuilder addLayer(String layerName, Layer layer, InputPreProcessor preProcessor,
                         String... layerInputs) {
@@ -812,8 +814,8 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
          * @param layerName    Name/label of the layer to add
          * @param layer        The layer configuration
          * @param preProcessor The InputPreProcessor to use with this layer.
-         * @param layerInputs  Inputs to this layer (must be 1 or more). Inputs may be other layers, GraphVertex objects,
-         *                     on a combination of the two.
+         * @param layerInputs  Inputs to this layer. Inputs may be other layers, GraphVertex objects,
+         *                     on a combination of the two.  If empty, the last added vertex or layer is used.
          */
         public GraphBuilder layer(String layerName, Layer layer, InputPreProcessor preProcessor,
                                      String... layerInputs) {
@@ -881,6 +883,7 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
          */
         public GraphBuilder addInputs(String... inputNames) {
             Collections.addAll(networkInputs, inputNames);
+            lastAdded = networkInputs.get(networkInputs.size() - 1);
             return this;
         }
 
@@ -891,6 +894,7 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
          */
         public GraphBuilder addInputs(Collection<String> inputNames) {
             networkInputs.addAll(inputNames);
+            lastAdded = networkInputs.get(networkInputs.size() - 1);
             return this;
         }
 
@@ -934,9 +938,16 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
          *
          * @param vertexName   The name of the GraphVertex to add
          * @param vertex       The GraphVertex to add
-         * @param vertexInputs The inputs/activations to this GraphVertex
+         * @param vertexInputs The inputs/activations to this GraphVertex.  If empty, the last added vertex will be used.
          */
         public GraphBuilder addVertex(String vertexName, GraphVertex vertex, String... vertexInputs) {
+
+            if(vertexInputs.length == 0){
+                if(lastAdded != null) {
+                    vertexInputs = new String[]{lastAdded};
+                }
+            }
+
             Preconditions.checkState(!vertices.containsKey(vertexName), "Cannot add vertex: a vertex with name \"%s\" already exists", vertexName);
             vertices.put(vertexName, vertex);
 
@@ -948,6 +959,9 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
             } else if (vertexInputs != null) {
                 this.vertexInputs.put(vertexName, Arrays.asList(vertexInputs));
             }
+
+            this.lastAdded = vertexName;
+
             return this;
         }
 
