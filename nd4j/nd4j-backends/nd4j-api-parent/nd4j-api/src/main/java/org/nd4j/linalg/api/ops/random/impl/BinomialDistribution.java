@@ -71,7 +71,7 @@ public class BinomialDistribution extends BaseRandomOp {
      */
     public BinomialDistribution(@NonNull INDArray z, int trials, @NonNull INDArray probabilities) {
         super(z, probabilities, z);
-        if (trials > probabilities.lengthLong())
+        if (trials > probabilities.length())
             throw new IllegalStateException("Number of trials is > then amount of probabilities provided");
 
         if (probabilities.elementWiseStride() < 1)

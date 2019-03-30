@@ -66,7 +66,7 @@ public class GaussianDistribution extends BaseRandomOp {
 
     public GaussianDistribution(@NonNull INDArray z, @NonNull INDArray means, double stddev) {
         super(z, means, z);
-        if (z.lengthLong() != means.lengthLong())
+        if (z.length() != means.length())
             throw new IllegalStateException("Result length should be equal to provided Means length");
 
         if (means.elementWiseStride() < 1)

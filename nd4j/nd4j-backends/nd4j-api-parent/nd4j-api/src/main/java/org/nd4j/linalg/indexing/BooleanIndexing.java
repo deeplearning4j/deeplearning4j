@@ -51,7 +51,7 @@ public class BooleanIndexing {
         if (cond instanceof BaseCondition) {
             long val = (long) Nd4j.getExecutioner().exec(new MatchCondition(n, cond)).getDouble(0);
 
-            if (val == n.lengthLong())
+            if (val == n.length())
                 return true;
             else
                 return false;
@@ -157,7 +157,7 @@ public class BooleanIndexing {
         if (!(condition instanceof BaseCondition))
             throw new UnsupportedOperationException("Only static Conditions are supported");
 
-        if (to.lengthLong() != from.lengthLong())
+        if (to.length() != from.length())
             throw new IllegalStateException("Mis matched length for to and from");
 
         Nd4j.getExecutioner().exec(new CompareAndSet(to, from, condition));
@@ -175,7 +175,7 @@ public class BooleanIndexing {
         if (!(condition instanceof BaseCondition))
             throw new UnsupportedOperationException("Only static Conditions are supported");
 
-        if (to.lengthLong() != from.lengthLong())
+        if (to.length() != from.length())
             throw new IllegalStateException("Mis matched length for to and from");
 
         Nd4j.getExecutioner().exec(new CompareAndReplace(to, from, condition));
