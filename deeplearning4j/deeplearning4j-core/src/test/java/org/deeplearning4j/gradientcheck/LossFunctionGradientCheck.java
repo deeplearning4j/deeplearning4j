@@ -83,7 +83,7 @@ public class LossFunctionGradientCheck extends BaseDL4JTest {
                         new LossFMeasure(), new LossFMeasure(2.0),
                         LossMixtureDensity.builder().gaussians(2).labelWidth(3).build(),
                         LossMixtureDensity.builder().gaussians(2).labelWidth(3).build(),
-                        new LossMultiLabel(),
+                        new LossMultiLabel(), new LossWasserstein(),
         };
 
         Activation[] outputActivationFn = new Activation[] {Activation.SIGMOID, //xent
@@ -117,6 +117,7 @@ public class LossFunctionGradientCheck extends BaseDL4JTest {
                         Activation.IDENTITY, // MixtureDensity
                         Activation.TANH, // MixtureDensity + tanh
                         Activation.TANH, // MultiLabel, doesn't require any special activation, but tanh was used in paper
+                        Activation.IDENTITY // Wasserstein
         };
 
         int[] nOut = new int[] {1, //xent
@@ -150,6 +151,7 @@ public class LossFunctionGradientCheck extends BaseDL4JTest {
                         10, // Mixture Density
                         10, // Mixture Density + tanh
                         10, // MultiLabel
+                        2, // Wasserstein
         };
 
         int[] minibatchSizes = new int[] {1, 3};
@@ -231,7 +233,7 @@ public class LossFunctionGradientCheck extends BaseDL4JTest {
                         new LossSquaredHinge(), new LossFMeasure(), new LossFMeasure(2.0), new LossFMeasure(),
                         new LossFMeasure(2.0), LossMixtureDensity.builder().gaussians(2).labelWidth(3).build(),
                         LossMixtureDensity.builder().gaussians(2).labelWidth(3).build(),
-                        new LossMultiLabel()
+                        new LossMultiLabel(), new LossWasserstein()
         };
 
         Activation[] outputActivationFn = new Activation[] {Activation.SIGMOID, //xent
@@ -264,6 +266,7 @@ public class LossFunctionGradientCheck extends BaseDL4JTest {
                         Activation.IDENTITY, // MixtureDensity
                         Activation.TANH, // MixtureDensity + tanh
                         Activation.TANH, // MultiLabel
+                        Activation.IDENTITY // Wasserstein
         };
 
         int[] nOut = new int[] {1, //xent
@@ -296,6 +299,7 @@ public class LossFunctionGradientCheck extends BaseDL4JTest {
                         10, // Mixture Density
                         10, // Mixture Density + tanh
                         10, // MultiLabel
+                        2, // Wasserstein
         };
 
         int[] minibatchSizes = new int[] {1, 3};
