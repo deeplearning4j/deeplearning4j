@@ -65,13 +65,13 @@ public class CapsuleLayerTest extends BaseDL4JTest {
         CapsuleLayer layer1 = new CapsuleLayer.Builder(10, 16, 5).build();
 
         assertEquals(10, layer1.getCapsules());
-        assertEquals(16, layer1.getInputCapsuleDimensions());
+        assertEquals(16, layer1.getCapsuleDimensions());
         assertEquals(5, layer1.getRoutings());
         assertFalse(layer1.isHasBias());
 
         CapsuleLayer layer2 = new CapsuleLayer.Builder(10, 16, 5).hasBias(true).build();
 
-        assertTrue(layer1.isHasBias());
+        assertTrue(layer2.isHasBias());
 
     }
 
@@ -80,7 +80,7 @@ public class CapsuleLayerTest extends BaseDL4JTest {
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                 .seed(123)
                 .list()
-                .layer(new CapsuleLayer.Builder(10, 16, 5).build())
+                .layer(new CapsuleLayer.Builder(10, 16, 3).build())
                 .setInputType(InputType.recurrent(10, 8))
                 .build();
 

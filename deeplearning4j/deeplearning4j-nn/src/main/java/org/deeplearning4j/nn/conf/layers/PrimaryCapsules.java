@@ -139,10 +139,10 @@ public class PrimaryCapsules extends SameDiffLayer {
     public void defineParameters(SDLayerParams params) {
         params.clear();
         params.addWeightParam(WEIGHT_PARAM,
-                kernelSize[0], kernelSize[1], inputChannels, channels);
+                kernelSize[0], kernelSize[1], inputChannels, capsuleDimensions * channels);
 
         if(hasBias){
-            params.addBiasParam(BIAS_PARAM, channels);
+            params.addBiasParam(BIAS_PARAM, capsuleDimensions * channels);
         }
     }
 
@@ -154,7 +154,7 @@ public class PrimaryCapsules extends SameDiffLayer {
                     e.getValue().assign(0);
                 } else if(WEIGHT_PARAM.equals(e.getKey())){
                     double fanIn = inputChannels * kernelSize[0] * kernelSize[1];
-                    double fanOut = channels * kernelSize[0] * kernelSize[1] / ((double) stride[0] * stride[1]);
+                    double fanOut = capsuleDimensions * channels * kernelSize[0] * kernelSize[1] / ((double) stride[0] * stride[1]);
                     WeightInitUtil.initWeights(fanIn, fanOut, e.getValue().shape(), weightInit, null, 'c',
                             e.getValue());
                 }
@@ -175,7 +175,7 @@ public class PrimaryCapsules extends SameDiffLayer {
 
             InputTypeConvolutional out = (InputTypeConvolutional) InputTypeUtil
                     .getOutputTypeCnnLayers(inputType, kernelSize, stride, padding, dilation, convolutionMode,
-                            channels, -1, getLayerName(), PrimaryCapsules.class);
+                            capsuleDimensions * channels, -1, getLayerName(), PrimaryCapsules.class);
 
             return InputType.recurrent((int) (out.getChannels() * out.getHeight() * out.getWidth() / capsuleDimensions),
                     capsuleDimensions);
@@ -197,7 +197,7 @@ public class PrimaryCapsules extends SameDiffLayer {
 
             InputTypeConvolutional out = (InputTypeConvolutional) InputTypeUtil
                     .getOutputTypeCnnLayers(inputType, kernelSize, stride, padding, dilation, convolutionMode,
-                            channels, -1, getLayerName(), PrimaryCapsules.class);
+                            capsuleDimensions * channels, -1, getLayerName(), PrimaryCapsules.class);
 
             this.capsules = (int) (out.getChannels() * out.getHeight() * out.getWidth() / capsuleDimensions);
         }

@@ -41,29 +41,29 @@ public class PrimaryCapsulesTest extends BaseDL4JTest {
 
     @Test
     public void testOutputType(){
-        PrimaryCapsules layer = new PrimaryCapsules.Builder(8, 10)
-                .kernelSize(5, 5)
-                .stride(4, 4)
+        PrimaryCapsules layer = new PrimaryCapsules.Builder(8, 8)
+                .kernelSize(7, 7)
+                .stride(2, 2)
                 .build();
 
 
-        InputType in1 = InputType.convolutional(20, 20, 20);
-        assertEquals(InputType.recurrent(160, 8), layer.getOutputType(0, in1));
+        InputType in1 = InputType.convolutional(7, 7, 16);
+        assertEquals(InputType.recurrent(8, 8), layer.getOutputType(0, in1));
 
     }
 
     @Test
     public void testInputType(){
-        PrimaryCapsules layer = new PrimaryCapsules.Builder(8, 10)
-                .kernelSize(5, 5)
-                .stride(4, 4)
+        PrimaryCapsules layer = new PrimaryCapsules.Builder(8, 8)
+                .kernelSize(7, 7)
+                .stride(2, 2)
                 .build();
-        InputType in1 = InputType.convolutional(20, 20, 20);
+        InputType in1 = InputType.convolutional(7, 7, 16);
 
 
         layer.setNIn(in1, true);
 
-        assertEquals(160, layer.getCapsules());
+        assertEquals(8, layer.getCapsules());
         assertEquals(8, layer.getCapsuleDimensions());
     }
 
@@ -75,14 +75,14 @@ public class PrimaryCapsulesTest extends BaseDL4JTest {
                 .useLeakyReLU(0.5)
                 .build();
 
-        assertEquals(10, layer1.getCapsuleDimensions());
-        assertEquals(8, layer1.getChannels());
+        assertEquals(8, layer1.getCapsuleDimensions());
+        assertEquals(10, layer1.getChannels());
         assertArrayEquals(new int[]{5, 5}, layer1.getKernelSize());
         assertArrayEquals(new int[]{4, 4}, layer1.getStride());
         assertArrayEquals(new int[]{0, 0}, layer1.getPadding());
         assertArrayEquals(new int[]{1, 1}, layer1.getDilation());
         assertTrue(layer1.isUseRelu());
-        assertEquals(0.2, layer1.getLeak());
+        assertEquals(0.5, layer1.getLeak(), 0.001);
 
         PrimaryCapsules layer2 = new PrimaryCapsules.Builder(8, 10)
                 .kernelSize(5, 5)
@@ -96,7 +96,7 @@ public class PrimaryCapsulesTest extends BaseDL4JTest {
                 .useReLU()
                 .build();
         assertTrue(layer3.isUseRelu());
-        assertEquals(0, layer3.getLeak());
+        assertEquals(0, layer3.getLeak(), 0.001);
 
     }
 

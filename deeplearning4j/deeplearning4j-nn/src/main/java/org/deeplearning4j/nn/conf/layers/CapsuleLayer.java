@@ -115,7 +115,7 @@ public class CapsuleLayer extends SameDiffLayer {
 
         //TODO convert to SameDiff.whileLoop?
         for(int i = 0 ; i < routings ; i++){
-            SDVariable c = CapsuleUtils.softmax(SD, b, 2);
+            SDVariable c = CapsuleUtils.softmax(SD, b, 2, 5);
 
             SDVariable temp = c.times(uHat).sum(true, 1);
             if(hasBias){
