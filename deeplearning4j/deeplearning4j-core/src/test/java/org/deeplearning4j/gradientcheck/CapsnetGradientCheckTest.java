@@ -16,29 +16,22 @@
 
 package org.deeplearning4j.gradientcheck;
 
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.TestUtils;
-import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.CapsuleLayer;
 import org.deeplearning4j.nn.conf.layers.CapsuleStrengthLayer;
 import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
-import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.conf.layers.PrimaryCapsules;
-import org.deeplearning4j.nn.conf.layers.SubsamplingLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.junit.Test;
-import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.learning.config.Adam;
 import org.nd4j.linalg.learning.config.NoOp;
-import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 public class CapsnetGradientCheckTest extends BaseDL4JTest {
 
