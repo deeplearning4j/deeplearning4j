@@ -23,15 +23,19 @@ import org.deeplearning4j.TestUtils;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
+import org.deeplearning4j.nn.conf.layers.ActivationLayer;
 import org.deeplearning4j.nn.conf.layers.CapsuleLayer;
 import org.deeplearning4j.nn.conf.layers.CapsuleStrengthLayer;
 import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
+import org.deeplearning4j.nn.conf.layers.LossLayer;
 import org.deeplearning4j.nn.conf.layers.PrimaryCapsules;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.junit.Test;
+import org.nd4j.linalg.activations.impl.ActivationSoftmax;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.config.NoOp;
+import org.nd4j.linalg.lossfunctions.impl.LossNegativeLogLikelihood;
 
 public class CapsnetGradientCheckTest extends BaseDL4JTest {
 
@@ -85,6 +89,8 @@ public class CapsnetGradientCheckTest extends BaseDL4JTest {
                                                 .build())
                                         .layer(new CapsuleLayer.Builder(capsule, capsuleDim, routing).build())
                                         .layer(new CapsuleStrengthLayer.Builder().build())
+                                        .layer(new ActivationLayer.Builder(new ActivationSoftmax()).build())
+                                        .layer(new LossLayer.Builder(new LossNegativeLogLikelihood()).build())
                                         .setInputType(InputType.convolutionalFlat(28, 28, 1))
                                         .build();
 
