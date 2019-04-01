@@ -49,6 +49,72 @@ public:
     }
 };
 
+
+TEST_F(PlaygroundTests, LSTMBenchmarks_DebugTNS) {
+
+    BenchmarkHelper helper(5,10);
+
+    PredefinedParameters mb("mb", {1, 8, 64});
+    PredefinedParameters nInOut("nInOut", {32, 256, 1024});
+
+    ParametersBatch batch({&mb, &nInOut});
+    nd4j::ops::lstmBlock lstmBlock;
+    DeclarableBenchmark benchmark(lstmBlock, "lstm");
+
+    int seqLength = 64;
+
+    auto generator = PARAMETRIC_D() {
+        auto ctx = new Context(1);
+        int m = p.getIntParam("mb");
+        int n = p.getIntParam("nInOut");
+
+        Nd4jLong l = 0;
+        ctx->setInputArray(0, NDArrayFactory::create_<Nd4jLong>(l));  //Max TS length (unused)
+
+
+        //TNS format
+        ctx->setInputArray(1, NDArrayFactory::create_<float>('c', {seqLength, m, n}));     //x
+        ctx->setOutputArray(0, NDArrayFactory::create_<float>('c', {seqLength, m, n}));    //i
+        ctx->setOutputArray(1, NDArrayFactory::create_<float>('c', {seqLength, m, n}));    //c
+        ctx->setOutputArray(2, NDArrayFactory::create_<float>('c', {seqLength, m, n}));    //f
+        ctx->setOutputArray(3, NDArrayFactory::create_<float>('c', {seqLength, m, n}));    //o
+        ctx->setOutputArray(4, NDArrayFactory::create_<float>('c', {seqLength, m, n}));    //z
+        ctx->setOutputArray(5, NDArrayFactory::create_<float>('c', {seqLength, m, n}));    //h
+        ctx->setOutputArray(6, NDArrayFactory::create_<float>('c', {seqLength, m, n}));    //y
+
+        auto cLast = NDArrayFactory::create_<float>('c', {m, n});
+        auto yLast = NDArrayFactory::create_<float>('c', {m, n});
+        auto W = NDArrayFactory::create_<float>('c', {2 * n, 4 * n});
+        auto Wci = NDArrayFactory::create_<float>('c', {n});
+        auto Wcf = NDArrayFactory::create_<float>('c', {n});
+        auto Wco = NDArrayFactory::create_<float>('c', {n});
+        auto b = NDArrayFactory::create_<float>('c', {4 * n});
+
+        ctx->setInputArray(2, cLast);
+        ctx->setInputArray(3, yLast);
+        ctx->setInputArray(4, W);
+        ctx->setInputArray(5, Wci);
+        ctx->setInputArray(6, Wcf);
+        ctx->setInputArray(7, Wco);
+        ctx->setInputArray(8, b);
+
+        Nd4jLong *iargs = new Nd4jLong[2];
+        iargs[0] = 0;   //No peephole
+        iargs[1] = 0;   //TNS
+        ctx->setIArguments(iargs, 2);
+        delete[] iargs;
+        double *targs = new double[2];
+        targs[0] = 1.0; //forget bias
+        targs[1] = 0.0; //cell clipping value
+        ctx->setTArguments(targs, 2);
+        delete[] targs;
+        return ctx;
+    };
+
+    helper.runOperationSuit(&benchmark, generator, batch, "LSTMBlock");
+}
+
+
 TEST_F(PlaygroundTests, BroadcastOps2d) {
     BenchmarkHelper helper;
 
