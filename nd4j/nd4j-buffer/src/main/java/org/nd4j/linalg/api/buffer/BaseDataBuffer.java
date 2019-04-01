@@ -31,7 +31,7 @@ import org.nd4j.linalg.primitives.Triple;
 import org.nd4j.linalg.util.ArrayUtil;
 
 import java.io.*;
-import java.lang.ref.PhantomReference;
+import java.lang.ref.WeakReference;
 import java.nio.*;
 import java.nio.DoubleBuffer;
 import java.nio.FloatBuffer;
@@ -100,7 +100,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
     protected transient boolean released = false;
 
     protected transient AtomicBoolean referenced = new AtomicBoolean(false);
-    protected transient Collection<BaseDataBuffer> references = new ArrayList<>();
+    protected transient Collection<WeakReference<BaseDataBuffer>> references = new ArrayList<>();
 
     public BaseDataBuffer() {}
 
@@ -152,6 +152,11 @@ public abstract class BaseDataBuffer implements DataBuffer {
         this.indexer = indexer;
     }
 
+    protected void pickReferent(BaseDataBuffer referent) {
+        referenced.compareAndSet(false, true);
+        references.add(new WeakReference<BaseDataBuffer>(this));
+    }
+
     /**
      *
      * Meant for creating another view of a buffer
@@ -177,10 +182,9 @@ public abstract class BaseDataBuffer implements DataBuffer {
         this.wrappedDataBuffer = underlyingBuffer;
 
         // we're not referencing constant buffers
-        if (!underlyingBuffer.isConstant()) {
-            ((BaseDataBuffer) underlyingBuffer).referenced.compareAndSet(false, true);
-            ((BaseDataBuffer) underlyingBuffer).references.add(this);
-        }
+        if (!underlyingBuffer.isConstant())
+            ((BaseDataBuffer) underlyingBuffer).pickReferent(this);
+
 
         // Adding link to original databuffer
         if (underlyingBuffer.originalDataBuffer() == null) {
@@ -2277,8 +2281,12 @@ public abstract class BaseDataBuffer implements DataBuffer {
     protected void markReleased() {
         this.released = true;
 
-        for (val r:references)
-            r.markReleased();
+        for (val r:references) {
+            val b = r.get();
+
+            if (b != null)
+                b.markReleased();
+        }
     }
 
     @Override
@@ -2287,8 +2295,12 @@ public abstract class BaseDataBuffer implements DataBuffer {
             throw new IllegalStateException("Can't release this data buffer");
 
         // notifying other databuffers that their underlying
-        for (val r:references)
-            r.markReleased();
+        for (val r:references) {
+            val b = r.get();
+
+            if (b != null)
+                b.markReleased();
+        }
 
         release();
     }
