@@ -5280,6 +5280,15 @@ public class Nd4jTestsC extends BaseNd4jTest {
     }
 
     @Test
+    public void testLongShapeDescriptor(){
+        Nd4j.setDefaultDataTypes(DataType.DOUBLE, DataType.DOUBLE);
+        INDArray arr = Nd4j.create(new float[]{1,2,3});
+
+        val lsd = arr.shapeDescriptor();
+        assertNotNull(lsd);     //Fails here on CUDA, OK on native/cpu
+    }
+
+    @Test
     public void testNativeSort3_1() {
         INDArray array = Nd4j.linspace(1, 2017152, 2017152, DataType.DOUBLE).reshape(1, -1);
         INDArray exp = array.dup();
