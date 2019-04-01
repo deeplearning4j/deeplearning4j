@@ -16,8 +16,11 @@
 
 package org.deeplearning4j.nn.graph;
 
-import lombok.*;
+import lombok.Getter;
+import lombok.NonNull;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.bytedeco.javacpp.Pointer;
@@ -56,7 +59,6 @@ import org.deeplearning4j.util.ModelSerializer;
 import org.deeplearning4j.util.NetworkUtils;
 import org.deeplearning4j.util.OutputLayerUtil;
 import org.nd4j.base.Preconditions;
-import org.nd4j.evaluation.EvaluationUtils;
 import org.nd4j.evaluation.IEvaluation;
 import org.nd4j.evaluation.classification.Evaluation;
 import org.nd4j.evaluation.classification.ROC;
@@ -644,15 +646,17 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                 continue; //Output vertex
             VertexIndices[] outputIndices = new VertexIndices[thisVertexOutputsTo.size()];
             int j = 0;
-            for (String s : thisVertexOutputsTo) {
+            for (String s : new HashSet<>(thisVertexOutputsTo)) {
                 //First, we have gv -> s
                 //Which input in s does gv connect to? s may in general have multiple inputs...
                 List<String> nextVertexInputNames = vertexInputs.get(s);
 
-                int outputVertexInputNumber = nextVertexInputNames.indexOf(vertexName);
-
-                int outputVertexIndex = allNamesReverse.get(s);
-                outputIndices[j++] = new VertexIndices(outputVertexIndex, outputVertexInputNumber);
+                for (int k = 0; k < nextVertexInputNames.size(); k++) {
+                    if(vertexName.equals(nextVertexInputNames.get(k))){
+                        int outputVertexIndex = allNamesReverse.get(s);
+                        outputIndices[j++] = new VertexIndices(outputVertexIndex, k);
+                    }
+                }
             }
             gv.setOutputVertices(outputIndices);
         }

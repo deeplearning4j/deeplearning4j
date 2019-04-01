@@ -52,7 +52,6 @@ import org.deeplearning4j.nn.modelimport.keras.preprocessors.PermutePreprocessor
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.multilayer.MultiLayerTest;
 import org.deeplearning4j.nn.transferlearning.TransferLearning;
-import org.deeplearning4j.nn.updater.UpdaterBlock;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
@@ -75,6 +74,7 @@ import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.io.ClassPathResource;
 import org.nd4j.linalg.learning.config.AdaGrad;
 import org.nd4j.linalg.learning.config.Adam;
+import org.nd4j.linalg.learning.config.NoOp;
 import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.linalg.primitives.Pair;
@@ -2083,5 +2083,36 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
         Nd4j.getExecutioner().setProfilingMode(OpExecutioner.ProfilingMode.NAN_PANIC);
         cg.fit(new DataSet(in, lbl));
         Nd4j.getExecutioner().setProfilingMode(OpExecutioner.ProfilingMode.SCOPE_PANIC);
+    }
+
+    @Test
+    public void testCompGraphInputReuse() {
+        int inputSize = 5;
+        int outputSize = 6;
+        int layerSize = 3;
+
+        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
+                .seed(12345)
+                .weightInit(WeightInit.XAVIER)
+                .updater(new NoOp())
+                .graphBuilder()
+                .addInputs("in")
+                .setOutputs("out")
+                .addLayer("0",new DenseLayer.Builder().nIn(inputSize).nOut(layerSize).build(),"in")
+                .addVertex("combine", new MergeVertex(), "0", "0", "0")
+                .addLayer("out",new OutputLayer.Builder(LossFunctions.LossFunction.XENT).nIn(3*layerSize).nOut(outputSize)
+                        .activation(Activation.SIGMOID).build(),"combine")
+                .build();
+
+        ComputationGraph net = new ComputationGraph(conf);
+        net.init();
+
+
+        int dataSize = 11;
+        INDArray features = Nd4j.rand(new int[] {dataSize, inputSize});
+        INDArray labels = Nd4j.rand(new int[] {dataSize, outputSize});
+
+        DataSet dataSet1 = new DataSet(features, labels);
+        net.fit(dataSet1);
     }
 }
