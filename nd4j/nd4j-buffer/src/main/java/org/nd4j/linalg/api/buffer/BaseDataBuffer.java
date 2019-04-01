@@ -100,7 +100,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
     protected transient boolean released = false;
 
     protected transient AtomicBoolean referenced = new AtomicBoolean(false);
-    protected transient Collection<WeakReference<BaseDataBuffer>> references = new ArrayList<>();
+    //protected transient Collection<WeakReference<BaseDataBuffer>> references = new ArrayList<>();
 
     public BaseDataBuffer() {}
 
@@ -154,7 +154,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
     protected void pickReferent(BaseDataBuffer referent) {
         referenced.compareAndSet(false, true);
-        references.add(new WeakReference<BaseDataBuffer>(this));
+        //references.add(new WeakReference<BaseDataBuffer>(this));
     }
 
     /**
@@ -574,8 +574,18 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
     @Override
     public Pointer pointer() {
-        return underlyingDataBuffer() != null && underlyingDataBuffer() != this ? underlyingDataBuffer().pointer()
-                        : pointer;
+        if (underlyingDataBuffer() != null && underlyingDataBuffer() != this)
+            return underlyingDataBuffer().pointer();
+        else {
+            if (underlyingDataBuffer() != null)
+                if (((BaseDataBuffer) underlyingDataBuffer()).released)
+                    throw new IllegalStateException("Underlying buffer was released via close() call");
+
+            if (released)
+                throw new IllegalStateException("This buffer was already released via close() call");
+
+            return pointer;
+        }
     }
 
     @Override
@@ -2280,13 +2290,14 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
     protected void markReleased() {
         this.released = true;
-
+/*
         for (val r:references) {
             val b = r.get();
 
             if (b != null)
                 b.markReleased();
         }
+        */
     }
 
     @Override
@@ -2295,17 +2306,21 @@ public abstract class BaseDataBuffer implements DataBuffer {
             throw new IllegalStateException("Can't release this data buffer");
 
         // notifying other databuffers that their underlying
+        /*
         for (val r:references) {
+
             val b = r.get();
 
             if (b != null)
                 b.markReleased();
         }
+         */
 
         release();
     }
 
     protected void release() {
+        this.released = true;
         this.pointer.deallocate();
         this.indexer = null;
         this.pointer = null;
