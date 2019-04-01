@@ -148,6 +148,10 @@ public abstract class Layer implements TrainingConfig, Serializable, Cloneable {
         }
     }
 
+    public Layer cloneAndShareWeights(){
+        return clone();
+    }
+
     public abstract org.deeplearning4j.nn.api.Layer instantiate(NeuralNetConfiguration conf,
                     Collection<TrainingListener> trainingListeners, int layerIndex, INDArray layerParamsView,
                     boolean initializeParams);

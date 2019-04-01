@@ -70,6 +70,7 @@ public abstract class AbstractSameDiffLayer extends Layer {
         return null;
     }
 
+    @Override
     public AbstractSameDiffLayer cloneAndShareWeights() {
         AbstractSameDiffLayer clone = (AbstractSameDiffLayer) clone();
         clone.weightPoolId = this.weightPoolId;

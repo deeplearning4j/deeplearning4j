@@ -123,6 +123,7 @@ public abstract class BaseLayer extends Layer implements Serializable, Cloneable
         return clone;
     }
 
+    @Override
     public BaseLayer cloneAndShareWeights() {
         BaseLayer clone = clone();
         clone.weightPoolId = this.weightPoolId;
