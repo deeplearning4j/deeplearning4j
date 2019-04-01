@@ -18,6 +18,7 @@ package org.nd4j.linalg.workspace;
 
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -58,6 +59,7 @@ public class CyclicWorkspaceTests extends BaseNd4jTest {
     }
 
     @Test
+    @Ignore
     public void testGc() {
         val indArray = Nd4j.create(4, 4);
         indArray.putRow(0, Nd4j.create(new float[]{0, 2, -2, 0}));

@@ -1507,6 +1507,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
     @Override
     protected void release() {
         AtomicAllocator.getInstance().freeMemory(allocationPoint);
+        released = true;
     }
 
     /*
