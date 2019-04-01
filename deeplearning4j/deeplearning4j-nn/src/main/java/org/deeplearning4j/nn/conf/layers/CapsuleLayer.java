@@ -105,7 +105,7 @@ public class CapsuleLayer extends SameDiffLayer {
     @Override
     public SDVariable defineLayer(SameDiff SD, SDVariable input, Map<String, SDVariable> paramTable) {
         SDVariable expanded = SD.expandDims(SD.expandDims(input, 2), 4);
-        SDVariable tiled = SD.tile(expanded, new int[]{1, 1, capsules * capsuleDimensions, 1, 1});
+        SDVariable tiled = SD.tile(expanded, 1, 1, capsules * capsuleDimensions, 1, 1);
 
         SDVariable weights = paramTable.get(WEIGHT_PARAM);
         SDVariable uHat = weights.times(tiled).sum(true, 3)
@@ -128,7 +128,7 @@ public class CapsuleLayer extends SameDiffLayer {
                 return SD.squeeze(SD.squeeze(v, 1), 3);
             }
 
-            SDVariable vTiled = SD.tile(v, new int[]{1, (int) inputCapsules, 1, 1, 1});
+            SDVariable vTiled = SD.tile(v, 1, (int) inputCapsules, 1, 1, 1);
 
             b = b.plus(uHat.times(vTiled).sum(true, 3));
         }

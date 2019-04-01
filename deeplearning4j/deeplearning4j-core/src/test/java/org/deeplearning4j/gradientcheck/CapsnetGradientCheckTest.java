@@ -55,7 +55,7 @@ public class CapsnetGradientCheckTest extends BaseDL4JTest {
         int inputDepth = 1;
 
         int[] primaryCapsDims = {4, 8};
-        int[] primaryCapsChannels = {16, 32};
+        int[] primaryCapsChannels = {8, 16};
         int[] capsules = {10, 12};
         int[] capsuleDims = {12, 16};
         int[] routings = {3, 5};

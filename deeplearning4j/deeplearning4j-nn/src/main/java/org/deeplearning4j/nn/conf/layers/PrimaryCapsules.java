@@ -193,7 +193,7 @@ public class PrimaryCapsules extends SameDiffLayer {
 
         this.inputChannels = (int) ci.getChannels();
 
-        if(channels <= 0 || override) {
+        if(capsules <= 0 || override) {
 
             InputTypeConvolutional out = (InputTypeConvolutional) InputTypeUtil
                     .getOutputTypeCnnLayers(inputType, kernelSize, stride, padding, dilation, convolutionMode,
