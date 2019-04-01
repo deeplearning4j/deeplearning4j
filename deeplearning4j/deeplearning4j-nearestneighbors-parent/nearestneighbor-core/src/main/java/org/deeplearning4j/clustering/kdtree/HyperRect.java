@@ -31,7 +31,12 @@ public class HyperRect implements Serializable {
     private List<Interval> points;
 
     public HyperRect(List<Interval> points) {
-        this.points = points;
+        //this.points = points;
+        this.points = new ArrayList<>(points.size());
+        for (int i = 0; i < points.size(); ++i) {
+            Interval newInterval = new Interval(points.get(i).lower, points.get(i).higher);
+            this.points.add(newInterval);
+        }
     }
 
 
