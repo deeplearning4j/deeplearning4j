@@ -82,6 +82,7 @@ public class CapsnetGradientCheckTest extends BaseDL4JTest {
                                                 .nOut(16)
                                                 .kernelSize(9, 9)
                                                 .stride(3, 3)
+                                                //.activation(new ActivationReLU())
                                                 .build())
                                         .layer(new PrimaryCapsules.Builder(primaryCapsDim, primarpCapsChannel)
                                                 .kernelSize(7, 7)
@@ -104,7 +105,7 @@ public class CapsnetGradientCheckTest extends BaseDL4JTest {
                                 String msg = "minibatch=" + minibatchSize +
                                         ", PrimaryCaps: " + primarpCapsChannel +
                                         " channels, " + primaryCapsDim + " dimensions, Capsules: " + capsule +
-                                        " capsules with " + capsuleDim + "dimensions and " + routing + " routings";
+                                        " capsules with " + capsuleDim + " dimensions and " + routing + " routings";
                                 System.out.println(msg);
 
                                 boolean gradOK = GradientCheckUtil
