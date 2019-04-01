@@ -374,21 +374,22 @@ public class KDTreeTest {
         assertEquals(0, bigTree.size());
     }
 
+    @Ignore
     @Test
     public void performanceTest() {
         int n = 2;
-        int num = 1000;
+        int num = 100000;
         // make a KD-tree of dimension {#n}
         long start = System.currentTimeMillis();
         KDTree kdTree = new KDTree(n);
-        INDArray inputArrray = Nd4j.linspace(DataType.DOUBLE, 0.0, 1.0, num*n).reshape(num, n);
+        INDArray inputArrray = Nd4j.randn(DataType.DOUBLE, num, n);
         for (int  i = 0 ; i < num; ++i) {
             kdTree.insert(inputArrray.getRow(i));
         }
 
         long end = System.currentTimeMillis();
         Duration duration = new Duration(start, end);
-        System.out.println("Elapsed time for tree construction " + duration.getMillis());
+        System.out.println("Elapsed time for tree construction " + duration.getStandardSeconds() + " " + duration.getMillis());
 
         List<Double> pt = new ArrayList(num);
         for (int k = 0; k < n; k++) {
@@ -399,6 +400,9 @@ public class KDTreeTest {
         end = System.currentTimeMillis();
         duration = new Duration(start, end);
         long elapsed = end - start;
-        System.out.println("Elapsed time for tree search " + duration.getMillis());
+        System.out.println("Elapsed time for tree search " + duration.getStandardSeconds() + " " + duration.getMillis());
+        for (val pair : list) {
+            System.out.println(pair.getFirst() + " " + pair.getSecond()) ;
+        }
     }
 }

@@ -282,6 +282,7 @@ public class VpTreeNodeTest {
     public void performanceTest() {
         final int dim = 300;
         final int rows = 200000;
+        final int k = 5;
 
         INDArray inputArrray = Nd4j.linspace(DataType.DOUBLE, 0.0, 1.0, rows * dim).reshape(rows, dim);
 
@@ -299,11 +300,11 @@ public class VpTreeNodeTest {
         List<DataPoint> results = new ArrayList<>();
         List<Double> distances = new ArrayList<>();
         start = System.currentTimeMillis();
-        tree.search(Nd4j.createFromArray(input), 1, results, distances);
+        tree.search(Nd4j.createFromArray(input), k, results, distances);
         end = System.currentTimeMillis();
         duration = new Duration(start, end);
         System.out.println("Elapsed time for tree search " + duration.getStandardSeconds());
-
+        assertEquals(1590.2987519949422, distances.get(0), 1e-4);
     }
 
     public static void testVPSearchOverNaturalsPD(int nrows, int ncols, int K) throws Exception {
