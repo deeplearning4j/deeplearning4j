@@ -104,32 +104,47 @@ public class CapsuleLayer extends SameDiffLayer {
 
     @Override
     public SDVariable defineLayer(SameDiff SD, SDVariable input, Map<String, SDVariable> paramTable) {
+
+        // input: [mb, inputCapsules, inputCapsuleDimensions]
+
+        // [mb, inputCapsules, 1, inputCapsuleDimensions, 1]
         SDVariable expanded = SD.expandDims(SD.expandDims(input, 2), 4);
+
+        // [mb, inputCapsules, capsules  * capsuleDimensions, inputCapsuleDimensions, 1]
         SDVariable tiled = SD.tile(expanded, 1, 1, capsules * capsuleDimensions, 1, 1);
 
+        // [1, inputCapsules, capsules * capsuleDimensions, inputCapsuleDimensions]
         SDVariable weights = paramTable.get(WEIGHT_PARAM);
+
+        // [mb, inputCapsules, capsules, capsuleDimensions, 1]
         SDVariable uHat = weights.times(tiled).sum(true, 3)
                 .reshape(-1, inputCapsules, capsules, capsuleDimensions, 1);
 
+        // [mb, inputCapsules, capsules, 1, 1]
         SDVariable b = SD.zerosLike(uHat).get(SDIndex.all(), SDIndex.all(), SDIndex.all(), SDIndex.interval(0, 1), SDIndex.interval(0, 1));
 
-        //TODO convert to SameDiff.whileLoop?
         for(int i = 0 ; i < routings ; i++){
+
+            // [mb, inputCapsules, capsules, 1, 1]
             SDVariable c = CapsuleUtils.softmax(SD, b, 2, 5);
 
+            // [mb, 1, capsules, capsuleDimensions, 1]
             SDVariable temp = c.times(uHat).sum(true, 1);
             if(hasBias){
                 temp = temp.plus(paramTable.get(BIAS_PARAM));
             }
 
+            // [mb, 1, capsules, capsuleDimensions, 1]
             SDVariable v = CapsuleUtils.squash(SD, temp, 3);
 
             if(i == routings - 1){
                 return SD.squeeze(SD.squeeze(v, 1), 3);
             }
 
+            // [mb, inputCapsules, capsules, capsuleDimensions, 1]
             SDVariable vTiled = SD.tile(v, 1, (int) inputCapsules, 1, 1, 1);
 
+            // [mb, inputCapsules, capsules, 1, 1]
             b = b.plus(uHat.times(vTiled).sum(true, 3));
         }
 
