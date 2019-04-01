@@ -399,8 +399,6 @@ void JacobiSVD<T>::evalData(const NDArray& matrix) {
             if(_calcU) {
                 auto temp1 = _u({0,0, pos,pos+1}, true);
                 auto temp2 = _u({0,0, i,i+1}, true);
-                _u.printShapeInfo();
-                temp1.printShapeInfo();
                 auto  temp3 = temp1;
                 temp1.assign(temp2);
                 temp2.assign(temp3);      
