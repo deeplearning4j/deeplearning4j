@@ -176,9 +176,6 @@ namespace nd4j {
             auto clone = reinterpret_cast<DeclarableBenchmark*>(op->clone());
             clone->setContext(ctx);
             list.emplace_back(clone);
-
-            clone->setContext(nullptr);
-            delete ctx;
         }
 
         runOperationSuit(list, false);
