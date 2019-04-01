@@ -1860,7 +1860,9 @@ public class SDVariable extends DifferentialFunction implements Serializable {
                 long pointIndex = index.getPointIndex();
                 begin[i] = pointIndex;
                 end[i] = pointIndex + 1;
-                shrink_axis_mask_arr[i] = 1;
+                if(!index.isPointKeepDim()) {
+                    shrink_axis_mask_arr[i] = 1;
+                }
             } else if (indexType == SDIndex.IndexType.INTERVAL) {
                 if (index.getIntervalBegin() == null) {
                     begin_mask_arr[i] = 1;

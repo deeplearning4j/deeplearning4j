@@ -368,7 +368,7 @@ public class NativeImageLoader extends BaseImageLoader {
         long cols = image.cols();
         long channels = image.channels();
 
-        if (ret.lengthLong() != rows * cols * channels) {
+        if (ret.length() != rows * cols * channels) {
             throw new ND4JIllegalStateException("INDArray provided to store image not equal to image: {channels: "
                             + channels + ", rows: " + rows + ", columns: " + cols + "}");
         }

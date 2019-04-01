@@ -2258,7 +2258,7 @@ public class SameDiffTests {
     public void testGet(){
 
         SameDiff sd  = SameDiff.create();
-        INDArray arr = Nd4j.create(10, 10);
+        INDArray arr = Nd4j.linspace(1, 100, 100).reshape(10L, 10L);
         SDVariable x = sd.var(arr);
 
         INDArray expOut1 = arr.get(NDArrayIndex.point(4), NDArrayIndex.point(5));
@@ -2278,6 +2278,9 @@ public class SameDiffTests {
         SDVariable result4 = x.get(SDIndex.point(5), SDIndex.interval(3, 8));
         assertEquals(expOut4, result4.eval());
 
+        INDArray expOut5 = arr.get(NDArrayIndex.interval(5, 6), NDArrayIndex.all());
+        SDVariable result5 = x.get(SDIndex.point(5, true), SDIndex.all());
+        assertEquals(expOut5, result5.eval());
 
     }
 

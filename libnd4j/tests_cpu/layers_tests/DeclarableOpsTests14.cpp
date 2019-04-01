@@ -150,6 +150,32 @@ TEST_F(DeclarableOpsTests14, Test_EvalReductionShape_2) {
     delete result;
 }
 
+TEST_F(DeclarableOpsTests14, Test_Reduce_Min_Small_0) {
+    auto x = NDArrayFactory::create<float>('c', {3, 4}, {-999.f, 0.2236f, 0.7973f, 0.0962f, 0.7231f, 0.3381f, -0.7301f, 0.9115f, -0.5094f, 0.9749f, -2.1340f, 0.6023f});
+    auto z = NDArrayFactory::create<float>('c', {4});
+    auto e = NDArrayFactory::create<float>('c', {4}, {-999.f, 0.2236f, -2.1340f, 0.0962f});
+
+    nd4j::ops::reduce_min op;
+    op.execute({&x}, {&z}, {}, {0}, {});
+
+    //z.printIndexedBuffer("Z");
+
+    ASSERT_EQ(e, z);
+}
+
+TEST_F(DeclarableOpsTests14, Test_Reduce_Min_Small_1) {
+    auto x = NDArrayFactory::create<float>('c', {3, 4}, {-999.f, 0.2236f, 0.7973f, 0.0962f, 0.7231f, 0.3381f, -0.7301f, 0.9115f, -0.5094f, 0.9749f, -2.1340f, 0.6023f});
+    auto z = NDArrayFactory::create<float>('c', {3});
+    auto e = NDArrayFactory::create<float>('c', {3}, {-999.f, -0.7301f, -2.1340f});
+
+    nd4j::ops::reduce_min op;
+    op.execute({&x}, {&z}, {}, {1}, {});
+
+    //z.printIndexedBuffer("Z");
+
+    ASSERT_EQ(e, z);
+}
+
 TEST_F(DeclarableOpsTests14, Test_Diag_Zeros_1) {
     auto x = NDArrayFactory::create<double>('c', {2}, {1, 2});
     auto z = NDArrayFactory::create<double>('c', {2, 2}, {-119, -119, -119, -119});

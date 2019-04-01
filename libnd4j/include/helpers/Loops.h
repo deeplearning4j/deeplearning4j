@@ -102,7 +102,7 @@ namespace nd4j {
     public:
 
         //////////////////////////////////////////////////////////////////////////////
-        template<typename OpType>
+        template<typename OpType, bool doParallel>
         static FORCEINLINE void loopXZ(X* x, Nd4jLong* xShapeInfo, Z* z, Nd4jLong* zShapeInfo, E* extraParams);
     };
 
@@ -629,7 +629,7 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
 
     //////////////////////////////////////////////////////////////////////////////
     template <typename X, typename Z, typename E>
-    template <typename OpType>
+    template <typename OpType, bool doParallel>
     void nd4j::TransformLoops<X,Z,E>::loopXZ(X* x, Nd4jLong* xShapeInfo,
                                              Z* z, Nd4jLong* zShapeInfo,
                                              E* extraParams) {
@@ -643,14 +643,14 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
         const Nd4jLong len = shape::length(xShapeInfo);
         const uint ulen = static_cast<uint>(len);
 
-        OmpLaunchHelper thredsInfo(len);
+        OmpLaunchHelper thredsInfo(len, doParallel ? -1 : 1);
 
         switch (kindOfLoop) {
 
             //*********************************************//
             case EWS1: {
                 if (ulen > Environment::getInstance()->elementwiseThreshold()) {
-                    PRAGMA_OMP_PARALLEL_FOR_SIMD
+                    PRAGMA_OMP_PARALLEL_FOR_SIMD_THREADS(thredsInfo._numThreads)
                     for (uint i = 0; i < ulen; i++)
                         z[i] = OpType::op(x[i], extraParams);
                 } else {

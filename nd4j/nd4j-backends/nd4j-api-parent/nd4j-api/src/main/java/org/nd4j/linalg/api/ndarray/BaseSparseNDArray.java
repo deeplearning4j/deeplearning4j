@@ -1668,7 +1668,7 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
 
         INDArray n = (INDArray) o;
 
-        if (this.lengthLong() != n.lengthLong())
+        if (this.length() != n.length())
             return false;
 
         if (isScalar() && n.isScalar()) {
