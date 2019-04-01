@@ -125,7 +125,7 @@ public class CapsuleLayer extends SameDiffLayer {
             SDVariable v = CapsuleUtils.squash(SD, temp, 3);
 
             if(i == routings - 1){
-                return v;
+                return SD.squeeze(SD.squeeze(v, 1), 3);
             }
 
             SDVariable vTiled = SD.tile(v, new int[]{1, (int) inputCapsules, 1, 1, 1});
