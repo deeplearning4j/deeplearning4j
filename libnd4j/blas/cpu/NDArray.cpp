@@ -130,7 +130,7 @@ namespace nd4j {
 NDArray::NDArray(const NDArray& other) {
         
     _workspace = other._workspace;
-    setShapeInfo(ShapeBuilders::copyShapeInfo(other._shapeInfo, false, _workspace));    
+    setShapeInfo(ShapeBuilders::copyShapeInfo(other._shapeInfo, false, _workspace));
 
     ALLOCATE(_buffer, other._workspace, _length * other.sizeOfT(), int8_t);    
 
@@ -934,17 +934,14 @@ std::vector<int64_t> NDArray::getShapeAsFlatVector() {
     else {
         if(_isBuffAlloc && _workspace == nullptr)
             delete []_buffer;
-        if(_isShapeAlloc && _workspace == nullptr)
-            delete []_shapeInfo;
-
-        _length = other._length;
-        _dataType = other._dataType;
-
-        _shapeInfo = ShapeBuilders::copyShapeInfo(other._shapeInfo, false, _workspace);
+        
+        _workspace = other._workspace;
+        setShapeInfo(ShapeBuilders::copyShapeInfo(other._shapeInfo, false, _workspace));
+        
         ALLOCATE(_buffer, _workspace, _length * sizeOfT(), int8_t);
 
-        _isBuffAlloc = true;
-        _isShapeAlloc = true;
+        triggerAllocationFlag(true, true);
+        
         this->assign(&other);
     }
 
