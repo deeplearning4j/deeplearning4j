@@ -489,6 +489,6 @@ public class NDArray extends BaseNDArray {
 
     @Override
     public LongShapeDescriptor shapeDescriptor() {
-        return LongShapeDescriptor.fromShape(shape(), dataType());
+        return LongShapeDescriptor.fromShape(shape(), stride(), elementWiseStride(), ordering(), dataType(), isEmpty());
     }
 }
