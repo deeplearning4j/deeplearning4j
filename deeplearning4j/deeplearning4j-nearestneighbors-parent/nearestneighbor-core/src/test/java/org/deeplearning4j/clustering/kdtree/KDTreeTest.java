@@ -18,6 +18,7 @@ package org.deeplearning4j.clustering.kdtree;
 
 import com.google.common.primitives.Doubles;
 import lombok.val;
+import org.joda.time.Duration;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
@@ -371,5 +372,36 @@ public class KDTreeTest {
         }
 
         assertEquals(0, bigTree.size());
+    }
+
+    @Test
+    public void performanceTest() {
+        int n = 2;
+        int num = 1000;
+        // make a KD-tree of dimension {#n}
+        long start = System.currentTimeMillis();
+        KDTree kdTree = new KDTree(n);
+        double first = 0.0, last = 1.0;
+        for (int  i = 0 ; i < num; ++i) {
+            INDArray inputArrray = Nd4j.linspace(DataType.DOUBLE, first, last, n);
+            first += 1.0;
+            last += 1.0;
+            kdTree.insert(inputArrray);
+        }
+
+        long end = System.currentTimeMillis();
+        Duration duration = new Duration(start, end);
+        System.out.println("Elapsed time for tree construction " + duration.getMillis());
+
+        List<Double> pt = new ArrayList(num);
+        for (int k = 0; k < n; k++) {
+            pt.add((double)(num / 2));
+        }
+        start = System.currentTimeMillis();
+        List<Pair<Double, INDArray>> list = kdTree.knn(Nd4j.create(Nd4j.createBuffer(Doubles.toArray(pt))), 20.0);
+        end = System.currentTimeMillis();
+        duration = new Duration(start, end);
+        long elapsed = end - start;
+        System.out.println("Elapsed time for tree search " + duration.getMillis());
     }
 }
