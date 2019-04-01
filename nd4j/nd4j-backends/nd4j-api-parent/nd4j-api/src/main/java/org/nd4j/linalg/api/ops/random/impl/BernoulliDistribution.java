@@ -71,9 +71,9 @@ public class BernoulliDistribution extends BaseRandomOp {
         if (prob.elementWiseStride() != 1)
             throw new ND4JIllegalStateException("Probabilities should have ElementWiseStride of 1");
 
-        if (prob.lengthLong() != z.lengthLong())
-            throw new ND4JIllegalStateException("Length of probabilities array [" + prob.lengthLong()
-                            + "] doesn't match length of output array [" + z.lengthLong() + "]");
+        if (prob.length() != z.length())
+            throw new ND4JIllegalStateException("Length of probabilities array [" + prob.length()
+                            + "] doesn't match length of output array [" + z.length() + "]");
         this.prob = 0.0;
         this.extraArgs = new Object[] {this.prob};
     }

@@ -99,9 +99,7 @@ namespace randomOps {
                             z[e * zEWS] = x[f * xEWS];
                             f += yLength;
                         }
-                        __syncthreads();
                     }
-                    __syncthreads();
                 }
             } 
             else {
@@ -124,9 +122,7 @@ namespace randomOps {
                             z[zOffset2] = x[xOffset2];
                             f += yLength;
                         }
-                        __syncthreads();
                     }
-                    __syncthreads();
                 }
             }
 
