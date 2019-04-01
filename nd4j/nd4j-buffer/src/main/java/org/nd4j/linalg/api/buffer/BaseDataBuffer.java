@@ -31,6 +31,7 @@ import org.nd4j.linalg.primitives.Triple;
 import org.nd4j.linalg.util.ArrayUtil;
 
 import java.io.*;
+import java.lang.ref.PhantomReference;
 import java.nio.*;
 import java.nio.DoubleBuffer;
 import java.nio.FloatBuffer;
@@ -174,8 +175,12 @@ public abstract class BaseDataBuffer implements DataBuffer {
         this.elementSize = (byte) underlyingBuffer.getElementSize();
         this.underlyingLength = underlyingBuffer.underlyingLength();
         this.wrappedDataBuffer = underlyingBuffer;
-        ((BaseDataBuffer) underlyingBuffer).referenced.compareAndSet(false, true);
-        ((BaseDataBuffer) underlyingBuffer).references.add(this);
+
+        // we're not referencing constant buffers
+        if (!underlyingBuffer.isConstant()) {
+            ((BaseDataBuffer) underlyingBuffer).referenced.compareAndSet(false, true);
+            ((BaseDataBuffer) underlyingBuffer).references.add(this);
+        }
 
         // Adding link to original databuffer
         if (underlyingBuffer.originalDataBuffer() == null) {

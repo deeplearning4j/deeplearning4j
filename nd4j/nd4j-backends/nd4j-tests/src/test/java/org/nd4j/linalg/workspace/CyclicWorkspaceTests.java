@@ -57,6 +57,20 @@ public class CyclicWorkspaceTests extends BaseNd4jTest {
         }
     }
 
+    @Test
+    public void testGc() {
+        val indArray = Nd4j.create(4, 4);
+        indArray.putRow(0, Nd4j.create(new float[]{0, 2, -2, 0}));
+        indArray.putRow(1, Nd4j.create(new float[]{0, 1, -1, 0}));
+        indArray.putRow(2, Nd4j.create(new float[]{0, -1, 1, 0}));
+        indArray.putRow(3, Nd4j.create(new float[]{0, -2, 2, 0}));
+
+        for (int i = 0; i < 100000000; i++) {
+            indArray.getRow(i % 3);
+            //Thread.sleep(1);
+        }
+    }
+
     @Override
     public char ordering() {
         return 'c';
