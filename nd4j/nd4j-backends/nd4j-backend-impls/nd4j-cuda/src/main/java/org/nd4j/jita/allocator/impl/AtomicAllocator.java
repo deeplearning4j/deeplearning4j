@@ -52,6 +52,7 @@ import org.nd4j.linalg.jcublas.context.CudaContext;
 import org.nd4j.nativeblas.NativeOpsHolder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.nd4j.linalg.jcublas.buffer.BaseCudaDataBuffer;
 
 import java.lang.ref.ReferenceQueue;
 import java.util.Map;
@@ -114,7 +115,7 @@ public class AtomicAllocator implements Allocator {
         here we have handles for garbage collector threads
         ThreadId, GarbageCollector
      */
-    private Map<Integer, UnifiedGarbageCollectorThread> collectorsUnified = new ConcurrentHashMap<>();
+    //private Map<Integer, UnifiedGarbageCollectorThread> collectorsUnified = new ConcurrentHashMap<>();
 
     private final AtomicBoolean shouldStop = new AtomicBoolean(false);
 
@@ -125,8 +126,6 @@ public class AtomicAllocator implements Allocator {
 
     private final Ring zeroLong = new LockedRing(30);
     private final Ring zeroShort = new LockedRing(30);
-
-    private final Map<Integer, ReferenceQueue<BaseDataBuffer>> queueMap = new ConcurrentHashMap<>();
 
     private ConstantHandler constantHandler = Nd4j.getConstantHandler();
     private AtomicLong useTracker = new AtomicLong(System.currentTimeMillis());
@@ -147,10 +146,14 @@ public class AtomicAllocator implements Allocator {
 
         this.memoryHandler.init(configuration, this);
 
-        initDeviceCollectors();
-        initHostCollectors();
+        /*initDeviceCollectors();
+        initHostCollectors();*/
         this.protector = ConstantProtector.getInstance();
 
+    }
+
+    protected Map<Long, AllocationPoint> allocationsMap(){
+        return allocationsMap;
     }
 
     public void applyConfiguration() {
@@ -180,7 +183,7 @@ public class AtomicAllocator implements Allocator {
     /**
      * This method executes preconfigured number of host memory garbage collectors
      */
-    protected void initHostCollectors() {
+    /*protected void initHostCollectors() {
         for (int i = 0; i < configuration.getNumberOfGcThreads(); i++) {
             ReferenceQueue<BaseDataBuffer> queue = new ReferenceQueue<>();
 
@@ -194,14 +197,14 @@ public class AtomicAllocator implements Allocator {
             uThread.start();
 
             collectorsUnified.put(i, uThread);
-            /*
+            *
             ZeroGarbageCollectorThread zThread = new ZeroGarbageCollectorThread((long) i, shouldStop);
             zThread.start();
             
             collectorsZero.put((long) i, zThread);
-            */
+            *
         }
-    }
+    }*/
 
     /**
      * This method executes garbage collectors for each special device (i.e. CUDA GPUs) present in system
@@ -458,12 +461,12 @@ public class AtomicAllocator implements Allocator {
             point.setConstant(true);
         }
         */
-        int numBuckets = configuration.getNumberOfGcThreads();
+        /*int numBuckets = configuration.getNumberOfGcThreads();
         int bucketId = RandomUtils.nextInt(0, numBuckets);
 
         GarbageBufferReference reference =
-                        new GarbageBufferReference((BaseDataBuffer) buffer, queueMap.get(bucketId), point);
-        point.attachReference(reference);
+                        new GarbageBufferReference((BaseDataBuffer) buffer, queueMap.get(bucketId), point);*/
+        //point.attachReference(reference);
         point.setDeviceId(-1);
 
         if (buffer.isAttached()) {
@@ -698,7 +701,7 @@ public class AtomicAllocator implements Allocator {
         return freeSpace.get();
     }
 
-    private class UnifiedGarbageCollectorThread extends Thread implements Runnable {
+    /*private class UnifiedGarbageCollectorThread extends Thread implements Runnable {
         private final ReferenceQueue<BaseDataBuffer> queue;
         private int threadId;
         private int deviceId;
@@ -773,7 +776,7 @@ public class AtomicAllocator implements Allocator {
                 }
             }
         }
-    }
+    }*/
 
     /**
      * This class implements garbage collector for memory allocated on host system.
@@ -1029,8 +1032,10 @@ public class AtomicAllocator implements Allocator {
 
     @Override
     public AllocationPoint getAllocationPoint(INDArray array) {
-        DataBuffer buffer =
-                        array.data().originalDataBuffer() == null ? array.data() : array.data().originalDataBuffer();
+        if (array.isEmpty())
+            return null;
+
+        DataBuffer buffer = array.data().originalDataBuffer() == null ? array.data() : array.data().originalDataBuffer();
         return getAllocationPoint(buffer);
     }
 

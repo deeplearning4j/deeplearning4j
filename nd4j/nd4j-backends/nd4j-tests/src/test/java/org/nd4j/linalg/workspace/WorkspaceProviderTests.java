@@ -17,6 +17,7 @@
 package org.nd4j.linalg.workspace;
 
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.junit.After;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -959,6 +960,36 @@ public class WorkspaceProviderTests extends BaseNd4jTest {
         MemoryWorkspace workspace2 = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread();
 
         assertEquals(workspace1, workspace2);
+    }
+
+    @Test
+    public void testWorkspaceGc_1() throws Exception {
+
+        for (int e = 0; e < 10; e++) {
+            val f = e;
+            val t = new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    val wsConf = WorkspaceConfiguration.builder()
+                            .initialSize(1000000).build();
+                    try (val ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace(wsConf, "SomeRandomName999" + f)) {
+                        val array = Nd4j.create(2, 2);
+                    }
+                    //Nd4j.getWorkspaceManager().destroyAllWorkspacesForCurrentThread();
+                }
+            });
+            t.start();
+            t.join();
+
+            System.gc();
+            Thread.sleep(50);
+        }
+
+        System.gc();
+        Thread.sleep(1000);
+        System.gc();
+
+        log.info("Done");
     }
 
     @Ignore

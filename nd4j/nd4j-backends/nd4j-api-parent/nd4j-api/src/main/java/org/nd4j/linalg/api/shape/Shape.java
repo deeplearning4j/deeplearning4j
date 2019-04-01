@@ -3412,6 +3412,15 @@ public class Shape {
         return true;
     }
 
+    public static boolean contentEquals(long[] arr, long[] other) {
+        for (int i = 0; i < arr.length; i++) {
+            if (other[i] != arr[i]) {
+                return false;
+            }
+        }
+        return true;
+    }
+
     public static boolean contentEquals(long[] arr, DataBuffer other) {
         for (int i = 0; i < arr.length; i++) {
             if (other.getLong(i) != arr[i]) {
