@@ -2161,8 +2161,8 @@ TEST_F(DeclarableOpsTests6, maxPool2D_float_test1) {
 
 TEST_F(DeclarableOpsTests6, concat_test14) {
     
-    NDArray x0('c', {1, 40, 60}, nd4j::DataType::DOUBLE);
-    NDArray x1('c', {1, 40, 60}, nd4j::DataType::DOUBLE);
+    NDArray x0('c', {1, 55, 40}, nd4j::DataType::DOUBLE);
+    NDArray x1('c', {1, 55, 40}, nd4j::DataType::DOUBLE);
     
     x0 = 1.;
     x1 = 2.;    
@@ -2172,6 +2172,8 @@ TEST_F(DeclarableOpsTests6, concat_test14) {
     ASSERT_EQ(Status::OK(), result->status());
 
     auto z = result->at(0);
+    // z->printShapeInfo();
+    // z->printIndexedBuffer();
     
     Nd4jLong numOfTads= ShapeUtils::getNumOfSubArrs(z->getShapeInfo(), {0});
     ASSERT_TRUE(2 == numOfTads);

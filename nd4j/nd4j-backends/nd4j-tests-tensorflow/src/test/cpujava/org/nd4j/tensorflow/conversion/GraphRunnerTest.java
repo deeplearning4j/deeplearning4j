@@ -34,7 +34,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-import static org.bytedeco.javacpp.tensorflow.ConfigProto;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
@@ -119,7 +118,7 @@ public class GraphRunnerTest {
 
     @Test
     public void testGraphRunnerSavedModel() throws Exception {
-        File f = testDir.newFolder();
+        File f = testDir.newFolder("test");
         new ClassPathResource("/tf_saved_models/saved_model_counter/00000123/").copyDirectory(f);
         SavedModelConfig savedModelConfig = SavedModelConfig.builder()
                 .savedModelPath(f.getAbsolutePath())

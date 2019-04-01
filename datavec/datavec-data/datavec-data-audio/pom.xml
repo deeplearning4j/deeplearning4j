@@ -60,7 +60,7 @@
 <!-- Do not depend on FFmpeg by default due to licensing concerns. -->
 <!--
         <dependency>
-            <groupId>org.bytedeco.javacpp-presets</groupId>
+            <groupId>org.bytedeco</groupId>
             <artifactId>ffmpeg-platform</artifactId>
             <version>${ffmpeg.version}-${javacpp-presets.version}</version>
         </dependency>
@@ -72,7 +72,7 @@
             <id>test-nd4j-native</id>
         </profile>
         <profile>
-            <id>test-nd4j-cuda-10.0</id>
+            <id>test-nd4j-cuda-10.1</id>
         </profile>
     </profiles>
 </project>

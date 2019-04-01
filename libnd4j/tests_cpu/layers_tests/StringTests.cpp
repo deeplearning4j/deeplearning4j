@@ -73,3 +73,22 @@ TEST_F(StringTests, Export_Test_1) {
 
     auto vector = array.asByteVector();
 }
+
+TEST_F(StringTests, Basic_dup_1) {
+    std::string f("alpha");
+    auto array = NDArrayFactory::string(f);
+    ASSERT_EQ(nd4j::DataType::UTF8, array.dataType());
+
+    ASSERT_EQ(1, array.lengthOf());
+    ASSERT_EQ(0, array.rankOf());
+
+    auto dup = array.dup();
+
+    auto z0 = array.e<std::string>(0);
+    auto z1 = dup->e<std::string>(0);
+
+    ASSERT_EQ(f, z0);
+    ASSERT_EQ(f, z1);
+
+    delete dup;
+}

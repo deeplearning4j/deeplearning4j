@@ -113,8 +113,14 @@ DECLARE_SHAPE_FN(lstmBlock) {
     }
     ShapeUtils::updateStridesAndType(s, x, 'c');
 
-    //7 outputs, all same shape/type
-    return SHAPELIST(s, s, s, s, s, s, s);
+    Nd4jLong *s1, *s2, *s3, *s4,*s5,*s6;
+    COPY_SHAPE(s, s1);
+    COPY_SHAPE(s, s2);
+    COPY_SHAPE(s, s3);
+    COPY_SHAPE(s, s4);
+    COPY_SHAPE(s, s5);
+    COPY_SHAPE(s, s6);
+    return SHAPELIST(s, s1, s2, s3, s4, s5, s6);
 }   
 
 }

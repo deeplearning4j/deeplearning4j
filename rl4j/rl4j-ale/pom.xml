@@ -39,7 +39,7 @@
             <version>${project.version}</version>
         </dependency>
         <dependency>
-            <groupId>org.bytedeco.javacpp-presets</groupId>
+            <groupId>org.bytedeco</groupId>
             <artifactId>ale</artifactId>
             <version>${ale.version}-${javacpp-presets.version}</version>
         </dependency>

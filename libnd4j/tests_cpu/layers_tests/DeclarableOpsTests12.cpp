@@ -798,3 +798,79 @@ TEST_F(DeclarableOpsTests12, multiUnique_2) {
     std::vector<NDArray*> arrayList({&input1, &input2, &input3, &input4, &input5});
     ASSERT_TRUE(nd4j::ops::helpers::multiUnique(arrayList));
 }
+
+////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests12, tensormmul_6) {
+    
+    NDArray x('c', {1}, {2});
+    NDArray y('c', {2,1,2}, {1,2,3,4});
+    NDArray exp('c', {2,2}, {2,4,6,8}, nd4j::DataType::FLOAT32);
+                                             
+    nd4j::ops::tensormmul op;
+    auto results = op.execute({&x, &y}, {}, {1,0, 1,1});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    auto *result = results->at(0);    
+    exp.printShapeInfo();
+    result->printShapeInfo();
+    result->printIndexedBuffer();
+
+    ASSERT_TRUE(exp.isSameShape(result));
+    ASSERT_TRUE(exp.equalsTo(result));
+
+    delete results;
+
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests12, concat_test10) {
+
+    NDArray x0('c', {1,4,5}, nd4j::DataType::FLOAT32);
+    NDArray x1('c', {2,4,5}, nd4j::DataType::FLOAT32);
+    NDArray  z('f', {3,4,5}, nd4j::DataType::FLOAT32);
+    
+    x0 = 0.;
+    x1 = 1.;
+
+    nd4j::ops::concat op;    
+    auto status = op.execute({&x0, &x1}, {&z}, {}, {0}, {});
+    ASSERT_EQ(ND4J_STATUS_OK, status);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests12, concat_14) {
+
+    NDArray x0('c', {1,6}, {1,2,3,4,5,6});
+    NDArray x1('c', {1,6}, {7,8,9,10,11,12});
+    NDArray output('f', {2,6}, nd4j::DataType::DOUBLE);
+    NDArray exp('c', {2,6}, {1,2,3,4,5,6,7,8,9,10,11,12});
+    
+    nd4j::ops::concat op;
+
+    auto status = op.execute({&x0, &x1}, {&output}, {}, {0}, {});
+    ASSERT_EQ(ND4J_STATUS_OK, status);
+    // output.printBuffer();
+    // output.printIndexedBuffer();
+
+    ASSERT_TRUE(exp.equalsTo(output));
+}
+
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests12, concat_15) {
+
+    NDArray x0('c', {1,4}, {1,2,3,4});
+    NDArray x1('c', {1,4}, {5,6,7,8});
+    NDArray output('c', {2,4}, nd4j::DataType::DOUBLE);
+    NDArray exp('c', {2,4}, {1,2,3,4,5,6,7,8});
+    
+    nd4j::ops::concat op;
+
+    auto status = op.execute({&x0, &x1}, {&output}, {}, {0}, {});
+    ASSERT_EQ(ND4J_STATUS_OK, status);
+    // output.printBuffer();
+    // output.printIndexedBuffer();
+
+    ASSERT_TRUE(exp.equalsTo(output));
+}

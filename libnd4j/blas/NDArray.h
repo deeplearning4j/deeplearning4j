@@ -164,9 +164,8 @@ namespace nd4j {
         */
         NDArray(NDArray&& other) noexcept;
 
-
         /**
-        *  constructor, create empty array stored at given workspace
+        *  constructor, create array stored at given workspace
         */
         NDArray(nd4j::memory::Workspace* workspace);
 
@@ -203,9 +202,9 @@ namespace nd4j {
         NDArray(const NDArray *other, const bool copyStrides = false, memory::Workspace* workspace = nullptr);
 
         /**
-        *  this constructor creates scalar and set its value = 0
+        *  this constructor creates scalar(and set its value = 0) or empty array depending on bool argument isScalar
         */
-        NDArray(nd4j::DataType dtype, nd4j::memory::Workspace* workspace = nullptr);
+        NDArray(nd4j::DataType dtype, nd4j::memory::Workspace* workspace = nullptr, const bool isScalar = true);
 
 
         /**
@@ -1313,6 +1312,13 @@ namespace nd4j {
         FORCEINLINE bool isRowVector() const;
 
         /**
+        *  returns true if all dimensions of array except one are unities, for example: [1,1,n,1], [n,1,1], [n], ...
+        *  posOfNonUnityDim - one dimension with value > 1
+        */
+        FORCEINLINE bool isCommonVector(int& posOfNonUnityDim) const;
+
+
+        /**
         *  returns true if array is scalar
         */
         FORCEINLINE bool isScalar() const;
@@ -1557,7 +1563,8 @@ namespace nd4j {
     bool NDArray::isVector() const {
         if (isEmpty())
             return false;
-
+        if (rankOf() == 1)
+            return true;
         return !isScalar() && shape::isVector(this->_shapeInfo);
     }
 
@@ -1579,6 +1586,12 @@ namespace nd4j {
             return true;
 
         return !isScalar() && shape::isRowVector(this->_shapeInfo);
+    }
+
+    //////////////////////////////////////////////////////////////////////////
+    bool NDArray::isCommonVector(int& posOfNonUnityDim) const {        
+
+        return shape::isCommonVector(_shapeInfo, posOfNonUnityDim);
     }
 
     //////////////////////////////////////////////////////////////////////////

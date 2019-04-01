@@ -59,7 +59,7 @@ public class ScatterUpdate implements CustomOp {
         for (val v: indices)
             iargs.add(v);
 
-        if (updates.tensorAlongDimension(0, dimension).lengthLong() != original.tensorAlongDimension(0, dimension).lengthLong())
+        if (updates.tensorAlongDimension(0, dimension).length() != original.tensorAlongDimension(0, dimension).length())
             throw new ND4JIllegalStateException("ScatterUpdate requires equal shaped tensors for operation along given dimension(s)");
 
         long numTensors = original.tensorsAlongDimension(dimension);

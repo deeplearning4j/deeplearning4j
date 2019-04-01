@@ -47,8 +47,9 @@ namespace helpers {
         }
         else {
             std::vector<int> restDims(input->rankOf() - 1);
+            Nd4jLong loop_size = input->rankOf();
             PRAGMA_OMP_PARALLEL_FOR
-            for (Nd4jLong e = 1; e < input->rankOf(); e++)
+            for (Nd4jLong e = 1; e < loop_size; e++)
                 restDims[e - 1] = e;
 
             auto listOfTensors = input->allTensorsAlongDimension(restDims);
@@ -103,8 +104,9 @@ namespace helpers {
         }
         else {
             std::vector<int> restDims(input->rankOf() - 1);
+            auto loop_length = input->rankOf();
             PRAGMA_OMP_PARALLEL_FOR
-            for (int e = 1; e < input->rankOf(); e++)
+            for (int e = 1; e < loop_length; e++)
                 restDims[e - 1] = e;
 
             std::unique_ptr<ResultSet> listOfTensors( input->allTensorsAlongDimension(restDims) );
@@ -160,8 +162,9 @@ namespace helpers {
         }
         else {
             std::vector<int> restDims(input->rankOf() - 1);
+            int loop_size = input->rankOf();
             PRAGMA_OMP_PARALLEL_FOR
-            for (int e = 1; e < input->rankOf(); e++)
+            for (int e = 1; e < loop_size; e++)
                 restDims[e - 1] = e;
 
             auto listOfTensors = input->allTensorsAlongDimension(restDims);
@@ -220,8 +223,9 @@ namespace helpers {
         }
         else {
             std::vector<int> restDims(input->rankOf() - 1);
+	    int loop_size = input->rankOf();
             PRAGMA_OMP_PARALLEL_FOR
-            for (int e = 1; e < input->rankOf(); e++)
+            for (int e = 1; e < loop_size; e++)
                 restDims[e - 1] = e;
 
             auto listOfTensors = input->allTensorsAlongDimension(restDims);
@@ -273,8 +277,9 @@ namespace helpers {
         }
         else {
             std::vector<int> restDims(input->rankOf() - 1);
+            int loop_size = input->rankOf();
             PRAGMA_OMP_SIMD
-            for (int e = 1; e < input->rankOf(); e++)
+            for (int e = 1; e < loop_size; e++)
                 restDims[e - 1] = e;
 
             auto listOfTensors = input->allTensorsAlongDimension(restDims);
@@ -385,8 +390,9 @@ namespace helpers {
         else {
             std::vector<int> restDims(input->rankOf() - 1);
             Nd4jLong idx = idxs[0][0];
+            int loop_size = input->rankOf();
             PRAGMA_OMP_SIMD
-            for (int e = 1; e < input->rankOf(); e++)
+            for (int e = 1; e < loop_size; e++)
                 restDims[e - 1] = e;
 
             std::unique_ptr<ResultSet> listOfTensors(input->allTensorsAlongDimension(restDims));
@@ -484,9 +490,9 @@ namespace helpers {
 
             for (auto fi = idxs.begin(); fi != idxs.end(); ++fi) {
                 double sumValue = input->e<double>(fi->second.at(0));
-
+                int loop_size = fi->second.size();
                 PRAGMA_OMP_PARALLEL_FOR_SIMD_REDUCTION(+:sumValue)
-                for (size_t idx = 1; idx < fi->second.size(); ++idx) {
+                for (size_t idx = 1; idx < loop_size; ++idx) {
                     sumValue += input->e<double>(fi->second.at(idx));
                 }
 
@@ -495,7 +501,8 @@ namespace helpers {
         }
         else {
             std::vector<int> restDims(input->rankOf() - 1);
-            for (int e = 1; e < input->rankOf(); e++)
+            Nd4jLong loop_size= input->rankOf();
+            for (int e = 1; e < loop_size; e++)
                 restDims[e - 1] = e;
 
             std::unique_ptr<ResultSet> listOfTensors(input->allTensorsAlongDimension(restDims));
@@ -504,9 +511,9 @@ namespace helpers {
             for (auto fi = idxs.begin(); fi != idxs.end(); ++fi) {
                 auto outputT = listOfOutTensors->at(fi->first);
                 outputT->assign(listOfTensors->at(fi->second.at(0)));
-
+                loop_size = fi->second.size();
                 PRAGMA_OMP_PARALLEL_FOR
-                for (Nd4jLong idx = 1; idx < fi->second.size(); ++idx) {
+                for (Nd4jLong idx = 1; idx < loop_size; ++idx) {
                     auto current = listOfTensors->at(fi->second.at(idx));
                     *outputT += *current;
                 }
@@ -524,8 +531,9 @@ namespace helpers {
 
             for (auto fi = idxs.begin(); fi != idxs.end(); ++fi) {
                 double sumValue = input->e<double>(fi->second.at(0));
+                Nd4jLong loop_size = fi->second.size();
                 PRAGMA_OMP_PARALLEL_FOR_REDUCTION(+:sumValue)
-                for (Nd4jLong idx = 1; idx < fi->second.size(); ++idx) {
+                for (Nd4jLong idx = 1; idx < loop_size; ++idx) {
                     sumValue += input->e<double>(fi->second.at(idx));
                 }
                 output->p(fi->first, sumValue);
@@ -533,7 +541,8 @@ namespace helpers {
         }
         else {
             std::vector<int> restDims(input->rankOf() - 1);
-            for (int e = 1; e < input->rankOf(); e++)
+            int loop_size = input->rankOf();
+            for (int e = 1; e < loop_size; e++)
                 restDims[e - 1] = e;
 
             std::unique_ptr<ResultSet> listOfTensors(input->allTensorsAlongDimension(restDims));
@@ -542,9 +551,9 @@ namespace helpers {
             for (auto fi = idxs.begin(); fi != idxs.end(); ++fi) {
                 auto outputT = listOfOutTensors->at(fi->first);
                 outputT->assign(listOfTensors->at(fi->second.at(0)));
-
+                Nd4jLong loop_size = fi->second.size();
                 PRAGMA_OMP_PARALLEL_FOR
-                for (Nd4jLong idx = 1; idx < fi->second.size(); ++idx) {
+                for (Nd4jLong idx = 1; idx < loop_size; ++idx) {
                     auto current = listOfTensors->at(fi->second.at(idx));
                     *(outputT) += *current;
                 }
@@ -574,7 +583,8 @@ namespace helpers {
         }
         else {
             std::vector<int> restDims(input->rankOf() - 1);
-            for (int e = 1; e < input->rankOf(); e++)
+            Nd4jLong loop_size = input->rankOf();
+            for (int e = 1; e < loop_size; e++)
                 restDims[e - 1] = e;
 
             std::unique_ptr<ResultSet> listOfTensors(input->allTensorsAlongDimension(restDims));
@@ -615,7 +625,9 @@ namespace helpers {
         }
         else {
             std::vector<int> restDims(input->rankOf() - 1);
-            for (int e = 1; e < input->rankOf(); e++)
+
+            int loop_size =  input->rankOf();
+            for (int e = 1; e < loop_size; e++)
                 restDims[e - 1] = e;
 
             std::unique_ptr<ResultSet> listOfTensors(input->allTensorsAlongDimension(restDims));
@@ -648,8 +660,9 @@ namespace helpers {
         auto tempRes = gradOut->dup();
         segmentMaxFunctor_<T>(input, indices, tempRes);
         if (input->isVector()) {
+            Nd4jLong loop_size = input->lengthOf();
             PRAGMA_OMP_PARALLEL_FOR
-            for (Nd4jLong e = 0; e < input->lengthOf(); ++e) {
+            for (Nd4jLong e = 0; e < loop_size; ++e) {
                 Nd4jLong classNum = indices->e<Nd4jLong>(e);
                 if (nd4j::math::nd4j_abs(tempRes->e<T>(classNum) -input->e<T>(e) <= T(1.e-6)))
                     output->p(e, gradOut->e<T>(classNum));
@@ -657,7 +670,8 @@ namespace helpers {
         }
         else {
             std::vector<int> restDims(input->rankOf() - 1);
-            for (int e = 1; e < input->rankOf(); e++)
+            Nd4jLong loop_size = input->rankOf();
+            for (int e = 1; e < loop_size; e++)
                 restDims[e - 1] = e;
 
             std::unique_ptr<ResultSet> listOfBPTensors(tempRes->allTensorsAlongDimension(restDims));
@@ -706,7 +720,8 @@ namespace helpers {
         }
         else {
             std::vector<int> restDims(input->rankOf() - 1);
-            for (int e = 1; e < input->rankOf(); e++)
+            Nd4jLong loop_size = input->rankOf();
+            for (int e = 1; e < loop_size; e++)
                 restDims[e - 1] = e;
 
             std::unique_ptr<ResultSet> listOfBPTensors(tempRes->allTensorsAlongDimension(restDims));
@@ -756,7 +771,8 @@ namespace helpers {
         }
         else {
             std::vector<int> restDims(input->rankOf() - 1);
-            for (int e = 1; e < input->rankOf(); e++)
+            Nd4jLong loop_size = input->rankOf();
+            for (int e = 1; e < loop_size; e++)
                 restDims[e - 1] = e;
 
             std::unique_ptr<ResultSet> listOfGradOuts(gradOut->allTensorsAlongDimension(restDims));
@@ -794,7 +810,8 @@ namespace helpers {
         }
         else {
             std::vector<int> restDims(input->rankOf() - 1);
-            for (int e = 1; e < input->rankOf(); e++)
+            int loop_size = input->rankOf();
+            for (int e = 1; e < loop_size; e++)
                 restDims[e - 1] = e;
 
             std::unique_ptr<ResultSet> listOfGradOuts(gradOut->allTensorsAlongDimension(restDims));
@@ -824,7 +841,8 @@ namespace helpers {
         }
         else {
             std::vector<int> restDims(input->rankOf() - 1);
-            for (int e = 1; e < input->rankOf(); e++)
+            int loop_size = input->rankOf();
+            for (int e = 1; e < loop_size; e++)
                 restDims[e - 1] = e;
 
             std::unique_ptr<ResultSet> listOfBPTensors(tempRes->allTensorsAlongDimension(restDims));
@@ -913,7 +931,8 @@ namespace helpers {
         }
         else {
             std::vector<int> restDims(input->rankOf() - 1);
-            for (int e = 1; e < input->rankOf(); e++)
+            int loop_size = input->rankOf();
+            for (int e = 1; e < loop_size; e++)
                 restDims[e - 1] = e;
 
             std::unique_ptr<ResultSet> listOfBPTensors(tempRes->allTensorsAlongDimension(restDims));
@@ -997,7 +1016,8 @@ namespace helpers {
         }
         else {
             std::vector<int> restDims(input->rankOf() - 1);
-            for (int e = 1; e < input->rankOf(); e++)
+            int loop_size = input->rankOf();
+            for (int e = 1; e < loop_size; e++)
                 restDims[e - 1] = e;
 
             std::unique_ptr<ResultSet> listOfGradOuts(gradOut->allTensorsAlongDimension(restDims));
@@ -1030,7 +1050,8 @@ namespace helpers {
         }
         else {
             std::vector<int> restDims(input->rankOf() - 1);
-            for (int e = 1; e < input->rankOf(); e++)
+            int loop_size = input->rankOf();
+            for (int e = 1; e < loop_size; e++)
                 restDims[e - 1] = e;
 
             std::unique_ptr<ResultSet> listOfBPTensors(tempRes->allTensorsAlongDimension(restDims));
@@ -1075,7 +1096,8 @@ namespace helpers {
         }
         else {
             std::vector<int> restDims(input->rankOf() - 1);
-            for (int e = 1; e < input->rankOf(); e++)
+            int loop_size = input->rankOf();
+            for (int e = 1; e < loop_size; e++)
                 restDims[e - 1] = e;
 
             std::unique_ptr<ResultSet> listOfGradOuts(gradOut->allTensorsAlongDimension(restDims));

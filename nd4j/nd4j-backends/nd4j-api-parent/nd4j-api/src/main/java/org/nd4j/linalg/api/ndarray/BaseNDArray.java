@@ -4503,8 +4503,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
         long prod = ArrayUtil.prodLong(shape);
 
-        if (prod != this.lengthLong()){
-            throw new ND4JIllegalStateException("New shape length doesn't match original length: [" + prod + "] vs [" + this.lengthLong() + "]. Original shape: "+Arrays.toString(this.shape())+" New Shape: "+Arrays.toString(newShape));
+        if (prod != this.length()){
+            throw new ND4JIllegalStateException("New shape length doesn't match original length: [" + prod + "] vs [" + this.length() + "]. Original shape: "+Arrays.toString(this.shape())+" New Shape: "+Arrays.toString(newShape));
         }
 
 
@@ -4689,7 +4689,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     @Override
     public INDArray sum(boolean keepDim, int... dimension) {
         validateNumericalArray("sum", false);
-        return Nd4j.getExecutioner().exec(new Sum(this, null, true, keepDim, dimension));
+        return Nd4j.getExecutioner().exec(new Sum(this, null, keepDim, dimension));
     }
 
 
@@ -4901,9 +4901,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             return this;
         else if (isColumnVector() && c > 0)
             throw new IllegalArgumentException("Illegal index for row");
-        else if(isRowVector()) {
-            return Nd4j.scalar(getDouble(c));
-        }
         return get(NDArrayIndex.all(), NDArrayIndex.point(c));
     }
 
@@ -5984,7 +5981,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         if (Nd4j.getMemoryManager().getCurrentWorkspace() == null) {
             if (!isView()) {
                 Nd4j.getExecutioner().commit();
-                DataBuffer buffer = Nd4j.createBuffer(this.lengthLong(), false);
+                DataBuffer buffer = Nd4j.createBuffer(this.length(), false);
 
                 Nd4j.getMemoryManager().memcpy(buffer, this.data());
 
@@ -6003,7 +6000,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
             if (!isView()) {
                 Nd4j.getExecutioner().commit();
-                DataBuffer buffer = Nd4j.createBuffer(this.lengthLong(), false);
+                DataBuffer buffer = Nd4j.createBuffer(this.length(), false);
 
                 //Pointer.memcpy(buffer.pointer(), this.data.pointer(), this.lengthLong() * Nd4j.sizeOfDataType(this.data.dataType()));
                 Nd4j.getMemoryManager().memcpy(buffer, this.data());
@@ -6059,7 +6056,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             INDArray copy = null;
             if (!this.isView()) {
                 Nd4j.getExecutioner().commit();
-                DataBuffer buffer = Nd4j.createBuffer(this.lengthLong(), false);
+                DataBuffer buffer = Nd4j.createBuffer(this.length(), false);
                 Nd4j.getMemoryManager().memcpy(buffer, this.data());
 
                 copy = Nd4j.createArrayFromShapeBuffer(buffer, this.shapeInfoDataBuffer());
@@ -6125,7 +6122,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         INDArray copy = null;
         if (!this.isView()) {
             Nd4j.getExecutioner().commit();
-            DataBuffer buffer = Nd4j.createBuffer(this.dataType(), this.lengthLong(), false);
+            DataBuffer buffer = Nd4j.createBuffer(this.dataType(), this.length(), false);
             Nd4j.getMemoryManager().memcpy(buffer, this.data());
 
             copy = Nd4j.createArrayFromShapeBuffer(buffer, this.shapeInfoDataBuffer());
@@ -6202,7 +6199,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
         if (!this.isView()) {
             Nd4j.getExecutioner().commit();
-            DataBuffer buffer = Nd4j.createBuffer(this.lengthLong(), false);
+            DataBuffer buffer = Nd4j.createBuffer(this.length(), false);
             Nd4j.getMemoryManager().memcpy(buffer, this.data());
 
             copy = Nd4j.createArrayFromShapeBuffer(buffer, this.shapeInfoDataBuffer());

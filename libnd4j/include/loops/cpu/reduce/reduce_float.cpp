@@ -20,11 +20,13 @@
 //
 
 #include <types/types.h>
+#include <ShapeUtils.h>
 #include <op_boilerplate.h>
 #include <loops/reduce_float.h>
 #include <loops/legacy_ops.h>
 #include <OmpLaunchHelper.h>
 #include <helpers/Loops.h>
+#include <helpers/ConstantTadHelper.h>
 
 using namespace simdOps;
 
@@ -176,33 +178,25 @@ namespace functions {
                 if (OpType::requiresSpecialAccumulation) {
                     OpType::execSpecial(x, xShapeInfo, extraParams, z, zShapeInfo, dimension, dimensionLength, tadShapeInfo, tadOffset);
                     return;
-                }            
+                }
 
                 auto tadOnlyShapeInfo = tadShapeInfo;
                 auto tadOffsets = tadOffset;
-                shape::TAD *tad = nullptr;
 
                 if (tadOnlyShapeInfo == nullptr || tadOffsets == nullptr) {
-                    tad = new shape::TAD();
-                    tad->init(xShapeInfo, dimension, dimensionLength);
-                    tad->createTadOnlyShapeInfo();
-                    tad->createOffsets();
-
-                    //nd4j_printf("Calculating TAD\n","");
-
-                    if (tad->dimensionLength < 1) {
-                        delete tad;
+                    if (dimensionLength < 1)
                         return;
-                    }
 
-                    tadOnlyShapeInfo = tad->tadOnlyShapeInfo;
-                    tadOffsets = tad->tadOffsets;
+                    auto tadPack = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(xShapeInfo, dimension, dimensionLength);
+                    tadOnlyShapeInfo = tadPack.primaryShapeInfo();
+                    tadOffsets = tadPack.primaryOffsets();
                 }
 
-                nd4j::Loops::loopTadXZ<X, Z, Z, OpType>(x, tadOnlyShapeInfo, tadOffsets, z, zShapeInfo, extraParams);
-
-                if (tad != nullptr)
-                    delete tad;
+#ifdef INLINE_LOOPS
+                nd4j::ReductionLoops<X,Z,Z>::template loopTadXZ<OpType>(x, xShapeInfo, z, zShapeInfo,  tadOnlyShapeInfo, tadOffsets, extraParams);
+#else
+                nd4j::ReductionFloatLoops<X,Z>::template innerloopTadXZ<OpType>(x, xShapeInfo, z, zShapeInfo,  tadOnlyShapeInfo, tadOffsets, extraParams);
+#endif
             }
 
 

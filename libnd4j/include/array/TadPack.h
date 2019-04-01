@@ -14,22 +14,35 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-#include "helpers/Loops.hpp"
+//
+//  @author raver119@gmail.com
+//
 
-using namespace simdOps;
+#ifndef DEV_TESTS_TADPACK_H
+#define DEV_TESTS_TADPACK_H
+
+#include "DataBuffer.h"
 
 namespace nd4j {
-    template <typename X, typename Y>
-    class ReduceBoolWrapper {
+    class ND4J_EXPORT TadPack {
+    private:
+        DataBuffer _tadShape;
+        DataBuffer _tadOffsets;
+        Nd4jLong _numTads;
     public:
-        template <typename OpType>
-        static void wrapper(const X *x, const Nd4jLong *tadShapeInfo, const Nd4jLong *tadOffset, Y *z, const Nd4jLong *zShapeInfo, X *extras) {
-            Loops::loopTadXZ<X, Y, X, OpType>(x, tadShapeInfo, tadOffset, z, zShapeInfo, extras);
-        }
+        explicit TadPack(DataBuffer &shapes, DataBuffer &offets, Nd4jLong numTads);
+        TadPack() = default;
+        ~TadPack() = default;
 
-        static void wrap(const int opNum, const X *x, const Nd4jLong *tadShapeInfo, const Nd4jLong *tadOffset, Y *z, const Nd4jLong *zShapeInfo, X *extras) {
-            DISPATCH_BY_OPNUM_TT(wrapper, PARAMS(x, tadShapeInfo, tadOffset, z, zShapeInfo, extras), REDUCE_BOOL_OPS);
-        }
+        Nd4jLong* primaryShapeInfo();
+        Nd4jLong* primaryOffsets();
+
+        Nd4jLong* specialShapeInfo();
+        Nd4jLong* specialOffsets();
+
+        Nd4jLong numberOfTads();
     };
-    BUILD_DOUBLE_TEMPLATE(template class ReduceBoolWrapper, , LIBND4J_TYPES, BOOL_TYPES);
 }
+
+
+#endif //DEV_TESTS_TADPACK_H

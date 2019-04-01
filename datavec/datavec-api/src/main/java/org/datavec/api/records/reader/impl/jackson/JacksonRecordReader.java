@@ -16,7 +16,10 @@
 
 package org.datavec.api.records.reader.impl.jackson;
 
+import lombok.Getter;
+import lombok.Setter;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.IOUtils;
 import org.datavec.api.conf.Configuration;
 import org.datavec.api.io.labels.PathLabelGenerator;
 import org.datavec.api.records.Record;
@@ -32,6 +35,8 @@ import org.nd4j.shade.jackson.databind.ObjectMapper;
 
 import java.io.*;
 import java.net.URI;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 /**
@@ -69,6 +74,8 @@ public class JacksonRecordReader extends BaseRecordReader {
     private int labelPosition;
     private InputSplit is;
     private Random r;
+    @Getter @Setter
+    private String charset = StandardCharsets.UTF_8.name(); //Using String as StandardCharsets.UTF_8 is not serializable
 
     private URI[] uris;
     private int cursor = 0;
@@ -102,6 +109,7 @@ public class JacksonRecordReader extends BaseRecordReader {
     public void initialize(InputSplit split) throws IOException, InterruptedException {
         if (split instanceof FileSplit)
             throw new UnsupportedOperationException("Cannot use JacksonRecordReader with FileSplit");
+        super.initialize(inputSplit);
         this.uris = split.locations();
         if (shuffle) {
             List<URI> list = Arrays.asList(uris);
@@ -125,8 +133,8 @@ public class JacksonRecordReader extends BaseRecordReader {
         URI uri = uris[cursor++];
         invokeListeners(uri);
         String fileAsString;
-        try {
-            fileAsString = FileUtils.readFileToString(new File(uri.toURL().getFile()));
+        try (InputStream s = streamCreatorFn.apply(uri)){
+            fileAsString = IOUtils.toString(s, charset);
         } catch (IOException e) {
             throw new RuntimeException("Error reading URI file", e);
         }

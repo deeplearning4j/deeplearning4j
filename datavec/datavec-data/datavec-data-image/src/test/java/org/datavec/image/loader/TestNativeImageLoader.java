@@ -38,8 +38,10 @@ import java.io.IOException;
 import java.lang.reflect.Field;
 import java.util.Random;
 
-import static org.bytedeco.javacpp.lept.*;
-import static org.bytedeco.javacpp.opencv_core.*;
+import org.bytedeco.leptonica.*;
+import org.bytedeco.opencv.opencv_core.*;
+import static org.bytedeco.leptonica.global.lept.*;
+import static org.bytedeco.opencv.global.opencv_core.*;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
@@ -391,7 +393,7 @@ public class TestNativeImageLoader {
     org.opencv.core.Mat makeRandomOrgOpenCvCoreMatImage(int height, int width, int channels) {
         Mat img = makeRandomImage(height, width, channels);
 
-        Loader.load(org.bytedeco.javacpp.opencv_java.class);
+        Loader.load(org.bytedeco.opencv.opencv_java.class);
         OpenCVFrameConverter.ToOrgOpenCvCoreMat c = new OpenCVFrameConverter.ToOrgOpenCvCoreMat();
 
         return c.convert(c.convert(img));

@@ -57,8 +57,6 @@ import org.joda.time.DateTimeZone;
 import org.junit.Assert;
 import org.junit.Test;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.shade.jackson.core.JsonFactory;
-import org.nd4j.shade.jackson.databind.ObjectMapper;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -1558,5 +1556,52 @@ public class TestTransforms {
         String json = tp.toJson();
         TransformProcess tp2 = TransformProcess.fromJson(json);
         assertEquals(tp, tp2);
+    }
+
+
+    @Test
+    public void testFirstDigitTransform(){
+        Schema s = new Schema.Builder()
+                .addColumnString("data")
+                .addColumnDouble("double")
+                .addColumnString("stringNumber")
+                .build();
+
+        TransformProcess tp = new TransformProcess.Builder(s)
+                .firstDigitTransform("double", "fdDouble", FirstDigitTransform.Mode.EXCEPTION_ON_INVALID)
+                .firstDigitTransform("stringNumber", "stringNumber", FirstDigitTransform.Mode.INCLUDE_OTHER_CATEGORY)
+                .build();
+
+        Schema s2 = tp.getFinalSchema();
+        assertEquals(Arrays.asList("data","double", "fdDouble", "stringNumber"), s2.getColumnNames());
+
+        assertEquals(Arrays.asList(ColumnType.String, ColumnType.Double, ColumnType.Categorical, ColumnType.Categorical), s2.getColumnTypes());
+
+        List<List<Writable>> in = Arrays.asList(
+                Arrays.<Writable>asList(new Text("a"), new DoubleWritable(3.14159), new Text("8e-4")),
+                Arrays.<Writable>asList(new Text("b"), new DoubleWritable(2.71828), new Text("7e2")),
+                Arrays.<Writable>asList(new Text("c"), new DoubleWritable(1.61803), new Text("6e8")),
+                Arrays.<Writable>asList(new Text("c"), new DoubleWritable(-2), new Text("non numerical")));
+
+        List<List<Writable>> expected = Arrays.asList(
+                Arrays.<Writable>asList(new Text("a"), new DoubleWritable(3.14159), new Text("3"), new Text("8")),
+                Arrays.<Writable>asList(new Text("b"), new DoubleWritable(2.71828), new Text("2"), new Text("7")),
+                Arrays.<Writable>asList(new Text("c"), new DoubleWritable(1.61803), new Text("1"), new Text("6")),
+                Arrays.<Writable>asList(new Text("c"), new DoubleWritable(-2), new Text("2"), new Text("Other")));
+
+        List<List<Writable>> out = new ArrayList<>();
+        for(List<Writable> i : in){
+            out.add(tp.execute(i));
+        }
+        assertEquals(expected, out);
+
+        //Test Benfords law use case:
+        TransformProcess tp2 = new TransformProcess.Builder(s)
+                .firstDigitTransform("double", "fdDouble", FirstDigitTransform.Mode.EXCEPTION_ON_INVALID)
+                .firstDigitTransform("stringNumber", "stringNumber", FirstDigitTransform.Mode.INCLUDE_OTHER_CATEGORY)
+                .removeColumns("data", "double")
+                .categoricalToOneHot("fdDouble", "stringNumber")
+                .reduce(new Reducer.Builder(ReduceOp.Sum).build())
+                .build();
     }
 }

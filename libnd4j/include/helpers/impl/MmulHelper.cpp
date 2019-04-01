@@ -401,9 +401,9 @@ nd4j::NDArray* nd4j::MmulHelper::tensorDot(const nd4j::NDArray* a, const nd4j::N
     
     // check whether reshape is necessary
     if(!aPR->isSameShape(shapeAt))
-        aPR->reshapei('c', shapeAt);    
+        aPR->reshapei(shapeAt);
     if(!bPR->isSameShape(shapeBt)) 
-        bPR->reshapei('c', shapeBt);                
+        bPR->reshapei(shapeBt);  
     
     NDArray* c = mmul(aPR, bPR, nullptr, 1.0, 0.0);
 
@@ -499,7 +499,7 @@ void nd4j::MmulHelper::tensorDot(const nd4j::NDArray* a, const nd4j::NDArray* b,
     if(!aPR->isSameShape(shapeAt))    
             aPR->reshapei(shapeAt);    
     if(!bPR->isSameShape(shapeBt))
-            bPR->reshapei(shapeBt);    
+            bPR->reshapei(shapeBt);
 
     if(!cP->isSameShape({aPR->sizeAt(0), bPR->sizeAt(1)}))
         cPR = cP->reshape(cP->ordering(), {aPR->sizeAt(0), bPR->sizeAt(1)});

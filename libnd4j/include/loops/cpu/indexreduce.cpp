@@ -22,6 +22,7 @@
 #include <op_boilerplate.h>
 #include <Loops.h>
 #include <types/types.h>
+#include <helpers/ConstantTadHelper.h>
 #include "../legacy_ops.h"
 
 using namespace simdOps;
@@ -124,48 +125,18 @@ void IndexReduce<X>::exec(void *vx, Nd4jLong *xShapeInfo,
 
     auto tadOnlyShapeInfo = tadShapeInfo;
     Nd4jLong *tadOffsets = tadOffset;
-    shape::TAD *tad = nullptr;
 
     if (tadOnlyShapeInfo == nullptr || tadOffsets == nullptr) {
-        tad = new shape::TAD();
-        tad->init(xShapeInfo, dimension, dimensionLength);
-        tad->createTadOnlyShapeInfo();
-        tad->createOffsets();
-
-        if (tad->dimensionLength < 1) {
-            delete tad;
+        if (dimensionLength < 1)
             return;
-        }
 
-        tadOnlyShapeInfo = tad->tadOnlyShapeInfo;
-        tadOffsets = tad->tadOffsets;
+        auto tadPack = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(xShapeInfo, dimension, dimensionLength);
+
+        tadOnlyShapeInfo = tadPack.primaryShapeInfo();
+        tadOffsets = tadPack.primaryOffsets();
     }
 
-    nd4j::Loops::loopIndexTadXZ<X, OpType>(x, tadOnlyShapeInfo, tadOffsets, z, zShapeInfo, extraParams);
-    
-    if (tad != nullptr)
-        delete tad;
-
-    // int tadLength = shape::tadLength(xShapeInfo, dimension, dimensionLength);
-    // int numThreads = nd4j::math::nd4j_min<int>(zLen, omp_get_max_threads());
-
-    // uint tadOnlyShapeInfoCast[MAX_RANK];                    
-    // bool canCastX = nd4j::DataTypeUtils::castShapeInfo(tadOnlyShapeInfo, tadOnlyShapeInfoCast);
-
-    // PRAGMA_OMP_PARALLEL_FOR_THREADS(numThreads)
-    // for(Nd4jLong i = 0; i < zLen; i++) {
-
-    //     auto offset = tadOffsets[i];
-    //     auto indexValue = OpType::startingIndexValue(&x[offset]);
-
-    //     PRAGMA_OMP_SIMD
-    //     for(int j = 0; j < tadLength; j++) {
-    //         auto xOffset = offset + shape::indexOffset(j, tadOnlyShapeInfo, tadOnlyShapeInfoCast, tadLength, canCastX);
-    //         IndexValue<X> comp(x[xOffset], j);
-    //         indexValue = OpType::update(indexValue,comp,extraParams);
-    //     }
-    //     z[i] = indexValue.index;
-    // }    
+    nd4j::IndexReductionLoops<X>::template loopIndexTadXZ<OpType>(x, xShapeInfo, z, zShapeInfo,  tadOnlyShapeInfo, tadOffsets, extraParams);
 }
 
 

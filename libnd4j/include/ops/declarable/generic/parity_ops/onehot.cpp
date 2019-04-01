@@ -23,6 +23,7 @@
 
 #include <ops/declarable/CustomOperations.h>
 #include <helpers/ShapeUtils.h>
+#include <ops/declarable/helpers/one_hot.h>
 
 namespace nd4j {
     namespace ops {
@@ -65,20 +66,8 @@ namespace nd4j {
             if (axis < 0)
                 axis = output->rankOf() + axis;
 
-            auto vec = ShapeUtils::convertAxisToTadTarget(input->rankOf(), {axis});
-            auto tads = output->allTensorsAlongDimension({axis});
-            for (int e = 0; e < tads->size(); e++) {
-                auto tad = tads->at(e);
-                tad->assign(off);
-
-                int idx = input->e<int>(e);
-                if (idx < 0 || idx >= tad->lengthOf())
-                    continue;
-
-                tad->p(idx, on);
-            }
-
-            delete tads;
+            std::vector<int> vec({axis});
+            helpers::onehot(output, input, vec, on, off);
 
             return Status::OK();
         }

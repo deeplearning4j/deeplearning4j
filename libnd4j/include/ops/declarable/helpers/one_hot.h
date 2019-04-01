@@ -14,22 +14,22 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-#include "helpers/Loops.hpp"
+//
+// @author raver119@gmail.com
+//
 
-using namespace simdOps;
+#ifndef DEV_TESTS_ONE_HOT_H
+#define DEV_TESTS_ONE_HOT_H
+
+#include <op_boilerplate.h>
+#include <NDArray.h>
 
 namespace nd4j {
-    template <typename X>
-    class ReduceSameWrapper {
-    public:
-        template <typename OpType>
-        static void wrapper(const X *x, const Nd4jLong *tadShapeInfo, const Nd4jLong *tadOffset, X *z, const Nd4jLong *zShapeInfo, X *extras) {
-            Loops::loopTadXZ<X, X, X, OpType>(x, tadShapeInfo, tadOffset, z, zShapeInfo, extras);
+    namespace ops {
+        namespace helpers {
+            void onehot(NDArray *output, NDArray *indices, std::vector<int> &axis, double on, double off);
         }
-
-        static void wrap(const int opNum, const X *x, const Nd4jLong *tadShapeInfo, const Nd4jLong *tadOffset, X *z, const Nd4jLong *zShapeInfo, X *extras) {
-            DISPATCH_BY_OPNUM_T(wrapper, PARAMS(x, tadShapeInfo, tadOffset, z, zShapeInfo, extras), REDUCE_SAME_OPS);
-        }
-    };
-    BUILD_SINGLE_TEMPLATE(template class ReduceSameWrapper, , LIBND4J_TYPES);
+    }
 }
+
+#endif //DEV_TESTS_ONE_HOT_H
