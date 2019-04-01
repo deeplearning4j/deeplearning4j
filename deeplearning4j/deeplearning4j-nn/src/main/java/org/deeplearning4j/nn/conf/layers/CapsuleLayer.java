@@ -37,11 +37,10 @@ import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
-//TODO short description
 /**
  * An implementation of the DigiCaps layer from Dynamic Routing Between Capsules
  *
- * Input should come from a PrimaryCapsules layer and be of shape [mb, inputCaps, inputCapDims]
+ * Input should come from a PrimaryCapsules layer and be of shape [mb, inputCaps, inputCapDims].
  *
  * From <a href="http://papers.nips.cc/paper/6975-dynamic-routing-between-capsules.pdf">Dynamic Routing Between Capsules</a>
  *
@@ -116,26 +115,30 @@ public class CapsuleLayer extends SameDiffLayer {
         // [1, inputCapsules, capsules * capsuleDimensions, inputCapsuleDimensions]
         SDVariable weights = paramTable.get(WEIGHT_PARAM);
 
+        // uHat is the matrix of prediction vectors between two capsules
         // [mb, inputCapsules, capsules, capsuleDimensions, 1]
         SDVariable uHat = weights.times(tiled).sum(true, 3)
                 .reshape(-1, inputCapsules, capsules, capsuleDimensions, 1);
 
+        // b is the logits of the routing procedure
         // [mb, inputCapsules, capsules, 1, 1]
         SDVariable b = SD.zerosLike(uHat).get(SDIndex.all(), SDIndex.all(), SDIndex.all(), SDIndex.interval(0, 1), SDIndex.interval(0, 1));
 
         for(int i = 0 ; i < routings ; i++){
 
+            // c is the coupling coefficient, i.e. the edge weight between the 2 capsules
             // [mb, inputCapsules, capsules, 1, 1]
             SDVariable c = CapsuleUtils.softmax(SD, b, 2, 5);
 
             // [mb, 1, capsules, capsuleDimensions, 1]
-            SDVariable temp = c.times(uHat).sum(true, 1);
+            SDVariable s = c.times(uHat).sum(true, 1);
             if(hasBias){
-                temp = temp.plus(paramTable.get(BIAS_PARAM));
+                s = s.plus(paramTable.get(BIAS_PARAM));
             }
 
+            // v is the per capsule activations.  On the last routing iteration, this is output
             // [mb, 1, capsules, capsuleDimensions, 1]
-            SDVariable v = CapsuleUtils.squash(SD, temp, 3);
+            SDVariable v = CapsuleUtils.squash(SD, s, 3);
 
             if(i == routings - 1){
                 return SD.squeeze(SD.squeeze(v, 1), 3);
