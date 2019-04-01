@@ -109,8 +109,7 @@ NDArray::NDArray(Nd4jLong* shapeInfo, const bool copyStrides, nd4j::graph::Launc
 ////////////////////////////////////////////////////////////////////////
 // do not allocate memory, memory for array is passed from outside
 NDArray::NDArray(void *buffer, Nd4jLong *shapeInfo, graph::LaunchContext* context, const bool isBuffAlloc) {
-
-    if (ArrayOptions::arrayType(shapeInfo) != ArrayType::EMPTY)
+    
     if (buffer == nullptr)
         throw std::runtime_error("NDArray constructor: can't be initalized with nullptr buffer !");
     
@@ -123,10 +122,9 @@ NDArray::NDArray(void *buffer, Nd4jLong *shapeInfo, graph::LaunchContext* contex
     _context = context;
     _isAttached = _context->getWorkspace() != nullptr;
 
-    setShapeInfo(shapeInfo);    
+    setShapeInfo(shapeInfo);
 
-    if (this->isEmpty()) {
-        _length = 0;
+    if (this->isEmpty()) {        
         tickReadDevice();
         tickReadHost();
     }
@@ -161,10 +159,8 @@ NDArray::NDArray(void *buffer, void* bufferD, Nd4jLong *shapeInfo, graph::Launch
 
     setShapeInfo(shapeInfo);
     
-    if (this->isEmpty()) {
-        _length = 0;        
-    }
-    else {
+    if (!isEmpty()) {
+        
          if(buffer != nullptr) {
             _buffer = reinterpret_cast<int8_t *>(buffer);        
             triggerAllocationFlag(isBuffAlloc);
