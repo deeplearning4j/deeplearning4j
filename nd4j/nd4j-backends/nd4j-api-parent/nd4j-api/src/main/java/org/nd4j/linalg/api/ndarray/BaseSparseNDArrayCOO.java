@@ -597,7 +597,7 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
                                         && indexes[0] instanceof NDArrayIndexAll)))
             return this;
 
-        indexes = NDArrayIndex.resolve(shapeInfoDataBuffer(), indexes);
+        indexes = NDArrayIndex.resolve(javaShapeInformation, indexes);
         ShapeOffsetResolution resolution = new ShapeOffsetResolution(this);
         resolution.exec(indexes);
 

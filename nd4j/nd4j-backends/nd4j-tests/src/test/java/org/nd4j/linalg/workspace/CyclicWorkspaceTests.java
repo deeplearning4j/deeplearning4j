@@ -18,6 +18,7 @@ package org.nd4j.linalg.workspace;
 
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -54,6 +55,21 @@ public class CyclicWorkspaceTests extends BaseNd4jTest {
 
                 log.info("Current offset: {}; Current size: {};", ws.getCurrentOffset(), ws.getCurrentSize());
             }
+        }
+    }
+
+    @Test
+    @Ignore
+    public void testGc() {
+        val indArray = Nd4j.create(4, 4);
+        indArray.putRow(0, Nd4j.create(new float[]{0, 2, -2, 0}));
+        indArray.putRow(1, Nd4j.create(new float[]{0, 1, -1, 0}));
+        indArray.putRow(2, Nd4j.create(new float[]{0, -1, 1, 0}));
+        indArray.putRow(3, Nd4j.create(new float[]{0, -2, 2, 0}));
+
+        for (int i = 0; i < 100000000; i++) {
+            indArray.getRow(i % 3);
+            //Thread.sleep(1);
         }
     }
 

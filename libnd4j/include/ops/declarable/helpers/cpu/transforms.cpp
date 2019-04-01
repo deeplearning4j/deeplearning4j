@@ -1146,7 +1146,7 @@ static void concat_(const std::vector<NDArray*>& inArrs, NDArray& output, const 
     int outDim;
     const bool isOutputVector = output.isCommonVector(outDim);
 
-    if(isOutputVector || axis == 0) {
+    if(isOutputVector || (axis == 0 && output.ordering() == 'c')) {
 
         bool allVectorsOrScalars = true;
         const uint outEws = isOutputVector ? output.stridesOf()[outDim] : output.ews();

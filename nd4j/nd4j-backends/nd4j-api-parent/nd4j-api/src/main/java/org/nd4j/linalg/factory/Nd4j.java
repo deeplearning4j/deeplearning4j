@@ -85,6 +85,7 @@ import org.nd4j.linalg.exception.ND4JUnknownDataTypeException;
 import org.nd4j.linalg.factory.Nd4jBackend.NoAvailableBackendException;
 import org.nd4j.linalg.memory.BasicMemoryManager;
 import org.nd4j.linalg.memory.MemoryManager;
+import org.nd4j.linalg.memory.deallocation.DeallocatorService;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.string.NDArrayStrings;
 import org.nd4j.linalg.util.ArrayUtil;
@@ -156,6 +157,7 @@ public class Nd4j {
     public static Nd4jBackend backend;
     public static RandomFactory randomFactory;
     private static MemoryWorkspaceManager workspaceManager;
+    private static DeallocatorService deallocatorService;
     private static final AtomicInteger numThreads = new AtomicInteger(-1);
     private static AtomicReference<DataType> defaultFloatingPointDataType;
 
@@ -7156,6 +7158,14 @@ public class Nd4j {
             return Nd4j.empty(DataType.BOOL);
         long[] shape = new long[]{array.length, array[0].length, array[0][0].length, array[0][0][0].length};
         return create(ArrayUtil.flatten(array), shape, ArrayUtil.calcStrides(shape), 'c', DataType.BOOL);
+    }
+
+
+    public static synchronized DeallocatorService getDeallocatorService() {
+        if (deallocatorService == null)
+            deallocatorService = new DeallocatorService();
+
+        return deallocatorService;
     }
 
 ///////////////////
