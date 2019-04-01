@@ -291,6 +291,10 @@
         <javacpp.version>1.5-SNAPSHOT</javacpp.version>
         <javacpp-presets.version>1.5-SNAPSHOT</javacpp-presets.version>
         <javacv.version>1.5-SNAPSHOT</javacv.version>
+
+        <python.version>3.6</python.version>
+        <cpython-platform.version>${python.version}-${javacpp-presets.version}</cpython-platform.version>
+
         <openblas.version>0.3.5</openblas.version>
         <mkl.version>2019.3</mkl.version>
         <mkl-dnn.version>0.18.1</mkl-dnn.version>

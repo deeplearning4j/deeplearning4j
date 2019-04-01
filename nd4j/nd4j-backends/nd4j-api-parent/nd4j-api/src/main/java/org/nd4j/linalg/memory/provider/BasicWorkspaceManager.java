@@ -48,9 +48,9 @@ public abstract class BasicWorkspaceManager implements MemoryWorkspaceManager {
     protected AtomicLong counter = new AtomicLong();
     protected WorkspaceConfiguration defaultConfiguration;
     protected ThreadLocal<Map<String, MemoryWorkspace>> backingMap = new ThreadLocal<>();
-    private ReferenceQueue<MemoryWorkspace> queue;
-    private WorkspaceDeallocatorThread thread;
-    private Map<String, Nd4jWorkspace.GarbageWorkspaceReference> referenceMap = new ConcurrentHashMap<>();
+    //private ReferenceQueue<MemoryWorkspace> queue;
+    //private WorkspaceDeallocatorThread thread;
+    //private Map<String, Nd4jWorkspace.GarbageWorkspaceReference> referenceMap = new ConcurrentHashMap<>();
 
     // default mode is DISABLED, as in: production mode
     protected SynchronizedObject<DebugMode> debugMode = new SynchronizedObject<>(DebugMode.DISABLED);
@@ -63,10 +63,10 @@ public abstract class BasicWorkspaceManager implements MemoryWorkspaceManager {
 
     public BasicWorkspaceManager(@NonNull WorkspaceConfiguration defaultConfiguration) {
         this.defaultConfiguration = defaultConfiguration;
-        this.queue = new ReferenceQueue<>();
+        //this.queue = new ReferenceQueue<>();
 
-        thread = new WorkspaceDeallocatorThread(this.queue);
-        thread.start();
+        //thread = new WorkspaceDeallocatorThread(this.queue);
+        //thread.start();
     }
 
     /**
@@ -130,11 +130,15 @@ public abstract class BasicWorkspaceManager implements MemoryWorkspaceManager {
     }
     */
 
+    protected abstract void pickReference(MemoryWorkspace workspace);
+    /*
     protected void pickReference(MemoryWorkspace workspace) {
-        Nd4jWorkspace.GarbageWorkspaceReference reference =
-                        new Nd4jWorkspace.GarbageWorkspaceReference(workspace, queue);
+        Nd4jWorkspace.GarbageWorkspaceReference reference = new Nd4jWorkspace.GarbageWorkspaceReference(workspace, queue);
         referenceMap.put(reference.getKey(), reference);
     }
+    */
+
+
 
     @Override
     public void setWorkspaceForCurrentThread(MemoryWorkspace workspace) {
@@ -275,6 +279,7 @@ public abstract class BasicWorkspaceManager implements MemoryWorkspaceManager {
     @Deprecated // For test use within the github.com/deeplearning4j/deeplearning4j repo only.
     public static final String WorkspaceDeallocatorThreadName = "Workspace deallocator thread";
 
+    /*
     protected class WorkspaceDeallocatorThread extends Thread implements Runnable {
         private final ReferenceQueue<MemoryWorkspace> queue;
 
@@ -330,13 +335,14 @@ public abstract class BasicWorkspaceManager implements MemoryWorkspaceManager {
                         referenceMap.remove(reference.getKey());
                     }
                 } catch (InterruptedException e) {
-                    return; /* terminate thread when being interrupted */
+                    return; // terminate thread when being interrupted
                 } catch (Exception e) {
                     //
                 }
             }
         }
     }
+    */
 
     /**
      * This method prints out basic statistics for workspaces allocated in current thread
