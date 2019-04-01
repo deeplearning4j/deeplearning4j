@@ -36,7 +36,7 @@ __host__ void oesTadGeneric(dim3 &launchDims, cudaStream_t *stream, void *vx, Nd
 
 
 
-__device__ inline int getDevicePosition(Nd4jLong *xShapeInfo, int index) {
+__device__ inline int getDevicePosition(Nd4jLong *xShapeInfo, int index, Nd4jLong length) {
     
     int xEWS = shape::elementWiseStride(xShapeInfo);
 
@@ -47,7 +47,7 @@ __device__ inline int getDevicePosition(Nd4jLong *xShapeInfo, int index) {
         return index * xEWS;
     } 
     else {                
-        return shape::getIndexOffset(index, xShapeInfo, shape::length(xShapeInfo));
+        return shape::getIndexOffset(index, xShapeInfo, length);
     }
 }
 
