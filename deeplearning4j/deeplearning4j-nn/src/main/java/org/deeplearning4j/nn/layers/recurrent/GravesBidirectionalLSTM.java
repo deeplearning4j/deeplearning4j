@@ -16,19 +16,17 @@
 
 package org.deeplearning4j.nn.layers.recurrent;
 
+import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
-import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.conf.CacheMode;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.params.GravesBidirectionalLSTMParamInitializer;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.primitives.Pair;
-import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
-
-import java.util.Map;
 
 /**
  *
@@ -57,12 +55,12 @@ public class GravesBidirectionalLSTM
     protected FwdPassReturn cachedPassForward;
     protected FwdPassReturn cachedPassBackward;
 
-    public GravesBidirectionalLSTM(NeuralNetConfiguration conf) {
-        super(conf);
+    public GravesBidirectionalLSTM(NeuralNetConfiguration conf, String weightPoolId) {
+        super(conf, weightPoolId);
     }
 
-    public GravesBidirectionalLSTM(NeuralNetConfiguration conf, INDArray input) {
-        super(conf, input);
+    public GravesBidirectionalLSTM(NeuralNetConfiguration conf, INDArray input, String weightPoolId) {
+        super(conf, input, weightPoolId);
     }
 
     @Override
@@ -134,7 +132,7 @@ public class GravesBidirectionalLSTM
 
         final Gradient correctOrderedGradient = new DefaultGradient();
 
-        for (final String key : params.keySet()) {
+        for (final String key : weightPool.params.keySet()) {
             correctOrderedGradient.setGradientFor(key, combinedGradient.getGradientFor(key));
         }
 

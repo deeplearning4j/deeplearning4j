@@ -17,6 +17,9 @@
 package org.deeplearning4j.nn.layers;
 
 
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 import lombok.val;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
@@ -29,11 +32,6 @@ import org.nd4j.linalg.learning.regularization.Regularization;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
 import org.nd4j.linalg.primitives.Pair;
 
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-
 
 /**
  * Baseline class for any Neural Network used
@@ -45,12 +43,12 @@ public abstract class BasePretrainNetwork<LayerConfT extends org.deeplearning4j.
                 extends BaseLayer<LayerConfT> {
 
 
-    public BasePretrainNetwork(NeuralNetConfiguration conf) {
-        super(conf);
+    public BasePretrainNetwork(NeuralNetConfiguration conf, String weightPoolId) {
+        super(conf, weightPoolId);
     }
 
-    public BasePretrainNetwork(NeuralNetConfiguration conf, INDArray input) {
-        super(conf, input);
+    public BasePretrainNetwork(NeuralNetConfiguration conf, INDArray input, String weightPoolId) {
+        super(conf, input, weightPoolId);
     }
 
 
@@ -127,15 +125,15 @@ public abstract class BasePretrainNetwork<LayerConfT extends org.deeplearning4j.
     @Override
     public Map<String, INDArray> paramTable(boolean backpropParamsOnly) {
         if (!backpropParamsOnly)
-            return params;
+            return weightPool.params;
         Map<String, INDArray> map = new LinkedHashMap<>();
-        map.put(PretrainParamInitializer.WEIGHT_KEY, params.get(PretrainParamInitializer.WEIGHT_KEY));
-        map.put(PretrainParamInitializer.BIAS_KEY, params.get(PretrainParamInitializer.BIAS_KEY));
+        map.put(PretrainParamInitializer.WEIGHT_KEY, weightPool.params.get(PretrainParamInitializer.WEIGHT_KEY));
+        map.put(PretrainParamInitializer.BIAS_KEY, weightPool.params.get(PretrainParamInitializer.BIAS_KEY));
         return map;
     }
 
     public INDArray params() {
-        return paramsFlattened;
+        return weightPool.paramsFlattened;
     }
 
     /**The number of parameters for the model, for backprop (i.e., excluding visible bias)
@@ -143,7 +141,7 @@ public abstract class BasePretrainNetwork<LayerConfT extends org.deeplearning4j.
      */
     public long numParams() {
         int ret = 0;
-        for (Map.Entry<String, INDArray> entry : params.entrySet()) {
+        for (Map.Entry<String, INDArray> entry : weightPool.params.entrySet()) {
             ret += entry.getValue().length();
         }
         return ret;
@@ -151,7 +149,7 @@ public abstract class BasePretrainNetwork<LayerConfT extends org.deeplearning4j.
 
     @Override
     public void setParams(INDArray params) {
-        if (params == paramsFlattened)
+        if (params == weightPool.paramsFlattened)
             return; //No op
 
         //SetParams has two different uses: during pretrain vs. backprop.
@@ -170,7 +168,7 @@ public abstract class BasePretrainNetwork<LayerConfT extends org.deeplearning4j.
         }
 
         // Set for backprop and only W & hb
-        paramsFlattened.assign(params);
+        weightPool.paramsFlattened.assign(params);
 
     }
 
@@ -185,7 +183,7 @@ public abstract class BasePretrainNetwork<LayerConfT extends org.deeplearning4j.
         result.getFirst().gradientForVariable().put(PretrainParamInitializer.VISIBLE_BIAS_KEY, vBiasGradient);
         vBiasGradient.assign(0);
 
-        weightNoiseParams.clear();
+        weightPool.weightNoiseParams.clear();
 
         return result;
     }

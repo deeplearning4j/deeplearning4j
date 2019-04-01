@@ -16,7 +16,15 @@
 
 package org.deeplearning4j.nn.conf.layers;
 
-import lombok.*;
+import java.util.Collection;
+import java.util.Map;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.NonNull;
+import lombok.Setter;
+import lombok.ToString;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
@@ -29,10 +37,6 @@ import org.deeplearning4j.optimize.api.TrainingListener;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
-import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction;
-
-import java.util.Collection;
-import java.util.Map;
 
 /**
  * 3D Convolutional Neural Network Loss Layer.<br> Handles calculation of gradients etc for various loss (objective)
@@ -74,7 +78,7 @@ public class Cnn3DLossLayer extends FeedForwardLayer {
     public Layer instantiate(NeuralNetConfiguration conf, Collection<TrainingListener> trainingListeners,
                     int layerIndex, INDArray layerParamsView, boolean initializeParams) {
         org.deeplearning4j.nn.layers.convolution.Cnn3DLossLayer ret =
-                        new org.deeplearning4j.nn.layers.convolution.Cnn3DLossLayer(conf);
+                        new org.deeplearning4j.nn.layers.convolution.Cnn3DLossLayer(conf, weightPoolId);
         ret.setListeners(trainingListeners);
         ret.setIndex(layerIndex);
         ret.setParamsViewArray(layerParamsView);

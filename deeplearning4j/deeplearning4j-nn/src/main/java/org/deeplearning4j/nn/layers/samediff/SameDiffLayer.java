@@ -16,6 +16,10 @@
 
 package org.deeplearning4j.nn.layers.samediff;
 
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import lombok.val;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -23,6 +27,9 @@ import org.deeplearning4j.nn.conf.layers.samediff.AbstractSameDiffLayer;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.AbstractLayer;
+import org.deeplearning4j.nn.weightsharing.WeightPool;
+import org.deeplearning4j.nn.workspace.ArrayType;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.base.Preconditions;
@@ -31,10 +38,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.layers.ExternalErrorsFunction;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
-import org.deeplearning4j.nn.workspace.ArrayType;
-import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
-
-import java.util.*;
 
 public class SameDiffLayer extends AbstractLayer<AbstractSameDiffLayer> {
 
@@ -45,17 +48,25 @@ public class SameDiffLayer extends AbstractLayer<AbstractSameDiffLayer> {
     protected ExternalErrorsFunction fn;
     protected String outputKey;
 
-    protected INDArray params;
     protected INDArray gradients;
-    protected Map<String,INDArray> paramTable;
     protected Map<String,INDArray> gradTable;
 
+    protected WeightPool weightPool;
 
-    public SameDiffLayer(NeuralNetConfiguration conf){
+    public SameDiffLayer(NeuralNetConfiguration conf, String weightPoolId){
         super(conf);
+        weightPool = WeightPool.getOrCreatePool(weightPoolId);
     }
 
 
+
+    protected INDArray getParams(){
+        return weightPool.paramsFlattened;
+    }
+
+    protected Map<String, INDArray> getParamTable(){
+        return weightPool.params;
+    }
 
     @Override
     public Layer clone() {
@@ -82,8 +93,8 @@ public class SameDiffLayer extends AbstractLayer<AbstractSameDiffLayer> {
         try(MemoryWorkspace ws = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()) {
 //            sameDiff.clearExecutionCache();
             sameDiff.associateArrayWithVariable(input.dup(), sameDiff.getVariable(INPUT_KEY));
-            for(String s : paramTable.keySet() ) {
-                sameDiff.associateArrayWithVariable(paramTable.get(s), s);
+            for(String s : getParamTable().keySet() ) {
+                sameDiff.associateArrayWithVariable(getParamTable().get(s), s);
             }
 
             Map<String,INDArray> out = sameDiff.exec(null, outputKey);
@@ -105,13 +116,13 @@ public class SameDiffLayer extends AbstractLayer<AbstractSameDiffLayer> {
             sameDiff.associateArrayWithVariable(input.dup(), sameDiff.getVariable(INPUT_KEY));
             fn.updateVariable(outputVar.getVarName(), epsilon.dup());
 
-            for(String s : paramTable.keySet() ){
+            for(String s : getParamTable().keySet() ){
                 //TODO this should only be necessary, in theory, once!
-                sameDiff.associateArrayWithVariable(paramTable.get(s), s);
+                sameDiff.associateArrayWithVariable(getParamTable().get(s), s);
             }
 
             sameDiff.execBackwards(Collections.<String, INDArray>emptyMap());
-            for(String s : paramTable.keySet() ){
+            for(String s : getParamTable().keySet() ){
                 INDArray sdGrad = sameDiff.grad(s).getArr();
                 INDArray dl4jGrad = gradTable.get(s);
                 dl4jGrad.assign(sdGrad);                                            //TODO OPTIMIZE THIS
@@ -129,25 +140,25 @@ public class SameDiffLayer extends AbstractLayer<AbstractSameDiffLayer> {
      */
     @Override
     public INDArray params() {
-        return params;
+        return getParams();
     }
 
     @Override
     public INDArray getParam(String param) {
-        return paramTable.get(param);
+        return getParamTable().get(param);
     }
 
     @Override
     public long numParams(){
-        return params == null ? 0 : (int)params.length();
+        return getParams() == null ? 0 : (int)getParams().length();
     }
 
     @Override
     public void setParam(String key, INDArray val) {
-        if(!paramTable.containsKey(key)){
+        if(!getParamTable().containsKey(key)){
             throw new IllegalArgumentException("Cannot set parameter, invalid/unknown parameter key: " + key);
         }
-        INDArray current = paramTable.get(key);
+        INDArray current = getParamTable().get(key);
         if(!Arrays.equals(current.shape(), val.shape())){
             throw new IllegalArgumentException("Cannot set parameter \"" + key + "\", invalid shape: parameter array has shape "
                     + Arrays.toString(current.shape()) + ", trying to set parameter of shape " + Arrays.toString(val.shape()));
@@ -167,7 +178,7 @@ public class SameDiffLayer extends AbstractLayer<AbstractSameDiffLayer> {
 
     @Override
     public void setParamsViewArray(INDArray params) {
-        this.params = params;
+        this.weightPool.paramsFlattened = params;
     }
 
     @Override
@@ -183,8 +194,8 @@ public class SameDiffLayer extends AbstractLayer<AbstractSameDiffLayer> {
 
     @Override
     public void setParamTable(Map<String, INDArray> paramTable) {
-        if(this.paramTable == null){
-            this.paramTable = paramTable;
+        if(this.getParamTable() == null){
+            weightPool.params = paramTable;
         } else {
             for (Map.Entry<String, INDArray> e : paramTable.entrySet()) {
                 setParam(e.getKey(), e.getValue());
@@ -199,7 +210,7 @@ public class SameDiffLayer extends AbstractLayer<AbstractSameDiffLayer> {
 
     @Override
     public Map<String, INDArray> paramTable(boolean backpropParamsOnly) {
-        return paramTable;
+        return getParamTable();
     }
 
     protected void doInit(){

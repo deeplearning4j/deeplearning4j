@@ -16,7 +16,18 @@
 
 package org.deeplearning4j.nn.conf.layers;
 
-import lombok.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import lombok.ToString;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.api.layers.LayerConstraint;
@@ -28,8 +39,6 @@ import org.deeplearning4j.optimize.api.TrainingListener;
 import org.deeplearning4j.util.ConvolutionUtils;
 import org.deeplearning4j.util.ValidationUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
-
-import java.util.*;
 
 /**
  * 2D Separable convolution layer configuration.
@@ -129,7 +138,7 @@ public class SeparableConvolution2D extends ConvolutionLayer {
         LayerValidation.assertNInNOutSet("SeparableConvolution2D", getLayerName(), layerIndex, getNIn(), getNOut());
 
         org.deeplearning4j.nn.layers.convolution.SeparableConvolution2DLayer ret =
-                        new org.deeplearning4j.nn.layers.convolution.SeparableConvolution2DLayer(conf);
+                        new org.deeplearning4j.nn.layers.convolution.SeparableConvolution2DLayer(conf, weightPoolId);
         ret.setListeners(trainingListeners);
         ret.setIndex(layerIndex);
         ret.setParamsViewArray(layerParamsView);

@@ -16,6 +16,10 @@
 
 package org.deeplearning4j.nn.layers.normalization;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -42,8 +46,6 @@ import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.util.OneTimeLogger;
 
-import java.util.*;
-
 /**
  * Batch normalization layer.<br>
  * Rerences:<br>
@@ -66,8 +68,8 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
     protected INDArray xMu;
     protected INDArray xHat;
 
-    public BatchNormalization(NeuralNetConfiguration conf) {
-        super(conf);
+    public BatchNormalization(NeuralNetConfiguration conf, String weightPoolId) {
+        super(conf, weightPoolId);
         initializeHelper();
     }
 
@@ -110,9 +112,9 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
         val batchSize = epsilon.size(0); // number examples in batch
         org.deeplearning4j.nn.conf.layers.BatchNormalization layerConf = layerConf();
 
-        INDArray globalMean = params.get(BatchNormalizationParamInitializer.GLOBAL_MEAN);
-        INDArray globalVar = params.get(BatchNormalizationParamInitializer.GLOBAL_VAR);             //One of log10std will be null depending on config
-        INDArray globalLog10Std = params.get(BatchNormalizationParamInitializer.GLOBAL_LOG_STD);
+        INDArray globalMean = weightPool.params.get(BatchNormalizationParamInitializer.GLOBAL_MEAN);
+        INDArray globalVar = weightPool.params.get(BatchNormalizationParamInitializer.GLOBAL_VAR);             //One of log10std will be null depending on config
+        INDArray globalLog10Std = weightPool.params.get(BatchNormalizationParamInitializer.GLOBAL_LOG_STD);
         INDArray gamma = null;
         INDArray dGammaView;
         INDArray dBetaView;

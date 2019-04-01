@@ -16,14 +16,13 @@
 
 package org.deeplearning4j.nn.conf.layers.samediff;
 
+import java.util.Collection;
+import java.util.Map;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.optimize.api.TrainingListener;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
-
-import java.util.Collection;
-import java.util.Map;
 
 /**
  * A base layer used for implementing Deeplearning4j Output layers using SameDiff. These layers are scoring/output layers:
@@ -92,7 +91,7 @@ public abstract class SameDiffOutputLayer extends AbstractSameDiffLayer {
                     Collection<TrainingListener> trainingListeners, int layerIndex, INDArray layerParamsView,
                     boolean initializeParams) {
         org.deeplearning4j.nn.layers.samediff.SameDiffOutputLayer ret =
-                        new org.deeplearning4j.nn.layers.samediff.SameDiffOutputLayer(conf);
+                        new org.deeplearning4j.nn.layers.samediff.SameDiffOutputLayer(conf, weightPoolId);
         ret.setIndex(layerIndex);
         ret.setParamsViewArray(layerParamsView);
         Map<String, INDArray> paramTable = initializer().init(conf, layerParamsView, initializeParams);

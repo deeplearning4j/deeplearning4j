@@ -16,7 +16,14 @@
 
 package org.deeplearning4j.nn.conf.layers;
 
-import lombok.*;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.NoArgsConstructor;
+import lombok.ToString;
+import lombok.val;
 import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -29,10 +36,6 @@ import org.deeplearning4j.nn.params.EmptyParamInitializer;
 import org.deeplearning4j.optimize.api.TrainingListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.learning.regularization.Regularization;
-
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
 
 /**
  * Dropout layer. This layer simply applies dropout at training time, and passes activations through unmodified at test
@@ -60,7 +63,7 @@ public class DropoutLayer extends FeedForwardLayer {
     public org.deeplearning4j.nn.api.Layer instantiate(NeuralNetConfiguration conf,
                     Collection<TrainingListener> trainingListeners, int layerIndex, INDArray layerParamsView,
                     boolean initializeParams) {
-        org.deeplearning4j.nn.layers.DropoutLayer ret = new org.deeplearning4j.nn.layers.DropoutLayer(conf);
+        org.deeplearning4j.nn.layers.DropoutLayer ret = new org.deeplearning4j.nn.layers.DropoutLayer(conf, weightPoolId);
         ret.setListeners(trainingListeners);
         ret.setIndex(layerIndex);
         ret.setParamsViewArray(layerParamsView);

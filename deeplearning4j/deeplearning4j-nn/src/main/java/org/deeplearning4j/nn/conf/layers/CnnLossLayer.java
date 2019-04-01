@@ -16,6 +16,8 @@
 
 package org.deeplearning4j.nn.conf.layers;
 
+import java.util.Collection;
+import java.util.Map;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
@@ -33,9 +35,6 @@ import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
 import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction;
-
-import java.util.Collection;
-import java.util.Map;
 
 /**
  * Convolutional Neural Network Loss Layer.<br> Handles calculation of gradients etc for various loss (objective)
@@ -71,7 +70,7 @@ public class CnnLossLayer extends FeedForwardLayer {
     public Layer instantiate(NeuralNetConfiguration conf, Collection<TrainingListener> trainingListeners,
                     int layerIndex, INDArray layerParamsView, boolean initializeParams) {
         org.deeplearning4j.nn.layers.convolution.CnnLossLayer ret =
-                        new org.deeplearning4j.nn.layers.convolution.CnnLossLayer(conf);
+                        new org.deeplearning4j.nn.layers.convolution.CnnLossLayer(conf, weightPoolId);
         ret.setListeners(trainingListeners);
         ret.setIndex(layerIndex);
         ret.setParamsViewArray(layerParamsView);

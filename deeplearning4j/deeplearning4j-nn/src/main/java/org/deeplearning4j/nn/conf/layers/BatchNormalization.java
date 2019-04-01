@@ -16,7 +16,18 @@
 
 package org.deeplearning4j.nn.conf.layers;
 
-import lombok.*;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.ToString;
+import lombok.val;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.api.layers.LayerConstraint;
@@ -33,11 +44,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.learning.config.IUpdater;
 import org.nd4j.linalg.learning.config.NoOp;
 import org.nd4j.linalg.learning.regularization.Regularization;
-
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
 
 /**
  * Batch normalization layer<br> See: Ioffe and Szegedy, 2014, <i>Batch Normalization: Accelerating Deep Network
@@ -89,7 +95,7 @@ public class BatchNormalization extends FeedForwardLayer {
         LayerValidation.assertNOutSet("BatchNormalization", getLayerName(), layerIndex, getNOut());
 
         org.deeplearning4j.nn.layers.normalization.BatchNormalization ret =
-                        new org.deeplearning4j.nn.layers.normalization.BatchNormalization(conf);
+                        new org.deeplearning4j.nn.layers.normalization.BatchNormalization(conf, weightPoolId);
         ret.setListeners(trainingListeners);
         ret.setIndex(layerIndex);
         ret.setParamsViewArray(layerParamsView);

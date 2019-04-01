@@ -17,6 +17,8 @@
 package org.deeplearning4j.nn.layers.custom.testclasses;
 
 
+import java.util.Collection;
+import java.util.Map;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
@@ -30,9 +32,6 @@ import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.deeplearning4j.optimize.api.TrainingListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
-
-import java.util.Collection;
-import java.util.Map;
 
 /**
  * A custom output layer for testing. Functionally equivalent to {@link OutputLayer}, but defined here to test JSON
@@ -53,7 +52,7 @@ public class CustomOutputLayer extends BaseOutputLayer {
     @Override
     public Layer instantiate(NeuralNetConfiguration conf, Collection<TrainingListener> trainingListeners,
             int layerIndex, INDArray layerParamsView, boolean initializeParams) {
-        CustomOutputLayerImpl ret = new CustomOutputLayerImpl(conf);
+        CustomOutputLayerImpl ret = new CustomOutputLayerImpl(conf, weightPoolId);
         ret.setListeners(trainingListeners);
         ret.setIndex(layerIndex);
         ret.setParamsViewArray(layerParamsView);

@@ -16,6 +16,8 @@
 
 package org.deeplearning4j.nn.layers.convolution;
 
+import java.util.Arrays;
+import java.util.List;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.val;
@@ -26,18 +28,15 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.BaseLayer;
+import org.deeplearning4j.nn.workspace.ArrayType;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.deeplearning4j.util.ConvolutionUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
 import org.nd4j.linalg.primitives.Pair;
-import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
-import org.deeplearning4j.nn.workspace.ArrayType;
 import org.nd4j.linalg.util.ArrayUtil;
-
-import java.util.Arrays;
-import java.util.List;
 
 /**
  * Convolutional Neural Network Loss Layer.<br>
@@ -61,8 +60,8 @@ public class CnnLossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.Cn
     @Getter
     protected INDArray labels;
 
-    public CnnLossLayer(NeuralNetConfiguration conf) {
-        super(conf);
+    public CnnLossLayer(NeuralNetConfiguration conf, String weightPoolId) {
+        super(conf, weightPoolId);
     }
 
     @Override

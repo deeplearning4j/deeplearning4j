@@ -16,12 +16,19 @@
 
 package org.deeplearning4j.nn.layers;
 
+import java.lang.reflect.Constructor;
+import java.util.Arrays;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import org.deeplearning4j.exception.DL4JInvalidInputException;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
+import org.deeplearning4j.nn.weightsharing.WeightPool;
 import org.deeplearning4j.nn.workspace.ArrayType;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.deeplearning4j.optimize.Solver;
@@ -35,9 +42,6 @@ import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.learning.regularization.Regularization;
 import org.nd4j.linalg.primitives.Pair;
 
-import java.lang.reflect.Constructor;
-import java.util.*;
-
 /**
  * A layer with parameters
  * @author Adam Gibson
@@ -45,23 +49,32 @@ import java.util.*;
 public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.layers.BaseLayer>
         extends AbstractLayer<LayerConfT> {
 
-    protected INDArray paramsFlattened;
     protected INDArray gradientsFlattened;
-    protected Map<String, INDArray> params;
     protected transient Map<String, INDArray> gradientViews;
     protected double score = 0.0;
     protected ConvexOptimizer optimizer;
     protected Gradient gradient;
     protected Solver solver;
 
-    protected Map<String,INDArray> weightNoiseParams = new HashMap<>();
+    protected WeightPool weightPool;
 
-    public BaseLayer(NeuralNetConfiguration conf) {
+    public BaseLayer(NeuralNetConfiguration conf, String weightPoolId) {
         super(conf);
+        weightPool = WeightPool.getOrCreatePool(weightPoolId);
     }
 
-    public BaseLayer(NeuralNetConfiguration conf, INDArray input) {
-        this(conf);
+    public BaseLayer(NeuralNetConfiguration conf, INDArray input, String weightPoolId) {
+        this(conf, weightPoolId);
+        this.input = input;
+    }
+
+    public BaseLayer(NeuralNetConfiguration conf, WeightPool weightPool) {
+        super(conf);
+        this.weightPool = weightPool;
+    }
+
+    public BaseLayer(NeuralNetConfiguration conf, INDArray input, WeightPool weightPool) {
+        this(conf, weightPool);
         this.input = input;
     }
 
@@ -108,7 +121,7 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
         Nd4j.gemm(input.castTo(weightGrad.dataType()), delta, weightGrad, true, false, 1.0, 0.0);           //TODO avoid castTo?
         ret.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, weightGrad);
 
-        weightNoiseParams.clear();
+        weightPool.weightNoiseParams.clear();
 
         epsilonNext = backpropDropOutIfPresent(epsilonNext);
         return new Pair<>(ret, epsilonNext);
@@ -172,25 +185,25 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
      */
     @Override
     public INDArray params() {
-        return paramsFlattened;
+        return weightPool.paramsFlattened;
     }
 
     @Override
     public INDArray getParam(String param) {
-        return params.get(param);
+        return weightPool.params.get(param);
     }
 
     @Override
     public void setParam(String key, INDArray val) {
-        if (params.containsKey(key))
-            params.get(key).assign(val);
+        if (weightPool.params.containsKey(key))
+            weightPool.params.get(key).assign(val);
         else
-            params.put(key, val);
+            weightPool.params.put(key, val);
     }
 
     @Override
     public void setParams(INDArray params) {
-        if (params == paramsFlattened)
+        if (params == weightPool.paramsFlattened)
             return; //no op
         setParams(params, 'f');
     }
@@ -204,7 +217,7 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
             throw new IllegalArgumentException("Unable to set parameters: must be of length " + length
                     + ", got params of length " + params.length() + " - " + layerId());
         int idx = 0;
-        Set<String> paramKeySet = this.params.keySet();
+        Set<String> paramKeySet = this.weightPool.params.keySet();
         for (String s : paramKeySet) {
             INDArray param = getParam(s);
             INDArray get = params.get(NDArrayIndex.point(0), NDArrayIndex.interval(idx, idx + param.length()));
@@ -218,11 +231,11 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
 
     @Override
     public void setParamsViewArray(INDArray params) {
-        if (this.params != null && params.length() != numParams())
+        if (this.weightPool.params != null && params.length() != numParams())
             throw new IllegalArgumentException("Invalid input: expect params of length " + numParams()
                     + ", got params of length " + params.length() + " - " + layerId());
 
-        this.paramsFlattened = params;
+        this.weightPool.paramsFlattened = params;
     }
 
     @Override
@@ -232,7 +245,7 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
 
     @Override
     public void setBackpropGradientsViewArray(INDArray gradients) {
-        if (this.params != null && gradients.length() != numParams())
+        if (this.weightPool.params != null && gradients.length() != numParams())
             throw new IllegalArgumentException("Invalid input: expect gradients array of length " + numParams(true)
                     + ", got array of length " + gradients.length() + " - " + layerId());
 
@@ -242,7 +255,7 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
 
     @Override
     public void setParamTable(Map<String, INDArray> paramTable) {
-        this.params = paramTable;
+        this.weightPool.params = paramTable;
     }
 
     @Override
@@ -252,7 +265,7 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
 
     @Override
     public Map<String, INDArray> paramTable(boolean backpropParamsOnly) {
-        return params;
+        return weightPool.params;
     }
 
     /**
@@ -268,10 +281,10 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
     protected INDArray getParamWithNoise(String param, boolean training, LayerWorkspaceMgr workspaceMgr){
         INDArray p;
         if(layerConf().getWeightNoise() != null){
-            if(training && weightNoiseParams.size() > 0 && weightNoiseParams.containsKey(param) ){
+            if(training && weightPool.weightNoiseParams.size() > 0 && weightPool.weightNoiseParams.containsKey(param) ){
                 //Re-use these weights for both forward pass and backprop - don't want to use 2 different params here
                 //These should be cleared during  backprop
-                return weightNoiseParams.get(param);
+                return weightPool.weightNoiseParams.get(param);
             } else {
                 try (MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
                     p = layerConf().getWeightNoise().getParameter(this, param, getIterationCount(), getEpochCount(), training, workspaceMgr);
@@ -280,7 +293,7 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
 
             if(training){
                 //Store for re-use in backprop
-                weightNoiseParams.put(param, p);
+                weightPool.weightNoiseParams.put(param, p);
             }
         } else {
             return getParam(param);
@@ -368,7 +381,7 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
             Constructor c = getClass().getConstructor(NeuralNetConfiguration.class);
             layer = (Layer) c.newInstance(conf);
             Map<String, INDArray> linkedTable = new LinkedHashMap<>();
-            for (Map.Entry<String, INDArray> entry : params.entrySet()) {
+            for (Map.Entry<String, INDArray> entry : weightPool.params.entrySet()) {
                 linkedTable.put(entry.getKey(), entry.getValue().dup());
             }
             layer.setParamTable(linkedTable);
@@ -388,7 +401,7 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
     @Override
     public long numParams() {
         int ret = 0;
-        for (INDArray val : params.values())
+        for (INDArray val : weightPool.params.values())
             ret += val.length();
         return ret;
     }
@@ -415,12 +428,12 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
     @Override
     public void clear(){
         super.clear();
-        weightNoiseParams.clear();
+        weightPool.weightNoiseParams.clear();
     }
 
     @Override
     public void clearNoiseWeightParams(){
-        weightNoiseParams.clear();
+        weightPool.weightNoiseParams.clear();
     }
 
     /**

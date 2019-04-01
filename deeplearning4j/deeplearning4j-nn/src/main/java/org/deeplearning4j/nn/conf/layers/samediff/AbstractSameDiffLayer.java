@@ -16,6 +16,10 @@
 
 package org.deeplearning4j.nn.conf.layers.samediff;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
@@ -40,11 +44,6 @@ import org.nd4j.linalg.learning.regularization.L2Regularization;
 import org.nd4j.linalg.learning.regularization.Regularization;
 import org.nd4j.linalg.learning.regularization.WeightDecay;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-
 @Slf4j
 @Data
 @EqualsAndHashCode(callSuper = true)
@@ -59,6 +58,8 @@ public abstract class AbstractSameDiffLayer extends Layer {
 
     private SDLayerParams layerParams;
 
+    protected String weightPoolId;
+
     @Override
     public List<Regularization> getRegularizationByParam(String paramName) {
         if(layerParams.isWeightParam(paramName)){
@@ -67,6 +68,12 @@ public abstract class AbstractSameDiffLayer extends Layer {
             return regularizationBias;
         }
         return null;
+    }
+
+    public AbstractSameDiffLayer cloneAndShareWeights() {
+        AbstractSameDiffLayer clone = (AbstractSameDiffLayer) clone();
+        clone.weightPoolId = this.weightPoolId;
+        return clone;
     }
 
     protected AbstractSameDiffLayer(Builder builder) {

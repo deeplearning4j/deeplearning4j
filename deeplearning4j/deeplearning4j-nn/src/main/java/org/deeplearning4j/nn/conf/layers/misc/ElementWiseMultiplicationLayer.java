@@ -16,7 +16,13 @@
 
 package org.deeplearning4j.nn.conf.layers.misc;
 
-import lombok.*;
+import java.util.Collection;
+import java.util.Map;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.ToString;
+import lombok.val;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -27,9 +33,6 @@ import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.deeplearning4j.nn.params.ElementWiseParamInitializer;
 import org.deeplearning4j.optimize.api.TrainingListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
-
-import java.util.Collection;
-import java.util.Map;
 
 
 /**
@@ -66,7 +69,7 @@ public class ElementWiseMultiplicationLayer extends org.deeplearning4j.nn.conf.l
                             + nIn + ", nOut=" + nOut);
         }
         org.deeplearning4j.nn.layers.feedforward.elementwise.ElementWiseMultiplicationLayer ret =
-                        new org.deeplearning4j.nn.layers.feedforward.elementwise.ElementWiseMultiplicationLayer(conf);
+                        new org.deeplearning4j.nn.layers.feedforward.elementwise.ElementWiseMultiplicationLayer(conf, weightPoolId);
         ret.setListeners(trainingListeners);
         ret.setIndex(layerIndex);
         ret.setParamsViewArray(layerParamsView);

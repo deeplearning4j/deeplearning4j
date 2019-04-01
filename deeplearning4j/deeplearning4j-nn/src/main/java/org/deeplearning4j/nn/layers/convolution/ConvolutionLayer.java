@@ -17,6 +17,7 @@
 package org.deeplearning4j.nn.layers.convolution;
 
 
+import java.util.Arrays;
 import org.deeplearning4j.exception.DL4JInvalidInputException;
 import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.conf.CacheMode;
@@ -28,6 +29,8 @@ import org.deeplearning4j.nn.layers.BaseLayer;
 import org.deeplearning4j.nn.layers.LayerHelper;
 import org.deeplearning4j.nn.layers.mkldnn.MKLDNNConvHelper;
 import org.deeplearning4j.nn.params.ConvolutionParamInitializer;
+import org.deeplearning4j.nn.workspace.ArrayType;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.deeplearning4j.util.ConvolutionUtils;
 import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
@@ -36,13 +39,9 @@ import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.convolution.Convolution;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
-import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
-import org.deeplearning4j.nn.workspace.ArrayType;
 import org.nd4j.util.OneTimeLogger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.Arrays;
 
 
 /**
@@ -61,14 +60,14 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
     protected transient INDArray dummyBias;     //Used only when: hasBias == false AND helpers are used
     protected transient INDArray dummyBiasGrad; //As above
 
-    public ConvolutionLayer(NeuralNetConfiguration conf) {
-        super(conf);
+    public ConvolutionLayer(NeuralNetConfiguration conf, String weightPoolId) {
+        super(conf, weightPoolId);
         initializeHelper();
         convolutionMode = ((org.deeplearning4j.nn.conf.layers.ConvolutionLayer) conf().getLayer()).getConvolutionMode();
     }
 
-    public ConvolutionLayer(NeuralNetConfiguration conf, INDArray input) {
-        super(conf, input);
+    public ConvolutionLayer(NeuralNetConfiguration conf, INDArray input, String weightPoolId) {
+        super(conf, input, weightPoolId);
         initializeHelper();
     }
 
@@ -242,7 +241,7 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         }
         retGradient.setGradientFor(ConvolutionParamInitializer.WEIGHT_KEY, weightGradView, 'c');
 
-        weightNoiseParams.clear();
+        weightPool.weightNoiseParams.clear();
 
         epsNext = backpropDropOutIfPresent(epsNext);
         return new Pair<>(retGradient, epsNext);

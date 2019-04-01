@@ -16,6 +16,7 @@
 
 package org.deeplearning4j.nn.layers.convolution;
 
+import java.util.Arrays;
 import lombok.val;
 import org.deeplearning4j.exception.DL4JInvalidInputException;
 import org.deeplearning4j.nn.conf.CacheMode;
@@ -34,8 +35,6 @@ import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
 
-import java.util.Arrays;
-
 /**
  * 2D depth-wise convolution layer configuration.
  * <p>
@@ -48,12 +47,12 @@ import java.util.Arrays;
  */
 public class DepthwiseConvolution2DLayer extends ConvolutionLayer {
 
-    public DepthwiseConvolution2DLayer(NeuralNetConfiguration conf) {
-        super(conf);
+    public DepthwiseConvolution2DLayer(NeuralNetConfiguration conf, String weightPoolId) {
+        super(conf, weightPoolId);
     }
 
-    public DepthwiseConvolution2DLayer(NeuralNetConfiguration conf, INDArray input) {
-        super(conf, input);
+    public DepthwiseConvolution2DLayer(NeuralNetConfiguration conf, INDArray input, String weightPoolId) {
+        super(conf, input, weightPoolId);
     }
 
 
@@ -142,7 +141,7 @@ public class DepthwiseConvolution2DLayer extends ConvolutionLayer {
         }
         retGradient.setGradientFor(DepthwiseConvolutionParamInitializer.WEIGHT_KEY, weightGradView, 'c');
 
-        weightNoiseParams.clear();
+        weightPool.weightNoiseParams.clear();
 
         outEpsilon = backpropDropOutIfPresent(outEpsilon);
         return new Pair<>(retGradient, outEpsilon);

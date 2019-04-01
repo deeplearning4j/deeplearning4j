@@ -16,6 +16,11 @@
 
 package org.deeplearning4j.nn.layers.samediff;
 
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.val;
@@ -25,6 +30,7 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.AbstractLayer;
+import org.deeplearning4j.nn.weightsharing.WeightPool;
 import org.deeplearning4j.nn.workspace.ArrayType;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.nd4j.autodiff.samediff.SDVariable;
@@ -32,13 +38,10 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.impl.layers.ExternalErrorsFunction;
 import org.nd4j.linalg.dataset.api.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
-
-import java.util.*;
 
 public class SameDiffOutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.layers.samediff.SameDiffOutputLayer>
     implements IOutputLayer {
@@ -53,14 +56,25 @@ public class SameDiffOutputLayer extends AbstractLayer<org.deeplearning4j.nn.con
     @Getter @Setter
     protected INDArray labels;
 
-    protected INDArray params;
     protected INDArray gradients;
-    protected Map<String,INDArray> paramTable;
     protected Map<String,INDArray> gradTable;
 
+    protected WeightPool weightPool;
 
-    public SameDiffOutputLayer(NeuralNetConfiguration conf){
+
+    public SameDiffOutputLayer(NeuralNetConfiguration conf, String weightPoolId){
         super(conf);
+        weightPool = WeightPool.getOrCreatePool(weightPoolId);
+    }
+
+
+
+    protected INDArray getParams(){
+        return weightPool.paramsFlattened;
+    }
+
+    protected Map<String, INDArray> getParamTable(){
+        return weightPool.params;
     }
 
 
@@ -104,8 +118,8 @@ public class SameDiffOutputLayer extends AbstractLayer<org.deeplearning4j.nn.con
             if(layerConf().labelsRequired() && labels != null) {
                 sameDiff.associateArrayWithVariable(labels.dup(), sameDiff.getVariable(LABELS_KEY));
             }
-            for(String s : paramTable.keySet() ) {
-                sameDiff.associateArrayWithVariable(paramTable.get(s), s);
+            for(String s : getParamTable().keySet() ) {
+                sameDiff.associateArrayWithVariable(getParamTable().get(s), s);
             }
 
             INDArray score = sameDiff.execAndEndResult();
@@ -144,13 +158,13 @@ public class SameDiffOutputLayer extends AbstractLayer<org.deeplearning4j.nn.con
                 sameDiff.associateArrayWithVariable(castLabels, sameDiff.getVariable(LABELS_KEY));
             }
 
-            for(String s : paramTable.keySet() ){
+            for(String s : getParamTable().keySet() ){
                 //TODO this should only be necessary, in theory, once!
-                sameDiff.associateArrayWithVariable(paramTable.get(s), s);
+                sameDiff.associateArrayWithVariable(getParamTable().get(s), s);
             }
 
             sameDiff.execBackwards(Collections.<String, INDArray>emptyMap());
-            for(String s : paramTable.keySet() ){
+            for(String s : getParamTable().keySet() ){
                 INDArray sdGrad = sameDiff.grad(s).getArr();
                 INDArray dl4jGrad = gradTable.get(s);
                 dl4jGrad.assign(sdGrad);                                            //TODO OPTIMIZE THIS
@@ -168,25 +182,25 @@ public class SameDiffOutputLayer extends AbstractLayer<org.deeplearning4j.nn.con
      */
     @Override
     public INDArray params() {
-        return params;
+        return getParams();
     }
 
     @Override
     public INDArray getParam(String param) {
-        return paramTable.get(param);
+        return getParamTable().get(param);
     }
 
     @Override
     public long numParams(){
-        return params == null ? 0 : (int)params.length();
+        return getParams() == null ? 0 : (int)getParams().length();
     }
 
     @Override
     public void setParam(String key, INDArray val) {
-        if(!paramTable.containsKey(key)){
+        if(!getParamTable().containsKey(key)){
             throw new IllegalArgumentException("Cannot set parameter, invalid/unknown parameter key: " + key);
         }
-        INDArray current = paramTable.get(key);
+        INDArray current = getParamTable().get(key);
         if(!Arrays.equals(current.shape(), val.shape())){
             throw new IllegalArgumentException("Cannot set parameter \"" + key + "\", invalid shape: parameter array has shape "
                     + Arrays.toString(current.shape()) + ", trying to set parameter of shape " + Arrays.toString(val.shape()));
@@ -206,7 +220,7 @@ public class SameDiffOutputLayer extends AbstractLayer<org.deeplearning4j.nn.con
 
     @Override
     public void setParamsViewArray(INDArray params) {
-        this.params = params;
+        this.weightPool.paramsFlattened = params;
     }
 
     @Override
@@ -222,8 +236,8 @@ public class SameDiffOutputLayer extends AbstractLayer<org.deeplearning4j.nn.con
 
     @Override
     public void setParamTable(Map<String, INDArray> paramTable) {
-        if(this.paramTable == null){
-            this.paramTable = paramTable;
+        if(this.getParamTable() == null){
+            this.weightPool.params = paramTable;
         } else {
             for (Map.Entry<String, INDArray> e : paramTable.entrySet()) {
                 setParam(e.getKey(), e.getValue());
@@ -238,7 +252,7 @@ public class SameDiffOutputLayer extends AbstractLayer<org.deeplearning4j.nn.con
 
     @Override
     public Map<String, INDArray> paramTable(boolean backpropParamsOnly) {
-        return paramTable;
+        return getParamTable();
     }
 
     protected void doInit(){

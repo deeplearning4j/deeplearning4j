@@ -26,8 +26,8 @@ import org.nd4j.linalg.api.ndarray.INDArray;
  * Created by Alex on 28/08/2016.
  */
 public class CustomOutputLayerImpl extends BaseOutputLayer<CustomOutputLayer> {
-    public CustomOutputLayerImpl(NeuralNetConfiguration conf) {
-        super(conf);
+    public CustomOutputLayerImpl(NeuralNetConfiguration conf, String weightPoolId) {
+        super(conf, weightPoolId);
     }
 
     @Override

@@ -16,7 +16,15 @@
 
 package org.deeplearning4j.nn.conf.ocnn;
 
-import lombok.*;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import lombok.ToString;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -32,10 +40,6 @@ import org.nd4j.linalg.lossfunctions.ILossFunction;
 import org.nd4j.shade.jackson.annotation.JsonCreator;
 import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
-
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
 
 /**
  * An implementation of one class neural networks from:
@@ -109,7 +113,7 @@ public class OCNNOutputLayer extends BaseOutputLayer {
         LayerValidation.assertNInNOutSet("OCNNOutputLayer", getLayerName(), layerIndex, getNIn(), getNOut());
 
         org.deeplearning4j.nn.layers.ocnn.OCNNOutputLayer ret =
-                        new org.deeplearning4j.nn.layers.ocnn.OCNNOutputLayer(conf);
+                        new org.deeplearning4j.nn.layers.ocnn.OCNNOutputLayer(conf, weightPoolId);
         ret.setListeners(trainingListeners);
         ret.setIndex(layerIndex);
         ret.setParamsViewArray(layerParamsView);

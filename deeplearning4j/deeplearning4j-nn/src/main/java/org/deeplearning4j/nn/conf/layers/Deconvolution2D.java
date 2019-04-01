@@ -16,6 +16,8 @@
 
 package org.deeplearning4j.nn.conf.layers;
 
+import java.util.Collection;
+import java.util.Map;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
@@ -30,9 +32,6 @@ import org.deeplearning4j.nn.params.DeconvolutionParamInitializer;
 import org.deeplearning4j.optimize.api.TrainingListener;
 import org.deeplearning4j.util.ValidationUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
-
-import java.util.Collection;
-import java.util.Map;
 
 /**
  * 2D deconvolution layer configuration<br>
@@ -88,7 +87,7 @@ public class Deconvolution2D extends ConvolutionLayer {
         LayerValidation.assertNInNOutSet("Deconvolution2D", getLayerName(), layerIndex, getNIn(), getNOut());
 
         org.deeplearning4j.nn.layers.convolution.Deconvolution2DLayer ret =
-                        new org.deeplearning4j.nn.layers.convolution.Deconvolution2DLayer(conf);
+                        new org.deeplearning4j.nn.layers.convolution.Deconvolution2DLayer(conf, weightPoolId);
         ret.setListeners(trainingListeners);
         ret.setIndex(layerIndex);
         ret.setParamsViewArray(layerParamsView);

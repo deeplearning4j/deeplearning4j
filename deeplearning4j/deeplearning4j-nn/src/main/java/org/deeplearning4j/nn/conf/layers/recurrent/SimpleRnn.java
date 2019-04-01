@@ -16,6 +16,8 @@
 
 package org.deeplearning4j.nn.conf.layers.recurrent;
 
+import java.util.Collection;
+import java.util.Map;
 import lombok.Data;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -30,9 +32,6 @@ import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
 import org.deeplearning4j.nn.params.SimpleRnnParamInitializer;
 import org.deeplearning4j.optimize.api.TrainingListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
-
-import java.util.Collection;
-import java.util.Map;
 
 /**
  * Simple RNN - aka "vanilla" RNN is the simplest type of recurrent neural network layer. It implements {@code out_t =
@@ -64,7 +63,7 @@ public class SimpleRnn extends BaseRecurrentLayer {
         LayerValidation.assertNInNOutSet("SimpleRnn", getLayerName(), layerIndex, getNIn(), getNOut());
 
         org.deeplearning4j.nn.layers.recurrent.SimpleRnn ret =
-                        new org.deeplearning4j.nn.layers.recurrent.SimpleRnn(conf);
+                        new org.deeplearning4j.nn.layers.recurrent.SimpleRnn(conf, weightPoolId);
         ret.setListeners(trainingListeners);
         ret.setIndex(layerIndex);
         ret.setParamsViewArray(layerParamsView);

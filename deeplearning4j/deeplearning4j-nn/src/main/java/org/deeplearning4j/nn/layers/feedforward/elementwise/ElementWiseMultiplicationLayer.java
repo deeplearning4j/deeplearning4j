@@ -17,19 +17,18 @@
 package org.deeplearning4j.nn.layers.feedforward.elementwise;
 
 
-import org.deeplearning4j.nn.params.ElementWiseParamInitializer;
+import java.util.Arrays;
 import org.deeplearning4j.exception.DL4JInvalidInputException;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.BaseLayer;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
+import org.deeplearning4j.nn.params.ElementWiseParamInitializer;
+import org.deeplearning4j.nn.workspace.ArrayType;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.primitives.Pair;
-import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
-import org.deeplearning4j.nn.workspace.ArrayType;
-
-import java.util.Arrays;
 
 /**
  * Elementwise multiplication layer with weights: implements out = activationFn(input .* w + b) where:<br>
@@ -43,12 +42,12 @@ import java.util.Arrays;
  */
 public class ElementWiseMultiplicationLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.misc.ElementWiseMultiplicationLayer> {
 
-    public ElementWiseMultiplicationLayer(NeuralNetConfiguration conf){
-        super(conf);
+    public ElementWiseMultiplicationLayer(NeuralNetConfiguration conf, String weightPoolId){
+        super(conf, weightPoolId);
     }
 
-    public ElementWiseMultiplicationLayer(NeuralNetConfiguration conf, INDArray input) {
-        super(conf, input);
+    public ElementWiseMultiplicationLayer(NeuralNetConfiguration conf, INDArray input, String weightPoolId) {
+        super(conf, input, weightPoolId);
     }
 
     @Override
@@ -75,7 +74,7 @@ public class ElementWiseMultiplicationLayer extends BaseLayer<org.deeplearning4j
         ret.gradientForVariable().put(ElementWiseParamInitializer.BIAS_KEY, biasGrad);
 
 //      epsilonNext is a 2d matrix
-        INDArray epsilonNext = delta.mulRowVector(params.get(ElementWiseParamInitializer.WEIGHT_KEY));
+        INDArray epsilonNext = delta.mulRowVector(weightPool.params.get(ElementWiseParamInitializer.WEIGHT_KEY));
         epsilonNext = workspaceMgr.leverageTo(ArrayType.ACTIVATION_GRAD, epsilonNext);
 
         epsilonNext = backpropDropOutIfPresent(epsilonNext);

@@ -16,6 +16,7 @@
 
 package org.deeplearning4j.nn.layers.convolution;
 
+import java.util.Arrays;
 import org.deeplearning4j.exception.DL4JInvalidInputException;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -33,8 +34,6 @@ import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
 
-import java.util.Arrays;
-
 /**
  * 3D convolution layer implementation.
  *
@@ -42,12 +41,12 @@ import java.util.Arrays;
  */
 public class Convolution3DLayer extends ConvolutionLayer {
 
-    public Convolution3DLayer(NeuralNetConfiguration conf) {
-        super(conf);
+    public Convolution3DLayer(NeuralNetConfiguration conf, String weightPoolId) {
+        super(conf, weightPoolId);
     }
 
-    public Convolution3DLayer(NeuralNetConfiguration conf, INDArray input) {
-        super(conf, input);
+    public Convolution3DLayer(NeuralNetConfiguration conf, INDArray input, String weightPoolId) {
+        super(conf, input, weightPoolId);
     }
 
 
@@ -155,7 +154,7 @@ public class Convolution3DLayer extends ConvolutionLayer {
             retGradient.setGradientFor(Convolution3DParamInitializer.BIAS_KEY, biasGradView);
         }
         retGradient.setGradientFor(Convolution3DParamInitializer.WEIGHT_KEY, weightGradView, 'c');
-        weightNoiseParams.clear();
+        weightPool.weightNoiseParams.clear();
 
         return new Pair<>(retGradient, outEpsilon);
     }

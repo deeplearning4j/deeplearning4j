@@ -22,12 +22,12 @@ import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.BaseOutputLayer;
 import org.deeplearning4j.nn.params.CenterLossParamInitializer;
+import org.deeplearning4j.nn.workspace.ArrayType;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
 import org.nd4j.linalg.primitives.Pair;
-import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
-import org.deeplearning4j.nn.workspace.ArrayType;
 
 
 /**
@@ -45,12 +45,12 @@ public class CenterLossOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn
 
     private double fullNetRegTerm;
 
-    public CenterLossOutputLayer(NeuralNetConfiguration conf) {
-        super(conf);
+    public CenterLossOutputLayer(NeuralNetConfiguration conf, String weightPoolId) {
+        super(conf, weightPoolId);
     }
 
-    public CenterLossOutputLayer(NeuralNetConfiguration conf, INDArray input) {
-        super(conf, input);
+    public CenterLossOutputLayer(NeuralNetConfiguration conf, INDArray input, String weightPoolId) {
+        super(conf, input, weightPoolId);
     }
 
     /** Compute score after labels and input have been set.
@@ -71,7 +71,7 @@ public class CenterLossOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn
         ILossFunction interClassLoss = layerConf().getLossFn();
 
         // calculate the intra-class score component
-        INDArray centers = params.get(CenterLossParamInitializer.CENTER_KEY);
+        INDArray centers = weightPool.params.get(CenterLossParamInitializer.CENTER_KEY);
         INDArray centersForExamples = labels.mmul(centers);
 
         //        double intraClassScore = intraClassLoss.computeScore(centersForExamples, input, Activation.IDENTITY.getActivationFunction(), maskArray, false);
@@ -109,7 +109,7 @@ public class CenterLossOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn
         INDArray preOut = preOutput2d(false, workspaceMgr);
 
         // calculate the intra-class score component
-        INDArray centers = params.get(CenterLossParamInitializer.CENTER_KEY);
+        INDArray centers = weightPool.params.get(CenterLossParamInitializer.CENTER_KEY);
         INDArray centersForExamples = labels.mmul(centers);
         INDArray intraClassScoreArray = input.sub(centersForExamples);
 
@@ -154,7 +154,7 @@ public class CenterLossOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn
         INDArray delta = pair.getSecond();
 
         // centers
-        INDArray centers = params.get(CenterLossParamInitializer.CENTER_KEY);
+        INDArray centers = weightPool.params.get(CenterLossParamInitializer.CENTER_KEY);
         INDArray centersForExamples = labels.mmul(centers);
         INDArray dLcdai = input.sub(centersForExamples);
 
@@ -165,7 +165,7 @@ public class CenterLossOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn
         double lambda = layerConf().getLambda();
         epsilonNext.addi(dLcdai.muli(lambda)); // add center loss here
 
-        weightNoiseParams.clear();
+        weightPool.weightNoiseParams.clear();
 
         return new Pair<>(pair.getFirst(), epsilonNext);
     }
@@ -200,7 +200,7 @@ public class CenterLossOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn
         // centers delta
         double alpha = layerConf().getAlpha();
 
-        INDArray centers = params.get(CenterLossParamInitializer.CENTER_KEY);
+        INDArray centers = weightPool.params.get(CenterLossParamInitializer.CENTER_KEY);
         INDArray centersForExamples = labels.mmul(centers);
         INDArray diff = centersForExamples.sub(input).muli(alpha);
         INDArray numerator = labels.transpose().mmul(diff);

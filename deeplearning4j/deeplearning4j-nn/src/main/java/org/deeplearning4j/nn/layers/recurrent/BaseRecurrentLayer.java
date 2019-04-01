@@ -16,14 +16,14 @@
 
 package org.deeplearning4j.nn.layers.recurrent;
 
+import java.util.HashMap;
+import java.util.Map;
 import org.deeplearning4j.nn.api.layers.RecurrentLayer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.layers.BaseLayer;
+import org.deeplearning4j.nn.weightsharing.RecurrentWeightPool;
+import org.deeplearning4j.nn.weightsharing.WeightPool;
 import org.nd4j.linalg.api.ndarray.INDArray;
-
-import java.util.HashMap;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 public abstract class BaseRecurrentLayer<LayerConfT extends org.deeplearning4j.nn.conf.layers.BaseLayer>
                 extends BaseLayer<LayerConfT> implements RecurrentLayer {
@@ -31,21 +31,25 @@ public abstract class BaseRecurrentLayer<LayerConfT extends org.deeplearning4j.n
     /**
      * stateMap stores the INDArrays needed to do rnnTimeStep() forward pass.
      */
-    protected Map<String, INDArray> stateMap = new ConcurrentHashMap<>();
+    protected Map<String, INDArray> getStateMap(){
+        return ((RecurrentWeightPool)weightPool).stateMap;
+    }
 
     /**
      * State map for use specifically in truncated BPTT training. Whereas stateMap contains the
      * state from which forward pass is initialized, the tBpttStateMap contains the state at the
      * end of the last truncated bptt
      */
-    protected Map<String, INDArray> tBpttStateMap = new ConcurrentHashMap<>();
-
-    public BaseRecurrentLayer(NeuralNetConfiguration conf) {
-        super(conf);
+    protected Map<String, INDArray> gettBpttStateMap(){
+        return ((RecurrentWeightPool)weightPool).tBpttStateMap;
     }
 
-    public BaseRecurrentLayer(NeuralNetConfiguration conf, INDArray input) {
-        super(conf, input);
+    public BaseRecurrentLayer(NeuralNetConfiguration conf, String weightPoolId) {
+        super(conf, WeightPool.getOrCreateRecurrentPool(weightPoolId));
+    }
+
+    public BaseRecurrentLayer(NeuralNetConfiguration conf, INDArray input, String weightPoolId) {
+        super(conf, input, WeightPool.getOrCreateRecurrentPool(weightPoolId));
     }
 
     /**
@@ -53,7 +57,7 @@ public abstract class BaseRecurrentLayer<LayerConfT extends org.deeplearning4j.n
      */
     @Override
     public Map<String, INDArray> rnnGetPreviousState() {
-        return new HashMap<>(stateMap);
+        return new HashMap<>(getStateMap());
     }
 
     /**
@@ -62,8 +66,8 @@ public abstract class BaseRecurrentLayer<LayerConfT extends org.deeplearning4j.n
      */
     @Override
     public void rnnSetPreviousState(Map<String, INDArray> stateMap) {
-        this.stateMap.clear();
-        this.stateMap.putAll(stateMap);
+        this.getStateMap().clear();
+        this.getStateMap().putAll(stateMap);
     }
 
     /**
@@ -71,19 +75,18 @@ public abstract class BaseRecurrentLayer<LayerConfT extends org.deeplearning4j.n
      */
     @Override
     public void rnnClearPreviousState() {
-        stateMap.clear();
-        tBpttStateMap.clear();
+        getStateMap().clear();
+        gettBpttStateMap().clear();
     }
 
     @Override
     public Map<String, INDArray> rnnGetTBPTTState() {
-        return new HashMap<>(tBpttStateMap);
+        return new HashMap<>(gettBpttStateMap());
     }
 
     @Override
     public void rnnSetTBPTTState(Map<String, INDArray> state) {
-        tBpttStateMap.clear();
-        tBpttStateMap.putAll(state);
+        gettBpttStateMap().clear();
+        gettBpttStateMap().putAll(state);
     }
-
 }

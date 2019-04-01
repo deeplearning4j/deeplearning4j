@@ -16,6 +16,8 @@
 
 package org.deeplearning4j.nn.conf.layers;
 
+import java.util.Collection;
+import java.util.Map;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
@@ -28,11 +30,6 @@ import org.deeplearning4j.util.Convolution1DUtils;
 import org.deeplearning4j.util.ConvolutionUtils;
 import org.deeplearning4j.util.ValidationUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
-
-import java.util.Collection;
-import java.util.Map;
-
-import static org.deeplearning4j.nn.conf.layers.InputTypeUtil.getOutputTypeCnnLayers;
 
 /**
  * 1D (temporal) convolutional layer. This layer accepts RNN InputTypes instead of CNN InputTypes
@@ -65,7 +62,7 @@ public class Convolution1DLayer extends ConvolutionLayer {
         LayerValidation.assertNInNOutSet("Convolution1DLayer", getLayerName(), layerIndex, getNIn(), getNOut());
 
         org.deeplearning4j.nn.layers.convolution.Convolution1DLayer ret =
-                        new org.deeplearning4j.nn.layers.convolution.Convolution1DLayer(conf);
+                        new org.deeplearning4j.nn.layers.convolution.Convolution1DLayer(conf, weightPoolId);
         ret.setListeners(trainingListeners);
         ret.setIndex(layerIndex);
         ret.setParamsViewArray(layerParamsView);

@@ -16,6 +16,7 @@
 
 package org.deeplearning4j.nn.layers.convolution;
 
+import java.util.Arrays;
 import lombok.val;
 import org.deeplearning4j.exception.DL4JInvalidInputException;
 import org.deeplearning4j.nn.conf.CacheMode;
@@ -24,6 +25,8 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.params.DeconvolutionParamInitializer;
+import org.deeplearning4j.nn.workspace.ArrayType;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.deeplearning4j.util.ConvolutionUtils;
 import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -32,10 +35,6 @@ import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
-import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
-import org.deeplearning4j.nn.workspace.ArrayType;
-
-import java.util.Arrays;
 
 /**
  * 2D deconvolution layer implementation.
@@ -54,12 +53,12 @@ import java.util.Arrays;
  */
 public class Deconvolution2DLayer extends ConvolutionLayer {
 
-    public Deconvolution2DLayer(NeuralNetConfiguration conf) {
-        super(conf);
+    public Deconvolution2DLayer(NeuralNetConfiguration conf, String weightPoolId) {
+        super(conf, weightPoolId);
     }
 
-    public Deconvolution2DLayer(NeuralNetConfiguration conf, INDArray input) {
-        super(conf, input);
+    public Deconvolution2DLayer(NeuralNetConfiguration conf, INDArray input, String weightPoolId) {
+        super(conf, input, weightPoolId);
     }
 
 
@@ -149,7 +148,7 @@ public class Deconvolution2DLayer extends ConvolutionLayer {
             retGradient.setGradientFor(DeconvolutionParamInitializer.BIAS_KEY, biasGradView);
         }
         retGradient.setGradientFor(DeconvolutionParamInitializer.WEIGHT_KEY, weightGradView, 'c');
-        weightNoiseParams.clear();
+        weightPool.weightNoiseParams.clear();
 
         return new Pair<>(retGradient, outEps);
     }

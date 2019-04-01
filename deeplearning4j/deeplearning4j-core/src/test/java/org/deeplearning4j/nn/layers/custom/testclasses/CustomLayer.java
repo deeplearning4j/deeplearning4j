@@ -16,6 +16,8 @@
 
 package org.deeplearning4j.nn.layers.custom.testclasses;
 
+import java.util.Collection;
+import java.util.Map;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.deeplearning4j.nn.api.ParamInitializer;
@@ -25,12 +27,10 @@ import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.FeedForwardLayer;
 import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
+import org.deeplearning4j.nn.weightsharing.WeightPool;
 import org.deeplearning4j.optimize.api.TrainingListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
-
-import java.util.Collection;
-import java.util.Map;
 
 /**
  * Created by Alex on 26/08/2016.
@@ -51,7 +51,7 @@ public class CustomLayer extends FeedForwardLayer {
     public org.deeplearning4j.nn.api.Layer instantiate(NeuralNetConfiguration conf,
                     Collection<TrainingListener> trainingListeners, int layerIndex, INDArray layerParamsView,
                     boolean initializeParams) {
-        CustomLayerImpl ret = new CustomLayerImpl(conf);
+        CustomLayerImpl ret = new CustomLayerImpl(conf, WeightPool.getNewId());
         ret.setListeners(trainingListeners);
         ret.setIndex(layerIndex);
         ret.setParamsViewArray(layerParamsView);

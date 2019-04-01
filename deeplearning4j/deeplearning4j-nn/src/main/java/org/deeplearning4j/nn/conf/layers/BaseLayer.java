@@ -16,7 +16,14 @@
 
 package org.deeplearning4j.nn.conf.layers;
 
-import lombok.*;
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.List;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 import org.deeplearning4j.nn.conf.GradientNormalization;
 import org.deeplearning4j.nn.conf.Updater;
 import org.deeplearning4j.nn.conf.distribution.Distribution;
@@ -24,6 +31,7 @@ import org.deeplearning4j.nn.conf.weightnoise.IWeightNoise;
 import org.deeplearning4j.nn.weights.IWeightInit;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.nn.weights.WeightInitDistribution;
+import org.deeplearning4j.nn.weightsharing.WeightPool;
 import org.deeplearning4j.util.NetworkUtils;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.activations.IActivation;
@@ -32,10 +40,6 @@ import org.nd4j.linalg.learning.regularization.L1Regularization;
 import org.nd4j.linalg.learning.regularization.L2Regularization;
 import org.nd4j.linalg.learning.regularization.Regularization;
 import org.nd4j.linalg.learning.regularization.WeightDecay;
-
-import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * A neural network layer.
@@ -57,6 +61,7 @@ public abstract class BaseLayer extends Layer implements Serializable, Cloneable
     protected GradientNormalization gradientNormalization = GradientNormalization.None; //Clipping, rescale based on l2 norm, etc
     protected double gradientNormalizationThreshold = 1.0; //Threshold for l2 and element-wise gradient clipping
 
+    protected String weightPoolId;
 
     public BaseLayer(Builder builder) {
         super(builder);
@@ -72,6 +77,8 @@ public abstract class BaseLayer extends Layer implements Serializable, Cloneable
         this.gradientNormalization = builder.gradientNormalization;
         this.gradientNormalizationThreshold = builder.gradientNormalizationThreshold;
         this.weightNoise = builder.weightNoise;
+        this.weightPoolId = WeightPool.getNewId();
+
     }
 
     /**
@@ -91,6 +98,7 @@ public abstract class BaseLayer extends Layer implements Serializable, Cloneable
         this.setGradientNormalizationThreshold(1.0);
         this.iUpdater = null;
         this.biasUpdater = null;
+        this.weightPoolId = WeightPool.getNewId();
     }
 
     @Override
@@ -112,6 +120,12 @@ public abstract class BaseLayer extends Layer implements Serializable, Cloneable
                 clone.regularizationBias.add(r.clone());
             }
         }
+        return clone;
+    }
+
+    public BaseLayer cloneAndShareWeights() {
+        BaseLayer clone = clone();
+        clone.weightPoolId = this.weightPoolId;
         return clone;
     }
 

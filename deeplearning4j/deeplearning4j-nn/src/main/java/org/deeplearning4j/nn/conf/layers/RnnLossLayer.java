@@ -16,6 +16,8 @@
 
 package org.deeplearning4j.nn.conf.layers;
 
+import java.util.Collection;
+import java.util.Map;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
@@ -32,9 +34,6 @@ import org.deeplearning4j.optimize.api.TrainingListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
-
-import java.util.Collection;
-import java.util.Map;
 
 /**
  * Recurrent Neural Network Loss Layer.<br> Handles calculation of gradients etc for various objective (loss)
@@ -64,7 +63,7 @@ public class RnnLossLayer extends FeedForwardLayer {
     public Layer instantiate(NeuralNetConfiguration conf, Collection<TrainingListener> trainingListeners,
                     int layerIndex, INDArray layerParamsView, boolean initializeParams) {
         org.deeplearning4j.nn.layers.recurrent.RnnLossLayer ret =
-                        new org.deeplearning4j.nn.layers.recurrent.RnnLossLayer(conf);
+                        new org.deeplearning4j.nn.layers.recurrent.RnnLossLayer(conf, weightPoolId);
         ret.setListeners(trainingListeners);
         ret.setIndex(layerIndex);
         ret.setParamsViewArray(layerParamsView);

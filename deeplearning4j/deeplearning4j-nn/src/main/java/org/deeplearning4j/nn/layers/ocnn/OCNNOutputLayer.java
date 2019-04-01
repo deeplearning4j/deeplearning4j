@@ -17,6 +17,10 @@
 package org.deeplearning4j.nn.layers.ocnn;
 
 
+import static org.deeplearning4j.nn.layers.ocnn.OCNNParamInitializer.R_KEY;
+import static org.deeplearning4j.nn.layers.ocnn.OCNNParamInitializer.V_KEY;
+import static org.deeplearning4j.nn.layers.ocnn.OCNNParamInitializer.W_KEY;
+
 import lombok.Getter;
 import lombok.Setter;
 import org.deeplearning4j.nn.api.Layer;
@@ -29,7 +33,6 @@ import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.activations.impl.ActivationReLU;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Broadcast;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.INDArrayIndex;
@@ -37,10 +40,6 @@ import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.primitives.Pair;
-
-import static org.deeplearning4j.nn.layers.ocnn.OCNNParamInitializer.R_KEY;
-import static org.deeplearning4j.nn.layers.ocnn.OCNNParamInitializer.V_KEY;
-import static org.deeplearning4j.nn.layers.ocnn.OCNNParamInitializer.W_KEY;
 
 /**
  * Layer implementation for {@link org.deeplearning4j.nn.conf.ocnn.OCNNOutputLayer}
@@ -63,15 +62,15 @@ public class OCNNOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.
 
     private INDArray window;
 
-    public OCNNOutputLayer(NeuralNetConfiguration conf) {
-        super(conf);
+    public OCNNOutputLayer(NeuralNetConfiguration conf, String weightPoolId) {
+        super(conf, weightPoolId);
         this.lossFunction = new OCNNLossFunction();
         org.deeplearning4j.nn.conf.ocnn.OCNNOutputLayer ocnnOutputLayer = (org.deeplearning4j.nn.conf.ocnn.OCNNOutputLayer) conf.getLayer();
         ocnnOutputLayer.setLossFn(this.lossFunction);
     }
 
-    public OCNNOutputLayer(NeuralNetConfiguration conf, INDArray input) {
-        super(conf, input);
+    public OCNNOutputLayer(NeuralNetConfiguration conf, INDArray input, String weightPoolId) {
+        super(conf, input, weightPoolId);
         org.deeplearning4j.nn.conf.ocnn.OCNNOutputLayer ocnnOutputLayer = (org.deeplearning4j.nn.conf.ocnn.OCNNOutputLayer) conf.getLayer();
         ocnnOutputLayer.setLossFn(this.lossFunction);
     }

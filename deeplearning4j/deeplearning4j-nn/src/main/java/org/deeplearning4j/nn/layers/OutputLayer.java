@@ -32,12 +32,12 @@ import org.nd4j.linalg.factory.Nd4j;
  */
 public class OutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.layers.OutputLayer> {
 
-    public OutputLayer(NeuralNetConfiguration conf) {
-        super(conf);
+    public OutputLayer(NeuralNetConfiguration conf, String weightPoolId) {
+        super(conf, weightPoolId);
     }
 
-    public OutputLayer(NeuralNetConfiguration conf, INDArray input) {
-        super(conf, input);
+    public OutputLayer(NeuralNetConfiguration conf, INDArray input, String weightPoolId) {
+        super(conf, input, weightPoolId);
     }
 
     @Override

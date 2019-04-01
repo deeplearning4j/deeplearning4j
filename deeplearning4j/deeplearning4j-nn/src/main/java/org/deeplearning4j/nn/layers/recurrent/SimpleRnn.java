@@ -16,6 +16,10 @@
 
 package org.deeplearning4j.nn.layers.recurrent;
 
+import static org.nd4j.linalg.indexing.NDArrayIndex.all;
+import static org.nd4j.linalg.indexing.NDArrayIndex.interval;
+import static org.nd4j.linalg.indexing.NDArrayIndex.point;
+
 import lombok.val;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
@@ -36,8 +40,6 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.primitives.Quad;
 
-import static org.nd4j.linalg.indexing.NDArrayIndex.*;
-
 /**
  * Simple RNN - aka "vanilla" RNN is the simplest type of recurrent neural network layer.
  * It implements out_t = activationFn( in_t * inWeight + out_(t-1) * recurrentWeights + bias).
@@ -49,17 +51,17 @@ import static org.nd4j.linalg.indexing.NDArrayIndex.*;
 public class SimpleRnn extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.layers.recurrent.SimpleRnn> {
     public static final String STATE_KEY_PREV_ACTIVATION = "prevAct";
 
-    public SimpleRnn(NeuralNetConfiguration conf) {
-        super(conf);
+    public SimpleRnn(NeuralNetConfiguration conf, String weightPoolId) {
+        super(conf, weightPoolId);
     }
 
     @Override
     public INDArray rnnTimeStep(INDArray input, LayerWorkspaceMgr workspaceMgr) {
         setInput(input, workspaceMgr);
-        INDArray last = stateMap.get(STATE_KEY_PREV_ACTIVATION);
+        INDArray last = getStateMap().get(STATE_KEY_PREV_ACTIVATION);
         INDArray out = activateHelper(last, false, false, workspaceMgr).getFirst();
         try(MemoryWorkspace ws = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()){
-            stateMap.put(STATE_KEY_PREV_ACTIVATION, out.get(all(), all(), point(out.size(2)-1)).dup());
+            getStateMap().put(STATE_KEY_PREV_ACTIVATION, out.get(all(), all(), point(out.size(2)-1)).dup());
         }
         return out;
     }
@@ -67,11 +69,11 @@ public class SimpleRnn extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.lay
     @Override
     public INDArray rnnActivateUsingStoredState(INDArray input, boolean training, boolean storeLastForTBPTT, LayerWorkspaceMgr workspaceMgr) {
         setInput(input, workspaceMgr);
-        INDArray last = tBpttStateMap.get(STATE_KEY_PREV_ACTIVATION);
+        INDArray last = gettBpttStateMap().get(STATE_KEY_PREV_ACTIVATION);
         INDArray out = activateHelper(last, training, false, workspaceMgr).getFirst();
         if(storeLastForTBPTT){
             try(MemoryWorkspace ws = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()){
-                tBpttStateMap.put(STATE_KEY_PREV_ACTIVATION, out.get(all(), all(), point(out.size(2)-1)));
+                gettBpttStateMap().put(STATE_KEY_PREV_ACTIVATION, out.get(all(), all(), point(out.size(2)-1)));
             }
         }
         return out;
@@ -186,7 +188,7 @@ public class SimpleRnn extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.lay
             }
         }
 
-        weightNoiseParams.clear();
+        weightPool.weightNoiseParams.clear();
 
         Gradient grad = new DefaultGradient(gradientsFlattened);
         grad.gradientForVariable().put(SimpleRnnParamInitializer.WEIGHT_KEY, wg);

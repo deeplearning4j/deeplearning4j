@@ -27,7 +27,7 @@ import org.deeplearning4j.nn.layers.BaseLayer;
  */
 public class CustomLayerImpl extends BaseLayer<CustomLayer> {
     public CustomLayerImpl(NeuralNetConfiguration conf) {
-        super(conf);
+        super(conf, );
     }
 
     @Override
