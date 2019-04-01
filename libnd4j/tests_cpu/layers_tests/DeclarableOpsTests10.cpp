@@ -185,8 +185,47 @@ TEST_F(DeclarableOpsTests10, Pad_SGO_Test_1) {
 
     auto res = op.execute({&in, &pad}, {10.0}, {0});
     ASSERT_EQ(res->status(), ND4J_STATUS_OK);
-    res->at(0)->printIndexedBuffer("PAD_SGO");
-    exp.printIndexedBuffer("PAD_EXP");
+//    res->at(0)->printIndexedBuffer("PAD_SGO");
+//    exp.printIndexedBuffer("PAD_EXP");
+    ASSERT_TRUE(exp.equalsTo(res->at(0)));
+    delete res;
+}
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests10, Pad_SGO_Test_2) {
+
+    auto in = NDArrayFactory::create<double>({1., 11., 111., 11., 1.});
+//    auto pad = NDArrayFactory::create<double>('c', {1, 2}, {1., 1.});// = Nd4j.create(new double[]{1, 1}, new long[]{1, 2});
+    auto pad = NDArrayFactory::create<int>('c', {1, 2}, {1, 1});
+//    auto value(10.0);
+
+    auto exp = NDArrayFactory::create<double>({1., 1., 11., 111., 11., 1., 1.});
+
+    nd4j::ops::pad op;
+
+    auto res = op.execute({&in, &pad}, {10.0}, {1});
+    ASSERT_EQ(res->status(), ND4J_STATUS_OK);
+ //   res->at(0)->printIndexedBuffer("PAD_SGO");
+ //   exp.printIndexedBuffer("PAD_EXP");
+    ASSERT_TRUE(exp.equalsTo(res->at(0)));
+    delete res;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests10, Pad_SGO_Test_3) {
+
+    auto in = NDArrayFactory::create<double>({1., 11., 111., 1111., 11111.});
+//    auto pad = NDArrayFactory::create<double>('c', {1, 2}, {1., 1.});// = Nd4j.create(new double[]{1, 1}, new long[]{1, 2});
+    auto pad = NDArrayFactory::create<int>('c', {1, 2}, {1, 1});
+//    auto value(10.0);
+
+    auto exp = NDArrayFactory::create<double>({11., 1., 11., 111., 1111., 11111., 1111.});
+
+    nd4j::ops::pad op;
+
+    auto res = op.execute({&in, &pad}, {10.0}, {2});
+    ASSERT_EQ(res->status(), ND4J_STATUS_OK);
+ //   res->at(0)->printIndexedBuffer("PAD_SGO");
+ //   exp.printIndexedBuffer("PAD_EXP");
     ASSERT_TRUE(exp.equalsTo(res->at(0)));
     delete res;
 }

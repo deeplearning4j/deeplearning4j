@@ -143,6 +143,7 @@ __host__ static void concatCudaLauncher(const int numOfArrs, const cudaStream_t 
             __shared__ Nd4jLong inputLen;
             __shared__ Nd4jLong outputLen;
             __shared__ Nd4jLong rank;
+            __shared__ Nd4jLong lastInDimSize;
             if (threadIdx.x == 0) {
                 z = reinterpret_cast<T*>(outputBuffer);
                 x = reinterpret_cast<T*>(inputBuffer);
@@ -153,6 +154,7 @@ __host__ static void concatCudaLauncher(const int numOfArrs, const cudaStream_t 
                 else
                     val = nullptr;
                 rank = shape::rank(outputShape);
+                Nd4jLong lastInDimSize  = shape::sizeAt(inputShape, rank - 1);
             }
             __syncthreads();
 
@@ -166,10 +168,13 @@ __host__ static void concatCudaLauncher(const int numOfArrs, const cudaStream_t 
                     else if (val)
                         z[i] = val[0];
                     else {
-                        if (mode == 1) { // REFLECT
-
-                        } else { // SYMMETRIC
-
+                        Nd4jLong startL = mode == 1 ? 1 : 0;                            // REFLECT or SYMMETRIC
+                        Nd4jLong startR = mode == 1 ? lastInDimSize - 2 : lastInDimSize - 1;        // REFLECT or SYMMETRIC
+                        if (i < paddingBound[2 * k]) {
+                            z[i] = x[paddingBound[2 * k] - i - startL];
+                        }
+                        else {
+                            z[i] = x[i - startR - paddingBound[2 * k + 1] + paddingBound[2 * k] + 1];
                         }
                     }
                 }
