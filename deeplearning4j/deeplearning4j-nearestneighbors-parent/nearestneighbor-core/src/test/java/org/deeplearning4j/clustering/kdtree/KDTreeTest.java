@@ -381,12 +381,9 @@ public class KDTreeTest {
         // make a KD-tree of dimension {#n}
         long start = System.currentTimeMillis();
         KDTree kdTree = new KDTree(n);
-        double first = 0.0, last = 1.0;
+        INDArray inputArrray = Nd4j.linspace(DataType.DOUBLE, 0.0, 1.0, num*n).reshape(num, n);
         for (int  i = 0 ; i < num; ++i) {
-            INDArray inputArrray = Nd4j.linspace(DataType.DOUBLE, first, last, n);
-            first += 1.0;
-            last += 1.0;
-            kdTree.insert(inputArrray);
+            kdTree.insert(inputArrray.getRow(i));
         }
 
         long end = System.currentTimeMillis();
