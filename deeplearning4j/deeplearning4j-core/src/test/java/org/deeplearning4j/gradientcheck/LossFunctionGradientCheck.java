@@ -558,6 +558,10 @@ public class LossFunctionGradientCheck extends BaseDL4JTest {
                 }
 
                 break;
+            case "LossWasserstein":
+                ret[1] = Nd4j.rand(labelsShape).mul(2).sub(1);
+                break;
+
             default:
                 throw new IllegalArgumentException("Unknown class: " + l.getClass().getSimpleName());
         }

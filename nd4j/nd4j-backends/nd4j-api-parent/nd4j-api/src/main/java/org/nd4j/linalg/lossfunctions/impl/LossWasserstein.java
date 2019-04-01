@@ -28,6 +28,7 @@ import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.Op;
+import org.nd4j.linalg.api.ops.impl.transforms.same.Sign;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
 import org.nd4j.linalg.lossfunctions.LossUtil;
@@ -70,11 +71,13 @@ public class LossWasserstein extends DifferentialFunction implements ILossFuncti
             boolean average) {
         INDArray scoreArr = scoreArray(labels, preOutput, activationFn, mask);
 
+        double score = scoreArr.mean(1).sumNumber().doubleValue();
+
         if (average) {
-            return scoreArr.meanNumber().doubleValue();
-        } else {
-            return scoreArr.sumNumber().doubleValue() / scoreArr.size(1);
+            score /= scoreArr.size(0);
         }
+
+        return score;
     }
 
     @Override
@@ -89,17 +92,19 @@ public class LossWasserstein extends DifferentialFunction implements ILossFuncti
             Preconditions.throwEx("Labels and preOutput must have equal shapes: got shapes %s vs %s", labels.shape(), preOutput.shape());
         }
 
-        if (mask != null && LossUtil.isPerOutputMasking(labels, mask)) {
+        INDArray dLda = labels.div(labels.size(1));
+
+        if (mask != null && LossUtil.isPerOutputMasking(dLda, mask)) {
             LossUtil.applyMask(labels, mask);
         }
 
-        INDArray grad = activationFn.backprop(preOutput, labels).getFirst();
+        INDArray grad = activationFn.backprop(preOutput, dLda).getFirst();
 
         if (mask != null) {
             LossUtil.applyMask(grad, mask);
         }
 
-        return grad.divi(labels.size(1));
+        return grad;
     }
 
     @Override
