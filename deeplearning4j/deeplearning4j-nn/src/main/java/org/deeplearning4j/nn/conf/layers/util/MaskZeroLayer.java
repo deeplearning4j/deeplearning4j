@@ -28,6 +28,7 @@ import org.deeplearning4j.nn.conf.layers.wrapper.BaseWrapperLayer;
 import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
 import org.deeplearning4j.optimize.api.TrainingListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.shade.jackson.annotation.JsonProperty;
 
 import java.util.Collection;
 
@@ -51,7 +52,7 @@ public class MaskZeroLayer extends BaseWrapperLayer {
     }
 
 
-    public MaskZeroLayer(Layer underlying, double maskingValue) {
+    public MaskZeroLayer(@JsonProperty("underlying") Layer underlying, @JsonProperty("maskingValue") double maskingValue) {
         this.underlying = underlying;
         this.maskingValue = maskingValue;
     }

@@ -7478,6 +7478,35 @@ public class Nd4jTestsC extends BaseNd4jTest {
     }
 
     @Test
+    public void testMin2(){
+        INDArray x = Nd4j.createFromArray(new double[][]{
+                {-999,       0.2236,    0.7973,    0.0962},
+                { 0.7231,    0.3381,   -0.7301,    0.9115},
+                {-0.5094,    0.9749,   -2.1340,    0.6023}});
+
+        INDArray out = Nd4j.create(DataType.DOUBLE, 4);
+        Nd4j.exec(DynamicCustomOp.builder("reduce_min")
+                .addInputs(x)
+                .addOutputs(out)
+                .addIntegerArguments(0)
+                .build());
+
+        INDArray exp = Nd4j.createFromArray(-999, 0.2236, -2.1340, 0.0962);
+        assertEquals(exp, out); //Fails here
+
+
+        INDArray out1 = Nd4j.create(DataType.DOUBLE, 3);
+        Nd4j.exec(DynamicCustomOp.builder("reduce_min")
+                .addInputs(x)
+                .addOutputs(out1)
+                .addIntegerArguments(1)
+                .build());
+
+        INDArray exp1 = Nd4j.createFromArray(-999, -0.7301, -2.1340);
+        assertEquals(exp1, out1); //This is OK
+    }
+
+    @Test
     public void testCreateF(){
         char origOrder = Nd4j.order();
         try {
