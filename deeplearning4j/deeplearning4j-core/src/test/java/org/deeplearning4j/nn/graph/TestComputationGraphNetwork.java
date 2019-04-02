@@ -30,6 +30,7 @@ import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.SingletonMultiDataSetIterator;
 import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.exception.DL4JException;
+import org.deeplearning4j.gradientcheck.GradientCheckUtil;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.*;
 import org.deeplearning4j.nn.conf.distribution.UniformDistribution;
@@ -2087,6 +2088,8 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
 
     @Test
     public void testCompGraphInputReuse() {
+        Nd4j.setDefaultDataTypes(DataType.DOUBLE, DataType.DOUBLE);
+
         int inputSize = 5;
         int outputSize = 6;
         int layerSize = 3;
@@ -2112,7 +2115,8 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
         INDArray features = Nd4j.rand(new int[] {dataSize, inputSize});
         INDArray labels = Nd4j.rand(new int[] {dataSize, outputSize});
 
-        DataSet dataSet1 = new DataSet(features, labels);
-        net.fit(dataSet1);
+        boolean gradOK = GradientCheckUtil.checkGradients(net, 1e-6, 1e-3,
+                1e-8, false, true, new INDArray[]{features}, new INDArray[]{labels}, null, null);
+        assertTrue(gradOK);
     }
 }
