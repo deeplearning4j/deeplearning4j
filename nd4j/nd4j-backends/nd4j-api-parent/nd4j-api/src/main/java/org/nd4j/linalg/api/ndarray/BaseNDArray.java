@@ -4946,7 +4946,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         else if (rank() == 2 && jvmShapeInfo.javaShapeInformation[2] == 1 && indexes.length == 1)
             indexes = new INDArrayIndex[]{indexes[0], NDArrayIndex.all()};
         else
-            Preconditions.checkArgument(indexes != null && indexes.length == this.rank(), "Number of indices should be equal to rank of the INDArray");
+            Preconditions.checkArgument(indexes != null && indexes.length >= this.rank(), "Number of indices should be greater or equal to rank of the INDArray");
 
         if(indexes.length > rank()) {
             int numNonNewAxis = 0;
