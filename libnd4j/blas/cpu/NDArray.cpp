@@ -45,6 +45,52 @@
 namespace nd4j {
 
 
+    //////////////////////////////////////////////////////////////////////
+static bool reshapeC(const int oldRank, const Nd4jLong* oldShapeInfo, const int newRank, const Nd4jLong* newShape, Nd4jLong* newShapeInfo) {
+
+        // PLEASE NOTE !: reshaping not-permuted (ews=1) array in f order (except insertion/elimination of unities) will definitely cause allocation of new buffer for array elements
+        // also this function takes into account identical shapes automatically, namely in that case oldShapeInfo is completely copied to newShapeInfo 
+                
+        newShapeInfo[0] = newRank;
+        memcpy(newShapeInfo + 1, newShape, newRank * sizeof(Nd4jLong));
+
+        Nd4jLong* newStrides       = shape::stride(newShapeInfo);
+        const Nd4jLong* oldShape   = shape::shapeOf(const_cast<Nd4jLong*>(oldShapeInfo));
+        const Nd4jLong* oldStrides = shape::stride(const_cast<Nd4jLong*>(oldShapeInfo));
+        const bool isSubArr        = shape::isSubArray(oldShapeInfo);
+        int oldStart(0), oldStop(1), newStart(0), newStop(1), newDim, oldDim;
+                
+        while (newStart < newRank && oldStart < oldRank) {
+            
+            newDim = newShape[newStart];
+            oldDim = oldShape[oldStart];
+
+            while (newDim != oldDim)
+                if (newDim < oldDim) newDim *= newShape[newStop++];                
+                else                 oldDim *= oldShape[oldStop++];
+
+            // ------ Check whether the original axes can be combined ------ //
+            for (int i = oldStart; i < oldStop - 1; i++)
+                if( !(isSubArr && oldShape[i] == 1) && oldStrides[i] != oldShape[i + 1] * oldStrides[i + 1]) //  oldShape[i] != 1 ---> ignore strides for unity-dimensions, like {...,1,1,...}, only in case of arrays with ews == 1
+                    return false;           // not contiguous enough            
+            
+            newStrides[newStop - 1] = oldStrides[oldStop - 1];
+            for (int i = newStop - 1; i > newStart; --i) 
+                newStrides[i - 1] = newStrides[i] * newShape[i];     
+
+            newStart = newStop++;
+            oldStart = oldStop++;
+        }
+        
+        newShapeInfo[2 * newRank + 3] = shape::order(oldShapeInfo);    // order
+        newShapeInfo[2 * newRank + 2] = shape::elementWiseStride(oldShapeInfo);    // ews
+        newShapeInfo[2 * newRank + 1] = shape::type(oldShapeInfo);    // type
+
+        return true;
+    }
+
+
+
     void* NDArray::operator new(size_t i) {
         if (nd4j::memory::MemoryRegistrator::getInstance()->hasWorkspaceAttached()) {
             nd4j::memory::Workspace* ws = nd4j::memory::MemoryRegistrator::getInstance()->getWorkspace();
@@ -2463,14 +2509,17 @@ template void NDArray::applyScalar(nd4j::scalar::Ops op, const bool scalar, NDAr
     Nd4jLong *shapeInfoNew;
     ALLOCATE(shapeInfoNew, _workspace, shape::shapeInfoLength(rank), Nd4jLong);
 
+    bool canReshape = reshapeC(this->rankOf(), this->_shapeInfo, shape.size(), shape.data(), shapeInfoNew);
+    
     // we can do this only if there was no permute applied, or there are no weird strides
-    if (shape::reshapeC(this->rankOf(), this->_shapeInfo, shape.size(), shape.data(), shapeInfoNew)) {
+    if (canReshape) {
         
         if(ordering() == 'c' && order == 'f')
             throw std::invalid_argument("NDArray::reshapei(order, shape): in case of reshapeC it doesn't make sense to reshape from c order to f order !");
 
         setShapeInfo(shapeInfoNew);
         _isShapeAlloc = true;
+
     } 
     else {
 
@@ -2480,7 +2529,7 @@ template void NDArray::applyScalar(nd4j::scalar::Ops op, const bool scalar, NDAr
         RELEASE(shapeInfoNew, _workspace);
     }
 
-    return true;
+    return canReshape;
 }
 
 //////////////////////////////////////////////////////////////////////////
