@@ -28,18 +28,21 @@ public class ClusterSet implements Serializable {
 
     private String distanceFunction;
     private List<Cluster> clusters;
+    private CentersHolder centersHolder;
     private Map<String, String> pointDistribution;
     private boolean inverse;
 
     public ClusterSet(boolean inverse) {
-        this(null, inverse);
+        this(null, inverse, null);
     }
 
-    public ClusterSet(String distanceFunction, boolean inverse) {
+    public ClusterSet(String distanceFunction, boolean inverse, long[] shape) {
         this.distanceFunction = distanceFunction;
         this.inverse = inverse;
         this.clusters = Collections.synchronizedList(new ArrayList<Cluster>());
         this.pointDistribution = Collections.synchronizedMap(new HashMap<String, String>());
+        if (shape != null)
+            this.centersHolder = new CentersHolder(shape);
     }
 
 
@@ -56,6 +59,7 @@ public class ClusterSet implements Serializable {
         Cluster newCluster = new Cluster(center, distanceFunction);
         getClusters().add(newCluster);
         setPointLocation(center, newCluster);
+        centersHolder.addCenter(center.getArray());
         return newCluster;
     }
 
@@ -126,7 +130,7 @@ public class ClusterSet implements Serializable {
         Cluster nearestCluster = null;
         double minDistance = isInverse() ? Float.MIN_VALUE : Float.MAX_VALUE;
 
-        double currentDistance;
+        /*double currentDistance;
         for (Cluster cluster : getClusters()) {
             currentDistance = cluster.getDistanceToCenter(point);
             if (isInverse()) {
@@ -141,8 +145,9 @@ public class ClusterSet implements Serializable {
                 }
             }
 
-        }
+        }*/
 
+        minDistance = centersHolder.getMinDistanceToCenter(point, distanceFunction);
         return Pair.of(nearestCluster, minDistance);
 
     }

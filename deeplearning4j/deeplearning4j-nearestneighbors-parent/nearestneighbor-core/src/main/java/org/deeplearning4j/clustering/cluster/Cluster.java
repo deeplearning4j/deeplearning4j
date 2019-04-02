@@ -17,6 +17,7 @@
 package org.deeplearning4j.clustering.cluster;
 
 import lombok.Data;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.io.Serializable;
@@ -37,6 +38,7 @@ public class Cluster implements Serializable {
     private String label;
 
     private Point center;
+    private INDArray centers;
     private List<Point> points = Collections.synchronizedList(new ArrayList<Point>());
     private boolean inverse = false;
     private String distanceFunction;
@@ -76,6 +78,12 @@ public class Cluster implements Serializable {
         return Nd4j.getExecutioner().execAndReturn(
                         ClusterUtils.createDistanceFunctionOp(distanceFunction, center.getArray(), point.getArray()))
                         .getFinalResult().doubleValue();
+    }
+
+    public double getDistanceToCenterNew(Point point) {
+        return Nd4j.getExecutioner().execAndReturn(
+                ClusterUtils.createDistanceFunctionOp(distanceFunction, centers, point.getArray()))
+                .getFinalResult().doubleValue();
     }
 
     /**
