@@ -4939,7 +4939,14 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     public INDArray get(INDArrayIndex... indexes) {
         Nd4j.getCompressor().autoDecompress(this);
 
-        Preconditions.checkArgument(indexes != null && indexes.length == this.rank(), "Number of indices should be equal to rank of the INDArray");
+        // besides of backward support for legacy "vectors" which were 2D
+        // we enforce number of indices provided to be equal to number of dimensions in this array
+        if (rank() == 2 && jvmShapeInfo.javaShapeInformation[1] == 1 && indexes.length == 1)
+            indexes = new INDArrayIndex[]{ NDArrayIndex.all(), indexes[0]};
+        else if (rank() == 2 && jvmShapeInfo.javaShapeInformation[2] == 1 && indexes.length == 1)
+            indexes = new INDArrayIndex[]{indexes[0], NDArrayIndex.all()};
+        else
+            Preconditions.checkArgument(indexes != null && indexes.length == this.rank(), "Number of indices should be equal to rank of the INDArray");
 
         if(indexes.length > rank()) {
             int numNonNewAxis = 0;
