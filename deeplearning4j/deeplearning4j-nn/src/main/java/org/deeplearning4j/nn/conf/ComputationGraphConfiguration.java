@@ -967,12 +967,6 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
          */
         public GraphBuilder addVertex(String vertexName, GraphVertex vertex, String... vertexInputs) {
 
-            if(vertexInputs.length == 0){
-                if(lastAdded != null) {
-                    vertexInputs = new String[]{lastAdded};
-                }
-            }
-
             Preconditions.checkState(!vertices.containsKey(vertexName), "Cannot add vertex: a vertex with name \"%s\" already exists", vertexName);
             vertices.put(vertexName, vertex);
 
