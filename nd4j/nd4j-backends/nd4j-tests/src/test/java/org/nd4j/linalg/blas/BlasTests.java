@@ -198,6 +198,19 @@ public class BlasTests extends BaseNd4jTest {
     }
 
     @Test
+    public void test_Fp16_Mmuli1(){
+        final INDArray activations = Nd4j.createUninitialized(DataType.HALF, new long[]{1, 3, 2}, 'f');
+        final INDArray z = activations.tensorAlongDimension(0, 1, 2);
+
+        final INDArray a = Nd4j.rand(DataType.HALF, 3, 4);
+        final INDArray b = Nd4j.rand(DataType.HALF,4, 2);
+
+        INDArray ab = a.mmul(b);
+        a.mmul(b, z);
+        assertEquals(ab, z);
+    }
+
+    @Test
     public void testMmuli4(){
         try {
             Nd4j.rand(1, 3).mmuli(Nd4j.rand(3, 1), Nd4j.createUninitialized(new int[]{10, 10, 1}));
