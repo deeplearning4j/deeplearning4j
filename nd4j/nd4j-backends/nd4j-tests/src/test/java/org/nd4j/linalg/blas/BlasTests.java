@@ -18,6 +18,8 @@ package org.nd4j.linalg.blas;
 
 
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -26,6 +28,9 @@ import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
+
+import java.util.ArrayList;
+import java.util.Collections;
 
 import static org.junit.Assert.*;
 
@@ -198,7 +203,7 @@ public class BlasTests extends BaseNd4jTest {
     }
 
     @Test
-    public void test_Fp16_Mmuli1(){
+    public void test_Fp16_Mmuli_1(){
         final INDArray activations = Nd4j.createUninitialized(DataType.HALF, new long[]{1, 3, 2}, 'f');
         final INDArray z = activations.tensorAlongDimension(0, 1, 2);
 
@@ -208,6 +213,35 @@ public class BlasTests extends BaseNd4jTest {
         INDArray ab = a.mmul(b);
         a.mmul(b, z);
         assertEquals(ab, z);
+    }
+
+    @Test
+    public void test_Fp16_Mmuli_2(){
+        val a = Nd4j.create(DataType.HALF, 32, 768);
+        val b = Nd4j.create(DataType.HALF, 768);
+
+        val c = a.mmul(b);
+    }
+
+    @Test
+    @Ignore
+    public void testHalfPrecision() {
+        val a = Nd4j.create(DataType.HALF, 64, 768);
+        val b = Nd4j.create(DataType.HALF, 768, 1024);
+        val c = Nd4j.create(DataType.HALF, new long[]{64, 1024}, 'f');
+
+        val durations = new ArrayList<Long>();
+        val iterations = 100;
+        for (int e = 0; e < iterations; e++) {
+            val timeStart = System.currentTimeMillis();
+            a.mmuli(b, c);
+            val timeEnd = System.currentTimeMillis();
+            durations.add(timeEnd - timeStart);
+        }
+
+        Collections.sort(durations);
+
+        log.info("Median time: {} ms", durations.get(durations.size() / 2));
     }
 
     @Test
