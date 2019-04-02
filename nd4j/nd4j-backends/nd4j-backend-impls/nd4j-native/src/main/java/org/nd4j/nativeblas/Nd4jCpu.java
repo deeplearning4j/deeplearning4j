@@ -4204,6 +4204,15 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         public native @Cast("bool") boolean isRowVector();
 
         /**
+        *  returns true if all dimensions of array except one are unities, for example: [1,1,n,1], [n,1,1], [n], ...
+        *  posOfNonUnityDim - one dimension with value > 1
+        */
+        public native @Cast("bool") boolean isCommonVector(@ByRef IntPointer posOfNonUnityDim);
+        public native @Cast("bool") boolean isCommonVector(@ByRef IntBuffer posOfNonUnityDim);
+        public native @Cast("bool") boolean isCommonVector(@ByRef int[] posOfNonUnityDim);
+
+
+        /**
         *  returns true if array is scalar
         */
         public native @Cast("bool") boolean isScalar();
@@ -4351,6 +4360,9 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
 
     //////////////////////////////////////////////////////////////////////////
 
+    
+
+    //////////////////////////////////////////////////////////////////////////
     
 
     //////////////////////////////////////////////////////////////////////////

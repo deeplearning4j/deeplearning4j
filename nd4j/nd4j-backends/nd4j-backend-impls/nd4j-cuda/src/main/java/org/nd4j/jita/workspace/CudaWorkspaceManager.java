@@ -60,6 +60,11 @@ public class CudaWorkspaceManager extends BasicWorkspaceManager {
     }
 
     @Override
+    protected void pickReference(MemoryWorkspace w) {
+        Nd4j.getDeallocatorService().pickObject(w);
+    }
+
+    @Override
     public MemoryWorkspace createNewWorkspace() {
         ensureThreadExistense();
 

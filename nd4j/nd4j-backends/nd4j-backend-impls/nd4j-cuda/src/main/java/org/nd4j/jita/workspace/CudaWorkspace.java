@@ -36,6 +36,10 @@ import org.nd4j.linalg.jcublas.context.CudaContext;
 import org.nd4j.linalg.memory.abstracts.Nd4jWorkspace;
 import org.nd4j.nativeblas.NativeOpsHolder;
 import org.nd4j.nativeblas.Nd4jCuda;
+import org.nd4j.linalg.api.memory.Deallocator;
+import java.util.List;
+import java.util.Queue;
+
 
 /**
  * CUDA-aware MemoryWorkspace implementation
@@ -390,5 +394,27 @@ public class CudaWorkspace extends Nd4jWorkspace {
 
         context.getSpecialStream().synchronize();
         */
+    }
+
+    protected PointersPair workspace() {
+        return workspace;
+    }
+
+    protected Queue<PointersPair> pinnedPointers() {
+        return pinnedAllocations;
+    }
+
+    protected List<PointersPair> externalPointers() {
+        return externalAllocations;
+    }
+
+    @Override
+    public Deallocator deallocator() {
+        return new CudaWorkspaceDeallocator(this);
+    }
+
+    @Override
+    public String getUniqueId() {
+        return "Workspace_" + getId();
     }
 }
