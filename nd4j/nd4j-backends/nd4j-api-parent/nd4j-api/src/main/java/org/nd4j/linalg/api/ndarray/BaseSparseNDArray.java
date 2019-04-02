@@ -1323,6 +1323,16 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
     }
 
     @Override
+    public Number getNumber(long index) {
+        return null;
+    }
+
+    @Override
+    public Number getNumber(long... indices) {
+        return null;
+    }
+
+    @Override
     public INDArray getScalar(int... indices) {
         return null;
     }
