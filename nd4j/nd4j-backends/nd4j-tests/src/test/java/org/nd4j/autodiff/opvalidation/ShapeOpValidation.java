@@ -925,11 +925,11 @@ public class ShapeOpValidation extends BaseOpValidation {
     public void testTransposeOp(){
 
         INDArray arr = Nd4j.linspace(1,15, 15).reshape(5,3);
-        INDArray out = Nd4j.create(3,5);
+        INDArray out = Nd4j.create(Nd4j.defaultFloatingPointType(), new long[]{3,5}, 'c');
 
         OpTestCase op = new OpTestCase(new Transpose(arr, out));
         INDArray exp = arr.transpose();
-        op.expectedOutput(0, exp);
+        op.expectedOutput(0, exp.dup('c'));
         String err = OpValidation.validate(op);
         assertNull(err);
     }
@@ -994,7 +994,7 @@ public class ShapeOpValidation extends BaseOpValidation {
     public void testPermute2(){
         for (int[] perm : new int[][]{{0, 1, 2}, {0, 2, 1}, {1, 0, 2}, {1, 2, 0}, {2, 0, 1}, {2, 1, 0}}) {
             INDArray in = Nd4j.linspace(1, 60, 60).reshape(3,4,5);
-            INDArray exp = in.permute(perm);
+            INDArray exp = in.permute(perm).dup('c');
 
             int[] outShape = new int[3];
             for( int i=0; i<3; i++ ){
@@ -1807,13 +1807,13 @@ public class ShapeOpValidation extends BaseOpValidation {
     @Test
     public void testSplit2(){
         INDArray in = Nd4j.linspace(1,24,24).reshape(3,8);
-        INDArray axis = Nd4j.trueScalar(-1);
+        INDArray axis = Nd4j.scalar(-1);
 
-        INDArray out1 = Nd4j.create(new long[]{3,4});
-        INDArray out2 = Nd4j.create(new long[]{3,4});
+        INDArray out1 = Nd4j.create(new long[]{3,4}, 'c');
+        INDArray out2 = Nd4j.create(new long[]{3,4}, 'c');
 
-        INDArray exp1 = in.get(NDArrayIndex.all(), NDArrayIndex.interval(0,4));
-        INDArray exp2 = in.get(NDArrayIndex.all(), NDArrayIndex.interval(4,8));
+        INDArray exp1 = in.get(NDArrayIndex.all(), NDArrayIndex.interval(0,4)).dup('c');
+        INDArray exp2 = in.get(NDArrayIndex.all(), NDArrayIndex.interval(4,8)).dup('c');
 
         assertNull(OpValidation.validate(new OpTestCase(DynamicCustomOp.builder("split")
                 .addInputs(axis, in)
