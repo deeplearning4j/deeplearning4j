@@ -6918,7 +6918,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
 
         INDArray mask1 = inArray.match(1, Conditions.greaterThanOrEqual(1));
 
-        assertEquals(1, mask1.maxNumber().intValue()); // ! Not Empty Match
+        assertEquals(1, mask1.castTo(DataType.INT).maxNumber().intValue()); // ! Not Empty Match
 
         INDArray[] matchIndexes = Nd4j.where(mask1, null, null);
 
@@ -6927,7 +6927,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
 
         INDArray mask2 = inArray.match(1, Conditions.greaterThanOrEqual(11));
 
-        assertEquals(0, mask2.maxNumber().intValue());
+        assertEquals(0, mask2.castTo(DataType.INT).maxNumber().intValue());
 
         INDArray[] matchIndexes2 = Nd4j.where(mask2, null, null);
         for( int i=0; i<matchIndexes2.length; i++ ){

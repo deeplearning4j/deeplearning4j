@@ -2,14 +2,20 @@ package org.nd4j.linalg.api.ops.impl.shape;
 
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.imports.NoOpNameFoundException;
+import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
+import org.tensorflow.framework.AttrValue;
+import org.tensorflow.framework.GraphDef;
+import org.tensorflow.framework.NodeDef;
 
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Linspace op - with dynamic (SDVariable) args
@@ -28,7 +34,7 @@ public class Linspace extends DynamicCustomOp {
 
     @Override
     public String opName(){
-        return "linspace";
+        return "lin_space";
     }
 
     @Override
@@ -39,6 +45,21 @@ public class Linspace extends DynamicCustomOp {
     @Override
     public List<DataType> calculateOutputDataTypes(List<DataType> inputDataTypes){
         return Collections.singletonList(dataType);
+    }
+
+    @Override
+    public String onnxName() {
+        throw new NoOpNameFoundException("No onnx op opName found for " +  opName());
+    }
+
+    @Override
+    public String tensorflowName() {
+        return "LinSpace";
+    }
+
+    @Override
+    public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
+        dataType = TFGraphMapper.convertType(attributesForNode.get("T").getType());
     }
 
     @Override
