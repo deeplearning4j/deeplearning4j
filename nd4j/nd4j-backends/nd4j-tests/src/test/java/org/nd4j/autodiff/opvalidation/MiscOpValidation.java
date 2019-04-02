@@ -39,6 +39,7 @@ import org.nd4j.linalg.api.ops.impl.transforms.clip.ClipByNorm;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.CumProd;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.CumSum;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.Fill;
+import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.indexing.NDArrayIndex;
@@ -1502,5 +1503,66 @@ public class MiscOpValidation extends BaseOpValidation {
                 .build();
 
         Nd4j.getExecutioner().exec(op);
+    }
+
+    @Test
+    public void testMmulRank4() throws Exception {
+        Nd4j.getRandom().setSeed(12345);
+
+        INDArray arr1 = Nd4j.rand(DataType.FLOAT, 32, 12, 128, 64);
+        INDArray arr2 = Nd4j.rand(DataType.FLOAT, 32, 12, 128, 64);
+
+        DynamicCustomOp op = DynamicCustomOp.builder("matmul")
+                .addInputs(arr1, arr2)
+                .addIntegerArguments(0, 1)      //Transpose arr2 only
+                .build();
+
+        List<LongShapeDescriptor> shapes = op.calculateOutputShape();
+        assertEquals(1, shapes.size());
+        long[] shape = new long[]{32,12,128,128};
+        assertArrayEquals(shape, shapes.get(0).getShape());
+
+        INDArray out = Nd4j.create(DataType.FLOAT, shape);
+
+        INDArray outExp = out.like();
+        for( int i=0; i<32; i++ ){
+            for( int j=0; j<12; j++ ){
+                INDArray sub1 = arr1.get(NDArrayIndex.point(i), NDArrayIndex.point(j), NDArrayIndex.all(), NDArrayIndex.all());
+                INDArray sub2 = arr2.get(NDArrayIndex.point(i), NDArrayIndex.point(j), NDArrayIndex.all(), NDArrayIndex.all());
+                INDArray mmul = sub1.mmul(sub2.transpose());
+                outExp.get(NDArrayIndex.point(i), NDArrayIndex.point(j), NDArrayIndex.all(), NDArrayIndex.all()).assign(mmul);
+            }
+        }
+
+        op.setOutputArgument(0, out);
+        Nd4j.exec(op);
+
+        assertEquals(outExp, out);
+    }
+
+    @Test
+    public void testMmulRank4_simple(){
+
+        INDArray arr1 = Nd4j.ones(DataType.FLOAT, 32, 12, 128, 64);
+        INDArray arr2 = Nd4j.ones(DataType.FLOAT, 32, 12, 128, 64);
+
+        DynamicCustomOp op = DynamicCustomOp.builder("matmul")
+                .addInputs(arr1, arr2)
+                .addIntegerArguments(0, 1)      //Transpose arr2 only
+                .build();
+
+        List<LongShapeDescriptor> shapes = op.calculateOutputShape();
+        assertEquals(1, shapes.size());
+        long[] shape = new long[]{32,12,128,128};
+        assertArrayEquals(shape, shapes.get(0).getShape());
+
+        INDArray out = Nd4j.create(DataType.FLOAT, shape);
+
+        op.setOutputArgument(0, out);
+        Nd4j.exec(op);
+//        System.out.println(out);
+
+        INDArray exp = Nd4j.valueArrayOf(shape, 64.0, DataType.FLOAT);      //Each entry in output is sum of 64 (1.0 x 1.0) multiplications
+        assertEquals(exp, out);
     }
 }

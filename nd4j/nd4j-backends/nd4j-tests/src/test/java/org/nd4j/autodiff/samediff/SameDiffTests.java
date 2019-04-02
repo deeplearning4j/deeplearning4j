@@ -2254,11 +2254,12 @@ public class SameDiffTests {
         }
         return x;
     }
+
     @Test
     public void testGet(){
 
         SameDiff sd  = SameDiff.create();
-        INDArray arr = Nd4j.linspace(1, 100, 100).reshape(10L, 10L);
+        INDArray arr = Nd4j.linspace(1, 100, 100).reshape('c',10L, 10L);
         SDVariable x = sd.var(arr);
 
         INDArray expOut1 = arr.get(NDArrayIndex.point(4), NDArrayIndex.point(5));
@@ -2281,7 +2282,45 @@ public class SameDiffTests {
         INDArray expOut5 = arr.get(NDArrayIndex.interval(5, 6), NDArrayIndex.all());
         SDVariable result5 = x.get(SDIndex.point(5, true), SDIndex.all());
         assertEquals(expOut5, result5.eval());
+    }
 
+    @Test
+    public void testGetRank3(){
+
+        SameDiff sd  = SameDiff.create();
+        INDArray arr = Nd4j.linspace(1, 1000, 1000).reshape('c', 10, 10, 10);
+        SDVariable x = sd.var(arr);
+
+        INDArray y1 = arr.get(NDArrayIndex.point(2), NDArrayIndex.all(), NDArrayIndex.all());
+        SDVariable s1 = x.get(SDIndex.point(2), SDIndex.all(), SDIndex.all());
+        INDArray s1a = s1.eval();
+        assertEquals(s1a, y1);
+
+        INDArray y2 = arr.get(NDArrayIndex.all(), NDArrayIndex.point(2), NDArrayIndex.all());
+        SDVariable s2 = x.get(SDIndex.all(), SDIndex.point(2), SDIndex.all());
+        INDArray s2a = s2.eval();
+        assertEquals(s2a, y2);
+
+        INDArray y3 = arr.get(NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.point(2));
+        SDVariable s3 = x.get(SDIndex.all(), SDIndex.all(), SDIndex.point(2));
+        INDArray s3a = s3.eval();
+        assertEquals(s3a, y3);
+
+
+        INDArray y4 = arr.get(NDArrayIndex.point(2), NDArrayIndex.all(), NDArrayIndex.interval(3,5));
+        SDVariable s4 = x.get(SDIndex.point(2), SDIndex.all(), SDIndex.interval(3,5));
+        INDArray s4a = s4.eval();
+        assertEquals(s4a, y4);
+
+        INDArray y5 = arr.get(NDArrayIndex.interval(3,5), NDArrayIndex.point(2), NDArrayIndex.all());
+        SDVariable s5 = x.get(SDIndex.interval(3,5), SDIndex.point(2), SDIndex.all());
+        INDArray s5a = s5.eval();
+        assertEquals(s5a, y5);
+
+        INDArray y6 = arr.get(NDArrayIndex.all(), NDArrayIndex.interval(3,5), NDArrayIndex.point(2));
+        SDVariable s6 = x.get(SDIndex.all(), SDIndex.interval(3,5), SDIndex.point(2));
+        INDArray s6a = s6.eval();
+        assertEquals(s6a, y6);
     }
 
     @Test

@@ -372,7 +372,7 @@ public class ReductionBpOpValidation extends BaseOpValidation {
             preReduceInput.putScalar(0, 0, 20);
             preReduceInput.putScalar(1, 1, 21);
             preReduceInput.putScalar(2, 2, 22);
-            preReduceInput.putScalar(2, 2, 23);
+            preReduceInput.putScalar(3, 3, 23);
             INDArray dLdOut_0 = Nd4j.create(new double[]{1, 2, 3, 4}, reducedShape_0);
             INDArray dLdInExpected_0 = Nd4j.create(preReduceInput.shape());
             dLdInExpected_0.putScalar(0, 0, 1);
@@ -384,7 +384,7 @@ public class ReductionBpOpValidation extends BaseOpValidation {
 
             String err = OpValidation.validate(new OpTestCase(new MaxBp(preReduceInput, dLdOut_0, dLdIn, keepDims, 0))
                     .expectedOutput(0, dLdInExpected_0));
-            assertNull(err, err);
+            assertNull(err);
 
 
             long[] reducedShape_1 = (keepDims ? new long[]{4, 1} : new long[]{4});
@@ -396,7 +396,7 @@ public class ReductionBpOpValidation extends BaseOpValidation {
             err = OpValidation.validate(new OpTestCase(new MaxBp(preReduceInput, dLdOut_1, dLdIn, keepDims, 1))
                     .expectedOutput(0, dLdInExpected_1));
 
-            assertNull(err, err);
+            assertNull(err);
         }
     }
 

@@ -4642,6 +4642,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public INDArray max(int... dimension) {
+        validateNumericalArray("max", false);
         return Nd4j.getExecutioner().exec(new Max(this, dimension));
     }
 
@@ -4659,6 +4660,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public INDArray min(int... dimension) {
+        validateNumericalArray("max", false);
         return Nd4j.getExecutioner().exec(new Min(this, dimension));
     }
 
