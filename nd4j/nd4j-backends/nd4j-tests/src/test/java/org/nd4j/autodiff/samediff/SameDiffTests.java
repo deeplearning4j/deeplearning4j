@@ -16,6 +16,7 @@
 
 package org.nd4j.autodiff.samediff;
 
+import com.google.common.collect.Lists;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.junit.After;
@@ -2927,5 +2928,88 @@ public class SameDiffTests {
                 .gradientCheck(true));
 
         assertNull(err, err);
+    }
+
+
+    @Test
+    public void testNonScalarOutput1(){
+        SameDiff sd = SameDiff.create();
+        SDVariable a = sd.reshape("a", sd.linspace("at", DataType.DOUBLE, 1, 15, 15), 3, 5);//.add(1);
+        SDVariable b = sd.one("b", DataType.DOUBLE, 3, 5);
+
+        SDVariable out = a.mul(b);
+        out.eval();
+
+        sd.execBackwards(null, "a");
+        out.eval();
+        sd.grad("a").eval();
+
+        String err = OpValidation.validate(new TestCase(sd)
+                .testFlatBufferSerialization(TestCase.TestSerialization.BOTH)
+                .gradientCheck(true));
+
+        assertNull(err);
+    }
+
+    @Test
+    public void testNonScalarOutput2() {
+        SameDiff sd = SameDiff.create();
+        SDVariable a = sd.reshape("a", sd.linspace("at", DataType.DOUBLE, 1, 15, 15), 3, 5);
+        SDVariable b = sd.one("b", DataType.DOUBLE, 3, 5);
+
+        SDVariable out = a.mul(b).mean(1);
+        out.eval();
+
+        sd.execBackwards(null, Lists.asList("a", new String[]{}));
+        //System.out.println(out.eval());
+        INDArray actGrad = sd.grad("a").eval();
+
+        INDArray expGrad = Nd4j.valueArrayOf(new long[]{3,5}, 0.2, DataType.DOUBLE);
+        assertEquals(expGrad, actGrad);
+
+        String err = OpValidation.validate(new TestCase(sd).gradientCheck(true));
+        assertNull(err);
+    }
+
+    @Test
+    public void testNonScalarOutput3() {
+        SameDiff sd = SameDiff.create();
+        SDVariable a = sd.reshape("a", sd.linspace("at", DataType.DOUBLE, 1, 15, 15), 3, 5);
+        SDVariable b = sd.one("b", DataType.DOUBLE, 3, 5);//.add(3);
+
+        SDVariable out = a.mul(b).mean(0, 1);
+
+        out.eval();
+
+        sd.execBackwards(null, "a");
+        //System.out.println(out.eval());
+        INDArray gradAct = sd.grad("a").eval();
+        INDArray expGrad = Nd4j.valueArrayOf(new long[]{3,5}, 1.0/12, DataType.DOUBLE);
+
+        String err = OpValidation.validate(new TestCase(sd).gradientCheck(true));
+        assertNull(err);
+    }
+
+    @Test
+    public void testNonScalarOutput4(){
+        SameDiff sd = SameDiff.create();
+        SDVariable a = sd.placeHolder("a", DataType.DOUBLE, 3,4);
+        SDVariable b = sd.placeHolder("b", DataType.DOUBLE, 4,5);
+
+        SDVariable out = a.mmul("mmul", b);
+
+        Map<String,INDArray> m = new HashMap<>();
+        m.put("a", Nd4j.rand(DataType.DOUBLE, 3, 4));
+        m.put("b", Nd4j.rand(DataType.DOUBLE, 4, 5));
+        sd.execBackwards(m, "a", "b");
+
+        a.setArray(m.get("a"));
+        b.setArray(m.get("b"));
+
+        String err = OpValidation.validate(new TestCase(sd)
+                .testFlatBufferSerialization(TestCase.TestSerialization.BOTH)
+                .gradientCheck(true));
+
+        assertNull(err);
     }
 }

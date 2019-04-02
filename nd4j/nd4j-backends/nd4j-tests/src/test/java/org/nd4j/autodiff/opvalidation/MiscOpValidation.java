@@ -1188,7 +1188,7 @@ public class MiscOpValidation extends BaseOpValidation {
     @Test
     public void testLinspace(){
         SameDiff sd = SameDiff.create();
-        SDVariable out = sd.linspace("linspace", 1,10,10).castTo(DataType.DOUBLE);
+        SDVariable out = sd.linspace("linspace", DataType.DOUBLE, 1,10,10);
         SDVariable loss = out.std(true);
 
         String err = OpValidation.validate(new TestCase(sd)
