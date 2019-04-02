@@ -1772,6 +1772,24 @@ public class SameDiff extends SDBaseOps {
     }
 
     /**
+     * Evaluate the performance of a single variable's prediction.<br>
+     * For example, if the variable to evaluatate was called "softmax" you would use:
+     * <pre>
+     * {@code Evaluation e = new Evaluation();
+     * sameDiff.evaluate(iterator, "softmax", e);}
+     * </pre>
+     *
+     * @param iterator       Iterator as source of data to evaluate
+     * @param outputVariable The variable to evaluate
+     * @param evaluations    The evaluations to perform
+     */
+    public void evaluate(MultiDataSetIterator iterator, String outputVariable, IEvaluation... evaluations) {
+        Preconditions.checkArgument(evaluations != null && evaluations.length > 0, "No evaluations were passed to the evaluate method");
+        evaluate(iterator, Collections.singletonMap(outputVariable, Arrays.asList(evaluations)),
+                Collections.singletonMap(outputVariable, 0));
+    }
+
+    /**
      * Perform evaluation using classes such as {@link org.nd4j.evaluation.classification.Evaluation} for classifier outputs
      * and {@link org.nd4j.evaluation.regression.RegressionEvaluation} for regression outputs.<br>
      * <br>
@@ -1819,6 +1837,65 @@ public class SameDiff extends SDBaseOps {
                 }
             }
         }
+    }
+
+    /**
+     * Do inference on a network with a single input.<br>
+     * For example, if the variable to infer was called "softmax" you would use:
+     * <pre>
+     * {@code
+     * sameDiff.output(iterator, "softmax");}
+     * </pre>
+     *
+     * @param iterator       Iterator as source of data to evaluate
+     * @param outputs        The variables to evaluate
+     */
+    public void output(DataSetIterator iterator, String... outputs){
+        output(new MultiDataSetIteratorAdapter(iterator), outputs);
+    }
+
+    /**
+     * Perform inference.<br>
+     * <br>
+     * <b>Example: classifier inference</b><br>
+     * Predictions variable name: "softmaxOutput"<br>
+     * Evaluations to perform: {@link org.nd4j.evaluation.classification.Evaluation}<br>
+     * Data: single output MultiDataSets<br>
+     * Code:<br>
+     * <pre>
+     * {@code
+     * MultiDataSetIterator data = ...
+     * sameDiff.output(iterator, "softmaxOutput);
+     * }
+     * </pre>
+     *
+     * @param iterator  The iterator - the source of the data for inference
+     * @param outputs   The set of outputs to report.  If null, defaults to all outputs of this SameDiff.
+     */
+    public List<Map<String, INDArray>> output(MultiDataSetIterator iterator, String... outputs){
+        Preconditions.checkState(trainingConfig != null, "Training config has not been set");
+
+        List<String> reqVars;
+
+        if(outputs != null){
+            reqVars = Arrays.asList(outputs);
+        } else {
+            reqVars = outputs();
+        }
+
+        List<Map<String, INDArray>> predictions = new ArrayList<>();
+
+        if(!iterator.hasNext() && iterator.resetSupported())
+            iterator.reset();
+
+        while(iterator.hasNext()){
+            MultiDataSet ds = iterator.next();
+            Map<String,INDArray> placeholderMap = toPlaceholderMap(ds);
+
+            predictions.add(exec(placeholderMap, reqVars));
+        }
+
+        return predictions;
     }
 
 
