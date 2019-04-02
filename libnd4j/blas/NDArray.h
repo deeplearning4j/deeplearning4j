@@ -1125,6 +1125,7 @@ namespace nd4j {
         *  set _shapeInfo
         */
         FORCEINLINE void setShapeInfo(Nd4jLong *shapeInfo);
+        FORCEINLINE void setShapeInfo(Nd4jLong *shapeInfo, const nd4j::DataType dtype);
 
         /**
         *  set _buffer
@@ -1450,11 +1451,36 @@ namespace nd4j {
 
         _shapeInfo = shapeInfo;
 
-        if (shapeInfo != nullptr) {
-            this->_length = shape::length(shapeInfo);
-            this->_dataType = ArrayOptions::dataType(shapeInfo);
-        } else {
-            this->_dataType = nd4j::DataType::INHERIT;
+        if (shapeInfo != nullptr) {            
+            _dataType = ArrayOptions::dataType(_shapeInfo);
+            if(ArrayOptions::arrayType(_shapeInfo) == ArrayType::EMPTY)
+                _length = 0;
+            else
+                _length = shape::length(_shapeInfo);
+        } 
+        else {
+            _dataType = nd4j::DataType::INHERIT;
+            _length = 0;
+        }
+    }
+
+    //////////////////////////////////////////////////////////////////////////
+    void NDArray::setShapeInfo(Nd4jLong *shapeInfo, const nd4j::DataType dtype) {
+        if(_isShapeAlloc && _workspace == nullptr)
+            delete []_shapeInfo;
+
+        _shapeInfo = shapeInfo;
+
+        if (shapeInfo != nullptr) {            
+            _dataType = dtype;
+            if(ArrayOptions::arrayType(_shapeInfo) == ArrayType::EMPTY)
+                _length = 0;
+            else
+                _length = shape::length(_shapeInfo);
+        } 
+        else {
+            _dataType = nd4j::DataType::INHERIT;
+            _length = 0;
         }
     }
 
