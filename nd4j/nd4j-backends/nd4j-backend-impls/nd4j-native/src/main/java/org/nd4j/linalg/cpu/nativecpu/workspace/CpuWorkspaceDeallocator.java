@@ -19,6 +19,7 @@ package org.nd4j.linalg.cpu.nativecpu.workspace;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.nd4j.linalg.api.memory.Deallocator;
+import org.nd4j.linalg.api.memory.enums.LocationPolicy;
 import org.nd4j.linalg.api.memory.enums.MemoryKind;
 import org.nd4j.linalg.api.memory.pointers.PointersPair;
 import org.nd4j.linalg.factory.Nd4j;
@@ -35,11 +36,13 @@ public class CpuWorkspaceDeallocator implements Deallocator {
     private PointersPair pointersPair;
     private Queue<PointersPair> pinnedPointers;
     private List<PointersPair> externalPointers;
+    private LocationPolicy location;
 
     public CpuWorkspaceDeallocator(@NonNull CpuWorkspace workspace) {
         this.pointersPair = workspace.workspace();
         this.pinnedPointers = workspace.pinnedPointers();
         this.externalPointers = workspace.externalPointers();
+        this.location = workspace.getWorkspaceConfiguration().getPolicyLocation();
     }
 
     @Override
@@ -49,13 +52,12 @@ public class CpuWorkspaceDeallocator implements Deallocator {
         // purging workspace planes
         if (pointersPair != null) {
             if (pointersPair.getDevicePointer() != null) {
-                //log.info("Deallocating device...");
                 Nd4j.getMemoryManager().release(pointersPair.getDevicePointer(), MemoryKind.DEVICE);
             }
 
             if (pointersPair.getHostPointer() != null) {
-                //                                log.info("Deallocating host...");
-                Nd4j.getMemoryManager().release(pointersPair.getHostPointer(), MemoryKind.HOST);
+                if (location != LocationPolicy.MMAP)
+                    Nd4j.getMemoryManager().release(pointersPair.getHostPointer(), MemoryKind.HOST);
             }
         }
 
