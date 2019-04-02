@@ -16,12 +16,16 @@
 
 package org.deeplearning4j.iterator;
 
+import org.deeplearning4j.iterator.bert.BertMaskedLMMasker;
 import org.deeplearning4j.text.tokenization.tokenizer.Tokenizer;
 import org.deeplearning4j.text.tokenization.tokenizer.preprocessor.LowCasePreProcessor;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.BertWordPieceTokenizerFactory;
 import org.junit.Test;
 import org.nd4j.base.Preconditions;
+import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.io.ClassPathResource;
 import org.nd4j.linalg.primitives.Pair;
 
@@ -30,6 +34,8 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
+import java.util.Random;
 
 import static org.junit.Assert.assertEquals;
 
@@ -41,11 +47,11 @@ public class TestBertIterator {
     public TestBertIterator() throws IOException{ }
 
     @Test
-    public void testBertIterator() throws Exception {
+    public void testBertIteratorBasic() throws Exception {
 
-        String toTokenize = "I saw a girl with a telescope.";
+        String toTokenize1 = "I saw a girl with a telescope.";
+        String toTokenize2 = "Donaudampfschifffahrts Kapitänsmützeninnenfuttersaum";
         BertWordPieceTokenizerFactory t = new BertWordPieceTokenizerFactory(pathToVocab);
-        t.setTokenPreProcessor(new LowCasePreProcessor());
 
         BertIterator b = BertIterator.builder()
                 .tokenizer(t)
@@ -53,7 +59,8 @@ public class TestBertIterator {
                 .minibatchSize(2)
                 .sentenceProvider(new TestSentenceProvider())
                 .outputArrays(BertIterator.OutputArrays.INDICES_MASK)
-                .tokens(t.getVocab())
+                .vocabMap(t.getVocab())
+                .task(BertIterator.Task.SEQ_CLASSIFICATION)
                 .build();
 
         MultiDataSet mds = b.next();
@@ -61,6 +68,71 @@ public class TestBertIterator {
         System.out.println(mds.getFeatures(0));
         System.out.println(mds.getFeatures(1));
 
+
+        INDArray expEx0 = Nd4j.create(DataType.INT, 1, 16);
+        INDArray expM0 = Nd4j.create(DataType.INT, 1, 16);
+        List<String> tokens = t.create(toTokenize1).getTokens();
+        Map<String,Integer> m = t.getVocab();
+        for( int i=0; i<tokens.size(); i++ ){
+            int idx = m.get(tokens.get(i));
+            expEx0.putScalar(0, i, idx);
+            expM0.putScalar(0, i, 1);
+        }
+
+        INDArray expEx1 = Nd4j.create(DataType.INT, 1, 16);
+        INDArray expM1 = Nd4j.create(DataType.INT, 1, 16);
+        List<String> tokens2 = t.create(toTokenize2).getTokens();
+        for( int i=0; i<tokens2.size(); i++ ){
+            String token = tokens2.get(i);
+            if(!m.containsKey(token)){
+                throw new IllegalStateException("Unknown token: \"" + token + "\"");
+            }
+            int idx = m.get(token);
+            expEx1.putScalar(0, i, idx);
+            expM1.putScalar(0, i, 1);
+        }
+
+        INDArray expF = Nd4j.vstack(expEx0, expEx1);
+        INDArray expM = Nd4j.vstack(expM0, expM1);
+
+        assertEquals(expF, mds.getFeatures(0));
+        assertEquals(expM, mds.getFeatures(1));
+    }
+
+    @Test
+    public void testBertTasks() throws Exception {
+        //Task 1: Unsupervised
+        BertWordPieceTokenizerFactory t = new BertWordPieceTokenizerFactory(pathToVocab);
+        BertIterator b = BertIterator.builder()
+                .tokenizer(t)
+                .lengthHandling(BertIterator.LengthHandling.FIXED_LENGTH, 16)
+                .minibatchSize(2)
+                .sentenceProvider(new TestSentenceProvider())
+                .outputArrays(BertIterator.OutputArrays.INDICES_MASK)
+                .vocabMap(t.getVocab())
+                .task(BertIterator.Task.UNSUPERVISED)
+                .masker(new BertMaskedLMMasker(new Random(12345), 0.3, 0.5, 0.5))
+                .unsupervisedLabelFormat(BertIterator.UnsupervisedLabelFormat.RANK2_IDX)
+                .maskToken("[MASK]")
+                .build();
+
+//        for(String s : t.getVocab().keySet()){
+//            if(s.contains("mask") || s.contains("[")){
+//                System.out.println(s);
+//            }
+//        }
+
+        MultiDataSet mds = b.next();
+        System.out.println(mds.getFeatures(0));
+        System.out.println(mds.getFeatures(1));
+        System.out.println(mds.getLabels(0));
+
+
+        //Task 2: Sequence classification
+
+
+
+        //Task 3: Per token classification
     }
 
     private static class TestSentenceProvider implements LabeledSentenceProvider {
@@ -69,14 +141,17 @@ public class TestBertIterator {
 
         @Override
         public boolean hasNext() {
-            return pos == 0;
+            return pos <= totalNumSentences();
         }
 
         @Override
         public Pair<String, String> nextSentence() {
             Preconditions.checkState(hasNext());
-            pos++;
-            return new Pair<>("I saw a girl with a telescope.", "positive");
+            if(pos++ == 0){
+                return new Pair<>("I saw a girl with a telescope.", "positive");
+            } else {
+                return new Pair<>("Donaudampfschifffahrts Kapitänsmützeninnenfuttersaum", "negative");
+            }
         }
 
         @Override
@@ -86,7 +161,7 @@ public class TestBertIterator {
 
         @Override
         public int totalNumSentences() {
-            return 1;
+            return 2;
         }
 
         @Override
