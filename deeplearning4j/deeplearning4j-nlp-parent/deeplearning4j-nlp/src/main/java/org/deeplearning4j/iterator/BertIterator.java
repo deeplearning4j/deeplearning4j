@@ -36,17 +36,45 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * BertIterator is a MultiDataSetIterator for training BERT (Transformer) models in the following way:<br>
+ * (a) Unsupervised - Masked language model task (no sentence matching task is implemented thus far)<br>
+ * (b) Supervised - For sequence classification (i.e., 1 label per sequence, typically used for fine tuning)<br>
+ * The task can be specified using {@link Task}.
+ * <br>
+ * Example for unsupervised training:<br>
+ * <pre>
+ * {@code
+ *
+ * }
+ * </pre>
+ *
+ * This iterator supports numerous ways of configuring the behaviour with respect to the sequence lengths and data layout.<br>
+ * <br>
+ * <u><b>{@link LengthHandling} configuration:</b></u><br>
+ * Determines how to handle variable-length sequence situations.<br>
+ * <b>FIXED_LENGTH</b>: Always trim longer sequences to the specified length, and always pad shorter sequences to the specified length.<br>
+ * <b>ANY_LENGTH</b>: Output length is determined by the length of the longest sequence in the minibatch<br>
+ * <b>CLIP_ONLY</b>: For any sequences longer than the specified maximum, clip them. If the maximum sequence length in
+ * a minibatch is shorter than the specified maximum, no padding will occur.<br>
+ *<br><br>
+ * <u><b>{@link FeatureArrays} configuration:</b></u><br>
+ * Determines what arrays should be included.
+ * <b>INDICES_MASK</b>: Indices array and mask array only, no segment ID array<br>
+ * <b>INDICES_MASK</b>: Indices array, mask array and segment ID array (which is all 0s for single segment tasks)<br>
+ * <br>
+ * <u><b>{@link UnsupervisedLabelFormat} configuration:</b></u><br>
+ * Only relevant when the task is set to {@link Task#UNSUPERVISED}. Determine the format of the labels:<br>
+ * <b>RANK2_IDX</b>: return int32 [minibatch, numTokens] array with entries being class numbers<br>
+ * <b>RANK3_NCL</b>: return float32 [minibatch, numClasses, numTokens] array with 1-hot entries along dimension 1<br>
+ * <b>RANK3_NLC</b>: return float32 [minibatch, numTokens, numClasses] array with 1-hot entries along dimension 2<br>
+ * <br>
+ */
 public class BertIterator implements MultiDataSetIterator {
 
-    public enum Task {UNSUPERVISED, SEQ_CLASSIFICATION, CLASSIFICATION}
+    public enum Task {UNSUPERVISED, SEQ_CLASSIFICATION}
     public enum LengthHandling {FIXED_LENGTH, ANY_LENGTH, CLIP_ONLY}
-    public enum OutputArrays {INDICES_MASK, INDICES_MASK_SEGMENTID}
-
-    /**
-     * RANK2_IDX: return int32 [minibatch, numTokens] array with entries being class numbers
-     * RANK3_NCL: return float32, one-hot, [minibatch, numClasses, numTokens]
-     * RANK3_NLC: return float32, one-hot, [minibatch, numTokens, numClasses]
-     */
+    public enum FeatureArrays {INDICES_MASK, INDICES_MASK_SEGMENTID}
     public enum UnsupervisedLabelFormat {RANK2_IDX, RANK3_NCL, RANK3_NLC}
 
     protected Task task;
@@ -57,7 +85,7 @@ public class BertIterator implements MultiDataSetIterator {
     protected MultiDataSetPreProcessor preProcessor;
     protected LabeledSentenceProvider sentenceProvider = null;
     protected LengthHandling lengthHandling;
-    protected OutputArrays outputArrays;
+    protected FeatureArrays featureArrays;
     protected Map<String,Integer> vocabMap;   //TODO maybe use Eclipse ObjectIntHashMap or similar for fewer objects?
     protected BertSequenceMasker masker = null;
     protected UnsupervisedLabelFormat unsupervisedLabelFormat = null;
@@ -74,7 +102,7 @@ public class BertIterator implements MultiDataSetIterator {
         this.preProcessor = b.preProcessor;
         this.sentenceProvider = b.sentenceProvider;
         this.lengthHandling = b.lengthHandling;
-        this.outputArrays = b.outputArrays;
+        this.featureArrays = b.featureArrays;
         this.vocabMap = b.vocabMap;
         this.masker = b.masker;
         this.unsupervisedLabelFormat = b.unsupervisedLabelFormat;
@@ -153,13 +181,15 @@ public class BertIterator implements MultiDataSetIterator {
         INDArray outMaskArr = Nd4j.createFromArray(outMask);
         INDArray outSegmentIdArr = null;
         INDArray[] f;
-        INDArray[] fm = null;   //TODO
-        if(outputArrays == OutputArrays.INDICES_MASK_SEGMENTID){
+        INDArray[] fm;
+        if(featureArrays == FeatureArrays.INDICES_MASK_SEGMENTID){
             //For now: always segment index 0 (only single s sequence input supported)
             outSegmentIdArr = Nd4j.zeros(DataType.INT, mb, outLength);
-            f = new INDArray[]{outIdxsArr, outMaskArr, outSegmentIdArr};
+            f = new INDArray[]{outIdxsArr, outSegmentIdArr};
+            fm = new INDArray[]{outMaskArr, null};
         } else {
-            f = new INDArray[]{outIdxsArr, outMaskArr};
+            f = new INDArray[]{outIdxsArr};
+            fm = new INDArray[]{outMaskArr};
         }
 
         INDArray[] l = new INDArray[1];
@@ -288,7 +318,7 @@ public class BertIterator implements MultiDataSetIterator {
         protected int minibatchSize = 32;
         protected MultiDataSetPreProcessor preProcessor;
         protected LabeledSentenceProvider sentenceProvider = null;
-        protected OutputArrays outputArrays = OutputArrays.INDICES_MASK_SEGMENTID;
+        protected FeatureArrays featureArrays = FeatureArrays.INDICES_MASK_SEGMENTID;
         protected Map<String,Integer> vocabMap;   //TODO maybe use Eclipse ObjectIntHashMap for fewer objects?
         protected BertSequenceMasker masker = null;
         protected UnsupervisedLabelFormat unsupervisedLabelFormat;
@@ -325,8 +355,8 @@ public class BertIterator implements MultiDataSetIterator {
             return this;
         }
 
-        public Builder outputArrays(OutputArrays outputArrays){
-            this.outputArrays = outputArrays;
+        public Builder outputArrays(FeatureArrays featureArrays){
+            this.featureArrays = featureArrays;
             return this;
         }
 

@@ -17,8 +17,6 @@
 package org.deeplearning4j.iterator;
 
 import org.deeplearning4j.iterator.bert.BertMaskedLMMasker;
-import org.deeplearning4j.text.tokenization.tokenizer.Tokenizer;
-import org.deeplearning4j.text.tokenization.tokenizer.preprocessor.LowCasePreProcessor;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.BertWordPieceTokenizerFactory;
 import org.junit.Test;
 import org.nd4j.base.Preconditions;
@@ -26,10 +24,10 @@ import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.io.ClassPathResource;
 import org.nd4j.linalg.primitives.Pair;
 
-import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
@@ -37,7 +35,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.*;
 
 
 public class TestBertIterator {
@@ -47,7 +45,7 @@ public class TestBertIterator {
     public TestBertIterator() throws IOException{ }
 
     @Test
-    public void testBertIteratorBasic() throws Exception {
+    public void testBertSequenceClassification() throws Exception {
 
         String toTokenize1 = "I saw a girl with a telescope.";
         String toTokenize2 = "Donaudampfschifffahrts Kapitänsmützeninnenfuttersaum";
@@ -58,15 +56,15 @@ public class TestBertIterator {
                 .lengthHandling(BertIterator.LengthHandling.FIXED_LENGTH, 16)
                 .minibatchSize(2)
                 .sentenceProvider(new TestSentenceProvider())
-                .outputArrays(BertIterator.OutputArrays.INDICES_MASK)
+                .outputArrays(BertIterator.FeatureArrays.INDICES_MASK)
                 .vocabMap(t.getVocab())
                 .task(BertIterator.Task.SEQ_CLASSIFICATION)
                 .build();
 
         MultiDataSet mds = b.next();
-        assertEquals(2, mds.getFeatures().length);
+        assertEquals(1, mds.getFeatures().length);
         System.out.println(mds.getFeatures(0));
-        System.out.println(mds.getFeatures(1));
+        System.out.println(mds.getFeaturesMaskArray(0));
 
 
         INDArray expEx0 = Nd4j.create(DataType.INT, 1, 16);
@@ -96,11 +94,32 @@ public class TestBertIterator {
         INDArray expM = Nd4j.vstack(expM0, expM1);
 
         assertEquals(expF, mds.getFeatures(0));
-        assertEquals(expM, mds.getFeatures(1));
+        assertEquals(expM, mds.getFeaturesMaskArray(0));
+
+        assertFalse(b.hasNext());
+        b.reset();
+        assertTrue(b.hasNext());
+        MultiDataSet mds2 = b.next();
+
+        //Same thing, but with segment ID also
+        b = BertIterator.builder()
+                .tokenizer(t)
+                .lengthHandling(BertIterator.LengthHandling.FIXED_LENGTH, 16)
+                .minibatchSize(2)
+                .sentenceProvider(new TestSentenceProvider())
+                .outputArrays(BertIterator.FeatureArrays.INDICES_MASK_SEGMENTID)
+                .vocabMap(t.getVocab())
+                .task(BertIterator.Task.SEQ_CLASSIFICATION)
+                .build();
+        mds = b.next();
+        assertEquals(2, mds.getFeatures().length);
+        //Segment ID should be all 0s for single segment task
+        INDArray segmentId = expM.like();
+        assertEquals(segmentId, mds.getFeatures(1));
     }
 
     @Test
-    public void testBertTasks() throws Exception {
+    public void testBertUnsupervised() throws Exception {
         //Task 1: Unsupervised
         BertWordPieceTokenizerFactory t = new BertWordPieceTokenizerFactory(pathToVocab);
         BertIterator b = BertIterator.builder()
@@ -108,31 +127,96 @@ public class TestBertIterator {
                 .lengthHandling(BertIterator.LengthHandling.FIXED_LENGTH, 16)
                 .minibatchSize(2)
                 .sentenceProvider(new TestSentenceProvider())
-                .outputArrays(BertIterator.OutputArrays.INDICES_MASK)
+                .outputArrays(BertIterator.FeatureArrays.INDICES_MASK)
                 .vocabMap(t.getVocab())
                 .task(BertIterator.Task.UNSUPERVISED)
-                .masker(new BertMaskedLMMasker(new Random(12345), 0.3, 0.5, 0.5))
+                .masker(new BertMaskedLMMasker(new Random(12345), 0.2, 0.5, 0.5))
                 .unsupervisedLabelFormat(BertIterator.UnsupervisedLabelFormat.RANK2_IDX)
                 .maskToken("[MASK]")
                 .build();
 
-//        for(String s : t.getVocab().keySet()){
-//            if(s.contains("mask") || s.contains("[")){
-//                System.out.println(s);
-//            }
-//        }
+        System.out.println("Mask token index: " + t.getVocab().get("[MASK]"));
 
         MultiDataSet mds = b.next();
         System.out.println(mds.getFeatures(0));
-        System.out.println(mds.getFeatures(1));
+        System.out.println(mds.getFeaturesMaskArray(0));
         System.out.println(mds.getLabels(0));
+        System.out.println(mds.getLabelsMaskArray(0));
+
+        assertFalse(b.hasNext());
+        b.reset();
+        mds = b.next();
+    }
+
+    @Test
+    public void testLengthHandling() throws Exception {
+        String toTokenize1 = "I saw a girl with a telescope.";
+        String toTokenize2 = "Donaudampfschifffahrts Kapitänsmützeninnenfuttersaum";
+        BertWordPieceTokenizerFactory t = new BertWordPieceTokenizerFactory(pathToVocab);
+        INDArray expEx0 = Nd4j.create(DataType.INT, 1, 16);
+        INDArray expM0 = Nd4j.create(DataType.INT, 1, 16);
+        List<String> tokens = t.create(toTokenize1).getTokens();
+        Map<String,Integer> m = t.getVocab();
+        for( int i=0; i<tokens.size(); i++ ){
+            int idx = m.get(tokens.get(i));
+            expEx0.putScalar(0, i, idx);
+            expM0.putScalar(0, i, 1);
+        }
+
+        INDArray expEx1 = Nd4j.create(DataType.INT, 1, 16);
+        INDArray expM1 = Nd4j.create(DataType.INT, 1, 16);
+        List<String> tokens2 = t.create(toTokenize2).getTokens();
+        for( int i=0; i<tokens2.size(); i++ ){
+            String token = tokens2.get(i);
+            if(!m.containsKey(token)){
+                throw new IllegalStateException("Unknown token: \"" + token + "\"");
+            }
+            int idx = m.get(token);
+            expEx1.putScalar(0, i, idx);
+            expM1.putScalar(0, i, 1);
+        }
+
+        INDArray expF = Nd4j.vstack(expEx0, expEx1);
+        INDArray expM = Nd4j.vstack(expM0, expM1);
+
+        //--------------------------------------------------------------
+
+        //Fixed length: clip or pad - already tested in other tests
+
+        //Any length: as long as we need to fit longest sequence
+
+        BertIterator b = BertIterator.builder()
+                .tokenizer(t)
+                .lengthHandling(BertIterator.LengthHandling.ANY_LENGTH, -1)
+                .minibatchSize(2)
+                .sentenceProvider(new TestSentenceProvider())
+                .outputArrays(BertIterator.FeatureArrays.INDICES_MASK)
+                .vocabMap(t.getVocab())
+                .task(BertIterator.Task.SEQ_CLASSIFICATION)
+                .build();
+        MultiDataSet mds = b.next();
+        long[] expShape = new long[]{2, 14};
+        assertArrayEquals(expShape, mds.getFeatures(0).shape());
+        assertArrayEquals(expShape, mds.getFeaturesMaskArray(0).shape());
+        assertEquals(expF.get(NDArrayIndex.all(), NDArrayIndex.interval(0,14)), mds.getFeatures(0));
+        assertEquals(expM.get(NDArrayIndex.all(), NDArrayIndex.interval(0,14)), mds.getFeaturesMaskArray(0));
+
+        //Clip only: clip to maximum, but don't pad if less
+        b = BertIterator.builder()
+                .tokenizer(t)
+                .lengthHandling(BertIterator.LengthHandling.CLIP_ONLY, 20)
+                .minibatchSize(2)
+                .sentenceProvider(new TestSentenceProvider())
+                .outputArrays(BertIterator.FeatureArrays.INDICES_MASK)
+                .vocabMap(t.getVocab())
+                .task(BertIterator.Task.SEQ_CLASSIFICATION)
+                .build();
+        mds = b.next();
+        expShape = new long[]{2, 14};
+        assertArrayEquals(expShape, mds.getFeatures(0).shape());
+        assertArrayEquals(expShape, mds.getFeaturesMaskArray(0).shape());
 
 
-        //Task 2: Sequence classification
-
-
-
-        //Task 3: Per token classification
     }
 
     private static class TestSentenceProvider implements LabeledSentenceProvider {
@@ -141,7 +225,7 @@ public class TestBertIterator {
 
         @Override
         public boolean hasNext() {
-            return pos <= totalNumSentences();
+            return pos < totalNumSentences();
         }
 
         @Override
