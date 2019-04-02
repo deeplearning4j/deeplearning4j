@@ -493,11 +493,8 @@ public class VPTree implements Serializable {
             pq.poll();
         }
 
-
-        if (invert) {
-            Collections.reverse(results);
-            Collections.reverse(distances);
-        }
+        Collections.reverse(results);
+        Collections.reverse(distances);
     }
 
     /**
