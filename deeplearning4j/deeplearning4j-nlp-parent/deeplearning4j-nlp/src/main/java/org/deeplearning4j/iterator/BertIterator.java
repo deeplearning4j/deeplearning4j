@@ -59,11 +59,12 @@ public class BertIterator implements MultiDataSetIterator {
         this.sentenceProvider = b.sentenceProvider;
         this.lengthHandling = b.lengthHandling;
         this.outputArrays = b.outputArrays;
+        this.tokens = b.tokens;
     }
 
     @Override
     public boolean hasNext() {
-        return false;
+        return sentenceProvider.hasNext();
     }
 
     @Override
@@ -147,6 +148,7 @@ public class BertIterator implements MultiDataSetIterator {
         if(preProcessor != null)
             preProcessor.preProcess(mds);
 
+        return mds;
     }
 
     private List<String> tokenizeSentence(String sentence) {
@@ -231,7 +233,7 @@ public class BertIterator implements MultiDataSetIterator {
             Preconditions.checkState(tokenizerFactory != null, "No tokenizer factory has been set. A tokenizer factory (such as BertWordPieceTokenizerFactory) is required");
             Preconditions.checkState(tokens != null, "Cannot create iterator: No tokens have bees net. Use Builder.tokens(Map<String,Integer>) to set");
 
-            
+
 
             return new BertIterator(this);
         }
