@@ -20,8 +20,6 @@ import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.bytedeco.javacpp.LongPointer;
-import org.bytedeco.javacpp.Pointer;
-import org.bytedeco.javacpp.PointerPointer;
 import org.nd4j.linalg.api.memory.AllocationsTracker;
 import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
 import org.nd4j.linalg.api.memory.enums.AllocationKind;
@@ -31,8 +29,13 @@ import org.nd4j.linalg.api.memory.pointers.PagedPointer;
 import org.nd4j.linalg.api.memory.pointers.PointersPair;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.memory.abstracts.Nd4jWorkspace;
+import org.nd4j.linalg.api.memory.Deallocatable;
+import org.nd4j.linalg.api.memory.Deallocator;
 import org.nd4j.nativeblas.NativeOps;
 import org.nd4j.nativeblas.NativeOpsHolder;
+
+import java.util.List;
+import java.util.Queue;
 
 /**
  * CPU-only MemoryWorkspace implementation
@@ -40,7 +43,7 @@ import org.nd4j.nativeblas.NativeOpsHolder;
  * @author raver119@gmail.com
  */
 @Slf4j
-public class CpuWorkspace extends Nd4jWorkspace {
+public class CpuWorkspace extends Nd4jWorkspace implements Deallocatable {
 
     protected LongPointer mmap;
 
@@ -55,6 +58,24 @@ public class CpuWorkspace extends Nd4jWorkspace {
     public CpuWorkspace(@NonNull WorkspaceConfiguration configuration, @NonNull String workspaceId, Integer deviceId) {
         super(configuration, workspaceId);
         this.deviceId = deviceId;
+    }
+
+
+    public String getUniqueId() {
+        return "Workspace_" + getId();
+    }
+
+    @Override
+    public Deallocator deallocator() {
+        /*
+        return new Deallocator() {
+            @Override
+            public void deallocate() {
+                log.info("Deallocator invoked!");
+            }
+        };
+        */
+         return new CpuWorkspaceDeallocator(this);
     }
 
     @Override
@@ -160,5 +181,17 @@ public class CpuWorkspace extends Nd4jWorkspace {
     @Override
     protected void resetWorkspace() {
         //Pointer.memset(workspace.getHostPointer(), 0, currentSize.get() + SAFETY_OFFSET);
+    }
+
+    protected PointersPair workspace() {
+        return workspace;
+    }
+
+    protected Queue<PointersPair> pinnedPointers() {
+        return pinnedAllocations;
+    }
+
+    protected List<PointersPair> externalPointers() {
+        return externalAllocations;
     }
 }

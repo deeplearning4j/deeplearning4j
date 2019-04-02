@@ -160,6 +160,15 @@ public class ShapeTest extends BaseNd4jTest {
 
     }
 
+    @Test
+    public void testShapeOrder(){
+        long[] shape = {2,2};
+        long[] stride = {1,8};  //Ascending strides -> F order
+
+        char order = Shape.getOrder(shape, stride, 1);
+        assertEquals('f', order);
+    }
+
     @Override
     public char ordering() {
         return 'f';

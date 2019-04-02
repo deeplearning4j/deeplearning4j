@@ -2211,11 +2211,16 @@ public class Shape {
             return 'a';
         else if (isFortran && !cContiguous)
             return 'f';
-        else if (!isFortran && !cContiguous)
-            return 'c';
-        else
-            return 'c';
 
+        //Check if ascending strides
+        boolean stridesAscending = true;
+        for( int j=1; j<stride.length; j++ ){
+            stridesAscending &= (stride[j] >= stride[j-1]);
+        }
+        if(stridesAscending)
+            return 'f';
+
+        return 'c';
     }
 
     /**
@@ -3406,6 +3411,15 @@ public class Shape {
     public static boolean contentEquals(int[] arr, DataBuffer other) {
         for (int i = 0; i < arr.length; i++) {
             if (other.getInt(i) != arr[i]) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    public static boolean contentEquals(long[] arr, long[] other) {
+        for (int i = 0; i < arr.length; i++) {
+            if (other[i] != arr[i]) {
                 return false;
             }
         }

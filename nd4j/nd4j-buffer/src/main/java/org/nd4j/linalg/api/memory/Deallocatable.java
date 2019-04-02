@@ -14,13 +14,23 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.nd4j.linalg.api.buffer.factory;
+package org.nd4j.linalg.api.memory;
 
 /**
- * Created by agibsonccc on 2/25/16.
+ * This interface describes resource trackable via unified deallocation system
+ *
+ * @author raver119@gmail.com
  */
-public class AllocatorFactory {
+public interface Deallocatable {
+    /**
+     * This method returns unique ID for this instance
+     * @return
+     */
+    String getUniqueId();
 
-
-
+    /**
+     * This method returns deallocator associated with this instance
+     * @return
+     */
+    Deallocator deallocator();
 }

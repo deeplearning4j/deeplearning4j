@@ -54,9 +54,8 @@ public class ComputationGraphConfigurationTest extends BaseDL4JTest {
                 .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                 .dist(new NormalDistribution(0, 1)).updater(new NoOp())
                 .graphBuilder().addInputs("input")
-                .addLayer("firstLayer",
-                        new DenseLayer.Builder().nIn(4).nOut(5).activation(Activation.TANH).build(),
-                        "input")
+                .appendLayer("firstLayer",
+                        new DenseLayer.Builder().nIn(4).nOut(5).activation(Activation.TANH).build())
                 .addLayer("outputLayer",
                         new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MCXENT)
                                 .activation(Activation.SOFTMAX).nIn(5).nOut(3).build(),
@@ -145,6 +144,18 @@ public class ComputationGraphConfigurationTest extends BaseDL4JTest {
         try {
             new NeuralNetConfiguration.Builder().graphBuilder().addInputs("input1")
                     .addLayer("dense1", new DenseLayer.Builder().nIn(2).nOut(2).build(), "input1")
+                    .addLayer("out", new OutputLayer.Builder().nIn(2).nOut(2).build()).setOutputs("out")
+                    .build();
+            fail("No exception thrown for invalid configuration");
+        } catch (IllegalStateException e) {
+            //OK - exception is good
+            //e.printStackTrace();
+        }
+
+        // Use appendLayer on first layer
+        try {
+            new NeuralNetConfiguration.Builder().graphBuilder()
+                    .appendLayer("dense1", new DenseLayer.Builder().nIn(2).nOut(2).build())
                     .addLayer("out", new OutputLayer.Builder().nIn(2).nOut(2).build()).setOutputs("out")
                     .build();
             fail("No exception thrown for invalid configuration");

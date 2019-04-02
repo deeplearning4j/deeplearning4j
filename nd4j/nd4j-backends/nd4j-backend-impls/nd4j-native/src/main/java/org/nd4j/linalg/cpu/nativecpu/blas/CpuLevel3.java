@@ -17,11 +17,15 @@
 package org.nd4j.linalg.cpu.nativecpu.blas;
 
 
+import lombok.val;
 import org.bytedeco.javacpp.DoublePointer;
 import org.bytedeco.javacpp.FloatPointer;
 import org.nd4j.linalg.api.blas.impl.BaseLevel3;
+import org.nd4j.linalg.api.blas.params.MMulTranspose;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.aggregates.impl.AggregateGEMM;
+import org.nd4j.linalg.api.ops.impl.reduce.Mmul;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.nativeblas.Nd4jBlas;
 
@@ -41,7 +45,26 @@ public class CpuLevel3 extends BaseLevel3 {
     @Override
     protected void hgemm(char Order, char TransA, char TransB, int M, int N, int K, float alpha, INDArray A, int lda,
                     INDArray B, int ldb, float beta, INDArray C, int ldc) {
-        throw new UnsupportedOperationException();
+
+        //if (true) {
+            val fA = A.castTo(DataType.FLOAT);
+            val fB = B.castTo(DataType.FLOAT);
+            val fC = C.castTo(DataType.FLOAT);
+
+            sgemm(Order, TransA, TransB, M, N, K, alpha, fA, lda, fB, ldb, beta, fC, ldc);
+
+            C.assign(fC);
+        /*} else {
+            // TODO: uncomment this once we have optimized gemm calls
+            val t = MMulTranspose.builder()
+                    .transposeA(false)
+                    .transposeB(false)
+                    .transposeResult(false)
+                    .build();
+            val op = new Mmul(A, B, C, t);
+            Nd4j.exec(op);
+        }
+         */
     }
 
     @Override

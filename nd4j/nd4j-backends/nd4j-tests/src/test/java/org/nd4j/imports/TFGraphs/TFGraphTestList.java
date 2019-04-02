@@ -49,7 +49,7 @@ public class TFGraphTestList {
     public TemporaryFolder testDir = new TemporaryFolder();
 
     public static String[] modelNames = new String[]{
-            "rnn/lstmblockcell/dynamic_b1_n5-3_ts4_noPH_clip-0.3-0.4_fB1_Tanh_noIS_noTM"
+            "cond/cond_true"
     };
 
     @After

@@ -2579,7 +2579,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         if (stride.length != n)
             throw new IllegalArgumentException("Invalid stride " + Arrays.toString(stride));
 
-        if (shape.length == rank() && Shape.contentEquals(shape, shapeOf())) {
+        if (shape.length == rank() && Shape.contentEquals(shape, shape())) {
             if (ArrayUtil.isZero(offsets)) {
                 return this;
             } else {
@@ -4642,6 +4642,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public INDArray max(int... dimension) {
+        validateNumericalArray("max", false);
         return Nd4j.getExecutioner().exec(new Max(this, dimension));
     }
 
@@ -4659,6 +4660,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public INDArray min(int... dimension) {
+        validateNumericalArray("max", false);
         return Nd4j.getExecutioner().exec(new Min(this, dimension));
     }
 
@@ -4959,7 +4961,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
                 (rank() == 1 && length() == 1 && indexes.length == 1 && indexes[0] instanceof PointIndex && indexes[0].current() == 0))  //Last one: point index on rank 1 size 1
             return this;
 
-        indexes = NDArrayIndex.resolve(shapeInfoDataBuffer(), indexes);
+        indexes = NDArrayIndex.resolveLong(jvmShapeInfo.javaShapeInformation, indexes);
         ShapeOffsetResolution resolution = new ShapeOffsetResolution(this);
         resolution.exec(indexes);
 
@@ -5046,7 +5048,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
         // FIXME: this is bad
         if (!this.isView() && this.ordering() == 'c' && result.elementWiseStride() == 1 && result.ordering() != 'c') {
-            ((BaseNDArray) result).setShapeInformation(Nd4j.getShapeInfoProvider().createShapeInformation(result.shape(), result.stride(), 1, 'c', this.dataType()));
+            val newShapeInfo = Nd4j.getShapeInfoProvider().createShapeInformation(result.shape(), result.stride(), 1, 'c', this.dataType());
+            ((BaseNDArray) result).setShapeInformation(newShapeInfo);
         }
 
         return result;
