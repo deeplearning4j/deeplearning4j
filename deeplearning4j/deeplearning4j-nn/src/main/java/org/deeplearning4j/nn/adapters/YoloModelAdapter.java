@@ -48,7 +48,7 @@ public class YoloModelAdapter implements ModelAdapter<List<DetectedObject>> {
         if (model instanceof ComputationGraph) {
             val blindLayer = ((ComputationGraph) model).getOutputLayer(outputLayerIndex);
             if (blindLayer instanceof Yolo2OutputLayer) {
-                val output = ((ComputationGraph) model).output(false, inputs, masks);
+                val output = ((ComputationGraph) model).output(false, inputs, masks, labelsMasks);
                 return ((Yolo2OutputLayer) blindLayer).getPredictedObjects(output[outputIndex], detectionThreshold);
             } else {
                 throw new ND4JIllegalStateException("Output layer with index [" + outputLayerIndex + "] is NOT Yolo2OutputLayer");
