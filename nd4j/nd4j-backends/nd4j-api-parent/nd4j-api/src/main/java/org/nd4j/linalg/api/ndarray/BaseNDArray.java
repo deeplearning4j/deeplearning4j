@@ -4945,8 +4945,22 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             indexes = new INDArrayIndex[]{ NDArrayIndex.all(), indexes[0]};
         else if (rank() == 2 && jvmShapeInfo.javaShapeInformation[2] == 1 && indexes.length == 1)
             indexes = new INDArrayIndex[]{indexes[0], NDArrayIndex.all()};
-        else
+        else {
+            // we're padding remaining dimensions with all() index
+            if (indexes.length < this.rank()) {
+                val newIndexes = new INDArrayIndex[this.rank()];
+                for (int e = 0; e < indexes.length; e++)
+                    newIndexes[e] = indexes[e];
+
+                for (int e = indexes.length; e < newIndexes.length; e++)
+                    newIndexes[e] = NDArrayIndex.all();
+
+                indexes = newIndexes;
+            }
+
+            // never going to happen :/
             Preconditions.checkArgument(indexes != null && indexes.length >= this.rank(), "Number of indices should be greater or equal to rank of the INDArray");
+        }
 
         if(indexes.length > rank()) {
             int numNonNewAxis = 0;

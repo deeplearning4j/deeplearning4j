@@ -184,7 +184,7 @@ public class ShapeTests extends BaseNd4jTest {
     public void testNewAxis() {
         INDArray tensor = Nd4j.linspace(1, 12, 12, DataType.DOUBLE).reshape(3, 2, 2);
         INDArray assertion = Nd4j.create(new double[][] {{1, 7}, {4, 10}}).reshape(1, 2, 2);
-        INDArray tensorGet = tensor.get(NDArrayIndex.point(0), NDArrayIndex.newAxis());
+        INDArray tensorGet = tensor.get(NDArrayIndex.point(0), NDArrayIndex.newAxis(), NDArrayIndex.all());
         assertEquals(assertion, tensorGet);
 
     }

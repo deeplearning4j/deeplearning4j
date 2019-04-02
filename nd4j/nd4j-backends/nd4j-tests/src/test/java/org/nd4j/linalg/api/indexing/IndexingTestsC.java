@@ -263,12 +263,12 @@ public class IndexingTestsC extends BaseNd4jTest {
         INDArray firstRow = twoByTwo.getRow(0);
         INDArray secondRow = twoByTwo.getRow(1);
         INDArray firstAndSecondRow = twoByTwo.getRows(1, 2);
-        INDArray firstRowViaIndexing = twoByTwo.get(interval(0, 1));
+        INDArray firstRowViaIndexing = twoByTwo.get(interval(0, 1), NDArrayIndex.all());
         assertEquals(firstRow, firstRowViaIndexing);
-        INDArray secondRowViaIndexing = twoByTwo.get(point(1));
+        INDArray secondRowViaIndexing = twoByTwo.get(point(1), NDArrayIndex.all());
         assertEquals(secondRow, secondRowViaIndexing);
 
-        INDArray firstAndSecondRowTest = twoByTwo.get(interval(1, 3));
+        INDArray firstAndSecondRowTest = twoByTwo.get(interval(1, 3), NDArrayIndex.all());
         assertEquals(firstAndSecondRow, firstAndSecondRowTest);
 
         INDArray individualElement = twoByTwo.get(interval(1, 2), interval(1, 2));
