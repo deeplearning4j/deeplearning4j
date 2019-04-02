@@ -44,7 +44,7 @@ public class YoloModelAdapter implements ModelAdapter<List<DetectedObject>> {
     @Builder.Default private double detectionThreshold = 0.5;
 
     @Override
-    public List<DetectedObject> apply(Model model, INDArray[] inputs, INDArray[] masks) {
+    public List<DetectedObject> apply(Model model, INDArray[] inputs, INDArray[] masks, INDArray[] labelsMasks) {
         if (model instanceof ComputationGraph) {
             val blindLayer = ((ComputationGraph) model).getOutputLayer(outputLayerIndex);
             if (blindLayer instanceof Yolo2OutputLayer) {

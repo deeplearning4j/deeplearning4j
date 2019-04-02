@@ -2336,7 +2336,10 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
      */
     public synchronized <T> T output(@NonNull INDArray inputs, INDArray inputMasks, INDArray labelMasks, @NonNull OutputAdapter<T> outputAdapter) {
         try (val ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace(WS_ALL_LAYERS_ACT_CONFIG, WS_OUTPUT_MEM)) {
-            return outputAdapter.apply(output(inputs, false, inputMasks, labelMasks, ws));
+            if (outputAdapter instanceof ModelAdapter)
+                return ((ModelAdapter<T>) outputAdapter).apply(this, new INDArray[]{inputs}, new INDArray[]{ inputMasks}, new INDArray[]{labelMasks});
+            else
+                return outputAdapter.apply(output(inputs, false, inputMasks, labelMasks, ws));
         }
     }
 

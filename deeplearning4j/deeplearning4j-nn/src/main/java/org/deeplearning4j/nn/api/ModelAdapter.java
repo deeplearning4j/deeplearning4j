@@ -25,8 +25,8 @@ import org.nd4j.linalg.api.ndarray.INDArray;
  */
 public interface ModelAdapter<T> extends OutputAdapter<T> {
     /**
-     * This method
+     * This method invokes model internally, and does convertion to T
      * @return
      */
-    T apply(Model model, INDArray[] inputs, INDArray[] masks);
+    T apply(Model model, INDArray[] inputs, INDArray[] inputMasks, INDArray[] labelsMasks);
 }
