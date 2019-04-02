@@ -2695,9 +2695,9 @@ public abstract class SDBaseOps {
     }
 
     /**
-     * @see #tile(String, SDVariable, int[])
+     * @see #tile(String, SDVariable, int...)
      */
-    public SDVariable tile(SDVariable x, int[] repeat) {
+    public SDVariable tile(SDVariable x, int... repeat) {
         return tile(null, x, repeat);
     }
 
@@ -2719,7 +2719,7 @@ public abstract class SDBaseOps {
      * @param repeat Number of times to repeat in each axis. Must have length equal to the rank of the input array
      * @return Output variable
      */
-    public SDVariable tile(String name, SDVariable x, int[] repeat) {
+    public SDVariable tile(String name, SDVariable x, int... repeat) {
         SDVariable result = f().tile(x, repeat);
         return updateVariableNameAndReference(result, name);
     }

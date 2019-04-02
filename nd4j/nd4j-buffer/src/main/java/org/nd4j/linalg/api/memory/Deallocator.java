@@ -14,18 +14,16 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.nd4j.linalg.api.buffer.factory;
+package org.nd4j.linalg.api.memory;
 
 /**
- * Created by agibsonccc on 2/25/16.
+ * This interface describes callback which will be executed from unified reference tracking system context
+ *
+ * @author raver119@gmail.com
  */
-public class AllocatorInstanceHolder {
-    private static DataBufferFactory INSTANCE;
-
-    public static DataBufferFactory getInstance() {
-        if (INSTANCE == null)
-            INSTANCE = new DefaultDataBufferFactory();
-        return INSTANCE;
-    }
-
+public interface Deallocator {
+    /**
+     * This method does actual deallocation
+     */
+    void deallocate();
 }

@@ -57,7 +57,7 @@ public class DirectShapeInfoProvider extends BaseShapeInfoProvider {
             elementWiseStride = 0;
 
         LongShapeDescriptor descriptor = new LongShapeDescriptor(shape, stride, 0, elementWiseStride, order, extras);
-        if (!shapeCache.containsKey(descriptor)) {
+        if (!longCache.containsKey(descriptor)) {
             if (counter.get() < MAX_ENTRIES) {
                 synchronized (this) {
                     if (!longCache.containsKey(descriptor)) {

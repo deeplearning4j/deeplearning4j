@@ -141,14 +141,20 @@ public class LongShapeDescriptor {
     }
 
     public static LongShapeDescriptor fromShape(long[] shape, @NonNull DataType dataType) {
+        return fromShape(shape, Nd4j.getStrides(shape, Nd4j.order()), 1, Nd4j.order(), dataType, false);
+    }
+
+    public static LongShapeDescriptor fromShape(@NonNull long[] shape, @NonNull long[] strides, long ews, char order, @NonNull DataType dataType, boolean empty){
         long extras = 0L;
         extras = ArrayOptionsHelper.setOptionBit(extras, dataType);
-        return fromShape(shape, extras);
+        if (empty)
+            ArrayOptionsHelper.setOptionBit(extras, ArrayType.EMPTY);
+
+        return new LongShapeDescriptor(shape, strides, 0, ews, order, extras);
     }
 
     public static LongShapeDescriptor fromShape(long[] shape, long extras){
-        val desc = new LongShapeDescriptor(shape, Nd4j.getStrides(shape, Nd4j.order()), 0, 1, Nd4j.order(), extras);
-        return desc;
+        return new LongShapeDescriptor(shape, Nd4j.getStrides(shape, Nd4j.order()), 0, 1, Nd4j.order(), extras);
     }
 
     /**

@@ -2579,7 +2579,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         if (stride.length != n)
             throw new IllegalArgumentException("Invalid stride " + Arrays.toString(stride));
 
-        if (shape.length == rank() && Shape.contentEquals(shape, shapeOf())) {
+        if (shape.length == rank() && Shape.contentEquals(shape, shape())) {
             if (ArrayUtil.isZero(offsets)) {
                 return this;
             } else {
@@ -4503,8 +4503,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
         long prod = ArrayUtil.prodLong(shape);
 
-        if (prod != this.lengthLong()){
-            throw new ND4JIllegalStateException("New shape length doesn't match original length: [" + prod + "] vs [" + this.lengthLong() + "]. Original shape: "+Arrays.toString(this.shape())+" New Shape: "+Arrays.toString(newShape));
+        if (prod != this.length()){
+            throw new ND4JIllegalStateException("New shape length doesn't match original length: [" + prod + "] vs [" + this.length() + "]. Original shape: "+Arrays.toString(this.shape())+" New Shape: "+Arrays.toString(newShape));
         }
 
 
@@ -4959,7 +4959,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
                 (rank() == 1 && length() == 1 && indexes.length == 1 && indexes[0] instanceof PointIndex && indexes[0].current() == 0))  //Last one: point index on rank 1 size 1
             return this;
 
-        indexes = NDArrayIndex.resolve(shapeInfoDataBuffer(), indexes);
+        indexes = NDArrayIndex.resolveLong(jvmShapeInfo.javaShapeInformation, indexes);
         ShapeOffsetResolution resolution = new ShapeOffsetResolution(this);
         resolution.exec(indexes);
 
@@ -5046,7 +5046,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
         // FIXME: this is bad
         if (!this.isView() && this.ordering() == 'c' && result.elementWiseStride() == 1 && result.ordering() != 'c') {
-            ((BaseNDArray) result).setShapeInformation(Nd4j.getShapeInfoProvider().createShapeInformation(result.shape(), result.stride(), 1, 'c', this.dataType()));
+            val newShapeInfo = Nd4j.getShapeInfoProvider().createShapeInformation(result.shape(), result.stride(), 1, 'c', this.dataType());
+            ((BaseNDArray) result).setShapeInformation(newShapeInfo);
         }
 
         return result;
@@ -5981,7 +5982,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         if (Nd4j.getMemoryManager().getCurrentWorkspace() == null) {
             if (!isView()) {
                 Nd4j.getExecutioner().commit();
-                DataBuffer buffer = Nd4j.createBuffer(this.lengthLong(), false);
+                DataBuffer buffer = Nd4j.createBuffer(this.length(), false);
 
                 Nd4j.getMemoryManager().memcpy(buffer, this.data());
 
@@ -6000,7 +6001,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
             if (!isView()) {
                 Nd4j.getExecutioner().commit();
-                DataBuffer buffer = Nd4j.createBuffer(this.lengthLong(), false);
+                DataBuffer buffer = Nd4j.createBuffer(this.length(), false);
 
                 //Pointer.memcpy(buffer.pointer(), this.data.pointer(), this.lengthLong() * Nd4j.sizeOfDataType(this.data.dataType()));
                 Nd4j.getMemoryManager().memcpy(buffer, this.data());
@@ -6056,7 +6057,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             INDArray copy = null;
             if (!this.isView()) {
                 Nd4j.getExecutioner().commit();
-                DataBuffer buffer = Nd4j.createBuffer(this.lengthLong(), false);
+                DataBuffer buffer = Nd4j.createBuffer(this.length(), false);
                 Nd4j.getMemoryManager().memcpy(buffer, this.data());
 
                 copy = Nd4j.createArrayFromShapeBuffer(buffer, this.shapeInfoDataBuffer());
@@ -6122,7 +6123,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         INDArray copy = null;
         if (!this.isView()) {
             Nd4j.getExecutioner().commit();
-            DataBuffer buffer = Nd4j.createBuffer(this.dataType(), this.lengthLong(), false);
+            DataBuffer buffer = Nd4j.createBuffer(this.dataType(), this.length(), false);
             Nd4j.getMemoryManager().memcpy(buffer, this.data());
 
             copy = Nd4j.createArrayFromShapeBuffer(buffer, this.shapeInfoDataBuffer());
@@ -6199,7 +6200,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
         if (!this.isView()) {
             Nd4j.getExecutioner().commit();
-            DataBuffer buffer = Nd4j.createBuffer(this.lengthLong(), false);
+            DataBuffer buffer = Nd4j.createBuffer(this.length(), false);
             Nd4j.getMemoryManager().memcpy(buffer, this.data());
 
             copy = Nd4j.createArrayFromShapeBuffer(buffer, this.shapeInfoDataBuffer());

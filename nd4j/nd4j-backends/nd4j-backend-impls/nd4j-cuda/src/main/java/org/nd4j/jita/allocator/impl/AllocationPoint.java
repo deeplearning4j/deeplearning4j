@@ -140,13 +140,6 @@ public class AllocationPoint {
 
     private AtomicLong deviceTicks = new AtomicLong(0);
 
-    //    private Map<AllocationShape, NestedPoint> usedChunks = new ConcurrentHashMap<>();
-
-    //    @Getter private AtomicState accessState = new AtomicState();
-
-    private volatile WeakReference<BaseDataBuffer> originalDataBufferReference;
-
-    private volatile GarbageBufferReference garbageBufferReference;
 
     private AtomicBoolean enqueued = new AtomicBoolean(false);
 
@@ -218,11 +211,11 @@ public class AllocationPoint {
      * @param buffer
      */
     public void attachBuffer(@NonNull BaseDataBuffer buffer) {
-        originalDataBufferReference = new WeakReference<BaseDataBuffer>(buffer);
+        //originalDataBufferReference = new WeakReference<BaseDataBuffer>(buffer);
     }
 
     public void attachReference(GarbageBufferReference reference) {
-        garbageBufferReference = reference;
+        //garbageBufferReference = reference;
     }
 
     /**
@@ -233,10 +226,10 @@ public class AllocationPoint {
      * @return
      */
     public DataBuffer getBuffer() {
-        if (originalDataBufferReference != null) {
-            return originalDataBufferReference.get();
-        } else
-            return null;
+        //if (originalDataBufferReference != null) {
+        //    return originalDataBufferReference.get();
+        //} else
+        return null;
     }
 
     /**

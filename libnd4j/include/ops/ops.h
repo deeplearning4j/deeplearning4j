@@ -2874,7 +2874,7 @@ namespace simdOps {
         const static functions::ReduceType reduceType = functions::ReduceType::MAX;
 
 		op_def static X startingValue(const X *input) {
-			return input[0];
+			return -nd4j::DataTypeUtils::max<X>();
 		}
 
 		op_def static X merge(X old, X opOutput, X *extraParams) {
@@ -3052,7 +3052,7 @@ namespace simdOps {
         const static functions::ReduceType reduceType = functions::ReduceType::MIN;
 
         op_def static X startingValue(const X *input) {
-            return input[0];
+            return nd4j::DataTypeUtils::max<X>();
         }
 
         op_def static X merge(X old, X opOutput, X *extraParams) {

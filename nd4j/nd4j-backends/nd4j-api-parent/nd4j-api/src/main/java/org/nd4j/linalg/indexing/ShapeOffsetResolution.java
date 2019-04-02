@@ -362,7 +362,7 @@ public class ShapeOffsetResolution implements Serializable {
             }
         }
 
-        indexes = NDArrayIndex.resolve(arr.shapeInfoDataBuffer(), indexes);
+        indexes = NDArrayIndex.resolveLong(arr.shapeInfoJava(), indexes);
         if (tryShortCircuit(indexes)) {
             return;
         }
