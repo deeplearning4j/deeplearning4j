@@ -4938,6 +4938,9 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     @Override
     public INDArray get(INDArrayIndex... indexes) {
         Nd4j.getCompressor().autoDecompress(this);
+
+        Preconditions.checkArgument(indexes != null && indexes.length == this.rank(), "Number of indices should be equal to rank of the INDArray");
+
         if(indexes.length > rank()) {
             int numNonNewAxis = 0;
             for(int i = 0; i < indexes.length; i++) {
