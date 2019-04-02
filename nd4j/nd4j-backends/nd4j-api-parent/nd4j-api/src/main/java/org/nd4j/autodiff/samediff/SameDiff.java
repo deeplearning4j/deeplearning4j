@@ -1781,12 +1781,13 @@ public class SameDiff extends SDBaseOps {
      *
      * @param iterator       Iterator as source of data to evaluate
      * @param outputVariable The variable to evaluate
+     * @param labelIndex     The index of the target variable's labels in the iterator
      * @param evaluations    The evaluations to perform
      */
-    public void evaluate(MultiDataSetIterator iterator, String outputVariable, IEvaluation... evaluations) {
+    public void evaluate(MultiDataSetIterator iterator, String outputVariable, int labelIndex, IEvaluation... evaluations) {
         Preconditions.checkArgument(evaluations != null && evaluations.length > 0, "No evaluations were passed to the evaluate method");
         evaluate(iterator, Collections.singletonMap(outputVariable, Arrays.asList(evaluations)),
-                Collections.singletonMap(outputVariable, 0));
+                Collections.singletonMap(outputVariable, labelIndex));
     }
 
     /**
@@ -1847,11 +1848,26 @@ public class SameDiff extends SDBaseOps {
      * sameDiff.output(iterator, "softmax");}
      * </pre>
      *
+     * @param dataSet        The data to evaluate
+     * @param outputs        The variables to evaluate
+     */
+    public Map<String, INDArray> output(DataSet dataSet, String... outputs){
+        return output(new SingletonMultiDataSetIterator(dataSet.toMultiDataSet()), outputs).get(0);
+    }
+
+    /**
+     * Do inference on a network with a single input.<br>
+     * For example, if the variable to infer was called "softmax" you would use:
+     * <pre>
+     * {@code
+     * sameDiff.output(iterator, "softmax");}
+     * </pre>
+     *
      * @param iterator       Iterator as source of data to evaluate
      * @param outputs        The variables to evaluate
      */
-    public void output(DataSetIterator iterator, String... outputs){
-        output(new MultiDataSetIteratorAdapter(iterator), outputs);
+    public List<Map<String, INDArray>> output(DataSetIterator iterator, String... outputs){
+        return output(new MultiDataSetIteratorAdapter(iterator), outputs);
     }
 
     /**
