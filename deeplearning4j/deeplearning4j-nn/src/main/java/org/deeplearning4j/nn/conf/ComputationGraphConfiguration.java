@@ -967,7 +967,7 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
          */
         public GraphBuilder addVertex(String vertexName, GraphVertex vertex, String... vertexInputs) {
 
-            if(vertexInputs == null || (vertexInputs.length > 0 && vertexInputs[0] == null)){
+            if(vertexInputs.length == 0){
                 if(lastAdded != null) {
                     vertexInputs = new String[]{lastAdded};
                 }
