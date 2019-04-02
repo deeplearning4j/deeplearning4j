@@ -49,7 +49,7 @@ import org.tensorflow.framework.NodeDef;
  *
  * @author Ryan Nett
  */
-@EqualsAndHashCode(callSuper = true)
+@EqualsAndHashCode(callSuper = false)
 public class LossWasserstein extends DifferentialFunction implements ILossFunction {
 
     private INDArray scoreArray(INDArray labels, INDArray preOutput, IActivation activationFn, INDArray mask){
