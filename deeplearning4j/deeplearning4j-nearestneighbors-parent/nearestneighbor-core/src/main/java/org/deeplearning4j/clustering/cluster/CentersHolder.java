@@ -6,18 +6,20 @@ import org.nd4j.linalg.primitives.Pair;
 
 public class CentersHolder {
     private INDArray centers;
+    private long index = 0;
 
-    public CentersHolder(long[] shape) {
-        this.centers = Nd4j.create(shape);
+    public CentersHolder(long rows, long cols) {
+        this.centers = Nd4j.create(rows, cols);
     }
 
     public void addCenter(INDArray pointView) {
-        centers = centers.add(pointView);
+
+        centers.putRow(index++, pointView);
     }
 
     public Pair<Double, Long> getCenterByMinDistance(Point point, String distanceFunction) {
         INDArray minDistances = Nd4j.getExecutioner().exec(ClusterUtils.createDistanceFunctionOp(distanceFunction, centers, point.getArray()));
-        INDArray index = Nd4j.argMin(minDistances, 0);
+        INDArray index = Nd4j.argMin(minDistances);
         Pair<Double, Long> result = new Pair<>();
         result.setFirst(minDistances.getDouble(0));
         result.setSecond(index.getLong(0));

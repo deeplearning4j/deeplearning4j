@@ -43,7 +43,7 @@ public class ClusterSet implements Serializable {
         this.clusters = Collections.synchronizedList(new ArrayList<Cluster>());
         this.pointDistribution = Collections.synchronizedMap(new HashMap<String, String>());
         if (shape != null)
-            this.centersHolder = new CentersHolder(shape);
+            this.centersHolder = new CentersHolder(shape[0], shape[1]);
     }
 
 
@@ -147,7 +147,8 @@ public class ClusterSet implements Serializable {
 
         }*/
 
-        Pair<Double, Long> nearestCenterData = centersHolder.getCenterByMinDistance(point, distanceFunction);
+        Pair<Double, Long> nearestCenterData = centersHolder.
+                getCenterByMinDistance(point, distanceFunction);
         Cluster nearestCluster = getClusters().get(nearestCenterData.getSecond().intValue());
         double minDistance = nearestCenterData.getFirst();
         return Pair.of(nearestCluster, minDistance);
