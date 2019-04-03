@@ -117,7 +117,7 @@ CUSTOM_OP_IMPL(reduce_sqnorm_bp, 2, 1, false, 0, 0) {
         else if (block.getTArguments()->size())
             keepDims = (bool)T_ARG(0);
 
-            REQUIRE_TRUE(dimensions.size() <= input->rankOf(), 0, "REDUCE_SQNORM_BP OP: the number of dimensions to reduce along must be <= input array rank, but got %i instead" , dimensions.size());
+        REQUIRE_TRUE(dimensions.size() <= input->rankOf(), 0, "REDUCE_SQNORM_BP OP: the number of dimensions to reduce along must be <= input array rank, but got %i instead" , dimensions.size());
 
         for(const auto& item : dimensions)
             REQUIRE_TRUE(item > -input->rankOf() && item < input->rankOf(), 0, "REDUCE_SQNORM_BP OP: the input dimension to reduce along must be in range (-%i, %i), but got %i instead !" , input->rankOf(), input->rankOf(), item);
@@ -126,7 +126,7 @@ CUSTOM_OP_IMPL(reduce_sqnorm_bp, 2, 1, false, 0, 0) {
 
         if(!keepDims) {
 
-            Nd4jLong* gradOShapeKeepDims = ShapeUtils::evalReduceShapeInfo(input->ordering(), dimensions, *input, true, false, block.getWorkspace());
+            Nd4jLong* gradOShapeKeepDims = ShapeUtils::evalReduceShapeInfo(gradO->ordering(), dimensions, *input, true, false, block.getWorkspace());
             gradO = gradO->reshape(gradO->ordering(), ShapeUtils::pullShapeFromShapeInfo(gradOShapeKeepDims));  // for example could be something like [a,b] -> [1,a,1,b]
             RELEASE(gradOShapeKeepDims, block.getWorkspace());
         }
@@ -139,18 +139,21 @@ CUSTOM_OP_IMPL(reduce_sqnorm_bp, 2, 1, false, 0, 0) {
     return Status::OK();
 }
 
-DECLARE_SHAPE_FN(reduce_sqnorm_bp) {    
+DECLARE_SHAPE_FN(reduce_sqnorm_bp) {
 
-    auto dimensions = *block.getIArguments();
-    if (block.width() > 2) {
-        auto axesVector = INPUT_VARIABLE(2);
-        helpers::adjustAxis(INPUT_VARIABLE(0), axesVector, dimensions);
-    }
+    if(shape::length(inputShape->at(1)) > 1) {
+        
+        auto dimensions = *block.getIArguments();
+        if (block.width() > 2) {
+            auto axesVector = INPUT_VARIABLE(2);
+            helpers::adjustAxis(INPUT_VARIABLE(0), axesVector, dimensions);
+        }
 
-    REQUIRE_TRUE(dimensions.size() <= inputShape->at(0)[0], 0, "REDUCE_SQNORM_BP OP: the number of dimensions to reduce along must be <= input array rank, but got %i instead" , dimensions.size());
+        REQUIRE_TRUE(dimensions.size() <= inputShape->at(0)[0], 0, "REDUCE_SQNORM_BP OP: the number of dimensions to reduce along must be <= input array rank, but got %i instead" , dimensions.size());
     
-    for(const auto& item : dimensions)
-        REQUIRE_TRUE(item > -inputShape->at(0)[0] && item < inputShape->at(0)[0], 0, "REDUCE_SQNORM_BP OP: the input dimension to reduce along must be in range (-%i, %i), but got %i instead !" , inputShape->at(0)[0], inputShape->at(0)[0], item);
+        for(const auto& item : dimensions)
+            REQUIRE_TRUE(item > -inputShape->at(0)[0] && item < inputShape->at(0)[0], 0, "REDUCE_SQNORM_BP OP: the input dimension to reduce along must be in range (-%i, %i), but got %i instead !" , inputShape->at(0)[0], inputShape->at(0)[0], item);
+    }
     
     Nd4jLong* gradIshapeInfo(nullptr);
     COPY_SHAPE(inputShape->at(0), gradIshapeInfo);
