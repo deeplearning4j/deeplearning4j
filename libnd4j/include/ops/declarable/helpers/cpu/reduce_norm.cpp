@@ -86,24 +86,6 @@ namespace helpers {
         }
     }
 
-    void reduceSquareNormBP(NDArray* input, NDArray* epsilon, NDArray* tempNorm, NDArray* output, std::vector<int> const& axes, bool keepDims) {
-
-        std::vector<int> dimensions; //(input->rankOf() - axes.size());
-        for (Nd4jLong e = 0; e < input->rankOf(); e++) {
-            if (std::find(axes.begin(), axes.end(), e) == axes.end()) {
-                dimensions.emplace_back(e);
-            }
-        }
-        std::unique_ptr<ResultSet> outList(output->allTensorsAlongDimension(dimensions));
-        std::unique_ptr<ResultSet> inList(input->allTensorsAlongDimension(dimensions));
-        for (int e = 0; e < outList->size(); ++e) {
-            auto outputS = outList->at(e);
-            auto inputS = inList->at(e);
-            outputS->assign(2.f);
-            *outputS *= *epsilon;
-            *outputS *= *inputS;
-        }
-    }
 }
 }
 }

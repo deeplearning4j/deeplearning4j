@@ -112,7 +112,7 @@ CUSTOM_OP_IMPL(reduce_mean_bp, 2, 1, false, 0, 0) {
     REQUIRE_TRUE(dimensions.size() <= input->rankOf(), 0, "REDUCE_MEAN_BP OP: the number of dimensions to reduce along must be <= input array rank, but got %i instead" , dimensions.size());
 
     for(const auto& item : dimensions)
-        REQUIRE_TRUE(item > -input->rankOf() || item < input->rankOf(), 0, "REDUCE_MEAN_BP OP: the input dimension to reduce along must be in range (-%i, %i), but got %i instead !" , input->rankOf(), input->rankOf(), item);    
+        REQUIRE_TRUE(item > -input->rankOf() && item < input->rankOf(), 0, "REDUCE_MEAN_BP OP: the input dimension to reduce along must be in range (-%i, %i), but got %i instead !" , input->rankOf(), input->rankOf(), item);    
     
     if(gradO->lengthOf() == 1) {
         gradI->assign((*gradO) / input->lengthOf());
@@ -121,15 +121,15 @@ CUSTOM_OP_IMPL(reduce_mean_bp, 2, 1, false, 0, 0) {
         
         (*gradI).assign((gradO->lengthOf() + 0.) / input->lengthOf());
 
-        Nd4jLong* gradOShapeKeepDims = ShapeUtils::evalReduceShapeInfo(input->ordering(), dimensions, *input, true, false, block.getWorkspace());
-        const bool isGradOShapeBroadcast = shape::equalsSoft(gradOShapeKeepDims, gradO->getShapeInfo());
-        
-        if(!isGradOShapeBroadcast)
+        if(!keepDims) {
+            Nd4jLong* gradOShapeKeepDims = ShapeUtils::evalReduceShapeInfo(input->ordering(), dimensions, *input, true, false, block.getWorkspace());                    
             gradO = gradO->reshape(gradO->ordering(), ShapeUtils::pullShapeFromShapeInfo(gradOShapeKeepDims));  // for example could be something like [a,b] -> [1,a,1,b]
+            RELEASE(gradOShapeKeepDims, block.getWorkspace());
+        }
 
         *gradI *= *gradO;
 
-        if(!isGradOShapeBroadcast)
+        if(!keepDims)
             delete gradO;
     }
 
