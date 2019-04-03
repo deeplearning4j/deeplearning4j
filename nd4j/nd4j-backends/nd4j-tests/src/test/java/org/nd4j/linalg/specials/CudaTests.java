@@ -31,6 +31,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 
 import java.util.ArrayList;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.Assert.assertEquals;
 
@@ -101,13 +102,16 @@ public class CudaTests extends BaseNd4jTest {
         assertEquals(exp, arrayA);
     }
 
-    @Test
+    @Test(timeout = 10000L)
     public void testContextSpam() throws Exception {
         if (Nd4j.getExecutioner().type() != OpExecutioner.ExecutionerType.CUDA)
             return;
 
+        val success = new AtomicInteger(0);
+        val iterations = 101;
+
         val threads = new ArrayList<Thread>();
-        for (int e = 0; e <= 100; e++) {
+        for (int e = 0; e < iterations; e++) {
             val f = e;
             val t = new Thread(new Runnable() {
                 @Override
@@ -115,8 +119,11 @@ public class CudaTests extends BaseNd4jTest {
                     Nd4j.create(1);
                     if (f % 50 == 0)
                         log.info("Context {} created", f);
+
+                    Nd4j.getMemoryManager().releaseCurrentContext();
+                    success.incrementAndGet();
                     try {
-                        Thread.sleep(100000000L);
+                        Thread.sleep(1000L);
                     } catch (InterruptedException ex) {
                         ex.printStackTrace();
                     }
@@ -127,8 +134,10 @@ public class CudaTests extends BaseNd4jTest {
             threads.add(t);
         }
 
-        threads.get(threads.size() - 1).join();
+        for (val t: threads)
+            t.join();
 
+        assertEquals(iterations, success.get());
     }
 
 
