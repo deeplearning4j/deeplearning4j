@@ -56,7 +56,7 @@ public class TestBertIterator {
                 .lengthHandling(BertIterator.LengthHandling.FIXED_LENGTH, 16)
                 .minibatchSize(2)
                 .sentenceProvider(new TestSentenceProvider())
-                .outputArrays(BertIterator.FeatureArrays.INDICES_MASK)
+                .featureArrays(BertIterator.FeatureArrays.INDICES_MASK)
                 .vocabMap(t.getVocab())
                 .task(BertIterator.Task.SEQ_CLASSIFICATION)
                 .build();
@@ -107,7 +107,7 @@ public class TestBertIterator {
                 .lengthHandling(BertIterator.LengthHandling.FIXED_LENGTH, 16)
                 .minibatchSize(2)
                 .sentenceProvider(new TestSentenceProvider())
-                .outputArrays(BertIterator.FeatureArrays.INDICES_MASK_SEGMENTID)
+                .featureArrays(BertIterator.FeatureArrays.INDICES_MASK_SEGMENTID)
                 .vocabMap(t.getVocab())
                 .task(BertIterator.Task.SEQ_CLASSIFICATION)
                 .build();
@@ -127,7 +127,7 @@ public class TestBertIterator {
                 .lengthHandling(BertIterator.LengthHandling.FIXED_LENGTH, 16)
                 .minibatchSize(2)
                 .sentenceProvider(new TestSentenceProvider())
-                .outputArrays(BertIterator.FeatureArrays.INDICES_MASK)
+                .featureArrays(BertIterator.FeatureArrays.INDICES_MASK)
                 .vocabMap(t.getVocab())
                 .task(BertIterator.Task.UNSUPERVISED)
                 .masker(new BertMaskedLMMasker(new Random(12345), 0.2, 0.5, 0.5))
@@ -190,7 +190,7 @@ public class TestBertIterator {
                 .lengthHandling(BertIterator.LengthHandling.ANY_LENGTH, -1)
                 .minibatchSize(2)
                 .sentenceProvider(new TestSentenceProvider())
-                .outputArrays(BertIterator.FeatureArrays.INDICES_MASK)
+                .featureArrays(BertIterator.FeatureArrays.INDICES_MASK)
                 .vocabMap(t.getVocab())
                 .task(BertIterator.Task.SEQ_CLASSIFICATION)
                 .build();
@@ -207,7 +207,7 @@ public class TestBertIterator {
                 .lengthHandling(BertIterator.LengthHandling.CLIP_ONLY, 20)
                 .minibatchSize(2)
                 .sentenceProvider(new TestSentenceProvider())
-                .outputArrays(BertIterator.FeatureArrays.INDICES_MASK)
+                .featureArrays(BertIterator.FeatureArrays.INDICES_MASK)
                 .vocabMap(t.getVocab())
                 .task(BertIterator.Task.SEQ_CLASSIFICATION)
                 .build();
@@ -215,8 +215,73 @@ public class TestBertIterator {
         expShape = new long[]{2, 14};
         assertArrayEquals(expShape, mds.getFeatures(0).shape());
         assertArrayEquals(expShape, mds.getFeaturesMaskArray(0).shape());
+    }
 
+    @Test
+    public void testMinibatchPadding() throws Exception {
+        String toTokenize1 = "I saw a girl with a telescope.";
+        String toTokenize2 = "Donaudampfschifffahrts Kapitänsmützeninnenfuttersaum";
+        BertWordPieceTokenizerFactory t = new BertWordPieceTokenizerFactory(pathToVocab);
+        INDArray expEx0 = Nd4j.create(DataType.INT, 1, 16);
+        INDArray expM0 = Nd4j.create(DataType.INT, 1, 16);
+        List<String> tokens = t.create(toTokenize1).getTokens();
+        Map<String,Integer> m = t.getVocab();
+        for( int i=0; i<tokens.size(); i++ ){
+            int idx = m.get(tokens.get(i));
+            expEx0.putScalar(0, i, idx);
+            expM0.putScalar(0, i, 1);
+        }
 
+        INDArray expEx1 = Nd4j.create(DataType.INT, 1, 16);
+        INDArray expM1 = Nd4j.create(DataType.INT, 1, 16);
+        List<String> tokens2 = t.create(toTokenize2).getTokens();
+        for( int i=0; i<tokens2.size(); i++ ){
+            String token = tokens2.get(i);
+            if(!m.containsKey(token)){
+                throw new IllegalStateException("Unknown token: \"" + token + "\"");
+            }
+            int idx = m.get(token);
+            expEx1.putScalar(0, i, idx);
+            expM1.putScalar(0, i, 1);
+        }
+
+        INDArray zeros = Nd4j.create(DataType.INT, 2, 16);
+
+        INDArray expF = Nd4j.vstack(expEx0, expEx1, zeros);
+        INDArray expM = Nd4j.vstack(expM0, expM1, zeros);
+        INDArray expL = Nd4j.createFromArray(new float[][]{{1, 0}, {0, 1}, {0, 0}, {0, 0}});
+        INDArray expLM = Nd4j.create(Nd4j.defaultFloatingPointType(), 4, 1);
+        expLM.putScalar(0, 0, 1);
+        expLM.putScalar(1, 0, 1);
+
+        //--------------------------------------------------------------
+
+        BertIterator b = BertIterator.builder()
+                .tokenizer(t)
+                .lengthHandling(BertIterator.LengthHandling.FIXED_LENGTH, 16)
+                .minibatchSize(4)
+                .padMinibatches(true)
+                .sentenceProvider(new TestSentenceProvider())
+                .featureArrays(BertIterator.FeatureArrays.INDICES_MASK_SEGMENTID)
+                .vocabMap(t.getVocab())
+                .task(BertIterator.Task.SEQ_CLASSIFICATION)
+                .build();
+
+        MultiDataSet mds = b.next();
+        long[] expShape = {4, 16};
+        assertArrayEquals(expShape, mds.getFeatures(0).shape());
+        assertArrayEquals(expShape, mds.getFeatures(1).shape());
+        assertArrayEquals(expShape, mds.getFeaturesMaskArray(0).shape());
+
+        long[] lShape = {4, 2};
+        long[] lmShape = {4, 1};
+        assertArrayEquals(lShape, mds.getLabels(0).shape());
+        assertArrayEquals(lmShape, mds.getLabelsMaskArray(0).shape());
+
+        assertEquals(expF, mds.getFeatures(0));
+        assertEquals(expM, mds.getFeaturesMaskArray(0));
+        assertEquals(expL, mds.getLabels(0));
+        assertEquals(expLM, mds.getLabelsMaskArray(0));
     }
 
     private static class TestSentenceProvider implements LabeledSentenceProvider {

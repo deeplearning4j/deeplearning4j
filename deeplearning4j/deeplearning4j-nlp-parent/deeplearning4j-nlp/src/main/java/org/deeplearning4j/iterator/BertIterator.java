@@ -19,8 +19,10 @@ package org.deeplearning4j.iterator;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
+import org.deeplearning4j.iterator.bert.BertMaskedLMMasker;
 import org.deeplearning4j.iterator.bert.BertSequenceMasker;
 import org.deeplearning4j.text.tokenization.tokenizer.Tokenizer;
+import org.deeplearning4j.text.tokenization.tokenizerfactory.BertWordPieceTokenizerFactory;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
 import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataType;
@@ -29,6 +31,7 @@ import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.linalg.dataset.api.MultiDataSetPreProcessor;
 import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.primitives.Pair;
 
 import java.util.ArrayList;
@@ -81,6 +84,7 @@ public class BertIterator implements MultiDataSetIterator {
     protected TokenizerFactory tokenizerFactory;
     protected int maxTokens = -1;
     protected int minibatchSize = 32;
+    protected boolean padMinibatches = false;
     @Getter @Setter
     protected MultiDataSetPreProcessor preProcessor;
     protected LabeledSentenceProvider sentenceProvider = null;
@@ -99,6 +103,7 @@ public class BertIterator implements MultiDataSetIterator {
         this.tokenizerFactory = b.tokenizerFactory;
         this.maxTokens = b.maxTokens;
         this.minibatchSize = b.minibatchSize;
+        this.padMinibatches = b.padMinibatches;
         this.preProcessor = b.preProcessor;
         this.sentenceProvider = b.sentenceProvider;
         this.lengthHandling = b.lengthHandling;
@@ -136,8 +141,10 @@ public class BertIterator implements MultiDataSetIterator {
             }
         } else {
             //TODO - other types of iterators...
+            throw new UnsupportedOperationException("Labelled sentence provider is null and no other iterator types have yet been implemented");
         }
 
+        //Get and tokenize the sentences for this minibatch
         List<Pair<List<String>, String>> tokenizedSentences = new ArrayList<>(num);
         int longestSeq = -1;
         for(Pair<String,String> p : list){
@@ -146,6 +153,7 @@ public class BertIterator implements MultiDataSetIterator {
             longestSeq = Math.max(longestSeq, tokens.size());
         }
 
+        //Determine output array length...
         int outLength;
         switch (lengthHandling){
             case FIXED_LENGTH:
@@ -162,29 +170,30 @@ public class BertIterator implements MultiDataSetIterator {
         }
 
         int mb = tokenizedSentences.size();
-
-        int[][] outIdxs = new int[mb][outLength];
-        int[][] outMask = new int[mb][outLength];
+        int mbPadded = padMinibatches ? minibatchSize : mb;
+        int[][] outIdxs = new int[mbPadded][outLength];
+        int[][] outMask = new int[mbPadded][outLength];
 
         for( int i=0; i<tokenizedSentences.size(); i++ ){
             Pair<List<String>,String> p = tokenizedSentences.get(i);
             List<String> t = p.getFirst();
             for( int j=0; j<outLength && j<t.size(); j++ ){
+                Preconditions.checkState(vocabMap.containsKey(t.get(j)), "Unknown token encontered: token \"%s\" is not in vocabulary", t.get(j));
                 int idx = vocabMap.get(t.get(j));
-                //TODO unknown token check
                 outIdxs[i][j] = idx;
                 outMask[i][j] = 1;
             }
         }
 
+        //Create actual arrays. Indices, mask, and optional segment ID
         INDArray outIdxsArr = Nd4j.createFromArray(outIdxs);
         INDArray outMaskArr = Nd4j.createFromArray(outMask);
-        INDArray outSegmentIdArr = null;
+        INDArray outSegmentIdArr;
         INDArray[] f;
         INDArray[] fm;
         if(featureArrays == FeatureArrays.INDICES_MASK_SEGMENTID){
             //For now: always segment index 0 (only single s sequence input supported)
-            outSegmentIdArr = Nd4j.zeros(DataType.INT, mb, outLength);
+            outSegmentIdArr = Nd4j.zeros(DataType.INT, mbPadded, outLength);
             f = new INDArray[]{outIdxsArr, outSegmentIdArr};
             fm = new INDArray[]{outMaskArr, null};
         } else {
@@ -195,8 +204,9 @@ public class BertIterator implements MultiDataSetIterator {
         INDArray[] l = new INDArray[1];
         INDArray[] lm;
         if(task == Task.SEQ_CLASSIFICATION){
+            //Sequence classification task: output is 2d, one-hot, shape [minibatch, numClasses]
             int numClasses;
-            int[] classLabels = new int[mb];
+            int[] classLabels = new int[mbPadded];
             if(sentenceProvider != null){
                 numClasses = sentenceProvider.numLabelClasses();
                 List<String> labels = sentenceProvider.allLabels();
@@ -208,12 +218,19 @@ public class BertIterator implements MultiDataSetIterator {
             } else {
                 throw new RuntimeException();
             }
-            l[0] = Nd4j.create(Nd4j.defaultFloatingPointType(), mb, numClasses);
+            l[0] = Nd4j.create(Nd4j.defaultFloatingPointType(), mbPadded, numClasses);
             for( int i=0; i<mb; i++ ){
                 l[0].putScalar(i, classLabels[i], 1.0);
             }
             lm = null;
+            if(padMinibatches && mb != mbPadded){
+                INDArray a = Nd4j.zeros(DataType.FLOAT, mbPadded, 1);
+                lm = new INDArray[]{a};
+                a.get(NDArrayIndex.interval(0, mb), NDArrayIndex.all()).assign(1);
+            }
         } else if(task == Task.UNSUPERVISED){
+            //Unsupervised, masked language model task
+            //Output is either 2d, or 3d depending on settings
             if(vocabKeysAsList == null){
                 String[] arr = new String[vocabMap.size()];
                 for(Map.Entry<String,Integer> e : vocabMap.entrySet()){
@@ -225,13 +242,13 @@ public class BertIterator implements MultiDataSetIterator {
 
             int vocabSize = vocabMap.size();
             INDArray labelArr;
-            INDArray mask = Nd4j.zeros(DataType.INT, mb, outLength);
+            INDArray lMask = Nd4j.zeros(DataType.INT, mbPadded, outLength);
             if(unsupervisedLabelFormat == UnsupervisedLabelFormat.RANK2_IDX){
-                labelArr = Nd4j.create(DataType.INT, mb, outLength);
+                labelArr = Nd4j.create(DataType.INT, mbPadded, outLength);
             } else if(unsupervisedLabelFormat == UnsupervisedLabelFormat.RANK3_NCL){
-                labelArr = Nd4j.create(Nd4j.defaultFloatingPointType(), mb, vocabSize, outLength);
+                labelArr = Nd4j.create(Nd4j.defaultFloatingPointType(), mbPadded, vocabSize, outLength);
             } else if(unsupervisedLabelFormat == UnsupervisedLabelFormat.RANK3_NLC){
-                labelArr = Nd4j.create(Nd4j.defaultFloatingPointType(), mb, outLength, vocabSize);
+                labelArr = Nd4j.create(Nd4j.defaultFloatingPointType(), mbPadded, outLength, vocabSize);
             } else {
                 throw new IllegalStateException("Unknown unsupervised label format: " + unsupervisedLabelFormat);
             }
@@ -254,7 +271,7 @@ public class BertIterator implements MultiDataSetIterator {
                             labelArr.putScalar(i, targetTokenIdx, j, 1.0);
                         }
 
-                        mask.putScalar(i, j, 1.0);
+                        lMask.putScalar(i, j, 1.0);
 
                         //Also update previously created feature label indexes:
                         String newToken = maskedTokens.get(j);
@@ -265,7 +282,7 @@ public class BertIterator implements MultiDataSetIterator {
             }
             l[0] = labelArr;
             lm = new INDArray[1];
-            lm[0] = mask;
+            lm[0] = lMask;
         } else {
             throw new IllegalStateException("Task not yet implemented: " + task);
         }
@@ -316,65 +333,132 @@ public class BertIterator implements MultiDataSetIterator {
         protected LengthHandling lengthHandling = LengthHandling.FIXED_LENGTH;
         protected int maxTokens = -1;
         protected int minibatchSize = 32;
+        protected boolean padMinibatches = false;
         protected MultiDataSetPreProcessor preProcessor;
         protected LabeledSentenceProvider sentenceProvider = null;
         protected FeatureArrays featureArrays = FeatureArrays.INDICES_MASK_SEGMENTID;
         protected Map<String,Integer> vocabMap;   //TODO maybe use Eclipse ObjectIntHashMap for fewer objects?
-        protected BertSequenceMasker masker = null;
+        protected BertSequenceMasker masker = new BertMaskedLMMasker();
         protected UnsupervisedLabelFormat unsupervisedLabelFormat;
         protected String maskToken;
 
+        /**
+         * Specify the {@link Task} the iterator should be set up for. See {@link BertIterator} for more details.
+         */
         public Builder task(Task task){
             this.task = task;
             return this;
         }
 
+        /**
+         * Specify the TokenizerFactory to use.
+         * For BERT, typically {@link org.deeplearning4j.text.tokenization.tokenizerfactory.BertWordPieceTokenizerFactory}
+         * is used
+         */
         public Builder tokenizer(TokenizerFactory tokenizerFactory){
             this.tokenizerFactory = tokenizerFactory;
             return this;
         }
 
+        /**
+         * Specifies how the sequence length of the output data should be handled. See {@link BertIterator} for more details.
+         * @param lengthHandling    Length handling
+         * @param maxLength         Not used if LengthHandling is set to {@link LengthHandling#ANY_LENGTH}
+         * @return
+         */
         public Builder lengthHandling(@NonNull LengthHandling lengthHandling, int maxLength){
             this.lengthHandling = lengthHandling;
             this.maxTokens = maxLength;
             return this;
         }
 
+        /**
+         * Minibatch size to use (number of examples to train on for each iteration)
+         * See also: {@link #padMinibatches}
+         * @param minibatchSize    Minibatch size
+         */
         public Builder minibatchSize(int minibatchSize){
             this.minibatchSize = minibatchSize;
             return this;
         }
 
+        /**
+         * Default: false (disabled)<br>
+         * If the dataset is not an exact multiple of the minibatch size, should we pad the smaller final minibatch?<br>
+         * For example, if we have 100 examples total, and 32 minibatch size, the following number of examples will be returned
+         * for subsequent calls of next() in the one epoch:<br>
+         * padMinibatches = false (default): 32, 32, 32, 4.<br>
+         * padMinibatches = true: 32, 32, 32, 32 (note: the last minibatch will have 4 real examples, and 28 masked out padding examples).<br>
+         * Both options should result in exactly the same model. However, some BERT implementations may require exactly an
+         * exact number of examples in all minibatches to function.
+         */
+        public Builder padMinibatches(boolean padMinibatches){
+            this.padMinibatches = padMinibatches;
+            return this;
+        }
+
+        /**
+         * Set the preprocessor to be used on the MultiDataSets before returning them. Default: none (null)
+         */
         public Builder preProcessor(MultiDataSetPreProcessor preProcessor){
             this.preProcessor = preProcessor;
             return this;
         }
 
+        /**
+         * Specify the source of the data for classification. Can also be used for unsupervised learning; in the unsupervised
+         * use case, the labels will be ignored.
+         */
         public Builder sentenceProvider(LabeledSentenceProvider sentenceProvider){
             this.sentenceProvider = sentenceProvider;
             return this;
         }
 
-        public Builder outputArrays(FeatureArrays featureArrays){
+        /**
+         * Specify what arrays should be returned. See {@link BertIterator} for more details.
+         */
+        public Builder featureArrays(FeatureArrays featureArrays){
             this.featureArrays = featureArrays;
             return this;
         }
 
+        /**
+         * Provide the vocabulary as a map. Keys are
+         * If using {@link BertWordPieceTokenizerFactory},
+         * this can be obtained using {@link BertWordPieceTokenizerFactory#getVocab()}
+         */
         public Builder vocabMap(Map<String,Integer> vocabMap){
             this.vocabMap = vocabMap;
             return this;
         }
 
+        /**
+         * Used only for unsupervised training (i.e., when task is set to {@link Task#UNSUPERVISED} for learning a
+         * masked language model. This can be used to customize how the masking is performed.<br>
+         * Default: {@link BertMaskedLMMasker}
+         */
         public Builder masker(BertSequenceMasker masker){
             this.masker = masker;
             return this;
         }
 
+        /**
+         * Used only for unsupervised training (i.e., when task is set to {@link Task#UNSUPERVISED} for learning a
+         * masked language model. Used to specify the format that the labels should be returned in.
+         * See {@link BertIterator} for more details.
+         */
         public Builder unsupervisedLabelFormat(UnsupervisedLabelFormat labelFormat){
             this.unsupervisedLabelFormat = labelFormat;
             return this;
         }
 
+        /**
+         * Used only for unsupervised training (i.e., when task is set to {@link Task#UNSUPERVISED} for learning a
+         * masked language model. This specifies the token (such as "[MASK]") that should be used when a value is masked out.
+         * Note that this is passed to the {@link BertSequenceMasker} defined by {@link #masker(BertSequenceMasker)} hence
+         * the exact behaviour will depend on what masker is used.<br>
+         * Note that this must be in the vocabulary map set in {@link #vocabMap}
+         */
         public Builder maskToken(String maskToken){
             this.maskToken = maskToken;
             return this;
