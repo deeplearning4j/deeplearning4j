@@ -19,7 +19,6 @@
 // @author Yurii Shyrma (iuriish@yahoo.com)
 //
 
-#include <ops/declarable/helpers/reduce_dot.h>
 #include <ops/declarable/helpers/axis.h>
 #include <ops/declarable/CustomOperations.h>
 
