@@ -19,7 +19,7 @@ public class CentersHolder {
     }
 
     public void addCenter(INDArray pointView) {
-        centers.addRowVector(pointView);
+        centers = centers.add(pointView);
     }
 
     public double getMinDistanceToCenter(Point point, String distanceFunction) {
