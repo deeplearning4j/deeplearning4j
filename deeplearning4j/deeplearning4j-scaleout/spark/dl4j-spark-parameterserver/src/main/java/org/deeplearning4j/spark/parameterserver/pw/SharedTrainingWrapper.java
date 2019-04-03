@@ -517,16 +517,21 @@ public class SharedTrainingWrapper {
 
             //Get threshold algorithm instances from each thread, and average them - they may have state that needs
             // to be averaged and persisted, to avoid starting threshold adaption from scratch
-            EncodingHandler mh = (EncodingHandler) accum.getHandler();
-            ThresholdAlgorithm taAveraged = mh.getAverageThresholdAlgorithm();
+            val mh = (EncodingHandler) accum.getHandler();
+            val taAveraged = mh.getAverageThresholdAlgorithm();
 
             // FIXME: fill stats here
-            return SharedTrainingResult.builder().aggregationsCount(1).scoreSum(originalModel.score())
+            val result = SharedTrainingResult.builder().aggregationsCount(1).scoreSum(originalModel.score())
                             .updaterStateArray(updaterState).listenerMetaData(new ArrayList<>())
                             .listenerStaticInfo(new ArrayList<>()).listenerUpdates(new ArrayList<>())
                             .minibatchesPerExecutor(Collections.singletonMap(SparkUtils.getSparkExecutorId(), iteratorDataSetCount.get().get()))
                             .thresholdAlgorithm(taAveraged)
                             .build();
+
+            // releasing Context here
+            Nd4j.getMemoryManager().releaseCurrentContext();
+
+            return result;
         } else {
             // blocking call right here, all non-master threads will be blocked here
             try {

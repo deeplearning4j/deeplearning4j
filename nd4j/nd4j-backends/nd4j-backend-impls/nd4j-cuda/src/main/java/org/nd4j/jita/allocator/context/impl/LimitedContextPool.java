@@ -18,6 +18,8 @@ package org.nd4j.jita.allocator.context.impl;
 
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
+import lombok.var;
 import org.apache.commons.lang3.RandomUtils;
 import org.nd4j.jita.allocator.context.ContextPack;
 import org.nd4j.jita.allocator.garbage.GarbageResourceReference;
@@ -32,6 +34,7 @@ import org.nd4j.nativeblas.NativeOps;
 import org.nd4j.nativeblas.NativeOpsHolder;
 
 import java.lang.ref.ReferenceQueue;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -52,7 +55,8 @@ public class LimitedContextPool extends BasicContextPool {
 
     // pool of used pools
     protected Map<Long, CudaContext> acquired = new ConcurrentHashMap<>();
-    protected AtomicInteger currentPoolSize = new AtomicInteger(0);
+    //protected AtomicInteger currentPoolSize = new AtomicInteger(0);
+    protected List<AtomicInteger> devicePoolSizes = new ArrayList<>();
     protected Map<Integer, ResourceGarbageCollectorThread> collectors = new HashMap<>();
     protected Map<Integer, ReferenceQueue<Thread>> queueMap = new HashMap<>();
 
@@ -61,8 +65,8 @@ public class LimitedContextPool extends BasicContextPool {
         int perDevicePool = CudaEnvironment.getInstance().getConfiguration().getPoolSize();
 
         for (int i = 0; i < 4; i++) {
-            ReferenceQueue<Thread> queue = new ReferenceQueue<>();
-            ResourceGarbageCollectorThread collector = new ResourceGarbageCollectorThread(i, queue);
+            val queue = new ReferenceQueue<Thread>();
+            val collector = new ResourceGarbageCollectorThread(i, queue);
             collector.start();
 
             collectors.put(i, collector);
@@ -70,15 +74,14 @@ public class LimitedContextPool extends BasicContextPool {
         }
 
         fillPoolWithResources(perDevicePool, false);
-        currentPoolSize.set(perDevicePool);
     }
 
     protected void addResourcesToPool(int numResources) {
         int device = AtomicAllocator.getInstance().getDeviceId();
 
-        cublasHandle_t handle = createNewCublasHandle();
+        val handle = createNewCublasHandle();
         for (int cnt = 0; cnt < numResources; cnt++) {
-            CudaContext context = createNewStream(device);
+            val context = createNewStream(device);
             context.initOldStream();
             getDeviceBuffers(context, device);
             context.setHandle(handle);
@@ -102,11 +105,12 @@ public class LimitedContextPool extends BasicContextPool {
         for (Integer device : devices) {
             nativeOps.setDevice(new CudaPointer(device));
             pool.put(device, new LinkedBlockingQueue<CudaContext>());
+            devicePoolSizes.add(new AtomicInteger(numResources));
 
-            cublasHandle_t handle = createNewCublasHandle();
-            cusolverDnHandle_t solverHandle = createNewSolverHandle();
+            val handle = createNewCublasHandle();
+            val solverHandle = createNewSolverHandle();
             for (int cnt = 0; cnt < numResources; cnt++) {
-                CudaContext context = createNewStream(device);
+                val context = createNewStream(device);
                 context.initOldStream();
                 getDeviceBuffers(context, device);
                 context.setHandle(handle);
@@ -116,6 +120,8 @@ public class LimitedContextPool extends BasicContextPool {
 
                 pool.get(device).add(context);
             }
+
+
         }
 
         if (restoreDevice) {
@@ -125,8 +131,8 @@ public class LimitedContextPool extends BasicContextPool {
 
     @Override
     public CudaContext acquireContextForDevice(Integer deviceId) {
-        long threadIdx = Thread.currentThread().getId();
-        CudaContext context = acquired.get(threadIdx);
+        val threadIdx = Thread.currentThread().getId();
+        var context = acquired.get(threadIdx);
         if (context != null && deviceId == context.getDeviceId()) {
             return context;
         }
@@ -138,14 +144,12 @@ public class LimitedContextPool extends BasicContextPool {
             int col = RandomUtils.nextInt(0, collectors.size());
             collectors.get(col);
 
-            GarbageResourceReference reference = new GarbageResourceReference(Thread.currentThread(), queueMap.get(col),
-                            context, deviceId.intValue());
+            val reference = new GarbageResourceReference(Thread.currentThread(), queueMap.get(col), context, deviceId.intValue());
             context.attachReference(reference);
-            //Garba reference = new GarbageBufferReference((BaseDataBuffer) buffer, queueMap.get(bucketId), point);
-            //point.attachReference(reference);
 
             acquired.put(threadIdx, context);
             context.setDeviceId(deviceId);
+            context.setThreadId(threadIdx);
             return context;
         } else {
 
@@ -158,27 +162,30 @@ public class LimitedContextPool extends BasicContextPool {
                         int col = RandomUtils.nextInt(0, collectors.size());
                         collectors.get(col);
 
-                        GarbageResourceReference reference = new GarbageResourceReference(Thread.currentThread(),
-                                        queueMap.get(col), context, deviceId.intValue());
+                        val reference = new GarbageResourceReference(Thread.currentThread(), queueMap.get(col), context, deviceId.intValue());
                         context.attachReference(reference);
 
                         acquired.put(threadIdx, context);
                         context.setDeviceId(deviceId);
+                        context.setThreadId(threadIdx);
                     } else {
-                        if (currentPoolSize.get() < CudaEnvironment.getInstance().getConfiguration().getPoolSize()
-                                        * 3) {
-                            addResourcesToPool(16);
+                        val currentPoolSize = devicePoolSizes.get(deviceId);
+                        synchronized (currentPoolSize) {
+                            if (currentPoolSize.get() < CudaEnvironment.getInstance().getConfiguration().getPoolSize()) {
+                                addResourcesToPool(16);
 
-                            // there's possible race condition, but we don't really care
-                            currentPoolSize.addAndGet(16);
-                        } else {
-                            log.warn("Can't allocate new context, sleeping...");
+                                // there's possible race condition, but we don't really care
+                                currentPoolSize.addAndGet(16);
+                                log.warn("Initial pool size: {}; Current pool size: {}", CudaEnvironment.getInstance().getConfiguration().getPoolSize(), currentPoolSize.get());
+                            } else {
+                                log.warn("Can't allocate new context, sleeping...");
 
-                            Nd4j.getMemoryManager().invokeGc();
-                            try {
-                                Thread.sleep(500);
-                            } catch (Exception e) {
-                                //
+                                Nd4j.getMemoryManager().invokeGc();
+                                try {
+                                    Thread.sleep(500);
+                                } catch (Exception e) {
+                                    //
+                                }
                             }
                         }
                     }
@@ -192,6 +199,7 @@ public class LimitedContextPool extends BasicContextPool {
     }
 
     @Override
+    @Deprecated
     public ContextPack acquireContextPackForDevice(Integer deviceId) {
         return new ContextPack(acquireContextForDevice(deviceId));
     }
@@ -199,6 +207,16 @@ public class LimitedContextPool extends BasicContextPool {
     @Override
     public CudaContext getContextForDevice(Integer deviceId) {
         return acquireContextForDevice(deviceId);
+    }
+
+    @Override
+    public void releaseContext(CudaContext context) {
+        val threadIdx = context.getThreadId();
+        val deviceId = context.getDeviceId();
+
+        context.setThreadId(-1);
+        acquired.remove(threadIdx);
+        pool.get(deviceId).add(context);
     }
 
     private class ResourceGarbageCollectorThread extends Thread implements Runnable {
@@ -216,8 +234,12 @@ public class LimitedContextPool extends BasicContextPool {
                 GarbageResourceReference reference = (GarbageResourceReference) queue.poll();
                 if (reference != null) {
                     CudaContext context = reference.getContext();
-                    Long threadId = reference.getThreadId();
-                    int deviceId = reference.getDeviceId();
+                    val threadId = reference.getThreadId();
+                    val deviceId = reference.getDeviceId();
+
+                    // there's a chance context was already released
+                    if (context.getThreadId() != threadId)
+                        continue;
 
                     pool.get(deviceId).add(context);
                     acquired.remove(threadId);

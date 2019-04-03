@@ -182,6 +182,11 @@ public class BasicContextPool implements ContextPool {
         return contextsPool.get(threadId);
     }
 
+    @Override
+    public void releaseContext(CudaContext context) {
+        // no-op
+    }
+
     protected CudaContext createNewStream(Integer deviceId) {
         log.trace("Creating new stream for thread: [{}], device: [{}]...", Thread.currentThread().getId(), deviceId);
         //JCuda.cudaSetDevice(deviceId);
@@ -301,7 +306,7 @@ public class BasicContextPool implements ContextPool {
 
         context.syncOldStream();
 
-        Pointer allocationPointer = nativeOps.mallocDevice(1024 * 1024, new CudaPointer(deviceId), 0);
+        Pointer allocationPointer = nativeOps.mallocDevice(16384 * sizeOf, new CudaPointer(deviceId), 0);
         if (allocationPointer == null)
             throw new IllegalStateException("Can't allocate [DEVICE] allocation buffer memory!");
 
@@ -313,11 +318,11 @@ public class BasicContextPool implements ContextPool {
         context.setBufferAllocation(allocationPointer);
         context.setBufferReduction(reductionPointer);
 
-        Pointer specialPointer = nativeOps.mallocDevice(1024 * 1024 * sizeOf, new CudaPointer(deviceId), 0);
+        Pointer specialPointer = nativeOps.mallocDevice(16384 * sizeOf, new CudaPointer(deviceId), 0);
         if (specialPointer == null)
             throw new IllegalStateException("Can't allocate [DEVICE] special buffer memory!");
 
-        nativeOps.memsetAsync(specialPointer, 0, 65536 * sizeOf, 0, context.getOldStream());
+        nativeOps.memsetAsync(specialPointer, 0, 16384 * sizeOf, 0, context.getOldStream());
 
         context.setBufferSpecial(specialPointer);
     }
