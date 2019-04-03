@@ -44,7 +44,7 @@
 
 namespace nd4j {
 
-
+    //////////////////////////////////////////////////////////////////////////
     void* NDArray::operator new(size_t i) {
         if (nd4j::memory::MemoryRegistrator::getInstance()->hasWorkspaceAttached()) {
             nd4j::memory::Workspace* ws = nd4j::memory::MemoryRegistrator::getInstance()->getWorkspace();
@@ -59,6 +59,7 @@ namespace nd4j {
         }
     }
 
+    //////////////////////////////////////////////////////////////////////////
     void NDArray::operator delete(void* p) {
         if (!nd4j::memory::MemoryRegistrator::getInstance()->hasWorkspaceAttached()) {
             free(p);
@@ -2449,7 +2450,7 @@ template void NDArray::applyScalar(nd4j::scalar::Ops op, const bool scalar, NDAr
     if (numberNegativesOnes > 0)
         delete[] shape_;
 
-    int arrLength = 1;
+    Nd4jLong arrLength = 1;
     for(const auto& item : shape)
         arrLength *= item;
 
@@ -2463,13 +2464,16 @@ template void NDArray::applyScalar(nd4j::scalar::Ops op, const bool scalar, NDAr
     Nd4jLong *shapeInfoNew;
     ALLOCATE(shapeInfoNew, _workspace, shape::shapeInfoLength(rank), Nd4jLong);
 
+    bool canReshape = shape::reshapeC(this->rankOf(), this->_shapeInfo, shape.size(), shape.data(), shapeInfoNew);
+    
     // we can do this only if there was no permute applied, or there are no weird strides
-    if (shape::reshapeC(this->rankOf(), this->_shapeInfo, shape.size(), shape.data(), shapeInfoNew)) {
+    if (canReshape) {
         
         if(ordering() == 'c' && order == 'f')
             throw std::invalid_argument("NDArray::reshapei(order, shape): in case of reshapeC it doesn't make sense to reshape from c order to f order !");
 
-        setShapeInfo(shapeInfoNew);
+        shape::setEws(shapeInfoNew, arrLength);
+        setShapeInfo(shapeInfoNew);        
         _isShapeAlloc = true;
     } 
     else {
@@ -2480,7 +2484,7 @@ template void NDArray::applyScalar(nd4j::scalar::Ops op, const bool scalar, NDAr
         RELEASE(shapeInfoNew, _workspace);
     }
 
-    return true;
+    return canReshape;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -3928,7 +3932,7 @@ template void NDArray::pIdx(const Nd4jLong* indices, const bool value);
         }
         
         // check if there is possibility to set ews = 1
-        shape::calcEws(newShape, subArrLen);
+        shape::setEws(newShape, subArrLen);
 
         // create resulting sub-array
         NDArray result(bufferWithOffset(offset), newShape, _workspace, false, true);
@@ -5171,7 +5175,7 @@ void NDArray::getSubArrShapeAndOffsets(const std::vector<int>& dimsToExclude, Nd
     }
 
     // evaluate ews
-    shape::calcEws(outShapeInfo, subArrLen);
+    shape::setEws(outShapeInfo, subArrLen);
 
     // calculation of sub-array offsets (subArrOffsets)
     shape::calcSubArrOffsets(numOfSubArrs, dimsSize, shape.data(), strides.data(), subArrOffsets);

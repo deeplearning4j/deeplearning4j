@@ -1087,7 +1087,7 @@ namespace shape {
     // if array is scalar or unit length vector then ews = 1
     // if array is common vector then ews = stride of non-unity dimension
     // if strides are normal set ews = 1, otherwise ews = 0    
-    ND4J_EXPORT _CUDA_HD void calcEws(Nd4jLong* shapeInfo, Nd4jLong len);
+    ND4J_EXPORT _CUDA_HD void setEws(Nd4jLong* shapeInfo, Nd4jLong len);
 
 
 
@@ -4281,9 +4281,9 @@ INLINEDEF _CUDA_H bool reshapeC(const int oldRank, const Nd4jLong* oldShapeInfo,
         newShapeInfo[0] = newRank;
         memcpy(newShapeInfo + 1, newShape, newRank * sizeof(Nd4jLong));
 
-        Nd4jLong* newStrides = shape::stride(newShapeInfo);
-        const Nd4jLong* oldShape = shape::shapeOf(const_cast<Nd4jLong*>(oldShapeInfo));
-        const Nd4jLong* oldStrides = shape::stride(const_cast<Nd4jLong*>(oldShapeInfo));        
+        Nd4jLong* newStrides       = shape::stride(newShapeInfo);
+        const Nd4jLong* oldShape   = shape::shapeOf(const_cast<Nd4jLong*>(oldShapeInfo));
+        const Nd4jLong* oldStrides = shape::stride(const_cast<Nd4jLong*>(oldShapeInfo));
         int oldStart(0), oldStop(1), newStart(0), newStop(1), newDim, oldDim;
                 
         while (newStart < newRank && oldStart < oldRank) {
@@ -4296,9 +4296,14 @@ INLINEDEF _CUDA_H bool reshapeC(const int oldRank, const Nd4jLong* oldShapeInfo,
                 else                 oldDim *= oldShape[oldStop++];
 
             // ------ Check whether the original axes can be combined ------ //
-            for (int i = oldStart; i < oldStop - 1; i++)                     
-                if(oldShape[i] != 1 && oldStrides[i] != oldShape[i + 1] * oldStrides[i + 1]) //  oldShape[i] != 1 ---> ignore strides like {...,1,1,...}
-                    return false;           // not contiguous enough            
+            for (int step = 1, i = oldStart; i < oldStop - 1; ++i) {
+                if(oldShape[i] == 1)                // skip unity-dimension and its stride
+                    continue;
+                while((i + step) < oldRank && oldShape[i + step] == 1)
+                    ++step;                         // skip following unity-dimensions and its strides if such are present
+                if((i + step) < oldRank && oldStrides[i] != oldShape[i + step] * oldStrides[i + step])
+                    return false;                   // not contiguous enough
+            }
             
             newStrides[newStop - 1] = oldStrides[oldStop - 1];
             for (int i = newStop - 1; i > newStart; --i) 
@@ -4810,7 +4815,7 @@ INLINEDEF void calcSubArrOffsets(const Nd4jLong numOfSubArrs, const int rank, co
 }
 
 //////////////////////////////////////////////////////////////////////
-INLINEDEF void _CUDA_HD calcEws(Nd4jLong* shapeInfo, Nd4jLong len) {
+INLINEDEF void _CUDA_HD setEws(Nd4jLong* shapeInfo, Nd4jLong len) {
 
    
     const int rank          = shape::rank(shapeInfo);
@@ -4819,7 +4824,7 @@ INLINEDEF void _CUDA_HD calcEws(Nd4jLong* shapeInfo, Nd4jLong len) {
     const char order        = shape::order(shapeInfo);
     Nd4jLong* ews           = shape::ews(shapeInfo);
     
-    if(len == -1)   // calculate array length if it is not already set 
+    if(len == -1)   // calculate array length if it is not given 
         len = shape::length(shapeInfo);
         
     if(len <= 1) {  //  empty, scalar or unity-vector case
@@ -4865,8 +4870,6 @@ INLINEDEF void _CUDA_HD calcEws(Nd4jLong* shapeInfo, Nd4jLong len) {
     
     *ews = 1;    
 }
-
-
 
 }
 
