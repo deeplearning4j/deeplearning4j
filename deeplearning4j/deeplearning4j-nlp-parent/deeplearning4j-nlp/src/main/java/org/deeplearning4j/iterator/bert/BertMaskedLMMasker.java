@@ -8,7 +8,15 @@ import java.util.List;
 import java.util.Random;
 
 /**
- * Created by Alex on 03/04/2019.
+ * A standard/default {@link BertSequenceMasker}. Implements masking as per the BERT paper:
+ * <a href="https://arxiv.org/abs/1810.04805">https://arxiv.org/abs/1810.04805</a>
+ * That is, each token is chosen to be masked independently with some probability "maskProb".
+ * For tokens that are masked, 3 possibilities:<br>
+ * 1. They are replaced with the mask token (such as "[MASK]") in the input, with probability "maskTokenProb"<br>
+ * 2. They are replaced with a random word from the vocabulary, with probability "randomTokenProb"<br>
+ * 3. They are are left unmodified with probability 1.0 - maskTokenProb - randomTokenProb<br>
+ *
+ * @author Alex Black
  */
 public class BertMaskedLMMasker implements BertSequenceMasker {
     public static final double DEFAULT_MASK_PROB = 0.15;
@@ -18,18 +26,28 @@ public class BertMaskedLMMasker implements BertSequenceMasker {
     protected final Random r;
     protected final double maskProb;
     protected final double maskTokenProb;
-    protected final double randomWordProb;
+    protected final double randomTokenProb;
 
+    /**
+     * Create a BertMaskedLMMasker with all default probabilities
+     */
     public BertMaskedLMMasker(){
         this(new Random(), DEFAULT_MASK_PROB, DEFAULT_MASK_TOKEN_PROB, DEFAULT_RANDOM_WORD_PROB);
     }
 
-    public BertMaskedLMMasker(Random r, double maskProb, double maskTokenProb, double randomWordProb){
+    /**
+     * See: {@link BertMaskedLMMasker} for details.
+     * @param r                 Random number generator
+     * @param maskProb          Probability of masking each token
+     * @param maskTokenProb     Probability of replacing a selected token with the mask token
+     * @param randomTokenProb    Probability of replacing a selected token with a random token
+     */
+    public BertMaskedLMMasker(Random r, double maskProb, double maskTokenProb, double randomTokenProb){
         Preconditions.checkArgument(maskProb > 0 && maskProb < 1, "Probability must be beteen 0 and 1, got %s", maskProb);
         this.r = r;
         this.maskProb = maskProb;
         this.maskTokenProb = maskTokenProb;
-        this.randomWordProb = randomWordProb;
+        this.randomTokenProb = randomTokenProb;
     }
 
     @Override
@@ -42,7 +60,7 @@ public class BertMaskedLMMasker implements BertSequenceMasker {
                 double d = r.nextDouble();
                 if(d < maskTokenProb){
                     out.add(maskToken);
-                } else if(d < maskTokenProb + randomWordProb){
+                } else if(d < maskTokenProb + randomTokenProb){
                     //Randomly select a token...
                     String random = vocabWords.get(r.nextInt(vocabWords.size()));
                     out.add(random);
