@@ -452,3 +452,15 @@ TEST_F(LegacyOpsTests, PowDerivative_1) {
 
     ASSERT_TRUE(exp.equalsTo(&x));
 }
+
+TEST_F(LegacyOpsTests, Reduce3_1) {
+    auto x = NDArrayFactory::create<float>('c', {5, 5});
+    auto y = NDArrayFactory::create<float>('c', {5});
+    auto z = NDArrayFactory::create<float>('c', {5});
+
+    auto dim = NDArrayFactory::create<int>('c', {1}, {1});
+
+    NativeOps nativeOps;
+    nativeOps.execReduce3(nullptr, reduce3::CosineSimilarity, x.buffer(), x.shapeInfo(), x.specialBuffer(), x.specialShapeInfo(), nullptr, y.buffer(), y.shapeInfo(), y.specialBuffer(), y.specialShapeInfo(), z.buffer(), z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo(), dim.buffer(), dim.shapeInfo(), dim.specialBuffer(), dim.specialShapeInfo(),
+                          nullptr, nullptr, nullptr, nullptr);
+}

@@ -348,7 +348,7 @@ void Reduce3<X,Z>::exec(void *vx, Nd4jLong *xShapeInfo,
 
                         for (unsigned int j = 0; j < tadLength; j++) {                            
                             auto offset = shape::indexOffset(j, xShapeInf, xShapeInfoCast, tadLength, canCastX);
-                            start = OpType::update(start, OpType::op(tX[offset], tY[offset],extraParams), extraParamsVals);
+                            start = OpType::update(start, OpType::op(tX[offset], tY[offset],extraParamsVals), extraParamsVals);
                         }
                     }
                     else {
@@ -358,7 +358,7 @@ void Reduce3<X,Z>::exec(void *vx, Nd4jLong *xShapeInfo,
                         for (unsigned int j = 0; j < tadLength; j++) {                            
                             auto xOffset2 = shape::indexOffset(j, xShapeInf, xShapeInfoCast, tadLength, canCastX);
                             auto yOffset2 = shape::indexOffset(j, yShapeInf, yShapeInfoCast, tadLength, canCastY);
-                            start = OpType::update(start, OpType::op(tX[xOffset2], tY[yOffset2],extraParams), extraParamsVals);
+                            start = OpType::update(start, OpType::op(tX[xOffset2], tY[yOffset2],extraParamsVals), extraParamsVals);
                         }
                     } 
 
