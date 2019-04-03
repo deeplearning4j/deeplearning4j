@@ -275,6 +275,10 @@ public class CudaMemoryManager extends BasicMemoryManager {
         // gettting context for this thread
         val context = (CudaContext) AtomicAllocator.getInstance().getDeviceContext().getContext();
 
+        // we dont want any remnaints below this line
+        context.syncOldStream();
+        context.syncSpecialStream();
+
         if (context == null)
             return;
 

@@ -85,6 +85,17 @@ public class CudaContext {
         this.free = free;
     }
 
+    @Override
+    public String toString() {
+        return "CudaContext{" +
+                "bufferReduction=" + bufferReduction +
+                ", bufferScalar=" + bufferScalar +
+                ", deviceId=" + deviceId +
+                ", threadId=" + threadId +
+                ", laneId=" + laneId +
+                '}';
+    }
+
     @Deprecated
     public Pointer getBufferAllocation() {
         throw new UnsupportedOperationException();

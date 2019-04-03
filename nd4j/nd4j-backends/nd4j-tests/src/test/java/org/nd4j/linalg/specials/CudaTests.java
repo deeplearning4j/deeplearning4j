@@ -140,6 +140,19 @@ public class CudaTests extends BaseNd4jTest {
         assertEquals(iterations, success.get());
     }
 
+    @Test
+    public void testSequentialReleaseAndReacquire() throws Exception {
+        if (Nd4j.getExecutioner().type() != OpExecutioner.ExecutionerType.CUDA)
+            return;
+
+        Nd4j.create(128);
+
+        Nd4j.getMemoryManager().releaseCurrentContext();
+
+        val array = Nd4j.create(128);
+        array.addi(1.0f);
+    }
+
 
     @Override
     public char ordering() {
