@@ -107,14 +107,14 @@ public class InplaceParallelInference extends ParallelInference {
      * @param <T>
      * @return
      */
-    public <T> T output(@NonNull ModelAdapter<T> adapter, INDArray[] input, INDArray[] inputMasks) {
+    public <T> T output(@NonNull ModelAdapter<T> adapter, INDArray[] input, INDArray[] inputMasks, INDArray[] labelsMasks) {
         val holder = selector.getModelForThisThread();
         Model model = null;
         boolean acquired = false;
         try {
             model = holder.acquireModel();
             acquired = true;
-            return adapter.apply(model, input, inputMasks);
+            return adapter.apply(model, input, inputMasks, labelsMasks);
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         } finally {
