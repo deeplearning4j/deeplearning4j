@@ -43,7 +43,7 @@ namespace ops {
             keepDims = (bool)T_ARG(0);
 
         for(const auto& item : axes)
-            REQUIRE_TRUE(item > -input->shapeInfo()[0] || item <input->shapeInfo()[0], 0, "REDUCE_MEAN OP: the input dimension to reduce along must be in range (-%i, %i), but got %i instead !" , input->rankOf(), input->rankOf(), item);
+            REQUIRE_TRUE(item > -input->shapeInfo()[0] && item <input->shapeInfo()[0], 0, "REDUCE_PROD OP: the input dimension to reduce along must be in range (-%i, %i), but got %i instead !" , input->rankOf(), input->rankOf(), item);
 
         input->reduceAlongDimension(reduce::Prod, output, axes, keepDims);
 
@@ -118,7 +118,7 @@ namespace ops {
         if (tmpResult->status() != Status::OK())
             return tmpResult->status();
         auto tempProd = tmpResult->at(0);
-        REQUIRE_TRUE(tempProd->isSameShape(epsilon), 0, "reduce_prod_bp: The the second param and reduce_sum output should have the equal shapes.");
+        REQUIRE_TRUE(tempProd->isSameShape(epsilon), 0, "REDUCE_PROD_BP: The the second param and reduce_sum output should have the equal shapes.");
     
         // tempProd has equal shape with epsilon
         if (epsilon->isScalar()) {

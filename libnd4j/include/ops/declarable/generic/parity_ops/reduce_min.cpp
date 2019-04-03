@@ -37,7 +37,7 @@ namespace ops {
                 axes = *block.getIArguments();
 
         for(const auto& item : axes)
-            REQUIRE_TRUE(item > -input->shapeInfo()[0] || item <input->shapeInfo()[0], 0, "REDUCE_MIN OP: the input dimension to reduce along must be in range (-%i, %i), but got %i instead !" , input->rankOf(), input->rankOf(), item);
+            REQUIRE_TRUE(item > -input->shapeInfo()[0] && item < input->shapeInfo()[0], 0, "REDUCE_MIN OP: the input dimension to reduce along must be in range (-%i, %i), but got %i instead !" , input->rankOf(), input->rankOf(), item);
 
         bool keepDims = false;//: false;
         if (block.getBArguments()->size() > 0)

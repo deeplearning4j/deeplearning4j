@@ -53,7 +53,7 @@ CUSTOM_OP_IMPL(reduce_variance, 1, 1, false, 0, 0) {
     REQUIRE_TRUE(dimensions.size() <= input->rankOf(), 0, "REDUCE_VARIANCE OP: the number of dimensions to reduce along must be <= input array rank, but got %i instead" , dimensions.size());
 
     for(const auto& item : dimensions)
-        REQUIRE_TRUE(item > -input->rankOf() || item < input->rankOf(), 0, "REDUCE_VARIANCE OP: the input dimension to reduce along must be in range (-%i, %i), but got %i instead !" , input->rankOf(), input->rankOf(), item);
+        REQUIRE_TRUE(item > -input->rankOf() && item < input->rankOf(), 0, "REDUCE_VARIANCE OP: the input dimension to reduce along must be in range (-%i, %i), but got %i instead !" , input->rankOf(), input->rankOf(), item);
         
     input->varianceAlongDimension(variance::SummaryStatsVariance, output, biasCorrected, dimensions);
 
@@ -86,7 +86,7 @@ DECLARE_SHAPE_FN(reduce_variance) {
     REQUIRE_TRUE(dimensions.size() <= inputShape->at(0)[0], 0, "REDUCE_VARIANCE OP: the number of dimensions to reduce along must be <= input array rank, but got %i instead" , dimensions.size());
     
     for(const auto& item : dimensions)
-        REQUIRE_TRUE(item > -inputShape->at(0)[0] || item < inputShape->at(0)[0], 0, "REDUCE_VARIANCE OP: the input dimension to reduce along must be in range (-%i, %i), but got %i instead !" , inputShape->at(0)[0], inputShape->at(0)[0], item);
+        REQUIRE_TRUE(item > -inputShape->at(0)[0] && item < inputShape->at(0)[0], 0, "REDUCE_VARIANCE OP: the input dimension to reduce along must be in range (-%i, %i), but got %i instead !" , inputShape->at(0)[0], inputShape->at(0)[0], item);
 
     Nd4jLong* outShapeInfo = ShapeUtils::evalReduceShapeInfo(shape::order(inputShape->at(0)), dimensions, inputShape->at(0), keepDims, false, block.getWorkspace());
     ArrayOptions::setDataType(outShapeInfo, ArrayOptions::dataType(inputShape->at(0)));
@@ -131,7 +131,7 @@ CUSTOM_OP_IMPL(reduce_variance_bp, 2, 1, false, 0, 0) {
     REQUIRE_TRUE(dimensions.size() <= input->rankOf(), 0, "REDUCE_VARIANCE OP: the number of dimensions to reduce along must be <= input array rank, but got %i instead" , dimensions.size());
 
     for(const auto& item : dimensions)
-        REQUIRE_TRUE(item > -input->rankOf() || item < input->rankOf(), 0, "REDUCE_VARIANCE OP: the input dimension to reduce along must be in range (-%i, %i), but got %i instead !" , input->rankOf(), input->rankOf(), item);        
+        REQUIRE_TRUE(item > -input->rankOf() && item < input->rankOf(), 0, "REDUCE_VARIANCE OP: the input dimension to reduce along must be in range (-%i, %i), but got %i instead !" , input->rankOf(), input->rankOf(), item);        
 
     const Nd4jLong N = input->lengthOf() / gradO->lengthOf();
     const Nd4jLong NminusOne = biasCorrected ? N - 1 : N;
@@ -170,7 +170,7 @@ DECLARE_SHAPE_FN(reduce_variance_bp) {
     REQUIRE_TRUE(dimensions.size() <= inputShape->at(0)[0], 0, "REDUCE_VARIANCE OP: the number of dimensions to reduce along must be <= input array rank, but got %i instead" , dimensions.size());
     
     for(const auto& item : dimensions)
-        REQUIRE_TRUE(item > -inputShape->at(0)[0] || item < inputShape->at(0)[0], 0, "REDUCE_VARIANCE OP: the input dimension to reduce along must be in range (-%i, %i), but got %i instead !" , inputShape->at(0)[0], inputShape->at(0)[0], item);
+        REQUIRE_TRUE(item > -inputShape->at(0)[0] && item < inputShape->at(0)[0], 0, "REDUCE_VARIANCE OP: the input dimension to reduce along must be in range (-%i, %i), but got %i instead !" , inputShape->at(0)[0], inputShape->at(0)[0], item);
     
     Nd4jLong* gradIshapeInfo(nullptr);
     COPY_SHAPE(inputShape->at(0), gradIshapeInfo);
