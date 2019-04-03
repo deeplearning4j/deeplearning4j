@@ -329,17 +329,22 @@ void Reduce3<X,Z>::exec(void *vx, Nd4jLong *xShapeInfo,
                 int num_threads = nd4j::math::nd4j_max<int>(1, tadsPerThread);
                 num_threads = nd4j::math::nd4j_min<int>(num_threads, omp_get_max_threads());
 
+                auto xShapeInf = xTadBigger ? tadPackX.primaryShapeInfo() : xShapeInfo;
+                auto yShapeInf = !xTadBigger ? tadPackY.primaryShapeInfo() : yShapeInfo;
+
+                uint yShapeInfoCast[MAX_RANK];
+                bool canCastY = nd4j::DataTypeUtils::castShapeInfo(yShapeInf, yShapeInfoCast);
+
+                uint xShapeInfoCast[MAX_RANK];
+                bool canCastX = nd4j::DataTypeUtils::castShapeInfo(xShapeInf, xShapeInfoCast);
+
                 PRAGMA_OMP_PARALLEL_FOR_THREADS(num_threads)
                 for (int i = 0; i < zLen; i++) {
                 
                     Nd4jLong xOffset = xTadBigger ? tadPackX.primaryOffsets()[i] : 0;
                     Nd4jLong yOffset = !xTadBigger ? tadPackY.primaryOffsets()[i] : 0;
-                    auto xShapeInf = xTadBigger ? tadPackX.primaryShapeInfo() : xShapeInfo;
-                    auto yShapeInf = !xTadBigger ? tadPackY.primaryShapeInfo() : yShapeInfo;
-                    auto start = OpType::startingValue(x);
 
-                    uint xShapeInfoCast[MAX_RANK];                    
-                    bool canCastX = nd4j::DataTypeUtils::castShapeInfo(xShapeInf, xShapeInfoCast);
+                    auto start = OpType::startingValue(x);
 
                     auto tX = x + xOffset;
                     auto tY = y + yOffset;
@@ -352,8 +357,6 @@ void Reduce3<X,Z>::exec(void *vx, Nd4jLong *xShapeInfo,
                         }
                     }
                     else {
-                        uint yShapeInfoCast[MAX_RANK];                    
-                        bool canCastY = nd4j::DataTypeUtils::castShapeInfo(yShapeInf, yShapeInfoCast);
 
                         for (unsigned int j = 0; j < tadLength; j++) {                            
                             auto xOffset2 = shape::indexOffset(j, xShapeInf, xShapeInfoCast, tadLength, canCastX);
