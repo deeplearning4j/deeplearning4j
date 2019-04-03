@@ -26,8 +26,11 @@ import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
+import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
+
+import java.util.ArrayList;
 
 import static org.junit.Assert.assertEquals;
 
@@ -96,6 +99,36 @@ public class CudaTests extends BaseNd4jTest {
         Nd4j.getExecutioner().commit();
 
         assertEquals(exp, arrayA);
+    }
+
+    @Test
+    public void testContextSpam() throws Exception {
+        if (Nd4j.getExecutioner().type() != OpExecutioner.ExecutionerType.CUDA)
+            return;
+
+        val threads = new ArrayList<Thread>();
+        for (int e = 0; e <= 100; e++) {
+            val f = e;
+            val t = new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    Nd4j.create(1);
+                    if (f % 50 == 0)
+                        log.info("Context {} created", f);
+                    try {
+                        Thread.sleep(100000000L);
+                    } catch (InterruptedException ex) {
+                        ex.printStackTrace();
+                    }
+                }
+            });
+
+            t.start();
+            threads.add(t);
+        }
+
+        threads.get(threads.size() - 1).join();
+
     }
 
 

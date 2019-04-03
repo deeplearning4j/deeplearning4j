@@ -18,6 +18,7 @@ package org.nd4j.jita.allocator.context.impl;
 
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.apache.commons.lang3.RandomUtils;
 import org.nd4j.jita.allocator.context.ContextPack;
 import org.nd4j.jita.allocator.garbage.GarbageResourceReference;
@@ -32,6 +33,7 @@ import org.nd4j.nativeblas.NativeOps;
 import org.nd4j.nativeblas.NativeOpsHolder;
 
 import java.lang.ref.ReferenceQueue;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -52,7 +54,8 @@ public class LimitedContextPool extends BasicContextPool {
 
     // pool of used pools
     protected Map<Long, CudaContext> acquired = new ConcurrentHashMap<>();
-    protected AtomicInteger currentPoolSize = new AtomicInteger(0);
+    //protected AtomicInteger currentPoolSize = new AtomicInteger(0);
+    protected List<AtomicInteger> devicePoolSizes = new ArrayList<>();
     protected Map<Integer, ResourceGarbageCollectorThread> collectors = new HashMap<>();
     protected Map<Integer, ReferenceQueue<Thread>> queueMap = new HashMap<>();
 
@@ -70,7 +73,7 @@ public class LimitedContextPool extends BasicContextPool {
         }
 
         fillPoolWithResources(perDevicePool, false);
-        currentPoolSize.set(perDevicePool);
+        //currentPoolSize.set(perDevicePool);
     }
 
     protected void addResourcesToPool(int numResources) {
@@ -102,6 +105,7 @@ public class LimitedContextPool extends BasicContextPool {
         for (Integer device : devices) {
             nativeOps.setDevice(new CudaPointer(device));
             pool.put(device, new LinkedBlockingQueue<CudaContext>());
+            devicePoolSizes.add(new AtomicInteger(numResources));
 
             cublasHandle_t handle = createNewCublasHandle();
             cusolverDnHandle_t solverHandle = createNewSolverHandle();
@@ -116,6 +120,8 @@ public class LimitedContextPool extends BasicContextPool {
 
                 pool.get(device).add(context);
             }
+
+
         }
 
         if (restoreDevice) {
@@ -165,20 +171,23 @@ public class LimitedContextPool extends BasicContextPool {
                         acquired.put(threadIdx, context);
                         context.setDeviceId(deviceId);
                     } else {
-                        if (currentPoolSize.get() < CudaEnvironment.getInstance().getConfiguration().getPoolSize()
-                                        * 3) {
-                            addResourcesToPool(16);
+                        val currentPoolSize = devicePoolSizes.get(deviceId);
+                        synchronized (currentPoolSize) {
+                            if (currentPoolSize.get() < CudaEnvironment.getInstance().getConfiguration().getPoolSize() * 3) {
+                                addResourcesToPool(16);
 
-                            // there's possible race condition, but we don't really care
-                            currentPoolSize.addAndGet(16);
-                        } else {
-                            log.warn("Can't allocate new context, sleeping...");
+                                // there's possible race condition, but we don't really care
+                                currentPoolSize.addAndGet(16);
+                                log.warn("Initial pool size: {}; Current pool size: {}", CudaEnvironment.getInstance().getConfiguration().getPoolSize(), currentPoolSize.get());
+                            } else {
+                                log.warn("Can't allocate new context, sleeping...");
 
-                            Nd4j.getMemoryManager().invokeGc();
-                            try {
-                                Thread.sleep(500);
-                            } catch (Exception e) {
-                                //
+                                Nd4j.getMemoryManager().invokeGc();
+                                try {
+                                    Thread.sleep(500);
+                                } catch (Exception e) {
+                                    //
+                                }
                             }
                         }
                     }
