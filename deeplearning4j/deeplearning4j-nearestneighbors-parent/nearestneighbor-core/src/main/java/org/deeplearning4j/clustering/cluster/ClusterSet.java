@@ -17,6 +17,7 @@
 package org.deeplearning4j.clustering.cluster;
 
 import lombok.Data;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
 
@@ -127,10 +128,9 @@ public class ClusterSet implements Serializable {
      */
     public Pair<Cluster, Double> nearestCluster(Point point) {
 
-        Cluster nearestCluster = null;
-        double minDistance = isInverse() ? Float.MIN_VALUE : Float.MAX_VALUE;
+        /*double minDistance = isInverse() ? Float.MIN_VALUE : Float.MAX_VALUE;
 
-        /*double currentDistance;
+        double currentDistance;
         for (Cluster cluster : getClusters()) {
             currentDistance = cluster.getDistanceToCenter(point);
             if (isInverse()) {
@@ -147,9 +147,10 @@ public class ClusterSet implements Serializable {
 
         }*/
 
-        minDistance = centersHolder.getMinDistanceToCenter(point, distanceFunction);
+        Pair<Double, Long> nearestCenterData = centersHolder.getCenterByMinDistance(point, distanceFunction);
+        Cluster nearestCluster = getClusters().get(nearestCenterData.getSecond().intValue());
+        double minDistance = nearestCenterData.getFirst();
         return Pair.of(nearestCluster, minDistance);
-
     }
 
     /**
@@ -169,9 +170,9 @@ public class ClusterSet implements Serializable {
      * @param point
      * @return
      */
-    public double getDistanceFromNearestCluster(Point point) {
+    /*public double getDistanceFromNearestCluster(Point point) {
         return nearestCluster(point).getValue();
-    }
+    }*/
 
 
     /**

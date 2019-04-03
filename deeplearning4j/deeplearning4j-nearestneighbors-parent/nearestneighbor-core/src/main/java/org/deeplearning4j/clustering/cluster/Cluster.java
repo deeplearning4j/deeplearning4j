@@ -38,7 +38,7 @@ public class Cluster implements Serializable {
     private String label;
 
     private Point center;
-    private INDArray centers;
+    private INDArray centerView;
     private List<Point> points = Collections.synchronizedList(new ArrayList<Point>());
     private boolean inverse = false;
     private String distanceFunction;
@@ -67,6 +67,11 @@ public class Cluster implements Serializable {
         setCenter(center);
     }
 
+    public Cluster findClusterByCenter(INDArray centerView) {
+        if (centerView == this.centerView)
+            return this;
+        return null;
+    }
 
     /**
      * Get the distance to the given
@@ -80,11 +85,11 @@ public class Cluster implements Serializable {
                         .getFinalResult().doubleValue();
     }
 
-    public double getDistanceToCenterNew(Point point) {
+    /*public double getDistanceToCenterNew(Point point) {
         return Nd4j.getExecutioner().execAndReturn(
                 ClusterUtils.createDistanceFunctionOp(distanceFunction, centers, point.getArray()))
                 .getFinalResult().doubleValue();
-    }
+    }*/
 
     /**
      * Add a point to the cluster
