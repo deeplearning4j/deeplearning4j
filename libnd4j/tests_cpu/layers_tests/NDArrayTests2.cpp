@@ -1204,7 +1204,6 @@ TEST_F(NDArrayTest2, test_long_sum_1) {
 }
 
 //////////////////////////////////////////////////////////////////////
-
 TEST_F(NDArrayTest2, reshapei_1) {
     
     Nd4jLong shapeInfo1[] = {6,  2,1,2,1,7,1,   7,7,14,28,1,1,   8192, 0, 99};
@@ -1214,6 +1213,21 @@ TEST_F(NDArrayTest2, reshapei_1) {
     NDArray x(buffer, shapeInfo1);
 
     const bool canReshape = x.reshapei({4,7});
+
+    ASSERT_FALSE(canReshape);
+    ASSERT_TRUE(shape::equalsStrict(x.getShapeInfo(), shapeInfo2));
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(NDArrayTest2, reshapei_2) {
+    
+    Nd4jLong shapeInfo1[] = {6,  1,2,1,2,7,1,   28,7,7,14,1,1,   8192, 0, 99};
+    Nd4jLong shapeInfo2[] = {2,  4, 7,   7, 1,    8192, 1, 99};
+
+    float buffer[shape::length(shapeInfo1)];
+    NDArray x(buffer, shapeInfo1);
+
+    const bool canReshape = x.reshapei({4,7});    
 
     ASSERT_FALSE(canReshape);
     ASSERT_TRUE(shape::equalsStrict(x.getShapeInfo(), shapeInfo2));
