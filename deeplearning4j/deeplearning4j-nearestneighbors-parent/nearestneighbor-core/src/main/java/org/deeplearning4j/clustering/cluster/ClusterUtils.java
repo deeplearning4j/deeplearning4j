@@ -19,6 +19,7 @@ package org.deeplearning4j.clustering.cluster;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.apache.commons.lang3.ArrayUtils;
 import org.deeplearning4j.clustering.info.ClusterInfo;
 import org.deeplearning4j.clustering.info.ClusterSetInfo;
@@ -28,6 +29,7 @@ import org.deeplearning4j.clustering.util.MathUtils;
 import org.deeplearning4j.clustering.util.MultiThreadUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.Op;
+import org.nd4j.linalg.api.ops.ReduceOp;
 import org.nd4j.linalg.api.ops.impl.reduce3.*;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -484,7 +486,13 @@ public class ClusterUtils {
         MultiThreadUtils.parallelTasks(tasks, executorService);
     }
 
-    public static BaseReduce3Op createDistanceFunctionOp(String distanceFunction, INDArray x, INDArray y){
+    public static ReduceOp createDistanceFunctionOp(String distanceFunction, INDArray x, INDArray y, int...dimensions){
+        val op = createDistanceFunctionOp(distanceFunction, x, y);
+        op.setDimensions(dimensions);
+        return op;
+    }
+
+    public static ReduceOp createDistanceFunctionOp(String distanceFunction, INDArray x, INDArray y){
         switch (distanceFunction){
             case "cosinedistance":
                 return new CosineDistance(x,y);

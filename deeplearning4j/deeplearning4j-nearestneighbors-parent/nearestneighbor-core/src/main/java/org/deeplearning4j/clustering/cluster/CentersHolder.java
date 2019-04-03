@@ -18,7 +18,7 @@ public class CentersHolder {
     }
 
     public Pair<Double, Long> getCenterByMinDistance(Point point, String distanceFunction) {
-        INDArray minDistances = Nd4j.getExecutioner().exec(ClusterUtils.createDistanceFunctionOp(distanceFunction, centers, point.getArray()));
+        INDArray minDistances = Nd4j.getExecutioner().exec(ClusterUtils.createDistanceFunctionOp(distanceFunction, centers, point.getArray(), 1));
         INDArray index = Nd4j.argMin(minDistances);
         Pair<Double, Long> result = new Pair<>();
         result.setFirst(minDistances.getDouble(0));
