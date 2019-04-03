@@ -23,6 +23,8 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+import org.nd4j.autodiff.samediff.SDVariable;
+import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
@@ -31,6 +33,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.Assert.assertEquals;
@@ -151,6 +154,23 @@ public class CudaTests extends BaseNd4jTest {
 
         val array = Nd4j.create(128);
         array.addi(1.0f);
+    }
+
+    @Test
+    public void test(){
+        if (Nd4j.getExecutioner().type() != OpExecutioner.ExecutionerType.CUDA)
+            return;
+
+        val SD = SameDiff.create();
+        val in = SD.one("test", 5, 8, 3, 4);
+        SDVariable out = in.reshape(-1, 4);
+        SDVariable out1 = out.reshape(4, 15, -1);
+        SDVariable out2 = SD.dot(out1, out1, 2);
+
+        SDVariable out3 = out2.reshape(-1, 4);  // <----  error here
+
+        System.out.println(Arrays.toString(out3.eval().toFloatMatrix()));
+
     }
 
 

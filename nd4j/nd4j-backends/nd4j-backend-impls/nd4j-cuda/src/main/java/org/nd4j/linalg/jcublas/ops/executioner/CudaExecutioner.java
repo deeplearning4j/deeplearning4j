@@ -539,16 +539,6 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         if (op.z() == null) {
             long[] retShape = wholeArray ? new long[]{} : ArrayUtil.removeIndex(op.x().shape(), dimension);
 
-            //ensure vector is proper shape
-            if (retShape.length == 1) {
-                if (dimension[0] == 0)
-                    retShape = new long[]{1, retShape[0]};
-                else
-                    retShape = new long[]{retShape[0], 1};
-            } else if (retShape.length == 0) {
-                retShape = new long[]{1, 1};
-            }
-
             INDArray ret = Nd4j.createUninitialized(DataType.LONG, retShape);
 
             op.setZ(ret);
@@ -649,7 +639,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
             invoke(t);
         } else if (op instanceof ReduceOp) {
             ReduceOp acc = (ReduceOp) op;
-            invoke(acc, null);
+            invoke(acc, acc.dimensions().toIntVector());
         } else if (op instanceof ScalarOp) {
             ScalarOp sc = (ScalarOp) op;
             invoke(sc);
@@ -894,17 +884,8 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         Pointer x = AtomicAllocator.getInstance().getPointer(op.x(), context);
         Pointer xShapeInfo = AtomicAllocator.getInstance().getPointer(op.x().shapeInfoDataBuffer(), context);
 
-        long[] retShape = Shape.wholeArrayDimension(dimension) ? new long[] {1, 1}
+        long[] retShape = Shape.wholeArrayDimension(dimension) ? new long[] {}
                 : ArrayUtil.removeIndex(op.x().shape(), dimension);
-        //ensure vector is proper shape
-        if (retShape.length == 1) {
-            if (dimension[0] == 0)
-                retShape = new long[] {1, retShape[0]};
-            else
-                retShape = new long[] {retShape[0], 1};
-        } else if (retShape.length == 0) {
-            retShape = new long[] {1, 1};
-        }
 
         if (op.y() != null) {
             //2 options here: either pairwise, equal sizes - OR every X TAD vs. entirety of Y
@@ -948,15 +929,13 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                 context.getBufferReduction(), context.getBufferScalar(), context.getBufferSpecial(),
                 hostYShapeInfo, hostZShapeInfo, hostTadShapeInfo, devTadShapeInfo, devTadOffsets);
 
+        val yTadBuffers = op.y() == null ? null : tadManager.getTADOnlyShapeInfo(op.y(), dimension);
+
+        val yDevTadShapeInfo = op.y() == null ? null : AtomicAllocator.getInstance().getPointer(yTadBuffers.getFirst(), context);
+        val yOffsets = op.y() == null ? null : yTadBuffers.getSecond();
+        val yDevTadOffsets = yOffsets == null ? null : AtomicAllocator.getInstance().getPointer(yOffsets, context);
+
         if (op.y() != null) {
-            val yTadBuffers = tadManager.getTADOnlyShapeInfo(op.y(), dimension);
-
-            val yDevTadShapeInfo = AtomicAllocator.getInstance().getPointer(yTadBuffers.getFirst(), context);
-
-            val yOffsets = yTadBuffers.getSecond();
-            val yDevTadOffsets =
-                    yOffsets == null ? null : AtomicAllocator.getInstance().getPointer(yOffsets, context);
-
             xShapeInfoHostPointer.put(12, yDevTadShapeInfo);
             xShapeInfoHostPointer.put(13, yDevTadOffsets);
         }
@@ -1033,7 +1012,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                         null,
                         (LongPointer) op.dimensions().shapeInfoDataBuffer().addressPointer(),
                         AtomicAllocator.getInstance().getPointer(op.dimensions(), context),
-                        null, null, null, null, null);
+                        null, (LongPointer) devTadShapeInfo, (LongPointer) devTadShapeInfo, (LongPointer) yDevTadShapeInfo, (LongPointer) yDevTadOffsets);
             } else {
                 if (op instanceof Variance) {
                     nativeOps.execSummaryStats(xShapeInfoHostPointer, op.opNum(),
@@ -1100,6 +1079,8 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
 
         profilingConfigurableHookOut(op, st);
+
+        Nd4j.getExecutioner().commit();
 
         return context;
     }
@@ -1317,18 +1298,8 @@ public class CudaExecutioner extends DefaultOpExecutioner {
             if (dimension.length == op.x().rank())
                 dimension = new int[] {Integer.MAX_VALUE};
 
-            long[] retShape = Shape.wholeArrayDimension(dimension) ? new long[] {1, 1}
+            long[] retShape = Shape.wholeArrayDimension(dimension) ? new long[] {}
                     : ArrayUtil.removeIndex(op.x().shape(), dimension);
-
-            //ensure vector is proper shape
-            if (retShape.length == 1) {
-                if (dimension[0] == 0)
-                    retShape = new long[] {1, retShape[0]};
-                else
-                    retShape = new long[] {retShape[0], 1};
-            } else if (retShape.length == 0) {
-                retShape = new long[] {1, 1};
-            }
 
             ret = Nd4j.createUninitialized(DataType.LONG, retShape);
 
