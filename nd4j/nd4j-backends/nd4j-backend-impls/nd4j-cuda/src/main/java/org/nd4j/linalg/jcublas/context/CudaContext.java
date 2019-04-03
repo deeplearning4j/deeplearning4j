@@ -85,6 +85,16 @@ public class CudaContext {
         this.free = free;
     }
 
+    @Deprecated
+    public Pointer getBufferAllocation() {
+        throw new UnsupportedOperationException();
+    }
+
+    @Deprecated
+    public Pointer getBufferSpecial() {
+        throw new UnsupportedOperationException();
+    }
+
     public void attachReference(GarbageResourceReference ref) {
         reference = ref;
     }

@@ -162,8 +162,8 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         // new PointerPointer
         PointerPointer xShapeInfoHostPointer = extraz.get().put(
                 AddressRetriever.retrieveHostPointer(op.x().shapeInfoDataBuffer()), context.getOldStream(),
-                AtomicAllocator.getInstance().getDeviceIdPointer(), context.getBufferAllocation(),
-                context.getBufferReduction(), context.getBufferScalar(), context.getBufferSpecial(),
+                AtomicAllocator.getInstance().getDeviceIdPointer(), null,
+                context.getBufferReduction(), context.getBufferScalar(), null,
                 hostYShapeInfo, hostZShapeInfo, hostTadShapeInfo, devTadShapeInfo, devTadOffsets,
                 devTadShapeInfoZ, devTadOffsetsZ);
 
@@ -249,10 +249,10 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                 AddressRetriever.retrieveHostPointer(op.x().shapeInfoDataBuffer()),
                 context.getOldStream(),
                 AtomicAllocator.getInstance().getDeviceIdPointer(),
-                context.getBufferAllocation(),
+                null,
                 context.getBufferReduction(),
                 context.getBufferScalar(),
-                context.getBufferSpecial(),
+                null,
                 hostYShapeInfo,
                 hostZShapeInfo,
                 hostTadShapeInfo,
@@ -595,8 +595,8 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
         PointerPointer xShapeInfoHostPointer = extraz.get().put(
                 AddressRetriever.retrieveHostPointer(op.x().shapeInfoDataBuffer()), context.getOldStream(),
-                AtomicAllocator.getInstance().getDeviceIdPointer(), context.getBufferAllocation(),
-                context.getBufferReduction(), context.getBufferScalar(), context.getBufferSpecial(),
+                AtomicAllocator.getInstance().getDeviceIdPointer(), null,
+                context.getBufferReduction(), context.getBufferScalar(), null,
                 hostYShapeInfo, hostZShapeInfo, hostTadShapeInfo, devTadShapeInfo, devTadOffsets);
         Pointer extraArgs = op.extraArgs() != null
                 ? AtomicAllocator.getInstance().getPointer(op.extraArgsDataBuff(op.x().dataType()), context) : null;
@@ -720,8 +720,8 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
         PointerPointer xShapeInfoHostPointer = extraz.get().put(
                 AddressRetriever.retrieveHostPointer(op.x().shapeInfoDataBuffer()), context.getOldStream(),
-                AtomicAllocator.getInstance().getDeviceIdPointer(), context.getBufferAllocation(),
-                context.getBufferReduction(), context.getBufferScalar(), context.getBufferSpecial(),
+                AtomicAllocator.getInstance().getDeviceIdPointer(), null,
+                context.getBufferReduction(), context.getBufferScalar(), null,
                 hostYShapeInfo, hostZShapeInfo, hostTadShapeInfo, devTadShapeInfo, devTadOffsets,
                 devTadShapeInfoZ, devTadOffsetsZ);
 
@@ -819,8 +819,8 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
         PointerPointer xShapeInfoHostPointer = extraz.get().put(
                 AddressRetriever.retrieveHostPointer(op.x().shapeInfoDataBuffer()), context.getOldStream(),
-                AtomicAllocator.getInstance().getDeviceIdPointer(), context.getBufferAllocation(),
-                context.getBufferReduction(), context.getBufferScalar(), context.getBufferSpecial(),
+                AtomicAllocator.getInstance().getDeviceIdPointer(), null,
+                context.getBufferReduction(), context.getBufferScalar(), null,
                 hostYShapeInfo, hostZShapeInfo, hostTadShapeInfo, devTadShapeInfo, devTadOffsets);
 
         if (op.z().isScalar() || dimension == null || dimension[0] == Integer.MAX_VALUE) {
@@ -944,8 +944,8 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
         val xShapeInfoHostPointer = extraz.get().put(
                 AddressRetriever.retrieveHostPointer(op.x().shapeInfoDataBuffer()), context.getOldStream(),
-                AtomicAllocator.getInstance().getDeviceIdPointer(), context.getBufferAllocation(),
-                context.getBufferReduction(), context.getBufferScalar(), context.getBufferSpecial(),
+                AtomicAllocator.getInstance().getDeviceIdPointer(), null,
+                context.getBufferReduction(), context.getBufferScalar(), null,
                 hostYShapeInfo, hostZShapeInfo, hostTadShapeInfo, devTadShapeInfo, devTadOffsets);
 
         if (op.y() != null) {
@@ -1145,8 +1145,8 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
         PointerPointer extraPointers = extraz.get().put(
                 AddressRetriever.retrieveHostPointer(op.x().shapeInfoDataBuffer()), context.getOldStream(),
-                AtomicAllocator.getInstance().getDeviceIdPointer(), context.getBufferAllocation(),
-                context.getBufferReduction(), context.getBufferScalar(), context.getBufferSpecial(),
+                AtomicAllocator.getInstance().getDeviceIdPointer(), null,
+                context.getBufferReduction(), context.getBufferScalar(), null,
                 hostYShapeInfo, hostZShapeInfo, hostTadShapeInfo, devTadShapeInfo, devTadOffsets,
                 devTadShapeInfoZ, devTadOffsetsZ);
 
@@ -1236,8 +1236,8 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
         PointerPointer xShapeInfoHostPointer = extraz.get().put(
                 AddressRetriever.retrieveHostPointer(op.x().shapeInfoDataBuffer()), context.getOldStream(),
-                AtomicAllocator.getInstance().getDeviceIdPointer(), context.getBufferAllocation(),
-                context.getBufferReduction(), context.getBufferScalar(), context.getBufferSpecial(),
+                AtomicAllocator.getInstance().getDeviceIdPointer(), null,
+                context.getBufferReduction(), context.getBufferScalar(), null,
                 hostYShapeInfo, hostZShapeInfo, null, null);
 
         switch (op.getOpType()) {
@@ -1405,10 +1405,10 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                 extraz.get().put(AddressRetriever.retrieveHostPointer(op.x().shapeInfoDataBuffer()), // 0
                         context.getOldStream(), // 1
                         allocator.getDeviceIdPointer(), // 2
-                        context.getBufferAllocation(), // 3
+                        null, // 3
                         context.getBufferReduction(), // 4
                         context.getBufferScalar(), // 5
-                        context.getBufferSpecial(), // 6
+                        null, // 6
                         hostYShapeInfo, // 7
                         hostZShapeInfo, // 8
                         hostTadShapeInfo, // 9
@@ -2275,10 +2275,10 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                     extraz.get().put(AddressRetriever.retrieveHostPointer(xArr.shapeInfoDataBuffer()), // 0
                             context.getOldStream(), // 1
                             AtomicAllocator.getInstance().getDeviceIdPointer(), // 2
-                            context.getBufferAllocation(), // 3
+                            null, // 3
                             context.getBufferReduction(), // 4
                             context.getBufferScalar(), // 5
-                            context.getBufferSpecial(),
+                            null,
                             null,
                             AddressRetriever.retrieveHostPointer(zArr.shapeInfoDataBuffer())
                     );
@@ -2326,10 +2326,10 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                     extraz.get().put(AddressRetriever.retrieveHostPointer(xArr.shapeInfoDataBuffer()), // 0
                             context.getOldStream(), // 1
                             AtomicAllocator.getInstance().getDeviceIdPointer(), // 2
-                            context.getBufferAllocation(), // 3
+                            null, // 3
                             context.getBufferReduction(), // 4
                             context.getBufferScalar(), // 5
-                            context.getBufferSpecial(),
+                            null,
                             null,
                             AddressRetriever.retrieveHostPointer(zArr.shapeInfoDataBuffer())
                     );
@@ -2373,10 +2373,10 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                     extraz.get().put(AddressRetriever.retrieveHostPointer(xArr.shapeInfoDataBuffer()), // 0
                             context.getOldStream(), // 1
                             AtomicAllocator.getInstance().getDeviceIdPointer(), // 2
-                            context.getBufferAllocation(), // 3
+                            null, // 3
                             context.getBufferReduction(), // 4
                             context.getBufferScalar(), // 5
-                            context.getBufferSpecial(),
+                            null,
                             null,
                             AddressRetriever.retrieveHostPointer(zArr.shapeInfoDataBuffer())
                     );

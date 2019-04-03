@@ -383,8 +383,8 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
 
                 PointerPointer extras = new PointerPointer(
                                 AddressRetriever.retrieveHostPointer(ret.shapeInfoDataBuffer()), context.getOldStream(),
-                                allocator.getDeviceIdPointer(), context.getBufferAllocation(),
-                                context.getBufferReduction(), context.getBufferScalar(), context.getBufferSpecial(),
+                                allocator.getDeviceIdPointer(), null,
+                                context.getBufferReduction(), context.getBufferScalar(), null,
                                 hostYShapeInfo, AddressRetriever.retrieveHostPointer(ret.shapeInfoDataBuffer()));
 
 
@@ -514,8 +514,8 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
         // System.out.println("ShapesPointer after conversion: " + shapesPointer);
 
         val extras = new PointerPointer(AddressRetriever.retrieveHostPointer(ret.shapeInfoDataBuffer()),
-                        context.getOldStream(), allocator.getDeviceIdPointer(), context.getBufferAllocation(),
-                        context.getBufferReduction(), context.getBufferScalar(), context.getBufferSpecial(),
+                        context.getOldStream(), allocator.getDeviceIdPointer(), null,
+                        context.getBufferReduction(), context.getBufferScalar(), null,
                         AddressRetriever.retrieveHostPointer(toConcat[0].shapeInfoDataBuffer()),
                         AddressRetriever.retrieveHostPointer(ret.shapeInfoDataBuffer()),
                         new LongPointer(hostShapeInfoPointers),
@@ -1476,10 +1476,10 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
         PointerPointer extraz = new PointerPointer(ptr, // 0
                 context.getOldStream(), // 1
                 AtomicAllocator.getInstance().getDeviceIdPointer(), // 2
-                context.getBufferAllocation(), // 3
+                null, // 3
                 context.getBufferReduction(), // 4
                 context.getBufferScalar(), // 5
-                context.getBufferSpecial(), // 6
+                null, // 6
                 ptr, // 7
                 AtomicAllocator.getInstance().getHostPointer(x.shapeInfoDataBuffer()), // 8
                 ptr, // 9
