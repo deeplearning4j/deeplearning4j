@@ -40,6 +40,7 @@ import java.util.*;
 public class SameDiffLayer extends AbstractLayer<AbstractSameDiffLayer> {
 
     public static final String INPUT_KEY = "input";
+    public static final String MASK_KEY = "mask";
 
     protected SameDiff sameDiff;
     protected SDVariable outputVar;
@@ -104,6 +105,9 @@ public class SameDiffLayer extends AbstractLayer<AbstractSameDiffLayer> {
         try(MemoryWorkspace ws = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()){
 //            sameDiff.clearExecutionCache();
             sameDiff.associateArrayWithVariable(input.dup(), sameDiff.getVariable(INPUT_KEY));
+            if(maskArray != null){
+                sameDiff.associateArrayWithVariable(maskArray, sameDiff.getVariable(MASK_KEY));
+            }
             fn.updateVariable(outputVar.getVarName(), epsilon.dup());
 
             for(String s : paramTable.keySet() ){
@@ -222,7 +226,7 @@ public class SameDiffLayer extends AbstractLayer<AbstractSameDiffLayer> {
 
             SDVariable mask = null;
             if(maskArray != null){
-                mask = sameDiff.constant("mask", maskArray);
+                mask = sameDiff.constant(MASK_KEY, maskArray);
             }
 
             SDVariable layerOutput = bl.defineLayer(sameDiff, inputVar, params, mask);
@@ -250,4 +254,5 @@ public class SameDiffLayer extends AbstractLayer<AbstractSameDiffLayer> {
 
         return bl.feedForwardMaskArray(maskArray, currentMaskState, minibatchSize);
     }
+
 }
