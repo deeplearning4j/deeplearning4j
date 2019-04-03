@@ -144,6 +144,8 @@ __host__ static void concatCudaLauncher(const int numOfArrs, const cudaStream_t 
             __shared__ Nd4jLong outputLen;
             __shared__ Nd4jLong rank;
             __shared__ Nd4jLong lastInDimSize;
+            __shared__ Nd4jLong outTadCount;
+            __shared__ Nd4jLong inTadCount;
             if (threadIdx.x == 0) {
                 z = reinterpret_cast<T*>(outputBuffer);
                 x = reinterpret_cast<T*>(inputBuffer);
@@ -155,19 +157,26 @@ __host__ static void concatCudaLauncher(const int numOfArrs, const cudaStream_t 
                     val = nullptr;
                 rank = shape::rank(outputShape);
                 Nd4jLong lastInDimSize  = shape::sizeAt(inputShape, rank - 1);
+
+                outTadCount = outputLen / shape::length(outputTadShape);
+                inTadCount = inputLen / shape::length(inputTadShape);
+                printf("%lld, %lld\n", inTadCount, outTadCount);
             }
             __syncthreads();
 
             const auto tid = blockIdx.x * gridDim.x + threadIdx.x;
             const auto step = gridDim.x * blockDim.x;
             const auto stepY = gridDim.y * blockDim.y;
-            for (Nd4jLong k = blockIdx.y * gridDim.y + threadIdx.y; k < rank; k += stepY) {
+            Nd4jLong k = rank - 1;
+            //for (Nd4jLong k = blockIdx.y * gridDim.y + threadIdx.y; k < rank; k += stepY) {
                 for (Nd4jLong i = tid; i < outputLen; i += step) {
-                    if (i >= paddingBound[2 * k] && i < paddingBound[2 * k + 1])
-                        z[i] = x[i - paddingBound[2 * k]];
+                    if (i >= paddingBound[2 * k] && i < paddingBound[2 * k + 1]) {
+                        if (k == rank - 1)
+                            z[i] = x[i - paddingBound[2 * k]];
+                    }
                     else if (val)
                         z[i] = val[0];
-                    else {
+                    else if (mode != 0){
                         Nd4jLong startL = mode == 1 ? 1 : 0;                            // REFLECT or SYMMETRIC
                         Nd4jLong startR = mode == 1 ? lastInDimSize - 2 : lastInDimSize - 1;        // REFLECT or SYMMETRIC
                         if (i < paddingBound[2 * k]) {
@@ -178,14 +187,14 @@ __host__ static void concatCudaLauncher(const int numOfArrs, const cudaStream_t 
                         }
                     }
                 }
-            }
+            //}
     }
 
     template<typename T>
     void pad_(graph::LaunchContext* context, const int mode, const NDArray& input, const NDArray& paddings, NDArray& output, NDArray const& padValue) {
         const int rank = output.rankOf();
         const int rankBorder = rank - 1;
-        std::vector<int> dimsToExclude(rankBorder);
+        std::vector<int> dimsToExclude({rankBorder});
         std::iota(dimsToExclude.begin(), dimsToExclude.end(), 0);             // fill with 0, 1, ... rank-1
         //dimsToExclude.pop_back();
 
