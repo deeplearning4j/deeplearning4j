@@ -182,6 +182,11 @@ public class BasicContextPool implements ContextPool {
         return contextsPool.get(threadId);
     }
 
+    @Override
+    public void releaseContext(CudaContext context) {
+        // no-op
+    }
+
     protected CudaContext createNewStream(Integer deviceId) {
         log.trace("Creating new stream for thread: [{}], device: [{}]...", Thread.currentThread().getId(), deviceId);
         //JCuda.cudaSetDevice(deviceId);

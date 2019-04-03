@@ -19,6 +19,7 @@ package org.nd4j.jita.allocator.context.impl;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import lombok.var;
 import org.apache.commons.lang3.RandomUtils;
 import org.nd4j.jita.allocator.context.ContextPack;
 import org.nd4j.jita.allocator.garbage.GarbageResourceReference;
@@ -131,8 +132,8 @@ public class LimitedContextPool extends BasicContextPool {
 
     @Override
     public CudaContext acquireContextForDevice(Integer deviceId) {
-        long threadIdx = Thread.currentThread().getId();
-        CudaContext context = acquired.get(threadIdx);
+        val threadIdx = Thread.currentThread().getId();
+        var context = acquired.get(threadIdx);
         if (context != null && deviceId == context.getDeviceId()) {
             return context;
         }
@@ -152,6 +153,7 @@ public class LimitedContextPool extends BasicContextPool {
 
             acquired.put(threadIdx, context);
             context.setDeviceId(deviceId);
+            context.setThreadId(threadIdx);
             return context;
         } else {
 
@@ -170,10 +172,11 @@ public class LimitedContextPool extends BasicContextPool {
 
                         acquired.put(threadIdx, context);
                         context.setDeviceId(deviceId);
+                        context.setThreadId(threadIdx);
                     } else {
                         val currentPoolSize = devicePoolSizes.get(deviceId);
                         synchronized (currentPoolSize) {
-                            if (currentPoolSize.get() < CudaEnvironment.getInstance().getConfiguration().getPoolSize() * 3) {
+                            if (currentPoolSize.get() < CudaEnvironment.getInstance().getConfiguration().getPoolSize()) {
                                 addResourcesToPool(16);
 
                                 // there's possible race condition, but we don't really care
@@ -201,6 +204,7 @@ public class LimitedContextPool extends BasicContextPool {
     }
 
     @Override
+    @Deprecated
     public ContextPack acquireContextPackForDevice(Integer deviceId) {
         return new ContextPack(acquireContextForDevice(deviceId));
     }
@@ -208,6 +212,16 @@ public class LimitedContextPool extends BasicContextPool {
     @Override
     public CudaContext getContextForDevice(Integer deviceId) {
         return acquireContextForDevice(deviceId);
+    }
+
+    @Override
+    public void releaseContext(CudaContext context) {
+        val threadIdx = context.getThreadId();
+        val deviceId = context.getDeviceId();
+
+        context.setThreadId(-1);
+        acquired.remove(threadIdx);
+        pool.get(deviceId).add(context);
     }
 
     private class ResourceGarbageCollectorThread extends Thread implements Runnable {
