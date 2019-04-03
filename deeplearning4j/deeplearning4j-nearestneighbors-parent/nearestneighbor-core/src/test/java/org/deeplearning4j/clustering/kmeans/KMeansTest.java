@@ -45,7 +45,7 @@ public class KMeansTest {
     public void testKmeansCosine() {
         Nd4j.getRandom().setSeed(7);
         int numClusters = 5;
-        KMeansClustering kMeansClustering = KMeansClustering.setup(numClusters, 300, "cosinesimilarity", true);
+        KMeansClustering kMeansClustering = KMeansClustering.setup(numClusters, 1000, "cosinesimilarity", true);
         List<Point> points = Point.toPoints(Nd4j.rand(5, 5));
         ClusterSet clusterSet = kMeansClustering.applyTo(points);
         PointClassification pointClassification = clusterSet.classifyPoint(points.get(0));
