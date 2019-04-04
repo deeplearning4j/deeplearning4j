@@ -17,6 +17,7 @@
 package org.deeplearning4j.clustering.cluster;
 
 import lombok.Data;
+import org.deeplearning4j.clustering.algorithm.Distance;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
@@ -27,7 +28,7 @@ import java.util.*;
 @Data
 public class ClusterSet implements Serializable {
 
-    private String distanceFunction;
+    private Distance distanceFunction;
     private List<Cluster> clusters;
     private CentersHolder centersHolder;
     private Map<String, String> pointDistribution;
@@ -37,7 +38,7 @@ public class ClusterSet implements Serializable {
         this(null, inverse, null);
     }
 
-    public ClusterSet(String distanceFunction, boolean inverse, long[] shape) {
+    public ClusterSet(Distance distanceFunction, boolean inverse, long[] shape) {
         this.distanceFunction = distanceFunction;
         this.inverse = inverse;
         this.clusters = Collections.synchronizedList(new ArrayList<Cluster>());

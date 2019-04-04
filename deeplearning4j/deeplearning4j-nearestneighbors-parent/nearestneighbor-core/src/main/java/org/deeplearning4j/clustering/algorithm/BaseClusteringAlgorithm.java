@@ -135,7 +135,7 @@ public class BaseClusteringAlgorithm implements ClusteringAlgorithm, Serializabl
 
         //Initialize the ClusterSet with a single cluster center (based on position of one of the points chosen randomly)
         Random random = new Random();
-        String distanceFn = clusteringStrategy.getDistanceFunction();
+        Distance distanceFn = clusteringStrategy.getDistanceFunction();
         int initialClusterCount = clusteringStrategy.getInitialClusterCount();
         clusterSet = new ClusterSet(distanceFn,
                         clusteringStrategy.inverseDistanceCalculation(), new long[]{initialClusterCount, points.get(0).getArray().length()});
