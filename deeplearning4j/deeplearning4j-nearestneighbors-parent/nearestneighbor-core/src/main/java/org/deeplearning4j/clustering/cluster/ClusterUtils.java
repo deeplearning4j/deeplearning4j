@@ -52,8 +52,8 @@ public class ClusterUtils {
 
         List<Runnable> tasks = new ArrayList<>();
         for (final Point point : points) {
-            tasks.add(new Runnable() {
-                public void run() {
+            //tasks.add(new Runnable() {
+              //  public void run() {
                     try {
                         PointClassification result = classifyPoint(clusterSet, point);
                         if (result.isNewLocation())
@@ -63,10 +63,10 @@ public class ClusterUtils {
                     } catch (Throwable t) {
                         log.warn("Error classifying point", t);
                     }
-                }
-            });
-        }
-        MultiThreadUtils.parallelTasks(tasks, executorService);
+            //    }
+            }
+
+        //MultiThreadUtils.parallelTasks(tasks, executorService);
         return clusterSetInfo;
     }
 
