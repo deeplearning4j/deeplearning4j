@@ -3096,6 +3096,14 @@ public class SameDiff extends SDBaseOps {
      * with name "grad" as the argument.
      */
     public void createGradFunction() {
+        if(lossVariables.isEmpty()){
+            List<String> outputs = outputs();
+            if(outputs.size() == 1){
+                log.info("Inferring output \"{}\" as loss variable as none were previously set. Use SameDiff.setLossVariables() to override", outputs.get(0));
+                lossVariables.add(outputs.get(0));
+            }
+        }
+
         Preconditions.checkState(lossVariables != null && !lossVariables.isEmpty(), "Cannot create gradient funcction: " +
                 "No loss variables (variables to minimize) have been specified. Loss variables are the variables that" +
                 " represent the loss/cost/score to be minimized during training, and that all gradients are calculated with respect to.\n" +
@@ -3105,6 +3113,7 @@ public class SameDiff extends SDBaseOps {
             log.trace("Defining function \"grad\"");
         }
 
+        /*
         //First thing: check that there's only one output... throw an exception if so
         //A variable is an output if it's either an input, or if it's the output of a function, but not an input
         Set<String> variablesNotAsFunctionInput = new HashSet<>();
@@ -3127,6 +3136,7 @@ public class SameDiff extends SDBaseOps {
                     "component variables to create a scalar output.\nAll outputs for graph: "
                     + outputs);
         }
+        */
 
         final SameDiff outer = this;
         defineFunction("grad", new SameDiffFunctionDefinition() {
@@ -3189,6 +3199,7 @@ public class SameDiff extends SDBaseOps {
                     Preconditions.checkNotNull(s, "Encountered null value in loss variables. Null loss variables are not allowed." +
                             " Use SameDiff.setLossVariables with non-null array names to fix");
                     Preconditions.checkState(variables.containsKey(s), "Specified loss function variable \"%s\" does not exist", s);
+                    finalOutputs.add(variables.get(s).getVariable());
                 }
 
 
@@ -3288,8 +3299,8 @@ public class SameDiff extends SDBaseOps {
                     }
                 }
 
-                Preconditions.checkState(numProcessed == ops.size() + finalOutputs.size(), "Only differentiated %s of %s ops",
-                        numProcessed, ops.size() + finalOutputs.size());    //+finalOutputs due to sum() on each output for non-scalar outputs
+//                Preconditions.checkState(numProcessed == ops.size() + finalOutputs.size(), "Only differentiated %s of %s ops",
+//                        numProcessed, ops.size() + finalOutputs.size());    //+finalOutputs due to sum() on each output for non-scalar outputs
 
                 return new SDVariable[]{sameDiff.var("grad", org.nd4j.linalg.api.buffer.DataType.FLOAT, 1)};
             }
