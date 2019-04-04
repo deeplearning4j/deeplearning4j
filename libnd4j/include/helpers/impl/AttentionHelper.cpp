@@ -35,14 +35,21 @@ namespace nd4j {
         auto numHeads = projectionMatrix->sizeAt(0);
         auto projectedSize = projectionMatrix->sizeAt(1);
 
-        auto inputPrep = input->permute({1, 0, 2})->reshape(input->ordering(), {input->sizeAt(1), (miniBatchSize * seqLength)});
+        auto inputPerm = input->permute({1, 0, 2});
+        auto inputPrep = inputPerm->reshape(input->ordering(), {input->sizeAt(1), (miniBatchSize * seqLength)});
         auto projectionPrep = projectionMatrix->reshape(projectionMatrix->ordering(), {numHeads * projectionMatrix->sizeAt(1), projectionMatrix->sizeAt(2)});
 
+        NDArray* projected = new NDArray('c', {numHeads * projectionMatrix->sizeAt(1), (miniBatchSize * seqLength)}, input->dataType());
         nd4j::ops::matmul mmul;
-        auto projected = mmul.execute({projectionPrep, inputPrep}, {}, {}, {})->at(0);
+        mmul.execute({projectionPrep, inputPrep}, {projected},  {}, {}, {});
 
         projected->reshapei({numHeads, projectedSize, miniBatchSize, seqLength});
         projected->permutei({2, 0, 1, 3});
+
+        delete inputPerm;
+        delete inputPrep;
+        delete projectionPrep;
+
         return projected;
     }
 
@@ -55,13 +62,15 @@ namespace nd4j {
         auto numHeads = projectionMatrix->sizeAt(0);
         auto projectedSize = projectionMatrix->sizeAt(1);
 
-        auto reshapedEps = eps->permute({1, 2, 0, 3})->reshape(eps->ordering(), {numHeads * projectedSize, miniBatchSize * seqLength});
+        auto epsPerm = eps->permute({1, 2, 0, 3});
+        auto epsReshaped = epsPerm->reshape(eps->ordering(), {numHeads * projectedSize, miniBatchSize * seqLength});
 
-        auto inputPrep = input->permute({1, 0, 2})->reshape(input->ordering(), {input->sizeAt(1), (miniBatchSize * seqLength)});
+        auto inputPerm = input->permute({1, 0, 2});
+        auto inputPrep = inputPerm->reshape(input->ordering(), {input->sizeAt(1), (miniBatchSize * seqLength)});
         auto projectionPrep = projectionMatrix->reshape(projectionMatrix->ordering(), {numHeads * projectionMatrix->sizeAt(1), projectionMatrix->sizeAt(2)});
 
         nd4j::ops::matmul_bp mmulBp;
-        auto mmulBpRes = mmulBp.execute({projectionPrep, inputPrep, reshapedEps}, {}, {}, {});
+        auto mmulBpRes = mmulBp.execute({projectionPrep, inputPrep, epsReshaped}, {}, {}, {});
 
         auto dLdProjectionPrep = mmulBpRes->at(0);
         auto dLdInputPrep = mmulBpRes->at(1);
@@ -72,6 +81,13 @@ namespace nd4j {
         dLdInputPrep->reshapei({input->sizeAt(1), miniBatchSize, seqLength});
         dLdInputPrep->permutei({1, 0, 2});
         dLdInput->assign(dLdInputPrep);
+
+        delete inputPerm;
+        delete inputPrep;
+        delete epsPerm;
+        delete epsReshaped;
+        delete projectionPrep;
+        delete mmulBpRes;
     }
 }
 

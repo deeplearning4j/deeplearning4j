@@ -36,7 +36,8 @@ namespace ops  {
 
         auto output = OUTPUT_VARIABLE(0);
         NDArray* weights;
-        if(INT_ARG(1)){
+        bool outputWeights = INT_ARG(1);
+        if(outputWeights){
             weights = OUTPUT_VARIABLE(1);
         }else{
             auto weightShape = ShapeUtils::evalShapeForMatmul(keys->getShapeInfo(), queries->getShapeInfo(), true, false);
@@ -73,17 +74,24 @@ namespace ops  {
         }
 
         if(mask != nullptr){
+            NDArray* reshapedMask;
             if(weights->rankOf() == 4){
-                *weights += (*mask->reshape(mask->ordering(), {mask->sizeAt(0), 1, mask->sizeAt(1), 1}) - 1) * 1e9;
+                reshapedMask = mask->reshape(mask->ordering(), {mask->sizeAt(0), 1, mask->sizeAt(1), 1});
             }else{
-                *weights += (*mask->reshape(mask->ordering(), {mask->sizeAt(0), mask->sizeAt(1), 1}) - 1) * 1e9;
+                reshapedMask = mask->reshape(mask->ordering(), {mask->sizeAt(0), mask->sizeAt(1), 1});
             }
+            *weights += (*reshapedMask - 1) * 1e9;
+            delete reshapedMask;
         }
 
         nd4j::ops::softmax softmax;
         softmax.execute({weights}, {weights}, {}, {-2}, {}, true);
 
         mmul.execute({values, weights}, {output}, {}, {}, {});
+
+        if(!outputWeights){
+            delete weights;
+        }
 
         return Status::OK();
     }
@@ -153,31 +161,43 @@ namespace ops  {
             factor = sqrt((double)keys->sizeAt(-2));
 
         nd4j::ops::matmul mmul;
-        auto preSoftmax = mmul.execute({keys, queries}, {}, {1}, {})->at(0);
+        auto preSoftmaxRes = mmul.execute({keys, queries}, {}, {1}, {});
+        auto preSoftmax = preSoftmaxRes->at(0);
         if(normalization)
             *preSoftmax /= factor;
 
         if(mask != nullptr){
+            NDArray* reshapedMask;
             if(preSoftmax->rankOf() == 4){
-                *preSoftmax += (*mask->reshape(mask->ordering(), {mask->sizeAt(0), 1, mask->sizeAt(1), 1}) - 1) * 1e9;
+                reshapedMask = mask->reshape(mask->ordering(), {mask->sizeAt(0), 1, mask->sizeAt(1), 1});
             }else{
-                *preSoftmax += (*mask->reshape(mask->ordering(), {mask->sizeAt(0), mask->sizeAt(1), 1}) - 1) * 1e9;
+                reshapedMask = mask->reshape(mask->ordering(), {mask->sizeAt(0), mask->sizeAt(1), 1});
             }
+            *preSoftmax += (*reshapedMask - 1) * 1e9;
+            delete reshapedMask;
         }
+
         nd4j::ops::softmax softmax;
-        auto weights = softmax.execute({preSoftmax}, {}, {-2}, {})->at(0);
+        auto weightsRes = softmax.execute({preSoftmax}, {}, {-2}, {});
+        auto weights = weightsRes->at(0);
 
         nd4j::ops::matmul_bp mmul_bp;
         NDArray dLdw(weights->getShapeInfo(), block.workspace());
         mmul_bp.execute({values, weights, eps}, {dLdv, &dLdw}, {}, {}, {});
 
         nd4j::ops::softmax_bp softmax_bp;
-        auto dLds = softmax_bp.execute({preSoftmax, &dLdw}, {}, {-2}, {})->at(0);
+        auto dLdsRes = softmax_bp.execute({preSoftmax, &dLdw}, {}, {-2}, {});
+        auto dLds = dLdsRes->at(0);
 
         if(normalization)
             *dLds /= factor;
 
         mmul_bp.execute({keys, queries, dLds}, {dLdk, dLdq}, {}, {1}, {});
+
+        delete preSoftmaxRes;
+        delete weightsRes;
+        delete dLdsRes;
+
         return Status::OK();
     }
 
