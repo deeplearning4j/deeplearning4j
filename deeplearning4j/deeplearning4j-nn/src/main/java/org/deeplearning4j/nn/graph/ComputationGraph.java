@@ -34,6 +34,7 @@ import org.deeplearning4j.nn.conf.*;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.FeedForwardLayer;
 import org.deeplearning4j.nn.conf.layers.recurrent.Bidirectional;
+import org.deeplearning4j.nn.conf.layers.wrapper.BaseWrapperLayer;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.graph.util.ComputationGraphUtil;
@@ -1958,6 +1959,9 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                             Layer l = current.getLayer();
                             if (l instanceof RecurrentLayer) {
                                 out = ((RecurrentLayer) l).rnnTimeStep(reshapeTimeStepInput(input), workspaceMgr);
+                            }  else if(l instanceof org.deeplearning4j.nn.layers.wrapper.BaseWrapperLayer && ((org.deeplearning4j.nn.layers.wrapper.BaseWrapperLayer)l).getUnderlying() instanceof RecurrentLayer){
+                                RecurrentLayer rl = ((RecurrentLayer) ((org.deeplearning4j.nn.layers.wrapper.BaseWrapperLayer)l).getUnderlying());
+                                out = rl.rnnTimeStep(reshapeTimeStepInput(input), workspaceMgr);
                             } else if (l instanceof MultiLayerNetwork) {
                                 out = ((MultiLayerNetwork) l).rnnTimeStep(reshapeTimeStepInput(input));
                             } else {
@@ -2339,6 +2343,9 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                                 Layer l = current.getLayer();
                                 if (l instanceof RecurrentLayer) {
                                     out = ((RecurrentLayer) l).rnnTimeStep(reshapeTimeStepInput(input), workspaceMgr);
+                                } else if(l instanceof org.deeplearning4j.nn.layers.wrapper.BaseWrapperLayer && ((org.deeplearning4j.nn.layers.wrapper.BaseWrapperLayer)l).getUnderlying() instanceof RecurrentLayer){
+                                    RecurrentLayer rl = ((RecurrentLayer) ((org.deeplearning4j.nn.layers.wrapper.BaseWrapperLayer)l).getUnderlying());
+                                    out = rl.rnnTimeStep(reshapeTimeStepInput(input), workspaceMgr);
                                 } else if (l instanceof MultiLayerNetwork) {
                                     out = ((MultiLayerNetwork) l).rnnTimeStep(reshapeTimeStepInput(input));
                                 } else {
@@ -3444,6 +3451,9 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
      */
     public Map<String, INDArray> rnnGetPreviousState(String layerName) {
         Layer l = verticesMap.get(layerName).getLayer();
+        if(l instanceof org.deeplearning4j.nn.layers.wrapper.BaseWrapperLayer){
+            l = ((org.deeplearning4j.nn.layers.wrapper.BaseWrapperLayer)l).getUnderlying();
+        }
         if (l == null || !(l instanceof RecurrentLayer))
             return null;
         return ((RecurrentLayer) l).rnnGetPreviousState();
@@ -3459,6 +3469,9 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
     public Map<String, Map<String, INDArray>> rnnGetPreviousStates() {
         Map<String, Map<String, INDArray>> states = new HashMap<>();
         for (Layer l : layers) {
+            if(l instanceof org.deeplearning4j.nn.layers.wrapper.BaseWrapperLayer){
+                l = ((org.deeplearning4j.nn.layers.wrapper.BaseWrapperLayer)l).getUnderlying();
+            }
             if (l instanceof RecurrentLayer) {
                 states.put(l.conf().getLayer().getLayerName(), ((RecurrentLayer) l).rnnGetPreviousState());
             }
@@ -3484,6 +3497,9 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
      */
     public void rnnSetPreviousState(String layerName, Map<String, INDArray> state) {
         Layer l = verticesMap.get(layerName).getLayer();
+        if(l instanceof org.deeplearning4j.nn.layers.wrapper.BaseWrapperLayer){
+            l = ((org.deeplearning4j.nn.layers.wrapper.BaseWrapperLayer)l).getUnderlying();
+        }
         if (l == null || !(l instanceof RecurrentLayer)) {
             throw new UnsupportedOperationException(
                     "Layer \"" + layerName + "\" is not a recurrent layer. Cannot set state");
