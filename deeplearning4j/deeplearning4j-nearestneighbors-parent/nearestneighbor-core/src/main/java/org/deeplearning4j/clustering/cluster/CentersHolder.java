@@ -18,19 +18,23 @@ public class CentersHolder {
     protected transient INDArray distances;
     protected transient INDArray argMin;
 
+    private long rows, cols;
 
     public CentersHolder(long rows, long cols) {
-        this.centers = Nd4j.create(rows, cols);
+        this.rows = rows;
+        this.cols = cols;
     }
 
-    public void addCenter(INDArray pointView) {
+    public synchronized void addCenter(INDArray pointView) {
+        if (centers == null)
+            this.centers = Nd4j.create(pointView.dataType(), new long[] {rows, cols});
 
         centers.putRow(index++, pointView);
     }
 
     public Pair<Double, Long> getCenterByMinDistance(Point point, Distance distanceFunction) {
         if (distances == null)
-            distances = Nd4j.create(DataType.FLOAT, centers.rows());
+            distances = Nd4j.create(centers.dataType(), centers.rows());
 
         if (argMin == null)
             argMin = Nd4j.createUninitialized(DataType.LONG, new long[0]);

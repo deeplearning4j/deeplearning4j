@@ -19,6 +19,7 @@ package org.deeplearning4j.clustering.algorithm;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.apache.commons.lang3.ArrayUtils;
 import org.deeplearning4j.clustering.cluster.Cluster;
 import org.deeplearning4j.clustering.cluster.ClusterSet;
@@ -134,7 +135,7 @@ public class BaseClusteringAlgorithm implements ClusteringAlgorithm, Serializabl
         List<Point> points = new ArrayList<>(initialPoints);
 
         //Initialize the ClusterSet with a single cluster center (based on position of one of the points chosen randomly)
-        Random random = new Random();
+        val random = Nd4j.getRandom();
         Distance distanceFn = clusteringStrategy.getDistanceFunction();
         int initialClusterCount = clusteringStrategy.getInitialClusterCount();
         clusterSet = new ClusterSet(distanceFn,
