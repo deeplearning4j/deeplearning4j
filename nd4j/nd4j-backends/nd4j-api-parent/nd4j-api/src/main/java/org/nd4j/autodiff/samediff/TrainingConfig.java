@@ -47,6 +47,7 @@ public class TrainingConfig {
     private List<String> dataSetFeatureMaskMapping;
     private List<String> dataSetLabelMaskMapping;
     private List<String> trainableParams;   //Will be inferred automatically if null
+    private List<String> lossVariables;
     private int iterationCount;
     private int epochCount;
 
@@ -64,7 +65,7 @@ public class TrainingConfig {
      */
     public TrainingConfig(IUpdater updater, List<Regularization> regularization, String dataSetFeatureMapping, String dataSetLabelMapping) {
         this(updater, regularization, true, Collections.singletonList(dataSetFeatureMapping), Collections.singletonList(dataSetLabelMapping),
-                Collections.<String>emptyList(), Collections.<String>emptyList(), null);
+                Collections.<String>emptyList(), Collections.<String>emptyList(), null, null);
     }
 
     /**
@@ -85,7 +86,7 @@ public class TrainingConfig {
      *                                  If non-null, this defines the set of parameters that should be modified during training
      */
     public TrainingConfig(IUpdater updater, List<Regularization> regularization, boolean minimize, List<String> dataSetFeatureMapping, List<String> dataSetLabelMapping,
-                          List<String> dataSetFeatureMaskMapping, List<String> dataSetLabelMaskMapping, List<String> trainableParams) {
+                          List<String> dataSetFeatureMaskMapping, List<String> dataSetLabelMaskMapping, List<String> trainableParams, List<String> lossVariables) {
         this.updater = updater;
         this.regularization = regularization;
         this.minimize = minimize;
@@ -94,6 +95,7 @@ public class TrainingConfig {
         this.dataSetFeatureMaskMapping = dataSetFeatureMaskMapping;
         this.dataSetLabelMaskMapping = dataSetLabelMaskMapping;
         this.trainableParams = trainableParams;
+        this.lossVariables = lossVariables;
     }
 
     /**
@@ -133,6 +135,7 @@ public class TrainingConfig {
         private List<String> dataSetFeatureMaskMapping;
         private List<String> dataSetLabelMaskMapping;
         private List<String> trainableParams;   //Will be inferred automatically if null
+        private List<String> lossVariables;
         private boolean skipValidation = false;
 
         /**
@@ -348,6 +351,11 @@ public class TrainingConfig {
             return this;
         }
 
+        public Builder minimize(String... lossVariables){
+            this.lossVariables = Arrays.asList(lossVariables);
+            return this;
+        }
+
         public TrainingConfig build(){
             if(!skipValidation) {
                 Preconditions.checkState(updater != null, "Updater (optimizer) must not be null. Use updater(IUpdater) to set an updater");
@@ -358,7 +366,7 @@ public class TrainingConfig {
             }
 
             return new TrainingConfig(updater, regularization, minimize, dataSetFeatureMapping, dataSetLabelMapping,
-                    dataSetFeatureMaskMapping, dataSetLabelMaskMapping, trainableParams);
+                    dataSetFeatureMaskMapping, dataSetLabelMaskMapping, trainableParams, lossVariables);
         }
     }
 

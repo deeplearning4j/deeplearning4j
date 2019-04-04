@@ -117,6 +117,8 @@ public class SameDiff extends SDBaseOps {
     private final Map<String,DeviceLocalNDArray> variablesArrays = new ConcurrentHashMap<>();     //TODO issues with DeviceLocal +  mutable / changed during training?
     private final Map<Long,Map<String,INDArray>> placeholdersPerThread = new ConcurrentHashMap<>(); //Placeholders for each thread - if the user sets them
 
+    private final List<String> lossVariables = new ArrayList<>();
+
     ///////////////////////////////////////
     //Fields related to training
     @Getter
@@ -1425,6 +1427,17 @@ public class SameDiff extends SDBaseOps {
      */
     public List<SDVariable> variables() {
         return new ArrayList<>(variableMap().values());
+    }
+
+    public void setLossVariables(String... lossVariableNames){
+        this.lossVariables.clear();
+        Collections.addAll(this.lossVariables, lossVariableNames);
+    }
+
+    public void addLossVariable(@NonNull String variableName){
+        if(!lossVariables.contains(variableName)){
+            lossVariables.add(variableName);
+        }
     }
 
     /**
@@ -3083,12 +3096,17 @@ public class SameDiff extends SDBaseOps {
      * with name "grad" as the argument.
      */
     public void createGradFunction() {
+        Preconditions.checkState(lossVariables != null && !lossVariables.isEmpty(), "Cannot create gradient funcction: " +
+                "No loss variables (variables to minimize) have been specified. Loss variables are the variables that" +
+                " represent the loss/cost/score to be minimized during training, and that all gradients are calculated with respect to.\n" +
+                " Losses can be specified either in TrainingConfiguration (Builder.minimize(...)) or via SameDiff.setLossVariables()/addLossVariable()");
+
         if (log.isTraceEnabled()) {
             log.trace("Defining function \"grad\"");
         }
 
         //First thing: check that there's only one output... throw an exception if so
-        //A variable is an output if it's eithen an input, or if it's the output of a function, but not an input
+        //A variable is an output if it's either an input, or if it's the output of a function, but not an input
         Set<String> variablesNotAsFunctionInput = new HashSet<>();
         for(SDVariable s : variables()){
             variablesNotAsFunctionInput.add(s.getVarName());
@@ -3147,25 +3165,32 @@ public class SameDiff extends SDBaseOps {
                     func.setSameDiff(sameDiff);
                 }
 
-                //Find final outputs - these are SDVariables that are output of a function that are not inputs to anything else
-                // i.e., ArrayType - not constant, variable, placeholder
-                //Also should be a floating point type, to contribute to score
-                List<SDVariable> finalOutputs = new ArrayList<>();
-                for(Variable v : sameDiff.variables.values()){
-                    String outputOfOp = v.getOutputOfOp();
-                    boolean isExternalGrad = false;
-                    if(outputOfOp != null && getOps().get(outputOfOp).getOp() instanceof ExternalErrorsFunction){
-                        isExternalGrad = true;
-                    }
-                    if(!isExternalGrad && (v.getVariable().getVariableType() != VariableType.ARRAY ||
-                            (v.getInputsForOp() != null && ! v.getInputsForOp().isEmpty())
-                            || !v.getVariable().dataType().isFPType())){
-                        continue;
-                    }
-                    finalOutputs.add(v.getVariable());
+//                //Find final outputs - these are SDVariables that are output of a function that are not inputs to anything else
+//                // i.e., ArrayType - not constant, variable, placeholder
+//                //Also should be a floating point type, to contribute to score
+//                List<SDVariable> finalOutputs = new ArrayList<>();
+//                for(Variable v : sameDiff.variables.values()){
+//                    String outputOfOp = v.getOutputOfOp();
+//                    boolean isExternalGrad = false;
+//                    if(outputOfOp != null && getOps().get(outputOfOp).getOp() instanceof ExternalErrorsFunction){
+//                        isExternalGrad = true;
+//                    }
+//                    if(!isExternalGrad && (v.getVariable().getVariableType() != VariableType.ARRAY ||
+//                            (v.getInputsForOp() != null && ! v.getInputsForOp().isEmpty())
+//                            || !v.getVariable().dataType().isFPType())){
+//                        continue;
+//                    }
+//                    finalOutputs.add(v.getVariable());
+//                }
+//                Preconditions.checkState(!finalOutputs.isEmpty(), "Could not infer final network outputs to begin differentiation");
+
+                List<SDVariable> finalOutputs = new ArrayList<>(lossVariables.size());
+                for(String s : lossVariables){
+                    Preconditions.checkNotNull(s, "Encountered null value in loss variables. Null loss variables are not allowed." +
+                            " Use SameDiff.setLossVariables with non-null array names to fix");
+                    Preconditions.checkState(variables.containsKey(s), "Specified loss function variable \"%s\" does not exist", s);
                 }
 
-                Preconditions.checkState(!finalOutputs.isEmpty(), "Could not infer final network outputs to begin differentiation");
 
                 if (log.isTraceEnabled()) {
                     String[] initialOutputsStr = allFunctions.get(allFunctions.size() - 1).getOp().outputVariablesNames();
