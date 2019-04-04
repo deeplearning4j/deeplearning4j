@@ -52,7 +52,7 @@ namespace helpers {
 
 	void scatterUpdate(NDArray& operand, NDArray& updates, const std::vector<int>* intArgs);
 
-	void scatterSimple(NDArray& input, const NDArray& updates, const NDArray& indices, const std::vector<int>& dimensions);
+	void scatterSimple(const int opId, NDArray& input, const NDArray& updates, const NDArray& indices, const std::vector<int>& dimensions);
 
 	void mergeMaxIndex(const std::vector<NDArray*>& inArrs, NDArray& output);
 

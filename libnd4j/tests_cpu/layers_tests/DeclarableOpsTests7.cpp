@@ -5781,8 +5781,8 @@ TEST_F(DeclarableOpsTests7, Test_Reduce_Norm1_BP_2) {
     auto result = op.execute({&x, &eps}, {}, {0,1});
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
     auto output = result->at(0);
-    output->printIndexedBuffer("Result is");
-    exp.printIndexedBuffer("Expect is");
+    // output->printIndexedBuffer("Result is");
+    // exp.printIndexedBuffer("Expect is");
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));
 
@@ -5838,7 +5838,7 @@ TEST_F(DeclarableOpsTests7, Test_Reduce_Norm2_BP_1) {
     nd4j::ops::reduce_norm2_bp op;
     auto result = op.execute({&x, &eps}, {}, {0,1});
     auto output = result->at(0);
-//    output->printIndexedBuffer("Result is");
+    // output->printIndexedBuffer("Result is");
     ASSERT_EQ(ND4J_STATUS_OK, result->status());    
 
     ASSERT_TRUE(x.isSameShape(output));

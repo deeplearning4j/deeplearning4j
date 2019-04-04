@@ -35,7 +35,7 @@ CUSTOM_OP_IMPL(reduce_mean, 1, 1, false, 0, 0) {
         auto axesVector = INPUT_VARIABLE(1);
         helpers::adjustAxis(input, axesVector, dimensions);
     }
-//            else if (block.getIArguments()->size())
+
     bool keepDims = false;
     if (block.getBArguments()->size())
         keepDims = B_ARG(0);
@@ -52,20 +52,14 @@ CUSTOM_OP_IMPL(reduce_mean, 1, 1, false, 0, 0) {
     return Status::OK();
 }
 
-
-        DECLARE_TYPES(reduce_mean) {
-            getOpDescriptor()
-                    ->setAllowedInputTypes(nd4j::DataType::ANY)
-                    ->setAllowedOutputTypes({ALL_FLOATS});
-        }
-
 DECLARE_SHAPE_FN(reduce_mean) {
+    
     auto dimensions = *block.getIArguments();
     if (block.width() > 1) {
         auto axesVector = INPUT_VARIABLE(1);
         helpers::adjustAxis(INPUT_VARIABLE(0), axesVector, dimensions);
     }
-//            else if (block.getIArguments()->size())
+
     bool keepDims = false;
     if (block.getBArguments()->size())
         keepDims = B_ARG(0);
@@ -82,12 +76,11 @@ DECLARE_SHAPE_FN(reduce_mean) {
     return SHAPELIST(outShapeInfo);
 }
 
-
-        DECLARE_TYPES(reduce_mean_bp) {
-            getOpDescriptor()
-                    ->setAllowedInputTypes(nd4j::DataType::ANY)
-                    ->setAllowedOutputTypes({ALL_FLOATS});
-        }
+DECLARE_TYPES(reduce_mean) {
+    getOpDescriptor()
+        ->setAllowedInputTypes(nd4j::DataType::ANY)
+        ->setAllowedOutputTypes({ALL_FLOATS});
+}
 
 
 //////////////////////////////////////////////////////////////////////////
@@ -102,7 +95,7 @@ CUSTOM_OP_IMPL(reduce_mean_bp, 2, 1, false, 0, 0) {
         auto axesVector = INPUT_VARIABLE(2);
         helpers::adjustAxis(input, axesVector, dimensions);
     }
-//            else if (block.getIArguments()->size())
+
     bool keepDims = false;
     if (block.getBArguments()->size())
         keepDims = B_ARG(0);
@@ -115,7 +108,7 @@ CUSTOM_OP_IMPL(reduce_mean_bp, 2, 1, false, 0, 0) {
         REQUIRE_TRUE(item >= -input->rankOf() && item < input->rankOf(), 0, "REDUCE_MEAN_BP OP: the input dimension to reduce along must be in range [-%i, %i), but got %i instead !" , input->rankOf(), input->rankOf(), item);    
     
     if(gradO->lengthOf() == 1) {
-        gradI->assign((*gradO) / input->lengthOf());
+        gradI->assign(gradO->e(0) / input->lengthOf());
     }
     else {
         
@@ -136,8 +129,6 @@ CUSTOM_OP_IMPL(reduce_mean_bp, 2, 1, false, 0, 0) {
     return Status::OK();
 }
 
-
-
 DECLARE_SHAPE_FN(reduce_mean_bp) {    
     auto dimensions = *block.getIArguments();
     if (block.width() > 2) {
@@ -155,6 +146,14 @@ DECLARE_SHAPE_FN(reduce_mean_bp) {
 
     return SHAPELIST(gradIshapeInfo);
 }
+
+
+DECLARE_TYPES(reduce_mean_bp) {
+    getOpDescriptor()
+        ->setAllowedInputTypes(nd4j::DataType::ANY)
+        ->setAllowedOutputTypes({ALL_FLOATS});
+}
+
 
 
 }

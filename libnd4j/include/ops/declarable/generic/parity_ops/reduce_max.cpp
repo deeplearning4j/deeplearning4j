@@ -32,7 +32,7 @@ namespace ops {
 CUSTOM_OP_IMPL(reduce_max, 1, 1, false, 0, 0) {
     
     auto input = INPUT_VARIABLE(0);
-    auto gradI = OUTPUT_VARIABLE(0);
+    auto output = OUTPUT_VARIABLE(0);
     
     std::vector<int> dimensions = *block.getIArguments();
     
@@ -52,7 +52,7 @@ CUSTOM_OP_IMPL(reduce_max, 1, 1, false, 0, 0) {
     else if (block.getTArguments()->size() > 0)
         keepDims = (bool)T_ARG(0);
 
-    input->reduceAlongDimension(reduce::Max, gradI, dimensions, keepDims);
+    input->reduceAlongDimension(reduce::Max, output, dimensions, keepDims);
 
     return Status::OK();
 }
@@ -117,12 +117,12 @@ CUSTOM_OP_IMPL(reduce_max_bp, 2, 1, false, 0, 0) {
     if(gradO->lengthOf() == 1) {
         
         auto indOfMaxElem = input->indexReduceNumber(nd4j::indexreduce::IndexMax);
-        gradI->p(indOfMaxElem.e<Nd4jLong>(0), *gradO);
+        gradI->p(indOfMaxElem.t<Nd4jLong>(0), gradO->e(0));
     }
     else {
         
         auto indicesArr = input->applyIndexReduce(nd4j::indexreduce::IndexMax, dimensions);        
-        helpers::scatterSimple(*gradI, *gradO, *indicesArr, ShapeUtils::evalDimsToExclude(gradI->rankOf(), dimensions));
+        helpers::scatterSimple(6, *gradI, *gradO, *indicesArr, ShapeUtils::evalDimsToExclude(gradI->rankOf(), dimensions)); // 6 corresponds to copy operation
         delete indicesArr;
     }
 
