@@ -35,7 +35,7 @@ CUSTOM_OP_IMPL(reduce_mean, 1, 1, false, 0, 0) {
         auto axesVector = INPUT_VARIABLE(1);
         helpers::adjustAxis(input, axesVector, dimensions);
     }
-//            else if (block.getIArguments()->size())
+
     bool keepDims = false;
     if (block.getBArguments()->size())
         keepDims = B_ARG(0);
@@ -45,27 +45,21 @@ CUSTOM_OP_IMPL(reduce_mean, 1, 1, false, 0, 0) {
     REQUIRE_TRUE(dimensions.size() <= input->rankOf(), 0, "REDUCE_MEAN OP: the number of dimensions to reduce along must be <= input array rank, but got %i instead" , dimensions.size());
 
     for(const auto& item : dimensions)
-        REQUIRE_TRUE(item > -input->rankOf() || item < input->rankOf(), 0, "REDUCE_MEAN OP: the input dimension to reduce along must be in range (-%i, %i), but got %i instead !" , input->rankOf(), input->rankOf(), item);
+        REQUIRE_TRUE(item >= -input->rankOf() && item < input->rankOf(), 0, "REDUCE_MEAN OP: the input dimension to reduce along must be in range [-%i, %i), but got %i instead !" , input->rankOf(), input->rankOf(), item);
     
     input->reduceAlongDimension(reduce::Mean, output, dimensions, keepDims);
 
     return Status::OK();
 }
 
-
-        DECLARE_TYPES(reduce_mean) {
-            getOpDescriptor()
-                    ->setAllowedInputTypes(nd4j::DataType::ANY)
-                    ->setAllowedOutputTypes({ALL_FLOATS});
-        }
-
 DECLARE_SHAPE_FN(reduce_mean) {
+    
     auto dimensions = *block.getIArguments();
     if (block.width() > 1) {
         auto axesVector = INPUT_VARIABLE(1);
         helpers::adjustAxis(INPUT_VARIABLE(0), axesVector, dimensions);
     }
-//            else if (block.getIArguments()->size())
+
     bool keepDims = false;
     if (block.getBArguments()->size())
         keepDims = B_ARG(0);
@@ -75,19 +69,18 @@ DECLARE_SHAPE_FN(reduce_mean) {
     REQUIRE_TRUE(dimensions.size() <= inputShape->at(0)[0], 0, "REDUCE_MEAN OP: the number of dimensions to reduce along must be <= input array rank, but got %i instead" , dimensions.size());
     
     for(const auto& item : dimensions)
-        REQUIRE_TRUE(item > -inputShape->at(0)[0] || item < inputShape->at(0)[0], 0, "REDUCE_MEAN OP: the input dimension to reduce along must be in range (-%i, %i), but got %i instead !" , inputShape->at(0)[0], inputShape->at(0)[0], item);
+        REQUIRE_TRUE(item >= -inputShape->at(0)[0] && item < inputShape->at(0)[0], 0, "REDUCE_MEAN OP: the input dimension to reduce along must be in range [-%i, %i), but got %i instead !" , inputShape->at(0)[0], inputShape->at(0)[0], item);
 
     auto outShapeInfo = ShapeUtils::evalReduceShapeInfo(shape::order(inputShape->at(0)), dimensions, inputShape->at(0), keepDims, false, block.getWorkspace());
 
     return SHAPELIST(outShapeInfo);
 }
 
-
-        DECLARE_TYPES(reduce_mean_bp) {
-            getOpDescriptor()
-                    ->setAllowedInputTypes(nd4j::DataType::ANY)
-                    ->setAllowedOutputTypes({ALL_FLOATS});
-        }
+DECLARE_TYPES(reduce_mean) {
+    getOpDescriptor()
+        ->setAllowedInputTypes(nd4j::DataType::ANY)
+        ->setAllowedOutputTypes({ALL_FLOATS});
+}
 
 
 //////////////////////////////////////////////////////////////////////////
@@ -102,7 +95,7 @@ CUSTOM_OP_IMPL(reduce_mean_bp, 2, 1, false, 0, 0) {
         auto axesVector = INPUT_VARIABLE(2);
         helpers::adjustAxis(input, axesVector, dimensions);
     }
-//            else if (block.getIArguments()->size())
+
     bool keepDims = false;
     if (block.getBArguments()->size())
         keepDims = B_ARG(0);
@@ -112,31 +105,29 @@ CUSTOM_OP_IMPL(reduce_mean_bp, 2, 1, false, 0, 0) {
     REQUIRE_TRUE(dimensions.size() <= input->rankOf(), 0, "REDUCE_MEAN_BP OP: the number of dimensions to reduce along must be <= input array rank, but got %i instead" , dimensions.size());
 
     for(const auto& item : dimensions)
-        REQUIRE_TRUE(item > -input->rankOf() || item < input->rankOf(), 0, "REDUCE_MEAN_BP OP: the input dimension to reduce along must be in range (-%i, %i), but got %i instead !" , input->rankOf(), input->rankOf(), item);    
+        REQUIRE_TRUE(item >= -input->rankOf() && item < input->rankOf(), 0, "REDUCE_MEAN_BP OP: the input dimension to reduce along must be in range [-%i, %i), but got %i instead !" , input->rankOf(), input->rankOf(), item);    
     
     if(gradO->lengthOf() == 1) {
-        gradI->assign((*gradO) / input->lengthOf());
+        gradI->assign(gradO->e(0) / input->lengthOf());
     }
     else {
         
         (*gradI).assign((gradO->lengthOf() + 0.) / input->lengthOf());
 
-        Nd4jLong* gradOShapeKeepDims = ShapeUtils::evalReduceShapeInfo(input->ordering(), dimensions, *input, true, false, block.getWorkspace());
-        const bool isGradOShapeBroadcast = shape::equalsSoft(gradOShapeKeepDims, gradO->getShapeInfo());
-        
-        if(!isGradOShapeBroadcast)
+        if(!keepDims) {
+            Nd4jLong* gradOShapeKeepDims = ShapeUtils::evalReduceShapeInfo(gradO->ordering(), dimensions, *input, true, false, block.getWorkspace());                    
             gradO = gradO->reshape(gradO->ordering(), ShapeUtils::pullShapeFromShapeInfo(gradOShapeKeepDims));  // for example could be something like [a,b] -> [1,a,1,b]
+            RELEASE(gradOShapeKeepDims, block.getWorkspace());
+        }
 
         *gradI *= *gradO;
 
-        if(!isGradOShapeBroadcast)
+        if(!keepDims)
             delete gradO;
     }
 
     return Status::OK();
 }
-
-
 
 DECLARE_SHAPE_FN(reduce_mean_bp) {    
     auto dimensions = *block.getIArguments();
@@ -148,13 +139,21 @@ DECLARE_SHAPE_FN(reduce_mean_bp) {
     REQUIRE_TRUE(dimensions.size() <= inputShape->at(0)[0], 0, "REDUCE_MEAN_BP OP: the number of dimensions to reduce along must be <= input array rank, but got %i instead" , dimensions.size());
     
     for(const auto& item : dimensions)
-        REQUIRE_TRUE(item > -inputShape->at(0)[0] || item < inputShape->at(0)[0], 0, "REDUCE_MEAN_BP OP: the input dimension to reduce along must be in range (-%i, %i), but got %i instead !" , inputShape->at(0)[0], inputShape->at(0)[0], item);
+        REQUIRE_TRUE(item >= -inputShape->at(0)[0] || item < inputShape->at(0)[0], 0, "REDUCE_MEAN_BP OP: the input dimension to reduce along must be in range [-%i, %i), but got %i instead !" , inputShape->at(0)[0], inputShape->at(0)[0], item);
     
     Nd4jLong* gradIshapeInfo(nullptr);
     COPY_SHAPE(inputShape->at(0), gradIshapeInfo);
 
     return SHAPELIST(gradIshapeInfo);
 }
+
+
+DECLARE_TYPES(reduce_mean_bp) {
+    getOpDescriptor()
+        ->setAllowedInputTypes(nd4j::DataType::ANY)
+        ->setAllowedOutputTypes({ALL_FLOATS});
+}
+
 
 
 }

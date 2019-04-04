@@ -5514,12 +5514,12 @@ TEST_F(DeclarableOpsTests7, Test_Reduce_Min_BP_3) {
     x.linspace(1);
     x.p(2,2, -1.f);
     exp.p(2,2, 0.5f);
-//    x.printIndexedBuffer("Input is");
-//    exp.printIndexedBuffer("Expected ");
+    // x.printIndexedBuffer("Input is");
+    // exp.printIndexedBuffer("Expected ");
     nd4j::ops::reduce_min_bp op;
     auto result = op.execute({&x, &eps}, {1.f}, {});
     auto output = result->at(0);    
-//    output->printIndexedBuffer("Result is");
+    // output->printIndexedBuffer("Result is");
     ASSERT_EQ(ND4J_STATUS_OK, result->status());    
 
     ASSERT_TRUE(exp.isSameShape(output));
@@ -5622,12 +5622,12 @@ TEST_F(DeclarableOpsTests7, Test_Reduce_Max_BP_1) {
     exp.p(22, eps.e<double>(2));
     exp.p(23, eps.e<double>(3));
     x.linspace(1);
-//    x.printIndexedBuffer("Input is");
-//    exp.printIndexedBuffer("Expected ");
+    // x.printIndexedBuffer("Input is");
+    // exp.printIndexedBuffer("Expected ");
     nd4j::ops::reduce_max_bp op;
     auto result = op.execute({&x, &eps}, {}, {0, 1});
     auto output = result->at(0);    
-//    output->printIndexedBuffer("Result is");
+    // output->printIndexedBuffer("Result is");
     ASSERT_EQ(ND4J_STATUS_OK, result->status());    
 
     ASSERT_TRUE(exp.isSameShape(output));
@@ -5781,8 +5781,8 @@ TEST_F(DeclarableOpsTests7, Test_Reduce_Norm1_BP_2) {
     auto result = op.execute({&x, &eps}, {}, {0,1});
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
     auto output = result->at(0);
-    output->printIndexedBuffer("Result is");
-    exp.printIndexedBuffer("Expect is");
+    // output->printIndexedBuffer("Result is");
+    // exp.printIndexedBuffer("Expect is");
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));
 
@@ -5838,7 +5838,7 @@ TEST_F(DeclarableOpsTests7, Test_Reduce_Norm2_BP_1) {
     nd4j::ops::reduce_norm2_bp op;
     auto result = op.execute({&x, &eps}, {}, {0,1});
     auto output = result->at(0);
-//    output->printIndexedBuffer("Result is");
+    // output->printIndexedBuffer("Result is");
     ASSERT_EQ(ND4J_STATUS_OK, result->status());    
 
     ASSERT_TRUE(x.isSameShape(output));
