@@ -45,31 +45,61 @@ import java.util.Map;
  * (b) Supervised - For sequence classification (i.e., 1 label per sequence, typically used for fine tuning)<br>
  * The task can be specified using {@link Task}.
  * <br>
- * Example for unsupervised training:<br>
+ * <b>Example for unsupervised training:</b><br>
  * <pre>
  * {@code
- *
+ *          BertWordPieceTokenizerFactory t = new BertWordPieceTokenizerFactory(pathToVocab);
+ *          BertIterator b = BertIterator.builder()
+ *              .tokenizer(t)
+ *              .lengthHandling(BertIterator.LengthHandling.FIXED_LENGTH, 16)
+ *              .minibatchSize(2)
+ *              .sentenceProvider(<sentence provider here>)
+ *              .featureArrays(BertIterator.FeatureArrays.INDICES_MASK)
+ *              .vocabMap(t.getVocab())
+ *              .task(BertIterator.Task.UNSUPERVISED)
+ *              .masker(new BertMaskedLMMasker(new Random(12345), 0.2, 0.5, 0.5))
+ *              .unsupervisedLabelFormat(BertIterator.UnsupervisedLabelFormat.RANK2_IDX)
+ *              .maskToken("[MASK]")
+ *              .build();
  * }
  * </pre>
- *
+ * <br>
+ * <b>Example for supervised (sequence classification - one label per sequence) training:</b><br>
+ * <pre>
+ * {@code
+ *          BertWordPieceTokenizerFactory t = new BertWordPieceTokenizerFactory(pathToVocab);
+ *          BertIterator b = BertIterator.builder()
+ *              .tokenizer(t)
+ *              .lengthHandling(BertIterator.LengthHandling.FIXED_LENGTH, 16)
+ *              .minibatchSize(2)
+ *              .sentenceProvider(new TestSentenceProvider())
+ *              .featureArrays(BertIterator.FeatureArrays.INDICES_MASK)
+ *              .vocabMap(t.getVocab())
+ *              .task(BertIterator.Task.SEQ_CLASSIFICATION)
+ *              .build();
+ * }
+ * </pre>
  * This iterator supports numerous ways of configuring the behaviour with respect to the sequence lengths and data layout.<br>
  * <br>
  * <u><b>{@link LengthHandling} configuration:</b></u><br>
  * Determines how to handle variable-length sequence situations.<br>
  * <b>FIXED_LENGTH</b>: Always trim longer sequences to the specified length, and always pad shorter sequences to the specified length.<br>
- * <b>ANY_LENGTH</b>: Output length is determined by the length of the longest sequence in the minibatch<br>
+ * <b>ANY_LENGTH</b>: Output length is determined by the length of the longest sequence in the minibatch. Shorter sequences within the
+ * minibatch are zero padded and masked.<br>
  * <b>CLIP_ONLY</b>: For any sequences longer than the specified maximum, clip them. If the maximum sequence length in
- * a minibatch is shorter than the specified maximum, no padding will occur.<br>
+ * a minibatch is shorter than the specified maximum, no padding will occur. For sequences that are shorter than the
+ * maximum (within the current minibatch) they will be zero padded and masked.<br>
  *<br><br>
  * <u><b>{@link FeatureArrays} configuration:</b></u><br>
- * Determines what arrays should be included.
- * <b>INDICES_MASK</b>: Indices array and mask array only, no segment ID array<br>
- * <b>INDICES_MASK</b>: Indices array, mask array and segment ID array (which is all 0s for single segment tasks)<br>
+ * Determines what arrays should be included.<br>
+ * <b>INDICES_MASK</b>: Indices array and mask array only, no segment ID array. Returns 1 feature array, 1 feature mask array (plus labels).<br>
+ * <b>INDICES_MASK_SEGMENTID</b>: Indices array, mask array and segment ID array (which is all 0s for single segment tasks). Returns
+ * 2 feature arrays (indices, segment ID) and 1 feature mask array (plus labels)<br>
  * <br>
  * <u><b>{@link UnsupervisedLabelFormat} configuration:</b></u><br>
  * Only relevant when the task is set to {@link Task#UNSUPERVISED}. Determine the format of the labels:<br>
- * <b>RANK2_IDX</b>: return int32 [minibatch, numTokens] array with entries being class numbers<br>
- * <b>RANK3_NCL</b>: return float32 [minibatch, numClasses, numTokens] array with 1-hot entries along dimension 1<br>
+ * <b>RANK2_IDX</b>: return int32 [minibatch, numTokens] array with entries being class numbers. Example use case: with sparse softmax loss functions.<br>
+ * <b>RANK3_NCL</b>: return float32 [minibatch, numClasses, numTokens] array with 1-hot entries along dimension 1. Example use case: RnnOutputLayer, RnnLossLayer<br>
  * <b>RANK3_NLC</b>: return float32 [minibatch, numTokens, numClasses] array with 1-hot entries along dimension 2<br>
  * <br>
  */
@@ -423,7 +453,8 @@ public class BertIterator implements MultiDataSetIterator {
         }
 
         /**
-         * Provide the vocabulary as a map. Keys are
+         * Provide the vocabulary as a map. Keys are the words in the vocabulary, and values are the indices of those
+         * words. For indices, they should be in range 0 to vocabMap.size()-1 inclusive.<br>
          * If using {@link BertWordPieceTokenizerFactory},
          * this can be obtained using {@link BertWordPieceTokenizerFactory#getVocab()}
          */

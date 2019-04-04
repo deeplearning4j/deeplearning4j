@@ -44,6 +44,10 @@ public class BertMaskedLMMasker implements BertSequenceMasker {
      */
     public BertMaskedLMMasker(Random r, double maskProb, double maskTokenProb, double randomTokenProb){
         Preconditions.checkArgument(maskProb > 0 && maskProb < 1, "Probability must be beteen 0 and 1, got %s", maskProb);
+        Preconditions.checkState(maskTokenProb >=0 && maskTokenProb <= 1.0, "Mask token probability must be between 0 and 1, got %s", maskTokenProb);
+        Preconditions.checkState(randomTokenProb >=0 && randomTokenProb <= 1.0, "Random token probability must be between 0 and 1, got %s", randomTokenProb);
+        Preconditions.checkState(maskTokenProb + randomTokenProb <= 1.0, "Sum of maskTokenProb (%s) and randomTokenProb (%s) must be <= 1.0, got sum is %s",
+                maskTokenProb, randomTokenProb, (maskTokenProb + randomTokenProb));
         this.r = r;
         this.maskProb = maskProb;
         this.maskTokenProb = maskTokenProb;
