@@ -17,6 +17,7 @@
 package org.deeplearning4j.clustering.kmeans;
 
 import lombok.val;
+import org.apache.commons.lang3.time.StopWatch;
 import org.deeplearning4j.clustering.algorithm.Distance;
 import org.deeplearning4j.clustering.cluster.Cluster;
 import org.deeplearning4j.clustering.cluster.ClusterSet;
@@ -74,40 +75,22 @@ public class KMeansTest {
         Nd4j.setDefaultDataTypes(DataType.DOUBLE, DataType.DOUBLE);
         Nd4j.getRandom().setSeed(7);
         int numClusters = 3;
-        long start = System.currentTimeMillis();
+        StopWatch watch = new StopWatch();
+        watch.start();
         KMeansClustering kMeansClustering = KMeansClustering.setup(numClusters, 1000, Distance.COSINE_DISTANCE, true);
         List<Point> points = Point.toPoints(Nd4j.linspace(0, 5000*300, 5000*300).reshape(5000,300 ));
 
         ClusterSet clusterSet = kMeansClustering.applyTo(points);
-        long end = System.currentTimeMillis();
+        watch.stop();
+        System.out.println("Elapsed for clustering : " + watch);
 
-        Duration duration = new Duration(start, end);
-        System.out.println("Elapsed for clustering : " + duration.getStandardSeconds());
-
-        /*System.out.println("Start centroids:");
-        List<Cluster> clusters = clusterSet.getClusters();
-        for (val cluster : clusters) {
-            System.out.println(cluster.getCenter().getArray());
-        }*/
-
-        start = System.currentTimeMillis();
+        watch.reset();
+        watch.start();
         for (Point p : points) {
-            //System.out.println("Point: " + p.getArray());
             PointClassification pointClassification = clusterSet.classifyPoint(p);
-            //System.out.println("Cluster:" + pointClassification.getCluster().getCenter());
-            break;
         }
-        end = System.currentTimeMillis();
-        duration = new Duration(start, end);
-        System.out.println("Elapsed for search: " + duration.getStandardSeconds());
-
-
-        /*System.out.println("New centroids:");
-        clusters = clusterSet.getClusters();
-        for (val cluster : clusters) {
-            System.out.println(cluster.getCenter().getArray());
-        }*/
-
+        watch.stop();
+        System.out.println("Elapsed for search: " + watch);
     }
 
     @Test
@@ -138,25 +121,27 @@ public class KMeansTest {
 
         ClusterSet clusterSet = kMeansClustering.applyTo(points);
 
-        System.out.println("Start centroids:");
+
+        INDArray row0 = Nd4j.createFromArray(new double[]{26.1433,   28.8970});
+        INDArray row1 = Nd4j.createFromArray(new double[]{51.6358,   49.0883});
+        INDArray row2 = Nd4j.createFromArray(new double[]{90.3700,   86.8592});
+
         List<Cluster> clusters = clusterSet.getClusters();
-        for (val cluster : clusters) {
-            System.out.println(cluster.getCenter().getArray());
-        }
+        assertEquals(clusters.get(0).getCenter().getArray(), row0);
+        assertEquals(clusters.get(1).getCenter().getArray(), row1);
+        assertEquals(clusters.get(2).getCenter().getArray(), row2);
 
+        PointClassification pointClassification = null;
         for (Point p : points) {
-            System.out.println("Point: " + p.getArray());
-            PointClassification pointClassification = clusterSet.classifyPoint(p);
-            System.out.println("Cluster:" + pointClassification.getCluster().getCenter());
+            pointClassification = clusterSet.classifyPoint(p);
         }
+        assertEquals(Nd4j.createFromArray(new double[]{51.6358,   49.0883}),
+                pointClassification.getCluster().getCenter().getArray());
 
-
-        System.out.println("New centroids:");
         clusters = clusterSet.getClusters();
-        for (val cluster : clusters) {
-            System.out.println(cluster.getCenter().getArray());
-        }
-
+        assertEquals(clusters.get(0).getCenter().getArray(), row0);
+        assertEquals(clusters.get(1).getCenter().getArray(), row1);
+        assertEquals(clusters.get(2).getCenter().getArray(), row2);
 
     }
 }
