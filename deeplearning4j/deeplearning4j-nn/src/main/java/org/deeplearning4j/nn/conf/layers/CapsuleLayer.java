@@ -122,7 +122,7 @@ public class CapsuleLayer extends SameDiffLayer {
 
         // b is the logits of the routing procedure
         // [mb, inputCapsules, capsules, 1, 1]
-        SDVariable b = SD.zerosLike(uHat).get(SDIndex.all(), SDIndex.all(), SDIndex.all(), SDIndex.interval(0, 1), SDIndex.interval(0, 1));
+        SDVariable b = SD.zero("b_var", 1, inputCapsules, capsules, 1, 1);
 
         for(int i = 0 ; i < routings ; i++){
 
