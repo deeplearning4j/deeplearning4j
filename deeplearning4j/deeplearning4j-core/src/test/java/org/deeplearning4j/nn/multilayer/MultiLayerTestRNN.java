@@ -27,6 +27,7 @@ import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.GlobalPoolingLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.conf.layers.RnnOutputLayer;
+import org.deeplearning4j.nn.conf.layers.misc.FrozenLayer;
 import org.deeplearning4j.nn.conf.preprocessor.FeedForwardToRnnPreProcessor;
 import org.deeplearning4j.nn.conf.preprocessor.RnnToFeedForwardPreProcessor;
 import org.deeplearning4j.nn.gradient.Gradient;
@@ -773,5 +774,34 @@ public class MultiLayerTestRNN extends BaseDL4JTest {
 //            e.printStackTrace();
             assertTrue(e.getMessage().contains("TBPTT") && e.getMessage().contains("validateTbpttConfig"));
         }
+    }
+
+    @Test
+    public void testWrapperLayerGetPreviousState(){
+
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                .list()
+                .layer(new FrozenLayer(new org.deeplearning4j.nn.conf.layers.LSTM.Builder()
+                        .nIn(5).nOut(5).build()))
+                .build();
+
+        MultiLayerNetwork net = new MultiLayerNetwork(conf);
+        net.init();
+
+        INDArray in = Nd4j.create(1, 5, 2);
+        net.rnnTimeStep(in);
+
+        Map<String,INDArray> m = net.rnnGetPreviousState(0);
+        assertNotNull(m);
+        assertEquals(2, m.size());  //activation and cell state
+
+        net.rnnSetPreviousState(0, m);
+
+        ComputationGraph cg = net.toComputationGraph();
+        cg.rnnTimeStep(in);
+        m = cg.rnnGetPreviousState(0);
+        assertNotNull(m);
+        assertEquals(2, m.size());  //activation and cell state
+        cg.rnnSetPreviousState(0, m);
     }
 }

@@ -991,4 +991,38 @@ public class EvalTest extends BaseNd4jTest {
             }
         }
     }
+
+    @Test
+    public void testLabelReset(){
+
+        Map<Integer,String> m = new HashMap<>();
+        m.put(0, "False");
+        m.put(1, "True");
+
+        Evaluation e1 = new Evaluation(m);
+        INDArray zero = Nd4j.create(new double[]{1,0}).reshape(1,2);
+        INDArray one = Nd4j.create(new double[]{0,1}).reshape(1,2);
+
+        e1.eval(zero, zero);
+        e1.eval(zero, zero);
+        e1.eval(one, zero);
+        e1.eval(one, one);
+        e1.eval(one, one);
+        e1.eval(one, one);
+
+        String s1 = e1.stats();
+        System.out.println(s1);
+
+        e1.reset();
+        e1.eval(zero, zero);
+        e1.eval(zero, zero);
+        e1.eval(one, zero);
+        e1.eval(one, one);
+        e1.eval(one, one);
+        e1.eval(one, one);
+
+        String s2 = e1.stats();
+        assertEquals(s1, s2);
+
+    }
 }
