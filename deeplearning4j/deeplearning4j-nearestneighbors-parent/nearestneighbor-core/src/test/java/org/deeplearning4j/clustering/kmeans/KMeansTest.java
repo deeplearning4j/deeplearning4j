@@ -20,8 +20,10 @@ import org.deeplearning4j.clustering.cluster.ClusterSet;
 import org.deeplearning4j.clustering.cluster.Point;
 import org.deeplearning4j.clustering.cluster.PointClassification;
 import org.junit.Test;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import static org.junit.Assert.assertEquals;
@@ -46,7 +48,7 @@ public class KMeansTest {
         Nd4j.getRandom().setSeed(7);
         int numClusters = 5;
         KMeansClustering kMeansClustering = KMeansClustering.setup(numClusters, 1000, "cosinesimilarity", true);
-        List<Point> points = Point.toPoints(Nd4j.rand(5, 5));
+        List<Point> points = Point.toPoints(Nd4j.rand(5, 300));
         ClusterSet clusterSet = kMeansClustering.applyTo(points);
         PointClassification pointClassification = clusterSet.classifyPoint(points.get(0));
 
@@ -62,4 +64,36 @@ public class KMeansTest {
                         pointClassificationEuclidean.getCluster().getPoints().get(0));
     }
 
+    @Test
+    public void testIssue4748() {
+
+        INDArray result = Nd4j.randn(1, 1500);
+        List<Point> points = Point.toPoints(result);
+
+        List<List<Point>> listOfPointLists = new ArrayList<List<Point>>(); // list of point list
+        List<Point> points1 = new ArrayList<Point>();
+
+// get the first 2 then 3, then 4.... and make a point list
+        for(int i = 2;   i<= points.size(); i++)
+        {
+            points1 = points.subList(0,i);
+            listOfPointLists.add(points1);
+        }
+//here i create my Kmeans instance and create a List of ClusterSet because i will have many clusters
+        KMeansClustering kMeansClusteringEuclidean = KMeansClustering.setup(2, 1000, "euclidean");
+        List<ClusterSet> listOfClusterSet = new ArrayList<ClusterSet>();
+
+        // here i go though the Points list list to apply kmeans
+        for(int i=0;i< listOfPointLists.size();i++)
+        {
+            listOfClusterSet.add(kMeansClusteringEuclidean.applyTo(listOfPointLists.get(i)));
+        }
+
+        //and here i want to see my result
+        for(int i=0;i<  listOfPointLists.size();i++)
+        {
+            System.out.print(i+" "+listOfClusterSet.get(i).getClusters().get(0).getCenter().getArray().getDouble(0)+ " ");
+            System.out.println(i+" "+listOfClusterSet.get(i).getClusters().get(1).getCenter().getArray().getDouble(0));;
+        }
+    }
 }
