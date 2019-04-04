@@ -338,7 +338,7 @@ void Reduce3<X,Z>::exec(void *vx, Nd4jLong *xShapeInfo,
                 uint xShapeInfoCast[MAX_RANK];
                 bool canCastX = nd4j::DataTypeUtils::castShapeInfo(xShapeInf, xShapeInfoCast);
 
-                PRAGMA_OMP_PARALLEL_FOR_THREADS(num_threads)
+                PRAGMA_OMP_PARALLEL_FOR_SIMD_THREADS(num_threads)
                 for (int i = 0; i < zLen; i++) {
                 
                     Nd4jLong xOffset = xTadBigger ? tadPackX.primaryOffsets()[i] : 0;
@@ -349,12 +349,18 @@ void Reduce3<X,Z>::exec(void *vx, Nd4jLong *xShapeInfo,
                     auto tX = x + xOffset;
                     auto tY = y + yOffset;
 
-                    if(shape::haveSameOffsets(xShapeInf, yShapeInf)) {
+                    if (xEws == 1 && yEws == 1) {
+
+                        for (unsigned int j = 0; j < tadLength; j++)
+                            start = OpType::update(start, OpType::op(tX[j], tY[j], extraParamsVals), extraParamsVals);
+
+                    } else if(shape::haveSameOffsets(xShapeInf, yShapeInf)) {
 
                         for (unsigned int j = 0; j < tadLength; j++) {                            
                             auto offset = shape::indexOffset(j, xShapeInf, xShapeInfoCast, tadLength, canCastX);
                             start = OpType::update(start, OpType::op(tX[offset], tY[offset],extraParamsVals), extraParamsVals);
                         }
+
                     }
                     else {
 
@@ -363,6 +369,7 @@ void Reduce3<X,Z>::exec(void *vx, Nd4jLong *xShapeInfo,
                             auto yOffset2 = shape::indexOffset(j, yShapeInf, yShapeInfoCast, tadLength, canCastY);
                             start = OpType::update(start, OpType::op(tX[xOffset2], tY[yOffset2],extraParamsVals), extraParamsVals);
                         }
+
                     } 
 
                     z[i] = OpType::postProcess(start, shape::length(iterationTadInfo), extraParamsVals);

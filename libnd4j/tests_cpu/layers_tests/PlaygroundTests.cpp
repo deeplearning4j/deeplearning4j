@@ -174,6 +174,47 @@ TEST_F(PlaygroundTests, Test_PermutedArray_Operation_2) {
 
 }
 
+TEST_F(PlaygroundTests, test_reduce_3) {
+    auto x = NDArrayFactory::create<float>('c', {4096, 8192});
+    auto y = NDArrayFactory::create<float>('c', {8192});
+    auto z = NDArrayFactory::create<float>('c', {4096});
+
+    auto dim = NDArrayFactory::create<int>('c', {1}, {1});
+    auto iterations = 100;
+    std::vector<Nd4jLong> results(iterations);
+    Nd4jLong mean = 0L;
+    Nd4jLong max = 0L;
+    Nd4jLong min = DataTypeUtils::max<Nd4jLong>();
+
+    NativeOps nativeOps;
+
+    for (int e = 0; e < iterations; e++) {
+        auto timeStart = std::chrono::system_clock::now();
+
+        nativeOps.execReduce3(nullptr, reduce3::CosineDistance, x.buffer(), x.shapeInfo(), x.specialBuffer(),
+                              x.specialShapeInfo(), nullptr, y.buffer(), y.shapeInfo(), y.specialBuffer(),
+                              y.specialShapeInfo(), z.buffer(), z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo(),
+                              dim.buffer(), dim.shapeInfo(), dim.specialBuffer(), dim.specialShapeInfo(), nullptr,
+                              nullptr, nullptr, nullptr);
+
+        auto timeEnd = std::chrono::system_clock::now();
+        auto duration = std::chrono::duration_cast<std::chrono::microseconds> ((timeEnd - timeStart)).count();
+        results[e] = duration;
+        mean += duration;
+
+        if (duration > max)
+            max = duration;
+
+        if (duration < min)
+            min = duration;
+    }
+
+    mean /= iterations;
+    std::sort(results.begin(), results.end());
+
+    nd4j_printf("Median time: [%lld]; Mean time: [%lld]; Min time: [%lld]; Max time: [%lld]\n", results[results.size() / 2], mean, min, max);
+}
+
 /*
 TEST_F(PlaygroundTests, Test_OpBenchmark_1) {
 
