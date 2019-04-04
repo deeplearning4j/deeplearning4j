@@ -1450,6 +1450,17 @@ public class SameDiff extends SDBaseOps {
     }
 
     /**
+     * Fit the SameDiff instance based on a single MultiDataSet (i.e., a single minibatch for one iteration).<br>
+     * Note that a {@link TrainingConfig} must be set via {@link #setTrainingConfig(TrainingConfig)} before training can
+     * be performed.
+     *
+     * @param dataSet The DataSet (single minibatch) to peform training on
+     */
+    public void fit(MultiDataSet dataSet){
+        fit(new SingletonMultiDataSetIterator(dataSet), 1, false);
+    }
+
+    /**
      * Fit the SameDiff instance based on DataSetIterator for the specified number of epochs.<br>
      * This method can only be used for singe input, single output SameDiff instances as DataSet only supports a
      * single input and a single output.<br>
@@ -2604,7 +2615,7 @@ public class SameDiff extends SDBaseOps {
      * @return SDVariable
      */
     public SDVariable scalar(String name, int value) {
-        try(MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+        try (MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
             return var(name, Nd4j.scalar(value));
         }
     }
@@ -2618,6 +2629,20 @@ public class SameDiff extends SDBaseOps {
     public SDVariable scalar(String name, long value) {
         try(MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
             return var(name, Nd4j.scalar(value));
+        }
+    }
+
+    /**
+     * Create a new scalar (rank 0) SDVariable with the specified value and datatype
+     *
+     * @param name     Name of the SDVariable
+     * @param dataType Data type of the scalar
+     * @param value    Value to initialize the variable with
+     * @return SDVariable
+     */
+    public SDVariable scalar(String name, DataType dataType, Number value) {
+        try(MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+            return var(name, Nd4j.scalar(dataType, value));
         }
     }
 

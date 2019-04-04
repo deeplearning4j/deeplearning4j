@@ -40,7 +40,7 @@ public class SDLoss extends SDOps {
     public SDVariable absoluteDifference(String name, @NonNull SDVariable label, @NonNull SDVariable predictions,
                                          SDVariable weights, @NonNull LossReduce lossReduce) {
         if (weights == null)
-            weights = sd.scalar(null, 1.0);
+            weights = sd.scalar(null, predictions.dataType(), 1.0);
         SDVariable result = f().lossAbsoluteDifference(label, predictions, weights, lossReduce);
         return updateVariableNameAndReference(result, name);
     }
@@ -77,7 +77,7 @@ public class SDLoss extends SDOps {
     public SDVariable cosineDistance(String name, @NonNull SDVariable label, @NonNull SDVariable predictions,
                                      SDVariable weights, @NonNull LossReduce lossReduce, int dimension) {
         if (weights == null)
-            weights = sd.scalar(null, 1.0);
+            weights = sd.scalar(null, predictions.dataType(), 1.0);
         SDVariable result = f().lossCosineDistance(label, predictions, weights, lossReduce, dimension);
         return updateVariableNameAndReference(result, name);
     }
@@ -112,7 +112,7 @@ public class SDLoss extends SDOps {
     public SDVariable hingeLoss(String name, @NonNull SDVariable label, @NonNull SDVariable predictions,
                                 SDVariable weights, @NonNull LossReduce lossReduce) {
         if (weights == null)
-            weights = sd.scalar(null, 1.0);
+            weights = sd.scalar(null, predictions.dataType(), 1.0);
         SDVariable result = f().lossHinge(label, predictions, weights, lossReduce);
         return updateVariableNameAndReference(result, name);
     }
@@ -152,7 +152,7 @@ public class SDLoss extends SDOps {
     public SDVariable huberLoss(String name, @NonNull SDVariable label, @NonNull SDVariable predictions,
                                 SDVariable weights, @NonNull LossReduce lossReduce, double delta) {
         if (weights == null)
-            weights = sd.scalar(null, 1.0);
+            weights = sd.scalar(null, predictions.dataType(), 1.0);
         SDVariable result = f().lossHuber(label, predictions, weights, lossReduce, delta);
         return updateVariableNameAndReference(result, name);
     }
@@ -207,7 +207,7 @@ public class SDLoss extends SDOps {
     public SDVariable logLoss(String name, @NonNull SDVariable label, @NonNull SDVariable predictions,
                               SDVariable weights, @NonNull LossReduce lossReduce, double epsilon) {
         if (weights == null)
-            weights = sd.scalar(null, 1.0);
+            weights = sd.scalar(null, predictions.dataType(), 1.0);
         SDVariable result = f().lossLog(label, predictions, weights, lossReduce, epsilon);
         return updateVariableNameAndReference(result, name);
     }
@@ -240,7 +240,7 @@ public class SDLoss extends SDOps {
     public SDVariable logPoisson(String name, @NonNull SDVariable label, @NonNull SDVariable predictions,
                                  SDVariable weights, @NonNull LossReduce lossReduce) {
         if (weights == null)
-            weights = sd.scalar(null, 1.0);
+            weights = sd.scalar(null, predictions.dataType(), 1.0);
         SDVariable result = f().lossLogPoisson(label, predictions, weights, lossReduce);
         return updateVariableNameAndReference(result, name);
     }
@@ -274,7 +274,7 @@ public class SDLoss extends SDOps {
     public SDVariable logPoissonFull(String name, @NonNull SDVariable label, @NonNull SDVariable predictions,
                                      SDVariable weights, @NonNull LossReduce lossReduce) {
         if (weights == null)
-            weights = sd.scalar(null, 1.0);
+            weights = sd.scalar(null, predictions.dataType(), 1.0);
         SDVariable result = f().lossLogPoissonFull(label, predictions, weights, lossReduce);
         return updateVariableNameAndReference(result, name);
     }
@@ -307,7 +307,7 @@ public class SDLoss extends SDOps {
      */
     public SDVariable meanPairwiseSquaredError(String name, @NonNull SDVariable label, @NonNull SDVariable predictions, SDVariable weights, @NonNull LossReduce lossReduce) {
         if (weights == null)
-            weights = sd.scalar(null, 1.0);
+            weights = sd.scalar(null, predictions.dataType(), 1.0);
         SDVariable result = f().lossMeanPairwiseSquaredError(label, predictions, weights, lossReduce);
         return updateVariableNameAndReference(result, name);
     }
@@ -334,7 +334,7 @@ public class SDLoss extends SDOps {
     public SDVariable meanSquaredError(String name, @NonNull SDVariable label, @NonNull SDVariable predictions,
                                        SDVariable weights, @NonNull LossReduce lossReduce) {
         if (weights == null)
-            weights = sd.scalar(null, 1.0);
+            weights = sd.scalar(null, predictions.dataType(), 1.0);
         SDVariable result = f().lossMeanSquaredError(label, predictions, weights, lossReduce);
         return updateVariableNameAndReference(result, name);
     }
@@ -377,7 +377,7 @@ public class SDLoss extends SDOps {
     public SDVariable sigmoidCrossEntropy(String name, @NonNull SDVariable label, @NonNull SDVariable predictionLogits,
                                           SDVariable weights, @NonNull LossReduce lossReduce, double labelSmoothing) {
         if (weights == null)
-            weights = sd.scalar(null, 1.0);
+            weights = sd.scalar(null, predictionLogits.dataType(), 1.0);
         SDVariable result = f().lossSigmoidCrossEntropy(label, predictionLogits, weights, lossReduce, labelSmoothing);
         return updateVariableNameAndReference(result, name);
     }
@@ -410,17 +410,17 @@ public class SDLoss extends SDOps {
      *
      * @param name             Name of the operation
      * @param oneHotLabels     Label array. Should be one-hot per example and same shape as predictions (for example, [mb, nOut])
-     * @param logitPreductions Predictions array (pre-softmax)
+     * @param logitPredictions Predictions array (pre-softmax)
      * @param weights          Weights array. May be null. If null, a weight of 1.0 is used
      * @param lossReduce       Reduction type for the loss. See {@link LossReduce} for more details. Default: {@link LossReduce#MEAN_BY_NONZERO_WEIGHT_COUNT}
      * @param labelSmoothing   Label smoothing value. Default value: 0
      * @return Loss variable
      */
-    public SDVariable softmaxCrossEntropy(String name, @NonNull SDVariable oneHotLabels, @NonNull SDVariable logitPreductions,
+    public SDVariable softmaxCrossEntropy(String name, @NonNull SDVariable oneHotLabels, @NonNull SDVariable logitPredictions,
                                           SDVariable weights, @NonNull LossReduce lossReduce, double labelSmoothing) {
         if (weights == null)
-            weights = sd.scalar(null, 1.0);
-        SDVariable result = f().lossSoftmaxCrossEntropy(oneHotLabels, logitPreductions, weights, lossReduce, labelSmoothing);
+            weights = sd.scalar(null, logitPredictions.dataType(), 1.0);
+        SDVariable result = f().lossSoftmaxCrossEntropy(oneHotLabels, logitPredictions, weights, lossReduce, labelSmoothing);
         return updateVariableNameAndReference(result, name);
     }
 
