@@ -4041,6 +4041,9 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         public native void setShapeInfo(@Cast("Nd4jLong*") LongPointer shapeInfo);
         public native void setShapeInfo(@Cast("Nd4jLong*") LongBuffer shapeInfo);
         public native void setShapeInfo(@Cast("Nd4jLong*") long[] shapeInfo);
+        public native void setShapeInfo(@Cast("Nd4jLong*") LongPointer shapeInfo, @Cast("const nd4j::DataType") int dtype);
+        public native void setShapeInfo(@Cast("Nd4jLong*") LongBuffer shapeInfo, @Cast("const nd4j::DataType") int dtype);
+        public native void setShapeInfo(@Cast("Nd4jLong*") long[] shapeInfo, @Cast("const nd4j::DataType") int dtype);
 
         /**
         *  set _buffer
@@ -4323,6 +4326,9 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
 //////////////////////////////////////////////////////////////////////////
     
 
+    
+
+    //////////////////////////////////////////////////////////////////////////
     
 
     //////////////////////////////////////////////////////////////////////////

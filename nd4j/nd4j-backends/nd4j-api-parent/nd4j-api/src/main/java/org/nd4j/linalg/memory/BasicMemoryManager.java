@@ -213,4 +213,9 @@ public abstract class BasicMemoryManager implements MemoryManager {
             return new DummyWorkspace().notifyScopeEntered();//workspace.tagOutOfScopeUse();
         }
     }
+
+    @Override
+    public void releaseCurrentContext() {
+        // no-op
+    }
 }

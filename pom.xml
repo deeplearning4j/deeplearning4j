@@ -300,8 +300,8 @@
         <mkl-dnn.version>0.18.1</mkl-dnn.version>
         <mkl-dnn.javacpp.version>${mkl-dnn.version}-${javacpp.version}</mkl-dnn.javacpp.version>
         <opencv.version>4.0.1</opencv.version>
-        <ffmpeg.version>4.1.1</ffmpeg.version>
-        <leptonica.version>1.77.0</leptonica.version>
+        <ffmpeg.version>4.1.3</ffmpeg.version>
+        <leptonica.version>1.78.0</leptonica.version>
         <hdf5.version>1.10.5</hdf5.version>
         <ale.version>0.6.0</ale.version>
         <tensorflow.version>1.13.1</tensorflow.version>
