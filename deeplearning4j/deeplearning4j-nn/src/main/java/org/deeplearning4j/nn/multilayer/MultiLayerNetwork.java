@@ -1014,6 +1014,9 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
                     if (layers[i] instanceof RecurrentLayer) {
                         input = ((RecurrentLayer) layers[i]).rnnActivateUsingStoredState(input, train,
                                 storeLastForTBPTT, workspaceMgr);
+                    } else if(layers[i] instanceof BaseWrapperLayer && ((BaseWrapperLayer)layers[i]).getUnderlying() instanceof RecurrentLayer) {
+                        RecurrentLayer rl = (RecurrentLayer) ((BaseWrapperLayer)layers[i]).getUnderlying();
+                        input = rl.rnnActivateUsingStoredState(input, train,storeLastForTBPTT, workspaceMgr);
                     } else if (layers[i] instanceof MultiLayerNetwork) {
                         List<INDArray> temp = ((MultiLayerNetwork) layers[i]).rnnActivateUsingStoredState(input, train, storeLastForTBPTT);
                         input = temp.get(temp.size() - 1);
@@ -1101,6 +1104,9 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
                 } else if(fwdPassType == FwdPassType.RNN_ACTIVATE_WITH_STORED_STATE){
                     if (layers[i] instanceof RecurrentLayer) {
                         input = ((RecurrentLayer) layers[i]).rnnActivateUsingStoredState(input, true, storeLastForTBPTT, workspaceMgr);
+                    }else if(layers[i] instanceof BaseWrapperLayer && ((BaseWrapperLayer)layers[i]).getUnderlying() instanceof RecurrentLayer) {
+                        RecurrentLayer rl = (RecurrentLayer) ((BaseWrapperLayer)layers[i]).getUnderlying();
+                        input = rl.rnnActivateUsingStoredState(input, true, storeLastForTBPTT, workspaceMgr);
                     } else if (layers[i] instanceof MultiLayerNetwork) {
                         List<INDArray> temp = ((MultiLayerNetwork) layers[i]).rnnActivateUsingStoredState(input, true, storeLastForTBPTT);
                         input = temp.get(temp.size() - 1);

@@ -803,6 +803,5 @@ public class MultiLayerTestRNN extends BaseDL4JTest {
         assertNotNull(m);
         assertEquals(2, m.size());  //activation and cell state
         cg.rnnSetPreviousState(0, m);
-
     }
 }

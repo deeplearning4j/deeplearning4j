@@ -1976,8 +1976,10 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                         if (current.hasLayer()) {
                             Layer l = current.getLayer();
                             if (l instanceof RecurrentLayer) {
-                                out = ((RecurrentLayer) l).rnnActivateUsingStoredState(current.getInputs()[0], train,
-                                        storeLastForTBPTT, workspaceMgr);
+                                out = ((RecurrentLayer) l).rnnActivateUsingStoredState(current.getInputs()[0], train, storeLastForTBPTT, workspaceMgr);
+                            } else if(l instanceof org.deeplearning4j.nn.layers.wrapper.BaseWrapperLayer && ((org.deeplearning4j.nn.layers.wrapper.BaseWrapperLayer)l).getUnderlying() instanceof RecurrentLayer) {
+                                RecurrentLayer rl = (RecurrentLayer) ((org.deeplearning4j.nn.layers.wrapper.BaseWrapperLayer)l).getUnderlying();
+                                out = rl.rnnActivateUsingStoredState(current.getInputs()[0], train,storeLastForTBPTT, workspaceMgr);
                             } else if (l instanceof MultiLayerNetwork) {
                                 List<INDArray> temp = ((MultiLayerNetwork) l).rnnActivateUsingStoredState(
                                         current.getInputs()[0], train, storeLastForTBPTT);
@@ -2106,6 +2108,9 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                             if (l instanceof RecurrentLayer) {
                                 out = ((RecurrentLayer) l).rnnActivateUsingStoredState(current.getInputs()[0], train,
                                         storeLastForTBPTT, workspaceMgr);
+                            } else if(l instanceof org.deeplearning4j.nn.layers.wrapper.BaseWrapperLayer && ((org.deeplearning4j.nn.layers.wrapper.BaseWrapperLayer)l).getUnderlying() instanceof RecurrentLayer) {
+                                RecurrentLayer rl = (RecurrentLayer) ((org.deeplearning4j.nn.layers.wrapper.BaseWrapperLayer)l).getUnderlying();
+                                out = rl.rnnActivateUsingStoredState(current.getInputs()[0], train,storeLastForTBPTT, workspaceMgr);
                             } else if (l instanceof MultiLayerNetwork) {
                                 List<INDArray> temp = ((MultiLayerNetwork) l).rnnActivateUsingStoredState(
                                         current.getInputs()[0], train, storeLastForTBPTT);
