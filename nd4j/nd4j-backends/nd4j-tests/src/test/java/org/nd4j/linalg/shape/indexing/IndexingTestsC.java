@@ -166,7 +166,7 @@ public class IndexingTestsC extends BaseNd4jTest {
     @Test
     public void testRowVectorInterval() {
         int len = 30;
-        INDArray row = Nd4j.zeros(len);
+        INDArray row = Nd4j.zeros(1, len);
         for (int i = 0; i < len; i++) {
             row.putScalar(i, i);
         }
