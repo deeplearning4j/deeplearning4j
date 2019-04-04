@@ -32,7 +32,7 @@ public class CentersHolder {
         centers.putRow(index++, pointView);
     }
 
-    public Pair<Double, Long> getCenterByMinDistance(Point point, Distance distanceFunction) {
+    public synchronized Pair<Double, Long> getCenterByMinDistance(Point point, Distance distanceFunction) {
         if (distances == null)
             distances = Nd4j.create(centers.dataType(), centers.rows());
 
