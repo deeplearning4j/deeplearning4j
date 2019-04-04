@@ -192,4 +192,9 @@ public interface MemoryManager {
      * @return
      */
     long allocatedMemory(Integer deviceId);
+
+    /**
+     * This method releases Context (if current backend has one, sure)
+     */
+    void releaseCurrentContext();
 }

@@ -269,4 +269,22 @@ public class CudaMemoryManager extends BasicMemoryManager {
     public long allocatedMemory(Integer deviceId) {
         return AllocationsTracker.getInstance().bytesOnDevice(AllocationKind.GENERAL, deviceId) + AllocationsTracker.getInstance().bytesOnDevice(AllocationKind.WORKSPACE, deviceId);
     }
+
+    @Override
+    public void releaseCurrentContext() {
+        // gettting context for this thread
+        val context = (CudaContext) AtomicAllocator.getInstance().getDeviceContext().getContext();
+
+        // we dont want any remnaints below this line
+        context.syncOldStream();
+        context.syncSpecialStream();
+
+        if (context == null)
+            return;
+
+        val pool = AtomicAllocator.getInstance().getContextPool();
+
+        // push it back to pool
+        pool.releaseContext(context);
+    }
 }

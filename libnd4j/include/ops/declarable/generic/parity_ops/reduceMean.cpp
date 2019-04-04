@@ -114,7 +114,7 @@ CUSTOM_OP_IMPL(reduce_mean_bp, 2, 1, false, 0, 0) {
     for(const auto& item : dimensions)
         REQUIRE_TRUE(item > -input->rankOf() || item < input->rankOf(), 0, "REDUCE_MEAN_BP OP: the input dimension to reduce along must be in range (-%i, %i), but got %i instead !" , input->rankOf(), input->rankOf(), item);    
     
-    if(gradO->isScalar()) {
+    if(gradO->lengthOf() == 1) {
         gradI->assign((*gradO) / input->lengthOf());
     }
     else {

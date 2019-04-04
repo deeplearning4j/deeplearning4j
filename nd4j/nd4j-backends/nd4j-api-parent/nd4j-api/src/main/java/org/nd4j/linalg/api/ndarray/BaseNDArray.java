@@ -1403,6 +1403,9 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         Preconditions.checkState((this.isScalar() && arr.isScalar()) || (this.isVector() && arr.isVector()) || Shape.shapeEqualWithSqueeze(this.shape(), arr.shape()),
                 "Cannot assign arrays: arrays must both be scalars, both vectors, or shapes must be equal other than size 1 dimensions. Attempting to do x.assign(y)" +
                         " with x.shape=%ndShape and y.shape=%ndShape", this, arr );
+
+        Preconditions.checkArgument(this.length() == arr.length(), "Length of both arrays must be equal");
+
         //Nd4j.getExecutioner().exec(new org.nd4j.linalg.api.ops.impl.transforms.pairwise.Set(this, arr, this, length()));
         Nd4j.getExecutioner().exec(new org.nd4j.linalg.api.ops.impl.transforms.any.Assign(arr, this));
         return this;
@@ -4938,6 +4941,30 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     @Override
     public INDArray get(INDArrayIndex... indexes) {
         Nd4j.getCompressor().autoDecompress(this);
+
+        // besides of backward support for legacy "vectors" which were 2D
+        // we enforce number of indices provided to be equal to number of dimensions in this array
+        if (rank() == 2 && jvmShapeInfo.javaShapeInformation[1] == 1 && indexes.length == 1)
+            indexes = new INDArrayIndex[]{ NDArrayIndex.all(), indexes[0]};
+        else if (rank() == 2 && jvmShapeInfo.javaShapeInformation[2] == 1 && indexes.length == 1)
+            indexes = new INDArrayIndex[]{indexes[0], NDArrayIndex.all()};
+        else {
+            // we're padding remaining dimensions with all() index
+            if (indexes.length < this.rank()) {
+                val newIndexes = new INDArrayIndex[this.rank()];
+                for (int e = 0; e < indexes.length; e++)
+                    newIndexes[e] = indexes[e];
+
+                for (int e = indexes.length; e < newIndexes.length; e++)
+                    newIndexes[e] = NDArrayIndex.all();
+
+                indexes = newIndexes;
+            }
+
+            // never going to happen :/
+            Preconditions.checkArgument(indexes != null && indexes.length >= this.rank(), "Number of indices should be greater or equal to rank of the INDArray");
+        }
+
         if(indexes.length > rank()) {
             int numNonNewAxis = 0;
             for(int i = 0; i < indexes.length; i++) {

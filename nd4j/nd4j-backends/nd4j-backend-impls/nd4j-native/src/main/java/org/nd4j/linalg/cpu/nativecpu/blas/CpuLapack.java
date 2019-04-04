@@ -16,6 +16,7 @@
 
 package org.nd4j.linalg.cpu.nativecpu.blas;
 
+import lombok.val;
 import org.nd4j.linalg.api.blas.impl.BaseLapack;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -233,13 +234,13 @@ public class CpuLapack extends BaseLapack {
 	if( status == 0 ) {
 		int lwork = (int)fp.get() ;
 		INDArray work = Nd4j.createArrayFromShapeBuffer(Nd4j.getDataBufferFactory().createFloat(lwork),
-		                Nd4j.getShapeInfoProvider().createShapeInformation(new long[] {1, lwork}, A.dataType()).getFirst());
+		                Nd4j.getShapeInfoProvider().createShapeInformation(new long[] {lwork}, A.dataType()).getFirst());
 
 		status = LAPACKE_ssyev( getColumnOrder(A), (byte)jobz, (byte)uplo, N, 
 		            (FloatPointer)A.data().addressPointer(), getLda(A),
 			    (FloatPointer)work.data().addressPointer() ) ;
 		if( status == 0 ) {
-			R.assign( work.get( NDArrayIndex.interval(0,N) ) ) ;
+			R.assign(work.get(NDArrayIndex.interval(0,N))) ;
 		}
 	}
 	return status ;
@@ -255,7 +256,7 @@ public class CpuLapack extends BaseLapack {
 	if( status == 0 ) {
 		int lwork = (int)dp.get() ;
 		INDArray work = Nd4j.createArrayFromShapeBuffer(Nd4j.getDataBufferFactory().createDouble(lwork),
-		                Nd4j.getShapeInfoProvider().createShapeInformation(new long[] {1, lwork}, A.dataType()).getFirst());
+		                Nd4j.getShapeInfoProvider().createShapeInformation(new long[] {lwork}, A.dataType()).getFirst());
 
 		status = LAPACKE_dsyev( getColumnOrder(A), (byte)jobz, (byte)uplo, N, 
 		            (DoublePointer)A.data().addressPointer(), getLda(A),

@@ -19,6 +19,7 @@ package org.nd4j.linalg.workspace;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -937,6 +938,7 @@ public class BasicWorkspaceTests extends BaseNd4jTest {
 
 
     @Test
+    @Ignore
     public void testMmap2() throws Exception {
         // we don't support MMAP on cuda yet
         if (Nd4j.getExecutioner().getClass().getName().toLowerCase().contains("cuda"))

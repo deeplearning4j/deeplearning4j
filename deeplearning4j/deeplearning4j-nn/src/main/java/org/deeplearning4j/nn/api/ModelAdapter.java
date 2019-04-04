@@ -14,28 +14,19 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.nd4j.jita.allocator.context;
+package org.deeplearning4j.nn.api;
 
-import org.nd4j.linalg.jcublas.context.CudaContext;
+import org.nd4j.linalg.api.ndarray.INDArray;
 
 /**
- * This interface describes pool of CudaContext objects, used to execute kernels
- * @author raver119@gmail.com
+ * This interface describes abstraction that uses provided model to convert INDArrays to some specific output
+ *
+ * @param <T>
  */
-public interface ContextPool {
+public interface ModelAdapter<T> extends OutputAdapter<T> {
     /**
-     * This method returns CudaContext for given device
-     * @param deviceId
+     * This method invokes model internally, and does convertion to T
      * @return
      */
-    CudaContext acquireContextForDevice(Integer deviceId);
-
-    @Deprecated
-    ContextPack acquireContextPackForDevice(Integer deviceId);
-
-    /**
-     * This method returns CudaContext to the pool for reuse
-     * @param context
-     */
-    void releaseContext(CudaContext context);
+    T apply(Model model, INDArray[] inputs, INDArray[] inputMasks, INDArray[] labelsMasks);
 }

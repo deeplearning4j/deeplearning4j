@@ -46,22 +46,23 @@ public class KMeansTest {
 
     @Test
     public void testKmeansCosine() {
-            Nd4j.getRandom().setSeed(7);
-            int numClusters = 5;
-            KMeansClustering kMeansClustering = KMeansClustering.setup(numClusters, 1000, Distance.COSINE_DISTANCE, true);
-            List<Point> points = Point.toPoints(Nd4j.rand(5, 300));
-            ClusterSet clusterSet = kMeansClustering.applyTo(points);
-            PointClassification pointClassification = clusterSet.classifyPoint(points.get(0));
+
+        Nd4j.getRandom().setSeed(7);
+        int numClusters = 5;
+        KMeansClustering kMeansClustering = KMeansClustering.setup(numClusters, 1000, Distance.COSINE_DISTANCE, true);
+        List<Point> points = Point.toPoints(Nd4j.rand(5, 300));
+        ClusterSet clusterSet = kMeansClustering.applyTo(points);
+        PointClassification pointClassification = clusterSet.classifyPoint(points.get(0));
 
 
-            KMeansClustering kMeansClusteringEuclidean = KMeansClustering.setup(numClusters, 1000, Distance.EUCLIDIAN);
-            ClusterSet clusterSetEuclidean = kMeansClusteringEuclidean.applyTo(points);
-            PointClassification pointClassificationEuclidean = clusterSetEuclidean.classifyPoint(points.get(0));
-            System.out.println("Cosine " + pointClassification);
-            System.out.println("Euclidean " + pointClassificationEuclidean);
+        KMeansClustering kMeansClusteringEuclidean = KMeansClustering.setup(numClusters, 1000, Distance.EUCLIDIAN);
+        ClusterSet clusterSetEuclidean = kMeansClusteringEuclidean.applyTo(points);
+        PointClassification pointClassificationEuclidean = clusterSetEuclidean.classifyPoint(points.get(0));
+        System.out.println("Cosine " + pointClassification);
+        System.out.println("Euclidean " + pointClassificationEuclidean);
 
 
-            assertEquals(pointClassification.getCluster().getPoints().get(0),
-                    pointClassificationEuclidean.getCluster().getPoints().get(0));
+        assertEquals(pointClassification.getCluster().getPoints().get(0),
+                        pointClassificationEuclidean.getCluster().getPoints().get(0));
     }
 }

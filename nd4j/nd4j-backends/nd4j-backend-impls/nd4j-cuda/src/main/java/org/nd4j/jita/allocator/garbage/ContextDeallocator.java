@@ -14,28 +14,29 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.nd4j.jita.allocator.context;
+package org.nd4j.jita.allocator.garbage;
 
+import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
+import org.nd4j.jita.allocator.impl.AtomicAllocator;
+import org.nd4j.linalg.api.memory.Deallocator;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.context.CudaContext;
 
 /**
- * This interface describes pool of CudaContext objects, used to execute kernels
+ * This class provides Deallocator implementation for tracking/releasing CudaContexts once thread holding it dies
  * @author raver119@gmail.com
  */
-public interface ContextPool {
-    /**
-     * This method returns CudaContext for given device
-     * @param deviceId
-     * @return
-     */
-    CudaContext acquireContextForDevice(Integer deviceId);
+@Slf4j
+public class ContextDeallocator implements Deallocator {
+    private CudaContext context;
 
-    @Deprecated
-    ContextPack acquireContextPackForDevice(Integer deviceId);
+    public ContextDeallocator(@NonNull CudaContext context) {
+        this.context = context;
+    }
 
-    /**
-     * This method returns CudaContext to the pool for reuse
-     * @param context
-     */
-    void releaseContext(CudaContext context);
+    @Override
+    public void deallocate() {
+        AtomicAllocator.getInstance().getContextPool().releaseContext(context);
+    }
 }
