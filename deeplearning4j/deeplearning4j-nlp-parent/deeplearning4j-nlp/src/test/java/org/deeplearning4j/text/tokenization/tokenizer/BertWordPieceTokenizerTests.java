@@ -16,6 +16,7 @@
 
 package org.deeplearning4j.text.tokenization.tokenizer;
 
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import org.deeplearning4j.text.tokenization.tokenizer.preprocessor.LowCasePreProcessor;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.BertWordPieceTokenizerFactory;
@@ -34,9 +35,9 @@ import java.util.List;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
+@Slf4j
 public class BertWordPieceTokenizerTests {
 
-    protected static final Logger log = LoggerFactory.getLogger(BertWordPieceTokenizerTests.class);
     private File pathToVocab =  new ClassPathResource("other/vocab.txt").getFile();
 
     public BertWordPieceTokenizerTests() throws IOException {

@@ -20,6 +20,7 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -124,6 +125,45 @@ public class CudaTests extends BaseNd4jTest {
                         log.info("Context {} created", f);
 
                     Nd4j.getMemoryManager().releaseCurrentContext();
+                    success.incrementAndGet();
+                    try {
+                        Thread.sleep(1000L);
+                    } catch (InterruptedException ex) {
+                        ex.printStackTrace();
+                    }
+                }
+            });
+
+            t.start();
+            threads.add(t);
+        }
+
+        for (val t: threads)
+            t.join();
+
+        assertEquals(iterations, success.get());
+    }
+
+    @Ignore
+    @Test(timeout = 100000L)
+    public void testContextSpam_2() throws Exception {
+        if (Nd4j.getExecutioner().type() != OpExecutioner.ExecutionerType.CUDA)
+            return;
+
+        val success = new AtomicInteger(0);
+        val iterations = 101;
+
+        val threads = new ArrayList<Thread>();
+        for (int e = 0; e < iterations; e++) {
+            val f = e;
+            val t = new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    Nd4j.create(1);
+                    if (f % 50 == 0)
+                        log.info("Context {} created", f);
+
+                    //Nd4j.getMemoryManager().releaseCurrentContext();
                     success.incrementAndGet();
                     try {
                         Thread.sleep(1000L);

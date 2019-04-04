@@ -113,12 +113,12 @@ public class GradCheckUtil {
         List<String> outputs = sd.outputs();
         Preconditions.checkState(outputs.size() == 1, "Expected 1 output for gradient check, got %s", outputs);
         String outName = outputs.get(0);
-        Map<String,INDArray> outMap = sd.exec(placeholderValues, outName);
-        Preconditions.checkState(outMap.size() == 1, "Expected 1 output, got %s", outMap.keySet());
-        INDArray out = outMap.get(outName);
-        if(out.length() != 1){
-            throw new IllegalStateException("Output variable is not a scalar - has shape " + Arrays.toString(out.shape()));
-        }
+//        Map<String,INDArray> outMap = sd.exec(placeholderValues, outName);
+//        Preconditions.checkState(outMap.size() == 1, "Expected 1 output, got %s", outMap.keySet());
+//        INDArray out = outMap.get(outName);
+//        if(out.length() != 1){
+//            throw new IllegalStateException("Output variable is not a scalar - has shape " + Arrays.toString(out.shape()));
+//        }
 
         //TODO also check that all inputs are non-zero (otherwise: consider out = sum(x * y) with all x and y being 0
         // in this case, gradients of x and y are all 0 too
@@ -204,9 +204,9 @@ public class GradCheckUtil {
                 totalCount++;
                 double orig = a.getDouble(idx);
                 a.putScalar(idx, orig+eps);
-                double scorePlus = sd.exec(placeholderValues, outputs.get(0)).get(outName).getDouble(0);
+                double scorePlus = sd.exec(placeholderValues, outputs.get(0)).get(outName).sumNumber().doubleValue();
                 a.putScalar(idx, orig-eps);
-                double scoreMinus = sd.exec(placeholderValues, outputs.get(0)).get(outName).getDouble(0);
+                double scoreMinus = sd.exec(placeholderValues, outputs.get(0)).get(outName).sumNumber().doubleValue();
                 a.putScalar(idx, orig);
 
                 double numericalGrad = (scorePlus - scoreMinus) / (2 * eps);

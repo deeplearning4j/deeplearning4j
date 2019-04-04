@@ -22,12 +22,14 @@ import lombok.val;
 import lombok.var;
 import org.apache.commons.lang3.RandomUtils;
 import org.nd4j.jita.allocator.context.ContextPack;
+import org.nd4j.jita.allocator.garbage.DeallocatableThread;
 import org.nd4j.jita.allocator.garbage.GarbageResourceReference;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.jita.allocator.pointers.CudaPointer;
 import org.nd4j.jita.allocator.pointers.cuda.cublasHandle_t;
 import org.nd4j.jita.allocator.pointers.cuda.cusolverDnHandle_t;
 import org.nd4j.jita.conf.CudaEnvironment;
+import org.nd4j.linalg.api.memory.Deallocatable;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.context.CudaContext;
 import org.nd4j.nativeblas.NativeOps;
@@ -57,13 +59,15 @@ public class LimitedContextPool extends BasicContextPool {
     protected Map<Long, CudaContext> acquired = new ConcurrentHashMap<>();
     //protected AtomicInteger currentPoolSize = new AtomicInteger(0);
     protected List<AtomicInteger> devicePoolSizes = new ArrayList<>();
-    protected Map<Integer, ResourceGarbageCollectorThread> collectors = new HashMap<>();
     protected Map<Integer, ReferenceQueue<Thread>> queueMap = new HashMap<>();
+
+    protected ThreadLocal<Deallocatable> threadHooks = new ThreadLocal<>();
 
     public LimitedContextPool() {
 
         int perDevicePool = CudaEnvironment.getInstance().getConfiguration().getPoolSize();
 
+/*
         for (int i = 0; i < 4; i++) {
             val queue = new ReferenceQueue<Thread>();
             val collector = new ResourceGarbageCollectorThread(i, queue);
@@ -72,7 +76,7 @@ public class LimitedContextPool extends BasicContextPool {
             collectors.put(i, collector);
             queueMap.put(i, queue);
         }
-
+*/
         fillPoolWithResources(perDevicePool, false);
     }
 
@@ -141,11 +145,12 @@ public class LimitedContextPool extends BasicContextPool {
         nativeOps.setDevice(new CudaPointer(deviceId));
         context = pool.get(deviceId).poll();
         if (context != null) {
-            int col = RandomUtils.nextInt(0, collectors.size());
-            collectors.get(col);
+            //val reference = new GarbageResourceReference(Thread.currentThread(), queueMap.get(col), context, deviceId.intValue());
+            //context.attachReference(reference);
+            val hook = new DeallocatableThread(Thread.currentThread(), context);
+            threadHooks.set(hook);
+            Nd4j.getDeallocatorService().pickObject(hook);
 
-            val reference = new GarbageResourceReference(Thread.currentThread(), queueMap.get(col), context, deviceId.intValue());
-            context.attachReference(reference);
 
             acquired.put(threadIdx, context);
             context.setDeviceId(deviceId);
@@ -159,11 +164,11 @@ public class LimitedContextPool extends BasicContextPool {
 
                     context = pool.get(deviceId).poll(1, TimeUnit.SECONDS);
                     if (context != null) {
-                        int col = RandomUtils.nextInt(0, collectors.size());
-                        collectors.get(col);
-
-                        val reference = new GarbageResourceReference(Thread.currentThread(), queueMap.get(col), context, deviceId.intValue());
-                        context.attachReference(reference);
+                        //val reference = new GarbageResourceReference(Thread.currentThread(), queueMap.get(col), context, deviceId.intValue());
+                        //context.attachReference(reference);
+                        val hook = new DeallocatableThread(Thread.currentThread(), context);
+                        threadHooks.set(hook);
+                        Nd4j.getDeallocatorService().pickObject(hook);
 
                         acquired.put(threadIdx, context);
                         context.setDeviceId(deviceId);
@@ -219,6 +224,7 @@ public class LimitedContextPool extends BasicContextPool {
         pool.get(deviceId).add(context);
     }
 
+    /*
     private class ResourceGarbageCollectorThread extends Thread implements Runnable {
         private final ReferenceQueue<Thread> queue;
 
@@ -249,4 +255,5 @@ public class LimitedContextPool extends BasicContextPool {
             }
         }
     }
+    */
 }

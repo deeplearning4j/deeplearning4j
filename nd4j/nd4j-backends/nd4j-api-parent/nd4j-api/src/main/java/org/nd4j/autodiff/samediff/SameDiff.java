@@ -2574,7 +2574,7 @@ public class SameDiff extends SDBaseOps {
 
 
     /**
-     * Create a new scalar (rank 0) SDVariable with the specified value
+     * Create a new double scalar (rank 0) SDVariable with the specified value
      * @param name  Name of the SDVariable
      * @param value Value to initialize the variable with
      * @return SDVariable
@@ -2585,8 +2585,41 @@ public class SameDiff extends SDBaseOps {
         }
     }
 
+    /**
+     * Create a new float scalar (rank 0) SDVariable with the specified value
+     * @param name  Name of the SDVariable
+     * @param value Value to initialize the variable with
+     * @return SDVariable
+     */
+    public SDVariable scalar(String name, float value) {
+        try(MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+            return var(name, Nd4j.scalar(value));
+        }
+    }
 
+    /**
+     * Create a new integer scalar (rank 0) SDVariable with the specified value
+     * @param name  Name of the SDVariable
+     * @param value Value to initialize the variable with
+     * @return SDVariable
+     */
+    public SDVariable scalar(String name, int value) {
+        try(MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+            return var(name, Nd4j.scalar(value));
+        }
+    }
 
+    /**
+     * Create a new long scalar (rank 0) SDVariable with the specified value
+     * @param name  Name of the SDVariable
+     * @param value Value to initialize the variable with
+     * @return SDVariable
+     */
+    public SDVariable scalar(String name, long value) {
+        try(MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+            return var(name, Nd4j.scalar(value));
+        }
+    }
 
 
     /**
@@ -2988,6 +3021,10 @@ public class SameDiff extends SDBaseOps {
         execBackwards(placeholders, vargradNamesList);
     }
 
+    public void execBackwards(Map<String,INDArray> placeholders, String... variableGradNamesList){
+        execBackwards(placeholders, Arrays.asList(variableGradNamesList));
+    }
+
     /**
      * As per {@link #execBackwards(Map)}, but the set of gradients to calculate can be specified manually.<br>
      * For example, to calculate the gradient for placeholder variable "myPlaceholder", use
@@ -3122,6 +3159,7 @@ public class SameDiff extends SDBaseOps {
                 }
                 SDVariable initialGrad = sameDiff.var("one-var", initGradArr);
                 for(SDVariable v : finalOutputs) {
+                    v = v.sum();    //If output is not a scalar: we'll use loss = v.sum(), same as adding loss for multiple outputs
                     if(v.dataType() == initialGrad.dataType()){
                         sameDiff.setGradientForVariableName(v.getVarName(), initialGrad);
                     } else {
@@ -3200,7 +3238,8 @@ public class SameDiff extends SDBaseOps {
                     }
                 }
 
-                Preconditions.checkState(numProcessed == ops.size(), "Only differentiated %s of %s ops", numProcessed, ops.size());
+                Preconditions.checkState(numProcessed == ops.size() + finalOutputs.size(), "Only differentiated %s of %s ops",
+                        numProcessed, ops.size() + finalOutputs.size());    //+finalOutputs due to sum() on each output for non-scalar outputs
 
                 return new SDVariable[]{sameDiff.var("grad", org.nd4j.linalg.api.buffer.DataType.FLOAT, 1)};
             }
@@ -3347,6 +3386,12 @@ public class SameDiff extends SDBaseOps {
         varToUpdate.setVarName(newVarName);
         updateVariableName(oldVarName, newVarName);
         return varToUpdate;
+    }
+
+    @Override
+    protected SameDiff sd() {
+        //Helper method for SDBaseOps etc
+        return this;
     }
 
 
