@@ -69,8 +69,8 @@ namespace nd4j {
     //////////////////////////////////////////////////////////////////////////
     template <>
     utf8string NDArray::e(const Nd4jLong i) const {
-        if (i >= _length)
-            throw std::invalid_argument("NDArray::e(i): input index is out of array length !");
+        // if (i >= _length)
+        //     throw std::invalid_argument("NDArray::e(i): input index is out of array length !");
 
         if (!isS())
             throw std::runtime_error("This method is available for String arrays only");
@@ -89,8 +89,8 @@ namespace nd4j {
     template <typename T>
     T NDArray::e(const Nd4jLong i) const {
 
-        if (i >= _length)
-            throw std::invalid_argument("NDArray::e(i): input index is out of array length !");
+        // if (i >= _length)
+        //     throw std::invalid_argument("NDArray::e(i): input index is out of array length !");
 
         auto rp = getOffset(i);
 
@@ -448,6 +448,7 @@ NDArray::NDArray(nd4j::DataType dtype, nd4j::memory::Workspace* workspace, const
 
         std::vector<T> vector(_length);
 
+        PRAGMA_OMP_PARALLEL_FOR_SIMD
         for (int e = 0; e < _length; e++)
             vector[e] = this->e<T>(e);
 
@@ -3447,7 +3448,7 @@ template void NDArray::applyScalar(nd4j::scalar::Ops op, const bool scalar, NDAr
     T NDArray::r(const Nd4jLong i) const {
 
         if (i >= _length)
-            throw std::invalid_argument("NDArray::e(i): input index is out of array length !");
+            throw std::invalid_argument("NDArray::r(i): input index is out of array length !");
 
 
         BUILD_SINGLE_PARTIAL_SELECTOR(this->dataType(), return templatedGet<, T>(this->_buffer, i), LIBND4J_TYPES);
@@ -5019,16 +5020,7 @@ template void NDArray::operator/=(const bool scalar);
 Nd4jLong NDArray::getOffset(const Nd4jLong i) const {
 
     if (i >= _length)
-        throw std::invalid_argument("NDArray::getOffset: input index is out of array length !");
-
-    auto ews   = this->ews();    
-
-    if(ordering() == 'c') {
-        if(ews == 1)
-            return i;
-        if(ews > 1)
-            return i * ews;
-    }
+        throw std::invalid_argument("NDArray::getOffset: input index is out of array length !");    
     
     return shape::getIndexOffset(i, _shapeInfo, _length);
 }

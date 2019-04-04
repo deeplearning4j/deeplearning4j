@@ -1933,8 +1933,8 @@ DataType NDArray::dataType() const {
 template <typename T>
 T& NDArray::t(const Nd4jLong i) {
 
-    if (i >= _length)
-        throw std::invalid_argument("NDArray::t(i): input index is out of array length !");
+    // if (i >= _length)
+    //     throw std::invalid_argument("NDArray::t(i): input index is out of array length !");
     if (DataTypeUtils::fromT<T>() != _dataType)
         throw std::invalid_argument("NDArray::t(i): type of array is not equal to template type T!");
     
@@ -1959,8 +1959,8 @@ T& NDArray::t(const Nd4jLong i, const Nd4jLong j) {
 template <typename T>
 T NDArray::t(const Nd4jLong i) const {
 
-    if (i >= _length)
-        throw std::invalid_argument("NDArray::t(i): input index is out of array length !");
+    // if (i >= _length)
+    //     throw std::invalid_argument("NDArray::t(i): input index is out of array length !");
     if (DataTypeUtils::fromT<T>() != _dataType)
         throw std::invalid_argument("NDArray::t(i): type of array is not equal to template type T!");
 

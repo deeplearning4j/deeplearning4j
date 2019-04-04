@@ -729,6 +729,20 @@ void scatterUpdate(NDArray& input, NDArray& updates, const std::vector<int>* int
     }
 }
 
+
+//////////////////////////////////////////////////////////////////////////
+void scatterSimple(NDArray& input, const NDArray& updates, const NDArray& indices, const std::vector<int>& dimensions) {
+
+    // updates and indices have same length
+    const Nd4jLong len = indices.lengthOf();
+
+    PRAGMA_OMP_PARALLEL_FOR_IF(len > Environment::getInstance()->elementwiseThreshold())
+    for(uint i = 0; i < len; ++i) {
+        auto inSubArr = input(i, dimensions);
+        inSubArr.p(indices.t<Nd4jLong>(i), updates.e(i));
+    }
+}
+
 //////////////////////////////////////////////////////////////////////////
 template<typename T>
 static void mergeMaxIndex_(const std::vector<NDArray*>& inArrs, NDArray& output) {

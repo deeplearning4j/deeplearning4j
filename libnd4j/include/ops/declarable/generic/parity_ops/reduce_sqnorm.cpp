@@ -49,7 +49,7 @@ CUSTOM_OP_IMPL(reduce_sqnorm, 1, 1, false, 0, 0) {
     REQUIRE_TRUE(dimensions.size() <= input->rankOf(), 0, "REDUCE_SQNORM OP: the number of dimensions to reduce along must be <= input array rank, but got %i instead" , dimensions.size());
 
     for(const auto& item : dimensions)
-        REQUIRE_TRUE(item > -input->rankOf() && item < input->rankOf(), 0, "REDUCE_SQNORM OP: the input dimension to reduce along must be in range (-%i, %i), but got %i instead !" , input->rankOf(), input->rankOf(), item);
+        REQUIRE_TRUE(item >= -input->rankOf() && item < input->rankOf(), 0, "REDUCE_SQNORM OP: the input dimension to reduce along must be in range [-%i, %i), but got %i instead !" , input->rankOf(), input->rankOf(), item);
 
     input->reduceAlongDimension(reduce::SquaredNorm, gradI, dimensions, keepDims);
 
@@ -74,7 +74,7 @@ DECLARE_SHAPE_FN(reduce_sqnorm) {
     REQUIRE_TRUE(dimensions.size() <= inputShape->at(0)[0], 0, "REDUCE_SQNORM OP: the number of dimensions to reduce along must be <= input array rank, but got %i instead" , dimensions.size());
     
     for(const auto& item : dimensions)
-        REQUIRE_TRUE(item > -inputShape->at(0)[0] && item < inputShape->at(0)[0], 0, "REDUCE_SQNORM OP: the input dimension to reduce along must be in range (-%i, %i), but got %i instead !" , inputShape->at(0)[0], inputShape->at(0)[0], item);
+        REQUIRE_TRUE(item >= -inputShape->at(0)[0] && item < inputShape->at(0)[0], 0, "REDUCE_SQNORM OP: the input dimension to reduce along must be in range [-%i, %i), but got %i instead !" , inputShape->at(0)[0], inputShape->at(0)[0], item);
 
     Nd4jLong* outShapeInfo = ShapeUtils::evalReduceShapeInfo(shape::order(inputShape->at(0)), dimensions, inputShape->at(0), keepDims, false, block.getWorkspace());
     //ArrayOptions::setDataType(outShapeInfo, ArrayOptions::dataType(inputShape->at(0)));
@@ -120,7 +120,7 @@ CUSTOM_OP_IMPL(reduce_sqnorm_bp, 2, 1, false, 0, 0) {
         REQUIRE_TRUE(dimensions.size() <= input->rankOf(), 0, "REDUCE_SQNORM_BP OP: the number of dimensions to reduce along must be <= input array rank, but got %i instead" , dimensions.size());
 
         for(const auto& item : dimensions)
-            REQUIRE_TRUE(item > -input->rankOf() && item < input->rankOf(), 0, "REDUCE_SQNORM_BP OP: the input dimension to reduce along must be in range (-%i, %i), but got %i instead !" , input->rankOf(), input->rankOf(), item);
+            REQUIRE_TRUE(item >= -input->rankOf() && item < input->rankOf(), 0, "REDUCE_SQNORM_BP OP: the input dimension to reduce along must be in range [-%i, %i), but got %i instead !" , input->rankOf(), input->rankOf(), item);
 
         // *** calculations *** //
 
@@ -152,7 +152,7 @@ DECLARE_SHAPE_FN(reduce_sqnorm_bp) {
         REQUIRE_TRUE(dimensions.size() <= inputShape->at(0)[0], 0, "REDUCE_SQNORM_BP OP: the number of dimensions to reduce along must be <= input array rank, but got %i instead" , dimensions.size());
     
         for(const auto& item : dimensions)
-            REQUIRE_TRUE(item > -inputShape->at(0)[0] && item < inputShape->at(0)[0], 0, "REDUCE_SQNORM_BP OP: the input dimension to reduce along must be in range (-%i, %i), but got %i instead !" , inputShape->at(0)[0], inputShape->at(0)[0], item);
+            REQUIRE_TRUE(item >= -inputShape->at(0)[0] && item < inputShape->at(0)[0], 0, "REDUCE_SQNORM_BP OP: the input dimension to reduce along must be in range [-%i, %i), but got %i instead !" , inputShape->at(0)[0], inputShape->at(0)[0], item);
     }
     
     Nd4jLong* gradIshapeInfo(nullptr);

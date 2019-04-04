@@ -63,7 +63,7 @@ CUSTOM_OP_IMPL(reduce_dot_bp, 3, 2, false, 0, 0) {
         REQUIRE_TRUE(dimensions.size() <= x->rankOf(), 0, "REDUCE_DOT_BP OP: the number of dimensions to reduce along must be <= input array rank, but got %i instead" , dimensions.size());
 
         for(const auto& item : dimensions)
-            REQUIRE_TRUE(item > -x->rankOf() && item < x->rankOf(), 0, "REDUCE_DOT_BP OP: the input dimension to reduce along must be in range (-%i, %i), but got %i instead !" , x->rankOf(), x->rankOf(), item);
+            REQUIRE_TRUE(item >= -x->rankOf() && item < x->rankOf(), 0, "REDUCE_DOT_BP OP: the input dimension to reduce along must be in range [-%i, %i), but got %i instead !" , x->rankOf(), x->rankOf(), item);
             
         if(!keepDims) {
             Nd4jLong* gradOShapeKeepDims = ShapeUtils::evalReduceShapeInfo(gradO->ordering(), dimensions, *x, true, false, block.getWorkspace());
@@ -101,7 +101,7 @@ DECLARE_SHAPE_FN(reduce_dot_bp) {
         REQUIRE_TRUE(dimensions.size() <= inputShape->at(0)[0], 0, "REDUCE_DOT_BP OP: the number of dimensions to reduce along must be <= input array rank, but got %i instead" , dimensions.size());
 
         for(const auto& item : dimensions)
-            REQUIRE_TRUE(item > -inputShape->at(0)[0] && item < inputShape->at(0)[0], 0, "REDUCE_DOT_BP OP: the input dimension to reduce along must be in range (-%i, %i), but got %i instead !" , inputShape->at(0)[0], inputShape->at(0)[0], item);
+            REQUIRE_TRUE(item >= -inputShape->at(0)[0] && item < inputShape->at(0)[0], 0, "REDUCE_DOT_BP OP: the input dimension to reduce along must be in range [-%i, %i), but got %i instead !" , inputShape->at(0)[0], inputShape->at(0)[0], item);
     }
                     
     Nd4jLong *outShapeInfo1, *outShapeInfo2;
