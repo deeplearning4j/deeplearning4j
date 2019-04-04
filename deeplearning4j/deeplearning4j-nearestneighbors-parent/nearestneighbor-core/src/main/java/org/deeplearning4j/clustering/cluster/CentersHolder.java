@@ -1,5 +1,6 @@
 package org.deeplearning4j.clustering.cluster;
 
+import lombok.val;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
@@ -18,7 +19,8 @@ public class CentersHolder {
     }
 
     public Pair<Double, Long> getCenterByMinDistance(Point point, String distanceFunction) {
-        INDArray minDistances = Nd4j.getExecutioner().exec(ClusterUtils.createDistanceFunctionOp(distanceFunction, centers, point.getArray(), 1));
+        val op = ClusterUtils.createDistanceFunctionOp(distanceFunction, centers, point.getArray(), 1);
+        INDArray minDistances = Nd4j.getExecutioner().exec(op);
         INDArray index = Nd4j.argMin(minDistances);
         Pair<Double, Long> result = new Pair<>();
         result.setFirst(minDistances.getDouble(0));

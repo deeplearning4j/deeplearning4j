@@ -112,7 +112,7 @@ public class BaseClusteringAlgorithm implements ClusteringAlgorithm, Serializabl
             removePoints();
             classifyPoints();
             applyClusteringStrategy();
-            log.info("Completed clustering iteration {}", ++iterationCount);
+            log.trace("Completed clustering iteration {}", ++iterationCount);
         }
     }
 
