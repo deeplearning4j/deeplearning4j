@@ -18,7 +18,6 @@
 // Created by george@skymind.io on 6/4/2018.
 //
 
-#include <ops/declarable/helpers/reduce_norm.h>
 #include <ops/declarable/helpers/axis.h>
 #include <ops/declarable/CustomOperations.h>
 
