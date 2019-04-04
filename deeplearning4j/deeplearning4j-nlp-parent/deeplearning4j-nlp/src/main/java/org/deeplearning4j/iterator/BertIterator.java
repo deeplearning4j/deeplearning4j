@@ -100,7 +100,8 @@ import java.util.Map;
  * Only relevant when the task is set to {@link Task#UNSUPERVISED}. Determine the format of the labels:<br>
  * <b>RANK2_IDX</b>: return int32 [minibatch, numTokens] array with entries being class numbers. Example use case: with sparse softmax loss functions.<br>
  * <b>RANK3_NCL</b>: return float32 [minibatch, numClasses, numTokens] array with 1-hot entries along dimension 1. Example use case: RnnOutputLayer, RnnLossLayer<br>
- * <b>RANK3_NLC</b>: return float32 [minibatch, numTokens, numClasses] array with 1-hot entries along dimension 2<br>
+ * <b>RANK3_LNC</b>: return float32 [numTokens, minibatch, numClasses] array with 1-hot entries along dimension 2. This format is occasionally
+ * used for some RNN layers in libraries such as TensorFlow, for example<br>
  * <br>
  */
 public class BertIterator implements MultiDataSetIterator {
@@ -108,7 +109,7 @@ public class BertIterator implements MultiDataSetIterator {
     public enum Task {UNSUPERVISED, SEQ_CLASSIFICATION}
     public enum LengthHandling {FIXED_LENGTH, ANY_LENGTH, CLIP_ONLY}
     public enum FeatureArrays {INDICES_MASK, INDICES_MASK_SEGMENTID}
-    public enum UnsupervisedLabelFormat {RANK2_IDX, RANK3_NCL, RANK3_NLC}
+    public enum UnsupervisedLabelFormat {RANK2_IDX, RANK3_NCL, RANK3_LNC}
 
     protected Task task;
     protected TokenizerFactory tokenizerFactory;
@@ -277,8 +278,8 @@ public class BertIterator implements MultiDataSetIterator {
                 labelArr = Nd4j.create(DataType.INT, mbPadded, outLength);
             } else if(unsupervisedLabelFormat == UnsupervisedLabelFormat.RANK3_NCL){
                 labelArr = Nd4j.create(Nd4j.defaultFloatingPointType(), mbPadded, vocabSize, outLength);
-            } else if(unsupervisedLabelFormat == UnsupervisedLabelFormat.RANK3_NLC){
-                labelArr = Nd4j.create(Nd4j.defaultFloatingPointType(), mbPadded, outLength, vocabSize);
+            } else if(unsupervisedLabelFormat == UnsupervisedLabelFormat.RANK3_LNC){
+                labelArr = Nd4j.create(Nd4j.defaultFloatingPointType(), outLength, mbPadded, vocabSize);
             } else {
                 throw new IllegalStateException("Unknown unsupervised label format: " + unsupervisedLabelFormat);
             }
@@ -297,8 +298,8 @@ public class BertIterator implements MultiDataSetIterator {
                             labelArr.putScalar(i, j, targetTokenIdx);
                         } else if(unsupervisedLabelFormat == UnsupervisedLabelFormat.RANK3_NCL){
                             labelArr.putScalar(i, j, targetTokenIdx, 1.0);
-                        } else if(unsupervisedLabelFormat == UnsupervisedLabelFormat.RANK3_NLC){
-                            labelArr.putScalar(i, targetTokenIdx, j, 1.0);
+                        } else if(unsupervisedLabelFormat == UnsupervisedLabelFormat.RANK3_LNC){
+                            labelArr.putScalar(j, i, targetTokenIdx, 1.0);
                         }
 
                         lMask.putScalar(i, j, 1.0);
