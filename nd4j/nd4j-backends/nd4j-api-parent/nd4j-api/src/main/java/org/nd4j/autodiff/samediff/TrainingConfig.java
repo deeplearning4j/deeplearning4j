@@ -137,6 +137,7 @@ public class TrainingConfig {
         private List<String> trainableParams;   //Will be inferred automatically if null
         private List<String> lossVariables;
         private boolean skipValidation = false;
+        private boolean markLabelsUnused = false;
 
         /**
          * Set the updater (such as {@link org.nd4j.linalg.learning.config.Adam}, {@link org.nd4j.linalg.learning.config.Nesterovs}
@@ -297,6 +298,11 @@ public class TrainingConfig {
             return this;
         }
 
+        public Builder markLabelsUnused(){
+            this.markLabelsUnused = true;
+            return this;
+        }
+
         /**
          * Set the name of the placeholders/variables that should be set using the feature mask INDArray(s) from the
          * DataSet or MultiDataSet. For example, if the network had 2 mask variables called "mask1" and "mask2"
@@ -360,9 +366,10 @@ public class TrainingConfig {
             if(!skipValidation) {
                 Preconditions.checkState(updater != null, "Updater (optimizer) must not be null. Use updater(IUpdater) to set an updater");
                 Preconditions.checkState(dataSetFeatureMapping != null, "No DataSet feature mapping has been provided. A " +
-                        "mapping between DataSet array positions and variables/placeholders must be provided - use  dateSetFeatureMapping(...) to set this");
-                Preconditions.checkState(dataSetLabelMapping != null, "No DataSet label mapping has been provided. A " +
-                        "mapping between DataSet array positions and variables/placeholders must be provided - use  dateSetLabelMapping(...) to set this");
+                        "mapping between DataSet array positions and variables/placeholders must be provided - use dateSetFeatureMapping(...) to set this");
+                Preconditions.checkState(markLabelsUnused || dataSetLabelMapping != null, "No DataSet label mapping has been provided. A " +
+                        "mapping between DataSet array positions and variables/placeholders must be provided - use dateSetLabelMapping(...) to set this," +
+                        " or markLabelsUnused() to mark labels as unused (for example, for unsupervised learning)");
             }
 
             return new TrainingConfig(updater, regularization, minimize, dataSetFeatureMapping, dataSetLabelMapping,

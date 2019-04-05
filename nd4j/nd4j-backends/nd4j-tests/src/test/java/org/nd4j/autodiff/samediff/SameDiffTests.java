@@ -2662,7 +2662,7 @@ public class SameDiffTests {
             sd.createGradFunction();
             fail("Expected exception");
         } catch (IllegalStateException e){
-            assertTrue(e.getMessage(), e.getMessage().contains("multiple outputs"));
+            assertTrue(e.getMessage(), e.getMessage().contains("No loss variables"));
         }
 
         SDVariable add = mean.add(sum);
@@ -2680,7 +2680,7 @@ public class SameDiffTests {
             sd.createGradFunction();
             fail("Expected exception");
         } catch (IllegalStateException e){
-            assertTrue(e.getMessage(), e.getMessage().contains("multiple outputs"));
+            assertTrue(e.getMessage(), e.getMessage().contains("No loss variables"));
         }
 
         SDVariable add = in.add(in2);
@@ -2927,7 +2927,7 @@ public class SameDiffTests {
                 .testFlatBufferSerialization(TestCase.TestSerialization.BOTH)
                 .gradientCheck(true));
 
-        assertNull(err, err);
+        assertNull(err);
     }
 
 

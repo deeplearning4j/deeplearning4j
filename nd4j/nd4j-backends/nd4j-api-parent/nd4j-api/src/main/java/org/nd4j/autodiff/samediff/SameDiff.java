@@ -3097,14 +3097,18 @@ public class SameDiff extends SDBaseOps {
      */
     public void createGradFunction() {
         if(lossVariables.isEmpty()){
-            List<String> outputs = outputs();
-            if(outputs.size() == 1){
-                log.info("Inferring output \"{}\" as loss variable as none were previously set. Use SameDiff.setLossVariables() to override", outputs.get(0));
-                lossVariables.add(outputs.get(0));
+            if(trainingConfig != null && trainingConfig.getLossVariables() != null && !trainingConfig.getLossVariables().isEmpty()){
+                lossVariables.addAll(trainingConfig.getLossVariables());
+            } else {
+                List<String> outputs = outputs();
+                if (outputs.size() == 1) {
+                    log.info("Inferring output \"{}\" as loss variable as none were previously set. Use SameDiff.setLossVariables() to override", outputs.get(0));
+                    lossVariables.add(outputs.get(0));
+                }
             }
         }
 
-        Preconditions.checkState(lossVariables != null && !lossVariables.isEmpty(), "Cannot create gradient funcction: " +
+        Preconditions.checkState(!lossVariables.isEmpty(), "Cannot create gradient function: " +
                 "No loss variables (variables to minimize) have been specified. Loss variables are the variables that" +
                 " represent the loss/cost/score to be minimized during training, and that all gradients are calculated with respect to.\n" +
                 " Losses can be specified either in TrainingConfiguration (Builder.minimize(...)) or via SameDiff.setLossVariables()/addLossVariable()");
@@ -3150,8 +3154,7 @@ public class SameDiff extends SDBaseOps {
 
             @Override
             public SDVariable[] define(SameDiff sameDiff, Map<String, INDArray> inputs, SDVariable[] variableInputs) {
-                //propagate graph to this samediff instance
-                //which will also contain the backward
+                //Propagate graph to this samediff instance which will also contain the backward
                 if (SameDiff.this.debugMode) {
                     sameDiff.enableDebugMode();
                 }
@@ -3182,26 +3185,8 @@ public class SameDiff extends SDBaseOps {
                     func.setSameDiff(sameDiff);
                 }
 
-//                //Find final outputs - these are SDVariables that are output of a function that are not inputs to anything else
-//                // i.e., ArrayType - not constant, variable, placeholder
-//                //Also should be a floating point type, to contribute to score
-//                List<SDVariable> finalOutputs = new ArrayList<>();
-//                for(Variable v : sameDiff.variables.values()){
-//                    String outputOfOp = v.getOutputOfOp();
-//                    boolean isExternalGrad = false;
-//                    if(outputOfOp != null && getOps().get(outputOfOp).getOp() instanceof ExternalErrorsFunction){
-//                        isExternalGrad = true;
-//                    }
-//                    if(!isExternalGrad && (v.getVariable().getVariableType() != VariableType.ARRAY ||
-//                            (v.getInputsForOp() != null && ! v.getInputsForOp().isEmpty())
-//                            || !v.getVariable().dataType().isFPType())){
-//                        continue;
-//                    }
-//                    finalOutputs.add(v.getVariable());
-//                }
-//                Preconditions.checkState(!finalOutputs.isEmpty(), "Could not infer final network outputs to begin differentiation");
-
                 List<SDVariable> finalOutputs = new ArrayList<>(lossVariables.size());
+                SDVariable initialGrad = sameDiff.var("one-var", Nd4j.scalar(1.0f));
                 for(String s : lossVariables){
                     Preconditions.checkNotNull(s, "Encountered null value in loss variables. Null loss variables are not allowed." +
                             " Use SameDiff.setLossVariables with non-null array names to fix");
@@ -3210,6 +3195,11 @@ public class SameDiff extends SDBaseOps {
                     Preconditions.checkState(v.dataType().isFPType(), "Specified loss function variable \"%s\" is not a floating" +
                             "point variable (datatype: %s). Only floating point variables may be used as loss function variable", s, v.dataType());
                     v = v.sum();    //If output is not a scalar: we'll use loss = v.sum(), same as adding loss for multiple outputs. We don't always know for sure if output is scalar at this point
+                    if(v.dataType() == initialGrad.dataType()){
+                        sameDiff.setGradientForVariableName(v.getVarName(), initialGrad);
+                    } else {
+                        sameDiff.setGradientForVariableName(v.getVarName(), initialGrad.castTo(v.dataType()));
+                    }
                     if(finalOutputs.contains(v)){
                         log.warn("Loss function variable \"{}\" appears multiple times in list of loss variables - using only first instance", s);
                     } else {
