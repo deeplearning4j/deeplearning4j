@@ -25,6 +25,10 @@ public class CentersHolder {
         this.cols = cols;
     }
 
+    public INDArray getCenters() {
+        return this.centers;
+    }
+
     public synchronized void addCenter(INDArray pointView) {
         if (centers == null)
             this.centers = Nd4j.create(pointView.dataType(), new long[] {rows, cols});
@@ -55,4 +59,28 @@ public class CentersHolder {
         result.setSecond(argMin.getLong(0));
         return result;
     }
+
+    public synchronized INDArray getMinDistances(Point point, Distance distanceFunction) {
+        if (distances == null)
+            distances = Nd4j.create(centers.dataType(), centers.rows());
+
+        if (argMin == null)
+            argMin = Nd4j.createUninitialized(DataType.LONG, new long[0]);
+
+        if (op == null) {
+            op = ClusterUtils.createDistanceFunctionOp(distanceFunction, centers, point.getArray(), 1);
+            imin = new IMin(distances, argMin);
+            op.setZ(distances);
+        }
+
+        op.setY(point.getArray());
+
+        Nd4j.getExecutioner().exec(op);
+        Nd4j.getExecutioner().exec(imin);
+
+        System.out.println(distances);
+        return distances;
+    }
+
+
 }
