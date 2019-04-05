@@ -41,9 +41,8 @@ namespace nd4j {
         __shared__ int numTads;
 
         for (int f = 0; f < N; f++) {
-
-            T *x = (T *) dX[f];
-            T *z = (T *) dZ[f];
+            auto x = (T *) dX[f];
+            auto z = (T *) dZ[f];
 
             __syncthreads();
 
@@ -55,7 +54,7 @@ namespace nd4j {
             __syncthreads();
 
             // we roll over the pairs of TADs, thus limit is numTads / 2
-            for (Nd4jLong r = blockIdx.x; r < numTads; r += blockDim.x) {
+            for (uint r = blockIdx.x; r < numTads; r += gridDim.x) {
 
                 if (shuffleMap[r] < 0)
                     continue;
@@ -63,11 +62,11 @@ namespace nd4j {
                 Nd4jLong oldOffset = tadOffsets[f][r];
                 Nd4jLong newOffset = tadOffsets[f][shuffleMap[r]];
 
-                T *rX = x + oldOffset;
-                T *rY = x + newOffset;
+                auto rX = x + oldOffset;
+                auto rY = x + newOffset;
 
-                T *zX = z + oldOffset;
-                T *zY = z + newOffset;
+                auto zX = z + oldOffset;
+                auto zY = z + newOffset;
 
                 // so we're going to change TAD[oldOffset] with TAD[newOffset]
                 if (tadEWS == 1) {
