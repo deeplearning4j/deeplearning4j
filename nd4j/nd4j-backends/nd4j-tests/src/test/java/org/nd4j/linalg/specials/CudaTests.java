@@ -197,6 +197,7 @@ public class CudaTests extends BaseNd4jTest {
     }
 
     @Test
+    @Ignore
     public void test(){
         if (Nd4j.getExecutioner().type() != OpExecutioner.ExecutionerType.CUDA)
             return;
