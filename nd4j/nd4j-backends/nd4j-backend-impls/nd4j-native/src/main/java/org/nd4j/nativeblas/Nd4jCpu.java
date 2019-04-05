@@ -7711,9 +7711,9 @@ public static final int PREALLOC_SIZE = 33554432;
     // if array is scalar or unit length vector then ews = 1
     // if array is common vector then ews = stride of non-unity dimension
     // if strides are normal set ews = 1, otherwise ews = 0    
-    @Namespace("shape") public static native void calcEws(@Cast("Nd4jLong*") LongPointer shapeInfo, @Cast("Nd4jLong") long len);
-    @Namespace("shape") public static native void calcEws(@Cast("Nd4jLong*") LongBuffer shapeInfo, @Cast("Nd4jLong") long len);
-    @Namespace("shape") public static native void calcEws(@Cast("Nd4jLong*") long[] shapeInfo, @Cast("Nd4jLong") long len);
+    @Namespace("shape") public static native void setEws(@Cast("Nd4jLong*") LongPointer shapeInfo, @Cast("Nd4jLong") long len);
+    @Namespace("shape") public static native void setEws(@Cast("Nd4jLong*") LongBuffer shapeInfo, @Cast("Nd4jLong") long len);
+    @Namespace("shape") public static native void setEws(@Cast("Nd4jLong*") long[] shapeInfo, @Cast("Nd4jLong") long len);
 
 
 
@@ -8653,8 +8653,6 @@ public static final int PREALLOC_SIZE = 33554432;
 //////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////
-
-
 
 
 
@@ -16432,6 +16430,25 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
             }
         
                                                                                     public cumprod_bp() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
+                                                                                }
+//         #endif
+
+
+//         #if NOT_EXCLUDED(OP_flatten)
+        @Namespace("nd4j::ops") public static class flatten extends DeclarableCustomOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public flatten(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public flatten(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public flatten position(long position) {
+                return (flatten)super.position(position);
+            }
+        
+                                                                                    public flatten() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
                                                                                     public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
                                                                                 }
