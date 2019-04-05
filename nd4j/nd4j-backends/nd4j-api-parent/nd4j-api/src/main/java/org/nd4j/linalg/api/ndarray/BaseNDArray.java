@@ -5040,6 +5040,10 @@ public abstract class BaseNDArray implements INDArray, Iterable {
                 (rank() == 1 && length() == 1 && indexes.length == 1 && indexes[0] instanceof PointIndex && indexes[0].current() == 0))  //Last one: point index on rank 1 size 1
             return this;
 
+        //1d+all: return this
+        if(indexes.length == 1 && rank() == 1 && indexes[0] instanceof NDArrayIndexAll)
+            return this;
+
         indexes = NDArrayIndex.resolveLong(jvmShapeInfo.javaShapeInformation, indexes);
         ShapeOffsetResolution resolution = new ShapeOffsetResolution(this);
         resolution.exec(indexes);
