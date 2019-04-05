@@ -88,6 +88,23 @@ public class ShapeOffsetResolution implements Serializable {
         }
 
 
+        if(arr.rank() == 1 && indexes.length == 1){
+            if(indexes[0] instanceof PointIndex){
+                PointIndex pi = (PointIndex)indexes[0] ;
+                offset = pi.offset();
+                this.strides = new long[0];
+                this.shapes = new long[0];
+                this.offsets = new long[0];
+                return true;
+            } else if(indexes[0] instanceof IntervalIndex){
+                IntervalIndex ii = (IntervalIndex)indexes[0];
+                offset = ii.offset();
+                this.strides = new long[]{ii.stride() * arr.stride(0)};
+                this.shapes = new long[]{ii.length()};
+                this.offsets = new long[]{0};
+                return true;
+            }
+        }
 
         if (arr.isVector() && arr.rank() == 2) {
             //return the whole vector
