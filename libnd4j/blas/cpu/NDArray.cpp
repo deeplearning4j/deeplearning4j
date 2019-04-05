@@ -3765,7 +3765,44 @@ template void NDArray::pIdx(const Nd4jLong* indices, const bool value);
 
         return result;
     }
-    
+
+    ////////////////////////////////////////////////////////////////////////
+    // apply reduce3 (exec) operations to this and other array, return result in new output array
+    NDArray* NDArray::applyReduce3(nd4j::reduce3::Ops op, const NDArray* other, const std::vector<int>& dimensions, const void* extraParams) const {
+        if (isS())
+            throw std::runtime_error("NDArray::applyReduce3: you can't use this method on String array!");
+        if(_dataType != other->_dataType)
+            throw std::runtime_error("NDArray::applyReduce3 method: the types of this and other arrays must be the same !");
+
+        std::vector<int> copy(dimensions);
+        shape::checkDimensions(rankOf(), copy);
+        shape::checkDimensions(other->rankOf(), copy);               
+
+        auto newShape = ShapeUtils::evalReduceShapeInfo('c', copy, *this, false, false, _workspace);
+        ArrayOptions::setDataType(newShape, DataTypeUtils::pickFloatingType(_dataType));
+        auto result = new NDArray(newShape, true, _workspace, true);
+        // create temporary dynamic array of extra parameters if array extraParams is empty (==nullptr)
+        void* params = const_cast<void*>(extraParams);
+        if(params == nullptr) {
+            params = new int8_t[result->sizeOfT()*3];
+            memset(params, 0, result->sizeOfT()*3);
+        }
+        // perform calculations
+        if(rankOf() == copy.size() && other->rankOf() == copy.size())
+            NativeOpExcutioner::execReduce3Scalar(op, _buffer, _shapeInfo, params, other->_buffer, other->_shapeInfo, result->_buffer, result->shapeInfo());
+        else {
+            auto tadPackX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(_shapeInfo, copy);
+            auto tadPackY = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(other->_shapeInfo, copy);
+
+            NativeOpExcutioner::execReduce3(op, _buffer, _shapeInfo, params, other->_buffer, other->_shapeInfo, result->_buffer,result->_shapeInfo, copy.data(), copy.size());
+        }
+
+        if(params != extraParams)
+            delete [] static_cast<int8_t*>(params);
+
+        return result;
+    }
+
     ////////////////////////////////////////////////////////////////////////
     // apply reduce3 (execAll) operations to this and other array, return result in new output array
     NDArray* NDArray::applyAllReduce3(nd4j::reduce3::Ops op, const NDArray *other, const std::vector<int>& dimensions, const void* extraParams) const {
@@ -3809,43 +3846,6 @@ template void NDArray::pIdx(const Nd4jLong* indices, const bool value);
         }
 
         NativeOpExcutioner::execReduce3All(op, _buffer, _shapeInfo, params, other->_buffer, other->_shapeInfo, result->_buffer,result->_shapeInfo, copy.data(), copy.size(), tadPackX.primaryShapeInfo(), tadPackX.primaryOffsets(), tadPackY.primaryShapeInfo(), tadPackY.primaryOffsets());
-        if(params != extraParams)
-            delete [] static_cast<int8_t*>(params);
-
-        return result;
-    }
- 
-    ////////////////////////////////////////////////////////////////////////
-    // apply reduce3 (exec) operations to this and other array, return result in new output array
-    NDArray* NDArray::applyReduce3(nd4j::reduce3::Ops op, const NDArray* other, const std::vector<int>& dimensions, const void* extraParams) const {
-        if (isS())
-            throw std::runtime_error("NDArray::applyReduce3: you can't use this method on String array!");
-        if(_dataType != other->_dataType)
-            throw std::runtime_error("NDArray::applyReduce3 method: the types of this and other arrays must be the same !");
-
-        std::vector<int> copy(dimensions);
-        shape::checkDimensions(rankOf(), copy);
-        shape::checkDimensions(other->rankOf(), copy);               
-
-        auto newShape = ShapeUtils::evalReduceShapeInfo('c', copy, *this, false, false, _workspace);
-        ArrayOptions::setDataType(newShape, DataTypeUtils::pickFloatingType(_dataType));
-        auto result = new NDArray(newShape, true, _workspace, true);
-        // create temporary dynamic array of extra parameters if array extraParams is empty (==nullptr)
-        void* params = const_cast<void*>(extraParams);
-        if(params == nullptr) {
-            params = new int8_t[result->sizeOfT()*3];
-            memset(params, 0, result->sizeOfT()*3);
-        }
-        // perform calculations
-        if(rankOf() == copy.size() && other->rankOf() == copy.size())
-            NativeOpExcutioner::execReduce3Scalar(op, _buffer, _shapeInfo, params, other->_buffer, other->_shapeInfo, result->_buffer, result->shapeInfo());
-        else {
-            auto tadPackX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(_shapeInfo, copy);
-            auto tadPackY = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(other->_shapeInfo, copy);
-        
-            NativeOpExcutioner::execReduce3(op, _buffer, _shapeInfo, params, other->_buffer, other->_shapeInfo, result->_buffer,result->_shapeInfo, copy.data(), copy.size());
-        }
-        
         if(params != extraParams)
             delete [] static_cast<int8_t*>(params);
 
