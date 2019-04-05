@@ -17,6 +17,7 @@
 package org.deeplearning4j.clustering.kmeans;
 
 import lombok.val;
+import lombok.var;
 import org.apache.commons.lang3.time.StopWatch;
 import org.deeplearning4j.clustering.algorithm.Distance;
 import org.deeplearning4j.clustering.cluster.Cluster;
@@ -117,16 +118,16 @@ public class KMeansTest {
                 102, 93.23,
                 102.23, 94.23
         };
-        List<Point> points = Point.toPoints(Nd4j.createFromArray(data).reshape(15,2 ));
+        val points = Point.toPoints(Nd4j.createFromArray(data).reshape(15,2 ));
 
-        ClusterSet clusterSet = kMeansClustering.applyTo(points);
+        val clusterSet = kMeansClustering.applyTo(points);
 
 
-        INDArray row0 = Nd4j.createFromArray(new double[]{26.1433,   28.8970});
-        INDArray row1 = Nd4j.createFromArray(new double[]{51.6358,   49.0883});
-        INDArray row2 = Nd4j.createFromArray(new double[]{90.3700,   86.8592});
+        val row0 = Nd4j.createFromArray(new double[]{26.1433,   28.8970});
+        val row1 = Nd4j.createFromArray(new double[]{51.6358,   49.0883});
+        val row2 = Nd4j.createFromArray(new double[]{90.3700,   86.8592});
 
-        List<Cluster> clusters = clusterSet.getClusters();
+        var clusters = clusterSet.getClusters();
         assertEquals(clusters.get(0).getCenter().getArray(), row0);
         assertEquals(clusters.get(1).getCenter().getArray(), row1);
         assertEquals(clusters.get(2).getCenter().getArray(), row2);
@@ -142,6 +143,5 @@ public class KMeansTest {
         assertEquals(clusters.get(0).getCenter().getArray(), row0);
         assertEquals(clusters.get(1).getCenter().getArray(), row1);
         assertEquals(clusters.get(2).getCenter().getArray(), row2);
-
     }
 }
