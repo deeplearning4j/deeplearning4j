@@ -120,7 +120,7 @@ void Reduce3<X,Z>::exec(void *vx, Nd4jLong *xShapeInfo,
     auto x = reinterpret_cast<X *>(vx);
     auto y = reinterpret_cast<X *>(vy);
     auto z = reinterpret_cast<Z *>(vz);
-    auto extraParams = reinterpret_cast<Z *>(vextraParams);
+    // auto extraParams = reinterpret_cast<Z *>(vextraParams);
     
     Z extraParamsVals[3] = {(Z) 0.0f, (Z) 0.0f, (Z) 0.0f};
 
@@ -145,73 +145,11 @@ void Reduce3<X,Z>::exec(void *vx, Nd4jLong *xShapeInfo,
     auto x = reinterpret_cast<X *>(vx);
     auto y = reinterpret_cast<X *>(vy);
     auto z = reinterpret_cast<Z *>(vz);
-    auto extraParams = reinterpret_cast<Z *>(vextraParams);
-    
-    auto startingVal = OpType::startingValue(x);
+    // auto extraParams = reinterpret_cast<Z *>(vextraParams);
 
-    auto tadLength = shape::tadLength(xShapeInfo, dimension, dimensionLength);
-    auto tads = shape::length(xShapeInfo) / tadLength;
+    Z extraParamsVals[3] = {(Z) 0.0f, (Z) 0.0f, (Z) 0.0f};
 
-    uint tadShapeInfoCast[MAX_RANK];
-    bool canCastX = nd4j::DataTypeUtils::castShapeInfo(tadShapeInfo, tadShapeInfoCast);
-
-    if(shape::haveSameOffsets(tadShapeInfo, yShapeInfo)) {
-
-        PRAGMA_OMP_PARALLEL_FOR
-        for (Nd4jLong r = 0; r < tads; r++) {
-            
-            Nd4jLong offset = tadOffsets[r];
-            Z *localExtraParams = nullptr;
-            auto sv = OpType::startingValue(x);
-
-            if (OpType::extraParamsLen > 0)
-                localExtraParams = new Z[OpType::extraParamsLen];
-
-            for (int extraParamsIdx = 0; extraParamsIdx < OpType::extraParamsLen; extraParamsIdx++) 
-                localExtraParams[extraParamsIdx] = startingVal;
-
-            for (Nd4jLong f = 0; f < tadLength; f++) {
-                auto yOffset = shape::indexOffset(f, tadShapeInfo, tadShapeInfoCast, tadLength, canCastX);
-                auto xOffset = offset + yOffset;                
-                sv = OpType::update(sv, OpType::op(x[xOffset], y[yOffset], localExtraParams), localExtraParams);
-            }
-
-            z[r] = OpType::postProcess(sv, tadLength, localExtraParams);
-
-            if (localExtraParams != nullptr)
-                delete[] localExtraParams;
-        }        
-    }
-    else {
-
-        uint yShapeInfoCast[MAX_RANK];
-        bool canCastY = nd4j::DataTypeUtils::castShapeInfo(yShapeInfo, yShapeInfoCast);
-
-        PRAGMA_OMP_PARALLEL_FOR
-        for (Nd4jLong r = 0; r < tads; r++) {
-            
-            Nd4jLong offset = tadOffsets[r];
-            Z *localExtraParams = nullptr;
-            auto sv = OpType::startingValue(x);
-
-            if (OpType::extraParamsLen > 0)
-                localExtraParams = new Z[OpType::extraParamsLen];
-
-            for (int extraParamsIdx = 0; extraParamsIdx < OpType::extraParamsLen; extraParamsIdx++) 
-                localExtraParams[extraParamsIdx] = startingVal;
-
-            for (Nd4jLong f = 0; f < tadLength; f++) {
-                auto xOffset = offset + shape::indexOffset(f, tadShapeInfo, tadShapeInfoCast, tadLength, canCastX);
-                auto yOffset = shape::indexOffset(f, yShapeInfo, yShapeInfoCast, tadLength, canCastY);
-                sv = OpType::update(sv, OpType::op(x[xOffset], y[yOffset], localExtraParams), localExtraParams);
-            }
-
-            z[r] = OpType::postProcess(sv, tadLength, localExtraParams);
-
-            if (localExtraParams != nullptr)
-                delete[] localExtraParams;
-        }
-    }
+    nd4j::Reduction3Loops<X,Z>::template loopReduce3<OpType>(x, xShapeInfo, y, yShapeInfo, z, zShapeInfo, dimension, dimensionLength, extraParamsVals);
 }
 
 
@@ -229,90 +167,9 @@ void Reduce3<X,Z>:: execAll(void *vx, Nd4jLong *xShapeInfo,
     auto x = reinterpret_cast<X *>(vx);
     auto y = reinterpret_cast<X *>(vy);
     auto z = reinterpret_cast<Z *>(vz);
-    auto extraParams = reinterpret_cast<X *>(vextraParams);
-
-    auto xTadLength = shape::tadLength(xShapeInfo, dimension, dimensionLength);
-    auto yTadLength = shape::tadLength(yShapeInfo, dimension, dimensionLength);
-
-    auto xTads = shape::length(xShapeInfo) / xTadLength;
-    auto yTads = shape::length(yShapeInfo) / yTadLength;
-    auto startingVal = OpType::startingValue(x);
-
-    uint xTadShapeInfoCast[MAX_RANK];
-    bool canCastX = nd4j::DataTypeUtils::castShapeInfo(xTadShapeInfo, xTadShapeInfoCast);
+    // auto extraParams = reinterpret_cast<X *>(vextraParams);
     
-    if (shape::haveSameOffsets(xTadShapeInfo, yTadShapeInfo) ) {
-        
-        PRAGMA_OMP_PARALLEL_FOR
-        for (Nd4jLong r = 0; r < xTads; r++) {
-        
-            Nd4jLong xOffset = xOffsets[r];
-            auto lX = x + xOffset;
-
-            for (Nd4jLong g = 0; g < yTads; g++) {
-            
-                auto yOffset = yOffsets[g];
-                auto lY = y + yOffset;
-                auto ri = (r * yTads) + g;
-                auto sv = OpType::startingValue(x);
-
-                Z *localExtraParams = nullptr;
-                if (OpType::extraParamsLen > 0)
-                    localExtraParams = new Z[OpType::extraParamsLen];
-
-                for (int extraParamsIdx = 0; extraParamsIdx < OpType::extraParamsLen; extraParamsIdx++) 
-                    localExtraParams[extraParamsIdx] = startingVal;
-
-                for (int f = 0; f < xTadLength; f++) {                            
-                    auto offset = shape::indexOffset(f, xTadShapeInfo, xTadShapeInfoCast, xTadLength, canCastX);                    
-                    sv = OpType::update(sv, OpType::op(lX[offset], lY[offset], localExtraParams), localExtraParams);
-                }
-
-                z[ri] = OpType::postProcess(sv, xTadLength, localExtraParams);
-
-                if (localExtraParams != nullptr)
-                    delete[] localExtraParams;
-            }
-        }
-    }
-    else {
-
-        uint yTadShapeInfoCast[MAX_RANK];
-        bool canCastY = canCastX ? nd4j::DataTypeUtils::castShapeInfo(yTadShapeInfo, yTadShapeInfoCast) : false;
-        
-        PRAGMA_OMP_PARALLEL_FOR
-        for (Nd4jLong r = 0; r < xTads; r++) {
-        
-            Nd4jLong xOffset = xOffsets[r];
-            auto lX = x + xOffset;
-
-            for (Nd4jLong g = 0; g < yTads; g++) {
-            
-                auto yOffset = yOffsets[g];
-                auto lY = y + yOffset;
-                auto ri = (r * yTads) + g;
-                auto sv = OpType::startingValue(x);
-
-                Z *localExtraParams = nullptr;
-                if (OpType::extraParamsLen > 0)
-                    localExtraParams = new Z[OpType::extraParamsLen];
-
-                for (int extraParamsIdx = 0; extraParamsIdx < OpType::extraParamsLen; extraParamsIdx++) 
-                    localExtraParams[extraParamsIdx] = startingVal;
-
-                for (int f = 0; f < xTadLength; f++) {
-                    auto xO = shape::indexOffset(f, yTadShapeInfo, xTadShapeInfoCast, xTadLength, canCastX);
-                    auto yO = shape::indexOffset(f, yTadShapeInfo, yTadShapeInfoCast, xTadLength, canCastY);
-                    sv = OpType::update(sv, OpType::op(lX[xO], lY[yO], localExtraParams), localExtraParams);
-                }
-
-                z[ri] = OpType::postProcess(sv, xTadLength, localExtraParams);
-
-                if (localExtraParams != nullptr)
-                    delete[] localExtraParams;
-            }
-        }
-    }
+    nd4j::Reduction3Loops<X,Z>::template loopReduce3All<OpType>(x, xShapeInfo, y, yShapeInfo, z, zShapeInfo, xTadShapeInfo, xOffsets, yTadShapeInfo, yOffsets);
 }
 
 //////////////////////////////////////////////////////////////////////////
