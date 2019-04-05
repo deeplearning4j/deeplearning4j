@@ -3287,7 +3287,7 @@ public class SameDiff extends SDBaseOps {
                     //Note that any time we remove a variable, the only possible new leafs are those that this one
                     // is connected to.
                     List<String> inputsTo = v.getInputsForOp();
-                    if(!inputsTo.isEmpty()) {
+                    if( inputsTo != null && !inputsTo.isEmpty()) {
                         for (String opName : inputsTo) {
                             SameDiffOp op = ops.get(opName);
                             List<String> inputsToOp = op.getInputsToOp();
