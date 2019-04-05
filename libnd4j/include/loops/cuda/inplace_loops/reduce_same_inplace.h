@@ -122,6 +122,7 @@ namespace functions {
             aggregatePartials<OpType>(sPartials, threadIdx.x, nd4j::math::nd4j_min<int>(blockDim.x, len), extraParams);
             __syncthreads();
 
+
             if (gridDim.x > 1) {
 
                 unsigned int *tc = (unsigned int *)reductionBuffer;
