@@ -17,6 +17,7 @@
 package org.deeplearning4j.clustering.kmeans;
 
 import lombok.val;
+import lombok.var;
 import org.apache.commons.lang3.time.StopWatch;
 import org.deeplearning4j.clustering.algorithm.Distance;
 import org.deeplearning4j.clustering.cluster.*;
@@ -192,6 +193,5 @@ public class KMeansTest {
             System.out.println("Distance: " + dist);
             System.out.println();
         }
-
     }
 }
