@@ -34,16 +34,10 @@ import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.junit.Test;
 import org.nd4j.evaluation.classification.Evaluation;
 import org.nd4j.linalg.activations.impl.ActivationSoftmax;
-import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.learning.config.Adam;
 import org.nd4j.linalg.lossfunctions.impl.LossNegativeLogLikelihood;
 
 public class CapsNetMNISTTest extends BaseDL4JTest {
-
-    public DataType getDataType(){
-        return DataType.FLOAT;
-    }
-
     @Test
     public void testCapsNetOnMNIST(){
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
