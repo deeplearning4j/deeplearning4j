@@ -2886,7 +2886,7 @@ public abstract class SDBaseOps {
     /**
      * See {@link #unsortedSegmentSum(String, SDVariable, SDVariable, int)}
      */
-    public SDVariable unsortedSegmentSum(SDVariable data, SDVariable segmentIds, int numSegments) {
+    public SDVariable unsortedSegmentSum(@NonNull SDVariable data, @NonNull SDVariable segmentIds, int numSegments) {
         return unsortedSegmentSum(null, data, segmentIds, numSegments);
     }
 
@@ -2903,7 +2903,7 @@ public abstract class SDBaseOps {
      * @param numSegments Number of segments
      * @return Unsorted segment sum output
      */
-    public SDVariable unsortedSegmentSum(String name, SDVariable data, SDVariable segmentIds, int numSegments) {
+    public SDVariable unsortedSegmentSum(String name, @NonNull SDVariable data, @NonNull SDVariable segmentIds, int numSegments) {
         SDVariable ret = f().unsortedSegmentSum(data, segmentIds, numSegments);
         return updateVariableNameAndReference(ret, name);
     }
@@ -2918,7 +2918,7 @@ public abstract class SDBaseOps {
     /**
      * @see #unstack(String[], SDVariable, int, int)
      */
-    public SDVariable[] unstack(String[] names, SDVariable value, int axis) {
+    public SDVariable[] unstack(String[] names, @NonNull SDVariable value, int axis) {
         SDVariable[] ret = f().unstack(value, axis);
         return updateVariableNamesAndReferences(ret, names);
     }
@@ -2926,7 +2926,7 @@ public abstract class SDBaseOps {
     /**
      * @see #unstack(String[], SDVariable, int, int)
      */
-    public SDVariable[] unstack(SDVariable value, int axis, int num) {
+    public SDVariable[] unstack(@NonNull SDVariable value, int axis, int num) {
         return unstack(null, value, axis, num);
     }
 
@@ -2944,7 +2944,7 @@ public abstract class SDBaseOps {
      * @return Output variables
      * @see #stack(String, int, SDVariable...)
      */
-    public SDVariable[] unstack(String[] names, SDVariable value, int axis, int num) {
+    public SDVariable[] unstack(String[] names, @NonNull SDVariable value, int axis, int num) {
         SDVariable[] ret = f().unstack(value, axis, num);
         return updateVariableNamesAndReferences(ret, names);
     }
@@ -2952,7 +2952,7 @@ public abstract class SDBaseOps {
     /**
      * @see #variance(String, SDVariable, boolean, int...)
      */
-    public SDVariable variance(SDVariable x, boolean biasCorrected, int... dimensions) {
+    public SDVariable variance(@NonNull SDVariable x, boolean biasCorrected, int... dimensions) {
         return variance(null, x, biasCorrected, dimensions);
     }
 
@@ -2965,7 +2965,7 @@ public abstract class SDBaseOps {
      * @param dimensions    Dimensions to reduce over. If dimensions are not specified, full array reduction is performed
      * @return Output variable: reduced array of rank (input rank - num dimensions)
      */
-    public SDVariable variance(String name, SDVariable x, boolean biasCorrected, int... dimensions) {
+    public SDVariable variance(String name, @NonNull SDVariable x, boolean biasCorrected, int... dimensions) {
         return variance(name, x, biasCorrected, false, dimensions);
     }
 
@@ -2985,7 +2985,7 @@ public abstract class SDBaseOps {
      * @param dimensions    Dimensions to reduce over. If dimensions are not specified, full array reduction is performed
      * @return Output variable: reduced array of rank (input rank - num dimensions)
      */
-    public SDVariable variance(String name, SDVariable x, boolean biasCorrected, boolean keepDims, int... dimensions) {
+    public SDVariable variance(String name, @NonNull SDVariable x, boolean biasCorrected, boolean keepDims, int... dimensions) {
         SDVariable result = f().variance(x, biasCorrected, keepDims, dimensions);
         return updateVariableNameAndReference(result, name);
     }
@@ -2997,7 +2997,7 @@ public abstract class SDBaseOps {
      * @param input Input SDVariable
      * @return A new SDVariable with the same (dynamic) shape as the input
      */
-    public SDVariable zerosLike(SDVariable input) {
+    public SDVariable zerosLike(@NonNull SDVariable input) {
         return zerosLike(null, input);
     }
 
@@ -3009,7 +3009,7 @@ public abstract class SDBaseOps {
      * @param input Input SDVariable
      * @return A new SDVariable with the same (dynamic) shape as the input
      */
-    public SDVariable zerosLike(String name, SDVariable input) {
+    public SDVariable zerosLike(String name, @NonNull SDVariable input) {
         SDVariable ret = f().zerosLike(name, input);
         return updateVariableNameAndReference(ret, name);
     }

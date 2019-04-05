@@ -36,6 +36,7 @@ public class SameDiffSpecifiedLossVarsTests {
         assertNull(shape.gradient());
         assertNotNull(out.gradient());
         assertNotNull(add.gradient());
+        assertNotNull(ph1.gradient());
     }
 
     @Test
@@ -55,10 +56,12 @@ public class SameDiffSpecifiedLossVarsTests {
             SDVariable loss1 = add.std("l1", true);
             SDVariable loss2 = mmul.mean("l2");
 
+            System.out.println(sd.summary());
+
             if(i == 0){
                 sd.setLossVariables("l1", "l2");
                 sd.createGradFunction();
-                for(String s : new String[]{"w", "b", badd.getVarName(), add.getVarName(), "l1", "l2"}){
+                for(String s : new String[]{"w", "b", badd.getVarName(), add.getVarName(), /*"l1", "l2"*/}){
                     SDVariable gradVar = sd.getVariable(s).gradient();
                     assertNotNull(s, gradVar);
                 }
