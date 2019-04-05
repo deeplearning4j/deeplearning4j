@@ -1325,15 +1325,17 @@ void NativeOps::execTransformStrict(Nd4jPointer *extraPointers,int opNum,
                     int length = shape::length(hXShapeInfo);
                     int block = nd4j::math::nd4j_min<int>(length, 256);
 
+                    auto reductionPointer = reinterpret_cast<float *>(extraPointers[4]);
+
                     launchDims.x = 1;
                     launchDims.y = block;
                     launchDims.z += (block * sizeof(double) * 4);
 
-                    BUILD_SINGLE_SELECTOR(xType, functions::transform::TransformStrict, ::executeTransformShaped(launchDims, stream, opNum, dX, dXShapeInfo, xRank, extraParams, dZ, dZShapeInfo, zRank, nullptr, nullptr, nullptr, nullptr), FLOAT_TYPES);
+                    BUILD_SINGLE_SELECTOR(xType, functions::transform::TransformStrict, ::executeTransformShaped(launchDims, stream, opNum, dX, dXShapeInfo, xRank, extraParams, dZ, dZShapeInfo, zRank, nullptr, reductionPointer, nullptr, nullptr), FLOAT_TYPES);
                 } else {
                     auto shape = shape::shapeOf(hXShapeInfo);
-                    int *allocPointer = reinterpret_cast<int *>(extraPointers[3]);
-                    float *reductionPointer = reinterpret_cast<float *>(extraPointers[4]);
+                    auto llocPointer = reinterpret_cast<int *>(extraPointers[3]);
+                    auto reductionPointer = reinterpret_cast<float *>(extraPointers[4]);
 
                     // special pointer for special buffer for special ops
                     auto specialPointer = reinterpret_cast<double *>(extraPointers[6]);

@@ -22,13 +22,13 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>nd4j-cuda-10.1</artifactId>
+    <artifactId>nd4j-cuda-10.0</artifactId>
     <name>nd4j-cuda</name>
 
     <properties>
         <!-- CUDA version is linked with the artifact name so cannot move to parent pom.xml -->
-        <cuda.version>10.1</cuda.version>
-        <cudnn.version>7.5</cudnn.version>
+        <cuda.version>10.0</cuda.version>
+        <cudnn.version>7.4</cudnn.version>
         <javacpp-presets.cuda.version>1.5-SNAPSHOT</javacpp-presets.cuda.version>
     </properties>
 
