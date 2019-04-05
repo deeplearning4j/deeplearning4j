@@ -339,7 +339,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
          * This is a pointer to a pointer in c.
          */
         //  FIXME: we need something better then 3rd element being non-null here...
-        PointerPointer dummy = extraz.get().put(hostTadShapeInfo, hostTadOffsets, tvf ? hostTadOffsets : null);
+        //PointerPointer dummy = extraz.get().put(hostTadShapeInfo, hostTadOffsets, tvf ? hostTadOffsets : null);
 
         long st = profilingConfigurableHookIn(op, tadBuffers.getFirst());
 
@@ -353,7 +353,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
             if (op instanceof Variance) {
                 if (ret.isScalar()) {
-                    loop.execSummaryStatsScalar(dummy, op.opNum(),
+                    loop.execSummaryStatsScalar(null, op.opNum(),
                             op.x().data().addressPointer(), (LongPointer) op.x().shapeInfoDataBuffer().addressPointer(),
                             null, null,
                             getPointerForExtraArgs(op, op.z().dataType()),
@@ -363,7 +363,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                 } else {
                     Variance var = (Variance) op;
                     try {
-                        loop.execSummaryStats(dummy, op.opNum(),
+                        loop.execSummaryStats(null, op.opNum(),
                                 op.x().data().addressPointer(), (LongPointer) op.x().shapeInfoDataBuffer().addressPointer(),
                                 null, null,
                             getPointerForExtraArgs(op, op.z().dataType()),
@@ -384,7 +384,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             else if (op.y() != null && op.getOpType() == Op.Type.REDUCE3) {
                 if (op.isComplexAccumulation()) {
                     try {
-                        loop.execReduce3All(dummy, op.opNum(),
+                        loop.execReduce3All(null, op.opNum(),
                                 op.x().data().addressPointer(), (LongPointer) op.x().shapeInfoDataBuffer().addressPointer(),
                                 null, null,
                                 getPointerForExtraArgs(op, op.z().dataType()),
@@ -406,7 +406,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                         throw new RuntimeException("Native AccumulationOp execution (double) failed: " + str, t);
                     }
                 } else if (ret.isScalar()) {
-                            loop.execReduce3Scalar(dummy, op.opNum(),
+                            loop.execReduce3Scalar(null, op.opNum(),
                                     op.x().data().addressPointer(), (LongPointer) op.x().shapeInfoDataBuffer().addressPointer(),
                                     null, null,
                                     getPointerForExtraArgs(op, op.z().dataType()),
@@ -416,7 +416,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                                     null, null);
                 } else {
                     try {
-                        loop.execReduce3(dummy, op.opNum(),
+                        loop.execReduce3(null, op.opNum(),
                                 op.x().data().addressPointer(), (LongPointer) op.x().shapeInfoDataBuffer().addressPointer(),
                                 null, null,
                                 getPointerForExtraArgs(op, op.z().dataType()),
@@ -439,7 +439,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                 if (ret.isScalar()) {
                     switch (op.getOpType()) {
                         case REDUCE_FLOAT:
-                            loop.execReduceFloat(dummy, op.opNum(),
+                            loop.execReduceFloat(null, op.opNum(),
                                 op.x().data().addressPointer(), (LongPointer) op.x().shapeInfoDataBuffer().addressPointer(),
                                     null, null,
                                 getPointerForExtraArgs(op, op.z().dataType()),
@@ -447,7 +447,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                                     null, null);
                             break;
                         case REDUCE_BOOL:
-                            loop.execReduceBool(dummy, op.opNum(),
+                            loop.execReduceBool(null, op.opNum(),
                                     op.x().data().addressPointer(), (LongPointer) op.x().shapeInfoDataBuffer().addressPointer(),
                                     null, null,
                                     getPointerForExtraArgs(op, op.x().dataType()),
@@ -455,7 +455,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                                     null, null);
                             break;
                         case REDUCE_SAME:
-                            loop.execReduceSame(dummy, op.opNum(),
+                            loop.execReduceSame(null, op.opNum(),
                                     op.x().data().addressPointer(), (LongPointer) op.x().shapeInfoDataBuffer().addressPointer(),
                                     null, null,
                                     getPointerForExtraArgs(op, op.x().dataType()),
@@ -463,7 +463,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                                     null, null);
                             break;
                         case REDUCE_LONG:
-                            loop.execReduceLong(dummy, op.opNum(),
+                            loop.execReduceLong(null, op.opNum(),
                                     op.x().data().addressPointer(), (LongPointer) op.x().shapeInfoDataBuffer().addressPointer(),
                                     null, null,
                                     getPointerForExtraArgs(op, op.x().dataType()),
@@ -476,7 +476,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                 } else {
                     switch (op.getOpType()) {
                         case REDUCE_FLOAT:
-                            loop.execReduceFloat(dummy, op.opNum(),
+                            loop.execReduceFloat(null, op.opNum(),
                                 op.x().data().addressPointer(), (LongPointer) op.x().shapeInfoDataBuffer().addressPointer(),
                                     null, null,
                                 getPointerForExtraArgs(op, op.z().dataType()),
@@ -488,7 +488,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                                     null);
                         break;
                         case REDUCE_LONG:
-                            loop.execReduceLong(dummy, op.opNum(),
+                            loop.execReduceLong(null, op.opNum(),
                                     op.x().data().addressPointer(), (LongPointer) op.x().shapeInfoDataBuffer().addressPointer(),
                                     null, null,
                                     getPointerForExtraArgs(op, op.x().dataType()),
@@ -500,7 +500,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                                     null);
                             break;
                         case REDUCE_SAME:
-                            loop.execReduceSame(dummy, op.opNum(),
+                            loop.execReduceSame(null, op.opNum(),
                                     op.x().data().addressPointer(), (LongPointer) op.x().shapeInfoDataBuffer().addressPointer(),
                                     null, null,
                                     getPointerForExtraArgs(op, op.z().dataType()),
@@ -512,7 +512,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                                     null);
                             break;
                         case REDUCE_BOOL:
-                            loop.execReduceBool(dummy, op.opNum(),
+                            loop.execReduceBool(null, op.opNum(),
                                     op.x().data().addressPointer(), (LongPointer) op.x().shapeInfoDataBuffer().addressPointer(),
                                     null, null,
                                     getPointerForExtraArgs(op, op.x().dataType()),
