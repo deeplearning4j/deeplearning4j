@@ -3102,7 +3102,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
     @Test
     public void testSoftmaxRow() {
         for (int i = 0; i < 20; i++) {
-            INDArray arr1 = Nd4j.zeros(100);
+            INDArray arr1 = Nd4j.zeros(1, 100);
             Nd4j.getExecutioner().execAndReturn(new OldSoftMax(arr1));
             System.out.println(Arrays.toString(arr1.data().asFloat()));
         }

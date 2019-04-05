@@ -1299,11 +1299,16 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public Number prodNumber() {
+        if(isScalar())
+            return getNumber(0);
         return prod(Integer.MAX_VALUE).getDouble(0);
     }
 
     @Override
     public Number meanNumber() {
+        validateNumericalArray("meanNumber", false);
+        if(isScalar())
+            return getNumber(0);
         return mean(Integer.MAX_VALUE).getDouble(0);
     }
 
@@ -1319,6 +1324,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public Number maxNumber() {
+        if(isScalar())
+            return getNumber(0);
         return max(Integer.MAX_VALUE).getDouble(0);
     }
 
@@ -1329,6 +1336,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public Number minNumber() {
+        if(isScalar())
+            return getNumber(0);
         return min(Integer.MAX_VALUE).getDouble(0);
     }
 
@@ -1346,6 +1355,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     @Override
     public Number sumNumber() {
         validateNumericalArray("sum", false);
+        if(isScalar())
+            return getNumber(0);
         val scalar = sum(Integer.MAX_VALUE);
         Nd4j.getExecutioner().commit();
         return scalar.getDouble(0);
@@ -4377,9 +4388,51 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             return assign(toPut);
         }
         return put(new INDArrayIndex[] {NDArrayIndex.all(), NDArrayIndex.point(column)}, toPut);
-
     }
 
+    @Override
+    public Number getNumber(long i){
+        switch (dataType()){
+            case DOUBLE:
+            case FLOAT:
+            case HALF:
+                return getDouble(i);
+            case LONG:
+            case INT:
+            case SHORT:
+            case UBYTE:
+            case BYTE:
+            case BOOL:
+                return getLong(i);
+            case UTF8:
+            case COMPRESSED:
+            case UNKNOWN:
+            default:
+                throw new UnsupportedOperationException("Cannot get number from array of datatype: " + dataType());
+        }
+    }
+
+    @Override
+    public Number getNumber(long... idx){
+        switch (dataType()){
+            case DOUBLE:
+            case FLOAT:
+            case HALF:
+                return getDouble(idx);
+            case LONG:
+            case INT:
+            case SHORT:
+            case UBYTE:
+            case BYTE:
+            case BOOL:
+                return getLong(idx);
+            case UTF8:
+            case COMPRESSED:
+            case UNKNOWN:
+            default:
+                throw new UnsupportedOperationException("Cannot get number from array of datatype: " + dataType());
+        }
+    }
 
     @Override
     public double getDouble(long i) {
@@ -4976,6 +5029,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
                 throw new IllegalArgumentException("Too many indices for array. Number of indexes must be <= rank(): rank " +
                         rank() + " array with indices " + Arrays.toString(indexes));
             }
+        } else if(indexes.length < rank()){
+            throw new IllegalStateException("Expected " + rank() + " indices for array of rank " + rank() + ", got " + indexes.length + " indices");
         }
 
 
@@ -4986,6 +5041,10 @@ public abstract class BaseNDArray implements INDArray, Iterable {
                 || isColumnVector() && indexes[1] instanceof PointIndex && indexes[0].offset() == 0
                 && indexes[0] instanceof NDArrayIndexAll)) ||
                 (rank() == 1 && length() == 1 && indexes.length == 1 && indexes[0] instanceof PointIndex && indexes[0].current() == 0))  //Last one: point index on rank 1 size 1
+            return this;
+
+        //1d+all: return this
+        if(indexes.length == 1 && rank() == 1 && indexes[0] instanceof NDArrayIndexAll)
             return this;
 
         indexes = NDArrayIndex.resolveLong(jvmShapeInfo.javaShapeInformation, indexes);
@@ -6258,6 +6317,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     @Override
     public Number medianNumber() {
         validateNumericalArray("medianNumber", false);
+        if(isScalar())
+            return getNumber(0);
         return percentileNumber(50);
     }
 

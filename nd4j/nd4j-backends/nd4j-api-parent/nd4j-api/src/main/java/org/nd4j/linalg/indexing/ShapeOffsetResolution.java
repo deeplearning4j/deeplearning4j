@@ -88,8 +88,25 @@ public class ShapeOffsetResolution implements Serializable {
         }
 
 
+        if(arr.rank() == 1 && indexes.length == 1){
+            if(indexes[0] instanceof PointIndex){
+                PointIndex pi = (PointIndex)indexes[0] ;
+                offset = pi.offset();
+                this.strides = new long[0];
+                this.shapes = new long[0];
+                this.offsets = new long[0];
+                return true;
+            } else if(indexes[0] instanceof IntervalIndex){
+                IntervalIndex ii = (IntervalIndex)indexes[0];
+                offset = ii.offset();
+                this.strides = new long[]{ii.stride() * arr.stride(0)};
+                this.shapes = new long[]{ii.length()};
+                this.offsets = new long[]{0};
+                return true;
+            }
+        }
 
-        if (arr.isVector()) {
+        if (arr.isVector() && arr.rank() == 2) {
             //return the whole vector
             if (indexes[0] instanceof NDArrayIndexAll && indexes.length == 1) {
 
@@ -355,7 +372,7 @@ public class ShapeOffsetResolution implements Serializable {
         for (int i = 0; i < indexes.length; i++) {
             INDArrayIndex idx = indexes[i];
             // On vectors, the first dimension can be ignored when indexing them with a single point index
-            if (idx instanceof PointIndex && (arr.isVector() && indexes.length == 1 ? idx.current() >= shape[i + 1]
+            if (idx instanceof PointIndex && (arr.isVector() && arr.rank() == 2 && indexes.length == 1 ? idx.current() >= shape[i + 1]
                     : idx.current() >= shape[i])) {
                 throw new IllegalArgumentException(
                         "INDArrayIndex[" + i + "] is out of bounds (value: " + idx.current() + ")");

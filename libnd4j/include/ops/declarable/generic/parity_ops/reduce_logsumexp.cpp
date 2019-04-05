@@ -37,7 +37,7 @@ namespace ops {
         }
 
         for(const auto& item : axes)
-            REQUIRE_TRUE(item > -input->shapeInfo()[0] || item <input->shapeInfo()[0], 0, "reduce_logsumexp: the input dimension to reduce along must be in range (-%i, %i), but got %i instead !" , input->rankOf(), input->rankOf(), item);
+            REQUIRE_TRUE(item >= -input->shapeInfo()[0] && item <input->shapeInfo()[0], 0, "REDUCE_LOGSUMEXP: the input dimension to reduce along must be in range [-%i, %i), but got %i instead !" , input->rankOf(), input->rankOf(), item);
 
         const bool keepDims = block.getTArguments()->size() > 0 ? (bool)T_ARG(0) : false;
         Nd4jLong maxI = input->argMax();

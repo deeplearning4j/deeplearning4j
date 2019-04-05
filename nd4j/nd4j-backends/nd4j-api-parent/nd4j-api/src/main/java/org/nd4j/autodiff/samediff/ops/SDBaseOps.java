@@ -3,6 +3,7 @@ package org.nd4j.autodiff.samediff.ops;
 import lombok.NonNull;
 import org.nd4j.autodiff.functions.DifferentialFunctionFactory;
 import org.nd4j.autodiff.samediff.SDVariable;
+import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.blas.params.MMulTranspose;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ops.impl.shape.OneHot;
@@ -42,6 +43,8 @@ public abstract class SDBaseOps {
     protected abstract DifferentialFunctionFactory f();
 
     protected abstract SDVariable updateVariableNameAndReference(SDVariable varToUpdate, String newVarName);
+
+    protected abstract SameDiff sd();
 
     /**
      * Argmax array reduction operation, optionally along specified dimensions.<br>
@@ -790,8 +793,24 @@ public abstract class SDBaseOps {
      * @param number Number of values to generate
      * @return SDVariable with linearly spaced elements
      */
-    public SDVariable linspace(double start, double stop, long number) {
-        return linspace(null, start, stop, number);
+    public SDVariable linspace(DataType dataType, double start, double stop, long number) {
+        return linspace(dataType, start, stop, number);
+    }
+
+    /**
+     * Create a new 1d array with values evenly spaced between values 'start' and 'stop'
+     * For example, linspace(start=3.0, stop=4.0, number=3) will generate [3.0, 3.5, 4.0]
+     *
+     * @param name     Name of the new variable
+     * @param dataType Data type of the output array
+     * @param start    Start value
+     * @param stop     Stop value
+     * @param number   Number of values to generate
+     * @return SDVariable with linearly spaced elements
+     */
+    public SDVariable linspace(String name, DataType dataType, double start, double stop, long number) {
+        SDVariable ret = f().linspace(sd().scalar(null, start), sd().scalar(null, stop), sd().scalar(null, number), dataType);
+        return updateVariableNameAndReference(ret, name);
     }
 
     /**
@@ -799,16 +818,12 @@ public abstract class SDBaseOps {
      * For example, linspace(start=3.0, stop=4.0, number=3) will generate [3.0, 3.5, 4.0]
      *
      * @param name   Name of the new variable
-     * @param start  Start value
-     * @param stop   Stop value
-     * @param number Number of values to generate
+     * @param from   Start value
+     * @param to     Stop value
+     * @param length Number of values to generate
+     * @param dt     Data type of the output array
      * @return SDVariable with linearly spaced elements
      */
-    public SDVariable linspace(String name, double start, double stop, long number) {
-        SDVariable ret = f().linspace(start, stop, number);
-        return updateVariableNameAndReference(ret, name);
-    }
-
     public SDVariable linspace(String name, SDVariable from, SDVariable to, SDVariable length, DataType dt) {
         SDVariable ret = f().linspace(from, to, length, dt);
         return updateVariableNameAndReference(ret, name);

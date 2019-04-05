@@ -179,10 +179,6 @@ public class DifferentialFunctionFactory {
         return new Constant(sameDiff(), input, (shape != null && shape.length > 0 ? shape : null)).outputVariable();
     }
 
-    public SDVariable linspace(double lower, double upper, long count) {
-        return new Linspace(sameDiff(), lower, upper, count).outputVariable();
-    }
-
     public SDVariable linspace(SDVariable lower, SDVariable upper, SDVariable count, DataType dt) {
         return new org.nd4j.linalg.api.ops.impl.shape.Linspace(sameDiff(), lower, upper, count, dt).outputVariable();
     }

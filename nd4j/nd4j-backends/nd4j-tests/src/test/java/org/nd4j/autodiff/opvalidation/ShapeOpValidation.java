@@ -1515,10 +1515,10 @@ public class ShapeOpValidation extends BaseOpValidation {
         SDVariable idxs = sameDiff.var("idxs", arr2);
         SDVariable result = sameDiff.gatherNd(x, idxs);
         // build expected output array
-        INDArray expected  = Nd4j.zeros(3);
+        INDArray expected  = Nd4j.zeros(1, 3);
         for (int i=0; i<3; i++){
-            INDArray idx = arr2.get(point(i));
-            expected.get(point(i)).assign(
+            INDArray idx = arr2.get(point(i), NDArrayIndex.all());
+            expected.get(NDArrayIndex.point(0), point(i)).assign(
                     arr1.get(point(idx.getInt(0)),
                             point(idx.getInt(1)),
                             point(idx.getInt(2))));

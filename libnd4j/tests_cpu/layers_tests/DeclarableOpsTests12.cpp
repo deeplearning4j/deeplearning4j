@@ -921,23 +921,14 @@ TEST_F(DeclarableOpsTests12, reduceMeanBp_5) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests12, reduceMeanBp_6) {
+TEST_F(DeclarableOpsTests12, reduceSqnormBp_1) {
 
-    NDArray x('c', {3,5}, {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15});
-    NDArray grad0('c', {0}, nd4j::DataType::DOUBLE);
-    NDArray exp('c', {3,5}, nd4j::DataType::DOUBLE);
-
-    grad0 = 1.;
-    exp = 1/15.;
+    NDArray x('c', {8,6,4}, nd4j::DataType::DOUBLE);
+    NDArray grad0('c', {8,6,1}, nd4j::DataType::DOUBLE);
                    
-    nd4j::ops::reduce_mean_bp op;
-    auto result = op.execute({&x, &grad0}, {}, {0,1});
-    auto output = result->at(0);    
-
-    // output->printShapeInfo();
-    // output->printIndexedBuffer();
-    ASSERT_TRUE(exp.isSameShape(output));
-    ASSERT_TRUE(exp.equalsTo(output));
+    nd4j::ops::reduce_sqnorm_bp op;
+    auto result = op.execute({&x, &grad0}, {1}, {2});
+    ASSERT_EQ(Status::OK(), result->status());
 
     delete result;
 }
