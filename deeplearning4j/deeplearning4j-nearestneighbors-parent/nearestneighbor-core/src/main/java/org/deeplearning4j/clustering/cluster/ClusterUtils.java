@@ -19,7 +19,9 @@ package org.deeplearning4j.clustering.cluster;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.apache.commons.lang3.ArrayUtils;
+import org.deeplearning4j.clustering.algorithm.Distance;
 import org.deeplearning4j.clustering.info.ClusterInfo;
 import org.deeplearning4j.clustering.info.ClusterSetInfo;
 import org.deeplearning4j.clustering.optimisation.ClusteringOptimizationType;
@@ -28,6 +30,7 @@ import org.deeplearning4j.clustering.util.MathUtils;
 import org.deeplearning4j.clustering.util.MultiThreadUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.Op;
+import org.nd4j.linalg.api.ops.ReduceOp;
 import org.nd4j.linalg.api.ops.impl.reduce3.*;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -49,8 +52,8 @@ public class ClusterUtils {
 
         List<Runnable> tasks = new ArrayList<>();
         for (final Point point : points) {
-            tasks.add(new Runnable() {
-                public void run() {
+            //tasks.add(new Runnable() {
+              //  public void run() {
                     try {
                         PointClassification result = classifyPoint(clusterSet, point);
                         if (result.isNewLocation())
@@ -60,10 +63,10 @@ public class ClusterUtils {
                     } catch (Throwable t) {
                         log.warn("Error classifying point", t);
                     }
-                }
-            });
-        }
-        MultiThreadUtils.parallelTasks(tasks, executorService);
+            //    }
+            }
+
+        //MultiThreadUtils.parallelTasks(tasks, executorService);
         return clusterSetInfo;
     }
 
@@ -244,7 +247,7 @@ public class ClusterUtils {
      * @param distanceFunction
      * @return
      */
-    public static ClusterInfo computeClusterInfos(Cluster cluster, String distanceFunction) {
+    public static ClusterInfo computeClusterInfos(Cluster cluster, Distance distanceFunction) {
         ClusterInfo info = new ClusterInfo(cluster.isInverse(), true);
         for (int i = 0, j = cluster.getPoints().size(); i < j; i++) {
             Point point = cluster.getPoints().get(i);
@@ -484,19 +487,25 @@ public class ClusterUtils {
         MultiThreadUtils.parallelTasks(tasks, executorService);
     }
 
-    public static BaseReduce3Op createDistanceFunctionOp(String distanceFunction, INDArray x, INDArray y){
+    public static ReduceOp createDistanceFunctionOp(Distance distanceFunction, INDArray x, INDArray y, int...dimensions){
+        val op = createDistanceFunctionOp(distanceFunction, x, y);
+        op.setDimensions(dimensions);
+        return op;
+    }
+
+    public static ReduceOp createDistanceFunctionOp(Distance distanceFunction, INDArray x, INDArray y){
         switch (distanceFunction){
-            case "cosinedistance":
+            case COSINE_DISTANCE:
                 return new CosineDistance(x,y);
-            case CosineSimilarity.OP_NAME:
+            case COSINE_SIMILARITY:
                 return new CosineSimilarity(x,y);
-            case "dot":
+            case DOT:
                 return new Dot(x,y);
-            case EuclideanDistance.OP_NAME:
+            case EUCLIDIAN:
                 return new EuclideanDistance(x,y);
-            case "jaccarddistance":
+            case JACCARD:
                 return new JaccardDistance(x,y);
-            case ManhattanDistance.OP_NAME:
+            case MANHATTAN:
                 return new ManhattanDistance(x,y);
             default:
                 throw new IllegalStateException("Unknown distance function: " + distanceFunction);

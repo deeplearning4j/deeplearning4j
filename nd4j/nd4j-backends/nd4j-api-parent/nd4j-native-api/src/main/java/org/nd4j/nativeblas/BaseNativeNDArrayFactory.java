@@ -16,6 +16,7 @@
 
 package org.nd4j.nativeblas;
 
+import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.commons.lang3.ArrayUtils;
 import org.bytedeco.javacpp.*;
@@ -24,6 +25,7 @@ import org.bytedeco.javacpp.indexer.FloatIndexer;
 import org.bytedeco.javacpp.indexer.LongIndexer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.concurrency.AffinityManager;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.performance.PerformanceTracker;
 import org.nd4j.linalg.api.shape.Shape;
@@ -46,6 +48,7 @@ import java.util.Map;
  *
  * @author Adam Gibson
  */
+@Slf4j
 public abstract class BaseNativeNDArrayFactory extends BaseNDArrayFactory {
 
     protected NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
@@ -87,6 +90,10 @@ public abstract class BaseNativeNDArrayFactory extends BaseNDArrayFactory {
         Pointer.memcpy(bytePointer,headerCast,headerCast.capacity());
         pos += (headerCast.capacity() - 1);
         bytePointer.position(pos);
+
+        // make sure data is copied to the host memory
+        Nd4j.getAffinityManager().ensureLocation(array, AffinityManager.Location.HOST);
+
         Pointer.memcpy(bytePointer,array.data().pointer(),(array.data().getElementSize() * array.data().length()));
         bytePointer.position(0);
         return bytePointer;
@@ -168,6 +175,8 @@ public abstract class BaseNativeNDArrayFactory extends BaseNDArrayFactory {
                 Shape.strideArr(shapeBuffer),
                 0,
                 Shape.order(shapeBuffer));
+
+        Nd4j.getAffinityManager().tagLocation(ret, AffinityManager.Location.DEVICE);
 
         return ret;
     }

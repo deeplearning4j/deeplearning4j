@@ -49,7 +49,7 @@ namespace helpers {
             auto tadPack = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(sortedVals.shapeInfo(), lastDims);
             SpecialMethods<T>::sortTadGeneric(sortedVals.buffer(), sortedVals.shapeInfo(), lastDims.data(), lastDims.size(), tadPack.primaryShapeInfo(), tadPack.primaryOffsets(), reverse);
 
-            std::unique_ptr<ResultSet> rows(input->allTensorsAlongDimension(lastDims));
+            std::unique_ptr<ResultSet> rows(sortedVals.allTensorsAlongDimension(lastDims));
 
             Nd4jLong oL = output->lengthOf();
 

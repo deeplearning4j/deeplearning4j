@@ -17,6 +17,7 @@
 package org.nd4j.jita.allocator.context.impl;
 
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.apache.commons.lang3.RandomUtils;
 import org.bytedeco.javacpp.Pointer;
 import org.nd4j.jita.allocator.context.ContextPack;
@@ -298,19 +299,19 @@ public class BasicContextPool implements ContextPool {
         // we hardcode sizeOf to sizeOf(double)
         int sizeOf = 8;
 
-        Pointer reductionPointer = nativeOps.mallocDevice(16385 * sizeOf * 2, new CudaPointer(deviceId), 0);
+        val reductionPointer = nativeOps.mallocDevice(16384 * sizeOf, new CudaPointer(deviceId), 0);
         if (reductionPointer == null)
             throw new IllegalStateException("Can't allocate [DEVICE] reduction buffer memory!");
 
-        nativeOps.memsetAsync(reductionPointer, 0, 16385 * sizeOf * 2, 0, context.getOldStream());
+        nativeOps.memsetAsync(reductionPointer, 0, 16384 * sizeOf, 0, context.getOldStream());
 
         context.syncOldStream();
 
-        Pointer allocationPointer = nativeOps.mallocDevice(16384 * sizeOf, new CudaPointer(deviceId), 0);
+        val allocationPointer = nativeOps.mallocDevice(16384 * sizeOf, new CudaPointer(deviceId), 0);
         if (allocationPointer == null)
             throw new IllegalStateException("Can't allocate [DEVICE] allocation buffer memory!");
 
-        Pointer scalarPointer = nativeOps.mallocHost(1 * sizeOf, 0);
+        val scalarPointer = nativeOps.mallocHost(sizeOf, 0);
         if (scalarPointer == null)
             throw new IllegalStateException("Can't allocate [HOST] scalar buffer memory!");
 
@@ -318,7 +319,7 @@ public class BasicContextPool implements ContextPool {
         context.setBufferAllocation(allocationPointer);
         context.setBufferReduction(reductionPointer);
 
-        Pointer specialPointer = nativeOps.mallocDevice(16384 * sizeOf, new CudaPointer(deviceId), 0);
+        val specialPointer = nativeOps.mallocDevice(16384 * sizeOf, new CudaPointer(deviceId), 0);
         if (specialPointer == null)
             throw new IllegalStateException("Can't allocate [DEVICE] special buffer memory!");
 
