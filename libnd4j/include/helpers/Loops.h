@@ -852,24 +852,20 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
         Z param0(OpType::startingValue(x)), param1(OpType::startingValue(x)), param2(extraParameters ? extraParameters[0] : OpType::startingValue(x));
         Z extraParams[3] = {param0, param1, param2};
 
-        Nd4jLong *xTadShapeInfo, *yTadShapeInfo, *xTadOffsets, *yTadOffsets;
+        Nd4jLong *xTadShapeInfo = nullptr, *yTadShapeInfo = nullptr, *xTadOffsets = nullptr, *yTadOffsets = nullptr;
         TadPack tadPackX, tadPackY;
         std::vector<Nd4jLong> zeroOffsets;
 
-        if(dimsLen == shape::rank(xShapeInfo)) {        
-            zeroOffsets   = std::vector<Nd4jLong>(shape::length(xShapeInfo), 0); 
+        if(dimsLen == shape::rank(xShapeInfo)) {
             tadPackY      = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(yShapeInfo, dims, dimsLen);
             xTadShapeInfo = xShapeInfo;
             yTadShapeInfo = tadPackY.primaryShapeInfo();
-            xTadOffsets   = zeroOffsets.data();    // no offsets for x
             yTadOffsets   = tadPackY.primaryOffsets();
         }
-        else if(dimsLen == shape::rank(yShapeInfo)) {        
-            zeroOffsets   = std::vector<Nd4jLong>(shape::length(xShapeInfo), 0); 
+        else if(dimsLen == shape::rank(yShapeInfo)) {
             tadPackX      = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(xShapeInfo, dims, dimsLen);
             yTadShapeInfo = yShapeInfo;
             xTadShapeInfo = tadPackX.primaryShapeInfo();
-            yTadOffsets   = zeroOffsets.data();    // no offsets for y
             xTadOffsets   = tadPackX.primaryOffsets();
         }
         else {
@@ -908,8 +904,8 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
                     extraParams[1] = param1;
                     extraParams[2] = param2;
 
-                    const auto xTad = x + xTadOffsets[i];
-                    const auto yTad = y + yTadOffsets[i];
+                    const auto xTad = xTadOffsets ? x + xTadOffsets[i] : x;
+                    const auto yTad = yTadOffsets ? y + yTadOffsets[i] : y;
                     auto start      = OpType::startingValue(xTad);                                        
                                         
                     for (uint j = 0; j < tadLen; ++j)
@@ -930,8 +926,8 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
                     extraParams[1] = param1;
                     extraParams[2] = param2;
                     
-                    const auto xTad  = x + xTadOffsets[i];
-                    const auto yTad  = y + yTadOffsets[i];
+                    const auto xTad  = xTadOffsets ? x + xTadOffsets[i] : x;
+                    const auto yTad  = yTadOffsets ? y + yTadOffsets[i] : y;
                           auto start = OpType::startingValue(xTad);                    
                                         
                     for (uint j = 0; j < tadLen; ++j)
@@ -952,8 +948,8 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
                     extraParams[1] = param1;
                     extraParams[2] = param2;
                     
-                    const auto xTad  = x + xTadOffsets[i];
-                    const auto yTad  = y + yTadOffsets[i];
+                    const auto xTad  = xTadOffsets ? x + xTadOffsets[i] : x;
+                    const auto yTad  = yTadOffsets ? y + yTadOffsets[i] : y;
                           auto start = OpType::startingValue(xTad);
 
                     for (uint i0 = 0; i0 < tadLen; ++i0) {
@@ -976,8 +972,8 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
                     extraParams[1] = param1;
                     extraParams[2] = param2;
 
-                    const auto xTad  = x + xTadOffsets[i];
-                    const auto yTad  = y + yTadOffsets[i];
+                    const auto xTad  = xTadOffsets ? x + xTadOffsets[i] : x;
+                    const auto yTad  = yTadOffsets ? y + yTadOffsets[i] : y;
                           auto start = OpType::startingValue(xTad);
 
                     for (uint i0 = 0; i0 < tadShape[0]; ++i0) {
@@ -1002,8 +998,8 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
                     extraParams[1] = param1;
                     extraParams[2] = param2;
 
-                    const auto xTad  = x + xTadOffsets[i];
-                    const auto yTad  = y + yTadOffsets[i];
+                    const auto xTad  = xTadOffsets ? x + xTadOffsets[i] : x;
+                    const auto yTad  = yTadOffsets ? y + yTadOffsets[i] : y;
                           auto start = OpType::startingValue(xTad);
 
                     for (uint i0 = 0; i0 < tadShape[0]; ++i0) {
@@ -1030,8 +1026,8 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
                     extraParams[1] = param1;
                     extraParams[2] = param2;
 
-                    const auto xTad  = x + xTadOffsets[i];
-                    const auto yTad  = y + yTadOffsets[i];
+                    const auto xTad  = xTadOffsets ? x + xTadOffsets[i] : x;
+                    const auto yTad  = yTadOffsets ? y + yTadOffsets[i] : y;
                           auto start = OpType::startingValue(xTad);
 
                     for (uint i0 = 0; i0 < tadShape[0]; ++i0) {
@@ -1060,8 +1056,8 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
                     extraParams[1] = param1;
                     extraParams[2] = param2;
 
-                    const auto xTad  = x + xTadOffsets[i];
-                    const auto yTad  = y + yTadOffsets[i];
+                    const auto xTad  = xTadOffsets ? x + xTadOffsets[i] : x;
+                    const auto yTad  = yTadOffsets ? y + yTadOffsets[i] : y;
                           auto start = OpType::startingValue(xTad);
 
                     for (uint i0 = 0; i0 < tadShape[0]; ++i0) {
@@ -1097,8 +1093,8 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
                         extraParams[1] = param1;
                         extraParams[2] = param2;
                     
-                        const auto xTad = x + xTadOffsets[i];
-                        const auto yTad = y + yTadOffsets[i];
+                        const auto xTad = xTadOffsets ? x + xTadOffsets[i] : x;
+                        const auto yTad = yTadOffsets ? y + yTadOffsets[i] : y;
                         auto start      = OpType::startingValue(xTad);
                 
                         for (uint j = 0; j < tadLen; ++j) {
@@ -1121,8 +1117,8 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
                         extraParams[1] = param1;
                         extraParams[2] = param2;
 
-                        const auto xTad = x + xTadOffsets[i];
-                        const auto yTad = y + yTadOffsets[i];
+                        const auto xTad = xTadOffsets ? x + xTadOffsets[i] : x;
+                        const auto yTad = yTadOffsets ? y + yTadOffsets[i] : y;
                         auto start      = OpType::startingValue(xTad);                        
                                         
                         for (uint j = 0; j < tadLen; ++j) {
