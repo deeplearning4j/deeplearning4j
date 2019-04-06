@@ -454,7 +454,7 @@ public class MiscOpValidation extends BaseOpValidation {
                 }
 
                 SDVariable in = sd.var("in", Nd4j.rand(DataType.DOUBLE, inShape));
-                SDVariable indices = sd.var("indices", Nd4j.create(new double[]{0, 3, 7}).castTo(DataType.INT));
+                SDVariable indices = sd.constant("indices", Nd4j.createFromArray(0, 3, 7));
 
                 INDArray gatherExp = null;
                 if(rank == 2){
@@ -1168,7 +1168,7 @@ public class MiscOpValidation extends BaseOpValidation {
         expectedOut.putScalar(1, 0, 1, 1.0);
 
         SameDiff sd = SameDiff.create();
-        SDVariable indices = sd.var("indices", indicesArr);
+        SDVariable indices = sd.constant("indices", indicesArr);
 
         int depth = 3;
         int axis = -1;
@@ -1178,7 +1178,7 @@ public class MiscOpValidation extends BaseOpValidation {
 
         String err = OpValidation.validate(new TestCase(sd)
                 .expected(oneHot, expectedOut)
-                .gradCheckSkipVariables("indices"));
+                .gradientCheck(false));
 
         assertNull(err);
     }
@@ -1192,7 +1192,8 @@ public class MiscOpValidation extends BaseOpValidation {
         SDVariable loss = out.std(true);
 
         String err = OpValidation.validate(new TestCase(sd)
-                .expected(out, Nd4j.linspace(1,10,10, DataType.DOUBLE)));
+                .expected(out, Nd4j.linspace(1,10,10, DataType.DOUBLE))
+                .gradientCheck(false));
 
         assertNull(err);
     }
@@ -1234,9 +1235,7 @@ public class MiscOpValidation extends BaseOpValidation {
         SDVariable var = sd.var("in", i);
         SDVariable shape = sd.shape(var);
         SDVariable sum = shape.castTo(DataType.DOUBLE).sum();
-
-        sd.execAndEndResult();
-        sd.execBackwards(Collections.emptyMap());
+        sum.eval();
     }
 
 
@@ -1417,15 +1416,16 @@ public class MiscOpValidation extends BaseOpValidation {
 
                     INDArray exp;
                     if (expTrue || shape == null) {
-                        exp = Nd4j.trueScalar(1.0);
+                        exp = Nd4j.scalar(1.0);
                     } else {
-                        exp = Nd4j.trueScalar(0.0);
+                        exp = Nd4j.scalar(0.0);
                     }
 
                     String msg = (nonDec ? "isNonDecreasing" : "isStrictlyIncreasing") + " - " +  (shape == null ? "[]" : Arrays.toString(shape)) + " - expected=" + exp;
                     TestCase tc = new TestCase(sd)
                             .testName(msg)
-                            .expected(out, exp);
+                            .expected(out, exp)
+                            .gradientCheck(false);
 
                     String err = OpValidation.validate(tc, true);
                     if (err != null) {

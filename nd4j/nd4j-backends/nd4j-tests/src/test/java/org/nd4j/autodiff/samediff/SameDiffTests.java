@@ -2044,8 +2044,9 @@ public class SameDiffTests {
 
         SameDiff sd  = SameDiff.create();
         SDVariable refs = sd.var("refs", arr1);
-        SDVariable idxs = sd.var("idxs", arr2);
-        SDVariable upds = sd.var("upds", arr3);
+        SDVariable idxs = sd.constant("idxs", arr2);
+        SDVariable upds = sd.placeHolder("upds", arr3.dataType(), arr3.shape());
+        upds.setArray(arr3);
 
         SDVariable result = sd.scatterAdd(refs, idxs, upds);
         assertArrayEquals(new long[]{3, 3}, result.eval().shape());
@@ -2065,8 +2066,9 @@ public class SameDiffTests {
 
         SameDiff sd  = SameDiff.create();
         SDVariable refs = sd.var("refs", arr1);
-        SDVariable idxs = sd.var("idxs", arr2);
-        SDVariable upds = sd.var("upds", arr3);
+        SDVariable idxs = sd.constant("idxs", arr2);
+        SDVariable upds = sd.placeHolder("upds", arr3.dataType(), arr3.shape());
+        upds.setArray(arr3);
 
         SDVariable result = sd.scatterMul(refs, idxs, upds);
         assertArrayEquals(new long[]{3, 3}, result.eval().shape());
@@ -2086,8 +2088,9 @@ public class SameDiffTests {
 
         SameDiff sd  = SameDiff.create();
         SDVariable refs = sd.var("refs", arr1);
-        SDVariable idxs = sd.var("idxs", arr2);
-        SDVariable upds = sd.var("upds", arr3);
+        SDVariable idxs = sd.constant("idxs", arr2);
+        SDVariable upds = sd.placeHolder("upds", arr3.dataType(), arr3.shape());
+        upds.setArray(arr3);
 
         SDVariable result = sd.scatterSub(refs, idxs, upds);
         assertArrayEquals(new long[]{3, 3}, result.eval().shape());
@@ -2107,8 +2110,9 @@ public class SameDiffTests {
 
         SameDiff sd  = SameDiff.create();
         SDVariable refs = sd.var("refs", arr1);
-        SDVariable idxs = sd.var("idxs", arr2);
-        SDVariable upds = sd.var("upds", arr3);
+        SDVariable idxs = sd.constant("idxs", arr2);
+        SDVariable upds = sd.placeHolder("upds", arr3.dataType(), arr3.shape());
+        upds.setArray(arr3);
 
         SDVariable result = sd.scatterDiv(refs, idxs, upds);
         assertArrayEquals(new long[]{3, 3}, result.eval().shape());
@@ -2127,8 +2131,9 @@ public class SameDiffTests {
 
         SameDiff sd  = SameDiff.create();
         SDVariable refs = sd.var("refs", arr1);
-        SDVariable idxs = sd.var("idxs", arr2);
-        SDVariable upds = sd.var("upds", arr3);
+        SDVariable idxs = sd.constant("idxs", arr2);
+        SDVariable upds = sd.placeHolder("upds", arr3.dataType(), arr3.shape());
+        upds.setArray(arr3);
 
         SDVariable result = sd.scatterMax(refs, idxs, upds);
         assertArrayEquals(new long[]{3, 3}, result.eval().shape());
@@ -2147,8 +2152,9 @@ public class SameDiffTests {
 
         SameDiff sd  = SameDiff.create();
         SDVariable refs = sd.var("refs", arr1);
-        SDVariable idxs = sd.var("idxs", arr2);
-        SDVariable upds = sd.var("upds", arr3);
+        SDVariable idxs = sd.constant("idxs", arr2);
+        SDVariable upds = sd.placeHolder("upds", arr3.dataType(), arr3.shape());
+        upds.setArray(arr3);
 
         SDVariable result = sd.scatterMin(refs, idxs, upds);
         assertArrayEquals(new long[]{3, 3}, result.eval().shape());
@@ -2175,7 +2181,7 @@ public class SameDiffTests {
         SameDiff sd = SameDiff.create();
 
         SDVariable var = sd.var("in", in);
-        SDVariable varIndices = sd.var("indices", indices);
+        SDVariable varIndices = sd.constant("indices", indices);
         SDVariable gather = sd.gather(var, varIndices, 0);
 
         System.out.println(in);
@@ -2373,9 +2379,9 @@ public class SameDiffTests {
     @Test
     public void testFill(){
         SameDiff sd = SameDiff.create();
-        INDArray arr = Nd4j.createFromArray(2,2);
+        INDArray shape = Nd4j.createFromArray(2,2);
         INDArray expOut = Nd4j.valueArrayOf(new int[]{2,2}, 42.0);
-        SDVariable x = sd.var(arr);
+        SDVariable x = sd.constant(shape);
         SDVariable result = sd.fill(x, DataType.DOUBLE, 42);
         assertEquals(expOut, result.eval());
     }
@@ -2909,7 +2915,7 @@ public class SameDiffTests {
                 .expectedOutput("out", out)
                 .gradientCheck(true));
 
-        assertNull(err, err);
+        assertNull(err);
     }
 
     @Test
@@ -2934,7 +2940,8 @@ public class SameDiffTests {
     @Test
     public void testNonScalarOutput1(){
         SameDiff sd = SameDiff.create();
-        SDVariable a = sd.reshape("a", sd.linspace("at", DataType.DOUBLE, 1, 15, 15), 3, 5);
+        SDVariable linspace = sd.linspace("at", DataType.DOUBLE, 1, 15, 15);
+        SDVariable a = sd.reshape("a", linspace, 3, 5);
         SDVariable b = sd.one("b", DataType.DOUBLE, 3, 5);
 
         SDVariable out = a.mul(b);

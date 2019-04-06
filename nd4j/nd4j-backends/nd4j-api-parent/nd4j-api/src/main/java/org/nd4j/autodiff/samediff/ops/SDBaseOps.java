@@ -809,7 +809,7 @@ public abstract class SDBaseOps {
      * @return SDVariable with linearly spaced elements
      */
     public SDVariable linspace(String name, DataType dataType, double start, double stop, long number) {
-        SDVariable ret = f().linspace(sd().scalar(null, start), sd().scalar(null, stop), sd().scalar(null, number), dataType);
+        SDVariable ret = f().linspace(sd().constant(start), sd().constant(stop), sd().constant(number), dataType);
         return updateVariableNameAndReference(ret, name);
     }
 

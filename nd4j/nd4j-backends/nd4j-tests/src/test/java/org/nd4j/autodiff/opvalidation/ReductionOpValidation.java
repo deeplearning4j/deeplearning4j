@@ -115,7 +115,7 @@ public class ReductionOpValidation extends BaseOpValidation {
             String error = OpValidation.validate(new TestCase(sd)
                     .expectedOutput(nonZero.getVarName(), Nd4j.scalar(DataType.LONG, i == 0 ? 2.0 : 4.0))
                     .expectedOutput(zero.getVarName(), Nd4j.scalar(DataType.LONG, i == 0 ? 2.0 : 0.0))
-                    .gradientCheck(i != 0)
+                    .gradientCheck(false)
             );
             if (error != null)
                 allFailed.add(error);
@@ -341,6 +341,7 @@ public class ReductionOpValidation extends BaseOpValidation {
                 String name;
                 TestCase tc = new TestCase(sd);
                 boolean uDistInput = false;
+                boolean gradientCheckable = true;
                 switch (i) {
                     case 0:
                         loss = sd.mean("loss", msePerEx, dim);
@@ -385,10 +386,12 @@ public class ReductionOpValidation extends BaseOpValidation {
                     case 10:
                         loss = sd.math().countNonZero("loss", msePerEx, dim).castTo(DataType.DOUBLE);
                         name = "countNonZero";
+                        gradientCheckable = false;
                         break;
                     case 11:
                         loss = sd.math().countZero("loss", msePerEx, dim).castTo(DataType.DOUBLE);
                         name = "countZero";
+                        gradientCheckable = false;
                         break;
                     case 12:
                         loss = sd.math().amax("loss", msePerEx, dim);
@@ -428,6 +431,8 @@ public class ReductionOpValidation extends BaseOpValidation {
 
                 sd.associateArrayWithVariable(inputArr, input);
                 sd.associateArrayWithVariable(labelArr, label);
+
+                tc.gradientCheck(gradientCheckable);
 
                 String error = OpValidation.validate(tc);
                 if (error != null) {
@@ -880,6 +885,7 @@ public class ReductionOpValidation extends BaseOpValidation {
 
                 TestCase tc = new TestCase(sd)
                         .expected(reduce, exp)
+                        .gradientCheck(false)
                         .testName(name + " - " + (dim == null ? null : Arrays.toString(dim)));
 
                 log.info("Starting: {}", tc.testName());

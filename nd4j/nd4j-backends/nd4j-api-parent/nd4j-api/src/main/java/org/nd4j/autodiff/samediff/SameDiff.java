@@ -2049,8 +2049,10 @@ public class SameDiff extends SDBaseOps {
      * @param constant Value for the constant SDVariable
      * @return
      */
-    public SDVariable constant(@NonNull String name, @NonNull INDArray constant){
+    public SDVariable constant(String name, @NonNull INDArray constant){
         Preconditions.checkState(!variables.containsKey(name), "Variable with name \"%s\" already exists", name);
+        if (name == null || name.length() < 1)
+            name = getNewVarName();
         SDVariable v = new SDVariable(name, VariableType.CONSTANT, this, constant.shape(), constant.dataType(), null);
         variables.put(name, Variable.builder().name(name).variable(v).build());
         constantArrays.put(name, new DeviceLocalNDArray(constant));
@@ -2270,16 +2272,16 @@ public class SameDiff extends SDBaseOps {
      * @param arr Array to associate with the new variable
      * @return New SDVariable with the specified name and array
      */
-    public SDVariable var(String name, INDArray arr) {
+    public SDVariable var(String name, @NonNull INDArray arr) {
         if (variables.containsKey(name) && variables.get(name).getVariable().getArr() != null)
             throw new IllegalArgumentException("Another variable with the name " + name + " already exists.");
+        Preconditions.checkState(arr.dataType().isFPType(), "Cannot create variable with non-floating point type:" +
+                " provided array has datatype %s. Variables must be floating point type to be trainable by backpropagation.\n" +
+                "For non floating point types, these should be created as placeholders or constants instead.", arr.dataType());
 
 
         if (name == null || name.length() < 1)
             name = getNewVarName();
-
-        if (arr == null)
-            throw new IllegalArgumentException("Array for " + name + " must not be null");
 
         boolean duped = false;
         if(arr.isAttached()) {
@@ -2721,6 +2723,99 @@ public class SameDiff extends SDBaseOps {
         }
     }
 
+    /**
+     * Create a new double scalar constant (rank 0) with the specified value
+     * @param value Value to initialize the constant with
+     * @return SDVariable
+     */
+    public SDVariable constant(double value){
+        return constant(null, value);
+    }
+
+    /**
+     * Create a new double scalar constant (rank 0) with the specified value
+     * @param name  Name of the SDVariable
+     * @param value Value to initialize the constant with
+     * @return SDVariable
+     */
+    public SDVariable constant(String name, double value) {
+        try(MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+            return constant(name, Nd4j.scalar(value));
+        }
+    }
+
+    /**
+     * Create a new float scalar constant (rank 0) with the specified value
+     * @param value Value to initialize the constant with
+     * @return SDVariable
+     */
+    public SDVariable constant(float value) {
+        return constant(null, value);
+    }
+
+    /**
+     * Create a new float scalar constant (rank 0) with the specified value
+     * @param name  Name of the SDVariable
+     * @param value Value to initialize the constant with
+     * @return SDVariable
+     */
+    public SDVariable constant(String name, float value) {
+        try(MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+            return constant(name, Nd4j.scalar(value));
+        }
+    }
+
+    /**
+     * Create a new integer scalar constant (rank 0) with the specified value
+     * @param value Value to initialize the constant with
+     */
+    public SDVariable constant(int value) {
+        return constant(null, value);
+    }
+
+    /**
+     * Create a new integer scalar constant (rank 0) with the specified value
+     * @param name  Name of the SDVariable
+     * @param value Value to initialize the constant with
+     * @return SDVariable
+     */
+    public SDVariable constant(String name, int value) {
+        try (MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+            return constant(name, Nd4j.scalar(value));
+        }
+    }
+
+    /**
+     * Create a new long scalar constant (rank 0) with the specified value
+     * @param value Value to initialize the constant with
+     */
+    public SDVariable constant(long value) {
+        return constant(null, value);
+    }
+
+    /**
+     * Create a new long scalar constant (rank 0) with the specified value
+     * @param name  Name of the SDVariable
+     * @param value Value to initialize the constant with
+     */
+    public SDVariable constant(String name, long value) {
+        try(MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+            return constant(name, Nd4j.scalar(value));
+        }
+    }
+
+    /**
+     * Create a new scalar constant (rank 0) with the specified value and datatype
+     *
+     * @param name     Name of the SDVariable
+     * @param dataType Data type of the scalar constant
+     * @param value    Value to initialize the constant with
+     */
+    public SDVariable constant(String name, DataType dataType, Number value) {
+        try(MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+            return constant(name, Nd4j.scalar(dataType, value));
+        }
+    }
 
     /**
      * Add the specified variable to this SameDiff instance
@@ -3376,6 +3471,9 @@ public class SameDiff extends SDBaseOps {
                     }
                 }
 
+                Preconditions.checkState(!minimalSubgraph.isEmpty(), "Cannot differentiate graph relative to the specified loss function variables %s:" +
+                        " graph does not contain any trainable SDVariables (floating point VARIABLE type SDVariables) that the loss function depend on.", lossVariables);
+
                 //At this point: we know the set of variables that are connected to the loss - these all (and only) need gradients
                 Queue<DifferentialFunction> availableForDiff = new LinkedList<>();
                 for(SDVariable lossVar : finalOutputs){
@@ -3387,7 +3485,6 @@ public class SameDiff extends SDBaseOps {
                 }
 
                 Set<String> differentiatedOps = new HashSet<>();
-                int numProcessed = 0;
                 while(!availableForDiff.isEmpty()){
                     DifferentialFunction df = availableForDiff.remove();
 
@@ -3401,7 +3498,6 @@ public class SameDiff extends SDBaseOps {
                     } else {
                         inputsToOp = sameDiff.ops.get(df.getOwnName()).getInputsToOp();
                         outputsOfOp = sameDiff.ops.get(df.getOwnName()).getOutputsOfOp();
-                        numProcessed++;
                     }
 
 
@@ -3433,7 +3529,6 @@ public class SameDiff extends SDBaseOps {
                     List<SDVariable> currFnGrads = df.diff(grads);
                     differentiatedOps.add(df.getOwnName());
                     System.out.println("Differentiated op: \"" + df.getOwnName() + "\"");
-                    numProcessed++;
 
                     //Check the inputs to this op, see if we can differentiate those ops now (and if so: add to queue)
                     for(String s : inputsToOp){
