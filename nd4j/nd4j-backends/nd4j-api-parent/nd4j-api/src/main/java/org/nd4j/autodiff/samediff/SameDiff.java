@@ -1429,12 +1429,33 @@ public class SameDiff extends SDBaseOps {
         return new ArrayList<>(variableMap().values());
     }
 
+    /**
+     * Clear/remove any existing loss variables, and set the loss variables to the specified variable names.<br>
+     * See {@link #addLossVariable(String)} for more details
+     * @param lossVariableNames Names of variables to be loss function variables
+     */
     public void setLossVariables(String... lossVariableNames){
         this.lossVariables.clear();
-        Collections.addAll(this.lossVariables, lossVariableNames);
+        for(String s : lossVariableNames){
+            addLossVariable(s);
+        }
     }
 
+    /**
+     * Mark the specified variable as a loss function variable. This means that this variable will be minimized via backprop during training.<br>
+     * This will add the variable as a loss to any others - i.e., if multiple variables are marked as losses, their values will be summed
+     * to give the total network loss.<br>
+     * Note that only floating point (Float16/32/64) variables may be marked as a loss.<br>
+     * Note also that only ARRAY type SDVariables can be marked as losses to be minimized. That is, we cannot mark the value
+     * of a constant, variable or placeholder to be minimized as doing so would not make sense.<br>
+     */
     public void addLossVariable(@NonNull String variableName){
+        Preconditions.checkState(hasVariable(variableName), "No variable with name \"%s\" exists", variableName);
+        SDVariable v = getVariable(variableName);
+        Preconditions.checkState(v.dataType().isFPType(), "Only floating point type variables can be marked as losses to be minimized." +
+                " SDVariable \"%s\" has datatype %s", variableName, v.dataType());
+        Preconditions.checkState(v.getVariableType() == VariableType.ARRAY, "Only ARRAY type SDVariables can be marked as losses to be minimized." +
+                " SDVariable \"%s\" has variable type %s", variableName, v.getVariableType());
         if(!lossVariables.contains(variableName)){
             lossVariables.add(variableName);
         }

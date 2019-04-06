@@ -1914,6 +1914,20 @@ public class SDVariable extends DifferentialFunction implements Serializable {
         return sameDiff.convertToVariable(this);
     }
 
+
+    /**
+     * Mark this variable as a loss function variable. This means that this variable will be minimized via backprop during training.<br>
+     * This will add the variable as a loss to any others - i.e., if multiple variables are marked as losses, their values will be summed
+     * to give the total network loss.<br>
+     * Note that only floating point (Float16/32/64) variables may be marked as a loss.<br>
+     * Note also that only ARRAY type SDVariables can be marked as losses to be minimized. That is, we cannot mark the value
+     * of a constant, variable or placeholder to be minimized as doing so would not make sense.<br>
+     * This is equivalent to {@link SameDiff#addLossVariable(String)}
+     */
+    public void markAsLoss(){
+        sameDiff.addLossVariable(getVarName());
+    }
+
     private static int binArrToInt(int[] arr) {
         int x = 0;
         int m = 1;
