@@ -2045,19 +2045,21 @@ public class SameDiff extends SDBaseOps {
     }
 
     /**
-     * Create an SDVariable with a fixed/constant value, with a generated name
+     * Create an SDVariable with a fixed/constant value, with a generated name<br>
+     * Constants are not modified by training/backprop. See {@link VariableType} for more details.
      * @param constant Value for the constant SDVariable
-     * @return
+     * @return The created variable
      */
     public SDVariable constant(@NonNull INDArray constant){
         return constant(getNewVarName(), constant);
     }
 
     /**
-     * Create an SDVariable with a fixed/constant value
+     * Create an SDVariable with a fixed/constant value<br>
+     * Constants are not modified by training/backprop. See {@link VariableType} for more details.
      * @param name  Name of the constant SDVariable
      * @param constant Value for the constant SDVariable
-     * @return
+     * @return The created variable
      */
     public SDVariable constant(String name, @NonNull INDArray constant){
         Preconditions.checkState(!variables.containsKey(name), "Variable with name \"%s\" already exists", name);
@@ -2096,10 +2098,15 @@ public class SameDiff extends SDBaseOps {
     }
 
     /**
-     * Create a variable with a place holder
-     * @param name the name of the variable
-     * @param shape the shape of the variable if any
-     * @return
+     * Create a a placeholder variable. Placeholders are variables that expect an array to be provided during training
+     * and inference.<br>
+     * For example, the SDVariables for your input/features and labels should be placeholders.<br>
+     * See also: {@link VariableType}
+     *
+     * @param name     the name of the variable
+     * @param dataType Data type of the new placeholder
+     * @param shape    the shape of the variable if any
+     * @return SDVariable placeholder
      */
     public SDVariable placeHolder(String name, org.nd4j.linalg.api.buffer.DataType dataType, long...shape) {
         SDVariable ret = new SDVariable(name, VariableType.PLACEHOLDER, this, shape, dataType, null);
@@ -2109,6 +2116,7 @@ public class SameDiff extends SDBaseOps {
 
     /**
      * Variable initialization with a specified {@link WeightInitScheme}
+     * This method creates VARIABLE type SDVariable - i.e., must be floating point, and is a trainable parameter. See {@link VariableType} for more details.
      *
      * @param name             the name of the variable
      * @param shape            the shape of the array to be created
@@ -2139,6 +2147,16 @@ public class SameDiff extends SDBaseOps {
         return ret;
     }
 
+    /**
+     * Creates a {@link SDVariable} with the given shape and name<br>
+     * The underlying array will be initialized using the specified weight initilization scheme<br>
+     * This is a VARIABLE type SDVariable - i.e., must be floating point, and is a trainable parameter. See {@link VariableType} for more details.
+     *
+     * @param name  the name of the variable
+     * @param shape the shape of the variable
+     * @param weightInitScheme Weight initialization scheme to use to initialize the underlying array
+     * @return the created variable
+     */
     public SDVariable var(@NonNull String name, @NonNull LongShapeDescriptor shape, WeightInitScheme weightInitScheme) {
         return var(name, weightInitScheme, shape.dataType(), shape.getShape());
     }
@@ -2146,7 +2164,8 @@ public class SameDiff extends SDBaseOps {
 
     /**
      * Creates a {@link SDVariable} with the given shape and name<br>
-     * Any array will be generated with all zeros for the values
+     * Any array will be generated with all zeros for the values<br>
+     * This is a VARIABLE type SDVariable - i.e., must be floating point, and is a trainable parameter. See {@link VariableType} for more details.
      *
      * @param name  the name of the variable
      * @param shape the shape of the variable
@@ -2160,22 +2179,49 @@ public class SameDiff extends SDBaseOps {
         return var(name, new ZeroInitScheme(), dataType, shape);
     }
 
+    /**
+     * Creates a {@link SDVariable} with the given shape and name<br>
+     * Any array will be generated with all zeros for the values<br>
+     * This is a VARIABLE type SDVariable - i.e., must be floating point, and is a trainable parameter. See {@link VariableType} for more details.
+     *
+     * @param name      the name of the variable
+     * @param shapeDesc the shape of the variable
+     * @return the created variable
+     */
     public SDVariable var(String name, LongShapeDescriptor shapeDesc) {
         Preconditions.checkNotNull(shapeDesc != null, "Invalid shape: shape may not be null");
         return var(name, shapeDesc, new ZeroInitScheme());
     }
 
+    /**
+     * Creates a {@link SDVariable} with the given shape and name<br>
+     * Any array will be generated with all zeros for the values. Data type will be given by {@link Nd4j#defaultFloatingPointType()}<br>
+     * This is a VARIABLE type SDVariable - i.e., must be floating point, and is a trainable parameter. See {@link VariableType} for more details.
+     *
+     * @param name  the name of the variable
+     * @param shape the shape of the variable
+     * @return the created variable
+     */
     public SDVariable var(String name, int... shape){
         return var(name, Nd4j.defaultFloatingPointType(), shape);
     }
 
+    /**
+     * Creates a {@link SDVariable} with the given shape and name<br>
+     * Any array will be generated with all zeros for the values. Data type will be given by {@link Nd4j#defaultFloatingPointType()}<br>
+     * This is a VARIABLE type SDVariable - i.e., must be floating point, and is a trainable parameter. See {@link VariableType} for more details.
+     *
+     * @param name  the name of the variable
+     * @param shape the shape of the variable
+     * @return the created variable
+     */
     public SDVariable var(String name, long... shape){
         return var(name, Nd4j.defaultFloatingPointType(), shape);
     }
 
     /**
      * Creates a {@link SDVariable} with the given shape and name<br>
-     * Any array will be generated with all zeros for the values
+     * Any array will be generated with all zeros for the values<br>
      *
      * @param name  the name of the variable
      * @param shape the shape of the variable
@@ -2235,7 +2281,8 @@ public class SameDiff extends SDBaseOps {
 
     /**
      * Creates a {@link SDVariable} with the specified shape and a generated name<br>
-     * Any array will be generated with all zeros for the values
+     * Any array will be generated with all zeros for the values<br>
+     * This method creates a VARIABLE type SDVariable - i.e., must be floating point, and is a trainable parameter. See {@link VariableType} for more details.
      *
      * @param shape the shape of the variable
      * @return the created variable
@@ -2246,7 +2293,8 @@ public class SameDiff extends SDBaseOps {
 
     /**
      * Creates a {@link SDVariable} with the specified shape and a generated name<br>
-     * Any array will be generated with all zeros for the values
+     * Any array will be generated with all zeros for the values<br>
+     * This method creates a VARIABLE type SDVariable - i.e., must be floating point, and is a trainable parameter. See {@link VariableType} for more details.
      *
      * @param shape the shape of the variable
      * @return the created variable
@@ -2268,7 +2316,8 @@ public class SameDiff extends SDBaseOps {
     }
 
     /**
-     * Create an {@link SDVariable} with a generated name, and assocate the specified array with it
+     * Create an {@link SDVariable} with a generated name, and assocate the specified array with it.<br>
+     * This is a VARIABLE type SDVariable - i.e., must be floating point, and is a trainable parameter. See {@link VariableType} for more details.
      * @param arr Array to associate with the new variable
      * @return New SDVariable
      * @see #var(String, INDArray)
@@ -2278,7 +2327,8 @@ public class SameDiff extends SDBaseOps {
     }
 
     /**
-     * Create an {@link SDVariable} with the specified name, and assocate the specified array with it
+     * Create an {@link SDVariable} with the specified name, and associate the specified array with it<br>
+     * This is a VARIABLE type SDVariable - i.e., must be floating point, and is a trainable parameter. See {@link VariableType} for more details.
      * @param arr Array to associate with the new variable
      * @return New SDVariable with the specified name and array
      */
@@ -2331,7 +2381,8 @@ public class SameDiff extends SDBaseOps {
      * Convert the specified variable to a constant. This is equivalent to "freezing" a variable so that it's value
      * won't be changed by further training.<br>
      * This can only be done for variables and placeholders, not ARRAY type variables (which are usually network activations).
-     * As a constant, this variable will no longer be modified by any subsequent training.
+     * As a constant, this variable will no longer be modified by any subsequent training.<br>
+     * See also: {@link VariableType}
      *
      * @param variable Variable to convert to a constant
      * @return The (now constant) SDVariable
@@ -2345,7 +2396,8 @@ public class SameDiff extends SDBaseOps {
      * Convert all of the specified variables to constants. This is equivalent to "freezing" the variables so that their values
      * won't be changed by further training.<br>
      * This can only be done for variables and placeholders, not ARRAY type variables (which are usually network activations).
-     * As constants, these variables will no longer be modified by any subsequent training.
+     * As constants, these variables will no longer be modified by any subsequent training.<br>
+     * See also: {@link VariableType}
      *
      * @param variables Variables to convert to constants
      * @return The (now constant) SDVariables
@@ -2440,11 +2492,14 @@ public class SameDiff extends SDBaseOps {
     /**
      * Convert the specified variable to a VARIABLE type SDVariable.<br>
      * This can only be done for constants and placeholders, not ARRAY type variables (which are usually network activations).
-     * As a variable, this variable will modified during any subsequent training.
+     * As a variable, this variable will modified during any subsequent training.<br>
+     * See also: {@link VariableType}
      *
      * @return This variable (now a variable type SDVariable)
      */
     public SDVariable convertToVariable(@NonNull SDVariable constant) {
+        Preconditions.checkState(constant.dataType().isFPType(), "Only floating point SDVariables can be converted to variables," +
+                " datatype of %s is %s", constant.getVarName(), constant.dataType());
         convertToVariables(Collections.singletonList(constant));
         return constant;
     }
@@ -2452,7 +2507,8 @@ public class SameDiff extends SDBaseOps {
     /**
      * Convert the specified variables to VARIABLE type SDVariables.<br>
      * This can only be done for constants and placeholders, not ARRAY type variables (which are usually network activations).
-     * As variables, this variable will modified during any subsequent training.
+     * As variables, this variable will modified during any subsequent training.<br>
+     * See also: {@link VariableType}
      */
     public void convertToVariables(@NonNull List<SDVariable> constants){
         if(constants.size() == 0)
@@ -2734,7 +2790,8 @@ public class SameDiff extends SDBaseOps {
     }
 
     /**
-     * Create a new double scalar constant (rank 0) with the specified value
+     * Create a new double scalar constant (rank 0) with the specified value.<br>
+     * Constants are not modified by training/backprop. See {@link VariableType} for more details.
      * @param value Value to initialize the constant with
      * @return SDVariable
      */
@@ -2755,7 +2812,8 @@ public class SameDiff extends SDBaseOps {
     }
 
     /**
-     * Create a new float scalar constant (rank 0) with the specified value
+     * Create a new float scalar constant (rank 0) with the specified value<br>
+     * Constants are not modified by training/backprop. See {@link VariableType} for more details.
      * @param value Value to initialize the constant with
      * @return SDVariable
      */
