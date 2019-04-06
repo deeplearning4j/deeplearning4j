@@ -2934,7 +2934,7 @@ public class SameDiffTests {
     @Test
     public void testNonScalarOutput1(){
         SameDiff sd = SameDiff.create();
-        SDVariable a = sd.reshape("a", sd.linspace("at", DataType.DOUBLE, 1, 15, 15), 3, 5);//.add(1);
+        SDVariable a = sd.reshape("a", sd.linspace("at", DataType.DOUBLE, 1, 15, 15), 3, 5);
         SDVariable b = sd.one("b", DataType.DOUBLE, 3, 5);
 
         SDVariable out = a.mul(b);

@@ -126,7 +126,7 @@ public class GradCheckUtil {
         //Collect variables to get gradients for - we want placeholders AND variables
         Set<String> gradVarNames = new HashSet<>();
         for(Variable v : sd.getVariables().values()){
-            if(v.getVariable().getVariableType() == VariableType.VARIABLE || v.getVariable().getVariableType() == VariableType.PLACEHOLDER){
+            if(v.getVariable().dataType().isFPType() && (v.getVariable().getVariableType() == VariableType.VARIABLE || v.getVariable().getVariableType() == VariableType.PLACEHOLDER)){
                 SDVariable g = v.getVariable().getGradient();
                 Preconditions.checkNotNull(g, "No gradient variable found for variable %s", v.getVariable());
                 gradVarNames.add(g.getVarName());
@@ -138,6 +138,10 @@ public class GradCheckUtil {
         for(SDVariable v : sd.variables()){
             if (fnOutputs.contains(v.getVarName())) {
                 //This is not an input to the graph
+                continue;
+            }
+            if(!v.hasGradient()){
+                //Skip non-fp variables, or variables that don't impact loss function value
                 continue;
             }
             SDVariable g = sd.grad(v.getVarName());

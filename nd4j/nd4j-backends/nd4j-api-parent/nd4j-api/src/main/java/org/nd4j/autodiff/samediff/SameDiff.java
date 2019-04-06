@@ -1430,6 +1430,17 @@ public class SameDiff extends SDBaseOps {
     }
 
     /**
+     * Get the names of variables (if any) that have been marked as loss variables to be minimized.<br>
+     * Variables can be marked as loss variables in a few different ways:<br>
+     * (a) Losses are automatically added when creating loss functions via {@link #sd()}<br>
+     * (b) Via {@link #setLossVariables(String...)}, @link #addLossVariable(String)} or {@link SDVariable#markAsLoss()}<br>
+     * (c) Via {@link TrainingConfig#setLossVariables(List)}<br>
+     */
+    public List<String> getLossVariables(){
+        return this.lossVariables;
+    }
+
+    /**
      * Clear/remove any existing loss variables, and set the loss variables to the specified variable names.<br>
      * See {@link #addLossVariable(String)} for more details
      * @param lossVariableNames Names of variables to be loss function variables
@@ -2558,21 +2569,51 @@ public class SameDiff extends SDBaseOps {
 
 
     /**
-     * Get the gradient for the given vertex id
+     * Get the gradient for the variable with the specified name.<br>
+     * The gradient variable is the variable that represents the derivative of the loss function with respect
+     * to the output of this variable. I.e., if this variable is X and loss function is L, then gradient() returns the
+     * variable representing dL/dX<br>
+     * Note that only floating point variables can have gradients.<br>
+     * Note also that a gradient may not yet be defined, and/or if no loss function variables have been set.<br>
+     * You can set the loss function variables using {@link SameDiff#setLossVariables(String...)} and then create the
+     * gradient functions using {@link SameDiff#createGradFunction()}. Alternatively, the gradient function will be
+     * created automatically when training is performed.
      *
      * @param varName the vertex id
      * @return the gradient for this variable or null
      */
     public SDVariable getGradForVariable(String varName) {
-        //TODO 2018/06/26 - Review this?
+        Preconditions.checkState(variables.containsKey(varName), "No variable with name \"%s\" exists", varName);
+        SDVariable v = getVariable(varName);
+        Preconditions.checkState(v.dataType().isFPType(), "Cannot get gradient of %s variable \"%s\": only floating" +
+                " point variables have gradients", varName, v.dataType());
         //Gradients are being placed in the inner "grad" function SameDiff instance, but not the outer one
-        // should they be synced and we just use the map in this instance?
         if (variables.containsKey(varName) && variables.get(varName).getGradient() != null) {
             return variables.get(varName).getGradient();
         } else if(sameDiffFunctionInstances.containsKey("grad") && sameDiffFunctionInstances.get("grad").variables.containsKey(varName)){
             return sameDiffFunctionInstances.get("grad").variables.get(varName).getGradient();
         }
         return null;
+    }
+
+    /**
+     * Determine if the specified variable has a gradient with respect to the current loss. Note that:
+     * (a) Non-floating-point variables (integer, string, etc) will never have gradients<br>
+     * (b) This method will return false if no gradient function has been created yet. See {@link SameDiff#createGradFunction()}
+     * and {@link SameDiff#setLossVariables(String...)}<br>
+     * (c) Floating point variables may not have any gradient if the specified loss variables does not depend on the
+     * specified variable at all. In this case, "no gradient" for floating point is equivalent to "always 0"<br>
+     *
+     * @param varName Name of the variable to check the existence of a gradient variable for
+     * @return True if a gradient variable exists for the specified variable, for the current loss
+     */
+    public boolean variableHasGradient(String varName){
+        Preconditions.checkState(variables.containsKey(varName), "No variable with name \"%s\" exists", varName);
+        SDVariable v = getVariable(varName);
+        if(!v.dataType().isFPType())
+            return false;
+
+        return getGradForVariable(varName) != null;
     }
 
 
@@ -4031,8 +4072,6 @@ public class SameDiff extends SDBaseOps {
             reverseMap.put(variable.getVarName(), varIdx);
             log.trace("Adding [{}] as [{}]", variable.getVarName(), varIdx);
 
-//            val arr = variable.getArr();
-
             int shape = 0;
             int name = bufferBuilder.createString(variable.getVarName());
             int array = arr == null ? 0 : arr.toFlatArray(bufferBuilder);
@@ -4114,7 +4153,15 @@ public class SameDiff extends SDBaseOps {
         }
         int placeholdersOffset = FlatGraph.createPlaceholdersVector(bufferBuilder, placeholderOffsets);
 
-        int fg = FlatGraph.createFlatGraph(bufferBuilder, graphId, variablesOffset, nodesOffset, outputsOffset, configuration.getFlatConfiguration(bufferBuilder), placeholdersOffset);
+        List<String> lossVars = getLossVariables();
+        int[] lossVarOffsets = new int[lossVars == null ? 0 : lossVars.size()];
+        for( int i=0; i<lossVarOffsets.length; i++ ){
+            lossVarOffsets[i] = bufferBuilder.createString(lossVars.get(i));
+        }
+        int lossVarOffset = FlatGraph.createLossVariablesVector(bufferBuilder, lossVarOffsets);
+
+        int fg = FlatGraph.createFlatGraph(bufferBuilder, graphId, variablesOffset, nodesOffset, outputsOffset,
+                configuration.getFlatConfiguration(bufferBuilder), placeholdersOffset, lossVarOffset);
         bufferBuilder.finish(fg);
 
         synchronized (this) {
@@ -4496,6 +4543,13 @@ public class SameDiff extends SDBaseOps {
                 if(!variablesByNodeAndOutNum.containsKey(p)){
                     variablesByNodeAndOutNum.put(p, sd.getVariable(varNames[i]));
                 }
+            }
+        }
+
+        //Reconstruct loss variables
+        if(fg.lossVariablesLength() > 0){
+            for(int i=0; i<fg.lossVariablesLength(); i++ ){
+                sd.addLossVariable(fg.lossVariables(i));
             }
         }
 

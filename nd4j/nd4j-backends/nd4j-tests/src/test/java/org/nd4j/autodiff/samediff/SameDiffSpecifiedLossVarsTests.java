@@ -13,7 +13,7 @@ import java.util.Map;
 
 import static junit.framework.TestCase.assertNotNull;
 import static junit.framework.TestCase.assertNull;
-import static org.junit.Assert.fail;
+import static org.junit.Assert.*;
 
 /**
  * Created by Alex on 04/04/2019.
@@ -34,7 +34,8 @@ public class SameDiffSpecifiedLossVarsTests {
         sd.setLossVariables("sum");
         sd.createGradFunction();
 
-        assertNull(shape.gradient());
+        assertFalse(shape.hasGradient());
+        try{ assertNull(shape.gradient()); } catch (IllegalStateException e){ assertTrue(e.getMessage().contains("only floating point variables")); }
         assertNotNull(out.gradient());
         assertNotNull(add.gradient());
         assertNotNull(ph1.gradient());
@@ -83,7 +84,9 @@ public class SameDiffSpecifiedLossVarsTests {
                 assertNotNull(s, gradVar);
             }
             //Unused:
-            for(String s : new String[]{shape.getVarName(), unused1.getVarName(), unused2.getVarName(), unused3.getVarName()}){
+            assertFalse(shape.hasGradient());
+            try{ assertNull(shape.gradient()); } catch (IllegalStateException e){ assertTrue(e.getMessage().contains("only floating point variables")); }
+            for(String s : new String[]{unused1.getVarName(), unused2.getVarName(), unused3.getVarName()}){
                 assertNull(sd.getVariable(s).gradient());
             }
         }
