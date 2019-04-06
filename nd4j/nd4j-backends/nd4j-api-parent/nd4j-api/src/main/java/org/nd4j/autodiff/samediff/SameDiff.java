@@ -3372,7 +3372,9 @@ public class SameDiff extends SDBaseOps {
 
         Step 3: Differentiate ops in minimal subgraph
         The only major issue here is with multiple output ops, where only one of the outputs lead to the loss.
-        For example, X -> slice -> (A,B); B -> loss, with A being unused.
+        For example, X -> slice -> (A,B); B -> loss, with A being unused (in that it doesn't contribute to the loss function)
+        But to do split op backprop, we need gradient variables/arrays for both outputs (A and B).
+        We know the shape and type of dL/dA must be exactly the same as A; we also know that the loss function doesn't depend on A. Hence, dL/dA == zerosLike(A)
 
          */
 
@@ -3623,6 +3625,7 @@ public class SameDiff extends SDBaseOps {
                             if(!v.dataType().isFPType()){
                                 grads.add(null);
                             } else {
+                                //See "Step 3: Differentiate ops in minimal subgraph" above for explanation on why this should be zerosLike here...
                                 SDVariable gTemp = sameDiff.zerosLike(v);
                                 grads.add(gTemp);
                             }
