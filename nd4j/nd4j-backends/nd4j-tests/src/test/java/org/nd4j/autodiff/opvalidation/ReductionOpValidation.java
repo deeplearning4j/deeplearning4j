@@ -324,7 +324,7 @@ public class ReductionOpValidation extends BaseOpValidation {
 
         for (int dim : new int[]{0, Integer.MAX_VALUE}) {    //These two cases are equivalent here
 
-            for (int i = 0; i < 18; i++) {
+            for (int i = 0; i < 16; i++) {
 
                 SameDiff sd = SameDiff.create();
 
@@ -342,6 +342,7 @@ public class ReductionOpValidation extends BaseOpValidation {
                 TestCase tc = new TestCase(sd);
                 boolean uDistInput = false;
                 boolean gradientCheckable = true;
+                INDArray exp = null;
                 switch (i) {
                     case 0:
                         loss = sd.mean("loss", msePerEx, dim);
@@ -384,14 +385,13 @@ public class ReductionOpValidation extends BaseOpValidation {
                         name = "normmax";
                         break;
                     case 10:
-                        loss = sd.math().countNonZero("loss", msePerEx, dim).castTo(DataType.DOUBLE);
-                        name = "countNonZero";
-                        gradientCheckable = false;
+                        loss = sd.math().entropy("loss", msePerEx, dim);
+                        name = "entropy";
                         break;
                     case 11:
-                        loss = sd.math().countZero("loss", msePerEx, dim).castTo(DataType.DOUBLE);
-                        name = "countZero";
-                        gradientCheckable = false;
+                        name = "logEntropy";
+                        loss = sd.math().logEntropy("loss", msePerEx, dim);
+                        uDistInput = true;
                         break;
                     case 12:
                         loss = sd.math().amax("loss", msePerEx, dim);
@@ -409,15 +409,6 @@ public class ReductionOpValidation extends BaseOpValidation {
                         loss = sd.math().amean("loss", msePerEx, dim);
                         name = "amean";
                         break;
-                    case 16:
-                        loss = sd.math().entropy("loss", msePerEx, dim);
-                        name = "entropy";
-                        break;
-                    case 17:
-                        name = "logEntropy";
-                        loss = sd.math().logEntropy("loss", msePerEx, dim);
-                        uDistInput = true;
-                        break;
                     default:
                         throw new RuntimeException();
                 }
@@ -433,6 +424,9 @@ public class ReductionOpValidation extends BaseOpValidation {
                 sd.associateArrayWithVariable(labelArr, label);
 
                 tc.gradientCheck(gradientCheckable);
+                if(exp != null){
+                    tc.expectedOutput(loss.getVarName(), exp);
+                }
 
                 String error = OpValidation.validate(tc);
                 if (error != null) {

@@ -1450,6 +1450,9 @@ public class SameDiff extends SDBaseOps {
         for(String s : lossVariableNames){
             addLossVariable(s);
         }
+        //After changing loss function variables, we (probably) need to recreate gradient function - as gradient
+        // function is defined with respect to specific loss function variables
+        sameDiffFunctionInstances.remove("grad");
     }
 
     /**
@@ -1581,7 +1584,14 @@ public class SameDiff extends SDBaseOps {
                 for (String s : trainingConfig.getTrainableParams()) {
                     //TODO fix using inference session
                     INDArray param = variables.get(s).getVariable().getArr();
-                    INDArray grad = variables.get(s).getVariable().getGradient().getArr();
+                    SDVariable gradVar = variables.get(s).getVariable().getGradient();
+                    if(gradVar == null){
+                        //Not all trainable parameters have gradients defined.
+                        //Consider graph: in1->loss1; in2->loss2, where we optimize only loss1.
+                        //No gradient will be present for in2, because in2 doesn't impact loss1 at all
+                        continue;
+                    }
+                    INDArray grad = gradVar.getArr();
                     //Note: don't need to divide by minibatch - that should be handled in loss function and hence loss function gradients,
                     // which should flow through to here
 
@@ -2612,7 +2622,7 @@ public class SameDiff extends SDBaseOps {
     public boolean variableHasGradient(String varName){
         Preconditions.checkState(variables.containsKey(varName), "No variable with name \"%s\" exists", varName);
         SDVariable v = getVariable(varName);
-        if(!v.dataType().isFPType())
+        if(!v.dataType().isFPType() || v.isConstant())
             return false;
 
         return getGradForVariable(varName) != null;
@@ -3201,7 +3211,11 @@ public class SameDiff extends SDBaseOps {
         for(Variable v : variables.values()){
             if(v.getVariable().getVariableType() == VariableType.VARIABLE){
                 SDVariable g = v.getVariable().gradient();
-                varGradNames.add(g.getVarName());
+                if(g != null) {
+                    //Not all variables can have gradients... for example: suppose graph has 2 independent loss functions,
+                    // optimizing only 1 might not require changing all variables
+                    varGradNames.add(g.getVarName());
+                }
             }
         }
 
