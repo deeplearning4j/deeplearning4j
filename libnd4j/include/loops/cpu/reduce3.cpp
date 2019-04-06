@@ -49,10 +49,10 @@ void Reduce3<X,Z>::execScalar(void *vx, Nd4jLong *xShapeInfo,
     auto xOrder = shape::order(xShapeInfo);
     auto yOrder = shape::order(yShapeInfo);
 
-    Z extraParamsVals[3] = {(X) 0.0f, (X) 0.0f, (X) 0.0f};
+    Z extraParamsVals[3] = {(Z) 0.0f, (Z) 0.0f, (Z) 0.0f};
     // it's possible case for EqualsWithEps op
     if (extraParams != nullptr) 
-        extraParamsVals[2] = extraParams[0];                
+        extraParamsVals[2] = extraParams[0];
     
     uint xShapeInfoCast[MAX_RANK];
     const bool canCastX = nd4j::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
@@ -117,12 +117,14 @@ void Reduce3<X,Z>::exec(void *vx, Nd4jLong *xShapeInfo,
                     void *vz, Nd4jLong *zShapeInfo,
                     int *dimension, int dimensionLength) {
 
-    auto x = reinterpret_cast<X *>(vx);
-    auto y = reinterpret_cast<X *>(vy);
-    auto z = reinterpret_cast<Z *>(vz);
-    // auto extraParams = reinterpret_cast<Z *>(vextraParams);
+    auto x = reinterpret_cast<X*>(vx);
+    auto y = reinterpret_cast<X*>(vy);
+    auto z = reinterpret_cast<Z*>(vz);
+    auto extraParams = reinterpret_cast<Z*>(vextraParams);
     
     Z extraParamsVals[3] = {(Z) 0.0f, (Z) 0.0f, (Z) 0.0f};
+    if (extraParams != nullptr)     // it's possible case for EqualsWithEps op
+        extraParamsVals[2] = extraParams[0];
 
     if(shape::isScalar(zShapeInfo)) {
         execScalar<OpType>(vx, xShapeInfo, extraParamsVals, vy, yShapeInfo, vz, zShapeInfo);
@@ -145,9 +147,11 @@ void Reduce3<X,Z>::exec(void *vx, Nd4jLong *xShapeInfo,
     auto x = reinterpret_cast<X *>(vx);
     auto y = reinterpret_cast<X *>(vy);
     auto z = reinterpret_cast<Z *>(vz);
-    // auto extraParams = reinterpret_cast<Z *>(vextraParams);
+    auto extraParams = reinterpret_cast<Z *>(vextraParams);
 
     Z extraParamsVals[3] = {(Z) 0.0f, (Z) 0.0f, (Z) 0.0f};
+    if (extraParams != nullptr)     // it's possible case for EqualsWithEps op
+        extraParamsVals[2] = extraParams[0];
 
     nd4j::Reduction3Loops<X,Z>::template loopReduce3<OpType>(x, xShapeInfo, y, yShapeInfo, z, zShapeInfo, dimension, dimensionLength, extraParamsVals);
 }
@@ -167,9 +171,13 @@ void Reduce3<X,Z>:: execAll(void *vx, Nd4jLong *xShapeInfo,
     auto x = reinterpret_cast<X *>(vx);
     auto y = reinterpret_cast<X *>(vy);
     auto z = reinterpret_cast<Z *>(vz);
-    // auto extraParams = reinterpret_cast<X *>(vextraParams);
-    
-    nd4j::Reduction3Loops<X,Z>::template loopReduce3All<OpType>(x, xShapeInfo, y, yShapeInfo, z, zShapeInfo, xTadShapeInfo, xOffsets, yTadShapeInfo, yOffsets);
+    auto extraParams = reinterpret_cast<X *>(vextraParams);
+
+    Z extraParamsVals[3] = {(Z) 0.0f, (Z) 0.0f, (Z) 0.0f};
+    if (extraParams != nullptr)     // it's possible case for EqualsWithEps op
+        extraParamsVals[2] = extraParams[0];
+
+    nd4j::Reduction3Loops<X,Z>::template loopReduce3All<OpType>(x, xShapeInfo, y, yShapeInfo, z, zShapeInfo, xTadShapeInfo, xOffsets, yTadShapeInfo, yOffsets, extraParamsVals);
 }
 
 //////////////////////////////////////////////////////////////////////////
