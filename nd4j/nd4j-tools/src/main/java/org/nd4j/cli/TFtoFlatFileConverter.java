@@ -1,10 +1,8 @@
 package org.nd4j.cli;
 
-import lombok.val;
-import org.nd4j.autodiff.execution.NativeGraphExecutioner;
-import org.nd4j.autodiff.execution.conf.ExecutionMode;
-import org.nd4j.autodiff.execution.conf.ExecutorConfiguration;
-import org.nd4j.autodiff.execution.conf.OutputMode;
+import org.junit.Assert;
+import org.junit.Ignore;
+import org.junit.Test;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.transform.*;
@@ -12,9 +10,6 @@ import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
 import org.nd4j.imports.tensorflow.TFImportOverride;
 import org.nd4j.imports.tensorflow.TFOpImportFilter;
 import org.nd4j.linalg.api.buffer.DataType;
-import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
-import org.nd4j.linalg.factory.Nd4j;
 
 import java.io.File;
 import java.io.IOException;
@@ -25,17 +20,17 @@ import java.util.*;
  */
 public class TFtoFlatFileConverter {
 
-    public static void convert(String inFile, String outFile) throws IOException {
-
+    public static void convert(String inFile, String outFile) throws IOException, org.nd4j.linalg.exception.ND4JIllegalStateException {
         SameDiff tg = TFGraphMapper.getInstance().importGraph(new File(inFile));
         tg.asFlatFile(new File(outFile));
     }
 
-    public static void convertBERT(String inFile, String outFile) throws IOException {
+    public static void convertBERT(String inFile, String outFile) throws IOException, org.nd4j.linalg.exception.ND4JIllegalStateException  {
+        //
+        // Working around some issues in the BERT model's execution. See file:
+        // nd4j/nd4j-backends/nd4j-tests/src/test/java/org/nd4j/imports/TFGraphs/BERTGraphTest.java
+        // for details.
 
-        /*
-         * Define: Op import overrides for the BERT model. This is used to skip the IteratorGetNext node and instead crate some placeholders
-         */
         int minibatchSize = 4;
         Map<String, TFImportOverride> m = new HashMap<>();
         m.put("IteratorGetNext", (inputs, controlDepInputs, nodeDef, initWith, attributesForNode, graph) -> {
@@ -96,100 +91,41 @@ public class TFtoFlatFileConverter {
 
         System.out.println("Exporting file "+outFile);
         sd.asFlatFile(new File(outFile));
+    }
+
+
+    @Test @Ignore
+    public void convertFile(){
+        // Change these variables to convert the file you want
+        String inputFilename = "/home/user/dl4j/models/densenet.pb";
+        String outputFilename = "/home/user/dl4j/models/densenet.fb";
+        // BERT Models require a specific pre-processing
+        Boolean isBertModel = false;
+
+        try {
+            if(isBertModel){
+                convertBERT(inputFilename, outputFilename);
+            }
+            else {
+                convert(inputFilename, outputFilename);
+            }
         }
+        catch (IOException e){
+            Assert.fail(e.toString());
+        }
+        catch (org.nd4j.linalg.exception.ND4JIllegalStateException e){
+            Assert.fail(e.toString());
+        }
+    }
 
     public static void main(String [] args) throws IOException {
         if(args.length<2){
             System.err.println("Usage:\n" +
                     "mvn exec:java -Dexec.mainClass=\"org.nd4j.cli.TFtoFlatFileConverter\" -Dexec.args=\"<input_file.pb> <output_file.fb>\"\n");
-            //mobileNetFlatBufferSanity();
-            //mobileNetFlatBufferSanityLibNd4j();
-            //testDenseNet();
-            //testMobileNet();
-            //testMobileNetOutput();
-            //testTfFiles();
         }
         else{
             convert(args[0], args[1]);
-            //convertBERT(args[0], args[1]);
         }
     }
 
-/*    public static void testTfFiles() throws IOException {
-        String inDir = "//home/yves/dl4j/models/";
-        String outDir = "/home/yves/tmp/fbmodels/";
-        String[] filenames = {"mobilenet_v1_0.5_128_frozen.pb",
-                "mobilenet_v2_1.0_224_frozen.pb",
-                "nasnet_mobile.pb",
-                "resnetv2_imagenet_frozen_graph.pb",
-                "squeezenet.pb",
-                "densenet.pb"};
-
-        for(int i=0;i<filenames.length;i++){
-            System.out.println("Testing model "+filenames[i]);
-            String outFilename = filenames[i].substring(0, filenames[i].length()-3) + ".fb";
-            convert(inDir+filenames[i], outDir+outFilename);
-        }
-    }
-
-    public static void testMobileNet() throws IOException {
-        //convert("/home/yves/tmp/mobilenet_v1_0.5_128_frozen.pb", "/home/yves/tmp/mobilenet.fb");
-    }
-
-    public static void testDenseNet() throws IOException {
-        //convert("/home/yves/tmp/densenet/densenet.pb", "/home/yves/tmp/densenet.fb");
-    }
-
-    public static void testMobileNetOutput(){
-        SameDiff tg = TFGraphMapper.getInstance().importGraph(new File("/home/yves/dl4j/models/mobilenet_v1_0.5_128_frozen.pb"));
-        INDArray array = Nd4j.ones(1,128,128,3);
-        tg.associateArrayWithVariable(array, "input");
-        //INDArray result = tg.execAndEndResult();
-        INDArray result = tg.execSingle(Collections.singletonMap("input",array), tg.outputs().get(0));
-
-        System.out.println("Result = "+result.toString());
-        System.out.println("Result ind max = "+result.argMax().toString());
-        System.out.println("Result arg max = "+result.get(result.argMax()).toString());
-    }
-
-    public static void mobileNetFlatBufferSanity() throws IOException {
-        SameDiff tg = SameDiff.fromFlatFile(new File("/home/yves/dl4j/models/flatBufferModels/master_version/mobilenet_v1_0.5_128_frozen.fb"));
-        INDArray array = Nd4j.zeros(1,128,128,3);
-        tg.associateArrayWithVariable(array, "input");
-
-        INDArray result = tg.execSingle(Collections.singletonMap("input",array), tg.outputs().get(0));
-
-
-        System.out.println("Result = "+result.toString());
-        System.out.println("Result ind max = "+result.argMax().toString());
-        System.out.println("Result arg max = "+result.get(result.argMax()).toString());
-    }
-
-    public static void mobileNetFlatBufferSanityLibNd4j() throws IOException {
-        //SameDiff tg = SameDiff.fromFlatFile(new File("/home/yves/dl4j/models/flatBufferModels/master_version/mobilenet_v1_0.5_128_frozen.fb"));
-        //SameDiff tg = SameDiff.fromFlatFile(new File("/home/yves/tmp/fbmodels/mobilenet_v1_0.5_128_frozen.fb"));
-        SameDiff tg = TFGraphMapper.getInstance().importGraph(new File("/home/yves/dl4j/models/mobilenet_v1_0.5_128_frozen.pb"));
-        INDArray array = Nd4j.zeros(1,128,128,3);
-        tg.associateArrayWithVariable(array, "input");
-
-        //INDArray result = tg.execSingle(Collections.singletonMap("input",array), tg.outputs().get(0));
-
-        val executioner = new NativeGraphExecutioner();
-        ExecutorConfiguration configuration = ExecutorConfiguration.builder()
-                .executionMode(ExecutionMode.SEQUENTIAL)
-                .profilingMode(OpExecutioner.ProfilingMode.DISABLED)
-                .gatherTimings(true)
-                .outputMode(OutputMode.VARIABLE_SPACE)
-                .build();
-
-
-        executioner.executeGraph(tg, configuration);
-        INDArray result = tg.getVariable("MobilenetV1/Predictions/Reshape_1").getArr();
-
-        System.out.println("Result = "+result.toString());
-        System.out.println("Result ind max = "+result.argMax().toString());
-        System.out.println("Result arg max = "+result.get(result.argMax()).toString());
-    }
-
-*/
 }
