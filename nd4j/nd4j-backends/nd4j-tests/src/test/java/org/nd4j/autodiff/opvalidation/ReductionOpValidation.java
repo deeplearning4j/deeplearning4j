@@ -324,8 +324,7 @@ public class ReductionOpValidation extends BaseOpValidation {
 
         for (int dim : new int[]{0, Integer.MAX_VALUE}) {    //These two cases are equivalent here
 
-//            for (int i = 0; i < 18; i++) {
-            for (int i = 2; i < 3; i++) {
+            for (int i = 0; i < 18; i++) {
 
                 SameDiff sd = SameDiff.create();
 

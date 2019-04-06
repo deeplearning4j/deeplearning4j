@@ -3409,7 +3409,7 @@ public class SameDiff extends SDBaseOps {
                     List<SDVariable> grads = new ArrayList<>();
                     for(String s : outputsOfOp){
                         SDVariable v = sameDiff.getVariable(s);
-                        SDVariable g = v.gradient();
+                        SDVariable g = v.hasGradient() ? v.gradient() : null;
 
                         if(g == null){
                             //If no gradient exists at this point, 3 possibilities:
@@ -3496,11 +3496,13 @@ public class SameDiff extends SDBaseOps {
                             }
                         }
 
-                        if(allAvailable){
+                        if(allAvailable && !availableForDiff.contains(o.getOp())){
                             availableForDiff.add(o.getOp());
                             System.out.println("Marked available for diff: " + o.getOp().getOwnName());
                         } else {
-                            System.out.println("Not all inputs available: " + o.getName());
+                            if(!availableForDiff.contains(o.getOp())) {
+                                System.out.println("Not all inputs available: " + o.getName());
+                            }
                         }
                     }
                 }
@@ -4684,7 +4686,8 @@ public class SameDiff extends SDBaseOps {
         sb.append("--- Summary ---\n");
         sb.append(String.format(format, "Variables:", varMap.size())).append(" (").append(countVarsWithArrays).append(" with arrays)").append("\n")
                 .append(String.format(format, "Functions:", functions.length)).append("\n")
-                .append(String.format(format, "SameDiff Function Defs:", sameDiffFunctionInstances.size()))
+                .append(String.format(format, "SameDiff Function Defs:", sameDiffFunctionInstances.size())).append("\n")
+                .append("Loss function variables: ").append(getLossVariables())
                 .append("\n\n");
 
         sb.append("--- Variables ---\n");
