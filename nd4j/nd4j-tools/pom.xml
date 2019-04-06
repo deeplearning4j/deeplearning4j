@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <parent>
+    <artifactId>nd4j</artifactId>
+    <groupId>org.nd4j</groupId>
+    <version>1.0.0-SNAPSHOT</version>
+  </parent>
+  <modelVersion>4.0.0</modelVersion>
+
+  <artifactId>nd4j-tools</artifactId>
+  <version>${nd4j.version}</version>
+  <properties>
+    <nd4j.backend>nd4j-native</nd4j.backend>
+    <maven.compiler.target>1.8</maven.compiler.target>
+    <maven.compiler.source>1.8</maven.compiler.source>
+  </properties>
+  <dependencies>
+    <dependency>
+      <groupId>org.nd4j</groupId>
+      <artifactId>${nd4j.backend}</artifactId>
+      <version>${nd4j.version}</version>
+      <scope>compile</scope>
+    </dependency>
+
+    <!-- Copy this into your own projects (without the comment block around it), for CPU operations-->
+    <!--
+    <dependency>
+        <groupId>org.nd4j</groupId>
+        <artifactId>nd4j-native-platform</artifactId>
+        <version>${nd4j.version}</version>
+    </dependency>
+    -->
+
+    <!-- Copy this into your own projects (without the comment block around it), for CUDA (NVIDIA GPU) operations-->
+    <!--
+    <dependency>
+        <groupId>org.nd4j</groupId>
+        <artifactId>nd4j-cuda-9.1-platform</artifactId>
+        <version>${nd4j.version}</version>
+    </dependency>
+    -->
+
+    <dependency>
+      <groupId>ch.qos.logback</groupId>
+      <artifactId>logback-classic</artifactId>
+      <version>${logback.version}</version>
+    </dependency>
+
+
+  </dependencies>
+
+</project>
