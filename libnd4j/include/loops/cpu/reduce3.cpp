@@ -48,7 +48,7 @@ void Reduce3<X,Z>::execScalar(void *vx, Nd4jLong *xShapeInfo,
     auto xOrder = shape::order(xShapeInfo);
     auto yOrder = shape::order(yShapeInfo);
 
-    Z extraParamsVals[3] = {(X) 0.0f, (X) 0.0f, (X) 0.0f};
+    Z extraParamsVals[3] = {(Z) 0.0f, (Z) 0.0f, (Z) 0.0f};
     // it's possible case for EqualsWithEps op
     if (extraParams != nullptr) 
         extraParamsVals[2] = extraParams[0];                
@@ -142,13 +142,12 @@ void Reduce3<X,Z>::exec(void *vx, Nd4jLong *xShapeInfo,
             uint xShapeInfoCast[MAX_RANK];
             const bool canCastX = nd4j::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
 
-             PRAGMA_OMP_PARALLEL_THREADS(info._numThreads)
+             PRAGMA_OMP_PARALLEL_ARGS(num_threads(info._numThreads) private(extraParamsVals))
             {                
                 auto threadNum = omp_get_thread_num();         
                 auto threadOffset = info.getThreadOffset(threadNum);
                 auto ulen = static_cast<unsigned int>(info.getItersPerThread(threadNum));
 
-                PRAGMA_OMP_SIMD
                 for (Nd4jLong i = 0; i < ulen; i++) {
                     auto offset = shape::indexOffset(i + threadOffset, xShapeInfo, xShapeInfoCast, zLen, canCastX);
                     z[offset] = OpType::update(z[offset], OpType::op(x[offset], y[offset], extraParamsVals), extraParamsVals);
@@ -338,9 +337,13 @@ void Reduce3<X,Z>::exec(void *vx, Nd4jLong *xShapeInfo,
                 uint xShapeInfoCast[MAX_RANK];
                 bool canCastX = nd4j::DataTypeUtils::castShapeInfo(xShapeInf, xShapeInfoCast);
 
-                PRAGMA_OMP_PARALLEL_FOR_SIMD_THREADS(num_threads)
+                PRAGMA_OMP_PARALLEL_FOR_SIMD_ARGS(num_threads(num_threads) if (num_threads>1) private(extraParamsVals))
                 for (int i = 0; i < zLen; i++) {
-                
+
+                    extraParamsVals[0] = (Z) 0.f;
+                    extraParamsVals[1] = (Z) 0.f;
+                    extraParamsVals[2] = (Z) 0.f;
+
                     Nd4jLong xOffset = xTadBigger ? tadPackX.primaryOffsets()[i] : 0;
                     Nd4jLong yOffset = !xTadBigger ? tadPackY.primaryOffsets()[i] : 0;
 
@@ -389,8 +392,12 @@ void Reduce3<X,Z>::exec(void *vx, Nd4jLong *xShapeInfo,
 
             if(shape::haveSameOffsets(xShapeInfo, yShapeInfo)) {
 
-                PRAGMA_OMP_PARALLEL_FOR_THREADS(num_threads)
+                PRAGMA_OMP_PARALLEL_FOR_SIMD_ARGS(num_threads(num_threads) if (num_threads>1) private(extraParamsVals))
                 for (unsigned int i = 0; i < zLen; i++) {
+
+                    extraParamsVals[0] = (Z) 0.f;
+                    extraParamsVals[1] = (Z) 0.f;
+                    extraParamsVals[2] = (Z) 0.f;
                 
                     auto offset = tadPackX.primaryOffsets()[i];
                     auto start = OpType::startingValue(x + offset);
@@ -413,8 +420,12 @@ void Reduce3<X,Z>::exec(void *vx, Nd4jLong *xShapeInfo,
                 uint yShapeInfoCast[MAX_RANK];
                 bool canCastY = nd4j::DataTypeUtils::castShapeInfo(tadPackY.primaryShapeInfo(), yShapeInfoCast);
 
-                PRAGMA_OMP_PARALLEL_FOR_THREADS(num_threads)
+                PRAGMA_OMP_PARALLEL_FOR_SIMD_ARGS(num_threads(num_threads) if (num_threads>1) private(extraParamsVals))
                 for (unsigned int i = 0; i < zLen; i++) {
+
+                    extraParamsVals[0] = (Z) 0.f;
+                    extraParamsVals[1] = (Z) 0.f;
+                    extraParamsVals[2] = (Z) 0.f;
                 
                     auto xOffset = tadPackX.primaryOffsets()[i];
                     auto yOffset = tadPackY.primaryOffsets()[i];
