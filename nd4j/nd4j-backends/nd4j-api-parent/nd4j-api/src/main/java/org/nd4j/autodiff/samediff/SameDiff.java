@@ -1437,7 +1437,7 @@ public class SameDiff extends SDBaseOps {
      * (c) Via {@link TrainingConfig#setLossVariables(List)}<br>
      */
     public List<String> getLossVariables(){
-        return this.lossVariables;
+        return Collections.unmodifiableList(this.lossVariables);
     }
 
     /**
@@ -3444,7 +3444,7 @@ public class SameDiff extends SDBaseOps {
 
 
                 //----- Step 1: Determine FP variables connected to loss -----
-                // Find all FP variables that are connected to loss by an FP32 path
+                // Find all FP variables that are connected to loss by an floating point (FP16/32/64) path
                 Set<String> allFpVarsConnectedToLoss = new HashSet<>();
                 Queue<String> toProcess = new LinkedList<>();
                 for(String s : lossVariables){
@@ -3634,7 +3634,6 @@ public class SameDiff extends SDBaseOps {
                     //Differentiate:
                     List<SDVariable> currFnGrads = df.diff(grads);
                     differentiatedOps.add(df.getOwnName());
-                    System.out.println("Differentiated op: \"" + df.getOwnName() + "\"");
 
                     //Check the inputs to this op, see if we can differentiate those ops now (and if so: add to queue)
                     for(String s : inputsToOp){
@@ -3671,7 +3670,6 @@ public class SameDiff extends SDBaseOps {
                         }
 
                         if(!isRequiredOp){
-                            System.out.println("Skipped as not required: " + opName);
                             continue;
                         }
 
@@ -3708,11 +3706,6 @@ public class SameDiff extends SDBaseOps {
 
                         if(allAvailable && !availableForDiff.contains(o.getOp())){
                             availableForDiff.add(o.getOp());
-                            System.out.println("Marked available for diff: " + o.getOp().getOwnName());
-                        } else {
-                            if(!availableForDiff.contains(o.getOp())) {
-                                System.out.println("Not all inputs available: " + o.getName());
-                            }
                         }
                     }
                 }

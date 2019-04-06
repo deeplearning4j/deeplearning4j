@@ -298,6 +298,12 @@ public class TrainingConfig {
             return this;
         }
 
+        /**
+         * Calling this method will mark the label as unused. This is basically a way to turn off label mapping validation in
+         * TrainingConfig builder, for training models without labels.<br>
+         * Put another way: usually you need to call {@link #dataSetLabelMapping(String...)} to set labels, this method
+         * allows you to say that the DataSet/MultiDataSet labels aren't used in training.
+         */
         public Builder markLabelsUnused(){
             this.markLabelsUnused = true;
             return this;
@@ -368,8 +374,8 @@ public class TrainingConfig {
                 Preconditions.checkState(dataSetFeatureMapping != null, "No DataSet feature mapping has been provided. A " +
                         "mapping between DataSet array positions and variables/placeholders must be provided - use dateSetFeatureMapping(...) to set this");
                 Preconditions.checkState(markLabelsUnused || dataSetLabelMapping != null, "No DataSet label mapping has been provided. A " +
-                        "mapping between DataSet array positions and variables/placeholders must be provided - use dateSetLabelMapping(...) to set this," +
-                        " or markLabelsUnused() to mark labels as unused (for example, for unsupervised learning)");
+                        "mapping between DataSet array positions and variables/placeholders must be provided - use dataSetLabelMapping(...) to set this," +
+                        " or use markLabelsUnused() to mark labels as unused (for example, for unsupervised learning)");
             }
 
             return new TrainingConfig(updater, regularization, minimize, dataSetFeatureMapping, dataSetLabelMapping,
