@@ -3421,7 +3421,7 @@ public class SameDiff extends SDBaseOps {
 
                 //----- Step 2: Determine minimal set of FP variables actually required -----
                 // Keep removing leaf nodes until only Variable type SDVariables remain
-                Set<String> minimalSubgraph = new HashSet<>(allFpVarsConnectedToLoss);
+                Set<String> minimalSubgraphVars = new HashSet<>(allFpVarsConnectedToLoss);
                 Queue<String> leafFPVars = new LinkedList<>();
                 for(String s : allFpVarsConnectedToLoss){
                     //First: determine if is a FP leaf (Array type SDVariable)
@@ -3450,7 +3450,7 @@ public class SameDiff extends SDBaseOps {
                 while(!leafFPVars.isEmpty()){
                     String nextLeaf = leafFPVars.remove();
                     Variable v = variables.get(nextLeaf);
-                    minimalSubgraph.remove(nextLeaf);
+                    minimalSubgraphVars.remove(nextLeaf);
 
                     //Now, after removing: check what this variable is input to...
                     //If nextLeaf is input to some op X, then if none of inputs y->X are present in subgraph, then
@@ -3464,7 +3464,7 @@ public class SameDiff extends SDBaseOps {
                             List<String> inputsToOp = op.getInputsToOp();
                             boolean anyPresent = false;
                             for(String s : inputsToOp){
-                                if(minimalSubgraph.contains(s)){
+                                if(minimalSubgraphVars.contains(s)){
                                     anyPresent = true;
                                     break;
                                 }
@@ -3485,7 +3485,7 @@ public class SameDiff extends SDBaseOps {
                     }
                 }
 
-                Preconditions.checkState(!minimalSubgraph.isEmpty(), "Cannot differentiate graph relative to the specified loss function variables %s:" +
+                Preconditions.checkState(!minimalSubgraphVars.isEmpty(), "Cannot differentiate graph relative to the specified loss function variables %s:" +
                         " graph does not contain any trainable SDVariables (floating point VARIABLE type SDVariables) that the loss function depend on.", lossVariables);
 
                 //At this point: we know the set of variables that are connected to the loss - these all (and only) need gradients
@@ -3495,6 +3495,40 @@ public class SameDiff extends SDBaseOps {
                     if(v.getOutputOfOp() != null){
                         String opName = v.getOutputOfOp();
                         availableForDiff.add(sameDiff.ops.get(opName).getOp());
+                    }
+                }
+
+                // Collect all the the ops that have to be traversed before we can conclude that the gradient for
+                // a variable is fully available
+                //For example, if we have  X -> op -> Y, and Y -> (A,B) we need gradient contribution from BOTH
+                // Y->A and Y->B connections before we can do differentiation of op "op"
+                final HashMap<String, List<String>> prerequisites = new HashMap<>();    //Key: variable name. Value: list of op names
+                for(String var : minimalSubgraphVars){
+                    Variable variable = variables.get(var);
+                    // Copy the collection, as the original one will be modified during backprop
+                    final List<String> inputsForOp = variable.getInputsForOp();
+                    if (inputsForOp != null) {
+                        List<String> req = new ArrayList<>();
+                        for(String opName : inputsForOp){
+                            //Need to filter ops here
+                            //For example, if we have: var -> Op1, and var -> Op2
+                            //we might not need to differentiate Op2 if output of Op2 doesn't impact loss function
+                            SameDiffOp o = ops.get(opName);
+                            List<String> opOutputs = o.getOutputsOfOp();
+                            boolean anyOpOutputsRequired = false;
+                            if(opOutputs != null) {
+                                for (String s : opOutputs) {
+                                    if(minimalSubgraphVars.contains(s)) {
+                                        anyOpOutputsRequired = true;
+                                        break;
+                                    }
+                                }
+                            }
+                            if(anyOpOutputsRequired){
+                                req.add(opName);
+                            }
+                        }
+                        prerequisites.put(variable.getName(), req);
                     }
                 }
 
@@ -3566,7 +3600,7 @@ public class SameDiff extends SDBaseOps {
                             List<String> opInputs = op.getInputsToOp();
                             boolean anyInputsRequired = false;
                             for(String s2 : opInputs){
-                                if(minimalSubgraph.contains(s2)){
+                                if(minimalSubgraphVars.contains(s2)){
                                     anyInputsRequired = true;
                                     break;
                                 }
@@ -3588,17 +3622,26 @@ public class SameDiff extends SDBaseOps {
                         //(a) we have gradient already, OR
                         //(b) it's not a FP variable, OR
                         //(c) it's a FP variable but not one that the loss depends on
+                        //Note that for "output array is used multiple times" case (i.e., X->opY->Y, X->opZ->Z) we need all gradient
+                        // contributions - i.e., we need to have differentiated both opY and opZ
 
                         boolean allAvailable = true;
                         SameDiffOp o = sameDiff.ops.get(opName);
                         for(String opOutput : o.getOutputsOfOp()){
                             Variable outVar = variables.get(opOutput);
                             if(outVar.getVariable().dataType().isFPType()){
-                                if(minimalSubgraph.contains(outVar.getName())){
+                                if(minimalSubgraphVars.contains(outVar.getName())){
                                     //Need gradient for this variable to be available before we can differentiate
                                     if(outVar.getVariable().gradient() == null){
                                         allAvailable = false;
                                         break;
+                                    }
+                                    //However, when a variable is used multiple times, we need ALL gradient contributions available:
+                                    List<String> prereqs = prerequisites.get(outVar.getName());
+                                    if(prereqs != null){
+                                        allAvailable &= differentiatedOps.containsAll(prereqs);
+                                        if(!allAvailable)
+                                            break;
                                     }
                                 }
                                 //If in't not in the minimal subgraph, loss doesn't depend on it, so we don't care about it
@@ -3617,7 +3660,7 @@ public class SameDiff extends SDBaseOps {
                 }
 
                 //Let's validate we actually differentiated everything correctly:
-                for(String s : minimalSubgraph){
+                for(String s : minimalSubgraphVars){
                     if(lossVariables.contains(s))
                         continue;
                     SDVariable g = variables.get(s).getVariable().gradient();
