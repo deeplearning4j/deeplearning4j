@@ -4,6 +4,7 @@
 #include <NDArray.h>
 #include <NDArrayFactory.h>
 #include <GraphExecutioner.h>
+#include <graph/profiling/GraphProfilingHelper.h>
 #include <iostream>
 #include <vector>
 #include <map>
@@ -167,12 +168,22 @@ void read_csv(string filename, NDArray* output, int width){
 
 void showVariables(Graph* graph){
     std::vector<Variable*> variablesVector = graph->getVariableSpace()->getVariables();
+    printf("Variables: \n");
     for(int i=0;i<variablesVector.size();i++){
         Variable* var = variablesVector[i];
-        //varNames[*(var->getName())] = var;
-        printf("_%s_ \n", var->getName()->c_str());
+        printf(" * %s\n", var->getName()->c_str());
     }
+    printf("\n");
+}
 
+void showPlaceholders(Graph* graph){
+    std::vector<Variable*> variablesVector = *(graph->getVariableSpace()->getPlaceholders());
+    printf("Placeholders: \n");
+    for(int i=0;i<variablesVector.size();i++){
+        Variable* var = variablesVector[i];
+        printf(" * %s\n", var->getName()->c_str());
+    }
+    printf("\n");
 }
 
 void rgbToBgrConversion(NDArray* img){
@@ -237,8 +248,9 @@ void inceptionPreprocessing(NDArray* img){
 
 void printUsage(){
     cout << "Usage: " <<endl;
-    cout << "./GraphExecutor model_file.fb image_file.png [ARGS]" << endl;
+    cout << "./GraphExecutor model_file.fb [image_file.png] [ARGS]" << endl;
     cout << endl;
+    cout << "If no image file is present, the graph will not be executed." <<endl;
     cout << "Available arguments: " << endl;
     cout << "\t-i input layer name (if not specified the program will try to guess it)" << endl;
     cout << "\t-o output layer name (if not specified the program will try to guess it)" << endl;
@@ -247,6 +259,9 @@ void printUsage(){
     cout << "\t\t1: INCEPTION (default)" << endl;
     cout << "\t\t2: VGG" << endl;
     cout << "\t--rgb2bgr switches the color channels" << endl;
+    cout << "\t--graph displays the graph of the model" << endl;
+    cout << "\t--variables lists the variables of the model" << endl;
+    cout << "\t--placeholders lists the placeholders of the model" << endl;
     cout << "\t-h this help message" << endl;
 
     /*
@@ -280,11 +295,11 @@ int main(int argc, char** argv){
     bool profiling = false;
     enum preProcessingType preProcessing = INCEPTION;
     bool rgbToBgr = false;
+    bool verbose = false;
     string inputLayerName = "";
     string outputLayerName = "";
 
     static ko_longopt_t longopts[] = {
-        { "debug",   ko_no_argument,         301 },
         { "verbose", ko_no_argument,         302 },
         { "graph",   ko_no_argument,         303 },
         { "variables", ko_no_argument,       304 },
@@ -297,14 +312,11 @@ int main(int argc, char** argv){
     };
     ketopt_t opt = KETOPT_INIT;
     int i, c;
-    while ((c = ketopt(&opt, argc, argv, 1, "dvhi:o:", longopts)) >= 0) {
+    while ((c = ketopt(&opt, argc, argv, 1, "vhi:o:", longopts)) >= 0) {
         switch(c){
-        case 'd':
-        case 301:
-            nd4j::Environment::getInstance()->setDebug(true);
-            break;
         case 'v':
         case 302:
+            nd4j::Environment::getInstance()->setDebug(true);
             nd4j::Environment::getInstance()->setVerbose(true);
             break;
         case 303:
@@ -371,51 +383,54 @@ int main(int argc, char** argv){
       argcount++;
     }
 
-    printf("Import FlatBuffer\n");
     auto graph = GraphExecutioner::importFromFlatBuffers(modelFilename.c_str());
-    printf("Build Graph\n");
     graph->buildGraph();
 
-    //showVariable(graph);
-    //graph->printOut();
+    if(displayVariables)
+        showVariables(graph);
+    if(displayGraph)
+        graph->printOut();
+    if(displayPlaceholders)
+        showPlaceholders(graph);
 
-    int width, height;
-    read_size(imageFilename.c_str(), width, height);
+    if(!imageFilename.empty()){
+        int width, height;
+        read_size(imageFilename.c_str(), width, height);
 
-    NDArray* inputArray = NDArrayFactory::create_<float>('c', {1, height, width, 3});
-    read_png_file(imageFilename.c_str(), inputArray);
-    //inputArray->assign(1.0f);
-    if(rgbToBgr){
-        printf("Converting rgb to bgr\n");
-        rgbToBgrConversion(inputArray);
+        NDArray* inputArray = NDArrayFactory::create_<float>('c', {1, height, width, 3});
+        read_png_file(imageFilename.c_str(), inputArray);
+        //inputArray->assign(1.0f);
+        if(rgbToBgr){
+            rgbToBgrConversion(inputArray);
+        }
+        if(preProcessing == VGG){
+            vggPreprocessing(inputArray);
+        }
+        else if (preProcessing == INCEPTION){
+            inceptionPreprocessing(inputArray);
+        }
+
+        Variable* input = new Variable(inputArray, inputLayerName.c_str());
+        graph->getVariableSpace()->replaceVariable(input);
+
+        //read_csv("/home/yves/dl4j/datasets/mobilev1.csv", &inputArray, width);
+
+        if(profiling){
+            Environment::getInstance()->setProfiling(true);
+            auto profile = GraphProfilingHelper::profile(graph, 1, 0);
+            profile->printOut();
+        }
+        GraphExecutioner::execute(graph);
+
+        NDArray* result = graph->getVariableSpace()->getVariable(&outputLayerName)->getNDArray();
+        std::vector<float> rvec = result->getBufferAsVector<float>();
+        LabelsImagenet imageNetLabels;
+        std::map<int, std::string>& labels = imageNetLabels.labels;
+
+        for(int k=0;k<20;k++){
+            printf("(%d): %f ", (int)(result->argMax()), rvec[result->argMax()]);
+            printf("\t %s\n", labels[result->argMax()-1].c_str());
+            result->p<float>(result->argMax(), 0);
+        }
     }
-    if(preProcessing == VGG){
-        printf("VGG-style preprocessing\n");
-        vggPreprocessing(inputArray);
-    }
-    else if (preProcessing == INCEPTION){
-        printf("inception-style preprocessing\n");
-        inceptionPreprocessing(inputArray);
-    }
-
-    Variable* input = new Variable(inputArray, inputLayerName.c_str());
-    graph->getVariableSpace()->replaceVariable(input);
-
-    //read_csv("/home/yves/dl4j/datasets/mobilev1.csv", &inputArray, width);
-
-    printf("Executing graph\n");
-    Nd4jStatus status = GraphExecutioner::execute(graph);
-    printf("Execution finished\n");
-
-    NDArray* result = graph->getVariableSpace()->getVariable(&outputLayerName)->getNDArray();
-    std::vector<float> rvec = result->getBufferAsVector<float>();
-    LabelsImagenet imageNetLabels;
-    std::map<int, std::string>& labels = imageNetLabels.labels;
-
-    for(int k=0;k<20;k++){
-        printf("(%d): %f ", (int)(result->argMax()), rvec[result->argMax()]);
-        printf("\t %s\n", labels[result->argMax()-1].c_str());
-        result->p<float>(result->argMax(), 0);
-    }
-    nd4j_printf("Execution status=%d\n",status);
 }
