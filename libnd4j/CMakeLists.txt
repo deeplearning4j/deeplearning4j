@@ -7,6 +7,7 @@ set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
 set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS OFF)
 
 option(BUILD_TESTS "Build tests" OFF)
+option(BUILD_STANDALONE "Build standalone GraphExecutor" OFF)
 
 # -fsanitize=address
 # -fsanitize=leak
@@ -69,6 +70,11 @@ endif ()
 
 if ($ENV{CLION_IDE})
     add_subdirectory(tests_cpu)
+endif ()
+
+if(BUILD_STANDALONE)
+    add_subdirectory(standalone)
+    add_dependencies(GraphExecutor nd4jcpu)
 endif ()
 
 set (CMAKE_INSTALL_PREFIX $ENV{ND4J_HOME}/nd4j-native-parent/nd4j-native/src/main/resources)

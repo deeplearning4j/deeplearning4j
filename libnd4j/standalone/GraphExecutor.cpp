@@ -171,7 +171,29 @@ void showVariables(Graph* graph){
     printf("Variables: \n");
     for(int i=0;i<variablesVector.size();i++){
         Variable* var = variablesVector[i];
-        printf(" * %s\n", var->getName()->c_str());
+        printf(" * %d %s", var->id(), var->getName()->c_str());
+        if(var->shape().size()>0){
+            printf("\t variable shape:");
+            bool skip_first=true;
+            for(auto s:var->shape()){
+                if(!skip_first) printf("%lld ", s);
+                skip_first=false;
+            }
+        }
+        if(var->hasNDArray()){
+            printf("\t array shape:");
+            long long * shapeInfo = var->getNDArray()->shapeInfo();
+            int rank = shape::rank(shapeInfo);
+            int lim = shape::shapeInfoLength(rank);
+            for (int i = 0; i < lim; i++) {
+                printf("%lld", (long long) shapeInfo[i]);
+
+                if (i < lim - 1) {
+                    printf(", ");
+                }
+            }
+        }
+        printf("\n");
     }
     printf("\n");
 }
@@ -244,6 +266,83 @@ void inceptionPreprocessing(NDArray* img){
             img->p<float>(0,y,x,2, (((float)(b))/128.0f) - 1.0f);
         }
     }
+}
+
+string guessInputLayer(Graph* graph, int width, int height){
+    std::vector<Variable*> variablesVector = graph->getVariableSpace()->getVariables();
+    std::vector<std::pair<int, string> > guessScore;
+    for(int i=0;i<variablesVector.size();i++){
+        Variable* var = variablesVector[i];
+        std::pair<int, string> guess(0, *var->getName());
+        if(var->shape().size()>0){
+            guess.first++;
+            bool skip_first=true;
+            for(auto s:var->shape()){
+                if(s==width || s==height)
+                    guess.first++;
+                skip_first=false;
+            }
+        }
+        guessScore.push_back(guess);
+    }
+    std::sort(guessScore.begin(), guessScore.end());
+    std::reverse(guessScore.begin(), guessScore.end());
+    if(guessScore.size()>0)
+        return guessScore[0].second;
+    else
+        return "";
+}
+
+string guessOutputLayer(Graph* graph){
+    std::vector<std::pair<int, string> > guessScore;
+    std::map<int, int> connections;
+    for(int nodeIndex:(*graph->nodes())){
+        Node* node = graph->nodeById(nodeIndex);
+        for (int e = 0; e < node->input()->size(); e++) {
+            auto in = node->input()->at(e);
+            connections[in.first]++;
+        }
+    }
+    for(int nodeIndex:(*graph->nodes())){
+        Node* node = graph->nodeById(nodeIndex);
+        std::pair<int, string> guess(0, *node->getName());
+        //printf("%s %d\n", node->name()->c_str(), connections[node->id()]);
+        if(connections[node->id()]==0){
+            //printf("%s gained a point\n", node->name()->c_str());
+            guess.first++;
+        }
+        Variable* var = graph->getVariableSpace()->getVariable(node->id());
+        if(var->hasNDArray()){
+            long long * shapeInfo = var->getNDArray()->shapeInfo();
+            int rank = shape::rank(shapeInfo);
+            //printf(" %s ", node->name()->c_str());
+            for (int i = 1; i <= rank; i++) {
+                //printf(" %d ", shapeInfo[i]);
+            }
+            //printf("\n");
+            for (int i = 1; i <= rank; i++) {
+                if(shapeInfo[i]==1000 || shapeInfo[i]==1001){
+                    //printf("%s gained a point\n", node->name()->c_str());
+                    guess.first++;
+                }
+                if(shapeInfo[i]!=1000 && shapeInfo[i]!=1001 && shapeInfo[i]!=1){
+                    //printf("%s lost a point\n", node->name()->c_str());
+                    guess.first--;
+                }
+            }
+        }
+        guessScore.push_back(guess);
+    }
+
+    std::sort(guessScore.begin(), guessScore.end());
+    std::reverse(guessScore.begin(), guessScore.end());
+    for(auto g:guessScore){
+        //printf("%d %s\n", g.first, g.second.c_str());
+    }
+    if(guessScore.size()>0)
+        return guessScore[0].second;
+    else
+        return "";
 }
 
 void printUsage(){
@@ -386,13 +485,6 @@ int main(int argc, char** argv){
     auto graph = GraphExecutioner::importFromFlatBuffers(modelFilename.c_str());
     graph->buildGraph();
 
-    if(displayVariables)
-        showVariables(graph);
-    if(displayGraph)
-        graph->printOut();
-    if(displayPlaceholders)
-        showPlaceholders(graph);
-
     if(!imageFilename.empty()){
         int width, height;
         read_size(imageFilename.c_str(), width, height);
@@ -410,6 +502,11 @@ int main(int argc, char** argv){
             inceptionPreprocessing(inputArray);
         }
 
+        if(inputLayerName.empty()){
+            inputLayerName = guessInputLayer(graph, width, height);
+            printf("Guessed the input layer as \"%s\"\n", inputLayerName.c_str());
+        }
+
         Variable* input = new Variable(inputArray, inputLayerName.c_str());
         graph->getVariableSpace()->replaceVariable(input);
 
@@ -422,6 +519,12 @@ int main(int argc, char** argv){
         }
         GraphExecutioner::execute(graph);
 
+        if(outputLayerName.empty()){
+            outputLayerName = guessOutputLayer(graph);
+            printf("Guessed the output layer as \"%s\"\n", outputLayerName.c_str());
+        }
+
+
         NDArray* result = graph->getVariableSpace()->getVariable(&outputLayerName)->getNDArray();
         std::vector<float> rvec = result->getBufferAsVector<float>();
         LabelsImagenet imageNetLabels;
@@ -433,4 +536,13 @@ int main(int argc, char** argv){
             result->p<float>(result->argMax(), 0);
         }
     }
+    if(displayGraph)
+        graph->printOut();
+    if(displayPlaceholders)
+        showPlaceholders(graph);
+    if(displayVariables)
+        showVariables(graph);
+
+
+
 }
