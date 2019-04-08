@@ -14,34 +14,43 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.nd4j.linalg.api.ops.impl.controlflow.compat;
+package org.nd4j.linalg.api.ops.custom;
 
-import org.nd4j.autodiff.samediff.SDVariable;
-import org.nd4j.linalg.api.buffer.DataType;
-import org.nd4j.linalg.api.ops.impl.transforms.BaseDynamicTransformOp;
+import lombok.val;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.DynamicCustomOp;
 
-import java.util.Collections;
-import java.util.List;
+/**
+ * This op takes arbitrary number of arrays as input, and returns single "flattened" vector
+ *
+ * @author raver119@gmail.com
+ */
+public class Flatten extends DynamicCustomOp {
+    private char order;
 
+    public Flatten() {
+        //
+    }
 
-public class StopGradient extends BaseDynamicTransformOp {
+    public Flatten(char order, INDArray... inputs) {
+        this.order = order;
+
+        for (val in:inputs)
+            inputArguments.add(in);
+
+        iArguments.add(Long.valueOf((int) this.order));
+    }
+
+    public Flatten(INDArray output, INDArray... inputs) {
+        this(output.ordering(), inputs);
+
+        outputArguments.add(output);
+    }
+
     @Override
     public String opName() {
-        return "stop_gradient";
+        return "flatten";
     }
 
-    @Override
-    public String tensorflowName() {
-        return "StopGradient";
-    }
 
-    @Override
-    public List<DataType> calculateOutputDataTypes(List<DataType> input){
-        return input;
-    }
-
-    @Override
-    public List<SDVariable> doDiff(List<SDVariable> gradients){
-        return Collections.singletonList(f().zerosLike(arg()));
-    }
 }

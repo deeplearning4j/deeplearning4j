@@ -14,34 +14,22 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.nd4j.linalg.api.ops.impl.controlflow.compat;
+//
+//  @author raver119@gmail.com
+//
 
-import org.nd4j.autodiff.samediff.SDVariable;
-import org.nd4j.linalg.api.buffer.DataType;
-import org.nd4j.linalg.api.ops.impl.transforms.BaseDynamicTransformOp;
+#ifndef DEV_TESTS_FLATTEN_H
+#define DEV_TESTS_FLATTEN_H
 
-import java.util.Collections;
-import java.util.List;
+#include <vector>
+#include <NDArray.h>
 
-
-public class StopGradient extends BaseDynamicTransformOp {
-    @Override
-    public String opName() {
-        return "stop_gradient";
-    }
-
-    @Override
-    public String tensorflowName() {
-        return "StopGradient";
-    }
-
-    @Override
-    public List<DataType> calculateOutputDataTypes(List<DataType> input){
-        return input;
-    }
-
-    @Override
-    public List<SDVariable> doDiff(List<SDVariable> gradients){
-        return Collections.singletonList(f().zerosLike(arg()));
+namespace nd4j {
+    namespace ops {
+        namespace helpers {
+            void flatten(std::vector<NDArray*> &inputs, NDArray *output, char order);
+        }
     }
 }
+
+#endif //DEV_TESTS_FLATTEN_H

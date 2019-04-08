@@ -16435,6 +16435,25 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
                                                                                 }
 //         #endif
 
+
+//         #if NOT_EXCLUDED(OP_flatten)
+        @Namespace("nd4j::ops") public static class flatten extends DeclarableCustomOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public flatten(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public flatten(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public flatten position(long position) {
+                return (flatten)super.position(position);
+            }
+        
+                                                                                    public flatten() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
+                                                                                }
+//         #endif
+
         /**
          * returns histogram (as 1D array) with fixed bins width
          * 
