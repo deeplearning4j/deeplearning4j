@@ -30,6 +30,7 @@ import org.deeplearning4j.clustering.strategy.FixedClusterCountStrategy;
 public class KMeansClustering extends BaseClusteringAlgorithm {
 
     private static final long serialVersionUID = 8476951388145944776L;
+    private static final double VARIATION_TOLERANCE= 1e-4;
 
 
     /**
@@ -99,5 +100,11 @@ public class KMeansClustering extends BaseClusteringAlgorithm {
         return new KMeansClustering(clusteringStrategy);
     }
 
+    public static KMeansClustering setup(int clusterCount, Distance distanceFunction,
+                                         boolean allowEmptyClusters) {
+        ClusteringStrategy clusteringStrategy = FixedClusterCountStrategy.setup(clusterCount, distanceFunction, false);
+        clusteringStrategy.endWhenDistributionVariationRateLessThan(VARIATION_TOLERANCE);
+        return new KMeansClustering(clusteringStrategy);
+    }
 
 }
