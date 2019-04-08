@@ -2151,6 +2151,12 @@ public class DifferentialFunctionFactory {
                 newAxisMask, shrinkAxisMask).outputVariable();
     }
 
+    public SDVariable stridedSliceBp(SDVariable in, SDVariable grad, SDVariable begin, SDVariable end, SDVariable strides, int beginMask,
+                                     int endMask, int ellipsisMask, int newAxisMask, int shrinkAxisMask) {
+        return new StridedSliceBp(sameDiff(), in, grad, begin, end, strides, beginMask, endMask, ellipsisMask,
+                newAxisMask, shrinkAxisMask).outputVariable();
+    }
+
     public SDVariable scatterAdd(SDVariable ref, SDVariable indices, SDVariable updates) {
         return new ScatterAdd(sameDiff(), ref, indices, updates).outputVariable();
     }

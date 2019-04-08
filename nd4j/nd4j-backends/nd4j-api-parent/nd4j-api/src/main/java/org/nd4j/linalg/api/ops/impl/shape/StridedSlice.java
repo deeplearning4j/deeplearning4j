@@ -249,8 +249,15 @@ public class StridedSlice extends DynamicCustomOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
-        return Collections.singletonList(f().stridedSliceBp(arg(), i_v.get(0), begin, end, strides, beginMask, endMask,
-                ellipsisMask, newAxisMask, shrinkAxisMask));
+        if(numInputArguments() == 1) {
+            //Array inputs for begin/end/strides
+            return Collections.singletonList(f().stridedSliceBp(arg(), i_v.get(0), begin, end, strides, beginMask, endMask,
+                    ellipsisMask, newAxisMask, shrinkAxisMask));
+        } else {
+            //SDVariable inputs for begin/end/strides
+            return Collections.singletonList(f().stridedSliceBp(arg(), i_v.get(0), arg(1), arg(2), arg(3), beginMask, endMask,
+                    ellipsisMask, newAxisMask, shrinkAxisMask));
+        }
     }
 
     @Override

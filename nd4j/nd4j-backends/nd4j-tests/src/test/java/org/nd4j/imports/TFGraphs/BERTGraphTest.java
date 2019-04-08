@@ -306,6 +306,7 @@ public class BERTGraphTest {
         SDVariable label = sd.placeHolder("label", DataType.FLOAT, 4, 2);
         SDVariable softmax = sd.getVariable("loss/Softmax");
         sd.loss().logLoss("loss", label, softmax);
+        assertEquals(Collections.singletonList("loss"), sd.getLossVariables());
 
         //Peform simple overfitting test - same input, but inverted labels
 
