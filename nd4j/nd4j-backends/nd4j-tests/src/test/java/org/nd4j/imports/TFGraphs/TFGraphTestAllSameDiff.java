@@ -65,42 +65,39 @@ public class TFGraphTestAllSameDiff {
 
     public static final String[] IGNORE_REGEXES = new String[]{
 
-            //Still failing: 2019/01/08 - https://github.com/deeplearning4j/deeplearning4j/issues/6322 and https://github.com/deeplearning4j/deeplearning4j/issues/6958 issue 1
-            "broadcast_dynamic_shape/.*",
+            //Still failing: 2019/04/08 - https://github.com/deeplearning4j/deeplearning4j/issues/6322 and https://github.com/deeplearning4j/deeplearning4j/issues/6958 issue 1
+            "broadcast_dynamic_shape/1_4",
+            "broadcast_dynamic_shape/2,2_1",
 
-            //Failing 2019/01/08 - Issue 3 https://github.com/deeplearning4j/deeplearning4j/issues/6958
+            //Failing 2019/04/08 - Issue 3 https://github.com/deeplearning4j/deeplearning4j/issues/6958
             "boolean_mask/.*",
 
-            //Failing 2019/01/15 - Issue 10, https://github.com/deeplearning4j/deeplearning4j/issues/6958
+            //Failing 2019/04/08 - Issue 10, https://github.com/deeplearning4j/deeplearning4j/issues/6958
             "slogdet/.*",
 
-            //Failing 2019/01/15 - Issue 11 - https://github.com/deeplearning4j/deeplearning4j/issues/6958
+            //Failing 2019/04/08 - Issue 11 - https://github.com/deeplearning4j/deeplearning4j/issues/6958 also exception
             "bincount/.*",
 
-            //Failures as of 2019/01/15: due to bad gather op - Issue 12 https://github.com/deeplearning4j/deeplearning4j/issues/6958
+            //Failures as of 2019/04/08: due to bad gather op - Issue 12 https://github.com/deeplearning4j/deeplearning4j/issues/6958
             "embedding_lookup/.*multiple.*",
 
-            //Failing as of 2019/01/15 - Issue 13 - https://github.com/deeplearning4j/deeplearning4j/issues/6958
-            "nth_element/rank1_n0",
-            "nth_element/rank2_n0",
-
-            //2019/01/16 - Issue 14 - https://github.com/deeplearning4j/deeplearning4j/issues/6958
+            //2019/04/08 - Issue 14 - https://github.com/deeplearning4j/deeplearning4j/issues/6958
             "g_07",
 
-            //Failing 2019/01/16 - Issue 15 https://github.com/deeplearning4j/deeplearning4j/issues/6958
+            //Failing 2019/04/08 - Issue 15 https://github.com/deeplearning4j/deeplearning4j/issues/6958
             "where/cond_only.*",
 
-            //scatter_nd: a few cases failing as of 2019/01/08
+            //scatter_nd: a few cases failing as of 2019/04/08
             "scatter_nd/rank2shape_2indices",
             "scatter_nd/rank3shape_2indices",
 
             //TODO floormod and truncatemod behave differently - i.e., "c" vs. "python" semantics. Need to check implementations too
             "truncatemod/.*",
 
-            //2019/01/08 - This is simply an order issue - need to account for this in test (TF gives no order guarantees)
+            //2019/04/08 - This is simply an order issue - need to account for this in test (TF gives no order guarantees)
             "topk/.*",
 
-            //Still failing as of 2019/01/08 - https://github.com/deeplearning4j/deeplearning4j/issues/6447
+            //Still failing as of 2019/04/08 - https://github.com/deeplearning4j/deeplearning4j/issues/6447
             "cnn1d_layers/channels_first_b2_k2_s1_d2_SAME",
             "cnn2d_layers/channels_first_b1_k12_s1_d12_SAME",
 
@@ -108,16 +105,13 @@ public class TFGraphTestAllSameDiff {
             "alpha_dropout/.*",
             "layers_dropout/.*",
 
-            //Still failing as of 2019/02/04 - https://github.com/deeplearning4j/deeplearning4j/issues/6464 - not sure if related to: https://github.com/deeplearning4j/deeplearning4j/issues/6447
+            //Still failing as of 2019/04/08 - https://github.com/deeplearning4j/deeplearning4j/issues/6464 - not sure if related to: https://github.com/deeplearning4j/deeplearning4j/issues/6447
             "cnn2d_nn/nhwc_b1_k12_s12_d12_SAME",
 
             //2019/01/08 - No tensorflow op found for SparseTensorDenseAdd
             "confusion/.*",
 
-            //2019/01/18 - Issue 18 here: https://github.com/deeplearning4j/deeplearning4j/issues/6958
-            "extractImagePatches/.*",
-
-            //2019/02/23 - Couple of tests failing (InferenceSession issues)
+            //2019/04/08 - Couple of tests failing (InferenceSession issues)
             "rnn/bstack/d_.*",
     };
 

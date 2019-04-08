@@ -1587,4 +1587,30 @@ public class MiscOpValidation extends BaseOpValidation {
         System.out.println(out);
         assertEquals(0.0, out.getDouble(0), 1e-5);
     }
+
+    @Test
+    public void testTensorMmulShape(){
+        INDArray a = Nd4j.create(new double[]{2}).reshape(1);
+        INDArray b = Nd4j.create(new double[]{1, 2, 3, 4}).reshape(2, 1, 2);
+        int[][] axes = new int[][]{{0},{1}};
+
+        CustomOp op = DynamicCustomOp.builder("tensordot")
+                .addInputs(a, b)
+                .addIntegerArguments(axes[0].length)
+                .addIntegerArguments(axes[0])
+                .addIntegerArguments(axes[1].length)
+                .addIntegerArguments(axes[1])
+                .build();
+
+        List<LongShapeDescriptor> l = op.calculateOutputShape();
+        assertArrayEquals(new long[]{2,2}, l.get(0).getShape());         //Returning [1,2,2]
+    }
+
+    @Test
+    public void testTensorMmulShape2(){
+        INDArray a = Nd4j.create(new double[]{2}).reshape(1);
+        INDArray b = Nd4j.create(new double[]{1, 2, 3, 4}).reshape(2, 1, 2);
+        INDArray c = Nd4j.tensorMmul(a, b, new int[][]{new int[]{0}, new int[]{1}});
+        assertArrayEquals(new long[]{2,2}, c.shape());
+    }
 }
