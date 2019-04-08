@@ -33,14 +33,6 @@
     </properties>
 
     <build>
-        <!--
-        <testSourceDirectory>../../nd4j-tests/src/test/java</testSourceDirectory>
-        <testResources>
-            <testResource>
-                <directory>${project.basedir}/../../nd4j-tests/src/test/resources</directory>
-            </testResource>
-        </testResources>
-        -->
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
