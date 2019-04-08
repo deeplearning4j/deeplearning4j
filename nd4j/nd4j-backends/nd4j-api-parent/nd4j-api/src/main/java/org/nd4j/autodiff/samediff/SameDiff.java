@@ -3331,7 +3331,11 @@ public class SameDiff extends SDBaseOps {
             } else {
                 List<String> outputs = outputs();
                 if (outputs.size() == 1) {
-                    log.info("Inferring output \"{}\" as loss variable as none were previously set. Use SameDiff.setLossVariables() to override", outputs.get(0));
+                    String outName = outputs.get(0);
+                    String opName = variables.get(outName).getOutputOfOp();
+                    if(opName == null || !(ops.get(opName).getOp() instanceof ExternalErrorsFunction)){
+                        log.info("Inferring output \"{}\" as loss variable as none were previously set. Use SameDiff.setLossVariables() to override", outputs.get(0));
+                    }
                     lossVariables.add(outputs.get(0));
                 }
             }
