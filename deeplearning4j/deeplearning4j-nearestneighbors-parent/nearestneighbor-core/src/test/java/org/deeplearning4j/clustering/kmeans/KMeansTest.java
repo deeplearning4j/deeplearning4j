@@ -73,16 +73,58 @@ public class KMeansTest {
 
     @Ignore
     @Test
-    public void testPerformance() {
+    public void testPerformanceAllIterations() {
         Nd4j.setDefaultDataTypes(DataType.DOUBLE, DataType.DOUBLE);
         Nd4j.getRandom().setSeed(7);
-        int numClusters = 3;
+        int numClusters = 20;
         StopWatch watch = new StopWatch();
         watch.start();
         KMeansClustering kMeansClustering = KMeansClustering.setup(numClusters, 1000, Distance.COSINE_DISTANCE, true);
         List<Point> points = Point.toPoints(Nd4j.linspace(0, 5000*300, 5000*300).reshape(5000,300 ));
 
         ClusterSet clusterSet = kMeansClustering.applyTo(points);
+        watch.stop();
+        System.out.println("Elapsed for clustering : " + watch);
+
+        watch.reset();
+        watch.start();
+        for (Point p : points) {
+            PointClassification pointClassification = clusterSet.classifyPoint(p);
+        }
+        watch.stop();
+        System.out.println("Elapsed for search: " + watch);
+    }
+
+    @Test
+    public void testPerformanceWithConvergence() {
+        Nd4j.setDefaultDataTypes(DataType.DOUBLE, DataType.DOUBLE);
+        Nd4j.getRandom().setSeed(7);
+        int numClusters = 20;
+        StopWatch watch = new StopWatch();
+        watch.start();
+        KMeansClustering kMeansClustering = KMeansClustering.setup(numClusters, Distance.COSINE_DISTANCE, false);
+
+        List<Point> points = Point.toPoints(Nd4j.linspace(0, 10000*300, 10000*300).reshape(10000,300 ));
+
+        ClusterSet clusterSet = kMeansClustering.applyTo(points);
+        watch.stop();
+        System.out.println("Elapsed for clustering : " + watch);
+
+        watch.reset();
+        watch.start();
+        for (Point p : points) {
+            PointClassification pointClassification = clusterSet.classifyPoint(p);
+        }
+        watch.stop();
+        System.out.println("Elapsed for search: " + watch);
+
+        watch.reset();
+        watch.start();
+        kMeansClustering = KMeansClustering.setup(numClusters, 0.05, Distance.COSINE_DISTANCE, false);
+
+        points = Point.toPoints(Nd4j.linspace(0, 10000*300, 10000*300).reshape(10000,300 ));
+
+        clusterSet = kMeansClustering.applyTo(points);
         watch.stop();
         System.out.println("Elapsed for clustering : " + watch);
 
