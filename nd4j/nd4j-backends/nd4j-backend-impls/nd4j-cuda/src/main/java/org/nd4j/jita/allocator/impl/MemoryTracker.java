@@ -13,9 +13,9 @@ public class MemoryTracker {
 
     private MemoryTracker() {
         for (int i = 0; i < Nd4j.getAffinityManager().getNumberOfDevices(); ++i) {
-            allocatedPerDevice.get(i).set(0);
-            cachedPerDevice.get(i).set(0);
-            totalPerDevice.get(i).set(0);
+            allocatedPerDevice.add(i, new AtomicLong(0));
+            cachedPerDevice.add(i, new AtomicLong(0));
+            totalPerDevice.add(i, new AtomicLong(0));
         }
     }
 
@@ -32,7 +32,7 @@ public class MemoryTracker {
     }
 
     public AtomicLong getTotal(int deviceId) {
-        return cachedPerDevice.get(deviceId);
+        return totalPerDevice.get(deviceId);
     }
 
     public synchronized void incrementAllocated(int deviceId) {
