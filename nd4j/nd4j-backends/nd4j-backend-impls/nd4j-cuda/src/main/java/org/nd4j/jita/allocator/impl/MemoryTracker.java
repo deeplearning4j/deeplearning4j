@@ -1,5 +1,7 @@
 package org.nd4j.jita.allocator.impl;
 
+import java.util.*;
+
 public class MemoryTracker {
 
     private List<Long> allocatedPerDevice = new ArrayList<>();
@@ -18,11 +20,13 @@ public class MemoryTracker {
         return cachedPerDevice.get(deviceId);
     }
 
-    public void incrementAllocated(int deviceId) {
-        allocatedPerDevice.get(deviceId) += 1;
+    public synchronized void incrementAllocated(int deviceId) {
+        long cnt  = allocatedPerDevice.get(deviceId);
+	allocatedPerDevice.set(deviceId, ++cnt);
     }
 
-    public void incrementCached(int deviceId) {
-        cachedPerDevice.get(deviceId) += 1;
+    public synchronized void incrementCached(int deviceId) {
+        long cnt = cachedPerDevice.get(deviceId);
+	cachedPerDevice.set(deviceId, ++cnt);
     }
 }
