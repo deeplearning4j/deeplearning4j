@@ -71,7 +71,7 @@ namespace ops  {
         auto dLdg = OUTPUT_VARIABLE(1);
         auto dLdb = block.width() == 4 ? OUTPUT_VARIABLE(2) : nullptr;
 
-        std::vector<int> axis = *block.getIArguments();;
+        std::vector<int> axis = *block.getIArguments();
 
         std::vector<Nd4jLong> longAxis = ArrayUtils::toLongVector(axis);
 
@@ -92,7 +92,10 @@ namespace ops  {
 
         nd4j::ops::standardize_bp standardizeBp;
         eps->applyTrueBroadcast(nd4j::BroadcastOpsTuple::Multiply(), gain, dLdx);
-        dLdx->assign(standardizeBp.execute({input, dLdx}, {}, longAxis)->at(0));
+        auto standardizeBpRes = standardizeBp.execute({input, dLdx}, {}, longAxis);
+        dLdx->assign(standardizeBpRes->at(0));
+
+        delete standardizeBpRes;
 
         return Status::OK();
     }
@@ -104,12 +107,12 @@ namespace ops  {
 
     DECLARE_SHAPE_FN(layer_norm_bp) {
         Nd4jLong *dLdx_shape;
-        COPY_SHAPE(inputShape->at(0), dLdx_shape);
+        COPY_SHAPE(inputShape->at(0), dLdx_shape)
         Nd4jLong *dLdg_shape;
-        COPY_SHAPE(inputShape->at(1), dLdg_shape);
+        COPY_SHAPE(inputShape->at(1), dLdg_shape)
         if(inputShape->size() > 3){
             Nd4jLong *dLdb_shape;
-            COPY_SHAPE(inputShape->at(2), dLdb_shape);
+            COPY_SHAPE(inputShape->at(2), dLdb_shape)
             return SHAPELIST(dLdx_shape, dLdg_shape, dLdb_shape);
         }
         return SHAPELIST(dLdx_shape, dLdg_shape);
