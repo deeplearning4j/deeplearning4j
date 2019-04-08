@@ -1414,6 +1414,9 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         Preconditions.checkState((this.isScalar() && arr.isScalar()) || (this.isVector() && arr.isVector()) || Shape.shapeEqualWithSqueeze(this.shape(), arr.shape()),
                 "Cannot assign arrays: arrays must both be scalars, both vectors, or shapes must be equal other than size 1 dimensions. Attempting to do x.assign(y)" +
                         " with x.shape=%ndShape and y.shape=%ndShape", this, arr );
+
+        Preconditions.checkArgument(this.length() == arr.length(), "Length of both arrays must be equal");
+
         //Nd4j.getExecutioner().exec(new org.nd4j.linalg.api.ops.impl.transforms.pairwise.Set(this, arr, this, length()));
         Nd4j.getExecutioner().exec(new org.nd4j.linalg.api.ops.impl.transforms.any.Assign(arr, this));
         return this;
@@ -5038,6 +5041,10 @@ public abstract class BaseNDArray implements INDArray, Iterable {
                 || isColumnVector() && indexes[1] instanceof PointIndex && indexes[0].offset() == 0
                 && indexes[0] instanceof NDArrayIndexAll)) ||
                 (rank() == 1 && length() == 1 && indexes.length == 1 && indexes[0] instanceof PointIndex && indexes[0].current() == 0))  //Last one: point index on rank 1 size 1
+            return this;
+
+        //1d+all: return this
+        if(indexes.length == 1 && rank() == 1 && indexes[0] instanceof NDArrayIndexAll)
             return this;
 
         indexes = NDArrayIndex.resolveLong(jvmShapeInfo.javaShapeInformation, indexes);

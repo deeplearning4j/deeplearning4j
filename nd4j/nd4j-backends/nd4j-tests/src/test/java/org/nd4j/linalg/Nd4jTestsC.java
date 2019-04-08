@@ -7459,6 +7459,22 @@ public class Nd4jTestsC extends BaseNd4jTest {
         assertEquals(exp1, out1); //This is OK
     }
 
+    @Test(expected = IllegalArgumentException.class)
+    public void testPutRowValidation() {
+        val matrix = Nd4j.create(5, 10);
+        val row = Nd4j.create(25);
+
+        matrix.putRow(1, row);
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void testPutColumnValidation() {
+        val matrix = Nd4j.create(5, 10);
+        val column = Nd4j.create(25);
+
+        matrix.putColumn(1, column);
+    }
+
     @Test
     public void testCreateF(){
         char origOrder = Nd4j.order();

@@ -69,8 +69,8 @@ namespace nd4j {
     //////////////////////////////////////////////////////////////////////////
     template <>
     utf8string NDArray::e(const Nd4jLong i) const {
-        if (i >= _length)
-            throw std::invalid_argument("NDArray::e(i): input index is out of array length !");
+        // if (i >= _length)
+        //     throw std::invalid_argument("NDArray::e(i): input index is out of array length !");
 
         if (!isS())
             throw std::runtime_error("This method is available for String arrays only");
@@ -89,8 +89,8 @@ namespace nd4j {
     template <typename T>
     T NDArray::e(const Nd4jLong i) const {
 
-        if (i >= _length)
-            throw std::invalid_argument("NDArray::e(i): input index is out of array length !");
+        // if (i >= _length)
+        //     throw std::invalid_argument("NDArray::e(i): input index is out of array length !");
 
         auto rp = getOffset(i);
 
@@ -448,6 +448,7 @@ NDArray::NDArray(nd4j::DataType dtype, nd4j::memory::Workspace* workspace, const
 
         std::vector<T> vector(_length);
 
+        PRAGMA_OMP_PARALLEL_FOR_SIMD
         for (int e = 0; e < _length; e++)
             vector[e] = this->e<T>(e);
 
@@ -3447,7 +3448,7 @@ template void NDArray::applyScalar(nd4j::scalar::Ops op, const bool scalar, NDAr
     T NDArray::r(const Nd4jLong i) const {
 
         if (i >= _length)
-            throw std::invalid_argument("NDArray::e(i): input index is out of array length !");
+            throw std::invalid_argument("NDArray::r(i): input index is out of array length !");
 
 
         BUILD_SINGLE_PARTIAL_SELECTOR(this->dataType(), return templatedGet<, T>(this->_buffer, i), LIBND4J_TYPES);
@@ -3764,7 +3765,44 @@ template void NDArray::pIdx(const Nd4jLong* indices, const bool value);
 
         return result;
     }
-    
+
+    ////////////////////////////////////////////////////////////////////////
+    // apply reduce3 (exec) operations to this and other array, return result in new output array
+    NDArray* NDArray::applyReduce3(nd4j::reduce3::Ops op, const NDArray* other, const std::vector<int>& dimensions, const void* extraParams) const {
+        if (isS())
+            throw std::runtime_error("NDArray::applyReduce3: you can't use this method on String array!");
+        if(_dataType != other->_dataType)
+            throw std::runtime_error("NDArray::applyReduce3 method: the types of this and other arrays must be the same !");
+
+        std::vector<int> copy(dimensions);
+        shape::checkDimensions(rankOf(), copy);
+        shape::checkDimensions(other->rankOf(), copy);               
+
+        auto newShape = ShapeUtils::evalReduceShapeInfo('c', copy, *this, false, false, _workspace);
+        ArrayOptions::setDataType(newShape, DataTypeUtils::pickFloatingType(_dataType));
+        auto result = new NDArray(newShape, true, _workspace, true);
+        // create temporary dynamic array of extra parameters if array extraParams is empty (==nullptr)
+        void* params = const_cast<void*>(extraParams);
+        if(params == nullptr) {
+            params = new int8_t[result->sizeOfT()*3];
+            memset(params, 0, result->sizeOfT()*3);
+        }
+        // perform calculations
+        if(rankOf() == copy.size() && other->rankOf() == copy.size())
+            NativeOpExcutioner::execReduce3Scalar(op, _buffer, _shapeInfo, params, other->_buffer, other->_shapeInfo, result->_buffer, result->shapeInfo());
+        else {
+            auto tadPackX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(_shapeInfo, copy);
+            auto tadPackY = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(other->_shapeInfo, copy);
+
+            NativeOpExcutioner::execReduce3(op, _buffer, _shapeInfo, params, other->_buffer, other->_shapeInfo, result->_buffer,result->_shapeInfo, copy.data(), copy.size());
+        }
+
+        if(params != extraParams)
+            delete [] static_cast<int8_t*>(params);
+
+        return result;
+    }
+
     ////////////////////////////////////////////////////////////////////////
     // apply reduce3 (execAll) operations to this and other array, return result in new output array
     NDArray* NDArray::applyAllReduce3(nd4j::reduce3::Ops op, const NDArray *other, const std::vector<int>& dimensions, const void* extraParams) const {
@@ -3808,43 +3846,6 @@ template void NDArray::pIdx(const Nd4jLong* indices, const bool value);
         }
 
         NativeOpExcutioner::execReduce3All(op, _buffer, _shapeInfo, params, other->_buffer, other->_shapeInfo, result->_buffer,result->_shapeInfo, copy.data(), copy.size(), tadPackX.primaryShapeInfo(), tadPackX.primaryOffsets(), tadPackY.primaryShapeInfo(), tadPackY.primaryOffsets());
-        if(params != extraParams)
-            delete [] static_cast<int8_t*>(params);
-
-        return result;
-    }
- 
-    ////////////////////////////////////////////////////////////////////////
-    // apply reduce3 (exec) operations to this and other array, return result in new output array
-    NDArray* NDArray::applyReduce3(nd4j::reduce3::Ops op, const NDArray* other, const std::vector<int>& dimensions, const void* extraParams) const {
-        if (isS())
-            throw std::runtime_error("NDArray::applyReduce3: you can't use this method on String array!");
-        if(_dataType != other->_dataType)
-            throw std::runtime_error("NDArray::applyReduce3 method: the types of this and other arrays must be the same !");
-
-        std::vector<int> copy(dimensions);
-        shape::checkDimensions(rankOf(), copy);
-        shape::checkDimensions(other->rankOf(), copy);               
-
-        auto newShape = ShapeUtils::evalReduceShapeInfo('c', copy, *this, false, false, _workspace);
-        ArrayOptions::setDataType(newShape, DataTypeUtils::pickFloatingType(_dataType));
-        auto result = new NDArray(newShape, true, _workspace, true);
-        // create temporary dynamic array of extra parameters if array extraParams is empty (==nullptr)
-        void* params = const_cast<void*>(extraParams);
-        if(params == nullptr) {
-            params = new int8_t[result->sizeOfT()*3];
-            memset(params, 0, result->sizeOfT()*3);
-        }
-        // perform calculations
-        if(rankOf() == copy.size() && other->rankOf() == copy.size())
-            NativeOpExcutioner::execReduce3Scalar(op, _buffer, _shapeInfo, params, other->_buffer, other->_shapeInfo, result->_buffer, result->shapeInfo());
-        else {
-            auto tadPackX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(_shapeInfo, copy);
-            auto tadPackY = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(other->_shapeInfo, copy);
-        
-            NativeOpExcutioner::execReduce3(op, _buffer, _shapeInfo, params, other->_buffer, other->_shapeInfo, result->_buffer,result->_shapeInfo, copy.data(), copy.size());
-        }
-        
         if(params != extraParams)
             delete [] static_cast<int8_t*>(params);
 
@@ -5019,16 +5020,7 @@ template void NDArray::operator/=(const bool scalar);
 Nd4jLong NDArray::getOffset(const Nd4jLong i) const {
 
     if (i >= _length)
-        throw std::invalid_argument("NDArray::getOffset: input index is out of array length !");
-
-    auto ews   = this->ews();    
-
-    if(ordering() == 'c') {
-        if(ews == 1)
-            return i;
-        if(ews > 1)
-            return i * ews;
-    }
+        throw std::invalid_argument("NDArray::getOffset: input index is out of array length !");    
     
     return shape::getIndexOffset(i, _shapeInfo, _length);
 }
