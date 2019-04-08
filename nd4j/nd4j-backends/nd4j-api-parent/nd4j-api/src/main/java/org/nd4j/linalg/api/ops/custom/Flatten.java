@@ -14,35 +14,43 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.nd4j.jita.constant;
+package org.nd4j.linalg.api.ops.custom;
 
-import org.junit.Before;
-import org.junit.Test;
-import org.nd4j.linalg.api.buffer.DataBuffer;
-import org.nd4j.linalg.factory.Nd4j;
-
-import static org.junit.Assert.*;
+import lombok.val;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.DynamicCustomOp;
 
 /**
+ * This op takes arbitrary number of arrays as input, and returns single "flattened" vector
+ *
  * @author raver119@gmail.com
  */
-public class ProtectedCudaConstantHandlerTest {
-    @Before
-    public void setUp() throws Exception {
+public class Flatten extends DynamicCustomOp {
+    private char order;
 
+    public Flatten() {
+        //
     }
 
-    @Test
-    public void testPurge1() throws Exception {
-        DataBuffer buffer = Nd4j.getConstantHandler().getConstantBuffer(new float[]{1, 2, 3, 4, 5});
+    public Flatten(char order, INDArray... inputs) {
+        this.order = order;
 
-        ProtectedCudaConstantHandler handler = (ProtectedCudaConstantHandler) ((CudaConstantHandler)Nd4j.getConstantHandler()).wrappedHandler;
+        for (val in:inputs)
+            inputArguments.add(in);
 
-        assertEquals(1, handler.amountOfEntries(0));
-
-        handler.purgeConstants();
-
-        assertEquals(0, handler.amountOfEntries(0));
+        iArguments.add(Long.valueOf((int) this.order));
     }
+
+    public Flatten(INDArray output, INDArray... inputs) {
+        this(output.ordering(), inputs);
+
+        outputArguments.add(output);
+    }
+
+    @Override
+    public String opName() {
+        return "flatten";
+    }
+
 
 }

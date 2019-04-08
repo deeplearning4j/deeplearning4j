@@ -14,42 +14,22 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.nd4j.jita.allocator.time.impl;
+//
+//  @author raver119@gmail.com
+//
 
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Test;
+#ifndef DEV_TESTS_FLATTEN_H
+#define DEV_TESTS_FLATTEN_H
 
-import java.util.concurrent.TimeUnit;
+#include <vector>
+#include <NDArray.h>
 
-import static org.junit.Assert.*;
-
-/**
- * @author raver119@gmail.com
- */
-@Ignore
-public class BinaryTimerTest {
-
-    @Before
-    public void setUp() throws Exception {
-
-    }
-
-    @Test
-    public void testIsAlive1() throws Exception {
-        BinaryTimer timer = new BinaryTimer(2, TimeUnit.SECONDS);
-        timer.triggerEvent();
-
-        assertTrue(timer.isAlive());
-    }
-
-    @Test
-    public void testIsAlive2() throws Exception {
-        BinaryTimer timer = new BinaryTimer(2, TimeUnit.SECONDS);
-        timer.triggerEvent();
-
-        Thread.sleep(3000);
-
-        assertFalse(timer.isAlive());
+namespace nd4j {
+    namespace ops {
+        namespace helpers {
+            void flatten(std::vector<NDArray*> &inputs, NDArray *output, char order);
+        }
     }
 }
+
+#endif //DEV_TESTS_FLATTEN_H

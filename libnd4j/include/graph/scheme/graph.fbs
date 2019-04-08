@@ -30,6 +30,7 @@ table FlatGraph {
     outputs:[IntPair]; // list of output variables or nodes, in format of IntPair.first is node Id, IntPair.second is output index of the node
     configuration:FlatConfiguration; // optional execution configuration
 	placeholders:[string];	//Placeholders. Used for SameDiff serialization/deserialization
+	lossVariables:[string];	//Variables that are marked as losses. Used for training.
 }
 
 
