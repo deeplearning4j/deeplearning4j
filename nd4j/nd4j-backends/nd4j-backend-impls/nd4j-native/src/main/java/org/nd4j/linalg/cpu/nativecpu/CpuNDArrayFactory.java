@@ -22,6 +22,7 @@ import lombok.val;
 import org.nd4j.base.Preconditions;
 import org.nd4j.config.ND4JSystemProperties;
 import org.nd4j.linalg.api.buffer.*;
+import org.nd4j.linalg.api.ops.custom.Flatten;
 import org.nd4j.linalg.api.ops.performance.PerformanceTracker;
 import org.nd4j.linalg.api.shape.options.ArrayOptionsHelper;
 import org.nd4j.linalg.api.shape.options.ArrayType;
@@ -492,7 +493,7 @@ public class CpuNDArrayFactory extends BaseNativeNDArrayFactory {
     @Override
     public INDArray toFlattened(char order, Collection<INDArray> matrices) {
         Preconditions.checkArgument(matrices.size() > 0, "toFlattened expects > 0 operands");
-
+/*
         int length = 0;
         val list = new ArrayList<INDArray>(matrices);
         val t = list.get(0).dataType();
@@ -517,6 +518,8 @@ public class CpuNDArrayFactory extends BaseNativeNDArrayFactory {
             linearIndex += m.length();
         }
         return ret;
+        */
+        return Nd4j.exec(new Flatten(order, matrices.toArray(new INDArray[matrices.size()])))[0];
     }
 
     @Override

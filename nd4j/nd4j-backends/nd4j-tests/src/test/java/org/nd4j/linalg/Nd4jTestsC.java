@@ -43,6 +43,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BroadcastOp;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.Op;
+import org.nd4j.linalg.api.ops.custom.Flatten;
 import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.api.ops.impl.broadcast.*;
@@ -681,7 +682,10 @@ public class Nd4jTestsC extends BaseNd4jTest {
         INDArray noViewF = Nd4j.toFlattened('f', first.dup('f'), second.dup('f'), third.dup('f'));
 
         assertEquals(noViewC, Nd4j.toFlattened('c', first, second, third));
-        assertEquals(noViewF, Nd4j.toFlattened('f', first, second, third));
+
+        val result = Nd4j.exec(new Flatten('f', first, second, third))[0];
+        assertEquals(noViewF, result);
+        //assertEquals(noViewF, Nd4j.toFlattened('f', first, second, third));
     }
 
     private static INDArray toFlattenedViaIterator(char order, INDArray... toFlatten) {
