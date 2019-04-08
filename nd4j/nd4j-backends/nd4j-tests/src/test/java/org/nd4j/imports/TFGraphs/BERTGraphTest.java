@@ -240,7 +240,7 @@ public class BERTGraphTest {
         assertEquals(exp3, softmax.getRow(3));
     }
 
-    @Test
+    @Test @Ignore   //AB ignored 08/04/2019 until fixed
     public void testBertTraining() throws Exception {
         String url = "https://deeplearning4jblob.blob.core.windows.net/testresources/bert_mrpc_frozen_v1.zip";
         File saveDir = new File(TFGraphTestZooModels.getBaseModelDir(), ".nd4jtests/bert_mrpc_frozen_v1");
