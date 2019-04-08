@@ -683,9 +683,9 @@ public class Nd4jTestsC extends BaseNd4jTest {
 
         assertEquals(noViewC, Nd4j.toFlattened('c', first, second, third));
 
-        val result = Nd4j.exec(new Flatten('f', first, second, third))[0];
-        assertEquals(noViewF, result);
-        //assertEquals(noViewF, Nd4j.toFlattened('f', first, second, third));
+        //val result = Nd4j.exec(new Flatten('f', first, second, third))[0];
+        //assertEquals(noViewF, result);
+        assertEquals(noViewF, Nd4j.toFlattened('f', first, second, third));
     }
 
     private static INDArray toFlattenedViaIterator(char order, INDArray... toFlatten) {
