@@ -221,7 +221,7 @@ TEST_F(LeadingOnes,OnesTest) {
 
 class NormalThreeFourFive : public testing::Test {
 public:
-    Nd4jLong assertionBuffer[8] = {2, 3, 4, 20, 5, 16384, 0, 99};
+    Nd4jLong assertionBuffer[8] = {2, 3, 4, 20, 5, 16384, 0, 102};
     Nd4jLong inputShapeBuffer[10] = {3,3,4,5,20,5,1,16384,1,99};
     int dimensionLength = 2;
     int dimension[2] = {0,1};
@@ -233,6 +233,7 @@ TEST_F(NormalThreeFourFive,DimensionTest) {
     tad->init(inputShapeBuffer,dimension,dimensionLength);
     tad->createTadOnlyShapeInfo();
     tad->createOffsets();
+    shape::printShapeInfoLinear(tad->tadOnlyShapeInfo);
     ASSERT_TRUE(arrsEquals(8,assertionBuffer,tad->tadOnlyShapeInfo));
 
     delete tad;
@@ -406,7 +407,7 @@ public:
     Nd4jLong inputShapeBuffer[12] = {4,5,5,5,1,1,5,25,125,16384,1,102};
     int dimensionLength = 1;
     int dimension[1] = {0};
-    Nd4jLong assertionShapeBuffer[8] = {2,1,5,125,1,16384,0,99};
+    Nd4jLong assertionShapeBuffer[8] = {2,1,5,125,1,16384,1,102};
 };
 
 TEST_F(TrailingTest,TrailingTest2) {

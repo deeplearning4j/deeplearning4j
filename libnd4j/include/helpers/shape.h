@@ -2631,14 +2631,13 @@ template <typename T>
         indices[0] = sliceIdx;
         Nd4jLong offset = shape::getOffset(0,newShape,newStride,indices,rank);
         newShapeBuffer[shape::shapeInfoLength(newRank) - 3] = offset;
-        if(shape::isMatrix(shapeBuffer)) {
-            newShapeBuffer[shape::shapeInfoLength(newRank) - 2] = currStride[1];
-        }
-        else {
-            newShapeBuffer[shape::shapeInfoLength(newRank) - 2] = shape::elementWiseStride(shapeBuffer);
-        }
-        newShapeBuffer[shape::shapeInfoLength(newRank) - 1] = shape::getOrder(newRank,newShape,newStride,1);
 
+        // set current order and ews
+        newShapeBuffer[2 * newRank + 2] = shape::elementWiseStride(shapeBuffer);
+        newShapeBuffer[2 * newRank + 3] = shape::order(shapeBuffer);
+       
+        // correct order and ews if necessary
+        shape::setOrderAndEws(newShapeBuffer);        
 
         delete[] indices;
 
@@ -2793,7 +2792,7 @@ template <typename T>
  */
     INLINEDEF _CUDA_HD char order(const Nd4jLong *buffer) {
         //FIXME magic numbers
-        return static_cast<char>(buffer[(buffer[0] * 2 + 4) - 1]);
+        return static_cast<char>(buffer[buffer[0] * 2 + 3]);
     }
 
 /**
