@@ -43,6 +43,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BroadcastOp;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.Op;
+import org.nd4j.linalg.api.ops.custom.Flatten;
 import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.api.ops.impl.broadcast.*;
@@ -677,58 +678,14 @@ public class Nd4jTestsC extends BaseNd4jTest {
         first = first.get(NDArrayIndex.interval(4, 8), NDArrayIndex.interval(0, 2, 8));
         second = second.get(NDArrayIndex.interval(3, 7), NDArrayIndex.all());
         third = third.permute(0, 2, 1);
-        INDArray cAssertion = Nd4j.create(new double[] {33.10, 35.10, 37.10, 39.10, 41.10, 43.10, 45.10, 47.10, 49.10,
-                51.10, 53.10, 55.10, 57.10, 59.10, 61.10, 63.10, 25.20, 26.20, 27.20, 28.20, 29.20, 30.20,
-                31.20, 32.20, 33.20, 34.20, 35.20, 36.20, 37.20, 38.20, 39.20, 40.20, 41.20, 42.20, 43.20,
-                44.20, 45.20, 46.20, 47.20, 48.20, 49.20, 50.20, 51.20, 52.20, 53.20, 54.20, 55.20, 56.20, 1.30,
-                5.30, 9.30, 13.30, 17.30, 21.30, 25.30, 29.30, 2.30, 6.30, 10.30, 14.30, 18.30, 22.30, 26.30,
-                30.30, 3.30, 7.30, 11.30, 15.30, 19.30, 23.30, 27.30, 31.30, 4.30, 8.30, 12.30, 16.30, 20.30,
-                24.30, 28.30, 32.30, 33.30, 37.30, 41.30, 45.30, 49.30, 53.30, 57.30, 61.30, 34.30, 38.30,
-                42.30, 46.30, 50.30, 54.30, 58.30, 62.30, 35.30, 39.30, 43.30, 47.30, 51.30, 55.30, 59.30,
-                63.30, 36.30, 40.30, 44.30, 48.30, 52.30, 56.30, 60.30, 64.30, 65.30, 69.30, 73.30, 77.30,
-                81.30, 85.30, 89.30, 93.30, 66.30, 70.30, 74.30, 78.30, 82.30, 86.30, 90.30, 94.30, 67.30,
-                71.30, 75.30, 79.30, 83.30, 87.30, 91.30, 95.30, 68.30, 72.30, 76.30, 80.30, 84.30, 88.30,
-                92.30, 96.30, 97.30, 101.30, 105.30, 109.30, 113.30, 117.30, 121.30, 125.30, 98.30, 102.30,
-                106.30, 110.30, 114.30, 118.30, 122.30, 126.30, 99.30, 103.30, 107.30, 111.30, 115.30, 119.30,
-                123.30, 127.30, 100.30, 104.30, 108.30, 112.30, 116.30, 120.30, 124.30, 128.30, 129.30, 133.30,
-                137.30, 141.30, 145.30, 149.30, 153.30, 157.30, 130.30, 134.30, 138.30, 142.30, 146.30, 150.30,
-                154.30, 158.30, 131.30, 135.30, 139.30, 143.30, 147.30, 151.30, 155.30, 159.30, 132.30, 136.30,
-                140.30, 144.30, 148.30, 152.30, 156.30, 160.30, 161.30, 165.30, 169.30, 173.30, 177.30, 181.30,
-                185.30, 189.30, 162.30, 166.30, 170.30, 174.30, 178.30, 182.30, 186.30, 190.30, 163.30, 167.30,
-                171.30, 175.30, 179.30, 183.30, 187.30, 191.30, 164.30, 168.30, 172.30, 176.30, 180.30, 184.30,
-                188.30, 192.30, 193.30, 197.30, 201.30, 205.30, 209.30, 213.30, 217.30, 221.30, 194.30, 198.30,
-                202.30, 206.30, 210.30, 214.30, 218.30, 222.30, 195.30, 199.30, 203.30, 207.30, 211.30, 215.30,
-                219.30, 223.30, 196.30, 200.30, 204.30, 208.30, 212.30, 216.30, 220.30, 224.30, 225.30, 229.30,
-                233.30, 237.30, 241.30, 245.30, 249.30, 253.30, 226.30, 230.30, 234.30, 238.30, 242.30, 246.30,
-                250.30, 254.30, 227.30, 231.30, 235.30, 239.30, 243.30, 247.30, 251.30, 255.30, 228.30, 232.30,
-                236.30, 240.30, 244.30, 248.30, 252.30, 256.30});
-        INDArray fAssertion = Nd4j.create(new double[] {33.10, 41.10, 49.10, 57.10, 35.10, 43.10, 51.10, 59.10, 37.10,
-                45.10, 53.10, 61.10, 39.10, 47.10, 55.10, 63.10, 25.20, 33.20, 41.20, 49.20, 26.20, 34.20,
-                42.20, 50.20, 27.20, 35.20, 43.20, 51.20, 28.20, 36.20, 44.20, 52.20, 29.20, 37.20, 45.20,
-                53.20, 30.20, 38.20, 46.20, 54.20, 31.20, 39.20, 47.20, 55.20, 32.20, 40.20, 48.20, 56.20, 1.30,
-                33.30, 65.30, 97.30, 129.30, 161.30, 193.30, 225.30, 2.30, 34.30, 66.30, 98.30, 130.30, 162.30,
-                194.30, 226.30, 3.30, 35.30, 67.30, 99.30, 131.30, 163.30, 195.30, 227.30, 4.30, 36.30, 68.30,
-                100.30, 132.30, 164.30, 196.30, 228.30, 5.30, 37.30, 69.30, 101.30, 133.30, 165.30, 197.30,
-                229.30, 6.30, 38.30, 70.30, 102.30, 134.30, 166.30, 198.30, 230.30, 7.30, 39.30, 71.30, 103.30,
-                135.30, 167.30, 199.30, 231.30, 8.30, 40.30, 72.30, 104.30, 136.30, 168.30, 200.30, 232.30,
-                9.30, 41.30, 73.30, 105.30, 137.30, 169.30, 201.30, 233.30, 10.30, 42.30, 74.30, 106.30, 138.30,
-                170.30, 202.30, 234.30, 11.30, 43.30, 75.30, 107.30, 139.30, 171.30, 203.30, 235.30, 12.30,
-                44.30, 76.30, 108.30, 140.30, 172.30, 204.30, 236.30, 13.30, 45.30, 77.30, 109.30, 141.30,
-                173.30, 205.30, 237.30, 14.30, 46.30, 78.30, 110.30, 142.30, 174.30, 206.30, 238.30, 15.30,
-                47.30, 79.30, 111.30, 143.30, 175.30, 207.30, 239.30, 16.30, 48.30, 80.30, 112.30, 144.30,
-                176.30, 208.30, 240.30, 17.30, 49.30, 81.30, 113.30, 145.30, 177.30, 209.30, 241.30, 18.30,
-                50.30, 82.30, 114.30, 146.30, 178.30, 210.30, 242.30, 19.30, 51.30, 83.30, 115.30, 147.30,
-                179.30, 211.30, 243.30, 20.30, 52.30, 84.30, 116.30, 148.30, 180.30, 212.30, 244.30, 21.30,
-                53.30, 85.30, 117.30, 149.30, 181.30, 213.30, 245.30, 22.30, 54.30, 86.30, 118.30, 150.30,
-                182.30, 214.30, 246.30, 23.30, 55.30, 87.30, 119.30, 151.30, 183.30, 215.30, 247.30, 24.30,
-                56.30, 88.30, 120.30, 152.30, 184.30, 216.30, 248.30, 25.30, 57.30, 89.30, 121.30, 153.30,
-                185.30, 217.30, 249.30, 26.30, 58.30, 90.30, 122.30, 154.30, 186.30, 218.30, 250.30, 27.30,
-                59.30, 91.30, 123.30, 155.30, 187.30, 219.30, 251.30, 28.30, 60.30, 92.30, 124.30, 156.30,
-                188.30, 220.30, 252.30, 29.30, 61.30, 93.30, 125.30, 157.30, 189.30, 221.30, 253.30, 30.30,
-                62.30, 94.30, 126.30, 158.30, 190.30, 222.30, 254.30, 31.30, 63.30, 95.30, 127.30, 159.30,
-                191.30, 223.30, 255.30, 32.30, 64.30, 96.30, 128.30, 160.30, 192.30, 224.30, 256.30});
-        assertEquals(cAssertion, Nd4j.toFlattened('c', first, second, third));
-        assertEquals(fAssertion, Nd4j.toFlattened('f', first, second, third));
+        INDArray noViewC = Nd4j.toFlattened('c', first.dup('c'), second.dup('c'), third.dup('c'));
+        INDArray noViewF = Nd4j.toFlattened('f', first.dup('f'), second.dup('f'), third.dup('f'));
+
+        assertEquals(noViewC, Nd4j.toFlattened('c', first, second, third));
+
+        //val result = Nd4j.exec(new Flatten('f', first, second, third))[0];
+        //assertEquals(noViewF, result);
+        assertEquals(noViewF, Nd4j.toFlattened('f', first, second, third));
     }
 
     private static INDArray toFlattenedViaIterator(char order, INDArray... toFlatten) {
@@ -3149,7 +3106,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
     @Test
     public void testSoftmaxRow() {
         for (int i = 0; i < 20; i++) {
-            INDArray arr1 = Nd4j.zeros(100);
+            INDArray arr1 = Nd4j.zeros(1, 100);
             Nd4j.getExecutioner().execAndReturn(new OldSoftMax(arr1));
             System.out.println(Arrays.toString(arr1.data().asFloat()));
         }
@@ -6918,7 +6875,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
 
         INDArray mask1 = inArray.match(1, Conditions.greaterThanOrEqual(1));
 
-        assertEquals(1, mask1.maxNumber().intValue()); // ! Not Empty Match
+        assertEquals(1, mask1.castTo(DataType.INT).maxNumber().intValue()); // ! Not Empty Match
 
         INDArray[] matchIndexes = Nd4j.where(mask1, null, null);
 
@@ -6927,7 +6884,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
 
         INDArray mask2 = inArray.match(1, Conditions.greaterThanOrEqual(11));
 
-        assertEquals(0, mask2.maxNumber().intValue());
+        assertEquals(0, mask2.castTo(DataType.INT).maxNumber().intValue());
 
         INDArray[] matchIndexes2 = Nd4j.where(mask2, null, null);
         for( int i=0; i<matchIndexes2.length; i++ ){
@@ -7475,6 +7432,51 @@ public class Nd4jTestsC extends BaseNd4jTest {
 
         assertEquals(Nd4j.create(new double[]{3,4}), view.max(0));
         assertEquals(Nd4j.create(new double[]{2,4}), view.max(1));
+    }
+
+    @Test
+    public void testMin2(){
+        INDArray x = Nd4j.createFromArray(new double[][]{
+                {-999,       0.2236,    0.7973,    0.0962},
+                { 0.7231,    0.3381,   -0.7301,    0.9115},
+                {-0.5094,    0.9749,   -2.1340,    0.6023}});
+
+        INDArray out = Nd4j.create(DataType.DOUBLE, 4);
+        Nd4j.exec(DynamicCustomOp.builder("reduce_min")
+                .addInputs(x)
+                .addOutputs(out)
+                .addIntegerArguments(0)
+                .build());
+
+        INDArray exp = Nd4j.createFromArray(-999, 0.2236, -2.1340, 0.0962);
+        assertEquals(exp, out); //Fails here
+
+
+        INDArray out1 = Nd4j.create(DataType.DOUBLE, 3);
+        Nd4j.exec(DynamicCustomOp.builder("reduce_min")
+                .addInputs(x)
+                .addOutputs(out1)
+                .addIntegerArguments(1)
+                .build());
+
+        INDArray exp1 = Nd4j.createFromArray(-999, -0.7301, -2.1340);
+        assertEquals(exp1, out1); //This is OK
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void testPutRowValidation() {
+        val matrix = Nd4j.create(5, 10);
+        val row = Nd4j.create(25);
+
+        matrix.putRow(1, row);
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void testPutColumnValidation() {
+        val matrix = Nd4j.create(5, 10);
+        val column = Nd4j.create(25);
+
+        matrix.putColumn(1, column);
     }
 
     @Test

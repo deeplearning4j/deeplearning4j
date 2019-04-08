@@ -39,6 +39,7 @@ import org.nd4j.linalg.api.ops.impl.transforms.clip.ClipByNorm;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.CumProd;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.CumSum;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.Fill;
+import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.indexing.NDArrayIndex;
@@ -453,7 +454,7 @@ public class MiscOpValidation extends BaseOpValidation {
                 }
 
                 SDVariable in = sd.var("in", Nd4j.rand(DataType.DOUBLE, inShape));
-                SDVariable indices = sd.var("indices", Nd4j.create(new double[]{0, 3, 7}).castTo(DataType.INT));
+                SDVariable indices = sd.constant("indices", Nd4j.createFromArray(0, 3, 7));
 
                 INDArray gatherExp = null;
                 if(rank == 2){
@@ -1167,7 +1168,7 @@ public class MiscOpValidation extends BaseOpValidation {
         expectedOut.putScalar(1, 0, 1, 1.0);
 
         SameDiff sd = SameDiff.create();
-        SDVariable indices = sd.var("indices", indicesArr);
+        SDVariable indices = sd.constant("indices", indicesArr);
 
         int depth = 3;
         int axis = -1;
@@ -1177,7 +1178,7 @@ public class MiscOpValidation extends BaseOpValidation {
 
         String err = OpValidation.validate(new TestCase(sd)
                 .expected(oneHot, expectedOut)
-                .gradCheckSkipVariables("indices"));
+                .gradientCheck(false));
 
         assertNull(err);
     }
@@ -1187,11 +1188,12 @@ public class MiscOpValidation extends BaseOpValidation {
     @Test
     public void testLinspace(){
         SameDiff sd = SameDiff.create();
-        SDVariable out = sd.linspace("linspace", 1,10,10).castTo(DataType.DOUBLE);
+        SDVariable out = sd.linspace("linspace", DataType.DOUBLE, 1,10,10);
         SDVariable loss = out.std(true);
 
         String err = OpValidation.validate(new TestCase(sd)
-                .expected(out, Nd4j.linspace(1,10,10, DataType.DOUBLE)));
+                .expected(out, Nd4j.linspace(1,10,10, DataType.DOUBLE))
+                .gradientCheck(false));
 
         assertNull(err);
     }
@@ -1233,9 +1235,7 @@ public class MiscOpValidation extends BaseOpValidation {
         SDVariable var = sd.var("in", i);
         SDVariable shape = sd.shape(var);
         SDVariable sum = shape.castTo(DataType.DOUBLE).sum();
-
-        sd.execAndEndResult();
-        sd.execBackwards(Collections.emptyMap());
+        sum.eval();
     }
 
 
@@ -1416,15 +1416,16 @@ public class MiscOpValidation extends BaseOpValidation {
 
                     INDArray exp;
                     if (expTrue || shape == null) {
-                        exp = Nd4j.trueScalar(1.0);
+                        exp = Nd4j.scalar(1.0);
                     } else {
-                        exp = Nd4j.trueScalar(0.0);
+                        exp = Nd4j.scalar(0.0);
                     }
 
                     String msg = (nonDec ? "isNonDecreasing" : "isStrictlyIncreasing") + " - " +  (shape == null ? "[]" : Arrays.toString(shape)) + " - expected=" + exp;
                     TestCase tc = new TestCase(sd)
                             .testName(msg)
-                            .expected(out, exp);
+                            .expected(out, exp)
+                            .gradientCheck(false);
 
                     String err = OpValidation.validate(tc, true);
                     if (err != null) {
@@ -1502,5 +1503,66 @@ public class MiscOpValidation extends BaseOpValidation {
                 .build();
 
         Nd4j.getExecutioner().exec(op);
+    }
+
+    @Test
+    public void testMmulRank4() throws Exception {
+        Nd4j.getRandom().setSeed(12345);
+
+        INDArray arr1 = Nd4j.rand(DataType.FLOAT, 32, 12, 128, 64);
+        INDArray arr2 = Nd4j.rand(DataType.FLOAT, 32, 12, 128, 64);
+
+        DynamicCustomOp op = DynamicCustomOp.builder("matmul")
+                .addInputs(arr1, arr2)
+                .addIntegerArguments(0, 1)      //Transpose arr2 only
+                .build();
+
+        List<LongShapeDescriptor> shapes = op.calculateOutputShape();
+        assertEquals(1, shapes.size());
+        long[] shape = new long[]{32,12,128,128};
+        assertArrayEquals(shape, shapes.get(0).getShape());
+
+        INDArray out = Nd4j.create(DataType.FLOAT, shape);
+
+        INDArray outExp = out.like();
+        for( int i=0; i<32; i++ ){
+            for( int j=0; j<12; j++ ){
+                INDArray sub1 = arr1.get(NDArrayIndex.point(i), NDArrayIndex.point(j), NDArrayIndex.all(), NDArrayIndex.all());
+                INDArray sub2 = arr2.get(NDArrayIndex.point(i), NDArrayIndex.point(j), NDArrayIndex.all(), NDArrayIndex.all());
+                INDArray mmul = sub1.mmul(sub2.transpose());
+                outExp.get(NDArrayIndex.point(i), NDArrayIndex.point(j), NDArrayIndex.all(), NDArrayIndex.all()).assign(mmul);
+            }
+        }
+
+        op.setOutputArgument(0, out);
+        Nd4j.exec(op);
+
+        assertEquals(outExp, out);
+    }
+
+    @Test
+    public void testMmulRank4_simple(){
+
+        INDArray arr1 = Nd4j.ones(DataType.FLOAT, 32, 12, 128, 64);
+        INDArray arr2 = Nd4j.ones(DataType.FLOAT, 32, 12, 128, 64);
+
+        DynamicCustomOp op = DynamicCustomOp.builder("matmul")
+                .addInputs(arr1, arr2)
+                .addIntegerArguments(0, 1)      //Transpose arr2 only
+                .build();
+
+        List<LongShapeDescriptor> shapes = op.calculateOutputShape();
+        assertEquals(1, shapes.size());
+        long[] shape = new long[]{32,12,128,128};
+        assertArrayEquals(shape, shapes.get(0).getShape());
+
+        INDArray out = Nd4j.create(DataType.FLOAT, shape);
+
+        op.setOutputArgument(0, out);
+        Nd4j.exec(op);
+//        System.out.println(out);
+
+        INDArray exp = Nd4j.valueArrayOf(shape, 64.0, DataType.FLOAT);      //Each entry in output is sum of 64 (1.0 x 1.0) multiplications
+        assertEquals(exp, out);
     }
 }

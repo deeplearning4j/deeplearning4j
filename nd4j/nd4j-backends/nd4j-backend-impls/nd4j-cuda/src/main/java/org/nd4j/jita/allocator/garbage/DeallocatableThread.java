@@ -14,27 +14,32 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-//
-//  @author sgazeos@gmail.com
-//
-#ifndef __REDUCE_NORM_H_HELPERS__
-#define __REDUCE_NORM_H_HELPERS__
-#include <op_boilerplate.h>
-#include <NDArray.h>
+package org.nd4j.jita.allocator.garbage;
 
-namespace nd4j {
-namespace ops {
-namespace helpers {
+import org.nd4j.linalg.api.memory.Deallocatable;
+import org.nd4j.linalg.api.memory.Deallocator;
+import org.nd4j.linalg.jcublas.context.CudaContext;
 
-    void reduceNorm2BP_scalar(NDArray *input, NDArray *epsilon, NDArray *tempNorm, NDArray *output);
+/**
+ * This class enables Thread tracking via DeallocatorService
+ * @author raver119@gmail.com
+ */
+public class DeallocatableThread implements Deallocatable {
+    private long threadId;
+    private CudaContext context;
 
-    void reduceNorm1BP(NDArray* input, NDArray* epsilon, NDArray* tempNorm, NDArray* output, std::vector<int> const& axes, bool keepDims);
+    public DeallocatableThread(Thread thread, CudaContext context) {
+        this.threadId = thread.getId();
+        this.context = context;
+    }
 
-    void reduceNorm2BP(NDArray* input, NDArray* epsilon, NDArray* tempNorm, NDArray* output, std::vector<int> const& axes, bool keepDims);
+    @Override
+    public String getUniqueId() {
+        return "thread_" +  threadId;
+    }
 
-    void reduceSquareNormBP(NDArray* input, NDArray* epsilon, NDArray* tempNorm, NDArray* output, std::vector<int> const& axes, bool keepDims);
-
+    @Override
+    public Deallocator deallocator() {
+        return new ContextDeallocator(context);
+    }
 }
-}
-}
-#endif

@@ -1095,6 +1095,60 @@ TEST_F(DeclarableOpsTests10, NTH_Element_Test_6) {
 
     delete results;
 }
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests10, NTH_Element_Test_7) {
+
+    NDArray input = NDArrayFactory::create<float>('c', {2, 3, 4}, {0.7788, 0.8012, 0.7244, 0.2309,
+                                                                   0.7271, 0.1804, 0.5056, 0.8925,
+                                                                   0.5461, 0.9234, 0.0856, 0.7938,
+
+                                                                   0.6591, 0.5555, 0.1596, 0.3087,
+                                                                   0.1548, 0.4695, 0.9939, 0.6113,
+                                                                   0.6765, 0.1800, 0.6750, 0.2246});
+    NDArray n = NDArrayFactory::create<int>(2);
+    NDArray exp = NDArrayFactory::create<float>('c', {2,3}, {0.7788, 0.7271, 0.7938, 0.5555, 0.6113, 0.675});
+
+    //input.linspace(1.f);
+
+    nd4j::ops::nth_element op;
+    auto results = op.execute({&input, &n}, {}, {0});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray* output = results->at(0);
+    output->printIndexedBuffer("NTH rank3_n2");
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+
+    delete results;
+}
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests10, NTH_Element_Test_8) {
+
+    NDArray input = NDArrayFactory::create<float>('c', {2, 3, 4}, {0.7788, 0.8012, 0.7244, 0.2309,
+                                                                   0.7271, 0.1804, 0.5056, 0.8925,
+                                                                   0.5461, 0.9234, 0.0856, 0.7938,
+
+                                                                   0.6591, 0.5555, 0.1596, 0.3087,
+                                                                   0.1548, 0.4695, 0.9939, 0.6113,
+                                                                   0.6765, 0.1800, 0.6750, 0.2246});
+    NDArray n = NDArrayFactory::create<int>(2);
+    NDArray exp = NDArrayFactory::create<float>('c', {2,3}, {0.7244, 0.5056, 0.5461, 0.3087, 0.4695, 0.2246});
+
+    //input.linspace(1.f);
+
+    nd4j::ops::nth_element op;
+    auto results = op.execute({&input, &n}, {}, {1});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray* output = results->at(0);
+    output->printIndexedBuffer("NTH rank3_n2_reverse");
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+
+    delete results;
+}
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests10, broadcast_to_test1) {

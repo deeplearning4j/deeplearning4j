@@ -14,22 +14,19 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-//
-//  @author sgazeos@gmail.com
-//
-#ifndef __REDUCE_PRODUCT_H_HELPERS__
-#define __REDUCE_PRODUCT_H_HELPERS__
-#include <op_boilerplate.h>
-#include <NDArray.h>
+package org.deeplearning4j.nn.api;
 
-namespace nd4j {
-namespace ops {
-namespace helpers {
+import org.nd4j.linalg.api.ndarray.INDArray;
 
-    void reduceProductBP(NDArray* input, NDArray* epsilon, NDArray* tempProd, NDArray* output, std::vector<int> const& axes);
-    void reduceProductBPScalar(NDArray* input, NDArray* epsilon, NDArray* tempProd, NDArray* output);
-
+/**
+ * This interface describes abstraction that uses provided model to convert INDArrays to some specific output
+ *
+ * @param <T>
+ */
+public interface ModelAdapter<T> extends OutputAdapter<T> {
+    /**
+     * This method invokes model internally, and does convertion to T
+     * @return
+     */
+    T apply(Model model, INDArray[] inputs, INDArray[] inputMasks, INDArray[] labelsMasks);
 }
-}
-}
-#endif

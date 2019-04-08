@@ -3,6 +3,7 @@ package org.nd4j.autodiff.samediff.ops;
 import lombok.NonNull;
 import org.nd4j.autodiff.functions.DifferentialFunctionFactory;
 import org.nd4j.autodiff.samediff.SDVariable;
+import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.blas.params.MMulTranspose;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ops.impl.shape.OneHot;
@@ -42,6 +43,8 @@ public abstract class SDBaseOps {
     protected abstract DifferentialFunctionFactory f();
 
     protected abstract SDVariable updateVariableNameAndReference(SDVariable varToUpdate, String newVarName);
+
+    protected abstract SameDiff sd();
 
     /**
      * Argmax array reduction operation, optionally along specified dimensions.<br>
@@ -790,8 +793,24 @@ public abstract class SDBaseOps {
      * @param number Number of values to generate
      * @return SDVariable with linearly spaced elements
      */
-    public SDVariable linspace(double start, double stop, long number) {
-        return linspace(null, start, stop, number);
+    public SDVariable linspace(DataType dataType, double start, double stop, long number) {
+        return linspace(dataType, start, stop, number);
+    }
+
+    /**
+     * Create a new 1d array with values evenly spaced between values 'start' and 'stop'
+     * For example, linspace(start=3.0, stop=4.0, number=3) will generate [3.0, 3.5, 4.0]
+     *
+     * @param name     Name of the new variable
+     * @param dataType Data type of the output array
+     * @param start    Start value
+     * @param stop     Stop value
+     * @param number   Number of values to generate
+     * @return SDVariable with linearly spaced elements
+     */
+    public SDVariable linspace(String name, DataType dataType, double start, double stop, long number) {
+        SDVariable ret = f().linspace(sd().constant(start), sd().constant(stop), sd().constant(number), dataType);
+        return updateVariableNameAndReference(ret, name);
     }
 
     /**
@@ -799,16 +818,12 @@ public abstract class SDBaseOps {
      * For example, linspace(start=3.0, stop=4.0, number=3) will generate [3.0, 3.5, 4.0]
      *
      * @param name   Name of the new variable
-     * @param start  Start value
-     * @param stop   Stop value
-     * @param number Number of values to generate
+     * @param from   Start value
+     * @param to     Stop value
+     * @param length Number of values to generate
+     * @param dt     Data type of the output array
      * @return SDVariable with linearly spaced elements
      */
-    public SDVariable linspace(String name, double start, double stop, long number) {
-        SDVariable ret = f().linspace(start, stop, number);
-        return updateVariableNameAndReference(ret, name);
-    }
-
     public SDVariable linspace(String name, SDVariable from, SDVariable to, SDVariable length, DataType dt) {
         SDVariable ret = f().linspace(from, to, length, dt);
         return updateVariableNameAndReference(ret, name);
@@ -2871,7 +2886,7 @@ public abstract class SDBaseOps {
     /**
      * See {@link #unsortedSegmentSum(String, SDVariable, SDVariable, int)}
      */
-    public SDVariable unsortedSegmentSum(SDVariable data, SDVariable segmentIds, int numSegments) {
+    public SDVariable unsortedSegmentSum(@NonNull SDVariable data, @NonNull SDVariable segmentIds, int numSegments) {
         return unsortedSegmentSum(null, data, segmentIds, numSegments);
     }
 
@@ -2888,7 +2903,7 @@ public abstract class SDBaseOps {
      * @param numSegments Number of segments
      * @return Unsorted segment sum output
      */
-    public SDVariable unsortedSegmentSum(String name, SDVariable data, SDVariable segmentIds, int numSegments) {
+    public SDVariable unsortedSegmentSum(String name, @NonNull SDVariable data, @NonNull SDVariable segmentIds, int numSegments) {
         SDVariable ret = f().unsortedSegmentSum(data, segmentIds, numSegments);
         return updateVariableNameAndReference(ret, name);
     }
@@ -2903,7 +2918,7 @@ public abstract class SDBaseOps {
     /**
      * @see #unstack(String[], SDVariable, int, int)
      */
-    public SDVariable[] unstack(String[] names, SDVariable value, int axis) {
+    public SDVariable[] unstack(String[] names, @NonNull SDVariable value, int axis) {
         SDVariable[] ret = f().unstack(value, axis);
         return updateVariableNamesAndReferences(ret, names);
     }
@@ -2911,7 +2926,7 @@ public abstract class SDBaseOps {
     /**
      * @see #unstack(String[], SDVariable, int, int)
      */
-    public SDVariable[] unstack(SDVariable value, int axis, int num) {
+    public SDVariable[] unstack(@NonNull SDVariable value, int axis, int num) {
         return unstack(null, value, axis, num);
     }
 
@@ -2929,7 +2944,7 @@ public abstract class SDBaseOps {
      * @return Output variables
      * @see #stack(String, int, SDVariable...)
      */
-    public SDVariable[] unstack(String[] names, SDVariable value, int axis, int num) {
+    public SDVariable[] unstack(String[] names, @NonNull SDVariable value, int axis, int num) {
         SDVariable[] ret = f().unstack(value, axis, num);
         return updateVariableNamesAndReferences(ret, names);
     }
@@ -2937,7 +2952,7 @@ public abstract class SDBaseOps {
     /**
      * @see #variance(String, SDVariable, boolean, int...)
      */
-    public SDVariable variance(SDVariable x, boolean biasCorrected, int... dimensions) {
+    public SDVariable variance(@NonNull SDVariable x, boolean biasCorrected, int... dimensions) {
         return variance(null, x, biasCorrected, dimensions);
     }
 
@@ -2950,7 +2965,7 @@ public abstract class SDBaseOps {
      * @param dimensions    Dimensions to reduce over. If dimensions are not specified, full array reduction is performed
      * @return Output variable: reduced array of rank (input rank - num dimensions)
      */
-    public SDVariable variance(String name, SDVariable x, boolean biasCorrected, int... dimensions) {
+    public SDVariable variance(String name, @NonNull SDVariable x, boolean biasCorrected, int... dimensions) {
         return variance(name, x, biasCorrected, false, dimensions);
     }
 
@@ -2970,7 +2985,7 @@ public abstract class SDBaseOps {
      * @param dimensions    Dimensions to reduce over. If dimensions are not specified, full array reduction is performed
      * @return Output variable: reduced array of rank (input rank - num dimensions)
      */
-    public SDVariable variance(String name, SDVariable x, boolean biasCorrected, boolean keepDims, int... dimensions) {
+    public SDVariable variance(String name, @NonNull SDVariable x, boolean biasCorrected, boolean keepDims, int... dimensions) {
         SDVariable result = f().variance(x, biasCorrected, keepDims, dimensions);
         return updateVariableNameAndReference(result, name);
     }
@@ -2982,7 +2997,7 @@ public abstract class SDBaseOps {
      * @param input Input SDVariable
      * @return A new SDVariable with the same (dynamic) shape as the input
      */
-    public SDVariable zerosLike(SDVariable input) {
+    public SDVariable zerosLike(@NonNull SDVariable input) {
         return zerosLike(null, input);
     }
 
@@ -2994,7 +3009,7 @@ public abstract class SDBaseOps {
      * @param input Input SDVariable
      * @return A new SDVariable with the same (dynamic) shape as the input
      */
-    public SDVariable zerosLike(String name, SDVariable input) {
+    public SDVariable zerosLike(String name, @NonNull SDVariable input) {
         SDVariable ret = f().zerosLike(name, input);
         return updateVariableNameAndReference(ret, name);
     }

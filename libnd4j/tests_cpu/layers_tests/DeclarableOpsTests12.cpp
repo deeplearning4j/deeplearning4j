@@ -874,3 +874,61 @@ TEST_F(DeclarableOpsTests12, concat_15) {
 
     ASSERT_TRUE(exp.equalsTo(output));
 }
+
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests12, reduceMeanBp_4) {
+
+    NDArray x('c', {3,5}, {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15});
+    NDArray grad0('c', {5}, nd4j::DataType::DOUBLE);
+    NDArray exp('c', {3,5}, nd4j::DataType::DOUBLE);
+
+    grad0 = 1.;
+    exp = 0.333333;
+                   
+    nd4j::ops::reduce_mean_bp op;
+    auto result = op.execute({&x, &grad0}, {}, {0});
+    auto output = result->at(0);    
+
+    // output->printShapeInfo();
+    // output->printIndexedBuffer();
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests12, reduceMeanBp_5) {
+
+    NDArray x('c', {3,5}, {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15});
+    NDArray grad0('c', {3}, nd4j::DataType::DOUBLE);
+    NDArray exp('c', {3,5}, nd4j::DataType::DOUBLE);
+
+    grad0 = 1.;
+    exp = 0.2;
+                   
+    nd4j::ops::reduce_mean_bp op;
+    auto result = op.execute({&x, &grad0}, {}, {1});
+    auto output = result->at(0);    
+
+    // output->printShapeInfo();
+    // output->printIndexedBuffer();
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests12, reduceSqnormBp_1) {
+
+    NDArray x('c', {8,6,4}, nd4j::DataType::DOUBLE);
+    NDArray grad0('c', {8,6,1}, nd4j::DataType::DOUBLE);
+                   
+    nd4j::ops::reduce_sqnorm_bp op;
+    auto result = op.execute({&x, &grad0}, {1}, {2});
+    ASSERT_EQ(Status::OK(), result->status());
+
+    delete result;
+}

@@ -16,6 +16,8 @@
 
 package org.datavec.api.records.reader.impl;
 
+import lombok.Getter;
+import lombok.Setter;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.LineIterator;
 import org.datavec.api.conf.Configuration;
@@ -33,6 +35,7 @@ import org.nd4j.linalg.primitives.Triple;
 
 import java.io.*;
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 /**
@@ -49,6 +52,8 @@ public class LineRecordReader extends BaseRecordReader {
     protected int lineIndex = 0; //Line index within the current split
     protected Configuration conf;
     protected boolean initialized;
+    @Getter @Setter
+    protected String charset = StandardCharsets.UTF_8.name(); //Using String as StandardCharsets.UTF_8 is not serializable
 
     @Override
     public void initialize(InputSplit split) throws IOException, InterruptedException {
@@ -81,7 +86,6 @@ public class LineRecordReader extends BaseRecordReader {
                 lineIndex = 0; //New split opened -> reset line index
                 try {
                     close();
-//                    iter = IOUtils.lineIterator(new InputStreamReader(locations[splitIndex].toURL().openStream()));
                     iter = getIterator(splitIndex);
                     onLocationOpen(locations[splitIndex]);
                 } catch (IOException e) {
@@ -194,7 +198,11 @@ public class LineRecordReader extends BaseRecordReader {
         } else if (inputSplit instanceof InputStreamInputSplit) {
             InputStream is = ((InputStreamInputSplit) inputSplit).getIs();
             if (is != null) {
-                iterator = IOUtils.lineIterator(new InputStreamReader(is));
+                try {
+                    iterator = IOUtils.lineIterator(new InputStreamReader(is, charset));
+                } catch (UnsupportedEncodingException e){
+                    throw new RuntimeException("Unsupported encoding: " + charset, e);
+                }
             }
         } else {
             final ArrayList<URI> uris = new ArrayList<>();
@@ -204,7 +212,11 @@ public class LineRecordReader extends BaseRecordReader {
             this.locations = uris.toArray(new URI[uris.size()]);
             if (locations.length > 0) {
                 InputStream inputStream = streamCreatorFn.apply(locations[location]);
-                iterator = IOUtils.lineIterator(new InputStreamReader(inputStream));
+                try {
+                    iterator = IOUtils.lineIterator(new InputStreamReader(inputStream, charset));
+                } catch (UnsupportedEncodingException e){
+                    throw new RuntimeException("Unsupported encoding: " + charset, e);
+                }
             }
         }
         if (iterator == null)
@@ -274,8 +286,8 @@ public class LineRecordReader extends BaseRecordReader {
             Iterator<Triple<Integer, RecordMetaDataLine, List<Writable>>> metaIter = list.iterator(); //Currently sorted by URI, then line number
 
             URI currentURI = sortedURIs.get(0);
-            Iterator<String> currentUriIter =
-                            IOUtils.lineIterator(new InputStreamReader(currentURI.toURL().openStream()));
+            Iterator<String> currentUriIter = IOUtils.lineIterator(streamCreatorFn.apply(currentURI), charset);
+
             int currentURIIdx = 0; //Index of URI
             int currentLineIdx = 0; //Index of the line for the current URI
             String line = currentUriIter.next();

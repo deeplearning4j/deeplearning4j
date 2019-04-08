@@ -2211,11 +2211,16 @@ public class Shape {
             return 'a';
         else if (isFortran && !cContiguous)
             return 'f';
-        else if (!isFortran && !cContiguous)
-            return 'c';
-        else
-            return 'c';
 
+        //Check if ascending strides
+        boolean stridesAscending = true;
+        for( int j=1; j<stride.length; j++ ){
+            stridesAscending &= (stride[j] >= stride[j-1]);
+        }
+        if(stridesAscending)
+            return 'f';
+
+        return 'c';
     }
 
     /**

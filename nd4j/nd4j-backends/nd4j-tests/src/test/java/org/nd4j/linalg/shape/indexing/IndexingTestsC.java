@@ -166,7 +166,7 @@ public class IndexingTestsC extends BaseNd4jTest {
     @Test
     public void testRowVectorInterval() {
         int len = 30;
-        INDArray row = Nd4j.zeros(len);
+        INDArray row = Nd4j.zeros(1, len);
         for (int i = 0; i < len; i++) {
             row.putScalar(i, i);
         }
@@ -260,7 +260,7 @@ public class IndexingTestsC extends BaseNd4jTest {
             7,8,9   16,17,18    25,26,27
          */
         INDArray viewOne = A.get(NDArrayIndex.point(1), NDArrayIndex.interval(0, 2), NDArrayIndex.interval(1, 3));
-        INDArray viewTwo = A.get(NDArrayIndex.point(1)).get(NDArrayIndex.interval(0, 2), NDArrayIndex.interval(1, 3));
+        INDArray viewTwo = A.get(NDArrayIndex.point(1), NDArrayIndex.all(), NDArrayIndex.all()).get(NDArrayIndex.interval(0, 2), NDArrayIndex.interval(1, 3));
         INDArray expected = Nd4j.zeros(2, 2);
         expected.putScalar(0, 0, 11);
         expected.putScalar(0, 1, 12);
@@ -290,7 +290,7 @@ public class IndexingTestsC extends BaseNd4jTest {
                     log.info("Running for ( {}, {} - {} , {} - {} )", s, i, rows, j, cols);
                     INDArrayIndex ndi_I = NDArrayIndex.interval(i, rows);
                     INDArrayIndex ndi_J = NDArrayIndex.interval(j, cols);
-                    INDArray aView = A.get(ndi_Slice).get(ndi_I, ndi_J);
+                    INDArray aView = A.get(ndi_Slice, NDArrayIndex.all(), NDArrayIndex.all()).get(ndi_I, ndi_J);
                     INDArray sameView = A.get(ndi_Slice, ndi_I, ndi_J);
                     String failureMessage = String.format("Fails for (%d , %d - %d, %d - %d)\n", s, i, rows, j, cols);
                     try {

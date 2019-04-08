@@ -16,6 +16,7 @@
 
 package org.deeplearning4j.clustering.strategy;
 
+import org.deeplearning4j.clustering.algorithm.Distance;
 import org.deeplearning4j.clustering.condition.ClusteringAlgorithmCondition;
 import org.deeplearning4j.clustering.condition.ConvergenceCondition;
 import org.deeplearning4j.clustering.condition.FixedIterationCountCondition;
@@ -33,11 +34,11 @@ public class OptimisationStrategy extends BaseClusteringStrategy {
         super();
     }
 
-    protected OptimisationStrategy(int initialClusterCount, String distanceFunction) {
+    protected OptimisationStrategy(int initialClusterCount, Distance distanceFunction) {
         super(ClusteringStrategyType.OPTIMIZATION, initialClusterCount, distanceFunction, false);
     }
 
-    public static OptimisationStrategy setup(int initialClusterCount, String distanceFunction) {
+    public static OptimisationStrategy setup(int initialClusterCount, Distance distanceFunction) {
         return new OptimisationStrategy(initialClusterCount, distanceFunction);
     }
 

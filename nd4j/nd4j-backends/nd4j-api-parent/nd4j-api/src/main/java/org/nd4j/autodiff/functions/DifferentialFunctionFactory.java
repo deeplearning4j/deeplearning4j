@@ -179,10 +179,6 @@ public class DifferentialFunctionFactory {
         return new Constant(sameDiff(), input, (shape != null && shape.length > 0 ? shape : null)).outputVariable();
     }
 
-    public SDVariable linspace(double lower, double upper, long count) {
-        return new Linspace(sameDiff(), lower, upper, count).outputVariable();
-    }
-
     public SDVariable linspace(SDVariable lower, SDVariable upper, SDVariable count, DataType dt) {
         return new org.nd4j.linalg.api.ops.impl.shape.Linspace(sameDiff(), lower, upper, count, dt).outputVariable();
     }
@@ -2181,6 +2177,12 @@ public class DifferentialFunctionFactory {
     }
 
     public SDVariable stridedSliceBp(SDVariable in, SDVariable grad, long[] begin, long[] end, long[] strides, int beginMask,
+                                     int endMask, int ellipsisMask, int newAxisMask, int shrinkAxisMask) {
+        return new StridedSliceBp(sameDiff(), in, grad, begin, end, strides, beginMask, endMask, ellipsisMask,
+                newAxisMask, shrinkAxisMask).outputVariable();
+    }
+
+    public SDVariable stridedSliceBp(SDVariable in, SDVariable grad, SDVariable begin, SDVariable end, SDVariable strides, int beginMask,
                                      int endMask, int ellipsisMask, int newAxisMask, int shrinkAxisMask) {
         return new StridedSliceBp(sameDiff(), in, grad, begin, end, strides, beginMask, endMask, ellipsisMask,
                 newAxisMask, shrinkAxisMask).outputVariable();

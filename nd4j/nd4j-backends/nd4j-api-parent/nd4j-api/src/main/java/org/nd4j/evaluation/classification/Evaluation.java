@@ -382,9 +382,11 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
             int nClasses = labels2d.columns();
             if (nClasses == 1)
                 nClasses = 2; //Binary (single output variable) case
-            labelsList = new ArrayList<>(nClasses);
-            for (int i = 0; i < nClasses; i++)
-                labelsList.add(String.valueOf(i));
+            if(labelsList == null || labelsList.isEmpty()) {
+                labelsList = new ArrayList<>(nClasses);
+                for (int i = 0; i < nClasses; i++)
+                    labelsList.add(String.valueOf(i));
+            }
             createConfusion(nClasses);
         }
 

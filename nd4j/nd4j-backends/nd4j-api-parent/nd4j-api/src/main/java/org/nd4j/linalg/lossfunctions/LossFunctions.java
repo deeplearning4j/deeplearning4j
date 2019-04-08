@@ -35,7 +35,7 @@ public class LossFunctions {
      * NEGATIVELOGLIKELIHOOD: Negative Log Likelihood<br>
      */
     public enum LossFunction {
-        MSE, L1, @Deprecated EXPLL, XENT, MCXENT, @Deprecated RMSE_XENT, SQUARED_LOSS, RECONSTRUCTION_CROSSENTROPY, NEGATIVELOGLIKELIHOOD, @Deprecated CUSTOM, COSINE_PROXIMITY, HINGE, SQUARED_HINGE, KL_DIVERGENCE, MEAN_ABSOLUTE_ERROR, L2, MEAN_ABSOLUTE_PERCENTAGE_ERROR, MEAN_SQUARED_LOGARITHMIC_ERROR, POISSON;
+        MSE, L1, @Deprecated EXPLL, XENT, MCXENT, @Deprecated RMSE_XENT, SQUARED_LOSS, RECONSTRUCTION_CROSSENTROPY, NEGATIVELOGLIKELIHOOD, @Deprecated CUSTOM, COSINE_PROXIMITY, HINGE, SQUARED_HINGE, KL_DIVERGENCE, MEAN_ABSOLUTE_ERROR, L2, MEAN_ABSOLUTE_PERCENTAGE_ERROR, MEAN_SQUARED_LOGARITHMIC_ERROR, POISSON, WASSERSTEIN;
 
         public ILossFunction getILossFunction() {
             switch (this) {
@@ -70,6 +70,8 @@ public class LossFunctions {
                 case POISSON:
                 case EXPLL:
                     return new LossPoisson();
+                case WASSERSTEIN:
+                    return new LossWasserstein();
                 default:
                     //Custom, RMSE_XENT
                     throw new UnsupportedOperationException("Unknown or not supported loss function: " + this);

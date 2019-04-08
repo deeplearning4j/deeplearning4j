@@ -125,8 +125,11 @@ void  NativeOps::execIndexReduce(Nd4jPointer *extraPointers,int opNum,
     auto dimension = reinterpret_cast<int *>(hDimension);
     int dimensionLength = static_cast<int>(shape::length(hDimensionShape));
 
-    Nd4jLong *hTADShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[0]);
-    Nd4jLong *hTADOffsets = reinterpret_cast<Nd4jLong *>(extraPointers[1]);
+    auto tadPack = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(hXShapeInfo, dimension, dimensionLength);
+
+    auto hTADShapeInfo = tadPack.primaryShapeInfo();
+    auto hTADOffsets = tadPack.primaryOffsets();
+
     auto hz = reinterpret_cast<Nd4jLong*>(hZ);
 
     NativeOpExcutioner::execIndexReduce(opNum,
@@ -167,10 +170,13 @@ void NativeOps::execBroadcast(Nd4jPointer *extraPointers,
     auto dimension = reinterpret_cast<int *>(hDimension);
     int dimensionLength = static_cast<int>(shape::length(hDimensionShape));
 
-    Nd4jLong *hTADShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[0]);
-    Nd4jLong *hTADOffsets = reinterpret_cast<Nd4jLong *>(extraPointers[1]);
-    Nd4jLong *hTADShapeInfoZ = reinterpret_cast<Nd4jLong *>(extraPointers[2]);
-    Nd4jLong *hTADOffsetsZ = reinterpret_cast<Nd4jLong *>(extraPointers[3]);
+    auto tadPackX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(hXShapeInfo, dimension, dimensionLength);
+    auto tadPackZ = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(hZShapeInfo, dimension, dimensionLength);
+
+    auto hTADShapeInfo = tadPackX.primaryShapeInfo();
+    auto hTADOffsets = tadPackX.primaryOffsets();
+    auto hTADShapeInfoZ = tadPackZ.primaryShapeInfo();
+    auto hTADOffsetsZ = tadPackZ.primaryOffsets();
 
     NativeOpExcutioner::execBroadcast(
             opNum,
@@ -196,10 +202,13 @@ void NativeOps::execBroadcastBool(Nd4jPointer *extraPointers,
     auto dimension = reinterpret_cast<int *>(hDimension);
     int dimensionLength = static_cast<int>(shape::length(hDimensionShape));
 
-    Nd4jLong *hTADShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[0]);
-    Nd4jLong *hTADOffsets = reinterpret_cast<Nd4jLong *>(extraPointers[1]);
-    Nd4jLong *hTADShapeInfoZ = reinterpret_cast<Nd4jLong *>(extraPointers[2]);
-    Nd4jLong *hTADOffsetsZ = reinterpret_cast<Nd4jLong *>(extraPointers[3]);
+    auto tadPackX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(hXShapeInfo, dimension, dimensionLength);
+    auto tadPackZ = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(hZShapeInfo, dimension, dimensionLength);
+
+    auto hTADShapeInfo = tadPackX.primaryShapeInfo();
+    auto hTADOffsets = tadPackX.primaryOffsets();
+    auto hTADShapeInfoZ = tadPackZ.primaryShapeInfo();
+    auto hTADOffsetsZ = tadPackZ.primaryOffsets();
 
     NativeOpExcutioner::execBroadcastBool(
             opNum,
@@ -372,9 +381,11 @@ void NativeOps::execReduceFloat(Nd4jPointer *extraPointers,
     auto dimension = reinterpret_cast<int *>(hDimension);
     int dimensionLength = static_cast<int>(shape::length(hDimensionShape));
 
-    auto hTADShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[0]);
-    auto hTADOffsets = reinterpret_cast<Nd4jLong *>(extraPointers[1]);
-    
+    auto tadPackX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(hXShapeInfo, dimension, dimensionLength);
+
+    auto hTADShapeInfo = tadPackX.primaryShapeInfo();
+    auto hTADOffsets = tadPackX.primaryOffsets();
+
     NativeOpExcutioner::execReduceFloat(opNum,
                                            hX,
                                            hXShapeInfo,
@@ -399,8 +410,10 @@ void NativeOps::execReduceBool(Nd4jPointer *extraPointers,
     auto dimension = reinterpret_cast<int *>(hDimension);
     int dimensionLength = static_cast<int>(shape::length(hDimensionShape));
 
-    auto hTADShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[0]);
-    auto hTADOffsets = reinterpret_cast<Nd4jLong *>(extraPointers[1]);
+    auto tadPack = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(hXShapeInfo, dimension, dimensionLength);
+
+    auto hTADShapeInfo = tadPack.primaryShapeInfo();
+    auto hTADOffsets = tadPack.primaryOffsets();
 
     NativeOpExcutioner::execReduceBool(opNum,
                                         hX,
@@ -426,8 +439,10 @@ void NativeOps::execReduceSame(Nd4jPointer *extraPointers,
     auto dimension = reinterpret_cast<int *>(hDimension);
     int dimensionLength = static_cast<int>(shape::length(hDimensionShape));
 
-    auto hTADShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[0]);
-    auto hTADOffsets = reinterpret_cast<Nd4jLong *>(extraPointers[1]);
+    auto tadPack = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(hXShapeInfo, dimension, dimensionLength);
+
+    auto hTADShapeInfo = tadPack.primaryShapeInfo();
+    auto hTADOffsets = tadPack.primaryOffsets();
 
     NativeOpExcutioner::execReduceSame(opNum,
                                         hX,
@@ -453,8 +468,10 @@ void NativeOps::execReduceLong(Nd4jPointer *extraPointers,
     auto dimension = reinterpret_cast<int *>(hDimension);
     int dimensionLength = static_cast<int>(shape::length(hDimensionShape));
 
-    auto hTADShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[0]);
-    auto hTADOffsets = reinterpret_cast<Nd4jLong *>(extraPointers[1]);
+    auto tadPack = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(hXShapeInfo, dimension, dimensionLength);
+
+    auto hTADShapeInfo = tadPack.primaryShapeInfo();
+    auto hTADOffsets = tadPack.primaryOffsets();
 
     NativeOpExcutioner::execReduceLong(opNum,
                                         hX,
@@ -547,10 +564,12 @@ void NativeOps::execReduce3(Nd4jPointer *extraPointers,
         NativeOpExcutioner::execReduce3(opNum, hX, hXShapeInfo, extraParams, hY, hYShapeInfo, hZ, hZShapeInfo, dimension, dimensionLength);
     } else {
         // going tad-way
-        auto tadShapeInfo = reinterpret_cast<Nd4jLong *> (extraPointers[0]);
-        auto tadOffsets = reinterpret_cast<Nd4jLong *>(extraPointers[1]);
+        auto tadPack = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(hXShapeInfo, dimension, dimensionLength);
 
-        NativeOpExcutioner::execReduce3TAD(opNum, hX, hXShapeInfo, extraParams, hY, hYShapeInfo, hZ, hZShapeInfo, dimension, dimensionLength, tadShapeInfo, tadOffsets);
+        auto hTADShapeInfo = tadPack.primaryShapeInfo();
+        auto hTADOffsets = tadPack.primaryOffsets();
+
+        NativeOpExcutioner::execReduce3TAD(opNum, hX, hXShapeInfo, extraParams, hY, hYShapeInfo, hZ, hZShapeInfo, dimension, dimensionLength, hTADShapeInfo, hTADOffsets);
     }
 
 }

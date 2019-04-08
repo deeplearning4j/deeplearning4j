@@ -16,6 +16,7 @@
 
 package org.deeplearning4j.clustering.strategy;
 
+import org.deeplearning4j.clustering.algorithm.Distance;
 import org.deeplearning4j.clustering.condition.ClusteringAlgorithmCondition;
 import org.deeplearning4j.clustering.iteration.IterationHistory;
 
@@ -53,7 +54,7 @@ public interface ClusteringStrategy {
      *
      * @return
      */
-    String getDistanceFunction();
+    Distance getDistanceFunction();
 
     /**
      *

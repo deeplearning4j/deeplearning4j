@@ -120,4 +120,15 @@ public class NearestNeighborTest {
         assertEquals(numNeighbors, results.size());
     }
 
+    @Test
+    public void testDistances() {
+
+        INDArray indArray = Nd4j.create(new float[][]{{3, 4}, {1, 2}, {5, 6}});
+        INDArray record = Nd4j.create(new float[][]{{7, 6}});
+        VPTree vpTree = new VPTree(indArray, "euclidean", false);
+        VPTreeFillSearch vpTreeFillSearch = new VPTreeFillSearch(vpTree, 3, record);
+        vpTreeFillSearch.search();
+        //System.out.println(vpTreeFillSearch.getResults());
+        System.out.println(vpTreeFillSearch.getDistances());
+    }
 }

@@ -5,6 +5,7 @@ import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.autodiff.samediff.TrainingConfig;
 import org.nd4j.autodiff.samediff.transform.*;
 import org.nd4j.base.Preconditions;
 import org.nd4j.graph.ui.LogFileWriter;
@@ -13,7 +14,9 @@ import org.nd4j.imports.tensorflow.TFImportOverride;
 import org.nd4j.imports.tensorflow.TFOpImportFilter;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.learning.config.Adam;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.resources.Downloader;
 import org.nd4j.util.ArchiveUtils;
@@ -211,23 +214,9 @@ public class BERTGraphTest {
         INDArray ex4Mask = Nd4j.createFromArray(1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0);
         INDArray ex4SegmentId = Nd4j.createFromArray(0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0);
 
-        INDArray idxs = Nd4j.create(DataType.INT, minibatchSize, 128);
-        idxs.getRow(0).assign(ex1Idxs);
-        idxs.getRow(1).assign(ex2Idxs);
-        idxs.getRow(2).assign(ex3Idxs);
-        idxs.getRow(3).assign(ex4Idxs);
-
-        INDArray mask = Nd4j.create(DataType.INT, minibatchSize, 128);
-        mask.getRow(0).assign(ex1Mask);
-        mask.getRow(1).assign(ex2Mask);
-        mask.getRow(2).assign(ex3Mask);
-        mask.getRow(3).assign(ex4Mask);
-
-        INDArray segmentIdxs = Nd4j.create(DataType.INT, minibatchSize, 128);
-        segmentIdxs.getRow(0).assign(ex1SegmentId);
-        segmentIdxs.getRow(1).assign(ex2SegmentId);
-        segmentIdxs.getRow(2).assign(ex3SegmentId);
-        segmentIdxs.getRow(3).assign(ex4SegmentId);
+        INDArray idxs = Nd4j.vstack(ex1Idxs, ex2Idxs, ex3Idxs, ex4Idxs);
+        INDArray mask = Nd4j.vstack(ex1Mask, ex2Mask, ex3Mask, ex4Mask);
+        INDArray segmentIdxs = Nd4j.vstack(ex1SegmentId, ex2SegmentId, ex3SegmentId, ex4SegmentId);
 
         Map<String, INDArray> placeholderValues = new HashMap<>();
         placeholderValues.put("IteratorGetNext", idxs);
@@ -249,6 +238,132 @@ public class BERTGraphTest {
         assertEquals(exp1, softmax.getRow(1));
         assertEquals(exp2, softmax.getRow(2));
         assertEquals(exp3, softmax.getRow(3));
+    }
+
+    @Test @Ignore   //AB ignored 08/04/2019 until fixed
+    public void testBertTraining() throws Exception {
+        String url = "https://deeplearning4jblob.blob.core.windows.net/testresources/bert_mrpc_frozen_v1.zip";
+        File saveDir = new File(TFGraphTestZooModels.getBaseModelDir(), ".nd4jtests/bert_mrpc_frozen_v1");
+        saveDir.mkdirs();
+
+        File localFile = new File(saveDir, "bert_mrpc_frozen_v1.zip");
+        String md5 = "7cef8bbe62e701212472f77a0361f443";
+
+        if(localFile.exists() && !Downloader.checkMD5OfFile(md5, localFile)) {
+            log.info("Deleting local file: does not match MD5. {}", localFile.getAbsolutePath());
+            localFile.delete();
+        }
+
+        if (!localFile.exists()) {
+            log.info("Starting resource download from: {} to {}", url, localFile.getAbsolutePath());
+            Downloader.download("BERT MRPC", new URL(url), localFile, md5, 3);
+        }
+
+        //Extract
+        File f = new File(saveDir, "bert_mrpc_frozen.pb");
+        if(!f.exists() || !Downloader.checkMD5OfFile("93d82bca887625632578df37ea3d3ca5", f)){
+            if(f.exists()) {
+                f.delete();
+            }
+            ArchiveUtils.zipExtractSingleFile(localFile, f, "bert_mrpc_frozen.pb");
+        }
+
+        /*
+        Important node: This BERT model uses a FIXED (hardcoded) minibatch size, not dynamic as most models use
+         */
+        int minibatchSize = 4;
+
+        /*
+         * Define: Op import overrides. This is used to skip the IteratorGetNext node and instead crate some placeholders
+         */
+        Map<String, TFImportOverride> m = new HashMap<>();
+        m.put("IteratorGetNext", (inputs, controlDepInputs, nodeDef, initWith, attributesForNode, graph) -> {
+            //Return 3 placeholders called "IteratorGetNext:0", "IteratorGetNext:1", "IteratorGetNext:3" instead of the training iterator
+            return Arrays.asList(
+                    initWith.placeHolder("IteratorGetNext", DataType.INT, minibatchSize, 128),
+                    initWith.placeHolder("IteratorGetNext:1", DataType.INT, minibatchSize, 128),
+                    initWith.placeHolder("IteratorGetNext:4", DataType.INT, minibatchSize, 128)
+            );
+        });
+
+        //Skip the "IteratorV2" op - we don't want or need this
+        TFOpImportFilter filter = (nodeDef, initWith, attributesForNode, graph) -> { return "IteratorV2".equals(nodeDef.getName()); };
+
+        SameDiff sd = TFGraphMapper.getInstance().importGraph(f, m, filter);
+
+        //For training, convert weights and biases from constants to variables:
+        for(SDVariable v : sd.variables()){
+            if(v.isConstant() && v.dataType().isFPType()){
+                log.info("Converting to variable: {} - shape {}", v.getVarName(), v.shape());
+                v.convertToVariable();
+            }
+        }
+
+        System.out.println("INPUTS: " + sd.inputs());
+        System.out.println("OUTPUTS: " + sd.outputs());
+
+        //For training, we'll need to add a label placeholder for one-hot labels:
+        SDVariable label = sd.placeHolder("label", DataType.FLOAT, 4, 2);
+        SDVariable softmax = sd.getVariable("loss/Softmax");
+        sd.loss().logLoss("loss", label, softmax);
+        assertEquals(Collections.singletonList("loss"), sd.getLossVariables());
+
+        //Peform simple overfitting test - same input, but inverted labels
+
+        INDArray ex1Idxs = Nd4j.createFromArray(101,1996,12368,3115,1004,3532,1005,1055,3156,5950,1026,1012,11867,2595,1028,2001,1014,1012,4805,2685,2896,1010,2030,1014,1012,5709,3867,1010,2012,5585,2581,1012,6185,1012,102,1996,2974,1011,17958,17235,2850,4160,12490,5950,1012,11814,2594,2001,2039,1021,1012,4413,2685,1010,2030,1014,1012,3429,3867,1010,2012,1015,1010,3515,2509,1012,4008,1012,102,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0);
+        INDArray ex1Mask = Nd4j.createFromArray(1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0);
+        INDArray ex1SegmentId = Nd4j.createFromArray(0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0);
+
+        INDArray ex2Idxs = Nd4j.createFromArray(101,6661,1999,8670,2020,2091,1015,1012,1019,3867,2012,16923,7279,3401,2011,16087,2692,13938,2102,1010,2125,1037,2659,1997,17943,2361,1010,1999,1037,3621,6428,3452,2414,3006,1012,102,6661,1999,8670,2020,2091,2093,3867,2012,13913,1011,1015,1013,1018,7279,3401,2011,5641,22394,13938,2102,1010,2125,1037,2659,1997,17943,7279,3401,1010,1999,1037,6428,3006,1012,102,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0);
+        INDArray ex2Mask = Nd4j.createFromArray(1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0);
+        INDArray ex2SegmentId = Nd4j.createFromArray(0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0);
+
+        INDArray ex3Idxs = Nd4j.createFromArray(101,2197,2095,1010,4012,10526,2772,1015,1012,1019,2454,2047,3617,5830,17073,1012,102,4012,10526,2038,2055,2538,1012,1017,2454,5830,17073,1010,2116,1999,1996,2922,1057,1012,1055,1012,3655,1012,102,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0);
+        INDArray ex3Mask = Nd4j.createFromArray(1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0);
+        INDArray ex3SegmentId = Nd4j.createFromArray(0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0);
+
+        INDArray ex4Idxs = Nd4j.createFromArray(101,6599,3123,1017,1012,1023,3867,1010,2000,1002,1015,1012,6191,4551,2013,1002,1015,1012,5401,4551,1012,102,1996,17602,1010,3448,1011,2241,2194,2056,3780,6599,3445,1019,3867,2000,1002,1015,1012,4805,4551,1012,102,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0);
+        INDArray ex4Mask = Nd4j.createFromArray(1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0);
+        INDArray ex4SegmentId = Nd4j.createFromArray(0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0);
+
+        INDArray idxs = Nd4j.vstack(ex1Idxs, ex2Idxs, ex3Idxs, ex4Idxs);
+        INDArray mask = Nd4j.vstack(ex1Mask, ex2Mask, ex3Mask, ex4Mask);
+        INDArray segmentIdxs = Nd4j.vstack(ex1SegmentId, ex2SegmentId, ex3SegmentId, ex4SegmentId);
+        INDArray labelArr = Nd4j.createFromArray(new float[][]{
+                {1, 0},
+                {0, 1},
+                {1, 0},
+                {1, 0}});
+
+        TrainingConfig c = TrainingConfig.builder()
+                .updater(new Adam(2e-5))
+                .l2(1e-5)
+                .dataSetFeatureMapping("IteratorGetNext", "IteratorGetNext:1", "IteratorGetNext:4")
+                .dataSetLabelMapping("label")
+                .build();
+        sd.setTrainingConfig(c);
+
+        MultiDataSet mds = new org.nd4j.linalg.dataset.MultiDataSet(new INDArray[]{idxs, mask, segmentIdxs}, new INDArray[]{labelArr});
+
+        Map<String, INDArray> placeholderValues = new HashMap<>();
+        placeholderValues.put("IteratorGetNext", idxs);
+        placeholderValues.put("IteratorGetNext:1", mask);
+        placeholderValues.put("IteratorGetNext:4", segmentIdxs);
+        placeholderValues.put("label", labelArr);
+
+        INDArray lossArr = sd.exec(placeholderValues, "loss").get("loss");
+        assertTrue(lossArr.isScalar());
+        double scoreBefore = lossArr.getDouble(0);
+        for( int i=0; i<100; i++ ){
+            sd.fit(mds);
+        }
+
+        lossArr = sd.exec(placeholderValues, "loss").get("loss");
+        assertTrue(lossArr.isScalar());
+        double scoreAfter = lossArr.getDouble(0);
+
+        System.out.println("Score Before: " + scoreBefore);
+        System.out.println("Score After: " + scoreAfter);
     }
 
     @Test @Ignore

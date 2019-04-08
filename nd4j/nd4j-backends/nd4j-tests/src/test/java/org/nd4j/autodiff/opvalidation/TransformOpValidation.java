@@ -436,8 +436,8 @@ public class TransformOpValidation extends BaseOpValidation {
         SDVariable in1 = sd.var("in1", ia);
         SDVariable in2 = sd.var("in2", ib);
 
-        SDVariable index1 = sd.var("index1", indexA);
-        SDVariable index2 = sd.var("index2", indexB);
+        SDVariable index1 = sd.constant("index1", indexA);
+        SDVariable index2 = sd.constant("index2", indexB);
 
         SDVariable t = sd.dynamicStitch("ds", new SDVariable[]{index1, index2}, new SDVariable[]{in1, in2});
         SDVariable loss = sd.standardDeviation("loss", t, true);
@@ -525,7 +525,7 @@ public class TransformOpValidation extends BaseOpValidation {
             String err = OpValidation.validate(new TestCase(sd)
                     .expectedOutput("e", expOut[i])
                     .gradCheckSkipVariables("e")
-                    .gradientCheck(true));
+                    .gradientCheck(false));
             assertNull(err);
         }
     }
@@ -738,10 +738,8 @@ public class TransformOpValidation extends BaseOpValidation {
                     tc.expectedOutput(t.getVarName(), Transforms.leakyRelu(ia, true));
                     break;
                 case 39:
-                    if(OpValidationSuite.IGNORE_FAILING){
-                        //2018-01-09 - Gradient check is failing - not sure why
+                    if(OpValidationSuite.IGNORE_FAILING)
                         continue;
-                    }
                     t = sd.nn().logSoftmax(in);
                     ia = Nd4j.rand(minibatch, nOut).muli(10).subi(5);
                     tc.expectedOutput(t.getVarName(), Transforms.log(Transforms.softmax(ia, true)));
@@ -753,29 +751,29 @@ public class TransformOpValidation extends BaseOpValidation {
                     break;
                 case 41:
                     t = sd.gt(in, 1.0).castTo(DataType.DOUBLE);
-                    tc.expectedOutput(t.getVarName(), ia.gt(1.0).castTo(DataType.DOUBLE));
+                    tc.expectedOutput(t.getVarName(), ia.gt(1.0).castTo(DataType.DOUBLE)).gradientCheck(false);
                     break;
                 case 42:
                     t = sd.gte(in, 1.0).castTo(DataType.DOUBLE);
-                    tc.expectedOutput(t.getVarName(), ia.gte(1.0).castTo(DataType.DOUBLE));
+                    tc.expectedOutput(t.getVarName(), ia.gte(1.0).castTo(DataType.DOUBLE)).gradientCheck(false);
                     break;
                 case 43:
                     t = sd.lt(in, 1.0).castTo(DataType.DOUBLE);
-                    tc.expectedOutput(t.getVarName(), ia.lt(1.0).castTo(DataType.DOUBLE));
+                    tc.expectedOutput(t.getVarName(), ia.lt(1.0).castTo(DataType.DOUBLE)).gradientCheck(false);
                     break;
                 case 44:
                     t = sd.lte(in, 1.0).castTo(DataType.DOUBLE);
-                    tc.expectedOutput(t.getVarName(), ia.lte(1.0).castTo(DataType.DOUBLE));
+                    tc.expectedOutput(t.getVarName(), ia.lte(1.0).castTo(DataType.DOUBLE)).gradientCheck(false);
                     break;
                 case 45:
                     t = sd.eq(in, 2.0).castTo(DataType.DOUBLE);
                     ia = Nd4j.linspace(1, minibatch * nOut, minibatch * nOut, DataType.DOUBLE).reshape('c', minibatch, nOut);
-                    tc.expectedOutput(t.getVarName(), ia.eq(2.0).castTo(DataType.DOUBLE));
+                    tc.expectedOutput(t.getVarName(), ia.eq(2.0).castTo(DataType.DOUBLE)).gradientCheck(false);
                     break;
                 case 46:
                     t = sd.neq(in, 2.0).castTo(DataType.DOUBLE);
                     ia = Nd4j.linspace(1, minibatch * nOut, minibatch * nOut, DataType.DOUBLE).reshape('c', minibatch, nOut);
-                    tc.expectedOutput(t.getVarName(), ia.neq(2.0).castTo(DataType.DOUBLE));
+                    tc.expectedOutput(t.getVarName(), ia.neq(2.0).castTo(DataType.DOUBLE)).gradientCheck(false);
                     break;
                 case 47:
                     t = sd.math().ceil(in);
@@ -902,11 +900,10 @@ public class TransformOpValidation extends BaseOpValidation {
                     break;
                 case 61:
                     ia = Nd4j.create(new float[] {2, 2}).castTo(DataType.DOUBLE);
-//                    in = sd.var("in", new int[]{1, 2});
                     sd.associateArrayWithVariable(ia, in);
                     double value = 42;
                     t = sd.fill(in.castTo(DataType.INT), DataType.DOUBLE, value);
-                    tc.expectedOutput(t.getVarName(), Nd4j.valueArrayOf(new int[]{2,2}, 42));
+                    tc.expectedOutput(t.getVarName(), Nd4j.valueArrayOf(new int[]{2,2}, 42)).gradientCheck(false);
                     opName = "fill";
                     break;
                 case 62:
@@ -935,11 +932,11 @@ public class TransformOpValidation extends BaseOpValidation {
                     break;
                 case 68:
                     t = sd.shape(in).castTo(DataType.DOUBLE);
-                    tc.expectedOutput(t.getVarName(), Nd4j.create(ArrayUtil.toDouble(ia.shape())));
+                    tc.expectedOutput(t.getVarName(), Nd4j.create(ArrayUtil.toDouble(ia.shape()))).gradientCheck(false);
                     break;
                 case 69:
                     t = sd.rank(in).castTo(DataType.DOUBLE);
-                    tc.expectedOutput(t.getVarName(), Nd4j.create(new double[]{ia.rank()}));
+                    tc.expectedOutput(t.getVarName(), Nd4j.create(new double[]{ia.rank()})).gradientCheck(false);
                     break;
                 case 70:
                     t = sd.onesLike(in);
@@ -979,7 +976,7 @@ public class TransformOpValidation extends BaseOpValidation {
                     ia = Nd4j.rand(DataType.DOUBLE, ia.shape());
                     t = sd.matchCondition(in, Conditions.lessThan(0.5)).castTo(DataType.DOUBLE);
                     INDArray exp = ia.dup().lt(0.5).castTo(DataType.DOUBLE);
-                    tc.expected(t, exp);
+                    tc.expected(t, exp).gradientCheck(false);
                     break;
                 case 78:
                     ia = Nd4j.rand(DataType.DOUBLE, ia.shape()).muli(2).subi(1);
@@ -1096,45 +1093,45 @@ public class TransformOpValidation extends BaseOpValidation {
                     tc.expectedOutput(t.getVarName(), ia.rdiv(ib));
                     break;
                 case 6:
-                    t = sd.eq(in1, in2).castTo(DataType.DOUBLE);
+                    t = sd.eq(in1, in2);
                     opName = "eq";
-                    tc.expectedOutput(t.getVarName(), ia.eq(ib).castTo(DataType.DOUBLE));
+                    tc.expectedOutput(t.getVarName(), ia.eq(ib)).gradientCheck(false);
                     break;
                 case 7:
-                    t = sd.neq(in1, in2).castTo(DataType.DOUBLE);
+                    t = sd.neq(in1, in2);
                     opName = "neq";
-                    tc.expectedOutput(t.getVarName(), ia.neq(ib).castTo(DataType.DOUBLE));
+                    tc.expectedOutput(t.getVarName(), ia.neq(ib)).gradientCheck(false);;
                     break;
                 case 8:
-                    t = sd.gt(in1, in2).castTo(DataType.DOUBLE);
+                    t = sd.gt(in1, in2);
                     opName = "gt";
-                    tc.expectedOutput(t.getVarName(), ia.gt(ib).castTo(DataType.DOUBLE));
+                    tc.expectedOutput(t.getVarName(), ia.gt(ib)).gradientCheck(false);
                     break;
                 case 9:
-                    t = sd.lt(in1, in2).castTo(DataType.DOUBLE);
+                    t = sd.lt(in1, in2);
                     opName = "lt";
-                    tc.expectedOutput(t.getVarName(), ia.lt(ib).castTo(DataType.DOUBLE));
+                    tc.expectedOutput(t.getVarName(), ia.lt(ib)).gradientCheck(false);
                     break;
                 case 10:
-                    t = sd.gte(in1, in2).castTo(DataType.DOUBLE);
+                    t = sd.gte(in1, in2);
                     opName = "gte";
                     INDArray expOut10 = Nd4j.create(DataType.BOOL, ia.shape());
                     Nd4j.getExecutioner().exec(new GreaterThanOrEqual(new INDArray[]{ia, ib}, new INDArray[]{expOut10}));
-                    tc.expectedOutput(t.getVarName(), expOut10.castTo(DataType.DOUBLE));
+                    tc.expectedOutput(t.getVarName(), expOut10).gradientCheck(false);
                     break;
                 case 11:
-                    t = sd.lte(in1, in2).castTo(DataType.DOUBLE);
+                    t = sd.lte(in1, in2);
                     opName = "lte";
                     INDArray expOut11 = Nd4j.create(DataType.BOOL, ia.shape());
                     Nd4j.getExecutioner().exec(new LessThanOrEqual(new INDArray[]{ia, ib}, new INDArray[]{expOut11}));
-                    tc.expectedOutput(t.getVarName(), expOut11.castTo(DataType.DOUBLE));
+                    tc.expectedOutput(t.getVarName(), expOut11).gradientCheck(false);
                     break;
                 case 12:
                     ia = Nd4j.getExecutioner().exec(new BernoulliDistribution(ia, 0.5));
                     ib = Nd4j.getExecutioner().exec(new BernoulliDistribution(ib, 0.5));
-                    t = sd.math().or(in1.castTo(DataType.BOOL), in2.castTo(DataType.BOOL)).castTo(DataType.DOUBLE);
+                    t = sd.math().or(in1.castTo(DataType.BOOL), in2.castTo(DataType.BOOL));
                     opName = "or";
-                    tc.expectedOutput(t.getVarName(), Transforms.or(ia.castTo(DataType.BOOL), ib.castTo(DataType.BOOL)).castTo(DataType.DOUBLE));
+                    tc.expectedOutput(t.getVarName(), Transforms.or(ia.castTo(DataType.BOOL), ib.castTo(DataType.BOOL))).gradientCheck(false);
                     break;
                 case 13:
                     ib = Nd4j.randn(DataType.DOUBLE, nOut, nOut);
@@ -1152,16 +1149,16 @@ public class TransformOpValidation extends BaseOpValidation {
                 case 16:
                     ia = Nd4j.getExecutioner().exec(new BernoulliDistribution(ia, 0.5));
                     ib = Nd4j.getExecutioner().exec(new BernoulliDistribution(ib, 0.5));
-                    t = sd.math().and(in1.castTo(DataType.BOOL), in2.castTo(DataType.BOOL)).castTo(DataType.DOUBLE);
+                    t = sd.math().and(in1.castTo(DataType.BOOL), in2.castTo(DataType.BOOL));
                     opName = "and";
-                    tc.expectedOutput(t.getVarName(), Transforms.and(ia.castTo(DataType.BOOL), ib.castTo(DataType.BOOL)).castTo(DataType.DOUBLE));
+                    tc.expectedOutput(t.getVarName(), Transforms.and(ia.castTo(DataType.BOOL), ib.castTo(DataType.BOOL))).gradientCheck(false);
                     break;
                 case 17:
                     ia = Nd4j.getExecutioner().exec(new BernoulliDistribution(ia, 0.5));
                     ib = Nd4j.getExecutioner().exec(new BernoulliDistribution(ib, 0.5));
-                    t = sd.math().xor(in1.castTo(DataType.BOOL), in2.castTo(DataType.BOOL)).castTo(DataType.DOUBLE);
+                    t = sd.math().xor(in1.castTo(DataType.BOOL), in2.castTo(DataType.BOOL));
                     opName = "xor";
-                    tc.expectedOutput(t.getVarName(), Transforms.xor(ia.castTo(DataType.BOOL), ib.castTo(DataType.BOOL)).castTo(DataType.DOUBLE));
+                    tc.expectedOutput(t.getVarName(), Transforms.xor(ia.castTo(DataType.BOOL), ib.castTo(DataType.BOOL))).gradientCheck(false);
                     break;
                 case 18:
                     t = sd.assign(in1, in2);
@@ -1221,7 +1218,7 @@ public class TransformOpValidation extends BaseOpValidation {
 
         if (allFailed.size() > 0) {
             log.error("All failed transforms: " + allFailed);
-            fail(allFailed.size() + " transforms failed");
+            fail(allFailed.size() + " transforms failed: " + allFailed);
         }
     }
 
@@ -1265,7 +1262,9 @@ public class TransformOpValidation extends BaseOpValidation {
                     throw new RuntimeException();
             }
 
-            SDVariable loss = out.castTo(DataType.DOUBLE).mean();
+            SDVariable other = sd.var("other", Nd4j.rand(DataType.DOUBLE, 4));
+
+            SDVariable loss = out.castTo(DataType.DOUBLE).add(other).mean();
             TestCase tc = new TestCase(sd)
                     .gradientCheck(doGrad)
                     .expected(out, exp);

@@ -45,6 +45,7 @@ import org.deeplearning4j.nn.layers.FrozenLayer;
 import org.deeplearning4j.nn.layers.FrozenLayerWithBackprop;
 import org.deeplearning4j.nn.layers.recurrent.BidirectionalLayer;
 import org.deeplearning4j.nn.layers.LayerHelper;
+import org.deeplearning4j.nn.layers.wrapper.BaseWrapperLayer;
 import org.deeplearning4j.nn.updater.MultiLayerUpdater;
 import org.deeplearning4j.nn.updater.UpdaterCreator;
 import org.deeplearning4j.nn.workspace.ArrayType;
@@ -1013,6 +1014,9 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
                     if (layers[i] instanceof RecurrentLayer) {
                         input = ((RecurrentLayer) layers[i]).rnnActivateUsingStoredState(input, train,
                                 storeLastForTBPTT, workspaceMgr);
+                    } else if(layers[i] instanceof BaseWrapperLayer && ((BaseWrapperLayer)layers[i]).getUnderlying() instanceof RecurrentLayer) {
+                        RecurrentLayer rl = (RecurrentLayer) ((BaseWrapperLayer)layers[i]).getUnderlying();
+                        input = rl.rnnActivateUsingStoredState(input, train,storeLastForTBPTT, workspaceMgr);
                     } else if (layers[i] instanceof MultiLayerNetwork) {
                         List<INDArray> temp = ((MultiLayerNetwork) layers[i]).rnnActivateUsingStoredState(input, train, storeLastForTBPTT);
                         input = temp.get(temp.size() - 1);
@@ -1100,6 +1104,9 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
                 } else if(fwdPassType == FwdPassType.RNN_ACTIVATE_WITH_STORED_STATE){
                     if (layers[i] instanceof RecurrentLayer) {
                         input = ((RecurrentLayer) layers[i]).rnnActivateUsingStoredState(input, true, storeLastForTBPTT, workspaceMgr);
+                    }else if(layers[i] instanceof BaseWrapperLayer && ((BaseWrapperLayer)layers[i]).getUnderlying() instanceof RecurrentLayer) {
+                        RecurrentLayer rl = (RecurrentLayer) ((BaseWrapperLayer)layers[i]).getUnderlying();
+                        input = rl.rnnActivateUsingStoredState(input, true, storeLastForTBPTT, workspaceMgr);
                     } else if (layers[i] instanceof MultiLayerNetwork) {
                         List<INDArray> temp = ((MultiLayerNetwork) layers[i]).rnnActivateUsingStoredState(input, true, storeLastForTBPTT);
                         input = temp.get(temp.size() - 1);
@@ -1255,6 +1262,9 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
                         //rnnTimeStep case
                         if (layers[i] instanceof RecurrentLayer) {
                             input = ((RecurrentLayer) layers[i]).rnnTimeStep(reshapeTimeStepInput(input), mgr);
+                        } else if(layers[i] instanceof BaseWrapperLayer && ((BaseWrapperLayer)layers[i]).getUnderlying() instanceof RecurrentLayer){
+                            RecurrentLayer rl = ((RecurrentLayer) ((BaseWrapperLayer)layers[i]).getUnderlying());
+                            input = rl.rnnTimeStep(reshapeTimeStepInput(input), mgr);
                         } else if (layers[i] instanceof MultiLayerNetwork) {
                             input = ((MultiLayerNetwork) layers[i]).rnnTimeStep(reshapeTimeStepInput(input));
                         } else {
@@ -2336,7 +2346,10 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
      */
     public synchronized <T> T output(@NonNull INDArray inputs, INDArray inputMasks, INDArray labelMasks, @NonNull OutputAdapter<T> outputAdapter) {
         try (val ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace(WS_ALL_LAYERS_ACT_CONFIG, WS_OUTPUT_MEM)) {
-            return outputAdapter.apply(output(inputs, false, inputMasks, labelMasks, ws));
+            if (outputAdapter instanceof ModelAdapter)
+                return ((ModelAdapter<T>) outputAdapter).apply(this, new INDArray[]{inputs}, new INDArray[]{ inputMasks}, new INDArray[]{labelMasks});
+            else
+                return outputAdapter.apply(output(inputs, false, inputMasks, labelMasks, ws));
         }
     }
 
@@ -3057,9 +3070,13 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
     public Map<String, INDArray> rnnGetPreviousState(int layer) {
         if (layer < 0 || layer >= layers.length)
             throw new IllegalArgumentException("Invalid layer number");
-        if (!(layers[layer] instanceof RecurrentLayer))
+        Layer l = layers[layer];
+        if(l instanceof org.deeplearning4j.nn.layers.wrapper.BaseWrapperLayer){
+            l = ((org.deeplearning4j.nn.layers.wrapper.BaseWrapperLayer)l).getUnderlying();
+        }
+        if (!(l instanceof RecurrentLayer))
             throw new IllegalArgumentException("Layer is not an RNN layer");
-        return ((RecurrentLayer) layers[layer]).rnnGetPreviousState();
+        return ((RecurrentLayer) l).rnnGetPreviousState();
     }
 
     /**Set the state of the RNN layer.
@@ -3069,10 +3086,13 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
     public void rnnSetPreviousState(int layer, Map<String, INDArray> state) {
         if (layer < 0 || layer >= layers.length)
             throw new IllegalArgumentException("Invalid layer number");
-        if (!(layers[layer] instanceof RecurrentLayer))
+        Layer l = layers[layer];
+        if(l instanceof org.deeplearning4j.nn.layers.wrapper.BaseWrapperLayer){
+            l = ((org.deeplearning4j.nn.layers.wrapper.BaseWrapperLayer)l).getUnderlying();
+        }
+        if (!(l instanceof RecurrentLayer))
             throw new IllegalArgumentException("Layer is not an RNN layer");
-
-        RecurrentLayer r = (RecurrentLayer) layers[layer];
+        RecurrentLayer r = (RecurrentLayer) l;
         r.rnnSetPreviousState(state);
     }
 
@@ -3086,6 +3106,8 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
                 ((RecurrentLayer) layers[i]).rnnClearPreviousState();
             else if (layers[i] instanceof MultiLayerNetwork) {
                 ((MultiLayerNetwork) layers[i]).rnnClearPreviousState();
+            } else if(layers[i] instanceof BaseWrapperLayer && ((BaseWrapperLayer)layers[i]).getUnderlying() instanceof RecurrentLayer){
+                ((RecurrentLayer) ((BaseWrapperLayer)layers[i]).getUnderlying()).rnnClearPreviousState();
             }
         }
     }

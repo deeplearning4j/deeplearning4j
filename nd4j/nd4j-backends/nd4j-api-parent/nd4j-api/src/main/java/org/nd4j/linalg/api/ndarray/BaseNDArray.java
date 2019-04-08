@@ -1299,11 +1299,16 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public Number prodNumber() {
+        if(isScalar())
+            return getNumber(0);
         return prod(Integer.MAX_VALUE).getDouble(0);
     }
 
     @Override
     public Number meanNumber() {
+        validateNumericalArray("meanNumber", false);
+        if(isScalar())
+            return getNumber(0);
         return mean(Integer.MAX_VALUE).getDouble(0);
     }
 
@@ -1319,6 +1324,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public Number maxNumber() {
+        if(isScalar())
+            return getNumber(0);
         return max(Integer.MAX_VALUE).getDouble(0);
     }
 
@@ -1329,6 +1336,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public Number minNumber() {
+        if(isScalar())
+            return getNumber(0);
         return min(Integer.MAX_VALUE).getDouble(0);
     }
 
@@ -1346,6 +1355,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     @Override
     public Number sumNumber() {
         validateNumericalArray("sum", false);
+        if(isScalar())
+            return getNumber(0);
         val scalar = sum(Integer.MAX_VALUE);
         Nd4j.getExecutioner().commit();
         return scalar.getDouble(0);
@@ -1403,6 +1414,9 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         Preconditions.checkState((this.isScalar() && arr.isScalar()) || (this.isVector() && arr.isVector()) || Shape.shapeEqualWithSqueeze(this.shape(), arr.shape()),
                 "Cannot assign arrays: arrays must both be scalars, both vectors, or shapes must be equal other than size 1 dimensions. Attempting to do x.assign(y)" +
                         " with x.shape=%ndShape and y.shape=%ndShape", this, arr );
+
+        Preconditions.checkArgument(this.length() == arr.length(), "Length of both arrays must be equal");
+
         //Nd4j.getExecutioner().exec(new org.nd4j.linalg.api.ops.impl.transforms.pairwise.Set(this, arr, this, length()));
         Nd4j.getExecutioner().exec(new org.nd4j.linalg.api.ops.impl.transforms.any.Assign(arr, this));
         return this;
@@ -4374,9 +4388,51 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             return assign(toPut);
         }
         return put(new INDArrayIndex[] {NDArrayIndex.all(), NDArrayIndex.point(column)}, toPut);
-
     }
 
+    @Override
+    public Number getNumber(long i){
+        switch (dataType()){
+            case DOUBLE:
+            case FLOAT:
+            case HALF:
+                return getDouble(i);
+            case LONG:
+            case INT:
+            case SHORT:
+            case UBYTE:
+            case BYTE:
+            case BOOL:
+                return getLong(i);
+            case UTF8:
+            case COMPRESSED:
+            case UNKNOWN:
+            default:
+                throw new UnsupportedOperationException("Cannot get number from array of datatype: " + dataType());
+        }
+    }
+
+    @Override
+    public Number getNumber(long... idx){
+        switch (dataType()){
+            case DOUBLE:
+            case FLOAT:
+            case HALF:
+                return getDouble(idx);
+            case LONG:
+            case INT:
+            case SHORT:
+            case UBYTE:
+            case BYTE:
+            case BOOL:
+                return getLong(idx);
+            case UTF8:
+            case COMPRESSED:
+            case UNKNOWN:
+            default:
+                throw new UnsupportedOperationException("Cannot get number from array of datatype: " + dataType());
+        }
+    }
 
     @Override
     public double getDouble(long i) {
@@ -4642,6 +4698,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public INDArray max(int... dimension) {
+        validateNumericalArray("max", false);
         return Nd4j.getExecutioner().exec(new Max(this, dimension));
     }
 
@@ -4659,6 +4716,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public INDArray min(int... dimension) {
+        validateNumericalArray("max", false);
         return Nd4j.getExecutioner().exec(new Min(this, dimension));
     }
 
@@ -4936,6 +4994,30 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     @Override
     public INDArray get(INDArrayIndex... indexes) {
         Nd4j.getCompressor().autoDecompress(this);
+
+        // besides of backward support for legacy "vectors" which were 2D
+        // we enforce number of indices provided to be equal to number of dimensions in this array
+        if (rank() == 2 && jvmShapeInfo.javaShapeInformation[1] == 1 && indexes.length == 1)
+            indexes = new INDArrayIndex[]{ NDArrayIndex.all(), indexes[0]};
+        else if (rank() == 2 && jvmShapeInfo.javaShapeInformation[2] == 1 && indexes.length == 1)
+            indexes = new INDArrayIndex[]{indexes[0], NDArrayIndex.all()};
+        else {
+            // we're padding remaining dimensions with all() index
+            if (indexes.length < this.rank()) {
+                val newIndexes = new INDArrayIndex[this.rank()];
+                for (int e = 0; e < indexes.length; e++)
+                    newIndexes[e] = indexes[e];
+
+                for (int e = indexes.length; e < newIndexes.length; e++)
+                    newIndexes[e] = NDArrayIndex.all();
+
+                indexes = newIndexes;
+            }
+
+            // never going to happen :/
+            Preconditions.checkArgument(indexes != null && indexes.length >= this.rank(), "Number of indices should be greater or equal to rank of the INDArray");
+        }
+
         if(indexes.length > rank()) {
             int numNonNewAxis = 0;
             for(int i = 0; i < indexes.length; i++) {
@@ -4947,6 +5029,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
                 throw new IllegalArgumentException("Too many indices for array. Number of indexes must be <= rank(): rank " +
                         rank() + " array with indices " + Arrays.toString(indexes));
             }
+        } else if(indexes.length < rank()){
+            throw new IllegalStateException("Expected " + rank() + " indices for array of rank " + rank() + ", got " + indexes.length + " indices");
         }
 
 
@@ -4957,6 +5041,10 @@ public abstract class BaseNDArray implements INDArray, Iterable {
                 || isColumnVector() && indexes[1] instanceof PointIndex && indexes[0].offset() == 0
                 && indexes[0] instanceof NDArrayIndexAll)) ||
                 (rank() == 1 && length() == 1 && indexes.length == 1 && indexes[0] instanceof PointIndex && indexes[0].current() == 0))  //Last one: point index on rank 1 size 1
+            return this;
+
+        //1d+all: return this
+        if(indexes.length == 1 && rank() == 1 && indexes[0] instanceof NDArrayIndexAll)
             return this;
 
         indexes = NDArrayIndex.resolveLong(jvmShapeInfo.javaShapeInformation, indexes);
@@ -6229,6 +6317,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     @Override
     public Number medianNumber() {
         validateNumericalArray("medianNumber", false);
+        if(isScalar())
+            return getNumber(0);
         return percentileNumber(50);
     }
 

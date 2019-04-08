@@ -15,22 +15,21 @@
  ******************************************************************************/
 
 //
-//  @author sgazeos@gmail.com
+//  @author raver119@gmail.com
 //
-#ifndef __REDUCE_MIN_MAX_H_HELPERS__
-#define __REDUCE_MIN_MAX_H_HELPERS__
-#include <op_boilerplate.h>
+
+#ifndef DEV_TESTS_FLATTEN_H
+#define DEV_TESTS_FLATTEN_H
+
+#include <vector>
 #include <NDArray.h>
 
 namespace nd4j {
-namespace ops {
-namespace helpers {
-
-    void minMaxReduceFunctor(NDArray* input, NDArray* gradOut, NDArray* tempVals, NDArray* output, bool normalize = false);
-//    void minMaxReduceFunctor(NDArray<T> const* input, NDArray<T> const* gradOut, NDArray<T> const* tempVals, NDArray<T>* output);
-
+    namespace ops {
+        namespace helpers {
+            void flatten(std::vector<NDArray*> &inputs, NDArray *output, char order);
+        }
+    }
 }
-}
-}
-#endif //__REDUCE_MIN_MAX_H_HELPERS__
 
+#endif //DEV_TESTS_FLATTEN_H
