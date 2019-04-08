@@ -2128,4 +2128,47 @@ public class ShapeOpValidation extends BaseOpValidation {
         INDArray out = Nd4j.empty(DataType.FLOAT);
         op.addOutputArgument(out);
     }
+
+    @Test
+    public void testBroadcastDynamicShape1(){
+
+        //Test case: [2,1] and [4]: expect [2,4]
+        INDArray out = Nd4j.create(DataType.INT, 2);
+        DynamicCustomOp op = DynamicCustomOp.builder("broadcast_dynamic_shape")
+                .addInputs(Nd4j.createFromArray(new int[]{2,1}), Nd4j.createFromArray(new int[]{4}))
+                .addOutputs(out)
+                .build();
+        Nd4j.getExecutioner().exec(op);
+        assertEquals(Nd4j.createFromArray(new int[]{2,4}), out);
+
+        //Same thing, reversed input order (expect same output)
+        op = DynamicCustomOp.builder("broadcast_dynamic_shape")
+                .addInputs(Nd4j.createFromArray(new int[]{4}), Nd4j.createFromArray(new int[]{2,1}))
+                .addOutputs(out)
+                .build();
+        Nd4j.getExecutioner().exec(op);
+        assertEquals(Nd4j.createFromArray(new int[]{2,4}), out);
+    }
+
+    @Test
+    public void testBroadcastDynamicShape2(){
+
+        //Test case: [2,1,4] and [2,2,4]: expect [2,2,4]
+        INDArray out = Nd4j.create(DataType.INT, 3);
+        DynamicCustomOp op = DynamicCustomOp.builder("broadcast_dynamic_shape")
+                .addInputs(Nd4j.createFromArray(new int[]{2,1,4}), Nd4j.createFromArray(new int[]{2,2,4}))
+                .addOutputs(out)
+                .build();
+        Nd4j.getExecutioner().exec(op);
+        assertEquals(Nd4j.createFromArray(new int[]{2,2,4}), out);
+
+        //Test case: [1,1,3] and [2,4,1]: expect [2,4,3]
+        out = Nd4j.create(DataType.INT, 3);
+        op = DynamicCustomOp.builder("broadcast_dynamic_shape")
+                .addInputs(Nd4j.createFromArray(new int[]{1,1,3}), Nd4j.createFromArray(new int[]{2,4,1}))
+                .addOutputs(out)
+                .build();
+        Nd4j.getExecutioner().exec(op);
+        assertEquals(Nd4j.createFromArray(new int[]{2,4,3}), out);
+    }
 }

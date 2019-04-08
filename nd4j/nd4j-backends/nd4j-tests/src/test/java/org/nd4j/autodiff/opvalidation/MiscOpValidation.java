@@ -1565,4 +1565,26 @@ public class MiscOpValidation extends BaseOpValidation {
         INDArray exp = Nd4j.valueArrayOf(shape, 64.0, DataType.FLOAT);      //Each entry in output is sum of 64 (1.0 x 1.0) multiplications
         assertEquals(exp, out);
     }
+
+    @Test
+    public void testNthElementRank1(){
+        INDArray in = Nd4j.createFromArray(new double[]{0,1,2,3,4,5,6,7,8,9});
+        INDArray n = Nd4j.scalar(0);
+        DynamicCustomOp op = DynamicCustomOp.builder("nth_element")
+                .addInputs(in,n)
+                .addIntegerArguments(0) //reverse = false
+                .build();
+
+        List<LongShapeDescriptor> shapeList = op.calculateOutputShape();
+        long[] shape = shapeList.get(0).getShape();
+        long[] expShape = new long[0];
+        assertArrayEquals(expShape, shape);
+
+        INDArray out = Nd4j.scalar(0.0);
+        op.addOutputArgument(out);
+
+        Nd4j.getExecutioner().exec(op);
+        System.out.println(out);
+        assertEquals(0.0, out.getDouble(0), 1e-5);
+    }
 }
