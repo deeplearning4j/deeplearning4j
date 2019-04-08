@@ -2933,7 +2933,7 @@ public class SameDiff extends SDBaseOps {
         }
 
         //First thing: check that there's only one output... throw an exception if so
-        //A variable is an output if it's eithen an input, or if it's the output of a function, but not an input
+        //A variable is an output if it's either an input, or if it's the output of a function, but not an input
         Set<String> variablesNotAsFunctionInput = new HashSet<>();
         for(SDVariable s : variables()){
             variablesNotAsFunctionInput.add(s.getVarName());
@@ -3075,7 +3075,7 @@ public class SameDiff extends SDBaseOps {
                     List<SDVariable> grads = new ArrayList<>();
                     for(String s : outputsOfOp){
                         SDVariable g = sameDiff.getVariable(s).gradient();
-                        Preconditions.checkNotNull(g, "Could not get gradient for variable %s as output of op %s", g.getVarName(), df.getOwnName());
+                        Preconditions.checkNotNull(g, "Could not get gradient for variable %s as output of op %s", s, df.getOwnName());
                         grads.add(g);
                     }
 

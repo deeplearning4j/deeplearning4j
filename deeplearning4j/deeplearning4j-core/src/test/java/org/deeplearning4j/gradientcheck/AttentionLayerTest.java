@@ -283,81 +283,14 @@ public class AttentionLayerTest extends BaseDL4JTest {
     }
 
     @Test
-    public void testAttentionVertexSameInputViaWorkaround() {
+    public void testAttentionVertexSameInput() {
         int nIn = 3;
         int nOut = 5;
         int tsLength = 4;
         int layerSize = 8;
 
         Random r = new Random(12345);
-        for (boolean inputMask : new boolean[]{false, true}) {
-            for (int mb : new int[]{3, 2, 1}) {
-                for (boolean projectInput : new boolean[]{false, true}) {
-                    INDArray in = Nd4j.rand(new int[]{mb, nIn, tsLength});
-                    INDArray labels = Nd4j.create(mb, nOut);
-                    for (int i = 0; i < mb; i++) {
-                        labels.putScalar(i, r.nextInt(nOut), 1.0);
-                    }
-                    String maskType = (inputMask ? "inputMask" : "none");
-
-                    INDArray inMask = null;
-                    if (inputMask) {
-                        inMask = Nd4j.ones(mb, tsLength);
-                        for (int i = 0; i < mb; i++) {
-                            int firstMaskedStep = tsLength - 1 - i;
-                            if (firstMaskedStep == 0) {
-                                firstMaskedStep = tsLength;
-                            }
-                            for (int j = firstMaskedStep; j < tsLength; j++) {
-                                inMask.putScalar(i, j, 0.0);
-                            }
-                        }
-                    }
-
-                    String name = "testAttentionVertex() - mb=" + mb + ", tsLength = " + tsLength + ", maskType=" + maskType + ", projectInput = " + projectInput;
-                    System.out.println("Starting test: " + name);
-
-
-                    ComputationGraphConfiguration graph = new NeuralNetConfiguration.Builder()
-                            .activation(Activation.TANH)
-                            .updater(new NoOp())
-                            .weightInit(WeightInit.XAVIER)
-                            .graphBuilder()
-                            .addInputs("input")
-                            .addLayer("lstm", new LSTM.Builder().nOut(layerSize).build(), "input")
-                            .addLayer("lstmQueries", new ActivationLayer.Builder().activation(Activation.IDENTITY).build(), "lstm")
-                            .addLayer("lstmKeys", new ActivationLayer.Builder().activation(Activation.IDENTITY).build(), "lstm")
-                            .addLayer("lstmValues", new ActivationLayer.Builder().activation(Activation.IDENTITY).build(), "lstm")
-                            .addVertex("attention",
-                                    projectInput ?
-                                            AttentionVertex.builder().nOut(8).nHeads(2).projectInput(true).nInQueries(layerSize).nInKeys(layerSize).nInValues(layerSize).build()
-                                            :  AttentionVertex.builder().nOut(8).nHeads(1).projectInput(false).nInQueries(layerSize).nInKeys(layerSize).nInValues(layerSize).build(), "lstmQueries", "lstmKeys", "lstmValues")
-                            .addLayer("pooling", new GlobalPoolingLayer.Builder().poolingType(PoolingType.MAX).build(), "attention")
-                            .addLayer("output", new OutputLayer.Builder().nOut(nOut).activation(Activation.SOFTMAX).lossFunction(LossFunctions.LossFunction.MCXENT).build(), "pooling")
-                            .setOutputs("output")
-                            .setInputTypes(InputType.recurrent(nIn))
-                            .build();
-
-                    ComputationGraph net = new ComputationGraph(graph);
-                    net.init();
-
-                    boolean gradOK = GradientCheckUtil.checkGradients(net, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
-                            DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, new INDArray[]{in}, new INDArray[]{labels}, inMask != null ? new INDArray[]{inMask} : null, null);
-                    assertTrue(name, gradOK);
-                }
-            }
-        }
-    }
-
-    @Test
-    public void testAttentionVertexSameInputSimple() {
-        int nIn = 3;
-        int nOut = 5;
-        int tsLength = 4;
-        int layerSize = 8;
-
-        Random r = new Random(12345);
-        for (boolean inputMask : new boolean[]{false, true}) {
+        for (boolean inputMask : new boolean[]{true, false}) {
             for (int mb : new int[]{3, 2, 1}) {
                 for (boolean projectInput : new boolean[]{false, true}) {
                     INDArray in = Nd4j.rand(new int[]{mb, nIn, tsLength});
@@ -396,71 +329,6 @@ public class AttentionLayerTest extends BaseDL4JTest {
                                     projectInput ?
                                             AttentionVertex.builder().nOut(8).nHeads(2).projectInput(true).nInQueries(layerSize).nInKeys(layerSize).nInValues(layerSize).build()
                                             :  AttentionVertex.builder().nOut(8).nHeads(1).projectInput(false).nInQueries(layerSize).nInKeys(layerSize).nInValues(layerSize).build(), "lstm", "lstm", "lstm")
-                            .addLayer("pooling", new GlobalPoolingLayer.Builder().poolingType(PoolingType.MAX).build(), "attention")
-                            .addLayer("output", new OutputLayer.Builder().nOut(nOut).activation(Activation.SOFTMAX).lossFunction(LossFunctions.LossFunction.MCXENT).build(), "pooling")
-                            .setOutputs("output")
-                            .setInputTypes(InputType.recurrent(nIn))
-                            .build();
-
-                    ComputationGraph net = new ComputationGraph(graph);
-                    net.init();
-
-                    boolean gradOK = GradientCheckUtil.checkGradients(net, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
-                            DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, new INDArray[]{in}, new INDArray[]{labels}, inMask != null ? new INDArray[]{inMask} : null, null);
-                    assertTrue(name, gradOK);
-                }
-            }
-        }
-    }
-
-    @Test
-    public void testAttentionVertexSameInputComplex() {
-        int nIn = 3;
-        int nOut = 5;
-        int tsLength = 4;
-        int layerSize = 8;
-
-        Random r = new Random(12345);
-        for (boolean inputMask : new boolean[]{false, true}) {
-            for (int mb : new int[]{3, 2, 1}) {
-                for (boolean projectInput : new boolean[]{false, true}) {
-                    INDArray in = Nd4j.rand(new int[]{mb, nIn, tsLength});
-                    INDArray labels = Nd4j.create(mb, nOut);
-                    for (int i = 0; i < mb; i++) {
-                        labels.putScalar(i, r.nextInt(nOut), 1.0);
-                    }
-                    String maskType = (inputMask ? "inputMask" : "none");
-
-                    INDArray inMask = null;
-                    if (inputMask) {
-                        inMask = Nd4j.ones(mb, tsLength);
-                        for (int i = 0; i < mb; i++) {
-                            int firstMaskedStep = tsLength - 1 - i;
-                            if (firstMaskedStep == 0) {
-                                firstMaskedStep = tsLength;
-                            }
-                            for (int j = firstMaskedStep; j < tsLength; j++) {
-                                inMask.putScalar(i, j, 0.0);
-                            }
-                        }
-                    }
-
-                    String name = "testAttentionVertex() - mb=" + mb + ", tsLength = " + tsLength + ", maskType=" + maskType + ", projectInput = " + projectInput;
-                    System.out.println("Starting test: " + name);
-
-
-                    ComputationGraphConfiguration graph = new NeuralNetConfiguration.Builder()
-                            .activation(Activation.TANH)
-                            .updater(new NoOp())
-                            .weightInit(WeightInit.XAVIER)
-                            .graphBuilder()
-                            .addInputs("input")
-                            .addLayer("lstm", new LSTM.Builder().nOut(layerSize).build(), "input")
-                            .addLayer("lstm2", new LSTM.Builder().nOut(layerSize).build(), "input")
-                            .addVertex("attention",
-                                    projectInput ?
-                                            AttentionVertex.builder().nOut(8).nHeads(2).projectInput(true).nInQueries(layerSize).nInKeys(layerSize).nInValues(layerSize).build()
-                                            :  AttentionVertex.builder().nOut(8).nHeads(1).projectInput(false).nInQueries(layerSize).nInKeys(layerSize).nInValues(layerSize).build(), "lstm", "lstm2", "lstm")
                             .addLayer("pooling", new GlobalPoolingLayer.Builder().poolingType(PoolingType.MAX).build(), "attention")
                             .addLayer("output", new OutputLayer.Builder().nOut(nOut).activation(Activation.SOFTMAX).lossFunction(LossFunctions.LossFunction.MCXENT).build(), "pooling")
                             .setOutputs("output")

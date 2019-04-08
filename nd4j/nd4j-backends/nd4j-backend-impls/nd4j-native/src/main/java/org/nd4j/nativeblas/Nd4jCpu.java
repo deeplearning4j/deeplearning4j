@@ -3419,7 +3419,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         /**
         *  creates array which is view of this array
         */
-        public native NDArray getView();
+        public native NDArray getView();        
 
         /**
         *  cast array elements to given dtype
@@ -3822,16 +3822,16 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         public native @ByVal @Name("operator ()") NDArray apply(@Cast("const Nd4jLong") long subArrIdx, @StdVector IntBuffer dimsToExclude);
         public native @ByVal @Name("operator ()") NDArray apply(@Cast("const Nd4jLong") long subArrIdx, @StdVector int[] dimsToExclude, @Cast("bool") boolean keepUnitiesInShape/*=false*/);
         public native @ByVal @Name("operator ()") NDArray apply(@Cast("const Nd4jLong") long subArrIdx, @StdVector int[] dimsToExclude);
-
+        
         /**
-        * processes whole set of sub-arrays
-        * evaluates shapeInfo of sub-arrays (all sub-arrays have the same shapeInfo) and their buffer offsets (each sub-array has its own unique offset from original this-buffer)
+        * processes whole set of sub-arrays 
+        * evaluates shapeInfo of sub-arrays (all sub-arrays have the same shapeInfo) and their buffer offsets (each sub-array has its own unique offset from original this-buffer)         
         * dimsToExclude - MUST BE SORTED, dimensions to evaluate sub-array along, i.e. when shape is [2,3,4,5] and dimsToExclude={0,2}, then there will be 8 sub-arrays with shape [3,5], and subArrIdx must be in range [0,7]
         *                 if dimsToExclude is empty then idxRanges containing all zeros (means whole array) will be returned.
         * subArrShapeInfo    - output argument, contains shapeInfo common for all sub-arrays
         * subArrOffsets      - output argument, contains successive sub-arrays offsets from original this-buffer
         * keepUnitiesInShape - if false then eliminate unities from sub-array shapeInfo, for example {1,a,1,b} -> {a,b}
-        */
+        */ 
         public native void getSubArrShapeAndOffsets(@StdVector IntPointer dimsToExclude, @Cast("Nd4jLong*&") @ByPtrRef LongPointer subArrShapeInfo, @Cast("Nd4jLong*&") @ByPtrRef LongPointer subArrOffsets, @Cast("bool") boolean keepUnitiesInShape/*=false*/);
         public native void getSubArrShapeAndOffsets(@StdVector IntPointer dimsToExclude, @Cast("Nd4jLong*&") @ByPtrRef LongPointer subArrShapeInfo, @Cast("Nd4jLong*&") @ByPtrRef LongPointer subArrOffsets);
         public native void getSubArrShapeAndOffsets(@StdVector IntBuffer dimsToExclude, @Cast("Nd4jLong*&") @ByPtrRef LongBuffer subArrShapeInfo, @Cast("Nd4jLong*&") @ByPtrRef LongBuffer subArrOffsets, @Cast("bool") boolean keepUnitiesInShape/*=false*/);
@@ -3941,7 +3941,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         *  left - input array
         *  right - input array
         */
-
+                
 
         /**
         *  return vector containing _buffer as flat binary array
@@ -4178,10 +4178,10 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         /**
         *  creates array which points on certain sub-range of this array, sub-range is defined by given indices
         */
-
-
-
-
+        
+        
+        
+        
 
         /**
         *  returns true if array is 2D
@@ -4881,19 +4881,19 @@ NDArray& NDArray::operator()(const Nd4jLong* idx) {
 
         
 
+        
 
+        
 
+        
 
+        
 
+        
 
+        
 
-
-
-
-
-
-
-
+        
 
 
         
@@ -7691,12 +7691,12 @@ public static final int PREALLOC_SIZE = 33554432;
     @Namespace("shape") public static native int outerArrayOffsets(@Cast("Nd4jLong*") long[] maxOffsets, @Cast("const Nd4jLong") long minIdx, @Cast("const Nd4jLong*") long[] maxShapeInfo, @Cast("const Nd4jLong*") long[] minShapeInfo, @Const int[] dimsToExclude/*=nullptr*/);
     @Namespace("shape") public static native int outerArrayOffsets(@Cast("Nd4jLong*") long[] maxOffsets, @Cast("const Nd4jLong") long minIdx, @Cast("const Nd4jLong*") long[] maxShapeInfo, @Cast("const Nd4jLong*") long[] minShapeInfo);
 
-    // calculates offsets for numOfSubArrs sub-arrays, shape in this context means dominions excluded from outer array
+    // calculates offsets for numOfSubArrs sub-arrays, shape in this context means dominions excluded from outer array 
     // rank is equal to size of shape
     @Namespace("shape") public static native void calcSubArrOffsets(@Cast("const Nd4jLong") long numOfSubArrs, int rank, @Cast("const Nd4jLong*") LongPointer shape, @Cast("const Nd4jLong*") LongPointer strides, @Cast("Nd4jLong*") LongPointer subArrOffsets);
     @Namespace("shape") public static native void calcSubArrOffsets(@Cast("const Nd4jLong") long numOfSubArrs, int rank, @Cast("const Nd4jLong*") LongBuffer shape, @Cast("const Nd4jLong*") LongBuffer strides, @Cast("Nd4jLong*") LongBuffer subArrOffsets);
     @Namespace("shape") public static native void calcSubArrOffsets(@Cast("const Nd4jLong") long numOfSubArrs, int rank, @Cast("const Nd4jLong*") long[] shape, @Cast("const Nd4jLong*") long[] strides, @Cast("Nd4jLong*") long[] subArrOffsets);
-
+   
     @Namespace("shape") public static native void shapeOldScalar(@Cast("nd4j::DataType") int dtype, @Cast("Nd4jLong*const") LongPointer buffer, byte order);
     @Namespace("shape") public static native void shapeOldScalar(@Cast("nd4j::DataType") int dtype, @Cast("Nd4jLong*const") LongBuffer buffer, byte order);
     @Namespace("shape") public static native void shapeOldScalar(@Cast("nd4j::DataType") int dtype, @Cast("Nd4jLong*const") long[] buffer, byte order);
@@ -7704,7 +7704,7 @@ public static final int PREALLOC_SIZE = 33554432;
     // calculate element-wise stride
     // if array is scalar or unit length vector then ews = 1
     // if array is common vector then ews = stride of non-unity dimension
-    // if strides are normal set ews = 1, otherwise ews = 0
+    // if strides are normal set ews = 1, otherwise ews = 0    
     @Namespace("shape") public static native void calcEws(@Cast("Nd4jLong*") LongPointer shapeInfo, @Cast("Nd4jLong") long len);
     @Namespace("shape") public static native void calcEws(@Cast("Nd4jLong*") LongBuffer shapeInfo, @Cast("Nd4jLong") long len);
     @Namespace("shape") public static native void calcEws(@Cast("Nd4jLong*") long[] shapeInfo, @Cast("Nd4jLong") long len);
@@ -7793,9 +7793,9 @@ public static final int PREALLOC_SIZE = 33554432;
  * @return the strides for a matrix of n dimensions
  */
 
-//////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////    
 
-//////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////    
 
 
 // check whether input dimensions are permuted, not permuted dimensions order have to be 0,....,rank-1
@@ -8567,59 +8567,59 @@ public static final int PREALLOC_SIZE = 33554432;
 // INLINEDEF _CUDA_H bool reshapeC(const int oldRank, const Nd4jLong* oldShapeInfo, const int newRank, const Nd4jLong* newShape, const bool isFOrder, Nd4jLong* newShapeInfo) {
 
 //         // PLEASE NOTE !: reshaping not-permuted (ews=1) array in f order (except insertion/elimination of unities) will definitely cause allocation of new buffer for array elements
-//         // also this function takes into account identical shapes automatically, namely in that case oldShapeInfo is completely copied to newShapeInfo
+//         // also this function takes into account identical shapes automatically, namely in that case oldShapeInfo is completely copied to newShapeInfo 
 
 //         const int newOrder = isFOrder ? 102 : 99;
 //         const int oldOrder = oldShapeInfo[2 * oldRank + 3];
-
+                
 //         newShapeInfo[0] = newRank;
 //         memcpy(newShapeInfo + 1, newShape, newRank * sizeof(Nd4jLong));
 
 //         Nd4jLong* newStrides = shape::stride(newShapeInfo);
 //         const Nd4jLong* oldShape = shape::shapeOf(const_cast<Nd4jLong*>(oldShapeInfo));
-//         const Nd4jLong* oldStrides = shape::stride(const_cast<Nd4jLong*>(oldShapeInfo));
+//         const Nd4jLong* oldStrides = shape::stride(const_cast<Nd4jLong*>(oldShapeInfo));        
 //         int oldStart(0), oldStop(1), newStart(0), newStop(1), newDim, oldDim;
-
-
+        
+        
 //         while (newStart < newRank && oldStart < oldRank) {
-
+            
 //             newDim = newShape[newStart];
 //             oldDim = oldShape[oldStart];
 
 //             while (newDim != oldDim)
-//                 if (newDim < oldDim) newDim *= newShape[newStop++];
+//                 if (newDim < oldDim) newDim *= newShape[newStop++];                
 //                 else                 oldDim *= oldShape[oldStop++];
 
 //             // ------ Check whether the original axes can be combined ------ //
 //             for (int i = oldStart; i < oldStop - 1; i++) {
-
-//                 if(oldShape[i] == 1) {                         // ignore strides like {...,1,1,...}
-//                     if(oldOrder == 102) ++oldStart;
-//                     continue;
-//                 }
-
-//                 if(oldOrder == 102 && oldStrides[i + 1] != oldShape[i] * oldStrides[i])
+                    
+//                 if(oldShape[i] == 1) {                         // ignore strides like {...,1,1,...} 
+//                     if(oldOrder == 102) ++oldStart; 
+//                     continue; 
+//                 }   
+                    
+//                 if(oldOrder == 102 && oldStrides[i + 1] != oldShape[i] * oldStrides[i])  
 //                     return false;       // not contiguous enough
-//                 if(oldOrder == 99  && oldStrides[i] != oldShape[i + 1] * oldStrides[i + 1])
+//                 if(oldOrder == 99  && oldStrides[i] != oldShape[i + 1] * oldStrides[i + 1]) 
 //                     return false;       // not contiguous enough
 //             }
 
 //             // ------ Calculate new strides for all axes currently worked with ------ //
 //             if(isFOrder) {
 //                 newStrides[newStart] = oldStrides[oldStart];
-//                 for (int i = newStart + 1; i < newStop; ++i)
+//                 for (int i = newStart + 1; i < newStop; ++i) 
 //                     newStrides[i] = newStrides[i - 1] * newShape[i - 1];
 //             }
 //             else {
 //                 newStrides[newStop - 1] = oldStrides[oldStop - 1];
-//                 for (int i = newStop - 1; i > newStart; --i)
-//                     newStrides[i - 1] = newStrides[i] * newShape[i];
+//                 for (int i = newStop - 1; i > newStart; --i) 
+//                     newStrides[i - 1] = newStrides[i] * newShape[i];     
 //             }
-
+            
 //             newStart = newStop++;
 //             oldStart = oldStop++;
 //         }
-
+        
 //         newShapeInfo[2 * newRank + 3] = shape::order(oldShapeInfo);    // order
 //         newShapeInfo[2 * newRank + 2] = shape::elementWiseStride(oldShapeInfo);    // ews
 //         newShapeInfo[2 * newRank + 1] = shape::type(oldShapeInfo);    // type
@@ -18476,13 +18476,13 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public logdet position(long position) {
                 return (logdet)super.position(position);
             }
-
+        
                                                                                     public logdet() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
                                                                                     public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
                                                                                 }
 //         #endif
-
+        
         /**
          * matrix_inverse op. - make inverse for all 2D square matricies found in the input tensor
          *
@@ -20964,7 +20964,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
                     @Override public dot_product_attention position(long position) {
                         return (dot_product_attention)super.position(position);
                     }
-
+                
                                                                                     public dot_product_attention() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
                                                                                     public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
@@ -20979,7 +20979,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
                     @Override public dot_product_attention_bp position(long position) {
                         return (dot_product_attention_bp)super.position(position);
                     }
-
+                
                                                                                     public dot_product_attention_bp() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
                                                                                     public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
@@ -21027,7 +21027,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
                     @Override public multi_head_dot_product_attention position(long position) {
                         return (multi_head_dot_product_attention)super.position(position);
                     }
-
+                
                                                                                     public multi_head_dot_product_attention() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
                                                                                     public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
@@ -21042,13 +21042,13 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
                     @Override public multi_head_dot_product_attention_bp position(long position) {
                         return (multi_head_dot_product_attention_bp)super.position(position);
                     }
-
+                
                                                                                     public multi_head_dot_product_attention_bp() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
                                                                                     public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
                                                                                 }
 //         #endif
-
+    
 
 
 // #endif
@@ -21121,7 +21121,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public matmul_bp position(long position) {
                 return (matmul_bp)super.position(position);
             }
-
+        
                                                                                     public matmul_bp() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
                                                                                     public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
@@ -22417,7 +22417,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
         @Override public DebugInfo position(long position) {
             return (DebugInfo)super.position(position);
         }
-
+    
        public native double _minValue(); public native DebugInfo _minValue(double _minValue);
        public native double _maxValue(); public native DebugInfo _maxValue(double _maxValue);
        public native double _meanValue(); public native DebugInfo _meanValue(double _meanValue);

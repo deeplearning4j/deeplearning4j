@@ -17,6 +17,7 @@
 package org.deeplearning4j.nn.conf.layers.samediff;
 
 import lombok.Data;
+import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.api.TrainingConfig;
 import org.deeplearning4j.nn.conf.GradientNormalization;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -31,6 +32,7 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.learning.config.IUpdater;
 import org.nd4j.linalg.learning.regularization.Regularization;
+import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.util.ArrayUtil;
 
 import java.util.List;
@@ -65,10 +67,11 @@ public abstract class SameDiffVertex extends GraphVertex implements TrainingConf
      * @param sameDiff   SameDiff instance
      * @param layerInput Input to the layer - keys as defined by {@link #defineParametersAndInputs(SDVertexParams)}
      * @param paramTable Parameter table - keys as defined by {@link #defineParametersAndInputs(SDVertexParams)}
+     * @param maskVars  Masks of input, if available - keys as defined by {@link #defineParametersAndInputs(SDVertexParams)}
      * @return The final layer variable corresponding to the activations/output from the forward pass
      */
     public abstract SDVariable defineVertex(SameDiff sameDiff, Map<String, SDVariable> layerInput,
-                    Map<String, SDVariable> paramTable);
+                                            Map<String, SDVariable> paramTable, Map<String, SDVariable> maskVars);
 
     /**
      * Define the parameters - and inputs - for the network.
@@ -129,6 +132,10 @@ public abstract class SameDiffVertex extends GraphVertex implements TrainingConf
     @Override
     public InputType getOutputType(int layerIndex, InputType... vertexInputs) throws InvalidInputTypeException {
         throw new UnsupportedOperationException("Not yet implemented");
+    }
+
+    public Pair<INDArray, MaskState> feedForwardMaskArrays(INDArray[] maskArrays, MaskState currentMaskState, int minibatchSize) {
+        throw new UnsupportedOperationException("Not yet supported");
     }
 
     @Override

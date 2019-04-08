@@ -26,7 +26,6 @@ import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.graph.vertex.BaseGraphVertex;
-import org.deeplearning4j.nn.graph.vertex.VertexIndices;
 import org.deeplearning4j.nn.params.SameDiffParamInitializer;
 import org.deeplearning4j.nn.workspace.ArrayType;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
@@ -39,8 +38,6 @@ import org.nd4j.linalg.api.ops.impl.layers.ExternalErrorsFunction;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
 
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -58,11 +55,14 @@ public class SameDiffGraphVertex extends BaseGraphVertex {
     protected ExternalErrorsFunction fn;
     protected String outputKey;
     protected Map<String,SDVariable> inputVars;
+    protected INDArray[] maskArrays;
 
     protected INDArray params;
     protected INDArray gradients;
     protected Map<String,INDArray> paramTable;
     protected Map<String,INDArray> gradTable;
+    private MaskState currentMaskState;
+    private int minibatchSize;
 
     public SameDiffGraphVertex(SameDiffVertex config, ComputationGraph graph, String name, int vertexIndex,
                                   INDArray paramsView, boolean initParams) {
@@ -104,6 +104,12 @@ public class SameDiffGraphVertex extends BaseGraphVertex {
                 String name = config.getVertexParams().getInputs().get(i);
                 sameDiff.associateArrayWithVariable(inputs[i].dup(), sameDiff.getVariable(name));
             }
+            if(maskArrays != null){
+                for(int i=0; i<maskArrays.length; i++ ){
+                    String name = config.getVertexParams().getInputs().get(i);
+                    sameDiff.associateArrayWithVariable(maskArrays[i++].dup(), name + "_mask");
+                }
+            }
             if(paramTable != null && paramTable.size() > 0) {
                 for (String s : paramTable.keySet()) {
                     sameDiff.associateArrayWithVariable(paramTable.get(s), s);
@@ -134,7 +140,14 @@ public class SameDiffGraphVertex extends BaseGraphVertex {
                 sameDiff.associateArrayWithVariable(paramTable.get(s), s);
             }
 
-            sameDiff.execBackwards(Collections.<String, INDArray>emptyMap());
+            if(maskArrays != null){
+                for(int i=0; i<maskArrays.length; i++ ){
+                    String name = config.getVertexParams().getInputs().get(i);
+                    sameDiff.associateArrayWithVariable(maskArrays[i++].dup(), name + "_mask");
+                }
+            }
+
+            sameDiff.execBackwards(null);
             for(String s : paramTable.keySet() ){
                 INDArray sdGrad = sameDiff.grad(s).getArr();
                 INDArray dl4jGrad = gradTable.get(s);
@@ -166,7 +179,10 @@ public class SameDiffGraphVertex extends BaseGraphVertex {
 
     @Override
     public Pair<INDArray, MaskState> feedForwardMaskArrays(INDArray[] maskArrays, MaskState currentMaskState, int minibatchSize) {
-        throw new UnsupportedOperationException("Not yet supported");
+        this.maskArrays = maskArrays;
+        this.currentMaskState = currentMaskState;
+
+        return config.feedForwardMaskArrays(maskArrays, currentMaskState, minibatchSize);
     }
 
 
@@ -182,6 +198,17 @@ public class SameDiffGraphVertex extends BaseGraphVertex {
                 inputVars.put(s, inputVar);
             }
 
+            LinkedHashMap<String, SDVariable> maskVars = null;
+            if(maskArrays != null) {
+                 maskVars = new LinkedHashMap<>();
+                 i=0;
+                for(String s : config.getVertexParams().getInputs()) {
+                    SDVariable maskVar = sameDiff.constant(s + "_mask", maskArrays[i++].dup());
+                    maskVars.put(s, maskVar);
+                }
+            }
+
+
             Map<String, long[]> paramShapes = config.getVertexParams().getParamShapes();
             Map<String, SDVariable> params = new LinkedHashMap<>();
             for (String s : paramShapes.keySet()) {
@@ -189,7 +216,7 @@ public class SameDiffGraphVertex extends BaseGraphVertex {
                 SDVariable v = sameDiff.var(s, ps);
                 params.put(s, v);
             }
-            SDVariable layerOutput = config.defineVertex(sameDiff, inputVars, params);
+            SDVariable layerOutput = config.defineVertex(sameDiff, inputVars, params, maskVars);
             Preconditions.checkNotNull(layerOutput, "Invalid output: layer output is null");
             outputVar = layerOutput;
 

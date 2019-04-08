@@ -17,6 +17,7 @@ package org.deeplearning4j.nn.conf.graph;
 
 import com.google.common.base.Preconditions;
 import lombok.*;
+import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.inputs.InvalidInputTypeException;
 import org.deeplearning4j.nn.conf.layers.samediff.SDVertexParams;
@@ -28,6 +29,7 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.primitives.Pair;
 
 import java.util.Map;
 
@@ -125,20 +127,43 @@ public class AttentionVertex extends SameDiffVertex {
     }
 
     @Override
-    public SDVariable defineVertex(SameDiff sameDiff, Map<String, SDVariable> layerInput, Map<String, SDVariable> paramTable) {
+    public Pair<INDArray, MaskState> feedForwardMaskArrays(INDArray[] maskArrays, MaskState currentMaskState, int minibatchSize) {
+        if(maskArrays != null) {
+            if(maskArrays[0] == null) {
+                // Queries are unmasked, we don't need to pass on any mask
+                return null;
+            }else{
+                // Queries are masked, keep the masking going
+                return Pair.of(maskArrays[0], currentMaskState);
+            }
+        }else {
+            return Pair.of(null, currentMaskState);
+        }
+    }
+
+    @Override
+    public SDVariable defineVertex(SameDiff sameDiff, Map<String, SDVariable> layerInput, Map<String, SDVariable> paramTable, Map<String, SDVariable> maskVars) {
         final SDVariable queries = layerInput.get("queries");
         final SDVariable keys = layerInput.get("keys");
         final SDVariable values = layerInput.get("values");
+        final SDVariable mask = maskVars != null ? sameDiff.min(maskVars.get("keys"), maskVars.get("values")): null;
 
+        SDVariable attention;
         if(projectInput){
             val Wq = paramTable.get(WEIGHT_KEY_QUERY_PROJECTION);
             val Wk = paramTable.get(WEIGHT_KEY_KEY_PROJECTION);
             val Wv = paramTable.get(WEIGHT_KEY_VALUE_PROJECTION);
             val Wo = paramTable.get(WEIGHT_KEY_OUT_PROJECTION);
 
-            return sameDiff.nn.multiHeadDotProductAttention(getLayerName(), queries, keys, values, Wq, Wk, Wv, Wo, null, true);
+            attention = sameDiff.nn.multiHeadDotProductAttention(getLayerName(), queries, keys, values, Wq, Wk, Wv, Wo, mask, true);
         }else{
-            return sameDiff.nn.dotProductAttention(getLayerName(), queries, keys, values, null, true);
+            attention = sameDiff.nn.dotProductAttention(getLayerName(), queries, keys, values, mask, true);
+        }
+
+        if(maskVars != null){
+            return attention.mul(sameDiff.expandDims(maskVars.get("queries"), 1));
+        }else{
+            return attention;
         }
     }
 }
