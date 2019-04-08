@@ -135,3 +135,13 @@ TEST_F(DeclarableOpsTests15, test_avgpooling_edge_1) {
 
     delete result;
 }
+
+TEST_F(DeclarableOpsTests15, Test_standarize_1) {
+    auto x = NDArrayFactory::create<int>('c', {5}, {1, 1, 1, 1, 1});
+    auto e = NDArrayFactory::create<int>('c', {5}, {0, 0, 0, 0, 0});
+
+    nd4j::ops::standardize op;
+    auto result = op.execute({&x}, {&x}, {}, {0}, {});
+    ASSERT_EQ(Status::OK(), result);
+    ASSERT_EQ(e, x);
+}
