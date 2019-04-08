@@ -284,5 +284,52 @@ TEST_F(ConvolutionTests2, conv2d_bp_4) {
     ASSERT_EQ(Status::OK(), status);
 }
 
+//////////////////////////////////////////////////////////////////////
+TEST_F(ConvolutionTests2, sconv2d_bp_2) {
+        
+    int bS=1, iH=8,iW=8,  iC=3,mC=3,  kH=1,kW=1,  sH=1,sW=1,  pH=0,pW=0,  dH=1,dW=1;
+    int       oH=8,oW=8;
+    int       oC=2;                  // iC*mC if weightsPoint = nullptr
+    int paddingMode = 0;             // 1-SAME, 0-VALID;
+    int dataFormat  = 0;             // 1-NHWC, 0-NCHW    
+
+    auto input    = NDArrayFactory::create<double>('c', {bS, iC, iH, iW});
+    auto gradO    = NDArrayFactory::create<double>('c', {bS, oC, oH, oW});
+    auto weightsDepth  = NDArrayFactory::create<double>('c', {kH, kW, iC, mC});
+    auto weightsPoint  = NDArrayFactory::create<double>('c', {1, 1, iC*mC, oC});
+    auto bias     = NDArrayFactory::create<double>('c', {1,oC}, {1,2});
+
+    auto gradI   = NDArrayFactory::create<double>('c', {bS, iC, iH, iW});
+    auto gradWD  = NDArrayFactory::create<double>('f', {kH, kW, iC, mC});
+    auto gradWP  = NDArrayFactory::create<double>('c', {1, 1, iC*mC, oC});
+    auto gradB   = NDArrayFactory::create<double>('c', {1,oC}, {1,2});
+    
+    input = 2.;
+    weightsDepth.linspace(0.1, 0.1);
+    weightsDepth.linspace(-0.5, 0.1);
+    gradO.linspace(0.01, 0.01);    
+
+    nd4j::ops::sconv2d_bp op;
+    auto status = op.execute({&input, &gradO, &weightsDepth, &weightsPoint, &bias}, {&gradI, &gradWD, &gradWP, &gradB}, {}, {kH,kW,  sH,sW,  pH,pW,  dH,dW, paddingMode, dataFormat}, {});
+    ASSERT_EQ(Status::OK(), status);    
+}
+
+ // @Test
+ //    public void testSconv2dbp(){
+
+ //        DynamicCustomOp op = DynamicCustomOp.builder("sconv2d_bp")
+ //                .addInputs(Nd4j.create(DataType.DOUBLE, 1,3,8,8),   // input
+ //                        Nd4j.create(DataType.DOUBLE, 1, 2, 8, 8),   // gradO
+ //                        Nd4j.create(DataType.DOUBLE, 1, 1, 3, 3),   // weightsDepth
+ //                        Nd4j.create(DataType.DOUBLE, 1, 1, 9, 2),   // weightsPoint
+ //                        Nd4j.create(DataType.DOUBLE, 1, 2))
+ //                .addOutputs(Nd4j.create(DataType.DOUBLE, 1, 3, 8, 8),
+ //                        Nd4j.create(DataType.DOUBLE, new long[]{1, 1, 3, 3}, 'f'),
+ //                        Nd4j.create(DataType.DOUBLE, 1, 1, 9, 2),
+ //                        Nd4j.create(DataType.DOUBLE, 1, 2))
+ //                .addIntegerArguments(1,1,  1,1,  0,0,  1,1,   0)
+ //                .build();
+ //        Nd4j.exec(op);
+ //    }
 
 #endif //LIBND4J_CONVOLUTIONTESTS2_H

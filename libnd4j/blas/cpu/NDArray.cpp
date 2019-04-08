@@ -44,6 +44,7 @@
 
 namespace nd4j {
 
+
     //////////////////////////////////////////////////////////////////////////
     void* NDArray::operator new(size_t i) {
         if (nd4j::memory::MemoryRegistrator::getInstance()->hasWorkspaceAttached()) {
@@ -2780,7 +2781,7 @@ template void NDArray::applyScalar(nd4j::scalar::Ops op, const bool scalar, NDAr
         } else {
             if (!nonNull() || rank != rankOf())
                 throw std::runtime_error("NDArray::permutei method: wrong arguments in permutei method: either array is nullptr or rank is not suitable!");
-            shape::doPermuteShapeInfo(_shapeInfo, dimensions);
+            shape::doPermuteShapeInfo(_shapeInfo, dimensions, _length);
         }
 
         return true;
@@ -2788,14 +2789,16 @@ template void NDArray::applyScalar(nd4j::scalar::Ops op, const bool scalar, NDAr
 
     bool NDArray::permutei(const Nd4jLong* dimensions, const int rank) {
 
+        std::vector<int> copy(dimensions, dimensions + rank);
+
         // check if current object is _shapeInfo owner
         if (!_isShapeAlloc) {             // if _shapeInfo is not its own
-            _shapeInfo = ShapeUtils::evalPermShapeInfo(dimensions, rank, *this, _workspace);
+            _shapeInfo = ShapeUtils::evalPermShapeInfo(copy.data(), rank, *this, _workspace);
             _isShapeAlloc = true;
         } else {
             if (!nonNull() || rank != rankOf())
                 throw std::runtime_error("NDArray::permutei method: wrong arguments in permutei method: either array is nullptr or rank is not suitable!");
-            shape::doPermuteShapeInfo(_shapeInfo, dimensions);
+            shape::doPermuteShapeInfo(_shapeInfo, copy.data(), _length);
         }
 
         return true;
