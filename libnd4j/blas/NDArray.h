@@ -673,8 +673,10 @@ namespace nd4j {
         *  dimensions - vector of dimensions to calculate variance along
         */
         NDArray* varianceAlongDimension(nd4j::variance::Ops op, const bool biasCorrected, const std::vector<int>& dimensions) const;
-
         NDArray* varianceAlongDimension(nd4j::variance::Ops op, const bool biasCorrected, const std::initializer_list<int>& dimensions) const;
+
+        NDArray varianceAlongDims(nd4j::variance::Ops op, const bool biasCorrected, const std::vector<int>& dimensions) const;
+        NDArray varianceAlongDims(nd4j::variance::Ops op, const bool biasCorrected, const std::initializer_list<int>& dimensions) const;
 
         void varianceAlongDimension(nd4j::variance::Ops op, const NDArray* target, const bool biasCorrected, const std::vector<int>& dimensions);
 

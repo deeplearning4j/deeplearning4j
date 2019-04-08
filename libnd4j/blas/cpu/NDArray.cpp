@@ -3145,6 +3145,11 @@ template void NDArray::applyScalar(nd4j::scalar::Ops op, const bool scalar, NDAr
         if(((op.s == scalar::Divide || op.s == scalar::FloorDiv || op.s == scalar::FloorMod) && other->isB()) || (op.s == scalar::ReverseDivide && this->isB()))
             throw std::runtime_error("NDArray::applyTrueBroadcast method: you can't divide by bool array !");
 
+        if (!Environment::getInstance()->isExperimentalBuild()) {
+            if (!(this->dataType() == other->dataType() && other->dataType() == target->dataType()))
+                throw datatype_exception::build("NDArray::applyTrueBroadcast all ", target->dataType(), this->dataType(), other->dataType());
+        }
+
         if(isEmpty() || other->isEmpty()) {
             if(!target->isEmpty())
                 throw std::runtime_error("NDArray::applyTrueBroadcast method: when some of input arrays (or both) is empty target array must be empty as well !");
@@ -3858,6 +3863,32 @@ template void NDArray::pIdx(const Nd4jLong* indices, const bool value);
     ////////////////////////////////////////////////////////////////////////
     NDArray* NDArray::varianceAlongDimension(nd4j::variance::Ops op, const bool biasCorrected, const std::initializer_list<int>& dimensions) const {
             return varianceAlongDimension(op, biasCorrected, std::vector<int>(dimensions));
+    }
+
+    ////////////////////////////////////////////////////////////////////////
+    NDArray NDArray::varianceAlongDims(nd4j::variance::Ops op, const bool biasCorrected, const std::vector<int>& dimensions) const {
+        if (isS())
+            throw std::runtime_error("NDArray::varianceAlongDims: you can't use this method on String array!");
+
+        std::vector<int> copy(dimensions);
+        if (copy.size() > 1)
+            std::sort(copy.begin(), copy.end());
+
+        auto newShape = ShapeUtils::evalReduceShapeInfo('c', copy, *this, false, false, _workspace);
+        ArrayOptions::setDataType(newShape, DataTypeUtils::pickFloatingType(_dataType));
+        NDArray result(newShape, true, _workspace, true);
+
+        if(rankOf() == copy.size() || copy.empty())
+            NativeOpExcutioner::execSummaryStatsScalar(op, _buffer, _shapeInfo, nullptr, result.buffer(), result.shapeInfo(), biasCorrected);
+        else
+            NativeOpExcutioner::execSummaryStats(op, _buffer, _shapeInfo, nullptr, result._buffer, result._shapeInfo, copy.data(), copy.size(), biasCorrected);
+
+        return result;
+    }
+
+    ////////////////////////////////////////////////////////////////////////
+    NDArray NDArray::varianceAlongDims(nd4j::variance::Ops op, const bool biasCorrected, const std::initializer_list<int>& dimensions) const {
+        return varianceAlongDims(op, biasCorrected, std::vector<int>(dimensions));
     }
 
     void NDArray::varianceAlongDimension(nd4j::variance::Ops op, const NDArray *target, const bool biasCorrected, const std::vector<int>& dimensions) {

@@ -45,7 +45,7 @@ namespace ops  {
         shape::checkDimensions(input->rankOf(), axis);
 
         auto means = input->reduceAlongDims(reduce::Mean, axis, true);
-        auto stdev = *input->varianceAlongDimension(variance::SummaryStatsStandardDeviation, false, axis);
+        auto stdev = input->varianceAlongDims(variance::SummaryStatsStandardDeviation, false, axis);
         stdev.reshapei(means.getShapeAsVector());
 
         input->applyTrueBroadcast(nd4j::BroadcastOpsTuple::Subtract(), &means, output, false);
