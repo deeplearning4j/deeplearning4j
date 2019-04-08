@@ -137,8 +137,8 @@ TEST_F(DeclarableOpsTests15, test_avgpooling_edge_1) {
 }
 
 TEST_F(DeclarableOpsTests15, Test_standarize_1) {
-    auto x = NDArrayFactory::create<float>('c', {5}, {1., 1., 1., 1., 1.});
-    auto e = NDArrayFactory::create<float>('c', {5}, {0., 0., 0., 0., 0.});
+    auto x = NDArrayFactory::create<float>('c', {5}, {1, 1, 1, 1, 1});
+    auto e = NDArrayFactory::create<float>('c', {5}, {0, 0, 0, 0, 0});
 
     nd4j::ops::standardize op;
     auto result = op.execute({&x}, {&x}, {}, {0}, {});

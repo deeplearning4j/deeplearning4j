@@ -45,15 +45,13 @@ namespace ops  {
         shape::checkDimensions(input->rankOf(), axis);
 
         auto means = input->reduceAlongDims(reduce::Mean, axis, true);
-        auto stdev = input->varianceAlongDimension(variance::SummaryStatsStandardDeviation, false, axis);
-        stdev->reshapei(means.getShapeAsVector());
+        auto stdev = input->varianceAlongDims(variance::SummaryStatsStandardDeviation, false, axis);
+        stdev.reshapei(means.getShapeAsVector());
 
         input->applyTrueBroadcast(nd4j::BroadcastOpsTuple::Subtract(), &means, output, false);
-        output->applyTrueBroadcast(nd4j::BroadcastOpsTuple::Divide(), stdev, output, false);
+        output->applyTrueBroadcast(nd4j::BroadcastOpsTuple::Divide(), &stdev, output, false);
         output->applyScalar(nd4j::scalar::ReplaceNans, 0, output, nullptr);
 
-        delete stdev;
-   
         return Status::OK();
     }
 
@@ -83,10 +81,10 @@ namespace ops  {
         auto longAxis = ArrayUtils::toLongVector(axis);
 
         auto means = input->reduceAlongDims(reduce::Mean, axis, true);
-        auto stdev = input->varianceAlongDimension(variance::SummaryStatsStandardDeviation, false, axis);
-        stdev->reshapei(means.getShapeAsVector());
+        auto stdev = input->varianceAlongDims(variance::SummaryStatsStandardDeviation, false, axis);
+        stdev.reshapei(means.getShapeAsVector());
 
-        eps->applyTrueBroadcast(nd4j::BroadcastOpsTuple::Divide(), stdev, output, false);
+        eps->applyTrueBroadcast(nd4j::BroadcastOpsTuple::Divide(), &stdev, output, false);
 
         auto dldu_sum = -output->reduceAlongDims(reduce::Sum, axis, true);
         nd4j::ops::reduce_mean_bp meanBp;
@@ -98,8 +96,8 @@ namespace ops  {
         NDArray tmp(eps);
         means.applyTrueBroadcast(nd4j::BroadcastOpsTuple::Subtract(), input, &tmp, false);
         tmp.applyPairwiseTransform(nd4j::pairwise::Multiply, eps, &tmp, nullptr);
-        stdev->applyPairwiseTransform(nd4j::pairwise::Multiply, stdev, stdev, nullptr);
-        tmp.applyTrueBroadcast(nd4j::BroadcastOpsTuple::Divide(), stdev, &tmp, false);
+        stdev.applyPairwiseTransform(nd4j::pairwise::Multiply, &stdev, &stdev, nullptr);
+        tmp.applyTrueBroadcast(nd4j::BroadcastOpsTuple::Divide(), &stdev, &tmp, false);
 
         auto dlds_sum = tmp.reduceAlongDims(reduce::Sum, axis, true);
         nd4j::ops::reduce_stdev_bp stdevBp;
@@ -109,7 +107,6 @@ namespace ops  {
 
         output->applyScalar(nd4j::scalar::ReplaceNans, 0, output, nullptr);
 
-        delete stdev;
         delete stdevBpRes;
         delete meanBpRes;
 
