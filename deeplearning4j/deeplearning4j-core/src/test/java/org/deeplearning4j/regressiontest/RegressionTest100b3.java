@@ -57,16 +57,7 @@ public class RegressionTest100b3 extends BaseDL4JTest {
     public void testCustomLayer() throws Exception {
 
         File f = new ClassPathResource("regression_testing/100b3/CustomLayerExample_100b3.bin").getTempFileFromArchive();
-
-        try {
-            MultiLayerNetwork.load(f, true);
-            fail("Expected exception");
-        } catch (Exception e){
-            String msg = e.getMessage();
-            assertTrue(msg, msg.contains("NeuralNetConfiguration.registerLegacyCustomClassesForJSON"));
-        }
-
-        NeuralNetConfiguration.registerLegacyCustomClassesForJSON(CustomLayer.class);
+        MultiLayerNetwork.load(f, true);
 
         MultiLayerNetwork net = MultiLayerNetwork.load(f, true);
 
