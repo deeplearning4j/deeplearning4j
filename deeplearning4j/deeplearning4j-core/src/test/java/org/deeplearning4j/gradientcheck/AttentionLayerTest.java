@@ -263,8 +263,8 @@ public class AttentionLayerTest extends BaseDL4JTest {
                             .addLayer("lstmValues", new LSTM.Builder().nOut(layerSize).build(), "input")
                             .addVertex("attention",
                                     projectInput ?
-                                    AttentionVertex.builder().nOut(8).nHeads(2).projectInput(true).nInQueries(layerSize).nInKeys(layerSize).nInValues(layerSize).build()
-                                            :  AttentionVertex.builder().nOut(8).nHeads(1).projectInput(false).nInQueries(layerSize).nInKeys(layerSize).nInValues(layerSize).build(), "lstmQueries", "lstmKeys", "lstmValues")
+                                    new AttentionVertex.Builder().nOut(8).nHeads(2).projectInput(true).nInQueries(layerSize).nInKeys(layerSize).nInValues(layerSize).build()
+                                            :  new AttentionVertex.Builder().nOut(8).nHeads(1).projectInput(false).nInQueries(layerSize).nInKeys(layerSize).nInValues(layerSize).build(), "lstmQueries", "lstmKeys", "lstmValues")
                             .addLayer("pooling", new GlobalPoolingLayer.Builder().poolingType(PoolingType.MAX).build(), "attention")
                             .addLayer("output", new OutputLayer.Builder().nOut(nOut).activation(Activation.SOFTMAX).lossFunction(LossFunctions.LossFunction.MCXENT).build(), "pooling")
                             .setOutputs("output")
@@ -290,7 +290,7 @@ public class AttentionLayerTest extends BaseDL4JTest {
         int layerSize = 8;
 
         Random r = new Random(12345);
-        for (boolean inputMask : new boolean[]{true, false}) {
+        for (boolean inputMask : new boolean[]{false, true}) {
             for (int mb : new int[]{3, 2, 1}) {
                 for (boolean projectInput : new boolean[]{false, true}) {
                     INDArray in = Nd4j.rand(new int[]{mb, nIn, tsLength});
@@ -327,8 +327,8 @@ public class AttentionLayerTest extends BaseDL4JTest {
                             .addLayer("lstm", new LSTM.Builder().nOut(layerSize).build(), "input")
                             .addVertex("attention",
                                     projectInput ?
-                                            AttentionVertex.builder().nOut(8).nHeads(2).projectInput(true).nInQueries(layerSize).nInKeys(layerSize).nInValues(layerSize).build()
-                                            :  AttentionVertex.builder().nOut(8).nHeads(1).projectInput(false).nInQueries(layerSize).nInKeys(layerSize).nInValues(layerSize).build(), "lstm", "lstm", "lstm")
+                                            new AttentionVertex.Builder().nOut(8).nHeads(2).projectInput(true).nInQueries(layerSize).nInKeys(layerSize).nInValues(layerSize).build()
+                                            :  new AttentionVertex.Builder().nOut(8).nHeads(1).projectInput(false).nInQueries(layerSize).nInKeys(layerSize).nInValues(layerSize).build(), "lstm", "lstm", "lstm")
                             .addLayer("pooling", new GlobalPoolingLayer.Builder().poolingType(PoolingType.MAX).build(), "attention")
                             .addLayer("output", new OutputLayer.Builder().nOut(nOut).activation(Activation.SOFTMAX).lossFunction(LossFunctions.LossFunction.MCXENT).build(), "pooling")
                             .setOutputs("output")

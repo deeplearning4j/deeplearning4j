@@ -61,22 +61,15 @@ public class AttentionVertex extends SameDiffVertex {
     private static final String WEIGHT_KEY_VALUE_PROJECTION = "Wv";
     private static final String WEIGHT_KEY_OUT_PROJECTION = "Wo";
 
-    @Builder
-    public AttentionVertex(long nInKeys, long nInValues, long nInQueries, long nOut, long headSize, int nHeads, boolean projectInput, WeightInit weightInit) {
-        this.nHeads = nHeads == 0 ? 1 : nHeads;
-        this.weightInit = weightInit == null ? WeightInit.XAVIER : weightInit;
-        Preconditions.checkArgument(nOut > 0, "You have to set nOut");
-        Preconditions.checkArgument(nInKeys > 0, "You have to set nInKeys");
-        Preconditions.checkArgument(nInQueries > 0, "You have to set nInQueries");
-        Preconditions.checkArgument(nInValues > 0, "You have to set nInValues");
-        Preconditions.checkArgument(headSize > 0 || nOut % this.nHeads == 0, "You have to set a head size if nOut isn't cleanly divided by nHeads");
-        Preconditions.checkArgument(projectInput || (nInQueries == nInKeys && nInKeys == nInValues  && nInValues == nOut && nHeads == 1), "You may only disable projectInput if all nIn* equal to nOut and you want to use only a single attention head");
-        this.nInKeys = nInKeys;
-        this.nInValues = nInValues;
-        this.nInQueries = nInQueries;
-        this.nOut = nOut;
-        this.headSize = headSize == 0 ? nOut / nHeads : headSize;
-        this.projectInput = projectInput;
+    protected AttentionVertex(Builder builder) {
+        this.nInKeys = builder.nInKeys;
+        this.nInValues = builder.nInValues;
+        this.nInQueries = builder.nInQueries;
+        this.nOut = builder.nOut;
+        this.headSize = builder.headSize;
+        this.projectInput = builder.projectInput;
+        this.nHeads = builder.nHeads;
+        this.weightInit = builder.weightInit;
     }
 
     @Override
@@ -164,6 +157,135 @@ public class AttentionVertex extends SameDiffVertex {
             return attention.mul(sameDiff.expandDims(maskVars.get("queries"), 1));
         }else{
             return attention;
+        }
+    }
+
+    @Getter
+    @Setter
+    public static class Builder {
+        /**
+         * Size of Keys
+         */
+        private long nInKeys = 0;
+
+        /**
+         * Size of Values
+         */
+        private long nInValues = 0;
+
+        /**
+         * Size of Queries
+         */
+        private long nInQueries = 0;
+
+        /**
+         * Output Size
+         */
+        private long nOut = 0;
+
+        /**
+         * Size of Attention Heads
+         */
+        private long headSize = 0;
+
+        /**
+         * Number of Attention Heads
+         */
+        private int nHeads = 1;
+
+        /**
+         * Toggle to enable / disable projection of inputs (key, values, queries).
+         *
+         * Works only if input size is identical for all AND only one head is used AND output size is
+         * identical to input size
+         */
+        private boolean projectInput;
+
+        /**
+         * Weight initialization scheme
+         */
+        protected WeightInit weightInit;
+
+
+        /**
+         * Size of Keys
+         */
+        public Builder nInKeys(long nInKeys) {
+            this.nInKeys = nInKeys;
+            return this;
+        }
+
+        /**
+         * Size of Queries
+         */
+        public Builder nInQueries(long nInQueries) {
+            this.nInQueries = nInQueries;
+            return this;
+        }
+
+        /**
+         * Size of Values
+         */
+        public Builder nInValues(long nInValues) {
+            this.nInValues = nInValues;
+            return this;
+        }
+
+        /**
+         * Size of Attention Heads
+         */
+        public Builder headSize(long headSize){
+            this.headSize = headSize;
+            return this;
+        }
+
+        /**
+         * Number of Attention Heads
+         */
+        public Builder nHeads(int nHeads) {
+            this.nHeads = nHeads;
+            return this;
+        }
+
+        /**
+         * Output Size
+         */
+        public Builder nOut(long nOut) {
+            this.nOut = nOut;
+            return this;
+        }
+
+        /**
+         * Weight initialization scheme
+         */
+        public Builder weightInit(WeightInit weightInit){
+            this.weightInit = weightInit;
+            return this;
+        }
+
+        /**
+         * Toggle to enable / disable projection of inputs (key, values, queries).
+         *
+         * Works only if input size is identical for all AND only one head is used AND output size is
+         * identical to input size
+         */
+        public Builder projectInput(boolean projectInput){
+            this.projectInput = projectInput;
+            return this;
+        }
+
+        public AttentionVertex build(){
+            this.nHeads = nHeads == 0 ? 1 : nHeads;
+            this.weightInit = weightInit == null ? WeightInit.XAVIER : weightInit;
+            Preconditions.checkArgument(nOut > 0, "You have to set nOut");
+            Preconditions.checkArgument(nInKeys > 0, "You have to set nInKeys");
+            Preconditions.checkArgument(nInQueries > 0, "You have to set nInQueries");
+            Preconditions.checkArgument(nInValues > 0, "You have to set nInValues");
+            Preconditions.checkArgument(headSize > 0 || nOut % this.nHeads == 0, "You have to set a head size if nOut isn't cleanly divided by nHeads");
+            Preconditions.checkArgument(projectInput || (nInQueries == nInKeys && nInKeys == nInValues  && nInValues == nOut && nHeads == 1), "You may only disable projectInput if all nIn* equal to nOut and you want to use only a single attention head");
+            this.headSize = headSize == 0 ? nOut / nHeads : headSize;
+
+            return new AttentionVertex(this);
         }
     }
 }
