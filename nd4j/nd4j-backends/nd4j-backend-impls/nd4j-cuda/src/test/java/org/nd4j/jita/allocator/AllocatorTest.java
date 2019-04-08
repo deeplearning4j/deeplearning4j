@@ -7,7 +7,7 @@ import org.nd4j.jita.allocator.impl.MemoryTracker;
 import static org.junit.Assert.assertTrue;
 
 
-class AllocatorTest {
+public class AllocatorTest {
 
 
     @Test
