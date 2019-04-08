@@ -354,8 +354,8 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
             return (utf8string)super.position(position);
         }
     
-        public native @Cast("char*") BytePointer _buffer(); public native utf8string _buffer(BytePointer _buffer);
-        public native @Cast("unsigned int") int _length(); public native utf8string _length(int _length);
+        public native @Cast("char*") BytePointer _buffer(); public native utf8string _buffer(BytePointer setter);
+        public native @Cast("unsigned int") int _length(); public native utf8string _length(int setter);
 
         public utf8string() { super((Pointer)null); allocate(); }
         private native void allocate();
@@ -6445,12 +6445,12 @@ public static final int PREALLOC_SIZE = 33554432;
         public ShapeInformation(@Cast("Nd4jLong*") long[] shape_/*=nullptr*/, @Cast("Nd4jLong*") long[] stride_/*=nullptr*/, char order_/*=0*/, int rank_/*=0*/, int offset_/*=0*/, int elementWiseStride_/*=0*/) { super((Pointer)null); allocate(shape_, stride_, order_, rank_, offset_, elementWiseStride_); }
         private native void allocate(@Cast("Nd4jLong*") long[] shape_/*=nullptr*/, @Cast("Nd4jLong*") long[] stride_/*=nullptr*/, char order_/*=0*/, int rank_/*=0*/, int offset_/*=0*/, int elementWiseStride_/*=0*/);
 
-        public native @Cast("Nd4jLong*") LongPointer shape(); public native ShapeInformation shape(LongPointer shape);
-        public native @Cast("Nd4jLong*") LongPointer stride(); public native ShapeInformation stride(LongPointer stride);
-        public native char order(); public native ShapeInformation order(char order);
-        public native int rank(); public native ShapeInformation rank(int rank);
-        public native int offset(); public native ShapeInformation offset(int offset);
-        public native int elementWiseStride(); public native ShapeInformation elementWiseStride(int elementWiseStride);
+        public native @Cast("Nd4jLong*") LongPointer shape(); public native ShapeInformation shape(LongPointer setter);
+        public native @Cast("Nd4jLong*") LongPointer stride(); public native ShapeInformation stride(LongPointer setter);
+        public native char order(); public native ShapeInformation order(char setter);
+        public native int rank(); public native ShapeInformation rank(int setter);
+        public native int offset(); public native ShapeInformation offset(int setter);
+        public native int elementWiseStride(); public native ShapeInformation elementWiseStride(int setter);
     }
 
 /**
@@ -6471,10 +6471,10 @@ public static final int PREALLOC_SIZE = 33554432;
             return (CurrentIndexing)super.position(position);
         }
     
-        public native int numElementsPerThread(); public native CurrentIndexing numElementsPerThread(int numElementsPerThread);
-        public native int blockStartingIndex(); public native CurrentIndexing blockStartingIndex(int blockStartingIndex);
-        public native int startingThreadIndex(); public native CurrentIndexing startingThreadIndex(int startingThreadIndex);
-        public native int endingThreadIndex(); public native CurrentIndexing endingThreadIndex(int endingThreadIndex);
+        public native int numElementsPerThread(); public native CurrentIndexing numElementsPerThread(int setter);
+        public native int blockStartingIndex(); public native CurrentIndexing blockStartingIndex(int setter);
+        public native int startingThreadIndex(); public native CurrentIndexing startingThreadIndex(int setter);
+        public native int endingThreadIndex(); public native CurrentIndexing endingThreadIndex(int setter);
 
     }
 
@@ -22281,15 +22281,15 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
             return (DebugInfo)super.position(position);
         }
     
-       public native double _minValue(); public native DebugInfo _minValue(double _minValue);
-       public native double _maxValue(); public native DebugInfo _maxValue(double _maxValue);
-       public native double _meanValue(); public native DebugInfo _meanValue(double _meanValue);
-       public native double _stdDevValue(); public native DebugInfo _stdDevValue(double _stdDevValue);
-       public native @Cast("Nd4jLong") long _zeroCount(); public native DebugInfo _zeroCount(long _zeroCount);
-       public native @Cast("Nd4jLong") long _positiveCount(); public native DebugInfo _positiveCount(long _positiveCount);
-       public native @Cast("Nd4jLong") long _negativeCount(); public native DebugInfo _negativeCount(long _negativeCount);
-       public native @Cast("Nd4jLong") long _infCount(); public native DebugInfo _infCount(long _infCount);
-       public native @Cast("Nd4jLong") long _nanCount(); public native DebugInfo _nanCount(long _nanCount);
+       public native double _minValue(); public native DebugInfo _minValue(double setter);
+       public native double _maxValue(); public native DebugInfo _maxValue(double setter);
+       public native double _meanValue(); public native DebugInfo _meanValue(double setter);
+       public native double _stdDevValue(); public native DebugInfo _stdDevValue(double setter);
+       public native @Cast("Nd4jLong") long _zeroCount(); public native DebugInfo _zeroCount(long setter);
+       public native @Cast("Nd4jLong") long _positiveCount(); public native DebugInfo _positiveCount(long setter);
+       public native @Cast("Nd4jLong") long _negativeCount(); public native DebugInfo _negativeCount(long setter);
+       public native @Cast("Nd4jLong") long _infCount(); public native DebugInfo _infCount(long setter);
+       public native @Cast("Nd4jLong") long _nanCount(); public native DebugInfo _nanCount(long setter);
     }
 
     @Namespace("nd4j") public static native @Cast("bool") @Name("operator ==") boolean equals(@Const @ByRef DebugInfo first, @Const @ByRef DebugInfo second);
