@@ -26,7 +26,11 @@ import org.nd4j.linalg.api.ops.DynamicCustomOp;
  * @author raver119@gmail.com
  */
 public class Flatten extends DynamicCustomOp {
-    private final char order;
+    private char order;
+
+    public Flatten() {
+        //
+    }
 
     public Flatten(char order, INDArray... inputs) {
         this.order = order;
