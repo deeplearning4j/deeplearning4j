@@ -6,6 +6,7 @@ import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -34,7 +35,16 @@ public class Pow extends DynamicCustomOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {
-        throw new UnsupportedOperationException("Not yet implemneted");
+        //TODO: replace this with discrete op once available: https://github.com/deeplearning4j/deeplearning4j/issues/7461
+        //If y=a^b, then:
+        //dL/da = b*a^(b-1) * dL/dy
+        //dL/db = a^b * log(a) * dL/dy
+
+        SDVariable a = arg(0);
+        SDVariable b = arg(1);
+        SDVariable dlda = b.mul(sameDiff.math().pow(a,b.sub(1))).mul(f1.get(0));
+        SDVariable dldb = outputVariable().mul(sameDiff.math().log(a)).mul(f1.get(0));
+        return Arrays.asList(dlda, dldb);
     }
 
     @Override

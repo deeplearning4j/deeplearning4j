@@ -110,15 +110,8 @@ public class GradCheckUtil {
         }
 
         //Do forward pass, check that output is a scalar:
-        List<String> outputs = sd.outputs();
-        Preconditions.checkState(outputs.size() == 1, "Expected 1 output for gradient check, got %s", outputs);
-        String outName = outputs.get(0);
-//        Map<String,INDArray> outMap = sd.exec(placeholderValues, outName);
-//        Preconditions.checkState(outMap.size() == 1, "Expected 1 output, got %s", outMap.keySet());
-//        INDArray out = outMap.get(outName);
-//        if(out.length() != 1){
-//            throw new IllegalStateException("Output variable is not a scalar - has shape " + Arrays.toString(out.shape()));
-//        }
+        List<String> lossFnVariables = sd.getLossVariables();
+        Preconditions.checkState(lossFnVariables != null && !lossFnVariables.isEmpty(), "Expected 1 or more loss function variables for gradient check, got %s", lossFnVariables);
 
         //TODO also check that all inputs are non-zero (otherwise: consider out = sum(x * y) with all x and y being 0
         // in this case, gradients of x and y are all 0 too
@@ -126,7 +119,7 @@ public class GradCheckUtil {
         //Collect variables to get gradients for - we want placeholders AND variables
         Set<String> gradVarNames = new HashSet<>();
         for(Variable v : sd.getVariables().values()){
-            if(v.getVariable().getVariableType() == VariableType.VARIABLE || v.getVariable().getVariableType() == VariableType.PLACEHOLDER){
+            if(v.getVariable().dataType().isFPType() && (v.getVariable().getVariableType() == VariableType.VARIABLE || v.getVariable().getVariableType() == VariableType.PLACEHOLDER)){
                 SDVariable g = v.getVariable().getGradient();
                 Preconditions.checkNotNull(g, "No gradient variable found for variable %s", v.getVariable());
                 gradVarNames.add(g.getVarName());
@@ -138,6 +131,10 @@ public class GradCheckUtil {
         for(SDVariable v : sd.variables()){
             if (fnOutputs.contains(v.getVarName())) {
                 //This is not an input to the graph
+                continue;
+            }
+            if(!v.hasGradient()){
+                //Skip non-fp variables, or variables that don't impact loss function value
                 continue;
             }
             SDVariable g = sd.grad(v.getVarName());
@@ -204,9 +201,17 @@ public class GradCheckUtil {
                 totalCount++;
                 double orig = a.getDouble(idx);
                 a.putScalar(idx, orig+eps);
-                double scorePlus = sd.exec(placeholderValues, outputs.get(0)).get(outName).sumNumber().doubleValue();
+                double scorePlus = 0.0;
+                Map<String,INDArray> m = sd.exec(placeholderValues, lossFnVariables);//.get(outName).sumNumber().doubleValue();
+                for(INDArray arr : m.values()){
+                    scorePlus += arr.sumNumber().doubleValue();
+                }
                 a.putScalar(idx, orig-eps);
-                double scoreMinus = sd.exec(placeholderValues, outputs.get(0)).get(outName).sumNumber().doubleValue();
+                m = sd.exec(placeholderValues, lossFnVariables);
+                double scoreMinus = 0.0;
+                for(INDArray arr : m.values()){
+                    scoreMinus += arr.sumNumber().doubleValue();
+                }
                 a.putScalar(idx, orig);
 
                 double numericalGrad = (scorePlus - scoreMinus) / (2 * eps);

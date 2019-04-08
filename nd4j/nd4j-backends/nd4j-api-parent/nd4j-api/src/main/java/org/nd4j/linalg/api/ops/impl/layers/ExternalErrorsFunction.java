@@ -61,8 +61,10 @@ public class ExternalErrorsFunction extends DifferentialFunction {
     @Override
     public SDVariable[] outputVariables(String baseName) {
         if(out == null){
-            out = sameDiff.zero("dummyOutput", DataType.FLOAT, 1);
+            String name = sameDiff.generateNewVarName("dummyOutput", 0);
+            out = sameDiff.zero(name, DataType.FLOAT, 1);
             sameDiff.getOps().get(getOwnName()).setOutputsOfOp(Collections.singletonList(out.getVarName()));
+            sameDiff.getVariables().get(name).setOutputOfOp(getOwnName());
         }
         return new SDVariable[]{out};
     }
