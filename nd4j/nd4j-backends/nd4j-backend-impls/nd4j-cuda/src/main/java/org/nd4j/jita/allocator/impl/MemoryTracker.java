@@ -4,29 +4,42 @@ import java.util.*;
 
 public class MemoryTracker {
 
-    private List<Long> allocatedPerDevice = new ArrayList<>();
-    private List<Long> cachedPerDevice = new ArrayList<>();
+    private List<AtomicLong> allocatedPerDevice = new ArrayList<>();
+    private List<AtomicLong> cachedPerDevice = new ArrayList<>();
+    private List<AtomicLong> totalPerDevice = new ArrayList<>();
     private static MemoryTracker INSTANCE = new MemoryTracker();
+
+    private MemoryTracker() {
+        for (int i = 0; i < Nd4j.getAffinityManager().getNumberOfDevices(); ++i) {
+            allocatedPerDevice.get(i).set(0);
+            cachedPerDevice.get(i).set(0);
+            totalPerDevice.get(i).set(0);
+        }
+    }
 
     public static MemoryTracker getInstance() {
         return INSTANCE;
     }
 
-    public Long getAllocated(int deviceId) {
+    public AtomicLong getAllocated(int deviceId) {
         return allocatedPerDevice.get(deviceId);
     }
 
-    public Long getCached(int deviceId) {
+    public AtomicLong getCached(int deviceId) {
+        return cachedPerDevice.get(deviceId);
+    }
+
+    public AtomicLong getTotal(int deviceId) {
         return cachedPerDevice.get(deviceId);
     }
 
     public synchronized void incrementAllocated(int deviceId) {
-        long cnt  = allocatedPerDevice.get(deviceId);
-	allocatedPerDevice.set(deviceId, ++cnt);
+        allocatedPerDevice.get(deviceId).getAndIncrement();
+        totalPerDevice.get(deviceId).getAndIncrement();
     }
 
     public synchronized void incrementCached(int deviceId) {
-        long cnt = cachedPerDevice.get(deviceId);
-	cachedPerDevice.set(deviceId, ++cnt);
+        cachedPerDevice.get(deviceId).getAndIncrement();
+        totalPerDevice.get(deviceId).getAndIncrement();
     }
 }
