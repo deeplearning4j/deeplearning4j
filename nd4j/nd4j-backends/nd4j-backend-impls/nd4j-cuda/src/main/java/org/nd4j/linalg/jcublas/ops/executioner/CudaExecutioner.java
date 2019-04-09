@@ -649,7 +649,12 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         } else if (op instanceof IndexAccumulation) {
             IndexAccumulation indexAccumulation = (IndexAccumulation) op;
             invoke(indexAccumulation, indexAccumulation.dimensions().toIntVector());
+        } else if (op instanceof RandomOp) {
+            exec((RandomOp) op);
+        } else if (op instanceof CustomOp) {
+            exec((CustomOp) op);
         }
+
 
         return op.z();
     }
@@ -1000,12 +1005,11 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                 AtomicAllocator.getInstance().registerAction(context, op.z(), op.x(), op.y());
             }
         } else {
-            Pointer dimensionPointer = AtomicAllocator.getInstance()
-                    .getPointer(AtomicAllocator.getInstance().getConstantBuffer(dimension), context); //AtomicAllocator.getInstance().getPointer(Nd4j.createBuffer(dimension), context);
+            val dimensionPointer = AtomicAllocator.getInstance().getPointer(AtomicAllocator.getInstance().getConstantBuffer(dimension), context); //AtomicAllocator.getInstance().getPointer(Nd4j.createBuffer(dimension), context);
 
             if (op.y() != null) {
-                Pointer y = AtomicAllocator.getInstance().getPointer(op.y(), context);
-                Pointer yShapeInfo = AtomicAllocator.getInstance().getPointer(op.y().shapeInfoDataBuffer(), context);
+                val y = AtomicAllocator.getInstance().getPointer(op.y(), context);
+                val yShapeInfo = AtomicAllocator.getInstance().getPointer(op.y().shapeInfoDataBuffer(), context);
                 nativeOps.execReduce3(xShapeInfoHostPointer, op.opNum(),
                             null, (LongPointer) hostXShapeInfo, x, (LongPointer) xShapeInfo,
                             extraArgs,
@@ -1013,8 +1017,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                             null, (LongPointer) hostZShapeInfo, z, (LongPointer) zShapeInfo,
                         null,
                         (LongPointer) op.dimensions().shapeInfoDataBuffer().addressPointer(),
-                        AtomicAllocator.getInstance().getPointer(op.dimensions(), context),
-                        null, (LongPointer) devTadShapeInfo, (LongPointer) devTadShapeInfo, (LongPointer) yDevTadShapeInfo, (LongPointer) yDevTadOffsets);
+                        dimensionPointer, null, (LongPointer) devTadShapeInfo, (LongPointer) devTadOffsets, (LongPointer) yDevTadShapeInfo, (LongPointer) yDevTadOffsets);
             } else {
                 if (op instanceof Variance) {
                     nativeOps.execSummaryStats(xShapeInfoHostPointer, op.opNum(),

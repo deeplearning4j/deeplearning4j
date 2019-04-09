@@ -122,56 +122,54 @@ namespace functions {
                     return;
                 } else {
 
-                __shared__ Nd4jLong length;
-                __shared__ int xEWS;
-                __shared__ int yEWS;
-                __shared__ int zEWS;
+                    __shared__
+                    Nd4jLong length;
+                    __shared__ int xEWS;
+                    __shared__ int yEWS;
+                    __shared__ int zEWS;
 
-                __shared__ nd4j::graph::RandomGenerator *buffer;
-                __shared__ unsigned char *cB;
-                __shared__ unsigned char *dB;
-                nd4j::graph::RandomGenerator *devBuffer;
-                if (threadIdx.x == 0) {
-                    length = shape::length(zShapeBuffer);
-                    xEWS = shape::elementWiseStride(xShapeBuffer);
-                    yEWS = shape::elementWiseStride(yShapeBuffer);
-                    zEWS = shape::elementWiseStride(zShapeBuffer);
+                    __shared__
+                    nd4j::graph::RandomGenerator *buffer;
+                    __shared__ unsigned char *cB;
+                    __shared__ unsigned char *dB;
+                    nd4j::graph::RandomGenerator *devBuffer;
+                    if (threadIdx.x == 0) {
+                        length = shape::length(zShapeBuffer);
+                        xEWS = shape::elementWiseStride(xShapeBuffer);
+                        yEWS = shape::elementWiseStride(yShapeBuffer);
+                        zEWS = shape::elementWiseStride(zShapeBuffer);
 
-                    extern __shared__ unsigned char shmem[];
-                    buffer = (nd4j::graph::RandomGenerator *) shmem;
-                    cB = shmem;
-                    devBuffer = reinterpret_cast<nd4j::graph::RandomGenerator *> (state);
-                    dB = reinterpret_cast<unsigned char *> (state);
-                }
-                __syncthreads();
-
-                // using this loop instead of memcpy
-                for (int e = threadIdx.x; e < sizeof(nd4j::graph::RandomGenerator); e+= blockDim.x) {
-                    cB[e] = dB[e];
-                }
-                __syncthreads();
-
-
-                int tid = blockIdx.x * blockDim.x + threadIdx.x;
-
-                if (xEWS >= 1 && yEWS >= 1 && zEWS >= 1) {
-                    for (Nd4jLong e = tid; e < length; e += blockDim.x * gridDim.x) {
-                        z[e * zEWS] = OpClass::op(x[e * xEWS], y[e * yEWS], e, length, buffer, extraArguments);
+                        extern __shared__ unsigned char shmem[];
+                        buffer = (nd4j::graph::RandomGenerator *) shmem;
+                        cB = shmem;
+                        devBuffer = reinterpret_cast<nd4j::graph::RandomGenerator *> (state);
+                        dB = reinterpret_cast<unsigned char *> (state);
                     }
-                } else {
-                    for (Nd4jLong i = tid; i < length; i += blockDim.x * gridDim.x) {
-                        
-                        auto xOffset2 = shape::getIndexOffset(i, xShapeBuffer, length);
-                        auto yOffset2 = shape::getIndexOffset(i, yShapeBuffer, length);
-                        auto zOffset2 = shape::getIndexOffset(i, zShapeBuffer, length);                        
+                    __syncthreads();
 
-                        z[zOffset2] = OpClass::op(x[xOffset2], y[yOffset2], i, length, buffer, extraArguments);
+                    // using this loop instead of memcpy
+                    for (int e = threadIdx.x; e < sizeof(nd4j::graph::RandomGenerator); e += blockDim.x) {
+                        cB[e] = dB[e];
                     }
-                }
+                    __syncthreads();
 
-                __syncthreads();
-                if (threadIdx.x == 0 && blockIdx.x == 0)
-                    devBuffer->rewindH(length);
+
+                    int tid = blockIdx.x * blockDim.x + threadIdx.x;
+
+                    if (xEWS >= 1 && yEWS >= 1 && zEWS >= 1) {
+                        for (Nd4jLong e = tid; e < length; e += blockDim.x * gridDim.x) {
+                            z[e * zEWS] = OpClass::op(x[e * xEWS], y[e * yEWS], e, length, buffer, extraArguments);
+                        }
+                    } else {
+                        for (Nd4jLong i = tid; i < length; i += blockDim.x * gridDim.x) {
+
+                            auto xOffset2 = shape::getIndexOffset(i, xShapeBuffer, length);
+                            auto yOffset2 = shape::getIndexOffset(i, yShapeBuffer, length);
+                            auto zOffset2 = shape::getIndexOffset(i, zShapeBuffer, length);
+
+                            z[zOffset2] = OpClass::op(x[xOffset2], y[yOffset2], i, length, buffer, extraArguments);
+                        }
+                    }
                 }
             };
 
@@ -226,11 +224,6 @@ namespace functions {
                         z[zOffset2] = OpClass::op(x[xOffset2], i, length, buffer, extraArguments);
                     }
                 }
-
-                __syncthreads();
-
-                if (threadIdx.x == 0 && blockIdx.x == 0)
-                    devBuffer->rewindH(length);
             }
 
 
@@ -276,11 +269,6 @@ namespace functions {
                         z[zOffset2] = OpClass::op(i, length, buffer,  extraArguments);
                     }
                 }
-
-                __syncthreads();
-
-                if (threadIdx.x == 0 && blockIdx.x == 0)
-                    devBuffer->rewindH(length);
             }
 
         template <>
