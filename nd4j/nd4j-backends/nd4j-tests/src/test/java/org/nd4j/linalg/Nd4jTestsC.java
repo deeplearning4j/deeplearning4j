@@ -4524,6 +4524,20 @@ public class Nd4jTestsC extends BaseNd4jTest {
     }
 
     @Test
+    public void testReduce3SignaturesEquality_1() {
+        val x = Nd4j.rand(DataType.DOUBLE, 3, 4, 5);
+        val y = Nd4j.rand(DataType.DOUBLE, 3, 4, 5);
+
+        val reduceOp = new ManhattanDistance(x, y, 0);
+        val op = (Op) reduceOp;
+
+        val z0 = Nd4j.getExecutioner().exec(reduceOp);
+        val z1 = Nd4j.getExecutioner().exec(op);
+
+        assertEquals(z0, z1);
+    }
+
+    @Test
     public void testTadReduce3_1() {
         INDArray initial = Nd4j.create(5, 10);
         for (int i = 0; i < initial.rows(); i++) {

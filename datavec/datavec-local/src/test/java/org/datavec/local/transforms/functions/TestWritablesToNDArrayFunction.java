@@ -49,10 +49,10 @@ public class TestWritablesToNDArrayFunction {
         List<Writable> l = new ArrayList<>();
         l.add(new IntWritable(0));
         l.add(new IntWritable(1));
-        INDArray arr = Nd4j.arange(2, 5);
+        INDArray arr = Nd4j.arange(2, 5).reshape(1, 3);
         l.add(new NDArrayWritable(arr));
         l.add(new IntWritable(5));
-        arr = Nd4j.arange(6, 9);
+        arr = Nd4j.arange(6, 9).reshape(1, 3);
         l.add(new NDArrayWritable(arr));
         l.add(new IntWritable(9));
 

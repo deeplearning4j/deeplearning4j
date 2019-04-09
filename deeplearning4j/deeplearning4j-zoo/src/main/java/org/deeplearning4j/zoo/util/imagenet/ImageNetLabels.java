@@ -110,7 +110,7 @@ public class ImageNetLabels extends BaseLabels {
             predictionDescription += " :";
             INDArray currentBatch = predictions.getRow(batch).dup();
             while (i < 5) {
-                top5[i] = Nd4j.argMax(currentBatch, 1).getInt(0, 0);
+                top5[i] = Nd4j.argMax(currentBatch, 1).getInt(0);
                 top5Prob[i] = currentBatch.getFloat(batch, top5[i]);
                 currentBatch.putScalar(0, top5[i], 0);
                 predictionDescription += "\n\t" + String.format("%3f", top5Prob[i] * 100) + "%, "

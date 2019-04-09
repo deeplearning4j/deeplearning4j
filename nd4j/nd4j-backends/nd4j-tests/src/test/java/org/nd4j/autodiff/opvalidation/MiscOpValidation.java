@@ -1565,4 +1565,52 @@ public class MiscOpValidation extends BaseOpValidation {
         INDArray exp = Nd4j.valueArrayOf(shape, 64.0, DataType.FLOAT);      //Each entry in output is sum of 64 (1.0 x 1.0) multiplications
         assertEquals(exp, out);
     }
+
+    @Test
+    public void testNthElementRank1(){
+        INDArray in = Nd4j.createFromArray(new double[]{0,1,2,3,4,5,6,7,8,9});
+        INDArray n = Nd4j.scalar(0);
+        DynamicCustomOp op = DynamicCustomOp.builder("nth_element")
+                .addInputs(in,n)
+                .addIntegerArguments(0) //reverse = false
+                .build();
+
+        List<LongShapeDescriptor> shapeList = op.calculateOutputShape();
+        long[] shape = shapeList.get(0).getShape();
+        long[] expShape = new long[0];
+        assertArrayEquals(expShape, shape);
+
+        INDArray out = Nd4j.scalar(0.0);
+        op.addOutputArgument(out);
+
+        Nd4j.getExecutioner().exec(op);
+        System.out.println(out);
+        assertEquals(0.0, out.getDouble(0), 1e-5);
+    }
+
+    @Test
+    public void testTensorMmulShape(){
+        INDArray a = Nd4j.create(new double[]{2}).reshape(1);
+        INDArray b = Nd4j.create(new double[]{1, 2, 3, 4}).reshape(2, 1, 2);
+        int[][] axes = new int[][]{{0},{1}};
+
+        CustomOp op = DynamicCustomOp.builder("tensordot")
+                .addInputs(a, b)
+                .addIntegerArguments(axes[0].length)
+                .addIntegerArguments(axes[0])
+                .addIntegerArguments(axes[1].length)
+                .addIntegerArguments(axes[1])
+                .build();
+
+        List<LongShapeDescriptor> l = op.calculateOutputShape();
+        assertArrayEquals(new long[]{2,2}, l.get(0).getShape());         //Returning [1,2,2]
+    }
+
+    @Test
+    public void testTensorMmulShape2(){
+        INDArray a = Nd4j.create(new double[]{2}).reshape(1);
+        INDArray b = Nd4j.create(new double[]{1, 2, 3, 4}).reshape(2, 1, 2);
+        INDArray c = Nd4j.tensorMmul(a, b, new int[][]{new int[]{0}, new int[]{1}});
+        assertArrayEquals(new long[]{2,2}, c.shape());
+    }
 }

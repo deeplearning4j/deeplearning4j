@@ -51,6 +51,7 @@ import org.nd4j.linalg.api.rng.Random;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.api.shape.options.ArrayOptionsHelper;
+import org.nd4j.linalg.api.shape.options.ArrayType;
 import org.nd4j.linalg.cache.ConstantHandler;
 import org.nd4j.linalg.cache.TADManager;
 import org.nd4j.linalg.compression.CompressionDescriptor;
@@ -155,13 +156,8 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
         val dimension = Shape.normalizeAxis(op.x().rank(), op.dimensions().toIntVector());
 
-        boolean keepDims;
-        if(op instanceof BaseIndexAccumulation) {
-            keepDims = ((BaseIndexAccumulation) op).isKeepDims();
-        } else {
-            keepDims = false;
-        }
-        long[] retShape = reductionShape(op.x(), dimension, true, keepDims);
+        boolean keepDims = op.isKeepDims();
+        long[] retShape = Shape.reductionShape(op.x(), dimension, true, keepDims);
 
         if(op.z() == null || op.x() == op.z()) {
             val ret = Nd4j.createUninitialized(DataType.LONG, retShape);
@@ -232,16 +228,8 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         if (extraz.get() == null)
             extraz.set(new PointerPointer(32));
 
-        long[] maxShape = Shape.getMaxShape(op.x(),op.y());
-
-        boolean keepDims;
-        if(op instanceof BaseReduceOp) {
-            keepDims = op.isKeepDims();
-        } else {
-            keepDims = false;
-        }
-
-        long[] retShape = reductionShape(op.x(), dimension, true, keepDims);
+        boolean keepDims = op.isKeepDims();
+        long[] retShape = Shape.reductionShape(op.x(), dimension, true, keepDims);
 
         if (op.x().isVector() && op.x().length() == ArrayUtil.prod(retShape) && ArrayUtil.prodLong(retShape) > 1 && op.y() == null)
             return op.noOp();
@@ -1743,13 +1731,14 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
     protected LongShapeDescriptor getShapeFromPointer(LongPointer ptr) {
         val rank = (int) ptr.get(0);
 
-        long[] shape = new long[rank];
-        for (int i = 0; i < rank; i++) {
-            shape[i] = ptr.get(i+1);
+        val shape = new long[rank * 2 + 4];
+        for (int i = 0; i < shape.length; i++) {
+            shape[i] = ptr.get(i);
         }
 
-        val extras = ptr.get(Shape.shapeInfoLength(rank) - 3);
-        return LongShapeDescriptor.fromShape(shape, extras);
+        //val extras = ptr.get(Shape.shapeInfoLength(rank) - 3);
+        val t = ArrayOptionsHelper.arrayType(shape);
+        return LongShapeDescriptor.fromShape(Shape.shape(shape), Shape.stride(shape), Shape.elementWiseStride(shape), Shape.order(shape), ArrayOptionsHelper.dataType(shape), t == ArrayType.EMPTY);
     }
 
     @Override
@@ -1953,41 +1942,6 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
     @Override
     public void setTadThreshold(int threshold) {
         loop.setTADThreshold(threshold);
-    }
-
-
-    private static long[] reductionShape(INDArray x, int[] dimension, boolean newFormat, boolean keepDims){
-        boolean wholeArray = Shape.wholeArrayDimension(dimension) || dimension.length == x.rank();
-        long[] retShape;
-        if(!newFormat) {
-            retShape = wholeArray ? new long[] {1, 1} : ArrayUtil.removeIndex(x.shape(), dimension);
-
-            //ensure vector is proper shape (if old format)
-            if (retShape.length == 1) {
-                if (dimension[0] == 0)
-                    retShape = new long[]{1, retShape[0]};
-                else
-                    retShape = new long[]{retShape[0], 1};
-            } else if (retShape.length == 0) {
-                retShape = new long[]{1, 1};
-            }
-        } else {
-            if(keepDims){
-                retShape = x.shape().clone();
-                if(wholeArray){
-                    for( int i=0; i<retShape.length; i++ ){
-                        retShape[i] = 1;
-                    }
-                } else {
-                    for (int d : dimension) {
-                        retShape[d] = 1;
-                    }
-                }
-            } else {
-                retShape = wholeArray ? new long[0] : ArrayUtil.removeIndex(x.shape(), dimension);
-            }
-        }
-        return retShape;
     }
 
     @Override

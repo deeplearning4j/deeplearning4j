@@ -20,6 +20,7 @@
 #include "../NDArray.h"
 #include "../NDArrayFactory.h"
 #include "../NativeOpExcutioner.h"
+#include <BroadcastPairwiseConverter.h>
 #include <memory/Workspace.h>
 #include <memory/MemoryRegistrator.h>
 #include <ops.h>
@@ -43,6 +44,7 @@
 #include <helpers/ConstantTadHelper.h>
 
 namespace nd4j {
+
 
     //////////////////////////////////////////////////////////////////////////
     void* NDArray::operator new(size_t i) {
@@ -2780,7 +2782,7 @@ template void NDArray::applyScalar(nd4j::scalar::Ops op, const bool scalar, NDAr
         } else {
             if (!nonNull() || rank != rankOf())
                 throw std::runtime_error("NDArray::permutei method: wrong arguments in permutei method: either array is nullptr or rank is not suitable!");
-            shape::doPermuteShapeInfo(_shapeInfo, dimensions);
+            shape::doPermuteShapeInfo(_shapeInfo, dimensions, _length);
         }
 
         return true;
@@ -2788,14 +2790,16 @@ template void NDArray::applyScalar(nd4j::scalar::Ops op, const bool scalar, NDAr
 
     bool NDArray::permutei(const Nd4jLong* dimensions, const int rank) {
 
+        std::vector<int> copy(dimensions, dimensions + rank);
+
         // check if current object is _shapeInfo owner
         if (!_isShapeAlloc) {             // if _shapeInfo is not its own
-            _shapeInfo = ShapeUtils::evalPermShapeInfo(dimensions, rank, *this, _workspace);
+            _shapeInfo = ShapeUtils::evalPermShapeInfo(copy.data(), rank, *this, _workspace);
             _isShapeAlloc = true;
         } else {
             if (!nonNull() || rank != rankOf())
                 throw std::runtime_error("NDArray::permutei method: wrong arguments in permutei method: either array is nullptr or rank is not suitable!");
-            shape::doPermuteShapeInfo(_shapeInfo, dimensions);
+            shape::doPermuteShapeInfo(_shapeInfo, copy.data(), _length);
         }
 
         return true;
@@ -2943,7 +2947,13 @@ template void NDArray::applyScalar(nd4j::scalar::Ops op, const bool scalar, NDAr
 
         if (dimensions.size() == 0)
             return;
+        
         auto result = target == nullptr ? this : target;
+
+        if (other->lengthOf() == lengthOf() && this->rankOf() == other->rankOf()) {
+            NativeOpExcutioner::execPairwiseTransform(fromBroadcastToPairwise(op), this->_buffer, this->_shapeInfo, other->_buffer, other->_shapeInfo, result->_buffer, result->_shapeInfo, nullptr);
+            return;
+        }
 
         NDArray *min(nullptr), *max(nullptr);
         if((lengthOf() > other->lengthOf()) || (lengthOf() == other->lengthOf() && rankOf() >= other->rankOf()))  {
@@ -2991,6 +3001,11 @@ template void NDArray::applyScalar(nd4j::scalar::Ops op, const bool scalar, NDAr
             return;
 
         auto result = target == nullptr ? this : target;
+
+        if (other->lengthOf() == lengthOf() && this->rankOf() == other->rankOf()) {
+            NativeOpExcutioner::execPairwiseTransform(fromBroadcastToPairwiseBool(op), this->_buffer, this->_shapeInfo, other->_buffer, other->_shapeInfo, result->_buffer, result->_shapeInfo, nullptr);
+            return;
+        }
 
         NDArray *min(nullptr), *max(nullptr);
         if((lengthOf() > other->lengthOf()) || (lengthOf() == other->lengthOf() && rankOf() >= other->rankOf()))  {
@@ -3059,7 +3074,7 @@ template void NDArray::applyScalar(nd4j::scalar::Ops op, const bool scalar, NDAr
                     return;
                 }
             }
-        }
+        }        
 
         NDArray* min(nullptr), *max(nullptr);
         if(this->rankOf() >= other->rankOf()) {

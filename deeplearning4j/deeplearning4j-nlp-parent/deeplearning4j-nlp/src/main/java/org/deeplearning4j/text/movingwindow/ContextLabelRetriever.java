@@ -16,12 +16,12 @@
 
 package org.deeplearning4j.text.movingwindow;
 
+import org.apache.commons.lang3.StringUtils;
 import org.deeplearning4j.text.tokenization.tokenizer.Tokenizer;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
 import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.collection.MultiDimensionalMap;
 import org.nd4j.linalg.primitives.Pair;
-import org.nd4j.util.StringUtils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -104,7 +104,7 @@ public class ContextLabelRetriever {
         //now join the output
         StringBuilder strippedSentence = new StringBuilder();
         for (Pair<String, List<String>> tokensWithLabel : tokensWithSameLabel) {
-            String joinedSentence = StringUtils.join(" ", tokensWithLabel.getSecond());
+            String joinedSentence = StringUtils.join(tokensWithLabel.getSecond(), " ");
             //spaces between separate parts of the sentence
             if (!(strippedSentence.length() < 1))
                 strippedSentence.append(" ");

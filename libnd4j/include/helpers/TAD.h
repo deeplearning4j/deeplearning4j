@@ -422,13 +422,13 @@ namespace shape {
 
     INLINEDEF void TAD::permuteShapeBufferInPlace(Nd4jLong* shapeBuffer, int* rearrange, Nd4jLong* out) {
         memcpy(out, shapeBuffer, sizeof(Nd4jLong) * shape::shapeInfoLength(this->rank));
-        doPermuteShapeBuffer(this->rank, out, rearrange);
+        doPermuteShapeInfo(out, rearrange);
     }
 
     INLINEDEF Nd4jLong* TAD::permuteShapeBuffer(Nd4jLong* shapeBuffer, int *rearrange) {
         int len = shape::shapeInfoLength(this->rank);
         Nd4jLong *copy = shape::copyOf(len,shapeBuffer);
-        doPermuteShapeBuffer(rank, copy,rearrange);
+        doPermuteShapeInfo(copy,rearrange);
         return copy;
     }
 
@@ -775,7 +775,7 @@ namespace shape {
             // we might have special case here: skipped dimensions might be just full of ones
             Nd4jLong *ret = shape::copyOf(shape::shapeInfoLength(shape::rank(shapeInfo)), shapeInfo);
             if (shape::isDimPermuted<int>(dimension, (Nd4jLong) dimensionLength))    // check whether we need permutation
-                shape::doPermuteShapeBuffer(ret, dimension);
+                doPermuteShapeInfo(ret, dimension);
 
             return ret;
         }

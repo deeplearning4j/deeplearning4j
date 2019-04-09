@@ -1170,7 +1170,9 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
     @Override
     public String toString() {
-        StringBuilder sb = new StringBuilder();
+        AtomicAllocator.getInstance().synchronizeHostData(this);
+        return super.toString();
+        /*StringBuilder sb = new StringBuilder();
         sb.append("[");
         for (int i = 0; i < length(); i++) {
             sb.append(getDouble(i));
@@ -1179,7 +1181,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
         }
         sb.append("]");
         return sb.toString();
-
+*/
     }
 
     @Override

@@ -153,7 +153,11 @@ public class SubsamplingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
 
                 if(layerConf().isCudnnAllowFallback()){
                     helperCountFail++;
-                    log.warn("CuDNN execution failed - falling back on built-in implementation",e);
+                    if(helper instanceof MKLDNNSubsamplingHelper){
+                        log.warn("MKL-DNN execution failed - falling back on built-in implementation",e);
+                    } else {
+                        log.warn("CuDNN execution failed - falling back on built-in implementation",e);
+                    }
                 } else {
                     throw new RuntimeException(e);
                 }
@@ -339,7 +343,11 @@ public class SubsamplingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
             } catch (Exception e){
                 if(layerConf().isCudnnAllowFallback()){
                     helperCountFail++;
-                    log.warn("CuDNN execution failed - falling back on built-in implementation",e);
+                    if(helper instanceof MKLDNNSubsamplingHelper){
+                        log.warn("MKL-DNN execution failed - falling back on built-in implementation",e);
+                    } else {
+                        log.warn("CuDNN execution failed - falling back on built-in implementation",e);
+                    }
                 } else {
                     throw new RuntimeException(e);
                 }

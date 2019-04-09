@@ -190,6 +190,9 @@ GraphUtils::runPreprocessor(char const* input, char const* output) {
 #ifdef OPENBLAS_PATH
     args.emplace_back(std::string("-I" OPENBLAS_PATH "/include"));
 #endif
+#ifdef FLATBUFFERS_PATH
+    args.emplace_back(std::string("-I" FLATBUFFERS_PATH "/include"));
+#endif
     args.emplace_back(input);
 
     std::string preprocessorCmd(cxx);

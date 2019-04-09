@@ -62,7 +62,7 @@ namespace functions {
                 return;
             }
 
-            nd4j::TransformLoops<X,X,X>::template loopXZ<OpType, true>(x, xShapeInfo, z, zShapeInfo, extraParams);
+            nd4j::TransformLoops<X,X,X>::template loopTransform<OpType, true>(x, xShapeInfo, z, zShapeInfo, extraParams);
         }
 
         BUILD_SINGLE_TEMPLATE(template class ND4J_EXPORT TransformStrict, , FLOAT_TYPES);

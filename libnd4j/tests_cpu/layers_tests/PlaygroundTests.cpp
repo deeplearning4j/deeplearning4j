@@ -1711,7 +1711,7 @@ TEST_F(PlaygroundTests, loops_1) {
     auto timeStart2 = std::chrono::system_clock::now();
 
     for (int i = 0; i < N ; i++)
-        Loops::loopTadXZ<float, float, float>(x.bufferAsT<float>(), tadShapeInfo, tadOffsets,
+        Loops::loopReduce<float, float, float>(x.bufferAsT<float>(), tadShapeInfo, tadOffsets,
                                        z2.bufferAsT<float>(), z2.getShapeInfo(),
                                        nullptr,
                                        &simdOps::Mean<float,float>::startingValue,
