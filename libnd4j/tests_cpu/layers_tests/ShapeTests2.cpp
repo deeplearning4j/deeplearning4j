@@ -194,12 +194,13 @@ public:
     Nd4jLong shapeBufferC[16] = {4,1,1,4,4,16,16,4,1,16384,1,99};
     int dimensionLength = 2;
     int dimension[2] = {2,3};
-    Nd4jLong tadAssertionC[10] = {3,4,4,1,4,1,16,16384,0,99};
-    Nd4jLong tadCAssertionF[10] = {3,4,4,1,1,4,1,16384,0,99};
+    Nd4jLong tadAssertionC[10] = {3,4,4,1,4,1,16,16384,1,99};
+    Nd4jLong tadCAssertionF[10] = {3,4,4,1,1,4,1,16384,1,102};
 };
 
 
-TEST_F(LeadingOnes,OnesTest) {
+TEST_F(LeadingOnes,OnesTest) {        
+
     shape::TAD *cTad = new shape::TAD;
     cTad->init(shapeBufferC,dimension,dimensionLength);
     cTad->createTadOnlyShapeInfo();
@@ -208,6 +209,8 @@ TEST_F(LeadingOnes,OnesTest) {
     fTad->init(shapeBufferF,dimension,dimensionLength);
     fTad->createTadOnlyShapeInfo();
     fTad->createOffsets();
+    // shape::printShapeInfoLinear(cTad->tadOnlyShapeInfo);
+    // shape::printShapeInfoLinear(fTad->tadOnlyShapeInfo);
     ASSERT_TRUE(arrsEquals(10, tadCAssertionF, fTad->tadOnlyShapeInfo));
     ASSERT_TRUE(arrsEquals(10, tadAssertionC, cTad->tadOnlyShapeInfo));
 
@@ -218,7 +221,7 @@ TEST_F(LeadingOnes,OnesTest) {
 
 class NormalThreeFourFive : public testing::Test {
 public:
-    Nd4jLong assertionBuffer[8] = {2, 3, 4, 20, 5, 16384, 0, 99};
+    Nd4jLong assertionBuffer[8] = {2, 3, 4, 20, 5, 16384, 0, 102};
     Nd4jLong inputShapeBuffer[10] = {3,3,4,5,20,5,1,16384,1,99};
     int dimensionLength = 2;
     int dimension[2] = {0,1};
@@ -230,6 +233,7 @@ TEST_F(NormalThreeFourFive,DimensionTest) {
     tad->init(inputShapeBuffer,dimension,dimensionLength);
     tad->createTadOnlyShapeInfo();
     tad->createOffsets();
+    shape::printShapeInfoLinear(tad->tadOnlyShapeInfo);
     ASSERT_TRUE(arrsEquals(8,assertionBuffer,tad->tadOnlyShapeInfo));
 
     delete tad;
@@ -296,7 +300,7 @@ public:
 
 class BeginOneTadTest : public testing::Test {
 public:
-    Nd4jLong assertionShapeBuffer[8] = {2,3,5,1,3,16384,0,102};
+    Nd4jLong assertionShapeBuffer[8] = {2,3,5,1,3,16384,1,102};
     Nd4jLong inputShapeBuffer[10] = {3,1,3,5,1,1,3,16384,0,102};
     int dimensionLength = 2;
     int dimension[2] = {1,2};
@@ -383,14 +387,16 @@ public:
     Nd4jLong inputShapeBuffer[16] = {6,1,1,4,4,4,4,1,1,1,4,16,64,16384,1,102}; // shape with double data type
     int dimensionLength = 2;
     int dimension[2] = {2,3};
-    Nd4jLong assertionShapeBuffer[8] = {2,4,4,1,4,16384,0,102}; // also double typed shape
+    Nd4jLong assertionShapeBuffer[8] = {2,4,4,1,4,16384,1,102}; // also double typed shape
 };
 
-TEST_F(SixDTest,SixDWithOnes) {
+TEST_F(SixDTest, SixDWithOnes) {
     shape::TAD *tad = new shape::TAD;
     tad->init(inputShapeBuffer,dimension,dimensionLength);
     tad->createTadOnlyShapeInfo();
     tad->createOffsets();
+    // shape::printShapeInfoLinear(inputShapeBuffer);
+    // shape::printShapeInfoLinear(tad->tadOnlyShapeInfo);
     //[2,1,1,1,1,0,1,97]
     ASSERT_TRUE(arrsEquals(8,assertionShapeBuffer,tad->tadOnlyShapeInfo));
     delete tad;
@@ -401,7 +407,7 @@ public:
     Nd4jLong inputShapeBuffer[12] = {4,5,5,5,1,1,5,25,125,16384,1,102};
     int dimensionLength = 1;
     int dimension[1] = {0};
-    Nd4jLong assertionShapeBuffer[8] = {2,1,5,125,1,16384,0,99};
+    Nd4jLong assertionShapeBuffer[8] = {2,1,5,125,1,16384,1,102};
 };
 
 TEST_F(TrailingTest,TrailingTest2) {
@@ -454,11 +460,12 @@ TEST_F(ThreeTest,ThreeTest ) {
 }
 
 
-TEST_F(BeginOneTadTest,TadTest) {
+TEST_F(BeginOneTadTest, TadTest) {
     shape::TAD *tad = new shape::TAD;
     tad->init(inputShapeBuffer,dimension,dimensionLength);
     tad->createTadOnlyShapeInfo();
     auto tadShapeBuffer = tad->tadOnlyShapeInfo;
+    // shape::printShapeInfoLinear(tadShapeBuffer);
     //[2,1,1,1,1,0,1,97]
     ASSERT_TRUE(arrsEquals(8,assertionShapeBuffer,tadShapeBuffer));
 

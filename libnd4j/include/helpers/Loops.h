@@ -43,7 +43,7 @@ namespace nd4j {
         static FORCEINLINE LoopKind deduceKindOfLoopTadXZ(Nd4jLong* xShapeInfo, Nd4jLong* zShapeInfo, Nd4jLong* tadShapeInfo);
 
         template <typename OpType>
-        static FORCEINLINE void loopTadXZ(X* x, Nd4jLong* xShapeInfo, Z* z, Nd4jLong* zShapeInfo, Nd4jLong* tadShapeInfo, Nd4jLong* tadOffsets, E* extraParams);
+        static FORCEINLINE void loopReduce(X* x, Nd4jLong* xShapeInfo, Z* z, Nd4jLong* zShapeInfo, Nd4jLong* tadShapeInfo, Nd4jLong* tadOffsets, E* extraParams);
     };
 
     template <typename X, typename Z>
@@ -52,7 +52,7 @@ namespace nd4j {
         static void wrapper(const int opNum, X* x, Nd4jLong* xShapeInfo, Z* z, Nd4jLong* zShapeInfo, Nd4jLong* tadShapeInfo, Nd4jLong* tadOffsets, Z* extraParams);
 
         template <typename OpType>
-        static void innerloopTadXZ(X* x, Nd4jLong* xShapeInfo, Z* z, Nd4jLong* zShapeInfo, Nd4jLong* tadShapeInfo, Nd4jLong* tadOffsets, Z* extraParams);
+        static void innerloopReduce(X* x, Nd4jLong* xShapeInfo, Z* z, Nd4jLong* zShapeInfo, Nd4jLong* tadShapeInfo, Nd4jLong* tadOffsets, Z* extraParams);
     };
 
     template <typename X, typename Z>
@@ -61,7 +61,7 @@ namespace nd4j {
         static void wrapper(const int opNum, X* x, Nd4jLong* xShapeInfo, Z* z, Nd4jLong* zShapeInfo, Nd4jLong* tadShapeInfo, Nd4jLong* tadOffsets, X* extraParams);
 
         template <typename OpType>
-        static void innerloopTadXZ(X* x, Nd4jLong* xShapeInfo, Z* z, Nd4jLong* zShapeInfo, Nd4jLong* tadShapeInfo, Nd4jLong* tadOffsets, X* extraParams);
+        static void innerloopReduce(X* x, Nd4jLong* xShapeInfo, Z* z, Nd4jLong* zShapeInfo, Nd4jLong* tadShapeInfo, Nd4jLong* tadOffsets, X* extraParams);
     };
 
     template <typename X, typename Z>
@@ -70,7 +70,7 @@ namespace nd4j {
         static void wrapper(const int opNum, X* x, Nd4jLong* xShapeInfo, Z* z, Nd4jLong* zShapeInfo, Nd4jLong* tadShapeInfo, Nd4jLong* tadOffsets, X* extraParams);
 
         template <typename OpType>
-        static void innerloopTadXZ(X* x, Nd4jLong* xShapeInfo, Z* z, Nd4jLong* zShapeInfo, Nd4jLong* tadShapeInfo, Nd4jLong* tadOffsets, X* extraParams);
+        static void innerloopReduce(X* x, Nd4jLong* xShapeInfo, Z* z, Nd4jLong* zShapeInfo, Nd4jLong* tadShapeInfo, Nd4jLong* tadOffsets, X* extraParams);
     };
 
     template <typename X>
@@ -79,7 +79,7 @@ namespace nd4j {
         static void wrapper(const int opNum, X* x, Nd4jLong* xShapeInfo, X* z, Nd4jLong* zShapeInfo, Nd4jLong* tadShapeInfo, Nd4jLong* tadOffsets, X* extraParams);
 
         template <typename OpType>
-        static void innerloopTadXZ(X* x, Nd4jLong* xShapeInfo, X* z, Nd4jLong* zShapeInfo, Nd4jLong* tadShapeInfo, Nd4jLong* tadOffsets, X* extraParams);
+        static void innerloopReduce(X* x, Nd4jLong* xShapeInfo, X* z, Nd4jLong* zShapeInfo, Nd4jLong* tadShapeInfo, Nd4jLong* tadOffsets, X* extraParams);
     };
 
 
@@ -87,10 +87,10 @@ namespace nd4j {
     class ND4J_EXPORT IndexReductionLoops {
     private:
     public:
-        static void wrapXZ(const int opNum, void* x, Nd4jLong* xShapeInfo, Nd4jLong* z, Nd4jLong* zShapeInfo, Nd4jLong* tadShapeInfo, Nd4jLong* tadOffsets, void* extraParams);
+        static void wrapIndexReduce(const int opNum, void* x, Nd4jLong* xShapeInfo, Nd4jLong* z, Nd4jLong* zShapeInfo, Nd4jLong* tadShapeInfo, Nd4jLong* tadOffsets, void* extraParams);
 
         template <typename OpType>
-        static void loopIndexTadXZ(X* x, Nd4jLong* xShapeInfo, Nd4jLong* z, Nd4jLong* zShapeInfo, Nd4jLong* tadShapeInfo, Nd4jLong* tadOffsets, X* extraParams);
+        static void loopIndexReduce(X* x, Nd4jLong* xShapeInfo, Nd4jLong* z, Nd4jLong* zShapeInfo, Nd4jLong* tadShapeInfo, Nd4jLong* tadOffsets, X* extraParams);
     };
 
 
@@ -102,7 +102,7 @@ namespace nd4j {
     public:
         
         template<typename OpType, bool doParallel>
-        static FORCEINLINE void loopXZ(X* x, Nd4jLong* xShapeInfo, Z* z, Nd4jLong* zShapeInfo, E* extraParams);
+        static FORCEINLINE void loopTransform(X* x, Nd4jLong* xShapeInfo, Z* z, Nd4jLong* zShapeInfo, E* extraParams);
     };
 
     template <typename X, typename Z>
@@ -187,11 +187,11 @@ LoopKind ReductionLoops<X, Z, E>::deduceKindOfLoopTadXZ(Nd4jLong* xShapeInfo, Nd
     const bool zVector = shape::isCommonVector(zShapeInfo, temp);
 
     if(shape::length(tadShapeInfo) * shape::length(zShapeInfo) <= Environment::getInstance()->elementwiseThreshold() && shape::rank(xShapeInfo) == 2 && xEws == 1 && xOrder == 'c' && xRank == 2 &&
-        tEws > 1 && zEws == 1 && ((tOrder == zOrder) || ((tVector || tOrder == 'c') && (zVector || zOrder == 'c'))))
+        tEws > 1 && zEws == 1 && ((tOrder == zOrder && zOrder == 'c') || ((tVector || tOrder == 'c') && (zVector || zOrder == 'c'))))
         return SMALLARR2DX;
-    if(tEws == 1 && zEws == 1 && ((tOrder == zOrder) || ((tVector || tOrder == 'c') && (zVector || zOrder == 'c'))))
+    if(tEws == 1 && zEws == 1 && ((tOrder == zOrder && zOrder == 'c') || ((tVector || tOrder == 'c') && (zVector || zOrder == 'c'))))
         return EWS1;
-    if(tEws > 0 && zEws > 0   && ((tOrder == zOrder) || ((tVector || tOrder == 'c') && (zVector || zOrder == 'c'))))
+    if(tEws > 0 && zEws > 0   && ((tOrder == zOrder && zOrder == 'c') || ((tVector || tOrder == 'c') && (zVector || zOrder == 'c'))))
         return EWSNONZERO;
     if(tRank == 1 && zEws == 1 && (zVector || zOrder == 'c'))
         return RANK1;
@@ -231,9 +231,9 @@ LoopKind Reduction3Loops<X, Z>::deduceKindOfLoopTadXYZ(const Nd4jLong* xTadShape
     const bool yTadVector = shape::isCommonVector(yTadShapeInfo, position);
     const bool zVector    = shape::isCommonVector(zShapeInfo, position);
 
-    if(xTadEws == 1 && yTadEws == 1 && zEws == 1 && xTadOrder == yTadOrder && xTadOrder == zOrder)
+    if(xTadEws == 1 && yTadEws == 1 && zEws == 1 && xTadOrder == yTadOrder && xTadOrder == zOrder && zOrder == 'c')
         return EWS1;
-    if(xTadEws >  0 && yTadEws  > 0 && zEws  > 0 && ((xTadOrder == yTadOrder && xTadOrder == zOrder) || ((xTadVector || xTadOrder == 'c') && (yTadVector || yTadOrder == 'c') && (zVector || zOrder == 'c'))))
+    if(xTadEws >  0 && yTadEws  > 0 && zEws  > 0 && ((xTadOrder == yTadOrder && xTadOrder == zOrder && zOrder == 'c') || ((xTadVector || xTadOrder == 'c') && (yTadVector || yTadOrder == 'c') && (zVector || zOrder == 'c'))))
         return EWSNONZERO;
     if(tadRank == 1 && zEws > 0 && (zVector || zOrder == 'c'))
         return RANK1;
@@ -386,7 +386,7 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
 //////////////////////////////////////////////////////////////////////////////
     template<typename X, typename Z, typename E>
     template <typename OpType>
-    void nd4j::ReductionLoops<X, Z, E>::loopTadXZ(X* x, Nd4jLong* xShapeInfo,
+    void nd4j::ReductionLoops<X, Z, E>::loopReduce(X* x, Nd4jLong* xShapeInfo,
                                                   Z* z, Nd4jLong* zShapeInfo,
                                                   Nd4jLong* tadShapeInfo, Nd4jLong* tadOffsets,
                                                   E* extraParams) {
@@ -630,7 +630,7 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
     //////////////////////////////////////////////////////////////////////////////
     template <typename X, typename Z, typename E>
     template <typename OpType, bool doParallel>
-    void nd4j::TransformLoops<X,Z,E>::loopXZ(X* x, Nd4jLong* xShapeInfo,
+    void nd4j::TransformLoops<X,Z,E>::loopTransform(X* x, Nd4jLong* xShapeInfo,
                                              Z* z, Nd4jLong* zShapeInfo,
                                              E* extraParams) {
 
