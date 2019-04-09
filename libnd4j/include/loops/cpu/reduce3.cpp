@@ -126,8 +126,11 @@ void Reduce3<X,Z>::exec(void *vx, Nd4jLong *xShapeInfo,
         execScalar<OpType>(vx, xShapeInfo, vextraParams, vy, yShapeInfo, vz, zShapeInfo);
         return;
     }
-    
+#ifdef INLINE_LOOPS
+    nd4j::Reduction3Loops<X,Z>::template loopReduce3<OpType>(x, xShapeInfo, y, yShapeInfo, z, zShapeInfo, dimension, dimensionLength, extraParams);
+#else
     nd4j::Reduction3Loops<X,Z>::template innerloopReduce3<OpType>(x, xShapeInfo, y, yShapeInfo, z, zShapeInfo, dimension, dimensionLength, extraParams);
+#endif
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -144,8 +147,11 @@ void Reduce3<X,Z>::exec(void *vx, Nd4jLong *xShapeInfo,
     auto y = reinterpret_cast<X *>(vy);
     auto z = reinterpret_cast<Z *>(vz);
     auto extraParams = reinterpret_cast<Z *>(vextraParams);
-
+#ifdef INLINE_LOOPS
+    nd4j::Reduction3Loops<X,Z>::template loopReduce3<OpType>(x, xShapeInfo, y, yShapeInfo, z, zShapeInfo, dimension, dimensionLength, extraParams);
+#else
     nd4j::Reduction3Loops<X,Z>::template innerloopReduce3<OpType>(x, xShapeInfo, y, yShapeInfo, z, zShapeInfo, dimension, dimensionLength, extraParams);
+#endif
 }
 
 
@@ -164,8 +170,11 @@ void Reduce3<X,Z>:: execAll(void *vx, Nd4jLong *xShapeInfo,
     auto y = reinterpret_cast<X *>(vy);
     auto z = reinterpret_cast<Z *>(vz);
     auto extraParams = reinterpret_cast<Z*>(vextraParams);
-
+#ifdef INLINE_LOOPS
+    nd4j::Reduction3Loops<X,Z>::template loopReduce3All<OpType>(x, xShapeInfo, y, yShapeInfo, z, zShapeInfo, xTadShapeInfo, xOffsets, yTadShapeInfo, yOffsets, extraParams);
+#else
     nd4j::Reduction3Loops<X,Z>::template innerloopReduce3All<OpType>(x, xShapeInfo, y, yShapeInfo, z, zShapeInfo, xTadShapeInfo, xOffsets, yTadShapeInfo, yOffsets, extraParams);
+#endif
 }
 
 //////////////////////////////////////////////////////////////////////////
