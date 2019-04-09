@@ -524,7 +524,7 @@ public class JcublasLapack extends BaseLapack {
 
         // synchronized on the solver
         synchronized (handle) {
-            int result = cusolverDnSetStream(new cusolverDnContext(handle), new CUstream_st(ctx.getOldStream()));
+            int result = cusolverDnSetStream(solverDn, new CUstream_st(ctx.getOldStream()));
             if (result != 0)
                 throw new BlasException("solverSetStream failed");
 
