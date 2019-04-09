@@ -3509,6 +3509,9 @@ public class SameDiff extends SDBaseOps {
                             leafFPVars.add(s);
                         }
                     }
+                    if(v.getVariable().getVariableType() == VariableType.CONSTANT || v.getVariable().getVariableType() == VariableType.PLACEHOLDER){
+                        leafFPVars.add(s);
+                    }
                 }
 
                 while(!leafFPVars.isEmpty()){
@@ -3658,7 +3661,7 @@ public class SameDiff extends SDBaseOps {
                         // need to differentiate OpY too
                         //Note that just because we *need to* doesn't mean we *can* yet
 
-                        boolean isRequiredOp = true;
+                        boolean isRequiredOp = false;
                         SameDiffOp op = ops.get(opName);
                         if(op.getInputsToOp() != null){
                             List<String> opInputs = op.getInputsToOp();

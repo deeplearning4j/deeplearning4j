@@ -3019,4 +3019,19 @@ public class SameDiffTests {
 
         assertNull(err);
     }
+
+    @Test
+    public void testSameDiffNoGradForConstantAndPlaceholder(){
+        SameDiff sd = SameDiff.create();
+        final SDVariable a = sd.var("a", Nd4j.rand(4, 4));
+        final SDVariable b = sd.constant("b", Nd4j.rand(4, 4));
+        final SDVariable c = sd.placeHolder("c", Nd4j.dataType(), 4, 4);
+
+        a.add(b.add(c)).sum().markAsLoss();
+
+        sd.execBackwards(Collections.singletonMap("c", Nd4j.rand(4,4 )));
+        assertNotNull(sd.grad("a"));
+        assertNull(sd.grad("b"));
+        assertNull(sd.grad("c"));
+    }
 }
