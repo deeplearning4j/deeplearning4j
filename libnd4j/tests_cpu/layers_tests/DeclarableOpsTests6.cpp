@@ -125,6 +125,51 @@ TEST_F(DeclarableOpsTests6, Test_StridedSlice_Once_Again_4) {
     delete result;
 }
 
+TEST_F(DeclarableOpsTests6, Test_StridedSlice_Once_Again_04) {
+    auto matrix = NDArrayFactory::create<double>('c', {1}, {10});
+    auto b = NDArrayFactory::create_<int>('c', {1}, {1});
+    auto e = NDArrayFactory::create_<int>('c', {1}, {(int)0});
+    auto s = NDArrayFactory::create_<int>('c', {1}, {1});
+    nd4j::ops::ones_as opOnes;
+    //auto exp = NDArrayFactory::create<double>('c', {2}, {1.0f, 2.0f});
+    auto onesRes = opOnes.execute({&matrix}, {}, {});
+    //matrix.linspace(1);
+    ASSERT_EQ(onesRes->status(), Status::OK());
+
+    auto ones = onesRes->at(0);
+    ones->printShapeInfo("Shape ones");
+    *ones *= 10;
+
+    auto variableSpace = new VariableSpace();
+    variableSpace->putVariable(-1, ones);
+    variableSpace->putVariable(-2, b);
+    variableSpace->putVariable(-3, e);
+    variableSpace->putVariable(-4, s);
+    auto block = new Context(1, variableSpace, false);  // not-in-place
+    block->fillInputs({-1});
+    block->fillInputs({-2});
+    block->fillInputs({-3});
+    block->fillInputs({-4});
+    block->getIArguments()->push_back(0);
+    block->getIArguments()->push_back(0);
+    block->getIArguments()->push_back(1);
+    block->getIArguments()->push_back(0);
+    block->getIArguments()->push_back(0);
+    auto inputShapes = new ShapeList({ones->getShapeInfo(), b->getShapeInfo(), e->getShapeInfo(), s->getShapeInfo()});
+    nd4j::ops::strided_slice op;
+    auto result = op.calculateOutputShape(inputShapes, *block); //execute({ones, &b, &e, &s}, {}, {0, 1, 0, 0, 0});
+    ASSERT_EQ(result->size(), 1);
+    shape::printShapeInfoLinear(result->at(0));
+    //auto z = result->at(0);
+//    z->printShapeInfo("SS OS shape");
+    ASSERT_TRUE(shape::isEmpty(result->at(0)));
+    //ASSERT_EQ(exp, *z);
+    delete block;
+
+    delete onesRes;
+    delete result;
+}
+
 TEST_F(DeclarableOpsTests6, Test_StridedSlice_Once_Again_5) {
     auto matrix = NDArrayFactory::create<double>('c', {3, 2, 2});
     auto b = NDArrayFactory::create<int>(2);
