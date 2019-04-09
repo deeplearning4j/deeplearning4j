@@ -149,7 +149,7 @@ public abstract class BaseMultiLayerUpdater<T extends Model> implements Updater 
             updaterRequiresInit = false;
         } else if (updaterStateSize > 0) {
             //May be 0 if all SGD or NONE updaters, for example
-            updaterStateViewArray = Nd4j.createUninitialized(new int[] {1, updaterStateSize}, Nd4j.order());
+            updaterStateViewArray = Nd4j.createUninitialized(network.params().dataType(), new long[] {1, updaterStateSize}, Nd4j.order());
             updaterRequiresInit = true;
         }
 
