@@ -18,6 +18,7 @@ package org.deeplearning4j.nn.layers.dropout;
 
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
+import com.jakewharton.byteunits.BinaryByteUnit;
 import org.bytedeco.javacpp.*;
 import org.deeplearning4j.nn.conf.dropout.DropoutHelper;
 import org.deeplearning4j.nn.layers.BaseCudnnHelper;
@@ -28,7 +29,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.context.CudaContext;
 import org.nd4j.linalg.util.ArrayUtil;
-import org.nd4j.util.StringUtils;
 
 import org.bytedeco.cuda.cudart.*;
 import org.bytedeco.cuda.cudnn.*;
@@ -137,11 +137,11 @@ public class CudnnDropoutHelper extends BaseCudnnHelper implements DropoutHelper
             if(log.isTraceEnabled()){
                 if(rngStates == null){
                     log.trace("CudnnDropoutHelper: Allocating intial RNG states workspace of size {} ({})", rngStateSizeBytes,
-                            StringUtils.TraditionalBinaryPrefix.long2String(rngStateSizeBytes, "B", 2));
+                            BinaryByteUnit.format(rngStateSizeBytes, "#.00"));
                 } else {
                     log.trace("CudnnDropoutHelper: Deallocating RNG states of size {} ({}), allocating new workspace of size {} ({})",
-                            rngStates.capacity(), StringUtils.TraditionalBinaryPrefix.long2String(rngStates.capacity(), "B", 2),
-                            rngStateSizeBytes, StringUtils.TraditionalBinaryPrefix.long2String(rngStateSizeBytes, "B", 2));
+                            rngStates.capacity(), BinaryByteUnit.format(rngStates.capacity(), "#.00"),
+                            rngStateSizeBytes, BinaryByteUnit.format(rngStateSizeBytes, "#.00"));
                 }
             }
 
@@ -155,11 +155,11 @@ public class CudnnDropoutHelper extends BaseCudnnHelper implements DropoutHelper
             if(log.isTraceEnabled()){
                 if(mask == null){
                     log.trace("CudnnDropoutHelper: Allocating intial mask array of size {} ({})", maskReserveSizeBytes,
-                            StringUtils.TraditionalBinaryPrefix.long2String(maskReserveSizeBytes, "B", 2));
+                            BinaryByteUnit.format(maskReserveSizeBytes, "#.00"));
                 } else {
                     log.trace("CudnnDropoutHelper: Deallocating mask array of size {} ({}), allocating new mask array of size {} ({})",
-                            mask.capacity(), StringUtils.TraditionalBinaryPrefix.long2String(mask.capacity(), "B", 2),
-                            maskReserveSizeBytes, StringUtils.TraditionalBinaryPrefix.long2String(maskReserveSizeBytes, "B", 2));
+                            mask.capacity(), BinaryByteUnit.format(mask.capacity(), "#.00"),
+                            maskReserveSizeBytes, BinaryByteUnit.format(maskReserveSizeBytes, "#.00"));
                 }
             }
 

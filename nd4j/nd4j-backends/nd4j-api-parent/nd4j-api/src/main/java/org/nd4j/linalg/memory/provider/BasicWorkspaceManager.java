@@ -16,6 +16,7 @@
 
 package org.nd4j.linalg.memory.provider;
 
+import com.jakewharton.byteunits.BinaryByteUnit;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
@@ -27,7 +28,6 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.memory.abstracts.DummyWorkspace;
 import org.nd4j.linalg.memory.abstracts.Nd4jWorkspace;
 import org.nd4j.linalg.primitives.SynchronizedObject;
-import org.nd4j.util.StringUtils;
 
 import java.lang.ref.ReferenceQueue;
 import java.util.ArrayList;
@@ -358,9 +358,9 @@ public abstract class BasicWorkspaceManager implements MemoryWorkspaceManager {
             long spilled = ((Nd4jWorkspace) map.get(key)).getSpilledSize();
             long pinned = ((Nd4jWorkspace) map.get(key)).getPinnedSize();
             log.info(String.format("%-26s %8s / %8s / %8s (%11d / %11d / %11d)", (key + ":"),
-                    StringUtils.TraditionalBinaryPrefix.long2String(current, "", 2),
-                    StringUtils.TraditionalBinaryPrefix.long2String(spilled, "", 2),
-                    StringUtils.TraditionalBinaryPrefix.long2String(pinned, "", 2),
+                    BinaryByteUnit.format(current, "#.00"),
+                    BinaryByteUnit.format(spilled, "#.00"),
+                    BinaryByteUnit.format(pinned, "#.00"),
                     current, spilled, pinned));
         }
     }

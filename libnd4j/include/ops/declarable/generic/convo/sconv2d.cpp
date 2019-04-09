@@ -300,7 +300,7 @@ CUSTOM_OP_IMPL(sconv2d_bp, 3, 2, false, 0, 9) {
 DECLARE_SHAPE_FN(sconv2d_bp) {
 
     auto inputShapeInfo    = inputShape->at(0);                 // [bS, iH, iW, iC]  (NHWC) or [bS, iC, iH, iW]  (NCHW)
-    auto gradOShapeInfo    = inputShape->at(1);                 // [bS, oH, oW, oC]  (NHWC) or [bS, oC, oH, oW] (NCHW), epsilon_next
+    auto gradOShapeInfo    = inputShape->at(1);                 // [bS, oH, oW, oC]  (NHWC) or [bS, oC, oH, oW] (NCHW), epsilon_next    
     auto weightsDShapeInfo = inputShape->at(2);                 // [kH, kW, iC, mC]  always
     Nd4jLong* weightsPShapeInfo = nullptr;                      // [1, 1, iC*mC, oC] always
     Nd4jLong* biasShapeInfo     = nullptr;                      // [oC], oC = iC*mC if weightsPoint=nullptr
@@ -313,7 +313,7 @@ DECLARE_SHAPE_FN(sconv2d_bp) {
     }
     else if(block.width() == 5) {
         weightsPShapeInfo = inputShape->at(3);
-        biasShapeInfo         = inputShape->at(4);
+        biasShapeInfo     = inputShape->at(4);
     }
 
     const int rank = 4;
