@@ -43,6 +43,8 @@ import org.nd4j.linalg.learning.regularization.WeightDecay;
 import java.io.DataInputStream;
 import java.io.File;
 import java.io.FileInputStream;
+import java.util.Arrays;
+import java.util.List;
 
 import static org.junit.Assert.*;
 
@@ -56,65 +58,54 @@ public class RegressionTest100b3 extends BaseDL4JTest {
     @Test
     public void testCustomLayer() throws Exception {
 
-        File f = new ClassPathResource("regression_testing/100b3/CustomLayerExample_100b3.bin").getTempFileFromArchive();
-        MultiLayerNetwork.load(f, true);
+        for( int i=1; i<2; i++ ) {
+            String dtype = (i == 0 ? "float" : "double");
+            DataType dt = (i == 0 ? DataType.FLOAT : DataType.DOUBLE);
 
-        MultiLayerNetwork net = MultiLayerNetwork.load(f, true);
+            File f = new ClassPathResource("regression_testing/100b3/CustomLayerExample_100b3_" + dtype + ".bin").getTempFileFromArchive();
+            MultiLayerNetwork.load(f, true);
 
-        DenseLayer l0 = (DenseLayer) net.getLayer(0).conf().getLayer();
-        assertEquals(new ActivationTanH(), l0.getActivationFn());
-        assertEquals(new WeightDecay(0.03, false), TestUtils.getWeightDecayReg(l0));
-        assertEquals(new RmsProp(0.95), l0.getIUpdater());
+            MultiLayerNetwork net = MultiLayerNetwork.load(f, true);
+//            net = net.clone();
 
-        CustomLayer l1 = (CustomLayer) net.getLayer(1).conf().getLayer();
-        assertEquals(new ActivationTanH(), l1.getActivationFn());
-        assertEquals(new ActivationSigmoid(), l1.getSecondActivationFunction());
-        assertEquals(new RmsProp(0.95), l1.getIUpdater());
+            DenseLayer l0 = (DenseLayer) net.getLayer(0).conf().getLayer();
+            assertEquals(new ActivationTanH(), l0.getActivationFn());
+            assertEquals(new WeightDecay(0.03, false), TestUtils.getWeightDecayReg(l0));
+            assertEquals(new RmsProp(0.95), l0.getIUpdater());
+
+            CustomLayer l1 = (CustomLayer) net.getLayer(1).conf().getLayer();
+            assertEquals(new ActivationTanH(), l1.getActivationFn());
+            assertEquals(new ActivationSigmoid(), l1.getSecondActivationFunction());
+            assertEquals(new RmsProp(0.95), l1.getIUpdater());
 
 
-        INDArray outExp;
-        File f2 = new ClassPathResource("regression_testing/100b3/CustomLayerExample_Output_100b3.bin").getTempFileFromArchive();
-        try(DataInputStream dis = new DataInputStream(new FileInputStream(f2))){
-            outExp = Nd4j.read(dis);
+            INDArray outExp;
+            File f2 = new ClassPathResource("regression_testing/100b3/CustomLayerExample_Output_100b3_" + dtype + ".bin").getTempFileFromArchive();
+            try (DataInputStream dis = new DataInputStream(new FileInputStream(f2))) {
+                outExp = Nd4j.read(dis);
+            }
+
+            INDArray in;
+            File f3 = new ClassPathResource("regression_testing/100b3/CustomLayerExample_Input_100b3_" + dtype + ".bin").getTempFileFromArchive();
+            try (DataInputStream dis = new DataInputStream(new FileInputStream(f3))) {
+                in = Nd4j.read(dis);
+            }
+
+            assertEquals(dt, in.dataType());
+            assertEquals(dt, outExp.dataType());
+            assertEquals(dt, net.params().dataType());
+            assertEquals(dt, net.getFlattenedGradients().dataType());
+            assertEquals(dt, net.getUpdater().getStateViewArray().dataType());
+
+            System.out.println(Arrays.toString(net.params().data().asFloat()));
+
+            INDArray outAct = net.output(in);
+            assertEquals(dt, outAct.dataType());
+
+            List<INDArray> activations = net.feedForward(in);
+
+            assertEquals(dtype, outExp, outAct);
         }
-
-        INDArray in;
-        File f3 = new ClassPathResource("regression_testing/100b3/CustomLayerExample_Input_100b3.bin").getTempFileFromArchive();
-        try(DataInputStream dis = new DataInputStream(new FileInputStream(f3))){
-            in = Nd4j.read(dis);
-        }
-
-        INDArray outAct = net.output(in);
-
-        assertEquals(outExp, outAct);
-
-
-        //Check graph
-        f = new ClassPathResource("regression_testing/100b3/CustomLayerExample_Graph_100b3.bin").getTempFileFromArchive();
-
-        //Deregister custom class:
-        new LegacyLayerDeserializer().getLegacyNamesMap().remove("CustomLayer");
-
-        try {
-            ComputationGraph.load(f, true);
-            fail("Expected exception");
-        } catch (Exception e){
-            String msg = e.getMessage();
-            assertTrue(msg, msg.contains("NeuralNetConfiguration.registerLegacyCustomClassesForJSON"));
-        }
-
-        NeuralNetConfiguration.registerLegacyCustomClassesForJSON(CustomLayer.class);
-
-        ComputationGraph graph = ComputationGraph.load(f, true);
-
-        f2 = new ClassPathResource("regression_testing/100b3/CustomLayerExample_Graph_Output_100b3.bin").getTempFileFromArchive();
-        try(DataInputStream dis = new DataInputStream(new FileInputStream(f2))){
-            outExp = Nd4j.read(dis);
-        }
-
-        outAct = graph.outputSingle(in);
-
-        assertEquals(outExp, outAct);
     }
 
 
