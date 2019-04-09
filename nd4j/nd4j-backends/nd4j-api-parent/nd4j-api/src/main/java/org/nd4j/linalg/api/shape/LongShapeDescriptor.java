@@ -148,7 +148,7 @@ public class LongShapeDescriptor {
         long extras = 0L;
         extras = ArrayOptionsHelper.setOptionBit(extras, dataType);
         if (empty)
-            ArrayOptionsHelper.setOptionBit(extras, ArrayType.EMPTY);
+            extras = ArrayOptionsHelper.setOptionBit(extras, ArrayType.EMPTY);
 
         return new LongShapeDescriptor(shape, strides, 0, ews, order, extras);
     }
