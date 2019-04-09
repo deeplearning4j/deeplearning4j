@@ -154,7 +154,8 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
 
         if (helper != null && (helperCountFail == 0 || !layerConf().isCudnnAllowFallback())) {
 
-            if(!hasBias()){
+            if(!hasBias() && !(helper instanceof MKLDNNConvHelper)){
+                //MKL-DNN supports no bias, CuDNN doesn't
                 if(dummyBiasGrad == null){
                     try (MemoryWorkspace wsO = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
                         dummyBiasGrad = Nd4j.create(1, layerConf().getNOut());
@@ -177,7 +178,7 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
 
                 if(layerConf().isCudnnAllowFallback()){
                     helperCountFail++;
-                    if(helper.getClass().getName().toLowerCase().contains("mkl")){
+                    if(helper instanceof MKLDNNConvHelper){
                         log.warn("MKL-DNN execution failed - falling back on built-in implementation",e);
                     } else {
                         log.warn("CuDNN execution failed - falling back on built-in implementation",e);
@@ -364,7 +365,7 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
 
                 if(layerConf().isCudnnAllowFallback()){
                     helperCountFail++;
-                    if(helper.getClass().getName().toLowerCase().contains("mkl")){
+                    if(helper instanceof MKLDNNConvHelper){
                         log.warn("MKL-DNN execution failed - falling back on built-in implementation",e);
                     } else {
                         log.warn("CuDNN execution failed - falling back on built-in implementation",e);
