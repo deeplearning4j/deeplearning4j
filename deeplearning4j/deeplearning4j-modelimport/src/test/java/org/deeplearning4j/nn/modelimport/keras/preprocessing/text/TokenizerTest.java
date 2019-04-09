@@ -92,7 +92,6 @@ public class TokenizerTest {
         for (Map.Entry<String, Integer> entry: expectedIndex.entrySet()){
             assertEquals(entry.getValue(), index.get(entry.getKey()));
         }
-
-
+        
     }
 }

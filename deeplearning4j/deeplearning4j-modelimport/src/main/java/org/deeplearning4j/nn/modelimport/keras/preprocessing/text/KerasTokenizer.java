@@ -48,7 +48,7 @@ public class KerasTokenizer {
     private boolean charLevel;
     private String outOfVocabularyToken;
 
-    private Map<String, Integer> wordCounts = new HashMap<>();
+    private Map<String, Integer> wordCounts = new LinkedHashMap<>();
     private HashMap<String, Integer> wordDocs = new HashMap<>();
     private Map<String, Integer> wordIndex = new HashMap<>();
     private Map<Integer, String> indexWord = new HashMap<>();
@@ -230,8 +230,8 @@ public class KerasTokenizer {
         List list = new LinkedList(map.entrySet());
         Collections.sort(list, new Comparator() {
             public int compare(Object o1, Object o2) {
-                return ((Comparable) ((Map.Entry) (o2)).getValue())
-                        .compareTo(((Map.Entry) (o1)).getValue());
+                return ((Comparable) ((Map.Entry) (o1)).getValue())
+                        .compareTo(((Map.Entry) (o2)).getValue());
             }
         });
         HashMap sortedHashMap = new LinkedHashMap();
