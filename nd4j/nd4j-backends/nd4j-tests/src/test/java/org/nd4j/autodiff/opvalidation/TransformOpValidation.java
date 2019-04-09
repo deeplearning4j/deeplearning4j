@@ -552,7 +552,7 @@ public class TransformOpValidation extends BaseOpValidation {
 
             int nOut = 4;
             int minibatch = 5;
-            SDVariable in = sd.var("in", -1, nOut);
+            SDVariable in = sd.var("in", minibatch, nOut);
 
             INDArray ia = Nd4j.randn(DataType.DOUBLE, minibatch, nOut);
 
@@ -1055,8 +1055,8 @@ public class TransformOpValidation extends BaseOpValidation {
 
             int nOut = 4;
             int minibatch = 5;
-            SDVariable in1 = sd.var("in1", DataType.DOUBLE, -1, nOut);
-            SDVariable in2 = sd.var("in2", DataType.DOUBLE, -1, nOut);
+            SDVariable in1 = sd.var("in1", DataType.DOUBLE, minibatch, nOut);
+            SDVariable in2 = sd.var("in2", DataType.DOUBLE, minibatch, nOut);
 
             INDArray ia = Nd4j.randn(DataType.DOUBLE, minibatch, nOut);
             INDArray ib = Nd4j.randn(DataType.DOUBLE, minibatch, nOut);
