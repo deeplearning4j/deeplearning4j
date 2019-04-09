@@ -4785,7 +4785,7 @@ INLINEDEF _CUDA_HD void setOrderAndEws(Nd4jLong* shapeInfo, Nd4jLong len) {
 
     // check if strides are contiguous in respect to c-order 
     // firstly check last stride, it should be equal to 1
-    if (strides[rank - 1] == 1) {     // last dimension is ok, go on through the rest dimensions in reverse order
+    if (strides[rank - 1] == 1 || shape[rank - 1] == 1) {     // last dimension is ok, go on through the rest dimensions in reverse order
         Nd4jLong correctStride = 1;
         bool cContiguous = true;
         for (int i = rank - 2; i >= 0 ; i--) {
@@ -4806,7 +4806,7 @@ INLINEDEF _CUDA_HD void setOrderAndEws(Nd4jLong* shapeInfo, Nd4jLong len) {
 
     // now check if strides are contiguous in respect to f-order 
     // firstly check first stride, it should be equal to 1
-    if(strides[0] == 1) {           // first dimension is ok, go on through the rest dimensions
+    if(strides[0] == 1 || shape[0] == 1) {           // first dimension is ok, go on through the rest dimensions
         Nd4jLong correctStride = 1;
         bool fContiguous = true;
         for (int i = 1; i < rank; ++i) {            

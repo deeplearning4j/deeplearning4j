@@ -194,7 +194,7 @@ public:
     Nd4jLong shapeBufferC[16] = {4,1,1,4,4,16,16,4,1,16384,1,99};
     int dimensionLength = 2;
     int dimension[2] = {2,3};
-    Nd4jLong tadAssertionC[10] = {3,4,4,1,4,1,16,16384,0,99};
+    Nd4jLong tadAssertionC[10] = {3,4,4,1,4,1,16,16384,1,99};
     Nd4jLong tadCAssertionF[10] = {3,4,4,1,1,4,1,16384,1,102};
 };
 
