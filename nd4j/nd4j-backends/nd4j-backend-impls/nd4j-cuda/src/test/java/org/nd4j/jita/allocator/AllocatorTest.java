@@ -11,20 +11,26 @@ public class AllocatorTest {
 
 
     @Test
-    public void test1() {
+    public void testCounters() {
         int deviceId = 0;
         MemoryTracker tracker = MemoryTracker.getInstance();
-	assertTrue(false);
-        assertTrue(0 == tracker.getAllocated(deviceId).get());
-        assertTrue(0 == tracker.getCached(deviceId).get());
-        assertTrue(0 == tracker.getTotal(deviceId).get());
 
-        tracker.incrementAllocated(deviceId);
-        assertTrue(1 == tracker.getAllocated(deviceId).get());
+        assertTrue(0 == tracker.getAllocated(deviceId));
+        assertTrue(0 == tracker.getCached(deviceId));
+        assertTrue(0 == tracker.getTotal(deviceId));
 
-        tracker.incrementCached(deviceId);
-        assertTrue(1 == tracker.getCached(deviceId).get());
+        tracker.incrementAllocated(deviceId, 10);
+        assertTrue(10 == tracker.getAllocated(deviceId));
 
-        assertTrue(2 == tracker.getTotal(deviceId).get());
+        tracker.incrementCached(deviceId, 5);
+        assertTrue(5 == tracker.getCached(deviceId));
+
+        tracker.decrementAllocated(deviceId, 5);
+        assertTrue(5 == tracker.getAllocated(deviceId));
+
+        tracker.decrementCached(deviceId, 5);
+        assertTrue(0 == tracker.getCached(deviceId));
+
+        assertTrue(0 == tracker.getTotal(deviceId));
     }
 }

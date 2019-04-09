@@ -23,25 +23,35 @@ public class MemoryTracker {
         return INSTANCE;
     }
 
-    public AtomicLong getAllocated(int deviceId) {
-        return allocatedPerDevice.get(deviceId);
+    public long getAllocated(int deviceId) {
+        return allocatedPerDevice.get(deviceId).get();
     }
 
-    public AtomicLong getCached(int deviceId) {
-        return cachedPerDevice.get(deviceId);
+    public long getCached(int deviceId) {
+        return cachedPerDevice.get(deviceId).get();
     }
 
-    public AtomicLong getTotal(int deviceId) {
-        return totalPerDevice.get(deviceId);
+    public long getTotal(int deviceId) {
+        return totalPerDevice.get(deviceId).get();
     }
 
-    public synchronized void incrementAllocated(int deviceId) {
-        allocatedPerDevice.get(deviceId).getAndIncrement();
-        totalPerDevice.get(deviceId).getAndIncrement();
+    public void incrementAllocated(int deviceId, long memoryAdded) {
+        allocatedPerDevice.get(deviceId).getAndAdd(memoryAdded);
     }
 
-    public synchronized void incrementCached(int deviceId) {
-        cachedPerDevice.get(deviceId).getAndIncrement();
-        totalPerDevice.get(deviceId).getAndIncrement();
+    public void incrementCached(int deviceId, long memoryAdded) {
+        cachedPerDevice.get(deviceId).getAndAdded(memoryAdded);
+    }
+
+    public void decrementAllocated(int deviceId, long memoryAdded) {
+        allocatedPerDevice.get(deviceId).getAndAdd(-memoryAdded);
+    }
+
+    public void decrementCached(int deviceId, long memorySubtracted) {
+        cachedPerDevice.get(deviceId).getAndAdd(-memoryAdded);
+    }
+
+    public void setTotalPerDevice(int device, long memoryAvailable) {
+        totalPerDevice.add(device, new AtomicLong(memoryAvailable));
     }
 }
