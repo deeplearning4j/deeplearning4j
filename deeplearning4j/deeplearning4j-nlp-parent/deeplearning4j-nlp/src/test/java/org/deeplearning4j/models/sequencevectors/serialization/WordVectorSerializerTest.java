@@ -15,7 +15,9 @@ import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.models.word2vec.Word2Vec;
 import org.deeplearning4j.models.word2vec.wordstore.inmemory.AbstractCache;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -29,6 +31,9 @@ import static org.junit.Assert.*;
 
 public class WordVectorSerializerTest {
     private AbstractCache<VocabWord> cache;
+
+    @Rule
+    public TemporaryFolder testDir = new TemporaryFolder();
 
     @Before
     public void setUp() throws Exception {
@@ -220,7 +225,7 @@ public class WordVectorSerializerTest {
     }
 
     @Test
-    public void weightLookupTable_Correct_WhenDeserialized() {
+    public void weightLookupTable_Correct_WhenDeserialized() throws Exception {
 
         INDArray syn0 = Nd4j.rand(DataType.FLOAT, 10, 2),
                 syn1 = Nd4j.rand(DataType.FLOAT, 10, 2),
@@ -235,7 +240,8 @@ public class WordVectorSerializerTest {
         lookupTable.setSyn1(syn1);
         lookupTable.setSyn1Neg(syn1Neg);
 
-        File file = new File("lookupTable.txt");
+        File dir = testDir.newFolder();
+        File file = new File(dir, "lookupTable.txt");
 
         WeightLookupTable<VocabWord> deser = null;
         try {
