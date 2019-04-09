@@ -1372,6 +1372,16 @@ public class RandomTests extends BaseNd4jTest {
         }
     }
 
+    @Test
+    public void testBernoulli(){
+        Nd4j.getRandom().setSeed(12345);
+        INDArray arr = Nd4j.create(DataType.DOUBLE, 100);
+        Nd4j.exec(new BernoulliDistribution(arr, 0.5));
+        System.out.println(arr);
+        double sum = arr.sumNumber().doubleValue();
+        assertTrue(String.valueOf(sum), sum > 0.0 && sum < 100.0);
+    }
+
     private List<INDArray> getList(int numBatches){
         Nd4j.getRandom().setSeed(12345);
         List<INDArray> out = new ArrayList<>();

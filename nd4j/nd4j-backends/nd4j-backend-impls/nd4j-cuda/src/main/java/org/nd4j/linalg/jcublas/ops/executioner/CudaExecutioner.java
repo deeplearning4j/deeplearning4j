@@ -649,7 +649,12 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         } else if (op instanceof IndexAccumulation) {
             IndexAccumulation indexAccumulation = (IndexAccumulation) op;
             invoke(indexAccumulation, indexAccumulation.dimensions().toIntVector());
+        } else if (op instanceof RandomOp) {
+            exec((RandomOp) op);
+        } else if (op instanceof CustomOp) {
+            exec((CustomOp) op);
         }
+
 
         return op.z();
     }
