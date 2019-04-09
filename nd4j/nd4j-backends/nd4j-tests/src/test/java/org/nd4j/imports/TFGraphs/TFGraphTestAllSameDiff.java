@@ -69,7 +69,7 @@ public class TFGraphTestAllSameDiff {
             "broadcast_dynamic_shape/1_4",
             "broadcast_dynamic_shape/2,2_1",
 
-            //Failing 2019/04/09 - JVM Crash
+            //Failing 2019/04/09 - JVM Crash - https://github.com/deeplearning4j/deeplearning4j/issues/7495
             "boolean_mask/.*",
 
             //Failing 2019/04/08 - Issue 10, https://github.com/deeplearning4j/deeplearning4j/issues/6958

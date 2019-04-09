@@ -16,6 +16,7 @@
 
 package org.deeplearning4j.util;
 
+import com.jakewharton.byteunits.BinaryByteUnit;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
@@ -45,7 +46,6 @@ import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.nativeblas.NativeOps;
 import org.nd4j.nativeblas.NativeOpsHolder;
-import org.nd4j.util.StringUtils;
 import org.nd4j.versioncheck.VersionCheck;
 import org.nd4j.versioncheck.VersionInfo;
 import oshi.SystemInfo;
@@ -353,7 +353,7 @@ public class CrashReportingUtil {
     }
 
     private static String fBytes(long bytes){
-        String s = StringUtils.TraditionalBinaryPrefix.long2String(bytes, "B", 2);
+        String s = BinaryByteUnit.format(bytes, "#.00");
         String format = "%10s";
         s = String.format(format, s);
         if(bytes >= 1024){

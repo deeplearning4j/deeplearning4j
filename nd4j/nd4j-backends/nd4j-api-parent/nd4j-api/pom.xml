@@ -130,6 +130,12 @@
 
     <dependencies>
         <dependency>
+          <groupId>com.jakewharton.byteunits</groupId>
+          <artifactId>byteunits</artifactId>
+          <version>0.9.1</version>
+        </dependency>
+
+        <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-math3</artifactId>
             <version>${commons-math3.version}</version>

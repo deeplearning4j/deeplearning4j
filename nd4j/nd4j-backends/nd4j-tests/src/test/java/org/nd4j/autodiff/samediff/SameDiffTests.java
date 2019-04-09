@@ -145,16 +145,16 @@ public class SameDiffTests {
 
         int nOut = 4;
         int minibatch = 3;
-        SDVariable input = sd.var("in", new long[]{-1, nOut});
-        SDVariable label = sd.var("label", new long[]{-1, nOut});
+        SDVariable input = sd.var("in", DataType.FLOAT, new long[]{minibatch, nOut});
+        SDVariable label = sd.var("label", DataType.FLOAT, new long[]{minibatch, nOut});
 
         SDVariable diff = input.sub(label);
         SDVariable sqDiff = diff.mul(diff);
         SDVariable msePerEx = sd.mean("msePerEx", sqDiff, 1);
         SDVariable avgMSE = sd.mean("loss", msePerEx, 0);
 
-        INDArray inputArr = Nd4j.rand(minibatch, nOut);
-        INDArray labelArr = Nd4j.rand(minibatch, nOut);
+        INDArray inputArr = Nd4j.rand(DataType.FLOAT, minibatch, nOut);
+        INDArray labelArr = Nd4j.rand(DataType.FLOAT, minibatch, nOut);
 
         sd.associateArrayWithVariable(inputArr, input);
         sd.associateArrayWithVariable(labelArr, label);
@@ -2700,8 +2700,8 @@ public class SameDiffTests {
 
         SameDiff sd = SameDiff.create();
 
-        SDVariable xSd = sd.placeHolder("x", DataType.FLOAT, x.shape());
-        SDVariable ySd = sd.placeHolder("y", DataType.FLOAT, y.shape());
+        SDVariable xSd = sd.var("x", DataType.FLOAT, x.shape());
+        SDVariable ySd = sd.var("y", DataType.FLOAT, y.shape());
 
         SDVariable add = ySd.add("add", xSd);
 
@@ -3000,17 +3000,16 @@ public class SameDiffTests {
     @Test
     public void testNonScalarOutput4() {
         SameDiff sd = SameDiff.create();
-        SDVariable a = sd.placeHolder("a", DataType.DOUBLE, 3, 4);
+        SDVariable a = sd.var("a", DataType.DOUBLE, 3, 4);
         SDVariable b = sd.placeHolder("b", DataType.DOUBLE, 4, 5);
+        a.setArray(Nd4j.rand(DataType.DOUBLE, 3, 4));
 
         SDVariable out = a.mmul("mmul", b);
 
         Map<String, INDArray> m = new HashMap<>();
-        m.put("a", Nd4j.rand(DataType.DOUBLE, 3, 4));
         m.put("b", Nd4j.rand(DataType.DOUBLE, 4, 5));
         sd.execBackwards(m, "a", "b");
 
-        a.setArray(m.get("a"));
         b.setArray(m.get("b"));
 
         String err = OpValidation.validate(new TestCase(sd)
