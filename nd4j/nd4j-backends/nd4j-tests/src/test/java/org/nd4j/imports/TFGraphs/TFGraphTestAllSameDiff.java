@@ -69,7 +69,7 @@ public class TFGraphTestAllSameDiff {
             "broadcast_dynamic_shape/1_4",
             "broadcast_dynamic_shape/2,2_1",
 
-            //Failing 2019/04/08 - Issue 3 https://github.com/deeplearning4j/deeplearning4j/issues/6958
+            //Failing 2019/04/09 - JVM Crash
             "boolean_mask/.*",
 
             //Failing 2019/04/08 - Issue 10, https://github.com/deeplearning4j/deeplearning4j/issues/6958
@@ -80,9 +80,6 @@ public class TFGraphTestAllSameDiff {
 
             //Failures as of 2019/04/08: due to bad gather op - Issue 12 https://github.com/deeplearning4j/deeplearning4j/issues/6958
             "embedding_lookup/.*multiple.*",
-
-            //2019/04/08 - Issue 14 - https://github.com/deeplearning4j/deeplearning4j/issues/6958
-            "g_07",
 
             //Failing 2019/04/08 - Issue 15 https://github.com/deeplearning4j/deeplearning4j/issues/6958
             "where/cond_only.*",

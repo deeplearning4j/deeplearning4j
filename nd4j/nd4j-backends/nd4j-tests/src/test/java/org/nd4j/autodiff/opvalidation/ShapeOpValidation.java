@@ -34,6 +34,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.impl.shape.*;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
+import org.nd4j.linalg.api.shape.options.ArrayOptionsHelper;
 import org.nd4j.linalg.checkutil.CheckUtil;
 import org.nd4j.linalg.checkutil.NDArrayCreationUtil;
 import org.nd4j.linalg.factory.Nd4j;
@@ -48,6 +49,7 @@ import org.nd4j.linalg.util.ArrayUtil;
 import java.util.*;
 
 import static org.junit.Assert.*;
+import static org.junit.Assert.assertArrayEquals;
 import static org.nd4j.linalg.indexing.NDArrayIndex.*;
 
 @Slf4j
@@ -2170,5 +2172,52 @@ public class ShapeOpValidation extends BaseOpValidation {
                 .build();
         Nd4j.getExecutioner().exec(op);
         assertEquals(Nd4j.createFromArray(new int[]{2,4,3}), out);
+    }
+
+    @Test
+    public void testStridedSliceShrinkAxis(){
+        INDArray in = Nd4j.create(DataType.DOUBLE, 3,2,2);
+        INDArray begin = Nd4j.createFromArray(2);
+        INDArray end = Nd4j.createFromArray(3);         //Should be ignored due to shrink_axis_mask
+        INDArray stride = Nd4j.createFromArray(1);      //Should be ignored due to shrink_axis_mask
+
+        DynamicCustomOp op = DynamicCustomOp.builder("strided_slice")
+                .addInputs(in, begin, end, stride)
+                .addIntegerArguments(
+                        0,  //begin mask
+                        0,  //ellipsis mask
+                        0,  //end mask
+                        0,  //new axis mask
+                        1   //shrink axis mask
+                )
+                .build();
+
+        List<LongShapeDescriptor> lsd = op.calculateOutputShape();
+        assertEquals(1, lsd.size());
+        long[] shape = lsd.get(0).getShape();
+        long[] exp = new long[]{2,2};
+        assertArrayEquals(exp, shape);
+    }
+
+    @Test
+    public void testStridedSliceEmpty(){
+
+        INDArray in = Nd4j.createFromArray(10); //Integer, Length 1, rank 1, value 10   - Not used due to begin mask!
+        INDArray from = Nd4j.createFromArray(0);
+        INDArray to = Nd4j.createFromArray(0);
+        INDArray stride = Nd4j.createFromArray(1);
+
+        DynamicCustomOp op = DynamicCustomOp.builder("stridedslice")
+                .addInputs(in, from, to, stride)
+                .addIntegerArguments(1,0,0,0,0) //Begin mask, ellipsis, end, new axis, shrink
+                .build();
+
+        List<LongShapeDescriptor> s = Nd4j.getExecutioner().calculateOutputShape(op);
+        assertEquals(1, s.size());
+
+        //Is returning shape [0], should be empty
+        long extras = s.get(0).getExtras();
+        boolean isEmpty = ArrayOptionsHelper.hasBitSet(extras, ArrayOptionsHelper.ATYPE_EMPTY_BIT);
+        assertTrue(isEmpty);
     }
 }
