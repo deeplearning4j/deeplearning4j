@@ -51,6 +51,7 @@ import org.nd4j.linalg.api.rng.Random;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.api.shape.options.ArrayOptionsHelper;
+import org.nd4j.linalg.api.shape.options.ArrayType;
 import org.nd4j.linalg.cache.ConstantHandler;
 import org.nd4j.linalg.cache.TADManager;
 import org.nd4j.linalg.compression.CompressionDescriptor;
@@ -1730,13 +1731,14 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
     protected LongShapeDescriptor getShapeFromPointer(LongPointer ptr) {
         val rank = (int) ptr.get(0);
 
-        long[] shape = new long[rank];
-        for (int i = 0; i < rank; i++) {
-            shape[i] = ptr.get(i+1);
+        val shape = new long[rank * 2 + 4];
+        for (int i = 0; i < shape.length; i++) {
+            shape[i] = ptr.get(i);
         }
 
-        val extras = ptr.get(Shape.shapeInfoLength(rank) - 3);
-        return LongShapeDescriptor.fromShape(shape, extras);
+        //val extras = ptr.get(Shape.shapeInfoLength(rank) - 3);
+        val t = ArrayOptionsHelper.arrayType(shape);
+        return LongShapeDescriptor.fromShape(Shape.shape(shape), Shape.stride(shape), Shape.elementWiseStride(shape), Shape.order(shape), ArrayOptionsHelper.dataType(shape), t == ArrayType.EMPTY);
     }
 
     @Override

@@ -657,7 +657,7 @@ public class OpExecutionerTests extends BaseNd4jTest {
                         exp.putScalar(0, 0, i, j, sum);
                     }
                 }
-                assertEquals(exp, arr6s);
+                assertEquals("Failed for [" + order + "] order", exp, arr6s);
 
                 System.out.println("ORDER: " + order);
                 for (int i = 0; i < 6; i++) {
