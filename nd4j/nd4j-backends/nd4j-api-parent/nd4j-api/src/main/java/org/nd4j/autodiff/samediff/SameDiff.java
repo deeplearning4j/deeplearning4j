@@ -3556,12 +3556,12 @@ public class SameDiff extends SDBaseOps {
                         " graph does not contain any trainable SDVariables (floating point VARIABLE type SDVariables) that the loss function depend on.", lossVariables);
 
                 //At this point: we know the set of variables that are connected to the loss - these all (and only) need gradients
-                Queue<DifferentialFunction> availableForDiff = new LinkedList<>();
+                Queue<String> availableForDiff = new LinkedList<>();
                 for(SDVariable lossVar : finalOutputs){
                     Variable v = sameDiff.variables.get(lossVar.getVarName());
                     if(v.getOutputOfOp() != null){
                         String opName = v.getOutputOfOp();
-                        availableForDiff.add(sameDiff.ops.get(opName).getOp());
+                        availableForDiff.add(opName);
                     }
                 }
 
@@ -3601,7 +3601,8 @@ public class SameDiff extends SDBaseOps {
 
                 Set<String> differentiatedOps = new HashSet<>();
                 while(!availableForDiff.isEmpty()){
-                    DifferentialFunction df = availableForDiff.remove();
+                    String dfName = availableForDiff.remove();
+                    DifferentialFunction df = sameDiff.ops.get(dfName).getOp();
 
                     //Get the inputs and outputs of the op
                     List<String> inputsToOp;
@@ -3714,8 +3715,8 @@ public class SameDiff extends SDBaseOps {
                             }
                         }
 
-                        if(allAvailable && !availableForDiff.contains(o.getOp())){
-                            availableForDiff.add(o.getOp());
+                        if(allAvailable && !availableForDiff.contains(o.getOp().getOwnName())){
+                            availableForDiff.add(o.getOp().getOwnName());
                         }
                     }
                 }

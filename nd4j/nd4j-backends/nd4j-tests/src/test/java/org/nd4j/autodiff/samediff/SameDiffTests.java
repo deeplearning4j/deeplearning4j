@@ -3021,6 +3021,20 @@ public class SameDiffTests {
     }
 
     @Test
+    public void testSameDiffBackprop1(){
+        SameDiff sd = SameDiff.create();
+        final SDVariable a = sd.var("a", Nd4j.rand(4, 4));
+        final SDVariable b = sd.var("b", Nd4j.rand(4, 4));
+        final SDVariable c = sd.var("c", Nd4j.rand(4, 4));
+        final SDVariable d = sd.var("d", Nd4j.rand(4, 4));
+
+        final SDVariable out = a.mmul(b).add(c.mmul(d)).sum();
+        out.markAsLoss();
+
+        sd.execBackwards(null);
+    }
+
+    @Test
     public void testSameDiffNoGradForConstantAndPlaceholder(){
         SameDiff sd = SameDiff.create();
         final SDVariable a = sd.var("a", Nd4j.rand(4, 4));
