@@ -757,7 +757,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
             }
 
             if(numParams > 0) {
-                flattenedGradients = Nd4j.create(1, numParams);
+                flattenedGradients = Nd4j.create(flattenedParams.dataType(), 1, numParams);
             }
 
             //Given the topological ordering: work out the subset of the gradient array used for each layer, and set it
