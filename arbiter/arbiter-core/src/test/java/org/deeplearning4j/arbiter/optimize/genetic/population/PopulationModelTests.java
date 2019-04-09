@@ -53,7 +53,7 @@ public class PopulationModelTests {
         PopulationInitializer populationInitializer = new TestPopulationInitializer();
 
         PopulationModel sut = new PopulationModel.Builder().populationInitializer(populationInitializer)
-                        .populationSize(5).cullOperator(new TestCullOperator(1)).build();
+                        .populationSize(5).cullOperator(new TestCullOperator(2)).build();
 
         boolean result = sut.isReadyToBreed();
 
@@ -79,7 +79,7 @@ public class PopulationModelTests {
         PopulationInitializer populationInitializer = new TestPopulationInitializer();
 
         PopulationModel sut = new PopulationModel.Builder().populationInitializer(populationInitializer)
-                        .populationSize(5).cullOperator(new TestCullOperator(1)).build();
+                        .populationSize(5).cullOperator(new TestCullOperator(2)).build();
 
         sut.initializeInstance(false);
 
@@ -101,7 +101,7 @@ public class PopulationModelTests {
         PopulationInitializer populationInitializer = new TestPopulationInitializer();
 
         PopulationModel sut = new PopulationModel.Builder().populationInitializer(populationInitializer)
-                        .populationSize(5).cullOperator(new TestCullOperator(1)).build();
+                        .populationSize(5).cullOperator(new TestCullOperator(2)).build();
 
         sut.initializeInstance(true);
 
@@ -123,7 +123,7 @@ public class PopulationModelTests {
         PopulationInitializer populationInitializer = new TestPopulationInitializer();
 
         PopulationModel sut = new PopulationModel.Builder().populationInitializer(populationInitializer)
-                        .populationSize(5).cullOperator(new TestCullOperator(1)).build();
+                        .populationSize(5).cullOperator(new TestCullOperator(2)).build();
 
         sut.initializeInstance(true);
 
@@ -174,17 +174,5 @@ public class PopulationModelTests {
         sut.add(new Chromosome(new double[0], 6.0));
 
         Assert.assertTrue(cullOperator.hasCulled);
-    }
-
-    @Test(expected = IllegalArgumentException.class)
-    public void PopulationModel_ctor_culledSizeLessThanTwo_ShouldThrow() {
-        PopulationInitializer populationInitializer = new TestPopulationInitializer();
-
-        TestCullOperator cullOperator = new TestCullOperator(1);
-
-        PopulationModel sut = new PopulationModel.Builder().populationInitializer(populationInitializer)
-                .populationSize(5).cullOperator(cullOperator).build();
-
-        Assert.fail("Should have thrown IllegalArgumentException");
     }
 }

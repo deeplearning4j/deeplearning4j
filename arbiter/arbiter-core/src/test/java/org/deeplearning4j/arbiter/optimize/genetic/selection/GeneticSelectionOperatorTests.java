@@ -18,6 +18,8 @@ import org.junit.Assert;
 import org.junit.Test;
 import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
+import static org.junit.Assert.assertArrayEquals;
+
 public class GeneticSelectionOperatorTests {
 
     private class TestCullOperator implements CullOperator {
@@ -186,10 +188,10 @@ public class GeneticSelectionOperatorTests {
         sut.initializeInstance(populationModel, chromosomeFactory);
 
         double[] newGenes = sut.buildNextGenes();
-        Assert.assertSame(crossoverResults[0].getGenes(), newGenes);
+        assertArrayEquals(crossoverResults[0].getGenes(), newGenes, 1e-6);
 
         newGenes = sut.buildNextGenes();
-        Assert.assertSame(crossoverResults[2].getGenes(), newGenes);
+        assertArrayEquals(crossoverResults[2].getGenes(), newGenes, 1e-6);
     }
 
     @Test(expected = GeneticGenerationException.class)
