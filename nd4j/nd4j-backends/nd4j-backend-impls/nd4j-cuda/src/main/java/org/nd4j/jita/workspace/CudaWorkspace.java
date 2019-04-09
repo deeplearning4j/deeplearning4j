@@ -94,8 +94,9 @@ public class CudaWorkspace extends Nd4jWorkspace {
             if (workspaceConfiguration.getPolicyMirroring() != MirroringPolicy.HOST_ONLY) {
                 workspace.setDevicePointer(new PagedPointer(memoryManager.allocate((bytes + SAFETY_OFFSET), MemoryKind.DEVICE, false)));
                 AllocationsTracker.getInstance().markAllocated(AllocationKind.GENERAL, Nd4j.getAffinityManager().getDeviceForCurrentThread(), bytes + SAFETY_OFFSET);
-                MemoryTracker.getInstance().incrementWorkspace(Nd4j.getAffinityManager().getDeviceForCurrentThread(), bytes + SAFETY_OFFSET);
+               // MemoryTracker.getInstance().incrementWorkspace(Nd4j.getAffinityManager().getDeviceForCurrentThread(), bytes + SAFETY_OFFSET);
             }
+	     MemoryTracker.getInstance().incrementWorkspace(Nd4j.getAffinityManager().getDeviceForCurrentThread(), bytes + SAFETY_OFFSET);
 
             //log.info("Workspace [{}] initialized successfully", id);
         }
