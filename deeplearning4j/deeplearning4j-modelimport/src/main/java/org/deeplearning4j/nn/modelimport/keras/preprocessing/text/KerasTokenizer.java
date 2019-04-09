@@ -161,7 +161,7 @@ public class KerasTokenizer {
             text = text.replace(filter, split);
         }
         String[] sequences = text.split(split);
-        List<String> seqList = Arrays.asList(sequences);
+        List<String> seqList = new ArrayList(Arrays.asList(sequences));
         seqList.removeAll(Arrays.asList("", null));
 
         return seqList.toArray(new String[seqList.size()]);
