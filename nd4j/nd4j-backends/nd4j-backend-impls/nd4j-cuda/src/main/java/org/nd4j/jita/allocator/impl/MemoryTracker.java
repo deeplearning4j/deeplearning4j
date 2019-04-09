@@ -9,7 +9,7 @@ public class MemoryTracker {
     private List<AtomicLong> allocatedPerDevice = new ArrayList<>();
     private List<AtomicLong> cachedPerDevice = new ArrayList<>();
     private List<AtomicLong> totalPerDevice = new ArrayList<>();
-    private static MemoryTracker INSTANCE = new MemoryTracker();
+    private final static MemoryTracker INSTANCE = new MemoryTracker();
 
     private MemoryTracker() {
         for (int i = 0; i < Nd4j.getAffinityManager().getNumberOfDevices(); ++i) {
@@ -51,7 +51,7 @@ public class MemoryTracker {
         cachedPerDevice.get(deviceId).getAndAdd(-memoryAdded);
     }
 
-    public void setTotalPerDevice(int device, long memoryAvailable) {
+    private void setTotalPerDevice(int device, long memoryAvailable) {
         totalPerDevice.add(device, new AtomicLong(memoryAvailable));
     }
 }
