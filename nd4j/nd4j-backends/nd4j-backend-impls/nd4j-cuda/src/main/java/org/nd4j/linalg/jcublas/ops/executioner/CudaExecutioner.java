@@ -537,7 +537,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         val dimension = Shape.normalizeAxis(op.x().rank(), op.dimensions().toIntVector());
         val wholeArray = Shape.wholeArrayDimension(dimension) || dimension.length == 0;
         if (op.z() == null) {
-            long[] retShape = wholeArray ? new long[]{} : ArrayUtil.removeIndex(op.x().shape(), dimension);
+            long[] retShape = Shape.reductionShape(op.x(), dimension, true, op.isKeepDims());
 
             INDArray ret = Nd4j.createUninitialized(DataType.LONG, retShape);
 
@@ -887,8 +887,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         Pointer x = AtomicAllocator.getInstance().getPointer(op.x(), context);
         Pointer xShapeInfo = AtomicAllocator.getInstance().getPointer(op.x().shapeInfoDataBuffer(), context);
 
-        long[] retShape = Shape.wholeArrayDimension(dimension) ? new long[] {}
-                : ArrayUtil.removeIndex(op.x().shape(), dimension);
+        long[] retShape = Shape.reductionShape(op.x(), dimension, true, op.isKeepDims());
 
         if (op.y() != null) {
             //2 options here: either pairwise, equal sizes - OR every X TAD vs. entirety of Y
