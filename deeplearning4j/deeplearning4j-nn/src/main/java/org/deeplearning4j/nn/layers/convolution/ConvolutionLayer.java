@@ -177,9 +177,13 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
 
                 if(layerConf().isCudnnAllowFallback()){
                     helperCountFail++;
-                    log.warn("CuDNN execution failed - falling back on built-in implementation",e);
+                    if(helper.getClass().getName().toLowerCase().contains("mkl")){
+                        log.warn("MKL-DNN execution failed - falling back on built-in implementation",e);
+                    } else {
+                        log.warn("CuDNN execution failed - falling back on built-in implementation",e);
+                    }
                 } else {
-                    throw new RuntimeException("Error during ConovlutionLayer CuDNN helper backprop - isCudnnAllowFallback() is set to false", e);
+                    throw new RuntimeException("Error during ConvolutionLayer MKL/CuDNN helper backprop - isCudnnAllowFallback() is set to false", e);
                 }
             }
 
@@ -360,7 +364,11 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
 
                 if(layerConf().isCudnnAllowFallback()){
                     helperCountFail++;
-                    log.warn("CuDNN execution failed - falling back on built-in implementation",e);
+                    if(helper.getClass().getName().toLowerCase().contains("mkl")){
+                        log.warn("MKL-DNN execution failed - falling back on built-in implementation",e);
+                    } else {
+                        log.warn("CuDNN execution failed - falling back on built-in implementation",e);
+                    }
                 } else {
                     throw new RuntimeException(e);
                 }
