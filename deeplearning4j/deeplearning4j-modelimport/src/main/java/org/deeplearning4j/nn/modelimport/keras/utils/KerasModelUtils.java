@@ -18,6 +18,7 @@ package org.deeplearning4j.nn.modelimport.keras.utils;
 
 
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.conf.layers.wrapper.BaseWrapperLayer;
@@ -33,7 +34,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.shade.jackson.core.type.TypeReference;
 import org.nd4j.shade.jackson.databind.ObjectMapper;
 import org.nd4j.shade.jackson.dataformat.yaml.YAMLFactory;
-import org.nd4j.util.StringUtils;
 
 import java.io.IOException;
 import java.util.*;
@@ -210,7 +210,7 @@ public class KerasModelUtils {
                             break;
                         attributeStrParts.add(part);
                     }
-                    attributeJoinStr = StringUtils.join("/", attributeStrParts);
+                    attributeJoinStr = StringUtils.join(attributeStrParts, "/");
                 } else {
                     attributeJoinStr = layerFragments[0];
                 }

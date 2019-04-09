@@ -18,6 +18,7 @@ package org.deeplearning4j.nn.layers.recurrent;
 
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import com.jakewharton.byteunits.BinaryByteUnit;
 import org.bytedeco.javacpp.Pointer;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -36,7 +37,6 @@ import org.nd4j.linalg.jcublas.context.CudaContext;
 import org.nd4j.linalg.primitives.Pair;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.deeplearning4j.nn.workspace.ArrayType;
-import org.nd4j.util.StringUtils;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -489,11 +489,11 @@ public class CudnnLSTMHelper extends BaseCudnnHelper implements LSTMHelper {
             if(log.isTraceEnabled()){
                 if(workSpace == null){
                     log.trace("CudnnLSTMHelper activate: Allocating initial workspace of size {} ({})", workSize,
-                            StringUtils.TraditionalBinaryPrefix.long2String(workSize, "B", 2));
+                            BinaryByteUnit.format(workSize, "#.00"));
                 } else {
                     log.trace("CudnnLSTMHelper activate: Deallocating workspace of size {} ({}), allocating new workspace of size {} ({})",
-                            workSpace.capacity(), StringUtils.TraditionalBinaryPrefix.long2String(workSpace.capacity(), "B", 2),
-                            workSize, StringUtils.TraditionalBinaryPrefix.long2String(workSize, "B", 2));
+                            workSpace.capacity(), BinaryByteUnit.format(workSpace.capacity(), "#.00"),
+                            workSize, BinaryByteUnit.format(workSize, "#.00"));
                 }
             }
             if(workSpace != null)

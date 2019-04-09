@@ -17,10 +17,10 @@
 package org.datavec.api.io.serializers;
 
 
+import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.datavec.api.conf.Configuration;
 import org.datavec.api.conf.Configured;
 import org.datavec.api.util.ReflectionUtils;
-import org.nd4j.util.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -61,7 +61,7 @@ public class SerializationFactory extends Configured {
                             (Class<? extends Serialization>) conf.getClassByName(serializationName);
             serializations.add(ReflectionUtils.newInstance(serializationClass, getConf()));
         } catch (ClassNotFoundException e) {
-            LOG.warn("Serialization class not found: " + StringUtils.stringifyException(e));
+            LOG.warn("Serialization class not found: " + ExceptionUtils.getStackTrace(e));
         }
     }
 
