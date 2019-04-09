@@ -50,7 +50,7 @@ public class AllocatorTest {
     public void testWorkspaceInitSize() {
 
         long initSize = 1024;
-	MemoryTracker tracker = MemoryTracker.getInstance();
+	    MemoryTracker tracker = MemoryTracker.getInstance();
 
         WorkspaceConfiguration workspaceConfig = WorkspaceConfiguration.builder()
                 .policyAllocation(AllocationPolicy.STRICT)
@@ -58,10 +58,10 @@ public class AllocatorTest {
                 .policyMirroring(MirroringPolicy.HOST_ONLY) // Commenting this out makes it so that assert is not triggered (for at least 40 secs or so...)
                 .build();
 
-	MemoryWorkspace ws = Nd4j.getWorkspaceManager().createNewWorkspace(workspaceConfig);
+	    MemoryWorkspace ws = Nd4j.getWorkspaceManager().createNewWorkspace(workspaceConfig);
         assertTrue(initSize + SAFETY_OFFSET  ==
                    tracker.getWorkspace(Nd4j.getAffinityManager().getDeviceForCurrentThread()));
-	ws.close();
+    	ws.close();
         Nd4j.getWorkspaceManager().destroyWorkspace(ws);
         assertTrue(0L == tracker.getWorkspace(Nd4j.getAffinityManager().getDeviceForCurrentThread()));
     }
@@ -78,11 +78,11 @@ public class AllocatorTest {
                 .policyMirroring(MirroringPolicy.HOST_ONLY) // Commenting this out makes it so that assert is not triggered (for at least 40 secs or so...)
                 .build();
 
-	MemoryWorkspace ws = Nd4j.getWorkspaceManager().createNewWorkspace(workspaceConfig); 
+	    MemoryWorkspace ws = Nd4j.getWorkspaceManager().createNewWorkspace(workspaceConfig);
         final INDArray zeros = Nd4j.zeros(allocSize, 'c');
         assertTrue(allocSize ==
                     MemoryTracker.getInstance().getWorkspace(Nd4j.getAffinityManager().getDeviceForCurrentThread()));
-	ws.close();
+	    ws.close();
         assertTrue(allocSize == 
                 MemoryTracker.getInstance().getWorkspace(Nd4j.getAffinityManager().getDeviceForCurrentThread()));
         Nd4j.getWorkspaceManager().destroyWorkspace(ws);
