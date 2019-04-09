@@ -117,6 +117,7 @@ __device__ void ReduceSameFunction<X>::transformCudaXD( void *vx, Nd4jLong *xSha
     __shared__ int numTads;
     __shared__ Nd4jLong *tadShape;
     __shared__ Nd4jLong *tadStride;
+    __shared__ bool isPlainOutput;
     
     if (threadIdx.x == 0) {
         extern __shared__ unsigned char shmem[];
@@ -126,6 +127,8 @@ __device__ void ReduceSameFunction<X>::transformCudaXD( void *vx, Nd4jLong *xSha
         numTads = shape::length(xShapeInfo) / tadLength;
         tadShape = shape::shapeOf(tadOnlyShapeInfo);
         tadStride = shape::stride(tadOnlyShapeInfo);
+
+        isPlainOutput = shape::order(zShapeInfo) == 'c' && shape::elementWiseStride(zShapeInfo) == 1;
     }
     __syncthreads();
     
@@ -147,7 +150,7 @@ __device__ void ReduceSameFunction<X>::transformCudaXD( void *vx, Nd4jLong *xSha
           __syncthreads();
 
           if (threadIdx.x == 0)
-            z[r] = OpType::postProcess(sPartials[threadIdx.x], tadLength, extraParams);
+            z[isPlainOutput ? r : shape::getIndexOffset(r, zShapeInfo, numTads)] = OpType::postProcess(sPartials[threadIdx.x], tadLength, extraParams);
     }
 }
 
