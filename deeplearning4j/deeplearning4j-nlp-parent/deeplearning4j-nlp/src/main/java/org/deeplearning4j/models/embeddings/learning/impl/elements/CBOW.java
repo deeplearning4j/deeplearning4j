@@ -21,6 +21,7 @@ import lombok.NonNull;
 import lombok.Setter;
 import lombok.val;
 import org.apache.commons.lang3.ArrayUtils;
+import org.apache.commons.lang3.RandomUtils;
 import org.deeplearning4j.models.embeddings.WeightLookupTable;
 import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
 import org.deeplearning4j.models.embeddings.learning.ElementsLearningAlgorithm;
@@ -148,7 +149,7 @@ public class CBOW<T extends SequenceElement> implements ElementsLearningAlgorith
         int currentWindow = window;
 
         if (variableWindows != null && variableWindows.length != 0) {
-            currentWindow = variableWindows[RandomUtils.nextInt(variableWindows.length)];
+            currentWindow = variableWindows[RandomUtils.nextInt(0, variableWindows.length)];
         }
 
         for (int i = 0; i < tempSequence.getElements().size(); i++) {
@@ -169,7 +170,7 @@ public class CBOW<T extends SequenceElement> implements ElementsLearningAlgorith
         int currentWindow = window;
 
         if (variableWindows != null && variableWindows.length != 0) {
-            currentWindow = variableWindows[RandomUtils.nextInt(variableWindows.length)];
+            currentWindow = variableWindows[RandomUtils.nextInt(0, variableWindows.length)];
         }
 
         for (int i = 0; i < tempSequence.getElements().size(); i++) {
