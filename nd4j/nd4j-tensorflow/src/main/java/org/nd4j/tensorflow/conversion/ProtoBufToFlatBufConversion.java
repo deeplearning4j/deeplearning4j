@@ -1,8 +1,5 @@
-package org.nd4j.cli;
+package org.nd4j.tensorflow.conversion;
 
-import org.junit.Assert;
-import org.junit.Ignore;
-import org.junit.Test;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.transform.*;
@@ -16,16 +13,44 @@ import java.io.IOException;
 import java.util.*;
 
 /**
- * Created by Yves Quemener on 12/7/18.
+ * Conversion from models saved using the Google's Protocol Buffer
+ * (https://github.com/protocolbuffers/protobuf) to flatbuffer format
+ * (https://github.com/google/flatbuffers)
+ *
+ * This is especially useful for executing models using only the C++ libnd4j
+ * library, as the protobuf loader is only available through the Java API
+ *
+ * It simply loads a file as a SameDiff and saves it as a flat file.
+ *
+ * There is a special case for BERT models where a pre-processing is necessary:
+ * See nd4j/nd4j-backends/nd4j-tests/src/test/java/org/nd4j/imports/TFGraphs/BERTGraphTest.java
+ * for details
+ *
+ * @author Yves Quemener
  */
-public class TFtoFlatFileConverter {
+public class ProtoBufToFlatBufConversion {
 
+    /**
+     * Converts a file containing a model from the Protocol Buffer format to the Flat
+     * Buffer format.
+     * @param inFile input file (.pb format)
+     * @param outFile output file (.fb format)
+     * @throws IOException
+     * @throws org.nd4j.linalg.exception.ND4JIllegalStateException
+     */
     public static void convert(String inFile, String outFile)
                     throws IOException, org.nd4j.linalg.exception.ND4JIllegalStateException {
         SameDiff tg = TFGraphMapper.getInstance().importGraph(new File(inFile));
         tg.asFlatFile(new File(outFile));
     }
 
+    /**
+     * Converts a BERT model from the Protocol Buffer format to the Flat Buffer format.
+     * @param inFile input file (.pb format)
+     * @param outFile output file (.fb format)
+     * @throws IOException
+     * @throws org.nd4j.linalg.exception.ND4JIllegalStateException
+     */
     public static void convertBERT(String inFile, String outFile)
                     throws IOException, org.nd4j.linalg.exception.ND4JIllegalStateException {
         //
@@ -114,32 +139,19 @@ public class TFtoFlatFileConverter {
     }
 
 
-    @Test
-    @Ignore
-    public void convertFile() {
-        // Change these variables to convert the file you want
-        String inputFilename = "/home/user/dl4j/models/densenet.pb";
-        String outputFilename = "/home/user/dl4j/models/densenet.fb";
-        // BERT Models require a specific pre-processing
-        Boolean isBertModel = false;
-
-        try {
-            if (isBertModel) {
-                convertBERT(inputFilename, outputFilename);
-            } else {
-                convert(inputFilename, outputFilename);
-            }
-        } catch (IOException e) {
-            Assert.fail(e.toString());
-        } catch (org.nd4j.linalg.exception.ND4JIllegalStateException e) {
-            Assert.fail(e.toString());
-        }
-    }
-
+    /**
+     * Main function.
+     * The conversion tool can be called from the command line with the floowing syntax:
+     * mvn exec:java -Dexec.mainClass="org.nd4j.tensorflow.conversion.ProtoBufToFlatBufConversion" -Dexec.args="<input_file.pb> <output_file.fb>"
+     *
+     * @param args the first argument is the input filename (protocol buffer format),
+     *             the second one is the output filename (flat buffer format)
+     * @throws IOException
+     */
     public static void main(String[] args) throws IOException {
         if (args.length < 2) {
             System.err.println("Usage:\n"
-                            + "mvn exec:java -Dexec.mainClass=\"org.nd4j.cli.TFtoFlatFileConverter\" -Dexec.args=\"<input_file.pb> <output_file.fb>\"\n");
+                            + "mvn exec:java -Dexec.mainClass=\"org.nd4j.tensorflow.conversion.ProtoBufToFlatBufConversion\" -Dexec.args=\"<input_file.pb> <output_file.fb>\"\n");
         } else {
             convert(args[0], args[1]);
         }
