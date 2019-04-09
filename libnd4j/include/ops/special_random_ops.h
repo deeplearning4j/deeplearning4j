@@ -269,6 +269,7 @@ namespace randomOps {
             int tid = blockIdx.x * blockDim.x + threadIdx.x;
 
             int middle = zLength % 2 == 0 ? zLength / 2 : zLength / 2 + 1;
+            T t(-2.0f);
 
             for (int e = tid; e < middle; e += step) {
                 auto epm = e + middle;
@@ -279,18 +280,13 @@ namespace randomOps {
 
                 T realMean0 = y == z ? mean : y[e * yEWS];
 
-                z[e * zEWS] =  (nd4j::math::nd4j_sqrt<T,T>(static_cast<T>(-2.0f) * nd4j::math::nd4j_log<T,T>(r0)) * nd4j::math::nd4j_cos<T,T>(two_pi * r1)) * stddev + realMean0;
+                z[e * zEWS] =  (nd4j::math::nd4j_sqrt<T,T>(t * nd4j::math::nd4j_log<T,T>(r0)) * nd4j::math::nd4j_cos<T,T>(two_pi * r1)) * stddev + realMean0;
 
                 if (epm < zLength) {
                     T realMean1 = y == z ? mean : y[epm * yEWS];
-                    z[epm * zEWS] =  (nd4j::math::nd4j_sqrt<T,T>(static_cast<T>(-2.0f) * nd4j::math::nd4j_log<T,T>(r0)) * nd4j::math::nd4j_sin<T,T>(two_pi * r1)) * stddev + realMean1;
+                    z[epm * zEWS] =  (nd4j::math::nd4j_sqrt<T,T>(t * nd4j::math::nd4j_log<T,T>(r0)) * nd4j::math::nd4j_sin<T,T>(two_pi * r1)) * stddev + realMean1;
                 }
             }
-
-            __syncthreads();
-
-            if (threadIdx.x == 0 && blockIdx.x == 0)
-                devRng->rewindH(zLength);
         }
 #endif
 
@@ -411,10 +407,6 @@ namespace randomOps {
                 // if trials is set to 0, effectively we just have successful memset
                 z[e * zEWS] = static_cast<T>(success);
             }
-
-            __syncthreads();
-            if (trials > 0 && threadIdx.x == 0 && blockIdx.x == 0)
-                devRng->rewindH(zLength * trials);
         }
 #endif
 
@@ -533,10 +525,6 @@ namespace randomOps {
                 // if trials is set to 0, effectively we just have successful memset
                 z[e * zEWS] = (T) success;
             }
-
-            __syncthreads();
-             if (trials > 0 && threadIdx.x == 0 && blockIdx.x == 0)
-                 devRng->rewindH(zLength * trials);
         }
 #endif
 
@@ -707,10 +695,6 @@ namespace randomOps {
                 if((epm) < zLength)
                     z[epm * zEWS] = result1;
             }
-
-            __syncthreads();
-            if (threadIdx.x == 0 && blockIdx.x == 0)
-                devRng->rewindH(zLength);
         }
 #endif
 
@@ -830,10 +814,6 @@ namespace randomOps {
                     z[epm *zEWS] =  nd4j::math::nd4j_exp<T,T>((nd4j::math::nd4j_sqrt<T,T>(static_cast<T>(-2.0f) * nd4j::math::nd4j_log<T,T>(r0)) * nd4j::math::nd4j_sin<T,T>(two_pi * r1)) * stddev + realMean);
                 }
             }
-
-            __syncthreads();
-            if (threadIdx.x == 0 && blockIdx.x == 0)
-                devRng->rewindH(zLength);
         }
 #endif
 
@@ -892,7 +872,6 @@ namespace randomOps {
 
             // update rng state
             rng->rewindH(zLength);
-
         }
     };
 
