@@ -1232,3 +1232,86 @@ TEST_F(NDArrayTest2, reshapei_2) {
     ASSERT_FALSE(canReshape);
     ASSERT_TRUE(shape::equalsStrict(x.getShapeInfo(), shapeInfo2));
 }
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(NDArrayTest2, Test_apply_true_scalar_1) {
+    NDArray x('f', {2, 3}, {1., 2., 3., 4., 5., 6.});
+    NDArray y('f', {2, 3}, {5., 4., 3., 2., 1., 0.});
+    NDArray z('c', {2, 3}, nd4j::DataType::DOUBLE);
+
+    auto expected = x - y;
+
+    x.applyTrueBroadcast(nd4j::BroadcastOpsTuple::Subtract(), &y, &z, true);    
+    expected.printIndexedBuffer();
+    z.printIndexedBuffer();
+
+    ASSERT_TRUE(expected.equalsTo(z));
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(NDArrayTest2, reduce_1) {
+
+    NDArray arr6('c', {1, 1, 4, 4, 4, 4}, nd4j::DataType::DOUBLE);
+    NDArray exp('c', {1, 1, 4, 4}, nd4j::DataType::DOUBLE);    
+
+    arr6.linspace(1);
+
+    NDArray* arr6s = arr6.reduceAlongDimension(nd4j::reduce::Sum, {2,3});
+
+    for (int i = 0; i < 4; i++) {
+        for (int j = 0; j < 4; j++) {
+            double sum = 0;
+            for (int x = 0; x < 4; x++) {
+                for (int y = 0; y < 4; y++) {
+                    Nd4jLong indices[] = {0, 0, x, y, i, j};
+                    shape::getOffset(0, arr6.shapeOf(), arr6.stridesOf(), indices, arr6.rankOf());
+                    sum += *(double*)arr6.getBuffer();
+                }
+            }
+            exp.p<double>(0, 0, i, j, sum);
+        }
+    }
+        
+    exp.printIndexedBuffer();
+    arr6s->printIndexedBuffer();
+
+    ASSERT_TRUE(exp.equalsTo(arr6s));
+
+    delete arr6s;
+}
+
+
+// @Test
+//     public void testSum6d2() {
+//         char origOrder = Nd4j.order();
+//         try {
+//             for (char order : new char[]{'c', 'f'}) {
+//                 Nd4j.factory().setOrder(order);
+
+//                 INDArray arr6 = Nd4j.linspace(1, 256, 256, DataType.DOUBLE).reshape(1, 1, 4, 4, 4, 4);
+//                 INDArray arr6s = arr6.sum(2, 3);
+
+//                 INDArray exp = Nd4j.create(DataType.DOUBLE, 1, 1, 4, 4);
+//                 for (int i = 0; i < 4; i++) {
+//                     for (int j = 0; j < 4; j++) {
+//                         double sum = 0;
+//                         for (int x = 0; x < 4; x++) {
+//                             for (int y = 0; y < 4; y++) {
+//                                 sum += arr6.getDouble(0, 0, x, y, i, j);
+//                             }
+//                         }
+
+//                         exp.putScalar(0, 0, i, j, sum);
+//                     }
+//                 }
+//                 assertEquals(exp, arr6s);
+
+//                 System.out.println("ORDER: " + order);
+//                 for (int i = 0; i < 6; i++) {
+//                     System.out.println(arr6s.getDouble(i));
+//                 }
+//             }
+//         } finally {
+//             Nd4j.factory().setOrder(origOrder);
+//         }
+//     }
