@@ -364,8 +364,8 @@ public class KerasLayerUtils {
         Map<String, Object> outerConfig = getInnerLayerConfigFromConfig(layerConfig, conf);
         Map<String, Object> innerLayer = (Map<String, Object>) outerConfig.get(conf.getLAYER_FIELD_LAYER());
         layerConfig.put(conf.getLAYER_FIELD_CLASS_NAME(), innerLayer.get(conf.getLAYER_FIELD_CLASS_NAME()));
-        layerConfig.put(conf.getLAYER_FIELD_NAME(), innerLayer.get(conf.getLAYER_FIELD_CLASS_NAME()));
         Map<String, Object> innerConfig = getInnerLayerConfigFromConfig(innerLayer, conf);
+        innerConfig.put(conf.getLAYER_FIELD_NAME(), outerConfig.get(conf.getLAYER_FIELD_NAME()));
         outerConfig.putAll(innerConfig);
         outerConfig.remove(conf.getLAYER_FIELD_LAYER());
         return layerConfig;
