@@ -7,22 +7,22 @@ import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
 import org.deeplearning4j.models.embeddings.learning.impl.elements.CBOW;
 import org.deeplearning4j.models.embeddings.loader.VectorsConfiguration;
 import org.deeplearning4j.models.embeddings.loader.WordVectorSerializer;
-import org.deeplearning4j.models.embeddings.reader.ModelUtils;
 import org.deeplearning4j.models.embeddings.reader.impl.BasicModelUtils;
 import org.deeplearning4j.models.embeddings.reader.impl.FlatModelUtils;
 import org.deeplearning4j.models.paragraphvectors.ParagraphVectors;
 import org.deeplearning4j.models.sequencevectors.SequenceVectors;
 import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.models.word2vec.Word2Vec;
-import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.deeplearning4j.models.word2vec.wordstore.inmemory.AbstractCache;
-import org.deeplearning4j.util.DL4JFileUtils;
 import org.junit.Before;
 import org.junit.Test;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
-import java.io.*;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.util.Collections;
 
 import static org.junit.Assert.*;
@@ -48,13 +48,9 @@ public class WordVectorSerializerTest {
     @Test
     public void sequenceVectorsCorrect_WhenDeserialized() {
 
-        INDArray syn0 = Nd4j.create(10, 2),
-                syn1 = Nd4j.create(10, 2),
-                syn1Neg = Nd4j.create(10, 2);
-        float[] vector = new float[10];
-        syn0.putRow(0, Nd4j.create(vector));
-        syn1.putRow(0, Nd4j.create(vector));
-        syn1Neg.putRow(0, Nd4j.create(vector));
+        INDArray syn0 = Nd4j.rand(DataType.FLOAT, 10, 2),
+                syn1 = Nd4j.rand(DataType.FLOAT, 10, 2),
+                syn1Neg = Nd4j.rand(DataType.FLOAT, 10, 2);
 
         InMemoryLookupTable<VocabWord> lookupTable =
                 (InMemoryLookupTable<VocabWord>) new InMemoryLookupTable.Builder<VocabWord>()
@@ -100,13 +96,9 @@ public class WordVectorSerializerTest {
     @Test
     public void W2V_Correct_WhenDeserialized() {
 
-        INDArray syn0 = Nd4j.create(10, 2),
-                syn1 = Nd4j.create(10, 2),
-                syn1Neg = Nd4j.create(10, 2);
-        float[] vector = new float[10];
-        syn0.putRow(0, Nd4j.create(vector));
-        syn1.putRow(0, Nd4j.create(vector));
-        syn1Neg.putRow(0, Nd4j.create(vector));
+        INDArray syn0 = Nd4j.rand(DataType.FLOAT, 10, 2),
+                syn1 = Nd4j.rand(DataType.FLOAT, 10, 2),
+                syn1Neg = Nd4j.rand(DataType.FLOAT, 10, 2);
 
         InMemoryLookupTable<VocabWord> lookupTable =
                 (InMemoryLookupTable<VocabWord>) new InMemoryLookupTable.Builder<VocabWord>()
@@ -182,13 +174,9 @@ public class WordVectorSerializerTest {
     @Test
     public void ParaVec_Correct_WhenDeserialized() {
 
-        INDArray syn0 = Nd4j.create(10, 2),
-                syn1 = Nd4j.create(10, 2),
-                syn1Neg = Nd4j.create(10, 2);
-        float[] vector = new float[10];
-        syn0.putRow(0, Nd4j.create(vector));
-        syn1.putRow(0, Nd4j.create(vector));
-        syn1Neg.putRow(0, Nd4j.create(vector));
+        INDArray syn0 = Nd4j.rand(DataType.FLOAT, 10, 2),
+                syn1 = Nd4j.rand(DataType.FLOAT, 10, 2),
+                syn1Neg = Nd4j.rand(DataType.FLOAT, 10, 2);
 
         InMemoryLookupTable<VocabWord> lookupTable =
                 (InMemoryLookupTable<VocabWord>) new InMemoryLookupTable.Builder<VocabWord>()
@@ -234,13 +222,9 @@ public class WordVectorSerializerTest {
     @Test
     public void weightLookupTable_Correct_WhenDeserialized() {
 
-        INDArray syn0 = Nd4j.create(10, 2),
-                syn1 = Nd4j.create(10, 2),
-                syn1Neg = Nd4j.create(10, 2);
-        float[] vector = new float[10];
-        syn0.putRow(0, Nd4j.create(vector));
-        syn1.putRow(0, Nd4j.create(vector));
-        syn1Neg.putRow(0, Nd4j.create(vector));
+        INDArray syn0 = Nd4j.rand(DataType.FLOAT, 10, 2),
+                syn1 = Nd4j.rand(DataType.FLOAT, 10, 2),
+                syn1Neg = Nd4j.rand(DataType.FLOAT, 10, 2);
 
         InMemoryLookupTable<VocabWord> lookupTable =
                 (InMemoryLookupTable<VocabWord>) new InMemoryLookupTable.Builder<VocabWord>()
