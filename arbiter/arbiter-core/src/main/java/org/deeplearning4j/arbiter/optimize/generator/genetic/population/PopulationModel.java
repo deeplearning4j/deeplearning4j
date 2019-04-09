@@ -131,7 +131,7 @@ public class PopulationModel {
         cullOperator.initializeInstance(this);
 
         if(cullOperator.getCulledSize() < 2) {
-            throw new IllegalArgumentException(String.format("The culled population size must be greater or equal to 2. Currently it is %d.", cullOperator.getCulledSize()));
+            throw new IllegalArgumentException("The culled population size must be greater or equal to 2. Currently it is " + cullOperator.getCulledSize());
         }
     }
 

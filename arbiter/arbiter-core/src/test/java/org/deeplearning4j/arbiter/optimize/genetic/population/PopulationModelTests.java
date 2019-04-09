@@ -19,7 +19,6 @@ public class PopulationModelTests {
         public boolean hasCulled = false;
 
         public TestCullOperator(int culledSize) {
-
             this.culledSize = culledSize;
         }
 
