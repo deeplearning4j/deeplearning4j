@@ -2143,9 +2143,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         }
 
         val extras = ptr.get(Shape.shapeInfoLength(rank) - 3);
-        val dtype = ArrayOptionsHelper.dataType(extras);
-
-        return LongShapeDescriptor.fromShape(shape, dtype);
+        return LongShapeDescriptor.fromShape(shape, extras);
     }
 
     @Override
