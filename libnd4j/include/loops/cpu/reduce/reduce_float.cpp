@@ -193,9 +193,9 @@ namespace functions {
                 }
 
 #ifdef INLINE_LOOPS
-                nd4j::ReductionLoops<X,Z,Z>::template loopTadXZ<OpType>(x, xShapeInfo, z, zShapeInfo,  tadOnlyShapeInfo, tadOffsets, extraParams);
+                nd4j::ReductionLoops<X,Z,Z>::template loopReduce<OpType>(x, xShapeInfo, z, zShapeInfo,  tadOnlyShapeInfo, tadOffsets, extraParams);
 #else
-                nd4j::ReductionFloatLoops<X,Z>::template innerloopTadXZ<OpType>(x, xShapeInfo, z, zShapeInfo,  tadOnlyShapeInfo, tadOffsets, extraParams);
+                nd4j::ReductionFloatLoops<X,Z>::template innerloopReduce<OpType>(x, xShapeInfo, z, zShapeInfo,  tadOnlyShapeInfo, tadOffsets, extraParams);
 #endif
             }
 

@@ -1272,7 +1272,8 @@ TEST_F(NDArrayTest2, reduce_1) {
         }
     }
         
-    arr6s->printShapeInfo();
+    // arr6s->printShapeInfo();
+    // exp.printShapeInfo();
     // exp.printIndexedBuffer();
     // arr6s->printIndexedBuffer();
 
