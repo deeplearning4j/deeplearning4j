@@ -53,7 +53,7 @@ public class WritablesToNDArrayFunction implements Function<List<Writable>, INDA
             }
         }
 
-        INDArray arr = Nd4j.zeros(length);
+        INDArray arr = Nd4j.zeros(1, length);
         int idx = 0;
         for (Writable w : c) {
             if (w instanceof NDArrayWritable) {

@@ -922,6 +922,27 @@ TEST_F(DeclarableOpsTests4, Test_StridedSlice_Alex_2) {
     delete result;
 }
 
+TEST_F(DeclarableOpsTests4, Test_StridedSlice_Alex_3) {
+    auto x = NDArrayFactory::create<double>('c', {1}, {10});
+    auto begin = NDArrayFactory::create<double>('c', {1}, {0.});
+    auto end = NDArrayFactory::create<double>('c', {1}, {0.});
+    auto stride = NDArrayFactory::create<double>('c', {1}, {1});
+    //x.linspace(1);
+    //auto exp = NDArrayFactory::create<double>('c', {1,3,4,5});
+    //exp.linspace(1);
+
+    nd4j::ops::strided_slice op;
+    auto result = op.execute({&x, &begin, &end, &stride}, {}, {1,0,0,0,0});
+
+    ASSERT_EQ(Status::OK(), result->status());
+
+    auto z = result->at(0);
+    z->printShapeInfo("Emply shape expected");
+    ASSERT_TRUE(z->isEmpty());
+
+    delete result;
+}
+
 //////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests4, parallel_stack_test1) {
 

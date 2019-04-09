@@ -37,7 +37,6 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import java.io.IOException;
-import java.util.Map;
 
 import static junit.framework.TestCase.assertTrue;
 import static org.junit.Assert.assertArrayEquals;
@@ -90,6 +89,8 @@ public class TestInstantiation extends BaseDL4JTest {
             }
 
             // clean up for current model
+            model = null;
+            initializedModel = null;
             Nd4j.getWorkspaceManager().destroyAllWorkspacesForCurrentThread();
             System.gc();
             Thread.sleep(1000);

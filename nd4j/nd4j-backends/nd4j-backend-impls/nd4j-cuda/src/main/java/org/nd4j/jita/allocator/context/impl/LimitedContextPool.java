@@ -133,6 +133,11 @@ public class LimitedContextPool extends BasicContextPool {
         }
     }
 
+    public void removeAcquired() {
+        val threadIdx = Thread.currentThread().getId();
+        acquired.remove(threadIdx);
+    }
+
     @Override
     public CudaContext acquireContextForDevice(Integer deviceId) {
         val threadIdx = Thread.currentThread().getId();
@@ -219,9 +224,9 @@ public class LimitedContextPool extends BasicContextPool {
         val threadIdx = context.getThreadId();
         val deviceId = context.getDeviceId();
 
-        context.setThreadId(-1);
         acquired.remove(threadIdx);
         pool.get(deviceId).add(context);
+        context.setThreadId(-1);
     }
 
     /*

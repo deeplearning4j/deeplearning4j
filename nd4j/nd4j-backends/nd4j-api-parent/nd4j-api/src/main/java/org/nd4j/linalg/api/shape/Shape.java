@@ -3750,4 +3750,46 @@ public class Shape {
         else
             return Nd4j.createFromArray(dimensions);
     }
+
+    /**
+     * Calculate the shape of the returned array, for a reduction along dimension
+     * @param x            Input array to reduce
+     * @param dimension    Dimensions/axis to reduce on
+     * @param newFormat    If new format (almost always true; will be removed eventually)
+     * @param keepDims     If reduced dimensions should be kept as size 1 dimensions
+     * @return             Shape of the output array for the reduction
+     */
+    public static long[] reductionShape(INDArray x, int[] dimension, boolean newFormat, boolean keepDims){
+        boolean wholeArray = Shape.wholeArrayDimension(dimension) || dimension.length == x.rank();
+        long[] retShape;
+        if(!newFormat) {
+            retShape = wholeArray ? new long[] {1, 1} : ArrayUtil.removeIndex(x.shape(), dimension);
+
+            //ensure vector is proper shape (if old format)
+            if (retShape.length == 1) {
+                if (dimension[0] == 0)
+                    retShape = new long[]{1, retShape[0]};
+                else
+                    retShape = new long[]{retShape[0], 1};
+            } else if (retShape.length == 0) {
+                retShape = new long[]{1, 1};
+            }
+        } else {
+            if(keepDims){
+                retShape = x.shape().clone();
+                if(wholeArray){
+                    for( int i=0; i<retShape.length; i++ ){
+                        retShape[i] = 1;
+                    }
+                } else {
+                    for (int d : dimension) {
+                        retShape[d] = 1;
+                    }
+                }
+            } else {
+                retShape = wholeArray ? new long[0] : ArrayUtil.removeIndex(x.shape(), dimension);
+            }
+        }
+        return retShape;
+    }
 }
