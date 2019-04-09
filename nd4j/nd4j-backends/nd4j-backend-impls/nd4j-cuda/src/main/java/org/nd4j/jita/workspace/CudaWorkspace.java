@@ -103,7 +103,7 @@ public class CudaWorkspace extends Nd4jWorkspace {
 
     @Override
     public PagedPointer alloc(long requiredMemory, DataType type, boolean initialize) {
-        Nd4j.getAffinityManager().getDeviceForCurrentThread(), requiredMemory);
+	MemoryTracker.getInstance().incrementWorkspace(Nd4j.getAffinityManager().getDeviceForCurrentThread(), requiredMemory);
         return this.alloc(requiredMemory, MemoryKind.DEVICE, type, initialize);
     }
 
@@ -147,12 +147,12 @@ public class CudaWorkspace extends Nd4jWorkspace {
             if (kind == MemoryKind.DEVICE) {
                 PagedPointer pointer = new PagedPointer(memoryManager.allocate(requiredMemory, MemoryKind.DEVICE, initialize), numElements);
                 externalAllocations.add(new PointersPair(null, pointer));
-                MemoryTracker.getInstance().incrementWorkspace(Nd4j.getAffinityManager().getDeviceForCurrentThread(), size + SAFETY_OFFSET);
+                MemoryTracker.getInstance().incrementWorkspace(Nd4j.getAffinityManager().getDeviceForCurrentThread(), requiredMemory);
                 return pointer;
             } else {
                 PagedPointer pointer = new PagedPointer(memoryManager.allocate(requiredMemory, MemoryKind.HOST, initialize), numElements);
                 externalAllocations.add(new PointersPair(pointer, null));
-                MemoryTracker.getInstance().incrementWorkspace(Nd4j.getAffinityManager().getDeviceForCurrentThread(), size + SAFETY_OFFSET);
+                MemoryTracker.getInstance().incrementWorkspace(Nd4j.getAffinityManager().getDeviceForCurrentThread(), requiredMemory);
                 return pointer;
             }
 

@@ -16,6 +16,7 @@ public class MemoryTracker {
         for (int i = 0; i < Nd4j.getAffinityManager().getNumberOfDevices(); ++i) {
             allocatedPerDevice.add(i, new AtomicLong(0));
             cachedPerDevice.add(i, new AtomicLong(0));
+	    workspacesPerDevice.add(i, new AtomicLong(0));
             totalPerDevice.add(i, new AtomicLong(0));
         }
     }
@@ -33,7 +34,7 @@ public class MemoryTracker {
     }
 
     public long getWorkspace(int deviceId) {
-        return workspacePerDevice.get(deviceId).get();
+        return workspacesPerDevice.get(deviceId).get();
     }
 
     public long getTotal(int deviceId) {
@@ -45,7 +46,7 @@ public class MemoryTracker {
     }
 
     public void incrementCached(int deviceId, long memoryAdded) {
-        cachedPerDevice.get(deviceId).getAndAdded(memoryAdded);
+        cachedPerDevice.get(deviceId).getAndAdd(memoryAdded);
     }
 
     public void decrementAllocated(int deviceId, long memoryAdded) {
@@ -53,15 +54,15 @@ public class MemoryTracker {
     }
 
     public void decrementCached(int deviceId, long memorySubtracted) {
-        cachedPerDevice.get(deviceId).getAndAdd(-memoryAdded);
+        cachedPerDevice.get(deviceId).getAndAdd(-memorySubtracted);
     }
 
     public void incrementWorkspace(int deviceId, long memoryAdded) {
-        workspacesPerDevice.get(deviceId).getAndAdded(memoryAdded);
+        workspacesPerDevice.get(deviceId).getAndAdd(memoryAdded);
     }
 
-    public void decrementWorkspace(int deviceId, long memoryAdded) {
-        workspacePerDevice.get(deviceId).getAndAdd(-memoryAdded);
+    public void decrementWorkspace(int deviceId, long memorySubtracted) {
+        workspacesPerDevice.get(deviceId).getAndAdd(-memorySubtracted);
     }
 
     private void setTotalPerDevice(int device, long memoryAvailable) {
