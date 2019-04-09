@@ -1038,18 +1038,21 @@ TEST_F(DeclarableOpsTests6, LogMatrixDeterminant_1) {
 
     auto x = NDArrayFactory::create<double>('c', {2, 3, 3}, {-3.0, 0.0, 0.0, 0.0, 4.0, 0.0, 0.0, 0.0, -3.0, 4.0, 0.0, 0.0, 0.0, -3.0, 0.0, 0.0, 0.0, 4.0});
     auto exp = NDArrayFactory::create<double>({3.58351893845611, 3.871201010907891});
+    auto expSigns = NDArrayFactory::create<double>({1., -1.});
 
     nd4j::ops::log_matrix_determinant op;
     auto result = op.execute({&x}, {}, {});
 
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
-    auto z = result->at(0);
-    //z->printIndexedBuffer("Output ");
+    auto z = result->at(1);
+    auto signs = result->at(0);
+    //signs->printIndexedBuffer("Output Signs");
     //exp.printIndexedBuffer("Expected ");
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
+    ASSERT_TRUE(expSigns.equalsTo(signs));
 
     delete result;
 }

@@ -26,6 +26,9 @@
 namespace nd4j {
 namespace ops {
 namespace helpers {
+    template <typename T>
+    static T lup(NDArray* input, NDArray* compound, NDArray* permutation);
+
 
     template <typename T> 
     static void _swapRows(NDArray* matrix, int theFirst, int theSecond) {
@@ -190,29 +193,30 @@ namespace helpers {
     }
 
 template <typename T>
-    int log_abs_determinant_(NDArray* input, NDArray* output) {
+    int log_abs_determinant_(NDArray* input, NDArray* outputSigns, NDArray* outputVals) {
 
         Nd4jLong n = input->sizeAt(-1);
         Nd4jLong n2 = n * n;
 
         NDArray matrix = NDArrayFactory::create(input->ordering(), {n, n}, input->dataType(), input->getWorkspace()); //, block.getWorkspace());
 
-        for (int e = 0; e < output->lengthOf(); e++) {
+        for (int e = 0; e < outputSigns->lengthOf(); e++) {
             for (int k = e * n2, row = 0; k < (e + 1) * n2; ++k, ++row) {
                 matrix.p(row, input->e<T>(k));
             }
-	    NDArray det = _lup<T>(&matrix, (NDArray*)nullptr, (NDArray*)nullptr);
-	    if (det.e<T>(0) != 0.f)
-             	output->p(e, nd4j::math::nd4j_log<T,T>(nd4j::math::nd4j_abs(det.t<T>(0))));
+	        NDArray det = _lup<T>(&matrix, (NDArray*)nullptr, (NDArray*)nullptr);
+	        if (det.e<T>(0) != 0.f)
+	            outputSigns->p(e, det.e<T>(0) > 0?1.f:-1.f);
+             	outputVals->p(e, nd4j::math::nd4j_log<T,T>(nd4j::math::nd4j_abs(det.t<T>(0))));
         }
 
         return ND4J_STATUS_OK;
     }
 
-    BUILD_SINGLE_TEMPLATE(template int log_abs_determinant_, (NDArray* input, NDArray* output), FLOAT_TYPES);
+    BUILD_SINGLE_TEMPLATE(template int log_abs_determinant_, (NDArray* input, NDArray* outputSigns, NDArray* outputVals), FLOAT_TYPES);
 
-    int log_abs_determinant(NDArray* input, NDArray* output) {
-        BUILD_SINGLE_SELECTOR(input->dataType(), return log_abs_determinant_, (input, output), FLOAT_TYPES);
+    int log_abs_determinant(NDArray* input, NDArray* outputSigns, NDArray* outputVals) {
+        BUILD_SINGLE_SELECTOR(input->dataType(), return log_abs_determinant_, (input, outputSigns, outputVals), FLOAT_TYPES);
     }
 
     template <typename T>

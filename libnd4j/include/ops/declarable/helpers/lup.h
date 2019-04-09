@@ -26,11 +26,8 @@ namespace nd4j {
 namespace ops {
 namespace helpers {
 
-    template <typename T>
-    T lup(NDArray* input, NDArray* compound, NDArray* permutation);
-
     int determinant(NDArray* input, NDArray* output);
-    int log_abs_determinant(NDArray* input, NDArray* output);
+    int log_abs_determinant(NDArray* input, NDArray* outputSigns, NDArray* outputVals);
 
     int inverse(NDArray* input, NDArray* output);
 

@@ -884,7 +884,7 @@ namespace nd4j {
          */
 
         #if NOT_EXCLUDED(OP_log_matrix_determinant)
-        DECLARE_CUSTOM_OP(log_matrix_determinant, 1, 1, false, 0, 0);
+        DECLARE_CUSTOM_OP(log_matrix_determinant, 1, 2, false, 0, 0);
         #endif
 
         /**

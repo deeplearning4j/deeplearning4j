@@ -76,36 +76,50 @@ namespace nd4j {
                     ->setAllowedOutputTypes({ALL_FLOATS});
         }
 
-        CUSTOM_OP_IMPL(log_matrix_determinant, 1, 1, false, 0, 0) {
+        CUSTOM_OP_IMPL(log_matrix_determinant, 1, 2, false, 0, 0) {
             auto input = INPUT_VARIABLE(0);
-            auto output = OUTPUT_VARIABLE(0);
+            auto outputSign = OUTPUT_VARIABLE(0);
+            auto outputVals = OUTPUT_VARIABLE(1);
 
             REQUIRE_TRUE(input->rankOf() >=2, 0, "log_matrix_determinant: The rank of input array should not less than 2, but %i is given", input->rankOf());
             REQUIRE_TRUE(input->sizeAt(-1) == input->sizeAt(-2), 0, "log_matrix_determinant: The last two dimmensions should be equal, but %i and %i are given", input->sizeAt(-1), input->sizeAt(-2));
 
-            return helpers::log_abs_determinant(input, output);
+            return helpers::log_abs_determinant(input, outputSign, outputVals);
         }
+        DECLARE_SYN(slogdet, log_matrix_determinant);
 
         DECLARE_SHAPE_FN(log_matrix_determinant) {
             auto inShape = inputShape->at(0);
 
             Nd4jLong* determinantShape;
+            Nd4jLong* determinantSignShape;
             int targetRank = shape::rank(inShape) - 2; // last two dimensions will be reduced to scalar
 
             if (targetRank == 0) { // scalar only
                 determinantShape = ShapeBuilders::createScalarShapeInfo(ArrayOptions::dataType(inShape), block.getWorkspace());
+                determinantSignShape = ShapeBuilders::createScalarShapeInfo(ArrayOptions::dataType(inShape), block.getWorkspace());
             }
             else if (targetRank == 1) { // vector 
                 determinantShape = ShapeBuilders::createVectorShapeInfo(ArrayOptions::dataType(inShape), shape::sizeAt(inShape, 0), block.getWorkspace());
+                determinantSignShape = ShapeBuilders::createVectorShapeInfo(ArrayOptions::dataType(inShape), shape::sizeAt(inShape, 0), block.getWorkspace());
             }
             else { // only two last dimensions are excluded
                 ALLOCATE(determinantShape, block.getWorkspace(), shape::shapeInfoLength(targetRank), Nd4jLong);
-                if (shape::order(inShape) == 'c')
-                    shape::shapeBuffer(targetRank, ArrayOptions::dataType(inShape), shape::shapeOf(inShape), determinantShape);
-                else
-                    shape::shapeBufferFortran(targetRank, ArrayOptions::dataType(inShape), shape::shapeOf(inShape), determinantShape);
+                ALLOCATE(determinantSignShape, block.getWorkspace(), shape::shapeInfoLength(targetRank), Nd4jLong);
+                if (shape::order(inShape) == 'c') {
+                    shape::shapeBuffer(targetRank, ArrayOptions::dataType(inShape), shape::shapeOf(inShape),
+                                       determinantShape);
+                    shape::shapeBuffer(targetRank, ArrayOptions::dataType(inShape), shape::shapeOf(inShape),
+                                       determinantSignShape);
+                }
+                else {
+                    shape::shapeBufferFortran(targetRank, ArrayOptions::dataType(inShape), shape::shapeOf(inShape),
+                                              determinantSignShape);
+                    shape::shapeBufferFortran(targetRank, ArrayOptions::dataType(inShape), shape::shapeOf(inShape),
+                                              determinantShape);
+                }
             }
-            return SHAPELIST(determinantShape);
+            return SHAPELIST(determinantSignShape, determinantShape);
         }
     }
 }
