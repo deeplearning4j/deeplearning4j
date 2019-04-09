@@ -59,7 +59,7 @@ public class WindowConverter {
         List<String> words = window.getWords();
         int windowSize = vec.getWindow();
         Preconditions.checkState(words.size() == vec.getWindow());
-        INDArray ret = Nd4j.create(length * windowSize);
+        INDArray ret = Nd4j.create(1, length * windowSize);
 
 
 
@@ -97,7 +97,7 @@ public class WindowConverter {
 
             // if there's null elements
             if (data[i] == null)
-                data[i] = Nd4j.zeros(vec.getLayerSize());
+                data[i] = Nd4j.zeros(1, vec.getLayerSize());
         }
         return Nd4j.hstack(data);
     }

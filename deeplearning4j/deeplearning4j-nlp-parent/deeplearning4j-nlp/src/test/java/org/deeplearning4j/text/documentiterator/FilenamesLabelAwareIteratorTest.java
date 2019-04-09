@@ -65,6 +65,12 @@ public class FilenamesLabelAwareIteratorTest {
         LabelledDocument doc4 = iterator.nextDocument();
         labels.add(doc4.getLabel());
 
+        LabelledDocument doc5 = iterator.nextDocument();
+        labels.add(doc5.getLabel());
+
+        LabelledDocument doc6 = iterator.nextDocument();
+        labels.add(doc6.getLabel());
+
         assertFalse(iterator.hasNextDocument());
 
         System.out.println("Labels: " + labels);
@@ -73,5 +79,8 @@ public class FilenamesLabelAwareIteratorTest {
         assertTrue(labels.contains("occurrences.txt"));
         assertTrue(labels.contains("raw_sentences.txt"));
         assertTrue(labels.contains("tokens.txt"));
+        assertTrue(labels.contains("raw_sentences_2.txt"));
+        assertTrue(labels.contains("rnj.txt"));
+
     }
 }
