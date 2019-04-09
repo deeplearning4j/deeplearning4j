@@ -20,6 +20,7 @@ import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
 
 
 public class AllocatorTest {
+    private static final long SAFETY_OFFSET = 1024L;	
 
     @Test
     public void testCounters() {
@@ -58,7 +59,7 @@ public class AllocatorTest {
                 .build();
 
 	MemoryWorkspace ws = Nd4j.getWorkspaceManager().createNewWorkspace(workspaceConfig);
-        assertTrue(initSize ==
+        assertTrue(initSize + SAFETY_OFFSET  ==
                    tracker.getWorkspace(Nd4j.getAffinityManager().getDeviceForCurrentThread()));
 	ws.close();
         Nd4j.getWorkspaceManager().destroyWorkspace(ws);
