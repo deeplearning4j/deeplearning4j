@@ -200,7 +200,7 @@ public class KerasTokenizer {
                     wordDocs.put(word, 1);
             }
         }
-        Map<String, Integer> sortedWordCounts = reverseSortByValues(wordDocs);
+        Map<String, Integer> sortedWordCounts = reverseSortByValues((HashMap) wordCounts);
 
         ArrayList<String> sortedVocabulary = new ArrayList<>();
         if (outOfVocabularyToken != null)
