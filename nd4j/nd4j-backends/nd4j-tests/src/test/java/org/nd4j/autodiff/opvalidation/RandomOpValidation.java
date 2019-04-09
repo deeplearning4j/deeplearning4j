@@ -54,14 +54,15 @@ public class RandomOpValidation extends BaseOpValidation {
         Nd4j.getRandom().setSeed(12345);
         List<String> failed = new ArrayList<>();
 
-        for (double[] shape : Arrays.asList(new double[]{1000.0}, new double[]{100, 10}, new double[]{40, 5, 5})) {
+        for (long[] shape : Arrays.asList(new long[]{1000}, new long[]{100, 10}, new long[]{40, 5, 5})) {
 
             for (int i = 0; i < 4; i++) {
-                INDArray arr = Nd4j.create(shape).castTo(DataType.INT);
+                INDArray arr = Nd4j.createFromArray(shape).castTo(DataType.INT);
 
                 Nd4j.getRandom().setSeed(12345);
                 SameDiff sd = SameDiff.create();
-                SDVariable shapeVar = sd.var("shape", arr);
+                SDVariable shapeVar = sd.constant("shape", arr);
+                SDVariable otherVar = sd.var("misc", Nd4j.rand(shape));
 
                 SDVariable rand;
                 Function<INDArray, String> checkFn;
@@ -132,7 +133,7 @@ public class RandomOpValidation extends BaseOpValidation {
 
                 String msg = name + " - " + Arrays.toString(shape);
                 TestCase tc = new TestCase(sd)
-                        .gradCheckSkipVariables("shape")
+                        .gradientCheck(false)
                         .testName(msg)
                         .expected(rand, checkFn)
                         .testFlatBufferSerialization(TestCase.TestSerialization.NONE);  //Can't compare values due to randomness
@@ -258,7 +259,7 @@ public class RandomOpValidation extends BaseOpValidation {
 
                 String msg = name + " - " + Arrays.toString(shape);
                 TestCase tc = new TestCase(sd)
-                        .gradCheckSkipVariables("shape")
+                        .gradientCheck(false)
                         .testName(msg)
                         .expected(rand, checkFn)
                         .testFlatBufferSerialization(TestCase.TestSerialization.NONE);  //Can't compare values due to randomness
@@ -365,7 +366,8 @@ public class RandomOpValidation extends BaseOpValidation {
 
             TestCase tc = new TestCase(sd)
                     .expected(range, e)
-                    .testName(Arrays.toString(d));
+                    .testName(Arrays.toString(d))
+                    .gradientCheck(false);
 
             assertNull(OpValidation.validate(tc));
         }

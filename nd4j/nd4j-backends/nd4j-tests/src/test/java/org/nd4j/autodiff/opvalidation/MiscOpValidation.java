@@ -454,7 +454,7 @@ public class MiscOpValidation extends BaseOpValidation {
                 }
 
                 SDVariable in = sd.var("in", Nd4j.rand(DataType.DOUBLE, inShape));
-                SDVariable indices = sd.var("indices", Nd4j.create(new double[]{0, 3, 7}).castTo(DataType.INT));
+                SDVariable indices = sd.constant("indices", Nd4j.createFromArray(0, 3, 7));
 
                 INDArray gatherExp = null;
                 if(rank == 2){
@@ -1168,7 +1168,7 @@ public class MiscOpValidation extends BaseOpValidation {
         expectedOut.putScalar(1, 0, 1, 1.0);
 
         SameDiff sd = SameDiff.create();
-        SDVariable indices = sd.var("indices", indicesArr);
+        SDVariable indices = sd.constant("indices", indicesArr);
 
         int depth = 3;
         int axis = -1;
@@ -1178,7 +1178,7 @@ public class MiscOpValidation extends BaseOpValidation {
 
         String err = OpValidation.validate(new TestCase(sd)
                 .expected(oneHot, expectedOut)
-                .gradCheckSkipVariables("indices"));
+                .gradientCheck(false));
 
         assertNull(err);
     }
@@ -1192,7 +1192,8 @@ public class MiscOpValidation extends BaseOpValidation {
         SDVariable loss = out.std(true);
 
         String err = OpValidation.validate(new TestCase(sd)
-                .expected(out, Nd4j.linspace(1,10,10, DataType.DOUBLE)));
+                .expected(out, Nd4j.linspace(1,10,10, DataType.DOUBLE))
+                .gradientCheck(false));
 
         assertNull(err);
     }
@@ -1234,9 +1235,7 @@ public class MiscOpValidation extends BaseOpValidation {
         SDVariable var = sd.var("in", i);
         SDVariable shape = sd.shape(var);
         SDVariable sum = shape.castTo(DataType.DOUBLE).sum();
-
-        sd.execAndEndResult();
-        sd.execBackwards(Collections.emptyMap());
+        sum.eval();
     }
 
 
@@ -1417,15 +1416,16 @@ public class MiscOpValidation extends BaseOpValidation {
 
                     INDArray exp;
                     if (expTrue || shape == null) {
-                        exp = Nd4j.trueScalar(1.0);
+                        exp = Nd4j.scalar(1.0);
                     } else {
-                        exp = Nd4j.trueScalar(0.0);
+                        exp = Nd4j.scalar(0.0);
                     }
 
                     String msg = (nonDec ? "isNonDecreasing" : "isStrictlyIncreasing") + " - " +  (shape == null ? "[]" : Arrays.toString(shape)) + " - expected=" + exp;
                     TestCase tc = new TestCase(sd)
                             .testName(msg)
-                            .expected(out, exp);
+                            .expected(out, exp)
+                            .gradientCheck(false);
 
                     String err = OpValidation.validate(tc, true);
                     if (err != null) {
@@ -1564,5 +1564,53 @@ public class MiscOpValidation extends BaseOpValidation {
 
         INDArray exp = Nd4j.valueArrayOf(shape, 64.0, DataType.FLOAT);      //Each entry in output is sum of 64 (1.0 x 1.0) multiplications
         assertEquals(exp, out);
+    }
+
+    @Test
+    public void testNthElementRank1(){
+        INDArray in = Nd4j.createFromArray(new double[]{0,1,2,3,4,5,6,7,8,9});
+        INDArray n = Nd4j.scalar(0);
+        DynamicCustomOp op = DynamicCustomOp.builder("nth_element")
+                .addInputs(in,n)
+                .addIntegerArguments(0) //reverse = false
+                .build();
+
+        List<LongShapeDescriptor> shapeList = op.calculateOutputShape();
+        long[] shape = shapeList.get(0).getShape();
+        long[] expShape = new long[0];
+        assertArrayEquals(expShape, shape);
+
+        INDArray out = Nd4j.scalar(0.0);
+        op.addOutputArgument(out);
+
+        Nd4j.getExecutioner().exec(op);
+        System.out.println(out);
+        assertEquals(0.0, out.getDouble(0), 1e-5);
+    }
+
+    @Test
+    public void testTensorMmulShape(){
+        INDArray a = Nd4j.create(new double[]{2}).reshape(1);
+        INDArray b = Nd4j.create(new double[]{1, 2, 3, 4}).reshape(2, 1, 2);
+        int[][] axes = new int[][]{{0},{1}};
+
+        CustomOp op = DynamicCustomOp.builder("tensordot")
+                .addInputs(a, b)
+                .addIntegerArguments(axes[0].length)
+                .addIntegerArguments(axes[0])
+                .addIntegerArguments(axes[1].length)
+                .addIntegerArguments(axes[1])
+                .build();
+
+        List<LongShapeDescriptor> l = op.calculateOutputShape();
+        assertArrayEquals(new long[]{2,2}, l.get(0).getShape());         //Returning [1,2,2]
+    }
+
+    @Test
+    public void testTensorMmulShape2(){
+        INDArray a = Nd4j.create(new double[]{2}).reshape(1);
+        INDArray b = Nd4j.create(new double[]{1, 2, 3, 4}).reshape(2, 1, 2);
+        INDArray c = Nd4j.tensorMmul(a, b, new int[][]{new int[]{0}, new int[]{1}});
+        assertArrayEquals(new long[]{2,2}, c.shape());
     }
 }

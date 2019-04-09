@@ -305,7 +305,7 @@ public class TestGraphLocalExecution {
     @Test
     public void testLocalExecutionEarlyStopping() throws Exception {
         EarlyStoppingConfiguration<ComputationGraph> esConf = new EarlyStoppingConfiguration.Builder<ComputationGraph>()
-                .epochTerminationConditions(new MaxEpochsTerminationCondition(15))
+                .epochTerminationConditions(new MaxEpochsTerminationCondition(6))
                 .scoreCalculator(new ScoreProvider())
                 .modelSaver(new InMemoryModelSaver()).build();
         Map<String, Object> commands = new HashMap<>();

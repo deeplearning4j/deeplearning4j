@@ -1325,15 +1325,17 @@ void NativeOps::execTransformStrict(Nd4jPointer *extraPointers,int opNum,
                     int length = shape::length(hXShapeInfo);
                     int block = nd4j::math::nd4j_min<int>(length, 256);
 
+                    auto reductionPointer = reinterpret_cast<float *>(extraPointers[4]);
+
                     launchDims.x = 1;
                     launchDims.y = block;
                     launchDims.z += (block * sizeof(double) * 4);
 
-                    BUILD_SINGLE_SELECTOR(xType, functions::transform::TransformStrict, ::executeTransformShaped(launchDims, stream, opNum, dX, dXShapeInfo, xRank, extraParams, dZ, dZShapeInfo, zRank, nullptr, nullptr, nullptr, nullptr), FLOAT_TYPES);
+                    BUILD_SINGLE_SELECTOR(xType, functions::transform::TransformStrict, ::executeTransformShaped(launchDims, stream, opNum, dX, dXShapeInfo, xRank, extraParams, dZ, dZShapeInfo, zRank, nullptr, reductionPointer, nullptr, nullptr), FLOAT_TYPES);
                 } else {
                     auto shape = shape::shapeOf(hXShapeInfo);
-                    int *allocPointer = reinterpret_cast<int *>(extraPointers[3]);
-                    float *reductionPointer = reinterpret_cast<float *>(extraPointers[4]);
+                    auto llocPointer = reinterpret_cast<int *>(extraPointers[3]);
+                    auto reductionPointer = reinterpret_cast<float *>(extraPointers[4]);
 
                     // special pointer for special buffer for special ops
                     auto specialPointer = reinterpret_cast<double *>(extraPointers[6]);
@@ -2253,7 +2255,7 @@ void NativeOps::shuffle(Nd4jPointer *extras,
     auto tadOffset = reinterpret_cast<Nd4jLong **>(tadOffsets);
 
     auto xType = nd4j::ArrayOptions::dataType(xShape[0]);
-    dim3 launchDims(N, 256, 8192);
+    dim3 launchDims(256, 512, 8192);
     BUILD_SINGLE_SELECTOR(xType, shuffleKernelGeneric, (launchDims, stream, dX, dxShape, dZ, N, shuffleMap,  tadOnlyShapeInfo, tadOffset), LIBND4J_TYPES);
 
 	DEBUG_KERNEL(stream, 0);
@@ -2655,6 +2657,7 @@ void NativeOps::execRandom(Nd4jPointer *extraPointers,
 
     auto stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
     auto sizeOf = sizeof(nd4j::graph::RandomGenerator);
+    auto rng = reinterpret_cast<nd4j::graph::RandomGenerator *>(stateHost);
     Nd4jPointer stateDevice;
 
     cudaError_t res = cudaMalloc(reinterpret_cast<void **>(&stateDevice), sizeOf);
@@ -2666,10 +2669,10 @@ void NativeOps::execRandom(Nd4jPointer *extraPointers,
 
     // functions::random::RandomFunction<float>::executeCudaSingle(launchDims, extraPointers, opNum, stateHost, dZ, dZShapeInfo, extraArguments),
     BUILD_SINGLE_SELECTOR(zType, functions::random::RandomFunction, ::executeCudaSingle(launchDims, extraPointers, opNum, stateDevice, dZ, dZShapeInfo, extraArguments), FLOAT_TYPES);
-
-    checkCudaErrors(cudaMemcpyAsync(stateHost, stateDevice, sizeOf, cudaMemcpyDeviceToHost, *stream));
     checkCudaErrors(cudaStreamSynchronize(*stream));
     cudaFree(stateDevice);
+
+    rng->rewindH(shape::length(hZShapeInfo));
 }
 
 void NativeOps::execRandom(Nd4jPointer *extraPointers, int opNum, Nd4jPointer stateHost, 
@@ -2682,6 +2685,7 @@ void NativeOps::execRandom(Nd4jPointer *extraPointers, int opNum, Nd4jPointer st
     auto stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
     auto sizeOf = sizeof(nd4j::graph::RandomGenerator);
+    auto rng = reinterpret_cast<nd4j::graph::RandomGenerator *>(stateHost);
     Nd4jPointer stateDevice;
 
     cudaError_t res = cudaMalloc(reinterpret_cast<void **>(&stateDevice), sizeOf);
@@ -2693,9 +2697,9 @@ void NativeOps::execRandom(Nd4jPointer *extraPointers, int opNum, Nd4jPointer st
     // functions::random::RandomFunction<float>::executeCudaDouble(launchDims, extraPointers, opNum, stateHost, dX, dXShapeInfo, dZ, dZShapeInfo, extraArguments);
     BUILD_SINGLE_SELECTOR(xType, functions::random::RandomFunction, ::executeCudaDouble(launchDims, extraPointers, opNum, stateDevice, dX, dXShapeInfo, dZ, dZShapeInfo, extraArguments), FLOAT_TYPES);
 
-    checkCudaErrors(cudaMemcpyAsync(stateHost, stateDevice, sizeOf, cudaMemcpyDeviceToHost, *stream));
     checkCudaErrors(cudaStreamSynchronize(*stream));
     cudaFree(stateDevice);
+    rng->rewindH(shape::length(hZShapeInfo));
 }
 
 void NativeOps::execRandom(Nd4jPointer *extraPointers, int opNum, Nd4jPointer stateHost, 
@@ -2709,6 +2713,7 @@ void NativeOps::execRandom(Nd4jPointer *extraPointers, int opNum, Nd4jPointer st
 
     auto stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
     auto sizeOf = sizeof(nd4j::graph::RandomGenerator);
+    auto rng = reinterpret_cast<nd4j::graph::RandomGenerator *>(stateHost);
     Nd4jPointer stateDevice;
 
     cudaError_t res = cudaMalloc(reinterpret_cast<void **>(&stateDevice), sizeOf);
@@ -2719,10 +2724,10 @@ void NativeOps::execRandom(Nd4jPointer *extraPointers, int opNum, Nd4jPointer st
     auto xType = nd4j::ArrayOptions::dataType(hZShapeInfo);
     // functions::random::RandomFunction<float>::executeCudaTriple(launchDims, extraPointers, opNum, stateHost, dX, dXShapeInfo, dY, dYShapeInfo, dZ, dZShapeInfo, extraArguments);
     BUILD_SINGLE_SELECTOR(xType, functions::random::RandomFunction, ::executeCudaTriple(launchDims, extraPointers, opNum, stateDevice, dX, dXShapeInfo, dY, dYShapeInfo, dZ, dZShapeInfo, extraArguments), FLOAT_TYPES);
-
-    checkCudaErrors(cudaMemcpyAsync(stateHost, stateDevice, sizeOf, cudaMemcpyDeviceToHost, *stream));
     checkCudaErrors(cudaStreamSynchronize(*stream));
     cudaFree(stateDevice);
+
+    rng->rewindH(shape::length(hZShapeInfo));
 }
 
 

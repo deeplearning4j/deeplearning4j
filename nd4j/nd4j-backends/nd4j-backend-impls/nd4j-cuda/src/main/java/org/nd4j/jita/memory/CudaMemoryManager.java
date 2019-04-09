@@ -19,6 +19,7 @@ package org.nd4j.jita.memory;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.bytedeco.javacpp.Pointer;
+import org.nd4j.jita.allocator.context.impl.LimitedContextPool;
 import org.nd4j.jita.allocator.enums.AllocationStatus;
 import org.nd4j.jita.allocator.impl.AllocationPoint;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
@@ -286,5 +287,6 @@ public class CudaMemoryManager extends BasicMemoryManager {
 
         // push it back to pool
         pool.releaseContext(context);
+        ((LimitedContextPool) pool).removeAcquired();
     }
 }

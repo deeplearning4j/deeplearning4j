@@ -169,6 +169,11 @@ namespace nd4j {
         DECLARE_CUSTOM_OP(cumprod_bp, 2, -21, false, 0, 2);
         #endif
 
+
+        #if NOT_EXCLUDED(OP_flatten)
+        DECLARE_CUSTOM_OP(flatten, -1, 1, false, 0, 1);
+        #endif
+
         /**
          * returns histogram (as 1D array) with fixed bins width
          * 

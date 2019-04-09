@@ -372,12 +372,12 @@ namespace nd4j {
             std::vector<int> ignoreEnd   = BitwiseUtils::valueBits(end_mask);
             std::vector<int> addAxes     = BitwiseUtils::valueBits(new_axis_mask);
             std::vector<int> moveAxes    = BitwiseUtils::valueBits(shrink_axis_mask);
-            
+            if (shrink_axis_mask == 0)
             for (int dim = 0, b = 0, e = 0; dim < x->rankOf(); ++dim) {
 
                 if(moveAxes[dim])
-                    continue;                            
-                
+                    continue;
+
                 if(b < begin.size() && !ignoreBegin[b] && !addAxes[dim]) {
                     int first = strides[b] > 0 ? begin[b] : math::nd4j_abs<int>(begin[b]) - 1;
                     REQUIRE_TRUE(first <= x->sizeAt(dim), 0, "StridedSlice: begin index should be <= corresponding dimension of input array, but got end_index = %i for dimension %i!", begin[b], dim);
@@ -385,7 +385,7 @@ namespace nd4j {
                 if(e < end.size() && !ignoreEnd[e] && !addAxes[dim]) {
                    int last  = strides[e] > 0 ? end[e] : math::nd4j_abs<int>(end[e])   - 1;
                    REQUIRE_TRUE(last <= x->sizeAt(dim), 0, "StridedSlice: end index should be <= corresponding dimension of input array, but got end_index = %i for dimension %i!", end[e], dim);
-                }                
+                }
                 ++b;
                 ++e;
             }
@@ -459,19 +459,20 @@ namespace nd4j {
             std::vector<int> ignoreEnd   = BitwiseUtils::valueBits(end_mask);
             std::vector<int> addAxes     = BitwiseUtils::valueBits(new_axis_mask);
             std::vector<int> moveAxes    = BitwiseUtils::valueBits(shrink_axis_mask);
-            
-            for (int dim = 0, b = 0, e = 0; dim < inShape[0]; ++dim) {
+
+            if (0 == shrink_axis_mask)
+            for (int dim = 0, b = 0, e = 0; dim < x_rank; ++dim) {
 
                 if(moveAxes[dim])
-                    continue;                            
+                    continue;
 
                 if(b < begin.size() && !ignoreBegin[b] && !addAxes[dim]) {
                     int first = strides[b] > 0 ? begin[b] : math::nd4j_abs<int>(begin[b]) - 1;
-                    REQUIRE_TRUE(first <= inShape[dim+1], 0, "StridedSlice: begin index should be <= corresponding dimension of input array, but got end_index = %i for dimension %i!", begin[b], dim);                    
+                    REQUIRE_TRUE(first <= inShape[dim + 1], 0, "StridedSlice: begin index should be <= corresponding dimension of input array, but got end_index = %i for dimension %i!", begin[b], dim);
                 }
                 if(e < end.size() && !ignoreEnd[e] && !addAxes[dim]) {
                    int last  = strides[e] > 0 ? end[e] : math::nd4j_abs<int>(end[e])   - 1;
-                   REQUIRE_TRUE(last <= inShape[dim+1], 0, "StridedSlice: end index should be <= corresponding dimension of input array, but got end_index = %i for dimension %i!", end[e], dim);                   
+                   REQUIRE_TRUE(last <= inShape[dim + 1], 0, "StridedSlice: end index should be <= corresponding dimension of input array, but got end_index = %i for dimension %i!", end[e], dim);
                 }
                 ++b;
                 ++e;
@@ -479,6 +480,7 @@ namespace nd4j {
 
             Nd4jLong *newShape;
             std::vector<Nd4jLong> input_shape(shape::rank(inShape));
+            auto inputLen = shape::length(inShape);
             std::vector<Nd4jLong> shape;
             
             for (int e = 0; e < shape::rank(inShape); e++)
@@ -491,7 +493,7 @@ namespace nd4j {
             // FIXME: remove this, once we bring in 1D NDArrays 
             vectorize(input_shape);
             bool result = _preprocess_strided_slice(nullptr, &shape, input_shape, begin, end, strides, begin_mask, ellipsis_mask, end_mask, new_axis_mask, shrink_axis_mask, &is_identity, &is_simple_slice, &is_dim0);
-            if (shape.size()) {
+            if (shape.size() && inputLen > 1) {
                 ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(shape.size()), Nd4jLong);
                 shape::shapeBuffer(shape.size(), ArrayOptions::dataType(inShape), shape.data(), newShape);
                 //if (input_shape[0] == 0)

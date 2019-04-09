@@ -137,10 +137,28 @@ nd4j.graph.FlatGraph.prototype.placeholdersLength = function() {
 };
 
 /**
+ * @param {number} index
+ * @param {flatbuffers.Encoding=} optionalEncoding
+ * @returns {string|Uint8Array}
+ */
+nd4j.graph.FlatGraph.prototype.lossVariables = function(index, optionalEncoding) {
+  var offset = this.bb.__offset(this.bb_pos, 16);
+  return offset ? this.bb.__string(this.bb.__vector(this.bb_pos + offset) + index * 4, optionalEncoding) : null;
+};
+
+/**
+ * @returns {number}
+ */
+nd4j.graph.FlatGraph.prototype.lossVariablesLength = function() {
+  var offset = this.bb.__offset(this.bb_pos, 16);
+  return offset ? this.bb.__vector_len(this.bb_pos + offset) : 0;
+};
+
+/**
  * @param {flatbuffers.Builder} builder
  */
 nd4j.graph.FlatGraph.startFlatGraph = function(builder) {
-  builder.startObject(6);
+  builder.startObject(7);
 };
 
 /**
@@ -272,6 +290,35 @@ nd4j.graph.FlatGraph.createPlaceholdersVector = function(builder, data) {
  * @param {number} numElems
  */
 nd4j.graph.FlatGraph.startPlaceholdersVector = function(builder, numElems) {
+  builder.startVector(4, numElems, 4);
+};
+
+/**
+ * @param {flatbuffers.Builder} builder
+ * @param {flatbuffers.Offset} lossVariablesOffset
+ */
+nd4j.graph.FlatGraph.addLossVariables = function(builder, lossVariablesOffset) {
+  builder.addFieldOffset(6, lossVariablesOffset, 0);
+};
+
+/**
+ * @param {flatbuffers.Builder} builder
+ * @param {Array.<flatbuffers.Offset>} data
+ * @returns {flatbuffers.Offset}
+ */
+nd4j.graph.FlatGraph.createLossVariablesVector = function(builder, data) {
+  builder.startVector(4, data.length, 4);
+  for (var i = data.length - 1; i >= 0; i--) {
+    builder.addOffset(data[i]);
+  }
+  return builder.endVector();
+};
+
+/**
+ * @param {flatbuffers.Builder} builder
+ * @param {number} numElems
+ */
+nd4j.graph.FlatGraph.startLossVariablesVector = function(builder, numElems) {
   builder.startVector(4, numElems, 4);
 };
 

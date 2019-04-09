@@ -86,7 +86,7 @@ public class RandomProjectionLSHTest {
     @Test
     public void testGetRawBucketOfDims(){
         rpLSH.makeIndex(inputs);
-        assertArrayEquals(new long[]{100, 1}, rpLSH.rawBucketOf(e1).shape());
+        assertArrayEquals(new long[]{100}, rpLSH.rawBucketOf(e1).shape());
     }
 
     @Test
@@ -100,7 +100,7 @@ public class RandomProjectionLSHTest {
     @Test
     public void testBucketDims(){
         rpLSH.makeIndex(inputs);
-        assertArrayEquals(new long[]{100, 1}, rpLSH.bucket(e1).shape());
+        assertArrayEquals(new long[]{100}, rpLSH.bucket(e1).shape());
     }
 
     @Test

@@ -28,6 +28,8 @@ public final class FlatGraph extends Table {
   public FlatConfiguration configuration(FlatConfiguration obj) { int o = __offset(12); return o != 0 ? obj.__assign(__indirect(o + bb_pos), bb) : null; }
   public String placeholders(int j) { int o = __offset(14); return o != 0 ? __string(__vector(o) + j * 4) : null; }
   public int placeholdersLength() { int o = __offset(14); return o != 0 ? __vector_len(o) : 0; }
+  public String lossVariables(int j) { int o = __offset(16); return o != 0 ? __string(__vector(o) + j * 4) : null; }
+  public int lossVariablesLength() { int o = __offset(16); return o != 0 ? __vector_len(o) : 0; }
 
   public static int createFlatGraph(FlatBufferBuilder builder,
       long id,
@@ -35,9 +37,11 @@ public final class FlatGraph extends Table {
       int nodesOffset,
       int outputsOffset,
       int configurationOffset,
-      int placeholdersOffset) {
-    builder.startObject(6);
+      int placeholdersOffset,
+      int lossVariablesOffset) {
+    builder.startObject(7);
     FlatGraph.addId(builder, id);
+    FlatGraph.addLossVariables(builder, lossVariablesOffset);
     FlatGraph.addPlaceholders(builder, placeholdersOffset);
     FlatGraph.addConfiguration(builder, configurationOffset);
     FlatGraph.addOutputs(builder, outputsOffset);
@@ -46,7 +50,7 @@ public final class FlatGraph extends Table {
     return FlatGraph.endFlatGraph(builder);
   }
 
-  public static void startFlatGraph(FlatBufferBuilder builder) { builder.startObject(6); }
+  public static void startFlatGraph(FlatBufferBuilder builder) { builder.startObject(7); }
   public static void addId(FlatBufferBuilder builder, long id) { builder.addLong(0, id, 0L); }
   public static void addVariables(FlatBufferBuilder builder, int variablesOffset) { builder.addOffset(1, variablesOffset, 0); }
   public static int createVariablesVector(FlatBufferBuilder builder, int[] data) { builder.startVector(4, data.length, 4); for (int i = data.length - 1; i >= 0; i--) builder.addOffset(data[i]); return builder.endVector(); }
@@ -61,6 +65,9 @@ public final class FlatGraph extends Table {
   public static void addPlaceholders(FlatBufferBuilder builder, int placeholdersOffset) { builder.addOffset(5, placeholdersOffset, 0); }
   public static int createPlaceholdersVector(FlatBufferBuilder builder, int[] data) { builder.startVector(4, data.length, 4); for (int i = data.length - 1; i >= 0; i--) builder.addOffset(data[i]); return builder.endVector(); }
   public static void startPlaceholdersVector(FlatBufferBuilder builder, int numElems) { builder.startVector(4, numElems, 4); }
+  public static void addLossVariables(FlatBufferBuilder builder, int lossVariablesOffset) { builder.addOffset(6, lossVariablesOffset, 0); }
+  public static int createLossVariablesVector(FlatBufferBuilder builder, int[] data) { builder.startVector(4, data.length, 4); for (int i = data.length - 1; i >= 0; i--) builder.addOffset(data[i]); return builder.endVector(); }
+  public static void startLossVariablesVector(FlatBufferBuilder builder, int numElems) { builder.startVector(4, numElems, 4); }
   public static int endFlatGraph(FlatBufferBuilder builder) {
     int o = builder.endObject();
     return o;

@@ -242,27 +242,29 @@ public class SDVariable extends DifferentialFunction implements Serializable {
 
 
     /**
-     * Nicer looking alias
-     * for the gradient variable.
-     * The gradient variable is meant to be an
-     * a variable representation
-     * of the gradient represented
-     * in the underlying {@link DifferentialFunction}
-     * @return
+     * Alias for the gradient variable - same as {@link #getGradient()}.
+     * The gradient variable is the variable that represents the derivative of the loss function with respect
+     * to the output of this variable. I.e., if this variable is X and loss function is L, then gradient() returns the
+     * variable representing dL/dX.<br>
+     * Note that only floating point variables can have gradients.
      */
     public SDVariable gradient() {
         return getGradient();
     }
 
     /**
-     * A getter for the variable gradient.
-     * Note here that a lazy initialization of the
-     * gradient variable will happen if the gradient
-     * isn't present at this variable's initialization
-     * but is set later.
-     * @return
+     * The gradient variable is the variable that represents the derivative of the loss function with respect
+     * to the output of this variable. I.e., if this variable is X and loss function is L, then gradient() returns the
+     * variable representing dL/dX<br>
+     * Note that only floating point variables can have gradients.<br>
+     * Note also that a gradient may not yet be defined, and/or if no loss function variables have been set.<br>
+     * You can set the loss function variables using {@link SameDiff#setLossVariables(String...)} and then create the
+     * gradient functions using {@link SameDiff#createGradFunction()}. Alternatively, the gradient function will be
+     * created automatically when training is performed.
      */
     public SDVariable getGradient() {
+        Preconditions.checkState(dataType().isFPType(), "Cannot get gradient of %s variable \"%s\": only floating" +
+                " point variables have gradients", getVarName(), dataType());
         return sameDiff.getGradForVariable(getVarName());
     }
 
@@ -1912,6 +1914,32 @@ public class SDVariable extends DifferentialFunction implements Serializable {
      */
     public SDVariable convertToVariable(){
         return sameDiff.convertToVariable(this);
+    }
+
+
+    /**
+     * Mark this variable as a loss function variable. This means that this variable will be minimized via backprop during training.<br>
+     * This will add the variable as a loss to any others - i.e., if multiple variables are marked as losses, their values will be summed
+     * to give the total network loss.<br>
+     * Note that only floating point (Float16/32/64) variables may be marked as a loss.<br>
+     * Note also that only ARRAY type SDVariables can be marked as losses to be minimized. That is, we cannot mark the value
+     * of a constant, variable or placeholder to be minimized as doing so would not make sense.<br>
+     * This is equivalent to {@link SameDiff#addLossVariable(String)}
+     */
+    public void markAsLoss(){
+        sameDiff.addLossVariable(getVarName());
+    }
+
+    /**
+     * Determine if this variable has a gradient with respect to the current loss. Note that:
+     * (a) Non-floating-point variables (integer, string, etc) will never have gradients<br>
+     * (b) This method will return false if no gradient function has been created yet. See {@link SameDiff#createGradFunction()}
+     * and {@link SameDiff#setLossVariables(String...)}<br>
+     * (c) Floating point variables may not have any gradient if the current loss does not depend on the variable at all<br>
+     * @return True if a gradient variable exists for the specified variable, for the current loss
+     */
+    public boolean hasGradient(){
+        return sameDiff.variableHasGradient(getVarName());
     }
 
     private static int binArrToInt(int[] arr) {

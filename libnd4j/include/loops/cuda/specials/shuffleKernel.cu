@@ -32,7 +32,6 @@ namespace nd4j {
                                   Nd4jLong **tadOnlyShapeInfo, Nd4jLong **tadOffsets) {
 
         // we assume that shuffle map for each X contains pair TAD Y
-
         auto dX = reinterpret_cast<T **>(vdX);
         auto dZ = reinterpret_cast<T **>(vdZ);
 
@@ -41,11 +40,8 @@ namespace nd4j {
         __shared__ int numTads;
 
         for (int f = 0; f < N; f++) {
-
-            T *x = (T *) dX[f];
-            T *z = (T *) dZ[f];
-
-            __syncthreads();
+            auto x = reinterpret_cast<T *>(dX[f]);
+            auto z = reinterpret_cast<T *>(dZ[f]);
 
             if (threadIdx.x == 0) {
                 tadLength = shape::length(tadOnlyShapeInfo[f]);
@@ -55,44 +51,40 @@ namespace nd4j {
             __syncthreads();
 
             // we roll over the pairs of TADs, thus limit is numTads / 2
-            for (Nd4jLong r = blockIdx.x; r < numTads; r += blockDim.x) {
+            for (uint r = blockIdx.x; r < numTads; r += gridDim.x) {
+                if (shuffleMap[r] >= 0) {
+                    auto oldOffset = tadOffsets[f][r];
+                    auto newOffset = tadOffsets[f][shuffleMap[r]];
 
-                if (shuffleMap[r] < 0)
-                    continue;
+                    auto rX = x + oldOffset;
+                    auto rY = x + newOffset;
 
-                Nd4jLong oldOffset = tadOffsets[f][r];
-                Nd4jLong newOffset = tadOffsets[f][shuffleMap[r]];
+                    auto zX = z + oldOffset;
+                    auto zY = z + newOffset;
 
-                T *rX = x + oldOffset;
-                T *rY = x + newOffset;
+                    // so we're going to change TAD[oldOffset] with TAD[newOffset]
+                    if (tadEWS == 1) {
+                        for (Nd4jLong i = threadIdx.x; i < tadLength; i += blockDim.x) {
+                            T oldX = rX[i];
+                            rX[i] = rY[i];
+                            zY[i] = oldX;
+                        }
 
-                T *zX = z + oldOffset;
-                T *zY = z + newOffset;
+                    } else {
+                        for (Nd4jLong i = threadIdx.x; i < tadLength; i += blockDim.x) {
 
-                // so we're going to change TAD[oldOffset] with TAD[newOffset]
-                if (tadEWS == 1) {
+                            auto xOffset = shape::getIndexOffset(i, tadOnlyShapeInfo[f], tadLength);
+                            auto yOffset = newOffset + xOffset;
+                            xOffset += oldOffset;
 
-                    for (Nd4jLong i = threadIdx.x; i < tadLength; i += blockDim.x) {
-
-                        T oldX = rX[i];
-                        rX[i] = rY[i];
-                        zY[i] = oldX;
-                    }
-
-                } else {
-
-                    for (Nd4jLong i = threadIdx.x; i < tadLength; i += blockDim.x) {
-
-                        auto xOffset = shape::getIndexOffset(i, tadOnlyShapeInfo[f], tadLength);
-                        auto yOffset = newOffset + xOffset;
-                        xOffset += oldOffset;
-
-                        T oldX = x[xOffset];
-                        z[xOffset] = x[yOffset];
-                        z[yOffset] = oldX;
+                            T oldX = x[xOffset];
+                            z[xOffset] = x[yOffset];
+                            z[yOffset] = oldX;
+                        }
                     }
                 }
             }
+            __syncthreads();
         }
     }
 

@@ -79,7 +79,7 @@ public class LossOpValidation extends BaseOpValidation {
 
                     int nOut = 4;
                     int minibatch = 10;
-                    SDVariable predictions = sd.var("in", DataType.DOUBLE, -1, nOut);
+                    SDVariable predictions = sd.var("in", DataType.DOUBLE, minibatch, nOut);
                     SDVariable labels;
                     if("sparsesoftmax".equalsIgnoreCase(fn)){
                         labels = sd.var("labels", DataType.INT, -1);

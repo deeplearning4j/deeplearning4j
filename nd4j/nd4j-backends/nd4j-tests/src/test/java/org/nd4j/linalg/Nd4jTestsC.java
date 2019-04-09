@@ -43,6 +43,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BroadcastOp;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.Op;
+import org.nd4j.linalg.api.ops.custom.Flatten;
 import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.api.ops.impl.broadcast.*;
@@ -681,6 +682,9 @@ public class Nd4jTestsC extends BaseNd4jTest {
         INDArray noViewF = Nd4j.toFlattened('f', first.dup('f'), second.dup('f'), third.dup('f'));
 
         assertEquals(noViewC, Nd4j.toFlattened('c', first, second, third));
+
+        //val result = Nd4j.exec(new Flatten('f', first, second, third))[0];
+        //assertEquals(noViewF, result);
         assertEquals(noViewF, Nd4j.toFlattened('f', first, second, third));
     }
 
@@ -4517,6 +4521,20 @@ public class Nd4jTestsC extends BaseNd4jTest {
         //cosinedistance([-0.84443557262, -0.06822254508, 0.74266910552, 0.61765557527, -0.77555125951], [-0.99536740779, -0.0257304441183, -0.6512106060, -0.345789492130, -1.25485503673)
         //cosinedistance([.62955373525, -0.31357592344, 1.03362500667, -0.59279078245, 1.1914824247], [-0.99536740779, -0.0257304441183, -0.6512106060, -0.345789492130, -1.25485503673)
 
+    }
+
+    @Test
+    public void testReduce3SignaturesEquality_1() {
+        val x = Nd4j.rand(DataType.DOUBLE, 3, 4, 5);
+        val y = Nd4j.rand(DataType.DOUBLE, 3, 4, 5);
+
+        val reduceOp = new ManhattanDistance(x, y, 0);
+        val op = (Op) reduceOp;
+
+        val z0 = Nd4j.getExecutioner().exec(reduceOp);
+        val z1 = Nd4j.getExecutioner().exec(op);
+
+        assertEquals(z0, z1);
     }
 
     @Test

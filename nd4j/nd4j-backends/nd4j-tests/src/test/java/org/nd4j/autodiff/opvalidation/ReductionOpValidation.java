@@ -115,7 +115,7 @@ public class ReductionOpValidation extends BaseOpValidation {
             String error = OpValidation.validate(new TestCase(sd)
                     .expectedOutput(nonZero.getVarName(), Nd4j.scalar(DataType.LONG, i == 0 ? 2.0 : 4.0))
                     .expectedOutput(zero.getVarName(), Nd4j.scalar(DataType.LONG, i == 0 ? 2.0 : 0.0))
-                    .gradientCheck(i != 0)
+                    .gradientCheck(false)
             );
             if (error != null)
                 allFailed.add(error);
@@ -324,15 +324,14 @@ public class ReductionOpValidation extends BaseOpValidation {
 
         for (int dim : new int[]{0, Integer.MAX_VALUE}) {    //These two cases are equivalent here
 
-//            for (int i = 0; i < 18; i++) {
-            for (int i = 2; i < 3; i++) {
+            for (int i = 0; i < 16; i++) {
 
                 SameDiff sd = SameDiff.create();
 
                 int nOut = 4;
                 int minibatch = 10;
-                SDVariable input = sd.placeHolder("in", DataType.DOUBLE, -1, nOut);
-                SDVariable label = sd.placeHolder("label", DataType.DOUBLE, -1, nOut);
+                SDVariable input = sd.var("in", DataType.DOUBLE, minibatch, nOut);
+                SDVariable label = sd.var("label", DataType.DOUBLE, minibatch, nOut);
 
                 SDVariable diff = input.sub(label);
                 SDVariable sqDiff = diff.mul(diff);
@@ -342,6 +341,8 @@ public class ReductionOpValidation extends BaseOpValidation {
                 String name;
                 TestCase tc = new TestCase(sd);
                 boolean uDistInput = false;
+                boolean gradientCheckable = true;
+                INDArray exp = null;
                 switch (i) {
                     case 0:
                         loss = sd.mean("loss", msePerEx, dim);
@@ -384,12 +385,13 @@ public class ReductionOpValidation extends BaseOpValidation {
                         name = "normmax";
                         break;
                     case 10:
-                        loss = sd.math().countNonZero("loss", msePerEx, dim).castTo(DataType.DOUBLE);
-                        name = "countNonZero";
+                        loss = sd.math().entropy("loss", msePerEx, dim);
+                        name = "entropy";
                         break;
                     case 11:
-                        loss = sd.math().countZero("loss", msePerEx, dim).castTo(DataType.DOUBLE);
-                        name = "countZero";
+                        name = "logEntropy";
+                        loss = sd.math().logEntropy("loss", msePerEx, dim);
+                        uDistInput = true;
                         break;
                     case 12:
                         loss = sd.math().amax("loss", msePerEx, dim);
@@ -407,15 +409,6 @@ public class ReductionOpValidation extends BaseOpValidation {
                         loss = sd.math().amean("loss", msePerEx, dim);
                         name = "amean";
                         break;
-                    case 16:
-                        loss = sd.math().entropy("loss", msePerEx, dim);
-                        name = "entropy";
-                        break;
-                    case 17:
-                        name = "logEntropy";
-                        loss = sd.math().logEntropy("loss", msePerEx, dim);
-                        uDistInput = true;
-                        break;
                     default:
                         throw new RuntimeException();
                 }
@@ -429,6 +422,11 @@ public class ReductionOpValidation extends BaseOpValidation {
 
                 sd.associateArrayWithVariable(inputArr, input);
                 sd.associateArrayWithVariable(labelArr, label);
+
+                tc.gradientCheck(gradientCheckable);
+                if(exp != null){
+                    tc.expectedOutput(loss.getVarName(), exp);
+                }
 
                 String error = OpValidation.validate(tc);
                 if (error != null) {
@@ -471,7 +469,7 @@ public class ReductionOpValidation extends BaseOpValidation {
                 SameDiff sd = SameDiff.create();
                 sd.setLogExecution(false);
 
-                SDVariable in = sd.var("in", -1, d1, d2);
+                SDVariable in = sd.var("in", d0, d1, d2);
                 SDVariable label = sd.var("label", outShape);
                 SDVariable second = in.mul(2);
 
@@ -482,6 +480,8 @@ public class ReductionOpValidation extends BaseOpValidation {
                 SDVariable reduced;
                 String name;
                 TestCase tc = new TestCase(sd);
+                boolean gradCheck = true;
+                INDArray exp = null;
                 switch (i) {
                     case 0:
                         reduced = sd.mean("reduced", second, reduceDim);
@@ -543,18 +543,26 @@ public class ReductionOpValidation extends BaseOpValidation {
                         break;
                     case 10:
                         reduced = sd.argmax("reduced", second, reduceDim);
+                        gradCheck = false;
+                        exp = inputArr.mul(2).argMax(reduceDim);
                         name = "argmax";
                         break;
                     case 11:
                         reduced = sd.argmin("reduced", second, reduceDim);
+                        gradCheck = false;
+                        exp = Nd4j.argMin(inputArr.mul(2), reduceDim);
                         name = "argmin";
                         break;
                     case 12:
                         reduced = sd.math().countNonZero("reduced", second, reduceDim);
+                        gradCheck = false;
+                        exp = inputArr.mul(2).neq(0).castTo(DataType.LONG).sum(reduceDim);
                         name = "countNonZero";
                         break;
                     case 13:
                         reduced = sd.math().countZero("reduced", second, reduceDim);
+                        gradCheck = false;
+                        exp = inputArr.mul(2).eq(0).castTo(DataType.LONG).sum(reduceDim);
                         name = "countZero";
                         break;
                     case 14:
@@ -592,8 +600,10 @@ public class ReductionOpValidation extends BaseOpValidation {
 
                 tc.gradCheckMaxRelativeError(maxRelError);
                 tc.gradCheckMinAbsError(minAbsError);
-
-//                sd.execAndEndResult();
+                tc.gradientCheck(gradCheck);
+                if(exp != null){
+                    tc.expected(reduced, exp);
+                }
 
                 String error = OpValidation.validate(tc);
                 if (error != null) {
@@ -881,6 +891,7 @@ public class ReductionOpValidation extends BaseOpValidation {
 
                 TestCase tc = new TestCase(sd)
                         .expected(reduce, exp)
+                        .gradientCheck(false)
                         .testName(name + " - " + (dim == null ? null : Arrays.toString(dim)));
 
                 log.info("Starting: {}", tc.testName());
@@ -1001,8 +1012,8 @@ public class ReductionOpValidation extends BaseOpValidation {
 
             int nOut = 4;
             int minibatch = 3;
-            SDVariable input = sd.var("in", new long[]{-1, nOut});
-            SDVariable label = sd.var("label", new long[]{-1, nOut});
+            SDVariable input = sd.var("in", DataType.DOUBLE, new long[]{minibatch, nOut});
+            SDVariable label = sd.var("label", DataType.DOUBLE, new long[]{minibatch, nOut});
 
             SDVariable diff = input.sub(label);
             SDVariable sqDiff = diff.mul(diff);
@@ -1047,8 +1058,8 @@ public class ReductionOpValidation extends BaseOpValidation {
             String msg = "test: " + i + " - " + name;
             log.info("*** Starting test: " + msg);
 
-            INDArray inputArr = Nd4j.rand(minibatch, nOut);
-            INDArray labelArr = Nd4j.rand(minibatch, nOut);
+            INDArray inputArr = Nd4j.rand(DataType.DOUBLE, minibatch, nOut);
+            INDArray labelArr = Nd4j.rand(DataType.DOUBLE, minibatch, nOut);
 
             sd.associateArrayWithVariable(inputArr, input);
             sd.associateArrayWithVariable(labelArr, label);

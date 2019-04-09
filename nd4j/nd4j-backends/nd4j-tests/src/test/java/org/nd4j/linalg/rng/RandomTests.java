@@ -297,7 +297,7 @@ public class RandomTests extends BaseNd4jTest {
 
         INDArray z1 = Nd4j.create(DataType.DOUBLE, 1000000);
         INDArray z2 = Nd4j.create(DataType.DOUBLE, 1000000);
-        INDArray zDup = z1.dup();
+        INDArray zDup = z1.like();
 
         GaussianDistribution op1 = new GaussianDistribution(z1, 0.0, 1.0);
         Nd4j.getExecutioner().exec(op1, random1);
@@ -309,6 +309,11 @@ public class RandomTests extends BaseNd4jTest {
         assertEquals(0.0, z1.meanNumber().doubleValue(), 0.01);
 
         assertEquals(1.0, z1.stdNumber().doubleValue(), 0.01);
+
+        val d1 = z1.toDoubleVector();
+        val d2 = z2.toDoubleVector();
+
+        assertArrayEquals(d1, d2, 1e-4);
 
         assertEquals(z1, z2);
     }
@@ -1370,6 +1375,16 @@ public class RandomTests extends BaseNd4jTest {
 
             assertTrue(i >= 10 && i < 20);
         }
+    }
+
+    @Test
+    public void testBernoulli(){
+        Nd4j.getRandom().setSeed(12345);
+        INDArray arr = Nd4j.create(DataType.DOUBLE, 100);
+        Nd4j.exec(new BernoulliDistribution(arr, 0.5));
+        System.out.println(arr);
+        double sum = arr.sumNumber().doubleValue();
+        assertTrue(String.valueOf(sum), sum > 0.0 && sum < 100.0);
     }
 
     private List<INDArray> getList(int numBatches){

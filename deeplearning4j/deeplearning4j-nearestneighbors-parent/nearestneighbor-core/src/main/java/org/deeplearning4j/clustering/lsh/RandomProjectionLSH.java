@@ -18,6 +18,7 @@ package org.deeplearning4j.clustering.lsh;
 
 import lombok.Getter;
 import lombok.val;
+import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.broadcast.bool.BroadcastEqualTo;
@@ -125,8 +126,7 @@ public class RandomProjectionLSH implements LSH {
 
         INDArray norms = Nd4j.norm2(data2.dup(), -1);
 
-        assert(norms.shape()[0] == numTables);
-        assert(norms.shape()[1] == 1);
+        Preconditions.checkState(norms.rank() == 1 && norms.size(0) == numTables, "Expected norm2 to have shape [%s], is %ndShape", norms.size(0), norms);
 
         data2.diviColumnVector(norms);
         data2.addiRowVector(data);
