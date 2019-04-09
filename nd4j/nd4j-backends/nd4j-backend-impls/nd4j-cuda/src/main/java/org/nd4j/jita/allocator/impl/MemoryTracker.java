@@ -9,6 +9,7 @@ public class MemoryTracker {
     private List<AtomicLong> allocatedPerDevice = new ArrayList<>();
     private List<AtomicLong> cachedPerDevice = new ArrayList<>();
     private List<AtomicLong> totalPerDevice = new ArrayList<>();
+    private List<AtomicLong> workspacesPerDevice = new ArrayList<>();
     private final static MemoryTracker INSTANCE = new MemoryTracker();
 
     private MemoryTracker() {
@@ -31,6 +32,10 @@ public class MemoryTracker {
         return cachedPerDevice.get(deviceId).get();
     }
 
+    public long getWorkspace(int deviceId) {
+        return workspacePerDevice.get(deviceId).get();
+    }
+
     public long getTotal(int deviceId) {
         return totalPerDevice.get(deviceId).get();
     }
@@ -49,6 +54,14 @@ public class MemoryTracker {
 
     public void decrementCached(int deviceId, long memorySubtracted) {
         cachedPerDevice.get(deviceId).getAndAdd(-memoryAdded);
+    }
+
+    public void incrementWorkspace(int deviceId, long memoryAdded) {
+        workspacesPerDevice.get(deviceId).getAndAdded(memoryAdded);
+    }
+
+    public void decrementWorkspace(int deviceId, long memoryAdded) {
+        workspacePerDevice.get(deviceId).getAndAdd(-memoryAdded);
     }
 
     private void setTotalPerDevice(int device, long memoryAvailable) {
