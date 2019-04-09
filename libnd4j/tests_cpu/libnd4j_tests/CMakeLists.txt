@@ -17,6 +17,32 @@ if(result)
   message(FATAL_ERROR "Build step for googletest failed: ${result}")
 endif()
 
+
+# Download and unpack flatbuffers at configure time
+configure_file(../../CMakeLists.txt.in flatbuffers-download/CMakeLists.txt)
+execute_process(COMMAND ${CMAKE_COMMAND} -G "${CMAKE_GENERATOR}" .
+        RESULT_VARIABLE result
+        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/flatbuffers-download )
+if(result)
+    message(FATAL_ERROR "CMake step for flatbuffers failed: ${result}")
+endif()
+execute_process(COMMAND ${CMAKE_COMMAND} --build .
+        RESULT_VARIABLE result
+        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/flatbuffers-download )
+if(result)
+    message(FATAL_ERROR "Build step for flatbuffers failed: ${result}")
+endif()
+
+# Add flatbuffers directly to our build.
+add_subdirectory(${CMAKE_CURRENT_BINARY_DIR}/flatbuffers-src
+        ${CMAKE_CURRENT_BINARY_DIR}/flatbuffers-build
+        EXCLUDE_FROM_ALL)
+
+set(HAVE_FLATBUFFERS 1)
+set(FLATBUFFERS_PATH ${CMAKE_CURRENT_BINARY_DIR}/flatbuffers-src)
+include_directories(${FLATBUFFERS_PATH}/include)
+
+
 # Prevent overriding the parent project's compiler/linker
 # settings on Windows
 set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
