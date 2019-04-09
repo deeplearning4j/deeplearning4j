@@ -21,6 +21,7 @@ import lombok.val;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.CustomOp;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.custom.Flatten;
@@ -29,9 +30,12 @@ import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.api.ops.executioner.OpStatus;
 import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.AddOp;
 import org.nd4j.linalg.api.ops.random.compat.RandomStandardNormal;
+import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.nativeblas.NativeOpsHolder;
+
+import java.util.List;
 
 import static org.junit.Assert.*;
 
@@ -480,5 +484,30 @@ public class CustomOpsTests {
         val result = Nd4j.exec(new Flatten('c', arrayA, arrayB, arrayC))[0];
 
         assertEquals(exp, result);
+    }
+
+    @Test
+    public void testStridedSliceEdgeCase(){
+        INDArray in = Nd4j.scalar(10.0).reshape(1);   //Int [1]
+        INDArray begin = Nd4j.ones(DataType.INT, 1);
+        INDArray end = Nd4j.zeros(DataType.INT, 1);
+        INDArray stride = Nd4j.ones(DataType.INT, 1);
+
+        DynamicCustomOp op = DynamicCustomOp.builder("strided_slice")
+                .addInputs(in, begin, end, stride)
+                .addIntegerArguments(0, //Begin mask
+                        0,  //Ellipsis mask
+                        1,  //End mask
+                        0,  //New axis mask
+                        0)  //Shrink axis mask
+                //.addOutputs(Nd4j.empty(DataType.INT))
+                .build();
+
+        List<LongShapeDescriptor> l = op.calculateOutputShape();
+        assertEquals(1, l.size());
+        assertEquals(DataType.DOUBLE, l.get(0).dataType());
+        assertTrue(l.get(0).isEmpty()); //Should be empty array, is rank 0 scalar
+
+        Nd4j.exec(op);  //Execution is OK
     }
 }
