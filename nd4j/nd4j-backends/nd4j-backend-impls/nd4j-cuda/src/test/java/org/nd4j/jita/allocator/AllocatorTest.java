@@ -49,20 +49,47 @@ public class AllocatorTest {
     }
 
     @Test
-    public void testWorkspaceReuse() {
-        if (Nd4j.getExecutioner().type() != OpExecutioner.ExecutionerType.CUDA)
-            return;
+    public void testWorkspaceInitSize() {
+
+        long initSize = 1024;
 
         val workspaceConfig = WorkspaceConfiguration.builder()
+                .allocationPolicy(STRICT)
+                .initialSize(initSize)
                 .policyMirroring(MirroringPolicy.HOST_ONLY) // Commenting this out makes it so that assert is not triggered (for at least 40 secs or so...)
                 .build();
 
-        for (int  e = 0; e < 10; e++) {
-           try (val ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace(workspaceConfig, "test")) {
-              final INDArray zeros = Nd4j.zeros(10, 'f');
-              System.out.println(MemoryTracker.getInstance().getWorkspace(Nd4j.getAffinityManager().getDeviceForCurrentThread());
-           }
+        try (val ws = Nd4j.getWorkspaceManager().createNewWorkspace(workspaceConfig, "test")) {
+           assertEquals(initSize,
+                        MemoryTracker.getInstance().getWorkspace(Nd4j.getAffinityManager().getDeviceForCurrentThread());
         }
+        Nd4j.getWorkspaceManager().destoryWorkspace(ws);
+        assertEquals(0,
+                MemoryTracker.getInstance().getWorkspace(Nd4j.getAffinityManager().getDeviceForCurrentThread());
+    }
+
+    @Test
+    public void testWorkspaceAlloc() {
+
+        long initSize = 0;
+        long allocSize = 48;
+
+        val workspaceConfig = WorkspaceConfiguration.builder()
+                .allocationPolicy(STRICT)
+                .initialSize(initSize)
+                .policyMirroring(MirroringPolicy.HOST_ONLY) // Commenting this out makes it so that assert is not triggered (for at least 40 secs or so...)
+                .build();
+
+        try (val ws = Nd4j.getWorkspaceManager().createNewWorkspace(workspaceConfig, "test")) {
+            final INDArray zeros = Nd4j.zeros(allocSize, 'c');
+            assertEquals(allocSize,
+                    MemoryTracker.getInstance().getWorkspace(Nd4j.getAffinityManager().getDeviceForCurrentThread());
+        }
+        assertEquals(allocSize,
+                MemoryTracker.getInstance().getWorkspace(Nd4j.getAffinityManager().getDeviceForCurrentThread());
+        Nd4j.getWorkspaceManager().destoryWorkspace(ws);
+        assertEquals(0,
+                MemoryTracker.getInstance().getWorkspace(Nd4j.getAffinityManager().getDeviceForCurrentThread());
     }
 
 }
