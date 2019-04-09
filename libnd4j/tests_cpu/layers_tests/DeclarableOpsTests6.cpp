@@ -126,9 +126,9 @@ TEST_F(DeclarableOpsTests6, Test_StridedSlice_Once_Again_4) {
 }
 TEST_F(DeclarableOpsTests6, Test_StridedSlice_Once_Again_04) {
     auto matrix = NDArrayFactory::create<double>('c', {1}, {10});
-    auto b = NDArrayFactory::create<int>('c', {1}, {1});
-    auto e = NDArrayFactory::create<int>('c', {1}, {(int)0});
-    auto s = NDArrayFactory::create<int>('c', {1}, {1});
+    auto b = NDArrayFactory::create_<int>('c', {1}, {1});
+    auto e = NDArrayFactory::create_<int>('c', {1}, {(int)0});
+    auto s = NDArrayFactory::create_<int>('c', {1}, {1});
     nd4j::ops::ones_as opOnes;
     //auto exp = NDArrayFactory::create<double>('c', {2}, {1.0f, 2.0f});
     auto onesRes = opOnes.execute({&matrix}, {}, {});
@@ -138,14 +138,33 @@ TEST_F(DeclarableOpsTests6, Test_StridedSlice_Once_Again_04) {
     auto ones = onesRes->at(0);
     ones->printShapeInfo("Shape ones");
     *ones *= 10;
-    nd4j::ops::strided_slice op;
-    auto result = op.execute({ones, &b, &e, &s}, {}, {0, 1, 0, 0, 0});
-    ASSERT_EQ(Status::OK(), result->status());
 
-    auto z = result->at(0);
-    z->printShapeInfo("SS OS shape");
-    ASSERT_TRUE(z->isEmpty());
+    auto variableSpace = new VariableSpace();
+    variableSpace->putVariable(-1, ones);
+    variableSpace->putVariable(-2, b);
+    variableSpace->putVariable(-3, e);
+    variableSpace->putVariable(-4, s);
+    auto block = new Context(1, variableSpace, false);  // not-in-place
+    block->fillInputs({-1});
+    block->fillInputs({-2});
+    block->fillInputs({-3});
+    block->fillInputs({-4});
+    block->getIArguments()->push_back(0);
+    block->getIArguments()->push_back(1);
+    block->getIArguments()->push_back(0);
+    block->getIArguments()->push_back(0);
+    block->getIArguments()->push_back(0);
+    auto inputShapes = new ShapeList({ones->getShapeInfo(), b->getShapeInfo(), e->getShapeInfo(), s->getShapeInfo()});
+    nd4j::ops::strided_slice op;
+    auto result = op.calculateOutputShape(inputShapes, *block); //execute({ones, &b, &e, &s}, {}, {0, 1, 0, 0, 0});
+    ASSERT_EQ(result->size(), 1);
+    shape::printShapeInfo(result->at(0));
+    //auto z = result->at(0);
+//    z->printShapeInfo("SS OS shape");
+    ASSERT_TRUE(shape::isEmpty(result->at(0)));
     //ASSERT_EQ(exp, *z);
+    delete block;
+
     delete onesRes;
     delete result;
 }
