@@ -1,9 +1,10 @@
-package test.org.nd4j.jita.allocator;
+package org.nd4j.jita.allocator;
 
-import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.jita.allocator.impl.MemoryTracker;
+
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import lombok.val;
@@ -11,12 +12,8 @@ import lombok.val;
 import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
 import org.nd4j.linalg.api.memory.enums.MirroringPolicy;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.factory.Nd4jBackend;
-import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.memory.enums.AllocationPolicy;
-import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
 
 
 public class AllocatorTest {
@@ -27,41 +24,96 @@ public class AllocatorTest {
         int deviceId = 0;
         MemoryTracker tracker = MemoryTracker.getInstance();
 
-        assertTrue(0 == tracker.getAllocated(deviceId));
-        assertTrue(0 == tracker.getCached(deviceId));
-        assertTrue(0 == tracker.getTotal(deviceId));
+        assertTrue(0 == tracker.getAllocatedAmount(deviceId));
+        assertTrue(0 == tracker.getCachedAmount(deviceId));
+        assertTrue(0 == tracker.getTotalMemory(deviceId));
 
-        tracker.incrementAllocated(deviceId, 10);
-        assertTrue(10 == tracker.getAllocated(deviceId));
+        tracker.incrementAllocatedAmount(deviceId, 10);
+        assertTrue(10 == tracker.getAllocatedAmount(deviceId));
 
-        tracker.incrementCached(deviceId, 5);
-        assertTrue(5 == tracker.getCached(deviceId));
+        tracker.incrementCachedAmount(deviceId, 5);
+        assertTrue(5 == tracker.getCachedAmount(deviceId));
 
-        tracker.decrementAllocated(deviceId, 5);
-        assertTrue(5 == tracker.getAllocated(deviceId));
+        tracker.decrementAllocatedAmount(deviceId, 5);
+        assertTrue(5 == tracker.getAllocatedAmount(deviceId));
 
-        tracker.decrementCached(deviceId, 5);
-        assertTrue(0 == tracker.getCached(deviceId));
+        tracker.decrementCachedAmount(deviceId, 5);
+        assertTrue(0 == tracker.getCachedAmount(deviceId));
 
-        assertTrue(0 == tracker.getTotal(deviceId));
+        assertTrue(0 == tracker.getTotalMemory(deviceId));
     }
 
     @Test
     public void testWorkspaceInitSize() {
 
         long initSize = 1024;
-	MemoryTracker tracker = MemoryTracker.getInstance();
+	    MemoryTracker tracker = MemoryTracker.getInstance();
 
         WorkspaceConfiguration workspaceConfig = WorkspaceConfiguration.builder()
                 .policyAllocation(AllocationPolicy.STRICT)
                 .initialSize(initSize)
                 .build();
 
-	try (MemoryWorkspace ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace(workspaceConfig, "test")) {
-        	assertTrue(initSize + SAFETY_OFFSET  ==
-                   tracker.getWorkspace(Nd4j.getAffinityManager().getDeviceForCurrentThread()));
+	    try (val ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace(workspaceConfig, "test121")) {
+        	assertEquals(initSize + SAFETY_OFFSET, tracker.getWorkspaceAllocatedAmount(Nd4j.getAffinityManager().getDeviceForCurrentThread()));
         }
-	assertTrue(0L == tracker.getWorkspace(Nd4j.getAffinityManager().getDeviceForCurrentThread()));
+
+	    val ws = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread("test121");
+	    ws.destroyWorkspace();
+
+	    assertEquals(0, tracker.getWorkspaceAllocatedAmount(Nd4j.getAffinityManager().getDeviceForCurrentThread()));
+    }
+
+
+    @Test
+    public void testWorkspaceSpilledSize() {
+
+        long initSize = 0;
+        MemoryTracker tracker = MemoryTracker.getInstance();
+
+        WorkspaceConfiguration workspaceConfig = WorkspaceConfiguration.builder()
+                .policyAllocation(AllocationPolicy.STRICT)
+                .initialSize(initSize)
+                .build();
+
+        try (val ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace(workspaceConfig, "test99323")) {
+            assertEquals(0L, tracker.getWorkspaceAllocatedAmount(Nd4j.getAffinityManager().getDeviceForCurrentThread()));
+
+            val array = Nd4j.createFromArray(1.f, 2.f, 3.f, 4.f);
+
+            assertEquals(array.length() * array.data().getElementSize(), tracker.getWorkspaceAllocatedAmount(Nd4j.getAffinityManager().getDeviceForCurrentThread()));
+        }
+
+        val ws = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread("test99323");
+        ws.destroyWorkspace();
+
+        assertEquals(0, tracker.getWorkspaceAllocatedAmount(Nd4j.getAffinityManager().getDeviceForCurrentThread()));
+    }
+
+    @Test
+    public void testWorkspaceSpilledSizeHost() {
+
+        long initSize = 0;
+        MemoryTracker tracker = MemoryTracker.getInstance();
+
+        WorkspaceConfiguration workspaceConfig = WorkspaceConfiguration.builder()
+                .policyAllocation(AllocationPolicy.STRICT)
+                .policyMirroring(MirroringPolicy.HOST_ONLY)
+                .initialSize(initSize)
+                .build();
+
+        try (val ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace(workspaceConfig, "test99323222")) {
+            assertEquals(0L, tracker.getWorkspaceAllocatedAmount(Nd4j.getAffinityManager().getDeviceForCurrentThread()));
+
+            val array = Nd4j.createFromArray(1.f, 2.f, 3.f, 4.f);
+
+            assertEquals(0, tracker.getWorkspaceAllocatedAmount(Nd4j.getAffinityManager().getDeviceForCurrentThread()));
+        }
+
+        val ws = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread("test99323222");
+        ws.destroyWorkspace();
+
+        assertEquals(0, tracker.getWorkspaceAllocatedAmount(Nd4j.getAffinityManager().getDeviceForCurrentThread()));
     }
 
 
@@ -80,15 +132,15 @@ public class AllocatorTest {
 
 	    try (val ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace(workspaceConfig, "test")) {
         	final INDArray zeros = Nd4j.zeros(allocSize, 'c');
-		System.out.println("Alloc1:" + MemoryTracker.getInstance().getWorkspace(Nd4j.getAffinityManager().getDeviceForCurrentThread()));
+		System.out.println("Alloc1:" + MemoryTracker.getInstance().getWorkspaceAllocatedAmount(Nd4j.getAffinityManager().getDeviceForCurrentThread()));
         	assertTrue(allocSize ==
-                    MemoryTracker.getInstance().getWorkspace(Nd4j.getAffinityManager().getDeviceForCurrentThread()));
+                    MemoryTracker.getInstance().getWorkspaceAllocatedAmount(Nd4j.getAffinityManager().getDeviceForCurrentThread()));
 	}
         assertTrue(allocSize == 
-                MemoryTracker.getInstance().getWorkspace(Nd4j.getAffinityManager().getDeviceForCurrentThread()));
+                MemoryTracker.getInstance().getWorkspaceAllocatedAmount(Nd4j.getAffinityManager().getDeviceForCurrentThread()));
         /*Nd4j.getWorkspaceManager().destroyWorkspace(ws);
         assertTrue(0L ==
-                MemoryTracker.getInstance().getWorkspace(Nd4j.getAffinityManager().getDeviceForCurrentThread()));*/
+                MemoryTracker.getInstance().getWorkspaceAllocatedAmount(Nd4j.getAffinityManager().getDeviceForCurrentThread()));*/
     }
 
 }

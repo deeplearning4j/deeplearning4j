@@ -25,43 +25,43 @@ public class MemoryTracker {
         return INSTANCE;
     }
 
-    public long getAllocated(int deviceId) {
+    public long getAllocatedAmount(int deviceId) {
         return allocatedPerDevice.get(deviceId).get();
     }
 
-    public long getCached(int deviceId) {
+    public long getCachedAmount(int deviceId) {
         return cachedPerDevice.get(deviceId).get();
     }
 
-    public long getWorkspace(int deviceId) {
+    public long getWorkspaceAllocatedAmount(int deviceId) {
         return workspacesPerDevice.get(deviceId).get();
     }
 
-    public long getTotal(int deviceId) {
+    public long getTotalMemory(int deviceId) {
         return totalPerDevice.get(deviceId).get();
     }
 
-    public void incrementAllocated(int deviceId, long memoryAdded) {
+    public void incrementAllocatedAmount(int deviceId, long memoryAdded) {
         allocatedPerDevice.get(deviceId).getAndAdd(memoryAdded);
     }
 
-    public void incrementCached(int deviceId, long memoryAdded) {
+    public void incrementCachedAmount(int deviceId, long memoryAdded) {
         cachedPerDevice.get(deviceId).getAndAdd(memoryAdded);
     }
 
-    public void decrementAllocated(int deviceId, long memoryAdded) {
+    public void decrementAllocatedAmount(int deviceId, long memoryAdded) {
         allocatedPerDevice.get(deviceId).getAndAdd(-memoryAdded);
     }
 
-    public void decrementCached(int deviceId, long memorySubtracted) {
+    public void decrementCachedAmount(int deviceId, long memorySubtracted) {
         cachedPerDevice.get(deviceId).getAndAdd(-memorySubtracted);
     }
 
-    public void incrementWorkspace(int deviceId, long memoryAdded) {
+    public void incrementWorkspaceAllocatedAmount(int deviceId, long memoryAdded) {
         workspacesPerDevice.get(deviceId).getAndAdd(memoryAdded);
     }
 
-    public void decrementWorkspace(int deviceId, long memorySubtracted) {
+    public void decrementWorkspaceAmount(int deviceId, long memorySubtracted) {
         workspacesPerDevice.get(deviceId).getAndAdd(-memorySubtracted);
     }
 
