@@ -6580,10 +6580,15 @@ public class Nd4j {
      * For more on the format, see: https://docs.scipy.org/doc/numpy-1.14.0/neps/npy-format.html
      * @throws IOException
      */
-    public static byte[] toNpyByteArray(INDArray input) throws IOException {
-        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-        writeAsNumpy(input,byteArrayOutputStream);
-        return byteArrayOutputStream.toByteArray();
+    public static byte[] toNpyByteArray(INDArray input) {
+        try {
+            ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+            writeAsNumpy(input, byteArrayOutputStream);
+            return byteArrayOutputStream.toByteArray();
+        } catch (IOException e){
+            //Should never happen
+            throw new RuntimeException(e);
+        }
     }
 
 

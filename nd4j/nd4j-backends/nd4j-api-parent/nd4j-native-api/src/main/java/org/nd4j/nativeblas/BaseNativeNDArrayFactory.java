@@ -78,14 +78,9 @@ public abstract class BaseNativeNDArrayFactory extends BaseNDArrayFactory {
         header.capacity(size.get());
         header.position(0);
 
-        char[] magic = {'\\','x','9','3','N','U','M','P','Y','1','0'};
-
-        BytePointer magicPointer = new BytePointer(new String(magic).getBytes());
-        BytePointer bytePointer = new BytePointer(magicPointer.capacity() + (int) (size.get() + (array.data().getElementSize() * array.data().length())));
+        BytePointer bytePointer = new BytePointer((int) (size.get() + (array.data().getElementSize() * array.data().length())));
         BytePointer headerCast = new BytePointer(header);
         int pos = 0;
-        Pointer.memcpy(bytePointer,magicPointer,magicPointer.capacity());
-        pos += (magicPointer.capacity() - 1);
         bytePointer.position(pos);
         Pointer.memcpy(bytePointer,headerCast,headerCast.capacity());
         pos += (headerCast.capacity() - 1);
