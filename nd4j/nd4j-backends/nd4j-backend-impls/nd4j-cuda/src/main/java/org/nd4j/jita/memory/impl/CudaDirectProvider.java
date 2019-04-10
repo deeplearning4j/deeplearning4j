@@ -88,6 +88,7 @@ public class CudaDirectProvider implements MemoryProvider {
                 point.setPointers(devicePointerInfo);
 
                 point.setAllocationStatus(AllocationStatus.HOST);
+                MemoryTracker.getInstance().incrementAllocatedAmount(Nd4j.getAffinityManager().getDeviceForCurrentThread(), reqMem);
                 return devicePointerInfo;
             }
             case DEVICE: {
@@ -121,7 +122,7 @@ public class CudaDirectProvider implements MemoryProvider {
 
                 point.setAllocationStatus(AllocationStatus.DEVICE);
                 point.setDeviceId(deviceId);
-
+                MemoryTracker.getInstance().incrementAllocatedAmount(Nd4j.getAffinityManager().getDeviceForCurrentThread(), reqMemory);
                 return devicePointerInfo;
             }
             default:
@@ -151,6 +152,7 @@ public class CudaDirectProvider implements MemoryProvider {
                 if (result == 0)
                     throw new RuntimeException("Can't deallocate [HOST] memory...");
             }
+                MemoryTracker.getInstance().decrementAllocatedAmount(Nd4j.getAffinityManager().getDeviceForCurrentThread(), reqMem);
                 break;
             case DEVICE: {
                 // cudaFree call
@@ -169,6 +171,7 @@ public class CudaDirectProvider implements MemoryProvider {
                 if (result == 0)
                     throw new RuntimeException("Can't deallocate [DEVICE] memory...");
             }
+                MemoryTracker.getInstance().decrementAllocatedAmount(Nd4j.getAffinityManager().getDeviceForCurrentThread(), reqMem);
                 break;
             default:
                 throw new IllegalStateException("Can't free memory on target [" + point.getAllocationStatus() + "]");
