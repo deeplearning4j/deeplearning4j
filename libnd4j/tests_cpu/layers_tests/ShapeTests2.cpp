@@ -20,6 +20,7 @@
 #include <helpers/data_gen.h>
 #include "testinclude.h"
 #include <helpers/TAD.h>
+#include <ShapeBuilders.h>
 
 class OnesTest : public testing::Test {
 public:
@@ -324,8 +325,8 @@ public:
     int dimensionFour = 0;
     int dimensionLength = 1;
     FourDTest() {
-        threeDShapeBuffer = shape::shapeBufferFortran(3, nd4j::DataType::FLOAT32, threeDShape);
-        fourDShapeBuffer = shape::shapeBufferFortran(4, nd4j::DataType::FLOAT32, fourDShape);
+        threeDShapeBuffer = nd4j::ShapeBuilders::createShapeInfo(nd4j::DataType::FLOAT32, 'f', 3, threeDShape);        
+        fourDShapeBuffer  = nd4j::ShapeBuilders::createShapeInfo(nd4j::DataType::FLOAT32, 'f', 4, fourDShape);
     }
     ~FourDTest() {
         if(threeDShapeBuffer != nullptr)
