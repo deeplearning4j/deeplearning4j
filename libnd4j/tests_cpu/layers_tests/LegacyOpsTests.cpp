@@ -469,8 +469,8 @@ TEST_F(LegacyOpsTests, reduce3_1) {
 
     std::vector<int> dim = {1};
 
-    auto shapeBuffer = shape::shapeBuffer(2, nd4j::DataType::FLOAT32, yShape);
-    auto xShapeBuffer = shape::shapeBuffer(1, nd4j::DataType::FLOAT32, xShape);
+    auto shapeBuffer  = nd4j::ShapeBuilders::createShapeInfo(nd4j::DataType::FLOAT32, 'c', 2, yShape);
+    auto xShapeBuffer = nd4j::ShapeBuilders::createShapeInfo(nd4j::DataType::FLOAT32, 'c', 1, xShape);    
 
     //int *tadShapeBuffer = shape::computeResultShape(shapeBuffer,dimension,dimensionLength);
     auto tadShapeBuffer = nd4j::ShapeUtils::evalReduceShapeInfo('c', dim, shapeBuffer, false, true, nullptr);
