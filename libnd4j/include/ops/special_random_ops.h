@@ -583,7 +583,7 @@ namespace randomOps {
     template<typename T>
     class TruncatedNormalDistribution {
     private:
-        static T step(nd4j::graph::RandomGenerator* rng, T mean, T stddev, Nd4jLong e, Nd4jLong middle, T& z) {
+        static inline _CUDA_HD T step(nd4j::graph::RandomGenerator* rng, T mean, T stddev, Nd4jLong e, Nd4jLong middle, T& z) {
             auto epm = e + middle;
             const T two_pi = static_cast<T>(2.0f) * static_cast<T>(3.14159265358979323846);
             const T epsilon = static_cast<T>(1.e-5f);
@@ -629,6 +629,7 @@ namespace randomOps {
             __shared__ unsigned char *cB;
             __shared__ unsigned char *dB;
             __shared__ nd4j::graph::RandomGenerator* devRng;
+            __shared__ Nd4jLong middle;
 
             if (threadIdx.x == 0) {
                 extern __shared__ unsigned char shmem[];
@@ -643,7 +644,6 @@ namespace randomOps {
                 zEWS = shape::elementWiseStride(zShapeBuffer);
                 yEWS = shape::elementWiseStride(yShapeBuffer);
 
-
                 epsilon = static_cast<T>(1e-6f);
                 two_pi = static_cast<T>(2.0f) * static_cast<T>(3.14159265358979323846);
 
@@ -651,6 +651,7 @@ namespace randomOps {
                 stddev = extraArguments[1];
 
                 step = (blockDim.x * gridDim.x);
+                middle = zLength / 2 + (zLength % 2);
             }
             __syncthreads();
 
@@ -661,39 +662,18 @@ namespace randomOps {
             __syncthreads();
 
             int tid = blockIdx.x * blockDim.x + threadIdx.x;
-            int middle = zLength % 2 == 0 ? zLength / 2 : zLength / 2 + 1;
-            T result0, result1, u0, u1, z0, z1, uT, uP;
+
+            GaussianDistribution<T>::specialOpCuda(state, x, xShapeBuffer, y, yShapeBuffer, z, zShapeBuffer, extraArguments);
+            __syncthreads();
 
             T ds = nd4j::math::nd4j_abs<T>(stddev) * static_cast<T>(2.0f);
-            for (Nd4jLong e = tid; e < middle; e += step) {
-                // we need to get random values
+            for (Nd4jLong e = tid; e < zLength; e += step) {
+                if (z[e] > mean + ds || z[e] < mean - ds) {
+                    z[e] = TruncatedNormalDistribution<T>::step(rng, mean, stddev, e, middle, z[e]);
 
-                Nd4jLong generation0 = 0;
-                auto epm = e + middle;
-                T realMean0 = y == z ? mean : y[e * yEWS];
-                T realMean1 = y == z ? mean : y[epm * yEWS];
-                T aRealMean0 = nd4j::math::nd4j_abs<T>(realMean0);
-                T aRealMean1 = nd4j::math::nd4j_abs<T>(realMean1);
-
-                do {
-                    u0 = rng->relativeT<T>(e + generation0, epsilon, static_cast<T>(1.0f));
-                    u1 = rng->relativeT<T>(epm + generation0, epsilon, static_cast<T>(1.0f));
-
-                    uT = nd4j::math::nd4j_sqrt<T,T>(static_cast<T>(-2.0f) * nd4j::math::nd4j_log<T,T>(u0));
-                    uP = two_pi * u1;
-
-                    z0 = uT * nd4j::math::nd4j_cos<T,T>(uP);
-                    z1 = uT * nd4j::math::nd4j_sin<T,T>(uP);
-
-                    result0 = z0 * stddev + realMean0;
-                    result1 = z1 * stddev + realMean1;
-
-                    generation0 += zLength;
-                } while (ds < aRealMean0 + nd4j::math::nd4j_abs<T>(result0) || aRealMean1 + nd4j::math::nd4j_abs<T>(result1) > ds);
-
-                z[e * zEWS] = result0;
-                if((epm) < zLength)
-                    z[epm * zEWS] = result1;
+                    if (z[e] > mean + ds || z[e] < mean - ds)
+                        z[e] = mean + nd4j::DataTypeUtils::min<T>();
+                }
             }
         }
 #endif
@@ -718,9 +698,8 @@ namespace randomOps {
             PRAGMA_OMP_PARALLEL_FOR_THREADS(_threads)
             for (Nd4jLong e = 0; e < zLength; ++e) {
                 if (z[e] > mean + ds || z[e] < mean - ds) {
-                    z[e] = step(rng, mean, stddev, e, middle, z[e]);// = e > 0 ? z[e - 1] : mean; // + stddev;
+                    z[e] = step(rng, mean, stddev, e, middle, z[e]);
 
-                //else if (z[e] < mean - ds)
                     if (z[e] > mean + ds || z[e] < mean - ds)
                         z[e] = mean + nd4j::DataTypeUtils::min<T>();
                 }
