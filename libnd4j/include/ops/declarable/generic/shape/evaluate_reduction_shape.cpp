@@ -77,7 +77,6 @@ namespace nd4j {
                 }
             }
 
-
             return SHAPELIST(ShapeBuilders::createVectorShapeInfo(nd4j::DataType::INT64, length, block.workspace()));
         }
     }

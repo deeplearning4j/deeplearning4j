@@ -3238,7 +3238,7 @@ static FORCEINLINE Nd4jStatus realExec(nd4j::ops::DeclarableOp* op, Nd4jPointer*
 	std::vector<nd4j::NDArray*> inputs(numInputs);
 	std::vector<nd4j::NDArray*> outputs(numOutputs);
 	std::vector<double> ttArgs(numTArgs);
-	std::vector<bool> bbArgs(0);
+	std::vector<bool> bbArgs(numBArgs);
 	std::vector<Nd4jLong> iiArgs(numIArgs);
 
 	// filling block now with inputs
@@ -3280,9 +3280,11 @@ static FORCEINLINE Nd4jStatus realExec(nd4j::ops::DeclarableOp* op, Nd4jPointer*
 	for (int e = 0; e < numIArgs; e++)
 		iiArgs[e] = iArgs[e];
 
-
 	for (int e = 0; e < numTArgs; e++)
 		ttArgs[e] = tArgs[e];
+
+    for (int e = 0; e < numBArgs; e++)
+        bbArgs[e] = bArgs[e];
 
 
 	// hypothetically at this point we have everything filled

@@ -237,8 +237,8 @@ namespace nd4j {
                                 outSha->destroy();
                                 delete outSha;
 
-                                nd4j_printf("Expected vs provided shapes mismatch: %s vs %s\n", eShape.c_str(), aShape.c_str());
-                                throw std::runtime_error("Expected vs provided shapes mismatch");
+                                nd4j_printf("Expected vs provided shape mismatch: %s vs %s\n", eShape.c_str(), aShape.c_str());
+                                throw std::runtime_error("Expected vs provided shape mismatch");
                             }
                         }
                     }
