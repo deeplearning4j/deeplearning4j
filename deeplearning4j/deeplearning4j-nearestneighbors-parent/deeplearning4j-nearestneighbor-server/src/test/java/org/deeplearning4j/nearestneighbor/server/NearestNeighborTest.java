@@ -22,6 +22,7 @@ import org.deeplearning4j.clustering.vptree.VPTree;
 import org.deeplearning4j.clustering.vptree.VPTreeFillSearch;
 import org.deeplearning4j.nearestneighbor.client.NearestNeighborsClient;
 import org.deeplearning4j.nearestneighbor.model.NearestNeighborRequest;
+import org.deeplearning4j.nearestneighbor.model.NearestNeighborsResult;
 import org.deeplearning4j.nearestneighbor.model.NearestNeighborsResults;
 import org.junit.Rule;
 import org.junit.Test;
@@ -58,7 +59,11 @@ public class NearestNeighborTest {
         request.setK(2);
         request.setInputIndex(0);
         NearestNeighbor nearestNeighbor = NearestNeighbor.builder().tree(vpTree).points(arr).record(request).build();
-        assertEquals(1, nearestNeighbor.search().get(0).getIndex());
+        List<NearestNeighborsResult> results = nearestNeighbor.search();
+        assertEquals(0, nearestNeighbor.search().get(0).getIndex());
+        assertEquals(0.0, nearestNeighbor.search().get(0).getDistance(), 1e-5);
+        assertEquals(1, nearestNeighbor.search().get(1).getIndex());
+        assertEquals(1.0, nearestNeighbor.search().get(1).getDistance(), 1e-5);
     }
 
     @Test
