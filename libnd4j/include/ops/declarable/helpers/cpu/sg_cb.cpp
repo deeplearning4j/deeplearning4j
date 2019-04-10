@@ -430,7 +430,6 @@ namespace nd4j {
                 const auto negTable = reinterpret_cast<T*>(vnegTable);
                 const auto infVector = reinterpret_cast<T*>(vinfVector);
 
-
                 T sneu1[600];
                 T sneu1e[600];
 

@@ -523,3 +523,29 @@ TEST_F(LegacyOpsTests, Reduce3_3) {
 
     ASSERT_EQ(e, z);
 }
+
+TEST_F(LegacyOpsTests, Reduce3_4) {
+    auto x = NDArrayFactory::create<double>('c', {3, 5}, {-0.84443557262, -0.06822254508, 0.74266910552, 0.61765557527, -0.77555125951,
+                                                          -0.99536740779, -0.0257304441183, -0.6512106060, -0.345789492130, -1.25485503673,
+                                                          0.62955373525, -0.31357592344, 1.03362500667, -0.59279078245, 1.1914824247});
+
+    auto y = NDArrayFactory::create<double>('c', {1, 5}, {-0.99536740779, -0.0257304441183, -0.6512106060, -0.345789492130, -1.25485503673});
+    auto e = NDArrayFactory::create<double>('c', {1, 3}, {0.577452, 0.0, 1.80182});
+    auto z = NDArrayFactory::create<double>('c', {1, 3});
+
+    auto dim = NDArrayFactory::create<int>('c', {1}, {1});
+
+    NativeOps nativeOps;
+
+    nativeOps.execReduce3(nullptr, reduce3::CosineDistance,
+                          x.buffer(), x.shapeInfo(), x.specialBuffer(), x.specialShapeInfo(),
+                          nullptr,
+                          y.buffer(), y.shapeInfo(), y.specialBuffer(), y.specialShapeInfo(),
+                          z.buffer(), z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo(),
+                          dim.buffer(), dim.shapeInfo(), dim.specialBuffer(), dim.specialShapeInfo(),
+                          nullptr, nullptr, nullptr, nullptr);
+
+    z.printIndexedBuffer("z");
+
+    ASSERT_EQ(e, z);
+}
