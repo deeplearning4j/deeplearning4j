@@ -500,6 +500,9 @@ namespace nd4j {
                             if (cIndex < 0)
                                 continue;
 
+                            if (cIndex >= vocabSize)
+                                throw std::runtime_error("Bad context 3");
+
                             hSoftmax_<T>(neu1, syn1 + (cIndex * vectorLength), expTable, neu1e, alpha, vectorLength, cCode, expLength, false);
                         }
                     }
