@@ -488,8 +488,10 @@ public class VPTree implements Serializable {
 
         while (!pq.isEmpty()) {
             HeapObject ho = pq.peek();
-            results.add(new DataPoint(ho.getIndex(), ho.getPoint()));
-            distances.add(ho.getDistance());
+            if (!ho.getPoint().equals(target)) {
+                results.add(new DataPoint(ho.getIndex(), ho.getPoint()));
+                distances.add(ho.getDistance());
+            }
             pq.poll();
         }
 

@@ -60,10 +60,8 @@ public class NearestNeighborTest {
         request.setInputIndex(0);
         NearestNeighbor nearestNeighbor = NearestNeighbor.builder().tree(vpTree).points(arr).record(request).build();
         List<NearestNeighborsResult> results = nearestNeighbor.search();
-        assertEquals(0, nearestNeighbor.search().get(0).getIndex());
-        assertEquals(0.0, nearestNeighbor.search().get(0).getDistance(), 1e-5);
-        assertEquals(1, nearestNeighbor.search().get(1).getIndex());
-        assertEquals(1.0, nearestNeighbor.search().get(1).getDistance(), 1e-5);
+        assertEquals(1, nearestNeighbor.search().get(0).getIndex());
+        assertEquals(1.0, nearestNeighbor.search().get(0).getDistance(), 1e-5);
     }
 
     @Test
@@ -105,7 +103,7 @@ public class NearestNeighborTest {
 
         NearestNeighborsClient client = new NearestNeighborsClient("http://localhost:" + localPort);
         NearestNeighborsResults result = client.knnNew(5, rand.getRow(0));
-        assertEquals(5, result.getResults().size());
+        assertEquals(4, result.getResults().size());
         server.stop();
     }
 
