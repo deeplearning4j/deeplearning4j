@@ -471,6 +471,9 @@ namespace nd4j {
                         if (cContext < 0)
                             continue;
 
+                        if (cContext >= vocabSize)
+                            throw std::runtime_error("Bad context");
+
                         T *syn0word = syn0 + (cContext * vectorLength);
 
                         for (int i = 0; i < vectorLength; i++)
@@ -539,6 +542,9 @@ namespace nd4j {
                         // skipping padded values
                         if (cContext < 0 || cLock == 1)
                             continue;
+
+                        if (cContext >= vocabSize)
+                            throw std::runtime_error("Bad context 2");
 
                         // one word from context
                         T *syn0word = syn0 + (cContext * vectorLength);
