@@ -116,8 +116,8 @@ public class CudaCachingZeroProvider extends CudaDirectProvider implements Memor
                     pair.setHostPointer(new CudaPointer(pointer.address()));
 
                     point.setAllocationStatus(AllocationStatus.HOST);
-                    MemoryTracker.getInstance().incrementCachedAmount(Nd4j.getAffinityManager().getDeviceForCurrentThread(), reqMemory);
-                    MemoryTracker.getInstance().decrementAllocatedAmount(Nd4j.getAffinityManager().getDeviceForCurrentThread(), reqMemory);
+                    MemoryTracker.getInstance().decrementCachedAmount(Nd4j.getAffinityManager().getDeviceForCurrentThread(), reqMemory);
+                    MemoryTracker.getInstance().incrementAllocatedAmount(Nd4j.getAffinityManager().getDeviceForCurrentThread(), reqMemory);
                     return pair;
                 }
             }
@@ -173,8 +173,8 @@ public class CudaCachingZeroProvider extends CudaDirectProvider implements Memor
             if (reqMemory > CudaEnvironment.getInstance().getConfiguration().getMaximumHostCacheableLength() || zeroCachedAmount.get() >= CudaEnvironment.getInstance().getConfiguration().getMaximumHostCache()) {
                 //log.info("HOST memory purging: {} bytes; MS: {}; MT: {}", reqMemory, MAX_SINGLE_ALLOCATION, MAX_CACHED_MEMORY);
                 super.free(point);
-                MemoryTracker.getInstance().decrementCachedAmount(Nd4j.getAffinityManager().getDeviceForCurrentThread(), reqMemory);
-                MemoryTracker.getInstance().incrementAllocatedAmount(Nd4j.getAffinityManager().getDeviceForCurrentThread(), reqMemory);
+                MemoryTracker.getInstance().incrementCachedAmount(Nd4j.getAffinityManager().getDeviceForCurrentThread(), reqMemory);
+                MemoryTracker.getInstance().decrementAllocatedAmount(Nd4j.getAffinityManager().getDeviceForCurrentThread(), reqMemory);
                 return;
             }
 
