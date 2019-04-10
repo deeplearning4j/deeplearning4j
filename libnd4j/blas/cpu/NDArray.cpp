@@ -1153,29 +1153,22 @@ void NDArray::replacePointers(void *buffer, Nd4jLong *shapeInfo, const bool rele
     }
 
     NDArray* NDArray::detach() {
+
         if (!isAttached())
             return this;
 
         void* newBuffer;
-        Nd4jLong* newShapeInfo;
-
-        auto l = lengthOf();
-
 
         newBuffer = new int8_t[lengthOf() * sizeOfT()];
 
-        if (this->ordering() == 'f')
-            newShapeInfo = shape::shapeBufferFortran(rankOf(), dataType(), shapeOf());
-        else
-            newShapeInfo = shape::shapeBuffer(rankOf(), dataType(), shapeOf());
+        Nd4jLong* newShapeInfo = ShapeBuilders::copyShapeInfo(_shapeInfo, false, nullptr);
 
-        auto result = new NDArray(newBuffer, newShapeInfo, nullptr);
-        result->_isBuffAlloc = true;
-        result->_isShapeAlloc = true;
+        auto result = new NDArray(newBuffer, newShapeInfo, nullptr, true, true);
 
         result->assign(this);
 
         return result;
+
     }
 
 ////////////////////////////////////////////////////////////////////////

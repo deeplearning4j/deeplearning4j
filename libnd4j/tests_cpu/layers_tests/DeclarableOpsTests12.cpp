@@ -932,3 +932,22 @@ TEST_F(DeclarableOpsTests12, reduceSqnormBp_1) {
 
     delete result;
 }
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests12, cumsum_1) {
+    
+    NDArray x('f', {3, 4}, nd4j::DataType::FLOAT32);
+
+    nd4j::ops::cumsum op;
+    auto result = op.execute({&x}, {}, {0, 0, 1});
+    ASSERT_EQ(Status::OK(), result->status());
+
+    auto z = result->at(0);
+    // z->printShapeInfo();
+    // x.printShapeInfo();
+
+    ASSERT_TRUE(z->ews() == 1);
+    ASSERT_TRUE(x.ews() == 1);
+
+    delete result;
+}
