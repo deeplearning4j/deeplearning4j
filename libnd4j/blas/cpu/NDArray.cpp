@@ -2979,12 +2979,13 @@ template void NDArray::applyScalar(nd4j::scalar::Ops op, const bool scalar, NDAr
         if (tadLength != min->lengthOf())
             throw std::runtime_error("NDArray::applyBroadcast method: tad length mismatch !");
 
-        auto tadPack = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(max->_shapeInfo, copy);
+        auto tadPackX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(max->_shapeInfo, copy);
+        auto tadPackZ = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(target->_shapeInfo, copy);
 
         if(max == this)
-            NativeOpExcutioner::execBroadcast(op, this->_buffer, this->_shapeInfo, other->_buffer, other->_shapeInfo, result->_buffer, result->_shapeInfo, copy.data(), (int)copy.size(), tadPack.primaryShapeInfo(), tadPack.primaryOffsets(), tadPack.primaryShapeInfo(), tadPack.primaryOffsets());
+            NativeOpExcutioner::execBroadcast(op, this->_buffer, this->_shapeInfo, other->_buffer, other->_shapeInfo, result->_buffer, result->_shapeInfo, copy.data(), (int)copy.size(), tadPackX.primaryShapeInfo(), tadPackX.primaryOffsets(), tadPackZ.primaryShapeInfo(), tadPackZ.primaryOffsets());
         else
-            NativeOpExcutioner::execInverseBroadcast(op, this->_buffer, this->_shapeInfo, other->_buffer, other->_shapeInfo, result->_buffer, result->_shapeInfo, copy.data(), (int)copy.size(), tadPack.primaryShapeInfo(), tadPack.primaryOffsets(), tadPack.primaryShapeInfo(), tadPack.primaryOffsets());
+            NativeOpExcutioner::execInverseBroadcast(op, this->_buffer, this->_shapeInfo, other->_buffer, other->_shapeInfo, result->_buffer, result->_shapeInfo, copy.data(), (int)copy.size(), tadPackX.primaryShapeInfo(), tadPackX.primaryOffsets(), tadPackZ.primaryShapeInfo(), tadPackZ.primaryOffsets());
     }
 
     //////////////////////////////////////////////////////////////////////////
@@ -3033,13 +3034,14 @@ template void NDArray::applyScalar(nd4j::scalar::Ops op, const bool scalar, NDAr
         if (tadLength != min->lengthOf())
             throw std::runtime_error("Tad length mismatch");
 
-        auto tadPack = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(max->_shapeInfo, copy);
+        auto tadPackX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(max->_shapeInfo, copy);
+        auto tadPackZ = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(max->_shapeInfo, copy);
 
         // TODO: eventually we want separate tads here
         if(this == max)
-            NativeOpExcutioner::execBroadcastBool(op, this->_buffer, this->_shapeInfo, other->_buffer, other->_shapeInfo, result->_buffer, result->_shapeInfo, copy.data(), (int)copy.size(), tadPack.primaryShapeInfo(), tadPack.primaryOffsets(), tadPack.primaryShapeInfo(), tadPack.primaryOffsets());
+            NativeOpExcutioner::execBroadcastBool(op, this->_buffer, this->_shapeInfo, other->_buffer, other->_shapeInfo, result->_buffer, result->_shapeInfo, copy.data(), (int)copy.size(), tadPackX.primaryShapeInfo(), tadPackX.primaryOffsets(), tadPackZ.primaryShapeInfo(), tadPackZ.primaryOffsets());
         else
-            NativeOpExcutioner::execInverseBroadcastBool(op, this->_buffer, this->_shapeInfo, other->_buffer, other->_shapeInfo, result->_buffer, result->_shapeInfo, copy.data(), (int)copy.size(), tadPack.primaryShapeInfo(), tadPack.primaryOffsets(), tadPack.primaryShapeInfo(), tadPack.primaryOffsets());
+            NativeOpExcutioner::execInverseBroadcastBool(op, this->_buffer, this->_shapeInfo, other->_buffer, other->_shapeInfo, result->_buffer, result->_shapeInfo, copy.data(), (int)copy.size(), tadPackX.primaryShapeInfo(), tadPackX.primaryOffsets(), tadPackZ.primaryShapeInfo(), tadPackZ.primaryOffsets());
     }
 
     //////////////////////////////////////////////////////////////////////////
