@@ -132,6 +132,17 @@ TEST_F(DeclarableOpsTests13, test_listdiff_1) {
     ASSERT_EQ(Status::OK(), result);
 }
 
+TEST_F(DeclarableOpsTests13, test_greater_1) {
+    auto x = NDArrayFactory::create<float>('c', {3, 1});
+    auto y = NDArrayFactory::create<float>('c', {1, 4});
+
+    nd4j::ops::greater op;
+    auto result = op.execute({&x, &y}, {}, {});
+    ASSERT_EQ(Status::OK(), result->status());
+
+    delete result;
+}
+
 TEST_F(DeclarableOpsTests13, test_or_1) {
     auto x = NDArrayFactory::create<bool>('c', {4}, {false, true, false, true});
     auto y = NDArrayFactory::create<bool>('c', {4}, {false, false, true, true});

@@ -3003,7 +3003,7 @@ template void NDArray::applyScalar(nd4j::scalar::Ops op, const bool scalar, NDAr
         auto result = target == nullptr ? this : target;
 
         if (other->lengthOf() == lengthOf() && this->rankOf() == other->rankOf()) {
-            NativeOpExcutioner::execPairwiseTransform(fromBroadcastToPairwiseBool(op), this->_buffer, this->_shapeInfo, other->_buffer, other->_shapeInfo, result->_buffer, result->_shapeInfo, nullptr);
+            NativeOpExcutioner::execPairwiseBoolTransform(fromBroadcastToPairwiseBool(op), this->_buffer, this->_shapeInfo, other->_buffer, other->_shapeInfo, result->_buffer, result->_shapeInfo, nullptr);
             return;
         }
 
