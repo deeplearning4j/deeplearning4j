@@ -463,7 +463,6 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
     @Override
     public INDArray exec(ReduceOp op) {
-        long st = profilingConfigurableHookIn(op);
         checkForCompression(op);
 
         val dimension = op.dimensions().toIntVector();
@@ -526,6 +525,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                 throw new ND4JIllegalStateException("Shape of target array for reduction [" + Arrays.toString(op.z().shape()) + "] doesn't match expected [" + Arrays.toString(retShape) + "]");
         }
 
+        long st = profilingConfigurableHookIn(op);
         naiveExec(op, dimension);
 
         profilingConfigurableHookOut(op, st);
