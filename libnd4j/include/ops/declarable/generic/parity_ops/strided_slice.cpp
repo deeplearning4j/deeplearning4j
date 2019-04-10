@@ -509,7 +509,7 @@ namespace nd4j {
             }
             else {
                 newShape = ShapeBuilders::createScalarShapeInfo(ArrayOptions::dataType(inShape), block.workspace());
-                if (!nonEmpty || shape::rank(inShape) == 0 || begin >= end)
+                if (shape::rank(inShape) == 0 || begin >= end)
                 ArrayOptions::setPropertyBit(newShape, ARRAY_EMPTY);
             }
 
