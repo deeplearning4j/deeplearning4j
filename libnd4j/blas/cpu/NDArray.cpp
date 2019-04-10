@@ -3070,7 +3070,7 @@ template void NDArray::applyScalar(nd4j::scalar::Ops op, const bool scalar, NDAr
             int dim = 0;
             if (shape::isCommonVector(this->_shapeInfo, dim)) {
                 if (this->shapeOf()[dim] == other->lengthOf() && dim == this->rankOf() - 1) {
-                    NativeOpExcutioner::execPairwiseTransform(op.p, this->_buffer, this->_shapeInfo, other->_buffer, other->_shapeInfo, target->_buffer, target->_shapeInfo, extraArgs);
+                    NativeOpExcutioner::execPairwiseBoolTransform(op.p, this->_buffer, this->_shapeInfo, other->_buffer, other->_shapeInfo, target->_buffer, target->_shapeInfo, extraArgs);
                     return;
                 }
             }
