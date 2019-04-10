@@ -14,6 +14,8 @@ import org.nd4j.linalg.api.memory.enums.MirroringPolicy;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.api.memory.enums.AllocationPolicy;
+import org.nd4j.jita.memory.impl.CudaDirectProvider;
+import org.nd4j.jita.memory.impl.CudaCachingZeroProvider;
 
 
 public class AllocatorTest {
@@ -141,6 +143,22 @@ public class AllocatorTest {
         /*Nd4j.getWorkspaceManager().destroyWorkspace(ws);
         assertTrue(0L ==
                 MemoryTracker.getInstance().getWorkspaceAllocatedAmount(Nd4j.getAffinityManager().getDeviceForCurrentThread()));*/
+    }
+
+    @Test
+    public void testDirectProvider() {
+        CudaDirectProvider provider = new CudaDirectProvider();
+	//provider.malloc(AllocationStatus.HOST, point, targetMode);
+        MemoryTracker.getInstance().getAllocatedAmount(Nd4j.getAffinityManager().getDeviceForCurrentThread()); 
+	MemoryTracker.getInstance().getCachedAmount(Nd4j.getAffinityManager().getDeviceForCurrentThread());
+	//provider.free(point, target);
+    }
+
+    @Test
+    public void testCachingProvider() {
+        CudaCachingZeroProvider provider = new CudaCachingZeroProvider();
+        MemoryTracker.getInstance().getAllocatedAmount(Nd4j.getAffinityManager().getDeviceForCurrentThread());
+        MemoryTracker.getInstance().getCachedAmount(Nd4j.getAffinityManager().getDeviceForCurrentThread());
     }
 
 }

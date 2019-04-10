@@ -27,6 +27,7 @@ import org.nd4j.jita.conf.Configuration;
 import org.nd4j.jita.conf.CudaEnvironment;
 import org.nd4j.jita.memory.MemoryProvider;
 import org.slf4j.Logger;
+import org.nd4j.linalg.factory.Nd4j;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
