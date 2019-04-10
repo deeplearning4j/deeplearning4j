@@ -493,7 +493,15 @@ namespace nd4j {
             // FIXME: remove this, once we bring in 1D NDArrays 
             vectorize(input_shape);
             bool result = _preprocess_strided_slice(nullptr, &shape, input_shape, begin, end, strides, begin_mask, ellipsis_mask, end_mask, new_axis_mask, shrink_axis_mask, &is_identity, &is_simple_slice, &is_dim0);
-            if (shape.size() && inputLen > 1) {
+            bool nonEmpty = shape.size() > 0;
+            if (nonEmpty)
+            for (auto x: shape) {
+                if (x == 0) {
+                    nonEmpty = false;
+                    break;
+                }
+            }
+            if (nonEmpty && inputLen > 1) {
                 ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(shape.size()), Nd4jLong);
                 shape::shapeBuffer(shape.size(), ArrayOptions::dataType(inShape), shape.data(), newShape);
                 //if (input_shape[0] == 0)
