@@ -143,6 +143,23 @@ TEST_F(DeclarableOpsTests13, test_greater_1) {
     delete result;
 }
 
+TEST_F(DeclarableOpsTests13, test_eval_reduction_shape_1) {
+    Nd4jLong axis = 0L;
+    auto x = NDArrayFactory::create<Nd4jLong>('c', {2}, {4, 2});
+    auto y = NDArrayFactory::create<Nd4jLong>('c', {1}, {axis});
+    auto exp = NDArrayFactory::create<Nd4jLong>('c', {2}, {1, 2});
+
+    nd4j::ops::evaluate_reduction_shape op;
+    auto result = op.execute({&x, &y}, {}, {}, {true});
+    ASSERT_EQ(Status::OK(), result->status());
+
+    auto z = result->at(0);
+
+    ASSERT_EQ(exp, *z);
+
+    delete result;
+}
+
 TEST_F(DeclarableOpsTests13, test_or_1) {
     auto x = NDArrayFactory::create<bool>('c', {4}, {false, true, false, true});
     auto y = NDArrayFactory::create<bool>('c', {4}, {false, false, true, true});

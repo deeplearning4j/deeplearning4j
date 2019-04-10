@@ -2458,11 +2458,15 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
         val tArgs = op.tArgs().length > 0 ? new DoublePointer(op.tArgs().length) : null;
 
-        val bArgs = op.numBArguments() > 0 ? new BooleanPointer(op.numBArguments()) : null;
+        val bArgs = op.bArgs().length > 0 ? new BooleanPointer(op.numBArguments()) : null;
 
         cnt = 0;
         for (val t: op.tArgs())
             tArgs.put(cnt++, t);
+
+        cnt = 0;
+        for (val b: op.bArgs())
+            bArgs.put(cnt++, b);
 
         try {
             val status = OpStatus.byNumber(nativeOps.execCustomOp(extras, hash, inputBuffers, inputShapes, inputArgs.length, outputBuffers, outputShapes, outputArgs.length, tArgs, op.tArgs().length, iArgs, op.iArgs().length, bArgs, op.numBArguments(), op.isInplaceCall()));

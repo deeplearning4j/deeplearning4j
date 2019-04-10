@@ -6567,13 +6567,7 @@ public static final int PREALLOC_SIZE = 33554432;
 
     @Namespace("shape") public static native @Cast("Nd4jLong*") LongPointer shapeBufferFortran(int rank, @Cast("nd4j::DataType") int dtype, @Cast("Nd4jLong*") LongPointer shape, @Cast("Nd4jLong*") LongPointer output);
     @Namespace("shape") public static native @Cast("Nd4jLong*") LongBuffer shapeBufferFortran(int rank, @Cast("nd4j::DataType") int dtype, @Cast("Nd4jLong*") LongBuffer shape, @Cast("Nd4jLong*") LongBuffer output);
-    @Namespace("shape") public static native @Cast("Nd4jLong*") long[] shapeBufferFortran(int rank, @Cast("nd4j::DataType") int dtype, @Cast("Nd4jLong*") long[] shape, @Cast("Nd4jLong*") long[] output);
-
-    //ND4J_EXPORT _CUDA_HD void doPermuteShapeBuffer(Nd4jLong *shapeBuffer, int* rearrange, Nd4jLong *tmpBuffer);
-
-    @Namespace("shape") public static native void doPermuteShapeBuffer(int rank, @Cast("Nd4jLong*") LongPointer shapeBuffer, IntPointer rearrange, @Cast("Nd4jLong*") LongPointer tmpBuffer);
-    @Namespace("shape") public static native void doPermuteShapeBuffer(int rank, @Cast("Nd4jLong*") LongBuffer shapeBuffer, IntBuffer rearrange, @Cast("Nd4jLong*") LongBuffer tmpBuffer);
-    @Namespace("shape") public static native void doPermuteShapeBuffer(int rank, @Cast("Nd4jLong*") long[] shapeBuffer, int[] rearrange, @Cast("Nd4jLong*") long[] tmpBuffer);
+    @Namespace("shape") public static native @Cast("Nd4jLong*") long[] shapeBufferFortran(int rank, @Cast("nd4j::DataType") int dtype, @Cast("Nd4jLong*") long[] shape, @Cast("Nd4jLong*") long[] output);        
 
 // #ifdef __CUDACC__
 // #endif
@@ -6742,21 +6736,13 @@ public static final int PREALLOC_SIZE = 33554432;
     @Namespace("shape") public static native void permuteShapeBufferInPlace(@Cast("Nd4jLong*") LongBuffer shapeBuffer, IntBuffer rearrange, @Cast("Nd4jLong*") LongBuffer out);
     @Namespace("shape") public static native void permuteShapeBufferInPlace(@Cast("Nd4jLong*") long[] shapeBuffer, int[] rearrange, @Cast("Nd4jLong*") long[] out);
 
+    @Namespace("shape") public static native void doPermuteShapeInfo(@Cast("Nd4jLong*") LongPointer shapeBuffer, @Const IntPointer rearrange, @Cast("Nd4jLong") long len/*=-1*/);
     @Namespace("shape") public static native void doPermuteShapeInfo(@Cast("Nd4jLong*") LongPointer shapeBuffer, @Const IntPointer rearrange);
+    @Namespace("shape") public static native void doPermuteShapeInfo(@Cast("Nd4jLong*") LongBuffer shapeBuffer, @Const IntBuffer rearrange, @Cast("Nd4jLong") long len/*=-1*/);
     @Namespace("shape") public static native void doPermuteShapeInfo(@Cast("Nd4jLong*") LongBuffer shapeBuffer, @Const IntBuffer rearrange);
+    @Namespace("shape") public static native void doPermuteShapeInfo(@Cast("Nd4jLong*") long[] shapeBuffer, @Const int[] rearrange, @Cast("Nd4jLong") long len/*=-1*/);
     @Namespace("shape") public static native void doPermuteShapeInfo(@Cast("Nd4jLong*") long[] shapeBuffer, @Const int[] rearrange);
-
-    @Namespace("shape") public static native void doPermuteShapeInfo(@Cast("Nd4jLong*") LongPointer shapeBuffer, @Cast("const Nd4jLong*") LongPointer rearrange);
-    @Namespace("shape") public static native void doPermuteShapeInfo(@Cast("Nd4jLong*") LongBuffer shapeBuffer, @Cast("const Nd4jLong*") LongBuffer rearrange);
-    @Namespace("shape") public static native void doPermuteShapeInfo(@Cast("Nd4jLong*") long[] shapeBuffer, @Cast("const Nd4jLong*") long[] rearrange);
-
-    @Namespace("shape") public static native void doPermuteShapeBuffer(@Cast("Nd4jLong*") LongPointer shapeBuffer, IntPointer rearrange);
-    @Namespace("shape") public static native void doPermuteShapeBuffer(@Cast("Nd4jLong*") LongBuffer shapeBuffer, IntBuffer rearrange);
-    @Namespace("shape") public static native void doPermuteShapeBuffer(@Cast("Nd4jLong*") long[] shapeBuffer, int[] rearrange);
-
-    @Namespace("shape") public static native void doPermuteShapeBuffer(int rank,@Cast("Nd4jLong*") LongPointer shapeBuffer, IntPointer rearrange);
-    @Namespace("shape") public static native void doPermuteShapeBuffer(int rank,@Cast("Nd4jLong*") LongBuffer shapeBuffer, IntBuffer rearrange);
-    @Namespace("shape") public static native void doPermuteShapeBuffer(int rank,@Cast("Nd4jLong*") long[] shapeBuffer, int[] rearrange);
+    
     /**
      * Rearrange the permute indexes
      * according to which  dimensions are specified.
@@ -7707,13 +7693,24 @@ public static final int PREALLOC_SIZE = 33554432;
     @Namespace("shape") public static native void shapeOldScalar(@Cast("nd4j::DataType") int dtype, @Cast("Nd4jLong*const") LongBuffer buffer, byte order);
     @Namespace("shape") public static native void shapeOldScalar(@Cast("nd4j::DataType") int dtype, @Cast("Nd4jLong*const") long[] buffer, byte order);
 
-    // calculate element-wise stride
+    // deduce element-wise stride
     // if array is scalar or unit length vector then ews = 1
     // if array is common vector then ews = stride of non-unity dimension
     // if strides are normal set ews = 1, otherwise ews = 0    
     @Namespace("shape") public static native void setEws(@Cast("Nd4jLong*") LongPointer shapeInfo, @Cast("Nd4jLong") long len);
     @Namespace("shape") public static native void setEws(@Cast("Nd4jLong*") LongBuffer shapeInfo, @Cast("Nd4jLong") long len);
     @Namespace("shape") public static native void setEws(@Cast("Nd4jLong*") long[] shapeInfo, @Cast("Nd4jLong") long len);
+
+    // deduce order and element-wise stride
+    // if array is scalar or unit length vector then ews = 1 and order is preserved
+    // if array is common vector then ews = stride of non-unity dimension and order is preserved
+    // if strides are normal/contiguous then ews = 1 and corresponding order is set, otherwise ews = 0 and order is preserved
+    @Namespace("shape") public static native void setOrderAndEws(@Cast("Nd4jLong*") LongPointer shapeInfo, @Cast("Nd4jLong") long len/*=-1*/);
+    @Namespace("shape") public static native void setOrderAndEws(@Cast("Nd4jLong*") LongPointer shapeInfo);
+    @Namespace("shape") public static native void setOrderAndEws(@Cast("Nd4jLong*") LongBuffer shapeInfo, @Cast("Nd4jLong") long len/*=-1*/);
+    @Namespace("shape") public static native void setOrderAndEws(@Cast("Nd4jLong*") LongBuffer shapeInfo);
+    @Namespace("shape") public static native void setOrderAndEws(@Cast("Nd4jLong*") long[] shapeInfo, @Cast("Nd4jLong") long len/*=-1*/);
+    @Namespace("shape") public static native void setOrderAndEws(@Cast("Nd4jLong*") long[] shapeInfo);
 
 
 
@@ -7969,24 +7966,6 @@ public static final int PREALLOC_SIZE = 33554432;
  * @param rearrange
  * @return
  */
-/*
-    INLINEDEF _CUDA_HD void doPermuteShapeBuffer(Nd4jLong *shapeBuffer, int *rearrange, Nd4jLong *tmpBuffer) {
-        auto shapeRef = shapeBuffer;
-        //rank of the rearrange array == rank of shape buffer
-        int rearrageRank = shape::rank(shapeRef);
-        auto shape = shape::shapeOf(shapeRef);
-        auto stride = shape::stride(shapeRef);
-
-        shape::copyOf(rearrageRank,rearrange, tmpBuffer);
-        shape::doPermuteSwap(rearrageRank,&shape, tmpBuffer);
-
-        shape::copyOf(rearrageRank,rearrange, tmpBuffer);
-        shape::doPermuteSwap(rearrageRank,&stride,tmpBuffer);
-
-        shapeRef[shapeInfoLength(rearrageRank) - 2] = 0;
-        shapeRef[shape::shapeInfoLength(rearrageRank) - 1] = shape::getOrder(rearrageRank,shape,stride,1);
-    }
-    */
 
 /**
  * Get the ordering for the device
@@ -8649,6 +8628,8 @@ public static final int PREALLOC_SIZE = 33554432;
     //////////////////////////////////////////////////////////////////////
 
     //////////////////////////////////////////////////////////////////////
+
+//////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////
 
