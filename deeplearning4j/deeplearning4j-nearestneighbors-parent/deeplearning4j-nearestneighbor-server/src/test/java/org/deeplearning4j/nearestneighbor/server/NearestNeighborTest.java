@@ -16,6 +16,7 @@
 
 package org.deeplearning4j.nearestneighbor.server;
 
+import org.apache.commons.lang3.ArrayUtils;
 import org.deeplearning4j.clustering.sptree.DataPoint;
 import org.deeplearning4j.clustering.vptree.VPTree;
 import org.deeplearning4j.clustering.vptree.VPTreeFillSearch;
@@ -37,6 +38,7 @@ import java.util.UUID;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
 /**
@@ -128,7 +130,10 @@ public class NearestNeighborTest {
         VPTree vpTree = new VPTree(indArray, "euclidean", false);
         VPTreeFillSearch vpTreeFillSearch = new VPTreeFillSearch(vpTree, 3, record);
         vpTreeFillSearch.search();
-        //System.out.println(vpTreeFillSearch.getResults());
-        System.out.println(vpTreeFillSearch.getDistances());
+
+        List<Double> result = vpTreeFillSearch.getDistances();
+        assertEquals(2.0, result.get(0), 1e-5);
+        assertEquals(4.47213, result.get(1), 1e-5);
+        assertEquals(7.21110, result.get(2), 1e-5);
     }
 }
