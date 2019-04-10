@@ -139,9 +139,10 @@ TEST_F(DeclarableOpsTests6, Test_StridedSlice_Once_Again_04) {
     auto ones = onesRes->at(0);
     ones->printShapeInfo("Shape ones");
     *ones *= 10;
+    auto onesD = ones->dup();
 
     auto variableSpace = new VariableSpace();
-    variableSpace->putVariable(-1, ones);
+    variableSpace->putVariable(-1, onesD);
     variableSpace->putVariable(-2, b);
     variableSpace->putVariable(-3, e);
     variableSpace->putVariable(-4, s);
@@ -168,6 +169,8 @@ TEST_F(DeclarableOpsTests6, Test_StridedSlice_Once_Again_04) {
 
     delete onesRes;
     delete result;
+    delete variableSpace;
+    delete inputShapes;
 }
 
 TEST_F(DeclarableOpsTests6, Test_StridedSlice_Once_Again_5) {
