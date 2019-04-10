@@ -767,7 +767,7 @@ public class Word2VecTests {
 
         SentenceIterator iter = new BasicLineIterator(inputFile.getAbsolutePath());
 
-        Word2Vec vec1 = new Word2Vec.Builder().minWordFrequency(1).iterations(3).batchSize(2).layerSize(100)
+        Word2Vec vec1 = new Word2Vec.Builder().minWordFrequency(1).iterations(1).batchSize(2).layerSize(100)
                 .stopWords(new ArrayList<String>()).seed(42).learningRate(0.025).minLearningRate(0.001)
                 .sampling(0).elementsLearningAlgorithm(new CBOW<VocabWord>())
                 .epochs(1).windowSize(5).allowParallelTokenization(true)
@@ -778,7 +778,7 @@ public class Word2VecTests {
         vec1.fit();
 
         iter = new BasicLineIterator(inputFile2.getAbsolutePath());
-        Word2Vec vec2 = new Word2Vec.Builder().minWordFrequency(1).iterations(3).batchSize(1).layerSize(100)
+        Word2Vec vec2 = new Word2Vec.Builder().minWordFrequency(1).iterations(1).batchSize(1).layerSize(100)
                 .stopWords(new ArrayList<String>()).seed(32).learningRate(0.021).minLearningRate(0.001)
                 .sampling(0).elementsLearningAlgorithm(new CBOW<VocabWord>())
                 .epochs(1).windowSize(5).allowParallelTokenization(true)
