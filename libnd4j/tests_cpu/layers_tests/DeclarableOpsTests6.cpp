@@ -213,6 +213,29 @@ TEST_F(DeclarableOpsTests6, Test_StridedSlice_Once_Again_6) {
 
     delete result;
 }
+
+TEST_F(DeclarableOpsTests6, Test_StridedSlice_Once_Again_7) {
+    auto matrix = NDArrayFactory::create<double>('c', {5, 4});
+    auto b = NDArrayFactory::create<int>('c', {1}, {(int)0});
+    auto e = NDArrayFactory::create<int>('c', {1}, {(int)0});
+    auto s = NDArrayFactory::create<int>('c', {1}, {1});
+
+    //auto exp = NDArrayFactory::create<double>('c', {1,2,2}, {0.0f, 0.0f, 0., 0.});
+
+    //matrix.linspace(1);
+
+    nd4j::ops::strided_slice op;
+    auto result = op.execute({&matrix, &b, &e, &s}, {}, {1, 0, 0, 0, 0});
+    ASSERT_EQ(Status::OK(), result->status());
+
+    auto z = result->at(0);
+    z->printShapeInfo("Output shape");
+    z->printIndexedBuffer("Output");
+    //ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}
+
 TEST_F(DeclarableOpsTests6, Test_Simple_Scalar_1) {
     auto x = NDArrayFactory::create<double>('c', {1, 1}, {2.0f});
     auto exp = NDArrayFactory::create<double>('c', {1, 1}, {4.0f});
