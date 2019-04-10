@@ -104,6 +104,7 @@ import java.nio.file.Paths;
 import java.util.*;
 
 import static org.junit.Assert.*;
+import static org.junit.Assert.assertArrayEquals;
 
 /**
  * NDArrayTests
@@ -7524,6 +7525,16 @@ public class Nd4jTestsC extends BaseNd4jTest {
         } finally {
             Nd4j.factory().setOrder(origOrder);
         }
+    }
+
+    @Test
+    public void testReduceKeepDimsShape(){
+        INDArray arr = Nd4j.create(3,4);
+        INDArray out = arr.sum(true, 1);
+        assertArrayEquals(new long[]{3, 1}, out.shape());
+
+        INDArray out2 = arr.sum(true, 0);
+        assertArrayEquals(new long[]{1, 4}, out2.shape());
     }
 
     ///////////////////////////////////////////////////////

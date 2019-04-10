@@ -463,7 +463,6 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
     @Override
     public INDArray exec(ReduceOp op) {
-        long st = profilingConfigurableHookIn(op);
         checkForCompression(op);
 
         val dimension = op.dimensions().toIntVector();
@@ -473,12 +472,8 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
         val maxShape = Shape.getMaxShape(op.x(),op.y());
 
-        long[] retShape;
         val wholeDims = Shape.wholeArrayDimension(dimension) || op.x().rank() == dimension.length || dimension.length == 0;
-        if (wholeDims)
-            retShape = new long[0];
-        else
-            retShape = ArrayUtil.removeIndex(maxShape, dimension);
+        long[] retShape = Shape.reductionShape(op.x(), dimension, true, op.isKeepDims());
 
         if (op.x().isVector() && op.x().length() == ArrayUtil.prod(retShape) && ArrayUtil.prodLong(retShape) > 1 && op.y() == null)
             return op.noOp();
@@ -522,10 +517,11 @@ public class CudaExecutioner extends DefaultOpExecutioner {
             op.setZ(ret);
         } else {
             // compare length
-            if (op.z().lengthLong() != ArrayUtil.prodLong(retShape))
+            if (op.z().length() != (retShape.length == 0 ? 1 : ArrayUtil.prodLong(retShape)))
                 throw new ND4JIllegalStateException("Shape of target array for reduction [" + Arrays.toString(op.z().shape()) + "] doesn't match expected [" + Arrays.toString(retShape) + "]");
         }
 
+        long st = profilingConfigurableHookIn(op);
         naiveExec(op, dimension);
 
         profilingConfigurableHookOut(op, st);
@@ -536,12 +532,10 @@ public class CudaExecutioner extends DefaultOpExecutioner {
     @Override
     public INDArray exec(IndexAccumulation op) {
         val dimension = Shape.normalizeAxis(op.x().rank(), op.dimensions().toIntVector());
-        val wholeArray = Shape.wholeArrayDimension(dimension) || dimension.length == 0;
         if (op.z() == null) {
             long[] retShape = Shape.reductionShape(op.x(), dimension, true, op.isKeepDims());
 
             INDArray ret = Nd4j.createUninitialized(DataType.LONG, retShape);
-
             op.setZ(ret);
         }
 
