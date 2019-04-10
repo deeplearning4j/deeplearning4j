@@ -532,12 +532,10 @@ public class CudaExecutioner extends DefaultOpExecutioner {
     @Override
     public INDArray exec(IndexAccumulation op) {
         val dimension = Shape.normalizeAxis(op.x().rank(), op.dimensions().toIntVector());
-        val wholeArray = Shape.wholeArrayDimension(dimension) || dimension.length == 0;
         if (op.z() == null) {
             long[] retShape = Shape.reductionShape(op.x(), dimension, true, op.isKeepDims());
 
             INDArray ret = Nd4j.createUninitialized(DataType.LONG, retShape);
-
             op.setZ(ret);
         }
 
