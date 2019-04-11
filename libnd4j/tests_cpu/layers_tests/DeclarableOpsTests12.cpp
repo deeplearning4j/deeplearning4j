@@ -951,3 +951,27 @@ TEST_F(DeclarableOpsTests12, cumsum_1) {
 
     delete result;
 }
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests12, pullRows_1) {
+    
+    NDArray x('c', {5, 1}, {0,1,2,3,4});
+    NDArray z('c', {4, 1}, nd4j::DataType::DOUBLE);
+    NDArray exp('c', {4, 1}, {0,2,3,4});
+
+    Nd4jLong indexes[] = {0,2,3,4};
+
+    std::vector<int> dims = {1};
+
+    auto xTadPack = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(x.getShapeInfo(), dims);
+    auto zTadPack = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(z.getShapeInfo(), dims);
+ 
+    NativeOps op;
+    op.pullRows(nullptr, x.buffer(), x.getShapeInfo(), nullptr, nullptr,
+                         z.buffer(), z.getShapeInfo(), nullptr, nullptr,
+                         4, indexes,
+                         xTadPack.primaryShapeInfo(), xTadPack.primaryOffsets(),
+                         zTadPack.primaryShapeInfo(), zTadPack.primaryOffsets());
+ 
+    ASSERT_TRUE(z.equalsTo(exp));    
+}
