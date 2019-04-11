@@ -17,6 +17,10 @@ import org.nd4j.linalg.api.memory.enums.AllocationPolicy;
 import org.nd4j.jita.memory.impl.CudaDirectProvider;
 import org.nd4j.jita.memory.impl.CudaCachingZeroProvider;
 import org.nd4j.jita.allocator.utils.AllocationUtils;
+import org.nd4j.jita.allocator.enums.AllocationStatus;
+import org.nd4j.jita.allocator.impl.AllocationPoint;
+import org.nd4j.jita.allocator.enums.AllocationStatus;
+import org.nd4j.jita.allocator.impl.AllocationShape;
 
 
 public class AllocatorTest {

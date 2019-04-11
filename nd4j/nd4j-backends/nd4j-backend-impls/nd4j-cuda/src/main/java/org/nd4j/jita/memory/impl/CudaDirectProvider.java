@@ -32,6 +32,7 @@ import org.nd4j.nativeblas.NativeOps;
 import org.nd4j.nativeblas.NativeOpsHolder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.nd4j.jita.allocator.impl.MemoryTracker;
 
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
@@ -122,7 +123,7 @@ public class CudaDirectProvider implements MemoryProvider {
 
                 point.setAllocationStatus(AllocationStatus.DEVICE);
                 point.setDeviceId(deviceId);
-                MemoryTracker.getInstance().incrementAllocatedAmount(Nd4j.getAffinityManager().getDeviceForCurrentThread(), reqMemory);
+                MemoryTracker.getInstance().incrementAllocatedAmount(Nd4j.getAffinityManager().getDeviceForCurrentThread(), reqMem);
                 return devicePointerInfo;
             }
             default:
@@ -151,8 +152,8 @@ public class CudaDirectProvider implements MemoryProvider {
                 //JCuda.cudaFreeHost(new Pointer(point.getPointers().getHostPointer()));
                 if (result == 0)
                     throw new RuntimeException("Can't deallocate [HOST] memory...");
+		MemoryTracker.getInstance().decrementAllocatedAmount(Nd4j.getAffinityManager().getDeviceForCurrentThread(), reqMem);
             }
-                MemoryTracker.getInstance().decrementAllocatedAmount(Nd4j.getAffinityManager().getDeviceForCurrentThread(), reqMem);
                 break;
             case DEVICE: {
                 // cudaFree call
@@ -170,8 +171,9 @@ public class CudaDirectProvider implements MemoryProvider {
                 long result = nativeOps.freeDevice(point.getPointers().getDevicePointer(), new CudaPointer(0));
                 if (result == 0)
                     throw new RuntimeException("Can't deallocate [DEVICE] memory...");
+		MemoryTracker.getInstance().decrementAllocatedAmount(Nd4j.getAffinityManager().getDeviceForCurrentThread(), reqMem);
+
             }
-                MemoryTracker.getInstance().decrementAllocatedAmount(Nd4j.getAffinityManager().getDeviceForCurrentThread(), reqMem);
                 break;
             default:
                 throw new IllegalStateException("Can't free memory on target [" + point.getAllocationStatus() + "]");
