@@ -2585,9 +2585,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
         int n = shape.length;
 
-        // FIXME: shapeInfo should be used here
-        if (shape.length < 1)
-            return create(Nd4j.createBufferDetached(shape));
         if (offsets.length != n)
             throw new IllegalArgumentException("Invalid offset " + Arrays.toString(offsets));
         if (stride.length != n)
