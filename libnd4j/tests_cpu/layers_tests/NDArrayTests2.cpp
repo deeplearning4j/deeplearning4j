@@ -1282,4 +1282,3 @@ TEST_F(NDArrayTest2, reduce_1) {
 
     delete arr6s;
 }
-
