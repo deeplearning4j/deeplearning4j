@@ -288,9 +288,9 @@
         <javacpp.platform.extension/> <!-- -Djavacpp.platform.extension=-avx512 -->
         <javacpp.platform.properties>${javacpp.platform}</javacpp.platform.properties>
 
-        <javacpp.version>1.5-SNAPSHOT</javacpp.version>
-        <javacpp-presets.version>1.5-SNAPSHOT</javacpp-presets.version>
-        <javacv.version>1.5-SNAPSHOT</javacv.version>
+        <javacpp.version>1.5</javacpp.version>
+        <javacpp-presets.version>1.5</javacpp-presets.version>
+        <javacv.version>1.5</javacv.version>
 
         <python.version>3.6</python.version>
         <cpython-platform.version>${python.version}-${javacpp-presets.version}</cpython-platform.version>
