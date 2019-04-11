@@ -257,11 +257,7 @@ namespace nd4j {
                     }
                 }
 
-
-                Nd4jLong *newShape;
-                ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(shapeNew.size()), Nd4jLong);
-
-                shape::shapeBuffer(shapeNew.size(), ArrayOptions::dataType(inp), shapeNew.data(), newShape);
+                Nd4jLong *newShape = nd4j::ShapeBuilders::createShapeInfo(ArrayOptions::dataType(inp), 'c', shapeNew, block.getWorkspace());
 
                 return SHAPELIST(newShape);
             }

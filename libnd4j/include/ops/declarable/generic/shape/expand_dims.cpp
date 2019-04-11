@@ -68,20 +68,15 @@ namespace nd4j {
 
             // 0D scalar edge case
             if (shape::rank(inShape) == 0) {
-                Nd4jLong* newShape;
-                ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(1), Nd4jLong);
 
                 Nd4jLong x = 1;
-                shape::shapeBuffer(1, ArrayOptions::dataType(inShape), &x, newShape);
+                Nd4jLong *newShape = nd4j::ShapeBuilders::createShapeInfo(ArrayOptions::dataType(inShape), 'c', 1, &x, block.getWorkspace());                
                 return SHAPELIST(newShape);
             }
 
             // FIXME: temp workaround for TF
-            if (shape::isScalar(inShape)) {
-                Nd4jLong* newShape;
-                ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(inShape), Nd4jLong);
-
-                shape::shapeBuffer(2, ArrayOptions::dataType(inShape), shape::shapeOf(inShape), newShape);
+            if (shape::isScalar(inShape)) {                
+                Nd4jLong *newShape = nd4j::ShapeBuilders::createShapeInfo(ArrayOptions::dataType(inShape), 'c', 2, shape::shapeOf(inShape), block.getWorkspace());
                 return SHAPELIST(newShape);
             }
 
@@ -93,20 +88,13 @@ namespace nd4j {
             if (axis < 0)
                 axis += x_rank + 1;
 
-            Nd4jLong* newShape;
-            ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(x_rank+1), Nd4jLong);
-
             std::vector<Nd4jLong> shape;
             for(int e = 0; e < x_rank; e++)
                 shape.emplace_back(shape::shapeOf(inShape)[e]);
 
             shape.insert(shape.begin() + axis, 1);
 
-            if (order == 'c')
-                shape::shapeBuffer(x_rank+1, ArrayOptions::dataType(inShape), shape.data(), newShape);
-            else
-                shape::shapeBufferFortran(x_rank+1, ArrayOptions::dataType(inShape), shape.data(), newShape);
-
+            Nd4jLong *newShape = ShapeBuilders::createShapeInfo(ArrayOptions::dataType(inShape), order, shape, block.getWorkspace());
 
             return SHAPELIST(newShape);
         }

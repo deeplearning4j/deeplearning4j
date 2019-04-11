@@ -1283,3 +1283,19 @@ TEST_F(NDArrayTest2, reduce_1) {
     delete arr6s;
 }
 
+//////////////////////////////////////////////////////////////////////
+TEST_F(NDArrayTest2, reduce3_1) {
+
+    NDArray x('c', {1,4}, {1,2,3,4});
+    NDArray y('c', {1,4}, {2,3,4,5});
+    NDArray exp('c', {4}, {1,1,1,1});
+
+    NDArray* z = x.applyReduce3(nd4j::reduce3::EuclideanDistance, &y, {0}, nullptr);
+    // z->printShapeInfo();
+    // z->printIndexedBuffer();
+
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete z;
+}
