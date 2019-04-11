@@ -53,10 +53,7 @@ namespace nd4j {
             auto in = INPUT_VARIABLE(0);
             auto shape = in->template asVectorT<Nd4jLong>();
 
-            Nd4jLong *newShape;
-            ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(shape.size()), Nd4jLong);
-            shape::shapeBuffer(shape.size(), block.dataType(), shape.data(), newShape);
-
+            Nd4jLong *newShape = nd4j::ShapeBuilders::createShapeInfo(block.dataType(), 'c', shape, block.getWorkspace());
             return SHAPELIST(newShape);
         }
 

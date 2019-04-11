@@ -1153,29 +1153,22 @@ void NDArray::replacePointers(void *buffer, Nd4jLong *shapeInfo, const bool rele
     }
 
     NDArray* NDArray::detach() {
+
         if (!isAttached())
             return this;
 
         void* newBuffer;
-        Nd4jLong* newShapeInfo;
-
-        auto l = lengthOf();
-
 
         newBuffer = new int8_t[lengthOf() * sizeOfT()];
 
-        if (this->ordering() == 'f')
-            newShapeInfo = shape::shapeBufferFortran(rankOf(), dataType(), shapeOf());
-        else
-            newShapeInfo = shape::shapeBuffer(rankOf(), dataType(), shapeOf());
+        Nd4jLong* newShapeInfo = ShapeBuilders::copyShapeInfo(_shapeInfo, false, nullptr);
 
-        auto result = new NDArray(newBuffer, newShapeInfo, nullptr);
-        result->_isBuffAlloc = true;
-        result->_isShapeAlloc = true;
+        auto result = new NDArray(newBuffer, newShapeInfo, nullptr, true, true);
 
         result->assign(this);
 
         return result;
+
     }
 
 ////////////////////////////////////////////////////////////////////////
@@ -2387,16 +2380,10 @@ template void NDArray::applyScalar(nd4j::scalar::Ops op, const bool scalar, NDAr
             nd4j_printf("Can't enforce new shape, lengths mismatch. Original shape: %s; Requested shape: %s\n", current.c_str(), enforced.c_str());
             throw std::runtime_error("Incompatible shape");
         }
-
-        Nd4jLong *newShape;
-        ALLOCATE(newShape, _workspace, shape::shapeInfoLength(dimensions.size()), Nd4jLong);
-
+        
         char order = o == 'a' ? this->ordering() : o;
 
-        if (order == 'c')
-            shape::shapeBuffer(dimensions.size(), dataType(), dimensions.data(), newShape);
-        else
-            shape::shapeBufferFortran(dimensions.size(), dataType(), dimensions.data(), newShape);
+        Nd4jLong *newShape = ShapeBuilders::createShapeInfo(dataType(), order, dimensions, _workspace);        
 
         if (_isShapeAlloc)
             RELEASE(_shapeInfo, _workspace);
@@ -4782,20 +4769,14 @@ template void NDArray::operator/=(const bool scalar);
     void NDArray::streamline(char o) {
         char order = o == 'a' ? this->ordering() : o;
     
-        Nd4jLong *newShape;
-        ALLOCATE(newShape, this->_workspace, shape::shapeInfoLength(this->rankOf()), Nd4jLong);
-
         int8_t *newBuffer;
         ALLOCATE(newBuffer, this->_workspace, this->lengthOf() * sizeOfT(), int8_t);
 
         std::vector<Nd4jLong> shape(this->rankOf());
         for (int e = 0; e < this->rankOf(); e++)
             shape[e] = this->sizeAt(e);
-
-        if (order == 'c')
-            shape::shapeBuffer(this->rankOf(),dataType(),  shape.data(), newShape);
-        else
-            shape::shapeBufferFortran(this->rankOf(), dataType(), shape.data(), newShape);
+        
+        Nd4jLong *newShape = ShapeBuilders::createShapeInfo(dataType(), order, shape, _workspace);        
 
         if (!isView()) {
             NativeOpExcutioner::execTransformSame(transform::Copy, _buffer, _shapeInfo, newBuffer, newShape, nullptr, nullptr, nullptr);

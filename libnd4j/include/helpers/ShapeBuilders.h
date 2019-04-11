@@ -30,18 +30,16 @@
 
 namespace nd4j {
     class ShapeBuilders {
-    public:
-        static Nd4jLong* createScalarShapeInfo(nd4j::memory::Workspace* workspace = nullptr);
+    public:        
         static Nd4jLong* createScalarShapeInfo(nd4j::DataType dataType, nd4j::memory::Workspace* workspace = nullptr);
-
-        static Nd4jLong* createVectorShapeInfo(Nd4jLong length, nd4j::memory::Workspace* workspace = nullptr);
-        static Nd4jLong* createVectorShapeInfo(nd4j::DataType dataType, Nd4jLong length, nd4j::memory::Workspace* workspace = nullptr);
+        
+        static Nd4jLong* createVectorShapeInfo(const nd4j::DataType dataType, const Nd4jLong length, nd4j::memory::Workspace* workspace = nullptr);
 
         /**
         *   create shapeInfo for given order basing on shape stored in shapeOnly vector
         *   memory allocation for shapeInfo is on given workspace
-        */
-        static Nd4jLong* createShapeInfo(const char order, const std::vector<Nd4jLong>& shapeOnly, memory::Workspace* workspace = nullptr);
+        */        
+        static Nd4jLong* createShapeInfo(const nd4j::DataType dataType, const char order, int rank, const Nd4jLong* shapeOnly, memory::Workspace* workspace = nullptr);
         static Nd4jLong* createShapeInfo(const nd4j::DataType dataType, const char order, const std::vector<Nd4jLong>& shapeOnly, memory::Workspace* workspace = nullptr);
         static Nd4jLong* createShapeInfo(const nd4j::DataType dataType, const char order, const std::initializer_list<Nd4jLong>& shapeOnly, memory::Workspace* workspace = nullptr);
 
