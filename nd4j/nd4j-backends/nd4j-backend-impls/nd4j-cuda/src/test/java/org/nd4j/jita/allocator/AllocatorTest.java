@@ -1,11 +1,9 @@
 package org.nd4j.jita.allocator;
 
+import lombok.extern.slf4j.Slf4j;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.jita.allocator.impl.MemoryTracker;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 import lombok.val;
 
@@ -23,7 +21,9 @@ import org.nd4j.jita.allocator.impl.AllocationPoint;
 import org.nd4j.jita.allocator.enums.AllocationStatus;
 import org.nd4j.jita.allocator.impl.AllocationShape;
 
+import static org.junit.Assert.*;
 
+@Slf4j
 public class AllocatorTest {
     private static final long SAFETY_OFFSET = 1024L;	
 
@@ -34,7 +34,7 @@ public class AllocatorTest {
 
         assertTrue(0 == tracker.getAllocatedAmount(deviceId));
         assertTrue(0 == tracker.getCachedAmount(deviceId));
-        assertTrue(0 == tracker.getTotalMemory(deviceId));
+        //assertTrue(0 == tracker.getTotalMemory(deviceId));
 
         tracker.incrementAllocatedAmount(deviceId, 10);
         assertTrue(10 == tracker.getAllocatedAmount(deviceId));
@@ -48,7 +48,13 @@ public class AllocatorTest {
         tracker.decrementCachedAmount(deviceId, 5);
         assertTrue(0 == tracker.getCachedAmount(deviceId));
 
-        assertTrue(0 == tracker.getTotalMemory(deviceId));
+        //assertTrue(0 == tracker.getTotalMemory(deviceId));
+
+        for (int e = 0; e < Nd4j.getAffinityManager().getNumberOfDevices(); e++) {
+            val ttl = tracker.getTotalMemory(e);
+            log.info("Device_{} {} bytes", e, ttl);
+            assertNotEquals(0, ttl);
+        }
     }
 
     @Test

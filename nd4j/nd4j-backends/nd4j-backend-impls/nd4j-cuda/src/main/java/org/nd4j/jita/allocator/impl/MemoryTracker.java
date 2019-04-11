@@ -2,7 +2,11 @@ package org.nd4j.jita.allocator.impl;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
+
+import lombok.val;
+import org.nd4j.jita.allocator.pointers.CudaPointer;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.nativeblas.NativeOpsHolder;
 
 public class MemoryTracker {
 
@@ -16,8 +20,10 @@ public class MemoryTracker {
         for (int i = 0; i < Nd4j.getAffinityManager().getNumberOfDevices(); ++i) {
             allocatedPerDevice.add(i, new AtomicLong(0));
             cachedPerDevice.add(i, new AtomicLong(0));
-	    workspacesPerDevice.add(i, new AtomicLong(0));
-            totalPerDevice.add(i, new AtomicLong(0));
+	        workspacesPerDevice.add(i, new AtomicLong(0));
+
+            val memory = NativeOpsHolder.getInstance().getDeviceNativeOps().getDeviceTotalMemory(new CudaPointer(i));
+            totalPerDevice.add(i, new AtomicLong(memory));
         }
     }
 
@@ -41,29 +47,77 @@ public class MemoryTracker {
         return totalPerDevice.get(deviceId).get();
     }
 
+    /**
+     * This method returns total amount of device memory allocated on specified device
+     *
+     * Includes: workspace memory, cached memory, regular memory
+     * @param deviceId
+     * @return
+     */
+    public long getActiveMemory(int deviceId) {
+        return getWorkspaceAllocatedAmount(deviceId) +  getAllocatedAmount(deviceId) + getCachedAmount(deviceId);
+    }
+
+    /**
+     * This method increments amount of regular allocated memory
+     *
+     * @param deviceId
+     * @param memoryAdded
+     */
     public void incrementAllocatedAmount(int deviceId, long memoryAdded) {
         allocatedPerDevice.get(deviceId).getAndAdd(memoryAdded);
     }
 
+    /**
+     * This method increments amount of cached memory
+     *
+     * @param deviceId
+     * @param memoryAdded
+     */
     public void incrementCachedAmount(int deviceId, long memoryAdded) {
         cachedPerDevice.get(deviceId).getAndAdd(memoryAdded);
     }
 
+    /**
+     * This method decrements amount of regular allocated memory
+     *
+     * @param deviceId
+     * @param memoryAdded
+     */
     public void decrementAllocatedAmount(int deviceId, long memoryAdded) {
         allocatedPerDevice.get(deviceId).getAndAdd(-memoryAdded);
     }
 
+    /**
+     * This method decrements amount of cached memory
+     *
+     * @param deviceId
+     * @param memorySubtracted
+     */
     public void decrementCachedAmount(int deviceId, long memorySubtracted) {
         cachedPerDevice.get(deviceId).getAndAdd(-memorySubtracted);
     }
 
+    /**
+     * This method increments amount of memory allocated within workspaces
+     *
+     * @param deviceId
+     * @param memoryAdded
+     */
     public void incrementWorkspaceAllocatedAmount(int deviceId, long memoryAdded) {
         workspacesPerDevice.get(deviceId).getAndAdd(memoryAdded);
     }
 
+    /**
+     * This method decrements amount of memory allocated within workspaces
+     *
+     * @param deviceId
+     * @param memorySubtracted
+     */
     public void decrementWorkspaceAmount(int deviceId, long memorySubtracted) {
         workspacesPerDevice.get(deviceId).getAndAdd(-memorySubtracted);
     }
+
 
     private void setTotalPerDevice(int device, long memoryAvailable) {
         totalPerDevice.add(device, new AtomicLong(memoryAvailable));
