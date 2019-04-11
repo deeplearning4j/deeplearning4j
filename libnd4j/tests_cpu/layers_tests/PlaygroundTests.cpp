@@ -34,6 +34,7 @@
 
 #include <helpers/BenchmarkHelper.h>
 #include <helpers/ConstantTadHelper.h>
+#include <array>
 
 using namespace nd4j;
 using namespace nd4j::graph;
