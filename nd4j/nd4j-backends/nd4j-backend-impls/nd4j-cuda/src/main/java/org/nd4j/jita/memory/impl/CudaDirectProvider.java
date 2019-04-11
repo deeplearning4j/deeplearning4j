@@ -141,29 +141,21 @@ public class CudaDirectProvider implements MemoryProvider {
         switch (point.getAllocationStatus()) {
             case HOST: {
                 // cudaFreeHost call here
-                // FIXME: it would be nice to get rid of typecasting here
                 long reqMem = AllocationUtils.getRequiredMemory(point.getShape());
-
-                //  log.info("Deallocating {} bytes on [HOST]", reqMem);
-
                 NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
 
                 long result = nativeOps.freeHost(point.getPointers().getHostPointer());
-                //JCuda.cudaFreeHost(new Pointer(point.getPointers().getHostPointer()));
                 if (result == 0)
                     throw new RuntimeException("Can't deallocate [HOST] memory...");
-		MemoryTracker.getInstance().decrementAllocatedAmount(Nd4j.getAffinityManager().getDeviceForCurrentThread(), reqMem);
+
+                MemoryTracker.getInstance().decrementAllocatedAmount(Nd4j.getAffinityManager().getDeviceForCurrentThread(), reqMem);
             }
                 break;
             case DEVICE: {
-                // cudaFree call
-                //JCuda.cudaFree(new Pointer(point.getPointers().getDevicePointer().address()));
                 if (point.isConstant())
                     return;
 
                 long reqMem = AllocationUtils.getRequiredMemory(point.getShape());
-
-                //       log.info("Deallocating {} bytes on [DEVICE]", reqMem);
 
                 NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
                 AllocationsTracker.getInstance().markReleased(AllocationKind.GENERAL, point.getDeviceId(), reqMem);
@@ -171,8 +163,8 @@ public class CudaDirectProvider implements MemoryProvider {
                 long result = nativeOps.freeDevice(point.getPointers().getDevicePointer(), new CudaPointer(0));
                 if (result == 0)
                     throw new RuntimeException("Can't deallocate [DEVICE] memory...");
-		MemoryTracker.getInstance().decrementAllocatedAmount(Nd4j.getAffinityManager().getDeviceForCurrentThread(), reqMem);
 
+                MemoryTracker.getInstance().decrementAllocatedAmount(Nd4j.getAffinityManager().getDeviceForCurrentThread(), reqMem);
             }
                 break;
             default:

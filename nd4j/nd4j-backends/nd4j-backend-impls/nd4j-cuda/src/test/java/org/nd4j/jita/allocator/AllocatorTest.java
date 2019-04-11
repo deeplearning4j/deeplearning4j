@@ -152,17 +152,17 @@ public class AllocatorTest {
 
     @Test
     public void testDirectProvider() {
-        CudaDirectProvider provider = new CudaDirectProvider();
         INDArray input = Nd4j.zeros(1024);
+        CudaDirectProvider provider = new CudaDirectProvider();
         AllocationShape shape = AllocationUtils.buildAllocationShape(input);
         AllocationPoint point = new AllocationPoint();
         point.setShape(shape);
-	    provider.malloc(AllocationStatus.HOST, point, AllocationStatus.HOST);
+	    provider.malloc(shape, point, AllocationStatus.DEVICE);
 
         System.out.println(MemoryTracker.getInstance().getAllocatedAmount(Nd4j.getAffinityManager().getDeviceForCurrentThread()));
         System.out.println(MemoryTracker.getInstance().getCachedAmount(Nd4j.getAffinityManager().getDeviceForCurrentThread()));
 
-	    provider.free(point, AllocationStatus.HOST);
+	    provider.free(point);
 
         System.out.println(MemoryTracker.getInstance().getAllocatedAmount(Nd4j.getAffinityManager().getDeviceForCurrentThread()));
         System.out.println(MemoryTracker.getInstance().getCachedAmount(Nd4j.getAffinityManager().getDeviceForCurrentThread()));
@@ -170,17 +170,17 @@ public class AllocatorTest {
 
     @Test
     public void testCachingProvider() {
-        CudaCachingZeroProvider provider = new CudaCachingZeroProvider();
         INDArray input = Nd4j.zeros(1024);
+        CudaCachingZeroProvider provider = new CudaCachingZeroProvider();
         AllocationShape shape = AllocationUtils.buildAllocationShape(input);
         AllocationPoint point = new AllocationPoint();
         point.setShape(shape);
-        provider.malloc(AllocationStatus.HOST, point, AllocationStatus.HOST);
+        provider.malloc(shape, point, AllocationStatus.DEVICE);
 
         System.out.println(MemoryTracker.getInstance().getAllocatedAmount(Nd4j.getAffinityManager().getDeviceForCurrentThread()));
         System.out.println(MemoryTracker.getInstance().getCachedAmount(Nd4j.getAffinityManager().getDeviceForCurrentThread()));
 
-        provider.free(point, AllocationStatus.HOST);
+        provider.free(point);
 
         System.out.println(MemoryTracker.getInstance().getAllocatedAmount(Nd4j.getAffinityManager().getDeviceForCurrentThread()));
         System.out.println(MemoryTracker.getInstance().getCachedAmount(Nd4j.getAffinityManager().getDeviceForCurrentThread()));
