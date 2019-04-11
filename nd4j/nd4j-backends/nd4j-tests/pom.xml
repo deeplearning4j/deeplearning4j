@@ -192,6 +192,7 @@
                             <testSourceDirectory>src/test/java</testSourceDirectory>
                             <includes>
                                 <include>*.java</include>
+                                <include>**/*.java</include>
                                 <include>**/Test*.java</include>
                                 <include>**/*Test.java</include>
                                 <include>**/*TestCase.java</include>
