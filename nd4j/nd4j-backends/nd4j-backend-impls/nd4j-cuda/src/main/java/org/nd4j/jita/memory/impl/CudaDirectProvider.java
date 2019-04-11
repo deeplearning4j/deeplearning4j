@@ -16,6 +16,7 @@
 
 package org.nd4j.jita.memory.impl;
 
+import lombok.val;
 import org.bytedeco.javacpp.Pointer;
 import org.nd4j.jita.allocator.enums.AllocationStatus;
 import org.nd4j.jita.allocator.impl.AllocationPoint;
@@ -160,7 +161,9 @@ public class CudaDirectProvider implements MemoryProvider {
                 NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
                 AllocationsTracker.getInstance().markReleased(AllocationKind.GENERAL, point.getDeviceId(), reqMem);
 
-                long result = nativeOps.freeDevice(point.getPointers().getDevicePointer(), new CudaPointer(0));
+                val pointers = point.getPointers();
+
+                long result = nativeOps.freeDevice(pointers.getDevicePointer(), new CudaPointer(0));
                 if (result == 0)
                     throw new RuntimeException("Can't deallocate [DEVICE] memory...");
 

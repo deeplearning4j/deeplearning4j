@@ -157,15 +157,32 @@ public class AllocatorTest {
         AllocationShape shape = AllocationUtils.buildAllocationShape(input);
         AllocationPoint point = new AllocationPoint();
         point.setShape(shape);
-	    provider.malloc(shape, point, AllocationStatus.DEVICE);
+
+        val allocBefore = MemoryTracker.getInstance().getAllocatedAmount(Nd4j.getAffinityManager().getDeviceForCurrentThread());
+        val cachedBefore = MemoryTracker.getInstance().getCachedAmount(Nd4j.getAffinityManager().getDeviceForCurrentThread());
+
+	    val pointers = provider.malloc(shape, point, AllocationStatus.DEVICE);
+	    point.setPointers(pointers);
 
         System.out.println(MemoryTracker.getInstance().getAllocatedAmount(Nd4j.getAffinityManager().getDeviceForCurrentThread()));
         System.out.println(MemoryTracker.getInstance().getCachedAmount(Nd4j.getAffinityManager().getDeviceForCurrentThread()));
+
+        val allocMiddle = MemoryTracker.getInstance().getAllocatedAmount(Nd4j.getAffinityManager().getDeviceForCurrentThread());
+        val cachedMiddle = MemoryTracker.getInstance().getCachedAmount(Nd4j.getAffinityManager().getDeviceForCurrentThread());
 
 	    provider.free(point);
 
         System.out.println(MemoryTracker.getInstance().getAllocatedAmount(Nd4j.getAffinityManager().getDeviceForCurrentThread()));
         System.out.println(MemoryTracker.getInstance().getCachedAmount(Nd4j.getAffinityManager().getDeviceForCurrentThread()));
+
+        val allocAfter = MemoryTracker.getInstance().getAllocatedAmount(Nd4j.getAffinityManager().getDeviceForCurrentThread());
+        val cachedAfter = MemoryTracker.getInstance().getCachedAmount(Nd4j.getAffinityManager().getDeviceForCurrentThread());
+
+        assertTrue(allocBefore < allocMiddle);
+        assertEquals(allocBefore, allocAfter);
+
+        assertEquals(cachedBefore, cachedMiddle);
+        assertEquals(cachedBefore, cachedAfter);
     }
 
     @Test
@@ -175,7 +192,9 @@ public class AllocatorTest {
         AllocationShape shape = AllocationUtils.buildAllocationShape(input);
         AllocationPoint point = new AllocationPoint();
         point.setShape(shape);
-        provider.malloc(shape, point, AllocationStatus.DEVICE);
+
+        val pointers = provider.malloc(shape, point, AllocationStatus.DEVICE);
+        point.setPointers(pointers);
 
         System.out.println(MemoryTracker.getInstance().getAllocatedAmount(Nd4j.getAffinityManager().getDeviceForCurrentThread()));
         System.out.println(MemoryTracker.getInstance().getCachedAmount(Nd4j.getAffinityManager().getDeviceForCurrentThread()));
