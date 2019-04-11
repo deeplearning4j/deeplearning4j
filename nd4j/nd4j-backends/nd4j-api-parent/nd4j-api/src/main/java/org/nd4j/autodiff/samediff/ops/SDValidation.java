@@ -18,6 +18,8 @@ public class SDValidation {
      * @param v      Variable to perform operation on
      */
     protected static void validateNumerical(String opName, SDVariable v) {
+        if(v == null)
+            return;
         if (v.dataType() == DataType.BOOL || v.dataType() == DataType.UTF8)
             throw new IllegalStateException("Cannot apply operation \"" + opName + "\" to variable \"" + v.getVarName() + "\" with non-numerical data type " + v.dataType());
     }
@@ -30,6 +32,8 @@ public class SDValidation {
      * @param v      Variable to perform operation on
      */
     protected static void validateNumerical(String opName, String inputName, SDVariable v) {
+        if(v == null)
+            return;
         if (v.dataType() == DataType.BOOL || v.dataType() == DataType.UTF8)
             throw new IllegalStateException("Input \"" + inputName + "\" for operation \"" + opName + "\" must be an numerical type type; got variable \"" +
                     v.getVarName() + "\" with non-integer data type " + v.dataType());
@@ -49,14 +53,54 @@ public class SDValidation {
     }
 
     protected static void validateInteger(String opName, SDVariable v){
+        if(v == null)
+            return;
         if (!v.dataType().isIntType())
             throw new IllegalStateException("Cannot apply operation \"" + opName + "\" to variable \"" + v.getVarName() + "\" with non-integer data type " + v.dataType());
     }
 
     protected static void validateInteger(String opName, String inputName, SDVariable v){
+        if(v == null)
+            return;
         if (!v.dataType().isIntType())
             throw new IllegalStateException("Input \"" + inputName + "\" for operation \"" + opName + "\" must be an integer type; got variable \"" +
                     v.getVarName() + "\" with non-integer data type " + v.dataType());
+    }
+
+    protected static void validateFloatingPoint(String opName, SDVariable v){
+        if(v == null)
+            return;
+        if (!v.dataType().isFPType())
+            throw new IllegalStateException("Cannot apply operation \"" + opName + "\" to variable \"" + v.getVarName() + "\" with non-floating point data type " + v.dataType());
+    }
+
+    protected static void validateFloatingPoint(String opName, String inputName, SDVariable v){
+        if(v == null)
+            return;
+        if (!v.dataType().isFPType())
+            throw new IllegalStateException("Input \"" + inputName + "\" for operation \"" + opName + "\" must be an floating point type; got variable \"" +
+                    v.getVarName() + "\" with non-floating point data type " + v.dataType());
+    }
+
+    protected static void validateBool(String opName, SDVariable v){
+        if(v == null)
+            return;
+        if (v.dataType() != DataType.BOOL)
+            throw new IllegalStateException("Cannot apply operation \"" + opName + "\" to variable \"" + v.getVarName() + "\" with non-boolean point data type " + v.dataType());
+    }
+
+    protected static void validateBool(String opName, String inputName, SDVariable v){
+        if(v == null)
+            return;
+        if (v.dataType() != DataType.BOOL)
+            throw new IllegalStateException("Input \"" + inputName + "\" for operation \"" + opName + "\" must be an boolean variable; got variable \"" +
+                    v.getVarName() + "\" with non-boolean data type " + v.dataType());
+    }
+
+    protected static void validateBool(String opName, SDVariable v1, SDVariable v2) {
+        if (v1.dataType() != DataType.BOOL || v2.dataType() != DataType.BOOL)
+            throw new IllegalStateException("Cannot perform operation " + opName + " to variables  \"" + v1.getVarName() + "\" and \"" +
+                    v2.getVarName() + "\" if one or both variables are non-boolean: " + v1.dataType() + " and " + v2.dataType());
     }
 
     /**
