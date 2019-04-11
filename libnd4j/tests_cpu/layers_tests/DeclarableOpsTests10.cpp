@@ -185,7 +185,7 @@ TEST_F(DeclarableOpsTests10, Pad_SGO_Test_1) {
 
     auto res = op.execute({&in, &pad}, {10.0}, {0});
     ASSERT_EQ(res->status(), ND4J_STATUS_OK);
-//    res->at(0)->printIndexedBuffer("PAD_SGO");
+    res->at(0)->printIndexedBuffer("PAD_SGO");
 //    exp.printIndexedBuffer("PAD_EXP");
     ASSERT_TRUE(exp.equalsTo(res->at(0)));
     delete res;
@@ -229,7 +229,61 @@ TEST_F(DeclarableOpsTests10, Pad_SGO_Test_3) {
     ASSERT_TRUE(exp.equalsTo(res->at(0)));
     delete res;
 }
+///////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests10, Pad_SGO_Test_4) {
 
+    auto in = NDArrayFactory::create<double>('c', {3,3}, {1., 2., 3., 4., 5.,6,7,8,9});
+//    auto pad = NDArrayFactory::create<double>('c', {1, 2}, {1., 1.});// = Nd4j.create(new double[]{1, 1}, new long[]{1, 2});
+    auto pad = NDArrayFactory::create<int>('c', {2,2}, {1, 2, 2, 3});
+//    auto value(10.0);
+
+    auto exp = NDArrayFactory::create<double>('c', {6,8}, {0,0,0,0,0,0,0,0,
+                                                           0,0,1,2,3,0,0,0,
+                                                           0,0,2,3,4,0,0,0,
+                                                           0,0,7,8,9,0,0,0,
+                                                           0,0,0,0,0,0,0,0,
+                                                           0,0,0,0,0,0,0,0});
+
+    nd4j::ops::pad op;
+
+    auto res = op.execute({&in, &pad}, {10.0}, {2});
+    ASSERT_EQ(res->status(), ND4J_STATUS_OK);
+    res->at(0)->printIndexedBuffer("PAD_SGO");
+    //   exp.printIndexedBuffer("PAD_EXP");
+//    ASSERT_TRUE(exp.equalsTo(res->at(0)));
+    delete res;
+}
+///////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests10, Pad_SGO_Test_5) {
+
+    auto in = NDArrayFactory::create<double>('c', {2,3,4}, {1, 2, 3, 4,
+                                                            5, 6, 7, 8,
+                                                            9,10,11,12,
+
+                                                           13, 14, 15, 16,
+                                                           17, 18, 19, 20,
+                                                           21, 22, 23, 24});
+
+//    auto pad = NDArrayFactory::create<double>('c', {1, 2}, {1., 1.});// = Nd4j.create(new double[]{1, 1}, new long[]{1, 2});
+    auto pad = NDArrayFactory::create<int>('c', {3,2}, {1, 2, 2, 3, 3,3});
+//    auto value(10.0);
+
+    auto exp = NDArrayFactory::create<double>('c', {6,8}, {0,0,0,0,0,0,0,0,
+                                                           0,0,1,2,3,0,0,0,
+                                                           0,0,2,3,4,0,0,0,
+                                                           0,0,7,8,9,0,0,0,
+                                                           0,0,0,0,0,0,0,0,
+                                                           0,0,0,0,0,0,0,0});
+
+    nd4j::ops::pad op;
+
+    auto res = op.execute({&in, &pad}, {10.0}, {2});
+    ASSERT_EQ(res->status(), ND4J_STATUS_OK);
+    res->at(0)->printIndexedBuffer("PAD_SGO");
+    //   exp.printIndexedBuffer("PAD_EXP");
+//    ASSERT_TRUE(exp.equalsTo(res->at(0)));
+    delete res;
+}
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests10, MirrorPad_SGO_Test_1) {
 
