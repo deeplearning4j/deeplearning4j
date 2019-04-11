@@ -63,6 +63,7 @@ import org.nd4j.evaluation.IEvaluation;
 import org.nd4j.evaluation.classification.Evaluation;
 import org.nd4j.evaluation.classification.ROC;
 import org.nd4j.evaluation.classification.ROCMultiClass;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
 import org.nd4j.linalg.api.memory.enums.AllocationPolicy;
@@ -3732,6 +3733,27 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
      */
     public ComputationGraph toComputationGraph(){
         return NetworkUtils.toComputationGraph(this);
+    }
+
+    public MultiLayerNetwork convertDataType(@NonNull DataType dataType){
+        Preconditions.checkState(dataType.isFPType(), "Invalid DataType: %s. Can only convert parameters to floating point types", dataType);
+        if(dataType == params().dataType()){
+            return this;
+        }
+
+        try(MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+            INDArray newParams = params().castTo(dataType);
+            String jsonConfig = getLayerWiseConfigurations().toJson();
+            MultiLayerNetwork newNet = new MultiLayerNetwork(MultiLayerConfiguration.fromJson(jsonConfig));
+            newNet.init(newParams, false);
+
+            Updater u = getUpdater(false);
+            if(u != null && u.getStateViewArray() != null){
+                INDArray oldUpdaterState = u.getStateViewArray();
+                newNet.getUpdater(true).getStateViewArray().assign(oldUpdaterState);
+            }
+            return newNet;
+        }
     }
 
     /**
