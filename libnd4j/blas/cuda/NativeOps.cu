@@ -81,7 +81,7 @@
 #include <graph/VariablesSet.h>
 #include <ops/declarable/OpRegistrator.h>
 #include <ops/declarable/CustomOperations.h>
-
+#include <PointersManager.h>
 
 
 //#include <sys/time.h>
@@ -2013,7 +2013,60 @@ BUILD_SINGLE_TEMPLATE(template void concatCudaLauncher, (const int numOfArrs, co
 	// numArrays will be used as number of TADs, so each block process 1 input
     //concatCudaLauncher(numArrays, stream,  ddata, dinputShapeInfo, dZ, dZShapeInfo);
     auto zType = nd4j::ArrayOptions::dataType(hZShapeInfo);
-    BUILD_SINGLE_SELECTOR(zType, concatCudaLauncher, (numArrays, stream, ddata, dinputShapeInfo, dZ, dZShapeInfo), LIBND4J_TYPES);
+    auto axis = dimension;
+    NDArray tempOutput(hZ, hZShapeInfo);
+    tempOutput.setSpecialBuffers(dZ, dZShapeInfo);
+    //BUILD_SINGLE_SELECTOR(zType, concatCudaLauncher, (numArrays, stream, ddata, dinputShapeInfo, dZ, dZShapeInfo), LIBND4J_TYPES);
+    //const int numOfArrs = inArrs.size();
+//    for(int i = 0; i < numOfArrs; ++i)
+//        if(!inArrs[i]->isActualOnDeviceSide()) inArrs[i]->syncToDevice();
+
+    const int rank  = shape::rank(reinterpret_cast<Nd4jLong*>(inputShapeInfo[0]));
+    const int rank2 = 2 * rank;
+    std::vector<std::vector<Nd4jLong>> indices(numArrays, std::vector<Nd4jLong>(rank2,0));
+
+    // take into account indices for first array
+    auto axisSize = shape::sizeAt(reinterpret_cast<Nd4jLong*>(inputShapeInfo[0]), axis);
+    indices[0][2 * axis + 1] = axisSize;
+
+    // loop through the rest of input arrays
+    for(int i = 1; i < numArrays; ++i) {
+        indices[i][2 * axis]     = indices[i-1][2 * axis + 1];                                // index start from
+        indices[i][2 * axis + 1] = indices[i-1][2 * axis + 1] + axisSize;      // index end with (excluding)
+    }
+
+    std::vector<NDArray*> outSubArrs(numArrays);
+    for(int i = 0; i < numArrays; ++i)
+        outSubArrs[i] = new NDArray(tempOutput(indices[i], true));
+
+    // prepare arrays of pointers on buffers and shapes
+    std::vector<void*>     hOutBuffers(numArrays), hInBuffers(numArrays);
+    std::vector<Nd4jLong*> hOutShapeInfo(numArrays), hInShapeInfo(numArrays);
+    for(int i = 0; i < numArrays; ++i) {
+        hOutBuffers[i]   = outSubArrs[i]->specialBuffer();
+        hInBuffers[i]    = ddata[i];//->getSpecialBuffer();
+        hOutShapeInfo[i] = (Nd4jLong*)(outSubArrs[i]->specialShapeInfo());
+        hInShapeInfo[i]  = (Nd4jLong*)(dinputShapeInfo[i]);//->getSpecialShapeInfo();
+    }
+
+    // allocate and copy all buffers and shapes arrays to global memory
+    PointersManager manager(LaunchContext::defaultContext(), "NativeOps::concat");
+    void* dOutBuffers	= manager.replicatePointer(hOutBuffers.data(),   hOutBuffers.size() * sizeof(void*));
+    void* dInBuffers	= manager.replicatePointer(hInBuffers.data(),    hInBuffers.size() * sizeof(void*));
+    void* dInShapeInfo  = manager.replicatePointer(hInShapeInfo.data(),  hInShapeInfo.size() * sizeof(Nd4jLong*));
+    void* dOutShapeInfo = manager.replicatePointer(hOutShapeInfo.data(), hOutShapeInfo.size() * sizeof(Nd4jLong*));
+
+    BUILD_SINGLE_SELECTOR(zType, concatCudaLauncher, (numArrays, stream, dInBuffers, dInShapeInfo, dOutBuffers, dOutShapeInfo), LIBND4J_TYPES);
+
+    manager.synchronize();
+
+    for(int i = 0; i < numArrays; ++i)
+        delete outSubArrs[i];
+
+//    for(int i = 0; i < numOfArrs; ++i)
+//        inArrs[i]->tickReadHost();
+
+    //output.tickWriteDevice();
 //	int smem = 8192;
 //	bool isVstack = false;
 //	bool isScalar = true;
