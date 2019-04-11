@@ -252,7 +252,7 @@ public class RegressionTest100a extends BaseDL4JTest {
 
         INDArray outAct = net.outputSingle(in).castTo(outExp.dataType());
 
-        boolean eq = outExp.equalsWithEps(outAct), 1e-4);
+        boolean eq = outExp.equalsWithEps(outAct, 1e-4);
         if(!eq){
             log.info("Expected: {}", outExp);
             log.info("Actual: {}", outAct);

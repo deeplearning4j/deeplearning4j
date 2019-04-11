@@ -42,7 +42,7 @@ public class OutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.laye
 
     @Override
     protected INDArray getLabels2d(LayerWorkspaceMgr workspaceMgr, ArrayType arrayType) {
-        return workspaceMgr.castTo(arrayType, Nd4j.defaultFloatingPointType(), labels, false);
+        return labels;
     }
 
 }

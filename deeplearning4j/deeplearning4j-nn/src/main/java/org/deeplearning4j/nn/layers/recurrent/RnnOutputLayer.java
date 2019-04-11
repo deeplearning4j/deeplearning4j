@@ -116,7 +116,7 @@ public class RnnOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.l
     protected INDArray getLabels2d(LayerWorkspaceMgr workspaceMgr, ArrayType arrayType) {
         if (labels.rank() == 3)
             return TimeSeriesUtils.reshape3dTo2d(labels, workspaceMgr, arrayType);
-        return workspaceMgr.castTo(arrayType, Nd4j.defaultFloatingPointType(), labels, false);
+        return labels;
     }
 
     @Override
