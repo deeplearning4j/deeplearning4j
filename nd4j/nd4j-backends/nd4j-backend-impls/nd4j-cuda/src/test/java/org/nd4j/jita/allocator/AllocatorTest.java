@@ -9,6 +9,7 @@ import static org.junit.Assert.assertTrue;
 
 import lombok.val;
 
+import org.nd4j.jita.memory.impl.CudaFullCachingProvider;
 import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
 import org.nd4j.linalg.api.memory.enums.MirroringPolicy;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -29,7 +30,7 @@ public class AllocatorTest {
     @Test
     public void testCounters() {
         int deviceId = 0;
-        MemoryTracker tracker = MemoryTracker.getInstance();
+        MemoryTracker tracker = new MemoryTracker();
 
         assertTrue(0 == tracker.getAllocatedAmount(deviceId));
         assertTrue(0 == tracker.getCachedAmount(deviceId));
@@ -186,12 +187,15 @@ public class AllocatorTest {
     }
 
     @Test
-    public void testCachingProvider() {
+    public void testZeroCachingProvider() {
         INDArray input = Nd4j.zeros(1024);
         CudaCachingZeroProvider provider = new CudaCachingZeroProvider();
         AllocationShape shape = AllocationUtils.buildAllocationShape(input);
         AllocationPoint point = new AllocationPoint();
         point.setShape(shape);
+
+        val allocBefore = MemoryTracker.getInstance().getAllocatedAmount(Nd4j.getAffinityManager().getDeviceForCurrentThread());
+        val cachedBefore = MemoryTracker.getInstance().getCachedAmount(Nd4j.getAffinityManager().getDeviceForCurrentThread());
 
         val pointers = provider.malloc(shape, point, AllocationStatus.DEVICE);
         point.setPointers(pointers);
@@ -199,10 +203,60 @@ public class AllocatorTest {
         System.out.println(MemoryTracker.getInstance().getAllocatedAmount(Nd4j.getAffinityManager().getDeviceForCurrentThread()));
         System.out.println(MemoryTracker.getInstance().getCachedAmount(Nd4j.getAffinityManager().getDeviceForCurrentThread()));
 
+        val allocMiddle = MemoryTracker.getInstance().getAllocatedAmount(Nd4j.getAffinityManager().getDeviceForCurrentThread());
+        val cachedMiddle = MemoryTracker.getInstance().getCachedAmount(Nd4j.getAffinityManager().getDeviceForCurrentThread());
+
         provider.free(point);
 
         System.out.println(MemoryTracker.getInstance().getAllocatedAmount(Nd4j.getAffinityManager().getDeviceForCurrentThread()));
         System.out.println(MemoryTracker.getInstance().getCachedAmount(Nd4j.getAffinityManager().getDeviceForCurrentThread()));
+
+        val allocAfter = MemoryTracker.getInstance().getAllocatedAmount(Nd4j.getAffinityManager().getDeviceForCurrentThread());
+        val cachedAfter = MemoryTracker.getInstance().getCachedAmount(Nd4j.getAffinityManager().getDeviceForCurrentThread());
+
+        assertTrue(allocBefore < allocMiddle);
+        assertEquals(allocBefore, allocAfter);
+
+        assertEquals(cachedBefore, cachedMiddle);
+        assertEquals(cachedBefore, cachedAfter);
     }
 
+    @Test
+    public void testFullCachingProvider() {
+        INDArray input = Nd4j.zeros(1024);
+        val provider = new CudaFullCachingProvider();
+        AllocationShape shape = AllocationUtils.buildAllocationShape(input);
+        AllocationPoint point = new AllocationPoint();
+        point.setShape(shape);
+
+        val allocBefore = MemoryTracker.getInstance().getAllocatedAmount(Nd4j.getAffinityManager().getDeviceForCurrentThread());
+        val cachedBefore = MemoryTracker.getInstance().getCachedAmount(Nd4j.getAffinityManager().getDeviceForCurrentThread());
+
+        val pointers = provider.malloc(shape, point, AllocationStatus.DEVICE);
+        point.setPointers(pointers);
+
+        System.out.println(MemoryTracker.getInstance().getAllocatedAmount(Nd4j.getAffinityManager().getDeviceForCurrentThread()));
+        System.out.println(MemoryTracker.getInstance().getCachedAmount(Nd4j.getAffinityManager().getDeviceForCurrentThread()));
+
+        val allocMiddle = MemoryTracker.getInstance().getAllocatedAmount(Nd4j.getAffinityManager().getDeviceForCurrentThread());
+        val cachedMiddle = MemoryTracker.getInstance().getCachedAmount(Nd4j.getAffinityManager().getDeviceForCurrentThread());
+
+        provider.free(point);
+
+        System.out.println(MemoryTracker.getInstance().getAllocatedAmount(Nd4j.getAffinityManager().getDeviceForCurrentThread()));
+        System.out.println(MemoryTracker.getInstance().getCachedAmount(Nd4j.getAffinityManager().getDeviceForCurrentThread()));
+
+        val allocAfter = MemoryTracker.getInstance().getAllocatedAmount(Nd4j.getAffinityManager().getDeviceForCurrentThread());
+        val cachedAfter = MemoryTracker.getInstance().getCachedAmount(Nd4j.getAffinityManager().getDeviceForCurrentThread());
+
+        assertTrue(allocBefore < allocMiddle);
+        assertEquals(allocBefore, allocAfter);
+
+        //assertEquals(0, cachedBefore);
+        //assertEquals(0, cachedMiddle);
+        //assertEquals(shape.getNumberOfBytes(), cachedAfter);
+
+        assertEquals(cachedBefore, cachedMiddle);
+        assertTrue(cachedBefore < cachedAfter);
+    }
 }

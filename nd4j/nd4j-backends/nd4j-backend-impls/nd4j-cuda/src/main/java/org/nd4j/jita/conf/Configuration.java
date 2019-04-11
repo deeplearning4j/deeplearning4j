@@ -186,7 +186,7 @@ public class Configuration implements Serializable {
     private long maximumHostCacheableLength = 100663296;
 
     @Getter
-    private long maximumDeviceCacheableLength = 1L; //16L * 1024L * 1024L;
+    private long maximumDeviceCacheableLength = 16L * 1024L * 1024L;
 
     @Getter
     private int commandQueueLength = 3;

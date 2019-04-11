@@ -12,7 +12,7 @@ public class MemoryTracker {
     private List<AtomicLong> workspacesPerDevice = new ArrayList<>();
     private final static MemoryTracker INSTANCE = new MemoryTracker();
 
-    private MemoryTracker() {
+    public MemoryTracker() {
         for (int i = 0; i < Nd4j.getAffinityManager().getNumberOfDevices(); ++i) {
             allocatedPerDevice.add(i, new AtomicLong(0));
             cachedPerDevice.add(i, new AtomicLong(0));

@@ -16,11 +16,13 @@
 
 package org.nd4j.jita.memory.impl;
 
+import lombok.val;
 import org.bytedeco.javacpp.Pointer;
 import org.nd4j.jita.allocator.enums.AllocationStatus;
 import org.nd4j.jita.allocator.impl.AllocationPoint;
 import org.nd4j.jita.allocator.impl.AllocationShape;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
+import org.nd4j.jita.allocator.impl.MemoryTracker;
 import org.nd4j.jita.allocator.pointers.CudaPointer;
 import org.nd4j.jita.allocator.pointers.PointersPair;
 import org.nd4j.jita.allocator.utils.AllocationUtils;
@@ -98,6 +100,11 @@ public class CudaFullCachingProvider extends CudaCachingZeroProvider {
 
                     point.setAllocationStatus(AllocationStatus.DEVICE);
                     point.setDeviceId(deviceId);
+
+
+                    MemoryTracker.getInstance().decrementCachedAmount(deviceId, reqMemory);
+                    MemoryTracker.getInstance().incrementAllocatedAmount(deviceId, reqMemory);
+
                     return pair;
                 }
             }
@@ -127,18 +134,13 @@ public class CudaFullCachingProvider extends CudaCachingZeroProvider {
             // we don't cache too big objects
 
             if (reqMemory > CudaEnvironment.getInstance().getConfiguration().getMaximumDeviceCacheableLength() || deviceCachedAmount.get(deviceId).get() >= CudaEnvironment.getInstance().getConfiguration().getMaximumHostCache()) {
-                //log.info("DEVICE_{} memory purging: {} bytes; MS: {}; MT: {}", deviceId, reqMemory, MAX_GPU_ALLOCATION, MAX_GPU_CACHE);
                 super.free(point);
                 return;
             }
 
-//            log.info("Saving HOST memory into cache...");
-
             ensureDeviceCacheHolder(deviceId, shape);
 
-            CacheHolder cache = deviceCache.get(deviceId).get(shape);
-
-
+            val cache = deviceCache.get(deviceId).get(shape);
 
             if (point.getDeviceId() != deviceId)
                 throw new RuntimeException("deviceId changed!");
@@ -154,12 +156,11 @@ public class CudaFullCachingProvider extends CudaCachingZeroProvider {
                 // total memory allocated within this bucket
                 long cacheDepth = cacheEntries * reqMemory;
 
-                //if (cacheDepth < MAX_CACHED_MEMORY / cacheHeight) {
                 cache.put(new CudaPointer(point.getDevicePointer().address()));
+
+                MemoryTracker.getInstance().incrementCachedAmount(deviceId, reqMemory);
+                MemoryTracker.getInstance().decrementAllocatedAmount(deviceId, reqMemory);
                 return;
-                //} else {
-                //    super.free(point);
-                // }
             }
         }
         super.free(point);

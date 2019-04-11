@@ -116,8 +116,6 @@ public class CudaCachingZeroProvider extends CudaDirectProvider implements Memor
                     pair.setHostPointer(new CudaPointer(pointer.address()));
 
                     point.setAllocationStatus(AllocationStatus.HOST);
-                    MemoryTracker.getInstance().decrementCachedAmount(Nd4j.getAffinityManager().getDeviceForCurrentThread(), reqMemory);
-                    MemoryTracker.getInstance().incrementAllocatedAmount(Nd4j.getAffinityManager().getDeviceForCurrentThread(), reqMemory);
                     return pair;
                 }
             }
@@ -171,16 +169,11 @@ public class CudaCachingZeroProvider extends CudaDirectProvider implements Memor
 
             // we don't cache too big objects
             if (reqMemory > CudaEnvironment.getInstance().getConfiguration().getMaximumHostCacheableLength() || zeroCachedAmount.get() >= CudaEnvironment.getInstance().getConfiguration().getMaximumHostCache()) {
-                //log.info("HOST memory purging: {} bytes; MS: {}; MT: {}", reqMemory, MAX_SINGLE_ALLOCATION, MAX_CACHED_MEMORY);
                 super.free(point);
-                MemoryTracker.getInstance().incrementCachedAmount(Nd4j.getAffinityManager().getDeviceForCurrentThread(), reqMemory);
-                MemoryTracker.getInstance().decrementAllocatedAmount(Nd4j.getAffinityManager().getDeviceForCurrentThread(), reqMemory);
                 return;
             }
 
             ensureCacheHolder(shape);
-
-            //log.info("Saving DEVICE memory into cache...");
 
             /*
                 Now we should decide if this object can be cached or not
@@ -198,12 +191,8 @@ public class CudaCachingZeroProvider extends CudaDirectProvider implements Memor
                 // total memory allocated within this bucket
                 long cacheDepth = cacheEntries * reqMemory;
 
-                //   if (cacheDepth < MAX_CACHED_MEMORY / cacheHeight) {
                 Pointer.memset(point.getHostPointer(), 0, reqMemory);
                 cache.put(new CudaPointer(point.getHostPointer().address()));
-                //    } else {
-                //       super.free(point);
-                //    }
             }
         }
     }
