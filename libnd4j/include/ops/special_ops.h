@@ -25,7 +25,6 @@
 #include <op_enums.h>
 #include <loops/transform_strict.h>
 #include <helpers/ConstantTadHelper.h>
-#include <ShapeBuilders.h>
 
 #ifdef __CUDACC__
 #include <loops/cuda/inplace_loops/reduce_same_inplace.h>
@@ -1339,8 +1338,8 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
 			if (threadIdx.x == 0) {
 			    maxResult = (X) 0.0;
 			    maxShape[0] = shape[0];
-			    maxShape[1] = 1;				
-                maxResultShapeBuffer = nd4j::ShapeBuilders::createShapeInfo(nd4j::DataTypeUtils::fromT<X>(), 'c', 2, maxShape);
+			    maxShape[1] = 1;
+                maxResultShapeBuffer = shape::shapeBuffer(2, nd4j::DataTypeUtils::fromT<X>(), maxShape, tempBuffer);
 			}
 			__syncthreads();
 
@@ -1387,8 +1386,8 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
 				auto maxResult = new X[shape[0]];
 				for (int i = 0; i < shape[0]; i++)
 					maxResult[i] = 0.0;
-				Nd4jLong maxShape[2] = { shape[0], 1 };				
-                auto maxResultShapeBuffer = nd4j::ShapeBuilders::createShapeInfo(nd4j::DataTypeUtils::fromT<X>(), 'c', 2, maxShape);
+				Nd4jLong maxShape[2] = { shape[0], 1 };
+                auto maxResultShapeBuffer = shape::shapeBuffer(2, nd4j::DataTypeUtils::fromT<X>(), maxShape);
 				functions::reduce::ReduceSameFunction<X>::exec(nd4j::reduce::Max, dx, xShapeBuffer, extraParams, maxResult, maxResultShapeBuffer, maxDimension, 1,  nullptr, nullptr);
 
 				//subtract max of each row
@@ -1491,8 +1490,8 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
 			Nd4jLong maxShape[2] = { shape[0], 1 };
 			__shared__ Nd4jLong tempBuffer[8];
 
-			if (threadIdx.x == 0)				
-                maxResultShapeBuffer = nd4j::ShapeBuilders::createShapeInfo(nd4j::DataTypeUtils::fromT<X>(), 'c', 2, maxShape);
+			if (threadIdx.x == 0)
+                maxResultShapeBuffer = shape::shapeBuffer(2, nd4j::DataTypeUtils::fromT<X>(), maxShape, tempBuffer);
 			__syncthreads();
 
 			functions::reduce::ReduceSameInplace<X>::execScalarCudaLegacy(nd4j::reduce::Max, dx, xShapeBuffer, extraParams, &maxResult, maxResultShapeBuffer, reductionPointer, nullptr);
@@ -1545,8 +1544,8 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
 				for (int i = 0; i < shape[0]; i++)
 					maxResult[i] = 0.0;
 
-				Nd4jLong maxShape[2] = { shape[0], 1 };				
-                auto maxResultShapeBuffer = nd4j::ShapeBuilders::createShapeInfo(nd4j::DataTypeUtils::fromT<X>(), 'c', 2, maxShape);
+				Nd4jLong maxShape[2] = { shape[0], 1 };
+                auto maxResultShapeBuffer = shape::shapeBuffer(2, nd4j::DataTypeUtils::fromT<X>(), maxShape);
 				functions::reduce::ReduceSameFunction<X>::exec(nd4j::reduce::Max, dx, xShapeBuffer, extraParams, maxResult, maxResultShapeBuffer, maxDimension, 1, nullptr, nullptr);
 
 				//subtract max of each row
@@ -1657,8 +1656,8 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
 
 			__shared__ Nd4jLong tempBuffer[8];
 
-			if (threadIdx.x == 0)				
-                maxResultShapeBuffer = nd4j::ShapeBuilders::createShapeInfo(nd4j::DataTypeUtils::fromT<X>(), 'c', 2, maxShape);
+			if (threadIdx.x == 0)
+                maxResultShapeBuffer = shape::shapeBuffer(2, nd4j::DataTypeUtils::fromT<X>(), maxShape, tempBuffer);
 			__syncthreads();
 
 			functions::reduce::ReduceSameInplace<X>::execScalarCudaLegacy(nd4j::reduce::Max, dx, xShapeBuffer, extraParams, &maxResult, maxResultShapeBuffer, reductionPointer, nullptr);
@@ -1720,8 +1719,8 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
 				for (int i = 0; i < shape[0]; i++)
 					maxResult[i] = 0.0f;
 
-				Nd4jLong maxShape[2] = { shape[0], 1 };				
-                auto maxResultShapeBuffer = nd4j::ShapeBuilders::createShapeInfo(nd4j::DataTypeUtils::fromT<X>(), 'c', 2, maxShape);
+				Nd4jLong maxShape[2] = { shape[0], 1 };
+                auto maxResultShapeBuffer = shape::shapeBuffer(2, nd4j::DataTypeUtils::fromT<X>(), maxShape);
 				functions::reduce::ReduceSameFunction<X>::exec(nd4j::reduce::Max, dx, xShapeBuffer, extraParams, maxResult, maxResultShapeBuffer, maxDimension, 1, nullptr, nullptr);
 
 				//subtract max of each row
