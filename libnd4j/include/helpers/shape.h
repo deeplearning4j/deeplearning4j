@@ -453,9 +453,17 @@ namespace shape {
  * Returns the rank portion of
  * an information buffer
  */
-    ND4J_EXPORT _CUDA_HD int rank(const Nd4jLong *buffer);
-    ND4J_EXPORT _CUDA_HD int rank(const int *buffer);
-    ND4J_EXPORT _CUDA_HD int rank(const unsigned int *buffer);
+    ND4J_EXPORT _CUDA_HD int rank(const Nd4jLong *shapeInfo);
+    ND4J_EXPORT _CUDA_HD int rank(const int *shapeInfo);
+    ND4J_EXPORT _CUDA_HD int rank(const unsigned int *shapeInfo);
+
+
+    /**
+    * Returns the rank of array neglecting unities in shape
+    * for example returns 2 for shape {1,3,1,4,1}
+    * an information buffer
+    */
+    ND4J_EXPORT _CUDA_HD int rankExcludeUnities(const Nd4jLong *shapeInfo);
 
     // returns pointer on elementWiseStride
     ND4J_EXPORT _CUDA_HD Nd4jLong* ews(Nd4jLong* shapeInfo);
@@ -2691,6 +2699,15 @@ template <typename T>
         return static_cast<int>(buffer[0]);
     }
 
+    INLINEDEF _CUDA_HD int rankExcludeUnities(const Nd4jLong *shapeInfo) {
+        
+        int rank = 0;
+        for (int i = 1; i <= shapeInfo[0]; ++i)
+            if(shapeInfo[i] != 1)
+                ++rank;
+
+        return rank;
+    }
 
     INLINEDEF _CUDA_HD Nd4jLong* ews(Nd4jLong* shapeInfo) {
         return shapeInfo + 2 * shapeInfo[0] + 2;

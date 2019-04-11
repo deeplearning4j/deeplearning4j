@@ -853,16 +853,16 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
         Z extraParams[3] = {param0, param1, param2};
 
         Nd4jLong *xTadShapeInfo = nullptr, *yTadShapeInfo = nullptr, *xTadOffsets = nullptr, *yTadOffsets = nullptr;
-        TadPack tadPackX, tadPackY;
+        TadPack tadPackX, tadPackY; 
         std::vector<Nd4jLong> zeroOffsets;
-
-        if(dimsLen == shape::rank(xShapeInfo)) {
+        
+        if(dimsLen == shape::rankExcludeUnities(xShapeInfo)) {
             tadPackY      = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(yShapeInfo, dims, dimsLen);
             xTadShapeInfo = xShapeInfo;
             yTadShapeInfo = tadPackY.primaryShapeInfo();
             yTadOffsets   = tadPackY.primaryOffsets();
         }
-        else if(dimsLen == shape::rank(yShapeInfo)) {
+        else if(dimsLen == shape::rankExcludeUnities(yShapeInfo)) {
             tadPackX      = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(xShapeInfo, dims, dimsLen);
             yTadShapeInfo = yShapeInfo;
             xTadShapeInfo = tadPackX.primaryShapeInfo();
@@ -897,7 +897,7 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
             //*********************************************//
             case EWS1: {
 
-                PRAGMA_OMP_PARALLEL_FOR_SIMD_ARGS(num_threads(numThreads) if(numThreads > 1) private(extraParams))
+                // PRAGMA_OMP_PARALLEL_FOR_SIMD_ARGS(num_threads(numThreads) if(numThreads > 1) private(extraParams))
                 for (uint i = 0; i < zLen; ++i) {
                    
                     extraParams[0] = param0;
