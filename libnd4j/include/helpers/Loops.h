@@ -852,30 +852,34 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
         Z param0(OpType::startingValue(x)), param1(OpType::startingValue(x)), param2(extraParameters ? extraParameters[0] : OpType::startingValue(x));
         Z extraParams[3] = {param0, param1, param2};
 
+        const Nd4jLong xLen = shape::length(xShapeInfo);
+        const Nd4jLong yLen = shape::length(yShapeInfo);
+
         Nd4jLong *xTadShapeInfo = nullptr, *yTadShapeInfo = nullptr, *xTadOffsets = nullptr, *yTadOffsets = nullptr;
         TadPack tadPackX, tadPackY; 
         std::vector<Nd4jLong> zeroOffsets;
-        
-        if(dimsLen == shape::rankExcludeUnities(xShapeInfo)) {
+
+        if(xLen == yLen) {
+            tadPackX      = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(xShapeInfo, dims, dimsLen);
+            tadPackY      = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(yShapeInfo, dims, dimsLen);
+            xTadShapeInfo = tadPackX.primaryShapeInfo();
+            yTadShapeInfo = tadPackY.primaryShapeInfo();
+            xTadOffsets   = tadPackX.primaryOffsets();
+            yTadOffsets   = tadPackY.primaryOffsets();
+        }
+        else if(yLen > xLen) {
             tadPackY      = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(yShapeInfo, dims, dimsLen);
             xTadShapeInfo = xShapeInfo;
             yTadShapeInfo = tadPackY.primaryShapeInfo();
             yTadOffsets   = tadPackY.primaryOffsets();
         }
-        else if(dimsLen == shape::rankExcludeUnities(yShapeInfo)) {
+        else {
             tadPackX      = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(xShapeInfo, dims, dimsLen);
             yTadShapeInfo = yShapeInfo;
             xTadShapeInfo = tadPackX.primaryShapeInfo();
             xTadOffsets   = tadPackX.primaryOffsets();
         }
-        else {
-            tadPackX      = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(xShapeInfo, dims, dimsLen);
-            tadPackY      = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(yShapeInfo, dims, dimsLen);
-            xTadShapeInfo = tadPackX.primaryShapeInfo();
-            yTadShapeInfo = tadPackY.primaryShapeInfo();
-            xTadOffsets   = tadPackX.primaryOffsets();
-            yTadOffsets   = tadPackY.primaryOffsets();
-        }
+        
 
         const LoopKind kindOfLoop = deduceKindOfLoopTadXYZ(xTadShapeInfo, yTadShapeInfo, zShapeInfo);
 
@@ -897,7 +901,7 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
             //*********************************************//
             case EWS1: {
 
-                // PRAGMA_OMP_PARALLEL_FOR_SIMD_ARGS(num_threads(numThreads) if(numThreads > 1) private(extraParams))
+                PRAGMA_OMP_PARALLEL_FOR_SIMD_ARGS(num_threads(numThreads) if(numThreads > 1) private(extraParams))
                 for (uint i = 0; i < zLen; ++i) {
                    
                     extraParams[0] = param0;
