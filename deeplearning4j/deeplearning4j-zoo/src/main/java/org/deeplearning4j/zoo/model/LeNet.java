@@ -98,21 +98,43 @@ public class LeNet extends ZooModel {
                         .convolutionMode(ConvolutionMode.Same)
                         .list()
                         // block 1
-                        .layer(0, new ConvolutionLayer.Builder(new int[] {5, 5}, new int[] {1, 1}).name("cnn1")
-                                        .nIn(inputShape[0]).nOut(20).activation(Activation.RELU).build())
-                        .layer(1, new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX, new int[] {2, 2},
-                                        new int[] {2, 2}).name("maxpool1").build())
+                        .layer(new ConvolutionLayer.Builder()
+                                .name("cnn1")
+                                .kernelSize(5, 5)
+                                .stride(1, 1)
+                                .nIn(inputShape[0])
+                                .nOut(20)
+                                .activation(Activation.RELU)
+                                .build())
+                        .layer(new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX)
+                                .name("maxpool1")
+                                .kernelSize(2, 2)
+                                .stride(2, 2)
+                                .build())
                         // block 2
-                        .layer(2, new ConvolutionLayer.Builder(new int[] {5, 5}, new int[] {1, 1}).name("cnn2").nOut(50)
-                                        .activation(Activation.RELU).build())
-                        .layer(3, new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX, new int[] {2, 2},
-                                        new int[] {2, 2}).name("maxpool2").build())
+                        .layer(new ConvolutionLayer.Builder()
+                                .name("cnn2")
+                                .kernelSize(5, 5)
+                                .stride(1, 1)
+                                .nOut(50)
+                                .activation(Activation.RELU).build())
+                        .layer(new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX)
+                                .name("maxpool2")
+                                .kernelSize(2, 2)
+                                .stride(2, 2)
+                                .build())
                         // fully connected
-                        .layer(4, new DenseLayer.Builder().name("ffn1").activation(Activation.RELU).nOut(500).build())
+                        .layer(new DenseLayer.Builder()
+                                .name("ffn1")
+                                .activation(Activation.RELU)
+                                .nOut(500)
+                                .build())
                         // output
-                        .layer(5, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).name("output")
-                                        .nOut(numClasses).activation(Activation.SOFTMAX) // radial basis function required
-                                        .build())
+                        .layer(new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
+                                .name("output")
+                                .nOut(numClasses)
+                                .activation(Activation.SOFTMAX) // radial basis function required
+                                .build())
                         .setInputType(InputType.convolutionalFlat(inputShape[2], inputShape[1], inputShape[0]))
                         .build();
 
