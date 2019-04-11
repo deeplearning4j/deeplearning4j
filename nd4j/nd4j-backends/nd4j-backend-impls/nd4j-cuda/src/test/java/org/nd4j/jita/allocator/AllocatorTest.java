@@ -16,6 +16,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.api.memory.enums.AllocationPolicy;
 import org.nd4j.jita.memory.impl.CudaDirectProvider;
 import org.nd4j.jita.memory.impl.CudaCachingZeroProvider;
+import org.nd4j.jita.allocator.utils.AllocationUtils;
 
 
 public class AllocatorTest {
@@ -148,8 +149,10 @@ public class AllocatorTest {
     @Test
     public void testDirectProvider() {
         CudaDirectProvider provider = new CudaDirectProvider();
-        AllocationShape shape = new AllocationShape(1024, 4, DataType.FLOAT);
+        INDArray input = Nd4j.zeros(1024);
+        AllocationShape shape = AllocationUtils.buildAllocationShape(input);
         AllocationPoint point = new AllocationPoint();
+        point.setShape(shape);
 	    provider.malloc(AllocationStatus.HOST, point, AllocationStatus.HOST);
 
         System.out.println(MemoryTracker.getInstance().getAllocatedAmount(Nd4j.getAffinityManager().getDeviceForCurrentThread()));
@@ -164,7 +167,8 @@ public class AllocatorTest {
     @Test
     public void testCachingProvider() {
         CudaCachingZeroProvider provider = new CudaCachingZeroProvider();
-        AllocationShape shape = new AllocationShape(1024, 4, DataType.FLOAT);
+        INDArray input = Nd4j.zeros(1024);
+        AllocationShape shape = AllocationUtils.buildAllocationShape(input);
         AllocationPoint point = new AllocationPoint();
         point.setShape(shape);
         provider.malloc(AllocationStatus.HOST, point, AllocationStatus.HOST);
