@@ -8,6 +8,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import static org.nd4j.autodiff.samediff.ops.SDValidation.validateFloatingPoint;
 
 /**
  * SameDiff general neural network operations<br>
@@ -40,6 +41,11 @@ public class SDNN extends SDOps {
     public SDVariable batchNorm(String name, SDVariable input, SDVariable mean,
                                 SDVariable variance, SDVariable gamma,
                                 SDVariable beta, boolean applyGamma, boolean applyBeta, double epsilon, int... axis) {
+        validateFloatingPoint("batchNorm", "input", input);
+        validateFloatingPoint("batchNorm", "mean", mean);
+        validateFloatingPoint("batchNorm", "variance", variance);
+        validateFloatingPoint("batchNorm", "gamma", gamma);
+        validateFloatingPoint("batchNorm", "beta", beta);
         SDVariable res = f().batchNorm(input, mean, variance, gamma, beta, applyGamma, applyBeta, epsilon, axis);
         return updateVariableNameAndReference(res, name);
     }
@@ -82,6 +88,8 @@ public class SDNN extends SDOps {
      * @return Output variable
      */
     public SDVariable biasAdd(String name, SDVariable input, SDVariable bias) {
+        validateFloatingPoint("biasAdd", "input", input);
+        validateFloatingPoint("biasAdd", "bias", bias);
         SDVariable ret = f().biasAdd(input, bias);
         return updateVariableNameAndReference(ret, name);
     }
@@ -101,6 +109,7 @@ public class SDNN extends SDOps {
      * @return
      */
     public SDVariable dropout(String name, SDVariable input, double inputRetainProbability) {
+        validateFloatingPoint("dropout", input);
         SDVariable res = f().dropout(input, inputRetainProbability);
         return updateVariableNameAndReference(res, name);
     }
@@ -133,6 +142,7 @@ public class SDNN extends SDOps {
      * @return Output variable
      */
     public SDVariable elu(String name, SDVariable x) {
+        validateFloatingPoint("elu", x);
         SDVariable result = f().elu(x);
         return updateVariableNameAndReference(result, name);
     }
@@ -157,6 +167,7 @@ public class SDNN extends SDOps {
      * @return Output variable
      */
     public SDVariable eluDerivative(String name, SDVariable x) {
+        validateFloatingPoint("eluDerivative", x);
         SDVariable result = f().eluDerivative(x);
         return updateVariableNameAndReference(result, name);
     }
@@ -183,6 +194,7 @@ public class SDNN extends SDOps {
      * @return Output variable - GELU applied to the input
      */
     public SDVariable gelu(String name, SDVariable x) {
+        validateFloatingPoint("gelu", x);
         SDVariable ret = f().gelu(x, false);    //Defaults to si
         return updateVariableNameAndReference(ret, name);
     }
@@ -211,6 +223,7 @@ public class SDNN extends SDOps {
      * @return Output variable
      */
     public SDVariable hardSigmoid(String name, SDVariable in) {
+        validateFloatingPoint("hard sigmoid", in);
         SDVariable ret = f().hardSigmoid(in);
         return updateVariableNameAndReference(ret, name);
     }
@@ -239,6 +252,7 @@ public class SDNN extends SDOps {
      * @return Output variable
      */
     public SDVariable hardTanh(String name, SDVariable in) {
+        validateFloatingPoint("hard Tanh", in);
         SDVariable result = f().hardTanh(in);
         return updateVariableNameAndReference(result, name);
     }
@@ -261,6 +275,7 @@ public class SDNN extends SDOps {
      * @return Output variable
      */
     public SDVariable hardTanhDerivative(String name, SDVariable x) {
+        validateFloatingPoint("hard Tanh derivative", x);
         SDVariable result = f().hardTanhDerivative(x);
         return updateVariableNameAndReference(result, name);
     }
@@ -290,6 +305,7 @@ public class SDNN extends SDOps {
      * @return Output variable
      */
     public SDVariable leakyRelu(String name, SDVariable x, double alpha) {
+        validateFloatingPoint("leaky ReLU", x);
         SDVariable result = f().leakyRelu(x, alpha);
         return updateVariableNameAndReference(result, name);
     }
@@ -303,6 +319,7 @@ public class SDNN extends SDOps {
      * @return Output variable
      */
     public SDVariable leakyReluDerivative(String name, SDVariable x, double alpha) {
+        validateFloatingPoint("leaky ReLU derivative", x);
         SDVariable result = f().leakyReluDerivative(x, alpha);
         return updateVariableNameAndReference(result, name);
     }
@@ -325,6 +342,9 @@ public class SDNN extends SDOps {
      * @return Output variable
      */
     public SDVariable linear(String name, SDVariable input, SDVariable weights, SDVariable bias) {
+        validateFloatingPoint("linear", "input", input);
+        validateFloatingPoint("linear", "weights", weights);
+        validateFloatingPoint("linear", "bias", bias);
         SDVariable res = f().xwPlusB(input, weights, bias);
         return updateVariableNameAndReference(res, name);
     }
@@ -347,6 +367,7 @@ public class SDNN extends SDOps {
      * @return Output variable
      */
     public SDVariable logSigmoid(String name, SDVariable x) {
+        validateFloatingPoint("log sigmoid", x);
         SDVariable ret = f().logSigmoid(x);
         return updateVariableNameAndReference(ret, name);
     }
@@ -369,6 +390,7 @@ public class SDNN extends SDOps {
      * @return Output variable
      */
     public SDVariable logSoftmax(String name, SDVariable x) {
+        validateFloatingPoint("log softmax", x);
         SDVariable ret = f().logSoftmax(x);
         return updateVariableNameAndReference(ret, name);
     }
@@ -397,6 +419,7 @@ public class SDNN extends SDOps {
      * @return Output variable
      */
     public SDVariable relu(String name, SDVariable x, double cutoff) {
+        validateFloatingPoint("ReLU", x);
         SDVariable result = f().relu(x, cutoff);
         return updateVariableNameAndReference(result, name);
     }
@@ -423,6 +446,7 @@ public class SDNN extends SDOps {
      * @return Output variable
      */
     public SDVariable relu6(String name, SDVariable x, double cutoff) {
+        validateFloatingPoint("ReLU6", x);
         SDVariable result = f().relu6(x, cutoff);
         return updateVariableNameAndReference(result, name);
     }
@@ -445,6 +469,9 @@ public class SDNN extends SDOps {
      * @return Output variable
      */
     public SDVariable reluLayer(String name, SDVariable input, SDVariable weights, SDVariable bias) {
+        validateFloatingPoint("reluLayer", "input", input);
+        validateFloatingPoint("reluLayer", "weights", weights);
+        validateFloatingPoint("reluLayer", "bias", bias);
         SDVariable res = f().reluLayer(input, weights, bias);
         return updateVariableNameAndReference(res, name);
     }
@@ -473,6 +500,7 @@ public class SDNN extends SDOps {
      * @return Output variable
      */
     public SDVariable selu(String name, SDVariable x) {
+        validateFloatingPoint("selu", x);
         SDVariable ret = f().selu(x);
         return updateVariableNameAndReference(ret, name);
     }
@@ -495,6 +523,7 @@ public class SDNN extends SDOps {
      * @return Output variable
      */
     public SDVariable sigmoid(String name, SDVariable x) {
+        validateFloatingPoint("sigmoid", x);
         SDVariable result = f().sigmoid(x);
         return updateVariableNameAndReference(result, name);
     }
@@ -519,6 +548,7 @@ public class SDNN extends SDOps {
      * @return Output variable
      */
     public SDVariable sigmoidDerivative(String name, SDVariable x, SDVariable wrt) {
+        validateFloatingPoint("sigmoidDerivative", x);
         SDVariable result = f().sigmoidDerivative(x, wrt);
         return updateVariableNameAndReference(result, name);
     }
@@ -540,6 +570,7 @@ public class SDNN extends SDOps {
      * @return Output variable
      */
     public SDVariable softmax(String name, SDVariable x) {
+        validateFloatingPoint("softmax", x);
         SDVariable result = f().softmax(x);
         return updateVariableNameAndReference(result, name);
     }
@@ -553,6 +584,7 @@ public class SDNN extends SDOps {
     }
 
     public SDVariable softmaxDerivative(String name, SDVariable x, SDVariable wrt, Integer dimension) {
+        validateFloatingPoint("softmaxDerivative", x);
         SDVariable result = f().softmaxDerivative(x, wrt, dimension);
         return updateVariableNameAndReference(result, name);
     }
@@ -575,6 +607,7 @@ public class SDNN extends SDOps {
      * @return Output variable
      */
     public SDVariable softplus(String name, SDVariable x) {
+        validateFloatingPoint("softplus", x);
         SDVariable result = f().softplus(x);
         return updateVariableNameAndReference(result, name);
     }
@@ -597,6 +630,7 @@ public class SDNN extends SDOps {
      * @return Output variable
      */
     public SDVariable softsign(String name, SDVariable x) {
+        validateFloatingPoint("softsign", x);
         SDVariable result = f().softsign(x);
         return updateVariableNameAndReference(result, name);
     }
@@ -619,6 +653,7 @@ public class SDNN extends SDOps {
      * @return Output varible
      */
     public SDVariable softsignDerivative(String name, SDVariable x) {
+        validateFloatingPoint("softsignDerivative", x);
         SDVariable result = f().softsignDerivative(x);
         return updateVariableNameAndReference(result, name);
     }
@@ -643,6 +678,7 @@ public class SDNN extends SDOps {
      * @return Output variable
      */
     public SDVariable swish(String name, SDVariable x) {
+        validateFloatingPoint("swish", x);
         SDVariable ret = f().swish(x);
         return updateVariableNameAndReference(ret, name);
     }
@@ -678,6 +714,9 @@ public class SDNN extends SDOps {
      * @return Output variable
      */
     public SDVariable layerNorm(String name, SDVariable input, SDVariable gain, SDVariable bias, int... dimensions) {
+        validateFloatingPoint("layerNorm", "input", input);
+        validateFloatingPoint("layerNorm", "gain", gain);
+        validateFloatingPoint("layerNorm", "bias", bias);
         SDVariable result = f().layerNorm(input, gain, bias, dimensions);
         return updateVariableNameAndReference(result, name);
     }
@@ -704,6 +743,8 @@ public class SDNN extends SDOps {
      * @return Output variable
      */
     public SDVariable layerNorm(String name, SDVariable input, SDVariable gain, int... dimensions) {
+        validateFloatingPoint("layerNorm", "input", input);
+        validateFloatingPoint("layerNorm", "gain", gain);
         SDVariable result = f().layerNorm(input, gain, dimensions);
         return updateVariableNameAndReference(result, name);
     }
