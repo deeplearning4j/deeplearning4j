@@ -4101,14 +4101,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         if (slice >= slices)
             throw new IllegalArgumentException("Illegal slice " + slice);
 
-        if (jvmShapeInfo.rank == 0 || isVector()) {
-            if (slice == 0 || isVector()) {
-                return createScalarForIndex(slice, true);
-            }
-            else {
-                throw new IllegalArgumentException("Can't slice a 0-d NDArray");
-            }
-
+        if (jvmShapeInfo.rank == 0 ) {
+            throw new IllegalArgumentException("Can't slice a 0-d NDArray");
         }
 
 

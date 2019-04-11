@@ -7527,6 +7527,39 @@ public class Nd4jTestsC extends BaseNd4jTest {
         assertArrayEquals(new long[]{1, 4}, out2.shape());
     }
 
+    @Test
+    public void testSliceRow(){
+        double[] data = new double[]{15.0, 16.0};
+        INDArray vector = Nd4j.createFromArray(data).reshape(1,2);
+        INDArray slice = vector.slice(0);
+        System.out.println(slice.shapeInfoToString());
+        assertEquals(vector, slice);
+        slice.assign(-1);
+        assertEquals(Nd4j.createFromArray(-1.0, -1.0).reshape(1,2), vector);
+    }
+
+    @Test
+    public void testSliceMatrix(){
+        INDArray arr = Nd4j.arange(4).reshape(2,2);
+        System.out.println(arr.slice(0));
+        System.out.println();
+        System.out.println(arr.slice(1));
+    }
+
+    @Test
+    public void testScalarEq(){
+        INDArray scalarRank2 = Nd4j.scalar(10.0).reshape(1,1);
+        INDArray scalarRank1 = Nd4j.scalar(10.0).reshape(1);
+        INDArray scalarRank0 = Nd4j.scalar(10.0);
+
+        assertNotEquals(scalarRank0, scalarRank2);
+        assertNotEquals(scalarRank0, scalarRank1);
+        assertNotEquals(scalarRank1, scalarRank2);
+        assertEquals(scalarRank0, scalarRank0.dup());
+        assertEquals(scalarRank1, scalarRank1.dup());
+        assertEquals(scalarRank2, scalarRank2.dup());
+    }
+
     ///////////////////////////////////////////////////////
     protected static void fillJvmArray3D(float[][][] arr) {
         int cnt = 1;
