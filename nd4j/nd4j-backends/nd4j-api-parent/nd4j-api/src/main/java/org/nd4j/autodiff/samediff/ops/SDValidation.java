@@ -49,7 +49,7 @@ public class SDValidation {
      */
     protected static void validateNumerical(String opName, SDVariable v1, SDVariable v2) {
         if (v1.dataType() == DataType.BOOL || v1.dataType() == DataType.UTF8 || v2.dataType() == DataType.BOOL || v2.dataType() == DataType.UTF8)
-            throw new IllegalStateException("Cannot perform operation " + opName + " to variables  \"" + v1.getVarName() + "\" and \"" +
+            throw new IllegalStateException("Cannot perform operation \"" + opName + "\" on variables  \"" + v1.getVarName() + "\" and \"" +
                     v2.getVarName() + "\" if one or both variables are non-numerical: " + v1.dataType() + " and " + v2.dataType());
     }
 
@@ -146,7 +146,7 @@ public class SDValidation {
      */
     protected static void validateBool(String opName, SDVariable v1, SDVariable v2) {
         if (v1.dataType() != DataType.BOOL || v2.dataType() != DataType.BOOL)
-            throw new IllegalStateException("Cannot perform operation " + opName + " to variables  \"" + v1.getVarName() + "\" and \"" +
+            throw new IllegalStateException("Cannot perform operation \"" + opName + "\" on variables  \"" + v1.getVarName() + "\" and \"" +
                     v2.getVarName() + "\" if one or both variables are non-boolean: " + v1.dataType() + " and " + v2.dataType());
     }
 

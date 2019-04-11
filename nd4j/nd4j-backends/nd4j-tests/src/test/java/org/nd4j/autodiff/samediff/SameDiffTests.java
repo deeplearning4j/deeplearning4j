@@ -181,11 +181,11 @@ public class SameDiffTests {
         SameDiff sameDiff = SameDiff.create();
         INDArray arr = Transforms.sigmoid(Nd4j.linspace(1, 4, 4, DataType.FLOAT)).reshape(1, 4);
         SDVariable x = sameDiff.var("x", arr);
-        SDVariable result = sameDiff.sum(x, 1); //[1,4].sum(1) == [1,1]
+        SDVariable result = sameDiff.sum(x, 1); //[1,4].sum(1) == [1]
 
         sameDiff.exec(Collections.emptyMap(), sameDiff.outputs());
 
-        INDArray exp = Nd4j.scalar(arr.sumNumber().floatValue());
+        INDArray exp = Nd4j.scalar(arr.sumNumber().floatValue()).reshape(1);
         INDArray resultArr = result.getArr();
         assertEquals(exp, resultArr);
     }
@@ -1047,7 +1047,7 @@ public class SameDiffTests {
         Map<String, INDArray> inputsSubset = new HashMap<>();
         inputsSubset.put("y", inputs.get("y"));
         INDArray output = logisticGraph.exec(inputsSubset, Collections.singletonList("rsub")).get("rsub");
-        INDArray assertion = Nd4j.create(new double[]{0, 0, 1, 0});
+        INDArray assertion = Nd4j.create(new double[]{0, 0, 1, 0}, new int[]{4,1});
         assertEquals(assertion, output);
 
     }
@@ -1667,7 +1667,7 @@ public class SameDiffTests {
         SDVariable out = sd.sum("oun", ones);
 
         INDArray outArr = sd.execAndEndResult();
-        assertEquals(Nd4j.valueArrayOf(1, 12.0), outArr);
+        assertEquals(Nd4j.scalar(12.0), outArr);
 
         sd.execBackwards(Collections.emptyMap());
 
@@ -1769,7 +1769,7 @@ public class SameDiffTests {
                 case 6:
                     ia = Nd4j.getExecutioner().exec(new BernoulliDistribution(ia, 0.5));
                     ib = Nd4j.getExecutioner().exec(new BernoulliDistribution(ib, 0.5));
-                    t = sd.math().or(in1, in2);
+                    t = sd.math().or(in1.castTo(DataType.BOOL), in2.castTo(DataType.BOOL));
                     expOut = Transforms.or(ia, ib);
                     break;
                 case 7:
@@ -1783,13 +1783,13 @@ public class SameDiffTests {
                 case 9:
                     ia = Nd4j.getExecutioner().exec(new BernoulliDistribution(ia, 0.5));
                     ib = Nd4j.getExecutioner().exec(new BernoulliDistribution(ib, 0.5));
-                    t = sd.math().and(in1, in2);
+                    t = sd.math().and(in1.castTo(DataType.BOOL), in2.castTo(DataType.BOOL));
                     expOut = Transforms.and(ia, ib);
                     break;
                 case 10:
                     ia = Nd4j.getExecutioner().exec(new BernoulliDistribution(ia, 0.5));
                     ib = Nd4j.getExecutioner().exec(new BernoulliDistribution(ib, 0.5));
-                    t = sd.math().xor(in1, in2);
+                    t = sd.math().xor(in1.castTo(DataType.BOOL), in2.castTo(DataType.BOOL));
                     expOut = Transforms.xor(ia, ib);
                     break;
                 default:
@@ -1819,7 +1819,7 @@ public class SameDiffTests {
             INDArray ia = Nd4j.randn(minibatch, nOut);
 
             SDVariable in1 = sd.var("in1", ia);
-            INDArray expOut = Nd4j.create(new boolean[]{true});
+            INDArray expOut = Nd4j.scalar(true);
             SDVariable t;
 
             switch (i) {
@@ -1974,14 +1974,14 @@ public class SameDiffTests {
 
     @Test
     public void testConfusionMatrix() {
-        INDArray labels = Nd4j.create(new float[]{1, 2, 4});
-        INDArray pred = Nd4j.create(new float[]{2, 2, 4});
-        INDArray weights = Nd4j.create(new float[]{10, 100, 1000});
+        INDArray labels = Nd4j.createFromArray(1, 2, 4);
+        INDArray pred = Nd4j.createFromArray(2, 2, 4);
+        INDArray weights = Nd4j.createFromArray(10, 100, 1000);
         Integer numClasses = 5;
         SameDiff sd = SameDiff.create();
-        SDVariable labelsVar = sd.var("labels", labels);
-        SDVariable predictionsVar = sd.var("predictions", pred);
-        SDVariable weightsVar = sd.var("weights", weights);
+        SDVariable labelsVar = sd.constant("labels", labels);
+        SDVariable predictionsVar = sd.constant("predictions", pred);
+        SDVariable weightsVar = sd.constant("weights", weights);
         sd.math().confusionMatrix("cm", labelsVar, predictionsVar, numClasses, weightsVar);
         INDArray out = sd.execAndEndResult();
 
@@ -2267,20 +2267,20 @@ public class SameDiffTests {
         INDArray arr = Nd4j.linspace(1, 100, 100).reshape('c', 10L, 10L);
         SDVariable x = sd.var(arr);
 
-        INDArray expOut1 = arr.get(NDArrayIndex.point(4), NDArrayIndex.point(5));
+        INDArray expOut1 = arr.get(NDArrayIndex.point(4), NDArrayIndex.point(5)).reshape();
         SDVariable result1 = x.get(SDIndex.point(4), SDIndex.point(5));
         assertEquals(expOut1, result1.eval());
 
-        INDArray expOut2 = arr.get(NDArrayIndex.point(4), NDArrayIndex.all());
+        INDArray expOut2 = arr.get(NDArrayIndex.point(4), NDArrayIndex.all()).reshape(10);
         SDVariable result2 = x.get(SDIndex.point(4), SDIndex.all());
         assertEquals(expOut2, result2.eval());
 
-        INDArray expOut3 = arr.get(NDArrayIndex.interval(3, 8));
+        INDArray expOut3 = arr.get(NDArrayIndex.interval(3, 8)).reshape(5,10);
         SDVariable result3 = x.get(SDIndex.interval(3, 8));
         assertEquals(expOut3, result3.eval());
 
 
-        INDArray expOut4 = arr.get(NDArrayIndex.point(5), NDArrayIndex.interval(3, 8));
+        INDArray expOut4 = arr.get(NDArrayIndex.point(5), NDArrayIndex.interval(3, 8)).reshape(5);
         SDVariable result4 = x.get(SDIndex.point(5), SDIndex.interval(3, 8));
         assertEquals(expOut4, result4.eval());
 

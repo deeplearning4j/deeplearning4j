@@ -16,6 +16,7 @@
 
 package org.deeplearning4j.regressiontest;
 
+import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.TestUtils;
 import org.deeplearning4j.nn.api.Layer;
@@ -47,6 +48,7 @@ import java.io.FileInputStream;
 
 import static org.junit.Assert.*;
 
+@Slf4j
 public class RegressionTest100a extends BaseDL4JTest {
 
     @Override
@@ -248,9 +250,14 @@ public class RegressionTest100a extends BaseDL4JTest {
             }
         }
 
-        INDArray outAct = net.outputSingle(in);
+        INDArray outAct = net.outputSingle(in).castTo(outExp.dataType());
 
-        assertEquals(outExp, outAct.castTo(outExp.dataType()));
+        boolean eq = outExp.equalsWithEps(outAct), 1e-4);
+        if(!eq){
+            log.info("Expected: {}", outExp);
+            log.info("Actual: {}", outAct);
+        }
+        assertTrue("Output not equal", eq);
     }
 
 
