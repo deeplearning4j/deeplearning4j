@@ -5154,6 +5154,9 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             return n.equals(this);
         }
 
+        if (this.rank() != n.rank())
+            return false;
+
         if (this.length() != n.length())
             return false;
 
