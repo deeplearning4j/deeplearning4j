@@ -1235,6 +1235,7 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
                     .cyclesBeforeInitialization(3)
                     .initialSize(25L * 1024L * 1024L)
                     .build();
+            val workspace_id = "sequence_vectors_training_" + java.util.UUID.randomUUID().toString();
 
             Nd4j.getAffinityManager().getDeviceForCurrentThread();
             while (digitizer.hasMoreLines()) {
@@ -1261,7 +1262,7 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
                         batchSequences = new BatchSequences<>(configuration.getBatchSize());
                         // we roll over sequences derived from digitizer, it's NOT window loop
                         for (int x = 0; x < sequences.size(); x++) {
-                            try (val ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace(conf, "sequence_vectors_training")) {
+                            try (val ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace(conf, workspace_id)) {
                                 Sequence<T> sequence = sequences.get(x);
 
                                 //log.info("LR before: {}; wordsCounter: {}; totalWordsCount: {}", learningRate.get(), this.wordsCounter.get(), this.totalWordsCount);
