@@ -49,15 +49,15 @@ check_cuda_version "$VERSION"
 case $VERSION in
   10.1)
     VERSION2="7.5"
-    VERSION3="1.5-SNAPSHOT"
+    VERSION3="1.5"
     ;;
   10.0)
     VERSION2="7.4"
-    VERSION3="1.5-SNAPSHOT"
+    VERSION3="1.5"
     ;;
   9.2)
     VERSION2="7.2"
-    VERSION3="1.5-SNAPSHOT"
+    VERSION3="1.5"
     ;;
 esac
 

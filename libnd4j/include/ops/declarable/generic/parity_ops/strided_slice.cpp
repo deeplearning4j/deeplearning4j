@@ -502,10 +502,7 @@ namespace nd4j {
                 }
             }
             if (nonEmpty && inputLen > 1) {
-                ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(shape.size()), Nd4jLong);
-                shape::shapeBuffer(shape.size(), ArrayOptions::dataType(inShape), shape.data(), newShape);
-                //if (input_shape[0] == 0)
-                //    ArrayOptions::setPropertyBit(newShape, nd4j::ArrayType::EMPTY);
+                newShape = nd4j::ShapeBuilders::createShapeInfo(ArrayOptions::dataType(inShape), 'c', shape, block.getWorkspace());
             }
             else {
                 newShape = ShapeBuilders::createScalarShapeInfo(ArrayOptions::dataType(inShape), block.workspace());
