@@ -111,7 +111,7 @@ TEST_F(DeclarableOpsTests14, Multiply_test) {
         nd4j::ops::multiply op;
         auto result = op.execute({&x, &y}, {}, {});
         auto f = result->at(0);
-        NDArray r = f;
+        NDArray r = *f;
 
         ASSERT_EQ(e, r);
         ASSERT_EQ(e, *f);

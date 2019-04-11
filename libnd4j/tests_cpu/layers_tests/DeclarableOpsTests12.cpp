@@ -24,6 +24,7 @@
 #include <NDArray.h>
 #include <ops/ops.h>
 #include <GradCheck.h>
+#include <ConstantTadHelper.h>
 
 
 using namespace nd4j;
