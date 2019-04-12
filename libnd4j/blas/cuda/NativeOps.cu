@@ -2007,6 +2007,12 @@ BUILD_SINGLE_TEMPLATE(template void concatCudaLauncher, (const int numOfArrs, co
         void *dZ, Nd4jLong *dZShapeInfo,
 		Nd4jPointer *tadPointers, Nd4jPointer *offsetPointers) {
 
+     printf("%p %p %p %p\n", data, inputShapeInfo, ddata, dinputShapeInfo);
+     printf("%p %p\n", dZ, dZShapeInfo);
+     if (dZ == nullptr) std::runtime_error("Device buffer for output is not allocated yet.");
+     if (dZShapeInfo == nullptr) std::runtime_error("Device buffer for output shape is not allocated yet.");
+     if (ddata == nullptr) std::runtime_error("Device memory for input buffers is not allocated yet.");
+     if (dinputShapeInfo) std::runtime_error("Device memory for input shapes is not allocated yet.");
 	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 	auto hXShapeInfo = hZShapeInfo;
 	auto hShapePointers = reinterpret_cast<Nd4jLong **>(inputShapeInfo);
