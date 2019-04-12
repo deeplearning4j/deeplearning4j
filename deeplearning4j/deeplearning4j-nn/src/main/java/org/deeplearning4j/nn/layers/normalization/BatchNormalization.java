@@ -278,9 +278,9 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
             if(xHat == null && helper != null){
                 INDArray mean = helper.getMeanCache();
                 std = Transforms.sqrt(helper.getVarCache().addi(layerConf().getEps()));
-                xMu =  Nd4j.createUninitialized(input.shape(), input.ordering());
+                xMu =  Nd4j.createUninitialized(input.dataType(), input.shape(), input.ordering());
                 xMu = Nd4j.getExecutioner().exec(new BroadcastSubOp(input, mean, xMu, 1));
-                xHat =  Nd4j.createUninitialized(input.shape(), input.ordering());
+                xHat =  Nd4j.createUninitialized(input.dataType(), input.shape(), input.ordering());
                 xHat = Nd4j.getExecutioner().exec(new BroadcastDivOp(xMu, std,xHat, 1));
             }
 
@@ -292,7 +292,7 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
             } else {
                 //Standard case
                 dxhat = Nd4j.getExecutioner().exec(new BroadcastMulOp(epsilon, gamma,
-                                Nd4j.createUninitialized(epsilon.shape(), epsilon.ordering()), 1));
+                                Nd4j.createUninitialized(epsilon.dataType(), epsilon.shape(), epsilon.ordering()), 1));
             }
 
             //dL/dVariance
@@ -345,7 +345,7 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
             //First: we have log10(var[i]) from last iteration, hence can calculate var[i] and stdev[i]
             //Need to calculate log10{std[i]) - log10(std[i+1]) as the "update"
             //Note, var[i+1] = d*var[i] + (1-d)*batchVar
-            INDArray vari = Nd4j.valueArrayOf(globalLog10Std.shape(), 10.0);
+            INDArray vari = Nd4j.valueArrayOf(globalLog10Std.shape(), 10.0, globalMean.dataType());
             Transforms.pow(vari, globalLog10Std, false);     //variance = (10^log10(s))^2
             vari.muli(vari);
 
@@ -436,7 +436,7 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
                 if(globalVarView == null){
                     //May be null when useLogStd is true
                     INDArray log10s = getParam(BatchNormalizationParamInitializer.GLOBAL_LOG_STD);
-                    globalVarView = Transforms.pow(Nd4j.valueArrayOf(log10s.shape(), 10.0), log10s, false);
+                    globalVarView = Transforms.pow(Nd4j.valueArrayOf(log10s.shape(), 10.0, log10s.dataType()), log10s, false);
                     globalVarView.muli(globalVarView);
                 }
 
@@ -495,7 +495,7 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
             if(layerConf().isUseLogStd()){
                 //var = (10^(log10(s)))^2
                 INDArray log10s = getParam(BatchNormalizationParamInitializer.GLOBAL_LOG_STD);
-                var = Transforms.pow(Nd4j.valueArrayOf(log10s.shape(), 10.0), log10s);
+                var = Transforms.pow(Nd4j.valueArrayOf(log10s.shape(), 10.0, mean.dataType()), log10s);
                 var.muli(var);
             } else {
                 var = getParam(BatchNormalizationParamInitializer.GLOBAL_VAR);
