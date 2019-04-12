@@ -129,9 +129,7 @@ namespace ops {
         helpers::_dilation_hw(input, weights, strides, rates, isSameShape, &stride_rows, &stride_cols, &rate_rows, &rate_cols, &pad_top, &pad_left, &out_rows, &out_cols);
 
         std::array<Nd4jLong, 4> shape = {{batch_size, out_rows, out_cols, depth}};
-        ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(4), Nd4jLong);
-        shape::shapeBuffer(4, block.dataType(), shape.data(), newShape);
-        ArrayOptions::setDataType(newShape, ArrayOptions::dataType(weights));
+        newShape = nd4j::ShapeBuilders::createShapeInfo(ArrayOptions::dataType(weights), 'c', 4, shape.data(), block.getWorkspace());        
         return SHAPELIST(newShape);
     }
 }

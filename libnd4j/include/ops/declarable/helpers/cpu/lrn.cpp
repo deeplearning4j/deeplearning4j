@@ -409,13 +409,13 @@ static void getMKLDNNMemoryDescLrn(const NDArray* src, const NDArray* diff_src, 
             NDArray tmp = (*sumPart)(indA, true);
             NDArray addVal = (*activitySqr)(indB, true);
 
-            tmp.applyPairwiseTransform(pairwise::Add, &addVal, nullptr);
+            tmp.applyPairwiseTransform(pairwise::Add, addVal, nullptr);
 
 
             NDArray tmp2 = (*sumPart)(indB, true);
             NDArray addVal2 = (*activitySqr)(indA, true);
 
-            tmp2.applyPairwiseTransform(pairwise::Add, &addVal2, nullptr);
+            tmp2.applyPairwiseTransform(pairwise::Add, addVal2, nullptr);
         }
 
         if (unitScale != nullptr && scale != nullptr) {

@@ -47,12 +47,8 @@ namespace nd4j {
             else if (targetRank == 1) { // vector 
                 determinantShape = ShapeBuilders::createVectorShapeInfo(ArrayOptions::dataType(inShape), shape::sizeAt(inShape, 0), block.workspace());
             }
-            else { // only two last dimensions are excluded
-                ALLOCATE(determinantShape, block.getWorkspace(), shape::shapeInfoLength(targetRank), Nd4jLong);
-                if (shape::order(inShape) == 'c')
-                    shape::shapeBuffer(targetRank, ArrayOptions::dataType(inShape), shape::shapeOf(inShape), determinantShape);
-                else
-                    shape::shapeBufferFortran(targetRank, ArrayOptions::dataType(inShape), shape::shapeOf(inShape), determinantShape);
+            else { // only two last dimensions are excluded                
+                determinantShape = ShapeBuilders::createShapeInfo(ArrayOptions::dataType(inShape), shape::order(inShape), targetRank, shape::shapeOf(inShape), block.getWorkspace());
             }
             return SHAPELIST(determinantShape);
         }
@@ -99,11 +95,7 @@ namespace nd4j {
                 determinantShape = ShapeBuilders::createVectorShapeInfo(ArrayOptions::dataType(inShape), shape::sizeAt(inShape, 0), block.getWorkspace());
             }
             else { // only two last dimensions are excluded
-                ALLOCATE(determinantShape, block.getWorkspace(), shape::shapeInfoLength(targetRank), Nd4jLong);
-                if (shape::order(inShape) == 'c')
-                    shape::shapeBuffer(targetRank, ArrayOptions::dataType(inShape), shape::shapeOf(inShape), determinantShape);
-                else
-                    shape::shapeBufferFortran(targetRank, ArrayOptions::dataType(inShape), shape::shapeOf(inShape), determinantShape);
+                determinantShape = ShapeBuilders::createShapeInfo(ArrayOptions::dataType(inShape), shape::order(inShape), targetRank, shape::shapeOf(inShape), block.getWorkspace());
             }
             return SHAPELIST(determinantShape);
         }
@@ -144,11 +136,7 @@ namespace nd4j {
                 determinantShape = ShapeBuilders::createVectorShapeInfo(ArrayOptions::dataType(inShape), shape::sizeAt(inShape, 0), block.getWorkspace());
             }
             else { // only two last dimensions are excluded
-                ALLOCATE(determinantShape, block.getWorkspace(), shape::shapeInfoLength(targetRank), Nd4jLong);
-                if (shape::order(inShape) == 'c')
-                    shape::shapeBuffer(targetRank, ArrayOptions::dataType(inShape), shape::shapeOf(inShape), determinantShape);
-                else
-                    shape::shapeBufferFortran(targetRank, ArrayOptions::dataType(inShape), shape::shapeOf(inShape), determinantShape);
+                determinantShape = ShapeBuilders::createShapeInfo(ArrayOptions::dataType(inShape), shape::order(inShape), targetRank, shape::shapeOf(inShape), block.getWorkspace());                
             }
             return SHAPELIST(determinantShape);
         }
