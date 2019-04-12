@@ -306,7 +306,8 @@ public class DTypeTests extends BaseDL4JTest {
                     assertEquals(msg, networkDtype, out.dataType());
                     List<INDArray> ff = net.feedForward(in);
                     for (int i = 0; i < ff.size(); i++) {
-                        assertEquals(msg, networkDtype, ff.get(i).dataType());
+                        String s = msg + " - layer " + (i-1) + " - " + (i == 0 ? "input" : net.getLayer(i-1).conf().getLayer().getClass().getSimpleName());
+                        assertEquals(s, networkDtype, ff.get(i).dataType());
                     }
 
                     net.setInput(in);
