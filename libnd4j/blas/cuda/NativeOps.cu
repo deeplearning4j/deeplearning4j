@@ -1974,7 +1974,8 @@ __global__ static void concatCuda(const int numOfArrs, void* pVx,  void* pxShape
         xShapeInfo = reinterpret_cast<Nd4jLong**>(pxShapeInfo)[arrIdx];
         zShapeInfo = reinterpret_cast<Nd4jLong**>(pzShapeInfo)[arrIdx];
         arrLen = shape::length(xShapeInfo);
-
+        printf("Input arr shape is %p\n", xShapeInfo);
+        printf("Output arr shape is %p\n", zShapeInfo);
         arrLenPerBlock = (arrLen + blocksPerArr - 1) / blocksPerArr;  // ceil
 
         start = (blockIdx.x % blocksPerArr) * arrLenPerBlock;
@@ -1983,8 +1984,11 @@ __global__ static void concatCuda(const int numOfArrs, void* pVx,  void* pxShape
 
     __syncthreads();
 
-    for (Nd4jLong i = start + threadIdx.x; i < end; i += blockDim.x)
-        z[shape::getIndexOffset(i, zShapeInfo, arrLen)] = x[shape::getIndexOffset(i, xShapeInfo, arrLen)];
+    for (Nd4jLong i = start + threadIdx.x; i < end; i += blockDim.x) {
+        shape::printShapeInfoLinear(xShapeInfo);
+        shape::printShapeInfoLinear(zShapeInfo);
+        //z[shape::getIndexOffset(i, zShapeInfo, arrLen)] = x[shape::getIndexOffset(i, xShapeInfo, arrLen)];
+    }
 }
 template<typename T>
 __host__ static void concatCudaLauncher(const int numOfArrs, const cudaStream_t *stream,  void* pVx, void* pxShapeInfo, void* pVz, void* pzShapeInfo) {
@@ -2107,6 +2111,8 @@ specialBufferAndShapeWithOffset(void* vZ, Nd4jLong* hZShapeInfo, Nd4jLong* dZSha
     void* dInBuffers	= manager.replicatePointer(hInBuffers.data(),    hInBuffers.size() * sizeof(void*));
     void* dInShapeInfo  = manager.replicatePointer(hInShapeInfo.data(),  hInShapeInfo.size() * sizeof(Nd4jLong*));
     void* dOutShapeInfo = manager.replicatePointer(hOutShapeInfo.data(), hOutShapeInfo.size() * sizeof(Nd4jLong*));
+
+    manager.synchronize();
 
     BUILD_SINGLE_SELECTOR(zType, concatCudaLauncher, (numArrays, stream, dInBuffers, dInShapeInfo, dOutBuffers, dOutShapeInfo), LIBND4J_TYPES);
 
