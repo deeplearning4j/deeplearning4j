@@ -59,6 +59,18 @@ public class MemoryTracker {
     }
 
     /**
+     * This method returns amount of memory that relies on JVM GC
+     *
+     * Includes: cached memory, regular allocated memory
+     *
+     * @param deviceId
+     * @return
+     */
+    public long getManagedMemory(int deviceId) {
+        return getAllocatedAmount(deviceId) + getCachedAmount(deviceId);
+    }
+
+    /**
      * This method increments amount of regular allocated memory
      *
      * @param deviceId
