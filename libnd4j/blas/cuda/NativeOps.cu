@@ -1993,6 +1993,51 @@ __host__ static void concatCudaLauncher(const int numOfArrs, const cudaStream_t 
 }
 BUILD_SINGLE_TEMPLATE(template void concatCudaLauncher, (const int numOfArrs, const cudaStream_t *stream,  void* pVx, void* pxShapeInfo, void* pVz, void* pzShapeInfo), LIBND4J_TYPES);
 
+static void
+specialBufferAndShapeWithOffset(void* vZ, Nd4jLong* hZShapeInfo, Nd4jLong* dZShapeInfo, std::vector<Nd4jLong> const& idx, void* outBuffer, Nd4jLong* outShape) {
+    auto zType = nd4j::ArrayOptions::dataType(hZShapeInfo);
+    const int rank = shape::rank(hZShapeInfo);
+    Nd4jLong *newShape = new Nd4jLong[shape::shapeInfoLength(rank)];
+    Nd4jLong *newShapeD;
+    //ALLOCATE(newShape, nullptr, , Nd4jLong);
+    memcpy(newShape, hZShapeInfo, shape::shapeInfoByteLength(rank));
+
+    auto shapeOf = shape::shapeOf(newShape);
+    auto stridesOf = shape::stride(newShape);
+
+    Nd4jLong offset(0), subArrLen(1);
+    int n(2), first, last, stride;
+
+    for (int d = rank - 1; d >= 0; --d) {
+
+        if (idx[n * d] != idx[n * d + 1]) {
+
+            first  = idx[n * d]     >= 0 ? idx[n * d]     : idx[n * d]     + shape::sizeAt(hZShapeInfo, d) + 1;
+            last   = idx[n * d + 1] >= 0 ? idx[n * d + 1] : idx[n * d + 1] + shape::sizeAt(hZShapeInfo, d) + 1;
+            stride = 1;
+
+            shapeOf[d] = (last - first + stride - 1) / stride;      // ceil (last - first) / stride;
+            offset += first * stridesOf[d];
+
+            if(shapeOf[d] != 1)
+                stridesOf[d] *= stride;
+        }
+
+        subArrLen *= shapeOf[d];
+    }
+
+    // check if there is possibility to set ews = 1
+    shape::calcEws(newShape, subArrLen);
+
+    //makeBothBuffersActual();
+    outBuffer = (void*)((int8_t*)vZ + offset * DataTypeUtils::sizeOfElement(zType));
+    cudaMalloc(&newShapeD, shape::shapeInfoLength(rank));
+    cudaMemcpy(outShape, newShape, shape::shapeInfoLength(rank), cudaMemcpyHostToDevice);
+    //NDArray result(bufferWithOffset(offset), specialBufferWithOffset(offset), newShape, _context, false, false);
+
+    delete [] newShape;
+}
+
 /**
   * Concatneate multi array of the same shape together
   * along a particular dimension
@@ -2020,8 +2065,8 @@ BUILD_SINGLE_TEMPLATE(template void concatCudaLauncher, (const int numOfArrs, co
     //concatCudaLauncher(numArrays, stream,  ddata, dinputShapeInfo, dZ, dZShapeInfo);
     auto zType = nd4j::ArrayOptions::dataType(hZShapeInfo);
     auto axis = dimension;
-    NDArray tempOutput(hZ, hZShapeInfo);
-    tempOutput.setSpecialBuffers(dZ, dZShapeInfo);
+    //NDArray tempOutput(hZ, hZShapeInfo);
+    //tempOutput.setSpecialBuffers(dZ, dZShapeInfo);
     //BUILD_SINGLE_SELECTOR(zType, concatCudaLauncher, (numArrays, stream, ddata, dinputShapeInfo, dZ, dZShapeInfo), LIBND4J_TYPES);
     //const int numOfArrs = inArrs.size();
 //    for(int i = 0; i < numOfArrs; ++i)
@@ -2041,17 +2086,19 @@ BUILD_SINGLE_TEMPLATE(template void concatCudaLauncher, (const int numOfArrs, co
         indices[i][2 * axis + 1] = indices[i-1][2 * axis + 1] + axisSize;      // index end with (excluding)
     }
 
-    std::vector<NDArray*> outSubArrs(numArrays);
-    for(int i = 0; i < numArrays; ++i)
-        outSubArrs[i] = new NDArray(tempOutput(indices[i], true));
+    std::vector<void*> outSubArrsBuffs(numArrays);
+    std::vector<Nd4jLong*> outSubArrsShapes(numArrays);
+    for(int i = 0; i < numArrays; ++i) {
+        specialBufferAndShapeWithOffset(dZ, hZShapeInfo, dZShapeInfo, indices[i], outSubArrsBuffs[i], outSubArrsShapes[i]);
+    }
 
     // prepare arrays of pointers on buffers and shapes
     std::vector<void*>     hOutBuffers(numArrays), hInBuffers(numArrays);
     std::vector<Nd4jLong*> hOutShapeInfo(numArrays), hInShapeInfo(numArrays);
     for(int i = 0; i < numArrays; ++i) {
-        hOutBuffers[i]   = outSubArrs[i]->specialBuffer();
+        hOutBuffers[i]   = outSubArrsBuffs[i];
         hInBuffers[i]    = ddata[i];//->getSpecialBuffer();
-        hOutShapeInfo[i] = (Nd4jLong*)(outSubArrs[i]->specialShapeInfo());
+        hOutShapeInfo[i] = outSubArrsShapes[i];
         hInShapeInfo[i]  = (Nd4jLong*)(dinputShapeInfo[i]);//->getSpecialShapeInfo();
     }
 
@@ -2067,7 +2114,7 @@ BUILD_SINGLE_TEMPLATE(template void concatCudaLauncher, (const int numOfArrs, co
     manager.synchronize();
 
     for(int i = 0; i < numArrays; ++i)
-        delete outSubArrs[i];
+        cudaFree(outSubArrsShapes[i]);
 
 //    for(int i = 0; i < numOfArrs; ++i)
 //        inArrs[i]->tickReadHost();
