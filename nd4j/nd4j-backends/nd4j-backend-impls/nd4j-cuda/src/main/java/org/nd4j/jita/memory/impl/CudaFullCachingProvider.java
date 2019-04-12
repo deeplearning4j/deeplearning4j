@@ -148,6 +148,8 @@ public class CudaFullCachingProvider extends CudaCachingZeroProvider {
             // memory chunks < threshold will be cached no matter what
             if (reqMemory <= FORCED_CACHE_THRESHOLD) {
                 cache.put(new CudaPointer(point.getDevicePointer().address()));
+                MemoryTracker.getInstance().incrementCachedAmount(deviceId, reqMemory);
+                MemoryTracker.getInstance().decrementAllocatedAmount(deviceId, reqMemory);
                 return;
             } else {
                 long cacheEntries = cache.size();

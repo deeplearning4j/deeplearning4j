@@ -3,6 +3,7 @@ package org.nd4j.jita.allocator;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.jita.allocator.impl.MemoryTracker;
 
 import lombok.val;
@@ -274,12 +275,17 @@ public class AllocatorTest {
             val array = Nd4j.scalar(100.0);
 
             val timeEnd = System.currentTimeMillis();
-            if (timeEnd - timeStart > 5 * 60 * 1000) {
+            if (timeEnd - timeStart > 1 * 60 * 1000) {
                 log.info("Exiting...");
                 break;
             }
         }
 
-        Thread.sleep(100000000L);
+        while (true) {
+            log.info("Cached memory: {}", MemoryTracker.getInstance().getCachedAmount(Nd4j.getAffinityManager().getDeviceForCurrentThread()));
+            log.info("Active memory: {}", MemoryTracker.getInstance().getAllocatedAmount(Nd4j.getAffinityManager().getDeviceForCurrentThread()));
+            System.gc();
+            Thread.sleep(30000);
+        }
     }
 }
