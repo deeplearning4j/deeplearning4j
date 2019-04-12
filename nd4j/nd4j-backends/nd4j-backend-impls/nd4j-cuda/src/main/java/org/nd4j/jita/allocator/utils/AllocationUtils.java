@@ -52,7 +52,6 @@ public class AllocationUtils {
      */
     public static AllocationShape buildAllocationShape(INDArray array) {
         AllocationShape shape = new AllocationShape();
-        shape.setOffset(array.originalOffset());
         shape.setDataType(array.data().dataType());
         shape.setLength(array.length());
         shape.setDataType(array.data().dataType());
@@ -68,7 +67,6 @@ public class AllocationUtils {
      */
     public static AllocationShape buildAllocationShape(DataBuffer buffer) {
         AllocationShape shape = new AllocationShape();
-        shape.setOffset(buffer.originalOffset());
         shape.setDataType(buffer.dataType());
         shape.setLength(buffer.length());
 
@@ -83,22 +81,11 @@ public class AllocationUtils {
      */
     public static AllocationShape buildAllocationShape(JCudaBuffer buffer) {
         AllocationShape shape = new AllocationShape();
-        shape.setOffset(buffer.originalOffset());
         shape.setDataType(buffer.dataType());
         shape.setLength(buffer.length());
 
         return shape;
     }
-
-    /**
-     * This method returns byte offset based on AllocationShape
-     *
-     * @return
-     */
-    public static long getByteOffset(AllocationShape shape) {
-        return shape.getOffset() * getElementSize(shape);
-    }
-
 
     public static DataBuffer getPointersBuffer(long[] pointers) {
         CudaDoubleDataBuffer tempX = new CudaDoubleDataBuffer(pointers.length);

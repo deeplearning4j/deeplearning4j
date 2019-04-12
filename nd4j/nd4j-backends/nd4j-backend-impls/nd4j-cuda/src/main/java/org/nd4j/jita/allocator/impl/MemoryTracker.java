@@ -3,11 +3,13 @@ package org.nd4j.jita.allocator.impl;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
 
+import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.nd4j.jita.allocator.pointers.CudaPointer;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.nativeblas.NativeOpsHolder;
 
+@Slf4j
 public class MemoryTracker {
 
     private List<AtomicLong> allocatedPerDevice = new ArrayList<>();
@@ -26,7 +28,10 @@ public class MemoryTracker {
 	        val ptr = new CudaPointer(i);
             totalPerDevice.add(i, new AtomicLong(NativeOpsHolder.getInstance().getDeviceNativeOps().getDeviceTotalMemory(ptr)));
 
-            freePerDevice.add(i, new AtomicLong(NativeOpsHolder.getInstance().getDeviceNativeOps().getDeviceFreeMemory(ptr)));
+            val f = new AtomicLong(NativeOpsHolder.getInstance().getDeviceNativeOps().getDeviceFreeMemory(ptr));
+
+            log.info("Free memory on device_{}: {}", i, f);
+            freePerDevice.add(i, f);
         }
     }
 
@@ -52,6 +57,30 @@ public class MemoryTracker {
 
     public long getFreeMemory(int deviceId) {
         return freePerDevice.get(deviceId).get();
+    }
+
+    /**
+     * This method returns approximate free memory on specified device
+     * @param deviceId
+     * @return
+     */
+    public long getApproximateFreeMemory(int deviceId) {
+        val externalAllocations = getTotalMemory(deviceId) - getFreeMemory(deviceId);
+        val active = getActiveMemory(deviceId);
+        return getTotalMemory(deviceId) - (active + externalAllocations);
+    }
+
+    /**
+     * This method returns precise amount of free memory on specified device
+     * @param deviceId
+     * @return
+     */
+    public long getPreciseFreeMemory(int deviceId) {
+        // we refresh free memory on device
+        val extFree = NativeOpsHolder.getInstance().getDeviceNativeOps().getDeviceFreeMemory(new CudaPointer(deviceId));
+        //freePerDevice.get(deviceId).set(extFree);
+
+        return extFree;
     }
 
     /**

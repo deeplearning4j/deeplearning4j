@@ -64,7 +64,7 @@ public class CudaFullCachingProvider extends CudaCachingZeroProvider {
         deviceCachedAmount = new ArrayList<>();
 
         for (int i = 0; i < numDevices; i++) {
-            deviceCachedAmount.add(new AtomicLong());
+            deviceCachedAmount.add(new AtomicLong(0));
         }
     }
 
@@ -80,36 +80,67 @@ public class CudaFullCachingProvider extends CudaCachingZeroProvider {
      */
     @Override
     public PointersPair malloc(AllocationShape shape, AllocationPoint point, AllocationStatus location) {
-        long reqMemory = AllocationUtils.getRequiredMemory(shape);
+        val reqMemory = AllocationUtils.getRequiredMemory(shape);
         if (location == AllocationStatus.DEVICE && reqMemory < CudaEnvironment.getInstance().getConfiguration().getMaximumDeviceAllocation()) {
 
 
-            int deviceId = AtomicAllocator.getInstance().getDeviceId();
+            val deviceId = AtomicAllocator.getInstance().getDeviceId();
             ensureDeviceCacheHolder(deviceId, shape);
 
-            CacheHolder cache = deviceCache.get(deviceId).get(shape);
+            val cache = deviceCache.get(deviceId).get(shape);
             if (cache != null) {
-                Pointer pointer = cache.poll();
+                val pointer = cache.poll();
                 if (pointer != null) {
                     cacheDeviceHit.incrementAndGet();
 
-                    deviceCachedAmount.get(deviceId).addAndGet(-1 * reqMemory);
+                    deviceCachedAmount.get(deviceId).addAndGet(-reqMemory);
 
-                    PointersPair pair = new PointersPair();
+                    val pair = new PointersPair();
                     pair.setDevicePointer(pointer);
 
                     point.setAllocationStatus(AllocationStatus.DEVICE);
                     point.setDeviceId(deviceId);
 
 
-                    MemoryTracker.getInstance().decrementCachedAmount(deviceId, reqMemory);
                     MemoryTracker.getInstance().incrementAllocatedAmount(deviceId, reqMemory);
+                    MemoryTracker.getInstance().decrementCachedAmount(deviceId, reqMemory);
 
                     return pair;
                 }
             }
+
+            // in case of miss, we'll check how many memory we have left, and if there's way too close to threshold - we'll call gc.
+            val desiredFreeSpace = 512 * 1024L * 1024L;
+            val approx = MemoryTracker.getInstance().getApproximateFreeMemory(deviceId);
+            if (approx < desiredFreeSpace) {
+                log.info("Cached before gc: {} bytes", MemoryTracker.getInstance().getCachedAmount(deviceId));
+                log.info("Active before gc: {} bytes", MemoryTracker.getInstance().getAllocatedAmount(deviceId));
+
+                purgeCache(deviceId);
+                Nd4j.getMemoryManager().invokeGc();
+
+                log.info("Cached after gc: {} bytes", MemoryTracker.getInstance().getCachedAmount(deviceId));
+                log.info("Active after gc: {} bytes", MemoryTracker.getInstance().getAllocatedAmount(deviceId));
+
+            }
+
             cacheDeviceMiss.incrementAndGet();
             return super.malloc(shape, point, location);
+        } else if (location == AllocationStatus.DEVICE) {
+            int deviceId = AtomicAllocator.getInstance().getDeviceId();
+            val desiredFreeSpace = 512 * 1024L * 1024L;
+            val approx = MemoryTracker.getInstance().getApproximateFreeMemory(deviceId);
+            if (approx < desiredFreeSpace) {
+                log.info("Cached before gc: {} bytes", MemoryTracker.getInstance().getCachedAmount(deviceId));
+                log.info("Active before gc: {} bytes", MemoryTracker.getInstance().getAllocatedAmount(deviceId));
+
+                purgeCache(deviceId);
+                Nd4j.getMemoryManager().invokeGc();
+
+                log.info("Cached after gc: {} bytes", MemoryTracker.getInstance().getCachedAmount(deviceId));
+                log.info("Active after gc: {} bytes", MemoryTracker.getInstance().getAllocatedAmount(deviceId));
+
+            }
         }
         return super.malloc(shape, point, location);
     }
@@ -127,10 +158,10 @@ public class CudaFullCachingProvider extends CudaCachingZeroProvider {
             if (point.isConstant())
                 return;
 
-            AllocationShape shape = point.getShape();
-            int deviceId = point.getDeviceId();
-            long address = point.getDevicePointer().address();
-            long reqMemory = AllocationUtils.getRequiredMemory(shape);
+            val shape = point.getShape();
+            val deviceId = point.getDeviceId();
+            val address = point.getDevicePointer().address();
+            val reqMemory = AllocationUtils.getRequiredMemory(shape);
             // we don't cache too big objects
 
             if (reqMemory > CudaEnvironment.getInstance().getConfiguration().getMaximumDeviceCacheableLength() || deviceCachedAmount.get(deviceId).get() >= CudaEnvironment.getInstance().getConfiguration().getMaximumDeviceCache()) {
@@ -152,11 +183,6 @@ public class CudaFullCachingProvider extends CudaCachingZeroProvider {
                 MemoryTracker.getInstance().decrementAllocatedAmount(deviceId, reqMemory);
                 return;
             } else {
-                long cacheEntries = cache.size();
-                long cacheHeight = deviceCache.get(deviceId).size();
-
-                // total memory allocated within this bucket
-                long cacheDepth = cacheEntries * reqMemory;
 
                 cache.put(new CudaPointer(point.getDevicePointer().address()));
 
@@ -202,17 +228,22 @@ public class CudaFullCachingProvider extends CudaCachingZeroProvider {
         }
     }
 
+    protected synchronized void purgeCache(int deviceId) {
+        for (AllocationShape shape : deviceCache.get(deviceId).keySet()) {
+            Pointer ptr = null;
+            while ((ptr = deviceCache.get(deviceId).get(shape).poll()) != null) {
+                freeDevice(ptr, deviceId);
+                MemoryTracker.getInstance().decrementCachedAmount(deviceId, shape.getNumberOfBytes());
+            }
+        }
+
+        deviceCachedAmount.get(deviceId).set(0);
+    }
+
     @Override
     public synchronized void purgeCache() {
         for (Integer device : deviceCache.keySet()) {
-            for (AllocationShape shape : deviceCache.get(device).keySet()) {
-                Pointer ptr = null;
-                while ((ptr = deviceCache.get(device).get(shape).poll()) != null) {
-                    freeDevice(ptr, device);
-                }
-            }
-
-            deviceCachedAmount.get(device).set(0);
+            purgeCache(device);
         }
         super.purgeCache();
     }

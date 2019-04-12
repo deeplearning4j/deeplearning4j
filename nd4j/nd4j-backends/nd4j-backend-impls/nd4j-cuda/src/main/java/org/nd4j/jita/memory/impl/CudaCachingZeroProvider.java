@@ -16,6 +16,7 @@
 
 package org.nd4j.jita.memory.impl;
 
+import lombok.val;
 import org.bytedeco.javacpp.Pointer;
 import org.nd4j.jita.allocator.enums.AllocationStatus;
 import org.nd4j.jita.allocator.impl.AllocationPoint;
@@ -102,16 +103,16 @@ public class CudaCachingZeroProvider extends CudaDirectProvider implements Memor
 
         if (location == AllocationStatus.HOST && reqMemory < CudaEnvironment.getInstance().getConfiguration().getMaximumHostCacheableLength()) {
 
-            CacheHolder cache = zeroCache.get(shape);
+            val cache = zeroCache.get(shape);
             if (cache != null) {
-                Pointer pointer = cache.poll();
+                val pointer = cache.poll();
                 if (pointer != null) {
                     cacheZeroHit.incrementAndGet();
 
                     // since this memory chunk is going to be used now, remove it's amount from
                     zeroCachedAmount.addAndGet(-1 * reqMemory);
 
-                    PointersPair pair = new PointersPair();
+                    val pair = new PointersPair();
                     pair.setDevicePointer(new CudaPointer(pointer.address()));
                     pair.setHostPointer(new CudaPointer(pointer.address()));
 
@@ -123,7 +124,7 @@ public class CudaCachingZeroProvider extends CudaDirectProvider implements Memor
 
             if (CudaEnvironment.getInstance().getConfiguration().isUsePreallocation() && zeroCachedAmount.get() < CudaEnvironment.getInstance().getConfiguration().getMaximumHostCache() / 10
                             && reqMemory < 16 * 1024 * 1024L) {
-                CachePreallocator preallocator = new CachePreallocator(shape, location, CudaEnvironment.getInstance().getConfiguration().getPreallocationCalls());
+                val preallocator = new CachePreallocator(shape, location, CudaEnvironment.getInstance().getConfiguration().getPreallocationCalls());
                 preallocator.start();
             }
 

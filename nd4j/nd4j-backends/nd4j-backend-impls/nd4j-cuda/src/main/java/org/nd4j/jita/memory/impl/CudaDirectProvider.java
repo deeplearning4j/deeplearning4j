@@ -17,6 +17,7 @@
 package org.nd4j.jita.memory.impl;
 
 import lombok.val;
+import lombok.var;
 import org.bytedeco.javacpp.Pointer;
 import org.nd4j.jita.allocator.enums.AllocationStatus;
 import org.nd4j.jita.allocator.impl.AllocationPoint;
@@ -101,22 +102,16 @@ public class CudaDirectProvider implements MemoryProvider {
                 if (reqMem < 1)
                     reqMem = 1;
 
-                //                if (CudaEnvironment.getInstance().getConfiguration().getDebugTriggered() == 119)
-                //                    throw new RuntimeException("Device allocation happened");
-
-
                 AllocationsTracker.getInstance().markAllocated(AllocationKind.GENERAL, deviceId, reqMem);
                 Pointer pointer = nativeOps.mallocDevice(reqMem, null, 0);
                 //log.info("Device [{}] allocation, Thread id: {}, ReqMem: {}, Pointer: {}", AtomicAllocator.getInstance().getDeviceId(), Thread.currentThread().getId(), reqMem, pointer != null ? pointer.address() : null);
 
-
                 if (pointer == null)
                     return null;
-                //throw new RuntimeException("Can't allocate [DEVICE] memory!");
 
-                Pointer devicePointer = new CudaPointer(pointer);
+                val devicePointer = new CudaPointer(pointer);
 
-                PointersPair devicePointerInfo = point.getPointers();
+                var devicePointerInfo = point.getPointers();
                 if (devicePointerInfo == null)
                     devicePointerInfo = new PointersPair();
                 devicePointerInfo.setDevicePointer(new CudaPointer(devicePointer, reqMem));

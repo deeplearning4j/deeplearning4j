@@ -27,7 +27,6 @@ import org.nd4j.linalg.api.buffer.DataType;
 @Data
 @NoArgsConstructor
 public class AllocationShape {
-    private long offset = 0;
     private long length = 0;
     private byte elementSize = 0;
     private DataType dataType = DataType.FLOAT;
