@@ -26,9 +26,10 @@ namespace nd4j {
     TadDescriptor::TadDescriptor(const TadDescriptor &other) {
         _originalShape = other._originalShape;
         _axis = other._axis;
+        _unitiesInShape = other._unitiesInShape;
     }
 
-    TadDescriptor::TadDescriptor(const Nd4jLong *originalShape, const int *dimensions, const int length) {
+    TadDescriptor::TadDescriptor(const Nd4jLong *originalShape, const int *dimensions, const int length, const bool keepUnitiesInShape) {
         ShapeDescriptor descriptor(originalShape);
 
         _axis.resize(length);
@@ -39,23 +40,25 @@ namespace nd4j {
             std::sort(_axis.begin(), _axis.end());
 
         _originalShape = descriptor;
+        _unitiesInShape = keepUnitiesInShape;
     }
 
-    TadDescriptor::TadDescriptor(const ShapeDescriptor &descriptor, const std::vector<int> &dimensions) {
+    TadDescriptor::TadDescriptor(const ShapeDescriptor &descriptor, const std::vector<int> &dimensions, const bool keepUnitiesInShape) {
         _originalShape = descriptor;
         _axis = dimensions;
+        _unitiesInShape = keepUnitiesInShape;
 
         if (_axis.size() > 1)
             std::sort(_axis.begin(), _axis.end());
     }
 
     bool TadDescriptor::operator==(const TadDescriptor &other) const {
-        return std::tie(_originalShape, _axis) == std::tie(other._originalShape, other._axis);
+        return std::tie(_originalShape, _axis, _unitiesInShape) == std::tie(other._originalShape, other._axis, other._unitiesInShape);
     }
 
 
     bool TadDescriptor::operator<(const TadDescriptor &other) const {
-        return std::tie(_originalShape, _axis) < std::tie(other._originalShape, other._axis);
+        return std::tie(_originalShape, _axis, _unitiesInShape) < std::tie(other._originalShape, other._axis, other._unitiesInShape);
     }
 
     std::vector<int>& TadDescriptor::axis() {
@@ -64,5 +67,9 @@ namespace nd4j {
 
     ShapeDescriptor& TadDescriptor::originalShape() {
         return _originalShape;
+    }
+
+    bool TadDescriptor::areUnitiesinShape() const {
+        return _unitiesInShape;   
     }
 }

@@ -857,6 +857,9 @@ Nd4jLong ShapeUtils::getNumOfSubArrs(const Nd4jLong* shapeInfo, const std::vecto
 
     Nd4jLong numOfSubArrs = 1;
 
+    if(dimsToExclude.size() == shape::rank(shapeInfo) || dimsToExclude.size() == 0)     // means there is only one sub-array and it coincides with whole array
+        return numOfSubArrs;
+
     for(const auto& dim : dimsToExclude)
         numOfSubArrs *= shapeInfo[dim + 1];
 
