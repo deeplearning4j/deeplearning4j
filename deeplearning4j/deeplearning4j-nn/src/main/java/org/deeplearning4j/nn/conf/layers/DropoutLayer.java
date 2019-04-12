@@ -51,6 +51,14 @@ public class DropoutLayer extends FeedForwardLayer {
         super(builder);
     }
 
+    public DropoutLayer(double activationRetainProb){
+        this(new Builder().dropOut(activationRetainProb));
+    }
+
+    public DropoutLayer(IDropout dropout){
+        this(new Builder().dropOut(dropout));
+    }
+
     @Override
     public DropoutLayer clone() {
         return (DropoutLayer) super.clone();

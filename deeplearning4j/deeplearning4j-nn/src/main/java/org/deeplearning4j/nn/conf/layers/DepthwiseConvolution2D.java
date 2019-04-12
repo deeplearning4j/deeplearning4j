@@ -26,6 +26,7 @@ import org.deeplearning4j.nn.params.DepthwiseConvolutionParamInitializer;
 import org.deeplearning4j.optimize.api.TrainingListener;
 import org.deeplearning4j.util.ConvolutionUtils;
 import org.deeplearning4j.util.ValidationUtils;
+import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.util.*;
@@ -49,6 +50,7 @@ public class DepthwiseConvolution2D extends ConvolutionLayer {
 
     protected DepthwiseConvolution2D(Builder builder) {
         super(builder);
+        Preconditions.checkState(builder.depthMultiplier > 0, "Depth multiplier must be > 0,  got %s", builder.depthMultiplier);
         this.depthMultiplier = builder.depthMultiplier;
         this.nOut = this.nIn * this.depthMultiplier;
 
@@ -95,6 +97,14 @@ public class DepthwiseConvolution2D extends ConvolutionLayer {
                         nOut, layerIndex, getLayerName(), DepthwiseConvolution2DLayer.class);
     }
 
+    @Override
+    public void setNIn(InputType inputType, boolean override) {
+        super.setNIn(inputType, override);
+
+        if(nOut == 0 || override){
+            nOut = this.nIn * this.depthMultiplier;
+        }
+    }
 
     @Getter
     @Setter
