@@ -34,6 +34,7 @@ import org.nd4j.jita.allocator.enums.CudaConstants;
 import org.nd4j.jita.allocator.impl.AllocationPoint;
 import org.nd4j.jita.allocator.impl.AllocationShape;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
+import org.nd4j.jita.allocator.impl.MemoryTracker;
 import org.nd4j.jita.allocator.pointers.CudaPointer;
 import org.nd4j.jita.allocator.pointers.PointersPair;
 import org.nd4j.jita.allocator.utils.AllocationUtils;
@@ -280,18 +281,24 @@ public class CudaZeroHandler implements MemoryHandler {
                                 && deviceMemoryTracker.getAllocatedSize(deviceId) + reqMemory < configuration
                                                 .getMaximumDeviceAllocation()) {
 */
-                    if (deviceMemoryTracker.reserveAllocationIfPossible(Thread.currentThread().getId(), deviceId,
-                                    reqMemory)) {
+
+
+                    //val timeStart = System.nanoTime();
+                    //long free = NativeOpsHolder.getInstance().getDeviceNativeOps().getDeviceFreeMemory();
+                    //val timeEnd = System.nanoTime();
+
+                    //log.info("Free time: {} ns; Free memory: {} bytes", (timeEnd - timeStart), free);
+
+                    if (deviceMemoryTracker.reserveAllocationIfPossible(Thread.currentThread().getId(), deviceId, reqMemory)) {
                         point.setDeviceId(deviceId);
                         PointersPair pair = memoryProvider.malloc(shape, point, targetMode);
                         if (pair != null) {
-                            //  log.info("PEWPEW");
                             returnPair.setDevicePointer(pair.getDevicePointer());
 
                             point.setAllocationStatus(AllocationStatus.DEVICE);
 
                             if (point.getPointers() == null)
-                                throw new RuntimeException("WTF?");
+                                throw new RuntimeException("PointersPair can't be null");
 
                             point.getPointers().setDevicePointer(pair.getDevicePointer());
 
@@ -317,8 +324,6 @@ public class CudaZeroHandler implements MemoryHandler {
                                 point.tickDeviceWrite();
                                 point.tickHostRead();
                             } else {
-                                //CudaContext ctx = AtomicAllocator.getInstance().getFlowController().prepareAction(point);
-
                                 nativeOps.memsetAsync(pair.getDevicePointer(), 0, reqMemory, 0,
                                                 context.getSpecialStream());
                                 context.getSpecialStream().synchronize();
@@ -329,8 +334,7 @@ public class CudaZeroHandler implements MemoryHandler {
                                 //AtomicAllocator.getInstance().getFlowController().registerAction(ctx, point);
                             }
                         } else {
-                            log.warn("Out of [DEVICE] memory, host memory will be used instead: deviceId: [{}], requested bytes: [{}]",
-                                            deviceId, reqMemory);
+                            log.warn("Out of [DEVICE] memory, host memory will be used instead: deviceId: [{}], requested bytes: [{}]", deviceId, reqMemory);
                             // if device memory allocation failed (aka returned NULL), keep using host memory instead
 
                             returnPair.setDevicePointer(tmpPair.getHostPointer());

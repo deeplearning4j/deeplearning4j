@@ -1,6 +1,7 @@
 package org.nd4j.jita.allocator;
 
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.RandomUtils;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
@@ -9,6 +10,7 @@ import org.nd4j.jita.allocator.impl.MemoryTracker;
 import lombok.val;
 
 import org.nd4j.jita.memory.impl.CudaFullCachingProvider;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
 import org.nd4j.linalg.api.memory.enums.MirroringPolicy;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -272,10 +274,10 @@ public class AllocatorTest {
         val timeStart = System.currentTimeMillis();
 
         while (true) {
-            val array = Nd4j.scalar(100.0);
+            val array = Nd4j.create(DataType.FLOAT, RandomUtils.nextInt(100, 1000), RandomUtils.nextInt(100, 1000));
 
             val timeEnd = System.currentTimeMillis();
-            if (timeEnd - timeStart > 1 * 60 * 1000) {
+            if (timeEnd - timeStart > 5 * 60 * 1000) {
                 log.info("Exiting...");
                 break;
             }

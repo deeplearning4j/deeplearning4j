@@ -133,7 +133,7 @@ public class CudaFullCachingProvider extends CudaCachingZeroProvider {
             long reqMemory = AllocationUtils.getRequiredMemory(shape);
             // we don't cache too big objects
 
-            if (reqMemory > CudaEnvironment.getInstance().getConfiguration().getMaximumDeviceCacheableLength() || deviceCachedAmount.get(deviceId).get() >= CudaEnvironment.getInstance().getConfiguration().getMaximumHostCache()) {
+            if (reqMemory > CudaEnvironment.getInstance().getConfiguration().getMaximumDeviceCacheableLength() || deviceCachedAmount.get(deviceId).get() >= CudaEnvironment.getInstance().getConfiguration().getMaximumDeviceCache()) {
                 super.free(point);
                 return;
             }

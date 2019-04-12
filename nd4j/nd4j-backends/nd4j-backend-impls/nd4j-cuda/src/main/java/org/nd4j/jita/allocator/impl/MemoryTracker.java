@@ -13,6 +13,7 @@ public class MemoryTracker {
     private List<AtomicLong> allocatedPerDevice = new ArrayList<>();
     private List<AtomicLong> cachedPerDevice = new ArrayList<>();
     private List<AtomicLong> totalPerDevice = new ArrayList<>();
+    private List<AtomicLong> freePerDevice = new ArrayList<>();
     private List<AtomicLong> workspacesPerDevice = new ArrayList<>();
     private final static MemoryTracker INSTANCE = new MemoryTracker();
 
@@ -22,8 +23,10 @@ public class MemoryTracker {
             cachedPerDevice.add(i, new AtomicLong(0));
 	        workspacesPerDevice.add(i, new AtomicLong(0));
 
-            val memory = NativeOpsHolder.getInstance().getDeviceNativeOps().getDeviceTotalMemory(new CudaPointer(i));
-            totalPerDevice.add(i, new AtomicLong(memory));
+	        val ptr = new CudaPointer(i);
+            totalPerDevice.add(i, new AtomicLong(NativeOpsHolder.getInstance().getDeviceNativeOps().getDeviceTotalMemory(ptr)));
+
+            freePerDevice.add(i, new AtomicLong(NativeOpsHolder.getInstance().getDeviceNativeOps().getDeviceFreeMemory(ptr)));
         }
     }
 
@@ -45,6 +48,19 @@ public class MemoryTracker {
 
     public long getTotalMemory(int deviceId) {
         return totalPerDevice.get(deviceId).get();
+    }
+
+    public long getFreeMemory(int deviceId) {
+        return freePerDevice.get(deviceId).get();
+    }
+
+    /**
+     * This method returns delta between total memory and free memory
+     * @param deviceId
+     * @return
+     */
+    public long getUsableMemory(int deviceId) {
+        return getTotalMemory(deviceId) - getFreeMemory(deviceId);
     }
 
     /**

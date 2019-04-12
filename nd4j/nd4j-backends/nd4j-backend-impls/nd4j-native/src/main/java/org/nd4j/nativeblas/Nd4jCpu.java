@@ -1723,6 +1723,12 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
     public native @Cast("Nd4jLong") long getDeviceFreeMemory(@Cast("Nd4jPointer") Pointer ptrToDeviceId);
 
     /**
+     * Returns amount of free memory for current device
+     * @return
+     */
+    public native @Cast("Nd4jLong") long getDeviceFreeMemory();
+
+    /**
      *
      * @param ptrToDeviceId
      * @return
