@@ -126,7 +126,7 @@ public class MergeVertex extends BaseGraphVertex {
         //Split the epsilons in the opposite way that the activations were merged
         INDArray[] out = new INDArray[forwardPassShapes.length];
         for (int i = 0; i < out.length; i++)
-            out[i] = workspaceMgr.createUninitialized(ArrayType.ACTIVATION_GRAD, forwardPassShapes[i]);
+            out[i] = workspaceMgr.createUninitialized(ArrayType.ACTIVATION_GRAD, epsilon.dataType(), forwardPassShapes[i]);
 
         int cumulative = 0;
         switch (fwdPassRank) {

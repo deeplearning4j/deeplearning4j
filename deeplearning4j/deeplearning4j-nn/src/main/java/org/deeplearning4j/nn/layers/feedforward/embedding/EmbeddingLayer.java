@@ -113,7 +113,7 @@ public class EmbeddingLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.
         INDArray weights = getParam(DefaultParamInitializer.WEIGHT_KEY);
         INDArray bias = getParam(DefaultParamInitializer.BIAS_KEY);
 
-        INDArray destination = workspaceMgr.createUninitialized(ArrayType.ACTIVATIONS, input.size(0), weights.size(1));
+        INDArray destination = workspaceMgr.createUninitialized(ArrayType.ACTIVATIONS, weights.dataType(), input.size(0), weights.size(1));
         INDArray rows = Nd4j.pullRows(weights, destination, 1, indexes);
         if(hasBias()){
             rows.addiRowVector(bias);

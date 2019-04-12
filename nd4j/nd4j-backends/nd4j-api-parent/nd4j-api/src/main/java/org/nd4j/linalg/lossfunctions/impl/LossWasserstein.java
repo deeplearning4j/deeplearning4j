@@ -56,6 +56,7 @@ public class LossWasserstein extends DifferentialFunction implements ILossFuncti
         if(!labels.equalShapes(preOutput)){
             Preconditions.throwEx("Labels and preOutput must have equal shapes: got shapes %s vs %s", labels.shape(), preOutput.shape());
         }
+        labels = labels.castTo(preOutput.dataType());   //No-op if already correct dtype
 
         INDArray output = activationFn.getActivation(preOutput.dup(), true);
 
@@ -91,7 +92,7 @@ public class LossWasserstein extends DifferentialFunction implements ILossFuncti
         if(!labels.equalShapes(preOutput)){
             Preconditions.throwEx("Labels and preOutput must have equal shapes: got shapes %s vs %s", labels.shape(), preOutput.shape());
         }
-
+        labels = labels.castTo(preOutput.dataType());   //No-op if already correct dtype
         INDArray dLda = labels.div(labels.size(1));
 
         if (mask != null && LossUtil.isPerOutputMasking(dLda, mask)) {

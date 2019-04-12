@@ -64,7 +64,7 @@ public class Cropping3DLayer extends AbstractLayer<org.deeplearning4j.nn.conf.la
     @Override
     public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon, LayerWorkspaceMgr workspaceMgr) {
         val inShape = input.shape();
-        INDArray epsNext = workspaceMgr.create(ArrayType.ACTIVATION_GRAD, inShape, 'c');
+        INDArray epsNext = workspaceMgr.create(ArrayType.ACTIVATION_GRAD, input.dataType(), inShape, 'c');
         INDArray epsNextSubset = inputSubset(epsNext);
         epsNextSubset.assign(epsilon);
         return new Pair<>((Gradient) new DefaultGradient(), epsNext);

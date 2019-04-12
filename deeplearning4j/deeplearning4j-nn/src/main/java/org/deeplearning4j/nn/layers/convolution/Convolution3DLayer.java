@@ -98,7 +98,7 @@ public class Convolution3DLayer extends ConvolutionLayer {
 
         INDArray weightGradView = gradientViews.get(Convolution3DParamInitializer.WEIGHT_KEY);
 
-        INDArray outEpsilon = workspaceMgr.createUninitialized(ArrayType.ACTIVATION_GRAD,
+        INDArray outEpsilon = workspaceMgr.createUninitialized(ArrayType.ACTIVATION_GRAD, weights.dataType(),
                 miniBatch * outEpsChannels * inD * inH * inW);
         if (isNCDHW)
             outEpsilon = outEpsilon.reshape('c', miniBatch, outEpsChannels, inD, inH, inW);
@@ -242,8 +242,7 @@ public class Convolution3DLayer extends ConvolutionLayer {
         int outH = outSize[1];
         int outW = outSize[2];
 
-        INDArray output = workspaceMgr.createUninitialized(ArrayType.ACTIVATIONS,
-                miniBatch*outWeightChannels*outD*outH*outW);
+        INDArray output = workspaceMgr.createUninitialized(ArrayType.ACTIVATIONS, weights.dataType(),miniBatch*outWeightChannels*outD*outH*outW);
         if (isNCDHW)
             output = output.reshape('c', miniBatch, outWeightChannels, outD, outH, outW);
         else

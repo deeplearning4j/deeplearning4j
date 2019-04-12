@@ -136,7 +136,7 @@ public class ReverseTimeSeriesVertex extends BaseGraphVertex {
         val m = input.size(2);
 
         // Create empty output
-        INDArray out = workspaceMgr.create(type, input.shape(), 'f');
+        INDArray out = workspaceMgr.create(type, input.dataType(), input.shape(), 'f');
 
         // Iterate over all samples
         for (int s = 0; s < n; s++) {

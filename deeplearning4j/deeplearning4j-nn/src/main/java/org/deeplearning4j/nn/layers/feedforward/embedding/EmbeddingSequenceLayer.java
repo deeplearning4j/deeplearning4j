@@ -149,7 +149,7 @@ public class EmbeddingSequenceLayer extends BaseLayer<org.deeplearning4j.nn.conf
 
         val nOut = layerConf().getNOut();
         INDArray destination = workspaceMgr.createUninitialized(
-                ArrayType.ACTIVATIONS, new long[]{minibatch * inputLength, nOut}, 'c');
+                ArrayType.ACTIVATIONS, weights.dataType(), new long[]{minibatch * inputLength, nOut}, 'c');
         INDArray rows = Nd4j.pullRows(weights, destination, 1, indexes);
 
         if (hasBias()) {

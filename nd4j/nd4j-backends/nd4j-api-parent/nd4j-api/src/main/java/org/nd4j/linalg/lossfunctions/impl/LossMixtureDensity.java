@@ -214,6 +214,7 @@ public class LossMixtureDensity extends DifferentialFunction implements ILossFun
      */
     @Override
     public INDArray computeScoreArray(INDArray labels, INDArray preOutput, IActivation activationFn, INDArray mask) {
+        labels = labels.castTo(preOutput.dataType());   //No-op if already correct dtype
         INDArray output = activationFn.getActivation(preOutput.dup(), false);
         MixtureDensityComponents mdc = extractComponents(output);
         INDArray scoreArr = negativeLogLikelihood(labels, mdc.alpha, mdc.mu, mdc.sigma);
@@ -239,6 +240,7 @@ public class LossMixtureDensity extends DifferentialFunction implements ILossFun
      */
     @Override
     public INDArray computeGradient(INDArray labels, INDArray preOutput, IActivation activationFn, INDArray mask) {
+        labels = labels.castTo(preOutput.dataType());   //No-op if already correct dtype
         long nSamples = labels.size(0);
 
         INDArray output = activationFn.getActivation(preOutput.dup(), false);

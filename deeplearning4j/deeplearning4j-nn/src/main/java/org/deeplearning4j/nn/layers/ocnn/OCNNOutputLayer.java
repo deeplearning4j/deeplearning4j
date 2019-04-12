@@ -120,7 +120,7 @@ public class OCNNOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.
         long inputShape = (( org.deeplearning4j.nn.conf.ocnn.OCNNOutputLayer) this.getConf().getLayer()).getNIn();
         INDArray delta = pair.getSecond();
         //4 x 150
-        INDArray epsilonNext = workspaceMgr.createUninitialized(ArrayType.ACTIVATION_GRAD, new long[]{inputShape, delta.length()}, 'f');
+        INDArray epsilonNext = workspaceMgr.createUninitialized(ArrayType.ACTIVATION_GRAD, input.dataType(), new long[]{inputShape, delta.length()}, 'f');
         epsilonNext = epsilonNext.assign(delta.broadcast(epsilonNext.shape())).transpose();
 
         //Normally we would clear weightNoiseParams here - but we want to reuse them for forward + backward + score
@@ -260,7 +260,7 @@ public class OCNNOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.
         INDArray first = Nd4j.createUninitialized(input.size(0), v.size(1));
         input.mmuli(v, first);
         INDArray act2d = layerConf().getActivationFn().getActivation(first, training);
-        INDArray output = workspaceMgr.createUninitialized(ArrayType.ACTIVATIONS,input.size(0));
+        INDArray output = workspaceMgr.createUninitialized(ArrayType.ACTIVATIONS, input.dataType(), input.size(0));
         act2d.mmuli(w.reshape(w.length()), output);
         this.labels = output;
         return output;

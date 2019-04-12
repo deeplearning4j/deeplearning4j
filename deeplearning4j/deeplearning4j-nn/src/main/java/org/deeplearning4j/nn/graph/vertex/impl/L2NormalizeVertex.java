@@ -123,7 +123,7 @@ public class L2NormalizeVertex extends BaseGraphVertex {
             Nd4j.getExecutioner().exec(new BroadcastMulOp(xDivNorm3, dx, xDivNorm3, 0));
 
             //1/|x|_2 * dLda - above
-            dLdx = workspaceMgr.createUninitialized(ArrayType.ACTIVATION_GRAD, epsilon.shape(), epsilon.ordering());
+            dLdx = workspaceMgr.createUninitialized(ArrayType.ACTIVATION_GRAD, epsilon.dataType(), epsilon.shape(), epsilon.ordering());
             Nd4j.getExecutioner().exec(new BroadcastDivOp(epsilon, norm, dLdx, 0));
             dLdx.subi(xDivNorm3);
         }

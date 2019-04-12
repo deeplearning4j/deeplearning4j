@@ -257,7 +257,7 @@ public class TimeSeriesUtils {
 
         INDArray inReshape = in.reshape('f', in.size(0)*in.size(1), in.size(2));
 
-        INDArray outReshape = workspaceMgr.create(arrayType, new long[]{inReshape.size(0), idxs.length}, 'f');
+        INDArray outReshape = workspaceMgr.create(arrayType, in.dataType(), new long[]{inReshape.size(0), idxs.length}, 'f');
         Nd4j.pullRows(inReshape, outReshape, 0, idxs);
         return workspaceMgr.leverageTo(arrayType, outReshape.reshape('f', in.size(0), in.size(1), in.size(2)));
 
@@ -326,7 +326,7 @@ public class TimeSeriesUtils {
             idxs[j++] = i;
         }
 
-        INDArray ret = workspaceMgr.createUninitialized(arrayType, new long[]{mask.size(0), idxs.length}, 'f');
+        INDArray ret = workspaceMgr.createUninitialized(arrayType, mask.dataType(), new long[]{mask.size(0), idxs.length}, 'f');
 
         return Nd4j.pullRows(mask, ret, 0, idxs);
 

@@ -65,7 +65,7 @@ public class Cropping1DLayer extends AbstractLayer<Cropping1D> {
     @Override
     public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon, LayerWorkspaceMgr workspaceMgr) {
         val inShape = input.shape();
-        INDArray epsNext = workspaceMgr.create(ArrayType.ACTIVATION_GRAD, inShape, 'c');
+        INDArray epsNext = workspaceMgr.create(ArrayType.ACTIVATION_GRAD, input.dataType(), inShape, 'c');
         INDArray epsNextSubset = inputSubset(epsNext, ArrayType.ACTIVATION_GRAD, workspaceMgr);
         epsNextSubset.assign(epsilon);
         return new Pair<>((Gradient) new DefaultGradient(), epsNext);

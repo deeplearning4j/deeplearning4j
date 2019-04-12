@@ -86,7 +86,7 @@ public class MaskLayer extends AbstractLayer<org.deeplearning4j.nn.conf.layers.u
                             Arrays.toString(input.shape()) + ", expected 2d mask array with shape [minibatch, sequenceLength]." +
                             " Got mask with shape: "+ Arrays.toString(maskArray.shape()));
                 }
-                INDArray fwd = workspaceMgr.createUninitialized(type, input.shape(), 'f');
+                INDArray fwd = workspaceMgr.createUninitialized(type, input.dataType(), input.shape(), 'f');
                 Broadcast.mul(input, maskArray, fwd, 0, 2);
                 return fwd;
             case 4:
@@ -102,7 +102,7 @@ public class MaskLayer extends AbstractLayer<org.deeplearning4j.nn.conf.layers.u
                     dimensions = Arrays.copyOfRange(dimensions, 0, count);
                 }
 
-                INDArray fwd2 = workspaceMgr.createUninitialized(type, input.shape(), 'c');
+                INDArray fwd2 = workspaceMgr.createUninitialized(type, input.dataType(), input.shape(), 'c');
                 Broadcast.mul(input, maskArray, fwd2, dimensions);
                 return fwd2;
             default:

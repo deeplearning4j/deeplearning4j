@@ -96,7 +96,7 @@ public class SubsetVertex extends BaseGraphVertex {
         if (!canDoBackward())
             throw new IllegalStateException("Cannot do backward pass: error not set");
 
-        INDArray out = workspaceMgr.create(ArrayType.ACTIVATION_GRAD, forwardShape);
+        INDArray out = workspaceMgr.create(ArrayType.ACTIVATION_GRAD, epsilon.dataType(), forwardShape);
         switch (forwardShape.length) {
             case 2:
                 out.put(new INDArrayIndex[] {NDArrayIndex.all(), NDArrayIndex.interval(from, to, true)}, epsilon);

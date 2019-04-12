@@ -79,7 +79,7 @@ public class DropoutLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.Dr
                 if(inputModificationAllowed){
                     result = input;
                 } else {
-                    result = workspaceMgr.createUninitialized(ArrayType.INPUT, input.shape(), input.ordering());
+                    result = workspaceMgr.createUninitialized(ArrayType.INPUT, input.dataType(), input.shape(), input.ordering());
                 }
 
                 ret = layerConf().getIDropout().applyDropout(input, result, getIterationCount(), getEpochCount(), workspaceMgr);

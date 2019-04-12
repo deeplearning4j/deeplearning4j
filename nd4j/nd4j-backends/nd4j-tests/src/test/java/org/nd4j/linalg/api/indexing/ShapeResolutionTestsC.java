@@ -319,6 +319,24 @@ public class ShapeResolutionTestsC extends BaseNd4jTest {
         assertArrayEquals(new long[]{}, out.shape());
     }
 
+    @Test
+    public void testPointIndex(){
+        for( int i=0; i<3; i++ ) {
+            INDArray arr = Nd4j.linspace(DataType.DOUBLE, 1, 3, 1);
+            INDArray out = arr.get(NDArrayIndex.point(i));
+            assertArrayEquals(new long[]{}, out.shape());
+            INDArray exp = Nd4j.scalar((double)i+1);
+            assertEquals(exp, out);
+            assertTrue(out.isView());
+
+            INDArray exp2 = Nd4j.linspace(DataType.DOUBLE, 1, 3, 1);
+            exp2.putScalar(i, 10.0);
+            out.assign(10.0);
+            assertEquals(exp2, arr);
+
+        }
+    }
+
 
     @Override
     public char ordering() {

@@ -291,7 +291,7 @@ public abstract class AbstractLayer<LayerConfT extends org.deeplearning4j.nn.con
             if(inputModificationAllowed){
                 result = input;
             } else {
-                result = workspaceMgr.createUninitialized(ArrayType.INPUT, input.shape(), input.ordering());
+                result = workspaceMgr.createUninitialized(ArrayType.INPUT, input.dataType(), input.shape(), input.ordering());
             }
 
             input = layerConf().getIDropout().applyDropout(input, result, getIterationCount(), getEpochCount(), workspaceMgr);

@@ -106,7 +106,7 @@ public class UnstackVertex extends BaseGraphVertex {
         if (!canDoBackward())
             throw new IllegalStateException("Cannot do backward pass: error not set");
 
-        INDArray out = workspaceMgr.create(ArrayType.ACTIVATION_GRAD, forwardShape);
+        INDArray out = workspaceMgr.create(ArrayType.ACTIVATION_GRAD, inputs[0].dataType(), forwardShape);
         int start = from * step;
         int end = (from + 1) * step;
 

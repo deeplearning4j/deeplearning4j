@@ -107,7 +107,7 @@ public class ElementWiseMultiplicationLayer extends BaseLayer<org.deeplearning4j
 
         applyDropOutIfNecessary(training, workspaceMgr);
 
-        INDArray ret = workspaceMgr.createUninitialized(ArrayType.ACTIVATIONS, input.shape(), 'c');
+        INDArray ret = workspaceMgr.createUninitialized(ArrayType.ACTIVATIONS, input.dataType(), input.shape(), 'c');
 
         ret.assign(input.mulRowVector(W).addiRowVector(b));
 

@@ -96,8 +96,8 @@ public class Subsampling3DLayer extends AbstractLayer<org.deeplearning4j.nn.conf
             pad = layerConf().getPadding();
         }
 
-        INDArray outEpsilon = workspaceMgr.createUninitialized(ArrayType.ACTIVATION_GRAD,
-                isNCDHW ? new int[]{miniBatch, inChannels, inD, inH, inW} : new int[]{miniBatch, inD, inH, inW, inChannels}, 'c');
+        INDArray outEpsilon = workspaceMgr.createUninitialized(ArrayType.ACTIVATION_GRAD, epsilon.dataType(),
+                isNCDHW ? new long[]{miniBatch, inChannels, inD, inH, inW} : new long[]{miniBatch, inD, inH, inW, inChannels}, 'c');
 
 
         int[] intArgs = new int[]{
@@ -179,8 +179,8 @@ public class Subsampling3DLayer extends AbstractLayer<org.deeplearning4j.nn.conf
 
         String opName = layerConf().getPoolingType() == PoolingType.MAX ? "maxpool3dnew" : "avgpool3dnew";
 
-        INDArray output = workspaceMgr.createUninitialized(ArrayType.ACTIVATIONS,
-                isNCDHW ? new int[]{miniBatch, inChannels, outD, outH, outW} : new int[]{miniBatch, outD, outH, outW, inChannels}, 'c');
+        INDArray output = workspaceMgr.createUninitialized(ArrayType.ACTIVATIONS, input.dataType(),
+                isNCDHW ? new long[]{miniBatch, inChannels, outD, outH, outW} : new long[]{miniBatch, outD, outH, outW, inChannels}, 'c');
 
         int[] intArgs = new int[]{
                 kernel[0], kernel[1], kernel[2],

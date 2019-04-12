@@ -84,6 +84,7 @@ public class LossMultiLabel extends DifferentialFunction implements ILossFunctio
                             + " number of outputs (nOut = " + preOutput.size(1) + ") ");
 
         }
+        labels = labels.castTo(preOutput.dataType());   //No-op if already correct dtype
         final INDArray postOutput = activationFn.getActivation(preOutput.dup(), true);
 
         final INDArray positive = labels;
@@ -171,6 +172,7 @@ public class LossMultiLabel extends DifferentialFunction implements ILossFunctio
 
     @Override
     public INDArray computeGradient(INDArray labels, INDArray preOutput, IActivation activationFn, INDArray mask) {
+        labels = labels.castTo(preOutput.dataType());   //No-op if already correct dtype
         if (labels.size(1) != preOutput.size(1)) {
             throw new IllegalArgumentException(
                     "Labels array numColumns (size(1) = " + labels.size(1) + ") does not match output layer"

@@ -92,13 +92,12 @@ public class SpaceToBatch extends AbstractLayer<org.deeplearning4j.nn.conf.layer
     public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon, LayerWorkspaceMgr workspaceMgr) {
         assertInputSet(true);
 
-        // FIXME: int cast
-        int miniBatch = (int) input.size(0);
-        int inDepth = (int) input.size(1);
-        int inH = (int) input.size(2);
-        int inW = (int) input.size(3);
+        long miniBatch = input.size(0);
+        long inDepth = input.size(1);
+        long inH = input.size(2);
+        long inW = input.size(3);
 
-        INDArray outEpsilon = workspaceMgr.createUninitialized(ArrayType.ACTIVATION_GRAD, new int[]{miniBatch, inDepth, inH, inW}, 'c');
+        INDArray outEpsilon = workspaceMgr.createUninitialized(ArrayType.ACTIVATION_GRAD, input.dataType(), new long[]{miniBatch, inDepth, inH, inW}, 'c');
 
         Gradient gradient = new DefaultGradient();
 
@@ -128,23 +127,22 @@ public class SpaceToBatch extends AbstractLayer<org.deeplearning4j.nn.conf.layer
             return preOutput;
         }
 
-        // FIXME: int cast
-        int inMiniBatch = (int) input.size(0);
-        int depth = (int) input.size(1);
-        int inH = (int) input.size(2);
-        int inW = (int) input.size(3);
+        long inMiniBatch = input.size(0);
+        long depth = input.size(1);
+        long inH = input.size(2);
+        long inW = input.size(3);
 
         int[] blocks = getBlocks();
         int[][] padding = getPadding();
 
-        int paddedH = inH + padding[0][0] + padding[0][1];
-        int paddedW = inW + padding[1][0] + padding[1][1];
+        long paddedH = inH + padding[0][0] + padding[0][1];
+        long paddedW = inW + padding[1][0] + padding[1][1];
 
-        int outH = paddedH / blocks[0];
-        int outW = paddedW / blocks[1];
-        int outMiniBatch = inMiniBatch * blocks[0] * blocks[1];
+        long outH = paddedH / blocks[0];
+        long outW = paddedW / blocks[1];
+        long outMiniBatch = inMiniBatch * blocks[0] * blocks[1];
 
-        INDArray out = workspaceMgr.create(ArrayType.ACTIVATIONS, new int[]{outMiniBatch, depth, outH, outW}, 'c');
+        INDArray out = workspaceMgr.create(ArrayType.ACTIVATIONS, input.dataType(), new long[]{outMiniBatch, depth, outH, outW}, 'c');
 
         CustomOp op = DynamicCustomOp.builder("space_to_batch")
                 .addInputs(input, getBlocksArray(), getPaddingArray())

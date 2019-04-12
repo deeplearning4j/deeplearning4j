@@ -47,6 +47,7 @@ public class LossPoisson extends DifferentialFunction  implements ILossFunction 
         if(!labels.equalShapes(preOutput)){
             Preconditions.throwEx("Labels and preOutput must have equal shapes: got shapes %s vs %s", labels.shape(), preOutput.shape());
         }
+        labels = labels.castTo(preOutput.dataType());   //No-op if already correct dtype
         /*
          mean of (yhat - y * log(yhat))
          */
@@ -86,6 +87,7 @@ public class LossPoisson extends DifferentialFunction  implements ILossFunction 
         if(!labels.equalShapes(preOutput)){
             Preconditions.throwEx("Labels and preOutput must have equal shapes: got shapes %s vs %s", labels.shape(), preOutput.shape());
         }
+        labels = labels.castTo(preOutput.dataType());   //No-op if already correct dtype
         INDArray yHat = activationFn.getActivation(preOutput.dup(), true);
         INDArray yDivyhat = labels.div(yHat);
         INDArray dLda = yDivyhat.rsubi(1);

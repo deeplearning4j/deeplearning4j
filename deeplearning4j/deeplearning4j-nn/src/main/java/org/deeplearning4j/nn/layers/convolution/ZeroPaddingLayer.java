@@ -81,7 +81,7 @@ public class ZeroPaddingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         val outW = inShape[3] + padding[2] + padding[3];
         val outShape = new long[] {inShape[0], inShape[1], outH, outW};
 
-        INDArray out = workspaceMgr.create(ArrayType.ACTIVATIONS, outShape, 'c');
+        INDArray out = workspaceMgr.create(ArrayType.ACTIVATIONS, input.dataType(), outShape, 'c');
 
         out.put(new INDArrayIndex[] {NDArrayIndex.all(), NDArrayIndex.all(),
                         NDArrayIndex.interval(padding[0], padding[0] + inShape[2]),

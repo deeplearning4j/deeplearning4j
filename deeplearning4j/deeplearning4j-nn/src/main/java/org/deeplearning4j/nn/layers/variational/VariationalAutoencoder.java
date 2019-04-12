@@ -713,7 +713,7 @@ public class VariationalAutoencoder implements Layer {
             gradient.gradientForVariable().put(bKey, dLdB);
 
             if(i == 0) {
-                epsilon = workspaceMgr.createUninitialized(ArrayType.ACTIVATION_GRAD, new long[]{weights.size(0), currentDelta.size(0)}, 'f');
+                epsilon = workspaceMgr.createUninitialized(ArrayType.ACTIVATION_GRAD, currentDelta.dataType(), new long[]{weights.size(0), currentDelta.size(0)}, 'f');
                 weights.mmuli(currentDelta.transpose(), epsilon);
                 epsilon = epsilon.transpose();
             } else {
@@ -767,7 +767,7 @@ public class VariationalAutoencoder implements Layer {
         INDArray mW = getParamWithNoise(VariationalAutoencoderParamInitializer.PZX_MEAN_W, training, workspaceMgr);
         INDArray mB = getParamWithNoise(VariationalAutoencoderParamInitializer.PZX_MEAN_B, training, workspaceMgr);
 
-        INDArray pzxMean = workspaceMgr.createUninitialized(ArrayType.ACTIVATIONS, new long[]{current.size(0), mW.size(1)}, 'f');
+        INDArray pzxMean = workspaceMgr.createUninitialized(ArrayType.ACTIVATIONS, mW.dataType(), new long[]{current.size(0), mW.size(1)}, 'f');
         pzxMean = current.mmuli(mW, pzxMean).addiRowVector(mB);
 
 

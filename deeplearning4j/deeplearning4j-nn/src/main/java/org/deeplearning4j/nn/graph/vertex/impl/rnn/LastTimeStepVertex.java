@@ -94,7 +94,7 @@ public class LastTimeStepVertex extends BaseGraphVertex {
             fwdPassTimeSteps = null; //Null -> last time step for all examples
         } else {
             val outShape = new long[] {inputs[0].size(0), inputs[0].size(1)};
-            out = workspaceMgr.create(ArrayType.ACTIVATIONS, outShape);
+            out = workspaceMgr.create(ArrayType.ACTIVATIONS, inputs[0].dataType(), outShape);
 
             //Want the index of the last non-zero entry in the mask array.
             //Check a little here by using mulRowVector([0,1,2,3,...]) and argmax
@@ -122,7 +122,7 @@ public class LastTimeStepVertex extends BaseGraphVertex {
     public Pair<Gradient, INDArray[]> doBackward(boolean tbptt, LayerWorkspaceMgr workspaceMgr) {
 
         //Allocate the appropriate sized array:
-        INDArray epsilonsOut = workspaceMgr.create(ArrayType.ACTIVATION_GRAD, fwdPassShape, 'f');
+        INDArray epsilonsOut = workspaceMgr.create(ArrayType.ACTIVATION_GRAD, epsilon.dataType(), fwdPassShape, 'f');
 
         if (fwdPassTimeSteps == null) {
             //Last time step for all examples

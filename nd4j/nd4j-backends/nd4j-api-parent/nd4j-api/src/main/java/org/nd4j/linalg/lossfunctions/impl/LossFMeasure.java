@@ -86,7 +86,7 @@ public class LossFMeasure extends DifferentialFunction implements ILossFunction 
     @Override
     public double computeScore(INDArray labels, INDArray preOutput, IActivation activationFn, INDArray mask,
                     boolean average) {
-
+        labels = labels.castTo(preOutput.dataType());   //No-op if already correct dtype
         double[] d = computeScoreNumDenom(labels, preOutput, activationFn, mask, average);
         double numerator = d[0];
         double denominator = d[1];
@@ -148,6 +148,7 @@ public class LossFMeasure extends DifferentialFunction implements ILossFunction 
 
     @Override
     public INDArray computeGradient(INDArray labels, INDArray preOutput, IActivation activationFn, INDArray mask) {
+        labels = labels.castTo(preOutput.dataType());   //No-op if already correct dtype
         double[] d = computeScoreNumDenom(labels, preOutput, activationFn, mask, false);
         double numerator = d[0];
         double denominator = d[1];

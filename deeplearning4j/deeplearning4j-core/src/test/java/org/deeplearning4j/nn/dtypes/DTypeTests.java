@@ -16,6 +16,7 @@ import org.nd4j.linalg.learning.config.Adam;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class DTypeTests extends BaseDL4JTest {
 
@@ -62,19 +63,36 @@ public class DTypeTests extends BaseDL4JTest {
         netFloat.computeGradientAndScore();
         double scoreFloat = netFloat.score();
         INDArray gradsFloat = netFloat.getFlattenedGradients();
-        INDArray uFloat = net.getUpdater().getStateViewArray();
+        INDArray uFloat = netFloat.getUpdater().getStateViewArray();
 
         assertEquals(scoreDouble, scoreFloat, 1e-6);
         assertEquals(outDouble.castTo(DataType.FLOAT), outFloat);
         assertEquals(grads.castTo(DataType.FLOAT), gradsFloat);
-        assertEquals(u.castTo(DataType.FLOAT), uFloat);
-
+        INDArray uCast = u.castTo(DataType.FLOAT);
+        assertTrue(uCast.equalsWithEps(uFloat, 1e-4));
 
         MultiLayerNetwork netFP16 = net.convertDataType(DataType.HALF);
         netFP16.initGradientsView();
         assertEquals(DataType.HALF, netFP16.params().dataType());
         assertEquals(DataType.HALF, netFP16.getFlattenedGradients().dataType());
         assertEquals(DataType.HALF, netFP16.getUpdater(true).getStateViewArray().dataType());
-    }
 
+        INDArray inH = inD.castTo(DataType.HALF);
+        INDArray lH = lD.castTo(DataType.HALF);
+        INDArray outHalf = netFP16.output(inH);
+        netFP16.setInput(inH);
+        netFP16.setLabels(lH);
+        netFP16.computeGradientAndScore();
+        double scoreHalf = netFP16.score();
+        INDArray gradsHalf = netFP16.getFlattenedGradients();
+        INDArray uHalf = netFP16.getUpdater().getStateViewArray();
+
+        assertEquals(scoreDouble, scoreHalf, 1e-4);
+        boolean outHalfEq = outDouble.castTo(DataType.HALF).equalsWithEps(outHalf, 1e-3);
+        assertTrue(outHalfEq);
+        boolean gradsHalfEq = grads.castTo(DataType.HALF).equalsWithEps(gradsHalf, 1e-3);
+        assertTrue(gradsHalfEq);
+        INDArray uHalfCast = u.castTo(DataType.HALF);
+        assertTrue(uHalfCast.equalsWithEps(uHalf, 1e-4));
+    }
 }

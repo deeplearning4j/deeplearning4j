@@ -100,7 +100,7 @@ public class StackVertex extends BaseGraphVertex {
             }
 
             outShape[2] = maxLength;
-            INDArray out = workspaceMgr.create(ArrayType.ACTIVATIONS, outShape);
+            INDArray out = workspaceMgr.create(ArrayType.ACTIVATIONS, inputs[0].dataType(), outShape);
             long numExamples = inputs[0].size(0);
             lastInputShapes = new long[inputs.length][0];
             for (int i = 0; i < inputs.length; i++) {

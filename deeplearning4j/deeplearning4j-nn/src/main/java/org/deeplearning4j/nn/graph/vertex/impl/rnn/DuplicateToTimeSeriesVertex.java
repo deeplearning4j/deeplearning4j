@@ -81,7 +81,7 @@ public class DuplicateToTimeSeriesVertex extends BaseGraphVertex {
         val tsLength = graph.getInput(inputVertexIndex).size(2);
         val outShape = new long[] {inputs[0].size(0), inputs[0].size(1), tsLength};
 
-        INDArray out = workspaceMgr.create(ArrayType.ACTIVATIONS, outShape, 'f');
+        INDArray out = workspaceMgr.create(ArrayType.ACTIVATIONS, inputs[0].dataType(), outShape, 'f');
         for (int i = 0; i < tsLength; i++) {
             out.put(new INDArrayIndex[] {NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.point(i)}, inputs[0]);
         }
@@ -91,7 +91,7 @@ public class DuplicateToTimeSeriesVertex extends BaseGraphVertex {
     @Override
     public Pair<Gradient, INDArray[]> doBackward(boolean tbptt, LayerWorkspaceMgr workspaceMgr) {
         //Because we duplicated for each time step: simply need to sum along time for errors/epsilons
-        INDArray ret = epsilon.sum(workspaceMgr.create(ArrayType.ACTIVATION_GRAD, epsilon.size(0), epsilon.size(1)), 2);
+        INDArray ret = epsilon.sum(workspaceMgr.create(ArrayType.ACTIVATION_GRAD, epsilon.dataType(), epsilon.size(0), epsilon.size(1)), 2);
         return new Pair<>(null, new INDArray[] {ret});
     }
 
