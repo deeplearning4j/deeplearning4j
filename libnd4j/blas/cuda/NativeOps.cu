@@ -2031,7 +2031,12 @@ specialBufferAndShapeWithOffset(void* vZ, Nd4jLong* hZShapeInfo, Nd4jLong* dZSha
 
     //makeBothBuffersActual();
     outBuffer = (void*)((int8_t*)vZ + offset * DataTypeUtils::sizeOfElement(zType));
-    cudaMalloc(&newShapeD, shape::shapeInfoLength(rank));
+    cudaError_t err = cudaMalloc(&newShapeD, shape::shapeInfoByteLength(rank));
+    if (err != 0) {
+        printf("Cannot allocate memory with error %d\n", err);
+        throw std::runtime_error("Cannot allocate memory for shape");
+    }
+
     cudaMemcpy(outShape, newShape, shape::shapeInfoLength(rank), cudaMemcpyHostToDevice);
     //NDArray result(bufferWithOffset(offset), specialBufferWithOffset(offset), newShape, _context, false, false);
 
@@ -2052,12 +2057,6 @@ specialBufferAndShapeWithOffset(void* vZ, Nd4jLong* hZShapeInfo, Nd4jLong* dZSha
         void *dZ, Nd4jLong *dZShapeInfo,
 		Nd4jPointer *tadPointers, Nd4jPointer *offsetPointers) {
 
-     printf("%p %p %p %p\n", data, inputShapeInfo, ddata, dinputShapeInfo);
-     printf("%p %p\n", hZ, hZShapeInfo, dZ, dZShapeInfo);
-     if (dZ == nullptr) std::runtime_error("Device buffer for output is not allocated yet.");
-     if (dZShapeInfo == nullptr) std::runtime_error("Device buffer for output shape is not allocated yet.");
-     if (ddata == nullptr) std::runtime_error("Device memory for input buffers is not allocated yet.");
-     if (dinputShapeInfo) std::runtime_error("Device memory for input shapes is not allocated yet.");
 	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 	auto hXShapeInfo = hZShapeInfo;
 	auto hShapePointers = reinterpret_cast<Nd4jLong **>(inputShapeInfo);
