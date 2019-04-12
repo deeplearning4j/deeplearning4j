@@ -2008,7 +2008,7 @@ BUILD_SINGLE_TEMPLATE(template void concatCudaLauncher, (const int numOfArrs, co
 		Nd4jPointer *tadPointers, Nd4jPointer *offsetPointers) {
 
      printf("%p %p %p %p\n", data, inputShapeInfo, ddata, dinputShapeInfo);
-     printf("%p %p\n", dZ, dZShapeInfo);
+     printf("%p %p\n", hZ, hZShapeInfo, dZ, dZShapeInfo);
      if (dZ == nullptr) std::runtime_error("Device buffer for output is not allocated yet.");
      if (dZShapeInfo == nullptr) std::runtime_error("Device buffer for output shape is not allocated yet.");
      if (ddata == nullptr) std::runtime_error("Device memory for input buffers is not allocated yet.");
