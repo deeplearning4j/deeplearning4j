@@ -94,6 +94,7 @@ public class DeallocatorService {
         @Override
         public void run() {
             boolean canRun = true;
+            long cnt = 0;
             while (canRun) {
                 try {
                     val reference = (DeallocatableReference) queue.remove();

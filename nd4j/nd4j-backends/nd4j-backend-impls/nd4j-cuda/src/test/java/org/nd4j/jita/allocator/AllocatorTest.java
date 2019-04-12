@@ -265,4 +265,11 @@ public class AllocatorTest {
         assertEquals(cachedBefore, cachedMiddle);
         assertTrue(cachedBefore < cachedAfter);
     }
+
+    @Test
+    public void testCyclicCreation() {
+        while (true) {
+            val array = Nd4j.scalar(100.0);
+        }
+    }
 }
