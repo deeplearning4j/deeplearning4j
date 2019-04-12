@@ -22,14 +22,8 @@
 
 namespace nd4j {
 
-
-    Nd4jLong* ShapeBuilders::createScalarShapeInfo(nd4j::DataType dataType, nd4j::memory::Workspace* workspace) {
-        auto res = createScalarShapeInfo(workspace);
-        nd4j::ArrayOptions::setDataType(res, dataType);
-        return res;
-    }
-
-    Nd4jLong* ShapeBuilders::createScalarShapeInfo(nd4j::memory::Workspace* workspace) {
+    
+    Nd4jLong* ShapeBuilders::createScalarShapeInfo(const nd4j::DataType dataType, nd4j::memory::Workspace* workspace) {
         Nd4jLong *newShape;
         ALLOCATE(newShape, workspace, shape::shapeInfoLength(0), Nd4jLong);
         newShape[0] = 0;
@@ -37,16 +31,12 @@ namespace nd4j {
         newShape[2] = 1;
         newShape[3] = 99;
 
+        nd4j::ArrayOptions::setDataType(newShape, dataType);
+
         return newShape;
     }
 
-    Nd4jLong* ShapeBuilders::createVectorShapeInfo(nd4j::DataType dataType, Nd4jLong length, nd4j::memory::Workspace *workspace) {
-        auto res = createVectorShapeInfo(length, workspace);
-        nd4j::ArrayOptions::setDataType(res, dataType);
-        return res;
-    }
-
-    Nd4jLong* ShapeBuilders::createVectorShapeInfo(Nd4jLong length, nd4j::memory::Workspace* workspace) {
+    Nd4jLong* ShapeBuilders::createVectorShapeInfo(const nd4j::DataType dataType, const Nd4jLong length, nd4j::memory::Workspace* workspace) {
         Nd4jLong *newShape;
         ALLOCATE(newShape, workspace, shape::shapeInfoLength(1), Nd4jLong);
 
@@ -57,27 +47,22 @@ namespace nd4j {
         newShape[4] = 1;
         newShape[5] = 99;
 
+        nd4j::ArrayOptions::setDataType(newShape, dataType);
+
         return newShape;
     }
 
-    Nd4jLong* ShapeBuilders::createShapeInfo(const nd4j::DataType dataType, const char order, const std::vector<Nd4jLong>& shapeOnly, memory::Workspace* workspace) {
-        auto res = createShapeInfo(order, shapeOnly, workspace);
-        nd4j::ArrayOptions::setDataType(res, dataType);
-        return res;
-    }
-
     ////////////////////////////////////////////////////////////////////////////////
-    Nd4jLong* ShapeBuilders::createShapeInfo(const char order, const std::vector<Nd4jLong>& shapeOnly, memory::Workspace* workspace) {
-        int rank = shapeOnly.size();
-
+    Nd4jLong* ShapeBuilders::createShapeInfo(const nd4j::DataType dataType, const char order, int rank, const Nd4jLong* shapeOnly, memory::Workspace* workspace) {
+    
         if (rank)
-        if(shapeOnly[0] == 0) // scalar case
-            rank = 0;
+            if(shapeOnly[0] == 0) // scalar case
+                rank = 0;
 
         Nd4jLong* shapeInfo = nullptr;
 
         if(rank == 0) {    // scalar case
-            shapeInfo = ShapeBuilders::createScalarShapeInfo(workspace);
+            shapeInfo = ShapeBuilders::createScalarShapeInfo(dataType, workspace);
         }
         else {
             ALLOCATE(shapeInfo, workspace, shape::shapeInfoLength(rank), Nd4jLong);
@@ -86,6 +71,7 @@ namespace nd4j {
                 shapeInfo[i + 1] = shapeOnly[i];
 
             shape::updateStrides(shapeInfo, order);
+            nd4j::ArrayOptions::setDataType(shapeInfo, dataType);
         }
 
         return shapeInfo;
@@ -96,6 +82,12 @@ namespace nd4j {
         ArrayOptions::setPropertyBit(shape, ARRAY_EMPTY);
         return shape;
     }
+
+////////////////////////////////////////////////////////////////////////////////
+Nd4jLong* ShapeBuilders::createShapeInfo(const nd4j::DataType dataType, const char order, const std::vector<Nd4jLong>& shapeOnly, memory::Workspace* workspace) {
+
+    return ShapeBuilders::createShapeInfo(dataType, order, shapeOnly.size(), shapeOnly.data(), workspace);
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 Nd4jLong* ShapeBuilders::createShapeInfo(const nd4j::DataType dataType, const char order, const std::initializer_list<Nd4jLong>& shapeOnly, memory::Workspace* workspace) {

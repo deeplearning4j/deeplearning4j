@@ -676,12 +676,10 @@ Nd4jLong* ShapeUtils::matrixProductShape(Nd4jLong* theFirstShape, Nd4jLong* theS
 
 
     if (shape::rank(tmpA) == 1 && shape::isMatrix(tmpB)) {
-        // special case here
-        Nd4jLong *newShape;
+        // special case here        
         shape[0] = 1;
         shape[1] = tmpB[2];
-        ALLOCATE(newShape, workspace, shape::shapeInfoLength(2), Nd4jLong);
-        shape::shapeBufferFortran(2, dtype, shape, newShape);
+        Nd4jLong *newShape = ShapeBuilders::createShapeInfo(dtype, 'f', 2, shape, workspace);        
 
         RELEASE(shape, workspace);
         RELEASE(tmpA, workspace);
@@ -728,9 +726,7 @@ Nd4jLong* ShapeUtils::matrixProductShape(Nd4jLong* theFirstShape, Nd4jLong* theS
         shape[1] = 1;
     }
 
-    Nd4jLong *newShape;
-    ALLOCATE(newShape, workspace, shape::shapeInfoLength(2), Nd4jLong);
-    shape::shapeBufferFortran(2, dtype, shape, newShape);
+    Nd4jLong *newShape = ShapeBuilders::createShapeInfo(dtype, 'f', 2, shape, workspace);
 
     RELEASE(shape, workspace);
 

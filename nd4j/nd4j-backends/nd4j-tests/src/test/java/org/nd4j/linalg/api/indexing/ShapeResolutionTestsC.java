@@ -312,6 +312,13 @@ public class ShapeResolutionTestsC extends BaseNd4jTest {
     }
 
 
+    @Test
+    public void testVectorPointIndex(){
+        INDArray arr = Nd4j.create(3L);
+        INDArray out = arr.get(NDArrayIndex.point(1));
+        assertArrayEquals(new long[]{}, out.shape());
+    }
+
 
     @Override
     public char ordering() {

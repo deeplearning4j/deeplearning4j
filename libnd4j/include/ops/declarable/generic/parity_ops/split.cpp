@@ -154,17 +154,10 @@ namespace ops {
                 shape[e] = shape::sizeAt(input, e) / num_splits;
             else 
                 shape[e] = shape::sizeAt(input, e);
-
         
-
         for (int e = 0; e < num_splits; e++) {
-            Nd4jLong *newShape;
-            ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(input), Nd4jLong);
-
-            if (shape::order(input) == 'c')
-                shape::shapeBuffer(shape.size(), dataType, shape.data(), newShape);
-            else
-                shape::shapeBufferFortran(shape.size(), dataType, shape.data(), newShape);
+            
+            Nd4jLong *newShape = ShapeBuilders::createShapeInfo(dataType, shape::order(input), shape, block.getWorkspace());            
             shapes->push_back(newShape);
         }
 

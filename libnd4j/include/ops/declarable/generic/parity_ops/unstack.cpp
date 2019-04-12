@@ -106,12 +106,7 @@ namespace nd4j {
 
             auto result = SHAPELIST();
             for (int e = 0; e < numTads; e++) {
-                Nd4jLong *newShape;
-                ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(shape.size()), Nd4jLong);
-                if (shape::order(inShape) == 'c')
-                    shape::shapeBuffer(shape.size(), ArrayOptions::dataType(inShape), shape.data(), newShape);
-                else
-                    shape::shapeBufferFortran(shape.size(), ArrayOptions::dataType(inShape), shape.data(), newShape);
+                Nd4jLong *newShape = ShapeBuilders::createShapeInfo(ArrayOptions::dataType(inShape), shape::order(inShape), shape, block.getWorkspace());
                 result->push_back(newShape);
             }
             return result;

@@ -1602,6 +1602,7 @@ TEST_F(GraphTests, Test_Inplace_Outputs_2) {
 #endif
 }
 
+/*
 TEST_F(GraphTests, Test_Minifier_1) {
     // run preprocessor to produce single header
     // if all ok - return value is 0, if error - non-zero value will be returned
@@ -1613,6 +1614,7 @@ TEST_F(GraphTests, Test_Minifier_1) {
     ASSERT_EQ(0, unlink("libnd4j_mini.hpp"));
 #endif
 }
+*/
 
 TEST_F(GraphTests, Test_Minifier_2) {
 

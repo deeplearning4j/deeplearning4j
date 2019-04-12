@@ -124,8 +124,8 @@ TEST_F(StdTest,MultiDimTest) {
 
 
 TEST_F(ReduceTest,MatrixTest) {
-    int opNum = 4;
-    auto xShapeInfo = shape::shapeBuffer(2,  nd4j::DataType::FLOAT32, shape);
+    int opNum = 4;    
+    auto xShapeInfo = nd4j::ShapeBuilders::createShapeInfo(nd4j::DataType::FLOAT32, 'c', 2, shape);
     //int *resultShapeInfo = shape::computeResultShape(xShapeInfo,dimension,dimensionLength);
     auto resultShapeInfo = nd4j::ShapeUtils::evalReduceShapeInfo('c', dim, xShapeInfo, false, true, nullptr);
     int resultLengthAssertion = 3;
