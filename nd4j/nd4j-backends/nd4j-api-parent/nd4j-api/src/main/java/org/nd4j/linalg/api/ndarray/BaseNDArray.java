@@ -6052,7 +6052,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         if (Nd4j.getMemoryManager().getCurrentWorkspace() == null) {
             if (!isView()) {
                 Nd4j.getExecutioner().commit();
-                DataBuffer buffer = Nd4j.createBuffer(this.length(), false);
+                DataBuffer buffer = Nd4j.createBuffer(this.dataType(), this.length(), false);
 
                 Nd4j.getMemoryManager().memcpy(buffer, this.data());
 
@@ -6071,7 +6071,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
             if (!isView()) {
                 Nd4j.getExecutioner().commit();
-                DataBuffer buffer = Nd4j.createBuffer(this.length(), false);
+                DataBuffer buffer = Nd4j.createBuffer(this.dataType(), this.length(), false);
 
                 //Pointer.memcpy(buffer.pointer(), this.data.pointer(), this.lengthLong() * Nd4j.sizeOfDataType(this.data.dataType()));
                 Nd4j.getMemoryManager().memcpy(buffer, this.data());
