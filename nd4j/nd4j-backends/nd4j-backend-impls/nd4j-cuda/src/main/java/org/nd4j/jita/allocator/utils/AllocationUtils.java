@@ -52,7 +52,6 @@ public class AllocationUtils {
      */
     public static AllocationShape buildAllocationShape(INDArray array) {
         AllocationShape shape = new AllocationShape();
-        shape.setStride(array.elementWiseStride());
         shape.setOffset(array.originalOffset());
         shape.setDataType(array.data().dataType());
         shape.setLength(array.length());
@@ -69,7 +68,6 @@ public class AllocationUtils {
      */
     public static AllocationShape buildAllocationShape(DataBuffer buffer) {
         AllocationShape shape = new AllocationShape();
-        shape.setStride(1);
         shape.setOffset(buffer.originalOffset());
         shape.setDataType(buffer.dataType());
         shape.setLength(buffer.length());
@@ -85,7 +83,6 @@ public class AllocationUtils {
      */
     public static AllocationShape buildAllocationShape(JCudaBuffer buffer) {
         AllocationShape shape = new AllocationShape();
-        shape.setStride(1);
         shape.setOffset(buffer.originalOffset());
         shape.setDataType(buffer.dataType());
         shape.setLength(buffer.length());

@@ -41,7 +41,7 @@ public class DeallocatorService {
     public DeallocatorService() {
         // we need to have at least 2 threads, but for CUDA we'd need at least numDevices threads, due to thread->device affinity
         int numDevices = Nd4j.getAffinityManager().getNumberOfDevices();
-        int numThreads = Math.max(2, numDevices * 5);
+        int numThreads = 2; //Math.max(2, numDevices * 5);
 
         deallocatorThreads = new Thread[numThreads];
         queues = new ReferenceQueue[numThreads];

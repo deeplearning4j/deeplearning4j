@@ -40,7 +40,6 @@ import org.nd4j.jita.allocator.utils.AllocationUtils;
 import org.nd4j.jita.conf.Configuration;
 import org.nd4j.jita.conf.CudaEnvironment;
 import org.nd4j.jita.flow.FlowController;
-import org.nd4j.jita.flow.impl.AsynchronousFlowController;
 import org.nd4j.jita.flow.impl.GridFlowController;
 import org.nd4j.jita.handler.MemoryHandler;
 import org.nd4j.jita.memory.MemoryProvider;
@@ -139,12 +138,6 @@ public class CudaZeroHandler implements MemoryHandler {
         this.INITIAL_LOCATION = configuration.getFirstMemory();
 
         switch (configuration.getExecutionModel()) {
-            case OPTIMIZED:
-            case ASYNCHRONOUS: {
-                this.flowController = new AsynchronousFlowController();
-                this.contextPool = new PackedContextPool();
-            }
-                break;
             case SEQUENTIAL: {
                 this.flowController = new GridFlowController();
                 this.contextPool = new LimitedContextPool();
@@ -801,18 +794,6 @@ public class CudaZeroHandler implements MemoryHandler {
             }
         }
         */
-        // here's the place, where we do care about promotion. but we only care about promotion of original  buffers
-        if (dstPoint.getAllocationStatus() == AllocationStatus.HOST && buffer.offset() == 0 && 1 < 0) {
-            if (dstPoint.getDeviceTicks() > configuration.getMinimumRelocationThreshold()) {
-                // at this point we know, that this request is done withing some existent context
-                long requiredMemory = AllocationUtils.getRequiredMemory(dstPoint.getShape());
-                if (deviceMemoryTracker.reserveAllocationIfPossible(Thread.currentThread().getId(), getDeviceId(),
-                                requiredMemory) && pingDeviceForFreeMemory(getDeviceId(), requiredMemory)) {
-                    // so, memory is reserved
-                    promoteObject(buffer);
-                }
-            }
-        }
 
 
         // if that's device state, we probably might want to update device memory state

@@ -29,8 +29,7 @@ import org.nd4j.linalg.api.buffer.DataType;
 public class AllocationShape {
     private long offset = 0;
     private long length = 0;
-    private int stride = 1;
-    private int elementSize = 0;
+    private byte elementSize = 0;
     private DataType dataType = DataType.FLOAT;
 
     /*
@@ -41,8 +40,16 @@ public class AllocationShape {
     */
     public AllocationShape(long length, int elementSize, DataType dataType) {
         this.length = length;
-        this.elementSize = elementSize;
+        this.elementSize = (byte) elementSize;
         this.dataType = dataType;
+    }
+
+    public int getElementSize() {
+        return elementSize;
+    }
+
+    public void setElementSize(int elementSize) {
+        this.elementSize = (byte) elementSize;
     }
 
 

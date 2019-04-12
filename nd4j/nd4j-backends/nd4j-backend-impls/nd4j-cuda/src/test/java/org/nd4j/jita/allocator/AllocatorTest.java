@@ -267,9 +267,19 @@ public class AllocatorTest {
     }
 
     @Test
-    public void testCyclicCreation() {
+    public void testCyclicCreation() throws Exception {
+        val timeStart = System.currentTimeMillis();
+
         while (true) {
             val array = Nd4j.scalar(100.0);
+
+            val timeEnd = System.currentTimeMillis();
+            if (timeEnd - timeStart > 5 * 60 * 1000) {
+                log.info("Exiting...");
+                break;
+            }
         }
+
+        Thread.sleep(100000000L);
     }
 }
