@@ -2003,8 +2003,9 @@ specialBufferAndShapeWithOffset(void* vZ, Nd4jLong* hZShapeInfo, Nd4jLong* dZSha
     const int rank = shape::rank(hZShapeInfo);
     Nd4jLong *newShape = new Nd4jLong[shape::shapeInfoLength(rank)];
     Nd4jLong *newShapeD;
-    //ALLOCATE(newShape, nullptr, , Nd4jLong);
-    memcpy(newShape, hZShapeInfo, shape::shapeInfoByteLength(rank));
+    //ALLOCATE(newShape, nullptr, , Nd4jLong)
+    auto shapeSize = shape::shapeInfoByteLength(rank);
+    memcpy(newShape, hZShapeInfo, shapeSize);
 
     auto shapeOf = shape::shapeOf(newShape);
     auto stridesOf = shape::stride(newShape);
@@ -2035,13 +2036,13 @@ specialBufferAndShapeWithOffset(void* vZ, Nd4jLong* hZShapeInfo, Nd4jLong* dZSha
 
     //makeBothBuffersActual();
     outBuffer = (void*)((int8_t*)vZ + offset * DataTypeUtils::sizeOfElement(zType));
-    cudaError_t err = cudaMalloc(&newShapeD, shape::shapeInfoByteLength(rank));
+    cudaError_t err = cudaMalloc(&newShapeD, shapeSize);
     if (err != 0) {
         printf("Cannot allocate memory with error %d\n", err);
         throw std::runtime_error("Cannot allocate memory for shape");
     }
-
-    cudaMemcpy(outShape, newShape, shape::shapeInfoLength(rank), cudaMemcpyHostToDevice);
+    outShape = newShapeD;
+    cudaMemcpy(outShape, newShape, shapeSize, cudaMemcpyHostToDevice);
     //NDArray result(bufferWithOffset(offset), specialBufferWithOffset(offset), newShape, _context, false, false);
 
     delete [] newShape;
