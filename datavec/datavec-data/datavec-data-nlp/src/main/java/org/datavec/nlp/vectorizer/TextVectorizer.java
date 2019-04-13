@@ -55,8 +55,9 @@ public abstract class TextVectorizer<VECTOR_TYPE> implements Vectorizer<VECTOR_T
     public void initialize(Configuration conf) {
         tokenizerFactory = createTokenizerFactory(conf);
         minWordFrequency = conf.getInt(MIN_WORD_FREQUENCY, 5);
-        stopWords = conf.getStringCollection(STOP_WORDS);
-        if (stopWords == null || stopWords.isEmpty())
+        if(conf.get(STOP_WORDS) != null)
+            stopWords = conf.getStringCollection(STOP_WORDS);
+        if (stopWords == null)
             stopWords = StopWords.getStopWords();
 
         String clazz = conf.get(VOCAB_CACHE, DefaultVocabCache.class.getName());

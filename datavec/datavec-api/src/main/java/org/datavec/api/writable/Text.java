@@ -279,7 +279,7 @@ public class Text extends BinaryComparable implements WritableComparable<BinaryC
      * @see Writable#write(DataOutput)
      */
     public void write(DataOutput out) throws IOException {
-        WritableUtils.writeVInt(out, length);
+        //WritableUtils.writeVInt(out, length);
         out.write(bytes, 0, length);
     }
 
