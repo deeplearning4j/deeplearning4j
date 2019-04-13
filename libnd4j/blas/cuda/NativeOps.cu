@@ -1974,8 +1974,6 @@ __global__ static void concatCuda(const int numOfArrs, void* pVx,  void* pxShape
         xShapeInfo = reinterpret_cast<Nd4jLong**>(pxShapeInfo)[arrIdx];
         zShapeInfo = reinterpret_cast<Nd4jLong**>(pzShapeInfo)[arrIdx];
         arrLen = shape::length(xShapeInfo);
-        printf("Input arr shape is %p\n", xShapeInfo);
-        printf("Output arr shape is %p\n", zShapeInfo);
         arrLenPerBlock = (arrLen + blocksPerArr - 1) / blocksPerArr;  // ceil
 
         start = (blockIdx.x % blocksPerArr) * arrLenPerBlock;
@@ -1985,9 +1983,7 @@ __global__ static void concatCuda(const int numOfArrs, void* pVx,  void* pxShape
     __syncthreads();
 
     for (Nd4jLong i = start + threadIdx.x; i < end; i += blockDim.x) {
-        shape::printShapeInfoLinear(xShapeInfo);
-        shape::printShapeInfoLinear(zShapeInfo);
-        //z[shape::getIndexOffset(i, zShapeInfo, arrLen)] = x[shape::getIndexOffset(i, xShapeInfo, arrLen)];
+        z[shape::getIndexOffset(i, zShapeInfo, arrLen)] = x[shape::getIndexOffset(i, xShapeInfo, arrLen)];
     }
 }
 template<typename T>
@@ -1998,11 +1994,10 @@ __host__ static void concatCudaLauncher(const int numOfArrs, const cudaStream_t 
 BUILD_SINGLE_TEMPLATE(template void concatCudaLauncher, (const int numOfArrs, const cudaStream_t *stream,  void* pVx, void* pxShapeInfo, void* pVz, void* pzShapeInfo), LIBND4J_TYPES);
 
 static void
-specialBufferAndShapeWithOffset(void* vZ, Nd4jLong* hZShapeInfo, Nd4jLong* dZShapeInfo, std::vector<Nd4jLong> const& idx, void* outBuffer, Nd4jLong* outShape) {
+specialBufferAndShapeWithOffset(void* vZ, Nd4jLong* hZShapeInfo, Nd4jLong* dZShapeInfo, std::vector<Nd4jLong> const& idx, void*& outBuffer, Nd4jLong*& outShape) {
     auto zType = nd4j::ArrayOptions::dataType(hZShapeInfo);
     const int rank = shape::rank(hZShapeInfo);
-    Nd4jLong *newShape = new Nd4jLong[shape::shapeInfoLength(rank)];
-    Nd4jLong *newShapeD;
+    Nd4jLong* newShape = new Nd4jLong[shape::shapeInfoLength(rank)];
     //ALLOCATE(newShape, nullptr, , Nd4jLong)
     auto shapeSize = shape::shapeInfoByteLength(rank);
     memcpy(newShape, hZShapeInfo, shapeSize);
@@ -2036,15 +2031,12 @@ specialBufferAndShapeWithOffset(void* vZ, Nd4jLong* hZShapeInfo, Nd4jLong* dZSha
 
     //makeBothBuffersActual();
     outBuffer = (void*)((int8_t*)vZ + offset * DataTypeUtils::sizeOfElement(zType));
-    cudaError_t err = cudaMalloc(&newShapeD, shapeSize);
+    cudaError_t err = cudaMalloc(&outShape, shapeSize);
     if (err != 0) {
         printf("Cannot allocate memory with error %d\n", err);
         throw std::runtime_error("Cannot allocate memory for shape");
     }
-    outShape = newShapeD;
     cudaMemcpy(outShape, newShape, shapeSize, cudaMemcpyHostToDevice);
-    //NDArray result(bufferWithOffset(offset), specialBufferWithOffset(offset), newShape, _context, false, false);
-
     delete [] newShape;
 }
 
@@ -2062,19 +2054,12 @@ specialBufferAndShapeWithOffset(void* vZ, Nd4jLong* hZShapeInfo, Nd4jLong* dZSha
         void *dZ, Nd4jLong *dZShapeInfo,
 		Nd4jPointer *tadPointers, Nd4jPointer *offsetPointers) {
 
-	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
-	auto hXShapeInfo = hZShapeInfo;
-	auto hShapePointers = reinterpret_cast<Nd4jLong **>(inputShapeInfo);
-	// numArrays will be used as number of TADs, so each block process 1 input
-    //concatCudaLauncher(numArrays, stream,  ddata, dinputShapeInfo, dZ, dZShapeInfo);
+    cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
+    auto hXShapeInfo = hZShapeInfo;
+    auto hShapePointers = reinterpret_cast<Nd4jLong **>(inputShapeInfo);
+    // numArrays will be used as number of TADs, so each block process 1 input
     auto zType = nd4j::ArrayOptions::dataType(hZShapeInfo);
     auto axis = dimension;
-    //NDArray tempOutput(hZ, hZShapeInfo);
-    //tempOutput.setSpecialBuffers(dZ, dZShapeInfo);
-    //BUILD_SINGLE_SELECTOR(zType, concatCudaLauncher, (numArrays, stream, ddata, dinputShapeInfo, dZ, dZShapeInfo), LIBND4J_TYPES);
-    //const int numOfArrs = inArrs.size();
-//    for(int i = 0; i < numOfArrs; ++i)
-//        if(!inArrs[i]->isActualOnDeviceSide()) inArrs[i]->syncToDevice();
 
     const int rank  = shape::rank(reinterpret_cast<Nd4jLong*>(inputShapeInfo[0]));
     const int rank2 = 2 * rank;
@@ -2118,9 +2103,14 @@ specialBufferAndShapeWithOffset(void* vZ, Nd4jLong* hZShapeInfo, Nd4jLong* dZSha
     BUILD_SINGLE_SELECTOR(zType, concatCudaLauncher, (numArrays, stream, dInBuffers, dInShapeInfo, dOutBuffers, dOutShapeInfo), LIBND4J_TYPES);
 
     manager.synchronize();
-
-    for(int i = 0; i < numArrays; ++i)
-        cudaFree(outSubArrsShapes[i]);
+    cudaError_t err;
+    for(int i = 0; i < numArrays; ++i) {
+        err = cudaFree(outSubArrsShapes[i]);
+        if (err != 0) {
+            printf("Error %d occured when shape %i was deallocating.\n", err, i);
+            throw std::runtime_error("Cannot deallocate memory for shapes.");
+        }
+    }
 
 //    for(int i = 0; i < numOfArrs; ++i)
 //        inArrs[i]->tickReadHost();
