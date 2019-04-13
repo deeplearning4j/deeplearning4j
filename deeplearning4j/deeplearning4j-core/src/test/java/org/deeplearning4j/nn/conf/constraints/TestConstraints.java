@@ -66,7 +66,7 @@ public class TestConstraints extends BaseDL4JTest {
 
             MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                     .updater(new Sgd(0.0))
-                    .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 5))
+                    .dist(new NormalDistribution(0, 5))
                     .list()
                     .layer(new LSTM.Builder().nIn(12).nOut(10)
                             .constrainRecurrent(lc).build())
@@ -118,7 +118,7 @@ public class TestConstraints extends BaseDL4JTest {
 
             MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                     .updater(new Sgd(0.0))
-                    .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 5))
+                    .dist(new NormalDistribution(0, 5))
                     .biasInit(10.0)
                     .list()
                     .layer(new DenseLayer.Builder().nIn(12).nOut(10)
@@ -171,7 +171,7 @@ public class TestConstraints extends BaseDL4JTest {
 
             MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                     .updater(new Sgd(0.0))
-                    .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 5))
+                    .dist(new NormalDistribution(0, 5))
                     .list()
                     .layer(new DenseLayer.Builder().nIn(12).nOut(10)
                             .constrainWeights(lc).build())
@@ -223,7 +223,7 @@ public class TestConstraints extends BaseDL4JTest {
 
             MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                     .updater(new Sgd(0.0))
-                    .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 5))
+                    .dist(new NormalDistribution(0, 5))
                     .biasInit(0.2)
                     .list()
                     .layer(new DenseLayer.Builder().nIn(12).nOut(10)
@@ -284,7 +284,7 @@ public class TestConstraints extends BaseDL4JTest {
 
             MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                     .updater(new Sgd(0.0))
-                    .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 5))
+                    .dist(new NormalDistribution(0, 5))
                     .biasInit(0.2)
                     .list()
                     .layer(new DenseLayer.Builder().nIn(12).nOut(10)
@@ -345,7 +345,7 @@ public class TestConstraints extends BaseDL4JTest {
             MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                     .constrainWeights(lc)
                     .updater(new Sgd(0.0))
-                    .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0,5))
+                    .dist(new NormalDistribution(0,5))
                     .biasInit(1)
                     .list()
                     .layer(new DenseLayer.Builder().nIn(12).nOut(10).build())

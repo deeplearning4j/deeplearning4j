@@ -19,7 +19,9 @@ package org.nd4j.linalg.string;
 import lombok.Getter;
 import lombok.Setter;
 import org.apache.commons.lang3.StringUtils;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.text.DecimalFormat;
@@ -151,19 +153,30 @@ public class NDArrayStrings {
     private String format(INDArray arr, int offset, boolean summarize) {
         int rank = arr.rank();
         if (arr.isScalar()) {
-            //true scalar i.e shape = [] not legacy which is [1,1]
-            double arrElement = arr.getDouble(0);
-            if (!dontOverrideFormat && ((Math.abs(arrElement) < this.minToPrintWithoutSwitching && arrElement!= 0) || (Math.abs(arrElement) >= this.maxToPrintWithoutSwitching))) {
-                //switch to scientific notation
-                String asString = localeIndifferentDecimalFormat(scientificFormat).format(arrElement);
-                //from E to small e
-                asString = asString.replace('E','e');
-                return asString;
-            }
-            else {
-                if (arr.getDouble(0) == 0) return "0";
-                return decimalFormat.format(arr.getDouble(0));
-            }
+            if (arr.isR()) {
+                //true scalar i.e shape = [] not legacy which is [1,1]
+                double arrElement = arr.getDouble(0);
+                if (!dontOverrideFormat && ((Math.abs(arrElement) < this.minToPrintWithoutSwitching && arrElement != 0) || (Math.abs(arrElement) >= this.maxToPrintWithoutSwitching))) {
+                    //switch to scientific notation
+                    String asString = localeIndifferentDecimalFormat(scientificFormat).format(arrElement);
+                    //from E to small e
+                    asString = asString.replace('E', 'e');
+                    return asString;
+                } else {
+                    if (arr.getDouble(0) == 0) return "0";
+                    return decimalFormat.format(arr.getDouble(0));
+                }
+            } else if (arr.isZ()) {
+                long arrElement = arr.getLong(0);
+                return String.valueOf(arrElement);
+            } else if (arr.isB()) {
+                long arrElement = arr.getLong(0);
+                return arrElement == 0 ? "false" : "true";
+            } else if (arr.dataType() == DataType.UTF8){
+                String s = arr.getStringUnsafe(0);
+                return "\"" + s.replaceAll("\n","\\n") + "\"";
+            } else
+                throw new ND4JIllegalStateException();
         } else if (rank == 1) {
             //true vector
             return vectorToString(arr, summarize);
@@ -226,19 +239,31 @@ public class NDArrayStrings {
                 // immediately jump to the last elements so we only print ellipsis once
                 i = Math.max(i, (int) l - 4);
             } else {
-                double arrElement = arr.getDouble(i);
-                if (!dontOverrideFormat && ((Math.abs(arrElement) < this.minToPrintWithoutSwitching && arrElement != 0) || (Math.abs(arrElement) >= this.maxToPrintWithoutSwitching))) {
-                    //switch to scientific notation
-                    String asString = localeIndifferentDecimalFormat(scientificFormat).format(arrElement);
-                    //from E to small e
-                    asString = asString.replace('E', 'e');
-                    sb.append(String.format("%1$" + padding + "s", asString));
-                } else {
-                    if (arrElement == 0) {
-                        sb.append(String.format("%1$" + padding + "s", 0));
+                if (arr.isR()) {
+                    double arrElement = arr.getDouble(i);
+                    if (!dontOverrideFormat && ((Math.abs(arrElement) < this.minToPrintWithoutSwitching && arrElement != 0) || (Math.abs(arrElement) >= this.maxToPrintWithoutSwitching))) {
+                        //switch to scientific notation
+                        String asString = localeIndifferentDecimalFormat(scientificFormat).format(arrElement);
+                        //from E to small e
+                        asString = asString.replace('E', 'e');
+                        sb.append(String.format("%1$" + padding + "s", asString));
                     } else {
-                        sb.append(String.format("%1$" + padding + "s", decimalFormat.format(arrElement)));
+                        if (arrElement == 0) {
+                            sb.append(String.format("%1$" + padding + "s", 0));
+                        } else {
+                            sb.append(String.format("%1$" + padding + "s", decimalFormat.format(arrElement)));
+                        }
                     }
+                } else if (arr.isZ()) {
+                    long arrElement = arr.getLong(i);
+                    sb.append(String.format("%1$" + padding + "s", arrElement));
+                } else if (arr.isB()) {
+                    long arrElement = arr.getLong(i);
+                    sb.append(String.format("%1$" + padding + "s", arrElement == 0 ? "false" : "true"));
+                } else if(arr.dataType() == DataType.UTF8){
+                    String s = arr.getStringUnsafe(i);
+                    s = "\"" + s.replaceAll("\n", "\\n") + "\"";
+                    sb.append(s);
                 }
             }
             if (i < l - 1) {

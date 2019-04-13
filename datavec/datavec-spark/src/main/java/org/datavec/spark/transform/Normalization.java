@@ -233,7 +233,7 @@ public class Normalization {
      * and mean of the given columns
      * The list returned is a list of size 2 where each row
      * represents the standard deviation of each column and the mean of each column
-     * @param data the data to get the standard deviation and mean for for
+     * @param data the data to get the standard deviation and mean for
      * @param columns the columns to get the
      * @return
      */
@@ -253,8 +253,7 @@ public class Normalization {
      */
     public static List<Row> aggregate(DataRowsFacade data, String[] columns, String[] functions) {
         String[] rest = new String[columns.length - 1];
-        for (int i = 0; i < rest.length; i++)
-            rest[i] = columns[i + 1];
+        System.arraycopy(columns, 1, rest, 0, rest.length);
         List<Row> rows = new ArrayList<>();
         for (String op : functions) {
             Map<String, String> expressions = new ListOrderedMap();

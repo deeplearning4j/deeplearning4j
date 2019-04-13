@@ -30,32 +30,34 @@ namespace helpers {
 
 ///////////////////////////////////////////////////////////////////
 template <typename T>
-void stack(const std::vector<NDArray<T>*>& inArrs, NDArray<T>& outArr, const int dim) {
+static void stack_(const std::vector<NDArray*>& inArrs, NDArray& outArr, const int dim) {
 
 	if(inArrs[0]->rankOf() == 0) {
+	    int inSize = inArrs.size();
 
-#pragma omp parallel for if(inArrs.size() > Environment::getInstance()->elementwiseThreshold()) schedule(guided)
-		for(int i=0; i < inArrs.size(); ++i)
-			outArr(i) = (*inArrs[i])(0.);
+        PRAGMA_OMP_PARALLEL_FOR_IF(inSize > Environment::getInstance()->tadThreshold())
+		for(int i=0; i < inSize; ++i)
+			outArr.p(i, inArrs[i]->e<T>(0));
 	}
 	else {
 
-		std::vector<int> dimsToExclude = ShapeUtils<T>::evalDimsToExclude(outArr.rankOf(), {dim});	
-		ResultSet<T>* list = outArr.allTensorsAlongDimension(dimsToExclude);		// list.size() == block.width()
-		
-#pragma omp parallel for if(list->size() > Environment::getInstance()->elementwiseThreshold()) schedule(guided)
-		for(int i=0; i<list->size(); ++i)
+		std::vector<int> dimsToExclude = ShapeUtils::evalDimsToExclude(outArr.rankOf(), {dim});
+		auto list = outArr.allTensorsAlongDimension(dimsToExclude);		// list.size() == block.width()
+        int listSize = list->size();
+
+        PRAGMA_OMP_PARALLEL_FOR_IF(listSize > Environment::getInstance()->tadThreshold())
+		for(int i=0; i<listSize; ++i)
 			list->at(i)->assign(inArrs[i]);
 		
 		delete list;
 	}
 }
 
+	void stack(const std::vector<NDArray*>& inArrs, NDArray& outArr, const int dim) {
+		BUILD_SINGLE_SELECTOR(outArr.dataType(), stack_, (inArrs, outArr, dim), LIBND4J_TYPES);
+	}
 
-template void stack<float>  (const std::vector<NDArray<float  >*>& inArrs, NDArray<float  >& outArr, const int dim);
-template void stack<float16>(const std::vector<NDArray<float16>*>& inArrs, NDArray<float16>& outArr, const int dim);
-template void stack<double> (const std::vector<NDArray<double >*>& inArrs, NDArray<double >& outArr, const int dim);
-
+	BUILD_SINGLE_TEMPLATE(template void stack_ , (const std::vector<NDArray*>& inArrs, NDArray& outArr, const int dim), LIBND4J_TYPES);
 
 }
 }

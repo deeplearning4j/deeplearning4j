@@ -28,11 +28,11 @@ namespace ops     {
 namespace helpers {
 
 
-	template <typename T>
-	void lstmCell(const std::vector<NDArray<T>*>& inArrs, const std::vector<NDArray<T>*>& outArrs, const std::vector<T>& params);
+	void lstmCell(const NDArray* xt, const NDArray* ht_1, const NDArray* ct_1, const NDArray* Wx, const NDArray* Wh, const NDArray* Wc, const NDArray* Wp, const NDArray* b,
+                  NDArray* ht, NDArray* ct, const std::vector<double>& params);
 
-	template <typename T>
-	void lstmTimeLoop(const std::vector<NDArray<T>*>& inArrs, const std::vector<NDArray<T>*>& outArrs, const std::vector<T>& params);
+	void lstmTimeLoop(const NDArray* x, const NDArray* h0, const NDArray* c0, const NDArray* Wx, const NDArray* Wh, const NDArray* Wc, const NDArray* Wp, const NDArray* b,
+                      NDArray* h, NDArray* c, const std::vector<double>& params);
 	
     
 

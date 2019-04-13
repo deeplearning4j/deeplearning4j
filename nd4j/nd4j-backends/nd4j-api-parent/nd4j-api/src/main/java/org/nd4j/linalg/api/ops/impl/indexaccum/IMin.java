@@ -38,16 +38,12 @@ public class IMin extends BaseIndexAccumulation {
     public IMin() {
     }
 
-    public IMin(INDArray x, INDArray y, long n) {
-        super(x, y, n);
+    public IMin(INDArray x, int... dimensions) {
+        super(x, dimensions);
     }
 
-    public IMin(INDArray x) {
-        super(x);
-    }
-
-    public IMin(INDArray x, INDArray y) {
-        super(x, y);
+    public IMin(INDArray x, INDArray z, int... dimensions) {
+        super(x, z, dimensions);
     }
 
 
@@ -60,23 +56,6 @@ public class IMin extends BaseIndexAccumulation {
     public String opName() {
         return "imin";
     }
-
-
-    @Override
-    public float zeroFloat() {
-        return Float.MAX_VALUE;
-    }
-
-    @Override
-    public double zeroDouble() {
-        return Double.MAX_VALUE;
-    }
-
-    @Override
-    public float zeroHalf() {
-        return 65503.0f;
-    }
-
 
     @Override
     public String onnxName() {

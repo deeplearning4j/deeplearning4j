@@ -21,9 +21,11 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.base.Preconditions;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.imports.descriptors.properties.PropertyMapping;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.util.ArrayUtil;
@@ -170,27 +172,6 @@ public class StridedSlice extends DynamicCustomOp {
 
         addIArgument((int) nm.getI());
         addIArgument((int) sm.getI());
-
-        val beginArr = TFGraphMapper.getInstance().getNDArrayFromTensor("value",beginNode,graph);
-        val endArr = TFGraphMapper.getInstance().getNDArrayFromTensor("value",endNode,graph);
-        val stridesArr = TFGraphMapper.getInstance().getNDArrayFromTensor("value",strides,graph);
-
-        if (beginArr != null && endArr != null && stridesArr != null) {
-
-            for (int e = 0; e < beginArr.length(); e++)
-                addIArgument(beginArr.getInt(e));
-
-            for (int e = 0; e <  endArr.length(); e++)
-                addIArgument(endArr.getInt(e));
-
-            for (int e = 0; e < stridesArr.length(); e++)
-                addIArgument(stridesArr.getInt(e));
-        } else {
-            // do nothing
-        }
-
-
-
     }
 
 
@@ -268,8 +249,23 @@ public class StridedSlice extends DynamicCustomOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
-        return Collections.singletonList(f().stridedSliceBp(arg(), i_v.get(0), begin, end, strides, beginMask, endMask,
-                ellipsisMask, newAxisMask, shrinkAxisMask));
+        if(args().length == 1) {
+            //Array inputs for begin/end/strides
+            return Collections.singletonList(f().stridedSliceBp(arg(), i_v.get(0), begin, end, strides, beginMask, endMask,
+                    ellipsisMask, newAxisMask, shrinkAxisMask));
+        } else {
+            //SDVariable inputs for begin/end/strides
+            return Collections.singletonList(f().stridedSliceBp(arg(), i_v.get(0), arg(1), arg(2), arg(3), beginMask, endMask,
+                    ellipsisMask, newAxisMask, shrinkAxisMask));
+        }
+    }
+
+    @Override
+    public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes){
+        Preconditions.checkState(dataTypes != null && (dataTypes.size() == 1 || dataTypes.size() == 4),
+                "Expected 1 or 4 input datatypes for %s, got %s", getClass(), dataTypes);
+        //Output type is same as input type. 1 or 4 depending on whether using iargs or arrays (for TF import etc)
+        return Collections.singletonList(dataTypes.get(0));
     }
 
 }

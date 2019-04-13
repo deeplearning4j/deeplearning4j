@@ -17,9 +17,8 @@
 package org.deeplearning4j.earlystopping.scorecalc;
 
 import org.deeplearning4j.earlystopping.scorecalc.base.BaseIEvaluationScoreCalculator;
-import org.deeplearning4j.eval.RegressionEvaluation;
 import org.deeplearning4j.nn.api.Model;
-import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
+import org.nd4j.evaluation.regression.RegressionEvaluation;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 
 /**

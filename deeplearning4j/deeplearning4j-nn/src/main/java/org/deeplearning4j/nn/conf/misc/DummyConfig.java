@@ -21,6 +21,9 @@ import org.deeplearning4j.nn.api.TrainingConfig;
 import org.deeplearning4j.nn.conf.GradientNormalization;
 import org.nd4j.linalg.learning.config.IUpdater;
 import org.nd4j.linalg.learning.config.NoOp;
+import org.nd4j.linalg.learning.regularization.Regularization;
+
+import java.util.List;
 
 /**
  * A 'dummy' training configuration for use in frozen layers
@@ -37,18 +40,8 @@ public class DummyConfig implements TrainingConfig {
     }
 
     @Override
-    public boolean isPretrain() {
-        return false;
-    }
-
-    @Override
-    public double getL1ByParam(String paramName) {
-        return 0;
-    }
-
-    @Override
-    public double getL2ByParam(String paramName) {
-        return 0;
+    public List<Regularization> getRegularizationByParam(String paramName) {
+        return null;
     }
 
     @Override
@@ -69,10 +62,5 @@ public class DummyConfig implements TrainingConfig {
     @Override
     public double getGradientNormalizationThreshold() {
         return 1.0;
-    }
-
-    @Override
-    public void setPretrain(boolean pretrain) {
-        //No op
     }
 }

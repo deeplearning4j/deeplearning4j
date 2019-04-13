@@ -20,7 +20,9 @@ import lombok.val;
 import org.apache.commons.lang3.NotImplementedException;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.base.Preconditions;
 import org.nd4j.imports.descriptors.properties.PropertyMapping;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
@@ -32,12 +34,16 @@ import java.util.*;
  *
  */
 public class ConfusionMatrix extends DynamicCustomOp {
+    public static final DataType DEFAULT_DTYPE = DataType.INT;
+
+    private DataType outputType = DEFAULT_DTYPE;
 
     public ConfusionMatrix(){
     }
 
-    public ConfusionMatrix(SameDiff sameDiff, SDVariable labels, SDVariable pred){
+    public ConfusionMatrix(SameDiff sameDiff, SDVariable labels, SDVariable pred, DataType dataType){
         super(null, sameDiff, new SDVariable[]{labels, pred});
+        this.outputType = dataType;
     }
 
     public ConfusionMatrix(SameDiff sameDiff, SDVariable labels, SDVariable pred, SDVariable weights){
@@ -57,6 +63,7 @@ public class ConfusionMatrix extends DynamicCustomOp {
     @Override
     public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
         super.initFromTensorFlow(nodeDef, initWith, attributesForNode, graph);
+        //Looks like this is implemented in practice using a large collection of discrete ops - not single TF import op?
     }
 
     @Override
@@ -78,5 +85,10 @@ public class ConfusionMatrix extends DynamicCustomOp {
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v){
         return Arrays.asList(sameDiff.zerosLike(arg(0)), sameDiff.zerosLike(arg(1)));
+    }
+
+    @Override
+    public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes){
+        return Collections.singletonList(outputType);
     }
 }

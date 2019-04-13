@@ -36,11 +36,11 @@ import java.util.Collections;
 import java.util.Map;
 
 /**
- * LSTM recurrent neural network layer without peephole connections.
- * Supports CuDNN acceleration - see <a href="https://deeplearning4j.org/cudnn>https://deeplearning4j.org/cudnn</a> for details
+ * LSTM recurrent neural network layer without peephole connections. Supports CuDNN acceleration - see <a
+ * href="https://deeplearning4j.org/docs/latest/deeplearning4j-config-cudnn">https://deeplearning4j.org/docs/latest/deeplearning4j-config-cudnn</a> for details
  *
- * @see GravesLSTM GravesLSTM class for an alternative LSTM (with peephole connections)
  * @author Alex Black
+ * @see GravesLSTM GravesLSTM class for an alternative LSTM (with peephole connections)
  */
 @Data
 @NoArgsConstructor
@@ -59,10 +59,10 @@ public class LSTM extends AbstractLSTM {
     }
 
     @Override
-    protected void initializeConstraints(org.deeplearning4j.nn.conf.layers.Layer.Builder<?> builder){
+    protected void initializeConstraints(org.deeplearning4j.nn.conf.layers.Layer.Builder<?> builder) {
         super.initializeConstraints(builder);
-        if(((Builder)builder).recurrentConstraints != null){
-            if(constraints == null){
+        if (((Builder) builder).recurrentConstraints != null) {
+            if (constraints == null) {
                 constraints = new ArrayList<>();
             }
             for (LayerConstraint c : ((Builder) builder).recurrentConstraints) {
@@ -98,7 +98,7 @@ public class LSTM extends AbstractLSTM {
         return LSTMHelpers.getMemoryReport(this, inputType);
     }
 
-    @AllArgsConstructor
+    @NoArgsConstructor
     public static class Builder extends AbstractLSTM.Builder<Builder> {
 
 

@@ -33,9 +33,9 @@ namespace nd4j {
             // FIXME: this is obviously bad
             auto result = list->stack();
 
-            OVERWRITE_RESULT(result);
-
-            return ND4J_STATUS_OK;
+            //OVERWRITE_RESULT(result);
+            setupResult(result, block);
+            return Status::OK();
         }
         DECLARE_SYN(TensorArrayConcatV3, stack_list);
         DECLARE_SYN(tensorarrayconcatv3, stack_list);

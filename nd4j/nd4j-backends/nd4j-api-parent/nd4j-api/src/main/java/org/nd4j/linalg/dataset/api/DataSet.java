@@ -96,8 +96,6 @@ public interface DataSet extends Iterable<org.nd4j.linalg.dataset.DataSet>, Seri
      */
     Map<Integer, Double> labelCounts();
 
-    void apply(Condition condition, Function<Number, Number> function);
-
     /**
      * Create a copy of the DataSet
      *
@@ -329,4 +327,6 @@ public interface DataSet extends Iterable<org.nd4j.linalg.dataset.DataSet>, Seri
      * @return true if the DataSet object is empty (no features, labels, or masks)
      */
     boolean isEmpty();
+
+    MultiDataSet toMultiDataSet();
 }

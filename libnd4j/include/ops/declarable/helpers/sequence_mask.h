@@ -26,8 +26,7 @@ namespace nd4j {
 namespace ops {
 namespace helpers {
 
-    template <typename T>
-    void sequenceMask(NDArray<T>* input, NDArray<T>* output, int maxIndex);
+    void sequenceMask(NDArray* input, NDArray* output, int maxIndex);
 
 }
 }

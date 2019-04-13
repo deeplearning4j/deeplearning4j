@@ -51,23 +51,23 @@ struct FlatProperties FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
            VerifyOffset(verifier, VT_NAME) &&
-           verifier.Verify(name()) &&
+           verifier.VerifyString(name()) &&
            VerifyOffset(verifier, VT_I) &&
-           verifier.Verify(i()) &&
+           verifier.VerifyVector(i()) &&
            VerifyOffset(verifier, VT_L) &&
-           verifier.Verify(l()) &&
+           verifier.VerifyVector(l()) &&
            VerifyOffset(verifier, VT_D) &&
-           verifier.Verify(d()) &&
+           verifier.VerifyVector(d()) &&
            VerifyOffset(verifier, VT_A) &&
-           verifier.Verify(a()) &&
+           verifier.VerifyVector(a()) &&
            verifier.VerifyVectorOfTables(a()) &&
            VerifyOffset(verifier, VT_B) &&
-           verifier.Verify(b()) &&
+           verifier.VerifyVector(b()) &&
            VerifyOffset(verifier, VT_S) &&
-           verifier.Verify(s()) &&
+           verifier.VerifyVector(s()) &&
            verifier.VerifyVectorOfStrings(s()) &&
            VerifyOffset(verifier, VT_SHAPE) &&
-           verifier.Verify(shape()) &&
+           verifier.VerifyVector(shape()) &&
            verifier.EndTable();
   }
 };

@@ -16,6 +16,7 @@
 
 package org.deeplearning4j.util;
 
+import com.jakewharton.byteunits.BinaryByteUnit;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
@@ -45,7 +46,6 @@ import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.nativeblas.NativeOps;
 import org.nd4j.nativeblas.NativeOpsHolder;
-import org.nd4j.util.StringUtils;
 import org.nd4j.versioncheck.VersionCheck;
 import org.nd4j.versioncheck.VersionInfo;
 import oshi.SystemInfo;
@@ -353,7 +353,7 @@ public class CrashReportingUtil {
     }
 
     private static String fBytes(long bytes){
-        String s = StringUtils.TraditionalBinaryPrefix.long2String(bytes, "B", 2);
+        String s = BinaryByteUnit.format(bytes, "#.00");
         String format = "%10s";
         s = String.format(format, s);
         if(bytes >= 1024){
@@ -563,9 +563,12 @@ public class CrashReportingUtil {
             }
             long numElements = ArrayUtil.prodLong(shape);
             long bytes = numElements*bytesPerElement;
+            if (bytes < 0) {
+                bytes = 0;
+            }
             totalActivationBytes += bytes;
             sb.append(String.format(format, String.valueOf(i), layers[i].conf().getLayer().getLayerName(), layers[i].getClass().getSimpleName(),
-                    inputTypes.get(i), Arrays.toString(shape), String.valueOf(numElements), fBytes(bytes))).append("\n");
+                    inputTypes.get(i), Arrays.toString(shape), (numElements < 0 ? "<variable>" : String.valueOf(numElements)), fBytes(bytes))).append("\n");
             last = bytes;
         }
         sb.append(fBytes("Total Activations Memory", totalActivationBytes));
@@ -616,6 +619,9 @@ public class CrashReportingUtil {
             }
             long numElements = ArrayUtil.prodLong(shape);
             long bytes = numElements*bytesPerElement;
+            if(bytes < 0){
+                bytes = 0;
+            }
             totalActivationBytes += bytes;
             String className;
             if(gv instanceof LayerVertex){
@@ -625,7 +631,7 @@ public class CrashReportingUtil {
             }
 
             sb.append(String.format(format, String.valueOf(i), layerName, className, it,
-                    Arrays.toString(shape), String.valueOf(numElements), fBytes(bytes))).append("\n");
+                    Arrays.toString(shape), (numElements < 0 ? "<variable>" : String.valueOf(numElements)), fBytes(bytes))).append("\n");
 
             if(!net.getConfiguration().getNetworkOutputs().contains(layerName)){
                 totalExOutput += bytes;

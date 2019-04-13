@@ -18,7 +18,9 @@ package org.nd4j.linalg.compression;
 
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -200,8 +202,8 @@ public class BasicNDArrayCompressor {
      * @param buffer the databuffer to compress
      * @return the decompressed databuffer
      */
-    public DataBuffer decompress(DataBuffer buffer) {
-        if (buffer.dataType() != DataBuffer.Type.COMPRESSED)
+    public DataBuffer decompress(DataBuffer buffer, DataType targetType) {
+        if (buffer.dataType() != DataType.COMPRESSED)
             throw new IllegalStateException("You can't decompress DataBuffer with dataType of: " + buffer.dataType());
 
         CompressedDataBuffer comp = (CompressedDataBuffer) buffer;
@@ -211,7 +213,7 @@ public class BasicNDArrayCompressor {
             throw new RuntimeException("Non-existent compression algorithm requested: ["
                             + descriptor.getCompressionAlgorithm() + "]");
 
-        return codecs.get(descriptor.getCompressionAlgorithm()).decompress(buffer);
+        return codecs.get(descriptor.getCompressionAlgorithm()).decompress(buffer, targetType);
     }
 
     public NDArrayCompressor getCompressor(@NonNull String name) {
@@ -224,7 +226,7 @@ public class BasicNDArrayCompressor {
      * @return
      */
     public INDArray decompress(INDArray array) {
-        if (array.data().dataType() != DataBuffer.Type.COMPRESSED)
+        if (array.data().dataType() != DataType.COMPRESSED)
             return array;
 
         CompressedDataBuffer comp = (CompressedDataBuffer) array.data();
@@ -245,11 +247,12 @@ public class BasicNDArrayCompressor {
      *              if it is comprssed
      */
     public void decompressi(INDArray array) {
-        if (array.data().dataType() != DataBuffer.Type.COMPRESSED)
+        if (array.data().dataType() != DataType.COMPRESSED)
             return;
 
-        CompressedDataBuffer comp = (CompressedDataBuffer) array.data();
-        CompressionDescriptor descriptor = comp.getCompressionDescriptor();
+        val comp = (CompressedDataBuffer) array.data();
+        val descriptor = comp.getCompressionDescriptor();
+
 
         if (!codecs.containsKey(descriptor.getCompressionAlgorithm()))
             throw new RuntimeException("Non-existent compression algorithm requested: ["

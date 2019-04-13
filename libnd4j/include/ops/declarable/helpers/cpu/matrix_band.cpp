@@ -24,24 +24,24 @@ namespace ops {
 namespace helpers {
 
     template <typename T>
-    void matrixBandPart(NDArray<T>* input, NDArray<T>* output, Nd4jLong lowerBand, Nd4jLong upperBand) {
+    void matrixBandPart_(NDArray* input, NDArray* output, Nd4jLong lowerBand, Nd4jLong upperBand) {
         // TO DO: retrieve all 2D submatricies with last dimensions and process them with given bands
         Nd4jLong M = input->sizeAt(-2);
         Nd4jLong N = input->sizeAt(-1);
         Nd4jLong lastDim = input->rankOf() - 1;
         Nd4jLong preLastDim = input->rankOf() - 2;
-        std::unique_ptr<ResultSet<T>> listOut(output->allTensorsAlongDimension({(int)preLastDim, (int)lastDim}));
-        std::unique_ptr<ResultSet<T>> listDiag(input->allTensorsAlongDimension({(int)preLastDim, (int)lastDim}));
+        std::unique_ptr<ResultSet> listOut(output->allTensorsAlongDimension({(int)preLastDim, (int)lastDim}));
+        std::unique_ptr<ResultSet> listDiag(input->allTensorsAlongDimension({(int)preLastDim, (int)lastDim}));
         for (Nd4jLong e = 0; e < listOut->size(); ++e) {
-            NDArray<T>* inputMatrix = listDiag->at(e);
-            NDArray<T>* outputMatrix = listOut->at(e);
+            NDArray* inputMatrix = listDiag->at(e);
+            NDArray* outputMatrix = listOut->at(e);
             if (outputMatrix != inputMatrix) // if not inplace
                 outputMatrix->assign(inputMatrix);
             if (lowerBand >= 0) {
                 for (Nd4jLong row = 0; row < inputMatrix->rows(); ++row) {
                     for (Nd4jLong col = 0; col < row; ++col) {
                         if ((row - col) > lowerBand)
-                            (*outputMatrix)(row, col) = (T)0.;
+                            outputMatrix->p(row, col, 0.);
 //                        else
   //                          (*outputMatrix)(row, col) = (*inputMatrix)(row, col);
                     }
@@ -52,7 +52,7 @@ namespace helpers {
                 for (Nd4jLong col = 0; col < inputMatrix->columns(); ++col) {
                     for (Nd4jLong row = 0; row < col; ++row) {
                         if ((col - row) > upperBand)
-                            (*outputMatrix)(row, col) = (T)0.;
+                            outputMatrix->p(row, col, 0.);
 //                        else
   //                          (*outputMatrix)(row, col) = (*inputMatrix)(row, col);
                     }
@@ -63,10 +63,10 @@ namespace helpers {
         }
     }
 
-    template void matrixBandPart(NDArray<float>* input, NDArray<float>* output, Nd4jLong lowerBand, Nd4jLong upperBand);
-    template void matrixBandPart(NDArray<float16>* input, NDArray<float16>* output, Nd4jLong lowerBand, Nd4jLong upperBand);
-    template void matrixBandPart(NDArray<double>* input, NDArray<double>* output, Nd4jLong lowerBand, Nd4jLong upperBand);
-
+    void matrixBandPart(NDArray* input, NDArray* output, Nd4jLong lowerBand, Nd4jLong upperBand) {
+        BUILD_SINGLE_SELECTOR(input->dataType(), matrixBandPart_, (input, output, lowerBand, upperBand), FLOAT_TYPES);
+    }
+    BUILD_SINGLE_TEMPLATE(template void matrixBandPart_, (NDArray* input, NDArray* output, Nd4jLong lowerBand, Nd4jLong upperBand), FLOAT_TYPES);
 }
 }
 }

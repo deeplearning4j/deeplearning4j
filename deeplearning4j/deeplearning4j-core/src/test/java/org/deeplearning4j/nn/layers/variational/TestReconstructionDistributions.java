@@ -104,7 +104,7 @@ public class TestReconstructionDistributions extends BaseDL4JTest {
 
                 //Also: check random sampling...
                 int count = minibatch * inputSize;
-                INDArray arr = Nd4j.linspace(-3, 3, count).reshape(minibatch, inputSize);
+                INDArray arr = Nd4j.linspace(-3, 3, count, Nd4j.dataType()).reshape(minibatch, inputSize);
                 INDArray sampleMean = dist.generateAtMean(arr);
                 INDArray sampleRandom = dist.generateRandom(arr);
             }
@@ -172,7 +172,7 @@ public class TestReconstructionDistributions extends BaseDL4JTest {
 
                 //Also: check random sampling...
                 int count = minibatch * inputSize;
-                INDArray arr = Nd4j.linspace(-3, 3, count).reshape(minibatch, inputSize);
+                INDArray arr = Nd4j.linspace(-3, 3, count, Nd4j.dataType()).reshape(minibatch, inputSize);
                 INDArray sampleMean = dist.generateAtMean(arr);
                 INDArray sampleRandom = dist.generateRandom(arr);
 
@@ -251,7 +251,7 @@ public class TestReconstructionDistributions extends BaseDL4JTest {
 
                 //Also: check random sampling...
                 int count = minibatch * inputSize;
-                INDArray arr = Nd4j.linspace(-3, 3, count).reshape(minibatch, inputSize);
+                INDArray arr = Nd4j.linspace(-3, 3, count, Nd4j.dataType()).reshape(minibatch, inputSize);
                 INDArray sampleMean = dist.generateAtMean(arr);
                 INDArray sampleRandom = dist.generateRandom(arr);
 

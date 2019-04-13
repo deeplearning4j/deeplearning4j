@@ -89,7 +89,7 @@ public class TestSparkDl4jMultiLayer extends BaseSparkTest {
 
                     .build();
 
-            //Configuration for Spark training: see https://deeplearning4j.org/distributed for explanation of these configuration options
+            //Configuration for Spark training: see https://deeplearning4j.org/docs/latest/deeplearning4j-scaleout-howto for explanation of these configuration options
 
             TrainingMaster tm = new ParameterAveragingTrainingMaster.Builder(batchSizePerWorker)
                     .averagingFrequency(2)

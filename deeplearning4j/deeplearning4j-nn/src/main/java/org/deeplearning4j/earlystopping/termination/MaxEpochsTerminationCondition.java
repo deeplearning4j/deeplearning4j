@@ -16,12 +16,14 @@
 
 package org.deeplearning4j.earlystopping.termination;
 
+import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.nd4j.shade.jackson.annotation.JsonCreator;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 
 /** Terminate training if the number of epochs exceeds the maximum number of epochs */
 @NoArgsConstructor
+@Data
 public class MaxEpochsTerminationCondition implements EpochTerminationCondition {
     @JsonProperty
     private int maxEpochs;

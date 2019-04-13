@@ -18,6 +18,7 @@ package org.nd4j.tensorflow.conversion;
 
 import com.github.os72.protobuf351.util.JsonFormat;
 import org.apache.commons.io.IOUtils;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -25,6 +26,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.io.ClassPathResource;
 import org.nd4j.tensorflow.conversion.graphrunner.GraphRunner;
+import org.nd4j.tensorflow.conversion.graphrunner.SavedModelConfig;
 
 import java.io.File;
 import java.util.Arrays;
@@ -32,7 +34,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-import static org.bytedeco.javacpp.tensorflow.ConfigProto;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
@@ -64,6 +65,18 @@ public class GraphRunnerTest {
         GraphRunner graphRunner = new GraphRunner(content,Arrays.asList("Reshape/tensor"));
         assertEquals(1,graphRunner.getInputOrder().size());
         assertEquals(1,graphRunner.getOutputOrder().size());
+    }
+
+
+    @Test @Ignore   //Ignored 2019/02/05: ssd_inception_v2_coco_2019_01_28 does not exist in test resources
+    public void testMultiOutputGraph() throws Exception {
+        ClassPathResource classPathResource = new ClassPathResource("/tf_graphs/examples/ssd_inception_v2_coco_2018_01_28/frozen_inference_graph.pb");
+        GraphRunner graphRunner = new GraphRunner(classPathResource.getFile().getAbsolutePath(),Arrays.asList("image_tensor"));
+        String[] outputs = new String[] { "detection_boxes", "detection_scores", "detection_classes", "num_detections"};
+
+        assertEquals(1,graphRunner.getInputOrder().size());
+        System.out.println(graphRunner.getOutputOrder());
+        assertEquals(4,graphRunner.getOutputOrder().size());
     }
 
     private void runGraphRunnerTest(GraphRunner graphRunner) throws Exception {
@@ -105,9 +118,14 @@ public class GraphRunnerTest {
 
     @Test
     public void testGraphRunnerSavedModel() throws Exception {
-        File f = testDir.newFolder();
+        File f = testDir.newFolder("test");
         new ClassPathResource("/tf_saved_models/saved_model_counter/00000123/").copyDirectory(f);
-        try(GraphRunner graphRunner = new GraphRunner(f.getAbsolutePath(),"serve","incr_counter_by")) {
+        SavedModelConfig savedModelConfig = SavedModelConfig.builder()
+                .savedModelPath(f.getAbsolutePath())
+                .signatureKey("incr_counter_by")
+                .modelTag("serve")
+                .build();
+        try(GraphRunner graphRunner = new GraphRunner(savedModelConfig)) {
             INDArray delta = Nd4j.create(new float[] { 42 }, new long[0]);
             Map<String,INDArray> inputs = new LinkedHashMap<>();
             inputs.put("delta",delta);

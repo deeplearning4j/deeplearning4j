@@ -41,7 +41,7 @@ public class Pooling3DConfig extends BaseConvolutionConfig {
     @Builder.Default
     private long dH = 1;
     private Pooling3D.Pooling3DType type;
-    private boolean ceilingMode;
+    private boolean isSameMode;
     @Builder.Default private boolean isNCDHW = true;
 
     public Map<String, Object> toProperties() {
@@ -59,7 +59,7 @@ public class Pooling3DConfig extends BaseConvolutionConfig {
         ret.put("dW", dW);
         ret.put("dH", dH);
         ret.put("type", type.toString());
-        ret.put("ceilingMode", ceilingMode);
+        ret.put("isSameMode", isSameMode);
         return ret;
 
     }

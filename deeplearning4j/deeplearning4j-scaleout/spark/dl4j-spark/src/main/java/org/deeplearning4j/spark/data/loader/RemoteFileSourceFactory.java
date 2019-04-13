@@ -16,10 +16,11 @@
 
 package org.deeplearning4j.spark.data.loader;
 
-import lombok.AllArgsConstructor;
-import lombok.NoArgsConstructor;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
+import org.apache.spark.broadcast.Broadcast;
+import org.datavec.spark.util.DefaultHadoopConfig;
+import org.datavec.spark.util.SerializableHadoopConfig;
 import org.nd4j.api.loader.Source;
 import org.nd4j.api.loader.SourceFactory;
 
@@ -27,16 +28,21 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 
-@AllArgsConstructor
-@NoArgsConstructor
+
 public class RemoteFileSourceFactory implements SourceFactory {
-    private FileSystem fileSystem;
+    private transient FileSystem fileSystem;
+    private final Broadcast<SerializableHadoopConfig> conf;
+
+    public RemoteFileSourceFactory(Broadcast<SerializableHadoopConfig> configuration){
+        this.conf = configuration;
+    }
 
     @Override
     public Source getSource(String path) {
         if(fileSystem == null){
+            Configuration c = conf == null ? DefaultHadoopConfig.get() : conf.getValue().getConfiguration();
             try {
-                fileSystem = FileSystem.get(new URI(path), new Configuration());
+                fileSystem = FileSystem.get(new URI(path), c);
             } catch (IOException | URISyntaxException u){
                 throw new RuntimeException(u);
             }

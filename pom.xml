@@ -82,7 +82,11 @@
             <id>turambar</id>
             <name>Dave kale</name>
         </developer>
-        <!--current & previous core contributers and company developers-->
+        <developer>
+            <id>maxpumperla</id>
+            <name>Max Pumperla</name>
+        </developer>
+        <!--current & previous core contributors and company developers-->
         <developer>
             <id>rubenfiszel</id>
             <name>Ruben Fiszel</name>
@@ -127,11 +131,13 @@
         <module>datavec</module>
         <module>deeplearning4j</module>
         <module>arbiter</module>
-        <!--<module>nd4s</module>-->
+        <module>nd4s</module>
         <module>gym-java-client</module>
         <module>rl4j</module>
         <module>scalnet</module>
         <module>jumpy</module>
+        <module>pydatavec</module>
+        <module>pydl4j</module>
     </modules>
 
     <scm>
@@ -167,11 +173,6 @@
                 <updatePolicy>daily</updatePolicy>  <!-- Optional, update daily -->
             </snapshots>
         </repository>
-        <repository>
-            <id>scala-tools.org</id>
-            <name>Scala-Tools Maven2 Repository</name>
-            <url>http://scala-tools.org/repo-releases</url>
-        </repository>
     </repositories>
 
     <pluginRepositories>
@@ -198,11 +199,6 @@
                 <enabled>true</enabled>
                 <updatePolicy>daily</updatePolicy>  <!-- Optional, update daily -->
             </snapshots>
-        </pluginRepository>
-        <pluginRepository>
-            <id>scala-tools.org</id>
-            <name>Scala-Tools Maven2 Repository</name>
-            <url>http://scala-tools.org/repo-releases</url>
         </pluginRepository>
     </pluginRepositories>
 
@@ -259,7 +255,7 @@
         <servlet.version>3.1.0</servlet.version>
         <snakeyaml.version>1.12</snakeyaml.version>
         <snappy.version>1.1.2.6</snappy.version>
-        <spring.version>4.1.6.RELEASE</spring.version>
+        <spring.version>5.1.1.RELEASE</spring.version>
         <t-digest.version>3.2</t-digest.version>
 
         <oshi.version>3.4.2</oshi.version>
@@ -273,6 +269,7 @@
         <protonpack.version>1.15</protonpack.version>
         <poi.version>3.17</poi.version>
         <play.version>2.4.8</play.version>
+        <jodah.typetools.version>0.5.0</jodah.typetools.version>
         <freemarker.version>2.3.23</freemarker.version>
         <geoip2.version>2.8.1</geoip2.version>
         <stream.analytics.version>2.7.0</stream.analytics.version>
@@ -288,22 +285,26 @@
         <javacpp.platform.root/>      <!-- -Djavacpp.platform.root=/path/to/android-ndk/ -->
         <javacpp.platform.compiler/>  <!-- -Djavacpp.platform.compiler=/path/to/arm-linux-androideabi-g++ -->
         <javacpp.platform.sysroot/>   <!-- -Djavacpp.platform.sysroot=$(xcrun -sdk iphoneos -show-sdk-path) -->
-        <javacpp.platform.extension/> <!-- -Djavacpp.platform.extension=avx512 -->
+        <javacpp.platform.extension/> <!-- -Djavacpp.platform.extension=-avx512 -->
         <javacpp.platform.properties>${javacpp.platform}</javacpp.platform.properties>
 
-        <javacpp.version>1.4.3</javacpp.version>
-        <javacpp-presets.version>1.4.3</javacpp-presets.version>
-        <javacv.version>1.4.3</javacv.version>
-        <openblas.version>0.3.3</openblas.version>
-        <mkl.version>2019.0</mkl.version>
-        <mkl-dnn.version>0.16</mkl-dnn.version>
+        <javacpp.version>1.5</javacpp.version>
+        <javacpp-presets.version>1.5</javacpp-presets.version>
+        <javacv.version>1.5</javacv.version>
+
+        <python.version>3.6</python.version>
+        <cpython-platform.version>${python.version}-${javacpp-presets.version}</cpython-platform.version>
+
+        <openblas.version>0.3.5</openblas.version>
+        <mkl.version>2019.3</mkl.version>
+        <mkl-dnn.version>0.18.1</mkl-dnn.version>
         <mkl-dnn.javacpp.version>${mkl-dnn.version}-${javacpp.version}</mkl-dnn.javacpp.version>
-        <opencv.version>3.4.3</opencv.version>
-        <ffmpeg.version>4.0.2</ffmpeg.version>
-        <leptonica.version>1.76.0</leptonica.version>
-        <hdf5.version>1.10.3</hdf5.version>
+        <opencv.version>4.0.1</opencv.version>
+        <ffmpeg.version>4.1.3</ffmpeg.version>
+        <leptonica.version>1.78.0</leptonica.version>
+        <hdf5.version>1.10.5</hdf5.version>
         <ale.version>0.6.0</ale.version>
-        <tensorflow.version>1.11.0</tensorflow.version>
+        <tensorflow.version>1.13.1</tensorflow.version>
         <tensorflow.javacpp.version>${tensorflow.version}-${javacpp-presets.version}</tensorflow.javacpp.version>
 
         <commons-compress.version>1.16.1</commons-compress.version>
@@ -333,7 +334,7 @@
         <geo.jackson.version>2.8.7</geo.jackson.version>
         <lombok.version>1.18.2</lombok.version>
         <cleartk.version>2.0.0</cleartk.version>
-        <lucene-solr.version>7.5.0</lucene-solr.version>
+        <lucene-solr.version>7.7.1</lucene-solr.version>
         <json.version>20131018</json.version>
         <google.protobuf.version>2.6.1</google.protobuf.version>
         <failIfNoTests>false</failIfNoTests>
@@ -349,12 +350,13 @@
         </playframework.version>    <!-- Play Framework 2.5 dropped Scala 2.10 support - use 2.4 for Spark compatibility w/ Scala 2.10 -->
         <javax.ws.rs.version>2.0</javax.ws.rs.version>
         <guava.version>20.0</guava.version>
-        <jetbrains-annotations.version>13.0</jetbrains-annotations.version>
         <fbs.version>1.2.0-3f79e055</fbs.version>
         <threadly.version>4.10.0</threadly.version>
 
-        <flatbuffers.version>1.9.0</flatbuffers.version>
+        <flatbuffers.version>1.10.0</flatbuffers.version>
         <grpc.version>1.14.0</grpc.version>
+        <javax.version>1.2</javax.version>
+        <jaxb.version>2.3.0</jaxb.version>
 
         <maven-gpg-plugin.version>1.6</maven-gpg-plugin.version>
         <maven-source-plugin.version>3.0.1</maven-source-plugin.version>
@@ -378,7 +380,7 @@
         <maven-lifecycle-mapping-plugin.version>1.0.0</maven-lifecycle-mapping-plugin.version>
         <maven-lifecycle-mapping.version>${maven-lifecycle-mapping-plugin.version}
         </maven-lifecycle-mapping.version>
-        <maven-shade-plugin.version>3.0.0</maven-shade-plugin.version>
+        <maven-shade-plugin.version>3.2.1</maven-shade-plugin.version>
         <maven-jar-plugin.version>3.0.2</maven-jar-plugin.version>
         <mockito.version>2.2.6</mockito.version>
 
@@ -396,6 +398,9 @@
 
         <libnd4j.tests>--tests</libnd4j.tests>
         <libnd4j.test.skip>false</libnd4j.test.skip>
+        <jumpy.test.skip>false</jumpy.test.skip>
+        <pydatavec.test.skip>false</pydatavec.test.skip>
+        <pydl4j.test.skip>false</pydl4j.test.skip>
         <skipBackendChoice>false</skipBackendChoice>
         <skipTestResourceEnforcement>false
         </skipTestResourceEnforcement> <!-- Test resource profile must be enabled unless using -DskipTests etc -->
@@ -641,6 +646,9 @@
             <properties>
                 <libnd4j.tests></libnd4j.tests>
                 <libnd4j.test.skip>true</libnd4j.test.skip>
+                <jumpy.test.skip>true</jumpy.test.skip>
+                <pydatavec.test.skip>true</pydatavec.test.skip>
+                <pydl4j.test.skip>true</pydl4j.test.skip>
                 <skipBackendChoice>true</skipBackendChoice>
                 <skipTestResourceEnforcement>true</skipTestResourceEnforcement>
             </properties>
@@ -655,6 +663,9 @@
             <properties>
                 <libnd4j.tests></libnd4j.tests>
                 <libnd4j.test.skip>true</libnd4j.test.skip>
+                <jumpy.test.skip>true</jumpy.test.skip>
+                <pydatavec.test.skip>true</pydatavec.test.skip>
+                <pydl4j.test.skip>true</pydl4j.test.skip>
                 <skipBackendChoice>true</skipBackendChoice>
                 <skipTestResourceEnforcement>true</skipTestResourceEnforcement>
             </properties>
@@ -847,7 +858,7 @@
             </properties>
         </profile>
 
-        <!-- If someone knows a better way to do this, please do let me know! -->
+        <!-- Profiles to set the default javacpp.platform property: If someone knows a better way to do this, please do let me know! -->
         <profile>
             <id>linux</id>
             <activation>

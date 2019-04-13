@@ -32,7 +32,7 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.impl.transforms.temp.ExternalErrorsFunction;
+import org.nd4j.linalg.api.ops.impl.layers.ExternalErrorsFunction;
 import org.nd4j.linalg.dataset.api.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
@@ -100,7 +100,6 @@ public class SameDiffOutputLayer extends AbstractLayer<org.deeplearning4j.nn.con
 
         //TODO optimize
         try(MemoryWorkspace ws = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()) {
-            sameDiff.clearExecutionCache();
             sameDiff.associateArrayWithVariable(input.dup(), sameDiff.getVariable(INPUT_KEY));
             if(layerConf().labelsRequired() && labels != null) {
                 sameDiff.associateArrayWithVariable(labels.dup(), sameDiff.getVariable(LABELS_KEY));
@@ -134,10 +133,15 @@ public class SameDiffOutputLayer extends AbstractLayer<org.deeplearning4j.nn.con
 
         INDArray dLdIn;
         try(MemoryWorkspace ws = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()){
-            sameDiff.clearExecutionCache();
-            sameDiff.associateArrayWithVariable(input.dup(), sameDiff.getVariable(INPUT_KEY));
+            INDArray castInput = input.castTo(Nd4j.defaultFloatingPointType());
+            if(castInput.isAttached())
+                castInput = castInput.dup();
+            sameDiff.associateArrayWithVariable(castInput, sameDiff.getVariable(INPUT_KEY));
             if(layerConf().labelsRequired()) {
-                sameDiff.associateArrayWithVariable(labels.dup(), sameDiff.getVariable(LABELS_KEY));
+                INDArray castLabels = labels.castTo(Nd4j.defaultFloatingPointType());
+                if(castLabels.isAttached())
+                    castLabels = castLabels.dup();
+                sameDiff.associateArrayWithVariable(castLabels, sameDiff.getVariable(LABELS_KEY));
             }
 
             for(String s : paramTable.keySet() ){
@@ -145,7 +149,7 @@ public class SameDiffOutputLayer extends AbstractLayer<org.deeplearning4j.nn.con
                 sameDiff.associateArrayWithVariable(paramTable.get(s), s);
             }
 
-            sameDiff.execBackwards();
+            sameDiff.execBackwards(Collections.<String, INDArray>emptyMap());
             for(String s : paramTable.keySet() ){
                 INDArray sdGrad = sameDiff.grad(s).getArr();
                 INDArray dl4jGrad = gradTable.get(s);
@@ -173,7 +177,7 @@ public class SameDiffOutputLayer extends AbstractLayer<org.deeplearning4j.nn.con
     }
 
     @Override
-    public int numParams(){
+    public long numParams(){
         return params == null ? 0 : (int)params.length();
     }
 
@@ -244,7 +248,6 @@ public class SameDiffOutputLayer extends AbstractLayer<org.deeplearning4j.nn.con
             Map<String, INDArray> p = paramTable();
 
             val inputShape = input.shape().clone();
-//        inputShape[0] = -1;                                       //TODO THIS DOESN'T ENABLE VARIABLE SIZE MINIBATCHES
             SDVariable inputVar = sameDiff.var(INPUT_KEY, inputShape);
             SDVariable labelVar = null;
             if(layerConf().labelsRequired()){
@@ -267,8 +270,6 @@ public class SameDiffOutputLayer extends AbstractLayer<org.deeplearning4j.nn.con
             }
 
             this.outputKey = layerOutput.getVarName();
-
-//        sameDiff.createGradFunction();
         }
     }
 
@@ -278,12 +279,12 @@ public class SameDiffOutputLayer extends AbstractLayer<org.deeplearning4j.nn.con
     }
 
     @Override
-    public double computeScore(double fullNetworkL1, double fullNetworkL2, boolean training, LayerWorkspaceMgr workspaceMgr) {
-        return (activateHelper(false, workspaceMgr).getDouble(0) + fullNetworkL1 + fullNetworkL1) / input.size(0);
+    public double computeScore(double fullNetRegTerm, boolean training, LayerWorkspaceMgr workspaceMgr) {
+        return (activateHelper(false, workspaceMgr).getDouble(0) + fullNetRegTerm) / input.size(0);
     }
 
     @Override
-    public INDArray computeScoreForExamples(double fullNetworkL1, double fullNetworkL2, LayerWorkspaceMgr workspaceMgr) {
+    public INDArray computeScoreForExamples(double fullNetRegTerm, LayerWorkspaceMgr workspaceMgr) {
         throw new UnsupportedOperationException("Not yet implemented");
     }
 
@@ -314,11 +315,6 @@ public class SameDiffOutputLayer extends AbstractLayer<org.deeplearning4j.nn.con
 
     @Override
     public List<String> predict(DataSet dataSet) {
-        throw new UnsupportedOperationException("Not supported");
-    }
-
-    @Override
-    public INDArray labelProbabilities(INDArray examples) {
         throw new UnsupportedOperationException("Not supported");
     }
 

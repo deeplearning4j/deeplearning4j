@@ -20,6 +20,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.dataset.api.iterator.TestDataSetIterator;
@@ -48,7 +49,7 @@ public class NormalizerStandardizeTest extends BaseNd4jTest {
         int nSamples = 5120;
         int x = 1, y = 2, z = 3;
 
-        INDArray featureX = Nd4j.linspace(1, nSamples, nSamples).reshape(nSamples, 1).mul(x);
+        INDArray featureX = Nd4j.linspace(1, nSamples, nSamples, DataType.DOUBLE).reshape(nSamples, 1).mul(x);
         INDArray featureY = featureX.mul(y);
         INDArray featureZ = featureX.mul(z);
         INDArray featureSet = Nd4j.concat(1, featureX, featureY, featureZ);
@@ -57,22 +58,22 @@ public class NormalizerStandardizeTest extends BaseNd4jTest {
 
         double meanNaturalNums = (nSamples + 1) / 2.0;
         INDArray theoreticalMean =
-                        Nd4j.create(new double[] {meanNaturalNums * x, meanNaturalNums * y, meanNaturalNums * z});
+                        Nd4j.create(new double[] {meanNaturalNums * x, meanNaturalNums * y, meanNaturalNums * z}).reshape(1, -1);
         double stdNaturalNums = Math.sqrt((nSamples * nSamples - 1) / 12.0);
         INDArray theoreticalStd =
-                        Nd4j.create(new double[] {stdNaturalNums * x, stdNaturalNums * y, stdNaturalNums * z});
+                        Nd4j.create(new double[] {stdNaturalNums * x, stdNaturalNums * y, stdNaturalNums * z}).reshape(1, -1);
 
         NormalizerStandardize myNormalizer = new NormalizerStandardize();
         myNormalizer.fit(sampleDataSet);
 
         INDArray meanDelta = Transforms.abs(theoreticalMean.sub(myNormalizer.getMean()));
         INDArray meanDeltaPerc = meanDelta.div(theoreticalMean).mul(100);
-        double maxMeanDeltaPerc = meanDeltaPerc.max(1).getDouble(0, 0);
+        double maxMeanDeltaPerc = meanDeltaPerc.max(1).getDouble(0);
         assertTrue(maxMeanDeltaPerc < tolerancePerc);
 
         INDArray stdDelta = Transforms.abs(theoreticalStd.sub(myNormalizer.getStd()));
         INDArray stdDeltaPerc = stdDelta.div(theoreticalStd).mul(100);
-        double maxStdDeltaPerc = stdDeltaPerc.max(1).getDouble(0, 0);
+        double maxStdDeltaPerc = stdDeltaPerc.max(1).getDouble(0);
         assertTrue(maxStdDeltaPerc < tolerancePerc);
 
         // SAME TEST WITH THE ITERATOR
@@ -83,12 +84,12 @@ public class NormalizerStandardizeTest extends BaseNd4jTest {
 
         meanDelta = Transforms.abs(theoreticalMean.sub(myNormalizer.getMean()));
         meanDeltaPerc = meanDelta.div(theoreticalMean).mul(100);
-        maxMeanDeltaPerc = meanDeltaPerc.max(1).getDouble(0, 0);
+        maxMeanDeltaPerc = meanDeltaPerc.max(1).getDouble(0);
         assertTrue(maxMeanDeltaPerc < tolerancePerc);
 
         stdDelta = Transforms.abs(theoreticalStd.sub(myNormalizer.getStd()));
         stdDeltaPerc = stdDelta.div(theoreticalStd).mul(100);
-        maxStdDeltaPerc = stdDeltaPerc.max(1).getDouble(0, 0);
+        maxStdDeltaPerc = stdDeltaPerc.max(1).getDouble(0);
         assertTrue(maxStdDeltaPerc < tolerancePerc);
     }
 
@@ -100,7 +101,7 @@ public class NormalizerStandardizeTest extends BaseNd4jTest {
             Obtained mean and std dev are compared to theoretical
             Transformed values should be the same as X with the same seed.
          */
-        long randSeed = 41732786;
+        long randSeed = 12345;
 
         int nFeatures = 2;
         int nSamples = 6400;
@@ -126,16 +127,17 @@ public class NormalizerStandardizeTest extends BaseNd4jTest {
         double tolerancePerc = 0.10; //within 0.1%
         sampleMean = myNormalizer.getMean();
         sampleMeanDelta = Transforms.abs(sampleMean.sub(normData.theoreticalMean));
-        assertTrue(sampleMeanDelta.mul(100).div(normData.theoreticalMean).max(1).getDouble(0, 0) < tolerancePerc);
+        assertTrue(sampleMeanDelta.mul(100).div(normData.theoreticalMean).max().getDouble(0) < tolerancePerc);
         //sanity check to see if it's within the theoretical standard error of mean
-        sampleMeanSEM = sampleMeanDelta.div(normData.theoreticalSEM).max(1).getDouble(0, 0);
+        sampleMeanSEM = sampleMeanDelta.div(normData.theoreticalSEM).max().getDouble(0);
         assertTrue(sampleMeanSEM < 2.6); //99% of the time it should be within this many SEMs
 
         tolerancePerc = 1; //within 1% - std dev value
         sampleStd = myNormalizer.getStd();
         sampleStdDelta = Transforms.abs(sampleStd.sub(normData.theoreticalStd));
 
-        assertTrue(sampleStdDelta.div(normData.theoreticalStd).max(1).mul(100).getDouble(0, 0) < tolerancePerc);
+        double actualmaxDiff = sampleStdDelta.div(normData.theoreticalStd).max().mul(100).getDouble(0);
+        assertTrue(actualmaxDiff < tolerancePerc);
 
         tolerancePerc = 1; //within 1%
         normIterator.setPreProcessor(myNormalizer);
@@ -147,7 +149,7 @@ public class NormalizerStandardizeTest extends BaseNd4jTest {
             delta = Transforms.abs(after.sub(expected));
             deltaPerc = delta.div(Transforms.abs(before.sub(expected)));
             deltaPerc.muli(100);
-            maxDeltaPerc = deltaPerc.max(0, 1).getDouble(0, 0);
+            maxDeltaPerc = deltaPerc.max(0, 1).getDouble(0);
             /*
             System.out.println("=== BEFORE ===");
             System.out.println(before);
@@ -166,7 +168,7 @@ public class NormalizerStandardizeTest extends BaseNd4jTest {
     @Test
     public void testDifferentBatchSizes() {
         // Create 6x1 matrix of the numbers 1 through 6
-        INDArray values = Nd4j.linspace(1, 6, 6).transpose();
+        INDArray values = Nd4j.linspace(1, 6, 6, DataType.DOUBLE).reshape(1, -1).transpose();
         DataSet dataSet = new DataSet(values, values);
 
         // Test fitting a DataSet
@@ -216,14 +218,14 @@ public class NormalizerStandardizeTest extends BaseNd4jTest {
         DataSet sampleDataSet = new DataSet(featureSet, labelSet);
         DataSetIterator sampleIter = new TestDataSetIterator(sampleDataSet, bSize);
 
-        INDArray theoreticalMean = Nd4j.create(new double[] {x, y, z});
+        INDArray theoreticalMean = Nd4j.create(new float[] {x, y, (float) z}).castTo(Nd4j.defaultFloatingPointType()).reshape(1, -1);
 
         NormalizerStandardize myNormalizer = new NormalizerStandardize();
         myNormalizer.fit(sampleIter);
 
         INDArray meanDelta = Transforms.abs(theoreticalMean.sub(myNormalizer.getMean()));
         INDArray meanDeltaPerc = meanDelta.mul(100).div(theoreticalMean);
-        assertTrue(meanDeltaPerc.max(1).getDouble(0, 0) < tolerancePerc);
+        assertTrue(meanDeltaPerc.max(1).getDouble(0) < tolerancePerc);
 
         //this just has to not barf
         //myNormalizer.transform(sampleIter);
@@ -249,7 +251,7 @@ public class NormalizerStandardizeTest extends BaseNd4jTest {
         //System.out.println(transformed.getFeatures());
         INDArray delta = Transforms.abs(transformed.getFeatures().sub(sampleDataSet.getFeatures()))
                         .div(sampleDataSet.getFeatures());
-        double maxdeltaPerc = delta.max(0, 1).mul(100).getDouble(0, 0);
+        double maxdeltaPerc = delta.max(0, 1).mul(100).getDouble(0);
         assertTrue(maxdeltaPerc < tolerancePerc);
     }
 
@@ -274,7 +276,7 @@ public class NormalizerStandardizeTest extends BaseNd4jTest {
         //Checking if we gets nans, because std dev is zero
         assertFalse(Double.isNaN(sampleDataSet.getFeatures().min(0, 1).getDouble(0)));
         //Checking to see if transformed values are close enough to zero
-        assertEquals(Transforms.abs(sampleDataSet.getFeatures()).max(0, 1).getDouble(0, 0), 0,
+        assertEquals(Transforms.abs(sampleDataSet.getFeatures()).max(0, 1).getDouble(0), 0,
                         constant * tolerancePerc / 100.0);
 
         myNormalizer.revert(sampleDataSet);

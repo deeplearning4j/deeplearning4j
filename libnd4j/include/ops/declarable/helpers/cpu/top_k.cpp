@@ -20,15 +20,19 @@
 
 #include <ops/declarable/helpers/top_k.h>
 #include <ops/declarable/headers/parity_ops.h>
+#include <NDArrayFactory.h>
+
 namespace nd4j {
 namespace ops {
 namespace helpers {
 
     template <typename T>
-    int topKFunctor(NDArray<T>* input, NDArray<T>* values, NDArray<T>* indeces, int k, bool needSort) {
-        int width = input->sizeAt(-1); // last dim of input
-        std::unique_ptr<ResultSet<T>> lastDimList(input->allTensorsAlongDimension({input->rankOf() - 1}));
-
+    static int topKFunctor_(NDArray* input, NDArray* values, NDArray* indeces, int k, bool needSort) {
+        Nd4jLong width = input->sizeAt(-1);
+//        Nd4jLong lastDim = input->rankOf() - 1;
+//      FIX ME: lastDim should be Nd4Long not int only?
+        int lastDim = input->rankOf() - 1;
+//        std::unique_ptr<ResultSet> lastDimList(input->allTensorsAlongDimension({lastDim}));
 // ----------------------------------------------------------------------------------------------- //
 // this assumption is right:
 //        if (values->lengthOf() != k * lastDimList->size()) {
@@ -36,128 +40,145 @@ namespace helpers {
 //                values->lengthOf(), k * lastDimList->size());
 //        }
 // ----------------------------------------------------------------------------------------------- //
+        std::vector<int> dimsToExclude(input->rankOf() - 1);
+        for (int d = 0; d < dimsToExclude.size(); ++d)
+            dimsToExclude[d] = d;
+
+        const Nd4jLong numOfSubArrs = ShapeUtils::getNumOfSubArrs(input->getShapeInfo(), dimsToExclude);
 
             if (k == 1) {
-                int pos = 0;
-//#pragma omp parallel for if(lastDimList->size() > Environment::getInstance()->elementwiseThreshold()) schedule(static)
-                for (size_t e = 0; e < lastDimList->size(); ++e) {
-                    int maxPos = lastDimList->at(e)->argMax();
+                for (Nd4jLong e = 0; e < numOfSubArrs; ++e) {
+                    auto trial = (*input)(e, dimsToExclude);
+                    //int maxPos = //lastDimList->at(e)->argMax();
+                    Nd4jLong maxPos = 0;
+                    //trial.printIndexedBuffer("TRIAL:");
+                    T maxVal = trial.e<T>(0);
+                    for (Nd4jLong pos = 1; pos < trial.lengthOf(); pos++)
+                        if (maxVal < trial.e<T>(pos)) {
+                            maxPos = pos;
+                            maxVal = trial.e<T>(pos);
+                        }
                     if (indeces)
-                        (*indeces)(e) = maxPos; //topIndex;
+                        indeces->p(e, maxPos); //topIndex;
                     if (values)
-                        (*values)(e) = (*lastDimList->at(e))(maxPos);
+                        values->p(e, maxVal);
                 }
             }
             else { 
                 int nextPos = 0;
 
-//#pragma omp parallel for if(lastDimList->size() > Environment::getInstance()->elementwiseThreshold()) schedule(static)
-                for (int e = 0; e < lastDimList->size(); ++e) {
-                    NDArray<T>* trial = lastDimList->at(e); // a vector to be search
-
-                    std::vector<int> topIndices(k);
-                    std::vector<T> topValues(k);
+                for (Nd4jLong e = 0; e < numOfSubArrs; ++e) {
+                    auto trial = (*input)(e, dimsToExclude);
 
                     // fill up the first k elements
-                    for (int pos = 0; pos < k; ++pos) {
-                        topIndices[pos] = pos;
-                        topValues[pos] = (*trial)(pos);
+                    NDArray topValues = NDArrayFactory::create<T>('c', {k});
+                    NDArray sortedVals = NDArrayFactory::create<T>('c', {k});
+                    NDArray topIndices = NDArrayFactory::create<Nd4jLong>('c', {k});
+                    for (Nd4jLong pos = 0; pos < k; ++pos) {
+                        topIndices.t<Nd4jLong>(pos) = pos;
+                        topValues.t<T>(pos) = trial.t<T>(pos);
                     }
-                    std::vector<T> sortedVals(topValues);
-                    std::sort(sortedVals.begin(), sortedVals.end()); // sorted in ascending order
-                    
+                    //std::vector<T> sortedVals(topValues);
+                    sortedVals.assign(topValues);// = NDArrayFactory::create<T>('c', {k});
+                    //std::sort(sortedVals.begin(), sortedVals.end()); // sorted in ascending order
+                    SpecialMethods<T>::sortGeneric(sortedVals.buffer(), sortedVals.shapeInfo(), false);
                     for (int i = k; i < width; ++i) {
-                        T val = (*trial)(i);
-                        if (sortedVals[0] < val) { // value should be inserted to top k
+                        T val = trial.e<T>(i);
+                        T minTopVal = sortedVals.t<T>(0);
+                        if (minTopVal < val) { // value should be inserted to top k
                             // only if it is not contained in
-                            auto itPos = std::find(sortedVals.begin(), sortedVals.end(), val);
-                            if (sortedVals.end() == itPos) {
+                            T* begin = reinterpret_cast<T*>(sortedVals.buffer());
+                            T* end = begin + k;
+                            bool exists = std::binary_search(begin, end, val);
+                            if (!exists) {
                                 //exchangePos - a distance between begin and minimal existed to be suppressed by val
-                                auto exchangePos = std::distance(topValues.begin(), std::find(topValues.begin(), topValues.end(), sortedVals[0]));
-                                topValues[exchangePos] = val; //*exchangeIt = val;
-                                topIndices[exchangePos] = i;
-                                sortedVals[0] = val; // suppress in sorted
-                                std::sort(sortedVals.begin(), sortedVals.end()); // sorted in ascending order
+                                T* topBegin = reinterpret_cast<T*>(topValues.buffer());
+                                T* topEnd = topBegin + k;
+                                auto exchangePos = std::distance(topBegin, std::find(topBegin, topEnd, sortedVals.t<T>(0)));
+                                topValues.t<T>(exchangePos) = val; //*exchangeIt = val;
+                                topIndices.t<Nd4jLong>(exchangePos) = i;
+                                sortedVals.t<T>(0) = val; // suppress in sorted
+                                //std::sort(sortedVals.begin(), sortedVals.end()); // sorted in ascending order
+                                SpecialMethods<T>::sortGeneric(sortedVals.buffer(), sortedVals.shapeInfo(), false);
                             }
                         }
                     }
-
                     if (needSort) {
-                        std::sort(topValues.begin(), topValues.end(), [](T a, T b) {
-                            return a > b;   
-                        });
+                        SpecialMethods<T>::sortGeneric(topValues.buffer(), topValues.shapeInfo(), true);
 
                         for (int j = 0; j < width; j++)
                             for (int pos = 0; pos < k; ++pos)
-                                if (topValues[pos] == (*trial)(j))
-                                    topIndices[pos] = j;
+                                if (topValues.t<T>(pos) == trial.t<T>(j))
+                                    topIndices.t<Nd4jLong>(pos) = j;
                     }
                     else { // else sort by indices
-
-                        std::vector<std::pair<int, T>> data(topValues.size());
-                        for (size_t e = 0; e < topValues.size(); ++e) {
-                            data[e].first = topIndices[e];
-                            data[e].second = topValues[e];
+                        std::map<Nd4jLong, T> sortValsMap;
+                        //std::vector<std::pair<int, T>> data(topValues.lengthOf());
+                        for (size_t e = 0; e < topValues.lengthOf(); ++e) {
+                            sortValsMap[topIndices.t<Nd4jLong>(e)] = topValues.t<T>(e);
                         }
 
-                        std::sort(data.begin(), data.end(), [](std::pair<int, T> const& a, std::pair<int, T> const& b) {
-                            return a.first < b.first;
-                        });
-
-                        for (size_t e = 0; e < topValues.size(); ++e) {
-                            topIndices[e] = data[e].first;
-                            topValues[e] = data[e].second;
+                        //std::sort(data.begin(), data.end(), [](std::pair<int, T> const& a, std::pair<int, T> const& b) {
+                        //    return a.first < b.first;
+                        //});
+                        Nd4jLong e = 0;
+                        for (auto it = sortValsMap.begin(); it != sortValsMap.end(); ++it, e++) {
+                            topIndices.t<Nd4jLong>(e) = it->first;
+                            topValues.t<T>(e) = it->second;
                         }
 
                     }
-
-                    for (int pos = 0; pos < k; ++pos, ++nextPos) {
-                        if (values != nullptr)
-                            (*values)(nextPos) = topValues[pos];
-
-                        (*indeces)(nextPos) = topIndices[pos];
-                    }
+                    if (values)
+                    (*values)(e, dimsToExclude).assign(topValues);
+                    if (indeces)
+                    (*indeces)(e, dimsToExclude).assign(topIndices);
                 }
+                //indeces->printIndexedBuffer("Indices as is");
         }
-        return ND4J_STATUS_OK;
+        return Status::OK();
     }
 // ----------------------------------------------------------------------------------------------- //
 
     template <typename T>
-    int inTopKFunctor(NDArray<T>* input, NDArray<T>* target, NDArray<T>* result, int k) {
+    static int inTopKFunctor_(NDArray* input, NDArray* target, NDArray* result, int k) {
 
-            std::vector<Nd4jLong> shapeV(input->rankOf() + 1);
-            for (int i = 0; i < input->rankOf(); i++)
-                shapeV[i] = input->sizeAt(i);
-            shapeV[input->rankOf()] = k;
-            std::unique_ptr<NDArray<T>> indices( new NDArray<T>(input->ordering(), shapeV));
-            NDArray<T>* values = nullptr;
+            std::vector<Nd4jLong> shapeI(input->rankOf());
+            for (int i = 0; i < input->rankOf() - 1; i++)
+                shapeI[i] = input->sizeAt(i);
+            shapeI[input->rankOf() - 1] = k;
+            std::unique_ptr<NDArray> indices(NDArrayFactory::create_<Nd4jLong>(input->ordering(), shapeI));
+            NDArray* values = nullptr;
             int status = topKFunctor(input, values, indices.get(), k, true);
 
             if (status == ND4J_STATUS_OK) {
-#pragma omp parallel for if(target->lengthOf() > Environment::getInstance()->elementwiseThreshold()) schedule(static)
+                bool condition = target->lengthOf() > Environment::getInstance()->tadThreshold();
+                PRAGMA_OMP_PARALLEL_FOR_IF(condition)
                 for (int e = 0; e < target->lengthOf(); e++) {
                     bool found = false;
                     for (int j = 0; j < k; j++) {
-                        if ((*target)(e) == (*indices)(e * k + j)) {
+                        if (target->e<Nd4jLong>(e) == indices->e<Nd4jLong>(e * k + j)) {
                             found = true;
                             break;
                         }
                     }
                     if (found)
-                        (*result)(e) = (T)1.f;
+                        result->p<bool>(e, true);
                 }
             }
             return status; 
 
     }
-    template int topKFunctor<float>(NDArray<float>* input, NDArray<float>* values, NDArray<float>* indeces, int k, bool needSort);
-    template int topKFunctor<float16>(NDArray<float16>* input, NDArray<float16>* values, NDArray<float16>* indeces, int k, bool needSort);
-    template int topKFunctor<double>(NDArray<double>* input, NDArray<double>* values, NDArray<double>* indeces, int k, bool needSort);
-    template int inTopKFunctor<float>(NDArray<float>* input, NDArray<float>* target, NDArray<float>* result, int k);
-    template int inTopKFunctor<float16>(NDArray<float16>* input, NDArray<float16>* target, NDArray<float16>* result, int k);
-    template int inTopKFunctor<double>(NDArray<double>* input, NDArray<double>* target, NDArray<double>* result, int k);
 
+        int topKFunctor(NDArray* input, NDArray* values, NDArray* indeces, int k, bool needSort) {
+            BUILD_SINGLE_SELECTOR(input->dataType(), return topKFunctor_, (input, values, indeces, k, needSort), NUMERIC_TYPES);
+        }
+
+        int inTopKFunctor(NDArray* input, NDArray* target, NDArray* result, int k) {
+            BUILD_SINGLE_SELECTOR(input->dataType(), return inTopKFunctor_, (input, target, result, k), NUMERIC_TYPES);
+        }
+
+        BUILD_SINGLE_TEMPLATE(template int topKFunctor_, (NDArray* input, NDArray* values, NDArray* indeces, int k, bool needSort), NUMERIC_TYPES);
+        BUILD_SINGLE_TEMPLATE(template int inTopKFunctor_, (NDArray* input, NDArray* target, NDArray* result, int k), NUMERIC_TYPES);
 }
 }
 }

@@ -32,8 +32,6 @@ import org.deeplearning4j.nn.conf.layers.util.MaskZeroLayer;
 import org.deeplearning4j.nn.modelimport.keras.KerasLayer;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
-import org.deeplearning4j.nn.modelimport.keras.layers.core.KerasMasking;
-import org.deeplearning4j.nn.modelimport.keras.layers.embeddings.KerasEmbedding;
 import org.deeplearning4j.nn.modelimport.keras.utils.KerasConstraintUtils;
 import org.deeplearning4j.nn.modelimport.keras.utils.KerasLayerUtils;
 import org.deeplearning4j.nn.params.LSTMParamInitializer;
@@ -45,7 +43,10 @@ import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.primitives.Pair;
 
-import java.util.*;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
 
 import static org.deeplearning4j.nn.modelimport.keras.utils.KerasActivationUtils.getIActivationFromConfig;
 import static org.deeplearning4j.nn.modelimport.keras.utils.KerasActivationUtils.mapToIActivation;
@@ -185,15 +186,11 @@ public class KerasLSTM extends KerasLayer {
                 .nOut(getNOutFromConfig(layerConfig, conf))
                 .dropOut(this.dropout)
                 .activation(getIActivationFromConfig(layerConfig, conf))
-                .weightInit(weightInit)
-                .weightInitRecurrent(recurrentWeightInit)
+                .weightInit(weightInit.getWeightInitFunction(distribution))
+                .weightInitRecurrent(recurrentWeightInit.getWeightInitFunction(recurrentDistribution))
                 .biasInit(0.0) // TODO: this is incorrect
                 .l1(this.weightL1Regularization)
                 .l2(this.weightL2Regularization);
-        if (distribution != null)
-            builder.dist(distribution);
-        if (recurrentDistribution != null)
-            builder.weightInitRecurrent(recurrentDistribution);
         if (biasConstraint != null)
             builder.constrainBias(biasConstraint);
         if (weightConstraint != null)
@@ -328,10 +325,10 @@ public class KerasLSTM extends KerasLayer {
             U_f = U.get(NDArrayIndex.all(), NDArrayIndex.interval(sliceInterval, 2 * sliceInterval));
             U_c = U.get(NDArrayIndex.all(), NDArrayIndex.interval(2 * sliceInterval, 3 * sliceInterval));
             U_o = U.get(NDArrayIndex.all(), NDArrayIndex.interval(3 * sliceInterval, 4 * sliceInterval));
-            b_i = b.get(NDArrayIndex.all(), NDArrayIndex.interval(0, sliceInterval));
-            b_f = b.get(NDArrayIndex.all(), NDArrayIndex.interval(sliceInterval, 2 * sliceInterval));
-            b_c = b.get(NDArrayIndex.all(), NDArrayIndex.interval(2 * sliceInterval, 3 * sliceInterval));
-            b_o = b.get(NDArrayIndex.all(), NDArrayIndex.interval(3 * sliceInterval, 4 * sliceInterval));
+            b_i = b.get(NDArrayIndex.interval(0, sliceInterval));
+            b_f = b.get(NDArrayIndex.interval(sliceInterval, 2 * sliceInterval));
+            b_c = b.get(NDArrayIndex.interval(2 * sliceInterval, 3 * sliceInterval));
+            b_o = b.get(NDArrayIndex.interval(3 * sliceInterval, 4 * sliceInterval));
         } else {
             if (weights.containsKey(KERAS_PARAM_NAME_W_C))
                 W_c = weights.get(KERAS_PARAM_NAME_W_C);

@@ -24,6 +24,8 @@ import org.nd4j.parameterserver.distributed.enums.FaultToleranceStrategy;
 import org.nd4j.parameterserver.distributed.enums.NodeRole;
 import org.nd4j.parameterserver.distributed.enums.TransportType;
 import org.nd4j.parameterserver.distributed.v2.enums.MeshBuildMode;
+import org.nd4j.parameterserver.distributed.v2.transport.PortSupplier;
+import org.nd4j.parameterserver.distributed.v2.transport.impl.StaticPortSupplier;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -41,18 +43,24 @@ import java.util.List;
 @Slf4j
 @Data
 public class VoidConfiguration implements Serializable {
+    public static final int DEFAULT_AERON_UDP_PORT = 49876;
 
     /**
      * StreamId is used for Aeron configuration
      */
     @Builder.Default
-    private int streamId = 119;
+    private int streamId = -1;
 
     /**
-     * This variable defines UDP port that will be used for communication
+     * This variable defines UDP port that will be used for communication with cluster driver.<br>
+     * NOTE: Use {@link #setPortSupplier(PortSupplier)} to set the port to use - the value of the unicastControllerPort
+     * field will automatically be updated to the value set by the PortSupplier provided on the master/controller machine,
+     * before communicating to the worker machines. Setting this field directly will NOT control the port that is
+     * used.
+     *
      */
     @Builder.Default
-    private int unicastPort = 49876;
+    private int unicastControllerPort = 49876;
 
     /**
      * This method specifies UDP port for multicast/broadcast transport
@@ -186,6 +194,14 @@ public class VoidConfiguration implements Serializable {
      */
     private String controllerAddress;
 
+    /**
+     * The port supplier used to provide the networking port to use for communication to/from the driver (UDP via Aeron).
+     * This setting can be used to control how ports get assigned (including port setting different ports on different machines).<br>
+     * See {@link PortSupplier} for further details.<br>
+     * Default: static port (i.e., {@link StaticPortSupplier}) with value {@link #DEFAULT_AERON_UDP_PORT}
+     */
+    @Builder.Default private PortSupplier portSupplier = new StaticPortSupplier(49876);
+
     public void setStreamId(int streamId) {
         if (streamId < 1)
             throw new ND4JIllegalStateException("You can't use streamId 0, please specify other one");
@@ -282,5 +298,34 @@ public class VoidConfiguration implements Serializable {
 
     public void setExecutionMode(@NonNull ExecutionMode executionMode) {
         this.executionMode = executionMode;
+    }
+
+    //Partial implementation to hideh/exclude unicastControllerPort from builder - users should use portSupplier method instead
+    // in the builder - otherwise, users might think they can set it via this method (instead, it gets overriden by whatever
+    // is provided by the port supplier)
+    //Also hide from builder some unsupported methods
+    public static class VoidConfigurationBuilder {
+
+        /**
+         * Equivalent to calling {@link #portSupplier(PortSupplier)} with a {@link StaticPortSupplier}
+         * @param unicastPort Port to use for
+         * @see #portSupplier(PortSupplier)
+         */
+        public VoidConfigurationBuilder unicastPort(int unicastPort){
+            return portSupplier(new StaticPortSupplier(unicastPort));
+        }
+
+        private VoidConfigurationBuilder unicastControllerPort(int unicastControllerPort){
+            throw new UnsupportedOperationException("Not supported. Use portSupplier method instead");
+        }
+
+        private VoidConfigurationBuilder faultToleranceStrategy(FaultToleranceStrategy faultToleranceStrategy){
+            throw new UnsupportedOperationException("Reserved for future use");
+        }
+
+        public VoidConfigurationBuilder backupAddresses(List<String> backupAddresses){
+            throw new UnsupportedOperationException("Reserved for future use");
+        }
+
     }
 }

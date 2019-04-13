@@ -21,10 +21,14 @@ import lombok.val;
 import onnx.OnnxProto3;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.autodiff.samediff.VariableType;
+import org.nd4j.base.Preconditions;
 import org.nd4j.imports.descriptors.properties.PropertyMapping;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.util.ArrayUtil;
 import org.tensorflow.framework.AttrValue;
@@ -112,15 +116,16 @@ public class Transpose extends DynamicCustomOp {
         }
 
         //handle once properly mapped
-        if (arg().getShape() == null) {
+        if (arg().getShape() == null || arg().getVariableType() == VariableType.PLACEHOLDER || arg().getArr() == null) {
             return;
         }
 
         INDArray arr = sameDiff.getArrForVarName(arg().getVarName());
         if (arr == null) {
             val arrVar = sameDiff.getVariable(arg().getVarName());
-            arr = arrVar.getWeightInitScheme().create(arrVar.getShape());
-            sameDiff.putArrayForVarName(arg().getVarName(), arr);
+
+            arr = arrVar.getWeightInitScheme().create(arrVar.dataType(), arrVar.getShape());
+            sameDiff.setArrayForVariable(arg().getVarName(), arr);
         }
 
         if(permuteArrayOp != null){
@@ -128,6 +133,8 @@ public class Transpose extends DynamicCustomOp {
         } else {
             addInputArgument(arr);
         }
+
+
 
         if (arr != null && permuteDims == null) {
             this.permuteDims = ArrayUtil.reverseCopy(ArrayUtil.range(0, arr.rank()));
@@ -148,17 +155,27 @@ public class Transpose extends DynamicCustomOp {
     }
 
     @Override
-    public List<long[]> calculateOutputShape() {
-        if (args().length > 1){
+    public List<LongShapeDescriptor> calculateOutputShape() {
+        if(numInputArguments() > 1){
             return super.calculateOutputShape();
-        }
-        if (permuteDims == null && arg() != null && arg().getShape() != null) {
+        } else if (args().length > 1) {
+            if (args()[0].getArr() != null && args()[1].getArr() != null) {
+                return super.calculateOutputShape();
+            }
+        } else  if (permuteDims == null && arg() != null && arg().getShape() != null) {
             this.permuteDims = ArrayUtil.reverseCopy(ArrayUtil.range(0, arg().getShape().length));
             val permutedShape = ArrayUtil.permute(arg().getShape(), permuteDims);
-            return Arrays.asList(permutedShape);
-        } else if (permuteDims != null && arg() != null && arg().getShape() != null) {
-            val permutedShape = ArrayUtil.permute(arg().getShape(), permuteDims);
-            return Arrays.asList(permutedShape);
+            return Arrays.asList(LongShapeDescriptor.fromShape(permutedShape, larg().dataType()));
+        } else if (permuteDims != null && arg() != null && (!inputArguments.isEmpty() || arg().getShape() != null)) {
+            long[] shape = null;
+            if(!inputArguments.isEmpty())
+                shape = inputArguments.get(0).shape();
+            else
+                shape = arg().getShape();
+            val permutedShape = ArrayUtil.permute(shape, permuteDims);
+            SDVariable lArg = larg();
+            DataType lArgType = lArg.dataType();
+            return Arrays.asList(LongShapeDescriptor.fromShape(permutedShape, lArgType));
         }
 
         return Collections.emptyList();
@@ -169,6 +186,14 @@ public class Transpose extends DynamicCustomOp {
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
         SDVariable ret = sameDiff.transpose(i_v.get(0));
         return Arrays.asList(ret);
+    }
+
+    @Override
+    public List<org.nd4j.linalg.api.buffer.DataType> calculateOutputDataTypes(List<org.nd4j.linalg.api.buffer.DataType> dataTypes){
+        Preconditions.checkState(dataTypes != null && (dataTypes.size() == 1 || dataTypes.size() == 2),
+                "Expected list with 1 or 2 datatype for %s, got %s", getClass(), dataTypes);
+        //Output type is same as input type. Second input is permute dimensions as array
+        return Collections.singletonList(dataTypes.get(0));
     }
 
 }

@@ -63,10 +63,10 @@ public class GravesLSTM extends AbstractLSTM {
     }
 
     @Override
-    protected void initializeConstraints(org.deeplearning4j.nn.conf.layers.Layer.Builder<?> builder){
+    protected void initializeConstraints(org.deeplearning4j.nn.conf.layers.Layer.Builder<?> builder) {
         super.initializeConstraints(builder);
-        if(((Builder)builder).recurrentConstraints != null){
-            if(constraints == null){
+        if (((Builder) builder).recurrentConstraints != null) {
+            if (constraints == null) {
                 constraints = new ArrayList<>();
             }
             for (LayerConstraint c : ((Builder) builder).recurrentConstraints) {

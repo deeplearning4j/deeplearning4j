@@ -24,7 +24,10 @@ import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.*;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
+import org.deeplearning4j.nn.conf.layers.GlobalPoolingLayer;
+import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.conf.layers.RnnOutputLayer;
+import org.deeplearning4j.nn.conf.layers.misc.FrozenLayer;
 import org.deeplearning4j.nn.conf.preprocessor.FeedForwardToRnnPreProcessor;
 import org.deeplearning4j.nn.conf.preprocessor.RnnToFeedForwardPreProcessor;
 import org.deeplearning4j.nn.gradient.Gradient;
@@ -37,6 +40,7 @@ import org.deeplearning4j.nn.params.GravesLSTMParamInitializer;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
@@ -64,10 +68,10 @@ public class MultiLayerTestRNN extends BaseDL4JTest {
                                         .list().layer(0,
                                                         new org.deeplearning4j.nn.conf.layers.GravesLSTM.Builder()
                                                                         .nIn(nIn).nOut(nHiddenUnits)
-                                                                        .weightInit(WeightInit.DISTRIBUTION)
+
                                                                         .activation(Activation.TANH).build())
                                         .layer(1, new RnnOutputLayer.Builder(LossFunction.MSE).nIn(nHiddenUnits)
-                                                        .nOut(nOut).weightInit(WeightInit.DISTRIBUTION)
+                                                        .nOut(nOut)
                                                         .activation(Activation.TANH).build())
                                         .build();
         MultiLayerNetwork network = new MultiLayerNetwork(conf);
@@ -90,7 +94,10 @@ public class MultiLayerTestRNN extends BaseDL4JTest {
         //Want forget gate biases to be initialized to > 0. See parameter initializer for details
         INDArray forgetGateBiases =
                         biases.get(NDArrayIndex.point(0), NDArrayIndex.interval(nHiddenUnits, 2 * nHiddenUnits));
-        assertEquals(nHiddenUnits, (int) forgetGateBiases.gt(0).sum(Integer.MAX_VALUE).getDouble(0));
+        INDArray gt = forgetGateBiases.gt(0);
+        INDArray gtSum = gt.castTo(DataType.INT).sum(Integer.MAX_VALUE);
+        int count = gtSum.getInt(0);
+        assertEquals(nHiddenUnits, count);
 
         val nParams = recurrentWeights.length() + inputWeights.length() + biases.length();
         assertTrue(nParams == layer.numParams());
@@ -103,13 +110,13 @@ public class MultiLayerTestRNN extends BaseDL4JTest {
         int[] nHiddenUnits = {17, 19, 23};
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().list()
                         .layer(0, new org.deeplearning4j.nn.conf.layers.GravesLSTM.Builder().nIn(nIn).nOut(17)
-                                        .weightInit(WeightInit.DISTRIBUTION).activation(Activation.TANH).build())
+                                        .activation(Activation.TANH).build())
                         .layer(1, new org.deeplearning4j.nn.conf.layers.GravesLSTM.Builder().nIn(17).nOut(19)
-                                        .weightInit(WeightInit.DISTRIBUTION).activation(Activation.TANH).build())
+                                        .activation(Activation.TANH).build())
                         .layer(2, new org.deeplearning4j.nn.conf.layers.GravesLSTM.Builder().nIn(19).nOut(23)
-                                        .weightInit(WeightInit.DISTRIBUTION).activation(Activation.TANH).build())
+                                        .activation(Activation.TANH).build())
                         .layer(3, new RnnOutputLayer.Builder(LossFunction.MSE).nIn(23).nOut(nOut)
-                                        .weightInit(WeightInit.DISTRIBUTION).activation(Activation.TANH).build())
+                                        .activation(Activation.TANH).build())
                         .build();
         MultiLayerNetwork network = new MultiLayerNetwork(conf);
         network.init();
@@ -134,7 +141,10 @@ public class MultiLayerTestRNN extends BaseDL4JTest {
             //Want forget gate biases to be initialized to > 0. See parameter initializer for details
             INDArray forgetGateBiases = biases.get(NDArrayIndex.point(0),
                             NDArrayIndex.interval(nHiddenUnits[i], 2 * nHiddenUnits[i]));
-            assertEquals(nHiddenUnits[i], (int) forgetGateBiases.gt(0).sum(Integer.MAX_VALUE).getDouble(0));
+            INDArray gt = forgetGateBiases.gt(0).castTo(DataType.INT);
+            INDArray gtSum = gt.sum(Integer.MAX_VALUE);
+            double count = gtSum.getDouble(0);
+            assertEquals(nHiddenUnits[i], (int)count);
 
             val nParams = recurrentWeights.length() + inputWeights.length() + biases.length();
             assertTrue(nParams == layer.numParams());
@@ -151,18 +161,18 @@ public class MultiLayerTestRNN extends BaseDL4JTest {
                                         .list().layer(0,
                                                         new org.deeplearning4j.nn.conf.layers.GravesLSTM.Builder()
                                                                         .nIn(5).nOut(7).activation(Activation.TANH)
-                                                                        .weightInit(WeightInit.DISTRIBUTION)
+
                                                                         .dist(new NormalDistribution(0, 0.5)).build())
                                         .layer(1, new org.deeplearning4j.nn.conf.layers.GravesLSTM.Builder().nIn(7)
                                                         .nOut(8).activation(Activation.TANH)
-                                                        .weightInit(WeightInit.DISTRIBUTION)
+
                                                         .dist(new NormalDistribution(0,
                                                                         0.5))
                                                         .build())
                                         .layer(2, new RnnOutputLayer.Builder(LossFunction.MCXENT)
-                                                        .weightInit(WeightInit.DISTRIBUTION).nIn(8).nOut(4)
+                                                        .nIn(8).nOut(4)
                                                         .activation(Activation.SOFTMAX)
-                                                        .weightInit(WeightInit.DISTRIBUTION)
+
                                                         .dist(new NormalDistribution(0, 0.5)).build())
                                         .build();
         MultiLayerNetwork mln = new MultiLayerNetwork(conf);
@@ -217,26 +227,26 @@ public class MultiLayerTestRNN extends BaseDL4JTest {
 
             if(layerType == 0){
                 l0 = new org.deeplearning4j.nn.conf.layers.GravesLSTM.Builder().nIn(5).nOut(7)
-                        .activation(Activation.TANH).weightInit(WeightInit.DISTRIBUTION)
+                        .activation(Activation.TANH)
                         .dist(new NormalDistribution(0, 0.5)).build();
                 l1 = new org.deeplearning4j.nn.conf.layers.GravesLSTM.Builder().nIn(7).nOut(8)
-                        .activation(Activation.TANH).weightInit(WeightInit.DISTRIBUTION)
+                        .activation(Activation.TANH)
                         .dist(new NormalDistribution(0, 0.5)).build();
                 lastActKey = GravesLSTM.STATE_KEY_PREV_ACTIVATION;
             } else if(layerType == 1){
                 l0 = new org.deeplearning4j.nn.conf.layers.LSTM.Builder().nIn(5).nOut(7)
-                        .activation(Activation.TANH).weightInit(WeightInit.DISTRIBUTION)
+                        .activation(Activation.TANH)
                         .dist(new NormalDistribution(0, 0.5)).build();
                 l1 = new org.deeplearning4j.nn.conf.layers.LSTM.Builder().nIn(7).nOut(8)
-                        .activation(Activation.TANH).weightInit(WeightInit.DISTRIBUTION)
+                        .activation(Activation.TANH)
                         .dist(new NormalDistribution(0, 0.5)).build();
                 lastActKey = LSTM.STATE_KEY_PREV_ACTIVATION;
             } else {
                 l0 = new org.deeplearning4j.nn.conf.layers.recurrent.SimpleRnn.Builder().nIn(5).nOut(7)
-                        .activation(Activation.TANH).weightInit(WeightInit.DISTRIBUTION)
+                        .activation(Activation.TANH)
                         .dist(new NormalDistribution(0, 0.5)).build();
                 l1 = new org.deeplearning4j.nn.conf.layers.recurrent.SimpleRnn.Builder().nIn(7).nOut(8)
-                        .activation(Activation.TANH).weightInit(WeightInit.DISTRIBUTION)
+                        .activation(Activation.TANH)
                         .dist(new NormalDistribution(0, 0.5)).build();
                 lastActKey = SimpleRnn.STATE_KEY_PREV_ACTIVATION;
             }
@@ -252,13 +262,13 @@ public class MultiLayerTestRNN extends BaseDL4JTest {
                     .layer(0, l0)
                     .layer(1, l1)
                     .layer(2, new DenseLayer.Builder().nIn(8).nOut(9).activation(Activation.TANH)
-                            .weightInit(WeightInit.DISTRIBUTION).dist(
+                            .dist(
                                     new NormalDistribution(0,
                                             0.5))
                             .build())
-                    .layer(3, new RnnOutputLayer.Builder(LossFunction.MCXENT).weightInit(WeightInit.DISTRIBUTION)
+                    .layer(3, new RnnOutputLayer.Builder(LossFunction.MCXENT)
                             .nIn(9).nOut(4).activation(Activation.SOFTMAX)
-                            .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 0.5))
+                            .dist(new NormalDistribution(0, 0.5))
                             .build())
                     .inputPreProcessor(2, new RnnToFeedForwardPreProcessor())
                     .inputPreProcessor(3, new FeedForwardToRnnPreProcessor()).build();
@@ -340,18 +350,18 @@ public class MultiLayerTestRNN extends BaseDL4JTest {
                                         .list().layer(0,
                                                         new org.deeplearning4j.nn.conf.layers.GravesLSTM.Builder()
                                                                         .nIn(5).nOut(7).activation(Activation.TANH)
-                                                                        .weightInit(WeightInit.DISTRIBUTION)
+
                                                                         .dist(new NormalDistribution(0, 0.5)).build())
                                         .layer(1, new org.deeplearning4j.nn.conf.layers.GravesLSTM.Builder().nIn(7)
                                                         .nOut(8).activation(Activation.TANH)
-                                                        .weightInit(WeightInit.DISTRIBUTION)
+
                                                         .dist(new NormalDistribution(0,
                                                                         0.5))
                                                         .build())
                                         .layer(2, new RnnOutputLayer.Builder(LossFunction.MCXENT)
-                                                        .weightInit(WeightInit.DISTRIBUTION).nIn(8).nOut(4)
+                                                        .nIn(8).nOut(4)
                                                         .activation(Activation.SOFTMAX)
-                                                        .weightInit(WeightInit.DISTRIBUTION)
+
                                                         .dist(new NormalDistribution(0, 0.5)).build())
                                         .build();
         MultiLayerNetwork mln = new MultiLayerNetwork(conf);
@@ -398,17 +408,17 @@ public class MultiLayerTestRNN extends BaseDL4JTest {
                 .trainingWorkspaceMode(WorkspaceMode.NONE).inferenceWorkspaceMode(WorkspaceMode.NONE)
                 .list()
                         .layer(0, new org.deeplearning4j.nn.conf.layers.GravesLSTM.Builder().nIn(nIn).nOut(7)
-                                        .activation(Activation.TANH).weightInit(WeightInit.DISTRIBUTION)
+                                        .activation(Activation.TANH)
                                         .dist(new NormalDistribution(0, 0.5)).build())
                         .layer(1, new org.deeplearning4j.nn.conf.layers.GravesLSTM.Builder().nIn(7).nOut(8)
                                         .activation(Activation.TANH)
-                                        .weightInit(WeightInit.DISTRIBUTION).dist(
+                                        .dist(
                                                         new NormalDistribution(0,
                                                                         0.5))
                                         .build())
-                        .layer(2, new RnnOutputLayer.Builder(LossFunction.MCXENT).weightInit(WeightInit.DISTRIBUTION)
+                        .layer(2, new RnnOutputLayer.Builder(LossFunction.MCXENT)
                                         .nIn(8).nOut(nOut).activation(Activation.SOFTMAX)
-                                        .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 0.5))
+                                        .dist(new NormalDistribution(0, 0.5))
                                         .build())
                         .build();
         assertEquals(BackpropType.Standard, conf.getBackpropType());
@@ -417,17 +427,17 @@ public class MultiLayerTestRNN extends BaseDL4JTest {
                 .trainingWorkspaceMode(WorkspaceMode.NONE).inferenceWorkspaceMode(WorkspaceMode.NONE)
                 .list()
                         .layer(0, new org.deeplearning4j.nn.conf.layers.GravesLSTM.Builder().nIn(nIn).nOut(7)
-                                        .activation(Activation.TANH).weightInit(WeightInit.DISTRIBUTION)
+                                        .activation(Activation.TANH)
                                         .dist(new NormalDistribution(0, 0.5)).build())
                         .layer(1, new org.deeplearning4j.nn.conf.layers.GravesLSTM.Builder().nIn(7).nOut(8)
                                         .activation(Activation.TANH)
-                                        .weightInit(WeightInit.DISTRIBUTION).dist(
+                                        .dist(
                                                         new NormalDistribution(0,
                                                                         0.5))
                                         .build())
-                        .layer(2, new RnnOutputLayer.Builder(LossFunction.MCXENT).weightInit(WeightInit.DISTRIBUTION)
+                        .layer(2, new RnnOutputLayer.Builder(LossFunction.MCXENT)
                                         .nIn(8).nOut(nOut).activation(Activation.SOFTMAX)
-                                        .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 0.5))
+                                        .dist(new NormalDistribution(0, 0.5))
                                         .build())
                         .backpropType(BackpropType.TruncatedBPTT).tBPTTBackwardLength(timeSeriesLength)
                         .tBPTTForwardLength(timeSeriesLength).build();
@@ -462,7 +472,7 @@ public class MultiLayerTestRNN extends BaseDL4JTest {
         Pair<Gradient, Double> tbpttPair = mlnTBPTT.gradientAndScore();
 
         assertEquals(mlnPair.getFirst().gradientForVariable(), tbpttPair.getFirst().gradientForVariable());
-        assertEquals(mlnPair.getSecond(), tbpttPair.getSecond());
+        assertEquals(mlnPair.getSecond(), tbpttPair.getSecond(), 1e-8);
 
         //Check states: expect stateMap to be empty but tBpttStateMap to not be
         Map<String, INDArray> l0StateMLN = mln.rnnGetPreviousState(0);
@@ -509,18 +519,18 @@ public class MultiLayerTestRNN extends BaseDL4JTest {
         MultiLayerConfiguration conf =
                         new NeuralNetConfiguration.Builder().seed(12345).list().layer(0,
                                         new org.deeplearning4j.nn.conf.layers.GravesLSTM.Builder().nIn(nIn).nOut(7)
-                                                        .activation(Activation.TANH).weightInit(WeightInit.DISTRIBUTION)
+                                                        .activation(Activation.TANH)
                                                         .dist(new NormalDistribution(0, 0.5)).build())
                                         .layer(1, new org.deeplearning4j.nn.conf.layers.GravesLSTM.Builder().nIn(7)
                                                         .nOut(8).activation(Activation.TANH)
-                                                        .weightInit(WeightInit.DISTRIBUTION)
+
                                                         .dist(new NormalDistribution(0,
                                                                         0.5))
                                                         .build())
                                         .layer(2, new RnnOutputLayer.Builder(LossFunction.MCXENT)
-                                                        .weightInit(WeightInit.DISTRIBUTION).nIn(8).nOut(nOut)
+                                                        .nIn(8).nOut(nOut)
                                                         .activation(Activation.SOFTMAX)
-                                                        .weightInit(WeightInit.DISTRIBUTION)
+
                                                         .dist(new NormalDistribution(0, 0.5)).build())
                                         .build();
 
@@ -591,17 +601,17 @@ public class MultiLayerTestRNN extends BaseDL4JTest {
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345)
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).list()
                         .layer(0, new org.deeplearning4j.nn.conf.layers.GravesLSTM.Builder().nIn(nIn).nOut(7)
-                                        .activation(Activation.TANH).weightInit(WeightInit.DISTRIBUTION)
+                                        .activation(Activation.TANH)
                                         .dist(new NormalDistribution(0, 0.5)).build())
                         .layer(1, new org.deeplearning4j.nn.conf.layers.GravesLSTM.Builder().nIn(7).nOut(8)
                                         .activation(Activation.TANH)
-                                        .weightInit(WeightInit.DISTRIBUTION).dist(
+                                        .dist(
                                                         new NormalDistribution(0,
                                                                         0.5))
                                         .build())
-                        .layer(2, new RnnOutputLayer.Builder(LossFunction.MCXENT).weightInit(WeightInit.DISTRIBUTION)
+                        .layer(2, new RnnOutputLayer.Builder(LossFunction.MCXENT)
                                         .nIn(8).nOut(nOut).activation(Activation.SOFTMAX)
-                                        .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 0.5))
+                                        .dist(new NormalDistribution(0, 0.5))
                                         .build())
                         .backpropType(BackpropType.TruncatedBPTT)
                         .tBPTTBackwardLength(timeSeriesLength).tBPTTForwardLength(timeSeriesLength).build();
@@ -628,17 +638,17 @@ public class MultiLayerTestRNN extends BaseDL4JTest {
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345)
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).list()
                         .layer(0, new org.deeplearning4j.nn.conf.layers.GravesLSTM.Builder().nIn(nIn).nOut(7)
-                                        .activation(Activation.TANH).weightInit(WeightInit.DISTRIBUTION)
+                                        .activation(Activation.TANH)
                                         .dist(new NormalDistribution(0, 0.5)).build())
                         .layer(1, new org.deeplearning4j.nn.conf.layers.GravesLSTM.Builder().nIn(7).nOut(8)
                                         .activation(Activation.TANH)
-                                        .weightInit(WeightInit.DISTRIBUTION).dist(
+                                        .dist(
                                                         new NormalDistribution(0,
                                                                         0.5))
                                         .build())
-                        .layer(2, new RnnOutputLayer.Builder(LossFunction.MCXENT).weightInit(WeightInit.DISTRIBUTION)
+                        .layer(2, new RnnOutputLayer.Builder(LossFunction.MCXENT)
                                         .nIn(8).nOut(nOut).activation(Activation.SOFTMAX)
-                                        .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 0.5))
+                                        .dist(new NormalDistribution(0, 0.5))
                                         .build())
                         .backpropType(BackpropType.TruncatedBPTT)
                         .tBPTTBackwardLength(tbpttLength).tBPTTForwardLength(tbpttLength).build();
@@ -741,5 +751,57 @@ public class MultiLayerTestRNN extends BaseDL4JTest {
         mln.fit(ds);
         INDArray afterParams = mln.params();
         assertNotEquals(initialParams, afterParams);
+    }
+
+    @Test
+    public void testInvalidTPBTT() {
+        int nIn = 8;
+        int nOut = 25;
+        int nHiddenUnits = 17;
+
+        try {
+            new NeuralNetConfiguration.Builder()
+                    .list()
+                    .layer(new org.deeplearning4j.nn.conf.layers.LSTM.Builder().nIn(nIn).nOut(nHiddenUnits).build())
+                    .layer(new GlobalPoolingLayer())
+                    .layer(new OutputLayer.Builder(LossFunction.MSE).nIn(nHiddenUnits)
+                            .nOut(nOut)
+                            .activation(Activation.TANH).build())
+                    .backpropType(BackpropType.TruncatedBPTT)
+                    .build();
+            fail("Exception expected");
+        } catch (IllegalStateException e){
+//            e.printStackTrace();
+            assertTrue(e.getMessage().contains("TBPTT") && e.getMessage().contains("validateTbpttConfig"));
+        }
+    }
+
+    @Test
+    public void testWrapperLayerGetPreviousState(){
+
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                .list()
+                .layer(new FrozenLayer(new org.deeplearning4j.nn.conf.layers.LSTM.Builder()
+                        .nIn(5).nOut(5).build()))
+                .build();
+
+        MultiLayerNetwork net = new MultiLayerNetwork(conf);
+        net.init();
+
+        INDArray in = Nd4j.create(1, 5, 2);
+        net.rnnTimeStep(in);
+
+        Map<String,INDArray> m = net.rnnGetPreviousState(0);
+        assertNotNull(m);
+        assertEquals(2, m.size());  //activation and cell state
+
+        net.rnnSetPreviousState(0, m);
+
+        ComputationGraph cg = net.toComputationGraph();
+        cg.rnnTimeStep(in);
+        m = cg.rnnGetPreviousState(0);
+        assertNotNull(m);
+        assertEquals(2, m.size());  //activation and cell state
+        cg.rnnSetPreviousState(0, m);
     }
 }

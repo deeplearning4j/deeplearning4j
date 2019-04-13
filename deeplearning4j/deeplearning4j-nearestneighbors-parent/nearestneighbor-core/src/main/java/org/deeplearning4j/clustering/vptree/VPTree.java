@@ -25,8 +25,7 @@ import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
 import org.nd4j.linalg.api.memory.enums.*;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.impl.accum.Dot;
-import org.nd4j.linalg.api.ops.impl.accum.distances.*;
+import org.nd4j.linalg.api.ops.impl.reduce3.*;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -207,32 +206,28 @@ public class VPTree implements Serializable {
     public void calcDistancesRelativeTo(INDArray items, INDArray basePoint, INDArray distancesArr) {
         switch (similarityFunction) {
             case "euclidean":
-                Nd4j.getExecutioner().exec(new EuclideanDistance(items, basePoint, distancesArr, items.lengthLong()),
-                        -1);
+                Nd4j.getExecutioner().exec(new EuclideanDistance(items, basePoint, distancesArr, true,-1));
                 break;
             case "cosinedistance":
-                Nd4j.getExecutioner().exec(new CosineDistance(items, basePoint, distancesArr, items.lengthLong()), -1);
+                Nd4j.getExecutioner().exec(new CosineDistance(items, basePoint, distancesArr, true, -1));
                 break;
             case "cosinesimilarity":
-                Nd4j.getExecutioner().exec(new CosineSimilarity(items, basePoint, distancesArr, items.lengthLong()),
-                        -1);
+                Nd4j.getExecutioner().exec(new CosineSimilarity(items, basePoint, distancesArr, true, -1));
                 break;
             case "manhattan":
-                Nd4j.getExecutioner().exec(new ManhattanDistance(items, basePoint, distancesArr, items.lengthLong()),
-                        -1);
+                Nd4j.getExecutioner().exec(new ManhattanDistance(items, basePoint, distancesArr, true, -1));
                 break;
             case "dot":
-                Nd4j.getExecutioner().exec(new Dot(items, basePoint, distancesArr, items.lengthLong()), -1);
+                Nd4j.getExecutioner().exec(new Dot(items, basePoint, distancesArr, -1));
                 break;
             case "jaccard":
-                Nd4j.getExecutioner().exec(new JaccardDistance(items, basePoint, distancesArr, items.lengthLong()), -1);
+                Nd4j.getExecutioner().exec(new JaccardDistance(items, basePoint, distancesArr, true, -1));
                 break;
             case "hamming":
-                Nd4j.getExecutioner().exec(new HammingDistance(items, basePoint, distancesArr, items.lengthLong()), -1);
+                Nd4j.getExecutioner().exec(new HammingDistance(items, basePoint, distancesArr, true, -1));
                 break;
             default:
-                Nd4j.getExecutioner().exec(new EuclideanDistance(items, basePoint, distancesArr, items.lengthLong()),
-                        -1);
+                Nd4j.getExecutioner().exec(new EuclideanDistance(items, basePoint, distancesArr, true, -1));
                 break;
 
         }
@@ -261,32 +256,32 @@ public class VPTree implements Serializable {
         switch (similarityFunction) {
             case "jaccard":
                 float ret7 = Nd4j.getExecutioner()
-                        .execAndReturn(new JaccardDistance(arr1, arr2, scalars.get(), arr1.length()))
+                        .execAndReturn(new JaccardDistance(arr1, arr2, scalars.get()))
                         .getFinalResult().floatValue();
                 return invert ? -ret7 : ret7;
             case "hamming":
                 float ret8 = Nd4j.getExecutioner()
-                        .execAndReturn(new HammingDistance(arr1, arr2, scalars.get(), arr1.length()))
+                        .execAndReturn(new HammingDistance(arr1, arr2, scalars.get()))
                         .getFinalResult().floatValue();
                 return invert ? -ret8 : ret8;
             case "euclidean":
                 float ret = Nd4j.getExecutioner()
-                        .execAndReturn(new EuclideanDistance(arr1, arr2, scalars.get(), arr1.length()))
+                        .execAndReturn(new EuclideanDistance(arr1, arr2, scalars.get()))
                         .getFinalResult().floatValue();
                 return invert ? -ret : ret;
             case "cosinesimilarity":
                 float ret2 = Nd4j.getExecutioner()
-                        .execAndReturn(new CosineSimilarity(arr1, arr2, scalars.get(), arr1.length()))
+                        .execAndReturn(new CosineSimilarity(arr1, arr2, scalars.get()))
                         .getFinalResult().floatValue();
                 return invert ? -ret2 : ret2;
             case "cosinedistance":
                 float ret6 = Nd4j.getExecutioner()
-                        .execAndReturn(new CosineDistance(arr1, arr2, scalars.get(), arr1.length()))
+                        .execAndReturn(new CosineDistance(arr1, arr2, scalars.get()))
                         .getFinalResult().floatValue();
                 return invert ? -ret6 : ret6;
             case "manhattan":
                 float ret3 = Nd4j.getExecutioner()
-                        .execAndReturn(new ManhattanDistance(arr1, arr2, scalars.get(), arr1.length()))
+                        .execAndReturn(new ManhattanDistance(arr1, arr2, scalars.get()))
                         .getFinalResult().floatValue();
                 return invert ? -ret3 : ret3;
             case "dot":
@@ -294,7 +289,7 @@ public class VPTree implements Serializable {
                 return invert ? -dotRet : dotRet;
             default:
                 float ret4 = Nd4j.getExecutioner()
-                        .execAndReturn(new EuclideanDistance(arr1, arr2, scalars.get(), arr1.length()))
+                        .execAndReturn(new EuclideanDistance(arr1, arr2, scalars.get()))
                         .getFinalResult().floatValue();
                 return invert ? -ret4 : ret4;
 
@@ -498,11 +493,8 @@ public class VPTree implements Serializable {
             pq.poll();
         }
 
-
-        if (invert) {
-            Collections.reverse(results);
-            Collections.reverse(distances);
-        }
+        Collections.reverse(results);
+        Collections.reverse(distances);
     }
 
     /**

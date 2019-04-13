@@ -28,10 +28,11 @@ import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.activations.impl.ActivationIdentity;
 import org.nd4j.linalg.activations.impl.ActivationSigmoid;
 import org.nd4j.linalg.activations.impl.ActivationSoftmax;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastMulOp;
-import org.nd4j.linalg.api.ops.impl.transforms.IsMax;
-import org.nd4j.linalg.api.ops.impl.transforms.Not;
+import org.nd4j.linalg.api.ops.impl.transforms.any.IsMax;
+import org.nd4j.linalg.api.ops.impl.transforms.pairwise.bool.Not;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.dataset.api.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
@@ -90,8 +91,7 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
     @Setter @Getter
     protected INDArray labels;
 
-    private double fullNetworkL1;
-    private double fullNetworkL2;
+    private double fullNetRegTerm;
     private double score;
 
     public Yolo2OutputLayer(NeuralNetConfiguration conf) {
@@ -128,9 +128,13 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         //Infer mask array from labels. Mask array is 1_i^B in YOLO paper - i.e., whether an object is present in that
         // grid location or not. Here: we are using the fact that class labels are one-hot, and assume that values are
         // all 0s if no class label is present
+        Preconditions.checkState(labels.rank() == 4, "Expected labels array to be rank 4 with shape [minibatch, 4+numClasses, H, W]. Got labels array with shape %ndShape", labels);
+        Preconditions.checkState(labels.size(1) > 0, "Invalid labels array: labels.size(1) must be > 4. labels array should be rank 4 with shape [minibatch, 4+numClasses, H, W]. Got labels array with shape %ndShape", labels);
+
         val size1 = labels.size(1);
         INDArray classLabels = labels.get(all(), interval(4,size1), all(), all());   //Shape: [minibatch, nClasses, H, W]
-        INDArray maskObjectPresent = classLabels.sum(Nd4j.createUninitialized(nhw, 'c'), 1); //Shape: [minibatch, H, W]
+        INDArray maskObjectPresent = classLabels.sum(Nd4j.createUninitialized(nhw, 'c'), 1);//.castTo(DataType.BOOL); //Shape: [minibatch, H, W]
+        INDArray maskObjectPresentBool = maskObjectPresent.castTo(DataType.BOOL);
 
         // ----- Step 1: Labels format conversion -----
         //First: Convert labels/ground truth (x1,y1,x2,y2) from "coordinates (grid box units)" format to "center position in grid box" format
@@ -167,7 +171,7 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         //Exponential for w/h (for: boxPrior * exp(input))      ->      Predicted WH in grid units (0 to 13 usually)
         INDArray predictedWHPreExp = input5.get(all(), all(), interval(2,4), all(), all());
         INDArray predictedWH = Transforms.exp(predictedWHPreExp, true);
-        Broadcast.mul(predictedWH, layerConf().getBoundingBoxes(), predictedWH, 1, 2);  //Box priors: [b, 2]; predictedWH: [mb, b, 2, h, w]
+        Broadcast.mul(predictedWH, layerConf().getBoundingBoxes().castTo(predictedWH.dataType()), predictedWH, 1, 2);  //Box priors: [b, 2]; predictedWH: [mb, b, 2, h, w]
 
         //Apply sqrt to W/H in preparation for loss function
         INDArray predictedWHSqrt = Transforms.sqrt(predictedWH, true);
@@ -176,7 +180,7 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
 
         // ----- Step 3: Calculate IOU(predicted, labels) to infer 1_ij^obj mask array (for loss function) -----
         //Calculate IOU (intersection over union - aka Jaccard index) - for the labels and predicted values
-        IOURet iouRet = calculateIOULabelPredicted(labelTLXY, labelBRXY, predictedWH, predictedXYCenterGrid, maskObjectPresent);  //IOU shape: [minibatch, B, H, W]
+        IOURet iouRet = calculateIOULabelPredicted(labelTLXY, labelBRXY, predictedWH, predictedXYCenterGrid, maskObjectPresent, maskObjectPresentBool);  //IOU shape: [minibatch, B, H, W]
         INDArray iou = iouRet.getIou();
 
         //Mask 1_ij^obj: isMax (dimension 1) + apply object present mask. Result: [minibatch, B, H, W]
@@ -184,9 +188,11 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         // IOU of any in the grid cell
         //We also need 1_ij^noobj, which is (a) no object, or (b) object present in grid cell, but this box doesn't
         // have the highest IOU
-        INDArray mask1_ij_obj = Nd4j.getExecutioner().execAndReturn(new IsMax(iou.dup('c'), 1));
-        Nd4j.getExecutioner().execAndReturn(new BroadcastMulOp(mask1_ij_obj, maskObjectPresent, mask1_ij_obj, 0,2,3));
+        INDArray mask1_ij_obj = Nd4j.create(DataType.BOOL, iou.shape(), 'c');
+        Nd4j.getExecutioner().execAndReturn(new IsMax(iou, mask1_ij_obj, 1));
+        Nd4j.getExecutioner().execAndReturn(new BroadcastMulOp(mask1_ij_obj, maskObjectPresentBool, mask1_ij_obj, 0,2,3));
         INDArray mask1_ij_noobj = Transforms.not(mask1_ij_obj);
+        mask1_ij_obj = mask1_ij_obj.castTo(Nd4j.defaultFloatingPointType());
 
 
 
@@ -204,7 +210,8 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         //(and masks) to a 2d representation, suitable for use in DL4J's loss functions
 
         INDArray mask1_ij_obj_2d = mask1_ij_obj.reshape(mb*b*h*w, 1);  //Must be C order before reshaping
-        INDArray mask1_ij_noobj_2d = Transforms.not(mask1_ij_obj_2d);   //Not op is copy op; mask has 1 where box is not responsible for prediction
+        INDArray mask1_ij_noobj_2d = mask1_ij_obj_2d.rsub(1.0);
+
 
         INDArray predictedXYCenter2d = predictedXYCenterGrid.permute(0,1,3,4,2)  //From: [mb, B, 2, H, W] to [mb, B, H, W, 2]
                 .dup('c').reshape('c', mb*b*h*w, 2);
@@ -258,11 +265,13 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
                     .addi(classPredictionLoss)
                     .dup('c');
 
-            scoreForExamples = scoreForExamples.reshape('c', mb, b*h*w).sum(1).addi(fullNetworkL1 + fullNetworkL2);
+            scoreForExamples = scoreForExamples.reshape('c', mb, b*h*w).sum(true, 1);
+            if(fullNetRegTerm > 0.0) {
+                scoreForExamples.addi(fullNetRegTerm);
+            }
 
             return workspaceMgr.leverageTo(ArrayType.ACTIVATIONS, scoreForExamples);
         }
-
 
         double positionLoss = layerConf().getLossPositionScale().computeScore(labelXYCenter2d, predictedXYCenter2d, identity, mask1_ij_obj_2d, false );
         double sizeScaleLoss = layerConf().getLossPositionScale().computeScore(labelWHSqrt2d, predictedWHSqrt2d, identity, mask1_ij_obj_2d, false);
@@ -272,11 +281,11 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
 
         this.score = lambdaCoord * (positionLoss + sizeScaleLoss) +
                 confidenceLoss  +
-                classPredictionLoss +
-                fullNetworkL1 +
-                fullNetworkL2;
+                classPredictionLoss;
 
         this.score /= getInputMiniBatchSize();
+
+        this.score += fullNetRegTerm;
 
         if(scoreOnly)
             return null;
@@ -346,7 +355,7 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
 
         //Lc = 1^(obj)*(iou - predicted)^2 + lambdaNoObj * 1^(noobj) * (iou - predicted)^2 -> dLc/diou = 2*1^(obj)*(iou-predicted) + 2 * lambdaNoObj * 1^(noobj) * (iou-predicted) = 2*(iou-predicted) * (1^(obj) + lambdaNoObj * 1^(noobj))
         INDArray twoIOUSubPredicted = iou.subi(predictedConfidence).muli(2.0);  //Shape: [mb, b, h, w]. Note that when an object is present, IOU and confidence are the same. In-place to avoid copy op (iou no longer needed)
-        INDArray dLc_dIOU = twoIOUSubPredicted.muli(mask1_ij_obj.add(mask1_ij_noobj.muli(lambdaNoObj)));    //Modify mask1_ij_noobj - avoid extra temp array allocatino
+        INDArray dLc_dIOU = twoIOUSubPredicted.muli(mask1_ij_noobj.castTo(Nd4j.defaultFloatingPointType()).muli(lambdaNoObj).addi(mask1_ij_obj));
 
 
         INDArray dLc_dxy = Nd4j.createUninitialized(iouRet.dIOU_dxy.shape(), iouRet.dIOU_dxy.ordering());
@@ -391,9 +400,8 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
     }
 
     @Override
-    public double computeScore(double fullNetworkL1, double fullNetworkL2, boolean training, LayerWorkspaceMgr workspaceMgr) {
-        this.fullNetworkL1 = fullNetworkL1;
-        this.fullNetworkL2 = fullNetworkL2;
+    public double computeScore(double fullNetRegTerm, boolean training, LayerWorkspaceMgr workspaceMgr) {
+        this.fullNetRegTerm = fullNetRegTerm;
 
         computeBackpropGradientAndScore(workspaceMgr, true, false);
         return score();
@@ -415,7 +423,7 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
      * @param objectPresentMask 3d [mb, H, W] - mask array, for objects present (1) or not (0) in grid cell
      * @return IOU and gradients
      */
-    private static IOURet calculateIOULabelPredicted(INDArray labelTL, INDArray labelBR, INDArray predictedWH, INDArray predictedXYinGridBox, INDArray objectPresentMask){
+    private static IOURet calculateIOULabelPredicted(INDArray labelTL, INDArray labelBR, INDArray predictedWH, INDArray predictedXYinGridBox, INDArray objectPresentMask, INDArray objectPresentMaskBool){
         // FIXME: int cast
         int mb = (int) labelTL.size(0);
         int h = (int) labelTL.size(2);
@@ -428,8 +436,8 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         int gridW = (int) labelTL.size(3);
         //Add grid positions to the predicted XY values (to get predicted XY in terms of grid cell units in image,
         // from (0 to 1 in grid cell) format)
-        INDArray linspaceX = Nd4j.linspace(0, gridW-1, gridW);
-        INDArray linspaceY = Nd4j.linspace(0, gridH-1, gridH);
+        INDArray linspaceX = Nd4j.linspace(0, gridW-1, gridW, Nd4j.dataType());
+        INDArray linspaceY = Nd4j.linspace(0, gridH-1, gridH, Nd4j.dataType());
         INDArray grid = Nd4j.createUninitialized(new int[]{2, gridH, gridW}, 'c');
         INDArray gridX = grid.get(point(0), all(), all());
         INDArray gridY = grid.get(point(1), all(), all());
@@ -457,20 +465,21 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         //Need to mask the calculated intersection values, to avoid returning non-zero values when intersection is actually 0
         //No intersection if: xP + wP/2 < xL - wL/2 i.e., BR_xPred < TL_xLab   OR  TL_xPred > BR_xLab (similar for Y axis)
         //Here, 1 if intersection exists, 0 otherwise. This is doing x/w and y/h simultaneously
-        INDArray noIntMask1 = Nd4j.createUninitialized(maxTL.shape(), maxTL.ordering());
-        INDArray noIntMask2 = Nd4j.createUninitialized(maxTL.shape(), maxTL.ordering());
+        INDArray noIntMask1 = Nd4j.createUninitialized(DataType.BOOL, maxTL.shape(), maxTL.ordering());
+        INDArray noIntMask2 = Nd4j.createUninitialized(DataType.BOOL, maxTL.shape(), maxTL.ordering());
         //Does both x and y on different dims
-        Broadcast.lt(predictedBR_XY, labelTL, noIntMask1, 0, 2, 3, 4);  //Predicted BR < label TL
-        Broadcast.gt(predictedTL_XY, labelBR, noIntMask2, 0, 2, 3, 4);  //predicted TL > label BR
+        Broadcast.lte(predictedBR_XY, labelTL, noIntMask1, 0, 2, 3, 4);  //Predicted BR <= label TL
+        Broadcast.gte(predictedTL_XY, labelBR, noIntMask2, 0, 2, 3, 4);  //predicted TL >= label BR
 
         noIntMask1 = Transforms.or(noIntMask1.get(all(), all(), point(0), all(), all()), noIntMask1.get(all(), all(), point(1), all(), all()) );    //Shape: [mb, b, H, W]. Values 1 if no intersection
         noIntMask2 = Transforms.or(noIntMask2.get(all(), all(), point(0), all(), all()), noIntMask2.get(all(), all(), point(1), all(), all()) );
         INDArray noIntMask = Transforms.or(noIntMask1, noIntMask2 );
 
-        INDArray intMask = Nd4j.getExecutioner().execAndReturn(new Not(noIntMask, noIntMask, 0.0)); //Values 0 if no intersection
-        Broadcast.mul(intMask, objectPresentMask, intMask, 0, 2, 3);
+        INDArray intMask = Transforms.not(noIntMask); //Values 0 if no intersection
+        Broadcast.mul(intMask, objectPresentMaskBool, intMask, 0, 2, 3);
 
         //Mask the intersection area: should be 0 if no intersection
+        intMask = intMask.castTo(Nd4j.defaultFloatingPointType());
         intersectionArea.muli(intMask);
 
 
@@ -490,18 +499,20 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         Broadcast.mul(iou, objectPresentMask, iou, 0, 2, 3);
 
         //Finally, calculate derivatives:
-        INDArray maskMaxTL = Nd4j.createUninitialized(maxTL.shape(), maxTL.ordering());    //1 if predicted Top/Left is max, 0 otherwise
+        INDArray maskMaxTL = Nd4j.createUninitialized(DataType.BOOL, maxTL.shape(), maxTL.ordering());    //1 if predicted Top/Left is max, 0 otherwise
         Broadcast.gt(predictedTL_XY, labelTL, maskMaxTL, 0, 2, 3, 4);   // z = x > y
+        maskMaxTL = maskMaxTL.castTo(Nd4j.defaultFloatingPointType());
 
-        INDArray maskMinBR = Nd4j.createUninitialized(maxTL.shape(), maxTL.ordering());    //1 if predicted Top/Left is max, 0 otherwise
+        INDArray maskMinBR = Nd4j.createUninitialized(DataType.BOOL, maxTL.shape(), maxTL.ordering());    //1 if predicted Top/Left is max, 0 otherwise
         Broadcast.lt(predictedBR_XY, labelBR, maskMinBR, 0, 2, 3, 4);   // z = x < y
+        maskMinBR = maskMinBR.castTo(Nd4j.defaultFloatingPointType());
 
         //dI/dx = lambda * (1^(min(x1+w1/2) - 1^(max(x1-w1/2))
         //dI/dy = omega * (1^(min(y1+h1/2) - 1^(max(y1-h1/2))
         //omega = min(x1+w1/2,x2+w2/2) - max(x1-w1/2,x2+w2/2)       i.e., from diff = minBR.sub(maxTL), which has shape [mb, b, 2, h, w]
         //lambda = min(y1+h1/2,y2+h2/2) - max(y1-h1/2,y2+h2/2)
         INDArray dI_dxy = maskMinBR.sub(maskMaxTL);              //Shape: [mb, b, 2, h, w]
-        INDArray dI_dwh = maskMinBR.add(maskMaxTL).muli(0.5);    //Shape: [mb, b, 2, h, w]
+        INDArray dI_dwh = maskMinBR.addi(maskMaxTL).muli(0.5);    //Shape: [mb, b, 2, h, w]
 
         dI_dxy.get(all(), all(), point(0), all(), all()).muli(diff.get(all(), all(), point(1), all(), all()));
         dI_dxy.get(all(), all(), point(1), all(), all()).muli(diff.get(all(), all(), point(0), all(), all()));
@@ -558,9 +569,8 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
     }
 
     @Override
-    public INDArray computeScoreForExamples(double fullNetworkL1, double fullNetworkL2, LayerWorkspaceMgr workspaceMgr) {
-        this.fullNetworkL1 = fullNetworkL1;
-        this.fullNetworkL2 = fullNetworkL2;
+    public INDArray computeScoreForExamples(double fullNetRegTerm, LayerWorkspaceMgr workspaceMgr) {
+        this.fullNetRegTerm = fullNetRegTerm;
         return computeBackpropGradientAndScore(workspaceMgr, false, true);
     }
 
@@ -591,11 +601,6 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
 
     @Override
     public List<String> predict(DataSet dataSet) {
-        throw new UnsupportedOperationException("Not supported");
-    }
-
-    @Override
-    public INDArray labelProbabilities(INDArray examples) {
         throw new UnsupportedOperationException("Not supported");
     }
 

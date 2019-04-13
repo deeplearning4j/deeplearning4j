@@ -29,11 +29,6 @@
 
     <dependencies>
         <dependency>
-          <groupId>org.jetbrains</groupId>
-          <artifactId>annotations</artifactId>
-          <version>${jetbrains-annotations.version}</version>
-        </dependency>
-        <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-lang3</artifactId>
             <version>${commons-lang3.version}</version>
@@ -136,7 +131,7 @@
             <id>test-nd4j-native</id>
         </profile>
         <profile>
-            <id>test-nd4j-cuda-10.0</id>
+            <id>test-nd4j-cuda-10.1</id>
         </profile>
     </profiles>
 </project>

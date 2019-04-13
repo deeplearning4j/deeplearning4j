@@ -69,7 +69,7 @@
         </dependency>
 
         <dependency>
-            <groupId>org.bytedeco.javacpp-presets</groupId>
+            <groupId>org.bytedeco</groupId>
             <artifactId>hdf5-platform</artifactId>
             <version>${hdf5.version}-${javacpp-presets.version}</version>
         </dependency>
@@ -79,6 +79,12 @@
             <artifactId>lombok</artifactId>
             <version>${lombok.version}</version>
             <scope>provided</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.deeplearning4j</groupId>
+            <artifactId>deeplearning4j-common</artifactId>
+            <version>${project.version}</version>
         </dependency>
 
         <!-- For unit tests -->
@@ -107,13 +113,6 @@
             <version>${project.version}</version>
             <scope>test</scope>
         </dependency>
-
-        <dependency>
-            <groupId>org.deeplearning4j</groupId>
-            <artifactId>deeplearning4j-common</artifactId>
-            <version>${project.version}</version>
-            <scope>test</scope>
-        </dependency>
     </dependencies>
 
     <profiles>
@@ -121,7 +120,7 @@
             <id>test-nd4j-native</id>
         </profile>
         <profile>
-            <id>test-nd4j-cuda-10.0</id>
+            <id>test-nd4j-cuda-10.1</id>
         </profile>
     </profiles>
 

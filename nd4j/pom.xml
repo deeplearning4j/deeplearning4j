@@ -33,7 +33,7 @@
     <packaging>pom</packaging>
 
     <name>nd4j</name>
-    <url>http://nd4j.org/</url>
+    <url>https://deeplearning4j.org</url>
 
     <licenses>
         <license>

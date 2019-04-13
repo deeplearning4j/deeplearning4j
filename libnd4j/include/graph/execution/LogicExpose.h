@@ -27,10 +27,9 @@
 
 namespace nd4j {
     namespace graph {
-        template <typename T>
         class LogicExpose {
         public:
-            static Nd4jStatus processNode(Graph<T>* graph, Node<T>* node);
+            static Nd4jStatus processNode(Graph* graph, Node* node);
         };
     }
 }

@@ -27,6 +27,13 @@
 
 namespace nd4j {
 namespace ops {
+
+    DECLARE_TYPES(space_to_depth) {
+        getOpDescriptor()
+                ->setAllowedInputTypes(nd4j::DataType::ANY)
+                ->setSameMode(true);
+    }
+
     CUSTOM_OP_IMPL(space_to_depth, 1, 1, false, 0, 2) {
         int block_size = INT_ARG(0);
         bool isNHWC = INT_ARG(1) == 1;
@@ -46,7 +53,7 @@ namespace ops {
 
         helpers::_spaceTodepth(input, output, block_size, isNHWC);        
 
-        return ND4J_STATUS_OK;
+        return Status::OK();
     }
     
 
@@ -63,15 +70,14 @@ namespace ops {
         int oD = iD * block_size * block_size;
         int oH = iH / block_size;
         int oW = iW / block_size;
-
-        Nd4jLong *newShape;
-        ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(4), Nd4jLong);
+        
         std::array<Nd4jLong, 4> shape;
         if (isNHWC) 
             shape = {{bS, oH, oW, oD }};
         else 
             shape = {{bS, oD, oH, oW }};
-        shape::shapeBuffer(4, shape.data(), newShape);
+
+        Nd4jLong *newShape = nd4j::ShapeBuilders::createShapeInfo(ArrayOptions::dataType(in), 'c', 4, shape.data(), block.getWorkspace());        
 
         return SHAPELIST(newShape);
     }

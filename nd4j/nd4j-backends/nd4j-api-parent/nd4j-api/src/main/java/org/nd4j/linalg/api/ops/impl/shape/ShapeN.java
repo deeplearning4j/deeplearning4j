@@ -19,7 +19,10 @@ package org.nd4j.linalg.api.ops.impl.shape;
 import onnx.OnnxProto3;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.base.Preconditions;
 import org.nd4j.imports.NoOpNameFoundException;
+import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.Op;
@@ -33,11 +36,13 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Returns the shape of N input array as as N output arrays
+ * Returns the shape of N input array as N output arrays
  *
  * @author Alex Black
  */
 public class ShapeN extends DynamicCustomOp {
+
+    protected DataType dataType;
 
     public ShapeN() {}
 
@@ -73,5 +78,23 @@ public class ShapeN extends DynamicCustomOp {
     @Override
     public int getNumOutputs(){
         return args().length;
+    }
+
+    @Override
+    public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
+        super.initFromTensorFlow(nodeDef, initWith, attributesForNode, graph);
+        dataType = TFGraphMapper.convertType(nodeDef.getAttrOrThrow("out_type").getType());
+    }
+
+    @Override
+    public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes){
+        //Output type is always long (i.e., shape of array) - for each input
+        //TODO TF allows customizing int or long
+        int n = getNumOutputs();
+        List<DataType> outputTypes = new ArrayList<>(n);
+        for(int i=0; i<n; i++ ){
+            outputTypes.add(dataType == null ? DataType.LONG : dataType);
+        }
+        return outputTypes;
     }
 }

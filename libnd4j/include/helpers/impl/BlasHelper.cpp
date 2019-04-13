@@ -74,12 +74,20 @@ namespace nd4j {
 
     template <>
     bool BlasHelper::hasGEMV<float>() {
+#if defined(__EXTERNAL_BLAS__) || defined(HAVE_MKLDNN) || defined(HAVE_OPENBLAS)
+        return true;
+#else
         return _hasSgemv;
+#endif
     }
 
     template <>
     bool BlasHelper::hasGEMV<double>() {
-        return _hasDgemv;
+#if defined(__EXTERNAL_BLAS__) || defined(HAVE_MKLDNN) || defined(HAVE_OPENBLAS)
+        return true;
+#else
+    return _hasDgemv;
+#endif
     }
 
     template <>
@@ -88,17 +96,83 @@ namespace nd4j {
     }
 
     template <>
+    bool BlasHelper::hasGEMV<bfloat16>() {
+        return false;
+    }
+
+    template <>
+    bool BlasHelper::hasGEMV<bool>() {
+        return false;
+    }
+
+    template <>
+    bool BlasHelper::hasGEMV<int>() {
+        return false;
+    }
+
+    template <>
+    bool BlasHelper::hasGEMV<int8_t>() {
+        return false;
+    }
+
+    template <>
+    bool BlasHelper::hasGEMV<uint8_t>() {
+        return false;
+    }
+
+    template <>
+    bool BlasHelper::hasGEMV<int16_t>() {
+        return false;
+    }
+
+    template <>
+    bool BlasHelper::hasGEMV<Nd4jLong>() {
+        return false;
+    }
+
+    bool BlasHelper::hasGEMV(const nd4j::DataType dtype) const {
+        if(dtype == DataType::FLOAT32) {
+            #if defined(__EXTERNAL_BLAS__) || defined(HAVE_MKLDNN) || defined(HAVE_OPENBLAS)
+                return true;
+            #else
+                return _hasSgemv;
+            #endif
+        }
+        if(dtype == DataType::DOUBLE) {
+            #if defined(__EXTERNAL_BLAS__) || defined(HAVE_MKLDNN) || defined(HAVE_OPENBLAS)
+                return true;
+            #else
+                return _hasDgemv;
+            #endif
+        }
+        return false;        
+    }
+
+    template <>
     bool BlasHelper::hasGEMM<float>() {
-        return _hasSgemm;
+#if defined(__EXTERNAL_BLAS__) || defined(HAVE_MKLDNN) || defined(HAVE_OPENBLAS)
+        return true;
+#else
+    return _hasSgemm;
+#endif
     }
 
     template <>
     bool BlasHelper::hasGEMM<double>() {
-        return _hasDgemm;
+#if defined(__EXTERNAL_BLAS__) || defined(HAVE_MKLDNN) || defined(HAVE_OPENBLAS)
+        return true;
+#else
+    return _hasDgemm;
+#endif
     }
 
     template <>
     bool BlasHelper::hasGEMM<float16>() {
+        return false;
+    }
+
+    template <>
+    bool BlasHelper::hasGEMM<bfloat16>() {
         return false;
     }
 
@@ -108,7 +182,45 @@ namespace nd4j {
     }
 
     template <>
+    bool BlasHelper::hasGEMM<uint8_t>() {
+        return false;
+    }
+
+    template <>
+    bool BlasHelper::hasGEMM<int8_t>() {
+        return false;
+    }
+
+    template <>
+    bool BlasHelper::hasGEMM<int16_t>() {
+        return false;
+    }
+
+    template <>
+    bool BlasHelper::hasGEMM<bool>() {
+        return false;
+    }
+
+    template <>
     bool BlasHelper::hasGEMM<Nd4jLong>() {
+        return false;
+    }
+
+    bool BlasHelper:: hasGEMM(const nd4j::DataType dtype) const {
+        if(dtype == DataType::FLOAT32) {
+            #if defined(__EXTERNAL_BLAS__) || defined(HAVE_MKLDNN) || defined(HAVE_OPENBLAS)
+                return true;
+            #else
+                return _hasSgemm;
+            #endif
+        }
+        if(dtype == DataType::DOUBLE) {
+            #if defined(__EXTERNAL_BLAS__) || defined(HAVE_MKLDNN) || defined(HAVE_OPENBLAS)
+                return true;
+            #else
+                return _hasDgemm;
+            #endif
+        }
         return false;
     }
 
@@ -127,20 +239,70 @@ namespace nd4j {
         return false;
     }
 
+    template <>
+    bool BlasHelper::hasBatchedGEMM<bfloat16>() {
+        return false;
+    }
+
+    template <>
+    bool BlasHelper::hasBatchedGEMM<Nd4jLong>() {
+        return false;
+    }
+
+    template <>
+    bool BlasHelper::hasBatchedGEMM<int>() {
+        return false;
+    }
+
+    template <>
+    bool BlasHelper::hasBatchedGEMM<int8_t>() {
+        return false;
+    }
+
+    template <>
+    bool BlasHelper::hasBatchedGEMM<uint8_t>() {
+        return false;
+    }
+
+    template <>
+    bool BlasHelper::hasBatchedGEMM<int16_t>() {
+        return false;
+    }
+
+    template <>
+    bool BlasHelper::hasBatchedGEMM<bool>() {
+        return false;
+    }
 
     CblasSgemv BlasHelper::sgemv() {
+#if defined(__EXTERNAL_BLAS__) || defined(HAVE_MKLDNN) || defined(HAVE_OPENBLAS)
+        return (CblasSgemv)&cblas_sgemv;
+#else
         return this->cblasSgemv;
+#endif
     }
     CblasDgemv BlasHelper::dgemv() {
+#if defined(__EXTERNAL_BLAS__) || defined(HAVE_MKLDNN) || defined(HAVE_OPENBLAS)
+        return (CblasDgemv)&cblas_dgemv;
+#else
         return this->cblasDgemv;
+#endif
     }
 
     CblasSgemm BlasHelper::sgemm() {
+#if defined(__EXTERNAL_BLAS__) || defined(HAVE_MKLDNN) || defined(HAVE_OPENBLAS)
+        return (CblasSgemm)&cblas_sgemm;
+#else
         return this->cblasSgemm;
+#endif
     }
 
     CblasDgemm BlasHelper::dgemm() {
+#if defined(__EXTERNAL_BLAS__) || defined(HAVE_MKLDNN) || defined(HAVE_OPENBLAS)
+        return (CblasDgemm)&cblas_dgemm;
+#else
         return this->cblasDgemm;
+#endif
     }
 
     CblasSgemmBatch BlasHelper::sgemmBatched() {

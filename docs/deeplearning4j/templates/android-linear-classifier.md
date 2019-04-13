@@ -29,27 +29,28 @@ compile (group: 'org.deeplearning4j', name: 'deeplearning4j-core', version: '{{p
     exclude group: 'org.bytedeco.javacpp-presets', module: 'opencv-platform'
     exclude group: 'org.bytedeco.javacpp-presets', module: 'leptonica-platform'
     exclude group: 'org.bytedeco.javacpp-presets', module: 'hdf5-platform'
+    exclude group: 'org.nd4j', module: 'nd4j-base64'
 }
 compile group: 'org.nd4j', name: 'nd4j-native', version: '{{page.version}}'
 compile group: 'org.nd4j', name: 'nd4j-native', version: '{{page.version}}', classifier: "android-arm"
 compile group: 'org.nd4j', name: 'nd4j-native', version: '{{page.version}}', classifier: "android-arm64"
 compile group: 'org.nd4j', name: 'nd4j-native', version: '{{page.version}}', classifier: "android-x86"
 compile group: 'org.nd4j', name: 'nd4j-native', version: '{{page.version}}', classifier: "android-x86_64"
-compile group: 'org.bytedeco.javacpp-presets', name: 'openblas', version: '0.3.0-1.4.2'
-compile group: 'org.bytedeco.javacpp-presets', name: 'openblas', version: '0.3.0-1.4.2', classifier: "android-arm"
-compile group: 'org.bytedeco.javacpp-presets', name: 'openblas', version: '0.3.0-1.4.2', classifier: "android-arm64"
-compile group: 'org.bytedeco.javacpp-presets', name: 'openblas', version: '0.3.0-1.4.2', classifier: "android-x86"
-compile group: 'org.bytedeco.javacpp-presets', name: 'openblas', version: '0.3.0-1.4.2', classifier: "android-x86_64"
-compile group: 'org.bytedeco.javacpp-presets', name: 'opencv', version: '3.4.2-1.4.2'
-compile group: 'org.bytedeco.javacpp-presets', name: 'opencv', version: '3.4.2-1.4.2', classifier: "android-arm"
-compile group: 'org.bytedeco.javacpp-presets', name: 'opencv', version: '3.4.2-1.4.2', classifier: "android-arm64"
-compile group: 'org.bytedeco.javacpp-presets', name: 'opencv', version: '3.4.2-1.4.2', classifier: "android-x86"
-compile group: 'org.bytedeco.javacpp-presets', name: 'opencv', version: '3.4.2-1.4.2', classifier: "android-x86_64"
-compile group: 'org.bytedeco.javacpp-presets', name: 'leptonica', version: '1.76.0-1.4.2'
-compile group: 'org.bytedeco.javacpp-presets', name: 'leptonica', version: '1.76.0-1.4.2', classifier: "android-arm"
-compile group: 'org.bytedeco.javacpp-presets', name: 'leptonica', version: '1.76.0-1.4.2', classifier: "android-arm64"
-compile group: 'org.bytedeco.javacpp-presets', name: 'leptonica', version: '1.76.0-1.4.2', classifier: "android-x86"
-compile group: 'org.bytedeco.javacpp-presets', name: 'leptonica', version: '1.76.0-1.4.2', classifier: "android-x86_64"
+compile group: 'org.bytedeco.javacpp-presets', name: 'openblas', version: '0.3.3-1.4.3'
+compile group: 'org.bytedeco.javacpp-presets', name: 'openblas', version: '0.3.3-1.4.3', classifier: "android-arm"
+compile group: 'org.bytedeco.javacpp-presets', name: 'openblas', version: '0.3.3-1.4.3', classifier: "android-arm64"
+compile group: 'org.bytedeco.javacpp-presets', name: 'openblas', version: '0.3.3-1.4.3', classifier: "android-x86"
+compile group: 'org.bytedeco.javacpp-presets', name: 'openblas', version: '0.3.3-1.4.3', classifier: "android-x86_64"
+compile group: 'org.bytedeco.javacpp-presets', name: 'opencv', version: '3.4.3-1.4.3'
+compile group: 'org.bytedeco.javacpp-presets', name: 'opencv', version: '3.4.3-1.4.3', classifier: "android-arm"
+compile group: 'org.bytedeco.javacpp-presets', name: 'opencv', version: '3.4.3-1.4.3', classifier: "android-arm64"
+compile group: 'org.bytedeco.javacpp-presets', name: 'opencv', version: '3.4.3-1.4.3', classifier: "android-x86"
+compile group: 'org.bytedeco.javacpp-presets', name: 'opencv', version: '3.4.3-1.4.3', classifier: "android-x86_64"
+compile group: 'org.bytedeco.javacpp-presets', name: 'leptonica', version: '1.76.0-1.4.3'
+compile group: 'org.bytedeco.javacpp-presets', name: 'leptonica', version: '1.76.0-1.4.3', classifier: "android-arm"
+compile group: 'org.bytedeco.javacpp-presets', name: 'leptonica', version: '1.76.0-1.4.3', classifier: "android-arm64"
+compile group: 'org.bytedeco.javacpp-presets', name: 'leptonica', version: '1.76.0-1.4.3', classifier: "android-x86"
+compile group: 'org.bytedeco.javacpp-presets', name: 'leptonica', version: '1.76.0-1.4.3', classifier: "android-x86_64"
 ```
 
 Compiling these dependencies involves a large number of files, thus it is necessary to set multiDexEnabled to true in defaultConfig.
@@ -271,7 +272,7 @@ Once the training of the neural network and the classification of the user measu
 
 ## <a name="head_link6">Conclusion</a>
 
-Hopefully this tutorial has illustrated how the compatibility of DL4J with Android makes it easy to build, train, and evaluate neural networks on mobile devices. We used a simple UI to take input values from the measurement and then passed them as the *Params* in an AsyncTask. The processor intensive steps of data preparation, network layer building, model training, and evaluation of the user data were all performed in the doInBackground() method of the background thread, maintaining a stable and responsive device. Once completed, we passed the output INDArray as the AsyncTask *Results* to onPostExecute() where the the UI was updated to demonstrate the classification results. 
+Hopefully this tutorial has illustrated how the compatibility of DL4J with Android makes it easy to build, train, and evaluate neural networks on mobile devices. We used a simple UI to take input values from the measurement and then passed them as the *Params* in an AsyncTask. The processor intensive steps of data preparation, network layer building, model training, and evaluation of the user data were all performed in the doInBackground() method of the background thread, maintaining a stable and responsive device. Once completed, we passed the output INDArray as the AsyncTask *Results* to onPostExecute() where the UI was updated to demonstrate the classification results. 
 The limitations of processing power and battery life of mobile devices make training robust, multi-layer networks somewhat unfeasible. To address this limitation, we will next look at an example Android application that saves the trained model on the device for faster performance after an initial model training.
 
 The complete code for this example is available [here.](https://github.com/deeplearning4j/dl4j-examples/tree/master/android/DL4JIrisClassifierDemo)

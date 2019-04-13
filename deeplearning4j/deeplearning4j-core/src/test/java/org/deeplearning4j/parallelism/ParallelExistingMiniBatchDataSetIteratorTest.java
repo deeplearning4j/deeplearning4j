@@ -56,7 +56,7 @@ public class ParallelExistingMiniBatchDataSetIteratorTest extends BaseDL4JTest {
     }
 
 
-    @Test
+    @Test(timeout = 30000L)
     public void testNewSimpleLoop1() throws Exception {
         FileSplitParallelDataSetIterator fspdsi = new FileSplitParallelDataSetIterator(rootFolder, "mnist-train-%d.bin",
                         new DataSetDeserializer());

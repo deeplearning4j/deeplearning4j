@@ -29,7 +29,10 @@ namespace nd4j {
             auto list = INPUT_LIST(0);
             auto indices = INPUT_VARIABLE(1);
 
-            REQUIRE_TRUE(indices->isVector(), 0, "Indices for Gather operation should be a vector");
+            indices->printShapeInfo("indices shape");
+            indices->printIndexedBuffer("indices");
+
+            REQUIRE_TRUE(indices->isVector() || indices->rankOf() == 1, 0, "Indices for Gather operation should be a vector");
             REQUIRE_TRUE(list->height() > 0, 0, "Number of elements in list should be positive prior to Gather call");
             REQUIRE_TRUE(list->height() == indices->lengthOf(), 1, "Number of indicies should be equal to number of elements in list, but got [%i] indices instead", indices->lengthOf());
 
@@ -46,32 +49,24 @@ namespace nd4j {
                 }
             }
 
-            auto result = new NDArray<T>('c', shape);
+            auto result = NDArrayFactory::create_('c', shape, list->dataType());
+            std::vector<Nd4jLong> indicesList((list->readRaw(0)->rankOf() + 1) * 2, 0);
             int skipPosition = 0;
             for (int e = 0; e < indices->lengthOf(); e++) {
-                auto idx = static_cast<int>(indices->getIndexedScalar(e));
+                auto idx = indices->e<int>(e);
                 auto array = list->readRaw(idx);
-                
-                IndicesList indicesList;
+                                
                 // first dimension
-                indicesList.push_back(NDIndex::interval(skipPosition, skipPosition + 1));
+                indicesList[0] = skipPosition;
+                indicesList[1] = skipPosition++ + 1;                
 
-                for (int d = 0; d < array->rankOf(); d++)
-                    indicesList.push_back(NDIndex::all());
-
-                auto subarray = result->subarray(indicesList);
-                subarray->assign(array);
-
-                skipPosition++;
-
-                delete subarray;
+                auto subarray = (*result)(indicesList, true);
+                subarray.assign(array);
             }
 
-
-            OVERWRITE_RESULT(result);
-    
-
-            return ND4J_STATUS_OK;
+            //OVERWRITE_RESULT(result);
+            setupResult(result, block);
+            return Status::OK();
         }
         DECLARE_SYN(TensorArrayGatherV3, gather_list);
         DECLARE_SYN(tensorarraygatherv3, gather_list);

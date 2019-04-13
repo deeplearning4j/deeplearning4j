@@ -21,8 +21,6 @@
 #ifndef PROJECT_LEGACY_OPS_H
 #define PROJECT_LEGACY_OPS_H
 
-
-
 #define AGGREGATE_OPS \
         (0, aggregateOps::HierarchicSoftmax) ,\
         (1, aggregateOps::Dot) ,\
@@ -31,307 +29,347 @@
         (4, aggregateOps::CBOW) ,\
         (5, aggregateOps::GEMM)
 
+#define BROADCAST_BOOL_OPS \
+        (0, EqualTo),\
+        (1, GreaterThan),\
+        (2, LessThan),\
+        (3, Epsilon),\
+        (4, GreaterThanOrEqual),\
+        (5, LessThanOrEqual),\
+        (6, NotEqualTo),\
+        (7, And),\
+        (8, Or),\
+        (9, Xor) ,\
+        (10, Not)
 
 
 #define BROADCAST_OPS \
-       (0, simdOps::Add), \
-       (1, simdOps::Subtract), \
-       (2, simdOps::Multiply), \
-       (3, simdOps::Divide), \
-       (4, simdOps::ReverseDivide), \
-       (5, simdOps::ReverseSubtract), \
-       (6, simdOps::Copy) ,\
-       (7, simdOps::EqualTo) ,\
-       (8, simdOps::GreaterThan) ,\
-       (9, simdOps::GreaterThanOrEqual) ,\
-       (10, simdOps::LessThan) ,\
-       (11, simdOps::LessThanOrEqual) ,\
-       (12, simdOps::NotEqualTo) ,\
-       (13, simdOps::Min) ,\
-       (14, simdOps::Max) ,\
-       (15, simdOps::AMin) ,\
-       (16, simdOps::AMax) ,\
-       (17, simdOps::SquaredSubtract),\
-       (18, simdOps::FloorMod),\
-       (19, simdOps::FloorDiv),\
-       (20, simdOps::ReverseMod),\
-       (21, simdOps::SafeDivide),\
-       (22, simdOps::Mod) ,\
-       (23, simdOps::TruncateDiv), \
-       (24, simdOps::And), \
-       (25, simdOps::Or) ,\
-       (26, simdOps::Atan2) ,\
-       (27, simdOps::LogicalOr) ,\
-       (28, simdOps::LogicalXor) ,\
-       (29, simdOps::LogicalNot) ,\
-       (30, simdOps::LogicalAnd)
+       (0, Add), \
+       (1, Subtract), \
+       (2, Multiply), \
+       (3, Divide), \
+       (4, ReverseDivide), \
+       (5, ReverseSubtract), \
+       (6, CopyPws), \
+       (7, Pow), \
+       (13, MinPairwise) ,\
+       (14, MaxPairwise) ,\
+       (15, AMinPairwise) ,\
+       (16, AMaxPairwise) ,\
+       (17, SquaredSubtract),\
+       (18, FloorMod),\
+       (19, FloorDiv),\
+       (20, ReverseMod),\
+       (21, SafeDivide),\
+       (22, Mod) ,\
+       (23, TruncateDiv), \
+       (26, Atan2) ,\
+       (27, LogicalOr) ,\
+       (28, LogicalXor) ,\
+       (29, LogicalNot) ,\
+       (30, LogicalAnd)
+
+// these ops return same data type as input
+#define TRANSFORM_SAME_OPS \
+        (0, Abs), \
+        (1, Sign), \
+        (2, Ones), \
+        (3, Neg), \
+        (4, Round), \
+        (5, TimesOneMinus), \
+        (6, Cube), \
+        (7, OneMinus), \
+        (8, Col2Im), \
+        (9, Im2col),\
+        (11, Reciprocal), \
+        (12, Square), \
+        (13, CompareAndSetTransform) ,\
+        (15, Identity), \
+        (17, Ceiling), \
+        (18, Floor), \
+        (19, ClipByValue) ,\
+        (20, Reverse), \
+        (21, Copy)
+
+#define TRANSFORM_ANY_OPS \
+        (0, Assign) , \
+        (1, IsMax)
+
+// these ops return bool
+#define TRANSFORM_BOOL_OPS \
+        (1, IsInf), \
+        (2, IsNan), \
+        (3, IsFinite), \
+        (4, IsInfOrNan), \
+        (5, MatchConditionBool), \
+        (6, IsPositive) , \
+        (7, Not)
 
 
+#define TRANSFORM_STRICT_OPS \
+        (0, SoftMax), \
+        (1, SoftMaxDerivative), \
+        (2, LogSoftMax) ,\
+        (3, ELUDerivative), \
+        (4, TanhDerivative), \
+        (5, HardTanhDerivative), \
+        (6, SigmoidDerivative), \
+        (7, SoftSignDerivative), \
+        (8, TanDerivative) ,\
+        (9, SELUDerivative) ,\
+        (10, HardSigmoidDerivative) ,\
+        (11, RationalTanhDerivative) ,\
+        (12, RectifiedTanhDerivative) ,\
+        (13, SwishDerivative) ,\
+        (14, ACoshDerivative) ,\
+        (15, ASinhDerivative) ,\
+        (16, SinhDerivative), \
+        (17, LogSigmoidDerivative) ,\
+        (18, SpecialDerivative), \
+        (19, Stabilize), \
+        (20, StabilizeFP16) ,\
+        (21, CubeDerivative) ,\
+        (22, Cosine), \
+        (23, Exp), \
+        (24, Log), \
+        (25, SetRange), \
+        (26, Sigmoid), \
+        (27, Sin), \
+        (28, SoftPlus), \
+        (29, Tanh), \
+        (30, ACos), \
+        (31, ASin), \
+        (32, ATan), \
+        (33, HardTanh), \
+        (34, SoftSign), \
+        (35, ELU), \
+        (36, HardSigmoid), \
+        (37, RationalTanh) ,\
+        (38, RectifiedTanh) ,\
+        (39, Sinh) ,\
+        (40, Cosh) ,\
+        (41, Tan) ,\
+        (42, SELU) ,\
+        (43, Swish) ,\
+        (44, Log1p), \
+        (45, Erf), \
+        (46, ACosh), \
+        (47, ASinh), \
+        (48, Rint), \
+        (49, LogSigmoid), \
+        (50, Erfc) ,\
+        (51, Expm1), \
+        (52, ATanh) ,\
+        (53, GELU) ,\
+        (54, GELUDerivative), \
+        (55, PreciseGELU) ,\
+        (56, PreciseGELUDerivative)
 
-
-#define TRANSFORM_OPS \
-	(0, simdOps::Abs), \
-        (1, simdOps::Ceiling), \
-        (2, simdOps::Cosine), \
-        (3, simdOps::Exp), \
-        (4, simdOps::Floor), \
-        (5, simdOps::Log), \
-        (6, simdOps::Neg), \
-        (7, simdOps::Pow), \
-        (8, simdOps::Round), \
-        (9, simdOps::SetRange), \
-        (10,simdOps::Sigmoid), \
-        (11,simdOps::Sign), \
-        (12,simdOps::Sin), \
-        (13,simdOps::SoftPlus), \
-        (14,simdOps::Sqrt), \
-        (15,simdOps::Tanh), \
-        (16,simdOps::ACos), \
-        (17,simdOps::ASin), \
-        (18,simdOps::ATan), \
-        (19,simdOps::HardTanh), \
-        (20,simdOps::SoftSign), \
-        (21,simdOps::ELU), \
-        (22,simdOps::ELUDerivative), \
-        (23,simdOps::TanhDerivative), \
-        (24,simdOps::TimesOneMinus), \
-        (25,simdOps::HardTanhDerivative), \
-        (26,simdOps::Ones), \
-        (27,simdOps::Identity), \
-        (28,simdOps::Stabilize), \
-        (29,simdOps::SigmoidDerivative), \
-        (30,simdOps::SoftSignDerivative), \
-        (31,simdOps::LeakyRELU), \
-        (32,simdOps::LeakyRELUDerivative), \
-        (33,simdOps::RELU), \
-        (34,simdOps::Step), \
-        (35,simdOps::OneMinus), \
-        (36,simdOps::Col2Im), \
-        (37,simdOps::Im2col), \
-        (38,simdOps::SoftMax), \
-        (39,simdOps::SoftMaxDerivative), \
-        (40,simdOps::LogSoftMax), \
-        (41,simdOps::IsMax), \
-        (42,simdOps::SpecialDerivative), \
-        (43,simdOps::DropOut), \
-        (44,simdOps::DropOutInverted), \
-        (45,simdOps::CompareAndSet), \
-        (46,simdOps::ReplaceNans) ,\
-        (47,simdOps::StabilizeFP16) ,\
-        (48,simdOps::Histogram), \
-        (49,simdOps::Cube), \
-        (50,simdOps::CubeDerivative) , \
-        (51,simdOps::HardSigmoid), \
-        (52,simdOps::HardSigmoidDerivative) ,\
-        (53,simdOps::RationalTanh) ,\
-        (54,simdOps::RationalTanhDerivative) ,\
-        (55,simdOps::LogX) ,\
-        (59,simdOps::Not) ,\
-        (61,simdOps::RectifiedTanh) ,\
-        (62,simdOps::RectifiedTanhDerivative) ,\
-        (63,simdOps::Sinh) ,\
-        (64,simdOps::Cosh) ,\
-        (65,simdOps::Tan) ,\
-        (66,simdOps::TanDerivative) ,\
-        (67,simdOps::SELU) ,\
-        (68,simdOps::SELUDerivative) ,\
-        (70,simdOps::Reverse) ,\
-        (71,simdOps::Pooling2D) ,\
-        (72,simdOps::MatchCondition) ,\
-        (73,simdOps::ClipByValue) ,\
-        (74,simdOps::Swish) ,\
-        (75,simdOps::SwishDerivative) ,\
-        (76,simdOps::RSqrt), \
-        (77,simdOps::Log1p), \
-        (78,simdOps::Erf), \
-        (79,simdOps::IsInf), \
-        (80,simdOps::IsNan), \
-        (81,simdOps::IsFinite), \
-        (82,simdOps::ACosh), \
-        (83,simdOps::ACoshDerivative) ,\
-        (84,simdOps::ASinh), \
-        (85,simdOps::ASinhDerivative) ,\
-        (86,simdOps::SinhDerivative), \
-        (87,simdOps::Rint), \
-        (88,simdOps::LogSigmoid), \
-        (89,simdOps::LogSigmoidDerivative) ,\
-        (90,simdOps::Erfc) ,\
-        (91,simdOps::Expm1), \
-        (92, simdOps::PowDerivative), \
-        (93,simdOps::ATanh), \
-        (94,simdOps::Reciprocal), \
-        (95,simdOps::Square), \
-        (96,simdOps::RELU6)
-
-
+// these ops return one of FLOAT data types
+#define TRANSFORM_FLOAT_OPS \
+        (0, Histogram), \
+        (1, Sqrt), \
+        (2, Pooling2D) ,\
+        (3, RSqrt)
 
 
 #define SUMMARY_STATS_OPS \
-        (0, simdOps::SummaryStatsVariance), \
-        (1,     simdOps::SummaryStatsStandardDeviation)
+        (0, SummaryStatsVariance), \
+        (1, SummaryStatsStandardDeviation)
 
 
-
+#define SCALAR_BOOL_OPS \
+        (0, EqualTo),\
+        (1, GreaterThan),\
+        (2, LessThan),\
+        (3, Epsilon),\
+        (4, GreaterThanOrEqual),\
+        (5, LessThanOrEqual),\
+        (6, NotEqualTo),\
+        (7, And),\
+        (8, Or),\
+        (9, Xor) ,\
+        (10, Not)
 
 #define SCALAR_OPS \
-        (0, simdOps::Add),\
-        (1, simdOps::Subtract),\
-        (2, simdOps::Multiply),\
-        (3, simdOps::Divide),\
-        (4, simdOps::ReverseDivide),\
-        (5, simdOps::ReverseSubtract),\
-        (6, simdOps::Max),\
-        (7, simdOps::LessThan),\
-        (8, simdOps::GreaterThan),\
-        (9, simdOps::EqualTo),\
-        (10,simdOps::LessThanOrEqual),\
-        (11,simdOps::NotEqualTo),\
-        (12,simdOps::Min),\
-        (13,simdOps::Copy),\
-        (14,simdOps::Mod),\
-        (15,simdOps::ReverseMod),\
-        (16,simdOps::GreaterThanOrEqual),\
-        (17,simdOps::Remainder),\
-        (18,simdOps::FMod) ,\
-        (19, simdOps::TruncateDiv) ,\
-        (20, simdOps::FloorDiv) ,\
-        (21, simdOps::FloorMod), \
-        (22, simdOps::SquaredSubtract),\
-        (23, simdOps::SafeDivide), \
-        (24, simdOps::AMax), \
-        (25, simdOps::AMin), \
-        (26, simdOps::And), \
-        (27, simdOps::Or), \
-        (28, simdOps::Atan2) ,\
-        (29, simdOps::LogicalOr) ,\
-        (30, simdOps::LogicalXor) ,\
-        (31, simdOps::LogicalNot) ,\
-        (32, simdOps::LogicalAnd)
+        (0, Add),\
+        (1, Subtract),\
+        (2, Multiply),\
+        (3, Divide),\
+        (4, ReverseDivide),\
+        (5, ReverseSubtract),\
+        (6, MaxPairwise),\
+        (13, MinPairwise),\
+        (14, CopyPws),\
+        (15, Mod),\
+        (16, ReverseMod),\
+        (17, Remainder),\
+        (18, FMod) ,\
+        (19, TruncateDiv) ,\
+        (20, FloorDiv) ,\
+        (21, FloorMod), \
+        (22, SquaredSubtract),\
+        (23, SafeDivide), \
+        (24, AMaxPairwise), \
+        (25, AMinPairwise), \
+        (26, Atan2) ,\
+        (27, LogicalOr) ,\
+        (28, LogicalXor) ,\
+        (29, LogicalNot) ,\
+        (30, LogicalAnd) ,\
+        (31, Pow) ,\
+        (32, PowDerivative) ,\
+        (33, CompareAndSet) ,\
+        (34, SXELogitsSmoother), \
+        (35, LeakyRELU), \
+        (36, LeakyRELUDerivative), \
+        (37, ReplaceNans) ,\
+        (38, LogX) ,\
+        (39, RELU), \
+        (40, RELU6), \
+        (41, Step), \
+        (42, LstmClip), \
+        (43, TruncateMod) ,\
+        (44, SquaredReverseSubtract) ,\
+        (45, ReversePow)
+
 
 
 
 
 
 #define REDUCE3_OPS \
-        (0, simdOps::ManhattanDistance), \
-        (1, simdOps::EuclideanDistance), \
-        (2, simdOps::CosineSimilarity), \
-        (3, simdOps::Dot), \
-        (4, simdOps::EqualsWithEps) ,\
-        (5, simdOps::CosineDistance) ,\
-        (6, simdOps::JaccardDistance) ,\
-        (7, simdOps::SimpleHammingDistance)
+        (0, ManhattanDistance), \
+        (1, EuclideanDistance), \
+        (2, CosineSimilarity), \
+        (3, Dot), \
+        (4, EqualsWithEps) ,\
+        (5, CosineDistance) ,\
+        (6, JaccardDistance) ,\
+        (7, SimpleHammingDistance)
+
+#define REDUCE_LONG_OPS \
+        (0, CountNonZero), \
+        (1, CountZero), \
+        (2, MatchCondition)
+
+#define REDUCE_BOOL_OPS \
+        (0, Any) ,\
+        (1, All), \
+        (2, IsFinite), \
+        (3, IsInfOrNan), \
+        (4, IsNan), \
+        (5, IsInf), \
+        (6, IsPositive)
+
+#define REDUCE_SAME_OPS \
+        (0, Sum), \
+        (1, Max), \
+        (2, Min), \
+        (3, Prod), \
+        (4, ASum), \
+        (5, AMax) ,\
+        (6, AMin) ,\
+        (7, ReduceSameBenchmarkOp)
 
 
 
-#define REDUCE_OPS \
-        (0, simdOps::Mean), \
-        (1, simdOps::Sum), \
-        (3, simdOps::Max), \
-        (4, simdOps::Min), \
-        (5, simdOps::Norm1), \
-        (6, simdOps::Norm2), \
-        (7, simdOps::NormMax), \
-        (8, simdOps::Prod), \
-        (9, simdOps::StandardDeviation), \
-        (10, simdOps::Variance), \
-        (11, simdOps::ASum), \
-        (12, simdOps::MatchCondition) ,\
-        (13, simdOps::AMax) ,\
-        (14, simdOps::AMin) ,\
-        (15, simdOps::AMean) ,\
-        (16, simdOps::Entropy) ,\
-        (17, simdOps::LogEntropy) ,\
-        (18, simdOps::ShannonEntropy) ,\
-        (19, simdOps::LogSumExp) ,\
-        (20, simdOps::Any) ,\
-        (21, simdOps::All), \
-        (22, simdOps::CountNonZero), \
-        (23, simdOps::NormFrobenius), \
-        (24, simdOps::NormP), \
-        (25, simdOps::SquaredNorm), \
-        (26, simdOps::CountZero), \
-        (27, simdOps::IsFinite), \
-        (28, simdOps::IsInfOrNan), \
-        (29, simdOps::IsNan), \
-        (30, simdOps::IsInf)
+#define REDUCE_FLOAT_OPS \
+        (0, Mean), \
+        (1, AMean) ,\
+        (2, Norm1), \
+        (3, Norm2), \
+        (4, NormMax), \
+        (5, NormFrobenius), \
+        (6, NormP), \
+        (7, SquaredNorm) ,\
+        (8, Entropy) ,\
+        (9, LogEntropy) ,\
+        (10, ShannonEntropy) ,\
+        (12, ReduceFloatBenchmarkOp)
+
 
 
 
 #define RANDOM_OPS \
-        (0, randomOps::UniformDistribution) ,\
-        (1, randomOps::DropOut) ,\
-        (2, randomOps::DropOutInverted) ,\
-        (3, randomOps::ProbablisticMerge) ,\
-        (4, randomOps::Linspace) ,\
-        (5, randomOps::Choice) ,\
-        (6, randomOps::GaussianDistribution) ,\
-        (7, randomOps::BernoulliDistribution) ,\
-        (8, randomOps::BinomialDistribution),\
-        (9, randomOps::BinomialDistributionEx),\
-        (10, randomOps::LogNormalDistribution) ,\
-        (11, randomOps::TruncatedNormalDistribution) ,\
-        (12, randomOps::AlphaDropOut),\
-        (13, randomOps::ExponentialDistribution),\
-        (14, randomOps::ExponentialDistributionInv)
+        (0, UniformDistribution) ,\
+        (1, DropOut) ,\
+        (2, DropOutInverted) ,\
+        (3, ProbablisticMerge) ,\
+        (4, Linspace) ,\
+        (5, Choice) ,\
+        (6, GaussianDistribution) ,\
+        (7, BernoulliDistribution) ,\
+        (8, BinomialDistribution),\
+        (9, BinomialDistributionEx),\
+        (10, LogNormalDistribution) ,\
+        (11, TruncatedNormalDistribution) ,\
+        (12, AlphaDropOut),\
+        (13, ExponentialDistribution),\
+        (14, ExponentialDistributionInv)
 
-
+#define PAIRWISE_BOOL_OPS \
+        (0, EqualTo),\
+        (1, GreaterThan),\
+        (2, LessThan),\
+        (3, Epsilon),\
+        (4, GreaterThanOrEqual),\
+        (5, LessThanOrEqual),\
+        (6, NotEqualTo),\
+        (7, And),\
+        (8, Or),\
+        (9, Xor) ,\
+        (10, Not)
 
 #define PAIRWISE_TRANSFORM_OPS \
-        (0, simdOps::Add),\
-        (1, simdOps::Copy),\
-        (2, simdOps::Divide),\
-        (3, simdOps::EqualTo),\
-        (4, simdOps::GreaterThan),\
-        (5, simdOps::LessThan),\
-        (6, simdOps::Multiply),\
-        (7, simdOps::Pow),\
-        (8, simdOps::ReverseSubtract),\
-        (9, simdOps::Subtract),\
-        (10,simdOps::Epsilon),\
-        (11,simdOps::GreaterThanOrEqual),\
-        (12,simdOps::LessThanOrEqual),\
-        (13,simdOps::Max),\
-        (14,simdOps::Min),\
-        (15,simdOps::NotEqualTo),\
-        (16,simdOps::Copy2),\
-        (17,simdOps::Axpy),\
-        (18,simdOps::ReverseDivide),\
-        (45,simdOps::CompareAndSet),\
-        (46,simdOps::CompareAndReplace),\
-        (56,simdOps::And),\
-        (57,simdOps::Or),\
-        (58,simdOps::Xor),\
-        (59,simdOps::Remainder),\
-        (60,simdOps::FMod),\
-        (69,simdOps::Atan2) ,\
-        (19, simdOps::TruncateDiv),\
-        (20, simdOps::FloorDiv), \
-        (21, simdOps::FloorMod) ,\
-        (22, simdOps::SquaredSubtract) ,\
-        (23, simdOps::ReverseMod),\
-        (24, simdOps::SafeDivide), \
-        (25, simdOps::Mod) ,\
-        (26, simdOps::RelativeError) ,\
-        (27, simdOps::BinaryRelativeError) ,\
-        (28, simdOps::BinaryMinimumAbsoluteRelativeError) ,\
-        (29, simdOps::LogicalOr) ,\
-        (30, simdOps::LogicalXor) ,\
-        (31, simdOps::LogicalNot) ,\
-        (32, simdOps::LogicalAnd) ,\
-        (92, simdOps::PowDerivative), \
-        (93, simdOps::LogPoisonLoss), \
-        (94, simdOps::LogPoisonLossFull)
+        (0, Add),\
+        (1, CopyPws),\
+        (2, Divide),\
+        (3, Multiply),\
+        (4, Pow),\
+        (5, ReverseSubtract),\
+        (6, Subtract),\
+        (7, MaxPairwise),\
+        (8, MinPairwise),\
+        (9, Copy2) ,\
+        (10, Axpy),\
+        (11, ReverseDivide),\
+        (12, CompareAndSet),\
+        (13, CompareAndReplace),\
+        (14, Remainder),\
+        (15, FMod),\
+        (16, Atan2) ,\
+        (17, TruncateDiv),\
+        (18, FloorDiv), \
+        (19, FloorMod) ,\
+        (20, SquaredSubtract) ,\
+        (21, ReverseMod),\
+        (22, SafeDivide), \
+        (23, Mod) ,\
+        (24, RelativeError) ,\
+        (25, BinaryRelativeError) ,\
+        (26, BinaryMinimumAbsoluteRelativeError) ,\
+        (27, LogicalOr) ,\
+        (28, LogicalXor) ,\
+        (29, LogicalNot) ,\
+        (30, LogicalAnd) ,\
+        (31, PowDerivative), \
+        (32, LogPoissonLoss), \
+        (33, LogPoissonLossFull) , \
+        (34, AMaxPairwise), \
+        (35, AMinPairwise) ,\
+        (36, TruncateMod), \
+        (37, ReplaceNans)
 
 
 
 #define INDEX_REDUCE_OPS \
-        (0, simdOps::IndexMax), \
-        (1, simdOps::IndexMin), \
-		(2, simdOps::IndexAbsoluteMax), \
-		(3, simdOps::IndexAbsoluteMin) , \
-		(4, simdOps::FirstIndex) , \
-		(5, simdOps::LastIndex)
+        (0, IndexMax), \
+        (1, IndexMin), \
+        (2, IndexAbsoluteMax), \
+	    (3, IndexAbsoluteMin) , \
+	    (4, FirstIndex) , \
+	    (5, LastIndex)
 
 
 

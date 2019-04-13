@@ -22,6 +22,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.deeplearning4j.api.storage.Persistable;
 import org.deeplearning4j.api.storage.StorageMetaData;
+import org.deeplearning4j.optimize.solvers.accumulation.encoding.ThresholdAlgorithm;
 import org.deeplearning4j.spark.api.TrainingResult;
 import org.deeplearning4j.spark.api.stats.SparkTrainingStats;
 import org.deeplearning4j.spark.impl.paramavg.BaseTrainingResult;
@@ -47,6 +48,7 @@ public class SharedTrainingResult extends BaseTrainingResult implements Training
     private Collection<Persistable> listenerStaticInfo;
     private Collection<Persistable> listenerUpdates;
     private Map<String,Integer> minibatchesPerExecutor;
+    private ThresholdAlgorithm thresholdAlgorithm;
 
 
     @Override

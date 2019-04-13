@@ -30,23 +30,30 @@ namespace nd4j {
             auto z = OUTPUT_VARIABLE(0);
 
             for (int e = 0; e < x->rankOf(); e++)
-                z->putIndexedScalar(e, x->sizeAt(e));
+                z->p(e, x->sizeAt(e));
 
             STORE_RESULT(z);
 
-            return ND4J_STATUS_OK;
+            return Status::OK();
         };
         DECLARE_SYN(shape, shape_of);
 
         DECLARE_SHAPE_FN(shape_of) {
             auto inShape = inputShape->at(0);
 
-            Nd4jLong *newshape;
-            ALLOCATE(newshape, block.getWorkspace(), shape::shapeInfoLength(1), Nd4jLong);
-            shape::shapeVector(shape::rank(inShape), newshape);
+            // LONG by default
+            auto dtype = DataType::INT64;
+            if (block.numI() > 0)
+                dtype = DataTypeUtils::fromInt(INT_ARG(0));
 
-            return SHAPELIST(newshape);
+            return SHAPELIST(ShapeBuilders::createVectorShapeInfo(dtype, shape::rank(inShape), block.workspace()));
         };
+
+        DECLARE_TYPES(shape_of) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setAllowedOutputTypes({ALL_INTS});
+        }
     }
 }
 

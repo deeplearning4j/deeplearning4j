@@ -47,7 +47,8 @@ public class BasicGraphExecutioner implements GraphExecutioner {
      */
     @Override
     public INDArray[] executeGraph(SameDiff graph, ExecutorConfiguration configuration) {
-        return new INDArray[]{graph.execAndEndResult()};
+//        return new INDArray[]{graph.execAndEndResult()};
+        throw new UnsupportedOperationException("Not yet reimplemented");
     }
 
     /**

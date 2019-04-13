@@ -55,7 +55,10 @@ public class BaseDatasetIterator implements DataSetIterator {
     @Override
     public DataSet next() {
         fetcher.fetch(batch);
-        return fetcher.next();
+        DataSet ds = fetcher.next();
+        if(preProcessor != null)
+            preProcessor.preProcess(ds);
+        return ds;
     }
 
     @Override

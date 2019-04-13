@@ -84,7 +84,7 @@ public abstract class BaseStatusStorage implements StatusStorage {
     private void init() {
         updated = createUpdatedMap();
         executorService = Executors.newScheduledThreadPool(1);
-        //eject values that haven't checked in in a while
+        //eject values that haven't checked in a while
         executorService.scheduleAtFixedRate(new Runnable() {
             @Override
             public void run() {

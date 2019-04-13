@@ -16,11 +16,7 @@
 
 package org.deeplearning4j.nn.conf.layers.convolutional;
 
-import com.google.common.base.Preconditions;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
-import lombok.NonNull;
+import lombok.*;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
@@ -31,6 +27,8 @@ import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
 import org.deeplearning4j.nn.layers.convolution.Cropping2DLayer;
 import org.deeplearning4j.optimize.api.TrainingListener;
 import org.deeplearning4j.util.ConvolutionUtils;
+import org.deeplearning4j.util.ValidationUtils;
+import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.util.Arrays;
@@ -38,8 +36,8 @@ import java.util.Collection;
 import java.util.Map;
 
 /**
- * Cropping layer for convolutional (2d) neural networks.
- * Allows cropping to be done separately for top/bottom/left/right
+ * Cropping layer for convolutional (2d) neural networks. Allows cropping to be done separately for
+ * top/bottom/left/right
  *
  * @author Alex Black
  */
@@ -59,18 +57,18 @@ public class Cropping2D extends NoParamLayer {
     }
 
     /**
-     * @param cropTop    Amount of cropping to apply to the top of the input activations
+     * @param cropTop Amount of cropping to apply to the top of the input activations
      * @param cropBottom Amount of cropping to apply to the bottom of the input activations
-     * @param cropLeft   Amount of cropping to apply to the left of the input activations
-     * @param cropRight  Amount of cropping to apply to the right of the input activations
+     * @param cropLeft Amount of cropping to apply to the left of the input activations
+     * @param cropRight Amount of cropping to apply to the right of the input activations
      */
     public Cropping2D(int cropTop, int cropBottom, int cropLeft, int cropRight) {
         this(new Builder(cropTop, cropBottom, cropLeft, cropRight));
     }
 
     /**
-     * @param cropping Cropping as either a length 2 array, with values {@code [cropTopBottom, cropLeftRight]},
-     *                 or as a length 4 array, with values {@code [cropTop, cropBottom, cropLeft, cropRight]}
+     * @param cropping Cropping as either a length 2 array, with values {@code [cropTopBottom, cropLeftRight]}, or as a
+     * length 4 array, with values {@code [cropTop, cropBottom, cropLeft, cropRight]}
      */
     public Cropping2D(int[] cropping) {
         this(new Builder(cropping));
@@ -82,8 +80,9 @@ public class Cropping2D extends NoParamLayer {
     }
 
     @Override
-    public org.deeplearning4j.nn.api.Layer instantiate(NeuralNetConfiguration conf, Collection<TrainingListener> trainingListeners,
-                                                       int layerIndex, INDArray layerParamsView, boolean initializeParams) {
+    public org.deeplearning4j.nn.api.Layer instantiate(NeuralNetConfiguration conf,
+                    Collection<TrainingListener> trainingListeners, int layerIndex, INDArray layerParamsView,
+                    boolean initializeParams) {
         Cropping2DLayer ret = new Cropping2DLayer(conf);
         ret.setListeners(trainingListeners);
         ret.setIndex(layerIndex);
@@ -105,7 +104,7 @@ public class Cropping2D extends NoParamLayer {
     @Override
     public InputPreProcessor getPreProcessorForInputType(InputType inputType) {
         Preconditions.checkArgument(inputType != null, "Invalid input for Cropping2D layer (layer name=\""
-                + getLayerName() + "\"): InputType is null");
+                        + getLayerName() + "\"): InputType is null");
         return InputTypeUtil.getPreProcessorForInputTypeCnnLayers(inputType, getLayerName());
     }
 
@@ -115,9 +114,22 @@ public class Cropping2D extends NoParamLayer {
     }
 
 
+    @Getter
+    @Setter
     public static class Builder extends Layer.Builder<Builder> {
 
-        private int[] cropping = new int[]{0, 0, 0, 0};
+        /**
+         * Cropping amount for top/bottom/left/right (in that order). A length 4 array.
+         */
+        @Setter(AccessLevel.NONE)
+        private int[] cropping = new int[] {0, 0, 0, 0};
+
+        /**
+         * @param cropping Cropping amount for top/bottom/left/right (in that order). Must be length 1, 2, or 4 array.
+         */
+        public void setCropping(int... cropping) {
+            this.cropping = ValidationUtils.validate4NonNegative(cropping, "cropping");
+        }
 
         public Builder() {
 
@@ -127,14 +139,7 @@ public class Cropping2D extends NoParamLayer {
          * @param cropping Cropping amount for top/bottom/left/right (in that order). Must be length 4 array.
          */
         public Builder(@NonNull int[] cropping) {
-            Preconditions.checkArgument(cropping.length == 4 || cropping.length == 2,
-                    "Either 2 or 4 cropping values,  i.e. (top/bottom. left/right) or (top, bottom," +
-                            " left, right) must be provided. Got " + cropping.length + " values: " + Arrays.toString(cropping));
-            if (cropping.length == 2) {
-                this.cropping = new int[]{cropping[0], cropping[0], cropping[1], cropping[1]};
-            } else {
-                this.cropping = cropping;
-            }
+            this.setCropping(cropping);
         }
 
         /**
@@ -146,15 +151,13 @@ public class Cropping2D extends NoParamLayer {
         }
 
         /**
-         * @param cropTop    Amount of cropping to apply to the top of the input activations
+         * @param cropTop Amount of cropping to apply to the top of the input activations
          * @param cropBottom Amount of cropping to apply to the bottom of the input activations
-         * @param cropLeft   Amount of cropping to apply to the left of the input activations
-         * @param cropRight  Amount of cropping to apply to the right of the input activations
+         * @param cropLeft Amount of cropping to apply to the left of the input activations
+         * @param cropRight Amount of cropping to apply to the right of the input activations
          */
         public Builder(int cropTop, int cropBottom, int cropLeft, int cropRight) {
-            this.cropping = new int[]{cropTop, cropBottom, cropLeft, cropRight};
-            Preconditions.checkArgument(cropTop >= 0 && cropBottom >= 0 && cropLeft >= 0 && cropRight >= 0,
-                    "Invalid arguments: crop dimensions must be > 0. Got [t,b,l,r] = " + Arrays.toString(this.cropping));
+            this.setCropping(new int[] {cropTop, cropBottom, cropLeft, cropRight});
         }
 
         public Cropping2D build() {

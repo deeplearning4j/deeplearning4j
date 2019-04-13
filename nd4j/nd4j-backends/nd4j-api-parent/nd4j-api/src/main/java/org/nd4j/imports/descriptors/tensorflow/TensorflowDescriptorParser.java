@@ -31,14 +31,19 @@ import java.util.Map;
 
 public class TensorflowDescriptorParser {
 
+    protected static Map<String,OpDef> DESCRIPTORS;
+
     /**
      * Get the op descriptors for tensorflow
      * @return the op descriptors for tensorflow
      * @throws Exception
      */
-    public static Map<String,OpDef> opDescs() throws Exception {
-        InputStream contents = new ClassPathResource("ops.proto").getInputStream();
-        try (BufferedInputStream bis2 = new BufferedInputStream(contents); BufferedReader reader = new BufferedReader(new InputStreamReader(bis2))) {
+    public static synchronized Map<String,OpDef> opDescs() {
+        if(DESCRIPTORS != null){
+            return DESCRIPTORS;
+        }
+
+        try (InputStream contents = new ClassPathResource("ops.proto").getInputStream(); BufferedInputStream bis2 = new BufferedInputStream(contents); BufferedReader reader = new BufferedReader(new InputStreamReader(bis2))) {
             org.tensorflow.framework.OpList.Builder builder = org.tensorflow.framework.OpList.newBuilder();
 
             StringBuilder str = new StringBuilder();
@@ -55,15 +60,11 @@ public class TensorflowDescriptorParser {
                 map.put(opDef.getName(),opDef);
             }
 
-            return map;
-
-        } catch (Exception e2) {
-            e2.printStackTrace();
+            DESCRIPTORS = map;
+            return DESCRIPTORS;
+        } catch (Exception e) {
+            throw new ND4JIllegalStateException("Unable to load tensorflow descriptors", e);
         }
 
-        throw new ND4JIllegalStateException("Unable to load tensorflow descriptors!");
-
     }
-
-
 }

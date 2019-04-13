@@ -142,7 +142,7 @@ public class DataSetUtil {
 
         INDArray in2d = Nd4j.create(channels, height * width * instances);
 
-        long tads = data.tensorssAlongDimension(3, 2, 0);
+        long tads = data.tensorsAlongDimension(3, 2, 0);
         for (int i = 0; i < tads; i++) {
             INDArray thisTAD = data.tensorAlongDimension(i, 3, 2, 0);
             in2d.putRow(i, Nd4j.toFlattened(thisTAD));
@@ -208,7 +208,7 @@ public class DataSetUtil {
             default:
                 throw new IllegalStateException("Cannot merge examples: features rank must be in range 2 to 4"
                                 + " inclusive. First example features shape: "
-                                + Arrays.toString(featureMasksToMerge[0].shape()));
+                                + Arrays.toString(featuresToMerge[0].shape()));
         }
     }
 
@@ -347,7 +347,7 @@ public class DataSetUtil {
             numExamplesPerArr[i] = arrays[i].size(0);
         }
 
-        INDArray outMask = Nd4j.ones(outShape); //Initialize to 'all present' (1s)
+        INDArray outMask = Nd4j.ones(arrays[0].dataType(), outShape); //Initialize to 'all present' (1s)
 
         int rowsSoFar = 0;
         for (int i = 0; i < masks.length; i++) {
@@ -468,8 +468,8 @@ public class DataSetUtil {
         }
 
         boolean needMask = hasMask || lengthsDiffer;
-        INDArray arr = Nd4j.create(totalExamples, size, maxLength);
-        INDArray mask = (needMask && maskRank != 3 ? Nd4j.ones(totalExamples, maxLength) : null);
+        INDArray arr = Nd4j.create(arrays[0].dataType(), totalExamples, size, maxLength);
+        INDArray mask = (needMask && maskRank != 3 ? Nd4j.ones(arrays[0].dataType(), totalExamples, maxLength) : null);
 
         //Now, merge the time series (and if necessary, mask arrays):
         int examplesSoFar = 0;
@@ -520,7 +520,7 @@ public class DataSetUtil {
                 }
             } else if (maskRank == 3) {
                 //Per output masking required. May also be variable length
-                mask = Nd4j.create(arr.shape());
+                mask = Nd4j.create(arr.dataType(), arr.shape());
                 for (int i = 0; i < arrays.length; i++) {
                     INDArray m = masks[i];
                     INDArray a = arrays[i];

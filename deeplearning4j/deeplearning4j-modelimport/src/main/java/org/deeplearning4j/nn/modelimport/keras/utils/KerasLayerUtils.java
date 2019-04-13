@@ -302,14 +302,15 @@ public class KerasLayerUtils {
             layer = new KerasCropping2D(layerConfig, enforceTrainingConfig);
         } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_CROPPING_1D())) {
             layer = new KerasCropping1D(layerConfig, enforceTrainingConfig);
-        } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_LAMBDA()) && !lambdaLayers.isEmpty()) {
+        } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_LAMBDA())) {
             String lambdaLayerName = KerasLayerUtils.getLayerNameFromConfig(layerConfig, conf);
             SameDiffLambdaLayer lambdaLayer;
             if (lambdaLayers.containsKey(lambdaLayerName)) {
                 lambdaLayer = lambdaLayers.get(lambdaLayerName);
             } else {
                 throw new UnsupportedKerasConfigurationException("No SameDiff Lambda layer found for Lambda" +
-                        "layer " + lambdaLayerName);
+                        "layer " + lambdaLayerName + ". You can register a SameDiff Lambda layer using KerasLayer." +
+                        "registerLambdaLayer(lambdaLayerName, sameDiffLambdaLayer);");
             }
             layer = new KerasLambda(layerConfig, enforceTrainingConfig, lambdaLayer);
         } else {
@@ -364,8 +365,8 @@ public class KerasLayerUtils {
         Map<String, Object> outerConfig = getInnerLayerConfigFromConfig(layerConfig, conf);
         Map<String, Object> innerLayer = (Map<String, Object>) outerConfig.get(conf.getLAYER_FIELD_LAYER());
         layerConfig.put(conf.getLAYER_FIELD_CLASS_NAME(), innerLayer.get(conf.getLAYER_FIELD_CLASS_NAME()));
-        layerConfig.put(conf.getLAYER_FIELD_NAME(), innerLayer.get(conf.getLAYER_FIELD_CLASS_NAME()));
         Map<String, Object> innerConfig = getInnerLayerConfigFromConfig(innerLayer, conf);
+        innerConfig.put(conf.getLAYER_FIELD_NAME(), outerConfig.get(conf.getLAYER_FIELD_NAME()));
         outerConfig.putAll(innerConfig);
         outerConfig.remove(conf.getLAYER_FIELD_LAYER());
         return layerConfig;

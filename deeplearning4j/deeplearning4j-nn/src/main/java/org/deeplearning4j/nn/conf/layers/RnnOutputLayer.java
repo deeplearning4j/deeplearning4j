@@ -38,7 +38,7 @@ import java.util.Map;
 /**
  * A version of {@link OutputLayer} for recurrent neural networks. Expects inputs of size [minibatch,nIn,sequenceLength]
  * and labels of shape [minibatch,nOut,sequenceLength]. It also supports mask arrays.
- *<br>
+ * <br>
  * Note that RnnOutputLayer can also be used for 1D CNN layers, which also have [minibatch,nOut,sequenceLength]
  * activations/labels shape.
  *
@@ -110,7 +110,7 @@ public class RnnOutputLayer extends BaseOutputLayer {
 
         public Builder() {
             //Set default activation function to softmax (to match default loss function MCXENT)
-            this.activationFn = new ActivationSoftmax();
+            this.setActivationFn(new ActivationSoftmax());
         }
 
         /**
@@ -119,16 +119,16 @@ public class RnnOutputLayer extends BaseOutputLayer {
         public Builder(LossFunction lossFunction) {
             lossFunction(lossFunction);
             //Set default activation function to softmax (for consistent behaviour with no-arg constructor)
-            this.activationFn = new ActivationSoftmax();
+            this.setActivationFn(new ActivationSoftmax());
         }
 
         /**
          * @param lossFunction Loss function for the output layer
          */
         public Builder(ILossFunction lossFunction) {
-            this.lossFn = lossFunction;
+            this.setLossFn(lossFunction);
             //Set default activation function to softmax (for consistent behaviour with no-arg constructor)
-            this.activationFn = new ActivationSoftmax();
+            this.setActivationFn(new ActivationSoftmax());
         }
 
         @Override

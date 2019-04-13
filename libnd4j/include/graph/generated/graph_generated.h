@@ -30,7 +30,9 @@ struct FlatGraph FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
     VT_VARIABLES = 6,
     VT_NODES = 8,
     VT_OUTPUTS = 10,
-    VT_CONFIGURATION = 12
+    VT_CONFIGURATION = 12,
+    VT_PLACEHOLDERS = 14,
+    VT_LOSSVARIABLES = 16
   };
   int64_t id() const {
     return GetField<int64_t>(VT_ID, 0);
@@ -47,20 +49,32 @@ struct FlatGraph FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   const FlatConfiguration *configuration() const {
     return GetPointer<const FlatConfiguration *>(VT_CONFIGURATION);
   }
+  const flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>> *placeholders() const {
+    return GetPointer<const flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>> *>(VT_PLACEHOLDERS);
+  }
+  const flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>> *lossVariables() const {
+    return GetPointer<const flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>> *>(VT_LOSSVARIABLES);
+  }
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
            VerifyField<int64_t>(verifier, VT_ID) &&
            VerifyOffset(verifier, VT_VARIABLES) &&
-           verifier.Verify(variables()) &&
+           verifier.VerifyVector(variables()) &&
            verifier.VerifyVectorOfTables(variables()) &&
            VerifyOffset(verifier, VT_NODES) &&
-           verifier.Verify(nodes()) &&
+           verifier.VerifyVector(nodes()) &&
            verifier.VerifyVectorOfTables(nodes()) &&
            VerifyOffset(verifier, VT_OUTPUTS) &&
-           verifier.Verify(outputs()) &&
+           verifier.VerifyVector(outputs()) &&
            verifier.VerifyVectorOfTables(outputs()) &&
            VerifyOffset(verifier, VT_CONFIGURATION) &&
            verifier.VerifyTable(configuration()) &&
+           VerifyOffset(verifier, VT_PLACEHOLDERS) &&
+           verifier.VerifyVector(placeholders()) &&
+           verifier.VerifyVectorOfStrings(placeholders()) &&
+           VerifyOffset(verifier, VT_LOSSVARIABLES) &&
+           verifier.VerifyVector(lossVariables()) &&
+           verifier.VerifyVectorOfStrings(lossVariables()) &&
            verifier.EndTable();
   }
 };
@@ -83,6 +97,12 @@ struct FlatGraphBuilder {
   void add_configuration(flatbuffers::Offset<FlatConfiguration> configuration) {
     fbb_.AddOffset(FlatGraph::VT_CONFIGURATION, configuration);
   }
+  void add_placeholders(flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>>> placeholders) {
+    fbb_.AddOffset(FlatGraph::VT_PLACEHOLDERS, placeholders);
+  }
+  void add_lossVariables(flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>>> lossVariables) {
+    fbb_.AddOffset(FlatGraph::VT_LOSSVARIABLES, lossVariables);
+  }
   explicit FlatGraphBuilder(flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
     start_ = fbb_.StartTable();
@@ -101,9 +121,13 @@ inline flatbuffers::Offset<FlatGraph> CreateFlatGraph(
     flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<FlatVariable>>> variables = 0,
     flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<FlatNode>>> nodes = 0,
     flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<IntPair>>> outputs = 0,
-    flatbuffers::Offset<FlatConfiguration> configuration = 0) {
+    flatbuffers::Offset<FlatConfiguration> configuration = 0,
+    flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>>> placeholders = 0,
+    flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>>> lossVariables = 0) {
   FlatGraphBuilder builder_(_fbb);
   builder_.add_id(id);
+  builder_.add_lossVariables(lossVariables);
+  builder_.add_placeholders(placeholders);
   builder_.add_configuration(configuration);
   builder_.add_outputs(outputs);
   builder_.add_nodes(nodes);
@@ -117,14 +141,18 @@ inline flatbuffers::Offset<FlatGraph> CreateFlatGraphDirect(
     const std::vector<flatbuffers::Offset<FlatVariable>> *variables = nullptr,
     const std::vector<flatbuffers::Offset<FlatNode>> *nodes = nullptr,
     const std::vector<flatbuffers::Offset<IntPair>> *outputs = nullptr,
-    flatbuffers::Offset<FlatConfiguration> configuration = 0) {
+    flatbuffers::Offset<FlatConfiguration> configuration = 0,
+    const std::vector<flatbuffers::Offset<flatbuffers::String>> *placeholders = nullptr,
+    const std::vector<flatbuffers::Offset<flatbuffers::String>> *lossVariables = nullptr) {
   return nd4j::graph::CreateFlatGraph(
       _fbb,
       id,
       variables ? _fbb.CreateVector<flatbuffers::Offset<FlatVariable>>(*variables) : 0,
       nodes ? _fbb.CreateVector<flatbuffers::Offset<FlatNode>>(*nodes) : 0,
       outputs ? _fbb.CreateVector<flatbuffers::Offset<IntPair>>(*outputs) : 0,
-      configuration);
+      configuration,
+      placeholders ? _fbb.CreateVector<flatbuffers::Offset<flatbuffers::String>>(*placeholders) : 0,
+      lossVariables ? _fbb.CreateVector<flatbuffers::Offset<flatbuffers::String>>(*lossVariables) : 0);
 }
 
 struct FlatDropRequest FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {

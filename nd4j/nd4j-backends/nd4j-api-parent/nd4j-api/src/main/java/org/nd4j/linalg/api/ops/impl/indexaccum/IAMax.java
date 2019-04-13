@@ -37,19 +37,13 @@ public class IAMax extends BaseIndexAccumulation {
 
     public IAMax() {}
 
-    public IAMax(INDArray x, INDArray y, long n) {
-        super(x, y, n);
+    public IAMax(INDArray x, int... dimensions) {
+        this(x, null, dimensions);
     }
 
-    public IAMax(INDArray x) {
-        super(x);
+    public IAMax(INDArray x, INDArray z, int... dimensions) {
+        super(x, z, dimensions);
     }
-
-    public IAMax(INDArray x, INDArray y) {
-        super(x, y);
-    }
-
-
 
     @Override
     public int opNum() {
@@ -59,22 +53,6 @@ public class IAMax extends BaseIndexAccumulation {
     @Override
     public String opName() {
         return "iamax";
-    }
-
-
-    @Override
-    public double zeroDouble() {
-        return 0.0;
-    }
-
-    @Override
-    public float zeroFloat() {
-        return 0.0f;
-    }
-
-    @Override
-    public float zeroHalf() {
-        return zeroFloat();
     }
 
     @Override

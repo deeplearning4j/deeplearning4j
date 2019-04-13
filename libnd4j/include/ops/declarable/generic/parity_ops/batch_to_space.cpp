@@ -42,6 +42,12 @@ namespace nd4j {
 namespace ops {
     const int kMaxSpaceToBatchBlockDims = 4;
 
+    DECLARE_TYPES(batch_to_space) {
+        getOpDescriptor()
+                ->setAllowedInputTypes(nd4j::DataType::ANY)
+                ->setSameMode(true);
+    }
+
     CUSTOM_OP_IMPL(batch_to_space, 1, 1, false, 0, -2) {
         auto input = INPUT_VARIABLE(0);
 
@@ -168,8 +174,8 @@ namespace ops {
         internal_input_shape.emplace_back(depth);
         internal_output_shape.emplace_back(depth);
 
-        Nd4jLong* internal_crops = &crops_shape.data()[2 * removed_prefix_block_dims];
-        Nd4jLong* internal_block_shape = &block_shape.data()[removed_prefix_block_dims];
+        auto internal_crops = &crops_shape.data()[2 * removed_prefix_block_dims];
+        auto internal_block_shape = &block_shape.data()[removed_prefix_block_dims];
 
         helpers::_batchToSpace(internal_block_dims, output, input, internal_output_shape, internal_input_shape, internal_block_shape, internal_crops);
 
@@ -256,7 +262,7 @@ namespace ops {
 
         external_output_shape.emplace_back(orig_input_batch_size / block_shape_product);
 
-        Nd4jLong input_batch_size = orig_input_batch_size;
+        auto input_batch_size = orig_input_batch_size;
         for (int block_dim = 0; block_dim < removed_prefix_block_dims; ++block_dim) {
             const Nd4jLong size = shape::sizeAt(in, block_dim + 1);
             input_batch_size *= size;
@@ -292,7 +298,7 @@ namespace ops {
         //nd4j_printv("STB shape: ", external_output_shape);
 
         // we always give out C order here
-        shape::shapeBuffer((int) external_output_shape.size(), external_output_shape.data(), newShape);
+        newShape = nd4j::ShapeBuilders::createShapeInfo(ArrayOptions::dataType(in), 'c', external_output_shape, block.getWorkspace());        
 
         return SHAPELIST(newShape);
     }

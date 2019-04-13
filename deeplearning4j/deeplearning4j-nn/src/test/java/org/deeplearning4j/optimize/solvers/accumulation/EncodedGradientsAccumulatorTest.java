@@ -18,6 +18,7 @@ package org.deeplearning4j.optimize.solvers.accumulation;
 
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import org.deeplearning4j.optimize.solvers.accumulation.encoding.threshold.FixedThresholdAlgorithm;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -43,15 +44,15 @@ public class EncodedGradientsAccumulatorTest {
         int workers[] = new int[] {2, 4, 8};
 
         for (int numWorkers : workers) {
-            EncodingHandler handler = new EncodingHandler(1e-3);
+            EncodingHandler handler = new EncodingHandler(new FixedThresholdAlgorithm(1e-3),null, null, false);
 
             val bufferSize = EncodedGradientsAccumulator.getOptimalBufferSize(numParams, numWorkers, 2);
             log.info("Workers: {}; Buffer size: {} bytes", numWorkers, bufferSize);
             EncodedGradientsAccumulator accumulator =
-                            new EncodedGradientsAccumulator(numWorkers, handler, bufferSize, 2, null);
+                            new EncodedGradientsAccumulator(numWorkers, handler, bufferSize, 2, null, false);
 
             for (int e = 10; e < numParams / 10; e++) {
-                INDArray encoded = handler.encodeUpdates(getGradients(numParams, e, 2e-3));
+                INDArray encoded = handler.encodeUpdates(0, 0, getGradients(numParams, e, 2e-3));
                 accumulator.receiveUpdate(encoded);
 
                 // just purge updates, like they were consumed
@@ -73,9 +74,9 @@ public class EncodedGradientsAccumulatorTest {
         int numParams = 100000;
 
         for (int e = 10; e < numParams / 5; e++) {
-            EncodingHandler handler = new EncodingHandler(1e-3);
+            EncodingHandler handler = new EncodingHandler(new FixedThresholdAlgorithm(1e-3), null, null, false);
 
-            INDArray encoded = handler.encodeUpdates(getGradients(numParams, e, 2e-3));
+            INDArray encoded = handler.encodeUpdates(0, 0, getGradients(numParams, e, 2e-3));
 
             //  log.info("enc len: {}", encoded.data().length());
 

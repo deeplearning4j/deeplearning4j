@@ -23,11 +23,13 @@ import lombok.val;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.base.Preconditions;
 import org.nd4j.imports.converters.DifferentialFunctionClassHolder;
 import org.nd4j.imports.descriptors.properties.AttributeAdapter;
 import org.nd4j.imports.descriptors.properties.PropertyMapping;
 import org.nd4j.imports.descriptors.properties.adapters.*;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv3DConfig;
@@ -47,6 +49,7 @@ import java.util.*;
 public class Conv3D extends DynamicCustomOp {
 
     protected Conv3DConfig config;
+    private static final String INVALID_CONFIGURATION = "Invalid Conv3D configuration : sW = %s pH = %s dW = %s ";
 
     public Conv3D() {
     }
@@ -62,6 +65,9 @@ public class Conv3D extends DynamicCustomOp {
         if (outputs != null)
             addOutputArgument(outputs);
         this.config = conv3DConfig;
+        Preconditions.checkState(config.getSW() >= 1 && config.getPH() >= 0 && config.getDW() >= 1,
+                                    INVALID_CONFIGURATION,
+                                    config.getSW(), config.getPH(), config.getDW());
         addArgs();
 
 
@@ -90,7 +96,7 @@ public class Conv3D extends DynamicCustomOp {
                 getConfig().getDH(),
                 getConfig().getDW(),
 
-                getConfig().isValidMode() ? 0 : 1,
+                getConfig().isSameMode() ? 1 : 0,
                 getConfig().isNCDHW() ? 0 : 1
         );
     }
@@ -112,7 +118,7 @@ public class Conv3D extends DynamicCustomOp {
                     .dD(iArguments.get(9))
                     .dH(iArguments.get(10))
                     .dW(iArguments.get(11))
-                    .isValidMode(iArguments.get(12) == 0)
+                    .isSameMode(iArguments.get(12) == 1)
                     .dataFormat(iArguments.get(13) == 1 ? Conv3DConfig.NCDHW : Conv3DConfig.NDHWC)
                     .build();
         }
@@ -148,7 +154,7 @@ public class Conv3D extends DynamicCustomOp {
         tfAdapters.put("pW", new IntArrayIntIndexAdpater(3));
 
 
-        tfAdapters.put("isValidMode", new StringEqualsAdapter("VALID"));
+        tfAdapters.put("isSameMode", new StringNotEqualsAdapter("VALID"));
 
         ret.put(tensorflowName(), tfAdapters);
 
@@ -195,7 +201,7 @@ public class Conv3D extends DynamicCustomOp {
 
         val sameMode = PropertyMapping.builder()
                 .onnxAttrName("auto_pad")
-                .propertyNames(new String[]{"isValidMode"})
+                .propertyNames(new String[]{"isSameMode"})
                 .tfAttrName("padding")
                 .build();
 
@@ -268,12 +274,6 @@ public class Conv3D extends DynamicCustomOp {
         if (numIArguments() < 1) {
             addArgs();
         }
-
-        if (numInputArguments() < getDescriptor().getNumIArgs()) {
-            populateInputsAndOutputsFromSameDiff();
-        }
-
-
     }
 
     @Override
@@ -295,5 +295,12 @@ public class Conv3D extends DynamicCustomOp {
     @Override
     public String tensorflowName() {
         return "Conv3D";
+    }
+
+    @Override
+    public List<DataType> calculateOutputDataTypes(List<DataType> inputDataTypes){
+        int n = args().length;
+        Preconditions.checkState(inputDataTypes != null && inputDataTypes.size() == n, "Expected %s input data types for %s, got %s", n, getClass(), inputDataTypes);
+        return Collections.singletonList(inputDataTypes.get(0));
     }
 }

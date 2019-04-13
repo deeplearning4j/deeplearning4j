@@ -17,6 +17,7 @@
 package org.deeplearning4j.models.embeddings.learning;
 
 import org.deeplearning4j.models.embeddings.WeightLookupTable;
+import org.deeplearning4j.models.embeddings.learning.impl.elements.BatchSequences;
 import org.deeplearning4j.models.embeddings.loader.VectorsConfiguration;
 import org.deeplearning4j.models.sequencevectors.interfaces.SequenceIterator;
 import org.deeplearning4j.models.sequencevectors.sequence.Sequence;
@@ -47,7 +48,7 @@ public interface SequenceLearningAlgorithm<T extends SequenceElement> {
      * @param learningRate
      * @return average score for this sequence
      */
-    double learnSequence(Sequence<T> sequence, AtomicLong nextRandom, double learningRate);
+    double learnSequence(Sequence<T> sequence, AtomicLong nextRandom, double learningRate, BatchSequences<T> batchSequences);
 
     boolean isEarlyTerminationHit();
 

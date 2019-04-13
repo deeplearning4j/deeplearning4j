@@ -26,8 +26,7 @@ namespace nd4j {
 namespace ops {
 namespace helpers {
 
-    template <typename T>
-    int matrixDiag(NDArray<T> const* input, NDArray<T>* output);
+    int matrixDiag(NDArray const* input, NDArray* output);
 
 }
 }

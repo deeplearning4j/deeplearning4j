@@ -23,6 +23,7 @@ import lombok.NonNull;
 import org.deeplearning4j.nn.conf.CacheMode;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DataType;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -87,7 +88,7 @@ public class LayerMemoryReport extends MemoryReport {
 
     @Override
     public long getTotalMemoryBytes(int minibatchSize, @NonNull MemoryUseMode memoryUseMode,
-                    @NonNull CacheMode cacheMode, @NonNull DataBuffer.Type dataType) {
+                                    @NonNull CacheMode cacheMode, @NonNull DataType dataType) {
         long total = 0;
         for (MemoryType mt : MemoryType.values()) {
             total += getMemoryBytes(mt, minibatchSize, memoryUseMode, cacheMode, dataType);
@@ -97,7 +98,7 @@ public class LayerMemoryReport extends MemoryReport {
 
     @Override
     public long getMemoryBytes(MemoryType memoryType, int minibatchSize, MemoryUseMode memoryUseMode,
-                    CacheMode cacheMode, DataBuffer.Type dataType) {
+                    CacheMode cacheMode, DataType dataType) {
         int bytesPerElement = getBytesPerElement(dataType);
         switch (memoryType) {
             case PARAMETERS:

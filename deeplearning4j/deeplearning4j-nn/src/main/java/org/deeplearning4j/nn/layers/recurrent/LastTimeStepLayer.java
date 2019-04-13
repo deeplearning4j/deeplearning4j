@@ -90,6 +90,7 @@ public class LastTimeStepLayer extends BaseWrapperLayer {
     @Override
     public Pair<INDArray, MaskState> feedForwardMaskArray(INDArray maskArray, MaskState currentMaskState, int minibatchSize) {
         underlying.feedForwardMaskArray(maskArray, currentMaskState, minibatchSize);
+        this.setMaskArray(maskArray);
 
         //Input: 2d mask array, for masking a time series. After extracting out the last time step, we no longer need the mask array
         return new Pair<>(null, currentMaskState);

@@ -33,8 +33,8 @@ public class ScalarDivision extends BaseScalarOp {
     public ScalarDivision() {
     }
 
-    public ScalarDivision(INDArray x, INDArray y, INDArray z, long n, Number num) {
-        super(x, y, z, n, num);
+    public ScalarDivision(INDArray x, INDArray y, INDArray z, Number num) {
+        super(x, y, z, num);
     }
 
     public ScalarDivision(INDArray x, Number num) {
@@ -48,14 +48,6 @@ public class ScalarDivision extends BaseScalarOp {
 
     public ScalarDivision(SameDiff sameDiff, SDVariable i_v, Number scalar, boolean inPlace) {
         super(sameDiff, i_v, scalar, inPlace);
-    }
-
-    public ScalarDivision(SameDiff sameDiff, SDVariable i_v, Number scalar, boolean inPlace, Object[] extraArgs) {
-        super(sameDiff, i_v, scalar, inPlace, extraArgs);
-    }
-
-    public ScalarDivision(SameDiff sameDiff, SDVariable i_v, Number scalar, Object[] extraArgs) {
-        super(sameDiff, i_v, scalar, extraArgs);
     }
 
     @Override
@@ -80,7 +72,7 @@ public class ScalarDivision extends BaseScalarOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v1) {
-        SDVariable ret = i_v1.get(0).div(scalarValue.doubleValue());
+        SDVariable ret = i_v1.get(0).div(scalarValue.getDouble(0));
         return Arrays.asList(ret);
     }
 }

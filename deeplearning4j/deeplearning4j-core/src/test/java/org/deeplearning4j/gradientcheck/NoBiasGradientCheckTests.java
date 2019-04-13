@@ -24,11 +24,9 @@ import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
-import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
-import org.nd4j.linalg.api.buffer.DataBuffer;
-import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.config.NoOp;
@@ -47,7 +45,7 @@ public class NoBiasGradientCheckTests extends BaseDL4JTest {
     private static final double DEFAULT_MIN_ABS_ERROR = 1e-8;
 
     static {
-        Nd4j.setDataType(DataBuffer.Type.DOUBLE);
+        Nd4j.setDataType(DataType.DOUBLE);
     }
 
     @Test
@@ -72,20 +70,20 @@ public class NoBiasGradientCheckTests extends BaseDL4JTest {
                             .seed(12345L)
                             .list()
                             .layer(0, new DenseLayer.Builder().nIn(nIn).nOut(layerSize)
-                                    .weightInit(WeightInit.DISTRIBUTION)
+
                                     .dist(new NormalDistribution(0, 1))
                                     .activation(Activation.TANH)
                                     .hasBias(true)  //Layer 0: Always have a bias
                                     .build())
                             .layer(1, new DenseLayer.Builder().nIn(layerSize).nOut(layerSize)
-                                    .weightInit(WeightInit.DISTRIBUTION)
+
                                     .dist(new NormalDistribution(0, 1))
                                     .activation(Activation.TANH)
                                     .hasBias(denseHasBias)
                                     .build())
                             .layer(2, new OutputLayer.Builder(LossFunction.MCXENT)
                                     .activation(Activation.SOFTMAX).nIn(layerSize).nOut(nOut)
-                                    .weightInit(WeightInit.DISTRIBUTION)
+
                                     .dist(new NormalDistribution(0, 1))
                                     .hasBias(outHasBias)
                                     .build())
@@ -142,13 +140,13 @@ public class NoBiasGradientCheckTests extends BaseDL4JTest {
                         .seed(12345L)
                         .list()
                         .layer(0, new LSTM.Builder().nIn(nIn).nOut(layerSize)
-                                .weightInit(WeightInit.DISTRIBUTION)
+
                                 .dist(new NormalDistribution(0, 1))
                                 .activation(Activation.TANH)
                                 .build())
                         .layer(1, new RnnOutputLayer.Builder(LossFunction.MCXENT)
                                 .activation(Activation.SOFTMAX).nIn(layerSize).nOut(nOut)
-                                .weightInit(WeightInit.DISTRIBUTION)
+
                                 .dist(new NormalDistribution(0, 1))
                                 .hasBias(rnnOutHasBias)
                                 .build())
@@ -202,14 +200,14 @@ public class NoBiasGradientCheckTests extends BaseDL4JTest {
                         .seed(12345L)
                         .list()
                         .layer(0, new EmbeddingLayer.Builder().nIn(nIn).nOut(layerSize)
-                                .weightInit(WeightInit.DISTRIBUTION)
+
                                 .dist(new NormalDistribution(0, 1))
                                 .activation(Activation.TANH)
                                 .hasBias(embeddingHasBias)
                                 .build())
                         .layer(1, new OutputLayer.Builder(LossFunction.MCXENT)
                                 .activation(Activation.SOFTMAX).nIn(layerSize).nOut(nOut)
-                                .weightInit(WeightInit.DISTRIBUTION)
+
                                 .dist(new NormalDistribution(0, 1))
                                 .build())
                         .build();
@@ -264,7 +262,7 @@ public class NoBiasGradientCheckTests extends BaseDL4JTest {
 
                 MultiLayerConfiguration conf =
                         new NeuralNetConfiguration.Builder().updater(new NoOp())
-                                .weightInit(WeightInit.DISTRIBUTION)
+
                                 .dist(new NormalDistribution(0, 1))
                                 .list()
                                 .layer(new ConvolutionLayer.Builder(kernel,

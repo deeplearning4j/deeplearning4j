@@ -19,6 +19,7 @@ package org.nd4j.linalg.api.blas.impl;
 import org.nd4j.linalg.api.blas.BlasBufferUtil;
 import org.nd4j.linalg.api.blas.Level1;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.executioner.DefaultOpExecutioner;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
@@ -56,14 +57,14 @@ public abstract class BaseLevel1 extends BaseLevel implements Level1 {
             return 0;
         }
 
-        if (X.data().dataType() == DataBuffer.Type.DOUBLE) {
-            DefaultOpExecutioner.validateDataType(DataBuffer.Type.DOUBLE, X, Y);
+        if (X.data().dataType() == DataType.DOUBLE) {
+            DefaultOpExecutioner.validateDataType(DataType.DOUBLE, X, Y);
             return ddot(n, X, BlasBufferUtil.getBlasStride(X), Y, BlasBufferUtil.getBlasStride(Y));
-        } else if (X.data().dataType() == DataBuffer.Type.FLOAT) {
-            DefaultOpExecutioner.validateDataType(DataBuffer.Type.FLOAT, X, Y);
+        } else if (X.data().dataType() == DataType.FLOAT) {
+            DefaultOpExecutioner.validateDataType(DataType.FLOAT, X, Y);
             return sdot(n, X, BlasBufferUtil.getBlasStride(X), Y, BlasBufferUtil.getBlasStride(Y));
         } else {
-            DefaultOpExecutioner.validateDataType(DataBuffer.Type.HALF, X, Y);
+            DefaultOpExecutioner.validateDataType(DataType.HALF, X, Y);
             return hdot(n, X, BlasBufferUtil.getBlasStride(X), Y, BlasBufferUtil.getBlasStride(Y));
         }
 
@@ -72,9 +73,9 @@ public abstract class BaseLevel1 extends BaseLevel implements Level1 {
     @Override
     public double dot(long n, DataBuffer x, int offsetX, int incrX, DataBuffer y, int offsetY, int incrY) {
         if (supportsDataBufferL1Ops()) {
-            if (x.dataType() == DataBuffer.Type.FLOAT) {
+            if (x.dataType() == DataType.FLOAT) {
                 return sdot(n, x, offsetX, incrX, y, offsetY, incrY);
-            } else if (x.dataType() == DataBuffer.Type.DOUBLE) {
+            } else if (x.dataType() == DataType.DOUBLE) {
                 return ddot(n, x, offsetX, incrX, y, offsetY, incrY);
             } else {
                 return hdot(n, x, offsetX, incrX, y, offsetY, incrY);
@@ -107,11 +108,11 @@ public abstract class BaseLevel1 extends BaseLevel implements Level1 {
         if (arr.isSparse()) {
             return Nd4j.getSparseBlasWrapper().level1().nrm2(arr);
         }
-        if (arr.data().dataType() == DataBuffer.Type.DOUBLE) {
-            DefaultOpExecutioner.validateDataType(DataBuffer.Type.DOUBLE, arr);
+        if (arr.data().dataType() == DataType.DOUBLE) {
+            DefaultOpExecutioner.validateDataType(DataType.DOUBLE, arr);
             return dnrm2(arr.length(), arr, BlasBufferUtil.getBlasStride(arr));
         } else {
-            DefaultOpExecutioner.validateDataType(DataBuffer.Type.FLOAT, arr);
+            DefaultOpExecutioner.validateDataType(DataType.FLOAT, arr);
             return snrm2(arr.length(), arr, BlasBufferUtil.getBlasStride(arr));
         }
         // TODO: add nrm2 for half, as call to appropriate NativeOp<HALF>
@@ -132,14 +133,14 @@ public abstract class BaseLevel1 extends BaseLevel implements Level1 {
         if (Nd4j.getExecutioner().getProfilingMode() == OpExecutioner.ProfilingMode.ALL)
             OpProfiler.getInstance().processBlasCall(false, arr);
 
-        if (arr.data().dataType() == DataBuffer.Type.DOUBLE) {
-            DefaultOpExecutioner.validateDataType(DataBuffer.Type.DOUBLE, arr);
+        if (arr.data().dataType() == DataType.DOUBLE) {
+            DefaultOpExecutioner.validateDataType(DataType.DOUBLE, arr);
             return dasum(arr.length(), arr, BlasBufferUtil.getBlasStride(arr));
-        } else if (arr.data().dataType() == DataBuffer.Type.FLOAT) {
-            DefaultOpExecutioner.validateDataType(DataBuffer.Type.FLOAT, arr);
+        } else if (arr.data().dataType() == DataType.FLOAT) {
+            DefaultOpExecutioner.validateDataType(DataType.FLOAT, arr);
             return sasum(arr.length(), arr, BlasBufferUtil.getBlasStride(arr));
         } else {
-            DefaultOpExecutioner.validateDataType(DataBuffer.Type.HALF, arr);
+            DefaultOpExecutioner.validateDataType(DataType.HALF, arr);
             return hasum(arr.length(), arr, BlasBufferUtil.getBlasStride(arr));
         }
     }
@@ -147,9 +148,9 @@ public abstract class BaseLevel1 extends BaseLevel implements Level1 {
     @Override
     public double asum(long n, DataBuffer x, int offsetX, int incrX) {
         if (supportsDataBufferL1Ops()) {
-            if (x.dataType() == DataBuffer.Type.FLOAT) {
+            if (x.dataType() == DataType.FLOAT) {
                 return sasum(n, x, offsetX, incrX);
-            } else if (x.dataType() == DataBuffer.Type.DOUBLE) {
+            } else if (x.dataType() == DataType.DOUBLE) {
                 return dasum(n, x, offsetX, incrX);
             } else {
                 return hasum(n, x, offsetX, incrX);
@@ -167,11 +168,11 @@ public abstract class BaseLevel1 extends BaseLevel implements Level1 {
         if (Nd4j.getExecutioner().getProfilingMode() == OpExecutioner.ProfilingMode.ALL)
             OpProfiler.getInstance().processBlasCall(false, arr);
 
-        if (arr.data().dataType() == DataBuffer.Type.DOUBLE) {
-            DefaultOpExecutioner.validateDataType(DataBuffer.Type.DOUBLE, arr);
+        if (arr.data().dataType() == DataType.DOUBLE) {
+            DefaultOpExecutioner.validateDataType(DataType.DOUBLE, arr);
             return idamax(n, arr, stride);
         } else {
-            DefaultOpExecutioner.validateDataType(DataBuffer.Type.FLOAT, arr);
+            DefaultOpExecutioner.validateDataType(DataType.FLOAT, arr);
             return isamax(n, arr, stride);
         }
     }
@@ -179,7 +180,7 @@ public abstract class BaseLevel1 extends BaseLevel implements Level1 {
     @Override
     public int iamax(long n, DataBuffer x, int offsetX, int incrX) {
         if (supportsDataBufferL1Ops()) {
-            if (x.dataType() == DataBuffer.Type.FLOAT) {
+            if (x.dataType() == DataType.FLOAT) {
                 return isamax(n, x, offsetX, incrX);
             } else {
                 return isamax(n, x, offsetX, incrX);
@@ -207,11 +208,11 @@ public abstract class BaseLevel1 extends BaseLevel implements Level1 {
         if (Nd4j.getExecutioner().getProfilingMode() == OpExecutioner.ProfilingMode.ALL)
             OpProfiler.getInstance().processBlasCall(false, arr);
 
-        if (arr.data().dataType() == DataBuffer.Type.DOUBLE) {
-            DefaultOpExecutioner.validateDataType(DataBuffer.Type.DOUBLE, arr);
+        if (arr.data().dataType() == DataType.DOUBLE) {
+            DefaultOpExecutioner.validateDataType(DataType.DOUBLE, arr);
             return idamax(arr.length(), arr, BlasBufferUtil.getBlasStride(arr));
         } else {
-            DefaultOpExecutioner.validateDataType(DataBuffer.Type.FLOAT, arr);
+            DefaultOpExecutioner.validateDataType(DataType.FLOAT, arr);
             return isamax(arr.length(), arr, BlasBufferUtil.getBlasStride(arr));
         }
     }
@@ -247,11 +248,11 @@ public abstract class BaseLevel1 extends BaseLevel implements Level1 {
             return;
         }
 
-        if (x.data().dataType() == DataBuffer.Type.DOUBLE) {
-            DefaultOpExecutioner.validateDataType(DataBuffer.Type.DOUBLE, x, y);
+        if (x.data().dataType() == DataType.DOUBLE) {
+            DefaultOpExecutioner.validateDataType(DataType.DOUBLE, x, y);
             dswap(x.length(), x, BlasBufferUtil.getBlasStride(x), y, BlasBufferUtil.getBlasStride(y));
         } else {
-            DefaultOpExecutioner.validateDataType(DataBuffer.Type.FLOAT, x, y);
+            DefaultOpExecutioner.validateDataType(DataType.FLOAT, x, y);
             sswap(x.length(), x, BlasBufferUtil.getBlasStride(x), y, BlasBufferUtil.getBlasStride(y));
         }
     }
@@ -272,11 +273,11 @@ public abstract class BaseLevel1 extends BaseLevel implements Level1 {
             Nd4j.getSparseBlasWrapper().level1().copy(x, y);
             return;
         }
-        if (x.data().dataType() == DataBuffer.Type.DOUBLE) {
-            DefaultOpExecutioner.validateDataType(DataBuffer.Type.DOUBLE, x, y);
+        if (x.data().dataType() == DataType.DOUBLE) {
+            DefaultOpExecutioner.validateDataType(DataType.DOUBLE, x, y);
             dcopy(x.length(), x, BlasBufferUtil.getBlasStride(x), y, BlasBufferUtil.getBlasStride(y));
         } else {
-            DefaultOpExecutioner.validateDataType(DataBuffer.Type.FLOAT, x, y);
+            DefaultOpExecutioner.validateDataType(DataType.FLOAT, x, y);
             scopy(x.length(), x, BlasBufferUtil.getBlasStride(x), y, BlasBufferUtil.getBlasStride(y));
         }
     }
@@ -288,7 +289,7 @@ public abstract class BaseLevel1 extends BaseLevel implements Level1 {
 
 
         if (supportsDataBufferL1Ops()) {
-            if (x.dataType() == DataBuffer.Type.DOUBLE) {
+            if (x.dataType() == DataType.DOUBLE) {
                 dcopy(n, x, offsetX, incrX, y, offsetY, incrY);
             } else {
                 scopy(n, x, offsetX, incrX, y, offsetY, incrY);
@@ -322,14 +323,14 @@ public abstract class BaseLevel1 extends BaseLevel implements Level1 {
 
         if (x.isSparse() && !y.isSparse()) {
             Nd4j.getSparseBlasWrapper().level1().axpy(n, alpha, x, y);
-        } else if (x.data().dataType() == DataBuffer.Type.DOUBLE) {
-            DefaultOpExecutioner.validateDataType(DataBuffer.Type.DOUBLE, x, y);
+        } else if (x.data().dataType() == DataType.DOUBLE) {
+            DefaultOpExecutioner.validateDataType(DataType.DOUBLE, x, y);
             daxpy(n, alpha, x, BlasBufferUtil.getBlasStride(x), y, BlasBufferUtil.getBlasStride(y));
-        } else if (x.data().dataType() == DataBuffer.Type.FLOAT) {
-            DefaultOpExecutioner.validateDataType(DataBuffer.Type.FLOAT, x, y);
+        } else if (x.data().dataType() == DataType.FLOAT) {
+            DefaultOpExecutioner.validateDataType(DataType.FLOAT, x, y);
             saxpy(n, (float) alpha, x, BlasBufferUtil.getBlasStride(x), y, BlasBufferUtil.getBlasStride(y));
         } else {
-            DefaultOpExecutioner.validateDataType(DataBuffer.Type.HALF, x, y);
+            DefaultOpExecutioner.validateDataType(DataType.HALF, x, y);
             haxpy(n, (float) alpha, x, BlasBufferUtil.getBlasStride(x), y, BlasBufferUtil.getBlasStride(y));
         }
     }
@@ -337,9 +338,9 @@ public abstract class BaseLevel1 extends BaseLevel implements Level1 {
     @Override
     public void axpy(long n, double alpha, DataBuffer x, int offsetX, int incrX, DataBuffer y, int offsetY, int incrY) {
         if (supportsDataBufferL1Ops()) {
-            if (x.dataType() == DataBuffer.Type.DOUBLE) {
+            if (x.dataType() == DataType.DOUBLE) {
                 daxpy(n, alpha, x, offsetX, incrX, y, offsetY, incrY);
-            } else if (x.dataType() == DataBuffer.Type.FLOAT) {
+            } else if (x.dataType() == DataType.FLOAT) {
                 saxpy(n, (float) alpha, x, offsetX, incrX, y, offsetY, incrY);
             } else {
                 haxpy(n, (float) alpha, x, offsetX, incrX, y, offsetY, incrY);
@@ -385,11 +386,11 @@ public abstract class BaseLevel1 extends BaseLevel implements Level1 {
 
         if (X.isSparse() && !Y.isSparse()) {
             Nd4j.getSparseBlasWrapper().level1().rot(N, X, Y, c, s);
-        } else if (X.data().dataType() == DataBuffer.Type.DOUBLE) {
-            DefaultOpExecutioner.validateDataType(DataBuffer.Type.DOUBLE, X, Y);
+        } else if (X.data().dataType() == DataType.DOUBLE) {
+            DefaultOpExecutioner.validateDataType(DataType.DOUBLE, X, Y);
             drot(N, X, BlasBufferUtil.getBlasStride(X), Y, BlasBufferUtil.getBlasStride(X), c, s);
         } else {
-            DefaultOpExecutioner.validateDataType(DataBuffer.Type.FLOAT, X, Y);
+            DefaultOpExecutioner.validateDataType(DataType.FLOAT, X, Y);
             srot(N, X, BlasBufferUtil.getBlasStride(X), Y, BlasBufferUtil.getBlasStride(X), (float) c, (float) s);
         }
     }
@@ -422,11 +423,11 @@ public abstract class BaseLevel1 extends BaseLevel implements Level1 {
 
         if (X.isSparse()) {
             Nd4j.getSparseBlasWrapper().level1().scal(N, alpha, X);
-        } else if (X.data().dataType() == DataBuffer.Type.DOUBLE)
+        } else if (X.data().dataType() == DataType.DOUBLE)
             dscal(N, alpha, X, BlasBufferUtil.getBlasStride(X));
-        else if (X.data().dataType() == DataBuffer.Type.FLOAT)
+        else if (X.data().dataType() == DataType.FLOAT)
             sscal(N, (float) alpha, X, BlasBufferUtil.getBlasStride(X));
-        else if (X.data().dataType() == DataBuffer.Type.HALF)
+        else if (X.data().dataType() == DataType.HALF)
             Nd4j.getExecutioner().exec(new ScalarMultiplication(X, alpha));
     }
 

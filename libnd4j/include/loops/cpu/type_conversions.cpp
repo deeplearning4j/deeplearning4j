@@ -39,7 +39,7 @@ namespace nd4j {
 
 
         for (Nd4jLong e = 0; e < N; e++) {
-            z[e] = static_cast<T>(static_cast<float>(x[e]) / static_cast<float>(DataTypeUtils::max<char>()) * nd4j::math::nd4j_max<float>(amin, amax));
+            z[e] = static_cast<T>(static_cast<float>(x[e]) / static_cast<float>(DataTypeUtils::max<int8_t>()) * nd4j::math::nd4j_max<float>(amin, amax));
         }
     }
 
@@ -53,7 +53,6 @@ namespace nd4j {
         T mn = DataTypeUtils::max<T>();
         T mx = -DataTypeUtils::max<T>();
 
-#pragma omp parallel for reduction(minT:mn), reduction(maxT:mx)
         for (Nd4jLong e = 0; e < N; e++) {
             T v = x[e];
             if (v < mn)
@@ -62,8 +61,6 @@ namespace nd4j {
             if (v > mx)
                 mx = v;
         }
-
-        nd4j_printf("min: [%f]; max: [%f]\n", (float) mn, (float) mx);
 
         // we shift by 2 fp32 elements
         auto rz = z + 8;
@@ -74,7 +71,7 @@ namespace nd4j {
         float max = static_cast<float>(mx);
         float min = static_cast<float>(mn);
 
-        int max_byte = static_cast<int>(DataTypeUtils::max<char>());
+        int max_byte = static_cast<int>(DataTypeUtils::max<int8_t>());
         fz[0] = min;
         fz[1] = max;
 
@@ -82,9 +79,9 @@ namespace nd4j {
         auto amin = nd4j::math::nd4j_abs<float>(min);
 
         // now we actually apply quantization
-#pragma omp parallel for simd
+        PRAGMA_OMP_PARALLEL_FOR_SIMD
         for (Nd4jLong e = 0; e < N; e++) {
-            rz[e] = static_cast<char>(nd4j::math::nd4j_round<float>(1.0f * x[e] / nd4j::math::nd4j_max<float>(amax, amin) * max_byte));
+            rz[e] = static_cast<char>(nd4j::math::nd4j_round<float,char>(1.0f * x[e] / nd4j::math::nd4j_max<float>(amax, amin) * max_byte));
         }
     }
 
@@ -115,7 +112,7 @@ namespace nd4j {
         int flimit = limit + 4;
         volatile int cnt = 4;
         volatile bool flag = false;
-#pragma omp parallel num_threads(threads) default(shared)
+        PRAGMA_OMP_PARALLEL_THREADS(threads)
         {
             int tid = omp_get_thread_num();
             int start = span * tid;
@@ -175,7 +172,7 @@ namespace nd4j {
         // we use 3 as offset, since first 12 bytes are occupied with header
         int flimit = limit + 4;
 
-#pragma omp parallel for schedule(guided)
+        PRAGMA_OMP_PARALLEL_FOR_IF(flimit > Environment::getInstance()->elementwiseThreshold())
         for (int e = 4; e < flimit; e++) {
             int el = x[e];
             int ael = nd4j::math::nd4j_abs<int>(el) - 1;
@@ -204,7 +201,7 @@ namespace nd4j {
             }
         } else {
 
-#pragma omp parallel for
+            PRAGMA_OMP_PARALLEL_FOR
             for (int i = 0; i < N; i++) {
                 // FIXME: get rid of through-float though
                 z[i] = static_cast<T>(static_cast<float>(x[i]));

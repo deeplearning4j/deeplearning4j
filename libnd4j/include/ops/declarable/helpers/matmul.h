@@ -27,8 +27,8 @@
 namespace nd4j {
     namespace ops {
         namespace helpers {
-            template <typename T>
-            void _matmul(NDArray<T> *A, NDArray<T> *B, NDArray<T> *C, int transA, int transB, T alpha = 1., T beta = 0.);
+
+            void _matmul(NDArray *A, NDArray *B, NDArray *C, int transA, int transB, double alpha = 1., double beta = 0.);
         }
     }
 }

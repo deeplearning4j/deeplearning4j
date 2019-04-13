@@ -19,6 +19,7 @@ package org.deeplearning4j.text.documentiterator;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.LineIterator;
+import org.nd4j.base.Preconditions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -26,8 +27,7 @@ import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Arrays;
-import java.util.Iterator;
+import java.util.*;
 
 /**
  * Iterate over files
@@ -48,15 +48,25 @@ public class FileDocumentIterator implements DocumentIterator {
 
     public FileDocumentIterator(File path) {
         if (path.isFile()) {
-            iter = Arrays.asList(path).iterator();
+            Preconditions.checkState(path.exists(), "File %s does not exist", path);
+            Preconditions.checkState(path.length() > 0, "Cannot iterate over empty file: %s", path);
+            iter = Collections.singletonList(path).iterator();
             try {
-                lineIterator = FileUtils.lineIterator(path);
+                lineIterator = FileUtils.lineIterator(iter.next());
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
             this.rootDir = path;
         } else {
-            iter = FileUtils.iterateFiles(path, null, true);
+            Collection<File> fileList = FileUtils.listFiles(path, null, true);
+            List<File> nonEmpty = new ArrayList<>();
+            for(File f : fileList){
+                if(f.length() > 0){
+                    nonEmpty.add(f);
+                }
+            }
+            Preconditions.checkState(!nonEmpty.isEmpty(), "No (non-empty) files were found at path %s", path);
+            iter = nonEmpty.iterator();
             try {
                 lineIterator = FileUtils.lineIterator(iter.next());
             } catch (IOException e) {
@@ -79,8 +89,6 @@ public class FileDocumentIterator implements DocumentIterator {
                     lineIterator.close();
                     lineIterator = FileUtils.lineIterator(next);
                 }
-
-
             }
 
             if (lineIterator != null && lineIterator.hasNext()) {

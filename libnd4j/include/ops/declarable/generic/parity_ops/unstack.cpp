@@ -22,6 +22,7 @@
 #if NOT_EXCLUDED(OP_unstack)
 
 #include <ops/declarable/CustomOperations.h>
+#include <helpers/ConstantTadHelper.h>
 
 namespace nd4j {
     namespace ops {
@@ -40,6 +41,12 @@ namespace nd4j {
             for (int e = 0; e < input->rankOf(); e++)
                 if (e != dim)
                     dims.emplace_back(e);
+            if (dims.size() == 0 && input->rankOf() == 1) { // split vector into lenthOf scalars
+                for (Nd4jLong e = 0; e < input->lengthOf(); e++) {
+                    auto outE = OUTPUT_VARIABLE(e);
+                    outE->assign(input->e(e));
+                }
+            }
 
             auto tads = input->allTensorsAlongDimension(dims);
             //nd4j_printf("Tad size: %d\n",tads->size());
@@ -55,7 +62,7 @@ namespace nd4j {
 
             delete tads;
 
-            return ND4J_STATUS_OK;
+            return Status::OK();
         }
         DECLARE_SYN(unpack, unstack);
         
@@ -73,14 +80,20 @@ namespace nd4j {
             for (int e = 0; e < shape::rank(inShape); e++)
                 if (e != dim)
                     dims.emplace_back(e);
+            if (dims.size() == 0 && shape::rank(inShape) == 1) { // split vector into lenthOf scalars
+                //
+                auto result = SHAPELIST();
+                for (Nd4jLong e = 0; e < shape::length(inShape); e++)
+                    result->push_back(ShapeBuilders::createScalarShapeInfo(ArrayOptions::dataType(inShape), block.workspace()));
+                return result;
+            }
 
-            shape::TAD tad(inShape, dims.data(), (int) dims.size());
-            tad.createTadOnlyShapeInfo();
-            Nd4jLong numTads = shape::length(inShape) / shape::tadLength(inShape, dims.data(), (int) dims.size());
-            
-            std::vector<Nd4jLong> shape(shape::rank(tad.tadOnlyShapeInfo));
-            for (int e = 0; e < shape::rank(tad.tadOnlyShapeInfo); e++)
-                shape[e] = shape::shapeOf(tad.tadOnlyShapeInfo)[e];
+            auto tadPack = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(inShape, dims);
+            auto numTads = tadPack.numberOfTads();
+
+            std::vector<Nd4jLong> shape(shape::rank(tadPack.primaryShapeInfo()));
+            for (int e = 0; e < shape::rank(tadPack.primaryShapeInfo()); e++)
+                shape[e] = shape::shapeOf(tadPack.primaryShapeInfo())[e];
 
             // remove leading and trailing 1
             if (inShape[0] == 2 && shape.size() == 2) {
@@ -90,19 +103,19 @@ namespace nd4j {
                     shape.erase(shape.end());
                 }
             }
-            
+
             auto result = SHAPELIST();
             for (int e = 0; e < numTads; e++) {
-                Nd4jLong *newShape;
-                ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(shape.size()), Nd4jLong);
-                if (shape::order(inShape) == 'c')
-                    shape::shapeBuffer(shape.size(), shape.data(), newShape);
-                else
-                    shape::shapeBufferFortran(shape.size(), shape.data(), newShape);
+                Nd4jLong *newShape = ShapeBuilders::createShapeInfo(ArrayOptions::dataType(inShape), shape::order(inShape), shape, block.getWorkspace());
                 result->push_back(newShape);
             }
-
             return result;
+        }
+
+        DECLARE_TYPES(unstack) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes({ALL_FLOATS, ALL_INTS})
+                    ->setSameMode(true);
         }
     }
 }

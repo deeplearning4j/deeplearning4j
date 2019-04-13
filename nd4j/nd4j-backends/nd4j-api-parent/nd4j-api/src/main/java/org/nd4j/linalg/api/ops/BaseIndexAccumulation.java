@@ -21,8 +21,11 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
@@ -39,9 +42,7 @@ import java.util.List;
 @Slf4j
 @Data
 public abstract class BaseIndexAccumulation extends BaseOp implements IndexAccumulation {
-    protected int finalResult;
     protected boolean keepDims = false;
-    protected boolean newFormat = false;
 
     public BaseIndexAccumulation(SameDiff sameDiff,
                                  SDVariable i_v,
@@ -61,7 +62,7 @@ public abstract class BaseIndexAccumulation extends BaseOp implements IndexAccum
             throw new IllegalArgumentException("Input not null variable.");
         }
         this.keepDims = keepDims;
-        this.newFormat = true;
+        defineDimensions(dimensions);
     }
 
     public BaseIndexAccumulation(SameDiff sameDiff,
@@ -89,80 +90,30 @@ public abstract class BaseIndexAccumulation extends BaseOp implements IndexAccum
             throw new IllegalArgumentException("Input not null variable.");
         }
         this.keepDims = keepDims;
-        this.newFormat = true;
+        defineDimensions(dimensions);
     }
 
 
     public BaseIndexAccumulation() {}
 
-    /**
-     * Initialize with the given
-     * input, pairwise transform, result, and number
-     * of elements
-     *
-     * @param x the input
-     * @param y the pairwise transform
-     * @param z the result
-     * @param n the number of elements
-     */
-    public BaseIndexAccumulation(INDArray x, INDArray y, INDArray z, long n) {
-        super(x, y, z, n);
-        init(x,y,z,n);
+
+    public BaseIndexAccumulation(INDArray x, int[] dimensions) {
+        this(x, null, dimensions);
     }
 
-    public BaseIndexAccumulation(INDArray x, INDArray y, long n) {
-        this(x, y, x, n);
-    }
-
-    public BaseIndexAccumulation(INDArray x) {
-        this(x, null, x, x.lengthLong());
-    }
-
-    public BaseIndexAccumulation(INDArray x, INDArray y) {
-        this(x, y, x, x.lengthLong());
-    }
-
-    @Override
-    public double zeroDouble() {
-        return 0.0;
-    }
-
-    @Override
-    public float zeroFloat() {
-        return 0.0f;
-    }
-
-    @Override
-    public Pair<Double, Integer> zeroPair() {
-        return new Pair<>(zeroDouble(), -1);
-    }
-
-    private void init() {
-        init(x, y, x, x.lengthLong());
-    }
-
-    @Override
-    public void init(INDArray x, INDArray y, INDArray z, long n) {
-        super.init(x, y, z, n);
-        if (Nd4j.dataType() == DataBuffer.Type.DOUBLE) {
-            this.extraArgs = new Object[] {zeroDouble()};
-        } else if (Nd4j.dataType() == DataBuffer.Type.FLOAT) {
-            this.extraArgs = new Object[] {zeroFloat()};
-        } else if (Nd4j.dataType() == DataBuffer.Type.HALF) {
-            this.extraArgs = new Object[] {zeroHalf()};
-        }
+    public BaseIndexAccumulation(INDArray x, INDArray z, int[] dimensions) {
+        super(x, z);
+        defineDimensions(dimensions);
     }
 
 
     @Override
-    public List<long[]> calculateOutputShape() {
-        if(arg().getShape() == null)
+    public List<LongShapeDescriptor> calculateOutputShape() {
+        if(x == null)
             return Collections.emptyList();
 
-        List<long[]> ret = new ArrayList<>(1);
-        val reducedShape = Shape.getReducedShape(arg().getShape(),dimensions, keepDims, newFormat);
-        ret.add(reducedShape);
-        return ret;
+        long[] reducedShape = Shape.getReducedShape(x.shape(), dimensions, keepDims);
+        return Collections.singletonList(LongShapeDescriptor.fromShape(reducedShape, DataType.LONG));
     }
 
     @Override
@@ -170,16 +121,20 @@ public abstract class BaseIndexAccumulation extends BaseOp implements IndexAccum
         return Type.INDEXREDUCE;
     }
 
-
     @Override
-    public void setFinalResult(int idx) {
-        this.finalResult = idx;
+    public boolean validateDataTypes() {
+
+        if (z() != null)
+            Preconditions.checkArgument(z().dataType() == DataType.LONG, "IndexReduce operations require LONG output: " +
+                    "got result array of type %s for op %s", z.dataType(), getClass());
+
+        return true;
     }
 
     @Override
-    public int getFinalResult() {
-        return finalResult;
+    public List<org.nd4j.linalg.api.buffer.DataType> calculateOutputDataTypes(List<org.nd4j.linalg.api.buffer.DataType> dataTypes){
+        //All index accumulation ops: always long output type
+        Preconditions.checkState(dataTypes != null && dataTypes.size() == 1, "Expected exactly 1 input datatype for %s, got input %s", getClass(), dataTypes);
+        return Collections.singletonList(DataType.LONG);
     }
-
-
 }

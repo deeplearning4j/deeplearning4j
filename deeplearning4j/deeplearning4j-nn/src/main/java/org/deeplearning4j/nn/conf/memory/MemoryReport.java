@@ -21,6 +21,7 @@ import lombok.NonNull;
 import org.deeplearning4j.nn.conf.CacheMode;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
 import org.nd4j.shade.jackson.core.JsonProcessingException;
@@ -134,7 +135,7 @@ public abstract class MemoryReport {
      * @return The estimated total memory consumption in bytes
      */
     public abstract long getTotalMemoryBytes(int minibatchSize, @NonNull MemoryUseMode memoryUseMode,
-                    @NonNull CacheMode cacheMode, @NonNull DataBuffer.Type dataType);
+                    @NonNull CacheMode cacheMode, @NonNull DataType dataType);
 
     /**
      * Get the memory estimate (in bytes) for the specified type of memory, using the current ND4J data type
@@ -161,11 +162,11 @@ public abstract class MemoryReport {
      * @return              Estimated memory use for the given memory type
      */
     public abstract long getMemoryBytes(MemoryType memoryType, int minibatchSize, MemoryUseMode memoryUseMode,
-                    CacheMode cacheMode, DataBuffer.Type dataType);
+                    CacheMode cacheMode, DataType dataType);
 
     public abstract String toString();
 
-    protected int getBytesPerElement(DataBuffer.Type dataType) {
+    protected int getBytesPerElement(DataType dataType) {
         switch (dataType) {
             case DOUBLE:
                 return 8;

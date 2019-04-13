@@ -34,7 +34,8 @@ public enum OpStatus {
     ND4J_STATUS_BAD_LENGTH,
     ND4J_STATUS_BAD_DIMENSIONS,
     ND4J_STATUS_BAD_ORDER,
-    ND4J_STATUS_BAD_ARGUMENTS;
+    ND4J_STATUS_BAD_ARGUMENTS,
+    ND4J_STATUS_VALIDATION;
 
     public static OpStatus byNumber(int val) {
         switch (val) {
@@ -58,6 +59,8 @@ public enum OpStatus {
                 return ND4J_STATUS_BAD_GRADIENTS;
             case 9:
                 return ND4J_STATUS_BAD_BIAS;
+            case 20:
+                return ND4J_STATUS_VALIDATION;
             case 30:
                 return ND4J_STATUS_BAD_GRAPH;
             case 31:

@@ -46,12 +46,7 @@ public class ActivationLayer extends AbstractLayer<org.deeplearning4j.nn.conf.la
     }
 
     @Override
-    public double calcL2(boolean backpropParamsOnly) {
-        return 0;
-    }
-
-    @Override
-    public double calcL1(boolean backpropParamsOnly) {
+    public double calcRegularizationScore(boolean backpropParamsOnly){
         return 0;
     }
 
@@ -71,7 +66,6 @@ public class ActivationLayer extends AbstractLayer<org.deeplearning4j.nn.conf.la
         }
 
         delta = workspaceMgr.leverageTo(ArrayType.ACTIVATION_GRAD, delta);  //Usually a no-op (except for perhaps identity)
-        delta = backpropDropOutIfPresent(delta);
         Gradient ret = new DefaultGradient();
         return new Pair<>(ret, delta);
     }
@@ -79,7 +73,6 @@ public class ActivationLayer extends AbstractLayer<org.deeplearning4j.nn.conf.la
     @Override
     public INDArray activate(boolean training, LayerWorkspaceMgr mgr) {
         assertInputSet(false);
-        applyDropOutIfNecessary(training, mgr);
 
         INDArray in;
         if (training) {

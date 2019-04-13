@@ -26,8 +26,7 @@ namespace nd4j {
 namespace ops {
 namespace helpers {
 
-    template <typename T>
-    void adjustWeights(NDArray<T>* input, NDArray<T>* weights, NDArray<T>* output, int minLength, int maxLength);
+    void adjustWeights(NDArray* input, NDArray* weights, NDArray* output, int minLength, int maxLength);
 
 }
 }

@@ -162,12 +162,7 @@ public class SpaceToBatch extends AbstractLayer<org.deeplearning4j.nn.conf.layer
 
 
     @Override
-    public double calcL2(boolean backpropParamsOnly) {
-        return 0;
-    }
-
-    @Override
-    public double calcL1(boolean backpropParamsOnly) {
+    public double calcRegularizationScore(boolean backpropParamsOnly){
         return 0;
     }
 
@@ -187,7 +182,7 @@ public class SpaceToBatch extends AbstractLayer<org.deeplearning4j.nn.conf.layer
     }
 
     @Override
-    public int numParams() {
+    public long numParams() {
         return 0;
     }
 

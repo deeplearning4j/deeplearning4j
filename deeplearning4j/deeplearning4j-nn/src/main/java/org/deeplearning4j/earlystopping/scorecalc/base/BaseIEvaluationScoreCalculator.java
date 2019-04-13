@@ -16,14 +16,13 @@
 
 package org.deeplearning4j.earlystopping.scorecalc.base;
 
-import lombok.AllArgsConstructor;
 import org.deeplearning4j.datasets.iterator.MultiDataSetWrapperIterator;
 import org.deeplearning4j.datasets.iterator.impl.MultiDataSetIteratorAdapter;
 import org.deeplearning4j.earlystopping.scorecalc.ScoreCalculator;
-import org.deeplearning4j.eval.IEvaluation;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
+import org.nd4j.evaluation.IEvaluation;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
 

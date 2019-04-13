@@ -296,8 +296,8 @@ public class TransferLearningHelper {
 
         MultiLayerConfiguration c = origMLN.getLayerWiseConfigurations();
 
-        unFrozenSubsetMLN = new MultiLayerNetwork(new MultiLayerConfiguration.Builder().backprop(c.isBackprop())
-                        .inputPreProcessors(c.getInputPreProcessors()).pretrain(c.isPretrain())
+        unFrozenSubsetMLN = new MultiLayerNetwork(new MultiLayerConfiguration.Builder()
+                        .inputPreProcessors(c.getInputPreProcessors())
                         .backpropType(c.getBackpropType()).tBPTTForwardLength(c.getTbpttFwdLength())
                         .tBPTTBackwardLength(c.getTbpttBackLength()).confs(allConfs).build());
         unFrozenSubsetMLN.init();

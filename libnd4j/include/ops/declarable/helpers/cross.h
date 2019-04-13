@@ -23,23 +23,37 @@
 namespace nd4j {
 namespace ops {
 namespace helpers {
-    template <typename T>
-    void FORCEINLINE _cross(NDArray<T> *a, NDArray<T> *b, NDArray<T> *o) {
-        auto a0 = a->getScalar(0);
-        auto a1 = a->getScalar(1);
-        auto a2 = a->getScalar(2);
+    void FORCEINLINE _cross(NDArray *a, NDArray *b, NDArray *o) {
+        if (a->isR()) {
+            auto a0 = a->e<double>(0);
+            auto a1 = a->e<double>(1);
+            auto a2 = a->e<double>(2);
 
-        auto b0 = b->getScalar(0);
-        auto b1 = b->getScalar(1);
-        auto b2 = b->getScalar(2);
+            auto b0 = b->e<double>(0);
+            auto b1 = b->e<double>(1);
+            auto b2 = b->e<double>(2);
 
-        o->putScalar(0, a1 * b2 - a2 * b1);
-        o->putScalar(1, a2 * b0 - a0 * b2);
-        o->putScalar(2, a0 * b1 - a1 * b0);
+            Nd4jLong idx = 0L;
+            o->p(Nd4jLong(0L), a1 * b2 - a2 * b1);
+            o->p(1L, a2 * b0 - a0 * b2);
+            o->p(2L, a0 * b1 - a1 * b0);
+        } else {
+            auto a0 = a->e<Nd4jLong>(0);
+            auto a1 = a->e<Nd4jLong>(1);
+            auto a2 = a->e<Nd4jLong>(2);
+
+            auto b0 = b->e<Nd4jLong>(0);
+            auto b1 = b->e<Nd4jLong>(1);
+            auto b2 = b->e<Nd4jLong>(2);
+
+            Nd4jLong idx = 0L;
+            o->p(Nd4jLong(0L), a1 * b2 - a2 * b1);
+            o->p(1L, a2 * b0 - a0 * b2);
+            o->p(2L, a0 * b1 - a1 * b0);
+        }
     }
 
-    template <typename T>
-    void FORCEINLINE _crossBatched(NDArray<T> *a, NDArray<T> *b, NDArray<T> *o) {
+    void FORCEINLINE _crossBatched(NDArray *a, NDArray *b, NDArray *o) {
         auto _a = a->reshape(a->ordering(), {-1, 3});
         auto _b = b->reshape(b->ordering(), {-1, 3});
         auto _o = o->reshape(o->ordering(), {-1, 3});
@@ -50,7 +64,7 @@ namespace helpers {
 
         int tads = tadsA->size();
 
-        #pragma omp parallel for simd schedule(static)
+        PRAGMA_OMP_PARALLEL_FOR_SIMD
         for (int e = 0; e < tads; e++) {
             auto a_ = tadsA->at(e);
             auto b_ = tadsB->at(e);
@@ -66,6 +80,8 @@ namespace helpers {
         delete _b;
         delete _o;
     }
+
+    void weightedCrossEntropyWithLogitsFunctor(NDArray const* targets, NDArray const* input, NDArray const* weights, NDArray* output);
 }
 }
 }

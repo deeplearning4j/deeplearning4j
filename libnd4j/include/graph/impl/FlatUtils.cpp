@@ -19,9 +19,11 @@
 //
 
 #include <graph/FlatUtils.h>
+#include <array/ByteOrder.h>
 #include <array/DataTypeConversions.h>
 #include <array/DataTypeUtils.h>
 #include <array/ByteOrderUtils.h>
+#include <NDArrayFactory.h>
 
 
 namespace nd4j {
@@ -34,33 +36,70 @@ namespace nd4j {
             return std::pair<Nd4jLong, Nd4jLong>(pair->first(), pair->second());
         }
 
-        template<typename T>
-        NDArray<T> *FlatUtils::fromFlatArray(const nd4j::graph::FlatArray *flatArray) {
+        NDArray* FlatUtils::fromFlatArray(const nd4j::graph::FlatArray *flatArray) {
             auto rank = static_cast<int>(flatArray->shape()->Get(0));
             auto newShape = new Nd4jLong[shape::shapeInfoLength(rank)];
             memcpy(newShape, flatArray->shape()->data(), shape::shapeInfoByteLength(rank));
 
+            auto length = shape::length(newShape);
+            auto dtype = DataTypeUtils::fromFlatDataType(flatArray->dtype());
+
             // empty arrays is special case, nothing to restore here
             if (shape::isEmpty(newShape)) {
                 delete[] newShape;
-                return NDArray<T>::createEmpty();
+                return NDArrayFactory::empty_(dtype, nullptr);
             }
 
-            auto length = shape::length(newShape);
-            auto newBuffer = new T[length];
-            auto dtype = DataTypeUtils::fromFlatDataType(flatArray->dtype());
+            if (dtype == UTF8) {
+                bool isBe = BitwiseUtils::isBE();
+                bool canKeep = (isBe && flatArray->byteOrder() == nd4j::graph::ByteOrder_BE) || (!isBe && flatArray->byteOrder() == nd4j::graph::ByteOrder_LE);
+                auto order = shape::order(newShape);
 
-            DataTypeConversions<T>::convertType(newBuffer, (void *)flatArray->buffer()->data(), dtype, ByteOrderUtils::fromFlatByteOrder(flatArray->byteOrder()),  length);
+                std::vector<std::string> substrings(length);
+                std::vector<Nd4jLong> shapeVector(rank);
+                for (int e = 0; e < rank; e++)
+                    shapeVector[e] = newShape[e+1];
 
-            auto array = new NDArray<T>(newBuffer, newShape);
+                auto rawPtr = (void *)flatArray->buffer()->data();
+                auto longPtr = reinterpret_cast<Nd4jLong *>(rawPtr);
+                auto charPtr = reinterpret_cast<char *>(longPtr + length + 2);
+                auto offsets = new Nd4jLong[length+1];
+                for (int e = 0; e <= length; e++) {
+                    auto v = canKeep ?  longPtr[e+1] : BitwiseUtils::swap_bytes<Nd4jLong>(longPtr[e+1]);
+                    offsets[e] = v;
+                }
+
+                for (int e = 0; e < length; e++) {
+                    auto start = offsets[e];
+                    auto end = offsets[e+1];
+                    auto len = end - start;
+
+                    auto c = (char *) malloc(len+1);
+                    CHECK_ALLOC(c, "Failed temp allocation");
+                    memset(c, '\0', len + 1);
+                    memcpy(c, charPtr + start, len);
+
+                    std::string val(c);
+                    substrings[e] = val;
+                    free(c);
+                }
+
+                delete[] offsets;
+                delete[] newShape;
+
+                return NDArrayFactory::string_(order, shapeVector, substrings);
+            }
+
+
+            auto newBuffer = new int8_t[length * DataTypeUtils::sizeOf(dtype)];
+
+            BUILD_SINGLE_SELECTOR(dtype, DataTypeConversions, ::convertType(newBuffer, (void *)flatArray->buffer()->data(), dtype, ByteOrderUtils::fromFlatByteOrder(flatArray->byteOrder()),  length), LIBND4J_TYPES);
+
+            auto array = new NDArray(newBuffer, newShape);
+            //array->printIndexedBuffer("restored");
             array->triggerAllocationFlag(true, true);
 
             return array;
         }
-
-
-        template NDArray<float> *FlatUtils::fromFlatArray<float>(const nd4j::graph::FlatArray *flatArray);
-        template NDArray<float16> *FlatUtils::fromFlatArray<float16>(const nd4j::graph::FlatArray *flatArray);
-        template NDArray<double> *FlatUtils::fromFlatArray<double>(const nd4j::graph::FlatArray *flatArray);
     }
 }

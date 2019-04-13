@@ -16,9 +16,9 @@
 
 package org.deeplearning4j.optimize.listeners.callbacks;
 
-import org.deeplearning4j.eval.IEvaluation;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.optimize.listeners.EvaluativeListener;
+import org.nd4j.evaluation.IEvaluation;
 
 /**
  * This interface describes callback, which can be used with EvaluativeListener, to extend its functionality.

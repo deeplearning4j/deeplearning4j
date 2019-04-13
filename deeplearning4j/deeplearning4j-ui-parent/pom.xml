@@ -69,7 +69,6 @@
         <module>deeplearning4j-ui</module>
         <module>deeplearning4j-ui-components</module>
         <module>deeplearning4j-ui-model</module>
-        <module>deeplearning4j-ui-resources</module>
         <module>deeplearning4j-play</module>
         <module>deeplearning4j-ui-standalone</module>
     </modules>
@@ -79,7 +78,7 @@
             <id>test-nd4j-native</id>
         </profile>
         <profile>
-            <id>test-nd4j-cuda-10.0</id>
+            <id>test-nd4j-cuda-10.1</id>
         </profile>
     </profiles>
 

@@ -23,8 +23,8 @@
 
 #include <atomic>
 #include <dll.h>
-#include <helpers/StringUtils.h>
 #include <stdexcept>
+#include <array/DataType.h>
 
 namespace nd4j{
     class ND4J_EXPORT Environment {
@@ -35,7 +35,15 @@ namespace nd4j{
         std::atomic<bool> _debug;
         std::atomic<bool> _profile;
         std::atomic<int> _maxThreads;
+        std::atomic<nd4j::DataType> _dataType;
+        std::atomic<bool> _precBoost;
         std::atomic<bool> _useMKLDNN{true};
+
+#ifdef __ND4J_EXPERIMENTAL__
+        const bool _experimental = true;
+#else
+        const bool _experimental = false;
+#endif
 
         static Environment* _instance;
 
@@ -63,6 +71,14 @@ namespace nd4j{
 
         bool isUseMKLDNN() { return _useMKLDNN.load(); }
         void setUseMKLDNN(bool useMKLDNN) { _useMKLDNN.store(useMKLDNN); }
+
+        nd4j::DataType defaultFloatDataType();
+        void setDefaultFloatDataType(nd4j::DataType dtype);
+
+        bool precisionBoostAllowed();
+        void allowPrecisionBoost(bool reallyAllow);
+
+        bool isExperimentalBuild();
     };
 }
 

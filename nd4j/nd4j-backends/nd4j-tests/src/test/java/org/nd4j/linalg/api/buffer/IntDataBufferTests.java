@@ -24,15 +24,13 @@ import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
 import org.nd4j.linalg.api.memory.enums.AllocationPolicy;
 import org.nd4j.linalg.api.memory.enums.LearningPolicy;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 
 import java.io.*;
 
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Tests for INT INDArrays and DataBuffers serialization
@@ -50,7 +48,7 @@ public class IntDataBufferTests extends BaseNd4jTest {
 
 
         DataBuffer dataBuffer = Nd4j.createBuffer(new int[] {1, 2, 3, 4, 5});
-        DataBuffer shapeBuffer = Nd4j.getShapeInfoProvider().createShapeInformation(new int[] {1, 5}).getFirst();
+        DataBuffer shapeBuffer = Nd4j.getShapeInfoProvider().createShapeInformation(new long[] {1, 5}, DataType.INT).getFirst();
         INDArray intArray = Nd4j.createArrayFromShapeBuffer(dataBuffer, shapeBuffer);
 
         File tempFile = File.createTempFile("test", "test");
@@ -64,23 +62,24 @@ public class IntDataBufferTests extends BaseNd4jTest {
 
         INDArray loaded = Nd4j.read(dis);
 
-        assertEquals(DataBuffer.Type.INT, loaded.data().dataType());
-        assertEquals(DataBuffer.Type.LONG, loaded.shapeInfoDataBuffer().dataType());
+        assertEquals(DataType.INT, loaded.data().dataType());
+        assertEquals(DataType.LONG, loaded.shapeInfoDataBuffer().dataType());
 
         assertEquals(intArray.data().length(), loaded.data().length());
 
         assertArrayEquals(intArray.data().asInt(), loaded.data().asInt());
     }
 
-
+/*
     @Test(expected = ND4JIllegalStateException.class)
     public void testOpDiscarded() throws Exception {
         DataBuffer dataBuffer = Nd4j.createBuffer(new int[] {1, 2, 3, 4, 5});
-        DataBuffer shapeBuffer = Nd4j.getShapeInfoProvider().createShapeInformation(new int[] {1, 5}).getFirst();
+        DataBuffer shapeBuffer = Nd4j.getShapeInfoProvider().createShapeInformation(new long[] {1, 5}, DataType.INT).getFirst();
         INDArray intArray = Nd4j.createArrayFromShapeBuffer(dataBuffer, shapeBuffer);
 
         intArray.add(10f);
     }
+    */
 
     @Test
     public void testReallocation() {

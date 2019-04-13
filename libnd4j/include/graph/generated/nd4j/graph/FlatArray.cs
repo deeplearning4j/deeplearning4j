@@ -19,10 +19,20 @@ public struct FlatArray : IFlatbufferObject
 
   public long Shape(int j) { int o = __p.__offset(4); return o != 0 ? __p.bb.GetLong(__p.__vector(o) + j * 8) : (long)0; }
   public int ShapeLength { get { int o = __p.__offset(4); return o != 0 ? __p.__vector_len(o) : 0; } }
+#if ENABLE_SPAN_T
+  public Span<byte> GetShapeBytes() { return __p.__vector_as_span(4); }
+#else
   public ArraySegment<byte>? GetShapeBytes() { return __p.__vector_as_arraysegment(4); }
+#endif
+  public long[] GetShapeArray() { return __p.__vector_as_array<long>(4); }
   public sbyte Buffer(int j) { int o = __p.__offset(6); return o != 0 ? __p.bb.GetSbyte(__p.__vector(o) + j * 1) : (sbyte)0; }
   public int BufferLength { get { int o = __p.__offset(6); return o != 0 ? __p.__vector_len(o) : 0; } }
+#if ENABLE_SPAN_T
+  public Span<byte> GetBufferBytes() { return __p.__vector_as_span(6); }
+#else
   public ArraySegment<byte>? GetBufferBytes() { return __p.__vector_as_arraysegment(6); }
+#endif
+  public sbyte[] GetBufferArray() { return __p.__vector_as_array<sbyte>(6); }
   public DataType Dtype { get { int o = __p.__offset(8); return o != 0 ? (DataType)__p.bb.GetSbyte(o + __p.bb_pos) : DataType.INHERIT; } }
   public ByteOrder ByteOrder { get { int o = __p.__offset(10); return o != 0 ? (ByteOrder)__p.bb.GetSbyte(o + __p.bb_pos) : ByteOrder.LE; } }
 
@@ -42,9 +52,11 @@ public struct FlatArray : IFlatbufferObject
   public static void StartFlatArray(FlatBufferBuilder builder) { builder.StartObject(4); }
   public static void AddShape(FlatBufferBuilder builder, VectorOffset shapeOffset) { builder.AddOffset(0, shapeOffset.Value, 0); }
   public static VectorOffset CreateShapeVector(FlatBufferBuilder builder, long[] data) { builder.StartVector(8, data.Length, 8); for (int i = data.Length - 1; i >= 0; i--) builder.AddLong(data[i]); return builder.EndVector(); }
+  public static VectorOffset CreateShapeVectorBlock(FlatBufferBuilder builder, long[] data) { builder.StartVector(8, data.Length, 8); builder.Add(data); return builder.EndVector(); }
   public static void StartShapeVector(FlatBufferBuilder builder, int numElems) { builder.StartVector(8, numElems, 8); }
   public static void AddBuffer(FlatBufferBuilder builder, VectorOffset bufferOffset) { builder.AddOffset(1, bufferOffset.Value, 0); }
   public static VectorOffset CreateBufferVector(FlatBufferBuilder builder, sbyte[] data) { builder.StartVector(1, data.Length, 1); for (int i = data.Length - 1; i >= 0; i--) builder.AddSbyte(data[i]); return builder.EndVector(); }
+  public static VectorOffset CreateBufferVectorBlock(FlatBufferBuilder builder, sbyte[] data) { builder.StartVector(1, data.Length, 1); builder.Add(data); return builder.EndVector(); }
   public static void StartBufferVector(FlatBufferBuilder builder, int numElems) { builder.StartVector(1, numElems, 1); }
   public static void AddDtype(FlatBufferBuilder builder, DataType dtype) { builder.AddSbyte(2, (sbyte)dtype, 0); }
   public static void AddByteOrder(FlatBufferBuilder builder, ByteOrder byteOrder) { builder.AddSbyte(3, (sbyte)byteOrder, 0); }

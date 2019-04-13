@@ -78,7 +78,7 @@ public class Convolution {
         if (col.rank() != 6)
             throw new IllegalArgumentException("col2im input array must be rank 6");
 
-        INDArray output = Nd4j.create(new long[]{col.size(0), col.size(1), kH, kW});
+        INDArray output = Nd4j.create(col.dataType(), new long[]{col.size(0), col.size(1), kH, kW});
 
         val cfg = Conv2DConfig.builder()
                 .sH(sH)
@@ -97,7 +97,7 @@ public class Convolution {
                 .conv2DConfig(cfg)
                 .build();
 
-        Nd4j.getExecutioner().exec(col2Im);
+        Nd4j.getExecutioner().execAndReturn(col2Im);
         return col2Im.outputArguments()[0];
     }
 
@@ -122,7 +122,7 @@ public class Convolution {
                         .build())
                 .build();
 
-        Nd4j.getExecutioner().exec(col2Im);
+        Nd4j.getExecutioner().execAndReturn(col2Im);
 
         return z;
     }
@@ -187,7 +187,7 @@ public class Convolution {
                         .isSameMode(isSameMode)
                         .build()).build();
 
-        Nd4j.getExecutioner().exec(im2col);
+        Nd4j.getExecutioner().execAndReturn(im2col);
         return im2col.outputArguments()[0];
     }
 
@@ -208,7 +208,7 @@ public class Convolution {
                         .isSameMode(isSameMode)
                         .build()).build();
 
-        Nd4j.getExecutioner().exec(im2col);
+        Nd4j.getExecutioner().execAndReturn(im2col);
         return im2col.outputArguments()[0];
     }
 
@@ -255,7 +255,7 @@ public class Convolution {
                         .divisor(divisor)
                         .build())
                 .build();
-        Nd4j.getExecutioner().exec(pooling);
+        Nd4j.getExecutioner().execAndReturn(pooling);
         return out;
     }
 
@@ -281,13 +281,13 @@ public class Convolution {
             int oH = (int) Math.ceil(img.size(2) * 1.f / sy);
             int oW = (int) Math.ceil(img.size(3) * 1.f / sx);
 
-            output = Nd4j.createUninitialized(new long[]{img.size(0), img.size(1), kh, kw, oH, oW}, 'c');
+            output = Nd4j.createUninitialized(img.dataType(), new long[]{img.size(0), img.size(1), kh, kw, oH, oW}, 'c');
         } else {
             // FIXME: int cast
             int oH = ((int) img.size(2) - (kh + (kh - 1) * (1 - 1)) + 2 * ph) / sy + 1;
             int oW = ((int) img.size(3) - (kw + (kw - 1) * (1 - 1)) + 2 * pw) / sx + 1;
 
-            output = Nd4j.createUninitialized(new long[]{img.size(0), img.size(1), kh, kw, oH, oW}, 'c');
+            output = Nd4j.createUninitialized(img.dataType(), new long[]{img.size(0), img.size(1), kh, kw, oH, oW}, 'c');
         }
 
         Im2col im2col = Im2col.builder()
@@ -305,7 +305,7 @@ public class Convolution {
                         .isSameMode(isSameMode)
                         .build()).build();
 
-        Nd4j.getExecutioner().exec(im2col);
+        Nd4j.getExecutioner().execAndReturn(im2col);
         return im2col.outputArguments()[0];
     }
 

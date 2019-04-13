@@ -20,7 +20,7 @@ import com.github.os72.protobuf351.Message;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.descriptors.properties.PropertyMapping;
-import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.Op;
 
@@ -42,6 +42,54 @@ import java.util.Set;
  *@author Adam Gibson
  */
 public interface GraphMapper<GRAPH_TYPE,NODE_TYPE,ATTR_TYPE,TENSOR_TYPE> {
+
+    /**
+     * Import a graph as SameDiff from the given file
+     * @param graphFile Input stream pointing to graph file to import
+     * @return Imported graph
+     */
+    SameDiff importGraph(InputStream graphFile);
+
+    SameDiff importGraph(InputStream graphFile, Map<String,? extends OpImportOverride<GRAPH_TYPE,NODE_TYPE,ATTR_TYPE>> opImportOverrides,
+                         OpImportFilter<GRAPH_TYPE,NODE_TYPE,ATTR_TYPE> opFilter);
+
+    /**
+     * Import a graph as SameDiff from the given file
+     * @param graphFile Graph file to import
+     * @return Imported graph
+     * @see #importGraph(File, Map)
+     */
+    SameDiff importGraph(File graphFile);
+
+    /**
+     * Import a graph as SameDiff from the given file, with optional op import overrides.<br>
+     * The {@link OpImportOverride} instances allow the operation import to be overridden - useful for importing ops
+     * that have not been mapped for import in SameDiff yet, and also for non-standard/user-defined functions.
+     *
+     * @param graphFile Graph file to import
+     * @param opImportOverrides May be null. If non-null: used to import the specified operations. Key is the name of the
+     *                          operation to import, value is the object used to import it
+     * @return Imported graph
+     */
+    SameDiff importGraph(File graphFile, Map<String,? extends OpImportOverride<GRAPH_TYPE,NODE_TYPE,ATTR_TYPE>> opImportOverrides,
+                         OpImportFilter<GRAPH_TYPE,NODE_TYPE,ATTR_TYPE> opFilter);
+
+    /**
+     * This method converts given graph type (in its native format) to SameDiff
+     * @param graph Graph to import
+     * @return Imported graph
+     */
+    SameDiff importGraph(GRAPH_TYPE graph);
+
+    /**
+     * This method converts given graph type (in its native format) to SameDiff<br>
+     * The {@link OpImportOverride} instances allow the operation import to be overridden - useful for importing ops
+     * that have not been mapped for import in SameDiff yet, and also for non-standard/user-defined functions.
+     * @param graph Graph to import
+     * @return Imported graph
+     */
+    SameDiff importGraph(GRAPH_TYPE graph, Map<String,? extends OpImportOverride<GRAPH_TYPE,NODE_TYPE,ATTR_TYPE>> opImportOverrides,
+                         OpImportFilter<GRAPH_TYPE,NODE_TYPE,ATTR_TYPE> opFilter);
 
 
     /**
@@ -109,6 +157,14 @@ public interface GraphMapper<GRAPH_TYPE,NODE_TYPE,ATTR_TYPE,TENSOR_TYPE> {
      * @return true if the node is a place holder or not
      */
     boolean isPlaceHolderNode(TENSOR_TYPE node);
+
+    /**
+     * Get the list of control dependencies for the current node (or null if none exist)
+     *
+     * @param node Node to get the control dependencies (if any) for
+     * @return
+     */
+    List<String> getControlDependencies(NODE_TYPE node);
 
     /**
      * Dump a binary proto file representation as a
@@ -193,28 +249,25 @@ public interface GraphMapper<GRAPH_TYPE,NODE_TYPE,ATTR_TYPE,TENSOR_TYPE> {
 
 
     /**
-     * Map a node in to the import state covering
-     * the {@link SameDiff} instance
+     * Map a node in to the import state covering the {@link SameDiff} instance
      * @param tfNode the node to map
      * @param importState the current import state
+     * @param opFilter    Optional filter for skipping operations
      */
-    void mapNodeType(NODE_TYPE tfNode, ImportState<GRAPH_TYPE,TENSOR_TYPE> importState);
+    void mapNodeType(NODE_TYPE tfNode, ImportState<GRAPH_TYPE,TENSOR_TYPE> importState,
+                     OpImportOverride<GRAPH_TYPE,NODE_TYPE,ATTR_TYPE> opImportOverride,
+                     OpImportFilter<GRAPH_TYPE,NODE_TYPE,ATTR_TYPE> opFilter);
 
 
     /**
      *
      * @param tensorType
+     * @param outputNum
      * @return
      */
-    DataBuffer.Type dataTypeForTensor(TENSOR_TYPE tensorType);
+    DataType dataTypeForTensor(TENSOR_TYPE tensorType, int outputNum);
 
-    /**
-     * If {@link #dataTypeForTensor(Object)} return UNKNOWN we *might* still be able
-     * to import it. This method will return true if it is importable in spite of unknown type
-     * @param tensor
-     * @return
-     */
-    boolean unknownTypeNodeImportable(TENSOR_TYPE tensor);
+    boolean isStringType(TENSOR_TYPE tensor);
 
     /**
      *
@@ -373,37 +426,4 @@ public interface GraphMapper<GRAPH_TYPE,NODE_TYPE,ATTR_TYPE,TENSOR_TYPE> {
      * @return
      */
     List<NODE_TYPE> getNodeList(GRAPH_TYPE graphType);
-
-
-
-    /**
-     * Import a graph as same diff
-     * from the given file
-     * @param graphFile
-     * @return
-     */
-    SameDiff importGraph(InputStream graphFile);
-
-    /**
-     * Import a graph as same diff
-     * from the given file
-     * @param graphFile
-     * @return
-     */
-    SameDiff importGraph(File graphFile);
-
-    /**
-     * This method converts given TF
-     * @param tfGraph
-     * @return
-     */
-    SameDiff importGraph(GRAPH_TYPE tfGraph);
-
-    /**
-     * This method converts given TF graph file
-     * @param file
-     * @return
-     */
-    SameDiff importGraph(String graphFile);
-
 }

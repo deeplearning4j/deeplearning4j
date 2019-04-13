@@ -169,6 +169,11 @@ namespace nd4j {
         DECLARE_CUSTOM_OP(cumprod_bp, 2, -21, false, 0, 2);
         #endif
 
+
+        #if NOT_EXCLUDED(OP_flatten)
+        DECLARE_CUSTOM_OP(flatten, -1, 1, false, 0, 1);
+        #endif
+
         /**
          * returns histogram (as 1D array) with fixed bins width
          * 
@@ -185,6 +190,15 @@ namespace nd4j {
         #endif
 
 
+        /**
+         * standardizes input array to be zero mean unit variance along the given axis
+         *
+         *
+         */
+        #if NOT_EXCLUDED(OP_standardize)
+                DECLARE_CONFIGURABLE_OP(standardize, 1, 1, true, 0, -2);
+                DECLARE_CUSTOM_OP(standardize_bp, 2, 1, false, 0, -2);
+        #endif
     }
 }
 

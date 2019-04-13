@@ -28,8 +28,7 @@ namespace nd4j    {
 namespace ops     {
 namespace helpers {
 
-template <typename T>
-void stack(const std::vector<NDArray<T>*>& inArrs, NDArray<T>& outArr, const int dim);
+void stack(const std::vector<NDArray*>& inArrs, NDArray& outArr, const int dim);
     
 
 }

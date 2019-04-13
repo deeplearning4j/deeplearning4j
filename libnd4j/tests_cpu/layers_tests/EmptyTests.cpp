@@ -36,7 +36,7 @@ public:
 };
 
 TEST_F(EmptyTests, Test_Create_Empty) {
-    auto empty = NDArray<float>::createEmpty();
+    auto empty = NDArrayFactory::empty_<float>();
     ASSERT_TRUE(empty->isEmpty());
 
     ASSERT_EQ(0, empty->lengthOf());
@@ -48,12 +48,12 @@ TEST_F(EmptyTests, Test_Create_Empty) {
 }
 
 TEST_F(EmptyTests, Test_Concat_1) {
-    auto empty = NDArray<float>::createEmpty();
-    auto vector = new NDArray<float>('c', {1}, {1.0f});
+    auto empty = NDArrayFactory::empty_<float>();
+    auto vector = NDArrayFactory::create_<float>('c', {1}, {1.0f});
 
     ASSERT_TRUE(empty->isEmpty());
 
-    nd4j::ops::concat<float> op;
+    nd4j::ops::concat op;
     auto result = op.execute({empty, vector}, {}, {0});
     ASSERT_EQ(Status::OK(), result->status());
 
@@ -71,14 +71,14 @@ TEST_F(EmptyTests, Test_Concat_1) {
 
 
 TEST_F(EmptyTests, Test_Concat_2) {
-    auto empty = NDArray<float>::createEmpty();
-    auto scalar1 = new NDArray<float>(1.0f);
-    auto scalar2 = new NDArray<float>(2.0f);
-    NDArray<float> exp('c', {2}, {1.f, 2.f});
+    auto empty = NDArrayFactory::empty_<float>();
+    auto scalar1 =  NDArrayFactory::create_<float>(1.0f);
+    auto scalar2  = NDArrayFactory::create_<float>(2.0f);
+    auto exp = NDArrayFactory::create<float>('c', {2}, {1.f, 2.f});
 
     ASSERT_TRUE(empty->isEmpty());
 
-    nd4j::ops::concat<float> op;
+    nd4j::ops::concat op;
     auto result = op.execute({empty, scalar1, scalar2}, {}, {0});
     ASSERT_EQ(Status::OK(), result->status());
 
@@ -96,11 +96,11 @@ TEST_F(EmptyTests, Test_Concat_2) {
 }
 
 TEST_F(EmptyTests, Test_Reshape_1) {
-    NDArray<float> vector('c', {1}, {119.0f});
-    NDArray<float> exp(119.0f);
-    auto empty = NDArray<float>::createEmpty();
+    auto vector = NDArrayFactory::create<float>('c', {1}, {119.0f});
+    auto exp = NDArrayFactory::create<float>(119.f);
+    auto empty = NDArrayFactory::empty_<int>();
 
-    nd4j::ops::reshape<float> op;
+    nd4j::ops::reshape op;
     auto result = op.execute({&vector, empty}, {}, {});
 
     ASSERT_EQ(Status::OK(), result->status());
@@ -112,12 +112,12 @@ TEST_F(EmptyTests, Test_Reshape_1) {
 }
 
 TEST_F(EmptyTests, Test_Reshape_2) {
-    NDArray<float> vector('c', {1}, {119.0f});
-    NDArray<float> exp(119.0f);
-    auto empty = NDArray<float>::createEmpty();
+    auto vector = NDArrayFactory::create<float>('c', {1}, {119.0f});
+    auto exp = NDArrayFactory::create<float>(119.0f);
+    auto empty = NDArrayFactory::empty_<Nd4jLong>();
 
-    nd4j::ops::reshape<float> op;
-    auto result = op.execute({&vector, empty}, {}, {}, true);
+    nd4j::ops::reshape op;
+    auto result = op.execute({&vector, empty}, {}, {}, {}, true);
 
     ASSERT_EQ(Status::OK(), result->status());
 
@@ -126,4 +126,14 @@ TEST_F(EmptyTests, Test_Reshape_2) {
 
     delete empty;
     delete result;
+}
+
+TEST_F(EmptyTests, Test_dup_1) {
+    auto empty = NDArrayFactory::empty<int>();
+    auto dup = empty.dup();
+
+    ASSERT_TRUE(dup->isEmpty());
+    ASSERT_EQ(empty, *dup);
+
+    delete dup;
 }

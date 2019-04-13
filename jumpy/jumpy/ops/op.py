@@ -39,10 +39,10 @@ take care of nd4j<->jumpy conversions. e.g:
 
 @op
 def reshape(arr, shape):
-	# we are in nd4j space now
-	# arr is an INDArray instance
-	# we return a INDArray instance as well
-	return arr.reshape(*shape)
+    # we are in nd4j space now
+    # arr is an INDArray instance
+    # we return a INDArray instance as well
+    return arr.reshape(*shape)
 
 
 # use in jumpy space:
@@ -73,7 +73,7 @@ def op(f):
                 for j, a in enumerate(arg):
                     if _is_jumpy(a):
                         arg[j] = a.array
-                args[i] = tuple(arg)    
+                args[i] = tuple(arg)
         for k in kwargs:
             v = kwargs[k]
             if _is_jumpy(v):

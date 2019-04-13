@@ -40,15 +40,15 @@ public class Conv2DConfig extends BaseConvolutionConfig {
     @Builder.Default
     private long sH = 1;
     @Builder.Default
-    private long sW = 1;
+    private long sW = 1; // strides >= 1
     @Builder.Default
-    private long pH = 0;
+    private long pH = 0; // padding >= 0
     @Builder.Default
     private long pW = 0;
     @Builder.Default
     private long dH = 1;
     @Builder.Default
-    private long dW = 1;
+    private long dW = 1;  // dilations >= 1
     private boolean isSameMode;
     @Builder.Default
     private String dataFormat = NCHW;

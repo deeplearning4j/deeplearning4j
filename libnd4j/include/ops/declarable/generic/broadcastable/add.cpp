@@ -30,8 +30,10 @@ namespace nd4j {
             auto x = INPUT_VARIABLE(0);
             auto y = INPUT_VARIABLE(1);
             auto z = OUTPUT_VARIABLE(0);
+			
+            BROADCAST_CHECK_EMPTY(x,y,z);
 
-            auto tZ = BroadcastHelper<T>::template broadcastApply<simdOps::Add<T>>(x, y, z);
+            auto tZ = BroadcastHelper::broadcastApply(nd4j::BroadcastOpsTuple::Add(), x, y, z);
             if (tZ == nullptr)
                 return ND4J_STATUS_KERNEL_FAILURE;
             else if (tZ != z)
@@ -39,6 +41,19 @@ namespace nd4j {
 
 
     		return Status::OK();
+        }
+
+        DECLARE_TYPES(add) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(0, DataType::ANY)
+                    ->setAllowedInputTypes(1, DataType::ANY)
+                    ->setAllowedOutputTypes(DataType::ANY);
+        }
+
+        DECLARE_TYPES(add_bp) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(DataType::ANY)
+                    ->setAllowedOutputTypes({ALL_FLOATS});
         }
 
 
@@ -56,23 +71,23 @@ namespace nd4j {
                 gradX->assign(epsNext);
             } else if (y->isScalar()) {
                 // scalar case
-                auto tmp = epsNext->template reduceNumber<simdOps::Sum<T>>();
+                auto tmp = epsNext->reduceNumber(nd4j::reduce::Sum);
                 gradY->assign(tmp);
                 gradX->assign(epsNext);
             } else {
                 // broadcast case
-                auto axisX = ShapeUtils<T>::evalBroadcastBackwardAxis(x->shapeInfo(), epsNext->shapeInfo());
-                auto axisY = ShapeUtils<T>::evalBroadcastBackwardAxis(y->shapeInfo(), epsNext->shapeInfo());
+                auto axisX = ShapeUtils::evalBroadcastBackwardAxis(x->shapeInfo(), epsNext->shapeInfo());
+                auto axisY = ShapeUtils::evalBroadcastBackwardAxis(y->shapeInfo(), epsNext->shapeInfo());
 
                 if (axisX.size() > 0) {
-                    auto sum = epsNext->template reduceAlongDimension<simdOps::Sum<T>>(axisX);
+                    auto sum = epsNext->reduceAlongDimension(nd4j::reduce::Sum, axisX);
                     gradX->assign(sum);
                     delete sum;
                 } else 
                     gradX->assign(epsNext);
 
                 if (axisY.size() > 0) {
-                    auto sum = epsNext->template reduceAlongDimension<simdOps::Sum<T>>(axisY);
+                    auto sum = epsNext->reduceAlongDimension(nd4j::reduce::Sum, axisY);
                     gradY->assign(sum);
                     delete sum;
                 } else

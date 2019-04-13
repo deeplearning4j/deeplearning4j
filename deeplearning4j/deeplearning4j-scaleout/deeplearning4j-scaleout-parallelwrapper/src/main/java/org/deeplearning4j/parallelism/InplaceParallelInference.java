@@ -20,10 +20,13 @@ package org.deeplearning4j.parallelism;
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.api.Model;
+import org.deeplearning4j.nn.api.ModelAdapter;
+import org.deeplearning4j.nn.api.OutputAdapter;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
+import org.deeplearning4j.parallelism.inference.InferenceMode;
 import org.deeplearning4j.parallelism.inference.LoadBalanceMode;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
@@ -93,6 +96,31 @@ public class InplaceParallelInference extends ParallelInference {
     @Override
     public INDArray[] output(INDArray[] input, INDArray[] inputMasks) {
         return selector.output(input, inputMasks);
+    }
+
+    /**
+     * This method does forward pass and returns output provided by OutputAdapter
+     *
+     * @param adapter
+     * @param input
+     * @param inputMasks
+     * @param <T>
+     * @return
+     */
+    public <T> T output(@NonNull ModelAdapter<T> adapter, INDArray[] input, INDArray[] inputMasks, INDArray[] labelsMasks) {
+        val holder = selector.getModelForThisThread();
+        Model model = null;
+        boolean acquired = false;
+        try {
+            model = holder.acquireModel();
+            acquired = true;
+            return adapter.apply(model, input, inputMasks, labelsMasks);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        } finally {
+            if (model != null && acquired)
+                holder.releaseModel(model);
+        }
     }
 
 
@@ -241,18 +269,25 @@ public class InplaceParallelInference extends ParallelInference {
                     val model = acquireModel();
 
                     // doing inference
-                    val output = ((ComputationGraph) model).output(false, input, inputMasks);
-
-                    // releasing model
-                    releaseModel(model);
+                    INDArray[] output;
+                    try{
+                        output = ((ComputationGraph) model).output(false, input, inputMasks);
+                    } finally {
+                        // releasing model
+                        releaseModel(model);
+                    }
                     return output;
                 } else if (isMLN) {
                     if (input.length > 1 || (inputMasks != null && inputMasks.length > 1))
                         throw new ND4JIllegalStateException("MultilayerNetwork can't have multiple inputs");
 
                     val model = acquireModel();
-                    val result = ((MultiLayerNetwork) model).output(input[0], false, (inputMasks == null ? null : inputMasks[0]), null);
-                    releaseModel(model);
+                    INDArray result;
+                    try {
+                        result = ((MultiLayerNetwork) model).output(input[0], false, (inputMasks == null ? null : inputMasks[0]), null);
+                    } finally {
+                        releaseModel(model);
+                    }
                     return new INDArray[]{result};
                 } else
                     throw new UnsupportedOperationException();

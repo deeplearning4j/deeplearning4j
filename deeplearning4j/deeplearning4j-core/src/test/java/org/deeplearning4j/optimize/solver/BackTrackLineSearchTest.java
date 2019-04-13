@@ -39,6 +39,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.learning.config.Adam;
 import org.nd4j.linalg.learning.config.Nesterovs;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
@@ -56,9 +57,6 @@ public class BackTrackLineSearchTest extends BaseDL4JTest {
 
     @Before
     public void before() {
-        Nd4j.MAX_SLICES_TO_PRINT = -1;
-        Nd4j.MAX_ELEMENTS_PER_SLICE = -1;
-        Nd4j.ENFORCE_NUMERICAL_STABILITY = true;
         if (irisIter == null) {
             irisIter = new IrisDataSetIterator(5, 5);
         }
@@ -74,7 +72,7 @@ public class BackTrackLineSearchTest extends BaseDL4JTest {
     public void testSingleMinLineSearch() throws Exception {
         OutputLayer layer = getIrisLogisticLayerConfig(Activation.SOFTMAX, 100,
                         LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD);
-        int nParams = layer.numParams();
+        int nParams = (int)layer.numParams();
         layer.setBackpropGradientsViewArray(Nd4j.create(1, nParams));
         layer.setInput(irisData.getFeatures(), LayerWorkspaceMgr.noWorkspaces());
         layer.setLabels(irisData.getLabels());
@@ -92,7 +90,7 @@ public class BackTrackLineSearchTest extends BaseDL4JTest {
 
         OutputLayer layer = getIrisLogisticLayerConfig(Activation.SOFTMAX, 100,
                         LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD);
-        int nParams = layer.numParams();
+        int nParams = (int)layer.numParams();
         layer.setBackpropGradientsViewArray(Nd4j.create(1, nParams));
         layer.setInput(irisData.getFeatures(), LayerWorkspaceMgr.noWorkspaces());
         layer.setLabels(irisData.getLabels());
@@ -113,7 +111,7 @@ public class BackTrackLineSearchTest extends BaseDL4JTest {
 
         OutputLayer layer = getIrisLogisticLayerConfig(Activation.SOFTMAX, 100,
                         LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD);
-        int nParams = layer.numParams();
+        int nParams = (int)layer.numParams();
         layer.setBackpropGradientsViewArray(Nd4j.create(1, nParams));
         layer.setInput(irisData.getFeatures(), LayerWorkspaceMgr.noWorkspaces());
         layer.setLabels(irisData.getLabels());
@@ -141,7 +139,7 @@ public class BackTrackLineSearchTest extends BaseDL4JTest {
 
         irisData.normalizeZeroMeanZeroUnitVariance();
         OutputLayer layer = getIrisLogisticLayerConfig(Activation.SOFTMAX, 100, LossFunctions.LossFunction.MCXENT);
-        int nParams = layer.numParams();
+        int nParams = (int)layer.numParams();
         layer.setBackpropGradientsViewArray(Nd4j.create(1, nParams));
         layer.setInput(irisData.getFeatures(), LayerWorkspaceMgr.noWorkspaces());
         layer.setLabels(irisData.getLabels());
@@ -240,7 +238,7 @@ public class BackTrackLineSearchTest extends BaseDL4JTest {
 
     private static MultiLayerConfiguration getIrisMultiLayerConfig(Activation activationFunction, OptimizationAlgorithm optimizer) {
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().optimizationAlgo(optimizer)
-                        .miniBatch(false).updater(new Nesterovs(0.9)).seed(12345L).list()
+                        .updater(new Adam(0.01)).seed(12345L).list()
                         .layer(0, new DenseLayer.Builder().nIn(4).nOut(100).weightInit(WeightInit.XAVIER)
                                         .activation(activationFunction).build())
                         .layer(1, new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(

@@ -23,48 +23,49 @@
 #if NOT_EXCLUDED(OP_thresholdedrelu)
 
 #include <ops/declarable/CustomOperations.h>
-
+#include <ops/declarable/helpers/legacy_helpers.h>
+#include <ops/declarable/helpers/activations.h>
 namespace nd4j {
 namespace ops  {
 
 
 ////////////////////////////////////////////////////////////////////////
 CONFIGURABLE_OP_IMPL(thresholdedrelu, 1, 1, true, 0, 0) {
-    
-    NDArray<T>* input  = INPUT_VARIABLE(0);    
-    NDArray<T>* output = OUTPUT_VARIABLE(0);
+    auto input  = INPUT_VARIABLE(0);
+    auto output = OUTPUT_VARIABLE(0);
 
-    const T theta = block.getTArguments()->size() == 0 ? static_cast<T>(1) : T_ARG(0);
+    auto scalar = block.numT() > 0 ? block.getTArguments()->at(0) : 0.0;
 
-    // REQUIRE_TRUE(theta >= static_cast<T>(0), 0, "THRESHOLDED_RELU OP: input float argument theta must be >= 0, but got %f instead !", theta);
+    helpers::thresholdRelu(*input, scalar, *output);
 
-    auto func = LAMBDA_T(i, theta) { if (i > theta) return i; else return static_cast<T>(0); };
-
-    input->applyLambda(func, output);
-    
     return Status::OK();
 }
 
+    DECLARE_TYPES(thresholdedrelu) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(0, DataType::ANY)
+                    ->setSameMode(true);
+    }
 
 ////////////////////////////////////////////////////////////////////////
 CONFIGURABLE_OP_IMPL(thresholdedrelu_bp, 2, 1, true, 0, 0) {
+    auto input = INPUT_VARIABLE(0);
+    auto dLdO  = INPUT_VARIABLE(1);    
     
-    NDArray<T>* input = INPUT_VARIABLE(0);
-    NDArray<T>* dLdO  = INPUT_VARIABLE(1);
-    
-    NDArray<T>* dLdI = OUTPUT_VARIABLE(0);
+    auto dLdI = OUTPUT_VARIABLE(0);
+    auto threshold = block.numT() > 0 ? block.getTArguments()->at(0) : 0.0;
 
-    const T theta = block.getTArguments()->size() == 0 ? static_cast<T>(1) : T_ARG(0);
-
-    // REQUIRE_TRUE(theta >= static_cast<T>(0), 0, "THRESHOLDED_RELU_BP OP: input float argument theta must be >= 0, but got %f instead !", theta);
-
-    auto derivative = LAMBDA_TT(i, grO, theta) {if (i > theta) return grO; else return static_cast<T>(0); };
-
-    input->applyPairwiseLambda(dLdO, derivative, dLdI);
+    helpers::thresholdReluDerivative(input, threshold, dLdO, dLdI);
 
     return Status::OK();
 }
 
+        DECLARE_TYPES(thresholdedrelu_bp) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(0, DataType::ANY)
+                    ->setAllowedInputTypes(1, {DataType::FLOAT32, DataType ::DOUBLE, DataType::HALF})
+                    ->setAllowedOutputTypes(0, {DataType::FLOAT32, DataType ::DOUBLE, DataType::HALF});
+        }
 
 
 }

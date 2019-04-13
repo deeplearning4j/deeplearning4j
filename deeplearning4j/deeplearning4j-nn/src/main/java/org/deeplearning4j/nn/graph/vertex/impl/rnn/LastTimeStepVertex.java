@@ -100,7 +100,7 @@ public class LastTimeStepVertex extends BaseGraphVertex {
             //Check a little here by using mulRowVector([0,1,2,3,...]) and argmax
             // FIXME: int cast
             int maxTsLength = (int) fwdPassShape[2];
-            INDArray row = Nd4j.linspace(0, maxTsLength - 1, maxTsLength);
+            INDArray row = Nd4j.linspace(0, maxTsLength - 1, maxTsLength, mask.dataType());
             INDArray temp = mask.mulRowVector(row);
             INDArray lastElementIdx = Nd4j.argMax(temp, 1);
             fwdPassTimeSteps = new int[(int)fwdPassShape[0]];

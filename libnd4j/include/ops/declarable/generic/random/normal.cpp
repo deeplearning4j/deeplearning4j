@@ -22,19 +22,24 @@
 #if NOT_EXCLUDED(OP_random_normal)
 
 #include <ops/declarable/headers/random.h>
+#include <helpers/RandomLauncher.h>
 
 namespace nd4j {
     namespace ops {
         CUSTOM_OP_IMPL(random_normal, 1, 1, true, 2, 0) {
             // normal distribution
-            auto rng = block.getRNG();
-
+            auto rng = block.randomGenerator();
+            // FIXME: to be implemented
+/*
             REQUIRE_TRUE(rng != nullptr, 0, "RNG isn't defined for this Graph instance");
 
             auto x = INPUT_VARIABLE(0);
             auto z = OUTPUT_VARIABLE(0);
 
             functions::random::RandomFunction<T>::template execTransform<randomOps::GaussianDistribution<T>>(block.getRNG(), z->getBuffer(), z->getShapeInfo(), z->getBuffer(), z->getShapeInfo(), z->getBuffer(), z->getShapeInfo(), block.getTArguments()->data());
+*/
+
+            RandomLauncher::fillGaussian(rng, OUTPUT_VARIABLE(0), T_ARG(0), T_ARG(1));
 
             return Status::OK();
         }
@@ -43,14 +48,17 @@ namespace nd4j {
             auto in = INPUT_VARIABLE(0);
             auto shape = in->template asVectorT<Nd4jLong>();
 
-            Nd4jLong *newShape;
-            ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(shape.size()), Nd4jLong);
-            shape::shapeBuffer(shape.size(), shape.data(), newShape);
-
+            Nd4jLong *newShape = nd4j::ShapeBuilders::createShapeInfo(block.dataType(), 'c', shape, block.getWorkspace());            
             return SHAPELIST(newShape);
         }
 		
 		DECLARE_SYN(randomnormal, random_normal);
+
+        DECLARE_TYPES(random_normal) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setAllowedOutputTypes({ALL_FLOATS});
+        }
     }
 }
 

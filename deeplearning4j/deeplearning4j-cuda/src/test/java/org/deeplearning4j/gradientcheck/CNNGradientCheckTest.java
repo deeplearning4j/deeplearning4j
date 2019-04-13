@@ -30,16 +30,16 @@ import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.conf.layers.convolutional.Cropping2D;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
-import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.config.NoOp;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
-import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 
 import java.util.Arrays;
 
@@ -58,7 +58,7 @@ public class CNNGradientCheckTest extends BaseDL4JTest {
     private static final double DEFAULT_MIN_ABS_ERROR = 1e-8;
 
     static {
-        Nd4j.setDataType(DataBuffer.Type.DOUBLE);
+        Nd4j.setDataType(DataType.DOUBLE);
     }
 
     @Test
@@ -258,7 +258,7 @@ public class CNNGradientCheckTest extends BaseDL4JTest {
 
                 MultiLayerConfiguration conf =
                         new NeuralNetConfiguration.Builder()
-                                .updater(new NoOp()).weightInit(WeightInit.DISTRIBUTION)
+                                .updater(new NoOp())
                                 .dist(new NormalDistribution(0, 1))
                                 .list().layer(new ConvolutionLayer.Builder(kernel).nIn(inputDepth).hasBias(false)
                                 .cudnnAllowFallback(false)
@@ -321,7 +321,7 @@ public class CNNGradientCheckTest extends BaseDL4JTest {
 
                     MultiLayerConfiguration conf =
                             new NeuralNetConfiguration.Builder()
-                                    .updater(new NoOp()).weightInit(WeightInit.DISTRIBUTION)
+                                    .updater(new NoOp())
                                     .dist(new NormalDistribution(0, 1))
                                     .list().layer(new ConvolutionLayer.Builder(kernel).nIn(inputDepth)
                                     .cudnnAllowFallback(false)
@@ -387,7 +387,7 @@ public class CNNGradientCheckTest extends BaseDL4JTest {
 
                     MultiLayerConfiguration conf =
                             new NeuralNetConfiguration.Builder()
-                                    .updater(new NoOp()).weightInit(WeightInit.DISTRIBUTION)
+                                    .updater(new NoOp())
                                     .dist(new NormalDistribution(0, 1))
                                     .list().layer(new ConvolutionLayer.Builder(kernel,
                                     stride, padding).nIn(inputDepth)
@@ -456,7 +456,7 @@ public class CNNGradientCheckTest extends BaseDL4JTest {
 
                     MultiLayerConfiguration conf =
                             new NeuralNetConfiguration.Builder().updater(new NoOp())
-                                    .weightInit(WeightInit.DISTRIBUTION)
+
                                     .dist(new NormalDistribution(0, 1))
                                     .list().layer(0,
                                     new ConvolutionLayer.Builder(kernel,
@@ -527,7 +527,7 @@ public class CNNGradientCheckTest extends BaseDL4JTest {
                     }
 
                     MultiLayerConfiguration conf =
-                            new NeuralNetConfiguration.Builder().updater(new NoOp()).weightInit(WeightInit.DISTRIBUTION)
+                            new NeuralNetConfiguration.Builder().updater(new NoOp())
                                     .dist(new NormalDistribution(0, 1))
                                     .list().layer(0,
                                     new ConvolutionLayer.Builder(kernel,
@@ -795,7 +795,7 @@ public class CNNGradientCheckTest extends BaseDL4JTest {
                 for (int[] zeroPad : zeroPadLayer) {
 
                     MultiLayerConfiguration conf =
-                            new NeuralNetConfiguration.Builder().updater(new NoOp()).weightInit(WeightInit.DISTRIBUTION)
+                            new NeuralNetConfiguration.Builder().updater(new NoOp())
                                     .dist(new NormalDistribution(0, 1)).list()
                                     .layer(0, new ConvolutionLayer.Builder(kernel, stride, padding)
                                             .cudnnAllowFallback(false)
@@ -837,40 +837,6 @@ public class CNNGradientCheckTest extends BaseDL4JTest {
                 }
             }
         }
-    }
-
-    @Test(expected = IllegalArgumentException.class)
-    public void testDeconvolution2DUnsupportedSameModeLayer() {
-        /*
-         * When setting border mode same on layer directly, we can catch
-         * it in the builder
-         */
-        Deconvolution2D.Builder deconv = new Deconvolution2D.Builder();
-        deconv.convolutionMode(Same);
-    }
-
-    @Test(expected = IllegalArgumentException.class)
-    public void testDeconvolution2DUnsupportedSameModeNetwork() {
-        /*
-         * When convolution mode Same is set for the network and a deconvolution layer is added
-         * then only layer activation will fail. Suboptimal, but I don't think we want special
-         * logic for NNC in this case.
-         */
-        NeuralNetConfiguration.ListBuilder b = new NeuralNetConfiguration.Builder().seed(12345)
-                .updater(new NoOp())
-                .activation(Activation.SIGMOID)
-                .convolutionMode(Same)
-                .list()
-                .layer(new Deconvolution2D.Builder().name("deconvolution")
-                        .nIn(3).nOut(2).build());
-
-        MultiLayerConfiguration conf = b.layer(new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
-                .activation(Activation.SOFTMAX).nOut(2).build())
-                .setInputType(InputType.convolutionalFlat(7, 7, 3)).build();
-
-        MultiLayerNetwork net = new MultiLayerNetwork(conf);
-        net.init();
-        net.getLayer(0).activate(Nd4j.rand(10, 7 * 7 * 3), false, LayerWorkspaceMgr.noWorkspaces());
     }
 
     @Test

@@ -16,13 +16,19 @@
 
 package org.nd4j.linalg.api.ops.impl.transforms;
 
+import lombok.val;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
+import org.nd4j.linalg.api.shape.LongShapeDescriptor;
+import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -40,11 +46,6 @@ public class MaxOut extends BaseTransformOp {
         this.max = max;
     }
 
-    public MaxOut(SameDiff sameDiff, SDVariable i_v, long[] shape, boolean inPlace, Object[] extraArgs, Number max) {
-        super(sameDiff, i_v, shape, inPlace, extraArgs);
-        this.max = max;
-    }
-
     public MaxOut(SameDiff sameDiff, SDVariable i_v, Object[] extraArgs, Number max) {
         super(sameDiff, i_v, extraArgs);
         this.max = max;
@@ -54,14 +55,6 @@ public class MaxOut extends BaseTransformOp {
 
     public MaxOut(INDArray x, INDArray z) {
         super(x, z);
-    }
-
-    public MaxOut(INDArray x, INDArray z, long n) {
-        super(x, z, n);
-    }
-
-    public MaxOut(INDArray x, INDArray y, INDArray z, long n) {
-        super(x, y, z, n);
     }
 
     public MaxOut(INDArray x) {
@@ -93,5 +86,43 @@ public class MaxOut extends BaseTransformOp {
     @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {
         return null;
+    }
+
+    @Override
+    public DataType resultType() {
+        return Nd4j.defaultFloatingPointType();
+    }
+
+    @Override
+    public Type getOpType() {
+        return Type.TRANSFORM_STRICT;
+    }
+
+    @Override
+    public boolean validateDataTypes(boolean experimentalMode) {
+        if (!x().isR())
+            return false;
+
+        if (y() != null && !y().isR())
+            return false;
+
+        if (z() != null && z().dataType() != x().dataType())
+            return false;
+
+        return true;
+    }
+
+    @Override
+    public List<LongShapeDescriptor> calculateOutputShape() {
+        val ret = new ArrayList<LongShapeDescriptor>(1);
+        if(arg() == null)
+            throw new ND4JIllegalStateException("No arg found for op!");
+
+        val arr = sameDiff.getArrForVarName(arg().getVarName());
+        if(arr == null)
+            return Collections.emptyList();
+
+        ret.add(LongShapeDescriptor.fromShape(arr.shape(), Nd4j.defaultFloatingPointType()));
+        return ret;
     }
 }

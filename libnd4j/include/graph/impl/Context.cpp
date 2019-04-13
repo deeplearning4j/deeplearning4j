@@ -20,13 +20,14 @@
 
 #include <Context.h>
 #include <helpers/ShapeUtils.h>
+#include <graph/Context.h>
+
 
 namespace nd4j {
     namespace graph {
-
-        template <typename T>
-        Context<T>::Context(ContextPrototype<T>* prototype, VariableSpace<T>* variableSpace) {
+        Context::Context(ContextPrototype* prototype, VariableSpace* variableSpace) {
             _variableSpace = variableSpace;
+            _dataType = prototype->dataType();
 
             if (prototype != nullptr) {
                 for (const auto &v: *(prototype->inputs())) {
@@ -41,6 +42,14 @@ namespace nd4j {
                     this->_iArgs.push_back(v);
                 }
 
+                for (const auto &v: *(prototype->getBArguments())) {
+                    this->_bArgs.push_back(v);
+                }
+
+                for (const auto &v: *(prototype->getAxis())) {
+                    this->_axis.push_back(v);
+                }
+
                 this->_opNum = prototype->opNum();
                 this->_isInplace = prototype->isInplace();
                 this->_nodeId = prototype->nodeId();
@@ -51,10 +60,22 @@ namespace nd4j {
             if (variableSpace != nullptr && variableSpace->workspace() != nullptr)
                     this->_workspace = variableSpace->workspace();
         }
+        nd4j::DataType Context::dataType(int index) {
 
+            return _dataType;
+        }
 
-        template <typename T>
-        Context<T>::Context(int nodeId, VariableSpace<T> *variableSpace) {
+        nd4j::DataType Context::dataType() {
+            return dataType(0);
+        }
+
+        void Context::setDataType(int index, nd4j::DataType type) {
+            if (this->_dataTypes.size() > (size_t)index)
+                _dataTypes[index] = type;
+            _dataType = type;
+        }
+
+        Context::Context(int nodeId, VariableSpace *variableSpace) {
             this->_nodeId = nodeId;
             this->_variableSpace = variableSpace;
             this->_isInplace = false;
@@ -70,68 +91,72 @@ namespace nd4j {
                 this->_workspace = variableSpace->workspace();
         }
 
-        template <typename T>
-        Context<T>::Context(int nodeId, VariableSpace<T> *variableSpace, bool isInplace) : Context<T>(nodeId, variableSpace) {
+        Context::Context(int nodeId, VariableSpace *variableSpace, bool isInplace) : Context(nodeId, variableSpace) {
             this->_isInplace = isInplace;
         }
 
-        template<typename T>
-        Context<T>::~Context() {
+        Context::~Context() {
             this->_iArgs.clear();
             this->_tArgs.clear();
             this->_inputs.clear();
+            this->_fastpath_in.clear();
+            this->_fastpath_out.clear();
 #ifdef HAVE_MKLDNN
-            if (_mkldnnStream != nullptr) {
-                delete _mkldnnStream;
-            }
+            this->_mkldnnStreams.clear();
 #endif
+
+            for (auto v:_handles)
+                delete v;
         }
 
-        template <typename T>
-        bool Context<T>::hasWorkspaceProvided() {
+        bool Context::hasWorkspaceProvided() {
             return this->_workspace != nullptr;
         }
 
-        template <typename T>
-        void Context<T>::attachWorkspace(nd4j::memory::Workspace* workspace) {
+        void Context::attachWorkspace(nd4j::memory::Workspace* workspace) {
             this->_workspace = workspace;
         }
 
-        template <typename T>
-        void Context<T>::setVariableSpace(VariableSpace<T> *variableSpace) {
+        void Context::setVariableSpace(VariableSpace *variableSpace) {
             this->_variableSpace = variableSpace;
 
             if (variableSpace != nullptr)
                 this->_rng = variableSpace->getRNG();
         }
 
-        template <typename T>
-        void Context<T>::forgetWorkspace() {
+        void Context::forgetWorkspace() {
             _workspace = nullptr;
         }
 
-        template<typename T>
-        VariableSpace<T> *Context<T>::getVariableSpace() {
+        std::vector<NDArray*>& Context::fastpath_in() {
+            return _fastpath_in;
+        }
+
+        std::vector<NDArray*>& Context::fastpath_out() {
+            return _fastpath_out;
+        }
+
+        bool Context::isFastPath() {
+            return !_fastpath_in.empty();
+        }
+
+        VariableSpace *Context::getVariableSpace() {
             return _variableSpace;
         }
 
-        template <typename T>
-        nd4j::memory::Workspace* Context<T>::getWorkspace() {
+        nd4j::memory::Workspace* Context::getWorkspace() {
             return _workspace;
         }
 
-        template <typename T>
-        nd4j::memory::Workspace* Context<T>::workspace() {
+        nd4j::memory::Workspace* Context::workspace() {
             return _workspace;
         }
 
-        template <typename T>
-        nd4j::random::RandomBuffer* Context<T>::getRNG() {
+        nd4j::random::RandomBuffer* Context::getRNG() {
             return _rng;
         }
 
-        template <typename T>
-        void Context<T>::setRNG(nd4j::random::RandomBuffer* rng) {
+        void Context::setRNG(nd4j::random::RandomBuffer* rng) {
             _rng = rng;
         }
 
@@ -139,25 +164,22 @@ namespace nd4j {
          * This method returns variableSpace used in this block
          * @return
          */
-    /*    template <typename T>
-        VariableSpace<T>* Context<T>::getVariableSpace() {
+    /*
+        VariableSpace* Context::getVariableSpace() {
             return _variableSpace;
         }
 */
 
-        template <typename T>
-        Stash<T>* Context<T>::getStash() {
+        Stash* Context::getStash() {
             return _variableSpace->getStash();
         }
 
-        template <typename T>
-        void Context<T>::trackList(NDArrayList<T>* list) {
+        void Context::trackList(NDArrayList* list) {
             _variableSpace->trackList(list);
         }
 
 /*
-        template <typename T>
-        void Block<T>::updateVariables() {
+        void Block::updateVariables() {
             _variables.clear();
             auto x = _inputs.size();
             for (auto &v:_inputs) {
@@ -166,44 +188,37 @@ namespace nd4j {
             }
         }
 */
-        template <typename T>
-        int Context<T>::getBranch() {
+        int Context::getBranch() {
             return _variableSpace->flowPath()->branch(this->nodeId());
         }
 
-        template <typename T>
-        void Context<T>::setBranch(int branch) {
+        void Context::setBranch(int branch) {
             //_branch = branch;
             if (_variableSpace->flowPath() != nullptr)
                 _variableSpace->flowPath()->markBranch(this->nodeId(), branch);
         }
 
-        template <typename T>
-        Nd4jLong nd4j::graph::Context<T>::getOuterTime(){
+        Nd4jLong nd4j::graph::Context::getOuterTime(){
             return this->_executionTime.first;
         }
 
-        template <typename T>
-        Nd4jLong nd4j::graph::Context<T>::getInnerTime(){
+        Nd4jLong nd4j::graph::Context::getInnerTime(){
             return this->_executionTime.second;
         }
 
-        template <typename T>
-        void nd4j::graph::Context<T>::setOuterTime(Nd4jLong time){
+        void nd4j::graph::Context::setOuterTime(Nd4jLong time){
             this->_executionTime.first = time;
         }
 
-        template <typename T>
-        void nd4j::graph::Context<T>::setInnerTime(Nd4jLong time){
+        void nd4j::graph::Context::setInnerTime(Nd4jLong time){
             this->_executionTime.second = time;
         }
 
 
-        template <typename T>
-        Variable<T>* Context<T>::getVariable(int idx) {
+        Variable* Context::getVariable(int idx) {
             if (idx >= this->_inputs.size()) {
                 nd4j_printf("Node %i; Variable [%i] requested, but only %i inputs available\n", this->_nodeId, idx, this->_inputs.size());
-                throw std::runtime_error("Bad index");
+                throw std::runtime_error("Context: bad Variable index");
             }
 
             auto p = this->_inputs[idx];
@@ -212,27 +227,26 @@ namespace nd4j {
 
             if (Environment::getInstance()->isDebugAndVerbose() && v != nullptr &&  v->getNDArray() != nullptr) {
                 auto array = v->getNDArray();
-                std::string shape_ = ShapeUtils<T>::shapeAsString(array);
-
+                std::string shape_ = ShapeUtils::shapeAsString(array);
+                auto type = DataTypeUtils::asString(array->dataType());
                 float m = std::numeric_limits<float>::quiet_NaN();
                 if (!array->isEmpty()) {
                     auto values = array->asIndexedString(16);
-                    nd4j_printf("Debug info for node_%i input[%i]; shape: %s; ews: %i; order: %i; first values: %s\n", this->_nodeId, idx, shape_.c_str(), array->ews(), array->ordering(), values.c_str());
+
+                    nd4j_printf("Debug info for node_%i input[%i]; shape: %s; ews: [%i]; order: [%i]; dtype: [%s]; first values: %s\n", this->_nodeId, idx, shape_.c_str(), array->ews(), array->ordering(), type.c_str(), values.c_str());
                 } else {
-                    nd4j_printf("Debug info for node_%i input[%i]; shape: %s; ews: %i; order: %i; mean value: [%f]\n", this->_nodeId, idx, shape_.c_str(), array->ews(), array->ordering(), m);
+                    nd4j_printf("Debug info for node_%i input[%i]; shape: %s; ews: [%i]; order: [%i]; dtype: [%s]; mean value: [%f]\n", this->_nodeId, idx, shape_.c_str(), array->ews(), array->ordering(), type.c_str(), m);
                 }
             }
 
             return v;
         }
 
-        template <typename T>
-        Variable<T>* Context<T>::variable(int idx) {
+        Variable* Context::variable(int idx) {
             return getVariable(idx);
         }
 
-        template <typename T>
-        Variable<T>* Context<T>::variable(std::initializer_list<int> p) {
+        Variable* Context::variable(std::initializer_list<int> p) {
             if (p.size() != 2)
                 throw std::runtime_error("Variable address should have size of 2");
 
@@ -242,14 +256,12 @@ namespace nd4j {
             return variable(pair);
         }
 
-        template <typename T>
-        Variable<T>* Context<T>::variable(int node, int idx) {
+        Variable* Context::variable(int node, int idx) {
             std::pair<int, int> pair(node, idx);
             return variable(pair);
         }
 
-        template <typename T>
-        Variable<T>* Context<T>::variable(std::pair<int,int>& p) {
+        Variable* Context::variable(std::pair<int,int>& p) {
             if (!_variableSpace->hasVariable(p)) {
                 nd4j_printf("Node %i; Non-existent variable requested: [%i:%i]\n", this->_nodeId, p.first, p.second);
                 throw std::runtime_error("Bad variable");
@@ -258,41 +270,43 @@ namespace nd4j {
             return _variableSpace->getVariable(p);
         }
 
-
-        template <typename T>
-        void Context<T>::pushNDArrayToVariableSpace(int nodeId, int index, NDArray<T> *array, bool removable) {
+        void Context::pushNDArrayToVariableSpace(int nodeId, int index, NDArray *array, bool removable) {
             std::pair<int,int> pair(nodeId, index);
             pushNDArrayToVariableSpace(pair, array, removable);
         }
 
-        template <typename T>
-        void Context<T>::pushNDArrayToVariableSpace(std::pair<int, int> &pair, NDArray<T> *array, bool removable) {
-            if (!_variableSpace->hasVariable(pair)) {
-                auto var = new Variable<T>(array, nullptr, pair.first, pair.second);
-                _variableSpace->putVariable(pair, var);
-                var->markRemovable(removable);
-            } else {
-                auto var = _variableSpace->getVariable(pair);
-                if (var->getNDArray() != array) {
-                    if (var->isRemovable() && var->getNDArray() != nullptr)
-                        delete var->getNDArray();
-
-                    var->setNDArray(array);
+        void Context::pushNDArrayToVariableSpace(std::pair<int, int> &pair, NDArray *array, bool removable) {
+            if (_variableSpace != nullptr) {
+                if (!_variableSpace->hasVariable(pair)) {
+                    auto var = new Variable(array, nullptr, pair.first, pair.second);
+                    _variableSpace->putVariable(pair, var);
                     var->markRemovable(removable);
+                } else {
+                    auto var = _variableSpace->getVariable(pair);
+                    if (var->hasNDArray()) {
+                        if (var->getNDArray() != array) {
+                            if (var->isRemovable() && var->hasNDArray())
+                                delete var->getNDArray();
+
+                            var->setNDArray(array);
+                            var->markRemovable(removable);
+                        }
+                    } else {
+                        var->setNDArray(array);
+                        var->markRemovable(removable);
+                    }
                 }
             }
         }
 
-        template <typename T>
-        void Context<T>::pushNDArrayListToVariableSpace(int nodeId, int index, NDArrayList<T>* list, bool track) {
+        void Context::pushNDArrayListToVariableSpace(int nodeId, int index, NDArrayList* list, bool track) {
             std::pair<int,int> pair(nodeId, index);
             pushNDArrayListToVariableSpace(pair, list, track);
         }
         
-        template <typename T>
-        void Context<T>::pushNDArrayListToVariableSpace(std::pair<int, int>& pair, NDArrayList<T>* list, bool track) {
+        void Context::pushNDArrayListToVariableSpace(std::pair<int, int>& pair, NDArrayList* list, bool track) {
             if (!_variableSpace->hasVariable(pair)) {
-                auto var = new Variable<T>(nullptr, nullptr, pair.first, pair.second);
+                auto var = new Variable(nullptr, nullptr, pair.first, pair.second);
                 var->setNDArrayList(list);
                 _variableSpace->putVariable(pair, var);
             } else {
@@ -304,11 +318,10 @@ namespace nd4j {
                 _variableSpace->trackList(list);
         }
 
-        template <typename T>
-        Variable<T>* Context<T>::ensureVariable(int idx) {
+        Variable* Context::ensureVariable(int idx) {
             std::pair<int, int> pair(this->nodeId(), idx);
             if (!_variableSpace->hasVariable(pair)) {
-                auto var = new Variable<T>(nullptr, nullptr, this->nodeId(), idx);
+                auto var = new Variable(nullptr, nullptr, this->nodeId(), idx);
                 _variableSpace->putVariable(pair, var);
                 return var;
             } else {
@@ -316,38 +329,112 @@ namespace nd4j {
             }
         }
 
-
-        template <typename T>
-        bool Context<T>::isValueAvailable(int idx) {
+        bool Context::isValueAvailable(int idx) {
             auto var = ensureVariable(idx);
 
             if (var->variableType() == VariableType::NDARRAY) {
-                return var->getNDArray() != nullptr;
+                return var->hasNDArray();
             } else if (var->variableType() == VariableType::ARRAY_LIST) {
-                return var->getNDArrayList() != nullptr;
+                return var->hasNDArrayList();
             }
 
             return false;
         }
 
-        template<typename T>
-        nd4j::memory::Workspace *Context<T>::fWorkspace() {
+        NDArray* Context::getNDArray(int idx) {
+            return array(idx);
+        }
+
+        NDArray* Context::array(int idx) {
+            // we check for fastpath first
+            if (!_fastpath_in.empty() && _fastpath_in.size() > idx) {
+                return _fastpath_in[idx];
+            }
+
+            // if no luck for fastpath - return whatever is available
+            return getVariable(idx)->getNDArray();
+        }
+
+        nd4j::memory::Workspace *Context::fWorkspace() {
             return workspace();
         }
 
-        template<typename T>
-        nd4j::memory::Workspace *Context<T>::tWorkspace() {
+        nd4j::memory::Workspace *Context::tWorkspace() {
             return nullptr;
         }
 
-        template<typename T>
-        nd4j::memory::Workspace *Context<T>::oWorkspace() {
+        nd4j::memory::Workspace *Context::oWorkspace() {
             return nullptr;
         }
 
-        template class ND4J_EXPORT Context<float>;
-        template class ND4J_EXPORT Context<float16>;
-        template class ND4J_EXPORT Context<double>;
+        unsigned long Context::width() {
+            if (!_fastpath_in.empty())
+                return _fastpath_in.size();
+            else
+                return _inputs.size();
+        }
+
+        void Context::setInputArray(int index, NDArray *array, bool removable) {
+            if (_fastpath_in.size() < index + 1)
+                _fastpath_in.resize(index+1);
+
+            _fastpath_in[index] = array;
+            if (removable)
+                _handles.emplace_back(array);
+        }
+
+        void Context::setInputArray(int index, void *buffer, void *shapeInfo, void *specialBuffer, void *specialShapeInfo) {
+            auto array = new NDArray(buffer, reinterpret_cast<Nd4jLong *>(shapeInfo));
+            array->triggerAllocationFlag(false, false);
+
+            if (_fastpath_in.size() < index + 1)
+                _fastpath_in.resize(index+1);
+
+            _fastpath_in[index] = array;
+            _handles.emplace_back(array);
+        }
+
+        void Context::setOutputArray(int index, NDArray *array, bool removable) {
+            if (_fastpath_out.size() < index + 1)
+                _fastpath_out.resize(index+1);
+
+            _fastpath_out[index] = array;
+
+            if (removable)
+                _handles.emplace_back(array);
+        }
+
+        void Context::setOutputArray(int index, void *buffer, void *shapeInfo, void *specialBuffer, void *specialShapeInfo) {
+            if (_fastpath_out.size() < index + 1)
+                _fastpath_out.resize(index+1);
+
+            auto array = new NDArray(buffer, reinterpret_cast<Nd4jLong *>(shapeInfo));
+            array->triggerAllocationFlag(false, false);
+
+            _fastpath_out[index] = array;
+            _handles.emplace_back(array);
+        }
+
+        void Context::setTArguments(double *arguments, int numberOfArguments) {
+            _tArgs.clear();
+            _tArgs.reserve(numberOfArguments);
+            for (int e = 0; e < numberOfArguments; e++)
+                _tArgs.push_back(arguments[e]);
+        }
+
+        void Context::setIArguments(Nd4jLong *arguments, int numberOfArguments) {
+            _iArgs.clear();
+            _iArgs.reserve(numberOfArguments);
+            for (int e = 0; e < numberOfArguments; e++)
+                _iArgs.push_back(arguments[e]);
+        }
+
+        void Context::setBArguments(bool *arguments, int numberOfArguments) {
+            _bArgs.clear();
+            _bArgs.reserve(numberOfArguments);
+            for (int e = 0; e < numberOfArguments; e++)
+                _bArgs.push_back(arguments[e]);
+        }
     }
 }
 

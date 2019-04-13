@@ -28,7 +28,7 @@ namespace ops  {
 //////////////////////////////////////////////////////////////////////////
 CUSTOM_OP_IMPL(tri, -2, 1, false, 0, 1) {
 	
-    NDArray<T>* output = OUTPUT_VARIABLE(0);
+    auto output = OUTPUT_VARIABLE(0);
 
     const int diag = block.getIArguments()->size() > 2 ? INT_ARG(2) : 0;
 
@@ -37,6 +37,13 @@ CUSTOM_OP_IMPL(tri, -2, 1, false, 0, 1) {
 
     return Status::OK();
 }
+
+        DECLARE_TYPES(tri) {
+            getOpDescriptor()
+//                    ->setAllowedInputTypes(0, {ALL_FLOATS})
+//                    ->setAllowedInputTypes(1, {ALL_FLOATS})
+                    ->setAllowedOutputTypes(0, {ALL_FLOATS, ALL_INTS});
+        }
 
 
 DECLARE_SHAPE_FN(tri) {
@@ -52,7 +59,7 @@ DECLARE_SHAPE_FN(tri) {
     outShapeInfo[1] = rows;
     outShapeInfo[2] = cols;
 
-	shape::updateStrides(outShapeInfo, 'c');
+	ShapeUtils::updateStridesAndType(outShapeInfo, block.dataType(), 'c');
 
     return SHAPELIST(outShapeInfo);    
 }

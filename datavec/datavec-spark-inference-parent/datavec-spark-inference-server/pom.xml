@@ -63,12 +63,6 @@
         </dependency>
 
         <dependency>
-            <groupId>org.nd4j</groupId>
-            <artifactId>nd4j-base64</artifactId>
-            <version>${nd4j.version}</version>
-        </dependency>
-
-        <dependency>
             <groupId>com.typesafe.akka</groupId>
             <artifactId>akka-cluster_2.11</artifactId>
             <version>${akka.version}</version>
@@ -137,7 +131,16 @@
                     <groupId>com.google.code.findbugs</groupId>
                     <artifactId>jsr305</artifactId>
                 </exclusion>
+                <exclusion>
+                    <groupId>net.jodah</groupId>
+                    <artifactId>typetools</artifactId>
+                </exclusion>
             </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>net.jodah</groupId>
+            <artifactId>typetools</artifactId>
+            <version>${jodah.typetools.version}</version>
         </dependency>
         <dependency>
             <groupId>com.typesafe.play</groupId>
@@ -188,7 +191,7 @@
             <id>test-nd4j-native</id>
         </profile>
         <profile>
-            <id>test-nd4j-cuda-10.0</id>
+            <id>test-nd4j-cuda-10.1</id>
         </profile>
     </profiles>
 </project>

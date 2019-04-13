@@ -16,10 +16,12 @@
 
 package org.nd4j.linalg.api.ops.impl.transforms;
 
+import lombok.val;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.base.Preconditions;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.util.ArrayUtil;
@@ -27,6 +29,7 @@ import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -39,15 +42,17 @@ public class BinCount extends DynamicCustomOp {
 
     private Integer minLength;
     private Integer maxLength;
+    private DataType outputType;
 
     public BinCount(){ }
 
-    public BinCount(SameDiff sd, SDVariable in, SDVariable weights, Integer minLength, Integer maxLength){
-        super(sd, new SDVariable[]{in}, false);
+    public BinCount(SameDiff sd, SDVariable in, SDVariable weights, Integer minLength, Integer maxLength, DataType outputType){
+        super(sd, weights == null ? new SDVariable[]{in} : new SDVariable[]{in, weights}, false);
         Preconditions.checkState((minLength == null) != (maxLength == null), "Cannot have only one of minLength and maxLength" +
                 "non-null: both must be simultaneously null or non-null. minLength=%s, maxLength=%s", minLength, maxLength);
         this.minLength = minLength;
         this.maxLength = maxLength;
+        this.outputType = outputType;
         addArgs();
     }
 
@@ -72,11 +77,28 @@ public class BinCount extends DynamicCustomOp {
 
     @Override
     public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
-        System.out.println();
+        if(attributesForNode.containsKey("T")) {
+            outputType = TFGraphMapper.convertType(attributesForNode.get("T").getType());
+        }
     }
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
         throw new UnsupportedOperationException("Not supported");
+    }
+
+    @Override
+    public List<DataType> calculateOutputDataTypes(List<DataType> inputTypes){
+        Preconditions.checkState(inputTypes != null && (inputTypes.size() >= 1 && inputTypes.size() <= 4), "Expected 1 to 4 input types, got %s for op %s",
+                inputTypes, getClass());
+
+        //If weights present, same type as weights. Otherwise specified dtype
+        if(inputTypes.size() == 2 || inputTypes.size() == 4){
+            //weights available case or TF import case (args 2/3 are min/max)
+            return Collections.singletonList(inputTypes.get(1));
+        } else {
+            Preconditions.checkNotNull(outputType, "No output type available - output type must be set unless weights input is available");
+            return Collections.singletonList(outputType);
+        }
     }
 }

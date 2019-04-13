@@ -16,10 +16,7 @@
 
 package org.deeplearning4j.nn.conf.layers;
 
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
-import lombok.ToString;
+import lombok.*;
 import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.inputs.InputType;
@@ -61,8 +58,15 @@ public abstract class BaseUpsamplingLayer extends NoParamLayer {
 
 
     @NoArgsConstructor
-    protected static abstract class UpsamplingBuilder<T extends UpsamplingBuilder<T>>
-                    extends Layer.Builder<T> {
+    @Getter
+    @Setter
+    protected static abstract class UpsamplingBuilder<T extends UpsamplingBuilder<T>> extends Layer.Builder<T> {
+
+        /**
+         * An int array to specify upsampling dimensions, the length of which has to equal to the number of spatial
+         * dimensions (e.g. 2 for Upsampling2D etc.)
+         *
+         */
         protected int[] size = new int[] {1};
 
         /**
@@ -71,17 +75,17 @@ public abstract class BaseUpsamplingLayer extends NoParamLayer {
          * @param size int for upsampling
          */
         protected UpsamplingBuilder(int size) {
-            this.size = new int[] {size};
+            this.setSize(new int[] {size});
         }
 
         /**
-         * An int array to specify upsampling dimensions, the length of which has to equal to the number of
-         * spatial dimensions (e.g. 2 for Upsampling2D etc.)
+         * An int array to specify upsampling dimensions, the length of which has to equal to the number of spatial
+         * dimensions (e.g. 2 for Upsampling2D etc.)
          *
          * @param size int for upsampling
          */
         protected UpsamplingBuilder(int[] size) {
-            this.size = size;
+            this.setSize(size);
         }
     }
 

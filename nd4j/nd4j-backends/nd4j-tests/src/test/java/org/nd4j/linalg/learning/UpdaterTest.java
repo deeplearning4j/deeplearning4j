@@ -25,8 +25,6 @@ import org.nd4j.linalg.api.rng.distribution.Distribution;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.learning.config.*;
-import org.nd4j.linalg.learning.config.AdaGrad;
-import org.nd4j.linalg.learning.legacy.*;
 
 import static org.junit.Assert.assertEquals;
 

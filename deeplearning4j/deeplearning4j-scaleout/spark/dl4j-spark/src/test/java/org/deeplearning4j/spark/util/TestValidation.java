@@ -46,7 +46,7 @@ public class TestValidation extends BaseSparkTest {
         File f = folder.newFolder();
 
         for( int i=0; i<3; i++ ) {
-            DataSet ds = new DataSet(Nd4j.create(10), Nd4j.create(10));
+            DataSet ds = new DataSet(Nd4j.create(1,10), Nd4j.create(1,10));
             ds.save(new File(f, i + ".bin"));
         }
 
@@ -72,7 +72,7 @@ public class TestValidation extends BaseSparkTest {
 
 
         //Add a DataSet with missing features:
-        new DataSet(null, Nd4j.create(10)).save(f3);
+        new DataSet(null, Nd4j.create(1,10)).save(f3);
 
         r = SparkDataValidation.validateDataSets(sc, f.toURI().toString());
         exp = ValidationResult.builder()
@@ -92,7 +92,7 @@ public class TestValidation extends BaseSparkTest {
         }
 
         //Add DataSet with incorrect labels shape:
-        new DataSet(Nd4j.create(10), Nd4j.create(20)).save(f3);
+        new DataSet(Nd4j.create(1,10), Nd4j.create(1,20)).save(f3);
         r = SparkDataValidation.validateDataSets(sc, f.toURI().toString(), new int[]{-1,10}, new int[]{-1,10});
         exp = ValidationResult.builder()
                 .countTotal(4)
@@ -110,7 +110,7 @@ public class TestValidation extends BaseSparkTest {
         File f = folder.newFolder();
 
         for( int i=0; i<3; i++ ) {
-            MultiDataSet ds = new MultiDataSet(Nd4j.create(10), Nd4j.create(10));
+            MultiDataSet ds = new MultiDataSet(Nd4j.create(1,10), Nd4j.create(1,10));
             ds.save(new File(f, i + ".bin"));
         }
 
@@ -136,7 +136,7 @@ public class TestValidation extends BaseSparkTest {
 
 
         //Add a MultiDataSet with missing features:
-        new MultiDataSet(null, Nd4j.create(10)).save(f3);
+        new MultiDataSet(null, Nd4j.create(1,10)).save(f3);
 
         r = SparkDataValidation.validateMultiDataSets(sc, f.toURI().toString());
         exp = ValidationResult.builder()
@@ -156,7 +156,7 @@ public class TestValidation extends BaseSparkTest {
         }
 
         //Add MultiDataSet with incorrect labels shape:
-        new MultiDataSet(Nd4j.create(10), Nd4j.create(20)).save(f3);
+        new MultiDataSet(Nd4j.create(1,10), Nd4j.create(1,20)).save(f3);
         r = SparkDataValidation.validateMultiDataSets(sc, f.toURI().toString(), Arrays.asList(new int[]{-1,10}),
                 Arrays.asList(new int[]{-1,10}));
         exp = ValidationResult.builder()
@@ -169,8 +169,8 @@ public class TestValidation extends BaseSparkTest {
         assertEquals(exp, r);
 
         //Add a MultiDataSet with incorrect number of feature arrays:
-        new MultiDataSet(new INDArray[]{Nd4j.create(10), Nd4j.create(10)},
-                new INDArray[]{Nd4j.create(10)}).save(f3);
+        new MultiDataSet(new INDArray[]{Nd4j.create(1,10), Nd4j.create(1,10)},
+                new INDArray[]{Nd4j.create(1,10)}).save(f3);
         r = SparkDataValidation.validateMultiDataSets(sc, f.toURI().toString(), Arrays.asList(new int[]{-1,10}),
                 Arrays.asList(new int[]{-1,10}));
         exp = ValidationResult.builder()

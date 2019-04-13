@@ -36,8 +36,9 @@
 #include <helper_cuda.h>
 
 #endif
-
+#include <DebugInfo.h>
 namespace nd4j {
+    class NDArray;
     class DebugHelper {
     public:
 
@@ -72,6 +73,8 @@ namespace nd4j {
             }
         }
 #endif
+        static DebugInfo debugStatistics(NDArray const* input);
+        static void retrieveDebugStatistics(DebugInfo* statistics, NDArray const* input);
     };
 }
 

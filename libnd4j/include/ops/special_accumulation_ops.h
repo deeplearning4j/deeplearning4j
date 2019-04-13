@@ -23,43 +23,45 @@
 
 #include <templatemath.h>
 #include <helpers/TAD.h>
+#include <helpers/ConstantTadHelper.h>
 //#include <ops/ops.h>
 //#include <loops/reduce.h>
 
 namespace simdOps {
 
-    template<typename T>
+    template<typename T, typename Z>
     class LogSumExp {
     public:
         static const bool requiresSpecialAccumulation = true;
 
+        constexpr static functions::ReduceType reduceType = functions::ReduceType::SUM;
 
         op_def static T startingValue(const T *input) {
             return (T) 0.0f;
         }
 
-        op_def static T merge(T old, T opOutput, T *extraParams) {
+        op_def static Z merge(T old, T opOutput, Z *extraParams) {
             return opOutput + old;
         }
 
-        op_def static T update(T old, T opOutput, T *extraParams) {
+        op_def static T update(T old, T opOutput, Z *extraParams) {
             return opOutput + old;
         }
 
-        op_def static T op(T d1, T d2) {
-            return nd4j::math::nd4j_exp<T>(d1 - d2);
+        op_def static Z op(T d1, T d2) {
+            return nd4j::math::nd4j_exp<T, Z>(d1 - d2);
         }
 
-        op_def static T op(T d1, T* extraParams) {
-            return nd4j::math::nd4j_exp<T>(d1 - extraParams[0]);
+        op_def static Z op(T d1, Z* extraParams) {
+            return nd4j::math::nd4j_exp<Z, Z>(static_cast<Z>(d1) - extraParams[0]);
         }
 
-        op_def static T postProcess(T reduction, Nd4jLong n, T *extraParams) {
-            return extraParams[0] + nd4j::math::nd4j_log<T>(reduction);
+        op_def static Z postProcess(T reduction, Nd4jLong n, Z *extraParams) {
+            return extraParams[0] + nd4j::math::nd4j_log<T, Z>(reduction);
         }
 
 #ifdef __CUDACC__
-        __device__ static inline void aggregatePartials(T *sPartials, int tid, int numItems, T *extraParams) {
+        __device__ static inline void aggregatePartials(Z *sPartials, int tid, int numItems, Z *extraParams) {
             // start the shared memory loop on the next power of 2 less
             // than the block size.  If block size is not a power of 2,
             // accumulate the intermediate sums in the remainder range.
@@ -88,57 +90,45 @@ namespace simdOps {
         static inline __device__ void execSpecialCuda(
 				T *dx,
 				Nd4jLong *xShapeInfo,
-				T *extraParams,
-				T *result,
+				Z *extraParams,
+				Z *result,
 				Nd4jLong *resultShapeInfo,
 				int *dimension,
 				int dimensionLength,
-				T *reductionBuffer,
-				UnifiedSharedMemory *manager,
+				Z *reductionBuffer,
 				Nd4jLong *tadOnlyShapeInfo,
 				Nd4jLong *tadOffsets) {
 
 				// we assume that RESULT already holds max values
 
 				//shared memory space for storing intermediate results
-				__shared__ T *sPartials;
+				__shared__ Z *sPartials;
 
 				//                __shared__ shape::TAD *tad;
 				__shared__ Nd4jLong tadLength;
-				__shared__ Nd4jLong tadRank;
 				__shared__ Nd4jLong numTads;
-				__shared__ Nd4jLong *tadShape;
-				__shared__ Nd4jLong *tadStride;
+
 				if (threadIdx.x == 0) {
 				    extern __shared__ unsigned char shmem[];
-				    sPartials = (T *) shmem;
+				    sPartials = (Z *) shmem;
 					tadLength = shape::tadLength(xShapeInfo, dimension, dimensionLength);
-					tadRank = shape::rank(tadOnlyShapeInfo);
-					numTads = shape::length(xShapeInfo) / tadLength;
-
-					tadShape = shape::shapeOf(tadOnlyShapeInfo);
-					tadStride = shape::stride(tadOnlyShapeInfo);
+					numTads = shape::length(xShapeInfo) / tadLength;					
 				}
-				__syncthreads();
-
-				Nd4jLong xCoord[MAX_RANK];
+				__syncthreads();				
 
 				for (int r = blockIdx.x; r < numTads; r += gridDim.x) {
 					auto tadOffsetForBlock = tadOffsets[r];
 
 					sPartials[threadIdx.x] = startingValue(dx + tadOffsetForBlock);
 
-					for (int i = threadIdx.x; i < tadLength; i += blockDim.x) {
-						shape::ind2subC(tadRank, tadShape, i, xCoord);
-						auto xOffset = shape::getOffset(tadOffsetForBlock, tadShape, tadStride, xCoord, tadRank);
-
+					for (int i = threadIdx.x; i < tadLength; i += blockDim.x) {						
+						auto xOffset = tadOffsetForBlock + shape::getIndexOffset(i, tadOnlyShapeInfo, tadLength);
 						sPartials[threadIdx.x] = update(sPartials[threadIdx.x], op(dx[xOffset], result[r]), extraParams);
 					}
 					__syncthreads();
 
 					// aggregate. do NOT reduce for elements > tadLength
 					aggregatePartials(sPartials, threadIdx.x, nd4j::math::nd4j_min<int>(blockDim.x, tadLength), &result[r]);
-
 
 					__syncthreads();
 					if (threadIdx.x == 0)
@@ -149,8 +139,8 @@ namespace simdOps {
 
         static void execSpecial(T *x,
                          Nd4jLong *xShapeInfo,
-                         T *extraParams,
-                         T *result,
+                         Z *extraParams,
+                         Z *result,
                          Nd4jLong *resultShapeInfoBuffer,
                          int *dimension,
                          int dimensionLength,
@@ -160,20 +150,14 @@ namespace simdOps {
 
             auto tadOnlyShapeInfo = tadShapeInfo;
             auto tadOffsets = tadOffset;
-            shape::TAD *tad = nullptr;
 
             if (tadOnlyShapeInfo == nullptr || tadOffsets == nullptr) {
-                tad = new shape::TAD(xShapeInfo, dimension, dimensionLength);
-                tad->createTadOnlyShapeInfo();
-                tad->createOffsets();
-
-                if (tad->dimensionLength < 1) {
-                    delete tad;
+                if (dimensionLength < 1)
                     return;
-                }
 
-                tadOnlyShapeInfo = tad->tadOnlyShapeInfo;
-                tadOffsets = tad->tadOffsets;
+                auto tadPack = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(xShapeInfo, dimension, dimensionLength);
+                tadOnlyShapeInfo = tadPack.primaryShapeInfo();
+                tadOffsets = tadPack.primaryOffsets();
             }
 
 
@@ -187,7 +171,7 @@ namespace simdOps {
 
             if (tadEWS > 0 && (numTads == 1 || shape::isVector(tadOnlyShapeInfo) || shape::isScalar(tadOnlyShapeInfo))) {
 
-#pragma omp parallel for schedule(guided) num_threads(num_threads) if (num_threads > 1) proc_bind(AFFINITY) default(shared)
+                PRAGMA_OMP_PARALLEL_FOR_THREADS(num_threads)
                 for (int i = 0; i < resultLength; i++) {
 
                     T *iter = x + tadOffsets[i];
@@ -207,32 +191,21 @@ namespace simdOps {
                 }
             }
             else {
-                auto tadShape = shape::shapeOf(tadOnlyShapeInfo);
-                auto tadStride = shape::stride(tadOnlyShapeInfo);
-                auto tadRank = shape::rank(tadOnlyShapeInfo);
 
-#pragma omp  parallel for schedule(guided) num_threads(num_threads) if (num_threads > 1) proc_bind(AFFINITY) default(shared)
+                PRAGMA_OMP_PARALLEL_FOR_THREADS(num_threads)
                 for (int i = 0; i < resultLength; i++) {
 
                     auto offset = tadOffsets[i];
-                    Nd4jLong xCoord[MAX_RANK];
-
                     T start = startingValue(x + offset);
 
-                    for (int j = 0; j < tadLength; j++) {
-                        shape::ind2subC(tadRank, tadShape, j, xCoord);
-                        auto xOffset = shape::getOffset(offset, tadShape, tadStride, xCoord, tadRank);
-
+                    for (int j = 0; j < tadLength; j++) {                        
+                        auto xOffset = offset + shape::getIndexOffset(j, tadOnlyShapeInfo, tadLength);
                         start = update(start, op(x[xOffset], result[i]), extraParams);
                     }
 
                     result[i] = postProcess(start, tadLength, &result[i]);;
                 }
             }
-
-            if (tad != nullptr)
-                delete tad;
-
         }
     };
 }

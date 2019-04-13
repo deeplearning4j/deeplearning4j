@@ -96,7 +96,37 @@ class FlatGraph(object):
             return obj
         return None
 
-def FlatGraphStart(builder): builder.StartObject(5)
+    # FlatGraph
+    def Placeholders(self, j):
+        o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(14))
+        if o != 0:
+            a = self._tab.Vector(o)
+            return self._tab.String(a + flatbuffers.number_types.UOffsetTFlags.py_type(j * 4))
+        return ""
+
+    # FlatGraph
+    def PlaceholdersLength(self):
+        o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(14))
+        if o != 0:
+            return self._tab.VectorLen(o)
+        return 0
+
+    # FlatGraph
+    def LossVariables(self, j):
+        o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(16))
+        if o != 0:
+            a = self._tab.Vector(o)
+            return self._tab.String(a + flatbuffers.number_types.UOffsetTFlags.py_type(j * 4))
+        return ""
+
+    # FlatGraph
+    def LossVariablesLength(self):
+        o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(16))
+        if o != 0:
+            return self._tab.VectorLen(o)
+        return 0
+
+def FlatGraphStart(builder): builder.StartObject(7)
 def FlatGraphAddId(builder, id): builder.PrependInt64Slot(0, id, 0)
 def FlatGraphAddVariables(builder, variables): builder.PrependUOffsetTRelativeSlot(1, flatbuffers.number_types.UOffsetTFlags.py_type(variables), 0)
 def FlatGraphStartVariablesVector(builder, numElems): return builder.StartVector(4, numElems, 4)
@@ -105,4 +135,8 @@ def FlatGraphStartNodesVector(builder, numElems): return builder.StartVector(4, 
 def FlatGraphAddOutputs(builder, outputs): builder.PrependUOffsetTRelativeSlot(3, flatbuffers.number_types.UOffsetTFlags.py_type(outputs), 0)
 def FlatGraphStartOutputsVector(builder, numElems): return builder.StartVector(4, numElems, 4)
 def FlatGraphAddConfiguration(builder, configuration): builder.PrependUOffsetTRelativeSlot(4, flatbuffers.number_types.UOffsetTFlags.py_type(configuration), 0)
+def FlatGraphAddPlaceholders(builder, placeholders): builder.PrependUOffsetTRelativeSlot(5, flatbuffers.number_types.UOffsetTFlags.py_type(placeholders), 0)
+def FlatGraphStartPlaceholdersVector(builder, numElems): return builder.StartVector(4, numElems, 4)
+def FlatGraphAddLossVariables(builder, lossVariables): builder.PrependUOffsetTRelativeSlot(6, flatbuffers.number_types.UOffsetTFlags.py_type(lossVariables), 0)
+def FlatGraphStartLossVariablesVector(builder, numElems): return builder.StartVector(4, numElems, 4)
 def FlatGraphEnd(builder): return builder.EndObject()

@@ -37,9 +37,9 @@ import java.util.Collection;
  */
 public class LastTimeStep extends BaseWrapperLayer {
 
-    private LastTimeStep(){ }
+    private LastTimeStep() {}
 
-    public LastTimeStep(Layer underlying){
+    public LastTimeStep(Layer underlying) {
         super(underlying);
         this.layerName = underlying.getLayerName(); // needed for keras import to match names
     }
@@ -50,20 +50,22 @@ public class LastTimeStep extends BaseWrapperLayer {
 
 
     @Override
-    public org.deeplearning4j.nn.api.Layer instantiate(NeuralNetConfiguration conf, Collection<TrainingListener> trainingListeners,
-                                                       int layerIndex, INDArray layerParamsView, boolean initializeParams) {
+    public org.deeplearning4j.nn.api.Layer instantiate(NeuralNetConfiguration conf,
+                    Collection<TrainingListener> trainingListeners, int layerIndex, INDArray layerParamsView,
+                    boolean initializeParams) {
         NeuralNetConfiguration conf2 = conf.clone();
-        conf2.setLayer(((LastTimeStep)conf2.getLayer()).getUnderlying());
-        return new LastTimeStepLayer(underlying.instantiate(conf2, trainingListeners, layerIndex, layerParamsView, initializeParams));
+        conf2.setLayer(((LastTimeStep) conf2.getLayer()).getUnderlying());
+        return new LastTimeStepLayer(underlying.instantiate(conf2, trainingListeners, layerIndex, layerParamsView,
+                        initializeParams));
     }
 
     @Override
     public InputType getOutputType(int layerIndex, InputType inputType) {
-        if(inputType.getType() != InputType.Type.RNN){
+        if (inputType.getType() != InputType.Type.RNN) {
             throw new IllegalArgumentException("Require RNN input type - got " + inputType);
         }
         InputType outType = underlying.getOutputType(layerIndex, inputType);
-        InputType.InputTypeRecurrent r = (InputType.InputTypeRecurrent)outType;
+        InputType.InputTypeRecurrent r = (InputType.InputTypeRecurrent) outType;
         return InputType.feedForward(r.getSize());
     }
 }

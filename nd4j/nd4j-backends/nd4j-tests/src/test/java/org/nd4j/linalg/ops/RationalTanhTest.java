@@ -20,6 +20,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.gradient.RationalTanhDerivative;
 import org.nd4j.linalg.factory.Nd4j;
@@ -44,7 +45,7 @@ public class RationalTanhTest extends BaseNd4jTest {
 
         double eps = 1e-6;
         INDArray A = Nd4j.linspace(-3, 3, 10).reshape(2, 5);
-        INDArray ADer = Nd4j.getExecutioner().execAndReturn(new RationalTanhDerivative(A.dup()));
+        INDArray ADer = Nd4j.getExecutioner().exec(new RationalTanhDerivative(A.dup()));
 
         double[] a = A.data().asDouble();
         double[] aDer = ADer.data().asDouble();

@@ -37,28 +37,41 @@ namespace nd4j {
 
             input->cast(output, newType);
             */
+			
+            if(input->isEmpty()){
+                REQUIRE_TRUE(output->isEmpty(), 0, "If input is empty, output array must also be empty");
+                return Status::OK();
+			}
 
             if (!block.isInplace())
                 output->assign(input);
             
             STORE_RESULT(output);
-            return ND4J_STATUS_OK;
+            return Status::OK();
         }
         DECLARE_SYN(Cast, cast);
 
         DECLARE_SHAPE_FN(cast) {
             auto inShape = inputShape->at(0);
 
-            int it = INT_ARG(0);
+            auto it = INT_ARG(0);
             DataType newType = DataTypeUtils::fromInt(it);
 
-            // FIXME: remove memcpy here
             Nd4jLong *newShape;
             COPY_SHAPE(inShape, newShape);
-
-            // TODO: put sign of dtype into shapeinfo?
+            ArrayOptions::setDataType(newShape, newType);
+			
+            if(INPUT_VARIABLE(0)->isEmpty()){
+                ArrayOptions::setPropertyBit(newShape, ARRAY_EMPTY);
+            }
 
             return SHAPELIST(newShape);
+        }
+
+        DECLARE_TYPES(cast) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setAllowedOutputTypes(nd4j::DataType::ANY);
         }
     }
 }

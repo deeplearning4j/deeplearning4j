@@ -18,6 +18,7 @@
 #include <graph/RandomGenerator.h>
 #include <array/DataTypeUtils.h>
 #include <graph/Graph.h>
+#include <array>
 
 using namespace nd4j;
 using namespace nd4j::graph;
@@ -166,6 +167,9 @@ TEST_F(GraphRandomGeneratorTests, Sequential_Test_4) {
     ASSERT_NE(y1, z1);
 }
 
+
+//#ifndef __clang__
+
 TEST_F(GraphRandomGeneratorTests, Long_Test_1) {
     nd4j::graph::RandomGenerator g0(119, 5);
     nd4j::graph::RandomGenerator g1(119, 5);
@@ -257,3 +261,5 @@ TEST_F(GraphRandomGeneratorTests, FloatingPoint_Test_1) {
     // and positives
     ASSERT_NE(z0.size(), negs);
 }
+
+//#endif

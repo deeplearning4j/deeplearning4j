@@ -22,6 +22,11 @@
 
 
 namespace nd4j {
+    SimpleReadWriteLock::SimpleReadWriteLock(const SimpleReadWriteLock& other) {
+        _read_locks.store(other._read_locks.load());
+        _write_locks.store(other._write_locks.load());
+    }
+
     SimpleReadWriteLock::SimpleReadWriteLock(){
         _read_locks.store(0);
         _write_locks.store(0);

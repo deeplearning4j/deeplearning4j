@@ -24,8 +24,10 @@
 #include <helpers/shape.h>
 #include <helpers/TAD.h>
 #include <specials.h>
+#include <dll.h>
 #include <NDArray.h>
 #include <ops/declarable/CustomOperations.h>
+#include <types/types.h>
 
 namespace nd4j {
 
@@ -34,20 +36,22 @@ namespace nd4j {
 * along a particular dimension
 */
 template <typename T>
-void SpecialMethods<T>::concatCpuGeneric(int dimension, int numArrays, Nd4jPointer *data, Nd4jPointer *inputShapeInfo, T *result, Nd4jLong *resultShapeInfo) {
+void SpecialMethods<T>::concatCpuGeneric(int dimension, int numArrays, Nd4jPointer *data, Nd4jPointer *inputShapeInfo, void *vresult, Nd4jLong *resultShapeInfo) {
+    auto result = reinterpret_cast<T *>(vresult);
 
     std::vector<Nd4jLong> iArgs = {dimension};
-    std::vector<T> tArgs;
-    std::vector<NDArray<T>*> inputs(numArrays);
-    std::vector<NDArray<T>*> outputs(1);
+    std::vector<double> tArgs;
+    std::vector<bool> bArgsEmpty;
+    std::vector<NDArray*> inputs(numArrays);
+    std::vector<NDArray*> outputs(1);
 
-    outputs[0] = new NDArray<T>(static_cast<T*>(result), static_cast<Nd4jLong*>(resultShapeInfo));
+    outputs[0] = new NDArray(static_cast<void*>(result), static_cast<Nd4jLong*>(resultShapeInfo));
 
     for(int i = 0; i < numArrays; ++i)
-        inputs[i] = new NDArray<T>(static_cast<T*>(data[i]), static_cast<Nd4jLong*>(inputShapeInfo[i]));    
+        inputs[i] = new NDArray(static_cast<void *>(data[i]), static_cast<Nd4jLong*>(inputShapeInfo[i]));
 
-    nd4j::ops::concat<T> op;    
-    auto status = op.execute(inputs, outputs, tArgs, iArgs);
+    nd4j::ops::concat op;
+    auto status = op.execute(inputs, outputs, tArgs, iArgs, bArgsEmpty);
     if(status != Status::OK())
         throw std::runtime_error("concatCpuGeneric fails to be executed !");
     
@@ -67,7 +71,10 @@ void SpecialMethods<T>::concatCpuGeneric(int dimension, int numArrays, Nd4jPoint
  * @param length
  */
     template<typename T>
-    void SpecialMethods<T>::accumulateGeneric(T **x, T *z, int n, const Nd4jLong length) {
+    void SpecialMethods<T>::accumulateGeneric(void **vx, void *vz, Nd4jLong *zShapeInfo, int n, const Nd4jLong length) {
+        auto z = reinterpret_cast<T *>(vz);
+        auto x = reinterpret_cast<T **>(vx);
+
         // aggregation step
 #ifdef _OPENMP
         int _threads = omp_get_max_threads();
@@ -76,7 +83,7 @@ void SpecialMethods<T>::concatCpuGeneric(int dimension, int numArrays, Nd4jPoint
     int _threads = 4;
 #endif
 
-#pragma omp parallel for simd num_threads(_threads) schedule(guided) default(shared) proc_bind(close)
+        PRAGMA_OMP_PARALLEL_FOR_SIMD
         for (Nd4jLong i = 0; i < length; i++) {
 
             for (Nd4jLong ar = 0; ar < n; ar++) {
@@ -97,13 +104,15 @@ void SpecialMethods<T>::concatCpuGeneric(int dimension, int numArrays, Nd4jPoint
  * @param propagate
  */
     template<typename T>
-    void SpecialMethods<T>::averageGeneric(T **x, T *z, int n, const Nd4jLong length, bool propagate) {
+    void SpecialMethods<T>::averageGeneric(void **vx, void *vz, Nd4jLong *zShapeInfo, int n, const Nd4jLong length, bool propagate) {
+        auto z = reinterpret_cast<T *>(vz);
+        auto x = reinterpret_cast<T **>(vx);
 
         if (z == nullptr) {
             //code branch for absent Z
             z = x[0];
 
-#pragma omp simd
+            PRAGMA_OMP_SIMD
             for (Nd4jLong i = 0; i < length; i++) {
                 z[i] /= n;
             }
@@ -115,7 +124,7 @@ void SpecialMethods<T>::concatCpuGeneric(int dimension, int numArrays, Nd4jPoint
             int _threads = 4;
 #endif
 
-#pragma omp parallel for simd num_threads(_threads) schedule(guided) default(shared) proc_bind(close)
+            PRAGMA_OMP_PARALLEL_FOR_SIMD
             for (Nd4jLong i = 0; i < length; i++) {
 
                 for (Nd4jLong ar = 1; ar < n; ar++) {
@@ -124,7 +133,6 @@ void SpecialMethods<T>::concatCpuGeneric(int dimension, int numArrays, Nd4jPoint
             }
 
             // instead of doing element-wise propagation, we just issue memcpy to propagate data
-#pragma omp parallel for num_threads(_threads) default(shared) proc_bind(close)
             for (Nd4jLong ar = 1; ar < n; ar++) {
                 memcpy(x[ar], z, length * sizeof(T));
             }
@@ -142,7 +150,7 @@ void SpecialMethods<T>::concatCpuGeneric(int dimension, int numArrays, Nd4jPoint
             int _threads = 4;
 #endif
 
-#pragma omp parallel for simd num_threads(_threads) schedule(guided) default(shared) proc_bind(close)
+            PRAGMA_OMP_PARALLEL_FOR_SIMD
             for (Nd4jLong i = 0; i < length; i++) {
 
                 for (Nd4jLong ar = 0; ar < n; ar++) {
@@ -151,7 +159,6 @@ void SpecialMethods<T>::concatCpuGeneric(int dimension, int numArrays, Nd4jPoint
             }
 
             // instead of doing element-wise propagation, we just issue memcpy to propagate data
-#pragma omp parallel for num_threads(_threads) default(shared) proc_bind(close)
             for (Nd4jLong ar = 0; ar < n; ar++) {
                 memcpy(x[ar], z, length * sizeof(T));
             }
@@ -162,21 +169,12 @@ void SpecialMethods<T>::concatCpuGeneric(int dimension, int numArrays, Nd4jPoint
     Nd4jLong SpecialMethods<T>::getPosition(Nd4jLong *xShapeInfo, Nd4jLong index) {
         auto xEWS = shape::elementWiseStride(xShapeInfo);
 
-        if (xEWS == 1) {
-            return index;
-        } else if (xEWS > 1) {
+        if (xEWS == 1) 
+            return index;        
+        else if (xEWS > 1)
             return index * xEWS;
-        } else {
-            Nd4jLong xCoord[MAX_RANK];
-            int xRank = shape::rank(xShapeInfo);
-            auto xShape = shape::shapeOf(xShapeInfo);
-            auto xStride = shape::stride(xShapeInfo);
-
-            shape::ind2subC(xRank, xShape, index, xCoord);
-            auto xOffset = shape::getOffset(0, xShape, xStride, xCoord, xRank);
-
-            return xOffset;
-        }
+        else 
+            return shape::getIndexOffset(index, xShapeInfo, shape::length(xShapeInfo));
     }
 
     template<typename T>
@@ -235,11 +233,11 @@ void SpecialMethods<T>::concatCpuGeneric(int dimension, int numArrays, Nd4jPoint
     }
 
     template<typename T>
-    void SpecialMethods<T>::quickSort_parallel(T* array, Nd4jLong *xShapeInfo, Nd4jLong lenArray, int numThreads, bool descending){
-
+    void SpecialMethods<T>::quickSort_parallel(void *varray, Nd4jLong *xShapeInfo, Nd4jLong lenArray, int numThreads, bool descending){
+        auto array = reinterpret_cast<T *>(varray);
         int cutoff = 1000;
 
-#pragma omp parallel num_threads(numThreads)
+        PRAGMA_OMP_PARALLEL_THREADS(numThreads)
         {
 #pragma omp single nowait
             {
@@ -249,7 +247,8 @@ void SpecialMethods<T>::concatCpuGeneric(int dimension, int numArrays, Nd4jPoint
 
     }
 
-    int nextPowerOf2(int number) {
+    template <typename T>
+    int SpecialMethods<T>::nextPowerOf2(int number) {
         int pos = 0;
 
         while (number > 0) {
@@ -259,7 +258,8 @@ void SpecialMethods<T>::concatCpuGeneric(int dimension, int numArrays, Nd4jPoint
         return (int) pow(2, pos);
     }
 
-    int lastPowerOf2(int number) {
+    template <typename T>
+    int SpecialMethods<T>::lastPowerOf2(int number) {
         int p = 1;
         while (p <= number)
             p <<= 1;
@@ -270,18 +270,22 @@ void SpecialMethods<T>::concatCpuGeneric(int dimension, int numArrays, Nd4jPoint
 
 
     template<typename T>
-    void SpecialMethods<T>::sortGeneric(T *x, Nd4jLong *xShapeInfo, bool descending) {
+    void SpecialMethods<T>::sortGeneric(void *vx, Nd4jLong *xShapeInfo, bool descending) {
+        auto x = reinterpret_cast<T *>(vx);
+
         quickSort_parallel(x, xShapeInfo, shape::length(xShapeInfo), omp_get_max_threads(), descending);
     }
 
     template<typename T>
-    void SpecialMethods<T>::sortTadGeneric(T *x, Nd4jLong *xShapeInfo, int *dimension, int dimensionLength, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets, bool descending) {
+    void SpecialMethods<T>::sortTadGeneric(void *vx, Nd4jLong *xShapeInfo, int *dimension, int dimensionLength, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets, bool descending) {
+        auto x = reinterpret_cast<T *>(vx);
+
         //quickSort_parallel(x, xShapeInfo, shape::length(xShapeInfo), omp_get_max_threads(), descending);
         Nd4jLong xLength = shape::length(xShapeInfo);
         Nd4jLong xTadLength = shape::tadLength(xShapeInfo, dimension, dimensionLength);
         int numTads = xLength / xTadLength;
 
-#pragma omp parallel for
+        PRAGMA_OMP_PARALLEL_FOR
         for (int r = 0; r < numTads; r++) {
             T *dx = x + tadOffsets[r];
 
@@ -291,7 +295,8 @@ void SpecialMethods<T>::concatCpuGeneric(int dimension, int numArrays, Nd4jPoint
 
 
     template<typename T>
-    void SpecialMethods<T>::decodeBitmapGeneric(void *dx, Nd4jLong N, T *dz) {
+    void SpecialMethods<T>::decodeBitmapGeneric(void *dx, Nd4jLong N, void *vz, Nd4jLong *zShapeInfo) {
+        auto dz = reinterpret_cast<T *>(vz);
         auto x = reinterpret_cast<int *>(dx);
         Nd4jLong lim = N / 16 + 5;
 
@@ -300,7 +305,7 @@ void SpecialMethods<T>::concatCpuGeneric(int dimension, int numArrays, Nd4jPoint
         float threshold = fb.f_;
 
 
-#pragma omp parallel for schedule(guided) proc_bind(close)
+        PRAGMA_OMP_PARALLEL_FOR
         for (Nd4jLong e = 4; e < lim; e++) {
 
             for (int bitId = 0; bitId < 16; bitId++) {
@@ -320,7 +325,9 @@ void SpecialMethods<T>::concatCpuGeneric(int dimension, int numArrays, Nd4jPoint
     }
 
     template<typename T>
-    Nd4jLong SpecialMethods<T>::encodeBitmapGeneric(T *dx, Nd4jLong N, int *dz, float threshold) {
+    Nd4jLong SpecialMethods<T>::encodeBitmapGeneric(void *vx, Nd4jLong *xShapeInfo, Nd4jLong N, int *dz, float threshold) {
+        auto dx = reinterpret_cast<T *>(vx);
+
         Nd4jLong retVal = 0L;
 
 #pragma omp parallel for schedule(guided) proc_bind(close) reduction(+:retVal)
@@ -366,7 +373,5 @@ void SpecialMethods<T>::concatCpuGeneric(int dimension, int numArrays, Nd4jPoint
         return retVal;
     }
 
-    template class ND4J_EXPORT SpecialMethods<float>;
-    template class ND4J_EXPORT SpecialMethods<float16>;
-    template class ND4J_EXPORT SpecialMethods<double>;
+    BUILD_SINGLE_TEMPLATE(template class SpecialMethods, , LIBND4J_TYPES);
 }

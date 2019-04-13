@@ -22,6 +22,7 @@ import org.deeplearning4j.exception.DL4JInvalidConfigException;
 import org.deeplearning4j.optimize.api.StepFunction;
 import org.deeplearning4j.optimize.solvers.accumulation.FancyBlockingQueue;
 import org.deeplearning4j.optimize.solvers.accumulation.GradientsAccumulator;
+import org.deeplearning4j.optimize.solvers.accumulation.IndexedTail;
 import org.deeplearning4j.spark.parameterserver.networking.v1.messages.SilentUpdatesMessage;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -67,7 +68,7 @@ public class SilentTrainingDriver implements TrainingDriver<SilentUpdatesMessage
         We use this buffer to provide double buffering for incoming messages.
         So we store incoming messages right here, and apply them as time comes
      */
-    protected transient BlockingQueue<INDArray> updatesBuffer;
+    protected transient IndexedTail updatesBuffer;
 
     // these 2 are not used here
     protected transient Storage storage;
@@ -80,7 +81,7 @@ public class SilentTrainingDriver implements TrainingDriver<SilentUpdatesMessage
         this.updatesCount = new AtomicLong(0);
 
         // TODO: make this configurable
-        this.updatesBuffer = new FancyBlockingQueue<>(new LinkedBlockingQueue<>(1024));
+        this.updatesBuffer = new IndexedTail(1);
 
         // FBQ will guarantee that all workers using given queue will be applying the same updates in the same order
         this.accumulator.setExternalSource(updatesBuffer);
@@ -105,7 +106,7 @@ public class SilentTrainingDriver implements TrainingDriver<SilentUpdatesMessage
      * This method is viable only at Spark Workers, Master node will always have empty buffer here by design
      * @return
      */
-    public BlockingQueue<INDArray> getUpdatesBuffer() {
+    public IndexedTail getUpdatesBuffer() {
         return updatesBuffer;
     }
 
@@ -121,7 +122,7 @@ public class SilentTrainingDriver implements TrainingDriver<SilentUpdatesMessage
 
         // if TrainingDriver is temporary disabled - remove existing messages from queue
         if (reallyBypass) {
-            updatesBuffer.clear();
+            //updatesBuffer.clear();
         }
     }
 

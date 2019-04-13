@@ -21,6 +21,10 @@ import org.deeplearning4j.TestUtils;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.inputs.InputType;
+import org.deeplearning4j.nn.conf.layers.DenseLayer;
+import org.deeplearning4j.nn.conf.layers.LSTM;
+import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.conf.layers.recurrent.LastTimeStep;
 import org.deeplearning4j.nn.conf.layers.recurrent.SimpleRnn;
 import org.deeplearning4j.nn.graph.ComputationGraph;
@@ -29,8 +33,14 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
+import org.nd4j.linalg.learning.config.AdaGrad;
 
-import static org.junit.Assert.assertEquals;
+import static org.deeplearning4j.nn.api.OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT;
+import static org.deeplearning4j.nn.weights.WeightInit.XAVIER_UNIFORM;
+import static org.junit.Assert.*;
+import static org.nd4j.linalg.activations.Activation.IDENTITY;
+import static org.nd4j.linalg.activations.Activation.TANH;
+import static org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction.MSE;
 
 public class TestLastTimeStepLayer extends BaseDL4JTest {
 
@@ -76,4 +86,54 @@ public class TestLastTimeStepLayer extends BaseDL4JTest {
         TestUtils.testModelSerialization(graph);
     }
 
+    @Test
+    public void testMaskingAndAllMasked(){
+        ComputationGraphConfiguration.GraphBuilder builder = new NeuralNetConfiguration.Builder()
+                .optimizationAlgo(STOCHASTIC_GRADIENT_DESCENT)
+                .weightInit(XAVIER_UNIFORM)
+                .activation(TANH)
+                .updater(new AdaGrad(0.01))
+                .l2(0.0001)
+                .seed(1234)
+                .graphBuilder()
+                .addInputs("in")
+                .setInputTypes(InputType.recurrent(1))
+                .addLayer("RNN", new LastTimeStep(new LSTM.Builder()
+                        .nOut(10)
+                        .build()), "in")
+                .addLayer("dense", new DenseLayer.Builder()
+                        .nOut(10)
+                        .build(), "RNN")
+                .addLayer("out", new OutputLayer.Builder()
+                        .activation(IDENTITY)
+                        .lossFunction(MSE)
+                        .nOut(10)
+                        .build(), "dense")
+                .setOutputs("out");
+
+        ComputationGraphConfiguration conf = builder.build();
+        ComputationGraph cg = new ComputationGraph(conf);
+        cg.init();
+
+        INDArray f = Nd4j.rand(new long[]{1,1,24});
+        INDArray fm1 = Nd4j.ones(1,24);
+        INDArray fm2 = Nd4j.zeros(1,24);
+        INDArray fm3 = Nd4j.zeros(1,24);
+        fm3.get(NDArrayIndex.point(0), NDArrayIndex.interval(0,5)).assign(1);
+
+        INDArray[] out1 = cg.output(false, new INDArray[]{f}, new INDArray[]{fm1});
+        try {
+            cg.output(false, new INDArray[]{f}, new INDArray[]{fm2});
+            fail("Expected exception");
+        } catch (Exception e){
+            assertTrue(e.getMessage().contains("mask is all 0s"));
+        }
+
+        INDArray[] out3 = cg.output(false, new INDArray[]{f}, new INDArray[]{fm3});
+
+        System.out.println(out1[0]);
+        System.out.println(out3[0]);
+
+        assertNotEquals(out1[0], out3[0]);
+    }
 }

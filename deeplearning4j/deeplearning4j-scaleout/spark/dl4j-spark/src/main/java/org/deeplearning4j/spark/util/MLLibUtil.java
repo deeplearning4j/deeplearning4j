@@ -421,7 +421,8 @@ public class MLLibUtil {
         double label = point.label();
 
         // FIXMEL int cast
-        return new DataSet(Nd4j.create(features.toArray()),
+        double[] fArr = features.toArray();
+        return new DataSet(Nd4j.create(fArr, new long[]{1,fArr.length}),
                         FeatureUtil.toOutcomeVector((int) label, (int) numPossibleLabels));
     }
 

@@ -28,26 +28,25 @@
 
 namespace nd4j {
     namespace graph {
-        template <typename T>
         class ND4J_EXPORT InferenceRequest {
         private:
             Nd4jLong _id;
-            std::vector<Variable<T>*> _variables;
-            std::vector<Variable<T>*> _deletables;
+            std::vector<Variable*> _variables;
+            std::vector<Variable*> _deletables;
 
             ExecutorConfiguration *_configuration = nullptr;
 
-            void insertVariable(Variable<T>* variable);
+            void insertVariable(Variable* variable);
         public:
 
             InferenceRequest(Nd4jLong graphId, ExecutorConfiguration *configuration = nullptr);
             ~InferenceRequest();
 
-            void appendVariable(int id, NDArray<T> *array);
-            void appendVariable(int id, int index, NDArray<T> *array);
-            void appendVariable(std::string &name, NDArray<T> *array);
-            void appendVariable(std::string &name, int id, int index, NDArray<T> *array);
-            void appendVariable(Variable<T> *variable);
+            void appendVariable(int id, NDArray *array);
+            void appendVariable(int id, int index, NDArray *array);
+            void appendVariable(std::string &name, NDArray *array);
+            void appendVariable(std::string &name, int id, int index, NDArray *array);
+            void appendVariable(Variable *variable);
 
 #ifndef __JAVACPP_HACK__
             flatbuffers::Offset<FlatInferenceRequest> asFlatInferenceRequest(flatbuffers::FlatBufferBuilder &builder);

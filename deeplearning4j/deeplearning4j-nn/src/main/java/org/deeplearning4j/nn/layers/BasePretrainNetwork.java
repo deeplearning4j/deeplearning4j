@@ -25,6 +25,7 @@ import org.deeplearning4j.nn.params.PretrainParamInitializer;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.learning.regularization.Regularization;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
 import org.nd4j.linalg.primitives.Pair;
 
@@ -62,7 +63,7 @@ public abstract class BasePretrainNetwork<LayerConfT extends org.deeplearning4j.
      */
     public INDArray getCorruptedInput(INDArray x, double corruptionLevel) {
         INDArray corrupted = Nd4j.getDistributions().createBinomial(1, 1 - corruptionLevel).sample(x.shape());
-        corrupted.muli(x);
+        corrupted.muli(x.castTo(Nd4j.defaultFloatingPointType()));
         return corrupted;
     }
 
@@ -91,7 +92,7 @@ public abstract class BasePretrainNetwork<LayerConfT extends org.deeplearning4j.
     }
 
     @Override
-    public int numParams(boolean backwards) {
+    public long numParams(boolean backwards) {
         return super.numParams(backwards);
     }
 
@@ -117,8 +118,8 @@ public abstract class BasePretrainNetwork<LayerConfT extends org.deeplearning4j.
 
         //double score = lossFunction.computeScore(input, z, layerConf().getActivationFunction(), maskArray, false);
         double score = lossFunction.computeScore(input, z, layerConf().getActivationFn(), maskArray, false);
-        score += calcL1(false) + calcL2(false);
         score /= getInputMiniBatchSize();
+        score += calcRegularizationScore(false);
 
         this.score = score;
     }
@@ -134,17 +135,13 @@ public abstract class BasePretrainNetwork<LayerConfT extends org.deeplearning4j.
     }
 
     public INDArray params() {
-        List<INDArray> list = new ArrayList<>(2);
-        for (Map.Entry<String, INDArray> entry : params.entrySet()) {
-            list.add(entry.getValue());
-        }
-        return Nd4j.toFlattened('f', list);
+        return paramsFlattened;
     }
 
     /**The number of parameters for the model, for backprop (i.e., excluding visible bias)
      * @return the number of parameters for the model (ex. visible bias)
      */
-    public int numParams() {
+    public long numParams() {
         int ret = 0;
         for (Map.Entry<String, INDArray> entry : params.entrySet()) {
             ret += entry.getValue().length();
@@ -195,25 +192,16 @@ public abstract class BasePretrainNetwork<LayerConfT extends org.deeplearning4j.
 
 
     @Override
-    public double calcL2(boolean backpropParamsOnly) {
-        double l2Sum = super.calcL2(true);
+    public double calcRegularizationScore(boolean backpropParamsOnly) {
+        double scoreSum = super.calcRegularizationScore(true);
         if (backpropParamsOnly)
-            return l2Sum;
-        if (layerConf().getL2ByParam(PretrainParamInitializer.VISIBLE_BIAS_KEY) > 0) {
-            double l2Norm = getParam(PretrainParamInitializer.VISIBLE_BIAS_KEY).norm2Number().doubleValue();
-            l2Sum += 0.5 * layerConf().getL2ByParam(PretrainParamInitializer.VISIBLE_BIAS_KEY) * l2Norm * l2Norm;
+            return scoreSum;
+        if (layerConf().getRegularizationBias() != null && !layerConf().getRegularizationBias().isEmpty()) {
+            for(Regularization r : layerConf().getRegularizationBias()){
+                INDArray p = getParam(PretrainParamInitializer.VISIBLE_BIAS_KEY);
+                scoreSum += r.score(p, getIterationCount(), getEpochCount());
+            }
         }
-        return l2Sum;
+        return scoreSum;
     }
-
-    @Override
-    public double calcL1(boolean backpropParamsOnly) {
-        double l1Sum = super.calcL1(true);
-        if (layerConf().getL1ByParam(PretrainParamInitializer.VISIBLE_BIAS_KEY) > 0) {
-            l1Sum += layerConf().getL1ByParam(PretrainParamInitializer.VISIBLE_BIAS_KEY)
-                            * getParam(PretrainParamInitializer.VISIBLE_BIAS_KEY).norm1Number().doubleValue();
-        }
-        return l1Sum;
-    }
-
 }

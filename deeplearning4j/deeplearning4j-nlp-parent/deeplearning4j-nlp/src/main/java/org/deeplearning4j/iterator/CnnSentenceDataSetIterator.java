@@ -377,28 +377,26 @@ public class CnnSentenceDataSetIterator implements DataSetIterator {
             }
 
             if (minLength != maxLength) {
-                int idxSeq;
                 if(sentencesAlongHeight){
                     featuresMask = Nd4j.create(currMinibatchSize, 1, maxLength, 1);
-                    idxSeq = 2;
+                    for (int i = 0; i < currMinibatchSize; i++) {
+                        int sentenceLength = tokenizedSentences.get(i).getFirst().size();
+                        if (sentenceLength >= maxLength) {
+                            featuresMask.getRow(i).assign(1.0);
+                        } else {
+                            featuresMask.get(NDArrayIndex.point(i), NDArrayIndex.point(0), NDArrayIndex.interval(0, sentenceLength), NDArrayIndex.point(0)).assign(1.0);
+                        }
+                    }
                 } else {
                     featuresMask = Nd4j.create(currMinibatchSize, 1, 1, maxLength);
-                    idxSeq = 3;
-                }
-
-                INDArrayIndex[] idxs = new INDArrayIndex[4];
-                idxs[1] = NDArrayIndex.all();
-                idxs[2] = NDArrayIndex.all();   //One of [2] and [3] will get replaced, depending on sentencesAlongHeight
-                idxs[3] = NDArrayIndex.all();
-                for (int i = 0; i < currMinibatchSize; i++) {
-                    idxs[0] = NDArrayIndex.point(i);
-                    int sentenceLength = tokenizedSentences.get(i).getFirst().size();
-                    if (sentenceLength >= maxLength) {
-                        idxs[idxSeq] = NDArrayIndex.all();
-                    } else {
-                        idxs[idxSeq] = NDArrayIndex.interval(0,sentenceLength);
+                    for (int i = 0; i < currMinibatchSize; i++) {
+                        int sentenceLength = tokenizedSentences.get(i).getFirst().size();
+                        if (sentenceLength >= maxLength) {
+                            featuresMask.getRow(i).assign(1.0);
+                        } else {
+                            featuresMask.get(NDArrayIndex.point(i), NDArrayIndex.point(0), NDArrayIndex.point(0), NDArrayIndex.interval(0, sentenceLength)).assign(1.0);
+                        }
                     }
-                    featuresMask.get(idxs).assign(1.0);
                 }
             }
         }

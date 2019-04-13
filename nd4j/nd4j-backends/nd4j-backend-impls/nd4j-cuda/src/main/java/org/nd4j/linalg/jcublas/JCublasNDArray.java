@@ -23,6 +23,8 @@ import org.nd4j.jita.allocator.enums.CudaConstants;
 import org.nd4j.jita.allocator.impl.AllocationPoint;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.buffer.DataTypeEx;
 import org.nd4j.linalg.api.buffer.FloatBuffer;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.BaseNDArray;
@@ -31,6 +33,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ndarray.JvmShapeInfo;
 import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
 import org.nd4j.linalg.api.ops.performance.PerformanceTracker;
+import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.buffer.CudaLongDataBuffer;
@@ -217,14 +220,9 @@ public class JCublasNDArray extends BaseNDArray {
         super(data, shape, stride, offset, ordering);
     }
 
-    public JCublasNDArray(DataBuffer data, int[] shape, int[] stride, long offset) {
-        super(data, shape, stride, offset);
-    }
-
     public JCublasNDArray(int[] data, int[] shape, int[] strides) {
         super(data, shape, strides);
     }
-
     public JCublasNDArray(DataBuffer data, int[] shape) {
         super(data, shape);
     }
@@ -372,8 +370,12 @@ public class JCublasNDArray extends BaseNDArray {
         super(buffer, shape, stride, offset, ordering);
     }
 
-    public JCublasNDArray(DataBuffer buffer, long[] shape, long[] stride, long offset, char ordering) {
-        super(buffer, shape, stride, offset, ordering);
+    public JCublasNDArray(DataBuffer buffer, long[] shape, long[] stride, long offset, char ordering, DataType dataType) {
+        super(buffer, shape, stride, offset, ordering, dataType);
+    }
+
+    public JCublasNDArray(DataBuffer buffer, long[] shape, long[] stride, char ordering, DataType dataType) {
+        super(buffer, shape, stride, ordering, dataType);
     }
 
     public JCublasNDArray(float[] data, char order) {
@@ -446,7 +448,11 @@ public class JCublasNDArray extends BaseNDArray {
         
             allocator.getFlowController().registerAction(context, array, this);
             return array;
-        } else */return super.dup();
+        } else */
+
+        val res = super.dup();
+        Nd4j.getExecutioner().commit();
+        return res;
     }
 
     @Override
@@ -501,7 +507,8 @@ public class JCublasNDArray extends BaseNDArray {
      */
     @Override
     public String toString() {
-        AtomicAllocator.getInstance().synchronizeHostData(this);
+        if (!isS())
+            AtomicAllocator.getInstance().synchronizeHostData(this);
         return super.toString();
     }
 
@@ -525,6 +532,11 @@ public class JCublasNDArray extends BaseNDArray {
         Nd4j.getExecutioner().push();
 
         return super.permutei(rearrange);
+    }
+
+    @Override
+    public LongShapeDescriptor shapeDescriptor() {
+        return LongShapeDescriptor.fromShape(shape(), stride(), elementWiseStride(), ordering(), dataType(), isEmpty());
     }
 
     /**
@@ -766,16 +778,17 @@ public class JCublasNDArray extends BaseNDArray {
         return copy;
     }
 
+/*
     @Override
     public INDArray convertToHalfs() {
-        if (data.dataType() == DataBuffer.Type.HALF)
+        if (data.dataType() == DataType.HALF)
             return this;
 
         val factory = Nd4j.getNDArrayFactory();
-        val buffer = Nd4j.createBuffer(new long[]{this.length()}, DataBuffer.Type.HALF);
+        val buffer = Nd4j.createBuffer(new long[]{this.length()}, DataType.HALF);
 
         factory.convertDataEx(convertType(data.dataType()), AtomicAllocator.getInstance().getPointer(this.data()),
-                DataBuffer.TypeEx.FLOAT16, AtomicAllocator.getInstance().getPointer(buffer), buffer.length());
+                DataTypeEx.FLOAT16, AtomicAllocator.getInstance().getPointer(buffer), buffer.length());
 
         AtomicAllocator.getInstance().getAllocationPoint(buffer).tickDeviceWrite();
 
@@ -785,13 +798,13 @@ public class JCublasNDArray extends BaseNDArray {
 
     @Override
     public INDArray convertToFloats() {
-        if (data.dataType() == DataBuffer.Type.FLOAT)
+        if (data.dataType() == DataType.FLOAT)
             return this;
 
         val factory = Nd4j.getNDArrayFactory();
-        val buffer = Nd4j.createBuffer(new long[]{this.length()}, DataBuffer.Type.FLOAT);
+        val buffer = Nd4j.createBuffer(new long[]{this.length()}, DataType.FLOAT);
 
-        factory.convertDataEx(convertType(data.dataType()), AtomicAllocator.getInstance().getPointer(this.data()), DataBuffer.TypeEx.FLOAT, AtomicAllocator.getInstance().getPointer(buffer), buffer.length());
+        factory.convertDataEx(convertType(data.dataType()), AtomicAllocator.getInstance().getPointer(this.data()), DataTypeEx.FLOAT, AtomicAllocator.getInstance().getPointer(buffer), buffer.length());
 
         AtomicAllocator.getInstance().getAllocationPoint(buffer).tickDeviceWrite();
 
@@ -800,18 +813,18 @@ public class JCublasNDArray extends BaseNDArray {
 
     @Override
     public INDArray convertToDoubles() {
-        if (data.dataType() == DataBuffer.Type.DOUBLE)
+        if (data.dataType() == DataType.DOUBLE)
             return this;
 
         val factory = Nd4j.getNDArrayFactory();
-        val buffer = Nd4j.createBuffer(new long[]{this.length()}, DataBuffer.Type.DOUBLE);
+        val buffer = Nd4j.createBuffer(new long[]{this.length()}, DataType.DOUBLE);
 
-        factory.convertDataEx(convertType(data.dataType()), AtomicAllocator.getInstance().getPointer(this.data()), DataBuffer.TypeEx.DOUBLE, AtomicAllocator.getInstance().getPointer(buffer), buffer.length());
+        factory.convertDataEx(convertType(data.dataType()), AtomicAllocator.getInstance().getPointer(this.data()), DataTypeEx.DOUBLE, AtomicAllocator.getInstance().getPointer(buffer), buffer.length());
 
         AtomicAllocator.getInstance().getAllocationPoint(buffer).tickDeviceWrite();
 
         return Nd4j.createArrayFromShapeBuffer(buffer, this.shapeInformation);
     }
 
-
+*/
 }

@@ -42,7 +42,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import java.io.IOException;
 import java.util.List;
 
-import static org.bytedeco.javacpp.opencv_imgproc.*;
+import static org.bytedeco.opencv.global.opencv_imgproc.COLOR_BGR2RGB;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 

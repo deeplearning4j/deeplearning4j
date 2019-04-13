@@ -10,47 +10,8 @@ weight: 3
 
 Deeplearning4j supports CUDA but can be further accelerated with cuDNN. Most 2D CNN layers (such as ConvolutionLayer, SubsamplingLayer, etc), and also LSTM and BatchNormalization layers support CuDNN.
 
-To use cuDNN, you will first need to switch ND4J to the CUDA backend. This can be done by replacing `nd4j-native` with `nd4j-cuda-8.0`, `nd4j-cuda-9.0`, or `nd4j-cuda-9.2`  in your `pom.xml` files, ideally adding a dependency on `nd4j-cuda-8.0-platform`, `nd4j-cuda-9.0-platform`, or `nd4j-cuda-9.2-platform` to include automatically binaries from all platforms:
+The only thing we need to do to have DL4J load cuDNN is to add a dependency on `deeplearning4j-cuda-9.0`, `deeplearning4j-cuda-9.2`, or `deeplearning4j-cuda-10.0`, for example:
 
-```xml
-<dependency>
-	<groupId>org.nd4j</groupId>
-	<artifactId>nd4j-cuda-8.0-platform</artifactId>
-	<version>{{page.version}}</version>
-</dependency>
-```
-
-or
-```xml
-<dependency>
-	<groupId>org.nd4j</groupId>
-	<artifactId>nd4j-cuda-9.0-platform</artifactId>
-	<version>{{page.version}}</version>
-</dependency>
-```
-
-or
-```xml
-<dependency>
-	<groupId>org.nd4j</groupId>
-	<artifactId>nd4j-cuda-9.2-platform</artifactId>
-	<version>{{page.version}}</version>
-</dependency>
-```
-
-More information about that can be found among the [installation instructions for ND4J](http://nd4j.org/getstarted).
-
-The only other thing we need to do to have DL4J load cuDNN is to add a dependency on `deeplearning4j-cuda-8.0`, `deeplearning4j-cuda-9.0`, or `deeplearning4j-cuda-9.2`, for example:
-
-```xml
-<dependency>
-	<groupId>org.deeplearning4j</groupId>
-	<artifactId>deeplearning4j-cuda-8.0</artifactId>
-	<version>{{page.version}}</version>
-</dependency>
-```
-
-or
 ```xml
 <dependency>
 	<groupId>org.deeplearning4j</groupId>
@@ -68,6 +29,15 @@ or
 </dependency>
 ```
 
+or
+```xml
+<dependency>
+	<groupId>org.deeplearning4j</groupId>
+	<artifactId>deeplearning4j-cuda-10.0</artifactId>
+	<version>{{page.version}}</version>
+</dependency>
+```
+
 The actual library for cuDNN is not bundled, so be sure to download and install the appropriate package for your platform from NVIDIA:
 
 * [NVIDIA cuDNN](https://developer.nvidia.com/cudnn)
@@ -78,16 +48,16 @@ Note there are multiple combinations of cuDNN and CUDA supported. At this time t
 		<th>CUDA Version</th>
 		<th>cuDNN Version</th>
 	</tr>
-	<tr><td>8.0</td><td>6.0</td></tr>
 	<tr><td>9.0</td><td>7.0</td></tr>
 	<tr><td>9.2</td><td>7.1</td></tr>
+	<tr><td>10.0</td><td>7.3</td></tr>
 </table>
 
  
- To install, simply extract the library to a directory found in the system path used by native libraries. The easiest way is to place it alongside other libraries from CUDA in the default directory (`/usr/local/cuda/lib64/` on Linux, `/usr/local/cuda/lib/` on Mac OS X, and `C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v8.0\bin\`, `C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v9.0\bin\`, or `C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v9.2\bin\` on Windows).
+ To install, simply extract the library to a directory found in the system path used by native libraries. The easiest way is to place it alongside other libraries from CUDA in the default directory (`/usr/local/cuda/lib64/` on Linux, `/usr/local/cuda/lib/` on Mac OS X, and `C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v9.0\bin\`, `C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v9.2\bin\`, or `C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v10.0\bin\` on Windows).
 
-Alternatively, in the case of CUDA 9.2, cuDNN comes bundled with the "redist" package of the [JavaCPP Presets for CUDA](https://github.com/bytedeco/javacpp-presets/tree/master/cuda). [After agreeing to the license](https://github.com/bytedeco/javacpp-presets/tree/master/cuda#license-agreements), we can add the following dependencies instead of installing CUDA and cuDNN:
-
+Alternatively, in the case of CUDA 9.2 or 10.0, cuDNN comes bundled with the "redist" package of the [JavaCPP Presets for CUDA](https://github.com/bytedeco/javacpp-presets/tree/master/cuda). [After agreeing to the license](https://github.com/bytedeco/javacpp-presets/tree/master/cuda#license-agreements), we can add the following dependencies instead of installing CUDA and cuDNN:
+		 
 	 <dependency>
 	     <groupId>org.bytedeco.javacpp-presets</groupId>
 	     <artifactId>cuda</artifactId>
@@ -110,6 +80,33 @@ Alternatively, in the case of CUDA 9.2, cuDNN comes bundled with the "redist" pa
 	     <groupId>org.bytedeco.javacpp-presets</groupId>
 	     <artifactId>cuda</artifactId>
 	     <version>9.2-7.1-1.4.2</version>
+	     <classifier>windows-x86_64-redist</classifier>
+	 </dependency>
+
+or
+
+	 <dependency>
+	     <groupId>org.bytedeco.javacpp-presets</groupId>
+	     <artifactId>cuda</artifactId>
+	     <version>10.0-7.3-1.4.3</version>
+	     <classifier>linux-x86_64-redist</classifier>
+	 </dependency>
+	 <dependency>
+	     <groupId>org.bytedeco.javacpp-presets</groupId>
+	     <artifactId>cuda</artifactId>
+	     <version>10.0-7.3-1.4.3</version>
+	     <classifier>linux-ppc64le-redist</classifier>
+	 </dependency>
+	 <dependency>
+	     <groupId>org.bytedeco.javacpp-presets</groupId>
+	     <artifactId>cuda</artifactId>
+	     <version>10.0-7.3-1.4.3</version>
+	     <classifier>macosx-x86_64-redist</classifier>
+	 </dependency>
+	 <dependency>
+	     <groupId>org.bytedeco.javacpp-presets</groupId>
+	     <artifactId>cuda</artifactId>
+	     <version>10.0-7.3-1.4.3</version>
 	     <classifier>windows-x86_64-redist</classifier>
 	 </dependency>
 

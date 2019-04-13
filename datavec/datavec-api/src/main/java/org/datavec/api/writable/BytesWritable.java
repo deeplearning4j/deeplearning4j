@@ -21,6 +21,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.io.DataInput;
@@ -43,7 +44,7 @@ import java.util.Objects;
  *
  * If you want *safe* indexing that you are familiar with, please
  * consider using nd4j's {@link DataBuffer} object
- * and the associated {@link #asNd4jBuffer(DataBuffer.Type, int)}
+ * and the associated {@link #asNd4jBuffer(DataType, int)}
  *  method below.
  *
  * @author Adam Gibson
@@ -81,7 +82,7 @@ public class BytesWritable extends ArrayWritable {
      * @param elementSize the size of each element in the buffer
      * @return the equivalent nd4j data buffer
      */
-    public DataBuffer asNd4jBuffer(DataBuffer.Type type,int elementSize) {
+    public DataBuffer asNd4jBuffer(DataType type, int elementSize) {
         int length = content.length / elementSize;
         DataBuffer ret = Nd4j.createBuffer(ByteBuffer.allocateDirect(content.length),type,length,0);
         for(int i = 0; i < length; i++) {

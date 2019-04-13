@@ -11,7 +11,7 @@ There are several other basic matrix manipulations to highlight as you learn ND4
 
 ### Transpose
 
-The transpose of a matrix is its mirror image. An element located in row 1, column 2, in matrix A will be located in row 2, column 1, in the the transpose of matrix A, whose mathematical notation is A to the T, or A^T. Notice that the elements along the diagonal of a square matrix do not move -- they are at the hinge of the reflection. In ND4J, transpose matrices like this:
+The transpose of a matrix is its mirror image. An element located in row 1, column 2, in matrix A will be located in row 2, column 1, in the transpose of matrix A, whose mathematical notation is A to the T, or A^T. Notice that the elements along the diagonal of a square matrix do not move -- they are at the hinge of the reflection. In ND4J, transpose matrices like this:
 ```java
 INDArray nd = Nd4j.create(new float[]{1, 2, 3, 4}, new int[]{2, 2});
 

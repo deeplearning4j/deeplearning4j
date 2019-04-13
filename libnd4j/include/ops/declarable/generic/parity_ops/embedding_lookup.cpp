@@ -33,10 +33,9 @@ namespace ops {
 
 //////////////////////////////////////////////////////////////////////////
 CUSTOM_OP_IMPL(embedding_lookup, 2, 1, false, 0, 1) {
-
-    NDArray<T>* input   = INPUT_VARIABLE(0); // lookup param
-    NDArray<T>* indeces = INPUT_VARIABLE(1); // indeces, as is
-    NDArray<T>* output  = OUTPUT_VARIABLE(0); //
+    auto input   = INPUT_VARIABLE(0); // lookup param
+    auto indeces = INPUT_VARIABLE(1); // indeces, as is
+    auto output  = OUTPUT_VARIABLE(0); //
 
     if (block.width() > 2) { // multiple input
         indeces = INPUT_VARIABLE(block.width() - 1);
@@ -46,12 +45,12 @@ CUSTOM_OP_IMPL(embedding_lookup, 2, 1, false, 0, 1) {
             v = i++;
         }
 
-        std::unique_ptr<ResultSet<T>> outputView(output->allTensorsAlongDimension(dims));
+        std::unique_ptr<ResultSet> outputView(output->allTensorsAlongDimension(dims));
         REQUIRE_TRUE(block.width() > output->sizeAt(0), 0, "embedding_lookup: input list should be greater then %i, but %i given.",
                     output->sizeAt(0), block.width()
                 );
         for (Nd4jLong e = 0; e < indeces->lengthOf(); ++e) {
-            Nd4jLong thisIndex = static_cast<Nd4jLong>((*indeces)(e));
+            Nd4jLong thisIndex = (*indeces).e<Nd4jLong>(e);
             input   = INPUT_VARIABLE(thisIndex); // lookup param
 
             outputView->at(e)->assign(input);
@@ -65,14 +64,20 @@ CUSTOM_OP_IMPL(embedding_lookup, 2, 1, false, 0, 1) {
         int lastIndDim = indeces->lengthOf();
         int partition_mode = INT_ARG(0); // partition_mode == 0 - i.e. 'mod' , 1 - 'div'
 
-        nd4j::ops::gather<T> op;
+        nd4j::ops::gather op;
 
-        std::unique_ptr<ResultSet<T>> result(op.execute({input, indeces}, {}, {0}));
-        REQUIRE_TRUE(result->status() == ND4J_STATUS_OK, 0, "embedding_lookup: cannot retrieve results from gather op.");
+        std::unique_ptr<ResultSet> result(op.execute({input, indeces}, {}, {0}, {}));
+        REQUIRE_TRUE(result->status() == Status::OK(), 0, "embedding_lookup: cannot retrieve results from gather op.");
         REQUIRE_TRUE(result->at(0)->isSameShape(output), 0, "embedding_lookup: wrong shape of return from gather op.");
         output->assign(result->at(0));
     }
-    return ND4J_STATUS_OK;
+    return Status::OK();
+}
+
+DECLARE_TYPES(embedding_lookup) {
+    getOpDescriptor()
+            ->setAllowedInputTypes(nd4j::DataType::ANY)
+            ->setAllowedOutputTypes(nd4j::DataType::ANY);
 }
 
 DECLARE_SHAPE_FN(embedding_lookup) {
@@ -82,38 +87,29 @@ DECLARE_SHAPE_FN(embedding_lookup) {
     int inRank = shape::rank(inShapeInfo);
     if (inputShape->size() == 2u) {
         int outRank = inRank;
-
-        Nd4jLong *outShapeInfo = nullptr;
-
-        ALLOCATE(outShapeInfo, block.getWorkspace(), shape::shapeInfoLength(outRank), Nd4jLong);
+        
         std::vector<Nd4jLong> shapeInfo(outRank);
 
         shapeInfo[0] = indecesShapeInfo[1]; // vector - how many elements
         for (int e = 1; e < outRank; e++)
             shapeInfo[e] = shape::sizeAt(inShapeInfo, e);
-        if (shape::order(inShapeInfo) == 'c')
-            shape::shapeBuffer(outRank, shapeInfo.data(), outShapeInfo);
-        else
-            shape::shapeBufferFortran(outRank, shapeInfo.data(), outShapeInfo);
+
+        Nd4jLong *outShapeInfo = ShapeBuilders::createShapeInfo(block.dataType(), shape::order(inShapeInfo), shapeInfo, block.getWorkspace());
 
         return SHAPELIST(outShapeInfo);
     }
 
-    Nd4jLong *outShapeInfo = nullptr;
-    int outRank = inRank + 1;
-    ALLOCATE(outShapeInfo, block.getWorkspace(), shape::shapeInfoLength(outRank), Nd4jLong);
+    
+    int outRank = inRank + 1;    
     std::vector<Nd4jLong> shapeInfo(outRank);
-    NDArray<T>* indeces = INPUT_VARIABLE(block.width() - 1);
+    auto indeces = INPUT_VARIABLE(block.width() - 1);
     shapeInfo[0] = indeces->lengthOf(); // vector - how many elements
     for (int e = 1; e < outRank; e++)
         shapeInfo[e] = shape::sizeAt(inShapeInfo, e);
-    if (shape::order(inShapeInfo) == 'c')
-        shape::shapeBuffer(outRank, shapeInfo.data(), outShapeInfo);
-    else
-        shape::shapeBufferFortran(outRank, shapeInfo.data(), outShapeInfo);
-
+    
+    Nd4jLong *outShapeInfo = ShapeBuilders::createShapeInfo(ArrayOptions::dataType(inShapeInfo), shape::order(inShapeInfo), shapeInfo, block.getWorkspace());
+    
     return SHAPELIST(outShapeInfo);
-
 }
 
 

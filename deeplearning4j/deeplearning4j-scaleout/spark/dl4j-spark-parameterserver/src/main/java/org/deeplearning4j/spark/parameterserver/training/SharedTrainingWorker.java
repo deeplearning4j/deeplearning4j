@@ -33,6 +33,7 @@ import org.deeplearning4j.spark.impl.paramavg.BaseTrainingWorker;
 import org.deeplearning4j.spark.parameterserver.conf.SharedTrainingConfiguration;
 import org.nd4j.linalg.dataset.api.DataSet;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
 
 import java.util.List;
@@ -49,16 +50,21 @@ public class SharedTrainingWorker extends BaseTrainingWorker<SharedTrainingResul
     private final Broadcast<SharedTrainingConfiguration> broadcastConfiguration;
     private final List<TrainingListener> listeners;
     private final StatsStorageRouter router;
+    private final Boolean workerTogglePeriodicGC;
+    private final Integer workerPeriodicGCFrequency;
 
     public SharedTrainingWorker(long instanceId, Broadcast<NetBroadcastTuple> broadcastModel,
                                 Broadcast<SharedTrainingConfiguration> broadcastConfiguration,
-                                List<TrainingListener> listeners, StatsStorageRouter router) {
+                                List<TrainingListener> listeners, StatsStorageRouter router, Boolean workerTogglePeriodicGC,
+                                Integer workerPeriodicGCFrequency) {
         this.instanceId = instanceId;
         // our initial model is stored here.
         this.broadcastModel = broadcastModel;
         this.broadcastConfiguration = broadcastConfiguration;
         this.listeners = listeners;
         this.router = router;
+        this.workerTogglePeriodicGC = workerTogglePeriodicGC;
+        this.workerPeriodicGCFrequency = workerPeriodicGCFrequency;
     }
 
     @Override
@@ -73,7 +79,15 @@ public class SharedTrainingWorker extends BaseTrainingWorker<SharedTrainingResul
 
     @Override
     public MultiLayerNetwork getInitialModel() {
+        if(workerTogglePeriodicGC != null)
+            Nd4j.getMemoryManager().togglePeriodicGc(workerTogglePeriodicGC);
+        if(workerPeriodicGCFrequency != null)
+            Nd4j.getMemoryManager().setAutoGcWindow(workerPeriodicGCFrequency);
+
         // This method will be called ONLY once, in master thread
+        //Before getting NetBroadcastTuple, to ensure it always gets mapped to device 0
+        Nd4j.getAffinityManager().attachThreadToDevice(Thread.currentThread(), 0);
+
         NetBroadcastTuple tuple = broadcastModel.getValue();
         if (tuple.getConfiguration() != null) {
             MultiLayerConfiguration conf = tuple.getConfiguration();
@@ -94,7 +108,8 @@ public class SharedTrainingWorker extends BaseTrainingWorker<SharedTrainingResul
 
     @Override
     public ComputationGraph getInitialModelGraph() {
-        // This method will be called ONLY once, in master thread
+        //Before getting NetBroadcastTuple, to ensure it always gets mapped to device 0
+        Nd4j.getAffinityManager().attachThreadToDevice(Thread.currentThread(), 0);
         NetBroadcastTuple tuple = broadcastModel.getValue();
         if (tuple.getGraphConfiguration() != null) {
             ComputationGraphConfiguration conf = tuple.getGraphConfiguration();

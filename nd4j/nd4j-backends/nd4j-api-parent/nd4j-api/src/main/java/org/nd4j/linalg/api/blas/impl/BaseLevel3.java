@@ -20,6 +20,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.nd4j.linalg.api.blas.Level3;
 import org.nd4j.linalg.api.blas.params.GemmParams;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.executioner.DefaultOpExecutioner;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
@@ -60,16 +61,16 @@ public abstract class BaseLevel3 extends BaseLevel implements Level3 {
         GemmParams params = new GemmParams(A, B, C);
 
         int charOder = Order;
-        if (A.data().dataType() == DataBuffer.Type.DOUBLE) {
-            DefaultOpExecutioner.validateDataType(DataBuffer.Type.DOUBLE, params.getA(), params.getB(), params.getC());
+        if (A.data().dataType() == DataType.DOUBLE) {
+            DefaultOpExecutioner.validateDataType(DataType.DOUBLE, params.getA(), params.getB(), params.getC());
             dgemm(Order, params.getTransA(), params.getTransB(), params.getM(), params.getN(), params.getK(), 1.0,
                             params.getA(), params.getLda(), params.getB(), params.getLdb(), 0, C, params.getLdc());
-        } else if (A.data().dataType() == DataBuffer.Type.FLOAT) {
-            DefaultOpExecutioner.validateDataType(DataBuffer.Type.FLOAT, params.getA(), params.getB(), params.getC());
+        } else if (A.data().dataType() == DataType.FLOAT) {
+            DefaultOpExecutioner.validateDataType(DataType.FLOAT, params.getA(), params.getB(), params.getC());
             sgemm(Order, params.getTransA(), params.getTransB(), params.getM(), params.getN(), params.getK(), 1.0f,
                             params.getA(), params.getLda(), params.getB(), params.getLdb(), 0, C, params.getLdc());
         } else {
-            DefaultOpExecutioner.validateDataType(DataBuffer.Type.HALF, params.getA(), params.getB(), params.getC());
+            DefaultOpExecutioner.validateDataType(DataType.HALF, params.getA(), params.getB(), params.getC());
             hgemm(Order, params.getTransA(), params.getTransB(), params.getM(), params.getN(), params.getK(), 1.0f,
                             params.getA(), params.getLda(), params.getB(), params.getLdb(), 0, C, params.getLdc());
         }
@@ -86,18 +87,18 @@ public abstract class BaseLevel3 extends BaseLevel implements Level3 {
             OpProfiler.getInstance().processBlasCall(true, A, B, C);
 
         GemmParams params = new GemmParams(A, B, C, transposeA, transposeB);
-        if (A.data().dataType() == DataBuffer.Type.DOUBLE) {
-            DefaultOpExecutioner.validateDataType(DataBuffer.Type.DOUBLE, params.getA(), params.getB(), C);
+        if (A.data().dataType() == DataType.DOUBLE) {
+            DefaultOpExecutioner.validateDataType(DataType.DOUBLE, params.getA(), params.getB(), C);
             dgemm(A.ordering(), params.getTransA(), params.getTransB(), params.getM(), params.getN(), params.getK(),
                             alpha, params.getA(), params.getLda(), params.getB(), params.getLdb(), beta, C,
                             params.getLdc());
-        } else if (A.data().dataType() == DataBuffer.Type.FLOAT) {
-            DefaultOpExecutioner.validateDataType(DataBuffer.Type.FLOAT, params.getA(), params.getB(), C);
+        } else if (A.data().dataType() == DataType.FLOAT) {
+            DefaultOpExecutioner.validateDataType(DataType.FLOAT, params.getA(), params.getB(), C);
             sgemm(A.ordering(), params.getTransA(), params.getTransB(), params.getM(), params.getN(), params.getK(),
                             (float) alpha, params.getA(), params.getLda(), params.getB(), params.getLdb(), (float) beta,
                             C, params.getLdc());
         } else {
-            DefaultOpExecutioner.validateDataType(DataBuffer.Type.HALF, params.getA(), params.getB(), C);
+            DefaultOpExecutioner.validateDataType(DataType.HALF, params.getA(), params.getB(), C);
             hgemm(A.ordering(), params.getTransA(), params.getTransB(), params.getM(), params.getN(), params.getK(),
                             (float) alpha, params.getA(), params.getLda(), params.getB(), params.getLdb(), (float) beta,
                             C, params.getLdc());
@@ -130,11 +131,11 @@ public abstract class BaseLevel3 extends BaseLevel implements Level3 {
 
         // FIXME: int cast
 
-        if (A.data().dataType() == DataBuffer.Type.DOUBLE) {
-            DefaultOpExecutioner.validateDataType(DataBuffer.Type.DOUBLE, A, B, C);
+        if (A.data().dataType() == DataType.DOUBLE) {
+            DefaultOpExecutioner.validateDataType(DataType.DOUBLE, A, B, C);
             dsymm(Order, Side, Uplo, (int) C.rows(), (int) C.columns(), alpha, A, (int) A.size(0), B, (int) B.size(0), beta, C, (int) C.size(0));
         } else {
-            DefaultOpExecutioner.validateDataType(DataBuffer.Type.FLOAT, A, B, C);
+            DefaultOpExecutioner.validateDataType(DataType.FLOAT, A, B, C);
             ssymm(Order, Side, Uplo, (int) C.rows(), (int) C.columns(), (float) alpha, A, (int) A.size(0), B, (int) B.size(0), (float) beta, C,
                     (int) C.size(0));
         }
@@ -164,11 +165,11 @@ public abstract class BaseLevel3 extends BaseLevel implements Level3 {
 
         // FIXME: int cast
 
-        if (A.data().dataType() == DataBuffer.Type.DOUBLE) {
-            DefaultOpExecutioner.validateDataType(DataBuffer.Type.DOUBLE, A, C);
+        if (A.data().dataType() == DataType.DOUBLE) {
+            DefaultOpExecutioner.validateDataType(DataType.DOUBLE, A, C);
             dsyrk(Order, Uplo, Trans, (int) C.rows(), 1, alpha, A, (int) A.size(0), beta, C, (int) C.size(0));
         } else {
-            DefaultOpExecutioner.validateDataType(DataBuffer.Type.FLOAT, A, C);
+            DefaultOpExecutioner.validateDataType(DataType.FLOAT, A, C);
             ssyrk(Order, Uplo, Trans, (int) C.rows(), 1, (float) alpha, A, (int) A.size(0), (float) beta, C, (int) C.size(0));
         }
 
@@ -199,11 +200,11 @@ public abstract class BaseLevel3 extends BaseLevel implements Level3 {
 
         // FIXME: int cast
 
-        if (A.data().dataType() == DataBuffer.Type.DOUBLE) {
-            DefaultOpExecutioner.validateDataType(DataBuffer.Type.DOUBLE, A, B, C);
+        if (A.data().dataType() == DataType.DOUBLE) {
+            DefaultOpExecutioner.validateDataType(DataType.DOUBLE, A, B, C);
             dsyr2k(Order, Uplo, Trans, (int) A.rows(), (int) A.columns(), alpha, A, (int) A.size(0), B, (int) B.size(0), beta, C, (int) C.size(0));
         } else {
-            DefaultOpExecutioner.validateDataType(DataBuffer.Type.FLOAT, A, B, C);
+            DefaultOpExecutioner.validateDataType(DataType.FLOAT, A, B, C);
             ssyr2k(Order, Uplo, Trans, (int) A.rows(), (int) A.columns(), (float) alpha, A, (int) A.size(0), B, (int) B.size(0), (float) beta, C, (int) C.size(0));
         }
 
@@ -235,11 +236,11 @@ public abstract class BaseLevel3 extends BaseLevel implements Level3 {
 
         // FIXME: int cast
 
-        if (A.data().dataType() == DataBuffer.Type.DOUBLE) {
-            DefaultOpExecutioner.validateDataType(DataBuffer.Type.DOUBLE, A, B, C);
+        if (A.data().dataType() == DataType.DOUBLE) {
+            DefaultOpExecutioner.validateDataType(DataType.DOUBLE, A, B, C);
             dtrmm(Order, Side, Uplo, TransA, Diag, (int) A.rows(), (int) A.columns(), alpha, A, (int) A.size(0), B, (int) B.size(0));
         } else {
-            DefaultOpExecutioner.validateDataType(DataBuffer.Type.FLOAT, A, B, C);
+            DefaultOpExecutioner.validateDataType(DataType.FLOAT, A, B, C);
             strmm(Order, Side, Uplo, TransA, Diag, (int) A.rows(), (int) A.columns(), (float) alpha, A, (int) A.size(0), B, (int) B.size(0));
         }
 
@@ -270,11 +271,11 @@ public abstract class BaseLevel3 extends BaseLevel implements Level3 {
 
         // FIXME: int cast
 
-        if (A.data().dataType() == DataBuffer.Type.DOUBLE) {
-            DefaultOpExecutioner.validateDataType(DataBuffer.Type.DOUBLE, A, B);
+        if (A.data().dataType() == DataType.DOUBLE) {
+            DefaultOpExecutioner.validateDataType(DataType.DOUBLE, A, B);
             dtrsm(Order, Side, Uplo, TransA, Diag, (int) A.rows(), (int) A.columns(), alpha, A, (int) A.size(0), B, (int) B.size(0));
         } else {
-            DefaultOpExecutioner.validateDataType(DataBuffer.Type.FLOAT, A, B);
+            DefaultOpExecutioner.validateDataType(DataType.FLOAT, A, B);
             strsm(Order, Side, Uplo, TransA, Diag, (int) A.rows(), (int) A.columns(), (float) alpha, A, (int) A.size(0), B, (int) B.size(0));
         }
 

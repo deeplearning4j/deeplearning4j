@@ -29,17 +29,22 @@ namespace ops  {
 
 CONFIGURABLE_OP_IMPL(clipbyavgnorm, 1, 1, true, 1, 0) {
 
-    NDArray<T>* input  = INPUT_VARIABLE(0);
-    NDArray<T>* output = OUTPUT_VARIABLE(0);
+    auto input  = INPUT_VARIABLE(0);
+    auto output = OUTPUT_VARIABLE(0);
 
-    const T clipNorm = T_ARG(0);
     const bool isInplace = block.isInplace();
+    auto ts = NDArrayFactory::create(T_ARG(0), block.getWorkspace());
 
-    helpers::clipByAveraged(*input, *output, *block.getIArguments(), clipNorm, isInplace);
+    helpers::clipByAveraged(*input, *output, *block.getIArguments(), ts, isInplace);
 
     return Status::OK();
 }
 
+    DECLARE_TYPES(clipbyavgnorm) {
+        getOpDescriptor()
+                ->setAllowedInputTypes(nd4j::DataType::ANY)
+                ->setAllowedOutputTypes({ALL_FLOATS});
+    }
 
 }
 }

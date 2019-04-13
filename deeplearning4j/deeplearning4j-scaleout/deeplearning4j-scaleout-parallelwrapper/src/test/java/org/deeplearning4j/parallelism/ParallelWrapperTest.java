@@ -16,6 +16,7 @@
 
 package org.deeplearning4j.parallelism;
 
+import lombok.val;
 import org.deeplearning4j.datasets.iterator.EarlyTerminationDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.deeplearning4j.eval.Evaluation;
@@ -62,6 +63,11 @@ public class ParallelWrapperTest {
         log.info("Load data....");
         DataSetIterator mnistTrain = new EarlyTerminationDataSetIterator(new MnistDataSetIterator(batchSize, true, 12345), 100);
         DataSetIterator mnistTest = new EarlyTerminationDataSetIterator(new MnistDataSetIterator(batchSize, false, 12345), 10);
+
+        assertTrue(mnistTrain.hasNext());
+        val t0 = mnistTrain.next();
+
+        log.info("F: {}; L: {};", t0.getFeatures().shape(), t0.getLabels().shape());
 
         log.info("Build model....");
         MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().seed(seed)

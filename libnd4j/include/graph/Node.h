@@ -33,15 +33,14 @@
 namespace nd4j {
     namespace graph {
 
-        template <typename T>
+
         class Graph;
 
-        template <typename T>
-        class Node {
+        class ND4J_EXPORT Node {
         protected:
-            DataType _dataType;
+            nd4j::DataType _dataType;
             OpType _opType;
-            ContextPrototype<T>* _protoContext = nullptr;
+            ContextPrototype* _protoContext = nullptr;
             Nd4jLong _opNum;
             int _id;
             std::vector<std::pair<int, int>> _input;
@@ -58,11 +57,11 @@ namespace nd4j {
             int _layer = -1;
 
             // many ops require extra parameters to run
-            T *_extraParams = nullptr;
+            double *_extraParams = nullptr;
 
 
             // optional scalar. used in scalar ops and in summary stats
-            float _scalar;
+            NDArray _scalar;
 
             bool _hasExternalOutputs;
             bool _hasExternalInputs;
@@ -78,8 +77,8 @@ namespace nd4j {
             OpClass _opClass;
 
             // these fields are used to store embedded CustomOps and Graph in case of Graph-in-Graph scenario
-            nd4j::graph::Graph<T> * _graph= nullptr;
-            nd4j::ops::DeclarableOp<T> *_customOp = nullptr;
+            nd4j::graph::Graph * _graph= nullptr;
+            nd4j::ops::DeclarableOp *_customOp = nullptr;
 
             // each node can be active or inactive, if used with divergents, like IF statements
             bool _active = true;
@@ -94,14 +93,15 @@ namespace nd4j {
             Nd4jLong _frameId = -1;
 
         public:
-            Node(OpType opType = OpType_TRANSFORM, int opNum = 0, int id = 0, std::initializer_list<int> input = {}, std::initializer_list<int> output = {},  std::initializer_list<int> dimensions = {}, float scalar = 0.0f, std::initializer_list<T> tArgs = {}, std::initializer_list<int> iArgs = {});
+            Node(nd4j::ops::DeclarableOp *customOp, int id = 0, std::initializer_list<int> input = {}, std::initializer_list<int> output = {},  std::initializer_list<int> dimensions = {}, float scalar = 0.0f, std::initializer_list<double> tArgs = {}, std::initializer_list<int> iArgs = {});
+            Node(OpType opType = OpType_TRANSFORM_SAME, int opNum = 0, int id = 0, std::initializer_list<int> input = {}, std::initializer_list<int> output = {},  std::initializer_list<int> dimensions = {}, float scalar = 0.0f, std::initializer_list<double> tArgs = {}, std::initializer_list<int> iArgs = {});
             Node(const nd4j::graph::FlatNode *node);
             ~Node();
 
             bool equals(Node *other);
 
-            DataType dataType();
-            ContextPrototype<T>* protoContext();
+            nd4j::DataType dataType();
+            ContextPrototype *protoContext();
             OpType opType();
             Nd4jLong opNum();
             int id();
@@ -119,7 +119,7 @@ namespace nd4j {
 
             void setId(int id);
 
-            T *extraParams();
+            double *extraParams();
 
             bool isMultiInput();
             bool isMultiOutput();
@@ -136,7 +136,7 @@ namespace nd4j {
             bool hasInternalOutputs();
             bool hasInternalInputs();
 
-            T scalar();
+            double scalar();
 
             std::vector<int> * getDimensions();
             int * getDimensionsPtr();
@@ -161,16 +161,16 @@ namespace nd4j {
             int totalReferences();
             void addReference(int nodeId);
 
-            void setContextPrototype(ContextPrototype<T> *block);
-            ContextPrototype<T>* getContextPrototype();
+            void setContextPrototype(ContextPrototype *block);
+            ContextPrototype* getContextPrototype();
             bool hasBlockAttached();
 
-            void setCustomOp(nd4j::ops::DeclarableOp<T> *customOp = nullptr);
-            nd4j::ops::DeclarableOp<T>* getCustomOp();
+            void setCustomOp(nd4j::ops::DeclarableOp *customOp = nullptr);
+            nd4j::ops::DeclarableOp* getCustomOp();
             bool hasCustomOp();
 
-            void setGraph(nd4j::graph::Graph<T>* graph = nullptr);
-            nd4j::graph::Graph<T>* getGraph();
+            void setGraph(nd4j::graph::Graph* graph = nullptr);
+            nd4j::graph::Graph* getGraph();
             bool hasGraphEmbedded();
 
             bool isInplace();
@@ -189,22 +189,22 @@ namespace nd4j {
             int scopeId();
             std::string* scopeName();
 
+            void setOpType(OpType opType);
+
             // clone Node
-            Node<T>* clone();
+            Node* clone();
 
-            // change Node data type
-            template <typename N>
-            Node<N>* asT();
+            template <typename T>
+            Node* asT();
 
-            template <typename N>
-            FORCEINLINE void pullValues(Node<N> *other) {
+            FORCEINLINE void pullValues(Node *other) {
 
                 if (this->_protoContext != nullptr)
                     delete _protoContext;
 
                 this->_dataType = other->dataType();
-                this->_protoContext = other->protoContext()->template asT<T>();
-                this->_scalar = (T) other->scalar();
+                this->_protoContext = other->protoContext()->clone();
+                this->_scalar =  other->scalar();
                 this->_hasExternalInputs = other->hasExternalInputs();
                 this->_hasExternalOutputs = other->hasExternalOutputs();
                 this->_hasInternalInputs = other->hasInternalInputs();
@@ -231,7 +231,7 @@ namespace nd4j {
 
             }
 
-            static nd4j::ops::DeclarableOp<T>* buildOpByType(OpType opType, int numInputs, int numIArgs, int numTArgs, int opNum, T scalar);
+            static nd4j::ops::DeclarableOp* buildOpByType(OpType opType, int numInputs, int numIArgs, int numTArgs, int opNum, NDArray *scalar);
         };
     }
 }

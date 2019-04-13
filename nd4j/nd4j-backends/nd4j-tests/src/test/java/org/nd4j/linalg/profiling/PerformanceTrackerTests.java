@@ -45,13 +45,13 @@ public class PerformanceTrackerTests extends BaseNd4jTest {
     }
 
     @Before
-    public void setUp() throws Exception {
+    public void setUp() {
         PerformanceTracker.getInstance().clear();
         Nd4j.getExecutioner().setProfilingMode(OpExecutioner.ProfilingMode.BANDWIDTH);
     }
 
     @After
-    public void tearDown() throws Exception {
+    public void tearDown() {
         PerformanceTracker.getInstance().clear();
         Nd4j.getExecutioner().setProfilingMode(OpExecutioner.ProfilingMode.SCOPE_PANIC);
     }

@@ -80,3 +80,69 @@ TEST_F(OmpLaunchHelperTests, Test_BetterThreads_3) {
     auto n = OmpLaunchHelper::betterThreads(899, 6);
     ASSERT_EQ(1, n);
 }
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(OmpLaunchHelperTests, loop_test1) {
+    
+    const Nd4jLong N = 20010;
+    Nd4jLong desiredNumThreads = 2;
+    int x[N] = {0};
+
+    OmpLaunchHelper info(N, desiredNumThreads);
+    PRAGMA_OMP_PARALLEL_THREADS(info._numThreads)
+    {                        
+        auto threadNum = omp_get_thread_num();
+        auto xi = x + info.getThreadOffset(threadNum);
+
+        auto ulen = static_cast<unsigned int>(info.getItersPerThread(threadNum));
+
+        PRAGMA_OMP_SIMD
+        for (Nd4jLong i = 0; i < ulen; i++)
+            xi[i] = xi[i] + 1;
+    }
+    
+    #ifdef _OPENMP
+        ASSERT_TRUE(info._numThreads == desiredNumThreads);        
+    #else
+        ASSERT_TRUE(info._numThreads == 1);
+    #endif
+    
+}
+
+TEST_F(OmpLaunchHelperTests, test_tad_threads_1) {
+    Nd4jLong numTads = 16;
+    Nd4jLong tadLength = 16;
+
+//    nd4j_printf("TT: [%i]; ET: [%i];\n", Environment::getInstance()->tadThreshold(), Environment::getInstance()->elementwiseThreshold());
+    ASSERT_EQ(1, OmpLaunchHelper::tadThreads(tadLength, numTads));
+}
+
+TEST_F(OmpLaunchHelperTests, test_tad_threads_2) {
+    Nd4jLong numTads = 2;
+    Nd4jLong tadLength = Environment::getInstance()->elementwiseThreshold();
+
+    ASSERT_EQ(2, OmpLaunchHelper::tadThreads(tadLength, numTads));
+}
+
+TEST_F(OmpLaunchHelperTests, test_tad_threads_3) {
+    Nd4jLong numTads = 2;
+    Nd4jLong tadLength = 128;
+
+    ASSERT_EQ(1, OmpLaunchHelper::tadThreads(tadLength, numTads));
+}
+
+TEST_F(OmpLaunchHelperTests, test_tad_threads_4) {
+    Nd4jLong numTads = 4;
+    Nd4jLong tadLength = 64;
+
+    ASSERT_EQ(1, OmpLaunchHelper::tadThreads(tadLength, numTads));
+}
+
+TEST_F(OmpLaunchHelperTests, test_tad_threads_5) {
+    auto exp = omp_get_max_threads();
+
+    Nd4jLong numTads = exp;
+    Nd4jLong tadLength = Environment::getInstance()->elementwiseThreshold();
+
+    ASSERT_EQ(exp, OmpLaunchHelper::tadThreads(tadLength, numTads));
+}

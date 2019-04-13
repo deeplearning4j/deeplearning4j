@@ -38,16 +38,13 @@ import org.deeplearning4j.nn.conf.misc.TestGraphVertex;
 import org.deeplearning4j.nn.conf.preprocessor.CnnToFeedForwardPreProcessor;
 import org.deeplearning4j.nn.conf.preprocessor.FeedForwardToCnnPreProcessor;
 import org.deeplearning4j.nn.graph.ComputationGraph;
-import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.learning.config.NoOp;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.Assert.*;
 
 public class ComputationGraphConfigurationTest extends BaseDL4JTest {
 
@@ -55,11 +52,10 @@ public class ComputationGraphConfigurationTest extends BaseDL4JTest {
     public void testJSONBasic() {
         ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345)
                 .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1)).updater(new NoOp())
+                .dist(new NormalDistribution(0, 1)).updater(new NoOp())
                 .graphBuilder().addInputs("input")
-                .addLayer("firstLayer",
-                        new DenseLayer.Builder().nIn(4).nOut(5).activation(Activation.TANH).build(),
-                        "input")
+                .appendLayer("firstLayer",
+                        new DenseLayer.Builder().nIn(4).nOut(5).activation(Activation.TANH).build())
                 .addLayer("outputLayer",
                         new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MCXENT)
                                 .activation(Activation.SOFTMAX).nIn(5).nOut(3).build(),
@@ -148,6 +144,18 @@ public class ComputationGraphConfigurationTest extends BaseDL4JTest {
         try {
             new NeuralNetConfiguration.Builder().graphBuilder().addInputs("input1")
                     .addLayer("dense1", new DenseLayer.Builder().nIn(2).nOut(2).build(), "input1")
+                    .addLayer("out", new OutputLayer.Builder().nIn(2).nOut(2).build()).setOutputs("out")
+                    .build();
+            fail("No exception thrown for invalid configuration");
+        } catch (IllegalStateException e) {
+            //OK - exception is good
+            //e.printStackTrace();
+        }
+
+        // Use appendLayer on first layer
+        try {
+            new NeuralNetConfiguration.Builder().graphBuilder()
+                    .appendLayer("dense1", new DenseLayer.Builder().nIn(2).nOut(2).build())
                     .addLayer("out", new OutputLayer.Builder().nIn(2).nOut(2).build()).setOutputs("out")
                     .build();
             fail("No exception thrown for invalid configuration");
@@ -312,7 +320,7 @@ public class ComputationGraphConfigurationTest extends BaseDL4JTest {
         }
 
         @Override
-        public int numParams(boolean backprop) {
+        public long numParams(boolean backprop) {
             return 0;
         }
 

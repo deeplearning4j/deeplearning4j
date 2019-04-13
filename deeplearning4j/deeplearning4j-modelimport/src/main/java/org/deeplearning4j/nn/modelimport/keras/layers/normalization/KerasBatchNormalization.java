@@ -132,6 +132,7 @@ public class KerasBatchNormalization extends KerasLayer {
                 .dropOut(this.dropout)
                 .minibatch(true)
                 .lockGammaBeta(false)
+                .useLogStd(false)
                 .decay(getMomentumFromConfig(layerConfig))
                 .eps(getEpsFromConfig(layerConfig));
         if (betaConstraint != null)

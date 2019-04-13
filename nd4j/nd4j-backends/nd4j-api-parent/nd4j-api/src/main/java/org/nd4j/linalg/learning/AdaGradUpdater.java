@@ -51,7 +51,7 @@ public class AdaGradUpdater implements GradientUpdater<AdaGrad> {
 
     @Override
     public void setStateViewArray(INDArray viewArray, long[] gradientShape, char gradientOrder, boolean initialize) {
-        if (!viewArray.isRowVector())
+        if (!viewArray.isRowVectorOrScalar())
             throw new IllegalArgumentException("Invalid input: expect row vector input");
         if (initialize)
             viewArray.assign(epsilon);

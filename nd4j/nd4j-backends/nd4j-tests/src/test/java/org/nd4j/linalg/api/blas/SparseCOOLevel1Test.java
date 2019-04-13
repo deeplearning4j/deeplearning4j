@@ -21,6 +21,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.BaseSparseNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -48,7 +49,7 @@ public class SparseCOOLevel1Test extends BaseNd4jTest {
     public void shouldComputeDot() {
         INDArray sparseVec = Nd4j.createSparseCOO(data, indexes, shape);
         //INDArray vec = Nd4j.create( new double[] {1 ,2, 3, 4});
-        INDArray matrix = Nd4j.linspace(1, 4, 4).reshape(1, 4);
+        INDArray matrix = Nd4j.linspace(1, 4, 4, DataType.FLOAT).reshape(1, 4);
         INDArray vec = matrix.getRow(0);
         assertEquals(21, Nd4j.getBlasWrapper().dot(sparseVec, vec), 1e-1);
     }

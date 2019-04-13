@@ -33,19 +33,21 @@ import org.deeplearning4j.nn.params.BidirectionalParamInitializer;
 import org.deeplearning4j.optimize.api.TrainingListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.learning.config.IUpdater;
+import org.nd4j.linalg.learning.regularization.Regularization;
 import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 
 import static org.nd4j.linalg.indexing.NDArrayIndex.interval;
 import static org.nd4j.linalg.indexing.NDArrayIndex.point;
 
 /**
- * Bidirectional is a "wrapper" layer: it wraps any uni-directional RNN layer to make it bidirectional.<br>
- * Note that multiple different modes are supported - these specify how the activations should be combined from
- * the forward and backward RNN networks. See {@link Mode} javadoc for more details.<br>
- * Parameters are not shared here - there are 2 separate copies of the wrapped RNN layer, each with separate parameters.
+ * Bidirectional is a "wrapper" layer: it wraps any uni-directional RNN layer to make it bidirectional.<br> Note that
+ * multiple different modes are supported - these specify how the activations should be combined from the forward and
+ * backward RNN networks. See {@link Mode} javadoc for more details.<br> Parameters are not shared here - there are 2
+ * separate copies of the wrapped RNN layer, each with separate parameters.
  * <br>
  * Usage: {@code .layer(new Bidirectional(new LSTM.Builder()....build())}
  *
@@ -59,13 +61,11 @@ public class Bidirectional extends Layer {
 
     /**
      * This Mode enumeration defines how the activations for the forward and backward networks should be combined.<br>
-     * ADD: out = forward + backward (elementwise addition)<br>
-     * MUL: out = forward * backward (elementwise multiplication)<br>
-     * AVERAGE: out = 0.5 * (forward + backward)<br>
-     * CONCAT: Concatenate the activations.<br>
-     * Where 'forward' is the activations for the forward RNN, and 'backward' is the activations for the backward RNN.
-     * In all cases except CONCAT, the output activations size is the same size as the standard RNN that is being wrapped
-     * by this layer. In the CONCAT case, the output activations size (dimension 1) is 2x larger than the standard RNN's
+     * ADD: out = forward + backward (elementwise addition)<br> MUL: out = forward * backward (elementwise
+     * multiplication)<br> AVERAGE: out = 0.5 * (forward + backward)<br> CONCAT: Concatenate the activations.<br> Where
+     * 'forward' is the activations for the forward RNN, and 'backward' is the activations for the backward RNN. In all
+     * cases except CONCAT, the output activations size is the same size as the standard RNN that is being wrapped by
+     * this layer. In the CONCAT case, the output activations size (dimension 1) is 2x larger than the standard RNN's
      * activations array.
      */
     public enum Mode {
@@ -93,14 +93,15 @@ public class Bidirectional extends Layer {
     /**
      * Create a Bidirectional wrapper for the specified layer
      *
-     * @param mode  Mode to use to combine activations. See {@link Mode} for details
+     * @param mode Mode to use to combine activations. See {@link Mode} for details
      * @param layer layer to wrap
      */
     public Bidirectional(@NonNull Mode mode, @NonNull Layer layer) {
-        if (!(layer instanceof BaseRecurrentLayer || layer instanceof LastTimeStep || layer instanceof BaseWrapperLayer)) {
-            throw new IllegalArgumentException("Cannot wrap a non-recurrent layer: " +
-                    "config must extend BaseRecurrentLayer or LastTimeStep " +
-                    "Got class: " + layer.getClass());
+        if (!(layer instanceof BaseRecurrentLayer || layer instanceof LastTimeStep
+                        || layer instanceof BaseWrapperLayer)) {
+            throw new IllegalArgumentException("Cannot wrap a non-recurrent layer: "
+                            + "config must extend BaseRecurrentLayer or LastTimeStep " + "Got class: "
+                            + layer.getClass());
         }
         this.fwd = layer;
         this.bwd = layer.clone();
@@ -117,7 +118,7 @@ public class Bidirectional extends Layer {
 
     public long getNIn() {
         if (this.fwd instanceof LastTimeStep) {
-            return  ((FeedForwardLayer)((LastTimeStep) this.fwd).getUnderlying()).getNIn();
+            return ((FeedForwardLayer) ((LastTimeStep) this.fwd).getUnderlying()).getNIn();
         } else {
             return ((FeedForwardLayer) this.fwd).getNIn();
         }
@@ -125,8 +126,8 @@ public class Bidirectional extends Layer {
 
     @Override
     public org.deeplearning4j.nn.api.Layer instantiate(NeuralNetConfiguration conf,
-                                                       Collection<TrainingListener> trainingListeners, int layerIndex,
-                                                       INDArray layerParamsView, boolean initializeParams) {
+                    Collection<TrainingListener> trainingListeners, int layerIndex, INDArray layerParamsView,
+                    boolean initializeParams) {
         NeuralNetConfiguration c1 = conf.clone();
         NeuralNetConfiguration c2 = conf.clone();
         c1.setLayer(fwd);
@@ -135,11 +136,9 @@ public class Bidirectional extends Layer {
         long n = layerParamsView.length() / 2;
         INDArray fp = layerParamsView.get(point(0), interval(0, n));
         INDArray bp = layerParamsView.get(point(0), interval(n, 2 * n));
-        org.deeplearning4j.nn.api.Layer f
-                = fwd.instantiate(c1, trainingListeners, layerIndex, fp, initializeParams);
+        org.deeplearning4j.nn.api.Layer f = fwd.instantiate(c1, trainingListeners, layerIndex, fp, initializeParams);
 
-        org.deeplearning4j.nn.api.Layer b
-                = bwd.instantiate(c2, trainingListeners, layerIndex, bp, initializeParams);
+        org.deeplearning4j.nn.api.Layer b = bwd.instantiate(c2, trainingListeners, layerIndex, bp, initializeParams);
 
         BidirectionalLayer ret = new BidirectionalLayer(conf, f, b, layerParamsView);
         Map<String, INDArray> paramTable = initializer().init(conf, layerParamsView, initializeParams);
@@ -190,19 +189,9 @@ public class Bidirectional extends Layer {
     }
 
     @Override
-    public boolean isPretrain() {
-        return fwd.isPretrain();
-    }
-
-    @Override
-    public double getL1ByParam(String paramName) {
+    public List<Regularization> getRegularizationByParam(String paramName){
         //Strip forward/backward prefix from param name
-        return fwd.getL1ByParam(paramName.substring(1));
-    }
-
-    @Override
-    public double getL2ByParam(String paramName) {
-        return fwd.getL2ByParam(paramName.substring(1));
+        return fwd.getRegularizationByParam(paramName.substring(1));
     }
 
     @Override
@@ -211,8 +200,8 @@ public class Bidirectional extends Layer {
     }
 
     /**
-     * Get the updater for the given parameter. Typically the same updater will be used for all updaters, but this
-     * is not necessarily the case
+     * Get the updater for the given parameter. Typically the same updater will be used for all updaters, but this is
+     * not necessarily the case
      *
      * @param paramName Parameter name
      * @return IUpdater for the parameter
@@ -242,29 +231,35 @@ public class Bidirectional extends Layer {
     @Override
     public LayerMemoryReport getMemoryReport(InputType inputType) {
         LayerMemoryReport lmr = fwd.getMemoryReport(inputType);
-        lmr.scale(2);   //Double all memory use
+        lmr.scale(2); //Double all memory use
         return lmr;
     }
 
     @AllArgsConstructor
+    @Getter
+    @Setter
     public static class Builder extends Layer.Builder<Bidirectional.Builder> {
 
         private Mode mode;
         private Layer layer;
 
+        public void setLayer(Layer layer) {
+            rnnLayer(layer);
+        }
+
         public Builder mode(Mode mode) {
-            this.mode = mode;
+            this.setMode(mode);
             return this;
         }
 
         public Builder rnnLayer(Layer layer) {
             if (!(layer instanceof BaseRecurrentLayer || layer instanceof LastTimeStep
-                    || layer instanceof BaseWrapperLayer)) {
-                throw new IllegalArgumentException("Cannot wrap a non-recurrent layer: " +
-                        "config must extend BaseRecurrentLayer or LastTimeStep " +
-                        "Got class: " + layer.getClass());
+                            || layer instanceof BaseWrapperLayer)) {
+                throw new IllegalArgumentException("Cannot wrap a non-recurrent layer: "
+                                + "config must extend BaseRecurrentLayer or LastTimeStep " + "Got class: "
+                                + layer.getClass());
             }
-            this.layer = layer;
+            this.setLayer(layer);
             return this;
         }
 

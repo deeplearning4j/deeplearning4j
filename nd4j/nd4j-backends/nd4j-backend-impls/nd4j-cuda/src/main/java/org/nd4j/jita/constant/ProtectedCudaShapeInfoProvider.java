@@ -17,7 +17,9 @@
 package org.nd4j.jita.constant;
 
 import lombok.extern.slf4j.Slf4j;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
+import org.nd4j.linalg.api.shape.options.ArrayOptionsHelper;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.jita.conf.Configuration;
@@ -64,61 +66,19 @@ public class ProtectedCudaShapeInfoProvider extends BaseShapeInfoProvider {
         return ourInstance;
     }
 
+
     @Override
-    public Pair<DataBuffer, long[]> createShapeInformation(int[] shape, int[] stride, long offset, int elementWiseStride, char order) {
-        return createShapeInformation(shape, stride, offset, elementWiseStride, order, 0L);
+    public Pair<DataBuffer, long[]> createShapeInformation(long[] shape, long[] stride, long elementWiseStride, char order, DataType type) {
+        long extras = ArrayOptionsHelper.setOptionBit(0L, type);
+        return createShapeInformation(shape, stride, elementWiseStride, order, extras);
     }
 
     @Override
-    public Pair<DataBuffer, long[]> createShapeInformation(int[] shape, int[] stride, long offset, int elementWiseStride, char order, long extras) {
+    public Pair<DataBuffer, long[]> createShapeInformation(long[] shape, long[] stride, long elementWiseStride, char order, long extras) {
         // We enforce offset to 0 in shapeBuffer, since we need it for cache efficiency + we don't actually use offset value @ native side
-        offset = 0;
-
-        Integer deviceId = AtomicAllocator.getInstance().getDeviceId();
-
-        ShapeDescriptor descriptor = new ShapeDescriptor(shape, stride, offset, elementWiseStride, order, extras);
-
-        if (!protector.containsDataBuffer(deviceId, descriptor)) {
-            Pair<DataBuffer, long[]> buffer = null;
-            synchronized (this) {
-                if (!protector.containsDataBuffer(deviceId, descriptor)) {
-                    //log.info("Cache miss: {}", descriptor);
-                    buffer = super.createShapeInformation(shape, stride, offset, elementWiseStride, order, extras);
-                    buffer.getFirst().setConstant(true);
-
-                    if (CudaEnvironment.getInstance().getConfiguration().getMemoryModel() == Configuration.MemoryModel.IMMEDIATE) {
-                        Nd4j.getConstantHandler().moveToConstantSpace(buffer.getFirst());
-                    }
-
-                    //deviceCache.get(deviceId).put(descriptor, buffer);
-                    protector.persistDataBuffer(deviceId, descriptor, buffer);
-
-                    bytes.addAndGet(buffer.getFirst().length() * 8 * 2);
-
-                    cacheMiss.incrementAndGet();
-                } else {
-                    buffer = protector.getDataBuffer(deviceId, descriptor);
-                }
-            }
-            return buffer;
-        } else {
-            //       log.info("Cache hit: {}", descriptor);
-            cacheHit.incrementAndGet();
-        }
-
-        return protector.getDataBuffer(deviceId, descriptor); //deviceCache.get(deviceId).get(descriptor);
-    }
-
-
-    @Override
-    public Pair<DataBuffer, long[]> createShapeInformation(long[] shape, long[] stride, long offset, long elementWiseStride, char order) {
-        return createShapeInformation(shape, stride, offset, elementWiseStride, order, 0L);
-    }
-
-    @Override
-    public Pair<DataBuffer, long[]> createShapeInformation(long[] shape, long[] stride, long offset, long elementWiseStride, char order, long extras) {
-        // We enforce offset to 0 in shapeBuffer, since we need it for cache efficiency + we don't actually use offset value @ native side
-        offset = 0;
+        long offset = 0;
+        if (elementWiseStride < 0)
+            elementWiseStride = 0;
 
         Integer deviceId = AtomicAllocator.getInstance().getDeviceId();
 
@@ -129,7 +89,7 @@ public class ProtectedCudaShapeInfoProvider extends BaseShapeInfoProvider {
             synchronized (this) {
                 if (!protector.containsDataBuffer(deviceId, descriptor)) {
                     //log.info("Cache miss: {}", descriptor);
-                    buffer = super.createShapeInformation(shape, stride, offset, elementWiseStride, order, extras);
+                    buffer = super.createShapeInformation(shape, stride, elementWiseStride, order, extras);
                     buffer.getFirst().setConstant(true);
 
                     if (CudaEnvironment.getInstance().getConfiguration().getMemoryModel() == Configuration.MemoryModel.IMMEDIATE) {

@@ -16,6 +16,10 @@
 
 package org.deeplearning4j.models.word2vec.wordstore.inmemory;
 
+import com.google.gson.JsonObject;
+import lombok.extern.slf4j.Slf4j;
+import lombok.val;
+import org.deeplearning4j.models.sequencevectors.serialization.ExtVocabWord;
 import org.deeplearning4j.models.word2vec.Huffman;
 import org.deeplearning4j.models.word2vec.VocabWord;
 import org.junit.Before;
@@ -23,12 +27,12 @@ import org.junit.Test;
 
 import java.util.Collection;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 /**
  * Created by fartovii on 10.12.15.
  */
+@Slf4j
 public class AbstractCacheTest {
 
     @Before
@@ -111,4 +115,76 @@ public class AbstractCacheTest {
         assertTrue(collection.contains("test"));
         assertTrue(collection.contains("tester"));
     }
+
+    @Test
+    public void testSerialization() {
+        AbstractCache<VocabWord> cache = new AbstractCache.Builder<VocabWord>().build();
+
+        val words = new VocabWord[3];
+        words[0] = new VocabWord(1.0, "word");
+        words[1] = new VocabWord(2.0, "test");
+        words[2] = new VocabWord(3.0, "tester");
+
+        for (int i = 0; i < words.length; ++i) {
+            cache.addToken(words[i]);
+            cache.addWordToIndex(i, words[i].getLabel());
+        }
+
+        String json = null;
+        AbstractCache<VocabWord> unserialized = null;
+        try {
+            json = cache.toJson();
+            log.info("{}", json.toString());
+
+            unserialized = AbstractCache.fromJson(json);
+        }
+        catch (Exception e) {
+            e.printStackTrace();
+            fail();
+        }
+        assertEquals(cache.totalWordOccurrences(),unserialized.totalWordOccurrences());
+        assertEquals(cache.totalNumberOfDocs(), unserialized.totalNumberOfDocs());
+
+        for (int i = 0; i < words.length; ++i) {
+            val cached = cache.wordAtIndex(i);
+            val restored = unserialized.wordAtIndex(i);
+            assertNotNull(cached);
+            assertEquals(cached, restored);
+        }
+    }
+
+    @Test
+    public void testUserClassSerialization() {
+        AbstractCache<ExtVocabWord> cache = new AbstractCache.Builder<ExtVocabWord>().build();
+
+        ExtVocabWord words[] = new ExtVocabWord[3];
+        words[0] = new ExtVocabWord("some", 1100, 1.0, "word");
+        words[1] = new ExtVocabWord("none", 23214, 2.0, "test");
+        words[2] = new ExtVocabWord("wwew", 13223, 3.0, "tester");
+
+        for (int i = 0; i < 3; ++i) {
+            cache.addToken(words[i]);
+            cache.addWordToIndex(i, words[i].getLabel());
+        }
+
+        String json = null;
+        AbstractCache<VocabWord> unserialized = null;
+        try {
+            json = cache.toJson();
+            unserialized = AbstractCache.fromJson(json);
+        }
+        catch (Exception e) {
+            e.printStackTrace();
+            fail();
+        }
+        assertEquals(cache.totalWordOccurrences(),unserialized.totalWordOccurrences());
+        assertEquals(cache.totalNumberOfDocs(), unserialized.totalNumberOfDocs());
+        for (int i = 0; i < 3; ++i) {
+            val t = cache.wordAtIndex(i);
+            assertNotNull(t);
+            assertTrue(unserialized.containsWord(t));
+            assertEquals(cache.wordAtIndex(i), unserialized.wordAtIndex(i));
+        }
+    }
+
 }

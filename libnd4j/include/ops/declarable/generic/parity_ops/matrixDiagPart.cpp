@@ -25,8 +25,8 @@
 namespace nd4j {
     namespace ops {
         CUSTOM_OP_IMPL(matrix_diag_part, 1, 1, false, 0, 0) {
-            NDArray<T>* input  = INPUT_VARIABLE(0);
-            NDArray<T>* output = OUTPUT_VARIABLE(0);
+            auto input  = INPUT_VARIABLE(0);
+            auto output = OUTPUT_VARIABLE(0);
             const int inRank = input->rankOf();
 
             REQUIRE_TRUE(inRank >= 2, 0, "CUSTOM_OP matrix_diag_part: input array must have rank >= 2, but %i given!", inRank);
@@ -35,7 +35,6 @@ namespace nd4j {
         }
 
         DECLARE_SHAPE_FN(matrix_diag_part) {
-
             Nd4jLong* outShapeInfo = nullptr;
             auto in = inputShape->at(0);
             int inRank = shape::rank(in);
@@ -46,8 +45,7 @@ namespace nd4j {
             int lastDimension = nd4j::math::nd4j_min(shape::sizeAt(in, -1), shape::sizeAt(in, -2));
             if(outRank == 1) {
                 //output shape is a vector with size min(sizeAt(0), sizeAt(1))
-                ALLOCATE(outShapeInfo, block.getWorkspace(), shape::shapeInfoLength(1), Nd4jLong);
-                shape::shapeVector(lastDimension, outShapeInfo);
+                outShapeInfo = ShapeBuilders::createVectorShapeInfo(ArrayOptions::dataType(in), lastDimension, block.workspace());
             }
             else {
                 ALLOCATE(outShapeInfo, block.getWorkspace(), shape::shapeInfoLength(outRank), Nd4jLong);
@@ -56,10 +54,16 @@ namespace nd4j {
                     outShapeInfo[i + 1] = shape::sizeAt(in, i);
                 outShapeInfo[outRank] = lastDimension;
 
-                shape::updateStrides(outShapeInfo, shape::order(in));
+                ShapeUtils::updateStridesAndType(outShapeInfo, in, shape::order(in));
             }
             return SHAPELIST(outShapeInfo);
     }
+
+        DECLARE_TYPES(matrix_diag_part) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setSameMode(true);
+        }
 }
 }
 

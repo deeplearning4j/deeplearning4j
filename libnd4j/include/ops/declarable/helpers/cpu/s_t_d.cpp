@@ -24,9 +24,9 @@ namespace nd4j {
 namespace ops {
 namespace helpers {
     template <typename T>
-    void _spaceTodepth(NDArray<T> *input, NDArray<T> *output, int block_size, bool isNHWC) {
-            T *input_ptr = input->buffer();
-            T *output_ptr = output->buffer();
+    static void _spaceTodepth_(NDArray *input, NDArray *output, int block_size, bool isNHWC) {
+            auto input_ptr = reinterpret_cast<T *>(input->buffer());
+            auto output_ptr = reinterpret_cast<T *>(output->buffer());
 
             const int batch_size = input->sizeAt(0);
             const int input_depth = isNHWC ? input->sizeAt(3) : input->sizeAt(1);
@@ -45,8 +45,8 @@ namespace helpers {
             
         if (isNHWC) {
             const int total_count = batch_size * input_height * input_width * input_depth;
-            
-            #pragma omp parallel for simd schedule(static)
+
+            PRAGMA_OMP_PARALLEL_FOR_SIMD
             for (int inp_idx = 0; inp_idx < total_count; inp_idx++){
                 // inp_idx = d + input_depth * (w + input_width * (h + input_height * b))
                 const int d = inp_idx % input_depth;
@@ -68,7 +68,8 @@ namespace helpers {
             }
         } else {
             const int total_count = batch_size * output_depth_by_output_area;
-            #pragma omp parallel for simd schedule(static)
+
+            PRAGMA_OMP_PARALLEL_FOR_SIMD
             for (int inp_idx = 0; inp_idx < total_count; inp_idx++) {
                 const int n_iC_oY_bY_oX = inp_idx / block_size;
                 const int bX = inp_idx - n_iC_oY_bY_oX * block_size;
@@ -89,9 +90,12 @@ namespace helpers {
         }
     }
 
-    template void _spaceTodepth<float>(NDArray<float> *input, NDArray<float> *output, int block_size, bool isNHWC);
-    template void _spaceTodepth<float16>(NDArray<float16> *input, NDArray<float16> *output, int block_size, bool isNHWC);
-    template void _spaceTodepth<double>(NDArray<double> *input, NDArray<double> *output, int block_size, bool isNHWC);
+    void _spaceTodepth(NDArray *input, NDArray *output, int block_size, bool isNHWC) {
+        BUILD_SINGLE_SELECTOR(input->dataType(), _spaceTodepth_, (input, output, block_size, isNHWC), LIBND4J_TYPES);
+    }
+
+    BUILD_SINGLE_TEMPLATE(template void _spaceTodepth_, (NDArray *input, NDArray *output, int block_size, bool isNHWC), LIBND4J_TYPES);
+
 }
 }
 }

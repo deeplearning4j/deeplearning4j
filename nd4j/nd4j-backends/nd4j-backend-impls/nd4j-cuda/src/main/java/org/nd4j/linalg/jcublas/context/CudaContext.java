@@ -73,6 +73,8 @@ public class CudaContext {
 
     private int deviceId = -1;
 
+    private long threadId;
+
     private int laneId = 0;
 
     private static NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
@@ -81,6 +83,17 @@ public class CudaContext {
     public CudaContext(boolean free) {
         this();
         this.free = free;
+    }
+
+    @Override
+    public String toString() {
+        return "CudaContext{" +
+                "bufferReduction=" + bufferReduction +
+                ", bufferScalar=" + bufferScalar +
+                ", deviceId=" + deviceId +
+                ", threadId=" + threadId +
+                ", laneId=" + laneId +
+                '}';
     }
 
     public void attachReference(GarbageResourceReference ref) {

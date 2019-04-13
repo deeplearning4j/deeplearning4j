@@ -26,6 +26,7 @@ import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.optimize.api.BaseTrainingListener;
 import org.deeplearning4j.optimize.api.TrainingListener;
 import org.deeplearning4j.util.ModelSerializer;
+import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.io.*;
@@ -195,7 +196,7 @@ public class CheckpointListener extends BaseTrainingListener implements Serializ
         long time = System.currentTimeMillis();
         if(saveEveryUnit != null){
             if(saveEverySinceLast){
-                //Consider last saved when when deciding whether to save
+                //Consider last saved when deciding whether to save
                 long lastSaveTime = (lastCheckpoint != null ? lastCheckpoint.getTimestamp() : startTime);
                 if((time - lastSaveTime) >= saveEveryMs){
                     saveCheckpoint(model);
@@ -333,6 +334,21 @@ public class CheckpointListener extends BaseTrainingListener implements Serializ
         if(!checkpointRecordFile.exists()){
             return Collections.emptyList();
         }
+
+        return availableCheckpoints(rootDir);
+    }
+
+    /**
+     * List all available checkpoints. A checkpoint is 'available' if the file can be loaded. Any checkpoint files that
+     * have been automatically deleted (given the configuration) will not be returned here.
+     * Note that the checkpointInfo.txt file must exist, as this stores checkpoint information
+     *
+     * @return List of checkpoint files that can be loaded from the specified directory
+     */
+    public static List<Checkpoint> availableCheckpoints(File directory){
+        File checkpointRecordFile = new File(directory, "checkpointInfo.txt");
+        Preconditions.checkState(checkpointRecordFile.exists(), "Could not find checkpoint record file at expected path %s", checkpointRecordFile.getAbsolutePath());
+
         List<String> lines;
         try(InputStream is = new BufferedInputStream(new FileInputStream(checkpointRecordFile))){
             lines = IOUtils.readLines(is);
@@ -343,7 +359,7 @@ public class CheckpointListener extends BaseTrainingListener implements Serializ
         List<Checkpoint> out = new ArrayList<>(lines.size()-1); //Assume first line is header
         for( int i=1; i<lines.size(); i++ ){
             Checkpoint c = Checkpoint.fromFileString(lines.get(i));
-            if(new File(rootDir, c.getFilename()).exists()){
+            if(new File(directory, c.getFilename()).exists()){
                 out.add(c);
             }
         }
@@ -355,7 +371,19 @@ public class CheckpointListener extends BaseTrainingListener implements Serializ
      * @return Checkpoint
      */
     public Checkpoint lastCheckpoint(){
-        List<Checkpoint> all = availableCheckpoints();
+        if(!checkpointRecordFile.exists()){
+            return null;
+        }
+        return lastCheckpoint(rootDir);
+    }
+
+    /**
+     * Return the most recent checkpoint, if one exists - otherwise returns null
+     * @param rootDir Root direcotry for the checkpoint files
+     * @return Checkpoint
+     */
+    public static Checkpoint lastCheckpoint(File rootDir){
+        List<Checkpoint> all = availableCheckpoints(rootDir);
         if(all.isEmpty()){
             return null;
         }
@@ -378,7 +406,11 @@ public class CheckpointListener extends BaseTrainingListener implements Serializ
      * @param checkpointNum Checkpoint number to get the model file for
      * @return Model file for the checkpoint
      */
-    public File getFileForCheckpoint(int checkpointNum){
+    public File getFileForCheckpoint(int checkpointNum) {
+        return getFileForCheckpoint(rootDir, checkpointNum);
+    }
+
+    public static File getFileForCheckpoint(File rootDir, int checkpointNum){
         if(checkpointNum < 0){
             throw new IllegalArgumentException("Invalid checkpoint number: " + checkpointNum);
         }
@@ -409,12 +441,44 @@ public class CheckpointListener extends BaseTrainingListener implements Serializ
      * @return The loaded model
      */
     public MultiLayerNetwork loadCheckpointMLN(int checkpointNum) {
-        File f = getFileForCheckpoint(checkpointNum);
+        return loadCheckpointMLN(rootDir, checkpointNum);
+    }
+
+    /**
+     * Load a MultiLayerNetwork for the given checkpoint that resides in the specified root directory
+     *
+     * @param rootDir    Root directory for the checkpoint
+     * @param checkpoint Checkpoint model to load
+     * @return The loaded model
+     */
+    public static MultiLayerNetwork loadCheckpointMLN(File rootDir, Checkpoint checkpoint) {
+        return loadCheckpointMLN(rootDir, checkpoint.getCheckpointNum());
+    }
+
+    /**
+     * Load a MultiLayerNetwork for the given checkpoint number
+     *
+     * @param rootDir       The directory that the checkpoint resides in
+     * @param checkpointNum Checkpoint model to load
+     * @return The loaded model
+     */
+    public static MultiLayerNetwork loadCheckpointMLN(File rootDir, int checkpointNum){
+        File f = getFileForCheckpoint(rootDir, checkpointNum);
         try {
             return ModelSerializer.restoreMultiLayerNetwork(f, true);
         } catch (IOException e){
             throw new RuntimeException(e);
         }
+    }
+
+    /**
+     * Load the last (most recent) checkpoint from the specified root directory
+     * @param rootDir Root directory to load checpoint from
+     * @return MultiLayerNetwork for last checkpoint
+     */
+    public static MultiLayerNetwork loadLastCheckpointMLN(File rootDir){
+        Checkpoint last = lastCheckpoint(rootDir);
+        return loadCheckpointMLN(rootDir, last);
     }
 
     /**
@@ -428,18 +492,49 @@ public class CheckpointListener extends BaseTrainingListener implements Serializ
     }
 
     /**
+     * Load a ComputationGraph for the given checkpoint from the specified root direcotry
+     *
+     * @param checkpoint Checkpoint model to load
+     * @return The loaded model
+     */
+    public static ComputationGraph loadCheckpointCG(File rootDir, Checkpoint checkpoint){
+        return loadCheckpointCG(rootDir, checkpoint.getCheckpointNum());
+    }
+
+    /**
      * Load a ComputationGraph for the given checkpoint
      *
      * @param checkpointNum Checkpoint model number to load
      * @return The loaded model
      */
-    public ComputationGraph loadCheckpointCG(int checkpointNum){
-        File f = getFileForCheckpoint(checkpointNum);
+    public ComputationGraph loadCheckpointCG(int checkpointNum) {
+        return loadCheckpointCG(rootDir, checkpointNum);
+    }
+
+    /**
+     * Load a ComputationGraph for the given checkpoint that resides in the specified root directory
+     *
+     * @param rootDir       Directory that the checkpoint resides in
+     * @param checkpointNum Checkpoint model number to load
+     * @return The loaded model
+     */
+    public static ComputationGraph loadCheckpointCG(File rootDir, int checkpointNum){
+        File f = getFileForCheckpoint(rootDir, checkpointNum);
         try {
             return ModelSerializer.restoreComputationGraph(f, true);
         } catch (IOException e){
             throw new RuntimeException(e);
         }
+    }
+
+    /**
+     * Load the last (most recent) checkpoint from the specified root directory
+     * @param rootDir Root directory to load checpoint from
+     * @return ComputationGraph for last checkpoint
+     */
+    public static ComputationGraph loadLastCheckpointCG(File rootDir){
+        Checkpoint last = lastCheckpoint(rootDir);
+        return loadCheckpointCG(rootDir, last);
     }
 
     public static class Builder {

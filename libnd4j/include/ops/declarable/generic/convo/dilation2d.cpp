@@ -76,9 +76,15 @@ namespace ops {
 
         REQUIRE_TRUE(out_rows > 0 && out_cols > 0, 0, "Dilation2D: outY and outX should have positive values, but got [%i, %i] instead", out_rows, out_cols);
 
-        helpers::_dilation2d<T>(input, weights, output, stride_rows, stride_cols, rate_rows, rate_cols, pad_top, pad_left);
+        helpers::dilation2d(input, weights, output, stride_rows, stride_cols, rate_rows, rate_cols, pad_top, pad_left);
 
         return Status::OK();
+    }
+
+    DECLARE_TYPES(dilation2d) {
+        getOpDescriptor()
+                ->setAllowedInputTypes(nd4j::DataType::ANY)
+                ->setAllowedOutputTypes({ALL_FLOATS});
     }
 
     DECLARE_SHAPE_FN(dilation2d) {
@@ -103,8 +109,7 @@ namespace ops {
             rates = r->template asVectorT<int>();
         } else {
             if (block.numI() < 9) {
-                ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(0), Nd4jLong);
-                shape::shapeScalar(newShape);
+                newShape = ShapeBuilders::createScalarShapeInfo(block.dataType(), block.workspace());
                 return SHAPELIST(newShape);
             }
                 
@@ -124,9 +129,7 @@ namespace ops {
         helpers::_dilation_hw(input, weights, strides, rates, isSameShape, &stride_rows, &stride_cols, &rate_rows, &rate_cols, &pad_top, &pad_left, &out_rows, &out_cols);
 
         std::array<Nd4jLong, 4> shape = {{batch_size, out_rows, out_cols, depth}};
-        ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(4), Nd4jLong);
-        shape::shapeBuffer(4, shape.data(), newShape);
-
+        newShape = nd4j::ShapeBuilders::createShapeInfo(ArrayOptions::dataType(weights), 'c', 4, shape.data(), block.getWorkspace());        
         return SHAPELIST(newShape);
     }
 }

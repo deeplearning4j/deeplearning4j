@@ -18,6 +18,10 @@
 // Created by GS <sgazeos@gmail.com> 3/7/2018
 //
 
+#ifndef __STANDALONE_BUILD__
+#include "config.h"
+#endif
+
 #include <graph/GraphUtils.h>
 #include <cstdlib>
 #include <cstdio>
@@ -34,13 +38,12 @@
 namespace nd4j {
 namespace graph {
 
-bool 
-GraphUtils::filterOperations(GraphUtils::OpList& ops) {
+bool GraphUtils::filterOperations(GraphUtils::OpList& ops) {
     bool modified = false;
 
-    std::vector<OpDescriptor> filtered(ops);
+    std::vector<ops::OpDescriptor> filtered(ops);
 
-    std::sort(filtered.begin(), filtered.end(), [](OpDescriptor a, OpDescriptor b) {
+    std::sort(filtered.begin(), filtered.end(), [](ops::OpDescriptor a, ops::OpDescriptor b) {
         return a.getOpName()->compare(*(b.getOpName())) < 0;
     });
     std::string name = *(filtered[0].getOpName());
@@ -50,7 +53,7 @@ GraphUtils::filterOperations(GraphUtils::OpList& ops) {
         if (0 == filtered[e].getOpName()->compare(name)) {
             // there is a match
             auto fi = std::find_if(ops.begin(), ops.end(), 
-                [name](OpDescriptor a) { 
+                [name](ops::OpDescriptor a) {
                     return a.getOpName()->compare(name) == 0; 
             });
             if (fi != ops.end())
@@ -62,8 +65,7 @@ GraphUtils::filterOperations(GraphUtils::OpList& ops) {
     return modified;
 }
 
-std::string 
-GraphUtils::makeCommandLine(GraphUtils::OpList& ops) {
+std::string GraphUtils::makeCommandLine(GraphUtils::OpList& ops) {
     std::string res;
 
     if (!ops.empty()) {
@@ -171,6 +173,8 @@ GraphUtils::runPreprocessor(char const* input, char const* output) {
     args.emplace_back(std::string("-std=c++11"));
     args.emplace_back(std::string("-o"));
     args.emplace_back(output);
+    args.emplace_back(std::string("-I../blasbuild/cpu/include"));
+    args.emplace_back(std::string("-I../blasbuild/cuda/include"));
     args.emplace_back(std::string("-I../include"));
     args.emplace_back(std::string("-I../blas"));
     args.emplace_back(std::string("-I../include/ops"));
@@ -178,7 +182,17 @@ GraphUtils::runPreprocessor(char const* input, char const* output) {
     args.emplace_back(std::string("-I../include/types"));
     args.emplace_back(std::string("-I../include/array"));
     args.emplace_back(std::string("-I../include/cnpy"));
-    args.emplace_back(std::string("-I../include/ops/declarable")); 
+        args.emplace_back(std::string("-I../include/graph"));
+    args.emplace_back(std::string("-I../include/ops/declarable"));
+#ifdef MKLDNN_PATH
+    args.emplace_back(std::string("-I" MKLDNN_PATH "/include"));
+#endif
+#ifdef OPENBLAS_PATH
+    args.emplace_back(std::string("-I" OPENBLAS_PATH "/include"));
+#endif
+#ifdef FLATBUFFERS_PATH
+    args.emplace_back(std::string("-I" FLATBUFFERS_PATH "/include"));
+#endif
     args.emplace_back(input);
 
     std::string preprocessorCmd(cxx);

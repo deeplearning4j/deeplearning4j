@@ -44,11 +44,11 @@ import org.deeplearning4j.util.ModelSerializer;
 import org.junit.rules.TemporaryFolder;
 import org.nd4j.base.Preconditions;
 import org.nd4j.imports.converters.DifferentialFunctionClassHolder;
-import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.Op;
-import org.nd4j.linalg.api.ops.impl.accum.MatchCondition;
-import org.nd4j.linalg.api.ops.impl.transforms.RelativeError;
+import org.nd4j.linalg.api.ops.impl.reduce.longer.MatchCondition;
+import org.nd4j.linalg.api.ops.impl.transforms.pairwise.RelativeError;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
@@ -148,7 +148,7 @@ public class IntegrationTestRunner {
     }
 
     public static void runTest(TestCase tc, TemporaryFolder testDir) throws Exception {
-        Preconditions.checkState(Nd4j.dataType() == DataBuffer.Type.FLOAT, "Integration tests must be run with float precision!");
+        Preconditions.checkState(Nd4j.dataType() == DataType.FLOAT, "Integration tests must be run with float precision!");
         log.info("Starting test case: {}", tc.getTestName());
         long start = System.currentTimeMillis();
 
@@ -847,8 +847,8 @@ public class IntegrationTestRunner {
     }
 
     private static INDArray relativeError(@NonNull INDArray a1, @NonNull INDArray a2, double minAbsError) {
-        long numNaN1 = Nd4j.getExecutioner().exec(new MatchCondition(a1, Conditions.isNan()), Integer.MAX_VALUE).getInt(0);
-        long numNaN2 = Nd4j.getExecutioner().exec(new MatchCondition(a2, Conditions.isNan()), Integer.MAX_VALUE).getInt(0);
+        long numNaN1 = Nd4j.getExecutioner().exec(new MatchCondition(a1, Conditions.isNan(), Integer.MAX_VALUE)).getInt(0);
+        long numNaN2 = Nd4j.getExecutioner().exec(new MatchCondition(a2, Conditions.isNan(), Integer.MAX_VALUE)).getInt(0);
         Preconditions.checkState(numNaN1 == 0, "Array 1 has NaNs");
         Preconditions.checkState(numNaN2 == 0, "Array 2 has NaNs");
 
@@ -932,7 +932,7 @@ public class IntegrationTestRunner {
                 long pSoFar = 0;
                 String pName = null;
                 for(org.deeplearning4j.nn.api.Layer l : layers){
-                    int n = l.numParams();
+                    long n = l.numParams();
                     if(pSoFar + n < i){
                         pSoFar += n;
                     } else {

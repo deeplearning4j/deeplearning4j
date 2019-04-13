@@ -34,6 +34,7 @@ import org.deeplearning4j.optimize.listeners.CollectScoresListener;
 import org.deeplearning4j.util.ModelSerializer;
 import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
@@ -61,7 +62,7 @@ public class IntegrationTestBaselineGenerator {
         }
 
         //All integration tests are run with float precision!
-        Nd4j.setDataType(DataBuffer.Type.FLOAT);
+        Nd4j.setDataType(DataType.FLOAT);
 
 //        runGeneration(
 //                MLPTestCases.getMLPMnist(),

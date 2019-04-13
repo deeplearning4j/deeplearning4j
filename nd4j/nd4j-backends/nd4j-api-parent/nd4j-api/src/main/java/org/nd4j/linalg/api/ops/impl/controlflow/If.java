@@ -26,10 +26,12 @@ import org.nd4j.autodiff.samediff.SameDiffConditional;
 import org.nd4j.autodiff.samediff.SameDiffFunctionDefinition;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.CustomOp;
 import org.nd4j.linalg.api.ops.CustomOpDescriptor;
 import org.nd4j.linalg.api.ops.Op;
+import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.util.HashUtil;
 import org.nd4j.weightinit.impl.ZeroInitScheme;
 import org.tensorflow.framework.AttrValue;
@@ -86,7 +88,7 @@ public class If extends DifferentialFunction implements CustomOp {
         this.trueBodyExecuted = ifStatement.trueBodyExecuted;
         this.dummyResult = ifStatement.dummyResult;
         this.inputVars = ifStatement.inputVars;
-        this.dummyResult =  this.sameDiff.var("dummyresult-" + UUID.randomUUID().toString(),new long[]{1,1},new ZeroInitScheme());
+        this.dummyResult =  this.sameDiff.var("dummyresult-" + UUID.randomUUID().toString(),new ZeroInitScheme(), DataType.FLOAT, 1);
         if(sameDiff.getShapeForVarName(dummyResult.getVarName()) == null)
             sameDiff.putShapeForVarName(dummyResult.getVarName(),new long[]{1,1});
 
@@ -114,7 +116,7 @@ public class If extends DifferentialFunction implements CustomOp {
         this.falseBody = falseBody;
         this.blockName = blockName;
         //need to add the op to the list of ops to be executed when running backwards
-        this.dummyResult =  parent.var("dummyresult-" + UUID.randomUUID().toString(),new long[]{1,1},new ZeroInitScheme('f'));
+        this.dummyResult =  parent.var("dummyresult-" + UUID.randomUUID().toString(),new ZeroInitScheme('f'), DataType.FLOAT, 1);
         parent.addOutgoingFor(new SDVariable[]{dummyResult},this);
 
         //create a samediff sub graph for running just the execution
@@ -207,6 +209,11 @@ public class If extends DifferentialFunction implements CustomOp {
     }
 
     @Override
+    public boolean[] bArgs() {
+        return new boolean[0];
+    }
+
+    @Override
     public void addIArgument(int... arg) {
 
     }
@@ -217,8 +224,18 @@ public class If extends DifferentialFunction implements CustomOp {
     }
 
     @Override
+    public void addBArgument(boolean... arg) {
+
+    }
+
+    @Override
     public void removeIArgument(Integer arg) {
 
+    }
+
+    @Override
+    public Boolean getBArgument(int index) {
+        return null;
     }
 
     @Override
@@ -248,6 +265,11 @@ public class If extends DifferentialFunction implements CustomOp {
 
     @Override
     public int numTArguments() {
+        return 0;
+    }
+
+    @Override
+    public int numBArguments() {
         return 0;
     }
 
@@ -352,8 +374,8 @@ public class If extends DifferentialFunction implements CustomOp {
 
 
     @Override
-    public List<long[]> calculateOutputShape() {
-        return Arrays.asList(new long[]{1,1});
+    public List<LongShapeDescriptor> calculateOutputShape() {
+        return Arrays.asList(LongShapeDescriptor.fromShape(new long[0], DataType.BOOL));
     }
 
     @Override
@@ -363,11 +385,6 @@ public class If extends DifferentialFunction implements CustomOp {
 
     @Override
     public void assertValidForExecution() {
-
-    }
-
-    @Override
-    public void populateInputsAndOutputsFromSameDiff() {
 
     }
 

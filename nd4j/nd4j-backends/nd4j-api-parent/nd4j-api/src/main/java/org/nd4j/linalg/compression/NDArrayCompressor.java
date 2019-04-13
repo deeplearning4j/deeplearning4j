@@ -17,6 +17,7 @@
 package org.nd4j.linalg.compression;
 
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 /**
@@ -96,7 +97,7 @@ public interface NDArrayCompressor {
      * @param buffer the buffer to decompress
      * @return the decompressed data buffer
      */
-    DataBuffer decompress(DataBuffer buffer);
+    DataBuffer decompress(DataBuffer buffer, DataType targetType);
 
     /**
      * This method creates compressed INDArray from Java float array, skipping usual INDArray instantiation routines

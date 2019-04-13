@@ -28,6 +28,7 @@ import org.deeplearning4j.nn.params.Convolution3DParamInitializer;
 import org.deeplearning4j.optimize.api.TrainingListener;
 import org.deeplearning4j.util.Convolution3DUtils;
 import org.deeplearning4j.util.ConvolutionUtils;
+import org.deeplearning4j.util.ValidationUtils;
 import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
@@ -46,24 +47,22 @@ import java.util.Map;
 public class Convolution3D extends ConvolutionLayer {
 
     /**
-     * An optional dataFormat: "NDHWC" or "NCDHW". Defaults to "NCDHW".<br>
-     * The data format of the input and output data. <br>
-     * For "NCDHW" (also known as 'channels first' format), the data storage order is: [batchSize, inputChannels, inputDepth, inputHeight, inputWidth].<br>
-     * For "NDHWC" ('channels last' format), the data is stored in the order of: [batchSize, inputDepth, inputHeight, inputWidth, inputChannels].
+     * An optional dataFormat: "NDHWC" or "NCDHW". Defaults to "NCDHW".<br> The data format of the input and output
+     * data. <br> For "NCDHW" (also known as 'channels first' format), the data storage order is: [batchSize,
+     * inputChannels, inputDepth, inputHeight, inputWidth].<br> For "NDHWC" ('channels last' format), the data is stored
+     * in the order of: [batchSize, inputDepth, inputHeight, inputWidth, inputChannels].
      */
     public enum DataFormat {
         NCDHW, NDHWC
     }
 
-    private ConvolutionMode mode = ConvolutionMode.Same;  // in libnd4j: 0 - same mode, 1 - valid mode
+    private ConvolutionMode mode = ConvolutionMode.Same; // in libnd4j: 0 - same mode, 1 - valid mode
     private DataFormat dataFormat = DataFormat.NCDHW; // in libnd4j: 1 - NCDHW, 0 - NDHWC
 
     /**
-     * 3-dimensional convolutional layer configuration
-     * nIn in the input layer is the number of channels
-     * nOut is the number of filters to be used in the net or in other words the depth
-     * The builder specifies the filter/kernel size, the stride and padding
-     * The pooling layer takes the kernel size
+     * 3-dimensional convolutional layer configuration nIn in the input layer is the number of channels nOut is the
+     * number of filters to be used in the net or in other words the depth The builder specifies the filter/kernel size,
+     * the stride and padding The pooling layer takes the kernel size
      */
     public Convolution3D(Builder builder) {
         super(builder);
@@ -79,20 +78,24 @@ public class Convolution3D extends ConvolutionLayer {
     @Override
     public Convolution3D clone() {
         Convolution3D clone = (Convolution3D) super.clone();
-        if (clone.kernelSize != null)
+        if (clone.kernelSize != null) {
             clone.kernelSize = clone.kernelSize.clone();
-        if (clone.stride != null)
+        }
+        if (clone.stride != null) {
             clone.stride = clone.stride.clone();
-        if (clone.padding != null)
+        }
+        if (clone.padding != null) {
             clone.padding = clone.padding.clone();
-        if (clone.dilation != null)
+        }
+        if (clone.dilation != null) {
             clone.dilation = clone.dilation.clone();
+        }
         return clone;
     }
 
     @Override
     public Layer instantiate(NeuralNetConfiguration conf, Collection<TrainingListener> iterationListeners,
-                             int layerIndex, INDArray layerParamsView, boolean initializeParams) {
+                    int layerIndex, INDArray layerParamsView, boolean initializeParams) {
         LayerValidation.assertNInNOutSet("Convolution3D", getLayerName(), layerIndex, getNIn(), getNOut());
 
         Convolution3DLayer ret = new Convolution3DLayer(conf);
@@ -114,17 +117,17 @@ public class Convolution3D extends ConvolutionLayer {
     public InputType getOutputType(int layerIndex, InputType inputType) {
         if (inputType == null || inputType.getType() != InputType.Type.CNN3D) {
             throw new IllegalStateException("Invalid input for Convolution3D layer (layer name=\"" + getLayerName()
-                    + "\"): Expected CNN3D input, got " + inputType);
+                            + "\"): Expected CNN3D input, got " + inputType);
         }
-        return InputTypeUtil.getOutputTypeCnn3DLayers(inputType, kernelSize, stride, padding, dilation,
-                convolutionMode, nOut, layerIndex, getLayerName(), Convolution3DLayer.class);
+        return InputTypeUtil.getOutputTypeCnn3DLayers(inputType, kernelSize, stride, padding, dilation, convolutionMode,
+                        nOut, layerIndex, getLayerName(), Convolution3DLayer.class);
     }
 
     @Override
     public InputPreProcessor getPreProcessorForInputType(InputType inputType) {
         if (inputType == null) {
             throw new IllegalStateException("Invalid input for Convolution3D layer (layer name=\"" + getLayerName()
-                    + "\"): input is null");
+                            + "\"): input is null");
         }
 
         return InputTypeUtil.getPreProcessorForInputTypeCnn3DLayers(inputType, getLayerName());
@@ -135,7 +138,7 @@ public class Convolution3D extends ConvolutionLayer {
     public void setNIn(InputType inputType, boolean override) {
         if (inputType == null || inputType.getType() != InputType.Type.CNN3D) {
             throw new IllegalStateException("Invalid input for Convolution 3D layer (layer name=\"" + getLayerName()
-                    + "\"): Expected CNN3D input, got " + inputType);
+                            + "\"): Expected CNN3D input, got " + inputType);
         }
 
         if (nIn <= 0 || override) {
@@ -145,32 +148,35 @@ public class Convolution3D extends ConvolutionLayer {
     }
 
     @AllArgsConstructor
+    @Getter
+    @Setter
     public static class Builder extends ConvolutionLayer.BaseConvBuilder<Builder> {
 
+        /**
+         * The data format for input and output activations.<br> NCDHW: activations (in/out) should have shape
+         * [minibatch, channels, depth, height, width]<br> NDHWC: activations (in/out) should have shape [minibatch,
+         * depth, height, width, channels]<br>
+         */
         private DataFormat dataFormat = DataFormat.NCDHW;
 
         public Builder() {
-            super(new int[]{2, 2, 2}, new int[]{1, 1, 1}, new int[]{0, 0, 0}, new int[]{1, 1, 1}, 3);
+            super(new int[] {2, 2, 2}, new int[] {1, 1, 1}, new int[] {0, 0, 0}, new int[] {1, 1, 1}, 3);
         }
 
         public Builder(int[] kernelSize, int[] stride, int[] padding, int[] dilation) {
             super(kernelSize, stride, padding, dilation, 3);
-            Preconditions.checkState(kernelSize.length == 3, "Kernel size argument has to have length 3.");
-            Preconditions.checkState(stride.length == 3, "Stride size argument has to have length 3.");
-            Preconditions.checkState(padding.length == 3, "Padding size argument has to have length 3.");
-            Preconditions.checkState(dilation.length == 3, "Padding size argument has to have length 3.");
         }
 
         public Builder(int[] kernelSize, int[] stride, int[] padding) {
-            this(kernelSize, stride, padding, new int[]{1,1,1});
+            this(kernelSize, stride, padding, new int[] {1, 1, 1});
         }
 
         public Builder(int[] kernelSize, int[] stride) {
-            this(kernelSize, stride, new int[]{0,0,0});
+            this(kernelSize, stride, new int[] {0, 0, 0});
         }
 
         public Builder(int... kernelSize) {
-            this(kernelSize, new int[]{1,1,1});
+            this(kernelSize, new int[] {1, 1, 1});
         }
 
         /**
@@ -180,8 +186,7 @@ public class Convolution3D extends ConvolutionLayer {
          * @return 3D convolution layer builder
          */
         public Builder kernelSize(int... kernelSize) {
-            Preconditions.checkState(kernelSize.length == 3, "Kernel size argument has to have length 3.");
-            this.kernelSize = kernelSize;
+            this.setKernelSize(kernelSize);
             return this;
         }
 
@@ -192,8 +197,7 @@ public class Convolution3D extends ConvolutionLayer {
          * @return 3D convolution layer builder
          */
         public Builder stride(int... stride) {
-            Preconditions.checkState(stride.length == 3, "Stride size argument has to have length 3.");
-            this.stride = stride;
+            this.setStride(stride);
             return this;
         }
 
@@ -204,9 +208,7 @@ public class Convolution3D extends ConvolutionLayer {
          * @return 3D convolution layer builder
          */
         public Builder padding(int... padding) {
-            Preconditions.checkState(padding.length == 3, "Padding size argument has to have length 3.");
-
-            this.padding = padding;
+            this.setPadding(padding);
             return this;
         }
 
@@ -217,20 +219,67 @@ public class Convolution3D extends ConvolutionLayer {
          * @return 3D convolution layer builder
          */
         public Builder dilation(int... dilation) {
-            Preconditions.checkState(dilation.length == 3, "Dilation size argument has to have length 3.");
-            this.dilation = dilation;
+            this.setDilation(dilation);
             return this;
         }
 
         public Builder convolutionMode(ConvolutionMode mode) {
-            this.convolutionMode = mode;
+            this.setConvolutionMode(mode);
             return this;
         }
 
+        /**
+         * The data format for input and output activations.<br> NCDHW: activations (in/out) should have shape
+         * [minibatch, channels, depth, height, width]<br> NDHWC: activations (in/out) should have shape [minibatch,
+         * depth, height, width, channels]<br>
+         *
+         * @param dataFormat Data format to use for activations
+         */
         public Builder dataFormat(DataFormat dataFormat) {
-            this.dataFormat = dataFormat;
+            this.setDataFormat(dataFormat);
             return this;
         }
+
+        /**
+         * Set kernel size for 3D convolutions in (depth, height, width) order
+         *
+         * @param kernelSize kernel size
+         */
+        @Override
+        public void setKernelSize(int... kernelSize) {
+            this.kernelSize = ValidationUtils.validate3NonNegative(kernelSize, "kernelSize");
+        }
+
+        /**
+         * Set stride size for 3D convolutions in (depth, height, width) order
+         *
+         * @param stride kernel size
+         */
+        @Override
+        public void setStride(int... stride) {
+            this.stride = ValidationUtils.validate3NonNegative(stride, "stride");
+        }
+
+        /**
+         * Set padding size for 3D convolutions in (depth, height, width) order
+         *
+         * @param padding kernel size
+         */
+        @Override
+        public void setPadding(int... padding) {
+            this.padding = ValidationUtils.validate3NonNegative(padding, "padding");
+        }
+
+        /**
+         * Set dilation size for 3D convolutions in (depth, height, width) order
+         *
+         * @param dilation kernel size
+         */
+        @Override
+        public void setDilation(int... dilation) {
+            this.dilation = ValidationUtils.validate3NonNegative(dilation, "dilation");
+        }
+
 
 
         @Override

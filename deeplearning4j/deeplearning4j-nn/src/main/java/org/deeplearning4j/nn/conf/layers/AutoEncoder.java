@@ -31,15 +31,14 @@ import java.util.Collection;
 import java.util.Map;
 
 /**
- * Autoencoder layer.
- * Adds noise to input and learn a reconstruction function.
- *
+ * Autoencoder layer. Adds noise to input and learn a reconstruction function.
  */
 @Data
 @NoArgsConstructor
 @ToString(callSuper = true)
 @EqualsAndHashCode(callSuper = true)
 public class AutoEncoder extends BasePretrainNetwork {
+
     protected double corruptionLevel;
     protected double sparsity;
 
@@ -101,35 +100,50 @@ public class AutoEncoder extends BasePretrainNetwork {
     }
 
     @AllArgsConstructor
+    @Getter
+    @Setter
     public static class Builder extends BasePretrainNetwork.Builder<Builder> {
+
+        /**
+         * Level of corruption - 0.0 (none) to 1.0 (all values corrupted)
+         *
+         */
         private double corruptionLevel = 3e-1f;
+
+        /**
+         * Autoencoder sparity parameter
+         *
+         */
         private double sparsity = 0f;
 
         public Builder() {}
 
         /**
          * Builder - sets the level of corruption - 0.0 (none) to 1.0 (all values corrupted)
+         *
          * @param corruptionLevel Corruption level (0 to 1)
          */
         public Builder(double corruptionLevel) {
-            this.corruptionLevel = corruptionLevel;
+            this.setCorruptionLevel(corruptionLevel);
         }
 
         /**
          * Level of corruption - 0.0 (none) to 1.0 (all values corrupted)
+         *
          * @param corruptionLevel Corruption level (0 to 1)
          */
         public Builder corruptionLevel(double corruptionLevel) {
-            this.corruptionLevel = corruptionLevel;
+            this.setCorruptionLevel(corruptionLevel);
             return this;
         }
 
         /**
          * Autoencoder sparity parameter
+         *
          * @param sparsity Sparsity
          */
         public Builder sparsity(double sparsity) {
-            this.sparsity = sparsity;
+            this.setSparsity(sparsity);
             return this;
         }
 

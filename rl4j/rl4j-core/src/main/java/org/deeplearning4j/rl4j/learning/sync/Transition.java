@@ -79,9 +79,7 @@ public class Transition<A> {
     public static INDArray[] append(INDArray[] history, INDArray append) {
         INDArray[] appended = new INDArray[history.length];
         appended[0] = append;
-        for (int i = 0; i < history.length - 1; i++) {
-            appended[i + 1] = history[i];
-        }
+        System.arraycopy(history, 0, appended, 1, history.length - 1);
         return appended;
     }
 

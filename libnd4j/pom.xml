@@ -63,10 +63,13 @@
     </developers>
 
     <properties>
+        <!-- CUDA version is linked with the artifact name so cannot move to parent pom.xml -->
+        <cuda.version>10.1</cuda.version>
+        <cudnn.version>7.5</cudnn.version>
         <libnd4j.build>release</libnd4j.build>
         <libnd4j.chip>cpu</libnd4j.chip>
         <libnd4j.platform>${javacpp.platform}</libnd4j.platform>
-        <libnd4j.extension>${javacpp.platform.extension}</libnd4j.extension>
+        <libnd4j.extension></libnd4j.extension>
         <libnd4j.cuda></libnd4j.cuda>
         <libnd4j.compute></libnd4j.compute>
         <libnd4j.classifier>${libnd4j.platform}</libnd4j.classifier>
@@ -88,12 +91,12 @@
                 <version>${javacpp.version}</version>
                 <dependencies>
                     <dependency>
-                        <groupId>org.bytedeco.javacpp-presets</groupId>
+                        <groupId>org.bytedeco</groupId>
                         <artifactId>mkl-dnn-platform</artifactId>
                         <version>${mkl-dnn.javacpp.version}</version>
                     </dependency>
                     <dependency>
-                        <groupId>org.bytedeco.javacpp-presets</groupId>
+                        <groupId>org.bytedeco</groupId>
                         <artifactId>openblas-platform</artifactId>
                         <version>${openblas.version}-${javacpp-presets.version}</version>
                     </dependency>
@@ -102,29 +105,33 @@
                     <properties>${libnd4j.platform}</properties>
                     <buildResources>
                         <buildResource>/${javacpp.platform.library.path}/</buildResource>
-                        <buildResource>/org/bytedeco/javacpp/${libnd4j.platform}/</buildResource>
+                        <buildResource>/org/bytedeco/mkldnn/${libnd4j.platform}/</buildResource>
+                        <buildResource>/org/bytedeco/openblas/${libnd4j.platform}/</buildResource>
                     </buildResources>
                     <includeResources>
                         <includeResource>/${javacpp.platform.library.path}/include/</includeResource>
-                        <includeResource>/org/bytedeco/javacpp/${libnd4j.platform}/include/</includeResource>
+                        <includeResource>/org/bytedeco/mkldnn/${libnd4j.platform}/include/</includeResource>
+                        <includeResource>/org/bytedeco/openblas/${libnd4j.platform}/include/</includeResource>
                     </includeResources>
                     <linkResources>
                         <linkResource>/${javacpp.platform.library.path}/</linkResource>
                         <linkResource>/${javacpp.platform.library.path}/lib/</linkResource>
-                        <linkResource>/org/bytedeco/javacpp/${libnd4j.platform}/</linkResource>
-                        <linkResource>/org/bytedeco/javacpp/${libnd4j.platform}/lib/</linkResource>
+                        <linkResource>/org/bytedeco/mkldnn/${libnd4j.platform}/</linkResource>
+                        <linkResource>/org/bytedeco/mkldnn/${libnd4j.platform}/</linkResource>
+                        <linkResource>/org/bytedeco/openblas/${libnd4j.platform}/</linkResource>
+                        <linkResource>/org/bytedeco/openblas/${libnd4j.platform}/lib/</linkResource>
                     </linkResources>
                 </configuration>
                 <executions>
                     <execution>
-                        <id>javacpp.cppbuild.validate</id>
+                        <id>javacpp-cppbuild-validate</id>
                         <phase>validate</phase>
                         <goals>
                           <goal>build</goal>
                         </goals>
                     </execution>
                     <execution>
-                        <id>javacpp.cppbuild.compile</id>
+                        <id>javacpp-cppbuild-compile</id>
                         <phase>compile</phase>
                         <goals>
                             <goal>build</goal>
@@ -143,7 +150,7 @@
                                 <argument>--chip-extension</argument>
                                 <argument>${libnd4j.extension}</argument>
                                 <argument>--chip-version</argument>
-                                <argument>${libnd4j.cuda}</argument>
+                                <argument>${cuda.version}</argument>
                                 <argument>--compute</argument>
                                 <argument>${libnd4j.compute}</argument>
                                 <argument>${libnd4j.tests}</argument>
@@ -152,7 +159,7 @@
                         </configuration>
                     </execution>
                     <execution>
-                        <id>libnd4j.test.run</id>
+                        <id>libnd4j-test-run</id>
                         <phase>test</phase>
                         <goals>
                             <goal>build</goal>
@@ -173,7 +180,7 @@
                 <version>2.6</version>
                 <executions>
                     <execution>
-                        <id>javacpp.cppbuild.clean</id>
+                        <id>javacpp-cppbuild-clean</id>
                         <phase>clean</phase>
                         <goals>
                             <goal>clean</goal>
@@ -217,7 +224,7 @@
                 </property>
             </activation>
             <properties>
-                <libnd4j.classifier>${libnd4j.platform}-${libnd4j.chip}</libnd4j.classifier>
+                <libnd4j.classifier>${libnd4j.platform}-${libnd4j.chip}-${cuda.version}</libnd4j.classifier>
             </properties>
         </profile>
         <profile>
@@ -239,9 +246,9 @@
                 </property>
             </activation>
             <properties>
-                <!-- Leave libnd4j.chip as is to build CPU version as well. -->
+                <!-- Leave libnd4j.chip and libnd4j.classifier as is to build CPU version as well. -->
                 <!-- <libnd4j.chip>cuda</libnd4j.chip> -->
-                <libnd4j.classifier>${libnd4j.platform}-cuda-${libnd4j.cuda}</libnd4j.classifier>
+                <!-- <libnd4j.classifier>${libnd4j.platform}-cuda-${cuda.version}</libnd4j.classifier> -->
             </properties>
             <build>
                 <plugins>
@@ -254,7 +261,7 @@
                         </configuration>
                         <executions>
                             <execution>
-                                <id>javacpp.cppbuild.compile.cuda</id>
+                                <id>javacpp-cppbuild-compile-cuda</id>
                                 <phase>compile</phase>
                                 <goals>
                                     <goal>build</goal>
@@ -265,6 +272,8 @@
                                         <program>bash</program>
                                         <argument>${project.basedir}/buildnativeoperations.sh
                                         </argument>
+                                        <argument>--build-type</argument>
+                                        <argument>${libnd4j.build}</argument>
                                         <argument>--chip</argument>
                                         <argument>cuda</argument>
                                         <argument>--platform</argument>
@@ -272,11 +281,30 @@
                                         <argument>--chip-extension</argument>
                                         <argument>${libnd4j.extension}</argument>
                                         <argument>--chip-version</argument>
-                                        <argument>${libnd4j.cuda}</argument>
+                                        <argument>${cuda.version}</argument>
                                         <argument>--compute</argument>
                                         <argument>${libnd4j.compute}</argument>
+                                        <argument>${libnd4j.tests}</argument>
                                     </buildCommand>
                                     <workingDirectory>${project.basedir}</workingDirectory>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <artifactId>maven-assembly-plugin</artifactId>
+                        <version>3.0.0</version>
+                        <executions>
+                            <execution>
+                                <id>libnd4j-package-cuda</id>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>single</goal>
+                                </goals>
+                                <configuration>
+                                    <descriptors>
+                                        <descriptor>assembly-cuda.xml</descriptor>
+                                    </descriptors>
                                 </configuration>
                             </execution>
                         </executions>
@@ -300,7 +328,7 @@
 
                         <executions>
                             <execution>
-                                <id>libnd4j.test.clean</id>
+                                <id>libnd4j-test-clean</id>
                                 <phase>clean</phase>
                                 <goals>
                                     <goal>exec</goal>

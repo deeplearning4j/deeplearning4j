@@ -20,12 +20,11 @@
 
 #include "graph/execution/LogicReturn.h"
 #include <helpers/EnumUtils.h>
+#include <Status.h>
 
 namespace nd4j {
     namespace graph {
-
-        template <typename T>
-        Nd4jStatus LogicReturn<T>::processNode(Graph<T> *graph, Node<T> *node) {
+        Nd4jStatus LogicReturn::processNode(Graph *graph, Node *node) {
             auto __variableSpace = graph->getVariableSpace();
 
             for (int e = 0; e < node->input()->size(); e++) {
@@ -47,14 +46,10 @@ namespace nd4j {
                 varOut->getNDArray()->assign(varIn->getNDArray());
 
                 if (Environment::getInstance()->isDebugAndVerbose())
-                    nd4j_debug("In after: [%f]; Out after: [%f]\n", varIn->getNDArray()->meanNumber(), varOut->getNDArray()->meanNumber());
+                    nd4j_debug("In after: [%f]; Out after: [%f]\n", varIn->getNDArray()->meanNumber().e<float>(0), varOut->getNDArray()->meanNumber().e<float>(0));
             }
 
-            return ND4J_STATUS_OK;
+            return nd4j::Status::OK();
         }
-
-        template class ND4J_EXPORT LogicReturn<float>;
-        template class ND4J_EXPORT LogicReturn<float16>;
-        template class ND4J_EXPORT LogicReturn<double>;
     }
 }

@@ -18,6 +18,7 @@ package org.nd4j.linalg.api.ops.random.impl;
 
 import lombok.NonNull;
 import org.nd4j.autodiff.samediff.SDVariable;
+import org.nd4j.base.Preconditions;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.random.BaseRandomOp;
@@ -46,7 +47,7 @@ public class BinomialDistributionEx extends BaseRandomOp {
      * @param probability
      */
     public BinomialDistributionEx(@NonNull INDArray z, int trials, double probability) {
-        init(z, z, z, z.lengthLong());
+        super(z, z, z);
         this.trials = trials;
         this.probability = probability;
         this.extraArgs = new Object[] {(double) this.trials, this.probability};
@@ -59,13 +60,14 @@ public class BinomialDistributionEx extends BaseRandomOp {
      * @param probabilities array with probability value for each trial
      */
     public BinomialDistributionEx(@NonNull INDArray z, int trials, @NonNull INDArray probabilities) {
-        if (z.lengthLong() != probabilities.lengthLong())
+        super(z, probabilities, z);
+        if (z.length() != probabilities.length())
             throw new IllegalStateException("Length of probabilities array should match length of target array");
 
         if (probabilities.elementWiseStride() < 1)
             throw new IllegalStateException("Probabilities array shouldn't have negative elementWiseStride");
 
-        init(z, probabilities, z, z.lengthLong());
+        Preconditions.checkArgument(probabilities.dataType() == z.dataType(), "Probabilities and Z operand should have same data type");
 
         this.trials = trials;
         this.probability = 0.0;
@@ -96,12 +98,6 @@ public class BinomialDistributionEx extends BaseRandomOp {
     }
 
     @Override
-    public boolean isExecSpecial() {
-        return true;
-    }
-
-
-    @Override
     public String onnxName() {
         throw new NoOpNameFoundException("No onnx op opName found for " +  opName());
     }
@@ -110,7 +106,6 @@ public class BinomialDistributionEx extends BaseRandomOp {
     public String tensorflowName() {
         throw new NoOpNameFoundException("No tensorflow op opName found for " +  opName());
     }
-
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {

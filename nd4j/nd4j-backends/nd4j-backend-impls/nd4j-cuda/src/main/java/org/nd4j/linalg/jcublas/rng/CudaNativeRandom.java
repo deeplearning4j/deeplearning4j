@@ -21,6 +21,7 @@ import org.bytedeco.javacpp.PointerPointer;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.jcublas.context.CudaContext;
+import org.nd4j.nativeblas.Nd4jCuda;
 import org.nd4j.rng.NativeRandom;
 
 import java.util.List;
@@ -40,27 +41,51 @@ public class CudaNativeRandom extends NativeRandom {
     }
 
     public CudaNativeRandom(long seed) {
-        this(seed, 10000000);
+        super(seed);
     }
 
-    public CudaNativeRandom(long seed, long numberOfElements) {
-        super(seed, numberOfElements);
+    public CudaNativeRandom(long seed, long nodeSeed) {
+        super(seed, nodeSeed);
     }
 
     @Override
     public void init() {
-        statePointer = nativeOps.initRandom(getExtraPointers(), seed, numberOfElements,
-                        AtomicAllocator.getInstance().getPointer(stateBuffer));
-
-        AtomicAllocator.getInstance().getAllocationPoint(stateBuffer).tickDeviceWrite();
+        statePointer = new Nd4jCuda.RandomGenerator(seed, seed ^ 0xdeadbeef);
+        setSeed(seed);
     }
 
     @Override
     public PointerPointer getExtraPointers() {
-        PointerPointer ptr = new PointerPointer(4);
-        CudaContext context = (CudaContext) AtomicAllocator.getInstance().getDeviceContext().getContext();
-        ptr.put(0, AtomicAllocator.getInstance().getHostPointer(stateBuffer));
-        ptr.put(1, context.getOldStream());
-        return ptr;
+        return null;
+    }
+
+    @Override
+    public void setSeed(long seed) {
+        this.seed = seed;
+        this.currentPosition.set(0);
+        ((Nd4jCuda.RandomGenerator) statePointer).setStates(seed, seed ^ 0xdeadbeef);
+    }
+
+    @Override
+    public long getSeed() {
+        return seed;
+    }
+
+    @Override
+    public int nextInt() {
+        return ((Nd4jCuda.RandomGenerator) statePointer).relativeInt(currentPosition.getAndIncrement());
+    }
+
+    @Override
+    public long nextLong() {
+        return ((Nd4jCuda.RandomGenerator) statePointer).relativeLong(currentPosition.getAndIncrement());
+    }
+
+    public long rootState() {
+        return ((Nd4jCuda.RandomGenerator) statePointer).rootState();
+    }
+
+    public long nodeState() {
+        return ((Nd4jCuda.RandomGenerator) statePointer).nodeState();
     }
 }

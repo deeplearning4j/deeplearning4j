@@ -22,20 +22,32 @@
 #if NOT_EXCLUDED(OP_clipbyvalue)
 
 #include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/helpers/transforms.h>
 
 namespace nd4j {
     namespace ops {
         CONFIGURABLE_OP_IMPL(clipbyvalue, 1, 1, true, 2, 0) {
-            NDArray<T>* input = INPUT_VARIABLE(0);
-            NDArray<T>* output = this->getZ(block);
+            auto input = INPUT_VARIABLE(0);
+            auto output = OUTPUT_VARIABLE(0);
 
-            input->template applyTransform<simdOps::ClipByValue<T>>(output, block.getTArguments()->data());
+            // FIXME: extra args!!!
+            auto left = T_ARG(0);
+            auto right = T_ARG(1);
 
-            STORE_RESULT(*output);
+            REQUIRE_TRUE(left < right, 0, "clip_by_value: left bound should be lesser than right. But %f >= %f given.", left, right);
+            //input->applyTransform(transform::ClipByValue, output, block.getTArguments()->data());
+            helpers::clipByValue(*input, left, right, *output);
+            //STORE_RESULT(*output);
 
-            return ND4J_STATUS_OK;
+            return Status::OK();
         }
         DECLARE_SYN(ClipByValue, clipbyvalue);
+
+        DECLARE_TYPES(clipbyvalue) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setAllowedOutputTypes({ALL_FLOATS});
+        }
     }
 }
 

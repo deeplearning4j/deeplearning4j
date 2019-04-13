@@ -31,11 +31,6 @@
 
     <dependencies>
         <dependency>
-            <groupId>org.nd4j</groupId>
-            <artifactId>nd4j-base64</artifactId>
-            <version>${nd4j.version}</version>
-        </dependency>
-        <dependency>
             <groupId>org.datavec</groupId>
             <artifactId>datavec-api</artifactId>
             <version>${datavec.version}</version>
@@ -63,7 +58,7 @@
             <id>test-nd4j-native</id>
         </profile>
         <profile>
-            <id>test-nd4j-cuda-10.0</id>
+            <id>test-nd4j-cuda-10.1</id>
         </profile>
     </profiles>
 </project>

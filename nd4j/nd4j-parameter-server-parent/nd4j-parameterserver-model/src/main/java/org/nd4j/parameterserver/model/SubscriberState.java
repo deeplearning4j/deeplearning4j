@@ -16,10 +16,7 @@
 
 package org.nd4j.parameterserver.model;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.io.DataInput;
 import java.io.DataOutput;
@@ -27,6 +24,7 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.util.Collections;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Reflects the state of
@@ -56,8 +54,9 @@ public class SubscriberState implements Serializable, Comparable<SubscriberState
      * @return an empty subscriber state
      */
     public static SubscriberState empty() {
+        val map = new ConcurrentHashMap<String, Number>();
         return SubscriberState.builder().serverState("empty").streamId(-1)
-                        .parameterUpdaterStatus(Collections.emptyMap()).totalUpdates(-1).isMaster(false).build();
+                        .parameterUpdaterStatus(map).totalUpdates(-1).isMaster(false).build();
     }
 
 

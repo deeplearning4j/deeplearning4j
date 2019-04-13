@@ -16,83 +16,152 @@
 
 //
 // Created by george@skymind.io on 6/4/2018.
+// @author Yurii Shyrma (iuriish@yahoo.com)
 //
 
 #include <ops/declarable/CustomOperations.h>
-#include <ops/declarable/helpers/reduce_minmax.h>
+#include <ops/declarable/helpers/transforms.h>
+#include <ops/declarable/helpers/axis.h>
 
 namespace nd4j {
 namespace ops {
 #if NOT_EXCLUDED(OP_reduce_norm_max)
 
-    CUSTOM_OP_IMPL(reduce_norm_max, 1, 1, false, 0, 0) {
-        NDArray<T>* input = INPUT_VARIABLE(0);
-        NDArray<T>* output = OUTPUT_VARIABLE(0);
-        std::vector<int> axes = *block.getIArguments();
+//////////////////////////////////////////////////////////////////////////
+CUSTOM_OP_IMPL(reduce_norm_max, 1, 1, false, 0, 0) {
 
-        for(const auto& item : axes)
-            REQUIRE_TRUE(item > -input->shapeInfo()[0] || item <input->shapeInfo()[0], 0, "REDUCE_MEAN OP: the input dimension to reduce along must be in range (-%i, %i), but got %i instead !" , input->rankOf(), input->rankOf(), item);
-
-        const bool keepDims = block.getTArguments()->size() > 0 ? (bool)T_ARG(0) : false;
-        input->template reduceAlongDimension<simdOps::NormMax<T>>(output, axes, keepDims);
-
-        return ND4J_STATUS_OK;
-    }
-
-    DECLARE_SHAPE_FN(reduce_norm_max) {    
-
-        const bool keepDims = block.getTArguments()->size() > 0 ? (bool)T_ARG(0) : false;
+    auto input = INPUT_VARIABLE(0);
+    auto output = OUTPUT_VARIABLE(0);
     
-        std::vector<int> dimensions = *block.getIArguments();
-        Nd4jLong* outShapeInfo = ShapeUtils<T>::evalReduceShapeInfo(shape::order(inputShape->at(0)), dimensions, inputShape->at(0), keepDims, false, block.getWorkspace());
-
-        return SHAPELIST(outShapeInfo);
+    std::vector<int> dimensions;
+    if (block.width() > 1) {
+        auto axesVector = INPUT_VARIABLE(1);
+        helpers::adjustAxis(input, axesVector, dimensions);
     }
+    else if (block.getIArguments()->size())
+        dimensions = *block.getIArguments();
+
+    REQUIRE_TRUE(dimensions.size() <= input->rankOf(), 0, "REDUCE_NORM_MAX OP: the number of dimensions to reduce along must be <= input array rank, but got %i instead" , dimensions.size());
+
+    for(const auto& item : dimensions)
+        REQUIRE_TRUE(item >= -input->shapeInfo()[0] && item < input->shapeInfo()[0], 0, "REDUCE_NORM_MAX OP: the input dimension to reduce along must be in range [-%i, %i), but got %i instead !" , input->rankOf(), input->rankOf(), item);
+
+    bool keepDims = false;
+    if (block.getBArguments()->size())
+        keepDims = B_ARG(0);
+    else if (block.getTArguments()->size())
+        keepDims = (bool)T_ARG(0);
+
+    input->reduceAlongDimension(reduce::NormMax, output, dimensions, keepDims);
+    
+    return Status::OK();
+}
+
+DECLARE_SHAPE_FN(reduce_norm_max) {
+
+    bool keepDims = false;
+    if (block.getBArguments()->size())
+        keepDims = B_ARG(0);
+    else if (block.getTArguments()->size())
+        keepDims = (bool)T_ARG(0);
+
+    std::vector<int> dimensions;
+    if (block.width() > 1) {
+        auto axesVector = INPUT_VARIABLE(1);
+        helpers::adjustAxis(INPUT_VARIABLE(0), axesVector, dimensions);
+    }
+    else if (block.getIArguments()->size())
+        dimensions = *block.getIArguments();
+
+    REQUIRE_TRUE(dimensions.size() <= inputShape->at(0)[0], 0, "REDUCE_NORM_MAX OP: the number of dimensions to reduce along must be <= input array rank, but got %i instead" , dimensions.size());
+
+    for(const auto& item : dimensions)
+        REQUIRE_TRUE(item >= -inputShape->at(0)[0] && item < inputShape->at(0)[0], 0, "REDUCE_NORM_MAX OP: the input dimension to reduce along must be in range [-%i, %i), but got %i instead !" , inputShape->at(0)[0], inputShape->at(0)[0], item);
+
+    Nd4jLong* outShapeInfo = ShapeUtils::evalReduceShapeInfo(shape::order(inputShape->at(0)), dimensions, inputShape->at(0), keepDims, false, block.getWorkspace());
+    ArrayOptions::setDataType(outShapeInfo, ArrayOptions::dataType(inputShape->at(0)));
+
+    return SHAPELIST(outShapeInfo);
+}
+
+DECLARE_TYPES(reduce_norm_max) {
+    getOpDescriptor()
+        ->setAllowedInputTypes(nd4j::DataType::ANY)
+        ->setAllowedOutputTypes({ALL_FLOATS});
+}
 #endif 
+
 #if NOT_EXCLUDED(OP_reduce_norm_max_bp)
 
-    DECLARE_SHAPE_FN(reduce_norm_max_bp) {    
+//////////////////////////////////////////////////////////////////////////
+CUSTOM_OP_IMPL(reduce_norm_max_bp, 2, 1, false, 0, 0) {
 
-        const bool keepDims = block.getTArguments()->size() > 0 ? (bool)T_ARG(0) : false;
+    auto input = INPUT_VARIABLE(0);
+    auto gradO = INPUT_VARIABLE(1);
+    auto gradI = OUTPUT_VARIABLE(0);
     
-        Nd4jLong* outShapeInfo;// = ShapeUtils<T>::evalReduceShapeInfo(shape::order(inputShape->at(0)), dimensions, inputShape->at(0), keepDims, false, block.getWorkspace());
-        COPY_SHAPE(inputShape->at(0), outShapeInfo);
-
-        return SHAPELIST(outShapeInfo);
+    std::vector<int> dimensions = *block.getIArguments();
+    
+    if (block.width() > 2) {
+        auto axesVector = INPUT_VARIABLE(2);
+        helpers::adjustAxis(input, axesVector, dimensions);
     }
 
-    CUSTOM_OP_IMPL(reduce_norm_max_bp, 2, 1, false, 0, 0) {
+    REQUIRE_TRUE(dimensions.size() <= input->rankOf(), 0, "REDUCE_NORM_MAX_BP OP: the number of dimensions to reduce along must be <= input array rank, but got %i instead" , dimensions.size());
 
-            auto input = INPUT_VARIABLE(0);
-            auto epsilon = INPUT_VARIABLE(1);
-            auto output = OUTPUT_VARIABLE(0);
-            const bool keepDims = block.getTArguments()->size() > 0 ? (bool)T_ARG(0) : false;
-			
-			output->assign(0.0);
+    for(const auto& item : dimensions)
+        REQUIRE_TRUE(item >= -input->shapeInfo()[0] && item < input->shapeInfo()[0], 0, "REDUCE_NORM_MAX_BP OP: the input dimension to reduce along must be in range [-%i, %i), but got %i instead !" , input->rankOf(), input->rankOf(), item);
 
-            T keepDimsT = (keepDims?T(1.f):T(0.f));
-            // at first step we build fwd activation
-            nd4j::ops::reduce_norm_max<T> op;
-            std::vector<Nd4jLong> axes;
+    // *** calculations *** //
 
-            if (block.numI() > 0) {
-                for (int e = 0; e < block.numI(); e++)
-                    axes.emplace_back(INT_ARG(e));// = *block.getIArguments();
-            }
+    *gradI = 0;
 
-            std::vector<T> tVec(1);
-            tVec[0] = (keepDims?T(1.0):T(0.0));
-            std::vector<NDArray<T>*> inputVec({input});
-            std::unique_ptr<ResultSet<T>> tmpResult(op.execute(inputVec, tVec, axes, false)); 
-            if (tmpResult->status() != ND4J_STATUS_OK)
-                return tmpResult->status();
-
-            NDArray<T>* normMax = tmpResult->at(0);
-
-            helpers::minMaxReduceFunctor(input, epsilon, normMax, output, true);
-
-            return ND4J_STATUS_OK;
+    if(gradO->lengthOf() == 1) {
+        
+        auto indOfAbsMaxElem = input->indexReduceNumber(nd4j::indexreduce::IndexAbsoluteMax);
+        const Nd4jLong ind = indOfAbsMaxElem.t<Nd4jLong>(0);
+        const int sign = input->e<float>(ind) >= 0 ? 1 : -1;
+        gradI->p(ind, sign * gradO->e(0));
     }
+    else {
+        
+        auto indicesArr = input->applyIndexReduce(nd4j::indexreduce::IndexAbsoluteMax, dimensions);        
+        helpers::scatterSimple(6, *gradI, *gradO, *indicesArr, ShapeUtils::evalDimsToExclude(gradI->rankOf(), dimensions));      // 6 corresponds to copy operation
+        *gradI *= input->transform(nd4j::transform::Sign);
+        delete indicesArr;
+    }
+
+    return Status::OK();
+}
+
+DECLARE_SHAPE_FN(reduce_norm_max_bp) {    
+        
+    auto dimensions = *block.getIArguments();
+    if (block.width() > 2) {
+        auto axesVector = INPUT_VARIABLE(2);
+        helpers::adjustAxis(INPUT_VARIABLE(0), axesVector, dimensions);
+    }
+    
+    REQUIRE_TRUE(dimensions.size() <= inputShape->at(0)[0], 0, "REDUCE_NORM_MAX_BP OP: the number of dimensions to reduce along must be <= input array rank, but got %i instead" , dimensions.size());
+
+    for(const auto& item : dimensions)
+        REQUIRE_TRUE(item >= -inputShape->at(0)[0] && item < inputShape->at(0)[0], 0, "REDUCE_NORM_MAX_BP OP: the input dimension to reduce along must be in range [-%i, %i), but got %i instead !", inputShape->at(0)[0], inputShape->at(0)[0], item);
+
+    Nd4jLong* outShapeInfo;
+    COPY_SHAPE(inputShape->at(0), outShapeInfo);
+
+    return SHAPELIST(outShapeInfo);
+}
+
+DECLARE_TYPES(reduce_norm_max_bp) {
+    getOpDescriptor()
+        ->setAllowedInputTypes(nd4j::DataType::ANY)
+        ->setAllowedOutputTypes({ALL_FLOATS});
+}
+
+
+
+
 #endif
 
 }

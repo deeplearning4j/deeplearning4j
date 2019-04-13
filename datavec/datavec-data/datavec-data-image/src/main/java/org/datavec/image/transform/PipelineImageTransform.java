@@ -25,7 +25,8 @@ import org.nd4j.linalg.primitives.Pair;
 
 import java.util.*;
 
-import static org.bytedeco.javacpp.opencv_core.Mat;
+import org.bytedeco.opencv.opencv_core.*;
+import static org.bytedeco.opencv.global.opencv_core.*;
 
 /**
  * Allows creation of image transform pipelines, either sequentially or randomly.

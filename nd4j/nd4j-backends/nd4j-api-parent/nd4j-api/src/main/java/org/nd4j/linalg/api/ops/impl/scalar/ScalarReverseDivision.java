@@ -34,14 +34,13 @@ public class ScalarReverseDivision extends BaseScalarOp {
     public ScalarReverseDivision() {
     }
 
-    public ScalarReverseDivision(INDArray x, INDArray y, INDArray z, long n, Number num) {
-        super(x, y, z, n, num);
+    public ScalarReverseDivision(INDArray x, INDArray y, INDArray z, Number num) {
+        super(x, y, z, num);
     }
 
     public ScalarReverseDivision(INDArray x, Number num) {
         super(x, num);
     }
-
 
     public ScalarReverseDivision(SameDiff sameDiff, SDVariable i_v, Number scalar) {
         super(sameDiff, i_v, scalar);
@@ -49,14 +48,6 @@ public class ScalarReverseDivision extends BaseScalarOp {
 
     public ScalarReverseDivision(SameDiff sameDiff, SDVariable i_v, Number scalar, boolean inPlace) {
         super(sameDiff, i_v, scalar, inPlace);
-    }
-
-    public ScalarReverseDivision(SameDiff sameDiff, SDVariable i_v, Number scalar, boolean inPlace, Object[] extraArgs) {
-        super(sameDiff, i_v, scalar, inPlace, extraArgs);
-    }
-
-    public ScalarReverseDivision(SameDiff sameDiff, SDVariable i_v, Number scalar, Object[] extraArgs) {
-        super(sameDiff, i_v, scalar, extraArgs);
     }
 
     @Override
@@ -82,7 +73,7 @@ public class ScalarReverseDivision extends BaseScalarOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v1) {
-        SDVariable g = f().rdiv(f().pow(arg(), 2), -scalarValue.doubleValue()).mul(i_v1.get(0));
+        SDVariable g = f().rdiv(f().pow(arg(), 2), -scalarValue.getDouble(0)).mul(i_v1.get(0));
         return Arrays.asList(g);
     }
 

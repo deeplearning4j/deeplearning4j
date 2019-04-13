@@ -17,6 +17,7 @@
 
 from .op import op
 from ..java_classes import Nd4j
+from ..ndarray import _nparray, ndarray, _indarray
 
 # Array manipulation routines
 # https://docs.scipy.org/doc/numpy-1.13.0/reference/routines.array-manipulation.html
@@ -37,7 +38,7 @@ def transpose(arr, *axis):
         if len(axis) == 1:
             axis = axis[0]
         assert set(axis) in [set(list(range(len(axis)))),
-                         set(list(range(len(arr.shape()))))]
+                             set(list(range(len(arr.shape()))))]
         return arr.permute(*axis)
 
 
@@ -130,6 +131,9 @@ def stack(arrs, axis):
 
 @op
 def tile(arr, reps):
+    import numpy as np
+    return _indarray(np.tile(_nparray(arr), reps))
+
     if type(reps) is int:
         return Nd4j.tile(arr, reps)
     else:

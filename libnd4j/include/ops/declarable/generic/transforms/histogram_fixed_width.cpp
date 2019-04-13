@@ -29,31 +29,35 @@ namespace ops  {
 
 CUSTOM_OP_IMPL(histogram_fixed_width, 2, 1, false, 0, 0) {
 
-    NDArray<T>* input  = INPUT_VARIABLE(0);
-    NDArray<T>* range  = INPUT_VARIABLE(1);
-    NDArray<T>* output = OUTPUT_VARIABLE(0);    
+    auto input  = INPUT_VARIABLE(0);
+    auto range  = INPUT_VARIABLE(1);
+    auto output = OUTPUT_VARIABLE(0);
 
-    const int nbins = block.getIArguments()->empty() ? 100 : INT_ARG(0);
+    const int nbins = block.width() == 3 ? INPUT_VARIABLE(2)->e<int>(0) : block.getIArguments()->empty() ? 100 : INT_ARG(0);
 
-    const T leftEdge  = (*range)(0.);
-    const T rightEdge = (*range)(1);
+    const double leftEdge  = range->e<double>(0);
+    const double rightEdge = range->e<double>(1);
 
     REQUIRE_TRUE(leftEdge < rightEdge, 0, "HISTOGRAM_FIXED_WIDTH OP: wrong content of range input array, bottom_edge must be smaller than top_edge, but got %f and %f correspondingly !", leftEdge, rightEdge);
     REQUIRE_TRUE(nbins >= 1, 0, "HISTOGRAM_FIXED_WIDTH OP: wrong nbins value, expected value should be >= 1, however got %i instead !", nbins);
 
-    helpers::histogramFixedWidth<T>(*input, *range, *output);
+    helpers::histogramFixedWidth(*input, *range, *output);
 
     return Status::OK();
 }
 
+DECLARE_TYPES(histogram_fixed_width) {
+    getOpDescriptor()
+        ->setAllowedInputTypes(nd4j::DataType::ANY)
+        ->setAllowedOutputTypes({ALL_INTS});
+}
+
+
 //////////////////////////////////////////////////////////////////////////
 DECLARE_SHAPE_FN(histogram_fixed_width) {
-            
-    Nd4jLong* outShapeInfo;
-    ALLOCATE(outShapeInfo, block.getWorkspace(), shape::shapeInfoLength(1), Nd4jLong);
 
-    const int nbins = block.getIArguments()->empty() ? 100 : INT_ARG(0);
-    shape::shapeVector(nbins, outShapeInfo);
+    const int nbins = block.width() == 3 ? INPUT_VARIABLE(2)->e<int>(0) : block.getIArguments()->empty() ? 100 : INT_ARG(0);
+    auto outShapeInfo = ShapeBuilders::createVectorShapeInfo(DataType::INT64, nbins, block.workspace());
        
     return SHAPELIST(outShapeInfo);
 }

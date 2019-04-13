@@ -29,16 +29,32 @@ namespace nd4j {
         BROADCASTABLE_OP_IMPL(floormod, 0, 0) {
             auto x = INPUT_VARIABLE(0);
             auto y = INPUT_VARIABLE(1);
-            auto z = this->getZ(block);
+            auto z = OUTPUT_VARIABLE(0);
 
-            auto tZ = BroadcastHelper<T>::template broadcastApply<simdOps::FloorMod<T>>(x, y, z);
+            BROADCAST_CHECK_EMPTY(x,y,z);
+
+            REQUIRE_TRUE(!y->isB(), 0, "FLOORMOD OP: you can't divide by bool array!");
+            auto tZ = BroadcastHelper::broadcastApply(BROADCAST(FloorMod), x, y, z);
             if (tZ == nullptr)
                 return ND4J_STATUS_KERNEL_FAILURE;
             else if (tZ != z) {
                 OVERWRITE_RESULT(tZ);
             }
 
-            return ND4J_STATUS_OK;
+            return Status::OK();
+        }
+
+        DECLARE_TYPES(floormod) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(0, DataType::ANY)
+                    ->setAllowedInputTypes(1, DataType::ANY)
+                    ->setAllowedOutputTypes(0, DataType::INHERIT);
+        }
+
+        DECLARE_TYPES(floormod_bp) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(DataType::ANY)
+                    ->setAllowedOutputTypes({ALL_FLOATS});
         }
 
         CUSTOM_OP_IMPL(floormod_bp, 3, 2, false, 0, 0) {
@@ -49,15 +65,20 @@ namespace nd4j {
             auto gradX = OUTPUT_VARIABLE(0);
             auto gradY = OUTPUT_VARIABLE(1);
             gradX->assign(epsNext);
-            nd4j::ops::floormod<T> op;
-            std::unique_ptr<ResultSet<T>> tmpResult(op.execute({x, y}, {}, {})); 
+            nd4j::ops::floormod op;
+            std::unique_ptr<ResultSet> tmpResult(op.execute({x, y}, {}, {}, {}));
 
             if (gradY->rankOf() == gradX->rankOf())
-                epsNext->template applyPairwiseTransform<simdOps::Multiply<T>>(tmpResult->at(0), gradY, nullptr);
+                epsNext->applyPairwiseTransform(pairwise::Multiply, tmpResult->at(0), gradY, nullptr);
             else // epsNext is greater than gradY
             {
-                for (Nd4jLong e = 0; e < gradY->lengthOf(); e++)
-                    (*gradY)(e) = (*tmpResult->at(0))(e) * (*epsNext)(e);
+                std::vector<Nd4jLong> dims(epsNext->rankOf() * 2);
+                Nd4jLong gap = epsNext->rankOf() - gradY->rankOf();
+                for (Nd4jLong d = 0; d < gap; d++) {
+                    dims[d * 2 + 1] = 1;
+                }
+                auto tempIn((*tmpResult->at(0))(dims));
+                (*epsNext)(dims).applyPairwiseTransform(pairwise::Multiply, &tempIn, gradY, nullptr);
             }
             return Status::OK();
         }

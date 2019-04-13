@@ -22,6 +22,7 @@ import org.deeplearning4j.datasets.iterator.EarlyTerminationDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.deeplearning4j.eval.Evaluation;
+import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -30,6 +31,11 @@ import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
+import org.deeplearning4j.optimize.api.BaseTrainingListener;
+import org.deeplearning4j.optimize.api.TrainingListener;
+import org.deeplearning4j.optimize.solvers.accumulation.encoding.ThresholdAlgorithm;
+import org.deeplearning4j.optimize.solvers.accumulation.encoding.threshold.AdaptiveThresholdAlgorithm;
+import org.deeplearning4j.optimize.solvers.accumulation.encoding.threshold.FixedThresholdAlgorithm;
 import org.deeplearning4j.spark.api.RDDTrainingApproach;
 import org.deeplearning4j.spark.api.TrainingMaster;
 import org.deeplearning4j.spark.impl.graph.SparkComputationGraph;
@@ -46,16 +52,17 @@ import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.learning.config.AMSGrad;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
+import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.parameterserver.distributed.conf.VoidConfiguration;
 import org.nd4j.parameterserver.distributed.v2.enums.MeshBuildMode;
 
 import java.io.File;
+import java.io.Serializable;
 import java.net.Inet4Address;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 @Slf4j
 public class GradientSharingTrainingTest extends BaseSparkTest {
@@ -101,11 +108,10 @@ public class GradientSharingTrainingTest extends BaseSparkTest {
                     .controllerAddress(controller)
                     .meshBuildMode(MeshBuildMode.PLAIN) // everyone is connected to the master
                     .build();
-            TrainingMaster tm = new SharedTrainingMaster.Builder(voidConfiguration, 2, 1e-4, 16)
+            TrainingMaster tm = new SharedTrainingMaster.Builder(voidConfiguration, 2, new AdaptiveThresholdAlgorithm(1e-3), 16)
                     .rngSeed(12345)
                     .collectTrainingStats(false)
                     .batchSizePerWorker(16) // Minibatch size for each worker
-                    .updatesThreshold(1e-4) // Encoding threshold (see docs for details)
                     .workersPerNode(2) // Workers per node
                     .rddTrainingApproach(rddTrainingApproach)
                     .exportDirectory("file:///" + temp.getAbsolutePath().replaceAll("\\\\", "/"))
@@ -114,7 +120,7 @@ public class GradientSharingTrainingTest extends BaseSparkTest {
 
             ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
                     .seed(12345)
-                    .updater(new AMSGrad(0.01))
+                    .updater(new AMSGrad(0.1))
                     .graphBuilder()
                     .addInputs("in")
                     .layer("out", new OutputLayer.Builder().nIn(784).nOut(10).activation(Activation.SOFTMAX)
@@ -167,10 +173,10 @@ public class GradientSharingTrainingTest extends BaseSparkTest {
                 }
 
                 INDArray paramsAfter = after.params();
-//            System.out.println(Arrays.toString(paramsBefore.get(NDArrayIndex.point(0), NDArrayIndex.interval(0, 256)).dup().data().asFloat()));
-//            System.out.println(Arrays.toString(paramsAfter.get(NDArrayIndex.point(0), NDArrayIndex.interval(0, 256)).dup().data().asFloat()));
-//            System.out.println(Arrays.toString(
-//                    Transforms.abs(paramsAfter.sub(paramsBefore)).get(NDArrayIndex.point(0), NDArrayIndex.interval(0, 256)).dup().data().asFloat()));
+                System.out.println(Arrays.toString(paramsBefore.get(NDArrayIndex.point(0), NDArrayIndex.interval(0, 256)).dup().data().asFloat()));
+                System.out.println(Arrays.toString(paramsAfter.get(NDArrayIndex.point(0), NDArrayIndex.interval(0, 256)).dup().data().asFloat()));
+                System.out.println(Arrays.toString(
+                        Transforms.abs(paramsAfter.sub(paramsBefore)).get(NDArrayIndex.point(0), NDArrayIndex.interval(0, 256)).dup().data().asFloat()));
                 assertNotEquals(paramsBefore, paramsAfter);
 
 
@@ -249,11 +255,10 @@ public class GradientSharingTrainingTest extends BaseSparkTest {
                     .networkMask(networkMask) // Local network mask
                     .controllerAddress(controller)
                     .build();
-            TrainingMaster tm = new SharedTrainingMaster.Builder(voidConfiguration, 2, 1e-4, batch)
+            TrainingMaster tm = new SharedTrainingMaster.Builder(voidConfiguration, 2, new FixedThresholdAlgorithm(1e-4), batch)
                     .rngSeed(12345)
                     .collectTrainingStats(false)
                     .batchSizePerWorker(batch) // Minibatch size for each worker
-                    .updatesThreshold(1e-5) // Encoding threshold (see docs for details)
                     .workersPerNode(2) // Workers per node
                     .build();
 
@@ -278,6 +283,86 @@ public class GradientSharingTrainingTest extends BaseSparkTest {
             } else {
                 assertEquals(lastDup, last);
             }
+        }
+    }
+
+
+    @Test
+    public void testEpochUpdating() throws Exception {
+        //Ensure that epoch counter is incremented properly on the workers
+
+        File temp = testDir.newFolder();
+
+        //TODO this probably won't work everywhere...
+        String controller = Inet4Address.getLocalHost().getHostAddress();
+        String networkMask = controller.substring(0, controller.lastIndexOf('.')) + ".0" + "/16";
+
+        VoidConfiguration voidConfiguration = VoidConfiguration.builder()
+                .unicastPort(40123) // Should be open for IN/OUT communications on all Spark nodes
+                .networkMask(networkMask) // Local network mask
+                .controllerAddress(controller)
+                .meshBuildMode(MeshBuildMode.PLAIN) // everyone is connected to the master
+                .build();
+        SharedTrainingMaster tm = new SharedTrainingMaster.Builder(voidConfiguration, 2, new AdaptiveThresholdAlgorithm(1e-3), 16)
+                .rngSeed(12345)
+                .collectTrainingStats(false)
+                .batchSizePerWorker(16) // Minibatch size for each worker
+                .workersPerNode(2) // Workers per node
+                .exportDirectory("file:///" + temp.getAbsolutePath().replaceAll("\\\\", "/"))
+                .build();
+
+
+        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
+                .seed(12345)
+                .updater(new AMSGrad(0.1))
+                .graphBuilder()
+                .addInputs("in")
+                .layer("out", new OutputLayer.Builder().nIn(784).nOut(10).activation(Activation.SOFTMAX)
+                        .lossFunction(LossFunctions.LossFunction.MCXENT).build(), "in")
+                .setOutputs("out")
+                .build();
+
+
+        SparkComputationGraph sparkNet = new SparkComputationGraph(sc, conf, tm);
+        sparkNet.setListeners(new TestListener());
+
+        DataSetIterator iter = new MnistDataSetIterator(16, true, 12345);
+        int count = 0;
+        List<String> paths = new ArrayList<>();
+        List<DataSet> ds = new ArrayList<>();
+        File f = testDir.newFolder();
+        while (iter.hasNext() && count++ < 8) {
+            DataSet d = iter.next();
+            File out = new File(f, count + ".bin");
+            d.save(out);
+            String path = "file:///" + out.getAbsolutePath().replaceAll("\\\\", "/");
+            paths.add(path);
+            ds.add(d);
+        }
+
+        JavaRDD<String> pathRdd = sc.parallelize(paths);
+        for( int i=0; i<3; i++ ) {
+            ThresholdAlgorithm ta = tm.getThresholdAlgorithm();
+            sparkNet.fitPaths(pathRdd);
+            //Check also that threshold algorithm was updated/averaged
+            ThresholdAlgorithm taAfter = tm.getThresholdAlgorithm();
+            assertTrue("Threshold algorithm should have been updated with different instance after averaging", ta != taAfter);
+            AdaptiveThresholdAlgorithm ataAfter = (AdaptiveThresholdAlgorithm) taAfter;
+            assertFalse(Double.isNaN(ataAfter.getLastSparsity()));
+            assertFalse(Double.isNaN(ataAfter.getLastThreshold()));
+        }
+
+        Set<Integer> expectedEpochs = new HashSet<>(Arrays.asList(0, 1, 2));
+        assertEquals(expectedEpochs, TestListener.epochs);
+    }
+
+    private static class TestListener extends BaseTrainingListener implements Serializable {
+        private static final Set<Integer> iterations = Collections.newSetFromMap(new ConcurrentHashMap<>());
+        private static final Set<Integer> epochs = Collections.newSetFromMap(new ConcurrentHashMap<>());
+        @Override
+        public void iterationDone(Model model, int iteration, int epoch) {
+            iterations.add(iteration);
+            epochs.add(epoch);
         }
     }
 }

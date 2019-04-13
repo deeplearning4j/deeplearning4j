@@ -20,34 +20,30 @@
 
 #include <ops/declarable/LegacyIndexReduceOp.h>
 #include <helpers/ShapeUtils.h>
+#include <helpers/TAD.h>
 #include <Status.h>
+#include <helpers/ConstantTadHelper.h>
 
 
 namespace nd4j {
     namespace ops {
-
-
-        template <typename T>
-        LegacyIndexReduceOp<T>::LegacyIndexReduceOp() : LegacyOp<T>::LegacyOp(1){
+        LegacyIndexReduceOp::LegacyIndexReduceOp() : LegacyOp::LegacyOp(1){
             //
         }
 
-        template <typename T>
-        LegacyIndexReduceOp<T>::LegacyIndexReduceOp(int opNum) : LegacyOp<T>::LegacyOp(1, opNum) {
+        LegacyIndexReduceOp::LegacyIndexReduceOp(int opNum) : LegacyOp::LegacyOp(1, opNum) {
             //
         }
 
-        template <typename T>
-        LegacyOp<T>* LegacyIndexReduceOp<T>::clone() {
+        LegacyOp* LegacyIndexReduceOp::clone() {
             return new LegacyIndexReduceOp(this->_opNum);
         }
 
-        template <typename T>
-        ShapeList *LegacyIndexReduceOp<T>::calculateOutputShape(ShapeList *inputShape, nd4j::graph::Context<T> &block) {
+        ShapeList *LegacyIndexReduceOp::calculateOutputShape(ShapeList *inputShape, nd4j::graph::Context &block) {
             auto inShape = inputShape->at(0);
 
             Nd4jLong *newShape;
-            if (block.getIArguments()->size() == 0 || (block.getIArguments()->size() == 1 && INT_ARG(0) == MAX_INT)) {
+            if (block.getAxis()->size() == 0 && block.width() == 1) {
                 // in this case we just return scalar
                 ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(2), Nd4jLong);
                 newShape[0] = 2;
@@ -55,18 +51,50 @@ namespace nd4j {
                 newShape[2] = 1;
                 newShape[3] = 1;
                 newShape[4] = 1;
-                newShape[5] = 0;
                 newShape[6] = 1;
                 newShape[7] = 99;
-            } else {
+            } else if (block.getAxis()->size()){
                 // in this case we're building proper shape for reduction
-                auto array = new NDArray<T>(nullptr, inShape, block.getWorkspace());
-                array->triggerAllocationFlag(false, false);
+                auto array = INPUT_VARIABLE(0); //new NDArray(nullptr, inShape, block.getWorkspace());
+                //array->triggerAllocationFlag(false, false);
 
-                newShape = ShapeUtils<T>::evalReduceShapeInfo('c', *block.getIArguments(), *array, false, true, block.workspace());
+                newShape = ShapeUtils::evalReduceShapeInfo('c', *block.getAxis(), *array, false, true, block.workspace());
 
-                delete array;
+                //delete array;
             }
+            else {
+                bool allAxes = false;
+                auto indices = INPUT_VARIABLE(1);
+                Nd4jLong rank = shape::rank(inShape);
+                if (indices->lengthOf() == rank)
+                    allAxes = true;
+
+                std::vector<int> axis(indices->lengthOf());
+                for (int e = 0; e < indices->lengthOf(); e++) {
+                    // lol otherwise we segfault on macOS
+                    int f = indices->e<int>(e);
+                    axis[e] = f >= 0 ? f : f += rank;
+                }
+                if (allAxes){
+                        // in this case we just return scalar
+                        ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(2), Nd4jLong);
+                        newShape[0] = 2;
+                        newShape[1] = 1;
+                        newShape[2] = 1;
+                        newShape[3] = 1;
+                        newShape[4] = 1;
+                        newShape[6] = 1;
+                        newShape[7] = 99;
+                } else {
+                    // in this case we're building proper shape for reduction
+                    auto array = INPUT_VARIABLE(0); //new NDArray(nullptr, inShape, block.getWorkspace());
+                    //array->triggerAllocationFlag(false, false);
+
+                    newShape = ShapeUtils::evalReduceShapeInfo('c', axis, *array, false, true, block.workspace());
+                }
+            }
+
+            ArrayOptions::setDataType(newShape, nd4j::DataType::INT64);
 
             return SHAPELIST(newShape);
         }
@@ -75,37 +103,36 @@ namespace nd4j {
         *   For all reductions rules are simple: either you return scalar, or you return reduced NDArray.
         *   It solely depends on input shape, and requested dimensions
         */
-        template <typename T>
-        Nd4jStatus LegacyIndexReduceOp<T>::validateAndExecute(Context<T> &block) {
+        Nd4jStatus LegacyIndexReduceOp::validateAndExecute(Context &block) {
             auto x = INPUT_VARIABLE(0);
             auto z = OUTPUT_VARIABLE(0);
+
+            if (z->dataType() != INT64) {
+                throw std::runtime_error("IndexReduce operations require output to be INT64");
+            }
 
             int opNum = block.opNum() < 0 ? this->_opNum : block.opNum();
 
             bool allAxes = false;
 
             if (block.width() == 1) {
-                if (block.getIArguments()->size() == 0 ||
-                    (block.getIArguments()->size() == 1 && INT_ARG(0) == MAX_INT)) {
+                if (block.getAxis()->size() == 0) {
                     // scalar
-                    T res = NativeOpExcutioner<T>::execIndexReduceScalar(opNum, x->getBuffer(), x->getShapeInfo(),
-                                                                         block.getTArguments()->data());
-                    z->putScalar(0, res);
+                    NativeOpExcutioner::execIndexReduceScalar(opNum, x->getBuffer(), x->getShapeInfo(),
+                                                                         block.getTArguments()->data(), z->getBuffer(), z->getShapeInfo());
                 } else {
                     // TAD
-                    std::vector<int> dims(*block.getIArguments());
-                    for (int e = 0; e < dims.size(); e++)
-                        if (dims[e] < 0)
-                            dims[e] += x->rankOf();
-
+                    std::vector<int> dims(block.getAxis()->size());
+                    for (size_t e = 0; e < dims.size(); e++) {
+                        auto axe = block.getAxis()->at(e);
+                        dims[e] = axe < 0 ? axe + x->rankOf(): axe;
+                    }
                     if (dims.size() > 1)
                         std::sort(dims.begin(), dims.end());
 
-                    shape::TAD tad(x->getShapeInfo(), dims.data(), dims.size());
-                    tad.createTadOnlyShapeInfo();
-                    tad.createOffsets();
+                    auto tadPack = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(x->shapeInfo(), dims);
 
-                    NativeOpExcutioner<T>::execIndexReduce(opNum, x->getBuffer(), x->getShapeInfo(), block.getTArguments()->data(), z->getBuffer(), z->getShapeInfo(), dims.data(), (int) dims.size(), tad.tadOnlyShapeInfo, tad.tadOffsets);                }
+                    NativeOpExcutioner::execIndexReduce(opNum, x->getBuffer(), x->getShapeInfo(), block.getTArguments()->data(), reinterpret_cast<Nd4jLong *>(z->getBuffer()), z->getShapeInfo(), dims.data(), (int) dims.size(), tadPack.primaryShapeInfo(), tadPack.primaryOffsets());                }
             } else {
                 // TF mode
                 auto indices = INPUT_VARIABLE(1);
@@ -115,11 +142,13 @@ namespace nd4j {
                 std::vector<int> axis(indices->lengthOf());
                 for (int e = 0; e < indices->lengthOf(); e++) {
                     // lol otherwise we segfault on macOS
-                    int f = (int) indices->getScalar(e);
+                    int f = indices->e<int>(e);
                     axis[e] = f >= 0 ? f : f += x->rankOf();
                 }
 
                 if (allAxes) {
+                    NativeOpExcutioner::execIndexReduceScalar(opNum, x->getBuffer(), x->getShapeInfo(),
+                                                              block.getTArguments()->data(), z->getBuffer(), z->getShapeInfo());
 
                 } else {
                     if (indices->lengthOf() > 1)
@@ -127,11 +156,9 @@ namespace nd4j {
 
                     REQUIRE_TRUE(axis.size() > 0, 0, "Some dimensions required for reduction!");
 
-                    shape::TAD tad(x->getShapeInfo(), axis.data(), axis.size());
-                    tad.createTadOnlyShapeInfo();
-                    tad.createOffsets();
+                    auto tadPack = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(x->shapeInfo(), axis);
 
-                    NativeOpExcutioner<T>::execIndexReduce(opNum, x->getBuffer(), x->getShapeInfo(), block.getTArguments()->data(), z->getBuffer(), z->getShapeInfo(), axis.data(), (int) axis.size(), tad.tadOnlyShapeInfo, tad.tadOffsets);
+                    NativeOpExcutioner::execIndexReduce(opNum, x->getBuffer(), x->getShapeInfo(), block.getTArguments()->data(), reinterpret_cast<Nd4jLong *>(z->getBuffer()), z->getShapeInfo(), axis.data(), (int) axis.size(), tadPack.primaryShapeInfo(), tadPack.primaryOffsets());
                 }
             }
 
@@ -139,9 +166,5 @@ namespace nd4j {
 
             return Status::OK();
         }
-
-        template class ND4J_EXPORT LegacyIndexReduceOp<float>;
-        template class ND4J_EXPORT LegacyIndexReduceOp<double>;
-        template class ND4J_EXPORT LegacyIndexReduceOp<float16>;
     }
 }

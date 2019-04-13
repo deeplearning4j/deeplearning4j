@@ -15,7 +15,7 @@
  ******************************************************************************/
 
 //
-// @author raver119@gmail.com, created on on 29/10/17.
+// @author raver119@gmail.com, created on 29/10/17.
 // @author Yurii Shyrma (iuriish@yahoo.com)
 //
 
@@ -23,48 +23,99 @@
 #if NOT_EXCLUDED(OP_batchnorm)
 
 #include <ops/declarable/CustomOperations.h>
+#include<ops/declarable/helpers/batchnorm.h>
 
 namespace nd4j {
 namespace ops {
 
+#ifdef HAVE_MKLDNN
+using namespace mkldnn;
+
+static void getMKLDNNMemoryDescBatchNorm(const NDArray* src, const NDArray* diff_src, const NDArray* dst,
+        mkldnn::memory::desc* batchnorm_src_md, mkldnn::memory::desc* batchnorm_diff_src_md, mkldnn::memory::desc* batchnorm_dst_md,
+        mkldnn::memory::desc* user_src_md, mkldnn::memory::desc* user_diff_src_md, mkldnn::memory::desc* user_dst_md, int axis) {
+    const Nd4jLong* shape = src->getShapeInfo();
+    Nd4jLong rank = shape[0];
+    Nd4jLong dim1 = axis; // MKL-DNN supports only 1 axis, which has to be the "channel" one
+    Nd4jLong dim2 = axis >= 2 ? 1 : 2;
+    Nd4jLong dim3 = axis >= 3 ? 2 : 3;
+    mkldnn::memory::dims batchnorm_src_tz = { (int)shape[1], (int)shape[dim1 + 1], rank > 2 ? (int)shape[dim2 + 1] : 1, rank > 3 ? (int)shape[dim3 + 1] : 1};
+
+    auto type = mkldnn::memory::data_type::f32;
+    auto format = mkldnn::memory::format::nchw;
+    auto supposed_to_be_any_format = mkldnn::memory::format::nChw8c; // doesn't work with "any"
+
+    if (src != nullptr && src->getBuffer() != nullptr && batchnorm_src_md != nullptr) {
+        *batchnorm_src_md = mkldnn::memory::desc({ batchnorm_src_tz }, type, supposed_to_be_any_format);
+        *user_src_md = mkldnn::memory::desc({ batchnorm_src_tz }, type, format);
+        user_src_md->data.format = mkldnn_blocked; // overrides format
+        user_src_md->data.layout_desc.blocking.strides[0][0] = src->stridesOf()[0];
+        user_src_md->data.layout_desc.blocking.strides[0][1] = src->stridesOf()[dim1];
+        user_src_md->data.layout_desc.blocking.strides[0][2] = rank > 2 ? src->stridesOf()[dim2] : 1;
+        user_src_md->data.layout_desc.blocking.strides[0][3] = rank > 3 ? src->stridesOf()[dim3] : 1;
+    }
+
+    if (diff_src != nullptr && diff_src->getBuffer() != nullptr && batchnorm_diff_src_md != nullptr) {
+        *batchnorm_diff_src_md = mkldnn::memory::desc({ batchnorm_src_tz }, type, supposed_to_be_any_format);
+        *user_diff_src_md = mkldnn::memory::desc({ batchnorm_src_tz }, type, format);
+        user_diff_src_md->data.format = mkldnn_blocked; // overrides format
+        user_diff_src_md->data.layout_desc.blocking.strides[0][0] = diff_src->stridesOf()[0];
+        user_diff_src_md->data.layout_desc.blocking.strides[0][1] = diff_src->stridesOf()[dim1];
+        user_diff_src_md->data.layout_desc.blocking.strides[0][2] = rank > 2 ? diff_src->stridesOf()[dim2] : 1;
+        user_diff_src_md->data.layout_desc.blocking.strides[0][3] = rank > 3 ? diff_src->stridesOf()[dim3] : 1;
+    }
+
+    if (dst != nullptr && dst->getBuffer() != nullptr && batchnorm_dst_md != nullptr) {
+        *batchnorm_dst_md = mkldnn::memory::desc({ batchnorm_src_tz }, type, supposed_to_be_any_format);
+        *user_dst_md = mkldnn::memory::desc({ batchnorm_src_tz }, type, format);
+        user_dst_md->data.format = mkldnn_blocked; // overrides format
+        user_dst_md->data.layout_desc.blocking.strides[0][0] = dst->stridesOf()[0];
+        user_dst_md->data.layout_desc.blocking.strides[0][1] = dst->stridesOf()[dim1];
+        user_dst_md->data.layout_desc.blocking.strides[0][2] = rank > 2 ? dst->stridesOf()[dim2] : 1;
+        user_dst_md->data.layout_desc.blocking.strides[0][3] = rank > 3 ? dst->stridesOf()[dim3] : 1;
+    }
+}
+#endif
+
 CUSTOM_OP_IMPL(batchnorm, 3, 1, false, 1, 2) {    
+    auto input    = INPUT_VARIABLE(0);
+    auto mean     = INPUT_VARIABLE(1);
+    auto variance = INPUT_VARIABLE(2);
+    NDArray *gamma    = nullptr;
+    NDArray *beta     = nullptr;
 
-    NDArray<T>* input    = INPUT_VARIABLE(0);
-    NDArray<T>* mean     = INPUT_VARIABLE(1);
-    NDArray<T>* variance = INPUT_VARIABLE(2);
-    NDArray<T>* gamma    = nullptr;
-    NDArray<T>* beta     = nullptr;
-
-    NDArray<T>* output   = OUTPUT_VARIABLE(0);
+    auto output   = OUTPUT_VARIABLE(0);
 
     const bool applyScale  = (bool)INT_ARG(0);
     const bool applyOffset = (bool)INT_ARG(1);
-    const T    epsilon     = T_ARG(0);
+
+    // FIXME: double?
+    const double epsilon     = T_ARG(0);
 
     if(applyScale)
         gamma = INPUT_VARIABLE(3);    
     if(applyOffset)
         beta = INPUT_VARIABLE(3 + static_cast<int>(applyScale));    
 
-    std::vector<const NDArray<T>*> inArrs(block.width());
+    std::vector<const NDArray*> inArrs(block.width());
     for(int i = 0; i < block.width(); ++i)
         inArrs[i] = INPUT_VARIABLE(i);
 
     // check whether all input shapes are mutually broadcastable
     Nd4jLong* outShapeInfo = nullptr;
-    const bool areShapesOk = ShapeUtils<T>::evalCommonBroadcastShapeInfo(inArrs, outShapeInfo, block.getWorkspace());
+    const bool areShapesOk = ShapeUtils::evalCommonBroadcastShapeInfo(inArrs, outShapeInfo, block.getWorkspace());
     REQUIRE_TRUE(areShapesOk, 0, "BATCHNORM op: the shapes of input arrays are not mutually broadcastable !");
     RELEASE(outShapeInfo, block.getWorkspace());
 
     // normalized output = gamma * ((input - mean) / sqrt(variance + epsilon)) + beta
 
-    NDArray<T> sigmaInvGam = (*variance + epsilon).template transform<simdOps::RSqrt<T>>();
+    auto sigmaInvGam = (*variance + epsilon).transform(transform::RSqrt);
     if(applyScale)
         sigmaInvGam *= *gamma;
 
-    NDArray<T> inputMinusMean;
+    NDArray inputMinusMean;
     if(!input->isSameShape(output) && !mean->isSameShape(output)) {
-        NDArray<T> inputTiled(output, false, block.getWorkspace());
+        auto inputTiled = NDArray(output, false, block.getWorkspace());
         input->tile(inputTiled);
         inputMinusMean = inputTiled - *mean;
     }
@@ -79,45 +130,56 @@ CUSTOM_OP_IMPL(batchnorm, 3, 1, false, 1, 2) {
     return Status::OK();
 }
 
+    DECLARE_TYPES(batchnorm) {
+        getOpDescriptor()
+                ->setAllowedInputTypes(nd4j::DataType::ANY)
+                ->setAllowedOutputTypes({ALL_FLOATS});
+    }
+
+
+//////////////////////////////////////////////////////////////////////////
 DECLARE_SHAPE_FN(batchnorm) {        
 
-    std::vector<const NDArray<T>*> inArrs(block.width());
+    std::vector<const NDArray*> inArrs(block.width());
+    auto in = inputShape->at(0);
     for(int i = 0; i < block.width(); ++i)
         inArrs[i] = INPUT_VARIABLE(i);
 
     // check whether all input shapes are mutually broadcastable
     Nd4jLong* outShapeInfo = nullptr;
-    const bool areShapesOk = ShapeUtils<T>::evalCommonBroadcastShapeInfo(inArrs, outShapeInfo, block.getWorkspace());
+    const bool areShapesOk = ShapeUtils::evalCommonBroadcastShapeInfo(inArrs, outShapeInfo, block.getWorkspace());
     REQUIRE_TRUE(areShapesOk, 0, "BATCHNORM op: the shapes of input arrays are not mutually broadcastable !");
+
+    ArrayOptions::setDataType(outShapeInfo, DataTypeUtils::pickFloatingType(ArrayOptions::dataType(in)));
 
     return SHAPELIST(outShapeInfo);
 }
 
 //////////////////////////////////////////////////////////////////////////
-CUSTOM_OP_IMPL(batchnorm_new, 3, 1, false, 1, 2) {    
+CUSTOM_OP_IMPL(batchnorm_new, 3, 1, false, 1, 2) {
 
-    NDArray<T>* input    = INPUT_VARIABLE(0);
-    NDArray<T>* mean     = INPUT_VARIABLE(1);
-    NDArray<T>* variance = INPUT_VARIABLE(2);
-    NDArray<T>* gamma    = nullptr;
-    NDArray<T>* beta     = nullptr;
+    auto input    = INPUT_VARIABLE(0);
+    auto mean     = INPUT_VARIABLE(1);
+    auto variance = INPUT_VARIABLE(2);
+    NDArray* gamma    = nullptr;
+    NDArray* beta     = nullptr;
 
-    NDArray<T>* output   = OUTPUT_VARIABLE(0);
+    auto output   = OUTPUT_VARIABLE(0);
 
-    const bool applyScale  = (bool)INT_ARG(0);
-    const bool applyOffset = (bool)INT_ARG(1);
-    const T    epsilon     = T_ARG(0);
+    const bool   applyScale  = (bool)INT_ARG(0);
+    const bool   applyOffset = (bool)INT_ARG(1);
+    const double epsilon     = T_ARG(0);
 
     if(applyScale)
-        gamma = INPUT_VARIABLE(3);    
+        gamma = INPUT_VARIABLE(3);
     if(applyOffset)
-        beta = INPUT_VARIABLE(3 + static_cast<int>(applyScale));    
+        beta = INPUT_VARIABLE(3 + static_cast<int>(applyScale));
 
     const int numOfIntArgs = block.getIArguments()->size();
     const int inRank = input->rankOf();
 
     // get axes args to normalize input array over
-    std::vector<int> axes;    
+    std::vector<int> axes;
     if(numOfIntArgs > 2)
         for(int i = 2; i < numOfIntArgs; ++i)
             axes.push_back(INT_ARG(i));
@@ -126,82 +188,148 @@ CUSTOM_OP_IMPL(batchnorm_new, 3, 1, false, 1, 2) {
 
     const int numOfAxes = axes.size();
     REQUIRE_TRUE(numOfAxes <= inRank, 0, "BATCHNORM_NEW op: too big number of input axes to normalize over, expected number should be less or equal to rank of input array, but got %i and %i correspondingly !", numOfAxes, inRank);
-    
+
     // get, for example, something like {1, inDim1, 1, inDim3, 1} if axes = {1, 3}
     std::vector<Nd4jLong> expShapeWithUnities(inRank, 1);
     for(int i = 0; i < numOfAxes; ++i)
-        expShapeWithUnities[axes[i]] = input->sizeAt(axes[i]);     
+        expShapeWithUnities[axes[i]] = input->sizeAt(axes[i]);
 
     // evaluate expected shape for mean, variance and gamma. These 3 arrays should have identical shapes
     // for example if input shape is {2,3,4,5,6} and axes = {1,3}, then expected shape would be {1,3,1,5,1}, and if axes = {3}, then expected shape would be {5}
-    std::vector<Nd4jLong> expShape = numOfAxes == 1 ? std::vector<Nd4jLong>(1, input->sizeAt(axes[0])) : expShapeWithUnities;    
-    std::string expShapeStr = ShapeUtils<T>::shapeAsString(expShape);
+    std::vector<Nd4jLong> expShape = numOfAxes == 1 ? std::vector<Nd4jLong>(1, input->sizeAt(axes[0])) : expShapeWithUnities;
+    std::string expShapeStr = ShapeUtils::shapeAsString(expShape);
 
-    REQUIRE_TRUE(ShapeUtils<T>::shapeAsString(mean)     == expShapeStr, 0, "BATCHNORM_NEW op: wrong shape of mean array, expected is %s, but got %s instead !", expShapeStr.c_str(), ShapeUtils<T>::shapeAsString(mean).c_str());
-    REQUIRE_TRUE(ShapeUtils<T>::shapeAsString(variance) == expShapeStr, 0, "BATCHNORM_NEW op: wrong shape of variance array, expected is %s, but got %s instead !", expShapeStr.c_str(), ShapeUtils<T>::shapeAsString(variance).c_str());
+    REQUIRE_TRUE(ShapeUtils::shapeAsString(mean)     == expShapeStr, 0, "BATCHNORM_NEW op: wrong shape of mean array, expected is %s, but got %s instead !", expShapeStr.c_str(), ShapeUtils::shapeAsString(mean).c_str());
+    REQUIRE_TRUE(ShapeUtils::shapeAsString(variance) == expShapeStr, 0, "BATCHNORM_NEW op: wrong shape of variance array, expected is %s, but got %s instead !", expShapeStr.c_str(), ShapeUtils::shapeAsString(variance).c_str());
     if(gamma)
-        REQUIRE_TRUE(ShapeUtils<T>::shapeAsString(variance) == expShapeStr, 0, "BATCHNORM_NEW op: wrong shape of gamma array, expected is %s, but got %s instead !", expShapeStr.c_str(), ShapeUtils<T>::shapeAsString(gamma).c_str());
+        REQUIRE_TRUE(ShapeUtils::shapeAsString(gamma) == expShapeStr, 0, "BATCHNORM_NEW op: wrong shape of gamma array, expected is %s, but got %s instead !", expShapeStr.c_str(), ShapeUtils::shapeAsString(gamma).c_str());
     if(beta)
-        REQUIRE_TRUE(ShapeUtils<T>::shapeAsString(beta) == expShapeStr, 0, "BATCHNORM_NEW op: wrong shape of beta array, expected is %s, but got %s instead !", expShapeStr.c_str(), ShapeUtils<T>::shapeAsString(beta).c_str());  
+        REQUIRE_TRUE(ShapeUtils::shapeAsString(beta) == expShapeStr, 0, "BATCHNORM_NEW op: wrong shape of beta array, expected is %s, but got %s instead !", expShapeStr.c_str(), ShapeUtils::shapeAsString(beta).c_str());
 
-    // normalized output = gamma * ((input - mean) / sqrt(variance + epsilon)) + beta
+    // types of all input arrays should be the same
+    for(int i = 1; i < block.width(); ++i)
+        REQUIRE_TRUE(INPUT_VARIABLE(0)->dataType() == INPUT_VARIABLE(i)->dataType(), 0, "BATCHNORM_NEW op: types of all input arrays should be the same !");
 
-    if(numOfAxes == 1 && inRank > 1) {
-        mean     = mean->reshape(mean->ordering(), expShapeWithUnities);
-        variance = variance->reshape(variance->ordering(), expShapeWithUnities);
-        if(gamma)
-            gamma = gamma->reshape(gamma->ordering(), expShapeWithUnities);
-        if(beta)
-            beta  = beta->reshape(beta->ordering(), expShapeWithUnities);
+#ifdef HAVE_MKLDNN
+    if (block.isUseMKLDNN() && nd4j::MKLDNNStream::isSupported({input, mean, variance, gamma, beta, output}) && numOfAxes == 1) {
+        std::vector<nd4j::MKLDNNStream>& streams = block.getMKLDNNStreams();
+        if (streams.empty()) {
+            streams.push_back(MKLDNNStream("batchnorm_new"));
+        }
+
+        std::vector<Nd4jLong> shape({2, mean->lengthOf()});
+        NDArray weights = NDArrayFactory::create<float>('c', shape, block.getWorkspace());
+        weights({0, 1, 0, 0}).assign(1.0f);
+        weights({1, 2, 0, 0}).assign(0.0f);
+
+        if (streams[0].checkAndReset({input, mean, variance, gamma, beta}, {output}, {(float)epsilon}, axes)) {
+            mkldnn_memory_desc_t empty;
+            mkldnn::memory::desc batchnorm_src_md(empty), batchnorm_dst_md(empty), user_src_md(empty), user_dst_md(empty);
+
+            getMKLDNNMemoryDescBatchNorm(input, nullptr, output,
+                        &batchnorm_src_md, nullptr, &batchnorm_dst_md,
+                        &user_src_md, nullptr, &user_dst_md, axes[0]);
+
+            auto batchnorm_desc = batch_normalization_forward::desc(prop_kind::forward_inference, batchnorm_src_md, epsilon,
+                            use_global_stats | (applyScale || applyOffset ? use_scale_shift : 0));
+
+            auto engine = streams[0].getEngine();
+            auto batchnorm_prim_desc = batch_normalization_forward::primitive_desc(batchnorm_desc, engine);
+            auto user_src_memory = mkldnn::memory({user_src_md, engine}, input->buffer());
+            auto user_dst_memory = mkldnn::memory({user_dst_md, engine}, output->buffer());
+            auto batchnorm_mean_memory = mkldnn::memory(batchnorm_prim_desc.mean_primitive_desc(), mean->buffer());
+            auto batchnorm_variance_memory = mkldnn::memory(batchnorm_prim_desc.variance_primitive_desc(), variance->buffer());
+
+            auto batchnorm_src_memory = user_src_memory;
+            streams[0].addMemory(user_src_memory);
+            if (mkldnn::memory::primitive_desc({batchnorm_src_md, engine})
+                    != user_src_memory.get_primitive_desc()) {
+                batchnorm_src_memory = mkldnn::memory({batchnorm_src_md, engine});
+                streams[0].addMemory(batchnorm_src_memory);
+                streams[0].addOperation(reorder(user_src_memory, batchnorm_src_memory));
+            }
+
+            auto batchnorm_dst_memory = user_dst_memory;
+            streams[0].addMemory(user_dst_memory);
+            if (mkldnn::memory::primitive_desc(batchnorm_prim_desc.dst_primitive_desc())
+                    != user_dst_memory.get_primitive_desc()) {
+                batchnorm_dst_memory = mkldnn::memory(batchnorm_prim_desc.dst_primitive_desc());
+                streams[0].addMemory(batchnorm_dst_memory);
+            }
+
+            streams[0].addMemory(batchnorm_mean_memory);
+            streams[0].addMemory(batchnorm_variance_memory);
+
+            if (applyScale || applyOffset) {
+                auto batchnorm_weights_memory = mkldnn::memory(batchnorm_prim_desc.weights_primitive_desc(), weights.buffer());
+                streams[0].addMemory(batchnorm_weights_memory);
+                streams[0].addOperation(batch_normalization_forward(batchnorm_prim_desc, (mkldnn::primitive::at)batchnorm_src_memory,
+                        (mkldnn::primitive::at)batchnorm_mean_memory, (mkldnn::primitive::at)batchnorm_variance_memory, (mkldnn::primitive::at)batchnorm_weights_memory, batchnorm_dst_memory));
+            } else {
+                streams[0].addOperation(batch_normalization_forward(batchnorm_prim_desc, (mkldnn::primitive::at)batchnorm_src_memory,
+                        (mkldnn::primitive::at)batchnorm_mean_memory, (mkldnn::primitive::at)batchnorm_variance_memory, batchnorm_dst_memory));
+            }
+
+            if (mkldnn::memory::primitive_desc(batchnorm_prim_desc.dst_primitive_desc())
+                    != user_dst_memory.get_primitive_desc()) {
+                streams[0].addOperation(reorder(batchnorm_dst_memory, user_dst_memory));
+            }
+        }
+
+        if (applyScale || applyOffset) {
+            if (gamma != nullptr) {
+                weights({0, 1, 0, 0}).assign(gamma);
+            }
+            if (beta != nullptr) {
+                weights({1, 2, 0, 0}).assign(beta);
+            }
+        }
+        streams[0].submitAndWait();
+        return Status::OK();
     }
+#endif
+    nd4j_debug("MKL-DNN is not used for batchnorm_new!\n", 0);
 
-    NDArray<T> sigmaInvGam = (*variance + epsilon).template transform<simdOps::RSqrt<T>>();
-    if(applyScale)
-        sigmaInvGam *= *gamma;
+    // formula: output = gamma * ((input - mean) / sqrt(variance + epsilon)) + beta
+    helpers::batchnorm(input, mean, variance, gamma, beta, output, axes, epsilon);
 
-    if (applyOffset)
-        output->assign((*input - *mean) * sigmaInvGam + *beta);
-    else 
-        output->assign((*input - *mean) * sigmaInvGam);
-
-    if(numOfAxes == 1 && inRank > 1) {
-        delete mean; 
-        delete variance;
-        delete gamma;
-        delete beta;
-    }
-    
     return Status::OK();
 }
 
-DECLARE_SHAPE_FN(batchnorm_new) {        
+DECLARE_TYPES(batchnorm_new) {
+    getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS})->setSameMode(true);
+}
 
-    Nd4jLong* outShapeInfo = nullptr;
-   
-    COPY_SHAPE(inputShape->at(0), outShapeInfo);    // output shape is identical to input shape
-    
+DECLARE_SHAPE_FN(batchnorm_new) {
+
+    auto inShapeInfo = inputShape->at(0);
+    DataType outType = DataTypeUtils::pickFloatingType(ArrayOptions::dataType(inShapeInfo));
+     
+    Nd4jLong* outShapeInfo = ShapeBuilders::copyShapeInfoAndType(inShapeInfo, outType, false, block.getWorkspace());    // output shape is identical to input shape
+
     return SHAPELIST(outShapeInfo);
 }
 
 //////////////////////////////////////////////////////////////////////////
 CUSTOM_OP_IMPL(batchnorm_bp, 4, 3, false, 1, 2) {
+    auto input    = INPUT_VARIABLE(0);
+    auto mean     = INPUT_VARIABLE(1);
+    auto variance = INPUT_VARIABLE(2);
+    NDArray *gamma    = nullptr;
+    NDArray *beta     = nullptr;
+    NDArray *dLdO     = nullptr;                 // next epsilon
 
-    NDArray<T>* input    = INPUT_VARIABLE(0);
-    NDArray<T>* mean     = INPUT_VARIABLE(1);
-    NDArray<T>* variance = INPUT_VARIABLE(2);
-    NDArray<T>* gamma    = nullptr;
-    NDArray<T>* beta     = nullptr;
-    NDArray<T>* dLdO     = nullptr;                 // next epsilon
-
-    NDArray<T>* dLdI = OUTPUT_VARIABLE(0);
-    NDArray<T>* dLdM = OUTPUT_VARIABLE(1);
-    NDArray<T>* dLdV = OUTPUT_VARIABLE(2);
-    NDArray<T>* dLdG = nullptr;
-    NDArray<T>* dLdB = nullptr;
+    auto dLdI = OUTPUT_VARIABLE(0);
+    auto dLdM = OUTPUT_VARIABLE(1);
+    auto dLdV = OUTPUT_VARIABLE(2);
+    NDArray *dLdG = nullptr;
+    NDArray *dLdB = nullptr;
 
     const bool applyScale  = (bool)INT_ARG(0);
     const bool applyOffset = (bool)INT_ARG(1);
-    const T    epsilon     = T_ARG(0);
+
+    // FIXME: double?
+    const double    epsilon     = T_ARG(0);
 
     const int dLdONum = static_cast<int>(applyScale) + static_cast<int>(applyOffset);
 
@@ -216,27 +344,27 @@ CUSTOM_OP_IMPL(batchnorm_bp, 4, 3, false, 1, 2) {
         
     dLdO = INPUT_VARIABLE(3 + dLdONum);
     
-    std::vector<const NDArray<T>*> inArrs(block.width());
+    std::vector<const NDArray*> inArrs(block.width());
     for(int i = 0; i < 4 + dLdONum; ++i)
         inArrs[i] = INPUT_VARIABLE(i);
 
     // check whether all input shapes are mutually broadcastable
     Nd4jLong* outShapeInfo = nullptr;
-    const bool areShapesOk = ShapeUtils<T>::evalCommonBroadcastShapeInfo(inArrs, outShapeInfo, block.getWorkspace());
+    const bool areShapesOk = ShapeUtils::evalCommonBroadcastShapeInfo(inArrs, outShapeInfo, block.getWorkspace());
     REQUIRE_TRUE(areShapesOk, 0, "BATCHNORM_BP op: the shapes of input arrays are not mutually broadcastable !");    
     RELEASE(outShapeInfo, block.getWorkspace());
 
     // ***** calculations ***** //
 
-    NDArray<T> sigmaInv = (*variance + epsilon).template transform<simdOps::RSqrt<T>>();    
+    auto sigmaInv = (*variance + epsilon).transform(transform::RSqrt);
     
-    NDArray<T> sigmaInvGamdLdO = -sigmaInv * *dLdO;
+    NDArray sigmaInvGamdLdO = -sigmaInv * *dLdO;
     if(applyScale)
         sigmaInvGamdLdO *= *gamma;
 
-    NDArray<T> inputMinusMean;
+    NDArray inputMinusMean;
     if(!input->isSameShape(dLdO) && !mean->isSameShape(dLdO)) {
-        NDArray<T> inputTiled(dLdO, false, block.getWorkspace());
+        auto inputTiled = NDArray(dLdO, false, block.getWorkspace());
         input->tile(inputTiled);
         inputMinusMean = inputTiled - *mean;
     }
@@ -245,27 +373,27 @@ CUSTOM_OP_IMPL(batchnorm_bp, 4, 3, false, 1, 2) {
 
     // dLdI
     if(!dLdI->isSameShape(dLdO))
-        dLdI->assign( (-sigmaInvGamdLdO).template reduceAlongDims<simdOps::Sum<T>>(ShapeUtils<T>::evalBroadcastBackwardAxis(dLdI->getShapeInfo(), dLdO->getShapeInfo())) );        
+        dLdI->assign( (-sigmaInvGamdLdO).reduceAlongDims(reduce::Sum, ShapeUtils::evalBroadcastBackwardAxis(dLdI->getShapeInfo(), dLdO->getShapeInfo())) );
     else
         dLdI->assign(-sigmaInvGamdLdO);
 
     // dLdM
     if(!dLdM->isSameShape(dLdO))
-        dLdM->assign( sigmaInvGamdLdO.template reduceAlongDims<simdOps::Sum<T>>(ShapeUtils<T>::evalBroadcastBackwardAxis(dLdM->getShapeInfo(), dLdO->getShapeInfo())) );        
+        dLdM->assign( sigmaInvGamdLdO.reduceAlongDims(reduce::Sum, ShapeUtils::evalBroadcastBackwardAxis(dLdM->getShapeInfo(), dLdO->getShapeInfo())) );
     else
         dLdM->assign(sigmaInvGamdLdO);
 
     // dLdV
     if(!dLdV->isSameShape(dLdO)) {
-        dLdV->assign( (sigmaInv * sigmaInv * sigmaInvGamdLdO * inputMinusMean * static_cast<T>(0.5)).template reduceAlongDims<simdOps::Sum<T>>(ShapeUtils<T>::evalBroadcastBackwardAxis(dLdV->getShapeInfo(), dLdO->getShapeInfo())) );
+        dLdV->assign( (sigmaInv * sigmaInv * sigmaInvGamdLdO * inputMinusMean * 0.5f).reduceAlongDims(reduce::Sum, ShapeUtils::evalBroadcastBackwardAxis(dLdV->getShapeInfo(), dLdO->getShapeInfo())) );
     }
     else
-        dLdV->assign(sigmaInv * sigmaInv * sigmaInvGamdLdO * inputMinusMean * static_cast<T>(0.5));
+        dLdV->assign(sigmaInv * sigmaInv * sigmaInvGamdLdO * inputMinusMean * 0.5f);
 
     // dLdG
     if(applyScale) {
         if(!dLdG->isSameShape(dLdO))
-            dLdG->assign( (sigmaInv * inputMinusMean * *dLdO).template reduceAlongDims<simdOps::Sum<T>>(ShapeUtils<T>::evalBroadcastBackwardAxis(dLdG->getShapeInfo(), dLdO->getShapeInfo())) );
+            dLdG->assign( (sigmaInv * inputMinusMean * *dLdO).reduceAlongDims(reduce::Sum, ShapeUtils::evalBroadcastBackwardAxis(dLdG->getShapeInfo(), dLdO->getShapeInfo())) );
         else
             dLdG->assign(sigmaInv * inputMinusMean * *dLdO);
     }
@@ -273,7 +401,7 @@ CUSTOM_OP_IMPL(batchnorm_bp, 4, 3, false, 1, 2) {
     // dLdB
     if(applyOffset) {
         if(!dLdB->isSameShape(dLdO))
-            dLdB->assign(dLdO->template reduceAlongDims<simdOps::Sum<T>>(ShapeUtils<T>::evalBroadcastBackwardAxis(dLdB->getShapeInfo(), dLdO->getShapeInfo())) );
+            dLdB->assign(dLdO->reduceAlongDims(reduce::Sum, ShapeUtils::evalBroadcastBackwardAxis(dLdB->getShapeInfo(), dLdO->getShapeInfo())) );
         else
             dLdB->assign(dLdO);
     }
@@ -281,6 +409,18 @@ CUSTOM_OP_IMPL(batchnorm_bp, 4, 3, false, 1, 2) {
     return Status::OK();
 }
 
+        DECLARE_TYPES(batchnorm_bp) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(0, nd4j::DataType::ANY)
+                    ->setAllowedInputTypes(1, nd4j::DataType::ANY)
+                    ->setAllowedInputTypes(2, nd4j::DataType::ANY)
+                    ->setAllowedInputTypes(3, nd4j::DataType::ANY)
+                    ->setAllowedInputTypes(4, nd4j::DataType::ANY)
+                    ->setAllowedInputTypes(5, {ALL_FLOATS})
+                    ->setAllowedOutputTypes({ALL_FLOATS});
+        }
+
+//////////////////////////////////////////////////////////////////////////
 
 DECLARE_SHAPE_FN(batchnorm_bp) {
 
@@ -289,13 +429,13 @@ DECLARE_SHAPE_FN(batchnorm_bp) {
 
     const int dLdONum = static_cast<int>(applyScale) + static_cast<int>(applyOffset);
 
-    std::vector<const NDArray<T>*> inArrs(block.width());
+    std::vector<const NDArray*> inArrs(block.width());
     for(int i = 0; i < 4 + dLdONum; ++i)
         inArrs[i] = INPUT_VARIABLE(i);
 
     // check whether all input shapes are mutually broadcastable
     Nd4jLong* outShapeInfo = nullptr;
-    const bool areShapesOk = ShapeUtils<T>::evalCommonBroadcastShapeInfo(inArrs, outShapeInfo, block.getWorkspace());
+    const bool areShapesOk = ShapeUtils::evalCommonBroadcastShapeInfo(inArrs, outShapeInfo, block.getWorkspace());
     REQUIRE_TRUE(areShapesOk, 0, "BATCHNORM_BP op: the shapes of input arrays are not mutually broadcastable !");    
     RELEASE(outShapeInfo, block.getWorkspace());
 

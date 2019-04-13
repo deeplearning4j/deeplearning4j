@@ -20,7 +20,12 @@ import com.google.common.collect.Lists;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
+import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.exception.ND4JIllegalStateException;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -119,6 +124,21 @@ public class Batch<T extends Aggregate> {
      * @return
      */
     public static <U extends Aggregate> List<Batch<U>> getBatches(List<U> list, int partitionSize) {
+        DataType c = null;
+        for (val u:list) {
+            for (val a:u.getArguments()) {
+                // we'll be comparing to the first array
+                if (c == null && a != null)
+                    c = a.dataType();
+
+                if (a != null && c != null)
+                    Preconditions.checkArgument(c == a.dataType(), "All arguments must have same data type");
+            }
+        }
+
+        if (c == null)
+            throw new ND4JIllegalStateException("Can't infer data type from arguments");
+
         List<List<U>> partitions = Lists.partition(list, partitionSize);
         List<Batch<U>> split = new ArrayList<>();
 

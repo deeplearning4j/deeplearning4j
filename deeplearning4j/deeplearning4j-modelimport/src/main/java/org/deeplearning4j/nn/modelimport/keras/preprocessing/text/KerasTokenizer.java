@@ -48,7 +48,7 @@ public class KerasTokenizer {
     private boolean charLevel;
     private String outOfVocabularyToken;
 
-    private Map<String, Integer> wordCounts = new HashMap<>();
+    private Map<String, Integer> wordCounts = new LinkedHashMap<>();
     private HashMap<String, Integer> wordDocs = new HashMap<>();
     private Map<String, Integer> wordIndex = new HashMap<>();
     private Map<Integer, String> indexWord = new HashMap<>();
@@ -114,13 +114,13 @@ public class KerasTokenizer {
             throw new InvalidKerasConfigurationException("No configuration found for Keras tokenizer");
 
 
-        int numWords = (int) tokenizerConfig.get("num_words");
+        Integer numWords = (Integer) tokenizerConfig.get("num_words");
         String filters = (String) tokenizerConfig.get("filters");
         Boolean lower = (Boolean) tokenizerConfig.get("lower");
         String split = (String) tokenizerConfig.get("split");
         Boolean charLevel = (Boolean) tokenizerConfig.get("char_level");
         String oovToken = (String) tokenizerConfig.get("oov_token");
-        int documentCount = (int) tokenizerConfig.get("document_count");
+        Integer documentCount = (Integer) tokenizerConfig.get("document_count");
 
         @SuppressWarnings("unchecked")
         Map<String, Integer> wordCounts = (Map) parseJsonString((String) tokenizerConfig.get("word_counts"));
@@ -161,7 +161,7 @@ public class KerasTokenizer {
             text = text.replace(filter, split);
         }
         String[] sequences = text.split(split);
-        List<String> seqList = Arrays.asList(sequences);
+        List<String> seqList = new ArrayList(Arrays.asList(sequences));
         seqList.removeAll(Arrays.asList("", null));
 
         return seqList.toArray(new String[seqList.size()]);
@@ -200,7 +200,7 @@ public class KerasTokenizer {
                     wordDocs.put(word, 1);
             }
         }
-        Map<String, Integer> sortedWordCounts = reverseSortByValues(wordDocs);
+        Map<String, Integer> sortedWordCounts = reverseSortByValues((HashMap) wordCounts);
 
         ArrayList<String> sortedVocabulary = new ArrayList<>();
         if (outOfVocabularyToken != null)
@@ -230,8 +230,8 @@ public class KerasTokenizer {
         List list = new LinkedList(map.entrySet());
         Collections.sort(list, new Comparator() {
             public int compare(Object o1, Object o2) {
-                return ((Comparable) ((Map.Entry) (o2)).getValue())
-                        .compareTo(((Map.Entry) (o1)).getValue());
+                return ((Comparable) ((Map.Entry) (o1)).getValue())
+                        .compareTo(((Map.Entry) (o2)).getValue());
             }
         });
         HashMap sortedHashMap = new LinkedHashMap();

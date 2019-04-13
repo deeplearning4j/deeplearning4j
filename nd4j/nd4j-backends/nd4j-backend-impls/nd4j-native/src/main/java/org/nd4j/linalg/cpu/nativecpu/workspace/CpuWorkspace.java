@@ -18,18 +18,24 @@ package org.nd4j.linalg.cpu.nativecpu.workspace;
 
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.bytedeco.javacpp.LongPointer;
-import org.bytedeco.javacpp.Pointer;
-import org.bytedeco.javacpp.PointerPointer;
+import org.nd4j.linalg.api.memory.AllocationsTracker;
 import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
+import org.nd4j.linalg.api.memory.enums.AllocationKind;
 import org.nd4j.linalg.api.memory.enums.LocationPolicy;
 import org.nd4j.linalg.api.memory.enums.MemoryKind;
 import org.nd4j.linalg.api.memory.pointers.PagedPointer;
 import org.nd4j.linalg.api.memory.pointers.PointersPair;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.memory.abstracts.Nd4jWorkspace;
+import org.nd4j.linalg.api.memory.Deallocatable;
+import org.nd4j.linalg.api.memory.Deallocator;
 import org.nd4j.nativeblas.NativeOps;
 import org.nd4j.nativeblas.NativeOpsHolder;
+
+import java.util.List;
+import java.util.Queue;
 
 /**
  * CPU-only MemoryWorkspace implementation
@@ -37,7 +43,7 @@ import org.nd4j.nativeblas.NativeOpsHolder;
  * @author raver119@gmail.com
  */
 @Slf4j
-public class CpuWorkspace extends Nd4jWorkspace {
+public class CpuWorkspace extends Nd4jWorkspace implements Deallocatable {
 
     protected LongPointer mmap;
 
@@ -54,6 +60,24 @@ public class CpuWorkspace extends Nd4jWorkspace {
         this.deviceId = deviceId;
     }
 
+
+    public String getUniqueId() {
+        return "Workspace_" + getId();
+    }
+
+    @Override
+    public Deallocator deallocator() {
+        /*
+        return new Deallocator() {
+            @Override
+            public void deallocate() {
+                log.info("Deallocator invoked!");
+            }
+        };
+        */
+         return new CpuWorkspaceDeallocator(this);
+    }
+
     @Override
     protected void init() {
         super.init();
@@ -68,6 +92,7 @@ public class CpuWorkspace extends Nd4jWorkspace {
                     log.info("Allocating [{}] workspace of {} bytes...", id, currentSize.get());
 
                 workspace.setHostPointer(new PagedPointer(memoryManager.allocate(currentSize.get() + SAFETY_OFFSET, MemoryKind.HOST, true)));
+                AllocationsTracker.getInstance().markAllocated(AllocationKind.WORKSPACE, 0, currentSize.get() + SAFETY_OFFSET);
             }
         } else if (workspaceConfiguration.getPolicyLocation() == LocationPolicy.MMAP) {
             long flen = tempFile.length();
@@ -129,7 +154,7 @@ public class CpuWorkspace extends Nd4jWorkspace {
         if (isDebug.get())
             log.info("Destroying workspace...");
 
-        currentSize.set(0);
+        val sizez = currentSize.getAndSet(0);
         hostOffset.set(0);
         deviceOffset.set(0);
 
@@ -139,8 +164,11 @@ public class CpuWorkspace extends Nd4jWorkspace {
         clearPinnedAllocations(extended);
 
         if (workspaceConfiguration.getPolicyLocation() == LocationPolicy.RAM) {
-            if (workspace.getHostPointer() != null)
+            if (workspace.getHostPointer() != null) {
                 NativeOpsHolder.getInstance().getDeviceNativeOps().freeHost(workspace.getHostPointer());
+
+                AllocationsTracker.getInstance().markReleased(AllocationKind.WORKSPACE, 0, sizez);
+            }
         } else if (workspaceConfiguration.getPolicyLocation() == LocationPolicy.MMAP) {
             if (workspace.getHostPointer() != null)
                 NativeOpsHolder.getInstance().getDeviceNativeOps().munmapFile(null, mmap, tempFile.length());
@@ -153,5 +181,17 @@ public class CpuWorkspace extends Nd4jWorkspace {
     @Override
     protected void resetWorkspace() {
         //Pointer.memset(workspace.getHostPointer(), 0, currentSize.get() + SAFETY_OFFSET);
+    }
+
+    protected PointersPair workspace() {
+        return workspace;
+    }
+
+    protected Queue<PointersPair> pinnedPointers() {
+        return pinnedAllocations;
+    }
+
+    protected List<PointersPair> externalPointers() {
+        return externalAllocations;
     }
 }

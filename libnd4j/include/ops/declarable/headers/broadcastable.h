@@ -314,13 +314,6 @@ namespace nd4j {
         #endif
 
         /**
-         *
-         */
-        #if NOT_EXCLUDED(OP_boolean_not)
-        DECLARE_BROADCASTABLE_OP(boolean_not, 0, 0);
-        #endif
-
-        /**
          * This operation performs calculation of percentile of input array along given axises
          *
          * Input - tensor with rank N > 0
@@ -343,6 +336,14 @@ namespace nd4j {
          */
         #if NOT_EXCLUDED(OP_tf_atan2)
         DECLARE_BROADCASTABLE_OP(tf_atan2, 0, 0);
+        #endif
+
+        /**
+         * Broadcastable pow implementation
+         * @tparam T
+         */
+        #if NOT_EXCLUDED(OP_Pow)
+        DECLARE_BROADCASTABLE_OP(Pow, 0, 0);
         #endif
     }
 }

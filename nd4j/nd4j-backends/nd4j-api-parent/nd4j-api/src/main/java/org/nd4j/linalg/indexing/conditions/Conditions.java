@@ -30,9 +30,16 @@ public class Conditions {
         return new IsInfinite();
     }
 
-
     public static Condition isNan() {
         return new IsNaN();
+    }
+
+    public static Condition isFinite() {
+        return new IsFinite();
+    }
+
+    public static Condition notFinite() {
+        return new NotFinite();
     }
 
     public static Condition epsNotEquals(Number value) {

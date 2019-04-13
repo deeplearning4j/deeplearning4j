@@ -131,7 +131,6 @@
         <module>deeplearning4j-scaleout</module>
         <module>deeplearning4j-ui-parent</module>
         <module>deeplearning4j-graph</module>
-        <module>deeplearning4j-cuda</module>
         <module>deeplearning4j-nlp-parent</module>
         <module>deeplearning4j-nn</module>
         <module>deeplearning4j-dataimport-solrj</module>
@@ -231,7 +230,7 @@
                             <skip>${skipBackendChoice}</skip>
                             <rules>
                                 <requireActiveProfile>
-                                    <profiles>test-nd4j-native,test-nd4j-cuda-10.0</profiles>
+                                    <profiles>test-nd4j-native,test-nd4j-cuda-10.1</profiles>
                                     <all>false</all>
                                 </requireActiveProfile>
                             </rules>
@@ -452,6 +451,29 @@
     </build>
 
     <profiles>
+        <profile>
+            <id>cuda</id>
+            <activation>
+                <property>
+                    <name>libnd4j.chip</name>
+                    <value>cuda</value>
+                </property>
+            </activation>
+            <modules>
+                <module>deeplearning4j-cuda</module>
+            </modules>
+        </profile>
+        <profile>
+            <id>libnd4j-cuda</id>
+            <activation>
+                <property>
+                    <name>libnd4j.cuda</name>
+                </property>
+            </activation>
+            <modules>
+                <module>deeplearning4j-cuda</module>
+            </modules>
+        </profile>
         <!-- For running unit tests with nd4j-native: "mvn clean test -P test-nd4j-native"
              Note that this excludes DL4J-cuda -->
         <profile>
@@ -476,7 +498,7 @@
         </profile>
         <!-- For running unit tests with nd4j-cuda-8.0: "mvn clean test -P test-nd4j-cuda-8.0" -->
         <profile>
-            <id>test-nd4j-cuda-10.0</id>
+            <id>test-nd4j-cuda-10.1</id>
             <activation>
                 <activeByDefault>false</activeByDefault>
             </activation>
@@ -489,7 +511,7 @@
                 </dependency>
                 <dependency>
                     <groupId>org.nd4j</groupId>
-                    <artifactId>nd4j-cuda-10.0</artifactId>
+                    <artifactId>nd4j-cuda-10.1</artifactId>
                     <version>${nd4j.version}</version>
                     <scope>test</scope>
                 </dependency>

@@ -16,26 +16,27 @@
 
 package org.deeplearning4j.spark.impl.evaluation;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.broadcast.Broadcast;
 import org.deeplearning4j.datasets.iterator.IteratorDataSetIterator;
 import org.deeplearning4j.datasets.iterator.IteratorMultiDataSetIterator;
-import org.deeplearning4j.eval.IEvaluation;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
-import org.jetbrains.annotations.NotNull;
 import org.nd4j.base.Preconditions;
+import org.nd4j.evaluation.IEvaluation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
+import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.util.DeviceLocal;
+import org.nd4j.linalg.util.DeviceLocalNDArray;
 
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -58,6 +59,14 @@ public class EvaluationRunner {
 
     private final AtomicInteger workerCount = new AtomicInteger(0);
     private Queue<Eval> queue = new ConcurrentLinkedQueue<>();
+    //parameters map for device local parameters for a given broadcast
+    //Note: byte[] doesn't override Object.equals hence this is effectively an *identity* weak hash map, which is what we want here
+    //i.e., DeviceLocal<INDArray> can be GC'd once the Broadcast<byte[]> is no longer referenced anywhere
+    //This approach relies on the fact that a single Broadcast object's *content* will be shared by all of Spark's threads,
+    // even though the Broadcast object itself mayb not be
+    //Also by storing params as a byte[] (i.e., in serialized form), we sidestep a lot of the thread locality issues
+    private Map<byte[],DeviceLocalNDArray> paramsMap = new WeakHashMap<>();
+
 
     private EvaluationRunner(){ }
 
@@ -74,30 +83,60 @@ public class EvaluationRunner {
      * @return Future for the results
      */
     public Future<IEvaluation[]> execute(IEvaluation[] evals, int evalWorkers, int evalBatchSize, Iterator<DataSet> ds, Iterator<MultiDataSet> mds,
-                                         boolean isCG, Broadcast<String> json, Broadcast<INDArray> params){
+                                         boolean isCG, Broadcast<String> json, Broadcast<byte[]> params){
         Preconditions.checkArgument(evalWorkers > 0, "Invalid number of evaluation workers: must be > 0. Got: %s", evalWorkers);
         Preconditions.checkState(ds != null || mds != null, "No data provided - both DataSet and MultiDataSet iterators were null");
 
+        //For multi-GPU we'll use a round robbin approach for worker thread/GPU affinity
+        int numDevices = Nd4j.getAffinityManager().getNumberOfDevices();
+        if(numDevices <= 0)
+            numDevices = 1;
+
+        //Create the device local params if required
+        DeviceLocalNDArray deviceLocalParams;
+        synchronized (this){
+            if(!paramsMap.containsKey(params.getValue())){
+                //Due to singleton pattern, this block should execute only once (first thread)
+                //Initially put on device 0. For CPU, this means we only have a single copy of the params INDArray shared by
+                // all threads, which is both safe and uses the least amount of memory
+                //For CUDA, we can't share threads otherwise arrays will be continually relocated, causing a crash
+                Nd4j.getAffinityManager().attachThreadToDevice(Thread.currentThread(), 0);
+                byte[] pBytes = params.getValue();
+                INDArray p;
+                try{
+                    p = Nd4j.read(new ByteArrayInputStream(pBytes));
+                } catch (IOException e){
+                    throw new RuntimeException(e);  //Should never happen
+                }
+                DeviceLocalNDArray dlp = new DeviceLocalNDArray(p);
+                paramsMap.put(params.getValue(), dlp);
+                log.info("paramsMap: size {}", paramsMap.size());
+            }
+            deviceLocalParams = paramsMap.get(params.getValue());
+        }
+
         int currentWorkerCount;
         while((currentWorkerCount = workerCount.get()) < evalWorkers){
+            //For load balancing: we're relying on the fact that threads are mapped to devices in a round-robbin approach
+            // the first time they touch an INDArray. If we assume this method is called by new threads,
+            // then the first N workers will be distributed evenly across available devices.
+
             if(workerCount.compareAndSet(currentWorkerCount, currentWorkerCount+1)){
                 log.debug("Starting evaluation in thread {}", Thread.currentThread().getId());
                 //This thread is now a worker
                 EvaluationFuture f = new EvaluationFuture();
                 f.setResult(evals);
                 try{
-                    //TODO We're re-using the params INDArray across all threads... params don't change - and this should be safe
-                    // for CPU - but what about CUDA?
                     Model m;
                     if(isCG){
                         ComputationGraphConfiguration conf = ComputationGraphConfiguration.fromJson(json.getValue());
                         ComputationGraph cg = new ComputationGraph(conf);
-                        cg.init(params.getValue(), false);
+                        cg.init(deviceLocalParams.get(), false);
                         m = cg;
                     } else {
                         MultiLayerConfiguration conf = MultiLayerConfiguration.fromJson(json.getValue());
                         MultiLayerNetwork net = new MultiLayerNetwork(conf);
-                        net.init(params.getValue(), false);
+                        net.init(deviceLocalParams.get(), false);
                         m = net;
                     }
 
@@ -202,7 +241,7 @@ public class EvaluationRunner {
         }
 
         @Override
-        public IEvaluation[] get(long timeout, @NotNull TimeUnit unit) {
+        public IEvaluation[] get(long timeout, @NonNull TimeUnit unit) {
             throw new UnsupportedOperationException();
         }
     }

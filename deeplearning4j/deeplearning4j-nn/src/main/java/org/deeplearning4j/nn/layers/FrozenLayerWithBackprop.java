@@ -69,13 +69,8 @@ public class FrozenLayerWithBackprop extends BaseWrapperLayer {
     }
 
     @Override
-    public double calcL2(boolean backpropOnlyParams) {
-        return 0;
-    }
-
-    @Override
-    public double calcL1(boolean backpropOnlyParams) {
-        return 0;
+    public double calcRegularizationScore(boolean backpropParamsOnly){
+        return 0.0;
     }
 
     @Override

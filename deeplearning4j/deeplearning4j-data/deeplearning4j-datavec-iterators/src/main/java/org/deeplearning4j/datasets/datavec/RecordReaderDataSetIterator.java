@@ -30,6 +30,7 @@ import org.datavec.api.records.reader.SequenceRecordReader;
 import org.datavec.api.records.reader.impl.ConcatenatingRecordReader;
 import org.datavec.api.records.reader.impl.collection.CollectionRecordReader;
 import org.datavec.api.writable.Writable;
+import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.DataSetPreProcessor;
@@ -148,7 +149,8 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
     }
 
     /**
-     * Main constructor for multi-label regression (i.e., regression with multiple outputs)
+     * Main constructor for multi-label regression (i.e., regression with multiple outputs). Can also be used for single
+     * output regression with labelIndexFrom == labelIndexTo
      *
      * @param recordReader      RecordReader to get data from
      * @param labelIndexFrom    Index of the first regression target
@@ -276,6 +278,12 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
 
             underlyingIsDisjoint = false;
         } else if (labelIndex >= 0) {
+            Preconditions.checkState(labelIndex < next.getRecord().size(),
+                    "Invalid label (from) index: index must be in range 0 to first record size of (0 to %s inclusive), got %s", next.getRecord().size()-1, labelIndex);
+            Preconditions.checkState(labelIndexTo < next.getRecord().size(),
+                    "Invalid label (to) index: index must be in range 0 to first record size of (0 to %s inclusive), got %s", next.getRecord().size()-1, labelIndexTo);
+
+
             //Multiple inputs
             int firstFrom = 0;
             int firstTo = labelIndex - 1;

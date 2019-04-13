@@ -20,12 +20,10 @@ package org.deeplearning4j.nn.params;
 import lombok.val;
 import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.conf.distribution.Distributions;
 import org.deeplearning4j.nn.conf.layers.Layer;
 import org.deeplearning4j.nn.conf.layers.SeparableConvolution2D;
 import org.deeplearning4j.nn.weights.WeightInitUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.rng.distribution.Distribution;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 
 import java.util.*;
@@ -217,7 +215,6 @@ public class SeparableConvolutionParamInitializer implements ParamInitializer {
         int depthMultiplier = layerConf.getDepthMultiplier();
 
         if (initializeParams) {
-            Distribution dist = Distributions.createDistribution(layerConf.getDist());
             int[] kernel = layerConf.getKernelSize();
             int[] stride = layerConf.getStride();
 
@@ -228,7 +225,7 @@ public class SeparableConvolutionParamInitializer implements ParamInitializer {
 
             val weightsShape = new long[] {depthMultiplier, inputDepth, kernel[0], kernel[1]};
 
-            return WeightInitUtil.initWeights(fanIn, fanOut, weightsShape, layerConf.getWeightInit(), dist, 'c',
+            return layerConf.getWeightInitFn().init(fanIn, fanOut, weightsShape, 'c',
                             weightView);
         } else {
             int[] kernel = layerConf.getKernelSize();
@@ -248,7 +245,6 @@ public class SeparableConvolutionParamInitializer implements ParamInitializer {
         int depthMultiplier = layerConf.getDepthMultiplier();
 
         if (initializeParams) {
-            Distribution dist = Distributions.createDistribution(layerConf.getDist());
 
             val inputDepth = layerConf.getNIn();
             val outputDepth = layerConf.getNOut();
@@ -258,7 +254,7 @@ public class SeparableConvolutionParamInitializer implements ParamInitializer {
 
             val weightsShape = new long[] {outputDepth, depthMultiplier * inputDepth, 1, 1};
 
-            return WeightInitUtil.initWeights(fanIn, fanOut, weightsShape, layerConf.getWeightInit(), dist, 'c',
+            return layerConf.getWeightInitFn().init(fanIn, fanOut, weightsShape, 'c',
                     weightView);
         } else {
             return WeightInitUtil.reshapeWeights(

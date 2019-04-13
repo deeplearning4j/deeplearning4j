@@ -23,11 +23,8 @@ import org.apache.arrow.vector.VectorSchemaRoot;
 import org.apache.arrow.vector.VectorUnloader;
 import org.apache.arrow.vector.ipc.message.ArrowRecordBatch;
 import org.datavec.api.transform.schema.Schema;
-import org.datavec.api.writable.DoubleWritable;
 import org.datavec.api.writable.Writable;
 import org.datavec.api.writable.batch.AbstractTimeSeriesWritableRecordBatch;
-import org.datavec.arrow.ArrowConverter;
-import org.jetbrains.annotations.NotNull;
 
 import java.io.Closeable;
 import java.io.IOException;

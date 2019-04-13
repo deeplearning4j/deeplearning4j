@@ -19,23 +19,23 @@ package org.nd4j.linalg.profiling;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.commons.lang3.ArrayUtils;
-import org.nd4j.linalg.api.memory.MemoryWorkspace;
-import org.nd4j.linalg.primitives.Pair;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.profiler.OpProfiler;
+import org.nd4j.linalg.profiler.ProfilerConfig;
 
 import java.util.Arrays;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 /**
  * @author raver119@gmail.com
@@ -66,7 +66,7 @@ public class OperationProfilerTests {
 
 
     @Test
-    public void testStack1() throws Exception {
+    public void testStack1() {
 
         Nd4j.getExecutioner().setProfilingMode(OpExecutioner.ProfilingMode.ALL);
 
@@ -83,7 +83,7 @@ public class OperationProfilerTests {
 
 
     @Test
-    public void testBadCombos1() throws Exception {
+    public void testBadCombos1() {
         INDArray x = Nd4j.create(100);
         INDArray y = Nd4j.create(100);
 
@@ -94,7 +94,7 @@ public class OperationProfilerTests {
     }
 
     @Test
-    public void testBadCombos2() throws Exception {
+    public void testBadCombos2() {
         INDArray x = Nd4j.create(100).reshape('f', 10, 10);
         INDArray y = Nd4j.create(100).reshape('c', 10, 10);
 
@@ -105,7 +105,7 @@ public class OperationProfilerTests {
     }
 
     @Test
-    public void testBadCombos3() throws Exception {
+    public void testBadCombos3() {
         INDArray x = Nd4j.create(27).reshape('c', 3, 3, 3).tensorAlongDimension(0, 1, 2);
         INDArray y = Nd4j.create(100).reshape('f', 10, 10);
 
@@ -118,7 +118,7 @@ public class OperationProfilerTests {
     }
 
     @Test
-    public void testBadCombos4() throws Exception {
+    public void testBadCombos4() {
         INDArray x = Nd4j.create(27).reshape('c', 3, 3, 3).tensorAlongDimension(0, 1, 2);
         INDArray y = Nd4j.create(100).reshape('f', 10, 10);
         INDArray z = Nd4j.create(100).reshape('f', 10, 10);
@@ -132,7 +132,7 @@ public class OperationProfilerTests {
     }
 
     @Test
-    public void testBadCombos5() throws Exception {
+    public void testBadCombos5() {
         INDArray w = Nd4j.create(100).reshape('c', 10, 10);
         INDArray x = Nd4j.create(100).reshape('c', 10, 10);
         INDArray y = Nd4j.create(100).reshape('f', 10, 10);
@@ -147,7 +147,7 @@ public class OperationProfilerTests {
 
     @Test
     @Ignore
-    public void testBadCombos6() throws Exception {
+    public void testBadCombos6() {
         INDArray x = Nd4j.create(27).reshape('f', 3, 3, 3).slice(1);
         INDArray y = Nd4j.create(100).reshape('f', 10, 10);
 
@@ -159,11 +159,11 @@ public class OperationProfilerTests {
     }
 
     @Test
-    public void testBadTad1() throws Exception {
+    public void testBadTad1() {
         INDArray x = Nd4j.create(2, 4, 5, 6);
 
         Pair<DataBuffer, DataBuffer> pair =
-                        Nd4j.getExecutioner().getTADManager().getTADOnlyShapeInfo(x, new int[] {0, 2});
+                        Nd4j.getExecutioner().getTADManager().getTADOnlyShapeInfo(x, 0, 2);
 
         OpProfiler.PenaltyCause[] causes = OpProfiler.getInstance().processTADOperands(pair.getFirst());
 
@@ -173,11 +173,11 @@ public class OperationProfilerTests {
     }
 
     @Test
-    public void testBadTad2() throws Exception {
+    public void testBadTad2() {
         INDArray x = Nd4j.create(2, 4, 5, 6);
 
         Pair<DataBuffer, DataBuffer> pair =
-                        Nd4j.getExecutioner().getTADManager().getTADOnlyShapeInfo(x, new int[] {2, 3});
+                        Nd4j.getExecutioner().getTADManager().getTADOnlyShapeInfo(x, 2, 3);
 
         OpProfiler.PenaltyCause[] causes = OpProfiler.getInstance().processTADOperands(pair.getFirst());
 
@@ -189,11 +189,11 @@ public class OperationProfilerTests {
 
 
     @Test
-    public void testBadTad3() throws Exception {
+    public void testBadTad3() {
         INDArray x = Nd4j.create(new int[] {2, 4, 5, 6, 7}, 'f');
 
         Pair<DataBuffer, DataBuffer> pair =
-                        Nd4j.getExecutioner().getTADManager().getTADOnlyShapeInfo(x, new int[] {0, 2, 4});
+                        Nd4j.getExecutioner().getTADManager().getTADOnlyShapeInfo(x, 0, 2, 4);
 
         OpProfiler.PenaltyCause[] causes = OpProfiler.getInstance().processTADOperands(pair.getFirst());
 
@@ -204,10 +204,10 @@ public class OperationProfilerTests {
 
     @Test
     @Ignore
-    public void testBadTad4() throws Exception {
+    public void testBadTad4() {
         INDArray x = Nd4j.create(2, 4, 5, 6);
 
-        Pair<DataBuffer, DataBuffer> pair = Nd4j.getExecutioner().getTADManager().getTADOnlyShapeInfo(x, new int[] {3});
+        Pair<DataBuffer, DataBuffer> pair = Nd4j.getExecutioner().getTADManager().getTADOnlyShapeInfo(x, 3);
 
         OpProfiler.PenaltyCause[] causes = OpProfiler.getInstance().processTADOperands(pair.getFirst());
 
@@ -218,10 +218,10 @@ public class OperationProfilerTests {
     }
 
     @Test
-    public void testBadTad5() throws Exception {
+    public void testBadTad5() {
         INDArray x = Nd4j.create(new int[] {2, 4, 5, 6, 7}, 'f');
 
-        Pair<DataBuffer, DataBuffer> pair = Nd4j.getExecutioner().getTADManager().getTADOnlyShapeInfo(x, new int[] {4});
+        Pair<DataBuffer, DataBuffer> pair = Nd4j.getExecutioner().getTADManager().getTADOnlyShapeInfo(x, 4);
 
         OpProfiler.PenaltyCause[] causes = OpProfiler.getInstance().processTADOperands(pair.getFirst());
 
@@ -233,7 +233,7 @@ public class OperationProfilerTests {
 
 
     @Test
-    public void testCxFxF1() throws Exception {
+    public void testCxFxF1() {
         INDArray a = Nd4j.create(10, 10).reshape('f', 10, 10);
         INDArray b = Nd4j.create(10, 10).reshape('c', 10, 10);
         INDArray c = Nd4j.create(10, 10).reshape('f', 10, 10);
@@ -243,7 +243,7 @@ public class OperationProfilerTests {
     }
 
     @Test
-    public void testCxFxF2() throws Exception {
+    public void testCxFxF2() {
         INDArray a = Nd4j.create(10, 10).reshape('c', 10, 10);
         INDArray b = Nd4j.create(10, 10).reshape('c', 10, 10);
         INDArray c = Nd4j.create(10, 10).reshape('f', 10, 10);
@@ -253,7 +253,7 @@ public class OperationProfilerTests {
     }
 
     @Test
-    public void testCxFxF3() throws Exception {
+    public void testCxFxF3() {
         INDArray a = Nd4j.create(10, 10).reshape('c', 10, 10);
         INDArray b = Nd4j.create(10, 10).reshape('c', 10, 10);
         INDArray c = Nd4j.create(10, 10).reshape('c', 10, 10);
@@ -264,7 +264,7 @@ public class OperationProfilerTests {
 
 
     @Test
-    public void testBlasFF() throws Exception {
+    public void testBlasFF() {
         Nd4j.getExecutioner().setProfilingMode(OpExecutioner.ProfilingMode.ALL);
 
         INDArray a = Nd4j.create(10, 10).reshape('f', 10, 10);
@@ -277,7 +277,7 @@ public class OperationProfilerTests {
 
 
     @Test(expected = ND4JIllegalStateException.class)
-    public void testNaNPanic1() throws Exception {
+    public void testNaNPanic1() {
         Nd4j.getExecutioner().setProfilingMode(OpExecutioner.ProfilingMode.NAN_PANIC);
 
         INDArray a = Nd4j.create(new float[] {1f, 2f, 3f, Float.NaN});
@@ -286,7 +286,7 @@ public class OperationProfilerTests {
     }
 
     @Test(expected = ND4JIllegalStateException.class)
-    public void testNaNPanic2() throws Exception {
+    public void testNaNPanic2() {
         Nd4j.getExecutioner().setProfilingMode(OpExecutioner.ProfilingMode.INF_PANIC);
 
         INDArray a = Nd4j.create(new float[] {1f, 2f, 3f, Float.POSITIVE_INFINITY});
@@ -295,7 +295,7 @@ public class OperationProfilerTests {
     }
 
     @Test(expected = ND4JIllegalStateException.class)
-    public void testNaNPanic3() throws Exception {
+    public void testNaNPanic3() {
         Nd4j.getExecutioner().setProfilingMode(OpExecutioner.ProfilingMode.ANY_PANIC);
 
         INDArray a = Nd4j.create(new float[] {1f, 2f, 3f, Float.NEGATIVE_INFINITY});
@@ -305,7 +305,7 @@ public class OperationProfilerTests {
 
 
     @Test(expected = ND4JIllegalStateException.class)
-    public void testScopePanic1() throws Exception {
+    public void testScopePanic1() {
         Nd4j.getExecutioner().setProfilingMode(OpExecutioner.ProfilingMode.SCOPE_PANIC);
 
         INDArray array;
@@ -321,7 +321,7 @@ public class OperationProfilerTests {
 
 
     @Test(expected = ND4JIllegalStateException.class)
-    public void testScopePanic2() throws Exception {
+    public void testScopePanic2() {
         Nd4j.getExecutioner().setProfilingMode(OpExecutioner.ProfilingMode.SCOPE_PANIC);
 
         INDArray array;
@@ -345,7 +345,7 @@ public class OperationProfilerTests {
 
 
     @Test
-    public void testScopePanic3() throws Exception {
+    public void testScopePanic3() {
         Nd4j.getExecutioner().setProfilingMode(OpExecutioner.ProfilingMode.SCOPE_PANIC);
 
 
@@ -400,5 +400,19 @@ public class OperationProfilerTests {
         }
     }
 
+    @Test
+    public void testExtendedStatistics() {
+        Nd4j.getExecutioner().setProfilingConfig(ProfilerConfig.builder().nativeStatistics(true).build());
+
+        INDArray array = Nd4j.ones(10);
+        val stats = OpProfiler.getInstance().getStatistics();
+
+        assertEquals(10, stats.getCountPositive());
+        assertEquals(0, stats.getCountNegative());
+        assertEquals(0, stats.getCountZero());
+        assertEquals(0, stats.getCountInf());
+        assertEquals(0, stats.getCountNaN());
+        assertEquals(1.0f, stats.getMeanValue(), 1e-5);
+    }
 
 }

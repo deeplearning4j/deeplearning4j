@@ -28,9 +28,9 @@
 #endif
 
 // since we can't inherit/overwrite static methods - we just define default impls
-#define method_idx  random_def T op(Nd4jLong idx, Nd4jLong length, nd4j::random::RandomBuffer *helper, T *extraParams) { return -1.0f; }
-#define method_X  random_def T op(T valueX, Nd4jLong idx, Nd4jLong length, nd4j::random::RandomBuffer *helper, T *extraParams) { return -2.0f; }
-#define method_XY  random_def T op(T valueX, T valueY, Nd4jLong idx, Nd4jLong length, nd4j::random::RandomBuffer *helper, T *extraParams) { return -3.0f; }
+#define method_idx  random_def T op(Nd4jLong idx, Nd4jLong length, nd4j::graph::RandomGenerator* rng, T *extraParams) { return -1.0f; }
+#define method_X  random_def T op(T valueX, Nd4jLong idx, Nd4jLong length, nd4j::graph::RandomGenerator* rng, T *extraParams) { return -2.0f; }
+#define method_XY  random_def T op(T valueX, T valueY, Nd4jLong idx, Nd4jLong length, nd4j::graph::RandomGenerator* rng, T *extraParams) { return -3.0f; }
 
 #define no_exec_special static const bool requiresSpecial = false; static inline void specialOp(Nd4jPointer state, T *x, Nd4jLong *xShapeBuffer, T *y, Nd4jLong *yShapeBuffer, T *z, Nd4jLong *zShapeBuffer, T *extraArguments) { }
 
@@ -41,6 +41,7 @@
 #endif
 
 #include <helpers/helper_generator.h>
+#include <graph/RandomGenerator.h>
 #include <array/DataTypeUtils.h>
 
 namespace randomOps {
@@ -58,7 +59,7 @@ namespace randomOps {
         method_idx
         method_X
 
-        random_def T op(T valueX, T valueY, Nd4jLong idx,  Nd4jLong length, nd4j::random::RandomBuffer *helper, T *extraParams) {
+        random_def T op(T valueX, T valueY, Nd4jLong idx,  Nd4jLong length, nd4j::graph::RandomGenerator *helper, T *extraParams) {
             T threshold = extraParams[0];
             T randVal = helper->relativeT<T>(idx);
 
@@ -79,7 +80,7 @@ namespace randomOps {
         method_XY
         method_X
 
-        random_def T op(Nd4jLong idx, Nd4jLong length, nd4j::random::RandomBuffer *helper, T *extraParams) {
+        random_def T op(Nd4jLong idx, Nd4jLong length, nd4j::graph::RandomGenerator *helper, T *extraParams) {
             return helper->relativeT<T>(idx, extraParams[0], extraParams[1]);
         }
     };
@@ -95,11 +96,11 @@ namespace randomOps {
 
         method_XY
 
-        random_def T op(Nd4jLong idx, Nd4jLong length, nd4j::random::RandomBuffer *helper, T *extraParams) {
+        random_def T op(Nd4jLong idx, Nd4jLong length, nd4j::graph::RandomGenerator *helper, T *extraParams) {
             return extraParams[0] >= helper->relativeT<T>(idx) ? (T) 1.0f : (T) 0.0f;
         }
 
-        random_def T op(T valueX, Nd4jLong idx, Nd4jLong length, nd4j::random::RandomBuffer *helper, T *extraParams) {
+        random_def T op(T valueX, Nd4jLong idx, Nd4jLong length, nd4j::graph::RandomGenerator *helper, T *extraParams) {
             return valueX >= helper->relativeT<T>(idx) ? (T) 1.0f : (T) 0.0f;
         }
     };
@@ -116,15 +117,15 @@ namespace randomOps {
 
         method_XY
 
-        random_def T op(Nd4jLong idx, Nd4jLong length, nd4j::random::RandomBuffer *helper, T *extraParams) {
+        random_def T op(Nd4jLong idx, Nd4jLong length, nd4j::graph::RandomGenerator *helper, T *extraParams) {
             T lambda = extraParams[0];
             T x = helper->relativeT(idx, -nd4j::DataTypeUtils::template max<T>() / 10 , nd4j::DataTypeUtils::template max<T>() / 10);
-            return x <= (T)0.f ? (T)0.f : (T)1.f - nd4j::math::nd4j_pow<T>((T) M_E, -(lambda * x));
+            return x <= (T)0.f ? (T)0.f : (T)1.f - nd4j::math::nd4j_pow<T, T, T>((T) M_E, -(lambda * x));
         }
 
-        random_def T op(T valueX, Nd4jLong idx, Nd4jLong length, nd4j::random::RandomBuffer *helper, T *extraParams) {
+        random_def T op(T valueX, Nd4jLong idx, Nd4jLong length, nd4j::graph::RandomGenerator *helper, T *extraParams) {
             T lambda = extraParams[0];
-            return valueX <= (T)0.f ? (T)0.f : (T)1.f - nd4j::math::nd4j_pow<T>((T) M_E, -(lambda * valueX));
+            return valueX <= (T)0.f ? (T)0.f : (T)1.f - nd4j::math::nd4j_pow<T, T, T>((T) M_E, -(lambda * valueX));
         }
     };
 
@@ -143,7 +144,7 @@ namespace randomOps {
         method_XY
 
         // please note: prob is chance to retain original value
-        random_def T op(T valueX, Nd4jLong idx, Nd4jLong length, nd4j::random::RandomBuffer *helper, T *extraParams) {
+        random_def T op(T valueX, Nd4jLong idx, Nd4jLong length, nd4j::graph::RandomGenerator *helper, T *extraParams) {
             T randVal = helper->relativeT<T>(idx);
             return randVal >= extraParams[0] ? (T) 0.0f : valueX;
         }
@@ -160,7 +161,7 @@ namespace randomOps {
         method_XY
 
         // please note: prob is chance to retain original value
-        random_def T op(T valueX, Nd4jLong idx, Nd4jLong length, nd4j::random::RandomBuffer *helper, T *extraParams) {
+        random_def T op(T valueX, Nd4jLong idx, Nd4jLong length, nd4j::graph::RandomGenerator *helper, T *extraParams) {
             T randVal = helper->relativeT<T>(idx);
             // extraParams[0] == p
             // [1] = a
@@ -184,7 +185,7 @@ namespace randomOps {
         method_XY
 
         // please note: prob is chance to retain original value
-        random_def T op(T valueX, Nd4jLong idx, Nd4jLong length, nd4j::random::RandomBuffer *helper, T *extraParams) {
+        random_def T op(T valueX, Nd4jLong idx, Nd4jLong length, nd4j::graph::RandomGenerator *helper, T *extraParams) {
             T prob = extraParams[0];
             T randVal = helper->relativeT<T>(idx);
             return randVal >= prob ? (T) 0.0f : valueX / prob;
@@ -202,13 +203,17 @@ namespace randomOps {
         method_X
         method_XY
 
-        random_def T op(Nd4jLong idx, Nd4jLong length, nd4j::random::RandomBuffer *helper, T *extraParams) {
+        random_def T op(Nd4jLong idx, Nd4jLong length, nd4j::graph::RandomGenerator *helper, T *extraParams) {
             T from = extraParams[0];
             T to = extraParams[1];
+            T step = extraParams[2];
 
-            T step = (T) idx / ((T)length - (T) 1.0f);
+	        if (step == static_cast<T>(0.0f)) {
+            	step = (T) idx / ((T)length - (T) 1.0f);
+            	return from * ((T) 1.0f - step) + step * to;
+            }
+	        return from + (idx * step);
 
-            return from * ((T) 1.0f - step) + step * to;
         }
     };
 
@@ -220,15 +225,15 @@ namespace randomOps {
 
         method_XY
 
-        random_def T op(Nd4jLong idx, Nd4jLong length, nd4j::random::RandomBuffer *helper, T *extraParams) {
+        random_def T op(Nd4jLong idx, Nd4jLong length, nd4j::graph::RandomGenerator *helper, T *extraParams) {
             T lambda = extraParams[0];
             T x = helper->relativeT(idx, nd4j::DataTypeUtils::template min<T>(), (T)1.f);            
-            return -nd4j::math::nd4j_log<double>((T)1.f - x) / lambda;      
+            return -nd4j::math::nd4j_log<T, T>((T)1.f - x) / lambda;
         }
 
-        random_def T op(T valueX, Nd4jLong idx, Nd4jLong length, nd4j::random::RandomBuffer *helper, T *extraParams) {
+        random_def T op(T valueX, Nd4jLong idx, Nd4jLong length, nd4j::graph::RandomGenerator *helper, T *extraParams) {
             T lambda = extraParams[0];            
-            return -nd4j::math::nd4j_log<double>((T)1.f - valueX) / lambda;  // valueX must be within (0, 1]
+            return -nd4j::math::nd4j_log<T, T>((T)1.f - valueX) / lambda;  // valueX must be within (0, 1]
         }
     };
 

@@ -182,8 +182,8 @@ public class PCA {
         long n = A.columns();
 
         // The prepare SVD results, we'll decomp A to UxSxV'
-        INDArray s = Nd4j.create(m < n ? m : n);
-        INDArray VT = Nd4j.create(n, n, 'f');
+        INDArray s = Nd4j.create(A.dataType(), m < n ? m : n);
+        INDArray VT = Nd4j.create(A.dataType(), new long[]{n, n}, 'f');
 
         // Note - we don't care about U 
         Nd4j.getBlasWrapper().lapack().gesvd(A, s, null, VT);
@@ -193,7 +193,7 @@ public class PCA {
         // So now let's rip out the appropriate number of left singular vectors from
         // the V output (note we pulls rows since VT is a transpose of V)
         INDArray V = VT.transpose();
-        INDArray factor = Nd4j.create(n, nDims, 'f');
+        INDArray factor = Nd4j.create(A.dataType(),new long[]{n, nDims}, 'f');
         for (int i = 0; i < nDims; i++) {
             factor.putColumn(i, V.getColumn(i));
         }
@@ -249,8 +249,8 @@ public class PCA {
         long n = A.columns();
 
         // The prepare SVD results, we'll decomp A to UxSxV'
-        INDArray s = Nd4j.create(m < n ? m : n);
-        INDArray VT = Nd4j.create(n, n, 'f');
+        INDArray s = Nd4j.create(A.dataType(), m < n ? m : n);
+        INDArray VT = Nd4j.create(A.dataType(), new long[]{n, n}, 'f');
 
         // Note - we don't care about U 
         Nd4j.getBlasWrapper().lapack().gesvd(A, s, null, VT);
@@ -278,7 +278,7 @@ public class PCA {
         // So now let's rip out the appropriate number of left singular vectors from
         // the V output (note we pulls rows since VT is a transpose of V)
         INDArray V = VT.transpose();
-        INDArray factor = Nd4j.create(n, k, 'f');
+        INDArray factor = Nd4j.createUninitialized(A.dataType(), new long[]{n, k}, 'f');
         for (int i = 0; i < k; i++) {
             factor.putColumn(i, V.getColumn(i));
         }
@@ -331,11 +331,8 @@ public class PCA {
         long dlength = in.rows();
         long vlength = in.columns();
 
-        INDArray sum = Nd4j.create(vlength);
         INDArray product = Nd4j.create(vlength, vlength);
-
-        for (int i = 0; i < vlength; i++)
-            sum.getColumn(i).assign(in.getColumn(i).sumNumber().doubleValue() / dlength);
+        INDArray sum = in.sum(0).divi(dlength);
 
         for (int i = 0; i < dlength; i++) {
             INDArray dx1 = in.getRow(i).sub(sum);

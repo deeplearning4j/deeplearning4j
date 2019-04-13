@@ -18,6 +18,7 @@ package org.nd4j.linalg.api.blas.impl;
 
 import org.nd4j.linalg.api.blas.Level1;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.BaseSparseNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.executioner.DefaultOpExecutioner;
@@ -45,13 +46,13 @@ public abstract class SparseBaseLevel1 extends SparseBaseLevel implements Level1
 
             switch (X.data().dataType()) {
                 case DOUBLE:
-                    DefaultOpExecutioner.validateDataType(DataBuffer.Type.DOUBLE, X, Y);
+                    DefaultOpExecutioner.validateDataType(DataType.DOUBLE, X, Y);
                     return ddoti(n, X, pointers, Y);
                 case FLOAT:
-                    DefaultOpExecutioner.validateDataType(DataBuffer.Type.FLOAT, X, Y);
+                    DefaultOpExecutioner.validateDataType(DataType.FLOAT, X, Y);
                     return sdoti(n, X, pointers, Y);
                 case HALF:
-                    DefaultOpExecutioner.validateDataType(DataBuffer.Type.HALF, X, Y);
+                    DefaultOpExecutioner.validateDataType(DataType.HALF, X, Y);
                     return hdoti(n, X, pointers, Y);
                 default:
             }
@@ -76,10 +77,10 @@ public abstract class SparseBaseLevel1 extends SparseBaseLevel implements Level1
 
         switch (arr.data().dataType()) {
             case DOUBLE:
-                DefaultOpExecutioner.validateDataType(DataBuffer.Type.DOUBLE, arr);
+                DefaultOpExecutioner.validateDataType(DataType.DOUBLE, arr);
                 return dnrm2(arr.length(), arr, 1);
             case FLOAT:
-                DefaultOpExecutioner.validateDataType(DataBuffer.Type.FLOAT, arr);
+                DefaultOpExecutioner.validateDataType(DataType.FLOAT, arr);
                 return snrm2(arr.length(), arr, 1);
             case HALF:
                 return hnrm2(arr.length(), arr, 1);
@@ -99,13 +100,13 @@ public abstract class SparseBaseLevel1 extends SparseBaseLevel implements Level1
 
         switch (arr.data().dataType()) {
             case DOUBLE:
-                DefaultOpExecutioner.validateDataType(DataBuffer.Type.DOUBLE, arr);
+                DefaultOpExecutioner.validateDataType(DataType.DOUBLE, arr);
                 return dasum(arr.length(), arr, 1);
             case FLOAT:
-                DefaultOpExecutioner.validateDataType(DataBuffer.Type.FLOAT, arr);
+                DefaultOpExecutioner.validateDataType(DataType.FLOAT, arr);
                 return sasum(arr.length(), arr, 1);
             case HALF:
-                DefaultOpExecutioner.validateDataType(DataBuffer.Type.HALF, arr);
+                DefaultOpExecutioner.validateDataType(DataType.HALF, arr);
                 return hasum(arr.length(), arr, 1);
             default:
         }
@@ -128,13 +129,13 @@ public abstract class SparseBaseLevel1 extends SparseBaseLevel implements Level1
     public int iamax(INDArray arr) {
         switch (arr.data().dataType()) {
             case DOUBLE:
-                DefaultOpExecutioner.validateDataType(DataBuffer.Type.DOUBLE, arr);
+                DefaultOpExecutioner.validateDataType(DataType.DOUBLE, arr);
                 return idamax(arr.length(), arr, 1);
             case FLOAT:
-                DefaultOpExecutioner.validateDataType(DataBuffer.Type.FLOAT, arr);
+                DefaultOpExecutioner.validateDataType(DataType.FLOAT, arr);
                 return isamax(arr.length(), arr, 1);
             case HALF:
-                DefaultOpExecutioner.validateDataType(DataBuffer.Type.HALF, arr);
+                DefaultOpExecutioner.validateDataType(DataType.HALF, arr);
                 return ihamax(arr.length(), arr, 1);
             default:
         }
@@ -162,13 +163,13 @@ public abstract class SparseBaseLevel1 extends SparseBaseLevel implements Level1
     public int iamin(INDArray arr) {
         switch (arr.data().dataType()) {
             case DOUBLE:
-                DefaultOpExecutioner.validateDataType(DataBuffer.Type.DOUBLE, arr);
+                DefaultOpExecutioner.validateDataType(DataType.DOUBLE, arr);
                 return idamin(arr.length(), arr, 1);
             case FLOAT:
-                DefaultOpExecutioner.validateDataType(DataBuffer.Type.FLOAT, arr);
+                DefaultOpExecutioner.validateDataType(DataType.FLOAT, arr);
                 return isamin(arr.length(), arr, 1);
             case HALF:
-                DefaultOpExecutioner.validateDataType(DataBuffer.Type.HALF, arr);
+                DefaultOpExecutioner.validateDataType(DataType.HALF, arr);
                 return ihamin(arr.length(), arr, 1);
             default:
         }
@@ -206,18 +207,18 @@ public abstract class SparseBaseLevel1 extends SparseBaseLevel implements Level1
         DataBuffer pointers = sparseX.getVectorCoordinates();
         switch (x.data().dataType()) {
             case DOUBLE:
-                DefaultOpExecutioner.validateDataType(DataBuffer.Type.DOUBLE, x);
-                DefaultOpExecutioner.validateDataType(DataBuffer.Type.DOUBLE, y);
+                DefaultOpExecutioner.validateDataType(DataType.DOUBLE, x);
+                DefaultOpExecutioner.validateDataType(DataType.DOUBLE, y);
                 daxpyi(n, alpha, x, pointers, y);
                 break;
             case FLOAT:
-                DefaultOpExecutioner.validateDataType(DataBuffer.Type.FLOAT, x);
-                DefaultOpExecutioner.validateDataType(DataBuffer.Type.FLOAT, y);
+                DefaultOpExecutioner.validateDataType(DataType.FLOAT, x);
+                DefaultOpExecutioner.validateDataType(DataType.FLOAT, y);
                 saxpyi(n, alpha, x, pointers, y);
                 break;
             case HALF:
-                DefaultOpExecutioner.validateDataType(DataBuffer.Type.HALF, x);
-                DefaultOpExecutioner.validateDataType(DataBuffer.Type.HALF, y);
+                DefaultOpExecutioner.validateDataType(DataType.HALF, x);
+                DefaultOpExecutioner.validateDataType(DataType.HALF, y);
                 haxpyi(n, alpha, x, pointers, y);
                 break;
             default:

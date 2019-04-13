@@ -20,18 +20,24 @@ import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.dropout.Dropout;
 import org.deeplearning4j.nn.conf.layers.DepthwiseConvolution2D;
 import org.deeplearning4j.nn.modelimport.keras.KerasLayer;
+import org.deeplearning4j.nn.modelimport.keras.KerasTestUtils;
 import org.deeplearning4j.nn.modelimport.keras.config.Keras2LayerConfiguration;
 import org.deeplearning4j.nn.modelimport.keras.config.KerasLayerConfiguration;
 import org.deeplearning4j.nn.modelimport.keras.layers.convolutional.KerasConvolution2D;
 import org.deeplearning4j.nn.modelimport.keras.layers.convolutional.KerasDepthwiseConvolution2D;
-import org.deeplearning4j.nn.weights.WeightInit;
+import org.deeplearning4j.nn.weights.IWeightInit;
+import org.deeplearning4j.nn.weights.WeightInitXavier;
 import org.junit.Test;
 import org.nd4j.base.Preconditions;
+import org.nd4j.linalg.learning.regularization.L1Regularization;
+import org.nd4j.linalg.learning.regularization.L2Regularization;
+import org.nd4j.linalg.learning.regularization.Regularization;
 
 import java.util.*;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
 /**
  * @author Max Pumperla
@@ -42,7 +48,7 @@ public class KerasDepthwiseConvolution2DTest {
     private final String ACTIVATION_DL4J = "identity";
     private final String LAYER_NAME = "test_layer";
     private final String INIT_KERAS = "depthwise_conv_2d";
-    private final WeightInit INIT_DL4J = WeightInit.XAVIER;
+    private final IWeightInit INIT_DL4J = new WeightInitXavier();
     private final double L1_REGULARIZATION = 0.01;
     private final double L2_REGULARIZATION = 0.02;
     private final double DROPOUT_KERAS = 0.3;
@@ -121,10 +127,10 @@ public class KerasDepthwiseConvolution2DTest {
         DepthwiseConvolution2D layer = kerasLayer.getDepthwiseConvolution2DLayer();
         assertEquals(ACTIVATION_DL4J, layer.getActivationFn().toString());
         assertEquals(LAYER_NAME, layer.getLayerName());
-        assertEquals(INIT_DL4J, layer.getWeightInit());
+        assertEquals(INIT_DL4J, layer.getWeightInitFn());
         assertEquals(DEPTH_MULTIPLIER, layer.getDepthMultiplier());
-        assertEquals(L1_REGULARIZATION, layer.getL1(), 0.0);
-        assertEquals(L2_REGULARIZATION, layer.getL2(), 0.0);
+        assertEquals(L1_REGULARIZATION, KerasTestUtils.getL1(layer), 0.0);
+        assertEquals(L2_REGULARIZATION, KerasTestUtils.getL2(layer), 0.0);
         assertEquals(new Dropout(DROPOUT_DL4J), layer.getIDropout());
         assertArrayEquals(KERNEL_SIZE, layer.getKernelSize());
         assertArrayEquals(STRIDE, layer.getStride());

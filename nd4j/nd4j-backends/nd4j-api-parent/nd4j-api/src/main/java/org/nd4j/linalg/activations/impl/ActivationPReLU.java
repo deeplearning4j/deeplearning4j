@@ -58,7 +58,7 @@ public class ActivationPReLU extends BaseActivationFunction {
                 prelu.addIntegerArguments(axis);
             }
         }
-        Nd4j.getExecutioner().exec(prelu.build());
+        Nd4j.getExecutioner().execAndReturn(prelu.build());
         return in;
     }
 
@@ -74,7 +74,7 @@ public class ActivationPReLU extends BaseActivationFunction {
                 preluBp.addIntegerArguments(axis);
             }
         }
-        Nd4j.getExecutioner().exec(preluBp.build());
+        Nd4j.getExecutioner().execAndReturn(preluBp.build());
         return new Pair<>(in, dLdalpha);
     }
 

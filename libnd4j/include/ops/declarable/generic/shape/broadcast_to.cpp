@@ -29,10 +29,10 @@ namespace ops  {
 
 CUSTOM_OP_IMPL(broadcast_to, 2, 1, false, 0, 0) {
 
-    NDArray<T>* input  = INPUT_VARIABLE(0);
-    NDArray<T>* shape  = INPUT_VARIABLE(1);
+    auto input  = INPUT_VARIABLE(0);
+    auto shape  = INPUT_VARIABLE(1);
     
-    NDArray<T>* output = OUTPUT_VARIABLE(0);    
+    auto output = OUTPUT_VARIABLE(0);
 
     const int      inputRank = input->rankOf();
     const int      shapeRank = shape->rankOf();
@@ -41,22 +41,28 @@ CUSTOM_OP_IMPL(broadcast_to, 2, 1, false, 0, 0) {
     REQUIRE_TRUE(shapeRank <= 1, 0, "BROADCAST_TO op: rank of shape array should be <= 1, bot got %i instead !", shapeRank);
     REQUIRE_TRUE(inputRank <= shapeLen, 0, "BROADCAST_TO op: rank of input shape array should be <= length of shape array, bot got %i and %i correspondingly !", inputRank, shapeLen);
 
-    std::vector<T> shapeBuff = shape->getBufferAsVector();
+    std::vector<Nd4jLong > shapeBuff = shape->getBufferAsVector<Nd4jLong>();
     std::vector<Nd4jLong> outShape(shapeBuff.begin(), shapeBuff.end());
 
     for(int i = 1; i <= inputRank; ++i)
-        REQUIRE_TRUE(input->sizeAt(inputRank-i) == outShape[shapeLen-i] || input->sizeAt(inputRank-i) == 1, 0, "BROADCAST_TO op: shape of input array %s can't be broadcasted to the shape %s !", ShapeUtils<T>::shapeAsString(input).c_str(), ShapeUtils<T>::shapeAsString(outShape).c_str());
+        REQUIRE_TRUE(input->sizeAt(inputRank-i) == outShape[shapeLen-i] || input->sizeAt(inputRank-i) == 1, 0, "BROADCAST_TO op: shape of input array %s can't be broadcasted to the shape %s !", ShapeUtils::shapeAsString(input).c_str(), ShapeUtils::shapeAsString(outShape).c_str());
 
     input->tile(*output);
 
     return Status::OK();
 }
 
+DECLARE_TYPES(broadcast_to) {
+    getOpDescriptor()
+        ->setAllowedInputTypes(DataType::ANY)
+        ->setSameMode(true);
+}
+
 //////////////////////////////////////////////////////////////////////////
 DECLARE_SHAPE_FN(broadcast_to) {
     
-    Nd4jLong* inputShapeInfo = inputShape->at(0);                                                
-    NDArray<T>* shape  = INPUT_VARIABLE(1);
+    auto inputShapeInfo = inputShape->at(0);
+    auto shape  = INPUT_VARIABLE(1);
 
     const int      inputRank = inputShapeInfo[0];
     const int      shapeRank = shape->rankOf();
@@ -65,13 +71,13 @@ DECLARE_SHAPE_FN(broadcast_to) {
     REQUIRE_TRUE(shapeRank <= 1, 0, "BROADCAST_TO op: rank of input shape array should be <= 1, bit got %i instead !", shapeRank);
     REQUIRE_TRUE(inputRank <= shapeLen, 0, "BROADCAST_TO op: rank of input shape array should be <= length of shape array, bot got %i and %i correspondingly !", inputRank, shapeLen);
 
-    std::vector<T> shapeBuff = shape->getBufferAsVector();
+    std::vector<Nd4jLong> shapeBuff = shape->getBufferAsVector<Nd4jLong>();
     std::vector<Nd4jLong> outShape(shapeBuff.begin(), shapeBuff.end());
 
     for(int i = 1; i <= inputRank; ++i)
-        REQUIRE_TRUE(inputShapeInfo[inputRank+1-i] == outShape[shapeLen-i] || inputShapeInfo[inputRank+1-i] == 1, 0, "BROADCAST_TO op: shape of input array %s can't be broadcasted to the shape %s !", ShapeUtils<T>::shapeAsString(inputShapeInfo).c_str(), ShapeUtils<T>::shapeAsString(outShape).c_str());
+        REQUIRE_TRUE(inputShapeInfo[inputRank+1-i] == outShape[shapeLen-i] || inputShapeInfo[inputRank+1-i] == 1, 0, "BROADCAST_TO op: shape of input array %s can't be broadcasted to the shape %s !", ShapeUtils::shapeAsString(inputShapeInfo).c_str(), ShapeUtils::shapeAsString(outShape).c_str());
         
-    Nd4jLong* outShapeInfo = ShapeUtils<T>::createShapeInfo(shape::order(inputShapeInfo), outShape, block.getWorkspace());    
+    Nd4jLong* outShapeInfo = ShapeBuilders::createShapeInfo(ArrayOptions::dataType(inputShapeInfo), shape::order(inputShapeInfo), outShape, block.getWorkspace());
 
     return SHAPELIST(outShapeInfo);
 }

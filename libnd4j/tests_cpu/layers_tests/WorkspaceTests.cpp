@@ -47,12 +47,16 @@ TEST_F(WorkspaceTests, BasicInitialization2) {
 
     ASSERT_EQ(0, workspace.getCurrentOffset());
 
-    NDArray<float> array('c', {5, 5}, &workspace);
+    auto array = NDArrayFactory::create<float>('c', {5, 5}, &workspace);
 
-    array.putScalar(0, 1.0f);
-    array.putScalar(5, 1.0f);
+    array.p(0, 1.0f);
+    array.p(5, 1.0f);
 
-    ASSERT_NEAR(2.0f, array.reduceNumber<simdOps::Sum<float>>(), 1e-5);
+    auto v = array.reduceNumber(reduce::Sum);
+    auto f = v.e<float>(0);
+    v.printShapeInfo("v shape");
+
+    ASSERT_NEAR(2.0f, f, 1e-5);
 
     ASSERT_TRUE(workspace.getCurrentOffset() > 0);
 }
@@ -63,12 +67,16 @@ TEST_F(WorkspaceTests, BasicInitialization3) {
 
     ASSERT_EQ(0, workspace.getCurrentOffset());
 
-    NDArray<float> array('c', {5, 5}, &workspace);
+    auto array = NDArrayFactory::create<float>('c', {5, 5}, &workspace);
 
-    array.putScalar(0, 1.0f);
-    array.putScalar(5, 1.0f);
+    array.p(0, 1.0f);
+    array.p(5, 1.0f);
 
-    ASSERT_NEAR(2.0f, array.reduceNumber<simdOps::Sum<float>>(), 1e-5);
+    auto v = array.reduceNumber(reduce::Sum);
+    auto f = v.e<float>(0);
+    v.printShapeInfo("v shape");
+
+    ASSERT_NEAR(2.0f, array.reduceNumber(reduce::Sum).e<float>(0), 1e-5);
 
     ASSERT_TRUE(workspace.getCurrentOffset() == 0);
 }
@@ -77,19 +85,19 @@ TEST_F(WorkspaceTests, BasicInitialization3) {
 TEST_F(WorkspaceTests, ResetTest1) {
     Workspace workspace(65536);
 
-    NDArray<float> array('c', {5, 5}, &workspace);
-    array.putScalar(0, 1.0f);
-    array.putScalar(5, 1.0f);
+    auto array = NDArrayFactory::create<float>('c', {5, 5}, &workspace);
+    array.p(0, 1.0f);
+    array.p(5, 1.0f);
 
     workspace.scopeOut();
     for (int e = 0; e < 5; e++) {
         workspace.scopeIn();
 
-        NDArray<float> array2('c', {5, 5}, &workspace);
-        array2.putScalar(0, 1.0f);
-        array2.putScalar(5, 1.0f);
+        auto array2 = NDArrayFactory::create<float>('c', {5, 5}, &workspace);
+        array2.p(0, 1.0f);
+        array2.p(5, 1.0f);
 
-        ASSERT_NEAR(2.0f, array2.reduceNumber<simdOps::Sum<float>>(), 1e-5);
+        ASSERT_NEAR(2.0f, array2.reduceNumber(reduce::Sum).e<float>(0), 1e-5);
 
         workspace.scopeOut();
     }
@@ -142,7 +150,7 @@ TEST_F(WorkspaceTests, NewInWorkspaceTest1) {
 
     ASSERT_TRUE(MemoryRegistrator::getInstance()->hasWorkspaceAttached());
 
-    auto ast = new NDArray<float>('c', {5, 5});
+    auto ast = NDArrayFactory::create_<float>('c', {5, 5});
 
     ASSERT_TRUE(ws.getCurrentOffset() > 0);
 
@@ -163,7 +171,7 @@ TEST_F(WorkspaceTests, NewInWorkspaceTest2) {
 
     MemoryRegistrator::getInstance()->attachWorkspace(&ws);
 
-    auto ast = new NDArray<float>('c', {5, 5}, &ws);
+    auto ast = NDArrayFactory::create_<float>('c', {5, 5}, &ws);
 
     ASSERT_TRUE(ws.getCurrentOffset() > 0);
 
@@ -190,17 +198,17 @@ TEST_F(WorkspaceTests, CloneTest1) {
 
 TEST_F(WorkspaceTests, Test_Arrays_1) {
     Workspace ws(65536);
-    NDArray<float> x('c', {3, 3}, {1, 2, 3, 4, 5, 6, 7, 8, 9}, &ws);
+    auto x = NDArrayFactory::create<float>('c', {3, 3}, {1, 2, 3, 4, 5, 6, 7, 8, 9}, &ws);
 
     // x.printIndexedBuffer("x0");
 
-    NDArray<float> y('c', {3, 3}, {-1, -2, -3, -4, -5, -6, -7, -8, -9}, &ws);
+    auto y = NDArrayFactory::create<float>('c', {3, 3}, {-1, -2, -3, -4, -5, -6, -7, -8, -9}, &ws);
 
     // x.printIndexedBuffer("x2");
 
-    NDArray<float> z('c', {3, 3}, {0, 0, 0, 0, 0, 0, 0, 0, 0}, &ws);
+    auto z = NDArrayFactory::create<float>('c', {3, 3}, {0, 0, 0, 0, 0, 0, 0, 0, 0}, &ws);
 
-    MmulHelper<float>::mmul(&x, &y, &z);
+    MmulHelper::mmul(&x, &y, &z);
 
     y.assign(&x);
 
@@ -210,16 +218,17 @@ TEST_F(WorkspaceTests, Test_Arrays_1) {
     // z.printIndexedBuffer("z");
 }
 
-
+#ifdef GRAPH_FILES_OK
 TEST_F(WorkspaceTests, Test_Graph_1) {
-    auto graph = GraphExecutioner<float>::importFromFlatBuffers("./resources/ae_00.fb");
+    auto graph = GraphExecutioner::importFromFlatBuffers("./resources/ae_00.fb");
     auto workspace = graph->getVariableSpace()->workspace();
 
-    auto status = GraphExecutioner<float>::execute(graph);
+    auto status = GraphExecutioner::execute(graph);
     ASSERT_EQ(Status::OK(), status);
 
     delete graph;
 }
+#endif
 
 TEST_F(WorkspaceTests, Test_Externalized_1) {
     char buffer[10000];
@@ -232,14 +241,14 @@ TEST_F(WorkspaceTests, Test_Externalized_1) {
     ASSERT_EQ(10000, ws.getCurrentSize());
     ASSERT_EQ(10000, ws.getAllocatedSize());
 
-    NDArray<float> x('c', {10, 10}, &ws);
+    auto x = NDArrayFactory::create<float>('c', {10, 10}, &ws);
 
     ASSERT_EQ(64 + 400, ws.getUsedSize());
     ASSERT_EQ(64 + 400, ws.getCurrentOffset());
 
     x.assign(2.0);
 
-    float m = x.meanNumber();
+    float m = x.meanNumber().e<float>(0);
     ASSERT_NEAR(2.0f, m, 1e-5);
 }
 

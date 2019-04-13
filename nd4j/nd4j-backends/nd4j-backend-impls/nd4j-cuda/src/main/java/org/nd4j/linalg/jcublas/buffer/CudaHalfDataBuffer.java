@@ -19,6 +19,7 @@ package org.nd4j.linalg.jcublas.buffer;
 import org.bytedeco.javacpp.Pointer;
 import org.bytedeco.javacpp.indexer.Indexer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.util.ArrayUtil;
 
@@ -79,7 +80,7 @@ public class CudaHalfDataBuffer extends BaseCudaDataBuffer {
     @Override
     protected void initTypeAndSize() {
         elementSize = 2;
-        type = Type.HALF;
+        type = DataType.HALF;
     }
 
     public CudaHalfDataBuffer(DataBuffer underlyingBuffer, long length, long offset) {
@@ -127,53 +128,15 @@ public class CudaHalfDataBuffer extends BaseCudaDataBuffer {
     }
 
     public CudaHalfDataBuffer(byte[] data, long length) {
-        super(data, length);
+        super(data, length, DataType.HALF);
     }
 
     public CudaHalfDataBuffer(ByteBuffer buffer, long length) {
-        super(buffer, (int) length);
+        super(buffer, (int) length, DataType.HALF);
     }
 
     public CudaHalfDataBuffer(ByteBuffer buffer, long length, long offset) {
-        super(buffer, length, offset);
-    }
-
-
-    @Override
-    public void assign(long[] indices, float[] data, boolean contiguous, long inc) {
-        if (indices.length != data.length)
-            throw new IllegalArgumentException("Indices and data length must be the same");
-        if (indices.length > length())
-            throw new IllegalArgumentException("More elements than space to assign. This buffer is of length "
-                            + length() + " where the indices are of length " + data.length);
-
-        if (contiguous) {
-            /*   long offset = indices[0];
-            Pointer p = Pointer.to(data);
-            set(offset, data.length, p, inc);
-            */
-            throw new UnsupportedOperationException();
-        } else
-            throw new UnsupportedOperationException("Only contiguous supported");
-    }
-
-    @Override
-    public void assign(long[] indices, double[] data, boolean contiguous, long inc) {
-
-        if (indices.length != data.length)
-            throw new IllegalArgumentException("Indices and data length must be the same");
-        if (indices.length > length())
-            throw new IllegalArgumentException("More elements than space to assign. This buffer is of length "
-                            + length() + " where the indices are of length " + data.length);
-
-        if (contiguous) {
-            /*long offset = indices[0];
-            Pointer p = Pointer.to(data);
-            set(offset, data.length, p, inc);
-            */
-            throw new UnsupportedOperationException();
-        } else
-            throw new UnsupportedOperationException("Only contiguous supported");
+        super(buffer, length, offset, DataType.HALF);
     }
 
     @Override
@@ -192,42 +155,9 @@ public class CudaHalfDataBuffer extends BaseCudaDataBuffer {
         return ArrayUtil.toDoubles(getFloatsAt(offset, inc, length));
     }
 
-
-
     @Override
-    public void setData(float[] data) {
-        throw new UnsupportedOperationException("setData(float) should be implemented first");
-    }
-
-    @Override
-    public void setData(int[] data) {
-        setData(ArrayUtil.toFloats(data));
-    }
-
-
-
-    @Override
-    public void setData(double[] data) {
-        setData(ArrayUtil.toFloats(data));
-    }
-
-    @Override
-    public byte[] asBytes() {
-        float[] data = asFloat();
-        ByteArrayOutputStream bos = new ByteArrayOutputStream();
-        DataOutputStream dos = new DataOutputStream(bos);
-        for (int i = 0; i < data.length; i++)
-            try {
-                dos.writeFloat(data[i]);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        return bos.toByteArray();
-    }
-
-    @Override
-    public Type dataType() {
-        return Type.HALF;
+    public DataType dataType() {
+        return DataType.HALF;
     }
 
     @Override

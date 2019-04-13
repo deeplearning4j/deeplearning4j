@@ -19,6 +19,7 @@ package org.deeplearning4j.nn.transferlearning;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.api.layers.LayerConstraint;
 import org.deeplearning4j.nn.conf.*;
@@ -28,16 +29,24 @@ import org.deeplearning4j.nn.conf.dropout.IDropout;
 import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.conf.stepfunctions.StepFunction;
 import org.deeplearning4j.nn.conf.weightnoise.IWeightNoise;
+import org.deeplearning4j.nn.weights.IWeightInit;
 import org.deeplearning4j.nn.weights.WeightInit;
+import org.deeplearning4j.nn.weights.WeightInitDistribution;
+import org.deeplearning4j.util.NetworkUtils;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.learning.config.IUpdater;
+import org.nd4j.linalg.learning.regularization.L1Regularization;
+import org.nd4j.linalg.learning.regularization.L2Regularization;
+import org.nd4j.linalg.learning.regularization.Regularization;
+import org.nd4j.linalg.learning.regularization.WeightDecay;
 import org.nd4j.linalg.primitives.Optional;
 import org.nd4j.shade.jackson.annotation.JsonInclude;
 import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
 import org.nd4j.shade.jackson.core.JsonProcessingException;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -54,13 +63,16 @@ import java.util.List;
 public class FineTuneConfiguration {
 
     protected IActivation activationFn;
-    protected WeightInit weightInit;
+    protected IWeightInit weightInitFn;
     protected Double biasInit;
-    protected Distribution dist;
-    protected Double l1;
-    protected Double l2;
-    protected Double l1Bias;
-    protected Double l2Bias;
+    protected List<Regularization> regularization;
+    protected List<Regularization> regularizationBias;
+    protected boolean removeL2 = false;     //For: .l2(0.0) -> user means "no l2" so we should remove it if it is present in the original model...
+    protected boolean removeL2Bias = false;
+    protected boolean removeL1 = false;
+    protected boolean removeL1Bias = false;
+    protected boolean removeWD = false;
+    protected boolean removeWDBias = false;
     protected Optional<IDropout> dropout;
     protected Optional<IWeightNoise> weightNoise;
     protected IUpdater updater;
@@ -101,15 +113,19 @@ public class FineTuneConfiguration {
      * Obviously, having null only makes sense for some things (dropout, etc) whereas null for other things doesn't
      * make sense
      */
+    @ToString
     public static class Builder {
         private IActivation activation;
-        private WeightInit weightInit;
+        private IWeightInit weightInitFn;
         private Double biasInit;
-        private Distribution dist;
-        private Double l1;
-        private Double l2;
-        private Double l1Bias;
-        private Double l2Bias;
+        protected List<Regularization> regularization = new ArrayList<>();
+        protected List<Regularization> regularizationBias = new ArrayList<>();
+        protected boolean removeL2 = false;     //For: .l2(0.0) -> user means "no l2" so we should remove it if it is present in the original model...
+        protected boolean removeL2Bias = false;
+        protected boolean removeL1 = false;
+        protected boolean removeL1Bias = false;
+        protected boolean removeWD = false;
+        protected boolean removeWDBias = false;
         private Optional<IDropout> dropout;
         private Optional<IWeightNoise> weightNoise;
         private IUpdater updater;
@@ -154,24 +170,38 @@ public class FineTuneConfiguration {
         }
 
         /**
-         * Weight initialization scheme
+         * Weight initialization scheme to use, for initial weight values
          *
-         * @see org.deeplearning4j.nn.weights.WeightInit
+         * @see IWeightInit
          */
-        public Builder weightInit(WeightInit weightInit) {
-            this.weightInit = weightInit;
+        public Builder weightInit(IWeightInit weightInit) {
+            this.weightInitFn = weightInit;
             return this;
         }
 
         /**
-         * Set weight initialization scheme to random sampling via the specified distribution.<br>
-         * Equivalent to: {@code .weightInit(WeightInit.DISTRIBUTION).dist(distribution)}
+         * Weight initialization scheme to use, for initial weight values
+         *
+         * @see WeightInit
+         */
+        public Builder weightInit(WeightInit weightInit) {
+            if(weightInit == WeightInit.DISTRIBUTION) {
+                throw new UnsupportedOperationException("Not supported!, User weightInit(Distribution distribution) instead!");
+            }
+
+            this.weightInitFn = weightInit.getWeightInitFunction();
+            return this;
+        }
+
+
+        /**
+         * Set weight initialization scheme to random sampling via the specified distribution.
+         * Equivalent to: {@code .weightInit(new WeightInitDistribution(distribution))}
          *
          * @param distribution Distribution to use for weight initialization
          */
         public Builder weightInit(Distribution distribution){
-            weightInit(WeightInit.DISTRIBUTION);
-            return dist(distribution);
+            return weightInit(new WeightInitDistribution(distribution));
         }
 
         /**
@@ -185,28 +215,38 @@ public class FineTuneConfiguration {
         }
 
         /**
-         * Distribution to sample initial weights from. Used in conjunction with .weightInit(WeightInit.DISTRIBUTION)
-         *
-         * @see #weightInit(Distribution)
+         * Distribution to sample initial weights from.
+         * Equivalent to: {@code .weightInit(new WeightInitDistribution(distribution))}
          */
+        @Deprecated
         public Builder dist(Distribution dist) {
-            this.dist = dist;
-            return this;
+            return weightInit(dist);
         }
 
         /**
-         * L1 regularization coefficient for the weights
+         * L1 regularization coefficient for the weights (excluding biases)
          */
         public Builder l1(double l1) {
-            this.l1 = l1;
+            NetworkUtils.removeInstances(regularization, L1Regularization.class);
+            if(l1 > 0.0) {
+                regularization.add(new L1Regularization(l1));
+            }
             return this;
         }
 
         /**
-         * L2 regularization coefficient for the weights
+         * L2 regularization coefficient for the weights (excluding biases)<br>
+         * <b>Note</b>: Generally, {@link WeightDecay} (set via {@link #weightDecay(double,boolean)} should be preferred to
+         * L2 regularization. See {@link WeightDecay} javadoc for further details.<br>
          */
         public Builder l2(double l2) {
-            this.l2 = l2;
+            NetworkUtils.removeInstances(regularization, L2Regularization.class);
+            if(l2 > 0.0) {
+                NetworkUtils.removeInstancesWithWarning(regularization, WeightDecay.class, "WeightDecay regularization removed: incompatible with added L2 regularization");
+                regularization.add(new L2Regularization(l2));
+            } else {
+                removeL2 = true;
+            }
             return this;
         }
 
@@ -214,15 +254,86 @@ public class FineTuneConfiguration {
          * L1 regularization coefficient for the bias parameters
          */
         public Builder l1Bias(double l1Bias) {
-            this.l1Bias = l1Bias;
+            NetworkUtils.removeInstances(regularizationBias, L1Regularization.class);
+            if(l1Bias > 0.0) {
+                regularizationBias.add(new L1Regularization(l1Bias));
+            } else {
+                removeL1Bias = true;
+            }
             return this;
         }
 
         /**
-         * L2 regularization coefficient for the bias parameters
+         * L2 regularization coefficient for the bias parameters<br>
+         * <b>Note</b>: Generally, {@link WeightDecay} (set via {@link #weightDecayBias(double,boolean)} should be preferred to
+         * L2 regularization. See {@link WeightDecay} javadoc for further details.<br>
          */
         public Builder l2Bias(double l2Bias) {
-            this.l2Bias = l2Bias;
+            NetworkUtils.removeInstances(regularizationBias, L2Regularization.class);
+            if(l2Bias > 0.0) {
+                NetworkUtils.removeInstancesWithWarning(regularizationBias, WeightDecay.class, "WeightDecay bias regularization removed: incompatible with added L2 regularization");
+                regularizationBias.add(new L2Regularization(l2Bias));
+            } else {
+                removeL2Bias = true;
+            }
+            return this;
+        }
+
+        /**
+         * Add weight decay regularization for the network parameters (excluding biases).<br>
+         * This applies weight decay <i>with</i> multiplying the learning rate - see {@link WeightDecay} for more details.<br>
+         *
+         * @param coefficient Weight decay regularization coefficient
+         * @see #weightDecay(double, boolean)
+         */
+        public Builder weightDecay(double coefficient) {
+            return weightDecay(coefficient, true);
+        }
+
+        /**
+         * Add weight decay regularization for the network parameters (excluding biases). See {@link WeightDecay} for more details.<br>
+         *
+         * @param coefficient Weight decay regularization coefficient
+         * @param applyLR     Whether the learning rate should be multiplied in when performing weight decay updates. See {@link WeightDecay} for more details.
+         * @see #weightDecay(double, boolean)
+         */
+        public Builder weightDecay(double coefficient, boolean applyLR) {
+            //Check if existing weight decay if it exists; if so, replace it. Also remove L2 - it doesn't make sense to use both
+            NetworkUtils.removeInstances(this.regularization, WeightDecay.class);
+            if(coefficient > 0.0) {
+                NetworkUtils.removeInstancesWithWarning(this.regularization, L2Regularization.class, "L2 regularization removed: incompatible with added WeightDecay regularization");
+                this.regularization.add(new WeightDecay(coefficient, applyLR));
+            } else {
+                removeWD = true;
+            }
+            return this;
+        }
+
+        /**
+         * Weight decay for the biases only - see {@link #weightDecay(double)} for more details.
+         * This applies weight decay <i>with</i> multiplying the learning rate.<br>
+         *
+         * @param coefficient Weight decay regularization coefficient
+         * @see #weightDecayBias(double, boolean)
+         */
+        public Builder weightDecayBias(double coefficient) {
+            return weightDecayBias(coefficient, true);
+        }
+
+        /**
+         * Weight decay for the biases only - see {@link #weightDecay(double)} for more details<br>
+         *
+         * @param coefficient Weight decay regularization coefficient
+         */
+        public Builder weightDecayBias(double coefficient, boolean applyLR) {
+            //Check if existing weight decay if it exists; if so, replace it. Also remove L2 - it doesn't make sense to use both
+            NetworkUtils.removeInstances(this.regularizationBias, WeightDecay.class);
+            if(coefficient > 0) {
+                NetworkUtils.removeInstancesWithWarning(this.regularizationBias, L2Regularization.class, "L2 bias regularization removed: incompatible with added WeightDecay regularization");
+                this.regularizationBias.add(new WeightDecay(coefficient, applyLR));
+            } else {
+                removeWDBias = true;
+            }
             return this;
         }
 
@@ -485,11 +596,11 @@ public class FineTuneConfiguration {
         }
 
         public FineTuneConfiguration build() {
-            return new FineTuneConfiguration(activation, weightInit, biasInit, dist, l1, l2, l1Bias, l2Bias, dropout, weightNoise, updater, biasUpdater, miniBatch, maxNumLineSearchIterations, seed, optimizationAlgo, stepFunction, minimize, gradientNormalization, gradientNormalizationThreshold, convolutionMode, cudnnAlgoMode, constraints, pretrain, backprop, backpropType, tbpttFwdLength, tbpttBackLength, trainingWorkspaceMode, inferenceWorkspaceMode);
-        }
-
-        public String toString() {
-            return "FineTuneConfiguration.Builder(activation=" + this.activation + ", weightInit=" + this.weightInit + ", biasInit=" + this.biasInit + ", dist=" + this.dist + ", l1=" + this.l1 + ", l2=" + this.l2 + ", l1Bias=" + this.l1Bias + ", l2Bias=" + this.l2Bias + ", dropout=" + this.dropout + ", weightNoise=" + this.weightNoise + ", updater=" + this.updater + ", biasUpdater=" + this.biasUpdater + ", miniBatch=" + this.miniBatch + ", maxNumLineSearchIterations=" + this.maxNumLineSearchIterations + ", seed=" + this.seed + ", optimizationAlgo=" + this.optimizationAlgo + ", stepFunction=" + this.stepFunction + ", minimize=" + this.minimize + ", gradientNormalization=" + this.gradientNormalization + ", gradientNormalizationThreshold=" + this.gradientNormalizationThreshold + ", convolutionMode=" + this.convolutionMode + ", cudnnAlgoMode=" + this.cudnnAlgoMode + ", constraints=" + this.constraints + ", pretrain=" + this.pretrain + ", backprop=" + this.backprop + ", backpropType=" + this.backpropType + ", tbpttFwdLength=" + this.tbpttFwdLength + ", tbpttBackLength=" + this.tbpttBackLength + ", trainingWorkspaceMode=" + this.trainingWorkspaceMode + ", inferenceWorkspaceMode=" + this.inferenceWorkspaceMode + ")";
+            return new FineTuneConfiguration(activation, weightInitFn, biasInit, regularization, regularizationBias,
+                    removeL2, removeL2Bias, removeL1, removeL1Bias, removeWD, removeWDBias, dropout,
+                    weightNoise, updater, biasUpdater, miniBatch, maxNumLineSearchIterations, seed, optimizationAlgo, stepFunction,
+                    minimize, gradientNormalization, gradientNormalizationThreshold, convolutionMode, cudnnAlgoMode, constraints,
+                    pretrain, backprop, backpropType, tbpttFwdLength, tbpttBackLength, trainingWorkspaceMode, inferenceWorkspaceMode);
         }
     }
 
@@ -507,31 +618,42 @@ public class FineTuneConfiguration {
         WeightInit origWeightInit = null;
 
         if (l != null) {
-            if (dropout != null)
-                l.setIDropout(dropout.orElse(null));
+            //As per NeuralNetConfiguration.configureLayer and LayerValidation.configureBaseLayer: only copy dropout to base layers
+            // this excludes things like subsampling and activation layers
+            if (dropout != null && l instanceof BaseLayer) {
+                IDropout d = dropout.orElse(null);
+                if(d != null)
+                    d = d.clone();  //Clone to avoid shared state between layers
+                l.setIDropout(d);
+            }
             if(constraints != null)
                 l.setConstraints(constraints.orElse(null));
         }
 
         if (l != null && l instanceof BaseLayer) {
             BaseLayer bl = (BaseLayer) l;
-            origWeightInit = bl.getWeightInit();
             if (activationFn != null)
                 bl.setActivationFn(activationFn);
-            if (weightInit != null)
-                bl.setWeightInit(weightInit);
+            if (weightInitFn != null)
+                bl.setWeightInitFn(weightInitFn);
             if (biasInit != null)
                 bl.setBiasInit(biasInit);
-            if (dist != null)
-                bl.setDist(dist);
-            if (l1 != null)
-                bl.setL1(l1);
-            if (l2 != null)
-                bl.setL2(l2);
-            if (l1Bias != null)
-                bl.setL1Bias(l1Bias);
-            if (l2Bias != null)
-                bl.setL2Bias(l2Bias);
+            if (regularization != null && !regularization.isEmpty())
+                bl.setRegularization(regularization);
+            if (regularizationBias != null && !regularizationBias.isEmpty())
+                bl.setRegularizationBias(regularizationBias);
+            if (removeL2)
+                NetworkUtils.removeInstances(bl.getRegularization(), L2Regularization.class);
+            if (removeL2Bias)
+                NetworkUtils.removeInstances(bl.getRegularizationBias(), L2Regularization.class);
+            if (removeL1)
+                NetworkUtils.removeInstances(bl.getRegularization(), L1Regularization.class);
+            if (removeL1Bias)
+                NetworkUtils.removeInstances(bl.getRegularizationBias(), L1Regularization.class);
+            if (removeWD)
+                NetworkUtils.removeInstances(bl.getRegularization(), WeightDecay.class);
+            if (removeWDBias)
+                NetworkUtils.removeInstances(bl.getRegularizationBias(), WeightDecay.class);
             if (gradientNormalization != null)
                 bl.setGradientNormalization(gradientNormalization.orElse(null));
             if (gradientNormalizationThreshold != null)
@@ -569,16 +691,10 @@ public class FineTuneConfiguration {
             ((SubsamplingLayer) l).setConvolutionMode(convolutionMode);
         }
 
-        //Check weight init. Remove dist if originally was DISTRIBUTION, and isn't now -> remove no longer needed distribution
-        if (l != null && l instanceof BaseLayer && origWeightInit == WeightInit.DISTRIBUTION && weightInit != null
-                        && weightInit != WeightInit.DISTRIBUTION) {
-            ((BaseLayer) l).setDist(null);
-        }
-
         //Perform validation
         if (l != null) {
-            LayerValidation.generalValidation(l.getLayerName(), l, get(dropout), l2, l2Bias, l1, l1Bias,
-                    dist, get(constraints), null, null);
+            LayerValidation.generalValidation(l.getLayerName(), l, get(dropout), regularization, regularizationBias,
+                    get(constraints), null, null);
         }
     }
 
@@ -590,10 +706,6 @@ public class FineTuneConfiguration {
     }
 
     public void applyToMultiLayerConfiguration(MultiLayerConfiguration conf) {
-        if (pretrain != null)
-            conf.setPretrain(pretrain);
-        if (backprop != null)
-            conf.setBackprop(backprop);
         if (backpropType != null)
             conf.setBackpropType(backpropType);
         if (tbpttFwdLength != null)
@@ -603,10 +715,6 @@ public class FineTuneConfiguration {
     }
 
     public void applyToComputationGraphConfiguration(ComputationGraphConfiguration conf) {
-        if (pretrain != null)
-            conf.setPretrain(pretrain);
-        if (backprop != null)
-            conf.setBackprop(backprop);
         if (backpropType != null)
             conf.setBackpropType(backpropType);
         if (tbpttFwdLength != null)
@@ -619,20 +727,14 @@ public class FineTuneConfiguration {
         NeuralNetConfiguration.Builder confBuilder = new NeuralNetConfiguration.Builder();
         if (activationFn != null)
             confBuilder.setActivationFn(activationFn);
-        if (weightInit != null)
-            confBuilder.setWeightInit(weightInit);
+        if (weightInitFn != null)
+            confBuilder.setWeightInitFn(weightInitFn);
         if (biasInit != null)
             confBuilder.setBiasInit(biasInit);
-        if (dist != null)
-            confBuilder.setDist(dist);
-        if (l1 != null)
-            confBuilder.setL1(l1);
-        if (l2 != null)
-            confBuilder.setL2(l2);
-        if (l1Bias != null)
-            confBuilder.setL1Bias(l1Bias);
-        if (l2Bias != null)
-            confBuilder.setL2Bias(l2Bias);
+        if (regularization != null)
+            confBuilder.setRegularization(regularization);
+        if (regularizationBias != null)
+            confBuilder.setRegularizationBias(regularizationBias);
         if (dropout != null)
             confBuilder.setIdropOut(dropout.orElse(null));
         if (updater != null)

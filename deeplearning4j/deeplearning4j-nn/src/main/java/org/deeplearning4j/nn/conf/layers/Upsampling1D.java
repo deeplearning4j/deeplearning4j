@@ -16,6 +16,7 @@
 
 package org.deeplearning4j.nn.conf.layers;
 
+import java.util.Arrays;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
@@ -26,6 +27,7 @@ import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
 import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.deeplearning4j.optimize.api.TrainingListener;
+import org.deeplearning4j.util.ValidationUtils;
 import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
@@ -33,10 +35,9 @@ import java.util.Collection;
 import java.util.Map;
 
 /**
- * Upsampling 1D layer<br>
- * Repeats each step {@code size} times along the temporal/sequence axis (dimension 2)<br>
- * For input shape {@code [minibatch, channels, sequenceLength]} output has shape {@code [minibatch, channels, size * sequenceLength]}<br>
- * Example:
+ * Upsampling 1D layer<br> Repeats each step {@code size} times along the temporal/sequence axis (dimension 2)<br> For
+ * input shape {@code [minibatch, channels, sequenceLength]} output has shape {@code [minibatch, channels, size *
+ * sequenceLength]}<br> Example:
  * <pre>
  * If input (for a single example, with channels down page, and sequence from left to right) is:
  * [ A1, A2, A3]
@@ -63,10 +64,10 @@ public class Upsampling1D extends BaseUpsamplingLayer {
 
     @Override
     public org.deeplearning4j.nn.api.Layer instantiate(NeuralNetConfiguration conf,
-                                                       Collection<TrainingListener> trainingListeners, int layerIndex, INDArray layerParamsView,
-                                                       boolean initializeParams) {
+                    Collection<TrainingListener> trainingListeners, int layerIndex, INDArray layerParamsView,
+                    boolean initializeParams) {
         org.deeplearning4j.nn.layers.convolution.upsampling.Upsampling1D ret =
-                new org.deeplearning4j.nn.layers.convolution.upsampling.Upsampling1D(conf);
+                        new org.deeplearning4j.nn.layers.convolution.upsampling.Upsampling1D(conf);
         ret.setListeners(trainingListeners);
         ret.setIndex(layerIndex);
         ret.setParamsViewArray(layerParamsView);
@@ -86,13 +87,14 @@ public class Upsampling1D extends BaseUpsamplingLayer {
     public InputType getOutputType(int layerIndex, InputType inputType) {
         if (inputType == null || inputType.getType() != InputType.Type.RNN) {
             throw new IllegalStateException("Invalid input for 1D Upsampling layer (layer index = " + layerIndex
-                    + ", layer name = \"" + getLayerName() + "\"): expect RNN input type with size > 0. Got: "
-                    + inputType);
+                            + ", layer name = \"" + getLayerName() + "\"): expect RNN input type with size > 0. Got: "
+                            + inputType);
         }
         InputType.InputTypeRecurrent recurrent = (InputType.InputTypeRecurrent) inputType;
         long outLength = recurrent.getTimeSeriesLength();
-        if(outLength > 0)
+        if (outLength > 0) {
             outLength *= size[0];
+        }
         return InputType.recurrent(recurrent.getSize(), outLength);
     }
 
@@ -100,7 +102,7 @@ public class Upsampling1D extends BaseUpsamplingLayer {
     public InputPreProcessor getPreProcessorForInputType(InputType inputType) {
         if (inputType == null) {
             throw new IllegalStateException("Invalid input for Upsampling layer (layer name=\"" + getLayerName()
-                    + "\"): input is null");
+                            + "\"): input is null");
         }
         return InputTypeUtil.getPreProcessorForInputTypeCnnLayers(inputType, getLayerName());
     }
@@ -116,11 +118,10 @@ public class Upsampling1D extends BaseUpsamplingLayer {
             trainingWorkingSizePerEx += inputType.arrayElementsPerExample();
         }
 
-        return new LayerMemoryReport.Builder(layerName, Upsampling1D.class, inputType, outputType)
-                .standardMemory(0, 0) //No params
-                .workingMemory(0, im2colSizePerEx, 0, trainingWorkingSizePerEx)
-                .cacheMemory(MemoryReport.CACHE_MODE_ALL_ZEROS, MemoryReport.CACHE_MODE_ALL_ZEROS) //No caching
-                .build();
+        return new LayerMemoryReport.Builder(layerName, Upsampling1D.class, inputType, outputType).standardMemory(0, 0) //No params
+                        .workingMemory(0, im2colSizePerEx, 0, trainingWorkingSizePerEx)
+                        .cacheMemory(MemoryReport.CACHE_MODE_ALL_ZEROS, MemoryReport.CACHE_MODE_ALL_ZEROS) //No caching
+                        .build();
     }
 
     @NoArgsConstructor
@@ -133,22 +134,21 @@ public class Upsampling1D extends BaseUpsamplingLayer {
         /**
          * Upsampling size
          *
-         * @param size    upsampling size in single spatial dimension of this 1D layer
+         * @param size upsampling size in single spatial dimension of this 1D layer
          */
         public Builder size(int size) {
 
-            this.size = new int[] {size, size};
+            this.setSize(new int[] {size});
             return this;
         }
 
         /**
          * Upsampling size int array with a single element. Array must be length 1
          *
-         * @param size    upsampling size in single spatial dimension of this 1D layer
+         * @param size upsampling size in single spatial dimension of this 1D layer
          */
         public Builder size(int[] size) {
-            Preconditions.checkArgument(size.length == 1, "Input array must be length 1");
-            this.size = new int[] {size[0], size[0]}; // Since this is 2D under the hood, we need to hide this.
+            this.setSize(size);
             return this;
         }
 
@@ -156,6 +156,24 @@ public class Upsampling1D extends BaseUpsamplingLayer {
         @SuppressWarnings("unchecked")
         public Upsampling1D build() {
             return new Upsampling1D(this);
+        }
+
+        @Override
+        public void setSize(int... size) {
+
+            if(size.length == 2){
+                if(size[0] == size[1]) {
+                    setSize(new int[]{size[0]});
+                    return;
+                } else {
+                    Preconditions.checkArgument(false,
+                            "When given a length 2 array for size, "
+                                    + "the values must be equal.  Got: " + Arrays.toString(size));
+                }
+            }
+
+            int[] temp = ValidationUtils.validate1NonNegative(size, "size");
+            this.size = new int[]{temp[0], temp[0]};
         }
     }
 

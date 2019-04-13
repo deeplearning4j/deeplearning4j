@@ -22,8 +22,7 @@ import org.nd4j.linalg.factory.Nd4jBackend;
 
 import java.util.Random;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.*;
 
 public class TestArrayUtils extends BaseNd4jTest {
 
@@ -147,6 +146,53 @@ public class TestArrayUtils extends BaseNd4jTest {
 
         int[] third = {7, 3, 8, 10};
         assertEquals(1, ArrayUtil.argMinOfMax(first, second, third));
+    }
+
+    @Test
+    public void testAssertNotRagged(){
+
+        //Rank 1 - should be fine
+        ArrayUtil.assertNotRagged(new Object[0]);
+        ArrayUtil.assertNotRagged(new Object[10]);
+
+        //Rank 2
+        ArrayUtil.assertNotRagged(new Object[3][4]);
+        ArrayUtil.assertNotRagged(new Object[2][1]);
+        ArrayUtil.assertNotRagged(new double[3][4]);
+        Object[] ragged = new Object[3][4];
+        ragged[2] = new Object[10];
+        shouldBeRagged(ragged);
+        double[][] ragged2 = new double[2][3];
+        ragged2[0] = new double[2];
+        shouldBeRagged(ragged2);
+
+        //Rank 3
+        ArrayUtil.assertNotRagged(new Object[1][0][2]);
+        ArrayUtil.assertNotRagged(new Object[2][3][4]);
+        ArrayUtil.assertNotRagged(new double[2][3][4]);
+        Object[][][] ragged3 = new Object[2][3][4];
+        ragged3[1][2] = new Object[7];
+        shouldBeRagged(ragged3);
+        double[][][] ragged4 = new double[2][3][4];
+        ragged4[0][1] = new double[1];
+        shouldBeRagged(ragged4);
+
+        //Rank 4:
+        ArrayUtil.assertNotRagged(new Object[2][3][4][5]);
+        ArrayUtil.assertNotRagged(new double[2][3][4][5]);
+        Object[][][][] ragged5 = new Object[2][3][4][5];
+        ragged5[1][2][1] = new Object[3][5];
+        shouldBeRagged(ragged5);
+    }
+
+    private static void shouldBeRagged(Object[] arr){
+        try{
+            ArrayUtil.assertNotRagged(arr);
+            fail("Expected exception");
+        } catch (Exception e){
+            String msg = e.getMessage();
+            assertTrue(msg, msg.contains("Ragged array detected"));
+        }
     }
 
     @Override

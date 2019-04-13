@@ -83,7 +83,7 @@ public class LossKLD extends DifferentialFunction implements ILossFunction {
     @Override
     public INDArray computeScoreArray(INDArray labels, INDArray preOutput, IActivation activationFn, INDArray mask) {
         INDArray scoreArr = scoreArray(labels, preOutput, activationFn, mask);
-        return scoreArr.sum(1);
+        return scoreArr.sum(true,1);
     }
 
     @Override
@@ -91,7 +91,6 @@ public class LossKLD extends DifferentialFunction implements ILossFunction {
         if(!labels.equalShapes(preOutput)){
             Preconditions.throwEx("Labels and preOutput must have equal shapes: got shapes %s vs %s", labels.shape(), preOutput.shape());
         }
-        //INDArray output = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, preOutput.dup()));
         INDArray output = activationFn.getActivation(preOutput.dup(), true);
 
         INDArray dLda = labels.div(output).negi();

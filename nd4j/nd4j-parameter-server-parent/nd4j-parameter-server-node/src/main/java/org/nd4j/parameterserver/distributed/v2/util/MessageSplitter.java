@@ -45,7 +45,7 @@ import java.util.concurrent.atomic.AtomicLong;
 public class MessageSplitter {
     private static final MessageSplitter INSTANCE = new MessageSplitter();
 
-    private Map<String, ChunksTracker> trackers = new ConcurrentHashMap<>();
+    protected Map<String, ChunksTracker> trackers = new ConcurrentHashMap<>();
 
     // simple counter for memory used by all in-memory trackers
     protected final AtomicLong memoryUse = new AtomicLong(0);
@@ -187,9 +187,9 @@ public class MessageSplitter {
                 if (tracker instanceof InmemoryChunksTracker)
                     memoryUse.addAndGet(-chunk.getTotalSize());
 
-                //trackers.remove(chunk.getOriginalId());
-
                 tracker.release();
+
+                trackers.remove(chunk.getOriginalId());
             }
         } else
             return Optional.empty();

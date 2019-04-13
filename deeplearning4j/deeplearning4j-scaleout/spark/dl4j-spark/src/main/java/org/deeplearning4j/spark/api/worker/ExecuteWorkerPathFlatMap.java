@@ -16,8 +16,10 @@
 
 package org.deeplearning4j.spark.api.worker;
 
+import org.apache.spark.broadcast.Broadcast;
 import org.datavec.spark.functions.FlatMapFunctionAdapter;
 import org.datavec.spark.transform.BaseFlatMapFunctionAdaptee;
+import org.datavec.spark.util.SerializableHadoopConfig;
 import org.deeplearning4j.api.loader.DataSetLoader;
 import org.deeplearning4j.spark.api.TrainingResult;
 import org.deeplearning4j.spark.api.TrainingWorker;
@@ -39,8 +41,8 @@ import java.util.List;
 public class ExecuteWorkerPathFlatMap<R extends TrainingResult>
                 extends BaseFlatMapFunctionAdaptee<Iterator<String>, R> {
 
-    public ExecuteWorkerPathFlatMap(TrainingWorker<R> worker, DataSetLoader loader) {
-        super(new ExecuteWorkerPathFlatMapAdapter<>(worker, loader));
+    public ExecuteWorkerPathFlatMap(TrainingWorker<R> worker, DataSetLoader loader, Broadcast<SerializableHadoopConfig> hadoopConfig) {
+        super(new ExecuteWorkerPathFlatMapAdapter<>(worker, loader, hadoopConfig));
     }
 }
 
@@ -56,10 +58,12 @@ class ExecuteWorkerPathFlatMapAdapter<R extends TrainingResult> implements FlatM
     private final FlatMapFunctionAdapter<Iterator<DataSet>, R> workerFlatMap;
     private final DataSetLoader dataSetLoader;
     private final int maxDataSetObjects;
+    private final Broadcast<SerializableHadoopConfig> hadoopConfig;
 
-    public ExecuteWorkerPathFlatMapAdapter(TrainingWorker<R> worker, DataSetLoader dataSetLoader) {
+    public ExecuteWorkerPathFlatMapAdapter(TrainingWorker<R> worker, DataSetLoader dataSetLoader, Broadcast<SerializableHadoopConfig> hadoopConfig) {
         this.workerFlatMap = new ExecuteWorkerFlatMapAdapter<>(worker);
         this.dataSetLoader = dataSetLoader;
+        this.hadoopConfig = hadoopConfig;
 
         //How many dataset objects of size 'dataSetObjectNumExamples' should we load?
         //Only pass on the required number, not all of them (to avoid async preloading data that won't be used)
@@ -87,6 +91,6 @@ class ExecuteWorkerPathFlatMapAdapter<R extends TrainingResult> implements FlatM
             list.add(iter.next());
         }
 
-        return workerFlatMap.call(new PathSparkDataSetIterator(list.iterator(), dataSetLoader));
+        return workerFlatMap.call(new PathSparkDataSetIterator(list.iterator(), dataSetLoader, hadoopConfig));
     }
 }

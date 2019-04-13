@@ -16,6 +16,8 @@
 
 package org.deeplearning4j.spark.impl.graph;
 
+import lombok.val;
+import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
@@ -26,13 +28,11 @@ import org.deeplearning4j.datasets.datavec.RecordReaderMultiDataSetIterator;
 import org.deeplearning4j.datasets.iterator.IteratorMultiDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.ListDataSetIterator;
-import org.deeplearning4j.eval.Evaluation;
-import org.deeplearning4j.eval.IEvaluation;
-import org.deeplearning4j.eval.ROC;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.Updater;
+import org.deeplearning4j.nn.conf.graph.ElementWiseVertex;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.graph.ComputationGraph;
@@ -40,11 +40,16 @@ import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.api.TrainingListener;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 import org.deeplearning4j.spark.BaseSparkTest;
+import org.deeplearning4j.spark.api.RDDTrainingApproach;
 import org.deeplearning4j.spark.api.Repartition;
 import org.deeplearning4j.spark.api.TrainingMaster;
 import org.deeplearning4j.spark.impl.paramavg.ParameterAveragingTrainingMaster;
 import org.junit.Test;
+import org.nd4j.evaluation.IEvaluation;
+import org.nd4j.evaluation.classification.Evaluation;
+import org.nd4j.evaluation.classification.ROC;
 import org.nd4j.linalg.activations.Activation;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
@@ -52,6 +57,7 @@ import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.io.ClassPathResource;
+import org.nd4j.linalg.learning.config.Adam;
 import org.nd4j.linalg.learning.config.Nesterovs;
 import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
@@ -383,4 +389,48 @@ public class TestSparkComputationGraph extends BaseSparkTest {
         }
     }
 
+    @Test
+    public void testIssue7068() throws Exception {
+
+        val batchSize = 5;
+        val featSize = 10;
+        val labelSize = 2;
+        val random = new Random(0);
+
+        List<org.nd4j.linalg.dataset.api.MultiDataSet> l = new ArrayList<>();
+        for( int i=0; i<10; i++ ) {
+            org.nd4j.linalg.dataset.MultiDataSet mds = new org.nd4j.linalg.dataset.MultiDataSet(
+                    new INDArray[]{Nd4j.rand(batchSize, featSize).castTo(DataType.DOUBLE), Nd4j.rand(batchSize, featSize).castTo(DataType.DOUBLE)},
+                    new INDArray[]{Nd4j.rand(batchSize, labelSize).castTo(DataType.DOUBLE)});
+            l.add(mds);
+        }
+        JavaRDD<org.nd4j.linalg.dataset.api.MultiDataSet> rdd = sc.parallelize(l);
+
+        // simple model
+        val modelConf = new NeuralNetConfiguration.Builder()
+                .updater(new Adam(0.01))
+                .weightInit(WeightInit.XAVIER_UNIFORM)
+                .biasInit(0)
+                .graphBuilder()
+                .addInputs("input1", "input2")
+                .addVertex("avg",new ElementWiseVertex(ElementWiseVertex.Op.Average),"input1","input2")
+                .addLayer("dense",new DenseLayer.Builder().dropOut(0.9).nIn(featSize).nOut(featSize / 2).build(),"avg")
+                .addLayer("output",new OutputLayer.Builder().nIn(featSize / 2).nOut(2).lossFunction(LossFunctions.LossFunction.MCXENT).activation(Activation.SOFTMAX).hasBias(false).build(),"dense")
+                .setOutputs("output")
+                .build();
+
+        val model = new ComputationGraph(modelConf);
+        model.init();
+
+        val trainingMaster =
+                new ParameterAveragingTrainingMaster.Builder(batchSize)
+                        .rddTrainingApproach(RDDTrainingApproach.Direct)
+                        .build();
+        val sparkModel =
+                new SparkComputationGraph(sc, model, trainingMaster);
+
+        for( int i=0; i<3; i++ ){
+            sparkModel.fitMultiDataSet(rdd);
+        }
+    }
 }

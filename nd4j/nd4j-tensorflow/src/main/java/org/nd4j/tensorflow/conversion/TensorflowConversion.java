@@ -20,13 +20,16 @@ import com.github.os72.protobuf351.InvalidProtocolBufferException;
 import org.bytedeco.javacpp.*;
 import org.bytedeco.javacpp.indexer.*;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.concurrency.AffinityManager;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.compression.CompressedDataBuffer;
 import org.nd4j.linalg.compression.CompressionDescriptor;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.ArrayUtil;
+import org.nd4j.tensorflow.conversion.graphrunner.SavedModelConfig;
 import org.tensorflow.framework.MetaGraphDef;
+import org.tensorflow.framework.SavedModel;
 import org.tensorflow.framework.SignatureDef;
 import org.tensorflow.framework.TensorInfo;
 
@@ -37,7 +40,8 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Map;
 
-import static org.bytedeco.javacpp.tensorflow.*;
+import org.bytedeco.tensorflow.*;
+import static org.bytedeco.tensorflow.global.tensorflow.*;
 
 /**
  * Interop between nd4j {@link INDArray}
@@ -81,7 +85,10 @@ public class TensorflowConversion {
      * @return the equivalent {@link TF_Tensor}
      */
     public TF_Tensor tensorFromNDArray(INDArray ndArray) {
-       //we infer data type from the ndarray.databuffer()
+       if(ndArray == null) {
+           throw new IllegalArgumentException("NDArray must not be null!");
+       }
+        //we infer data type from the ndarray.databuffer()
         //for now we throw an exception
         if(ndArray.data() == null) {
            throw new IllegalArgumentException("Unable to infer data type from null databuffer");
@@ -94,13 +101,11 @@ public class TensorflowConversion {
 
         long[] ndShape = ndArray.shape();
         long[] tfShape = new long[ndShape.length];
-        for (int i = 0; i < ndShape.length; i++) {
-            tfShape[i] = ndShape[i];
-        }
+        System.arraycopy(ndShape, 0, tfShape, 0, ndShape.length);
 
         int type;
         DataBuffer data = ndArray.data();
-        DataBuffer.Type dataType = data.dataType();
+        DataType dataType = data.dataType();
         switch (dataType) {
             case DOUBLE: type = DT_DOUBLE; break;
             case FLOAT:  type = DT_FLOAT;  break;
@@ -120,6 +125,7 @@ public class TensorflowConversion {
                 }
                 break;
             case LONG: type = DT_INT64; break;
+            case UTF8: type = DT_STRING; break;
             default: throw new IllegalArgumentException("Unsupported data type: " + dataType);
         }
 
@@ -135,20 +141,49 @@ public class TensorflowConversion {
                 case FLOAT:  type = DT_FLOAT;  break;
                 case INT:    type = DT_INT32;  break;
                 case LONG:   type = DT_INT64;  break;
+                case UTF8: type = DT_STRING; break;
                 default: throw new IllegalArgumentException("Unsupported data type: " + dataType);
             }
         }
 
 
         LongPointer longPointer = new LongPointer(tfShape);
+        TF_Tensor tf_tensor = null;
 
-        TF_Tensor tf_tensor = TF_NewTensor(
-                type,
-                longPointer,
-                tfShape.length,
-                data.pointer(),
-                data.length() * data.getElementSize(),
-                calling,null);
+        if (type == DT_STRING) {
+            long size = 0;
+            long length = ndArray.length();
+            BytePointer[] strings = new BytePointer[(int)length];
+            for (int i = 0; i < length; i++) {
+                strings[i] = new BytePointer(ndArray.getStringUnsafe(i));
+                size += TF_StringEncodedSize(strings[i].capacity());
+            }
+            tf_tensor = TF_AllocateTensor(
+                    type,
+                    longPointer,
+                    tfShape.length,
+                    8 * length + size);
+
+            long offset = 0;
+            BytePointer tf_data = new BytePointer(TF_TensorData(tf_tensor)).capacity(TF_TensorByteSize(tf_tensor));
+            TF_Status status = TF_NewStatus();
+            for (int i = 0; i < length; i++) {
+                tf_data.position(8 * i).putLong(offset);
+                offset += TF_StringEncode(strings[i], strings[i].capacity() - 1, tf_data.position(8 * length + offset), tf_data.capacity() - tf_data.position(), status);
+                if (TF_GetCode(status) != TF_OK) {
+                    throw new IllegalStateException("ERROR: Unable to convert tensor " + TF_Message(status).getString());
+                }
+            }
+            TF_DeleteStatus(status);
+        } else {
+            tf_tensor = TF_NewTensor(
+                    type,
+                    longPointer,
+                    tfShape.length,
+                    data.pointer(),
+                    data.length() * data.getElementSize(),
+                    calling,null);
+        }
 
         return tf_tensor;
 
@@ -178,13 +213,32 @@ public class TensorflowConversion {
         }
 
         int tfType = TF_TensorType(tensor);
-        DataBuffer.Type nd4jType = typeFor(tfType);
+        DataType nd4jType = typeFor(tfType);
 
         int length = ArrayUtil.prod(ndShape);
-        Pointer pointer = TF_TensorData(tensor).capacity(length);
-        Indexer indexer = indexerForType(nd4jType,pointer);
-        DataBuffer d = Nd4j.createBuffer(indexer.pointer(),nd4jType,length,indexer);
-        INDArray array = Nd4j.create(d,ndShape);
+        INDArray array;
+        if (nd4jType == DataType.UTF8) {
+            String[] strings = new String[length];
+            BytePointer data = new BytePointer(TF_TensorData(tensor)).capacity(TF_TensorByteSize(tensor));
+            BytePointer str = new BytePointer((Pointer)null);
+            SizeTPointer size = new SizeTPointer(1);
+            TF_Status status = TF_NewStatus();
+            for (int i = 0; i < length; i++) {
+                long offset = data.position(8 * i).getLong();
+                TF_StringDecode(data.position(8 * length + offset), data.capacity() - data.position(), str, size, status);
+                if (TF_GetCode(status) != TF_OK) {
+                    throw new IllegalStateException("ERROR: Unable to convert tensor " + TF_Message(status).getString());
+                }
+                strings[i] = str.position(0).capacity(size.get()).getString();
+            }
+            TF_DeleteStatus(status);
+            array = Nd4j.create(strings);
+        } else {
+            Pointer pointer = TF_TensorData(tensor).capacity(length);
+            Indexer indexer = indexerForType(nd4jType,pointer);
+            DataBuffer d = Nd4j.createBuffer(indexer.pointer(),nd4jType,length,indexer);
+            array = Nd4j.create(d,ndShape);
+        }
         Nd4j.getAffinityManager().tagLocation(array, AffinityManager.Location.HOST);
         return array;
     }
@@ -192,7 +246,7 @@ public class TensorflowConversion {
 
 
 
-    private Indexer indexerForType(DataBuffer.Type type,Pointer pointer) {
+    private Indexer indexerForType(DataType type,Pointer pointer) {
         switch(type) {
             case DOUBLE: return DoubleIndexer.create(new DoublePointer(pointer));
             case FLOAT: return FloatIndexer.create(new FloatPointer(pointer));
@@ -202,12 +256,13 @@ public class TensorflowConversion {
         }
     }
 
-    private DataBuffer.Type typeFor(int tensorflowType) {
+    private DataType typeFor(int tensorflowType) {
         switch(tensorflowType) {
-            case DT_DOUBLE: return DataBuffer.Type.DOUBLE;
-            case DT_FLOAT: return DataBuffer.Type.FLOAT;
-            case DT_INT32: return DataBuffer.Type.LONG;
-            case DT_INT64: return DataBuffer.Type.LONG;
+            case DT_DOUBLE: return DataType.DOUBLE;
+            case DT_FLOAT: return DataType.FLOAT;
+            case DT_INT32: return DataType.LONG;
+            case DT_INT64: return DataType.LONG;
+            case DT_STRING: return DataType.UTF8;
             default: throw new IllegalArgumentException("Illegal type " + tensorflowType);
         }
     }
@@ -288,11 +343,21 @@ public class TensorflowConversion {
         return graphC;
     }
 
-    public TF_Session loadSavedModel(String savedModelPath, TF_SessionOptions options, TF_Buffer runOptions,
-            String tag, String key, TF_Graph graph, Map<String, String> inputsMap, Map<String, String> outputsMap, TF_Status status) {
+    /**
+     * Load a session based on the saved model
+     * @param savedModelConfig the configuration for the saved model
+     * @param options the session options to use
+     * @param runOptions the run configuration to use
+     * @param graph the tf graph to use
+     * @param inputsMap the input map
+     * @param outputsMap the output names
+     * @param status  the status object to use for verifying the results
+     * @return
+     */
+    public TF_Session loadSavedModel(SavedModelConfig savedModelConfig, TF_SessionOptions options, TF_Buffer runOptions, TF_Graph graph, Map<String, String> inputsMap, Map<String, String> outputsMap, TF_Status status) {
         TF_Buffer metaGraph = TF_Buffer.newBuffer();
-        TF_Session session = TF_LoadSessionFromSavedModel(options, runOptions, new BytePointer(savedModelPath),
-                new BytePointer(tag), 1, graph, metaGraph, status);
+        TF_Session session = TF_LoadSessionFromSavedModel(options, runOptions, new BytePointer(savedModelConfig.getSavedModelPath()),
+                new BytePointer(savedModelConfig.getModelTag()), 1, graph, metaGraph, status);
         if (TF_GetCode(status) != TF_OK) {
             throw new IllegalStateException("ERROR: Unable to import model " + TF_Message(status).getString());
         }
@@ -304,7 +369,7 @@ public class TensorflowConversion {
             throw new IllegalStateException("ERROR: Unable to import model " + ex);
         }
         Map<String, SignatureDef> signatureDefMap = metaGraphDef.getSignatureDefMap();
-        SignatureDef signatureDef = signatureDefMap.get(key);
+        SignatureDef signatureDef = signatureDefMap.get(savedModelConfig.getSignatureKey());
 
         Map<String, TensorInfo> inputs = signatureDef.getInputsMap();
         for (Map.Entry<String, TensorInfo> e : inputs.entrySet()) {

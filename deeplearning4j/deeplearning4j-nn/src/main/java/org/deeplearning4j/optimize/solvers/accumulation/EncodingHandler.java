@@ -19,6 +19,9 @@ package org.deeplearning4j.optimize.solvers.accumulation;
 import com.google.common.util.concurrent.AtomicDouble;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+import org.deeplearning4j.optimize.solvers.accumulation.encoding.ResidualPostProcessor;
+import org.deeplearning4j.optimize.solvers.accumulation.encoding.ThresholdAlgorithm;
+import org.deeplearning4j.optimize.solvers.accumulation.encoding.ThresholdAlgorithmReducer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.compression.NDArrayCompressor;
@@ -26,6 +29,11 @@ import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;
 
+import java.text.DecimalFormat;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -41,80 +49,35 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 @Slf4j
 public class EncodingHandler implements MessageHandler {
+    public static final long THRESHOLD_LOG_FREQ_MS = 10000; //Every 10 sec max by default
     protected transient GradientsAccumulator accumulator;
-    protected double threshold, minThreshold, thresholdStep, stepTrigger;
-    protected int shakeFrequency;
-    protected int stepDelay;
-    protected Double boundary = null;
+    protected ThresholdAlgorithm initialThresholdAlgorithm;
+    protected ResidualPostProcessor initialResidualPostProcessor;
+
+    protected Double boundary;
+    protected boolean encodingDebugMode;
     protected NDArrayCompressor compressor;
     protected AtomicInteger atomicBoundary = new AtomicInteger(-1);
 
+    protected ThreadLocal<ThresholdAlgorithm> thresholdAlgorithm = new ThreadLocal<>();
+    protected Map<Long,ThresholdAlgorithm> allThreadThresholdAlgorithms = new ConcurrentHashMap<>();    //All instances - we need to average them at the end once training is complete
+    protected ThreadLocal<ResidualPostProcessor> residualPostProcessor = new ThreadLocal<>();
     protected ThreadLocal<AtomicLong> iterations = new ThreadLocal<>();
     protected ThreadLocal<AtomicLong> lastStep = new ThreadLocal<>();
+    protected ThreadLocal<AtomicDouble> lastThreshold = new ThreadLocal<>();
+    protected ThreadLocal<AtomicDouble> lastSparsityRatio = new ThreadLocal<>();
     protected ThreadLocal<AtomicDouble> currentThreshold = new ThreadLocal<>();
     protected ThreadLocal<AtomicBoolean> bitmapMode = new ThreadLocal<>();
+    protected ThreadLocal<AtomicBoolean> lastIterWasDense = new ThreadLocal<>();    //Same as bitmapMode but lagging by 1 iter
 
-    /**
-     * This method builds new EncodingHandler instance with initial threshold of 1e-3
-     *
-     */
-    public EncodingHandler() {
-        this(1e-3);
-    }
+    protected AtomicLong lastThresholdLogTime = new AtomicLong();
 
-    /**
-     * This method builds new EncodingHandler instance
-     *
-     * @param threshold Initial encoding threshold
-     */
-    public EncodingHandler(double threshold) {
-        this(threshold, null);
-    }
-
-    /**
-     * This method builds new EncodingHandler instance
-     *
-     * @param threshold Initial encoding threshold
-     */
-    public EncodingHandler(double threshold, Double boundary) {
-        this(threshold, threshold, 0.0, 0, 0, 0, boundary);
-    }
-
-    /**
-     * This method builds new EncodingHandler instance
-     *
-     * @param threshold Initial encoding threshold
-     * @param minThreshold Minimal encoding threshold (for threshold decay)
-     * @param thresholdStep Decay step for threshold decay
-     * @param stepTrigger Sparse/Dense ratio that will trigger decay step. In range 0..100
-     * @param stepDelay Minimal number of iterations between decay steps
-     * @param shakeFrequency How ofter we'll be sending dense updates with lower threshold
-     */
-    public EncodingHandler(double threshold, double minThreshold, double thresholdStep, double stepTrigger,
-                    int stepDelay, int shakeFrequency) {
-        this(threshold, minThreshold, thresholdStep, stepTrigger, stepDelay, shakeFrequency, null);
-    }
-
-    /**
-     * This method builds new EncodingHandler instance
-     *
-     * @param threshold Initial encoding threshold
-     * @param minThreshold Minimal encoding threshold (for threshold decay)
-     * @param thresholdStep Decay step for threshold decay
-     * @param stepTrigger Sparse/Dense ratio that will trigger decay step. In range 0..100
-     * @param stepDelay Minimal number of iterations between decay steps
-     * @param shakeFrequency How ofter we'll be sending dense updates with lower threshold
-     * @param boundary
-     */
-    public EncodingHandler(double threshold, double minThreshold, double thresholdStep, double stepTrigger,
-                    int stepDelay, int shakeFrequency, Double boundary) {
-        this.threshold = threshold;
-        this.minThreshold = minThreshold;
-        this.stepTrigger = stepTrigger;
-        this.stepDelay = stepDelay;
-        this.thresholdStep = thresholdStep;
-        this.shakeFrequency = shakeFrequency;
+    public EncodingHandler(final ThresholdAlgorithm thresholdAlgorithm, final ResidualPostProcessor residualPostProcessor,
+                           Double boundary, boolean encodingDebugMode){
+        this.initialThresholdAlgorithm = thresholdAlgorithm;
+        this.initialResidualPostProcessor = residualPostProcessor;
         this.boundary = boundary;
+        this.encodingDebugMode = encodingDebugMode;
     }
 
     @Override
@@ -124,76 +87,105 @@ public class EncodingHandler implements MessageHandler {
         compressor = Nd4j.getCompressor().getCompressor("THRESHOLD");
         if (compressor == null)
             throw new ND4JIllegalStateException("Can't find Threshold compressor implementation!");
-
-        compressor.configure(threshold);
     }
 
-    public INDArray encodeUpdates(INDArray updates) {
-        // getting statistics
-        //log.info("Residual: {amean: {}; amax: {}; 50%: {}; 95%: {}; 99%: {};  99.9%: {}}; Current Threshold: [{}]", updates.ameanNumber().doubleValue(), updates.amaxNumber().doubleValue(), Transforms.abs(updates, true).percentileNumber(50).doubleValue(), Transforms.abs(updates, true).percentileNumber(90).doubleValue(), Transforms.abs(updates, true).percentileNumber(99).doubleValue(), Transforms.abs(updates, true).percentileNumber(99.9).doubleValue(), currentThreshold.get());
+    public INDArray encodeUpdates(int iteration, int epoch, INDArray updates) {
+        if(thresholdAlgorithm.get() == null){
+            synchronized (this){
+                //Synchronized in case threshold algorithm has INDArrays and we're running on GPU - don't want race condition for shifting devices
+                thresholdAlgorithm.set(initialThresholdAlgorithm.clone());
+                allThreadThresholdAlgorithms.put(Thread.currentThread().getId(), thresholdAlgorithm.get());
+                if(initialResidualPostProcessor != null) {
+                    //May be null for no post processing
+                    residualPostProcessor.set(initialResidualPostProcessor.clone());
+                }
+            }
+        }
+
+        Double lastThr = null;
+        Boolean lastWasDense = null;
+        Double lastSparsity = null;
+        if(lastThreshold.get() != null){
+            //Keep null on first iteration in an epoch, or get for later iterations
+            lastThr = lastThreshold.get().get();
+            lastWasDense = lastIterWasDense.get().get();
+            lastSparsity = lastWasDense || lastSparsityRatio.get() == null ? null : lastSparsityRatio.get().get();
+        }
 
 
-        // special op should be called here for encoding
-        if (bitmapMode.get() == null) {
+
+        //Determine current threshold to use:
+        double currThreshold = thresholdAlgorithm.get().calculateThreshold(iteration, epoch, lastThr, lastWasDense, lastSparsity, updates);
+        if (bitmapMode.get() == null) { //Initialize values for this thread on first iteration (per epoch)
             bitmapMode.set(new AtomicBoolean(true));
-            currentThreshold.set(new AtomicDouble(threshold));
+            currentThreshold.set(new AtomicDouble(currThreshold));
             iterations.set(new AtomicLong(0));
             lastStep.set(new AtomicLong(0));
+
+            lastThreshold.set(new AtomicDouble(currThreshold));
+            lastIterWasDense.set(new AtomicBoolean());
         }
+
+        currentThreshold.get().set(currThreshold);
+        lastThreshold.get().set(currThreshold);
+
+        //Debug output if enabled:
+        residualDebugOutputIfRequired(updates);
 
         iterations.get().incrementAndGet();
 
         if (boundary != null && atomicBoundary.get() < 0)
             atomicBoundary.compareAndSet(-1, (int) (updates.lengthLong() * boundary));
 
-        INDArray encoded = null;
+        INDArray encoded;
 
         if (!bitmapMode.get().get()) {
-            // if shakeFrequency hits here, we'll use bitmap encoding for one round for 1/3 of current threshold
-            if (shakeFrequency != 0 && iterations.get().get() % shakeFrequency == 0) {
+            //Sparse updates
+            encoded = Nd4j.getExecutioner().thresholdEncode(updates, currentThreshold.get().get(),
+                    boundary == null ? null : atomicBoundary.get());
+
+            // updates were TOO sparse, nothing to share here
+            if (encoded == null) {
+                bitmapMode.get().set(false);
+                if(lastSparsityRatio.get() == null)
+                    lastSparsityRatio.set(new AtomicDouble(0.0));
+                else
+                    lastSparsityRatio.get().set(0.0);
+                lastIterWasDense.get().set(false);
+                logThresholdIfReq(false, iteration, epoch);
+                return null;
+            }
+
+
+            double encLen = encoded.data().getInt(0);
+
+            // if updates are too dense - we fallback to bitmap encoding
+            if (encLen >= (updates.lengthLong() / 16)) {
+                log.debug("Switching back to bitmapEncoding: iteration {}, epoch {}, threshold {}, encoded length {}", iteration, epoch, currThreshold, encLen);
+                bitmapMode.get().set(true);
+
                 DataBuffer buffer = Nd4j.getDataBufferFactory().createInt(updates.lengthLong() / 16 + 5);
                 encoded = Nd4j.createArrayFromShapeBuffer(buffer, updates.shapeInfoDataBuffer());
 
-                Nd4j.getExecutioner().bitmapEncode(updates, encoded, currentThreshold.get().get() / 3);
+                Nd4j.getExecutioner().bitmapEncode(updates, encoded, currentThreshold.get().get());
+
+                applyPostProcessor(iteration, epoch, currThreshold, updates);
+                lastSparsityRatio.set(null);
+                lastIterWasDense.get().set(true);
+                logThresholdIfReq(true, iteration, epoch);
+                return encoded;
             } else {
-                // otherwise (probably most often - we go for sparse
-                encoded = Nd4j.getExecutioner().thresholdEncode(updates, currentThreshold.get().get(),
-                                boundary == null ? null : atomicBoundary.get());
-
-                // updates were TOO sparse, nothing to share here
-                if (encoded == null)
-                    return null;
-
-
-                double encLen = encoded.data().getInt(0);
-                double encodingRatio = encLen * 100.0 / updates.length();
-
-                // if updates are too dense - we fallback to bitmap encoding
-                if (encLen >= (updates.lengthLong() / 16)) {
-                    log.debug("Going back to bitmapEncoding");
-                    bitmapMode.get().set(true);
-
-                    DataBuffer buffer = Nd4j.getDataBufferFactory().createInt(updates.lengthLong() / 16 + 5);
-                    encoded = Nd4j.createArrayFromShapeBuffer(buffer, updates.shapeInfoDataBuffer());
-
-                    Nd4j.getExecutioner().bitmapEncode(updates, encoded, currentThreshold.get().get());
-
-                    return encoded;
+                //Record sparsity for use in calculation
+                double sparsityRatio = encLen / (double)updates.length();
+                if(lastSparsityRatio.get() == null){
+                    lastSparsityRatio.set(new AtomicDouble(sparsityRatio));
+                } else {
+                    lastSparsityRatio.get().set(sparsityRatio);
                 }
-
-
-                // after encoding is finished, and updates are sparse enough - let's step down a bit
-                // and we don't step down too early, so we wait for 50 iterations at least to step down
-                if (minThreshold <= currentThreshold.get().get()
-                                && minThreshold < currentThreshold.get().get() - thresholdStep
-                                && iterations.get().get() > lastStep.get().get() + stepDelay
-                                && encodingRatio < stepTrigger) {
-                    currentThreshold.get().addAndGet(-thresholdStep);
-                    lastStep.set(iterations.get());
-                    log.debug("Threshold steps down to {}", currentThreshold.get().get());
-                }
+                lastIterWasDense.get().set(false);
             }
         } else {
+            //Dense bitmap updates
             DataBuffer buffer = Nd4j.getDataBufferFactory().createInt(updates.lengthLong() / 16 + 5);
             encoded = Nd4j.createArrayFromShapeBuffer(buffer, updates.shapeInfoDataBuffer());
 
@@ -201,15 +193,28 @@ public class EncodingHandler implements MessageHandler {
 
             if (values < (updates.lengthLong() / 16 + 5) / 2) {
                 bitmapMode.get().set(false);
-                log.debug("Switched to threshold encoding");
+                log.debug("Switched to threshold encoding: iteration {}, epoch {}, threshold {}, number of values {}", iteration, epoch, currThreshold, values);
             }
+
+            lastSparsityRatio.set(null);
+            lastIterWasDense.get().set(true);
         }
 
         //if (encoded != null)
         //log.info("Encoded length: {}, Original/encoded ratio: {}", encoded.data().length(), String.format("%.3f", encoded.data().length() * 100.0 / updates.lengthLong()));
         //log.info("Thread: {}; Encoded length: {}", Thread.currentThread().getId(), Arrays.toString(encoded.data().asInt()));
 
+        applyPostProcessor(iteration, epoch, currThreshold, updates);
+        logThresholdIfReq(lastIterWasDense.get().get(), iteration, epoch);
         return encoded;
+    }
+
+    public void applyPostProcessor(int iteration, int epoch, Double lastThreshold, INDArray residuals){
+        if(initialResidualPostProcessor == null) {
+            return; //No op
+        }
+
+        residualPostProcessor.get().processResidual(iteration, epoch, lastThreshold, residuals);
     }
 
     @Deprecated
@@ -235,11 +240,130 @@ public class EncodingHandler implements MessageHandler {
             1) encode updates
             2) send them somewhere
          */
-        INDArray message = encodeUpdates(updates);
+        INDArray message = encodeUpdates(iterationNumber, epochNumber, updates);
         if (message != null) {
             sendMessage(message, iterationNumber, epochNumber);
             return true;
         } else
             return false;
+    }
+
+    protected void logThresholdIfReq(boolean denseUpdates, int iter, int epoch){
+        long now = System.currentTimeMillis();
+        long lastLog = lastThresholdLogTime.get();
+        if(lastLog + THRESHOLD_LOG_FREQ_MS <= now ){
+            if (lastThresholdLogTime.compareAndSet(lastLog, now)) { //Avoid RC for logging between multiple threads
+                String lastThresholdStr = format(lastThreshold.get().get());
+                if(denseUpdates){
+                    log.info("Threshold at iter {}, epoch {} [thread {}]: {}, DENSE updates", iter, epoch,
+                            Thread.currentThread().getId(), lastThresholdStr);
+                } else {
+                    AtomicDouble d = lastSparsityRatio.get();
+                    String lastSparsityStr;
+                    if(d == null)
+                        lastSparsityStr = "-";
+                    else
+                        lastSparsityStr = format(d.get());
+                    log.info("Threshold at iter {}, epoch {}: {}, SPARSE updates, last sparsity ratio: {}", iter, epoch,
+                            Thread.currentThread().getId(), lastThresholdStr, lastSparsityStr);
+                }
+            }
+        }
+    }
+
+    protected void residualDebugOutputIfRequired(INDArray residual){
+        if(!encodingDebugMode)
+            return;
+
+        double currThreshold = currentThreshold.get().get();
+        String currThresholdStr = format(currThreshold);
+
+
+        INDArray absResidual = Transforms.abs(residual, true);
+
+        double dAmean = absResidual.meanNumber().doubleValue();
+        double dAMax = absResidual.maxNumber().doubleValue();
+        double dPc50 = absResidual.percentileNumber(50).doubleValue();
+        double dPc95 = absResidual.percentileNumber(95).doubleValue();
+        double dPc99 = absResidual.percentileNumber(99).doubleValue();
+        double dPc999 = absResidual.percentileNumber(99.9).doubleValue();
+        double dPc9999 = absResidual.percentileNumber(99.99).doubleValue();
+
+        String amean = format(dAmean).replace('E', 'e');
+        String aMax = format(dAMax).replace('E', 'e');
+        String pc50 = format(dPc50).replace('E', 'e');
+        String pc95 = format(dPc95).replace('E', 'e');
+        String pc99 = format(dPc99).replace('E', 'e');
+        String pc999 = format(dPc999).replace('E', 'e');
+        String pc9999 = format(dPc9999).replace('E', 'e');
+
+        String ameanThr = format(dAmean / currThreshold).replace('E', 'e');
+        String aMaxThr = format(dAMax / currThreshold).replace('E', 'e');
+        String pc50Thr = format(dPc50 / currThreshold).replace('E', 'e');
+        String pc95Thr = format(dPc95 / currThreshold).replace('E', 'e');
+        String pc99Thr = format(dPc99 / currThreshold).replace('E', 'e');
+        String pc999Thr = format(dPc999 / currThreshold).replace('E', 'e');
+        String pc9999Thr = format(dPc9999 / currThreshold).replace('E', 'e');
+
+        long length = absResidual.length();
+        long countAbsGTEThreshold = absResidual.gte(currThreshold).sumNumber().longValue();
+        double sparsity = countAbsGTEThreshold / (double)length;
+        String sparsityStr = format(sparsity);
+
+        log.info("Encoding debug info, residual vector: length: {}, threshold: {}, count > thr: {}, sparsity: {}, amean: {} ({}x); amax: {} ({}x); 50%: {} ({}x); 95%: {} ({}x}; 99%: {} ({}x);  99.9%: {} ({}x); 99.99%: {} ({}x)",
+                length, currThresholdStr, countAbsGTEThreshold, sparsityStr,
+                amean, ameanThr, aMax, aMaxThr, pc50, pc50Thr,
+                pc95, pc95Thr, pc99, pc99Thr, pc999, pc999Thr, pc9999, pc9999Thr);
+    }
+
+    protected static ThreadLocal<DecimalFormat> formatter = new ThreadLocal<>();
+    protected static ThreadLocal<DecimalFormat> formatter2 = new ThreadLocal<>();
+
+    protected static String format(double d){
+        if(d == 0){
+            return "0.0";
+        }
+        if((d <= -0.1 && d > -100) ||(d >= 0.1 && d < 100)){
+            if(formatter2.get() == null){
+                formatter2.set(new DecimalFormat("0.###"));
+            }
+            return formatter2.get().format(d);
+        }
+
+        if(formatter.get() == null){
+            formatter.set(new DecimalFormat("0.###E0"));
+        }
+        DecimalFormat df = formatter.get();
+        return df.format(d).replace('E','e');
+    }
+
+    /**
+     * This should ONLY be called once all training threads have completed
+     * @return
+     */
+    public ThresholdAlgorithm getAverageThresholdAlgorithm(){
+        Collection<ThresholdAlgorithm> c = this.allThreadThresholdAlgorithms.values();
+        if(c.isEmpty()){
+            return null;
+        }
+        if(c.size() == 1){
+            return c.iterator().next();
+        }
+        Iterator<ThresholdAlgorithm> iter = c.iterator();
+        ThresholdAlgorithmReducer r = null;
+        while(iter.hasNext()){
+            ThresholdAlgorithm ta = iter.next();
+            if(r == null){
+                r = ta.newReducer();
+            }
+            r.add(ta);
+        }
+        ThresholdAlgorithm ta = r.getFinalResult();
+
+        //Remove the old instances in preparation for use in next epoch, if required
+        thresholdAlgorithm = new ThreadLocal<>();
+        allThreadThresholdAlgorithms.clear();
+
+        return ta;
     }
 }

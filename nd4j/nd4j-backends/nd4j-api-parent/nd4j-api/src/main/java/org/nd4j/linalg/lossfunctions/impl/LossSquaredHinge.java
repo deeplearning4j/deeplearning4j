@@ -77,7 +77,7 @@ public class LossSquaredHinge extends DifferentialFunction implements ILossFunct
         INDArray scoreArr = scoreArray(labels, preOutput, activationFn, mask);
         BooleanIndexing.replaceWhere(scoreArr, 0.0, Conditions.lessThan(0.0));//max(0,1-y*yhat)
         scoreArr.muli(scoreArr);
-        return scoreArr.sum(1);
+        return scoreArr.sum(true,1);
     }
 
     @Override

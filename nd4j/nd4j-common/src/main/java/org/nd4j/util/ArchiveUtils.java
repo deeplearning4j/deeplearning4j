@@ -29,9 +29,11 @@ import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.util.ArrayList;
+import java.util.Enumeration;
 import java.util.List;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
 import java.util.zip.ZipInputStream;
 
 /**
@@ -65,7 +67,15 @@ public class ArchiveUtils {
 
                 while (ze != null) {
                     String fileName = ze.getName();
+
+                    String canonicalDestinationDirPath = new File(dest).getCanonicalPath();
                     File newFile = new File(dest + File.separator + fileName);
+                    String canonicalDestinationFile = newFile.getCanonicalPath();
+
+                    if (!canonicalDestinationFile.startsWith(canonicalDestinationDirPath + File.separator)) {
+                        log.debug("Attempt to unzip entry is outside of the target dir");
+                        throw new IOException("Entry is outside of the target dir: ");
+                    }
 
                     if (ze.isDirectory()) {
                         newFile.mkdirs();
@@ -88,11 +98,16 @@ public class ArchiveUtils {
 
                 zis.closeEntry();
             }
-        } else if (file.endsWith(".tar.gz") || file.endsWith(".tgz")) {
-
+        } else if (file.endsWith(".tar.gz") || file.endsWith(".tgz") || file.endsWith(".tar")) {
             BufferedInputStream in = new BufferedInputStream(fin);
-            GzipCompressorInputStream gzIn = new GzipCompressorInputStream(in);
-            TarArchiveInputStream tarIn = new TarArchiveInputStream(gzIn);
+            TarArchiveInputStream tarIn;
+            if(file.endsWith(".tar")){
+                //Not compressed
+                tarIn = new TarArchiveInputStream(in);
+            } else {
+                GzipCompressorInputStream gzIn = new GzipCompressorInputStream(in);
+                 tarIn = new TarArchiveInputStream(gzIn);
+            }
 
             TarArchiveEntry entry;
             /* Read the tar entries using the getNextEntry method **/
@@ -129,7 +144,7 @@ public class ArchiveUtils {
             if (extracted.exists())
                 extracted.delete();
             extracted.createNewFile();
-            try(GZIPInputStream is2 = new GZIPInputStream(fin); OutputStream fos = FileUtils.openOutputStream(extracted)) {
+            try (GZIPInputStream is2 = new GZIPInputStream(fin); OutputStream fos = FileUtils.openOutputStream(extracted)) {
                 IOUtils.copyLarge(is2, fos);
                 fos.flush();
             }
@@ -155,6 +170,39 @@ public class ArchiveUtils {
                 out.add(name);
             }
             return out;
+        }
+    }
+
+    /**
+     * List all of the files and directories in the specified .zip file
+     *
+     * @param zipFile Zip file
+     * @return List of files and directories
+     */
+    public static List<String> zipListFiles(File zipFile) throws IOException {
+        List<String> out = new ArrayList<>();
+        try (ZipFile zf = new ZipFile(zipFile)) {
+            Enumeration entries = zf.entries();
+            while (entries.hasMoreElements()) {
+                ZipEntry ze = (ZipEntry) entries.nextElement();
+                out.add(ze.getName());
+            }
+        }
+        return out;
+    }
+
+    /**
+     * Extract a single file from a .zip file. Does not support directories
+     *
+     * @param zipFile     Zip file to extract from
+     * @param destination Destination file
+     * @param pathInZip   Path in the zip to extract
+     * @throws IOException If exception occurs while reading/writing
+     */
+    public static void zipExtractSingleFile(File zipFile, File destination, String pathInZip) throws IOException {
+        try (ZipFile zf = new ZipFile(zipFile); InputStream is = new BufferedInputStream(zf.getInputStream(zf.getEntry(pathInZip)));
+             OutputStream os = new BufferedOutputStream(new FileOutputStream(destination))) {
+            IOUtils.copy(is, os);
         }
     }
 

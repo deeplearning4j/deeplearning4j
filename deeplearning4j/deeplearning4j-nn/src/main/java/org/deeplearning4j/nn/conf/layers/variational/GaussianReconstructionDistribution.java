@@ -98,7 +98,8 @@ public class GaussianReconstructionDistribution implements ReconstructionDistrib
 
         INDArray[] logProbArrays = calcLogProbArrayExConstants(x, preOutDistributionParams);
 
-        return logProbArrays[0].sum(1).muli(0.5).subi(size * NEG_HALF_LOG_2PI).addi(logProbArrays[1].sum(1));
+        return logProbArrays[0].sum(true, 1).muli(0.5).subi(size * NEG_HALF_LOG_2PI)
+                        .addi(logProbArrays[1].sum(true, 1));
     }
 
     private INDArray[] calcLogProbArrayExConstants(INDArray x, INDArray preOutDistributionParams) {
@@ -110,9 +111,9 @@ public class GaussianReconstructionDistribution implements ReconstructionDistrib
         INDArray logStdevSquared = output.get(NDArrayIndex.all(), NDArrayIndex.interval(size, 2 * size));
 
         INDArray sigmaSquared = Transforms.exp(logStdevSquared, true);
-        INDArray lastTerm = x.sub(mean);
+        INDArray lastTerm = x.sub(mean.castTo(x.dataType()));
         lastTerm.muli(lastTerm);
-        lastTerm.divi(sigmaSquared).divi(2);
+        lastTerm.divi(sigmaSquared.castTo(lastTerm.dataType())).divi(2);
 
         return new INDArray[] {logStdevSquared, lastTerm};
     }
@@ -126,9 +127,9 @@ public class GaussianReconstructionDistribution implements ReconstructionDistrib
         INDArray mean = output.get(NDArrayIndex.all(), NDArrayIndex.interval(0, size));
         INDArray logStdevSquared = output.get(NDArrayIndex.all(), NDArrayIndex.interval(size, 2 * size));
 
-        INDArray sigmaSquared = Transforms.exp(logStdevSquared, true);
+        INDArray sigmaSquared = Transforms.exp(logStdevSquared, true).castTo(x.dataType());
 
-        INDArray xSubMean = x.sub(mean);
+        INDArray xSubMean = x.sub(mean.castTo(x.dataType()));
         INDArray xSubMeanSq = xSubMean.mul(xSubMean);
 
         INDArray dLdmu = xSubMean.divi(sigmaSquared);

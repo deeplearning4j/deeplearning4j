@@ -21,11 +21,14 @@ import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.GradientNormalization;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.params.EmptyParamInitializer;
+import org.nd4j.linalg.learning.regularization.Regularization;
+
+import java.util.List;
 
 @NoArgsConstructor
 public abstract class NoParamLayer extends Layer {
 
-    protected NoParamLayer(Builder builder){
+    protected NoParamLayer(Builder builder) {
         super(builder);
     }
 
@@ -40,13 +43,9 @@ public abstract class NoParamLayer extends Layer {
     }
 
     @Override
-    public double getL1ByParam(String paramName) {
-        return 0.0;
-    }
-
-    @Override
-    public double getL2ByParam(String paramName) {
-        return 0.0;
+    public List<Regularization> getRegularizationByParam(String paramName){
+        //No parameters -> no regularization of parameters
+        return null;
     }
 
     @Override
@@ -63,10 +62,4 @@ public abstract class NoParamLayer extends Layer {
     public boolean isPretrainParam(String paramName) {
         throw new UnsupportedOperationException(getClass().getSimpleName() + " does not contain parameters");
     }
-
-    @Override
-    public boolean isPretrain() {
-        return false;
-    }
-
 }

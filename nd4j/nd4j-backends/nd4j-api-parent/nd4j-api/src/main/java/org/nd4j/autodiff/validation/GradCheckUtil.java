@@ -16,46 +16,20 @@
 
 package org.nd4j.autodiff.validation;
 
-import com.google.common.collect.ImmutableSet;
-import com.google.common.reflect.ClassPath;
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.autodiff.samediff.VariableType;
+import org.nd4j.autodiff.samediff.internal.SameDiffOp;
+import org.nd4j.autodiff.samediff.internal.Variable;
 import org.nd4j.base.Preconditions;
-import org.nd4j.imports.converters.DifferentialFunctionClassHolder;
-import org.nd4j.linalg.api.buffer.DataBuffer;
-import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.iter.NdIndexIterator;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.DynamicCustomOp;
-import org.nd4j.linalg.api.ops.impl.accum.All;
-import org.nd4j.linalg.api.ops.impl.accum.Any;
-import org.nd4j.linalg.api.ops.impl.accum.EqualsWithEps;
-import org.nd4j.linalg.api.ops.impl.accum.MatchCondition;
-import org.nd4j.linalg.api.ops.impl.broadcast.*;
-import org.nd4j.linalg.api.ops.impl.indexaccum.FirstIndex;
-import org.nd4j.linalg.api.ops.impl.indexaccum.IAMax;
-import org.nd4j.linalg.api.ops.impl.indexaccum.IAMin;
-import org.nd4j.linalg.api.ops.impl.indexaccum.LastIndex;
-import org.nd4j.linalg.api.ops.impl.layers.convolution.Col2Im;
-import org.nd4j.linalg.api.ops.impl.shape.ConfusionMatrix;
-import org.nd4j.linalg.api.ops.impl.shape.Eye;
-import org.nd4j.linalg.api.ops.impl.shape.OneHot;
-import org.nd4j.linalg.api.ops.impl.shape.OnesLike;
-import org.nd4j.linalg.api.ops.impl.transforms.BinaryMinimalRelativeError;
-import org.nd4j.linalg.api.ops.impl.transforms.Histogram;
-import org.nd4j.linalg.api.ops.impl.transforms.LegacyDropOut;
-import org.nd4j.linalg.api.ops.impl.transforms.LegacyDropOutInverted;
-import org.nd4j.linalg.api.ops.random.compat.RandomStandardNormal;
-import org.nd4j.linalg.api.ops.random.custom.DistributionUniform;
-import org.nd4j.linalg.api.ops.random.impl.*;
 import org.nd4j.linalg.factory.Nd4j;
 
-import java.io.IOException;
 import java.lang.reflect.Field;
-import java.lang.reflect.Modifier;
 import java.util.*;
 
 /**
@@ -73,142 +47,33 @@ public class GradCheckUtil {
     private static final double DEFAULT_MAX_REL_ERROR = 1e-5;
     private static final double DEFAULT_MIN_ABS_ERROR = 1e-6;
 
-
-
-
-    /**
-     *
-     * @param function
-     * @param epsilon
-     * @param maxRelError
-     * @param print
-     * @param inputParameters
-     * @return
-     */
-    public static boolean checkGradients(
-            SDVariable function,
-            SDVariable wrt,
-            double epsilon,
-            double maxRelError,
-            boolean print,
-            Map<String,INDArray> inputParameters) {
-        //Basic sanity checks on input:
-        if (epsilon <= 0.0 || epsilon > 0.1)
-            throw new IllegalArgumentException("Invalid epsilon: expect epsilon in range (0,0.1], usually 1e-4 or so");
-        if (maxRelError <= 0.0 || maxRelError > 0.25)
-            throw new IllegalArgumentException("Invalid maxRelativeError: " + maxRelError);
-
-        DataBuffer.Type dataType = DataTypeUtil.getDtypeFromContext();
-        if (dataType != DataBuffer.Type.DOUBLE) {
-            throw new IllegalStateException("Cannot perform gradient check: Datatype is not set to double precision ("
-                    + "is: " + dataType + "). Double precision must be used for gradient checks. Set "
-                    + "DataTypeUtil.setDTypeForContext(DataBuffer.Type.DOUBLE); before using GradientCheckUtil");
-        }
-
-        /**
-         * Need to pass in the exact gradient.
-         * This is obtained from executing a subgraph
-         * with just the gradient part to get the exact values.
-         * You then run the comparison vs the approximation from that.
-         *
-         * To obtain the comparison/computing the values,  use the below routine
-         */
-
-
-        SameDiff sameDiff = function.getSameDiff();
-        //get just the subgraph for the graph
-        SameDiff opExec = SameDiff.create(sameDiff);
-
-        INDArray[] eval = opExec.eval(inputParameters);
-        int totalNFailures = 0;
-        double maxError = 0.0;
-
-        for(Map.Entry<String,INDArray> entry : inputParameters.entrySet()) {
-            long nParams = entry.getValue().length();
-            INDArray params = entry.getValue().dup();
-            for (int i = 0; i < nParams; i++) {
-                INDArray zeros = Nd4j.create(nParams);
-                zeros.putScalar(i,epsilon / 2.0);
-
-                //(w+epsilon): Do forward pass and score
-                double origValue = params.getDouble(i);
-                params.putScalar(i, origValue + epsilon);
-                Map<String, INDArray> evalParams = new HashMap<>();
-                for (Map.Entry<String, INDArray> entry2 : inputParameters.entrySet()) {
-                    if (!entry2.getKey().equals(entry.getKey())) {
-                        evalParams.put(entry2.getKey(), entry2.getValue());
-                    } else {
-                        evalParams.put(entry.getKey(), params);
-                    }
-                }
-
-                /**
-                 * Need to figure out how I want to extract
-                 * parameters for computing the delta..
-                 *
-                 */
-                INDArray[] plusParams = sameDiff.eval(evalParams);
-
-
-                INDArray[] minusParams = sameDiff.eval(evalParams);
-
-
-                /**
-                 * Difference between new params and old
-                 */
-                INDArray[] newDifferences = new INDArray[minusParams.length];
-                for (int j = 0; j < newDifferences.length; j++) {
-                    newDifferences[j] = plusParams[j].subi(minusParams[j]).divi(epsilon);
-                }
-
-                double diff = plusParams[plusParams.length - 1].sumNumber().doubleValue() - minusParams[minusParams.length - 1].sumNumber().doubleValue();
-                double eps = diff / epsilon;
-                double correctVal = eval[eval.length - 1].sumNumber().doubleValue();
-                double gradDiff = Math.abs(correctVal - eps);
-                if(gradDiff > maxRelError)
-                    totalNFailures++;
-                if (print) {
-                    long nPass = nParams - totalNFailures;
-                    log.info("GradientCheckUtil.checkGradients(): " + nParams + " params checked, " + nPass + " passed, "
-                            + totalNFailures + " failed. Largest relative error = " + maxError);
-                }
-            }
-        }
-
-        return totalNFailures == 0;
-    }
-
     public static boolean checkGradients(TestCase t){
-        return checkGradients(t.sameDiff(), t.gradCheckEpsilon(), t.gradCheckMaxRelativeError(), t.gradCheckMinAbsError(),
-                t.gradCheckPrint(), t.gradCheckDefaultExitFirstFailure(), false, t.gradCheckDebugMode(), t.gradCheckSkipVariables());
+        return checkGradients(t.sameDiff(), t.placeholderValues(), t.gradCheckEpsilon(), t.gradCheckMaxRelativeError(), t.gradCheckMinAbsError(),
+                t.gradCheckPrint(), t.gradCheckDefaultExitFirstFailure(), false, t.gradCheckDebugMode(), t.gradCheckSkipVariables(), t.gradCheckMask());
     }
 
-    public static boolean checkGradients(SameDiff sd){
-        return checkGradients(sd, DEFAULT_PRINT, DEFAULT_EXIT_FIRST_FAILURE);
-    }
-
-    public static boolean checkGradients(SameDiff sd, String... skipVariables){
+    public static boolean checkGradients(SameDiff sd, Map<String,INDArray> placeholderValues, String... skipVariables){
         Set<String> skip = null;
         if(skipVariables != null){
             skip = new HashSet<>();
             Collections.addAll(skip, skipVariables);
         }
-        return checkGradients(sd, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR, DEFAULT_MIN_ABS_ERROR, DEFAULT_PRINT, DEFAULT_EXIT_FIRST_FAILURE,
-                false, DEFAULT_DEBUG_MODE, skip);
+        return checkGradients(sd, placeholderValues, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR, DEFAULT_MIN_ABS_ERROR, DEFAULT_PRINT, DEFAULT_EXIT_FIRST_FAILURE,
+                false, DEFAULT_DEBUG_MODE, skip, null);
     }
 
-    public static boolean checkGradients(SameDiff sd, boolean print, boolean exitOnFirstFailure){
-        return checkGradients(sd, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR, DEFAULT_MIN_ABS_ERROR, print, exitOnFirstFailure);
+    public static boolean checkGradients(SameDiff sd, Map<String,INDArray> placeholderValues, boolean print, boolean exitOnFirstFailure){
+        return checkGradients(sd, placeholderValues, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR, DEFAULT_MIN_ABS_ERROR, print, exitOnFirstFailure);
     }
 
 
-    public static boolean checkGradients(SameDiff sd, double eps, double maxRelError, double minAbsError, boolean print,
+    public static boolean checkGradients(SameDiff sd, Map<String,INDArray> placeholderValues, double eps, double maxRelError, double minAbsError, boolean print,
                                          boolean exitOnFirstFailure) {
-        return checkGradients(sd, eps, maxRelError, minAbsError, print, exitOnFirstFailure, false, DEFAULT_DEBUG_MODE, null);
+        return checkGradients(sd, placeholderValues, eps, maxRelError, minAbsError, print, exitOnFirstFailure, false, DEFAULT_DEBUG_MODE, null, null);
     }
 
-    public static boolean checkGradients(SameDiff sd, double eps, double maxRelError, double minAbsError, boolean print,
-                                         boolean exitOnFirstFailure, boolean skipValidation, boolean debugMode, Set<String> skipVariables){
+    public static boolean checkGradients(SameDiff sd, Map<String,INDArray> placeholderValues, double eps, double maxRelError, double minAbsError, boolean print,
+                                         boolean exitOnFirstFailure, boolean skipValidation, boolean debugMode, Set<String> skipVariables, Map<String,INDArray> gradCheckMask){
 
         boolean debugBefore = sd.isDebugMode();
         if(debugMode){
@@ -221,7 +86,7 @@ public class GradCheckUtil {
         }
 
         //Check data type:
-        if(Nd4j.dataType() != DataBuffer.Type.DOUBLE){
+        if(Nd4j.dataType() != DataType.DOUBLE){
             throw new IllegalStateException("Data type must be set to double");
         }
 
@@ -232,31 +97,44 @@ public class GradCheckUtil {
             }
         }
 
-        //Check that all *input* SDVariables have arrays associated with them
-        for(SDVariable s : sd.variables()){
-            if (fnOutputs.contains(s.getVarName())) {
-                //This is not an input to the graph
+        //Check that all non-Array type SDVariables have arrays associated with them
+        for(Variable v : sd.getVariables().values()){
+            if(v.getVariable().getVariableType() == VariableType.ARRAY){
+                //OK if variable is not available for this, it'll be created during forward pass
                 continue;
             }
-            if(s.getArr() == null){
-                throw new IllegalStateException("Variable \"" + s.getVarName() + "\" does not have array associated with it");
+
+            if(v.getVariable().getArr(true) == null){
+                throw new IllegalStateException("Variable \"" + v.getName() + "\" does not have array associated with it");
             }
         }
 
         //Do forward pass, check that output is a scalar:
-        INDArray out = sd.execAndEndResult();
-        if(out.length() != 1){
-            throw new IllegalStateException("Output variable is not a scalar - has shape " + Arrays.toString(out.shape()));
-        }
+        List<String> lossFnVariables = sd.getLossVariables();
+        Preconditions.checkState(lossFnVariables != null && !lossFnVariables.isEmpty(), "Expected 1 or more loss function variables for gradient check, got %s", lossFnVariables);
 
         //TODO also check that all inputs are non-zero (otherwise: consider out = sum(x * y) with all x and y being 0
         // in this case, gradients of x and y are all 0 too
 
-        sd.execBackwards();
+        //Collect variables to get gradients for - we want placeholders AND variables
+        Set<String> gradVarNames = new HashSet<>();
+        for(Variable v : sd.getVariables().values()){
+            if(v.getVariable().dataType().isFPType() && (v.getVariable().getVariableType() == VariableType.VARIABLE || v.getVariable().getVariableType() == VariableType.PLACEHOLDER)){
+                SDVariable g = v.getVariable().getGradient();
+                Preconditions.checkNotNull(g, "No gradient variable found for variable %s", v.getVariable());
+                gradVarNames.add(g.getVarName());
+            }
+        }
+
+        sd.execBackwards(placeholderValues, new ArrayList<>(gradVarNames));
         Map<String,INDArray> grad = new HashMap<>();
         for(SDVariable v : sd.variables()){
             if (fnOutputs.contains(v.getVarName())) {
                 //This is not an input to the graph
+                continue;
+            }
+            if(!v.hasGradient()){
+                //Skip non-fp variables, or variables that don't impact loss function value
                 continue;
             }
             SDVariable g = sd.grad(v.getVarName());
@@ -299,20 +177,41 @@ public class GradCheckUtil {
 
             NdIndexIterator iter = new NdIndexIterator('c',a.shape());
 
+            INDArray varMask = (gradCheckMask == null ? null : gradCheckMask.get(s.getVarName()));
+
+            if(varMask != null){
+                Preconditions.checkState(a.equalShapes(varMask), "Variable \"%s\": Gradient check mask and array shapes must be equal: got %s vs. mask shape %s", s.getVarName(), a.shape(), varMask.shape());
+                Preconditions.checkState(varMask.dataType() == DataType.BOOL, "Variable \"%s\": Gradient check mask must be BOOLEAN datatype, got %s", s.getVarName(), varMask.dataType());
+            }
+
             int i=0;
             while(iter.hasNext()){
-                val idx = iter.next();
+                long[] idx = iter.next();
                 String strIdx = null;
                 if(print){
                     strIdx = Arrays.toString(idx).replaceAll(" ","");
                 }
 
+                boolean maskValue = (varMask == null || (varMask.getDouble(idx) != 0));
+                if(!maskValue){
+                    //Skip this specific entry (masked out)
+                    continue;
+                }
+
                 totalCount++;
                 double orig = a.getDouble(idx);
                 a.putScalar(idx, orig+eps);
-                double scorePlus = sd.execAndEndResult().getDouble(0);
+                double scorePlus = 0.0;
+                Map<String,INDArray> m = sd.exec(placeholderValues, lossFnVariables);//.get(outName).sumNumber().doubleValue();
+                for(INDArray arr : m.values()){
+                    scorePlus += arr.sumNumber().doubleValue();
+                }
                 a.putScalar(idx, orig-eps);
-                double scoreMinus = sd.execAndEndResult().getDouble(0);
+                m = sd.exec(placeholderValues, lossFnVariables);
+                double scoreMinus = 0.0;
+                for(INDArray arr : m.values()){
+                    scoreMinus += arr.sumNumber().doubleValue();
+                }
                 a.putScalar(idx, orig);
 
                 double numericalGrad = (scorePlus - scoreMinus) / (2 * eps);
@@ -405,59 +304,51 @@ public class GradCheckUtil {
         }
 
         //1. Check incomingArgsReverse and outgoingArgsReverse
-        Map<String,String[]> incomingArgsReverse = getObject("incomingArgsReverse", sd, SameDiff.class);
-        Map<String,String[]> outgoingArgsReverse = getObject("outgoingArgsReverse", sd, SameDiff.class);
-
-        Preconditions.checkState(dfs.length == incomingArgsReverse.size(), "All functions not present in incomingArgsReverse");
-        Preconditions.checkState(dfs.length == outgoingArgsReverse.size(), "All functions not present in outgoingArgsReverse");
+        Map<String,SameDiffOp> ops = sd.getOps();
+        Preconditions.checkState(dfs.length == ops.size(), "All functions not present in incomingArgsReverse");
         for(DifferentialFunction df : dfs){
-            Preconditions.checkState(incomingArgsReverse.containsKey(df.getOwnName()), df.getOwnName() + " not present in incomingArgsReverse");
-            Preconditions.checkState(outgoingArgsReverse.containsKey(df.getOwnName()), df.getOwnName() + " not present in outgoingArgsReverse");
+            Preconditions.checkState(ops.containsKey(df.getOwnName()), df.getOwnName() + " not present in ops map");
 
-            String[] str = incomingArgsReverse.get(df.getOwnName());
-            for(String s : str){
-                Preconditions.checkState(varSetStr.contains(s), "Variable " + s + " in incomingArgsReverse value not a known variable name");
+            List<String> str = ops.get(df.getOwnName()).getInputsToOp();
+            if(str != null) {
+                for (String s : str) {
+                    Preconditions.checkState(varSetStr.contains(s), "Variable " + s + " in op inputs not a known variable name");
+                }
             }
 
-            str = outgoingArgsReverse.get(df.getOwnName());
-            for(String s : str){
-                Preconditions.checkState(varSetStr.contains(s), "Variable " + s + " in outgoingArgsReverse value not a known variable name");
+            str = ops.get(df.getOwnName()).getOutputsOfOp();
+            if(str != null) {
+                for (String s : str) {
+                    Preconditions.checkState(varSetStr.contains(s), "Variable " + s + " in op outputs not a known variable name");
+                }
             }
         }
 
         //Also check that outgoingArgsReverse values are unique: i.e., shouldn't have the same op appearing multiple times
         Map<String,String> seen = new HashMap<>();
-        for(Map.Entry<String,String[]> e : outgoingArgsReverse.entrySet()){
-            String[] varNames = e.getValue();
-            for(String s : varNames){
-                if(seen.containsKey(s)){
-                    throw new IllegalStateException("Already saw variable \"" + s + "\" as output for op \"" + seen.get(s)
-                            + "\": expected variables to be present as an output only once; also seen as output for op \"" +
-                            e.getKey() + "\"");
+        for(Map.Entry<String,SameDiffOp> e : ops.entrySet()){
+            List<String> varNames = e.getValue().getOutputsOfOp();
+            if(varNames != null) {
+                for (String s : varNames) {
+                    if (seen.containsKey(s)) {
+                        throw new IllegalStateException("Already saw variable \"" + s + "\" as output for op \"" + seen.get(s)
+                                + "\": expected variables to be present as an output only once; also seen as output for op \"" +
+                                e.getKey() + "\"");
+                    }
+                    seen.put(s, e.getKey());
                 }
-                seen.put(s, e.getKey());
             }
         }
 
         //2. Check variableMap
-        Map<String, SDVariable> variableMap = getObject("variableMap", sd, SameDiff.class);
+        Map<String, Variable> variableMap = sd.getVariables();
         Preconditions.checkState(vars.size() == variableMap.size(), "Variable map size check failed");
-        for(Map.Entry<String, SDVariable> e : variableMap.entrySet()){
-            Preconditions.checkState(e.getKey().equals(e.getValue().getVarName()), "Name not equal");
+        for(Map.Entry<String, Variable> e : variableMap.entrySet()){
+            Preconditions.checkState(e.getKey().equals(e.getValue().getVariable().getVarName()), "Name not equal");
         }
 
-        //3. Check functionArgsFor, functionOutputsFor
-        Map<String, List<DifferentialFunction>> functionsArgsFor = getObject("functionsArgsFor", sd, SameDiff.class);
-        Map<String, List<DifferentialFunction>> functionOutputFor = getObject("functionOutputFor", sd, SameDiff.class);
-        //TODO legit that some aren't present in these maps... equivalent to mapping to empty list. There might be a better
-        // check we can do here, however...
-//        Preconditions.checkState(functionsArgsFor.size() == vars.size(), "Unexpected size for functionsArgsFor: expected %s, got %s", vars.size(), functionsArgsFor.size());
-//        Preconditions.checkState(functionOutputFor.size() == vars.size(), "Unexpected size for functionOutputFor: expected %s, got %s", vars.size(), functionOutputFor.size());
-//        Preconditions.checkState(functionsArgsFor.keySet().containsAll(varSetStr), "functionArgsFor doesn't contain all variable names");
-//        Preconditions.checkState(functionOutputFor.keySet().containsAll(varSetStr), "functionOutputFor doesn't contain all variable names");
-
         if(generateAndCheckGradFn) {
-            //4. Check gradient function
+            //3. Check gradient function
             if(sd.getFunction("grad") == null){
                 sd.createGradFunction();
             }

@@ -31,7 +31,7 @@ public class BestScoreEpochTerminationCondition implements EpochTerminationCondi
     @JsonProperty
     private final double bestExpectedScore;
 
-    public BestScoreEpochTerminationCondition(double bestExpectedScore) {
+    public BestScoreEpochTerminationCondition(@JsonProperty("bestExpectedScore") double bestExpectedScore) {
         this.bestExpectedScore = bestExpectedScore;
     }
 

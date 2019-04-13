@@ -28,14 +28,6 @@ import java.io.Serializable;
  */
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY, property = "@class")
 @JsonInclude(JsonInclude.Include.NON_NULL)
-@JsonSubTypes(value = {
-                @JsonSubTypes.Type(value = BestScoreEpochTerminationCondition.class,
-                                name = "BestScoreEpochTerminationCondition"),
-                @JsonSubTypes.Type(value = MaxEpochsTerminationCondition.class, name = "MaxEpochsTerminationCondition"),
-                @JsonSubTypes.Type(value = MaxScoreIterationTerminationCondition.class,
-                                name = "MaxScoreIterationTerminationCondition"),
-
-})
 public interface EpochTerminationCondition extends Serializable {
 
     /** Initialize the epoch termination condition (often a no-op)*/

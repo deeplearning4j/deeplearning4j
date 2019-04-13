@@ -28,15 +28,14 @@ import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
 import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
-import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.layers.BaseLayer;
 import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.activations.impl.ActivationSigmoid;
 import org.nd4j.linalg.api.blas.Level1;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.impl.transforms.TimesOneMinus;
-import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.OldMulOp;
+import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.OldMulOp;
+import org.nd4j.linalg.api.ops.impl.transforms.same.TimesOneMinus;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
@@ -53,7 +52,7 @@ import static org.nd4j.linalg.indexing.NDArrayIndex.point;
 
 /**
  *
- * RNN tutorial: <a href="http://deeplearning4j.org/usingrnns.html">http://deeplearning4j.org/usingrnns.html</a>
+ * RNN tutorial: <a href="https://deeplearning4j.org/docs/latest/deeplearning4j-nn-recurrent">https://deeplearning4j.org/docs/latest/deeplearning4j-nn-recurrent</a>
  * READ THIS FIRST if you want to understand what the heck is happening here.
  *
  * Shared code for the standard "forwards" LSTM RNN and the bidirectional LSTM RNN
@@ -559,7 +558,7 @@ public class LSTMHelpers {
                 INDArray deltao = deltaoNext;
                 Nd4j.getExecutioner().exec(new OldMulOp(nablaOut, sigmahOfS, deltao));
                 if (sigmoidGates) {
-                    INDArray sigmaoPrimeOfZo = Nd4j.getExecutioner().execAndReturn(new TimesOneMinus(ao.dup('f'))); //Equivalent to sigmoid deriv on zo
+                    INDArray sigmaoPrimeOfZo = Nd4j.getExecutioner().exec(new TimesOneMinus(ao.dup('f'))); //Equivalent to sigmoid deriv on zo
                     deltao.muli(sigmaoPrimeOfZo);
                 } else {
                     deltao.assign(gateActivationFn.backprop(fwdPass.oz[time], deltao).getFirst()); //Deltao needs to be modified in-place
@@ -611,8 +610,7 @@ public class LSTMHelpers {
                     deltag.muli(ai);
                     deltag.muli(nablaCellState);
                 } else {
-                    INDArray temp2 = Nd4j.getExecutioner().execAndReturn(
-                            new OldMulOp(ai, nablaCellState, Nd4j.createUninitialized(ai.shape(), 'f')));
+                    INDArray temp2 = Nd4j.getExecutioner().exec(new OldMulOp(ai, nablaCellState, Nd4j.createUninitialized(ai.shape(), 'f')));
                     deltag.assign(gateActivationFn.backprop(fwdPass.gz[time], temp2).getFirst());
                     //TODO activation functions with params; optimize (no assign)
                 }
@@ -621,8 +619,7 @@ public class LSTMHelpers {
                 //Network input delta:
                 INDArray zi = fwdPass.iz[time];
                 INDArray deltai = deltaiNext;
-                temp = Nd4j.getExecutioner().execAndReturn(
-                        new OldMulOp(ag, nablaCellState, Nd4j.createUninitialized(deltai.shape(), 'f')));
+                temp = Nd4j.getExecutioner().exec(new OldMulOp(ag, nablaCellState, Nd4j.createUninitialized(deltai.shape(), 'f')));
                 deltai.assign(afn.backprop(zi, temp).getFirst());
                 //TODO activation functions with params; also: optimize this (no assign)
                 //Shape: [m,n^L]

@@ -18,6 +18,7 @@ package org.nd4j.list;
 
 import lombok.val;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -165,7 +166,7 @@ public abstract  class BaseNDArrayList<X extends Number> extends  AbstractList<X
         else if(size == container.length()) {
             growCapacity(size * 2);
         }
-        if(DataTypeUtil.getDtypeFromContext() == DataBuffer.Type.DOUBLE)
+        if(DataTypeUtil.getDtypeFromContext() == DataType.DOUBLE)
             container.putScalar(size,aX.doubleValue());
         else {
             container.putScalar(size,aX.floatValue());
@@ -250,7 +251,7 @@ public abstract  class BaseNDArrayList<X extends Number> extends  AbstractList<X
 
     @Override
     public X set(int i, X aX) {
-        if(DataTypeUtil.getDtypeFromContext() == DataBuffer.Type.DOUBLE)
+        if(DataTypeUtil.getDtypeFromContext() == DataType.DOUBLE)
             container.putScalar(i,aX.doubleValue());
         else {
             container.putScalar(i,aX.floatValue());
@@ -266,7 +267,7 @@ public abstract  class BaseNDArrayList<X extends Number> extends  AbstractList<X
         rangeCheck(i);
         growCapacity(i);
         moveForward(i);
-        if(DataTypeUtil.getDtypeFromContext() == DataBuffer.Type.DOUBLE)
+        if(DataTypeUtil.getDtypeFromContext() == DataType.DOUBLE)
             container.putScalar(i,aX.doubleValue());
         else {
             container.putScalar(i,aX.floatValue());

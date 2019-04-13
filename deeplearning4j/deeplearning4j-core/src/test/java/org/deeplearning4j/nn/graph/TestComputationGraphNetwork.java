@@ -17,6 +17,7 @@
 package org.deeplearning4j.nn.graph;
 
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.datavec.api.records.reader.RecordReader;
 import org.datavec.api.records.reader.impl.csv.CSVRecordReader;
 import org.datavec.api.split.FileSplit;
@@ -29,15 +30,18 @@ import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.SingletonMultiDataSetIterator;
 import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.exception.DL4JException;
+import org.deeplearning4j.gradientcheck.GradientCheckUtil;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.*;
 import org.deeplearning4j.nn.conf.distribution.UniformDistribution;
 import org.deeplearning4j.nn.conf.dropout.GaussianNoise;
+import org.deeplearning4j.nn.conf.dropout.IDropout;
 import org.deeplearning4j.nn.conf.graph.*;
 import org.deeplearning4j.nn.conf.graph.rnn.DuplicateToTimeSeriesVertex;
 import org.deeplearning4j.nn.conf.graph.rnn.LastTimeStepVertex;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
+import org.deeplearning4j.nn.conf.layers.misc.RepeatVector;
 import org.deeplearning4j.nn.conf.layers.recurrent.Bidirectional;
 import org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder;
 import org.deeplearning4j.nn.conf.preprocessor.*;
@@ -45,12 +49,12 @@ import org.deeplearning4j.nn.conf.weightnoise.DropConnect;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.graph.util.GraphIndices;
+import org.deeplearning4j.nn.modelimport.keras.preprocessors.PermutePreprocessor;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.multilayer.MultiLayerTest;
 import org.deeplearning4j.nn.transferlearning.TransferLearning;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
-import org.deeplearning4j.optimize.api.TrainingListener;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 import org.deeplearning4j.util.ModelSerializer;
 import org.junit.AfterClass;
@@ -59,6 +63,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.activations.impl.ActivationIdentity;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.dataset.DataSet;
@@ -70,6 +75,7 @@ import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.io.ClassPathResource;
 import org.nd4j.linalg.learning.config.AdaGrad;
 import org.nd4j.linalg.learning.config.Adam;
+import org.nd4j.linalg.learning.config.NoOp;
 import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.linalg.primitives.Pair;
@@ -79,6 +85,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.*;
 
+import static org.deeplearning4j.nn.conf.layers.recurrent.Bidirectional.Mode.CONCAT;
 import static org.junit.Assert.*;
 
 @Slf4j
@@ -122,6 +129,12 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
         Nd4j.getExecutioner().setProfilingMode(origMode);
     }
 
+    /**
+     * Override this to set the datatype of the tests defined in the child class
+     */
+    public DataType getDataType(){
+        return DataType.FLOAT;
+    }
 
     @Test
     public void testFeedForwardToLayer() {
@@ -570,7 +583,7 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
                         .l2(2e-4).graphBuilder().addInputs("in")
                         .addLayer("layer0",
                                 new VariationalAutoencoder.Builder().nIn(4).nOut(3)
-                                        .weightInit(WeightInit.DISTRIBUTION)
+
                                         .dist(new UniformDistribution(0,
                                                 1))
                                         .activation(Activation.TANH)
@@ -579,7 +592,7 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
                                 "in")
                         .addLayer("layer1",
                                 new VariationalAutoencoder.Builder().nIn(4).nOut(3)
-                                        .weightInit(WeightInit.DISTRIBUTION)
+
                                         .dist(new UniformDistribution(0,
                                                 1))
                                         .activation(Activation.TANH)
@@ -588,7 +601,7 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
                                 "in")
                         .addLayer("layer2",
                                 new VariationalAutoencoder.Builder().nIn(3).nOut(3)
-                                        .weightInit(WeightInit.DISTRIBUTION)
+
                                         .dist(new UniformDistribution(0,
                                                 1))
                                         .activation(Activation.TANH)
@@ -597,11 +610,11 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
                                 "layer1")
                         .addLayer("out", new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(
                                         LossFunctions.LossFunction.MCXENT).nIn(3 + 3).nOut(3)
-                                        .weightInit(WeightInit.DISTRIBUTION)
+
                                         .dist(new UniformDistribution(0, 1))
                                         .activation(Activation.SOFTMAX).build(),
                                 "layer0", "layer2")
-                        .setOutputs("out").pretrain(true).backprop(false).build();
+                        .setOutputs("out").build();
 
 
         ComputationGraph net = new ComputationGraph(conf);
@@ -1072,7 +1085,7 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
         ComputationGraph cg = new ComputationGraph(c);
         cg.init();
 
-        cg.setInputs(Nd4j.ones(5));
+        cg.setInputs(Nd4j.ones(1, 5));
 
         Map<String, INDArray> layersOnly = cg.feedForward(true, false, false);
         Map<String, INDArray> alsoVertices = cg.feedForward(true, false, true);
@@ -1138,8 +1151,8 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
         ComputationGraph g = new ComputationGraph(c);
         g.init();
 
-        g.calcL2();
-        g.calcL1();
+        g.calcRegularizationScore(true);
+        g.calcRegularizationScore(false);
     }
 
     @Test(expected = DL4JException.class)
@@ -1445,14 +1458,14 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
     @Test
     public void scaleVertexGraphTest() {
         final double scaleFactor = 2;
-        final double[] inputArr = new double[]{-2, -1, 0, 1, 2};//IntStream.rangeClosed(-2, 2).mapToDouble(i -> i).toArray();
-        final double[] expected = new double[inputArr.length];  //DoubleStream.of(inputArr).map(i -> i * scaleFactor).toArray();
+        final float[] inputArr = new float[]{-2, -1, 0, 1, 2};//IntStream.rangeClosed(-2, 2).mapToDouble(i -> i).toArray();
+        final float[] expected = new float[inputArr.length];  //DoubleStream.of(inputArr).map(i -> i * scaleFactor).toArray();
         for( int i=0; i<expected.length; i++ ){
-            expected[i] = inputArr[i] * scaleFactor;
+            expected[i] = (float) (inputArr[i] * scaleFactor);
         }
 
         final INDArray input = getInputArray4d(inputArr); // Replacing this line with the line below is enough to make test pass
-        //final INDArray input = Nd4j.create(new double[][]{inputArr});
+        //final INDArray input = Nd4j.create(new float[][]{inputArr});
 
         final String inputName = "input";
         final String outputName = "output";
@@ -1482,8 +1495,8 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
         assertEquals("Incorrect output", Nd4j.create(expected), graph.outputSingle(input));
     }
 
-    private static INDArray getInputArray4d(double[] inputArr) {
-        final INDArray input = Nd4j.create(1, 1, inputArr.length, 1);
+    private static INDArray getInputArray4d(float[] inputArr) {
+        final INDArray input = Nd4j.create(DataType.FLOAT, 1, 1, inputArr.length, 1);
         for (int i = 0; i < input.length(); i++) {
             input.putScalar(new int[]{0, 0, i, 0}, inputArr[i]);
         }
@@ -1665,7 +1678,7 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
                         .nIn(10).nOut(10).encoderLayerSizes(10).decoderLayerSizes(10).build(), "in")
                 .layer("1", new OutputLayer.Builder().nIn(10).nOut(10).activation(Activation.SOFTMAX).build(), "0")
                 .setOutputs("1")
-                .pretrain(true)
+
                 .build();
 
         ComputationGraph net = new ComputationGraph(conf);
@@ -1818,5 +1831,292 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
                 .addVertex("toRemove", new ScaleVertex(0), "don't care")
                 .addVertex("test", new ScaleVertex(0), "toRemove")
                 .removeVertex("toRemove", true);
+    }
+
+
+    @Test
+    public void testGetSetParamUnderscores(){
+        //Test get/set param with underscores in layer nome
+        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
+                .graphBuilder()
+                .addInputs("in")
+                .layer("layer_zero", new DenseLayer.Builder().nIn(10).nOut(10).build(), "in")
+                .layer("layer_one", new OutputLayer.Builder().nIn(10).nOut(10).build(), "layer_zero")
+                .setOutputs("layer_one")
+                .build();
+
+        ComputationGraph cg = new ComputationGraph(conf);
+        cg.init();
+        cg.params().assign(Nd4j.linspace(1, 220, 220).reshape(1, -11));
+
+        INDArray p0w = cg.getParam("layer_zero_W");
+        assertEquals(Nd4j.linspace(1, 100, 100).reshape('f', 10, 10), p0w);
+
+        INDArray p1b = cg.getParam("layer_one_b");
+        assertEquals(Nd4j.linspace(211, 220, 10).reshape(1,10), p1b);
+
+        INDArray newP1b = Nd4j.valueArrayOf(new long[]{1,10}, -1.0);
+        cg.setParam("layer_one_b", newP1b);
+
+        assertEquals(newP1b, p1b);
+    }
+
+    @Test
+    public void testOutputSpecificLayers(){
+        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
+                .seed(12345)
+                .graphBuilder()
+                .addInputs("in")
+                .layer("0", new DenseLayer.Builder().nIn(10).nOut(9).build(), "in")
+                .layer("1", new DenseLayer.Builder().nIn(9).nOut(8).build(), "0")
+                .layer("2", new DenseLayer.Builder().nIn(8).nOut(7).build(), "1")
+                .layer("3", new OutputLayer.Builder().nIn(7).nOut(6).build(), "2")
+                .setOutputs("3")
+                .build();
+
+        ComputationGraph cg = new ComputationGraph(conf);
+        cg.init();
+
+        INDArray in = Nd4j.rand(1, 10);
+
+        Map<String,INDArray> outMap = cg.feedForward(in, false);
+
+        INDArray[] outSpecific = cg.output(Arrays.asList("1", "3"), false, new INDArray[]{in}, null);
+        assertEquals(2, outSpecific.length);
+
+        assertEquals(outMap.get("1"), outSpecific[0]);
+        assertEquals(outMap.get("3"), outSpecific[1]);
+    }
+
+    @Test
+    public void singleInputElemVertex() {
+        final InputType inputType = InputType.convolutional(10, 10, 2);
+        final ComputationGraph graph = new ComputationGraph(new NeuralNetConfiguration.Builder()
+                .graphBuilder()
+                .setInputTypes(inputType)
+                .addInputs("input")
+                .setOutputs("output")
+                .addLayer("0", new ConvolutionLayer.Builder().nOut(5).convolutionMode(ConvolutionMode.Same).build(),"input" )
+                .addVertex("dummyAdd", new ElementWiseVertex(ElementWiseVertex.Op.Add), "0")
+                .addLayer("output", new CnnLossLayer(), "dummyAdd")
+                .build());
+        graph.init();
+        graph.outputSingle(Nd4j.randn(1, 2, 10, 10));
+    }
+
+
+    @Test
+    public void testCloneDropoutIndependence(){
+
+        val modelConf = new NeuralNetConfiguration.Builder()
+                .updater(new Adam(0.01))
+                .weightInit(WeightInit.XAVIER_UNIFORM)
+                .biasInit(0)
+                .graphBuilder()
+                .addInputs("input")
+                .addLayer(
+                        "dense",
+                        new DenseLayer.Builder()
+                                .nIn(10)
+                                .nOut(10)
+                                .activation(Activation.RELU)
+                                .hasBias(true)
+                                .dropOut(0.9)
+                                .build(),
+                        "input")
+                .addLayer("output",
+                        new OutputLayer.Builder()
+                                .nIn(10)
+                                .nOut(1)
+                                .lossFunction(LossFunctions.LossFunction.XENT)
+                                .activation(Activation.SIGMOID)
+                                .hasBias(false)
+                                .build(),
+                        "dense")
+                .setOutputs("output")
+                .build();
+
+        ComputationGraph model = new ComputationGraph(modelConf);
+        model.init();
+
+        ComputationGraph cg2 = model.clone();
+
+        IDropout d1 = model.getLayer(0).conf().getLayer().getIDropout();
+        IDropout d2 = cg2.getLayer(0).conf().getLayer().getIDropout();
+
+        assertFalse(d1 == d2);  //Should not be same object!
+        assertEquals(d1, d2);   //But should be equal
+    }
+
+    @Test
+    public void testVerticesAndMasking7027(){
+        //https://github.com/deeplearning4j/deeplearning4j/issues/7027
+        int inputSize = 300;
+        int hiddenSize = 100;
+
+        ComputationGraphConfiguration configuration = new NeuralNetConfiguration.Builder()
+                .updater(new Adam())
+                .graphBuilder()
+                .addInputs("x_emb")
+                .setInputTypes(InputType.recurrent(inputSize))
+                .addLayer("agg_lstm", new Bidirectional(CONCAT, new LSTM.Builder().nIn(inputSize).nOut(hiddenSize/2).build()), "x_emb")
+                .addLayer("agg_att", new DenseLayer.Builder().nIn(100).nOut(1).activation(Activation.SOFTMAX).build(), "agg_lstm")
+                .addVertex("att", new PreprocessorVertex(new ComposableInputPreProcessor(new FeedForwardToRnnPreProcessor(), new PermutePreprocessor(new int[] {0,2,1}), new RnnToFeedForwardPreProcessor())), "agg_att")
+                .addLayer("att_repeat", new RepeatVector.Builder(hiddenSize).build(),"att")
+                .addVertex("att_trans", new PreprocessorVertex(new PermutePreprocessor(new int[] {0, 2, 1})), "att_repeat")
+                .addVertex("mult", new ElementWiseVertex(ElementWiseVertex.Op.Product), "agg_lstm", "att_trans")
+                .addLayer("sum", new GlobalPoolingLayer.Builder().build(), "mult")
+                .addLayer("agg_out", new DenseLayer.Builder().nIn(100).nOut(6).activation(Activation.TANH).build(), "sum")
+                .addLayer("output", new OutputLayer.Builder().nIn(6).nOut(6).lossFunction(LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY).build(), "agg_out")
+                .setOutputs("output")
+                .build();
+
+        ComputationGraph net = new ComputationGraph(configuration);
+        net.init();
+
+        int dataSize = 10;
+        int seqLen = 5;
+        INDArray features = Nd4j.rand(new int[] {dataSize, inputSize, seqLen});
+        INDArray labels = Nd4j.rand(new int[] {dataSize, 6});
+        INDArray featuresMask = Nd4j.ones(dataSize, seqLen);
+        INDArray labelsMask = Nd4j.ones(dataSize, 6);
+
+        DataSet dataSet1 = new DataSet(features, labels);
+        net.fit(dataSet1);
+        DataSet dataSet2 = new DataSet(features, labels, featuresMask, labelsMask);
+        net.fit(dataSet2);
+    }
+
+
+    @Test
+    public void testCompGraphUpdaterBlocks(){
+        //Check that setting learning rate results in correct rearrangement of updater state within updater blocks
+        //https://github.com/deeplearning4j/deeplearning4j/issues/6809#issuecomment-463892644
+
+        double lr = 1e-3;
+        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
+                .seed(12345)
+                .weightInit(WeightInit.XAVIER)
+                .updater(new Adam(lr))
+                .graphBuilder()
+                .backpropType(BackpropType.Standard)
+                .addInputs("in")
+                .setOutputs("out")
+                .addLayer("0",new DenseLayer.Builder().nIn(5).nOut(3).build(),"in")
+                .addLayer("1",new DenseLayer.Builder().nIn(3).nOut(2).build(),"0")
+                .addLayer("out",new OutputLayer.Builder(LossFunctions.LossFunction.XENT).nIn(2).nOut(1)
+                        .activation(Activation.SIGMOID).build(),"1")
+                .build();
+
+        ComputationGraph cg = new ComputationGraph(conf);
+        cg.init();
+
+        INDArray in = Nd4j.rand(1, 5);
+        INDArray lbl = Nd4j.rand(1,1);
+
+        cg.fit(new DataSet(in, lbl));
+
+        INDArray viewArray = cg.getUpdater().getUpdaterStateViewArray();
+        INDArray viewArrayCopy = viewArray.dup();
+        //Initially updater view array is set out like:
+        //[m0w, m0b, m1w, m1b, m2w, m2b][v0w, v0b, v1w, v1b, v2w, v2b]
+        long soFar = 0;
+        INDArray m0w = viewArray.get(NDArrayIndex.point(0), NDArrayIndex.interval(soFar, soFar+5*3)).assign(0);    //m0w
+        soFar += 5*3;
+        INDArray m0b = viewArray.get(NDArrayIndex.point(0), NDArrayIndex.interval(soFar, soFar+3)).assign(1);    //m0b
+        soFar += 3;
+        INDArray m1w = viewArray.get(NDArrayIndex.point(0), NDArrayIndex.interval(soFar, soFar+3*2)).assign(2);    //m1w
+        soFar += 3*2;
+        INDArray m1b = viewArray.get(NDArrayIndex.point(0), NDArrayIndex.interval(soFar, soFar+2)).assign(3);    //m1b
+        soFar += 2;
+        INDArray m2w = viewArray.get(NDArrayIndex.point(0), NDArrayIndex.interval(soFar, soFar+2*1)).assign(4);    //m2w
+        soFar += 2*1;
+        INDArray m2b = viewArray.get(NDArrayIndex.point(0), NDArrayIndex.interval(soFar, soFar+1)).assign(5);    //m2b
+        soFar += 1;
+
+        INDArray v0w = viewArray.get(NDArrayIndex.point(0), NDArrayIndex.interval(soFar, soFar+5*3)).assign(6);    //v0w
+        soFar += 5*3;
+        INDArray v0b = viewArray.get(NDArrayIndex.point(0), NDArrayIndex.interval(soFar, soFar+3)).assign(7);    //v0b
+        soFar += 3;
+        INDArray v1w = viewArray.get(NDArrayIndex.point(0), NDArrayIndex.interval(soFar, soFar+3*2)).assign(8);    //v1w
+        soFar += 3*2;
+        INDArray v1b = viewArray.get(NDArrayIndex.point(0), NDArrayIndex.interval(soFar, soFar+2)).assign(9);    //v1b
+        soFar += 2;
+        INDArray v2w = viewArray.get(NDArrayIndex.point(0), NDArrayIndex.interval(soFar, soFar+2*1)).assign(10);    //v2w
+        soFar += 2*1;
+        INDArray v2b = viewArray.get(NDArrayIndex.point(0), NDArrayIndex.interval(soFar, soFar+1)).assign(11);    //v2b
+        soFar += 1;
+
+
+        cg.setLearningRate("0", 0.0);
+
+        //Expect new updater state to look like:
+        //[m0w, m0b][v0w,v0b], [m1w, m1b, m2w, m2b][v1w, v1b, v2w, v2b]
+        INDArray exp = Nd4j.concat(1, m0w, m0b, v0w, v0b,
+                m1w, m1b, m2w, m2b, v1w, v1b, v2w, v2b);
+
+        INDArray act = cg.getUpdater().getUpdaterStateViewArray();
+//        System.out.println(exp);
+//        System.out.println(act);
+
+        assertEquals(exp, act);
+
+        //And set layer 1 LR:
+        cg.setLearningRate("1", 0.2);
+        exp = Nd4j.concat(1, m0w, m0b, v0w, v0b,
+                m1w, m1b, v1w, v1b,
+                m2w, m2b, v2w, v2b);
+        assertEquals(exp, cg.getUpdater().getStateViewArray());
+
+
+        //Set all back to original LR and check again:
+        cg.setLearningRate("1", lr);
+        cg.setLearningRate("0", lr);
+
+        exp = Nd4j.concat(1, m0w, m0b, m1w, m1b, m2w, m2b, v0w, v0b, v1w, v1b, v2w, v2b);
+        assertEquals(exp, cg.getUpdater().getStateViewArray());
+
+
+        //Finally, training sanity check (if things are wrong, we get -ve values in adam V, which causes NaNs)
+        cg.getUpdater().getStateViewArray().assign(viewArrayCopy);
+        cg.setLearningRate("0", 0.0);
+
+        Nd4j.getExecutioner().setProfilingMode(OpExecutioner.ProfilingMode.NAN_PANIC);
+        cg.fit(new DataSet(in, lbl));
+        Nd4j.getExecutioner().setProfilingMode(OpExecutioner.ProfilingMode.SCOPE_PANIC);
+    }
+
+    @Test
+    public void testCompGraphInputReuse() {
+        Nd4j.setDefaultDataTypes(DataType.DOUBLE, DataType.DOUBLE);
+
+        int inputSize = 5;
+        int outputSize = 6;
+        int layerSize = 3;
+
+        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
+                .seed(12345)
+                .weightInit(WeightInit.XAVIER)
+                .updater(new NoOp())
+                .graphBuilder()
+                .addInputs("in")
+                .setOutputs("out")
+                .addLayer("0",new DenseLayer.Builder().nIn(inputSize).nOut(layerSize).build(),"in")
+                .addVertex("combine", new MergeVertex(), "0", "0", "0")
+                .addLayer("out",new OutputLayer.Builder(LossFunctions.LossFunction.XENT).nIn(3*layerSize).nOut(outputSize)
+                        .activation(Activation.SIGMOID).build(),"combine")
+                .build();
+
+        ComputationGraph net = new ComputationGraph(conf);
+        net.init();
+
+
+        int dataSize = 11;
+        INDArray features = Nd4j.rand(new int[] {dataSize, inputSize});
+        INDArray labels = Nd4j.rand(new int[] {dataSize, outputSize});
+
+        boolean gradOK = GradientCheckUtil.checkGradients(net, 1e-6, 1e-3,
+                1e-8, false, true, new INDArray[]{features}, new INDArray[]{labels}, null, null);
+        assertTrue(gradOK);
     }
 }

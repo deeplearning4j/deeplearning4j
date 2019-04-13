@@ -18,6 +18,7 @@ package org.deeplearning4j.nn.modelimport.keras.utils;
 
 
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.conf.layers.wrapper.BaseWrapperLayer;
@@ -33,7 +34,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.shade.jackson.core.type.TypeReference;
 import org.nd4j.shade.jackson.databind.ObjectMapper;
 import org.nd4j.shade.jackson.dataformat.yaml.YAMLFactory;
-import org.nd4j.util.StringUtils;
 
 import java.io.IOException;
 import java.util.*;
@@ -175,139 +175,141 @@ public class KerasModelUtils {
             if (layerName.contains("/"))
                 includesSlash = true;
         }
-        List<String> layerGroups;
-        if (!includesSlash) {
-            layerGroups = weightsRoot != null ? weightsArchive.getGroups(weightsRoot) : weightsArchive.getGroups();
-        } else {
-            layerGroups = new ArrayList<>(layers.keySet());
-        }
-        /* Set weights in KerasLayer for each entry in weights map. */
-        for (String layerName : layerGroups) {
-            List<String> layerParamNames;
-
-            // there's a bug where if a layer name contains a forward slash, the first fragment must be appended
-            // to the name of the dataset; it appears h5 interprets the forward slash as a data group
-            String[] layerFragments = layerName.split("/");
-
-            // Find nested groups when using Tensorflow
-            String rootPrefix = weightsRoot != null ? weightsRoot + "/" : "";
-            List<String> attributeStrParts = new ArrayList<>();
-            String attributeStr = weightsArchive.readAttributeAsString(
-                    "weight_names", rootPrefix + layerName
-            );
-            String attributeJoinStr;
-            Matcher attributeMatcher = Pattern.compile(":\\d+").matcher(attributeStr);
-            Boolean foundTfGroups = attributeMatcher.find();
-
-            if (foundTfGroups) {
-                for (String part : attributeStr.split("/")) {
-                    part = part.trim();
-                    if (part.length() == 0)
-                        break;
-                    Matcher tfSuffixMatcher = Pattern.compile(":\\d+").matcher(part);
-                    if (tfSuffixMatcher.find())
-                        break;
-                    attributeStrParts.add(part);
-                }
-                attributeJoinStr = StringUtils.join("/", attributeStrParts);
+        synchronized (KerasModelUtils.class) {
+            List<String> layerGroups;
+            if (!includesSlash) {
+                layerGroups = weightsRoot != null ? weightsArchive.getGroups(weightsRoot) : weightsArchive.getGroups();
             } else {
-                attributeJoinStr = layerFragments[0];
+                layerGroups = new ArrayList<>(layers.keySet());
             }
+            /* Set weights in KerasLayer for each entry in weights map. */
+            for (String layerName : layerGroups) {
+                List<String> layerParamNames;
 
-            String baseAttributes = layerName + "/" + attributeJoinStr;
-            if (layerFragments.length > 1) {
-                try {
-                    layerParamNames = weightsArchive.getDataSets(rootPrefix + baseAttributes);
-                } catch (Exception e) {
-                    layerParamNames = weightsArchive.getDataSets(rootPrefix + layerName);
-                }
-            } else {
+                // there's a bug where if a layer name contains a forward slash, the first fragment must be appended
+                // to the name of the dataset; it appears h5 interprets the forward slash as a data group
+                String[] layerFragments = layerName.split("/");
+
+                // Find nested groups when using Tensorflow
+                String rootPrefix = weightsRoot != null ? weightsRoot + "/" : "";
+                List<String> attributeStrParts = new ArrayList<>();
+                String attributeStr = weightsArchive.readAttributeAsString(
+                        "weight_names", rootPrefix + layerName
+                );
+                String attributeJoinStr;
+                Matcher attributeMatcher = Pattern.compile(":\\d+").matcher(attributeStr);
+                Boolean foundTfGroups = attributeMatcher.find();
+
                 if (foundTfGroups) {
-                    layerParamNames = weightsArchive.getDataSets(rootPrefix + baseAttributes);
+                    for (String part : attributeStr.split("/")) {
+                        part = part.trim();
+                        if (part.length() == 0)
+                            break;
+                        Matcher tfSuffixMatcher = Pattern.compile(":\\d+").matcher(part);
+                        if (tfSuffixMatcher.find())
+                            break;
+                        attributeStrParts.add(part);
+                    }
+                    attributeJoinStr = StringUtils.join(attributeStrParts, "/");
                 } else {
-                    if (kerasVersion == 2) {
-                        if (backend.equals("theano") && layerName.contains("bidirectional")) {
-                            for (String part : attributeStr.split("/")) {
-                                if (part.contains("forward"))
-                                    baseAttributes = baseAttributes + "/" + part;
+                    attributeJoinStr = layerFragments[0];
+                }
+
+                String baseAttributes = layerName + "/" + attributeJoinStr;
+                if (layerFragments.length > 1) {
+                    try {
+                        layerParamNames = weightsArchive.getDataSets(rootPrefix + baseAttributes);
+                    } catch (Exception e) {
+                        layerParamNames = weightsArchive.getDataSets(rootPrefix + layerName);
+                    }
+                } else {
+                    if (foundTfGroups) {
+                        layerParamNames = weightsArchive.getDataSets(rootPrefix + baseAttributes);
+                    } else {
+                        if (kerasVersion == 2) {
+                            if (backend.equals("theano") && layerName.contains("bidirectional")) {
+                                for (String part : attributeStr.split("/")) {
+                                    if (part.contains("forward"))
+                                        baseAttributes = baseAttributes + "/" + part;
+                                }
+
+                            }
+                            if (layers.get(layerName).getNumParams() > 0) {
+                                try {
+                                    layerParamNames = weightsArchive.getDataSets(rootPrefix + baseAttributes);
+                                } catch (Exception e) {
+                                    log.warn("No HDF5 group with weights found for layer with name "
+                                            + layerName + ", continuing import.");
+                                    layerParamNames = Collections.emptyList();
+                                }
+                            } else {
+                                layerParamNames = weightsArchive.getDataSets(rootPrefix + layerName);
                             }
 
-                        }
-                        if (layers.get(layerName).getNumParams() > 0) {
-                            try {
-                                layerParamNames = weightsArchive.getDataSets(rootPrefix + baseAttributes);
-                            } catch (Exception e) {
-                                log.warn("No HDF5 group with weights found for layer with name "
-                                        + layerName + ", continuing import.");
-                                layerParamNames = Collections.emptyList();
-                            }
                         } else {
                             layerParamNames = weightsArchive.getDataSets(rootPrefix + layerName);
                         }
 
-                    } else {
-                        layerParamNames = weightsArchive.getDataSets(rootPrefix + layerName);
                     }
-
                 }
-            }
-            if (layerParamNames.isEmpty())
-                continue;
-            if (!layers.containsKey(layerName))
-                throw new InvalidKerasConfigurationException(
-                        "Found weights for layer not in model (named " + layerName + ")");
-            KerasLayer layer = layers.get(layerName);
-
-
-            if (layerParamNames.size() != layer.getNumParams())
-                if (kerasVersion == 2
-                        && layer instanceof KerasBidirectional && 2 * layerParamNames.size() != layer.getNumParams())
+                if (layerParamNames.isEmpty())
+                    continue;
+                if (!layers.containsKey(layerName))
                     throw new InvalidKerasConfigurationException(
-                            "Found " + layerParamNames.size() + " weights for layer with " + layer.getNumParams()
-                                    + " trainable params (named " + layerName + ")");
-            Map<String, INDArray> weights = new HashMap<>();
+                            "Found weights for layer not in model (named " + layerName + ")");
+                KerasLayer layer = layers.get(layerName);
 
 
-            for (String layerParamName : layerParamNames) {
-                String paramName = KerasModelUtils.findParameterName(layerParamName, layerFragments);
-                INDArray paramValue;
+                if (layerParamNames.size() != layer.getNumParams())
+                    if (kerasVersion == 2
+                            && layer instanceof KerasBidirectional && 2 * layerParamNames.size() != layer.getNumParams())
+                        throw new InvalidKerasConfigurationException(
+                                "Found " + layerParamNames.size() + " weights for layer with " + layer.getNumParams()
+                                        + " trainable params (named " + layerName + ")");
+                Map<String, INDArray> weights = new HashMap<>();
 
-                if (kerasVersion == 2 && layer instanceof KerasBidirectional) {
-                    String backwardAttributes = baseAttributes.replace("forward", "backward");
-                    INDArray forwardParamValue = weightsArchive.readDataSet(layerParamName,
-                            rootPrefix + baseAttributes);
-                    INDArray backwardParamValue = weightsArchive.readDataSet(
-                            layerParamName, rootPrefix + backwardAttributes);
-                    weights.put("forward_" + paramName, forwardParamValue);
-                    weights.put("backward_" + paramName, backwardParamValue);
-                } else {
-                    if (foundTfGroups) {
-                        paramValue = weightsArchive.readDataSet(layerParamName, rootPrefix + baseAttributes);
+
+                for (String layerParamName : layerParamNames) {
+                    String paramName = KerasModelUtils.findParameterName(layerParamName, layerFragments);
+                    INDArray paramValue;
+
+                    if (kerasVersion == 2 && layer instanceof KerasBidirectional) {
+                        String backwardAttributes = baseAttributes.replace("forward", "backward");
+                        INDArray forwardParamValue = weightsArchive.readDataSet(layerParamName,
+                                rootPrefix + baseAttributes);
+                        INDArray backwardParamValue = weightsArchive.readDataSet(
+                                layerParamName, rootPrefix + backwardAttributes);
+                        weights.put("forward_" + paramName, forwardParamValue);
+                        weights.put("backward_" + paramName, backwardParamValue);
                     } else {
-                        if (layerFragments.length > 1) {
-                            paramValue = weightsArchive.readDataSet(
-                                    layerFragments[0] + "/" + layerParamName, rootPrefix, layerName);
+                        if (foundTfGroups) {
+                            paramValue = weightsArchive.readDataSet(layerParamName, rootPrefix + baseAttributes);
                         } else {
-                            if (kerasVersion == 2) {
+                            if (layerFragments.length > 1) {
                                 paramValue = weightsArchive.readDataSet(
-                                        layerParamName, rootPrefix + baseAttributes);
+                                        layerFragments[0] + "/" + layerParamName, rootPrefix, layerName);
                             } else {
-                                paramValue = weightsArchive.readDataSet(layerParamName, rootPrefix, layerName);
+                                if (kerasVersion == 2) {
+                                    paramValue = weightsArchive.readDataSet(
+                                            layerParamName, rootPrefix + baseAttributes);
+                                } else {
+                                    paramValue = weightsArchive.readDataSet(layerParamName, rootPrefix, layerName);
+                                }
                             }
                         }
+                        weights.put(paramName, paramValue);
                     }
-                    weights.put(paramName, paramValue);
                 }
+                layer.setWeights(weights);
             }
-            layer.setWeights(weights);
-        }
 
-        /* Look for layers in model with no corresponding entries in weights map. */
-        Set<String> layerNames = new HashSet<>(layers.keySet());
-        layerNames.removeAll(layerGroups);
-        for (String layerName : layerNames) {
-            if (layers.get(layerName).getNumParams() > 0)
-                throw new InvalidKerasConfigurationException("Could not find weights required for layer " + layerName);
+            /* Look for layers in model with no corresponding entries in weights map. */
+            Set<String> layerNames = new HashSet<>(layers.keySet());
+            layerNames.removeAll(layerGroups);
+            for (String layerName : layerNames) {
+                if (layers.get(layerName).getNumParams() > 0)
+                    throw new InvalidKerasConfigurationException("Could not find weights required for layer " + layerName);
+            }
         }
     }
 

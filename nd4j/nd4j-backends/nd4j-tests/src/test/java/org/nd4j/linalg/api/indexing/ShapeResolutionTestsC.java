@@ -21,6 +21,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
@@ -28,7 +29,6 @@ import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.indexing.ShapeOffsetResolution;
 import org.nd4j.linalg.util.ArrayUtil;
-import org.nd4j.linalg.util.LongUtils;
 
 import java.util.Arrays;
 
@@ -195,10 +195,10 @@ public class ShapeResolutionTestsC extends BaseNd4jTest {
 
     @Test
     public void testFlatIndexPointInterval() {
-        INDArray zeros = Nd4j.zeros(1, 4);
+        INDArray zeros = Nd4j.zeros(1, 4).castTo(DataType.DOUBLE);
         INDArrayIndex x = NDArrayIndex.point(0);
         INDArrayIndex y = NDArrayIndex.interval(1, 2, true);
-        INDArray value = Nd4j.ones(1, 2);
+        INDArray value = Nd4j.ones(1, 2).castTo(DataType.DOUBLE);
         zeros.put(new INDArrayIndex[] {x, y}, value);
 
         INDArray assertion = Nd4j.create(new double[] {0.0, 1.0, 1.0, 0.0});
@@ -207,10 +207,10 @@ public class ShapeResolutionTestsC extends BaseNd4jTest {
 
     @Test
     public void testVectorIndexPointPoint() {
-        INDArray zeros = Nd4j.zeros(1, 4);
+        INDArray zeros = Nd4j.zeros(1, 4).castTo(DataType.DOUBLE);
         INDArrayIndex x = NDArrayIndex.point(0);
         INDArrayIndex y = NDArrayIndex.point(2);
-        INDArray value = Nd4j.ones(1, 1);
+        INDArray value = Nd4j.ones(1, 1).castTo(DataType.DOUBLE);
         zeros.put(new INDArrayIndex[] {x, y}, value);
 
         INDArray assertion = Nd4j.create(new double[] {0.0, 0.0, 1.0, 0.0});
@@ -311,6 +311,13 @@ public class ShapeResolutionTestsC extends BaseNd4jTest {
             assertEquals(f2, zeros.toString());
     }
 
+
+    @Test
+    public void testVectorPointIndex(){
+        INDArray arr = Nd4j.create(3L);
+        INDArray out = arr.get(NDArrayIndex.point(1));
+        assertArrayEquals(new long[]{}, out.shape());
+    }
 
 
     @Override

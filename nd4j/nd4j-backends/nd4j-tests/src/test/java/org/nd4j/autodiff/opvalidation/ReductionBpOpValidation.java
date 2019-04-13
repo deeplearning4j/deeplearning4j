@@ -20,12 +20,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.nd4j.OpValidationSuite;
 import org.nd4j.autodiff.validation.OpTestCase;
 import org.nd4j.autodiff.validation.OpValidation;
-import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.impl.accum.bp.*;
+import org.nd4j.linalg.api.ops.impl.reduce.bp.*;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.ops.transforms.Transforms;
@@ -34,34 +33,33 @@ import org.nd4j.nativeblas.NativeOpsHolder;
 import java.util.Arrays;
 
 import static org.junit.Assert.assertNull;
-import static org.junit.Assert.fail;
 
 @Slf4j
 public class ReductionBpOpValidation extends BaseOpValidation {
 
-    private DataBuffer.Type initialType;
+    private DataType initialType;
 
     public ReductionBpOpValidation(Nd4jBackend backend) {
         super(backend);
     }
 
     @Before
-    public void before() throws Exception {
+    public void before() {
         Nd4j.create(1);
         initialType = Nd4j.dataType();
 
-        Nd4j.setDataType(DataBuffer.Type.DOUBLE);
+        Nd4j.setDataType(DataType.DOUBLE);
         Nd4j.getRandom().setSeed(123);
     }
 
     @After
-    public void after() throws Exception {
+    public void after() {
         Nd4j.setDataType(initialType);
     }
 
 
     @After
-    public void tearDown() throws Exception {
+    public void tearDown() {
         NativeOpsHolder.getInstance().getDeviceNativeOps().enableDebugMode(false);
         NativeOpsHolder.getInstance().getDeviceNativeOps().enableVerboseMode(false);
     }
@@ -374,7 +372,7 @@ public class ReductionBpOpValidation extends BaseOpValidation {
             preReduceInput.putScalar(0, 0, 20);
             preReduceInput.putScalar(1, 1, 21);
             preReduceInput.putScalar(2, 2, 22);
-            preReduceInput.putScalar(2, 2, 23);
+            preReduceInput.putScalar(3, 3, 23);
             INDArray dLdOut_0 = Nd4j.create(new double[]{1, 2, 3, 4}, reducedShape_0);
             INDArray dLdInExpected_0 = Nd4j.create(preReduceInput.shape());
             dLdInExpected_0.putScalar(0, 0, 1);
@@ -386,7 +384,7 @@ public class ReductionBpOpValidation extends BaseOpValidation {
 
             String err = OpValidation.validate(new OpTestCase(new MaxBp(preReduceInput, dLdOut_0, dLdIn, keepDims, 0))
                     .expectedOutput(0, dLdInExpected_0));
-            assertNull(err, err);
+            assertNull(err);
 
 
             long[] reducedShape_1 = (keepDims ? new long[]{4, 1} : new long[]{4});
@@ -398,7 +396,7 @@ public class ReductionBpOpValidation extends BaseOpValidation {
             err = OpValidation.validate(new OpTestCase(new MaxBp(preReduceInput, dLdOut_1, dLdIn, keepDims, 1))
                     .expectedOutput(0, dLdInExpected_1));
 
-            assertNull(err, err);
+            assertNull(err);
         }
     }
 
@@ -745,7 +743,7 @@ public class ReductionBpOpValidation extends BaseOpValidation {
 
         for (boolean keepDims : new boolean[]{false, true}) {
 
-            INDArray preReduceInput = Nd4j.linspace(1, 12, 12).reshape(3, 4);
+            INDArray preReduceInput = Nd4j.linspace(1, 12, 12).reshape(3, 4).castTo(DataType.DOUBLE);
 
             double norm2 = preReduceInput.norm2Number().doubleValue();
 
@@ -753,10 +751,10 @@ public class ReductionBpOpValidation extends BaseOpValidation {
             if (keepDims) {
                 dLdOut = Nd4j.valueArrayOf(new long[]{1, 1}, 0.5);
             } else {
-                dLdOut = Nd4j.trueScalar(0.5);
+                dLdOut = Nd4j.scalar(DataType.DOUBLE, 0.5);
             }
             INDArray dLdInExpected = preReduceInput.div(norm2).muli(0.5);
-            INDArray dLdIn = Nd4j.createUninitialized(3, 4);
+            INDArray dLdIn = Nd4j.createUninitialized(DataType.DOUBLE, 3, 4);
 
             String err = OpValidation.validate(new OpTestCase(new Norm2Bp(preReduceInput, dLdOut, dLdIn, keepDims))
                     .expectedOutput(0, dLdInExpected));

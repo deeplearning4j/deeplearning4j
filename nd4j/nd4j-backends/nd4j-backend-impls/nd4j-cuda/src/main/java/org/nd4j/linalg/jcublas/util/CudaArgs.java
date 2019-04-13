@@ -45,9 +45,9 @@ public class CudaArgs {
      * @return the module opName for the given op
      */
     public static String getModuleNameFor(Op op) {
-        //String functionName = op instanceof TransformOp || op instanceof Accumulation || op instanceof IndexAccumulation ? op.opName() + "_strided" : op.opName();
+        //String functionName = op instanceof TransformOp || op instanceof ReduceOp || op instanceof IndexAccumulation ? op.opName() + "_strided" : op.opName();
         String moduleName = null;
-        if (op instanceof Accumulation) {
+        if (op instanceof ReduceOp) {
 
             moduleName = "reduce";
 
@@ -95,7 +95,7 @@ public class CudaArgs {
 
         String name = op.opName();
 
-        if (op instanceof Accumulation) {
+        if (op instanceof ReduceOp) {
             if (name.equals("mean")) {
                 code = 0;
             } else if (name.equals("sum")) {

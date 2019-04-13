@@ -24,7 +24,7 @@ from numpy.testing import assert_allclose
 
 def test_conversion_32():
     jp.set_context_dtype('float32')
-    shapes = [(1, 1), (2, 1), (1, 2),  (32, 12), (100, 32, 16)]
+    shapes = [(1, 1), (2, 1), (1, 2), (32, 12), (100, 32, 16)]
     for shape in shapes:
         x_np = np.random.random(shape)
         x_np = np.cast['float32'](x_np)

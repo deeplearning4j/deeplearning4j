@@ -19,7 +19,12 @@ public struct FlatTiming : IFlatbufferObject
 
   public int Id { get { int o = __p.__offset(4); return o != 0 ? __p.bb.GetInt(o + __p.bb_pos) : (int)0; } }
   public string Name { get { int o = __p.__offset(6); return o != 0 ? __p.__string(o + __p.bb_pos) : null; } }
+#if ENABLE_SPAN_T
+  public Span<byte> GetNameBytes() { return __p.__vector_as_span(6); }
+#else
   public ArraySegment<byte>? GetNameBytes() { return __p.__vector_as_arraysegment(6); }
+#endif
+  public byte[] GetNameArray() { return __p.__vector_as_array<byte>(6); }
   public LongPair? Timing { get { int o = __p.__offset(8); return o != 0 ? (LongPair?)(new LongPair()).__assign(__p.__indirect(o + __p.bb_pos), __p.bb) : null; } }
 
   public static Offset<FlatTiming> CreateFlatTiming(FlatBufferBuilder builder,

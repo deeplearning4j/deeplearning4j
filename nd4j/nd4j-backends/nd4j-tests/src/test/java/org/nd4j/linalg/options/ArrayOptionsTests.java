@@ -17,18 +17,18 @@
 package org.nd4j.linalg.options;
 
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.shape.options.ArrayOptionsHelper;
 import org.nd4j.linalg.api.shape.options.ArrayType;
-import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 
 @Slf4j
 @RunWith(Parameterized.class)
@@ -41,7 +41,7 @@ public class ArrayOptionsTests extends BaseNd4jTest {
 
 
     @Before
-    public void setUp() throws Exception {
+    public void setUp() {
         shapeInfo = new long[]{2, 2, 2, 2, 1, 0, 1, 99};
     }
 
@@ -69,6 +69,22 @@ public class ArrayOptionsTests extends BaseNd4jTest {
         ArrayOptionsHelper.setOptionBit(shapeInfo, ArrayType.COMPRESSED);
 
         assertEquals(ArrayType.COMPRESSED, ArrayOptionsHelper.arrayType(shapeInfo));
+    }
+
+    @Test
+    public void testDataTypesToFromLong(){
+
+        for(DataType dt : DataType.values()){
+            if(dt == DataType.UNKNOWN)
+                continue;
+            String s = dt.toString();
+            long l = 0;
+            l = ArrayOptionsHelper.setOptionBit(l, dt);
+            assertNotEquals(s, 0, l);
+            DataType dt2 = ArrayOptionsHelper.dataType(l);
+            assertEquals(s, dt, dt2);
+        }
+
     }
 
     @Override

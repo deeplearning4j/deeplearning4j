@@ -36,6 +36,7 @@ import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.io.ClassPathResource;
@@ -233,9 +234,9 @@ public class TestImageRecordReader {
         assertEquals(2, b2a.getArrays().size());
 
         NDArrayWritable l1 = new NDArrayWritable(Nd4j.create(new double[]{expLabels.get(0).toDouble(),
-                expLabels.get(1).toDouble(), expLabels.get(2).toDouble()}, new int[]{3,1}));
+                expLabels.get(1).toDouble(), expLabels.get(2).toDouble()}, new long[]{3,1}, DataType.FLOAT));
         NDArrayWritable l2 = new NDArrayWritable(Nd4j.create(new double[]{expLabels.get(3).toDouble(),
-                expLabels.get(4).toDouble(), expLabels.get(5).toDouble()}, new int[]{3,1}));
+                expLabels.get(4).toDouble(), expLabels.get(5).toDouble()}, new long[]{3,1}, DataType.FLOAT));
 
         INDArray act1 = b1a.getArrays().get(1);
         INDArray act2 = b2a.getArrays().get(1);
@@ -316,6 +317,7 @@ public class TestImageRecordReader {
 
     @Test
     public void testImageRecordReaderPathMultiLabelGenerator() throws Exception {
+        Nd4j.setDataType(DataType.FLOAT);
         //Assumption: 2 multi-class (one hot) classification labels: 2 and 3 classes respectively
         // PLUS single value (Writable) regression label
 
@@ -370,7 +372,7 @@ public class TestImageRecordReader {
         NDArrayWritable l1c = new NDArrayWritable(Nd4j.create(new double[]{
                 expLabels.get(0).get(2).toDouble(),
                 expLabels.get(1).get(2).toDouble(),
-                expLabels.get(2).get(2).toDouble()}));
+                expLabels.get(2).get(2).toDouble()}, new long[]{1,3}, DataType.FLOAT));
 
 
         NDArrayWritable l2a = new NDArrayWritable(Nd4j.vstack(
@@ -384,7 +386,7 @@ public class TestImageRecordReader {
         NDArrayWritable l2c = new NDArrayWritable(Nd4j.create(new double[]{
                 expLabels.get(3).get(2).toDouble(),
                 expLabels.get(4).get(2).toDouble(),
-                expLabels.get(5).get(2).toDouble()}));
+                expLabels.get(5).get(2).toDouble()}, new long[]{1,3}, DataType.FLOAT));
 
 
 
@@ -409,23 +411,23 @@ public class TestImageRecordReader {
     private static List<Writable> testMultiLabel(String filename){
         switch(filename){
             case "0.jpg":
-                return Arrays.<Writable>asList(new NDArrayWritable(Nd4j.create(new double[]{1,0})),
-                        new NDArrayWritable(Nd4j.create(new double[]{1,0,0})), new DoubleWritable(0.0));
+                return Arrays.<Writable>asList(new NDArrayWritable(Nd4j.create(new double[]{1,0}, new long[]{1,2}, DataType.FLOAT)),
+                        new NDArrayWritable(Nd4j.create(new double[]{1,0,0}, new long[]{1,3}, DataType.FLOAT)), new DoubleWritable(0.0));
             case "1.png":
-                return Arrays.<Writable>asList(new NDArrayWritable(Nd4j.create(new double[]{1,0})),
-                        new NDArrayWritable(Nd4j.create(new double[]{0,1,0})), new DoubleWritable(1.0));
+                return Arrays.<Writable>asList(new NDArrayWritable(Nd4j.create(new double[]{1,0}, new long[]{1,2}, DataType.FLOAT)),
+                        new NDArrayWritable(Nd4j.create(new double[]{0,1,0}, new long[]{1,3}, DataType.FLOAT)), new DoubleWritable(1.0));
             case "2.jpg":
-                return Arrays.<Writable>asList(new NDArrayWritable(Nd4j.create(new double[]{1,0})),
-                        new NDArrayWritable(Nd4j.create(new double[]{0,0,1})), new DoubleWritable(2.0));
+                return Arrays.<Writable>asList(new NDArrayWritable(Nd4j.create(new double[]{1,0}, new long[]{1,2}, DataType.FLOAT)),
+                        new NDArrayWritable(Nd4j.create(new double[]{0,0,1}, new long[]{1,3}, DataType.FLOAT)), new DoubleWritable(2.0));
             case "A.jpg":
-                return Arrays.<Writable>asList(new NDArrayWritable(Nd4j.create(new double[]{0,1})),
-                        new NDArrayWritable(Nd4j.create(new double[]{1,0,0})), new DoubleWritable(3.0));
+                return Arrays.<Writable>asList(new NDArrayWritable(Nd4j.create(new double[]{0,1}, new long[]{1,2}, DataType.FLOAT)),
+                        new NDArrayWritable(Nd4j.create(new double[]{1,0,0}, new long[]{1,3}, DataType.FLOAT)), new DoubleWritable(3.0));
             case "B.png":
-                return Arrays.<Writable>asList(new NDArrayWritable(Nd4j.create(new double[]{0,1})),
-                        new NDArrayWritable(Nd4j.create(new double[]{0,1,0})), new DoubleWritable(4.0));
+                return Arrays.<Writable>asList(new NDArrayWritable(Nd4j.create(new double[]{0,1}, new long[]{1,2}, DataType.FLOAT)),
+                        new NDArrayWritable(Nd4j.create(new double[]{0,1,0}, new long[]{1,3}, DataType.FLOAT)), new DoubleWritable(4.0));
             case "C.jpg":
-                return Arrays.<Writable>asList(new NDArrayWritable(Nd4j.create(new double[]{0,1})),
-                        new NDArrayWritable(Nd4j.create(new double[]{0,0,1})), new DoubleWritable(5.0));
+                return Arrays.<Writable>asList(new NDArrayWritable(Nd4j.create(new double[]{0,1}, new long[]{1,2}, DataType.FLOAT)),
+                        new NDArrayWritable(Nd4j.create(new double[]{0,0,1}, new long[]{1,3}, DataType.FLOAT)), new DoubleWritable(5.0));
             default:
                 throw new RuntimeException(filename);
         }

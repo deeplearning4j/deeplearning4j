@@ -52,6 +52,7 @@ import org.deeplearning4j.spark.impl.graph.SparkComputationGraph;
 import org.deeplearning4j.spark.impl.multilayer.SparkDl4jMultiLayer;
 import org.deeplearning4j.spark.stats.EventStats;
 import org.deeplearning4j.spark.stats.ExampleCountEventStats;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -98,7 +99,6 @@ public class TestSparkMultiLayerParameterAveraging extends BaseSparkTest {
                                         new ClassPathResource("svmLight/iris_svmLight_0.txt").getTempFileFromArchive()
                                                         .getAbsolutePath())
                         .toJavaRDD().map(new TestFn());
-        Nd4j.ENFORCE_NUMERICAL_STABILITY = true;
 
         DataSet d = new IrisDataSetIterator(150, 150).next();
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(123)
@@ -151,7 +151,7 @@ public class TestSparkMultiLayerParameterAveraging extends BaseSparkTest {
                                                         LossFunctions.LossFunction.MCXENT).nIn(100).nOut(3)
                                                                         .activation(Activation.SOFTMAX)
                                                                         .weightInit(WeightInit.XAVIER).build())
-                                        .backprop(false).build();
+                                        .build();
 
 
 
@@ -792,7 +792,7 @@ public class TestSparkMultiLayerParameterAveraging extends BaseSparkTest {
     }
 
 
-    @Test
+    @Test @Ignore   //Ignored 2019/04/09 - low priority: https://github.com/deeplearning4j/deeplearning4j/issues/6656
     public void testVaePretrainSimple() {
         //Simple sanity check on pretraining
         int nIn = 8;
@@ -804,7 +804,7 @@ public class TestSparkMultiLayerParameterAveraging extends BaseSparkTest {
                                         .decoderLayerSizes(13).reconstructionDistribution(
                                                         new GaussianReconstructionDistribution(Activation.IDENTITY))
                                         .build())
-                        .pretrain(true).backprop(false).build();
+                        .build();
 
         //Do training on Spark with one executor, for 3 separate minibatches
         int rddDataSetNumExamples = 10;
@@ -827,7 +827,7 @@ public class TestSparkMultiLayerParameterAveraging extends BaseSparkTest {
         sparkNet.fit(data);
     }
 
-    @Test
+    @Test @Ignore    //Ignored 2019/04/09 - low priority: https://github.com/deeplearning4j/deeplearning4j/issues/6656
     public void testVaePretrainSimpleCG() {
         //Simple sanity check on pretraining
         int nIn = 8;
@@ -839,7 +839,7 @@ public class TestSparkMultiLayerParameterAveraging extends BaseSparkTest {
                                         .decoderLayerSizes(13).reconstructionDistribution(
                                                         new GaussianReconstructionDistribution(Activation.IDENTITY))
                                         .build(), "in")
-                        .setOutputs("0").pretrain(true).backprop(false).build();
+                        .setOutputs("0").build();
 
         //Do training on Spark with one executor, for 3 separate minibatches
         int rddDataSetNumExamples = 10;

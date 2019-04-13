@@ -17,19 +17,35 @@
 package org.deeplearning4j;
 
 import org.apache.commons.compress.utils.IOUtils;
+import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
+import org.deeplearning4j.nn.conf.layers.BaseLayer;
+import org.deeplearning4j.nn.conf.layers.samediff.AbstractSameDiffLayer;
 import org.deeplearning4j.nn.graph.ComputationGraph;
+import org.deeplearning4j.nn.layers.convolution.ConvolutionLayer;
+import org.deeplearning4j.nn.layers.convolution.subsampling.SubsamplingLayer;
+import org.deeplearning4j.nn.layers.normalization.BatchNormalization;
+import org.deeplearning4j.nn.layers.normalization.LocalResponseNormalization;
+import org.deeplearning4j.nn.layers.recurrent.LSTM;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.util.ModelSerializer;
+import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.random.impl.BernoulliDistribution;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.learning.regularization.L1Regularization;
+import org.nd4j.linalg.learning.regularization.L2Regularization;
+import org.nd4j.linalg.learning.regularization.Regularization;
+import org.nd4j.linalg.learning.regularization.WeightDecay;
 
 import java.io.*;
+import java.lang.reflect.Field;
+import java.util.List;
 import java.util.Random;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
 public class TestUtils {
 
@@ -154,6 +170,138 @@ public class TestUtils {
         byte[] b = IOUtils.toByteArray(is);
         try (OutputStream os = new BufferedOutputStream(new FileOutputStream(out))) {
             os.write(b);
+        }
+    }
+
+    public static L1Regularization getL1Reg(List<Regularization> l){
+        for(Regularization r : l){
+            if(r instanceof L1Regularization){
+                return (L1Regularization) r;
+            }
+        }
+        return null;
+    }
+
+    public static L2Regularization getL2Reg(BaseLayer baseLayer){
+        return getL2Reg(baseLayer.getRegularization());
+    }
+
+    public static L2Regularization getL2Reg(List<Regularization> l){
+        for(Regularization r : l){
+            if(r instanceof L2Regularization){
+                return (L2Regularization) r;
+            }
+        }
+        return null;
+    }
+
+    public static WeightDecay getWeightDecayReg(BaseLayer bl){
+        return getWeightDecayReg(bl.getRegularization());
+    }
+
+    public static WeightDecay getWeightDecayReg(List<Regularization> l){
+        for(Regularization r : l){
+            if(r instanceof WeightDecay){
+                return (WeightDecay) r;
+            }
+        }
+        return null;
+    }
+
+    public static double getL1(BaseLayer layer) {
+        List<Regularization> l = layer.getRegularization();
+        return getL1(l);
+    }
+
+    public static double getL1(List<Regularization> l){
+        L1Regularization l1Reg = null;
+        for(Regularization reg : l){
+            if(reg instanceof L1Regularization)
+                l1Reg = (L1Regularization) reg;
+        }
+        assertNotNull(l1Reg);
+        return l1Reg.getL1().valueAt(0,0);
+    }
+
+    public static double getL2(BaseLayer layer) {
+        List<Regularization> l = layer.getRegularization();
+        return getL2(l);
+    }
+
+    public static double getL2(List<Regularization> l){
+        L2Regularization l2Reg = null;
+        for(Regularization reg : l){
+            if(reg instanceof L2Regularization)
+                l2Reg = (L2Regularization) reg;
+        }
+        assertNotNull(l2Reg);
+        return l2Reg.getL2().valueAt(0,0);
+    }
+
+    public static double getL1(AbstractSameDiffLayer layer){
+        return getL1(layer.getRegularization());
+    }
+
+    public static double getL2(AbstractSameDiffLayer layer){
+        return getL2(layer.getRegularization());
+    }
+
+    public static double getWeightDecay(BaseLayer layer) {
+        return getWeightDecayReg(layer.getRegularization()).getCoeff().valueAt(0,0);
+    }
+
+    public static void removeHelper(Layer layer) throws Exception {
+        removeHelpers(new Layer[]{layer});
+    }
+
+    public static void removeHelpers(Layer[] layers) throws Exception {
+        for(Layer l : layers){
+
+            if(l instanceof ConvolutionLayer){
+                Field f1 = ConvolutionLayer.class.getDeclaredField("helper");
+                f1.setAccessible(true);
+                f1.set(l, null);
+            } else if(l instanceof SubsamplingLayer){
+                Field f2 = SubsamplingLayer.class.getDeclaredField("helper");
+                f2.setAccessible(true);
+                f2.set(l, null);
+            } else if(l instanceof BatchNormalization) {
+                Field f3 = BatchNormalization.class.getDeclaredField("helper");
+                f3.setAccessible(true);
+                f3.set(l, null);
+            } else if(l instanceof LSTM){
+                Field f4 = LSTM.class.getDeclaredField("helper");
+                f4.setAccessible(true);
+                f4.set(l, null);
+            } else if(l instanceof LocalResponseNormalization){
+                Field f5 = LocalResponseNormalization.class.getDeclaredField("helper");
+                f5.setAccessible(true);
+                f5.set(l, null);
+            }
+
+
+            if(l.getHelper() != null){
+                throw new IllegalStateException("Did not remove helper for layer: " + l.getClass().getSimpleName());
+            }
+        }
+    }
+
+    public static void assertHelperPresent(Layer layer){
+
+    }
+
+    public static void assertHelpersPresent(Layer[] layers) throws Exception {
+        for(Layer l : layers){
+            //Don't use instanceof here - there are sub conv subclasses
+            if(l.getClass() == ConvolutionLayer.class || l instanceof SubsamplingLayer || l instanceof BatchNormalization || l instanceof LSTM){
+                Preconditions.checkNotNull(l.getHelper(), l.conf().getLayer().getLayerName());
+            }
+        }
+    }
+
+    public static void assertHelpersAbsent(Layer[] layers) throws Exception {
+        for(Layer l : layers){
+            Preconditions.checkState(l.getHelper() == null, l.conf().getLayer().getLayerName());
         }
     }
 }

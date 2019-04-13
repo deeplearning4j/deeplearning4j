@@ -16,9 +16,7 @@
 
 package org.deeplearning4j.nn.conf.layers;
 
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.val;
+import lombok.*;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -29,6 +27,7 @@ import org.deeplearning4j.nn.conf.layers.samediff.SameDiffLayerUtils;
 import org.deeplearning4j.nn.params.ConvolutionParamInitializer;
 import org.deeplearning4j.nn.weights.WeightInitUtil;
 import org.deeplearning4j.util.ConvolutionUtils;
+import org.deeplearning4j.util.ValidationUtils;
 import org.nd4j.autodiff.samediff.SDIndex;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
@@ -55,9 +54,8 @@ public class LocallyConnected2D extends SameDiffLayer {
 
     private static final List<String> WEIGHT_KEYS = Collections.singletonList(ConvolutionParamInitializer.WEIGHT_KEY);
     private static final List<String> BIAS_KEYS = Collections.singletonList(ConvolutionParamInitializer.BIAS_KEY);
-    private static final List<String> PARAM_KEYS = Arrays.asList(
-            ConvolutionParamInitializer.BIAS_KEY,
-            ConvolutionParamInitializer.WEIGHT_KEY);
+    private static final List<String> PARAM_KEYS =
+                    Arrays.asList(ConvolutionParamInitializer.BIAS_KEY, ConvolutionParamInitializer.WEIGHT_KEY);
 
     private long nIn;
     private long nOut;
@@ -87,7 +85,7 @@ public class LocallyConnected2D extends SameDiffLayer {
         this.featureDim = kernel[0] * kernel[1] * (int) nIn;
     }
 
-    private LocallyConnected2D(){
+    private LocallyConnected2D() {
         //No arg constructor for Jackson/JSON serialization
     }
 
@@ -102,28 +100,28 @@ public class LocallyConnected2D extends SameDiffLayer {
         INDArray dummyInputForShapeInference = Nd4j.ones(inputShape);
 
         if (cm == ConvolutionMode.Same) {
-            this.outputSize = ConvolutionUtils.getOutputSize(
-                    dummyInputForShapeInference, kernel, stride, null, cm, dilation);
+            this.outputSize = ConvolutionUtils.getOutputSize(dummyInputForShapeInference, kernel, stride, null, cm,
+                            dilation);
             this.padding = ConvolutionUtils.getSameModeTopLeftPadding(outputSize, inputSize, kernel, stride, dilation);
         } else {
-            this.outputSize = ConvolutionUtils.getOutputSize(
-                    dummyInputForShapeInference, kernel, stride, padding, cm, dilation);
+            this.outputSize = ConvolutionUtils.getOutputSize(dummyInputForShapeInference, kernel, stride, padding, cm,
+                            dilation);
         }
     }
 
     @Override
     public InputType getOutputType(int layerIndex, InputType inputType) {
         if (inputType == null || inputType.getType() != InputType.Type.CNN) {
-            throw new IllegalArgumentException("Provided input type for locally connected 2D layers has to be " +
-                    "of CNN type, got: " + inputType);
+            throw new IllegalArgumentException("Provided input type for locally connected 2D layers has to be "
+                            + "of CNN type, got: " + inputType);
         }
         // dynamically compute input size from input type
         InputType.InputTypeConvolutional cnnType = (InputType.InputTypeConvolutional) inputType;
-        this.inputSize = new int[] { (int) cnnType.getHeight(), (int) cnnType.getWidth()};
+        this.inputSize = new int[] {(int) cnnType.getHeight(), (int) cnnType.getWidth()};
         computeOutputSize();
 
-        return InputTypeUtil.getOutputTypeCnnLayers(inputType, kernel, stride, padding, new int[]{1, 1},
-                cm, nOut, layerIndex, getLayerName(), LocallyConnected2D.class);
+        return InputTypeUtil.getOutputTypeCnnLayers(inputType, kernel, stride, padding, new int[] {1, 1}, cm, nOut,
+                        layerIndex, getLayerName(), LocallyConnected2D.class);
     }
 
     @Override
@@ -142,25 +140,25 @@ public class LocallyConnected2D extends SameDiffLayer {
     @Override
     public void defineParameters(SDLayerParams params) {
         params.clear();
-        val weightsShape = new long[]{outputSize[0] * outputSize[1], featureDim, nOut};
+        val weightsShape = new long[] {outputSize[0] * outputSize[1], featureDim, nOut};
         params.addWeightParam(ConvolutionParamInitializer.WEIGHT_KEY, weightsShape);
-        if(hasBias) {
-            val biasShape = new long[]{1, nOut};
+        if (hasBias) {
+            val biasShape = new long[] {1, nOut};
             params.addBiasParam(ConvolutionParamInitializer.BIAS_KEY, biasShape);
         }
     }
 
     @Override
     public void initializeParameters(Map<String, INDArray> params) {
-        try(MemoryWorkspace ws = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()) {
+        try (MemoryWorkspace ws = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()) {
             for (Map.Entry<String, INDArray> e : params.entrySet()) {
                 if (ConvolutionParamInitializer.BIAS_KEY.equals(e.getKey())) {
                     e.getValue().assign(0);
                 } else {
                     double fanIn = nIn * kernel[0] * kernel[1];
                     double fanOut = nOut * kernel[0] * kernel[1] / ((double) stride[0] * stride[1]);
-                    WeightInitUtil.initWeights(
-                            fanIn, fanOut, e.getValue().shape(), weightInit, null, 'c', e.getValue());
+                    WeightInitUtil.initWeights(fanIn, fanOut, e.getValue().shape(), weightInit, null, 'c',
+                                    e.getValue());
                 }
             }
         }
@@ -183,11 +181,10 @@ public class LocallyConnected2D extends SameDiffLayer {
         SDVariable[] inputArray = new SDVariable[outH * outW];
         for (int i = 0; i < outH; i++) {
             for (int j = 0; j < outW; j++) {
-                SDVariable slice = layerInput.get(
-                        SDIndex.all(), // miniBatch
-                        SDIndex.all(), // nIn
-                        SDIndex.interval(i * sH, i * sH + kH), // kernel height
-                        SDIndex.interval(j * sW, j * sW + kW) // kernel width
+                SDVariable slice = layerInput.get(SDIndex.all(), // miniBatch
+                                SDIndex.all(), // nIn
+                                SDIndex.interval(i * sH, i * sH + kH), // kernel height
+                                SDIndex.interval(j * sW, j * sW + kW) // kernel width
                 );
                 inputArray[i * outH + j] = sameDiff.reshape(slice, 1, miniBatch, featureDim);
             }
@@ -198,11 +195,11 @@ public class LocallyConnected2D extends SameDiffLayer {
 
         SDVariable reshapeResult = sameDiff.reshape(mmulResult, outH, outW, miniBatch, nOut);
 
-        SDVariable permutedResult = sameDiff.permute(reshapeResult,2, 3, 0, 1); // (mb, nOut, outH, outW)
+        SDVariable permutedResult = sameDiff.permute(reshapeResult, 2, 3, 0, 1); // (mb, nOut, outH, outW)
 
-        if(hasBias){
+        if (hasBias) {
             SDVariable b = paramTable.get(ConvolutionParamInitializer.BIAS_KEY);
-            SDVariable biasAddedResult = sameDiff.biasAdd(permutedResult, b);
+            SDVariable biasAddedResult = sameDiff.nn().biasAdd(permutedResult, b);
             return activation.asSameDiff("out", sameDiff, biasAddedResult);
         } else {
             return activation.asSameDiff("out", sameDiff, permutedResult);
@@ -220,24 +217,101 @@ public class LocallyConnected2D extends SameDiffLayer {
         }
     }
 
+    @Getter
+    @Setter
     public static class Builder extends SameDiffLayer.Builder<Builder> {
 
+        /**
+         * Number of inputs to the layer (input size)
+         */
         private int nIn;
+
+        /**
+         * Number of outputs (output size)
+         */
         private int nOut;
+
+        /**
+         * Activation function for the layer
+         */
         private Activation activation = Activation.TANH;
-        private int[] kernel = new int[]{2, 2};
-        private int[] stride = new int[]{1, 1};
-        private int[] padding = new int[]{0, 0};
-        private int[] dilation = new int[]{1, 1};
+
+        /**
+         * Kernel size for the layer. Must be 2 values (height/width)
+         */
+        @Setter(AccessLevel.NONE)
+        private int[] kernel = new int[] {2, 2};
+
+        /**
+         * Stride for the layer. Must be 2 values (height/width)
+         */
+        @Setter(AccessLevel.NONE)
+        private int[] stride = new int[] {1, 1};
+
+        /**
+         * Padding for the layer. Not used if {@link ConvolutionMode#Same} is set. Must be 2 values (height/width)
+         */
+        @Setter(AccessLevel.NONE)
+        private int[] padding = new int[] {0, 0};
+
+        /**
+         * Dilation for the layer. Must be 2 values (height/width)
+         */
+        @Setter(AccessLevel.NONE)
+        private int[] dilation = new int[] {1, 1};
+
+        /**
+         * Set input filter size (h,w) for this locally connected 2D layer
+         *
+         */
+        @Setter(AccessLevel.NONE)
         private int[] inputSize;
+
+        /**
+         * Convolution mode for the layer. See {@link ConvolutionMode} for details
+         */
         private ConvolutionMode cm = ConvolutionMode.Same;
+
+        /**
+         * If true (default is false) the layer will have a bias
+         */
         private boolean hasBias = true;
+
+
+
+        /**
+         * @param kernel Kernel size for the layer. Must be 2 values (height/width)
+         */
+        public void setKernel(int... kernel) {
+            this.kernel = ValidationUtils.validate2NonNegative(kernel, false, "kernel");
+        }
+
+        /**
+         * @param stride Stride for the layer. Must be 2 values (height/width)
+         */
+        public void setStride(int... stride) {
+            this.stride = ValidationUtils.validate2NonNegative(stride, false, "stride");
+        }
+
+        /**
+         * @param padding Padding for the layer. Not used if {@link ConvolutionMode#Same} is set. Must be 2 values (height/width)
+         */
+        public void setPadding(int... padding) {
+            this.padding = ValidationUtils.validate2NonNegative(padding, false, "padding");
+        }
+
+        /**
+         * @param dilation Dilation for the layer. Must be 2 values (height/width)
+         */
+        public void setDilation(int... dilation) {
+            this.dilation = ValidationUtils.validate2NonNegative(dilation, false, "dilation");
+        }
 
         /**
          * @param nIn Number of inputs to the layer (input size)
          */
         public Builder nIn(int nIn) {
-            this.nIn = nIn;
+            this.setNIn(nIn);
             return this;
         }
 
@@ -245,7 +319,7 @@ public class LocallyConnected2D extends SameDiffLayer {
          * @param nOut Number of outputs (output size)
          */
         public Builder nOut(int nOut) {
-            this.nOut = nOut;
+            this.setNOut(nOut);
             return this;
         }
 
@@ -253,7 +327,7 @@ public class LocallyConnected2D extends SameDiffLayer {
          * @param activation Activation function for the layer
          */
         public Builder activation(Activation activation) {
-            this.activation = activation;
+            this.setActivation(activation);
             return this;
         }
 
@@ -261,7 +335,7 @@ public class LocallyConnected2D extends SameDiffLayer {
          * @param k Kernel size for the layer. Must be 2 values (height/width)
          */
         public Builder kernelSize(int... k) {
-            this.kernel = k;
+            this.setKernel(k);
             return this;
         }
 
@@ -269,7 +343,7 @@ public class LocallyConnected2D extends SameDiffLayer {
          * @param s Stride for the layer. Must be 2 values (height/width)
          */
         public Builder stride(int... s) {
-            this.stride = s;
+            this.setStride(s);
             return this;
         }
 
@@ -277,7 +351,7 @@ public class LocallyConnected2D extends SameDiffLayer {
          * @param p Padding for the layer. Not used if {@link ConvolutionMode#Same} is set. Must be 2 values (height/width)
          */
         public Builder padding(int... p) {
-            this.padding = p;
+            this.setPadding(p);
             return this;
         }
 
@@ -285,7 +359,7 @@ public class LocallyConnected2D extends SameDiffLayer {
          * @param cm Convolution mode for the layer. See {@link ConvolutionMode} for details
          */
         public Builder convolutionMode(ConvolutionMode cm) {
-            this.cm = cm;
+            this.setCm(cm);
             return this;
         }
 
@@ -293,15 +367,15 @@ public class LocallyConnected2D extends SameDiffLayer {
          * @param d Dilation for the layer. Must be 2 values (height/width)
          */
         public Builder dilation(int... d) {
-            this.dilation = d;
+            this.setDilation(d);
             return this;
         }
 
         /**
          * @param hasBias If true (default is false) the layer will have a bias
          */
-        public Builder hasBias(boolean hasBias){
-            this.hasBias = hasBias;
+        public Builder hasBias(boolean hasBias) {
+            this.setHasBias(hasBias);
             return this;
         }
 
@@ -311,10 +385,8 @@ public class LocallyConnected2D extends SameDiffLayer {
          * @param inputSize pair of height and width of the input filters to this layer
          * @return Builder
          */
-        public Builder setInputSize(int... inputSize){
-            Preconditions.checkState(inputSize.length == 2, "Input size argument of a locally connected" +
-                    "layer has to have length 2, got " + inputSize.length);
-            this.inputSize = inputSize;
+        public Builder setInputSize(int... inputSize) {
+            this.inputSize = ValidationUtils.validate2(inputSize, false, "inputSize");
             return this;
         }
 

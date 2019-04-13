@@ -17,6 +17,7 @@
 package org.deeplearning4j.optimizer.listener;
 
 import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.api.storage.StatsStorageRouter;
 import org.deeplearning4j.api.storage.listener.RoutingIterationListener;
@@ -63,6 +64,7 @@ import static org.junit.Assert.assertTrue;
 /**
  * Created by Alex on 01/01/2017.
  */
+@Slf4j
 public class TestListeners extends BaseDL4JTest {
 
     @Rule
@@ -165,9 +167,9 @@ public class TestListeners extends BaseDL4JTest {
 
         List<TrainingListener> listeners = new ArrayList<>();
         listeners.add(new ScoreIterationListener());
-        listeners.add(new PerformanceListener(1));
+        listeners.add(new PerformanceListener(1, true, true));
         listeners.add(new TimeIterationListener(10000));
-        listeners.add(new ComposableIterationListener(new ScoreIterationListener(), new PerformanceListener(1)));
+        listeners.add(new ComposableIterationListener(new ScoreIterationListener(), new PerformanceListener(1, true, true)));
         listeners.add(new CheckpointListener.Builder(tempDir.newFolder()).keepAll().saveEveryNIterations(3).build());   //Doesn't usually need to be serialized, but no reason it can't be...
 
 
@@ -188,6 +190,8 @@ public class TestListeners extends BaseDL4JTest {
 
         List<TrainingListener> listeners2 = new ArrayList<>();
         for(TrainingListener il : listeners){
+            log.info("------------------");
+            log.info("Testing listener: {}", il);
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             ObjectOutputStream oos = new ObjectOutputStream(baos);
             oos.writeObject(il);

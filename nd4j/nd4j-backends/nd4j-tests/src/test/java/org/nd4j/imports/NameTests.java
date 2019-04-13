@@ -36,7 +36,7 @@ public class NameTests  extends BaseNd4jTest {
     }
 
     @Test
-    public void testNameExtraction_1() throws Exception {
+    public void testNameExtraction_1() {
         val str = "Name";
         val exp = "Name";
 
@@ -47,7 +47,7 @@ public class NameTests  extends BaseNd4jTest {
 
 
     @Test
-    public void testNameExtraction_2() throws Exception {
+    public void testNameExtraction_2() {
         val str = "Name_2";
         val exp = "Name_2";
 
@@ -57,7 +57,7 @@ public class NameTests  extends BaseNd4jTest {
     }
 
     @Test
-    public void testNameExtraction_3() throws Exception {
+    public void testNameExtraction_3() {
         val str = "Name_1:2";
         val exp = "Name_1";
 
@@ -67,7 +67,7 @@ public class NameTests  extends BaseNd4jTest {
     }
 
     @Test
-    public void testNameExtraction_4() throws Exception {
+    public void testNameExtraction_4() {
         val str = "Name_1:1:2";
         val exp = "Name_1:1";
 

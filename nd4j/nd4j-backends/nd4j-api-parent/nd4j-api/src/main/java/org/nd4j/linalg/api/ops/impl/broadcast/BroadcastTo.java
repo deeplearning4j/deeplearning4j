@@ -19,12 +19,15 @@ package org.nd4j.linalg.api.ops.impl.broadcast;
 import lombok.NoArgsConstructor;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.base.Preconditions;
 import org.nd4j.imports.NoOpNameFoundException;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -38,8 +41,8 @@ import java.util.Map;
 public class BroadcastTo extends DynamicCustomOp {
 
 
-    public BroadcastTo(SameDiff sameDiff, SDVariable x, SDVariable y) {
-        super(null, sameDiff, new SDVariable[] {x,y}, false);
+    public BroadcastTo(SameDiff sameDiff, SDVariable input, SDVariable shape) {
+        super(null, sameDiff, new SDVariable[] {input,shape}, false);
     }
 
     @Override
@@ -66,5 +69,11 @@ public class BroadcastTo extends DynamicCustomOp {
     @Override
     public List<SDVariable> doDiff(List<SDVariable> gradient){
         throw new UnsupportedOperationException("Not yet implemented");
+    }
+
+    @Override
+    public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes){
+        Preconditions.checkState(dataTypes != null && dataTypes.size() == 2, "Expected 2 input datatype for %s, got %s", getClass(), dataTypes);
+        return Collections.singletonList(dataTypes.get(0));
     }
 }

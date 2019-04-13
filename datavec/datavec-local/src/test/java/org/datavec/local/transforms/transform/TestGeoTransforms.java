@@ -18,9 +18,11 @@ package org.datavec.local.transforms.transform;
 
 import org.datavec.api.transform.ColumnType;
 import org.datavec.api.transform.Transform;
+import org.datavec.api.transform.geo.LocationType;
 import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.transform.transform.geo.CoordinatesDistanceTransform;
 import org.datavec.api.transform.transform.geo.IPAddressToCoordinatesTransform;
+import org.datavec.api.transform.transform.geo.IPAddressToLocationTransform;
 import org.datavec.api.writable.DoubleWritable;
 import org.datavec.api.writable.Text;
 import org.datavec.api.writable.Writable;
@@ -77,7 +79,7 @@ public class TestGeoTransforms {
 
         String in = "128.101.101.101";
         double latitude = 44.9733;
-        double longitude = -93.2323;
+        double longitude = -93.158;
 
         List<Writable> writables = transform.map(Collections.singletonList((Writable) new Text(in)));
         assertEquals(1, writables.size());
@@ -100,8 +102,41 @@ public class TestGeoTransforms {
         writables = deserialized.map(Collections.singletonList((Writable) new Text(in)));
         assertEquals(1, writables.size());
         coordinates = writables.get(0).toString().split("CUSTOM_DELIMITER");
+        System.out.println(Arrays.toString(coordinates));
         assertEquals(2, coordinates.length);
         assertEquals(latitude, Double.parseDouble(coordinates[0]), 0.1);
         assertEquals(longitude, Double.parseDouble(coordinates[1]), 0.1);
+    }
+
+    @Test
+    public void testIPAddressToLocationTransform() throws Exception {
+        Schema schema = new Schema.Builder().addColumnString("column").build();
+        LocationType[] locationTypes = LocationType.values();
+        String in = "128.101.101.101";
+        String[] locations = {"Saint Paul", "5045360", "North America", "6255149", "United States", "6252001",
+                        "44.9733:-93.2323", "55104", "Minnesota", "5037779"};
+
+        for (int i = 0; i < locationTypes.length; i++) {
+            LocationType locationType = locationTypes[i];
+            String location = locations[i];
+
+            if (locationType == LocationType.COORDINATES) {
+                // leave that to testIPAddressToCoordinatesTransform since coordinates
+                // often change slightly with the version of GeoIP2
+                continue;
+            }
+            Transform transform = new IPAddressToLocationTransform("column", locationType);
+            transform.setInputSchema(schema);
+
+            Schema out = transform.transform(schema);
+
+            assertEquals(1, out.getColumnMetaData().size());
+            assertEquals(ColumnType.String, out.getMetaData(0).getColumnType());
+
+            List<Writable> writables = transform.map(Collections.singletonList((Writable) new Text(in)));
+            assertEquals(1, writables.size());
+            assertEquals(location, writables.get(0).toString());
+            System.out.println(location);
+        }
     }
 }

@@ -56,7 +56,7 @@ public class StochasticGradientDescent extends BaseOptimizer {
                 log.info("Applying external updates before FF...");
 
                 // we'll just fire off params update process
-                accumulator.applyUpdate(stepFunction, model.params(), Nd4j.createUninitialized(model.params().shape(), model.params().ordering()));
+                accumulator.applyUpdate(stepFunction, model.params(), Nd4j.createUninitialized(model.params().shape(), model.params().ordering()), false);
             }
         }
 
@@ -85,7 +85,7 @@ public class StochasticGradientDescent extends BaseOptimizer {
             // and getting (possible) pending update from accumulator
             //INDArray pendingUpdate = accumulator.getUpdate();
             //stepFunction.step(params, pendingUpdate);
-            accumulator.applyUpdate(stepFunction, params, gradient.gradient());
+            accumulator.applyUpdate(stepFunction, params, gradient.gradient(), true);
 
             // if there's no update available - just go on then
         } else {

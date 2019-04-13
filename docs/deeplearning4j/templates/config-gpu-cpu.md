@@ -19,6 +19,9 @@ If you have CUDA v9.2+ installed and NVIDIA-compatible hardware, then your depen
  <version>{{ page.version }}</version>
 </dependency>
 ```
+As of now, the `artifactId` for the CUDA versions can be one of `nd4j-cuda-9.0`, `nd4j-cuda-9.2` or `nd4j-cuda-10.0`.
+
+You can also find the available CUDA versions via [Maven Central search](https://search.maven.org/search?q=nd4j-cuda) or in the [Release Notes](https://deeplearning4j.org/release-notes.html).
 
 Otherwise you will need to use the native implementation of ND4J as a CPU backend:
 

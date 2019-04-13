@@ -131,7 +131,7 @@ public class DenseTest extends BaseDL4JTest {
                                         .activation(Activation.TANH).weightInit(WeightInit.XAVIER).build())
                         .layer(2, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
                                         .weightInit(WeightInit.XAVIER).nIn(2).nOut(outputNum).activation(Activation.SOFTMAX).build())
-                        .backprop(backprop).pretrain(pretrain).build();
+                        .build();
 
         MultiLayerNetwork model = new MultiLayerNetwork(conf);
         model.init();

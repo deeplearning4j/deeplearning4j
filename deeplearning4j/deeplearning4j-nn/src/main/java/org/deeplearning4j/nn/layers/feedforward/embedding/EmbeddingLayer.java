@@ -69,8 +69,9 @@ public class EmbeddingLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.
             indexes[i] = input.getInt(i, 0);
         }
 
-        ScatterUpdate op = new ScatterUpdate(weightGradients, delta, indexes, DIM_1, ScatterUpdate.UpdateOp.ADD);
-        Nd4j.getExecutioner().exec(op);
+        INDArray indices = Nd4j.createFromArray(indexes);
+        Nd4j.scatterUpdate(org.nd4j.linalg.api.ops.impl.scatter.ScatterUpdate.UpdateOp.ADD, weightGradients, indices, delta, DIM_1);
+
 
         Gradient ret = new DefaultGradient();
         ret.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, weightGradients);
@@ -125,7 +126,6 @@ public class EmbeddingLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.
     public INDArray activate(boolean training, LayerWorkspaceMgr workspaceMgr) {
         INDArray rows = preOutput(training, workspaceMgr);
 
-        //INDArray ret =  Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getLayer().getActivationFunction(), rows));
         INDArray ret = layerConf().getActivationFn().getActivation(rows, training);
         if (maskArray != null) {
             ret.muliColumnVector(maskArray);

@@ -16,6 +16,7 @@
 
 package org.nd4j.linalg.api.ndarray;
 
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 
@@ -24,63 +25,28 @@ import org.nd4j.linalg.api.buffer.DataBuffer;
  */
 public interface ShapeInfoProvider {
     /**
-     * This method creates shapeInformation buffer, based on shape being passed in
-     * @param shape
-     * @return
-     */
-    Pair<DataBuffer, long[]> createShapeInformation(int[] shape);
-
-    /**
-     * This method creates shapeInformation buffer, based on shape & order being passed in
-     * @param shape
-     * @return
-     */
-    Pair<DataBuffer, long[]> createShapeInformation(int[] shape, char order);
-
-    /**
-     * This method creates shapeInformation buffer, based on detailed shape information being passed in
-     * @param shape
-     * @return
-     */
-    Pair<DataBuffer, long[]> createShapeInformation(int[] shape, int[] stride, long offset, int elementWiseStride, char order);
-
-
-    /**
-     * This method creates shapeInformation buffer, based on detailed shape information being passed in
-     * @param shape
-     * @return
-     */
-    Pair<DataBuffer, long[]> createShapeInformation(int[] shape, int[] stride, long offset, int elementWiseStride, char order, long extras);
-
-    /**
-     * This method creates shapeInformation buffer, based on detailed shape information being passed in
-     * @param shape
-     * @return
-     */
-    Pair<DataBuffer, long[]> createShapeInformation(long[] shape, long[] stride, long offset, long elementWiseStride, char order, long extras);
-
-    /**
      * This method creates long shapeInformation buffer, based on shape being passed in
      * @param shape
      * @return
      */
-    Pair<DataBuffer, long[]> createShapeInformation(long[] shape);
+    Pair<DataBuffer, long[]> createShapeInformation(long[] shape, DataType dataType);
 
     /**
      * This method creates long shapeInformation buffer, based on shape & order being passed in
      * @param shape
      * @return
      */
-    Pair<DataBuffer, long[]> createShapeInformation(long[] shape, char order);
+    Pair<DataBuffer, long[]> createShapeInformation(long[] shape, char order, DataType dataType);
 
     /**
      * This method creates long shapeInformation buffer, based on detailed shape info being passed in
      * @param shape
      * @return
      */
-    Pair<DataBuffer, long[]> createShapeInformation(long[] shape, long[] stride, long offset, long elementWiseStride, char order);
+    Pair<DataBuffer, long[]> createShapeInformation(long[] shape, long[] stride, long elementWiseStride, char order, DataType dataType);
 
 
+    Pair<DataBuffer, long[]> createShapeInformation(long[] shape, long[] stride, long elementWiseStride, char order, long extras);
 
     /**
      * This method forces cache purge, if cache is available for specific implementation

@@ -34,19 +34,18 @@ namespace nd4j {
             return Status::OK();
         }
 
+        DECLARE_TYPES(order) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(0, nd4j::DataType::ANY)
+                    ->setAllowedOutputTypes({ALL_INTS});
+        }
+
         DECLARE_SHAPE_FN(order) {
             auto input = inputShape->at(0);
-            Nd4jLong *newShape;
 
             auto isFOrder = INT_ARG(0) == 1;
 
-            ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(input), Nd4jLong
-            );
-
-            if (isFOrder)
-                shape::shapeBufferFortran(shape::rank(input), shape::shapeOf(input), newShape);
-            else
-                shape::shapeBuffer(shape::rank(input), shape::shapeOf(input), newShape);
+            Nd4jLong *newShape = ShapeBuilders::createShapeInfo(ArrayOptions::dataType(input), isFOrder ? 'f' : 'c', shape::rank(input), shape::shapeOf(input), block.getWorkspace());
 
             return SHAPELIST(newShape);
         }

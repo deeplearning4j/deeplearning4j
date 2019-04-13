@@ -27,15 +27,14 @@ namespace nd4j {
 namespace ops {
 namespace helpers {
 
+	void gruCell(const NDArray* x, const NDArray* hLast, const NDArray* Wru, const NDArray* Wc,
+				 const NDArray* bru, const NDArray* bc,
+				 NDArray* r, NDArray* u, NDArray* c, NDArray* h);
 
-	template <typename T>
-	void gruCell(const std::vector<NDArray<T>*>& inArrs, NDArray<T>* h);
+	void gruTimeLoop(const NDArray* x, const NDArray* h0, const NDArray* Wx, const NDArray* Wh, const NDArray* b, NDArray* h);
 
-	template <typename T>
-	void gruTimeLoop(const std::vector<NDArray<T>*>& inArrs, NDArray<T>* h);
-	
-	template <typename T>
-	void gruCellBP(const std::vector<NDArray<T>*>& inArrs, const std::vector<NDArray<T>*>& outArrs);    
+	void gruCellBP(const NDArray* x, const NDArray* h0, const NDArray* Wx, const NDArray* Wh, const NDArray* b, const NDArray* dLdh, const NDArray* dLdWx0, 
+                  const NDArray* dLdWh0, const NDArray* dLdb0, NDArray* dLdx, NDArray* dLdh0, NDArray* dLdWx, NDArray* dLdWh, NDArray* dLdb);
 
 }
 }

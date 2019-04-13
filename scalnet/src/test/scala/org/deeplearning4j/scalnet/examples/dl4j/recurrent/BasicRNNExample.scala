@@ -72,7 +72,7 @@ object BasicRNNExample extends App with Logging {
     var output = rnn.rnnTimeStep(init)
 
     val predicted: Vector[Char] = learningString.map { _ =>
-      val sampledCharacterIdx = Nd4j.getExecutioner.exec(new IMax(output), 1).getInt(0)
+      val sampledCharacterIdx = output.argMax(1).getInt(0)
       val nextInput = Nd4j.zeros(learningChars.length)
       nextInput.putScalar(sampledCharacterIdx, 1)
       output = rnn.rnnTimeStep(nextInput)

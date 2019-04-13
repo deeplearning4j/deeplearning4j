@@ -27,7 +27,6 @@ import org.deeplearning4j.nn.conf.graph.rnn.DuplicateToTimeSeriesVertex;
 import org.deeplearning4j.nn.conf.graph.rnn.LastTimeStepVertex;
 import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.conf.preprocessor.CnnToFeedForwardPreProcessor;
-import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.factory.Nd4j;
@@ -73,7 +72,7 @@ public class TestKryo extends BaseSparkKryoTest {
         testSerialization(mlc, si);
 
 
-        ComputationGraphConfiguration cgc = new NeuralNetConfiguration.Builder().weightInit(WeightInit.DISTRIBUTION)
+        ComputationGraphConfiguration cgc = new NeuralNetConfiguration.Builder()
                         .dist(new UniformDistribution(-1, 1))
                         .updater(new Adam(new MapSchedule(ScheduleType.ITERATION,m)))
                         .graphBuilder()
@@ -116,26 +115,26 @@ public class TestKryo extends BaseSparkKryoTest {
     public void testSerializationEvaluation() {
 
         Evaluation e = new Evaluation();
-        e.eval(Nd4j.create(new double[] {1, 0, 0}), Nd4j.create(new double[] {0.2, 0.5, 0.3}));
+        e.eval(Nd4j.create(new double[] {1, 0, 0}, new long[]{1, 3}), Nd4j.create(new double[] {0.2, 0.5, 0.3}, new long[]{1, 3}));
 
         EvaluationBinary eb = new EvaluationBinary();
-        eb.eval(Nd4j.create(new double[] {1, 0, 0}), Nd4j.create(new double[] {0.2, 0.6, 0.3}));
+        eb.eval(Nd4j.create(new double[] {1, 0, 0}, new long[]{1, 3}), Nd4j.create(new double[] {0.2, 0.6, 0.3}, new long[]{1, 3}));
 
         ROC roc = new ROC(30);
-        roc.eval(Nd4j.create(new double[] {1}), Nd4j.create(new double[] {0.2}));
+        roc.eval(Nd4j.create(new double[] {1}, new long[]{1, 1}), Nd4j.create(new double[] {0.2}, new long[]{1, 1}));
         ROC roc2 = new ROC();
-        roc2.eval(Nd4j.create(new double[] {1}), Nd4j.create(new double[] {0.2}));
+        roc2.eval(Nd4j.create(new double[] {1}, new long[]{1, 1}), Nd4j.create(new double[] {0.2}, new long[]{1, 1}));
 
         ROCMultiClass rocM = new ROCMultiClass(30);
-        rocM.eval(Nd4j.create(new double[] {1, 0, 0}), Nd4j.create(new double[] {0.2, 0.5, 0.3}));
+        rocM.eval(Nd4j.create(new double[] {1, 0, 0}, new long[]{1, 3}), Nd4j.create(new double[] {0.2, 0.5, 0.3}, new long[]{1, 3}));
         ROCMultiClass rocM2 = new ROCMultiClass();
-        rocM2.eval(Nd4j.create(new double[] {1, 0, 0}), Nd4j.create(new double[] {0.2, 0.5, 0.3}));
+        rocM2.eval(Nd4j.create(new double[] {1, 0, 0}, new long[]{1, 3}), Nd4j.create(new double[] {0.2, 0.5, 0.3}, new long[]{1, 3}));
 
         ROCBinary rocB = new ROCBinary(30);
-        rocB.eval(Nd4j.create(new double[] {1, 0, 0}), Nd4j.create(new double[] {0.2, 0.6, 0.3}));
+        rocB.eval(Nd4j.create(new double[] {1, 0, 0}, new long[]{1, 3}), Nd4j.create(new double[] {0.2, 0.6, 0.3}, new long[]{1, 3}));
 
         ROCBinary rocB2 = new ROCBinary();
-        rocB2.eval(Nd4j.create(new double[] {1, 0, 0}), Nd4j.create(new double[] {0.2, 0.6, 0.3}));
+        rocB2.eval(Nd4j.create(new double[] {1, 0, 0}, new long[]{1, 3}), Nd4j.create(new double[] {0.2, 0.6, 0.3}, new long[]{1, 3}));
 
         RegressionEvaluation re = new RegressionEvaluation();
         re.eval(Nd4j.rand(1, 5), Nd4j.rand(1, 5));

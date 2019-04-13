@@ -23,27 +23,38 @@
 
 #include <vector>
 #include <Environment.h>
+#include <array/DataType.h>
+#include <dll.h>
+#include <RandomGenerator.h>
+#include <ops/declarable/OpDescriptor.h>
 
 namespace nd4j {
     namespace graph {
-        template <typename T>
-        class ContextPrototype {
+
+        class ND4J_EXPORT ContextPrototype {
         protected:
             // int ids of the input nodes
             std::vector<std::pair<int, int>> _inputs;
             int _nodeId;
-            std::vector<T> _tArgs;
-            std::vector<int> _iArgs;            
-			
+            std::vector<double> _tArgs;
+            std::vector<int> _iArgs;
+            std::vector<bool> _bArgs;
+            std::vector<int> _axis;
+			nd4j::DataType _dataType = nd4j::DataType::FLOAT32;
 			bool _isInplace;
 
             // opNum for legacy XYZ ops
             int _opNum = -1;
+            uint64_t _rootSeed;
+            RandomGenerator _randomGenerator;
 
+            std::vector<nd4j::DataType> _dataTypes;
+
+            nd4j::ops::OpDescriptor* _opDescriptor;
             bool _useMKLDNN = nd4j::Environment::getInstance()->isUseMKLDNN();
 
         public:
-            explicit ContextPrototype(int nodeId = 1, bool inPlace = false);
+            explicit ContextPrototype(nd4j::ops::OpDescriptor* opDescriptor = nullptr, int nodeId = 1, bool inPlace = false);
             ~ContextPrototype() = default;
 
             int getNodeId();
@@ -51,6 +62,12 @@ namespace nd4j {
 
             // this method returns true, if inputs are defined
             bool hasVariablesFilled();
+
+            void setOpDescriptor(nd4j::ops::OpDescriptor* opDescriptor);
+
+            virtual nd4j::DataType dataType();
+            virtual nd4j::DataType dataType(int index);
+            virtual void setDataType(int index, nd4j::DataType type);
 
             bool isInplace();
             void markInplace(bool reallyInplace);
@@ -62,11 +79,14 @@ namespace nd4j {
             void fillInputs(std::vector<int>& inputs);
             std::vector<std::pair<int, int>>* inputs();
 
-            std::vector<T>* getTArguments();
+            std::vector<double>* getTArguments();
             std::vector<int>* getIArguments();
+            std::vector<bool>* getBArguments();
+            std::vector<int>* getAxis();
 
-            int numT();
-            int numI();
+            size_t numT();
+            size_t numI();
+            size_t numB();
 
             std::pair<int, int>* input(int idx);
 
@@ -80,13 +100,20 @@ namespace nd4j {
              * This method returns number of inputs available in this block
              * @return
              */
-            unsigned long width();
+            virtual unsigned long width();
 
             // just a clone
-            ContextPrototype<T>* clone();
+            ContextPrototype* clone();
 
             template <typename N>
-            ContextPrototype<N>* asT();
+            ContextPrototype* asT();
+
+            RandomGenerator& randomGenerator() {return _randomGenerator;}
+            RandomGenerator const& getRng()const { return _randomGenerator; }
+            void setRng(RandomGenerator const& anotherRng) { _randomGenerator = anotherRng; }
+            void setRandomGenerator(RandomGenerator const& anotherRng) { _randomGenerator = anotherRng; }
+            uint64_t randomSeed() const { return _rootSeed; }
+            void setRandomSeed(uint64_t seed) { _rootSeed = seed; }
         };
     }
 }

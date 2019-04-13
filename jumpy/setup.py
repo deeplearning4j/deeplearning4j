@@ -40,6 +40,7 @@ setup(name='jumpy',
       setup_requires=['Cython', 'pytest-runner'],
       install_requires=['Cython', 'requests', 'pydl4j', 'numpy'],
       extras_require={
+          'spark': ['pyspark'],
           'tests': ['pytest',
                     'pytest-pep8',
                     'mock'],

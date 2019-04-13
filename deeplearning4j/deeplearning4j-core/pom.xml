@@ -55,7 +55,7 @@
             </dependency>
             <dependency>
                 <groupId>org.nd4j</groupId>
-                <artifactId>nd4j-cuda-10.0</artifactId>
+                <artifactId>nd4j-cuda-10.1</artifactId>
                 <version>${nd4j.version}</version>
                 <scope>test</scope>
             </dependency>
@@ -180,6 +180,14 @@
             <artifactId>deeplearning4j-ui-components</artifactId>
             <version>${project.version}</version>
         </dependency>
+
+        <!-- Workaround for Java 9+ -->
+        <dependency>
+            <groupId>javax.xml.bind</groupId>
+            <artifactId>jaxb-api</artifactId>
+            <version>${jaxb.version}</version>
+            <scope>provided</scope>
+        </dependency>
     </dependencies>
 
     <profiles>
@@ -187,7 +195,7 @@
             <id>test-nd4j-native</id>
         </profile>
         <profile>
-            <id>test-nd4j-cuda-10.0</id>
+            <id>test-nd4j-cuda-10.1</id>
         </profile>
     </profiles>
 

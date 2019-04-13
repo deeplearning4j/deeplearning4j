@@ -29,6 +29,7 @@
 #include <dll.h>
 #include <ops/ops.h>
 #include <op_boilerplate.h>
+#include <OmpLaunchHelper.h>
 
 #ifdef __CUDACC__
 #include <helper_cuda.h>
@@ -56,62 +57,33 @@ namespace functions {
 		public:
 #ifdef __CUDACC__
 
-		static __device__ void transform(const int opNum, T *x, Nd4jLong *xShapeInfo, T *extraParams, T *result, Nd4jLong *resultShapeInfo, int *dimension,int dimensionLength, int postProcessOrNot, int *allocationBuffer, T *reductionBuffer, UnifiedSharedMemory *manager, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffset);
+	static __device__ void transform(const int opNum, void *x, Nd4jLong *xShapeInfo, void *extraParams, Nd4jLong *result, Nd4jLong *resultShapeInfo, int *dimension,int dimensionLength, int postProcessOrNot, int *allocationBuffer, void *reductionBuffer, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffset);
 
-	/**
-	 *
-	 * @param sPartialsRef
-	 * @param tid
-	 * @param extraParams
-	 */
     template<typename OpType>
-	static __device__ void aggregatePartials(IndexValue<T> **sPartialsRef, Nd4jLong tid, Nd4jLong numElements,T *extraParams);
+	static __device__ void aggregatePartials(IndexValue<T> **sPartialsRef, Nd4jLong tid, Nd4jLong numElements,void *extraParams);
 
-	/**
-	 * @param n n is the number of
-	 *        elements to loop through
-	 * @param dx the data to operate on
-	 * @param xVectorInfo the meta data for the vector:
-	 *                              0 is the offset
-	 *                              1 is the increment/stride
-	 *                              2 is the real length of the buffer (n and dx.length won't always be the same)
-	 *                              3 is the element wise stride for the buffer
-	 *                              4 is the number of elements it takes to get to the next row/column/tensor
-	 * @param gpuInformation
-	 *                              0 is the block size
-	 *                              1 is the grid size
-	 *                              2 is the shared memory size
-	 * @param problemDefinition
-	 *                          0 is the number of elements per vector
-	 *                          1 is the number of vectors
-	 */
+
     template<typename OpType>
-	static __device__ void transform(T *dx, Nd4jLong *xShapeInfo, T *extraParams, T *result, Nd4jLong *resultShapeInfo, int *dimension, int dimensionLength, int postProcessOrNot, int *allocationBuffer, T *reductionBuffer, UnifiedSharedMemory *manager, Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets);
+	static __device__ void transform(void *dx, Nd4jLong *xShapeInfo, void *extraParams, Nd4jLong *result, Nd4jLong *resultShapeInfo, int *dimension, int dimensionLength, int postProcessOrNot, int *allocationBuffer, void *reductionBuffer, Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets);
 
 
-    static _CUDA_H void executeIndexReduceScalar(dim3 launchDims, cudaStream_t *stream, const int op, T *dx, Nd4jLong *xShapeInfo, int xRank, T *extraParams, T *result, Nd4jLong *resultShapeInfo, int zRank, int *dimension, int dimensionLength, int postProcessOrNot, int *allocationBuffer, T *reductionBuffer, Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets);
+    static _CUDA_H void executeIndexReduceScalar(dim3 launchDims, cudaStream_t *stream, const int op, void *dx, Nd4jLong *xShapeInfo, int xRank, void *extraParams, Nd4jLong *result, Nd4jLong *resultShapeInfo, int zRank, int *dimension, int dimensionLength, int postProcessOrNot, int *allocationBuffer, void *reductionBuffer, Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets);
 
-    static _CUDA_H void executeIndexReduce(dim3 launchDims, cudaStream_t *stream, const int op, T *dx, Nd4jLong *xShapeInfo, int xRank, T *extraParams, T *result, Nd4jLong *resultShapeInfo, int zRank, int *dimension, int dimensionLength, int postProcessOrNot, int *allocationBuffer, T *reductionBuffer, Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets);
+    static _CUDA_H void executeIndexReduce(dim3 launchDims, cudaStream_t *stream, const int op, void *dx, Nd4jLong *xShapeInfo, int xRank, void *extraParams, Nd4jLong *result, Nd4jLong *resultShapeInfo, int zRank, int *dimension, int dimensionLength, int postProcessOrNot, int *allocationBuffer, void *reductionBuffer, Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets);
 #endif
-		static T execScalar(const int opNum, T *x, Nd4jLong *xShapeInfo, T *extraParams);
 
-		static void exec(const int opNum, T *x, Nd4jLong *xShapeInfo, T *extraParams, T *result, Nd4jLong *resultShapeInfoBuffer, int *dimension, int dimensionLength, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffset);
+		static Nd4jLong execScalar(const int opNum, void *x, Nd4jLong *xShapeInfo, void *extraParams);
 
-		template<typename OpType>
-		static _CUDA_H T execScalar(T *x, Nd4jLong *xShapeInfo, T *extraParams);
+		static void exec(const int opNum, void *x, Nd4jLong *xShapeInfo, void *extraParams, Nd4jLong *result, Nd4jLong *resultShapeInfoBuffer, int *dimension, int dimensionLength, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffset);
 
 		template<typename OpType>
-		static _CUDA_H void exec(T *x, Nd4jLong *xShapeInfo, T *extraParams, T *result, Nd4jLong *resultShapeInfoBuffer, int *dimension, int dimensionLength, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffset);
+		static _CUDA_H Nd4jLong execScalar(void *x, Nd4jLong *xShapeInfo, void *extraParams);
+
+		template<typename OpType>
+		static _CUDA_H void exec(void *x, Nd4jLong *xShapeInfo, void *extraParams, Nd4jLong *result, Nd4jLong *resultShapeInfoBuffer, int *dimension, int dimensionLength, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffset);
 		};
 	}
 }
-
-
-#ifdef __CUDACC__
-
-
-
-#endif
 
 #endif /* INDEXREDUCE_H_ */
 

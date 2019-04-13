@@ -42,7 +42,7 @@ namespace nd4j {
             else if (block.width() > 1) {
                 auto a = INPUT_VARIABLE(1);
                 for (int e = 0; e < a->lengthOf(); e++) {
-                    int _a = (int) a->getScalar(e);
+                    int _a = a->e<int>(e);
                     
                     if (_a < 0)
                         _a += input->rankOf();
@@ -52,8 +52,8 @@ namespace nd4j {
             }
 
             if (input->rankOf() == 0 || (input->rankOf() == 1 && input->lengthOf() == 1)) {
-                output->assign(input->buffer()[0]);
-                return ND4J_STATUS_OK;
+                output->assign(input);
+                return Status::OK();
             }
 
             std::vector<Nd4jLong> shape;
@@ -78,7 +78,13 @@ namespace nd4j {
                 delete tmp;
             }
 
-            return ND4J_STATUS_OK;
+            return Status::OK();
+        }
+
+        DECLARE_TYPES(squeeze) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setSameMode(true);
         }
 
         DECLARE_SHAPE_FN(squeeze) {
@@ -95,7 +101,7 @@ namespace nd4j {
                 newShape[1] = 0;
                 newShape[2] = 1;
                 newShape[3] = 99;
-
+                ArrayOptions::setDataType(newShape, ArrayOptions::dataType(in));
                 shapeList->push_back(newShape);
                 return shapeList;
             }
@@ -113,7 +119,7 @@ namespace nd4j {
             else if (block.width() > 1) {
                 auto a = INPUT_VARIABLE(1);
                 for (int e = 0; e < a->lengthOf(); e++) {
-                    int _a = (int) a->getScalar(e);
+                    int _a = a->e<int>(e);
                     
                     if (_a < 0)
                         _a += rank;
@@ -147,15 +153,12 @@ namespace nd4j {
                 newShape[2] = 1;
                 newShape[3] = 99;
 
+                ArrayOptions::setDataType(newShape, ArrayOptions::dataType(in));
                 shapeList->push_back(newShape);
                 return shapeList;
             }
 
-            ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(shape.size()), Nd4jLong);
-            if (order == 'c')
-                shape::shapeBuffer(shape.size(), shape.data(), newShape);
-            else
-                shape::shapeBufferFortran(shape.size(), shape.data(), newShape);
+            newShape = ShapeBuilders::createShapeInfo(ArrayOptions::dataType(in), order, shape, block.getWorkspace());
 
             shapeList->push_back(newShape);
 

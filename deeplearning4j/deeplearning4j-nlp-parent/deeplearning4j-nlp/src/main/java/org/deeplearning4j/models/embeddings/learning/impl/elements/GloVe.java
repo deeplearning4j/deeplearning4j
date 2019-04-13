@@ -132,6 +132,10 @@ public class GloVe<T extends SequenceElement> implements ElementsLearningAlgorit
         coOccurrences.fit();
     }
 
+    public double learnSequence(Sequence<T> sequence, AtomicLong nextRandom, double learningRate,
+                         BatchSequences<T> batchSequences) {
+        throw new UnsupportedOperationException();
+    }
     /**
      * Learns sequence using GloVe algorithm
      *

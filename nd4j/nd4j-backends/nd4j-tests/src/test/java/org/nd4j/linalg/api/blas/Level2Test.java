@@ -20,6 +20,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
@@ -36,7 +37,7 @@ public class Level2Test extends BaseNd4jTest {
     }
 
     @Test
-    public void testGemv1() throws Exception {
+    public void testGemv1() {
         INDArray array1 = Nd4j.linspace(1, 1000, 1000).reshape(10, 100);
         INDArray array2 = Nd4j.linspace(1, 100, 100).reshape(100, 1);
 
@@ -50,7 +51,7 @@ public class Level2Test extends BaseNd4jTest {
     }
 
     @Test
-    public void testGemv2() throws Exception {
+    public void testGemv2() {
         INDArray array1 = Nd4j.linspace(1, 1000, 1000).reshape(10, 100);
         INDArray array2 = Nd4j.linspace(1, 100, 100).reshape('f', 100, 1);
 
@@ -64,7 +65,7 @@ public class Level2Test extends BaseNd4jTest {
     }
 
     @Test
-    public void testGemv3() throws Exception {
+    public void testGemv3() {
         INDArray array1 = Nd4j.linspace(1, 1000, 1000).reshape('f', 10, 100);
         INDArray array2 = Nd4j.linspace(1, 100, 100).reshape('f', 100, 1);
 
@@ -78,7 +79,7 @@ public class Level2Test extends BaseNd4jTest {
     }
 
     @Test
-    public void testGemv4() throws Exception {
+    public void testGemv4() {
         INDArray array1 = Nd4j.linspace(1, 1000, 1000).reshape('f', 10, 100);
         INDArray array2 = Nd4j.linspace(1, 100, 100).reshape(100, 1);
 
@@ -92,7 +93,7 @@ public class Level2Test extends BaseNd4jTest {
     }
 
     @Test
-    public void testGemv5() throws Exception {
+    public void testGemv5() {
         INDArray array1 = Nd4j.linspace(1, 1000, 1000).reshape(10, 100);
         INDArray array2 = Nd4j.linspace(1, 100, 100).reshape(100, 1);
 
@@ -108,7 +109,7 @@ public class Level2Test extends BaseNd4jTest {
     }
 
     @Test
-    public void testGemv6() throws Exception {
+    public void testGemv6() {
         INDArray array1 = Nd4j.linspace(1, 1000, 1000).reshape('f', 10, 100);
         INDArray array2 = Nd4j.linspace(1, 100, 100).reshape(100, 1);
 
@@ -124,7 +125,7 @@ public class Level2Test extends BaseNd4jTest {
     }
 
     @Test
-    public void testGemv7() throws Exception {
+    public void testGemv7() {
         INDArray array1 = Nd4j.linspace(1, 1000, 1000).reshape('f', 10, 100);
         INDArray array2 = Nd4j.linspace(1, 100, 100).reshape(100, 1);
 

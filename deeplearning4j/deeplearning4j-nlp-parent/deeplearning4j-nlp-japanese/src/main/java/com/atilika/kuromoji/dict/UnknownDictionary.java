@@ -94,9 +94,7 @@ public class UnknownDictionary implements Dictionary {
         String[] allFeatures = new String[totalFeatures];
         String[] basicFeatures = features[wordId];
 
-        for (int i = 0; i < basicFeatures.length; i++) {
-            allFeatures[i] = basicFeatures[i];
-        }
+        System.arraycopy(basicFeatures, 0, allFeatures, 0, basicFeatures.length);
 
         for (int i = basicFeatures.length; i < totalFeatures; i++) {
             allFeatures[i] = DEFAULT_FEATURE;

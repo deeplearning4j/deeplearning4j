@@ -35,8 +35,8 @@ import java.util.Collection;
 import java.util.Map;
 
 /**
- * A custom output layer for testing. Functionally equivalent to {@link OutputLayer}, but
- * defined here to test JSON etc.
+ * A custom output layer for testing. Functionally equivalent to {@link OutputLayer}, but defined here to test JSON
+ * etc.
  *
  * @author Alex Black
  */
@@ -45,13 +45,14 @@ import java.util.Map;
 @ToString(callSuper = true)
 @EqualsAndHashCode(callSuper = true)
 public class CustomOutputLayer extends BaseOutputLayer {
+
     protected CustomOutputLayer(Builder builder) {
         super(builder);
     }
 
     @Override
     public Layer instantiate(NeuralNetConfiguration conf, Collection<TrainingListener> trainingListeners,
-                    int layerIndex, INDArray layerParamsView, boolean initializeParams) {
+            int layerIndex, INDArray layerParamsView, boolean initializeParams) {
         CustomOutputLayerImpl ret = new CustomOutputLayerImpl(conf);
         ret.setListeners(trainingListeners);
         ret.setIndex(layerIndex);

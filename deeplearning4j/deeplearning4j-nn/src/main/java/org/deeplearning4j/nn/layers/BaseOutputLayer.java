@@ -16,24 +16,22 @@
 
 package org.deeplearning4j.nn.layers;
 
-import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.api.layers.IOutputLayer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
+import org.deeplearning4j.nn.workspace.ArrayType;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.deeplearning4j.optimize.Solver;
-import org.nd4j.base.Preconditions;
+import org.nd4j.evaluation.classification.Evaluation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
 import org.nd4j.linalg.primitives.Pair;
-import org.nd4j.linalg.util.FeatureUtil;
-import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
-import org.deeplearning4j.nn.workspace.ArrayType;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -56,8 +54,7 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
 
     private transient Solver solver;
 
-    private double fullNetworkL1;
-    private double fullNetworkL2;
+    private double fullNetRegTerm;
 
     protected INDArray inputMaskArray;
     protected MaskState inputMaskArrayState;
@@ -71,30 +68,29 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
     }
 
     /** Compute score after labels and input have been set.
-     * @param fullNetworkL1 L1 regularization term for the entire network
-     * @param fullNetworkL2 L2 regularization term for the entire network
+     * @param fullNetRegTerm Regularization score term for the entire network
      * @param training whether score should be calculated at train or test time (this affects things like application of
      *                 dropout, etc)
      * @return score (loss function)
      */
     @Override
-    public double computeScore(double fullNetworkL1, double fullNetworkL2, boolean training, LayerWorkspaceMgr workspaceMgr) {
+    public double computeScore(double fullNetRegTerm, boolean training, LayerWorkspaceMgr workspaceMgr) {
         if (input == null || labels == null)
             throw new IllegalStateException("Cannot calculate score without input and labels " + layerId());
-        this.fullNetworkL1 = fullNetworkL1;
-        this.fullNetworkL2 = fullNetworkL2;
+        this.fullNetRegTerm = fullNetRegTerm;
         INDArray preOut = preOutput2d(training, workspaceMgr);
 
         ILossFunction lossFunction = layerConf().getLossFn();
 
         double score = lossFunction.computeScore(getLabels2d(workspaceMgr, ArrayType.FF_WORKING_MEM), preOut,
                 layerConf().getActivationFn(), maskArray,false);
-        score += fullNetworkL1 + fullNetworkL2;
+
         if(conf().isMiniBatch())
             score /= getInputMiniBatchSize();
 
-        this.score = score;
+        score += fullNetRegTerm;
 
+        this.score = score;
         return score;
     }
 
@@ -105,12 +101,11 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
 
     /**Compute the score for each example individually, after labels and input have been set.
      *
-     * @param fullNetworkL1 L1 regularization term for the entire network (or, 0.0 to not include regularization)
-     * @param fullNetworkL2 L2 regularization term for the entire network (or, 0.0 to not include regularization)
+     * @param fullNetRegTerm Regularization score term for the entire network (or, 0.0 to not include regularization)
      * @return A column INDArray of shape [numExamples,1], where entry i is the score of the ith example
      */
     @Override
-    public INDArray computeScoreForExamples(double fullNetworkL1, double fullNetworkL2, LayerWorkspaceMgr workspaceMgr) {
+    public INDArray computeScoreForExamples(double fullNetRegTerm, LayerWorkspaceMgr workspaceMgr) {
         if (input == null || labels == null)
             throw new IllegalStateException("Cannot calculate score without input and labels " + layerId());
         INDArray preOut = preOutput2d(false, workspaceMgr);
@@ -119,9 +114,8 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
         INDArray scoreArray =
                 lossFunction.computeScoreArray(getLabels2d(workspaceMgr, ArrayType.FF_WORKING_MEM),
                         preOut, layerConf().getActivationFn(), maskArray);
-        double l1l2 = fullNetworkL1 + fullNetworkL2;
-        if (l1l2 != 0.0) {
-            scoreArray.addi(l1l2);
+        if (fullNetRegTerm != 0.0) {
+            scoreArray.addi(fullNetRegTerm);
         }
         return workspaceMgr.leverageTo(ArrayType.ACTIVATIONS, scoreArray);
     }
@@ -135,7 +129,7 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
         Pair<Gradient, INDArray> pair = getGradientsAndDelta(preOut, workspaceMgr);
         this.gradient = pair.getFirst();
 
-        score = computeScore(fullNetworkL1, fullNetworkL2, true, workspaceMgr);
+        score = computeScore(fullNetRegTerm, true, workspaceMgr);
     }
 
     @Override
@@ -184,7 +178,7 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
         Gradient gradient = new DefaultGradient();
 
         INDArray weightGradView = gradientViews.get(DefaultParamInitializer.WEIGHT_KEY);
-        Nd4j.gemm(input, delta, weightGradView, true, false, 1.0, 0.0); //Equivalent to:  weightGradView.assign(input.transpose().mmul(delta));
+        Nd4j.gemm(input.castTo(weightGradView.dataType()), delta, weightGradView, true, false, 1.0, 0.0); //Equivalent to:  weightGradView.assign(input.transpose().mmul(delta));         //TODO can we avoid cast?
         gradient.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, weightGradView);
 
         if(hasBias()){
@@ -219,9 +213,6 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
 
     /**
      * Returns the f1 score for the given examples.
-     * Think of this to be like a percentage right.
-     * The higher the number the more it got right.
-     * This is on a scale from 0 to 1.
      *
      * @param examples te the examples to classify (one example in each row)
      * @param labels   the true labels
@@ -230,7 +221,7 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
     @Override
     public double f1Score(INDArray examples, INDArray labels) {
         Evaluation eval = new Evaluation();
-        eval.eval(labels, labelProbabilities(examples));
+        eval.eval(labels, activate(examples, false, LayerWorkspaceMgr.noWorkspacesImmutable()));
         return eval.f1();
     }
 
@@ -282,18 +273,6 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
     }
 
     /**
-     * Returns the probabilities for each label
-     * for each example row wise
-     *
-     * @param examples the examples to classify (one example in each row)
-     * @return the likelihoods of each example and each label
-     */
-    @Override
-    public INDArray labelProbabilities(INDArray examples) {
-        return activate(examples, false, LayerWorkspaceMgr.noWorkspacesImmutable());
-    }
-
-    /**
      * Fit the model
      *
      * @param input the examples to classify (one example in each row)
@@ -332,8 +311,7 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
         solver = null;
         inputMaskArrayState = null;
         inputMaskArray = null;
-        fullNetworkL1 = 0.0;
-        fullNetworkL2 = 0.0;
+        fullNetRegTerm = 0.0;
     }
 
     @Override

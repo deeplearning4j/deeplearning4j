@@ -16,12 +16,17 @@
 
 package org.deeplearning4j.earlystopping.termination;
 
+import org.nd4j.shade.jackson.annotation.JsonInclude;
+import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
+
 import java.io.Serializable;
 
 /**Interface for termination conditions to be evaluated once per iteration (i.e., once per minibatch).
  * Used for example to more quickly terminate training, instead of waiting for an epoch to complete before
  * checking termination conditions.
  * */
+@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY, property = "@class")
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public interface IterationTerminationCondition extends Serializable {
 
     /** Initialize the iteration termination condition (sometimes a no-op)*/

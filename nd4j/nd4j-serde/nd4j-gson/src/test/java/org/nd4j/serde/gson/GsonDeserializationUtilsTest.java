@@ -17,6 +17,7 @@
 package org.nd4j.serde.gson;
 
 import org.junit.Test;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -36,7 +37,7 @@ public class GsonDeserializationUtilsTest {
     @Test
     public void deserializeRawJson_ArrayHasOnlyOneRowWithColumns_ExpectCorrectDeserialization() {
         String serializedRawArray = "[1.00, 11.00, 3.00]";
-        INDArray expectedArray = Nd4j.create(new double[] {1, 11, 3});
+        INDArray expectedArray = Nd4j.create(new double[] {1, 11, 3}).castTo(Nd4j.defaultFloatingPointType());
 
         INDArray indArray = GsonDeserializationUtils.deserializeRawJson(serializedRawArray);
 
@@ -67,8 +68,9 @@ public class GsonDeserializationUtilsTest {
 
     @Test
     public void testSimpleVector() {
-        INDArray arr = Nd4j.linspace(1, 4, 4);
-        assertEquals(GsonDeserializationUtils.deserializeRawJson(arr.toString()), arr);
+        INDArray arr = Nd4j.linspace(1, 4, 4, Nd4j.defaultFloatingPointType()).reshape(4);
+        INDArray out = GsonDeserializationUtils.deserializeRawJson(arr.toString());
+        assertEquals(arr, out);
     }
 
 
@@ -77,7 +79,7 @@ public class GsonDeserializationUtilsTest {
     public void deserializeRawJson_HaveCommaInsideNumbers_ExpectCorrectDeserialization() {
         String serializedRawArray =
                         "[[1.00, 1100.00, 3.00],\n" + "[13.00, 5.00, 15591.00],\n" + "[7000.00, 17.00, 9.00]]";
-        INDArray expectedArray = Nd4j.create(new double[] {1, 1100, 3, 13, 5, 15591, 7000, 17, 9}, new int[] {3, 3});
+        INDArray expectedArray = Nd4j.create(new double[] {1, 1100, 3, 13, 5, 15591, 7000, 17, 9}, new int[] {3, 3}).castTo(Nd4j.defaultFloatingPointType());
 
         INDArray indArray = GsonDeserializationUtils.deserializeRawJson(serializedRawArray);
 

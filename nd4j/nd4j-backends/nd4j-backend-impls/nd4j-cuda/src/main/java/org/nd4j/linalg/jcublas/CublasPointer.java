@@ -113,7 +113,7 @@ public class CublasPointer implements AutoCloseable {
      * This wrapper makes sure that the INDArray offset, stride
      * and memory pointers are accurate to the data being copied to and from the device.
      *
-     * If the copyToHost function is used in in this class,
+     * If the copyToHost function is used in this class,
      * the host buffer offset and data length is taken care of automatically
      * @param array
      */

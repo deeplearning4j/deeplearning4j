@@ -22,6 +22,8 @@ import org.deeplearning4j.api.storage.StatsStorageRouter;
 import org.deeplearning4j.api.storage.listener.RoutingIterationListener;
 import org.deeplearning4j.datasets.iterator.AsyncDataSetIterator;
 import org.deeplearning4j.datasets.iterator.AsyncMultiDataSetIterator;
+import org.deeplearning4j.datasets.iterator.DummyBlockDataSetIterator;
+import org.deeplearning4j.datasets.iterator.DummyBlockMultiDataSetIterator;
 import org.deeplearning4j.datasets.iterator.callbacks.InterleavedDataSetCallback;
 import org.deeplearning4j.exception.DL4JInvalidConfigException;
 import org.deeplearning4j.nn.api.Model;
@@ -35,11 +37,13 @@ import org.deeplearning4j.optimize.listeners.SharedGradient;
 import org.deeplearning4j.optimize.solvers.accumulation.EncodedGradientsAccumulator;
 import org.deeplearning4j.optimize.solvers.accumulation.GradientsAccumulator;
 import org.deeplearning4j.optimize.solvers.accumulation.Registerable;
+import org.deeplearning4j.optimize.solvers.accumulation.encoding.ResidualPostProcessor;
+import org.deeplearning4j.optimize.solvers.accumulation.encoding.ThresholdAlgorithm;
 import org.deeplearning4j.parallelism.factory.DefaultTrainerContext;
 import org.deeplearning4j.parallelism.factory.SymmetricTrainerContext;
 import org.deeplearning4j.parallelism.factory.TrainerContext;
 import org.deeplearning4j.parallelism.trainer.Trainer;
-import org.jetbrains.annotations.NotNull;
+import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.DataSet;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
@@ -147,7 +151,7 @@ public class ParallelWrapper implements AutoCloseable {
         workerCounter.set(0);
         this.executorService = (ThreadPoolExecutor) Executors.newFixedThreadPool(workers, new ThreadFactory() {
             @Override
-            public Thread newThread(@NotNull Runnable r) {
+            public Thread newThread(@NonNull Runnable r) {
                 Thread t = Executors.defaultThreadFactory().newThread(r);
 
                 int cThread = workerCounter.getAndIncrement();
@@ -209,7 +213,7 @@ public class ParallelWrapper implements AutoCloseable {
         stopFit.set(false);
         createZooIfNeccessary(true);
 
-        if (source.resetSupported())
+        if (!source.hasNext() && source.resetSupported())
             source.reset();
 
         MultiDataSetIterator iterator = source;
@@ -226,10 +230,12 @@ public class ParallelWrapper implements AutoCloseable {
                 iterator = new AsyncMultiDataSetIterator(source, prefetchSize);
         }
 
-        AtomicInteger locker = new AtomicInteger(0);
+        val locker = new AtomicInteger(0);
 
-        long time1 = System.currentTimeMillis();
-        while (iterator.hasNext() && !stopFit.get()) {
+        val blockWrapper = new DummyBlockMultiDataSetIterator(iterator);
+
+        var time1 = System.currentTimeMillis();
+        while (blockWrapper.hasAnything() && !stopFit.get()) {
             if (modelParamsSupplier != null) {
                 val params = modelParamsSupplier.get();
                 if (params != null) {
@@ -248,79 +254,60 @@ public class ParallelWrapper implements AutoCloseable {
                 }
             }
 
-            MultiDataSet dataSet = iterator.next();
+            val dataSets = blockWrapper.next(workers);
             long time2 = System.currentTimeMillis();
 
-            if (dataSet == null)
+            if (dataSets == null)
                 throw new ND4JIllegalStateException("You can't have NULL as MultiDataSet");
+
+            locker.set(dataSets.length);
+
+            /*
+             * if we're using registerable accumulator (i.e. we're on spark or cuda with gradients sharing),
+             * update it & notify about number of threads in this training round then
+             */
+            if (gradientsAccumulator != null && gradientsAccumulator instanceof Registerable) {
+                ((Registerable) gradientsAccumulator).registerConsumers(dataSets.length);
+            }
 
             /*
              now dataSet should be dispatched to next free workers, until all workers are busy. And then we should block till all finished.
             */
-            int pos = locker.getAndIncrement();
-            zoo[pos].feedMultiDataSet(dataSet, time2 - time1);
+
+            for (int pos = 0; pos < dataSets.length; pos++) {
+                zoo[pos].feedMultiDataSet(dataSets[pos], time2 - time1);
+            }
+
+            iterationsCounter.incrementAndGet();
 
             /*
-                if all workers are dispatched now, join till all are finished
-            */
-            if (pos + 1 == workers) {
-                iterationsCounter.incrementAndGet();
-
-                /*
-                    if we're using registerable accumulator (i.e. we're on spark or cuda with gradients sharing),
-                    update it & notify about number of threads in this training round then
-                  */
-                if (gradientsAccumulator != null && gradientsAccumulator instanceof Registerable) {
-                    ((Registerable) gradientsAccumulator).registerConsumers(workers);
-                }
-
-                if (zoo[0].averagingRequired()) {
-                    for (int cnt = 0; cnt < workers && cnt < locker.get(); cnt++) {
-                        try {
-                            zoo[cnt].waitTillRunning();
-                        } catch (Exception e) {
-                            throw new RuntimeException(e);
-                        }
-                    }
-
-                    Nd4j.getMemoryManager().invokeGcOccasionally();
-
-                    /*
-                        average model, and propagate it to whole
-                    */
-                    if (iterationsCounter.get() % averagingFrequency == 0 && pos + 1 == workers
-                                    && zoo[0].averagingRequired()) {
-                        // averaging model
-                        double score = getScore(locker);
-
-                        // averaging updaters state
-                        averageUpdatersState(locker, score);
-                    }
-                }
-
-                locker.set(0);
+             * if all workers are dispatched now, join till all are finished
+             */
+            for (int pos = 0; pos < dataSets.length; pos++) {
+                zoo[pos].waitTillRunning();
             }
+
+            //Nd4j.getMemoryManager().invokeGcOccasionally();
+
+            // optional averaging
+            if (zoo[0].averagingRequired() && iterationsCounter.get() % averagingFrequency == 0 ) {
+                /*
+                 * average model, and propagate it to all workers
+                 */
+
+                double score = getScore(locker);
+
+                // averaging updaters state
+                averageUpdatersState(locker, score);
+            }
+
+            locker.set(0);
 
             time1 = System.currentTimeMillis();
         }
 
-        // launch last update
-        if (locker.get() != 0 && gradientsAccumulator != null && gradientsAccumulator instanceof Registerable) {
-            ((Registerable) gradientsAccumulator).registerConsumers(locker.get());
-        }
-
-
         if (debug)
             log.info("Stopping everyone...");
-
-        // ensure all threads stopped processing
-        for (int cnt = 0; cnt < workers; cnt++) {
-            try {
-                zoo[cnt].waitTillRunning();
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
-        }
 
         if (debug)
             log.info("Shutting down iterator...");
@@ -510,9 +497,7 @@ public class ParallelWrapper implements AutoCloseable {
         stopFit.set(false);
         createZooIfNeccessary(false);
 
-
-
-        if (source.resetSupported())
+        if (!source.hasNext() && source.resetSupported())
             source.reset();
 
         DataSetIterator iterator = source;
@@ -533,12 +518,15 @@ public class ParallelWrapper implements AutoCloseable {
         }
 
 
-        List<Long> nanos = new ArrayList<>();
-        AtomicInteger locker = new AtomicInteger(0);
-        long time1 = System.currentTimeMillis();
+        val nanos = new ArrayList<Long>();
+        val locker = new AtomicInteger(0);
+        var time1 = System.currentTimeMillis();
         log.info("Starting ParallelWrapper training round...");
         long intcnt = 0;
-        while (iterator.hasNext() && !stopFit.get()) {
+
+        val blockWrapper = new DummyBlockDataSetIterator(iterator);
+
+        while (blockWrapper.hasAnything() && !stopFit.get()) {
             if (modelParamsSupplier != null) {
                 val params = modelParamsSupplier.get();
                 if (params != null) {
@@ -563,84 +551,66 @@ public class ParallelWrapper implements AutoCloseable {
                 }
             }
 
-            //while (intcnt < 1000) {
             intcnt++;
-            DataSet dataSet = iterator.next();
-            long time2 = System.currentTimeMillis();
-            long lastEtlTime = time2 - time1;
-            //nanos.add((time2 - time1));
+            val dataSets = blockWrapper.next(workers);
+            var time2 = System.currentTimeMillis();
+            var lastEtlTime = time2 - time1;
 
-            if (dataSet == null)
+            if (dataSets == null)
                 throw new ND4JIllegalStateException("You can't have NULL as DataSet");
-
-            /*
-             now dataSet should be dispatched to next free workers, until all workers are busy. And then we should block till all finished.
-            */
-            int pos = locker.getAndIncrement();
-
-            if (debug)
-                log.info("Feeding dataset {} to worker {}", intcnt, pos);
 
             if (zoo == null)
                 throw new IllegalStateException(
                                 "ParallelWrapper.shutdown() has been called too early and will fail from this point forward.");
 
-            zoo[pos].feedDataSet(dataSet, lastEtlTime);
-
+            locker.set(dataSets.length);
             /*
-                if all workers are dispatched now, join till all are finished
-            */
-            if (pos + 1 == workers) {
-                iterationsCounter.incrementAndGet();
+             * if we're using registerable accumulator (i.e. we're on spark or cuda with gradients sharing),
+             * update it & notify about number of threads in this training round then
+             */
+            if (gradientsAccumulator != null && gradientsAccumulator instanceof Registerable) {
+                ((Registerable) gradientsAccumulator).registerConsumers(dataSets.length);
+            }
 
-                /*
-                    if we're using registerable accumulator (i.e. we're on spark or cuda with gradients sharing),
-                    update it & notify about number of threads in this training round then
-                  */
-                if (gradientsAccumulator != null && gradientsAccumulator instanceof Registerable) {
-                    ((Registerable) gradientsAccumulator).registerConsumers(workers);
+
+            // feeding datasets
+            for (int pos = 0; pos < dataSets.length; pos++) {
+                if (debug)
+                    log.info("Feeding dataset {} to worker {}", intcnt, pos);
+
+                zoo[pos].feedDataSet(dataSets[pos], lastEtlTime);
+            }
+
+            iterationsCounter.incrementAndGet();
+
+
+            // waiting till all threads are done
+            for (int pos = 0; pos < dataSets.length; pos++) {
+                try {
+                    zoo[pos].waitTillRunning();
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
                 }
+            }
 
-                if (zoo[0].averagingRequired()) {
-                    for (int cnt = 0; cnt < workers && cnt < locker.get(); cnt++) {
-                        try {
-                            zoo[cnt].waitTillRunning();
-                        } catch (Exception e) {
-                            throw new RuntimeException(e);
-                        }
-                    }
 
-                    Nd4j.getMemoryManager().invokeGcOccasionally();
+            // optional averaging
+            if (iterationsCounter.get() % averagingFrequency == 0 && zoo[0].averagingRequired() ) {
+                long timeA1 = System.currentTimeMillis();
 
-                    /*
-                        average model, and propagate it to whole
-                    */
-                    if (iterationsCounter.get() % averagingFrequency == 0 && pos + 1 == workers
-                                    && zoo[0].averagingRequired()) {
-                        long timeA1 = System.currentTimeMillis();
+                // model averaging happens within
+                double score = getScore(locker);
 
-                        // model averaging happens within
-                        double score = getScore(locker);
+                // updaters averging happens within (if any)
+                averageUpdatersState(locker, score);
 
-                        // updaters averging happens within (if any)
-                        averageUpdatersState(locker, score);
-
-                        long timeA2 = System.currentTimeMillis();
-                        if (reportScore)
-                            log.info("Averaging time: {} ms", timeA2 - timeA1);
-                    }
-
-                }
-                locker.set(0);
+                long timeA2 = System.currentTimeMillis();
+                if (reportScore)
+                    log.info("Averaging time: {} ms", timeA2 - timeA1);
             }
 
             time1 = System.currentTimeMillis();
-        }
-
-        // launch last update
-        if (locker.get() != 0 && gradientsAccumulator != null && gradientsAccumulator instanceof Registerable) {
-            //log.info("Finalizing process: {}", locker.get());
-            ((Registerable) gradientsAccumulator).registerConsumers(locker.get());
+            locker.set(0);
         }
 
         if (debug)
@@ -660,18 +630,6 @@ public class ParallelWrapper implements AutoCloseable {
 
         if (prefetchSize > 0 && source.asyncSupported())
             ((AsyncDataSetIterator) iterator).shutdown();
-
-        // TODO: get rid of this code, 0 model is not replicated anyway
-        // now we transfer models back from workers
-        /*
-        List<Model> models = new ArrayList<>();
-        for (int i = 0; i < zoo.length; i++) {
-            models.add(zoo[0].getModel());
-        }
-        
-        // actual transfer code depends on trainer
-        trainerContext.finalizeTraining(model, models.toArray(new Model[0]));
-        */
 
         try {
             close();
@@ -727,6 +685,8 @@ public class ParallelWrapper implements AutoCloseable {
         protected WorkspaceMode workspaceMode = WorkspaceMode.ENABLED;
         protected Supplier<INDArray> modelParamsSupplier;
         protected Supplier<INDArray> updaterParamsSupplier;
+        protected ThresholdAlgorithm thresholdAlgorithm;
+        protected ResidualPostProcessor residualPostProcessor;
 
         protected GradientsAccumulator accumulator;
 
@@ -865,7 +825,7 @@ public class ParallelWrapper implements AutoCloseable {
         /**
          *  This method allows you to specify training mode for this instance of PW.<br>
          *  1) AVERAGING - stands for parameters averaging. Each X epochs weights and updaters state will be averaged across all models<br>
-         *  2) SHARED_GRADIENTS - stands for gradients sharing - more details available here: <a href="https://deeplearning4j.org/distributed">https://deeplearning4j.org/distributed</a><br>
+         *  2) SHARED_GRADIENTS - stands for gradients sharing - more details available here: <a href="https://deeplearning4j.org/docs/latest/deeplearning4j-scaleout-intro">https://deeplearning4j.org/docs/latest/deeplearning4j-scaleout-intro</a><br>
          *  3) CUSTOM - this method allows you to specify custom gradients accumulator, this giving you better control of configuration params for training.<br>
          *
          * @param mode
@@ -902,6 +862,26 @@ public class ParallelWrapper implements AutoCloseable {
         }
 
         /**
+         * Set the threshold algorithm. Not used for single machine training (only for PW used in a distributed setting),
+         * and should not be set by users in most cases.
+         * @param thresholdAlgorithm Threshold algorithm to use
+         */
+        public Builder thresholdAlgorithm(ThresholdAlgorithm thresholdAlgorithm){
+            this.thresholdAlgorithm = thresholdAlgorithm;
+            return this;
+        }
+
+        /**
+         * Set the residual post processor algorithm. Not used for single machine training (only for PW used in a
+         * distributed setting), and should not be set by users in most cases.
+         * @param residualPostProcessor Residual post processor to use
+         */
+        public Builder residualPostProcessor(ResidualPostProcessor residualPostProcessor){
+            this.residualPostProcessor = residualPostProcessor;
+            return this;
+        }
+
+        /**
          * This method returns ParallelWrapper instance
          *
          * @return
@@ -926,10 +906,11 @@ public class ParallelWrapper implements AutoCloseable {
                 }
                     break;
                 case SHARED_GRADIENTS: {
+                    Preconditions.checkState(thresholdAlgorithm != null, "Cannot use SHARED_GRADIENTS training mode without setting a threshold algorithm");
                     this.trainerContext = new SymmetricTrainerContext();
                     if (this.accumulator == null) {
                         log.info("Creating new GradientsAccumulator instance with threshold of [5e-4");
-                        this.accumulator = new EncodedGradientsAccumulator(workers, 5e-4);
+                        this.accumulator = new EncodedGradientsAccumulator(workers, thresholdAlgorithm, residualPostProcessor,  false);
                     }
                 }
                     break;

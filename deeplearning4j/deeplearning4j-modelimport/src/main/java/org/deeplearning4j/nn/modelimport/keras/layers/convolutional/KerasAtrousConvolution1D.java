@@ -91,16 +91,14 @@ public class KerasAtrousConvolution1D extends KerasConvolution {
         Convolution1DLayer.Builder builder = new Convolution1DLayer.Builder().name(this.layerName)
                 .nOut(getNOutFromConfig(layerConfig, conf)).dropOut(this.dropout)
                 .activation(getIActivationFromConfig(layerConfig, conf))
-                .weightInit(weightInit)
-                .dilation(getDilationRate(layerConfig, 1, conf, true))
+                .weightInit(weightInit.getWeightInitFunction(distribution))
+                .dilation(getDilationRate(layerConfig, 1, conf, true)[0])
                 .l1(this.weightL1Regularization).l2(this.weightL2Regularization)
                 .convolutionMode(getConvolutionModeFromConfig(layerConfig, conf))
                 .kernelSize(getKernelSizeFromConfig(layerConfig, 1, conf, kerasMajorVersion)[0])
                 .hasBias(hasBias)
                 .stride(getStrideFromConfig(layerConfig, 1, conf)[0]);
         int[] padding = getPaddingFromBorderModeConfig(layerConfig, 1, conf, kerasMajorVersion);
-        if (distribution != null)
-            builder.dist(distribution);
         if (hasBias)
             builder.biasInit(0.0);
         if (padding != null)

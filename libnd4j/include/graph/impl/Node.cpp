@@ -20,9 +20,11 @@
 
 #include <graph/Node.h>
 #include <ops/declarable/OpRegistrator.h>
-#include <ops/declarable/LegacyTransformOp.h>
+#include <ops/declarable/LegacyTransformSameOp.h>
+#include <ops/declarable/LegacyTransformFloatOp.h>
 #include <ops/declarable/LegacyScalarOp.h>
-#include <ops/declarable/LegacyReduceOp.h>
+#include <ops/declarable/LegacyReduceSameOp.h>
+#include <ops/declarable/LegacyReduceFloatOp.h>
 #include <ops/declarable/LegacyIndexReduceOp.h>
 #include <ops/declarable/LegacyStatsOp.h>
 #include <ops/declarable/LegacyBroadcastOp.h>
@@ -30,64 +32,59 @@
 #include <ops/declarable/LegacyPairwiseTransformOp.h>
 #include <ops/declarable/LegacyRandomOp.h>
 #include <ops/declarable/LegacyOp.h>
+#include <ops/declarable/LegacyReduceLongOp.h>
+#include <ops/declarable/LegacyReduceBoolOp.h>
+#include <ops/declarable/LegacyBroadcastBoolOp.h>
+#include <ops/declarable/LegacyScalarBoolOp.h>
+#include <ops/declarable/LegacyPairwiseTransformBoolOp.h>
+#include <ops/declarable/LegacyTransformStrictOp.h>
+#include <ops/declarable/LegacyTransformBoolOp.h>
+#include <graph/FlatUtils.h>
 
 namespace nd4j {
     namespace graph {
-
-        template <typename T>
-        void nd4j::graph::Node<T>::setOuterTime(Nd4jLong time){
+        void nd4j::graph::Node::setOuterTime(Nd4jLong time){
 //            if (hasBlockAttached())
 //                _block->setOuterTime(time);
         }
 
-        template <typename T>
-        void nd4j::graph::Node<T>::setInnerTime(Nd4jLong time){
+        void nd4j::graph::Node::setInnerTime(Nd4jLong time){
 //            if (hasBlockAttached())
 //                _block->setInnerTime(time);
         }
 
-        template <typename T>
-        void nd4j::graph::Node<T>::setGraph(nd4j::graph::Graph<T>* graph) {
+        void nd4j::graph::Node::setGraph(nd4j::graph::Graph* graph) {
             _graph = graph;
         }
 
-        template <typename T>
-        nd4j::graph::Graph<T>* nd4j::graph::Node<T>::getGraph() {
+        nd4j::graph::Graph* nd4j::graph::Node::getGraph() {
             return _graph;
         }
 
-        template <typename T>
-        bool nd4j::graph::Node<T>::hasGraphEmbedded() {
+        bool nd4j::graph::Node::hasGraphEmbedded() {
             return _graph != nullptr;
         }
 
-        template <typename T>
-        void nd4j::graph::Node<T>::markInplace(bool reallyInplace) {
+        void nd4j::graph::Node::markInplace(bool reallyInplace) {
             _isInplace = reallyInplace;
             if (_protoContext != nullptr) {
                 _protoContext->markInplace(reallyInplace);
             }
         }
 
-        template <typename T>
-        OpClass nd4j::graph::Node<T>::getOpClass() {
+        OpClass nd4j::graph::Node::getOpClass() {
             return _opClass;
         }
 
-        template <typename T>
-        bool nd4j::graph::Node<T>::hasBlockAttached() {
+        bool nd4j::graph::Node::hasBlockAttached() {
             return _protoContext != nullptr;
         }
 
-
-
-        template <typename T>
-        bool nd4j::graph::Node<T>::isInplace() {
+        bool nd4j::graph::Node::isInplace() {
             return _isInplace;
         }
 
-        template <typename T>
-        bool nd4j::graph::Node<T>::isDivergencePoint() {
+        bool nd4j::graph::Node::isDivergencePoint() {
             if (hasCustomOp()) {
                 return _customOp->getOpDescriptor()->isDivergent();
             } else if (opType() == OpType_LOGIC && opNum() == 30)
@@ -96,30 +93,25 @@ namespace nd4j {
                 return false;
         }
 
-        template <typename T>
-        void nd4j::graph::Node<T>::setActive(bool reallyActive) {
+        void nd4j::graph::Node::setActive(bool reallyActive) {
             _active = reallyActive;
         }
 
-        template <typename T>
-        bool nd4j::graph::Node<T>::isActive() {
+        bool nd4j::graph::Node::isActive() {
             return _active;
         }
 
-        template<typename T>
-        Nd4jLong Node<T>::getFrameId() {
+        Nd4jLong Node::getFrameId() {
             return _frameId;
         }
 
-        template<typename T>
-        void Node<T>::setFrameId(Nd4jLong frameId) {
+        void Node::setFrameId(Nd4jLong frameId) {
             _frameId = frameId;
         }
 
-        template <typename T>
-        ContextPrototype<T> * nd4j::graph::Node<T>::getContextPrototype() {
+        ContextPrototype * nd4j::graph::Node::getContextPrototype() {
             if (_protoContext == nullptr)
-                _protoContext = new ContextPrototype<T>(this->id());
+                _protoContext = new ContextPrototype(this->getCustomOp() != nullptr ? this->getCustomOp()->getOpDescriptor() : nullptr, this->id());
             if (_protoContext->inputs()->empty()) {
                 for (int e = 0; e < this->input()->size(); e++) {
                     _protoContext->inputs()->emplace_back(this->input()->at(e));
@@ -128,26 +120,22 @@ namespace nd4j {
             return _protoContext;
         }
 
-        template <typename T>
-        void nd4j::graph::Node<T>::setContextPrototype(ContextPrototype<T> *block) {
+        void nd4j::graph::Node::setContextPrototype(ContextPrototype *block) {
             if (_protoContext != nullptr)
                 throw std::runtime_error("Block already exists");
 
             _protoContext = block;
         }
 
-        template <typename T>
-        void nd4j::graph::Node<T>::setId(int id) {
+        void nd4j::graph::Node::setId(int id) {
             _id = id;
         }
 
-        template <typename T>
-        nd4j::ops::DeclarableOp<T>* nd4j::graph::Node<T>::getCustomOp() {
+        nd4j::ops::DeclarableOp* nd4j::graph::Node::getCustomOp() {
             return _customOp;
         }
 
-        template <typename T>
-        void nd4j::graph::Node<T>::setCustomOp(nd4j::ops::DeclarableOp<T> *customOp) {
+        void nd4j::graph::Node::setCustomOp(nd4j::ops::DeclarableOp *customOp) {
             _customOp = customOp;
 
             // divergent ops (Switch etc) are always inplace, they don't allocate anything
@@ -155,49 +143,40 @@ namespace nd4j {
                 _isInplace = true;
         }
 
-        template <typename T>
-        bool nd4j::graph::Node<T>::hasCustomOp() {
+        bool nd4j::graph::Node::hasCustomOp() {
             return _customOp != nullptr;
         }
 
-        template <typename T>
-        std::string * nd4j::graph::Node<T>::name() {
+        std::string * nd4j::graph::Node::name() {
             return this->getName();
         }
 
-        template <typename T>
-        std::string * nd4j::graph::Node<T>::getName() {
+        std::string * nd4j::graph::Node::getName() {
             return &_name;
         }
 
-        template <typename T>
-        void nd4j::graph::Node<T>::setName(const std::string& name) {
+        void nd4j::graph::Node::setName(const std::string& name) {
             _name = name.c_str();
         }
 
-        template <typename T>
-        void nd4j::graph::Node<T>::setName(std::string *name) {
+        void nd4j::graph::Node::setName(std::string *name) {
             _name = *name;
         }
 
-        template <typename T>
-        T nd4j::graph::Node<T>::scalar() {
-            return (T) _scalar;
+        double nd4j::graph::Node::scalar() {
+            return  _scalar.e<double>(0);
         };
 
-        template <typename T>
-        void nd4j::graph::Node<T>::pickInput(std::pair<int,int>& pair) {
+        void nd4j::graph::Node::pickInput(std::pair<int,int>& pair) {
             _input.push_back(pair);
         }
 
-        template <typename T>
-        void nd4j::graph::Node<T>::pickInput(int inputId, int outputId) {
+        void nd4j::graph::Node::pickInput(int inputId, int outputId) {
             std::pair<int,int> p(inputId,outputId);
             pickInput(p);
         }
 
-        template <typename T>
-        void nd4j::graph::Node<T>::pickInput(int inputId) {
+        void nd4j::graph::Node::pickInput(int inputId) {
             pickInput(inputId, 0);
 
             if (inputId < 0)
@@ -206,29 +185,25 @@ namespace nd4j {
                 _hasInternalInputs = true;
         }
 
-        template <typename T>
-        void nd4j::graph::Node<T>::pickExternalOutput(int outputId) {
+        void nd4j::graph::Node::pickExternalOutput(int outputId) {
             std::pair<int, int> pair(outputId, 0);
             _output.push_back(pair);
 
             _hasExternalOutputs = true;
         }
 
-        template <typename T>
-        void nd4j::graph::Node<T>::pickOutputOnce(int outputId) {
+        void nd4j::graph::Node::pickOutputOnce(int outputId) {
             std::pair<int, int> pair(outputId, 0);
             if (std::find(_output.begin(), _output.end(), pair) == _output.end())
                 pickOutput(outputId);
         }
 
-        template <typename T>
-        void nd4j::graph::Node<T>::pickOutput(int nodeId, int outputId) {
+        void nd4j::graph::Node::pickOutput(int nodeId, int outputId) {
             std::pair<int, int> pair(nodeId, outputId);
             _output.emplace_back(pair);
         }
 
-        template <typename T>
-        void nd4j::graph::Node<T>::pickOutput(int outputId) {
+        void nd4j::graph::Node::pickOutput(int outputId) {
             std::pair<int, int> pair(outputId, 0);
             _output.emplace_back(pair);
 
@@ -238,125 +213,160 @@ namespace nd4j {
                 _hasInternalOutputs = true;
         }
 
-        template <typename T>
-        int * nd4j::graph::Node<T>::getDimensionsPtr() {
+        int * nd4j::graph::Node::getDimensionsPtr() {
             return _dim;
         }
 
-        template <typename T>
-        std::vector<int> * nd4j::graph::Node<T>::getDimensions() {
+        std::vector<int> * nd4j::graph::Node::getDimensions() {
             return &_dimensions;
         }
 
-        template <typename T>
-        int nd4j::graph::Node<T>::getLayer() {
+        int nd4j::graph::Node::getLayer() {
             return _layer;
         }
 
-        template <typename T>
-        void nd4j::graph::Node<T>::setLayer(int layer) {
+        void nd4j::graph::Node::setLayer(int layer) {
             _layer = layer;
         }
 
-        template <typename T>
-        bool nd4j::graph::Node<T>::hasExternalOutputs() {
+        bool nd4j::graph::Node::hasExternalOutputs() {
             return _hasExternalOutputs;
         }
 
-        template <typename T>
-        bool nd4j::graph::Node<T>::hasExternalInputs() {
+        bool nd4j::graph::Node::hasExternalInputs() {
             return _hasExternalInputs;
         }
 
-        template <typename T>
-        bool nd4j::graph::Node<T>::hasInternalOutputs() {
+        bool nd4j::graph::Node::hasInternalOutputs() {
             return _hasInternalOutputs;
         }
 
-        template <typename T>
-        bool nd4j::graph::Node<T>::hasInternalInputs() {
+        bool nd4j::graph::Node::hasInternalInputs() {
             return _hasInternalInputs;
         }
 
-        template <typename T>
-        bool nd4j::graph::Node<T>::isMultiInput() {
+        bool nd4j::graph::Node::isMultiInput() {
             return _input.size() > 1;
         }
 
-        template <typename T>
-        bool nd4j::graph::Node<T>::isMultiOutput() {
+        bool nd4j::graph::Node::isMultiOutput() {
             return _output.size() > 1;
         }
 
-        template <typename T>
-        T * nd4j::graph::Node<T>::extraParams() {
+        double * nd4j::graph::Node::extraParams() {
             return _extraParams;
         }
 
-        template <typename T>
-        int Node<T>::totalReferences() {
+        int Node::totalReferences() {
             return _referencedBy.size();
         }
 
-        template <typename T>
-        void Node<T>::addReference(int nodeId) {
+        void Node::addReference(int nodeId) {
             _referencedBy.emplace_back(nodeId);
         }
 
-        template <typename T>
-        nd4j::graph::OpType nd4j::graph::Node<T>::opType() {
+        nd4j::graph::OpType nd4j::graph::Node::opType() {
             return _opType;
         }
 
-        template <typename T>
-        int nd4j::graph::Node<T>::id() {
+        int nd4j::graph::Node::id() {
             return _id;
         }
 
-        template <typename T>
-        Nd4jLong nd4j::graph::Node<T>::opNum() {
+        Nd4jLong nd4j::graph::Node::opNum() {
             return _opNum;
         }
 
-        template <typename T>
-        std::vector<std::pair<int,int>> *nd4j::graph::Node<T>::input() {
+        std::vector<std::pair<int,int>> *nd4j::graph::Node::input() {
             return &_input;
         }
 
-        template <typename T>
-        std::vector<std::pair<int, int>> *nd4j::graph::Node<T>::output() {
+        std::vector<std::pair<int, int>> *nd4j::graph::Node::output() {
             return &_output;
         }
 
-        template <typename T>
-        bool Node<T>::isScoped() {
+        bool Node::isScoped() {
             return _scope_id != 0;
         }
 
-        template <typename T>
-        void Node<T>::setScopeInfo(int id, const char* name) {
+        void Node::setScopeInfo(int id, const char* name) {
             _scope_id = id;
 
             if (name != nullptr)
                 _scope_name = name;
         }
 
-        template <typename T>
-        int Node<T>::scopeId() {
+        int Node::scopeId() {
             return _scope_id;
         }
 
-        template <typename T>
-        std::string* Node<T>::scopeName() {
+        std::string* Node::scopeName() {
             return &_scope_name;
         }
 
         template <typename T>
-        nd4j::graph::Node<T>::Node(OpType opType, int opNum, int id, std::initializer_list<int> input, std::initializer_list<int> output, std::initializer_list<int> dimensions, float scalar, std::initializer_list<T> tArgs, std::initializer_list<int> iArgs) {
+        Node* Node::asT() {
+            auto node = this->clone();
+            node->_dataType = DataTypeUtils::fromT<T>();
+            return node;
+        }
+        BUILD_SINGLE_TEMPLATE(template Node* Node::asT, (), LIBND4J_TYPES);
+
+        nd4j::graph::Node::Node(nd4j::ops::DeclarableOp *customOp, int id, std::initializer_list<int> input, std::initializer_list<int> output,  std::initializer_list<int> dimensions, float scalar, std::initializer_list<double> tArgs, std::initializer_list<int> iArgs) {
+            this->_opType = OpType_CUSTOM;
+            this->_id = id;
+            this->_opNum = customOp->getOpHash();
+            this->_extraParams = nullptr;
+            this->_dataType = nd4j::DataType::FLOAT32; // float as default
+            this->_dim = nullptr;
+            this->_customOp = customOp;
+
+            _hasExternalInputs = false;
+            _hasExternalOutputs = false;
+            _hasInternalInputs = false;
+            _hasInternalOutputs = false;
+
+            _scalar = scalar;
+
+            for (auto i: input)
+                pickInput(i);
+
+            for (auto o: output)
+                pickOutput(o);
+
+            if (dimensions.size() > 0) {
+                _dim = new int[dimensions.size()];
+                int cnt = 0;
+                for (auto d: dimensions) {
+                    _dimensions.push_back(d);
+                    _dim[cnt++] = d;
+                }
+            }
+
+            auto block = new ContextPrototype(this->getCustomOp()->getOpDescriptor(), this->id(), false);
+
+            for (auto v: dimensions)
+                block->getAxis()->emplace_back(v);
+
+            for (auto v: iArgs)
+                block->getIArguments()->emplace_back(v);
+
+            for (auto v: tArgs)
+                block->getTArguments()->emplace_back(v);
+
+            this->setContextPrototype(block);
+        }
+
+        void nd4j::graph::Node::setOpType(OpType opType) {
+            this->_opType = opType;
+        }
+
+        nd4j::graph::Node::Node(OpType opType, int opNum, int id, std::initializer_list<int> input, std::initializer_list<int> output, std::initializer_list<int> dimensions, float scalar, std::initializer_list<double> tArgs, std::initializer_list<int> iArgs) {
             this->_opType = opType;
             this->_id = id;
             this->_opNum = opNum;
             this->_extraParams = nullptr;
+            this->_dataType = nd4j::DataType::FLOAT32; // float as default
             this->_dim = nullptr;
 
             _hasExternalInputs = false;
@@ -382,33 +392,40 @@ namespace nd4j {
             }
 
             // these ops allow in-place execution by design
-            if (opType == OpType_TRANSFORM || opType == OpType_SCALAR || opType == OpType_BROADCAST) {
+            if (opType == OpType_TRANSFORM_SAME || opType == OpType_TRANSFORM_FLOAT || opType == OpType_TRANSFORM_STRICT || opType == OpType_TRANSFORM_BOOL || opType == OpType_SCALAR || opType == OpType_BROADCAST) {
                 if (_output.size() <= 1) {
                     _isInplace = true;
                 }
                 _opClass = OpClass_TRANSFORM;
-            } else if (opType == OpType_ACCUMULATION || opType == OpType_SUMMARYSTATS) {
+            } else if (opType == OpType_REDUCE_SAME || opType == OpType_REDUCE_FLOAT || opType == OpType_REDUCE_BOOL || opType == OpType_REDUCE_LONG || opType == OpType_SUMMARYSTATS) {
                 _opClass = OpClass_REDUCTION;
             }
 
 
             if (opType == OpType_BROADCAST ||
-                    opType == OpType_INDEX_ACCUMULATION ||
+                    opType == OpType_BROADCAST_BOOL ||
+                    opType == OpType_INDEX_REDUCE ||
                     opType == OpType_SUMMARYSTATS ||
-                    opType == OpType_ACCUMULATION ||
-                    opType == OpType_ACCUMULATION3 ||
-                    opType == OpType_TRANSFORM ||
+                    opType == OpType_REDUCE_BOOL ||
+                    opType == OpType_REDUCE_SAME ||
+                    opType == OpType_REDUCE_FLOAT ||
+                    opType == OpType_REDUCE_3 ||
+                    opType == OpType_TRANSFORM_STRICT ||
+                    opType == OpType_TRANSFORM_SAME ||
+                    opType == OpType_TRANSFORM_FLOAT ||
+                    opType == OpType_TRANSFORM_BOOL ||
                     opType == OpType_RANDOM ||
                     opType == OpType_PAIRWISE ||
+                    opType == OpType_PAIRWISE_BOOL ||
+                    opType == OpType_SCALAR_BOOL ||
                     opType == OpType_SCALAR) {
 
                 this->_isDeductable = true;
 
-                auto block = new ContextPrototype<T>(this->id(), false);
+                auto block = new ContextPrototype(nullptr, this->id(), false);
 
-                // there's no other IArgs in legacy options, actually
                 for (auto v: dimensions)
-                    block->getIArguments()->emplace_back(v);
+                    block->getAxis()->emplace_back(v);
 
                 for (auto v: iArgs)
                     block->getIArguments()->emplace_back(v);
@@ -417,41 +434,49 @@ namespace nd4j {
                     block->getTArguments()->emplace_back(v);
 
                 this->setContextPrototype(block);
-                this->setCustomOp(Node<T>::buildOpByType(opType, (int) input.size(), (int) block->getIArguments()->size(), (int) block->getTArguments()->size(), opNum, scalar));
+                this->setCustomOp(Node::buildOpByType(opType, (int) input.size(), (int) block->getIArguments()->size(), (int) block->getTArguments()->size(), opNum, &_scalar));
+                block->setOpDescriptor(this->getCustomOp()->getOpDescriptor());
             } else if (opType == OpType_CUSTOM) {
-                auto block = new ContextPrototype<T>(this->id(), false);
+                if (this->getCustomOp()) {
+                    auto block = new ContextPrototype(this->getCustomOp()->getOpDescriptor(), this->id(), false);
 
-                for (auto v: iArgs)
-                    block->getIArguments()->emplace_back(v);
+                    for (auto v: dimensions)
+                        block->getAxis()->emplace_back(v);
 
-                for (auto v: tArgs)
-                    block->getTArguments()->emplace_back(v);
+                    for (auto v: iArgs)
+                        block->getIArguments()->emplace_back(v);
 
-                this->setContextPrototype(block);
+                    for (auto v: tArgs)
+                        block->getTArguments()->emplace_back(v);
+
+                    this->setContextPrototype(block);
+                } else throw std::runtime_error("wrong custom operation given");
             }
         };
 
-        template <typename T>
-        nd4j::graph::Node<T>::Node(const nd4j::graph::FlatNode *node) {
+        nd4j::graph::Node::Node(const nd4j::graph::FlatNode *node) {
             _hasExternalInputs = false;
             _hasExternalOutputs = false;
             _hasInternalInputs = false;
             _hasInternalOutputs = false;
             _extraParams = nullptr;
             _dim = nullptr;
-
+            _dataType = nd4j::DataType::FLOAT32; // float as default
             if (node->scope_id() != 0)
                 this->_scope_id = node->scope_id();
 
             if (node->scope_name() != nullptr && node->scope_name()->size() > 0)
                 this->_scope_name = node->scope_name()->str();
 
-
-            _scalar = node->scalar();
+            if (node->scalar() != nullptr) {
+                auto scalar = nd4j::graph::FlatUtils::fromFlatArray(node->scalar());
+                _scalar = *scalar;
+                delete scalar;
+            }
 
             if (node != nullptr) {
                 this->_id = node->id();
-                this->_dataType = node->dataType();
+                //this->_dataType = DataTypeUtils::fromFlatDataType(node->dataType());
                 this->_opNum = node->opNum();
                 this->_opType = node->opType();
 
@@ -470,9 +495,9 @@ namespace nd4j {
                 } else {
                     if (this->opType() != OpType_LOGIC) {
                         if (this->_name.size() > 0) {
-                            nd4j_printf("Node [%i:<%s>] do not have any inputs defined\n", this->_id, this->_name.c_str());
+                            nd4j_debug("Node [%i:<%s>] has no inputs defined\n", this->_id, this->_name.c_str());
                         } else {
-                            nd4j_printf("Node [%i:<noname>] do not have any inputs defined\n", this->_id);
+                            nd4j_debug("Node [%i:<noname>] has no inputs defined\n", this->_id);
                         }
                     }
                 }
@@ -490,16 +515,16 @@ namespace nd4j {
 
 
                 if (node->extraParams() != nullptr && node->extraParams()->size() > 0) {
-                    _extraParams = new T[node->extraParams()->size()];
+                    _extraParams = new double[node->extraParams()->size()];
                     for (int e = 0; e < (int) node->extraParams()->size(); e++) {
-                        _extraParams[e] = static_cast<T>(node->extraParams()->Get(e));
+                        _extraParams[e] = static_cast<double>(node->extraParams()->Get(e));
                     }
                 }
 
                 if (node->dimensions() != nullptr && node->dimensions()->size() > 0) {
                     _dim = new int[node->dimensions()->size()];
                     for (int e = 0; e < (int) node->dimensions()->size(); e++) {
-                        _dimensions.push_back(node->dimensions()->Get(e));
+                        _dimensions.emplace_back(node->dimensions()->Get(e));
                         _dim[e] = node->dimensions()->Get(e);
                     }
                 }
@@ -515,7 +540,24 @@ namespace nd4j {
 
 
                 // these ops allow in-place execution by design
-                if (this->_opType == OpType_TRANSFORM || this->_opType == OpType_SCALAR || this->_opType == OpType_BROADCAST || this->_opType == OpType_RANDOM || this->_opType == OpType_ACCUMULATION || this->_opType == OpType_ACCUMULATION3 || this->_opType == OpType_PAIRWISE || this->_opType == OpType_SUMMARYSTATS || this->_opType == OpType_INDEX_ACCUMULATION) {
+                if (_opType == OpType_BROADCAST ||
+                    _opType == OpType_BROADCAST_BOOL ||
+                        _opType == OpType_INDEX_REDUCE ||
+                        _opType == OpType_SUMMARYSTATS ||
+                        _opType == OpType_REDUCE_BOOL ||
+                        _opType == OpType_REDUCE_SAME ||
+                        _opType == OpType_REDUCE_FLOAT ||
+                        _opType == OpType_REDUCE_3 ||
+                        _opType == OpType_TRANSFORM_STRICT ||
+                        _opType == OpType_TRANSFORM_SAME ||
+                        _opType == OpType_TRANSFORM_FLOAT ||
+                        _opType == OpType_TRANSFORM_BOOL ||
+                        _opType == OpType_RANDOM ||
+                        _opType == OpType_PAIRWISE ||
+                        _opType == OpType_PAIRWISE_BOOL ||
+                        _opType == OpType_SCALAR_BOOL ||
+                        _opType == OpType_SCALAR) {
+
                     if (_output.size() <= 1) {
                         _isInplace = true;
                     }
@@ -523,23 +565,34 @@ namespace nd4j {
                     if (node->input() != nullptr && node->input()->size() > 0) {
                         this->_isDeductable = true;
 
-                        auto block = new ContextPrototype<T>(this->id(), false);
+                        auto block = new ContextPrototype(nullptr, this->id(), false);
 
-                        // there's no other IArgs in legacy options, actually
+
                         for (auto v: _dimensions)
-                            block->getIArguments()->emplace_back(v);
+                            block->getAxis()->emplace_back(v);
 
                         if (node->extraParams() != nullptr && node->extraParams()->size() > 0)
                             for (int e = 0; e < (int) node->extraParams()->size(); e++) {
-                                block->getTArguments()->emplace_back(static_cast<T>(node->extraParams()->Get(e)));
+                                block->getTArguments()->emplace_back(static_cast<double>(node->extraParams()->Get(e)));
+                            }
+
+                        if (node->extraBools() != nullptr && node->extraBools()->size() > 0)
+                            for (int e = 0; e < (int) node->extraBools()->size(); e++) {
+                                block->getBArguments()->push_back(node->extraBools()->Get(e));
+                            }
+
+                        if (node->extraInteger() != nullptr && node->extraInteger()->size() > 0)
+                            for (int e = 0; e < (int) node->extraInteger()->size(); e++) {
+                                block->getIArguments()->emplace_back(node->extraInteger()->Get(e));
                             }
 
                         this->setContextPrototype(block);
-                        this->setCustomOp(Node<T>::buildOpByType(_opType, (int) node->input()->size(), (int) block->getIArguments()->size(), (int) block->getTArguments()->size(), (int) _opNum, _scalar));
+                        this->setCustomOp(Node::buildOpByType(_opType, (int) node->input()->size(), (int) block->getIArguments()->size(), (int) block->getTArguments()->size(), (int) _opNum, &_scalar));
+                        block->setOpDescriptor(this->getCustomOp()->getOpDescriptor());
                     } else if (node->inputPaired() != nullptr && node->inputPaired()->size() > 0) {
                         this->_isDeductable = true;
 
-                        auto block = new ContextPrototype<T>(this->id(), false);
+                        auto block = new ContextPrototype(nullptr, this->id(), false);
 
                         for (int e = 0; e < this->input()->size(); e++) {
                             block->inputs()->emplace_back(this->input()->at(e));
@@ -547,26 +600,36 @@ namespace nd4j {
 
                         // there's no other IArgs in legacy options, actually
                         for (auto v: _dimensions)
-                            block->getIArguments()->emplace_back(v);
+                            block->getAxis()->emplace_back(v);
 
                         if (node->extraParams() != nullptr && node->extraParams()->size() > 0)
                             for (int e = 0; e < (int) node->extraParams()->size(); e++) {
-                                block->getTArguments()->emplace_back(static_cast<T>(node->extraParams()->Get(e)));
+                                block->getTArguments()->emplace_back(static_cast<double>(node->extraParams()->Get(e)));
+                            }
+
+                        if (node->extraBools() != nullptr && node->extraBools()->size() > 0)
+                            for (int e = 0; e < (int) node->extraBools()->size(); e++) {
+                                block->getBArguments()->push_back(node->extraBools()->Get(e));
+                            }
+
+                        if (node->extraInteger() != nullptr && node->extraInteger()->size() > 0)
+                            for (int e = 0; e < (int) node->extraInteger()->size(); e++) {
+                                block->getIArguments()->emplace_back(node->extraInteger()->Get(e));
                             }
 
                         this->setContextPrototype(block);
 
-                        this->setCustomOp(Node<T>::buildOpByType(_opType, (int) node->inputPaired()->size(), (int) block->getIArguments()->size(), (int) block->getTArguments()->size(), (int) _opNum, _scalar));
+                        this->setCustomOp(Node::buildOpByType(_opType, (int) node->inputPaired()->size(), (int) block->getIArguments()->size(), (int) block->getTArguments()->size(), (int) _opNum, &_scalar));
+                        block->setOpDescriptor(this->getCustomOp()->getOpDescriptor());
                     }
                 } else if (this->_opType == OpType_CUSTOM) {
-                    if (sizeof(T) == 4) {
-                        auto op = nd4j::ops::OpRegistrator::getInstance()->template getOperationT<T>(this->opNum());
+                        auto op = nd4j::ops::OpRegistrator::getInstance()->getOperation(this->opNum());
                         if (op == nullptr) {
                             nd4j_verbose("Can't find operation: %lld\n", this->opNum());
                             throw std::runtime_error("Can't find requested operation");
                         }
 
-                        auto block = new ContextPrototype<T>(this->id());
+                        auto block = new ContextPrototype(nullptr, this->id());
 
                         for (int e = 0; e < this->input()->size(); e++) {
                             block->inputs()->emplace_back(this->input()->at(e));
@@ -581,30 +644,34 @@ namespace nd4j {
 
                         if (node->extraParams() != nullptr)
                             for (uint32_t e = 0; e < node->extraParams()->size(); e++)
-                                block->getTArguments()->emplace_back(static_cast<T>(node->extraParams()->Get(e)));
+                                block->getTArguments()->emplace_back(static_cast<double>(node->extraParams()->Get(e)));
+
+                        if (node->extraBools() != nullptr && node->extraBools()->size() > 0)
+                            for (int e = 0; e < (int) node->extraBools()->size(); e++) {
+                                block->getBArguments()->push_back(node->extraBools()->Get(e));
+                            }
+
+                        for (auto v: _dimensions)
+                            block->getAxis()->emplace_back(v);
 
                         this->setContextPrototype(block);
-
                         this->setCustomOp(op);
-                    }
+                        block->setOpDescriptor(this->getCustomOp()->getOpDescriptor());
                 }
             } else {
                 // empty dynamic node, tests probably
             }
         }
 
-        template <typename T>
-        DataType Node<T>::dataType() {
+        nd4j::DataType Node::dataType() {
             return _dataType;
         }
 
-        template <typename T>
-        ContextPrototype<T>* Node<T>::protoContext() {
+        ContextPrototype* Node::protoContext() {
             return _protoContext;
         }
 
-        template <typename T>
-        nd4j::graph::Node<T>::~Node() {
+        nd4j::graph::Node::~Node() {
             if (_extraParams != nullptr)
                 delete[] _extraParams;
 
@@ -618,92 +685,90 @@ namespace nd4j {
                 delete _customOp;
         }
 
-        template <typename T>
-        int nd4j::graph::Node<T>::getRewindNode() {
+        int nd4j::graph::Node::getRewindNode() {
             return _rewindNode;
         }
 
-        template <typename T>
-        void nd4j::graph::Node<T>::setRewindNode(int nodeId) {
+        void nd4j::graph::Node::setRewindNode(int nodeId) {
             _rewindNode = nodeId;
         }
 
-        template <typename T>
-        std::pair<int, int>& nd4j::graph::Node<T>::getRewindLayer() {
+        std::pair<int, int>& nd4j::graph::Node::getRewindLayer() {
             return _rewindLayer;
         };
 
-        template <typename T>
-        void nd4j::graph::Node<T>::setRewindLayer(int layerId, int stepId) {
+        void nd4j::graph::Node::setRewindLayer(int layerId, int stepId) {
             _rewindLayer.first = layerId;
             _rewindLayer.second = stepId;
         }
 
-        template <typename T>
-        bool nd4j::graph::Node<T>::equals(Node *other) {
+        bool nd4j::graph::Node::equals(Node *other) {
             if (_opType == other->_opType && _dataType == other->_dataType && _opNum == other->_opNum)
                 return true;
 
             return false;
         }
 
-        template <typename T>
-        nd4j::ops::DeclarableOp<T>* nd4j::graph::Node<T>::buildOpByType(OpType opType, int numInputs,  int numIArgs, int numTArgs, int opNum, T scalar) {
+        nd4j::ops::DeclarableOp* nd4j::graph::Node::buildOpByType(OpType opType, int numInputs,  int numIArgs, int numTArgs, int opNum, NDArray *scalar) {
             switch (opType) {
                 case OpType_PAIRWISE:
-                    return new nd4j::ops::LegacyPairwiseTransformOp<T>(opNum);
-                case OpType_TRANSFORM:
-                    return new nd4j::ops::LegacyTransformOp<T>(opNum);
+                    return new nd4j::ops::LegacyPairwiseTransformOp(opNum);
+                case OpType_PAIRWISE_BOOL:
+                    return new nd4j::ops::LegacyPairwiseTransformBoolOp(opNum);
+                case OpType_TRANSFORM_STRICT:
+                    return new nd4j::ops::LegacyTransformStrictOp(opNum);
+                case OpType_TRANSFORM_SAME:
+                    return new nd4j::ops::LegacyTransformSameOp(opNum);
+                case OpType_TRANSFORM_FLOAT:
+                    return new nd4j::ops::LegacyTransformFloatOp(opNum);
+                case OpType_TRANSFORM_BOOL:
+                    return new nd4j::ops::LegacyTransformBoolOp(opNum);
                 case OpType_SCALAR:
-                    return new nd4j::ops::LegacyScalarOp<T>(opNum, scalar);
-                case OpType_ACCUMULATION3:
-                    return new nd4j::ops::LegacyReduce3Op<T>(opNum);
-                case OpType_ACCUMULATION:
-                    return new nd4j::ops::LegacyReduceOp<T>(opNum);
-                case OpType_INDEX_ACCUMULATION:
-                    return new nd4j::ops::LegacyIndexReduceOp<T>(opNum);
+                    return scalar == nullptr ? new nd4j::ops::LegacyScalarOp(opNum) : new nd4j::ops::LegacyScalarOp(opNum, *scalar);
+                case OpType_SCALAR_BOOL:
+                    return scalar == nullptr ? new nd4j::ops::LegacyScalarBoolOp(opNum) : new nd4j::ops::LegacyScalarBoolOp(opNum, *scalar);
+                case OpType_REDUCE_3:
+                    return new nd4j::ops::LegacyReduce3Op(opNum);
+                case OpType_REDUCE_SAME:
+                    return new nd4j::ops::LegacyReduceSameOp(opNum);
+                case OpType_REDUCE_FLOAT:
+                    return new nd4j::ops::LegacyReduceFloatOp(opNum);
+                case OpType_REDUCE_LONG:
+                    return new nd4j::ops::LegacyReduceLongOp(opNum);
+                case OpType_REDUCE_BOOL:
+                    return new nd4j::ops::LegacyReduceBoolOp(opNum);
+                case OpType_INDEX_REDUCE:
+                    return new nd4j::ops::LegacyIndexReduceOp(opNum);
                 case OpType_SUMMARYSTATS:
-                    return new nd4j::ops::LegacyStatsOp<T>(opNum);
+                    return new nd4j::ops::LegacyStatsOp(opNum);
                 case OpType_RANDOM:
-                    return new nd4j::ops::LegacyRandomOp<T>(opNum);
+                    return new nd4j::ops::LegacyRandomOp(opNum);
                 case OpType_BROADCAST:
-                    return new nd4j::ops::LegacyBroadcastOp<T>(opNum);
+                    return new nd4j::ops::LegacyBroadcastOp(opNum);
+                case OpType_BROADCAST_BOOL:
+                    return new nd4j::ops::LegacyBroadcastBoolOp(opNum);
                 default:
                     throw std::runtime_error("Bad opType passed in");
             }
         }
 
-        template <typename T>
-        bool Node<T>::isDeductable() {
+        bool Node::isDeductable() {
             return _isDeductable;
         }
 
-        template <typename T>
-        void Node<T>::setDeductable(bool reallyDeductable) {
+        void Node::setDeductable(bool reallyDeductable) {
             _isDeductable = reallyDeductable;
         }
 
-        template <typename T>
-        template <typename N>
-        Node<N>* Node<T>::asT() {
-            auto clone = new Node<N>(_opType, _opNum, _id);
 
-            clone->pullValues(this);
-
-            if (!_isDeductable && this->_customOp != nullptr)
-                clone->setCustomOp(OpRegistrator::getInstance()->getOperationT<N>(this->_customOp->getOpHash()));
-            else if (_customOp != nullptr) {
-                // this->setCustomOp(Node<T>::buildOpByType(opType, (int) input.size(), (int) block->getIArguments()->size(), (int) block->getTArguments()->size(), opNum, scalar));
-                auto op = clone->buildOpByType(_opType, clone->input()->size(), clone->getContextPrototype()->getIArguments()->size(), clone->getContextPrototype()->getTArguments()->size(), _opNum, clone->scalar());
-                clone->setCustomOp(op);
+        Node* Node::clone() {
+            if (this->_customOp && this->_opType == nd4j::graph::OpType_CUSTOM) {
+                auto clone = new Node(this->_customOp, _id);
+                clone->pullValues(this);
+                return clone;
             }
-
-            return clone;
-        }
-
-        template <typename T>
-        Node<T>* Node<T>::clone() {
-            auto clone = new Node<T>(_opType, _opNum, _id);
+            else {
+            auto clone = new Node(_opType, _opNum, _id);
 
             clone->pullValues(this);
 
@@ -711,28 +776,12 @@ namespace nd4j {
             if (!_isDeductable)
                 clone->_customOp = _customOp;
             else {
-                auto c = dynamic_cast<nd4j::ops::LegacyOp<T>*>(_customOp);
+                auto c = dynamic_cast<nd4j::ops::LegacyOp*>(_customOp);
                 clone->_customOp = c->clone();
             }
 
             return clone;
+            }
         }
-
-        template class ND4J_EXPORT Node<float>;
-        template class ND4J_EXPORT Node<float16>;
-        template class ND4J_EXPORT Node<double>;
-
-
-        template Node<float>* Node<float>::asT<float>();
-        template Node<float16>* Node<float>::asT<float16>();
-        template Node<double>* Node<float>::asT<double>();
-
-        template Node<float>* Node<float16>::asT<float>();
-        template Node<float16>* Node<float16>::asT<float16>();
-        template Node<double>* Node<float16>::asT<double>();
-
-        template Node<float>* Node<double>::asT<float>();
-        template Node<float16>* Node<double>::asT<float16>();
-        template Node<double>* Node<double>::asT<double>();
     }
 }

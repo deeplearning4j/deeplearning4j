@@ -38,6 +38,8 @@ import org.nd4j.linalg.learning.config.AdaDelta;
 import org.nd4j.linalg.learning.config.IUpdater;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
+import java.io.IOException;
+
 /**
  * U-Net
  *
@@ -79,6 +81,14 @@ public class SqueezeNet extends ZooModel {
             return 3711411239L;
         else
             return 0L;
+    }
+
+    @Override
+    public ComputationGraph initPretrained(PretrainedType pretrainedType) throws IOException {
+        ComputationGraph cg = (ComputationGraph) super.initPretrained(pretrainedType);
+        //Set collapse dimensions to true in global avg pooling - more useful for users [N,1000] rather than [N,1000,1,1] out. Also matches non-pretrain config
+        ((GlobalPoolingLayer)cg.getLayer("global_average_pooling2d_5").conf().getLayer()).setCollapseDimensions(true);
+        return cg;
     }
 
     @Override

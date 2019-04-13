@@ -19,8 +19,6 @@ package org.deeplearning4j.nn.layers.samediff;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.TestUtils;
-import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
-import org.deeplearning4j.gradientcheck.GradientCheckUtil;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.WorkspaceMode;
@@ -29,33 +27,21 @@ import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.layers.samediff.testlayers.SameDiffDenseVertex;
-import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
-import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.learning.config.Adam;
-import org.nd4j.linalg.learning.config.NoOp;
 import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
-import java.util.Arrays;
 import java.util.Map;
 
-import static org.junit.Assert.*;
-import static org.junit.Assume.assumeTrue;
+import static org.junit.Assert.assertEquals;
 
 @Slf4j
 public class TestSameDiffDenseVertex extends BaseDL4JTest {
-
-    private static final boolean PRINT_RESULTS = true;
-    private static final boolean RETURN_ON_FIRST_FAILURE = false;
-    private static final double DEFAULT_EPS = 1e-6;
-    private static final double DEFAULT_MAX_REL_ERROR = 1e-3;
-    private static final double DEFAULT_MIN_ABS_ERROR = 1e-8;
 
     @Test
     public void testSameDiffDenseVertex() {
@@ -77,7 +63,6 @@ public class TestSameDiffDenseVertex extends BaseDL4JTest {
                     ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
                             .trainingWorkspaceMode(workspaces ? WorkspaceMode.ENABLED : WorkspaceMode.NONE)
                             .inferenceWorkspaceMode(workspaces ? WorkspaceMode.ENABLED : WorkspaceMode.NONE)
-//                            .updater(new Sgd(1.0))
                             .updater(new Sgd(0.0))
                             .graphBuilder()
                             .addInputs("in")
@@ -146,6 +131,8 @@ public class TestSameDiffDenseVertex extends BaseDL4JTest {
                     }
 
                     assertEquals(gStd.gradient(), gSD.gradient());
+
+                    System.out.println("========================================================================");
 
                     //Sanity check: different minibatch size
                     in = Nd4j.rand(2 * minibatch, nIn);

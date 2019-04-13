@@ -53,12 +53,12 @@ public class FirstIndex extends BaseIndexAccumulation {
     public FirstIndex() {}
 
 
-    public FirstIndex(INDArray x, @NonNull Condition condition) {
-        this(x, condition, Nd4j.EPS_THRESHOLD);
+    public FirstIndex(INDArray x, @NonNull Condition condition, int... dimension) {
+        this(x, condition, Nd4j.EPS_THRESHOLD, dimension);
     }
 
-    public FirstIndex(INDArray x, @NonNull Condition condition, double eps) {
-        super(x);
+    public FirstIndex(INDArray x, @NonNull Condition condition, double eps, int... dimension) {
+        super(x, dimension);
         this.condition = condition;
         this.compare = condition.getValue();
         this.mode = condition.condtionNum();
@@ -75,21 +75,6 @@ public class FirstIndex extends BaseIndexAccumulation {
     @Override
     public String opName() {
         return "first_index";
-    }
-
-    @Override
-    public float zeroFloat() {
-        return 0.0f;
-    }
-
-    @Override
-    public float zeroHalf() {
-        return zeroFloat();
-    }
-
-    @Override
-    public double zeroDouble() {
-        return 0.0;
     }
 
     @Override

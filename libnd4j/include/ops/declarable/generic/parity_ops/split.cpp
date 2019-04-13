@@ -27,7 +27,7 @@
 namespace nd4j {
 namespace ops {
     CUSTOM_OP_IMPL(split, 1, -1, false, 0, 1) {
-        NDArray<T> *input = nullptr;
+        NDArray *input = nullptr;
         int num_splits = INT_ARG(0);
 
         // axis is 0 by default
@@ -41,13 +41,22 @@ namespace ops {
 
             if (a->isScalar()) {
                 // axis goes first
-                axis = a->getScalar(0);
+                axis = a->e<int>(0);
                 input = b;
             } else if (b->isScalar()) {
-                axis = b->getScalar(0);
+                axis = b->e<int>(0);
                 input = a;
             }
         }
+		
+		//Edge case: splitting empty array (mainly for TF import compatibility) -> return N empty arrays
+		if(input->isEmpty()){
+			for( int i=0; i< num_splits; i++ ){
+				REQUIRE_TRUE(OUTPUT_VARIABLE(i)->isEmpty(), 0, "Split: When input array is empty, all output arrays must be empty");
+			}
+			//No op
+			return Status::OK();
+		}
 
         if (block.numI() == 2)
             axis = INT_ARG(1);
@@ -58,54 +67,79 @@ namespace ops {
 
         int pos = 0;
         int split = input->sizeAt(axis) / num_splits;
+        std::vector<Nd4jLong> indices(2 * input->rankOf());
+        
         for (int e = 0; e < num_splits; e++) {
+            
             auto out = OUTPUT_VARIABLE(e);
-
-            IndicesList indices;
+            
             for (int d = 0; d < input->rankOf(); d++) {
-                if (d == axis)
-                    indices.push_back(NDIndex::interval(pos, pos + split));
+                if (d == axis) {
+                    indices[2*d]     = pos;
+                    indices[2*d + 1] = pos + split; 
+                }
                 else 
-                    indices.push_back(NDIndex::all());
+                    indices[2*d] = indices[2*d + 1] = 0;
             }
 
-            auto sub = input->subarray(indices);
+            auto sub = (*input)(indices, true);
             
             out->assign(sub);
-
-            delete sub;
 
             pos += split;
         }
 
+        return Status::OK();
+    }
 
-
-        return ND4J_STATUS_OK;
+    DECLARE_TYPES(split) {
+        getOpDescriptor()
+                ->setAllowedInputTypes({ALL_INTS, ALL_FLOATS})
+                ->setAllowedOutputTypes({ALL_INTS, ALL_FLOATS});
     }
 
     DECLARE_SHAPE_FN(split) {
         int num_splits = INT_ARG(0);
         Nd4jLong *input = nullptr;
+        nd4j::DataType dataType;
 
         // axis is 0 by default
         int axis = 0;
 
-        if (inputShape->size() == 1)
+		int inputVar = 0;
+        if (inputShape->size() == 1) {
             input = inputShape->at(0);
-        else {
+            dataType = ArrayOptions::dataType(input);
+        } else {
             auto shape0 = inputShape->at(0);
             auto shape1 = inputShape->at(1);
 
             if (shape::isScalar(shape0)) {
                 input = shape1;
                 auto _a = INPUT_VARIABLE(0);
-                axis = _a->getScalar(0);
+                axis = _a->e<int>(0);
+                dataType = ArrayOptions::dataType(shape1);
+				inputVar = 1;
             } else if (shape::isScalar(shape1)) {
                 input = shape0;
                 auto _a = INPUT_VARIABLE(1);
-                axis = _a->getScalar(0);
+                axis = _a->e<int>(0);
+                dataType = ArrayOptions::dataType(shape0);
+				inputVar = 0;
             }
         }
+		
+		auto shapes = SHAPELIST();
+		
+		//Edge case: splitting empty array (mainly for TF import compatibility) -> return N empty arrays
+		if(INPUT_VARIABLE(inputVar)->isEmpty()){
+			Nd4jLong* empty = ShapeBuilders::createScalarShapeInfo(dataType, block.getWorkspace());
+			ArrayOptions::setPropertyBit(empty, ARRAY_EMPTY);
+			for (int e = 0; e < num_splits; e++) {
+				shapes->push_back(empty);
+			}
+			return shapes;
+		}
 
         if (block.numI() == 2)
             axis = INT_ARG(1);
@@ -120,18 +154,10 @@ namespace ops {
                 shape[e] = shape::sizeAt(input, e) / num_splits;
             else 
                 shape[e] = shape::sizeAt(input, e);
-
-        auto shapes = SHAPELIST();
-
+        
         for (int e = 0; e < num_splits; e++) {
-            Nd4jLong *newShape;
-            ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(input), Nd4jLong);
-
-            if (shape::order(input) == 'c')
-                shape::shapeBuffer(shape.size(), shape.data(), newShape);
-            else
-                shape::shapeBufferFortran(shape.size(), shape.data(), newShape);
-
+            
+            Nd4jLong *newShape = ShapeBuilders::createShapeInfo(dataType, shape::order(input), shape, block.getWorkspace());            
             shapes->push_back(newShape);
         }
 

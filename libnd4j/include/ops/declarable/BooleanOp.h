@@ -27,24 +27,23 @@
 
 namespace nd4j {
     namespace ops {
-        template <typename T>
-        class ND4J_EXPORT BooleanOp : public DeclarableOp<T> {
+        class ND4J_EXPORT BooleanOp : public DeclarableOp {
         protected:
             OpDescriptor * _descriptor;
 
-            bool prepareOutputs(Context<T>& block);
-            virtual Nd4jStatus validateAndExecute(Context<T> &block) = 0;
+            bool prepareOutputs(Context& block);
+            virtual Nd4jStatus validateAndExecute(Context& block) = 0;
         public:
             BooleanOp(const char *name, int numInputs, bool scalar);
             ~BooleanOp();
 
-            bool evaluate(std::initializer_list<nd4j::NDArray<T> *> args);
-            bool evaluate(std::vector<nd4j::NDArray<T> *>& args);
-            bool evaluate(nd4j::graph::Context<T>& block);
+            bool evaluate(std::initializer_list<nd4j::NDArray*> args);
+            bool evaluate(std::vector<nd4j::NDArray*>& args);
+            bool evaluate(nd4j::graph::Context& block);
 
-            Nd4jStatus execute(Context<T>* block) override;
+            Nd4jStatus execute(Context* block) override;
 
-            ShapeList *calculateOutputShape(ShapeList *inputShape, nd4j::graph::Context<T> &block) override;
+            ShapeList *calculateOutputShape(ShapeList *inputShape, nd4j::graph::Context& block) override;
         };
     }
 }

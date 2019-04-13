@@ -27,12 +27,11 @@ import org.datavec.api.transform.reduce.Reducer;
 import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.transform.schema.SequenceSchema;
 import org.datavec.api.writable.*;
+import org.datavec.python.PythonTransform;
 
-import org.datavec.arrow.recordreader.ArrowWritableRecordTimeSeriesBatch;
 import org.datavec.local.transforms.LocalTransformExecutor;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.cpu.nativecpu.NDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;
 
@@ -245,6 +244,40 @@ public class ExecutionTest  {
         );
 
         assertEquals(expOut, out);
+    }
+
+    @Test
+    public void testPythonExecutionNdarray()throws Exception{
+        Schema schema = new Schema.Builder()
+                .addColumnNDArray("first",new long[]{1,32577})
+                .addColumnNDArray("second",new long[]{1,32577}).build();
+
+        TransformProcess transformProcess = new TransformProcess.Builder(schema)
+                .transform(
+                        new PythonTransform(
+                                "first = np.sin(first)\nsecond = np.cos(second)",
+                                schema
+                        )
+                )
+                .build();
+
+        List<List<Writable>> functions = new ArrayList<>();
+        List<Writable> firstRow = new ArrayList<>();
+        INDArray firstArr = Nd4j.linspace(1,4,4);
+        INDArray secondArr = Nd4j.linspace(1,4,4);
+        firstRow.add(new NDArrayWritable(firstArr));
+        firstRow.add(new NDArrayWritable(secondArr));
+        functions.add(firstRow);
+
+        List<List<Writable>> execute = LocalTransformExecutor.execute(functions, transformProcess);
+        INDArray firstResult = ((NDArrayWritable) execute.get(0).get(0)).get();
+        INDArray secondResult = ((NDArrayWritable) execute.get(0).get(1)).get();
+
+        INDArray expected = Transforms.sin(firstArr);
+        INDArray secondExpected = Transforms.cos(secondArr);
+        assertEquals(expected,firstResult);
+        assertEquals(secondExpected,secondResult);
+
     }
 
 }

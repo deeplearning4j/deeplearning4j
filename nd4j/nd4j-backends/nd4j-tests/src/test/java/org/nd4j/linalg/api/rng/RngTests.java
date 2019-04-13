@@ -24,7 +24,8 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /**
  * @author Adam Gibson
@@ -51,7 +52,7 @@ public class RngTests extends BaseNd4jTest {
 
         int rows = 20;
         int cols = 20;
-        int dim2 = 7;
+        int dim2 = 70;
 
         INDArray arr = Nd4j.rand('c', rows, cols);
         assertArrayEquals(new long[] {rows, cols}, arr.shape());
@@ -91,7 +92,7 @@ public class RngTests extends BaseNd4jTest {
         INDArray narr3 = Nd4j.randn('c', new int[] {rows, cols, dim2});
         assertArrayEquals(new long[] {rows, cols, dim2}, narr3.shape());
         assertEquals('c', narr3.ordering());
-        assertEquals(narr3.meanNumber().doubleValue(), 0.0, 0.05);
+        assertEquals(0.0, narr3.meanNumber().doubleValue(), 0.05);
 
         INDArray narr4 = Nd4j.randn('f', new int[] {rows, cols, dim2});
         assertArrayEquals(new long[] {rows, cols, dim2}, narr4.shape());

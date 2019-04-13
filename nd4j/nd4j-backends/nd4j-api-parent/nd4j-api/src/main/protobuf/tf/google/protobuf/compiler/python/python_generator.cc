@@ -216,7 +216,7 @@ void PrintTopBoilerplate(
 
 // Returns a Python literal giving the default value for a field.
 // If the field specifies no explicit default value, we'll return
-// the default default value for the field type (zero for numbers,
+// the default value for the field type (zero for numbers,
 // empty string for strings, empty list for repeated fields, and
 // None for non-repeated, composite fields).
 //

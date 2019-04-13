@@ -85,6 +85,8 @@ public class VectorsConfiguration implements Serializable {
     private boolean allowParallelTokenization = false;
     private boolean preciseWeightInit = false;
 
+    private boolean preciseMode = false;
+
     private static ObjectMapper mapper;
     private static final Object lock = new Object();
 

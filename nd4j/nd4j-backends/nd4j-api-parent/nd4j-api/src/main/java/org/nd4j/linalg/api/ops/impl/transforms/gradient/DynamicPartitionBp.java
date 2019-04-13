@@ -21,15 +21,13 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.descriptors.properties.PropertyMapping;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
 
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 
 /**
@@ -76,6 +74,12 @@ public class DynamicPartitionBp extends DynamicCustomOp {
         out[1] = partitions;
         System.arraycopy(grads, 0, out, 2, grads.length);
         return out;
+    }
+
+    @Override
+    public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes){
+        //Input gradients and partition 'gradients' - same type as inputs
+        return Arrays.asList(dataTypes.get(0), dataTypes.get(1));
     }
 
 }

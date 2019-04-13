@@ -23,8 +23,9 @@ import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.AbstractLayer;
 import org.deeplearning4j.nn.layers.LayerHelper;
+import org.deeplearning4j.nn.layers.mkldnn.MKLDNNLocalResponseNormalizationHelper;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.OldMulOp;
+import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.OldMulOp;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
@@ -69,7 +70,8 @@ public class LocalResponseNormalization
     protected static final Logger log =
                     LoggerFactory.getLogger(org.deeplearning4j.nn.conf.layers.LocalResponseNormalization.class);
 
-    LocalResponseNormalizationHelper helper = null;
+    protected LocalResponseNormalizationHelper helper = null;
+    protected int helperCountFail = 0;
 
     public LocalResponseNormalization(NeuralNetConfiguration conf, INDArray input) {
         super(conf, input);
@@ -93,29 +95,29 @@ public class LocalResponseNormalization
                 helper = Class.forName("org.deeplearning4j.nn.layers.normalization.CudnnLocalResponseNormalizationHelper")
                         .asSubclass(LocalResponseNormalizationHelper.class).newInstance();
                 log.debug("CudnnLocalResponseNormalizationHelper successfully initialized");
-                if (!helper.checkSupported(layerConf().getK(), layerConf().getN(), layerConf().getAlpha(),
-                        layerConf().getBeta())) {
-                    helper = null;
-                }
             } catch (Throwable t) {
                 if (!(t instanceof ClassNotFoundException)) {
                     log.warn("Could not initialize CudnnLocalResponseNormalizationHelper", t);
                 } else {
                     OneTimeLogger.info(log, "cuDNN not found: "
                             + "use cuDNN for better GPU performance by including the deeplearning4j-cuda module. "
-                            + "For more information, please refer to: https://deeplearning4j.org/cudnn", t);
+                            + "For more information, please refer to: https://deeplearning4j.org/docs/latest/deeplearning4j-config-cudnn", t);
                 }
             }
+        }
+        //2019-03-09 AB - MKL-DNN helper disabled: https://github.com/deeplearning4j/deeplearning4j/issues/7272
+//        else if("CPU".equalsIgnoreCase(backend)){
+//            helper = new MKLDNNLocalResponseNormalizationHelper();
+//            log.debug("Created MKLDNNLocalResponseNormalizationHelper");
+//        }
+        if (helper != null && !helper.checkSupported(layerConf().getK(), layerConf().getN(), layerConf().getAlpha(), layerConf().getBeta())) {
+            log.debug("Removed helper {} as not supported (k={}, n={}, alpha={}, beta={})", helper.getClass(), layerConf().getK(), layerConf().getN(), layerConf().getAlpha(), layerConf().getBeta());
+            helper = null;
         }
     }
 
     @Override
-    public double calcL2(boolean backpropParamsOnly) {
-        return 0;
-    }
-
-    @Override
-    public double calcL1(boolean backpropParamsOnly) {
+    public double calcRegularizationScore(boolean backpropParamsOnly){
         return 0;
     }
 
@@ -139,8 +141,22 @@ public class LocalResponseNormalization
         double beta = layerConf().getBeta();
         int halfN = (int) n / 2;
 
-        if (helper != null) {
-            Pair<Gradient, INDArray> ret = helper.backpropGradient(input, epsilon, k, n, alpha, beta, workspaceMgr);
+        if (helper != null && (helperCountFail == 0 || !layerConf().isCudnnAllowFallback())){
+            Pair<Gradient, INDArray> ret = null;
+            try {
+                ret = helper.backpropGradient(input, epsilon, k, n, alpha, beta, workspaceMgr);
+            } catch (Throwable t){
+                if(t.getMessage().contains("Failed to allocate")){
+                    //This is a memory exception - don't fallback to built-in implementation
+                    throw t;
+                }
+                if(layerConf().isCudnnAllowFallback()){
+                    helperCountFail++;
+                    log.warn("CuDNN LocalResponseNormalization backprop execution failed - falling back on built-in implementation",t);
+                } else {
+                    throw new RuntimeException("Error during LocalResponseNormalization CuDNN helper backprop - isCudnnAllowFallback() is set to false", t);
+                }
+            }
             if (ret != null) {
                 return ret;
             }
@@ -190,8 +206,23 @@ public class LocalResponseNormalization
         double beta = layerConf().getBeta();
         int halfN = (int) n / 2;
 
-        if (helper != null) {
-            INDArray activations = helper.activate(input, training, k, n, alpha, beta, workspaceMgr);
+        if (helper != null && (helperCountFail == 0 || !layerConf().isCudnnAllowFallback())){
+            INDArray activations = null;
+            try {
+                activations = helper.activate(input, training, k, n, alpha, beta, workspaceMgr);
+            } catch (Throwable t){
+                if(t.getMessage().contains("Failed to allocate")){
+                    //This is a memory exception - don't fallback to built-in implementation
+                    throw t;
+                }
+
+                if(layerConf().isCudnnAllowFallback()){
+                    helperCountFail++;
+                    log.warn("CuDNN LocalResponseNormalization backprop execution failed - falling back on built-in implementation",t);
+                } else {
+                    throw new RuntimeException("Error during LocalRsponseNormalization CuDNN helper backprop - isCudnnAllowFallback() is set to false", t);
+                }
+            }
             if (activations != null) {
                 return new Triple<>(activations, null, null);
             }

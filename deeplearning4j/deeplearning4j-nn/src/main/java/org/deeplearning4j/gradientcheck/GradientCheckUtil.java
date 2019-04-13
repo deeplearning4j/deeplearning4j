@@ -19,6 +19,7 @@ package org.deeplearning4j.gradientcheck;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.deeplearning4j.nn.api.Model;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.function.Consumer;
 import org.nd4j.linalg.lossfunctions.impl.LossBinaryXENT;
 import org.nd4j.linalg.primitives.Pair;
@@ -131,6 +132,13 @@ public class GradientCheckUtil {
     }
 
     public static boolean checkGradients(MultiLayerNetwork mln, double epsilon, double maxRelError,
+                                         double minAbsoluteError, boolean print, boolean exitOnFirstError, INDArray input,
+                                         INDArray labels, Set<String> excludeParams) {
+        return checkGradients(mln, epsilon, maxRelError, minAbsoluteError, print, exitOnFirstError, input, labels, null, null,
+                false, -1, excludeParams, (Integer)null);
+    }
+
+    public static boolean checkGradients(MultiLayerNetwork mln, double epsilon, double maxRelError,
                                          double minAbsoluteError, boolean print, boolean exitOnFirstError,
                                          INDArray input, INDArray labels, INDArray inputMask, INDArray labelMask) {
         return checkGradients(mln, epsilon, maxRelError, minAbsoluteError, print, exitOnFirstError,
@@ -185,11 +193,11 @@ public class GradientCheckUtil {
         if (!(mln.getOutputLayer() instanceof IOutputLayer))
             throw new IllegalArgumentException("Cannot check backprop gradients without OutputLayer");
 
-        DataBuffer.Type dataType = DataTypeUtil.getDtypeFromContext();
-        if (dataType != DataBuffer.Type.DOUBLE) {
+        DataType dataType = DataTypeUtil.getDtypeFromContext();
+        if (dataType != DataType.DOUBLE) {
             throw new IllegalStateException("Cannot perform gradient check: Datatype is not set to double precision ("
                             + "is: " + dataType + "). Double precision must be used for gradient checks. Set "
-                            + "DataTypeUtil.setDTypeForContext(DataBuffer.Type.DOUBLE); before using GradientCheckUtil");
+                            + "DataTypeUtil.setDTypeForContext(DataType.DOUBLE); before using GradientCheckUtil");
         }
 
         //Check network configuration:
@@ -454,11 +462,11 @@ public class GradientCheckUtil {
             throw new IllegalArgumentException(
                             "Invalid labels arrays: expect " + graph.getNumOutputArrays() + " outputs");
 
-        DataBuffer.Type dataType = DataTypeUtil.getDtypeFromContext();
-        if (dataType != DataBuffer.Type.DOUBLE) {
+        DataType dataType = DataTypeUtil.getDtypeFromContext();
+        if (dataType != DataType.DOUBLE) {
             throw new IllegalStateException("Cannot perform gradient check: Datatype is not set to double precision ("
                             + "is: " + dataType + "). Double precision must be used for gradient checks. Set "
-                            + "DataTypeUtil.setDTypeForContext(DataBuffer.Type.DOUBLE); before using GradientCheckUtil");
+                            + "DataTypeUtil.setDTypeForContext(DataType.DOUBLE); before using GradientCheckUtil");
         }
 
         //Check configuration
@@ -640,11 +648,11 @@ public class GradientCheckUtil {
         if (maxRelError <= 0.0 || maxRelError > 0.25)
             throw new IllegalArgumentException("Invalid maxRelativeError: " + maxRelError);
 
-        DataBuffer.Type dataType = DataTypeUtil.getDtypeFromContext();
-        if (dataType != DataBuffer.Type.DOUBLE) {
+        DataType dataType = DataTypeUtil.getDtypeFromContext();
+        if (dataType != DataType.DOUBLE) {
             throw new IllegalStateException("Cannot perform gradient check: Datatype is not set to double precision ("
                             + "is: " + dataType + "). Double precision must be used for gradient checks. Set "
-                            + "DataTypeUtil.setDTypeForContext(DataBuffer.Type.DOUBLE); before using GradientCheckUtil");
+                            + "DataTypeUtil.setDTypeForContext(DataType.DOUBLE); before using GradientCheckUtil");
         }
 
         //Check network configuration:

@@ -21,11 +21,11 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 
-import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assume.assumeNotNull;
 
@@ -42,7 +42,7 @@ public class ReshapeTests extends BaseNd4jTest {
 
     @Test
     public void testThreeTwoTwoTwo() {
-        INDArray threeTwoTwo = Nd4j.linspace(1, 12, 12).reshape(3, 2, 2);
+        INDArray threeTwoTwo = Nd4j.linspace(1, 12, 12, DataType.DOUBLE).reshape(3, 2, 2);
         INDArray sliceZero = Nd4j.create(new double[][] {{1, 7}, {4, 10}});
         INDArray sliceOne = Nd4j.create(new double[][] {{2, 8}, {5, 11}});
         INDArray sliceTwo = Nd4j.create(new double[][] {{3, 9}, {6, 12}});
@@ -53,7 +53,7 @@ public class ReshapeTests extends BaseNd4jTest {
             assertEquals(assertions[i], sliceI);
         }
 
-        INDArray linspaced = Nd4j.linspace(1, 4, 4).reshape(2, 2);
+        INDArray linspaced = Nd4j.linspace(1, 4, 4, DataType.DOUBLE).reshape(2, 2);
         INDArray[] assertionsTwo = new INDArray[] {Nd4j.create(new double[] {1, 3}), Nd4j.create(new double[] {2, 4})};
 
         for (int i = 0; i < assertionsTwo.length; i++)

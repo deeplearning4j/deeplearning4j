@@ -34,8 +34,8 @@ public class ScalarAdd extends BaseScalarOp {
 
     public ScalarAdd() {}
 
-    public ScalarAdd(INDArray x, INDArray y, INDArray z, long n, Number num) {
-        super(x, y, z, n, num);
+    public ScalarAdd(INDArray x, INDArray y, INDArray z, Number num) {
+        super(x, y, z, num);
     }
 
     public ScalarAdd(INDArray x, Number num) {

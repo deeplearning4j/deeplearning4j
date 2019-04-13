@@ -57,11 +57,10 @@ def test_transpose():
 
 
 def test_permute():
-    shapes = [
-        [(2, 3), [0, 1], [1, 0]],
-        [(2, 1), [0, 1], [1, 0]], 
-        [(2, 3, 4), [0, 1, 2], [0, 2, 1], [1, 0, 2], [1, 2, 0], [2, 0, 1], [2, 1, 0]]
-        ]
+    shapes = []
+    shapes.append([(2, 3), [0, 1], [1, 0]])
+    shapes.append([(2, 1), [0, 1], [1, 0]])
+    shapes.append([(2, 3, 4), [0, 1, 2], [0, 2, 1], [1, 0, 2], [1, 2, 0], [2, 0, 1], [2, 1, 0]])
 
     for shape in shapes:
         x_np = np.random.random(shape[0])
@@ -91,7 +90,7 @@ def test_squeeze():
         axis = shape.index(1)
         y_np = np.squeeze(x_np, axis)
         y_jp = jp.squeeze(x_jp, axis)
-        assert y_jp.shape == y_np.shape 
+        assert y_jp.shape == y_np.shape
 
 
 def test_concatenate():
@@ -132,7 +131,7 @@ def test_stack():
             y_np = np.stack([x1_np, x2_np], axis)
             y_jp = jp.stack([x1_jp, x2_jp], axis)
 
-            assert y_jp.shape == y_np.shape 
+            assert y_jp.shape == y_np.shape
 
 
 def test_tile():

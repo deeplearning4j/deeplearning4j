@@ -26,7 +26,7 @@
     <packaging>jar</packaging>
 
     <name>nd4j-kafka</name>
-    <url>http://nd4j.org</url>
+    <url>https://deeplearning4j.org</url>
 
     <properties>
         <!-- Default scala versions, may be overwritten by build profiles -->
@@ -35,6 +35,11 @@
     </properties>
 
     <dependencies>
+        <dependency>
+            <groupId>org.nd4j</groupId>
+            <artifactId>nd4j-api</artifactId>
+            <version>${project.version}</version>
+        </dependency>
         <dependency>
             <groupId>org.scala-lang</groupId>
             <artifactId>scala-library</artifactId>
@@ -70,13 +75,6 @@
                     <artifactId>log4j</artifactId>
                 </exclusion>
             </exclusions>
-        </dependency>
-
-        <!-- testing -->
-        <dependency>
-            <groupId>org.nd4j</groupId>
-            <artifactId>nd4j-base64</artifactId>
-            <version>${project.version}</version>
         </dependency>
     </dependencies>
 

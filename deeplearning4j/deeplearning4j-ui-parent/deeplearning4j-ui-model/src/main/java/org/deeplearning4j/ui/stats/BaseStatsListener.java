@@ -663,7 +663,7 @@ public abstract class BaseStatsListener implements RoutingIterationListener {
         if (initConfig.collectModelInfo()) {
             String jsonConf;
             int numLayers;
-            int numParams;
+            long numParams;
             if (model instanceof MultiLayerNetwork) {
                 MultiLayerNetwork net = ((MultiLayerNetwork) model);
                 jsonConf = net.getLayerWiseConfigurations().toJson();
@@ -775,8 +775,8 @@ public abstract class BaseStatsListener implements RoutingIterationListener {
 
         for (Map.Entry<String, INDArray> entry : map.entrySet()) {
 
-            org.nd4j.linalg.api.ops.impl.transforms.Histogram hOp =
-                    new org.nd4j.linalg.api.ops.impl.transforms.Histogram(entry.getValue(), nBins);
+            org.nd4j.linalg.api.ops.impl.transforms.floating.Histogram hOp =
+                    new org.nd4j.linalg.api.ops.impl.transforms.floating.Histogram(entry.getValue(), nBins);
             Nd4j.getExecutioner().exec(hOp);
 
             INDArray bins = hOp.z();

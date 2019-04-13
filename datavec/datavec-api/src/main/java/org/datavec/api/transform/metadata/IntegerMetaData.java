@@ -40,8 +40,8 @@ public class IntegerMetaData extends BaseColumnMetaData {
     }
 
     /**
-     * @param min Min allowed value. If null: no restriction on min value value in this column
-     * @param max Max allowed value. If null: no restiction on max value in this column
+     * @param min Min allowed value. If null: no restriction on min value in this column
+     * @param max Max allowed value. If null: no restriction on max value in this column
      */
     public IntegerMetaData(@JsonProperty("name") String name, @JsonProperty("minAllowedValue") Integer min,
                     @JsonProperty("maxAllowedValue") Integer max) {

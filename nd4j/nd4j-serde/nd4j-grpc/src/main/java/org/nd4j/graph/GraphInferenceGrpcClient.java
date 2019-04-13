@@ -26,6 +26,7 @@ import org.nd4j.autodiff.execution.conf.ExecutorConfiguration;
 import org.nd4j.autodiff.execution.input.OperandsAdapter;
 import org.nd4j.autodiff.execution.input.Operands;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.autodiff.samediff.serde.FlatBuffersMapper;
 import org.nd4j.graph.grpc.GraphInferenceServerGrpc;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
@@ -145,7 +146,8 @@ public class GraphInferenceGrpcClient {
             val nameOff = id.getName() != null ? builder.createString(id.getName()) : 0;
 
             val arrOff = array.toFlatArray(builder);
-            val varOff = FlatVariable.createFlatVariable(builder, idPair, nameOff, 0, arrOff, 0);
+            byte variableType = 0;  //TODO is this OK here?
+            val varOff = FlatVariable.createFlatVariable(builder, idPair, nameOff, FlatBuffersMapper.getDataTypeAsByte(array.dataType()),0,  arrOff, -1, variableType);
             ins[cnt++] = varOff;
         }
 

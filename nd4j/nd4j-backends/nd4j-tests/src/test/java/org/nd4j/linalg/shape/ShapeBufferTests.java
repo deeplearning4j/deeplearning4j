@@ -20,6 +20,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
@@ -58,7 +59,7 @@ public class ShapeBufferTests extends BaseNd4jTest {
 
     @Test
     public void testArrCreationShape() {
-        INDArray arr = Nd4j.linspace(1, 4, 4).reshape(2, 2);
+        INDArray arr = Nd4j.linspace(1, 4, 4, DataType.DOUBLE).reshape(2, 2);
         for (int i = 0; i < 2; i++)
             assertEquals(2, arr.size(i));
         int[] stride = ArrayUtil.calcStrides(new int[] {2, 2});

@@ -23,14 +23,14 @@ import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.io.ClassPathResource;
-import org.nd4j.nativeblas.NativeOps;
 import org.nd4j.nativeblas.NativeOpsHolder;
 
-import java.io.File;
+import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
 
@@ -47,10 +47,15 @@ public class TestNDArrayCreation extends BaseNd4jTest {
 
     @Test
     public void testBufferCreation() {
-        DataBuffer dataBuffer = Nd4j.createBuffer(new double[] {1, 2});
+        DataBuffer dataBuffer = Nd4j.createBuffer(new float[] {1, 2});
         Pointer pointer = dataBuffer.pointer();
         FloatPointer floatPointer = new FloatPointer(pointer);
-        DataBuffer dataBuffer1 = Nd4j.createBuffer(floatPointer, 2);
+        DataBuffer dataBuffer1 = Nd4j.createBuffer(floatPointer, 2, DataType.FLOAT);
+
+        assertEquals(2, dataBuffer.length());
+        assertEquals(1.0, dataBuffer.getDouble(0), 1e-1);
+        assertEquals(2.0, dataBuffer.getDouble(1), 1e-1);
+
         assertEquals(2, dataBuffer1.length());
         assertEquals(1.0, dataBuffer1.getDouble(0), 1e-1);
         assertEquals(2.0, dataBuffer1.getDouble(1), 1e-1);
@@ -69,6 +74,25 @@ public class TestNDArrayCreation extends BaseNd4jTest {
         assertEquals(2.0, arrCreate.getDouble(0, 1), 1e-1);
         assertEquals(3.0, arrCreate.getDouble(1, 0), 1e-1);
         assertEquals(4.0, arrCreate.getDouble(1, 1), 1e-1);
+
+    }
+
+    @Test
+    @Ignore
+    public void testCreateNpz() throws Exception {
+        Map<String, INDArray> map = Nd4j.createFromNpzFile(new ClassPathResource("nd4j-tests/test.npz").getFile());
+        assertEquals(true, map.containsKey("x"));
+        assertEquals(true, map.containsKey("y"));
+        INDArray arrX = map.get("x");
+        INDArray arrY = map.get("y");
+        assertEquals(1.0, arrX.getDouble(0), 1e-1);
+        assertEquals(2.0, arrX.getDouble(1), 1e-1);
+        assertEquals(3.0, arrX.getDouble(2), 1e-1);
+        assertEquals(4.0, arrX.getDouble(3), 1e-1);
+        assertEquals(5.0, arrY.getDouble(0), 1e-1);
+        assertEquals(6.0, arrY.getDouble(1), 1e-1);
+        assertEquals(7.0, arrY.getDouble(2), 1e-1);
+        assertEquals(8.0, arrY.getDouble(3), 1e-1);
 
     }
 

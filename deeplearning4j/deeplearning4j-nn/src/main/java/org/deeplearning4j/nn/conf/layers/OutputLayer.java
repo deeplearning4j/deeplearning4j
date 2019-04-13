@@ -34,12 +34,10 @@ import java.util.Collection;
 import java.util.Map;
 
 /**
- * Output layer used for training via backpropagation based on labels and a specified loss function.
- * Can be configured for both classification and regression.
- * Note that OutputLayer has parameters - it contains a fully-connected layer (effectively contains a DenseLayer)
- * internally. This allows the output size to be different to the layer input size.
+ * Output layer used for training via backpropagation based on labels and a specified loss function. Can be configured
+ * for both classification and regression. Note that OutputLayer has parameters - it contains a fully-connected layer
+ * (effectively contains a DenseLayer) internally. This allows the output size to be different to the layer input size.
  * OutputLayer is equivalent to ({@link DenseLayer} + {@link LossLayer})
- *
  */
 @Data
 @NoArgsConstructor
@@ -74,9 +72,9 @@ public class OutputLayer extends BaseOutputLayer {
 
     public static class Builder extends BaseOutputLayer.Builder<Builder> {
 
-        public Builder(){
+        public Builder() {
             //Set default activation function to softmax (to match default loss function MCXENT)
-            this.activationFn = new ActivationSoftmax();
+            this.setActivationFn(new ActivationSoftmax());
         }
 
         /**
@@ -85,16 +83,16 @@ public class OutputLayer extends BaseOutputLayer {
         public Builder(LossFunction lossFunction) {
             super.lossFunction(lossFunction);
             //Set default activation function to softmax (for consistent behaviour with no-arg constructor)
-            this.activationFn = new ActivationSoftmax();
+            this.setActivationFn(new ActivationSoftmax());
         }
 
         /**
          * @param lossFunction Loss function for the output layer
          */
         public Builder(ILossFunction lossFunction) {
-            this.lossFn = lossFunction;
+            this.setLossFn(lossFunction);
             //Set default activation function to softmax (for consistent behaviour with no-arg constructor)
-            this.activationFn = new ActivationSoftmax();
+            this.setActivationFn(new ActivationSoftmax());
         }
 
         @Override

@@ -33,7 +33,7 @@ public class LogisticPredictions implements SameDiffFunctionDefinition {
         SDVariable w = sameDiff.var("w",inputs.get("w"));
         SDVariable y = sameDiff.var("y",inputs.get("y"));
         SDVariable preOutput = sameDiff.mmul(input,w);
-        SDVariable sigmoid = sameDiff.sigmoid(preOutput);
+        SDVariable sigmoid = sameDiff.nn().sigmoid(preOutput);
 
         return new SDVariable[]{sigmoid};
     }

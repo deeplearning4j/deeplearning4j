@@ -37,9 +37,6 @@ public class AdaGradSpace extends BaseUpdaterSpace {
     private ParameterSpace<Double> learningRate;
     private ParameterSpace<ISchedule> lrSchedule;
 
-    @Getter @Setter
-    private int[] indices;
-
     public AdaGradSpace(ParameterSpace<Double> learningRate) {
         this(learningRate, null);
     }

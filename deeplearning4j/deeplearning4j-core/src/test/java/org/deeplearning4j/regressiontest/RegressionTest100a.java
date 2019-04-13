@@ -17,6 +17,7 @@
 package org.deeplearning4j.regressiontest;
 
 import org.deeplearning4j.BaseDL4JTest;
+import org.deeplearning4j.TestUtils;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.BackpropType;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
@@ -27,16 +28,18 @@ import org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder;
 import org.deeplearning4j.nn.conf.serde.legacyformat.LegacyLayerDeserializer;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
-import org.deeplearning4j.nn.weights.WeightInit;
+import org.deeplearning4j.nn.weights.WeightInitXavier;
 import org.deeplearning4j.regressiontest.customlayer100a.CustomLayer;
-import org.deeplearning4j.util.ModelSerializer;
+import org.junit.Before;
 import org.junit.Test;
 import org.nd4j.linalg.activations.impl.*;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.io.ClassPathResource;
 import org.nd4j.linalg.learning.config.Adam;
 import org.nd4j.linalg.learning.config.RmsProp;
+import org.nd4j.linalg.learning.regularization.WeightDecay;
 
 import java.io.DataInputStream;
 import java.io.File;
@@ -45,6 +48,11 @@ import java.io.FileInputStream;
 import static org.junit.Assert.*;
 
 public class RegressionTest100a extends BaseDL4JTest {
+
+    @Override
+    public DataType getDataType(){
+        return DataType.FLOAT;
+    }
 
     @Test
     public void testCustomLayer() throws Exception {
@@ -65,7 +73,7 @@ public class RegressionTest100a extends BaseDL4JTest {
 
         DenseLayer l0 = (DenseLayer) net.getLayer(0).conf().getLayer();
         assertEquals(new ActivationTanH(), l0.getActivationFn());
-        assertEquals(0.03, l0.getL2(), 1e-6);
+        assertEquals(new WeightDecay(0.03, false), TestUtils.getWeightDecayReg(l0));
         assertEquals(new RmsProp(0.95), l0.getIUpdater());
 
         CustomLayer l1 = (CustomLayer) net.getLayer(1).conf().getLayer();
@@ -129,22 +137,22 @@ public class RegressionTest100a extends BaseDL4JTest {
         GravesLSTM l0 = (GravesLSTM) net.getLayer(0).conf().getLayer();
         assertEquals(new ActivationTanH(), l0.getActivationFn());
         assertEquals(200, l0.getNOut());
-        assertEquals(WeightInit.XAVIER, l0.getWeightInit());
-        assertEquals(0.001, l0.getL2(), 1e-6);
+        assertEquals(new WeightInitXavier(), l0.getWeightInitFn());
+        assertEquals(new WeightDecay(0.001, false), TestUtils.getWeightDecayReg(l0));
         assertEquals(new RmsProp(0.1), l0.getIUpdater());
 
         GravesLSTM l1 = (GravesLSTM) net.getLayer(1).conf().getLayer();
         assertEquals(new ActivationTanH(), l1.getActivationFn());
         assertEquals(200, l1.getNOut());
-        assertEquals(WeightInit.XAVIER, l1.getWeightInit());
-        assertEquals(0.001, l1.getL2(), 1e-6);
+        assertEquals(new WeightInitXavier(), l1.getWeightInitFn());
+        assertEquals(new WeightDecay(0.001, false), TestUtils.getWeightDecayReg(l1));
         assertEquals(new RmsProp(0.1), l1.getIUpdater());
 
         RnnOutputLayer l2 = (RnnOutputLayer) net.getLayer(2).conf().getLayer();
         assertEquals(new ActivationSoftmax(), l2.getActivationFn());
         assertEquals(77, l2.getNOut());
-        assertEquals(WeightInit.XAVIER, l2.getWeightInit());
-        assertEquals(0.001, l0.getL2(), 1e-6);
+        assertEquals(new WeightInitXavier(), l2.getWeightInitFn());
+        assertEquals(new WeightDecay(0.001, false), TestUtils.getWeightDecayReg(l0));
         assertEquals(new RmsProp(0.1), l0.getIUpdater());
 
         assertEquals(BackpropType.TruncatedBPTT, net.getLayerWiseConfigurations().getBackpropType());
@@ -179,8 +187,8 @@ public class RegressionTest100a extends BaseDL4JTest {
         assertEquals(32, l0.getNOut());
         assertArrayEquals(new int[]{256, 256}, l0.getEncoderLayerSizes());
         assertArrayEquals(new int[]{256, 256}, l0.getDecoderLayerSizes());
-        assertEquals(WeightInit.XAVIER, l0.getWeightInit());
-        assertEquals(1e-4, l0.getL2(), 1e-6);
+                assertEquals(new WeightInitXavier(), l0.getWeightInitFn());
+        assertEquals(new WeightDecay(1e-4, false), TestUtils.getWeightDecayReg(l0));
         assertEquals(new Adam(0.05), l0.getIUpdater());
 
         INDArray outExp;
@@ -214,7 +222,7 @@ public class RegressionTest100a extends BaseDL4JTest {
         assertEquals(nBoxes * (5 + nClasses), cl.getNOut());
         assertEquals(new ActivationIdentity(), cl.getActivationFn());
         assertEquals(ConvolutionMode.Same, cl.getConvolutionMode());
-        assertEquals(WeightInit.XAVIER, cl.getWeightInit());
+        assertEquals(new WeightInitXavier(), cl.getWeightInitFn());
         assertArrayEquals(new int[]{1,1}, cl.getKernelSize());
         assertArrayEquals(new int[]{1,1}, cl.getKernelSize());
 
@@ -242,7 +250,7 @@ public class RegressionTest100a extends BaseDL4JTest {
 
         INDArray outAct = net.outputSingle(in);
 
-        assertEquals(outExp, outAct);
+        assertEquals(outExp, outAct.castTo(outExp.dataType()));
     }
 
 

@@ -49,7 +49,7 @@ public abstract class GraphVertex implements Cloneable, Serializable {
     @Override
     public abstract int hashCode();
 
-    public abstract int numParams(boolean backprop);
+    public abstract long numParams(boolean backprop);
 
     /**
      * @return The Smallest valid number of inputs to this vertex

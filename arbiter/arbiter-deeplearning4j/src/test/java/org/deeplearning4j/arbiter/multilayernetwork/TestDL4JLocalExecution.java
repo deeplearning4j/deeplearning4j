@@ -53,12 +53,15 @@ import org.deeplearning4j.earlystopping.termination.MaxEpochsTerminationConditio
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
+import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.nd4j.linalg.activations.Activation;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import java.io.File;
@@ -75,6 +78,11 @@ public class TestDL4JLocalExecution {
 
     @Rule
     public TemporaryFolder testDir = new TemporaryFolder();
+
+    @BeforeClass
+    public static void before(){
+        Nd4j.setDefaultDataTypes(DataType.FLOAT, DataType.FLOAT);
+    }
 
     @Test
     public void testLocalExecution() throws Exception {
@@ -94,7 +102,7 @@ public class TestDL4JLocalExecution {
                                     .build()) //1-2 identical layers (except nIn)
                     .addLayer(new OutputLayerSpace.Builder().nOut(10).activation(Activation.SOFTMAX)
                             .lossFunction(LossFunctions.LossFunction.MCXENT).build())
-                    .numEpochs(3).pretrain(false).backprop(true).build();
+                    .numEpochs(3).build();
 
             DataProvider dp = null;
             Class<? extends DataSource> ds = null;
@@ -224,7 +232,7 @@ public class TestDL4JLocalExecution {
                                         new IntegerParameterSpace(1, 2)) //1-2 identical layers (except nIn)
                         .addLayer(new OutputLayerSpace.Builder().nOut(3).activation(Activation.SOFTMAX)
                                         .lossFunction(LossFunctions.LossFunction.MCXENT).build())
-                        .numEpochs(3).pretrain(false).backprop(true).build();
+                        .numEpochs(3).build();
         Map<String, Object> commands = new HashMap<>();
         commands.put(DataSetIteratorFactoryProvider.FACTORY_KEY, TestDataFactoryProviderMnist.class.getCanonicalName());
 
@@ -280,7 +288,7 @@ public class TestDL4JLocalExecution {
                                         new IntegerParameterSpace(1, 2)) //1-2 identical layers (except nIn)
                         .addLayer(new OutputLayerSpace.Builder().nOut(3).activation(Activation.SOFTMAX)
                                         .lossFunction(LossFunctions.LossFunction.MCXENT).build())
-                        .earlyStoppingConfiguration(esConf).pretrain(false).backprop(true).build();
+                        .earlyStoppingConfiguration(esConf).build();
 
         //Define configuration:
 
@@ -335,7 +343,7 @@ public class TestDL4JLocalExecution {
                         .activation(Activation.HARDSIGMOID)
                         .lossFunction(LossFunctions.LossFunction.MCXENT).build())
                 .setInputType(InputType.convolutionalFlat(28,28,1))
-                .pretrain(false).backprop(true).build();
+                .build();
 
         //Define configuration:
 

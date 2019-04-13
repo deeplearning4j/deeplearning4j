@@ -20,6 +20,8 @@ import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
@@ -57,5 +59,39 @@ public class TokenizerTest {
         tokenizer.sequencesToTexts(sequences);
         tokenizer.sequencesToMatrix(sequences, TokenizerMode.TFIDF);
         tokenizer.fitOnSequences(sequences);
+    }
+
+    @Test
+    public void tokenizerParity(){
+        // See #7448
+        KerasTokenizer tokenize = new KerasTokenizer(1000);
+        String[] itemsArray = new String[] { "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua." };
+        tokenize.fitOnTexts(itemsArray);
+        Map<String, Integer> index = tokenize.getWordIndex();
+        Map<String, Integer> expectedIndex = new HashMap<>();
+        expectedIndex.put("lorem", 1);
+        expectedIndex.put("ipsum", 2);
+        expectedIndex.put("dolor", 3);
+        expectedIndex.put("sit", 4);
+        expectedIndex.put("amet", 5);
+        expectedIndex.put("consectetur", 6);
+        expectedIndex.put("adipiscing", 7);
+        expectedIndex.put("elit", 8);
+        expectedIndex.put("sed", 9);
+        expectedIndex.put("do", 10);
+        expectedIndex.put("eiusmod", 11);
+        expectedIndex.put("tempor", 12);
+        expectedIndex.put("incididunt", 13);
+        expectedIndex.put("ut", 14);
+        expectedIndex.put("labore", 15);
+        expectedIndex.put("et", 16);
+        expectedIndex.put("dolore", 17);
+        expectedIndex.put("magna", 18);
+        expectedIndex.put("aliqua", 19);
+        assertEquals(expectedIndex.size(), index.size());
+        for (Map.Entry<String, Integer> entry: expectedIndex.entrySet()){
+            assertEquals(entry.getValue(), index.get(entry.getKey()));
+        }
+        
     }
 }

@@ -25,11 +25,13 @@
 #include <op_boilerplate.h>
 #include <graph/LaunchContext.h>
 #include <types/float16.h>
+#include <types/types.h>
 #include <helpers/shape.h>
 #include <NDArray.h>
 #include <vector>
 #include <array>
 #include <Status.h>
+#include <NDArrayFactory.h>
 
 #ifdef __CUDACC__
 #include <cuda.h>

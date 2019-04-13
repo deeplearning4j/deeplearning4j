@@ -22,27 +22,19 @@
 
 namespace nd4j {
     namespace ops {
-
-        template <typename T>
-        LogicOp<T>::LogicOp(const char *name) : DeclarableOp<T>::DeclarableOp(name, true) {
+        LogicOp::LogicOp(const char *name) : DeclarableOp::DeclarableOp(name, true) {
             // just using DeclarableOp constructor
             //this->_descriptor->
         }
 
-        template <typename T>
-        Nd4jStatus LogicOp<T>::validateAndExecute(nd4j::graph::Context<T> &block) {
+        Nd4jStatus LogicOp::validateAndExecute(nd4j::graph::Context &block) {
             nd4j_logger("WARNING: LogicOps should NOT be ever called\n", "");
             return ND4J_STATUS_BAD_INPUT;
         }
 
-        template <typename T>
-        ShapeList* LogicOp<T>::calculateOutputShape(ShapeList *inputShape, nd4j::graph::Context<T> &block) {
+        ShapeList* LogicOp::calculateOutputShape(ShapeList *inputShape, nd4j::graph::Context &block) {
             // FIXME: we probably want these ops to evaluate scopes
             return SHAPELIST();
         }
-
-        template class ND4J_EXPORT LogicOp<float>;
-        template class ND4J_EXPORT LogicOp<float16>;
-        template class ND4J_EXPORT LogicOp<double>;
     }
 }

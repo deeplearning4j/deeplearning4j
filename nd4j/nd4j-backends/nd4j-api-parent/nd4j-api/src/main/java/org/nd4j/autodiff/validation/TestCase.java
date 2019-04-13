@@ -65,6 +65,7 @@ public class TestCase {
      * NOTE: The Function<INDArray,String> should return null on correct results, and an error message otherwise
      */
     private Map<String, Function<INDArray, String>> fwdTestFns;
+    private Map<String,INDArray> placeholderValues;
 
     //Gradient check configuration
     private boolean gradientCheck = true;
@@ -75,6 +76,7 @@ public class TestCase {
     private double gradCheckMaxRelativeError = GC_DEFAULT_MAX_REL_ERROR;
     private double gradCheckMinAbsError = GC_DEFAULT_MIN_ABS_ERROR;
     private Set<String> gradCheckSkipVariables;
+    private Map<String, INDArray> gradCheckMask;
 
     //FlatBuffers serialization configuration
     private TestSerialization testFlatBufferSerialization = TestSerialization.BOTH;
@@ -152,6 +154,10 @@ public class TestCase {
         return gradCheckSkipVariables;
     }
 
+    public Map<String, INDArray> gradCheckMask() {
+        return gradCheckMask;
+    }
+
     /**
      * Specify the input variables that should NOT be gradient checked.
      * For example, if an input is an integer index (not real valued) it should be skipped as such an input cannot
@@ -163,6 +169,18 @@ public class TestCase {
         if (gradCheckSkipVariables == null)
             gradCheckSkipVariables = new LinkedHashSet<>();
         Collections.addAll(gradCheckSkipVariables, toSkip);
+        return this;
+    }
+
+    public TestCase placeholderValues(Map<String,INDArray> placeholderValues){
+        this.placeholderValues = placeholderValues;
+        return this;
+    }
+
+    public TestCase placeholderValue(String variable, INDArray value){
+        if(this.placeholderValues == null)
+            this.placeholderValues = new HashMap<>();
+        this.placeholderValues.put(variable, value);
         return this;
     }
 

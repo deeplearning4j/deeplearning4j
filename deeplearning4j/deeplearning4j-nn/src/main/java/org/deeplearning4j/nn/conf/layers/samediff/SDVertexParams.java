@@ -37,9 +37,9 @@ public class SDVertexParams extends SDLayerParams {
      * @param inputNames Names of the inputs. Number here also defines the number of vertex inputs
      * @see #defineInputs(int)
      */
-    public void defineInputs(String... inputNames){
+    public void defineInputs(String... inputNames) {
         Preconditions.checkArgument(inputNames != null && inputNames.length > 0,
-                "Input names must not be null, and must have length > 0: got %s", inputNames);
+                        "Input names must not be null, and must have length > 0: got %s", inputNames);
         this.inputs = Arrays.asList(inputNames);
     }
 
@@ -48,10 +48,10 @@ public class SDVertexParams extends SDLayerParams {
      *
      * @param numInputs Number of inputs to the vertex.
      */
-    public void defineInputs(int numInputs){
+    public void defineInputs(int numInputs) {
         Preconditions.checkArgument(numInputs > 0, "Number of inputs must be > 0: Got %s", numInputs);
         String[] inputNames = new String[numInputs];
-        for( int i=0; i<numInputs; i++ ){
+        for (int i = 0; i < numInputs; i++) {
             inputNames[i] = "input_" + i;
         }
     }

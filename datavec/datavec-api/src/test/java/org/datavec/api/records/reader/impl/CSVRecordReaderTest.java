@@ -314,4 +314,24 @@ public class CSVRecordReaderTest {
             e.printStackTrace();
         }
     }
+
+    @Test
+    public void testUsefulExceptionNoInit(){
+
+        CSVRecordReader rr = new CSVRecordReader(0, ',');
+
+        try{
+            rr.hasNext();
+            fail("Expected exception");
+        } catch (Exception e){
+            assertTrue(e.getMessage(), e.getMessage().contains("initialized"));
+        }
+
+        try{
+            rr.next();
+            fail("Expected exception");
+        } catch (Exception e){
+            assertTrue(e.getMessage(), e.getMessage().contains("initialized"));
+        }
+    }
 }

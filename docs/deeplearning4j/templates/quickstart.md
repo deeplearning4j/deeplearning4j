@@ -94,6 +94,15 @@ Install the [latest version of Git](https://git-scm.com/book/en/v2/Getting-Start
 $ git clone git://git.kernel.org/pub/scm/git/git.git
 ```
 
+The latest version of Mac's Mojave OS breaks git, producing the following error message:
+
+```xcrun: error: invalid active developer path (/Library/Developer/CommandLineTools), missing xcrun at: /Library/Developer/CommandLineTools/usr/bin/xcrun
+```
+
+This can be fixed by running:
+
+```xcode-select --install
+```
 
 ## <a name="examples">DL4J Examples in a Few Easy Steps</a>
 
@@ -237,6 +246,6 @@ Deeplearning4j has two other notable components:
 * [Arbiter: hyperparameter optimization and model evaluation](./arbiter-overview)
 * [DataVec: built-in ETL for machine-learning data pipelines](./datavec-overview)
 
-Deeplearning4j is meant to be an end-to-end platform for building real applications, not just a tensor library with automatic differentiation. If you want a tensor library with autodiff, please see ND4J and and [samediff](https://github.com/deeplearning4j/deeplearning4j/tree/master/nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/java/org/nd4j/autodiff). Samediff is still in alpha, but if you want to contribute, please join our [live chat on Gitter](https://gitter.im/deeplearning4j/deeplearning4j).
+Deeplearning4j is meant to be an end-to-end platform for building real applications, not just a tensor library with automatic differentiation. If you want a tensor library with autodiff, please see ND4J and [samediff](https://github.com/deeplearning4j/deeplearning4j/tree/master/nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/java/org/nd4j/autodiff). Samediff is still in alpha, but if you want to contribute, please join our [live chat on Gitter](https://gitter.im/deeplearning4j/deeplearning4j).
 
 Lastly, if you are benchmarking Deeplearnin4j, please consider coming in to our live chat and asking for tips. Deeplearning4j has [all the knobs](./deeplearning4j-config-gpu-cpu), but some may not work exactly like the Python frameworks to do. You have to build Deeplearning4j from source for some applications.

@@ -22,6 +22,7 @@ import lombok.NonNull;
 import org.deeplearning4j.nn.conf.CacheMode;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 
 import java.text.DecimalFormat;
@@ -72,7 +73,7 @@ public class NetworkMemoryReport extends MemoryReport {
 
     @Override
     public long getTotalMemoryBytes(int minibatchSize, @NonNull MemoryUseMode memoryUseMode,
-                    @NonNull CacheMode cacheMode, @NonNull DataBuffer.Type dataType) {
+                    @NonNull CacheMode cacheMode, @NonNull DataType dataType) {
 
         //As per MemoryReport javadoc: we need
         // sum_layers (StdFixed + minibatch * StdVariable) + sum_layers (CacheFixed + minibatch * CacheVariable)
@@ -109,7 +110,7 @@ public class NetworkMemoryReport extends MemoryReport {
 
     @Override
     public long getMemoryBytes(MemoryType memoryType, int minibatchSize, MemoryUseMode memoryUseMode,
-                    CacheMode cacheMode, DataBuffer.Type dataType) {
+                    CacheMode cacheMode, DataType dataType) {
         long totalBytes = 0;
         for (MemoryReport lmr : layerAndVertexReports.values()) {
 
@@ -128,12 +129,12 @@ public class NetworkMemoryReport extends MemoryReport {
     @Override
     public String toString() {
 
-        long fixedMemBytes = getTotalMemoryBytes(0, MemoryUseMode.INFERENCE, CacheMode.NONE, DataBuffer.Type.FLOAT);
-        long perEx = getTotalMemoryBytes(1, MemoryUseMode.INFERENCE, CacheMode.NONE, DataBuffer.Type.FLOAT)
+        long fixedMemBytes = getTotalMemoryBytes(0, MemoryUseMode.INFERENCE, CacheMode.NONE, DataType.FLOAT);
+        long perEx = getTotalMemoryBytes(1, MemoryUseMode.INFERENCE, CacheMode.NONE, DataType.FLOAT)
                         - fixedMemBytes;
 
-        long fixedMemBytesTrain = getTotalMemoryBytes(0, MemoryUseMode.TRAINING, CacheMode.NONE, DataBuffer.Type.FLOAT);
-        long perExTrain = getTotalMemoryBytes(1, MemoryUseMode.TRAINING, CacheMode.NONE, DataBuffer.Type.FLOAT)
+        long fixedMemBytesTrain = getTotalMemoryBytes(0, MemoryUseMode.TRAINING, CacheMode.NONE, DataType.FLOAT);
+        long perExTrain = getTotalMemoryBytes(1, MemoryUseMode.TRAINING, CacheMode.NONE, DataType.FLOAT)
                         - fixedMemBytesTrain;
 
         Map<Class<?>, Integer> layerCounts = new LinkedHashMap<>();
@@ -163,17 +164,17 @@ public class NetworkMemoryReport extends MemoryReport {
         appendFixedPlusVariable(sb, "  Training Memory (FP32):             ", fixedMemBytesTrain, perExTrain);
 
         sb.append("  Inference Memory Breakdown (FP32):\n");
-        appendBreakDown(sb, MemoryUseMode.INFERENCE, CacheMode.NONE, DataBuffer.Type.FLOAT);
+        appendBreakDown(sb, MemoryUseMode.INFERENCE, CacheMode.NONE, DataType.FLOAT);
 
         sb.append("  Training Memory Breakdown (CacheMode = ").append(CacheMode.NONE).append(", FP32):\n");
-        appendBreakDown(sb, MemoryUseMode.TRAINING, CacheMode.NONE, DataBuffer.Type.FLOAT);
+        appendBreakDown(sb, MemoryUseMode.TRAINING, CacheMode.NONE, DataType.FLOAT);
 
 
         return sb.toString();
     }
 
     private void appendBreakDown(StringBuilder sb, MemoryUseMode useMode, CacheMode cacheMode,
-                    DataBuffer.Type dataType) {
+                    DataType dataType) {
         for (MemoryType mt : MemoryType.values()) {
             if (useMode == MemoryUseMode.INFERENCE && !mt.isInference()) {
                 continue;

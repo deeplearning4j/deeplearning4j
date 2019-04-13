@@ -20,12 +20,10 @@ package org.deeplearning4j.nn.params;
 import lombok.val;
 import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.conf.distribution.Distributions;
 import org.deeplearning4j.nn.conf.layers.DepthwiseConvolution2D;
 import org.deeplearning4j.nn.conf.layers.Layer;
 import org.deeplearning4j.nn.weights.WeightInitUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.rng.distribution.Distribution;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 
 import java.util.*;
@@ -162,7 +160,7 @@ public class DepthwiseConvolutionParamInitializer implements ParamInitializer {
 
         INDArray depthWiseWeightGradientView = gradientView.get(
                 NDArrayIndex.point(0), NDArrayIndex.interval(biasParams, biasParams + depthWiseParams))
-                .reshape('c', depthMultiplier, nIn, kernel[0], kernel[1]);
+                .reshape('c', kernel[0], kernel[1], nIn, depthMultiplier);
         out.put(WEIGHT_KEY, depthWiseWeightGradientView);
 
         if(layerConf.hasBias()){
@@ -190,7 +188,6 @@ public class DepthwiseConvolutionParamInitializer implements ParamInitializer {
         int depthMultiplier = layerConf.getDepthMultiplier();
 
         if (initializeParams) {
-            Distribution dist = Distributions.createDistribution(layerConf.getDist());
             int[] kernel = layerConf.getKernelSize();
             int[] stride = layerConf.getStride();
 
@@ -199,14 +196,14 @@ public class DepthwiseConvolutionParamInitializer implements ParamInitializer {
             double fanIn = inputDepth * kernel[0] * kernel[1];
             double fanOut = depthMultiplier * kernel[0] * kernel[1] / ((double) stride[0] * stride[1]);
 
-            val weightsShape = new long[] {depthMultiplier, inputDepth, kernel[0], kernel[1]};
+            val weightsShape = new long[] {kernel[0], kernel[1], inputDepth, depthMultiplier};
 
-            return WeightInitUtil.initWeights(fanIn, fanOut, weightsShape, layerConf.getWeightInit(), dist, 'c',
+            return layerConf.getWeightInitFn().init(fanIn, fanOut, weightsShape, 'c',
                             weightView);
         } else {
             int[] kernel = layerConf.getKernelSize();
             return WeightInitUtil.reshapeWeights(
-                            new long[] {depthMultiplier, layerConf.getNIn(), kernel[0], kernel[1]}, weightView, 'c');
+                            new long[] {kernel[0], kernel[1], layerConf.getNIn(), depthMultiplier}, weightView, 'c');
         }
     }
 }

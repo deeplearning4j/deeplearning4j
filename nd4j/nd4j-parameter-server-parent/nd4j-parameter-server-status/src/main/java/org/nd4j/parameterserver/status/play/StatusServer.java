@@ -103,7 +103,7 @@ public class StatusServer {
                 return statusStorage.getState(Integer.parseInt(id)).isMaster()
                                 ? ok(toJson(MasterStatus.builder()
                                                 .master(statusStorage.getState(Integer.parseInt(id)).getServerState())
-                                                //note here that a responder is is + 1
+                                                //note here that a responder is id + 1
                                                 .responder(statusStorage
                                                                 .getState(Integer.parseInt(id) + 1).getServerState())
                                                 .responderN(statusStorage

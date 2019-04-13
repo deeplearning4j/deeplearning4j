@@ -18,6 +18,7 @@ package org.nd4j.weightinit.impl;
 
 import lombok.Builder;
 import org.apache.commons.math3.util.FastMath;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.weightinit.BaseWeightInitScheme;
@@ -39,7 +40,7 @@ public class LecunUniformInitScheme extends BaseWeightInitScheme {
     }
 
     @Override
-    public INDArray doCreate(long[] shape, INDArray paramsView) {
+    public INDArray doCreate(DataType dataType, long[] shape, INDArray paramsView) {
         double b = 3.0 / Math.sqrt(fanIn);
         return  Nd4j.rand(shape, Nd4j.getDistributions().createUniform(-b, b));
     }

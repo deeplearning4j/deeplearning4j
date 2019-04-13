@@ -26,6 +26,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.io.ClassPathResource;
@@ -52,7 +53,7 @@ public class TsneTest {
                 //STEP 1: Initialization
                 int iterations = 300;
                 //create an n-dimensional array of doubles
-                Nd4j.setDataType(DataBuffer.Type.DOUBLE);
+                Nd4j.setDataType(DataType.DOUBLE);
                 List<String> cacheList = new ArrayList<>(); //cacheList is a dynamic array of strings used to hold all words
 
                 //STEP 2: Turn text input into a list of words

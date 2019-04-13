@@ -16,9 +16,7 @@
 
 package org.deeplearning4j.nn.layers.samediff.testlayers;
 
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.val;
+import lombok.*;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -31,6 +29,7 @@ import org.deeplearning4j.nn.params.ConvolutionParamInitializer;
 import org.deeplearning4j.nn.weights.WeightInitUtil;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -144,7 +143,7 @@ public class SameDiffConv extends SameDiffLayer {
                 .isSameMode(this.cm == ConvolutionMode.Same)
                 .build();
 
-        SDVariable conv = sameDiff.conv2d(vars, c);    //TODO can't set name
+        SDVariable conv = sameDiff.cnn().conv2d(vars, c);    //TODO can't set name
 
         return activation.asSameDiff("out", sameDiff, conv);
     }
@@ -165,6 +164,7 @@ public class SameDiffConv extends SameDiffLayer {
         private int nOut;
         private Activation activation = Activation.TANH;
         private int[] kernel = new int[]{2, 2};
+
         private int[] stride = new int[]{1, 1};
         private int[] padding = new int[]{0, 0};
         private int[] dilation = new int[]{1, 1};

@@ -27,8 +27,8 @@ import java.io.IOException;
 
 /**
  * @author Adam Gibson
+ * @deprecated Use {@link org.nd4j.serde.jackson.ndarray.NDArrayDeSerializer}
  */
-
 public class NDArrayDeSerializer extends JsonDeserializer<INDArray> {
     @Override
     public INDArray deserialize(JsonParser jp, DeserializationContext deserializationContext) throws IOException {

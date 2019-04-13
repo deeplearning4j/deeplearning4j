@@ -45,16 +45,13 @@ public class DropOut extends BaseRandomOp {
     }
 
     public DropOut(@NonNull INDArray x, double p) {
-        this(x, x, p, x.lengthLong());
+        this(x, x, p);
     }
 
     public DropOut(@NonNull INDArray x, @NonNull INDArray z, double p) {
-        this(x, z, p, x.lengthLong());
-    }
-
-    public DropOut(@NonNull INDArray x, @NonNull INDArray z, double p, long n) {
+        super(x,null,z);
         this.p = p;
-        init(x, null, z, n);
+        this.extraArgs = new Object[] {p};
     }
 
     @Override
@@ -65,12 +62,6 @@ public class DropOut extends BaseRandomOp {
     @Override
     public String opName() {
         return "dropout";
-    }
-
-    @Override
-    public void init(INDArray x, INDArray y, INDArray z, long n) {
-        super.init(x, y, z, n);
-        this.extraArgs = new Object[] {p, (double) n};
     }
 
 

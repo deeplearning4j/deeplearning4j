@@ -17,24 +17,23 @@
 package org.nd4j.linalg.shape;
 
 import lombok.val;
-import org.nd4j.linalg.primitives.Pair;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.iter.NdIndexIterator;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.checkutil.NDArrayCreationUtil;
 import org.nd4j.linalg.factory.Nd4jBackend;
+import org.nd4j.linalg.primitives.Pair;
 
-import java.nio.IntBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
 /**
@@ -76,17 +75,16 @@ public class StaticShapeTests extends BaseNd4jTest {
         //Shape.stride(DataBuffer,int), Shape.stride(IntBuffer,int)
 
         List<List<Pair<INDArray, String>>> lists = new ArrayList<>();
-        lists.add(NDArrayCreationUtil.getAllTestMatricesWithShape(3, 4, 12345));
-        lists.add(NDArrayCreationUtil.getAllTestMatricesWithShape(1, 4, 12345));
-        lists.add(NDArrayCreationUtil.getAllTestMatricesWithShape(3, 1, 12345));
-        lists.add(NDArrayCreationUtil.getAll3dTestArraysWithShape(12345, 3, 4, 5));
-        lists.add(NDArrayCreationUtil.getAll4dTestArraysWithShape(12345, 3, 4, 5, 6));
-        lists.add(NDArrayCreationUtil.getAll4dTestArraysWithShape(12345, 3, 1, 5, 1));
-        lists.add(NDArrayCreationUtil.getAll5dTestArraysWithShape(12345, 3, 4, 5, 6, 7));
-        lists.add(NDArrayCreationUtil.getAll6dTestArraysWithShape(12345, 3, 4, 5, 6, 7, 8));
+        lists.add(NDArrayCreationUtil.getAllTestMatricesWithShape(3, 4, 12345, DataType.DOUBLE));
+        lists.add(NDArrayCreationUtil.getAllTestMatricesWithShape(1, 4, 12345, DataType.DOUBLE));
+        lists.add(NDArrayCreationUtil.getAllTestMatricesWithShape(3, 1, 12345, DataType.DOUBLE));
+        lists.add(NDArrayCreationUtil.getAll3dTestArraysWithShape(12345, new long[]{3, 4, 5}, DataType.DOUBLE));
+        lists.add(NDArrayCreationUtil.getAll4dTestArraysWithShape(12345, new int[]{3, 4, 5, 6}, DataType.DOUBLE));
+        lists.add(NDArrayCreationUtil.getAll4dTestArraysWithShape(12345, new int[]{3, 1, 5, 1}, DataType.DOUBLE));
+        lists.add(NDArrayCreationUtil.getAll5dTestArraysWithShape(12345, new int[]{3, 4, 5, 6, 7}, DataType.DOUBLE));
+        lists.add(NDArrayCreationUtil.getAll6dTestArraysWithShape(12345, new int[]{3, 4, 5, 6, 7, 8}, DataType.DOUBLE));
 
-        val shapes = new long[][] {{3, 4}, {1, 4}, {3, 1}, {3, 4, 5}, {3, 4, 5, 6}, {3, 1, 5, 1}, {3, 4, 5, 6, 7},
-                        {3, 4, 5, 6, 7, 8}};
+        val shapes = new long[][] {{3, 4}, {1, 4}, {3, 1}, {3, 4, 5}, {3, 4, 5, 6}, {3, 1, 5, 1}, {3, 4, 5, 6, 7}, {3, 4, 5, 6, 7, 8}};
 
         for (int i = 0; i < shapes.length; i++) {
             List<Pair<INDArray, String>> list = lists.get(i);

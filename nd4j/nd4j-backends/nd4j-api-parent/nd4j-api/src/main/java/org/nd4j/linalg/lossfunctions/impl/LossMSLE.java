@@ -80,7 +80,6 @@ public class LossMSLE extends DifferentialFunction  implements ILossFunction {
             Preconditions.throwEx("Labels and preOutput must have equal shapes: got shapes %s vs %s", labels.shape(), preOutput.shape());
         }
         INDArray scoreArr;
-        //INDArray output = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, preOutput.dup()));
         INDArray output = activationFn.getActivation(preOutput.dup(), true);
         scoreArr = Transforms.log(output.addi(1.0).divi(labels.add(1.0)), false);
         scoreArr = scoreArr.muli(scoreArr).divi(labels.size(1));
@@ -116,7 +115,7 @@ public class LossMSLE extends DifferentialFunction  implements ILossFunction {
     @Override
     public INDArray computeScoreArray(INDArray labels, INDArray preOutput, IActivation activationFn, INDArray mask) {
         INDArray scoreArr = scoreArray(labels, preOutput, activationFn, mask);
-        return scoreArr.sum(1);
+        return scoreArr.sum(true,1);
     }
 
     @Override
@@ -124,7 +123,6 @@ public class LossMSLE extends DifferentialFunction  implements ILossFunction {
         if(!labels.equalShapes(preOutput)){
             Preconditions.throwEx("Labels and preOutput must have equal shapes: got shapes %s vs %s", labels.shape(), preOutput.shape());
         }
-        //INDArray output = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, preOutput.dup()));
         INDArray output = activationFn.getActivation(preOutput.dup(), true);
 
         INDArray p1 = output.add(1.0);

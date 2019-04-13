@@ -26,6 +26,7 @@ import org.apache.spark.serializer.SerializerInstance;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.*;
@@ -61,7 +62,7 @@ public class TestNd4jKryoSerialization {
     @Test
     public void testSerialization() {
 
-        Tuple2<INDArray, INDArray> t2 = new Tuple2<>(Nd4j.linspace(1, 10, 10), Nd4j.linspace(10, 20, 10));
+        Tuple2<INDArray, INDArray> t2 = new Tuple2<>(Nd4j.linspace(1, 10, 10, DataType.FLOAT), Nd4j.linspace(10, 20, 10, DataType.FLOAT));
 
         Broadcast<Tuple2<INDArray, INDArray>> b = sc.broadcast(t2);
 
@@ -131,8 +132,8 @@ public class TestNd4jKryoSerialization {
         @Override
         public void call(INDArray arr) throws Exception {
             Tuple2<INDArray, INDArray> t2 = b.getValue();
-            assertEquals(Nd4j.linspace(1, 10, 10), t2._1());
-            assertEquals(Nd4j.linspace(10, 20, 10), t2._2());
+            assertEquals(Nd4j.linspace(1, 10, 10, DataType.FLOAT), t2._1());
+            assertEquals(Nd4j.linspace(10, 20, 10, DataType.FLOAT), t2._2());
 
             assertEquals(Nd4j.ones(5), arr);
         }

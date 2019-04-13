@@ -16,9 +16,15 @@
 
 package org.deeplearning4j.models.word2vec;
 
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+import jdk.nashorn.internal.objects.annotations.Property;
 import lombok.Getter;
 import lombok.NonNull;
+import org.apache.commons.compress.compressors.gzip.GzipUtils;
 import org.deeplearning4j.models.embeddings.WeightLookupTable;
+import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
 import org.deeplearning4j.models.embeddings.learning.ElementsLearningAlgorithm;
 import org.deeplearning4j.models.embeddings.loader.VectorsConfiguration;
 import org.deeplearning4j.models.embeddings.reader.ModelUtils;
@@ -27,8 +33,11 @@ import org.deeplearning4j.models.sequencevectors.SequenceVectors;
 import org.deeplearning4j.models.sequencevectors.interfaces.SequenceIterator;
 import org.deeplearning4j.models.sequencevectors.interfaces.VectorsListener;
 import org.deeplearning4j.models.sequencevectors.iterators.AbstractSequenceIterator;
+import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;
 import org.deeplearning4j.models.sequencevectors.transformers.impl.SentenceTransformer;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
+import org.deeplearning4j.models.word2vec.wordstore.inmemory.AbstractCache;
+import org.deeplearning4j.models.word2vec.wordstore.inmemory.InMemoryLookupCache;
 import org.deeplearning4j.text.documentiterator.DocumentIterator;
 import org.deeplearning4j.text.documentiterator.LabelAwareIterator;
 import org.deeplearning4j.text.invertedindex.InvertedIndex;
@@ -36,9 +45,23 @@ import org.deeplearning4j.text.sentenceiterator.SentenceIterator;
 import org.deeplearning4j.text.sentenceiterator.StreamLineIterator;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.DefaultTokenizerFactory;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
+import org.nd4j.base.Preconditions;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.shade.jackson.core.JsonProcessingException;
+import org.nd4j.shade.jackson.databind.DeserializationFeature;
+import org.nd4j.shade.jackson.databind.ObjectMapper;
+import org.nd4j.shade.jackson.databind.SerializationFeature;
+import org.nd4j.shade.jackson.databind.type.CollectionType;
 
-import java.util.Collection;
-import java.util.List;
+import java.io.BufferedReader;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.zip.GZIPInputStream;
 
 /**
  * This is Word2Vec implementation based on SequenceVectors
@@ -93,6 +116,53 @@ public class Word2Vec extends SequenceVectors<VocabWord> {
      */
     public void setSequenceIterator(@NonNull SequenceIterator<VocabWord> iterator) {
         this.iterator = iterator;
+    }
+
+    private static ObjectMapper mapper = null;
+    private static final Object lock = new Object();
+
+    private static ObjectMapper mapper() {
+        if (mapper == null) {
+            synchronized (lock) {
+                if (mapper == null) {
+                    mapper = new ObjectMapper();
+                    mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+                    mapper.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
+                    return mapper;
+                }
+            }
+        }
+        return mapper;
+    }
+
+    private static final String CLASS_FIELD = "@class";
+    private static final String VOCAB_LIST_FIELD = "VocabCache";
+
+    public String toJson() throws JsonProcessingException {
+
+        JsonObject retVal = new JsonObject();
+        ObjectMapper mapper = mapper();
+
+        retVal.addProperty(CLASS_FIELD, mapper.writeValueAsString(this.getClass().getName()));
+
+        if (this.vocab instanceof AbstractCache) {
+            retVal.addProperty(VOCAB_LIST_FIELD, ((AbstractCache<VocabWord>) this.vocab).toJson());
+        }
+
+        return retVal.toString();
+    }
+
+    public static Word2Vec fromJson(String jsonString)  throws IOException {
+
+        Word2Vec ret = new Word2Vec();
+
+        JsonParser parser = new JsonParser();
+        JsonObject json = parser.parse(jsonString).getAsJsonObject();
+
+        VocabCache cache = AbstractCache.fromJson(json.get(VOCAB_LIST_FIELD).getAsString());
+
+        ret.setVocab(cache);
+        return ret;
     }
 
     public static class Builder extends SequenceVectors.Builder<VocabWord> {
@@ -545,6 +615,18 @@ public class Word2Vec extends SequenceVectors<VocabWord> {
             return this;
         }
 
+        @Override
+        public Builder usePreciseMode(boolean reallyUse) {
+            super.usePreciseMode(reallyUse);
+            return this;
+        }
+
+        @Override
+        public Builder intersectModel(@NonNull SequenceVectors vectors, boolean isLocked) {
+            super.intersectModel(vectors, isLocked);
+            return this;
+        }
+
         public Word2Vec build() {
             presetTables();
 
@@ -605,6 +687,9 @@ public class Word2Vec extends SequenceVectors<VocabWord> {
             ret.elementsLearningAlgorithm = this.elementsLearningAlgorithm;
             ret.sequenceLearningAlgorithm = this.sequenceLearningAlgorithm;
 
+            ret.intersectModel = this.intersectVectors;
+            ret.lockFactor = this.lockFactor;
+
             this.configuration.setLearningRate(this.learningRate);
             this.configuration.setLayersSize(layerSize);
             this.configuration.setHugeModelExpected(hugeModelExpected);
@@ -625,6 +710,7 @@ public class Word2Vec extends SequenceVectors<VocabWord> {
             this.configuration.setPreciseWeightInit(this.preciseWeightInit);
             this.configuration.setModelUtils(this.modelUtils.getClass().getCanonicalName());
             this.configuration.setAllowParallelTokenization(this.allowParallelTokenization);
+            this.configuration.setPreciseMode(this.preciseMode);
 
             if (tokenizerFactory != null) {
                 this.configuration.setTokenizerFactory(tokenizerFactory.getClass().getCanonicalName());
@@ -640,7 +726,6 @@ public class Word2Vec extends SequenceVectors<VocabWord> {
             ret.trainElementsVectors = true;
 
             ret.eventListeners = this.vectorsListeners;
-
 
 
             return ret;

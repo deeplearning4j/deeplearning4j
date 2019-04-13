@@ -17,6 +17,7 @@
 package org.deeplearning4j.clustering.kmeans;
 
 import org.deeplearning4j.clustering.algorithm.BaseClusteringAlgorithm;
+import org.deeplearning4j.clustering.algorithm.Distance;
 import org.deeplearning4j.clustering.strategy.ClusteringStrategy;
 import org.deeplearning4j.clustering.strategy.FixedClusterCountStrategy;
 
@@ -29,6 +30,7 @@ import org.deeplearning4j.clustering.strategy.FixedClusterCountStrategy;
 public class KMeansClustering extends BaseClusteringAlgorithm {
 
     private static final long serialVersionUID = 8476951388145944776L;
+    private static final double VARIATION_TOLERANCE= 1e-4;
 
 
     /**
@@ -47,7 +49,7 @@ public class KMeansClustering extends BaseClusteringAlgorithm {
      * @param distanceFunction the distance function to use for grouping
      * @return
      */
-    public static KMeansClustering setup(int clusterCount, int maxIterationCount, String distanceFunction,
+    public static KMeansClustering setup(int clusterCount, int maxIterationCount, Distance distanceFunction,
                     boolean inverse) {
         ClusteringStrategy clusteringStrategy =
                         FixedClusterCountStrategy.setup(clusterCount, distanceFunction, inverse);
@@ -63,7 +65,7 @@ public class KMeansClustering extends BaseClusteringAlgorithm {
      * @param allowEmptyClusters
      * @return
      */
-    public static KMeansClustering setup(int clusterCount, double minDistributionVariationRate, String distanceFunction,
+    public static KMeansClustering setup(int clusterCount, double minDistributionVariationRate, Distance distanceFunction,
                     boolean inverse, boolean allowEmptyClusters) {
         ClusteringStrategy clusteringStrategy = FixedClusterCountStrategy.setup(clusterCount, distanceFunction, inverse)
                         .endWhenDistributionVariationRateLessThan(minDistributionVariationRate);
@@ -79,7 +81,7 @@ public class KMeansClustering extends BaseClusteringAlgorithm {
      * @param distanceFunction the distance function to use for grouping
      * @return
      */
-    public static KMeansClustering setup(int clusterCount, int maxIterationCount, String distanceFunction) {
+    public static KMeansClustering setup(int clusterCount, int maxIterationCount, Distance distanceFunction) {
         return setup(clusterCount, maxIterationCount, distanceFunction, false);
     }
 
@@ -91,12 +93,18 @@ public class KMeansClustering extends BaseClusteringAlgorithm {
      * @param allowEmptyClusters
      * @return
      */
-    public static KMeansClustering setup(int clusterCount, double minDistributionVariationRate, String distanceFunction,
+    public static KMeansClustering setup(int clusterCount, double minDistributionVariationRate, Distance distanceFunction,
                     boolean allowEmptyClusters) {
         ClusteringStrategy clusteringStrategy = FixedClusterCountStrategy.setup(clusterCount, distanceFunction, false);
         clusteringStrategy.endWhenDistributionVariationRateLessThan(minDistributionVariationRate);
         return new KMeansClustering(clusteringStrategy);
     }
 
+    public static KMeansClustering setup(int clusterCount, Distance distanceFunction,
+                                         boolean allowEmptyClusters) {
+        ClusteringStrategy clusteringStrategy = FixedClusterCountStrategy.setup(clusterCount, distanceFunction, false);
+        clusteringStrategy.endWhenDistributionVariationRateLessThan(VARIATION_TOLERANCE);
+        return new KMeansClustering(clusteringStrategy);
+    }
 
 }

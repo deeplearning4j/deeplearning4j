@@ -36,17 +36,22 @@ import org.deeplearning4j.zoo.*;
 
 int numberOfClassesInYourData = 1000;
 int randomSeed = 123;
-int iterations = 1; // this is almost always 1
 
-ZooModel zooModel = new AlexNet(numberOfClassesInYourData, randomSeed, iterations);
+ZooModel zooModel = AlexNet.builder()
+                .numClasses(numberOfClassesInYourData)
+                .seed(randomSeed)
+                .build();
 Model net = zooModel.init();
 ```
 
 If you want to tune parameters or change the optimization algorithm, you can obtain a reference to the underlying network configuration:
 
 ```
-ZooModel zooModel = new AlexNet(numberOfClassesInYourData, randomSeed, iterations);
-MultiLayerConfiguration net = zooModel.conf();
+ZooModel zooModel = AlexNet.builder()
+                .numClasses(numberOfClassesInYourData)
+                .seed(randomSeed)
+                .build();
+MultiLayerConfiguration net = ((AlexNet) zooModel).conf();
 ```
 
 ### Initializing pretrained weights
@@ -61,14 +66,14 @@ import org.deeplearning4j.zoo.*;
 
 ...
 
-ZooModel zooModel = new VGG16();
+ZooModel zooModel = VGG16.builder().build();;
 Model net = zooModel.initPretrained(PretrainedType.IMAGENET);
 ```
 
 And initialize another VGG16 model with weights trained on VGGFace:
 
 ```
-ZooModel zooModel = new VGG16();
+ZooModel zooModel = VGG16.builder().build();
 Model net = zooModel.initPretrained(PretrainedType.VGGFACE);
 ```
 
@@ -107,8 +112,14 @@ The zoo comes with a couple additional features if you're looking to use the mod
 Aside from passing certain configuration information to the constructor of a zoo model, you can also change its input shape using `.setInputShape()`. NOTE: this applies to fresh configurations only, and will not affect pretrained models:
 
 ```
-ZooModel zooModel = new ResNet50(10, 123, 1);
-zooModel.setInputShape(new int[]{3,28,28});
+int numberOfClassesInYourData = 10;
+int randomSeed = 123;
+
+ZooModel zooModel = ResNet50.builder()
+        .numClasses(numberOfClassesInYourData)
+        .seed(randomSeed)
+        .build();
+zooModel.setInputShape(new int[][]{{3, 28, 28}});
 ```
 
 ### Transfer Learning

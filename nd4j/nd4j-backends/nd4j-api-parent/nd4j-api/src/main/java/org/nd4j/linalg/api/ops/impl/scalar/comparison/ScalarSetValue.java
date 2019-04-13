@@ -52,8 +52,8 @@ public class ScalarSetValue extends BaseScalarOp {
     public ScalarSetValue() {
     }
 
-    public ScalarSetValue(INDArray x, INDArray y, INDArray z, long n, Number num) {
-        super(x, y, z, n, num);
+    public ScalarSetValue(INDArray x, INDArray y, INDArray z, Number num) {
+        super(x, y, z, num);
     }
 
     public ScalarSetValue(INDArray x, Number num) {
@@ -63,7 +63,7 @@ public class ScalarSetValue extends BaseScalarOp {
 
     @Override
     public int opNum() {
-        return 13;
+        return 14;
     }
 
     @Override

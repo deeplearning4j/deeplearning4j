@@ -24,7 +24,11 @@ import org.deeplearning4j.ui.api.UIModule;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.Charset;
-import java.util.*;
+import java.util.Map;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Collections;
+import java.util.ServiceLoader;
 
 /**
  * Default internationalization implementation.<br>
@@ -50,19 +54,45 @@ public class DefaultI18N implements I18N {
     public static final String FALLBACK_LANGUAGE = "en"; //use this if the specified language doesn't have the requested message
 
     private static DefaultI18N instance;
+    private static Map<String, I18N> sessionInstances = Collections.synchronizedMap(new HashMap<>());
+    private static Throwable languageLoadingException = null;
 
+
+    private String currentLanguage = DEFAULT_LANGUAGE;
     private Map<String, Map<String, String>> messagesByLanguage = new HashMap<>();
 
+    /**
+     * Get global instance (used in single-session mode)
+     * @return global instance
+     */
     public static synchronized I18N getInstance() {
         if (instance == null)
             instance = new DefaultI18N();
         return instance;
     }
 
+    /**
+     * Get instance for session (used in multi-session mode)
+     * @param sessionId session
+     * @return instance for session
+     */
+    public static synchronized I18N getInstance(String sessionId) {
+        if (!sessionInstances.containsKey(sessionId)) {
+            sessionInstances.put(sessionId, new DefaultI18N());
+        }
+        return sessionInstances.get(sessionId);
+    }
 
-    private String currentLanguage = DEFAULT_LANGUAGE;
+    /**
+     * Remove I18N instance for session
+     * @param sessionId session ID
+     * @return the previous value associated with {@code sessionId},
+     * or null if there was no mapping for {@code sessionId}
+     */
+    public static synchronized I18N removeInstance(String sessionId) {
+        return sessionInstances.remove(sessionId);
+    }
 
-    private Set<String> loadedLanguages = Collections.synchronizedSet(new HashSet<>());
 
     private DefaultI18N() {
         loadLanguages();
@@ -88,9 +118,14 @@ public class DefaultI18N implements I18N {
                     parseFile(r, map);
                 } catch (Throwable t){
                     log.warn("Error parsing UI I18N content file; skipping: {}", r.getResource(), t);
+                    languageLoadingException = t;
                 }
             }
         }
+    }
+
+    public Throwable getLanguageLoadingException(){
+        return languageLoadingException;
     }
 
     public boolean noI18NData(){
@@ -143,12 +178,16 @@ public class DefaultI18N implements I18N {
     public String getMessage(String langCode, String key) {
         Map<String, String> messagesForLanguage = messagesByLanguage.get(langCode);
 
-        String msg = messagesForLanguage.get(key);
-        if (msg == null && !FALLBACK_LANGUAGE.equals(langCode)) {
-            //Try getting the result from the fallback language
-            return getMessage(FALLBACK_LANGUAGE, key);
+        String msg;
+        if (messagesForLanguage != null) {
+            msg = messagesForLanguage.get(key);
+            if (msg == null && !FALLBACK_LANGUAGE.equals(langCode)) {
+                //Try getting the result from the fallback language
+                return getMessage(FALLBACK_LANGUAGE, key);
+            }
+        } else {
+            msg = getMessage(FALLBACK_LANGUAGE, key);
         }
-
         return msg;
     }
 

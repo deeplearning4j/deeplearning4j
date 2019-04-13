@@ -32,7 +32,10 @@ import org.nd4j.imports.descriptors.properties.AttributeAdapter;
 import org.nd4j.imports.descriptors.properties.PropertyMapping;
 import org.nd4j.imports.graphmapper.BaseGraphMapper;
 import org.nd4j.imports.graphmapper.ImportState;
+import org.nd4j.imports.graphmapper.OpImportFilter;
+import org.nd4j.imports.graphmapper.OpImportOverride;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
@@ -276,6 +279,11 @@ public class OnnxGraphMapper extends BaseGraphMapper<OnnxProto3.GraphProto, Onnx
     }
 
     @Override
+    public List<String> getControlDependencies(OnnxProto3.NodeProto node) {
+        throw new UnsupportedOperationException("Not yet implemented");
+    }
+
+    @Override
     public void dumpBinaryProtoAsText(File inputFile, File outputFile) {
         try {
             OnnxProto3.ModelProto graphDef = OnnxProto3.ModelProto.parseFrom(new BufferedInputStream(new FileInputStream(inputFile)));
@@ -383,7 +391,9 @@ public class OnnxGraphMapper extends BaseGraphMapper<OnnxProto3.GraphProto, Onnx
     }
 
     @Override
-    public void mapNodeType(OnnxProto3.NodeProto tfNode, ImportState<OnnxProto3.GraphProto,onnx.OnnxProto3.TypeProto.Tensor> importState) {
+    public void mapNodeType(OnnxProto3.NodeProto tfNode, ImportState<OnnxProto3.GraphProto, OnnxProto3.TypeProto.Tensor> importState,
+                            OpImportOverride<OnnxProto3.GraphProto, OnnxProto3.NodeProto, OnnxProto3.AttributeProto> opImportOverride,
+                            OpImportFilter<OnnxProto3.GraphProto, OnnxProto3.NodeProto, OnnxProto3.AttributeProto> opFilter) {
         val differentialFunction = DifferentialFunctionClassHolder.getInstance().getOpWithOnnxName(tfNode.getOpType());
         if(differentialFunction == null) {
             throw new NoOpNameFoundException("No op name found " + tfNode.getOpType());
@@ -402,7 +412,7 @@ public class OnnxGraphMapper extends BaseGraphMapper<OnnxProto3.GraphProto, Onnx
             importState.getSameDiff().putFunctionForId(newInstance.getOwnName(),newInstance);
             //ensure we can track node name to function instance later.
             diff.setBaseNameForFunctionInstanceId(tfNode.getName(),newInstance);
-            diff.addVarNameForImport(tfNode.getName());
+            //diff.addVarNameForImport(tfNode.getName());
         }
         catch (Exception e) {
             e.printStackTrace();
@@ -415,13 +425,13 @@ public class OnnxGraphMapper extends BaseGraphMapper<OnnxProto3.GraphProto, Onnx
 
 
     @Override
-    public DataBuffer.Type dataTypeForTensor( onnx.OnnxProto3.TypeProto.Tensor tensorProto) {
+    public DataType dataTypeForTensor(OnnxProto3.TypeProto.Tensor tensorProto, int outputNum) {
        return nd4jTypeFromOnnxType(tensorProto.getElemType());
     }
 
     @Override
-    public boolean unknownTypeNodeImportable(OnnxProto3.TypeProto.Tensor tensor) {
-        return false;
+    public boolean isStringType(OnnxProto3.TypeProto.Tensor tensor) {
+        return tensor.getElemType() == OnnxProto3.TensorProto.DataType.STRING;
     }
 
 
@@ -430,14 +440,14 @@ public class OnnxGraphMapper extends BaseGraphMapper<OnnxProto3.GraphProto, Onnx
      * @param dataType the data type to convert
      * @return the nd4j type for the onnx type
      */
-    public DataBuffer.Type nd4jTypeFromOnnxType(OnnxProto3.TensorProto.DataType dataType) {
+    public DataType nd4jTypeFromOnnxType(OnnxProto3.TensorProto.DataType dataType) {
         switch (dataType) {
-            case DOUBLE: return DataBuffer.Type.DOUBLE;
-            case FLOAT: return DataBuffer.Type.FLOAT;
-            case FLOAT16: return DataBuffer.Type.HALF;
+            case DOUBLE: return DataType.DOUBLE;
+            case FLOAT: return DataType.FLOAT;
+            case FLOAT16: return DataType.HALF;
             case INT32:
-            case INT64: return DataBuffer.Type.INT;
-            default: return DataBuffer.Type.UNKNOWN;
+            case INT64: return DataType.INT;
+            default: return DataType.UNKNOWN;
         }
     }
 
@@ -470,7 +480,7 @@ public class OnnxGraphMapper extends BaseGraphMapper<OnnxProto3.GraphProto, Onnx
 
     @Override
     public INDArray getNDArrayFromTensor(String tensorName, OnnxProto3.TypeProto.Tensor tensorProto, OnnxProto3.GraphProto graph) {
-        DataBuffer.Type type = dataTypeForTensor(tensorProto);
+        DataType type = dataTypeForTensor(tensorProto, 0);
         if(!tensorProto.isInitialized()) {
             throw new ND4JIllegalStateException("Unable to retrieve ndarray. Tensor was not initialized");
         }
@@ -503,7 +513,7 @@ public class OnnxGraphMapper extends BaseGraphMapper<OnnxProto3.GraphProto, Onnx
             return null;
 
 
-        DataBuffer.Type type = nd4jTypeFromOnnxType(tensor.getDataType());
+        DataType type = nd4jTypeFromOnnxType(tensor.getDataType());
 
         ByteString bytes = tensor.getRawData();
         ByteBuffer byteBuffer = bytes.asReadOnlyByteBuffer().order(ByteOrder.nativeOrder());

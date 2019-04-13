@@ -16,9 +16,11 @@
 
 package org.nd4j.linalg.api.buffer;
 
+import lombok.NonNull;
 import org.bytedeco.javacpp.Pointer;
 import org.bytedeco.javacpp.indexer.Indexer;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
+import org.nd4j.linalg.primitives.Triple;
 
 import java.io.*;
 import java.nio.ByteBuffer;
@@ -30,14 +32,9 @@ import java.util.Collection;
  *
  * @author Adam Gibson
  */
-public interface DataBuffer extends Serializable {
-
-    enum Type {
-        DOUBLE, FLOAT, INT, HALF, COMPRESSED, LONG,UNKNOWN
-    }
-
+public interface DataBuffer extends Serializable, AutoCloseable {
     enum TypeEx {
-        FLOAT8, INT8, UINT8, FLOAT16, INT16, UINT16, FLOAT, DOUBLE, THRESHOLD, FTHRESHOLD
+
     }
 
     long getGenerationId();
@@ -53,8 +50,12 @@ public interface DataBuffer extends Serializable {
         DIRECT,
         @Deprecated
         HEAP,
+        @Deprecated
         JAVACPP,
+        @Deprecated
         LONG_SHAPE, // long shapes will be used instead of int
+
+        MIXED_DATA_TYPES, // latest generation of INDArrays support multiple data types, with information stored within shapeInfo "offset" field.
     }
 
     /**
@@ -92,7 +93,7 @@ public interface DataBuffer extends Serializable {
      */
     boolean sameUnderlyingData(DataBuffer buffer);
 
-    void read(DataInputStream s);
+    void read(DataInputStream s, AllocationMode allocationMode, long length, DataType dataType);
 
     void write(DataOutputStream out) throws IOException;
 
@@ -386,6 +387,9 @@ public interface DataBuffer extends Serializable {
      * @param data the data for this buffer
      */
     void setData(double[] data);
+    void setData(short[] data);
+    void setData(byte[] data);
+    void setData(boolean[] data);
 
     /**
      * Raw byte array storage
@@ -399,7 +403,7 @@ public interface DataBuffer extends Serializable {
      *
      * @return the data opType of the buffer
      */
-    Type dataType();
+    DataType dataType();
 
     /**
      * Return the buffer as a float array
@@ -499,6 +503,8 @@ public interface DataBuffer extends Serializable {
     void put(long i, int element);
 
     void put(long i, long element);
+
+    void put(long i, boolean element);
 
 
     /**
@@ -606,7 +612,7 @@ public interface DataBuffer extends Serializable {
      * Write this buffer to the input stream.
      * @param is the inpus tream to write to
      */
-    void read(InputStream is);
+    void read(InputStream is, AllocationMode allocationMode, long length, DataType dataType);
 
     /**
      * Returns tracking point for Allocator
@@ -675,4 +681,18 @@ public interface DataBuffer extends Serializable {
      * @return the capacity of the databuffer
      * */
     long capacity();
+
+    /**
+     * This method checks, if this DataBuffer instalce can use close() method
+     * @return true if DataBuffer can be released, false otherwise
+     */
+    boolean closeable();
+
+    /**
+     * This method releases exclusive off-heap resources uses by this DataBuffer instance.
+     * If DataBuffer relies on shared resources, exception will be thrown instead
+     *
+     * PLEASE NOTE: This method is NOT safe by any means
+     */
+    void close();
 }

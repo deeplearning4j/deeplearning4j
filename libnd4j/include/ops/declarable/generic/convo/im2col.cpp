@@ -45,17 +45,19 @@ namespace nd4j {
             int dY = INT_ARG(6);			//Dilation, height/y dimension
             int dX = INT_ARG(7);			//Dilation, width/x dimension
             bool isSameMode = INT_ARG(8) > 0;
-            T zeroPadVal = 0.0;
+            double zeroPadVal = 0.0;
             if (block.getTArguments()->size() > 0)
                 zeroPadVal = T_ARG(0);
 
+            // FIXME: zeropad value is void
             LaunchContext ctx;
-            nd4j::ops::helpers::_im2col(ctx, z->buffer(), x->buffer(), z->shapeInfo(), x->shapeInfo(), kernelHeight, kernelWidth, strideY, strideX, padHeight, padWidth, dY, dX, isSameMode, zeroPadVal);
+            nd4j::ops::helpers::im2col(ctx, *x, *z, kernelHeight, kernelWidth, strideY, strideX, padHeight, padWidth, dY, dX, NDArrayFactory::create(zeroPadVal, block.getWorkspace()));
 
             STORE_RESULT(*z);
 
-            return ND4J_STATUS_OK;
+            return Status::OK();
         }
+
         DECLARE_SHAPE_FN(im2col) {
             auto inShape = inputShape->at(0);
 
@@ -81,10 +83,10 @@ namespace nd4j {
             int oY = 0;
             int oX = 0;
 
-            ConvolutionUtils<T>::calcOutSizePool2D(oY, oX, kY, kX, sY, sX, pY, pX, dY, dX, inY, inX, isSameMode);
+            ConvolutionUtils::calcOutSizePool2D(oY, oX, kY, kX, sY, sX, pY, pX, dY, dX, inY, inX, isSameMode);
 
             if (isSameMode)
-                ConvolutionUtils<T>::calcPadding2D(pY, pX, oY, oX, inY, inX, kY, kX, sY, sX, dY, dX);
+                ConvolutionUtils::calcPadding2D(pY, pX, oY, oX, inY, inX, kY, kX, sY, sX, dY, dX);
 
             zShape[0] = 6;
             zShape[1] = bS;
@@ -94,14 +96,14 @@ namespace nd4j {
             zShape[5] = oY;
             zShape[6] = oX;
 
-            zShape[shape::shapeInfoLength(zShape) - 3] = 0;
             zShape[shape::shapeInfoLength(zShape) - 2] = 1;
             zShape[shape::shapeInfoLength(zShape) - 1] = 99;
 
-            shape::updateStrides(zShape, 'c');
+            ShapeUtils::updateStridesAndType(zShape, inShape, 'c');            
 
             return SHAPELIST(zShape);
         }
+
 		CUSTOM_OP_IMPL(im2col_bp, 2, 1, false, 0, 9) {
             auto input = INPUT_VARIABLE(0);
 			auto gradAtOutput = INPUT_VARIABLE(1);
@@ -120,7 +122,7 @@ namespace nd4j {
             int dY = INT_ARG(6);			//Dilation, height/y dimension
             int dX = INT_ARG(7);			//Dilation, width/x dimension
             bool isSameMode = INT_ARG(8) > 0;
-            T zeroPadVal = 0.0;
+            double zeroPadVal = 0.0;
             if (block.getTArguments()->size() > 0)
                 zeroPadVal = T_ARG(0);
 
@@ -129,11 +131,24 @@ namespace nd4j {
 			int imgW = input->sizeAt(3);
 			
             LaunchContext ctx;
-			nd4j::ops::helpers::_col2im(ctx, z->specialBuffer(), gradAtOutput->specialBuffer(), z->specialShapeInfo(), gradAtOutput->specialShapeInfo(), strideY, strideX, pH, pW, imgH, imgW, dY, dX);
+            // FIXME:: all helpers should accept NDArray
+			ops::helpers::col2im(ctx, *gradAtOutput, *z, strideY, strideX, pH, pW, imgH, imgW, dY, dX);
 
-            STORE_RESULT(*z);
+            return Status::OK();
+        }
 
-            return ND4J_STATUS_OK;
+        DECLARE_TYPES(im2col) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(0, DataType::ANY)
+                    ->setAllowedOutputTypes(0, DataType::INHERIT)
+                    ->setSameMode(true);
+        }
+
+        DECLARE_TYPES(im2col_bp) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(0, DataType::ANY)
+                    ->setAllowedOutputTypes(0, DataType::INHERIT)
+                    ->setSameMode(true);
         }
 		
 		DECLARE_SHAPE_FN(im2col_bp) {

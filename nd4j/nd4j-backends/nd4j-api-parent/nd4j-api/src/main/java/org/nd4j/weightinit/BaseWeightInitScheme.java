@@ -17,6 +17,7 @@
 package org.nd4j.weightinit;
 
 import lombok.EqualsAndHashCode;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -45,16 +46,16 @@ public abstract class BaseWeightInitScheme implements WeightInitScheme {
         this.order = order;
     }
 
-    public abstract INDArray doCreate(long[] shape, INDArray paramsView);
+    public abstract INDArray doCreate(DataType dataType, long[] shape, INDArray paramsView);
 
     @Override
     public INDArray create(long[] shape, INDArray paramsView) {
-        return handleParamsView(doCreate(shape,paramsView),paramsView);
+        return handleParamsView(doCreate(paramsView.dataType(), shape,paramsView),paramsView);
     }
 
     @Override
-    public INDArray create(long... shape) {
-        INDArray ret = doCreate(shape,null);
+    public INDArray create(DataType dataType, long... shape) {
+        INDArray ret = doCreate(dataType, shape,null);
         return ret;
     }
 

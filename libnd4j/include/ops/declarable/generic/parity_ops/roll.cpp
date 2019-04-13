@@ -28,9 +28,8 @@ namespace nd4j {
 namespace ops {
 
     CONFIGURABLE_OP_IMPL(roll, 1, 1, true, 0, 1) {
-
-        NDArray<T>* output = OUTPUT_VARIABLE(0);
-        NDArray<T>* input = INPUT_VARIABLE(0);
+        auto output = OUTPUT_VARIABLE(0);
+        auto input = INPUT_VARIABLE(0);
         bool shiftIsLinear = true;
         //std::vector<int> axes(input->rankOf());
         int shift = INT_ARG(0);
@@ -60,7 +59,14 @@ namespace ops {
             helpers::rollFunctorFull(input, output, shift, axes, block.isInplace());
         }
 
-        return ND4J_STATUS_OK;
+        return Status::OK();
+    }
+
+    DECLARE_TYPES(roll) {
+        getOpDescriptor()
+                ->setAllowedInputTypes(nd4j::DataType::ANY)
+                ->setAllowedOutputTypes(nd4j::DataType::ANY)
+                ->setSameMode(true);
     }
 }
 }

@@ -15,10 +15,11 @@
  ******************************************************************************/
 
 //
-// Created by raver on 6/30/2018.
+// @author raver119@gmail.com, created on 6/30/2018
+// @author Yurii Shyrma (iuriish@yahoo.com)
 //
 
-#include <helpers/OmpLaunchHelper.h>
+#include <OmpLaunchHelper.h>
 #include <Environment.h>
 #include <templatemath.h>
 #ifdef _OPENMP
@@ -26,7 +27,35 @@
 #endif
 
 namespace nd4j {
-    Nd4jLong OmpLaunchHelper::betterSpan(Nd4jLong N) {
+
+
+////////////////////////////////////////////////////////////////////////////////
+OmpLaunchHelper::OmpLaunchHelper(const Nd4jLong N, float desiredNumThreads) {            
+
+    auto maxItersPerThread = Environment::getInstance()->elementwiseThreshold();    
+        
+    if(N < maxItersPerThread)
+        _numThreads = 1;
+    else {
+        #ifdef _OPENMP
+            if(desiredNumThreads == -1)
+                desiredNumThreads = omp_get_max_threads();
+            else if(desiredNumThreads < 1) 
+                desiredNumThreads = 1;
+            else
+                desiredNumThreads = nd4j::math::nd4j_min<int>(omp_get_max_threads(), desiredNumThreads);
+        #else
+            desiredNumThreads = 1;
+        #endif
+        _numThreads = nd4j::math::nd4j_min<int>(N / maxItersPerThread, desiredNumThreads);        
+    }
+
+    _itersPerThread = N / _numThreads;
+    _remainder = N % _numThreads;  // last thread may contain bigger number of iterations    
+}
+
+
+Nd4jLong OmpLaunchHelper::betterSpan(Nd4jLong N) {
         return OmpLaunchHelper::betterSpan(N, OmpLaunchHelper::betterThreads(N));
     }
 
@@ -37,7 +66,7 @@ namespace nd4j {
         if (r == 0)
             return t;
         else {
-            // fuck alignment
+            // breaks alignment
             return t + 1;
         }
     }
@@ -57,5 +86,26 @@ namespace nd4j {
         else {
             return static_cast<int>(nd4j::math::nd4j_min<Nd4jLong>(N / t, maxThreads));
         }
+    }
+
+    int OmpLaunchHelper::tadThreads(Nd4jLong tadLength, Nd4jLong numTads) {
+#ifdef _OPENMP
+        auto maxThreads = omp_get_max_threads();
+#else
+        auto maxThreads = 1;
+#endif
+
+        // if there's only 1 thread allowed - nothing to do here
+        if (maxThreads <= 1)
+            return 1;
+
+        auto totalLength = tadLength * numTads;
+
+        // if array is tiny - no need to spawn any threeds
+        if (totalLength < Environment::getInstance()->elementwiseThreshold())
+            return 1;
+
+        // by default we're spawning as many threads we can, but not more than number of TADs
+        return nd4j::math::nd4j_min<int>(numTads, maxThreads);
     }
 }

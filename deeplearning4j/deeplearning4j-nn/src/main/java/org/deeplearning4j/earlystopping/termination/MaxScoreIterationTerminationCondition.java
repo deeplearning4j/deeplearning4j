@@ -16,14 +16,18 @@
 
 package org.deeplearning4j.earlystopping.termination;
 
+import lombok.Data;
+import org.nd4j.shade.jackson.annotation.JsonProperty;
+
 /** Iteration termination condition for terminating training if the minibatch score exceeds a certain value.
  * This can occur for example with a poorly tuned (too high) learning rate
  */
+@Data
 public class MaxScoreIterationTerminationCondition implements IterationTerminationCondition {
 
     private double maxScore;
 
-    public MaxScoreIterationTerminationCondition(double maxScore) {
+    public MaxScoreIterationTerminationCondition(@JsonProperty("maxScore") double maxScore) {
         this.maxScore = maxScore;
     }
 

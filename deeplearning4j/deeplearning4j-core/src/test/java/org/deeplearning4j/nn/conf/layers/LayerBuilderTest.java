@@ -19,8 +19,6 @@ package org.deeplearning4j.nn.conf.layers;
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.nn.conf.GradientNormalization;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.conf.distribution.Distribution;
-import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.dropout.Dropout;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
@@ -58,7 +56,6 @@ public class LayerBuilderTest extends BaseDL4JTest {
     double corrupt = 0.4;
     double sparsity = 0.3;
     double corruptionLevel = 0.5;
-    Distribution dist = new NormalDistribution(1.0, 0.1);
     double dropOut = 0.1;
     IUpdater updater = new AdaGrad();
     GradientNormalization gradNorm = GradientNormalization.ClipL2PerParamType;
@@ -66,15 +63,14 @@ public class LayerBuilderTest extends BaseDL4JTest {
 
     @Test
     public void testLayer() throws Exception {
-        DenseLayer layer = new DenseLayer.Builder().activation(act).weightInit(weight).dist(dist).dropOut(dropOut)
+        DenseLayer layer = new DenseLayer.Builder().activation(act).weightInit(weight).dropOut(dropOut)
                         .updater(updater).gradientNormalization(gradNorm)
                         .gradientNormalizationThreshold(gradNormThreshold).build();
 
         checkSerialization(layer);
 
         assertEquals(act, layer.getActivationFn());
-        assertEquals(weight, layer.getWeightInit());
-        assertEquals(dist, layer.getDist());
+        assertEquals(weight.getWeightInitFunction(), layer.getWeightInitFn());
         assertEquals(new Dropout(dropOut), layer.getIDropout());
         assertEquals(updater, layer.getIUpdater());
         assertEquals(gradNorm, layer.getGradientNormalization());

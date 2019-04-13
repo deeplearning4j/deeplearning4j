@@ -21,6 +21,7 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.descriptors.properties.PropertyMapping;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.tensorflow.framework.AttrValue;
@@ -70,7 +71,7 @@ public class DepthToSpace extends DynamicCustomOp {
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
         // Gradient to DepthToSpace is just SpaceToDepth of same block size and data format.
         SDVariable gradient = i_v.get(0);
-        SDVariable ret = sameDiff.spaceToDepth(gradient, blockSize, dataFormat);
+        SDVariable ret = sameDiff.cnn().spaceToDepth(gradient, blockSize, dataFormat);
         return Arrays.asList(ret);
     }
 
@@ -117,5 +118,10 @@ public class DepthToSpace extends DynamicCustomOp {
     @Override
     public String tensorflowName() {
         return "DepthToSpace";
+    }
+
+    @Override
+    public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes){
+        return Collections.singletonList(dataTypes.get(0));
     }
 }

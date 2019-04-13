@@ -141,6 +141,7 @@ public class ModelSerializer {
         } else if (model instanceof ComputationGraph) {
             json = ((ComputationGraph) model).getConfiguration().toJson();
         }
+
         ZipEntry config = new ZipEntry(CONFIGURATION_JSON);
         zipfile.putNextEntry(config);
         zipfile.write(json.getBytes());

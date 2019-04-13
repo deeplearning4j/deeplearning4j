@@ -127,13 +127,8 @@ public class BidirectionalLayer implements RecurrentLayer {
     }
 
     @Override
-    public double calcL2(boolean backpropOnlyParams) {
-        return fwd.calcL2(backpropOnlyParams) + bwd.calcL2(backpropOnlyParams);
-    }
-
-    @Override
-    public double calcL1(boolean backpropOnlyParams) {
-        return fwd.calcL1(backpropOnlyParams) + bwd.calcL1(backpropOnlyParams);
+    public double calcRegularizationScore(boolean backpropParamsOnly){
+        return fwd.calcRegularizationScore(backpropParamsOnly) + bwd.calcRegularizationScore(backpropParamsOnly);
     }
 
     @Override
@@ -272,12 +267,12 @@ public class BidirectionalLayer implements RecurrentLayer {
     }
 
     @Override
-    public int numParams() {
+    public long numParams() {
         return fwd.numParams() + bwd.numParams();
     }
 
     @Override
-    public int numParams(boolean backwards) {
+    public long numParams(boolean backwards) {
         return fwd.numParams(backwards) + bwd.numParams(backwards);
     }
 
@@ -378,6 +373,16 @@ public class BidirectionalLayer implements RecurrentLayer {
             m.put(BidirectionalParamInitializer.BACKWARD_PREFIX + e.getKey(), e.getValue());
         }
         return m;
+    }
+
+    @Override
+    public boolean updaterDivideByMinibatch(String paramName) {
+        String sub = paramName.substring(1);
+        if(paramName.startsWith(BidirectionalParamInitializer.FORWARD_PREFIX)){
+            return fwd.updaterDivideByMinibatch(paramName);
+        } else {
+            return bwd.updaterDivideByMinibatch(paramName);
+        }
     }
 
     @Override

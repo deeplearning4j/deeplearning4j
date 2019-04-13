@@ -37,6 +37,12 @@
         </dependency>
 
         <dependency>
+            <groupId>org.lucee</groupId>
+            <artifactId>oswego-concurrent</artifactId>
+            <version>1.3.4</version>
+        </dependency>
+
+        <dependency>
             <groupId>org.deeplearning4j</groupId>
             <artifactId>deeplearning4j-common</artifactId>
             <version>${project.version}</version>
@@ -118,7 +124,7 @@
             <id>test-nd4j-native</id>
         </profile>
         <profile>
-            <id>test-nd4j-cuda-10.0</id>
+            <id>test-nd4j-cuda-10.1</id>
         </profile>
     </profiles>
 

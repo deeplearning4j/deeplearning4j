@@ -187,4 +187,9 @@ public class IntervalIndex implements INDArrayIndex {
         result = 31 * result + Longs.hashCode(index);
         return result;
     }
+
+    @Override
+    public String toString(){
+        return "Interval(b=" + begin + ",e=" + end + ",s=" + stride + ")";
+    }
 }

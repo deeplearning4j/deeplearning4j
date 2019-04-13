@@ -19,13 +19,16 @@ package org.nd4j.linalg.api.ops.impl.controlflow;
 import lombok.NoArgsConstructor;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.base.Preconditions;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -64,5 +67,12 @@ public class Select extends DynamicCustomOp {
     @Override
     public String opName() {
         return "select";
+    }
+
+    @Override
+    public List<DataType> calculateOutputDataTypes(List<DataType> inputDataType){
+        Preconditions.checkState(inputDataType != null && inputDataType.size() == 3, "Expected 3 input datatypes for %s, got %s", getClass(), inputDataType );
+        //3 inputs: condition, x, y
+        return Collections.singletonList(inputDataType.get(1));
     }
 }

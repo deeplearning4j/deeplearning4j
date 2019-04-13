@@ -407,7 +407,7 @@ public class WorkspaceTests extends BaseDL4JTest {
             MultiLayerNetwork net = new MultiLayerNetwork(conf);
             net.init();
 
-            INDArray input = Nd4j.linspace(1, 3, 3);
+            INDArray input = Nd4j.linspace(1, 3, 3, Nd4j.dataType()).reshape(1,3);
             INDArray out = net.output(input);
             INDArray out2 = net.output(input);
 
@@ -584,6 +584,108 @@ public class WorkspaceTests extends BaseDL4JTest {
 
         try (MemoryWorkspace ws = workspace.notifyScopeEntered()) {
             net.output(input, false, ws);
+        }
+    }
+
+    @Test
+    public void checkScoreScopeOutMLN() {
+
+        String wsName = "WSScopeOutTest";
+        WorkspaceConfiguration conf = WorkspaceConfiguration.builder()
+                .initialSize(0)
+                .overallocationLimit(0.02)
+                .policyLearning(LearningPolicy.OVER_TIME)
+                .cyclesBeforeInitialization(1)
+                .policyReset(ResetPolicy.BLOCK_LEFT)
+                .policySpill(SpillPolicy.REALLOCATE)
+                .policyAllocation(AllocationPolicy.OVERALLOCATE)
+                .build();
+
+
+
+        MultiLayerConfiguration mlc = new NeuralNetConfiguration.Builder().weightInit(WeightInit.XAVIER)
+                .convolutionMode(ConvolutionMode.Same).seed(12345L).list()
+                .layer(0, new ConvolutionLayer.Builder().nIn(1).nOut(2).kernelSize(2, 2)
+                        .stride(1, 1).activation(Activation.TANH).build())
+                .layer(1, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
+                        .activation(Activation.SOFTMAX).nOut(10).build())
+                .setInputType(InputType.convolutional(5, 5, 1))
+                .build();
+
+        MultiLayerNetwork net = new MultiLayerNetwork(mlc);
+        net.init();
+
+
+        for (WorkspaceMode wm : new WorkspaceMode[]{WorkspaceMode.NONE, WorkspaceMode.ENABLED}) {
+            log.info("Starting test: {}", wm);
+            mlc.setTrainingWorkspaceMode(wm);
+            mlc.setInferenceWorkspaceMode(wm);
+
+            INDArray f = Nd4j.rand(new int[]{1, 1, 5, 5});
+            INDArray l = Nd4j.rand(1, 10);
+
+            DataSet ds = new DataSet(f,l);
+
+            for( int i=0; i<10; i++ ) {
+                try (MemoryWorkspace wsExternal = Nd4j.getWorkspaceManager().getAndActivateWorkspace(conf, wsName)) {
+                    try (MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+                        double s = net.score(ds);
+                    }
+                }
+            }
+
+            for( int i=0; i<10; i++ ) {
+                try (MemoryWorkspace wsExternal = Nd4j.getWorkspaceManager().getAndActivateWorkspace(conf, wsName)) {
+                    try (MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+                        INDArray s = net.scoreExamples(ds, true);
+                        assertFalse(s.isAttached());
+                    }
+                }
+            }
+        }
+    }
+
+    @Test
+    public void checkScoreScopeOutCG() throws Exception {
+
+        String wsName = "WSScopeOutTest";
+        WorkspaceConfiguration conf = WorkspaceConfiguration.builder()
+                .initialSize(0)
+                .overallocationLimit(0.02)
+                .policyLearning(LearningPolicy.OVER_TIME)
+                .cyclesBeforeInitialization(1)
+                .policyReset(ResetPolicy.BLOCK_LEFT)
+                .policySpill(SpillPolicy.REALLOCATE)
+                .policyAllocation(AllocationPolicy.OVERALLOCATE)
+                .build();
+
+        ComputationGraph c = createNet();
+        for (WorkspaceMode wm : new WorkspaceMode[]{WorkspaceMode.NONE, WorkspaceMode.ENABLED}) {
+            log.info("Starting test: {}", wm);
+            c.getConfiguration().setTrainingWorkspaceMode(wm);
+            c.getConfiguration().setInferenceWorkspaceMode(wm);
+
+            INDArray f = Nd4j.rand(new int[]{8, 1, 28, 28});
+            INDArray l = Nd4j.rand(8, 10);
+
+            DataSet ds = new DataSet(f,l);
+
+            for( int i=0; i<10; i++ ) {
+                try (MemoryWorkspace wsExternal = Nd4j.getWorkspaceManager().getAndActivateWorkspace(conf, wsName)) {
+                    try (MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+                        double s = c.score(ds);
+                    }
+                }
+            }
+
+            for( int i=0; i<10; i++ ) {
+                try (MemoryWorkspace wsExternal = Nd4j.getWorkspaceManager().getAndActivateWorkspace(conf, wsName)) {
+                    try (MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+                        INDArray s = c.scoreExamples(ds, true);
+                        assertFalse(s.isAttached());
+                    }
+                }
+            }
         }
     }
 }

@@ -50,7 +50,6 @@ public class LossPoisson extends DifferentialFunction  implements ILossFunction 
         /*
          mean of (yhat - y * log(yhat))
          */
-        //INDArray postOutput = Nd4j.utioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, preOutput.dup()));
         INDArray postOutput = activationFn.getActivation(preOutput.dup(), true);
 
         INDArray scoreArr = Transforms.log(postOutput);
@@ -79,7 +78,7 @@ public class LossPoisson extends DifferentialFunction  implements ILossFunction 
     @Override
     public INDArray computeScoreArray(INDArray labels, INDArray preOutput, IActivation activationFn, INDArray mask) {
         INDArray scoreArr = scoreArray(labels, preOutput, activationFn, mask);
-        return scoreArr.sum(1);
+        return scoreArr.sum(true,1);
     }
 
     @Override

@@ -19,15 +19,14 @@ package org.nd4j.linalg.cpu.nativecpu;
 
 import lombok.val;
 import org.bytedeco.javacpp.Pointer;
-import org.nd4j.linalg.api.buffer.DataBuffer;
-import org.nd4j.linalg.api.buffer.DoubleBuffer;
-import org.nd4j.linalg.api.buffer.FloatBuffer;
-import org.nd4j.linalg.api.buffer.LongBuffer;
+import org.nd4j.linalg.api.buffer.*;
+import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.BaseNDArray;
 import org.nd4j.linalg.api.ndarray.BaseNDArrayProxy;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ndarray.JvmShapeInfo;
 import org.nd4j.linalg.api.ops.performance.PerformanceTracker;
+import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.memory.MemcpyDirection;
 import org.nd4j.linalg.workspace.WorkspaceUtils;
@@ -81,6 +80,10 @@ public class NDArray extends BaseNDArray {
         super(buffer, shape, stride, offset, ordering);
     }
 
+    public NDArray(DataBuffer buffer, long[] shape, long[] stride, long offset, char ordering, DataType dataType) {
+        super(buffer, shape, stride, offset, ordering, dataType);
+    }
+
     public NDArray(double[][] data) {
         super(data);
     }
@@ -122,6 +125,14 @@ public class NDArray extends BaseNDArray {
         super(data, shape, stride, offset, ordering);
     }
 
+    public NDArray(DataBuffer data, long[] shape, long[] stride, char ordering, DataType type) {
+        super(data, shape, stride, ordering, type);
+    }
+
+    public NDArray(DataBuffer data, long[] shape, long[] stride, char ordering, DataType type, MemoryWorkspace workspace) {
+        super(data, shape, stride, ordering, type, workspace);
+    }
+
     public NDArray(double[] data, long[] shape, long offset, char ordering) {
         super(data, shape, offset, ordering);
     }
@@ -143,6 +154,8 @@ public class NDArray extends BaseNDArray {
         super(shape, stride, offset, ordering);
     }
 
+
+
     /**
      * Construct an ndarray of the specified shape, with optional initialization
      *
@@ -158,6 +171,22 @@ public class NDArray extends BaseNDArray {
 
     public NDArray(long[] shape, long[] stride, long offset, char ordering, boolean initialize) {
         super(shape, stride, offset, ordering, initialize);
+    }
+
+    public NDArray(DataType type, long[] shape, long[] stride, long offset, char ordering) {
+        super(type, shape, stride, offset, ordering, true);
+    }
+
+    public NDArray(DataType type, long[] shape, long[] stride, long offset, char ordering, MemoryWorkspace workspace) {
+        super(type, shape, stride, offset, ordering, true, workspace);
+    }
+
+    public NDArray(DataType type, long[] shape, long[] stride, long offset, char ordering, boolean initialize) {
+        super(type, shape, stride, offset, ordering, initialize);
+    }
+
+    public NDArray(DataType type, long[] shape, long[] stride, long offset, char ordering, boolean initialize, MemoryWorkspace workspace) {
+        super(type, shape, stride, offset, ordering, initialize, workspace);
     }
 
     /**
@@ -455,5 +484,11 @@ public class NDArray extends BaseNDArray {
     @Override
     public INDArray unsafeDuplication(boolean blocking) {
         return unsafeDuplication();
+    }
+
+
+    @Override
+    public LongShapeDescriptor shapeDescriptor() {
+        return LongShapeDescriptor.fromShape(shape(), stride(), elementWiseStride(), ordering(), dataType(), isEmpty());
     }
 }

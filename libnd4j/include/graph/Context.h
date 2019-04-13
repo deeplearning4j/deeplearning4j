@@ -18,10 +18,11 @@
 // @author raver119@gmail.com
 //
 
-#ifndef LIBND4J_BLOCK_H
-#define LIBND4J_BLOCK_H
+#ifndef LIBND4J_CONTEXT_H
+#define LIBND4J_CONTEXT_H
 
 #include <vector>
+#include <NDArray.h>
 #include <graph/Variable.h>
 #include <graph/VariableSpace.h>
 #include <graph/ContextPrototype.h>
@@ -38,7 +39,6 @@
 #include <cuda_runtime_api.h>
 #include <cuda_runtime.h>
 #include <cuda_device_runtime_api.h>
-
 #endif
 
 namespace nd4j {
@@ -46,20 +46,25 @@ namespace nd4j {
         /**
          * This class defines input desired for any given node/operation within graph
          */
-        template <typename T>
-        class Context : public nd4j::graph::ContextPrototype<T> {
+        class ND4J_EXPORT Context : public nd4j::graph::ContextPrototype {
         protected:
             nd4j::memory::Workspace* _workspace = nullptr;
-            nd4j::graph::VariableSpace<T>* _variableSpace = nullptr;
+            nd4j::graph::VariableSpace* _variableSpace = nullptr;
             std::pair<Nd4jLong, Nd4jLong> _executionTime;
             nd4j::random::RandomBuffer* _rng = nullptr;
 
+            nd4j::DataType _dataType = nd4j::DataType::FLOAT32;
             // branch for divergent_op
             int _branch = 0;
 
+            std::vector<nd4j::DataType> _dataTypes;
 #ifdef HAVE_MKLDNN
-            MKLDNNStream<T>* _mkldnnStream = nullptr;
+            std::vector<nd4j::MKLDNNStream> _mkldnnStreams;
 #endif
+
+            std::vector<NDArray*> _fastpath_in;
+            std::vector<NDArray*> _fastpath_out;
+            std::vector<NDArray*> _handles;
         public:
             // TODO: maybe override new here as well?
 
@@ -68,10 +73,10 @@ namespace nd4j {
             cudaStream_t* _stream;
 #endif
 
-            Context(ContextPrototype<T>* prototype, VariableSpace<T>* variableSpace);
+            Context(ContextPrototype* prototype, VariableSpace* variableSpace);
 
-            explicit Context(int nodeId, VariableSpace<T> *variableSpace = nullptr);
-            Context(int nodeId, VariableSpace<T> *variableSpace, bool isInplace);
+            explicit Context(int nodeId, VariableSpace *variableSpace = nullptr);
+            Context(int nodeId, VariableSpace *variableSpace, bool isInplace);
 
             // default destructor
             ~Context();
@@ -82,6 +87,10 @@ namespace nd4j {
             Nd4jLong getOuterTime();
             Nd4jLong getInnerTime();
 
+            nd4j::DataType dataType() override;
+
+            nd4j::DataType dataType(int index) override;
+            void setDataType(int index, nd4j::DataType type) override;
             // these methods are related to Workspace abstraction
             bool hasWorkspaceProvided();
             void attachWorkspace(nd4j::memory::Workspace* workspace);
@@ -99,12 +108,12 @@ namespace nd4j {
             nd4j::memory::Workspace* oWorkspace();
 
 
-            void setVariableSpace(VariableSpace<T> *variableSpace);
+            void setVariableSpace(VariableSpace* variableSpace);
 
             nd4j::random::RandomBuffer* getRNG();
             void setRNG(nd4j::random::RandomBuffer* rng);
 
-            VariableSpace<T> *getVariableSpace();
+            VariableSpace *getVariableSpace();
 
             // these fields define, if we can execute specific node in-place, without generating new array
 
@@ -114,19 +123,18 @@ namespace nd4j {
             void setBranch(int branch);
 
 #ifdef HAVE_MKLDNN
-            MKLDNNStream<T> *getMKLDNNStream() { return _mkldnnStream; }
-            void setMKLDNNStream(MKLDNNStream<T> *mkldnnStream) { _mkldnnStream = mkldnnStream; }
+            std::vector<nd4j::MKLDNNStream>& getMKLDNNStreams() { return _mkldnnStreams; }
 #endif
             /**
              *
              * @return
              */
-            Stash<T>* getStash();
+            Stash* getStash();
 
             /**
              *
              */
-            void trackList(NDArrayList<T>* list);
+            void trackList(NDArrayList* list);
 
 
             /**
@@ -134,29 +142,62 @@ namespace nd4j {
              * @param idx
              * @return
              */
-            Variable<T>* getVariable(int idx);
-            Variable<T>* variable(int idx);
+            Variable* getVariable(int idx);
+            Variable* variable(int idx);
+
+            /**
+             * This method is shortcut to getVariable(int idx);
+             *
+             * + it check fastpath for array availability (preferred)
+             * @return
+             */
+            NDArray* getNDArray(int idx);
+            NDArray* array(int idx);
 
 
             /**
-             * This method fetches variable from Workspace DIRECTLY
+             * This method fetches variable from VariableSpace DIRECTLY
              * @param p
              * @return
              */
-            Variable<T>* variable(int node, int index);
-            Variable<T>* variable(std::pair<int,int>& p);
-            Variable<T>* variable(std::initializer_list<int> p);
+            Variable* variable(int node, int index);
+            Variable* variable(std::pair<int,int>& p);
+            Variable* variable(std::initializer_list<int> p);
 
 
-            void pushNDArrayToVariableSpace(int nodeId, int index, NDArray<T>* array, bool removable = true);
-            void pushNDArrayToVariableSpace(std::pair<int, int>& pair, NDArray<T>* array, bool removable = true);
+            void pushNDArrayToVariableSpace(int nodeId, int index, NDArray* array, bool removable = true);
+            void pushNDArrayToVariableSpace(std::pair<int, int>& pair, NDArray* array, bool removable = true);
 
-            void pushNDArrayListToVariableSpace(int nodeId, int index, NDArrayList<T>* list, bool track = true);
-            void pushNDArrayListToVariableSpace(std::pair<int, int>& pair, NDArrayList<T>* list, bool track = true);
+            void pushNDArrayListToVariableSpace(int nodeId, int index, NDArrayList* list, bool track = true);
+            void pushNDArrayListToVariableSpace(std::pair<int, int>& pair, NDArrayList* list, bool track = true);
 
             bool isValueAvailable(int idx = 0);
 
-            Variable<T>* ensureVariable(int idx = 0);
+            Variable* ensureVariable(int idx = 0);
+
+            unsigned long width() override;
+
+            // methods used in java interop
+            /**
+             * This method checks, if Context uses fastpath variable access
+             * @return
+             */
+            bool isFastPath();
+
+#ifndef __JAVACPP_HACK__
+            std::vector<NDArray*>& fastpath_in();
+            std::vector<NDArray*>& fastpath_out();
+#endif
+
+            void setInputArray(int index, NDArray *array, bool removable = false);
+            void setInputArray(int index, void *buffer, void *shapeInfo, void *specialBuffer, void *specialShapeInfo);
+
+            void setOutputArray(int index, NDArray *array, bool removable = false);
+            void setOutputArray(int index, void *buffer, void *shapeInfo, void *specialBuffer, void *specialShapeInfo);
+
+            void setTArguments(double *arguments, int numberOfArguments);
+            void setIArguments(Nd4jLong *arguments, int numberOfArguments);
+            void setBArguments(bool *arguments, int numberOfArguments);
         };
     }
 }

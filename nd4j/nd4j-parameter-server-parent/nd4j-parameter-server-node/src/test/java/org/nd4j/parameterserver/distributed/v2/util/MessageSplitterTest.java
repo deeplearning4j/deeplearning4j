@@ -20,6 +20,7 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.junit.Test;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.primitives.Atomic;
 import org.nd4j.linalg.primitives.Optional;
 import org.nd4j.parameterserver.distributed.v2.messages.impl.GradientsUpdateMessage;
 
@@ -74,5 +75,28 @@ public class MessageSplitterTest {
 
         assertNotNull(dec);
         assertTrue(dec.isPresent());
+    }
+
+    @Test
+    public void testConcurrentAppend_1() throws Exception {
+        val splitter = new MessageSplitter();
+        val array = Nd4j.linspace(1, 100000, 100000).reshape(-1, 1000);
+        for (int e = 0; e < 100; e++) {
+            val message = new GradientsUpdateMessage(java.util.UUID.randomUUID().toString(), array);
+            val chunks = splitter.split(message, 16384);
+            val ref = new Atomic<GradientsUpdateMessage>();
+
+            chunks.parallelStream().forEach(c -> {
+                val o = splitter.merge(c);
+                if (o.isPresent())
+                    ref.set((GradientsUpdateMessage) o.get());
+            });
+
+            assertNotNull(ref.get());
+            assertEquals(array, ref.get().getPayload());
+            assertEquals(0, splitter.memoryUse.intValue());
+            assertEquals(false, splitter.isTrackedMessage(message.getMessageId()));
+            assertEquals(0, splitter.trackers.size());
+        }
     }
 }

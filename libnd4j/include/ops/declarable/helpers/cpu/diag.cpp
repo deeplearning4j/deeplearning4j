@@ -30,19 +30,33 @@ namespace helpers {
 // Returns a batched matrix tensor with new batched diagonal values.
 // for detailed explanations please take a look on web page: https://www.tensorflow.org/api_docs/python/tf/matrix_set_diag
 template <typename T>
-void diagFunctor(const NDArray<T>* input, NDArray<T>* output) {
+static void _diagFunctor(const NDArray* input, NDArray* output) {
 
-    const int inLength = input->lengthOf();    
+    const int inLength = input->lengthOf();
 
-#pragma omp parallel for if(inLength > Environment::getInstance()->elementwiseThreshold()) schedule(static)         
+    PRAGMA_OMP_PARALLEL_FOR_IF(inLength > Environment::getInstance()->elementwiseThreshold())
     for(int i = 0; i < inLength; ++i)
-        (*output)(i * (inLength + 1)) = (*input)(i);
+        (*output).p<T>(i * (inLength + 1), (*input).e<T>(i));
 }
 
+    void diagFunctor(const NDArray* input, NDArray* output) {
+        auto xType = input->dataType();
 
-template void diagFunctor<float>(const NDArray<float>* input, NDArray<float>* output);
-template void diagFunctor<float16>(const NDArray<float16>* input, NDArray<float16>* output);
-template void diagFunctor<double>(const NDArray<double>* input, NDArray<double>* output);
+        BUILD_SINGLE_SELECTOR(xType, _diagFunctor, (input, output), LIBND4J_TYPES);
+    }
+
+BUILD_SINGLE_TEMPLATE(template void _diagFunctor, (const NDArray* input, NDArray* output);, LIBND4J_TYPES);
+
+void diagPartFunctor(NDArray* input, NDArray* output) {
+    const int outLen = output->lengthOf();
+    const int inLen = input->lengthOf();
+    int i(0), j(0);
+    while (j < outLen) {
+        output->p(j, input->e(i));
+        i += outLen + 1;
+        ++j;
+    }
+}
 
 
 }

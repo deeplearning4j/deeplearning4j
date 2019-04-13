@@ -16,19 +16,21 @@
 
 package org.nd4j.linalg.shape.concat;
 
-import org.nd4j.linalg.primitives.Pair;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.checkutil.NDArrayCreationUtil;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
+import org.nd4j.linalg.primitives.Pair;
 
+import javax.xml.crypto.Data;
 import java.util.Arrays;
 import java.util.List;
 
@@ -49,8 +51,8 @@ public class ConcatTestsC extends BaseNd4jTest {
 
     @Test
     public void testConcatVertically() {
-        INDArray rowVector = Nd4j.ones(5);
-        INDArray other = Nd4j.ones(5);
+        INDArray rowVector = Nd4j.ones(1, 5);
+        INDArray other = Nd4j.ones(1, 5);
         INDArray concat = Nd4j.vstack(other, rowVector);
         assertEquals(rowVector.rows() * 2, concat.rows());
         assertEquals(rowVector.columns(), concat.columns());
@@ -97,9 +99,9 @@ public class ConcatTestsC extends BaseNd4jTest {
 
     @Test
     public void testConcatVectors1() {
-        INDArray first = Nd4j.ones(10);
-        INDArray second = Nd4j.ones(10);
-        INDArray third = Nd4j.ones(10);
+        INDArray first = Nd4j.ones(1, 10);
+        INDArray second = Nd4j.ones(1, 10);
+        INDArray third = Nd4j.ones(1, 10);
 
         INDArray result = Nd4j.concat(0, first, second, third);
 
@@ -115,7 +117,7 @@ public class ConcatTestsC extends BaseNd4jTest {
 
     @Test
     public void testConcatMatrices() {
-        INDArray a = Nd4j.linspace(1, 4, 4).reshape(2, 2);
+        INDArray a = Nd4j.linspace(1, 4, 4, DataType.DOUBLE).reshape(2, 2);
         INDArray b = a.dup();
 
 
@@ -134,7 +136,7 @@ public class ConcatTestsC extends BaseNd4jTest {
 
     @Test
     public void testAssign() {
-        INDArray vector = Nd4j.linspace(1, 5, 5);
+        INDArray vector = Nd4j.linspace(1, 5, 5, Nd4j.dataType());
         vector.assign(1);
         assertEquals(Nd4j.ones(5), vector);
         INDArray twos = Nd4j.ones(2, 2);
@@ -166,9 +168,9 @@ public class ConcatTestsC extends BaseNd4jTest {
 
     @Test
     public void testConcat3d() {
-        INDArray first = Nd4j.linspace(1, 24, 24).reshape('c', 2, 3, 4);
-        INDArray second = Nd4j.linspace(24, 36, 12).reshape('c', 1, 3, 4);
-        INDArray third = Nd4j.linspace(36, 48, 12).reshape('c', 1, 3, 4);
+        INDArray first = Nd4j.linspace(1, 24, 24, Nd4j.dataType()).reshape('c', 2, 3, 4);
+        INDArray second = Nd4j.linspace(24, 36, 12, Nd4j.dataType()).reshape('c', 1, 3, 4);
+        INDArray third = Nd4j.linspace(36, 48, 12, Nd4j.dataType()).reshape('c', 1, 3, 4);
 
         //ConcatV2, dim 0
         INDArray exp = Nd4j.create(2 + 1 + 1, 3, 4);
@@ -181,8 +183,8 @@ public class ConcatTestsC extends BaseNd4jTest {
         assertEquals(exp, concat0);
 
         //ConcatV2, dim 1
-        second = Nd4j.linspace(24, 32, 8).reshape('c', 2, 1, 4);
-        for (int i = 0; i < second.tensorssAlongDimension(1); i++) {
+        second = Nd4j.linspace(24, 32, 8, Nd4j.dataType()).reshape('c', 2, 1, 4);
+        for (int i = 0; i < second.tensorsAlongDimension(1); i++) {
             INDArray secondTad = second.javaTensorAlongDimension(i, 1);
             System.out.println(second.tensorAlongDimension(i, 1));
         }
@@ -213,7 +215,7 @@ public class ConcatTestsC extends BaseNd4jTest {
 
     @Test(expected = IllegalArgumentException.class)
     public void testConcatVector() {
-        System.out.println(Nd4j.concat(0, Nd4j.ones(1000000), Nd4j.create(1)));
+        System.out.println(Nd4j.concat(0, Nd4j.ones(1,1000000), Nd4j.create(1, 1)));
     }
 
     @Test
@@ -230,9 +232,9 @@ public class ConcatTestsC extends BaseNd4jTest {
         exp.put(new INDArrayIndex[] {NDArrayIndex.point(2), NDArrayIndex.all(), NDArrayIndex.all()}, second);
         exp.put(new INDArrayIndex[] {NDArrayIndex.point(3), NDArrayIndex.all(), NDArrayIndex.all()}, third);
 
-        List<Pair<INDArray, String>> firsts = NDArrayCreationUtil.getAll3dTestArraysWithShape(12345, 2, 3, 4);
-        List<Pair<INDArray, String>> seconds = NDArrayCreationUtil.getAll3dTestArraysWithShape(12345, 1, 3, 4);
-        List<Pair<INDArray, String>> thirds = NDArrayCreationUtil.getAll3dTestArraysWithShape(12345, 1, 3, 4);
+        List<Pair<INDArray, String>> firsts = NDArrayCreationUtil.getAll3dTestArraysWithShape(12345, new int[]{2, 3, 4}, DataType.DOUBLE);
+        List<Pair<INDArray, String>> seconds = NDArrayCreationUtil.getAll3dTestArraysWithShape(12345, new int[]{1, 3, 4}, DataType.DOUBLE);
+        List<Pair<INDArray, String>> thirds = NDArrayCreationUtil.getAll3dTestArraysWithShape(12345, new int[]{1, 3, 4}, DataType.DOUBLE);
         for (Pair<INDArray, String> f : firsts) {
             for (Pair<INDArray, String> s : seconds) {
                 for (Pair<INDArray, String> t : thirds) {
@@ -257,9 +259,9 @@ public class ConcatTestsC extends BaseNd4jTest {
         exp.put(new INDArrayIndex[] {NDArrayIndex.all(), NDArrayIndex.point(3), NDArrayIndex.all()}, second);
         exp.put(new INDArrayIndex[] {NDArrayIndex.all(), NDArrayIndex.interval(4, 6), NDArrayIndex.all()}, third);
 
-        firsts = NDArrayCreationUtil.getAll3dTestArraysWithShape(12345, 2, 3, 4);
-        seconds = NDArrayCreationUtil.getAll3dTestArraysWithShape(12345, 2, 1, 4);
-        thirds = NDArrayCreationUtil.getAll3dTestArraysWithShape(12345, 2, 2, 4);
+        firsts = NDArrayCreationUtil.getAll3dTestArraysWithShape(12345, new int[]{2, 3, 4}, DataType.DOUBLE);
+        seconds = NDArrayCreationUtil.getAll3dTestArraysWithShape(12345, new int[]{2, 1, 4}, DataType.DOUBLE);
+        thirds = NDArrayCreationUtil.getAll3dTestArraysWithShape(12345, new int[]{2, 2, 4}, DataType.DOUBLE);
         for (Pair<INDArray, String> f : firsts) {
             for (Pair<INDArray, String> s : seconds) {
                 for (Pair<INDArray, String> t : thirds) {
@@ -282,9 +284,9 @@ public class ConcatTestsC extends BaseNd4jTest {
         exp.put(new INDArrayIndex[] {NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.interval(4, 6)}, second);
         exp.put(new INDArrayIndex[] {NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.point(6)}, third);
 
-        firsts = NDArrayCreationUtil.getAll3dTestArraysWithShape(12345, 2, 3, 4);
-        seconds = NDArrayCreationUtil.getAll3dTestArraysWithShape(12345, 2, 3, 2);
-        thirds = NDArrayCreationUtil.getAll3dTestArraysWithShape(12345, 2, 3, 1);
+        firsts = NDArrayCreationUtil.getAll3dTestArraysWithShape(12345, new int[]{2, 3, 4}, DataType.DOUBLE);
+        seconds = NDArrayCreationUtil.getAll3dTestArraysWithShape(12345, new int[]{2, 3, 2}, DataType.DOUBLE);
+        thirds = NDArrayCreationUtil.getAll3dTestArraysWithShape(12345, new int[]{2, 3, 1}, DataType.DOUBLE);
         for (Pair<INDArray, String> f : firsts) {
             for (Pair<INDArray, String> s : seconds) {
                 for (Pair<INDArray, String> t : thirds) {

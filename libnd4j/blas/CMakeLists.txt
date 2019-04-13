@@ -1,3 +1,19 @@
+################################################################################
+# Copyright (c) 2015-2018 Skymind, Inc.
+#
+# This program and the accompanying materials are made available under the
+# terms of the Apache License, Version 2.0 which is available at
+# https://www.apache.org/licenses/LICENSE-2.0.
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations
+# under the License.
+#
+# SPDX-License-Identifier: Apache-2.0
+################################################################################
+
 set(CMAKE_VERBOSE_MAKEFILE OFF)
 
 if(LINUX)
@@ -12,12 +28,29 @@ if(APPLE)
     link_directories(/usr/lib)
     link_directories(/lib)
 endif()
+
 if(WIN32)
     get_property(dirs DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY INCLUDE_DIRECTORIES)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wa,-mbig-obj")
     foreach(dir ${dirs})
         message(STATUS "dir='${dir}'")
     endforeach()
+
+    # workaround for long command lines
+    SET(CMAKE_C_USE_RESPONSE_FILE_FOR_OBJECTS 1)
+    SET(CMAKE_CXX_USE_RESPONSE_FILE_FOR_OBJECTS 1)
+
+    SET(CMAKE_C_RESPONSE_FILE_LINK_FLAG "@")
+    SET(CMAKE_CXX_RESPONSE_FILE_LINK_FLAG "@")
+
+    SET(CMAKE_NINJA_FORCE_RESPONSE_FILE 1 CACHE INTERNAL "")
+else()
+    if (CUDA_BLAS)
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mcmodel=medium")
+    endif()
 endif()
+
+
 
 if ("${LIBND4J_ALL_OPS}")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DLIBND4J_ALL_OPS=true")
@@ -34,7 +67,7 @@ IF(${ARCH} MATCHES "arm*")
 ELSEIF(${ARCH} MATCHES "power*")
     set(ARCH_TUNE "-mcpu=${ARCH} -mtune=${ARCH} -D__POWER")
 ELSEIF(${EXTENSION} MATCHES "avx2")
-    set(ARCH_TUNE "-march=${ARCH} -mtune=${ARCH} -msse4.1 -msse4.2 -mavx -mavx2 -mfma")
+    set(ARCH_TUNE "-march=${ARCH} -mtune=${ARCH} -msse4.1 -msse4.2 -mavx -mavx2 -mfma -mf16c -D__F16C__=true")
 ELSE()
     if (${ARCH} STREQUAL "x86-64")
         set(ARCH_TYPE "generic")
@@ -111,36 +144,50 @@ if(CUDA_BLAS)
         message("CUDA found!")
         set( CUDA_ARCHITECTURE_MINIMUM "3.0" CACHE STRING "Minimum required CUDA compute capability" )
         SET(CUDA_VERBOSE_BUILD ON)
-        SET(CUDA_SEPARABLE_COMPILATION ON)
+        SET(CUDA_SEPARABLE_COMPILATION OFF)
         #set(CUDA_COMPUTE_CAPABILITY "61")
         set(CUDA_COMPUTE_CAPABILITY "35")
         # make NVCC more verbose to prevent timeouts on CI servers
         #list(APPEND CUDA_NVCC_FLAGS -v)
         if ("${EXPERIMENTAL}" STREQUAL "yes")
-            list(APPEND CUDA_NVCC_FLAGS -DEXPERIMENTAL)
+            message("Experimental mode ENABLED")
+            list(APPEND CUDA_NVCC_FLAGS -D__ND4J_EXPERIMENTAL__=true)
+            set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -D__ND4J_EXPERIMENTAL__=true")
+            set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D__ND4J_EXPERIMENTAL__=true")
+            set (EXPM " -D__ND4J_EXPERIMENTAL__=true")
         endif()
         if (CMAKE_BUILD_TYPE STREQUAL "Release")
-            if(CUDA_VERSION VERSION_GREATER "8.0") # cuda 9
+            if(CUDA_VERSION VERSION_GREATER "9.2") # cuda 10
                 if ("${COMPUTE}" STREQUAL "all")
                     if (APPLE)
-                        list(APPEND CUDA_NVCC_FLAGS -DCUDA_9 -w --cudart=static -O3 -gencode arch=compute_30,code=sm_30 -gencode arch=compute_35,code=sm_35 -gencode arch=compute_37,code=sm_37 -gencode arch=compute_50,code=sm_50 -gencode arch=compute_52,code=sm_52 -gencode arch=compute_53,code=sm_53 -gencode arch=compute_60,code=sm_60 -gencode arch=compute_61,code=sm_61 -gencode arch=compute_62,code=sm_62)
+                        list(APPEND CUDA_NVCC_FLAGS -DCUDA_10 ${EXPM} -w --cudart=static -O3 -gencode arch=compute_35,code=sm_35 -gencode arch=compute_50,code=sm_50 -gencode arch=compute_60,code=sm_60 -gencode arch=compute_61,code=sm_61)
                     else()
-                        list(APPEND CUDA_NVCC_FLAGS -DCUDA_9 -w --cudart=static -O3 -gencode arch=compute_30,code=sm_30 -gencode arch=compute_35,code=sm_35 -gencode arch=compute_37,code=sm_37 -gencode arch=compute_50,code=sm_50 -gencode arch=compute_52,code=sm_52 -gencode arch=compute_53,code=sm_53 -gencode arch=compute_60,code=sm_60 -gencode arch=compute_61,code=sm_61 -gencode arch=compute_62,code=sm_62 -gencode arch=compute_70,code=sm_70)
+                        list(APPEND CUDA_NVCC_FLAGS -DCUDA_10 ${EXPM} -w --cudart=static -O3 -gencode arch=compute_35,code=sm_35 -gencode arch=compute_50,code=sm_50 -gencode arch=compute_60,code=sm_60 -gencode arch=compute_61,code=sm_61 -gencode arch=compute_70,code=sm_70 -gencode arch=compute_75,code=sm_75)
                     endif()
                 else()
-                    list(APPEND CUDA_NVCC_FLAGS -DCUDA_9 -w --cudart=static -O3 -arch=compute_${COMPUTE} -code=sm_${COMPUTE})
+                    list(APPEND CUDA_NVCC_FLAGS -DCUDA_10 ${EXPM} -w --cudart=static -O3 -arch=compute_${COMPUTE} -code=sm_${COMPUTE})
+                endif()
+            elseif(CUDA_VERSION VERSION_GREATER "8.0") # cuda 9
+                if ("${COMPUTE}" STREQUAL "all")
+                    if (APPLE)
+                        list(APPEND CUDA_NVCC_FLAGS -DCUDA_9 ${EXPM} -w --cudart=static -O3 -gencode arch=compute_35,code=sm_35 -gencode arch=compute_50,code=sm_50 -gencode arch=compute_52,code=sm_52 -gencode arch=compute_60,code=sm_60 -gencode arch=compute_61,code=sm_61)
+                    else()
+                        list(APPEND CUDA_NVCC_FLAGS -DCUDA_9 ${EXPM} -w --cudart=static -O3 -gencode arch=compute_35,code=sm_35 -gencode arch=compute_50,code=sm_50 -gencode arch=compute_52,code=sm_52 -gencode arch=compute_60,code=sm_60 -gencode arch=compute_61,code=sm_61)
+                    endif()
+                else()
+                    list(APPEND CUDA_NVCC_FLAGS -DCUDA_9 ${EXPM} -w --cudart=static -O3 -arch=compute_${COMPUTE} -code=sm_${COMPUTE})
                 endif()
             elseif (CUDA_VERSION VERSION_GREATER "7.5") # cuda 8.0
                 if ("${COMPUTE}" STREQUAL "all")
-                    list(APPEND CUDA_NVCC_FLAGS -DCUDA_8 -w --cudart=static -O3 -gencode arch=compute_30,code=sm_30 -gencode arch=compute_35,code=sm_35 -gencode arch=compute_37,code=sm_37 -gencode arch=compute_50,code=sm_50 -gencode arch=compute_52,code=sm_52 -gencode arch=compute_53,code=sm_53 -gencode arch=compute_60,code=sm_60 -gencode arch=compute_61,code=sm_61 -gencode arch=compute_62,code=sm_62)
+                    list(APPEND CUDA_NVCC_FLAGS -DCUDA_8 ${EXPM} -w --cudart=static -O3 -gencode arch=compute_30,code=sm_30 -gencode arch=compute_35,code=sm_35 -gencode arch=compute_37,code=sm_37 -gencode arch=compute_50,code=sm_50 -gencode arch=compute_52,code=sm_52 -gencode arch=compute_60,code=sm_60 -gencode arch=compute_61,code=sm_61)
                 else()
-                    list(APPEND CUDA_NVCC_FLAGS -DCUDA_8 -w --cudart=static -O3 -arch=compute_${COMPUTE} -code=sm_${COMPUTE})
+                    list(APPEND CUDA_NVCC_FLAGS -DCUDA_8 ${EXPM} -w --cudart=static -O3 -arch=compute_${COMPUTE} -code=sm_${COMPUTE})
                 endif()
             else()
                 if ("${COMPUTE}" STREQUAL "all")
-                    list(APPEND CUDA_NVCC_FLAGS -DCUDA_75 --cudart=static -O3 -gencode arch=compute_30,code=sm_30 -gencode arch=compute_35,code=sm_35 -gencode arch=compute_37,code=sm_37 -gencode arch=compute_50,code=sm_50 -gencode arch=compute_52,code=sm_52 -gencode arch=compute_53,code=sm_53)
+                    list(APPEND CUDA_NVCC_FLAGS -DCUDA_75 ${EXPM} --cudart=static -O3 -gencode arch=compute_30,code=sm_30 -gencode arch=compute_35,code=sm_35 -gencode arch=compute_37,code=sm_37 -gencode arch=compute_50,code=sm_50 -gencode arch=compute_52,code=sm_52)
                 else()
-                    list(APPEND CUDA_NVCC_FLAGS -DCUDA_75 --cudart=static -O3 -arch=compute_${COMPUTE} -code=sm_${COMPUTE})
+                    list(APPEND CUDA_NVCC_FLAGS -DCUDA_75 ${EXPM} --cudart=static -O3 -arch=compute_${COMPUTE} -code=sm_${COMPUTE})
                 endif()
             endif()
 
@@ -148,24 +195,24 @@ if(CUDA_BLAS)
             if(CUDA_VERSION VERSION_GREATER "8.0") # cuda 9
                 if ("${COMPUTE}" STREQUAL "all")
                     if (APPLE)
-                        list(APPEND CUDA_NVCC_FLAGS -DCUDA_9 -G -g --cudart=static -gencode arch=compute_30,code=sm_30 -gencode arch=compute_35,code=sm_35 -gencode arch=compute_37,code=sm_37 -gencode arch=compute_50,code=sm_50 -gencode arch=compute_52,code=sm_52 -gencode arch=compute_53,code=sm_53 -gencode arch=compute_60,code=sm_60 -gencode arch=compute_61,code=sm_61  -gencode arch=compute_62,code=sm_62)
+                        list(APPEND CUDA_NVCC_FLAGS -DCUDA_9 ${EXPM} -G -g --cudart=static -gencode arch=compute_30,code=sm_30 -gencode arch=compute_35,code=sm_35 -gencode arch=compute_37,code=sm_37 -gencode arch=compute_50,code=sm_50 -gencode arch=compute_52,code=sm_52 -gencode arch=compute_53,code=sm_53 -gencode arch=compute_60,code=sm_60 -gencode arch=compute_61,code=sm_61  -gencode arch=compute_62,code=sm_62)
                     elseif()
-                        list(APPEND CUDA_NVCC_FLAGS -DCUDA_9 -G -g --cudart=static -gencode arch=compute_30,code=sm_30 -gencode arch=compute_35,code=sm_35 -gencode arch=compute_37,code=sm_37 -gencode arch=compute_50,code=sm_50 -gencode arch=compute_52,code=sm_52 -gencode arch=compute_53,code=sm_53 -gencode arch=compute_60,code=sm_60 -gencode arch=compute_61,code=sm_61  -gencode arch=compute_62,code=sm_62 -gencode arch=compute_70,code=sm_70)
+                        list(APPEND CUDA_NVCC_FLAGS -DCUDA_9 ${EXPM} -G -g --cudart=static -gencode arch=compute_30,code=sm_30 -gencode arch=compute_35,code=sm_35 -gencode arch=compute_37,code=sm_37 -gencode arch=compute_50,code=sm_50 -gencode arch=compute_52,code=sm_52 -gencode arch=compute_53,code=sm_53 -gencode arch=compute_60,code=sm_60 -gencode arch=compute_61,code=sm_61  -gencode arch=compute_62,code=sm_62 -gencode arch=compute_70,code=sm_70)
                     endif()
                 else()
-                    list(APPEND CUDA_NVCC_FLAGS -DCUDA_9 -G -g --cudart=static -arch=compute_${COMPUTE} -code=sm_${COMPUTE})
+                    list(APPEND CUDA_NVCC_FLAGS -DCUDA_9 ${EXPM} -G -g --cudart=static -arch=compute_${COMPUTE} -code=sm_${COMPUTE})
                 endif()
             elseif (CUDA_VERSION VERSION_GREATER "7.5") # cuda 8
                 if ("${COMPUTE}" STREQUAL "all")
-                    list(APPEND CUDA_NVCC_FLAGS -DCUDA_8 -G -g --cudart=static -gencode arch=compute_30,code=sm_30 -gencode arch=compute_35,code=sm_35 -gencode arch=compute_37,code=sm_37 -gencode arch=compute_50,code=sm_50 -gencode arch=compute_52,code=sm_52 -gencode arch=compute_53,code=sm_53 -gencode arch=compute_60,code=sm_60 -gencode arch=compute_61,code=sm_61  -gencode arch=compute_62,code=sm_62)
+                    list(APPEND CUDA_NVCC_FLAGS -DCUDA_8 ${EXPM} -G -g --cudart=static -gencode arch=compute_30,code=sm_30 -gencode arch=compute_35,code=sm_35 -gencode arch=compute_37,code=sm_37 -gencode arch=compute_50,code=sm_50 -gencode arch=compute_52,code=sm_52 -gencode arch=compute_53,code=sm_53 -gencode arch=compute_60,code=sm_60 -gencode arch=compute_61,code=sm_61  -gencode arch=compute_62,code=sm_62)
                 else()
-                    list(APPEND CUDA_NVCC_FLAGS -DCUDA_8 -G -g --cudart=static -arch=compute_${COMPUTE} -code=sm_${COMPUTE})
+                    list(APPEND CUDA_NVCC_FLAGS -DCUDA_8 ${EXPM} -G -g --cudart=static -arch=compute_${COMPUTE} -code=sm_${COMPUTE})
                 endif()
             else()
                 if ("${COMPUTE}" STREQUAL "all")
-                    list(APPEND CUDA_NVCC_FLAGS -DCUDA_75 -G -g --cudart=static -gencode arch=compute_30,code=sm_30 -gencode arch=compute_35,code=sm_35 -gencode arch=compute_37,code=sm_37 -gencode arch=compute_50,code=sm_50 -gencode arch=compute_52,code=sm_52 -gencode arch=compute_53,code=sm_53)
+                    list(APPEND CUDA_NVCC_FLAGS -DCUDA_75 ${EXPM} -G -g --cudart=static -gencode arch=compute_30,code=sm_30 -gencode arch=compute_35,code=sm_35 -gencode arch=compute_37,code=sm_37 -gencode arch=compute_50,code=sm_50 -gencode arch=compute_52,code=sm_52 -gencode arch=compute_53,code=sm_53)
                 else()
-                    list(APPEND CUDA_NVCC_FLAGS -DCUDA_75 -G -g --cudart=static -arch=compute_${COMPUTE} -code=sm_${COMPUTE})
+                    list(APPEND CUDA_NVCC_FLAGS -DCUDA_75 ${EXPM} -G -g --cudart=static -arch=compute_${COMPUTE} -code=sm_${COMPUTE})
                 endif()
             endif()
         endif()
@@ -174,30 +221,30 @@ if(CUDA_BLAS)
         file(GLOB_RECURSE TYPES_SOURCES false ../include/types/*.cpp ../include/types/*.h)
         file(GLOB_RECURSE ARRAY_SOURCES false ../include/array/*.cpp ../include/array/*.h)
         file(GLOB_RECURSE MEMORY_SOURCES false ../include/memory/*.cpp ../include/memory/*.h)
-        file(GLOB_RECURSE GRAPH_SOURCES false ../include/graph/*.cpp ../include/graph/*.h)
+        file(GLOB_RECURSE GRAPH_SOURCES false ../include/graph/*.cpp ../include/graph/*.cu ../include/graph/*.h)
         file(GLOB_RECURSE CUSTOMOPS_SOURCES false ../include/ops/declarable/generic/*.cpp)
         file(GLOB_RECURSE CUSTOMOPS_HELPERS_SOURCES false ../include/ops/declarable/helpers/cpu/*.cpp)
         file(GLOB_RECURSE OPS_SOURCES false ../include/ops/impl/*.cpp ../include/ops/declarable/impl/*.cpp  ../include/ops/*.h)
         file(GLOB_RECURSE INDEXING_SOURCES false ../include/indexing/*.cpp ../include/indexing/*.h)
         file(GLOB_RECURSE HELPERS_SOURCES false ../include/helpers/*.cpp ../include/helpers/*.h)
         file(GLOB_RECURSE LOOPS_SOURCES false ../include/loops/*.cpp ../include/loops/*.h)
+        file(GLOB_RECURSE LOOPS_SOURCES_CUDA false ../include/loops/*.cu)
 
             # ../include/loops/cuda/grid_strided.cu ../include/loops/cuda/grid_shaped.cu
             #cuda/NativeOps.cu ../include/loops/cuda/grid_strided.cu ../include/loops/cuda/grid_shaped.cu ../include/loops/cuda/scalar.cu ../include/loops/cuda/reduce.cu ../include/loops/cuda/pairwise_transform.cu
             # ../include/loops/cuda/scalar.cu
-        CUDA_ADD_LIBRARY(${LIBND4J_NAME} SHARED cuda/NativeOps.cu ../include/loops/cuda/type_conversions.cu ../include/loops/cuda/grid_shaped.cu ../include/loops/cuda/summarystatsreduce.cu
-                ../include/loops/cuda/reduce.cu ../include/loops/cuda/indexreduce.cu ../include/loops/cuda/scalar.cu ../include/loops/cuda/broadcasting.cu ../include/loops/cuda/transform.cu
-                ../include/loops/cuda/grid_strided.cu   ../include/loops/cuda/pairwise_transform.cu ../include/loops/cuda/random.cu ${CUSTOMOPS_HELPERS_SOURCES}
+        CUDA_ADD_LIBRARY(${LIBND4J_NAME} SHARED cuda/NativeOps.cu ${LOOPS_SOURCES_CUDA}
+                ${CUSTOMOPS_HELPERS_SOURCES}
                 ../include/cnpy/cnpy.cpp  ../include/nd4jmemset.h ../include/nd4jmalloc.h
-                cpu/GraphExecutioner.cpp cpu/NativeOpExcutioner.cpp cpu/NDArray.cpp
+                cpu/GraphExecutioner.cpp cpu/NativeOpExcutioner.cpp cpu/NDArray.cpp cpu/NDArrayFactory.cpp
                 Environment.cpp Environment.h ${LOOPS_SOURCES} ${ARRAY_SOURCES} ${TYPES_SOURCES}
                 ${MEMORY_SOURCES} ${GRAPH_SOURCES} ${CUSTOMOPS_SOURCES} ${INDEXING_SOURCES} ${HELPERS_SOURCES} ${OPS_SOURCES})
         target_link_libraries(${LIBND4J_NAME} ${CUDA_LIBRARIES})
 
         if(WIN32)
             message("CUDA on Windows: enabling /EHsc")
-            SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /EHsc")
-            SET_TARGET_PROPERTIES(${LIBND4J_NAME} PROPERTIES COMPILER_FLAGS "/EHsc")
+            SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /EHsc /bigobj")
+            SET_TARGET_PROPERTIES(${LIBND4J_NAME} PROPERTIES COMPILER_FLAGS "/EHsc /bigobj")
         endif()
 
         set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/cuda)
@@ -205,6 +252,12 @@ if(CUDA_BLAS)
         install(TARGETS ${LIBND4J_NAME} DESTINATION .)
     endif(CUDA_FOUND)
 elseif(CPU_BLAS)
+
+    if ("${EXPERIMENTAL}" STREQUAL "yes")
+        message("Experimental mode ENABLED")
+        set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -D__ND4J_EXPERIMENTAL__=true")
+        set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D__ND4J_EXPERIMENTAL__=true")
+    endif()
 
     file(GLOB_RECURSE TYPES_SOURCES false ../include/types/*.cpp ../include/types/*.h)
     file(GLOB_RECURSE ARRAY_SOURCES false ../include/array/*.cpp ../include/array/*.h)
@@ -220,7 +273,7 @@ elseif(CPU_BLAS)
     message("CPU BLAS")
     add_definitions(-D__CPUBLAS__=true)
     add_library(nd4jobj OBJECT cpu/NativeOps.cpp cpu/GraphExecutioner.cpp
-            cpu/NativeOpExcutioner.cpp cpu/NDArray.cpp
+            cpu/NativeOpExcutioner.cpp cpu/NDArray.cpp cpu/NDArrayFactory.cpp
             ../include/cnpy/cnpy.cpp  ../include/nd4jmemset.h ../include/nd4jmalloc.h
             Environment.cpp Environment.h ${LOOPS_SOURCES}  ${ARRAY_SOURCES} ${TYPES_SOURCES}
             ${MEMORY_SOURCES} ${GRAPH_SOURCES} ${CUSTOMOPS_SOURCES} ${INDEXING_SOURCES} ${HELPERS_SOURCES}  ${CUSTOMOPS_HELPERS_SOURCES}

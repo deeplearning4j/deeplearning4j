@@ -16,8 +16,10 @@
 
 package org.deeplearning4j.spark.api.worker;
 
+import org.apache.spark.broadcast.Broadcast;
 import org.datavec.spark.functions.FlatMapFunctionAdapter;
 import org.datavec.spark.transform.BaseFlatMapFunctionAdaptee;
+import org.datavec.spark.util.SerializableHadoopConfig;
 import org.deeplearning4j.api.loader.MultiDataSetLoader;
 import org.deeplearning4j.spark.api.TrainingResult;
 import org.deeplearning4j.spark.api.TrainingWorker;
@@ -39,8 +41,8 @@ import java.util.List;
 public class ExecuteWorkerPathMDSFlatMap<R extends TrainingResult>
                 extends BaseFlatMapFunctionAdaptee<Iterator<String>, R> {
 
-    public ExecuteWorkerPathMDSFlatMap(TrainingWorker<R> worker, MultiDataSetLoader loader) {
-        super(new ExecuteWorkerPathMDSFlatMapAdapter<>(worker, loader));
+    public ExecuteWorkerPathMDSFlatMap(TrainingWorker<R> worker, MultiDataSetLoader loader, Broadcast<SerializableHadoopConfig> hadoopConfig) {
+        super(new ExecuteWorkerPathMDSFlatMapAdapter<>(worker, loader, hadoopConfig));
     }
 }
 
@@ -57,10 +59,12 @@ class ExecuteWorkerPathMDSFlatMapAdapter<R extends TrainingResult>
     private final FlatMapFunctionAdapter<Iterator<MultiDataSet>, R> workerFlatMap;
     private MultiDataSetLoader loader;
     private final int maxDataSetObjects;
+    private final Broadcast<SerializableHadoopConfig> hadoopConfig;
 
-    public ExecuteWorkerPathMDSFlatMapAdapter(TrainingWorker<R> worker, MultiDataSetLoader loader) {
+    public ExecuteWorkerPathMDSFlatMapAdapter(TrainingWorker<R> worker, MultiDataSetLoader loader, Broadcast<SerializableHadoopConfig> hadoopConfig) {
         this.workerFlatMap = new ExecuteWorkerMultiDataSetFlatMapAdapter<>(worker);
         this.loader = loader;
+        this.hadoopConfig = hadoopConfig;
 
         //How many dataset objects of size 'dataSetObjectNumExamples' should we load?
         //Only pass on the required number, not all of them (to avoid async preloading data that won't be used)
@@ -88,6 +92,6 @@ class ExecuteWorkerPathMDSFlatMapAdapter<R extends TrainingResult>
             list.add(iter.next());
         }
 
-        return workerFlatMap.call(new PathSparkMultiDataSetIterator(list.iterator(), loader));
+        return workerFlatMap.call(new PathSparkMultiDataSetIterator(list.iterator(), loader, hadoopConfig));
     }
 }

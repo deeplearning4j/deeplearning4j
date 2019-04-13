@@ -67,5 +67,5 @@ else
 fi
 bash change-scala-versions.sh $SCALA
 mvn clean $MAVEN_PHASE -B -U --settings ./ci/settings.xml -Dmaven.javadoc.skip=true -Dmaven.test.skip=true -Dlocal.software.repository=sonatype \
-    -Djavacpp.extension=${EXT:-} $EXTRA_OPTIONS
+    -Dlibnd4j.extension=${EXT:-} $EXTRA_OPTIONS
 

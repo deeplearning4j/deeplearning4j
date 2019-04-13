@@ -29,7 +29,7 @@ import org.deeplearning4j.util.MaskedReductionUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastCopyOp;
 import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastMulOp;
-import org.nd4j.linalg.api.ops.impl.transforms.IsMax;
+import org.nd4j.linalg.api.ops.impl.transforms.any.IsMax;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.primitives.Pair;
@@ -73,7 +73,6 @@ public class GlobalPoolingLayer extends AbstractLayer<org.deeplearning4j.nn.conf
 
 
     private final int[] poolingDimensions;
-    private final boolean collapseDimensions;
     private final PoolingType poolingType;
     private final int pNorm;
 
@@ -84,7 +83,6 @@ public class GlobalPoolingLayer extends AbstractLayer<org.deeplearning4j.nn.conf
                 (org.deeplearning4j.nn.conf.layers.GlobalPoolingLayer) conf.getLayer();
 
         poolingDimensions = layerConf.getPoolingDimensions();
-        collapseDimensions = layerConf.isCollapseDimensions();
         poolingType = layerConf.getPoolingType();
         pNorm = layerConf.getPnorm();
     }
@@ -97,16 +95,6 @@ public class GlobalPoolingLayer extends AbstractLayer<org.deeplearning4j.nn.conf
     @Override
     public void clearNoiseWeightParams() {
         //No op
-    }
-
-    @Override
-    public double calcL2(boolean backpropParamsOnly) {
-        return 0;
-    }
-
-    @Override
-    public double calcL1(boolean backpropParamsOnly) {
-        return 0;
     }
 
     @Override
@@ -186,7 +174,7 @@ public class GlobalPoolingLayer extends AbstractLayer<org.deeplearning4j.nn.conf
         }
 
         //TODO optimize without leverage
-        if (collapseDimensions) {
+        if (layerConf().isCollapseDimensions()) {
             //Standard/common case
             return workspaceMgr.leverageTo(ArrayType.ACTIVATIONS, reduced2d);
         } else {
@@ -197,7 +185,6 @@ public class GlobalPoolingLayer extends AbstractLayer<org.deeplearning4j.nn.conf
                 return workspaceMgr.leverageTo(ArrayType.ACTIVATIONS, reduced2d.reshape(reduced2d.ordering(), inputShape[0], inputShape[1], 1, 1));
             } else {
                 return workspaceMgr.leverageTo(ArrayType.ACTIVATIONS, reduced2d.reshape(reduced2d.ordering(), inputShape[0], inputShape[1], 1, 1, 1));
-
             }
         }
     }
@@ -234,7 +221,7 @@ public class GlobalPoolingLayer extends AbstractLayer<org.deeplearning4j.nn.conf
     public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon, LayerWorkspaceMgr workspaceMgr) {
         assertInputSet(true);
 
-        if (!collapseDimensions && epsilon.rank() != 2) {
+        if (!layerConf().isCollapseDimensions() && epsilon.rank() != 2) {
             val origShape = epsilon.shape();
             //Don't collapse dims case: error should be [minibatch, vectorSize, 1] or [minibatch, channels, 1, 1]
             //Reshape it to 2d, to get rid of the 1s
@@ -306,8 +293,8 @@ public class GlobalPoolingLayer extends AbstractLayer<org.deeplearning4j.nn.conf
 
         switch (poolingType) {
             case MAX:
-                INDArray isMax = Nd4j.getExecutioner().execAndReturn(new IsMax(inputArray.dup(), poolDim));
-                return Nd4j.getExecutioner().execAndReturn(new BroadcastMulOp(isMax, epsilon, isMax, broadcastDims));
+                INDArray isMax = Nd4j.getExecutioner().exec(new IsMax(inputArray.dup(), poolDim));
+                return Nd4j.getExecutioner().exec(new BroadcastMulOp(isMax, epsilon, isMax, broadcastDims));
             case AVG:
                 //if out = avg(in,dims) then dL/dIn = 1/N * dL/dOut
                 int n = 1;

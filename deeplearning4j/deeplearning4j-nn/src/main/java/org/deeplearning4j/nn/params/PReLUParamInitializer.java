@@ -19,16 +19,18 @@ package org.deeplearning4j.nn.params;
 import lombok.val;
 import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.conf.distribution.Distributions;
-import org.deeplearning4j.nn.conf.layers.*;
-import org.deeplearning4j.nn.weights.WeightInit;
+import org.deeplearning4j.nn.conf.layers.BaseLayer;
+import org.deeplearning4j.nn.conf.layers.Layer;
+import org.deeplearning4j.nn.conf.layers.PReLULayer;
+import org.deeplearning4j.nn.weights.IWeightInit;
 import org.deeplearning4j.nn.weights.WeightInitUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.rng.distribution.Distribution;
-import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 
-import java.util.*;
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * PReLU weight initializer. PReLU layer has weights of input shape (excluding mini-batch
@@ -140,9 +142,8 @@ public class PReLUParamInitializer implements ParamInitializer {
 
         PReLULayer layerConf = (PReLULayer) conf.getLayer();
         if (initializeParameters) {
-            Distribution dist = Distributions.createDistribution(layerConf.getDist());
-            return WeightInitUtil.initWeights(layerConf.getNIn(), layerConf.getNOut(),
-                    weightShape, layerConf.getWeightInit(), dist, weightParamView);
+            return layerConf.getWeightInitFn().init(layerConf.getNIn(), layerConf.getNOut(),
+                    weightShape, IWeightInit.DEFAULT_WEIGHT_INIT_ORDER, weightParamView);
         } else {
             return WeightInitUtil.reshapeWeights(weightShape, weightParamView);
         }

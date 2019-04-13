@@ -71,7 +71,7 @@ public class FloatBuffer extends BaseDataBuffer {
      */
     @Override
     protected void initTypeAndSize() {
-        type = Type.FLOAT;
+        type = DataType.FLOAT;
         elementSize = 4;
     }
 

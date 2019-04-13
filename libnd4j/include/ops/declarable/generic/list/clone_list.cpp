@@ -30,8 +30,8 @@ namespace nd4j {
 
             auto newList = list->clone();
 
-            OVERWRITE_RESULT(newList);
-
+            //OVERWRITE_RESULT(newList);
+            setupResultList(newList, block);
             return ND4J_STATUS_OK;
         }
         DECLARE_SYN(TensorArrayIdentityV3, clone_list);

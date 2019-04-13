@@ -50,6 +50,7 @@ namespace ops {
        */               
         #if NOT_EXCLUDED(OP_hinge_loss)
         DECLARE_CUSTOM_OP(hinge_loss, 3, 1, false, 0, 1);
+        DECLARE_CUSTOM_OP(hinge_loss_grad, 3, 3, false, 0, 1);
         #endif
 
 
@@ -82,6 +83,7 @@ namespace ops {
        */      
         #if NOT_EXCLUDED(OP_huber_loss)
         DECLARE_CUSTOM_OP(huber_loss, 3, 1, false, 1, 1);
+        DECLARE_CUSTOM_OP(huber_loss_grad, 3, 1, false, 1, 1);
         #endif
 
     
@@ -112,8 +114,46 @@ namespace ops {
        */      
         #if NOT_EXCLUDED(OP_log_loss)
         DECLARE_CUSTOM_OP(log_loss, 3, 1, false, 1, 1);
+        DECLARE_CUSTOM_OP(log_loss_grad, 3, 3, false, 1, 1);
         #endif
-    
+
+        /**
+         * l2_loss op.
+         * compute a l2 norm for given array.
+         *
+         * input param - an array (tensor)
+         * output value - a real number with given type (e.g. float or double)
+         */
+        #if NOT_EXCLUDED(OP_l2_loss)
+        DECLARE_CUSTOM_OP(l2_loss, 1, 1, false, 0, 0);
+        #endif
+
+
+        /**
+         * This op calculates logarithmic loss of poisson distributed input.
+         * Input arrays:
+         *    0: log_predictions - must be already pre-transformed to log(x)
+         *    1: weights - is used for weighting (multiplying) of loss values, type float.
+         *       Can be single scalar or has the same rank as labels and must be broadcastable to labels.
+         *    2: labels - ground truth vales, expected to be 0. or 1., type float.
+         *       Must have the same shape as logits.
+         *
+         *  Input integer arguments:
+         *    0: type of reduction to apply to loss
+         *       0 - "none", unreduced weighted losses with the same shape as logits.
+         *       1 - "weighted_sum", output is scalar and equal to sum of all elements of weightedLosses array
+         *       2 - "weighted_mean", output is scalar and equal to sum of all elements of weightedLosses array divided by sum of all elements of weightsBroad array
+         *       3 - "weighted_sum_by_nonzero_weights", output is scalar and equal to scalar sum of all elements of weightedLosses array divided by number of non-zero weights
+         *    1: optional - boolean value compute_full_loss: 0 (default) or 1 (compute)
+         *
+         * Output array:
+         *    0: loss values, type float.
+         *       Can be an array with the same shape as log_predictions or just single scalar, depending on reduction mode (see input integer argument)
+         */
+        #if NOT_EXCLUDED(OP_log_poisson_loss)
+        DECLARE_CUSTOM_OP(log_poisson_loss, 3, 1, true, 0, 1);
+        DECLARE_CUSTOM_OP(log_poisson_loss_grad, 3, 3, true, 0, 1);
+        #endif
 
     //////////////////////////////////////////////////////////////////////////
     /**
@@ -131,6 +171,7 @@ namespace ops {
        */     
         #if NOT_EXCLUDED(OP_mean_pairwssqerr_loss)
         DECLARE_CUSTOM_OP(mean_pairwssqerr_loss, 3, 1, false, 0, 0);
+        DECLARE_CUSTOM_OP(mean_pairwssqerr_loss_grad, 3, 3, false, 0, 0);
         #endif
 
     
@@ -158,6 +199,7 @@ namespace ops {
        */      
         #if NOT_EXCLUDED(OP_mean_sqerr_loss)
         DECLARE_CUSTOM_OP(mean_sqerr_loss, 3, 1, false, 0, 1);
+        DECLARE_CUSTOM_OP(mean_sqerr_loss_grad, 3, 3, false, 0, 1);
         #endif
 
 
@@ -188,6 +230,7 @@ namespace ops {
        */      
         #if NOT_EXCLUDED(OP_sigm_cross_entropy_loss)
         DECLARE_CUSTOM_OP(sigm_cross_entropy_loss, 3, 1, false, 1, 1);
+        DECLARE_CUSTOM_OP(sigm_cross_entropy_loss_grad, 3, 3, false, 1, 1);
         #endif
     
 
@@ -218,6 +261,7 @@ namespace ops {
        */      
         #if NOT_EXCLUDED(OP_softmax_cross_entropy_loss)
         DECLARE_CUSTOM_OP(softmax_cross_entropy_loss, 3, 1, false, 1, 1);  
+        DECLARE_CUSTOM_OP(softmax_cross_entropy_loss_grad, 3, 3, false, 1, 1);  
         #endif
 
 
@@ -245,6 +289,7 @@ namespace ops {
        */      
         #if NOT_EXCLUDED(OP_absolute_difference_loss)
         DECLARE_CUSTOM_OP(absolute_difference_loss, 3, 1, false, 0, 1);
+        DECLARE_CUSTOM_OP(absolute_difference_loss_grad, 3, 3, false, 0, 1);
         #endif
 
 
@@ -273,6 +318,7 @@ namespace ops {
        */         
         #if NOT_EXCLUDED(OP_cosine_distance_loss)
         DECLARE_CUSTOM_OP(cosine_distance_loss, 3, 1, false, 0, 2);
+        DECLARE_CUSTOM_OP(cosine_distance_loss_grad, 3, 3, false, 0, 2);
         #endif
 
         //////////////////////////////////////////////////////////////////////////
@@ -291,7 +337,8 @@ namespace ops {
        *    0: loss values, type float. An array with shape resulting from reducing of logits shape along dimension with classes
        */      
         #if NOT_EXCLUDED(OP_softmax_cross_entropy_loss_with_logits)
-        DECLARE_CUSTOM_OP(softmax_cross_entropy_loss_with_logits, 2, 1, false, 0, 0);  
+        DECLARE_CUSTOM_OP(softmax_cross_entropy_loss_with_logits, 2, 1, false, 0, 0);
+        DECLARE_CUSTOM_OP(softmax_cross_entropy_loss_with_logits_grad, 2, 2, false, 0, 0);
         #endif
 
         //////////////////////////////////////////////////////////////////////////
@@ -307,7 +354,8 @@ namespace ops {
        *    0: loss values, type float. Has the same shape as labels
        */      
         #if NOT_EXCLUDED(OP_sparse_softmax_cross_entropy_loss_with_logits)
-        DECLARE_OP(sparse_softmax_cross_entropy_loss_with_logits, 2, 1, false);  
+        DECLARE_CUSTOM_OP(sparse_softmax_cross_entropy_loss_with_logits, 2, 1, false, 0, 0);
+        DECLARE_CUSTOM_OP(sparse_softmax_cross_entropy_loss_with_logits_grad, 2, 1, false, 0, 0);
         #endif
 
 

@@ -16,7 +16,12 @@
 
 package org.nd4j.linalg.api.ops.impl.controlflow.compat;
 
+import org.nd4j.autodiff.samediff.SDVariable;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ops.impl.transforms.BaseDynamicTransformOp;
+
+import java.util.Collections;
+import java.util.List;
 
 
 public class StopGradient extends BaseDynamicTransformOp {
@@ -28,5 +33,15 @@ public class StopGradient extends BaseDynamicTransformOp {
     @Override
     public String tensorflowName() {
         return "StopGradient";
+    }
+
+    @Override
+    public List<DataType> calculateOutputDataTypes(List<DataType> input){
+        return input;
+    }
+
+    @Override
+    public List<SDVariable> doDiff(List<SDVariable> gradients){
+        return Collections.singletonList(f().zerosLike(arg()));
     }
 }

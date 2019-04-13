@@ -22,36 +22,45 @@
 #if NOT_EXCLUDED(OP_softplus)
 
 #include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/helpers/legacy_helpers.h>
 
 namespace nd4j {
     namespace ops {
         CONFIGURABLE_OP_IMPL(softplus, 1, 1, true, 0, 0) {
-            NDArray<T> *first = INPUT_VARIABLE(0);
-            auto z = this->getZ(block);
+            auto first = INPUT_VARIABLE(0);
+            auto z = OUTPUT_VARIABLE(0);
 
-            first->template applyTransform<simdOps::SoftPlus<T>>(z, nullptr);
+            first->applyTransform(nd4j::transform::SoftPlus, z, nullptr);
 
             STORE_RESULT(*z);
 
-            return ND4J_STATUS_OK;
+            return Status::OK();
+        }
+
+        DECLARE_TYPES(softplus) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(0, DataType::ANY)
+                    ->setAllowedOutputTypes(0, {ALL_FLOATS});
         }
 
         CONFIGURABLE_OP_IMPL(softplus_bp, 2, 1, true, 0, 0) {
-            NDArray<T>* input = INPUT_VARIABLE(0);
-            NDArray<T>* epsilon = INPUT_VARIABLE(1);
+            auto input = INPUT_VARIABLE(0);
+            auto epsilon = INPUT_VARIABLE(1);
 
             auto z = OUTPUT_VARIABLE(0);
 
-            auto lambda = LAMBDA_TT(_x, _e) {
-                T p = nd4j::math::nd4j_pow<T>((T) M_E, _x);
-                return _e * (p / (p + 1.));
-            };
-
-            input->applyPairwiseLambda(epsilon, lambda, z);  
-
-            return ND4J_STATUS_OK;
+            //input->applyPairwiseTransform(pairwise::SoftplusDerivativeE, epsilon, z, nullptr);
+            helpers::softPlusDerivative(input, epsilon, z);
+            return Status::OK();
         }
         DECLARE_SYN(SoftplusGrad, softplus_bp);
+
+        DECLARE_TYPES(softplus_bp) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(0, DataType::ANY)
+                    ->setAllowedInputTypes(1, {DataType::FLOAT32, DataType ::DOUBLE, DataType::HALF})
+                    ->setAllowedOutputTypes(0, {DataType::FLOAT32, DataType ::DOUBLE, DataType::HALF});
+        }
     }
 }
 

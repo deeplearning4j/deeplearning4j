@@ -549,7 +549,7 @@ class Rational implements Cloneable {
 
 
     /**
-     * Compute Pochhammer’s symbol (this)_n.
+     * Compute Pochhammer's symbol (this)_n.
      *
      * @param n The number of product terms in the evaluation.
      * @return Gamma(this+n)/Gamma(this) = this*(this+1)*...*(this+n-1).
@@ -573,7 +573,7 @@ class Rational implements Cloneable {
 
 
     /**
-     * Compute pochhammer’s symbol (this)_n.
+     * Compute pochhammer's symbol (this)_n.
      *
      * @param n The number of product terms in the evaluation.
      * @return Gamma(this+n)/GAMMA(this).

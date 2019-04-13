@@ -106,7 +106,6 @@ public class UNet extends ZooModel {
                 .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                 .updater(updater)
                 .weightInit(weightInit)
-                .dist(new TruncatedNormalDistribution(0.0, 0.5))
                 .l2(5e-5)
                 .miniBatch(true)
                 .cacheMode(cacheMode)
@@ -204,7 +203,7 @@ public class UNet extends ZooModel {
                 .addLayer("up9-1", new Upsampling2D.Builder(2).build(), "conv8-2")
                 .addLayer("up9-2", new ConvolutionLayer.Builder(2,2).stride(1,1).nOut(64)
                         .convolutionMode(ConvolutionMode.Same).cudnnAlgoMode(cudnnAlgoMode)
-                        .activation(Activation.RELU).build(), "up8-1")
+                        .activation(Activation.RELU).build(), "up9-1")
                 .addVertex("merge9", new MergeVertex(), "conv1-2", "up9-2")
                 .addLayer("conv9-1", new ConvolutionLayer.Builder(3,3).stride(1,1).nOut(64)
                         .convolutionMode(ConvolutionMode.Same).cudnnAlgoMode(cudnnAlgoMode)
@@ -217,9 +216,10 @@ public class UNet extends ZooModel {
                         .activation(Activation.RELU).build(), "conv9-2")
 
                 .addLayer("conv10", new ConvolutionLayer.Builder(3,3).stride(1,1).nOut(1)
-                        .convolutionMode(ConvolutionMode.Truncate).cudnnAlgoMode(cudnnAlgoMode)
-                        .activation(Activation.SIGMOID).build(), "conv9-3")
-                .addLayer("output", new CnnLossLayer.Builder(LossFunctions.LossFunction.MCXENT).build(), "conv10")
+                        .convolutionMode(ConvolutionMode.Same).cudnnAlgoMode(cudnnAlgoMode)
+                        .activation(Activation.IDENTITY).build(), "conv9-3")
+                .addLayer("output", new CnnLossLayer.Builder(LossFunctions.LossFunction.XENT)
+                        .activation(Activation.SIGMOID).build(), "conv10")
 
                 .setOutputs("output");
 

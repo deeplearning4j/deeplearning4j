@@ -18,15 +18,14 @@ package org.datavec.image.loader;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
-import org.bytedeco.javacpp.opencv_core;
 import org.bytedeco.javacv.OpenCVFrameConverter;
+import org.nd4j.linalg.api.ops.impl.reduce.same.Sum;
 import org.nd4j.linalg.primitives.Pair;
 import org.datavec.image.data.ImageWritable;
 import org.datavec.image.transform.ColorConversionTransform;
 import org.datavec.image.transform.EqualizeHistTransform;
 import org.datavec.image.transform.ImageTransform;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.impl.accum.Sum;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.FeatureUtil;
@@ -35,9 +34,10 @@ import java.io.*;
 import java.nio.ByteBuffer;
 import java.util.*;
 
-import static org.bytedeco.javacpp.opencv_core.CV_8UC;
-import static org.bytedeco.javacpp.opencv_core.Mat;
-import static org.bytedeco.javacpp.opencv_imgproc.COLOR_BGR2YCrCb;
+import org.bytedeco.opencv.opencv_core.*;
+import org.bytedeco.opencv.opencv_imgproc.*;
+import static org.bytedeco.opencv.global.opencv_core.*;
+import static org.bytedeco.opencv.global.opencv_imgproc.*;
 
 /**
  * CifarLoader is loader specific for the Cifar10 dataset
@@ -264,7 +264,7 @@ public class CifarLoader extends NativeImageLoader implements Serializable {
      * Preprocess and store cifar based on successful Torch approach by Sergey Zagoruyko
      * Reference: <a href="https://github.com/szagoruyko/cifar.torch">https://github.com/szagoruyko/cifar.torch</a>
      */
-    public opencv_core.Mat convertCifar(Mat orgImage) {
+    public Mat convertCifar(Mat orgImage) {
         numExamples++;
         Mat resImage = new Mat();
         OpenCVFrameConverter.ToMat converter = new OpenCVFrameConverter.ToMat();
@@ -325,9 +325,9 @@ public class CifarLoader extends NativeImageLoader implements Serializable {
         result.save(fileName);
     }
 
-    public Pair<INDArray, opencv_core.Mat> convertMat(byte[] byteFeature) {
+    public Pair<INDArray, Mat> convertMat(byte[] byteFeature) {
         INDArray label = FeatureUtil.toOutcomeVector(byteFeature[0], NUM_LABELS);; // first value in the 3073 byte array
-        opencv_core.Mat image = new opencv_core.Mat(HEIGHT, WIDTH, CV_8UC(CHANNELS)); // feature are 3072
+        Mat image = new Mat(HEIGHT, WIDTH, CV_8UC(CHANNELS)); // feature are 3072
         ByteBuffer imageData = image.createBuffer();
 
         for (int i = 0; i < HEIGHT * WIDTH; i++) {
@@ -345,7 +345,7 @@ public class CifarLoader extends NativeImageLoader implements Serializable {
     public DataSet convertDataSet(int num) {
         int batchNumCount = 0;
         List<DataSet> dataSets = new ArrayList<>();
-        Pair<INDArray, opencv_core.Mat> matConversion;
+        Pair<INDArray, Mat> matConversion;
         byte[] byteFeature = new byte[BYTEFILELEN];
 
         try {

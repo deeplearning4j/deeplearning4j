@@ -41,6 +41,11 @@
         </license>
     </licenses>
 
+    <properties>
+        <jumpy.compile.skip>false</jumpy.compile.skip>
+        <jumpy.version>0.2.4</jumpy.version>
+    </properties>
+
     <dependencies>
         <dependency>
             <groupId>org.nd4j</groupId>
@@ -95,7 +100,6 @@
                             <goal>jar</goal>
                         </goals>
                         <configuration>
-                            <skip>false</skip>
                             <classifier>javadoc</classifier>
                             <classesDirectory>${basedir}/javadoc</classesDirectory>
                         </configuration>
@@ -109,6 +113,66 @@
                         <configuration>
                             <classifier>sources</classifier>
                             <classesDirectory>${basedir}/src</classesDirectory>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>python-install-cython</id>
+                        <phase>install</phase>
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
+                        <configuration>
+                            <executable>pip</executable>
+                            <workingDirectory>${basedir}</workingDirectory>
+                            <arguments>
+                                <argument>install</argument>
+                                <argument>--user</argument>
+                                <argument>Cython</argument>
+                                <argument>--install-option=--no-cython-compile</argument>
+                            </arguments>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>python-build</id>
+                        <phase>install</phase>
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
+                        <configuration>
+                            <executable>pip</executable>
+                            <workingDirectory>${basedir}</workingDirectory>
+                            <arguments>
+                                <argument>install</argument>
+                                <argument>--user</argument>
+                                <argument>-e</argument>
+                                <argument>.[tests, spark]</argument>
+                            </arguments>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>python-test</id>
+                        <phase>test</phase>
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
+                        <configuration>
+                            <executable>python</executable>
+                            <workingDirectory>${basedir}</workingDirectory>
+                            <skip>${jumpy.test.skip}</skip>
+                            <arguments>
+                                <argument>-m</argument>
+                                <argument>pytest</argument>
+                                <argument>--pep8</argument>
+                                <argument>-m</argument>
+                                <argument>pep8</argument>
+                                <argument>tests/</argument>
+                            </arguments>
                         </configuration>
                     </execution>
                 </executions>

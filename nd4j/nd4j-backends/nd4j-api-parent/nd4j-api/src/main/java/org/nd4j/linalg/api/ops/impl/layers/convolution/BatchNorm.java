@@ -20,18 +20,22 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import onnx.OnnxProto3;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.autodiff.samediff.internal.SameDiffOp;
 import org.nd4j.base.Preconditions;
 import org.nd4j.imports.descriptors.properties.PropertyMapping;
 import org.nd4j.imports.graphmapper.onnx.OnnxGraphMapper;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv1DConfig;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv2DConfig;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv3DConfig;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.ArrayUtil;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
@@ -52,7 +56,7 @@ public class BatchNorm extends DynamicCustomOp {
     private boolean applyGamma;
     private boolean applyBeta;
     private double epsilon;
-    private int[] axis;
+    private int[] jaxis;
 
     @Builder(builderMethodName = "builder")
     public BatchNorm(SameDiff sameDiff, SDVariable[] inputFunctions, INDArray[] inputArrays, INDArray[]
@@ -65,7 +69,7 @@ public class BatchNorm extends DynamicCustomOp {
         this.applyGamma = applyGamma;
         this.applyBeta = applyBeta;
         this.epsilon = epsilon;
-        this.axis = axis;
+        this.jaxis = axis;
         if(inputArrays != null) {
             addInputArgument(inputArrays);
         }
@@ -78,9 +82,13 @@ public class BatchNorm extends DynamicCustomOp {
     public void addArgs() {
         addIArgument(ArrayUtil.fromBoolean(applyGamma));
         addIArgument(ArrayUtil.fromBoolean(applyBeta));
-        if(axis != null) {
+        if(jaxis != null) {
             //If null: op defaults to last dimension
-            addIArgument(axis);
+            axis.clear();
+            for (val v:jaxis) {
+                axis.add(v);
+            }
+            addIArgument(jaxis);
         }
         addTArgument(epsilon);
     }
@@ -100,12 +108,10 @@ public class BatchNorm extends DynamicCustomOp {
     public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
         TFGraphMapper.getInstance().initFunctionFromProperties(nodeDef.getOp(), this, attributesForNode, nodeDef, graph);
         //Switch order: TF uses [input, gamma, beta, mean, variance]; libnd4j expects [input, mean, variance, gamma, beta]
-        String[] inputs = initWith.getInputsForFunction(this);
-        String[] orig = inputs.clone();
-        inputs[1] = orig[3];    //Mean
-        inputs[2] = orig[4];    //Variance
-        inputs[3] = orig[1];    //gamma
-        inputs[4] = orig[2];    //beta
+        SameDiffOp op = initWith.getOps().get(this.getOwnName());
+        List<String> list = op.getInputsToOp();
+        List<String> newList = Arrays.asList(list.get(0), list.get(3), list.get(4), list.get(1), list.get(2));
+        op.setInputsToOp(newList);
 
         this.applyGamma = true;
         this.applyBeta = true;
@@ -115,13 +121,13 @@ public class BatchNorm extends DynamicCustomOp {
             String dataFormat = attributesForNode.get("data_format").getS().toStringUtf8();
             //TODO not sure if these conv1d/3d cases appear. But BN definitely uses "NCHW" or "NHWC"
             if(dataFormat.equalsIgnoreCase(Conv2DConfig.NCHW) || dataFormat.equalsIgnoreCase(Conv1DConfig.NCW) || dataFormat.equalsIgnoreCase(Conv3DConfig.NCDHW)){
-                axis = new int[]{1};
+                jaxis = new int[]{1};
             } else if(dataFormat.equalsIgnoreCase(Conv2DConfig.NHWC)){
-                axis = new int[]{3};
+                jaxis = new int[]{3};
             } else if(dataFormat.equalsIgnoreCase(Conv1DConfig.NWC)){
-                axis = new int[]{2};
+                jaxis = new int[]{2};
             } else if(dataFormat.equalsIgnoreCase(Conv3DConfig.NDHWC)){
-                axis = new int[]{4};
+                jaxis = new int[]{4};
             } else {
                 throw new IllegalStateException("Unknown data format: \"" + dataFormat + "\"" );
             }
@@ -160,12 +166,22 @@ public class BatchNorm extends DynamicCustomOp {
         inputs.addAll(Arrays.asList(args()));
         inputs.add(f1.get(0));
         BatchNormDerivative batchNormDerivative = BatchNormDerivative.derivativeBuilder()
+                .sameDiff(sameDiff)
                 .applyGamma(applyGamma)
                 .applyBeta(applyBeta)
                 .epsilon(epsilon)
+                .axis(jaxis)
                 .build();
         ret.addAll(Arrays.asList(batchNormDerivative.outputVariables()));
         return ret;
     }
 
+    @Override
+    public List<DataType> calculateOutputDataTypes(List<DataType> inputDataTypes){
+        Preconditions.checkState(inputDataTypes != null && inputDataTypes.size() >= 3 && inputDataTypes.size() <= 5,
+                "Expected 3 to 5 input datatypes for %s, got %s", getClass(), inputDataTypes);
+        if(inputDataTypes.get(0).isFPType())
+            return Collections.singletonList(inputDataTypes.get(0));
+        return Collections.singletonList(Nd4j.defaultFloatingPointType());
+    }
 }

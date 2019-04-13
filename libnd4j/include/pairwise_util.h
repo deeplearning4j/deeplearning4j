@@ -30,8 +30,11 @@
 #define omp_get_max_threads() 1
 #define omp_set_num_threads(threads)
 #endif
-#include <pairwise_util.h>
+
+#include <templatemath.h>
+#include <functional>
 #include <pointercast.h>
+#include <op_boilerplate.h>
 #include <dll.h>
 #include <nd4jmemset.h>
 #ifdef _OPENMP
@@ -40,7 +43,17 @@
 //Loops adapted from:
 //https://github.com/numpy/numpy/blob/009b17a85a22707e63ac9ea1896413992bbf9ce5/numpy/core/src/private/lowlevel_strided_loops.h#L401-L401
 
+/*
+namespace shape {
 
+    Nd4jLong length(const Nd4jLong *shapeInfo);
+    Nd4jLong elementWiseStride(const Nd4jLong *shapeInfo);
+    char order(const Nd4jLong *shapeInfo);
+    bool isStrideSimple(const Nd4jLong* shapeInfo);
+    Nd4jLong getIndexOffset(Nd4jLong index, const Nd4jLong *shapeInfo, Nd4jLong arrLen);
+}
+
+ */
 /************************************************************
  * A struct used by CreateSortedStridePerm, new in 1.7.
  ************************************************************/
@@ -255,14 +268,16 @@ public:
     int threads;
     Nd4jLong chunks;
     Nd4jLong modulo;
+    Nd4jLong remainder;
+    
     BlockInformation(Nd4jLong length, int threshold) {
 
-    int tadsPerThread = length / threshold;
-    int _threads = nd4j::math::nd4j_max<int>(1, tadsPerThread);
-    _threads = nd4j::math::nd4j_min<int>(_threads, omp_get_max_threads());
-
-    threads = _threads;
+    threads = length / threshold;
+    threads = nd4j::math::nd4j_max<int>(1, threads);
+    threads = nd4j::math::nd4j_min<int>(threads, omp_get_max_threads());
+    
     items = length / threads;
+    remainder = length % threads;
     if(items < 1)
         items = 1;
     chunks = length / items;
@@ -355,16 +370,13 @@ inline void quickSort(StridePermutation *arr, int elements) {
  *
  * Returns 0 on success, -1 on failure.
  */
-template <typename T>
-#ifdef __CUDACC__
-__host__ __device__
-#endif
-int PrepareTwoRawArrayIter(int ndim, Nd4jLong *shape,
-                           T *dataA, Nd4jLong *stridesA,
-                           T *dataB, Nd4jLong *stridesB,
+template <typename X, typename Y>
+int _CUDA_HD PrepareTwoRawArrayIter(int ndim, Nd4jLong *shape,
+                           X *dataA, Nd4jLong *stridesA,
+                           Y *dataB, Nd4jLong *stridesB,
                            int *out_ndim, Nd4jLong *outShape,
-                           T **out_dataA, Nd4jLong *outStridesA,
-                           T **out_dataB, Nd4jLong *outStridesB) {
+                           X **out_dataA, Nd4jLong *outStridesA,
+                           Y **out_dataB, Nd4jLong *outStridesB) {
     int i;
 
 /* Sort the axes based on the destination strides */
@@ -449,18 +461,18 @@ int PrepareTwoRawArrayIter(int ndim, Nd4jLong *shape,
  *
  * Returns 0 on success, -1 on failure.
  */
-template <typename T>
+template <typename X, typename Y, typename Z>
 #ifdef __CUDACC__
 __host__ __device__
 #endif
 int  PrepareThreeRawArrayIter(int ndim, Nd4jLong shape[],
-                              T *dataA, Nd4jLong *stridesA,
-                              T *dataB, Nd4jLong *stridesB,
-                              T *dataC, Nd4jLong *stridesC,
+                              X *dataA, Nd4jLong *stridesA,
+                              Y *dataB, Nd4jLong *stridesB,
+                              Z *dataC, Nd4jLong *stridesC,
                               int &out_ndim, Nd4jLong *outShape,
-                              T **out_dataA, Nd4jLong outStridesA[],
-                              T **out_dataB, Nd4jLong outStridesB[],
-                              T **out_dataC, Nd4jLong outStridesC[])
+                              X **out_dataA, Nd4jLong outStridesA[],
+                              Y **out_dataB, Nd4jLong outStridesB[],
+                              Z **out_dataC, Nd4jLong outStridesC[])
 {
 
     /* Special case 0 and 1 dimensions */
@@ -545,6 +557,5 @@ int  PrepareThreeRawArrayIter(int ndim, Nd4jLong shape[],
     out_ndim = ndim;
     return 0;
 }
-
 
 #endif //NATIVEOPERATIONS_PAIRWISE_UTIL_H

@@ -24,6 +24,7 @@ import lombok.val;
 import onnx.OnnxProto3;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.base.Preconditions;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.imports.converters.DifferentialFunctionClassHolder;
 import org.nd4j.imports.descriptors.properties.AttributeAdapter;
@@ -31,6 +32,7 @@ import org.nd4j.imports.descriptors.properties.PropertyMapping;
 import org.nd4j.imports.descriptors.properties.adapters.*;
 import org.nd4j.imports.graphmapper.onnx.OnnxGraphMapper;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv2DConfig;
@@ -52,6 +54,7 @@ import java.util.*;
 public class Conv2D extends DynamicCustomOp {
 
     protected Conv2DConfig config;
+    private static final String INVALID_CONFIGURATION = "Invalid Conv2D configuration : sW = %s pH = %s dW = %s ";
 
     @Builder(builderMethodName = "builder")
     public Conv2D(SameDiff sameDiff,
@@ -62,9 +65,14 @@ public class Conv2D extends DynamicCustomOp {
         this.sameDiff = sameDiff;
         this.config = config;
 
+        Preconditions.checkState(config.getSW() >= 1 && config.getPH() >= 0 && config.getDW() >= 1,
+                                    INVALID_CONFIGURATION,
+                                    config.getSH(), config.getPH(), config.getDW());
         addArgs();
-        sameDiff.putFunctionForId(this.getOwnName(), this);    //Normally called in DynamicCustomOp constructor, via setInstanceId - but sameDiff field is null at that point
-        sameDiff.addArgsFor(inputFunctions, this);
+        if(sameDiff != null) {
+            sameDiff.putFunctionForId(this.getOwnName(), this);    //Normally called in DynamicCustomOp constructor, via setInstanceId - but sameDiff field is null at that point
+            sameDiff.addArgsFor(inputFunctions, this);
+        }
     }
 
     protected void addArgs() {
@@ -265,5 +273,12 @@ public class Conv2D extends DynamicCustomOp {
     @Override
     public String[] tensorflowNames() {
         return new String[]{"Conv2D"};
+    }
+
+    @Override
+    public List<DataType> calculateOutputDataTypes(List<DataType> inputDataTypes){
+        int n = args().length;
+        Preconditions.checkState(inputDataTypes != null && inputDataTypes.size() == n, "Expected %s input data types for %s, got %s", n, getClass(), inputDataTypes);
+        return Collections.singletonList(inputDataTypes.get(0));
     }
 }

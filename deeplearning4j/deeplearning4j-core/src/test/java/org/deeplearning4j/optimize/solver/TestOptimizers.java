@@ -40,9 +40,10 @@ import org.deeplearning4j.optimize.solvers.StochasticGradientDescent;
 import org.deeplearning4j.optimize.stepfunctions.NegativeDefaultStepFunction;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.impl.transforms.Cos;
-import org.nd4j.linalg.api.ops.impl.transforms.Sin;
+import org.nd4j.linalg.api.ops.impl.transforms.strict.Cos;
+import org.nd4j.linalg.api.ops.impl.transforms.strict.Sin;
 import org.nd4j.linalg.api.rng.DefaultRandom;
 import org.nd4j.linalg.api.rng.Random;
 import org.nd4j.linalg.dataset.DataSet;
@@ -350,7 +351,7 @@ public class TestOptimizers extends BaseDL4JTest {
         }
 
         @Override
-        public int numParams(boolean backwards) {
+        public long numParams(boolean backwards) {
             return 0;
         }
 
@@ -433,7 +434,7 @@ public class TestOptimizers extends BaseDL4JTest {
             conf.addVariable("W"); //Normally done by ParamInitializers, but obviously that isn't done here
 
             Model m = new RastriginFunctionModel(10, conf);
-            int nParams = m.numParams();
+            int nParams = (int)m.numParams();
             if (i == 0) {
                 m.computeGradientAndScore(LayerWorkspaceMgr.noWorkspaces());
                 scores[0] = m.score(); //Before optimization
@@ -521,7 +522,7 @@ public class TestOptimizers extends BaseDL4JTest {
                 }
             });
 
-            int nExceeds512 = paramExceeds512.sum(Integer.MAX_VALUE).getInt(0);
+            int nExceeds512 = paramExceeds512.castTo(DataType.DOUBLE).sum(Integer.MAX_VALUE).getInt(0);
             if (nExceeds512 > 0)
                 this.score = Double.POSITIVE_INFINITY;
 
@@ -538,7 +539,7 @@ public class TestOptimizers extends BaseDL4JTest {
         }
 
         @Override
-        public int numParams(boolean backwards) {
+        public long numParams(boolean backwards) {
             return 0;
         }
 
@@ -719,7 +720,7 @@ public class TestOptimizers extends BaseDL4JTest {
                 }
             });
 
-            int nExceeds5 = paramExceeds5.sum(Integer.MAX_VALUE).getInt(0);
+            int nExceeds5 = paramExceeds5.castTo(DataType.DOUBLE).sum(Integer.MAX_VALUE).getInt(0);
             if (nExceeds5 > 0)
                 this.score = Double.POSITIVE_INFINITY;
             else {
@@ -738,7 +739,7 @@ public class TestOptimizers extends BaseDL4JTest {
         }
 
         @Override
-        public int numParams(boolean backwards) {
+        public long numParams(boolean backwards) {
             return 0;
         }
 
@@ -876,12 +877,7 @@ public class TestOptimizers extends BaseDL4JTest {
         }
 
         @Override
-        public double calcL2(boolean backpropParamsOnly) {
-            return 0;
-        }
-
-        @Override
-        public double calcL1(boolean backpropParamsOnly) {
+        public double calcRegularizationScore(boolean backpropParamsOnly){
             return 0;
         }
 
@@ -896,7 +892,7 @@ public class TestOptimizers extends BaseDL4JTest {
         }
 
         @Override
-        public int numParams() {
+        public long numParams() {
             // FIXME: int cast
             return (int) parameters.length();
         }
@@ -1059,6 +1055,11 @@ public class TestOptimizers extends BaseDL4JTest {
         @Override
         public LayerHelper getHelper() {
             return null;
+        }
+
+        @Override
+        public boolean updaterDivideByMinibatch(String paramName) {
+            return true;
         }
     }
 }

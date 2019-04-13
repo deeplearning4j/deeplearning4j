@@ -18,6 +18,9 @@ package org.deeplearning4j.spark.iterator;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
+import org.apache.spark.broadcast.Broadcast;
+import org.datavec.spark.util.DefaultHadoopConfig;
+import org.datavec.spark.util.SerializableHadoopConfig;
 import org.deeplearning4j.api.loader.DataSetLoader;
 import org.deeplearning4j.spark.data.loader.RemoteFileSource;
 import org.nd4j.linalg.dataset.DataSet;
@@ -38,17 +41,20 @@ public class PathSparkDataSetIterator extends BaseDataSetIterator<String> {
     public static final int BUFFER_SIZE = 4194304; //4 MB
     private FileSystem fileSystem;
     private DataSetLoader dataSetLoader;
+    private Broadcast<SerializableHadoopConfig> hadoopConfig;
 
-    public PathSparkDataSetIterator(Iterator<String> iter, DataSetLoader dataSetLoader) {
+    public PathSparkDataSetIterator(Iterator<String> iter, DataSetLoader dataSetLoader, Broadcast<SerializableHadoopConfig> hadoopConfig) {
         this.dataSetStreams = null;
         this.iter = iter;
         this.dataSetLoader = dataSetLoader;
+        this.hadoopConfig = hadoopConfig;
     }
 
-    public PathSparkDataSetIterator(Collection<String> dataSetStreams, DataSetLoader dataSetLoader) {
+    public PathSparkDataSetIterator(Collection<String> dataSetStreams, DataSetLoader dataSetLoader, Broadcast<SerializableHadoopConfig> hadoopConfig) {
         this.dataSetStreams = dataSetStreams;
         iter = dataSetStreams.iterator();
         this.dataSetLoader = dataSetLoader;
+        this.hadoopConfig = hadoopConfig;
     }
 
     @Override
@@ -74,7 +80,8 @@ public class PathSparkDataSetIterator extends BaseDataSetIterator<String> {
     protected synchronized DataSet load(String path) {
         if (fileSystem == null) {
             try {
-                fileSystem = FileSystem.get(new URI(path), new Configuration());
+                Configuration c = hadoopConfig == null ? DefaultHadoopConfig.get() : hadoopConfig.getValue().getConfiguration();
+                fileSystem = FileSystem.get(new URI(path), c);
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }

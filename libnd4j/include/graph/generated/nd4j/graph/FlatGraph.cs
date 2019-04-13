@@ -25,15 +25,23 @@ public struct FlatGraph : IFlatbufferObject
   public IntPair? Outputs(int j) { int o = __p.__offset(10); return o != 0 ? (IntPair?)(new IntPair()).__assign(__p.__indirect(__p.__vector(o) + j * 4), __p.bb) : null; }
   public int OutputsLength { get { int o = __p.__offset(10); return o != 0 ? __p.__vector_len(o) : 0; } }
   public FlatConfiguration? Configuration { get { int o = __p.__offset(12); return o != 0 ? (FlatConfiguration?)(new FlatConfiguration()).__assign(__p.__indirect(o + __p.bb_pos), __p.bb) : null; } }
+  public string Placeholders(int j) { int o = __p.__offset(14); return o != 0 ? __p.__string(__p.__vector(o) + j * 4) : null; }
+  public int PlaceholdersLength { get { int o = __p.__offset(14); return o != 0 ? __p.__vector_len(o) : 0; } }
+  public string LossVariables(int j) { int o = __p.__offset(16); return o != 0 ? __p.__string(__p.__vector(o) + j * 4) : null; }
+  public int LossVariablesLength { get { int o = __p.__offset(16); return o != 0 ? __p.__vector_len(o) : 0; } }
 
   public static Offset<FlatGraph> CreateFlatGraph(FlatBufferBuilder builder,
       long id = 0,
       VectorOffset variablesOffset = default(VectorOffset),
       VectorOffset nodesOffset = default(VectorOffset),
       VectorOffset outputsOffset = default(VectorOffset),
-      Offset<FlatConfiguration> configurationOffset = default(Offset<FlatConfiguration>)) {
-    builder.StartObject(5);
+      Offset<FlatConfiguration> configurationOffset = default(Offset<FlatConfiguration>),
+      VectorOffset placeholdersOffset = default(VectorOffset),
+      VectorOffset lossVariablesOffset = default(VectorOffset)) {
+    builder.StartObject(7);
     FlatGraph.AddId(builder, id);
+    FlatGraph.AddLossVariables(builder, lossVariablesOffset);
+    FlatGraph.AddPlaceholders(builder, placeholdersOffset);
     FlatGraph.AddConfiguration(builder, configurationOffset);
     FlatGraph.AddOutputs(builder, outputsOffset);
     FlatGraph.AddNodes(builder, nodesOffset);
@@ -41,18 +49,29 @@ public struct FlatGraph : IFlatbufferObject
     return FlatGraph.EndFlatGraph(builder);
   }
 
-  public static void StartFlatGraph(FlatBufferBuilder builder) { builder.StartObject(5); }
+  public static void StartFlatGraph(FlatBufferBuilder builder) { builder.StartObject(7); }
   public static void AddId(FlatBufferBuilder builder, long id) { builder.AddLong(0, id, 0); }
   public static void AddVariables(FlatBufferBuilder builder, VectorOffset variablesOffset) { builder.AddOffset(1, variablesOffset.Value, 0); }
   public static VectorOffset CreateVariablesVector(FlatBufferBuilder builder, Offset<FlatVariable>[] data) { builder.StartVector(4, data.Length, 4); for (int i = data.Length - 1; i >= 0; i--) builder.AddOffset(data[i].Value); return builder.EndVector(); }
+  public static VectorOffset CreateVariablesVectorBlock(FlatBufferBuilder builder, Offset<FlatVariable>[] data) { builder.StartVector(4, data.Length, 4); builder.Add(data); return builder.EndVector(); }
   public static void StartVariablesVector(FlatBufferBuilder builder, int numElems) { builder.StartVector(4, numElems, 4); }
   public static void AddNodes(FlatBufferBuilder builder, VectorOffset nodesOffset) { builder.AddOffset(2, nodesOffset.Value, 0); }
   public static VectorOffset CreateNodesVector(FlatBufferBuilder builder, Offset<FlatNode>[] data) { builder.StartVector(4, data.Length, 4); for (int i = data.Length - 1; i >= 0; i--) builder.AddOffset(data[i].Value); return builder.EndVector(); }
+  public static VectorOffset CreateNodesVectorBlock(FlatBufferBuilder builder, Offset<FlatNode>[] data) { builder.StartVector(4, data.Length, 4); builder.Add(data); return builder.EndVector(); }
   public static void StartNodesVector(FlatBufferBuilder builder, int numElems) { builder.StartVector(4, numElems, 4); }
   public static void AddOutputs(FlatBufferBuilder builder, VectorOffset outputsOffset) { builder.AddOffset(3, outputsOffset.Value, 0); }
   public static VectorOffset CreateOutputsVector(FlatBufferBuilder builder, Offset<IntPair>[] data) { builder.StartVector(4, data.Length, 4); for (int i = data.Length - 1; i >= 0; i--) builder.AddOffset(data[i].Value); return builder.EndVector(); }
+  public static VectorOffset CreateOutputsVectorBlock(FlatBufferBuilder builder, Offset<IntPair>[] data) { builder.StartVector(4, data.Length, 4); builder.Add(data); return builder.EndVector(); }
   public static void StartOutputsVector(FlatBufferBuilder builder, int numElems) { builder.StartVector(4, numElems, 4); }
   public static void AddConfiguration(FlatBufferBuilder builder, Offset<FlatConfiguration> configurationOffset) { builder.AddOffset(4, configurationOffset.Value, 0); }
+  public static void AddPlaceholders(FlatBufferBuilder builder, VectorOffset placeholdersOffset) { builder.AddOffset(5, placeholdersOffset.Value, 0); }
+  public static VectorOffset CreatePlaceholdersVector(FlatBufferBuilder builder, StringOffset[] data) { builder.StartVector(4, data.Length, 4); for (int i = data.Length - 1; i >= 0; i--) builder.AddOffset(data[i].Value); return builder.EndVector(); }
+  public static VectorOffset CreatePlaceholdersVectorBlock(FlatBufferBuilder builder, StringOffset[] data) { builder.StartVector(4, data.Length, 4); builder.Add(data); return builder.EndVector(); }
+  public static void StartPlaceholdersVector(FlatBufferBuilder builder, int numElems) { builder.StartVector(4, numElems, 4); }
+  public static void AddLossVariables(FlatBufferBuilder builder, VectorOffset lossVariablesOffset) { builder.AddOffset(6, lossVariablesOffset.Value, 0); }
+  public static VectorOffset CreateLossVariablesVector(FlatBufferBuilder builder, StringOffset[] data) { builder.StartVector(4, data.Length, 4); for (int i = data.Length - 1; i >= 0; i--) builder.AddOffset(data[i].Value); return builder.EndVector(); }
+  public static VectorOffset CreateLossVariablesVectorBlock(FlatBufferBuilder builder, StringOffset[] data) { builder.StartVector(4, data.Length, 4); builder.Add(data); return builder.EndVector(); }
+  public static void StartLossVariablesVector(FlatBufferBuilder builder, int numElems) { builder.StartVector(4, numElems, 4); }
   public static Offset<FlatGraph> EndFlatGraph(FlatBufferBuilder builder) {
     int o = builder.EndObject();
     return new Offset<FlatGraph>(o);

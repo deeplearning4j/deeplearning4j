@@ -37,10 +37,10 @@ import java.util.Collection;
 import java.util.Map;
 
 /**
- * LossLayer is a flexible output layer that performs a loss function on an input without MLP logic.<br>
- * LossLayer is similar to {@link OutputLayer} in that both perform loss calculations for network outputs vs. labels,
- * but LossLayer does not have any parameters. Consequently, setting nIn/nOut isn't supported - the output size
- * is the same size as the input activations.
+ * LossLayer is a flexible output layer that performs a loss function on an input without MLP logic.<br> LossLayer is
+ * similar to {@link OutputLayer} in that both perform loss calculations for network outputs vs. labels, but LossLayer
+ * does not have any parameters. Consequently, setting nIn/nOut isn't supported - the output size is the same size as
+ * the input activations.
  *
  * @author Justin Long (crockpotveggies)
  */
@@ -49,6 +49,7 @@ import java.util.Map;
 @ToString(callSuper = true)
 @EqualsAndHashCode(callSuper = true)
 public class LossLayer extends FeedForwardLayer {
+
     protected ILossFunction lossFn;
 
     protected LossLayer(Builder builder) {
@@ -106,7 +107,7 @@ public class LossLayer extends FeedForwardLayer {
          * @param lossFunction Loss function for the loss layer
          */
         public Builder(ILossFunction lossFunction) {
-            this.lossFn = lossFunction;
+            this.setLossFn(lossFunction);
             this.activation(Activation.IDENTITY);
         }
 

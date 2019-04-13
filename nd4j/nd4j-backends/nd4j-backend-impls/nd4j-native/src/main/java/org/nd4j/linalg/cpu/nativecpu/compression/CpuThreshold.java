@@ -24,16 +24,17 @@ import org.bytedeco.javacpp.IntPointer;
 import org.bytedeco.javacpp.Pointer;
 import org.nd4j.compression.impl.AbstractCompressor;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.buffer.DataTypeEx;
 import org.nd4j.linalg.api.concurrency.AffinityManager;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.impl.accum.MatchCondition;
+import org.nd4j.linalg.api.ops.impl.reduce.longer.MatchCondition;
 import org.nd4j.linalg.compression.CompressedDataBuffer;
 import org.nd4j.linalg.compression.CompressionDescriptor;
 import org.nd4j.linalg.compression.CompressionType;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.conditions.Conditions;
-import org.nd4j.nativeblas.NativeOpsHolder;
 
 /**
  * This compression is very special case, and shouldn't be ever used outside of ParallelWrapper/ParameterServer implementation.
@@ -97,19 +98,19 @@ public class CpuThreshold extends AbstractCompressor {
     }
 
     @Override
-    public DataBuffer decompress(DataBuffer buffer) {
+    public DataBuffer decompress(DataBuffer buffer, DataType dataType) {
 
 
-        DataBuffer result = Nd4j.getNDArrayFactory().convertDataEx(DataBuffer.TypeEx.THRESHOLD, buffer, getGlobalTypeEx());
+        DataBuffer result = Nd4j.getNDArrayFactory().convertDataEx(DataTypeEx.THRESHOLD, buffer, getGlobalTypeEx());
 
         return result;
     }
 
     @Override
     public DataBuffer compress(DataBuffer buffer) {
-        INDArray temp = Nd4j.createArrayFromShapeBuffer(buffer, Nd4j.getShapeInfoProvider().createShapeInformation(new int[]{1, (int) buffer.length()}).getFirst());
+        INDArray temp = Nd4j.createArrayFromShapeBuffer(buffer, Nd4j.getShapeInfoProvider().createShapeInformation(new long[]{1, buffer.length()}, buffer.dataType()).getFirst());
         MatchCondition condition = new MatchCondition(temp, Conditions.absGreaterThanOrEqual(threshold));
-        int cntAbs = Nd4j.getExecutioner().exec(condition, Integer.MAX_VALUE).getInt(0);
+        int cntAbs = Nd4j.getExecutioner().exec(condition).getInt(0);
 
 
         //log.info("density ratio: {}", String.format("%.2f", cntAbs * 100.0f / buffer.length()));
@@ -139,7 +140,7 @@ public class CpuThreshold extends AbstractCompressor {
 
         CompressedDataBuffer cbuff = new CompressedDataBuffer(pointer, descriptor);
 
-        Nd4j.getNDArrayFactory().convertDataEx(getBufferTypeEx(buffer), buffer.addressPointer(), DataBuffer.TypeEx.THRESHOLD, pointer, buffer.length());
+        Nd4j.getNDArrayFactory().convertDataEx(getBufferTypeEx(buffer), buffer.addressPointer(), DataTypeEx.THRESHOLD, pointer, buffer.length());
 
         Nd4j.getAffinityManager().tagLocation(buffer, AffinityManager.Location.HOST);
 
@@ -147,7 +148,7 @@ public class CpuThreshold extends AbstractCompressor {
     }
 
     @Override
-    protected CompressedDataBuffer compressPointer(DataBuffer.TypeEx srcType, Pointer srcPointer, int length, int elementSize) {
+    protected CompressedDataBuffer compressPointer(DataTypeEx srcType, Pointer srcPointer, int length, int elementSize) {
         throw new UnsupportedOperationException();
     }
 }

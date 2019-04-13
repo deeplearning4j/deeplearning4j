@@ -23,24 +23,33 @@
 
 #include <ops/declarable/headers/parity_ops.h>
 #include <ops/declarable/helpers/adjust_saturation.h>
+#include <NDArrayFactory.h>
 
 namespace nd4j {
 namespace ops {
+    DECLARE_TYPES(adjust_saturation) {
+        getOpDescriptor()
+                ->setAllowedInputTypes(nd4j::DataType::ANY)
+                ->setSameMode(true);
+    }
+
     CONFIGURABLE_OP_IMPL(adjust_saturation, 1, 1, true, -2, -2) {
         auto input = INPUT_VARIABLE(0);
         auto output = OUTPUT_VARIABLE(0);
 
         REQUIRE_TRUE(input->rankOf() == 3 || input->rankOf() == 4, 0, "AdjustSaturation: op expects either 3D or 4D input, but got %i instead", input->rankOf());
 
-        T delta = 0;
+        double delta = 0;
         if (block.numT() > 0)
             delta = T_ARG(0);
         else if (block.width() > 1) {
             auto _d = INPUT_VARIABLE(1);
             if (!_d->isScalar()) {
-                auto str = ShapeUtils<T>::shapeAsString(_d);
+                auto str = ShapeUtils::shapeAsString(_d);
                 REQUIRE_TRUE(_d->isScalar(), 0, "AdjustSaturation: delta should be scalar NDArray, but got %s instead", str.c_str());
             }
+
+            delta = _d->e<double>(0);
         }
 
         bool isNHWC = false;
@@ -51,9 +60,11 @@ namespace ops {
 
         REQUIRE_TRUE(numChannels == 3, 0, "AdjustSaturation: this operation expects image with 3 channels (R, G, B), but got % instead", numChannels);
 
-        helpers::_adjust_saturation(input, output, delta, isNHWC);
+        auto ts = NDArrayFactory::create(delta, block.getWorkspace());
+        // FIXME: delta should be NDArray scalar
+        helpers::adjust_saturation(input, output, &ts, isNHWC);
 
-        return ND4J_STATUS_OK;
+        return Status::OK();
     }
 }
 }

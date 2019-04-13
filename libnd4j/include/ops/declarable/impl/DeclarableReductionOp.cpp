@@ -25,23 +25,30 @@
 
 namespace nd4j {
     namespace ops {
-        template <typename T>
-        DeclarableReductionOp<T>::DeclarableReductionOp(int numInputs, int numOutputs, const char *opName, bool allowsInplace, int tArgs, int iArgs) : nd4j::ops::DeclarableOp<T>(numInputs, numOutputs, opName, allowsInplace, tArgs, iArgs) {
+        DeclarableReductionOp::DeclarableReductionOp(int numInputs, int numOutputs, const char *opName, bool allowsInplace, int tArgs, int iArgs) : nd4j::ops::DeclarableOp(numInputs, numOutputs, opName, allowsInplace, tArgs, iArgs) {
             //
         }
 
-        template <typename T>
-        DeclarableReductionOp<T>::~DeclarableReductionOp()  {
+        DeclarableReductionOp::~DeclarableReductionOp()  {
             //
         }
 
 
-        template <typename T>
-        nd4j::ShapeList* DeclarableReductionOp<T>::calculateOutputShape(nd4j::ShapeList* inputShape, nd4j::graph::Context<T>& block)  {
+        nd4j::ShapeList* DeclarableReductionOp::calculateOutputShape(nd4j::ShapeList* inputShape, nd4j::graph::Context& block)  {
            // int numDims = INT_ARG(0);
             std::vector<int> dims;
-            for (int e = 0; e < block.getIArguments()->size(); e++)
-                dims.push_back(INT_ARG(e));
+            if (inputShape->size() > 1) {
+                // the second argument is axis
+                auto axis = INPUT_VARIABLE(1);
+                for (int e = 0; e < axis->lengthOf(); e++)
+                    dims.push_back(axis->e<int>(e));
+            }
+            else if (block.getIArguments()->size())
+               for (int e = 0; e < block.getIArguments()->size(); e++)
+                   dims.push_back(INT_ARG(e));
+            else if (block.getAxis()->size()) {
+                dims = *block.getAxis(); //.push_back(axis->e<int>(e));
+            }
 
             if (dims.size() > 1)
                 std::sort(dims.begin(), dims.end());
@@ -49,33 +56,24 @@ namespace nd4j {
             // special case - output is scalar
             if (dims.size() == 0 || (dims.size() == 1 && dims.at(0) == MAX_INT)) {
                 Nd4jLong* newShape;
-                ALLOCATE(newShape, block.getWorkspace(), 8, Nd4jLong);
+                ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(0), Nd4jLong);
 
-                newShape[0] = 2;
-                newShape[1] = 1;
+                newShape[0] = 0;
+                newShape[1] = 0;
                 newShape[2] = 1;
-                newShape[3] = 1;
-                newShape[4] = 1;
-                newShape[5] = 0;
-                newShape[6] = 1;
-                newShape[7] = 99;
+                newShape[3] = 99;
+
+                ArrayOptions::setDataType(newShape, block.dataType());
 
                 return SHAPELIST(newShape);
             }
 
-            shape::TAD tad(inputShape->at(0), dims.data(), dims.size());
-            tad.createTadOnlyShapeInfo();
+            auto tadLength = shape::tadLength(inputShape->at(0), dims.data(), dims.size());
+            auto numTads = shape::length(inputShape->at(0)) /  tadLength;
 
-            Nd4jLong tadLength = shape::tadLength(inputShape->at(0), dims.data(), dims.size());
-            Nd4jLong numTads = shape::length(inputShape->at(0)) /  tadLength;
-
-            auto newShape = ShapeUtils<T>::evalReduceShapeInfo('c', dims, inputShape->at(0), false, true, block.getWorkspace());
-
+            auto newShape = ShapeUtils::evalReduceShapeInfo('c', dims, inputShape->at(0), false, false, block.getWorkspace());
+            ArrayOptions::setDataType(newShape, block.dataType());
             return SHAPELIST(newShape);
         }
-
-        template class ND4J_EXPORT DeclarableReductionOp<float>;
-        template class ND4J_EXPORT DeclarableReductionOp<float16>;
-        template class ND4J_EXPORT DeclarableReductionOp<double>;
     }
 }

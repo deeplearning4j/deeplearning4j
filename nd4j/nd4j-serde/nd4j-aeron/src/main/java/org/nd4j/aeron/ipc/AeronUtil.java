@@ -12,6 +12,7 @@ package org.nd4j.aeron.ipc;
  * specific language governing permissions and limitations under the License.
  */
 
+import io.aeron.Aeron;
 import io.aeron.Image;
 import io.aeron.Subscription;
 import io.aeron.driver.MediaDriver;
@@ -24,6 +25,7 @@ import org.agrona.concurrent.BusySpinIdleStrategy;
 import org.agrona.concurrent.IdleStrategy;
 
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
 /**
@@ -180,5 +182,65 @@ public class AeronUtil {
         final Subscription subscription = image.subscription();
         System.out.println(String.format("Unavailable image on %s streamId=%d sessionId=%d", subscription.channel(),
                         subscription.streamId(), image.sessionId()));
+    }
+
+    private static final AtomicInteger conductorCount = new AtomicInteger();
+    private static final AtomicInteger receiverCount = new AtomicInteger();
+    private static final AtomicInteger senderCount = new AtomicInteger();
+    private static final AtomicInteger sharedNetworkCount = new AtomicInteger();
+    private static final AtomicInteger sharedThreadCount = new AtomicInteger();
+
+    /**
+     * Set all Aeron thread factories to create daemon threads (to stop aeron threads from keeping JVM alive
+     * if all other threads have exited)
+     * @param mediaDriverCtx Media driver context to configure
+     */
+    public static void setDaemonizedThreadFactories(MediaDriver.Context mediaDriverCtx){
+
+        //Set thread factories so we can make the Aeron threads daemon threads (some are not by default)
+        mediaDriverCtx.conductorThreadFactory(r -> {
+            Thread t = new Thread(r);
+            t.setDaemon(true);
+            t.setName("aeron-conductor-thread-" + conductorCount.getAndIncrement());
+            return t;
+        });
+
+        mediaDriverCtx.receiverThreadFactory(r -> {
+            Thread t = new Thread(r);
+            t.setDaemon(true);
+            t.setName("aeron-receiver-thread-" + receiverCount.getAndIncrement());
+            return t;
+        });
+
+
+        mediaDriverCtx.senderThreadFactory(r -> {
+            Thread t = new Thread(r);
+            t.setDaemon(true);
+            t.setName("aeron-sender-thread-" + senderCount.getAndIncrement());
+            return t;
+        });
+
+
+        mediaDriverCtx.sharedNetworkThreadFactory(r -> {
+            Thread t = new Thread(r);
+            t.setDaemon(true);
+            t.setName("aeron-shared-network-thread-" + sharedNetworkCount.getAndIncrement());
+            return t;
+        });
+
+        mediaDriverCtx.sharedThreadFactory(r -> {
+            Thread t = new Thread(r);
+            t.setDaemon(true);
+            t.setName("aeron-shared-thread-" + sharedThreadCount.getAndIncrement());
+            return t;
+        });
+    }
+
+    public static void setDaemonizedThreadFactories(Aeron.Context aeronCtx){
+        aeronCtx.threadFactory(r -> {
+            Thread t = new Thread(r);
+            t.setDaemon(true);
+            return t;
+        });
     }
 }

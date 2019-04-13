@@ -1,0 +1,16 @@
+#ifndef LIBND4J_CONFIG_H
+#define LIBND4J_CONFIG_H
+
+#cmakedefine HAVE_MKLDNN
+
+#cmakedefine MKLDNN_PATH "@MKLDNN_PATH@"
+
+#cmakedefine HAVE_OPENBLAS
+
+#cmakedefine OPENBLAS_PATH "@OPENBLAS_PATH@"
+
+#cmakedefine HAVE_FLATBUFFERS
+
+#cmakedefine FLATBUFFERS_PATH "@FLATBUFFERS_PATH@"
+
+#endif

@@ -20,6 +20,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.datasets.iterator.impl.EmnistDataSetIterator;
 import org.junit.Test;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
@@ -31,6 +32,11 @@ import static org.junit.Assert.*;
  */
 @Slf4j
 public class TestEmnistDataSetIterator extends BaseDL4JTest {
+
+    @Override
+    public DataType getDataType(){
+        return DataType.FLOAT;
+    }
 
     @Test
     public void testEmnistDataSetIterator() throws Exception {

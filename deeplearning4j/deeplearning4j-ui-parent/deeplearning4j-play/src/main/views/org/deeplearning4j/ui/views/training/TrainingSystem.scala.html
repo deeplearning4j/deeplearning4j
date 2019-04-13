@@ -26,8 +26,8 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
             <!-- End Mobile Specific -->
 
-        <link id="bootstrap-style" href="/assets/css/bootstrap.min.css" rel="stylesheet">
-        <link href="/assets/css/bootstrap-responsive.min.css" rel="stylesheet">
+        <link id="bootstrap-style" href="/assets/webjars/bootstrap/2.3.2/css/bootstrap.min.css" rel="stylesheet">
+        <link id="bootstrap-style" href="/assets/webjars/bootstrap/2.3.2/css/bootstrap-responsive.min.css" rel="stylesheet">
         <link id="base-style" href="/assets/css/style.css" rel="stylesheet">
         <link id="base-style-responsive" href="/assets/css/style-responsive.css" rel="stylesheet">
         <link href='/assets/css/opensans-fonts.css' rel='stylesheet' type='text/css'>
@@ -55,7 +55,7 @@
                         <span class="icon-bar"></span>
                         <span class="icon-bar"></span>
                     </a>
-                    <a class="brand" href="index.html"><span>@i18n.getMessage("train.pagetitle")</span></a>
+                    <a class="brand" href="./overview"><span>@i18n.getMessage("train.pagetitle")</span></a>
                     <div id="sessionSelectDiv" style="display:none; float:right">
                         @i18n.getMessage("train.session.label")
                         <select id="sessionSelect" onchange='selectNewSession()'>
@@ -88,7 +88,6 @@
                                     <li><a class="submenu" href="javascript:void(0);" onclick="languageSelect('zh', 'system')"><i class="icon-file-alt"></i> <span class="hidden-tablet"> 中文</span></a></li>
                                     <li><a class="submenu" href="javascript:void(0);" onclick="languageSelect('ko', 'system')"><i class="icon-file-alt"></i> <span class="hidden-tablet"> 한글</span></a></li>
                                     <li><a class="submenu" href="javascript:void(0);" onclick="languageSelect('ru', 'system')"><i class="icon-file-alt"></i> <span class="hidden-tablet"> русский</span></a></li>
-                                    <li><a class="submenu" href="javascript:void(0);" onclick="languageSelect('uk', 'system')"><i class="icon-file-alt"></i> <span class="hidden-tablet"> український</span></a></li>
                                 </ul>
                             </li>
                         </ul>
@@ -258,37 +257,33 @@
         </div><!-- End Row Fluid-->
 
         <!-- Start JavaScript-->
-        <script src="/assets/js/jquery-1.9.1.min.js"></script>
-        <script src="/assets/js/jquery-migrate-1.0.0.min.js"></script>
-        <script src="/assets/js/jquery-ui-1.10.0.custom.min.js"></script>
-        <script src="/assets/js/jquery.ui.touch-punch.js"></script>
-        <script src="/assets/js/modernizr.js"></script>
-        <script src="/assets/js/bootstrap.min.js"></script>
-        <script src="/assets/js/jquery.cookie.js"></script>
-        <script src="/assets/js/fullcalendar.min.js"></script>
-        <script src="/assets/js/jquery.dataTables.min.js"></script>
-        <script src="/assets/js/excanvas.js"></script>
-        <script src="/assets/js/jquery.flot.js"></script>
-        <script src="/assets/js/jquery.flot.pie.js"></script>
-        <script src="/assets/js/jquery.flot.stack.js"></script>
-        <script src="/assets/js/jquery.flot.resize.min.js"></script>
-        <script src="/assets/js/jquery.chosen.min.js"></script>
-        <script src="/assets/js/jquery.uniform.min.js"></script>
-        <script src="/assets/js/jquery.cleditor.min.js"></script>
-        <script src="/assets/js/jquery.noty.js"></script>
-        <script src="/assets/js/jquery.elfinder.min.js"></script>
-        <script src="/assets/js/jquery.raty.min.js"></script>
-        <script src="/assets/js/jquery.iphone.toggle.js"></script>
-        <script src="/assets/js/jquery.uploadify-3.1.min.js"></script>
-        <script src="/assets/js/jquery.gritter.min.js"></script>
-        <script src="/assets/js/jquery.imagesloaded.js"></script>
-        <script src="/assets/js/jquery.masonry.min.js"></script>
-        <script src="/assets/js/jquery.knob.modified.js"></script>
-        <script src="/assets/js/jquery.sparkline.min.js"></script>
-        <script src="/assets/js/counter.js"></script>
-        <script src="/assets/js/retina.js"></script>
+        <script src="/assets/webjars/jquery/2.2.0/jquery.min.js"></script>
+        <script src="/assets/webjars/jquery-ui/1.10.2/ui/minified/jquery-ui.min.js"></script>
+        <script src="/assets/webjars/jquery-migrate/1.2.1/jquery-migrate.min.js"></script>
+        <script src="/assets/webjars/jquery-ui-touch-punch/0.2.2/jquery.ui.touch-punch.min.js"></script>
+        <script src="/assets/webjars/modernizr/2.8.3/modernizr.min.js"></script>
+        <script src="/assets/webjars/bootstrap/2.3.2/js/bootstrap.min.js"></script>
+        <script src="/assets/webjars/jquery-cookie/1.4.1-1/jquery.cookie.js"></script>
+        <script src="/assets/webjars/fullcalendar/1.6.4/fullcalendar.min.js"></script>
+        <script src="/assets/webjars/datatables/1.9.4/media/js/jquery.dataTables.min.js"></script>
+        <script src="/assets/webjars/excanvas/3/excanvas.js"></script>
+        <script src="/assets/webjars/flot/0.8.3/jquery.flot.js"></script>
+        <script src="/assets/webjars/flot/0.8.3/jquery.flot.pie.js"></script>
+        <script src="/assets/webjars/flot/0.8.3/jquery.flot.stack.js"></script>
+        <script src="/assets/webjars/flot/0.8.3/jquery.flot.resize.min.js"></script>
+        <script src="/assets/webjars/chosen/0.9.8/chosen/chosen.jquery.min.js"></script>
+        <script src="/assets/webjars/uniform/2.1.2/jquery.uniform.min.js"></script>
+        <script src="/assets/webjars/noty/2.2.2/jquery.noty.packaged.js"></script>
+        <script src="/assets/webjars/jquery-raty/2.5.2/jquery.raty.min.js"></script>
+        <script src="/assets/webjars/imagesloaded/2.1.1/jquery.imagesloaded.min.js"></script>
+        <script src="/assets/webjars/masonry/3.1.5/masonry.pkgd.min.js"></script>
+        <script src="/assets/webjars/jquery-knob/1.2.2/jquery.knob.min.js"></script>
+        <script src="/assets/webjars/jquery.sparkline/2.1.2/jquery.sparkline.min.js"></script>
+        <script src="/assets/webjars/retinajs/0.0.2/retina.js"></script>
+
         <script src="/assets/js/train/system.js"></script> <!-- Charts and tables are generated here! -->
         <script src="/assets/js/train/train.js"></script>   <!-- Common (lang selection, etc) -->
+        <script src="/assets/js/counter.js"></script>
 
         <!-- Execute once on page load -->
         <script>

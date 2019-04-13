@@ -29,10 +29,16 @@ namespace nd4j {
             auto x = INPUT_VARIABLE(0);
             auto z = OUTPUT_VARIABLE(0);
 
-            x->template applyTransform<simdOps::Rint<T>>(z);
+            x->applyTransform(transform::Rint, z);
 
-            return ND4J_STATUS_OK;
+            return Status::OK();
         }
+    }
+
+    DECLARE_TYPES(rint) {
+        getOpDescriptor()
+                ->setAllowedInputTypes(nd4j::DataType::ANY)
+                ->setAllowedOutputTypes({ALL_FLOATS});
     }
 }
 

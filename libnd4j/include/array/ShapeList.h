@@ -23,12 +23,14 @@
 
 #include <vector>
 #include <shape.h>
+#include <dll.h>
 
 namespace nd4j {
     class ND4J_EXPORT ShapeList {
     protected:
         std::vector<Nd4jLong*> _shapes;
 
+        bool _destroyed = false;
         bool _autoremovable = false;
         bool _workspace = false;
     public:

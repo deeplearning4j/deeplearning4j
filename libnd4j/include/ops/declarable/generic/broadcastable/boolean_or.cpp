@@ -30,13 +30,22 @@ namespace nd4j {
             auto y = INPUT_VARIABLE(1);
             auto z = OUTPUT_VARIABLE(0);
 
-            auto tZ = BroadcastHelper<T>::template broadcastApply<simdOps::LogicalOr<T>>(x, y, z);
+            BROADCAST_CHECK_EMPTY(x,y,z);
+
+            auto tZ = BroadcastHelper::broadcastApply(BroadcastOpsTuple::custom(scalar::LogicalOr, pairwise::LogicalOr, broadcast::LogicalOr), x, y, z);
             if (tZ == nullptr)
                 return ND4J_STATUS_KERNEL_FAILURE;
             else if (tZ != z)
                 throw std::runtime_error("boolean_and: result was overwritten");
 
             return Status::OK();
+        }
+
+        DECLARE_TYPES(boolean_or) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(0, DataType::ANY)
+                    ->setAllowedInputTypes(1, DataType::ANY)
+                    ->setAllowedOutputTypes(0, DataType::INHERIT);
         }
     }
 }

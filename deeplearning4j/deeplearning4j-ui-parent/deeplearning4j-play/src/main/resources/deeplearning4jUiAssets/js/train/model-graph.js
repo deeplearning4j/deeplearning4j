@@ -1,13 +1,16 @@
 function renderModelGraph(){
-    $.ajax({
-        url: "/train/model/graph",
-        async: true,
-        error: function (query, status, error) {
-            console.log("Error getting data: " + error);
-        },
-        success: function (data) {
-            createGraph(data);
-        }
+    getSessionSettings(function(){
+        var modelGraphUrl = multiSession ? "/train/" + currSession + "/model/graph" : "/train/model/graph";
+        $.ajax({
+            url: modelGraphUrl,
+            async: true,
+            error: function (query, status, error) {
+                console.log("Error getting data: " + error);
+            },
+            success: function (data) {
+                createGraph(data);
+            }
+        });
     });
 }
 
@@ -93,8 +96,8 @@ function createGraph(data){
         edges: edges
     };
 
-
-    $('#layers').cytoscape({
+    var c = cytoscape({
+        container: $('#layers'),
         layout: {
             name: 'dagre',
             padding: 10
@@ -146,17 +149,6 @@ function createGraph(data){
 
         ready: function () {
             window.cy = this;
-//            if (vertexCount <= 4) {
-//                cy.zoom(1.6);
-//                cy.center();
-//            } else if (vertexCount > 4 && vertexCount <=6) {
-//                cy.zoom(1);
-//                cy.center();
-//            }
-//            else {
-//                cy.zoom(1);
-//                cy.panBy({x: -50, y:0});
-//            }
             cy.panningEnabled(true);
             cy.autoungrabify(true);
             cy.zoomingEnabled(true);
@@ -164,7 +156,7 @@ function createGraph(data){
         }
     });
 
-    cy.on('click', 'node', function (evt) {
+    c.on('click', 'node', function (evt) {
         setSelectedVertex(this.id());
     });
 

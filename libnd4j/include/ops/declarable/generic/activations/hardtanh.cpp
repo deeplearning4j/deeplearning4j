@@ -22,6 +22,7 @@
 #if NOT_EXCLUDED(OP_hardtanh)
 
 #include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/helpers/legacy_helpers.h>
 
 namespace nd4j {
     namespace ops {
@@ -29,25 +30,34 @@ namespace nd4j {
             auto input = INPUT_VARIABLE(0);
             auto output = OUTPUT_VARIABLE(0);
 
-            input->template applyTransform<simdOps::HardTanh<T>>(output, nullptr);
+            input->applyTransform(nd4j::transform::HardTanh, output, nullptr);
             STORE_RESULT(output);
             
-            return ND4J_STATUS_OK;
+            return Status::OK();
+        }
+
+        DECLARE_TYPES(hardtanh) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(0, DataType::ANY)
+                    ->setAllowedOutputTypes(0, {ALL_FLOATS});
         }
 
         CONFIGURABLE_OP_IMPL(hardtanh_bp, 2, 1, true, 0, 0) {
-            NDArray<T>* input = INPUT_VARIABLE(0);
-            NDArray<T>* epsilon = INPUT_VARIABLE(1);
+            auto input = INPUT_VARIABLE(0);
+            auto epsilon = INPUT_VARIABLE(1);
 
             auto z = OUTPUT_VARIABLE(0);
 
-            auto lambda = LAMBDA_TT(_x, _e) {
-                return _e * simdOps::HardTanhDerivative<T>::op(_x, nullptr);
-            };
+            //input->applyPairwiseTransform(pairwise::HardTanhDerivativeE, epsilon, z, nullptr);
+            helpers::hardTanhDerivative(input, epsilon, z);
+            return Status::OK();
+        }
 
-            input->applyPairwiseLambda(epsilon, lambda, z);  
-
-            return ND4J_STATUS_OK;
+        DECLARE_TYPES(hardtanh_bp) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(0, DataType::ANY)
+                    ->setAllowedInputTypes(1, {DataType::FLOAT32, DataType ::DOUBLE, DataType::HALF})
+                    ->setAllowedOutputTypes(0, {DataType::FLOAT32, DataType ::DOUBLE, DataType::HALF});
         }
     }
 }

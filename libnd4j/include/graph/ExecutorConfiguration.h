@@ -23,10 +23,11 @@
 
 #include <graph/generated/config_generated.h>
 #include <pointercast.h>
+#include <dll.h>
 
 namespace nd4j {
     namespace graph {
-        class ExecutorConfiguration {
+        class ND4J_EXPORT ExecutorConfiguration {
         public:
             nd4j::graph::ProfilingMode _profilingMode;
             nd4j::graph::ExecutionMode _executionMode;

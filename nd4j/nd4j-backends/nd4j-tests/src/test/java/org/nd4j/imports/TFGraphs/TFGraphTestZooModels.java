@@ -13,6 +13,7 @@ import org.junit.runners.Parameterized;
 import org.nd4j.OpValidationSuite;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.base.Preconditions;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.factory.Nd4j;
@@ -36,20 +37,21 @@ public class TFGraphTestZooModels {
     public static TemporaryFolder classTestDir = new TemporaryFolder();
 
     public static final String[] IGNORE_REGEXES = {
-            //https://github.com/deeplearning4j/deeplearning4j/issues/6397
-            "deeplab.*",
+            //2019/01/10 - Need TensorArray support - https://github.com/deeplearning4j/deeplearning4j/issues/6972
+            "ssd_mobilenet_v1_0.75_depth_300x300_coco14_sync_2018_07_03",
+            "ssd_mobilenet_v1_coco_2018_01_28",
 
-            //https://github.com/deeplearning4j/deeplearning4j/issues/6462
-            "inception_v4_2018_04_27",
-            "inception_resnet_v2_2018_04_27"
-
+            //2019/01/10 - Blocked by resize bilinear edge case - issue 8, https://github.com/deeplearning4j/deeplearning4j/issues/6958
+            //Also xception (deeplabv3_pascal_train_aug_2018_01_04) is VERY slow - may simply be large input image size (513x513)
+            "deeplabv3_pascal_train_aug_2018_01_04",
+            "deeplab_mobilenetv2_coco_voc_trainval",
     };
 
     @Rule
     public TemporaryFolder testDir = new TemporaryFolder();
-    private static File currentTestDir;
+    public static File currentTestDir;
 
-    public static final File BASE_MODEL_DL_DIR = new File(System.getProperty("user.home"), ".nd4jtests");
+    public static final File BASE_MODEL_DL_DIR = new File(getBaseModelDir(), ".nd4jtests");
 
     private static final String BASE_DIR = "tf_graphs/zoo_models";
     private static final String MODEL_FILENAME = "tf_model.txt";
@@ -59,6 +61,14 @@ public class TFGraphTestZooModels {
     private String modelName;
     private File localTestDir;
 
+    public static String getBaseModelDir(){
+        String s = System.getProperty("org.nd4j.tests.modeldir");
+        if(s != null && !s.isEmpty()){
+            return s;
+        }
+        return System.getProperty("user.home");
+    }
+
     public static final BiFunction<File,String,SameDiff> LOADER = new RemoteCachingLoader();
 
     public static class RemoteCachingLoader implements BiFunction<File,String,SameDiff> {
@@ -67,8 +77,9 @@ public class TFGraphTestZooModels {
             try {
                 String s = FileUtils.readFileToString(file, StandardCharsets.UTF_8).replaceAll("\r\n","\n");
                 String[] split = s.split("\n");
-                if(split.length != 2){
-                    throw new IllegalStateException("Invalid file: expected 2 lines with URL and MD5 hash. Got " + split.length + " lines");
+                if(split.length != 2 && split.length != 3){
+                    throw new IllegalStateException("Invalid file: expected 2 lines with URL and MD5 hash, or 3 lines with " +
+                            "URL, MD5 hash and file name. Got " + split.length + " lines");
                 }
                 String url = split[0];
                 String md5 = split[1];
@@ -97,12 +108,17 @@ public class TFGraphTestZooModels {
                 } else if(filename.endsWith(".tar.gz") || filename.endsWith(".tgz")){
                     List<String> files = ArchiveUtils.tarGzListFiles(localFile);
                     String toExtract = null;
-                    for(String f : files){
-                        if(f.endsWith(".pb")){
-                            if(toExtract != null){
-                                throw new IllegalStateException("Found multiple .pb files in archive: " + toExtract + " and " + f);
+                    if(split.length == 3){
+                        //Extract specific file
+                        toExtract = split[2];
+                    } else {
+                        for (String f : files) {
+                            if (f.endsWith(".pb")) {
+                                if (toExtract != null) {
+                                    throw new IllegalStateException("Found multiple .pb files in archive: " + toExtract + " and " + f);
+                                }
+                                toExtract = f;
                             }
-                            toExtract = f;
                         }
                     }
                     Preconditions.checkState(toExtract != null, "Found to .pb files in archive: %s", localFile.getAbsolutePath());
@@ -111,7 +127,7 @@ public class TFGraphTestZooModels {
                     modelFile = new File(currentTestDir, "tf_model.pb");
                     ArchiveUtils.tarGzExtractSingleFile(localFile, modelFile, toExtract);
                 } else if(filename.endsWith(".zip")){
-                    throw new IllegalStateException("Not yet implemented");
+                    throw new IllegalStateException("ZIP support - not yet implemented");
                 } else {
                     throw new IllegalStateException("Unknown format: " + filename);
                 }
@@ -126,6 +142,7 @@ public class TFGraphTestZooModels {
     @BeforeClass
     public static void beforeClass(){
         Nd4j.getExecutioner().setProfilingMode(OpExecutioner.ProfilingMode.SCOPE_PANIC);
+        Nd4j.setDefaultDataTypes(DataType.FLOAT, DataType.FLOAT);
     }
 
     @Parameterized.Parameters(name="{2}")
@@ -136,7 +153,7 @@ public class TFGraphTestZooModels {
         return params;
     }
 
-    public TFGraphTestZooModels(Map<String, INDArray> inputs, Map<String, INDArray> predictions, String modelName, File localTestDir) throws IOException {
+    public TFGraphTestZooModels(Map<String, INDArray> inputs, Map<String, INDArray> predictions, String modelName, File localTestDir) {
         this.inputs = inputs;
         this.predictions = predictions;
         this.modelName = modelName;
@@ -145,17 +162,13 @@ public class TFGraphTestZooModels {
 
     @Test   //(timeout = 360000L)
     public void testOutputOnly() throws Exception {
-//        if(!modelName.equals("mobilenet_v1_0.5_128")){
-//        if(!modelName.equals("nasnet_mobile_2018_04_27")){
-//        if(!modelName.equals("resnetv2_imagenet_frozen_graph")){
-//        if(!modelName.equals("mobilenet_v2_1.0_224")){
-//        if(!modelName.equals("densenet_2018_04_27")){
-//        if(!modelName.equals("inception_resnet_v2_2018_04_27")){
+//        if(!modelName.startsWith("ssd")){
 //            OpValidationSuite.ignoreFailing();
 //        }
         currentTestDir = testDir.newFolder();
 
-        Nd4j.getExecutioner().setProfilingMode(OpExecutioner.ProfilingMode.NAN_PANIC);
+//        Nd4j.getExecutioner().setProfilingMode(OpExecutioner.ProfilingMode.NAN_PANIC);
+        Nd4j.getMemoryManager().setAutoGcWindow(2000);
 
         Nd4j.create(1);
         for(String s : IGNORE_REGEXES){
@@ -168,13 +181,15 @@ public class TFGraphTestZooModels {
         Double maxRE = 1e-3;
         Double minAbs = 1e-4;
         currentTestDir = testDir.newFolder();
+        log.info("----- SameDiff Exec: {} -----", modelName);
         TFGraphTestAllHelper.checkOnlyOutput(inputs, predictions, modelName, BASE_DIR, MODEL_FILENAME, TFGraphTestAllHelper.ExecuteWith.SAMEDIFF,
                 LOADER, maxRE, minAbs);
 
 
-//        Double maxRE = 1e-2;
-//        Double minAbs = 1e-3;
-//        TFGraphTestAllHelper.checkIntermediate(inputs, modelName, BASE_DIR, MODEL_FILENAME, TFGraphTestAllHelper.ExecuteWith.SAMEDIFF,
-//                LOADER, maxRE, minAbs, localTestDir);
+        //Libnd4j exec:
+        currentTestDir = testDir.newFolder();
+        log.info("----- Libnd4j Exec: {} -----", modelName);
+        TFGraphTestAllHelper.checkOnlyOutput(inputs, predictions, modelName, BASE_DIR, MODEL_FILENAME, TFGraphTestAllHelper.ExecuteWith.LIBND4J,
+                LOADER, maxRE, minAbs);
     }
 }

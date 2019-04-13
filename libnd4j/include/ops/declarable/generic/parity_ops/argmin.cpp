@@ -26,6 +26,13 @@
 
 namespace nd4j {
     namespace ops {
+
+        DECLARE_TYPES(argmin) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setAllowedOutputTypes({ALL_INTS});
+        }
+
         CUSTOM_OP_IMPL(argmin, 1, 1, false, 0, -2) {
             auto input = INPUT_VARIABLE(0);
             auto axis = *block.getIArguments();
@@ -37,11 +44,11 @@ namespace nd4j {
                 auto axisVector = INPUT_VARIABLE(1);
                 helpers::adjustAxis(input, axisVector, axis);
 
-                input->template applyIndexReduce<simdOps::IndexMin<T>>(output, axis);
+                input->applyIndexReduce(indexreduce::IndexMin, output, axis);
             } else {
                 helpers::adjustAxis(input->shapeInfo(), axis);
 
-                input->template applyIndexReduce<simdOps::IndexMin<T>>(output, axis);
+                input->applyIndexReduce(indexreduce::IndexMin, output, axis);
             }
 
             STORE_RESULT(output);
@@ -67,17 +74,14 @@ namespace nd4j {
 
             // special case - output is scalar
             if (dims.size() == 0 || (dims.size() == 1 && dims.at(0) == MAX_INT)) {
-                return SHAPELIST(ShapeUtils<T>::createScalarShapeInfo(block.workspace()));
+                return SHAPELIST(ShapeBuilders::createScalarShapeInfo(ArrayOptions::dataType(inputShape->at(0)), block.workspace()));
             }
 
-            shape::TAD tad(inputShape->at(0), dims.data(), dims.size());
-            tad.createTadOnlyShapeInfo();
+            auto tadLength = shape::tadLength(inputShape->at(0), dims.data(), dims.size());
+            auto numTads = shape::length(inputShape->at(0)) /  tadLength;
 
-            Nd4jLong tadLength = shape::tadLength(inputShape->at(0), dims.data(), dims.size());
-            Nd4jLong numTads = shape::length(inputShape->at(0)) /  tadLength;
-
-            auto newShape = ShapeUtils<T>::evalReduceShapeInfo('c', dims, inputShape->at(0), false, false, block.getWorkspace());
-
+            auto newShape = ShapeUtils::evalReduceShapeInfo('c', dims, inputShape->at(0), false, false, block.getWorkspace());
+            ArrayOptions::setDataType(newShape, DataType::INT64);
             return SHAPELIST(newShape);
         }
 

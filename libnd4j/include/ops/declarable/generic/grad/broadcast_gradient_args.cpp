@@ -35,6 +35,11 @@ namespace nd4j {
             return ND4J_STATUS_KERNEL_FAILURE;
         }
         DECLARE_SYN(BroadcastGradientArgs, broadcastgradientargs);
+
+        DECLARE_TYPES(broadcastgradientargs) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(nd4j::DataType::ANY);
+        }
     }
 }
 

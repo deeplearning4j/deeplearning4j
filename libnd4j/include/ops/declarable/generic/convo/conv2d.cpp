@@ -31,16 +31,16 @@
 #include <declarable/generic/helpers/convolutions.h>
 
 namespace nd4j {
-    namespace ops {
+namespace ops  {
 
 
 CUSTOM_OP_IMPL(conv2d, 2, 1, false, 0, 9) {
     
-    NDArray<T> *input   = INPUT_VARIABLE(0);                                    // [bS, iH, iW, iC] (NHWC) or [bS, iC, iH, iW] (NCHW)
-    NDArray<T> *weights = INPUT_VARIABLE(1);                                    // [kH, kW, iC, oC] always
-    NDArray<T> *bias    = block.width() > 2 ? INPUT_VARIABLE(2) : nullptr;      // [oC]
+    auto input   = INPUT_VARIABLE(0);                                    // [bS, iH, iW, iC] (NHWC) or [bS, iC, iH, iW] (NCHW)
+    auto weights = INPUT_VARIABLE(1);                                    // [kH, kW, iC, oC] always
+    auto bias    = block.width() > 2 ? INPUT_VARIABLE(2) : nullptr;      // [oC]
 
-    NDArray<T> *output  = OUTPUT_VARIABLE(0);                                   // [bS, oH, oW, oC] (NHWC) or [bS, oC, oH, oW] (NCHW)
+    auto output  = OUTPUT_VARIABLE(0);                                   // [bS, oH, oW, oC] (NHWC) or [bS, oC, oH, oW] (NCHW)
     
     int sH = INT_ARG(2);                                                        // strides height
     int sW = INT_ARG(3);                                                        // strides width
@@ -56,26 +56,14 @@ CUSTOM_OP_IMPL(conv2d, 2, 1, false, 0, 9) {
 
     int bS, iC, iH, iW, oC, oH, oW;                             // batch size, input channels, input height/width, output channels, output height/width;
     int indIOioC, indIiH, indWoC, indWiC, indWkH, indOoH;       // corresponding indexes
-    ConvolutionUtils<T>::getSizesAndIndexesConv2d(isNCHW, *input, *output, bS, iC, iH, iW, oC, oH, oW, indIOioC, indIiH, indWiC, indWoC, indWkH, indOoH);
+    ConvolutionUtils::getSizesAndIndexesConv2d(isNCHW, *input, *output, bS, iC, iH, iW, oC, oH, oW, indIOioC, indIiH, indWiC, indWoC, indWkH, indOoH);
 
-    std::string expectedWeightsShape = ShapeUtils<T>::shapeAsString({kH, kW, iC, oC});
-    REQUIRE_TRUE(expectedWeightsShape == ShapeUtils<T>::shapeAsString(weights), 0, "CUSTOM CONV2D OP: wrong shape of weights array, expected is %s, but got %s instead !", expectedWeightsShape.c_str(), ShapeUtils<T>::shapeAsString(weights).c_str());
+    std::string expectedWeightsShape = ShapeUtils::shapeAsString({kH, kW, iC, oC});
+    REQUIRE_TRUE(expectedWeightsShape == ShapeUtils::shapeAsString(weights), 0, "CUSTOM CONV2D OP: wrong shape of weights array, expected is %s, but got %s instead !", expectedWeightsShape.c_str(), ShapeUtils::shapeAsString(weights).c_str());
     if (bias) 
         REQUIRE_TRUE(bias->rankOf() <= 2 && oC == bias->lengthOf(), 0, "CUSTOM CONV2D OP: wrong shape of array with biases, expected rank, length: <=2, %i, but got %i, %i instead !", oC, bias->rankOf(), bias->lengthOf());                
 
-#ifdef HAVE_MKLDNN
-    if (block.isUseMKLDNN() && MKLDNNStream<T>::isSupported()) {
-        if (block.getMKLDNNStream() == nullptr) {
-            block.setMKLDNNStream(new MKLDNNStream<T>("conv2d"));
-        }
-        ConvolutionUtils<T>::mkldnn_conv2d(*block.getMKLDNNStream(), {input, weights, bias}, output, {kH,kW,sH,sW,pH,pW,dH,dW,isSameMode,isNCHW});
-    } else {
-#endif
-        nd4j_debug("MKLDNN is not used !\n", 0);
-        ConvolutionUtils<T>::conv2d({input, weights, bias}, output, {kH,kW,sH,sW,pH,pW,dH,dW,isSameMode,isNCHW});
-#ifdef HAVE_MKLDNN
-    }
-#endif
+    ConvolutionUtils::conv2d(block, input, weights, bias, output, kH,kW,sH,sW,pH,pW,dH,dW,isSameMode,isNCHW);
 
     return Status::OK();
 }
@@ -121,8 +109,8 @@ DECLARE_SHAPE_FN(conv2d) {
     const int iC = inputShapeInfo[indIOioC+1];                   // input channels        
     const int oC = weightsShapeInfo[indWoC+1];                   // output channels
 
-    std::string expectedWeightsShape = ShapeUtils<T>::shapeAsString({kH, kW, iC, oC});
-    REQUIRE_TRUE(expectedWeightsShape == ShapeUtils<T>::shapeAsString(weightsShapeInfo), 0, "CUSTOM CONV2D OP: wrong shape of weights array, expected is %s, but got %s instead !", expectedWeightsShape.c_str(), ShapeUtils<T>::shapeAsString(weightsShapeInfo).c_str());    
+    std::string expectedWeightsShape = ShapeUtils::shapeAsString({kH, kW, iC, oC});
+    REQUIRE_TRUE(expectedWeightsShape == ShapeUtils::shapeAsString(weightsShapeInfo), 0, "CUSTOM CONV2D OP: wrong shape of weights array, expected is %s, but got %s instead !", expectedWeightsShape.c_str(), ShapeUtils::shapeAsString(weightsShapeInfo).c_str());
     if (biasShapeInfo) 
         REQUIRE_TRUE(biasShapeInfo[0] <= 2 && oC == shape::length(biasShapeInfo), 0, "CUSTOM CONV2D OP: wrong shape of array with biases, expected rank, length: <=2, %i, but got %i, %i instead !", oC, biasShapeInfo[0], shape::length(biasShapeInfo));
     
@@ -130,7 +118,7 @@ DECLARE_SHAPE_FN(conv2d) {
     ALLOCATE(outputShapeInfo, block.getWorkspace(), shape::shapeInfoLength(rank), Nd4jLong);
 
     int oH, oW;                                         // output height, width
-    ConvolutionUtils<T>::calcOutSizePool2D(oH, oW, kH, kW, sH, sW, pH, pW, dH, dW, iH, iW, isSameMode);
+    ConvolutionUtils::calcOutSizePool2D(oH, oW, kH, kW, sH, sW, pH, pW, dH, dW, iH, iW, isSameMode);
 
     outputShapeInfo[0] = rank;
     outputShapeInfo[1] = bS;
@@ -145,24 +133,37 @@ DECLARE_SHAPE_FN(conv2d) {
         outputShapeInfo[4] = oC;
     }
     
-    shape::updateStrides(outputShapeInfo, shape::order(inputShapeInfo));
+    ShapeUtils::updateStridesAndType(outputShapeInfo, weightsShapeInfo, shape::order(inputShapeInfo));
     
     return SHAPELIST(outputShapeInfo);
 }
 
+    DECLARE_TYPES(conv2d) {
+        getOpDescriptor()
+                ->setAllowedInputTypes(0, nd4j::DataType::ANY)
+                ->setAllowedInputTypes(1, {ALL_FLOATS})
+                ->setAllowedInputTypes(2, {ALL_FLOATS})
+                ->setAllowedOutputTypes({ALL_FLOATS});
+    }
+
+    DECLARE_TYPES(conv2d_bp) {
+        getOpDescriptor()
+                ->setAllowedInputTypes(nd4j::DataType::ANY)
+                ->setAllowedOutputTypes({ALL_FLOATS});
+    }
 
 
 ////////////////////////////////////////////////////////////////////////// 
 CUSTOM_OP_IMPL(conv2d_bp, 3, 2, false, 0, 9) {
     
-    NDArray<T> *input   = INPUT_VARIABLE(0);                                                // [bS, iH, iW, iC] (NHWC) or [bS, iC, iH, iW] (NCHW)
-    NDArray<T> *weights = INPUT_VARIABLE(1);                                                // [kH, kW, iC, oC] always
-    NDArray<T> *bias    = block.width() > 3 ? INPUT_VARIABLE(2) : nullptr;                  // [oC]
-    NDArray<T> *gradO   = block.width() > 3 ? INPUT_VARIABLE(3) : INPUT_VARIABLE(2);        // [bS, oH, oW, oC] (NHWC) or [bS, oC, oH, oW] (NCHW), epsilon_next
+    auto input   = INPUT_VARIABLE(0);                                                // [bS, iH, iW, iC] (NHWC) or [bS, iC, iH, iW] (NCHW)
+    auto weights = INPUT_VARIABLE(1);                                                // [kH, kW, iC, oC] always
+    auto bias    = block.width() > 3 ? INPUT_VARIABLE(2) : nullptr;                  // [oC]
+    auto gradO   = block.width() > 3 ? INPUT_VARIABLE(3) : INPUT_VARIABLE(2);        // [bS, oH, oW, oC] (NHWC) or [bS, oC, oH, oW] (NCHW), epsilon_next
     
-    NDArray<T> *gradI = OUTPUT_VARIABLE(0);                                                 // [bS, iH, iW, iC] (NHWC) or [bS, iC, iH, iW] (NCHW), epsilon
-    NDArray<T> *gradW = OUTPUT_VARIABLE(1);                                                 // [kH, kW, iC, oC] always
-    NDArray<T> *gradB = block.width() > 3 ? OUTPUT_VARIABLE(2) : nullptr;                   // [oC]
+    auto gradI = OUTPUT_VARIABLE(0);                                                 // [bS, iH, iW, iC] (NHWC) or [bS, iC, iH, iW] (NCHW), epsilon
+    auto gradW = OUTPUT_VARIABLE(1);                                                 // [kH, kW, iC, oC] always
+    auto gradB = block.width() > 3 ? OUTPUT_VARIABLE(2) : nullptr;                   // [oC]
                                      
     int kH = INT_ARG(0);                                                        // filter(kernel) height
     int kW = INT_ARG(1);                                                        // filter(kernel) width
@@ -181,19 +182,19 @@ CUSTOM_OP_IMPL(conv2d_bp, 3, 2, false, 0, 9) {
 
     int bS, iC, iH, iW, oC, oH, oW;                             // batch size, input channels, input height/width, output channels, output height/width;
     int indIOioC, indIiH, indWoC, indWiC, indWkH, indOoH;       // corresponding indexes
-    ConvolutionUtils<T>::getSizesAndIndexesConv2d(isNCHW, *input, *gradO, bS, iC, iH, iW, oC, oH, oW, indIOioC, indIiH, indWiC, indWoC, indWkH, indOoH);
+    ConvolutionUtils::getSizesAndIndexesConv2d(isNCHW, *input, *gradO, bS, iC, iH, iW, oC, oH, oW, indIOioC, indIiH, indWiC, indWoC, indWkH, indOoH);
 
     int trueoH, trueoW;          // true output height, width
-    ConvolutionUtils<T>::calcOutSizePool2D(trueoH, trueoW, kH, kW, sH, sW, pH, pW, dH, dW, iH, iW, isSameMode);
+    ConvolutionUtils::calcOutSizePool2D(trueoH, trueoW, kH, kW, sH, sW, pH, pW, dH, dW, iH, iW, isSameMode);
 
-    std::string expectedGradOShape   = ShapeUtils<T>::shapeAsString(ShapeUtils<T>::composeShapeUsingDimsAndIdx({bS,oC,trueoH,trueoW,  0,indIOioC,indOoH,indOoH+1}));            
-    std::string expectedWeightsShape = ShapeUtils<T>::shapeAsString({kH, kW, iC, oC});
-    REQUIRE_TRUE(expectedGradOShape == ShapeUtils<T>::shapeAsString(gradO), 0,  "CUSTOM CONV2D_BP OP: wrong shape of output gradients (next epsilon) array, expected is %s, but got %s instead !", expectedGradOShape.c_str(), ShapeUtils<T>::shapeAsString(gradO).c_str());
-    REQUIRE_TRUE(expectedWeightsShape == ShapeUtils<T>::shapeAsString(weights), 0, "CUSTOM CONV2D_BP OP: wrong shape of weights array, expected is %s, but got %s instead !", expectedWeightsShape.c_str(), ShapeUtils<T>::shapeAsString(weights).c_str());    
+    std::string expectedGradOShape   = ShapeUtils::shapeAsString(ShapeUtils::composeShapeUsingDimsAndIdx({bS,oC,trueoH,trueoW,  0,indIOioC,indOoH,indOoH+1}));
+    std::string expectedWeightsShape = ShapeUtils::shapeAsString({kH, kW, iC, oC});
+    REQUIRE_TRUE(expectedGradOShape == ShapeUtils::shapeAsString(gradO), 0,  "CUSTOM CONV2D_BP OP: wrong shape of output gradients (next epsilon) array, expected is %s, but got %s instead !", expectedGradOShape.c_str(), ShapeUtils::shapeAsString(gradO).c_str());
+    REQUIRE_TRUE(expectedWeightsShape == ShapeUtils::shapeAsString(weights), 0, "CUSTOM CONV2D_BP OP: wrong shape of weights array, expected is %s, but got %s instead !", expectedWeightsShape.c_str(), ShapeUtils::shapeAsString(weights).c_str());
     if(bias)
         REQUIRE_TRUE(bias->rankOf() <= 2 && oC == bias->lengthOf(), 0, "CUSTOM CONV2D_BP OP: wrong shape of array with biases, expected rank, length: <=2, %i, but got %i, %i instead !", oC, bias->rankOf(), bias->lengthOf());
 
-    ConvolutionUtils<T>::conv2dBP({input, weights, bias, gradO}, {gradI, gradW, gradB}, {kH,kW,sH,sW,pH,pW,dH,dW,isSameMode,isNCHW});
+    ConvolutionUtils::conv2dBP(block, input, weights, bias, gradO, gradI, gradW, gradB, kH,kW,sH,sW,pH,pW,dH,dW,isSameMode,isNCHW);
     
     return Status::OK();
 }
@@ -229,7 +230,7 @@ DECLARE_SHAPE_FN(conv2d_bp) {
         indIOioC = 3; indIiH = 1; indOoH = 1;
     }
     else {        
-        indIOioC = 1; indIiH = 2; indOoH = 2;              
+        indIOioC = 1; indIiH = 2; indOoH = 2;
     }    
 
     const int bS = inputShapeInfo[1];                            // batch size
@@ -239,22 +240,20 @@ DECLARE_SHAPE_FN(conv2d_bp) {
     const int oC = weightsShapeInfo[indWoC+1];                   // output channels
 
     int trueoH, trueoW;          // true output height, width
-    ConvolutionUtils<T>::calcOutSizePool2D(trueoH, trueoW, kH, kW, sH, sW, pH, pW, dH, dW, iH, iW, isSameMode);
+    ConvolutionUtils::calcOutSizePool2D(trueoH, trueoW, kH, kW, sH, sW, pH, pW, dH, dW, iH, iW, isSameMode);
 
-    std::string expectedGradOShape   = ShapeUtils<T>::shapeAsString(ShapeUtils<T>::composeShapeUsingDimsAndIdx({bS,oC,trueoH,trueoW,  0,indIOioC,indOoH,indOoH+1}));            
-    std::string expectedWeightsShape = ShapeUtils<T>::shapeAsString({kH, kW, iC, oC});
-    REQUIRE_TRUE(expectedGradOShape == ShapeUtils<T>::shapeAsString(gradOShapeInfo), 0,  "CUSTOM CONV2D_BP OP: wrong shape of output gradients (next epsilon) array, expected is %s, but got %s instead !", expectedGradOShape.c_str(), ShapeUtils<T>::shapeAsString(gradOShapeInfo).c_str());
-    REQUIRE_TRUE(expectedWeightsShape == ShapeUtils<T>::shapeAsString(weightsShapeInfo), 0, "CUSTOM CONV2D_BP OP: wrong shape of weights array, expected is %s, but got %s instead !", expectedWeightsShape.c_str(), ShapeUtils<T>::shapeAsString(weightsShapeInfo).c_str());
+    std::string expectedGradOShape   = ShapeUtils::shapeAsString(ShapeUtils::composeShapeUsingDimsAndIdx({bS,oC,trueoH,trueoW,  0,indIOioC,indOoH,indOoH+1}));
+    std::string expectedWeightsShape = ShapeUtils::shapeAsString({kH, kW, iC, oC});
+    REQUIRE_TRUE(expectedGradOShape == ShapeUtils::shapeAsString(gradOShapeInfo), 0,  "CUSTOM CONV2D_BP OP: wrong shape of output gradients (next epsilon) array, expected is %s, but got %s instead !", expectedGradOShape.c_str(), ShapeUtils::shapeAsString(gradOShapeInfo).c_str());
+    REQUIRE_TRUE(expectedWeightsShape == ShapeUtils::shapeAsString(weightsShapeInfo), 0, "CUSTOM CONV2D_BP OP: wrong shape of weights array, expected is %s, but got %s instead !", expectedWeightsShape.c_str(), ShapeUtils::shapeAsString(weightsShapeInfo).c_str());
     if(biasShapeInfo)
         REQUIRE_TRUE(biasShapeInfo[0] <= 2 && oC == shape::length(biasShapeInfo), 0, "CUSTOM CONV2D_BP OP: wrong shape of array with biases, expected rank, length: <=2, %i, but got %i, %i instead !", oC, biasShapeInfo[0], shape::length(biasShapeInfo));
     
-    Nd4jLong* gradIshapeInfo(nullptr), *gradWshapeInfo(nullptr);
-    COPY_SHAPE(inputShapeInfo, gradIshapeInfo);
-    COPY_SHAPE(weightsShapeInfo, gradWshapeInfo);
+    Nd4jLong* gradIshapeInfo = ShapeBuilders::copyShapeInfoAndType(inputShapeInfo,   gradOShapeInfo, false, block.getWorkspace());
+    Nd4jLong* gradWshapeInfo = ShapeBuilders::copyShapeInfoAndType(weightsShapeInfo, gradOShapeInfo, false, block.getWorkspace());
 
     if(biasShapeInfo) {
-        Nd4jLong* gradBshapeInfo(nullptr);
-        COPY_SHAPE(biasShapeInfo, gradBshapeInfo);
+        Nd4jLong* gradBshapeInfo = ShapeBuilders::copyShapeInfoAndType(biasShapeInfo, gradOShapeInfo, false, block.getWorkspace());
         return SHAPELIST(gradIshapeInfo, gradWshapeInfo, gradBshapeInfo);
     }     
 
@@ -264,11 +263,11 @@ DECLARE_SHAPE_FN(conv2d_bp) {
 ////////////////////////////////////////////////////////////////////////// 
 CUSTOM_OP_IMPL(conv2d_input_bp, 3, 1, false, 0, 9) {
     
-    NDArray<T> *gradIShape = INPUT_VARIABLE(0);                                                // [4]
-    NDArray<T> *weights    = INPUT_VARIABLE(1);                                                // [kH, kW, iC, oC] always
-    NDArray<T> *gradO      = INPUT_VARIABLE(2);                                                // [bS, oH, oW, oC] (NHWC) or [bS, oC, oH, oW] (NCHW), epsilon_next
+    auto gradIShape = INPUT_VARIABLE(0);                                                // [4]
+    auto weights    = INPUT_VARIABLE(1);                                                // [kH, kW, iC, oC] always
+    auto gradO      = INPUT_VARIABLE(2);                                                // [bS, oH, oW, oC] (NHWC) or [bS, oC, oH, oW] (NCHW), epsilon_next
     
-    NDArray<T> *gradI = OUTPUT_VARIABLE(0);                                                 // [bS, iH, iW, iC] (NHWC) or [bS, iC, iH, iW] (NCHW), epsilon
+    auto gradI = OUTPUT_VARIABLE(0);                                                 // [bS, iH, iW, iC] (NHWC) or [bS, iC, iH, iW] (NCHW), epsilon
                                      
     int kH = INT_ARG(0);                                                        // filter(kernel) height
     int kW = INT_ARG(1);                                                        // filter(kernel) width
@@ -290,26 +289,32 @@ CUSTOM_OP_IMPL(conv2d_input_bp, 3, 1, false, 0, 9) {
     // create empty conv2d input array    
     std::vector<Nd4jLong> gradIShapeAsVector(rank);
     for(int i = 0; i < rank; ++i)
-        gradIShapeAsVector[i] = (*gradIShape)(i);
-    NDArray<T> input(gradO->ordering(), gradIShapeAsVector, block.getWorkspace());
+        gradIShapeAsVector[i] = gradIShape->e<Nd4jLong>(i);
+    NDArray input(gradO->ordering(), gradIShapeAsVector, gradO->dataType(), block.getWorkspace());
 
 
     int bS, iC, iH, iW, oC, oH, oW;                             // batch size, input channels, input height/width, output channels, output height/width;
     int indIOioC, indIiH, indWoC, indWiC, indWkH, indOoH;       // corresponding indexes
-    ConvolutionUtils<T>::getSizesAndIndexesConv2d(isNCHW, input, *gradO, bS, iC, iH, iW, oC, oH, oW, indIOioC, indIiH, indWiC, indWoC, indWkH, indOoH);
+    ConvolutionUtils::getSizesAndIndexesConv2d(isNCHW, input, *gradO, bS, iC, iH, iW, oC, oH, oW, indIOioC, indIiH, indWiC, indWoC, indWkH, indOoH);
 
     int trueoH, trueoW;          // true output height, width
-    ConvolutionUtils<T>::calcOutSizePool2D(trueoH, trueoW, kH, kW, sH, sW, pH, pW, dH, dW, iH, iW, isSameMode);
+    ConvolutionUtils::calcOutSizePool2D(trueoH, trueoW, kH, kW, sH, sW, pH, pW, dH, dW, iH, iW, isSameMode);
 
-    std::string expectedGradOShape   = ShapeUtils<T>::shapeAsString(ShapeUtils<T>::composeShapeUsingDimsAndIdx({bS,oC,trueoH,trueoW,  0,indIOioC,indOoH,indOoH+1}));            
-    std::string expectedWeightsShape = ShapeUtils<T>::shapeAsString({kH, kW, iC, oC});
-    REQUIRE_TRUE(expectedGradOShape == ShapeUtils<T>::shapeAsString(gradO), 0,  "CUSTOM CONV2D_INPUT_BP OP: wrong shape of output gradients (next epsilon) array, expected is %s, but got %s instead !", expectedGradOShape.c_str(), ShapeUtils<T>::shapeAsString(gradO).c_str());
-    REQUIRE_TRUE(expectedWeightsShape == ShapeUtils<T>::shapeAsString(weights), 0, "CUSTOM CONV2D_INPUT_BP OP: wrong shape of weights array, expected is %s, but got %s instead !", expectedWeightsShape.c_str(), ShapeUtils<T>::shapeAsString(weights).c_str());        
+    std::string expectedGradOShape   = ShapeUtils::shapeAsString(ShapeUtils::composeShapeUsingDimsAndIdx({bS,oC,trueoH,trueoW,  0,indIOioC,indOoH,indOoH+1}));
+    std::string expectedWeightsShape = ShapeUtils::shapeAsString({kH, kW, iC, oC});
+    REQUIRE_TRUE(expectedGradOShape == ShapeUtils::shapeAsString(gradO), 0,  "CUSTOM CONV2D_INPUT_BP OP: wrong shape of output gradients (next epsilon) array, expected is %s, but got %s instead !", expectedGradOShape.c_str(), ShapeUtils::shapeAsString(gradO).c_str());
+    REQUIRE_TRUE(expectedWeightsShape == ShapeUtils::shapeAsString(weights), 0, "CUSTOM CONV2D_INPUT_BP OP: wrong shape of weights array, expected is %s, but got %s instead !", expectedWeightsShape.c_str(), ShapeUtils::shapeAsString(weights).c_str());
 
-    ConvolutionUtils<T>::conv2dBP({&input, weights, nullptr, gradO}, {gradI, nullptr, nullptr}, {kH,kW,sH,sW,pH,pW,dH,dW,isSameMode,isNCHW});
+    ConvolutionUtils::conv2dBP(block, &input, weights, nullptr, gradO, gradI, nullptr, nullptr, kH,kW,sH,sW,pH,pW,dH,dW,isSameMode,isNCHW);
     
     return Status::OK();
 }
+
+        DECLARE_TYPES(conv2d_input_bp) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setAllowedOutputTypes({ALL_FLOATS});
+        }
 
 
 
@@ -341,7 +346,7 @@ DECLARE_SHAPE_FN(conv2d_input_bp) {
         indIOioC = 3; indIiH = 1; indOoH = 1;
     }
     else {        
-        indIOioC = 1; indIiH = 2; indOoH = 2;              
+        indIOioC = 1; indIiH = 2; indOoH = 2;
     }    
 
     std::vector<Nd4jLong> gradIShape = INPUT_VARIABLE(0)->template asVectorT<Nd4jLong>();
@@ -353,12 +358,12 @@ DECLARE_SHAPE_FN(conv2d_input_bp) {
     const int oC = weightsShapeInfo[indWoC+1];             // output channels
     
     int trueoH, trueoW;          // true output height, width
-    ConvolutionUtils<T>::calcOutSizePool2D(trueoH, trueoW, kH, kW, sH, sW, pH, pW, dH, dW, iH, iW, isSameMode);
+    ConvolutionUtils::calcOutSizePool2D(trueoH, trueoW, kH, kW, sH, sW, pH, pW, dH, dW, iH, iW, isSameMode);
 
-    std::string expectedGradOShape   = ShapeUtils<T>::shapeAsString(ShapeUtils<T>::composeShapeUsingDimsAndIdx({bS,oC,trueoH,trueoW,  0,indIOioC,indOoH,indOoH+1}));            
-    std::string expectedWeightsShape = ShapeUtils<T>::shapeAsString({kH, kW, iC, oC});
-    REQUIRE_TRUE(expectedGradOShape == ShapeUtils<T>::shapeAsString(gradOShapeInfo), 0,  "CUSTOM CONV2D_INPUT_BP OP: wrong shape of output gradients (next epsilon) array, expected is %s, but got %s instead !", expectedGradOShape.c_str(), ShapeUtils<T>::shapeAsString(gradOShapeInfo).c_str());
-    REQUIRE_TRUE(expectedWeightsShape == ShapeUtils<T>::shapeAsString(weightsShapeInfo), 0, "CUSTOM CONV2D_INPUT_BP OP: wrong shape of weights array, expected is %s, but got %s instead !", expectedWeightsShape.c_str(), ShapeUtils<T>::shapeAsString(weightsShapeInfo).c_str());
+    std::string expectedGradOShape   = ShapeUtils::shapeAsString(ShapeUtils::composeShapeUsingDimsAndIdx({bS,oC,trueoH,trueoW,  0,indIOioC,indOoH,indOoH+1}));
+    std::string expectedWeightsShape = ShapeUtils::shapeAsString({kH, kW, iC, oC});
+    REQUIRE_TRUE(expectedGradOShape == ShapeUtils::shapeAsString(gradOShapeInfo), 0,  "CUSTOM CONV2D_INPUT_BP OP: wrong shape of output gradients (next epsilon) array, expected is %s, but got %s instead !", expectedGradOShape.c_str(), ShapeUtils::shapeAsString(gradOShapeInfo).c_str());
+    REQUIRE_TRUE(expectedWeightsShape == ShapeUtils::shapeAsString(weightsShapeInfo), 0, "CUSTOM CONV2D_INPUT_BP OP: wrong shape of weights array, expected is %s, but got %s instead !", expectedWeightsShape.c_str(), ShapeUtils::shapeAsString(weightsShapeInfo).c_str());
     
     Nd4jLong* gradIshapeInfo(nullptr);        
     ALLOCATE(gradIshapeInfo, block.getWorkspace(), shape::shapeInfoLength(rank), Nd4jLong);
@@ -376,7 +381,7 @@ DECLARE_SHAPE_FN(conv2d_input_bp) {
         gradIshapeInfo[4] = iC;
     }
     
-    shape::updateStrides(gradIshapeInfo, shape::order(gradOShapeInfo)); 
+    ShapeUtils::updateStridesAndType(gradIshapeInfo, gradOShapeInfo, shape::order(gradOShapeInfo));
 
     return SHAPELIST(gradIshapeInfo);        
 }

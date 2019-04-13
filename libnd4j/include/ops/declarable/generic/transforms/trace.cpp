@@ -29,8 +29,8 @@ namespace ops  {
 
 CUSTOM_OP_IMPL(trace, 1, 1, false, 0, 0) {
     
-    NDArray<T>* input  = INPUT_VARIABLE(0);
-    NDArray<T>* output = OUTPUT_VARIABLE(0);    
+    auto input  = INPUT_VARIABLE(0);
+    auto output = OUTPUT_VARIABLE(0);
     
     REQUIRE_TRUE(input->rankOf() >= 2, 0, "TRACE op: the rank of input array must be >=2, but got %i instead!", input->rankOf());
 
@@ -39,6 +39,10 @@ CUSTOM_OP_IMPL(trace, 1, 1, false, 0, 0) {
     return Status::OK();
 }
 
+    DECLARE_TYPES(trace) {
+        getOpDescriptor()->setAllowedInputTypes(0, {ALL_FLOATS})
+                ->setAllowedOutputTypes(0, {ALL_FLOATS});
+    }
 
 DECLARE_SHAPE_FN(trace) {
     auto inShapeInfo = inputShape->at(0);
@@ -54,10 +58,9 @@ DECLARE_SHAPE_FN(trace) {
         outShapeInfo[i] = inShapeInfo[i];
 
     shape::updateStrides(outShapeInfo, shape::order(inShapeInfo));
-
+    ArrayOptions::setDataType(outShapeInfo, ArrayOptions::dataType(inShapeInfo));
     return SHAPELIST(outShapeInfo);
 }
-
 
 }
 }

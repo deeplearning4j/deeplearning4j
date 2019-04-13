@@ -34,8 +34,8 @@ import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.random.impl.DropOut;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
@@ -51,6 +51,11 @@ import static org.junit.Assert.assertNull;
 /**
  */
 public class DropoutLayerTest extends BaseDL4JTest {
+
+    @Override
+    public DataType getDataType(){
+        return DataType.FLOAT;
+    }
 
     @Test
     public void testInputTypes() {
@@ -117,7 +122,7 @@ public class DropoutLayerTest extends BaseDL4JTest {
             l.allowInputModification(false);
         }
 
-        INDArray in = Nd4j.arange(1, 5);
+        INDArray in = Nd4j.arange(1, 5).reshape(1,4);
         Nd4j.getRandom().setSeed(12345);
         List<INDArray> actTrainIntegrated = netIntegrated.feedForward(in.dup(), true);
         Nd4j.getRandom().setSeed(12345);
@@ -214,6 +219,7 @@ public class DropoutLayerTest extends BaseDL4JTest {
 
     @Test
     public void testDropoutLayerWithConvMnist() throws Exception {
+        Nd4j.setDefaultDataTypes(DataType.DOUBLE, DataType.DOUBLE); //Set to double datatype - MKL-DNN not used for CPU (otherwise different strides due to Dl4J impl permutes)
         DataSetIterator iter = new MnistDataSetIterator(2, 2);
         DataSet next = iter.next();
 

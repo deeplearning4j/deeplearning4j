@@ -19,6 +19,12 @@ package org.deeplearning4j.models.paragraphvectors;
 
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
+import org.deeplearning4j.models.embeddings.learning.impl.elements.CBOW;
+import org.deeplearning4j.models.embeddings.reader.impl.FlatModelUtils;
+import org.deeplearning4j.models.sequencevectors.sequence.Sequence;
+import org.deeplearning4j.models.sequencevectors.transformers.impl.SentenceTransformer;
+import org.deeplearning4j.models.sequencevectors.transformers.impl.iterables.ParallelTransformerIterator;
 import org.junit.Rule;
 import org.junit.rules.TemporaryFolder;
 import org.nd4j.linalg.io.ClassPathResource;
@@ -51,15 +57,16 @@ import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.io.CollectionUtils;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.util.SerializationUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.io.IOException;
+import java.util.*;
+import java.util.concurrent.atomic.AtomicLong;
 
 import static org.junit.Assert.*;
 
@@ -167,6 +174,8 @@ public class ParagraphVectorsTest {
         ParagraphVectors vec = new ParagraphVectors.Builder().minWordFrequency(1).iterations(5).seed(119).epochs(1)
                         .layerSize(150).learningRate(0.025).labelsSource(source).windowSize(5)
                         .sequenceLearningAlgorithm(new DM<VocabWord>()).iterate(iter).trainWordVectors(true)
+                        .usePreciseWeightInit(true)
+                        .batchSize(8192)
                         .tokenizerFactory(t).workers(4).sampling(0).build();
 
         vec.fit();
@@ -303,6 +312,7 @@ public class ParagraphVectorsTest {
 
         log.info("Cos O/A: {}", cosAO1);
         log.info("Cos A/B: {}", cosAB1);
+        log.info("Inferred: {}", inferredA1);
         //        assertTrue(cosAO1 > 0.45);
         assertTrue(cosAB1 > 0.95);
 
@@ -423,11 +433,13 @@ public class ParagraphVectorsTest {
         ParagraphVectors vec = new ParagraphVectors.Builder().minWordFrequency(1).iterations(5).seed(119).epochs(1)
                         .layerSize(100).learningRate(0.025).labelsSource(source).windowSize(5).iterate(iter)
                         .trainWordVectors(true).vocabCache(cache).tokenizerFactory(t).negativeSample(0)
-                        .allowParallelTokenization(true).useHierarchicSoftmax(true).sampling(0).workers(2)
+                        .allowParallelTokenization(true).useHierarchicSoftmax(true).sampling(0).workers(4)
                         .usePreciseWeightInit(true).sequenceLearningAlgorithm(new DBOW<VocabWord>()).build();
 
         vec.fit();
 
+        assertFalse(((InMemoryLookupTable<VocabWord>)vec.getLookupTable()).getSyn0().isAttached());
+        assertFalse(((InMemoryLookupTable<VocabWord>)vec.getLookupTable()).getSyn1().isAttached());
 
         int cnt1 = cache.wordFrequency("day");
         int cnt2 = cache.wordFrequency("me");
@@ -571,10 +583,11 @@ public class ParagraphVectorsTest {
     @Test
     @Ignore
     public void testParagraphVectorsReducedLabels1() throws Exception {
+        val tempDir = testDir.newFolder();
         ClassPathResource resource = new ClassPathResource("/labeled");
-        File file = resource.getFile();
+        resource.copyDirectory(tempDir);
 
-        LabelAwareIterator iter = new FileLabelAwareIterator.Builder().addSourceFolder(file).build();
+        LabelAwareIterator iter = new FileLabelAwareIterator.Builder().addSourceFolder(tempDir).build();
 
         TokenizerFactory t = new DefaultTokenizerFactory();
 
@@ -617,6 +630,71 @@ public class ParagraphVectorsTest {
         log.info("Similarity positive: " + simV);
     }
 
+    @Test
+    public void testParallelIterator() throws IOException {
+        TokenizerFactory factory = new DefaultTokenizerFactory();
+        SentenceIterator iterator = new BasicLineIterator(new ClassPathResource("/big/raw_sentences.txt").getFile());
+
+        SentenceTransformer transformer = new SentenceTransformer.Builder().iterator(iterator).allowMultithreading(true)
+                .tokenizerFactory(factory).build();
+
+        ParallelTransformerIterator iter = (ParallelTransformerIterator)transformer.iterator();
+        for (int i = 0; i < 100; ++i) {
+            int cnt = 0;
+            long counter = 0;
+            Sequence<VocabWord> sequence = null;
+            while (iter.hasNext()) {
+                sequence = iter.next();
+                counter += sequence.size();
+                cnt++;
+            }
+            iter.reset();
+            assertEquals(757172, counter);
+        }
+    }
+
+    @Test
+    public void testIterator() throws IOException {
+        val folder_labeled = testDir.newFolder();
+        val folder_unlabeled = testDir.newFolder();
+        new ClassPathResource("/paravec/labeled").copyDirectory(folder_labeled);
+        new ClassPathResource("/paravec/unlabeled").copyDirectory(folder_unlabeled);
+
+
+        FileLabelAwareIterator labelAwareIterator = new FileLabelAwareIterator.Builder()
+                .addSourceFolder(folder_labeled).build();
+
+        ClassPathResource resource_sentences = new ClassPathResource("/big/raw_sentences.txt");
+        SentenceIterator iter = new BasicLineIterator(resource_sentences.getFile());
+
+        int i = 0;
+        for (; i < 10000; ++i) {
+            int j = 0;
+            int labels = 0;
+            int words = 0;
+            while (labelAwareIterator.hasNextDocument()) {
+                ++j;
+                LabelledDocument document = labelAwareIterator.nextDocument();
+                labels += document.getLabels().size();
+                List<VocabWord> lst =  document.getReferencedContent();
+                if (!CollectionUtils.isEmpty(lst))
+                    words += lst.size();
+            }
+            labelAwareIterator.reset();
+            //System.out.println(words + " " + labels + " " + j);
+            assertEquals(0, words);
+            assertEquals(30, labels);
+            assertEquals(30, j);
+            j = 0;
+            while (iter.hasNext()) {
+                ++j;
+                iter.nextSentence();
+            }
+            assertEquals(97162, j);
+            iter.reset();
+        }
+
+    }
 
     /*
         In this test we'll build w2v model, and will use it's vocab and weights for ParagraphVectors.
@@ -627,10 +705,14 @@ public class ParagraphVectorsTest {
 
         // we build w2v from multiple sources, to cover everything
         ClassPathResource resource_sentences = new ClassPathResource("/big/raw_sentences.txt");
+
+        val folder_mixed = testDir.newFolder();
         ClassPathResource resource_mixed = new ClassPathResource("/paravec");
+        resource_mixed.copyDirectory(folder_mixed);
+
         SentenceIterator iter = new AggregatingSentenceIterator.Builder()
                         .addSentenceIterator(new BasicLineIterator(resource_sentences.getFile()))
-                        .addSentenceIterator(new FileSentenceIterator(resource_mixed.getFile())).build();
+                        .addSentenceIterator(new FileSentenceIterator(folder_mixed)).build();
 
         TokenizerFactory t = new DefaultTokenizerFactory();
         t.setTokenPreProcessor(new CommonPreprocessor());
@@ -638,7 +720,8 @@ public class ParagraphVectorsTest {
         Word2Vec wordVectors = new Word2Vec.Builder().seed(119).minWordFrequency(1).batchSize(250).iterations(1).epochs(3)
                         .learningRate(0.025).layerSize(150).minLearningRate(0.001)
                         .elementsLearningAlgorithm(new SkipGram<VocabWord>()).useHierarchicSoftmax(true).windowSize(5)
-                        .workers(2)
+                        .allowParallelTokenization(true)
+                        .workers(1)
                         .iterate(iter).tokenizerFactory(t).build();
 
         wordVectors.fit();
@@ -649,20 +732,27 @@ public class ParagraphVectorsTest {
 
         // At this moment we have ready w2v model. It's time to use it for ParagraphVectors
 
+        val folder_labeled = testDir.newFolder();
+        val folder_unlabeled = testDir.newFolder();
+        new ClassPathResource("/paravec/labeled").copyDirectory(folder_labeled);
+        new ClassPathResource("/paravec/unlabeled").copyDirectory(folder_unlabeled);
+
+
         FileLabelAwareIterator labelAwareIterator = new FileLabelAwareIterator.Builder()
-                        .addSourceFolder(new ClassPathResource("/paravec/labeled").getFile()).build();
+                        .addSourceFolder(folder_labeled).build();
 
 
         // documents from this iterator will be used for classification
         FileLabelAwareIterator unlabeledIterator = new FileLabelAwareIterator.Builder()
-                        .addSourceFolder(new ClassPathResource("/paravec/unlabeled").getFile()).build();
+                        .addSourceFolder(folder_unlabeled).build();
 
 
         // we're building classifier now, with pre-built w2v model passed in
         ParagraphVectors paragraphVectors = new ParagraphVectors.Builder().seed(119).iterate(labelAwareIterator)
                         .learningRate(0.025).minLearningRate(0.001).iterations(10).epochs(1).layerSize(150)
                         .tokenizerFactory(t).sequenceLearningAlgorithm(new DBOW<VocabWord>()).useHierarchicSoftmax(true)
-                        .workers(2)
+                        .allowParallelTokenization(true)
+                        .workers(1)
                         .trainWordVectors(false).useExistingWordVectors(wordVectors).build();
 
         paragraphVectors.fit();
@@ -716,6 +806,7 @@ public class ParagraphVectorsTest {
         log.info("Zhealth: " + paragraphVectors.getWordVectorMatrix("Zhealth"));
         log.info("Zscience: " + paragraphVectors.getWordVectorMatrix("Zscience"));
 
+        assertTrue(unlabeledIterator.hasNext());
         LabelledDocument document = unlabeledIterator.nextDocument();
 
         log.info("Results for document '" + document.getLabel() + "'");
@@ -1012,4 +1103,75 @@ public class ParagraphVectorsTest {
             }
         }
     }
-}
+
+    @Test
+    public void testJSONSerialization() {
+        ParagraphVectors paragraphVectors = new ParagraphVectors.Builder().build();
+        AbstractCache<VocabWord> cache = new AbstractCache.Builder<VocabWord>().build();
+
+        val words = new VocabWord[3];
+        words[0] = new VocabWord(1.0, "word");
+        words[1] = new VocabWord(2.0, "test");
+        words[2] = new VocabWord(3.0, "tester");
+
+        for (int i = 0; i < words.length; ++i) {
+            cache.addToken(words[i]);
+            cache.addWordToIndex(i, words[i].getLabel());
+        }
+        paragraphVectors.setVocab(cache);
+
+        String json = null;
+        Word2Vec unserialized = null;
+        try {
+            json = paragraphVectors.toJson();
+            log.info("{}", json.toString());
+
+            unserialized = ParagraphVectors.fromJson(json);
+        } catch (Exception e) {
+            e.printStackTrace();
+            fail();
+        }
+
+        assertEquals(cache.totalWordOccurrences(), ((ParagraphVectors) unserialized).getVocab().totalWordOccurrences());
+        assertEquals(cache.totalNumberOfDocs(), ((ParagraphVectors) unserialized).getVocab().totalNumberOfDocs());
+
+        for (int i = 0; i < words.length; ++i) {
+            val cached = cache.wordAtIndex(i);
+            val restored = ((ParagraphVectors) unserialized).getVocab().wordAtIndex(i);
+            assertNotNull(cached);
+            assertEquals(cached, restored);
+        }
+    }
+
+        @Test
+        public void testDoubleFit() throws Exception {
+            ClassPathResource resource = new ClassPathResource("/big/raw_sentences.txt");
+            File file = resource.getFile();
+            SentenceIterator iter = new BasicLineIterator(file);
+
+            TokenizerFactory t = new DefaultTokenizerFactory();
+            t.setTokenPreProcessor(new CommonPreprocessor());
+
+            LabelsSource source = new LabelsSource("DOC_");
+
+            val builder = new ParagraphVectors.Builder();
+            ParagraphVectors vec = builder.minWordFrequency(1).iterations(5).seed(119).epochs(1)
+                    .layerSize(150).learningRate(0.025).labelsSource(source).windowSize(5)
+                    .sequenceLearningAlgorithm(new DM<VocabWord>()).iterate(iter).trainWordVectors(true)
+                    .usePreciseWeightInit(true)
+                    .batchSize(8192)
+                    .allowParallelTokenization(false)
+                    .tokenizerFactory(t).workers(1).sampling(0).build();
+
+            vec.fit();
+            long num1 = vec.vocab().totalNumberOfDocs();
+
+            vec.fit();
+            System.out.println(vec.vocab().totalNumberOfDocs());
+            long num2 = vec.vocab().totalNumberOfDocs();
+
+            assertEquals(num1, num2);
+        }
+    }
+
+

@@ -17,6 +17,7 @@
 package org.deeplearning4j.regressiontest;
 
 import org.deeplearning4j.BaseDL4JTest;
+import org.deeplearning4j.TestUtils;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.GradientNormalization;
@@ -28,15 +29,18 @@ import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.conf.preprocessor.CnnToFeedForwardPreProcessor;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
-import org.deeplearning4j.nn.weights.WeightInit;
+import org.deeplearning4j.nn.weights.WeightInitDistribution;
+import org.deeplearning4j.nn.weights.WeightInitRelu;
+import org.deeplearning4j.nn.weights.WeightInitXavier;
 import org.deeplearning4j.util.ModelSerializer;
 import org.junit.Test;
 import org.nd4j.linalg.activations.impl.ActivationLReLU;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.io.ClassPathResource;
 import org.nd4j.linalg.learning.config.Nesterovs;
 import org.nd4j.linalg.learning.config.RmsProp;
-import org.nd4j.linalg.lossfunctions.LossFunctions;
+import org.nd4j.linalg.learning.regularization.WeightDecay;
 import org.nd4j.linalg.lossfunctions.impl.LossMCXENT;
 import org.nd4j.linalg.lossfunctions.impl.LossMSE;
 import org.nd4j.linalg.lossfunctions.impl.LossNegativeLogLikelihood;
@@ -55,6 +59,11 @@ import static org.junit.Assert.*;
  */
 public class RegressionTest060 extends BaseDL4JTest {
 
+    @Override
+    public DataType getDataType(){
+        return DataType.FLOAT;
+    }
+
     @Test
     public void regressionTestMLP1() throws Exception {
 
@@ -66,14 +75,11 @@ public class RegressionTest060 extends BaseDL4JTest {
         MultiLayerConfiguration conf = net.getLayerWiseConfigurations();
         assertEquals(2, conf.getConfs().size());
 
-        assertTrue(conf.isBackprop());
-        assertFalse(conf.isPretrain());
-
         DenseLayer l0 = (DenseLayer) conf.getConf(0).getLayer();
         assertEquals("relu", l0.getActivationFn().toString());
         assertEquals(3, l0.getNIn());
         assertEquals(4, l0.getNOut());
-        assertEquals(WeightInit.XAVIER, l0.getWeightInit());
+        assertEquals(new WeightInitXavier(), l0.getWeightInitFn());
         assertEquals(new Nesterovs(0.15, 0.9), l0.getIUpdater());
         assertEquals(0.15, ((Nesterovs)l0.getIUpdater()).getLearningRate(), 1e-6);
 
@@ -82,15 +88,15 @@ public class RegressionTest060 extends BaseDL4JTest {
         assertTrue(l1.getLossFn() instanceof LossMCXENT);
         assertEquals(4, l1.getNIn());
         assertEquals(5, l1.getNOut());
-        assertEquals(WeightInit.XAVIER, l1.getWeightInit());
+        assertEquals(new WeightInitXavier(), l1.getWeightInitFn());
         assertEquals(new Nesterovs(0.15, 0.9), l1.getIUpdater());
         assertEquals(0.9, ((Nesterovs)l1.getIUpdater()).getMomentum(), 1e-6);
         assertEquals(0.15, ((Nesterovs)l1.getIUpdater()).getLearningRate(), 1e-6);
 
-        int numParams = net.numParams();
-        assertEquals(Nd4j.linspace(1, numParams, numParams), net.params());
+        int numParams = (int)net.numParams();
+        assertEquals(Nd4j.linspace(1, numParams, numParams, Nd4j.dataType()), net.params());
         int updaterSize = (int) new Nesterovs().stateSize(numParams);
-        assertEquals(Nd4j.linspace(1, updaterSize, updaterSize), net.getUpdater().getStateViewArray());
+        assertEquals(Nd4j.linspace(1, updaterSize, updaterSize, Nd4j.dataType()), net.getUpdater().getStateViewArray());
     }
 
     @Test
@@ -104,20 +110,16 @@ public class RegressionTest060 extends BaseDL4JTest {
         MultiLayerConfiguration conf = net.getLayerWiseConfigurations();
         assertEquals(2, conf.getConfs().size());
 
-        assertTrue(conf.isBackprop());
-        assertFalse(conf.isPretrain());
-
         DenseLayer l0 = (DenseLayer) conf.getConf(0).getLayer();
         assertTrue(l0.getActivationFn() instanceof ActivationLReLU);
         assertEquals(3, l0.getNIn());
         assertEquals(4, l0.getNOut());
-        assertEquals(WeightInit.DISTRIBUTION, l0.getWeightInit());
-        assertEquals(new NormalDistribution(0.1, 1.2), l0.getDist());
+        assertEquals(new WeightInitDistribution(new NormalDistribution(0.1, 1.2)), l0.getWeightInitFn());
         assertEquals(new RmsProp(0.15, 0.96, RmsProp.DEFAULT_RMSPROP_EPSILON), l0.getIUpdater());
         assertEquals(0.15, ((RmsProp)l0.getIUpdater()).getLearningRate(), 1e-6);
         assertEquals(new Dropout(0.6), l0.getIDropout());
-        assertEquals(0.1, l0.getL1(), 1e-6);
-        assertEquals(0.2, l0.getL2(), 1e-6);
+        assertEquals(0.1, TestUtils.getL1(l0), 1e-6);
+        assertEquals(new WeightDecay(0.2, false), TestUtils.getWeightDecayReg(l0));
         assertEquals(GradientNormalization.ClipElementWiseAbsoluteValue, l0.getGradientNormalization());
         assertEquals(1.5, l0.getGradientNormalizationThreshold(), 1e-5);
 
@@ -126,20 +128,19 @@ public class RegressionTest060 extends BaseDL4JTest {
         assertTrue(l1.getLossFn() instanceof LossMSE);
         assertEquals(4, l1.getNIn());
         assertEquals(5, l1.getNOut());
-        assertEquals(WeightInit.DISTRIBUTION, l0.getWeightInit());
-        assertEquals(new NormalDistribution(0.1, 1.2), l0.getDist());
+        assertEquals(new WeightInitDistribution(new NormalDistribution(0.1, 1.2)), l0.getWeightInitFn());
         assertEquals(new RmsProp(0.15, 0.96, RmsProp.DEFAULT_RMSPROP_EPSILON), l1.getIUpdater());
         assertEquals(0.15, ((RmsProp)l1.getIUpdater()).getLearningRate(), 1e-6);
         assertEquals(new Dropout(0.6), l1.getIDropout());
-        assertEquals(0.1, l1.getL1(), 1e-6);
-        assertEquals(0.2, l1.getL2(), 1e-6);
+        assertEquals(0.1, TestUtils.getL1(l1), 1e-6);
+        assertEquals(new WeightDecay(0.2,false), TestUtils.getWeightDecayReg(l1));
         assertEquals(GradientNormalization.ClipElementWiseAbsoluteValue, l1.getGradientNormalization());
         assertEquals(1.5, l1.getGradientNormalizationThreshold(), 1e-5);
 
-        int numParams = net.numParams();
-        assertEquals(Nd4j.linspace(1, numParams, numParams), net.params());
+        int numParams = (int)net.numParams();
+        assertEquals(Nd4j.linspace(1, numParams, numParams, Nd4j.dataType()), net.params());
         int updaterSize = (int) new RmsProp().stateSize(numParams);
-        assertEquals(Nd4j.linspace(1, updaterSize, updaterSize), net.getUpdater().getStateViewArray());
+        assertEquals(Nd4j.linspace(1, updaterSize, updaterSize, Nd4j.dataType()), net.getUpdater().getStateViewArray());
     }
 
     @Test
@@ -153,14 +154,11 @@ public class RegressionTest060 extends BaseDL4JTest {
         MultiLayerConfiguration conf = net.getLayerWiseConfigurations();
         assertEquals(3, conf.getConfs().size());
 
-        assertTrue(conf.isBackprop());
-        assertFalse(conf.isPretrain());
-
         ConvolutionLayer l0 = (ConvolutionLayer) conf.getConf(0).getLayer();
         assertEquals("tanh", l0.getActivationFn().toString());
         assertEquals(3, l0.getNIn());
         assertEquals(3, l0.getNOut());
-        assertEquals(WeightInit.RELU, l0.getWeightInit());
+        assertEquals(new WeightInitRelu(), l0.getWeightInitFn());
         assertEquals(new RmsProp(0.15, 0.96, RmsProp.DEFAULT_RMSPROP_EPSILON), l0.getIUpdater());
         assertEquals(0.15, ((RmsProp)l0.getIUpdater()).getLearningRate(), 1e-6);
         assertArrayEquals(new int[] {2, 2}, l0.getKernelSize());
@@ -180,16 +178,16 @@ public class RegressionTest060 extends BaseDL4JTest {
         assertTrue(l2.getLossFn() instanceof LossNegativeLogLikelihood); //TODO
         assertEquals(26 * 26 * 3, l2.getNIn());
         assertEquals(5, l2.getNOut());
-        assertEquals(WeightInit.RELU, l0.getWeightInit());
+        assertEquals(new WeightInitRelu(), l0.getWeightInitFn());
         assertEquals(new RmsProp(0.15, 0.96, RmsProp.DEFAULT_RMSPROP_EPSILON), l0.getIUpdater());
         assertEquals(0.15, ((RmsProp)l0.getIUpdater()).getLearningRate(), 1e-6);
 
         assertTrue(conf.getInputPreProcess(2) instanceof CnnToFeedForwardPreProcessor);
 
-        int numParams = net.numParams();
-        assertEquals(Nd4j.linspace(1, numParams, numParams), net.params());
+        int numParams = (int)net.numParams();
+        assertEquals(Nd4j.linspace(1, numParams, numParams, Nd4j.dataType()), net.params());
         int updaterSize = (int) new RmsProp().stateSize(numParams);
-        assertEquals(Nd4j.linspace(1, updaterSize, updaterSize), net.getUpdater().getStateViewArray());
+        assertEquals(Nd4j.linspace(1, updaterSize, updaterSize, Nd4j.dataType()), net.getUpdater().getStateViewArray());
     }
 
     @Test
@@ -202,9 +200,6 @@ public class RegressionTest060 extends BaseDL4JTest {
 
         MultiLayerConfiguration conf = net.getLayerWiseConfigurations();
         assertEquals(3, conf.getConfs().size());
-
-        assertTrue(conf.isBackprop());
-        assertFalse(conf.isPretrain());
 
         GravesLSTM l0 = (GravesLSTM) conf.getConf(0).getLayer();
         assertEquals("tanh", l0.getActivationFn().toString());
@@ -237,9 +232,6 @@ public class RegressionTest060 extends BaseDL4JTest {
 
         ComputationGraphConfiguration conf = net.getConfiguration();
         assertEquals(3, conf.getVertices().size());
-
-        assertTrue(conf.isBackprop());
-        assertFalse(conf.isPretrain());
 
         GravesLSTM l0 = (GravesLSTM) ((LayerVertex) conf.getVertices().get("0")).getLayerConf().getLayer();
         assertEquals("tanh", l0.getActivationFn().toString());

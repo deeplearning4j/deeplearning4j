@@ -39,8 +39,10 @@ import org.nd4j.linalg.util.ArrayUtil;
 import java.util.Collections;
 import java.util.Map;
 
-import static org.bytedeco.javacpp.cuda.CUstream_st;
-import static org.bytedeco.javacpp.cudnn.*;
+import org.bytedeco.cuda.cudart.*;
+import org.bytedeco.cuda.cudnn.*;
+import static org.bytedeco.cuda.global.cudart.*;
+import static org.bytedeco.cuda.global.cudnn.*;
 
 /**
  * cuDNN-based helper for the local response normalization layer.

@@ -24,6 +24,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.bytedeco.javacpp.BytePointer;
 import org.bytedeco.javacpp.Pointer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
 import org.nd4j.linalg.api.memory.enums.*;
@@ -294,6 +295,11 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
         return currentSize.get();
     }
 
+    @Override
+    public long getCurrentOffset() {
+        return hostOffset.get();
+    }
+
     protected void init() {
         //  we want params validation here
 
@@ -312,7 +318,7 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
         }
     }
 
-    public PagedPointer alloc(long requiredMemory, DataBuffer.Type type, boolean initialize) {
+    public PagedPointer alloc(long requiredMemory, DataType type, boolean initialize) {
         return alloc(requiredMemory, MemoryKind.HOST, type, initialize);
     }
 
@@ -326,18 +332,19 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
         this.isDebug.set(reallyEnable);
     }
 
-    public PagedPointer alloc(long requiredMemory, MemoryKind kind, DataBuffer.Type type, boolean initialize) {
+    public PagedPointer alloc(long requiredMemory, MemoryKind kind, DataType type, boolean initialize) {
         /*
             just two options here:
             1) reqMem + hostOffset < totalSize, we just return pointer + offset
             2) go for either external spilled, or pinned allocation
          */
+
+        long numElements = requiredMemory / Nd4j.sizeOfDataType(type);
+
         // we enforce 8 byte alignment to ensure CUDA doesn't blame us
         long div = requiredMemory % 8;
         if (div != 0)
-            requiredMemory += div;
-
-        long numElements = requiredMemory / Nd4j.sizeOfDataType(type);
+            requiredMemory += (8 - div);
 
         // shortcut made to skip workspace
         if (!isUsed.get()) {
@@ -821,7 +828,7 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
     public String toString() {
         return "Nd4jWorkspace{" + "id='" + id + '\'' + ", currentSize=" + currentSize.get() + '}';
     }
-
+/*
     @Data
     public static class GarbageWorkspaceReference extends WeakReference<MemoryWorkspace> {
         private PointersPair pointersPair;
@@ -843,4 +850,5 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
             this.key = id + "_" + threadId;
         }
     }
+    */
 }

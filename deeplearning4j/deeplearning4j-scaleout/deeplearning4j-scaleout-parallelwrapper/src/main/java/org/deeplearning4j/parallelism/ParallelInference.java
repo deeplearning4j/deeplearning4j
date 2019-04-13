@@ -19,7 +19,10 @@ package org.deeplearning4j.parallelism;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.Model;
+import org.deeplearning4j.nn.api.ModelAdapter;
+import org.deeplearning4j.nn.api.OutputAdapter;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.graph.ComputationGraph;
@@ -32,6 +35,7 @@ import org.deeplearning4j.parallelism.inference.observers.BasicInferenceObserver
 import org.deeplearning4j.parallelism.inference.observers.BatchedInferenceObservable;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
+import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
 
@@ -228,8 +232,9 @@ public class ParallelInference {
      * @return Output from the network
      */
     public INDArray[] output(INDArray[] input, INDArray[] inputMasks){
-        // basically, depending on model type we either throw stuff to specific model, or wait for batch
+        Nd4j.getExecutioner().commit(); //Commit before passing input to other thread
 
+        // basically, depending on model type we either throw stuff to specific model, or wait for batch
         BasicInferenceObserver observer = new BasicInferenceObserver();
         InferenceObservable observable;
 
@@ -257,6 +262,30 @@ public class ParallelInference {
         }
 
         return observable.getOutput();
+    }
+
+    /**
+     * This method does forward pass and returns output provided by OutputAdapter
+     *
+     * @param adapter
+     * @param inputs
+     * @return
+     */
+    public <T> T output(@NonNull ModelAdapter<T> adapter, INDArray... inputs) {
+        return output(adapter, inputs, null);
+    }
+
+    /**
+     * This method does forward pass and returns output provided by OutputAdapter
+     *
+     * @param adapter
+     * @param input
+     * @param inputMasks
+     * @param <T>
+     * @return
+     */
+    public <T> T output(@NonNull ModelAdapter<T> adapter,INDArray[] input, INDArray[] inputMasks) {
+        throw new ND4JIllegalStateException("Adapted mode requires Inplace inference mode");
     }
 
 
@@ -488,6 +517,7 @@ public class ParallelInference {
                                         INDArray[] output = ((ComputationGraph) replicatedModel).output(false, inBatch.getFirst(), inBatch.getSecond());
                                         out.add(output);
                                     } finally {
+                                        Nd4j.getExecutioner().commit();
                                         modelLock.readLock().unlock();
                                     }
 
@@ -509,6 +539,7 @@ public class ParallelInference {
                                         INDArray output = ((MultiLayerNetwork) replicatedModel).output(f, false, fm, null);
                                         out.add(new INDArray[]{output});
                                     } finally {
+                                        Nd4j.getExecutioner().commit();
                                         modelLock.readLock().unlock();
                                     }
                                 }

@@ -27,15 +27,21 @@
 
 namespace nd4j {
     namespace ops {
+        DECLARE_TYPES(broadcast_dynamic_shape) {
+            getOpDescriptor()
+                    ->setAllowedOutputTypes({ALL_INTS})
+                    ->setAllowedInputTypes({ALL_INTS})
+                    ->setSameMode(true);
+        }
+
         CUSTOM_OP_IMPL(broadcast_dynamic_shape, 2, 1, false, 0, 0) {
-
-            NDArray<T>* x_shape = INPUT_VARIABLE(0);
-            NDArray<T>* y_shape = INPUT_VARIABLE(1);
+            auto x_shape = INPUT_VARIABLE(0);
+            auto y_shape = INPUT_VARIABLE(1);
             
-            REQUIRE_TRUE(shape::isVector(x_shape->getShapeInfo()), 0, "broadcast_dynamic_shape: The first argument should be a vector");
-            REQUIRE_TRUE(shape::isVector(y_shape->getShapeInfo()), 0, "broadcast_dynamic_shape: The second argument should be a vector");
+            REQUIRE_TRUE(shape::isVector(x_shape->shapeInfo(), 1), 0, "broadcast_dynamic_shape: The first argument should be a vector");
+            REQUIRE_TRUE(shape::isVector(y_shape->shapeInfo(), 1), 0, "broadcast_dynamic_shape: The second argument should be a vector");
 
-            NDArray<T>* output = OUTPUT_VARIABLE(0);
+            auto output = OUTPUT_VARIABLE(0);
      
             return helpers::bdsFunctor(x_shape, y_shape, output);
         }
@@ -49,12 +55,11 @@ namespace nd4j {
             auto theFirstLen = shape::sizeAt(theFirst, -1);
             auto theSecondLen = shape::sizeAt(theSecond, -1);
 
-            Nd4jLong* newShape;
-    
             auto shapeLength = nd4j::math::nd4j_max(theFirstLen, theSecondLen);
-            newShape = ShapeUtils<T>::createVectorShapeInfo(shapeLength, block.getWorkspace());
 
-            shapeList->push_back(newShape);
+            auto newshape = ShapeBuilders::createVectorShapeInfo(ArrayOptions::dataType(theFirst), shapeLength, block.workspace());
+
+            shapeList->push_back(newshape); 
             return shapeList;
         }
 

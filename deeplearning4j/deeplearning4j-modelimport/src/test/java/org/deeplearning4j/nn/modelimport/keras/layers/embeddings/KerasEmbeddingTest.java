@@ -22,6 +22,7 @@ import org.deeplearning4j.nn.modelimport.keras.config.Keras2LayerConfiguration;
 import org.deeplearning4j.nn.modelimport.keras.config.KerasLayerConfiguration;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.junit.Test;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.ArrayList;
@@ -61,7 +62,8 @@ public class KerasEmbeddingTest {
         //WHEN
         embedding.setWeights(Collections.singletonMap(conf1.getLAYER_FIELD_EMBEDDING_WEIGHTS(), Nd4j.ones(INPUT_SHAPE)));
         //THEN first row is set to zeros
-        assertEquals(embedding.getWeights().get(DefaultParamInitializer.WEIGHT_KEY).getRow(0).eq(0).sumNumber().intValue(), INPUT_SHAPE[1]);
+        INDArray weights = embedding.getWeights().get(DefaultParamInitializer.WEIGHT_KEY);
+        assertEquals(embedding.getWeights().get(DefaultParamInitializer.WEIGHT_KEY).columns(),INPUT_SHAPE[1]);
     }
 
 

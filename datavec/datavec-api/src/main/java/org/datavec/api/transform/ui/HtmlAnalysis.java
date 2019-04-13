@@ -40,6 +40,7 @@ import org.nd4j.shade.jackson.databind.SerializationFeature;
 import java.io.File;
 import java.io.StringWriter;
 import java.io.Writer;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 /**
@@ -234,7 +235,7 @@ public class HtmlAnalysis {
 
         String str = createHtmlAnalysisString(dataAnalysis);
 
-        FileUtils.writeStringToFile(output, str);
+        FileUtils.writeStringToFile(output, str, StandardCharsets.UTF_8);
     }
 
 }

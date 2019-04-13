@@ -38,11 +38,14 @@ import java.util.Map;
 @ToString(callSuper = true)
 @EqualsAndHashCode(callSuper = true)
 public class DenseLayer extends FeedForwardLayer {
+
+    private boolean hasLayerNorm = false;
     private boolean hasBias = true;
 
     private DenseLayer(Builder builder) {
         super(builder);
         this.hasBias = builder.hasBias;
+        this.hasLayerNorm = builder.hasLayerNorm;
 
         initializeConstraints(builder);
     }
@@ -100,13 +103,23 @@ public class DenseLayer extends FeedForwardLayer {
                         .build();
     }
 
-    public boolean hasBias(){
+    public boolean hasBias() {
         return hasBias;
     }
 
+    public boolean hasLayerNorm(){
+        return hasLayerNorm;
+    }
+
     @NoArgsConstructor
+    @Getter
+    @Setter
     public static class Builder extends FeedForwardLayer.Builder<Builder> {
 
+        /**
+         * If true (default): include bias parameters in the model. False: no bias.
+         *
+         */
         private boolean hasBias = true;
 
         /**
@@ -114,10 +127,21 @@ public class DenseLayer extends FeedForwardLayer {
          *
          * @param hasBias If true: include bias parameters in this model
          */
-        public Builder hasBias(boolean hasBias){
-            this.hasBias = hasBias;
+        public Builder hasBias(boolean hasBias) {
+            this.setHasBias(hasBias);
             return this;
         }
+
+        /**
+         * If true (default = false): enable layer normalization on this layer
+         *
+         */
+        private boolean hasLayerNorm = false;
+        public Builder hasLayerNorm(boolean hasLayerNorm){
+            this.hasLayerNorm = hasLayerNorm;
+            return this;
+        }
+
 
         @Override
         @SuppressWarnings("unchecked")

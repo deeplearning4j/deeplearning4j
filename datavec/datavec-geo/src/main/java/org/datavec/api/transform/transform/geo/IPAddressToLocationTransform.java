@@ -36,7 +36,7 @@ import java.io.ObjectOutputStream;
 import java.net.InetAddress;
 
 /**
- * Uses GeoIP2 from from <a href="http://www.maxmind.com">http://www.maxmind.com</a>
+ * Uses GeoIP2 from <a href="http://www.maxmind.com">http://www.maxmind.com</a>
  * to convert IP addresses to (approximate) locations.
  *
  * @see LocationType

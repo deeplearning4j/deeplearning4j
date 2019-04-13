@@ -41,9 +41,7 @@ import java.util.Map;
 import static org.deeplearning4j.nn.modelimport.keras.layers.convolutional.KerasConvolutionUtils.*;
 import static org.deeplearning4j.nn.modelimport.keras.utils.KerasActivationUtils.getIActivationFromConfig;
 import static org.deeplearning4j.nn.modelimport.keras.utils.KerasInitilizationUtils.getWeightInitFromConfig;
-import static org.deeplearning4j.nn.modelimport.keras.utils.KerasLayerUtils.getHasBiasFromConfig;
-import static org.deeplearning4j.nn.modelimport.keras.utils.KerasLayerUtils.getNOutFromConfig;
-import static org.deeplearning4j.nn.modelimport.keras.utils.KerasLayerUtils.removeDefaultWeights;
+import static org.deeplearning4j.nn.modelimport.keras.utils.KerasLayerUtils.*;
 
 /**
  * Imports a 1D Convolution layer from Keras.
@@ -104,21 +102,19 @@ public class KerasConvolution1D extends KerasConvolution {
         Convolution1DLayer.Builder builder = new Convolution1DLayer.Builder().name(this.layerName)
                 .nOut(getNOutFromConfig(layerConfig, conf)).dropOut(this.dropout)
                 .activation(getIActivationFromConfig(layerConfig, conf))
-                .weightInit(weightInit)
+                .weightInit(weightInit.getWeightInitFunction(distribution))
                 .l1(this.weightL1Regularization).l2(this.weightL2Regularization)
                 .convolutionMode(getConvolutionModeFromConfig(layerConfig, conf))
                 .kernelSize(getKernelSizeFromConfig(layerConfig, 1,  conf, kerasMajorVersion)[0])
                 .hasBias(hasBias)
                 .stride(getStrideFromConfig(layerConfig, 1, conf)[0]);
         int[] padding = getPaddingFromBorderModeConfig(layerConfig, 1, conf, kerasMajorVersion);
-        if (distribution != null)
-            builder.dist(distribution);
         if (hasBias)
             builder.biasInit(0.0);
         if (padding != null)
             builder.padding(padding[0]);
         if (dilationRate != null)
-            builder.dilation(dilationRate);
+            builder.dilation(dilationRate[0]);
         if (biasConstraint != null)
             builder.constrainBias(biasConstraint);
         if (weightConstraint != null)
@@ -188,13 +184,16 @@ public class KerasConvolution1D extends KerasConvolution {
                 case TENSORFLOW:
                     paramValue = kerasParamValue.permute(2, 1, 0);
                     paramValue = paramValue.reshape(
-                            paramValue.size(0), paramValue.size(1), paramValue.size(2), 1);
+                            paramValue.size(0), paramValue.size(1),
+                            paramValue.size(2), 1);
                     break;
+
                 case THEANO:
-                    paramValue = kerasParamValue.reshape(
-                            kerasParamValue.size(0), kerasParamValue.size(1),
-                            kerasParamValue.size(2), 1).dup();
-                    for (int i = 0; i < paramValue.tensorssAlongDimension(2, 3); i++) {
+                    paramValue = kerasParamValue.permute(2, 1, 0);
+                    paramValue = paramValue.reshape(
+                            paramValue.size(0), paramValue.size(1),
+                            paramValue.size(2), 1).dup();
+                    for (int i = 0; i < paramValue.tensorsAlongDimension(2, 3); i++) {
                         INDArray copyFilter = paramValue.tensorAlongDimension(i, 2, 3).dup();
                         double[] flattenedFilter = copyFilter.ravel().data().asDouble();
                         ArrayUtils.reverse(flattenedFilter);
@@ -206,6 +205,7 @@ public class KerasConvolution1D extends KerasConvolution {
                 default:
                     throw new InvalidKerasConfigurationException("Unknown keras backend " + this.getDimOrder());
             }
+
             this.weights.put(ConvolutionParamInitializer.WEIGHT_KEY, paramValue);
         } else
             throw new InvalidKerasConfigurationException(

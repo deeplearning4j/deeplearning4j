@@ -26,11 +26,9 @@ import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
 import org.deeplearning4j.nn.conf.layers.LocalResponseNormalization;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
-import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
-import org.nd4j.linalg.api.buffer.DataBuffer;
-import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.config.NoOp;
@@ -52,7 +50,7 @@ public class LRNGradientCheckTests extends BaseDL4JTest {
     private static final double DEFAULT_MIN_ABS_ERROR = 1e-9;
 
     static {
-        Nd4j.setDataType(DataBuffer.Type.DOUBLE);
+        Nd4j.setDataType(DataType.DOUBLE);
     }
 
 
@@ -71,7 +69,7 @@ public class LRNGradientCheckTests extends BaseDL4JTest {
         }
 
         MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().updater(new NoOp())
-                        .seed(12345L).weightInit(WeightInit.DISTRIBUTION)
+                        .seed(12345L)
                         .dist(new NormalDistribution(0, 2)).list()
                         .layer(0, new ConvolutionLayer.Builder().nOut(6).kernelSize(2, 2).stride(1, 1)
                                         .activation(Activation.TANH).build())

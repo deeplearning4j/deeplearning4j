@@ -79,7 +79,7 @@ public class MaskZeroLayer extends BaseWrapperLayer {
     }
 
     @Override
-    public int numParams() {
+    public long numParams() {
         return underlying.numParams();
     }
 

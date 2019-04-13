@@ -17,7 +17,8 @@
 package org.deeplearning4j.clustering.kdtree;
 
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.impl.accum.distances.EuclideanDistance;
+import org.nd4j.linalg.api.ops.impl.reduce.bool.Any;
+import org.nd4j.linalg.api.ops.impl.reduce3.EuclideanDistance;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
 
@@ -63,7 +64,9 @@ public class KDTree implements Serializable {
             int successor;
             while (true) {
                 //exactly equal
-                if (node.getPoint().neq(point).sum(Integer.MAX_VALUE).getDouble(0) == 0) {
+                INDArray pt = node.getPoint();
+                INDArray countEq = Nd4j.getExecutioner().execAndReturn(new Any(pt.neq(point))).z();
+                if (countEq.getInt(0) == 0) {
                     return;
                 } else {
                     successor = successor(node, point, disc);
@@ -93,7 +96,7 @@ public class KDTree implements Serializable {
     }
 
 
-    public KDNode delete(INDArray point) {
+    public INDArray delete(INDArray point) {
         KDNode node = root;
         int _disc = 0;
         while (node != null) {
@@ -115,11 +118,11 @@ public class KDTree implements Serializable {
             size--;
             if (size == 1) {
                 rect = new HyperRect(HyperRect.point(point));
-            } else
+            } else if (size == 0)
                 rect = null;
 
         }
-        return node;
+        return node.getPoint();
     }
 
 
@@ -140,17 +143,18 @@ public class KDTree implements Serializable {
 
     private void knn(KDNode node, INDArray point, HyperRect rect, double dist, List<Pair<Double, INDArray>> best,
                     int _disc) {
-        if (node == null || rect.minDistance(point) > dist)
+        if (node == null || rect == null || rect.minDistance(point) > dist)
             return;
         int _discNext = (_disc + 1) % dims;
-        double distance = Nd4j.getExecutioner().execAndReturn(new EuclideanDistance(point)).getFinalResult()
-                        .doubleValue();
+        double distance = Nd4j.getExecutioner().execAndReturn(new EuclideanDistance(point,node.point)).getFinalResult()
+                .doubleValue();
+
         if (distance <= dist) {
             best.add(Pair.of(distance, node.getPoint()));
         }
 
-        HyperRect lower = rect.getLower(point, _disc);
-        HyperRect upper = rect.getUpper(point, _disc);
+        HyperRect lower = rect.getLower(node.point, _disc);
+        HyperRect upper = rect.getUpper(node.point, _disc);
         knn(node.getLeft(), point, lower, dist, best, _discNext);
         knn(node.getRight(), point, upper, dist, best, _discNext);
     }
@@ -171,7 +175,7 @@ public class KDTree implements Serializable {
             return Pair.of(Double.POSITIVE_INFINITY, null);
 
         int _discNext = (_disc + 1) % dims;
-        double dist2 = Nd4j.getExecutioner().execAndReturn(new EuclideanDistance(point)).getFinalResult().doubleValue();
+        double dist2 = Nd4j.getExecutioner().execAndReturn(new EuclideanDistance(point, Nd4j.zeros(point.shape()))).getFinalResult().doubleValue();
         if (dist2 < dist) {
             best = node.getPoint();
             dist = dist2;
@@ -220,6 +224,9 @@ public class KDTree implements Serializable {
             qd = min(delete.getRight(), disc, _disc);
         } else if (delete.getLeft() != null)
             qd = max(delete.getLeft(), disc, _disc);
+        if (qd == null) {// is leaf
+            return null;
+        }
         delete.point = qd.getKey().point;
         KDNode qFather = qd.getKey().getParent();
         if (qFather.getLeft() == qd.getKey()) {
@@ -318,7 +325,7 @@ public class KDTree implements Serializable {
     }
 
 
-    public static class KDNode {
+    private static class KDNode {
         private INDArray point;
         private KDNode left, right, parent;
 

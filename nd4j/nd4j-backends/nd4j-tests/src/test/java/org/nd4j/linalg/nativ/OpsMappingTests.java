@@ -21,11 +21,10 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.junit.Test;
 import org.nd4j.autodiff.functions.DifferentialFunction;
-import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.serde.FlatBuffersMapper;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ops.*;
-import org.nd4j.linalg.api.ops.impl.accum.Variance;
+import org.nd4j.linalg.api.ops.impl.summarystats.Variance;
 import org.nd4j.linalg.api.ops.random.BaseRandomOp;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
@@ -165,8 +164,8 @@ public class OpsMappingTests {
             }
             break;
             case REDUCE3:
-            case REDUCE: {
-                Set<Class<? extends BaseAccumulation>> clazzes = f.getSubTypesOf(BaseAccumulation.class);
+            case REDUCE_FLOAT: {
+                Set<Class<? extends BaseReduceFloatOp>> clazzes = f.getSubTypesOf(BaseReduceFloatOp.class);
 
                 for (Class<? extends DifferentialFunction> clazz : clazzes)
                     addOperation(clazz, list);
@@ -187,8 +186,8 @@ public class OpsMappingTests {
             }
             break;
             case PAIRWISE:
-            case TRANSFORM: {
-                Set<Class<? extends BaseTransformOp>> clazzes = f.getSubTypesOf(BaseTransformOp.class);
+            case TRANSFORM_SAME: {
+                Set<Class<? extends BaseTransformSameOp>> clazzes = f.getSubTypesOf(BaseTransformSameOp.class);
 
                 for (Class<? extends DifferentialFunction> clazz : clazzes)
                     addOperation(clazz, list);

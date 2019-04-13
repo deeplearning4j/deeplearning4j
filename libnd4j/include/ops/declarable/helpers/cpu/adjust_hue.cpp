@@ -25,18 +25,18 @@ namespace ops {
 namespace helpers {
 
     template <typename T>
-    static FORCEINLINE void _adjust_hue_single(NDArray<T> *array, NDArray<T> *output, T delta, bool isNHWC) {
+    static void _adjust_hue_single(NDArray *array, NDArray *output, float delta, bool isNHWC) {
         // we're 100% sure it's 3
         const int numChannels = 3;
         int tuples = array->lengthOf() /  numChannels;
-        auto bIn = array->buffer();
-        auto bOut = output->buffer();
+        auto bIn = reinterpret_cast<T *>(array->buffer());
+        auto bOut = reinterpret_cast<T *>(output->buffer());
         static const int kChannelRange = 6;
 
         int stridesDim = isNHWC ? 2 : 0;
         if (isNHWC) {
             // for NHWC our rgb values are stored one by one
-            #pragma omp parallel for simd
+            PRAGMA_OMP_PARALLEL_FOR_SIMD
             for (int e = 0; e < tuples; e++) {
                 auto i = bIn + e * numChannels;
                 auto o = bOut + e * numChannels;
@@ -57,15 +57,15 @@ namespace helpers {
             auto tadsChannelsIn  = array->allTensorsAlongDimension({0});
             auto tadsChannelsOut = output->allTensorsAlongDimension( {0});
 
-            auto bufferR = tadsChannelsIn->at(0)->buffer();
-            auto bufferG = tadsChannelsIn->at(1)->buffer();
-            auto bufferB = tadsChannelsIn->at(2)->buffer();
+            auto bufferR = reinterpret_cast<T *>(tadsChannelsIn->at(0)->buffer());
+            auto bufferG = reinterpret_cast<T *>(tadsChannelsIn->at(1)->buffer());
+            auto bufferB = reinterpret_cast<T *>(tadsChannelsIn->at(2)->buffer());
 
-            auto outputR = tadsChannelsOut->at(0)->buffer();
-            auto outputG = tadsChannelsOut->at(1)->buffer();
-            auto outputB = tadsChannelsOut->at(2)->buffer();
+            auto outputR = reinterpret_cast<T *>(tadsChannelsOut->at(0)->buffer());
+            auto outputG = reinterpret_cast<T *>(tadsChannelsOut->at(1)->buffer());
+            auto outputB = reinterpret_cast<T *>(tadsChannelsOut->at(2)->buffer());
 
-            #pragma omp parallel for simd 
+            PRAGMA_OMP_PARALLEL_FOR_SIMD
             for (int e = 0; e < tuples; e++) {
                 auto _ri = bufferR + e;
                 auto _gi = bufferG + e;
@@ -93,27 +93,30 @@ namespace helpers {
         }
     }
 
-    template <typename T>
-    void _adjust_hue(NDArray<T> *array, NDArray<T> *output, T delta, bool isNHWC) {
+    void _adjust_hue(NDArray *array, NDArray *output, NDArray* delta, bool isNHWC) {
+        auto xType = array->dataType();
+
+        float d = delta->e<float>(0);
         if (array->rankOf() == 4) {
             auto tadsIn = array->allTensorsAlongDimension({0});
             auto tadsOut = output->allTensorsAlongDimension({0});
-
-#pragma omp parallel for
-            for (int e = 0; e < tadsIn->size(); e++)
-                _adjust_hue_single(tadsIn->at(e), tadsOut->at(e), delta, isNHWC);
+            int tSize = tadsIn->size();
+            // FIXME: template selector should be moved out of loop
+            PRAGMA_OMP_PARALLEL_FOR
+            for (int e = 0; e < tSize; e++) {
+                BUILD_SINGLE_SELECTOR(xType, _adjust_hue_single, (tadsIn->at(e), tadsOut->at(e), d, isNHWC);, FLOAT_TYPES);
+            }
             
 
             delete tadsIn;
             delete tadsOut;
         } else {
-            _adjust_hue_single(array, output, delta, isNHWC);
+            BUILD_SINGLE_SELECTOR(xType, _adjust_hue_single, (array, output, d, isNHWC);, FLOAT_TYPES);
         }
     }
 
-    template void _adjust_hue<float>(NDArray<float> *array, NDArray<float> *output, float delta, bool isNHWC);
-    template void _adjust_hue<float16>(NDArray<float16> *array, NDArray<float16> *output, float16 delta, bool isNHWC);
-    template void _adjust_hue<double>(NDArray<double> *array, NDArray<double> *output, double delta, bool isNHWC);
+    BUILD_SINGLE_TEMPLATE(template void _adjust_hue_single, (NDArray *array, NDArray *output, float delta, bool isNHWC);, FLOAT_TYPES);
+
 }
 }
 }

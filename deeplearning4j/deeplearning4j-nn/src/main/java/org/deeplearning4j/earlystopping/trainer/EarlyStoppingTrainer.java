@@ -57,27 +57,21 @@ public class EarlyStoppingTrainer extends BaseEarlyStoppingTrainer<MultiLayerNet
 
     @Override
     protected void fit(DataSet ds) {
-        if(!net.getLayerWiseConfigurations().isBackprop()){
-            if(net.getLayerWiseConfigurations().isPretrain()){
-                net.pretrain(new SingletonDataSetIterator(ds));
-            } else {
-                throw new IllegalStateException("Cannot train - network configuration has both isBackprop == false and isPretrain == false");
-            }
-        } else {
-            net.fit(ds);
-        }
+        net.fit(ds);
     }
 
     @Override
     protected void fit(MultiDataSet mds) {
-        if(!net.getLayerWiseConfigurations().isBackprop()){
-            if(net.getLayerWiseConfigurations().isPretrain()){
-                net.pretrain(new MultiDataSetWrapperIterator(new SingletonMultiDataSetIterator(mds)));
-            } else {
-                throw new IllegalStateException("Cannot train - network configuration has both isBackprop == false and isPretrain == false");
-            }
-        } else {
-            net.fit(mds);
-        }
+        net.fit(mds);
+    }
+
+    @Override
+    protected void pretrain(DataSet ds) {
+        net.pretrain(new SingletonDataSetIterator(ds));
+    }
+
+    @Override
+    protected void pretrain(MultiDataSet mds) {
+        net.pretrain(new MultiDataSetWrapperIterator(new SingletonMultiDataSetIterator(mds)));
     }
 }

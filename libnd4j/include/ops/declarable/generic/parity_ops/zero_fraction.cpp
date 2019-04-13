@@ -34,19 +34,21 @@ namespace nd4j {
 //            for (int e = 0; e < input->lengthOf(); e++)
 //                if ((*input)(e) == T(0))
 //                    numZeros++;
-            T fraction = input->template reduceNumber<simdOps::CountZero<T>>();//((T)(0) + numZeros) / input->lengthOf();
-            fraction /= input->lengthOf();
-            output->putScalar(0, fraction);
+            auto countZero = input->reduceNumber(reduce::CountZero);
+            //nd4j_printf("Zero count is %f for %i elements.", countZero.e<double>(0), input->lengthOf());
+            //countZero /= double(input->lengthOf());
+            output->p<double>(0, countZero.e<Nd4jLong>(0) / double(input->lengthOf())); //printIndexedBuffer("Zero count");
 
-            return ND4J_STATUS_OK;
+            return Status::OK();
         }
         DECLARE_SHAPE_FN(zero_fraction) {
-            Nd4jLong *newShape;
-            ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(0), Nd4jLong);
+            return SHAPELIST(ShapeBuilders::createScalarShapeInfo(nd4j::DataType::DOUBLE, block.workspace()));
+        }
 
-            shape::shapeScalar(newShape);
-
-            return SHAPELIST(newShape);
+        DECLARE_TYPES(zero_fraction) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setAllowedOutputTypes({ALL_FLOATS});
         }
     }
 }

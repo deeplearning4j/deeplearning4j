@@ -16,8 +16,10 @@
 
 package org.nd4j.linalg.factory;
 
+import lombok.val;
 import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 /**
@@ -37,12 +39,12 @@ public class DataTypeValidation {
     }
 
     public static void assertDouble(INDArray d) {
-        if (d.data().dataType() != DataBuffer.Type.DOUBLE)
+        if (d.data().dataType() != DataType.DOUBLE)
             throw new IllegalStateException("Given ndarray does not have data opType double");
     }
 
     public static void assertFloat(INDArray d2) {
-        if (d2.data().dataType() != DataBuffer.Type.FLOAT) {
+        if (d2.data().dataType() != DataType.FLOAT) {
             throw new IllegalStateException("Given ndarray does not have data opType float");
         }
     }
@@ -50,9 +52,9 @@ public class DataTypeValidation {
     public static void assertSameDataType(INDArray... indArrays) {
         if (indArrays == null || indArrays.length < 2)
             return;
-        DataBuffer.Type type = indArrays[0].data().dataType();
+        DataType type = indArrays[0].data().dataType();
         for (int i = 1; i < indArrays.length; i++) {
-            DataBuffer.Type t = indArrays[i].data().dataType();
+            val t = indArrays[i].data().dataType();
             Preconditions.checkState(t == type, "Data types must be same: got %s and %s", type, t);
         }
     }

@@ -17,6 +17,7 @@
 package org.deeplearning4j.arbiter.computationgraph;
 
 import org.deeplearning4j.arbiter.ComputationGraphSpace;
+import org.deeplearning4j.arbiter.TestUtils;
 import org.deeplearning4j.arbiter.conf.updater.SgdSpace;
 import org.deeplearning4j.arbiter.layers.DenseLayerSpace;
 import org.deeplearning4j.arbiter.layers.OutputLayerSpace;
@@ -93,8 +94,7 @@ public class TestComputationGraphSpace {
                                         "in")
                         .addLayer("1", new OutputLayerSpace.Builder().nIn(10).nOut(10).activation(Activation.SOFTMAX)
                                         .build(), "0")
-                        .setOutputs("1").setInputTypes(InputType.feedForward(10)).pretrain(false).backprop(true)
-                        .build();
+                        .setOutputs("1").setInputTypes(InputType.feedForward(10)).build();
 
         int nParams = mls.numParameters();
         assertEquals(3, nParams);
@@ -129,8 +129,6 @@ public class TestComputationGraphSpace {
 
 
             ComputationGraphConfiguration conf = mls.getValue(rvs).getConfiguration();
-            assertEquals(false, conf.isPretrain());
-            assertEquals(true, conf.isBackprop());
 
             int nLayers = conf.getVertexInputs().size();
             assertEquals(2, nLayers);
@@ -141,7 +139,7 @@ public class TestComputationGraphSpace {
 
                 double lr = ((Sgd)((BaseLayer) layerConf.getLayer()).getIUpdater()).getLearningRate();
                 assertTrue(lr >= 0.0001 && lr <= 0.1);
-                double l2 = ((BaseLayer) layerConf.getLayer()).getL2();
+                double l2 = TestUtils.getL2(((BaseLayer) layerConf.getLayer()));
                 assertTrue(l2 >= 0.2 && l2 <= 0.5);
 
                 if (j == nLayers - 1) { //Output layer

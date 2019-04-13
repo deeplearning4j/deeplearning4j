@@ -20,12 +20,15 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.base.Preconditions;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.factory.Nd4j;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -42,10 +45,12 @@ public class Pad extends DynamicCustomOp {
 
     public Pad(){ }
 
-    public Pad(SameDiff sd, SDVariable in, SDVariable padding, Mode mode){
+    public Pad(SameDiff sd, SDVariable in, SDVariable padding, Mode mode, double padValue) {
         super(sd, new SDVariable[]{in, padding}, false);
+        Preconditions.checkState(padding.dataType().isIntType(), "Padding array must be an integer datatype, got %s", padding.dataType());
         this.mode = mode;
         addIArgument(mode.ordinal());
+        addTArgument(padValue);
     }
 
     @Override
@@ -80,5 +85,12 @@ public class Pad extends DynamicCustomOp {
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
         throw new UnsupportedOperationException("Not implemented yet");
+    }
+
+    @Override
+    public List<DataType> calculateOutputDataTypes(List<DataType> inputDataTypes){
+        Preconditions.checkState(inputDataTypes != null && (inputDataTypes.size() == 1 || inputDataTypes.size() == 2),
+                "Expected 1 or 2 input datatypes for %s, got %s", getClass(), inputDataTypes);
+        return Collections.singletonList(inputDataTypes.get(0));
     }
 }

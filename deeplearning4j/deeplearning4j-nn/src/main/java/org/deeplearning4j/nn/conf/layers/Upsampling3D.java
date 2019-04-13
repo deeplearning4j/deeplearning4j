@@ -24,6 +24,7 @@ import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
 import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.optimize.api.TrainingListener;
+import org.deeplearning4j.util.ValidationUtils;
 import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
@@ -31,10 +32,9 @@ import java.util.Collection;
 import java.util.Map;
 
 /**
- * Upsampling 3D layer<br>
- * Repeats each value (all channel values for each x/y/z location) by size[0], size[1] and size[2]<br>
- * If input has shape {@code [minibatch, channels, depth, height, width]} then output has shape
- * {@code [minibatch, channels, size[0] * depth, size[1] * height, size[2] * width]}
+ * Upsampling 3D layer<br> Repeats each value (all channel values for each x/y/z location) by size[0], size[1] and
+ * size[2]<br> If input has shape {@code [minibatch, channels, depth, height, width]} then output has shape {@code
+ * [minibatch, channels, size[0] * depth, size[1] * height, size[2] * width]}
  *
  * @author Max Pumperla
  */
@@ -58,11 +58,10 @@ public class Upsampling3D extends BaseUpsamplingLayer {
 
     @Override
     public org.deeplearning4j.nn.api.Layer instantiate(NeuralNetConfiguration conf,
-                                                       Collection<TrainingListener> iterationListeners,
-                                                       int layerIndex, INDArray layerParamsView,
-                                                       boolean initializeParams) {
+                    Collection<TrainingListener> iterationListeners, int layerIndex, INDArray layerParamsView,
+                    boolean initializeParams) {
         org.deeplearning4j.nn.layers.convolution.upsampling.Upsampling3D ret =
-                new org.deeplearning4j.nn.layers.convolution.upsampling.Upsampling3D(conf);
+                        new org.deeplearning4j.nn.layers.convolution.upsampling.Upsampling3D(conf);
         ret.setListeners(iterationListeners);
         ret.setIndex(layerIndex);
         ret.setParamsViewArray(layerParamsView);
@@ -76,7 +75,7 @@ public class Upsampling3D extends BaseUpsamplingLayer {
     public InputType getOutputType(int layerIndex, InputType inputType) {
         if (inputType == null || inputType.getType() != InputType.Type.CNN3D) {
             throw new IllegalStateException("Invalid input for Upsampling 3D layer (layer name=\"" + getLayerName()
-                    + "\"): Expected CNN3D input, got " + inputType);
+                            + "\"): Expected CNN3D input, got " + inputType);
         }
         InputType.InputTypeConvolutional3D i = (InputType.InputTypeConvolutional3D) inputType;
 
@@ -86,15 +85,14 @@ public class Upsampling3D extends BaseUpsamplingLayer {
         int inDepth = (int) i.getDepth();
         int inChannels = (int) i.getChannels();
 
-        return InputType.convolutional3D(
-                size[0] * inDepth,size[1] * inHeight, size[2] * inWidth,  inChannels);
+        return InputType.convolutional3D(size[0] * inDepth, size[1] * inHeight, size[2] * inWidth, inChannels);
     }
 
     @Override
     public InputPreProcessor getPreProcessorForInputType(InputType inputType) {
         if (inputType == null) {
             throw new IllegalStateException("Invalid input for Upsampling 3D layer (layer name=\"" + getLayerName()
-                    + "\"): input is null");
+                            + "\"): input is null");
         }
         return InputTypeUtil.getPreProcessorForInputTypeCnn3DLayers(inputType, getLayerName());
     }
@@ -103,11 +101,11 @@ public class Upsampling3D extends BaseUpsamplingLayer {
     public LayerMemoryReport getMemoryReport(InputType inputType) {
         InputType.InputTypeConvolutional3D c = (InputType.InputTypeConvolutional3D) inputType;
         InputType.InputTypeConvolutional3D outputType =
-                (InputType.InputTypeConvolutional3D) getOutputType(-1, inputType);
+                        (InputType.InputTypeConvolutional3D) getOutputType(-1, inputType);
 
         // During forward pass: im2col array + reduce. Reduce is counted as activations, so only im2col is working mem
-        val im2colSizePerEx = c.getChannels() & outputType.getDepth() * outputType.getHeight()
-                * outputType.getWidth() * size[0] * size[1] * size[2];
+        val im2colSizePerEx = c.getChannels() & outputType.getDepth() * outputType.getHeight() * outputType.getWidth()
+                        * size[0] * size[1] * size[2];
 
         // Current implementation does NOT cache im2col etc... which means: it's recalculated on each backward pass
         long trainingWorkingSizePerEx = im2colSizePerEx;
@@ -116,11 +114,10 @@ public class Upsampling3D extends BaseUpsamplingLayer {
             trainingWorkingSizePerEx += inputType.arrayElementsPerExample();
         }
 
-        return new LayerMemoryReport.Builder(layerName, Upsampling3D.class, inputType, outputType)
-                .standardMemory(0, 0) //No params
-                .workingMemory(0, im2colSizePerEx, 0, trainingWorkingSizePerEx)
-                .cacheMemory(MemoryReport.CACHE_MODE_ALL_ZEROS, MemoryReport.CACHE_MODE_ALL_ZEROS) //No caching
-                .build();
+        return new LayerMemoryReport.Builder(layerName, Upsampling3D.class, inputType, outputType).standardMemory(0, 0) //No params
+                        .workingMemory(0, im2colSizePerEx, 0, trainingWorkingSizePerEx)
+                        .cacheMemory(MemoryReport.CACHE_MODE_ALL_ZEROS, MemoryReport.CACHE_MODE_ALL_ZEROS) //No caching
+                        .build();
     }
 
 
@@ -138,7 +135,7 @@ public class Upsampling3D extends BaseUpsamplingLayer {
          */
         public Builder size(int size) {
 
-            this.size = new int[] {size, size, size};
+            this.setSize(new int[] {size, size, size});
             return this;
         }
 
@@ -149,7 +146,7 @@ public class Upsampling3D extends BaseUpsamplingLayer {
          */
         public Builder size(int[] size) {
             Preconditions.checkArgument(size.length == 3);
-            this.size = size;
+            this.setSize(size);
             return this;
         }
 
@@ -157,6 +154,11 @@ public class Upsampling3D extends BaseUpsamplingLayer {
         @SuppressWarnings("unchecked")
         public Upsampling3D build() {
             return new Upsampling3D(this);
+        }
+
+        @Override
+        public void setSize(int... size) {
+            this.size = ValidationUtils.validate3NonNegative(size, "size");
         }
     }
 

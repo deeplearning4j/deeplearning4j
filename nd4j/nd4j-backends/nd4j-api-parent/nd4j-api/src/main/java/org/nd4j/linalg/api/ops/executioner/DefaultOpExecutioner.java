@@ -22,14 +22,19 @@ import org.bytedeco.javacpp.Pointer;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.buffer.Utf8Buffer;
 import org.nd4j.linalg.api.environment.Nd4jEnvironment;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ndarray.INDArrayStatistics;
 import org.nd4j.linalg.api.ops.*;
 import org.nd4j.linalg.api.ops.aggregates.Aggregate;
 import org.nd4j.linalg.api.ops.aggregates.Batch;
-import org.nd4j.linalg.api.ops.impl.accum.Variance;
+import org.nd4j.linalg.api.ops.impl.scatter.ScatterUpdate;
+import org.nd4j.linalg.api.ops.impl.summarystats.Variance;
 import org.nd4j.linalg.api.rng.Random;
+import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.cache.TADManager;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
@@ -37,6 +42,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.AtomicBoolean;
 import org.nd4j.linalg.primitives.Optional;
 import org.nd4j.linalg.profiler.OpProfiler;
+import org.nd4j.linalg.profiler.ProfilerConfig;
 
 import java.util.*;
 
@@ -50,10 +56,9 @@ import java.util.*;
 @Slf4j
 public class DefaultOpExecutioner implements OpExecutioner {
 
-    private static final String SCOPE_PANIC_MSG = "For more details, see the ND4J User Guide: nd4j.org/userguide#workspaces-panic";
+    private static final String SCOPE_PANIC_MSG = "For more details, see the ND4J User Guide: deeplearning4j.org/docs/latest/nd4j-overview#workspaces-panic";
 
     protected ProfilingMode profilingMode = ProfilingMode.SCOPE_PANIC;
-    protected ExecutionMode executionMode = ExecutionMode.JAVA;
 
     protected AtomicBoolean verbose = new AtomicBoolean(false);
     protected AtomicBoolean debug = new AtomicBoolean(false);
@@ -86,226 +91,106 @@ public class DefaultOpExecutioner implements OpExecutioner {
      */
     protected void interceptIntDataType(Op op) {
         // FIXME: Remove this method, after we'll add support for <int> dtype operations
-
-        if (op.x() != null && op.x().data().dataType() == DataBuffer.Type.INT)
+/*
+        if (op.x() != null && op.x().data().dataType() == DataType.INT)
             throw new ND4JIllegalStateException(
                             "Op.X contains INT data. Operations on INT dataType are not supported yet");
 
-        if (op.z() != null && op.z().data().dataType() == DataBuffer.Type.INT)
+        if (op.z() != null && op.z().data().dataType() == DataType.INT)
             throw new ND4JIllegalStateException(
                             "Op.Z contains INT data. Operations on INT dataType are not supported yet");
 
-        if (op.y() != null && op.y().data().dataType() == DataBuffer.Type.INT)
+        if (op.y() != null && op.y().data().dataType() == DataType.INT)
             throw new ND4JIllegalStateException(
                             "Op.Y contains INT data. Operations on INT dataType are not supported yet.");
+        */
     }
 
     @Override
-    public Op exec(Op op) {
-        if (op.isPassThrough()) {
-            op.exec();
-            return op;
-        }
-
+    public INDArray exec(Op op) {
         throw new IllegalStateException("Java computation no longer supported");
     }
 
     @Override
-    public INDArray execAndReturn(Op op) {
+    public Op execAndReturn(Op op) {
         if (op instanceof TransformOp) {
             return execAndReturn((TransformOp) op);
         }
         if (op instanceof ScalarOp) {
             return execAndReturn((ScalarOp) op);
         }
-        if (op instanceof Accumulation) {
-            return Nd4j.scalar(execAndReturn((Accumulation) op).getFinalResult());
+        if (op instanceof ReduceOp) {
+            exec((ReduceOp) op);
+            return op;
         }
         if (op instanceof IndexAccumulation) {
-            return Nd4j.scalar(execAndReturn((IndexAccumulation) op).getFinalResult());
+            exec((IndexAccumulation) op);
+            return op;
         }
 
         throw new IllegalArgumentException("Illegal opType of op: " + op.getClass());
     }
 
     @Override
-    public void iterateOverAllRows(Op op) {
-        //column and row vectors should be treated the same
-        if (op.x().isVector()) {
-            //reset the op in case
-            op.setX(op.x());
-            if (op.y() != null)
-                op.setY(op.y());
-            op.setZ(op.z());
-            exec(op);
-        }
-        //execute row wise
-        else if (op.x().isMatrix()) {
-            INDArray original = op.x();
-            INDArray originalZ = op.z();
-            INDArray y = op.y();
-
-            for (int i = 0; i < original.rows(); i++) {
-                INDArray row = original.getRow(i);
-                INDArray zRow = originalZ.getRow(i);
-                op.setX(row.dup());
-                op.setZ(zRow.dup());
-                if (y != null)
-                    op.setY(y.getRow(i).dup());
-                exec(op);
-                zRow.assign(op.z());
-            }
-        } else {
-            INDArray originalX = op.x();
-            INDArray originalZ = op.z();
-            for (int i = 0; i < originalX.slices(); i++) {
-                INDArray slice = originalX.slice(i);
-                INDArray zSlice = originalZ.slice(i);
-                op.setX(slice);
-                op.setZ(zSlice);
-                iterateOverAllRows(op);
-            }
-        }
-    }
-
-    @Override
-    public void iterateOverAllColumns(Op op) {
-        if (op.x().isVector()) {
-            exec(op);
-        }
-        //execute row wise
-        else if (op.x().isMatrix() || op.x().isColumnVector()) {
-            exec(op, 1);
-        } else {
-            INDArray originalX = op.x();
-            INDArray originalZ = op.z();
-            INDArray y = op.y();
-            for (int i = 0; i < op.x().slices(); i++) {
-                op.setX(originalX.getColumn(i));
-                op.setZ(originalZ.getColumn(i));
-                if (y != null)
-                    op.setY(y.getColumn(i));
-                iterateOverAllColumns(op);
-            }
-        }
+    public TransformOp execAndReturn(TransformOp op) {
+        exec(op);
+        return op;
     }
 
 
     @Override
-    public INDArray execAndReturn(TransformOp op) {
-        Op result = exec(op);
-        TransformOp t = (TransformOp) result;
-        return t.z();
-    }
-
-
-    @Override
-    public Accumulation execAndReturn(Accumulation op) {
-        return (Accumulation) exec(op);
+    public ReduceOp execAndReturn(ReduceOp op) {
+        exec(op);
+        return op;
     }
 
     @Override
-    public Accumulation execAndReturn(Variance op, boolean biasCorrected) {
-        return null;
+    public Variance execAndReturn(Variance op) {
+        exec(op);
+        return op;
     }
 
     @Override
-    public INDArray execAndReturn(ScalarOp op) {
-        return exec(op).z();
+    public ScalarOp execAndReturn(ScalarOp op) {
+        exec(op);
+        return op;
     }
 
     @Override
     public IndexAccumulation execAndReturn(IndexAccumulation op) {
-        return (IndexAccumulation) exec(op);
-    }
-
-    @Override
-    public INDArray execAndReturn(BroadcastOp op) {
-        return exec(op).z();
-    }
-
-    /**
-     * Execute and return the result from a vector op
-     *
-     * @param op
-     */
-    @Override
-    public INDArray execAndReturn(ShapeOp op) {
         exec(op);
-        return op.z();
+        return op;
     }
 
     @Override
-    public Op exec(Op op, int... dimension) {
-        //do op along all dimensions
-        if (dimension.length == op.x().rank()) {
-            dimension = new int[] {Integer.MAX_VALUE};
-        }
-
-        if (op.isPassThrough()) {
-            op.exec(dimension);
-            return op;
-        }
-
-        if (op instanceof Accumulation || op instanceof IndexAccumulation) {
-            //Overloaded exec(Accumulation,int...) and exec(IndexAccumulation,int...) should always be called instead of this
-            throw new IllegalStateException(
-                            "exec(Op,int...) should never be invoked for Accumulation/IndexAccumulation");
-        }
-        if (op instanceof ScalarOp) {
-            //Scalar op along dimension should be same as on the entire NDArray
-            throw new IllegalStateException("Java computation no longer supported");
-        }
-        if (op instanceof TransformOp) {
-            throw new UnsupportedOperationException(
-                            "Executing transform ops along a dimension should be done via exec special");
-        }
-        throw new UnsupportedOperationException("Unknown op opType");
+    public BroadcastOp execAndReturn(BroadcastOp op) {
+        exec(op);
+        return op;
     }
 
     @Override
-    public INDArray exec(Accumulation op, int... dimension) {
+    public INDArray[] exec(CustomOp op) {
+        return execAndReturn(op).outputArguments();
+    }
 
+    @Override
+    public INDArray exec(ReduceOp op) {
         throw new UnsupportedOperationException("Java computation no longer supported");
     }
 
     @Override
-    public INDArray exec(Variance accumulation, boolean biasCorrected, int... dimension) {
-        accumulation.setBiasCorrected(biasCorrected);
-        return exec(accumulation, dimension);
-    }
-
-    @Override
-    public INDArray exec(IndexAccumulation op, int... dimension) {
+    public INDArray exec(Variance accumulation) {
         throw new UnsupportedOperationException("Operation should use exec special");
-
     }
 
     @Override
-    public ExecutionMode executionMode() {
-        return executionMode;
+    public INDArray exec(IndexAccumulation op) {
+        throw new UnsupportedOperationException("Operation should use exec special");
     }
 
     @Override
-    public void setExecutionMode(ExecutionMode executionMode) {
-        this.executionMode = executionMode;
-    }
-
-
-
-    @Override
-    public INDArray exec(BroadcastOp broadcast, int... dimension) {
-        if (dimension.length == broadcast.x().rank()) {
-            dimension = new int[] {Integer.MAX_VALUE};
-        }
-
-        if (broadcast.isPassThrough()) {
-            broadcast.exec(dimension);
-            return broadcast.z();
-        }
-
-        throw new IllegalStateException("Java computation no longer supported");
-
+    public INDArray exec(BroadcastOp broadcast) {
+    throw new IllegalStateException("Java computation no longer supported");
     }
 
     @Override
@@ -328,16 +213,9 @@ public class DefaultOpExecutioner implements OpExecutioner {
         throw new UnsupportedOperationException();
     }
 
-    /**
-     * @param op
-     */
     @Override
-    public void exec(ShapeOp op) {
-        if(!op.isExecSpecial()) {
-            throw new IllegalArgumentException("Only special execution supported right now.");
-        }
-
-        op.exec();
+    public INDArray exec(ScalarOp op) {
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -367,32 +245,50 @@ public class DefaultOpExecutioner implements OpExecutioner {
     }
 
 
+    @Deprecated
     @Override
     public void setProfilingMode(ProfilingMode mode) {
+
         profilingMode = mode;
+        ProfilerConfig config = null;
+        switch (profilingMode) {
+            case ALL:
+                config = ProfilerConfig.builder().checkWorkspaces(true).checkElapsedTime(true).stackTrace(true).build();
+                break;
+            case METHODS:
+                config = ProfilerConfig.builder().stackTrace(true).build();
+                break;
+            case OPERATIONS:
+                config = ProfilerConfig.builder().stackTrace(true).checkElapsedTime(true).build();
+                break;
+            case SCOPE_PANIC:
+                config = ProfilerConfig.builder().checkWorkspaces(true).build();
+                break;
+            case ANY_PANIC:
+                config = ProfilerConfig.builder().checkForINF(true).checkForNAN(true).build();
+                break;
+            case INF_PANIC:
+                config = ProfilerConfig.builder().checkForINF(true).build();
+                break;
+            case NAN_PANIC:
+                config = ProfilerConfig.builder().checkForNAN(true).build();
+                break;
+            default:
+                config = ProfilerConfig.builder().build();
+                break;
+        }
+        OpProfiler.getInstance().setConfig(config);
     }
 
+    @Override
+    public void setProfilingConfig(ProfilerConfig config) {
+        OpProfiler.getInstance().setConfig(config);
+    }
+
+    @Deprecated
     @Override
     public ProfilingMode getProfilingMode() {
         return profilingMode;
-    }
-
-    public long profilingHookIn(Op op, DataBuffer... tadBuffers) {
-        switch (profilingMode) {
-            case ALL:
-                OpProfiler.getInstance().processOpCall(op, tadBuffers);
-                break;
-            case METHODS:
-                break;
-            case OPERATIONS:
-                OpProfiler.getInstance().processOpCall(op, tadBuffers);
-                break;
-            case DISABLED:
-            default:
-                return 0L;
-        }
-
-        return System.nanoTime();
     }
 
     protected void checkWorkspace(String opName, INDArray array) {
@@ -403,12 +299,14 @@ public class DefaultOpExecutioner implements OpExecutioner {
 
                 if (!ws.isScopeActive()) {
                     throw new ND4JIllegalStateException("Op [" + opName + "] X argument uses leaked workspace pointer from workspace ["
-                            + ws.getId() + "]\nAll open workspaces: " + allOpenWorkspaces() + "\n" + SCOPE_PANIC_MSG);
+                            + ws.getId() + "]: Workspace the array was defined in is no longer open.\nAll open workspaces: " + allOpenWorkspaces() + "\n" + SCOPE_PANIC_MSG);
                 }
 
                 if (ws.getGenerationId() != array.data().getGenerationId())
                     throw new ND4JIllegalStateException("Op [" + opName + "] X argument uses outdated workspace pointer from workspace ["
-                            + ws.getId() + "]\nAll open workspaces: " + allOpenWorkspaces() + "\n" + SCOPE_PANIC_MSG);
+                            + ws.getId() + "]: Workspace array was defined in has been closed and reopened at least once since array creation. Array WS iteration: " +
+                            array.data().getGenerationId() + ". Workspace current iteration: " +
+                            ws.getGenerationId() + "\nAll open workspaces: " + allOpenWorkspaces() + "\n" + SCOPE_PANIC_MSG);
             }
         }
     }
@@ -435,7 +333,7 @@ public class DefaultOpExecutioner implements OpExecutioner {
             checkWorkspace(op.opName(), z);
     }
 
-    private static List<String> allOpenWorkspaces(){
+    public static List<String> allOpenWorkspaces(){
         List<MemoryWorkspace> l = Nd4j.getWorkspaceManager().getAllWorkspacesForCurrentThread();
         List<String> workspaces = new ArrayList<>(l.size());
         for( MemoryWorkspace ws : l){
@@ -446,15 +344,16 @@ public class DefaultOpExecutioner implements OpExecutioner {
         return workspaces;
     }
 
-    public long profilingHookIn(Op op) {
+    @Deprecated
+    public long profilingHookIn(Op op, DataBuffer... tadBuffers) {
         switch (profilingMode) {
             case ALL:
-                OpProfiler.getInstance().processOpCall(op);
+                OpProfiler.getInstance().processOpCall(op, tadBuffers);
                 break;
             case METHODS:
                 break;
             case OPERATIONS:
-                OpProfiler.getInstance().processOpCall(op);
+                OpProfiler.getInstance().processOpCall(op, tadBuffers);
                 break;
             case SCOPE_PANIC:
                 checkForWorkspaces(op);
@@ -467,6 +366,7 @@ public class DefaultOpExecutioner implements OpExecutioner {
         return System.nanoTime();
     }
 
+    @Deprecated
     public long profilingHookIn(CustomOp op) {
         switch (profilingMode) {
             case ALL:
@@ -488,6 +388,7 @@ public class DefaultOpExecutioner implements OpExecutioner {
         return System.nanoTime();
     }
 
+    @Deprecated
     public void profilingHookOut(Op op, long timeStart) {
         switch (profilingMode) {
             case ALL:
@@ -517,13 +418,11 @@ public class DefaultOpExecutioner implements OpExecutioner {
 
         if (Nd4j.getExecutioner().isVerbose()) {
             if (op.z() != null)
-                log.info("Z shapeInfo: {}; Z values: {}", op.z().shapeInfoJava(), firstX(op.z(), 10));
-
-            System.out.println();
+                log.info("Op name: {}; Z shapeInfo: {}; Z values: {}", op.opName(), op.z().shapeInfoJava(), firstX(op.z(), 10));
         }
     }
 
-
+    @Deprecated
     public void profilingHookOut(CustomOp op, long timeStart) {
         switch (profilingMode) {
             case ALL:
@@ -553,41 +452,138 @@ public class DefaultOpExecutioner implements OpExecutioner {
     }
 
 
+    public long profilingConfigurableHookIn(CustomOp op) {
+        if (OpProfiler.getInstance().getConfig() == null)
+            return System.nanoTime();
+
+        if (OpProfiler.getInstance().getConfig().isStackTrace() ||
+            OpProfiler.getInstance().getConfig().isCheckElapsedTime()) {
+            OpProfiler.getInstance().processOpCall(op);
+        }
+
+        if (OpProfiler.getInstance().getConfig().isCheckWorkspaces()) {
+            checkForWorkspaces(op);
+        }
+
+        return System.nanoTime();
+    }
+
+    public long profilingConfigurableHookIn(Op op, DataBuffer... tadBuffers) {
+        if (OpProfiler.getInstance().getConfig() == null)
+            return System.nanoTime();
+
+        if (OpProfiler.getInstance().getConfig().isStackTrace() ||
+            OpProfiler.getInstance().getConfig().isCheckElapsedTime()) {
+            OpProfiler.getInstance().processOpCall(op);
+        }
+
+        if (OpProfiler.getInstance().getConfig().isNotOptimalTAD()) {
+            OpProfiler.getInstance().processOpCall(op, tadBuffers);
+        }
+        if (OpProfiler.getInstance().getConfig().isCheckWorkspaces()) {
+            checkForWorkspaces(op);
+        }
+
+        return System.nanoTime();
+    }
+
+
+    public void profilingConfigurableHookOut(Op op, long timeStart) {
+        if (OpProfiler.getInstance().getConfig() == null)
+            return;
+
+        if (OpProfiler.getInstance().getConfig().isStackTrace()) {
+            OpProfiler.getInstance().processStackCall(op, timeStart);
+        }
+        if (OpProfiler.getInstance().getConfig().isCheckElapsedTime()) {
+            OpProfiler.getInstance().timeOpCall(op, timeStart);
+        }
+        if (OpProfiler.getInstance().getConfig().isCheckForNAN()) {
+            OpExecutionerUtil.checkForNaN(op);
+        }
+        if (OpProfiler.getInstance().getConfig().isCheckForINF()) {
+            OpExecutionerUtil.checkForInf(op);
+        }
+        if (OpProfiler.getInstance().getConfig().isNativeStatistics()) {
+            if (op.z() != null) {
+                INDArrayStatistics stat = inspectArray(op.z());
+                OpProfiler.getInstance().setStatistics(stat);
+                log.info("Op name: {}; Z shapeInfo: {}; Statistics: min:{} max:{} mean:{} stdev:{} pos:{}, neg:{} zero:{} inf:{} nan:{}",
+                        op.opName(), op.z().shapeInfoJava(), stat.getMinValue(), stat.getMaxValue(), stat.getMeanValue(),
+                        stat.getStdDevValue(), stat.getCountPositive(), stat.getCountNegative(),
+                        stat.getCountZero(), stat.getCountInf(), stat.getCountNaN());
+            }
+        }
+
+        if (Nd4j.getExecutioner().isVerbose()) {
+            if (op.z() != null)
+                log.info("Op name: {}; Z shapeInfo: {}; Z values: {}", op.opName(), op.z().shapeInfoJava(), firstX(op.z(), 10));
+        }
+    }
+
+    public void profilingConfigurableHookOut(CustomOp op, long timeStart) {
+        if (OpProfiler.getInstance().getConfig() == null)
+            return;
+
+        if (OpProfiler.getInstance().getConfig().isStackTrace()) {
+            OpProfiler.getInstance().processStackCall(op, timeStart);
+        }
+        if (OpProfiler.getInstance().getConfig().isCheckElapsedTime()) {
+            OpProfiler.getInstance().timeOpCall(op, timeStart);
+        }
+        if (OpProfiler.getInstance().getConfig().isCheckForNAN()) {
+            OpExecutionerUtil.checkForNaN(op);
+        }
+        if (OpProfiler.getInstance().getConfig().isCheckForINF()) {
+            OpExecutionerUtil.checkForInf(op);
+        }
+    }
+
     /**
      * Validate the data types
      * for the given operation
      * @param expectedType
      * @param op
      */
-    public static void validateDataType(DataBuffer.Type expectedType, Op op) {
-        if (op.x() != null && !Shape.isEmpty(op.x().shapeInfoJava()) && op.x().data().dataType() == DataBuffer.Type.COMPRESSED) {
+    public static void validateDataType(DataType expectedType, Op op) {
+        if (op.x() != null && !Shape.isEmpty(op.x().shapeInfoJava()) && op.x().data().dataType() == DataType.COMPRESSED) {
             Nd4j.getCompressor().decompressi(op.x());
         }
 
-        if (op.y() != null && !Shape.isEmpty(op.y().shapeInfoJava()) && op.y().data().dataType() == DataBuffer.Type.COMPRESSED) {
+        if (op.y() != null && !Shape.isEmpty(op.y().shapeInfoJava()) && op.y().data().dataType() == DataType.COMPRESSED) {
             Nd4j.getCompressor().decompressi(op.y());
         }
 
-        if (op.z() != null && !Shape.isEmpty(op.z().shapeInfoJava()) && op.z().data().dataType() == DataBuffer.Type.COMPRESSED) {
+        if (op.z() != null && !Shape.isEmpty(op.z().shapeInfoJava()) && op.z().data().dataType() == DataType.COMPRESSED) {
             Nd4j.getCompressor().decompressi(op.z());
         }
 
+        /*
         if (op.x() != null && !Shape.isEmpty(op.x().shapeInfoJava())
                 && op.x().data().dataType() != expectedType
-                && op.x().data().dataType() != DataBuffer.Type.COMPRESSED)
+                && op.x().data().dataType() != DataType.COMPRESSED) {
             throw new ND4JIllegalStateException("op.X dataType is [" + op.x().data().dataType()
-                            + "] instead of expected [" + expectedType + "]");
-
+                    + "] instead of expected [" + expectedType + "] - x.shape = " + Arrays.toString(op.x().shape())
+                    + (op.y() != null ? ", y.shape=" + Arrays.toString(op.y().shape()) : "")
+                    + ", z.shape=" + Arrays.toString(op.z().shape()) + " - op: " + op.getClass().getName());
+        }
+        */
+/*
         if (op.z() != null && !Shape.isEmpty(op.z().shapeInfoJava())
                         && op.z().data().dataType() != expectedType
-                        && op.z().data().dataType() != DataBuffer.Type.COMPRESSED)
+                        && op.z().data().dataType() != DataType.COMPRESSED)
             throw new ND4JIllegalStateException("op.Z dataType is [" + op.z().data().dataType()
                             + "] instead of expected [" + expectedType + "]");
+        */
 
         if (op.y() != null && !Shape.isEmpty(op.y().shapeInfoJava())
-                && op.y().data().dataType() != expectedType)
+                && op.y().data().dataType() != expectedType) {
             throw new ND4JIllegalStateException("op.Y dataType is [" + op.y().data().dataType()
-                            + "] instead of expected [" + expectedType + "]");
+                    + "] instead of expected [" + expectedType + "] - x.shape = " + Arrays.toString(op.x().shape())
+                    + (op.y() != null ? ", y.shape=" + Arrays.toString(op.y().shape()) : "")
+                    + ", z.shape=" + Arrays.toString(op.z().shape()) + " - op: " + op.getClass().getName());
+
+        }
 
 
         if (Nd4j.getExecutioner().isVerbose()) {
@@ -614,7 +610,7 @@ public class DefaultOpExecutioner implements OpExecutioner {
         return builder.toString();
     }
 
-    public static void validateDataType(DataBuffer.Type expectedType, INDArray... operands) {
+    public static void validateDataType(DataType expectedType, Object op, INDArray... operands) {
         if (operands == null || operands.length == 0)
             return;
 
@@ -623,9 +619,11 @@ public class DefaultOpExecutioner implements OpExecutioner {
             if (operand == null)
                 continue;
 
-            if (operand.data().dataType() != expectedType)
-                throw new ND4JIllegalStateException("INDArray [" + cnt++ + "] dataType is [" + operand.data().dataType()
-                                + "] instead of expected [" + expectedType + "]");
+            if (operand.data().dataType() != expectedType) {
+                throw new ND4JIllegalStateException("INDArray [" + cnt + "] dataType is [" + operand.data().dataType()
+                        + "] instead of expected [" + expectedType + "]" + (op != null ? " op: " + op.getClass().getName() : ""));
+            }
+            cnt++;
         }
     }
 
@@ -712,18 +710,19 @@ public class DefaultOpExecutioner implements OpExecutioner {
     }
 
     @Override
-    public void exec(CustomOp op) {
-        throw new UnsupportedOperationException();
+    public CustomOp execAndReturn(CustomOp op) {
+        exec(op);
+        return op;
     }
 
     @Override
-    public List<long[]> calculateOutputShape(CustomOp op) {
+    public List<LongShapeDescriptor> calculateOutputShape(CustomOp op) {
         throw new UnsupportedOperationException();
     }
 
     @Override
     public INDArray[] allocateOutputArrays(CustomOp op){
-        List<long[]> shapes = calculateOutputShape(op);
+        List<LongShapeDescriptor> shapes = calculateOutputShape(op);
         INDArray[] out = new INDArray[shapes.size()];
         for(int i=0; i<shapes.size(); i++ ){
             out[i] = Nd4j.create(shapes.get(i));
@@ -800,6 +799,16 @@ public class DefaultOpExecutioner implements OpExecutioner {
         throw new UnsupportedOperationException();
     }
 
+    @Override
+    public String getString(Utf8Buffer buffer, long index) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void scatterUpdate(ScatterUpdate.UpdateOp op, INDArray array, INDArray indices, INDArray updates, int[] axis) {
+        throw new UnsupportedOperationException();
+    }
+
 
     /**
      * Get the information about the op in a String representation, for throwing more useful exceptions (mainly for debugging)
@@ -831,7 +840,6 @@ public class DefaultOpExecutioner implements OpExecutioner {
         INDArray x = op.x();
         INDArray y = op.y();
         INDArray z = op.z();
-        boolean execSpecial = op.isExecSpecial();
         Object[] extraArgs = op.extraArgs();
 
         sb.append("\n");
@@ -845,7 +853,7 @@ public class DefaultOpExecutioner implements OpExecutioner {
         if(y == z && y != null)
             sb.append("(y == z)");
         sb.append("\n");
-        sb.append("isExecSpecial: ").append(execSpecial).append("; extraArgs: ").append(Preconditions.formatArray(extraArgs));
+        sb.append("; extraArgs: ").append(Preconditions.formatArray(extraArgs));
         return sb.toString();
     }
 
@@ -856,5 +864,25 @@ public class DefaultOpExecutioner implements OpExecutioner {
             return "(empty NDArray)";
 
         return arr.shapeInfoToString().replaceAll("\n","");
+    }
+
+    @Override
+    public boolean isExperimentalMode() {
+        return false;
+    }
+
+    @Override
+    public OpContext buildContext() {
+        throw new UnsupportedOperationException("OpContext is available only on native backends");
+    }
+
+    @Override
+    public INDArray[] exec(CustomOp op, OpContext context) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public INDArrayStatistics inspectArray(INDArray array) {
+        throw new UnsupportedOperationException();
     }
 }

@@ -17,6 +17,7 @@
 package org.nd4j.jita.constant;
 
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.cache.BasicConstantHandler;
 import org.nd4j.linalg.cache.ConstantHandler;
 import org.slf4j.Logger;
@@ -42,28 +43,33 @@ public class CudaConstantHandler extends BasicConstantHandler {
     }
 
     @Override
-    public DataBuffer getConstantBuffer(int[] array) {
-        return wrappedHandler.getConstantBuffer(array);
+    public DataBuffer getConstantBuffer(int[] array, DataType type) {
+        return wrappedHandler.getConstantBuffer(array, type);
     }
 
     @Override
-    public DataBuffer getConstantBuffer(float[] array) {
-        return wrappedHandler.getConstantBuffer(array);
+    public DataBuffer getConstantBuffer(float[] array, DataType type) {
+        return wrappedHandler.getConstantBuffer(array, type);
     }
 
     @Override
-    public DataBuffer getConstantBuffer(double[] array) {
-        return wrappedHandler.getConstantBuffer(array);
+    public DataBuffer getConstantBuffer(double[] array, DataType type) {
+        return wrappedHandler.getConstantBuffer(array, type);
     }
 
     @Override
-    public DataBuffer getConstantBuffer(long[] array) {
-        return wrappedHandler.getConstantBuffer(array);
+    public DataBuffer getConstantBuffer(long[] array, DataType type) {
+        return wrappedHandler.getConstantBuffer(array, type);
     }
 
     @Override
     public DataBuffer relocateConstantSpace(DataBuffer dataBuffer) {
         return wrappedHandler.relocateConstantSpace(dataBuffer);
+    }
+
+    @Override
+    public DataBuffer getConstantBuffer(boolean[] array, DataType dataType) {
+        return wrappedHandler.getConstantBuffer(array, dataType);
     }
 
     /**

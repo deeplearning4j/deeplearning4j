@@ -21,9 +21,11 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.base.Preconditions;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.imports.descriptors.properties.PropertyMapping;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.util.ArrayUtil;
@@ -31,6 +33,7 @@ import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -69,15 +72,28 @@ public class StridedSliceBp extends DynamicCustomOp {
         addArguments();
     }
 
+    public StridedSliceBp(SameDiff sameDiff, @NonNull SDVariable in, @NonNull SDVariable grad, @NonNull SDVariable begin, @NonNull SDVariable end,
+                          @NonNull SDVariable strides, int beginMask, int endMask, int ellipsisMask, int newAxisMask, int shrinkAxisMask){
+        super(null, sameDiff, new SDVariable[]{in, begin, end, strides, grad});
+        this.beginMask = beginMask;
+        this.endMask = endMask;
+        this.ellipsisMask = ellipsisMask;
+        this.newAxisMask = newAxisMask;
+        this.shrinkAxisMask = shrinkAxisMask;
+        addArguments();
+    }
+
     private void addArguments(){
         addIArgument(beginMask);
         addIArgument(ellipsisMask);
         addIArgument(endMask);
         addIArgument(newAxisMask);
         addIArgument(shrinkAxisMask);
-        addIArgument(begin);
-        addIArgument(end);
-        addIArgument(strides);
+        if(begin != null) { //May be null for SDVariable inputs of these args
+            addIArgument(begin);
+            addIArgument(end);
+            addIArgument(strides);
+        }
     }
 
 
@@ -103,4 +119,10 @@ public class StridedSliceBp extends DynamicCustomOp {
         throw new UnsupportedOperationException("Differentation not supported for backprop function: " + getClass().getSimpleName());
     }
 
+    @Override
+    public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes){
+        Preconditions.checkState(dataTypes.size() == 2 || dataTypes.size() == 5, "Expected list with exactly 2 or 5 datatypes for %s, got %s", getClass(), dataTypes);
+        //Output type is same as (original) input type
+        return Collections.singletonList(arg().dataType());
+    }
 }

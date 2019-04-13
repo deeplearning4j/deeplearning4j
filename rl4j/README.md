@@ -1,4 +1,4 @@
-# RL4J
+# RL4J: Reinforcement Learning for Java
 
 RL4J is a reinforcement learning framework integrated with deeplearning4j and released under an Apache 2.0 open-source license. By contributing code to this repository, you agree to make your contribution available under an Apache 2.0 license.
 

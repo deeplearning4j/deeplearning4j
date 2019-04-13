@@ -55,7 +55,9 @@ import org.deeplearning4j.ui.storage.InMemoryStatsStorage;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import java.io.File;
@@ -83,6 +85,7 @@ public class TestBasic {
     @Test
     @Ignore
     public void testBasicMnist() throws Exception {
+        Nd4j.setDefaultDataTypes(DataType.FLOAT, DataType.FLOAT);
 
         MultiLayerSpace mls = new MultiLayerSpace.Builder()
                 .updater(new SgdSpace(new ContinuousParameterSpace(0.0001, 0.2)))

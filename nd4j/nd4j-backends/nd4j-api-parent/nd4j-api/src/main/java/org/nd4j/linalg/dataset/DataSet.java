@@ -22,6 +22,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.DataSetUtil;
+import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.dataset.api.preprocessor.NormalizerStandardize;
 import org.nd4j.linalg.factory.Nd4j;
@@ -370,7 +371,7 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
         Map<Integer, Double> ret = new HashMap<>();
         if (labels == null)
             return ret;
-        long nTensors = labels.tensorssAlongDimension(1);
+        long nTensors = labels.tensorsAlongDimension(1);
         for (int i = 0; i < nTensors; i++) {
             INDArray row = labels.tensorAlongDimension(i, 1);
             INDArray javaRow = labels.javaTensorAlongDimension(i, 1);
@@ -385,11 +386,6 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
                 ret.put(maxIdx, ret.get(maxIdx) + 1.0);
         }
         return ret;
-    }
-
-    @Override
-    public void apply(Condition condition, Function<Number, Number> function) {
-        BooleanIndexing.applyWhere(getFeatures(), condition, function);
     }
 
     /**
@@ -558,7 +554,7 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
      */
     @Override
     public void binarize(double cutoff) {
-        INDArray linear = getFeatures().linearView();
+        INDArray linear = getFeatures().reshape(-1);
         for (int i = 0; i < getFeatures().length(); i++) {
             double curr = linear.getDouble(i);
             if (curr > cutoff)
@@ -1321,17 +1317,14 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
      */
     @Override
     public long getMemoryFootprint() {
-        long reqMem = features.lengthLong() * Nd4j.sizeOfDataType();
-        reqMem += labels == null ? 0 : labels.lengthLong() * Nd4j.sizeOfDataType();
-        reqMem += featuresMask == null ? 0 : featuresMask.lengthLong() * Nd4j.sizeOfDataType();
-        reqMem += labelsMask == null ? 0 : labelsMask.lengthLong() * Nd4j.sizeOfDataType();
+        long reqMem = features.length() * Nd4j.sizeOfDataType();
+        reqMem += labels == null ? 0 : labels.length() * Nd4j.sizeOfDataType();
+        reqMem += featuresMask == null ? 0 : featuresMask.length() * Nd4j.sizeOfDataType();
+        reqMem += labelsMask == null ? 0 : labelsMask.length() * Nd4j.sizeOfDataType();
 
         return reqMem;
     }
 
-    /**
-     * This method migrates this DataSet into current Workspace (if any)
-     */
     @Override
     public void migrate() {
         if (Nd4j.getMemoryManager().getCurrentWorkspace() != null) {
@@ -1349,9 +1342,6 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
         }
     }
 
-    /**
-     * This method migrates this DataSet into current Workspace (if any)
-     */
     @Override
     public void detach() {
         if (features != null)
@@ -1370,6 +1360,21 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
     @Override
     public boolean isEmpty() {
         return features == null && labels == null && featuresMask == null && labelsMask == null;
+    }
+
+    @Override
+    public MultiDataSet toMultiDataSet() {
+        INDArray f = getFeatures();
+        INDArray l = getLabels();
+        INDArray fMask = getFeaturesMaskArray();
+        INDArray lMask = getLabelsMaskArray();
+
+        INDArray[] fNew = f == null ? null : new INDArray[] {f};
+        INDArray[] lNew = l == null ? null : new INDArray[] {l};
+        INDArray[] fMaskNew = (fMask != null ? new INDArray[] {fMask} : null);
+        INDArray[] lMaskNew = (lMask != null ? new INDArray[] {lMask} : null);
+
+        return new org.nd4j.linalg.dataset.MultiDataSet(fNew, lNew, fMaskNew, lMaskNew);
     }
 
 

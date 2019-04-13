@@ -42,8 +42,8 @@ public class DoubleMetaData extends BaseColumnMetaData {
     }
 
     /**
-     * @param minAllowedValue Min allowed value. If null: no restriction on minAllowedValue value value in this column
-     * @param maxAllowedValue Max allowed value. If null: no restiction on maxAllowedValue value in this column
+     * @param minAllowedValue Min allowed value. If null: no restriction on minAllowedValue value in this column
+     * @param maxAllowedValue Max allowed value. If null: no restriction on maxAllowedValue value in this column
      */
     public DoubleMetaData(@JsonProperty("name") String name, @JsonProperty("minAllowedValue") Double minAllowedValue,
                     @JsonProperty("maxAllowedValue") Double maxAllowedValue) {
@@ -51,8 +51,8 @@ public class DoubleMetaData extends BaseColumnMetaData {
     }
 
     /**
-     * @param min           Min allowed value. If null: no restriction on minAllowedValue value value in this column
-     * @param maxAllowedValue           Max allowed value. If null: no restiction on maxAllowedValue value in this column
+     * @param min           Min allowed value. If null: no restriction on minAllowedValue value in this column
+     * @param maxAllowedValue           Max allowed value. If null: no restriction on maxAllowedValue value in this column
      * @param allowNaN      Are NaN values ok?
      * @param allowInfinite Are +/- infinite values ok?
      */

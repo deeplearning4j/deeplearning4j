@@ -55,9 +55,7 @@ public class MultiLayerUpdater extends BaseMultiLayerUpdater<MultiLayerNetwork> 
     protected Trainable[] getOrderedLayers() {
         Layer[] layers = network.getLayers();
         Trainable[] t = new Trainable[layers.length];
-        for( int i=0; i<layers.length; i++ ){
-            t[i] = layers[i];
-        }
+        System.arraycopy(layers, 0, t, 0, layers.length);
         return t;
     }
 

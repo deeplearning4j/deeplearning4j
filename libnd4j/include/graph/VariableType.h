@@ -27,6 +27,8 @@ namespace nd4j {
             NDARRAY = 0,
             ARRAY_LIST = 1,
             FLOW = 2,
+            CONSTANT = 3,
+            PLACEHOLDER = 4,
         };
     }
 }

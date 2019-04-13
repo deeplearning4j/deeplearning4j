@@ -31,8 +31,8 @@ import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.iter.NdIndexIterator;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.impl.transforms.SigmoidDerivative;
-import org.nd4j.linalg.api.ops.impl.transforms.TanhDerivative;
+import org.nd4j.linalg.api.ops.impl.transforms.strict.SigmoidDerivative;
+import org.nd4j.linalg.api.ops.impl.transforms.strict.TanhDerivative;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
@@ -280,7 +280,7 @@ public class BackPropMLPTest extends BaseDL4JTest {
                 INDArray prevActivations = (i == 0 ? x : layerActivations[i - 1]);
                 //Raw gradients, so not yet divided by mini-batch size (division is done in BaseUpdater)
                 dLdw[i] = deltas[i].transpose().mmul(prevActivations).transpose(); //Shape: [nIn, nOut]
-                dLdb[i] = deltas[i].sum(0); //Shape: [1,nOut]
+                dLdb[i] = deltas[i].sum(true, 0); //Shape: [1,nOut]
 
                 int nIn = (i == 0 ? 4 : hiddenLayerSizes[i - 1]);
                 int nOut = (i < nLayers - 1 ? hiddenLayerSizes[i] : 3);
@@ -401,15 +401,6 @@ public class BackPropMLPTest extends BaseDL4JTest {
         return out;
     }
 
-    public static INDArray doTanh(INDArray input) {
-        return Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("tanh", input.dup()));
-    }
-
-    public static INDArray doTanhDerivative(INDArray input) {
-        return Nd4j.getExecutioner()
-                        .execAndReturn(new TanhDerivative(input.dup()));
-    }
-
     public static INDArray doSoftmax(INDArray input) {
         return Transforms.softmax(input, true);
     }
@@ -419,7 +410,7 @@ public class BackPropMLPTest extends BaseDL4JTest {
     }
 
     public static INDArray doSigmoidDerivative(INDArray input) {
-        return Nd4j.getExecutioner().execAndReturn(new SigmoidDerivative(input.dup()));
+        return Nd4j.getExecutioner().exec(new SigmoidDerivative(input.dup()));
     }
 
 }

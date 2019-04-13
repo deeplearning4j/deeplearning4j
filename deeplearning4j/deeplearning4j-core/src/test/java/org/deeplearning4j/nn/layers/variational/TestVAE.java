@@ -21,27 +21,24 @@ import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.WorkspaceMode;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
-import org.deeplearning4j.nn.conf.dropout.GaussianNoise;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
-import org.deeplearning4j.nn.conf.layers.variational.*;
 import org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder;
+import org.deeplearning4j.nn.conf.layers.variational.*;
 import org.deeplearning4j.nn.conf.weightnoise.WeightNoise;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
-import org.deeplearning4j.nn.weights.WeightInit;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.activations.impl.ActivationTanH;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.random.impl.BernoulliDistribution;
-import org.nd4j.linalg.api.ops.random.impl.GaussianDistribution;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.linalg.lossfunctions.impl.LossMAE;
 import org.nd4j.linalg.lossfunctions.impl.LossMSE;
-import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 
 import java.util.HashMap;
 import java.util.Iterator;
@@ -125,7 +122,7 @@ public class TestVAE extends BaseDL4JTest {
         MultiLayerConfiguration mlc = new NeuralNetConfiguration.Builder().list()
                         .layer(0, new org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder.Builder()
                                         .nIn(inputSize).nOut(4).encoderLayerSizes(5).decoderLayerSizes(6).build())
-                        .pretrain(true).backprop(false).build();
+                        .build();
 
         NeuralNetConfiguration c = mlc.getConf(0);
         org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder vae =
@@ -223,7 +220,7 @@ public class TestVAE extends BaseDL4JTest {
                                         .nIn(10).nOut(5).encoderLayerSizes(12, 13).decoderLayerSizes(14, 15).build())
                         .layer(1, new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE).nIn(5).nOut(6)
                                         .activation(new ActivationTanH()).build())
-                        .pretrain(true).build();
+                        .build();
 
         NeuralNetConfiguration c = mlc.getConf(0);
         org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder vae =
@@ -252,8 +249,6 @@ public class TestVAE extends BaseDL4JTest {
 
         INDArray features = Nd4j.rand(3, 10);
         INDArray labels = Nd4j.rand(3, 6);
-
-        net.getLayerWiseConfigurations().setPretrain(false);
 
         for (int i = 0; i < 3; i++) {
             net.fit(features, labels);
@@ -298,7 +293,7 @@ public class TestVAE extends BaseDL4JTest {
                                         .nIn(15).nOut(16).encoderLayerSizes(17).decoderLayerSizes(18).build())
                         .layer(1, new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE).nIn(18)
                                         .nOut(19).activation(new ActivationTanH()).build())
-                        .pretrain(true).build();
+                        .build();
 
         String asJson = config.toJson();
         String asYaml = config.toYaml();
@@ -356,7 +351,7 @@ public class TestVAE extends BaseDL4JTest {
 
                 MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().l2(0.2).l1(0.3)
                                 .updater(new Sgd(1.0))
-                                .seed(12345L).weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1))
+                                .seed(12345L).dist(new NormalDistribution(0, 1))
                                 .list().layer(0,
                                                 new VariationalAutoencoder.Builder().nIn(inOutSize).nOut(3)
                                                                 .encoderLayerSizes(5).decoderLayerSizes(6)
@@ -365,7 +360,7 @@ public class TestVAE extends BaseDL4JTest {
                                                                                 reconstructionDistributions[i])
                                                                 .activation(new ActivationTanH())
                                                                 .build())
-                                .pretrain(true).backprop(false).build();
+                                .build();
 
                 MultiLayerNetwork mln = new MultiLayerNetwork(conf);
                 mln.init();
@@ -422,7 +417,7 @@ public class TestVAE extends BaseDL4JTest {
 
                 MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().l2(0.2).l1(0.3)
                                 .updater(new Sgd(1.0))
-                                .seed(12345L).weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1))
+                                .seed(12345L).dist(new NormalDistribution(0, 1))
                                 .list().layer(0,
                                                 new VariationalAutoencoder.Builder().nIn(inOutSize).nOut(3)
                                                                 .encoderLayerSizes(5).decoderLayerSizes(6)
@@ -431,7 +426,7 @@ public class TestVAE extends BaseDL4JTest {
                                                                                 reconstructionDistributions[i])
                                                                 .activation(new ActivationTanH())
                                                                 .build())
-                                .pretrain(true).backprop(false).build();
+                                .build();
 
                 MultiLayerNetwork mln = new MultiLayerNetwork(conf);
                 mln.init();
@@ -472,7 +467,7 @@ public class TestVAE extends BaseDL4JTest {
                                     .reconstructionDistribution(new GaussianReconstructionDistribution())
                                     .activation(new ActivationTanH())
                                     .build())
-                    .pretrain(true).backprop(false).build();
+                    .build();
 
             MultiLayerNetwork net = new MultiLayerNetwork(conf);
             net.init();

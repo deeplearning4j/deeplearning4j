@@ -39,6 +39,12 @@ namespace nd4j {
             else
                 return ND4J_STATUS_FALSE;
         }
+
+        DECLARE_TYPES(is_strictly_increasing) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(0, DataType::ANY)
+                    ->setAllowedOutputTypes(0, DataType::BOOL);
+        }
     }
 }
 

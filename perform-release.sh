@@ -50,7 +50,7 @@ sed -i "s/<deeplearning4j.version>.*<\/deeplearning4j.version>/<deeplearning4j.v
 sed -i "s/<dl4j-test-resources.version>.*<\/dl4j-test-resources.version>/<dl4j-test-resources.version>$RELEASE_VERSION<\/dl4j-test-resources.version>/" pom.xml
 #Spark versions, like <version>xxx_spark_2-SNAPSHOT</version>
 for f in $(find . -name 'pom.xml' -not -path '*target*'); do
-    sed -i "s/version>.*_spark_.*</version>${RELEASE_VERSION}_spark_1</g" $f
+    sed -i "s/version>.*_spark_.*</version>${RELEASE_VERSION}_spark_2</g" $f
 done
 mvn versions:set -DallowSnapshots=true -DgenerateBackupPoms=false -DnewVersion=$RELEASE_VERSION
 
@@ -109,7 +109,7 @@ sed -i "s/<dl4j-test-resources.version>.*<\/dl4j-test-resources.version>/<dl4j-t
 #Spark versions, like <version>xxx_spark_2-SNAPSHOT</version>
 SPLIT_VERSION=(${SNAPSHOT_VERSION//-/ })
 for f in $(find . -name 'pom.xml' -not -path '*target*'); do
-    sed -i "s/version>.*_spark_.*</version>${SPLIT_VERSION[0]}_spark_1-${SPLIT_VERSION[1]}</g" $f
+    sed -i "s/version>.*_spark_.*</version>${SPLIT_VERSION[0]}_spark_2-${SPLIT_VERSION[1]}</g" $f
 done
 mvn versions:set -DallowSnapshots=true -DgenerateBackupPoms=false -DnewVersion=$SNAPSHOT_VERSION
 

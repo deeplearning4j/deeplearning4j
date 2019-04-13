@@ -19,6 +19,8 @@ package org.nd4j.linalg.api.ndarray;
 import com.google.flatbuffers.FlatBufferBuilder;
 import org.nd4j.linalg.api.blas.params.MMulTranspose;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.exception.Nd4jNoSuchWorkspaceException;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.ShapeOffsetResolution;
@@ -33,7 +35,7 @@ import java.util.List;
  *
  * @author Adam Gibson
  */
-public interface INDArray extends Serializable {
+public interface INDArray extends Serializable, AutoCloseable {
     /**
      * Returns the shape information debugging
      * information
@@ -85,24 +87,6 @@ public interface INDArray extends Serializable {
      */
     void markAsCompressed(boolean reallyCompressed);
 
-    /**
-     * Set the ndarray to wrap around
-     * @param wrapAround thewrap around
-     */
-    void setWrapAround(boolean wrapAround);
-
-    /**
-     * Returns true if the ndarray
-     * on linear indexing wraps around
-     * based on the stride(1) of the ndarray
-     * This is a useful optimization in linear view
-     * where strides that might otherwise
-     * go out of bounds but wrap around instead.
-     *
-     * @return true if this ndarray wraps around on linear
-     * indexing, false otherwise
-     */
-    boolean isWrapAround();
 
     /**
      * Returns the rank of the ndarray (the number of dimensions).
@@ -119,44 +103,9 @@ public interface INDArray extends Serializable {
     int stride(int dimension);
 
     /**
-     * Element stride (one element to the next,
-     * also called the default stride: 1 for normal
-     * @return
-     * @deprecated Previously used for complex numbers
-     */
-    @Deprecated
-    int elementStride();
-
-
-    /**
      * Element wise stride
      */
     int elementWiseStride();
-
-    /**
-     * Returns true if the ndarray has already been freed
-     * @return
-     */
-    boolean isCleanedUp();
-
-    /**
-     * Cleanup resources
-     */
-    void cleanup();
-
-    /**
-     * Resets the linear view
-     */
-    @Deprecated
-    void resetLinearView();
-
-    /**
-     * Return the second stride for an ndarray.
-     * Think of this as the stride for the next element in a column.
-     *
-     * @return the secondary stride for an ndarray
-     */
-    int secondaryStride();
 
     /**
      * Get a scalar
@@ -166,6 +115,8 @@ public interface INDArray extends Serializable {
      */
     double getDoubleUnsafe(long offset);
 
+    String getStringUnsafe(long index);
+
     /**
      * Insert a scalar
      * at the given linear offset
@@ -174,42 +125,6 @@ public interface INDArray extends Serializable {
      * @return this
      */
     INDArray putScalarUnsafe(long offset, double value);
-
-    /**
-     * Return the major stride for an ndarray
-     *
-     * @return the major stride for an ndarray
-     */
-    int majorStride();
-
-    /**
-     * Get the inner most stride
-     * wrt the ordering of the array
-     * @return
-     */
-    int innerMostStride();
-
-    /**
-     * Returns a linear view reference of shape
-     * 1,length(ndarray)
-     *
-     * @return the linear view of this ndarray
-     * @deprecated Linear views are not always possible. Use reshape(array.length()) or reshape(1,array.length())
-     */
-    @Deprecated
-    INDArray linearView();
-
-
-
-    /**
-     * Returns a linear view reference of shape
-     * 1,length(ndarray)
-     *
-     * @return the linear view of this ndarray
-     * * @deprecated Linear views are not always possible. Use reshape(array.length()) or reshape(1,array.length())
-     */
-    @Deprecated
-    INDArray linearViewColumnOrder();
 
     /**
      * Returns the number of possible vectors for a given dimension
@@ -234,7 +149,7 @@ public interface INDArray extends Serializable {
      * @param dimension the dimension to calculate the number of vectors for
      * @return the number of possible vectors along a dimension
      */
-    long tensorssAlongDimension(int... dimension);
+    long tensorsAlongDimension(int... dimension);
 
     /**
      * Get the vector along a particular dimension
@@ -382,13 +297,6 @@ public interface INDArray extends Serializable {
      */
     INDArray lt(Number other);
 
-    /**
-     * Returns the binary ndarray for "Less" comparison. In-place method.
-     *
-     * @param other the number to compare.
-     * @return this object.
-     */
-    INDArray lti(Number other);
 
     /**
      * Put the specified float value at the specified indices in this array
@@ -417,14 +325,6 @@ public interface INDArray extends Serializable {
     INDArray eps(Number other);
 
 
-    /**
-     * Returns the binary ndarray for "Epsilon equals" comparison. In-place method.
-     *
-     * @param other the number to compare.
-     * @return this object.
-     */
-    INDArray epsi(Number other);
-
 
     /**
      * Returns the binary ndarray for "Equals" comparison.
@@ -433,14 +333,6 @@ public interface INDArray extends Serializable {
      * @return the binary ndarray for "Equals" comparison.
      */
     INDArray eq(Number other);
-
-    /**
-     * Returns the binary ndarray for "Equals" comparison. In-place method.
-     *
-     * @param other the number to compare.
-     * @return this object.
-     */
-    INDArray eqi(Number other);
 
     /**
      * Returns the binary ndarray for "Greater" comparison.
@@ -467,30 +359,6 @@ public interface INDArray extends Serializable {
     INDArray lte(Number other);
 
     /**
-     * Returns the binary ndarray for "Greter or equals" comparison. In-place method.
-     *
-     * @param other the number to compare.
-     * @return this object.
-     */
-    INDArray gtei(Number other);
-
-    /**
-     * Returns the binary ndarray for "Less or equals" comparison. In-place method.
-     *
-     * @param other the number to compare.
-     * @return this object.
-     */
-    INDArray ltei(Number other);
-
-    /**
-     * Returns the binary ndarray for "Greter" comparison. In-place method.
-     *
-     * @param other the number to compare.
-     * @return this object.
-     */
-    INDArray gti(Number other);
-
-    /**
      * Returns the binary ndarray for "Less" comparison.
      *
      * @param other the ndarray to compare.
@@ -498,14 +366,6 @@ public interface INDArray extends Serializable {
      */
 
     INDArray lt(INDArray other);
-
-    /**
-     * Returns the binary ndarray for "Less" comparison. In-place method.
-     *
-     * @param other the ndarray to compare.
-     * @return this object.
-     */
-    INDArray lti(INDArray other);
 
 
     /**
@@ -517,28 +377,12 @@ public interface INDArray extends Serializable {
     INDArray eps(INDArray other);
 
     /**
-     * Returns the binary ndarray for "Epsilon equals" comparison. In-place method.
-     *
-     * @param other the ndarray to compare.
-     * @return this object.
-     */
-    INDArray epsi(INDArray other);
-
-    /**
      * Returns the binary ndarray for "Not equals" comparison.
      *
      * @param other the number to compare.
      * @return the binary ndarray for "Not equals" comparison.
      */
     INDArray neq(Number other);
-
-    /**
-     * Returns the binary ndarray for "Not equals" comparison. In-place method.
-     *
-     * @param other the number to compare.
-     * @return this object.
-     */
-    INDArray neqi(Number other);
 
     /**
      * Returns the binary ndarray for "Not equals" comparison.
@@ -549,14 +393,6 @@ public interface INDArray extends Serializable {
     INDArray neq(INDArray other);
 
     /**
-     * Returns the binary ndarray for "Not equals" comparison. In-place method.
-     *
-     * @param other the ndarray to compare.
-     * @return this object.
-     */
-    INDArray neqi(INDArray other);
-
-    /**
      * Returns the binary ndarray for "Equals" comparison.
      *
      * @param other the ndarray to compare.
@@ -564,29 +400,28 @@ public interface INDArray extends Serializable {
      */
     INDArray eq(INDArray other);
 
-    /**
-     * Returns the binary ndarray for "Equals" comparison. In-place method.
-     *
-     * @param other the ndarray to compare.
-     * @return this object.
-     */
-    INDArray eqi(INDArray other);
 
     /**
-     * Returns the binary ndarray for "Greter" comparison.
+     * Returns the binary ndarray for "Greater Than" comparison.
      *
      * @param other the ndarray to compare.
-     * @return the binary ndarray for "Greter" comparison.
+     * @return the binary ndarray for "Greater Than" comparison.
      */
     INDArray gt(INDArray other);
 
     /**
-     * Returns the binary ndarray for "Greter" comparison. In-place method.
-     *
-     * @param other the ndarray to compare.
-     * @return this object.
+     * Returns the binary NDArray with value true where this array's entries are infinite, or false where they
+     * are not infinite
      */
-    INDArray gti(INDArray other);
+    INDArray isInfinite();
+
+    /**
+     * Returns the binary NDArray with value true where this array's entries are NaN, or false where they
+     * are not infinite
+     */
+    INDArray isNaN();
+
+
 
     /**
      * Returns the ndarray negative (cloned)
@@ -717,7 +552,7 @@ public interface INDArray extends Serializable {
     /**
      * Reverse in place division
      *
-     * @param n      the number to divide by  by
+     * @param n      the number to divide by
      * @param result the result ndarray
      * @return the result ndarray
      */
@@ -1028,22 +863,12 @@ public interface INDArray extends Serializable {
     INDArray putSlice(int slice, INDArray put);
 
     /**
-     * 1 in the ndarray if the element matches
-     * the condition 0 otherwise
+     * Returns a binary INDArray with value 'true' if the element matches the specified condition and 'false' otherwise
      *
      * @param condition Condition to apply
      * @return Copy of this array with values 0 (condition does not apply), or one (condition applies)
      */
     INDArray cond(Condition condition);
-
-    /**
-     * In-place: 1 in the ndarray if the element matches the condition 0 otherwise
-     *
-     * @param condition Condition to apply
-     * @return This array, modified with values 0 (condition does not apply), or one (condition applies)
-     */
-    INDArray condi(Condition condition);
-
 
 
     /**
@@ -1060,11 +885,8 @@ public interface INDArray extends Serializable {
      *
      * @param dimension the dimension to repeat
      * @param repeats the number of elements to repeat on each element
-     * @return
+     * @return Repeated array
      */
-    @Deprecated
-    INDArray repeat(int dimension, int... repeats);
-
     INDArray repeat(int dimension, long... repeats);
 
 
@@ -1107,16 +929,6 @@ public interface INDArray extends Serializable {
      * @return a scalar ndarray of the element at this index
      */
     INDArray getScalar(long i);
-
-
-    /**
-     * Return the linear index of the specified row and column
-     *
-     * @param row    the row to getScalar the linear index for
-     * @param column the column to getScalar the linear index for
-     * @return the linear index of the given row and column
-     */
-    long index(long row, long column);
 
     /**
      * Returns the square of the Euclidean distance.
@@ -1925,6 +1737,8 @@ public interface INDArray extends Serializable {
      */
     INDArray sum(int... dimension);
 
+    INDArray sum(boolean keepDims, int... dimension);
+
     /**
      * This method takes boolean condition, and returns number of elements matching this condition
      *
@@ -2002,11 +1816,11 @@ public interface INDArray extends Serializable {
 
     @Deprecated
     void setShape(long... shape);
-    
+
     /**
      * Shape and stride setter
      * @param shape
-     * @param stride 
+     * @param stride
      */
     public void setShapeAndStride(int[] shape, int[] stride);
 
@@ -2034,7 +1848,7 @@ public interface INDArray extends Serializable {
     INDArray subArray(long[] offsets, int[] shape, int[] stride);
 
     /**
-     * Returns the elements at the the specified indices
+     * Returns the elements at the specified indices
      *
      * @param indices the indices to getScalar
      * @return the array with the specified elements
@@ -2050,6 +1864,14 @@ public interface INDArray extends Serializable {
      */
     int getInt(int... indices);
 
+    long getLong(long index);
+
+    long getLong(long... indices);
+
+    Number getNumber(long index);
+
+    Number getNumber(long... indices);
+
     /**
      * Get a double value at the specified indices.
      * @param indices Indices to get the double at. Number of indices must match the array rank.
@@ -2060,7 +1882,7 @@ public interface INDArray extends Serializable {
     double getDouble(long... indices);
 
     /**
-     * Returns the elements at the the specified indices
+     * Returns the elements at the specified indices
      *
      * @param indices the indices to getScalar
      * @return the array with the specified elements
@@ -2210,7 +2032,26 @@ public interface INDArray extends Serializable {
      */
     INDArray reshape(char order, long... newShape);
 
+    /**
+     * Reshapes the ndarray (can't change the length of the ndarray). Typically this will be a view, unless reshaping
+     * without copying is impossible.
+     *
+     * @param newShape the new shape of the ndarray
+     * @return the reshaped ndarray
+     */
     INDArray reshape(char order, int... newShape);
+
+    /**
+     * Reshapes the ndarray (note: it's not possible to change the length of the ndarray).
+     * Typically this will be a view, unless reshaping without copying (i.e., returning a view) is impossible.<br>
+     * In that case, the behaviour will depend on the enforceView argument:
+     * enforceView == true: throw an exception<br>
+     * enforceView == false: return a copy<br>
+     *
+     * @param newShape the new shape of the ndarray
+     * @return the reshaped ndarray
+     */
+    INDArray reshape(char order, boolean enforceView, long... newShape);
 
 
     /**
@@ -2298,20 +2139,20 @@ public interface INDArray extends Serializable {
      * Examples originally from the theano docs:
      * http://deeplearning.net/software/theano/library/tensor/basic.html
      *
-     *  Returns a view of this tensor with permuted dimensions. Typically the pattern will include the integers 0, 1, ... ndim-1, and any number of ‘x’ characters in dimensions where this tensor should be broadcasted.
-    
+     *  Returns a view of this tensor with permuted dimensions. Typically the pattern will include the integers 0, 1, ... ndim-1, and any number of 'x' characters in dimensions where this tensor should be broadcasted.
+
      A few examples of patterns and their effect:
-    
-     (‘x’) -> make a 0d (scalar) into a 1d vector
+
+     ('x') -> make a 0d (scalar) into a 1d vector
      (0, 1) -> identity for 2d vectors
      (1, 0) -> inverts the first and second dimensions
-     (‘x’, 0) -> make a row out of a 1d vector (N to 1xN)
-     (0, ‘x’) -> make a column out of a 1d vector (N to Nx1)
+     ('x', 0) -> make a row out of a 1d vector (N to 1xN)
+     (0, 'x') -> make a column out of a 1d vector (N to Nx1)
      (2, 0, 1) -> AxBxC to CxAxB
-     (0, ‘x’, 1) -> AxB to Ax1xB
-     (1, ‘x’, 0) -> AxB to Bx1xA
+     (0, 'x', 1) -> AxB to Ax1xB
+     (1, 'x', 0) -> AxB to Bx1xA
      (1,) -> This remove dimensions 0. It must be a broadcastable dimension (1xA to A)
-    
+
      * @param rearrange     the dimensions to swap to
      * @param newOrder      the new order (think permute)
      * @param broadCastable (whether the dimension is broadcastable) (must be same length as new order)
@@ -2426,6 +2267,11 @@ public interface INDArray extends Serializable {
      */
     long[] shape();
 
+    /**
+     * Returns shape descriptor of this ndarray
+     * @return
+     */
+    LongShapeDescriptor shapeDescriptor();
 
     /**
      * Returns the stride of this ndarray
@@ -2459,7 +2305,9 @@ public interface INDArray extends Serializable {
      * Returns the total number of elements in the ndarray
      *
      * @return the number of elements in the ndarray
+     * @deprecated use {@link #length()}
      */
+    @Deprecated
     long lengthLong();
 
 
@@ -2717,11 +2565,11 @@ public interface INDArray extends Serializable {
     INDArray migrate(boolean detachOnNoWs);
 
     /**
-       * This method returns percentile value for this INDArray
-       *
-       * @param percentile target percentile in range of 0..100
-       * @return
-       */
+     * This method returns percentile value for this INDArray
+     *
+     * @param percentile target percentile in range of 0..100
+     * @return
+     */
     Number percentileNumber(Number percentile);
 
     /**
@@ -2793,11 +2641,6 @@ public interface INDArray extends Serializable {
      */
     int toFlatArray(FlatBufferBuilder builder);
 
-    INDArray convertToHalfs();
-    INDArray convertToFloats();
-    INDArray convertToDoubles();
-
-
     /**
      * This method returns true if this INDArray is special case: no-value INDArray
      * @return
@@ -2814,5 +2657,81 @@ public interface INDArray extends Serializable {
      * This method returns dtype for this INDArray
      * @return
      */
-    DataBuffer.Type dataType();
+    DataType dataType();
+
+    /**
+     * This method checks if this INDArray instance is one of Real types
+     * @return true if data type is floating point, false otherwise
+     */
+    boolean isR();
+
+    /**
+     * This method checks if this INDArray instance is one of integer types
+     * @return
+     */
+    boolean isZ();
+
+    /**
+     * This method checks if this INDArray instance has boolean type
+     * @return
+     */
+    boolean isB();
+
+    /**
+     * This method checks if this INDArray instance has String type
+     * @return
+     */
+    boolean isS();
+
+    /**
+     * This method cast elements of this INDArray to new data type
+     *
+     * @param dataType
+     * @return
+     */
+    INDArray castTo(DataType dataType);
+
+    /**
+     * This method checks if all elements within this array are non-zero (or true, in case of boolean)
+     * @return
+     */
+    boolean all();
+
+    /**
+     * This method checks if any of the elements within this array are non-zero (or true, in case of boolean)
+     * @return
+     */
+    boolean any();
+
+    /**
+     * This method checks if any of the elements within this array are non-zero (or true, in case of boolean)
+     * @return
+     */
+    boolean none();
+
+    /**
+     * This method checks, if this INDArray instalce can use close() method
+     * @return true if array can be released, false otherwise
+     */
+    boolean closeable();
+
+    /**
+     * This method releases exclusive off-heap resources uses by this INDArray instance.
+     * If INDArray relies on shared resources, exception will be thrown instead
+     *
+     * PLEASE NOTE: This method is NOT safe by any means
+     */
+    void close();
+
+    /**
+     * This method returns empty array with the same dtype/order/shape as this one
+     * @return
+     */
+    INDArray like();
+
+    /**
+     * This method returns uninitialized array with the same dtype/order/shape as this one
+     * @return
+     */
+    INDArray ulike();
 }

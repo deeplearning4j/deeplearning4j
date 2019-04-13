@@ -55,10 +55,15 @@ namespace nd4j {
     }
 
     void ShapeList::destroy() {
+        if (_destroyed)
+            return;
+
         if (!_workspace)
             for (auto v:_shapes)
                 if(v != nullptr)
                     delete[] v;
+
+        _destroyed = true;
     }
 
     int ShapeList::size() {
@@ -66,6 +71,9 @@ namespace nd4j {
     }
 
     Nd4jLong* ShapeList::at(int idx) {
+        if (_shapes.size() <= idx)
+            throw std::runtime_error("Can't find requested variable by index");
+
         return _shapes.at(idx);
     }
 
@@ -89,6 +97,8 @@ namespace nd4j {
         for (int e = 0; e < _shapes.size(); e++) {
             _shapes[e] = shape::detachShape(_shapes[e]);
         }
+
+        _autoremovable = true;
         _workspace = false;
     }
 }

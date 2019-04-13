@@ -54,12 +54,7 @@ public class RepeatVector extends AbstractLayer<org.deeplearning4j.nn.conf.layer
     }
 
     @Override
-    public double calcL2(boolean backpropParamsOnly) {
-        return 0;
-    }
-
-    @Override
-    public double calcL1(boolean backpropParamsOnly) {
+    public double calcRegularizationScore(boolean backpropParamsOnly){
         return 0;
     }
 
@@ -73,7 +68,10 @@ public class RepeatVector extends AbstractLayer<org.deeplearning4j.nn.conf.layer
     public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon, LayerWorkspaceMgr workspaceMgr) {
         assertInputSet(true);
 
-        INDArray outEpsilon = Nd4j.sum(epsilon,2);
+        INDArray outEpsilon;
+        try(MemoryWorkspace ws = workspaceMgr.notifyScopeBorrowed(ArrayType.ACTIVATION_GRAD)){
+            outEpsilon = Nd4j.sum(epsilon,2);
+        }
 
         Gradient gradient = new DefaultGradient();
         return new Pair<>(gradient, outEpsilon);
@@ -101,8 +99,9 @@ public class RepeatVector extends AbstractLayer<org.deeplearning4j.nn.conf.layer
         long miniBatch = input.shape()[0];
         long size = input.shape()[1];
         INDArray output = input.reshape(miniBatch, size, 1);
-
-        return output.repeat(2, (long) getN());
+        try(MemoryWorkspace ws = workspaceMgr.notifyScopeBorrowed(ArrayType.ACTIVATIONS)) {
+            return output.repeat(2, (long) getN());
+        }
     }
 
     @Override
@@ -113,7 +112,6 @@ public class RepeatVector extends AbstractLayer<org.deeplearning4j.nn.conf.layer
             cacheMode = CacheMode.NONE;
 
         INDArray z = preOutput(training, false, workspaceMgr);
-
         if (training && cacheMode != CacheMode.NONE && workspaceMgr.hasConfiguration(ArrayType.FF_CACHE)
                 && workspaceMgr.isWorkspaceOpen(ArrayType.FF_CACHE)) {
             try (MemoryWorkspace wsB = workspaceMgr.notifyScopeBorrowed(ArrayType.FF_CACHE)) {
@@ -144,7 +142,7 @@ public class RepeatVector extends AbstractLayer<org.deeplearning4j.nn.conf.layer
     }
 
     @Override
-    public int numParams() {
+    public long numParams() {
         return 0;
     }
 

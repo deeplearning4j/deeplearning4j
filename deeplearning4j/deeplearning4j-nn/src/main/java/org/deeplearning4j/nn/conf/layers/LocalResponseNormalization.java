@@ -27,25 +27,28 @@ import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.deeplearning4j.nn.params.EmptyParamInitializer;
 import org.deeplearning4j.optimize.api.TrainingListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.learning.regularization.Regularization;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 
 /**
- * Local response normalization layer<br>
- * See section 3.3 of <a href="http://www.cs.toronto.edu/~fritz/absps/imagenet.pdf">http://www.cs.toronto.edu/~fritz/absps/imagenet.pdf</a>
+ * Local response normalization layer<br> See section 3.3 of <a href="http://www.cs.toronto.edu/~fritz/absps/imagenet.pdf">http://www.cs.toronto.edu/~fritz/absps/imagenet.pdf</a>
  */
 @Data
 @NoArgsConstructor
 @ToString(callSuper = true)
 @EqualsAndHashCode(callSuper = true)
 public class LocalResponseNormalization extends Layer {
+
     // Defaults as per http://www.cs.toronto.edu/~fritz/absps/imagenet.pdf
     //Set defaults here as well as in builder, in case users use no-arg constructor instead of builder
     protected double n = 5; // # adjacent kernal maps
     protected double k = 2; // constant (e.g. scale)
     protected double beta = 0.75; // decay rate
     protected double alpha = 1e-4; // decay rate
+    protected boolean cudnnAllowFallback = true;
 
     private LocalResponseNormalization(Builder builder) {
         super(builder);
@@ -53,6 +56,7 @@ public class LocalResponseNormalization extends Layer {
         this.n = builder.n;
         this.alpha = builder.alpha;
         this.beta = builder.beta;
+        this.cudnnAllowFallback = builder.cudnnAllowFallback;
     }
 
     @Override
@@ -108,20 +112,8 @@ public class LocalResponseNormalization extends Layer {
     }
 
     @Override
-    public boolean isPretrain() {
-        return false;
-    }
-
-    @Override
-    public double getL1ByParam(String paramName) {
-        //Not applicable
-        return 0;
-    }
-
-    @Override
-    public double getL2ByParam(String paramName) {
-        //Not applicable
-        return 0;
+    public List<Regularization> getRegularizationByParam(String paramName) {
+        return null;
     }
 
     @Override
@@ -153,17 +145,52 @@ public class LocalResponseNormalization extends Layer {
     }
 
     @AllArgsConstructor
+    @Getter
+    @Setter
     public static class Builder extends Layer.Builder<Builder> {
+
         // defaults based on AlexNet model
+
+        /**
+         * LRN scaling constant k. Default: 2
+         *
+         */
         private double k = 2;
+
+        /**
+         * Number of adjacent kernel maps to use when doing LRN. default: 5
+         *
+         */
         private double n = 5;
+
+        /**
+         * LRN scaling constant alpha. Default: 1e-4
+         *
+         */
         private double alpha = 1e-4;
+
+        /**
+         * Scaling constant beta. Default: 0.75
+         *
+         */
         private double beta = 0.75;
 
+        /**
+         * When using CuDNN and an error is encountered, should fallback to the non-CuDNN implementatation be allowed?
+         * If set to false, an exception in CuDNN will be propagated back to the user. If false, the built-in
+         * (non-CuDNN) implementation for BatchNormalization will be used
+         *
+         */
+        protected boolean cudnnAllowFallback = true;
+
+        public Builder(double k, double n, double alpha, double beta) {
+            this(k, n, alpha, beta, true);
+        }
+
         public Builder(double k, double alpha, double beta) {
-            this.k = k;
-            this.alpha = alpha;
-            this.beta = beta;
+            this.setK(k);
+            this.setAlpha(alpha);
+            this.setBeta(beta);
         }
 
         public Builder() {}
@@ -174,37 +201,49 @@ public class LocalResponseNormalization extends Layer {
          * @param k Scaling constant
          */
         public Builder k(double k) {
-            this.k = k;
+            this.setK(k);
             return this;
         }
 
         /**
          * Number of adjacent kernel maps to use when doing LRN. default: 5
          *
-         * @param n    Number of adjacent kernel maps
+         * @param n Number of adjacent kernel maps
          */
         public Builder n(double n) {
-            this.n = n;
+            this.setN(n);
             return this;
         }
 
         /**
          * LRN scaling constant alpha. Default: 1e-4
          *
-         * @param alpha    Scaling constant
+         * @param alpha Scaling constant
          */
         public Builder alpha(double alpha) {
-            this.alpha = alpha;
+            this.setAlpha(alpha);
             return this;
         }
 
         /**
          * Scaling constant beta. Default: 0.75
          *
-         * @param beta    Scaling constant
+         * @param beta Scaling constant
          */
         public Builder beta(double beta) {
-            this.beta = beta;
+            this.setBeta(beta);
+            return this;
+        }
+
+        /**
+         * When using CuDNN and an error is encountered, should fallback to the non-CuDNN implementatation be allowed?
+         * If set to false, an exception in CuDNN will be propagated back to the user. If false, the built-in
+         * (non-CuDNN) implementation for BatchNormalization will be used
+         *
+         * @param allowFallback Whether fallback to non-CuDNN implementation should be used
+         */
+        public Builder cudnnAllowFallback(boolean allowFallback) {
+            this.setCudnnAllowFallback(allowFallback);
             return this;
         }
 

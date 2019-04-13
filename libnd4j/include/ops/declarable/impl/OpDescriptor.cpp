@@ -50,6 +50,7 @@ namespace nd4j {
             _scalar = isScalar;
         }
 
+
         bool OpDescriptor::operator==(const OpDescriptor& other) const {
             if (_hash == -1 && other._hash == -1)
                 return this->_opNum == other._opNum;
@@ -146,12 +147,147 @@ namespace nd4j {
             return _opNum;
         }
 
-        void OpDescriptor::setInputType(InputType type) {
+        OpDescriptor* OpDescriptor::setInputType(const InputType type) {
             _inputType = type;
+            return this;
         }
 
         InputType OpDescriptor::inputType() {
             return _inputType;
+        }
+
+        OpDescriptor* OpDescriptor::setAllowedInputTypes(const std::initializer_list<nd4j::DataType> &dtypes) {
+            _allowedIns = dtypes;
+            return this;
+        }
+
+        OpDescriptor* OpDescriptor::setAllowedOutputTypes(const std::initializer_list<nd4j::DataType> &dtypes) {
+            _allowedOuts = dtypes;
+            return this;
+        }
+
+        OpDescriptor* OpDescriptor::setAllowedInputTypes(const nd4j::DataType dtype) {
+            _allowedIns.clear();
+            _allowedIns.emplace_back(dtype);
+            return this;
+        }
+
+        OpDescriptor* OpDescriptor::setAllowedOutputTypes(const nd4j::DataType dtype) {
+            _allowedOuts.clear();
+            _allowedOuts.emplace_back(dtype);
+            return this;
+        }
+
+        OpDescriptor* OpDescriptor::setInputType(const int idx, const nd4j::DataType dtype) {
+            _inputTypes[idx] = { dtype };
+            return this;
+        }
+
+        OpDescriptor* OpDescriptor::setOutputType(const int idx, const nd4j::DataType dtype) {
+            _outputTypes[idx] = { dtype };
+            return this;
+        }
+
+        OpDescriptor* OpDescriptor::setSameMode(const bool reallySame) {
+            _sameMode = reallySame;
+            return this;
+        }
+
+        OpDescriptor* OpDescriptor::setAllowedInputTypes(int index, const std::vector<nd4j::DataType> &dtype) {
+            _inputTypes[index] = dtype;
+            return this;
+        }
+
+        OpDescriptor* OpDescriptor::setAllowedOutputTypes(int index, const std::vector<nd4j::DataType> &dtype) {
+            _outputTypes[index] = dtype;
+            return this;
+        }
+
+        OpDescriptor* OpDescriptor::setAllowedInputTypes(int index,  nd4j::DataType dtype) {
+            if (_inputTypes.count(index) == 0)
+                _inputTypes[index] = {dtype};
+            else
+                _inputTypes[index].emplace_back(dtype);
+
+            return this;
+        }
+
+        OpDescriptor* OpDescriptor::setAllowedOutputTypes(int index, nd4j::DataType dtype) {
+            if (_outputTypes.count(index) == 0)
+                _outputTypes[index] = {dtype};
+            else
+                _outputTypes[index].emplace_back(dtype);
+
+            return this;
+        }
+
+        bool OpDescriptor::checkDataTypesMatch(nd4j::DataType needle, std::vector<nd4j::DataType> &haystack) const {
+            // if haystack is empty - INHERIT is occurs - any type is perfect?
+            if (haystack.empty())
+                return true;
+
+            // first we're checking for direct input type match
+            if (std::find(haystack.begin(), haystack.end(), needle) == haystack.end()) {
+
+                // if direct input match failed - we're checking for ANY as allowed input
+                if (std::find(haystack.begin(), haystack.end(), nd4j::DataType::ANY) == haystack.end())
+                    return false;
+                else
+                    return true;
+            } else {
+                return true;
+            }
+        }
+
+        bool OpDescriptor::checkInputMatch(int index, nd4j::DataType dataType) {
+            // we check for per-input types first
+            if (_inputTypes.empty() || _inputTypes.count(index) == 0) {
+                // checking global input types
+                return checkDataTypesMatch(dataType, _allowedIns);
+            } else {
+                // checking data type for specified input
+                auto allowed = _inputTypes[index];
+                return checkDataTypesMatch(dataType, allowed);
+            }
+            return true;
+        }
+
+        bool OpDescriptor::checkOutputMatch(int index, nd4j::DataType dataType) {
+            // we check for per-output types first
+            if (_outputTypes.empty() || _outputTypes.count(index) == 0) {
+
+                // checking global output types
+                return checkDataTypesMatch(dataType, _allowedOuts);
+            } else {
+                // checking data type for specified output
+                auto allowed = _outputTypes[index];
+                return checkDataTypesMatch(dataType, allowed);
+            }
+            return true;
+        }
+
+        bool OpDescriptor::isSameMode() {
+            return _sameMode;
+        }
+
+        bool OpDescriptor::isInherit(int index) {
+            if (std::find(_allowedOuts.begin(), _allowedOuts.end(), nd4j::DataType::INHERIT) != _allowedOuts.end())
+                return true;
+            if (_outputTypes.count(index) > 0) {
+                auto vec = _outputTypes[index];
+
+                if (std::find(vec.begin(), vec.end(), nd4j::DataType::INHERIT) != vec.end())
+                    return true;
+            }
+
+            return false;
+        }
+
+        std::vector<nd4j::DataType> OpDescriptor::getOutputTypesForOutput(int index) {
+            if (_outputTypes.count(index) > 0)
+                return _outputTypes.at(index);
+            else
+                return std::vector<nd4j::DataType>();
         }
     }
 }

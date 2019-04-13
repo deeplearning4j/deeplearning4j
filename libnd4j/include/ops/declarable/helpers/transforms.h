@@ -22,74 +22,59 @@
 #define LIBND4J_TRANSFORMS_H
 
 #include <ops/declarable/helpers/helpers.h>
+#include <helpers/helper_random.h>
 
 namespace nd4j    {
 namespace ops     {
 namespace helpers {
 
+	void triu(const NDArray& input, NDArray& output, const int diagonal);
 
-	template <typename T>
-	void triu(const NDArray<T>& input, NDArray<T>& output, const int diagonal);
 
-	template <typename T>
-	void triuBP(const NDArray<T>& input, const NDArray<T>& gradO, NDArray<T>& gradI, const int diagonal);
+	void triuBP(const NDArray& input, const NDArray& gradO, NDArray& gradI, const int diagonal);
 
-	template <typename T>
-	void trace(const NDArray<T>& input, NDArray<T>& output);
+	void trace(const NDArray& input, NDArray& output);
 
-	template <typename T>
-	void randomShuffle(NDArray<T>& input, NDArray<T>& output, nd4j::random::RandomBuffer& rng, const bool isInplace);
+	void randomShuffle(NDArray& input, NDArray& output, nd4j::random::RandomBuffer& rng, const bool isInplace);
     
     // auxiliary function which serves for recursion purpose and is used in pad operation
-	template<typename T>
-	void recursiveLoopForPad(const int mode, NDArray<T>& input, const NDArray<T>& paddings, NDArray<T>& output, std::vector<int> dimensions, int dim, int inIdx, int outIdx, T padValue);
-	template<typename T>
-	void pad(const int mode, const NDArray<T>& input, const NDArray<T>& paddings, NDArray<T>& output, const T padValue );
+	// void recursiveLoopForPad(const int mode, NDArray& input, const NDArray& paddings, NDArray& output, std::vector<int> dimensions, int dim, int inIdx, int outIdx, NDArray& padValue);
 
-	template<typename T>
-	void invertPermutation(const NDArray<T>& input, NDArray<T>& output);
+	void pad(const int mode, const NDArray& input, const NDArray& paddings, NDArray& output, NDArray const& padValue);
 
-	template<typename T>
-	void gatherND(NDArray<T>& input, NDArray<T>& indices, NDArray<T>& output);
+	void invertPermutation(const NDArray& input, NDArray& output);
 
-	template<typename T>
-	void gather(NDArray<T>* input, const NDArray<T>* indices, NDArray<T>* output, const std::vector<int>& intArgs);
+	void gatherND(NDArray& input, NDArray& indices, NDArray& output);
 
-	template<typename T>
-	void eye(NDArray<T>& output);
+	void gather(NDArray* input, const NDArray* indices, NDArray* output, const std::vector<int>& intArgs);
 
-	template<typename T>
-	void scatterUpdate(NDArray<T>& operand, NDArray<T>& updates, const std::vector<int>* intArgs);
+	void eye(NDArray& output);
 
-	template<typename T>
-	void mergeMaxIndex(const std::vector<NDArray<T>*>& inArrs, NDArray<T>& output);
+	void scatterUpdate(NDArray& operand, NDArray& updates, const std::vector<int>* intArgs);
 
-	template<typename T>
-	void mergeMax(const std::vector<NDArray<T>*>& inArrs, NDArray<T>& output);
+	void scatterSimple(const int opId, NDArray& input, const NDArray& updates, const NDArray& indices, const std::vector<int>& dimensions);
 
-	template<typename T>
-	void mergeAvg(const std::vector<NDArray<T>*>& inArrs, NDArray<T>& output);
+	void mergeMaxIndex(const std::vector<NDArray*>& inArrs, NDArray& output);
 
-	template<typename T>
-	void mergeAdd(const std::vector<NDArray<T>*>& inArrs, NDArray<T>& output);
+	void mergeMax(const std::vector<NDArray*>& inArrs, NDArray& output);
 
-	template<typename T>
-	void clipByNorm(NDArray<T>& input, NDArray<T>& output, const std::vector<int>& dimensions, const T clipNorm, const bool isInplace);
+	void mergeAvg(const std::vector<NDArray*>& inArrs, NDArray& output);
 
-	template<typename T>
-	void clipByNormBP(const NDArray<T>& input, const NDArray<T>& gradO, NDArray<T>& gradI /*output*/, const std::vector<int>& dimensions, const T clipNorm); 
+	void mergeAdd(const std::vector<NDArray*>& inArrs, NDArray& output);
 
-	template<typename T>
-	void clipByAveraged(NDArray<T>& input, NDArray<T>& output, const std::vector<int>& dimensions, const T clipNorm, const bool isInplace);
+	void clipByNorm(NDArray& input, NDArray& output, const std::vector<int>& dimensions, const NDArray& clipNorm, const bool isInplace);
+	void clipByGlobalNorm(std::vector<NDArray*> const& inputs, double clipNorm, nd4j::memory::Workspace* workspace, std::vector<NDArray*>& outputs, bool isInplace);
 
-	template<typename T>
-	void mirrorPad(const NDArray<T>& input, const NDArray<T>& paddings, NDArray<T>& output, const int mode);
+	void clipByNormBP(const NDArray& input, const NDArray& gradO, NDArray& gradI /*output*/, const std::vector<int>& dimensions, const NDArray& clipNorm);
 
-	template<typename T>
-	void concat(const std::vector<NDArray<T>*>& inArrs, NDArray<T>& output, const int axis);
+	void clipByAveraged(NDArray& input, NDArray& output, const std::vector<int>& dimensions, const NDArray& clipNorm, const bool isInplace);
+	void clipByValue(NDArray& input, double leftBound, double rightBound, NDArray& output);
 
-	template<typename T>
-	void tileBP(const NDArray<T>& gradO /*input*/, NDArray<T>& gradI /*output*/, const std::vector<Nd4jLong> reps);
+	void mirrorPad(const NDArray& input, const NDArray& paddings, NDArray& output, const int mode);
+
+	void concat(const std::vector<NDArray*>& inArrs, NDArray& output, const int axis);
+
+	void tileBP(const NDArray& gradO /*input*/, NDArray& gradI /*output*/, const std::vector<Nd4jLong> reps);
 
 }
 }

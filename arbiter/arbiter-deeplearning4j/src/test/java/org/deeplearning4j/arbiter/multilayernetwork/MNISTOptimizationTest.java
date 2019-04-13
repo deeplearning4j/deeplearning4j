@@ -91,7 +91,7 @@ public class MNISTOptimizationTest {
                                         .build(), new IntegerParameterSpace(0, 1)) //0 to 1 layers
                         .addLayer(new OutputLayerSpace.Builder().nOut(10).activation(Activation.SOFTMAX)
                                         .lossFunction(LossFunctions.LossFunction.MCXENT).build())
-                        .earlyStoppingConfiguration(esConf).pretrain(false).backprop(true).build();
+                        .earlyStoppingConfiguration(esConf).build();
         Map<String, Object> commands = new HashMap<>();
         commands.put(DataSetIteratorFactoryProvider.FACTORY_KEY, TestDataFactoryProviderMnist.class.getCanonicalName());
 

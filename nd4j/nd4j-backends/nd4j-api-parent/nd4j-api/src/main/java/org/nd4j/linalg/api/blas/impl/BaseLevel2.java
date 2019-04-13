@@ -16,13 +16,16 @@
 
 package org.nd4j.linalg.api.blas.impl;
 
+import lombok.val;
 import org.nd4j.linalg.api.blas.Level2;
 import org.nd4j.linalg.api.blas.params.GemvParameters;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.executioner.DefaultOpExecutioner;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.api.ops.executioner.OpExecutionerUtil;
+import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.profiler.OpProfiler;
 
@@ -59,18 +62,34 @@ public abstract class BaseLevel2 extends BaseLevel implements Level2 {
         }
 
         GemvParameters parameters = new GemvParameters(A, X, Y);
-        if (A.data().dataType() == DataBuffer.Type.DOUBLE) {
-            DefaultOpExecutioner.validateDataType(DataBuffer.Type.DOUBLE, parameters.getA(), parameters.getX(),
+        if (A.data().dataType() == DataType.DOUBLE) {
+            DefaultOpExecutioner.validateDataType(DataType.DOUBLE, parameters.getA(), parameters.getX(),
                             parameters.getY());
             dgemv(order, parameters.getAOrdering(), parameters.getM(), parameters.getN(), alpha, parameters.getA(),
                             parameters.getLda(), parameters.getX(), parameters.getIncx(), beta, parameters.getY(),
                             parameters.getIncy());
-        } else {
-            DefaultOpExecutioner.validateDataType(DataBuffer.Type.FLOAT, parameters.getA(), parameters.getX(),
+        } else if (A.data().dataType() == DataType.FLOAT){
+            DefaultOpExecutioner.validateDataType(DataType.FLOAT, parameters.getA(), parameters.getX(),
                             parameters.getY());
             sgemv(order, parameters.getAOrdering(), parameters.getM(), parameters.getN(), (float) alpha,
                             parameters.getA(), parameters.getLda(), parameters.getX(), parameters.getIncx(),
                             (float) beta, parameters.getY(), parameters.getIncy());
+        } else if (A.data().dataType() == DataType.HALF) {
+            DefaultOpExecutioner.validateDataType(DataType.HALF, parameters.getA(), parameters.getX(),
+                    parameters.getY());
+
+            // TODO: provide optimized GEMV kernel eventually
+            val fA = parameters.getA().castTo(DataType.FLOAT);
+            val fX = parameters.getX().castTo(DataType.FLOAT);
+            val fY = parameters.getY().castTo(DataType.FLOAT);
+
+            sgemv(order, parameters.getAOrdering(), parameters.getM(), parameters.getN(), (float) alpha,
+                    fA, parameters.getLda(), fX, parameters.getIncx(),
+                    (float) beta, fY, parameters.getIncy());
+
+            Y.assign(fY);
+        } else {
+            throw new ND4JIllegalStateException("Unsupported data type " + A.dataType());
         }
 
         OpExecutionerUtil.checkForAny(Y);
@@ -101,13 +120,13 @@ public abstract class BaseLevel2 extends BaseLevel implements Level2 {
 
         // FIXME: int cast
 
-        if (A.data().dataType() == DataBuffer.Type.DOUBLE) {
-            DefaultOpExecutioner.validateDataType(DataBuffer.Type.DOUBLE, A, X, Y);
-            dgbmv(order, TransA, (int) A.rows(), (int) A.columns(), KL, KU, alpha, A, (int) A.size(0), X, X.majorStride(), beta, Y,
-                            Y.majorStride());
+        if (A.data().dataType() == DataType.DOUBLE) {
+            DefaultOpExecutioner.validateDataType(DataType.DOUBLE, A, X, Y);
+            dgbmv(order, TransA, (int) A.rows(), (int) A.columns(), KL, KU, alpha, A, (int) A.size(0), X, X.stride(-1), beta, Y,
+                            Y.stride(-1));
         } else {
-            DefaultOpExecutioner.validateDataType(DataBuffer.Type.FLOAT, A, X, Y);
-            sgbmv(order, TransA, (int) A.rows(), (int) A.columns(), KL, KU, (float) alpha, A, (int) A.size(0), X, X.majorStride(), (float) beta, Y, Y.majorStride());
+            DefaultOpExecutioner.validateDataType(DataType.FLOAT, A, X, Y);
+            sgbmv(order, TransA, (int) A.rows(), (int) A.columns(), KL, KU, (float) alpha, A, (int) A.size(0), X, X.stride(-1), (float) beta, Y, Y.stride(-1));
         }
 
         OpExecutionerUtil.checkForAny(Y);
@@ -130,12 +149,12 @@ public abstract class BaseLevel2 extends BaseLevel implements Level2 {
 
         // FIXME: int cast
 
-        if (X.data().dataType() == DataBuffer.Type.DOUBLE) {
-            DefaultOpExecutioner.validateDataType(DataBuffer.Type.DOUBLE, A, X, Y);
-            dger(order, (int) A.rows(), (int) A.columns(), alpha, X, X.majorStride(), Y, Y.majorStride(), A, (int) A.size(0));
+        if (X.data().dataType() == DataType.DOUBLE) {
+            DefaultOpExecutioner.validateDataType(DataType.DOUBLE, A, X, Y);
+            dger(order, (int) A.rows(), (int) A.columns(), alpha, X, X.stride(-1), Y, Y.stride(-1), A, (int) A.size(0));
         } else {
-            DefaultOpExecutioner.validateDataType(DataBuffer.Type.FLOAT, A, X, Y);
-            sger(order, (int) A.rows(), (int) A.columns(), (float) alpha, X, X.majorStride(), Y, Y.majorStride(), A, (int) A.size(0));
+            DefaultOpExecutioner.validateDataType(DataType.FLOAT, A, X, Y);
+            sger(order, (int) A.rows(), (int) A.columns(), (float) alpha, X, X.stride(-1), Y, Y.stride(-1), A, (int) A.size(0));
         }
 
         OpExecutionerUtil.checkForAny(A);
@@ -161,14 +180,14 @@ public abstract class BaseLevel2 extends BaseLevel implements Level2 {
 
         // FIXME: int cast
 
-        if (X.data().dataType() == DataBuffer.Type.DOUBLE) {
-            DefaultOpExecutioner.validateDataType(DataBuffer.Type.DOUBLE, A, X, Y);
-            dsbmv(order, Uplo, (int) X.length(), (int) A.columns(), alpha, A, (int) A.size(0), X, X.majorStride(), beta, Y,
-                    (int) Y.majorStride());
+        if (X.data().dataType() == DataType.DOUBLE) {
+            DefaultOpExecutioner.validateDataType(DataType.DOUBLE, A, X, Y);
+            dsbmv(order, Uplo, (int) X.length(), (int) A.columns(), alpha, A, (int) A.size(0), X, X.stride(-1), beta, Y,
+                    (int) Y.stride(-1));
         } else {
-            DefaultOpExecutioner.validateDataType(DataBuffer.Type.FLOAT, A, X, Y);
-            ssbmv(order, Uplo, (int) X.length(), (int) A.columns(), (float) alpha, A, (int) A.size(0), X, X.majorStride(), (float) beta,
-                            Y, Y.majorStride());
+            DefaultOpExecutioner.validateDataType(DataType.FLOAT, A, X, Y);
+            ssbmv(order, Uplo, (int) X.length(), (int) A.columns(), (float) alpha, A, (int) A.size(0), X, X.stride(-1), (float) beta,
+                            Y, Y.stride(-1));
         }
 
         OpExecutionerUtil.checkForAny(Y);
@@ -190,12 +209,12 @@ public abstract class BaseLevel2 extends BaseLevel implements Level2 {
 
         // FIXME: int cast
 
-        if (Ap.data().dataType() == DataBuffer.Type.DOUBLE) {
-            DefaultOpExecutioner.validateDataType(DataBuffer.Type.DOUBLE, X, Y);
-            dspmv(order, Uplo, (int) X.length(), alpha, Ap, X, Ap.majorStride(), beta, Y, Y.majorStride());
+        if (Ap.data().dataType() == DataType.DOUBLE) {
+            DefaultOpExecutioner.validateDataType(DataType.DOUBLE, X, Y);
+            dspmv(order, Uplo, (int) X.length(), alpha, Ap, X, Ap.stride(-1), beta, Y, Y.stride(-1));
         } else {
-            DefaultOpExecutioner.validateDataType(DataBuffer.Type.FLOAT, X, Y);
-            sspmv(order, Uplo, (int) X.length(), (float) alpha, Ap, X, Ap.majorStride(), (float) beta, Y, Y.majorStride());
+            DefaultOpExecutioner.validateDataType(DataType.FLOAT, X, Y);
+            sspmv(order, Uplo, (int) X.length(), (float) alpha, Ap, X, Ap.stride(-1), (float) beta, Y, Y.stride(-1));
         }
 
         OpExecutionerUtil.checkForAny(Y);
@@ -219,12 +238,12 @@ public abstract class BaseLevel2 extends BaseLevel implements Level2 {
 
         // FIXME: int cast
 
-        if (X.data().dataType() == DataBuffer.Type.DOUBLE) {
-            DefaultOpExecutioner.validateDataType(DataBuffer.Type.DOUBLE, X);
-            dspr(order, Uplo, (int) X.length(), alpha, X, X.majorStride(), Ap);
+        if (X.data().dataType() == DataType.DOUBLE) {
+            DefaultOpExecutioner.validateDataType(DataType.DOUBLE, X);
+            dspr(order, Uplo, (int) X.length(), alpha, X, X.stride(-1), Ap);
         } else {
-            DefaultOpExecutioner.validateDataType(DataBuffer.Type.FLOAT, X);
-            sspr(order, Uplo, (int) X.length(), (float) alpha, X, X.majorStride(), Ap);
+            DefaultOpExecutioner.validateDataType(DataType.FLOAT, X);
+            sspr(order, Uplo, (int) X.length(), (float) alpha, X, X.stride(-1), Ap);
         }
 
         OpExecutionerUtil.checkForAny(Ap);
@@ -248,12 +267,12 @@ public abstract class BaseLevel2 extends BaseLevel implements Level2 {
 
         // FIXME int cast
 
-        if (X.data().dataType() == DataBuffer.Type.DOUBLE) {
-            DefaultOpExecutioner.validateDataType(DataBuffer.Type.DOUBLE, A, X, Y);
-            dspr2(order, Uplo, (int) X.length(), alpha, X, X.majorStride(), Y, Y.majorStride(), A);
+        if (X.data().dataType() == DataType.DOUBLE) {
+            DefaultOpExecutioner.validateDataType(DataType.DOUBLE, A, X, Y);
+            dspr2(order, Uplo, (int) X.length(), alpha, X, X.stride(-1), Y, Y.stride(-1), A);
         } else {
-            DefaultOpExecutioner.validateDataType(DataBuffer.Type.FLOAT, A, X, Y);
-            sspr2(order, Uplo, (int) X.length(), (float) alpha, X, X.majorStride(), Y, Y.majorStride(), A);
+            DefaultOpExecutioner.validateDataType(DataType.FLOAT, A, X, Y);
+            sspr2(order, Uplo, (int) X.length(), (float) alpha, X, X.stride(-1), Y, Y.stride(-1), A);
         }
 
         OpExecutionerUtil.checkForAny(A);
@@ -279,13 +298,13 @@ public abstract class BaseLevel2 extends BaseLevel implements Level2 {
 
         // FIXME: int cast
 
-        if (X.data().dataType() == DataBuffer.Type.DOUBLE) {
-            DefaultOpExecutioner.validateDataType(DataBuffer.Type.DOUBLE, A, X, Y);
-            dsymv(order, Uplo, (int) X.length(), alpha, A, (int) A.size(0), X, X.majorStride(), beta, Y, Y.majorStride());
+        if (X.data().dataType() == DataType.DOUBLE) {
+            DefaultOpExecutioner.validateDataType(DataType.DOUBLE, A, X, Y);
+            dsymv(order, Uplo, (int) X.length(), alpha, A, (int) A.size(0), X, X.stride(-1), beta, Y, Y.stride(-1));
         } else {
-            DefaultOpExecutioner.validateDataType(DataBuffer.Type.FLOAT, A, X, Y);
-            ssymv(order, Uplo, (int) X.length(), (float) alpha, A, (int) A.size(0), X, X.majorStride(), (float) beta, Y,
-                            Y.majorStride());
+            DefaultOpExecutioner.validateDataType(DataType.FLOAT, A, X, Y);
+            ssymv(order, Uplo, (int) X.length(), (float) alpha, A, (int) A.size(0), X, X.stride(-1), (float) beta, Y,
+                            Y.stride(-1));
         }
 
         OpExecutionerUtil.checkForAny(Y);
@@ -309,12 +328,12 @@ public abstract class BaseLevel2 extends BaseLevel implements Level2 {
 
         // FIXME: int cast
 
-        if (X.data().dataType() == DataBuffer.Type.DOUBLE) {
-            DefaultOpExecutioner.validateDataType(DataBuffer.Type.DOUBLE, A, X);
-            dsyr(order, Uplo, (int) X.length(), alpha, X, X.majorStride(), A, (int) A.size(0));
+        if (X.data().dataType() == DataType.DOUBLE) {
+            DefaultOpExecutioner.validateDataType(DataType.DOUBLE, A, X);
+            dsyr(order, Uplo, (int) X.length(), alpha, X, X.stride(-1), A, (int) A.size(0));
         } else {
-            DefaultOpExecutioner.validateDataType(DataBuffer.Type.FLOAT, A, X);
-            ssyr(order, Uplo, (int) X.length(), (float) alpha, X, X.majorStride(), A, (int) A.size(0));
+            DefaultOpExecutioner.validateDataType(DataType.FLOAT, A, X);
+            ssyr(order, Uplo, (int) X.length(), (float) alpha, X, X.stride(-1), A, (int) A.size(0));
         }
 
         OpExecutionerUtil.checkForAny(A);
@@ -335,12 +354,12 @@ public abstract class BaseLevel2 extends BaseLevel implements Level2 {
 
         // FIXME: int cast
 
-        if (X.data().dataType() == DataBuffer.Type.DOUBLE) {
-            DefaultOpExecutioner.validateDataType(DataBuffer.Type.DOUBLE, A, X, Y);
-            dsyr2(order, Uplo, (int) X.length(), alpha, X, X.majorStride(), Y, Y.majorStride(), A, (int) A.size(0));
+        if (X.data().dataType() == DataType.DOUBLE) {
+            DefaultOpExecutioner.validateDataType(DataType.DOUBLE, A, X, Y);
+            dsyr2(order, Uplo, (int) X.length(), alpha, X, X.stride(-1), Y, Y.stride(-1), A, (int) A.size(0));
         } else {
-            DefaultOpExecutioner.validateDataType(DataBuffer.Type.FLOAT, A, X, Y);
-            ssyr2(order, Uplo, (int) X.length(), (float) alpha, X, X.majorStride(), Y, Y.majorStride(), A, (int) A.size(0));
+            DefaultOpExecutioner.validateDataType(DataType.FLOAT, A, X, Y);
+            ssyr2(order, Uplo, (int) X.length(), (float) alpha, X, X.stride(-1), Y, Y.stride(-1), A, (int) A.size(0));
         }
 
         OpExecutionerUtil.checkForAny(A);
@@ -364,12 +383,12 @@ public abstract class BaseLevel2 extends BaseLevel implements Level2 {
 
         // FIXME: int cast
 
-        if (X.data().dataType() == DataBuffer.Type.DOUBLE) {
-            DefaultOpExecutioner.validateDataType(DataBuffer.Type.DOUBLE, A, X);
-            dtbmv(order, Uplo, TransA, Diag, (int) X.length(), (int) A.columns(), A, (int) A.size(0), X, X.majorStride());
+        if (X.data().dataType() == DataType.DOUBLE) {
+            DefaultOpExecutioner.validateDataType(DataType.DOUBLE, A, X);
+            dtbmv(order, Uplo, TransA, Diag, (int) X.length(), (int) A.columns(), A, (int) A.size(0), X, X.stride(-1));
         } else {
-            DefaultOpExecutioner.validateDataType(DataBuffer.Type.FLOAT, A, X);
-            stbmv(order, Uplo, TransA, Diag, (int) X.length(), (int) A.columns(), A, (int) A.size(0), X, X.majorStride());
+            DefaultOpExecutioner.validateDataType(DataType.FLOAT, A, X);
+            stbmv(order, Uplo, TransA, Diag, (int) X.length(), (int) A.columns(), A, (int) A.size(0), X, X.stride(-1));
         }
     }
 
@@ -390,12 +409,12 @@ public abstract class BaseLevel2 extends BaseLevel implements Level2 {
 
         // FIXME: int cast
 
-        if (X.data().dataType() == DataBuffer.Type.DOUBLE) {
-            DefaultOpExecutioner.validateDataType(DataBuffer.Type.DOUBLE, A, X);
-            dtbsv(order, Uplo, TransA, Diag, (int) X.length(), (int) A.columns(), A, (int) A.size(0), X, X.majorStride());
+        if (X.data().dataType() == DataType.DOUBLE) {
+            DefaultOpExecutioner.validateDataType(DataType.DOUBLE, A, X);
+            dtbsv(order, Uplo, TransA, Diag, (int) X.length(), (int) A.columns(), A, (int) A.size(0), X, X.stride(-1));
         } else {
-            DefaultOpExecutioner.validateDataType(DataBuffer.Type.FLOAT, A, X);
-            stbsv(order, Uplo, TransA, Diag, (int) X.length(), (int) A.columns(), A, (int) A.size(0), X, X.majorStride());
+            DefaultOpExecutioner.validateDataType(DataType.FLOAT, A, X);
+            stbsv(order, Uplo, TransA, Diag, (int) X.length(), (int) A.columns(), A, (int) A.size(0), X, X.stride(-1));
         }
 
     }
@@ -417,12 +436,12 @@ public abstract class BaseLevel2 extends BaseLevel implements Level2 {
 
         // FIXME: int cast
 
-        if (X.data().dataType() == DataBuffer.Type.DOUBLE) {
-            DefaultOpExecutioner.validateDataType(DataBuffer.Type.DOUBLE, X);
-            dtpmv(order, Uplo, TransA, Diag, (int) Ap.length(), Ap, X, X.majorStride());
+        if (X.data().dataType() == DataType.DOUBLE) {
+            DefaultOpExecutioner.validateDataType(DataType.DOUBLE, X);
+            dtpmv(order, Uplo, TransA, Diag, (int) Ap.length(), Ap, X, X.stride(-1));
         } else {
-            DefaultOpExecutioner.validateDataType(DataBuffer.Type.FLOAT, X);
-            stpmv(order, Uplo, TransA, Diag, (int) Ap.length(), Ap, X, X.majorStride());
+            DefaultOpExecutioner.validateDataType(DataType.FLOAT, X);
+            stpmv(order, Uplo, TransA, Diag, (int) Ap.length(), Ap, X, X.stride(-1));
         }
 
         OpExecutionerUtil.checkForAny(X);
@@ -445,12 +464,12 @@ public abstract class BaseLevel2 extends BaseLevel implements Level2 {
 
         // FIXME: int cast
 
-        if (X.data().dataType() == DataBuffer.Type.DOUBLE) {
-            DefaultOpExecutioner.validateDataType(DataBuffer.Type.DOUBLE, X, Ap);
-            dtpsv(order, Uplo, TransA, Diag, (int) X.length(), Ap, X, X.majorStride());
+        if (X.data().dataType() == DataType.DOUBLE) {
+            DefaultOpExecutioner.validateDataType(DataType.DOUBLE, X, Ap);
+            dtpsv(order, Uplo, TransA, Diag, (int) X.length(), Ap, X, X.stride(-1));
         } else {
-            DefaultOpExecutioner.validateDataType(DataBuffer.Type.FLOAT, Ap, X);
-            stpsv(order, Uplo, TransA, Diag, (int) X.length(), Ap, X, X.majorStride());
+            DefaultOpExecutioner.validateDataType(DataType.FLOAT, Ap, X);
+            stpsv(order, Uplo, TransA, Diag, (int) X.length(), Ap, X, X.stride(-1));
         }
 
         OpExecutionerUtil.checkForAny(X);
@@ -473,12 +492,12 @@ public abstract class BaseLevel2 extends BaseLevel implements Level2 {
 
         // FIXME: int cast
 
-        if (A.data().dataType() == DataBuffer.Type.DOUBLE) {
-            DefaultOpExecutioner.validateDataType(DataBuffer.Type.DOUBLE, A, X);
-            dtrmv(order, Uplo, TransA, Diag, (int) X.length(), A, (int) A.size(0), X, X.majorStride());
+        if (A.data().dataType() == DataType.DOUBLE) {
+            DefaultOpExecutioner.validateDataType(DataType.DOUBLE, A, X);
+            dtrmv(order, Uplo, TransA, Diag, (int) X.length(), A, (int) A.size(0), X, X.stride(-1));
         } else {
-            DefaultOpExecutioner.validateDataType(DataBuffer.Type.FLOAT, A, X);
-            strmv(order, Uplo, TransA, Diag, (int) X.length(), A, (int) A.size(0), X, X.majorStride());
+            DefaultOpExecutioner.validateDataType(DataType.FLOAT, A, X);
+            strmv(order, Uplo, TransA, Diag, (int) X.length(), A, (int) A.size(0), X, X.stride(-1));
         }
 
         OpExecutionerUtil.checkForAny(X);
@@ -501,12 +520,12 @@ public abstract class BaseLevel2 extends BaseLevel implements Level2 {
 
         // FIXME: int cast
 
-        if (X.data().dataType() == DataBuffer.Type.DOUBLE) {
-            DefaultOpExecutioner.validateDataType(DataBuffer.Type.DOUBLE, A, X);
-            dtrsv(order, Uplo, TransA, Diag, (int) A.length(), A, (int) A.size(0), X, X.majorStride());
+        if (X.data().dataType() == DataType.DOUBLE) {
+            DefaultOpExecutioner.validateDataType(DataType.DOUBLE, A, X);
+            dtrsv(order, Uplo, TransA, Diag, (int) A.length(), A, (int) A.size(0), X, X.stride(-1));
         } else {
-            DefaultOpExecutioner.validateDataType(DataBuffer.Type.FLOAT, A, X);
-            strsv(order, Uplo, TransA, Diag, (int) A.length(), A, (int) A.size(0), X, X.majorStride());
+            DefaultOpExecutioner.validateDataType(DataType.FLOAT, A, X);
+            strsv(order, Uplo, TransA, Diag, (int) A.length(), A, (int) A.size(0), X, X.stride(-1));
         }
 
         OpExecutionerUtil.checkForAny(X);

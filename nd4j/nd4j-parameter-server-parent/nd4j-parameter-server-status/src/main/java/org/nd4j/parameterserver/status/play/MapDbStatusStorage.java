@@ -17,7 +17,7 @@
 package org.nd4j.parameterserver.status.play;
 
 import io.aeron.driver.MediaDriver;
-import org.jetbrains.annotations.NotNull;
+import lombok.NonNull;
 import org.mapdb.*;
 import org.nd4j.parameterserver.ParameterServerSubscriber;
 import org.nd4j.parameterserver.model.SubscriberState;
@@ -109,12 +109,12 @@ public class MapDbStatusStorage extends BaseStatusStorage {
     private class StatusStorageSerializer implements Serializer<SubscriberState> {
 
         @Override
-        public void serialize(@NotNull DataOutput2 out, @NotNull SubscriberState value) throws IOException {
+        public void serialize(@NonNull DataOutput2 out, @NonNull SubscriberState value) throws IOException {
             value.write(out);
         }
 
         @Override
-        public SubscriberState deserialize(@NotNull DataInput2 input, int available) throws IOException {
+        public SubscriberState deserialize(@NonNull DataInput2 input, int available) throws IOException {
             return SubscriberState.read(input);
         }
 

@@ -26,6 +26,8 @@ public interface IEarlyStoppingTrainer<T extends Model> {
     /** Conduct early stopping training */
     EarlyStoppingResult<T> fit();
 
+    EarlyStoppingResult<T> pretrain();
+
     /** Set the early stopping listener */
     void setListener(EarlyStoppingListener<T> listener);
 

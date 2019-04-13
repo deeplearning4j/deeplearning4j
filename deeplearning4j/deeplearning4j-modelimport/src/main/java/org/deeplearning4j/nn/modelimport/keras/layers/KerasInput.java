@@ -20,6 +20,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.conf.inputs.InputType;
+import org.deeplearning4j.nn.conf.layers.Convolution3D;
 import org.deeplearning4j.nn.modelimport.keras.KerasLayer;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
@@ -64,7 +65,7 @@ public class KerasInput extends KerasLayer {
     public KerasInput(Map<String, Object> layerConfig, boolean enforceTrainingConfig)
             throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         super(layerConfig, enforceTrainingConfig);
-        if (this.inputShape.length > 3)
+        if (this.inputShape.length > 4)
             throw new UnsupportedKerasConfigurationException(
                     "Inputs with " + this.inputShape.length + " dimensions not supported");
     }
@@ -99,7 +100,7 @@ public class KerasInput extends KerasLayer {
         this.inboundLayerNames = new ArrayList<>();
         this.layer = null;
         this.vertex = null;
-        if (this.inputShape.length > 3)
+        if (this.inputShape.length > 4)
             throw new UnsupportedKerasConfigurationException(
                     "Inputs with " + this.inputShape.length + " dimensions not supported");
     }
@@ -141,6 +142,28 @@ public class KerasInput extends KerasLayer {
                         this.dimOrder = DimOrder.THEANO;
                         myInputType = new InputType.InputTypeConvolutional(this.inputShape[1], this.inputShape[2],
                                 this.inputShape[0]);
+                        log.warn("Couldn't determine dim ordering / data format from model file. Older Keras " +
+                                "versions may come without specified backend, in which case we assume the model was " +
+                                "built with theano." );
+                }
+                break;
+            case 4:
+                switch (this.dimOrder) {
+                    case TENSORFLOW:
+                        myInputType = new InputType.InputTypeConvolutional3D(Convolution3D.DataFormat.NDHWC,
+                                this.inputShape[0], this.inputShape[1],
+                                this.inputShape[2],this.inputShape[3]);
+                        break;
+                    case THEANO:
+                        myInputType = new InputType.InputTypeConvolutional3D(Convolution3D.DataFormat.NCDHW,
+                                this.inputShape[3], this.inputShape[0],
+                                this.inputShape[1],this.inputShape[2]);
+                        break;
+                    default:
+                        this.dimOrder = DimOrder.THEANO;
+                        myInputType = new InputType.InputTypeConvolutional3D(Convolution3D.DataFormat.NCDHW,
+                                this.inputShape[3], this.inputShape[0],
+                                this.inputShape[1],this.inputShape[2]);
                         log.warn("Couldn't determine dim ordering / data format from model file. Older Keras " +
                                 "versions may come without specified backend, in which case we assume the model was " +
                                 "built with theano." );

@@ -21,6 +21,7 @@ import lombok.val;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.util.ArrayUtil;
@@ -65,10 +66,6 @@ public abstract class BaseTransformOp extends BaseOp implements TransformOp {
             if(Shape.isPlaceholderShape(i_v2.getShape())) {
                 sameDiff.addPropertyToResolve(this,i_v2.getVarName());
             }
-            if(i_v1.getShape() != null)
-                this.n = ArrayUtil.prod(i_v1.getShape());
-
-
         } else {
             throw new IllegalArgumentException("Input not null variables.");
         }
@@ -93,8 +90,6 @@ public abstract class BaseTransformOp extends BaseOp implements TransformOp {
             this.xVertexId = i_v1.getVarName();
             this.yVertexId = i_v2.getVarName();
             sameDiff.addArgsFor(new SDVariable[]{i_v1,i_v2},this);
-            if(i_v1.getShape() != null)
-                this.n = ArrayUtil.prod(i_v1.getShape());
 
             if(Shape.isPlaceholderShape(i_v1.getShape())) {
                 sameDiff.addPropertyToResolve(this,i_v1.getVarName());
@@ -137,9 +132,6 @@ public abstract class BaseTransformOp extends BaseOp implements TransformOp {
             f().validateDifferentialFunctionsameDiff(i_v);
             this.xVertexId = i_v.getVarName();
             sameDiff.addArgsFor(new SDVariable[]{i_v},this);
-            if(i_v.getShape() != null) {
-                this.n = ArrayUtil.prod(i_v.getShape());
-            }
 
             if(Shape.isPlaceholderShape(i_v.getShape())) {
                 sameDiff.addPropertyToResolve(this,i_v.getVarName());
@@ -168,15 +160,11 @@ public abstract class BaseTransformOp extends BaseOp implements TransformOp {
 
     public BaseTransformOp() {}
 
-    public BaseTransformOp(INDArray x, INDArray z, long n) {
-        super(x, z, n);
-    }
-
-    public BaseTransformOp(INDArray x, INDArray y, INDArray z, long n) {
-        super(x, y, z, n);
+    public BaseTransformOp(INDArray x, INDArray y, INDArray z) {
+        super(x, y, z);
         if (y != null)
             LinAlgExceptions.assertSameLength(x, y, z);
-        else
+        else if (z != null)
             LinAlgExceptions.assertSameLength(x, z);
 
     }
@@ -185,55 +173,11 @@ public abstract class BaseTransformOp extends BaseOp implements TransformOp {
         super(x);
     }
 
-    @Override
-    public Type opType() {
-        if(sameDiff == null)
-            return Type.TRANSFORM;  //TODO we can't determine if it's transform or pairwise using this method until initialized with args
-        if(args() == null || args().length == 1)
-            return Type.TRANSFORM;
-        else if(args().length == 2)
-            return Type.PAIRWISE;
-
-        else throw new ND4JIllegalStateException("Illegal number of args (can only be 1 or 2)");
-    }
-
-
-
-    @Override
-    public List<long[]> calculateOutputShape() {
-        List<long[]> ret = new ArrayList<>(1);
-        if(arg() == null)
-            throw new ND4JIllegalStateException("No arg found for op!");
-
-        val arr = sameDiff.getArrForVarName(arg().getVarName());
-        if(arr == null)
-            return Collections.emptyList();
-        ret.add(arr.shape());
-        this.n = arr.length();
-        return ret;
-    }
+    public abstract List<LongShapeDescriptor> calculateOutputShape();
 
 
     @Override
     public INDArray z() {
-        if(z == null) {
-            if(sameDiff != null) {
-                this.z = outputVariables()[0].getArr();
-                if(this.z == null) {
-                    val var = outputVariables()[0];
-                    if(var.getShape() != null)
-                        this. z = var.storeAndAllocateNewArray();
-                    else {
-                        val argsShape = args()[0].getShape();
-                        if(argsShape != null) {
-                            sameDiff.putShapeForVarName(var.getVarName(),argsShape);
-                            this. z = var.storeAndAllocateNewArray();
-                        }
-                    }
-                }
-            }
-        }
-
         return z;
     }
 

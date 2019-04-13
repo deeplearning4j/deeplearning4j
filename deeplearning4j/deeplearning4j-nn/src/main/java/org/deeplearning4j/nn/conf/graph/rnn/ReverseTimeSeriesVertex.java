@@ -77,7 +77,7 @@ public class ReverseTimeSeriesVertex extends GraphVertex {
         return maskArrayInputName != null ? maskArrayInputName.hashCode() : 0;
     }
 
-    public int numParams(boolean backprop) {
+    public long numParams(boolean backprop) {
         return 0;
     }
 

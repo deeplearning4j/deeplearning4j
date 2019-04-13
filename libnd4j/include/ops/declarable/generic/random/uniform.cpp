@@ -22,6 +22,7 @@
 #if NOT_EXCLUDED(OP_randomuniform)
 
 #include <ops/declarable/CustomOperations.h>
+#include <helpers/RandomLauncher.h>
 
 namespace nd4j {
     namespace ops {
@@ -36,8 +37,10 @@ namespace nd4j {
          */
         CUSTOM_OP_IMPL(randomuniform, 1, 1, true, 2, 0) {
             // uniform distribution
-            auto rng = block.getRNG();
+            auto rng = block.randomGenerator();
 
+            // FIXME: to be implemented
+            /*
             if (rng == nullptr)
                 return Status::THROW("RNG is null, aborting...");
 
@@ -47,8 +50,11 @@ namespace nd4j {
             functions::random::RandomFunction<T>::template execTransform<randomOps::UniformDistribution<T>>(block.getRNG(), z->getBuffer(), z->getShapeInfo(), block.getTArguments()->data());
 
             STORE_RESULT(*z);
+*/
+            REQUIRE_TRUE(block.numT() > 1, 0, "RandomUniform: to/from must be set");
 
-            return ND4J_STATUS_OK;
+            RandomLauncher::fillUniform(rng, OUTPUT_VARIABLE(0), T_ARG(0), T_ARG(1));
+            return Status::OK();
         }
 
 
@@ -56,11 +62,15 @@ namespace nd4j {
             auto in = INPUT_VARIABLE(0);
             auto shape = in->template asVectorT<Nd4jLong>();
 
-            Nd4jLong *newShape;
-            ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(shape.size()), Nd4jLong);
-            shape::shapeBuffer(shape.size(), shape.data(), newShape);
+            Nd4jLong *newShape = nd4j::ShapeBuilders::createShapeInfo(block.dataType(), 'c', shape, block.getWorkspace());            
 
             return SHAPELIST(newShape);
+        }
+
+        DECLARE_TYPES(randomuniform) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setAllowedOutputTypes({ALL_FLOATS});
         }
     }
 }

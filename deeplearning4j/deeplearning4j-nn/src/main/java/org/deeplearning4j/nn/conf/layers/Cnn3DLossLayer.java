@@ -35,24 +35,23 @@ import java.util.Collection;
 import java.util.Map;
 
 /**
- * 3D Convolutional Neural Network Loss Layer.<br>
- * Handles calculation of gradients etc for various loss (objective) functions.<br>
- * NOTE: Cnn3DLossLayer does not have any parameters. Consequently, the output activations size is equal to the input size.<br>
- * Input and output activations are same as 3D CNN layers: 5 dimensions with one of two possible shape, depending
- * on the data format:<br>
- * NCDHW ("channels first") format: data has shape [miniBatchSize,channels,depth,height,width]<br>
- * NDHWC ("channels last") format: data has shape [miniBatchSize,channels,depth,height,width]<br>
- * Cnn3DLossLayer has support for a built-in activation function (tanh, softmax etc) - if this is not required, set
- * activation function to Activation.IDENTITY. For activations such as softmax, note that this is applied channel-wise:
- * that is, softmax is applied along dimension 1 for NCDHW, or dimension 4 for NDHWC for each minibatch, and x/y/z location separately.<br>
+ * 3D Convolutional Neural Network Loss Layer.<br> Handles calculation of gradients etc for various loss (objective)
+ * functions.<br> NOTE: Cnn3DLossLayer does not have any parameters. Consequently, the output activations size is equal
+ * to the input size.<br> Input and output activations are same as 3D CNN layers: 5 dimensions with one of two possible
+ * shape, depending on the data format:<br> NCDHW ("channels first") format: data has shape
+ * [miniBatchSize,channels,depth,height,width]<br> NDHWC ("channels last") format: data has shape
+ * [miniBatchSize,channels,depth,height,width]<br> Cnn3DLossLayer has support for a built-in activation function (tanh,
+ * softmax etc) - if this is not required, set activation function to Activation.IDENTITY. For activations such as
+ * softmax, note that this is applied channel-wise: that is, softmax is applied along dimension 1 for NCDHW, or
+ * dimension 4 for NDHWC for each minibatch, and x/y/z location separately.<br>
  * <br>
  * Note that multiple types of masking are supported. Mask arrays (when present) must be 5d in a 'broadcastable' format:
- * that is, for (n=minibatchSize, c=channels, d=depth, h=height, w=width):<br>
- * - Per example masking: Where an example is present or not (and all outputs are masked by it). Mask shape [n,1,1,1,1] for both NCDHW and NDHWC<br>
- * - Per x/y/z location masking: where each spatial X/Y/Z location is present or not (all channels at a given x/y/z are masked by it).
- * Mask shape: [n,1,d,h,w] (NCDHW format) or [n,d,h,w,1] (NDHWC format).<br>
- * - Per output masking: Where each output activation value is present or not - mask shape [n,c,d,h,w] (NCDHW format) or
- * [n,d,h,w,c] (NDHWC format) - same same as input/output in both cases<br>
+ * that is, for (n=minibatchSize, c=channels, d=depth, h=height, w=width):<br> - Per example masking: Where an example
+ * is present or not (and all outputs are masked by it). Mask shape [n,1,1,1,1] for both NCDHW and NDHWC<br> - Per x/y/z
+ * location masking: where each spatial X/Y/Z location is present or not (all channels at a given x/y/z are masked by
+ * it). Mask shape: [n,1,d,h,w] (NCDHW format) or [n,d,h,w,1] (NDHWC format).<br> - Per output masking: Where each
+ * output activation value is present or not - mask shape [n,c,d,h,w] (NCDHW format) or [n,d,h,w,c] (NDHWC format) -
+ * same as input/output in both cases<br>
  *
  * @author Alex Black
  */
@@ -92,9 +91,11 @@ public class Cnn3DLossLayer extends FeedForwardLayer {
 
     @Override
     public InputType getOutputType(int layerIndex, InputType inputType) {
-        if (inputType == null || (inputType.getType() != InputType.Type.CNN3D && inputType.getType() != InputType.Type.CNNFlat)) {
+        if (inputType == null || (inputType.getType() != InputType.Type.CNN3D
+                        && inputType.getType() != InputType.Type.CNNFlat)) {
             throw new IllegalStateException("Invalid input type for CnnLossLayer (layer index = " + layerIndex
-                            + ", layer name=\"" + getLayerName() + "\"): Expected CNN3D or CNNFlat input, got " + inputType);
+                            + ", layer name=\"" + getLayerName() + "\"): Expected CNN3D or CNNFlat input, got "
+                            + inputType);
         }
         return inputType;
     }
@@ -108,9 +109,9 @@ public class Cnn3DLossLayer extends FeedForwardLayer {
     public LayerMemoryReport getMemoryReport(InputType inputType) {
         //During inference and training: dup the input array. But, this counts as *activations* not working memory
         return new LayerMemoryReport.Builder(layerName, getClass(), inputType, inputType).standardMemory(0, 0) //No params
-                .workingMemory(0, 0, 0, 0)
-                .cacheMemory(MemoryReport.CACHE_MODE_ALL_ZEROS, MemoryReport.CACHE_MODE_ALL_ZEROS) //No caching
-                .build();
+                        .workingMemory(0, 0, 0, 0)
+                        .cacheMemory(MemoryReport.CACHE_MODE_ALL_ZEROS, MemoryReport.CACHE_MODE_ALL_ZEROS) //No caching
+                        .build();
     }
 
     @Override
@@ -119,28 +120,47 @@ public class Cnn3DLossLayer extends FeedForwardLayer {
     }
 
 
+    @Getter
+    @Setter
     public static class Builder extends BaseOutputLayer.Builder<Builder> {
 
+        /**
+         * Format of the input/output data. See {@link Convolution3D.DataFormat} for details
+         */
         protected Convolution3D.DataFormat dataFormat;
 
         /**
          * @param format Format of the input/output data. See {@link Convolution3D.DataFormat} for details
          */
         public Builder(@NonNull Convolution3D.DataFormat format) {
-            this.dataFormat = format;
-            this.activationFn = Activation.IDENTITY.getActivationFunction();
+            this.setDataFormat(format);
+            this.setActivationFn(Activation.IDENTITY.getActivationFunction());
         }
 
         @Override
         @SuppressWarnings("unchecked")
         public Builder nIn(int nIn) {
-            throw new UnsupportedOperationException("Cnn3DLossLayer has no parameters, thus nIn will always equal nOut.");
+            throw new UnsupportedOperationException(
+                            "Cnn3DLossLayer has no parameters, thus nIn will always equal nOut.");
         }
 
         @Override
         @SuppressWarnings("unchecked")
         public Builder nOut(int nOut) {
-            throw new UnsupportedOperationException("Cnn3DLossLayer has no parameters, thus nIn will always equal nOut.");
+            throw new UnsupportedOperationException(
+                            "Cnn3DLossLayer has no parameters, thus nIn will always equal nOut.");
+        }
+
+        @Override
+        public void setNIn(int nIn){
+            throw new UnsupportedOperationException(
+                    "Cnn3DLossLayer has no parameters, thus nIn will always equal nOut.");
+        }
+
+        @Override
+        public void setNOut(int nOut){
+            throw new UnsupportedOperationException(
+                    "Cnn3DLossLayer has no parameters, thus nIn will always equal nOut.");
         }
 
         @Override

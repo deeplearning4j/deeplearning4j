@@ -30,19 +30,25 @@
 
 namespace nd4j {
     namespace ops {
+        DECLARE_TYPES(confusion_matrix) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes({ALL_INTS, ALL_FLOATS})
+                    ->setAllowedOutputTypes({ALL_FLOATS, ALL_INTS});
+        }
+
         CUSTOM_OP_IMPL(confusion_matrix, 2, 1, false, 0, -2) {
 
             auto labels = INPUT_VARIABLE(0);
             auto predictions = INPUT_VARIABLE(1);
-            NDArray<T>* weights = nullptr;
+            NDArray *weights = nullptr;
             if(block.width() > 2){
                 weights = INPUT_VARIABLE(2);
                 REQUIRE_TRUE(weights->isSameShape(predictions),0, "CONFUSION_MATRIX: Weights and predictions should have equal shape");
             }
             auto output = OUTPUT_VARIABLE(0);
-
-            int minPrediction = predictions->template reduceNumber<simdOps::Min<T>>();
-            int minLabel = labels->template reduceNumber<simdOps::Min<T>>();
+            output->assign(0.);
+            int minPrediction = predictions->reduceNumber(reduce::Min).e<int>(0);
+            int minLabel = labels->reduceNumber(reduce::Min).e<int>(0);
 
             REQUIRE_TRUE(minLabel >=0, 0, "CONFUSION_MATRIX: Labels contains negative values !");
             REQUIRE_TRUE(minPrediction >=0, 0, "CONFUSION_MATRIX: Predictions contains negative values !");
@@ -52,13 +58,16 @@ namespace nd4j {
 
             helpers::confusionFunctor(labels, predictions, weights, output);
 
-            return ND4J_STATUS_OK;
+            return Status::OK();
         }
 
         DECLARE_SHAPE_FN(confusion_matrix) {
-
             auto labels = INPUT_VARIABLE(0);
             auto predictions = INPUT_VARIABLE(1);
+            auto dtype = block.dataType();
+            dtype = nd4j::DataType::INT64; // dtype - should be a param with int argument
+            if (block.numI() > 1)
+                dtype = (nd4j::DataType)INT_ARG(1);
 
             int numClasses = 0;
 
@@ -66,15 +75,13 @@ namespace nd4j {
                 numClasses = INT_ARG(0);
             }
             else  {
-                int maxPrediction = predictions->template reduceNumber<simdOps::Max<T>>();
-                int maxLabel = labels->template reduceNumber<simdOps::Max<T>>();
+                int maxPrediction = predictions->reduceNumber(reduce::Max).e<int>(0);
+                int maxLabel = labels->reduceNumber(reduce::Max).e<int>(0);
                 numClasses = (maxPrediction >= maxLabel) ?  maxPrediction+1 : maxLabel+1;
             }
-
-            Nd4jLong *newShape;
+            
             std::array<Nd4jLong, 2> shape = {{numClasses,numClasses}};
-            ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(2), Nd4jLong);
-            shape::shapeBuffer(2, shape.data(), newShape);
+            Nd4jLong* newShape = nd4j::ShapeBuilders::createShapeInfo(dtype, 'c', 2, shape.data(), block.getWorkspace());            
 
             return SHAPELIST(newShape);
         }

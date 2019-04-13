@@ -29,19 +29,29 @@ namespace nd4j {
         BROADCASTABLE_OP_IMPL(reversedivide, 0, 0) {
             auto x = INPUT_VARIABLE(0);
             auto y = INPUT_VARIABLE(1);
-            auto z = this->getZ(block);
+            auto z = OUTPUT_VARIABLE(0);
 
-            // auto tZ = BroadcastHelper<T>::template broadcastApply<simdOps::ReverseDivide<T>>(x, y, z);
-            x->template applyTrueBroadcast<simdOps::ReverseDivide<T>>(y, z, true);
-            // if (tZ == nullptr)
-            //     return ND4J_STATUS_KERNEL_FAILURE;
-            // else if (tZ != z) {
-            //     OVERWRITE_RESULT(tZ);
-            // }
+            BROADCAST_CHECK_EMPTY(x,y,z);
 
-			return ND4J_STATUS_OK;
+            REQUIRE_TRUE(!x->isB(), 0, "REVERSEDIVIDE OP: you can't divide by bool array!");
+            x->applyTrueBroadcast(BROADCAST(ReverseDivide), y, z, true);            
+
+			return Status::OK();
         }
         DECLARE_SYN(RDiv, reversedivide);
+
+        DECLARE_TYPES(reversedivide) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(0, DataType::ANY)
+                    ->setAllowedInputTypes(1, DataType::ANY)
+                    ->setAllowedOutputTypes(0, DataType::INHERIT);
+        }
+
+        DECLARE_TYPES(reversedivide_bp) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(DataType::ANY)
+                    ->setAllowedOutputTypes({ALL_FLOATS});
+        }
 
         CUSTOM_OP_IMPL(reversedivide_bp, 3, 2, false, 0, 0) {
             auto x = INPUT_VARIABLE(0);
@@ -51,57 +61,44 @@ namespace nd4j {
             auto gradX = OUTPUT_VARIABLE(0);
             auto gradY = OUTPUT_VARIABLE(1);
 
-            auto lambdaY = LAMBDA_TT(_e, _x) {
-                return _e / _x;
-            };
-
-            auto lambdaX = LAMBDA_TTT(_e, _x, _y) {
-                return _e * -_y / (_x * _x);
-            };
-
-
             if (x->isSameShape(y)) {
                 // PWT case case
 
                 // X gradient
-                epsNext->applyTriplewiseLambda(x, y, lambdaX, gradX);
-
+                //epsNext->applyTriplewiseLambda(x, y, lambdaX, gradX);
+                gradX->assign((*epsNext) * (*y) / ((*x) * (*x)));
+                gradX->applyTransform(transform::Neg, nullptr, nullptr);
                 // Y gradient
-                epsNext->applyPairwiseLambda(x, lambdaY, gradY);
-
+                //epsNext->applyPairwiseLambda(x, lambdaY, gradY);
+                gradY->assign((*epsNext) / (*x));
             } else if (y->isScalar()) {
                 // scalar case
-                T _y = y->getScalar(0);
-                auto lambdaXS = LAMBDA_TT(_e, _x,  _y) {
-                    return _e * -_y / (_x * _x);
-                };
-
-                T tmp = epsNext->template reduceNumber<simdOps::Sum<T>>();
-                T tmpX = x->template reduceNumber<simdOps::Sum<T>>();
+                auto tmp = epsNext->reduceNumber(reduce::Sum);
+                auto tmpX = x->reduceNumber(reduce::Sum);
                 gradY->assign(tmp / tmpX);
-                
-                epsNext->applyPairwiseLambda(x, lambdaXS, gradX);
+
+                gradX->assign((*epsNext) * (*y) / ((*x) * (*x)));
+                gradX->applyTransform(transform::Neg, nullptr, nullptr);
             } else {
                 // broadcast case
 
                 auto preY = (*epsNext) / (*x);
 
-                NDArray<T> negY(*y);
-                y->template applyTransform<simdOps::Neg<T>>(&negY);
-                auto preX = *epsNext * negY / ((*x) * (*x));
+                auto preX = *epsNext * (*y) / ((*x) * (*x));
+                preX.applyTransform(transform::Neg, nullptr, nullptr);
 
-                auto axisX = ShapeUtils<T>::evalBroadcastBackwardAxis(x->shapeInfo(), epsNext->shapeInfo());
-                auto axisY = ShapeUtils<T>::evalBroadcastBackwardAxis(y->shapeInfo(), epsNext->shapeInfo());
+                auto axisX = ShapeUtils::evalBroadcastBackwardAxis(x->shapeInfo(), epsNext->shapeInfo());
+                auto axisY = ShapeUtils::evalBroadcastBackwardAxis(y->shapeInfo(), epsNext->shapeInfo());
 
                 if (axisX.size() > 0) {
-                    auto sum = preX.template reduceAlongDimension<simdOps::Sum<T>>(axisX);
+                    auto sum = preX.reduceAlongDimension(reduce::Sum, axisX);
                     gradX->assign(sum);
                     delete sum;
                 } else 
                     gradX->assign(preX);
 
                 if (axisY.size() > 0) {
-                    auto sum = preY.template reduceAlongDimension<simdOps::Sum<T>>(axisY);
+                    auto sum = preY.reduceAlongDimension(reduce::Sum, axisY);
                     gradY->assign(sum);
                     delete sum;
                 } else

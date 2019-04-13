@@ -16,6 +16,8 @@
 
 package org.deeplearning4j.datasets.iterator;
 
+import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.datasets.iterator.parallel.JointParallelDataSetIterator;
 import org.deeplearning4j.datasets.iterator.tools.SimpleVariableGenerator;
@@ -23,6 +25,7 @@ import org.junit.Test;
 import org.nd4j.linalg.dataset.api.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.dataset.api.iterator.enums.InequalityHandling;
+import org.nd4j.linalg.factory.Nd4j;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -30,6 +33,7 @@ import static org.junit.Assert.assertNotNull;
 /**
  * @author raver119@gmail.com
  */
+@Slf4j
 public class JointParallelDataSetIteratorTest extends BaseDL4JTest {
 
     /**
@@ -52,11 +56,11 @@ public class JointParallelDataSetIteratorTest extends BaseDL4JTest {
             DataSet ds = jpdsi.next();
             assertNotNull("Failed on iteration " + cnt, ds);
 
+//            ds.detach();
+            //ds.migrate();
 
-            assertEquals("Failed on iteration " + cnt, (double) example, ds.getFeatures().meanNumber().doubleValue(),
-                            0.001);
-            assertEquals("Failed on iteration " + cnt, (double) example + 0.5,
-                            ds.getLabels().meanNumber().doubleValue(), 0.001);
+            assertEquals("Failed on iteration " + cnt, (double) example, ds.getFeatures().meanNumber().doubleValue(), 0.001);
+            assertEquals("Failed on iteration " + cnt, (double) example + 0.5, ds.getLabels().meanNumber().doubleValue(), 0.001);
 
             cnt++;
             if (cnt % 2 == 0)

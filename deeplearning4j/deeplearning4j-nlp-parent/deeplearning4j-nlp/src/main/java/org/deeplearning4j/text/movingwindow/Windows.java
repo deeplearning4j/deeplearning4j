@@ -18,11 +18,11 @@ package org.deeplearning4j.text.movingwindow;
 
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.deeplearning4j.models.embeddings.wordvectors.WordVectors;
 import org.deeplearning4j.text.tokenization.tokenizer.DefaultStreamTokenizer;
 import org.deeplearning4j.text.tokenization.tokenizer.Tokenizer;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
-import org.nd4j.util.StringUtils;
 
 import java.io.InputStream;
 import java.util.ArrayList;
@@ -171,8 +171,8 @@ public class Windows {
             }
         }
 
-        String wholeSentence = StringUtils.join(sentence);
-        String window2 = StringUtils.join(onlyTokens);
+        String wholeSentence = StringUtils.join(sentence, " ");
+        String window2 = StringUtils.join(onlyTokens, " ");
         int begin = wholeSentence.indexOf(window2);
         int end = begin + window2.length();
         return new Window(window, windowSize, begin, end);

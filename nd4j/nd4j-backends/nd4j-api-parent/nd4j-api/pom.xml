@@ -27,7 +27,7 @@
     <packaging>jar</packaging>
 
     <name>nd4j-api</name>
-    <url>http://nd4j.org</url>
+    <url>https://deeplearning4j.org</url>
 
     <build>
         <plugins>
@@ -130,22 +130,17 @@
 
     <dependencies>
         <dependency>
+          <groupId>com.jakewharton.byteunits</groupId>
+          <artifactId>byteunits</artifactId>
+          <version>0.9.1</version>
+        </dependency>
+
+        <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-math3</artifactId>
             <version>${commons-math3.version}</version>
         </dependency>
         <!-- Tensorflow import -->
-
-        <!-- Note that this is a super minimal version of flatbuffers used by apache arrow.
-        We use this one as so as not to clash with their version.-->
-
-        <!--
-        <dependency>
-            <groupId>com.vlkan</groupId>
-            <artifactId>flatbuffers</artifactId>
-            <version>${fbs.version}</version>
-        </dependency>
--->
 
         <dependency>
             <groupId>com.google.flatbuffers</groupId>
@@ -200,13 +195,18 @@
             <artifactId>slf4j-api</artifactId>
         </dependency>
 
+
         <!-- Shaded version of Jackson -->
         <dependency>
             <groupId>org.nd4j</groupId>
             <artifactId>jackson</artifactId>
             <version>${project.version}</version>
         </dependency>
-
+        <dependency>
+            <groupId>commons-net</groupId>
+            <artifactId>commons-net</artifactId>
+            <version>${commons-net.version}</version>
+        </dependency>
         <dependency>
             <groupId>org.nd4j</groupId>
             <artifactId>nd4j-buffer</artifactId>

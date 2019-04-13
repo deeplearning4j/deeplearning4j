@@ -43,8 +43,7 @@ import org.deeplearning4j.nn.workspace.ArrayType;
  */
 public class CenterLossOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.layers.CenterLossOutputLayer> {
 
-    private double fullNetworkL1;
-    private double fullNetworkL2;
+    private double fullNetRegTerm;
 
     public CenterLossOutputLayer(NeuralNetConfiguration conf) {
         super(conf);
@@ -55,18 +54,16 @@ public class CenterLossOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn
     }
 
     /** Compute score after labels and input have been set.
-     * @param fullNetworkL1 L1 regularization term for the entire network
-     * @param fullNetworkL2 L2 regularization term for the entire network
+     * @param fullNetRegTerm Regularization score term for the entire network
      * @param training whether score should be calculated at train or test time (this affects things like application of
      *                 dropout, etc)
      * @return score (loss function)
      */
     @Override
-    public double computeScore(double fullNetworkL1, double fullNetworkL2, boolean training, LayerWorkspaceMgr workspaceMgr) {
+    public double computeScore(double fullNetRegTerm, boolean training, LayerWorkspaceMgr workspaceMgr) {
         if (input == null || labels == null)
             throw new IllegalStateException("Cannot calculate score without input and labels " + layerId());
-        this.fullNetworkL1 = fullNetworkL1;
-        this.fullNetworkL2 = fullNetworkL2;
+        this.fullNetRegTerm = fullNetRegTerm;
         INDArray preOut = preOutput2d(training, workspaceMgr);
 
         // center loss has two components
@@ -93,22 +90,20 @@ public class CenterLossOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn
 
         double score = interClassScore + intraClassScore;
 
-        score += fullNetworkL1 + fullNetworkL2;
         score /= getInputMiniBatchSize();
+        score += fullNetRegTerm;
 
         this.score = score;
-
         return score;
     }
 
     /**Compute the score for each example individually, after labels and input have been set.
      *
-     * @param fullNetworkL1 L1 regularization term for the entire network (or, 0.0 to not include regularization)
-     * @param fullNetworkL2 L2 regularization term for the entire network (or, 0.0 to not include regularization)
+     * @param fullNetRegTerm Regularization term for the entire network (or, 0.0 to not include regularization)
      * @return A column INDArray of shape [numExamples,1], where entry i is the score of the ith example
      */
     @Override
-    public INDArray computeScoreForExamples(double fullNetworkL1, double fullNetworkL2, LayerWorkspaceMgr workspaceMgr) {
+    public INDArray computeScoreForExamples(double fullNetRegTerm, LayerWorkspaceMgr workspaceMgr) {
         if (input == null || labels == null)
             throw new IllegalStateException("Cannot calculate score without input and labels " + layerId());
         INDArray preOut = preOutput2d(false, workspaceMgr);
@@ -124,10 +119,8 @@ public class CenterLossOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn
                         maskArray);
         scoreArray.addi(intraClassScoreArray.muli(layerConf().getLambda() / 2));
 
-        double l1l2 = fullNetworkL1 + fullNetworkL2;
-
-        if (l1l2 != 0.0) {
-            scoreArray.addi(l1l2);
+        if (fullNetRegTerm != 0.0) {
+            scoreArray.addi(fullNetRegTerm);
         }
         return workspaceMgr.leverageTo(ArrayType.ACTIVATIONS, scoreArray);
     }
@@ -141,7 +134,7 @@ public class CenterLossOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn
         Pair<Gradient, INDArray> pair = getGradientsAndDelta(preOut, workspaceMgr);
         this.gradient = pair.getFirst();
 
-        score = computeScore(fullNetworkL1, fullNetworkL2, true, workspaceMgr);
+        score = computeScore(fullNetRegTerm, true, workspaceMgr);
     }
 
     @Override
@@ -211,7 +204,7 @@ public class CenterLossOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn
         INDArray centersForExamples = labels.mmul(centers);
         INDArray diff = centersForExamples.sub(input).muli(alpha);
         INDArray numerator = labels.transpose().mmul(diff);
-        INDArray denominator = labels.sum(0).addi(1.0).transpose();
+        INDArray denominator = labels.sum(0).reshape(labels.size(1), 1).addi(1.0);
 
         INDArray deltaC;
         if (layerConf().getGradientCheck()) {

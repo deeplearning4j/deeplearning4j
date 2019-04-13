@@ -23,6 +23,7 @@ import org.junit.rules.ErrorCollector;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.scalar.ScalarAdd;
 import org.nd4j.linalg.factory.Nd4j;
@@ -31,7 +32,8 @@ import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.indexing.SpecifiedIndex;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /**
  * @author Adam Gibson
@@ -67,7 +69,7 @@ public class IndexingTestsC extends BaseNd4jTest {
 
     @Test
     public void testGetRows() {
-        INDArray arr = Nd4j.linspace(1, 9, 9).reshape(3, 3);
+        INDArray arr = Nd4j.linspace(1, 9, 9, DataType.DOUBLE).reshape(3, 3);
         INDArray testAssertion = Nd4j.create(new double[][] {{4, 5}, {7, 8}});
 
         INDArray test = arr.get(new SpecifiedIndex(1, 2), new SpecifiedIndex(0, 1));
@@ -86,7 +88,7 @@ public class IndexingTestsC extends BaseNd4jTest {
 
     @Test
     public void testMultiRow() {
-        INDArray matrix = Nd4j.linspace(1, 9, 9).reshape(3, 3);
+        INDArray matrix = Nd4j.linspace(1, 9, 9, DataType.DOUBLE).reshape(3, 3);
         INDArray assertion = Nd4j.create(new double[][] {{4, 7}});
 
         INDArray test = matrix.get(new SpecifiedIndex(1, 2), NDArrayIndex.interval(0, 1));
@@ -95,10 +97,10 @@ public class IndexingTestsC extends BaseNd4jTest {
 
     @Test
     public void testPointIndexes() {
-        INDArray arr = Nd4j.create(4, 3, 2);
+        INDArray arr = Nd4j.create(DataType.DOUBLE, 4, 3, 2);
         INDArray get = arr.get(NDArrayIndex.all(), NDArrayIndex.point(1), NDArrayIndex.all());
         assertArrayEquals(new int[] {4, 2}, get.shape());
-        INDArray linspaced = Nd4j.linspace(1, 24, 24).reshape(4, 3, 2);
+        INDArray linspaced = Nd4j.linspace(1, 24, 24, DataType.DOUBLE).reshape(4, 3, 2);
         INDArray assertion = Nd4j.create(new double[][] {{3, 4}, {9, 10}, {15, 16}, {21, 22}});
 
         INDArray linspacedGet = linspaced.get(NDArrayIndex.all(), NDArrayIndex.point(1), NDArrayIndex.all());
@@ -122,7 +124,7 @@ public class IndexingTestsC extends BaseNd4jTest {
         int j = 0;
         INDArray img = Nd4j.create(new double[] {1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3,
                         4, 4, 4, 4, 4, 4, 4, 4, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3,
-                        4, 4, 4, 4, 4, 4, 4, 4}, new int[] {1, 1, 8, 8});
+                        4, 4, 4, 4, 4, 4, 4, 4}, new long[] {1, 1, 8, 8});
 
 
         INDArray padded = Nd4j.pad(img, new int[][] {{0, 0}, {0, 0}, {ph, ph + sy - 1}, {pw, pw + sx - 1}},
@@ -164,7 +166,7 @@ public class IndexingTestsC extends BaseNd4jTest {
     @Test
     public void testRowVectorInterval() {
         int len = 30;
-        INDArray row = Nd4j.zeros(len);
+        INDArray row = Nd4j.zeros(1, len);
         for (int i = 0; i < len; i++) {
             row.putScalar(i, i);
         }
@@ -258,7 +260,7 @@ public class IndexingTestsC extends BaseNd4jTest {
             7,8,9   16,17,18    25,26,27
          */
         INDArray viewOne = A.get(NDArrayIndex.point(1), NDArrayIndex.interval(0, 2), NDArrayIndex.interval(1, 3));
-        INDArray viewTwo = A.get(NDArrayIndex.point(1)).get(NDArrayIndex.interval(0, 2), NDArrayIndex.interval(1, 3));
+        INDArray viewTwo = A.get(NDArrayIndex.point(1), NDArrayIndex.all(), NDArrayIndex.all()).get(NDArrayIndex.interval(0, 2), NDArrayIndex.interval(1, 3));
         INDArray expected = Nd4j.zeros(2, 2);
         expected.putScalar(0, 0, 11);
         expected.putScalar(0, 1, 12);
@@ -288,7 +290,7 @@ public class IndexingTestsC extends BaseNd4jTest {
                     log.info("Running for ( {}, {} - {} , {} - {} )", s, i, rows, j, cols);
                     INDArrayIndex ndi_I = NDArrayIndex.interval(i, rows);
                     INDArrayIndex ndi_J = NDArrayIndex.interval(j, cols);
-                    INDArray aView = A.get(ndi_Slice).get(ndi_I, ndi_J);
+                    INDArray aView = A.get(ndi_Slice, NDArrayIndex.all(), NDArrayIndex.all()).get(ndi_I, ndi_J);
                     INDArray sameView = A.get(ndi_Slice, ndi_I, ndi_J);
                     String failureMessage = String.format("Fails for (%d , %d - %d, %d - %d)\n", s, i, rows, j, cols);
                     try {

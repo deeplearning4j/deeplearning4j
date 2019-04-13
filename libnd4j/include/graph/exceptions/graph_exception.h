@@ -33,6 +33,7 @@ namespace nd4j {
             std::string _message;
             std::string _description;
         public:
+            graph_exception(std::string message);
             graph_exception(std::string message, Nd4jLong graphId);
             graph_exception(std::string message, std::string description, Nd4jLong graphId);
             graph_exception(std::string message, const char *description, Nd4jLong graphId);

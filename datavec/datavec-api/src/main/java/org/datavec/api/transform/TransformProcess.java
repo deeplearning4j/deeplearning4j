@@ -38,10 +38,7 @@ import org.datavec.api.transform.sequence.trim.SequenceTrimTransform;
 import org.datavec.api.transform.sequence.window.ReduceSequenceByWindowTransform;
 import org.datavec.api.transform.sequence.window.WindowFunction;
 import org.datavec.api.transform.serde.JsonMappers;
-import org.datavec.api.transform.transform.categorical.CategoricalToIntegerTransform;
-import org.datavec.api.transform.transform.categorical.CategoricalToOneHotTransform;
-import org.datavec.api.transform.transform.categorical.IntegerToCategoricalTransform;
-import org.datavec.api.transform.transform.categorical.StringToCategoricalTransform;
+import org.datavec.api.transform.transform.categorical.*;
 import org.datavec.api.transform.transform.column.*;
 import org.datavec.api.transform.transform.condition.ConditionalCopyValueTransform;
 import org.datavec.api.transform.transform.condition.ConditionalReplaceValueTransform;
@@ -1259,6 +1256,19 @@ public class TransformProcess implements Serializable {
             return transform(new StringToTimeTransform(column, format, dateTimeZone));
         }
 
+
+        /**
+         * Convert a String column (containing a date/time String) to a time column (by parsing the date/time String)
+         *
+         * @param column       String column containing the date/time Strings
+         * @param format       Format of the strings. Time format is specified as per http://www.joda.org/joda-time/apidocs/org/joda/time/format/DateTimeFormat.html
+         * @param dateTimeZone Timezone of the column
+         * @param locale       Locale of the column
+         */
+        public Builder stringToTimeTransform(String column, String format, DateTimeZone dateTimeZone, Locale locale) {
+            return transform(new StringToTimeTransform(column, format, dateTimeZone, locale));
+        }
+
         /**
          * Append a String to a specified column
          *
@@ -1394,6 +1404,43 @@ public class TransformProcess implements Serializable {
         public Builder ndArrayDistanceTransform(String newColumnName, Distance distance, String firstCol,
                                                 String secondCol) {
             return transform(new NDArrayDistanceTransform(newColumnName, distance, firstCol, secondCol));
+        }
+
+        /**
+         * FirstDigitTransform converts a column to a categorical column, with values being the first digit of the number.<br>
+         * For example, "3.1415" becomes "3" and "2.0" becomes "2".<br>
+         * Negative numbers ignore the sign: "-7.123" becomes "7".<br>
+         * Note that two {@link FirstDigitTransform.Mode}s are supported, which determines how non-numerical entries should be handled:<br>
+         * EXCEPTION_ON_INVALID: output has 10 category values ("0", ..., "9"), and any non-numerical values result in an exception<br>
+         * INCLUDE_OTHER_CATEGORY: output has 11 category values ("0", ..., "9", "Other"), all non-numerical values are mapped to "Other"<br>
+         * <br>
+         * FirstDigitTransform is useful (combined with {@link CategoricalToOneHotTransform} and Reductions) to implement
+         * <a href="https://en.wikipedia.org/wiki/Benford%27s_law">Benford's law</a>.
+         *
+         * @param inputColumn  Input column name
+         * @param outputColumn Output column name. If same as input, input column is replaced
+         */
+        public Builder firstDigitTransform(String inputColumn, String outputColumn){
+            return firstDigitTransform(inputColumn, outputColumn, FirstDigitTransform.Mode.INCLUDE_OTHER_CATEGORY);
+        }
+
+        /**
+         * FirstDigitTransform converts a column to a categorical column, with values being the first digit of the number.<br>
+         * For example, "3.1415" becomes "3" and "2.0" becomes "2".<br>
+         * Negative numbers ignore the sign: "-7.123" becomes "7".<br>
+         * Note that two {@link FirstDigitTransform.Mode}s are supported, which determines how non-numerical entries should be handled:<br>
+         * EXCEPTION_ON_INVALID: output has 10 category values ("0", ..., "9"), and any non-numerical values result in an exception<br>
+         * INCLUDE_OTHER_CATEGORY: output has 11 category values ("0", ..., "9", "Other"), all non-numerical values are mapped to "Other"<br>
+         * <br>
+         * FirstDigitTransform is useful (combined with {@link CategoricalToOneHotTransform} and Reductions) to implement
+         * <a href="https://en.wikipedia.org/wiki/Benford%27s_law">Benford's law</a>.
+         *
+         * @param inputColumn  Input column name
+         * @param outputColumn Output column name. If same as input, input column is replaced
+         * @param mode See {@link FirstDigitTransform.Mode}
+         */
+        public Builder firstDigitTransform(String inputColumn, String outputColumn, FirstDigitTransform.Mode mode){
+            return transform(new FirstDigitTransform(inputColumn, outputColumn, mode));
         }
 
         /**

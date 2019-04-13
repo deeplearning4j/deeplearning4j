@@ -63,42 +63,45 @@ namespace nd4j {
                 sparse2dense.insert(pair);
             }
 
-            std::unique_ptr<ResultSet<T>> rows(x->allTensorsAlongDimension({1}));
+            std::unique_ptr<ResultSet> rows(x->allTensorsAlongDimension({1}));
 
-#pragma omp parallel for schedule(dynamic) proc_bind(close)
+            PRAGMA_OMP_PARALLEL_FOR
             for (int r = 0; r < batchSize; r++) {
                 auto row = rows->at(r);
 
                 for (int e = 0; e < numColumns; e += 2) {
-                    int idx = row->getIndexedScalar(e);
+                    int idx = row->e<int>(e);
                     if (idx < 0)
                         break;
 
                     int denseIdx = sparse2dense.at(idx);
 
 
-                    T value = row->getIndexedScalar(e + 1);
-                    T current = z->getScalar(r, denseIdx);
-                    z->putScalar(r, denseIdx, value + current);
+                    float value = row->e<float>(e + 1);
+                    float current = z->e<float>(r, denseIdx);
+                    z->p(r, denseIdx, value + current);
                 }
             }
 
 
             STORE_RESULT(*z);
 
-            return ND4J_STATUS_OK;
+            return Status::OK();
         }
 
         DECLARE_SHAPE_FN(firas_sparse) {
             auto inP = inputShape->at(0);
 
-            Nd4jLong *newShape;
-            ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(2), Nd4jLong);
-
             std::vector<Nd4jLong> shape({shape::shapeOf(inP)[0], (Nd4jLong) block.getIArguments()->size()});
-            shape::shapeBuffer(2, shape.data(), newShape);
+            Nd4jLong *newShape = nd4j::ShapeBuilders::createShapeInfo(block.dataType(), 'c', shape, block.getWorkspace());
 
             return SHAPELIST(newShape);
+        }
+
+        DECLARE_TYPES(firas_sparse) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setAllowedOutputTypes({ALL_FLOATS});
         }
     }
 }

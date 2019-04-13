@@ -17,6 +17,7 @@
 package org.datavec.api.records.writer.impl.misc;
 
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.NotImplementedException;
 import org.datavec.api.conf.Configuration;
 import org.datavec.api.records.reader.impl.misc.SVMLightRecordReader;
 import org.datavec.api.records.writer.impl.FileRecordWriter;
@@ -103,6 +104,11 @@ public class SVMLightRecordWriter extends FileRecordWriter {
         featureLastColumn = conf.getInt(FEATURE_LAST_COLUMN, labelFirstColumn > 0 ? labelFirstColumn-1 : -1);
         zeroBasedIndexing = conf.getBoolean(ZERO_BASED_INDEXING, false);
         zeroBasedLabelIndexing = conf.getBoolean(ZERO_BASED_LABEL_INDEXING, false);
+    }
+
+    @Override
+    public boolean supportsBatch() {
+        return false;
     }
 
     /**
@@ -225,5 +231,10 @@ public class SVMLightRecordWriter extends FileRecordWriter {
         }
 
         return PartitionMetaData.builder().numRecordsUpdated(1).build();
+    }
+
+    @Override
+    public PartitionMetaData writeBatch(List<List<Writable>> batch) throws IOException {
+        throw new NotImplementedException("writeBatch is not supported on "+this.getClass().getSimpleName());
     }
 }

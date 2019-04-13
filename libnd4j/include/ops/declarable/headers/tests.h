@@ -34,7 +34,7 @@ namespace nd4j {
         #endif
 
         #if NOT_EXCLUDED(OP_noop)
-        DECLARE_OP(noop, -1, -1, true);
+        DECLARE_OP(noop, -2, -2, true);
         #endif
 
         #if NOT_EXCLUDED(OP_testop2i2o)

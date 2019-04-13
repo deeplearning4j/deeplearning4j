@@ -108,7 +108,7 @@ namespace aggregateOps {
             T *B = arguments[1];
             T *C = arguments[2];
 
-            nd4j::blas::GEMM<T>::op(convertOrder(Order), convertTranspose(TransA), convertTranspose(TransB),M,N,K,(T) alpha,A,lda,B,ldb,(T) beta,C,ldc);
+            nd4j::blas::GEMM<T, T, T>::op(convertOrder(Order), convertTranspose(TransA), convertTranspose(TransB),M,N,K,(T) alpha,A,lda,B,ldb,(T) beta,C,ldc);
         }
 #else
         aggregate_def void executeAggregate(T **arguments, int numArguments, Nd4jLong **shapeArguments, int numShapeArguments, int *indexArguments, int numIndexArguments, int **intArrays, int numIntArrays, T *realArguments, int numRealArguments) {
@@ -152,7 +152,6 @@ namespace aggregateOps {
 //            shape::printArray<T>(neu1e, vectorLength, "neu1e");
 
             // dot
-//#pragma omp simd reduction(sumT:dot)
             for (int x = 0; x < vectorLength; x++) {
                 dot += syn0[x] * syn1[x];
             }
@@ -174,14 +173,14 @@ namespace aggregateOps {
             //nd4j_printf("dot: [%f]; idx: [%i]; f: [%f]; g: [%f]\n", (float) dot, idx, (float) f, (float) g);
 
             // axpy1
-#pragma omp simd
+            PRAGMA_OMP_SIMD
             for (int x = 0; x < vectorLength; x++) {
                 neu1e[x] = g * syn1[x] + neu1e[x];
             }
 
             // axpy2
             if (!isInference) {
-#pragma omp simd
+                PRAGMA_OMP_SIMD
                 for (int x = 0; x < vectorLength; x++) {
                     syn1[x] = g * syn0[x] + syn1[x];
                 }
@@ -286,7 +285,6 @@ namespace aggregateOps {
             T alpha = realArguments[0];
 
             // dot
-//#pragma omp simd reduction(sumT:dot)
             for (int x = 0; x < vectorLength; x++) {
                 dot += syn0[x] * syn1Neg[x];
             }
@@ -307,14 +305,14 @@ namespace aggregateOps {
             }
 
             // axpy1
-#pragma omp simd
+            PRAGMA_OMP_SIMD
             for (int x = 0; x < vectorLength; x++) {
                 neu1e[x] = g * syn1Neg[x] + neu1e[x];
             }
 
             // axpy2
             if (!isInference) {
-#pragma omp simd
+                PRAGMA_OMP_SIMD
                 for (int x = 0; x < vectorLength; x++) {
                     syn1Neg[x] = g * syn0[x] + syn1Neg[x];
                 }
@@ -418,7 +416,7 @@ namespace aggregateOps {
 
             int vectorLength = indexArguments[0];
 
-#pragma omp simd reduction(sumT:dot)
+            PRAGMA_OMP_SIMD_SUM(dot)
             for (int x = 0; x < vectorLength; x++) {
                 dot += vecX[x] * vecY[x];
             }
@@ -463,7 +461,7 @@ namespace aggregateOps {
 
             int vectorLength = indexArguments[0];
 
-#pragma omp simd
+            PRAGMA_OMP_SIMD
             for (int x = 0; x < vectorLength; x++) {
                 vecY[x] = alpha * vecX[x] + vecY[x];
             }
@@ -571,12 +569,12 @@ namespace aggregateOps {
             //nd4j_printf("applying...\n","");
 
             if (!isInference) {
-#pragma omp simd
+                PRAGMA_OMP_SIMD
                 for (int x = 0; x < vectorLength; x++) {
                     syn0[x] += neu1e[x];
                 }
             } else {
-#pragma omp simd
+                PRAGMA_OMP_SIMD
                 for (int x = 0; x < vectorLength; x++) {
                     inferenceVector[x] += neu1e[x];
                 }
@@ -756,7 +754,7 @@ namespace aggregateOps {
             for (int c = 0; c < idxSyn0Length; c++) {
                 T *syn0word = syn0 + (idxSyn0[c] * vectorLength);
 
-#pragma omp simd
+                PRAGMA_OMP_SIMD
                 for (int i = 0; i < vectorLength; i++) {
                     neu1[i] += syn0word[i];
                 }
@@ -764,7 +762,7 @@ namespace aggregateOps {
 
             // for inference we use additional inference vector
             if (isInference) {
-#pragma omp simd
+                PRAGMA_OMP_SIMD
                 for (int i = 0; i < vectorLength; i++) {
                     neu1[i] += inferenceVector[i];
                 }
@@ -773,7 +771,7 @@ namespace aggregateOps {
 
             // average neu1
             if (idxSyn0Length > 0) {
-#pragma omp simd
+                PRAGMA_OMP_SIMD
                 for (int i = 0; i < vectorLength; i++) {
                     neu1[i] /= idxSyn0Length + isInference;
                 }
@@ -822,13 +820,14 @@ namespace aggregateOps {
             if (!isInference) {
                 for (int c = starter; c < idxSyn0Length; c++) {
                     T *syn0word = arguments[0] + (idxSyn0[c] * vectorLength);
-#pragma omp simd
+
+                    PRAGMA_OMP_SIMD
                     for (int i = 0; i < vectorLength; i++) {
                         syn0word[i] += neu1e[i];
                     }
                 }
             } else {
-#pragma omp simd
+                PRAGMA_OMP_SIMD
                 for (int i = 0; i < vectorLength; i++) {
                     inferenceVector[i] += neu1e[i];
                 }

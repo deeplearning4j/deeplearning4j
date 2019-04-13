@@ -17,6 +17,8 @@
 package org.nd4j.linalg.api.ndarray;
 
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.ArrayUtils;
 import org.junit.Rule;
 import org.junit.Test;
@@ -30,9 +32,7 @@ import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.primitives.Pair;
 
 import java.io.File;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
+import java.nio.charset.StandardCharsets;
 import java.util.Iterator;
 import java.util.List;
 
@@ -63,7 +63,7 @@ public class TestNdArrReadWriteTxt extends BaseNd4jTest {
     }
 
     public static void compareArrays(int rank, char ordering, TemporaryFolder testDir) throws Exception {
-        List<Pair<INDArray, String>> all = NDArrayCreationUtil.getTestMatricesWithVaryingShapes(rank,ordering);
+        List<Pair<INDArray, String>> all = NDArrayCreationUtil.getTestMatricesWithVaryingShapes(rank,ordering, Nd4j.defaultFloatingPointType());
         Iterator<Pair<INDArray,String>> iter = all.iterator();
         int cnt = 0;
         while (iter.hasNext()) {
@@ -80,6 +80,41 @@ public class TestNdArrReadWriteTxt extends BaseNd4jTest {
             INDArray readBack = Nd4j.readTxt(new File(dir, "someArr.txt").getAbsolutePath());
             assertEquals("\nNot equal on shape " + ArrayUtils.toString(origArray.shape()), origArray, readBack);
             cnt++;
+        }
+    }
+
+    @Test
+    public void testNd4jReadWriteText() throws Exception {
+
+        File dir = testDir.newFolder();
+        int count = 0;
+        for(val testShape : new long[][]{{1,1}, {3,1}, {4,5}, {1,2,3}, {2,1,3}, {2,3,1}, {2,3,4}, {1,2,3,4}, {2,3,4,2}}){
+            List<Pair<INDArray, String>> l = null;
+            switch (testShape.length){
+                case 2:
+                    l = NDArrayCreationUtil.getAllTestMatricesWithShape(testShape[0], testShape[1], 12345, Nd4j.defaultFloatingPointType());
+                    break;
+                case 3:
+                    l = NDArrayCreationUtil.getAll3dTestArraysWithShape(12345, testShape, Nd4j.defaultFloatingPointType());
+                    break;
+                case 4:
+                    l = NDArrayCreationUtil.getAll4dTestArraysWithShape(12345, testShape, Nd4j.defaultFloatingPointType());
+                    break;
+                default:
+                    throw new RuntimeException();
+            }
+
+
+            for (Pair<INDArray, String> p : l) {
+                File f = new File(dir, (count++) + ".txt");
+                Nd4j.writeTxt(p.getFirst(), f.getAbsolutePath());
+
+                INDArray read = Nd4j.readTxt(f.getAbsolutePath());
+                String s = FileUtils.readFileToString(f, StandardCharsets.UTF_8);
+//                System.out.println(s);
+
+                assertEquals(p.getFirst(), read);
+            }
         }
     }
 

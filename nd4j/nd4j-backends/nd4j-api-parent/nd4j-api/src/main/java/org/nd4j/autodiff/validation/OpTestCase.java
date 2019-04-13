@@ -24,6 +24,7 @@ import org.nd4j.autodiff.validation.functions.RelErrorFn;
 import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.function.Function;
 
 import java.util.HashMap;
@@ -43,7 +44,7 @@ public class OpTestCase {
 
     private final DynamicCustomOp op;
     private Map<Integer, Function<INDArray, String>> testFns = new LinkedHashMap<>();
-    private Map<Integer, long[]> expShapes = new HashMap<>();
+    private Map<Integer, LongShapeDescriptor> expShapes = new HashMap<>();
 
     public OpTestCase(@NonNull DynamicCustomOp op) {
         this.op = op;
@@ -57,7 +58,7 @@ public class OpTestCase {
      */
     public OpTestCase expectedOutput(int outputNum, INDArray expected) {
         testFns.put(outputNum, new EqualityFn(expected));
-        expShapes.put(outputNum, expected.shape());
+        expShapes.put(outputNum, expected.shapeDescriptor());
         return this;
     }
 
@@ -74,7 +75,7 @@ public class OpTestCase {
      */
     public OpTestCase expectedOutputRelError(int outputNum, @NonNull INDArray expected, double maxRelError, double minAbsError) {
         testFns.put(outputNum, new RelErrorFn(expected, maxRelError, minAbsError));
-        expShapes.put(outputNum, expected.shape());
+        expShapes.put(outputNum, expected.shapeDescriptor());
         return this;
     }
 
@@ -84,7 +85,7 @@ public class OpTestCase {
      * @param validationFn Function to use to validate the correctness of the specific Op. Should return null
      *                     if validation passes, or an error message if the op validation fails
      */
-    public OpTestCase expectedOutput(int outputNum, @NonNull long[] expShape, @NonNull Function<INDArray, String> validationFn) {
+    public OpTestCase expectedOutput(int outputNum, @NonNull LongShapeDescriptor expShape, @NonNull Function<INDArray, String> validationFn) {
         testFns.put(outputNum, validationFn);
         expShapes.put(outputNum, expShape);
         return this;

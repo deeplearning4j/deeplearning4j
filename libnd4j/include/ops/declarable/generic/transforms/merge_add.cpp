@@ -31,9 +31,9 @@ OP_IMPL(mergeadd, -1, 1, false) {
     
     REQUIRE_OK(this->validateInputDimensionsMatch(block));
         
-    NDArray<T>* output = OUTPUT_VARIABLE(0);
+    auto output = OUTPUT_VARIABLE(0);
 
-    std::vector<NDArray<T>*> inArrs(block.width());
+    std::vector<NDArray*> inArrs(block.width());
     
     for(int i = 0; i < block.width(); ++i)
         inArrs[i] = INPUT_VARIABLE(i);
@@ -49,7 +49,11 @@ DECLARE_SYN(addn, mergeadd);
 DECLARE_SYN(accumulaten, mergeadd);
 DECLARE_SYN(accumulate_n, mergeadd);
 
-
+    DECLARE_TYPES(mergeadd) {
+        getOpDescriptor()
+                ->setAllowedInputTypes(nd4j::DataType::ANY)
+                ->setAllowedOutputTypes(nd4j::DataType::ANY);
+    }
 }
 }
 

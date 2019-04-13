@@ -15,16 +15,20 @@
  ******************************************************************************/
 
 
-
 package org.deeplearning4j.nn.conf;
 
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
+import org.deeplearning4j.nn.conf.distribution.Distribution;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
+import org.deeplearning4j.nn.conf.layers.recurrent.LastTimeStep;
 import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
 import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.deeplearning4j.nn.conf.memory.NetworkMemoryReport;
+import org.deeplearning4j.nn.layers.recurrent.LastTimeStepLayer;
+import org.deeplearning4j.nn.weights.IWeightInit;
+import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.util.OutputLayerUtil;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.activations.IActivation;
@@ -55,11 +59,10 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
 
     protected List<NeuralNetConfiguration> confs;
     protected Map<Integer, InputPreProcessor> inputPreProcessors = new HashMap<>();
-    protected boolean pretrain = false;
-    protected boolean backprop = true;
     protected BackpropType backpropType = BackpropType.Standard;
     protected int tbpttFwdLength = 20;
     protected int tbpttBackLength = 20;
+    protected boolean validateOutputLayerConfig = true; //Default to legacy for pre 1.0.0-beta3 networks on deserialization
 
     @Getter
     @Setter
@@ -87,14 +90,13 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
 
     public void setEpochCount(int epochCount) {
         this.epochCount = epochCount;
-        for(int i = 0; i < confs.size(); i++) {
+        for (int i = 0; i < confs.size(); i++) {
             getConf(i).setEpochCount(epochCount);
         }
     }
 
     /**
-     *
-     * @return  JSON representation of NN configuration
+     * @return JSON representation of NN configuration
      */
     public String toYaml() {
         ObjectMapper mapper = NeuralNetConfiguration.mapperYaml();
@@ -109,6 +111,7 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
 
     /**
      * Create a neural net configuration from json
+     *
      * @param json the neural net configuration from json
      * @return {@link MultiLayerConfiguration}
      */
@@ -122,10 +125,8 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
     }
 
 
-
     /**
-     *
-     * @return  JSON representation of NN configuration
+     * @return JSON representation of NN configuration
      */
     public String toJson() {
         ObjectMapper mapper = NeuralNetConfiguration.mapper();
@@ -142,6 +143,7 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
 
     /**
      * Create a neural net configuration from json
+     *
      * @param json the neural net configuration from json
      * @return {@link MultiLayerConfiguration}
      */
@@ -151,9 +153,9 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
         try {
             conf = mapper.readValue(json, MultiLayerConfiguration.class);
         } catch (IOException e) {
-            //Check if this exception came from legacy legacy deserializer...
+            //Check if this exception came from legacy deserializer...
             String msg = e.getMessage();
-            if(msg != null && msg.contains("legacy")){
+            if (msg != null && msg.contains("legacy")) {
                 throw new RuntimeException("Error deserializing MultiLayerConfiguration - configuration may have a custom " +
                         "layer, vertex or preprocessor, in pre version 1.0.0-alpha JSON format. These layers can be " +
                         "deserialized by first registering them with NeuralNetConfiguration.registerLegacyCustomClassesForJSON(Class...)", e);
@@ -200,7 +202,7 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
                                 lossFunction = LossFunctions.LossFunction.valueOf(lossFunctionEnumStr);
                             } catch (Exception e) {
                                 log.warn("OutputLayer with null LossFunction or pre-0.6.0 loss function configuration detected: could not parse JSON",
-                                                e);
+                                        e);
                             }
 
                             if (lossFunction != null) {
@@ -226,7 +228,7 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
                                     case CUSTOM:
                                     default:
                                         log.warn("OutputLayer with null LossFunction or pre-0.6.0 loss function configuration detected: could not set loss function for {}",
-                                                        lossFunction);
+                                                lossFunction);
                                         break;
                                 }
                             }
@@ -234,11 +236,11 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
 
                     } else {
                         log.warn("OutputLayer with null LossFunction or pre-0.6.0 loss function configuration detected: could not parse JSON: layer 'confs' field is not an ArrayNode (is: {})",
-                                        (confs != null ? confs.getClass() : null));
+                                (confs != null ? confs.getClass() : null));
                     }
                 } catch (IOException e) {
                     log.warn("OutputLayer with null LossFunction or pre-0.6.0 loss function configuration detected: could not parse JSON",
-                                    e);
+                            e);
                     break;
                 }
             }
@@ -273,13 +275,64 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
 
                 } catch (IOException e) {
                     log.warn("Layer with null ActivationFn field or pre-0.7.2 activation function detected: could not parse JSON",
-                                    e);
+                            e);
                 }
+            }
+
+            if(!handleLegacyWeightInitFromJson(json, l, mapper, confs, layerCount)) {
+                return conf;
             }
 
             layerCount++;
         }
         return conf;
+    }
+
+    /**
+     * Handle {@link WeightInit} and {@link Distribution} from legacy configs in Json format. Copied from handling of {@link Activation}
+     * above.
+     * @return True if all is well and layer iteration shall continue. False else-wise.
+     */
+    private static boolean handleLegacyWeightInitFromJson(String json, Layer l, ObjectMapper mapper, JsonNode confs, int layerCount) {
+        if ((l instanceof BaseLayer) && ((BaseLayer) l).getWeightInitFn() == null) {
+            try {
+                JsonNode jsonNode = mapper.readTree(json);
+                if (confs == null) {
+                    confs = jsonNode.get("confs");
+                }
+                if (confs instanceof ArrayNode) {
+                    ArrayNode layerConfs = (ArrayNode) confs;
+                    JsonNode outputLayerNNCNode = layerConfs.get(layerCount);
+                    if (outputLayerNNCNode == null)
+                        return false; //Should never happen...
+                    JsonNode layerWrapperNode = outputLayerNNCNode.get("layer");
+
+                    if (layerWrapperNode == null || layerWrapperNode.size() != 1) {
+                        return true;
+                    }
+
+                    JsonNode layerNode = layerWrapperNode.elements().next();
+                    JsonNode weightInit = layerNode.get("weightInit"); //Should only have 1 element: "dense", "output", etc
+                    JsonNode distribution = layerNode.get("dist");
+
+                    Distribution dist = null;
+                    if(distribution != null) {
+                        dist = mapper.treeToValue(distribution, Distribution.class);
+                    }
+
+                    if (weightInit != null) {
+                        final IWeightInit wi = WeightInit.valueOf(weightInit.asText()).getWeightInitFunction(dist);
+                        ((BaseLayer) l).setWeightInitFn(wi);
+                    }
+                }
+
+            } catch (IOException e) {
+                log.warn("Layer with null WeightInit detected: " + l.getLayerName() + ", could not parse JSON",
+                        e);
+            }
+        }
+        return true;
+
     }
 
     @Override
@@ -315,6 +368,7 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
             clone.inferenceWorkspaceMode = this.inferenceWorkspaceMode;
             clone.trainingWorkspaceMode = this.trainingWorkspaceMode;
             clone.cacheMode = this.cacheMode;
+            clone.validateOutputLayerConfig = this.validateOutputLayerConfig;
 
             return clone;
 
@@ -363,10 +417,11 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
     /**
      * For the given input shape/type for the network, return a list of activation sizes for each layer in the network.<br>
      * i.e., list.get(i) is the output activation sizes for layer i
+     *
      * @param inputType Input type for the network
      * @return A lits of activation types for the network, indexed by layer number
      */
-    public List<InputType> getLayerActivationTypes(@NonNull InputType inputType){
+    public List<InputType> getLayerActivationTypes(@NonNull InputType inputType) {
         List<InputType> out = new ArrayList<>();
         int nLayers = confs.size();
         for (int i = 0; i < nLayers; i++) {
@@ -389,10 +444,6 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
         protected List<NeuralNetConfiguration> confs = new ArrayList<>();
         protected double dampingFactor = 100;
         protected Map<Integer, InputPreProcessor> inputPreProcessors = new HashMap<>();
-        @Deprecated
-        protected boolean pretrain = false;
-        @Deprecated
-        protected boolean backprop = true;
         protected BackpropType backpropType = BackpropType.Standard;
         protected int tbpttFwdLength = DEFAULT_TBPTT_LENGTH;
         protected int tbpttBackLength = DEFAULT_TBPTT_LENGTH;
@@ -402,11 +453,13 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
         protected WorkspaceMode inferenceWorkspaceMode = WorkspaceMode.ENABLED;
         protected CacheMode cacheMode = CacheMode.NONE;
         protected boolean validateOutputConfig = true;
+        protected boolean validateTbpttConfig = true;
 
         /**
          * Specify the processors.
          * These are used at each layer for doing things like normalization and
          * shaping of input.
+         *
          * @param processor what to use to preProcess the data.
          * @return builder pattern
          */
@@ -417,20 +470,6 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
 
         public Builder inputPreProcessors(Map<Integer, InputPreProcessor> processors) {
             this.inputPreProcessors = processors;
-            return this;
-        }
-
-        /**
-         * Whether to do back prop or not
-         *
-         * @deprecated doesn't affect training any more. Use {@link org.deeplearning4j.nn.multilayer.MultiLayerNetwork#fit(DataSetIterator)} when training for backprop.
-         *
-         * @param backprop whether to do back prop or not
-         * @return
-         */
-        @Deprecated
-        public Builder backprop(boolean backprop) {
-            this.backprop = backprop;
             return this;
         }
 
@@ -466,7 +505,8 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
             return this;
         }
 
-        /**The type of backprop. Default setting is used for most networks (MLP, CNN etc),
+        /**
+         * The type of backprop. Default setting is used for most networks (MLP, CNN etc),
          * but optionally truncated BPTT can be used for training recurrent neural networks.
          * If using TruncatedBPTT make sure you set both tBPTTForwardLength() and tBPTTBackwardLength()
          */
@@ -475,9 +515,11 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
             return this;
         }
 
-        /**When doing truncated BPTT: how many steps should we do?<br>
+        /**
+         * When doing truncated BPTT: how many steps should we do?<br>
          * Only applicable when doing backpropType(BackpropType.TruncatedBPTT)<br>
          * See: <a href="http://www.cs.utoronto.ca/~ilya/pubs/ilya_sutskever_phd_thesis.pdf">http://www.cs.utoronto.ca/~ilya/pubs/ilya_sutskever_phd_thesis.pdf</a>
+         *
          * @param bpttLength length > 0
          */
         public Builder tBPTTLength(int bpttLength) {
@@ -485,7 +527,8 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
             return tBPTTBackwardLength(bpttLength);
         }
 
-        /**When doing truncated BPTT: how many steps of forward pass should we do
+        /**
+         * When doing truncated BPTT: how many steps of forward pass should we do
          * before doing (truncated) backprop?<br>
          * Only applicable when doing backpropType(BackpropType.TruncatedBPTT)<br>
          * Typically tBPTTForwardLength parameter is same as the tBPTTBackwardLength parameter,
@@ -493,6 +536,7 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
          * Ideally your training data time series length should be divisible by this
          * This is the k1 parameter on pg23 of
          * <a href="http://www.cs.utoronto.ca/~ilya/pubs/ilya_sutskever_phd_thesis.pdf">http://www.cs.utoronto.ca/~ilya/pubs/ilya_sutskever_phd_thesis.pdf</a>
+         *
          * @param forwardLength Forward length > 0, >= backwardLength
          */
         public Builder tBPTTForwardLength(int forwardLength) {
@@ -500,28 +544,16 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
             return this;
         }
 
-        /**When doing truncated BPTT: how many steps of backward should we do?<br>
+        /**
+         * When doing truncated BPTT: how many steps of backward should we do?<br>
          * Only applicable when doing backpropType(BackpropType.TruncatedBPTT)<br>
          * This is the k2 parameter on pg23 of
          * <a href="http://www.cs.utoronto.ca/~ilya/pubs/ilya_sutskever_phd_thesis.pdf">http://www.cs.utoronto.ca/~ilya/pubs/ilya_sutskever_phd_thesis.pdf</a>
+         *
          * @param backwardLength <= forwardLength
          */
         public Builder tBPTTBackwardLength(int backwardLength) {
             this.tbpttBackLength = backwardLength;
-            return this;
-        }
-
-        /**
-         * Whether to do pre train or not
-         *
-         * @deprecated doesn't affect training any more. Use {@link org.deeplearning4j.nn.multilayer.MultiLayerNetwork#pretrain(DataSetIterator)} when training for layerwise pretraining.
-         *
-         * @param pretrain whether to do pre train or not
-         * @return builder pattern
-         */
-        @Deprecated
-        public Builder pretrain(boolean pretrain) {
-            this.pretrain = pretrain;
             return this;
         }
 
@@ -550,13 +582,39 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
             return this;
         }
 
+        /**
+         * Enabled by default. If enabled, an exception will be throw when using the (invalid) combination of truncated
+         * backpropagation through time (TBPTT) with either a GlobalPoolingLayer or LastTimeStepLayer.<br>
+         * It is possible to disable this validation to allow what is almost certainly an invalid configuration to be used,
+         * however this is not recommended.
+         *
+         * @param validate Whether TBPTT validation should be performed
+         */
+        public Builder validateTbpttConfig(boolean validate){
+            this.validateTbpttConfig = validate;
+            return this;
+        }
+
 
         public MultiLayerConfiguration build() {
             //Validate BackpropType setting
-            if((tbpttBackLength != DEFAULT_TBPTT_LENGTH || tbpttFwdLength != DEFAULT_TBPTT_LENGTH) && backpropType != BackpropType.TruncatedBPTT){
+            if ((tbpttBackLength != DEFAULT_TBPTT_LENGTH || tbpttFwdLength != DEFAULT_TBPTT_LENGTH) && backpropType != BackpropType.TruncatedBPTT) {
                 log.warn("Truncated backpropagation through time lengths have been configured with values " + tbpttFwdLength
                         + " and " + tbpttBackLength + " but backprop type is set to " + backpropType + ". TBPTT configuration" +
                         " settings will only take effect if backprop type is set to BackpropType.TruncatedBPTT");
+            }
+
+            if(backpropType == BackpropType.TruncatedBPTT && validateTbpttConfig){
+                //Check for invalid combination - tbptt plus LastTimeStepLayer or
+                for( int i=0; i<confs.size(); i++ ){
+                    Layer l = confs.get(i).getLayer();
+                    if(l instanceof LastTimeStep || l instanceof GlobalPoolingLayer){
+                        throw new IllegalStateException("Invalid network configuration detected: Truncated backpropagation through time (TBPTT)" +
+                                " cannot be used with layer " + i + " of type " + l.getClass().getName() + ": TBPTT is incompatible with this layer type (which is designed " +
+                                "to process entire sequences at once, and does support the type of sequence segments that TPBTT uses).\n" +
+                                "This check can be disabled using validateTbpttConfig(false) but this is not recommended.");
+                    }
+                }
             }
 
 
@@ -574,7 +632,7 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
                         inputType = InputType.recurrent(nIn);
                     }
                 } else if (firstLayer instanceof DenseLayer || firstLayer instanceof EmbeddingLayer
-                                || firstLayer instanceof OutputLayer) {
+                        || firstLayer instanceof OutputLayer) {
                     //Can't just use "instanceof FeedForwardLayer" here. ConvolutionLayer is also a FeedForwardLayer
                     FeedForwardLayer ffl = (FeedForwardLayer) firstLayer;
                     val nIn = ffl.getNIn();
@@ -612,19 +670,9 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
                 }
 
             }
-            // Sets pretrain on the layer to track update for that specific layer
-            if (isPretrain()) {
-                for (int j = 0; j < confs.size(); j++) {
-                    Layer l = confs.get(j).getLayer();
-                    if (l instanceof BasePretrainNetwork)
-                        confs.get(j).setPretrain(pretrain);
-                }
-            }
 
             MultiLayerConfiguration conf = new MultiLayerConfiguration();
             conf.confs = this.confs;
-            conf.pretrain = pretrain;
-            conf.backprop = backprop;
             conf.inputPreProcessors = inputPreProcessors;
             conf.backpropType = backpropType;
             conf.tbpttFwdLength = tbpttFwdLength;
@@ -636,9 +684,9 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
             Nd4j.getRandom().setSeed(conf.getConf(0).getSeed());
 
             //Validate output layer configuration
-            if(validateOutputConfig) {
+            if (validateOutputConfig) {
                 //Validate output layer configurations...
-                for(NeuralNetConfiguration n : conf.getConfs()){
+                for (NeuralNetConfiguration n : conf.getConfs()) {
                     Layer l = n.getLayer();
                     OutputLayerUtil.validateOutputLayer(l.getLayerName(), l); //No-op for non output/loss layers
                 }
@@ -647,7 +695,5 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
             return conf;
 
         }
-
-
     }
 }

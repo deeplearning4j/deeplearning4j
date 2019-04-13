@@ -24,18 +24,24 @@ import lombok.val;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.autodiff.samediff.VariableType;
+import org.nd4j.autodiff.samediff.internal.SameDiffOp;
+import org.nd4j.autodiff.samediff.internal.Variable;
+import org.nd4j.base.Preconditions;
 import org.nd4j.imports.converters.DifferentialFunctionClassHolder;
 import org.nd4j.imports.descriptors.properties.AttributeAdapter;
 import org.nd4j.imports.descriptors.properties.PropertyMapping;
+import org.nd4j.imports.descriptors.tensorflow.TensorflowDescriptorParser;
 import org.nd4j.imports.graphmapper.BaseGraphMapper;
 import org.nd4j.imports.graphmapper.ImportState;
-import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.imports.graphmapper.OpImportFilter;
+import org.nd4j.imports.graphmapper.OpImportOverride;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.controlflow.IfImportState;
+import org.nd4j.linalg.api.shape.options.ArrayOptionsHelper;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.ArrayUtil;
-import org.nd4j.weightinit.impl.ZeroInitScheme;
 import org.tensorflow.framework.*;
 
 import java.io.*;
@@ -170,17 +176,17 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
             val input = node.getInput(tfMappingIdx);
             val inputNode = TFGraphMapper.getInstance().getNodeWithNameFromGraph(graph,input);
             INDArray arr = getArrayFrom(inputNode,graph);
-            if(arr == null) {
+            if(arr == null && sameDiff.hasVariable(input)) {
                 arr = sameDiff.getArrForVarName(input);
             }
 
             if(arr == null && inputNode != null) {
                 sameDiff.addPropertyToResolve(on,name);
-                sameDiff.addVariableMappingForField(on,name,inputNode.getName());
+                sameDiff.addVariableMappingForField(on,name,getNodeName(inputNode.getName()));
                 return;
-            }
-            else if(inputNode == null) {
-                sameDiff.addAsPlaceHolder(input);
+            } else if(inputNode == null) {
+                //TODO need to do anything here given new design?
+                //sameDiff.addAsPlaceHolder(input);
                 return;
             }
 
@@ -323,8 +329,7 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
             return true;
 
         boolean endsWithRead = opType.getName().endsWith("/read");
-        boolean isReductionIndices = opType.getOp().endsWith("/reduction_indices");
-        return  endsWithRead  || isReductionIndices;
+        return endsWithRead;
     }
 
     @Override
@@ -387,7 +392,14 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
         if(ret.endsWith("/read")) {
             ret = ret.replace("/read","");
         }
+        if(ret.endsWith(":0")){
+            ret = ret.substring(0, ret.length()-2);
+        }
         return ret;
+    }
+
+    public boolean isControlDependency(String name){
+        return name.startsWith("^");
     }
 
 
@@ -429,6 +441,22 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
         return stringBuilder.toString();
     }
 
+    //Strip the variable suffix to give the node name: "Unique:1" -> "Unique"
+    public String varNameToOpName(String varName){
+        int idx = varName.lastIndexOf(':');
+        if(idx < 0)
+            return varName;
+        return varName.substring(0, idx);
+    }
+
+    public static int varNameToOpOutputNumber(String varName){
+        int idx = varName.lastIndexOf(':');
+        if(idx < 0)
+            return 0;
+        String n = varName.substring(idx+1);
+        return Integer.parseInt(n);
+    }
+
 
     @Override
     public Message.Builder getNewGraphBuilder() {
@@ -453,14 +481,15 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
     }
 
     @Override
-    public void mapNodeType(NodeDef tfNode, ImportState<GraphDef,NodeDef> importState) {
+    public void mapNodeType(NodeDef tfNode, ImportState<GraphDef,NodeDef> importState,
+                            OpImportOverride<GraphDef, NodeDef, AttrValue> importOverride,
+                            OpImportFilter<GraphDef, NodeDef, AttrValue> opFilter) {
         if (shouldSkip(tfNode) || alreadySeen(tfNode) || isVariableNode(tfNode)) {
             return;
         }
 
-        val nodeName = tfNode.getName();
 
-        val diff = importState.getSameDiff();
+        SameDiff diff = importState.getSameDiff();
         if (isVariableNode(tfNode)) {
             List<Long> dimensions = new ArrayList<>();
             Map<String, AttrValue> attributes = getAttrMap(tfNode);
@@ -485,75 +514,153 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
         }
 
         else if(isPlaceHolder(tfNode)) {
-            val vertexId = diff.getVariable(getName(tfNode));
-            diff.addAsPlaceHolder(vertexId.getVarName());
-        }
-        else {
+            SDVariable var = diff.getVariable(getName(tfNode));
+            Preconditions.checkState(var.isPlaceHolder(), "Variable should be marked as placeholder at this point: %s", var);
+        } else {
             val opName = tfNode.getOp();
 
-            // FIXME: early draft
-            // conditional import
-            /*
-            if (nodeName.startsWith("cond") && nodeName.contains("/")) {
-                val str = nodeName.replaceAll("/.*$","");
-                importCondition(str, tfNode, importState);
+            if(importOverride != null){
+                //First, get inputs:
+                int numInputs = tfNode.getInputCount();
+                List<SDVariable> inputs = new ArrayList<>(numInputs);
+                List<SDVariable> controlDeps = null;
+                for( int i=0; i<numInputs; i++ ){
+                    String inName = tfNode.getInput(i);
 
-                seenNodes.add(nodeName);
-                return;
-            } else if (nodeName.startsWith("while")) {
-                // while loop import
+                    boolean controlDep = isControlDependency(inName);
+                    String name = getNodeName(inName);
 
-                return;
-            }
-            */
+                    SDVariable v = diff.getVariable(name);
+                    //At this point, all placeholders, variables and constants should have been imported
+                    //This: this should be an array type variable (i.e., activations)
+                    //Edge case is we've skipped op X, and this input is missing for (X -> this)
+                    if (v == null) {
+                        //Check 'op skip' edge case
+                        boolean shouldSkip = false;
+                        if(opFilter != null){
+                            //Get the input node
+                            List<NodeDef> l = importState.getGraph().getNodeList();
+                            NodeDef inputNodeDef = null;
+                            for(NodeDef nd : l){
+                                if(inName.equals(nd.getName())){
+                                    inputNodeDef = nd;
+                                    break;
+                                }
+                            }
+                            Preconditions.checkState(inputNodeDef != null, "Could not find node with name \"%s\"", inName);
+                            shouldSkip = true;
+                        }
 
-            val differentialFunction = DifferentialFunctionClassHolder.getInstance().getOpWithTensorflowName(opName);
-            if(differentialFunction == null) {
-                throw new ND4JIllegalStateException("No tensorflow op found for " + opName + " possibly missing operation class?");
-            }
-            try {
-                val newInstance = differentialFunction.getClass().newInstance();
-                val args = new SDVariable[tfNode.getInputCount()];
-                newInstance.setOwnName(tfNode.getName());
+                        if(!shouldSkip) {
+                            //First: try to work out the datatype of this input node
+                            //Given we haven't already imported it at this point, it must be the 2nd or later output of an op
 
-                for(int i = 0; i < tfNode.getInputCount(); i++) {
-                    val name = getNodeName(tfNode.getInput(i));
-                    args[i] = diff.getVariable(name);
-                    if(args[i] == null) {
-                        args[i] = diff.var(name,null,new ZeroInitScheme('f'));
-                        diff.addAsPlaceHolder(args[i].getVarName());
+                            String inputOpName = varNameToOpName(inName);
+                            NodeDef inputOp = importState.getVariables().get(inputOpName);
+                            int outputIdx = varNameToOpOutputNumber(name);
+                            org.nd4j.linalg.api.buffer.DataType dt = dataTypeForTensor(inputOp, outputIdx);
+                            if (dt == org.nd4j.linalg.api.buffer.DataType.UNKNOWN)
+                                dt = null;    //Infer it later
+
+
+                            v = diff.var(name, VariableType.ARRAY, null, dt, (long[]) null);
+                        }
                     }
 
-                    /**
-                     * Note here that we are associating
-                     * the output/result variable
-                     * with its inputs and notifying
-                     * the variable that it has a place holder argument
-                     * it should resolve before trying to execute
-                     * anything.
-                     */
-                    if(diff.isPlaceHolder( args[i].getVarName())) {
-                        diff.putPlaceHolderForVariable(args[i].getVarName(), name);
+                    if(controlDep){
+                        if(controlDeps == null)
+                            controlDeps = new ArrayList<>();
+                        controlDeps.add(v);
+                    } else {
+                        inputs.add(v);
                     }
                 }
 
+                log.info("Importing op {} using override {}", opName, importOverride);
+                importOverride.initFromTensorFlow(inputs, controlDeps, tfNode, diff, getAttrMap(tfNode), importState.getGraph());
+            } else {
+
+                val differentialFunction = DifferentialFunctionClassHolder.getInstance().getOpWithTensorflowName(opName);
+                if (differentialFunction == null) {
+                    throw new ND4JIllegalStateException("No tensorflow op found for " + opName + " possibly missing operation class?");
+                }
+                try {
+                    DifferentialFunction newInstance = differentialFunction.getClass().newInstance();
+                    List<SDVariable> args = new ArrayList<>();
+                    List<String> controlDeps = null;
+                    newInstance.setOwnName(tfNode.getName());
+
+                    int x = 0;
+                    for (int i = 0; i < tfNode.getInputCount(); i++) {
+                        String inName = tfNode.getInput(i);
+                        String inputOpName = varNameToOpName(inName);
+                        NodeDef inputNode = importState.getVariables().get(inputOpName);
+
+                        if (shouldSkip(inputNode) && !inName.endsWith("/read"))
+                            continue;
+
+                        boolean controlDep = isControlDependency(inName);
+                        String name = getNodeName(inName);
+
+                        SDVariable v = diff.getVariable(name);
+
+                        //At this point, all placeholders, variables and constants should have been imported
+                        //This: this should be an array type variable (i.e., activations)
+                        if (v == null) {
+                            //First: try to work out the datatype of this input node
+                            //Given we haven't already imported it at this point, it must be the 2nd or later output of an op
+
+                            NodeDef inputOp = importState.getVariables().get(inputOpName);
+                            int outputIdx = varNameToOpOutputNumber(name);
+                            org.nd4j.linalg.api.buffer.DataType dt = dataTypeForTensor(inputOp, outputIdx);
+                            if (dt == org.nd4j.linalg.api.buffer.DataType.UNKNOWN)
+                                dt = null;    //Infer it later
 
 
-                diff.addArgsFor(args,newInstance);
-                newInstance.setSameDiff(importState.getSameDiff());
+                            v = diff.var(name, VariableType.ARRAY, null, dt, (long[]) null);
+                        }
 
-                newInstance.initFromTensorFlow(tfNode,diff,getAttrMap(tfNode),importState.getGraph());
-                mapProperties(newInstance,tfNode,importState.getGraph(),importState.getSameDiff(),newInstance.mappingsForFunction());
-                importState.getSameDiff().putFunctionForId(newInstance.getOwnName(),newInstance);
-                //ensure we can track node name to function instance later.
-                diff.setBaseNameForFunctionInstanceId(tfNode.getName(),newInstance);
-                diff.addVarNameForImport(tfNode.getName());
+                        if (controlDep) {
+                            //Is only a control dependency input to op, not a real data input
+                            if (controlDeps == null)
+                                controlDeps = new ArrayList<>();
+                            if (!controlDeps.contains(name))
+                                controlDeps.add(name);
+                        } else {
+                            //Is a standard/"real" op input
+                            args.add(v);
+                        }
+                    }
 
-            } catch (Exception e) {
-                log.error("Failed with [{}]", opName);
-                throw new RuntimeException(e);
+
+                    diff.addArgsFor(args.toArray(new SDVariable[args.size()]), newInstance);
+                    newInstance.setSameDiff(importState.getSameDiff());
+
+                    if (controlDeps != null) {
+                        SameDiffOp op = diff.getOps().get(newInstance.getOwnName());
+                        op.setControlDeps(controlDeps);
+
+                        //Also record this on the variables:
+                        for (String s : controlDeps) {
+                            Variable v = diff.getVariables().get(s);
+                            if (v.getControlDepsForOp() == null)
+                                v.setControlDeps(new ArrayList<String>());
+                            List<String> l = v.getControlDepsForOp();
+                            if (!l.contains(op.getName()))
+                                l.add(op.getName());
+                        }
+                    }
+
+                    newInstance.initFromTensorFlow(tfNode, diff, getAttrMap(tfNode), importState.getGraph());
+                    mapProperties(newInstance, tfNode, importState.getGraph(), importState.getSameDiff(), newInstance.mappingsForFunction());
+                    importState.getSameDiff().putFunctionForId(newInstance.getOwnName(), newInstance);
+                    //ensure we can track node name to function instance later.
+                    diff.setBaseNameForFunctionInstanceId(tfNode.getName(), newInstance);
+                } catch (Exception e) {
+                    log.error("Failed to import op [{}]", opName);
+                    throw new RuntimeException(e);
+                }
             }
-
         }
     }
 
@@ -771,25 +878,97 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
 
 
     @Override
-    public DataBuffer.Type dataTypeForTensor(NodeDef tensorProto) {
-        if(!tensorProto.containsAttr("dtype") && !tensorProto.containsAttr("Tidx") && !tensorProto.containsAttr("T"))
-            return DataBuffer.Type.UNKNOWN;
+    public org.nd4j.linalg.api.buffer.DataType dataTypeForTensor(NodeDef tensorProto, int outNum) {
+        //First: work out what attribute we should be looking at to determine output type
+        String opName = tensorProto.getOp();
 
-        val type = tensorProto.containsAttr("dtype") ? tensorProto.getAttrOrThrow("dtype").getType()
-                : tensorProto.containsAttr("T") ? tensorProto.getAttrOrThrow("T").getType() : tensorProto
-                .getAttrOrThrow("Tidx").getType();
-        switch(type) {
-            case DT_DOUBLE: return DataBuffer.Type.DOUBLE;
-            case DT_INT32:
-            case DT_INT64: return DataBuffer.Type.INT;
-            case DT_FLOAT: return DataBuffer.Type.FLOAT;
-            case DT_BFLOAT16: return DataBuffer.Type.HALF;
-            default: return DataBuffer.Type.UNKNOWN;
+        OpDef opDef = TensorflowDescriptorParser.opDescs().get(opName);
+
+        org.tensorflow.framework.DataType tfType;
+        /*
+        Note: "OutputArgCount" doesn't account for repeated or variable length outputs.
+        For example: "ShapeN" op has 1 for getOutputArgCount but output_arg has attribute "number_attr" that specifies number
+        of actual variables
+         */
+        int outputArgCount = opDef == null ? 0 : opDef.getOutputArgCount();
+        int[] outVarsPerOutputArg = outputArgCount == 0 ? null : new int[outputArgCount];
+        int actualOutputCount = 0;
+        if(outputArgCount > 0){
+            for(int i=0; i<outputArgCount; i++ ){
+                OpDef.ArgDef argDef = opDef.getOutputArg(i);
+                String numAttr = argDef.getNumberAttr();
+                if(numAttr != null && !numAttr.isEmpty()){
+                    //has a number_attr that specifies the actual number of outputs...
+                    String numAttrName = argDef.getNumberAttr();
+                    int n = (int)tensorProto.getAttrOrThrow(numAttrName).getI();
+                    outVarsPerOutputArg[i] = n;
+                } else {
+                    outVarsPerOutputArg[i] = 1;
+                }
+                actualOutputCount += outVarsPerOutputArg[i];
+            }
+        }
+
+        if(opDef != null && outputArgCount > 0){    //Looks like a few OpDef instances have outputs but don't actually list them... example: NoOp
+            Preconditions.checkState(outNum < actualOutputCount, "Cannot get output argument %s from op %s with %s output variables - variable %s", outNum, actualOutputCount, tensorProto.getName(), tensorProto.getName());
+
+            int argIdx = outNum;
+            if(outputArgCount != actualOutputCount){
+                //Map backwards accunting for fact that each output arg might correspond to multiple variables: for output variable x, which argument is this?
+                int idx = 0;
+                int soFar = 0;
+                while(soFar + outVarsPerOutputArg[idx] <= outNum){
+                    soFar += outVarsPerOutputArg[idx++];
+                }
+                argIdx = idx;
+            }
+
+            OpDef.ArgDef argDef = opDef.getOutputArg(argIdx);
+            String typeAttr = argDef.getTypeAttr();
+            if(typeAttr != null && tensorProto.containsAttr(typeAttr)){
+                tfType = tensorProto.getAttrOrThrow(typeAttr).getType();
+            } else {
+                return org.nd4j.linalg.api.buffer.DataType.UNKNOWN;
+            }
+
+        } else {
+            if(tensorProto.getOp().equals("NoOp")){
+                return org.nd4j.linalg.api.buffer.DataType.UNKNOWN;
+            }
+            log.warn("No TensorFlow descriptor found for tensor \"{}\", op \"{}\"", tensorProto.getName(), tensorProto.getOp());
+
+            //No descriptor... try to fall back on common type attribute names
+            if(!tensorProto.containsAttr("dtype") && !tensorProto.containsAttr("Tidx") && !tensorProto.containsAttr("T"))
+                return org.nd4j.linalg.api.buffer.DataType.UNKNOWN;
+
+            tfType = tensorProto.containsAttr("dtype") ? tensorProto.getAttrOrThrow("dtype").getType()
+                    : tensorProto.containsAttr("T") ? tensorProto.getAttrOrThrow("T").getType() : tensorProto
+                    .getAttrOrThrow("Tidx").getType();
+        }
+
+        return convertType(tfType);
+    }
+
+    public static org.nd4j.linalg.api.buffer.DataType convertType(org.tensorflow.framework.DataType tfType){
+        switch(tfType) {
+            case DT_DOUBLE: return org.nd4j.linalg.api.buffer.DataType.DOUBLE;
+            case DT_FLOAT: return org.nd4j.linalg.api.buffer.DataType.FLOAT;
+            case DT_HALF: return org.nd4j.linalg.api.buffer.DataType.HALF;
+            case DT_BFLOAT16: return org.nd4j.linalg.api.buffer.DataType.HALF;
+            case DT_INT8: return org.nd4j.linalg.api.buffer.DataType.BYTE;
+            case DT_INT16: return org.nd4j.linalg.api.buffer.DataType.SHORT;
+            case DT_INT32: return org.nd4j.linalg.api.buffer.DataType.INT;
+            case DT_INT64: return org.nd4j.linalg.api.buffer.DataType.LONG;
+            case DT_UINT8: return org.nd4j.linalg.api.buffer.DataType.UBYTE;
+            case DT_STRING: return org.nd4j.linalg.api.buffer.DataType.UTF8;
+            case DT_BOOL: return org.nd4j.linalg.api.buffer.DataType.BOOL;
+
+            default: return org.nd4j.linalg.api.buffer.DataType.UNKNOWN;
         }
     }
 
     @Override
-    public boolean unknownTypeNodeImportable(NodeDef tensorProto) {
+    public boolean isStringType(NodeDef tensorProto){
         DataType dt = null;
         if(tensorProto.containsAttr("dtype")){
             dt = tensorProto.getAttrOrThrow("dtype").getType();
@@ -799,7 +978,7 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
             dt = tensorProto.getAttrOrThrow("Tidx").getType();
         }
 
-        return dt == DataType.DT_BOOL;
+        return dt == DataType.DT_STRING || dt == DataType.DT_STRING_REF;
     }
 
 
@@ -829,6 +1008,24 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
     }
 
     @Override
+    public List<String> getControlDependencies(NodeDef node){
+        int numInputs = node.getInputCount();
+        if(numInputs == 0)
+            return null;
+
+        List<String> out = null;
+        for( int i=0; i<numInputs; i++ ){
+            String in = node.getInput(i);
+            if(isControlDependency(in)){
+                if(out == null)
+                    out = new ArrayList<>();
+                out.add(getNodeName(in));       //Remove "^" prefix
+            }
+        }
+        return out;
+    }
+
+    @Override
     public  INDArray getNDArrayFromTensor(String tensorName, NodeDef node, GraphDef graph) {
         //placeholder of some kind
         if(!node.getAttrMap().containsKey("value")) {
@@ -844,6 +1041,7 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
     public INDArray mapTensorProto(TensorProto tfTensor) {
         // building shape first
         int dims = tfTensor.getTensorShape().getDimCount();
+        long[] arrayShape = null;
         List<Integer> dimensions = new ArrayList<>();
         for (int e = 0; e < dims; e++) {
             // TODO: eventually we want long shapes :(
@@ -853,33 +1051,30 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
 
 
 
-        long[] arrayShape = new long[dimensions.size()];
-        for(int i=0; i< arrayShape.length; i++ ){
-            arrayShape[i] = dimensions.get(i);
-        }
+        arrayShape = ArrayUtil.toLongArray(Ints.toArray(dimensions));
 
         if (tfTensor.getDtype() == DataType.DT_INT32 || tfTensor.getDtype() == DataType.DT_INT16 || tfTensor.getDtype() == DataType.DT_INT8) {
             // valueOf
             if (tfTensor.getIntValCount() == 1 || ArrayUtil.prod(arrayShape) == 1) {
                 //straight zero case
                 if(tfTensor.getIntValCount() < 1)
-                    return Nd4j.trueScalar(0.0);
+                    return Nd4j.scalar( ArrayOptionsHelper.convertToDataType(tfTensor.getDtype()), 0);
 
                 //should be scalar otherwise
                 int val = tfTensor.getIntVal(0);
 
                 if (arrayShape == null || arrayShape.length == 0)
-                    return Nd4j.trueScalar((double) val);
+                    return Nd4j.scalar( ArrayOptionsHelper.convertToDataType(tfTensor.getDtype()), val);
 
-                return Nd4j.valueArrayOf(arrayShape, (double) val);
+                return Nd4j.valueArrayOf(arrayShape, val, ArrayOptionsHelper.convertToDataType(tfTensor.getDtype()));
             } else if (tfTensor.getInt64ValCount() > 0) {
-                double[] jArray = new double[tfTensor.getIntValCount()];
+                val jArray = new int[tfTensor.getIntValCount()];
                 for (int e = 0; e < tfTensor.getIntValCount(); e++) {
-                    jArray[e] = (double) tfTensor.getIntVal(e);
+                    jArray[e] = tfTensor.getIntVal(e);
                 }
 
                 // TF arrays are always C
-                return Nd4j.create(jArray, arrayShape, 0, 'c');
+                return Nd4j.create(Nd4j.createTypedBuffer(jArray, ArrayOptionsHelper.convertToDataType(tfTensor.getDtype())), arrayShape, Nd4j.getStrides(arrayShape, 'c'), 0, 'c', ArrayOptionsHelper.convertToDataType(tfTensor.getDtype()));
             } else {
                 // FIXME: INT bytebuffers should be converted to floating point
                 //throw new UnsupportedOperationException("To be implemented yet");
@@ -887,21 +1082,21 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
                 // binary representation
                 val bb = tfTensor.getTensorContent().asReadOnlyByteBuffer();
                 val fb = bb.order(ByteOrder.nativeOrder()).asIntBuffer();
-                val fa = new float[fb.capacity()];
+                val fa = new int[fb.capacity()];
                 for (int e = 0; e < fb.capacity(); e++)
-                    fa[e] = (float) fb.get(e);
+                    fa[e] = fb.get(e);
 
                 if (fa.length == 0)
-                    return Nd4j.empty();
+                    return Nd4j.empty(ArrayOptionsHelper.convertToDataType(tfTensor.getDtype()));
                     //throw new ND4JIllegalStateException("Can't find Tensor values! Probably you've forgot to freeze graph before saving?");
 
                 if (fa.length == 1)
-                    return Nd4j.trueScalar(fa[0]);
+                    return Nd4j.scalar(ArrayOptionsHelper.convertToDataType(tfTensor.getDtype()), fa[0]);
 
                 if (arrayShape.length == 1)
-                    return Nd4j.trueVector(fa);
+                    return Nd4j.create(fa, new long[]{fa.length}, new long[]{1}, 'c', ArrayOptionsHelper.convertToDataType(tfTensor.getDtype()));
 
-                val array = Nd4j.create(fa, arrayShape, 'c');
+                val array = Nd4j.create(Nd4j.createTypedBuffer(fa, ArrayOptionsHelper.convertToDataType(tfTensor.getDtype())), arrayShape, Nd4j.getStrides(arrayShape, 'c'), 0, 'c', ArrayOptionsHelper.convertToDataType(tfTensor.getDtype()));
                 //log.debug("SUM1: {}", array.sumNumber());
                 //log.debug("Data: {}", Arrays.toString(array.data().asFloat()));
                 return array;
@@ -910,7 +1105,7 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
             if (tfTensor.getFloatValCount() == 1 || ArrayUtil.prod(arrayShape) == 1) {
                 //straight zero case
                 if(tfTensor.getFloatValCount() < 1)
-                    return Nd4j.scalar(0.0);
+                    return Nd4j.scalar(org.nd4j.linalg.api.buffer.DataType.FLOAT, 0.0f);
 
 
                 float val = tfTensor.getFloatVal(0);
@@ -918,7 +1113,7 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
                 if (arrayShape == null || arrayShape.length == 0)
                     arrayShape = new long[]{};
 
-                INDArray array = Nd4j.valueArrayOf(arrayShape, (double) val);
+                INDArray array = Nd4j.valueArrayOf(arrayShape, val, org.nd4j.linalg.api.buffer.DataType.FLOAT);
                 return array;
             } else if (tfTensor.getFloatValCount() > 0) {
                 float[] jArray = new float[tfTensor.getFloatValCount()];
@@ -926,8 +1121,7 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
                     jArray[e] = tfTensor.getFloatVal(e);
                 }
 
-                // FIXME: we're missing float[] signature
-                INDArray array = Nd4j.create(Nd4j.createBuffer(jArray), arrayShape);
+                INDArray array = Nd4j.create(Nd4j.createTypedBuffer(jArray, org.nd4j.linalg.api.buffer.DataType.FLOAT), arrayShape, Nd4j.getStrides(arrayShape), 0, 'c');
                 return array;
             } else if (tfTensor.getTensorContent().size() > 0){
                 // binary representation
@@ -941,35 +1135,35 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
                     throw new ND4JIllegalStateException("Can't find Tensor values! Probably you've forgot to freeze graph before saving?");
 
                 if (fa.length == 1)
-                    return Nd4j.trueScalar(fa[0]);
+                    return Nd4j.scalar(org.nd4j.linalg.api.buffer.DataType.FLOAT, fa[0]);
 
                 if (arrayShape.length == 1)
-                    return Nd4j.trueVector(fa);
+                    return Nd4j.create(fa, new long[]{fa.length}, new long[]{1}, 'c', org.nd4j.linalg.api.buffer.DataType.FLOAT);
 
-                val array = Nd4j.create(fa, arrayShape, 'c');
+                val array = Nd4j.create(fa, arrayShape, Nd4j.getStrides(arrayShape, 'c'), 'c', org.nd4j.linalg.api.buffer.DataType.FLOAT);
                 return array;
             }
         } else if (tfTensor.getDtype() == DataType.DT_DOUBLE) {
             if (tfTensor.getDoubleValCount() == 1 || ArrayUtil.prod(arrayShape) == 1) {
                 //straight zero case
                 if(tfTensor.getDoubleValCount() < 1)
-                    return Nd4j.trueScalar(0.0);
+                    return Nd4j.scalar(org.nd4j.linalg.api.buffer.DataType.DOUBLE, 0.0);
 
                 double val = tfTensor.getDoubleVal(0);
                 INDArray array = Nd4j.trueScalar(val);
                 return array;
             } else if (tfTensor.getDoubleValCount() > 0) {
-                double[] jArray = new double[tfTensor.getDoubleValCount()];
+                val jArray = new double[tfTensor.getDoubleValCount()];
                 for (int e = 0; e < tfTensor.getDoubleValCount(); e++) {
                     jArray[e] =  tfTensor.getDoubleVal(e);
                 }
 
                 // TF arrays are always C
-                INDArray array = Nd4j.create(jArray, arrayShape, 0, 'c');
+                val array = Nd4j.create(jArray, arrayShape, Nd4j.getStrides(arrayShape, 'c'), 'c', org.nd4j.linalg.api.buffer.DataType.DOUBLE);
                 return array;
             } else if (tfTensor.getTensorContent().size() > 0) {
                 // binary representation
-                //DataBuffer buffer = Nd4j.createBuffer(tfTensor.getTensorContent().asReadOnlyByteBuffer(), DataBuffer.Type.FLOAT, (int) length);
+                //DataBuffer buffer = Nd4j.createBuffer(tfTensor.getTensorContent().asReadOnlyByteBuffer(), DataType.FLOAT, (int) length);
                 //INDArray array = Nd4j.createArrayFromShapeBuffer(buffer, Nd4j.getShapeInfoProvider().createShapeInformation(arrayShape, 'c'));
 
                 // binary representation
@@ -994,29 +1188,29 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
         } else if (tfTensor.getDtype() == DataType.DT_INT64) {
             if (tfTensor.getInt64ValCount() == 1 || ArrayUtil.prod(arrayShape) == 1) {
                 //straight zero case
-                if (tfTensor.getDoubleValCount() < 1)
+                if (tfTensor.getInt64ValCount() < 1)
                     return Nd4j.trueScalar(0.0);
 
                 double val = (double) tfTensor.getInt64Val(0);
                 INDArray array = Nd4j.trueScalar(val);
                 return array;
             } else if (tfTensor.getInt64ValCount() > 0) {
-                double[] jArray = new double[tfTensor.getInt64ValCount()];
+                val jArray = new long[tfTensor.getInt64ValCount()];
                 for (int e = 0; e < tfTensor.getInt64ValCount(); e++) {
-                    jArray[e] = (double) tfTensor.getInt64Val(e);
+                    jArray[e] = tfTensor.getInt64Val(e);
                 }
 
                 // TF arrays are always C
-                INDArray array = Nd4j.create(jArray, arrayShape, 0, 'c');
+                INDArray array = Nd4j.create(Nd4j.createTypedBuffer(jArray, org.nd4j.linalg.api.buffer.DataType.LONG), arrayShape, Nd4j.getStrides(arrayShape, 'c'),0, 'c', org.nd4j.linalg.api.buffer.DataType.LONG);
                 return array;
             } else if (tfTensor.getTensorContent().size() > 0) {
                 //throw new UnsupportedOperationException("To be implemented yet");
                 //Mapping INT bytebuffers should be converted to floating point
                 val bb = tfTensor.getTensorContent().asReadOnlyByteBuffer();
                 val lb = bb.order(ByteOrder.nativeOrder()).asLongBuffer();
-                val fa = new float[lb.capacity()];
+                val fa = new long[lb.capacity()];
                 for (int e = 0; e < lb.capacity(); e++)
-                    fa[e] = (float) lb.get(e);
+                    fa[e] = lb.get(e);
                 if (fa.length == 0)
                     throw new ND4JIllegalStateException("Can't find Tensor values! Probably you've forgot to freeze graph before saving?");
 
@@ -1025,30 +1219,49 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
 
                 if (arrayShape.length == 1)
                     return Nd4j.trueVector(fa);
-                val array = Nd4j.create(fa, arrayShape, 'c');
-                //log.debug("SUM1: {}", array.sumNumber());
-                //log.debug("Data: {}", Arrays.toString(array.data().asFloat()));
+
+                val array = Nd4j.create(Nd4j.createTypedBuffer(fa, org.nd4j.linalg.api.buffer.DataType.LONG), arrayShape, Nd4j.getStrides(arrayShape, 'c'),  0, 'c', org.nd4j.linalg.api.buffer.DataType.LONG);
                 return array;
             }
-        } else if (tfTensor.getDtype() == DataType.DT_BOOL){
-            if (tfTensor.getBoolValCount() == 1 || ArrayUtil.prod(arrayShape) == 1){
+        } else if (tfTensor.getDtype() == DataType.DT_BOOL) {
+            if (tfTensor.getBoolValCount() == 1 || ArrayUtil.prod(arrayShape) == 1) {
                 //straight zero case
-                if(tfTensor.getBoolValCount() < 1)
-                    return Nd4j.trueScalar(0.0);
+                if (tfTensor.getBoolValCount() < 1)
+                    return Nd4j.scalar(false);
 
-                boolean val = tfTensor.getBoolVal(0);
-                return Nd4j.trueScalar(val ? 1.0 : 0.0);
+                val val = tfTensor.getBoolVal(0);
+                val arr = Nd4j.scalar(val);
+                return arr;
             } else if (tfTensor.getBoolValCount() > 0) {
-                float[] jArray = new float[tfTensor.getBoolValCount()];
+                val jArray = new boolean[tfTensor.getBoolValCount()];
                 for (int e = 0; e < tfTensor.getBoolValCount(); e++) {
-                    jArray[e] = tfTensor.getBoolVal(e) ? 1.0f : 0.0f;
+                    jArray[e] = tfTensor.getBoolVal(e);
                 }
 
                 // TF arrays are always C
-                INDArray array = Nd4j.create(jArray, arrayShape, 'c');
+                INDArray array = Nd4j.create(Nd4j.createTypedBuffer(jArray, org.nd4j.linalg.api.buffer.DataType.BOOL), arrayShape, Nd4j.getStrides(arrayShape, 'c'), 0, 'c', org.nd4j.linalg.api.buffer.DataType.BOOL);
                 return array;
             } else if (tfTensor.getTensorContent().size() > 0) {
                 throw new UnsupportedOperationException("Not yet implemented for DataType.DT_BOOL");
+            }
+        } else if(tfTensor.getDtype() == DataType.DT_STRING){
+            if (tfTensor.getStringValCount() <= 1 || ArrayUtil.prod(arrayShape) == 1) {
+                //straight zero case
+                if (tfTensor.getStringValCount() < 1)
+                    return Nd4j.empty(org.nd4j.linalg.api.buffer.DataType.UTF8);
+
+                String val = tfTensor.getStringVal(0).toStringUtf8();
+                INDArray arr = Nd4j.scalar(val);
+                return arr;
+            } else if (tfTensor.getStringValCount() > 0) {
+                String[] sArr = new String[tfTensor.getStringValCount()];
+                for (int e = 0; e < sArr.length; e++) {
+                    sArr[e] = tfTensor.getStringVal(e).toStringUtf8();
+                }
+
+                // TF arrays are always C
+                INDArray array = Nd4j.create(sArr).reshape(arrayShape);
+                return array;
             }
         }  else {
             throw new UnsupportedOperationException("Unknown dataType found: [" + tfTensor.getDtype() + "]");

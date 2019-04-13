@@ -87,8 +87,6 @@ public abstract class BaseNetworkSpace<T> extends AbstractParameterSpace<T> {
     protected List<LayerConf> layerSpaces = new ArrayList<>();
 
     //NeuralNetConfiguration.ListBuilder/MultiLayerConfiguration.Builder<T> options:
-    protected ParameterSpace<Boolean> backprop;
-    protected ParameterSpace<Boolean> pretrain;
     protected ParameterSpace<BackpropType> backpropType;
     protected ParameterSpace<Integer> tbpttFwdLength;
     protected ParameterSpace<Integer> tbpttBwdLength;
@@ -132,9 +130,6 @@ public abstract class BaseNetworkSpace<T> extends AbstractParameterSpace<T> {
         this.weightConstraints = builder.weightConstraints;
         this.biasConstraints = builder.biasConstraints;
 
-
-        this.backprop = builder.backprop;
-        this.pretrain = builder.pretrain;
         this.backpropType = builder.backpropType;
         this.tbpttFwdLength = builder.tbpttFwdLength;
         this.tbpttBwdLength = builder.tbpttBwdLength;
@@ -303,8 +298,6 @@ public abstract class BaseNetworkSpace<T> extends AbstractParameterSpace<T> {
         private ParameterSpace<List<LayerConstraint>> biasConstraints;
 
         //NeuralNetConfiguration.ListBuilder/MultiLayerConfiguration.Builder<T> options:
-        private ParameterSpace<Boolean> backprop;
-        private ParameterSpace<Boolean> pretrain;
         private ParameterSpace<BackpropType> backpropType;
         private ParameterSpace<Integer> tbpttFwdLength;
         private ParameterSpace<Integer> tbpttBwdLength;
@@ -509,40 +502,6 @@ public abstract class BaseNetworkSpace<T> extends AbstractParameterSpace<T> {
 
         public T convolutionMode(ParameterSpace<ConvolutionMode> convolutionMode) {
             this.convolutionMode = convolutionMode;
-            return (T) this;
-        }
-
-        /**
-         * @deprecated backprop(boolean) and pretrain(boolean) are no longer used
-         */
-        @Deprecated
-        public T backprop(boolean backprop) {
-            return backprop(new FixedValue<>(backprop));
-        }
-
-        /**
-         * @deprecated backprop(boolean) and pretrain(boolean) are no longer used
-         */
-        @Deprecated
-        public T backprop(ParameterSpace<Boolean> backprop) {
-            this.backprop = backprop;
-            return (T) this;
-        }
-
-        /**
-         * @deprecated backprop(boolean) and pretrain(boolean) are no longer used
-         */
-        @Deprecated
-        public T pretrain(boolean pretrain) {
-            return pretrain(new FixedValue<>(pretrain));
-        }
-
-        /**
-         * @deprecated backprop(boolean) and pretrain(boolean) are no longer used
-         */
-        @Deprecated
-        public T pretrain(ParameterSpace<Boolean> pretrain) {
-            this.pretrain = pretrain;
             return (T) this;
         }
 

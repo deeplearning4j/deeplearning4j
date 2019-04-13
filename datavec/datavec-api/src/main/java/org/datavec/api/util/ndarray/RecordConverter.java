@@ -23,6 +23,7 @@ import org.datavec.api.timeseries.util.TimeSeriesWritableUtils;
 import org.datavec.api.transform.metadata.ColumnMetaData;
 import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.writable.*;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
@@ -168,7 +169,7 @@ public class RecordConverter {
             if (w instanceof NDArrayWritable) {
                 INDArray a = ((NDArrayWritable) w).get();
                 if (a.size(0) != 1) {
-                    throw new UnsupportedOperationException("NDArrayWritable must have leading dimension 1 for this" +
+                    throw new UnsupportedOperationException("NDArrayWritable must have leading dimension 1 for this " +
                             "method. Received array with shape: " + Arrays.toString(a.shape()));
                 }
                 if(toConcat == null){
@@ -194,7 +195,7 @@ public class RecordConverter {
         if(toConcat != null){
             return Nd4j.concat(0, toConcat.toArray(new INDArray[toConcat.size()]));
         } else {
-            return Nd4j.create(list.toArray(new double[list.size()]), new int[]{list.size(), 1});
+            return Nd4j.create(list.toArray(new double[list.size()]), new long[]{list.size(), 1}, DataType.FLOAT);
         }
     }
 

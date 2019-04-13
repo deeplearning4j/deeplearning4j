@@ -19,13 +19,17 @@ package org.nd4j.linalg.api.ops.impl.shape;
 import lombok.extern.slf4j.Slf4j;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.base.Preconditions;
 import org.nd4j.imports.NoOpNameFoundException;
+import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -37,16 +41,18 @@ import java.util.Map;
 @Slf4j
 public class OnesLike extends DynamicCustomOp {
 
+    protected DataType outputType;    //Allow customizing dtype for TF import
 
     public OnesLike() {
     }
 
     public OnesLike(String name, SameDiff sameDiff, SDVariable input) {
-        this(name, sameDiff, input, false);
+        this(name, sameDiff, input, input.dataType());
     }
 
-    public OnesLike(String name, SameDiff sameDiff, SDVariable input, boolean inPlace) {
-        super(name, sameDiff, new SDVariable[]{input}, inPlace);
+    public OnesLike(String name, SameDiff sameDiff, SDVariable input, DataType dataType) {
+        super(name, sameDiff, new SDVariable[]{input}, false);
+        this.outputType = dataType;
     }
 
 
@@ -69,7 +75,9 @@ public class OnesLike extends DynamicCustomOp {
 
     @Override
     public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
-
+        if(attributesForNode.containsKey("T")) {
+            outputType = TFGraphMapper.convertType(attributesForNode.get("T").getType());
+        }
     }
 
     @Override
@@ -78,4 +86,14 @@ public class OnesLike extends DynamicCustomOp {
         return Arrays.asList(ret);
     }
 
+    @Override
+    public List<org.nd4j.linalg.api.buffer.DataType> calculateOutputDataTypes(List<org.nd4j.linalg.api.buffer.DataType> dataTypes){
+        Preconditions.checkState(dataTypes.size() == 1, "Expected list with exactly 1 datatype for %s, got %s", getClass(), dataTypes);
+        if(outputType != null){
+            return Collections.singletonList(outputType);
+        } else {
+            //Output type is same as input type
+            return dataTypes;
+        }
+    }
 }

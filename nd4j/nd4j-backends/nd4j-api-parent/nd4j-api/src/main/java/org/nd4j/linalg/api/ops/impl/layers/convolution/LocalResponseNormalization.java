@@ -24,7 +24,9 @@ import lombok.val;
 import onnx.OnnxProto3;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.base.Preconditions;
 import org.nd4j.imports.descriptors.properties.PropertyMapping;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.LocalResponseNormalizationConfig;
@@ -42,8 +44,6 @@ import java.util.*;
 @Getter
 @NoArgsConstructor
 public class LocalResponseNormalization extends DynamicCustomOp {
-
-
 
     protected LocalResponseNormalizationConfig config;
 
@@ -89,10 +89,10 @@ public class LocalResponseNormalization extends DynamicCustomOp {
         val aBias = nodeDef.getAttrOrThrow("bias");
         val aDepth = nodeDef.getAttrOrThrow("depth_radius");
 
-        val alpha = aAlpha.getF();
-        val beta = aBeta.getF();
-        val bias = aBias.getF();
-        val depth = aDepth.getF();
+        double alpha = aAlpha.getF();
+        double beta = aBeta.getF();
+        double bias = aBias.getF();
+        int depth = (int)aDepth.getI();
 
         LocalResponseNormalizationConfig localResponseNormalizationConfig = LocalResponseNormalizationConfig.builder()
                 .alpha(alpha)
@@ -193,4 +193,9 @@ public class LocalResponseNormalization extends DynamicCustomOp {
         return "LRN";
     }
 
+    @Override
+    public List<DataType> calculateOutputDataTypes(List<DataType> inputDataTypes){
+        Preconditions.checkState(inputDataTypes.get(0).isFPType(), "Input 0 should be a floating point type for %s, got %s", getClass(), inputDataTypes.get(0));
+        return Collections.singletonList(inputDataTypes.get(0));
+    }
 }

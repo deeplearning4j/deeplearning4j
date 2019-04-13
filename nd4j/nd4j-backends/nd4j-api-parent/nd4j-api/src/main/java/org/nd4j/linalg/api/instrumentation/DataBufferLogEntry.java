@@ -17,6 +17,7 @@
 package org.nd4j.linalg.api.instrumentation;
 
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DataType;
 
 import java.io.Serializable;
 import java.util.Arrays;
@@ -39,7 +40,7 @@ public class DataBufferLogEntry implements Serializable {
 
     public DataBufferLogEntry(DataBuffer buffer, String status) {
         this.length = buffer.length();
-        this.dataType = buffer.dataType() == DataBuffer.Type.DOUBLE ? "double" : "float";
+        this.dataType = buffer.dataType() == DataType.DOUBLE ? "double" : "float";
         this.stackTraceElements = Thread.currentThread().getStackTrace();
         this.references = buffer.references();
         timestamp = System.currentTimeMillis();

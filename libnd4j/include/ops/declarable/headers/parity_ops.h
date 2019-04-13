@@ -115,7 +115,7 @@ namespace nd4j {
          * 1: bias vector
          */
         #if NOT_EXCLUDED(OP_biasadd)
-        DECLARE_OP(biasadd, 2, 1, true);
+        DECLARE_CUSTOM_OP(biasadd, 2, 1, true, 0, 0);
         DECLARE_CUSTOM_OP(biasadd_bp, 3, 2, false, 0, 0);
         #endif
 
@@ -634,10 +634,10 @@ namespace nd4j {
          *  will be sorted by the values in descending order.
          *  The first parameter is a NDArray for working.
          *  The second is k (default 1) - optional
-         *  The third is boolean value(default is 1) (0 - as is, 1 - sorted by value) optional
+         *  The third is boolean value(default is true) (0 - as is, 1 - sorted by value) optional
          */
         #if NOT_EXCLUDED(OP_top_k)
-        DECLARE_CUSTOM_OP(top_k, 1, 2, false, 0, -2);
+        DECLARE_CUSTOM_OP(top_k, 1, 2, false, 0, -1);
         #endif
 
         /**
@@ -739,30 +739,8 @@ namespace nd4j {
         DECLARE_OP(stop_gradient, 1, 1, true);
         #endif
 
-        /**
-         * l2_loss op.
-         * compute a l2 norm for given array.
-         *
-         * input param - an array (tensor)
-         * output value - a real number with given type (e.g. float or double)
-         */
-        #if NOT_EXCLUDED(OP_l2_loss)
-        DECLARE_CUSTOM_OP(l2_loss, 1, 1, false, 0, 0);
-        #endif
-
         #if NOT_EXCLUDED(OP_parallel_stack)
         DECLARE_CUSTOM_OP(parallel_stack, -1, 1, false, 0, 0);
-        #endif
-
-	/**
-         * This op calculates logarithmic loss of poison distributed input
-         * Input arguments
-         *  0 - target
-         *  1 - input
-         *  optional int - boolean value compute_full_loss: 0 (default) or 1 (compute)
-         */
-        #if NOT_EXCLUDED(OP_log_poison_loss)
-        DECLARE_CONFIGURABLE_OP(log_poison_loss, 2, 1, true, 0, 0);
         #endif
 
         /**
@@ -817,7 +795,7 @@ namespace nd4j {
         #endif
 
         /**
-         * This op calculates weighted logarithmic loss of input
+         * This op calculates dropout of input
          * Input arguments
          *  0 - input tensor
          *  1 - noise_shape - (vector with shape to reduce) - optional
@@ -828,6 +806,20 @@ namespace nd4j {
          */
         #if NOT_EXCLUDED(OP_dropout)
         DECLARE_CONFIGURABLE_OP(dropout, 1, 1, true, 1, 1);
+        #endif
+        #if NOT_EXCLUDED(OP_dropout_bp)
+        DECLARE_CONFIGURABLE_OP(dropout_bp, 2, 1, false, 1, 1);
+        #endif
+
+        /*  Calculates alpha weighted dropout
+            T params:
+                0 - drop probability
+                1 - alpha value
+                2 - alpha' value
+                3 - beta value
+         */
+        #if NOT_EXCLUDED(OP_alpha_dropout_bp)
+        DECLARE_CONFIGURABLE_OP(alpha_dropout_bp, 2, 1, false, 4, 1);
         #endif
 
 
@@ -880,6 +872,36 @@ namespace nd4j {
         DECLARE_CUSTOM_OP(matrix_determinant, 1, 1, false, 0, 0);
         #endif
 
+        /**
+         * log_matrix_determinant op.
+         *
+         * input params:
+         *    0 - the tensor with dimension (x * y * z * ::: * M * M)
+         *
+         * return value:
+         *    tensor with dimension (x * y * z * ::: *) with log determinant for all
+         * M x M matricies
+         */
+
+        #if NOT_EXCLUDED(OP_log_matrix_determinant)
+        DECLARE_CUSTOM_OP(log_matrix_determinant, 1, 1, false, 0, 0);
+        #endif
+
+        /**
+         * logdet op. Logarithm of the determinant of hermitian positive matricies.
+         *
+         * input params:
+         *    0 - the tensor with dimension (x * y * z * ::: * M * M)
+         *
+         * return value:
+         *    tensor with dimension (x * y * z * ::: *) with log determinant for all
+         * M x M matricies
+         */
+
+        #if NOT_EXCLUDED(OP_logdet)
+        DECLARE_CUSTOM_OP(logdet, 1, 1, false, 0, 0);
+        #endif
+        
         /**
          * matrix_inverse op. - make inverse for all 2D square matricies found in the input tensor
          *
@@ -1002,7 +1024,7 @@ namespace nd4j {
          *    tensor with max values according to indices sets.
          */
         #if NOT_EXCLUDED(OP_unsorted_segment_max)
-        DECLARE_CUSTOM_OP(unsorted_segment_max, 2, 1, false, 0, 1);
+        DECLARE_CUSTOM_OP(unsorted_segment_max, 2, 1, false, 0, 0);
         #endif
         #if NOT_EXCLUDED(OP_unsorted_segment_max_bp)
         DECLARE_CUSTOM_OP(unsorted_segment_max_bp, 3, 2, false, 0, 1);
@@ -1022,7 +1044,7 @@ namespace nd4j {
          *    tensor with min values according to indices sets.
          */
         #if NOT_EXCLUDED(OP_unsorted_segment_min_bp)
-        DECLARE_CUSTOM_OP(unsorted_segment_min, 2, 1, false, 0, 1);
+        DECLARE_CUSTOM_OP(unsorted_segment_min, 2, 1, false, 0, 0);
         #endif
         #if NOT_EXCLUDED(OP_unsorted_segment_min_bp)
         DECLARE_CUSTOM_OP(unsorted_segment_min_bp, 3, 2, false, 0, 1);
@@ -1042,7 +1064,7 @@ namespace nd4j {
          *    tensor with sum of values according to indices sets.
          */
         #if NOT_EXCLUDED(OP_unsorted_segment_sum)
-        DECLARE_CUSTOM_OP(unsorted_segment_sum, 2, 1, false, 0, 1);
+        DECLARE_CUSTOM_OP(unsorted_segment_sum, 2, 1, false, 0, 0);
         #endif
         #if NOT_EXCLUDED(OP_unsorted_segment_sum_bp)
         DECLARE_CUSTOM_OP(unsorted_segment_sum_bp, 3, 2, false, 0, 1);
@@ -1062,7 +1084,7 @@ namespace nd4j {
          *    tensor with product of values according to indices sets.
          */
         #if NOT_EXCLUDED(OP_unsorted_segment_prod)
-        DECLARE_CUSTOM_OP(unsorted_segment_prod, 2, 1, false, 0, 1);
+        DECLARE_CUSTOM_OP(unsorted_segment_prod, 2, 1, false, 0, 0);
         #endif
         #if NOT_EXCLUDED(OP_unsorted_segment_prod_bp)
         DECLARE_CUSTOM_OP(unsorted_segment_prod_bp, 3, 2, false, 0, 1);
@@ -1082,7 +1104,7 @@ namespace nd4j {
          *    tensor with average of values according to indices sets.
          */
         #if NOT_EXCLUDED(OP_unsorted_segment_mean)
-        DECLARE_CUSTOM_OP(unsorted_segment_mean, 2, 1, false, 0, 1);
+        DECLARE_CUSTOM_OP(unsorted_segment_mean, 2, 1, false, 0, 0);
         #endif
         #if NOT_EXCLUDED(OP_unsorted_segment_mean_bp)
         DECLARE_CUSTOM_OP(unsorted_segment_mean_bp, 3, 2, false, 0, 1);
@@ -1102,7 +1124,7 @@ namespace nd4j {
          *    tensor with average of values according to indices sets.
          */
         #if NOT_EXCLUDED(OP_unsorted_segment_sqrt)
-        DECLARE_CUSTOM_OP(unsorted_segment_sqrt_n, 2, 1, false, 0, 1);
+        DECLARE_CUSTOM_OP(unsorted_segment_sqrt_n, 2, 1, false, 0, 0);
         #endif
         #if NOT_EXCLUDED(OP_unsorted_segment_sqrt_n_bp)
         DECLARE_CUSTOM_OP(unsorted_segment_sqrt_n_bp, 3, 2, false, 0, 1);
@@ -1147,6 +1169,21 @@ namespace nd4j {
          */
         #if NOT_EXCLUDED(OP_roll)
         DECLARE_CONFIGURABLE_OP(roll, 1, 1, true, 0, 1);
+        #endif
+
+        /**
+         * lin_space - op porting from TF (https://www.tensorflow.org/api_docs/python/tf/lin_space)
+         * 
+         * input params:
+         *    0 - startVal - NDArray scalar (float point)
+         *    1 - finishVal - NDArray scalar (float point)
+         *    2 - numOfElements - NDArray scalar (integer)
+         * 
+         * output:
+         *    0 - 1D NDArray with the same type as input and length as given with numOfElements param.
+         */
+        #if NOT_EXCLUDED(OP_lin_space)
+        DECLARE_CUSTOM_OP(lin_space, 3, 1, false, 0, 0);
         #endif
 
         /**
@@ -1338,7 +1375,7 @@ namespace nd4j {
         DECLARE_CUSTOM_OP(reduce_norm_max_bp, 2, 1, false, 0, 0);
         #endif
 
-		/**
+        /**
         * This op calculates mean of elements along given dimensions
         *
         * input array:
@@ -1353,9 +1390,13 @@ namespace nd4j {
         * output array:
         *    reduced tensor with calculated means
         */
+        #if NOT_EXCLUDED(OP_reduce_mean)
         DECLARE_CUSTOM_OP(reduce_mean, 1, 1, false, 0, 0);
-        DECLARE_CUSTOM_OP(reduce_mean_bp, 2, 1, false, 0, 0)
+        #endif
 
+        #if NOT_EXCLUDED(OP_reduce_mean_bp)
+        DECLARE_CUSTOM_OP(reduce_mean_bp, 2, 1, false, 0, 0)
+        #endif
         /**
         * This op calculates sample variance of elements along given dimensions
         *
@@ -1415,6 +1456,95 @@ namespace nd4j {
         #if NOT_EXCLUDED(OP_reduce_dot_bp)
         DECLARE_CUSTOM_OP(reduce_dot_bp, 3, 2, false, 0, 0);
         #endif
+        /**
+         * reduce_logsumexp - tf.reduce_logsumexe operation
+         * 
+         * input params:
+         *    0 - NDArray (input)
+         *    1 - 1D NDArray (axis) (optional) - integer array
+         *
+         * T_ARG param (optional):
+         * 0 - keep_dims != 0.
+         *
+         * int params (optional):
+         *    0 - axe 1
+         *    1 - axe 2
+         *    ...
+         *    N-1 axe N 
+         *
+         *  CAUTION: All axes are optional and should be between 0 and input->rankOf() - 1
+         *  and put either with second param or as integers but not both
+         *
+         * output:
+         *    0 - NDArray with reduces shape accordingly to axes (the scalar in default case).
+         */
+        #if NOT_EXCLUDED(OP_reduce_logsumexp)
+        DECLARE_CUSTOM_OP(reduce_logsumexp, 1, 1, false, 0, 0);
+        #endif
+
+        /**
+        * This op make bilinear or nearest neighbor interpolated resize for given tensor
+        *
+        * input array:
+        *    0 - 4D-Tensor with shape (batch, sizeX, sizeY, channels) numeric type
+        *    1 - 2D-Tensor with shape (num_boxes, 4) float type
+        *    2 - 1D-Tensor with shape (num_boxes) int type
+        *    3 - 1D-Tensor with 2 values (newWidth, newHeight) (optional) int type
+        *
+        * float arguments (optional)
+        *   0 - exprapolation_value (optional) default 0.f
+        *
+        * int arguments: (optional)
+        *   0 - mode (default 0 - bilinear interpolation)
+        *
+        * output array:
+        *   the 4D-Tensor with resized to crop_size images given - float type
+        */
+        #if NOT_EXCLUDED(OP_crop_and_resize)
+        DECLARE_CUSTOM_OP(crop_and_resize, 4, 1, false, -1, -1);
+        #endif
+
+        /**
+        * This op make bilinear interpolated resize for given tensor
+        *
+        * input array:
+        *    0 - 4D-Tensor with shape (batch, sizeX, sizeY, channels)
+        *    1 - 1D-Tensor with 2 values (newWidth, newHeight) (optional)
+        *
+        * int arguments: (optional)
+        *   0 - new width
+        *   1 - new height
+        *
+        * output array:
+        *   the 4D-Tensor with calculated backproped dots
+        *
+        * CAUTION: either size tensor or a pair of int params should be provided.
+        */
+
+        #if NOT_EXCLUDED(OP_resize_bilinear)
+        DECLARE_CUSTOM_OP(resize_bilinear, 1, 1, false, 0, -2);
+        #endif
+
+        /**
+        * This op make nearest neighbor interpolated resize for given tensor
+        *
+        * input array:
+        *    0 - 4D-Tensor with shape (batch, sizeX, sizeY, channels)
+        *    1 - 1D-Tensor with 2 values (newWidth, newHeight) (optional)
+        *
+        * int arguments: (optional)
+        *   0 - new width
+        *   1 - new height
+        *
+        * output array:
+        *   the 4D-Tensor with calculated backproped dots
+        *
+        * CAUTION: either size tensor or a pair of int params should be provided.
+        */
+
+        #if NOT_EXCLUDED(OP_resize_bilinear)
+        DECLARE_CUSTOM_OP(resize_nearest_neighbor, 1, 1, false, 0, -2);
+        #endif
 
         /**
         * This op calculates backprop dot for two tensors along given dimensions
@@ -1436,6 +1566,67 @@ namespace nd4j {
 
         #if NOT_EXCLUDED(OP_matrix_band_part)
         DECLARE_CONFIGURABLE_OP(matrix_band_part, 1, 1, true, 0, 2);
+        #endif
+
+
+        #if NOT_EXCLUDED(OP_Assert)
+        DECLARE_OP(Assert, 1, 1, false);
+        #endif
+        /*
+         * image.non_max_suppression op.
+         * input:
+         *     0 - boxes - 2D-tensor with shape (num_boxes, 4) by float type
+         *     1 - scales - 1D-tensor with shape (num_boxes) by float type
+         *     2 - output_size - 0D-tensor by int type (optional)
+         * float args:
+         *     0 - threshold - threshold value for overlap checks (optional, by default 0.5)
+         * int args:
+         *     0 - output_size - as arg 2 used for same target. Eigher this or arg 2 should be provided.
+         *
+         * */
+        #if NOT_EXCLUDED(OP_image_non_max_suppression)
+        DECLARE_CUSTOM_OP(non_max_suppression, 2, 1, false, 0, 0);
+        #endif
+
+        /*
+         * cholesky op - decomposite positive square symetric matrix (or matricies when rank > 2).
+         * input:
+         *     0 - matricies - tensor with shape (..., N, N) by float type
+         *
+         * output - lower triangular matrix (matricies when rank > 2) with the same shape as input.
+         * */
+        #if NOT_EXCLUDED(OP_cholesky)
+        DECLARE_OP(cholesky, 1, 1, true);
+        #endif
+        /*
+         * nth_element - apply nth_element for last dimension of input tensor
+         * input array:
+         *     0 - input array
+         *     1 - scalar tensor with n for operation. n should be less than last dimension
+         *
+         * output:
+         *    0 - NDArray with the same shape as input
+         */
+        #if NOT_EXCLUDED(OP_nth_element)
+        DECLARE_CUSTOM_OP(nth_element, 2, 1, false, 0, 0);
+        #endif
+/**
+         * fake_quant_with_min_max_vals - tf.quantization.fake_quant_with_min_max_vars
+         * 
+         * input params:
+         *    0 - NDArray (input)
+         *    1 - 0D Tensor - min value
+         *    2 - 0D Tensor - max value
+         *
+         * int params (optional):
+         *    0 - num_bits (allowed interval [2, 16], default 8)
+         *    1 - narrow_range (default False)
+         *
+         * output:
+         *    0 - NDArray with the same shape as input
+         */
+        #if NOT_EXCLUDED(OP_fake_quant_with_min_max_vars)
+        DECLARE_CONFIGURABLE_OP(fake_quant_with_min_max_vars, 3, 1, true, 0, -2);
         #endif
 
     }

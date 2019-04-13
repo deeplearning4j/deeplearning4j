@@ -32,10 +32,9 @@ namespace ops  {
 
 ////////////////////////////////////////////////////////////////////////
 CONFIGURABLE_OP_IMPL(prelu, 2, 1, true, 0, 0) {
-    
-    NDArray<T>* input  = INPUT_VARIABLE(0);
-    NDArray<T>* alpha  = INPUT_VARIABLE(1);
-    NDArray<T>* output = OUTPUT_VARIABLE(0);
+    auto input  = INPUT_VARIABLE(0);
+    auto alpha  = INPUT_VARIABLE(1);
+    auto output = OUTPUT_VARIABLE(0);
 
     std::vector<int> sharedAxes = *block.getIArguments();
     
@@ -59,9 +58,9 @@ CONFIGURABLE_OP_IMPL(prelu, 2, 1, true, 0, 0) {
         expectedAlphaShape[sharedAxes[i] - 1] = 1;
     }
 
-    const Nd4jLong expectedAlphaLen = std::accumulate(expectedAlphaShape.begin(), expectedAlphaShape.end(), 1, std::multiplies<T>());        
+    //const Nd4jLong expectedAlphaLen =  0; //std::accumulate(expectedAlphaShape.begin(), expectedAlphaShape.end(), 1, std::multiplies<T>());
 
-    REQUIRE_TRUE(alphaLen == expectedAlphaLen, 0, "PRELU OP: wrong shape of alpha array, expected is %s, but got %s instead !", ShapeUtils<T>::shapeAsString(expectedAlphaShape).c_str(), ShapeUtils<T>::shapeAsString(alphaShape).c_str());   
+    REQUIRE_TRUE(helpers::checkAlphaShapeLen(expectedAlphaShape, alphaLen), 0, "PRELU OP: wrong shape of alpha array, expected is %s, but got %s instead !", ShapeUtils::shapeAsString(expectedAlphaShape).c_str(), ShapeUtils::shapeAsString(alphaShape).c_str());
     // ***** end of validation ***** //
 
     if(alphaShape != expectedAlphaShape)
@@ -76,15 +75,22 @@ CONFIGURABLE_OP_IMPL(prelu, 2, 1, true, 0, 0) {
 }
 
 
+        DECLARE_TYPES(prelu) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(0, DataType::ANY)
+                    ->setAllowedInputTypes(1, {ALL_FLOATS})
+                    ->setAllowedOutputTypes(0, {ALL_FLOATS});
+        }
+
+
 ////////////////////////////////////////////////////////////////////////
 CONFIGURABLE_OP_IMPL(prelu_bp, 3, 2, true, 0, 0) {
+    auto input = INPUT_VARIABLE(0);
+    auto alpha = INPUT_VARIABLE(1);
+    auto dLdO  = INPUT_VARIABLE(2);
     
-    NDArray<T>* input = INPUT_VARIABLE(0);
-    NDArray<T>* alpha = INPUT_VARIABLE(1);
-    NDArray<T>* dLdO  = INPUT_VARIABLE(2);
-    
-    NDArray<T>* dLdI = OUTPUT_VARIABLE(0);
-    NDArray<T>* dLdA = OUTPUT_VARIABLE(1);
+    auto dLdI = OUTPUT_VARIABLE(0);
+    auto dLdA = OUTPUT_VARIABLE(1);
 
     std::vector<int> sharedAxes = *block.getIArguments();
     
@@ -108,9 +114,7 @@ CONFIGURABLE_OP_IMPL(prelu_bp, 3, 2, true, 0, 0) {
         expectedAlphaShape[sharedAxes[i] - 1] = 1;
     }
 
-    const Nd4jLong expectedAlphaLen = std::accumulate(expectedAlphaShape.begin(), expectedAlphaShape.end(), 1, std::multiplies<T>());        
-
-    REQUIRE_TRUE(alphaLen == expectedAlphaLen, 0, "PRELU_BP OP: wrong shape of alpha array, expected is %s, but got %s instead !", ShapeUtils<T>::shapeAsString(expectedAlphaShape).c_str(), ShapeUtils<T>::shapeAsString(alphaShape).c_str());   
+    REQUIRE_TRUE(helpers::checkAlphaShapeLen(expectedAlphaShape, alphaLen), 0, "PRELU_BP OP: wrong shape of alpha array, expected is %s, but got %s instead !", ShapeUtils::shapeAsString(expectedAlphaShape).c_str(), ShapeUtils::shapeAsString(alphaShape).c_str());
     // ***** end of validation ***** //
     
     if(alphaShape != expectedAlphaShape) {
@@ -128,6 +132,14 @@ CONFIGURABLE_OP_IMPL(prelu_bp, 3, 2, true, 0, 0) {
     return Status::OK();
 }
 
+        DECLARE_TYPES(prelu_bp) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(0, DataType::ANY)
+                    ->setAllowedInputTypes(1, {DataType::FLOAT32, DataType ::DOUBLE, DataType::HALF})
+                    ->setAllowedInputTypes(2, {DataType::FLOAT32, DataType ::DOUBLE, DataType::HALF})
+                    ->setAllowedOutputTypes(0, {DataType::FLOAT32, DataType ::DOUBLE, DataType::HALF})
+                    ->setAllowedOutputTypes(1, {DataType::FLOAT32, DataType ::DOUBLE, DataType::HALF});
+        }
 
 
 }

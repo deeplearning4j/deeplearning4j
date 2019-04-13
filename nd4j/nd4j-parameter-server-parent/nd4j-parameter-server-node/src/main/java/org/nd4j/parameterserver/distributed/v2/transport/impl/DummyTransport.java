@@ -19,7 +19,6 @@ package org.nd4j.parameterserver.distributed.v2.transport.impl;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import org.jetbrains.annotations.NotNull;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.parameterserver.distributed.conf.VoidConfiguration;
 import org.nd4j.parameterserver.distributed.v2.messages.RequestMessage;
@@ -135,6 +134,11 @@ public class DummyTransport extends BaseTransport {
         }
     }
 
+    @Override
+    protected void internalProcessMessage(VoidMessage message) {
+        processMessage(message);
+    }
+
     /**
      * This class is written to mimic network connectivity locally
      */
@@ -142,9 +146,9 @@ public class DummyTransport extends BaseTransport {
         private Map<String, Transport> transports = new ConcurrentHashMap<>();
         private ThreadPoolExecutor executorService = (ThreadPoolExecutor) Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors(), new ThreadFactory() {
             @Override
-            public Thread newThread(@NotNull Runnable r) {
+            public Thread newThread(@NonNull Runnable r) {
                 val t = Executors.defaultThreadFactory().newThread(r);
-                t.setDaemon(true);
+                //t.setDaemon(true);
                 return t;
             }
         });

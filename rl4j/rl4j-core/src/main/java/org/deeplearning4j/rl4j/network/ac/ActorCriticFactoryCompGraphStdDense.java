@@ -91,7 +91,7 @@ public class ActorCriticFactoryCompGraphStdDense implements ActorCriticFactoryCo
         confB.setOutputs("value", "softmax");
 
 
-        ComputationGraphConfiguration cgconf = confB.pretrain(false).backprop(true).build();
+        ComputationGraphConfiguration cgconf = confB.build();
         ComputationGraph model = new ComputationGraph(cgconf);
         model.init();
         if (conf.getListeners() != null) {

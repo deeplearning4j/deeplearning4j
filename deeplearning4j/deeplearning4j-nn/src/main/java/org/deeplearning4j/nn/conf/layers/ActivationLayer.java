@@ -53,14 +53,14 @@ public class ActivationLayer extends NoParamLayer {
     /**
      * @param activation Activation function for the layer
      */
-    public ActivationLayer(Activation activation){
+    public ActivationLayer(Activation activation) {
         this(new Builder().activation(activation));
     }
 
     /**
      * @param activationFn Activation function for the layer
      */
-    public ActivationLayer(IActivation activationFn){
+    public ActivationLayer(IActivation activationFn) {
         this(new Builder().activation(activationFn));
     }
 
@@ -90,8 +90,9 @@ public class ActivationLayer extends NoParamLayer {
 
     @Override
     public InputType getOutputType(int layerIndex, InputType inputType) {
-        if (inputType == null)
+        if (inputType == null) {
             throw new IllegalStateException("Invalid input type: null for layer name \"" + getLayerName() + "\"");
+        }
         return inputType;
     }
 
@@ -121,15 +122,19 @@ public class ActivationLayer extends NoParamLayer {
 
     @AllArgsConstructor
     @NoArgsConstructor
+    @Getter
+    @Setter
     public static class Builder extends org.deeplearning4j.nn.conf.layers.Layer.Builder<Builder> {
 
+        /**
+         * Activation function for the layer
+         */
         private IActivation activationFn = null;
 
         /**
-         * Layer activation function.
-         * Typical values include:<br>
-         * "relu" (rectified linear), "tanh", "sigmoid", "softmax",
-         * "hardtanh", "leakyrelu", "maxout", "softsign", "softplus"
+         * Layer activation function. Typical values include:<br> "relu" (rectified linear), "tanh", "sigmoid",
+         * "softmax", "hardtanh", "leakyrelu", "maxout", "softsign", "softplus"
+         *
          * @deprecated Use {@link #activation(Activation)} or {@link @activation(IActivation)}
          */
         @Deprecated
@@ -141,7 +146,7 @@ public class ActivationLayer extends NoParamLayer {
          * @param activationFunction Activation function for the layer
          */
         public Builder activation(IActivation activationFunction) {
-            this.activationFn = activationFunction;
+            this.setActivationFn(activationFunction);
             return this;
         }
 

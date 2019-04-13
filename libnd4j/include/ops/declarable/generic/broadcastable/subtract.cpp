@@ -27,21 +27,30 @@
 namespace nd4j {
     namespace ops {
         BROADCASTABLE_OP_IMPL(subtract, 0, 0) {
-            NDArray<T> *x = INPUT_VARIABLE(0);
-            NDArray<T> *y = INPUT_VARIABLE(1);
-            NDArray<T> *z = OUTPUT_VARIABLE(0);
+            auto x = INPUT_VARIABLE(0);
+            auto y = INPUT_VARIABLE(1);
+            auto z = OUTPUT_VARIABLE(0);
 
-            auto tZ = BroadcastHelper<T>::template broadcastApply<simdOps::Subtract<T>>(x, y, z);
+            BROADCAST_CHECK_EMPTY(x,y,z);
+
+            auto tZ = BroadcastHelper::broadcastApply(BroadcastOpsTuple::Subtract(), x, y, z);
             if (tZ == nullptr)
                 return ND4J_STATUS_KERNEL_FAILURE;
             else if (tZ != z) {
                 OVERWRITE_RESULT(tZ);
             }
 
-			return ND4J_STATUS_OK;
+			return Status::OK();
         }
         DECLARE_SYN(Sub, subtract);
         DECLARE_SYN(sub, subtract);
+
+        DECLARE_TYPES(subtract) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(0, DataType::ANY)
+                    ->setAllowedInputTypes(1, DataType::ANY)
+                    ->setAllowedOutputTypes(0, DataType::INHERIT);
+        }
 
         CUSTOM_OP_IMPL(subtract_bp, 3, 2, false, 0, 0) {
             auto x = INPUT_VARIABLE(0);
@@ -53,36 +62,43 @@ namespace nd4j {
 
             if (x->isSameShape(y)) {
                 // PWT case case
-                epsNext->template applyTransform<simdOps::Neg<T>>(gradY, nullptr);
+                epsNext->applyTransform(transform::Neg, gradY, nullptr);
                 gradX->assign(epsNext);
             } else if (y->isScalar()) {
                 // scalar case
-                auto tmp = epsNext->template reduceNumber<simdOps::Sum<T>>();
+                auto tmp = epsNext->reduceNumber(reduce::Sum);
                 gradY->assign(-tmp);
                 gradX->assign(epsNext);
             } else {
                 // broadcastable
-                auto axisX = ShapeUtils<T>::evalBroadcastBackwardAxis(x->shapeInfo(), epsNext->shapeInfo());
-                auto axisY = ShapeUtils<T>::evalBroadcastBackwardAxis(y->shapeInfo(), epsNext->shapeInfo());
+                auto axisX = ShapeUtils::evalBroadcastBackwardAxis(x->shapeInfo(), epsNext->shapeInfo());
+                auto axisY = ShapeUtils::evalBroadcastBackwardAxis(y->shapeInfo(), epsNext->shapeInfo());
 
                 if (axisX.size() > 0) {
-                    auto sum = epsNext->template reduceAlongDimension<simdOps::Sum<T>>(axisX);
+                    auto sum = epsNext->reduceAlongDimension(reduce::Sum, axisX);
                     gradX->assign(sum);
                     delete sum;
                 } else 
                     gradX->assign(epsNext);
 
                 if (axisY.size() > 0) {
-                    auto sum = epsNext->template reduceAlongDimension<simdOps::Sum<T>>(axisY);
-                    sum->template applyTransform<simdOps::Neg<T>>(gradY);
+                    auto sum = epsNext->reduceAlongDimension(reduce::Sum, axisY);
+                    sum->applyTransform(transform::Neg, gradY);
                     delete sum;
                 } else {
-                    epsNext->template applyTransform<simdOps::Neg<T>>(gradY);
+                    epsNext->applyTransform(transform::Neg, gradY);
                 }
             }  
 
             return Status::OK();
         }
+
+        DECLARE_TYPES(subtract_bp) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(DataType::ANY)
+                    ->setAllowedOutputTypes({ALL_FLOATS});
+        }
+
 
         DECLARE_SHAPE_FN(subtract_bp) {
             auto x = inputShape->at(0);

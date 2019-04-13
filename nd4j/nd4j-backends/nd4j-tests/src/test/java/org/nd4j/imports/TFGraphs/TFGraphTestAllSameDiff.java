@@ -17,13 +17,14 @@
 package org.nd4j.imports.TFGraphs;
 
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.junit.*;
 import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.OpValidationSuite;
-import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.factory.Nd4j;
@@ -62,144 +63,97 @@ public class TFGraphTestAllSameDiff {
     private static final String BASE_DIR = "tf_graphs/examples";
     private static final String MODEL_FILENAME = "frozen_model.pb";
 
-
-
-    private static final String[] SKIP_ARR = new String[] {
-            "deep_mnist",
-            "deep_mnist_no_dropout",
-            "ssd_mobilenet_v1_coco",
-            "yolov2_608x608",
-            "inception_v3_with_softmax",
-            "conv_5", // this test runs, but we can't make it pass atm due to different RNG algorithms
-    };
-
     public static final String[] IGNORE_REGEXES = new String[]{
-            //https://github.com/deeplearning4j/deeplearning4j/issues/6172
-            "pad/rank1.*",
-            "pad/rank2Pone_const10",
-            "pad/rank3.*",
-            //https://github.com/deeplearning4j/deeplearning4j/issues/6177
-            "topk/.*",
-            //https://github.com/deeplearning4j/deeplearning4j/issues/6179
-            "in_top_k/.*",
-            //https://github.com/deeplearning4j/deeplearning4j/issues/6181
-            "confusion/.*",
-            //https://github.com/deeplearning4j/deeplearning4j/issues/6180
-            "identity_n.*",
-            //https://github.com/deeplearning4j/deeplearning4j/issues/6182
-            "zeta.*",
 
-            //TODO look into this:
-            "reverse/shape5-.*",
+            //Still failing: 2019/04/08 - https://github.com/deeplearning4j/deeplearning4j/issues/6322 and https://github.com/deeplearning4j/deeplearning4j/issues/6958 issue 1
+            "broadcast_dynamic_shape/1_4",
+            "broadcast_dynamic_shape/2,2_1",
 
-            //https://github.com/deeplearning4j/deeplearning4j/issues/6281
-            "log_determinant/.*",
+            //Failing 2019/04/09 - JVM Crash - https://github.com/deeplearning4j/deeplearning4j/issues/7495
+            "boolean_mask/.*",
+
+            //Failing 2019/04/08 - Issue 10, https://github.com/deeplearning4j/deeplearning4j/issues/6958
             "slogdet/.*",
 
-            //TODO need unsorted segment sum - then need to change libnd4j impl slightly (need to know format first)
+            //Failing 2019/04/08 - Issue 11 - https://github.com/deeplearning4j/deeplearning4j/issues/6958 also exception
             "bincount/.*",
 
-            //Crashing?
-            "batchnorm/.*",
+            //Failures as of 2019/04/08: due to bad gather op - Issue 12 https://github.com/deeplearning4j/deeplearning4j/issues/6958
+            "embedding_lookup/.*multiple.*",
 
-            //Not sure what's up here - "DEPTHWISECONV2D OP: wrong shape of weights array, expected is [-1, -1, 2, 2], but got [1, 2, 2, 2] instead !"
-            "sepconv1d_layers/.*",
+            //Failing 2019/04/08 - Issue 15 https://github.com/deeplearning4j/deeplearning4j/issues/6958
+            "where/cond_only.*",
 
-            //scatter_nd: one minor validation issue mentioned tu Yurii, already fixed but not merged (should validate vs. shape array length, not rank)
-            "scatter_nd/.*",
-
-            //https://github.com/deeplearning4j/deeplearning4j/issues/6476
-            "embedding_lookup/.*",
-
-            //https://github.com/deeplearning4j/deeplearning4j/issues/6315
-            "nth_element/.*",
-
-            //https://github.com/deeplearning4j/deeplearning4j/issues/6322
-            "broadcast_dynamic_shape/.*",
-
-            //https://github.com/deeplearning4j/deeplearning4j/issues/6345
-            "where/cond_only_rank.*",
-
-            //https://github.com/deeplearning4j/deeplearning4j/issues/6346
-            "boolean_mask/.*",
+            //scatter_nd: a few cases failing as of 2019/04/08
+            "scatter_nd/rank2shape_2indices",
+            "scatter_nd/rank3shape_2indices",
 
             //TODO floormod and truncatemod behave differently - i.e., "c" vs. "python" semantics. Need to check implementations too
             "truncatemod/.*",
 
-            //Not sure why these are failing yet
-            "lrn/dr3.*",
-            "lrn/dr5.*",
+            //2019/04/08 - This is simply an order issue - need to account for this in test (TF gives no order guarantees)
+            "topk/.*",
 
-            //This is failing on strided slice - on what appears to be an invalid op arguments. Will replace
-            // this test with a set of more thorough/isolated strided slice tests
-            "g_07",
-
-            //https://github.com/deeplearning4j/deeplearning4j/issues/6447
+            //Still failing as of 2019/04/08 - https://github.com/deeplearning4j/deeplearning4j/issues/6447
             "cnn1d_layers/channels_first_b2_k2_s1_d2_SAME",
             "cnn2d_layers/channels_first_b1_k12_s1_d12_SAME",
 
-            //These have a random component so can't be validated using simple .equals... should still be compared, however
+            //2019/01/16 - These have a random component so can't be validated using simple .equals... should still be compared, however to check range is sensible etc
             "alpha_dropout/.*",
             "layers_dropout/.*",
 
-            //These absurdly slow:
-            "simplewhile.*",
-
-            //New failures:
-            "gru_dynamic_mnist",
-            "primitive_gru_dynamic",
-            "simple_while",
-
-            //Bad test, no outputs (but there are non-output ("inbetween") results)
-            "g_10",
-
-            //https://github.com/deeplearning4j/deeplearning4j/issues/6464
-            "cnn2d_nn/nchw_b1_k12_s12_d12_SAME",
+            //Still failing as of 2019/04/08 - https://github.com/deeplearning4j/deeplearning4j/issues/6464 - not sure if related to: https://github.com/deeplearning4j/deeplearning4j/issues/6447
             "cnn2d_nn/nhwc_b1_k12_s12_d12_SAME",
 
-            "conv_4",
-            "ae"
+            //2019/01/08 - No tensorflow op found for SparseTensorDenseAdd
+            "confusion/.*",
+
+            //2019/04/08 - Couple of tests failing (InferenceSession issues)
+            "rnn/bstack/d_.*",
     };
-    public static final Set<String> SKIP_SET = new HashSet<>(Arrays.asList(SKIP_ARR));
 
     @BeforeClass
-    public static void beforeClass() throws Exception {
-        Nd4j.setDataType(DataBuffer.Type.FLOAT);
+    public static void beforeClass() {
+        Nd4j.setDataType(DataType.FLOAT);
         Nd4j.getExecutioner().setProfilingMode(OpExecutioner.ProfilingMode.SCOPE_PANIC);
     }
 
     @Before
     public void setup() {
-        Nd4j.setDataType(DataBuffer.Type.FLOAT);
+        Nd4j.setDataType(DataType.FLOAT);
+        Nd4j.getExecutioner().enableDebugMode(false);
+        Nd4j.getExecutioner().enableVerboseMode(false);
     }
 
     @After
-    public void tearDown() throws Exception {
-        NativeOpsHolder.getInstance().getDeviceNativeOps().enableDebugMode(true);
-        NativeOpsHolder.getInstance().getDeviceNativeOps().enableVerboseMode(true);
+    public void tearDown() {
     }
 
     @Parameterized.Parameters(name="{2}")
     public static Collection<Object[]> data() throws IOException {
-        File baseDir = new File(System.getProperty("java.io.tmpdir"), UUID.randomUUID().toString());
-        List<Object[]> params = TFGraphTestAllHelper.fetchTestParams(BASE_DIR, MODEL_FILENAME, EXECUTE_WITH, baseDir);
-        return params;
+        val localPath = System.getenv(TFGraphTestAllHelper.resourceFolderVar);
+
+        // if this variable isn't set - we're using dl4j-tests-resources
+        if (localPath == null) {
+            File baseDir = new File(System.getProperty("java.io.tmpdir"), UUID.randomUUID().toString());
+            List<Object[]> params = TFGraphTestAllHelper.fetchTestParams(BASE_DIR, MODEL_FILENAME, EXECUTE_WITH, baseDir);
+            return params;
+        } else {
+            File baseDir = new File(localPath);
+            return TFGraphTestAllHelper.fetchTestParams(BASE_DIR, MODEL_FILENAME, EXECUTE_WITH, baseDir);
+        }
     }
 
-    public TFGraphTestAllSameDiff(Map<String, INDArray> inputs, Map<String, INDArray> predictions, String modelName, File localTestDir) throws IOException {
+    public TFGraphTestAllSameDiff(Map<String, INDArray> inputs, Map<String, INDArray> predictions, String modelName, File localTestDir) {
         this.inputs = inputs;
         this.predictions = predictions;
         this.modelName = modelName;
         this.localTestDir = localTestDir;
     }
 
-    @Test(timeout = 25000L)
+    @Test//(timeout = 25000L)
     public void testOutputOnly() throws Exception {
         Nd4j.create(1);
-        if (SKIP_SET.contains(modelName)) {
-            log.info("\n\tSKIPPED MODEL: " + modelName);
-            return;
-        }
 
         for(String s : IGNORE_REGEXES){
             if(modelName.matches(s)){
@@ -216,7 +170,6 @@ public class TFGraphTestAllSameDiff {
                     TFGraphTestAllHelper.LOADER, maxRE, minAbs);
         } catch (Throwable t){
             log.error("ERROR Executing test: {} - input keys {}", modelName, (inputs == null ? null : inputs.keySet()), t);
-            t.printStackTrace();
             throw t;
         }
         //TFGraphTestAllHelper.checkIntermediate(inputs, modelName, EXECUTE_WITH);

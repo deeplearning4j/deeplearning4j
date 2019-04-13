@@ -26,7 +26,7 @@ import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.optimize.listeners.CollectScoresListener;
 import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.impl.accum.MatchCondition;
+import org.nd4j.linalg.api.ops.impl.reduce.longer.MatchCondition;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
@@ -117,7 +117,7 @@ public class CuDNNValidationUtil {
                     INDArray re = relError(p1, p2, MIN_ABS_ERROR);
                     double maxRE = re.maxNumber().doubleValue();
                     if (maxRE >= MAX_REL_ERROR) {
-                        System.out.println("Failed param values");
+                        System.out.println("Failed param values: parameter " + p + " - No CuDNN vs. with CuDNN - train=" + train);
                         System.out.println(p1);
                         System.out.println(p2);
                     }
@@ -196,9 +196,11 @@ public class CuDNNValidationUtil {
                 INDArray re = relError(g1, g2, MIN_ABS_ERROR);
                 double maxRE = re.maxNumber().doubleValue();
                 if (maxRE >= MAX_REL_ERROR) {
-                    System.out.println("Failed param values");
+                    System.out.println("Failed param values: no CuDNN vs. with CuDNN - parameter: " + p);
                     System.out.println(Arrays.toString(g1.dup().data().asFloat()));
                     System.out.println(Arrays.toString(g2.dup().data().asFloat()));
+                } else {
+                    System.out.println("OK: " + p);
                 }
                 assertTrue("Gradients are not equal: " + p, maxRE < MAX_REL_ERROR);
             }
@@ -301,8 +303,8 @@ public class CuDNNValidationUtil {
     }
 
     private static INDArray relError(@NonNull INDArray a1, @NonNull INDArray a2, double minAbsError){
-        long numNaN1 = Nd4j.getExecutioner().exec(new MatchCondition(a1, Conditions.isNan()), Integer.MAX_VALUE).getInt(0);
-        long numNaN2 = Nd4j.getExecutioner().exec(new MatchCondition(a2, Conditions.isNan()), Integer.MAX_VALUE).getInt(0);
+        long numNaN1 = Nd4j.getExecutioner().exec(new MatchCondition(a1, Conditions.isNan(), Integer.MAX_VALUE)).getInt(0);
+        long numNaN2 = Nd4j.getExecutioner().exec(new MatchCondition(a2, Conditions.isNan(), Integer.MAX_VALUE)).getInt(0);
         Preconditions.checkState(numNaN1 == 0, "Array 1 has NaNs");
         Preconditions.checkState(numNaN2 == 0, "Array 2 has NaNs");
 

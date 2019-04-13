@@ -59,10 +59,6 @@
                                     <profiles>nd4j-tf-cpu,nd4j-tf-gpu</profiles>
                                     <all>false</all>
                                 </requireActiveProfile>
-                                <requireActiveProfile>
-                                    <profiles>tf-cpu,tf-gpu</profiles>
-                                    <all>false</all>
-                                </requireActiveProfile>
                             </rules>
                             <fail>true</fail>
                         </configuration>
@@ -84,6 +80,13 @@
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
         </dependency>
+
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-classic</artifactId>
+            <version>${logback.version}</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <profiles>
@@ -97,12 +100,12 @@
             <id>tf-cpu</id>
             <dependencies>
                 <dependency>
-                    <groupId>org.bytedeco.javacpp-presets</groupId>
+                    <groupId>org.bytedeco</groupId>
                     <artifactId>tensorflow-platform</artifactId>
                     <version>${tensorflow.javacpp.version}</version>
                 </dependency>
                 <dependency>
-                    <groupId>org.bytedeco.javacpp-presets</groupId>
+                    <groupId>org.bytedeco</groupId>
                     <artifactId>tensorflow</artifactId>
                     <version>${tensorflow.javacpp.version}</version>
                     <classifier>linux-x86_64</classifier>
@@ -113,7 +116,7 @@
             <id>tf-gpu</id>
             <dependencies>
                 <dependency>
-                    <groupId>org.bytedeco.javacpp-presets</groupId>
+                    <groupId>org.bytedeco</groupId>
                     <artifactId>tensorflow</artifactId>
                     <version>${tensorflow.javacpp.version}</version>
                     <classifier>linux-x86_64-gpu</classifier>
@@ -168,7 +171,7 @@
                                 <configuration>
                                     <!-- Configures the source directory of our integration tests -->
                                     <sources>
-                                        <source>src/gputest/java</source>
+                                        <source>src/test/gpujava</source>
                                     </sources>
                                 </configuration>
                             </execution>
@@ -216,8 +219,14 @@
             <dependencies>
                 <dependency>
                     <groupId>org.nd4j</groupId>
-                    <artifactId>nd4j-cuda-10.0</artifactId>
+                    <artifactId>nd4j-cuda-10.1</artifactId>
                     <version>${project.version}</version>
+                </dependency>
+                <dependency>
+                    <groupId>org.bytedeco</groupId>
+                    <artifactId>tensorflow</artifactId>
+                    <version>${tensorflow.javacpp.version}</version>
+                    <classifier>linux-x86_64-gpu</classifier>
                 </dependency>
             </dependencies>
         </profile>
@@ -274,6 +283,11 @@
                     <groupId>org.nd4j</groupId>
                     <artifactId>nd4j-native</artifactId>
                     <version>${project.version}</version>
+                </dependency>
+                <dependency>
+                    <groupId>org.bytedeco</groupId>
+                    <artifactId>tensorflow-platform</artifactId>
+                    <version>${tensorflow.javacpp.version}</version>
                 </dependency>
             </dependencies>
         </profile>

@@ -15,12 +15,12 @@ Before contributing, make sure you know the structure of all of the Eclipse Deep
 - DataVec: DataVec handles the data import and conversion side of the pipeline. If you want to import images, video, audio or simply CSV data into DL4J: you probably want to use DataVec to do this.
 - Arbiter: Arbiter is a package for (amongst other things) hyperparameter optimization of neural networks. Hyperparameter optimization refers to the process of automating the selection of network hyperparameters (learning rate, number of layers, etc) in order to obtain good performance.
 
-We also have an extensive examples respository at [dl4j-examples](https://github.com/deeplearning4j/dl4j-examples).
+We also have an extensive examples repository at [dl4j-examples](https://github.com/deeplearning4j/dl4j-examples).
 
 
 ## Ways to contribute
 
-There are numerous ways to contribute to to DeepLearning4J (and related projects), depending on your interests and experince. Here’s some ideas:
+There are numerous ways to contribute to DeepLearning4J (and related projects), depending on your interests and experince. Here’s some ideas:
 
 - Add new types of neural network layers (for example: different types of RNNs, locally connected networks, etc)
 - Add a new training feature

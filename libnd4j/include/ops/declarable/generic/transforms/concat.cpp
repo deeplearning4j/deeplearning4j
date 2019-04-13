@@ -30,18 +30,24 @@ namespace nd4j {
 //////////////////////////////////////////////////////////////////////////
 CUSTOM_OP_IMPL(concat, -1, 1, false, 0, 1) {
 
+    REQUIRE_TRUE(block.width() > 0, 0, "CONCAT op: No input arrays were provided");
+
     // first of all take into account possible presence of empty arrays
     // also if scalar is present -> copy its value to vector with length=1
-    std::vector<NDArray<T>*> nonEmptyArrs;
+    std::vector<NDArray*> nonEmptyArrs;
     std::vector<int> arrsToDelete;
     int index = 0;
+    bool allOfSameType = true;
+
     for(int i = 0; i < block.width(); ++i) {
         
         if(!INPUT_VARIABLE(i)->isEmpty()) {
             
+            allOfSameType &= (INPUT_VARIABLE(0)->dataType() == INPUT_VARIABLE(i)->dataType());
             if(INPUT_VARIABLE(i)->rankOf() == 0) {
-                NDArray<T>* vec = new NDArray<T>('c', {1}, block.getWorkspace());
-                (*vec)(0.) = (*INPUT_VARIABLE(i))(0.);
+                // FIXME, use this instead:  block.dataType()
+                auto vec = new NDArray('c', {1}, INPUT_VARIABLE(0)->dataType(), block.getWorkspace());
+                vec->assign(INPUT_VARIABLE(i));
                 nonEmptyArrs.push_back(vec);
                 arrsToDelete.push_back(index);
             }
@@ -52,19 +58,20 @@ CUSTOM_OP_IMPL(concat, -1, 1, false, 0, 1) {
         }
     }
     
-    const int numOfArrs = nonEmptyArrs.size();    
-    REQUIRE_TRUE(numOfArrs > 0, 0, "CONCAT op: at least one input array must be non-empty!");
+    const int numOfArrs = nonEmptyArrs.size();
 
-    NDArray<T>* output = OUTPUT_VARIABLE(0);
-    
-    const int rank = nonEmptyArrs[0]->rankOf();     //  look up to first non-empty array
+    if(numOfArrs == 0){
+        //All inputs are empty arrays -> return empty, mainly for TF import compatibility (no op)
+        REQUIRE_TRUE(OUTPUT_VARIABLE(0)->isEmpty(), 0, "CONCAT op: If all input variables are empty, output must be empty");
+        return Status::OK();
+    }
 
-    int axis = INT_ARG(0);
-    if(axis < 0)
-        axis += rank;
+    const int rank = nonEmptyArrs[0]->rankOf();                     //  look up to first non-empty array
+    int axis = INT_ARG(0) >= 0 ? INT_ARG(0) : INT_ARG(0) + rank;
 
     // ******** input validation ******** //
-    REQUIRE_TRUE(0 <= axis && axis < rank, 0, "CONCAT op: input axis must be in range [0, %i], but got %i instead!", rank-1, axis);    
+    REQUIRE_TRUE(allOfSameType, 0, "CONCAT op: all of input arrays must have same type !");
+    REQUIRE_TRUE(0 <= axis && (axis < rank || (axis == 0 && rank == 0)), 0, "CONCAT op: input axis must be in range [0, %i], but got %i instead!", rank-1, axis);
 
     for(int i = 1; i < numOfArrs; ++i)        
         REQUIRE_TRUE(nonEmptyArrs[i]->rankOf() == rank, 0, "CONCAT op: all input arrays must have the same rank !");
@@ -76,10 +83,12 @@ CUSTOM_OP_IMPL(concat, -1, 1, false, 0, 1) {
     }
     // ******** end of input validation ******** //
 
+    auto output = OUTPUT_VARIABLE(0);
+
     if(numOfArrs == 1) 
         output->assign(nonEmptyArrs[0]);
     else 
-        helpers::concat<T>(nonEmptyArrs, *output, axis);
+        helpers::concat(nonEmptyArrs, *output, axis);
 
     // delete dynamically allocated vectors with length=1
     for(int index : arrsToDelete)
@@ -92,7 +101,15 @@ CUSTOM_OP_IMPL(concat, -1, 1, false, 0, 1) {
     DECLARE_SYN(concat_v2, concat);
     DECLARE_SYN(concatv2, concat);
 
+        DECLARE_TYPES(concat) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setSameMode(true);
+        }
+
 DECLARE_SHAPE_FN(concat) {
+
+    REQUIRE_TRUE(block.width() > 0, 0, "CONCAT op: No input arrays were provided");
     
     // first of all take into account possible presence of empty arrays
     // also if scalar is present -> use the shape of vector with length=1 instead 
@@ -104,10 +121,8 @@ DECLARE_SHAPE_FN(concat) {
         if(!INPUT_VARIABLE(i)->isEmpty()) {
             
             if(inputShape->at(i)[0] == 0) {
-                Nd4jLong* vecShapeInfo = nullptr;
-                ALLOCATE(vecShapeInfo, block.getWorkspace(), shape::shapeInfoLength(1), Nd4jLong);
-                shape::shapeVector(1, vecShapeInfo);
-                nonEmptyArrShapes.push_back(vecShapeInfo);
+                // FIXME, use this instead: block.dataType()
+                nonEmptyArrShapes.push_back(ShapeBuilders::createVectorShapeInfo(INPUT_VARIABLE(0)->dataType(), 1, block.workspace()));
                 shapesToDelete.push_back(index);
             }
             else{
@@ -118,7 +133,13 @@ DECLARE_SHAPE_FN(concat) {
     }
 
     const int numOfArrs = nonEmptyArrShapes.size();    
-    REQUIRE_TRUE(numOfArrs > 0, 0, "CONCAT op: at least one input array must be non-empty!");    
+
+    if(numOfArrs == 0){
+        //All inputs are empty arrays -> return empty, mainly for TF import compatibility
+        Nd4jLong* empty = ShapeBuilders::createScalarShapeInfo(INPUT_VARIABLE(0)->dataType(), block.getWorkspace());
+		ArrayOptions::setPropertyBit(empty, ARRAY_EMPTY);
+        return SHAPELIST(empty);
+    }
     
     const int rank = nonEmptyArrShapes[0][0];     //  look up to first non-empty array
 
@@ -144,15 +165,15 @@ DECLARE_SHAPE_FN(concat) {
     COPY_SHAPE(nonEmptyArrShapes[0], outShapeInfo);
     
     // case when we have only one input array
-    if(numOfArrs == 1) {                
-        shape::updateStrides(outShapeInfo, shape::order(nonEmptyArrShapes[0]));
+    if(numOfArrs == 1) {    
+        ShapeUtils::updateStridesAndType(outShapeInfo, nonEmptyArrShapes[0], shape::order(nonEmptyArrShapes[0]));        
         return SHAPELIST(outShapeInfo);
     }
 
     for(int i = 1; i < numOfArrs; ++i)
         outShapeInfo[axis + 1] += nonEmptyArrShapes[i][axis + 1];
 
-    shape::updateStrides(outShapeInfo, shape::order(nonEmptyArrShapes[0]));
+    ShapeUtils::updateStridesAndType(outShapeInfo, nonEmptyArrShapes[0], shape::order(nonEmptyArrShapes[0]));
 
     // delete dynamically allocated vectors shapes with length=1
     for(int index : shapesToDelete)        
@@ -171,7 +192,7 @@ DECLARE_SHAPE_FN(concat) {
         //     if (block.numI() > 0)
         //         _dimension = INT_ARG(0);
         //     else {
-        //         _dimension = (int) last->getScalar(0);
+        //         _dimension = (int) last->e(0);
         //     }
 
         //     // we want to ensure that all
@@ -339,6 +360,11 @@ DECLARE_SHAPE_FN(concat) {
         //     return SHAPELIST(newShape);
         // }
 
+        DECLARE_TYPES(concat_bp) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setAllowedOutputTypes({ALL_FLOATS});
+        }
 
         CUSTOM_OP_IMPL(concat_bp, -1, -1, false, 0, 1) {
             auto epsilonNext = INPUT_VARIABLE(block.width() - 1);
@@ -354,23 +380,21 @@ DECLARE_SHAPE_FN(concat) {
             for (int e = 0; e < block.width() - 1; e++) {
                 auto originalChunk = INPUT_VARIABLE(e);
                 auto epsilonChunk = OUTPUT_VARIABLE(e);
-                IndicesList indices;
+                std::vector<Nd4jLong> indices(2 * epsilonNext->rankOf());
 
                 int width = originalChunk->sizeAt(axis);            
 
                 for (int e = 0; e < epsilonNext->rankOf(); e++) {
                     if (e == axis)
-                        indices.push_back(NDIndex::interval(startPos, startPos + width));
+                        indices[2*e + 1] = (indices[2*e] = startPos) + width;                    
                     else
-                        indices.push_back(NDIndex::all());
+                        indices[2*e + 1] = indices[2*e] = 0;
                 }
 
-                auto subarray = epsilonNext->subarray(indices);
+                auto subarray = (*epsilonNext)(indices, true);
                 epsilonChunk->assign(subarray);
 
-                startPos += width;
-
-                delete subarray;
+                startPos += width;                
             }
 
             return ND4J_STATUS_OK;

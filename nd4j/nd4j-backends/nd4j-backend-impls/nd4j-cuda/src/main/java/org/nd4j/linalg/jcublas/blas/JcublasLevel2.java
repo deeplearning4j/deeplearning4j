@@ -23,6 +23,7 @@ import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.jita.allocator.pointers.cuda.cublasHandle_t;
 import org.nd4j.linalg.api.blas.impl.BaseLevel2;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.executioner.OpExecutionerUtil;
 import org.nd4j.linalg.factory.Nd4j;
@@ -34,8 +35,10 @@ import org.nd4j.nativeblas.Nd4jBlas;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.bytedeco.javacpp.cublas.*;
-import static org.bytedeco.javacpp.cuda.CUstream_st;
+import org.bytedeco.cuda.cudart.*;
+import org.bytedeco.cuda.cublas.*;
+import static org.bytedeco.cuda.global.cudart.*;
+import static org.bytedeco.cuda.global.cublas.*;
 import static org.nd4j.linalg.jcublas.blas.CudaBlas.convertTranspose;
 
 /**
@@ -50,8 +53,6 @@ public class JcublasLevel2 extends BaseLevel2 {
     @Override
     protected void sgemv(char order, char TransA, int M, int N, float alpha, INDArray A, int lda, INDArray X, int incX,
                     float beta, INDArray Y, int incY) {
-        if (Nd4j.dataType() != DataBuffer.Type.FLOAT)
-            logger.warn("FLOAT gemv called");
 
         Nd4j.getExecutioner().push();
 
@@ -124,8 +125,6 @@ public class JcublasLevel2 extends BaseLevel2 {
     @Override
     protected void dgemv(char order, char TransA, int M, int N, double alpha, INDArray A, int lda, INDArray X, int incX,
                     double beta, INDArray Y, int incY) {
-        if (Nd4j.dataType() != DataBuffer.Type.DOUBLE)
-            logger.warn("DOUBLE gemv called");
 
         Nd4j.getExecutioner().push();
 

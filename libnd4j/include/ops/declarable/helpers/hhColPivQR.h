@@ -29,18 +29,20 @@ namespace nd4j {
 namespace ops {
 namespace helpers {
 
-
-template<typename T>
 class HHcolPivQR {
 
     public:        
     
-        NDArray<T> _qr;                    
-        NDArray<T> _coeffs;
-        NDArray<T> _permut;
+        NDArray _qr;
+        NDArray _coeffs;
+        NDArray _permut;
         int _diagSize;
 
-        HHcolPivQR(const NDArray<T>& matrix);
+        HHcolPivQR() = delete;
+        HHcolPivQR(const NDArray& matrix);
+
+        template <typename T>
+        void _evalData();
 
         void evalData();
 };

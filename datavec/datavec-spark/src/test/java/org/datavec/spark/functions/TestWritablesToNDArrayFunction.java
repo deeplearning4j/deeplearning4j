@@ -20,6 +20,7 @@ import org.datavec.api.writable.*;
 import org.datavec.spark.transform.misc.SequenceWritablesToStringFunction;
 import org.datavec.spark.transform.misc.WritablesToNDArrayFunction;
 import org.junit.Test;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -36,7 +37,7 @@ public class TestWritablesToNDArrayFunction {
         List<Writable> l = new ArrayList<>();
         for (int i = 0; i < 5; i++)
             l.add(new IntWritable(i));
-        INDArray expected = Nd4j.arange(5);
+        INDArray expected = Nd4j.arange(5).castTo(DataType.FLOAT).reshape(1,5);
         assertEquals(expected, new WritablesToNDArrayFunction().call(l));
     }
 
@@ -52,7 +53,7 @@ public class TestWritablesToNDArrayFunction {
         l.add(new NDArrayWritable(arr));
         l.add(new IntWritable(9));
 
-        INDArray expected = Nd4j.arange(10);
+        INDArray expected = Nd4j.arange(10).castTo(DataType.FLOAT).reshape(1,10);
         assertEquals(expected, new WritablesToNDArrayFunction().call(l));
     }
 }

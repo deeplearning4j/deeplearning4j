@@ -185,4 +185,16 @@ public interface MemoryManager {
      *  This method returns per-device bandwidth use for memory transfers
      */
     Map<Integer, Long> getBandwidthUse();
+
+    /**
+     * This method returns number of bytes allocated on specified device
+     * @param deviceId
+     * @return
+     */
+    long allocatedMemory(Integer deviceId);
+
+    /**
+     * This method releases Context (if current backend has one, sure)
+     */
+    void releaseCurrentContext();
 }

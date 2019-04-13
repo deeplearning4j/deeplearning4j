@@ -25,9 +25,15 @@
 
 namespace nd4j {
     namespace ops {
-        OP_IMPL(noop, -1, -1, true) {
+        OP_IMPL(noop, -2, -2, true) {
             // Fastest op ever.
-            return ND4J_STATUS_OK;
+            return Status::OK();
+        }
+
+        DECLARE_TYPES(noop) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setSameMode(true);
         }
     }
 }

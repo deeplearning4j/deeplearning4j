@@ -18,30 +18,35 @@
 // Created by raver119 on 16.10.2017.
 //
 
-#ifndef LIBND4J_LEGACYTRANSFORMOP_H
-#define LIBND4J_LEGACYTRANSFORMOP_H
+#ifndef LIBND4J__LEGACY_TRANSFORM_OP__H
+#define LIBND4J__LEGACY_TRANSFORM_OP__H
 
 
-#include <ops/declarable/LegacyOp.h>
-
+//#include <ops/declarable/LegacyOp.h>
+#ifdef ONLY_SAME_TRANSFORM
 namespace nd4j {
     namespace ops {
         /**
         *   This class provides wrapper for Transform operations (i.e. Pow or OneMinus)
         */
-        template <typename T>
-        class ND4J_EXPORT LegacyTransformOp : public LegacyOp<T> {
+        class ND4J_EXPORT LegacyTransformOp : public LegacyOp {
         protected:
-            Nd4jStatus validateAndExecute(Context<T>& block);
+            Nd4jStatus validateAndExecute(Context &block);
         public:
             LegacyTransformOp();
             LegacyTransformOp(int opNum);
 
-            ShapeList* calculateOutputShape(ShapeList* inputShape, nd4j::graph::Context<T>& block);
-            virtual LegacyOp<T>* clone();
+            ShapeList* calculateOutputShape(ShapeList* inputShape, nd4j::graph::Context &block);
+            virtual LegacyOp* clone();
         };
     }
 }
+#endif
+
+#include <ops/declarable/LegacyTransformFloatOp.h>
+#include <ops/declarable/LegacyTransformSameOp.h>
+#include <ops/declarable/LegacyTransformBoolOp.h>
+#include <ops/declarable/LegacyTransformStrictOp.h>
 
 
-#endif //LIBND4J_LEGACYTRANSFORMOP_H
+#endif //LIBND4J__LEGACY_TRANSFORM_OP__H

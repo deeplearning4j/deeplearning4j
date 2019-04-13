@@ -16,7 +16,11 @@
 
 package org.deeplearning4j.models.word2vec.wordstore;
 
+import lombok.Getter;
+import lombok.Setter;
 import lombok.val;
+import org.junit.Rule;
+import org.junit.rules.TemporaryFolder;
 import org.nd4j.linalg.io.ClassPathResource;
 import org.deeplearning4j.models.sequencevectors.interfaces.SequenceIterator;
 import org.deeplearning4j.models.sequencevectors.iterators.AbstractSequenceIterator;
@@ -40,8 +44,7 @@ import java.io.File;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 /**
  * @author raver119@gmail.com
@@ -51,6 +54,9 @@ public class VocabConstructorTest {
     protected static final Logger log = LoggerFactory.getLogger(VocabConstructorTest.class);
 
     TokenizerFactory t = new DefaultTokenizerFactory();
+
+    @Rule
+    public TemporaryFolder testDir = new TemporaryFolder();
 
 
     @Before
@@ -303,8 +309,12 @@ public class VocabConstructorTest {
         int sourceSize = cacheSource.numWords();
         log.info("Source Vocab size: " + sourceSize);
 
+        val dir = testDir.newFolder();
+        new ClassPathResource("/paravec/labeled").copyDirectory(dir);
+
+
         FileLabelAwareIterator labelAwareIterator = new FileLabelAwareIterator.Builder()
-                        .addSourceFolder(new ClassPathResource("/paravec/labeled").getFile()).build();
+                        .addSourceFolder(dir).build();
 
         transformer = new SentenceTransformer.Builder().iterator(labelAwareIterator).tokenizerFactory(t).build();
 
@@ -380,5 +390,60 @@ public class VocabConstructorTest {
         assertEquals("gamma", result.wordAtIndex(10));
         assertEquals("beta", result.wordAtIndex(5));
         assertEquals("alpha", result.wordAtIndex(0));
+    }
+
+    @Test
+    public void testTransfer_3() {
+        val vocab = new AbstractCache<VocabWord>();
+
+        vocab.addToken(new VocabWord(1.0,"alpha"));
+        vocab.addWordToIndex(0, "alpha");
+
+        vocab.addToken(new VocabWord(2.0,"beta"));
+        vocab.addWordToIndex(5, "beta");
+
+        vocab.addToken(new VocabWord(3.0,"gamma"));
+        vocab.addWordToIndex(10, "gamma");
+
+        val vocabIntersect = new AbstractCache<VocabWord>();
+
+        vocabIntersect.addToken(new VocabWord(4.0,"alpha"));
+        vocabIntersect.addWordToIndex(0, "alpha");
+
+        vocab.addToken(new VocabWord(2.0,"delta"));
+        vocab.addWordToIndex(15, "delta");
+
+
+        val constructor = new VocabConstructor.Builder<VocabWord>().setTargetVocabCache(vocab).setLockFactor(false)
+                .build();
+
+        val result = constructor.transferVocabulary(vocabIntersect, true);
+
+        assertEquals(4, result.numWords());
+
+        assertEquals("alpha", result.wordAtIndex(0));
+        assertEquals(5.0, result.wordFrequency("alpha"), 1e-5);
+
+        assertEquals("beta", result.wordAtIndex(5));
+        assertEquals("gamma", result.wordAtIndex(10));
+        assertEquals("delta", result.wordAtIndex(15));
+    }
+
+
+    @Test(timeout=5000)		// 5s timeout
+    public void testParallelTokenizationDisabled_Completes() throws Exception {
+        File inputFile = new ClassPathResource("big/raw_sentences.txt").getFile();
+        SentenceIterator iter = new BasicLineIterator(inputFile);
+
+        SentenceTransformer transformer = new SentenceTransformer.Builder().iterator(iter).tokenizerFactory(t).build();
+
+        AbstractSequenceIterator<VocabWord> sequenceIterator =
+                new AbstractSequenceIterator.Builder<>(transformer).build();
+
+        VocabConstructor<VocabWord> constructor = new VocabConstructor.Builder<VocabWord>().addSource(sequenceIterator, 5)
+                .allowParallelTokenization( false)
+                .build();
+
+        constructor.buildJointVocabulary(false, true);
     }
 }

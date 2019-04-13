@@ -427,7 +427,7 @@ public class MeshOrganizer implements Serializable {
 
             // TODO: we can get rid of flat scan here, but it's one-off step anyway...
 
-            // we return next node node after this node
+            // we return next node after this node
             boolean b = false;
             for (val v: downstream) {
                 if (b)

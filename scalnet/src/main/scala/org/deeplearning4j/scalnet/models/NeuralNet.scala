@@ -53,7 +53,6 @@ class NeuralNet(inputType: Option[InputType], miniBatch: Boolean, biasInit: Doub
       listBuilder.layer(layerIndex, layer.asInstanceOf[Layer].compile)
     }
 
-    listBuilder = listBuilder.pretrain(false).backprop(true)
     val conf: MultiLayerConfiguration = listBuilder.build()
     model = new MultiLayerNetwork(conf)
     model.init()

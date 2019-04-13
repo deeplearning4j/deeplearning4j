@@ -29,7 +29,9 @@ import org.deeplearning4j.nn.conf.graph.ElementWiseVertex;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.graph.ComputationGraph;
+import org.deeplearning4j.nn.weights.IWeightInit;
 import org.deeplearning4j.nn.weights.WeightInit;
+import org.deeplearning4j.nn.weights.WeightInitDistribution;
 import org.deeplearning4j.zoo.ModelMetaData;
 import org.deeplearning4j.zoo.PretrainedType;
 import org.deeplearning4j.zoo.ZooModel;
@@ -54,7 +56,7 @@ public class ResNet50 extends ZooModel {
     @Builder.Default private long seed = 1234;
     @Builder.Default private int[] inputShape = new int[] {3, 224, 224};
     @Builder.Default private int numClasses = 0;
-    @Builder.Default private WeightInit weightInit = WeightInit.DISTRIBUTION;
+    @Builder.Default private IWeightInit weightInit = new WeightInitDistribution(new TruncatedNormalDistribution(0.0, 0.5));
     @Builder.Default private IUpdater updater = new RmsProp(0.1, 0.96, 0.001);
     @Builder.Default private CacheMode cacheMode = CacheMode.NONE;
     @Builder.Default private WorkspaceMode workspaceMode = WorkspaceMode.ENABLED;
@@ -182,7 +184,6 @@ public class ResNet50 extends ZooModel {
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                         .updater(updater)
                         .weightInit(weightInit)
-                        .dist(new TruncatedNormalDistribution(0.0, 0.5))
                         .l1(1e-7)
                         .l2(5e-5)
                         .miniBatch(true)

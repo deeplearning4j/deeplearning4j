@@ -20,6 +20,7 @@ import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -35,7 +36,7 @@ public class SPTreeTest {
 
     @Before
     public void setUp() {
-        DataTypeUtil.setDTypeForContext(DataBuffer.Type.DOUBLE);
+        DataTypeUtil.setDTypeForContext(DataType.DOUBLE);
     }
 
     @Test
@@ -54,7 +55,7 @@ public class SPTreeTest {
     @Ignore
     public void testLargeTree() {
         int num = 100000;
-        INDArray arr = Nd4j.linspace(1, num, num).reshape(num, 1);
+        INDArray arr = Nd4j.linspace(1, num, num, Nd4j.dataType()).reshape(num, 1);
         SpTree tree = new SpTree(arr);
     }
 

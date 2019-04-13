@@ -21,13 +21,17 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.activations.impl.*;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.Op;
-import org.nd4j.linalg.api.ops.TransformOp;
+import org.nd4j.linalg.api.ops.impl.scalar.LeakyReLU;
 import org.nd4j.linalg.api.ops.impl.scalar.ScalarSet;
-import org.nd4j.linalg.api.ops.impl.transforms.*;
-import org.nd4j.linalg.api.ops.impl.transforms.SigmoidDerivative;
-import org.nd4j.linalg.api.ops.impl.transforms.SoftMaxDerivative;
-import org.nd4j.linalg.api.ops.impl.transforms.TanhDerivative;
+import org.nd4j.linalg.api.ops.impl.transforms.same.OldIdentity;
+import org.nd4j.linalg.api.ops.impl.scalar.RectifiedLinear;
+import org.nd4j.linalg.api.ops.impl.scalar.Step;
+import org.nd4j.linalg.api.ops.impl.transforms.strict.*;
 import org.nd4j.linalg.api.ops.impl.transforms.gradient.*;
+import org.nd4j.linalg.api.ops.impl.transforms.same.Cube;
+import org.nd4j.linalg.api.ops.impl.transforms.strict.SigmoidDerivative;
+import org.nd4j.linalg.api.ops.impl.transforms.strict.SoftMaxDerivative;
+import org.nd4j.linalg.api.ops.impl.transforms.strict.TanhDerivative;
 
 /**
  * This enum is the factory for the activation function.
@@ -37,7 +41,7 @@ import org.nd4j.linalg.api.ops.impl.transforms.gradient.*;
 public enum Activation {
     CUBE, ELU, HARDSIGMOID, HARDTANH, IDENTITY, LEAKYRELU, RATIONALTANH, RELU, RELU6,
     RRELU, SIGMOID, SOFTMAX, SOFTPLUS, SOFTSIGN, TANH, RECTIFIEDTANH, SELU, SWISH,
-    THRESHOLDEDRELU;
+    THRESHOLDEDRELU, GELU;
 
     /**
      * Creates an instance of the activation function
@@ -84,6 +88,8 @@ public enum Activation {
                 return new ActivationTanH();
             case THRESHOLDEDRELU:
                 return new ActivationThresholdedReLU();
+            case GELU:
+                return new ActivationGELU();
             default:
                 throw new UnsupportedOperationException("Unknown or not supported activation function: " + this);
         }
@@ -122,27 +128,29 @@ public enum Activation {
     public SDVariable asSameDiff(String variableName, SameDiff sd, SDVariable input) {
         switch (this) {
             case CUBE:
-                return sd.pow(variableName, input, 3.0);
+                return sd.math().pow(variableName, input, 3.0);
             case ELU:
-                return sd.elu(variableName, input);
+                return sd.nn().elu(variableName, input);
             case HARDTANH:
-                return sd.hardTanh(variableName, input);
+                return sd.nn().hardTanh(variableName, input);
             case IDENTITY:
                 return sd.identity(variableName, input);
             case LEAKYRELU:
-                return sd.leakyRelu(variableName, input, 0.0);
+                return sd.nn().leakyRelu(variableName, input, 0.0);
             case RELU:
-                return sd.relu(variableName, input, 0.0);
+                return sd.nn().relu(variableName, input, 0.0);
             case SIGMOID:
-                return sd.sigmoid(variableName, input);
+                return sd.nn().sigmoid(variableName, input);
             case SOFTMAX:
-                return sd.softmax(variableName, input);
+                return sd.nn().softmax(variableName, input);
             case SOFTPLUS:
-                return sd.softplus(variableName, input);
+                return sd.nn().softplus(variableName, input);
             case SOFTSIGN:
-                return sd.softsign(variableName, input);
+                return sd.nn().softsign(variableName, input);
             case TANH:
-                return sd.tanh(variableName, input);
+                return sd.math().tanh(variableName, input);
+            case GELU:
+                return sd.nn().gelu(variableName, input);
             case HARDSIGMOID:
             case RATIONALTANH:
             case RRELU:
@@ -161,7 +169,7 @@ public enum Activation {
      * @param dup If true: duplicate the array before applying the transform. If false: don't duplicate
      * @return The transform op (execute using {@code Nd4j.getExecutioner().exec(op)}
      */
-    public TransformOp asTransform(INDArray in, boolean dup) {
+    public Op asTransform(INDArray in, boolean dup) {
         if (dup) {
             in = in.dup();
         }
@@ -181,7 +189,7 @@ public enum Activation {
             case RATIONALTANH:
                 return new RationalTanh(in);
             case RELU:
-                return new RectifedLinear(in);
+                return new RectifiedLinear(in);
             case SIGMOID:
                 return new Sigmoid(in);
             case SOFTMAX:
@@ -198,6 +206,8 @@ public enum Activation {
                 return new SELU(in);
             case SWISH:
                 return new Swish(in);
+            case GELU:
+                return new GELU(in);
             case RRELU:
             default:
                 throw new UnsupportedOperationException("Not supported via this method: " + this);
@@ -249,6 +259,8 @@ public enum Activation {
                 return new ScalarSet(in, 1.0);
             case RELU:
                 return new Step(in);
+            case GELU:
+                return new GELUDerivative(in);
             case RRELU:
             default:
                 throw new UnsupportedOperationException("Not supported via this method: " + this);

@@ -31,6 +31,7 @@
 #include <ops/declarable/headers/parity_ops.h>
 #include <ops/declarable/headers/shape.h>
 #include <ops/declarable/headers/random.h>
+#include <ops/declarable/headers/nlp.h>
 #include <ops/declarable/headers/nn.h>
 #include <ops/declarable/headers/blas.h>
 #include <ops/declarable/headers/bitwise.h>
@@ -39,8 +40,14 @@
 #include <ops/declarable/headers/third_party.h>
 #include <ops/declarable/headers/tests.h>
 #include <dll.h>
+#include <helpers/shape.h>
+#include <helpers/TAD.h>
 #include <Status.h>
 #include <helpers/ArrayUtils.h>
+#include <helpers/ShapeBuilders.h>
+#include <NDArrayFactory.h>
+#include <helpers/OpTracker.h>
+
 
 
 namespace nd4j {

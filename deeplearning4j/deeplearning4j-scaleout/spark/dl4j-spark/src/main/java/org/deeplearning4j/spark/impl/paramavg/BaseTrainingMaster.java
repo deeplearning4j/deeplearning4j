@@ -16,6 +16,8 @@
 
 package org.deeplearning4j.spark.impl.paramavg;
 
+import lombok.Getter;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
@@ -23,7 +25,9 @@ import org.apache.hadoop.fs.Path;
 import org.apache.spark.SparkContext;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
+import org.apache.spark.broadcast.Broadcast;
 import org.apache.spark.storage.StorageLevel;
+import org.datavec.spark.util.SerializableHadoopConfig;
 import org.deeplearning4j.api.storage.StatsStorageRouter;
 import org.deeplearning4j.optimize.api.TrainingListener;
 import org.deeplearning4j.spark.api.*;
@@ -74,6 +78,10 @@ public abstract class BaseTrainingMaster<R extends TrainingResult, W extends Tra
 
     protected String trainingMasterUID;
 
+    @Setter @Getter
+    protected Boolean workerTogglePeriodicGC;
+    @Setter @Getter
+    protected Integer workerPeriodicGCFrequency;
     protected StatsStorageRouter statsStorage;
 
     //Listeners etc
@@ -89,6 +97,8 @@ public abstract class BaseTrainingMaster<R extends TrainingResult, W extends Tra
     @JsonDeserialize(using = StorageLevelDeserializer.class)
     protected StorageLevel storageLevelStreams = StorageLevel.MEMORY_ONLY();
     protected RDDTrainingApproach rddTrainingApproach = RDDTrainingApproach.Export;
+
+    protected Broadcast<SerializableHadoopConfig> broadcastHadoopConfig;
 
     protected BaseTrainingMaster() {
 
@@ -268,6 +278,4 @@ public abstract class BaseTrainingMaster<R extends TrainingResult, W extends Tra
     public boolean deleteTempFiles(SparkContext sc) {
         return deleteTempFiles(new JavaSparkContext(sc));
     }
-
-
 }

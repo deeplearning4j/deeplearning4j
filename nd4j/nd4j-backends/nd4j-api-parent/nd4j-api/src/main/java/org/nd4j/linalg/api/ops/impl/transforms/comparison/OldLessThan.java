@@ -20,6 +20,7 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.BaseTransformBoolOp;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
 
 import java.util.Arrays;
@@ -31,7 +32,7 @@ import java.util.List;
  *
  * @author Adam Gibson
  */
-public class OldLessThan extends BaseTransformOp {
+public class OldLessThan extends BaseTransformBoolOp {
     public OldLessThan(SameDiff sameDiff, SDVariable i_v1, SDVariable i_v2) {
         super(sameDiff, i_v1, i_v2);
     }
@@ -44,43 +45,27 @@ public class OldLessThan extends BaseTransformOp {
         super(sameDiff);
     }
 
-    public OldLessThan(SameDiff sameDiff, SDVariable i_v1, SDVariable i_v2, Object[] extraArgs) {
-        super(sameDiff, i_v1, i_v2, extraArgs);
-    }
-
     public OldLessThan(SameDiff sameDiff, SDVariable i_v, boolean inPlace) {
         super(sameDiff, i_v, inPlace);
     }
 
-    public OldLessThan(SameDiff sameDiff, SDVariable i_v, int[] shape, boolean inPlace, Object[] extraArgs) {
-        super(sameDiff, i_v, shape, inPlace, extraArgs);
-    }
-
-    public OldLessThan(SameDiff sameDiff, SDVariable i_v, Object[] extraArgs) {
-        super(sameDiff, i_v, extraArgs);
-    }
-
     public OldLessThan() {}
 
-    public OldLessThan(INDArray x, INDArray y, INDArray z, long n) {
-        super(x, y, z, n);
+    public OldLessThan(INDArray x, INDArray y, INDArray z) {
+        super(x, y, z);
     }
 
     public OldLessThan(INDArray x) {
         super(x);
     }
 
-    public OldLessThan(INDArray ndArray, INDArray dup) {
-        super(ndArray, dup);
-    }
-
-    public OldLessThan(INDArray x, INDArray z, long n) {
-        super(x, z, n);
+    public OldLessThan(INDArray x, INDArray z) {
+        super(x, z);
     }
 
     @Override
     public int opNum() {
-        return 5;
+        return 2;
     }
 
     @Override

@@ -1,6 +1,11 @@
 package org.datavec.api.records.reader.impl.csv;
 
 /**
+
+ All contributions by Skymind, Inc.
+ Copyright (c) 2018 - 2019, Skymind, Inc.
+
+ Original implementation and all contributions by Bytecode Pty Ltd.
  Copyright 2005 Bytecode Pty Ltd.
 
  Licensed under the Apache License, Version 2.0 (the "License");

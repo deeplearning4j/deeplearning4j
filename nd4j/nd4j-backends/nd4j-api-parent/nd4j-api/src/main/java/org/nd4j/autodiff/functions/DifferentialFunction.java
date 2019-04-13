@@ -26,11 +26,13 @@ import onnx.OnnxProto3;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.base.Preconditions;
+import org.nd4j.graph.DataType;
 import org.nd4j.imports.converters.DifferentialFunctionClassHolder;
 import org.nd4j.imports.descriptors.properties.AttributeAdapter;
 import org.nd4j.imports.descriptors.properties.PropertyMapping;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.Op;
+import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.shade.jackson.annotation.JsonIgnore;
 import org.tensorflow.framework.AttrValue;
@@ -60,7 +62,7 @@ public abstract class DifferentialFunction {
     @Getter
     @Setter
     @JsonIgnore
-    protected Number scalarValue;
+    protected INDArray scalarValue;
 
 
     @Getter
@@ -78,7 +80,13 @@ public abstract class DifferentialFunction {
     private String ownName;
 
     public DifferentialFunction() {
-        setInstanceId();
+        this(true);
+    }
+
+    public DifferentialFunction(boolean sameDiff){
+        //Only need instance ID if using function in context of SameDiff, not standard ND4J with INDArray args
+        if(sameDiff)
+            setInstanceId();
     }
 
     /**
@@ -495,19 +503,6 @@ public abstract class DifferentialFunction {
         return sameDiff.f();
     }
 
-    /**
-     * Returns true if this
-     * function has place holder inputs
-     * @return
-     */
-    public boolean hasPlaceHolderInputs() {
-        val args = args();
-        for(val arg : args)
-            if(sameDiff.hasPlaceHolderVariables(arg().getVarName()))
-                return true;
-        return false;
-    }
-
 
     /**
      * Return the arguments for a given function
@@ -619,7 +614,7 @@ public abstract class DifferentialFunction {
         boolean copied = false;
         for(int i = 0; i < vals.size(); i++) {
             SDVariable var = outputVars[i];
-            SDVariable grad = var.getGradient();
+            SDVariable grad = var.hasGradient() ? var.getGradient() : null;
             if(grad != null) {
                 if(!copied){
                     //Don't mutate the original - this could mess with the original op's state!
@@ -780,15 +775,26 @@ public abstract class DifferentialFunction {
 
 
     /**
-     * Calculate
-     * the output shape for this op
-     * @return
+     * Calculate the output shape for this op
+     * @return List of output shape descriptors
      */
-    public List<long[]> calculateOutputShape() {
-        throw new UnsupportedOperationException();
+    public List<LongShapeDescriptor> calculateOutputShape() {
+        throw new ND4JIllegalStateException("calculateOutputShape() method leaked out for [" + this.opName() + "]");
     }
 
-
+    /**
+     * Calculate the data types for the output arrays.
+     * Though datatypes can also be inferred from {@link #calculateOutputShape()}, this method differs in that it does not
+     * require the input arrays to be populated.
+     * This is important as it allows us to do greedy datatype inference for the entire net - even if arrays are not
+     * available.
+     *
+     * @param dataTypes The data types of the inputs
+     * @return The data types of the outputs
+     */
+    public List<org.nd4j.linalg.api.buffer.DataType> calculateOutputDataTypes(List<org.nd4j.linalg.api.buffer.DataType> dataTypes){
+        throw new UnsupportedOperationException("calculateOutputDataTypes() has not been implemented for " + getClass().getName());
+    }
 
 
     @Override

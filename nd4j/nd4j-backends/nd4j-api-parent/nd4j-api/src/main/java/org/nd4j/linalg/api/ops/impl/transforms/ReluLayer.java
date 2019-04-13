@@ -20,6 +20,7 @@ import lombok.NoArgsConstructor;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.XwPlusB;
 
 import java.util.Collections;
 import java.util.List;
@@ -60,8 +61,8 @@ public class ReluLayer extends XwPlusB {
         //TODO a native implementation would be faster
         //Backprop through ReLU, then it's same as XwPlusB
         SDVariable[] args = args();
-        SDVariable xwb = sameDiff.linear(args[0], args[1], (args.length == 2 ? null : args[2]));
-        SDVariable grad = gradient.get(0).mul(sameDiff.step(xwb, 0));
+        SDVariable xwb = sameDiff.nn().linear(args[0], args[1], (args.length == 2 ? null : args[2]));
+        SDVariable grad = gradient.get(0).mul(sameDiff.math().step(xwb, 0));
         return super.doDiff(Collections.singletonList(grad));
     }
 

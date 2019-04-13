@@ -16,6 +16,7 @@
 
 package org.datavec.api.writable;
 
+import lombok.NonNull;
 import org.datavec.api.io.WritableComparable;
 import org.datavec.api.util.ndarray.DataInputWrapperStream;
 import org.datavec.api.util.ndarray.DataOutputWrapperStream;
@@ -23,7 +24,6 @@ import org.nd4j.linalg.api.iter.NdIndexIterator;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
-import org.jetbrains.annotations.NotNull;
 import org.nd4j.linalg.util.MathUtils;
 
 import java.io.*;
@@ -155,7 +155,7 @@ public class NDArrayWritable extends ArrayWritable implements WritableComparable
     }
 
     @Override
-    public int compareTo(@NotNull Object o) {
+    public int compareTo(@NonNull Object o) {
         NDArrayWritable other = (NDArrayWritable) o;
 
         //Conventions used here for ordering NDArrays: x.compareTo(y): -ve if x < y, 0 if x == y, +ve if x > y

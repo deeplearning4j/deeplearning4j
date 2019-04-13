@@ -17,6 +17,7 @@
 package org.nd4j.linalg.api.instrumentation;
 
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.util.Arrays;
@@ -43,7 +44,7 @@ public class LogEntry extends DataBufferLogEntry {
         this.ndArrayType = toLog.getClass().getName();
         this.length = toLog.length();
         this.references = toLog.data().references();
-        this.dataType = toLog.data().dataType() == DataBuffer.Type.DOUBLE ? "double" : "float";
+        this.dataType = toLog.data().dataType() == DataType.DOUBLE ? "double" : "float";
         this.timestamp = System.currentTimeMillis();
         this.stackTraceElements = Thread.currentThread().getStackTrace();
         this.status = status;
@@ -57,7 +58,7 @@ public class LogEntry extends DataBufferLogEntry {
         this.ndArrayType = toLog.getClass().getName();
         this.length = toLog.length();
         this.references = toLog.data().references();
-        this.dataType = toLog.data().dataType() == DataBuffer.Type.DOUBLE ? "double" : "float";
+        this.dataType = toLog.data().dataType() == DataType.DOUBLE ? "double" : "float";
         this.timestamp = System.currentTimeMillis();
         this.stackTraceElements = stackTraceElements;
         this.status = status;

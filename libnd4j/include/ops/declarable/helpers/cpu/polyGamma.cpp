@@ -20,6 +20,7 @@
 
 #include<ops/declarable/helpers/polyGamma.h>
 #include<ops/declarable/helpers/zeta.h>
+#include <NDArrayFactory.h>
 
 namespace nd4j {
 namespace ops {
@@ -29,17 +30,16 @@ namespace helpers {
 //////////////////////////////////////////////////////////////////////////
 // calculate factorial
 template <typename T>
-static T getFactorial(const int n) {
+static FORCEINLINE T getFactorial(const int n) {
 	if (n < 0)
 		throw std::runtime_error("factorial is not defined for negative number !");
 
 	if(n==0 || n==1)
-		return (T)1.;
+		return (T)1.f;
 
-	T result = (T)1.;
+	T result = (T)1.f;
 
-#pragma omp declare reduction (dot : double,float,float16 : omp_out *= omp_in) initializer(omp_priv = (T)1.)
-#pragma omp parallel for reduction(dot : result) schedule(static)
+    PRAGMA_OMP_PARALLEL_FOR_SIMD_REDUCTION(prodT : result)
 	for(int i = 2; i <= n; ++i)
 		result *= i;
 	
@@ -49,7 +49,7 @@ static T getFactorial(const int n) {
 //////////////////////////////////////////////////////////////////////////
 // implementation is based on serial representation written in terms of the Hurwitz zeta function as polygamma = (-1)^{n+1} * n! * zeta(n+1, x)
 template <typename T>
-static T polyGamma(const int n, const T x) {
+static FORCEINLINE T polyGamma(const int n, const T x) {
 	
 	// if (n < 0) 
 	// 	throw("polyGamma function: n must be >= 0 !");
@@ -69,25 +69,23 @@ static T polyGamma(const int n, const T x) {
 //////////////////////////////////////////////////////////////////////////
 // calculate polygamma function for arrays
 template <typename T>
-NDArray<T> polyGamma(const NDArray<T>& n, const NDArray<T>& x) {
+static void _polyGamma(const NDArray& n, const NDArray& x, NDArray& output) {
 
-	NDArray<T> result(&x, false, x.getWorkspace());
+	NDArray& result = output;
 
-#pragma omp parallel for if(x.lengthOf() > Environment::getInstance()->elementwiseThreshold()) schedule(guided)	
-	for(int i = 0; i < x.lengthOf(); ++i)
-		result(i) = polyGamma<T>((int)n(i), x(i));
+	int xLen = x.lengthOf();
 
-	return result;
+	PRAGMA_OMP_PARALLEL_FOR_IF(xLen > Environment::getInstance()->elementwiseThreshold())
+	for(int i = 0; i < xLen; ++i)
+		result.p(i, polyGamma<T>(n.e<int>(i), x.e<T>(i)));
 }
 
+	void polyGamma(const NDArray& n, const NDArray& x, NDArray& output) {
+		BUILD_SINGLE_SELECTOR(x.dataType(), _polyGamma, (n, x, output), FLOAT_TYPES);
+	}
 
-template float   polyGamma<float>  (const int n, const float   x);
-template float16 polyGamma<float16>(const int n, const float16 x);
-template double  polyGamma<double> (const int n, const double  x);
+BUILD_SINGLE_TEMPLATE(template void _polyGamma, (const NDArray& n, const NDArray& x, NDArray& output), FLOAT_TYPES);
 
-template NDArray<float>   polyGamma<float>  (const NDArray<float>&   n, const NDArray<float>&   x);
-template NDArray<float16> polyGamma<float16>(const NDArray<float16>& n, const NDArray<float16>& x);
-template NDArray<double>  polyGamma<double> (const NDArray<double>&  n, const NDArray<double>&  x);
 
 
 }

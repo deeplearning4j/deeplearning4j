@@ -17,14 +17,16 @@
 package org.nd4j.linalg;
 
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.apache.commons.lang3.RandomUtils;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.impl.transforms.OldSoftMax;
-import org.nd4j.linalg.api.ops.impl.transforms.Tanh;
+import org.nd4j.linalg.api.ops.impl.transforms.strict.OldSoftMax;
+import org.nd4j.linalg.api.ops.impl.transforms.strict.Tanh;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.checkutil.NDArrayCreationUtil;
 import org.nd4j.linalg.dataset.DataSet;
@@ -54,10 +56,9 @@ public class LoneTest extends BaseNd4jTest {
 
     @Test
     public void testSoftmaxStability() {
-        INDArray input = Nd4j.create(new double[]{-0.75, 0.58, 0.42, 1.03, -0.61, 0.19, -0.37, -0.40, -1.42, -0.04})
-                .transpose();
+        INDArray input = Nd4j.create(new double[]{-0.75, 0.58, 0.42, 1.03, -0.61, 0.19, -0.37, -0.40, -1.42, -0.04}).reshape(1, -1).transpose();
         System.out.println("Input transpose " + Shape.shapeToString(input.shapeInfo()));
-        INDArray output = Nd4j.create(10, 1);
+        INDArray output = Nd4j.create(DataType.DOUBLE, 10, 1);
         System.out.println("Element wise stride of output " + output.elementWiseStride());
         Nd4j.getExecutioner().exec(new OldSoftMax(input, output));
     }
@@ -76,18 +77,18 @@ public class LoneTest extends BaseNd4jTest {
         int length3d = rows * cols * dim2;
 
         INDArray first = Nd4j.linspace(1, length, length).reshape('c', rows, cols);
-        INDArray second = Nd4j.create(new int[]{rows, cols}, 'f').assign(first);
+        INDArray second = Nd4j.create(DataType.DOUBLE, new long[]{rows, cols}, 'f').assign(first);
         INDArray third = Nd4j.linspace(1, length3d, length3d).reshape('c', rows, cols, dim2);
         first.addi(0.1);
         second.addi(0.2);
         third.addi(0.3);
 
         first = first.get(NDArrayIndex.interval(4, 8), NDArrayIndex.interval(0, 2, 8));
-        for (int i = 0; i < first.tensorssAlongDimension(0); i++) {
+        for (int i = 0; i < first.tensorsAlongDimension(0); i++) {
             System.out.println(first.tensorAlongDimension(i, 0));
         }
 
-        for (int i = 0; i < first.tensorssAlongDimension(1); i++) {
+        for (int i = 0; i < first.tensorsAlongDimension(1); i++) {
             System.out.println(first.tensorAlongDimension(i, 1));
         }
         second = second.get(NDArrayIndex.interval(3, 7), NDArrayIndex.all());
@@ -112,8 +113,8 @@ public class LoneTest extends BaseNd4jTest {
             j = i + 1;
             assertEquals(i + 1,colVector.getRow(i).getInt(0));
             assertEquals(i + 1,rowVector.getColumn(i).getInt(0));
-            assertEquals(i + 1,rowVector.get(NDArrayIndex.interval(i, j)).getInt(0));
-            assertEquals(i + 1,colVector.get(NDArrayIndex.interval(i, j)).getInt(0));
+            assertEquals(i + 1,rowVector.get(NDArrayIndex.point(0), NDArrayIndex.interval(i, j)).getInt(0));
+            assertEquals(i + 1,colVector.get(NDArrayIndex.interval(i, j), NDArrayIndex.point(0)).getInt(0));
             System.out.println("Making sure index interval will not crash with begin/end vals...");
             jj = colVector.get(NDArrayIndex.interval(i, i + 10));
             jj = colVector.get(NDArrayIndex.interval(i, i + 10));
@@ -161,7 +162,7 @@ public class LoneTest extends BaseNd4jTest {
     public void testRelu() {
         INDArray aA = Nd4j.linspace(-3, 4, 8).reshape(2, 4);
         INDArray aD = Nd4j.linspace(-3, 4, 8).reshape(2, 4);
-        INDArray b = Nd4j.getExecutioner().execAndReturn(new Tanh(aA));
+        INDArray b = Nd4j.getExecutioner().exec(new Tanh(aA));
         //Nd4j.getExecutioner().execAndReturn(new TanhDerivative(aD));
         System.out.println(aA);
         System.out.println(aD);
@@ -194,28 +195,27 @@ public class LoneTest extends BaseNd4jTest {
     public void testArgMax() {
         int max = 63;
         INDArray A = Nd4j.linspace(1, max, max).reshape(1, max);
-        int currentArgMax = Nd4j.argMax(A).getInt(0, 0);
+        int currentArgMax = Nd4j.argMax(A).getInt(0);
         assertEquals(max - 1, currentArgMax);
 
         max = 64;
         A = Nd4j.linspace(1, max, max).reshape(1, max);
-        currentArgMax = Nd4j.argMax(A).getInt(0, 0);
+        currentArgMax = Nd4j.argMax(A).getInt(0);
         System.out.println("Returned argMax is " + currentArgMax);
         assertEquals(max - 1, currentArgMax);
     }
 
 
     @Test
-    public void testConcat3D_Vstack_C() throws Exception {
-        int[] shape = new int[]{1, 1000, 150};
-        //INDArray cOrder =  Nd4j.rand(shape,123);
-
+    public void testConcat3D_Vstack_C() {
+        val shape = new long[]{1, 1000, 150};
 
         List<INDArray> cArrays = new ArrayList<>();
         List<INDArray> fArrays = new ArrayList<>();
 
         for (int e = 0; e < 32; e++) {
-            cArrays.add(Nd4j.create(shape, 'c').assign(e));
+            val arr = Nd4j.create(DataType.FLOAT, shape, 'c').assign(e);
+            cArrays.add(arr);
             //            fArrays.add(cOrder.dup('f'));
         }
 
@@ -229,13 +229,13 @@ public class LoneTest extends BaseNd4jTest {
 
         for (int e = 0; e < 32; e++) {
             INDArray tad = res.tensorAlongDimension(e, 1, 2);
-            assertEquals((double) e, tad.meanNumber().doubleValue(), 1e-5);
+            assertEquals("Failed for TAD [" + e + "]",(double) e, tad.meanNumber().doubleValue(), 1e-5);
         }
     }
 
 
     @Test
-    public void testGetRow1() throws Exception {
+    public void testGetRow1() {
         INDArray array = Nd4j.create(10000, 10000);
 
         //Thread.sleep(10000);
@@ -281,7 +281,7 @@ public class LoneTest extends BaseNd4jTest {
         int[] ranksToCheck = new int[]{2, 3, 4, 5};
         for (int rank = 0; rank < ranksToCheck.length; rank++) {
             log.info("\nRunning through rank " + ranksToCheck[rank]);
-            List<Pair<INDArray, String>> allF = NDArrayCreationUtil.getTestMatricesWithVaryingShapes(ranksToCheck[rank], 'f');
+            List<Pair<INDArray, String>> allF = NDArrayCreationUtil.getTestMatricesWithVaryingShapes(ranksToCheck[rank], 'f', DataType.FLOAT);
             Iterator<Pair<INDArray, String>> iter = allF.iterator();
             while (iter.hasNext()) {
                 Pair<INDArray, String> currentPair = iter.next();

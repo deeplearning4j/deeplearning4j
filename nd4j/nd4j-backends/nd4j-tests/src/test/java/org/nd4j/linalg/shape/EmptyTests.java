@@ -22,10 +22,9 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
-import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
-import org.nd4j.linalg.api.ops.impl.shape.Concat;
-import org.nd4j.linalg.api.shape.options.ArrayOptionsHelper;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 
@@ -35,7 +34,7 @@ import static org.junit.Assert.*;
 @RunWith(Parameterized.class)
 public class EmptyTests extends BaseNd4jTest {
 
-    DataBuffer.Type initialType;
+    DataType initialType;
 
     public EmptyTests(Nd4jBackend backend) {
         super(backend);
@@ -65,18 +64,18 @@ public class EmptyTests extends BaseNd4jTest {
 
     @Test
     public void testEmptyDtype_1() {
-        val array = Nd4j.empty(DataBuffer.Type.INT);
+        val array = Nd4j.empty(DataType.INT);
 
         assertTrue(array.isEmpty());
-        assertEquals(DataBuffer.Type.INT, array.dataType());
+        assertEquals(DataType.INT, array.dataType());
     }
 
     @Test
     public void testEmptyDtype_2() {
-        val array = Nd4j.empty(DataBuffer.Type.LONG);
+        val array = Nd4j.empty(DataType.LONG);
 
         assertTrue(array.isEmpty());
-        assertEquals(DataBuffer.Type.LONG, array.dataType());
+        assertEquals(DataType.LONG, array.dataType());
     }
 
     @Test
@@ -97,6 +96,57 @@ public class EmptyTests extends BaseNd4jTest {
         val z = op.getOutputArgument(0);
 
         assertEquals(exp, z);
+    }
+
+    @Test
+    public void testEmptyReductions(){
+
+        INDArray empty = Nd4j.empty(DataType.FLOAT);
+        try {
+            empty.sumNumber();
+        } catch (Exception e){
+            assertTrue(e.getMessage().contains("empty"));
+        }
+
+        try {
+            empty.varNumber();
+        } catch (Exception e){
+            assertTrue(e.getMessage().contains("empty"));
+        }
+
+        try {
+            empty.stdNumber();
+        } catch (Exception e){
+            assertTrue(e.getMessage().contains("empty"));
+        }
+
+        try {
+            empty.meanNumber();
+        } catch (Exception e){
+            assertTrue(e.getMessage().contains("empty"));
+        }
+    }
+
+    @Test
+    public void testGetEmpty(){
+        INDArray empty = Nd4j.empty(DataType.FLOAT);
+        try {
+            empty.getFloat(0);
+        } catch (Exception e){
+            assertTrue(e.getMessage().contains("empty"));
+        }
+
+        try {
+            empty.getDouble(0);
+        } catch (Exception e){
+            assertTrue(e.getMessage().contains("empty"));
+        }
+
+        try {
+            empty.getLong(0);
+        } catch (Exception e){
+            assertTrue(e.getMessage().contains("empty"));
+        }
     }
 
     @Override

@@ -122,13 +122,9 @@ public class BenchmarkMultiDataSetIterator implements MultiDataSetIterator {
         counter.incrementAndGet();
 
         INDArray[] features = new INDArray[baseFeatures.length];
-        for (int i = 0; i < baseFeatures.length; i++) {
-            features[i] = baseFeatures[i];
-        }
+        System.arraycopy(baseFeatures, 0, features, 0, baseFeatures.length);
         INDArray[] labels = new INDArray[baseLabels.length];
-        for (int i = 0; i < baseLabels.length; i++) {
-            labels[i] = baseLabels[i];
-        }
+        System.arraycopy(baseLabels, 0, labels, 0, baseLabels.length);
 
         MultiDataSet ds = new MultiDataSet(features, labels);
 

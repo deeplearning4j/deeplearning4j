@@ -27,21 +27,21 @@ namespace nd4j {
 namespace ops {
 namespace helpers {
 
-	template <typename T>
-	void softMaxForVector(const NDArray<T>& input, NDArray<T>& output);
+    void softMaxForVector(const NDArray &input, NDArray &output);
 
-	template <typename T>
-	void logSoftMaxForVector(const NDArray<T>& input, NDArray<T>& output);
+    void logSoftMaxForVector(const NDArray &input, NDArray &output);
 
-	template <typename T>
-	void softmax(const NDArray<T>& input, NDArray<T>& output, const int dimension);
+    void softmax(const NDArray &input, NDArray &output, const int dimension);
 
-	template <typename T>
-	void prelu(const NDArray<T>& input, const NDArray<T>& alpha, NDArray<T>& output);
+    void prelu(const NDArray &input, const NDArray &alpha, NDArray &output);
 
-	template <typename T>
-	void preluBP(const NDArray<T>& input, const NDArray<T>& alpha, const NDArray<T>& dLdO, NDArray<T>& dLdI, NDArray<T>& dLdA);
+    void preluBP(const NDArray &input, const NDArray &alpha, const NDArray &dLdO, NDArray &dLdI, NDArray &dLdA);
 
+    bool checkAlphaShapeLen(std::vector<Nd4jLong> const &expectedShape, Nd4jLong shapeLen);
+
+    void thresholdRelu(const NDArray &input, double threshold, NDArray &output);
+
+    void thresholdReluDerivative(NDArray *input, double threshold, NDArray* dLdO, NDArray *output);
 }
 }
 }

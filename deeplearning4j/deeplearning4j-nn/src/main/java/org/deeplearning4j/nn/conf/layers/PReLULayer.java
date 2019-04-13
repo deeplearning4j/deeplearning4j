@@ -63,8 +63,7 @@ public class PReLULayer extends BaseLayer {
     @Override
     public Layer instantiate(NeuralNetConfiguration conf, Collection<TrainingListener> trainingListeners,
                     int layerIndex, INDArray layerParamsView, boolean initializeParams) {
-        org.deeplearning4j.nn.layers.feedforward.PReLU ret =
-                        new org.deeplearning4j.nn.layers.feedforward.PReLU(conf);
+        org.deeplearning4j.nn.layers.feedforward.PReLU ret = new org.deeplearning4j.nn.layers.feedforward.PReLU(conf);
         ret.setListeners(trainingListeners);
         ret.setIndex(layerIndex);
         ret.setParamsViewArray(layerParamsView);
@@ -76,8 +75,9 @@ public class PReLULayer extends BaseLayer {
 
     @Override
     public InputType getOutputType(int layerIndex, InputType inputType) {
-        if (inputType == null)
+        if (inputType == null) {
             throw new IllegalStateException("Invalid input type: null for layer name \"" + getLayerName() + "\"");
+        }
         return inputType;
     }
 
@@ -90,31 +90,6 @@ public class PReLULayer extends BaseLayer {
     public InputPreProcessor getPreProcessorForInputType(InputType inputType) {
         // None needed
         return null;
-    }
-
-    @Override
-    public boolean isPretrain() {
-        return false;
-    }
-
-    @Override
-    public double getL1ByParam(String paramName) {
-        switch (paramName) {
-            case DefaultParamInitializer.WEIGHT_KEY:
-                return l1;
-            default:
-                throw new IllegalStateException("Unknown parameter: \"" + paramName + "\"");
-        }
-    }
-
-    @Override
-    public double getL2ByParam(String paramName) {
-        switch (paramName) {
-            case DefaultParamInitializer.WEIGHT_KEY:
-                return l2;
-            default:
-                throw new IllegalStateException("Unknown parameter: \"" + paramName + "\"");
-        }
     }
 
     @Override
@@ -135,44 +110,53 @@ public class PReLULayer extends BaseLayer {
         val updaterStateSize = (int) getIUpdater().stateSize(numParams);
 
         return new LayerMemoryReport.Builder(layerName, PReLULayer.class, inputType, outputType)
-                        .standardMemory(numParams, updaterStateSize)
-                        .workingMemory(0, 0, 0, 0)
-                        .cacheMemory(MemoryReport.CACHE_MODE_ALL_ZEROS, MemoryReport.CACHE_MODE_ALL_ZEROS)
-                        .build();
+                        .standardMemory(numParams, updaterStateSize).workingMemory(0, 0, 0, 0)
+                        .cacheMemory(MemoryReport.CACHE_MODE_ALL_ZEROS, MemoryReport.CACHE_MODE_ALL_ZEROS).build();
     }
 
     @NoArgsConstructor
+    @Getter
+    @Setter
     public static class Builder extends FeedForwardLayer.Builder<PReLULayer.Builder> {
 
+        /**
+         * Explicitly set input shape of incoming activations so that parameters can be initialized properly. This
+         * explicitly excludes the mini-batch dimension.
+         *
+         */
         private long[] inputShape = null;
+
+        /**
+         * Set the broadcasting axes of PReLU's alpha parameter.
+         *
+         * For instance, given input data of shape [mb, channels, height, width], setting axes to [2,3] will set alpha
+         * to shape [channels, 1, 1] and broadcast alpha across height and width dimensions of each channel.
+         *
+         */
         private long[] sharedAxes = null;
 
         /**
-         * Explicitly set input shape of incoming activations so that parameters
-         * can be initialized properly. This explicitly excludes the mini-batch
-         * dimension.
+         * Explicitly set input shape of incoming activations so that parameters can be initialized properly. This
+         * explicitly excludes the mini-batch dimension.
          *
          * @param shape shape of input data
-         * @return
          */
-        public Builder inputShape(long... shape){
-            this.inputShape = shape;
+        public Builder inputShape(long... shape) {
+            this.setInputShape(shape);
             return this;
         }
 
         /**
          * Set the broadcasting axes of PReLU's alpha parameter.
          *
-         * For instance, given input data of shape
-         * [mb, channels, height, width], setting axes to [2,3] will
-         * set alpha to shape [channels, 1, 1] and broadcast alpha across
-         * height and width dimensions of each channel.
+         * For instance, given input data of shape [mb, channels, height, width], setting axes to [2,3] will set alpha
+         * to shape [channels, 1, 1] and broadcast alpha across height and width dimensions of each channel.
          *
          * @param axes shared/broadcasting axes
          * @return Builder
          */
         public Builder sharedAxes(long... axes) {
-            this.sharedAxes = axes;
+            this.setSharedAxes(axes);
             return this;
         }
 

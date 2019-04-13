@@ -60,14 +60,18 @@ namespace nd4j {
             auto alpha = INPUT_VARIABLE(0);
             auto beta = INPUT_VARIABLE(1);
 
-            std::vector<NDArray<T>*> vA(batchSize);
-            std::vector<NDArray<T>*> vB(batchSize);
-            std::vector<NDArray<T>*> vC(batchSize);
+            std::vector<NDArray*> vA(batchSize);
+            std::vector<NDArray*> vB(batchSize);
+            std::vector<NDArray*> vC(batchSize);
 
+            auto firstType = INPUT_VARIABLE(0)->dataType();
             for(int e = 0; e < batchSize; e++) {
                 vA[e] = INPUT_VARIABLE(e+2);
                 vB[e] = INPUT_VARIABLE(e+2+batchSize);
                 vC[e] = OUTPUT_VARIABLE(e);
+
+
+                REQUIRE_TRUE(firstType == vC[e]->dataType(), 0, "BatchedGemm: all inputs and outputs must have same data type");
 
                 REQUIRE_TRUE(vA[e]->rankOf() == 2, 0, "BatchedGemm: batch %i, rank of A should be equal to 2", e);
                 REQUIRE_TRUE(vB[e]->rankOf() == 2, 0, "BatchedGemm: batch %i, rank of B should be equal to 2", e);
@@ -80,14 +84,13 @@ namespace nd4j {
 
             REQUIRE_TRUE(vA.size() == vB.size() && vA.size() == vC.size() && vA.size() == batchSize, 0, "BatchedGemm: mismatched numbers of A, B, C for unknown reason");
             
-            nd4j::ops::helpers::_bgemm<T>(vA, vB, vC, alpha, beta, transA, transB, M, N, K, ldA, ldB, ldC);
+            nd4j::ops::helpers::_bgemm(vA, vB, vC, alpha, beta, transA, transB, M, N, K, ldA, ldB, ldC);
             
-            return ND4J_STATUS_OK;
+            return Status::OK();
         };
 
 
         DECLARE_SHAPE_FN(batched_gemm) {
-            auto shapeList = SHAPELIST();
             int transA = INT_ARG(0);
             int transB = INT_ARG(1);
             int M = INT_ARG(2);
@@ -97,6 +100,13 @@ namespace nd4j {
             int ldB = INT_ARG(6);
             int ldC = INT_ARG(7);
             int batchSize = INT_ARG(8);
+
+            auto firstType = ArrayOptions::dataType(inputShape->at(0));
+            for (int e = 1; e < block.width(); e++) {
+                REQUIRE_TRUE(firstType == ArrayOptions::dataType(inputShape->at(1)), 0, "BatchedGemm: all inputs must have same data type");
+            }
+
+            auto shapeList = SHAPELIST();
 
             if (!(M > 0 && N > 0 && K > 0 && ldA > 0 && ldB > 0 && ldC > 0 && batchSize > 0)) {
                 Nd4jLong *newShape;
@@ -119,15 +129,19 @@ namespace nd4j {
             std::vector<Nd4jLong> shape({M, N});
 
             for (int e = 0; e < batchSize; e++) {
-                Nd4jLong *newShape;
-                ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(2), Nd4jLong);
-
-                shape::shapeBufferFortran(2, shape.data(), newShape);
-
+                
+                Nd4jLong *newShape = ShapeBuilders::createShapeInfo(block.dataType(), 'f', shape, block.getWorkspace());
                 shapeList->push_back(newShape);
             }
 
             return shapeList;
+        }
+
+        DECLARE_TYPES(batched_gemm) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes({ALL_FLOATS})
+//                    ->setAllowedInputTypes(1, {DataType::FLOAT32, DataType ::DOUBLE, DataType::HALF})
+                    ->setAllowedOutputTypes({ALL_FLOATS});
         }
     }
 }

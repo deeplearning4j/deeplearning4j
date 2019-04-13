@@ -25,7 +25,7 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>deeplearning4j-nlp-korean</artifactId>
+    <artifactId>deeplearning4j-nlp-korean_2.11</artifactId>
 
     <properties>
         <!-- Default scala versions, may be overwritten by build profiles -->
@@ -61,7 +61,7 @@
             <id>test-nd4j-native</id>
         </profile>
         <profile>
-            <id>test-nd4j-cuda-10.0</id>
+            <id>test-nd4j-cuda-10.1</id>
         </profile>
     </profiles>
 

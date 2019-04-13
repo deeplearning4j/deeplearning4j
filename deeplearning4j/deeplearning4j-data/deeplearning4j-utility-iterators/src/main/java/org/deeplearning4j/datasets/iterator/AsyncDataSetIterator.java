@@ -387,7 +387,7 @@ public class AsyncDataSetIterator implements DataSetIterator {
         private DataSet terminator;
         private boolean isShutdown = false; // locked around `this`
         private WorkspaceConfiguration configuration = WorkspaceConfiguration.builder().minSize(10 * 1024L * 1024L)
-                        .overallocationLimit(prefetchSize + 1).policyReset(ResetPolicy.ENDOFBUFFER_REACHED)
+                        .overallocationLimit(prefetchSize + 2).policyReset(ResetPolicy.ENDOFBUFFER_REACHED)
                         .policyLearning(LearningPolicy.FIRST_LOOP).policyAllocation(AllocationPolicy.OVERALLOCATE)
                         .policySpill(SpillPolicy.REALLOCATE).build();
 

@@ -15,7 +15,7 @@
  ******************************************************************************/
 
 //
-// @author George A. Shulinok <sgazeos@gmail.com>, created on 8/22/2018
+// @author GS <sgazeos@gmail.com>, created on 8/22/2018
 //
 
 #include <op_boilerplate.h>
@@ -27,9 +27,9 @@ namespace nd4j {
     namespace ops {
         CONFIGURABLE_OP_IMPL(matrix_band_part, 1, 1, true, 0, 2) {
 
-            NDArray<T>* input = INPUT_VARIABLE(0);
+            auto input = INPUT_VARIABLE(0);
 
-            NDArray<T>* output   = OUTPUT_VARIABLE(0);
+            auto output   = OUTPUT_VARIABLE(0);
             Nd4jLong minLower = INT_ARG(0);
             Nd4jLong maxUpper = INT_ARG(1);
 
@@ -45,6 +45,13 @@ namespace nd4j {
             return ND4J_STATUS_OK;
         }
         DECLARE_SYN(band_part, matrix_band_part);
+    }
+
+    DECLARE_TYPES(matrix_band_part) {
+        getOpDescriptor()
+            ->setAllowedInputTypes(nd4j::DataType::ANY)
+            ->setAllowedInputTypes({ALL_FLOATS})
+            ->setSameMode(true);
     }
 }
 

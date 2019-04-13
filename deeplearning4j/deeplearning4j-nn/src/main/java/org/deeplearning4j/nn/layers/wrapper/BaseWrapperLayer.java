@@ -56,13 +56,8 @@ public abstract class BaseWrapperLayer implements Layer {
     }
 
     @Override
-    public double calcL2(boolean backpropOnlyParams) {
-        return underlying.calcL2(backpropOnlyParams);
-    }
-
-    @Override
-    public double calcL1(boolean backpropOnlyParams) {
-        return underlying.calcL1(backpropOnlyParams);
+    public double calcRegularizationScore(boolean backpropParamsOnly){
+        return underlying.calcRegularizationScore(backpropParamsOnly);
     }
 
     @Override
@@ -131,12 +126,12 @@ public abstract class BaseWrapperLayer implements Layer {
     }
 
     @Override
-    public int numParams() {
+    public long numParams() {
         return underlying.numParams();
     }
 
     @Override
-    public int numParams(boolean backwards) {
+    public long numParams(boolean backwards) {
         return underlying.numParams();
     }
 
@@ -328,5 +323,10 @@ public abstract class BaseWrapperLayer implements Layer {
     @Override
     public TrainingConfig getConfig() {
         return underlying.getConfig();
+    }
+
+    @Override
+    public boolean updaterDivideByMinibatch(String paramName) {
+        return underlying.updaterDivideByMinibatch(paramName);
     }
 }

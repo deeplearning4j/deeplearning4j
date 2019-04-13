@@ -184,6 +184,24 @@ namespace nd4j {
         DECLARE_CONFIGURABLE_OP(log_softmax_bp, 2, 1, true, 0, 0);
         #endif
 
+
+        /**
+         * relu_layer = relu(x*w + b)
+         */
+        DECLARE_CUSTOM_OP(relu_layer, 3, 1, false, 0, 0);
+
+        /**
+         * applies layer normalization to input
+         * y = g * standardize(x) + b
+         *
+         * see nd4j::ops::standardize
+         *
+         */
+        #if NOT_EXCLUDED(OP_layer_norm)
+                DECLARE_CONFIGURABLE_OP(layer_norm, 3, 1, true, 0, -2);
+                DECLARE_CUSTOM_OP(layer_norm_bp, 4, 1, false, 0, -2);
+        #endif
+
     }
 }
 

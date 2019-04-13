@@ -33,8 +33,8 @@ public class ScalarSubtraction extends BaseScalarOp {
 
     public ScalarSubtraction() {}
 
-    public ScalarSubtraction(INDArray x, INDArray y, INDArray z, long n, Number num) {
-        super(x, y, z, n, num);
+    public ScalarSubtraction(INDArray x, INDArray y, INDArray z, Number num) {
+        super(x, y, z, num);
     }
 
     public ScalarSubtraction(INDArray x, Number num) {
@@ -53,14 +53,6 @@ public class ScalarSubtraction extends BaseScalarOp {
 
     public ScalarSubtraction(SameDiff sameDiff, SDVariable i_v, Number scalar, boolean inPlace) {
         super(sameDiff, i_v, scalar, inPlace);
-    }
-
-    public ScalarSubtraction(SameDiff sameDiff, SDVariable i_v, Number scalar, boolean inPlace, Object[] extraArgs) {
-        super(sameDiff, i_v, scalar, inPlace, extraArgs);
-    }
-
-    public ScalarSubtraction(SameDiff sameDiff, SDVariable i_v, Number scalar, Object[] extraArgs) {
-        super(sameDiff, i_v, scalar, extraArgs);
     }
 
     @Override

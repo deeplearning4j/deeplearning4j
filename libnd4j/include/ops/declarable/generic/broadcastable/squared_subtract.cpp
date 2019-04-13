@@ -27,22 +27,29 @@
 namespace nd4j {
     namespace ops {
         BROADCASTABLE_OP_IMPL(squaredsubtract, 0, 0) {
-            NDArray<T> *x = INPUT_VARIABLE(0);
-            NDArray<T> *y = INPUT_VARIABLE(1);
-            NDArray<T> *z = OUTPUT_VARIABLE(0);
+            auto x = INPUT_VARIABLE(0);
+            auto y = INPUT_VARIABLE(1);
+            auto z = OUTPUT_VARIABLE(0);
 
+            BROADCAST_CHECK_EMPTY(x,y,z);
 
-            auto tZ = BroadcastHelper<T>::template broadcastApply<simdOps::SquaredSubtract<T>>(x, y, z);
+            auto tZ = BroadcastHelper::broadcastApply(BROADCAST(SquaredSubtract), x, y, z);
             if (tZ == nullptr)
                 return ND4J_STATUS_KERNEL_FAILURE;
             else if (tZ != z) {
                 OVERWRITE_RESULT(tZ);
             }
 
-            return ND4J_STATUS_OK;
+            return Status::OK();
         }
         DECLARE_SYN(squareddifference, squaredsubtract);
 
+        DECLARE_TYPES(squaredsubtract) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(0, DataType::ANY)
+                    ->setAllowedInputTypes(1, DataType::ANY)
+                    ->setAllowedOutputTypes(0, DataType::INHERIT);
+        }
 
         CUSTOM_OP_IMPL(squaredsubtract_bp, 3, 2, false, 0, 0) {
             auto x = INPUT_VARIABLE(0);
@@ -52,6 +59,7 @@ namespace nd4j {
             auto gradX = OUTPUT_VARIABLE(0);
             auto gradY = OUTPUT_VARIABLE(1);
 
+            /*
             auto lambdaX = LAMBDA_TTT(_e, _x, _y) {
                 return _e * (T) 2.0 * (_x - _y) ;
             };
@@ -59,28 +67,29 @@ namespace nd4j {
             auto lambdaY = LAMBDA_TTT(_e, _x, _y) {
                 return _e * (T) 2.0 * (_y - _x);
             };
+            */
+
+            auto ts = NDArrayFactory::create(x->dataType(), 2, block.workspace());
 
 
             if (x->isSameShape(y)) {
                 // PWT case case
 
                 // X gradient
-                epsNext->applyTriplewiseLambda(x, y, lambdaX, gradX);
+                //epsNext->applyTriplewiseLambda(x, y, lambdaX, gradX);
+                gradX->assign((*epsNext) * ts * ((*x) - (*y)));
 
                 // Y gradient
-                epsNext->applyTriplewiseLambda(x, y, lambdaY, gradY);
+                //epsNext->applyTriplewiseLambda(x, y, lambdaY, gradY);
+                gradY->assign((*epsNext) * ts * ((*y) - (*x)));
 
             } else if (y->isScalar()) {
                 // scalar case
-                T _y = y->getScalar(0);
-                auto lambdaS = LAMBDA_TT(_e, _x, _y) {
-                    return _e * (T) 2.0f * (_x - _y);
-                };
-
-                T tmpX = x->template reduceNumber<simdOps::Sum<T>>();
+                auto tmpX = x->reduceNumber(reduce::Sum);
                 gradY->assign(tmpX);
                 
-                epsNext->applyPairwiseLambda(x, lambdaS, gradX);
+                //epsNext->applyPairwiseLambda(x, lambdaS, gradX);
+                gradX->assign(epsNext * ts * ((*x) - (*y)));
             } else {
                 // broadcast case
 
@@ -93,21 +102,25 @@ namespace nd4j {
                 preY->tileToShape(targetShape);
 
 
-                epsNext->applyTriplewiseLambda(x, y, lambdaX, preX);
-                epsNext->applyTriplewiseLambda(x, y, lambdaY, preY);
+                //epsNext->applyTriplewiseLambda(x, y, lambdaX, preX);
+                //epsNext->applyTriplewiseLambda(x, y, lambdaY, preY);
+                auto resX = (*epsNext) * ts * ((*x) - (*y));
+                preX->assign(resX);
+                auto resY = (*epsNext) * ts * ((*y) - (*x));
+                preY->assign(resY);
 
-                auto axisX = ShapeUtils<T>::evalBroadcastBackwardAxis(x->shapeInfo(), epsNext->shapeInfo());
-                auto axisY = ShapeUtils<T>::evalBroadcastBackwardAxis(y->shapeInfo(), epsNext->shapeInfo());
+                auto axisX = ShapeUtils::evalBroadcastBackwardAxis(x->shapeInfo(), epsNext->shapeInfo());
+                auto axisY = ShapeUtils::evalBroadcastBackwardAxis(y->shapeInfo(), epsNext->shapeInfo());
 
                 if (axisX.size() > 0) {
-                    auto sum = preX->template reduceAlongDimension<simdOps::Sum<T>>(axisX);
+                    auto sum = preX->reduceAlongDimension(reduce::Sum, axisX);
                     gradX->assign(sum);
                     delete sum;
                 } else 
                     gradX->assign(preX);
 
                 if (axisY.size() > 0) {
-                    auto sum = preY->template reduceAlongDimension<simdOps::Sum<T>>(axisY);
+                    auto sum = preY->reduceAlongDimension(reduce::Sum, axisY);
                     gradY->assign(sum);
                     delete sum;
                 } else
@@ -139,6 +152,13 @@ namespace nd4j {
 
             return shapeList;
         }
+
+        DECLARE_TYPES(squaredsubtract_bp) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(DataType::ANY)
+                    ->setAllowedOutputTypes({ALL_FLOATS});
+        }
+
     }
 }
 

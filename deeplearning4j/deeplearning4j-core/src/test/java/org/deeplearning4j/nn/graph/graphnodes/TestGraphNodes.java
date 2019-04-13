@@ -61,8 +61,8 @@ public class TestGraphNodes {
         Nd4j.getRandom().setSeed(12345);
         GraphVertex mergeNode = new MergeVertex(null, "", -1);
 
-        INDArray first = Nd4j.linspace(0, 11, 12).reshape(3, 4);
-        INDArray second = Nd4j.linspace(0, 17, 18).reshape(3, 6).addi(100);
+        INDArray first = Nd4j.linspace(0, 11, 12, Nd4j.dataType()).reshape(3, 4);
+        INDArray second = Nd4j.linspace(0, 17, 18, Nd4j.dataType()).reshape(3, 6).addi(100);
 
         mergeNode.setInputs(first, second);
         INDArray out = mergeNode.doForward(false, LayerWorkspaceMgr.noWorkspaces());
@@ -83,8 +83,8 @@ public class TestGraphNodes {
         Nd4j.getRandom().setSeed(12345);
         GraphVertex mergeNode = new MergeVertex(null, "", -1);
 
-        INDArray first = Nd4j.linspace(0, 59, 60).reshape(3, 4, 5);
-        INDArray second = Nd4j.linspace(0, 89, 90).reshape(3, 6, 5).addi(100);
+        INDArray first = Nd4j.linspace(0, 59, 60, Nd4j.dataType()).reshape(3, 4, 5);
+        INDArray second = Nd4j.linspace(0, 89, 90, Nd4j.dataType()).reshape(3, 6, 5).addi(100);
 
         mergeNode.setInputs(first, second);
         INDArray out = mergeNode.doForward(false, LayerWorkspaceMgr.noWorkspaces());
@@ -104,8 +104,8 @@ public class TestGraphNodes {
         Nd4j.getRandom().setSeed(12345);
         GraphVertex mergeNode = new MergeVertex(null, "", -1);
 
-        INDArray first = Nd4j.linspace(0, 3, 4).reshape(1, 1, 2, 2);
-        INDArray second = Nd4j.linspace(0, 3, 4).reshape(1, 1, 2, 2).addi(10);
+        INDArray first = Nd4j.linspace(0, 3, 4, Nd4j.dataType()).reshape(1, 1, 2, 2);
+        INDArray second = Nd4j.linspace(0, 3, 4, Nd4j.dataType()).reshape(1, 1, 2, 2).addi(10);
 
         mergeNode.setInputs(first, second);
         INDArray out = mergeNode.doForward(false, LayerWorkspaceMgr.noWorkspaces());
@@ -125,8 +125,8 @@ public class TestGraphNodes {
 
 
         //Slightly more complicated test:
-        first = Nd4j.linspace(0, 17, 18).reshape(1, 2, 3, 3);
-        second = Nd4j.linspace(0, 17, 18).reshape(1, 2, 3, 3).addi(100);
+        first = Nd4j.linspace(0, 17, 18, Nd4j.dataType()).reshape(1, 2, 3, 3);
+        second = Nd4j.linspace(0, 17, 18, Nd4j.dataType()).reshape(1, 2, 3, 3).addi(100);
 
         mergeNode.setInputs(first, second);
         out = mergeNode.doForward(false, LayerWorkspaceMgr.noWorkspaces());

@@ -147,7 +147,7 @@ stringpiece_ssize_type StringPiece::rfind(char c, size_type pos) const {
 // the find_.*_of methods below to tell whether or not a character is in
 // the lookup table in constant time.
 // The argument `table' must be an array that is large enough to hold all
-// the possible values of an unsigned char.  Thus it should be be declared
+// the possible values of an unsigned char.  Thus it should be declared
 // as follows:
 //   bool table[UCHAR_MAX + 1]
 static inline void BuildLookupTable(StringPiece characters_wanted,
