@@ -35,6 +35,7 @@ import org.deeplearning4j.nn.weights.IWeightInit;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.nn.weights.WeightInitDistribution;
 import org.nd4j.base.Preconditions;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
@@ -75,6 +76,7 @@ public class TransferLearning {
 
         private InputType inputType;
         private Boolean validateOutputLayerConfig;
+        private DataType dataType;
 
         /**
          * Multilayer Network to tweak for transfer learning
@@ -83,6 +85,7 @@ public class TransferLearning {
         public Builder(MultiLayerNetwork origModel) {
             this.origModel = origModel;
             this.origConf = origModel.getLayerWiseConfigurations().clone();
+            this.dataType = origModel.getLayerWiseConfigurations().getDataType();
 
             this.inputPreProcessors = origConf.getInputPreProcessors();
         }
@@ -322,7 +325,7 @@ public class TransferLearning {
             INDArray params;
             if (numParams > 0) {
                 params = Nd4j.create(1, numParams);
-                org.deeplearning4j.nn.api.Layer someLayer = layer.instantiate(layerConf, null, 0, params, true);
+                org.deeplearning4j.nn.api.Layer someLayer = layer.instantiate(layerConf, null, 0, params, true, dataType);
                 appendParams.add(someLayer.params());
                 appendConfs.add(someLayer.conf());
             } else {
@@ -470,7 +473,7 @@ public class TransferLearning {
             layerImplF.setNIn(nIn);
             long numParams = layerImpl.initializer().numParams(layerConf);
             INDArray params = Nd4j.create(1, numParams);
-            org.deeplearning4j.nn.api.Layer someLayer = layerImpl.instantiate(layerConf, null, 0, params, true);
+            org.deeplearning4j.nn.api.Layer someLayer = layerImpl.instantiate(layerConf, null, 0, params, true, dataType);
             editedParams.set(layerNum, someLayer.params());
         }
 
@@ -488,7 +491,7 @@ public class TransferLearning {
             layerImplF.setNOut(nOut);
             long numParams = layerImpl.initializer().numParams(layerConf);
             INDArray params = Nd4j.create(1, numParams);
-            org.deeplearning4j.nn.api.Layer someLayer = layerImpl.instantiate(layerConf, null, 0, params, true);
+            org.deeplearning4j.nn.api.Layer someLayer = layerImpl.instantiate(layerConf, null, 0, params, true, dataType);
             editedParams.set(layerNum, someLayer.params());
 
             if (layerNum + 1 < editedConfs.size()) {
@@ -501,7 +504,7 @@ public class TransferLearning {
                     numParams = layerImpl.initializer().numParams(layerConf);
                     if (numParams > 0) {
                         params = Nd4j.create(1, numParams);
-                        someLayer = layerImpl.instantiate(layerConf, null, 0, params, true);
+                        someLayer = layerImpl.instantiate(layerConf, null, 0, params, true, dataType);
                         editedParams.set(layerNum + 1, someLayer.params());
                     }
                 }

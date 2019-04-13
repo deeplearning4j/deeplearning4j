@@ -27,6 +27,7 @@ import org.deeplearning4j.nn.conf.layers.Layer;
 import org.deeplearning4j.nn.conf.layers.wrapper.BaseWrapperLayer;
 import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
 import org.deeplearning4j.optimize.api.TrainingListener;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 
@@ -60,14 +61,14 @@ public class MaskZeroLayer extends BaseWrapperLayer {
 
     @Override
     public org.deeplearning4j.nn.api.Layer instantiate(NeuralNetConfiguration conf,
-                    Collection<TrainingListener> trainingListeners, int layerIndex, INDArray layerParamsView,
-                    boolean initializeParams) {
+                                                       Collection<TrainingListener> trainingListeners, int layerIndex, INDArray layerParamsView,
+                                                       boolean initializeParams, DataType networkDataType) {
 
         NeuralNetConfiguration conf2 = conf.clone();
         conf2.setLayer(((BaseWrapperLayer) conf2.getLayer()).getUnderlying());
 
         org.deeplearning4j.nn.api.Layer underlyingLayer =
-                        underlying.instantiate(conf2, trainingListeners, layerIndex, layerParamsView, initializeParams);
+                        underlying.instantiate(conf2, trainingListeners, layerIndex, layerParamsView, initializeParams, networkDataType);
         return new org.deeplearning4j.nn.layers.recurrent.MaskZeroLayer(underlyingLayer, maskingValue);
     }
 

@@ -29,6 +29,7 @@ import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.layers.samediff.SameDiffGraphVertex;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.learning.config.IUpdater;
 import org.nd4j.linalg.learning.regularization.Regularization;
@@ -124,7 +125,7 @@ public abstract class SameDiffVertex extends GraphVertex implements TrainingConf
 
     @Override
     public org.deeplearning4j.nn.graph.vertex.GraphVertex instantiate(ComputationGraph graph, String name, int idx,
-                    INDArray paramsView, boolean initializeParams) {
+                                                                      INDArray paramsView, boolean initializeParams, DataType networkDatatype) {
         this.name = name;
         return new SameDiffGraphVertex(this, graph, name, idx, paramsView, initializeParams);
     }

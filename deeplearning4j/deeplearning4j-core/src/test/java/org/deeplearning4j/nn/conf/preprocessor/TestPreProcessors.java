@@ -60,7 +60,7 @@ public class TestPreProcessors extends BaseDL4JTest {
 
             long numParams = nnc.getLayer().initializer().numParams(nnc);
             INDArray params = Nd4j.create(1, numParams);
-            DenseLayer layer = (DenseLayer) nnc.getLayer().instantiate(nnc, null, 0, params, true);
+            DenseLayer layer = (DenseLayer) nnc.getLayer().instantiate(nnc, null, 0, params, true, params.dataType());
             layer.setInputMiniBatchSize(miniBatchSize);
 
             INDArray activations3dc = Nd4j.create(new int[] {miniBatchSize, layerSize, timeSeriesLength}, 'c');
@@ -145,7 +145,7 @@ public class TestPreProcessors extends BaseDL4JTest {
 
             val numParams = nnc.getLayer().initializer().numParams(nnc);
             INDArray params = Nd4j.create(1, numParams);
-            DenseLayer layer = (DenseLayer) nnc.getLayer().instantiate(nnc, null, 0, params, true);
+            DenseLayer layer = (DenseLayer) nnc.getLayer().instantiate(nnc, null, 0, params, true, params.dataType());
             layer.setInputMiniBatchSize(miniBatchSize);
 
             INDArray rand = Nd4j.rand(miniBatchSize * timeSeriesLength, layerSize);
@@ -232,7 +232,7 @@ public class TestPreProcessors extends BaseDL4JTest {
                             val numParams = nnc.getLayer().initializer().numParams(nnc);
                             INDArray params = Nd4j.create(1, numParams);
                             ConvolutionLayer layer =
-                                            (ConvolutionLayer) nnc.getLayer().instantiate(nnc, null, 0, params, true);
+                                            (ConvolutionLayer) nnc.getLayer().instantiate(nnc, null, 0, params, true, params.dataType());
                             layer.setInputMiniBatchSize(miniBatchSize);
 
                             INDArray activationsCnn = Nd4j.rand(new int[] {miniBatchSize * timeSeriesLength, nChannels,
@@ -314,7 +314,7 @@ public class TestPreProcessors extends BaseDL4JTest {
                             val numParams = nnc.getLayer().initializer().numParams(nnc);
                             INDArray params = Nd4j.create(1, numParams);
                             ConvolutionLayer layer =
-                                            (ConvolutionLayer) nnc.getLayer().instantiate(nnc, null, 0, params, true);
+                                            (ConvolutionLayer) nnc.getLayer().instantiate(nnc, null, 0, params, true, params.dataType());
                             layer.setInputMiniBatchSize(miniBatchSize);
 
                             val shape_rnn = new long[] {miniBatchSize, nChannels * inputHeight * inputWidth,

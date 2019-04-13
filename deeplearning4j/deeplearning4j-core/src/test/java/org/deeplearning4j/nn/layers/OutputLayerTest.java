@@ -66,7 +66,7 @@ public class OutputLayerTest extends BaseDL4JTest {
         long numParams = conf.getLayer().initializer().numParams(conf);
         INDArray params = Nd4j.create(1, numParams);
         OutputLayer l = (OutputLayer) conf.getLayer().instantiate(conf,
-                        Collections.<TrainingListener>singletonList(new ScoreIterationListener(1)), 0, params, true);
+                        Collections.<TrainingListener>singletonList(new ScoreIterationListener(1)), 0, params, true, params.dataType());
         params = l.params();
         l.setParams(params);
         assertEquals(params, l.params());

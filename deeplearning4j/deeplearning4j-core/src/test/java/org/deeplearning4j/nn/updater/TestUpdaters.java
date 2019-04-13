@@ -39,7 +39,6 @@ import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.learning.*;
 import org.nd4j.linalg.learning.config.*;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
@@ -93,7 +92,7 @@ public class TestUpdaters extends BaseDL4JTest {
 
         long numParams = conf.getLayer().initializer().numParams(conf);
         INDArray params = Nd4j.create(1, numParams);
-        BaseLayer layer = (BaseLayer) conf.getLayer().instantiate(conf, null, 0, params, true);
+        BaseLayer layer = (BaseLayer) conf.getLayer().instantiate(conf, null, 0, params, true, params.dataType());
         layer.setBackpropGradientsViewArray(gradients);
         Updater updater = UpdaterCreator.getUpdater(layer);
         int updaterStateSize = (int) layer.layerConf().getIUpdater().stateSize(numParams);
@@ -159,7 +158,7 @@ public class TestUpdaters extends BaseDL4JTest {
 
         long numParams = conf.getLayer().initializer().numParams(conf);
         INDArray params = Nd4j.create(1, numParams);
-        BaseLayer layer = (BaseLayer) conf.getLayer().instantiate(conf, null, 0, params, true);
+        BaseLayer layer = (BaseLayer) conf.getLayer().instantiate(conf, null, 0, params, true, params.dataType());
         layer.setBackpropGradientsViewArray(gradients);
         Updater updater = UpdaterCreator.getUpdater(layer);
         int updaterStateSize = (int) layer.layerConf().getIUpdater().stateSize(numParams);
@@ -203,7 +202,7 @@ public class TestUpdaters extends BaseDL4JTest {
 
         long numParams = conf.getLayer().initializer().numParams(conf);
         INDArray params = Nd4j.create(1, numParams);
-        BaseLayer layer = (BaseLayer) conf.getLayer().instantiate(conf, null, 0, params, true);
+        BaseLayer layer = (BaseLayer) conf.getLayer().instantiate(conf, null, 0, params, true, params.dataType());
         layer.setBackpropGradientsViewArray(gradients);
         Updater updater = UpdaterCreator.getUpdater(layer);
         int updaterStateSize = (int) layer.layerConf().getIUpdater().stateSize(numParams);
@@ -266,7 +265,7 @@ public class TestUpdaters extends BaseDL4JTest {
 
         long numParams = conf.getLayer().initializer().numParams(conf);
         INDArray params = Nd4j.create(1, numParams);
-        BaseLayer layer = (BaseLayer) conf.getLayer().instantiate(conf, null, 0, params, true);
+        BaseLayer layer = (BaseLayer) conf.getLayer().instantiate(conf, null, 0, params, true, params.dataType());
         layer.setBackpropGradientsViewArray(gradients);
 
         Updater updater = UpdaterCreator.getUpdater(layer);
@@ -357,7 +356,7 @@ public class TestUpdaters extends BaseDL4JTest {
 
         long numParams = conf.getLayer().initializer().numParams(conf);
         INDArray params = Nd4j.create(1, numParams);
-        BaseLayer layer = (BaseLayer) conf.getLayer().instantiate(conf, null, 0, params, true);
+        BaseLayer layer = (BaseLayer) conf.getLayer().instantiate(conf, null, 0, params, true, params.dataType());
         layer.setBackpropGradientsViewArray(gradients);
         Updater updater = UpdaterCreator.getUpdater(layer);
         int updaterStateSize = (int) layer.layerConf().getIUpdater().stateSize(numParams);
@@ -413,7 +412,7 @@ public class TestUpdaters extends BaseDL4JTest {
 
         long numParams = conf.getLayer().initializer().numParams(conf);
         INDArray params = Nd4j.create(1, numParams);
-        BaseLayer layer = (BaseLayer) conf.getLayer().instantiate(conf, null, 0, params, true);
+        BaseLayer layer = (BaseLayer) conf.getLayer().instantiate(conf, null, 0, params, true, params.dataType());
         layer.setBackpropGradientsViewArray(gradients);
         Updater updater = UpdaterCreator.getUpdater(layer);
         int updaterStateSize = (int) layer.layerConf().getIUpdater().stateSize(numParams);
@@ -460,7 +459,7 @@ public class TestUpdaters extends BaseDL4JTest {
 
         long numParams = conf.getLayer().initializer().numParams(conf);
         INDArray params = Nd4j.create(1, numParams);
-        BaseLayer layer = (BaseLayer) conf.getLayer().instantiate(conf, null, 0, params, true);
+        BaseLayer layer = (BaseLayer) conf.getLayer().instantiate(conf, null, 0, params, true, params.dataType());
         layer.setBackpropGradientsViewArray(gradients);
         Updater updater = UpdaterCreator.getUpdater(layer);
         int updaterStateSize = (int) layer.layerConf().getIUpdater().stateSize(numParams);
@@ -507,7 +506,7 @@ public class TestUpdaters extends BaseDL4JTest {
 
         long numParams = conf.getLayer().initializer().numParams(conf);
         INDArray params = Nd4j.create(1, numParams);
-        BaseLayer layer = (BaseLayer) conf.getLayer().instantiate(conf, null, 0, params, true);
+        BaseLayer layer = (BaseLayer) conf.getLayer().instantiate(conf, null, 0, params, true, params.dataType());
         layer.setBackpropGradientsViewArray(gradients);
         Updater updater = UpdaterCreator.getUpdater(layer);
 
@@ -541,7 +540,7 @@ public class TestUpdaters extends BaseDL4JTest {
 
         long numParams = conf.getLayer().initializer().numParams(conf);
         INDArray params = Nd4j.create(1, numParams);
-        Layer layer = conf.getLayer().instantiate(conf, null, 0, params, true);
+        Layer layer = conf.getLayer().instantiate(conf, null, 0, params, true, params.dataType());
         layer.setBackpropGradientsViewArray(gradients);
         Updater updater = UpdaterCreator.getUpdater(layer);
 
@@ -747,7 +746,7 @@ public class TestUpdaters extends BaseDL4JTest {
                         .build();
         long numParams = conf.getLayer().initializer().numParams(conf);
         INDArray params = Nd4j.create(1, numParams);
-        BaseLayer layer = (BaseLayer) conf.getLayer().instantiate(conf, null, 0, params, true);
+        BaseLayer layer = (BaseLayer) conf.getLayer().instantiate(conf, null, 0, params, true, params.dataType());
         layer.setBackpropGradientsViewArray(gradients);
         Updater updater = UpdaterCreator.getUpdater(layer);
 
@@ -792,7 +791,7 @@ public class TestUpdaters extends BaseDL4JTest {
         gradientCopyPreUpdate.setFlattenedGradient(g);
 
         params = Nd4j.create(1, numParams);
-        layer = (BaseLayer) conf.getLayer().instantiate(conf, null, 0, params, true);
+        layer = (BaseLayer) conf.getLayer().instantiate(conf, null, 0, params, true, params.dataType());
         layer.setBackpropGradientsViewArray(gradients);
         updater = UpdaterCreator.getUpdater(layer);
         assertEquals(lr, ((Sgd)layer.layerConf().getIUpdater()).getLearningRate(), 1e-4);

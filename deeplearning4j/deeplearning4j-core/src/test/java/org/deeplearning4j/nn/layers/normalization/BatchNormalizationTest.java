@@ -42,7 +42,6 @@ import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Before;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
-import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -134,7 +133,7 @@ public class BatchNormalizationTest extends BaseDL4JTest {
         if (numParams > 0) {
             params = Nd4j.create(1, numParams);
         }
-        Layer layer = conf.getLayer().instantiate(conf, null, 0, params, true);
+        Layer layer = conf.getLayer().instantiate(conf, null, 0, params, true, params == null ? Nd4j.defaultFloatingPointType() : params.dataType());
         if (numParams > 0) {
             layer.setBackpropGradientsViewArray(Nd4j.create(1, numParams));
         }

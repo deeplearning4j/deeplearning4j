@@ -55,7 +55,7 @@ public class DenseTest extends BaseDL4JTest {
 
         long numParams = conf.getLayer().initializer().numParams(conf);
         INDArray params = Nd4j.create(1, numParams);
-        Layer layer = conf.getLayer().instantiate(conf, null, 0, params, true);
+        Layer layer = conf.getLayer().instantiate(conf, null, 0, params, true, Nd4j.defaultFloatingPointType());
 
         assertEquals(1, layer.getParam("b").size(0));
     }

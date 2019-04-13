@@ -50,7 +50,7 @@ public class TestGradientNormalization extends BaseDL4JTest {
 
         long numParams = conf.getLayer().initializer().numParams(conf);
         INDArray params = Nd4j.create(1, numParams);
-        Layer layer = conf.getLayer().instantiate(conf, null, 0, params, true);
+        Layer layer = conf.getLayer().instantiate(conf, null, 0, params, true, params.dataType());
         INDArray gradArray = Nd4j.rand(1, 220).muli(10).subi(5);
         layer.setBackpropGradientsViewArray(gradArray);
         INDArray weightGrad = Shape.newShapeNoCopy(gradArray.get(NDArrayIndex.point(0), NDArrayIndex.interval(0, 200)),
@@ -96,7 +96,7 @@ public class TestGradientNormalization extends BaseDL4JTest {
 
         long numParams = conf.getLayer().initializer().numParams(conf);
         INDArray params = Nd4j.create(1, numParams);
-        Layer layer = conf.getLayer().instantiate(conf, null, 0, params, true);
+        Layer layer = conf.getLayer().instantiate(conf, null, 0, params, true, params.dataType());
         layer.setBackpropGradientsViewArray(Nd4j.create(params.shape()));
         Updater updater = UpdaterCreator.getUpdater(layer);
         INDArray weightGrad = Nd4j.rand(10, 20);
@@ -129,7 +129,7 @@ public class TestGradientNormalization extends BaseDL4JTest {
 
         long numParams = conf.getLayer().initializer().numParams(conf);
         INDArray params = Nd4j.create(1, numParams);
-        Layer layer = conf.getLayer().instantiate(conf, null, 0, params, true);
+        Layer layer = conf.getLayer().instantiate(conf, null, 0, params, true, params.dataType());
         INDArray gradArray = Nd4j.rand(1, 220).muli(10).subi(5);
         layer.setBackpropGradientsViewArray(gradArray);
         INDArray weightGrad = Shape.newShapeNoCopy(gradArray.get(NDArrayIndex.point(0), NDArrayIndex.interval(0, 200)),
@@ -185,7 +185,7 @@ public class TestGradientNormalization extends BaseDL4JTest {
 
             val numParams = conf.getLayer().initializer().numParams(conf);
             INDArray params = Nd4j.create(1, numParams);
-            Layer layer = conf.getLayer().instantiate(conf, null, 0, params, true);
+            Layer layer = conf.getLayer().instantiate(conf, null, 0, params, true, params.dataType());
             INDArray gradArray = Nd4j.rand(1, 220).muli(t == 0 ? 0.05 : 10).subi(t == 0 ? 0 : 5);
             layer.setBackpropGradientsViewArray(gradArray);
             INDArray weightGrad =
@@ -240,7 +240,7 @@ public class TestGradientNormalization extends BaseDL4JTest {
 
         val numParams = conf.getLayer().initializer().numParams(conf);
         INDArray params = Nd4j.create(1, numParams);
-        Layer layer = conf.getLayer().instantiate(conf, null, 0, params, true);
+        Layer layer = conf.getLayer().instantiate(conf, null, 0, params, true, params.dataType());
         layer.setBackpropGradientsViewArray(Nd4j.create(params.shape()));
         Updater updater = UpdaterCreator.getUpdater(layer);
         INDArray weightGrad = Nd4j.rand(10, 20).muli(0.05);

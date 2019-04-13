@@ -35,7 +35,6 @@ import org.deeplearning4j.nn.conf.*;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.FeedForwardLayer;
 import org.deeplearning4j.nn.conf.layers.recurrent.Bidirectional;
-import org.deeplearning4j.nn.conf.layers.wrapper.BaseWrapperLayer;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.graph.util.ComputationGraphUtil;
@@ -569,7 +568,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
             org.deeplearning4j.nn.conf.graph.GraphVertex n = configVertexMap.get(name);
 
             GraphVertex gv = n.instantiate(this, name, vertexNumber, paramsViewForVertex[vertexNumber],
-                    initializeParams);
+                    initializeParams, netDtype);
 
             if(gv == null){
                 throw new IllegalStateException("Encountered null layer/vertex during initialization for layer \"" + name +

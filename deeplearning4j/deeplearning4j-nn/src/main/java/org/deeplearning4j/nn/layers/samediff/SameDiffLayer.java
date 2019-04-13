@@ -27,6 +27,7 @@ import org.deeplearning4j.nn.layers.AbstractLayer;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.base.Preconditions;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.layers.ExternalErrorsFunction;
@@ -42,6 +43,7 @@ public class SameDiffLayer extends AbstractLayer<AbstractSameDiffLayer> {
     public static final String INPUT_KEY = "input";
     public static final String MASK_KEY = "mask";
 
+    protected DataType dataType;
     protected SameDiff sameDiff;
     protected SDVariable outputVar;
     protected ExternalErrorsFunction fn;
@@ -53,8 +55,9 @@ public class SameDiffLayer extends AbstractLayer<AbstractSameDiffLayer> {
     protected Map<String,INDArray> gradTable;
 
 
-    public SameDiffLayer(NeuralNetConfiguration conf){
+    public SameDiffLayer(NeuralNetConfiguration conf, DataType dataType){
         super(conf);
+        this.dataType = dataType;
     }
 
 
@@ -82,10 +85,8 @@ public class SameDiffLayer extends AbstractLayer<AbstractSameDiffLayer> {
         }
 
         try(MemoryWorkspace ws = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()) {
-//            sameDiff.clearExecutionCache();
             org.deeplearning4j.nn.conf.layers.samediff.SameDiffLayer bl = (org.deeplearning4j.nn.conf.layers.samediff.SameDiffLayer) layerConf();
             bl.validateInput(input);
-
             sameDiff.associateArrayWithVariable(input.dup(), sameDiff.getVariable(INPUT_KEY));
             if(maskArray != null){
                 sameDiff.associateArrayWithVariable(maskArray, sameDiff.getVariable(MASK_KEY));
@@ -227,8 +228,7 @@ public class SameDiffLayer extends AbstractLayer<AbstractSameDiffLayer> {
             Map<String, INDArray> p = paramTable();
 
             val inputShape = input.shape().clone();
-//        inputShape[0] = -1;                                       //TODO THIS DOESN'T ENABLE VARIABLE SIZE MINIBATCHES
-            SDVariable inputVar = sameDiff.var(INPUT_KEY, inputShape);
+            SDVariable inputVar = sameDiff.var(INPUT_KEY, dataType, inputShape);
             Map<String, long[]> paramShapes = layerConf().getLayerParams().getParamShapes();
             Map<String, SDVariable> params = new LinkedHashMap<>();
             for (String s : paramShapes.keySet()) {

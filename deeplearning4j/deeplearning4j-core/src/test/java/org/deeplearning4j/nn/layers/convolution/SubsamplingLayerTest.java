@@ -170,7 +170,7 @@ public class SubsamplingLayerTest extends BaseDL4JTest {
                         .gradientNormalization(GradientNormalization.RenormalizeL2PerLayer).seed(123)
                         .layer(new SubsamplingLayer.Builder(pooling, new int[] {2, 2}).build()).build();
 
-        return conf.getLayer().instantiate(conf, null, 0, null, true);
+        return conf.getLayer().instantiate(conf, null, 0, null, true, Nd4j.defaultFloatingPointType());
     }
 
     public INDArray getData() throws Exception {

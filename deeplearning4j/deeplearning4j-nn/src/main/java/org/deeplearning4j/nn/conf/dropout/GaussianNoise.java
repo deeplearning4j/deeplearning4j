@@ -66,7 +66,7 @@ public class GaussianNoise implements IDropout {
             currS = stddev;
         }
 
-        INDArray noise = Nd4j.createUninitialized(inputActivations.shape(), inputActivations.ordering());
+        INDArray noise = Nd4j.createUninitialized(output.dataType(), inputActivations.shape(), inputActivations.ordering());
         Nd4j.getExecutioner().exec(new GaussianDistribution(noise, 0, currS));
 
         Nd4j.getExecutioner().exec(new OldAddOp(inputActivations, noise, output));
