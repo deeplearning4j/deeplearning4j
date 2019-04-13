@@ -26,6 +26,7 @@ import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
 import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.deeplearning4j.nn.params.PReLUParamInitializer;
 import org.deeplearning4j.optimize.api.TrainingListener;
+import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
@@ -58,6 +59,7 @@ public class PReLULayer extends BaseLayer {
         this.inputShape = builder.inputShape;
         this.sharedAxes = builder.sharedAxes;
         initializeConstraints(builder);
+        Preconditions.checkNotNull(inputShape, "Input shape cannot be null");
     }
 
     @Override

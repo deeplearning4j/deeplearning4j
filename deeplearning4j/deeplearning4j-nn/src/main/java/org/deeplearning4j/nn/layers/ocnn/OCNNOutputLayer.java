@@ -183,7 +183,7 @@ public class OCNNOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.
         //dG -> sigmoid derivative
 
         INDArray firstVertDerivV =  layerConf().getActivationFn()
-                .backprop(xTimesV.dup(),Nd4j.ones(xTimesV.shape()))
+                .backprop(xTimesV.dup(),Nd4j.ones(input.dataType(), xTimesV.shape()))
                 .getFirst().muliRowVector(getParam(W_KEY).neg());
         firstVertDerivV = firstVertDerivV.muliColumnVector(delta)
                         .reshape('f',input.size(0),1,layerConf().getHiddenSize());
@@ -195,7 +195,7 @@ public class OCNNOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.
             shape[i] = Math.max(firstVertDerivV.size(i),secondTermDerivV.size(i));
         }
 
-        INDArray firstDerivVBroadcast = Nd4j.createUninitialized(shape);
+        INDArray firstDerivVBroadcast = Nd4j.createUninitialized(input.dataType(), shape);
 
         INDArray mulResult = firstVertDerivV.broadcast(firstDerivVBroadcast);
         int[] bcDims = {0,1};
@@ -257,7 +257,7 @@ public class OCNNOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.
         INDArray v = getParamWithNoise(V_KEY,training,workspaceMgr);
         applyDropOutIfNecessary(training, workspaceMgr);
 
-        INDArray first = Nd4j.createUninitialized(input.size(0), v.size(1));
+        INDArray first = Nd4j.createUninitialized(input.dataType(), input.size(0), v.size(1));
         input.mmuli(v, first);
         INDArray act2d = layerConf().getActivationFn().getActivation(first, training);
         INDArray output = workspaceMgr.createUninitialized(ArrayType.ACTIVATIONS, input.dataType(), input.size(0));
@@ -320,7 +320,7 @@ public class OCNNOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.
         @Override
         public INDArray computeGradient(INDArray labels, INDArray preOutput, IActivation activationFn, INDArray mask) {
             INDArray preAct = preOutput.rsub(getParam(R_KEY).getDouble(0));
-            INDArray target =   relu.backprop(preAct,Nd4j.ones(preAct.shape())).getFirst();
+            INDArray target =   relu.backprop(preAct,Nd4j.ones(preOutput.dataType(), preAct.shape())).getFirst();
             return target;
         }
 

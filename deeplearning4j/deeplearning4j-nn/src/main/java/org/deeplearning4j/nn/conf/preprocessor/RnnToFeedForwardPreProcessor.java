@@ -49,10 +49,6 @@ import java.util.Arrays;
 @Slf4j
 public class RnnToFeedForwardPreProcessor implements InputPreProcessor {
 
-    public RnnToFeedForwardPreProcessor(){
-        System.out.println();
-    }
-
     @Override
     public INDArray preProcess(INDArray input, int miniBatchSize, LayerWorkspaceMgr workspaceMgr) {
         //Need to reshape RNN activations (3d) activations to 2d (for input into feed forward layer)

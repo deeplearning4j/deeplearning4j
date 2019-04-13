@@ -170,12 +170,8 @@ public class LocallyConnected1D extends SameDiffLayer {
 
     @Override
     public SDVariable defineLayer(SameDiff sameDiff, SDVariable layerInput, Map<String, SDVariable> paramTable, SDVariable mask) {
-
         SDVariable w = paramTable.get(ConvolutionParamInitializer.WEIGHT_KEY); // (outH, featureDim, nOut)
-        // System.out.println(Arrays.toString(w.getShape()));
 
-        long[] inputShape = layerInput.getShape();
-        long miniBatch = inputShape[0];
         int outH = outputSize;
         int sH = stride;
         int kH = kernel;
@@ -186,7 +182,7 @@ public class LocallyConnected1D extends SameDiffLayer {
                             SDIndex.all(), // nIn
                             SDIndex.interval(i * sH, i * sH + kH) // kernel
             );
-            inputArray[i] = sameDiff.reshape(slice, 1, miniBatch, featureDim);
+            inputArray[i] = sameDiff.reshape(slice, 1, -1, featureDim);
         }
         SDVariable concatOutput = sameDiff.concat(0, inputArray); // (outH, miniBatch, featureDim)
 
