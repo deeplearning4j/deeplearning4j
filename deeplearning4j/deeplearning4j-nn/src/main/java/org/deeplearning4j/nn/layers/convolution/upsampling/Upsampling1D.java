@@ -22,6 +22,7 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.BaseUpsamplingLayer;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
+import org.deeplearning4j.nn.workspace.ArrayType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.CustomOp;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
@@ -74,7 +75,7 @@ public class Upsampling1D extends Upsampling2D {
         int inW = (int) input.size(3);
 
 
-        INDArray outEpsilon = Nd4j.create(miniBatch * inDepth * inH * inW);
+        INDArray outEpsilon = workspaceMgr.createUninitialized(ArrayType.ACTIVATION_GRAD, input.dataType(), miniBatch * inDepth * inH * inW);
         INDArray reshapedEpsilon = outEpsilon.reshape('c', miniBatch, inDepth, inH, inW);
 
         int[] intArgs = new int[] {1}; // 1 is for NCHW

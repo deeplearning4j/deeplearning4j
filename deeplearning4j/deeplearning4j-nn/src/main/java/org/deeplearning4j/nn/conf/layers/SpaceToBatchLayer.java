@@ -197,7 +197,7 @@ public class SpaceToBatchLayer extends NoParamLayer {
          * @param blocks Block size for SpaceToBatch layer. Should be a length 2 array for the height and width
          * dimensions
          */
-        public T blocks(int[] blocks) {
+        public T blocks(int... blocks) {
             this.setBlocks(blocks);
             return (T) this;
         }
@@ -219,6 +219,8 @@ public class SpaceToBatchLayer extends NoParamLayer {
         @Override
         @SuppressWarnings("unchecked")
         public SpaceToBatchLayer build() {
+            if(padding == null)
+                setPadding(new int[][] {{0, 0}, {0, 0}});
             return new SpaceToBatchLayer(this);
         }
     }

@@ -301,13 +301,13 @@ public class GlobalPoolingLayer extends AbstractLayer<org.deeplearning4j.nn.conf
                 for (int d : poolDim) {
                     n *= inputArray.size(d);
                 }
-                INDArray ret = Nd4j.create(inputArray.shape());
+                INDArray ret = inputArray.ulike();
                 Nd4j.getExecutioner().exec(new BroadcastCopyOp(ret, epsilon, ret, broadcastDims));
                 ret.divi(n);
 
                 return ret;
             case SUM:
-                INDArray retSum = Nd4j.create(inputArray.shape());
+                INDArray retSum = inputArray.ulike();
                 Nd4j.getExecutioner().exec(new BroadcastCopyOp(retSum, epsilon, retSum, broadcastDims));
                 return retSum;
             case PNORM:

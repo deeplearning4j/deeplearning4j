@@ -13,9 +13,13 @@ import org.deeplearning4j.nn.conf.dropout.SpatialDropout;
 import org.deeplearning4j.nn.conf.graph.GraphVertex;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
+import org.deeplearning4j.nn.conf.layers.convolutional.Cropping1D;
 import org.deeplearning4j.nn.conf.layers.convolutional.Cropping2D;
+import org.deeplearning4j.nn.conf.layers.convolutional.Cropping3D;
+import org.deeplearning4j.nn.conf.layers.misc.FrozenLayerWithBackprop;
 import org.deeplearning4j.nn.conf.layers.objdetect.Yolo2OutputLayer;
 import org.deeplearning4j.nn.conf.layers.recurrent.Bidirectional;
+import org.deeplearning4j.nn.conf.layers.recurrent.LastTimeStep;
 import org.deeplearning4j.nn.conf.layers.recurrent.SimpleRnn;
 import org.deeplearning4j.nn.conf.layers.util.MaskLayer;
 import org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder;
@@ -37,6 +41,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.config.Adam;
+import org.nd4j.linalg.learning.config.Nesterovs;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import java.io.IOException;
@@ -56,13 +61,13 @@ public class DTypeTests extends BaseDL4JTest {
     protected static Set<Class<?>> seenVertices = new HashSet<>();
 
     @AfterClass
-    public static void after(){
+    public static void after() {
         ImmutableSet<ClassPath.ClassInfo> info;
         try {
             //Dependency note: this ClassPath class was added in Guava 14
             info = com.google.common.reflect.ClassPath.from(DTypeTests.class.getClassLoader())
                     .getTopLevelClassesRecursive("org.deeplearning4j");
-        } catch (IOException e){
+        } catch (IOException e) {
             //Should never happen
             throw new RuntimeException(e);
         }
@@ -70,86 +75,86 @@ public class DTypeTests extends BaseDL4JTest {
         Set<Class<?>> layerClasses = new HashSet<>();
         Set<Class<?>> preprocClasses = new HashSet<>();
         Set<Class<?>> vertexClasses = new HashSet<>();
-        for(ClassPath.ClassInfo ci : info){
+        for (ClassPath.ClassInfo ci : info) {
             Class<?> clazz;
-            try{
+            try {
                 clazz = Class.forName(ci.getName());
-            } catch (ClassNotFoundException e){
+            } catch (ClassNotFoundException e) {
                 //Should never happen as  this was found on the classpath
                 throw new RuntimeException(e);
             }
 
-            if(Modifier.isAbstract(clazz.getModifiers()) || clazz.isInterface()){
+            if (Modifier.isAbstract(clazz.getModifiers()) || clazz.isInterface()) {
                 continue;
             }
 
-            if(Layer.class.isAssignableFrom(clazz)){
-                if(!clazz.getName().endsWith("CustomLayer") && !clazz.getName().contains("samediff.testlayers"))
+            if (Layer.class.isAssignableFrom(clazz)) {
+                if (!clazz.getName().endsWith("CustomLayer") && !clazz.getName().contains("samediff.testlayers"))
                     layerClasses.add(clazz);
-            } else if(InputPreProcessor.class.isAssignableFrom(clazz)){
+            } else if (InputPreProcessor.class.isAssignableFrom(clazz)) {
                 preprocClasses.add(clazz);
-            } else if(GraphVertex.class.isAssignableFrom(clazz)){
+            } else if (GraphVertex.class.isAssignableFrom(clazz)) {
                 vertexClasses.add(clazz);
             }
         }
 
         boolean fail = false;
-        if(seenLayers.size() < layerClasses.size()){
-            for(Class<?> c : layerClasses){
-                if(!seenLayers.contains(c)){
+        if (seenLayers.size() < layerClasses.size()) {
+            for (Class<?> c : layerClasses) {
+                if (!seenLayers.contains(c)) {
                     log.warn("Layer class not tested for global vs. network datatypes: {}", c);
                 }
             }
             fail = true;
         }
-        if(seenPreprocs.size() < preprocClasses.size()){
-            for(Class<?> c : preprocClasses){
-                if(!seenPreprocs.contains(c)){
+        if (seenPreprocs.size() < preprocClasses.size()) {
+            for (Class<?> c : preprocClasses) {
+                if (!seenPreprocs.contains(c)) {
                     log.warn("Preprocessor class not tested for global vs. network datatypes: {}", c);
                 }
             }
             fail = true;
         }
-        if(seenVertices.size() < vertexClasses.size()){
-            for(Class<?> c : vertexClasses){
-                if(!seenVertices.contains(c)){
+        if (seenVertices.size() < vertexClasses.size()) {
+            for (Class<?> c : vertexClasses) {
+                if (!seenVertices.contains(c)) {
                     log.warn("GraphVertex class not tested for global vs. network datatypes: {}", c);
                 }
             }
             fail = true;
         }
 
-        if(fail) {
+        if (fail) {
             fail("Tested " + seenLayers.size() + " of " + layerClasses.size() + " layers, " + seenPreprocs.size() + " of " + preprocClasses.size() +
                     " preprocessors, " + seenVertices.size() + " of " + vertexClasses.size() + " vertices");
         }
     }
 
-    public static void logUsedClasses(MultiLayerNetwork net){
+    public static void logUsedClasses(MultiLayerNetwork net) {
         MultiLayerConfiguration conf = net.getLayerWiseConfigurations();
-        for(NeuralNetConfiguration nnc : conf.getConfs()){
+        for (NeuralNetConfiguration nnc : conf.getConfs()) {
             Layer l = nnc.getLayer();
             seenLayers.add(l.getClass());
-            if(l instanceof BaseWrapperLayer){
+            if (l instanceof BaseWrapperLayer) {
                 BaseWrapperLayer bwl = (BaseWrapperLayer) l;
                 seenLayers.add(bwl.getUnderlying().getClass());
-            } else if(l instanceof Bidirectional){
+            } else if (l instanceof Bidirectional) {
                 seenLayers.add(((Bidirectional) l).getFwd().getClass());
             }
         }
 
-        Map<Integer,InputPreProcessor> preprocs = conf.getInputPreProcessors();
-        if(preprocs != null){
-            for(InputPreProcessor ipp : preprocs.values()){
+        Map<Integer, InputPreProcessor> preprocs = conf.getInputPreProcessors();
+        if (preprocs != null) {
+            for (InputPreProcessor ipp : preprocs.values()) {
                 seenPreprocs.add(ipp.getClass());
             }
         }
     }
 
     @Test
-    public void testMultiLayerNetworkTypeConversion(){
+    public void testMultiLayerNetworkTypeConversion() {
 
-        for(DataType dt : new DataType[]{DataType.DOUBLE, DataType.FLOAT, DataType.HALF}) {
+        for (DataType dt : new DataType[]{DataType.DOUBLE, DataType.FLOAT, DataType.HALF}) {
             Nd4j.setDefaultDataTypes(dt, dt);
 
             MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
@@ -180,7 +185,6 @@ public class DTypeTests extends BaseDL4JTest {
             assertEquals(DataType.DOUBLE, net.params().dataType());
             assertEquals(DataType.DOUBLE, grads.dataType());
             assertEquals(DataType.DOUBLE, u.dataType());
-
 
 
             MultiLayerNetwork netFloat = net.convertDataType(DataType.FLOAT);
@@ -231,9 +235,9 @@ public class DTypeTests extends BaseDL4JTest {
     }
 
     @Test
-    public void testComputationGraphTypeConversion(){
+    public void testComputationGraphTypeConversion() {
 
-        for(DataType dt : new DataType[]{DataType.DOUBLE, DataType.FLOAT, DataType.HALF}) {
+        for (DataType dt : new DataType[]{DataType.DOUBLE, DataType.FLOAT, DataType.HALF}) {
             Nd4j.setDefaultDataTypes(dt, dt);
 
             ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
@@ -266,7 +270,6 @@ public class DTypeTests extends BaseDL4JTest {
             assertEquals(DataType.DOUBLE, net.params().dataType());
             assertEquals(DataType.DOUBLE, grads.dataType());
             assertEquals(DataType.DOUBLE, u.dataType());
-
 
 
             ComputationGraph netFloat = net.convertDataType(DataType.FLOAT);
@@ -318,11 +321,11 @@ public class DTypeTests extends BaseDL4JTest {
 
 
     @Test
-    public void testDtypesModelVsGlobalDtypeCnn(){
-        for(DataType globalDtype : new DataType[]{DataType.DOUBLE, DataType.FLOAT, DataType.HALF}){
+    public void testDtypesModelVsGlobalDtypeCnn() {
+        for (DataType globalDtype : new DataType[]{DataType.DOUBLE, DataType.FLOAT, DataType.HALF}) {
             Nd4j.setDefaultDataTypes(globalDtype, globalDtype);
-            for(DataType networkDtype : new DataType[]{DataType.DOUBLE, DataType.FLOAT, DataType.HALF}){
-                for( int outputLayer=0; outputLayer<5; outputLayer++ ) {
+            for (DataType networkDtype : new DataType[]{DataType.DOUBLE, DataType.FLOAT, DataType.HALF}) {
+                for (int outputLayer = 0; outputLayer < 5; outputLayer++) {
                     assertEquals(globalDtype, Nd4j.dataType());
                     assertEquals(globalDtype, Nd4j.defaultFloatingPointType());
 
@@ -330,14 +333,14 @@ public class DTypeTests extends BaseDL4JTest {
 
                     Layer ol;
                     Layer secondLast;
-                    switch (outputLayer){
+                    switch (outputLayer) {
                         case 0:
                             ol = new OutputLayer.Builder().nOut(10).activation(Activation.SOFTMAX).lossFunction(LossFunctions.LossFunction.MCXENT).build();
                             secondLast = new GlobalPoolingLayer(PoolingType.MAX);
                             break;
                         case 1:
                             ol = new LossLayer.Builder().activation(Activation.SOFTMAX).lossFunction(LossFunctions.LossFunction.MCXENT).build();
-                            secondLast = new DenseLayer.Builder().nOut(10).activation(Activation.SIGMOID).build();
+                            secondLast = new FrozenLayerWithBackprop(new DenseLayer.Builder().nOut(10).activation(Activation.SIGMOID).build());
                             break;
                         case 2:
                             ol = new CenterLossOutputLayer.Builder().nOut(10).activation(Activation.SOFTMAX).lossFunction(LossFunctions.LossFunction.MCXENT).build();
@@ -356,8 +359,6 @@ public class DTypeTests extends BaseDL4JTest {
                     }
 
 
-
-
                     MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                             .dataType(networkDtype)
                             .convolutionMode(ConvolutionMode.Same)
@@ -374,8 +375,8 @@ public class DTypeTests extends BaseDL4JTest {
                             .layer(new Pooling2D.Builder().poolingType(SubsamplingLayer.PoolingType.AVG).kernelSize(2, 2).stride(1, 1).build())
                             .layer(new Deconvolution2D.Builder().kernelSize(2, 2).stride(2, 2).nOut(3).activation(Activation.TANH).build())
 //                            .layer(new LocallyConnected2D.Builder().nOut(3).kernelSize(2,2).stride(1,1).activation(Activation.SIGMOID).build())   //EXCEPTION
-                            .layer(new ZeroPaddingLayer(1,1))
-                            .layer(new Cropping2D(1,1))
+                            .layer(new ZeroPaddingLayer(1, 1))
+                            .layer(new Cropping2D(1, 1))
                             .layer(new IdentityLayer())
                             .layer(new DepthwiseConvolution2D.Builder().nOut(3).activation(Activation.RELU).build())
                             .layer(new SeparableConvolution2D.Builder().nOut(3).activation(Activation.HARDTANH).build())
@@ -397,12 +398,12 @@ public class DTypeTests extends BaseDL4JTest {
 
                     INDArray in = Nd4j.rand(networkDtype, 2, 1, 28, 28);
                     INDArray label;
-                    if(outputLayer < 3){
+                    if (outputLayer < 3) {
                         label = TestUtils.randomOneHot(2, 10).castTo(networkDtype);
-                    } else if(outputLayer == 3){
+                    } else if (outputLayer == 3) {
                         //CNN loss
                         label = Nd4j.rand(networkDtype, 2, 3, 28, 28);
-                    } else if(outputLayer == 4){
+                    } else if (outputLayer == 4) {
                         //YOLO
                         label = Nd4j.ones(networkDtype, 2, 6, 28, 28);
                     } else {
@@ -413,7 +414,7 @@ public class DTypeTests extends BaseDL4JTest {
                     assertEquals(msg, networkDtype, out.dataType());
                     List<INDArray> ff = net.feedForward(in);
                     for (int i = 0; i < ff.size(); i++) {
-                        String s = msg + " - layer " + (i-1) + " - " + (i == 0 ? "input" : net.getLayer(i-1).conf().getLayer().getClass().getSimpleName());
+                        String s = msg + " - layer " + (i - 1) + " - " + (i == 0 ? "input" : net.getLayer(i - 1).conf().getLayer().getClass().getSimpleName());
                         assertEquals(s, networkDtype, ff.get(i).dataType());
                     }
 
@@ -430,20 +431,245 @@ public class DTypeTests extends BaseDL4JTest {
     }
 
     @Test
-    public void testDtypesModelVsGlobalDtypeRnn(){
-        for(DataType globalDtype : new DataType[]{DataType.DOUBLE, DataType.FLOAT, DataType.HALF}){
-            for(DataType networkDtype : new DataType[]{DataType.DOUBLE, DataType.FLOAT, DataType.HALF}){
-                for( int outputLayer=0; outputLayer<2; outputLayer++ ) {
+    public void testDtypesModelVsGlobalDtypeCnn3d() {
+        for (DataType globalDtype : new DataType[]{DataType.DOUBLE, DataType.FLOAT, DataType.HALF}) {
+            Nd4j.setDefaultDataTypes(globalDtype, globalDtype);
+            for (DataType networkDtype : new DataType[]{DataType.DOUBLE, DataType.FLOAT, DataType.HALF}) {
+                for (int outputLayer = 0; outputLayer < 2; outputLayer++) {
+                    assertEquals(globalDtype, Nd4j.dataType());
+                    assertEquals(globalDtype, Nd4j.defaultFloatingPointType());
 
                     String msg = "Global dtype: " + globalDtype + ", network dtype: " + networkDtype + ", outputLayer=" + outputLayer;
 
                     Layer ol;
-                    switch (outputLayer){
+                    Layer secondLast;
+                    switch (outputLayer) {
+                        case 0:
+                            ol = new OutputLayer.Builder().nOut(10).activation(Activation.SOFTMAX).lossFunction(LossFunctions.LossFunction.MCXENT).build();
+                            secondLast = new GlobalPoolingLayer(PoolingType.AVG);
+                            break;
+                        case 1:
+                            ol = new Cnn3DLossLayer.Builder(Convolution3D.DataFormat.NCDHW).activation(Activation.SOFTMAX).lossFunction(LossFunctions.LossFunction.MCXENT).build();
+                            secondLast = new Convolution3D.Builder().nOut(3).activation(Activation.ELU).build();
+                            break;
+                        default:
+                            throw new RuntimeException();
+                    }
+
+
+                    MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                            .dataType(networkDtype)
+                            .convolutionMode(ConvolutionMode.Same)
+                            .updater(new Nesterovs(1e-2, 0.9))
+                            .list()
+                            .layer(new Convolution3D.Builder().kernelSize(2, 2, 2).stride(1, 1, 1).nOut(3).activation(Activation.TANH).build())
+                            .layer(new Convolution3D.Builder().kernelSize(2, 2, 2).stride(1, 1, 1).nOut(3).activation(Activation.TANH).build())
+                            .layer(new Subsampling3DLayer.Builder().poolingType(PoolingType.AVG).kernelSize(2, 2, 2).stride(2, 2, 2).build())
+                            .layer(new Cropping3D.Builder(1, 1, 1, 1, 1, 1).build())
+                            .layer(new ZeroPadding3DLayer.Builder(1, 1, 1, 1, 1, 1).build())
+                            .layer(new ActivationLayer(Activation.LEAKYRELU))
+                            .layer(new Upsampling3D.Builder().size(2).build())
+                            .layer(secondLast)
+                            .layer(ol)
+                            .setInputType(InputType.convolutional3D(Convolution3D.DataFormat.NCDHW, 28, 28, 28, 1))
+                            .build();
+
+                    MultiLayerNetwork net = new MultiLayerNetwork(conf);
+                    net.init();
+
+                    net.initGradientsView();
+                    assertEquals(msg, networkDtype, net.params().dataType());
+                    assertEquals(msg, networkDtype, net.getFlattenedGradients().dataType());
+                    assertEquals(msg, networkDtype, net.getUpdater(true).getStateViewArray().dataType());
+
+                    INDArray in = Nd4j.rand(networkDtype, 2, 1, 28, 28, 28);
+                    INDArray label;
+                    if (outputLayer == 0) {
+                        label = TestUtils.randomOneHot(2, 10).castTo(networkDtype);
+                    } else {
+                        //CNN3D loss
+                        label = Nd4j.rand(networkDtype, 2, 3, 28, 28, 28);
+                    }
+
+                    INDArray out = net.output(in);
+                    assertEquals(msg, networkDtype, out.dataType());
+                    List<INDArray> ff = net.feedForward(in);
+                    for (int i = 0; i < ff.size(); i++) {
+                        String s = msg + " - layer " + (i - 1) + " - " + (i == 0 ? "input" : net.getLayer(i - 1).conf().getLayer().getClass().getSimpleName());
+                        assertEquals(s, networkDtype, ff.get(i).dataType());
+                    }
+
+                    net.setInput(in);
+                    net.setLabels(label);
+                    net.computeGradientAndScore();
+
+                    net.fit(new DataSet(in, label));
+
+                    logUsedClasses(net);
+                }
+            }
+        }
+    }
+
+    @Test
+    public void testDtypesModelVsGlobalDtypeCnn1d() {
+        for (DataType globalDtype : new DataType[]{DataType.DOUBLE, DataType.FLOAT, DataType.HALF}) {
+            Nd4j.setDefaultDataTypes(globalDtype, globalDtype);
+            for (DataType networkDtype : new DataType[]{DataType.DOUBLE, DataType.FLOAT, DataType.HALF}) {
+                for (int outputLayer = 0; outputLayer < 3; outputLayer++) {
+                    assertEquals(globalDtype, Nd4j.dataType());
+                    assertEquals(globalDtype, Nd4j.defaultFloatingPointType());
+
+                    String msg = "Global dtype: " + globalDtype + ", network dtype: " + networkDtype + ", outputLayer=" + outputLayer;
+
+                    Layer ol;
+                    Layer secondLast;
+                    switch (outputLayer) {
+                        case 0:
+                            ol = new OutputLayer.Builder().nOut(10).activation(Activation.SOFTMAX).lossFunction(LossFunctions.LossFunction.MCXENT).build();
+                            secondLast = new GlobalPoolingLayer(PoolingType.MAX);
+                            break;
+                        case 1:
+                            ol = new RnnOutputLayer.Builder().activation(Activation.SOFTMAX).lossFunction(LossFunctions.LossFunction.MCXENT).nOut(5).build();
+                            secondLast = new Convolution1D.Builder().kernelSize(2).nOut(5).build();
+                            break;
+                        case 2:
+                            ol = new RnnLossLayer.Builder().activation(Activation.SOFTMAX).lossFunction(LossFunctions.LossFunction.MCXENT).build();
+                            secondLast = new Convolution1D.Builder().kernelSize(2).nOut(5).build();
+                            break;
+                        default:
+                            throw new RuntimeException();
+                    }
+
+
+                    MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                            .dataType(networkDtype)
+                            .convolutionMode(ConvolutionMode.Same)
+                            .updater(new Adam(1e-2))
+                            .list()
+                            .layer(new Convolution1D.Builder().kernelSize(2).stride(1).nOut(3).activation(Activation.TANH).build())
+                            .layer(new Subsampling1DLayer.Builder().kernelSize(5).stride(1).build())
+                            .layer(new Cropping1D.Builder(1).build())
+                            .layer(new ZeroPadding1DLayer(1))
+//                            .layer(new LocallyConnected1D.Builder().kernelSize(2).stride(1).nOut(3).build())
+                            .layer(new Upsampling1D.Builder(2).build())
+                            .layer(secondLast)
+                            .layer(ol)
+                            .setInputType(InputType.recurrent(5, 10))
+                            .build();
+
+                    MultiLayerNetwork net = new MultiLayerNetwork(conf);
+                    net.init();
+
+                    net.initGradientsView();
+                    assertEquals(msg, networkDtype, net.params().dataType());
+                    assertEquals(msg, networkDtype, net.getFlattenedGradients().dataType());
+                    assertEquals(msg, networkDtype, net.getUpdater(true).getStateViewArray().dataType());
+
+                    INDArray in = Nd4j.rand(networkDtype, 2, 5, 10);
+                    INDArray label;
+                    if (outputLayer == 0) {
+                        //OutputLayer
+                        label = TestUtils.randomOneHot(2, 10).castTo(networkDtype);
+                    } else {
+                        //RnnOutputLayer, RnnLossLayer
+                        label = Nd4j.rand(networkDtype, 2, 5, 20);   //Longer sequence due to upsampling
+                    }
+
+//                    INDArray out = net.output(in);
+//                    assertEquals(msg, networkDtype, out.dataType());
+//                    List<INDArray> ff = net.feedForward(in);
+//                    for (int i = 0; i < ff.size(); i++) {
+//                        String s = msg + " - layer " + (i - 1) + " - " + (i == 0 ? "input" : net.getLayer(i - 1).conf().getLayer().getClass().getSimpleName());
+//                        assertEquals(s, networkDtype, ff.get(i).dataType());
+//                    }
+
+                    net.setInput(in);
+                    net.setLabels(label);
+                    net.computeGradientAndScore();
+
+                    net.fit(new DataSet(in, label));
+
+                    logUsedClasses(net);
+                }
+            }
+        }
+    }
+
+    @Test
+    public void testDtypesModelVsGlobalDtypeMisc() {
+        for (DataType globalDtype : new DataType[]{DataType.DOUBLE, DataType.FLOAT, DataType.HALF}) {
+            Nd4j.setDefaultDataTypes(globalDtype, globalDtype);
+            for (DataType networkDtype : new DataType[]{DataType.DOUBLE, DataType.FLOAT, DataType.HALF}) {
+                assertEquals(globalDtype, Nd4j.dataType());
+                assertEquals(globalDtype, Nd4j.defaultFloatingPointType());
+
+                String msg = "Global dtype: " + globalDtype + ", network dtype: " + networkDtype;
+
+
+                MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                        .dataType(networkDtype)
+                        .convolutionMode(ConvolutionMode.Same)
+                        .updater(new Adam(1e-2))
+                        .list()
+                        .layer(new SpaceToBatchLayer.Builder().blocks(1, 1).build())
+                        .layer(new SpaceToDepthLayer.Builder().blocks(2).build())
+                        .layer(new OutputLayer.Builder().nOut(10).activation(Activation.SOFTMAX).lossFunction(LossFunctions.LossFunction.MCXENT).build())
+                        .setInputType(InputType.convolutional(28, 28, 5))
+                        .build();
+
+                MultiLayerNetwork net = new MultiLayerNetwork(conf);
+                net.init();
+
+                net.initGradientsView();
+                assertEquals(msg, networkDtype, net.params().dataType());
+                assertEquals(msg, networkDtype, net.getFlattenedGradients().dataType());
+                assertEquals(msg, networkDtype, net.getUpdater(true).getStateViewArray().dataType());
+
+                INDArray in = Nd4j.rand(networkDtype, 2, 5, 28, 28);
+                INDArray label = TestUtils.randomOneHot(2, 10).castTo(networkDtype);
+
+                INDArray out = net.output(in);
+                assertEquals(msg, networkDtype, out.dataType());
+                List<INDArray> ff = net.feedForward(in);
+                for (int i = 0; i < ff.size(); i++) {
+                    String s = msg + " - layer " + (i - 1) + " - " + (i == 0 ? "input" : net.getLayer(i - 1).conf().getLayer().getClass().getSimpleName());
+                    assertEquals(s, networkDtype, ff.get(i).dataType());
+                }
+
+                net.setInput(in);
+                net.setLabels(label);
+                net.computeGradientAndScore();
+
+                net.fit(new DataSet(in, label));
+
+                logUsedClasses(net);
+            }
+        }
+    }
+
+    @Test
+    public void testDtypesModelVsGlobalDtypeRnn() {
+        for (DataType globalDtype : new DataType[]{DataType.DOUBLE, DataType.FLOAT, DataType.HALF}) {
+            for (DataType networkDtype : new DataType[]{DataType.DOUBLE, DataType.FLOAT, DataType.HALF}) {
+                for (int outputLayer = 0; outputLayer < 3; outputLayer++) {
+
+                    String msg = "Global dtype: " + globalDtype + ", network dtype: " + networkDtype + ", outputLayer=" + outputLayer;
+
+                    Layer ol;
+                    Layer secondLast;
+                    switch (outputLayer) {
                         case 0:
                             ol = new RnnOutputLayer.Builder().nOut(5).activation(Activation.SOFTMAX).lossFunction(LossFunctions.LossFunction.MCXENT).build();
+                            secondLast = new LSTM.Builder().nOut(5).activation(Activation.TANH).build();
                             break;
                         case 1:
                             ol = new RnnLossLayer.Builder().activation(Activation.SOFTMAX).lossFunction(LossFunctions.LossFunction.MCXENT).build();
+                            secondLast = new LSTM.Builder().nOut(5).activation(Activation.TANH).build();
+                            break;
+                        case 2:
+                            ol = new OutputLayer.Builder().nOut(5).build();
+                            secondLast = new LastTimeStep(new LSTM.Builder().nOut(5).activation(Activation.TANH).build());
                             break;
                         default:
                             throw new RuntimeException();
@@ -459,6 +685,7 @@ public class DTypeTests extends BaseDL4JTest {
                             .layer(new GravesBidirectionalLSTM.Builder().nIn(5).nOut(5).activation(Activation.TANH).build())
                             .layer(new Bidirectional(new LSTM.Builder().nIn(5).nOut(5).activation(Activation.TANH).build()))
                             .layer(new SimpleRnn.Builder().nIn(10).nOut(5).build())
+                            .layer(secondLast)
                             .layer(ol)
                             .build();
 
@@ -473,7 +700,13 @@ public class DTypeTests extends BaseDL4JTest {
                     assertEquals(msg, networkDtype, net.getUpdater(true).getStateViewArray().dataType());
 
                     INDArray in = Nd4j.rand(networkDtype, 2, 5, 4);
-                    INDArray label = TestUtils.randomOneHotTimeSeries(2, 5, 4).castTo(networkDtype);
+                    INDArray label;
+                    if (outputLayer == 2) {
+                        label = TestUtils.randomOneHot(2, 5).castTo(networkDtype);
+                    } else {
+                        label = TestUtils.randomOneHotTimeSeries(2, 5, 4).castTo(networkDtype);
+                    }
+
 
                     INDArray out = net.output(in);
                     assertEquals(msg, networkDtype, out.dataType());
