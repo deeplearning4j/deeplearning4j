@@ -95,7 +95,6 @@ namespace nd4j {
             // TadPack t(shapesBuffer, offsetsBuffer, tad.numTads);
 
 
-
             _cache[deviceId][descriptor] = t;
 
             TadPack &r = _cache[deviceId][descriptor];

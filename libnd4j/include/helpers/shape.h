@@ -1100,11 +1100,6 @@ namespace shape {
     */ 
     ND4J_EXPORT _CUDA_HD void calcSubArrShapeAndOffsets(const Nd4jLong* wholeShapeInfo, const Nd4jLong numOfSubArrs, const int dimsSize, const int* dimsToExclude, Nd4jLong* subArrShapeInfo, Nd4jLong* subArrOffsets, bool keepUnitiesInShape = false);
 
-    /*
-    *   for example if shapeInfo = {1,2,3,1,1,1} return 4 if shapeInfo = {2,3} return 0
-    */
-    ND4J_EXPORT _CUDA_HD int numOfUnitiesInShape(const Nd4jLong* shapeInfo);
-
 
 
 
@@ -2761,16 +2756,23 @@ template <typename T>
  * Compute the length of the given shape
  */
     INLINEDEF _CUDA_HD Nd4jLong length(const Nd4jLong *shapeInfo) {
-        int rank = shape::rank(shapeInfo);
+
+		const int rank = shape::rank(shapeInfo);
+
         if (rank == 0) {
             if (isEmpty(shapeInfo))
                 return 0L;
-            else
-                return 1L;
+            return 1L;
         }
+
         if (rank == 1)
             return shapeInfo[1];
 
+        // if(shape::elementWiseStride(shapeInfo) == 1) { // contiguous
+        //     if(shape::order(shapeInfo) == 'c')
+        //         return shapeInfo[1] * shapeInfo[rank + 1];      // first dim * first stride   
+        //     return shapeInfo[rank] * shapeInfo[2 * rank];       // last  dim * last  stride
+        // }
 
         return shape::prodLong(shape::shapeOf(const_cast<Nd4jLong*>(shapeInfo)), rank);
     }
@@ -4665,54 +4667,55 @@ INLINEDEF _CUDA_HD void maxIndToMinInd(Nd4jLong* maxIdxs, Nd4jLong* minIdxs, con
 //////////////////////////////////////////////////////////////////////
 INLINEDEF void calcSubArrOffsets(const Nd4jLong numOfSubArrs, const int rank, const Nd4jLong* shape, const Nd4jLong* strides, Nd4jLong* subArrOffsets) {
 
-    // set offset for first sub-array, it is equal to zero always        
+    // if(false) {                     // tests showed that this code did calculation notably slower even for big numOfSubArrs
+    //     Nd4jLong indexes[MAX_RANK];
+    //     PRAGMA_OMP_PARALLEL_FOR_ARGS(private(indexes))
+    //     for (Nd4jLong i = 0; i < numOfSubArrs; ++i) {
+    //         shape::ind2subC(rank, shape, i, indexes);
+    //         subArrOffsets[i] = 0;
+    //         for (int j = 0; j < rank; ++j)
+    //             if(shape[j] != 1)
+    //                 subArrOffsets[i] += indexes[j] * strides[j];
+    //     }
+    //     return
+    // }
+
+    // set offset for first sub-array, it is equal to zero always
     subArrOffsets[0] = 0; 
 
-    // choose whether to parallelize or not    
-    if(true) {
-        Nd4jLong indexes[MAX_RANK];
-        PRAGMA_OMP_PARALLEL_FOR_ARGS(if(numOfSubArrs >= 32) private(indexes))
-        for (Nd4jLong i = 1; i < numOfSubArrs; ++i) {
-                    
-            shape::ind2subC(rank, shape, i, indexes);
-            subArrOffsets[i] = 0;
-            for (int j = 0; j < rank; ++j)
-                if(shape[j] != 1)                   
-                    subArrOffsets[i] += indexes[j] * strides[j];
-        }                    
-    }
-    else {
+    Nd4jLong rankMinusOne = rank - 1, i = 1, j = rankMinusOne, start = 0;
 
-        Nd4jLong rankMinusOne = rank - 1;
-        Nd4jLong i = 1, j = rankMinusOne;
-        Nd4jLong* idx        = new Nd4jLong[rank];
-        Nd4jLong* currOffset = new Nd4jLong[rank];
-        memset(idx,        0, sizeof(Nd4jLong) * rank);
-        memset(currOffset, 0, sizeof(Nd4jLong) * rank);
+    Nd4jLong* idx          = new Nd4jLong[rankMinusOne];
+    Nd4jLong* offsetPerDim = new Nd4jLong[rankMinusOne];
+    memset(idx,        0, sizeof(Nd4jLong) * rankMinusOne);
 
-        // nested loops - calculation of sub-array offsets (subArrOffsets)
-        while(j >= 0) {
+    PRAGMA_OMP_SIMD
+    for (int i = 0; i < rankMinusOne; ++i)
+        offsetPerDim[i] = (shape[i] - 1) * strides[i];
 
-            if(shape[j] == 1) { --j; continue; } // ignore dimensions equal to unity
-            
-            if(j == rankMinusOne) {         // last dimension
-                for(idx[j] = 1; idx[j] < shape[j]; ++idx[j]) 
-                subArrOffsets[i++] = subArrOffsets[i-1] + strides[j];
-                --j;
-            }
-            else if(idx[j] < shape[j] - 1) {
-                currOffset[j] += strides[j];
-                subArrOffsets[i++] = j ? currOffset[j] + currOffset[j-1] : currOffset[j];                
-                ++idx[j];
-                j = rankMinusOne;
-            }
-            else
-                currOffset[j--] = idx[j] = 0;
+    // nested loops - calculation of sub-array offsets (subArrOffsets)
+    while(j >= 0) {
+
+        if(shape[j] == 1) { --j; continue; } // ignore dimensions equal to unity
+
+        if(j == rankMinusOne) {              // last dimension
+            for(int l = 1; l < shape[j]; ++l)
+                subArrOffsets[i++] = subArrOffsets[i - 1] + strides[j];
+            --j;
         }
+        else if(idx[j] < shape[j] - 1) {
+            subArrOffsets[i++] = (start += strides[j]);
+            ++idx[j];
+            j = rankMinusOne;
+        }
+        else {
+            start -= offsetPerDim[j];
+			idx[j--] = 0;
+        }
+	}
 
-        delete []idx;
-        delete []currOffset;
-    }
+    delete []idx;
+    delete []offsetPerDim;
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -4847,7 +4850,7 @@ INLINEDEF _CUDA_HD void calcSubArrShapeAndOffsets(const Nd4jLong* wholeShapeInfo
     const int rank = shape::rank(wholeShapeInfo);
 
     if(dimsSize == rank || dimsSize == 0) {    // means there is one sub-array and it coincides with whole array, return copy of wholeShapeInfo and one zero offset in this case
-        memcpy(subArrShapeInfo, wholeShapeInfo, shape::shapeInfoLength(rank) * sizeof(Nd4jLong));        
+        memcpy(subArrShapeInfo, wholeShapeInfo, shape::shapeInfoLength(rank) * sizeof(Nd4jLong));
         *subArrOffsets = 0;
         return;
     }
@@ -4859,7 +4862,7 @@ INLINEDEF _CUDA_HD void calcSubArrShapeAndOffsets(const Nd4jLong* wholeShapeInfo
     Nd4jLong* strides = new Nd4jLong[dimsSize];
 
     const int subArrRank = keepUnitiesInShape ? rank : rank - dimsSize;
-    Nd4jLong* shapeNoUnities= nullptr;
+    Nd4jLong* shapeNoUnities = nullptr;
     if(!keepUnitiesInShape)
         shapeNoUnities = new Nd4jLong[subArrRank];
 
@@ -4882,11 +4885,11 @@ INLINEDEF _CUDA_HD void calcSubArrShapeAndOffsets(const Nd4jLong* wholeShapeInfo
     shape::setEws(outShapeInfo, subArrLen);
 
     // calculation of sub-array offsets (subArrOffsets)
-    shape::calcSubArrOffsets(numOfSubArrs, dimsSize, shape, strides, subArrOffsets);
+    calcSubArrOffsets(numOfSubArrs, dimsSize, shape, strides, subArrOffsets);
 
     // remove unities from outShapeInfo if required
-    if(!keepUnitiesInShape) {       
-        shape::reshapeC(rank, outShapeInfo, subArrRank, shapeNoUnities, subArrShapeInfo);                
+    if(!keepUnitiesInShape) {
+        shape::reshapeC(rank, outShapeInfo, subArrRank, shapeNoUnities, subArrShapeInfo);
         delete []shapeNoUnities;
     }
     else
@@ -4894,19 +4897,9 @@ INLINEDEF _CUDA_HD void calcSubArrShapeAndOffsets(const Nd4jLong* wholeShapeInfo
 
     delete []strides;
     delete []shape;
-    delete []outShapeInfo;    
+    delete []outShapeInfo;
 }
 
-//////////////////////////////////////////////////////////////////////
-INLINEDEF _CUDA_HD int numOfUnitiesInShape(const Nd4jLong* shapeInfo) {
-
-    int numOfUnities = 0;
-    for (int i = 1; i <= shape::rank(shapeInfo); ++i)
-        if(shapeInfo[i] == 1)
-            ++numOfUnities;
-
-    return numOfUnities;
-}
 
 
 }

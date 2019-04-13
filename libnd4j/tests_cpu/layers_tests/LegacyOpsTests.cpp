@@ -376,7 +376,7 @@ TEST_F(LegacyOpsTests, Test_IsMax_1) {
 
     NativeOpExcutioner::execTransformAny(transform::IsMax, x.buffer(), x.shapeInfo(), z.buffer(), z.shapeInfo(), extra, nullptr, nullptr);
 
-    z.printIndexedBuffer("z");
+    // z.printIndexedBuffer("z");
     for (int e = 0; e < z.lengthOf(); e++) {
         ASSERT_TRUE(z.e<double>(e) >= 0);
     }
@@ -392,7 +392,7 @@ TEST_F(LegacyOpsTests, Test_IsMax_2) {
 
     NativeOpExcutioner::execTransformAny(transform::IsMax, x.buffer(), x.shapeInfo(), z.buffer(), z.shapeInfo(), extra, nullptr, nullptr);
 
-    z.printIndexedBuffer("z");
+    // z.printIndexedBuffer("z");
  for (int e = 0; e < z.lengthOf(); e++) {
      if (e >= z.lengthOf() / 2)
          ASSERT_TRUE(z.e<bool>(e));
