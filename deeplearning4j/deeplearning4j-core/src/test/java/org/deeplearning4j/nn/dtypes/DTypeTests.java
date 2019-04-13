@@ -11,22 +11,33 @@ import org.deeplearning4j.nn.conf.dropout.AlphaDropout;
 import org.deeplearning4j.nn.conf.dropout.GaussianDropout;
 import org.deeplearning4j.nn.conf.dropout.GaussianNoise;
 import org.deeplearning4j.nn.conf.dropout.SpatialDropout;
-import org.deeplearning4j.nn.conf.graph.GraphVertex;
+import org.deeplearning4j.nn.conf.graph.*;
+import org.deeplearning4j.nn.conf.graph.rnn.DuplicateToTimeSeriesVertex;
+import org.deeplearning4j.nn.conf.graph.rnn.LastTimeStepVertex;
+import org.deeplearning4j.nn.conf.graph.rnn.ReverseTimeSeriesVertex;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.conf.layers.convolutional.Cropping1D;
 import org.deeplearning4j.nn.conf.layers.convolutional.Cropping2D;
 import org.deeplearning4j.nn.conf.layers.convolutional.Cropping3D;
+import org.deeplearning4j.nn.conf.layers.misc.ElementWiseMultiplicationLayer;
+import org.deeplearning4j.nn.conf.layers.misc.FrozenLayer;
 import org.deeplearning4j.nn.conf.layers.misc.FrozenLayerWithBackprop;
+import org.deeplearning4j.nn.conf.layers.misc.RepeatVector;
 import org.deeplearning4j.nn.conf.layers.objdetect.Yolo2OutputLayer;
 import org.deeplearning4j.nn.conf.layers.recurrent.Bidirectional;
 import org.deeplearning4j.nn.conf.layers.recurrent.LastTimeStep;
 import org.deeplearning4j.nn.conf.layers.recurrent.SimpleRnn;
 import org.deeplearning4j.nn.conf.layers.util.MaskLayer;
+import org.deeplearning4j.nn.conf.layers.util.MaskZeroLayer;
 import org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder;
 import org.deeplearning4j.nn.conf.layers.wrapper.BaseWrapperLayer;
+import org.deeplearning4j.nn.conf.preprocessor.CnnToRnnPreProcessor;
+import org.deeplearning4j.nn.conf.preprocessor.FeedForwardToCnn3DPreProcessor;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.layers.util.IdentityLayer;
+import org.deeplearning4j.nn.modelimport.keras.preprocessors.PermutePreprocessor;
+import org.deeplearning4j.nn.modelimport.keras.preprocessors.ReshapePreprocessor;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.nn.weights.WeightInitDistribution;
@@ -42,6 +53,7 @@ import org.nd4j.linalg.api.memory.enums.AllocationPolicy;
 import org.nd4j.linalg.api.memory.enums.LearningPolicy;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
+import org.nd4j.linalg.dataset.MultiDataSet;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.config.Adam;
 import org.nd4j.linalg.learning.config.Nesterovs;
@@ -65,7 +77,8 @@ public class DTypeTests extends BaseDL4JTest {
     protected static Set<Class<?>> ignoreClasses = new HashSet<>(Arrays.<Class<?>>asList(
             Pooling2D.class,        //Alias for SubsamplingLayer
             Convolution2D.class,    //Alias for ConvolutionLayer
-            Pooling1D.class         //Alias for Subsampling1D
+            Pooling1D.class,        //Alias for Subsampling1D
+            Convolution1D.class     //Alias for  Convolution1DLayer
     ));
 
     @AfterClass
@@ -97,7 +110,7 @@ public class DTypeTests extends BaseDL4JTest {
             }
 
             if (Layer.class.isAssignableFrom(clazz)) {
-                if (!clazz.getName().endsWith("CustomLayer") && !clazz.getName().contains("samediff.testlayers") && !clazz.getName().endsWith("CustomOutputLayer"))
+                if (!clazz.getName().toLowerCase().contains("custom") && !clazz.getName().contains("samediff.testlayers") && !clazz.getName().toLowerCase().contains("test"))
                     layerClasses.add(clazz);
             } else if (InputPreProcessor.class.isAssignableFrom(clazz)) {
                 preprocClasses.add(clazz);
@@ -698,6 +711,7 @@ public class DTypeTests extends BaseDL4JTest {
                             .layer(new GravesBidirectionalLSTM.Builder().nIn(5).nOut(5).activation(Activation.TANH).build())
                             .layer(new Bidirectional(new LSTM.Builder().nIn(5).nOut(5).activation(Activation.TANH).build()))
                             .layer(new SimpleRnn.Builder().nIn(10).nOut(5).build())
+                            .layer(new MaskZeroLayer.Builder().underlying(new SimpleRnn.Builder().nIn(5).nOut(5).build()).maskValue(0.0).build())
                             .layer(secondLast)
                             .layer(ol)
                             .build();
@@ -730,7 +744,7 @@ public class DTypeTests extends BaseDL4JTest {
                     net.setLabels(label);
                     net.computeGradientAndScore();
 
-                    net.fit(new DataSet(in, label));
+                    net.fit(new DataSet(in, label, Nd4j.ones(networkDtype, 2, 4), outputLayer == 2 ? null :Nd4j.ones(networkDtype, 2, 4)));
 
                     logUsedClasses(net);
                 }
@@ -808,57 +822,171 @@ public class DTypeTests extends BaseDL4JTest {
         for (DataType globalDtype : new DataType[]{DataType.DOUBLE, DataType.FLOAT, DataType.HALF}) {
             Nd4j.setDefaultDataTypes(globalDtype, globalDtype);
             for (DataType networkDtype : new DataType[]{DataType.DOUBLE, DataType.FLOAT, DataType.HALF}) {
-                for( int test=0; test<2; test++ ) {
-                    assertEquals(globalDtype, Nd4j.dataType());
-                    assertEquals(globalDtype, Nd4j.defaultFloatingPointType());
+                for(boolean frozen : new boolean[]{false, true}) {
+                    for (int test = 0; test < 3; test++) {
+                        assertEquals(globalDtype, Nd4j.dataType());
+                        assertEquals(globalDtype, Nd4j.defaultFloatingPointType());
 
+                        String msg = "Global dtype: " + globalDtype + ", network dtype: " + networkDtype + ", test=" + test;
+
+                        ComputationGraphConfiguration.GraphBuilder conf = new NeuralNetConfiguration.Builder()
+                                .dataType(networkDtype)
+                                .seed(123)
+                                .updater(new NoOp())
+                                .weightInit(new WeightInitDistribution(new UniformDistribution(-6, 6)))
+                                .graphBuilder()
+                                .addInputs("in")
+                                .setOutputs("out");
+
+                        INDArray input;
+                        if (test == 0) {
+                            if(frozen) {
+                                conf.layer("0", new FrozenLayer(new EmbeddingLayer.Builder().nIn(5).nOut(5).build()), "in");
+                            } else {
+                                conf.layer("0", new EmbeddingLayer.Builder().nIn(5).nOut(5).build(), "in");
+                            }
+                            input = Nd4j.rand(networkDtype, 10, 1).muli(5).castTo(DataType.INT);
+                            conf.setInputTypes(InputType.feedForward(1));
+                        } else if(test == 1){
+                            if(frozen){
+                                conf.layer("0", new FrozenLayer(new EmbeddingSequenceLayer.Builder().nIn(5).nOut(5).build()), "in");
+                            } else {
+                                conf.layer("0", new EmbeddingSequenceLayer.Builder().nIn(5).nOut(5).build(), "in");
+                            }
+                            conf.layer("gp", new GlobalPoolingLayer.Builder(PoolingType.PNORM).pnorm(2).poolingDimensions(2).build(), "0");
+                            input = Nd4j.rand(networkDtype, 10, 1, 5).muli(5).castTo(DataType.INT);
+                            conf.setInputTypes(InputType.recurrent(1));
+                        } else {
+                            conf.layer("0", new RepeatVector.Builder().repetitionFactor(5).nOut(5).build(), "in");
+                            conf.layer("gp", new GlobalPoolingLayer.Builder(PoolingType.SUM).build(), "0");
+                            input = Nd4j.rand(networkDtype, 10, 5);
+                            conf.setInputTypes(InputType.feedForward(5));
+                        }
+
+                        conf.appendLayer("el", new ElementWiseMultiplicationLayer.Builder().nOut(5).build())
+                            .appendLayer("ae", new AutoEncoder.Builder().nOut(5).build())
+                            .appendLayer("out", new OutputLayer.Builder().nOut(10).build());
+
+                        ComputationGraph net = new ComputationGraph(conf.build());
+                        net.init();
+
+                        INDArray label = Nd4j.zeros(networkDtype, 10, 10);
+
+                        INDArray out = net.outputSingle(input);
+                        assertEquals(msg, networkDtype, out.dataType());
+                        Map<String, INDArray> ff = net.feedForward(input, false);
+                        for (Map.Entry<String, INDArray> e : ff.entrySet()) {
+                            if (e.getKey().equals("in"))
+                                continue;
+                            String s = msg + " - layer: " + e.getKey();
+                            assertEquals(s, networkDtype, e.getValue().dataType());
+                        }
+
+                        net.setInput(0, input);
+                        net.setLabels(label);
+                        net.computeGradientAndScore();
+
+                        net.fit(new DataSet(input, label));
+                    }
+                }
+            }
+        }
+    }
+
+    @Test
+    public void testVertexDtypes(){
+        for (DataType globalDtype : new DataType[]{DataType.DOUBLE, DataType.FLOAT, DataType.HALF}) {
+            Nd4j.setDefaultDataTypes(globalDtype, globalDtype);
+            for (DataType networkDtype : new DataType[]{DataType.DOUBLE, DataType.FLOAT, DataType.HALF}) {
+                assertEquals(globalDtype, Nd4j.dataType());
+                assertEquals(globalDtype, Nd4j.defaultFloatingPointType());
+
+                INDArray[] in = null;
+                for (int test = 0; test < 4; test++) {
                     String msg = "Global dtype: " + globalDtype + ", network dtype: " + networkDtype + ", test=" + test;
 
-                    ComputationGraphConfiguration.GraphBuilder conf = new NeuralNetConfiguration.Builder()
+                    ComputationGraphConfiguration.GraphBuilder b = new NeuralNetConfiguration.Builder()
                             .dataType(networkDtype)
                             .seed(123)
                             .updater(new NoOp())
-                            .weightInit(new WeightInitDistribution(new UniformDistribution(-6, 6)))
-                            .graphBuilder()
-                            .addInputs("in")
-                            .setOutputs("out");
+                            .weightInit(WeightInit.XAVIER)
+                            .convolutionMode(ConvolutionMode.Same)
+                            .graphBuilder();
 
-                    INDArray input;
-                    if(test == 0){
-                        conf.layer("0", new EmbeddingLayer.Builder().nIn(5).nOut(5).build(), "in");
-                        input = Nd4j.rand(networkDtype, 10, 1).muli(5).castTo(DataType.INT);
-                        conf.setInputTypes(InputType.feedForward(1));
-                    } else {
-                        conf.layer("0", new EmbeddingSequenceLayer.Builder().nIn(5).nOut(5).build(), "in")
-                                .layer("gp", new GlobalPoolingLayer.Builder(PoolingType.PNORM).pnorm(2).poolingDimensions(2).build(), "0");
-                        input = Nd4j.rand(networkDtype, 10, 1, 5).muli(5).castTo(DataType.INT);
-                        conf.setInputTypes(InputType.recurrent(1));
+                    switch (test){
+                        case 0:
+                            b.addInputs("in")
+                                    .addLayer("l", new ConvolutionLayer.Builder().kernelSize(2,2).stride(1,1).nOut(1).build(), "in")
+                                    .addVertex("preproc", new PreprocessorVertex(new CnnToRnnPreProcessor(28, 28, 1)), "l")
+                                    .addLayer("out", new OutputLayer.Builder().nOut(10).build(), "preproc")
+                                    .setInputTypes(InputType.convolutional(28, 28, 1))
+                                    .setOutputs("out");
+                            in = new INDArray[]{Nd4j.rand(networkDtype, 2, 1, 28, 28)};
+                            break;
+                        case 1:
+                            b.addInputs("in")
+                                    .addLayer("l", new DenseLayer.Builder().nOut(16).build(), "in")
+                                    .addVertex("preproc", new PreprocessorVertex(new FeedForwardToCnn3DPreProcessor(2,2,2,2, true)), "l")
+                                    .addVertex("preproc2", new PreprocessorVertex(new PermutePreprocessor(0,2,3,4,1)), "preproc")
+                                    .addVertex("preproc3", new PreprocessorVertex(new ReshapePreprocessor(new long[]{2,2,2,2}, new long[]{16})), "preproc2")
+                                    .addLayer("out", new OutputLayer.Builder().nIn(16).nOut(10).build(), "preproc3")
+                                    .setInputTypes(InputType.feedForward(5))
+                                    .setOutputs("out");
+                            in = new INDArray[]{Nd4j.rand(networkDtype, 2, 5)};
+                            break;
+                        case 2:
+                            b.addInputs("in")
+                                    .addLayer("1", new ConvolutionLayer.Builder().kernelSize(2,2).stride(1,1).nOut(1).build(), "in")
+                                    .addVertex("1a", new PoolHelperVertex(), "1")
+                                    .addVertex("2", new ShiftVertex(1), "1a")
+                                    .addVertex("3", new ScaleVertex(2), "2")
+                                    .addVertex("4", new ReshapeVertex(2, -1), "3")
+                                    .addVertex("5", new SubsetVertex(0, 99), "4")
+                                    .addVertex("6", new L2NormalizeVertex(), "5")
+                                    .addLayer("out", new OutputLayer.Builder().nIn(100).nOut(10).build(), "6")
+                                    .setInputTypes(InputType.convolutional(28, 28, 1))
+                                    .setOutputs("out");
+                            in = new INDArray[]{Nd4j.rand(networkDtype, 2, 1, 28, 28)};
+                            break;
+                        case 3:
+                            b.addInputs("in1", "in2", "in3")
+                                    .addVertex("1", new ElementWiseVertex(ElementWiseVertex.Op.Add), "in1", "in2")
+                                    .addVertex("2a", new UnstackVertex(0, 2), "1")
+                                    .addVertex("2b", new UnstackVertex(1, 2), "1")
+                                    .addVertex("3", new StackVertex(), "2a", "2b")
+                                    .addVertex("4", new DuplicateToTimeSeriesVertex("in3"), "3")
+                                    .addVertex("5", new ReverseTimeSeriesVertex(), "4")
+                                    .addLayer("6", new GlobalPoolingLayer(PoolingType.AVG), "5")
+                                    .addVertex("7", new LastTimeStepVertex("in3"), "in3")
+                                    .addVertex("8", new MergeVertex(), "6", "7")
+                                    .addLayer("out", new OutputLayer.Builder().nOut(10).build(), "8")
+                                    .setInputTypes(InputType.feedForward(8), InputType.feedForward(8), InputType.recurrent(8))
+                                    .setOutputs("out");
+                            in = new INDArray[]{Nd4j.rand(networkDtype, 2, 8), Nd4j.rand(networkDtype, 2, 8), Nd4j.rand(networkDtype, 2, 8, 5)};
+                            break;
                     }
 
-                    conf.appendLayer("out", new OutputLayer.Builder().nOut(10).build());
-
-                    ComputationGraph net = new ComputationGraph(conf.build());
+                    ComputationGraph net = new ComputationGraph(b.build());
                     net.init();
 
-                    INDArray label = Nd4j.zeros(networkDtype, 10, 10);
+                    INDArray label = TestUtils.randomOneHot(2, 10).castTo(networkDtype);
 
-                    INDArray out = net.outputSingle(input);
+                    INDArray out = net.outputSingle(in);
                     assertEquals(msg, networkDtype, out.dataType());
-                    Map<String,INDArray> ff = net.feedForward(input, false);
-                    for(Map.Entry<String,INDArray> e : ff.entrySet()){
-                        if(e.getKey().equals("in"))
+                    Map<String, INDArray> ff = net.feedForward(in, false);
+                    for (Map.Entry<String, INDArray> e : ff.entrySet()) {
+                        if (e.getKey().equals("in"))
                             continue;
                         String s = msg + " - layer: " + e.getKey();
                         assertEquals(s, networkDtype, e.getValue().dataType());
                     }
 
-                    net.setInput(0, input);
+                    net.setInputs(in);
                     net.setLabels(label);
                     net.computeGradientAndScore();
 
-                    net.fit(new DataSet(input, label));
+                    net.fit(new MultiDataSet(in, new INDArray[]{label}));
                 }
-
             }
         }
     }

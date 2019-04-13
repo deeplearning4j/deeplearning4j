@@ -121,6 +121,16 @@ public class MaskZeroLayer extends BaseWrapperLayer {
             return this;
         }
 
+        public Builder underlying(Layer underlying){
+            setUnderlying(underlying);
+            return this;
+        }
+
+        public Builder maskValue(double maskValue){
+            setMaskValue(maskValue);
+            return this;
+        }
+
         @Override
         @SuppressWarnings("unchecked")
         public MaskZeroLayer build() {

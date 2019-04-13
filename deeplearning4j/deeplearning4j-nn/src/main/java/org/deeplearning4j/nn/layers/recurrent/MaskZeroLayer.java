@@ -74,7 +74,7 @@ public class MaskZeroLayer extends BaseWrapperLayer {
             throw new IllegalArgumentException("Expected input of shape [batch_size, timestep_input_size, timestep], " +
                     "got shape "+Arrays.toString(input.shape()) + " instead");
         }
-        INDArray mask = input.eq(maskingValue).sum(1).neq(input.shape()[1]);
+        INDArray mask = input.eq(maskingValue).castTo(input.dataType()).sum(1).neq(input.shape()[1]);
         underlying.setMaskArray(mask);
     }
 
