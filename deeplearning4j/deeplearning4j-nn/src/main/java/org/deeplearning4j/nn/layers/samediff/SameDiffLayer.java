@@ -233,7 +233,7 @@ public class SameDiffLayer extends AbstractLayer<AbstractSameDiffLayer> {
             Map<String, SDVariable> params = new LinkedHashMap<>();
             for (String s : paramShapes.keySet()) {
                 val ps = paramShapes.get(s);
-                SDVariable v = sameDiff.var(s, ps);
+                SDVariable v = sameDiff.var(s, dataType, ps);
                 params.put(s, v);
             }
 
