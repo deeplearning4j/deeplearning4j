@@ -28,6 +28,7 @@ import org.deeplearning4j.datasets.iterator.AsyncMultiDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.MultiDataSetIteratorAdapter;
 import org.deeplearning4j.exception.DL4JException;
 import org.deeplearning4j.nn.api.*;
+import org.deeplearning4j.nn.api.Updater;
 import org.deeplearning4j.nn.api.layers.IOutputLayer;
 import org.deeplearning4j.nn.api.layers.RecurrentLayer;
 import org.deeplearning4j.nn.conf.*;
@@ -65,6 +66,7 @@ import org.nd4j.evaluation.classification.Evaluation;
 import org.nd4j.evaluation.classification.ROC;
 import org.nd4j.evaluation.classification.ROCMultiClass;
 import org.nd4j.evaluation.regression.RegressionEvaluation;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
 import org.nd4j.linalg.api.memory.enums.AllocationPolicy;
@@ -450,6 +452,19 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         if (initCalled)
             return;
 
+        DataType netDtype = getConfiguration().getDataType();
+        if(parameters != null && parameters.dataType() != netDtype){
+            if(cloneParametersArray){
+                try(MemoryWorkspace ws = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()) {
+                    parameters = parameters.castTo(netDtype);
+                }
+            } else {
+                throw new IllegalStateException("Error initializing network: Network datatype is set to " + netDtype
+                        + " but provided array has datatype " + parameters.dataType() + " with cloneParametersArray argument" +
+                        " set to false. Cannot initialize net with specified datatype array if that array does not match network datatype");
+            }
+        }
+
         if (configuration.getTrainingWorkspaceMode() == null)
             configuration.setTrainingWorkspaceMode(WorkspaceMode.NONE);
 
@@ -516,7 +531,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
 
             initializeParams = false;
         } else if(numParams > 0){
-            flattenedParams = Nd4j.create(1, numParams);
+            flattenedParams = Nd4j.create(netDtype, 1, numParams);
             initializeParams = true;
         } else {
             flattenedParams = null;
@@ -4479,6 +4494,29 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
      */
     public static ComputationGraph load(File f, boolean loadUpdater) throws IOException {
         return ModelSerializer.restoreComputationGraph(f, loadUpdater);
+    }
+
+    public ComputationGraph convertDataType(@NonNull DataType dataType){
+        Preconditions.checkState(dataType.isFPType(), "Invalid DataType: %s. Can only convert network to a floating point type", dataType);
+        if(dataType == params().dataType()){
+            return this;
+        }
+
+        try(MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+            INDArray newParams = params().castTo(dataType);
+            String jsonConfig = getConfiguration().toJson();
+            ComputationGraphConfiguration newConf = ComputationGraphConfiguration.fromJson(jsonConfig);
+            newConf.setDataType(dataType);
+            ComputationGraph newNet = new ComputationGraph(newConf);
+            newNet.init(newParams, false);
+
+            Updater u = getUpdater(false);
+            if(u != null && u.getStateViewArray() != null){
+                INDArray oldUpdaterState = u.getStateViewArray();
+                newNet.getUpdater(true).getStateViewArray().assign(oldUpdaterState);
+            }
+            return newNet;
+        }
     }
 
     /**

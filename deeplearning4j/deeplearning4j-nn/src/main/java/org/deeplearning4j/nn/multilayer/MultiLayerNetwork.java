@@ -615,6 +615,19 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         if (initCalled)
             return;
 
+        DataType netDtype = getLayerWiseConfigurations().getDataType();
+        if(parameters != null && parameters.dataType() != netDtype){
+            if(cloneParametersArray){
+                try(MemoryWorkspace ws = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()) {
+                    parameters = parameters.castTo(netDtype);
+                }
+            } else {
+                throw new IllegalStateException("Error initializing network: Network datatype is set to " + netDtype
+                        + " but provided array has datatype " + parameters.dataType() + " with cloneParametersArray argument" +
+                        " set to false. Cannot initialize net with specified datatype array if that array does not match network datatype");
+            }
+        }
+
         if (layerMap == null)
             layerMap = new LinkedHashMap<>();
 
@@ -666,7 +679,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
 
                 initializeParams = false;
             } else if(paramLength > 0){
-                flattenedParams = Nd4j.create(1, paramLength);
+                flattenedParams = Nd4j.create(netDtype, 1, paramLength);
                 initializeParams = true;
             } else {
                 //Edge case: 0 params in network
@@ -3736,7 +3749,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
     }
 
     public MultiLayerNetwork convertDataType(@NonNull DataType dataType){
-        Preconditions.checkState(dataType.isFPType(), "Invalid DataType: %s. Can only convert parameters to floating point types", dataType);
+        Preconditions.checkState(dataType.isFPType(), "Invalid DataType: %s. Can only convert network to a floating point type", dataType);
         if(dataType == params().dataType()){
             return this;
         }
@@ -3744,7 +3757,9 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         try(MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
             INDArray newParams = params().castTo(dataType);
             String jsonConfig = getLayerWiseConfigurations().toJson();
-            MultiLayerNetwork newNet = new MultiLayerNetwork(MultiLayerConfiguration.fromJson(jsonConfig));
+            MultiLayerConfiguration newConf = MultiLayerConfiguration.fromJson(jsonConfig);
+            newConf.setDataType(dataType);
+            MultiLayerNetwork newNet = new MultiLayerNetwork(newConf);
             newNet.init(newParams, false);
 
             Updater u = getUpdater(false);

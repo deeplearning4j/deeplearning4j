@@ -32,6 +32,7 @@ import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.util.OutputLayerUtil;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.activations.IActivation;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.linalg.lossfunctions.impl.LossBinaryXENT;
@@ -75,6 +76,10 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
     @Getter
     @Setter
     protected CacheMode cacheMode;
+
+    @Getter
+    @Setter
+    protected DataType dataType = DataType.FLOAT;   //Default to float for deserialization of beta3 and earlier nets
 
     //Counter for the number of parameter updates so far
     // This is important for learning rate schedules, for example, and is stored here to ensure it is persisted
@@ -454,6 +459,7 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
         protected CacheMode cacheMode = CacheMode.NONE;
         protected boolean validateOutputConfig = true;
         protected boolean validateTbpttConfig = true;
+        protected DataType dataType;
 
         /**
          * Specify the processors.
@@ -595,6 +601,11 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
             return this;
         }
 
+        public Builder dataType(@NonNull DataType dataType){
+            this.dataType = dataType;
+            return this;
+        }
+
 
         public MultiLayerConfiguration build() {
             //Validate BackpropType setting
@@ -680,6 +691,7 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
             conf.trainingWorkspaceMode = trainingWorkspaceMode;
             conf.inferenceWorkspaceMode = inferenceWorkspaceMode;
             conf.cacheMode = cacheMode;
+            conf.dataType = dataType;
 
             Nd4j.getRandom().setSeed(conf.getConf(0).getSeed());
 
