@@ -67,7 +67,8 @@ public class MemoryTracker {
     public long getApproximateFreeMemory(int deviceId) {
         val externalAllocations = getTotalMemory(deviceId) - getFreeMemory(deviceId);
         val active = getActiveMemory(deviceId);
-        return getTotalMemory(deviceId) - (active + externalAllocations);
+        val free = getTotalMemory(deviceId) - (active + externalAllocations);
+        return free;
     }
 
     /**
@@ -182,7 +183,8 @@ public class MemoryTracker {
 
 
     private long matchBlock(long numBytes) {
-        int align = 65536 * 2;
-        return numBytes + (align - (numBytes % align));
+        //int align = 65536 * 2;
+        //return numBytes + (align - (numBytes % align));
+        return numBytes;
     }
 }
