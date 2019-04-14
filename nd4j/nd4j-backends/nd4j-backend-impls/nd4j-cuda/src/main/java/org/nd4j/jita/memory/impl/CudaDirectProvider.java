@@ -155,7 +155,7 @@ public class CudaDirectProvider implements MemoryProvider {
 
                 val pointers = point.getPointers();
 
-                long result = nativeOps.freeDevice(pointers.getDevicePointer(), new CudaPointer(0));
+                long result = nativeOps.freeDevice(pointers.getDevicePointer(), null);
                 if (result == 0)
                     throw new RuntimeException("Can't deallocate [DEVICE] memory...");
 

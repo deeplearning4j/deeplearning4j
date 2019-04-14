@@ -122,7 +122,7 @@ public class MemoryTracker {
      * @param memoryAdded
      */
     public void incrementAllocatedAmount(int deviceId, long memoryAdded) {
-        allocatedPerDevice.get(deviceId).getAndAdd(memoryAdded);
+        allocatedPerDevice.get(deviceId).getAndAdd(matchBlock(memoryAdded));
     }
 
     /**
@@ -132,17 +132,17 @@ public class MemoryTracker {
      * @param memoryAdded
      */
     public void incrementCachedAmount(int deviceId, long memoryAdded) {
-        cachedPerDevice.get(deviceId).getAndAdd(memoryAdded);
+        cachedPerDevice.get(deviceId).getAndAdd(matchBlock(memoryAdded));
     }
 
     /**
      * This method decrements amount of regular allocated memory
      *
      * @param deviceId
-     * @param memoryAdded
+     * @param memorySubtracted
      */
-    public void decrementAllocatedAmount(int deviceId, long memoryAdded) {
-        allocatedPerDevice.get(deviceId).getAndAdd(-memoryAdded);
+    public void decrementAllocatedAmount(int deviceId, long memorySubtracted) {
+        allocatedPerDevice.get(deviceId).getAndAdd(-matchBlock(memorySubtracted));
     }
 
     /**
@@ -152,7 +152,7 @@ public class MemoryTracker {
      * @param memorySubtracted
      */
     public void decrementCachedAmount(int deviceId, long memorySubtracted) {
-        cachedPerDevice.get(deviceId).getAndAdd(-memorySubtracted);
+        cachedPerDevice.get(deviceId).getAndAdd(-matchBlock(memorySubtracted));
     }
 
     /**
@@ -162,7 +162,7 @@ public class MemoryTracker {
      * @param memoryAdded
      */
     public void incrementWorkspaceAllocatedAmount(int deviceId, long memoryAdded) {
-        workspacesPerDevice.get(deviceId).getAndAdd(memoryAdded);
+        workspacesPerDevice.get(deviceId).getAndAdd(matchBlock(memoryAdded));
     }
 
     /**
@@ -172,11 +172,17 @@ public class MemoryTracker {
      * @param memorySubtracted
      */
     public void decrementWorkspaceAmount(int deviceId, long memorySubtracted) {
-        workspacesPerDevice.get(deviceId).getAndAdd(-memorySubtracted);
+        workspacesPerDevice.get(deviceId).getAndAdd(-matchBlock(memorySubtracted));
     }
 
 
     private void setTotalPerDevice(int device, long memoryAvailable) {
         totalPerDevice.add(device, new AtomicLong(memoryAvailable));
+    }
+
+
+    private long matchBlock(long numBytes) {
+        int align = 65536 * 2;
+        return numBytes + (align - (numBytes % align));
     }
 }

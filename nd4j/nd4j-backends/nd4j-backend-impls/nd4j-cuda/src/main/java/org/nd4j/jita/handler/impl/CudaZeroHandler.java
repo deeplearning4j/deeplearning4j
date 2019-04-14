@@ -336,7 +336,9 @@ public class CudaZeroHandler implements MemoryHandler {
                         } else {
                             log.warn("Out of [DEVICE] memory, host memory will be used instead: deviceId: [{}], requested bytes: [{}]; Approximate free bytes: {}; Real free bytes: {}", deviceId, reqMemory, MemoryTracker.getInstance().getApproximateFreeMemory(deviceId), MemoryTracker.getInstance().getPreciseFreeMemory(deviceId));
                             log.info("Total allocated dev_0: {}", MemoryTracker.getInstance().getActiveMemory(0));
-                            log.info("Total allocated dev_1: {}", MemoryTracker.getInstance().getActiveMemory(1));
+                            log.info("Cached dev_0: {}", MemoryTracker.getInstance().getCachedAmount(0));
+                            log.info("Allocated dev_0: {}", MemoryTracker.getInstance().getAllocatedAmount(0));
+                            //log.info("Total allocated dev_1: {}", MemoryTracker.getInstance().getActiveMemory(1));
                             // if device memory allocation failed (aka returned NULL), keep using host memory instead
 
                             returnPair.setDevicePointer(tmpPair.getHostPointer());
@@ -357,21 +359,10 @@ public class CudaZeroHandler implements MemoryHandler {
                         Nd4j.getMemoryManager().invokeGc();
                         try {
                             Thread.sleep(100);
-                        } catch (Exception e) {
-
+                        } catch (InterruptedException e) {
+                            //
                         }
                     }
-               /* } else {
-                    log.warn("Soft limit on [DEVICE] memory hit, please consider tuning memory parameters, deviceId [{}]",
-                                    deviceId);
-
-                    Nd4j.getMemoryManager().invokeGc();
-                    try {
-                        Thread.sleep(100);
-                    } catch (Exception e) {
-
-                    }
-                }*/
 
                 return returnPair;
             }

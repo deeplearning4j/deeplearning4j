@@ -274,11 +274,12 @@ public class AllocatorTest {
         Nd4j.create(1);
 
         log.info("Approximate free memory: {}", MemoryTracker.getInstance().getApproximateFreeMemory(Nd4j.getAffinityManager().getDeviceForCurrentThread()));
-        log.info("Approximate real memory: {}", MemoryTracker.getInstance().getPreciseFreeMemory(Nd4j.getAffinityManager().getDeviceForCurrentThread()));
+        log.info("Real free memory: {}", MemoryTracker.getInstance().getPreciseFreeMemory(Nd4j.getAffinityManager().getDeviceForCurrentThread()));
 
         val timeStart = System.currentTimeMillis();
 
         while (true) {
+            //val array = Nd4j.create(DataType.FLOAT, 1000, 1000);
             val array = Nd4j.create(DataType.FLOAT, RandomUtils.nextInt(100, 1000), RandomUtils.nextInt(100, 1000));
 
             val timeEnd = System.currentTimeMillis();
