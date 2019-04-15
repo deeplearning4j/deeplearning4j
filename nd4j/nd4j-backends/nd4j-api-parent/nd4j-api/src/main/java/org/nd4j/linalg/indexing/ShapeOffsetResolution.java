@@ -161,14 +161,10 @@ public class ShapeOffsetResolution implements Serializable {
                 }
                 if (indexes[0] instanceof PointIndex) {
                     if (indexes.length > 1 && indexes[1] instanceof IntervalIndex) {
-                        offset = indexes[1].offset();
-                        this.shapes = new long[2];
-                        shapes[0] = 1;
-                        shapes[1] = indexes[1].length();
-                        this.strides = new long[2];
-                        strides[0] = 0;
-                        strides[1] = indexes[1].stride();
-                        this.offsets = new long[2];
+                        this.shapes = new long[]{indexes[1].length()};
+                        this.strides = new long[]{indexes[1].stride() * arr.stride(1)};
+                        this.offsets = new long[]{indexes[1].offset() * arr.stride(0)};
+                        this.offset = indexes[1].offset() * arr.stride(0);
                         return true;
                     }
                 } else if (indexes[0] instanceof IntervalIndex) {
