@@ -354,7 +354,7 @@ public class MultiDataSet implements org.nd4j.linalg.dataset.api.MultiDataSet {
         //So (point,all,all) on a 3d input returns a 2d output. Whereas, we want a 3d [1,x,y] output here
         switch (array.rank()) {
             case 2:
-                return array.get(NDArrayIndex.point(idx), NDArrayIndex.all());
+                return array.get(NDArrayIndex.interval(idx, idx, true), NDArrayIndex.all());
             case 3:
                 return array.get(NDArrayIndex.interval(idx, idx, true), NDArrayIndex.all(), NDArrayIndex.all());
             case 4:

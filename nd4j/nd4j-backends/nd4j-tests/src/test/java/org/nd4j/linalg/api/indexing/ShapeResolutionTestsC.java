@@ -55,12 +55,12 @@ public class ShapeResolutionTestsC extends BaseNd4jTest {
         //row 0
         resolution.exec(NDArrayIndex.point(0));
         long[] oneIndexShape = ArrayUtil.copy(resolution.getShapes());
-        assertArrayEquals(new long[] {1, 2}, oneIndexShape);
+        assertArrayEquals(new long[] {2}, oneIndexShape);
         long[] oneIndexOffsets = ArrayUtil.copy(resolution.getOffsets());
-        assertArrayEquals(new long[] {0, 0}, oneIndexOffsets);
+        assertArrayEquals(new long[] {0}, oneIndexOffsets);
         assertEquals(0, resolution.getOffset());
         long[] oneIndexStrides = ArrayUtil.copy(resolution.getStrides());
-        assertArrayEquals(new long[] {1, 1}, oneIndexStrides);
+        assertArrayEquals(new long[] {1}, oneIndexStrides);
 
     }
 
@@ -80,10 +80,10 @@ public class ShapeResolutionTestsC extends BaseNd4jTest {
         //row 0
         resolution.exec(NDArrayIndex.point(1));
         long[] oneIndexShape = ArrayUtil.copy(resolution.getShapes());
-        assertArrayEquals(new long[] {1, 2}, oneIndexShape);
+        assertArrayEquals(new long[] {2}, oneIndexShape);
         assertEquals(2, resolution.getOffset());
         long[] oneIndexStrides = ArrayUtil.copy(resolution.getStrides());
-        assertArrayEquals(new long[] {1, 1}, oneIndexStrides);
+        assertArrayEquals(new long[] {1}, oneIndexStrides);
 
     }
 
@@ -96,12 +96,12 @@ public class ShapeResolutionTestsC extends BaseNd4jTest {
         //row 0
         resolution.exec(NDArrayIndex.point(1), NDArrayIndex.all());
         long[] oneIndexShape = ArrayUtil.copy(resolution.getShapes());
-        assertArrayEquals(new long[] {1, 2}, oneIndexShape);
+        assertArrayEquals(new long[] {2}, oneIndexShape);
         long[] oneIndexOffsets = ArrayUtil.copy(resolution.getOffsets());
-        assertArrayEquals(new long[] {0, 0}, oneIndexOffsets);
+        assertArrayEquals(new long[] {0}, oneIndexOffsets);
         assertEquals(2, resolution.getOffset());
         long[] oneIndexStrides = ArrayUtil.copy(resolution.getStrides());
-        assertArrayEquals(new long[] {1, 1}, oneIndexStrides);
+        assertArrayEquals(new long[] {1}, oneIndexStrides);
 
     }
 
@@ -113,8 +113,8 @@ public class ShapeResolutionTestsC extends BaseNd4jTest {
         resolution.exec(NDArrayIndex.all(), NDArrayIndex.point(0));
         assertEquals(0, resolution.getOffset());
         long[] strides = resolution.getStrides();
-        assertArrayEquals(new long[] {2, 1}, resolution.getShapes());
-        assertArrayEquals(new long[] {2, 1}, strides);
+        assertArrayEquals(new long[] {2}, resolution.getShapes());
+        assertArrayEquals(new long[] {2}, strides);
     }
 
     @Test
@@ -124,8 +124,8 @@ public class ShapeResolutionTestsC extends BaseNd4jTest {
         resolution.exec(NDArrayIndex.all(), NDArrayIndex.point(1));
         assertEquals(1, resolution.getOffset());
         long[] strides = resolution.getStrides();
-        assertArrayEquals(new long[] {2, 1}, resolution.getShapes());
-        assertArrayEquals(new long[] {2, 1}, strides);
+        assertArrayEquals(new long[] {2}, resolution.getShapes());
+        assertArrayEquals(new long[] {2}, strides);
     }
 
 
@@ -201,7 +201,7 @@ public class ShapeResolutionTestsC extends BaseNd4jTest {
         INDArray value = Nd4j.ones(1, 2).castTo(DataType.DOUBLE);
         zeros.put(new INDArrayIndex[] {x, y}, value);
 
-        INDArray assertion = Nd4j.create(new double[] {0.0, 1.0, 1.0, 0.0});
+        INDArray assertion = Nd4j.create(new double[] {0.0, 1.0, 1.0, 0.0}, new int[]{1,4});
         assertEquals(assertion, zeros);
     }
 
@@ -213,7 +213,7 @@ public class ShapeResolutionTestsC extends BaseNd4jTest {
         INDArray value = Nd4j.ones(1, 1).castTo(DataType.DOUBLE);
         zeros.put(new INDArrayIndex[] {x, y}, value);
 
-        INDArray assertion = Nd4j.create(new double[] {0.0, 0.0, 1.0, 0.0});
+        INDArray assertion = Nd4j.create(new double[] {0.0, 0.0, 1.0, 0.0}, new int[]{1,4});
         assertEquals(assertion, zeros);
     }
 

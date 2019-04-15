@@ -79,7 +79,7 @@ public class DataSetTest extends BaseNd4jTest {
         for( int i=0; i<10; i++ ){
             assertTrue(iter.hasNext());
             DataSet d = iter.next();
-            INDArray exp = f.getRow(i);
+            INDArray exp = f.getRow(i, true);
             assertEquals(exp, d.getFeatures());
             assertEquals(exp, d.getLabels());
         }
