@@ -63,7 +63,7 @@ public class Upsampling1D extends Upsampling2D {
         epsilon = epsilon.repeat(3, size[0]);
 
         INDArray originalInput = input;
-        input = input.reshape(input.size(0), input.size(1), input.size(2), 1);
+        input = input.castTo(dataType).reshape(input.size(0), input.size(1), input.size(2), 1);
 
         // FIXME: int cast
         int miniBatch = (int) input.size(0);
@@ -109,7 +109,7 @@ public class Upsampling1D extends Upsampling2D {
 
         // add singleton fourth dimension to input
         INDArray origInput = input;
-        input = input.reshape(input.size(0), input.size(1), input.size(2), 1);
+        input = input.castTo(dataType).reshape(input.size(0), input.size(1), input.size(2), 1);
 
         // call 2D SubsamplingLayer's activate method
         INDArray acts = super.activate(training, workspaceMgr);

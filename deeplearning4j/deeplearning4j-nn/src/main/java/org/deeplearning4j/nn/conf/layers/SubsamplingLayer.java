@@ -456,6 +456,11 @@ public class SubsamplingLayer extends NoParamLayer {
             return (T) this;
         }
 
+        public T poolingType(org.deeplearning4j.nn.conf.layers.PoolingType poolingType){
+            this.setPoolingType(poolingType);
+            return (T) this;
+        }
+
         public T pnorm(int pnorm) {
             this.setPnorm(pnorm);
             return (T) this;

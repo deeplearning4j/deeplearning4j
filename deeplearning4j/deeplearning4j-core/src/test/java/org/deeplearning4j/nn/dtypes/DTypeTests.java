@@ -65,6 +65,7 @@ import org.nd4j.linalg.learning.config.Nesterovs;
 import org.nd4j.linalg.learning.config.NoOp;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.linalg.lossfunctions.impl.LossNegativeLogLikelihood;
+import org.nd4j.nativeblas.Nd4jCpu;
 
 import java.io.IOException;
 import java.lang.reflect.Modifier;
@@ -595,6 +596,8 @@ public class DTypeTests extends BaseDL4JTest {
 
     @Test
     public void testDtypesModelVsGlobalDtypeCnn1d() {
+        //Nd4jCpu.Environment.getInstance().setUseMKLDNN(false);
+
         for (DataType globalDtype : new DataType[]{DataType.DOUBLE, DataType.FLOAT, DataType.HALF}) {
             Nd4j.setDefaultDataTypes(globalDtype, globalDtype);
             for (DataType networkDtype : new DataType[]{DataType.DOUBLE, DataType.FLOAT, DataType.HALF}) {
@@ -625,15 +628,16 @@ public class DTypeTests extends BaseDL4JTest {
 
 
                     MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                            .trainingWorkspaceMode(WorkspaceMode.NONE)
+                            .inferenceWorkspaceMode(WorkspaceMode.NONE)
                             .dataType(networkDtype)
                             .convolutionMode(ConvolutionMode.Same)
                             .updater(new Adam(1e-2))
                             .list()
                             .layer(new Convolution1D.Builder().kernelSize(2).stride(1).nOut(3).activation(Activation.TANH).build())
-                            .layer(new Subsampling1DLayer.Builder().kernelSize(5).stride(1).build())
+                            .layer(new Subsampling1DLayer.Builder().poolingType(PoolingType.MAX).kernelSize(5).stride(1).build())
                             .layer(new Cropping1D.Builder(1).build())
                             .layer(new ZeroPadding1DLayer(1))
-//                            .layer(new LocallyConnected1D.Builder().kernelSize(2).stride(1).nOut(3).build())
                             .layer(new Upsampling1D.Builder(2).build())
                             .layer(secondLast)
                             .layer(ol)
@@ -676,6 +680,7 @@ public class DTypeTests extends BaseDL4JTest {
 
                     //Now, test mismatched dtypes for input/labels:
                     for (DataType inputLabelDtype : new DataType[]{DataType.DOUBLE, DataType.FLOAT, DataType.HALF}) {
+                        System.out.println(msg + " - " + inputLabelDtype);
                         INDArray in2 = in.castTo(inputLabelDtype);
                         INDArray label2 = label.castTo(inputLabelDtype);
                         net.output(in2);
