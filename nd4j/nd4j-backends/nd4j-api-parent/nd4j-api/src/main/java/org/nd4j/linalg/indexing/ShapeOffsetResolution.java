@@ -234,7 +234,7 @@ public class ShapeOffsetResolution implements Serializable {
 
         //specific easy case
         if (numSpecified < 1 && interval < 1 && newAxis < 1 && pointIndex > 0 && numAll > 0) {
-            int minDimensions = Math.max(arr.rank() - pointIndex, 2);
+            int minDimensions = arr.rank()-pointIndex;
             long[] shape = new long[minDimensions];
             Arrays.fill(shape, 1);
             long[] stride = new long[minDimensions];
@@ -277,7 +277,6 @@ public class ShapeOffsetResolution implements Serializable {
             this.offsets = offsets;
             this.offset = offset;
             return true;
-
         }
 
         //intervals and all

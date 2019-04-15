@@ -5030,8 +5030,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         if (indexes.length < 1)
             throw new IllegalStateException("Invalid index found of zero length");
 
-        // FIXME: LONG
-        int[] shape = LongUtils.toInts(resolution.getShapes());
+        long[] shape = resolution.getShapes();
         int numSpecifiedIndex = 0;
         for (int i = 0; i < indexes.length; i++)
             if (indexes[i] instanceof SpecifiedIndex)
@@ -5039,7 +5038,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
         if (shape != null && numSpecifiedIndex > 0) {
             Generator<List<List<Long>>> gen = SpecifiedIndex.iterate(indexes);
-            INDArray ret = Nd4j.create(this.dataType(), ArrayUtil.toLongArray(shape), 'c');
+            INDArray ret = Nd4j.create(this.dataType(), shape, 'c');
             int count = 0;
             while (true) {
                 try {

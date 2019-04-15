@@ -214,6 +214,31 @@ public class IndexingTests extends BaseNd4jTest {
         assertEquals(test, result);
     }
 
+    @Test
+    public void test2dGetPoint(){
+        INDArray arr = Nd4j.linspace(1,12,12, DataType.DOUBLE).reshape('c',3,4);
+        for( int i=0; i<3; i++ ){
+            INDArray exp = Nd4j.create(new double[]{i*4+1, i*4+2, i*4+3, i*4+4});
+            INDArray row = arr.getRow(i);
+            INDArray get = arr.get(NDArrayIndex.point(i), NDArrayIndex.all());
+
+            assertEquals(1, row.rank());
+            assertEquals(1, get.rank());
+            assertEquals(exp, row);
+            assertEquals(exp, get);
+        }
+
+        for( int i=0; i<4; i++ ){
+            INDArray exp = Nd4j.create(new double[]{1+i, 5+i, 9+i});
+            INDArray col = arr.getColumn(i);
+            INDArray get = arr.get(NDArrayIndex.all(), NDArrayIndex.point(i));
+
+            assertEquals(1, col.rank());
+            assertEquals(1, get.rank());
+            assertEquals(exp, col);
+            assertEquals(exp, get);
+        }
+    }
 
 
     @Override
