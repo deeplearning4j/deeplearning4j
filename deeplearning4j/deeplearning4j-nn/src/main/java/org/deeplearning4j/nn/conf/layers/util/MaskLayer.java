@@ -45,7 +45,7 @@ public class MaskLayer extends NoParamLayer {
     public org.deeplearning4j.nn.api.Layer instantiate(NeuralNetConfiguration conf,
                                                        Collection<TrainingListener> trainingListeners, int layerIndex, INDArray layerParamsView,
                                                        boolean initializeParams, DataType networkDataType) {
-        org.deeplearning4j.nn.layers.util.MaskLayer ret = new org.deeplearning4j.nn.layers.util.MaskLayer(conf);
+        org.deeplearning4j.nn.layers.util.MaskLayer ret = new org.deeplearning4j.nn.layers.util.MaskLayer(conf, networkDataType);
         ret.setIndex(layerIndex);
         ret.setParamsViewArray(layerParamsView);
         Map<String, INDArray> paramTable = initializer().init(conf, layerParamsView, initializeParams);

@@ -52,7 +52,7 @@ public class CustomLayer extends FeedForwardLayer {
     public org.deeplearning4j.nn.api.Layer instantiate(NeuralNetConfiguration conf,
                                                        Collection<TrainingListener> trainingListeners, int layerIndex, INDArray layerParamsView,
                                                        boolean initializeParams, DataType networkDataType) {
-        CustomLayerImpl ret = new CustomLayerImpl(conf);
+        CustomLayerImpl ret = new CustomLayerImpl(conf, networkDataType);
         ret.setListeners(trainingListeners);
         ret.setIndex(layerIndex);
         ret.setParamsViewArray(layerParamsView);

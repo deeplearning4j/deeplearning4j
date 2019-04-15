@@ -71,7 +71,7 @@ public class DepthwiseConvolution2D extends ConvolutionLayer {
                              int layerIndex, INDArray layerParamsView, boolean initializeParams, DataType networkDataType) {
         LayerValidation.assertNInNOutSet("DepthwiseConvolution2D", getLayerName(), layerIndex, getNIn(), getNOut());
 
-        DepthwiseConvolution2DLayer ret = new DepthwiseConvolution2DLayer(conf);
+        DepthwiseConvolution2DLayer ret = new DepthwiseConvolution2DLayer(conf, networkDataType);
         ret.setListeners(trainingListeners);
         ret.setIndex(layerIndex);
         ret.setParamsViewArray(layerParamsView);

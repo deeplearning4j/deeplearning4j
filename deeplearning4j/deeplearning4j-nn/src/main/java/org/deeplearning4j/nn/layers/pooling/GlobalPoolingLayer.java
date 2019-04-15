@@ -26,6 +26,7 @@ import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.AbstractLayer;
 import org.deeplearning4j.util.MaskedReductionUtil;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastCopyOp;
 import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastMulOp;
@@ -76,8 +77,8 @@ public class GlobalPoolingLayer extends AbstractLayer<org.deeplearning4j.nn.conf
     private final PoolingType poolingType;
     private final int pNorm;
 
-    public GlobalPoolingLayer(NeuralNetConfiguration conf) {
-        super(conf);
+    public GlobalPoolingLayer(NeuralNetConfiguration conf, DataType dataType) {
+        super(conf, dataType);
 
         org.deeplearning4j.nn.conf.layers.GlobalPoolingLayer layerConf =
                 (org.deeplearning4j.nn.conf.layers.GlobalPoolingLayer) conf.getLayer();
@@ -191,7 +192,7 @@ public class GlobalPoolingLayer extends AbstractLayer<org.deeplearning4j.nn.conf
 
     @Override
     public Layer clone() {
-        return new GlobalPoolingLayer(conf);
+        return new GlobalPoolingLayer(conf, dataType);
     }
 
     private INDArray activateHelperFullArray(INDArray inputArray, int[] poolDim) {

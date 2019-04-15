@@ -62,7 +62,7 @@ public class RnnOutputLayer extends BaseOutputLayer {
         LayerValidation.assertNInNOutSet("RnnOutputLayer", getLayerName(), layerIndex, getNIn(), getNOut());
 
         org.deeplearning4j.nn.layers.recurrent.RnnOutputLayer ret =
-                        new org.deeplearning4j.nn.layers.recurrent.RnnOutputLayer(conf);
+                        new org.deeplearning4j.nn.layers.recurrent.RnnOutputLayer(conf, networkDataType);
         ret.setListeners(trainingListeners);
         ret.setIndex(layerIndex);
         ret.setParamsViewArray(layerParamsView);

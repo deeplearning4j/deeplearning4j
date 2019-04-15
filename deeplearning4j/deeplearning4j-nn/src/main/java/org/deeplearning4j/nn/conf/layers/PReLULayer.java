@@ -65,7 +65,7 @@ public class PReLULayer extends BaseLayer {
     @Override
     public Layer instantiate(NeuralNetConfiguration conf, Collection<TrainingListener> trainingListeners,
                              int layerIndex, INDArray layerParamsView, boolean initializeParams, DataType networkDataType) {
-        org.deeplearning4j.nn.layers.feedforward.PReLU ret = new org.deeplearning4j.nn.layers.feedforward.PReLU(conf);
+        org.deeplearning4j.nn.layers.feedforward.PReLU ret = new org.deeplearning4j.nn.layers.feedforward.PReLU(conf, networkDataType);
         ret.setListeners(trainingListeners);
         ret.setIndex(layerIndex);
         ret.setParamsViewArray(layerParamsView);

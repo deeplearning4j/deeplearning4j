@@ -25,6 +25,7 @@ import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.AbstractLayer;
 import org.deeplearning4j.nn.workspace.ArrayType;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
@@ -42,8 +43,8 @@ public class Cropping1DLayer extends AbstractLayer<Cropping1D> {
 
     private int[] cropping; //[padTop, padBottom]
 
-    public Cropping1DLayer(NeuralNetConfiguration conf) {
-        super(conf);
+    public Cropping1DLayer(NeuralNetConfiguration conf, DataType dataType) {
+        super(conf, dataType);
         this.cropping = ((org.deeplearning4j.nn.conf.layers.convolutional.Cropping1D) conf.getLayer()).getCropping();
     }
 
@@ -80,7 +81,7 @@ public class Cropping1DLayer extends AbstractLayer<Cropping1D> {
 
     @Override
     public Layer clone() {
-        return new Cropping2DLayer(conf.clone());
+        return new Cropping2DLayer(conf.clone(), dataType);
     }
 
     @Override

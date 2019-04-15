@@ -98,7 +98,7 @@ public class Convolution3D extends ConvolutionLayer {
                              int layerIndex, INDArray layerParamsView, boolean initializeParams, DataType networkDataType) {
         LayerValidation.assertNInNOutSet("Convolution3D", getLayerName(), layerIndex, getNIn(), getNOut());
 
-        Convolution3DLayer ret = new Convolution3DLayer(conf);
+        Convolution3DLayer ret = new Convolution3DLayer(conf, networkDataType);
         ret.setListeners(iterationListeners);
         ret.setIndex(layerIndex);
         ret.setParamsViewArray(layerParamsView);

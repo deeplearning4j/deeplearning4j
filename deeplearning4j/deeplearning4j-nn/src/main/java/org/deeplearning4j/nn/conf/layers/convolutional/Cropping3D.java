@@ -86,7 +86,7 @@ public class Cropping3D extends NoParamLayer {
     public org.deeplearning4j.nn.api.Layer instantiate(NeuralNetConfiguration conf,
                                                        Collection<TrainingListener> iterationListeners, int layerIndex, INDArray layerParamsView,
                                                        boolean initializeParams, DataType networkDataType) {
-        Cropping3DLayer ret = new Cropping3DLayer(conf);
+        Cropping3DLayer ret = new Cropping3DLayer(conf, networkDataType);
         ret.setListeners(iterationListeners);
         ret.setIndex(layerIndex);
         Map<String, INDArray> paramTable = initializer().init(conf, layerParamsView, initializeParams);

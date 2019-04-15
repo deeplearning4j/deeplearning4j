@@ -84,7 +84,7 @@ public class GravesBidirectionalLSTM extends BaseRecurrentLayer {
     public Layer instantiate(NeuralNetConfiguration conf, Collection<TrainingListener> trainingListeners,
                              int layerIndex, INDArray layerParamsView, boolean initializeParams, DataType networkDataType) {
         org.deeplearning4j.nn.layers.recurrent.GravesBidirectionalLSTM ret =
-                        new org.deeplearning4j.nn.layers.recurrent.GravesBidirectionalLSTM(conf);
+                        new org.deeplearning4j.nn.layers.recurrent.GravesBidirectionalLSTM(conf, networkDataType);
         ret.setListeners(trainingListeners);
         ret.setIndex(layerIndex);
         ret.setParamsViewArray(layerParamsView);

@@ -22,6 +22,7 @@ import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.BaseOutputLayer;
 import org.deeplearning4j.nn.params.CenterLossParamInitializer;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
@@ -45,12 +46,8 @@ public class CenterLossOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn
 
     private double fullNetRegTerm;
 
-    public CenterLossOutputLayer(NeuralNetConfiguration conf) {
-        super(conf);
-    }
-
-    public CenterLossOutputLayer(NeuralNetConfiguration conf, INDArray input) {
-        super(conf, input);
+    public CenterLossOutputLayer(NeuralNetConfiguration conf, DataType dataType) {
+        super(conf, dataType);
     }
 
     /** Compute score after labels and input have been set.
@@ -72,7 +69,8 @@ public class CenterLossOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn
 
         // calculate the intra-class score component
         INDArray centers = params.get(CenterLossParamInitializer.CENTER_KEY);
-        INDArray centersForExamples = labels.mmul(centers);
+        INDArray l = labels.castTo(centers.dataType()); //Ensure correct dtype (same as params); no-op if already correct dtype
+        INDArray centersForExamples = l.mmul(centers);
 
         //        double intraClassScore = intraClassLoss.computeScore(centersForExamples, input, Activation.IDENTITY.getActivationFunction(), maskArray, false);
         INDArray norm2DifferenceSquared = input.sub(centersForExamples).norm2(1);
@@ -155,7 +153,8 @@ public class CenterLossOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn
 
         // centers
         INDArray centers = params.get(CenterLossParamInitializer.CENTER_KEY);
-        INDArray centersForExamples = labels.mmul(centers);
+        INDArray l = labels.castTo(centers.dataType());     //Ensure correct dtype (same as params); no-op if already correct dtype
+        INDArray centersForExamples = l.mmul(centers);
         INDArray dLcdai = input.sub(centersForExamples);
 
         INDArray w = getParamWithNoise(CenterLossParamInitializer.WEIGHT_KEY, true, workspaceMgr);
@@ -201,10 +200,11 @@ public class CenterLossOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn
         double alpha = layerConf().getAlpha();
 
         INDArray centers = params.get(CenterLossParamInitializer.CENTER_KEY);
-        INDArray centersForExamples = labels.mmul(centers);
+        INDArray l = labels.castTo(centers.dataType()); //Ensure correct dtype (same as params); no-op if already correct dtype
+        INDArray centersForExamples = l.mmul(centers);
         INDArray diff = centersForExamples.sub(input).muli(alpha);
-        INDArray numerator = labels.transpose().mmul(diff);
-        INDArray denominator = labels.sum(0).reshape(labels.size(1), 1).addi(1.0);
+        INDArray numerator = l.transpose().mmul(diff);
+        INDArray denominator = l.sum(0).reshape(l.size(1), 1).addi(1.0);
 
         INDArray deltaC;
         if (layerConf().getGradientCheck()) {

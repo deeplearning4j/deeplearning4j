@@ -23,6 +23,7 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.AbstractLayer;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.CustomOp;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
@@ -55,12 +56,8 @@ import java.util.Arrays;
 @Slf4j
 public class SpaceToBatch extends AbstractLayer<org.deeplearning4j.nn.conf.layers.SpaceToBatchLayer> {
 
-    public SpaceToBatch(NeuralNetConfiguration conf) {
-        super(conf);
-    }
-
-    public SpaceToBatch(NeuralNetConfiguration conf, INDArray input) {
-        super(conf, input);
+    public SpaceToBatch(NeuralNetConfiguration conf, DataType dataType) {
+        super(conf, dataType);
     }
 
     private int[] getBlocks() {
@@ -91,6 +88,8 @@ public class SpaceToBatch extends AbstractLayer<org.deeplearning4j.nn.conf.layer
     @Override
     public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon, LayerWorkspaceMgr workspaceMgr) {
         assertInputSet(true);
+
+        INDArray input = this.input.castTo(dataType);   //Cast to network dtype if required (no-op if already correct type)
 
         long miniBatch = input.size(0);
         long inDepth = input.size(1);

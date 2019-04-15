@@ -93,7 +93,7 @@ public abstract class SameDiffOutputLayer extends AbstractSameDiffLayer {
                                                        Collection<TrainingListener> trainingListeners, int layerIndex, INDArray layerParamsView,
                                                        boolean initializeParams, DataType networkDataType) {
         org.deeplearning4j.nn.layers.samediff.SameDiffOutputLayer ret =
-                        new org.deeplearning4j.nn.layers.samediff.SameDiffOutputLayer(conf);
+                        new org.deeplearning4j.nn.layers.samediff.SameDiffOutputLayer(conf, networkDataType);
         ret.setIndex(layerIndex);
         ret.setParamsViewArray(layerParamsView);
         Map<String, INDArray> paramTable = initializer().init(conf, layerParamsView, initializeParams);

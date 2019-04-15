@@ -73,7 +73,7 @@ public class CustomLayer extends FeedForwardLayer {
         // (i.e., a CustomLayerImpl instance)
         //For the most part, it's the same for each type of layer
 
-        CustomLayerImpl myCustomLayer = new CustomLayerImpl(conf);
+        CustomLayerImpl myCustomLayer = new CustomLayerImpl(conf, networkDataType);
         myCustomLayer.setListeners(iterationListeners);             //Set the iteration listeners, if any
         myCustomLayer.setIndex(layerIndex);                         //Integer index of the layer
 

@@ -474,6 +474,19 @@ public class DTypeTests extends BaseDL4JTest {
                     net.fit(new DataSet(in, label));
 
                     logUsedClasses(net);
+
+                    //Now, test mismatched dtypes for input/labels:
+                    for (DataType inputLabelDtype : new DataType[]{DataType.DOUBLE, DataType.FLOAT, DataType.HALF}) {
+                        log.info(msg + " - input/label type: " + inputLabelDtype);
+                        INDArray in2 = in.castTo(inputLabelDtype);
+                        INDArray label2 = label.castTo(inputLabelDtype);
+                        net.output(in2);
+                        net.setInput(in2);
+                        net.setLabels(label2);
+                        net.computeGradientAndScore();
+
+                        net.fit(new DataSet(in2, label2));
+                    }
                 }
             }
         }
@@ -563,6 +576,18 @@ public class DTypeTests extends BaseDL4JTest {
                     net.fit(new DataSet(in, label));
 
                     logUsedClasses(net);
+
+                    //Now, test mismatched dtypes for input/labels:
+                    for (DataType inputLabelDtype : new DataType[]{DataType.DOUBLE, DataType.FLOAT, DataType.HALF}) {
+                        INDArray in2 = in.castTo(inputLabelDtype);
+                        INDArray label2 = label.castTo(inputLabelDtype);
+                        net.output(in2);
+                        net.setInput(in2);
+                        net.setLabels(label2);
+                        net.computeGradientAndScore();
+
+                        net.fit(new DataSet(in2, label2));
+                    }
                 }
             }
         }
@@ -648,6 +673,18 @@ public class DTypeTests extends BaseDL4JTest {
                     net.fit(new DataSet(in, label));
 
                     logUsedClasses(net);
+
+                    //Now, test mismatched dtypes for input/labels:
+                    for (DataType inputLabelDtype : new DataType[]{DataType.DOUBLE, DataType.FLOAT, DataType.HALF}) {
+                        INDArray in2 = in.castTo(inputLabelDtype);
+                        INDArray label2 = label.castTo(inputLabelDtype);
+                        net.output(in2);
+                        net.setInput(in2);
+                        net.setLabels(label2);
+                        net.computeGradientAndScore();
+
+                        net.fit(new DataSet(in2, label2));
+                    }
                 }
             }
         }
@@ -701,6 +738,18 @@ public class DTypeTests extends BaseDL4JTest {
                 net.fit(new DataSet(in, label));
 
                 logUsedClasses(net);
+
+                //Now, test mismatched dtypes for input/labels:
+                for (DataType inputLabelDtype : new DataType[]{DataType.DOUBLE, DataType.FLOAT, DataType.HALF}) {
+                    INDArray in2 = in.castTo(inputLabelDtype);
+                    INDArray label2 = label.castTo(inputLabelDtype);
+                    net.output(in2);
+                    net.setInput(in2);
+                    net.setLabels(label2);
+                    net.computeGradientAndScore();
+
+                    net.fit(new DataSet(in2, label2));
+                }
             }
         }
     }
@@ -782,6 +831,18 @@ public class DTypeTests extends BaseDL4JTest {
                     net.fit(new DataSet(in, label, Nd4j.ones(networkDtype, 2, 4), outputLayer == 2 ? null :Nd4j.ones(networkDtype, 2, 4)));
 
                     logUsedClasses(net);
+
+                    //Now, test mismatched dtypes for input/labels:
+                    for (DataType inputLabelDtype : new DataType[]{DataType.DOUBLE, DataType.FLOAT, DataType.HALF}) {
+                        INDArray in2 = in.castTo(inputLabelDtype);
+                        INDArray label2 = label.castTo(inputLabelDtype);
+                        net.output(in2);
+                        net.setInput(in2);
+                        net.setLabels(label2);
+                        net.computeGradientAndScore();
+
+                        net.fit(new DataSet(in2, label2));
+                    }
                 }
             }
         }
@@ -849,6 +910,18 @@ public class DTypeTests extends BaseDL4JTest {
                 net.fit(new DataSet(in, label));
 
                 logUsedClasses(net);
+
+                //Now, test mismatched dtypes for input/labels:
+                for (DataType inputLabelDtype : new DataType[]{DataType.DOUBLE, DataType.FLOAT, DataType.HALF}) {
+                    INDArray in2 = in.castTo(inputLabelDtype);
+                    INDArray label2 = label.castTo(inputLabelDtype);
+                    net.output(in2);
+                    net.setInput(in2);
+                    net.setLabels(label2);
+                    net.computeGradientAndScore();
+
+                    net.fit(new DataSet(in2, label2));
+                }
             }
         }
     }
@@ -926,6 +999,18 @@ public class DTypeTests extends BaseDL4JTest {
                         net.fit(new DataSet(input, label));
 
                         logUsedClasses(net);
+
+                        //Now, test mismatched dtypes for input/labels:
+                        for (DataType inputLabelDtype : new DataType[]{DataType.DOUBLE, DataType.FLOAT, DataType.HALF}) {
+                            INDArray in2 = input.castTo(inputLabelDtype);
+                            INDArray label2 = label.castTo(inputLabelDtype);
+                            net.output(in2);
+                            net.setInput(0, in2);
+                            net.setLabels(label2);
+                            net.computeGradientAndScore();
+
+                            net.fit(new DataSet(in2, label2));
+                        }
                     }
                 }
             }
@@ -1069,6 +1154,21 @@ public class DTypeTests extends BaseDL4JTest {
                     net.fit(new MultiDataSet(in, new INDArray[]{label}));
 
                     logUsedClasses(net);
+
+                    //Now, test mismatched dtypes for input/labels:
+                    for (DataType inputLabelDtype : new DataType[]{DataType.DOUBLE, DataType.FLOAT, DataType.HALF}) {
+                        INDArray[] in2 = new INDArray[in.length];
+                        for( int i=0; i<in.length; i++ ){
+                            in2[i] = in[i].castTo(inputLabelDtype);
+                        }
+                        INDArray label2 = label.castTo(inputLabelDtype);
+                        net.output(in2);
+                        net.setInputs(in2);
+                        net.setLabels(label2);
+                        net.computeGradientAndScore();
+
+                        net.fit(new MultiDataSet(in2, new INDArray[]{label2}));
+                    }
                 }
             }
         }
@@ -1137,6 +1237,21 @@ public class DTypeTests extends BaseDL4JTest {
                     net.fit(new MultiDataSet(in, new INDArray[]{label}));
 
                     logUsedClasses(net);
+
+                    //Now, test mismatched dtypes for input/labels:
+                    for (DataType inputLabelDtype : new DataType[]{DataType.DOUBLE, DataType.FLOAT, DataType.HALF}) {
+                        INDArray[] in2 = new INDArray[in.length];
+                        for( int i=0; i<in.length; i++ ){
+                            in2[i] = in[i].castTo(inputLabelDtype);
+                        }
+                        INDArray label2 = label.castTo(inputLabelDtype);
+                        net.output(in2);
+                        net.setInputs(in2);
+                        net.setLabels(label2);
+                        net.computeGradientAndScore();
+
+                        net.fit(new MultiDataSet(in2, new INDArray[]{label2}));
+                    }
                 }
             }
         }

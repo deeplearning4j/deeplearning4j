@@ -57,7 +57,7 @@ public class DenseLayer extends FeedForwardLayer {
         LayerValidation.assertNInNOutSet("DenseLayer", getLayerName(), layerIndex, getNIn(), getNOut());
 
         org.deeplearning4j.nn.layers.feedforward.dense.DenseLayer ret =
-                        new org.deeplearning4j.nn.layers.feedforward.dense.DenseLayer(conf);
+                        new org.deeplearning4j.nn.layers.feedforward.dense.DenseLayer(conf, networkDataType);
         ret.setListeners(trainingListeners);
         ret.setIndex(layerIndex);
         ret.setParamsViewArray(layerParamsView);

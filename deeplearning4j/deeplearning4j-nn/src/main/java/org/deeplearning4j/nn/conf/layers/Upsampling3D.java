@@ -61,7 +61,7 @@ public class Upsampling3D extends BaseUpsamplingLayer {
                                                        Collection<TrainingListener> iterationListeners, int layerIndex, INDArray layerParamsView,
                                                        boolean initializeParams, DataType networkDataType) {
         org.deeplearning4j.nn.layers.convolution.upsampling.Upsampling3D ret =
-                        new org.deeplearning4j.nn.layers.convolution.upsampling.Upsampling3D(conf);
+                        new org.deeplearning4j.nn.layers.convolution.upsampling.Upsampling3D(conf, networkDataType);
         ret.setListeners(iterationListeners);
         ret.setIndex(layerIndex);
         ret.setParamsViewArray(layerParamsView);

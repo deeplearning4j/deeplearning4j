@@ -76,7 +76,7 @@ public class Upsampling2D extends BaseUpsamplingLayer {
                                                        Collection<TrainingListener> trainingListeners, int layerIndex, INDArray layerParamsView,
                                                        boolean initializeParams, DataType networkDataType) {
         org.deeplearning4j.nn.layers.convolution.upsampling.Upsampling2D ret =
-                        new org.deeplearning4j.nn.layers.convolution.upsampling.Upsampling2D(conf);
+                        new org.deeplearning4j.nn.layers.convolution.upsampling.Upsampling2D(conf, networkDataType);
         ret.setListeners(trainingListeners);
         ret.setIndex(layerIndex);
         ret.setParamsViewArray(layerParamsView);

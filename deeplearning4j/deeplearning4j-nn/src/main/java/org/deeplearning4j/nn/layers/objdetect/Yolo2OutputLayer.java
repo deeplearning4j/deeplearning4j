@@ -94,8 +94,8 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
     private double fullNetRegTerm;
     private double score;
 
-    public Yolo2OutputLayer(NeuralNetConfiguration conf) {
-        super(conf);
+    public Yolo2OutputLayer(NeuralNetConfiguration conf, DataType dataType) {
+        super(conf, dataType);
     }
 
     @Override
@@ -120,6 +120,8 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         int w = (int) input.size(3);
         int b = (int) layerConf().getBoundingBoxes().size(0);
         int c = (int) labels.size(1)-4;
+
+        INDArray labels = this.labels.castTo(input.dataType());     //Ensure correct dtype (same as params); no-op if already correct dtype
 
         //Various shape arrays, to reuse
         long[] nhw = new long[]{mb, h, w};

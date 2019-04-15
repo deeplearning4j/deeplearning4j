@@ -23,6 +23,7 @@ import org.deeplearning4j.nn.conf.layers.BaseUpsamplingLayer;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.workspace.ArrayType;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.CustomOp;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
@@ -47,12 +48,8 @@ import java.util.Arrays;
 public class Upsampling1D extends Upsampling2D {
 
 
-    public Upsampling1D(NeuralNetConfiguration conf) {
-        super(conf);
-    }
-
-    public Upsampling1D(NeuralNetConfiguration conf, INDArray input) {
-        super(conf, input);
+    public Upsampling1D(NeuralNetConfiguration conf, DataType dataType) {
+        super(conf, dataType);
     }
 
 

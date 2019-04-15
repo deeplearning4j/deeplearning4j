@@ -70,7 +70,7 @@ public class EmbeddingSequenceLayer extends FeedForwardLayer {
     public Layer instantiate(NeuralNetConfiguration conf, Collection<TrainingListener> trainingListeners,
                              int layerIndex, INDArray layerParamsView, boolean initializeParams, DataType networkDataType) {
         org.deeplearning4j.nn.layers.feedforward.embedding.EmbeddingSequenceLayer ret =
-                        new org.deeplearning4j.nn.layers.feedforward.embedding.EmbeddingSequenceLayer(conf);
+                        new org.deeplearning4j.nn.layers.feedforward.embedding.EmbeddingSequenceLayer(conf, networkDataType);
         ret.setListeners(trainingListeners);
         ret.setIndex(layerIndex);
         ret.setParamsViewArray(layerParamsView);

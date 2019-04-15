@@ -64,7 +64,7 @@ public class Subsampling1DLayer extends SubsamplingLayer {
                                                        Collection<TrainingListener> trainingListeners, int layerIndex, INDArray layerParamsView,
                                                        boolean initializeParams, DataType networkDataType) {
         org.deeplearning4j.nn.layers.convolution.subsampling.Subsampling1DLayer ret =
-                        new org.deeplearning4j.nn.layers.convolution.subsampling.Subsampling1DLayer(conf);
+                        new org.deeplearning4j.nn.layers.convolution.subsampling.Subsampling1DLayer(conf, networkDataType);
         ret.setListeners(trainingListeners);
         ret.setIndex(layerIndex);
         ret.setParamsViewArray(layerParamsView);

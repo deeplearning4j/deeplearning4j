@@ -71,7 +71,7 @@ public class LocalResponseNormalization extends Layer {
                                                        Collection<TrainingListener> trainingListeners, int layerIndex, INDArray layerParamsView,
                                                        boolean initializeParams, DataType networkDataType) {
         org.deeplearning4j.nn.layers.normalization.LocalResponseNormalization ret =
-                        new org.deeplearning4j.nn.layers.normalization.LocalResponseNormalization(conf);
+                        new org.deeplearning4j.nn.layers.normalization.LocalResponseNormalization(conf, networkDataType);
         ret.setListeners(trainingListeners);
         ret.setIndex(layerIndex);
         ret.setParamsViewArray(layerParamsView);

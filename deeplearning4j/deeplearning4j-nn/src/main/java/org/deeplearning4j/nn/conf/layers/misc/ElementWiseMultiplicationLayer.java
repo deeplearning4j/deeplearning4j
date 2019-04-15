@@ -67,7 +67,7 @@ public class ElementWiseMultiplicationLayer extends org.deeplearning4j.nn.conf.l
                             + nIn + ", nOut=" + nOut);
         }
         org.deeplearning4j.nn.layers.feedforward.elementwise.ElementWiseMultiplicationLayer ret =
-                        new org.deeplearning4j.nn.layers.feedforward.elementwise.ElementWiseMultiplicationLayer(conf);
+                        new org.deeplearning4j.nn.layers.feedforward.elementwise.ElementWiseMultiplicationLayer(conf, networkDataType);
         ret.setListeners(trainingListeners);
         ret.setIndex(layerIndex);
         ret.setParamsViewArray(layerParamsView);

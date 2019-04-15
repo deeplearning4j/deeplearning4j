@@ -80,7 +80,7 @@ public class SpaceToDepthLayer extends NoParamLayer {
                                                        Collection<TrainingListener> trainingListeners, int layerIndex, INDArray layerParamsView,
                                                        boolean initializeParams, DataType networkDataType) {
         org.deeplearning4j.nn.layers.convolution.SpaceToDepth ret =
-                        new org.deeplearning4j.nn.layers.convolution.SpaceToDepth(conf);
+                        new org.deeplearning4j.nn.layers.convolution.SpaceToDepth(conf, networkDataType);
         ret.setListeners(trainingListeners);
         ret.setIndex(layerIndex);
         ret.setParamsViewArray(layerParamsView);

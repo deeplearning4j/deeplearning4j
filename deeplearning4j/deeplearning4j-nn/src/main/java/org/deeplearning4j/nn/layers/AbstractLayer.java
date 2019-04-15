@@ -31,6 +31,7 @@ import org.deeplearning4j.nn.workspace.ArrayType;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.deeplearning4j.optimize.api.ConvexOptimizer;
 import org.deeplearning4j.optimize.api.TrainingListener;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.primitives.Pair;
 
@@ -54,18 +55,15 @@ public abstract class AbstractLayer<LayerConfT extends org.deeplearning4j.nn.con
     protected MaskState maskState;
     protected CacheMode cacheMode = CacheMode.NONE;
     protected boolean inputModificationAllowed = false;
+    protected DataType dataType;
 
     protected int iterationCount;
     protected int epochCount;
 
-    public AbstractLayer(NeuralNetConfiguration conf) {
+    public AbstractLayer(NeuralNetConfiguration conf, DataType dataType) {
         this.conf = conf;
         cacheMode = conf.getCacheMode();
-    }
-
-    public AbstractLayer(NeuralNetConfiguration conf, INDArray input) {
-        this(conf);
-        this.input = input;
+        this.dataType = dataType;
     }
 
     @Override

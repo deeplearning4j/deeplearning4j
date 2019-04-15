@@ -26,6 +26,7 @@ import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.params.DeconvolutionParamInitializer;
 import org.deeplearning4j.util.ConvolutionUtils;
 import org.nd4j.linalg.activations.IActivation;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.CustomOp;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
@@ -54,12 +55,8 @@ import java.util.Arrays;
  */
 public class Deconvolution2DLayer extends ConvolutionLayer {
 
-    public Deconvolution2DLayer(NeuralNetConfiguration conf) {
-        super(conf);
-    }
-
-    public Deconvolution2DLayer(NeuralNetConfiguration conf, INDArray input) {
-        super(conf, input);
+    public Deconvolution2DLayer(NeuralNetConfiguration conf, DataType dataType) {
+        super(conf, dataType);
     }
 
 

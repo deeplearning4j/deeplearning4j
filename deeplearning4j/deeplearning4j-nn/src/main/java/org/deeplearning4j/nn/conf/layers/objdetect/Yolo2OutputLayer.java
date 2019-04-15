@@ -98,7 +98,7 @@ public class Yolo2OutputLayer extends org.deeplearning4j.nn.conf.layers.Layer {
     public Layer instantiate(NeuralNetConfiguration conf, Collection<TrainingListener> trainingListeners,
                              int layerIndex, INDArray layerParamsView, boolean initializeParams, DataType networkDataType) {
         org.deeplearning4j.nn.layers.objdetect.Yolo2OutputLayer ret =
-                        new org.deeplearning4j.nn.layers.objdetect.Yolo2OutputLayer(conf);
+                        new org.deeplearning4j.nn.layers.objdetect.Yolo2OutputLayer(conf, networkDataType);
         ret.setListeners(trainingListeners);
         ret.setIndex(layerIndex);
         ret.setParamsViewArray(layerParamsView);

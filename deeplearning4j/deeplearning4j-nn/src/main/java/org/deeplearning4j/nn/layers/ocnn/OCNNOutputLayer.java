@@ -28,6 +28,7 @@ import org.deeplearning4j.nn.workspace.ArrayType;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.activations.impl.ActivationReLU;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Broadcast;
@@ -63,19 +64,12 @@ public class OCNNOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.
 
     private INDArray window;
 
-    public OCNNOutputLayer(NeuralNetConfiguration conf) {
-        super(conf);
+    public OCNNOutputLayer(NeuralNetConfiguration conf, DataType dataType) {
+        super(conf, dataType);
         this.lossFunction = new OCNNLossFunction();
         org.deeplearning4j.nn.conf.ocnn.OCNNOutputLayer ocnnOutputLayer = (org.deeplearning4j.nn.conf.ocnn.OCNNOutputLayer) conf.getLayer();
         ocnnOutputLayer.setLossFn(this.lossFunction);
     }
-
-    public OCNNOutputLayer(NeuralNetConfiguration conf, INDArray input) {
-        super(conf, input);
-        org.deeplearning4j.nn.conf.ocnn.OCNNOutputLayer ocnnOutputLayer = (org.deeplearning4j.nn.conf.ocnn.OCNNOutputLayer) conf.getLayer();
-        ocnnOutputLayer.setLossFn(this.lossFunction);
-    }
-
 
     @Override
     public void setLabels(INDArray labels) {

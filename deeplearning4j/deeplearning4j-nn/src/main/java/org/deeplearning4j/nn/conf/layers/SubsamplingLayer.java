@@ -121,7 +121,7 @@ public class SubsamplingLayer extends NoParamLayer {
                                                        Collection<TrainingListener> trainingListeners, int layerIndex, INDArray layerParamsView,
                                                        boolean initializeParams, DataType networkDataType) {
         org.deeplearning4j.nn.layers.convolution.subsampling.SubsamplingLayer ret =
-                        new org.deeplearning4j.nn.layers.convolution.subsampling.SubsamplingLayer(conf);
+                        new org.deeplearning4j.nn.layers.convolution.subsampling.SubsamplingLayer(conf, networkDataType);
         ret.setListeners(trainingListeners);
         ret.setIndex(layerIndex);
         ret.setParamsViewArray(layerParamsView);
@@ -340,7 +340,8 @@ public class SubsamplingLayer extends NoParamLayer {
             this.padding = ValidationUtils.validate2NonNegative(padding,false, "padding");
         }
 
-        public void setDilation(int... dilation) {
+
+        public void setDilation(int[] dilation) {
             this.dilation = ValidationUtils.validate2NonNegative(dilation, false, "dilation");
         }
     }

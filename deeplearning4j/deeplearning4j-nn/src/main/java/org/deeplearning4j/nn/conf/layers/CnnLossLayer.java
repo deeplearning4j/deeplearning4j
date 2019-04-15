@@ -72,7 +72,7 @@ public class CnnLossLayer extends FeedForwardLayer {
     public Layer instantiate(NeuralNetConfiguration conf, Collection<TrainingListener> trainingListeners,
                              int layerIndex, INDArray layerParamsView, boolean initializeParams, DataType networkDataType) {
         org.deeplearning4j.nn.layers.convolution.CnnLossLayer ret =
-                        new org.deeplearning4j.nn.layers.convolution.CnnLossLayer(conf);
+                        new org.deeplearning4j.nn.layers.convolution.CnnLossLayer(conf, networkDataType);
         ret.setListeners(trainingListeners);
         ret.setIndex(layerIndex);
         ret.setParamsViewArray(layerParamsView);

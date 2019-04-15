@@ -54,7 +54,7 @@ public class CustomOutputLayer extends BaseOutputLayer {
     @Override
     public Layer instantiate(NeuralNetConfiguration conf, Collection<TrainingListener> trainingListeners,
                              int layerIndex, INDArray layerParamsView, boolean initializeParams, DataType networkDataType) {
-        CustomOutputLayerImpl ret = new CustomOutputLayerImpl(conf);
+        CustomOutputLayerImpl ret = new CustomOutputLayerImpl(conf, networkDataType);
         ret.setListeners(trainingListeners);
         ret.setIndex(layerIndex);
         ret.setParamsViewArray(layerParamsView);

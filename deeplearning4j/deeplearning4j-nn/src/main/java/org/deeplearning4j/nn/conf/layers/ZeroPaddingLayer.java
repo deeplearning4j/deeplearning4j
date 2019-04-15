@@ -70,7 +70,7 @@ public class ZeroPaddingLayer extends NoParamLayer {
                                                        Collection<TrainingListener> trainingListeners, int layerIndex, INDArray layerParamsView,
                                                        boolean initializeParams, DataType networkDataType) {
         org.deeplearning4j.nn.layers.convolution.ZeroPaddingLayer ret =
-                        new org.deeplearning4j.nn.layers.convolution.ZeroPaddingLayer(conf);
+                        new org.deeplearning4j.nn.layers.convolution.ZeroPaddingLayer(conf, networkDataType);
         ret.setListeners(trainingListeners);
         ret.setIndex(layerIndex);
         Map<String, INDArray> paramTable = initializer().init(conf, layerParamsView, initializeParams);

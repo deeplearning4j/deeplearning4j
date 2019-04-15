@@ -130,7 +130,7 @@ public class SeparableConvolution2D extends ConvolutionLayer {
         LayerValidation.assertNInNOutSet("SeparableConvolution2D", getLayerName(), layerIndex, getNIn(), getNOut());
 
         org.deeplearning4j.nn.layers.convolution.SeparableConvolution2DLayer ret =
-                        new org.deeplearning4j.nn.layers.convolution.SeparableConvolution2DLayer(conf);
+                        new org.deeplearning4j.nn.layers.convolution.SeparableConvolution2DLayer(conf, networkDataType);
         ret.setListeners(trainingListeners);
         ret.setIndex(layerIndex);
         ret.setParamsViewArray(layerParamsView);

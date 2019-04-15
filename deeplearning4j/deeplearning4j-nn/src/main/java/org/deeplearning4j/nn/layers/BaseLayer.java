@@ -26,6 +26,7 @@ import org.deeplearning4j.nn.workspace.ArrayType;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.deeplearning4j.optimize.Solver;
 import org.deeplearning4j.optimize.api.ConvexOptimizer;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.LayerNorm;
@@ -56,13 +57,8 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
 
     protected Map<String,INDArray> weightNoiseParams = new HashMap<>();
 
-    public BaseLayer(NeuralNetConfiguration conf) {
-        super(conf);
-    }
-
-    public BaseLayer(NeuralNetConfiguration conf, INDArray input) {
-        this(conf);
-        this.input = input;
+    public BaseLayer(NeuralNetConfiguration conf, DataType dataType) {
+        super(conf, dataType);
     }
 
     public LayerConfT layerConf() {

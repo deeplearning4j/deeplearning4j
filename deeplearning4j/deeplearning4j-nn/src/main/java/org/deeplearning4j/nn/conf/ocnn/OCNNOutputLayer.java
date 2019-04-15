@@ -110,7 +110,7 @@ public class OCNNOutputLayer extends BaseOutputLayer {
         LayerValidation.assertNInNOutSet("OCNNOutputLayer", getLayerName(), layerIndex, getNIn(), getNOut());
 
         org.deeplearning4j.nn.layers.ocnn.OCNNOutputLayer ret =
-                        new org.deeplearning4j.nn.layers.ocnn.OCNNOutputLayer(conf);
+                        new org.deeplearning4j.nn.layers.ocnn.OCNNOutputLayer(conf, networkDataType);
         ret.setListeners(trainingListeners);
         ret.setIndex(layerIndex);
         ret.setParamsViewArray(layerParamsView);

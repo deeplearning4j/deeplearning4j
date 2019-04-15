@@ -65,7 +65,7 @@ public class SimpleRnn extends BaseRecurrentLayer {
         LayerValidation.assertNInNOutSet("SimpleRnn", getLayerName(), layerIndex, getNIn(), getNOut());
 
         org.deeplearning4j.nn.layers.recurrent.SimpleRnn ret =
-                        new org.deeplearning4j.nn.layers.recurrent.SimpleRnn(conf);
+                        new org.deeplearning4j.nn.layers.recurrent.SimpleRnn(conf, networkDataType);
         ret.setListeners(trainingListeners);
         ret.setIndex(layerIndex);
         ret.setParamsViewArray(layerParamsView);

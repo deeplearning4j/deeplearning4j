@@ -30,6 +30,7 @@ import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.base.Preconditions;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.layers.ExternalErrorsFunction;
@@ -59,11 +60,9 @@ public class SameDiffOutputLayer extends AbstractLayer<org.deeplearning4j.nn.con
     protected Map<String,INDArray> gradTable;
 
 
-    public SameDiffOutputLayer(NeuralNetConfiguration conf){
-        super(conf);
+    public SameDiffOutputLayer(NeuralNetConfiguration conf, DataType dataType){
+        super(conf, dataType);
     }
-
-
 
     @Override
     public Layer clone() {

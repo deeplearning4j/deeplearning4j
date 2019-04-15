@@ -24,6 +24,7 @@ import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.AbstractLayer;
 import org.deeplearning4j.nn.layers.LayerHelper;
 import org.deeplearning4j.nn.layers.mkldnn.MKLDNNLocalResponseNormalizationHelper;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.OldMulOp;
 import org.nd4j.linalg.factory.Nd4j;
@@ -73,18 +74,13 @@ public class LocalResponseNormalization
     protected LocalResponseNormalizationHelper helper = null;
     protected int helperCountFail = 0;
 
-    public LocalResponseNormalization(NeuralNetConfiguration conf, INDArray input) {
-        super(conf, input);
-        initializeHelper();
-    }
-
     @Override
     public Layer clone() {
-        return new LocalResponseNormalization(conf.clone());
+        return new LocalResponseNormalization(conf.clone(), dataType);
     }
 
-    public LocalResponseNormalization(NeuralNetConfiguration conf) {
-        super(conf);
+    public LocalResponseNormalization(NeuralNetConfiguration conf, DataType dataType) {
+        super(conf, dataType);
         initializeHelper();
     }
 

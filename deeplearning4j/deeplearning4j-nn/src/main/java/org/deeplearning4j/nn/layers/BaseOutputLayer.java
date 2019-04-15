@@ -26,6 +26,7 @@ import org.deeplearning4j.nn.workspace.ArrayType;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.deeplearning4j.optimize.Solver;
 import org.nd4j.evaluation.classification.Evaluation;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
@@ -59,12 +60,8 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
     protected INDArray inputMaskArray;
     protected MaskState inputMaskArrayState;
 
-    public BaseOutputLayer(NeuralNetConfiguration conf) {
-        super(conf);
-    }
-
-    public BaseOutputLayer(NeuralNetConfiguration conf, INDArray input) {
-        super(conf, input);
+    public BaseOutputLayer(NeuralNetConfiguration conf, DataType dataType) {
+        super(conf, dataType);
     }
 
     /** Compute score after labels and input have been set.
