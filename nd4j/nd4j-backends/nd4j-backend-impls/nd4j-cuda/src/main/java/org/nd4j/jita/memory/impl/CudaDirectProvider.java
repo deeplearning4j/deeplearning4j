@@ -68,23 +68,22 @@ public class CudaDirectProvider implements MemoryProvider {
 
         switch (location) {
             case HOST: {
-                Pointer devicePointer = new Pointer();
                 long reqMem = AllocationUtils.getRequiredMemory(shape);
 
                 // FIXME: this is WRONG, and directly leads to memleak
                 if (reqMem < 1)
                     reqMem = 1;
 
-                Pointer pointer = nativeOps.mallocHost(reqMem, 0);
+                val pointer = nativeOps.mallocHost(reqMem, 0);
                 if (pointer == null)
                     throw new RuntimeException("Can't allocate [HOST] memory: " + reqMem + "; threadId: "
                                     + Thread.currentThread().getId());
 
                 //                log.info("Host allocation, Thread id: {}, ReqMem: {}, Pointer: {}", Thread.currentThread().getId(), reqMem, pointer != null ? pointer.address() : null);
 
-                Pointer hostPointer = new CudaPointer(pointer);
+                val hostPointer = new CudaPointer(pointer);
 
-                PointersPair devicePointerInfo = new PointersPair();
+                val devicePointerInfo = new PointersPair();
                 devicePointerInfo.setDevicePointer(new CudaPointer(hostPointer, reqMem));
                 devicePointerInfo.setHostPointer(new CudaPointer(hostPointer, reqMem));
 
@@ -95,7 +94,7 @@ public class CudaDirectProvider implements MemoryProvider {
             }
             case DEVICE: {
                 // cudaMalloc call
-                int deviceId = AtomicAllocator.getInstance().getDeviceId();
+                val deviceId = AtomicAllocator.getInstance().getDeviceId();
                 long reqMem = AllocationUtils.getRequiredMemory(shape);
 
                 // FIXME: this is WRONG, and directly leads to memleak
@@ -103,11 +102,21 @@ public class CudaDirectProvider implements MemoryProvider {
                     reqMem = 1;
 
                 AllocationsTracker.getInstance().markAllocated(AllocationKind.GENERAL, deviceId, reqMem);
-                Pointer pointer = nativeOps.mallocDevice(reqMem, null, 0);
-                //log.info("Device [{}] allocation, Thread id: {}, ReqMem: {}, Pointer: {}", AtomicAllocator.getInstance().getDeviceId(), Thread.currentThread().getId(), reqMem, pointer != null ? pointer.address() : null);
+                var pointer = nativeOps.mallocDevice(reqMem, null, 0);
+                if (pointer == null) {
+                    // try to purge stuff if we're low on memory
+                    val freeDev = MemoryTracker.getInstance().getPreciseFreeMemory(deviceId);
+                    if (freeDev < 128 * 104L * 1024L)
+                        purgeCache(deviceId);
 
-                if (pointer == null)
-                    return null;
+                    // call for gc
+                    Nd4j.getMemoryManager().invokeGc();
+
+
+                    pointer = nativeOps.mallocDevice(reqMem, null, 0);
+                    if (pointer == null)
+                        return null;
+                }
 
                 val devicePointer = new CudaPointer(pointer);
 
@@ -137,7 +146,7 @@ public class CudaDirectProvider implements MemoryProvider {
             case HOST: {
                 // cudaFreeHost call here
                 long reqMem = AllocationUtils.getRequiredMemory(point.getShape());
-                NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
+                val nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
 
                 long result = nativeOps.freeHost(point.getPointers().getHostPointer());
                 if (result == 0)
@@ -150,7 +159,7 @@ public class CudaDirectProvider implements MemoryProvider {
 
                 long reqMem = AllocationUtils.getRequiredMemory(point.getShape());
 
-                NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
+                val nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
                 AllocationsTracker.getInstance().markReleased(AllocationKind.GENERAL, point.getDeviceId(), reqMem);
 
                 val pointers = point.getPointers();
@@ -204,13 +213,17 @@ public class CudaDirectProvider implements MemoryProvider {
     }
 
     protected void freeHost(Pointer pointer) {
-        NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
+        val nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
         nativeOps.freeHost(pointer);
     }
 
     protected void freeDevice(Pointer pointer, int deviceId) {
-        NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
+        val nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
         nativeOps.freeDevice(pointer, new CudaPointer(0));
+    }
+
+    protected void purgeCache(int deviceId) {
+        //
     }
 
     @Override

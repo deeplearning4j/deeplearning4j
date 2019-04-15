@@ -17,7 +17,9 @@ public class MemoryTrackerTest {
         val approxBefore = MemoryTracker.getInstance().getApproximateFreeMemory(0);
         val deltaBefore = precBefore - approxBefore;
 
-        val buffer = Nd4j.createBuffer(DataType.FLOAT, 1000, false);
+        for (int i = 0; i < 100; i++) {
+            val buffer = Nd4j.createBuffer(DataType.FLOAT, 100000, false);
+        }
 
         val precAfter = MemoryTracker.getInstance().getPreciseFreeMemory(0);
         val approxAfter = MemoryTracker.getInstance().getApproximateFreeMemory(0);

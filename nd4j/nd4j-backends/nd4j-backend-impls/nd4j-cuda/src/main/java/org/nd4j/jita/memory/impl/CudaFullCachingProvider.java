@@ -108,39 +108,8 @@ public class CudaFullCachingProvider extends CudaCachingZeroProvider {
                     return pair;
                 }
             }
-
-            // in case of miss, we'll check how many memory we have left, and if there's way too close to threshold - we'll call gc.
-            val desiredFreeSpace = 512 * 1024L * 1024L;
-            val approx = MemoryTracker.getInstance().getApproximateFreeMemory(deviceId);
-            if (approx < desiredFreeSpace) {
-                log.info("Cached before gc: {} bytes", MemoryTracker.getInstance().getCachedAmount(deviceId));
-                log.info("Active before gc: {} bytes", MemoryTracker.getInstance().getAllocatedAmount(deviceId));
-
-                purgeCache(deviceId);
-                Nd4j.getMemoryManager().invokeGc();
-
-                log.info("Cached after gc: {} bytes", MemoryTracker.getInstance().getCachedAmount(deviceId));
-                log.info("Active after gc: {} bytes", MemoryTracker.getInstance().getAllocatedAmount(deviceId));
-
-            }
-
             cacheDeviceMiss.incrementAndGet();
             return super.malloc(shape, point, location);
-        } else if (location == AllocationStatus.DEVICE) {
-            int deviceId = AtomicAllocator.getInstance().getDeviceId();
-            val desiredFreeSpace = 512 * 1024L * 1024L;
-            val approx = MemoryTracker.getInstance().getApproximateFreeMemory(deviceId);
-            if (approx < desiredFreeSpace) {
-                log.info("Cached before gc: {} bytes", MemoryTracker.getInstance().getCachedAmount(deviceId));
-                log.info("Active before gc: {} bytes", MemoryTracker.getInstance().getAllocatedAmount(deviceId));
-
-                purgeCache(deviceId);
-                Nd4j.getMemoryManager().invokeGc();
-
-                log.info("Cached after gc: {} bytes", MemoryTracker.getInstance().getCachedAmount(deviceId));
-                log.info("Active after gc: {} bytes", MemoryTracker.getInstance().getAllocatedAmount(deviceId));
-
-            }
         }
         return super.malloc(shape, point, location);
     }
@@ -228,6 +197,7 @@ public class CudaFullCachingProvider extends CudaCachingZeroProvider {
         }
     }
 
+    @Override
     protected synchronized void purgeCache(int deviceId) {
         for (AllocationShape shape : deviceCache.get(deviceId).keySet()) {
             Pointer ptr = null;
