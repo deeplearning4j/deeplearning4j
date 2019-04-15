@@ -1975,7 +1975,7 @@ __global__ static void concatCuda(const int numOfArrs, void* pVx,  void* pxShape
         zShapeInfo = reinterpret_cast<Nd4jLong**>(pzShapeInfo)[arrIdx];
 
         arrLen = shape::length(xShapeInfo);
-        arrLen = shape::length(zShapeInfo);
+        arrLenZ = shape::length(zShapeInfo);
         arrLenPerBlock = (arrLen + blocksPerArr - 1) / blocksPerArr;  // ceil
 
         start = (blockIdx.x % blocksPerArr) * arrLenPerBlock;
