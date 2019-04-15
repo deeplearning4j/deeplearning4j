@@ -1363,7 +1363,7 @@ void NativeOps::execTransformStrict(Nd4jPointer *extraPointers,int opNum,
                     tempPointers[15] = extraPointers[15];
 
                     Nd4jLong maxShape[2] = {shape::shapeOf(hXShapeInfo)[0], 1};
-                    auto hostMaxShapeBuffer = shape::shapeBuffer(2, xType, maxShape);
+                    auto hostMaxShapeBuffer = nd4j::ShapeBuilders::createShapeInfo(xType, 'c', 2, maxShape);                    
 
                     auto cshape = ShapeBuilders::createVectorShapeInfo(nd4j::DataType::INT32, 1);
 

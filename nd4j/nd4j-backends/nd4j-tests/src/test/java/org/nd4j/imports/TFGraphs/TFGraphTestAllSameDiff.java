@@ -170,7 +170,6 @@ public class TFGraphTestAllSameDiff {
                     TFGraphTestAllHelper.LOADER, maxRE, minAbs);
         } catch (Throwable t){
             log.error("ERROR Executing test: {} - input keys {}", modelName, (inputs == null ? null : inputs.keySet()), t);
-            t.printStackTrace();
             throw t;
         }
         //TFGraphTestAllHelper.checkIntermediate(inputs, modelName, EXECUTE_WITH);
