@@ -361,7 +361,7 @@ TEST_F(ListOperationsTests, GraphTests_Sequential_1) {
     tadsExp->at(2)->assign(-2.f);
     delete tadsExp;
 
-    auto indices = NDArrayFactory::valueOf({1, 3}, 1.0f, 'c');
+    auto indices = NDArrayFactory::valueOf<int>({3}, 1, 'c');
     //indices->linspace(0);
 
 

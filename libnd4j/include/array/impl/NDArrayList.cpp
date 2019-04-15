@@ -72,24 +72,47 @@ namespace nd4j {
         if (_chunks.empty()) {
             _dtype = array->dataType();
 
-            //adding leading 1 to shape
-            _shape.emplace_back(1);
-            for (int e = 0; e < array->rankOf(); e++)
-                _shape.emplace_back(array->sizeAt(e));
+            if (_shape.empty()) {
+                //adding leading 1 to shape
+                _shape.emplace_back(1);
+                for (int e = 0; e < array->rankOf(); e++)
+                    _shape.emplace_back(array->sizeAt(e));
+            } else {
+                // if shape is inferred (say, from split_list)
+                if (array->rankOf() == _shape.size()) {
+                    // skipping first dim
+                    for (int e = 1; e < _shape.size(); e++) {
+                        if (_shape[e] != array->sizeAt(e))
+                            return Status::CODE(ND4J_STATUS_BAD_INPUT, "NDArrayList: all arrays must have same size along inner dimensions");
+                    }
+                } else if (array->rankOf() == _shape.size() - 1) {
+                    // case like 2d _shape, and 1D rows
+                    for (int e = 1; e < _shape.size(); e++)
+                        if (_shape[e] != array->sizeAt(e - 1))
+                            return Status::CODE(ND4J_STATUS_BAD_INPUT, "NDArrayList: all arrays must have same size along inner dimensions");
+                } else
+                    return Status::CODE(ND4J_STATUS_BAD_INPUT, "NDArrayList: all arrays must have same size along inner dimensions");
+
+            }
         } else {
             if (array->dataType() != _dtype)
                 return Status::CODE(ND4J_STATUS_BAD_INPUT, "NDArrayList: all arrays must have same data type");
 
 
-            if (array->rankOf() + 1 != _shape.size())
-                return ND4J_STATUS_BAD_DIMENSIONS;
-
-            // we should validate shape before adding new array to chunks
-            for (int e = 1; e < array->rankOf(); e++) {
-                array->printShapeInfo("array");
-                if (_shape[e] != array->sizeAt(e - 1))
-                    return ND4J_STATUS_BAD_DIMENSIONS;
-            }
+            // if shape is inferred (say, from split_list)
+            if (array->rankOf() == _shape.size()) {
+                // skipping first dim
+                for (int e = 1; e < _shape.size(); e++) {
+                    if (_shape[e] != array->sizeAt(e))
+                        return Status::CODE(ND4J_STATUS_BAD_INPUT, "NDArrayList: all arrays must have same size along inner dimensions");
+                }
+            } else if (array->rankOf() == _shape.size() - 1) {
+                // case like 2d _shape, and 1D rows
+                for (int e = 1; e < _shape.size(); e++)
+                    if (_shape[e] != array->sizeAt(e - 1))
+                        return Status::CODE(ND4J_STATUS_BAD_INPUT, "NDArrayList: all arrays must have same size along inner dimensions");
+            } else
+                return Status::CODE(ND4J_STATUS_BAD_INPUT, "NDArrayList: all arrays must have same size along inner dimensions");
         }
         
         //_elements++;
@@ -98,6 +121,10 @@ namespace nd4j {
         _chunks[idx] = array;
 
         return ND4J_STATUS_OK;
+    }
+
+    std::vector<Nd4jLong>& NDArrayList::shape() {
+        return _shape;
     }
 
     int NDArrayList::counter() {
