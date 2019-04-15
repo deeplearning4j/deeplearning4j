@@ -107,12 +107,12 @@ namespace ops  {
 
     DECLARE_SHAPE_FN(layer_norm_bp) {
         Nd4jLong *dLdx_shape;
-        COPY_SHAPE(inputShape->at(0), dLdx_shape)
+        COPY_SHAPE(inputShape->at(0), dLdx_shape);
         Nd4jLong *dLdg_shape;
-        COPY_SHAPE(inputShape->at(1), dLdg_shape)
+        COPY_SHAPE(inputShape->at(1), dLdg_shape);
         if(inputShape->size() > 3){
             Nd4jLong *dLdb_shape;
-            COPY_SHAPE(inputShape->at(2), dLdb_shape)
+            COPY_SHAPE(inputShape->at(2), dLdb_shape);
             return SHAPELIST(dLdx_shape, dLdg_shape, dLdb_shape);
         }
         return SHAPELIST(dLdx_shape, dLdg_shape);
