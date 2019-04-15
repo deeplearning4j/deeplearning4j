@@ -929,13 +929,17 @@ public class Nd4jTestsC extends BaseNd4jTest {
 
         for (char order : new char[] {'c', 'f'}) {
             System.out.println(order);
-            Nd4j.factory().setOrder(order);
 
             INDArray arr1 = Nd4j.linspace(1, 6, 6, DataType.DOUBLE).reshape( 2, 3).dup('c');
             INDArray arr2 = Nd4j.linspace(7, 9, 3, DataType.DOUBLE).reshape(1, 3).dup('c');
 
+            Nd4j.factory().setOrder(order);
+
+            log.info("arr1: {}", arr1.data());
+            log.info("arr2: {}", arr2.data());
+
             INDArray merged = Nd4j.vstack(arr1, arr2);
-            System.out.println(merged);
+            System.out.println(merged.data());
             System.out.println(expected);
 
             assertEquals("Failed for [" + order + "] order", expected, merged);
