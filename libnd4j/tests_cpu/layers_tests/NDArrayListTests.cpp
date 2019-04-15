@@ -49,7 +49,7 @@ TEST_F(NDArrayListTests, BasicTests_2) {
 
     ASSERT_EQ(ND4J_STATUS_OK, list.write(1, x.dup()));
 
-    ASSERT_EQ(ND4J_STATUS_BAD_DIMENSIONS, list.write(0, &y));
+    ASSERT_EQ(ND4J_STATUS_BAD_INPUT, list.write(0, &y));
 }
 
 
