@@ -58,6 +58,8 @@ public class ElementWiseMultiplicationLayer extends BaseLayer<org.deeplearning4j
             applyMask(delta);
         }
 
+        INDArray input = this.input.castTo(dataType);
+
         Gradient ret = new DefaultGradient();
 
         INDArray weightGrad =  gradientViews.get(ElementWiseParamInitializer.WEIGHT_KEY);
@@ -101,6 +103,8 @@ public class ElementWiseMultiplicationLayer extends BaseLayer<org.deeplearning4j
                             + ") is invalid: does not match layer input size (layer # inputs = "
                             + W.shapeInfoToString() + ") " + layerId());
         }
+
+        INDArray input = this.input.castTo(dataType);
 
         applyDropOutIfNecessary(training, workspaceMgr);
 

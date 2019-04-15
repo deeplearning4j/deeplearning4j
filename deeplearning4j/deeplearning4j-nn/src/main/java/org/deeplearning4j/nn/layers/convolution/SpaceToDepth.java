@@ -81,6 +81,8 @@ public class SpaceToDepth extends AbstractLayer<org.deeplearning4j.nn.conf.layer
         int inH = (int) input.size(2);
         int inW = (int) input.size(3);
 
+        INDArray input = this.input.castTo(dataType);    //No-op if already correct type
+
         INDArray outEpsilon = workspaceMgr.create(ArrayType.ACTIVATION_GRAD, input.dataType(), new long[]{1, miniBatch * inDepth * inH * inW}, 'c');
         INDArray reshapedEpsilon;
 

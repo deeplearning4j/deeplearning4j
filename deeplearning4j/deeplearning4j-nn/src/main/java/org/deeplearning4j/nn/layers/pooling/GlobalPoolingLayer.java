@@ -229,6 +229,8 @@ public class GlobalPoolingLayer extends AbstractLayer<org.deeplearning4j.nn.conf
             epsilon = epsilon.reshape(epsilon.ordering(), origShape[0], origShape[1]);
         }
 
+        INDArray input = this.input.castTo(dataType);       //No-op if already correct dtype
+
         Gradient retGradient = new DefaultGradient(); //Empty: no params
 
         int[] poolDim = null;

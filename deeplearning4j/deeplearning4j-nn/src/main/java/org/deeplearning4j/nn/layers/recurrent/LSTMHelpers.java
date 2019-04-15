@@ -84,7 +84,7 @@ public class LSTMHelpers {
      */
     static public FwdPassReturn activateHelper(final BaseLayer layer, final NeuralNetConfiguration conf,
                                                final IActivation gateActivationFn, //Activation function for the gates - sigmoid or hard sigmoid (must be found in range 0 to 1)
-                                               final INDArray input, final INDArray recurrentWeights, //Shape: [hiddenLayerSize,4*hiddenLayerSize+3]; order: [wI,wF,wO,wG,wFF,wOO,wGG]
+                                               INDArray input, final INDArray recurrentWeights, //Shape: [hiddenLayerSize,4*hiddenLayerSize+3]; order: [wI,wF,wO,wG,wFF,wOO,wGG]
                                                final INDArray originalInputWeights, //Shape: [n^(L-1),4*hiddenLayerSize]; order: [wi,wf,wo,wg]
                                                final INDArray biases, //Shape: [4,hiddenLayerSize]; order: [bi,bf,bo,bg]^T
                                                final boolean training, final INDArray originalPrevOutputActivations,
@@ -104,6 +104,8 @@ public class LSTMHelpers {
         INDArray prevOutputActivations = originalPrevOutputActivations;
 
         boolean is2dInput = input.rank() < 3; //Edge case of T=1, may have shape [m,nIn], equiv. to [m,nIn,1]
+
+        input = input.castTo(inputWeights.dataType());  //No-op if already correct dtype
 
         // FIXME
         int timeSeriesLength = (int) (is2dInput ? 1 : input.size(2));
@@ -426,7 +428,7 @@ public class LSTMHelpers {
     }
 
     static public Pair<Gradient, INDArray> backpropGradientHelper(final NeuralNetConfiguration conf,
-                    final IActivation gateActivationFn, final INDArray input, final INDArray recurrentWeights, //Shape: [hiddenLayerSize,4*hiddenLayerSize+3]; order: [wI,wF,wO,wG,wFF,wOO,wGG]
+                    final IActivation gateActivationFn, INDArray input, final INDArray recurrentWeights, //Shape: [hiddenLayerSize,4*hiddenLayerSize+3]; order: [wI,wF,wO,wG,wFF,wOO,wGG]
                     final INDArray inputWeights, //Shape: [n^(L-1),4*hiddenLayerSize]; order: [wi,wf,wo,wg]
                     final INDArray epsilon, final boolean truncatedBPTT, final int tbpttBackwardLength,
                     final FwdPassReturn fwdPass, final boolean forwards, final String inputWeightKey,
@@ -436,6 +438,7 @@ public class LSTMHelpers {
                     final LSTMHelper helper,
                     final LayerWorkspaceMgr workspaceMgr) {
 
+        input = input.castTo(inputWeights.dataType());  //No-op if
 
         //Expect errors to have shape: [miniBatchSize,n^(L+1),timeSeriesLength]
         val hiddenLayerSize = recurrentWeights.size(0); //i.e., n^L
