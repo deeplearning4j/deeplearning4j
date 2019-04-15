@@ -189,7 +189,7 @@ TEST_F(ListOperationsTests, BasicTest_Split_1) {
 
     auto matrix = NDArrayFactory::create<double>('c', {10, 5});
 
-    auto lengths = NDArrayFactory::create<double>('c', {1, 3});
+    auto lengths = NDArrayFactory::create<int>('c', {3});
     lengths.p(0, 2);
     lengths.p(1, 3);
     lengths.p(2, 5);
@@ -220,7 +220,7 @@ TEST_F(ListOperationsTests, BasicTest_Split_1) {
 
     nd4j::ops::split_list op;
     auto result = op.execute(&list, {&matrix, &lengths}, {}, {});
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(Status::OK(), result->status());
 
     ASSERT_EQ(3, list.height());
 

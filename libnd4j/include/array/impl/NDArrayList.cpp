@@ -80,13 +80,16 @@ namespace nd4j {
             if (array->dataType() != _dtype)
                 return Status::CODE(ND4J_STATUS_BAD_INPUT, "NDArrayList: all arrays must have same data type");
 
+
             if (array->rankOf() + 1 != _shape.size())
                 return ND4J_STATUS_BAD_DIMENSIONS;
 
             // we should validate shape before adding new array to chunks
-            for (int e = 1; e < array->rankOf(); e++)
+            for (int e = 1; e < array->rankOf(); e++) {
+                array->printShapeInfo("array");
                 if (_shape[e] != array->sizeAt(e - 1))
                     return ND4J_STATUS_BAD_DIMENSIONS;
+            }
         }
         
         //_elements++;

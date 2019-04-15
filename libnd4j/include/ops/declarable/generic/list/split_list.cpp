@@ -45,6 +45,9 @@ namespace nd4j {
                 block.trackList(list);
             }
 
+            REQUIRE_TRUE(sizes->isZ(), 0, "split_list: sizes array must have one of integer types");
+            REQUIRE_TRUE(sizes->rankOf() == 1, 0, "split_list: sizes array must be 1D")
+
             // now let's build subarrays
             int cnt = 0;
             std::vector<Nd4jLong> indices(2 * array->rankOf(), 0);
