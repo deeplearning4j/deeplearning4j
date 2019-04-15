@@ -86,6 +86,12 @@ public abstract class SameDiffLayer extends AbstractSameDiffLayer {
         return new Pair<>(maskArray, currentMaskState);
     }
 
+    /**
+     * Validate input arrays to confirm that they fulfill the assumptions of the layer. If they don't, throw an exception.
+     * @param input input to the layer
+     */
+    public void validateInput(INDArray input){/* no-op */}
+
     //==================================================================================================================
 
     @Override

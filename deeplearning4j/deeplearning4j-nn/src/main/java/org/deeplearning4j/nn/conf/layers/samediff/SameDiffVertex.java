@@ -138,6 +138,12 @@ public abstract class SameDiffVertex extends GraphVertex implements TrainingConf
         throw new UnsupportedOperationException("Not yet supported");
     }
 
+    /**
+     * Validate input arrays to confirm that they fulfill the assumptions of the layer. If they don't, throw an exception.
+     * @param input inputs to the layer
+     */
+    public void validateInput(INDArray[] input){/* no-op */}
+
     @Override
     public MemoryReport getMemoryReport(InputType... inputTypes) {
         return null;

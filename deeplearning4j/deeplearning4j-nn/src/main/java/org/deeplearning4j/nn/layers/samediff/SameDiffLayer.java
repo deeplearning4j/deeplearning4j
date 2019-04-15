@@ -83,6 +83,9 @@ public class SameDiffLayer extends AbstractLayer<AbstractSameDiffLayer> {
 
         try(MemoryWorkspace ws = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()) {
 //            sameDiff.clearExecutionCache();
+            org.deeplearning4j.nn.conf.layers.samediff.SameDiffLayer bl = (org.deeplearning4j.nn.conf.layers.samediff.SameDiffLayer) layerConf();
+            bl.validateInput(input);
+
             sameDiff.associateArrayWithVariable(input.dup(), sameDiff.getVariable(INPUT_KEY));
             for(String s : paramTable.keySet() ) {
                 sameDiff.associateArrayWithVariable(paramTable.get(s), s);
@@ -104,6 +107,9 @@ public class SameDiffLayer extends AbstractLayer<AbstractSameDiffLayer> {
         INDArray dLdIn;
         try(MemoryWorkspace ws = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()){
 //            sameDiff.clearExecutionCache();
+            org.deeplearning4j.nn.conf.layers.samediff.SameDiffLayer bl = (org.deeplearning4j.nn.conf.layers.samediff.SameDiffLayer) layerConf();
+            bl.validateInput(input);
+
             sameDiff.associateArrayWithVariable(input.dup(), sameDiff.getVariable(INPUT_KEY));
             if(maskArray != null){
                 sameDiff.associateArrayWithVariable(maskArray, sameDiff.getVariable(MASK_KEY));

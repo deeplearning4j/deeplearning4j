@@ -48,6 +48,9 @@ import java.util.Map;
  * Attention implemented as in
  * Attention is all you need by Vaswani et al. [arXiv:1706.03762], pp. 4,5
  *
+ * <b>Note: At the moment this is limited to equal-length mini-batch input. Mixing mini-batches of differing timestep
+ * counts will not work.</b>
+ *
  * @see LearnedSelfAttentionLayer
  * @see SelfAttentionLayer
  * @see org.nd4j.linalg.api.ops.impl.transforms.custom.MultiHeadDotProductAttention
@@ -71,6 +74,7 @@ public class RecurrentAttentionLayer extends SameDiffLayer {
     private static final String WEIGHT_KEY = SimpleRnnParamInitializer.WEIGHT_KEY;
     private static final String BIAS_KEY = SimpleRnnParamInitializer.BIAS_KEY;
     private static final String RECURRENT_WEIGHT_KEY = SimpleRnnParamInitializer.RECURRENT_WEIGHT_KEY;
+    private int timeSteps;
 
     private RecurrentAttentionLayer(){/*No arg constructor for serialization*/}
 
@@ -169,14 +173,20 @@ public class RecurrentAttentionLayer extends SameDiffLayer {
     }
 
     @Override
+    public void validateInput(INDArray input) {
+        final long inputLength = input.size(2);
+        Preconditions.checkArgument(inputLength == (long) this.timeSteps, "This layer only supports fixed length mini-batches. Expected %s time steps but got %s.", this.timeSteps, inputLength);
+    }
+
+    @Override
     public SDVariable defineLayer(SameDiff sameDiff, SDVariable layerInput, Map<String, SDVariable> paramTable, SDVariable mask) {
         final val W = paramTable.get(WEIGHT_KEY);
         final val R = paramTable.get(RECURRENT_WEIGHT_KEY);
         final val b = paramTable.get(BIAS_KEY);
 
         SDVariable[] inputSlices = sameDiff.unstack(layerInput, 2);
-        final val timeSteps = inputSlices.length;
-        SDVariable[] outputSlices = new SDVariable[(int) timeSteps];
+        this.timeSteps = inputSlices.length;
+        SDVariable[] outputSlices = new SDVariable[timeSteps];
         SDVariable prev = null;
         for (int i = 0; i < timeSteps; i++) {
             final val x_i = inputSlices[i];
