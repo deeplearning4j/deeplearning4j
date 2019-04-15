@@ -86,6 +86,7 @@ public class CNNGradientCheckTest extends BaseDL4JTest {
                     Activation outputActivation = outputActivations[i];
 
                     MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder()
+                            .dataType(DataType.DOUBLE)
                             .optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT).updater(new NoOp())
                             .weightInit(WeightInit.XAVIER).seed(12345L).list()
                             .layer(0, new ConvolutionLayer.Builder(1, 1).nOut(6).activation(afn).build())
@@ -169,6 +170,7 @@ public class CNNGradientCheckTest extends BaseDL4JTest {
                         double l1 = l1vals[k];
 
                         MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder()
+                                .dataType(DataType.DOUBLE)
                                 .l2(l2).l1(l1).l2Bias(biasL2[k]).l1Bias(biasL1[k])
                                 .optimizationAlgo(
                                         OptimizationAlgorithm.CONJUGATE_GRADIENT)
@@ -255,6 +257,7 @@ public class CNNGradientCheckTest extends BaseDL4JTest {
 
                 MultiLayerConfiguration conf =
                         new NeuralNetConfiguration.Builder()
+                                .dataType(DataType.DOUBLE)
                                 .updater(new NoOp())
                                 .dist(new NormalDistribution(0, 1))
                                 .list().layer(new ConvolutionLayer.Builder(kernel).nIn(inputDepth).hasBias(false)
@@ -317,6 +320,7 @@ public class CNNGradientCheckTest extends BaseDL4JTest {
 
                     MultiLayerConfiguration conf =
                             new NeuralNetConfiguration.Builder()
+                                    .dataType(DataType.DOUBLE)
                                     .updater(new NoOp()).weightInit(new NormalDistribution(0, 1))
                                     .list().layer(new ConvolutionLayer.Builder(kernel).nIn(inputDepth)
                                     .nOut(3).build())//output: (5-2+0)/1+1 = 4
@@ -381,6 +385,7 @@ public class CNNGradientCheckTest extends BaseDL4JTest {
 
                     MultiLayerConfiguration conf =
                             new NeuralNetConfiguration.Builder()
+                                    .dataType(DataType.DOUBLE)
                                     .updater(new NoOp())
                                     .dist(new NormalDistribution(0, 1))
                                     .list().layer(new ConvolutionLayer.Builder(kernel,
@@ -449,7 +454,7 @@ public class CNNGradientCheckTest extends BaseDL4JTest {
 
                     MultiLayerConfiguration conf =
                             new NeuralNetConfiguration.Builder().updater(new NoOp())
-
+                                    .dataType(DataType.DOUBLE)
                                     .dist(new NormalDistribution(0, 1))
                                     .list().layer(0,
                                     new ConvolutionLayer.Builder(kernel,
@@ -519,6 +524,7 @@ public class CNNGradientCheckTest extends BaseDL4JTest {
 
                     MultiLayerConfiguration conf =
                             new NeuralNetConfiguration.Builder().updater(new NoOp())
+                                    .dataType(DataType.DOUBLE)
                                     .dist(new NormalDistribution(0, 1))
                                     .list().layer(0,
                                     new ConvolutionLayer.Builder(kernel,
@@ -577,6 +583,7 @@ public class CNNGradientCheckTest extends BaseDL4JTest {
                     }
 
                     MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345).updater(new NoOp())
+                            .dataType(DataType.DOUBLE)
                             .activation(afn)
                             .list()
                             .layer(0, new ConvolutionLayer.Builder().kernelSize(2, 2).stride(1, 1)
@@ -643,6 +650,7 @@ public class CNNGradientCheckTest extends BaseDL4JTest {
                         }
 
                         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345).updater(new NoOp())
+                                .dataType(DataType.DOUBLE)
                                 .activation(afn)
                                 .list()
                                 .layer(0, new ConvolutionLayer.Builder().kernelSize(2, 2).stride(1, 1)
@@ -707,6 +715,7 @@ public class CNNGradientCheckTest extends BaseDL4JTest {
                         }
 
                         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345)
+                                .dataType(DataType.DOUBLE)
                                 .updater(new NoOp())
                                 .activation(Activation.TANH).convolutionMode(Same).list()
                                 .layer(0, new ConvolutionLayer.Builder().name("layer 0").kernelSize(k, k)
@@ -776,6 +785,7 @@ public class CNNGradientCheckTest extends BaseDL4JTest {
                                     .stride(stride, stride).padding(0, 0).build();
 
                             MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345)
+                                    .dataType(DataType.DOUBLE)
                                     .updater(new NoOp())
                                     .activation(Activation.TANH).convolutionMode(Same).list()
                                     .layer(0, convFirst ? convLayer : poolLayer)
@@ -839,6 +849,7 @@ public class CNNGradientCheckTest extends BaseDL4JTest {
 
                     MultiLayerConfiguration conf =
                             new NeuralNetConfiguration.Builder().updater(new NoOp())
+                                    .dataType(DataType.DOUBLE)
                                     .dist(new NormalDistribution(0, 1)).list()
                                     .layer(0, new ConvolutionLayer.Builder(kernel, stride, padding)
                                             .nIn(inputDepth).nOut(3).build())//output: (6-2+0)/1+1 = 5
@@ -916,6 +927,7 @@ public class CNNGradientCheckTest extends BaseDL4JTest {
             }
 
             NeuralNetConfiguration.ListBuilder b = new NeuralNetConfiguration.Builder().seed(12345)
+                    .dataType(DataType.DOUBLE)
                     .updater(new NoOp())
                     .activation(act)
                     .list()
@@ -990,6 +1002,7 @@ public class CNNGradientCheckTest extends BaseDL4JTest {
             }
 
             NeuralNetConfiguration.ListBuilder b = new NeuralNetConfiguration.Builder().seed(12345)
+                    .dataType(DataType.DOUBLE)
                     .updater(new NoOp())
                     .activation(Activation.TANH)
                     .convolutionMode(cm)
@@ -1062,6 +1075,7 @@ public class CNNGradientCheckTest extends BaseDL4JTest {
             }
 
             NeuralNetConfiguration.ListBuilder b = new NeuralNetConfiguration.Builder().seed(12345)
+                    .dataType(DataType.DOUBLE)
                     .updater(new NoOp())
                     .activation(Activation.TANH).convolutionMode(cm).list()
                     .layer(new ConvolutionLayer.Builder().name("layer 0")
@@ -1136,6 +1150,7 @@ public class CNNGradientCheckTest extends BaseDL4JTest {
 
                     MultiLayerConfiguration conf =
                             new NeuralNetConfiguration.Builder()
+                                    .dataType(DataType.DOUBLE)
                                     .updater(new NoOp())
                                     .convolutionMode(ConvolutionMode.Same)
                                     .weightInit(new NormalDistribution(0, 1)).list()
@@ -1211,6 +1226,7 @@ public class CNNGradientCheckTest extends BaseDL4JTest {
             }
 
             NeuralNetConfiguration.ListBuilder b = new NeuralNetConfiguration.Builder().seed(12345)
+                    .dataType(DataType.DOUBLE)
                     .updater(new NoOp())
                     .activation(Activation.TANH)
                     .convolutionMode(cm)

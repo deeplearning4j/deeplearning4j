@@ -72,6 +72,7 @@ public class GradientCheckTests extends BaseDL4JTest {
         IrisDataSetIterator iter = new IrisDataSetIterator(30, 150);
 
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().miniBatch(false)
+                .dataType(DataType.DOUBLE)
                 .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).updater(new NoOp())
                 .list()
                 .layer(0,
@@ -161,6 +162,7 @@ public class GradientCheckTests extends BaseDL4JTest {
                     Activation outputActivation = outputActivations[i];
 
                     MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                                    .dataType(DataType.DOUBLE)
                                     .optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT).updater(new NoOp())
                                     .seed(12345L)
                                     .list().layer(0,
@@ -250,6 +252,7 @@ public class GradientCheckTests extends BaseDL4JTest {
 
                         MultiLayerConfiguration conf =
                                         new NeuralNetConfiguration.Builder().l2(l2).l1(l1)
+                                                        .dataType(DataType.DOUBLE)
                                                         .l2Bias(biasL2[k]).l1Bias(biasL1[k])
                                                         .optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT)
                                                         .seed(12345L)
@@ -320,6 +323,7 @@ public class GradientCheckTests extends BaseDL4JTest {
         }
 
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().l2(0.2).l1(0.1)
+                .dataType(DataType.DOUBLE)
                 .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).seed(12345L)
                 .list().layer(new EmbeddingLayer.Builder().nIn(4).nOut(3).weightInit(WeightInit.XAVIER)
                                 .updater(new NoOp()).build())
@@ -357,6 +361,7 @@ public class GradientCheckTests extends BaseDL4JTest {
         }
 
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().l2(0.2).l1(0.1)
+                        .dataType(DataType.DOUBLE)
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).seed(12345L)
                         .list().layer(0,
                                         new EmbeddingLayer.Builder().nIn(4).nOut(3).weightInit(WeightInit.XAVIER)
@@ -423,6 +428,7 @@ public class GradientCheckTests extends BaseDL4JTest {
                         Nd4j.getRandom().setSeed(12345);
                         MultiLayerConfiguration conf =
                                         new NeuralNetConfiguration.Builder()
+                                                        .dataType(DataType.DOUBLE)
                                                         .updater(new NoOp())
                                                         .l2(l2).l1(l1)
                                                         .optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT)
@@ -483,6 +489,7 @@ public class GradientCheckTests extends BaseDL4JTest {
         for(Activation a : new Activation[]{Activation.IDENTITY, Activation.TANH}) {
 
             ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
+                    .dataType(DataType.DOUBLE)
                     .optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT).updater(new NoOp())
                     .seed(12345L)
                     .weightInit(new UniformDistribution(0, 1))
@@ -551,6 +558,7 @@ public class GradientCheckTests extends BaseDL4JTest {
             for(int inputRank : new int[]{2,3}) {
 
                 MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                        .dataType(DataType.DOUBLE)
                         .seed(12345)
                         .updater(new NoOp())
                         .weightInit(new NormalDistribution(0, 1))
@@ -657,6 +665,7 @@ public class GradientCheckTests extends BaseDL4JTest {
 
                     MultiLayerConfiguration conf =
                             new NeuralNetConfiguration.Builder().l2(l2).l1(l1)
+                                    .dataType(DataType.DOUBLE)
                                     .l2Bias(biasL2[k]).l1Bias(biasL1[k])
                                     .weightDecay(wdVals[k]).weightDecayBias(wdBias[k])
                                     .optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT)
@@ -718,6 +727,7 @@ public class GradientCheckTests extends BaseDL4JTest {
                         Activation outputActivation = outputActivations[i];
 
                         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                                .dataType(DataType.DOUBLE)
                                 .optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT).updater(new NoOp())
                                 .seed(12345L)
                                 .list().layer(0,

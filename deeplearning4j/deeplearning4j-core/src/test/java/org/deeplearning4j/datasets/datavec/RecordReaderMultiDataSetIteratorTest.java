@@ -693,14 +693,14 @@ public class RecordReaderMultiDataSetIteratorTest extends BaseDL4JTest {
         INDArray f = mds.getFeatures(0);
         INDArray l = mds.getLabels(0);
 
-        INDArray expF1 = Nd4j.create(new double[] {1.0});
-        INDArray expL1 = Nd4j.create(new double[] {2.0});
+        INDArray expF1 = Nd4j.create(new double[] {1.0}, new int[]{1,1});
+        INDArray expL1 = Nd4j.create(new double[] {2.0}, new int[]{1,1});
 
-        INDArray expF2 = Nd4j.create(new double[] {10, 20, 30});
-        INDArray expL2 = Nd4j.create(new double[] {11, 21, 31});
+        INDArray expF2 = Nd4j.create(new double[] {10, 20, 30}, new int[]{1,3});
+        INDArray expL2 = Nd4j.create(new double[] {11, 21, 31}, new int[]{1,1});
 
-        INDArray expF3 = Nd4j.create(new double[] {100, 200, 300, 400, 500});
-        INDArray expL3 = Nd4j.create(new double[] {101, 201, 301, 401, 501});
+        INDArray expF3 = Nd4j.create(new double[] {100, 200, 300, 400, 500}, new int[]{1,5});
+        INDArray expL3 = Nd4j.create(new double[] {101, 201, 301, 401, 501}, new int[]{1,5});
 
         assertEquals(expF1, f.get(point(0), all(),
                         NDArrayIndex.interval(expOffsetSeq1, expOffsetSeq1 + 1)));
