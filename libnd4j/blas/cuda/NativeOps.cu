@@ -1962,7 +1962,7 @@ __global__ static void concatCuda(const int numOfArrs, void* pVx,  void* pxShape
 
     __shared__ int arrIdx, blocksPerArr;
     __shared__ T *x, *z;
-    __shared__ Nd4jLong *zShapeInfo, *xShapeInfo, arrLen, arrLenPerBlock, start, end;
+    __shared__ Nd4jLong *zShapeInfo, *xShapeInfo, arrLen, arrLenZ, arrLenPerBlock, start, end;
 
     if (threadIdx.x == 0) {
 
@@ -1975,19 +1975,17 @@ __global__ static void concatCuda(const int numOfArrs, void* pVx,  void* pxShape
         zShapeInfo = reinterpret_cast<Nd4jLong**>(pzShapeInfo)[arrIdx];
 
         arrLen = shape::length(xShapeInfo);
+        arrLen = shape::length(zShapeInfo);
         arrLenPerBlock = (arrLen + blocksPerArr - 1) / blocksPerArr;  // ceil
 
         start = (blockIdx.x % blocksPerArr) * arrLenPerBlock;
         end   = (start + arrLenPerBlock) > arrLen ? arrLen : (start + arrLenPerBlock);
-
-        //printf("blockIdx.x: %i; blocksPerArr: %i; arrIdx: %i; arrLen: %i; arrLenPerBlock: %i; start: %i; end: %i;\n",
-        //            blockIdx.x, (int) blocksPerArr, (int) arrIdx, (int) arrLen, (int) arrLenPerBlock, (int) start, (int) end);
     }
 
     __syncthreads();
 
     for (Nd4jLong i = start + threadIdx.x; i < end; i += blockDim.x) {
-        z[shape::getIndexOffset(i, zShapeInfo, arrLen)] = x[shape::getIndexOffset(i, xShapeInfo, arrLen)];
+        z[shape::getIndexOffset(i, zShapeInfo, arrLenZ)] = x[shape::getIndexOffset(i, xShapeInfo, arrLen)];
     }
 }
 template<typename T>
