@@ -2013,9 +2013,9 @@ specialBufferAndShapeWithOffset(void* vZ, Nd4jLong* hZShapeInfo, Nd4jLong* dZSha
     for (int d = rank - 1; d >= 0; --d) {
 
         if (idx[n * d] != idx[n * d + 1]) {
-
-            first  = idx[n * d]     >= 0 ? idx[n * d]     : idx[n * d]     + shape::sizeAt(hZShapeInfo, d) + 1;
-            last   = idx[n * d + 1] >= 0 ? idx[n * d + 1] : idx[n * d + 1] + shape::sizeAt(hZShapeInfo, d) + 1;
+            auto axeDim = shape::sizeAt(hZShapeInfo, d);
+            first  = idx[n * d]     >= 0 ? idx[n * d]     : idx[n * d]     + axeDim + 1;
+            last   = idx[n * d + 1] >= 0 ? idx[n * d + 1] : idx[n * d + 1] + axeDim + 1;
             stride = 1;
 
             shapeOf[d] = (last - first + stride - 1) / stride;      // ceil (last - first) / stride;
