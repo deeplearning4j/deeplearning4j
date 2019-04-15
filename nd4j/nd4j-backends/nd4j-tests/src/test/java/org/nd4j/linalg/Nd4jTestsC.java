@@ -925,20 +925,20 @@ public class Nd4jTestsC extends BaseNd4jTest {
 
     @Test
     public void testVStackDifferentOrders() {
-        INDArray expected = Nd4j.linspace(1, 9, 9, DataType.DOUBLE).reshape('c', 3, 3);
+        INDArray expected = Nd4j.linspace(1, 9, 9, DataType.DOUBLE).reshape(3, 3);
 
         for (char order : new char[] {'c', 'f'}) {
             System.out.println(order);
             Nd4j.factory().setOrder(order);
 
-            INDArray arr1 = Nd4j.linspace(1, 6, 6, DataType.DOUBLE).reshape('c', 2, 3);
-            INDArray arr2 = Nd4j.linspace(7, 9, 3, DataType.DOUBLE).reshape('c', 1, 3);
+            INDArray arr1 = Nd4j.linspace(1, 6, 6, DataType.DOUBLE).reshape( 2, 3).dup('c');
+            INDArray arr2 = Nd4j.linspace(7, 9, 3, DataType.DOUBLE).reshape(1, 3).dup('c');
 
             INDArray merged = Nd4j.vstack(arr1, arr2);
             System.out.println(merged);
             System.out.println(expected);
 
-            assertEquals(expected, merged);
+            assertEquals("Failed for [" + order + "] order", expected, merged);
         }
     }
 

@@ -6944,12 +6944,12 @@ public static final int PREALLOC_SIZE = 33554432;
  * Returns the rank portion of
  * an information buffer
  */
-    @Namespace("shape") public static native int rank(@Cast("const Nd4jLong*") LongPointer buffer);
-    @Namespace("shape") public static native int rank(@Cast("const Nd4jLong*") LongBuffer buffer);
-    @Namespace("shape") public static native int rank(@Cast("const Nd4jLong*") long[] buffer);
-    @Namespace("shape") public static native int rank(@Const IntPointer buffer);
-    @Namespace("shape") public static native int rank(@Const IntBuffer buffer);
-    @Namespace("shape") public static native int rank(@Const int[] buffer);
+    @Namespace("shape") public static native int rank(@Cast("const Nd4jLong*") LongPointer shapeInfo);
+    @Namespace("shape") public static native int rank(@Cast("const Nd4jLong*") LongBuffer shapeInfo);
+    @Namespace("shape") public static native int rank(@Cast("const Nd4jLong*") long[] shapeInfo);
+    @Namespace("shape") public static native int rank(@Const IntPointer shapeInfo);
+    @Namespace("shape") public static native int rank(@Const IntBuffer shapeInfo);
+    @Namespace("shape") public static native int rank(@Const int[] shapeInfo);
 
     // returns pointer on elementWiseStride
     @Namespace("shape") public static native @Cast("Nd4jLong*") LongPointer ews(@Cast("Nd4jLong*") LongPointer shapeInfo);
@@ -8634,6 +8634,11 @@ public static final int PREALLOC_SIZE = 33554432;
 //////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////
+
+//////////////////////////////////////////////////////////////////////
+@Namespace("shape") public static native void calcEws(@Cast("Nd4jLong*") LongPointer shapeInfo, @Cast("Nd4jLong") long len);
+@Namespace("shape") public static native void calcEws(@Cast("Nd4jLong*") LongBuffer shapeInfo, @Cast("Nd4jLong") long len);
+@Namespace("shape") public static native void calcEws(@Cast("Nd4jLong*") long[] shapeInfo, @Cast("Nd4jLong") long len);
 
 
 

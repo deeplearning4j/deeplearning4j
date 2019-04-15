@@ -6944,12 +6944,12 @@ public static final int PREALLOC_SIZE = 33554432;
  * Returns the rank portion of
  * an information buffer
  */
-    @Namespace("shape") public static native int rank(@Cast("const Nd4jLong*") LongPointer buffer);
-    @Namespace("shape") public static native int rank(@Cast("const Nd4jLong*") LongBuffer buffer);
-    @Namespace("shape") public static native int rank(@Cast("const Nd4jLong*") long[] buffer);
-    @Namespace("shape") public static native int rank(@Const IntPointer buffer);
-    @Namespace("shape") public static native int rank(@Const IntBuffer buffer);
-    @Namespace("shape") public static native int rank(@Const int[] buffer);
+    @Namespace("shape") public static native int rank(@Cast("const Nd4jLong*") LongPointer shapeInfo);
+    @Namespace("shape") public static native int rank(@Cast("const Nd4jLong*") LongBuffer shapeInfo);
+    @Namespace("shape") public static native int rank(@Cast("const Nd4jLong*") long[] shapeInfo);
+    @Namespace("shape") public static native int rank(@Const IntPointer shapeInfo);
+    @Namespace("shape") public static native int rank(@Const IntBuffer shapeInfo);
+    @Namespace("shape") public static native int rank(@Const int[] shapeInfo);
 
     // returns pointer on elementWiseStride
     @Namespace("shape") public static native @Cast("Nd4jLong*") LongPointer ews(@Cast("Nd4jLong*") LongPointer shapeInfo);
@@ -8634,6 +8634,11 @@ public static final int PREALLOC_SIZE = 33554432;
 //////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////
+
+//////////////////////////////////////////////////////////////////////
+@Namespace("shape") public static native void calcEws(@Cast("Nd4jLong*") LongPointer shapeInfo, @Cast("Nd4jLong") long len);
+@Namespace("shape") public static native void calcEws(@Cast("Nd4jLong*") LongBuffer shapeInfo, @Cast("Nd4jLong") long len);
+@Namespace("shape") public static native void calcEws(@Cast("Nd4jLong*") long[] shapeInfo, @Cast("Nd4jLong") long len);
 
 
 
@@ -10721,12 +10726,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 //                                                 nd4j::ShapeList* nd4j::ops::NAME::calculateOutputShape(nd4j::ShapeList* inputShape, nd4j::graph::Context& block) {
 //                                                     auto shapeList = SHAPELIST();
 //                                                     for (int e = 0; e < this->getOpDescriptor()->getNumberOfOutputs(); e++) {
-//                                                         Nd4jLong* newshape;
-//                                                         ALLOCATE(newshape, block.getWorkspace(), shape::shapeInfoLength(inputShape->at(e)), Nd4jLong);
-//                                                         if (shape::order(inputShape->at(e)) == 'c')
-//                                                             shape::shapeBuffer(shape::rank(inputShape->at(e)), ArrayOptions::dataType(inputShape->at(e)), shape::shapeOf(inputShape->at(e)), newshape);
-//                                                         else
-//                                                             shape::shapeBufferFortran(shape::rank(inputShape->at(e)), ArrayOptions::dataType(inputShape->at(e)), shape::shapeOf(inputShape->at(e)), newshape);
+//                                                         Nd4jLong* newshape = ShapeBuilders::createShapeInfo(ArrayOptions::dataType(inputShape->at(e)), shape::order(inputShape->at(e)), shape::rank(inputShape->at(e)), shape::shapeOf(inputShape->at(e)), block.getWorkspace());
 //                                                         shapeList->push_back(newshape);
 //                                                     }
 //                                                     return shapeList;
@@ -10786,12 +10786,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 //                                                                                 nd4j::ShapeList* nd4j::ops::NAME::calculateOutputShape(nd4j::ShapeList* inputShape, nd4j::graph::Context& block) {
 //                                                                                     auto shapeList = SHAPELIST();
 //                                                                                     for (int e = 0; e < this->getOpDescriptor()->getNumberOfOutputs(); e++) {
-//                                                                                         Nd4jLong* newshape;
-//                                                                                         ALLOCATE(newshape, block.getWorkspace(), shape::shapeInfoLength(inputShape->at(e)), Nd4jLong);
-//                                                                                         if (shape::order(inputShape->at(e)) == 'c')
-//                                                                                             shape::shapeBuffer(shape::rank(inputShape->at(e)), ArrayOptions::dataType(inputShape->at(e)), shape::shapeOf(inputShape->at(e)), newshape);
-//                                                                                         else
-//                                                                                             shape::shapeBufferFortran(shape::rank(inputShape->at(e)), ArrayOptions::dataType(inputShape->at(e)),  shape::shapeOf(inputShape->at(e)), newshape);
+//                                                                                         Nd4jLong* newshape = ShapeBuilders::createShapeInfo(ArrayOptions::dataType(inputShape->at(e)), shape::order(inputShape->at(e)), shape::rank(inputShape->at(e)), shape::shapeOf(inputShape->at(e)), block.getWorkspace());
 //                                                                                         shapeList->push_back(newshape);
 //                                                                                     }
 //                                                                                     return shapeList;
@@ -10850,13 +10845,6 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 
 // #define DECLARE_DEVICE_OP(NAME, NIN, NOUT, INPLACEABLE, TARGS, IARGS)
 
-// #define REPLICATE_SHAPE(SRC, TGT)   if (shape::order(SRC) == 'c')
-//                                         shape::shapeBuffer(shape::rank(SRC), nd4j::ArrayOptions::dataType(SRC), shape::shapeOf(SRC), TGT);
-//                                     else
-//                                         shape::shapeBufferFortran(shape::rank(SRC),  nd4j::ArrayOptions::dataType(SRC), shape::shapeOf(SRC), TGT);
-
-
-
 // #define ALLOCATE(VARIABLE, WORKSPACE, LENGTH, TT)   if (WORKSPACE == nullptr) {VARIABLE = new TT[LENGTH]; } else {VARIABLE = reinterpret_cast<TT *>(WORKSPACE->allocateBytes(LENGTH * sizeof(TT))); }
 // #define RELEASE(VARIABLE, WORKSPACE)    if (WORKSPACE == nullptr) delete[] VARIABLE;
 
@@ -10884,12 +10872,9 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 // #define B_ARG(INDEX)     block.getBArguments()->at(INDEX)
 
 
-// #define COPY_SHAPE(SRC, TGT)    ALLOCATE(TGT, block.getWorkspace(), shape::shapeInfoLength(SRC), Nd4jLong);
-//                                 REPLICATE_SHAPE(SRC, TGT);
+// #define COPY_SHAPE(SRC, TGT)    TGT = ShapeBuilders::copyShapeInfo(SRC, true, block.getWorkspace())
 
-// #define COPY_SHAPE_EX(SRC, TGT, WORKSPACE)    ALLOCATE(TGT, WORKSPACE, shape::shapeInfoLength(SRC), Nd4jLong);
-//                                 REPLICATE_SHAPE(SRC, TGT);
-
+// #define COPY_SHAPE_EX(SRC, TGT, WORKSPACE)    TGT = ShapeBuilders::copyShapeInfo(SRC, true, WORKSPACE)
 
 // define macros for compiler enforcement to make function inline  
 // #ifdef __clang__

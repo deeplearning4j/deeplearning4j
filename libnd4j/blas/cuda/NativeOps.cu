@@ -1973,11 +1973,15 @@ __global__ static void concatCuda(const int numOfArrs, void* pVx,  void* pxShape
         z = reinterpret_cast<T*>(reinterpret_cast<void**>(pVz)[arrIdx]);
         xShapeInfo = reinterpret_cast<Nd4jLong**>(pxShapeInfo)[arrIdx];
         zShapeInfo = reinterpret_cast<Nd4jLong**>(pzShapeInfo)[arrIdx];
+
         arrLen = shape::length(xShapeInfo);
         arrLenPerBlock = (arrLen + blocksPerArr - 1) / blocksPerArr;  // ceil
 
         start = (blockIdx.x % blocksPerArr) * arrLenPerBlock;
         end   = (start + arrLenPerBlock) > arrLen ? arrLen : (start + arrLenPerBlock);
+
+        //printf("blockIdx.x: %i; blocksPerArr: %i; arrIdx: %i; arrLen: %i; arrLenPerBlock: %i; start: %i; end: %i;\n",
+        //            blockIdx.x, (int) blocksPerArr, (int) arrIdx, (int) arrLen, (int) arrLenPerBlock, (int) start, (int) end);
     }
 
     __syncthreads();
@@ -2054,9 +2058,10 @@ specialBufferAndShapeWithOffset(void* vZ, Nd4jLong* hZShapeInfo, Nd4jLong* dZSha
         void *dZ, Nd4jLong *dZShapeInfo,
 		Nd4jPointer *tadPointers, Nd4jPointer *offsetPointers) {
 
-    cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
+    auto stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
     auto hXShapeInfo = hZShapeInfo;
     auto hShapePointers = reinterpret_cast<Nd4jLong **>(inputShapeInfo);
+    auto dShapePointers = reinterpret_cast<Nd4jLong **>(dinputShapeInfo);
     // numArrays will be used as number of TADs, so each block process 1 input
     auto zType = nd4j::ArrayOptions::dataType(hZShapeInfo);
     auto axis = dimension;
@@ -2088,7 +2093,8 @@ specialBufferAndShapeWithOffset(void* vZ, Nd4jLong* hZShapeInfo, Nd4jLong* dZSha
         hOutBuffers[i]   = outSubArrsBuffs[i];
         hInBuffers[i]    = ddata[i];//->getSpecialBuffer();
         hOutShapeInfo[i] = outSubArrsShapes[i];
-        hInShapeInfo[i]  = (Nd4jLong*)(dinputShapeInfo[i]);//->getSpecialShapeInfo();
+        hInShapeInfo[i]  = (Nd4jLong*)(dShapePointers[i]);//->getSpecialShapeInfo();
+        nd4j_printf("X_%i shape ptr: %p; data ptr: %p;\n", i, hInShapeInfo[i], hInBuffers[i]);
     }
 
     // allocate and copy all buffers and shapes arrays to global memory
@@ -2102,7 +2108,10 @@ specialBufferAndShapeWithOffset(void* vZ, Nd4jLong* hZShapeInfo, Nd4jLong* dZSha
 
     BUILD_SINGLE_SELECTOR(zType, concatCudaLauncher, (numArrays, stream, dInBuffers, dInShapeInfo, dOutBuffers, dOutShapeInfo), LIBND4J_TYPES);
 
-    manager.synchronize();
+    cudaError_t res = cudaStreamSynchronize(*stream);
+    checkCudaErrors(res);
+    nd4j::DebugHelper::checkErrorCode(stream, "Legacy ConcatFloat(...) failed");
+
     cudaError_t err;
     for(int i = 0; i < numArrays; ++i) {
         err = cudaFree(outSubArrsShapes[i]);
@@ -2197,10 +2206,6 @@ specialBufferAndShapeWithOffset(void* vZ, Nd4jLong* hZShapeInfo, Nd4jLong* dZSha
 //	}
 //	if (nd4j::Environment::getInstance()->isDebugAndVerbose())
 //		printf("sharedMemory requested for concatFloat: [%i], registers: [%i]\n", smem, funcAttributes[31].numRegs);
-
-    cudaError_t res = cudaStreamSynchronize(*stream);
-    checkCudaErrors(res);
-    nd4j::DebugHelper::checkErrorCode(stream, "Legacy ConcatFloat(...) failed");
 }
 
 
