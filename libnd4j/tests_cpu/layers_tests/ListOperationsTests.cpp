@@ -32,7 +32,7 @@ class ListOperationsTests : public testing::Test {
 
 TEST_F(ListOperationsTests, BasicTest_Write_1) {
     NDArrayList list(5);
-    auto x = NDArrayFactory::create<double>('c', {1, 128});
+    auto x = NDArrayFactory::create<double>('c', {128});
     x.linspace(1);
 
     nd4j::ops::write_list op;
@@ -56,7 +56,7 @@ TEST_F(ListOperationsTests, BasicTest_Stack_1) {
     auto exp = NDArrayFactory::create<double>('c', {10, 100});
     auto tads = exp.allTensorsAlongDimension({1});
     for (int e = 0; e < 10; e++) {
-        auto row = NDArrayFactory::create_<double>('c', {1, 100});
+        auto row = NDArrayFactory::create_<double>('c', {100});
         row->assign((double) e);
         list.write(e, row);
         tads->at(e)->assign(row);
@@ -69,6 +69,7 @@ TEST_F(ListOperationsTests, BasicTest_Stack_1) {
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
     auto z = result->at(0);
+    // z->printShapeInfo();
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));

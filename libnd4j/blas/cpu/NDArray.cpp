@@ -4977,9 +4977,8 @@ template void NDArray::operator/=(const bool scalar);
 
         if(copy.back() >= rankOf())
             throw std::runtime_error("NDArray::allTensorsAlongDimension static function: all input dimensions must be smaller than rank of input array !");
-
-        auto tadLength = shape::tadLength(_shapeInfo, copy.data(), copy.size());
-        auto numTads = _length / tadLength;
+        
+        auto numTads = _length / shape::tadLength(_shapeInfo, copy.data(), copy.size());
 
         auto tadPack = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(_shapeInfo, copy);
 

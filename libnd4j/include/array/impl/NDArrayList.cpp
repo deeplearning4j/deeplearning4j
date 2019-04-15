@@ -112,7 +112,7 @@ namespace nd4j {
 
     NDArray* NDArrayList::stack() {
         // FIXME: this is bad for perf, but ok as poc
-        nd4j::ops::concat op;
+        nd4j::ops::stack op;
         std::vector<NDArray*> inputs;
         std::vector<double> targs;
         std::vector<Nd4jLong> iargs({0});
@@ -124,7 +124,7 @@ namespace nd4j {
 
         iargs.push_back(_axis);
 
-        auto result = op.execute(inputs, targs, iargs, bargs);
+        auto result = op.execute(inputs, {}, {}, {});
 
         auto array = result->at(0)->dup();
 

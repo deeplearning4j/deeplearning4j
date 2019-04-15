@@ -64,7 +64,7 @@ namespace nd4j {
             const auto shapeInfo = descriptor.originalShape().toShapeInfo();
             const int rank = shape::rank(shapeInfo);
             const std::vector<int> dimsToExclude = ShapeUtils::evalDimsToExclude(rank, descriptor.axis());
-            const Nd4jLong numOfSubArrs = ShapeUtils::getNumOfSubArrs(shapeInfo, dimsToExclude);            
+            const Nd4jLong numOfSubArrs = ShapeUtils::getNumOfSubArrs(shapeInfo, dimsToExclude);
             const int subArrRank = (rank == dimsToExclude.size() || descriptor.areUnitiesinShape()) ? rank : rank - dimsToExclude.size();
 
             auto sPtr = new Nd4jLong[shape::shapeInfoLength(subArrRank)];

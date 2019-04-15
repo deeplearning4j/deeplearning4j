@@ -63,7 +63,7 @@ TEST_F(NDArrayListTests, Test_Stack_UnStack_1) {
 
     ASSERT_EQ(10, list.elements());
 
-    auto array = list.stack();
+    auto array = list.stack();    
 
     ASSERT_TRUE(input.isSameShape(array));
 
