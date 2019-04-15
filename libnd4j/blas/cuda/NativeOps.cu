@@ -1465,13 +1465,22 @@ void NativeOps::execTransformFloat(Nd4jPointer *extraPointers,int opNum,
 
         Nd4jPointer maskedAllocPointer;
         auto length = shape::length(hZShapeInfo);
-        cudaMalloc(reinterpret_cast<void **>(&maskedAllocPointer), length * launchDims.x * DataTypeUtils::sizeOf(nd4j::DataType::INT64));
+        bool onDevice = true;
+        auto res = cudaMalloc(reinterpret_cast<void **>(&maskedAllocPointer), length * launchDims.x * DataTypeUtils::sizeOf(nd4j::DataType::INT64));
+        if (res != 0) {
+            onDevice = false;
+            cudaHostAlloc(&maskedAllocPointer, length * launchDims.x * DataTypeUtils::sizeOf(nd4j::DataType::INT64), cudaHostAllocDefault);
+        }
         auto imaskedAllocPointer = reinterpret_cast<int *>(maskedAllocPointer);
 
         BUILD_DOUBLE_SELECTOR(xType, zType, functions::transform::TransformFloat, ::executeTransformShaped(launchDims, stream, opNum, dX, dXShapeInfo, xRank, extraParams, dZ, dZShapeInfo, zRank, imaskedAllocPointer, reductionPointer, nullptr, nullptr), LIBND4J_TYPES, FLOAT_TYPES);
 
         checkCudaErrors(cudaStreamSynchronize(*stream));
-        cudaFree(maskedAllocPointer);
+
+        if (onDevice)
+            cudaFree(maskedAllocPointer);
+        else
+            cudaFreeHost(maskedAllocPointer);
     } else {
         dim3 launchDims(512, 512, 16384);
         BUILD_DOUBLE_SELECTOR(xType, zType, functions::transform::TransformFloat, ::executeTransformShaped(launchDims, stream, opNum, dX, dXShapeInfo, xRank, extraParams, dZ, dZShapeInfo, zRank, nullptr, nullptr, nullptr, nullptr), LIBND4J_TYPES, FLOAT_TYPES);
@@ -1673,7 +1682,7 @@ Nd4jPointer NativeOps::mallocHost(Nd4jLong memorySize, int flags) {
  */
 Nd4jPointer NativeOps::mallocDevice(Nd4jLong memorySize, Nd4jPointer ptrToDeviceId, int flags) {
 	Nd4jPointer pointer;
-	cudaError_t res = cudaMalloc(reinterpret_cast<void **>(&pointer), memorySize);
+	auto res = cudaMalloc(reinterpret_cast<void **>(&pointer), memorySize);
 	if (res != 0)
 		pointer = 0L;
 	return pointer;
