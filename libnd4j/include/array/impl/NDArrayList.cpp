@@ -104,7 +104,7 @@ namespace nd4j {
     void NDArrayList::unstack(NDArray* array, int axis) {
         _axis = axis;
         std::vector<int> args({axis});
-        auto newAxis = ShapeUtils::convertAxisToTadTarget(array->rankOf(), args);
+        auto newAxis = ShapeUtils::evalDimsToExclude(array->rankOf(), args);
         auto result = array->allTensorsAlongDimension(newAxis);
         for (int e = 0; e < result->size(); e++) {
             auto chunk = result->at(e)->dup(array->ordering());
@@ -178,7 +178,7 @@ namespace nd4j {
         shape[_axis] = indices.size();
         // do we have to enforce C order here?
         auto array = new NDArray('c', shape, _chunks[0]->dataType(), _workspace);
-        std::vector<int> axis = ShapeUtils::convertAxisToTadTarget(shape.size(), {_axis});
+        std::vector<int> axis = ShapeUtils::evalDimsToExclude(shape.size(), {_axis});
         auto tads = array->allTensorsAlongDimension(axis);
         int indicesSize = indices.size();
 

@@ -65,7 +65,7 @@ namespace nd4j {
 
                     auto z = OUTPUT_VARIABLE(0);
 
-                    auto dims = ShapeUtils::convertAxisToTadTarget(x->rankOf(), {0});
+                    auto dims = ShapeUtils::evalDimsToExclude(x->rankOf(), {0});
                     auto tadsX = x->allTensorsAlongDimension(dims);
                     auto tadsY = y->allTensorsAlongDimension(dims);
                     auto tadsZ = z->allTensorsAlongDimension(dims);

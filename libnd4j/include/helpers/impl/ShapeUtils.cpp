@@ -509,23 +509,6 @@ Nd4jLong* ShapeUtils::evalTileShapeInfo(const NDArray& arr, const std::vector<Nd
     return newShapeInfo;
 }
 
-//////////////////////////////////////////////////////////////////////////
-    std::vector<int> ShapeUtils::convertAxisToTadTarget(int rank, std::initializer_list<int> axis) {
-        std::vector<int> newAxis(axis);
-        return convertAxisToTadTarget(rank, newAxis);
-    }
-
-//////////////////////////////////////////////////////////////////////////
-    std::vector<int> ShapeUtils::convertAxisToTadTarget(int rank, std::vector<int>& axis) {
-        std::vector<int> newAxis;
-        for (int e = 0; e < rank; e++) {
-            if (std::find(axis.begin(), axis.end(), e) == axis.end())
-                newAxis.emplace_back(e);
-        }
-
-        return newAxis;
-    }
-
     std::vector<Nd4jLong> ShapeUtils::pullShapeFromShapeInfo(Nd4jLong *shapeInfo) {
         std::vector<Nd4jLong> shape(shape::rank(shapeInfo));
         int shapeSize = shape.size();
