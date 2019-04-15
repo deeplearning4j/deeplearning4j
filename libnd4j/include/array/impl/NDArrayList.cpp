@@ -71,18 +71,21 @@ namespace nd4j {
         // we store reference shape on first write
         if (_chunks.empty()) {
             _dtype = array->dataType();
+
+            //adding leading 1 to shape
+            _shape.emplace_back(1);
             for (int e = 0; e < array->rankOf(); e++)
                 _shape.emplace_back(array->sizeAt(e));
         } else {
             if (array->dataType() != _dtype)
                 return Status::CODE(ND4J_STATUS_BAD_INPUT, "NDArrayList: all arrays must have same data type");
 
-            if (array->rankOf() != _shape.size())
+            if (array->rankOf() + 1 != _shape.size())
                 return ND4J_STATUS_BAD_DIMENSIONS;
 
             // we should validate shape before adding new array to chunks
             for (int e = 1; e < array->rankOf(); e++)
-                if (_shape[e] != array->sizeAt(e))
+                if (_shape[e] != array->sizeAt(e - 1))
                     return ND4J_STATUS_BAD_DIMENSIONS;
         }
         
@@ -179,7 +182,9 @@ namespace nd4j {
         auto tads = array->allTensorsAlongDimension(axis);
         int indicesSize = indices.size();
 
-        PRAGMA_OMP_PARALLEL_FOR
+        if (tads->size() != indicesSize)
+            throw std::runtime_error("Number of TADs should match number of indices");
+
         for (int e = 0; e < indicesSize; e++)
             tads->at(e)->assign(_chunks[indices[e]]);
 

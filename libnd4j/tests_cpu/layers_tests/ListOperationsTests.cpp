@@ -111,7 +111,7 @@ TEST_F(ListOperationsTests, BasicTest_Pick_1) {
     auto exp = NDArrayFactory::create<double>('c', {4, 100});
 
     for (int e = 0; e < 10; e++) {
-        auto row = NDArrayFactory::create_<double>('c', {1, 100});
+        auto row = NDArrayFactory::create_<double>('c', {100});
         row->assign((double) e);
         list.write(e, row->dup());
 
@@ -143,7 +143,7 @@ TEST_F(ListOperationsTests, BasicTest_Size_1) {
     NDArrayList list(10);
     auto exp = NDArrayFactory::create<int>(10);
     for (int e = 0; e < 10; e++) {
-        auto row = NDArrayFactory::create_<double>('c', {1, 100});
+        auto row = NDArrayFactory::create_<double>('c', {100});
         row->assign((double) e);
         list.write(e, row->dup());
 
@@ -204,7 +204,7 @@ TEST_F(ListOperationsTests, BasicTest_Split_1) {
     int cnt1 = 0;
     int cnt2 = 0;
     for (int e = 0; e < 10; e++) {
-        auto row = NDArrayFactory::create_<double>('c', {1, 5});
+        auto row = NDArrayFactory::create_<double>('c', {5});
         row->assign((double) e);
         tads->at(e)->assign(row);
 
