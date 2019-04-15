@@ -59,7 +59,7 @@ namespace nd4j {
                 indices[1] = cnt + c_size;
                 cnt += c_size;
                 
-                auto subarray = (*array)(indices, true);
+                auto subarray = (*array)(indices);
 
                 auto status = list->write(e, subarray.dup(array->ordering()));
                 
