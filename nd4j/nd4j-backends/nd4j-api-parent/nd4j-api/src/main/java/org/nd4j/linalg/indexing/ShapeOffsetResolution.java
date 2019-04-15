@@ -116,18 +116,19 @@ public class ShapeOffsetResolution implements Serializable {
                 this.offsets = new long[arr.rank()];
                 return true;
             } else if (indexes[0] instanceof PointIndex && indexes[1] instanceof NDArrayIndexAll) {
-                this.shapes = new long[2];
-                this.strides = new long[2];
-                for (int i = 0; i < 2; i++) {
-                    shapes[i] = 1;
-                    strides[i] = arr.stride(i);
-                }
-
-                this.offsets = new long[arr.rank()];
-                if(arr.isRowVector())
+                this.shapes = new long[1];
+                this.strides = new long[1];
+                this.offsets = new long[1];
+                if(arr.size(0) == 1){
+                    //Row vector: [1,x]
+                    shapes[0] = arr.size(1);
+                    strides[0] = arr.stride(1);
                     this.offset = indexes[0].offset() * strides[1];
-                else {
-                    this.offset = indexes[0].offset() * strides[0];
+                } else {
+                    //Column vector: [x, 1]
+                    shapes[0] = 1;
+                    strides[0] = 1;
+                    this.offset = indexes[0].offset();
                 }
                 return true;
             }
