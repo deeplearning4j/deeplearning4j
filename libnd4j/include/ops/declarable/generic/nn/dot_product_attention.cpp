@@ -80,6 +80,13 @@ namespace ops  {
             }else{
                 reshapedMask = mask->reshape(mask->ordering(), {mask->sizeAt(0), mask->sizeAt(1), 1});
             }
+
+            // the mask is 0 for positions we want to skip, and 1 for positions we want to keep. By subtracting 1 from
+            // it we get -1 for those we want to skip and 0 for those we want to keep. Multiplying it by 1e9 then
+            // turns all of those we want to skip into very large negative values. By adding this to the weights
+            // before going through the softmax, we effectively push all masked positions to zero after softmax.
+            //
+            // we are 1e9 to be effectively infinity
             *weights += (*reshapedMask - 1) * 1e9;
             delete reshapedMask;
         }

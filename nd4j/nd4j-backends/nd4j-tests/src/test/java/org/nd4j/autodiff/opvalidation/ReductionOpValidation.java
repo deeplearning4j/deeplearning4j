@@ -1083,7 +1083,7 @@ public class ReductionOpValidation extends BaseOpValidation {
         String err = OpValidation.validate(new TestCase(sd)
                     .expectedOutput("out", finalOut)
                     .gradientCheck(true));
-        assertNull(err, err);
+        assertNull(err);
     }
 
     @Test
@@ -1113,7 +1113,7 @@ public class ReductionOpValidation extends BaseOpValidation {
                 .expectedOutput("out", finalOut)
                 .gradCheckSkipVariables("mask")
                 .gradientCheck(true));
-        assertNull(err, err);
+        assertNull(err);
     }
 
     @Test
@@ -1144,7 +1144,7 @@ public class ReductionOpValidation extends BaseOpValidation {
                 .expectedOutput("out", finalOut)
                 .gradCheckSkipVariables("mask")
                 .gradientCheck(true));
-        assertNull(err, err);
+        assertNull(err);
     }
 
     @Test
@@ -1169,7 +1169,7 @@ public class ReductionOpValidation extends BaseOpValidation {
         String err = OpValidation.validate(new TestCase(sd)
                 .expectedOutput("out", finalOut)
                 .gradientCheck(true));
-        assertNull(err, err);
+        assertNull(err);
     }
 
 
@@ -1222,6 +1222,6 @@ public class ReductionOpValidation extends BaseOpValidation {
                 .gradientCheck(true)
                 .gradCheckSkipVariables("mask"));
 
-        assertNull(err, err);
+        assertNull(err);
     }
 }

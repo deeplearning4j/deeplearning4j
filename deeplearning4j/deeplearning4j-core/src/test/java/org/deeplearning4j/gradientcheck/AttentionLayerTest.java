@@ -135,8 +135,8 @@ public class AttentionLayerTest extends BaseDL4JTest {
                             .list()
                             .layer(new LSTM.Builder().nOut(layerSize).build())
                             .layer( projectInput ?
-                                    new LearnedSelfAttentionLayer.Builder().nOut(8).nHeads(2).numQueries(numQueries).projectInput(true).build()
-                                    : new LearnedSelfAttentionLayer.Builder().nHeads(1).numQueries(numQueries).projectInput(false).build()
+                                    new LearnedSelfAttentionLayer.Builder().nOut(8).nHeads(2).nQueries(numQueries).projectInput(true).build()
+                                    : new LearnedSelfAttentionLayer.Builder().nHeads(1).nQueries(numQueries).projectInput(false).build()
                             )
                             .layer(new GlobalPoolingLayer.Builder().poolingType(PoolingType.MAX).build())
                             .layer(new OutputLayer.Builder().nOut(nOut).activation(Activation.SOFTMAX)

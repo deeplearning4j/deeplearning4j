@@ -26,6 +26,7 @@ import org.deeplearning4j.nn.params.SimpleRnnParamInitializer;
 import org.deeplearning4j.nn.weights.WeightInitUtil;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -42,6 +43,13 @@ import java.util.Map;
  *
  * a_i = σ(W*x_i + R*attention(a_i, x, x) + b)
  *
+ * The output will be in the shape of [batchSize, nOut, timesteps].
+ *
+ * Attention implemented as in
+ * Attention is all you need by Vaswani et al. [arXiv:1706.03762], pp. 4,5
+ *
+ * @see LearnedSelfAttentionLayer
+ * @see SelfAttentionLayer
  * @see org.nd4j.linalg.api.ops.impl.transforms.custom.MultiHeadDotProductAttention
  * @author Paul Dubs
  */
@@ -55,8 +63,6 @@ public class RecurrentAttentionLayer extends SameDiffLayer {
     private boolean projectInput;
     private Activation activation;
     private boolean hasBias;
-
-
 
     private static final String WEIGHT_KEY_QUERY_PROJECTION = "Wq";
     private static final String WEIGHT_KEY_KEY_PROJECTION = "Wk";
@@ -168,10 +174,9 @@ public class RecurrentAttentionLayer extends SameDiffLayer {
         final val R = paramTable.get(RECURRENT_WEIGHT_KEY);
         final val b = paramTable.get(BIAS_KEY);
 
-        final long[] inputShape = layerInput.getShape();
-        final val timeSteps = inputShape[2];
-        SDVariable[] outputSlices = new SDVariable[(int) timeSteps];
         SDVariable[] inputSlices = sameDiff.unstack(layerInput, 2);
+        final val timeSteps = inputSlices.length;
+        SDVariable[] outputSlices = new SDVariable[(int) timeSteps];
         SDVariable prev = null;
         for (int i = 0; i < timeSteps; i++) {
             final val x_i = inputSlices[i];
@@ -205,56 +210,43 @@ public class RecurrentAttentionLayer extends SameDiffLayer {
         return sameDiff.concat(2, outputSlices);
     }
 
-
+    @Getter
+    @Setter
     public static class Builder extends SameDiffLayer.Builder<RecurrentAttentionLayer.Builder> {
 
         /**
          * Number of inputs to the layer (input size)
          */
-        @Getter
-        @Setter
         private int nIn;
 
         /**
          * Number of outputs (output size)
          */
-        @Getter
-        @Setter
         private int nOut;
 
         /**
          * Number of Attention Heads
          */
-        @Getter
-        @Setter
         private int nHeads;
 
         /**
          * Size of attention heads
          */
-        @Getter
-        @Setter
         private int headSize;
 
         /**
          * Project input before applying attention or not.
          */
-        @Getter
-        @Setter
         private boolean projectInput = true;
 
         /**
          * If true (default is true) the layer will have a bias
          */
-        @Getter
-        @Setter
         private boolean hasBias = true;
 
         /**
          * Activation function for the layer
          */
-        @Getter
-        @Setter
         private Activation activation = Activation.TANH;
 
         /**
@@ -316,10 +308,10 @@ public class RecurrentAttentionLayer extends SameDiffLayer {
         @Override
         @SuppressWarnings("unchecked")
         public RecurrentAttentionLayer build() {
-            if(!this.projectInput && this.nHeads != 1){ throw new IllegalArgumentException("projectInput must be true when nHeads != 1"); }
-            if(!this.projectInput && nIn != nOut){ throw new IllegalArgumentException("nIn must be equal to nOut when projectInput is false"); }
-            if(this.projectInput && nOut == 0){ throw new IllegalArgumentException("nOut must be specified when projectInput is true"); }
-            if(this.nOut % nHeads != 0 && headSize == 0){ throw new IllegalArgumentException("nOut isn't divided by nHeads cleanly. Specify the headSize manually."); }
+            Preconditions.checkArgument(this.projectInput || this.nHeads == 1, "projectInput must be true when nHeads != 1");
+            Preconditions.checkArgument(this.projectInput || nIn == nOut, "nIn must be equal to nOut when projectInput is false");
+            Preconditions.checkArgument(!this.projectInput || nOut != 0, "nOut must be specified when projectInput is true");
+            Preconditions.checkArgument(this.nOut % nHeads == 0 || headSize > 0, "nOut isn't divided by nHeads cleanly. Specify the headSize manually.");
             return new RecurrentAttentionLayer(this);
         }
     }

@@ -24,6 +24,7 @@ import org.deeplearning4j.nn.conf.layers.samediff.SameDiffLayer;
 import org.deeplearning4j.nn.weights.WeightInitUtil;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -37,6 +38,20 @@ import java.util.Map;
  * Takes in RNN style input in the shape of [batchSize, features, timesteps]
  * and applies dot product attention using learned queries.
  *
+ * The output will be in the shape of [batchSize, nOut, nQueries]. If input
+ * masks are used, they are applied to the input here and not propagated any
+ * further as now the time steps are given by the configured query count.
+ *
+ * While not an exact implementation of the paper, this is inspired by
+ * A Structured Self-attentive Sentence Embedding by Lin et al. [arXiv:1703.03130]
+ *
+ * Attention itself implemented as in
+ * Attention is all you need by Vaswani et al. [arXiv:1706.03762], pp. 4,5
+ *
+ * @see SelfAttentionLayer
+ * @see RecurrentAttentionLayer
+ * @see org.nd4j.linalg.api.ops.impl.transforms.custom.MultiHeadDotProductAttention
+ *
  * @author Paul Dubs
  */
 @Data
@@ -47,7 +62,7 @@ public class LearnedSelfAttentionLayer extends SameDiffLayer {
     private int nHeads;
     private long headSize;
     private boolean projectInput;
-    private int numQueries;
+    private int nQueries;
 
     private static final String WEIGHT_KEY_QUERY_PROJECTION = "Wq";
     private static final String WEIGHT_KEY_KEY_PROJECTION = "Wk";
@@ -64,7 +79,7 @@ public class LearnedSelfAttentionLayer extends SameDiffLayer {
         nHeads = builder.nHeads;
         headSize = builder.headSize == 0 ? nOut / nHeads : builder.headSize;
         projectInput = builder.projectInput;
-        numQueries = builder.numQueries;
+        nQueries = builder.nQueries;
     }
 
     @Override
@@ -94,9 +109,9 @@ public class LearnedSelfAttentionLayer extends SameDiffLayer {
         }
 
         if(projectInput){
-            return InputType.recurrent(nOut, numQueries);
+            return InputType.recurrent(nOut, nQueries);
         }else{
-            return InputType.recurrent(nIn, numQueries);
+            return InputType.recurrent(nIn, nQueries);
         }
     }
 
@@ -104,7 +119,7 @@ public class LearnedSelfAttentionLayer extends SameDiffLayer {
     public void defineParameters(SDLayerParams params) {
         params.clear();
 
-        params.addWeightParam(WEIGHT_QUERIES, 1, nIn, numQueries);
+        params.addWeightParam(WEIGHT_QUERIES, 1, nIn, nQueries);
 
         if(projectInput){
             params.addWeightParam(WEIGHT_KEY_QUERY_PROJECTION, nHeads, headSize, nIn);
@@ -121,7 +136,7 @@ public class LearnedSelfAttentionLayer extends SameDiffLayer {
                 if(e.getKey().equals(WEIGHT_KEY_OUT_PROJECTION)){
                     WeightInitUtil.initWeights(nIn, headSize, e.getValue().shape(), weightInit, null, 'c', e.getValue());
                 }else if(e.getKey().equals(WEIGHT_QUERIES)){
-                    WeightInitUtil.initWeights(nIn, numQueries, e.getValue().shape(), weightInit, null, 'c', e.getValue());
+                    WeightInitUtil.initWeights(nIn, nQueries, e.getValue().shape(), weightInit, null, 'c', e.getValue());
                 }else{
                     WeightInitUtil.initWeights(nHeads * headSize, nOut, e.getValue().shape(), weightInit, null, 'c', e.getValue());
                 }
@@ -153,50 +168,40 @@ public class LearnedSelfAttentionLayer extends SameDiffLayer {
         return null;
     }
 
+    @Getter
+    @Setter
     public static class Builder extends SameDiffLayer.Builder<LearnedSelfAttentionLayer.Builder> {
 
         /**
          * Number of inputs to the layer (input size)
          */
-        @Getter
-        @Setter
         private int nIn;
 
         /**
          * Number of outputs (output size)
          */
-        @Getter
-        @Setter
         private int nOut;
 
         /**
          * Number of Attention Heads
          */
-        @Getter
-        @Setter
         private int nHeads;
 
         /**
          * Size of attention heads
          */
-        @Getter
-        @Setter
         private int headSize;
 
         /**
          * Project input before applying attention or not.
          */
-        @Getter
-        @Setter
         private boolean projectInput;
 
 
         /**
          * Number of queries to learn
          */
-        @Getter
-        @Setter
-        private int numQueries;
+        private int nQueries;
 
         /**
          * @param nIn Number of inputs to the layer (input size)
@@ -241,19 +246,19 @@ public class LearnedSelfAttentionLayer extends SameDiffLayer {
         /**
          * Number of queries to learn
          */
-        public Builder numQueries(int numQueries){
-            this.numQueries = numQueries;
+        public Builder nQueries(int nQueries){
+            this.nQueries = nQueries;
             return this;
         }
 
         @Override
         @SuppressWarnings("unchecked")
         public LearnedSelfAttentionLayer build() {
-            if(!this.projectInput && this.nHeads != 1){ throw new IllegalArgumentException("projectInput must be true when nHeads != 1"); }
-            if(!this.projectInput && nIn != nOut){ throw new IllegalArgumentException("nIn must be equal to nOut when projectInput is false"); }
-            if(this.projectInput && nOut == 0){ throw new IllegalArgumentException("nOut must be specified when projectInput is true"); }
-            if(this.nOut % nHeads != 0 && headSize == 0){ throw new IllegalArgumentException("nOut isn't divided by nHeads cleanly. Specify the headSize manually."); }
-            if(this.numQueries == 0){ throw new IllegalArgumentException("You must set numQueries."); }
+            Preconditions.checkArgument(this.projectInput || this.nHeads == 1, "projectInput must be true when nHeads != 1");
+            Preconditions.checkArgument(this.projectInput || nIn == nOut, "nIn must be equal to nOut when projectInput is false");
+            Preconditions.checkArgument(!this.projectInput || nOut != 0, "nOut must be specified when projectInput is true");
+            Preconditions.checkArgument(this.nOut % nHeads == 0 || headSize > 0, "nOut isn't divided by nHeads cleanly. Specify the headSize manually.");
+            Preconditions.checkArgument(this.nQueries > 0, "You must set numQueries.");
 
             return new LearnedSelfAttentionLayer(this);
         }

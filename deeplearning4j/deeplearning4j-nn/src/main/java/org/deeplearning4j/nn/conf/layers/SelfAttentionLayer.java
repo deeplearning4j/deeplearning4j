@@ -23,6 +23,7 @@ import org.deeplearning4j.nn.conf.layers.samediff.SameDiffLayer;
 import org.deeplearning4j.nn.weights.WeightInitUtil;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -34,6 +35,15 @@ import java.util.Map;
  *
  * Takes in RNN style input in the shape of [batchSize, features, timesteps]
  * and applies dot product attention using each timestep as the query.
+ *
+ * The output will be in the shape of [batchSize, nOut, timesteps].
+ *
+ * Attention implemented as in
+ * Attention is all you need by Vaswani et al. [arXiv:1706.03762], pp. 4,5
+ *
+ * @see LearnedSelfAttentionLayer
+ * @see RecurrentAttentionLayer
+ * @see org.nd4j.linalg.api.ops.impl.transforms.custom.MultiHeadDotProductAttention
  *
  * @author Paul Dubs
  */
@@ -138,41 +148,33 @@ public class SelfAttentionLayer extends SameDiffLayer {
     }
 
 
+    @Getter
+    @Setter
     public static class Builder extends SameDiffLayer.Builder<SelfAttentionLayer.Builder> {
 
         /**
          * Number of inputs to the layer (input size)
          */
-        @Getter
-        @Setter
         private int nIn;
 
         /**
          * Number of outputs (output size)
          */
-        @Getter
-        @Setter
         private int nOut;
 
         /**
          * Number of Attention Heads
          */
-        @Getter
-        @Setter
         private int nHeads;
 
         /**
          * Size of attention heads
          */
-        @Getter
-        @Setter
         private int headSize;
 
         /**
          * Project input before applying attention or not.
          */
-        @Getter
-        @Setter
         private boolean projectInput;
 
         /**
@@ -218,10 +220,10 @@ public class SelfAttentionLayer extends SameDiffLayer {
         @Override
         @SuppressWarnings("unchecked")
         public SelfAttentionLayer build() {
-            if(!this.projectInput && this.nHeads != 1){ throw new IllegalArgumentException("projectInput must be true when nHeads != 1"); }
-            if(!this.projectInput && nIn != nOut){ throw new IllegalArgumentException("nIn must be equal to nOut when projectInput is false"); }
-            if(this.projectInput && nOut == 0){ throw new IllegalArgumentException("nOut must be specified when projectInput is true"); }
-            if(this.nOut % nHeads != 0 && headSize == 0){ throw new IllegalArgumentException("nOut isn't divided by nHeads cleanly. Specify the headSize manually."); }
+            Preconditions.checkArgument(this.projectInput || this.nHeads == 1, "projectInput must be true when nHeads != 1");
+            Preconditions.checkArgument(this.projectInput || nIn == nOut, "nIn must be equal to nOut when projectInput is false");
+            Preconditions.checkArgument(!this.projectInput || nOut != 0, "nOut must be specified when projectInput is true");
+            Preconditions.checkArgument(this.nOut % nHeads == 0 || headSize > 0, "nOut isn't divided by nHeads cleanly. Specify the headSize manually.");
             return new SelfAttentionLayer(this);
         }
     }
