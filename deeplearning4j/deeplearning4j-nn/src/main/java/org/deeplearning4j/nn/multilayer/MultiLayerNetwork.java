@@ -770,7 +770,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
             }
 
             if(paramLength > 0) {
-                flattenedGradients = Nd4j.zeros(new long[]{1, paramLength}, 'f'); //No need to initialize, as each layer will do it each iteration anyway
+                flattenedGradients = Nd4j.create(flattenedParams.dataType(), new long[]{1, paramLength}, 'f'); //No need to initialize, as each layer will do it each iteration anyway
             }
 
             long paramsSoFar = 0;

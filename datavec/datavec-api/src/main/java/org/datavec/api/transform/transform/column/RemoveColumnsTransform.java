@@ -17,6 +17,7 @@
 package org.datavec.api.transform.transform.column;
 
 import lombok.Data;
+import org.apache.commons.lang3.StringUtils;
 import org.datavec.api.transform.ColumnOp;
 import org.datavec.api.transform.metadata.ColumnMetaData;
 import org.datavec.api.transform.schema.Schema;
@@ -24,7 +25,6 @@ import org.datavec.api.transform.transform.BaseTransform;
 import org.datavec.api.writable.Writable;
 import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
-import org.nd4j.util.StringUtils;
 
 import java.util.*;
 
@@ -123,7 +123,7 @@ public class RemoveColumnsTransform extends BaseTransform implements ColumnOp {
             List<String> list = new ArrayList<>();
             for (Writable w : writables)
                 list.add(w.toString());
-            String toString = StringUtils.join(",", list);
+            String toString = StringUtils.join(list, ",");
             throw new IllegalStateException("Cannot execute transform: input writables list length (" + writables.size()
                             + ") does not " + "match expected number of elements (schema: " + inputSchema.numColumns()
                             + "). Transform = " + toString() + " and record " + toString);

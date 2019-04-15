@@ -26,7 +26,7 @@ using namespace simdOps;
 //////////////////////////////////////////////////////////////////////////////
 template <typename X>
 template <typename OpType>
-void nd4j::IndexReductionLoops<X>::loopIndexTadXZ(X* x, Nd4jLong* xShapeInfo,
+void nd4j::IndexReductionLoops<X>::loopIndexReduce(X* x, Nd4jLong* xShapeInfo,
                            Nd4jLong* z, Nd4jLong* zShapeInfo,
                            Nd4jLong* tadShapeInfo, Nd4jLong* tadOffsets,
                            X* extraParams) {
@@ -279,11 +279,11 @@ void nd4j::IndexReductionLoops<X>::loopIndexTadXZ(X* x, Nd4jLong* xShapeInfo,
 }
 
 template <typename X>
-void nd4j::IndexReductionLoops<X>::wrapXZ(const int opNum, void* vx, Nd4jLong* xShapeInfo, Nd4jLong* z, Nd4jLong* zShapeInfo, Nd4jLong* tadShapeInfo, Nd4jLong* tadOffsets, void* vextraParams) {
+void nd4j::IndexReductionLoops<X>::wrapIndexReduce(const int opNum, void* vx, Nd4jLong* xShapeInfo, Nd4jLong* z, Nd4jLong* zShapeInfo, Nd4jLong* tadShapeInfo, Nd4jLong* tadOffsets, void* vextraParams) {
     auto x = reinterpret_cast<X *>(vx);
     auto extraParams = reinterpret_cast<X *>(vextraParams);
 
-    DISPATCH_BY_OPNUM_T(loopIndexTadXZ, PARAMS(x, xShapeInfo, z, zShapeInfo, tadShapeInfo, tadOffsets, extraParams), INDEX_REDUCE_OPS);
+    DISPATCH_BY_OPNUM_T(loopIndexReduce, PARAMS(x, xShapeInfo, z, zShapeInfo, tadShapeInfo, tadOffsets, extraParams), INDEX_REDUCE_OPS);
 }
 
-BUILD_SINGLE_TEMPLATE(template void nd4j::IndexReductionLoops, ::wrapXZ(const int opNum, void* vx, Nd4jLong* xShapeInfo, Nd4jLong* z, Nd4jLong* zShapeInfo, Nd4jLong* tadShapeInfo, Nd4jLong* tadOffsets, void* vextraParams), LIBND4J_TYPES);
+BUILD_SINGLE_TEMPLATE(template void nd4j::IndexReductionLoops, ::wrapIndexReduce(const int opNum, void* vx, Nd4jLong* xShapeInfo, Nd4jLong* z, Nd4jLong* zShapeInfo, Nd4jLong* tadShapeInfo, Nd4jLong* tadOffsets, void* vextraParams), LIBND4J_TYPES);

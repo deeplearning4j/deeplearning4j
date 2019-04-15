@@ -3350,7 +3350,7 @@ public class Shape {
      * @return true if arr.length == 1 && arr[0] is Integer.MAX_VALUE
      */
     public static boolean wholeArrayDimension(int... arr) {
-        return arr.length == 1 && arr[0] == Integer.MAX_VALUE;
+        return arr == null || arr.length == 0 || (arr.length == 1 && arr[0] == Integer.MAX_VALUE);
     }
 
     public static int[] uniquify(int[] array) {

@@ -148,6 +148,7 @@
                     </environmentVariables>
                     <includes>
                         <include>*.java</include>
+                        <include>**/*.java</include>
                         <include>**/Test*.java</include>
                         <include>**/*Test.java</include>
                         <include>**/*TestCase.java</include>
@@ -240,6 +241,7 @@
                     </classPaths>
                     <includePaths>
                         <includePath>${libnd4jhome}/blasbuild/cpu/include</includePath>
+                        <includePath>${libnd4jhome}/blasbuild/cpu/flatbuffers-src/include/</includePath>
                         <includePath>${libnd4jhome}/blas</includePath>
                         <includePath>${libnd4jhome}/include</includePath>
                         <includePath>${libnd4jhome}/include/helpers</includePath>

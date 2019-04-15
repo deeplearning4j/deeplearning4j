@@ -288,9 +288,9 @@
         <javacpp.platform.extension/> <!-- -Djavacpp.platform.extension=-avx512 -->
         <javacpp.platform.properties>${javacpp.platform}</javacpp.platform.properties>
 
-        <javacpp.version>1.5-SNAPSHOT</javacpp.version>
-        <javacpp-presets.version>1.5-SNAPSHOT</javacpp-presets.version>
-        <javacv.version>1.5-SNAPSHOT</javacv.version>
+        <javacpp.version>1.5</javacpp.version>
+        <javacpp-presets.version>1.5</javacpp-presets.version>
+        <javacv.version>1.5</javacv.version>
 
         <python.version>3.6</python.version>
         <cpython-platform.version>${python.version}-${javacpp-presets.version}</cpython-platform.version>
@@ -334,7 +334,7 @@
         <geo.jackson.version>2.8.7</geo.jackson.version>
         <lombok.version>1.18.2</lombok.version>
         <cleartk.version>2.0.0</cleartk.version>
-        <lucene-solr.version>7.5.0</lucene-solr.version>
+        <lucene-solr.version>7.7.1</lucene-solr.version>
         <json.version>20131018</json.version>
         <google.protobuf.version>2.6.1</google.protobuf.version>
         <failIfNoTests>false</failIfNoTests>

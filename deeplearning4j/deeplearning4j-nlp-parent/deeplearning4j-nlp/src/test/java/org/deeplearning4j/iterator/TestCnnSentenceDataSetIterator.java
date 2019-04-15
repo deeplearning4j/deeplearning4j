@@ -16,6 +16,8 @@
 
 package org.deeplearning4j.iterator;
 
+import org.junit.Before;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.io.ClassPathResource;
 import org.deeplearning4j.iterator.provider.CollectionLabeledSentenceProvider;
 import org.deeplearning4j.models.embeddings.loader.WordVectorSerializer;
@@ -36,6 +38,11 @@ import static org.junit.Assert.*;
  * Created by Alex on 28/01/2017.
  */
 public class TestCnnSentenceDataSetIterator {
+
+    @Before
+    public void before(){
+        Nd4j.setDefaultDataTypes(DataType.FLOAT, DataType.FLOAT);
+    }
 
     @Test
     public void testSentenceIterator() throws Exception {
@@ -59,7 +66,7 @@ public class TestCnnSentenceDataSetIterator {
 
         List<String> labelsForSentences = Arrays.asList("Positive", "Negative");
 
-        INDArray expLabels = Nd4j.create(new double[][] {{0, 1}, {1, 0}}); //Order of labels: alphabetic. Positive -> [0,1]
+        INDArray expLabels = Nd4j.create(new float[][] {{0, 1}, {1, 0}}); //Order of labels: alphabetic. Positive -> [0,1]
 
         boolean[] alongHeightVals = new boolean[] {true, false};
 
@@ -79,7 +86,7 @@ public class TestCnnSentenceDataSetIterator {
                 } else {
                     fmShape = new int[]{2, 1, 1, 4};
                 }
-                INDArray expectedFeatureMask = Nd4j.create(new double[][]{{1, 1, 1, 1}, {1, 1, 1, 0}}).reshape('c', fmShape);
+                INDArray expectedFeatureMask = Nd4j.create(new float[][]{{1, 1, 1, 1}, {1, 1, 1, 0}}).reshape('c', fmShape);
 
 
                 for (int i = 0; i < 4; i++) {
@@ -159,14 +166,14 @@ public class TestCnnSentenceDataSetIterator {
 
         List<String> labelsForSentences = Arrays.asList("Positive", "Negative");
 
-        INDArray expLabels = Nd4j.create(new double[][] {{0, 1}, {1, 0}}); //Order of labels: alphabetic. Positive -> [0,1]
+        INDArray expLabels = Nd4j.create(new float[][] {{0, 1}, {1, 0}}); //Order of labels: alphabetic. Positive -> [0,1]
 
         for(boolean norm : new boolean[]{true, false}) {
             for(CnnSentenceDataSetIterator.Format f : new CnnSentenceDataSetIterator.Format[]{CnnSentenceDataSetIterator.Format.CNN1D, CnnSentenceDataSetIterator.Format.RNN}){
 
                 INDArray expectedFeatures = Nd4j.create(2, vectorSize, maxLength);
                 int[] fmShape = new int[]{2, 4};
-                INDArray expectedFeatureMask = Nd4j.create(new double[][]{{1, 1, 1, 1}, {1, 1, 1, 0}}).reshape('c', fmShape);
+                INDArray expectedFeatureMask = Nd4j.create(new float[][]{{1, 1, 1, 1}, {1, 1, 1, 0}}).reshape('c', fmShape);
 
 
                 for (int i = 0; i < 4; i++) {
@@ -226,7 +233,7 @@ public class TestCnnSentenceDataSetIterator {
 
         List<String> labelsForSentences = Arrays.asList("Positive", "Negative", "Positive", "Negative");
 
-        INDArray expLabels = Nd4j.create(new double[][] {{0, 1}, {1, 0}}); //Order of labels: alphabetic. Positive -> [0,1]
+        INDArray expLabels = Nd4j.create(new float[][] {{0, 1}, {1, 0}}); //Order of labels: alphabetic. Positive -> [0,1]
 
 
         LabeledSentenceProvider p = new CollectionLabeledSentenceProvider(sentences, labelsForSentences, null);
@@ -237,9 +244,9 @@ public class TestCnnSentenceDataSetIterator {
         //            System.out.println("alongHeight = " + alongHeight);
         DataSet ds = dsi.next();
 
-        INDArray expectedFeatures = Nd4j.create(2, 1, vectorSize, maxLength);
+        INDArray expectedFeatures = Nd4j.create(DataType.FLOAT, 2, 1, vectorSize, maxLength);
 
-        INDArray expectedFeatureMask = Nd4j.create(new double[][] {{1, 1, 1, 1}, {1, 1, 1, 0}}).reshape('c', 2, 1, 1, 4);
+        INDArray expectedFeatureMask = Nd4j.create(new float[][] {{1, 1, 1, 1}, {1, 1, 1, 0}}).reshape('c', 2, 1, 1, 4);
 
         for (int i = 0; i < 4; i++) {
             expectedFeatures.get(NDArrayIndex.point(0), NDArrayIndex.point(0), NDArrayIndex.all(),
@@ -282,7 +289,7 @@ public class TestCnnSentenceDataSetIterator {
 
         List<String> labelsForSentences = Arrays.asList("Positive", "Negative", "Positive", "Negative");
 
-        INDArray expLabels = Nd4j.create(new double[][] {{0, 1}, {1, 0}}); //Order of labels: alphabetic. Positive -> [0,1]
+        INDArray expLabels = Nd4j.create(new float[][] {{0, 1}, {1, 0}}); //Order of labels: alphabetic. Positive -> [0,1]
 
 
         LabeledSentenceProvider p = new CollectionLabeledSentenceProvider(sentences, labelsForSentences, null);
@@ -298,7 +305,7 @@ public class TestCnnSentenceDataSetIterator {
 
         INDArray expectedFeatures = Nd4j.create(2, 1, vectorSize, maxLength);
 
-        INDArray expectedFeatureMask = Nd4j.create(new double[][] {{1, 1, 1, 1}, {1, 1, 1, 0}}).reshape('c', 2, 1, 1, 4);
+        INDArray expectedFeatureMask = Nd4j.create(new float[][] {{1, 1, 1, 1}, {1, 1, 1, 0}}).reshape('c', 2, 1, 1, 4);
 
         for (int i = 0; i < 4; i++) {
             expectedFeatures.get(NDArrayIndex.point(0), NDArrayIndex.point(0), NDArrayIndex.all(),

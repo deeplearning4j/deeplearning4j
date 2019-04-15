@@ -25,7 +25,7 @@ public class SameDiffSpecifiedLossVarsTests {
     @Test
     public void testSpecifiedLoss1(){
         SameDiff sd = SameDiff.create();
-        SDVariable ph1 = sd.placeHolder("ph", DataType.FLOAT, 3, 4);
+        SDVariable ph1 = sd.var("ph", DataType.FLOAT, 3, 4);
         ph1.setArray(Nd4j.create(DataType.FLOAT, 3, 4));
 
         SDVariable add = ph1.add(1);

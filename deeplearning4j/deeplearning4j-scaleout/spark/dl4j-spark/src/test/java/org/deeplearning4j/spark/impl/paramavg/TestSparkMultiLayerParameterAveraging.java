@@ -52,6 +52,7 @@ import org.deeplearning4j.spark.impl.graph.SparkComputationGraph;
 import org.deeplearning4j.spark.impl.multilayer.SparkDl4jMultiLayer;
 import org.deeplearning4j.spark.stats.EventStats;
 import org.deeplearning4j.spark.stats.ExampleCountEventStats;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -791,7 +792,7 @@ public class TestSparkMultiLayerParameterAveraging extends BaseSparkTest {
     }
 
 
-    @Test
+    @Test @Ignore   //Ignored 2019/04/09 - low priority: https://github.com/deeplearning4j/deeplearning4j/issues/6656
     public void testVaePretrainSimple() {
         //Simple sanity check on pretraining
         int nIn = 8;
@@ -826,7 +827,7 @@ public class TestSparkMultiLayerParameterAveraging extends BaseSparkTest {
         sparkNet.fit(data);
     }
 
-    @Test
+    @Test @Ignore    //Ignored 2019/04/09 - low priority: https://github.com/deeplearning4j/deeplearning4j/issues/6656
     public void testVaePretrainSimpleCG() {
         //Simple sanity check on pretraining
         int nIn = 8;

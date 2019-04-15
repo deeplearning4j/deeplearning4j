@@ -1232,3 +1232,70 @@ TEST_F(NDArrayTest2, reshapei_2) {
     ASSERT_FALSE(canReshape);
     ASSERT_TRUE(shape::equalsStrict(x.getShapeInfo(), shapeInfo2));
 }
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(NDArrayTest2, trueBroadcast_1) {
+
+    NDArray x('f', {2, 3}, {1., 2., 3., 4., 5., 6.});
+    NDArray y('f', {1, 3}, {5., 4., 3.});
+    NDArray z('c', {2, 3}, nd4j::DataType::DOUBLE);
+
+    auto exp = x - y;
+    x.applyTrueBroadcast(nd4j::BroadcastOpsTuple::Subtract(), &y, &z, true);
+
+    // exp.printIndexedBuffer();
+    // z.printIndexedBuffer();
+
+    ASSERT_TRUE(exp.equalsTo(z));
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(NDArrayTest2, reduce_1) {
+
+    NDArray arr6('f', {1, 1, 4, 4, 4, 4}, nd4j::DataType::DOUBLE);
+    NDArray exp('f', {1, 1, 4, 4}, nd4j::DataType::DOUBLE);    
+
+    arr6.linspace(1);
+
+    NDArray* arr6s = arr6.reduceAlongDimension(nd4j::reduce::Sum, {2,3});
+
+    for (int i = 0; i < 4; i++) {
+        for (int j = 0; j < 4; j++) {
+            double sum = 0;
+            for (int x = 0; x < 4; x++) {
+                for (int y = 0; y < 4; y++) {
+                    Nd4jLong indices[] = {0, 0, x, y, i, j};
+                    Nd4jLong offset = shape::getOffset(0, arr6.shapeOf(), arr6.stridesOf(), indices, arr6.rankOf());
+                    sum += ((double*)arr6.getBuffer())[offset];
+                }
+            }
+            exp.p<double>(0, 0, i, j, sum);
+        }
+    }
+        
+    // arr6s->printShapeInfo();
+    // exp.printShapeInfo();
+    // exp.printIndexedBuffer();
+    // arr6s->printIndexedBuffer();
+
+    ASSERT_TRUE(exp.equalsTo(arr6s));
+
+    delete arr6s;
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(NDArrayTest2, reduce3_1) {
+
+    NDArray x('c', {1,4}, {1,2,3,4});
+    NDArray y('c', {1,4}, {2,3,4,5});
+    NDArray exp('c', {4}, {1,1,1,1});
+
+    NDArray* z = x.applyReduce3(nd4j::reduce3::EuclideanDistance, &y, {0}, nullptr);
+    // z->printShapeInfo();
+    // z->printIndexedBuffer();
+
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete z;
+}

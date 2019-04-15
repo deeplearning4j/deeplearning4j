@@ -553,7 +553,7 @@ public class TransformOpValidation extends BaseOpValidation {
 
             int nOut = 4;
             int minibatch = 5;
-            SDVariable in = sd.var("in", -1, nOut);
+            SDVariable in = sd.var("in", minibatch, nOut);
 
             INDArray ia = Nd4j.randn(DataType.DOUBLE, minibatch, nOut);
 
@@ -1056,8 +1056,8 @@ public class TransformOpValidation extends BaseOpValidation {
 
             int nOut = 4;
             int minibatch = 5;
-            SDVariable in1 = sd.var("in1", DataType.DOUBLE, -1, nOut);
-            SDVariable in2 = sd.var("in2", DataType.DOUBLE, -1, nOut);
+            SDVariable in1 = sd.var("in1", DataType.DOUBLE, minibatch, nOut);
+            SDVariable in2 = sd.var("in2", DataType.DOUBLE, minibatch, nOut);
 
             INDArray ia = Nd4j.randn(DataType.DOUBLE, minibatch, nOut);
             INDArray ib = Nd4j.randn(DataType.DOUBLE, minibatch, nOut);
@@ -1231,7 +1231,6 @@ public class TransformOpValidation extends BaseOpValidation {
             SameDiff sd = SameDiff.create();
             SDVariable in = sd.var("in", 4);
 
-            boolean doGrad = true;
             SDVariable out;
             INDArray exp;
             INDArray inArr;
@@ -1256,7 +1255,6 @@ public class TransformOpValidation extends BaseOpValidation {
                     inArr = Nd4j.create(new double[]{0,Double.NaN,10,Double.NaN});
                     exp = Nd4j.create(new boolean[]{false,true,false,true});
                     out = sd.math().isNaN(in);
-                    doGrad = false; //Can't grad check due to NaNs
                     break;
                 default:
                     throw new RuntimeException();
@@ -1266,7 +1264,7 @@ public class TransformOpValidation extends BaseOpValidation {
 
             SDVariable loss = out.castTo(DataType.DOUBLE).add(other).mean();
             TestCase tc = new TestCase(sd)
-                    .gradientCheck(doGrad)
+                    .gradientCheck(false)   //Can't gradient check - in -> boolean -> cast(double)
                     .expected(out, exp);
 
             in.setArray(inArr);

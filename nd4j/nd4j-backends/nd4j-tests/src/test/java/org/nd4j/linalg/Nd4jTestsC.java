@@ -104,6 +104,7 @@ import java.nio.file.Paths;
 import java.util.*;
 
 import static org.junit.Assert.*;
+import static org.junit.Assert.assertArrayEquals;
 
 /**
  * NDArrayTests
@@ -4524,6 +4525,20 @@ public class Nd4jTestsC extends BaseNd4jTest {
     }
 
     @Test
+    public void testReduce3SignaturesEquality_1() {
+        val x = Nd4j.rand(DataType.DOUBLE, 3, 4, 5);
+        val y = Nd4j.rand(DataType.DOUBLE, 3, 4, 5);
+
+        val reduceOp = new ManhattanDistance(x, y, 0);
+        val op = (Op) reduceOp;
+
+        val z0 = Nd4j.getExecutioner().exec(reduceOp);
+        val z1 = Nd4j.getExecutioner().exec(op);
+
+        assertEquals(z0, z1);
+    }
+
+    @Test
     public void testTadReduce3_1() {
         INDArray initial = Nd4j.create(5, 10);
         for (int i = 0; i < initial.rows(); i++) {
@@ -7510,6 +7525,16 @@ public class Nd4jTestsC extends BaseNd4jTest {
         } finally {
             Nd4j.factory().setOrder(origOrder);
         }
+    }
+
+    @Test
+    public void testReduceKeepDimsShape(){
+        INDArray arr = Nd4j.create(3,4);
+        INDArray out = arr.sum(true, 1);
+        assertArrayEquals(new long[]{3, 1}, out.shape());
+
+        INDArray out2 = arr.sum(true, 0);
+        assertArrayEquals(new long[]{1, 4}, out2.shape());
     }
 
     ///////////////////////////////////////////////////////

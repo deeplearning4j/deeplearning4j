@@ -199,7 +199,7 @@ namespace nd4j {
         /**
         *  this constructor creates new NDArray with shape matching "other" array, do not copy "other" elements into new array
         */
-        NDArray(const NDArray *other, const bool copyStrides = false, memory::Workspace* workspace = nullptr);
+        explicit NDArray(const NDArray *other, const bool copyStrides = false, memory::Workspace* workspace = nullptr);
 
         /**
         *  this constructor creates scalar(and set its value = 0) or empty array depending on bool argument isScalar

@@ -108,8 +108,6 @@ public class JcublasLevel3 extends BaseLevel3 {
                     INDArray B, int ldb, float beta, INDArray C, int ldc) {
         //A = Shape.toOffsetZero(A);
         //B = Shape.toOffsetZero(B);
-        if (Nd4j.dataType() != DataType.FLOAT)
-            logger.warn("FLOAT gemm called");
 
         Nd4j.getExecutioner().push();
 
@@ -136,8 +134,6 @@ public class JcublasLevel3 extends BaseLevel3 {
     @Override
     protected void ssymm(char Order, char Side, char Uplo, int M, int N, float alpha, INDArray A, int lda, INDArray B,
                     int ldb, float beta, INDArray C, int ldc) {
-        if (Nd4j.dataType() != DataType.FLOAT)
-            logger.warn("FLOAT symm called");
 
         Nd4j.getExecutioner().push();
 
@@ -164,9 +160,6 @@ public class JcublasLevel3 extends BaseLevel3 {
     @Override
     protected void ssyrk(char Order, char Uplo, char Trans, int N, int K, float alpha, INDArray A, int lda, float beta,
                     INDArray C, int ldc) {
-
-        if (Nd4j.dataType() != DataType.FLOAT)
-            logger.warn("FLOAT syrk called");
 
         Nd4j.getExecutioner().push();
 
@@ -204,8 +197,6 @@ public class JcublasLevel3 extends BaseLevel3 {
     @Override
     protected void strsm(char Order, char Side, char Uplo, char TransA, char Diag, int M, int N, float alpha,
                     INDArray A, int lda, INDArray B, int ldb) {
-        if (Nd4j.dataType() != DataType.FLOAT)
-            logger.warn("FLOAT trsm called");
 
         Nd4j.getExecutioner().push();
 
@@ -233,8 +224,6 @@ public class JcublasLevel3 extends BaseLevel3 {
                     INDArray B, int ldb, double beta, INDArray C, int ldc) {
         //A = Shape.toOffsetZero(A);
         //B = Shape.toOffsetZero(B);
-        if (Nd4j.dataType() != DataType.DOUBLE)
-            logger.warn("DOUBLE gemm called");
 
         Nd4j.getExecutioner().push();
 
@@ -263,9 +252,6 @@ public class JcublasLevel3 extends BaseLevel3 {
     @Override
     protected void dsymm(char Order, char Side, char Uplo, int M, int N, double alpha, INDArray A, int lda, INDArray B,
                     int ldb, double beta, INDArray C, int ldc) {
-        if (Nd4j.dataType() != DataType.DOUBLE)
-            logger.warn("DOUBLE symm called");
-
         Nd4j.getExecutioner().push();
 
         CudaContext ctx = allocator.getFlowController().prepareAction(C, A, B);
@@ -291,8 +277,6 @@ public class JcublasLevel3 extends BaseLevel3 {
     @Override
     protected void dsyrk(char Order, char Uplo, char Trans, int N, int K, double alpha, INDArray A, int lda,
                     double beta, INDArray C, int ldc) {
-        if (Nd4j.dataType() != DataType.DOUBLE)
-            logger.warn("DOUBLE syrk called");
 
         Nd4j.getExecutioner().push();
 
@@ -317,8 +301,6 @@ public class JcublasLevel3 extends BaseLevel3 {
     @Override
     protected void dsyr2k(char Order, char Uplo, char Trans, int N, int K, double alpha, INDArray A, int lda,
                     INDArray B, int ldb, double beta, INDArray C, int ldc) {
-        if (Nd4j.dataType() != DataType.DOUBLE)
-            logger.warn("DOUBLE syr2k called");
 
         Nd4j.getExecutioner().push();
 
@@ -345,8 +327,6 @@ public class JcublasLevel3 extends BaseLevel3 {
     @Override
     protected void dtrmm(char Order, char Side, char Uplo, char TransA, char Diag, int M, int N, double alpha,
                     INDArray A, int lda, INDArray B, int ldb) {
-        if (Nd4j.dataType() != DataType.DOUBLE)
-            logger.warn("DOUBLE trmm called");
 
         Nd4j.getExecutioner().push();
 
@@ -373,8 +353,6 @@ public class JcublasLevel3 extends BaseLevel3 {
     @Override
     protected void dtrsm(char Order, char Side, char Uplo, char TransA, char Diag, int M, int N, double alpha,
                     INDArray A, int lda, INDArray B, int ldb) {
-        if (Nd4j.dataType() != DataType.DOUBLE)
-            logger.warn("DOUBLE trsm called");
 
         Nd4j.getExecutioner().push();
 

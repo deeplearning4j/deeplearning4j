@@ -239,7 +239,7 @@ DECLARE_SHAPE_FN(sru_old) {
 
     ShapeUtils::updateStridesAndType(newShapeInfo1, inShape, order);
 
-    COPY_SHAPE(newShapeInfo1, newShapeInfo2)
+    COPY_SHAPE(newShapeInfo1, newShapeInfo2);
 
     return SHAPELIST(newShapeInfo1, newShapeInfo2);
 }
@@ -351,7 +351,7 @@ DECLARE_SHAPE_FN(sru) {
 
     ShapeUtils::updateStridesAndType(newShapeInfo1, xShapeInfo, shape::order(xShapeInfo));
     
-    COPY_SHAPE(newShapeInfo1,newShapeInfo2)
+    COPY_SHAPE(newShapeInfo1,newShapeInfo2);
 
     return SHAPELIST(newShapeInfo1, newShapeInfo2);
 }
@@ -837,7 +837,7 @@ DECLARE_SHAPE_FN(sru_bi) {
 
     ShapeUtils::updateStridesAndType(newShapeInfo1, xShapeInfo, order);
     
-    COPY_SHAPE(newShapeInfo1, newShapeInfo2)
+    COPY_SHAPE(newShapeInfo1, newShapeInfo2);
 
     return SHAPELIST(newShapeInfo1, newShapeInfo2);
 }

@@ -26,10 +26,7 @@ import org.deeplearning4j.zoo.model.UNet;
 import org.deeplearning4j.zoo.util.darknet.COCOLabels;
 import org.deeplearning4j.zoo.util.darknet.DarknetLabels;
 import org.deeplearning4j.zoo.util.imagenet.ImageNetLabels;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
-import org.junit.Test;
+import org.junit.*;
 import org.junit.rules.TemporaryFolder;
 import org.nd4j.linalg.factory.Nd4j;
 

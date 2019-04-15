@@ -144,11 +144,7 @@ namespace shape {
      */
     ND4J_EXPORT _CUDA_HD Nd4jLong *shapeBufferFortran(int rank, nd4j::DataType dtype, Nd4jLong *shape);
 
-    ND4J_EXPORT _CUDA_HD Nd4jLong *shapeBufferFortran(int rank, nd4j::DataType dtype, Nd4jLong *shape, Nd4jLong *output);
-
-    //ND4J_EXPORT _CUDA_HD void doPermuteShapeBuffer(Nd4jLong *shapeBuffer, int* rearrange, Nd4jLong *tmpBuffer);
-
-    ND4J_EXPORT _CUDA_HD void doPermuteShapeBuffer(int rank, Nd4jLong *shapeBuffer, int *rearrange, Nd4jLong *tmpBuffer);
+    ND4J_EXPORT _CUDA_HD Nd4jLong *shapeBufferFortran(int rank, nd4j::DataType dtype, Nd4jLong *shape, Nd4jLong *output);        
 
 #ifdef __CUDACC__
     template <typename T>
@@ -284,13 +280,8 @@ namespace shape {
 
     ND4J_EXPORT _CUDA_HD void permuteShapeBufferInPlace(Nd4jLong *shapeBuffer, int* rearrange, Nd4jLong *out);
 
-    ND4J_EXPORT _CUDA_HD void doPermuteShapeInfo(Nd4jLong *shapeBuffer, const int *rearrange);
-
-    ND4J_EXPORT _CUDA_HD void doPermuteShapeInfo(Nd4jLong *shapeBuffer, const Nd4jLong *rearrange);
-
-    ND4J_EXPORT _CUDA_HD void doPermuteShapeBuffer(Nd4jLong *shapeBuffer, int* rearrange);
-
-    ND4J_EXPORT _CUDA_HD void doPermuteShapeBuffer(int rank,Nd4jLong *shapeBuffer, int* rearrange);
+    ND4J_EXPORT _CUDA_HD void doPermuteShapeInfo(Nd4jLong *shapeBuffer, const int *rearrange, Nd4jLong len = -1);
+    
     /**
      * Rearrange the permute indexes
      * according to which  dimensions are specified.
@@ -462,9 +453,9 @@ namespace shape {
  * Returns the rank portion of
  * an information buffer
  */
-    ND4J_EXPORT _CUDA_HD int rank(const Nd4jLong *buffer);
-    ND4J_EXPORT _CUDA_HD int rank(const int *buffer);
-    ND4J_EXPORT _CUDA_HD int rank(const unsigned int *buffer);
+    ND4J_EXPORT _CUDA_HD int rank(const Nd4jLong *shapeInfo);
+    ND4J_EXPORT _CUDA_HD int rank(const int *shapeInfo);
+    ND4J_EXPORT _CUDA_HD int rank(const unsigned int *shapeInfo);
 
     // returns pointer on elementWiseStride
     ND4J_EXPORT _CUDA_HD Nd4jLong* ews(Nd4jLong* shapeInfo);
@@ -1083,11 +1074,17 @@ namespace shape {
    
     ND4J_EXPORT _CUDA_HD void shapeOldScalar(nd4j::DataType dtype, Nd4jLong* const buffer, const char order);
 
-    // calculate element-wise stride
+    // deduce element-wise stride
     // if array is scalar or unit length vector then ews = 1
     // if array is common vector then ews = stride of non-unity dimension
     // if strides are normal set ews = 1, otherwise ews = 0    
     ND4J_EXPORT _CUDA_HD void setEws(Nd4jLong* shapeInfo, Nd4jLong len);
+
+    // deduce order and element-wise stride
+    // if array is scalar or unit length vector then ews = 1 and order is preserved
+    // if array is common vector then ews = stride of non-unity dimension and order is preserved
+    // if strides are normal/contiguous then ews = 1 and corresponding order is set, otherwise ews = 0 and order is preserved
+    ND4J_EXPORT _CUDA_HD void setOrderAndEws(Nd4jLong* shapeInfo, Nd4jLong len = -1);
 
 
 
@@ -2198,66 +2195,29 @@ template <typename T>
 
     INLINEDEF _CUDA_HD void permuteShapeBufferInPlace(Nd4jLong *shapeBuffer, int *rearrange, Nd4jLong *out) {
         if(shapeBuffer != out)
-            memcpy(out,shapeBuffer,sizeof(Nd4jLong) * shape::shapeInfoLength(shape::rank(shapeBuffer)));
+            memcpy(out,shapeBuffer,sizeof(Nd4jLong) * shape::shapeInfoLength(shapeBuffer));
 
-        doPermuteShapeBuffer(shape::rank(shapeBuffer), shapeBuffer, rearrange, out);
+        shape::doPermuteShapeInfo(out, rearrange);
     }
 
     INLINEDEF _CUDA_HD Nd4jLong *permuteShapeBuffer(Nd4jLong *shapeBuffer, int* rearrange) {
         auto len = shape::shapeInfoLength(shape::rank(shapeBuffer));
         Nd4jLong *copy = shape::copyOf(len, shapeBuffer);
-        doPermuteShapeBuffer(copy,rearrange);
+        shape::doPermuteShapeInfo(copy,rearrange);
         return copy;
     }
 
-    INLINEDEF _CUDA_HD void doPermuteShapeInfo(Nd4jLong *shapeInfo, const Nd4jLong *rearrange) {
+    INLINEDEF _CUDA_HD void doPermuteShapeInfo(Nd4jLong *shapeInfo, const int *rearrange, Nd4jLong len) {
 
-        const int rank = shape::rank(shapeInfo);
-
-        //check whether shape is like {1} or {1,1} or {1,1,1,1,...} - in this case we don't need permute
-        if(prodLong(shape::shapeOf(shapeInfo), rank) < 2)
-            return;
-
-        // check whether rearrange is like {0,1,2,3,...}  - in this case we don't need permute as well
-        bool isPermutNecessary = false;
-        for(int i = 0; i < rank; ++i)
-            if(rearrange[i] != i) {
-                isPermutNecessary = true;
-                break;
-            }
-
-        if(!isPermutNecessary)
-            return;
-
-        // check whether rearrange contains correct indexes
-        for(int i = 0; i < rank; ++i)
-            if(rearrange[i] >= rank || rearrange[i] < 0) {
-                printf("shape::doPermuteShapeInfo function failed: rearrange indexes are incorrect !\n");
-                return;
-            }
-
-        // if everything is ok then perform permute
-        auto temp = new Nd4jLong[shape::shapeInfoLength(rank)];
-        memcpy(temp, shapeInfo, sizeof(Nd4jLong) * shape::shapeInfoLength(rank));
-        for (int i = 0; i < rank; ++i) {
-            shapeInfo[i + 1]        = temp[rearrange[i] + 1];
-            shapeInfo[i + 1 + rank] = temp[rearrange[i] + 1 + rank];
-        }
-
-        shapeInfo[2 * rank + 2] = 0;    // ews
-        shapeInfo[2 * rank + 3] = shape::getOrder(rank, shape::shapeOf(shapeInfo),shape::stride(shapeInfo),1); // order
-
-        delete[] temp;
-    }
-
-    INLINEDEF _CUDA_HD void doPermuteShapeInfo(Nd4jLong *shapeInfo, const int* rearrange) {
-
-        const int rank = shape::rank(shapeInfo);
+         if(len == -1)   // calculate array length if it is not given 
+            len = shape::length(shapeInfo);
         
         //check whether shape is like {1} or {1,1} or {1,1,1,1,...} - in this case we don't need permute 
-        if(prodLong(shape::shapeOf(shapeInfo), rank) < 2)
+        if(len < 2)
             return;
         
+        const int rank = shape::rank(shapeInfo);
+
         // check whether rearrange is like {0,1,2,3,...}  - in this case we don't need permute as well 
         bool isPermutNecessary = false;
         for(int i = 0; i < rank; ++i)
@@ -2277,87 +2237,17 @@ template <typename T>
             }
 
         // if everything is ok then perform permute 
-        auto temp = new Nd4jLong[shape::shapeInfoLength(rank)];
-        memcpy(temp, shapeInfo, sizeof(Nd4jLong) * shape::shapeInfoLength(rank));
+        auto temp = new Nd4jLong[shape::shapeInfoLength(rank) - 3];
+        memcpy(temp, shapeInfo, sizeof(Nd4jLong) * (shape::shapeInfoLength(rank) - 3));
         for (int i = 0; i < rank; ++i) {
             shapeInfo[i + 1]        = temp[rearrange[i] + 1];
             shapeInfo[i + 1 + rank] = temp[rearrange[i] + 1 + rank];
         }
 
-        shapeInfo[shapeInfoLength(rank) - 2] = 0;
-        shapeInfo[shape::shapeInfoLength(rank) - 1] = shape::getOrder(rank, shape::shapeOf(shapeInfo),shape::stride(shapeInfo), 1);
+        shape::setOrderAndEws(shapeInfo, len);
 
         delete[] temp;
-    }
-
-    INLINEDEF _CUDA_HD void doPermuteShapeBuffer(Nd4jLong *shapeBuffer,int *rearrange) {
-
-        //no swapping needs to happen
-        if(shape::isScalar(shapeBuffer)) {
-            return;
-        }
-
-        Nd4jLong *shapeRef = shapeBuffer;
-        //rank of the rearrange array == rank of shape buffer
-        int rearrageRank = shape::rank(shapeRef);
-        Nd4jLong *shape = shape::shapeOf(shapeRef);
-        Nd4jLong *stride = shape::stride(shapeRef);
-        shape::doPermuteSwap(rearrageRank,&shape,rearrange);
-        shape::doPermuteSwap(rearrageRank,&stride,rearrange);
-        shapeRef[shapeInfoLength(rearrageRank) - 2] = 0;
-        shapeRef[shape::shapeInfoLength(rearrageRank) - 1] = shape::getOrder(rearrageRank,shape,stride,1);
-
-        // doPermuteShapeInfo(shapeBuffer, rearrange); // possible fix of integer overflow issue when strides are too large
-    }
-/*
-    INLINEDEF _CUDA_HD void doPermuteShapeBuffer(Nd4jLong *shapeBuffer, int *rearrange, Nd4jLong *tmpBuffer) {
-        auto shapeRef = shapeBuffer;
-        //rank of the rearrange array == rank of shape buffer
-        int rearrageRank = shape::rank(shapeRef);
-        auto shape = shape::shapeOf(shapeRef);
-        auto stride = shape::stride(shapeRef);
-
-        shape::copyOf(rearrageRank,rearrange, tmpBuffer);
-        shape::doPermuteSwap(rearrageRank,&shape, tmpBuffer);
-
-        shape::copyOf(rearrageRank,rearrange, tmpBuffer);
-        shape::doPermuteSwap(rearrageRank,&stride,tmpBuffer);
-
-        shapeRef[shapeInfoLength(rearrageRank) - 2] = 0;
-        shapeRef[shape::shapeInfoLength(rearrageRank) - 1] = shape::getOrder(rearrageRank,shape,stride,1);
-    }
-    */
-
-    INLINEDEF _CUDA_HD void doPermuteShapeBuffer(int rank,Nd4jLong *shapeBuffer, int *rearrange) {
-        Nd4jLong *shapeRef = shapeBuffer;
-        //rank of the rearrange array == rank of shape buffer
-        int rearrageRank = rank;
-        Nd4jLong *shape = shape::shapeOf(shapeRef);
-        Nd4jLong *stride = shape::stride(shapeRef);
-        auto rearrangeCopy1 = shape::copyOf(rearrageRank, rearrange);
-        shape::doPermuteSwap(rearrageRank,&shape,rearrangeCopy1);
-        delete[] rearrangeCopy1;
-        auto rearrangeCopy2 = shape::copyOf(rearrageRank,rearrange);
-        shape::doPermuteSwap(rearrageRank, &stride, rearrangeCopy2);
-        shapeBuffer[shape::shapeInfoLength(rank) - 1] = shape::getOrder(rank,shape,stride,1);
-        shapeBuffer[shape::shapeInfoLength(rank) - 2] = 0;
-        delete[] rearrangeCopy2;
-    }
-
-    INLINEDEF _CUDA_HD void doPermuteShapeBuffer(int rank, Nd4jLong *shapeBuffer, int *rearrange, Nd4jLong *tmpBuffer) {
-        Nd4jLong *shapeRef = shapeBuffer;
-        //rank of the rearrange array == rank of shape buffer
-        int rearrageRank = rank;
-        auto shape = shape::shapeOf(shapeRef);
-        auto stride = shape::stride(shapeRef);
-        if(shapeBuffer != tmpBuffer)
-            shape::copyOf(rearrageRank,shapeBuffer, tmpBuffer);
-
-        shape::doPermuteSwap(rearrageRank,&shape,rearrange);
-        shape::doPermuteSwap(rearrageRank,&stride,rearrange);
-        shapeRef[shapeInfoLength(rank) - 2] = 0;
-        shapeRef[shape::shapeInfoLength(rank) - 1] = shape::getOrder(rank,shape,stride,1);
-    }
+    }    
 
 
     INLINEDEF _CUDA_HD Nd4jLong *createPermuteIndexes(int originalRank, int *dimension,int dimensionLength) {
@@ -2741,14 +2631,13 @@ template <typename T>
         indices[0] = sliceIdx;
         Nd4jLong offset = shape::getOffset(0,newShape,newStride,indices,rank);
         newShapeBuffer[shape::shapeInfoLength(newRank) - 3] = offset;
-        if(shape::isMatrix(shapeBuffer)) {
-            newShapeBuffer[shape::shapeInfoLength(newRank) - 2] = currStride[1];
-        }
-        else {
-            newShapeBuffer[shape::shapeInfoLength(newRank) - 2] = shape::elementWiseStride(shapeBuffer);
-        }
-        newShapeBuffer[shape::shapeInfoLength(newRank) - 1] = shape::getOrder(newRank,newShape,newStride,1);
 
+        // set current order and ews
+        newShapeBuffer[2 * newRank + 2] = shape::elementWiseStride(shapeBuffer);
+        newShapeBuffer[2 * newRank + 3] = shape::order(shapeBuffer);
+       
+        // correct order and ews if necessary
+        shape::setOrderAndEws(newShapeBuffer);        
 
         delete[] indices;
 
@@ -2801,7 +2690,6 @@ template <typename T>
     INLINEDEF _CUDA_HD  int rank(const unsigned int *buffer) {
         return static_cast<int>(buffer[0]);
     }
-
 
     INLINEDEF _CUDA_HD Nd4jLong* ews(Nd4jLong* shapeInfo) {
         return shapeInfo + 2 * shapeInfo[0] + 2;
@@ -2903,7 +2791,7 @@ template <typename T>
  */
     INLINEDEF _CUDA_HD char order(const Nd4jLong *buffer) {
         //FIXME magic numbers
-        return static_cast<char>(buffer[(buffer[0] * 2 + 4) - 1]);
+        return static_cast<char>(buffer[buffer[0] * 2 + 3]);
     }
 
 /**
@@ -4869,6 +4757,75 @@ INLINEDEF void _CUDA_HD setEws(Nd4jLong* shapeInfo, Nd4jLong len) {
     }      
     
     *ews = 1;    
+}
+
+//////////////////////////////////////////////////////////////////////
+INLINEDEF _CUDA_HD void setOrderAndEws(Nd4jLong* shapeInfo, Nd4jLong len) {
+   
+    const int rank          = shape::rank(shapeInfo);
+    const Nd4jLong* shape   = shape::shapeOf(shapeInfo);
+    const Nd4jLong* strides = shape::stride(shapeInfo);
+    const char order        = shape::order(shapeInfo);
+    Nd4jLong* ews           = shape::ews(shapeInfo);
+    
+    if(len == -1)   // calculate array length if it is not given 
+        len = shape::length(shapeInfo);
+        
+    if(len <= 1) {  //  empty, scalar or unity-vector case
+        *ews = 1;
+        return;
+    }
+
+    int nonUnityDim(0);
+    if(shape::isCommonVector(shapeInfo, nonUnityDim)) {        // in this case we don't change order
+        *ews = strides[nonUnityDim];
+        return;
+    }
+
+    // check if strides are contiguous in respect to c-order 
+    // firstly check last stride, it should be equal to 1
+    if (strides[rank - 1] == 1 || shape[rank - 1] == 1) {     // last dimension is ok, go on through the rest dimensions in reverse order
+        Nd4jLong correctStride = 1;
+        bool cContiguous = true;
+        for (int i = rank - 2; i >= 0 ; i--) {
+            correctStride *= shape[i + 1];
+            if(shape[i] == 1)
+                continue;
+            if(correctStride != strides[i]) {               
+                cContiguous = false;
+                break;
+            }
+        }    
+        if(cContiguous) {
+            *ews = 1;
+            shapeInfo[shape::shapeInfoLength(rank) - 1] = 99;
+            return;
+        }
+    }
+
+    // now check if strides are contiguous in respect to f-order 
+    // firstly check first stride, it should be equal to 1
+    if(strides[0] == 1 || shape[0] == 1) {           // first dimension is ok, go on through the rest dimensions
+        Nd4jLong correctStride = 1;
+        bool fContiguous = true;
+        for (int i = 1; i < rank; ++i) {            
+            correctStride *= shape[i - 1];
+            if(shape[i] == 1)
+                continue;
+            if(correctStride != strides[i]) {
+                fContiguous = false;
+                break;
+            }
+        }
+        if(fContiguous) {
+            *ews = 1;
+            shapeInfo[shape::shapeInfoLength(rank) - 1] = 102;
+            return;
+        }
+    }      
+    
+    *ews = 0; 
+    // if both cContiguous and fContiguous are false then order is preserved 
 }
 
 }
