@@ -2312,3 +2312,56 @@ TEST_F(NDArrayCudaBasicsTests, Test_ConcatNative_2) {
     z.printBuffer("F Concat result linear");
 
 }
+TEST_F(NDArrayCudaBasicsTests, Test_ConcatNative_3) {
+    auto x = NDArrayFactory::create<float>('c', {2,3}, {1,2,3,4,5,6});
+    auto y = NDArrayFactory::create<float>('c', {1,3}, {7,8,9});
+    NativeOps native;
+    auto z = NDArrayFactory::create<float>('f', {3, 3});
+    auto stream = x.getContext()->getCudaStream();//reinterpret_cast<cudaStream_t *>(&nativeStream);
+    std::vector<void*> buffers(2);
+    std::vector<Nd4jLong*> shapes(2);
+    std::vector<Nd4jLong*> hostShapes(2);
+
+    //for (size_t i = 0; i < buffers.size(); i++) {
+        buffers[0] = x.specialBuffer();
+        shapes[0] = x.specialShapeInfo();
+        hostShapes[0] = x.shapeInfo();
+    buffers[1] = y.specialBuffer();
+    shapes[1] = y.specialShapeInfo();
+    hostShapes[1] = y.shapeInfo();
+    //}
+    Nd4jPointer extra[2];
+    extra[1] = *stream;
+    native.concat(extra, 0, 2, nullptr, (Nd4jPointer*)hostShapes.data(), (Nd4jPointer*)buffers.data(), (Nd4jPointer*)shapes.data(), nullptr, z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo(), nullptr, nullptr);
+    z.syncToHost();
+    z.printIndexedBuffer("Concat result");
+    z.printBuffer("F Concat result linear");
+
+}
+
+TEST_F(NDArrayCudaBasicsTests, Test_ConcatNative_4) {
+    auto x = NDArrayFactory::create<float>('c', {2,3}, {1,2,3,4,5,6});
+    auto y = NDArrayFactory::create<float>('c', {1,3}, {7,8,9});
+    NativeOps native;
+    auto z = NDArrayFactory::create<float>('c', {3, 3});
+    auto stream = x.getContext()->getCudaStream();//reinterpret_cast<cudaStream_t *>(&nativeStream);
+    std::vector<void*> buffers(2);
+    std::vector<Nd4jLong*> shapes(2);
+    std::vector<Nd4jLong*> hostShapes(2);
+
+    //for (size_t i = 0; i < buffers.size(); i++) {
+    buffers[0] = x.specialBuffer();
+    shapes[0] = x.specialShapeInfo();
+    hostShapes[0] = x.shapeInfo();
+    buffers[1] = y.specialBuffer();
+    shapes[1] = y.specialShapeInfo();
+    hostShapes[1] = y.shapeInfo();
+    //}
+    Nd4jPointer extra[2];
+    extra[1] = *stream;
+    native.concat(extra, 0, 2, nullptr, (Nd4jPointer*)hostShapes.data(), (Nd4jPointer*)buffers.data(), (Nd4jPointer*)shapes.data(), nullptr, z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo(), nullptr, nullptr);
+    z.syncToHost();
+    z.printIndexedBuffer("Concat result");
+    z.printBuffer("F Concat result linear");
+
+}
