@@ -18,6 +18,7 @@ package org.deeplearning4j.bagofwords.vectorizer;
 
 
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.junit.Rule;
 import org.junit.rules.TemporaryFolder;
 import org.nd4j.linalg.io.ClassPathResource;
@@ -60,7 +61,10 @@ public class BagOfWordsVectorizerTest {
 
     @Test(timeout = 60000L)
     public void testBagOfWordsVectorizer() throws Exception {
-        File rootDir = new ClassPathResource("rootdir").getFile();
+        val rootDir = testDir.newFolder();
+        ClassPathResource resource = new ClassPathResource("rootdir");
+        resource.copyDirectory(rootDir);
+
         LabelAwareSentenceIterator iter = new LabelAwareFileSentenceIterator(rootDir);
         List<String> labels = Arrays.asList("label1", "label2");
         TokenizerFactory tokenizerFactory = new DefaultTokenizerFactory();
@@ -109,7 +113,8 @@ public class BagOfWordsVectorizerTest {
         INDArray labelz = dataSet.getLabels();
         log.info("Labels array: " + labelz);
 
-        int idx2 = ((IndexAccumulation) Nd4j.getExecutioner().exec(new IMax(labelz))).getFinalResult().intValue();
+        int idx2 = Nd4j.getExecutioner().exec(new IMax(labelz)).getInt(0);
+        //int idx2 = ((IndexAccumulation) Nd4j.getExecutioner().exec(new IMax(labelz))).getFinalResult().intValue();
 
         //        assertEquals(1.0, dataSet.getLabels().getDouble(0), 0.1);
         //        assertEquals(0.0, dataSet.getLabels().getDouble(1), 0.1);
@@ -122,7 +127,8 @@ public class BagOfWordsVectorizerTest {
         assertEquals(1, dataSet.getFeatures().getDouble(vocabCache.tokenFor("1").getIndex()), 0.1);
         assertEquals(0, dataSet.getFeatures().getDouble(vocabCache.tokenFor("2").getIndex()), 0.1);
 
-        int idx1 = ((IndexAccumulation) Nd4j.getExecutioner().exec(new IMax(dataSet.getLabels()))).getFinalResult().intValue();
+        int idx1 = Nd4j.getExecutioner().exec(new IMax(dataSet.getLabels())).getInt(0);
+        //int idx1 = ((IndexAccumulation) Nd4j.getExecutioner().exec(new IMax(dataSet.getLabels()))).getFinalResult().intValue();
 
         //assertEquals(0.0, dataSet.getLabels().getDouble(0), 0.1);
         //assertEquals(1.0, dataSet.getLabels().getDouble(1), 0.1);
