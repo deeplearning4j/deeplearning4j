@@ -2267,3 +2267,24 @@ TEST_F(NDArrayCudaBasicsTests, Test_Empty_4) {
 //     printCudaGlobal<Nd4jLong><<<1,1,0,*stream>>>(tadOffsets, 2);
 //     cudaStreamSynchronize(*stream);  
 
+TEST_F(NDArrayCudaBasicsTests, Test_ConcatNative_1) {
+    auto x = NDArrayFactory::create<float>('c', {5,2}, {0,1,2,3,4,5,6,7,8,9});
+    NativeOps native;
+    auto z = NDArrayFactory::create<float>('c', {5, 8});
+    auto stream = x.getContext()->getCudaStream();//reinterpret_cast<cudaStream_t *>(&nativeStream);
+    std::vector<void*> buffers(4);
+    std::vector<Nd4jLong*> shapes(4);
+    std::vector<Nd4jLong*> hostShapes(4);
+    
+    for (size_t i = 0; i < buffers.size(); i++) {
+        buffers[i] = x.specialBuffer();
+        shapes[i] = x.specialShapeInfo();
+        hostShapes[i] = x.shapeInfo();
+    }
+    Nd4jPointer extra[2];
+    extra[1] = *stream;
+    native.concat(extra, 1, 4, nullptr, (Nd4jPointer*)hostShapes.data(), (Nd4jPointer*)buffers.data(), (Nd4jPointer*)shapes.data(), nullptr, z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo(), nullptr, nullptr);
+    z.syncToHost();
+    z.printIndexedBuffer("Concat result");
+}
+
