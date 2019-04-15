@@ -1224,4 +1224,43 @@ public class ReductionOpValidation extends BaseOpValidation {
 
         assertNull(err);
     }
+
+    @Test
+    public void testMultiHeadedDotProductAttentionWeirdInputs(){
+        for (char orderWeights: new char[]{'c', 'f'}){
+            for (char orderInput: new char[]{'c', 'f'}){
+                log.info("-*- Starting Test: input Order = {}, weightOrder = {} -*-", orderInput, orderWeights);
+                final INDArray k = Nd4j.rand(new int[]{10, 4, 5}).dup(orderInput);
+                final INDArray v = Nd4j.rand(new int[]{10, 4, 5}).dup(orderInput);
+                final INDArray q = Nd4j.rand(new int[]{10, 4, 2}).dup(orderInput);
+
+                final INDArray Wk = Nd4j.rand(new int[]{2, 3, 4}).dup(orderWeights);
+                final INDArray Wv = Nd4j.rand(new int[]{2, 3, 4}).dup(orderWeights);
+                final INDArray Wq = Nd4j.rand(new int[]{2, 3, 4}).dup(orderWeights);
+                final INDArray Wo = Nd4j.rand(new int[]{2* 3, 8}).dup(orderWeights);
+
+                final INDArray mask = Nd4j.rand(10, 5).gte(0.2).castTo(DataType.DOUBLE);
+
+                SameDiff sd = SameDiff.create();
+                SDVariable sdQ = sd.var("q", q);
+                SDVariable sdK = sd.var("k", k);
+                SDVariable sdV = sd.var("v", v);
+                SDVariable sdWq = sd.var("Wq", Wq);
+                SDVariable sdWk = sd.var("Wk", Wk);
+                SDVariable sdWv = sd.var("Wv", Wv);
+                SDVariable sdWo = sd.var("Wo", Wo);
+                SDVariable sdMask = sd.constant("mask", mask);
+
+
+                SDVariable t = sd.nn.multiHeadDotProductAttention(sdQ, sdK, sdV, sdWq, sdWk, sdWv, sdWo, sdMask, true);
+                t.norm2("out");
+
+                String err = OpValidation.validate(new TestCase(sd)
+                        .gradientCheck(true)
+                        .gradCheckSkipVariables("mask"));
+
+                assertNull(err);
+            }
+        }
+    }
 }
