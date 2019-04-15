@@ -2074,8 +2074,8 @@ specialBufferAndShapeWithOffset(void* vZ, Nd4jLong* hZShapeInfo, Nd4jLong* dZSha
 
     // loop through the rest of input arrays
     for(int i = 1; i < numArrays; ++i) {
-        indices[i][2 * axis]     = indices[i-1][2 * axis + 1];                                // index start from
-        indices[i][2 * axis + 1] = indices[i-1][2 * axis + 1] + axisSize;      // index end with (excluding)
+        indices[i][2 * axis]     = indices[i - 1][2 * axis + 1];                                // index start from
+        indices[i][2 * axis + 1] = indices[i - 1][2 * axis + 1] + shape::sizeAt(reinterpret_cast<Nd4jLong*>(inputShapeInfo[i]), axis);      // index end with (excluding)
     }
 
     std::vector<void*> outSubArrsBuffs(numArrays);
