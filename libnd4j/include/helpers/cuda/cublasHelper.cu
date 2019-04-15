@@ -21,15 +21,17 @@
 
 #include <cublas_v2.h>
 #include "../cublasHelper.h"
-#include <exceptions/cuda_exception.h>
+//#include <graph/exceptions/cuda_exception.h>
+#include <stdexcept>
 
 namespace nd4j {
     void* cublas::handle() {
-        auto _handle = new cublasHandle_t();
-        auto status = cublasCreate_v2(_handle); // initialize CUBLAS context
-        if (status != CUBLAS_STATUS_SUCCESS)
-            throw cuda_exception::build("cuBLAS handle creation failed !", status);
+        //auto _handle = new cublasHandle_t();
+        //auto status = cublasCreate_v2(_handle); // initialize CUBLAS context
+        //if (status != CUBLAS_STATUS_SUCCESS)
+            //throw cuda_exception::build("cuBLAS handle creation failed !", status);
+        //    throw std::runtime_error("cuBLAS handle creation failed !");
 
-        return reinterpret_cast<void *>(_handle);
+        return nullptr;
     }
 }

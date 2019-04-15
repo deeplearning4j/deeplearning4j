@@ -20,7 +20,8 @@
 //
 
 #include <PointersManager.h>
-#include <exceptions/cuda_exception.h>
+//#include <graph/exceptions/cuda_exception.h>
+#include <stdexcept>
 #include <logger.h>
 #include <memory/Workspace.h>
 
@@ -39,7 +40,8 @@ void* PointersManager::replicatePointer(const void* src, const size_t numberOfBy
 	if (_context->getWorkspace() == nullptr) {
         cudaError_t cudaResult = cudaMalloc(reinterpret_cast<void **>(&dst), numberOfBytes);
         if (cudaResult != 0)
-            throw cuda_exception::build(_funcName + ": cannot allocate global memory on device!", cudaResult);
+            //throw cuda_exception::build(_funcName + ": cannot allocate global memory on device!", cudaResult);
+            throw std::runtime_error(_funcName + ": cannot allocate global memory on device!");
     } else {
 	    dst = _context->getWorkspace()->allocateBytes(nd4j::memory::MemoryType::DEVICE, numberOfBytes);
 	}
@@ -59,7 +61,8 @@ void PointersManager::synchronize() const {
     if (_context != nullptr) {
         cudaError_t cudaResult = cudaStreamSynchronize(*_context->getCudaStream());
         if (cudaResult != 0)
-            throw cuda_exception::build(_funcName + ": cuda stream synchronization failed !", cudaResult);
+            //throw cuda_exception::build(_funcName + ": cuda stream synchronization failed !", cudaResult);
+            throw std::runtime_error(_funcName + ": cuda stream synchronization failed !");
     } else {
         nd4j_printf("<%s> syncStream isn't possible: no stream set!", _funcName.c_str());
     }

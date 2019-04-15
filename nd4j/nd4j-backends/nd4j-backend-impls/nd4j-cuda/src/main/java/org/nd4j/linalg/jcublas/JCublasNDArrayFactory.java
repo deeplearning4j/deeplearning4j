@@ -463,9 +463,6 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
             dataPointers[i] = AtomicAllocator.getInstance().getPointer(toConcat[i], context).address();
             hostShapeInfoPointers[i] = AtomicAllocator.getInstance().getHostPointer(toConcat[i].shapeInfoDataBuffer()).address();
 
-            log.info("X_{} shape ptr: {}", i, shapeInfoPointers[i]);
-            log.info("X_{} data ptr: {}", i, dataPointers[i]);
-
             sumAlongDim += toConcat[i].size(dimension);
             for (int j = 0; j < toConcat[i].rank(); j++)
                 if (j != dimension && toConcat[i].size(j) != outputShape[j]) {
