@@ -24,6 +24,7 @@ import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.graph.vertex.BaseGraphVertex;
 import org.deeplearning4j.nn.graph.vertex.VertexIndices;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -46,13 +47,13 @@ public class StackVertex extends BaseGraphVertex {
 
     private long[][] lastInputShapes;
 
-    public StackVertex(ComputationGraph graph, String name, int vertexIndex) {
-        this(graph, name, vertexIndex, null, null);
+    public StackVertex(ComputationGraph graph, String name, int vertexIndex, DataType dataType) {
+        this(graph, name, vertexIndex, null, null, dataType);
     }
 
     public StackVertex(ComputationGraph graph, String name, int vertexIndex, VertexIndices[] inputVertices,
-                    VertexIndices[] outputVertices) {
-        super(graph, name, vertexIndex, inputVertices, outputVertices);
+                    VertexIndices[] outputVertices, DataType dataType) {
+        super(graph, name, vertexIndex, inputVertices, outputVertices, dataType);
     }
 
     @Override

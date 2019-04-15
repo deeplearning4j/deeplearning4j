@@ -90,7 +90,7 @@ public class LastTimeStepVertex extends GraphVertex {
     @Override
     public org.deeplearning4j.nn.graph.vertex.impl.rnn.LastTimeStepVertex instantiate(ComputationGraph graph,
                                                                                       String name, int idx, INDArray paramsView, boolean initializeParams, DataType networkDatatype) {
-        return new org.deeplearning4j.nn.graph.vertex.impl.rnn.LastTimeStepVertex(graph, name, idx, maskArrayInputName);
+        return new org.deeplearning4j.nn.graph.vertex.impl.rnn.LastTimeStepVertex(graph, name, idx, maskArrayInputName, networkDatatype);
     }
 
     @Override

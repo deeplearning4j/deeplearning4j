@@ -76,7 +76,7 @@ public class MergeVertex extends GraphVertex {
     @Override
     public org.deeplearning4j.nn.graph.vertex.GraphVertex instantiate(ComputationGraph graph, String name, int idx,
                                                                       INDArray paramsView, boolean initializeParams, DataType networkDatatype) {
-        return new org.deeplearning4j.nn.graph.vertex.impl.MergeVertex(graph, name, idx);
+        return new org.deeplearning4j.nn.graph.vertex.impl.MergeVertex(graph, name, idx, networkDatatype);
     }
 
     @Override

@@ -22,6 +22,7 @@ import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.graph.vertex.BaseGraphVertex;
 import org.deeplearning4j.nn.graph.vertex.VertexIndices;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
@@ -47,13 +48,13 @@ public class UnstackVertex extends BaseGraphVertex {
     private long forwardShape[];
     private int step;
 
-    public UnstackVertex(ComputationGraph graph, String name, int vertexIndex, int from, int stackSize) {
-        this(graph, name, vertexIndex, null, null, from, stackSize);
+    public UnstackVertex(ComputationGraph graph, String name, int vertexIndex, int from, int stackSize, DataType dataType) {
+        this(graph, name, vertexIndex, null, null, from, stackSize, dataType);
     }
 
     public UnstackVertex(ComputationGraph graph, String name, int vertexIndex, VertexIndices[] inputVertices,
-                    VertexIndices[] outputVertices, int from, int stackSize) {
-        super(graph, name, vertexIndex, inputVertices, outputVertices);
+                    VertexIndices[] outputVertices, int from, int stackSize, DataType dataType) {
+        super(graph, name, vertexIndex, inputVertices, outputVertices, dataType);
         this.from = from;
         this.stackSize = stackSize;
     }

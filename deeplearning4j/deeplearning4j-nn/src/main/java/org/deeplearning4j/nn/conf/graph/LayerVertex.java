@@ -111,7 +111,7 @@ public class LayerVertex extends GraphVertex {
                      layerConf.getLayer().getClass().getSimpleName() + " initialization returned null layer?");
         }
 
-        return new org.deeplearning4j.nn.graph.vertex.impl.LayerVertex(graph, name, idx, layer, preProcessor, isOutput);
+        return new org.deeplearning4j.nn.graph.vertex.impl.LayerVertex(graph, name, idx, layer, preProcessor, isOutput, networkDatatype);
     }
 
     @Override

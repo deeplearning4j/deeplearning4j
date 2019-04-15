@@ -127,7 +127,7 @@ public abstract class SameDiffVertex extends GraphVertex implements TrainingConf
     public org.deeplearning4j.nn.graph.vertex.GraphVertex instantiate(ComputationGraph graph, String name, int idx,
                                                                       INDArray paramsView, boolean initializeParams, DataType networkDatatype) {
         this.name = name;
-        return new SameDiffGraphVertex(this, graph, name, idx, paramsView, initializeParams);
+        return new SameDiffGraphVertex(this, graph, name, idx, paramsView, initializeParams, networkDatatype);
     }
 
     @Override

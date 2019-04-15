@@ -23,6 +23,7 @@ import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.graph.vertex.BaseGraphVertex;
 import org.deeplearning4j.nn.graph.vertex.VertexIndices;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
@@ -45,13 +46,13 @@ public class DuplicateToTimeSeriesVertex extends BaseGraphVertex {
     private String inputName;
     private int inputVertexIndex;
 
-    public DuplicateToTimeSeriesVertex(ComputationGraph graph, String name, int vertexIndex, String inputVertexName) {
-        this(graph, name, vertexIndex, null, null, inputVertexName);
+    public DuplicateToTimeSeriesVertex(ComputationGraph graph, String name, int vertexIndex, String inputVertexName, DataType dataType) {
+        this(graph, name, vertexIndex, null, null, inputVertexName, dataType);
     }
 
     public DuplicateToTimeSeriesVertex(ComputationGraph graph, String name, int vertexIndex,
-                    VertexIndices[] inputVertices, VertexIndices[] outputVertices, String inputName) {
-        super(graph, name, vertexIndex, inputVertices, outputVertices);
+                    VertexIndices[] inputVertices, VertexIndices[] outputVertices, String inputName, DataType dataType) {
+        super(graph, name, vertexIndex, inputVertices, outputVertices, dataType);
         this.inputName = inputName;
         this.inputVertexIndex = graph.getConfiguration().getNetworkInputs().indexOf(inputName);
         if (inputVertexIndex == -1)

@@ -51,13 +51,13 @@ public class ElementWiseVertex extends BaseGraphVertex {
     private Op op;
     private int nInForwardPass;
 
-    public ElementWiseVertex(ComputationGraph graph, String name, int vertexIndex, Op op) {
-        this(graph, name, vertexIndex, null, null, op);
+    public ElementWiseVertex(ComputationGraph graph, String name, int vertexIndex, Op op, DataType dataType) {
+        this(graph, name, vertexIndex, null, null, op, dataType);
     }
 
     public ElementWiseVertex(ComputationGraph graph, String name, int vertexIndex, VertexIndices[] inputVertices,
-                    VertexIndices[] outputVertices, Op op) {
-        super(graph, name, vertexIndex, inputVertices, outputVertices);
+                    VertexIndices[] outputVertices, Op op, DataType dataType) {
+        super(graph, name, vertexIndex, inputVertices, outputVertices, dataType);
         this.op = op;
     }
 

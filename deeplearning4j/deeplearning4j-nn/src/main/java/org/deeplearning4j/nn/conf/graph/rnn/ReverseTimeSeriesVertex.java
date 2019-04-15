@@ -90,8 +90,9 @@ public class ReverseTimeSeriesVertex extends GraphVertex {
         return 1;
     }
 
-    public org.deeplearning4j.nn.graph.vertex.impl.rnn.ReverseTimeSeriesVertex instantiate(ComputationGraph graph, String name, int idx, INDArray paramsView, boolean initializeParams, DataType networkDatatype) {
-        return new org.deeplearning4j.nn.graph.vertex.impl.rnn.ReverseTimeSeriesVertex(graph, name, idx, maskArrayInputName);
+    public org.deeplearning4j.nn.graph.vertex.impl.rnn.ReverseTimeSeriesVertex instantiate(ComputationGraph graph, String name, int idx, INDArray paramsView,
+                                                                                           boolean initializeParams, DataType networkDatatype) {
+        return new org.deeplearning4j.nn.graph.vertex.impl.rnn.ReverseTimeSeriesVertex(graph, name, idx, maskArrayInputName, networkDatatype);
     }
 
     public InputType getOutputType(int layerIndex, InputType... vertexInputs) throws InvalidInputTypeException {

@@ -23,6 +23,7 @@ import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.graph.vertex.BaseGraphVertex;
 import org.deeplearning4j.nn.graph.vertex.VertexIndices;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.INDArrayIndex;
@@ -49,14 +50,14 @@ public class LastTimeStepVertex extends BaseGraphVertex {
     /** Indexes of the time steps that were extracted, for each example */
     private int[] fwdPassTimeSteps;
 
-    public LastTimeStepVertex(ComputationGraph graph, String name, int vertexIndex, String inputName) {
-        this(graph, name, vertexIndex, null, null, inputName);
+    public LastTimeStepVertex(ComputationGraph graph, String name, int vertexIndex, String inputName, DataType dataType) {
+        this(graph, name, vertexIndex, null, null, inputName, dataType);
     }
 
 
     public LastTimeStepVertex(ComputationGraph graph, String name, int vertexIndex, VertexIndices[] inputVertices,
-                    VertexIndices[] outputVertices, String inputName) {
-        super(graph, name, vertexIndex, inputVertices, outputVertices);
+                    VertexIndices[] outputVertices, String inputName, DataType dataType) {
+        super(graph, name, vertexIndex, inputVertices, outputVertices, dataType);
         this.inputName = inputName;
         this.inputIdx = graph.getConfiguration().getNetworkInputs().indexOf(inputName);
         if (inputIdx == -1)

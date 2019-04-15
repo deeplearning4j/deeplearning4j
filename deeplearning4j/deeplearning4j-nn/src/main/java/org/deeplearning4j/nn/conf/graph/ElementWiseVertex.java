@@ -118,7 +118,7 @@ public class ElementWiseVertex extends GraphVertex {
             default:
                 throw new RuntimeException();
         }
-        return new org.deeplearning4j.nn.graph.vertex.impl.ElementWiseVertex(graph, name, idx, op);
+        return new org.deeplearning4j.nn.graph.vertex.impl.ElementWiseVertex(graph, name, idx, op, networkDatatype);
     }
 
     @Override

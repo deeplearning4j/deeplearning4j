@@ -82,7 +82,7 @@ public class ShiftVertex extends GraphVertex {
     public org.deeplearning4j.nn.graph.vertex.GraphVertex instantiate(ComputationGraph graph, String name, int idx,
                                                                       INDArray paramsView, boolean initializeParams, DataType networkDatatype) {
 
-        return new org.deeplearning4j.nn.graph.vertex.impl.ShiftVertex(graph, name, idx, shiftFactor);
+        return new org.deeplearning4j.nn.graph.vertex.impl.ShiftVertex(graph, name, idx, shiftFactor, networkDatatype);
     }
 
     @Override

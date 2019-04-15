@@ -496,7 +496,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         //Create network input vertices:
         int vertexNumber = 0;
         for (String name : networkInputNames) {
-            GraphVertex gv = new InputVertex(this, name, vertexNumber, null); //Output vertices: set later
+            GraphVertex gv = new InputVertex(this, name, vertexNumber, null, netDtype); //Output vertices: set later
             allNamesReverse.put(name, vertexNumber);
             vertices[vertexNumber++] = gv;
         }
