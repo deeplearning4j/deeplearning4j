@@ -104,8 +104,7 @@ namespace nd4j {
 
             REQUIRE_TRUE(begin.size() == x_rank, 0, "begin array should have length of [%i] but got [%i] instead", x_rank, begin.size());
             REQUIRE_TRUE(end.size() == x_rank, 0, "end array should have length of [%i] but got [%i] instead", x_rank, end.size());
-
-            Nd4jLong *newShape;
+            
             std::vector<Nd4jLong> shape;
             for (int e = 0; e < x_rank; e++) {
                 auto stop = end[e];
@@ -118,9 +117,7 @@ namespace nd4j {
                 shape.emplace_back(stop);
             }
 
-            ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(x_rank), Nd4jLong);
-            shape::shapeBuffer(x_rank, ArrayOptions::dataType(inShape), shape.data(), newShape);
-
+            Nd4jLong *newShape = nd4j::ShapeBuilders::createShapeInfo(ArrayOptions::dataType(inShape), 'c', shape, block.getWorkspace());
             return SHAPELIST(newShape);
         }
 

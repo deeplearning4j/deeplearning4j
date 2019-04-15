@@ -302,14 +302,15 @@ public class KerasLayerUtils {
             layer = new KerasCropping2D(layerConfig, enforceTrainingConfig);
         } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_CROPPING_1D())) {
             layer = new KerasCropping1D(layerConfig, enforceTrainingConfig);
-        } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_LAMBDA()) && !lambdaLayers.isEmpty()) {
+        } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_LAMBDA())) {
             String lambdaLayerName = KerasLayerUtils.getLayerNameFromConfig(layerConfig, conf);
             SameDiffLambdaLayer lambdaLayer;
             if (lambdaLayers.containsKey(lambdaLayerName)) {
                 lambdaLayer = lambdaLayers.get(lambdaLayerName);
             } else {
                 throw new UnsupportedKerasConfigurationException("No SameDiff Lambda layer found for Lambda" +
-                        "layer " + lambdaLayerName);
+                        "layer " + lambdaLayerName + ". You can register a SameDiff Lambda layer using KerasLayer." +
+                        "registerLambdaLayer(lambdaLayerName, sameDiffLambdaLayer);");
             }
             layer = new KerasLambda(layerConfig, enforceTrainingConfig, lambdaLayer);
         } else {

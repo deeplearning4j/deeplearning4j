@@ -72,17 +72,15 @@ namespace ops {
         int oH = iH * block_size;
         int oW = iW * block_size;
 
-        Nd4jLong *newShape;
-        ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(4), Nd4jLong);
+        
         std::array<Nd4jLong, 4> shape;
         if (isNHWC) 
             shape = {{bS, oH, oW, oD }};
         else 
             shape = {{bS, oD, oH, oW }};
-
-        shape::shapeBuffer(4, block.dataType(), shape.data(), newShape);
-        ArrayOptions::setDataType(newShape, ArrayOptions::dataType(in));
-
+        
+        Nd4jLong* newShape = nd4j::ShapeBuilders::createShapeInfo(ArrayOptions::dataType(in), 'c', 4, shape.data(), block.getWorkspace());
+        
         return SHAPELIST(newShape);
     }
 }

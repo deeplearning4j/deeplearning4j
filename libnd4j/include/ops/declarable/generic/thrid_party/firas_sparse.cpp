@@ -92,11 +92,8 @@ namespace nd4j {
         DECLARE_SHAPE_FN(firas_sparse) {
             auto inP = inputShape->at(0);
 
-            Nd4jLong *newShape;
-            ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(2), Nd4jLong);
-
             std::vector<Nd4jLong> shape({shape::shapeOf(inP)[0], (Nd4jLong) block.getIArguments()->size()});
-            shape::shapeBuffer(2, block.dataType(), shape.data(), newShape);
+            Nd4jLong *newShape = nd4j::ShapeBuilders::createShapeInfo(block.dataType(), 'c', shape, block.getWorkspace());
 
             return SHAPELIST(newShape);
         }

@@ -191,7 +191,6 @@ public class TestArrayUtils extends BaseNd4jTest {
             fail("Expected exception");
         } catch (Exception e){
             String msg = e.getMessage();
-            e.printStackTrace();
             assertTrue(msg, msg.contains("Ragged array detected"));
         }
     }
