@@ -123,12 +123,12 @@ public class ShapeOffsetResolution implements Serializable {
                     //Row vector: [1,x]
                     shapes[0] = arr.size(1);
                     strides[0] = arr.stride(1);
-                    this.offset = indexes[0].offset() * strides[1];
+                    this.offset = indexes[0].offset() * strides[0];
                 } else {
                     //Column vector: [x, 1]
                     shapes[0] = 1;
-                    strides[0] = 1;
-                    this.offset = indexes[0].offset();
+                    strides[0] = arr.stride(0);
+                    this.offset = indexes[0].offset() * strides[0];
                 }
                 return true;
             }

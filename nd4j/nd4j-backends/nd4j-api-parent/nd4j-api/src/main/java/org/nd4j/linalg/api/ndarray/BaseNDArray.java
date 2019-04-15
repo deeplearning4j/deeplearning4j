@@ -4489,7 +4489,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         Nd4j.getCompressor().autoDecompress(this);
 
         // special case for empty reshape
-        if (this.length() == 1 && (newShape == null || newShape.length == 0)) {
+        if (this.length() == 1 && (newShape == null || newShape.length == 0) && this.elementWiseStride() == 1) {
             return Nd4j.create(this.data(), new int[0], new int[0], 0);
         }
 
