@@ -453,7 +453,7 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
                 guessIndex = pClass1.gt(binaryDecisionThreshold);
             } else if (costArray != null) {
                 //With a cost array: do argmax(cost * probability) instead of just argmax(probability)
-                guessIndex = Nd4j.argMax(predictions2d.mulRowVector(costArray), 1);
+                guessIndex = Nd4j.argMax(predictions2d.mulRowVector(costArray.castTo(predictions2d.dataType())), 1);
             } else {
                 //Standard case: argmax
                 guessIndex = Nd4j.argMax(predictions2d, 1);

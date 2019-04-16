@@ -17,10 +17,13 @@
 package org.nd4j.evaluation;
 
 import org.junit.Test;
+import org.nd4j.evaluation.classification.EvaluationBinary;
 import org.nd4j.evaluation.classification.ROC;
 import org.nd4j.evaluation.classification.ROCBinary;
 import org.nd4j.evaluation.curves.PrecisionRecallCurve;
+import org.nd4j.evaluation.regression.RegressionEvaluation;
 import org.nd4j.linalg.BaseNd4jTest;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.random.impl.BernoulliDistribution;
 import org.nd4j.linalg.factory.Nd4j;
@@ -46,63 +49,99 @@ public class ROCBinaryTest extends BaseNd4jTest {
     public void testROCBinary() {
         //Compare ROCBinary to ROC class
 
-        Nd4j.getRandom().setSeed(12345);
+        DataType dtypeBefore = Nd4j.defaultFloatingPointType();
+        ROCBinary first30 = null;
+        ROCBinary first0 = null;
+        String sFirst30 = null;
+        String sFirst0 = null;
+        try {
+            for (DataType globalDtype : new DataType[]{DataType.DOUBLE, DataType.FLOAT, DataType.HALF, DataType.INT}) {
+                Nd4j.setDefaultDataTypes(globalDtype, globalDtype.isFPType() ? globalDtype : DataType.DOUBLE);
+                for (DataType lpDtype : new DataType[]{DataType.DOUBLE, DataType.FLOAT, DataType.HALF}) {
 
-        int nExamples = 50;
-        int nOut = 4;
-        int[] shape = {nExamples, nOut};
+                    Nd4j.getRandom().setSeed(12345);
 
-        for (int thresholdSteps : new int[] {30, 0}) { //0 == exact
+                    int nExamples = 50;
+                    int nOut = 4;
+                    int[] shape = {nExamples, nOut};
 
-            INDArray labels =
-                            Nd4j.getExecutioner().exec(new BernoulliDistribution(Nd4j.createUninitialized(shape), 0.5));
+                    for (int thresholdSteps : new int[]{30, 0}) { //0 == exact
 
-            INDArray predicted = Nd4j.rand(shape);
-            INDArray binaryPredicted = predicted.gt(0.5);
+                        INDArray labels =
+                                Nd4j.getExecutioner().exec(new BernoulliDistribution(Nd4j.createUninitialized(shape), 0.5)).castTo(lpDtype);
 
-            ROCBinary rb = new ROCBinary(thresholdSteps);
+                        INDArray predicted = Nd4j.rand(lpDtype, shape);
+                        //INDArray binaryPredicted = predicted.gt(0.5);
 
-            for (int xe = 0; xe < 2; xe++) {
-                rb.eval(labels, predicted);
+                        ROCBinary rb = new ROCBinary(thresholdSteps);
 
-                System.out.println(rb.stats());
+                        for (int xe = 0; xe < 2; xe++) {
+                            rb.eval(labels, predicted);
 
-                double eps = 1e-6;
-                for (int i = 0; i < nOut; i++) {
-                    INDArray lCol = labels.getColumn(i);
-                    INDArray pCol = predicted.getColumn(i);
+                            System.out.println(rb.stats());
+
+                            double eps = lpDtype == DataType.HALF ? 1e-2 : 1e-6;
+                            for (int i = 0; i < nOut; i++) {
+                                INDArray lCol = labels.getColumn(i, true);
+                                INDArray pCol = predicted.getColumn(i, true);
 
 
-                    ROC r = new ROC(thresholdSteps);
-                    r.eval(lCol, pCol);
+                                ROC r = new ROC(thresholdSteps);
+                                r.eval(lCol, pCol);
 
-                    double aucExp = r.calculateAUC();
-                    double auc = rb.calculateAUC(i);
+                                double aucExp = r.calculateAUC();
+                                double auc = rb.calculateAUC(i);
 
-                    assertEquals(aucExp, auc, eps);
+                                assertEquals(aucExp, auc, eps);
 
-                    long apExp = r.getCountActualPositive();
-                    long ap = rb.getCountActualPositive(i);
-                    assertEquals(ap, apExp);
+                                long apExp = r.getCountActualPositive();
+                                long ap = rb.getCountActualPositive(i);
+                                assertEquals(ap, apExp);
 
-                    long anExp = r.getCountActualNegative();
-                    long an = rb.getCountActualNegative(i);
-                    assertEquals(anExp, an);
+                                long anExp = r.getCountActualNegative();
+                                long an = rb.getCountActualNegative(i);
+                                assertEquals(anExp, an);
 
-                    PrecisionRecallCurve pExp = r.getPrecisionRecallCurve();
-                    PrecisionRecallCurve p = rb.getPrecisionRecallCurve(i);
+                                PrecisionRecallCurve pExp = r.getPrecisionRecallCurve();
+                                PrecisionRecallCurve p = rb.getPrecisionRecallCurve(i);
 
-                    assertEquals(pExp, p);
+                                assertEquals(pExp, p);
+                            }
+
+                            String s = rb.stats();
+
+                            if(thresholdSteps == 0){
+                                if(first0 == null) {
+                                    first0 = rb;
+                                    sFirst0 = s;
+                                } else { //if(lpDtype != DataType.HALF) {   //Precision issues with FP16
+                                    assertEquals(sFirst0, s);
+                                    assertEquals(first0, rb);
+                                }
+                            } else {
+                                if(first30 == null) {
+                                    first30 = rb;
+                                    sFirst30 = s;
+                                } else { //if(lpDtype != DataType.HALF) {   //Precision issues with FP16
+                                    assertEquals(sFirst30, s);
+                                    assertEquals(first30, rb);
+                                }
+                            }
+
+//                            rb.reset();
+                            rb = new ROCBinary();
+                        }
+                    }
                 }
-
-                rb.reset();
             }
+        } finally {
+            Nd4j.setDefaultDataTypes(dtypeBefore, dtypeBefore);
         }
     }
 
     @Test
     public void testRocBinaryMerging() {
-        for (int nSteps : new int[] {30, 0}) { //0 == exact
+        for (int nSteps : new int[]{30, 0}) { //0 == exact
             int nOut = 4;
             int[] shape1 = {30, nOut};
             int[] shape2 = {50, nOut};
@@ -133,21 +172,21 @@ public class ROCBinaryTest extends BaseNd4jTest {
     @Test
     public void testROCBinaryPerOutputMasking() {
 
-        for (int nSteps : new int[] {30, 0}) { //0 == exact
+        for (int nSteps : new int[]{30, 0}) { //0 == exact
 
             //Here: we'll create a test array, then insert some 'masked out' values, and ensure we get the same results
-            INDArray mask = Nd4j.create(new double[][] {{1, 1, 1}, {0, 1, 1}, {1, 0, 1}, {1, 1, 0}, {1, 1, 1}});
+            INDArray mask = Nd4j.create(new double[][]{{1, 1, 1}, {0, 1, 1}, {1, 0, 1}, {1, 1, 0}, {1, 1, 1}});
 
-            INDArray labels = Nd4j.create(new double[][] {{0, 1, 0}, {1, 1, 0}, {0, 1, 1}, {0, 0, 1}, {1, 1, 1}});
+            INDArray labels = Nd4j.create(new double[][]{{0, 1, 0}, {1, 1, 0}, {0, 1, 1}, {0, 0, 1}, {1, 1, 1}});
 
             //Remove the 1 masked value for each column
-            INDArray labelsExMasked = Nd4j.create(new double[][] {{0, 1, 0}, {0, 1, 0}, {0, 0, 1}, {1, 1, 1}});
+            INDArray labelsExMasked = Nd4j.create(new double[][]{{0, 1, 0}, {0, 1, 0}, {0, 0, 1}, {1, 1, 1}});
 
-            INDArray predicted = Nd4j.create(new double[][] {{0.9, 0.4, 0.6}, {0.2, 0.8, 0.4}, {0.6, 0.1, 0.1},
-                            {0.3, 0.7, 0.2}, {0.8, 0.6, 0.6}});
+            INDArray predicted = Nd4j.create(new double[][]{{0.9, 0.4, 0.6}, {0.2, 0.8, 0.4}, {0.6, 0.1, 0.1},
+                    {0.3, 0.7, 0.2}, {0.8, 0.6, 0.6}});
 
             INDArray predictedExMasked = Nd4j.create(
-                            new double[][] {{0.9, 0.4, 0.6}, {0.6, 0.8, 0.4}, {0.3, 0.7, 0.1}, {0.8, 0.6, 0.6}});
+                    new double[][]{{0.9, 0.4, 0.6}, {0.6, 0.8, 0.4}, {0.3, 0.7, 0.1}, {0.8, 0.6, 0.6}});
 
             ROCBinary rbMasked = new ROCBinary(nSteps);
             rbMasked.eval(labels, predicted, mask);

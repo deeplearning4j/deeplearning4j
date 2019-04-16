@@ -66,7 +66,7 @@ public class EvalCustomThreshold extends BaseNd4jTest {
 
         e.eval(labels, probs);
         e05.eval(labels, probs);
-        e05v2.eval(labels.getColumn(1), probs.getColumn(1)); //"single output binary" case
+        e05v2.eval(labels.getColumn(1, true), probs.getColumn(1, true)); //"single output binary" case
 
         for (Evaluation e2 : new Evaluation[] {e05, e05v2}) {
             assertEquals(e.accuracy(), e2.accuracy(), 1e-6);
@@ -102,7 +102,7 @@ public class EvalCustomThreshold extends BaseNd4jTest {
         //Check the same thing, but the single binary output case:
 
         Evaluation e025v2 = new Evaluation(0.25);
-        e025v2.eval(labels.getColumn(1), probs.getColumn(1));
+        e025v2.eval(labels.getColumn(1, true), probs.getColumn(1, true));
 
         assertEquals(ex2.accuracy(), e025v2.accuracy(), 1e-6);
         assertEquals(ex2.f1(), e025v2.f1(), 1e-6);
@@ -177,7 +177,7 @@ public class EvalCustomThreshold extends BaseNd4jTest {
 
         EvaluationBinary eb05v2 = new EvaluationBinary(Nd4j.create(new double[] {0.5, 0.5}, new long[]{1,2}));
         for (int i = 0; i < nExamples; i++) {
-            eb05v2.eval(labels.getRow(i), probs.getRow(i));
+            eb05v2.eval(labels.getRow(i, true), probs.getRow(i, true));
         }
 
         for (EvaluationBinary eb2 : new EvaluationBinary[] {eb05, eb05v2}) {
