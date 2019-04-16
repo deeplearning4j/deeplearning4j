@@ -2021,30 +2021,30 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
         //Initially updater view array is set out like:
         //[m0w, m0b, m1w, m1b, m2w, m2b][v0w, v0b, v1w, v1b, v2w, v2b]
         long soFar = 0;
-        INDArray m0w = viewArray.get(NDArrayIndex.point(0), NDArrayIndex.interval(soFar, soFar+5*3)).assign(0);    //m0w
+        INDArray m0w = viewArray.get(NDArrayIndex.interval(0,0,true), NDArrayIndex.interval(soFar, soFar+5*3)).assign(0);    //m0w
         soFar += 5*3;
-        INDArray m0b = viewArray.get(NDArrayIndex.point(0), NDArrayIndex.interval(soFar, soFar+3)).assign(1);    //m0b
+        INDArray m0b = viewArray.get(NDArrayIndex.interval(0,0,true), NDArrayIndex.interval(soFar, soFar+3)).assign(1);    //m0b
         soFar += 3;
-        INDArray m1w = viewArray.get(NDArrayIndex.point(0), NDArrayIndex.interval(soFar, soFar+3*2)).assign(2);    //m1w
+        INDArray m1w = viewArray.get(NDArrayIndex.interval(0,0,true), NDArrayIndex.interval(soFar, soFar+3*2)).assign(2);    //m1w
         soFar += 3*2;
-        INDArray m1b = viewArray.get(NDArrayIndex.point(0), NDArrayIndex.interval(soFar, soFar+2)).assign(3);    //m1b
+        INDArray m1b = viewArray.get(NDArrayIndex.interval(0,0,true), NDArrayIndex.interval(soFar, soFar+2)).assign(3);    //m1b
         soFar += 2;
-        INDArray m2w = viewArray.get(NDArrayIndex.point(0), NDArrayIndex.interval(soFar, soFar+2*1)).assign(4);    //m2w
+        INDArray m2w = viewArray.get(NDArrayIndex.interval(0,0,true), NDArrayIndex.interval(soFar, soFar+2*1)).assign(4);    //m2w
         soFar += 2*1;
-        INDArray m2b = viewArray.get(NDArrayIndex.point(0), NDArrayIndex.interval(soFar, soFar+1)).assign(5);    //m2b
+        INDArray m2b = viewArray.get(NDArrayIndex.interval(0,0,true), NDArrayIndex.interval(soFar, soFar+1)).assign(5);    //m2b
         soFar += 1;
 
-        INDArray v0w = viewArray.get(NDArrayIndex.point(0), NDArrayIndex.interval(soFar, soFar+5*3)).assign(6);    //v0w
+        INDArray v0w = viewArray.get(NDArrayIndex.interval(0,0,true), NDArrayIndex.interval(soFar, soFar+5*3)).assign(6);    //v0w
         soFar += 5*3;
-        INDArray v0b = viewArray.get(NDArrayIndex.point(0), NDArrayIndex.interval(soFar, soFar+3)).assign(7);    //v0b
+        INDArray v0b = viewArray.get(NDArrayIndex.interval(0,0,true), NDArrayIndex.interval(soFar, soFar+3)).assign(7);    //v0b
         soFar += 3;
-        INDArray v1w = viewArray.get(NDArrayIndex.point(0), NDArrayIndex.interval(soFar, soFar+3*2)).assign(8);    //v1w
+        INDArray v1w = viewArray.get(NDArrayIndex.interval(0,0,true), NDArrayIndex.interval(soFar, soFar+3*2)).assign(8);    //v1w
         soFar += 3*2;
-        INDArray v1b = viewArray.get(NDArrayIndex.point(0), NDArrayIndex.interval(soFar, soFar+2)).assign(9);    //v1b
+        INDArray v1b = viewArray.get(NDArrayIndex.interval(0,0,true), NDArrayIndex.interval(soFar, soFar+2)).assign(9);    //v1b
         soFar += 2;
-        INDArray v2w = viewArray.get(NDArrayIndex.point(0), NDArrayIndex.interval(soFar, soFar+2*1)).assign(10);    //v2w
+        INDArray v2w = viewArray.get(NDArrayIndex.interval(0,0,true), NDArrayIndex.interval(soFar, soFar+2*1)).assign(10);    //v2w
         soFar += 2*1;
-        INDArray v2b = viewArray.get(NDArrayIndex.point(0), NDArrayIndex.interval(soFar, soFar+1)).assign(11);    //v2b
+        INDArray v2b = viewArray.get(NDArrayIndex.interval(0,0,true), NDArrayIndex.interval(soFar, soFar+1)).assign(11);    //v2b
         soFar += 1;
 
 

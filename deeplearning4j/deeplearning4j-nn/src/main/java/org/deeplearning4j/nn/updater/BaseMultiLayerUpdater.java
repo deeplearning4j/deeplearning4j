@@ -359,7 +359,8 @@ public abstract class BaseMultiLayerUpdater<T extends Model> implements Updater 
             Map<String,INDArray> paramTable = t.paramTable(false);
             for(String s : layerParams) {
                 if(t.updaterDivideByMinibatch(s)){
-                    currentEnd += paramTable.get(s).length();
+                    long l = paramTable.get(s).length();
+                    currentEnd += l;
                 } else {
                     //This param/gradient subset should be excluded
                     if(currentEnd > currentStart){

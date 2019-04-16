@@ -218,9 +218,9 @@ public class SimpleRnn extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.lay
         Preconditions.checkState(input.rank() == 3,
                 "3D input expected to RNN layer expected, got " + input.rank());
 
-        INDArray input = this.input.castTo(dataType);    //No-op if correct type
-
         applyDropOutIfNecessary(training, workspaceMgr);
+
+        INDArray input = this.input.castTo(dataType);    //No-op if correct type
         val m = input.size(0);
         val tsLength = input.size(2);
         val nOut = layerConf().getNOut();

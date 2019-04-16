@@ -31,6 +31,7 @@ import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.config.NoOp;
@@ -100,7 +101,8 @@ public class TestRnnLayers extends BaseDL4JTest {
     public void testDropoutRecurrentLayers(){
         Nd4j.getRandom().setSeed(12345);
 
-        String[] layerTypes = new String[]{"graves", "lstm", "simple"};
+//        String[] layerTypes = new String[]{"graves", "lstm", "simple"};
+        String[] layerTypes = new String[]{"simple"};
 
         for(String s : layerTypes){
 
@@ -161,7 +163,7 @@ public class TestRnnLayers extends BaseDL4JTest {
             assertEquals(s, net.params(), netD.params());
             assertEquals(s, net.params(), netD2.params());
 
-            INDArray f = Nd4j.rand(new int[]{3, 10, 10});
+            INDArray f = Nd4j.rand(DataType.FLOAT, new int[]{3, 10, 10});
 
             //Output: test mode -> no dropout
             INDArray out1 = net.output(f);

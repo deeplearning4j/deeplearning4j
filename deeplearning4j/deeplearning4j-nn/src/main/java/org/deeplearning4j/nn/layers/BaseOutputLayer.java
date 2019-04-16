@@ -335,7 +335,7 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
         if (maskArray.isColumnVectorOrScalar()) {
             to.muliColumnVector(maskArray.castTo(to.dataType()));
         } else if (Arrays.equals(to.shape(), maskArray.shape())) {
-            to.muli(maskArray);
+            to.muli(maskArray.castTo(to.dataType()));
         } else {
             throw new IllegalStateException("Invalid mask array: per-example masking should be a column vector, "
                     + "per output masking arrays should be the same shape as the output/labels arrays. Mask shape: "

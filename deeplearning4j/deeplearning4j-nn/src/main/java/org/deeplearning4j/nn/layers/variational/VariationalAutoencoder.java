@@ -942,7 +942,7 @@ public class VariationalAutoencoder implements Layer {
      */
     public INDArray reconstructionProbability(INDArray data, int numSamples) {
         INDArray reconstructionLogProb = reconstructionLogProbability(data, numSamples);
-        return Transforms.exp(reconstructionLogProb, false);
+        return Transforms.exp(reconstructionLogProb.castTo(DataType.DOUBLE), false);    //Cast to double to reduce risk of numerical underflow
     }
 
     /**

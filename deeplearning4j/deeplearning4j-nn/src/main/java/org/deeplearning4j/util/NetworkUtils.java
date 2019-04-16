@@ -453,7 +453,7 @@ public class NetworkUtils {
             long soFar = 0;
             for( int sub=0; sub<paramsMultiplier; sub++) {
                 //subsetUpdaterView: [m0, m1, m2] etc
-                INDArray subsetUpdaterView = updaterView.get(NDArrayIndex.interval(0, 0, true), NDArrayIndex.interval(soFar, soFar + paramsMultiplier * nParamsInBlock));
+                INDArray subsetUpdaterView = updaterView.get(NDArrayIndex.interval(0, 0, true), NDArrayIndex.interval(soFar, soFar + nParamsInBlock));
 
                 long offsetWithinSub = 0;
                 for (UpdaterBlock.ParamState ps : params) {

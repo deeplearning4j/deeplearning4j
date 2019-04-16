@@ -58,7 +58,7 @@ public class EmbeddingLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.
         INDArray delta = layerConf().getActivationFn().backprop(z, epsilon).getFirst(); //TODO handle activation function params
 
         if (maskArray != null) {
-            delta.muliColumnVector(maskArray);
+            delta.muliColumnVector(maskArray.castTo(dataType));
         }
 
         INDArray weightGradients = gradientViews.get(DefaultParamInitializer.WEIGHT_KEY);

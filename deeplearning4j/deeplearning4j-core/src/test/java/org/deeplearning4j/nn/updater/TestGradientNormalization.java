@@ -100,7 +100,7 @@ public class TestGradientNormalization extends BaseDL4JTest {
         layer.setBackpropGradientsViewArray(Nd4j.create(params.shape()));
         Updater updater = UpdaterCreator.getUpdater(layer);
         INDArray weightGrad = Nd4j.rand(10, 20);
-        INDArray biasGrad = Nd4j.rand(1, 10);
+        INDArray biasGrad = Nd4j.rand(1, 20);
         INDArray weightGradCopy = weightGrad.dup();
         INDArray biasGradCopy = biasGrad.dup();
         Gradient gradient = new DefaultGradient();
@@ -244,7 +244,7 @@ public class TestGradientNormalization extends BaseDL4JTest {
         layer.setBackpropGradientsViewArray(Nd4j.create(params.shape()));
         Updater updater = UpdaterCreator.getUpdater(layer);
         INDArray weightGrad = Nd4j.rand(10, 20).muli(0.05);
-        INDArray biasGrad = Nd4j.rand(1, 10).muli(10);
+        INDArray biasGrad = Nd4j.rand(1, 20).muli(10);
         INDArray weightGradCopy = weightGrad.dup();
         INDArray biasGradCopy = biasGrad.dup();
         Gradient gradient = new DefaultGradient();

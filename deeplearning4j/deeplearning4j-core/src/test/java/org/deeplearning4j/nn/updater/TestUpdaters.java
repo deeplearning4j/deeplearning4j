@@ -37,6 +37,7 @@ import org.deeplearning4j.nn.updater.graph.ComputationGraphUpdater;
 import org.junit.Before;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.*;
@@ -636,8 +637,8 @@ public class TestUpdaters extends BaseDL4JTest {
 
             for (int j = 0; j < net.getnLayers(); j++) {
                 //Generate test gradient:
-                INDArray wGrad = Nd4j.rand(nIns[j], nOuts[j]);
-                INDArray bGrad = Nd4j.rand(1, nOuts[j]);
+                INDArray wGrad = Nd4j.rand(DataType.FLOAT, nIns[j], nOuts[j]);
+                INDArray bGrad = Nd4j.rand(DataType.FLOAT, 1, nOuts[j]);
 
                 String wKey = j + "_" + DefaultParamInitializer.WEIGHT_KEY;
                 String bKey = j + "_" + DefaultParamInitializer.BIAS_KEY;
@@ -1036,17 +1037,17 @@ public class TestUpdaters extends BaseDL4JTest {
         INDArray view = ((BaseMultiLayerUpdater) net.getUpdater()).getFlattenedGradientsView();
         view.assign(Nd4j.linspace(1, view.length(), view.length(), Nd4j.dataType()));
 
-        INDArray expView1 = view.get(point(0), interval(0, 10*9 + 9 + 2*9));
+        INDArray expView1 = view.get(interval(0,0,true), interval(0, 10*9 + 9 + 2*9));
         assertEquals(expView1, l.get(0));
 
         long start2 = (10*9 + 9 + 2*9) + 2*9;
         long length2 = 9*8 + 8 + 2*8;
-        INDArray expView2 = view.get(point(0), interval(start2, start2 + length2));
+        INDArray expView2 = view.get(interval(0,0,true), interval(start2, start2 + length2));
         assertEquals(expView2, l.get(1));
 
         long start3 = start2 + length2 + 2*8;
         long length3 = 8*7 + 7;
-        INDArray expView3 = view.get(point(0), interval(start3, start3 + length3));
+        INDArray expView3 = view.get(interval(0,0,true), interval(start3, start3 + length3));
         assertEquals(expView3, l.get(2));
     }
 
@@ -1092,17 +1093,17 @@ public class TestUpdaters extends BaseDL4JTest {
         INDArray view = ((BaseMultiLayerUpdater) net.getUpdater()).getFlattenedGradientsView();
         view.assign(Nd4j.linspace(1, view.length(), view.length(), Nd4j.dataType()));
 
-        INDArray expView1 = view.get(point(0), interval(0, 2*6));
+        INDArray expView1 = view.get(interval(0,0,true), interval(0, 2*6));
         assertEquals(expView1, l.get(0));
 
         long start2 = 2*6 + 2*6;
         long length2 = 6*5*2*2 + 5 + 2*5;
-        INDArray expView2 = view.get(point(0), interval(start2, start2 + length2));
+        INDArray expView2 = view.get(interval(0,0,true), interval(start2, start2 + length2));
         assertEquals(expView2, l.get(1));
 
         long start3 = start2 + length2 + 2*5;
         long length3 = 5*4*2*2 + 4 + 2*4;
-        INDArray expView3 = view.get(point(0), interval(start3, start3 + length3));
+        INDArray expView3 = view.get(interval(0,0,true), interval(start3, start3 + length3));
         assertEquals(expView3, l.get(2));
     }
 }
