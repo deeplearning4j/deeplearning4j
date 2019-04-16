@@ -216,7 +216,7 @@ public class IndexingTests extends BaseNd4jTest {
         assertEquals(first, fMerged.get(NDArrayIndex.interval(0, nExamples1), NDArrayIndex.all(), NDArrayIndex.all(),
                         NDArrayIndex.all()));
 
-        INDArray get = fMerged.get(NDArrayIndex.interval(nExamples1, nExamples1 + nExamples2, true), NDArrayIndex.all(),
+        INDArray get = fMerged.get(NDArrayIndex.interval(nExamples1, nExamples1 + nExamples2), NDArrayIndex.all(),
                         NDArrayIndex.all(), NDArrayIndex.all());
         assertEquals(second, get.dup()); //Passes
         assertEquals(second, get); //Fails

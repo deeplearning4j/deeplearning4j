@@ -118,10 +118,10 @@ public class LSTMParamInitializer implements ParamInitializer {
         val nParamsIn = nLast * (4 * nL);
         val nParamsRecurrent = nL * (4 * nL);
         val nBias = 4 * nL;
-        INDArray inputWeightView = paramsView.get(NDArrayIndex.point(0), NDArrayIndex.interval(0, nParamsIn));
-        INDArray recurrentWeightView = paramsView.get(NDArrayIndex.point(0),
+        INDArray inputWeightView = paramsView.get(NDArrayIndex.interval(0,0,true), NDArrayIndex.interval(0, nParamsIn));
+        INDArray recurrentWeightView = paramsView.get(NDArrayIndex.interval(0,0,true),
                         NDArrayIndex.interval(nParamsIn, nParamsIn + nParamsRecurrent));
-        INDArray biasView = paramsView.get(NDArrayIndex.point(0),
+        INDArray biasView = paramsView.get(NDArrayIndex.interval(0,0,true),
                         NDArrayIndex.interval(nParamsIn + nParamsRecurrent, nParamsIn + nParamsRecurrent + nBias));
 
         if (initializeParams) {
@@ -176,12 +176,12 @@ public class LSTMParamInitializer implements ParamInitializer {
         val nParamsIn = nLast * (4 * nL);
         val nParamsRecurrent = nL * (4 * nL);
         val nBias = 4 * nL;
-        INDArray inputWeightGradView = gradientView.get(NDArrayIndex.point(0), NDArrayIndex.interval(0, nParamsIn))
+        INDArray inputWeightGradView = gradientView.get(NDArrayIndex.interval(0,0,true), NDArrayIndex.interval(0, nParamsIn))
                         .reshape('f', nLast, 4 * nL);
         INDArray recurrentWeightGradView = gradientView
-                        .get(NDArrayIndex.point(0), NDArrayIndex.interval(nParamsIn, nParamsIn + nParamsRecurrent))
+                        .get(NDArrayIndex.interval(0,0,true), NDArrayIndex.interval(nParamsIn, nParamsIn + nParamsRecurrent))
                         .reshape('f', nL, 4 * nL);
-        INDArray biasGradView = gradientView.get(NDArrayIndex.point(0),
+        INDArray biasGradView = gradientView.get(NDArrayIndex.interval(0,0,true),
                         NDArrayIndex.interval(nParamsIn + nParamsRecurrent, nParamsIn + nParamsRecurrent + nBias)); //already a row vector
 
         Map<String, INDArray> out = new LinkedHashMap<>();

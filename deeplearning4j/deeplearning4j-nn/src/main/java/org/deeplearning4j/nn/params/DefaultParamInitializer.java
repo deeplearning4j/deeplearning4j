@@ -117,7 +117,7 @@ public class DefaultParamInitializer implements ParamInitializer {
 
         long offset = nWeightParams;
         if(hasBias(layerConf)){
-            INDArray biasView = paramsView.get(NDArrayIndex.point(0),
+            INDArray biasView = paramsView.get(NDArrayIndex.interval(0,0,true),
                     NDArrayIndex.interval(offset, offset + nOut));
             params.put(BIAS_KEY, createBias(conf, biasView, initializeParams));
             conf.addVariable(BIAS_KEY);
@@ -125,7 +125,7 @@ public class DefaultParamInitializer implements ParamInitializer {
         }
 
         if(hasLayerNorm(layerConf)){
-            INDArray gainView = paramsView.get(NDArrayIndex.point(0),
+            INDArray gainView = paramsView.get(NDArrayIndex.interval(0,0,true),
                     NDArrayIndex.interval(offset, offset + nOut));
             params.put(GAIN_KEY, createGain(conf, gainView, initializeParams));
             conf.addVariable(GAIN_KEY);

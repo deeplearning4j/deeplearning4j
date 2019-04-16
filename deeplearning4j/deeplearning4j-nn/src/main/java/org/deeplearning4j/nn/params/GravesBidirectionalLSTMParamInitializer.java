@@ -135,12 +135,12 @@ public class GravesBidirectionalLSTMParamInitializer implements ParamInitializer
         val rwROffset = iwROffset + nParamsInput;
         val bROffset = rwROffset + nParamsRecurrent;
 
-        INDArray iwF = paramsView.get(NDArrayIndex.point(0), NDArrayIndex.interval(0, rwFOffset));
-        INDArray rwF = paramsView.get(NDArrayIndex.point(0), NDArrayIndex.interval(rwFOffset, bFOffset));
-        INDArray bF = paramsView.get(NDArrayIndex.point(0), NDArrayIndex.interval(bFOffset, iwROffset));
-        INDArray iwR = paramsView.get(NDArrayIndex.point(0), NDArrayIndex.interval(iwROffset, rwROffset));
-        INDArray rwR = paramsView.get(NDArrayIndex.point(0), NDArrayIndex.interval(rwROffset, bROffset));
-        INDArray bR = paramsView.get(NDArrayIndex.point(0), NDArrayIndex.interval(bROffset, bROffset + nBias));
+        INDArray iwF = paramsView.get(NDArrayIndex.interval(0,0,true), NDArrayIndex.interval(0, rwFOffset));
+        INDArray rwF = paramsView.get(NDArrayIndex.interval(0,0,true), NDArrayIndex.interval(rwFOffset, bFOffset));
+        INDArray bF = paramsView.get(NDArrayIndex.interval(0,0,true), NDArrayIndex.interval(bFOffset, iwROffset));
+        INDArray iwR = paramsView.get(NDArrayIndex.interval(0,0,true), NDArrayIndex.interval(iwROffset, rwROffset));
+        INDArray rwR = paramsView.get(NDArrayIndex.interval(0,0,true), NDArrayIndex.interval(rwROffset, bROffset));
+        INDArray bR = paramsView.get(NDArrayIndex.interval(0,0,true), NDArrayIndex.interval(bROffset, bROffset + nBias));
 
         if (initializeParams) {
             bF.put(new INDArrayIndex[]{NDArrayIndex.point(0), NDArrayIndex.interval(nL, 2 * nL)},
@@ -205,16 +205,16 @@ public class GravesBidirectionalLSTMParamInitializer implements ParamInitializer
         val rwROffset = iwROffset + nParamsInput;
         val bROffset = rwROffset + nParamsRecurrent;
 
-        INDArray iwFG = gradientView.get(NDArrayIndex.point(0), NDArrayIndex.interval(0, rwFOffset)).reshape('f', nLast,
+        INDArray iwFG = gradientView.get(NDArrayIndex.interval(0,0,true), NDArrayIndex.interval(0, rwFOffset)).reshape('f', nLast,
                 4 * nL);
-        INDArray rwFG = gradientView.get(NDArrayIndex.point(0), NDArrayIndex.interval(rwFOffset, bFOffset)).reshape('f',
+        INDArray rwFG = gradientView.get(NDArrayIndex.interval(0,0,true), NDArrayIndex.interval(rwFOffset, bFOffset)).reshape('f',
                 nL, 4 * nL + 3);
-        INDArray bFG = gradientView.get(NDArrayIndex.point(0), NDArrayIndex.interval(bFOffset, iwROffset));
-        INDArray iwRG = gradientView.get(NDArrayIndex.point(0), NDArrayIndex.interval(iwROffset, rwROffset))
+        INDArray bFG = gradientView.get(NDArrayIndex.interval(0,0,true), NDArrayIndex.interval(bFOffset, iwROffset));
+        INDArray iwRG = gradientView.get(NDArrayIndex.interval(0,0,true), NDArrayIndex.interval(iwROffset, rwROffset))
                 .reshape('f', nLast, 4 * nL);
-        INDArray rwRG = gradientView.get(NDArrayIndex.point(0), NDArrayIndex.interval(rwROffset, bROffset)).reshape('f',
+        INDArray rwRG = gradientView.get(NDArrayIndex.interval(0,0,true), NDArrayIndex.interval(rwROffset, bROffset)).reshape('f',
                 nL, 4 * nL + 3);
-        INDArray bRG = gradientView.get(NDArrayIndex.point(0), NDArrayIndex.interval(bROffset, bROffset + nBias));
+        INDArray bRG = gradientView.get(NDArrayIndex.interval(0,0,true), NDArrayIndex.interval(bROffset, bROffset + nBias));
 
         Map<String, INDArray> out = new LinkedHashMap<>();
         out.put(INPUT_WEIGHT_KEY_FORWARDS, iwFG);

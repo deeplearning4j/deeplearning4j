@@ -156,7 +156,7 @@ public class SeparableConvolutionParamInitializer implements ParamInitializer {
         conf.addVariable(POINT_WISE_WEIGHT_KEY);
 
         if(layer.hasBias()){
-            INDArray biasView = paramsView.get(NDArrayIndex.point(0), NDArrayIndex.interval(0, biasParams));
+            INDArray biasView = paramsView.get(NDArrayIndex.interval(0,0,true), NDArrayIndex.interval(0, biasParams));
             params.put(BIAS_KEY, createBias(conf, biasView, initializeParams));
             conf.addVariable(BIAS_KEY);
         }
@@ -190,7 +190,7 @@ public class SeparableConvolutionParamInitializer implements ParamInitializer {
         out.put(POINT_WISE_WEIGHT_KEY, pointWiseWeightGradientView);
 
         if(layerConf.hasBias()){
-            INDArray biasGradientView = gradientView.get(NDArrayIndex.point(0), NDArrayIndex.interval(0, nOut));
+            INDArray biasGradientView = gradientView.get(NDArrayIndex.interval(0,0,true), NDArrayIndex.interval(0, nOut));
             out.put(BIAS_KEY, biasGradientView);
         }
         return out;
