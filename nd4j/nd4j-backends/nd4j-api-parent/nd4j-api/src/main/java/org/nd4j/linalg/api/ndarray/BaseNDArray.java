@@ -191,19 +191,25 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     }
 
     public BaseNDArray(DataBuffer buffer, long[] shape, long[] stride, long offset, char ordering) {
+        this(buffer, shape, stride, offset, Shape.elementWiseStride(shape, stride, ordering == 'f'), ordering);
+    }
+
+    public BaseNDArray(DataBuffer buffer, long[] shape, long[] stride, long offset, long ews, char ordering) {
         Shape.assertValidOrder(ordering);
         this.data = offset > 0 ? Nd4j.createBuffer(buffer, offset, Shape.lengthOfBuffer(shape, stride)) : buffer;
-        setShapeInformation(Nd4j.getShapeInfoProvider().createShapeInformation(shape, stride,
-                Shape.elementWiseStride(shape, stride, ordering == 'f'), ordering, buffer.dataType()));
+        setShapeInformation(Nd4j.getShapeInfoProvider().createShapeInformation(shape, stride, ews, ordering, buffer.dataType()));
         init(shape, stride);
         // Shape.setElementWiseStride(this.shapeInfo(),Shape.elementWiseStride(shape, stride, ordering == 'f'));
     }
 
-    public BaseNDArray(DataBuffer buffer, long[] shape, long[] stride, long offset, char ordering, DataType dataType) {
+    public BaseNDArray(DataBuffer buffer, long[] shape, long[] stride, long offset,  char ordering, DataType dataType) {
+        this(buffer, shape, stride, offset, Shape.elementWiseStride(shape, stride, ordering == 'f'), ordering, dataType);
+    }
+
+    public BaseNDArray(DataBuffer buffer, long[] shape, long[] stride, long offset, long ews, char ordering, DataType dataType) {
         this.data = offset > 0 ? Nd4j.createBuffer(buffer, offset, Shape.lengthOfBuffer(shape, stride)) : buffer;
-        setShapeInformation(Nd4j.getShapeInfoProvider().createShapeInformation(shape, stride, Shape.elementWiseStride(shape, stride, ordering == 'f'), ordering, dataType));
+        setShapeInformation(Nd4j.getShapeInfoProvider().createShapeInformation(shape, stride, ews, ordering, dataType));
         init(shape, stride);
-        // Shape.setElementWiseStride(this.shapeInfo(),Shape.elementWiseStride(shape, stride, ordering == 'f'));
     }
 
     public BaseNDArray(DataBuffer buffer, long[] shape, long[] stride, char ordering, DataType type) {
@@ -1019,31 +1025,9 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         val shape = Shape.shape(shapeInfo);
         val stride = Shape.stride(shapeInfo).asLong();
         long offset = offset() + tadInfo.getSecond().getLong(index);
-        char tadOrder = Shape.getOrder(shape, stride, 1);
-        INDArray toTad = Nd4j.create(data(), shape, stride, offset, tadOrder);
-        BaseNDArray baseNDArray = (BaseNDArray) toTad;
-
-        //preserve immutability
-        char newOrder = Shape.getOrder(shape, stride, 1);
-
-        int ews = baseNDArray.shapeInfoDataBuffer().getInt(baseNDArray.shapeInfoDataBuffer().length() - 2);
-
-        //TAD always calls permute. Permute EWS is always -1. This is not true for vector shapes though.
-        if (!Shape.isVector(baseNDArray.shapeInfoDataBuffer()))
-            ews = 0;
-
-        // we create new shapeInfo with possibly new ews & order
-        /**
-         * NOTE HERE THAT ZERO IS PRESET FOR THE OFFSET AND SHOULD STAY LIKE THAT.
-         * Zero is preset for caching purposes.
-         * We don't actually use the offset defined in the
-         * shape info data buffer.
-         * We calculate and cache the offsets separately.
-         *
-         */
-        baseNDArray.setShapeInformation(
-                Nd4j.getShapeInfoProvider().createShapeInformation(shape, stride,  ews, newOrder, this.dataType()));
-
+        val ews = shapeInfo.getLong(shapeInfo.getLong(0) * 2 + 2);
+        char tadOrder = (char) shapeInfo.getInt(shapeInfo.getLong(0) * 2 + 3);
+        val toTad = Nd4j.create(data(), shape, stride, offset, ews, tadOrder);
         return toTad;
     }
 
@@ -1055,6 +1039,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      * @return the vector along a particular dimension
      */
     @Override
+    @Deprecated
     public INDArray javaTensorAlongDimension(int index, int... dimension) {
         return doTad(index, dimension);
     }
@@ -1208,10 +1193,10 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         }
 
         INDArray ret = tensorAlongDimension(index, dimension);
-        if (isMatrix() && ret.isVector() && dimension == 1 && !ret.isRowVector())
-            return ret.reshape(ArrayUtil.reverseCopy(ret.shape()));
-        else if (isMatrix() && ret.isVector() && dimension == 0 && !ret.isColumnVector())
-            return ret.reshape(ArrayUtil.reverseCopy(ret.shape()));
+        //if (isMatrix() && ret.isVector() && dimension == 1 && !ret.isRowVector())
+        //    return ret.reshape(ArrayUtil.reverseCopy(ret.shape()));
+        //else if (isMatrix() && ret.isVector() && dimension == 0 && !ret.isColumnVector())
+        //    return ret.reshape(ArrayUtil.reverseCopy(ret.shape()));
         return ret;
     }
 
@@ -1430,9 +1415,12 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             i += rank();
 
         // TODO: i'm not sure that rank == 1 has fair shortcut here
-        if (isScalar() || rank() == 1) {
+        if (isScalar()) {
             autoProcessScalarCall();
             data.put(i, value);
+            return this;
+        } else if (rank() == 1) {
+            data.put(i * stride(0), value);
             return this;
         }
 

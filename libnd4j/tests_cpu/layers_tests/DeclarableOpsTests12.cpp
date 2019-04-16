@@ -976,3 +976,42 @@ TEST_F(DeclarableOpsTests12, pullRows_1) {
  
     ASSERT_TRUE(z.equalsTo(exp));    
 }
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests12, pullRows_2) {
+    
+    NDArray arr('f', {5, 2}, {0,1,2,3,4,5,6,7,8,9});
+    NDArray* y = arr.dup('c');
+    NDArray x = (*y)({0,0, 0,1}, true);     // view, points on first column of y, shape is {5,1}
+    // y->printBuffer("y ");
+    // x.printIndexedBuffer();
+    // x.printShapeInfo();
+    // NDArray x('c', {5, 1}, {0,1,2,3,4});
+    NDArray z('c', {4, 1}, nd4j::DataType::DOUBLE);
+    NDArray exp('c', {4, 1}, {0,2,3,4});
+
+    Nd4jLong indexes[] = {0,2,3,4};
+
+    std::vector<int> dims = {1};
+
+    auto xTadPack = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(x.getShapeInfo(), dims);
+    auto zTadPack = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(z.getShapeInfo(), dims);
+    // printf("TADs %lld, %lld\n", xTadPack.numberOfTads(), zTadPack.numberOfTads());
+    // shape::printShapeInfoLinear(xTadPack.primaryShapeInfo());
+    // shape::printIntArray(xTadPack.primaryOffsets(), 5);
+    // shape::printShapeInfoLinear(zTadPack.primaryShapeInfo());
+    // shape::printIntArray(zTadPack.primaryOffsets(), 4);
+ 
+    NativeOps op;
+    op.pullRows(nullptr, x.buffer(), x.getShapeInfo(), nullptr, nullptr,
+                         z.buffer(), z.getShapeInfo(), nullptr, nullptr,
+                         4, indexes,
+                         xTadPack.primaryShapeInfo(), xTadPack.primaryOffsets(),
+                         zTadPack.primaryShapeInfo(), zTadPack.primaryOffsets());
+ 
+    // printf("!!!!!!\n");
+    // z.printIndexedBuffer();
+    ASSERT_TRUE(z.equalsTo(exp));    
+
+    delete y;
+}

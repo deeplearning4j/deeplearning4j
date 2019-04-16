@@ -32,7 +32,7 @@ class ListOperationsTests : public testing::Test {
 
 TEST_F(ListOperationsTests, BasicTest_Write_1) {
     NDArrayList list(5);
-    auto x = NDArrayFactory::create<double>('c', {1, 128});
+    auto x = NDArrayFactory::create<double>('c', {128});
     x.linspace(1);
 
     nd4j::ops::write_list op;
@@ -56,7 +56,7 @@ TEST_F(ListOperationsTests, BasicTest_Stack_1) {
     auto exp = NDArrayFactory::create<double>('c', {10, 100});
     auto tads = exp.allTensorsAlongDimension({1});
     for (int e = 0; e < 10; e++) {
-        auto row = NDArrayFactory::create_<double>('c', {1, 100});
+        auto row = NDArrayFactory::create_<double>('c', {100});
         row->assign((double) e);
         list.write(e, row);
         tads->at(e)->assign(row);
@@ -69,6 +69,7 @@ TEST_F(ListOperationsTests, BasicTest_Stack_1) {
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
     auto z = result->at(0);
+    // z->printShapeInfo();
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
@@ -110,7 +111,7 @@ TEST_F(ListOperationsTests, BasicTest_Pick_1) {
     auto exp = NDArrayFactory::create<double>('c', {4, 100});
 
     for (int e = 0; e < 10; e++) {
-        auto row = NDArrayFactory::create_<double>('c', {1, 100});
+        auto row = NDArrayFactory::create_<double>('c', {100});
         row->assign((double) e);
         list.write(e, row->dup());
 
@@ -142,7 +143,7 @@ TEST_F(ListOperationsTests, BasicTest_Size_1) {
     NDArrayList list(10);
     auto exp = NDArrayFactory::create<int>(10);
     for (int e = 0; e < 10; e++) {
-        auto row = NDArrayFactory::create_<double>('c', {1, 100});
+        auto row = NDArrayFactory::create_<double>('c', {100});
         row->assign((double) e);
         list.write(e, row->dup());
 
@@ -188,7 +189,7 @@ TEST_F(ListOperationsTests, BasicTest_Split_1) {
 
     auto matrix = NDArrayFactory::create<double>('c', {10, 5});
 
-    auto lengths = NDArrayFactory::create<double>('c', {1, 3});
+    auto lengths = NDArrayFactory::create<int>('c', {3});
     lengths.p(0, 2);
     lengths.p(1, 3);
     lengths.p(2, 5);
@@ -203,7 +204,7 @@ TEST_F(ListOperationsTests, BasicTest_Split_1) {
     int cnt1 = 0;
     int cnt2 = 0;
     for (int e = 0; e < 10; e++) {
-        auto row = NDArrayFactory::create_<double>('c', {1, 5});
+        auto row = NDArrayFactory::create_<double>('c', {5});
         row->assign((double) e);
         tads->at(e)->assign(row);
 
@@ -219,7 +220,7 @@ TEST_F(ListOperationsTests, BasicTest_Split_1) {
 
     nd4j::ops::split_list op;
     auto result = op.execute(&list, {&matrix, &lengths}, {}, {});
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(Status::OK(), result->status());
 
     ASSERT_EQ(3, list.height());
 
@@ -360,7 +361,7 @@ TEST_F(ListOperationsTests, GraphTests_Sequential_1) {
     tadsExp->at(2)->assign(-2.f);
     delete tadsExp;
 
-    auto indices = NDArrayFactory::valueOf({1, 3}, 1.0f, 'c');
+    auto indices = NDArrayFactory::valueOf<int>({3}, 1, 'c');
     //indices->linspace(0);
 
 
