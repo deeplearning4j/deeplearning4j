@@ -69,7 +69,17 @@ public class MemoryTracker {
         cachedHost.addAndGet(numBytes);
     }
 
-    public void incrementAllocated
+    public void incrementAllocatedHostAmount(long numBytes) {
+        allocatedHost.addAndGet(numBytes);
+    }
+
+    public void decrementCachedHostAmount(long numBytes) {
+        cachedHost.addAndGet(-numBytes);
+    }
+
+    public void decrementAllocatedHostAmount(long numBytes) {
+        allocatedHost.addAndGet(-numBytes);
+    }
 
     public long getWorkspaceAllocatedAmount(int deviceId) {
         return workspacesPerDevice.get(deviceId).get();

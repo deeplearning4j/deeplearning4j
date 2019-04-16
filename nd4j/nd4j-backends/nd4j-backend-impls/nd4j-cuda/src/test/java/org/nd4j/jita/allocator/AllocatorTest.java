@@ -294,8 +294,11 @@ public class AllocatorTest {
         }
 
         while (true) {
-            log.info("Cached memory: {}", MemoryTracker.getInstance().getCachedAmount(Nd4j.getAffinityManager().getDeviceForCurrentThread()));
-            log.info("Active memory: {}", MemoryTracker.getInstance().getAllocatedAmount(Nd4j.getAffinityManager().getDeviceForCurrentThread()));
+            log.info("Cached device memory: {}", MemoryTracker.getInstance().getCachedAmount(Nd4j.getAffinityManager().getDeviceForCurrentThread()));
+            log.info("Active device memory: {}", MemoryTracker.getInstance().getAllocatedAmount(Nd4j.getAffinityManager().getDeviceForCurrentThread()));
+            log.info("Cached host memory: {}", MemoryTracker.getInstance().getCachedHostAmount());
+            log.info("Active host memory: {}", MemoryTracker.getInstance().getAllocatedHostAmount());
+
             System.gc();
             Thread.sleep(30000);
         }

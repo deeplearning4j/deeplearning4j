@@ -90,6 +90,9 @@ public class CudaDirectProvider implements MemoryProvider {
                 point.setPointers(devicePointerInfo);
 
                 point.setAllocationStatus(AllocationStatus.HOST);
+
+                MemoryTracker.getInstance().incrementAllocatedHostAmount(reqMem);
+
                 return devicePointerInfo;
             }
             case DEVICE: {
@@ -149,6 +152,7 @@ public class CudaDirectProvider implements MemoryProvider {
                 val nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
 
                 long result = nativeOps.freeHost(point.getPointers().getHostPointer());
+                MemoryTracker.getInstance().decrementAllocatedHostAmount(reqMem);
                 if (result == 0)
                     throw new RuntimeException("Can't deallocate [HOST] memory...");
             }

@@ -117,6 +117,10 @@ public class CudaCachingZeroProvider extends CudaDirectProvider implements Memor
                     pair.setHostPointer(new CudaPointer(pointer.address()));
 
                     point.setAllocationStatus(AllocationStatus.HOST);
+
+                    MemoryTracker.getInstance().incrementAllocatedHostAmount(reqMemory);
+                    MemoryTracker.getInstance().decrementCachedHostAmount(reqMemory);
+
                     return pair;
                 }
             }
@@ -195,6 +199,9 @@ public class CudaCachingZeroProvider extends CudaDirectProvider implements Memor
                 Pointer.memset(point.getHostPointer(), 0, reqMemory);
                 cache.put(new CudaPointer(point.getHostPointer().address()));
             }
+
+            MemoryTracker.getInstance().decrementAllocatedHostAmount(reqMemory);
+            MemoryTracker.getInstance().incrementCachedHostAmount(reqMemory);
         }
     }
 
@@ -283,6 +290,7 @@ public class CudaCachingZeroProvider extends CudaDirectProvider implements Memor
             Pointer ptr = null;
             while ((ptr = zeroCache.get(shape).poll()) != null) {
                 freeHost(ptr);
+                MemoryTracker.getInstance().decrementCachedHostAmount(shape.getNumberOfBytes());
             }
         }
 
