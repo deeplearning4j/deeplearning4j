@@ -43,8 +43,7 @@ import java.util.Random;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-import static org.nd4j.linalg.indexing.NDArrayIndex.all;
-import static org.nd4j.linalg.indexing.NDArrayIndex.point;
+import static org.nd4j.linalg.indexing.NDArrayIndex.*;
 
 /**Gradient checking tests with masking (i.e., variable length time series inputs, one-to-many and many-to-one etc)
  */
@@ -450,10 +449,10 @@ public class GradientCheckTestsMasking extends BaseDL4JTest {
                 continue;
             }
 
-            INDArray fView = f.get(point(i), all(),all());
+            INDArray fView = f.get(interval(i,i,true), all(),all());
             fView.assign(Nd4j.rand(fView.shape()));
 
-            INDArray lView = l.get(point(i), all());
+            INDArray lView = l.get(interval(i,i,true), all());
             lView.assign(TestUtils.randomOneHot(1, lView.size(1)));
 
             double score2 = net.score(new DataSet(f,l,null,lm));
@@ -504,10 +503,10 @@ public class GradientCheckTestsMasking extends BaseDL4JTest {
                 continue;
             }
 
-            INDArray fView = f.get(point(i), all(),all());
+            INDArray fView = f.get(interval(i,i,true), all(),all());
             fView.assign(Nd4j.rand(fView.shape()));
 
-            INDArray lView = l.get(point(i), all());
+            INDArray lView = l.get(interval(i,i,true), all());
             lView.assign(TestUtils.randomOneHot(1, lView.size(1)));
 
             double score2 = net.score(new DataSet(f,l,null,lm));

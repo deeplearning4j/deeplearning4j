@@ -34,6 +34,7 @@ import org.deeplearning4j.optimize.api.TrainingListener;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
@@ -547,7 +548,7 @@ public class OutputLayerTest extends BaseDL4JTest {
         assertTrue(min >= 0 && max <= 1.0);
 
         INDArray sum = out.sum(1);
-        assertEquals(Nd4j.ones(2,4,5), sum);
+        assertEquals(Nd4j.ones(DataType.FLOAT,2,4,5), sum);
     }
 
     @Test

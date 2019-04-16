@@ -604,7 +604,8 @@ public class CpuNDArrayFactory extends BaseNativeNDArrayFactory {
             if (toConcat[i].isCompressed())
                 Nd4j.getCompressor().decompressi(toConcat[i]);
 
-            Preconditions.checkArgument(toConcat[i].dataType() == toConcat[0].dataType(), "All operands must have same data type");
+            Preconditions.checkArgument(toConcat[i].dataType() == toConcat[0].dataType(), "All operands must have same data type: input 0 has type %s, input %s has type %s",
+                    toConcat[0].dataType(), i, toConcat[i].dataType());
 
             allScalars &= toConcat[i].rank() == 0;
 

@@ -102,6 +102,10 @@ public class LSTMHelpers {
         INDArray inputWeights = originalInputWeights;
         INDArray prevOutputActivations = originalPrevOutputActivations;
 
+        if(maskArray != null){
+            maskArray = maskArray.castTo(recurrentWeights.dataType());
+        }
+
         boolean is2dInput = input.rank() < 3; //Edge case of T=1, may have shape [m,nIn], equiv. to [m,nIn,1]
 
         input = input.castTo(inputWeights.dataType());  //No-op if already correct dtype
@@ -359,7 +363,7 @@ public class LSTMHelpers {
                     // incorrectly using activations from masked time steps (i.e., want 0 initialization in both directions)
                     //We *also* need to apply this to the memory cells, as they are carried forward
                     //Mask array has shape [minibatch, timeSeriesLength] -> get column
-                    INDArray timeStepMaskColumn = maskArray.getColumn(time);
+                    INDArray timeStepMaskColumn = maskArray.getColumn(time, true);
                     currHiddenUnitActivations.muliColumnVector(timeStepMaskColumn);
                     currentMemoryCellState.muliColumnVector(timeStepMaskColumn);
                 }
@@ -622,7 +626,7 @@ public class LSTMHelpers {
                 if (maskArray != null) {
                     //Mask array is present: bidirectional RNN -> need to zero out these errors to avoid using errors from a masked time step
                     // to calculate the parameter gradients.  Mask array has shape [minibatch, timeSeriesLength] -> get column(this time step)
-                    timeStepMaskColumn = maskArray.getColumn(time);
+                    timeStepMaskColumn = maskArray.getColumn(time, true);
                     deltaifogNext.muliColumnVector(timeStepMaskColumn);
                     //Later, the deltaifogNext is used to calculate: input weight gradients, recurrent weight gradients, bias gradients
                 }
@@ -668,12 +672,12 @@ public class LSTMHelpers {
 
                 if (iTimeIndex > 0 || prevHiddenUnitActivation != null) { //For time == 0 && no prevMemCellState, equivalent to muli by 0
                     //Note that prevHiddenUnitActivation may be non-null at t=0 for TBPTT
-                    bGradientsOut.addi(deltaifogNext.sum(0));
+                    bGradientsOut.addi(deltaifogNext.sum(true, 0));
                 } else {
-                    bGradientsOut.get(interval(0,0,true), interval(0, hiddenLayerSize)).addi(deltai.sum(0));
-                    INDArray ogBiasToAdd = deltaifogNext.get(all(), interval(2 * hiddenLayerSize, 4 * hiddenLayerSize)).sum(0);
+                    bGradientsOut.get(interval(0,0,true), interval(0, hiddenLayerSize)).addi(deltai.sum(true, 0));
+                    INDArray ogBiasToAdd = deltaifogNext.get(all(), interval(2 * hiddenLayerSize, 4 * hiddenLayerSize)).sum(true, 0);
                     INDArray ogBiasGrad = bGradientsOut.get(interval(0,0,true), interval(2 * hiddenLayerSize, 4 * hiddenLayerSize));
-                    ogBiasGrad.add(ogBiasToAdd);
+                    ogBiasGrad.addi(ogBiasToAdd);
                 }
 
                 //Calculate epsilonNext - i.e., equiv. to what would be (w^L*(d^(Lt))^T)^T in a normal network

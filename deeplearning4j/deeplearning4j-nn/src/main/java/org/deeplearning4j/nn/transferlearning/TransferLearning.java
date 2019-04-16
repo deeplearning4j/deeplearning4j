@@ -324,7 +324,7 @@ public class TransferLearning {
             val numParams = layer.initializer().numParams(layerConf);
             INDArray params;
             if (numParams > 0) {
-                params = Nd4j.create(1, numParams);
+                params = Nd4j.create(origModel.getLayerWiseConfigurations().getDataType(), 1, numParams);
                 org.deeplearning4j.nn.api.Layer someLayer = layer.instantiate(layerConf, null, 0, params, true, dataType);
                 appendParams.add(someLayer.params());
                 appendConfs.add(someLayer.conf());
@@ -472,7 +472,7 @@ public class TransferLearning {
             layerImplF.setWeightInitFn(init);
             layerImplF.setNIn(nIn);
             long numParams = layerImpl.initializer().numParams(layerConf);
-            INDArray params = Nd4j.create(1, numParams);
+            INDArray params = Nd4j.create(origModel.getLayerWiseConfigurations().getDataType(), 1, numParams);
             org.deeplearning4j.nn.api.Layer someLayer = layerImpl.instantiate(layerConf, null, 0, params, true, dataType);
             editedParams.set(layerNum, someLayer.params());
         }
@@ -490,7 +490,7 @@ public class TransferLearning {
             layerImplF.setWeightInitFn(scheme);
             layerImplF.setNOut(nOut);
             long numParams = layerImpl.initializer().numParams(layerConf);
-            INDArray params = Nd4j.create(1, numParams);
+            INDArray params = Nd4j.create(origModel.getLayerWiseConfigurations().getDataType(), 1, numParams);
             org.deeplearning4j.nn.api.Layer someLayer = layerImpl.instantiate(layerConf, null, 0, params, true, dataType);
             editedParams.set(layerNum, someLayer.params());
 
@@ -503,7 +503,7 @@ public class TransferLearning {
                     layerImplF.setNIn(nOut);
                     numParams = layerImpl.initializer().numParams(layerConf);
                     if (numParams > 0) {
-                        params = Nd4j.create(1, numParams);
+                        params = Nd4j.create(origModel.getLayerWiseConfigurations().getDataType(), 1, numParams);
                         someLayer = layerImpl.instantiate(layerConf, null, 0, params, true, dataType);
                         editedParams.set(layerNum + 1, someLayer.params());
                     }
@@ -548,6 +548,7 @@ public class TransferLearning {
             MultiLayerConfiguration conf = new MultiLayerConfiguration.Builder().inputPreProcessors(inputPreProcessors)
                             .setInputType(this.inputType).confs(allConfs)
                             .validateOutputLayerConfig(validateOutputLayerConfig == null ? true : validateOutputLayerConfig)
+                            .dataType(origConf.getDataType())
                     .build();
             if (finetuneConfiguration != null) {
                 finetuneConfiguration.applyToMultiLayerConfiguration(conf);

@@ -453,7 +453,7 @@ public class NetworkUtils {
             long soFar = 0;
             for( int sub=0; sub<paramsMultiplier; sub++) {
                 //subsetUpdaterView: [m0, m1, m2] etc
-                INDArray subsetUpdaterView = updaterView.get(NDArrayIndex.point(0), NDArrayIndex.interval(soFar, soFar + paramsMultiplier * nParamsInBlock));
+                INDArray subsetUpdaterView = updaterView.get(NDArrayIndex.interval(0, 0, true), NDArrayIndex.interval(soFar, soFar + paramsMultiplier * nParamsInBlock));
 
                 long offsetWithinSub = 0;
                 for (UpdaterBlock.ParamState ps : params) {
@@ -462,7 +462,7 @@ public class NetworkUtils {
                     INDArray pv = ps.getParamView();
                     long nParamsThisParam = pv.length();
 
-                    INDArray currSplit = subsetUpdaterView.get(NDArrayIndex.point(0), NDArrayIndex.interval(offsetWithinSub, offsetWithinSub + nParamsThisParam));
+                    INDArray currSplit = subsetUpdaterView.get(NDArrayIndex.interval(0, 0, true), NDArrayIndex.interval(offsetWithinSub, offsetWithinSub + nParamsThisParam));
                     if(!stateViewsPerParam.containsKey(paramName))
                         stateViewsPerParam.put(paramName, new ArrayList<INDArray>());
                     stateViewsPerParam.get(paramName).add(currSplit);
