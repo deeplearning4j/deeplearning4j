@@ -130,6 +130,7 @@ public class TestSameDiffConv extends BaseDL4JTest {
                                             log.info("Starting test: " + msg);
 
                                             MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                                                    .dataType(DataType.DOUBLE)
                                                     .seed(12345)
                                                     .list()
                                                     .layer(new SameDiffConv.Builder()
@@ -162,6 +163,7 @@ public class TestSameDiffConv extends BaseDL4JTest {
                                             assertNotNull(net.paramTable());
 
                                             MultiLayerConfiguration conf2 = new NeuralNetConfiguration.Builder()
+                                                    .dataType(DataType.DOUBLE)
                                                     .weightInit(WeightInit.XAVIER)
                                                     .seed(12345)
                                                     .list()

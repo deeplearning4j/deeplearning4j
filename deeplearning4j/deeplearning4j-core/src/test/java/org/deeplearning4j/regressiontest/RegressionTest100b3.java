@@ -105,6 +105,8 @@ public class RegressionTest100b3 extends BaseDL4JTest {
 
             List<INDArray> activations = net.feedForward(in);
 
+            assertEquals(dt, net.getLayerWiseConfigurations().getDataType());
+            assertEquals(dt, net.params().dataType());
             assertEquals(dtype, outExp, outAct);
         }
     }

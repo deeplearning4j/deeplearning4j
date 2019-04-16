@@ -131,12 +131,12 @@ public class MKLDNNBatchNormHelper implements BatchNormalizationHelper {
     }
 
     @Override
-    public INDArray getMeanCache() {
+    public INDArray getMeanCache(DataType dataType) {
         return meanCache;
     }
 
     @Override
-    public INDArray getVarCache() {
+    public INDArray getVarCache(DataType dataType) {
         return varCache;
     }
 

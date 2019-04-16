@@ -62,6 +62,7 @@ public class TestSameDiffDenseVertex extends BaseDL4JTest {
                 for (Activation a : afns) {
                     log.info("Starting test - " + a + " - minibatch " + minibatch + ", workspaces: " + workspaces);
                     ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
+                            .dataType(DataType.DOUBLE)
                             .trainingWorkspaceMode(workspaces ? WorkspaceMode.ENABLED : WorkspaceMode.NONE)
                             .inferenceWorkspaceMode(workspaces ? WorkspaceMode.ENABLED : WorkspaceMode.NONE)
                             .updater(new Sgd(0.0))

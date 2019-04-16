@@ -109,6 +109,7 @@ public class CuDNNGradientChecks extends BaseDL4JTest {
                     }
 
                     MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder()
+                            .dataType(DataType.DOUBLE)
                                     .optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT)
                                     .dist(new UniformDistribution(-1, 1))
                                     .updater(new NoOp()).seed(12345L).list()
@@ -202,6 +203,7 @@ public class CuDNNGradientChecks extends BaseDL4JTest {
                 }
 
                 MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder()
+                        .dataType(DataType.DOUBLE)
                         .dist(new UniformDistribution(-1, 1))
                         .updater(new NoOp()).seed(12345L)
                         .list()
@@ -265,6 +267,7 @@ public class CuDNNGradientChecks extends BaseDL4JTest {
         }
 
         MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().updater(new NoOp())
+                        .dataType(DataType.DOUBLE)
                         .seed(12345L)
                         .dist(new NormalDistribution(0, 2)).list()
                         .layer(0, new ConvolutionLayer.Builder().kernelSize(2, 2).stride(1, 1).nIn(depth).nOut(2)
@@ -323,6 +326,7 @@ public class CuDNNGradientChecks extends BaseDL4JTest {
         }
 
         MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().updater(new NoOp())
+                        .dataType(DataType.DOUBLE)
                         .seed(12345L)
                         .dist(new NormalDistribution(0, 2)).list()
                         .layer(0, new ConvolutionLayer.Builder().nOut(6).kernelSize(2, 2).stride(1, 1)
@@ -380,6 +384,7 @@ public class CuDNNGradientChecks extends BaseDL4JTest {
         }
 
         MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder()
+                        .dataType(DataType.DOUBLE)
                         .updater(new NoOp()).seed(12345L)
                         .dist(new NormalDistribution(0, 2)).list()
                         .layer(0, new LSTM.Builder().nIn(input.size(1)).nOut(lstmLayerSize)
@@ -437,6 +442,7 @@ public class CuDNNGradientChecks extends BaseDL4JTest {
         }
 
         MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder()
+                        .dataType(DataType.DOUBLE)
                         .updater(new NoOp()).seed(12345L)
                         .dist(new NormalDistribution(0, 2)).list()
                         .layer(0, new LSTM.Builder().nIn(input.size(1)).nOut(lstmLayerSize)
@@ -513,6 +519,7 @@ public class CuDNNGradientChecks extends BaseDL4JTest {
                             }
 
                             NeuralNetConfiguration.ListBuilder b = new NeuralNetConfiguration.Builder().seed(12345)
+                                    .dataType(DataType.DOUBLE)
                                     .updater(new NoOp())
                                     .activation(Activation.TANH).convolutionMode(cm).list()
                                     .layer(new ConvolutionLayer.Builder().name("layer 0")
@@ -589,7 +596,7 @@ public class CuDNNGradientChecks extends BaseDL4JTest {
 
             NeuralNetConfiguration.ListBuilder builder = new NeuralNetConfiguration.Builder()
                     .seed(12345)
-
+                    .dataType(DataType.DOUBLE)
                     .dist(new NormalDistribution(0, 1))
                     .convolutionMode(ConvolutionMode.Same)
                     .dropOut(dropout)
@@ -661,6 +668,7 @@ public class CuDNNGradientChecks extends BaseDL4JTest {
 
 
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                .dataType(DataType.DOUBLE)
                 .seed(12345)
                 .weightInit(WeightInit.XAVIER)
                 .updater(new NoOp())

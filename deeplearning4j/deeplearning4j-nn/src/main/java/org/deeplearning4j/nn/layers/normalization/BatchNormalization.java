@@ -199,8 +199,8 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
                 These make zero difference for local training (other than perhaps when using FP16), but the latter is more
                 numerically stable and is scaled better for distributed training
                  */
-                INDArray batchMean = helper.getMeanCache();
-                INDArray batchVar = helper.getVarCache();
+                INDArray batchMean = helper.getMeanCache(dataType);
+                INDArray batchVar = helper.getVarCache(dataType);
 
                 Nd4j.getExecutioner().exec(new OldSubOp(globalMean, batchMean, dGlobalMeanView));   //deltaGlobalMean = globalMean[t] - batchMean
                 dGlobalMeanView.muli(1-layerConf().getDecay());
@@ -233,8 +233,8 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
         INDArray batchVar;
         if (epsilon.rank() == 2) {
             if(xHat == null && helper != null){
-                INDArray mean = helper.getMeanCache();
-                std = Transforms.sqrt(helper.getVarCache().addi(layerConf().getEps()));
+                INDArray mean = helper.getMeanCache(dataType);
+                std = Transforms.sqrt(helper.getVarCache(dataType).addi(layerConf().getEps()));
                 xMu =  Nd4j.createUninitialized(dataType, input.shape(), input.ordering());
                 xMu = Nd4j.getExecutioner().exec(new BroadcastSubOp(input, mean, xMu, 1));
                 xHat =  Nd4j.createUninitialized(dataType, input.shape(), input.ordering());
@@ -279,8 +279,8 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
             batchVar = input.var(false, 0);
         } else if (epsilon.rank() == 4) {
             if(xHat == null && helper != null){
-                INDArray mean = helper.getMeanCache();
-                std = Transforms.sqrt(helper.getVarCache().addi(layerConf().getEps()));
+                INDArray mean = helper.getMeanCache(dataType);
+                std = Transforms.sqrt(helper.getVarCache(dataType).addi(layerConf().getEps()));
                 xMu =  Nd4j.createUninitialized(dataType, input.shape(), input.ordering());
                 xMu = Nd4j.getExecutioner().exec(new BroadcastSubOp(input, mean, xMu, 1));
                 xHat =  Nd4j.createUninitialized(dataType, input.shape(), input.ordering());
