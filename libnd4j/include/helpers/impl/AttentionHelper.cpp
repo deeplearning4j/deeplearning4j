@@ -36,10 +36,10 @@ namespace nd4j {
         auto projectedSize = projectionMatrix->sizeAt(1);
 
         auto inputPerm = input->permute({1, 0, 2});
-        auto inputPrep = inputPerm->reshape(input->ordering(), {input->sizeAt(1), (miniBatchSize * seqLength)});
-        auto projectionPrep = projectionMatrix->reshape(projectionMatrix->ordering(), {numHeads * projectionMatrix->sizeAt(1), projectionMatrix->sizeAt(2)});
+        auto inputPrep = inputPerm->reshape('c', {input->sizeAt(1), (miniBatchSize * seqLength)});
+        auto projectionPrep = projectionMatrix->reshape('c', {numHeads * projectionMatrix->sizeAt(1), projectionMatrix->sizeAt(2)});
 
-        NDArray* projected = new NDArray('c', {numHeads * projectionMatrix->sizeAt(1), (miniBatchSize * seqLength)}, input->dataType());
+        NDArray* projected = new NDArray(input->ordering(), {numHeads * projectionMatrix->sizeAt(1), (miniBatchSize * seqLength)}, input->dataType());
         nd4j::ops::matmul mmul;
         mmul.execute({projectionPrep, inputPrep}, {projected},  {}, {}, {});
 
@@ -63,11 +63,11 @@ namespace nd4j {
         auto projectedSize = projectionMatrix->sizeAt(1);
 
         auto epsPerm = eps->permute({1, 2, 0, 3});
-        auto epsReshaped = epsPerm->reshape(eps->ordering(), {numHeads * projectedSize, miniBatchSize * seqLength});
+        auto epsReshaped = epsPerm->reshape('c', {numHeads * projectedSize, miniBatchSize * seqLength});
 
         auto inputPerm = input->permute({1, 0, 2});
-        auto inputPrep = inputPerm->reshape(input->ordering(), {input->sizeAt(1), (miniBatchSize * seqLength)});
-        auto projectionPrep = projectionMatrix->reshape(projectionMatrix->ordering(), {numHeads * projectionMatrix->sizeAt(1), projectionMatrix->sizeAt(2)});
+        auto inputPrep = inputPerm->reshape('c', {input->sizeAt(1), (miniBatchSize * seqLength)});
+        auto projectionPrep = projectionMatrix->reshape('c', {numHeads * projectionMatrix->sizeAt(1), projectionMatrix->sizeAt(2)});
 
         nd4j::ops::matmul_bp mmulBp;
         auto mmulBpRes = mmulBp.execute({projectionPrep, inputPrep, epsReshaped}, {}, {}, {});

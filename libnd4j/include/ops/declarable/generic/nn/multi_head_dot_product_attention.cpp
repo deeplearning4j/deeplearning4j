@@ -92,7 +92,6 @@ namespace ops  {
                      ShapeUtils::shapeAsString(Wo).c_str(), ShapeUtils::shapeAsString(Wv).c_str());
 
 
-        nd4j::ops::matmul mmul;
         // Project queries, keys, values
         auto projectedQueries = AttentionHelper::multiHeadProject(queries, Wq);
         auto projectedKeys = AttentionHelper::multiHeadProject(keys, Wk);
@@ -111,6 +110,7 @@ namespace ops  {
         auto attnResultsPerm = attnResults->permute({0, 3, 1, 2});
         auto reshaped = attnResultsPerm->reshape(attnResults->ordering(), {miniBatchSize * queryCount, numHeads * projectedValuesSize});
 
+        nd4j::ops::matmul mmul;
         auto projRes = mmul.execute({reshaped, Wo}, {}, {}, {});
         auto projReshape = projRes->at(0)->reshape(output->ordering(), {miniBatchSize, queryCount, outSize});
         auto outputProjection = projReshape->permute({0, 2, 1});

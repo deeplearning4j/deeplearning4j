@@ -1238,29 +1238,84 @@ public class ReductionOpValidation extends BaseOpValidation {
     }
 
     @Test
+    public void testDotProductAttentionWeirdInputs(){
+        final INDArray keys = Nd4j.rand(new int[]{10, 4, 3});
+        final INDArray values = Nd4j.rand(new int[]{10, 4, 3});
+        final INDArray query = Nd4j.rand(new int[]{10, 4, 1});
+        final INDArray mask = Nd4j.rand(10, 3).gte(0.2).castTo(DataType.DOUBLE);
+
+        final INDArray exec = Nd4j.matmul(keys, query, true, false, false)
+                .divi(Math.sqrt(keys.size(1)));
+        exec.addi(mask.reshape(10, 3, 1).sub(1).muli(1e9));
+        Nd4j.exec(new SoftMax(exec, exec, 1));
+        final INDArray finalOut = Nd4j.matmul(values, exec).norm1();
+
+        for (char queryOrder : new char[]{'f', 'c'}) {
+            for (char keyOrder : new char[]{'f', 'c'}) {
+                for (char valueOrder : new char[]{'f', 'c'}) {
+                    log.info("-*- Starting Test: query order = {}, key order = {}, value order = {}-*-", queryOrder, keyOrder, valueOrder);
+                    SameDiff sd = SameDiff.create();
+                    SDVariable sdQ = sd.var("q", query.dup(queryOrder));
+                    SDVariable sdK = sd.var("k", keys.dup(keyOrder));
+                    SDVariable sdV = sd.var("v", values.dup(valueOrder));
+                    SDVariable sdMask = sd.constant("mask", mask);
+
+                    SDVariable t = sd.nn.dotProductAttention(sdQ, sdK, sdV, sdMask, true);
+                    t.norm1("out").markAsLoss();
+
+                    String err = OpValidation.validate(new TestCase(sd)
+                            .expectedOutput("out", finalOut)
+                            .gradientCheck(true)
+                            .gradCheckPrint(false)
+                            .gradCheckSkipVariables("mask"));
+                    assertNull(err);
+                }
+            }
+        }
+    }
+
+    @Test
     public void testMultiHeadedDotProductAttentionWeirdInputs(){
-        for (char orderWeights: new char[]{'c', 'f'}){
-            for (char orderInput: new char[]{'c', 'f'}){
+        final INDArray k = Nd4j.rand(new int[]{10, 4, 5});
+        final INDArray v = Nd4j.rand(new int[]{10, 4, 5});
+        final INDArray q = Nd4j.rand(new int[]{10, 4, 2});
+
+        final INDArray Wk = Nd4j.rand(new int[]{2, 3, 4});
+        final INDArray Wv = Nd4j.rand(new int[]{2, 3, 4});
+        final INDArray Wq = Nd4j.rand(new int[]{2, 3, 4});
+        final INDArray Wo = Nd4j.rand(new int[]{2* 3, 8});
+
+        final INDArray mask = Nd4j.rand(10, 5).gte(0.2).castTo(DataType.DOUBLE);
+
+        final INDArray kP = Nd4j.tensorMmul(k, Wk, new int[][]{{1}, {2}}).permutei(0, 2, 3, 1);
+        final INDArray vP = Nd4j.tensorMmul(v, Wv, new int[][]{{1}, {2}}).permutei(0, 2, 3, 1);
+        final INDArray qP = Nd4j.tensorMmul(q, Wq, new int[][]{{1}, {2}}).permutei(0, 2, 3, 1);
+
+        final DynamicCustomOp dot_product_attention = DynamicCustomOp
+                .builder("dot_product_attention")
+                .addInputs(qP, kP, vP, mask)
+                .addIntegerArguments(1, 0)
+                .build();
+
+        final INDArray[] outputs = Nd4j.exec(dot_product_attention);
+        final INDArray attOut = outputs[0].permutei(0, 3, 1, 2).reshape(k.size(0), q.size(2), Wv.size(0) * Wv.size(1));
+
+        final INDArray out = Nd4j.tensorMmul(attOut, Wo, new int[][]{{2}, {0}}).permutei(0, 2, 1);
+        final INDArray finalOut = out.norm2();
+
+        for (char orderWeights: new char[]{'f', 'c'}){
+            for (char orderInput: new char[]{'f', 'c'}){
                 log.info("-*- Starting Test: input Order = {}, weightOrder = {} -*-", orderInput, orderWeights);
-                final INDArray k = Nd4j.rand(new int[]{10, 4, 5}).dup(orderInput);
-                final INDArray v = Nd4j.rand(new int[]{10, 4, 5}).dup(orderInput);
-                final INDArray q = Nd4j.rand(new int[]{10, 4, 2}).dup(orderInput);
 
-                final INDArray Wk = Nd4j.rand(new int[]{2, 3, 4}).dup(orderWeights);
-                final INDArray Wv = Nd4j.rand(new int[]{2, 3, 4}).dup(orderWeights);
-                final INDArray Wq = Nd4j.rand(new int[]{2, 3, 4}).dup(orderWeights);
-                final INDArray Wo = Nd4j.rand(new int[]{2* 3, 8}).dup(orderWeights);
-
-                final INDArray mask = Nd4j.rand(10, 5).gte(0.2).castTo(DataType.DOUBLE);
 
                 SameDiff sd = SameDiff.create();
-                SDVariable sdQ = sd.var("q", q);
-                SDVariable sdK = sd.var("k", k);
-                SDVariable sdV = sd.var("v", v);
-                SDVariable sdWq = sd.var("Wq", Wq);
-                SDVariable sdWk = sd.var("Wk", Wk);
-                SDVariable sdWv = sd.var("Wv", Wv);
-                SDVariable sdWo = sd.var("Wo", Wo);
+                SDVariable sdQ = sd.var("q", q.dup(orderInput));
+                SDVariable sdK = sd.var("k", k.dup(orderInput));
+                SDVariable sdV = sd.var("v", v.dup(orderInput));
+                SDVariable sdWq = sd.var("Wq", Wq.dup(orderWeights));
+                SDVariable sdWk = sd.var("Wk", Wk.dup(orderWeights));
+                SDVariable sdWv = sd.var("Wv", Wv.dup(orderWeights));
+                SDVariable sdWo = sd.var("Wo", Wo.dup(orderWeights));
                 SDVariable sdMask = sd.constant("mask", mask);
 
 
@@ -1268,7 +1323,8 @@ public class ReductionOpValidation extends BaseOpValidation {
                 t.norm2("out");
 
                 String err = OpValidation.validate(new TestCase(sd)
-                        .gradientCheck(true)
+                        .expectedOutput("out", finalOut)
+                        .gradientCheck(false)
                         .gradCheckSkipVariables("mask"));
 
                 assertNull(err);
