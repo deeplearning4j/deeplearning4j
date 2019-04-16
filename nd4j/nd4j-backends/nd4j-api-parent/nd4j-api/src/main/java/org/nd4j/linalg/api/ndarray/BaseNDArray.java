@@ -2114,13 +2114,10 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
         INDArray view = slice(slice);
 
-        if (put.length() == 1)
+        if (put.length() == 1) {
             putScalar(slice, put.getDouble(0));
-        else if (put.isVector())
-            for (int i = 0; i < put.length(); i++)
-                view.putScalar(i, put.getDouble(i));
-        else {
-            if(!view.equalShapes(put)){
+        } else {
+            if(!(view.isVector() && put.isVector() && view.length() == put.length()) && !view.equalShapes(put)){
                 throw new IllegalStateException("Cannot put slice: array to be put (" + Arrays.toString(put.shape()) +
                         ") and slice array (" + Arrays.toString(view.shape()) + ") have different shapes");
             }
@@ -4981,28 +4978,20 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     public INDArray get(INDArrayIndex... indexes) {
         Nd4j.getCompressor().autoDecompress(this);
 
-        // besides of backward support for legacy "vectors" which were 2D
-        // we enforce number of indices provided to be equal to number of dimensions in this array
-        if (rank() == 2 && jvmShapeInfo.javaShapeInformation[1] == 1 && indexes.length == 1)
-            indexes = new INDArrayIndex[]{ NDArrayIndex.all(), indexes[0]};
-        else if (rank() == 2 && jvmShapeInfo.javaShapeInformation[2] == 1 && indexes.length == 1)
-            indexes = new INDArrayIndex[]{indexes[0], NDArrayIndex.all()};
-        else {
-            // we're padding remaining dimensions with all() index
-            if (indexes.length < this.rank()) {
-                val newIndexes = new INDArrayIndex[this.rank()];
-                for (int e = 0; e < indexes.length; e++)
-                    newIndexes[e] = indexes[e];
+        // we're padding remaining dimensions with all() index
+        if (indexes.length < this.rank()) {
+            val newIndexes = new INDArrayIndex[this.rank()];
+            for (int e = 0; e < indexes.length; e++)
+                newIndexes[e] = indexes[e];
 
-                for (int e = indexes.length; e < newIndexes.length; e++)
-                    newIndexes[e] = NDArrayIndex.all();
+            for (int e = indexes.length; e < newIndexes.length; e++)
+                newIndexes[e] = NDArrayIndex.all();
 
-                indexes = newIndexes;
-            }
-
-            // never going to happen :/
-            Preconditions.checkArgument(indexes != null && indexes.length >= this.rank(), "Number of indices should be greater or equal to rank of the INDArray");
+            indexes = newIndexes;
         }
+
+        // never going to happen :/
+        Preconditions.checkArgument(indexes != null && indexes.length >= this.rank(), "Number of indices should be greater or equal to rank of the INDArray");
 
         if(indexes.length > rank()) {
             int numNonNewAxis = 0;
@@ -5476,8 +5465,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
                 Nd4j.getExecutioner().execAndReturn(new Tile(new INDArray[]{this.dup(this.ordering())},new INDArray[]{result},repeat));
             } else
                 Nd4j.getExecutioner().execAndReturn(new Tile(new INDArray[]{this},new INDArray[]{result},repeat));
-
-            //result = Nd4j.tile(this,repeat);
         }
         return result;
 

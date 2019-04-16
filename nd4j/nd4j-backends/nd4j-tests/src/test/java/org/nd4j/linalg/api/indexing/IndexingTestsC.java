@@ -163,7 +163,7 @@ public class IndexingTestsC extends BaseNd4jTest {
         INDArray arr2 = arr.get(point(0), interval(0, 100));
 
         assertEquals(100, arr2.length()); //Returning: length 0
-        assertEquals(arr2, Nd4j.linspace(1, 100, 100, DataType.DOUBLE).reshape(1, -1));
+        assertEquals(Nd4j.linspace(1, 100, 100, DataType.DOUBLE), arr2);
     }
 
     @Test

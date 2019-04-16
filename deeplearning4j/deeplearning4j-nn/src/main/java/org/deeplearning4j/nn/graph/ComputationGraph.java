@@ -550,7 +550,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         for (int vertexIdx : topologicalOrder) {
             long nParamsThisVertex = numParamsForVertex[vertexIdx];
             if (nParamsThisVertex != 0) {
-                paramsViewForVertex[vertexIdx] = flattenedParams.get(NDArrayIndex.point(0),
+                paramsViewForVertex[vertexIdx] = flattenedParams.get(NDArrayIndex.interval(0,0,true),
                         NDArrayIndex.interval(paramOffsetSoFar, paramOffsetSoFar + nParamsThisVertex));
             }
             i++;
@@ -780,7 +780,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
             for (int vertexIdx : topologicalOrder) {
                 long nParamsThisVertex = numParamsForVertex[vertexIdx];
                 if (nParamsThisVertex != 0) {
-                    INDArray gradientView = flattenedGradients.get(NDArrayIndex.point(0),
+                    INDArray gradientView = flattenedGradients.get(NDArrayIndex.interval(0,0,true),
                             NDArrayIndex.interval(paramOffsetSoFar, paramOffsetSoFar + nParamsThisVertex));
                     vertices[vertexIdx].setBackpropGradientsViewArray(gradientView);
                 }

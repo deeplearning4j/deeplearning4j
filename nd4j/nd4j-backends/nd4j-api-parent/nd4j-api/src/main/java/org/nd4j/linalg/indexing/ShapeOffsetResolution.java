@@ -141,8 +141,8 @@ public class ShapeOffsetResolution implements Serializable {
                 if(arr.size(0) == 1){
                     //Row vector: [1,x]
                     shapes[0] = i.length();
-                    strides[0] = arr.stride(1);
-                    this.offset = indexes[0].offset() * strides[0];
+                    strides[0] = arr.stride(1) * indexes[1].stride();
+                    this.offset = indexes[1].offset() * arr.stride(1);
                 } else {
                     Preconditions.checkState(i.begin == 0 && i.end == 0, "Cannot get interval index along dimension 1 (begin=%s, end=%s) from array with shape %ndShape",
                             i.begin, i.end, arr);

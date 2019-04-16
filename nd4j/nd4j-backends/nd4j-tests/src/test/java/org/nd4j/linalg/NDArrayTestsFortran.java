@@ -887,9 +887,9 @@ public class NDArrayTestsFortran extends BaseNd4jTest {
         assertEquals(broadCasted, broadCast2);
 
 
-        INDArray columnBroadcast = n.transpose().broadcast(4, 5);
+        INDArray columnBroadcast = n.reshape(4,1).broadcast(4, 5);
         for (int i = 0; i < columnBroadcast.columns(); i++) {
-            assertEquals(columnBroadcast.getColumn(i), n.transpose());
+            assertEquals(columnBroadcast.getColumn(i), n.reshape(4));
         }
 
         INDArray fourD = Nd4j.create(1, 2, 1, 1);

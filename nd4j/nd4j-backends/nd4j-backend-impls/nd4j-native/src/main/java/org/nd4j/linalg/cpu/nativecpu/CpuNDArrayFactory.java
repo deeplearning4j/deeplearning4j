@@ -598,6 +598,9 @@ public class CpuNDArrayFactory extends BaseNativeNDArrayFactory {
         boolean allScalars = true;
 
         for (int i = 0; i < toConcat.length; i++) {
+            Preconditions.checkState(toConcat[i].rank() == outputShape.length, "Encountered different array ranks for concat: input[0].shape()=%ndShape, input[%s].shape()=%ndShape",
+                    toConcat[0], i, toConcat[i]);
+
             if (toConcat[i].isCompressed())
                 Nd4j.getCompressor().decompressi(toConcat[i]);
 
@@ -608,11 +611,13 @@ public class CpuNDArrayFactory extends BaseNativeNDArrayFactory {
             shapeInfoPointers.put(i, toConcat[i].shapeInfoDataBuffer().addressPointer());
             dataPointers.put(i, toConcat[i].data().addressPointer());
             sumAlongDim += toConcat[i].size(dimension);
-            for (int j = 0; j < toConcat[i].rank(); j++)
+            for (int j = 0; j < toConcat[i].rank(); j++) {
+
                 if (j != dimension && toConcat[i].size(j) != outputShape[j]) {
                     throw new IllegalArgumentException(
                             "Illegal concatenation at array " + i + " and shape element " + j);
                 }
+            }
 
 
             //log.info("Shape[{}]: {}", i, Arrays.toString(toConcat[i].shapeInfoDataBuffer().asInt()));

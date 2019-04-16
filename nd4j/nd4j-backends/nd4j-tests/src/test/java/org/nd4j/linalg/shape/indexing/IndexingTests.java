@@ -228,8 +228,7 @@ public class IndexingTests extends BaseNd4jTest {
         INDArray subarray = ndarray.get(NDArrayIndex.point(0), NDArrayIndex.all());
         assertTrue(subarray.isRowVector());
         val shape = subarray.shape();
-        assertEquals(shape[0], 1);
-        assertEquals(shape[1], 2);
+        assertArrayEquals(new long[]{2}, shape);
     }
 
     @Test

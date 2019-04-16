@@ -1379,7 +1379,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
     public void testGetFromRowVector() {
         INDArray matrix = Nd4j.linspace(1, 4, 4, DataType.DOUBLE).reshape(2, 2);
         INDArray rowGet = matrix.get(NDArrayIndex.point(0), NDArrayIndex.interval(0, 2));
-        assertArrayEquals(new long[] {1, 2}, rowGet.shape());
+        assertArrayEquals(new long[] {2}, rowGet.shape());
     }
 
     @Test
@@ -2948,7 +2948,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
 
     @Test
     public void testBroadCast() {
-        INDArray n = Nd4j.linspace(1, 4, 4, DataType.DOUBLE).reshape(1, 4);
+        INDArray n = Nd4j.linspace(1, 4, 4, DataType.DOUBLE);
         INDArray broadCasted = n.broadcast(5, 4);
         for (int i = 0; i < broadCasted.rows(); i++) {
             INDArray row = broadCasted.getRow(i);
@@ -2959,10 +2959,10 @@ public class Nd4jTestsC extends BaseNd4jTest {
         assertEquals(broadCasted, broadCast2);
 
 
-        INDArray columnBroadcast = n.transpose().broadcast(4, 5);
+        INDArray columnBroadcast = n.reshape(4,1).broadcast(4, 5);
         for (int i = 0; i < columnBroadcast.columns(); i++) {
             INDArray column = columnBroadcast.getColumn(i);
-            assertEquals(column, n.transpose());
+            assertEquals(column, n);
         }
 
         INDArray fourD = Nd4j.create(1, 2, 1, 1);
@@ -4171,7 +4171,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
 
         for (int x = 0; x < 10; x++) {
             assertEquals((double) x, matrix.getRow(x).meanNumber().doubleValue(), 0.1);
-            assertEquals(arrays.get(x), matrix.getRow(x).reshape(matrix.size(1)));
+            assertEquals(arrays.get(x), matrix.getRow(x).reshape(1, matrix.size(1)));
         }
     }
 
