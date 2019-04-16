@@ -3188,6 +3188,9 @@ template <typename T>
 
 
     INLINEDEF _CUDA_HD int sizeAt(const Nd4jLong *shape, const int dim) {
+        if (rank(shape) == 0)
+            return 1;
+
         if (dim >= 0)
             return shape[1+dim];
         else

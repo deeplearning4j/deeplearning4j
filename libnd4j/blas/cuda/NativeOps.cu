@@ -1538,18 +1538,18 @@ void NativeOps::concat(
     auto zType = nd4j::ArrayOptions::dataType(hZShapeInfo);
     auto axis = dimension;
 
-    const int rank  = shape::rank(reinterpret_cast<Nd4jLong*>(inputShapeInfo[0]));
+    const int rank  = shape::rank(hZShapeInfo); //reinterpret_cast<Nd4jLong*>(inputShapeInfo[0]));
     const int rank2 = 2 * rank;
     std::vector<std::vector<Nd4jLong>> indices(numArrays, std::vector<Nd4jLong>(rank2,0));
 
     // take into account indices for first array
     auto axisSize = shape::sizeAt(reinterpret_cast<Nd4jLong*>(inputShapeInfo[0]), axis);
     indices[0][2 * axis + 1] = axisSize;
-
+    printf("The axe size is %lld\n", axisSize);
     // loop through the rest of input arrays
     for(int i = 1; i < numArrays; ++i) {
         indices[i][2 * axis]     = indices[i-1][2 * axis + 1];                                // index start from
-        indices[i][2 * axis + 1] = indices[i-1][2 * axis + 1] + axisSize;      // index end with (excluding)
+        indices[i][2 * axis + 1] = indices[i-1][2 * axis + 1] + shape::sizeAt(reinterpret_cast<Nd4jLong*>(inputShapeInfo[i]), axis);      // index end with (excluding)
     }
 
     std::vector<void*> outSubArrsBuffs(numArrays);
