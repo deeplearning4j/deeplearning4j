@@ -186,11 +186,11 @@ public class BooleanIndexingTest extends BaseNd4jTest {
 
         INDArray subarray = slice.get(range);
 
-        System.out.println("Subarray: " + Arrays.toString(subarray.data().asFloat()) + " isView: " + subarray.isView());
+        //System.out.println("Subarray: " + Arrays.toString(subarray.data().asFloat()) + " isView: " + subarray.isView());
 
         slice.put(range, patch);
 
-        System.out.println("Array after being patched: " + Arrays.toString(array.data().asFloat()));
+        //System.out.println("Array after being patched: " + Arrays.toString(array.data().asFloat()));
 
         assertFalse(BooleanIndexing.and(array, Conditions.equals(0f)));
     }

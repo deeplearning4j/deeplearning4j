@@ -187,7 +187,7 @@ public class ShapeTestsC extends BaseNd4jTest {
 
         INDArray slice = nd.slice(1, 0);
 
-        INDArray vector = slice.reshape(1, 3);
+        INDArray vector = slice;
         for (int i = 0; i < vector.length(); i++) {
             System.out.println(vector.getDouble(i));
         }
