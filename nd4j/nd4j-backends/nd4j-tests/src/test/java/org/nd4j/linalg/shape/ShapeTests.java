@@ -111,7 +111,7 @@ public class ShapeTests extends BaseNd4jTest {
     @Test
     public void testVectorAlongDimension() {
         INDArray arr = Nd4j.linspace(1, 24, 24, DataType.FLOAT).reshape(4, 3, 2);
-        INDArray assertion = Nd4j.create(new float[] {5, 17}, new long[] {1, 2});
+        INDArray assertion = Nd4j.create(new float[] {5, 17}, new long[] {2});
         INDArray vectorDimensionTest = arr.vectorAlongDimension(1, 2);
         assertEquals(assertion, vectorDimensionTest);
         INDArray zeroOne = arr.vectorAlongDimension(0, 1);

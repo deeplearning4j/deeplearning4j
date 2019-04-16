@@ -167,6 +167,7 @@ public interface INDArray extends Serializable, AutoCloseable {
      * @param dimension the dimension to getScalar the vector from
      * @return the vector along a particular dimension
      */
+    @Deprecated
     INDArray javaTensorAlongDimension(int index, int... dimension);
 
 

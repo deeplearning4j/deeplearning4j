@@ -1055,6 +1055,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      * @return the vector along a particular dimension
      */
     @Override
+    @Deprecated
     public INDArray javaTensorAlongDimension(int index, int... dimension) {
         return doTad(index, dimension);
     }
