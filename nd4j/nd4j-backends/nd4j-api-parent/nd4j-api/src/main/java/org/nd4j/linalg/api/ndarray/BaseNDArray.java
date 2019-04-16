@@ -4942,7 +4942,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         INDArray col = getColumn(c);
         if(!keepDim)
             return col;
-        return col.reshape(1, col.length());
+        return col.reshape(col.length(), 1);
     }
 
 

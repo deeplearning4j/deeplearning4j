@@ -247,7 +247,7 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
             throw new IllegalArgumentException("Invalid cost array: Cost array values must be positive");
         }
         this.labelsList = labels;
-        this.costArray = costArray;
+        this.costArray = costArray == null ? null : costArray.castTo(DataType.FLOAT);
         this.topN = 1;
     }
 
