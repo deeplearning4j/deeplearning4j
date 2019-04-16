@@ -2072,10 +2072,14 @@ specialBufferAndShapeWithOffset(void* vZ, Nd4jLong* hZShapeInfo, Nd4jLong* dZSha
     auto axisSize = shape::sizeAt(reinterpret_cast<Nd4jLong*>(inputShapeInfo[0]), axis);
     printf("Set up indices...");
     indices[0][2 * axis + 1] = axisSize;
+    printf("\n\n\tElement 0 at %i was set\n", 2 * axis + 1);
     // loop through the rest of input arrays
     for(int i = 1; i < numArrays; ++i) {
+        printf("\tIteration %i:\n", i);
         indices[i][2 * axis]     = indices[i - 1][2 * axis + 1];                                // index start from
+        printf("\n\n\tindices[%i][%i] was set\n", i, 2 * axis);
         indices[i][2 * axis + 1] = indices[i - 1][2 * axis + 1] + shape::sizeAt(reinterpret_cast<Nd4jLong*>(inputShapeInfo[i]), axis);      // index end with (excluding)
+        printf("\tindices[%i][%i] was set\n", i, 2 * axis + 1);
     }
     printf(" done\n");
 
