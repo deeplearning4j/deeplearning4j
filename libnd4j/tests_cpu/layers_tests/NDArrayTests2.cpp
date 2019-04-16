@@ -1299,37 +1299,3 @@ TEST_F(NDArrayTest2, reduce3_1) {
 
     delete z;
 }
-
-//////////////////////////////////////////////////////////////////////
-// TEST_F(NDArrayTest2, temp_1) {
-
-//     NDArray x('f', {4, 3, 2}, nd4j::DataType::FLOAT32);
-
-//     Nd4jLong* tadShapeInfo = new Nd4jLong[shape::shapeInfoLength(1)];
-//     Nd4jLong* tadOffsets = new Nd4jLong[12];
-
-//     int dimension[] = {2};
-
-//     NativeOps op;
-//     op.tadOnlyShapeInfo(x.getShapeInfo(), dimension, 1, tadShapeInfo, tadOffsets);
-
-//     shape::printShapeInfoLinear(tadShapeInfo);
-
-//     delete []tadShapeInfo;
-//     delete []tadOffsets;
-// }
-
-
-TEST_F(NDArrayTest2, reshape) {
-    NDArray x('c', {2, 2, 2}, {1, 2, 3, 4, 5, 6, 7, 8});
-    auto xf = x.dup('f');
-
-    auto xReshaped = x.reshape('c', {4, 2});
-    auto xfReshaped = xf->reshape('f', {4, 2});
-
-    ASSERT_EQ(*xReshaped, *xfReshaped);
-
-    delete xf;
-    delete xReshaped;
-    delete xfReshaped;
-}
