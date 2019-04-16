@@ -1116,7 +1116,7 @@ public class ReductionOpValidation extends BaseOpValidation {
         SDVariable sdQ = sd.var("q", query);
         SDVariable sdK = sd.var("k", keys);
         SDVariable sdV = sd.var("v", values);
-        SDVariable sdMask = sd.var("mask", mask);
+        SDVariable sdMask = sd.constant("mask", mask);
 
         SDVariable t = sd.nn.dotProductAttention(sdQ, sdK, sdV, sdMask, true);
         t.norm1("out");
@@ -1146,7 +1146,7 @@ public class ReductionOpValidation extends BaseOpValidation {
         SDVariable sdQ = sd.var("q", query);
         SDVariable sdK = sd.var("k", keys);
         SDVariable sdV = sd.var("v", values);
-        SDVariable sdMask = sd.var("mask", mask);
+        SDVariable sdMask = sd.constant("mask", mask);
 
 
         SDVariable t = sd.nn.dotProductAttention(sdQ, sdK, sdV, sdMask, true);
@@ -1223,7 +1223,7 @@ public class ReductionOpValidation extends BaseOpValidation {
         SDVariable sdWk = sd.var("Wk", Wk);
         SDVariable sdWv = sd.var("Wv", Wv);
         SDVariable sdWo = sd.var("Wo", Wo);
-        SDVariable sdMask = sd.var("mask", mask);
+        SDVariable sdMask = sd.constant("mask", mask);
 
 
         SDVariable t = sd.nn.multiHeadDotProductAttention(sdQ, sdK, sdV, sdWq, sdWk, sdWv, sdWo, sdMask, true);
