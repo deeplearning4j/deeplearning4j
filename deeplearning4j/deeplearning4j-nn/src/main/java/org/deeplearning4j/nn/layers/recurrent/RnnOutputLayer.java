@@ -131,10 +131,10 @@ public class RnnOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.l
         if (maskArray != null) {
             if(!maskArray.isColumnVectorOrScalar() || Arrays.equals(maskArray.shape(), act2d.shape())){
                 //Per output masking
-                act2d.muli(maskArray);
+                act2d.muli(maskArray.castTo(act2d.dataType()));
             } else {
                 //Per time step masking
-                act2d.muliColumnVector(maskArray);
+                act2d.muliColumnVector(maskArray.castTo(act2d.dataType()));
             }
         }
 

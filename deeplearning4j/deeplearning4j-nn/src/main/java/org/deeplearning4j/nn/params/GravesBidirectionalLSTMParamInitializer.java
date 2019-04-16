@@ -143,9 +143,9 @@ public class GravesBidirectionalLSTMParamInitializer implements ParamInitializer
         INDArray bR = paramsView.get(NDArrayIndex.interval(0,0,true), NDArrayIndex.interval(bROffset, bROffset + nBias));
 
         if (initializeParams) {
-            bF.put(new INDArrayIndex[]{NDArrayIndex.point(0), NDArrayIndex.interval(nL, 2 * nL)},
+            bF.put(new INDArrayIndex[]{NDArrayIndex.interval(0,0,true), NDArrayIndex.interval(nL, 2 * nL)},
                     Nd4j.ones(1, nL).muli(forgetGateInit)); //Order: input, forget, output, input modulation, i.e., IFOG
-            bR.put(new INDArrayIndex[]{NDArrayIndex.point(0), NDArrayIndex.interval(nL, 2 * nL)},
+            bR.put(new INDArrayIndex[]{NDArrayIndex.interval(0,0,true), NDArrayIndex.interval(nL, 2 * nL)},
                     Nd4j.ones(1, nL).muli(forgetGateInit));
         }
         /*The above line initializes the forget gate biases to specified value.

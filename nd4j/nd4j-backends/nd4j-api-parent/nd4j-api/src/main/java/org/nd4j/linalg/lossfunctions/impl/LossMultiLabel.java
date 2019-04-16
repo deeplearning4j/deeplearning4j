@@ -94,21 +94,21 @@ public class LossMultiLabel extends DifferentialFunction implements ILossFunctio
 
         long examples = positive.size(0);
         for (int i = 0; i < examples; i++) {
-            final INDArray locCfn = postOutput.getRow(i);
+            final INDArray locCfn = postOutput.getRow(i, true);
             final long[] shape = locCfn.shape();
 
-            final INDArray locPositive = positive.getRow(i);
-            final INDArray locNegative = negative.getRow(i);
+            final INDArray locPositive = positive.getRow(i, true);
+            final INDArray locNegative = negative.getRow(i, true);
             final Double locNormFactor = normFactor.getDouble(i);
 
             final int outSetSize = locNegative.sumNumber().intValue();
             if(outSetSize == 0 || outSetSize == locNegative.columns()){
                 if (scoreOutput != null) {
-                    scoreOutput.getRow(i).assign(0);
+                    scoreOutput.getRow(i, true).assign(0);
                 }
 
                 if (gradientOutput != null) {
-                    gradientOutput.getRow(i).assign(0);
+                    gradientOutput.getRow(i, true).assign(0);
                 }
             }else {
                 final INDArray operandA = Nd4j.ones(shape[1], shape[0]).mmul(locCfn);
@@ -123,15 +123,15 @@ public class LossMultiLabel extends DifferentialFunction implements ILossFunctio
                 if (scoreOutput != null) {
                     if (mask != null) {
                         final INDArray perLabel = classificationDifferences.sum(0);
-                        LossUtil.applyMask(perLabel, mask.getRow(i));
-                        perLabel.sum(scoreOutput.getRow(i), 0);
+                        LossUtil.applyMask(perLabel, mask.getRow(i, true));
+                        perLabel.sum(scoreOutput.getRow(i, true), 0);
                     } else {
-                        classificationDifferences.sum(scoreOutput.getRow(i), 0, 1);
+                        classificationDifferences.sum(scoreOutput.getRow(i, true), 0, 1);
                     }
                 }
 
                 if (gradientOutput != null) {
-                    gradientOutput.getRow(i).assign(classificationDifferences.sum(true, 0).addi(classificationDifferences.sum(true,1).transposei().negi()));
+                    gradientOutput.getRow(i, true).assign(classificationDifferences.sum(true, 0).addi(classificationDifferences.sum(true,1).transposei().negi()));
                 }
             }
         }

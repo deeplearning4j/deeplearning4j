@@ -38,6 +38,7 @@ import org.deeplearning4j.optimize.api.TrainingListener;
 import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.activations.impl.ActivationIdentity;
 import org.nd4j.linalg.api.blas.Level1;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -88,6 +89,7 @@ public class VariationalAutoencoder implements Layer {
     protected IActivation pzxActivationFn;
     protected int numSamples;
     protected CacheMode cacheMode = CacheMode.NONE;
+    protected DataType dataType;
 
     protected boolean zeroedPretrainParamGradients = false;
 
@@ -98,8 +100,9 @@ public class VariationalAutoencoder implements Layer {
     @Getter @Setter
     protected int epochCount;
 
-    public VariationalAutoencoder(NeuralNetConfiguration conf) {
+    public VariationalAutoencoder(NeuralNetConfiguration conf, DataType dataType) {
         this.conf = conf;
+        this.dataType = dataType;
 
         this.encoderLayerSizes =
                         ((org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder) conf.getLayer())
@@ -213,7 +216,7 @@ public class VariationalAutoencoder implements Layer {
         for (int l = 0; l < numSamples; l++) { //Default (and in most cases) numSamples == 1
             double gemmCConstant = (l == 0 ? 0.0 : 1.0); //0 for first one (to get rid of previous buffer data), otherwise 1 (for adding)
 
-            INDArray e = Nd4j.randn(minibatch, size);
+            INDArray e = Nd4j.randn(dataType, minibatch, size);
             INDArray z = pzxSigma.mul(e).addi(meanZ); //z = mu + sigma * e, with e ~ N(0,1)
 
 
@@ -997,7 +1000,7 @@ public class VariationalAutoencoder implements Layer {
 
         INDArray sumReconstructionNegLogProbability = null;
         for (int i = 0; i < numSamples; i++) {
-            INDArray e = Nd4j.randn(minibatch, size);
+            INDArray e = Nd4j.randn(dataType, minibatch, size);
             INDArray z = e.muli(pzxSigma).addi(meanZ); //z = mu + sigma * e, with e ~ N(0,1)
 
             //Do forward pass through decoder

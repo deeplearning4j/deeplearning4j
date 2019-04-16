@@ -142,7 +142,7 @@ public class IndexingTests extends BaseNd4jTest {
 
     @Test
     public void testGetScalar() {
-        INDArray arr = Nd4j.linspace(1, 5, 5, DataType.DOUBLE).reshape(1, -1);
+        INDArray arr = Nd4j.linspace(1, 5, 5, DataType.DOUBLE);
         INDArray d = arr.get(NDArrayIndex.point(1));
         assertTrue(d.isScalar());
         assertEquals(2.0, d.getDouble(0), 1e-1);

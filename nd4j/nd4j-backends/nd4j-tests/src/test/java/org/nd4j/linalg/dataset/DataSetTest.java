@@ -430,7 +430,7 @@ public class DataSetTest extends BaseNd4jTest {
 
 
         assertEquals(first, fMerged.get(interval(0, nExamples1), all(), all(), all()));
-        assertEquals(second, fMerged.get(interval(nExamples1, nExamples1 + nExamples2, true), all(), all(), all()));
+        assertEquals(second, fMerged.get(interval(nExamples1, nExamples1 + nExamples2), all(), all(), all()));
         assertEquals(labels1, lMerged.get(interval(0, nExamples1), all()));
         assertEquals(labels2, lMerged.get(interval(nExamples1, nExamples1 + nExamples2), all()));
 

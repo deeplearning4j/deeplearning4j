@@ -87,8 +87,8 @@ public class TestPreProcessors extends BaseDL4JTest {
             //(example=0,t=0), (example=0,t=1), (example=0,t=2), ..., (example=1,t=0), (example=1,t=1), ...
             int nRows = activations2dc.rows();
             for (int i = 0; i < nRows; i++) {
-                INDArray rowc = activations2dc.getRow(i);
-                INDArray rowf = activations2df.getRow(i);
+                INDArray rowc = activations2dc.getRow(i, true);
+                INDArray rowf = activations2df.getRow(i, true);
                 assertArrayEquals(rowc.shape(), new long[] {1, layerSize});
                 assertEquals(rowc, rowf);
 
@@ -98,7 +98,7 @@ public class TestPreProcessors extends BaseDL4JTest {
                 //f order reshaping
                 int time = i / miniBatchSize;
                 int origExampleNum = i % miniBatchSize;
-                INDArray expectedRow = activations3dc.tensorAlongDimension(time, 1, 0).getRow(origExampleNum);
+                INDArray expectedRow = activations3dc.tensorAlongDimension(time, 1, 0).getRow(origExampleNum, true);
                 assertEquals(expectedRow, rowc);
                 assertEquals(expectedRow, rowf);
             }
@@ -170,9 +170,9 @@ public class TestPreProcessors extends BaseDL4JTest {
                 int time = i / miniBatchSize;
                 int example = i % miniBatchSize;
 
-                INDArray row2d = activations2dc.getRow(i);
-                INDArray row3dc = activations3dc.tensorAlongDimension(time, 0, 1).getRow(example);
-                INDArray row3df = activations3df.tensorAlongDimension(time, 0, 1).getRow(example);
+                INDArray row2d = activations2dc.getRow(i, true);
+                INDArray row3dc = activations3dc.tensorAlongDimension(time, 0, 1).getRow(example, true);
+                INDArray row3df = activations3df.tensorAlongDimension(time, 0, 1).getRow(example, true);
 
                 assertEquals(row2d, row3dc);
                 assertEquals(row2d, row3df);

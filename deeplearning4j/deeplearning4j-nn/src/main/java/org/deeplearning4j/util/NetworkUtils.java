@@ -60,6 +60,7 @@ public class NetworkUtils {
         // for the updater state...
 
         ComputationGraphConfiguration.GraphBuilder b = new NeuralNetConfiguration.Builder()
+                .dataType(net.getLayerWiseConfigurations().getDataType())
                 .graphBuilder();
 
         MultiLayerConfiguration origConf = net.getLayerWiseConfigurations().clone();

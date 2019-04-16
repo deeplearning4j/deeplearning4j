@@ -146,9 +146,9 @@ public class SeparableConvolutionParamInitializer implements ParamInitializer {
         val biasParams = numBiasParams(layerConf);
 
         INDArray depthWiseWeightView = paramsView.get(
-                NDArrayIndex.point(0), NDArrayIndex.interval(biasParams, biasParams + depthWiseParams));
+                NDArrayIndex.interval(0,0,true), NDArrayIndex.interval(biasParams, biasParams + depthWiseParams));
         INDArray pointWiseWeightView = paramsView.get(
-                NDArrayIndex.point(0), NDArrayIndex.interval(biasParams + depthWiseParams, numParams(conf)));
+                NDArrayIndex.interval(0,0,true), NDArrayIndex.interval(biasParams + depthWiseParams, numParams(conf)));
 
         params.put(DEPTH_WISE_WEIGHT_KEY, createDepthWiseWeightMatrix(conf, depthWiseWeightView, initializeParams));
         conf.addVariable(DEPTH_WISE_WEIGHT_KEY);
@@ -181,10 +181,10 @@ public class SeparableConvolutionParamInitializer implements ParamInitializer {
         val biasParams = numBiasParams(layerConf);
 
         INDArray depthWiseWeightGradientView = gradientView.get(
-                NDArrayIndex.point(0), NDArrayIndex.interval(biasParams, biasParams + depthWiseParams))
+                NDArrayIndex.interval(0,0,true), NDArrayIndex.interval(biasParams, biasParams + depthWiseParams))
                 .reshape('c', depthMultiplier, nIn, kernel[0], kernel[1]);
         INDArray pointWiseWeightGradientView = gradientView.get(
-                NDArrayIndex.point(0), NDArrayIndex.interval(biasParams + depthWiseParams, numParams(conf)))
+                NDArrayIndex.interval(0,0,true), NDArrayIndex.interval(biasParams + depthWiseParams, numParams(conf)))
                 .reshape('c', nOut, nIn * depthMultiplier, 1, 1);
         out.put(DEPTH_WISE_WEIGHT_KEY, depthWiseWeightGradientView);
         out.put(POINT_WISE_WEIGHT_KEY, pointWiseWeightGradientView);

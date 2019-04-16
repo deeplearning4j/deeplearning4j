@@ -67,7 +67,7 @@ public class EvaluationCalibrationTest extends BaseNd4jTest {
                     INDArray bin0Labels = Nd4j.create(new double[][]{{1.0, 0.0}, {1.0, 0.0}, {0.0, 1.0}}).castTo(lpDtype);
 
                     //[0.2, 0.4)
-                    INDArray bin1Probs = Nd4j.create(new double[][]{{0.8, 0.2}, {0.7, 0.3}, {0.65, 0.35}}).castTo(lpDtype);
+                    INDArray bin1Probs = Nd4j.create(new double[][]{{0.80, 0.20}, {0.7, 0.3}, {0.65, 0.35}}).castTo(lpDtype);
                     INDArray bin1Labels = Nd4j.create(new double[][]{{1.0, 0.0}, {0.0, 1.0}, {1.0, 0.0}}).castTo(lpDtype);
 
                     //[0.4, 0.6)
@@ -123,15 +123,13 @@ public class EvaluationCalibrationTest extends BaseNd4jTest {
                         } else {
 //                            assertEquals(first, ec);
                             assertEquals(sFirst, s);
-                            assertTrue(first.getRDiagBinPosCount().equalsWithEps(ec.getRDiagBinPosCount(), 1e-3));  //Lower precision due to fload
-                            assertTrue(first.getRDiagBinTotalCount().equalsWithEps(ec.getRDiagBinTotalCount(), 1e-3));
-                            assertTrue(first.getRDiagBinSumPredictions().equalsWithEps(ec.getRDiagBinSumPredictions(), 1e-3));
+                            assertTrue(first.getRDiagBinPosCount().equalsWithEps(ec.getRDiagBinPosCount(), lpDtype == DataType.HALF ? 1e-3 : 1e-5));  //Lower precision due to fload
+                            assertTrue(first.getRDiagBinTotalCount().equalsWithEps(ec.getRDiagBinTotalCount(), lpDtype == DataType.HALF ? 1e-3 : 1e-5));
+                            assertTrue(first.getRDiagBinSumPredictions().equalsWithEps(ec.getRDiagBinSumPredictions(), lpDtype == DataType.HALF ? 1e-3 : 1e-5));
                             assertArrayEquals(first.getLabelCountsEachClass(), ec.getLabelCountsEachClass());
                             assertArrayEquals(first.getPredictionCountsEachClass(), ec.getPredictionCountsEachClass());
-                            assertTrue(first.getResidualPlotOverall().equalsWithEps(ec.getResidualPlotOverall(), 1e-3));
-                            assertTrue(first.getResidualPlotByLabelClass().equalsWithEps(ec.getResidualPlotByLabelClass(), 1e-3));
-                            assertTrue(first.getProbHistogramOverall().equalsWithEps(ec.getProbHistogramOverall(), 1e-3));
-                            assertTrue(first.getProbHistogramByLabelClass().equalsWithEps(ec.getProbHistogramByLabelClass(), 1e-3));
+                            assertTrue(first.getProbHistogramOverall().equalsWithEps(ec.getProbHistogramOverall(), lpDtype == DataType.HALF ? 1e-3 : 1e-5));
+                            assertTrue(first.getProbHistogramByLabelClass().equalsWithEps(ec.getProbHistogramByLabelClass(), lpDtype == DataType.HALF ? 1e-3 : 1e-5));
                         }
                     }
                 }

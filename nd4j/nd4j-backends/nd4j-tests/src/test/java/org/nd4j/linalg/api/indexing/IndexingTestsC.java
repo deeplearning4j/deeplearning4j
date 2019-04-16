@@ -195,15 +195,15 @@ public class IndexingTestsC extends BaseNd4jTest {
 
     @Test
     public void testVectorIndexing2() {
-        INDArray wholeVector = Nd4j.linspace(1, 5, 5, DataType.DOUBLE).reshape(1, -1).get(interval(1, 2, 3, true));
-        INDArray assertion = Nd4j.create(new double[] {2, 4}).reshape(1, -1);
+        INDArray wholeVector = Nd4j.linspace(1, 5, 5, DataType.DOUBLE).get(interval(1, 2, 3, true));
+        INDArray assertion = Nd4j.create(new double[] {2, 4});
         assertEquals(assertion, wholeVector);
-        INDArray wholeVectorTwo = Nd4j.linspace(1, 5, 5, DataType.DOUBLE).reshape(1, -1).get(interval(1, 2, 4, true));
+        INDArray wholeVectorTwo = Nd4j.linspace(1, 5, 5, DataType.DOUBLE).get(interval(1, 2, 4, true));
         assertEquals(assertion, wholeVectorTwo);
-        INDArray wholeVectorThree = Nd4j.linspace(1, 5, 5, DataType.DOUBLE).reshape(1, -1).get(interval(1, 2, 4, false));
+        INDArray wholeVectorThree = Nd4j.linspace(1, 5, 5, DataType.DOUBLE).get(interval(1, 2, 4, false));
         assertEquals(assertion, wholeVectorThree);
-        INDArray threeFiveAssertion = Nd4j.create(new double[] {3, 5}).reshape(1, -1);
-        INDArray threeFive = Nd4j.linspace(1, 5, 5, DataType.DOUBLE).reshape(1, -1).get(interval(2, 2, 4, true));
+        INDArray threeFiveAssertion = Nd4j.create(new double[] {3, 5});
+        INDArray threeFive = Nd4j.linspace(1, 5, 5, DataType.DOUBLE).get(interval(2, 2, 4, true));
         assertEquals(threeFiveAssertion, threeFive);
     }
 
@@ -235,7 +235,7 @@ public class IndexingTestsC extends BaseNd4jTest {
 
     @Test
     public void testGetScalar() {
-        INDArray arr = Nd4j.linspace(1, 5, 5, DataType.DOUBLE).reshape(1, -1);
+        INDArray arr = Nd4j.linspace(1, 5, 5, DataType.DOUBLE);
         INDArray d = arr.get(point(1));
         assertTrue(d.isScalar());
         assertEquals(2.0, d.getDouble(0), 1e-1);

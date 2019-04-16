@@ -3366,6 +3366,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public INDArray mmul(INDArray other) {
+        Preconditions.checkState(this.dataType() == other.dataType(), "Matrix multiplication: arrays must have same dtype: %s vs. %s", this.dataType(), other.dataType());
         // FIXME: for 1D case, we probably want vector output here?
         long[] shape = {rows(), other.rank() == 1 ? 1 : other.columns()};
         INDArray result = createUninitialized(this.dataType(), shape, 'f');

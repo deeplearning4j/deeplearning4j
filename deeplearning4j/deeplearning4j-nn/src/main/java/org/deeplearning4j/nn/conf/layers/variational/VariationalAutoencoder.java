@@ -80,7 +80,7 @@ public class VariationalAutoencoder extends BasePretrainNetwork {
         LayerValidation.assertNInNOutSet("VariationalAutoencoder", getLayerName(), layerIndex, getNIn(), getNOut());
 
         org.deeplearning4j.nn.layers.variational.VariationalAutoencoder ret =
-                        new org.deeplearning4j.nn.layers.variational.VariationalAutoencoder(conf);
+                        new org.deeplearning4j.nn.layers.variational.VariationalAutoencoder(conf, networkDataType);
 
         ret.setListeners(trainingListeners);
         ret.setIndex(layerIndex);

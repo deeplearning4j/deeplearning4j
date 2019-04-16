@@ -59,8 +59,8 @@ public abstract class BasePretrainNetwork<LayerConfT extends org.deeplearning4j.
      * @return the binomial sampled corrupted input
      */
     public INDArray getCorruptedInput(INDArray x, double corruptionLevel) {
-        INDArray corrupted = Nd4j.getDistributions().createBinomial(1, 1 - corruptionLevel).sample(x.shape());
-        corrupted.muli(x.castTo(Nd4j.defaultFloatingPointType()));
+        INDArray corrupted = Nd4j.getDistributions().createBinomial(1, 1 - corruptionLevel).sample(x.ulike());
+        corrupted.muli(x.castTo(corrupted.dataType()));
         return corrupted;
     }
 

@@ -71,7 +71,6 @@ public class ROCBinaryTest extends BaseNd4jTest {
                                 Nd4j.getExecutioner().exec(new BernoulliDistribution(Nd4j.createUninitialized(shape), 0.5)).castTo(lpDtype);
 
                         INDArray predicted = Nd4j.rand(lpDtype, shape);
-                        //INDArray binaryPredicted = predicted.gt(0.5);
 
                         ROCBinary rb = new ROCBinary(thresholdSteps);
 

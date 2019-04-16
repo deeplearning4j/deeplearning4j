@@ -128,15 +128,6 @@ public class ShapeResolutionTestsC extends BaseNd4jTest {
         assertArrayEquals(new long[] {2}, strides);
     }
 
-
-    @Test
-    public void testPartiallyOutOfRangeIndices() {
-        INDArray arr = Nd4j.linspace(1, 4, 4).reshape(2, 2);
-        ShapeOffsetResolution resolution = new ShapeOffsetResolution(arr);
-        resolution.exec(NDArrayIndex.interval(0, 2), NDArrayIndex.interval(1, 4));
-        assertArrayEquals(new long[] {2, 1}, resolution.getShapes());
-    }
-
     @Test
     public void testOutOfRangeIndices() {
         INDArray arr = Nd4j.linspace(1, 4, 4).reshape(2, 2);

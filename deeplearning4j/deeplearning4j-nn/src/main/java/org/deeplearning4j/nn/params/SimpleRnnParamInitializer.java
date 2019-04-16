@@ -146,10 +146,10 @@ public class SimpleRnnParamInitializer implements ParamInitializer {
 
     private static Map<String,INDArray> getSubsets(INDArray in, long nIn, long nOut, boolean reshape, boolean hasLayerNorm){
         long pos = nIn * nOut;
-        INDArray w = in.get(point(0), interval(0, pos));
-        INDArray rw = in.get(point(0), interval(pos, pos + nOut * nOut));
+        INDArray w = in.get(interval(0,0,true), interval(0, pos));
+        INDArray rw = in.get(interval(0,0,true), interval(pos, pos + nOut * nOut));
         pos += nOut * nOut;
-        INDArray b = in.get(point(0), interval(pos, pos + nOut));
+        INDArray b = in.get(interval(0,0,true), interval(pos, pos + nOut));
 
         if(reshape){
             w = w.reshape('f', nIn, nOut);
@@ -162,7 +162,7 @@ public class SimpleRnnParamInitializer implements ParamInitializer {
         m.put(BIAS_KEY, b);
         if(hasLayerNorm){
             pos += nOut;
-            INDArray g = in.get(point(0), interval(pos, pos + 2 * nOut));
+            INDArray g = in.get(interval(0,0,true), interval(pos, pos + 2 * nOut));
             m.put(GAIN_KEY, g);
         }
         return m;
