@@ -46,8 +46,6 @@ void Reduce3<X,Z>::execScalar(void *vx, Nd4jLong *xShapeInfo,
     auto length = shape::length(xShapeInfo);
     auto xEws = shape::elementWiseStride(xShapeInfo);
     auto yEws = shape::elementWiseStride(yShapeInfo);
-    auto xOrder = shape::order(xShapeInfo);
-    auto yOrder = shape::order(yShapeInfo);
 
     Z extraParamsVals[3] = {(Z) 0.0f, (Z) 0.0f, (Z) 0.0f};
     // it's possible case for EqualsWithEps op
@@ -65,7 +63,9 @@ void Reduce3<X,Z>::execScalar(void *vx, Nd4jLong *xShapeInfo,
     for (int e = 0; e < maxThreads; e++)
         intermediate[e] = startingVal;
 
-    if (xEws == 1 && yEws == 1 && xOrder == yOrder) {
+    nd4j::LoopKind::Kind kindOfLoop = nd4j::LoopKind::deduceKindOfLoopXZ(xShapeInfo, yShapeInfo);
+
+    if (kindOfLoop == nd4j::LoopKind::EWS1) {
         PRAGMA_OMP_PARALLEL_FOR_SIMD_THREADS(t._numThreads)
         for(unsigned int i = 0; i < length; i++)
             intermediate[omp_get_thread_num()] = OpType::update(intermediate[omp_get_thread_num()], OpType::op(x[i], y[i], extraParamsVals), extraParamsVals);

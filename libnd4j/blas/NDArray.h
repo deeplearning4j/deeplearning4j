@@ -1903,8 +1903,8 @@ bool NDArray::isEmpty() const {
 
 //////////////////////////////////////////////////////////////////////////
 bool NDArray::operator==(const NDArray &other) const {
-    if (this->dataType() != other.dataType())
-            return false;
+    // if (this->dataType() != other.dataType())    // this comparison is already present in equalsTo
+    //         return false;
 
     if (!this->isSameShape(&other))
         return false;

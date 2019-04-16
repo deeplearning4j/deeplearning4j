@@ -31,9 +31,9 @@ void nd4j::IndexReductionLoops<X>::loopIndexReduce(X* x, Nd4jLong* xShapeInfo,
                            Nd4jLong* tadShapeInfo, Nd4jLong* tadOffsets,
                            X* extraParams) {
 
-    LoopKind kindOfLoop = nd4j::ReductionLoops<X,X,X>::deduceKindOfLoopTadXZ(xShapeInfo, zShapeInfo, tadShapeInfo);
-    if(kindOfLoop == SMALLARR2DX)
-        kindOfLoop = EWSNONZERO;
+    nd4j::LoopKind::Kind kindOfLoop = nd4j::LoopKind::deduceKindOfLoopTadXZ(xShapeInfo, zShapeInfo, tadShapeInfo);
+    if(kindOfLoop == nd4j::LoopKind::SMALLARR2DX)
+        kindOfLoop = nd4j::LoopKind::EWSNONZERO;
 
     const Nd4jLong zLen   = shape::length(zShapeInfo);
     const Nd4jLong tadLen = shape::length(tadShapeInfo);
@@ -50,7 +50,7 @@ void nd4j::IndexReductionLoops<X>::loopIndexReduce(X* x, Nd4jLong* xShapeInfo,
 
     switch (kindOfLoop) {
         //*********************************************//
-        case EWS1: {
+        case nd4j::LoopKind::EWS1: {
 
             PRAGMA_OMP_PARALLEL_FOR_THREADS(numThreads)
             for (uint i = 0; i < zLen; i++) {
@@ -68,7 +68,7 @@ void nd4j::IndexReductionLoops<X>::loopIndexReduce(X* x, Nd4jLong* xShapeInfo,
             break;
 
             //*********************************************//
-        case EWSNONZERO: {
+        case nd4j::LoopKind::EWSNONZERO: {
 
             PRAGMA_OMP_PARALLEL_FOR_THREADS(numThreads)
             for (uint i = 0; i < zLen; i++) {
@@ -86,7 +86,7 @@ void nd4j::IndexReductionLoops<X>::loopIndexReduce(X* x, Nd4jLong* xShapeInfo,
             break;
 
             //*********************************************//
-        case RANK1: {
+        case nd4j::LoopKind::RANK1: {
 
             PRAGMA_OMP_PARALLEL_FOR_THREADS(numThreads)
             for (uint i = 0; i < zLen; i++) {
@@ -104,7 +104,7 @@ void nd4j::IndexReductionLoops<X>::loopIndexReduce(X* x, Nd4jLong* xShapeInfo,
             break;
 
             //*********************************************//
-        case RANK2: {
+        case nd4j::LoopKind::RANK2: {
             Nd4jLong newStride[2];
             shape::updateStrides(2, tadShape, newStride, 'c');
 
@@ -128,7 +128,7 @@ void nd4j::IndexReductionLoops<X>::loopIndexReduce(X* x, Nd4jLong* xShapeInfo,
             break;
 
             //*********************************************//
-        case RANK3: {
+        case nd4j::LoopKind::RANK3: {
             Nd4jLong newStride[3];
             shape::updateStrides(3, tadShape, newStride, 'c');
 
@@ -154,7 +154,7 @@ void nd4j::IndexReductionLoops<X>::loopIndexReduce(X* x, Nd4jLong* xShapeInfo,
             break;
 
             //*********************************************//
-        case RANK4: {
+        case nd4j::LoopKind::RANK4: {
             Nd4jLong newStride[4];
             shape::updateStrides(4, tadShape, newStride, 'c');
 
@@ -182,7 +182,7 @@ void nd4j::IndexReductionLoops<X>::loopIndexReduce(X* x, Nd4jLong* xShapeInfo,
             break;
 
             //*********************************************//
-        case RANK5: {
+        case nd4j::LoopKind::RANK5: {
             Nd4jLong newStride[5];
             shape::updateStrides(5, tadShape, newStride, 'c');
 
@@ -212,7 +212,7 @@ void nd4j::IndexReductionLoops<X>::loopIndexReduce(X* x, Nd4jLong* xShapeInfo,
             break;
 
             //*********************************************//
-        case X_EWSNONZERO: {
+        case nd4j::LoopKind::X_EWSNONZERO: {
             uint castZShapeInfo[MAX_RANK];
             const bool canCastZ   = nd4j::DataTypeUtils::castShapeInfo<uint>(zShapeInfo,   castZShapeInfo);
 
@@ -233,7 +233,7 @@ void nd4j::IndexReductionLoops<X>::loopIndexReduce(X* x, Nd4jLong* xShapeInfo,
             break;
 
             //*********************************************//
-        case Z_EWSNONZERO: {
+        case nd4j::LoopKind::Z_EWSNONZERO: {
             uint castTadShapeInfo[MAX_RANK];
             const bool canCastTad = nd4j::DataTypeUtils::castShapeInfo<uint>(tadShapeInfo, castTadShapeInfo);
 
