@@ -86,7 +86,7 @@ namespace ops  {
             // turns all of those we want to skip into very large negative values. By adding this to the weights
             // before going through the softmax, we effectively push all masked positions to zero after softmax.
             //
-            // we are 1e9 to be effectively infinity
+            // we are using 1e9 to mean effectively infinity
             *weights += (*reshapedMask - 1) * 1e9;
             delete reshapedMask;
         }
