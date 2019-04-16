@@ -56,7 +56,7 @@ namespace nd4j {
                 } else {
                     REQUIRE_TRUE(condition->lengthOf() == x->sizeAt(0), 0, "Condition length should be equal to the dim0 of x/y to act as TAD-mask, but got %d instead", condition->lengthOf());
 
-                    auto dims = ShapeUtils::convertAxisToTadTarget(x->rankOf(), {0});
+                    auto dims = ShapeUtils::evalDimsToExclude(x->rankOf(), {0});
                     auto tadsX = x->allTensorsAlongDimension(dims);
                     auto tadsY = y->allTensorsAlongDimension(dims);
                     auto tadsZ = z->allTensorsAlongDimension(dims);
@@ -82,7 +82,7 @@ namespace nd4j {
                 if (z->isEmpty())
                     return ND4J_STATUS_OK;
 
-                std::vector<int> dims = ShapeUtils::convertAxisToTadTarget(width, {0});
+                std::vector<int> dims = ShapeUtils::evalDimsToExclude(width, {0});
 
                 helpers::_where(*condition, *output, block.workspace());
             }

@@ -37,7 +37,7 @@ namespace nd4j {
             if (dims.size() == 0 && block.width() > 2) {
                 auto axis = INPUT_VARIABLE(2);
                 helpers::adjustAxis(x, axis, dims);
-                //dims = ShapeUtils::convertAxisToTadTarget(z->rankOf(), dims);
+                //dims = ShapeUtils::evalDimsToExclude(z->rankOf(), dims);
             }
             if (dims.size() > 0)
                 std::sort(dims.begin(), dims.end());

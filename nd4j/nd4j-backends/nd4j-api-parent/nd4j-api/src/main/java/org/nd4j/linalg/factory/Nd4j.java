@@ -1789,6 +1789,7 @@ public class Nd4j {
              * and how they were rearranged.
              */
 
+
             Arrays.sort(index, new Comparator<Double>() {
                 @Override
                 public int compare(Double o1, Double o2) {
@@ -1812,6 +1813,7 @@ public class Nd4j {
                     indexVector.putScalar(j, index[currCount2]);
                 }
             }
+
 
         }
 
@@ -4329,6 +4331,14 @@ public class Nd4j {
         checkShapeValues(newShape);
 
         INDArray ret = INSTANCE.create(data, newShape, newStride, offset, ordering);
+        logCreationIfNecessary(ret);
+        return ret;
+    }
+
+    public static INDArray create(DataBuffer data, long[] newShape, long[] newStride, long offset, long ews, char ordering) {
+        checkShapeValues(newShape);
+
+        INDArray ret = INSTANCE.create(data, newShape, newStride, offset, ews, ordering);
         logCreationIfNecessary(ret);
         return ret;
     }
