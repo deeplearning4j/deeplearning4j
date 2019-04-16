@@ -17,6 +17,8 @@ public class MemoryTracker {
     private List<AtomicLong> totalPerDevice = new ArrayList<>();
     private List<AtomicLong> freePerDevice = new ArrayList<>();
     private List<AtomicLong> workspacesPerDevice = new ArrayList<>();
+    private AtomicLong cachedHost = new AtomicLong(0);
+    private AtomicLong allocatedHost = new AtomicLong(0);
     private final static MemoryTracker INSTANCE = new MemoryTracker();
 
     public MemoryTracker() {
@@ -46,6 +48,28 @@ public class MemoryTracker {
     public long getCachedAmount(int deviceId) {
         return cachedPerDevice.get(deviceId).get();
     }
+
+    /**
+     * This method returns number of bytes currently cached from host memory
+     * @return
+     */
+    public long getCachedHostAmount() {
+        return cachedHost.get();
+    }
+
+    /**
+     * This method returns number of bytes currently allocated from host memory
+     * @return
+     */
+    public long getAllocatedHostAmount() {
+        return allocatedHost.get();
+    }
+
+    public void incrementCachedHostAmount(long numBytes) {
+        cachedHost.addAndGet(numBytes);
+    }
+
+    public void incrementAllocated
 
     public long getWorkspaceAllocatedAmount(int deviceId) {
         return workspacesPerDevice.get(deviceId).get();

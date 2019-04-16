@@ -271,10 +271,14 @@ public class AllocatorTest {
 
     @Test
     public void testCyclicCreation() throws Exception {
-        Nd4j.create(1);
+        Nd4j.create(100);
 
         log.info("Approximate free memory: {}", MemoryTracker.getInstance().getApproximateFreeMemory(Nd4j.getAffinityManager().getDeviceForCurrentThread()));
         log.info("Real free memory: {}", MemoryTracker.getInstance().getPreciseFreeMemory(Nd4j.getAffinityManager().getDeviceForCurrentThread()));
+
+
+        Thread.sleep(300000000000L);
+        log.info("Starting...");
 
         val timeStart = System.currentTimeMillis();
 
