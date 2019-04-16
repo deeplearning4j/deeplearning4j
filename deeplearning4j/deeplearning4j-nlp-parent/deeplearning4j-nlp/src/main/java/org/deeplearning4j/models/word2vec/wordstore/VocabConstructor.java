@@ -412,10 +412,6 @@ public class VocabConstructor<T extends SequenceElement> {
         }
 
         if (buildHuffmanTree) {
-            // and now we're building Huffman tree
-            val huffman = new Huffman(cache.vocabWords());
-            huffman.build();
-            huffman.applyIndexes(cache);
 
             if (limit > 0) {
                 // we want to sort labels before truncating them, so we'll keep most important words
@@ -428,6 +424,10 @@ public class VocabConstructor<T extends SequenceElement> {
                         cache.removeElement(element.getLabel());
                 }
             }
+            // and now we're building Huffman tree
+            val huffman = new Huffman(cache.vocabWords());
+            huffman.build();
+            huffman.applyIndexes(cache);
         }
 
         executorService.shutdown();

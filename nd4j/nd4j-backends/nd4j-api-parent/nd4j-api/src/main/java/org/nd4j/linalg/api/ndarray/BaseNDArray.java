@@ -3925,7 +3925,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             return result;
         }
 
-        LinAlgExceptions.assertSameShape(other, result);
+        LinAlgExceptions.assertSameShape(this, other, result);
 
         Nd4j.getExecutioner().exec(new OldAddOp(this, other, result));
         return result;
