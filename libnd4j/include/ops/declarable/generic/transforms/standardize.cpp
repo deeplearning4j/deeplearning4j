@@ -87,28 +87,35 @@ namespace ops  {
         eps->applyTrueBroadcast(nd4j::BroadcastOpsTuple::Divide(), &stdev, output, false);
 
         auto dldu_sum = -output->reduceAlongDims(reduce::Sum, axis, true);
+
+        NDArray dldx_u(input->shapeInfo(), false, block.workspace());
+        std::vector<NDArray*> meanBpArgs = {input, &dldu_sum};
+        std::vector<NDArray*> meanBpOutput = {&dldx_u};
+        std::vector<double> meanBpTArgs = {};
+        std::vector<bool> meanBpBArgs = {};
+
         nd4j::ops::reduce_mean_bp meanBp;
-        auto meanBpRes = meanBp.execute({input, &dldu_sum}, {}, longAxis);
-        auto dldx_u = *meanBpRes->at(0);
+        meanBp.execute(meanBpArgs, meanBpOutput, meanBpTArgs, longAxis, meanBpBArgs);
         *output += dldx_u;
 
         // (eps * (means - input) / (stdev * stdev))
-        NDArray tmp(eps);
+        NDArray tmp(eps->shapeInfo(), false, block.workspace());
         means.applyTrueBroadcast(nd4j::BroadcastOpsTuple::Subtract(), input, &tmp, false);
         tmp.applyPairwiseTransform(nd4j::pairwise::Multiply, eps, &tmp, nullptr);
         stdev.applyPairwiseTransform(nd4j::pairwise::Multiply, &stdev, &stdev, nullptr);
         tmp.applyTrueBroadcast(nd4j::BroadcastOpsTuple::Divide(), &stdev, &tmp, false);
 
         auto dlds_sum = tmp.reduceAlongDims(reduce::Sum, axis, true);
+        NDArray dldx_s(input->shapeInfo(), false, block.workspace());
+        std::vector<NDArray*> stdevBpArgs = {input, &dlds_sum};
+        std::vector<NDArray*> stdevBpOutput = {&dldx_s};
+        std::vector<double> stdevBpTArgs = {};
+        std::vector<bool> stdevBpBArgs = {};
         nd4j::ops::reduce_stdev_bp stdevBp;
-        auto stdevBpRes = stdevBp.execute({input, &dlds_sum}, {}, longAxis);
-        auto dldx_s = *stdevBpRes->at(0);
+        stdevBp.execute(stdevBpArgs,  stdevBpOutput, stdevBpTArgs, longAxis, stdevBpBArgs);
         *output += dldx_s;
 
         output->applyScalar(nd4j::scalar::ReplaceNans, 0, output, nullptr);
-
-        delete stdevBpRes;
-        delete meanBpRes;
 
         return Status::OK();
     }

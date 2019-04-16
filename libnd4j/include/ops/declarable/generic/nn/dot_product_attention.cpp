@@ -41,7 +41,7 @@ namespace ops  {
             weights = OUTPUT_VARIABLE(1);
         }else{
             auto weightShape = ShapeUtils::evalShapeForMatmul(keys->getShapeInfo(), queries->getShapeInfo(), true, false);
-            weights = NDArrayFactory::create_('c', weightShape, values->dataType(), block.workspace());
+            weights = new NDArray('c', weightShape, values->dataType(), block.workspace());
         }
 
         int normalization = INT_ARG(0);
@@ -167,43 +167,42 @@ namespace ops  {
         if(normalization)
             factor = sqrt((double)keys->sizeAt(-2));
 
+        auto weightShape = ShapeUtils::evalShapeForMatmul(keys->getShapeInfo(), queries->getShapeInfo(), true, false);
+
         nd4j::ops::matmul mmul;
-        auto preSoftmaxRes = mmul.execute({keys, queries}, {}, {1}, {});
-        auto preSoftmax = preSoftmaxRes->at(0);
+        NDArray preSoftmax('c', weightShape, values->dataType(), block.workspace());
+        mmul.execute({keys, queries}, {&preSoftmax},{}, {1}, {});
+        
         if(normalization)
-            *preSoftmax /= factor;
+            preSoftmax /= factor;
 
         if(mask != nullptr){
             NDArray* reshapedMask;
-            if(preSoftmax->rankOf() == 4){
+            if(preSoftmax.rankOf() == 4){
                 reshapedMask = mask->reshape(mask->ordering(), {mask->sizeAt(0), 1, mask->sizeAt(1), 1});
             }else{
                 reshapedMask = mask->reshape(mask->ordering(), {mask->sizeAt(0), mask->sizeAt(1), 1});
             }
-            *preSoftmax += (*reshapedMask - 1) * 1e9;
+            preSoftmax += (*reshapedMask - 1) * 1e9;
             delete reshapedMask;
         }
 
+        NDArray weights('c', weightShape, values->dataType(), block.workspace());
         nd4j::ops::softmax softmax;
-        auto weightsRes = softmax.execute({preSoftmax}, {}, {-2}, {});
-        auto weights = weightsRes->at(0);
+        softmax.execute({&preSoftmax}, {&weights},{}, {-2}, {});
 
         nd4j::ops::matmul_bp mmul_bp;
-        NDArray dLdw(weights->getShapeInfo(), block.workspace());
-        mmul_bp.execute({values, weights, eps}, {dLdv, &dLdw}, {}, {}, {});
+        NDArray dLdw(weights.getShapeInfo(), block.workspace());
+        mmul_bp.execute({values, &weights, eps}, {dLdv, &dLdw}, {}, {}, {});
 
+        NDArray dLds(preSoftmax.shapeInfo(), block.workspace());
         nd4j::ops::softmax_bp softmax_bp;
-        auto dLdsRes = softmax_bp.execute({preSoftmax, &dLdw}, {}, {-2}, {});
-        auto dLds = dLdsRes->at(0);
+        softmax_bp.execute({&preSoftmax, &dLdw}, {&dLds}, {}, {-2}, {});
 
         if(normalization)
-            *dLds /= factor;
+            dLds /= factor;
 
-        mmul_bp.execute({keys, queries, dLds}, {dLdk, dLdq}, {}, {1}, {});
-
-        delete preSoftmaxRes;
-        delete weightsRes;
-        delete dLdsRes;
+        mmul_bp.execute({keys, queries, &dLds}, {dLdk, dLdq}, {}, {1}, {});
 
         return Status::OK();
     }
