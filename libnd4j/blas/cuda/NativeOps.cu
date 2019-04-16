@@ -2066,11 +2066,12 @@ specialBufferAndShapeWithOffset(void* vZ, Nd4jLong* hZShapeInfo, Nd4jLong* dZSha
 
     const int rank  = shape::rank(reinterpret_cast<Nd4jLong*>(inputShapeInfo[0]));
     const int rank2 = 2 * rank;
-    std::vector<std::vector<Nd4jLong>> indices(numArrays, std::vector<Nd4jLong>(rank2,0));
+    std::vector<std::vector<Nd4jLong>> indices(numArrays, std::vector<Nd4jLong>(rank2 == 0?2:rank2,0));
 
     // take into account indices for first array
     auto axisSize = shape::sizeAt(reinterpret_cast<Nd4jLong*>(inputShapeInfo[0]), axis);
     nd4j_printf("Set up indices...", "");
+    nd4j_printf("\n\n\tElement 0 at %i is setting\n", 2 * axis + 1);
     indices[0][2 * axis + 1] = axisSize;
     nd4j_printf("\n\n\tElement 0 at %i was set\n", 2 * axis + 1);
     // loop through the rest of input arrays
