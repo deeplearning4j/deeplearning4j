@@ -296,6 +296,8 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
         INDArray b = getParamWithNoise(DefaultParamInitializer.BIAS_KEY, training, workspaceMgr);
         INDArray g = (hasLayerNorm() ? getParam(DefaultParamInitializer.GAIN_KEY) : null);
 
+        INDArray input = this.input.castTo(dataType);
+
         //Input validation:
         if (input.rank() != 2 || input.columns() != W.rows()) {
             if (input.rank() != 2) {

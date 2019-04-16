@@ -91,6 +91,8 @@ public class SimpleRnn extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.lay
 
         val nOut = layerConf().getNOut();
 
+        INDArray input = this.input.castTo(dataType);   //No-op if correct type
+
         //First: Do forward pass to get gate activations and Zs
         Quad<INDArray,INDArray, INDArray, INDArray> p = activateHelper(null, true, true, workspaceMgr);
 
@@ -216,6 +218,8 @@ public class SimpleRnn extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.lay
         Preconditions.checkState(input.rank() == 3,
                 "3D input expected to RNN layer expected, got " + input.rank());
 
+        INDArray input = this.input.castTo(dataType);    //No-op if correct type
+
         applyDropOutIfNecessary(training, workspaceMgr);
         val m = input.size(0);
         val tsLength = input.size(2);
@@ -281,9 +285,10 @@ public class SimpleRnn extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.lay
         //Apply mask, if present:
         if(maskArray != null){
             //Mask should be shape [minibatch, tsLength]
-            Nd4j.getExecutioner().exec(new BroadcastMulOp(out, maskArray, out, 0, 2));
+            INDArray mask = maskArray.castTo(dataType);
+            Nd4j.getExecutioner().exec(new BroadcastMulOp(out, mask, out, 0, 2));
             if(forBackprop){
-                Nd4j.getExecutioner().exec(new BroadcastMulOp(outZ, maskArray, outZ, 0, 2));
+                Nd4j.getExecutioner().exec(new BroadcastMulOp(outZ, mask, outZ, 0, 2));
             }
         }
 

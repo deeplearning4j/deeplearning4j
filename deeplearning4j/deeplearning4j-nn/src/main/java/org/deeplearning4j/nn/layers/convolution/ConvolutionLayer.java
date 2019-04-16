@@ -108,6 +108,8 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         INDArray weights = getParamWithNoise(ConvolutionParamInitializer.WEIGHT_KEY, true, workspaceMgr);
         INDArray bias = getParamWithNoise(ConvolutionParamInitializer.BIAS_KEY, true, workspaceMgr);
 
+        INDArray input = this.input.castTo(dataType);       //No op if correct type
+
         // FIXME: int cast
         int miniBatch = (int) input.size(0);
         int inH = (int) input.size(2);
@@ -204,7 +206,7 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         //to get old order from required order: permute(0,3,4,5,1,2)
         INDArray im2col2d = p.getSecond(); //Re-use im2col2d array from forward pass if available; recalculate if not
         if (im2col2d == null) {
-            INDArray col = Nd4j.createUninitialized(new int[] {miniBatch, outH, outW, inDepth, kH, kW}, 'c');
+            INDArray col = Nd4j.createUninitialized(dataType, new long[] {miniBatch, outH, outW, inDepth, kH, kW}, 'c');
             INDArray col2 = col.permute(0, 3, 4, 5, 1, 2);
             Convolution.im2col(input, kH, kW, strides[0], strides[1], pad[0], pad[1], dilation[0], dilation[1],
                             convolutionMode == ConvolutionMode.Same, col2);

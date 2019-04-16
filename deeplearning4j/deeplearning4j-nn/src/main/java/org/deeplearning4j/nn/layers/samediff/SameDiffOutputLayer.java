@@ -247,11 +247,11 @@ public class SameDiffOutputLayer extends AbstractLayer<org.deeplearning4j.nn.con
             Map<String, INDArray> p = paramTable();
 
             val inputShape = input.shape().clone();
-            SDVariable inputVar = sameDiff.var(INPUT_KEY, inputShape);
+            SDVariable inputVar = sameDiff.var(INPUT_KEY, dataType, inputShape);
             SDVariable labelVar = null;
             if(layerConf().labelsRequired()){
                 long[] labelShape = labels == null ? new long[]{1} : labels.shape().clone();
-                labelVar = sameDiff.var(LABELS_KEY, labelShape);
+                labelVar = sameDiff.var(LABELS_KEY, dataType, labelShape);
             }
             Map<String, long[]> paramShapes = layerConf().getLayerParams().getParamShapes();
             Map<String, SDVariable> params = new LinkedHashMap<>();

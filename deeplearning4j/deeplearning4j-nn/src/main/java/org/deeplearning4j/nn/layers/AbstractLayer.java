@@ -248,7 +248,7 @@ public abstract class AbstractLayer<LayerConfT extends org.deeplearning4j.nn.con
     }
 
     protected void applyMask(INDArray to) {
-        to.muliColumnVector(maskArray);
+        to.muliColumnVector(maskArray.castTo(to.dataType()));
     }
 
     @Override

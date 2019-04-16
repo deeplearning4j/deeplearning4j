@@ -669,6 +669,8 @@ public class VariationalAutoencoder implements Layer {
             zeroedPretrainParamGradients = true;
         }
 
+        INDArray input = this.input.castTo(dataType);
+
         Gradient gradient = new DefaultGradient();
 
         VAEFwdHelper fwd = doForward(true, true, workspaceMgr);
@@ -962,6 +964,8 @@ public class VariationalAutoencoder implements Layer {
                             + "instances are not in general probabilistic, hence it is not possible to calculate reconstruction probability "
                             + layerId());
         }
+
+        data = data.castTo(dataType);
 
         //Forward pass through the encoder and mean for P(Z|X)
         LayerWorkspaceMgr workspaceMgr = LayerWorkspaceMgr.noWorkspaces();  //TODO add workspace support to this method

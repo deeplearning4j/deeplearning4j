@@ -129,7 +129,7 @@ public class EmbeddingLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.
 
         INDArray ret = layerConf().getActivationFn().getActivation(rows, training);
         if (maskArray != null) {
-            ret.muliColumnVector(maskArray);
+            ret.muliColumnVector(maskArray.castTo(dataType));
         }
         return ret;
     }

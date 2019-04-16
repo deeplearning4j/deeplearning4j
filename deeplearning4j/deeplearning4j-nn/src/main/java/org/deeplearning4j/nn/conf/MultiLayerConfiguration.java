@@ -374,6 +374,7 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
             clone.trainingWorkspaceMode = this.trainingWorkspaceMode;
             clone.cacheMode = this.cacheMode;
             clone.validateOutputLayerConfig = this.validateOutputLayerConfig;
+            clone.dataType = this.dataType;
 
             return clone;
 

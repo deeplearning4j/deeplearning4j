@@ -150,7 +150,7 @@ public class GlobalPoolingLayer extends AbstractLayer<org.deeplearning4j.nn.conf
             if (input.rank() == 3) {
                 //Masked time series
 
-                reduced2d = MaskedReductionUtil.maskedPoolingTimeSeries(poolingType, input, maskArray, pNorm);
+                reduced2d = MaskedReductionUtil.maskedPoolingTimeSeries(poolingType, input, maskArray, pNorm, dataType);
             } else if (input.rank() == 4) {
                 //Masked convolutions. 4d convolution data, shape [minibatch, channels, h, w]
                 //and 2d mask array.
@@ -168,7 +168,7 @@ public class GlobalPoolingLayer extends AbstractLayer<org.deeplearning4j.nn.conf
                                     + " 4d masks should have shape [batchSize,1,h,1] or [batchSize,1,w,1] or [batchSize,1,h,w]" + layerId());
                 }
 
-                reduced2d = MaskedReductionUtil.maskedPoolingConvolution(poolingType, input, maskArray, pNorm);
+                reduced2d = MaskedReductionUtil.maskedPoolingConvolution(poolingType, input, maskArray, pNorm, dataType);
             } else {
                 throw new UnsupportedOperationException("Invalid input: is rank " + input.rank() + " " + layerId());
             }
@@ -270,7 +270,7 @@ public class GlobalPoolingLayer extends AbstractLayer<org.deeplearning4j.nn.conf
                 epsilonNd = MaskedReductionUtil.maskedPoolingEpsilonTimeSeries(poolingType, input, maskArray, epsilon,
                         pNorm);
             } else if (input.rank() == 4) {
-                epsilonNd = MaskedReductionUtil.maskedPoolingEpsilonCnn(poolingType, input, maskArray, epsilon, pNorm);
+                epsilonNd = MaskedReductionUtil.maskedPoolingEpsilonCnn(poolingType, input, maskArray, epsilon, pNorm, dataType);
             } else {
                 throw new UnsupportedOperationException(layerId());
             }

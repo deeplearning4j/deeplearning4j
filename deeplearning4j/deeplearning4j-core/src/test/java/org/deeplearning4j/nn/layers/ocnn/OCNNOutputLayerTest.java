@@ -189,6 +189,7 @@ public class OCNNOutputLayerTest {
 
     public MultiLayerNetwork getGradientCheckNetwork(int numHidden) {
         MultiLayerConfiguration configuration = new NeuralNetConfiguration.Builder()
+                .dataType(DataType.DOUBLE)
                 .seed(42).updater(new NoOp()).miniBatch(false)
                 .list(new DenseLayer.Builder().activation(new ActivationIdentity()).nIn(4).nOut(4).build(),
                         new  org.deeplearning4j.nn.conf.ocnn.OCNNOutputLayer.Builder().nIn(4)

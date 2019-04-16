@@ -184,7 +184,7 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
         int nParams = getNumParams();
         assertEquals(nParams, params.length());
 
-        INDArray arr = Nd4j.linspace(0, nParams, nParams);
+        INDArray arr = Nd4j.linspace(0, nParams, nParams).reshape(1,nParams);
         assertEquals(nParams, arr.length());
 
         graph.setParams(arr);
@@ -672,7 +672,7 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
         assertArrayEquals(new long[]{3, 1}, scoresNoRegularization.shape());
 
         for (int i = 0; i < 3; i++) {
-            DataSet singleEx = new DataSet(input.getRow(i), output.getRow(i));
+            DataSet singleEx = new DataSet(input.getRow(i,true), output.getRow(i,true));
             double score = net.score(singleEx);
             double scoreNoReg = netNoReg.score(singleEx);
 
@@ -738,7 +738,7 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
             Gradient extErrorGrad = e.backpropGradient(olEpsilon);
 
             int nParamsDense = 10 * 10 + 10;
-            assertEquals(sGrad.gradient().get(NDArrayIndex.point(0), NDArrayIndex.interval(0, nParamsDense)),
+            assertEquals(sGrad.gradient().get(NDArrayIndex.interval(0,0,true), NDArrayIndex.interval(0, nParamsDense)),
                     extErrorGrad.gradient());
 
             Nd4j.getWorkspaceManager().destroyAllWorkspacesForCurrentThread();
@@ -1492,7 +1492,7 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
         //Hack output layer to be identity mapping
         graph.getOutputLayer(0).setParam("W", Nd4j.eye(input.length()));
         graph.getOutputLayer(0).setParam("b", Nd4j.zeros(input.length()));
-        assertEquals("Incorrect output", Nd4j.create(expected), graph.outputSingle(input));
+        assertEquals("Incorrect output", Nd4j.create(expected).reshape(1,expected.length), graph.outputSingle(input));
     }
 
     private static INDArray getInputArray4d(float[] inputArr) {
@@ -2095,6 +2095,7 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
         int layerSize = 3;
 
         ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
+                .dataType(DataType.DOUBLE)
                 .seed(12345)
                 .weightInit(WeightInit.XAVIER)
                 .updater(new NoOp())

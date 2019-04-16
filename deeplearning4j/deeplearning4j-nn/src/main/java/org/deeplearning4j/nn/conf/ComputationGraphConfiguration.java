@@ -320,6 +320,7 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
         conf.cacheMode = this.cacheMode;
         conf.defaultConfiguration.cacheMode = this.cacheMode;
         conf.validateOutputLayerConfig = this.validateOutputLayerConfig;
+        conf.dataType = this.dataType;
 
         return conf;
     }

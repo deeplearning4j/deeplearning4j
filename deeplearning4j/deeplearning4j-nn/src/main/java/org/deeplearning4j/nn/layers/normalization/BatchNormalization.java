@@ -111,6 +111,8 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
         val batchSize = epsilon.size(0); // number examples in batch
         org.deeplearning4j.nn.conf.layers.BatchNormalization layerConf = layerConf();
 
+        INDArray input = this.input.castTo(dataType);   //No-op if correct type
+
         INDArray globalMean = params.get(BatchNormalizationParamInitializer.GLOBAL_MEAN);
         INDArray globalVar = params.get(BatchNormalizationParamInitializer.GLOBAL_VAR);             //One of log10std will be null depending on config
         INDArray globalLog10Std = params.get(BatchNormalizationParamInitializer.GLOBAL_LOG_STD);
@@ -122,8 +124,8 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
         INDArray dGlobalLog10StdView = gradientViews.get(BatchNormalizationParamInitializer.GLOBAL_LOG_STD);
         if (layerConf.isLockGammaBeta()) {
             val tempShape = new long[] {1, shape[1]};
-            dGammaView = Nd4j.createUninitialized(tempShape, 'c');
-            dBetaView = Nd4j.createUninitialized(tempShape, 'c');
+            dGammaView = Nd4j.createUninitialized(dataType, tempShape, 'c');
+            dBetaView = Nd4j.createUninitialized(dataType, tempShape, 'c');
         } else {
             gamma = getParam(BatchNormalizationParamInitializer.GAMMA);
             dGammaView = gradientViews.get(BatchNormalizationParamInitializer.GAMMA);
@@ -233,9 +235,9 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
             if(xHat == null && helper != null){
                 INDArray mean = helper.getMeanCache();
                 std = Transforms.sqrt(helper.getVarCache().addi(layerConf().getEps()));
-                xMu =  Nd4j.createUninitialized(input.shape(), input.ordering());
+                xMu =  Nd4j.createUninitialized(dataType, input.shape(), input.ordering());
                 xMu = Nd4j.getExecutioner().exec(new BroadcastSubOp(input, mean, xMu, 1));
-                xHat =  Nd4j.createUninitialized(input.shape(), input.ordering());
+                xHat =  Nd4j.createUninitialized(dataType, input.shape(), input.ordering());
                 xHat = Nd4j.getExecutioner().exec(new BroadcastDivOp(xMu, std,xHat, 1));
             }
 
@@ -279,9 +281,9 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
             if(xHat == null && helper != null){
                 INDArray mean = helper.getMeanCache();
                 std = Transforms.sqrt(helper.getVarCache().addi(layerConf().getEps()));
-                xMu =  Nd4j.createUninitialized(input.dataType(), input.shape(), input.ordering());
+                xMu =  Nd4j.createUninitialized(dataType, input.shape(), input.ordering());
                 xMu = Nd4j.getExecutioner().exec(new BroadcastSubOp(input, mean, xMu, 1));
-                xHat =  Nd4j.createUninitialized(input.dataType(), input.shape(), input.ordering());
+                xHat =  Nd4j.createUninitialized(dataType, input.shape(), input.ordering());
                 xHat = Nd4j.getExecutioner().exec(new BroadcastDivOp(xMu, std,xHat, 1));
             }
 
@@ -399,6 +401,8 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
             throw new IllegalArgumentException("input.size(1) does not match expected input size of " + layerConf().getNIn()
                     + " - got input array with shape " + Arrays.toString(x.shape()));
         }
+        x = x.castTo(dataType); //No-op if correct type
+
         INDArray activations;
         // TODO add this directly in layer or get the layer prior...
         // batchnorm true but need to clarify if activation before or after
