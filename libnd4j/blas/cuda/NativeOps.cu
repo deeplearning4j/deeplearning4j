@@ -2070,20 +2070,25 @@ specialBufferAndShapeWithOffset(void* vZ, Nd4jLong* hZShapeInfo, Nd4jLong* dZSha
 
     // take into account indices for first array
     auto axisSize = shape::sizeAt(reinterpret_cast<Nd4jLong*>(inputShapeInfo[0]), axis);
+    printf("Set up indices...");
     indices[0][2 * axis + 1] = axisSize;
-
     // loop through the rest of input arrays
     for(int i = 1; i < numArrays; ++i) {
         indices[i][2 * axis]     = indices[i - 1][2 * axis + 1];                                // index start from
         indices[i][2 * axis + 1] = indices[i - 1][2 * axis + 1] + shape::sizeAt(reinterpret_cast<Nd4jLong*>(inputShapeInfo[i]), axis);      // index end with (excluding)
     }
+    printf(" done\n");
+
+    printf("Pack output shapes and buffers...");
 
     std::vector<void*> outSubArrsBuffs(numArrays);
     std::vector<Nd4jLong*> outSubArrsShapes(numArrays);
     for(int i = 0; i < numArrays; ++i) {
         specialBufferAndShapeWithOffset(dZ, hZShapeInfo, dZShapeInfo, indices[i], outSubArrsBuffs[i], outSubArrsShapes[i]);
     }
+    printf(" done\n");
 
+    printf("Prepare device pointers...");
     // prepare arrays of pointers on buffers and shapes
     std::vector<void*>     hOutBuffers(numArrays), hInBuffers(numArrays);
     std::vector<Nd4jLong*> hOutShapeInfo(numArrays), hInShapeInfo(numArrays);
@@ -2094,6 +2099,7 @@ specialBufferAndShapeWithOffset(void* vZ, Nd4jLong* hZShapeInfo, Nd4jLong* dZSha
         hInShapeInfo[i]  = (Nd4jLong*)(dShapePointers[i]);//->getSpecialShapeInfo();
         nd4j_printf("X_%i shape ptr: %p; data ptr: %p;\n", i, hInShapeInfo[i], hInBuffers[i]);
     }
+    printf(" done\n");
 
     // allocate and copy all buffers and shapes arrays to global memory
     PointersManager manager(LaunchContext::defaultContext(), "NativeOps::concat");
@@ -2103,13 +2109,18 @@ specialBufferAndShapeWithOffset(void* vZ, Nd4jLong* hZShapeInfo, Nd4jLong* dZSha
     void* dOutShapeInfo = manager.replicatePointer(hOutShapeInfo.data(), hOutShapeInfo.size() * sizeof(Nd4jLong*));
 
     manager.synchronize();
+    printf("Concat itself run...");
 
     BUILD_SINGLE_SELECTOR(zType, concatCudaLauncher, (numArrays, stream, dInBuffers, dInShapeInfo, dOutBuffers, dOutShapeInfo), LIBND4J_TYPES);
+    printf(" done\n");
+
+    printf("Postprocessing...");
 
     cudaError_t res = cudaStreamSynchronize(*stream);
     checkCudaErrors(res);
     nd4j::DebugHelper::checkErrorCode(stream, "Legacy ConcatFloat(...) failed");
-
+    printf(" done\n");
+    printf("Free up rest...");
     cudaError_t err;
     for(int i = 0; i < numArrays; ++i) {
         err = cudaFree(outSubArrsShapes[i]);
@@ -2118,92 +2129,8 @@ specialBufferAndShapeWithOffset(void* vZ, Nd4jLong* hZShapeInfo, Nd4jLong* dZSha
             throw std::runtime_error("Cannot deallocate memory for shapes.");
         }
     }
-
-//    for(int i = 0; i < numOfArrs; ++i)
-//        inArrs[i]->tickReadHost();
-
-    //output.tickWriteDevice();
-//	int smem = 8192;
-//	bool isVstack = false;
-//	bool isScalar = true;
-//	bool isHstack = false;
-//
-//	for (int i = 0; i < numArrays; i++) {
-//		if (!shape::isScalar(hShapePointers[i])) {
-//			isScalar = false;
-//			break;
-//		}
-//	}
-//
-//	if (!isScalar && dimension == 0 && shape::rank(hZShapeInfo) == 2 && shape::order(hZShapeInfo) == 'c' ) {
-//		isVstack = true;
-//        for (int i = 0; i < numArrays; i++) {
-//			if (!shape::isVector(hShapePointers[i]) || shape::elementWiseStride(hShapePointers[i]) <= 0 ||
-//				shape::order(hShapePointers[i]) != 'c') {
-//				isVstack = false;
-//				break;
-//			}
-//		}
-//	}
-//
-//    // let's try to fit N-dimensional vstack
-//    if (!isVstack && !isScalar && dimension == 0 && shape::order(hXShapeInfo) == 'c') {
-//		auto length0 = shape::length(hShapePointers[0]);
-//        isVstack = true;
-//        for (int i = 0; i < numArrays; i++) {
-//            if (shape::elementWiseStride(hShapePointers[i]) <= 0 || shape::order(hShapePointers[i]) != 'c' || length0 != shape::length(hShapePointers[i])) {
-//                isVstack = false;
-//                break;
-//            }
-//        }
-//    }
-//
-//	if (!isScalar && !isVstack && dimension == 1 && shape::isVector(hZShapeInfo)) {
-//		isHstack = true;
-//		for (int i = 0; i < numArrays; i++) {
-//			if (!shape::isVector(hShapePointers[i]) || shape::elementWiseStride(hShapePointers[i]) <= 0) {
-//				isHstack = false;
-//				break;
-//			}
-//		}
-//	}
-//
-//	if (isScalar) {
-//		if (nd4j::Environment::getInstance()->isDebugAndVerbose())
-//			printf("Going scalar concat\n");
-//
-//		dim3 launchDims(128, 128, 16384);
-//		auto zType = nd4j::ArrayOptions::dataType(hZShapeInfo);
-//		BUILD_SINGLE_SELECTOR(zType, concatKernelScalarGeneric, (launchDims, stream, numArrays, reinterpret_cast<Nd4jPointer *>(ddata[0]), dZ), LIBND4J_TYPES);
-//
-//	} else if (isVstack) {
-//		if (nd4j::Environment::getInstance()->isDebugAndVerbose())
-//			printf("Going VStack concat\n");
-//
-//		dim3 launchDims(128, 512, 16384);
-//		auto zType = nd4j::ArrayOptions::dataType(hZShapeInfo);
-//		BUILD_SINGLE_SELECTOR(zType, concatKernelVStackGeneric, (launchDims, stream, numArrays, reinterpret_cast<Nd4jPointer *>(ddata[0]), reinterpret_cast<Nd4jPointer *>(dinputShapeInfo[0]), dZ, dZShapeInfo), LIBND4J_TYPES);
-//
-//	} else if (isHstack) {
-//		if (nd4j::Environment::getInstance()->isDebugAndVerbose())
-//			printf("Going HStack concat\n");
-//
-//		dim3 launchDims(128, 128, 16384);
-//		auto zType = nd4j::ArrayOptions::dataType(hZShapeInfo);
-//		BUILD_SINGLE_SELECTOR(zType, concatKernelHStackGeneric, (launchDims, stream, numArrays, reinterpret_cast<Nd4jPointer *>(ddata[0]), reinterpret_cast<Nd4jPointer *>(dinputShapeInfo[0]), dZ, dZShapeInfo), LIBND4J_TYPES);
-//	} else {
-//		if (nd4j::Environment::getInstance()->isDebugAndVerbose())
-//			printf("Going generic concat\n");
-//
-//        auto devZTadShape = reinterpret_cast<Nd4jLong *>(extraPointers[10]);
-//		auto devZOffsets = reinterpret_cast<Nd4jLong *>(extraPointers[11]);
-//
-//		dim3 launchDims(128, 128, 8192);
-//		auto zType = nd4j::ArrayOptions::dataType(hZShapeInfo);
-//		BUILD_SINGLE_SELECTOR(zType, concatKernelGeneric, (launchDims, stream, numArrays, reinterpret_cast<Nd4jPointer *>(ddata[0]), reinterpret_cast<Nd4jPointer *>(dinputShapeInfo[0]), dZ, dZShapeInfo,  reinterpret_cast<Nd4jPointer *>(tadPointers[0]), reinterpret_cast<Nd4jPointer *>(offsetPointers[0]), devZTadShape, devZOffsets), LIBND4J_TYPES);
-//	}
-//	if (nd4j::Environment::getInstance()->isDebugAndVerbose())
-//		printf("sharedMemory requested for concatFloat: [%i], registers: [%i]\n", smem, funcAttributes[31].numRegs);
+    printf(" done\n");
+    printf("All done!!!\n");
 }
 
 
