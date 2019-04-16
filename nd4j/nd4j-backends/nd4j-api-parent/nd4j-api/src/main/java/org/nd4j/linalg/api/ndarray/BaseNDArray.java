@@ -1026,7 +1026,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         val stride = Shape.stride(shapeInfo).asLong();
         long offset = offset() + tadInfo.getSecond().getLong(index);
         val ews = shapeInfo.getLong(shapeInfo.getLong(0) * 2 + 2);
-        char tadOrder = Shape.getOrder(shape, stride, 1);
+        char tadOrder = (char) shapeInfo.getInt(shapeInfo.getLong(0) * 2 + 3);
         val toTad = Nd4j.create(data(), shape, stride, offset, ews, tadOrder);
         return toTad;
     }
@@ -1193,10 +1193,10 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         }
 
         INDArray ret = tensorAlongDimension(index, dimension);
-        if (isMatrix() && ret.isVector() && dimension == 1 && !ret.isRowVector())
-            return ret.reshape(ArrayUtil.reverseCopy(ret.shape()));
-        else if (isMatrix() && ret.isVector() && dimension == 0 && !ret.isColumnVector())
-            return ret.reshape(ArrayUtil.reverseCopy(ret.shape()));
+        //if (isMatrix() && ret.isVector() && dimension == 1 && !ret.isRowVector())
+        //    return ret.reshape(ArrayUtil.reverseCopy(ret.shape()));
+        //else if (isMatrix() && ret.isVector() && dimension == 0 && !ret.isColumnVector())
+        //    return ret.reshape(ArrayUtil.reverseCopy(ret.shape()));
         return ret;
     }
 
