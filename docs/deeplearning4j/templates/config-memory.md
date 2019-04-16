@@ -50,7 +50,7 @@ Example: Configuring 1GB initial on-heap, 2GB max on-heap, 8GB off-heap, 10GB ma
 
 * If you don't specify JVM heap limit, it will use 1/4 of your total system RAM as the limit, by default.
 
-* If you don't specify off-heap memory limit, x2 of JVM heap limit (Xmx) will be used by default. i.e. `-Xmx8G` will mean that 8GB can be used by JVM heap, and 16GB can be used by ND4j in off-heap.
+* If you don't specify off-heap memory limit, the JVM heap limit (Xmx) will be used by default. i.e. `-Xmx8G` will mean that 8GB can be used by JVM heap, and an additional 8GB can be used by ND4j in off-heap.
 
 * In limited memory environments, it's usually a bad idea to use high `-Xmx` value together with `-Xms` option. That is because doing so won't leave enough off-heap memory. Consider a 16GB system in which you set `-Xms14G`: 14GB of 16GB would be allocated to the JVM, leaving only 2GB for the off-heap memory, the OS and all other programs.
 
