@@ -4333,6 +4333,14 @@ public class Nd4j {
         return ret;
     }
 
+    public static INDArray create(DataBuffer data, long[] newShape, long[] newStride, long offset, long ews, char ordering) {
+        checkShapeValues(newShape);
+
+        INDArray ret = INSTANCE.create(data, newShape, newStride, offset, ews, ordering);
+        logCreationIfNecessary(ret);
+        return ret;
+    }
+
     public static INDArray create(DataBuffer data, long[] newShape, long[] newStride, long offset, char ordering, DataType dataType) {
         checkShapeValues(newShape);
 
