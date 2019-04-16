@@ -221,7 +221,7 @@ public class CudaCachingZeroProvider extends CudaDirectProvider implements Memor
 
     protected class CacheHolder {
         private Queue<Pointer> queue = new ConcurrentLinkedQueue<>();
-        private AtomicInteger counter = new AtomicInteger(0);
+        private volatile int counter = 0;
         private long reqMem = 0;
         private final AtomicLong allocCounter;
 
@@ -230,21 +230,21 @@ public class CudaCachingZeroProvider extends CudaDirectProvider implements Memor
             this.allocCounter = counter;
         }
 
-        public int size() {
-            return counter.get();
+        public synchronized int size() {
+            return counter;
         }
 
-        public Pointer poll() {
-            Pointer pointer = queue.poll();
+        public synchronized Pointer poll() {
+            val pointer = queue.poll();
             if (pointer != null)
-                counter.decrementAndGet();
+                counter--;
 
             return pointer;
         }
 
-        public void put(Pointer pointer) {
+        public synchronized void put(Pointer pointer) {
             allocCounter.addAndGet(reqMem);
-            counter.incrementAndGet();
+            counter++;
             queue.add(pointer);
         }
     }
@@ -263,14 +263,12 @@ public class CudaCachingZeroProvider extends CudaDirectProvider implements Memor
 
         @Override
         public void run() {
-            //            log.info("Precaching ["+target+"] chunks for shape: " + shape);
-
             ensureCacheHolder(shape);
 
             for (int i = 0; i < target; i++) {
-                AllocationPoint point = new AllocationPoint();
+                val point = new AllocationPoint();
 
-                PointersPair pair = CudaCachingZeroProvider.super.malloc(shape, point, this.location);
+                val pair = CudaCachingZeroProvider.super.malloc(shape, point, this.location);
                 if (this.location == AllocationStatus.HOST) {
                     Pointer pointer = new CudaPointer(pair.getHostPointer().address());
                     CudaCachingZeroProvider.this.zeroCache.get(shape).put(pointer);
