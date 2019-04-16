@@ -18,8 +18,6 @@ package org.deeplearning4j.nn.layers.samediff.testlayers;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import lombok.Getter;
-import lombok.Setter;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
@@ -100,7 +98,7 @@ public class SameDiffDense extends SameDiffLayer {
     }
 
     @Override
-    public SDVariable defineLayer(SameDiff sd, SDVariable layerInput, Map<String, SDVariable> paramTable) {
+    public SDVariable defineLayer(SameDiff sd, SDVariable layerInput, Map<String, SDVariable> paramTable, SDVariable mask) {
         SDVariable weights = paramTable.get(DefaultParamInitializer.WEIGHT_KEY);
         SDVariable bias = paramTable.get(DefaultParamInitializer.BIAS_KEY);
 

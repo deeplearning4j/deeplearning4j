@@ -71,14 +71,14 @@ namespace ops  {
         auto dLdg = OUTPUT_VARIABLE(1);
         auto dLdb = block.width() == 4 ? OUTPUT_VARIABLE(2) : nullptr;
 
-        std::vector<int> axis = *block.getIArguments();;
+        std::vector<int> axis = *block.getIArguments();
 
         std::vector<Nd4jLong> longAxis = ArrayUtils::toLongVector(axis);
 
         if(bias != nullptr)
             eps->reduceAlongDimension(nd4j::reduce::Sum, dLdb, {0}, true);
 
-        NDArray standardized(input);
+        NDArray standardized(input->shapeInfo(), false, block.workspace());
 
         nd4j::ops::standardize standardizeOp;
         std::vector<NDArray *> inputs = {input};
@@ -92,7 +92,10 @@ namespace ops  {
 
         nd4j::ops::standardize_bp standardizeBp;
         eps->applyTrueBroadcast(nd4j::BroadcastOpsTuple::Multiply(), gain, dLdx);
-        dLdx->assign(standardizeBp.execute({input, dLdx}, {}, longAxis)->at(0));
+
+        std::vector<NDArray *> standardizeBpArgs = {input, dLdx};
+        std::vector<NDArray *> standardizeBpOut = {dLdx};
+        standardizeBp.execute(standardizeBpArgs, standardizeBpOut, targs, longAxis, bargs);
 
         return Status::OK();
     }

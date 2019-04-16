@@ -20931,6 +20931,132 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
                                                                                 }
 //         #endif
 
+        /**
+         * This operation performs dot product attention on the given timeseries input with the given queries
+         * out = sum(similarity(k_i, q) * v_i)
+         *
+         * similarity(k, q) = softmax(k * q) where x * q is the dot product of x and q
+         *
+         * Optionally with normalization step:
+         * similarity(k, q) = softmax(k * q / sqrt(size(q))
+         *
+         * See also "Attention is all you need" (https://arxiv.org/abs/1706.03762, p. 4, eq. 1)
+         *
+         * Note: This supports multiple queries at once, if only one query is available the queries vector still has to
+         * be 3D but can have queryCount = 1
+         *
+         * Note: keys and values usually is the same array. If you want to use it as the same array, simply pass it for
+         * both.
+         *
+         * Expected arguments:
+         * q: input 3D array "queries" of shape [batchSize, featureKeys, queryCount] or 4D array of shape [batchSize, numHeads, featureKeys, queryCount]
+         * k: input 3D array "keys" of shape [batchSize, featureKeys, timesteps] or 4D array of shape [batchSize, numHeads, featureKeys, timesteps]
+         * v: input 3D array "values" of shape [batchSize, featureValues, timesteps] or 4D array of shape [batchSize, numHeads, featureValues, timesteps]
+         * mask: OPTIONAL; array that defines which values should be skipped of shape [batchSize, timesteps]
+         *
+         * integer input arguments:
+         * 0: normalization, may have two values: zero -> do not apply normalization, one -> apply normalization
+         * 1: withWeights, may have two values: zero -> do not return weights, one -> return weights
+         *
+         * Output Arrays:
+         * 0: Attention result arrays of shape [batchSize, featureValues, queryCount] or [batchSize, numHeads, featureValues, queryCount]
+         * 1: OPTIONAL; Attention weights of shape [batchSize, timesteps, queryCount] or [batchSize, numHeads, timesteps, queryCount]
+         */
+//         #if NOT_EXCLUDED(OP_dot_product_attention)
+                @Namespace("nd4j::ops") public static class dot_product_attention extends DeclarableCustomOp {
+                    static { Loader.load(); }
+                    /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+                    public dot_product_attention(Pointer p) { super(p); }
+                    /** Native array allocator. Access with {@link Pointer#position(long)}. */
+                    public dot_product_attention(long size) { super((Pointer)null); allocateArray(size); }
+                    private native void allocateArray(long size);
+                    @Override public dot_product_attention position(long position) {
+                        return (dot_product_attention)super.position(position);
+                    }
+                
+                                                                                    public dot_product_attention() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
+                                                                                }
+                @Namespace("nd4j::ops") public static class dot_product_attention_bp extends DeclarableCustomOp {
+                    static { Loader.load(); }
+                    /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+                    public dot_product_attention_bp(Pointer p) { super(p); }
+                    /** Native array allocator. Access with {@link Pointer#position(long)}. */
+                    public dot_product_attention_bp(long size) { super((Pointer)null); allocateArray(size); }
+                    private native void allocateArray(long size);
+                    @Override public dot_product_attention_bp position(long position) {
+                        return (dot_product_attention_bp)super.position(position);
+                    }
+                
+                                                                                    public dot_product_attention_bp() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
+                                                                                }
+//         #endif
+
+
+        /**
+         * This performs multi-headed dot product attention on the given timeseries input
+         * out = concat(head_1, head_2, ..., head_n) * Wo
+         * head_i = dot_product_attention(Wq_i*q, Wk_i*k, Wv_i*v)
+         *
+         * Optionally with normalization when calculating the attention for each head.
+         *
+         * See also "Attention is all you need" (https://arxiv.org/abs/1706.03762, pp. 4,5, "3.2.2 Multi-Head Attention")
+         *
+         * This makes use of dot_product_attention OP support for rank 4 inputs.
+         *
+         * Expected arguments:
+         * q: input 3D array "queries" of shape [batchSize, featureKeys, queryCount]
+         * k: input 3D array "keys" of shape [batchSize, featureKeys, timesteps]
+         * v: input 3D array "values" of shape [batchSize, featureValues, timesteps]
+         * Wq: input query projection weights of shape [numHeads, projectedKeys, featureKeys]
+         * Wk: input key projection weights of shape [numHeads, projectedKeys, featureKeys]
+         * Wv: input value projection weights of shape [numHeads, projectedValues, featureValues]
+         * Wo: output projection weights of shape [numHeads * projectedValues, outSize]
+         * mask: OPTIONAL; array that defines which values should be skipped of shape [batchSize, timesteps]
+         *
+         * integer input arguments:
+         * 0: normalization, may have two values: zero -> do not apply normalization, one -> apply normalization
+         * 1: withWeights, may have two values: zero -> do not return weights, one -> return weights
+         *
+         * Output Arrays:
+         * 0: Attention result arrays of shape [batchSize, outSize, queryCount]
+         * 1: OPTIONAL; Attention weights of shape [batchSize, numHeads, timesteps, queryCount]
+         */
+//         #if NOT_EXCLUDED(OP_multi_head_dot_product_attention)
+                @Namespace("nd4j::ops") public static class multi_head_dot_product_attention extends DeclarableCustomOp {
+                    static { Loader.load(); }
+                    /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+                    public multi_head_dot_product_attention(Pointer p) { super(p); }
+                    /** Native array allocator. Access with {@link Pointer#position(long)}. */
+                    public multi_head_dot_product_attention(long size) { super((Pointer)null); allocateArray(size); }
+                    private native void allocateArray(long size);
+                    @Override public multi_head_dot_product_attention position(long position) {
+                        return (multi_head_dot_product_attention)super.position(position);
+                    }
+                
+                                                                                    public multi_head_dot_product_attention() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
+                                                                                }
+                @Namespace("nd4j::ops") public static class multi_head_dot_product_attention_bp extends DeclarableCustomOp {
+                    static { Loader.load(); }
+                    /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+                    public multi_head_dot_product_attention_bp(Pointer p) { super(p); }
+                    /** Native array allocator. Access with {@link Pointer#position(long)}. */
+                    public multi_head_dot_product_attention_bp(long size) { super((Pointer)null); allocateArray(size); }
+                    private native void allocateArray(long size);
+                    @Override public multi_head_dot_product_attention_bp position(long position) {
+                        return (multi_head_dot_product_attention_bp)super.position(position);
+                    }
+                
+                                                                                    public multi_head_dot_product_attention_bp() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
+                                                                                }
+//         #endif
     
 
 
@@ -20991,6 +21117,21 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
             }
         
                                                                                     public matmul() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
+                                                                                }
+        @Namespace("nd4j::ops") public static class matmul_bp extends DeclarableCustomOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public matmul_bp(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public matmul_bp(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public matmul_bp position(long position) {
+                return (matmul_bp)super.position(position);
+            }
+        
+                                                                                    public matmul_bp() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
                                                                                     public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
                                                                                 }
