@@ -2070,30 +2070,29 @@ specialBufferAndShapeWithOffset(void* vZ, Nd4jLong* hZShapeInfo, Nd4jLong* dZSha
 
     // take into account indices for first array
     auto axisSize = shape::sizeAt(reinterpret_cast<Nd4jLong*>(inputShapeInfo[0]), axis);
-    nd4j_printf("Set up indices...", "");
-    nd4j_printf("\n\n\tElement 0 at %i is setting\n", 2 * axis + 1);
+//    nd4j_printf("Set up indices...", "");
+//    nd4j_printf("\n\n\tElement 0 at %i is setting\n", 2 * axis + 1);
     indices[0][2 * axis + 1] = axisSize;
-    nd4j_printf("\n\n\tElement 0 at %i was set\n", 2 * axis + 1);
+//    nd4j_printf("\n\n\tElement 0 at %i was set\n", 2 * axis + 1);
     // loop through the rest of input arrays
     for(int i = 1; i < numArrays; ++i) {
-        nd4j_printf("\tIteration %i:\n", i);
+//        nd4j_printf("\tIteration %i:\n", i);
         indices[i][2 * axis]     = indices[i - 1][2 * axis + 1];                                // index start from
-        nd4j_printf("\n\n\tindices[%i][%i] was set\n", i, 2 * axis);
+//        nd4j_printf("\n\n\tindices[%i][%i] was set\n", i, 2 * axis);
         indices[i][2 * axis + 1] = indices[i - 1][2 * axis + 1] + shape::sizeAt(reinterpret_cast<Nd4jLong*>(inputShapeInfo[i]), axis);      // index end with (excluding)
-        nd4j_printf("\tindices[%i][%i] was set\n", i, 2 * axis + 1);
+//        nd4j_printf("\tindices[%i][%i] was set\n", i, 2 * axis + 1);
     }
-    nd4j_printf(" done\n", "");
-
-    nd4j_printf("Pack output shapes and buffers...", "");
+//    nd4j_printf(" done\n", "");
+//    nd4j_printf("Pack output shapes and buffers...", "");
 
     std::vector<void*> outSubArrsBuffs(numArrays);
     std::vector<Nd4jLong*> outSubArrsShapes(numArrays);
     for(int i = 0; i < numArrays; ++i) {
         specialBufferAndShapeWithOffset(dZ, hZShapeInfo, dZShapeInfo, indices[i], outSubArrsBuffs[i], outSubArrsShapes[i]);
     }
-    nd4j_printf(" done\n", "");
+//    nd4j_printf(" done\n", "");
 
-    nd4j_printf("Prepare device pointers...", "");
+//    nd4j_printf("Prepare device pointers...", "");
     // prepare arrays of pointers on buffers and shapes
     std::vector<void*>     hOutBuffers(numArrays), hInBuffers(numArrays);
     std::vector<Nd4jLong*> hOutShapeInfo(numArrays), hInShapeInfo(numArrays);
@@ -2102,9 +2101,9 @@ specialBufferAndShapeWithOffset(void* vZ, Nd4jLong* hZShapeInfo, Nd4jLong* dZSha
         hInBuffers[i]    = ddata[i];//->getSpecialBuffer();
         hOutShapeInfo[i] = outSubArrsShapes[i];
         hInShapeInfo[i]  = (Nd4jLong*)(dShapePointers[i]);//->getSpecialShapeInfo();
-        nd4j_printf("X_%i shape ptr: %p; data ptr: %p;\n", i, hInShapeInfo[i], hInBuffers[i]);
+//        nd4j_printf("X_%i shape ptr: %p; data ptr: %p;\n", i, hInShapeInfo[i], hInBuffers[i]);
     }
-    nd4j_printf(" done\n", "");
+//    nd4j_printf(" done\n", "");
 
     // allocate and copy all buffers and shapes arrays to global memory
     PointersManager manager(LaunchContext::defaultContext(), "NativeOps::concat");
@@ -2114,18 +2113,18 @@ specialBufferAndShapeWithOffset(void* vZ, Nd4jLong* hZShapeInfo, Nd4jLong* dZSha
     void* dOutShapeInfo = manager.replicatePointer(hOutShapeInfo.data(), hOutShapeInfo.size() * sizeof(Nd4jLong*));
 
     manager.synchronize();
-    nd4j_printf("Concat itself run...", "");
+//    nd4j_printf("Concat itself run...", "");
 
     BUILD_SINGLE_SELECTOR(zType, concatCudaLauncher, (numArrays, stream, dInBuffers, dInShapeInfo, dOutBuffers, dOutShapeInfo), LIBND4J_TYPES);
-    nd4j_printf(" done\n", "");
+//    nd4j_printf(" done\n", "");
 
-    nd4j_printf("Postprocessing...", "");
+//    nd4j_printf("Postprocessing...", "");
 
     cudaError_t res = cudaStreamSynchronize(*stream);
     checkCudaErrors(res);
     nd4j::DebugHelper::checkErrorCode(stream, "Legacy ConcatFloat(...) failed");
-    nd4j_printf(" done\n", "");
-    nd4j_printf("Free up rest...", "");
+//    nd4j_printf(" done\n", "");
+//    nd4j_printf("Free up rest...", "");
     cudaError_t err;
     for(int i = 0; i < numArrays; ++i) {
         err = cudaFree(outSubArrsShapes[i]);
@@ -2134,8 +2133,8 @@ specialBufferAndShapeWithOffset(void* vZ, Nd4jLong* hZShapeInfo, Nd4jLong* dZSha
             throw std::runtime_error("Cannot deallocate memory for shapes.");
         }
     }
-    nd4j_printf(" done\n", "");
-    nd4j_printf("All done!!!\n", "");
+//    nd4j_printf(" done\n", "");
+//    nd4j_printf("All done!!!\n", "");
 }
 
 
