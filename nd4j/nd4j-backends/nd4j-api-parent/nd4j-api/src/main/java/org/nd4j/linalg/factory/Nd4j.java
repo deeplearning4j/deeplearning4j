@@ -889,7 +889,7 @@ public class Nd4j {
                                 boolean transposeB) {
         long cRows = (transposeA ? a.columns() : a.rows());
         long cCols = (transposeB ? b.rows() : b.columns());
-        INDArray c = Nd4j.createUninitialized(new long[] {cRows, cCols}, 'f');
+        INDArray c = Nd4j.createUninitialized(a.dataType(), new long[] {cRows, cCols}, 'f');
         return gemm(a, b, c, transposeA, transposeB, 1.0, 0.0);
     }
 
