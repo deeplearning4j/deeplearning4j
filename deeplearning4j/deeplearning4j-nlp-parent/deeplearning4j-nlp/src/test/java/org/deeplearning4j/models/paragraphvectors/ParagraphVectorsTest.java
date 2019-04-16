@@ -24,6 +24,7 @@ import org.deeplearning4j.models.embeddings.learning.impl.elements.CBOW;
 import org.deeplearning4j.models.embeddings.reader.impl.FlatModelUtils;
 import org.deeplearning4j.models.sequencevectors.sequence.Sequence;
 import org.deeplearning4j.models.sequencevectors.transformers.impl.SentenceTransformer;
+import org.deeplearning4j.models.sequencevectors.transformers.impl.iterables.BasicTransformerIterator;
 import org.deeplearning4j.models.sequencevectors.transformers.impl.iterables.ParallelTransformerIterator;
 import org.junit.Rule;
 import org.junit.rules.TemporaryFolder;
@@ -638,7 +639,7 @@ public class ParagraphVectorsTest {
         SentenceTransformer transformer = new SentenceTransformer.Builder().iterator(iterator).allowMultithreading(true)
                 .tokenizerFactory(factory).build();
 
-        ParallelTransformerIterator iter = (ParallelTransformerIterator)transformer.iterator();
+        BasicTransformerIterator iter = (BasicTransformerIterator)transformer.iterator();
         for (int i = 0; i < 100; ++i) {
             int cnt = 0;
             long counter = 0;

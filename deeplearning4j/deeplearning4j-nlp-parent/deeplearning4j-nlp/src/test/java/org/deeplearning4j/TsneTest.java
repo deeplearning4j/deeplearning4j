@@ -51,7 +51,7 @@ public class TsneTest {
                 log.info("Starting test: WSM={}, syntheticData={}", wsm, syntheticData);
 
                 //STEP 1: Initialization
-                int iterations = 300;
+                int iterations = 30;
                 //create an n-dimensional array of doubles
                 Nd4j.setDataType(DataType.DOUBLE);
                 List<String> cacheList = new ArrayList<>(); //cacheList is a dynamic array of strings used to hold all words
