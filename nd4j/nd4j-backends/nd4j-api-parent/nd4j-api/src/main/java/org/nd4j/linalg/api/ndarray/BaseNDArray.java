@@ -1415,9 +1415,12 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             i += rank();
 
         // TODO: i'm not sure that rank == 1 has fair shortcut here
-        if (isScalar() || rank() == 1) {
+        if (isScalar()) {
             autoProcessScalarCall();
             data.put(i, value);
+            return this;
+        } else if (rank() == 1) {
+            data.put(i * stride(0), value);
             return this;
         }
 

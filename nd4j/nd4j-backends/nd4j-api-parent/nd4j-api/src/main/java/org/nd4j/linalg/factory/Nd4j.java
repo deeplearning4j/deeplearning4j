@@ -1789,6 +1789,7 @@ public class Nd4j {
              * and how they were rearranged.
              */
 
+
             Arrays.sort(index, new Comparator<Double>() {
                 @Override
                 public int compare(Double o1, Double o2) {
@@ -1812,6 +1813,7 @@ public class Nd4j {
                     indexVector.putScalar(j, index[currCount2]);
                 }
             }
+
 
         }
 
