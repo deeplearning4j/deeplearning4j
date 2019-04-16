@@ -14,5 +14,6 @@ public class ProfilerConfig {
     private boolean checkForINF;
     private boolean stackTrace;
     private boolean checkElapsedTime;
-    private boolean checkWorkspaces;
+    @Builder.Default
+    private boolean checkWorkspaces = true;
 }

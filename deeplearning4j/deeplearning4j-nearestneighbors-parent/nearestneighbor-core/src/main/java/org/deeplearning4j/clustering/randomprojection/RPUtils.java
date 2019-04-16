@@ -323,6 +323,7 @@ public class RPUtils {
      */
     public static INDArray computeDistanceMulti(String function,INDArray x,INDArray y,INDArray result) {
         ReduceOp op = (ReduceOp) getOp(function, x, y, result);
+        op.setDimensions(1);
         Nd4j.getExecutioner().exec(op);
         return op.z();
     }
