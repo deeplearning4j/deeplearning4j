@@ -276,10 +276,6 @@ public class AllocatorTest {
         log.info("Approximate free memory: {}", MemoryTracker.getInstance().getApproximateFreeMemory(Nd4j.getAffinityManager().getDeviceForCurrentThread()));
         log.info("Real free memory: {}", MemoryTracker.getInstance().getPreciseFreeMemory(Nd4j.getAffinityManager().getDeviceForCurrentThread()));
 
-
-        Thread.sleep(300000000000L);
-        log.info("Starting...");
-
         val timeStart = System.currentTimeMillis();
 
         while (true) {

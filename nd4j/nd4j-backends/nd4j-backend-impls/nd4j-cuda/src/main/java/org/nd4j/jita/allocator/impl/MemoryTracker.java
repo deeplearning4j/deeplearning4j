@@ -65,6 +65,14 @@ public class MemoryTracker {
         return allocatedHost.get();
     }
 
+    /**
+     * This method returns number of bytes allocated and cached in host ram
+     * @return
+     */
+    public long getActiveHostAmount() {
+        return getAllocatedHostAmount() + getCachedHostAmount();
+    }
+
     public void incrementCachedHostAmount(long numBytes) {
         cachedHost.addAndGet(numBytes);
     }

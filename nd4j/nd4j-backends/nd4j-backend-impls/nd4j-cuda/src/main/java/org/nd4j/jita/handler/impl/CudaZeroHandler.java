@@ -224,24 +224,28 @@ public class CudaZeroHandler implements MemoryHandler {
         CudaContext context = getCudaContext();
         switch (targetMode) {
             case HOST: {
-                if (zeroUseCounter.get() + reqMemory >= configuration.getMaximumZeroAllocation()) {
-                    if (reqMemory > configuration.getMaximumZeroAllocation()) {
-                        throw new IllegalStateException(
-                                        "You can't allocate more memory, then allowed with configured value: ["
-                                                        + configuration.getMaximumZeroAllocation() + "]");
-                    }
+                if (MemoryTracker.getInstance().getActiveHostAmount() + reqMemory >= configuration.getMaximumZeroAllocation()) {
 
+                    while (MemoryTracker.getInstance().getActiveHostAmount() + reqMemory >= configuration.getMaximumZeroAllocation()) {
 
-                    while (zeroUseCounter.get() + reqMemory >= configuration.getMaximumZeroAllocation()) {
-                        try {
-                            log.warn("No available [HOST] memory, sleeping for a while...");
-                            log.debug("Currently used: [" + zeroUseCounter.get() + "], allocated objects: ["
-                                            + zeroAllocations.get(0) + "]");
+                        val before = MemoryTracker.getInstance().getActiveHostAmount();
+                        memoryProvider.purgeCache();
+                        Nd4j.getMemoryManager().invokeGc();
+                        val after = MemoryTracker.getInstance().getActiveHostAmount();
 
-                            Nd4j.getMemoryManager().invokeGc();
-                            Thread.sleep(1000);
-                        } catch (Exception e) {
-                            throw new RuntimeException(e);
+                        log.debug("[HOST] before: {}; after: {};", before, after);
+
+                        if (MemoryTracker.getInstance().getActiveHostAmount() + reqMemory >= configuration.getMaximumZeroAllocation()) {
+                            try {
+                                log.warn("No available [HOST] memory, sleeping for a while... Consider increasing -Xmx next time.");
+                                log.debug("Currently used: [" + zeroUseCounter.get() + "], allocated objects: [" + zeroAllocations.get(0) + "]");
+
+                                memoryProvider.purgeCache();
+                                Nd4j.getMemoryManager().invokeGc();
+                                Thread.sleep(1000);
+                            } catch (Exception e) {
+                                throw new RuntimeException(e);
+                            }
                         }
                     }
                 }
