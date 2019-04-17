@@ -602,6 +602,10 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
             return this;
         }
 
+        /**
+         * Set the DataType for the network parameters and activations for all layers in the network. Default: Float
+         * @param dataType Datatype to use for parameters and activations
+         */
         public Builder dataType(@NonNull DataType dataType){
             this.dataType = dataType;
             return this;

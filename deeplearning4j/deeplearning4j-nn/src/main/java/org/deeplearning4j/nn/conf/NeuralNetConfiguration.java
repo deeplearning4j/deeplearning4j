@@ -1159,9 +1159,8 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
 
 
         /**
-         * Set the DataType for the network. Must be a floating point type: {@link DataType#DOUBLE}, {@link DataType#FLOAT} or
-         * {@link DataType#HALF}.<br>
-         * This sets the datatype for the network
+         * Set the DataType for the network parameters and activations. Must be a floating point type: {@link DataType#DOUBLE},
+         * {@link DataType#FLOAT} or {@link DataType#HALF}.<br>
          */
         public Builder dataType(@NonNull DataType dataType){
             Preconditions.checkState(dataType == DataType.DOUBLE || dataType == DataType.FLOAT || dataType == DataType.HALF,

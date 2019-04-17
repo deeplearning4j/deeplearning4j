@@ -4495,6 +4495,14 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         return ModelSerializer.restoreComputationGraph(f, loadUpdater);
     }
 
+    /**
+     * Return a copy of the network with the parameters and activations set to use the specified (floating point) data type.
+     * If the existing datatype is the same as the requested dataype, the original network will be returned unchanged.
+     * Only floating point datatypes (DOUBLE, FLOAT, HALF) may be used.
+     *
+     * @param dataType Datatype to convert the network to
+     * @return The network, set to use the specified datatype for the parameters and activations
+     */
     public ComputationGraph convertDataType(@NonNull DataType dataType){
         Preconditions.checkState(dataType.isFPType(), "Invalid DataType: %s. Can only convert network to a floating point type", dataType);
         if(dataType == params().dataType()){
