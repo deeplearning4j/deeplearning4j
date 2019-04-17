@@ -163,10 +163,10 @@ static void softmax_(const NDArray& input, NDArray& output, const int dimension)
     else if(input.isSameShapeStrict(&output)) {
 
         TadPack tadPack  = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(input.getShapeInfo(), {dimension});
-        const Nd4jLong* tadShapeInfo = tadPack.primaryShapeInfo();
-        const Nd4jLong* tadOffsets   = tadPack.primaryOffsets();
-        const uint numOfSubArrs      = tadPack.numberOfTads();
-        const uint tadLen            = shape::length(tadShapeInfo);
+        Nd4jLong* tadShapeInfo  = tadPack.primaryShapeInfo();
+        Nd4jLong* tadOffsets    = tadPack.primaryOffsets();
+        const uint numOfSubArrs = tadPack.numberOfTads();
+        const uint tadLen       = shape::length(tadShapeInfo);
         
         if(shape::elementWiseStride(tadShapeInfo) == 1){
 
@@ -207,11 +207,10 @@ static void softmax_(const NDArray& input, NDArray& output, const int dimension)
                 T sum = 0.f;
             
                 auto offsets = new Nd4jLong[tadLen];
-
-                for(uint j = 0; j < tadLen; ++j) {
-                    offsets[j] = shape::indexOffset(j, tadShapeInfo, inShapeInfoCast, tadLen, canCast);
-                    max = nd4j::math::nd4j_max<T>(max, inBuff[offsets[j]]);
-                }
+                shape::calcSubArrOffsets(tadLen, shape::rank(tadShapeInfo), shape::shapeOf(tadShapeInfo), shape::stride(tadShapeInfo), offsets);
+ 
+                for(uint j = 0; j < tadLen; ++j)                    
+                    max = nd4j::math::nd4j_max<T>(max, inBuff[offsets[j]]);                
             
                 for (uint j = 0; j < tadLen; ++j) {
                     T temp = nd4j::math::nd4j_exp<T,T>(inBuff[offsets[j]] - max);
