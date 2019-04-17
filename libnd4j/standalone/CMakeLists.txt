@@ -22,6 +22,15 @@ if (OPENMP_FOUND)
 endif()
 SET( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -DLIBND4J_ALL_OPS=true -pthread")
 
+if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/klib/)
+else()
+    file(MAKE_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/)
+    #file(DOWNLOAD raw.githubusercontent.com/attractivechaos/klib/cc7e69f2969610b08238f8a9293a73adab990ba2/ketopt.h
+    #    ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/klib/ketopt.h
+    #    LOG DL_LOG)
+    execute_process(COMMAND git clone https://github.com/attractivechaos/klib.git ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/klib)
+endif()
+
 if(LIBND4J_NAME)
 
 else()
