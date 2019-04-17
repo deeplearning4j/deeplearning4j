@@ -21,6 +21,7 @@
 #include <ops/ops.h>
 #include <loops/pairwise_transform.h>
 #include <types/types.h>
+#include <LoopKind.h>
 #include <templatemath.h>
 #include <helpers/shape.h>
 #include <op_boilerplate.h>
@@ -191,20 +192,17 @@ namespace functions {
                 return;
             }
 
-            bool sameShape = shape::shapeEquals(shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), shape::rank(yShapeInfo), shape::shapeOf(yShapeInfo));
+            
 
-            if (xEws >= 1 && yEws >= 1 && zEws >= 1 &&
-                shape::order(xShapeInfo) == shape::order(yShapeInfo) && shape::order(zShapeInfo) == shape::order(xShapeInfo) &&
-                sameShape &&  xEws == yEws) {
+            const nd4j::LoopKind::Kind kindOfLoop = nd4j::LoopKind::deduceKindOfLoopXYZ(xShapeInfo, yShapeInfo, zShapeInfo);
+            const bool sameShapesXY = shape::shapeEquals(xShapeInfo, yShapeInfo);
 
+            if ((kindOfLoop == nd4j::LoopKind::EWS1 || kindOfLoop == nd4j::LoopKind::EWSNONZERO) && sameShapesXY) {
                 exec<OpType>(x, xEws, y, yEws, z, zEws, extraParams, n);
-            }                
-            else if (!sameShape && shape::order(xShapeInfo) == shape::order(yShapeInfo) &&
-                     shape::order(zShapeInfo) == shape::order(xShapeInfo) && xEws >= 1 &&
-                     yEws >= 1 &&zEws >= 1 && xEws == yEws) { //not same shape
-
+            }            
+            else if ((kindOfLoop == nd4j::LoopKind::EWS1 || kindOfLoop == nd4j::LoopKind::EWSNONZERO) && !sameShapesXY) { //not same shape
                 exec<OpType>(x, xEws, y, yEws, z, zEws, extraParams, shape::length(yShapeInfo));
-            }          
+            }                
             else {                
 
                 if(shape::haveSameOffsets(xShapeInfo, yShapeInfo) && shape::haveSameOffsets(xShapeInfo, zShapeInfo)) {

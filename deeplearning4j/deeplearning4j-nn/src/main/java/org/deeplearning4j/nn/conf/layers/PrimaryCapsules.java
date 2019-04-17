@@ -16,13 +16,7 @@
 
 package org.deeplearning4j.nn.conf.layers;
 
-import java.util.Map;
-import lombok.AccessLevel;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.inputs.InputType.InputTypeConvolutional;
@@ -38,6 +32,8 @@ import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv2DConfig;
 import org.nd4j.linalg.factory.Nd4j;
+
+import java.util.Map;
 
 /**
  * An implementation of the PrimaryCaps layer from Dynamic Routing Between Capsules
@@ -105,8 +101,7 @@ public class PrimaryCapsules extends SameDiffLayer {
     }
 
     @Override
-    public SDVariable defineLayer(SameDiff SD, SDVariable input, Map<String, SDVariable> paramTable) {
-
+    public SDVariable defineLayer(SameDiff SD, SDVariable input, Map<String, SDVariable> paramTable, SDVariable mask) {
         Conv2DConfig conf = Conv2DConfig.builder()
                 .kH(kernelSize[0]).kW(kernelSize[1])
                 .sH(stride[0]).sW(stride[1])

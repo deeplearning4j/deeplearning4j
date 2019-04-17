@@ -21,7 +21,6 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
-import java.util.Collections;
 import java.util.Map;
 
 /**
@@ -43,7 +42,7 @@ public abstract class SameDiffLambdaLayer extends SameDiffLayer {
     public abstract SDVariable defineLayer(SameDiff sameDiff, SDVariable layerInput);
 
     @Override
-    public SDVariable defineLayer(SameDiff sameDiff, SDVariable layerInput, Map<String, SDVariable> paramTable) {
+    public SDVariable defineLayer(SameDiff sameDiff, SDVariable layerInput, Map<String, SDVariable> paramTable, SDVariable mask) {
         return defineLayer(sameDiff, layerInput);
     }
 

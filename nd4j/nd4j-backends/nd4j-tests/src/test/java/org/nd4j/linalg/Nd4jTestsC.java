@@ -906,16 +906,6 @@ public class Nd4jTestsC extends BaseNd4jTest {
     }
 
     @Test
-    public void testTadShape() {
-        INDArray arr = Nd4j.linspace(1, 12, 12, DataType.DOUBLE).reshape(4, 3, 1, 1);
-        INDArray javaTad = arr.javaTensorAlongDimension(0, 0, 2, 3);
-        assertArrayEquals(new long[] {4, 1, 1}, javaTad.shape());
-        INDArray tad = arr.tensorAlongDimension(0, 0, 2, 3);
-        assertArrayEquals(javaTad.shapeInfoDataBuffer().asLong(), tad.shapeInfoDataBuffer().asLong());
-        assertEquals(javaTad.shapeInfoDataBuffer(), tad.shapeInfoDataBuffer());
-    }
-
-    @Test
     public void testSoftmaxDerivative() {
         INDArray input = Nd4j.create(new double[] {-1.07, -0.01, 0.45, 0.95, 0.45, 0.16, 0.20, 0.80, 0.89, 0.25}).reshape(1, -1).transpose();
         INDArray output = Nd4j.create(10, 1);
