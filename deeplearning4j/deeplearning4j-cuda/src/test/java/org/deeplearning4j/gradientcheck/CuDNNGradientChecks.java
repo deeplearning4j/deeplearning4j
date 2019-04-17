@@ -619,15 +619,6 @@ public class CuDNNGradientChecks extends BaseDL4JTest {
             MultiLayerNetwork mln = new MultiLayerNetwork(conf);
             mln.init();
 
-            for (Layer l : mln.getLayers()) {
-                Dropout d = (Dropout) l.conf().getLayer().getIDropout();
-                assertNotNull(d);
-                CudnnDropoutHelper h = (CudnnDropoutHelper) d.getHelper();
-                assertNotNull(h);
-            }
-
-            String msg = (cnn ? "CNN" : "Dense") + ": " + dropout.getClass().getSimpleName();
-
             INDArray f;
             if (cnn) {
                 f = Nd4j.rand(new int[]{minibatch, 3, 8, 8}).muli(10).subi(5);
@@ -635,6 +626,17 @@ public class CuDNNGradientChecks extends BaseDL4JTest {
                 f = Nd4j.rand(minibatch, 8).muli(10).subi(5);
             }
             INDArray l = TestUtils.randomOneHot(minibatch, 10);
+
+            mln.output(f, true);
+
+            for (Layer layer : mln.getLayers()) {
+                Dropout d = (Dropout) layer.conf().getLayer().getIDropout();
+                assertNotNull(d);
+                CudnnDropoutHelper h = (CudnnDropoutHelper) d.getHelper();
+                assertNotNull(h);
+            }
+
+            String msg = (cnn ? "CNN" : "Dense") + ": " + dropout.getClass().getSimpleName();
 
             //Consumer function to enforce CuDNN RNG repeatability - otherwise will fail due to randomness (inconsistent
             // dropout mask between forward passes)

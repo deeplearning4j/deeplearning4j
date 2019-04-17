@@ -138,7 +138,7 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
         if (helper != null && (helperCountFail == 0 || !layerConf().isCudnnAllowFallback())){
             //Note that cudnn does not support dense (2d) batch norm case as of v5.1
             if (layerConf.isLockGammaBeta()) {
-                gamma = Nd4j.valueArrayOf(new long[] {1, shape[1]}, layerConf.getGamma());
+                gamma = Nd4j.createUninitialized(dataType, 1, shape[1]).assign(layerConf.getGamma());
             }
 
             INDArray in;
@@ -418,8 +418,8 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
             if (helper != null && input.rank() == 4) {
                 //TODO: don't create these each iteration, when using cudnn
                 val gammaBetaShape = new long[] {1, layerConf().getNOut()};
-                gamma = Nd4j.valueArrayOf(gammaBetaShape, layerConf().getGamma());
-                beta = Nd4j.valueArrayOf(gammaBetaShape, layerConf().getBeta());
+                gamma = Nd4j.valueArrayOf(gammaBetaShape, layerConf().getGamma(), dataType);
+                beta = Nd4j.valueArrayOf(gammaBetaShape, layerConf().getBeta(), dataType);
             }
         } else {
             gamma = getParam(BatchNormalizationParamInitializer.GAMMA);
@@ -441,7 +441,7 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
                 if(globalVarView == null){
                     //May be null when useLogStd is true
                     INDArray log10s = getParam(BatchNormalizationParamInitializer.GLOBAL_LOG_STD);
-                    globalVarView = Transforms.pow(Nd4j.valueArrayOf(log10s.shape(), 10.0, log10s.dataType()), log10s, false);
+                    globalVarView = Transforms.pow(Nd4j.valueArrayOf(log10s.shape(), 10.0, dataType), log10s, false);
                     globalVarView.muli(globalVarView);
                 }
 
@@ -500,7 +500,7 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
             if(layerConf().isUseLogStd()){
                 //var = (10^(log10(s)))^2
                 INDArray log10s = getParam(BatchNormalizationParamInitializer.GLOBAL_LOG_STD);
-                var = Transforms.pow(Nd4j.valueArrayOf(log10s.shape(), 10.0, mean.dataType()), log10s);
+                var = Transforms.pow(Nd4j.valueArrayOf(log10s.shape(), 10.0, dataType), log10s);
                 var.muli(var);
             } else {
                 var = getParam(BatchNormalizationParamInitializer.GLOBAL_VAR);

@@ -59,7 +59,6 @@ public class PReLULayer extends BaseLayer {
         this.inputShape = builder.inputShape;
         this.sharedAxes = builder.sharedAxes;
         initializeConstraints(builder);
-        Preconditions.checkNotNull(inputShape, "Input shape cannot be null");
     }
 
     @Override
