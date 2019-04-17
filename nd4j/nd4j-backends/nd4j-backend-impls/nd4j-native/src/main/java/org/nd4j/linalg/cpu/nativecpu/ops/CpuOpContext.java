@@ -21,6 +21,7 @@ import org.bytedeco.javacpp.Pointer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseOpContext;
 import org.nd4j.linalg.api.ops.OpContext;
+import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.nativeblas.Nd4jCpu;
 
 import java.util.List;
@@ -53,13 +54,13 @@ public class CpuOpContext extends BaseOpContext implements OpContext {
     }
 
     @Override
-    public void setRootSeed(long seed) {
-
+    public void setRngStates(long rootState, long nodeState) {
+        context.randomGenerator().setStates(rootState, nodeState);
     }
 
     @Override
-    public void setNodeSeed(long seed) {
-
+    public Pair<Long, Long> getRngStates() {
+        return Pair.makePair(context.randomGenerator().rootState(), context.randomGenerator().nodeState());
     }
 
     @Override
