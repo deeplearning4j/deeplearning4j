@@ -197,7 +197,7 @@ public class ShapeTestsC extends BaseNd4jTest {
     @Test
     public void testVectorAlongDimension() {
         INDArray arr = Nd4j.linspace(1, 24, 24, DataType.DOUBLE).reshape(4, 3, 2);
-        INDArray assertion = Nd4j.create(new double[] {3, 4}, new long[] {1, 2});
+        INDArray assertion = Nd4j.create(new double[] {3, 4});
         INDArray vectorDimensionTest = arr.vectorAlongDimension(1, 2);
         assertEquals(assertion, vectorDimensionTest);
         val vectorsAlongDimension1 = arr.vectorsAlongDimension(1);

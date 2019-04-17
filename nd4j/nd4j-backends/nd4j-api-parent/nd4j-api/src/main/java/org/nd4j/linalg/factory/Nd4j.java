@@ -1927,7 +1927,7 @@ public class Nd4j {
         if (in.rows() > Integer.MAX_VALUE)
             throw new ND4JArraySizeException();
 
-        INDArray out = Nd4j.create(in.shape());
+        INDArray out = Nd4j.create(in.data(), in.shape());
         int nRows = (int) in.rows();
         ArrayList<Integer> list = new ArrayList<Integer>(nRows);
         for (int i = 0; i < nRows; i++)

@@ -56,28 +56,30 @@ public class ROCBinaryTest extends BaseNd4jTest {
         String sFirst0 = null;
         try {
             for (DataType globalDtype : new DataType[]{DataType.DOUBLE, DataType.FLOAT, DataType.HALF, DataType.INT}) {
+//            for (DataType globalDtype : new DataType[]{DataType.HALF}) {
                 Nd4j.setDefaultDataTypes(globalDtype, globalDtype.isFPType() ? globalDtype : DataType.DOUBLE);
                 for (DataType lpDtype : new DataType[]{DataType.DOUBLE, DataType.FLOAT, DataType.HALF}) {
-
-                    Nd4j.getRandom().setSeed(12345);
+                    String msg = "globalDtype=" + globalDtype + ", labelPredictionsDtype=" + lpDtype;
 
                     int nExamples = 50;
                     int nOut = 4;
-                    int[] shape = {nExamples, nOut};
+                    long[] shape = {nExamples, nOut};
 
                     for (int thresholdSteps : new int[]{30, 0}) { //0 == exact
 
+                        Nd4j.getRandom().setSeed(12345);
                         INDArray labels =
-                                Nd4j.getExecutioner().exec(new BernoulliDistribution(Nd4j.createUninitialized(shape), 0.5)).castTo(lpDtype);
+                                Nd4j.getExecutioner().exec(new BernoulliDistribution(Nd4j.createUninitialized(DataType.DOUBLE, shape), 0.5)).castTo(lpDtype);
 
-                        INDArray predicted = Nd4j.rand(lpDtype, shape);
+                        Nd4j.getRandom().setSeed(12345);
+                        INDArray predicted = Nd4j.rand(DataType.DOUBLE, shape).castTo(lpDtype);
 
                         ROCBinary rb = new ROCBinary(thresholdSteps);
 
                         for (int xe = 0; xe < 2; xe++) {
                             rb.eval(labels, predicted);
 
-                            System.out.println(rb.stats());
+                            //System.out.println(rb.stats());
 
                             double eps = lpDtype == DataType.HALF ? 1e-2 : 1e-6;
                             for (int i = 0; i < nOut; i++) {
@@ -91,11 +93,11 @@ public class ROCBinaryTest extends BaseNd4jTest {
                                 double aucExp = r.calculateAUC();
                                 double auc = rb.calculateAUC(i);
 
-                                assertEquals(aucExp, auc, eps);
+                                assertEquals(msg, aucExp, auc, eps);
 
                                 long apExp = r.getCountActualPositive();
                                 long ap = rb.getCountActualPositive(i);
-                                assertEquals(ap, apExp);
+                                assertEquals(msg, ap, apExp);
 
                                 long anExp = r.getCountActualNegative();
                                 long an = rb.getCountActualNegative(i);
@@ -104,7 +106,7 @@ public class ROCBinaryTest extends BaseNd4jTest {
                                 PrecisionRecallCurve pExp = r.getPrecisionRecallCurve();
                                 PrecisionRecallCurve p = rb.getPrecisionRecallCurve(i);
 
-                                assertEquals(pExp, p);
+                                assertEquals(msg, pExp, p);
                             }
 
                             String s = rb.stats();
@@ -113,22 +115,22 @@ public class ROCBinaryTest extends BaseNd4jTest {
                                 if(first0 == null) {
                                     first0 = rb;
                                     sFirst0 = s;
-                                } else { //if(lpDtype != DataType.HALF) {   //Precision issues with FP16
-                                    assertEquals(sFirst0, s);
+                                } else if(lpDtype != DataType.HALF) {   //Precision issues with FP16
+                                    assertEquals(msg, sFirst0, s);
                                     assertEquals(first0, rb);
                                 }
                             } else {
                                 if(first30 == null) {
                                     first30 = rb;
                                     sFirst30 = s;
-                                } else { //if(lpDtype != DataType.HALF) {   //Precision issues with FP16
-                                    assertEquals(sFirst30, s);
+                                } else if(lpDtype != DataType.HALF) {   //Precision issues with FP16
+                                    assertEquals(msg, sFirst30, s);
                                     assertEquals(first30, rb);
                                 }
                             }
 
 //                            rb.reset();
-                            rb = new ROCBinary();
+                            rb = new ROCBinary(thresholdSteps);
                         }
                     }
                 }

@@ -28,6 +28,7 @@ import org.deeplearning4j.nn.layers.convolution.CudnnConvolutionHelper;
 import org.nd4j.jita.allocator.Allocator;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.jita.conf.CudaEnvironment;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
 import org.nd4j.linalg.api.shape.Shape;
@@ -55,6 +56,10 @@ import static org.nd4j.linalg.indexing.NDArrayIndex.interval;
  */
 @Slf4j
 public class CudnnSubsamplingHelper extends BaseCudnnHelper implements SubsamplingHelper {
+
+    public CudnnSubsamplingHelper(DataType dataType) {
+        super(dataType);
+    }
 
     private static class CudnnSubsamplingContext extends CudnnContext {
 

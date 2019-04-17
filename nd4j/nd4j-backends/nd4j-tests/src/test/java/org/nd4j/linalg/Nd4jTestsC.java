@@ -2929,11 +2929,11 @@ public class Nd4jTestsC extends BaseNd4jTest {
     public void testSquareMatrix() {
         INDArray n = Nd4j.create(Nd4j.linspace(1, 8, 8, DataType.DOUBLE).data(), new long[] {2, 2, 2});
         INDArray eightFirstTest = n.vectorAlongDimension(0, 2);
-        INDArray eightFirstAssertion = Nd4j.create(new double[] {1, 2}, new long[] {1, 2});
+        INDArray eightFirstAssertion = Nd4j.create(new double[] {1, 2});
         assertEquals(eightFirstAssertion, eightFirstTest);
 
         INDArray eightFirstTestSecond = n.vectorAlongDimension(1, 2);
-        INDArray eightFirstTestSecondAssertion = Nd4j.create(new double[] {3, 4}, new int[]{1,2});
+        INDArray eightFirstTestSecondAssertion = Nd4j.create(new double[] {3, 4});
         assertEquals(eightFirstTestSecondAssertion, eightFirstTestSecond);
 
     }

@@ -983,8 +983,6 @@ public class MiscOpValidation extends BaseOpValidation {
                     {54, 42, 29, 15, 0}
             });
 
-            INDArray axisArg = Nd4j.scalar(1);  //Along dim 1
-
             for (boolean exclusive : new boolean[]{false, true}) {
                 for (boolean reverse : new boolean[]{false, true}) {
 
