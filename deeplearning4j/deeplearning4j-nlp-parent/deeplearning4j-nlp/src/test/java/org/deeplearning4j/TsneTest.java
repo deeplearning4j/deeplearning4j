@@ -160,7 +160,7 @@ public class TsneTest {
                 List<String> cacheList = new ArrayList<>(); //cacheList is a dynamic array of strings used to hold all words
 
                 //STEP 2: Turn text input into a list of words
-                INDArray weights = Nd4j.rand(500, 20);
+                INDArray weights = Nd4j.rand(25000,300);
 
                 StopWatch watch = new StopWatch();
                 watch.start();
