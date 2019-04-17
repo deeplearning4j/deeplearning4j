@@ -160,33 +160,81 @@ static void softmax_(const NDArray& input, NDArray& output, const int dimension)
         else
             output = 1.;
     }
-    else {
+    else if(input.isSameShapeStrict(&output)) {
 
-        TadPack inTadPack  = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(input.getShapeInfo(), {dimension});
-        const uint numOfSubArrs = inTadPack.numberOfTads();
-        auto inSubArrs = NDArrayFactory::createSetOfArrs(numOfSubArrs, input.getBuffer(), inTadPack.primaryShapeInfo(), inTadPack.primaryOffsets(), input.getWorkspace());
-        ResultSet outSubArrs;
+        TadPack tadPack  = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(input.getShapeInfo(), {dimension});
+        const Nd4jLong* tadShapeInfo = tadPack.primaryShapeInfo();
+        const Nd4jLong* tadOffsets   = tadPack.primaryOffsets();
+        const uint numOfSubArrs      = tadPack.numberOfTads();
+        const uint tadLen            = shape::length(tadShapeInfo);
+        
+        if(shape::elementWiseStride(tadShapeInfo) == 1){
 
-        if(input.isSameShapeStrict(&output))
-            outSubArrs = std::move(NDArrayFactory::createSetOfArrs(numOfSubArrs, output.getBuffer(), inTadPack.primaryShapeInfo(), inTadPack.primaryOffsets(), input.getWorkspace()));
-        else
-            outSubArrs = std::move(output.allTensorsAlongDims({dimension}));
+            PRAGMA_OMP_PARALLEL_FOR_SIMD
+            for (uint i = 0; i < numOfSubArrs; ++i) {
 
-        PRAGMA_OMP_PARALLEL_FOR
-        for (uint i = 0; i < numOfSubArrs; ++i) {
+                T* inBuff  = input.bufferAsT<T>()  + tadOffsets[i];
+                T* outBuff = output.bufferAsT<T>() + tadOffsets[i];
 
-            NDArray scalarMax = inSubArrs[i]->reduceNumber(nd4j::reduce::Max);            
+                T max = -DataTypeUtils::max<T>();
+                T sum = 0;
+                        
+                for(uint j = 0; j < tadLen; ++j)
+                    max = nd4j::math::nd4j_max<T>(max, inBuff[j]);            
             
-            inSubArrs[i]->applyScalarArr(nd4j::scalar::Subtract, &scalarMax, outSubArrs[i]);            
+                for (uint j = 0; j < tadLen; ++j) {
+                    T temp = nd4j::math::nd4j_exp<T,T>(inBuff[j] - max);
+                    outBuff[j] = temp;
+                    sum += temp;
+                }
+            
+                for (uint j = 0; j < tadLen; ++j)
+                    outBuff[j] /= sum;            
+            }
+        }
+        else {
 
-            outSubArrs[i]->applyTransform(nd4j::transform::Exp);
+            uint inShapeInfoCast[MAX_RANK];
+            bool canCast = nd4j::DataTypeUtils::castShapeInfo(tadShapeInfo, inShapeInfoCast);
 
-            NDArray scalarSum = outSubArrs[i]->reduceNumber(nd4j::reduce::Sum);
+            PRAGMA_OMP_PARALLEL_FOR_SIMD
+            for (uint i = 0; i < numOfSubArrs; ++i) {                        
 
-            *outSubArrs[i] /= scalarSum;
+                T* inBuff  = input.bufferAsT<T>()  + tadOffsets[i];
+                T* outBuff = output.bufferAsT<T>() + tadOffsets[i];
+
+                T max = -DataTypeUtils::max<T>();
+                T sum = 0.f;
+            
+                auto offsets = new Nd4jLong[tadLen];
+
+                for(uint j = 0; j < tadLen; ++j) {
+                    offsets[j] = shape::indexOffset(j, tadShapeInfo, inShapeInfoCast, tadLen, canCast);
+                    max = nd4j::math::nd4j_max<T>(max, inBuff[offsets[j]]);
+                }
+            
+                for (uint j = 0; j < tadLen; ++j) {
+                    T temp = nd4j::math::nd4j_exp<T,T>(inBuff[offsets[j]] - max);
+                    outBuff[offsets[j]] = temp;
+                    sum += temp;
+                }
+
+                for (uint j = 0; j < tadLen; ++j)
+                    outBuff[offsets[j]] /= sum;                
+            
+                delete []offsets;
+            }            
         }
     }
+    else {
+        NDArray max = input.reduceAlongDims(nd4j::reduce::Max, {dimension}, true);
+        input.applyTrueBroadcast(nd4j::BroadcastOpsTuple::Subtract(), &max, &output, false);
+        output.applyTransform(nd4j::transform::Exp);
+        NDArray sum = output.reduceAlongDims(nd4j::reduce::Sum, {dimension}, true);
+        output /= sum;
+    }
 }
+
 
 ///////////////////////////////////////////////////////////////////
 void softmax(const NDArray& input, NDArray& output, const int dimension) {
