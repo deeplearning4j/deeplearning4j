@@ -31,6 +31,7 @@ import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.activations.impl.ActivationSigmoid;
 import org.nd4j.linalg.activations.impl.ActivationTanH;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.rng.distribution.impl.UniformDistribution;
 import org.nd4j.linalg.factory.Nd4j;
@@ -192,6 +193,7 @@ public class ElementWiseVertexTest extends BaseDL4JTest {
         int midsz = 13;
         int outputsz = 11;
         ComputationGraphConfiguration cgc = new NeuralNetConfiguration.Builder().weightInit(WeightInit.XAVIER)
+                        .dataType(DataType.DOUBLE)
                         .biasInit(0.0).updater(new Sgd())
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).graphBuilder()
                         .addInputs("input1", "input2", "input3")
@@ -367,6 +369,7 @@ public class ElementWiseVertexTest extends BaseDL4JTest {
         int midsz = 13;
         int outputsz = 11;
         ComputationGraphConfiguration cgc = new NeuralNetConfiguration.Builder().weightInit(WeightInit.XAVIER)
+                        .dataType(DataType.DOUBLE)
                         .biasInit(0.0).updater(new Sgd())
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).graphBuilder()
                         .addInputs("input1", "input2", "input3")
@@ -541,6 +544,7 @@ public class ElementWiseVertexTest extends BaseDL4JTest {
         int midsz = 13;
         int outputsz = 11;
         ComputationGraphConfiguration cgc = new NeuralNetConfiguration.Builder().weightInit(WeightInit.XAVIER)
+                        .dataType(DataType.DOUBLE)
                         .biasInit(0.0).updater(new Sgd())
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).graphBuilder()
                         .addInputs("input1", "input2")

@@ -109,6 +109,7 @@ public class CNN3DGradientCheckTest extends BaseDL4JTest {
                                             }
 
                                             MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                                                    .dataType(DataType.DOUBLE)
                                                     .updater(new NoOp()).weightInit(WeightInit.LECUN_NORMAL)
                                                     .dist(new NormalDistribution(0, 1))
                                                     .list()
@@ -212,6 +213,7 @@ public class CNN3DGradientCheckTest extends BaseDL4JTest {
                     }
 
                     MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                            .dataType(DataType.DOUBLE)
                             .updater(new NoOp()).weightInit(WeightInit.LECUN_NORMAL)
                             .dist(new NormalDistribution(0, 1))
                             .list()
@@ -307,6 +309,7 @@ public class CNN3DGradientCheckTest extends BaseDL4JTest {
                             }
 
                             MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                                    .dataType(DataType.DOUBLE)
                                     .updater(new NoOp())
                                     .weightInit(WeightInit.XAVIER)
                                     .dist(new NormalDistribution(0, 1))
@@ -395,6 +398,7 @@ public class CNN3DGradientCheckTest extends BaseDL4JTest {
                     }
 
                     MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                            .dataType(DataType.DOUBLE)
                             .updater(new NoOp()).weightInit(WeightInit.LECUN_NORMAL)
                             .dist(new NormalDistribution(0, 1))
                             .list()
@@ -489,6 +493,7 @@ public class CNN3DGradientCheckTest extends BaseDL4JTest {
                     }
 
                     MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                            .dataType(DataType.DOUBLE)
                             .updater(new NoOp()).weightInit(WeightInit.LECUN_NORMAL)
                             .dist(new NormalDistribution(0, 1))
                             .list()

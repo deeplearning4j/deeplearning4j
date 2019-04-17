@@ -43,6 +43,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.nd4j.linalg.activations.Activation;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.io.ClassPathResource;
@@ -198,8 +199,9 @@ public class TestConvolution extends BaseDL4JTest {
 
         int inSize = 256;
         ComputationGraph model = KerasModelImport.importKerasModelAndWeights( fExtracted.getAbsolutePath(), new int[]{inSize, inSize, 3}, false);
+        model = model.convertDataType(DataType.DOUBLE);
 
-        INDArray in = Nd4j.rand(new int[]{1, 3, inSize, inSize});
+        INDArray in = Nd4j.rand(DataType.DOUBLE, new int[]{1, 3, inSize, inSize});
 
         CuDNNTestUtils.assertHelpersPresent(model.getLayers());
         Map<String,INDArray> withCudnn = model.feedForward(in, false);
@@ -261,7 +263,7 @@ public class TestConvolution extends BaseDL4JTest {
 
             MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                     .seed(seed)
-
+                    .dataType(DataType.DOUBLE)
                     .dist(new NormalDistribution(0.0, 0.01))
                     .activation(Activation.RELU)
                     .updater(new Adam(5e-3))

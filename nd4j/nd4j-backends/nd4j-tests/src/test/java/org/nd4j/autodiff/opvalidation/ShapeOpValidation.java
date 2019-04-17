@@ -931,7 +931,7 @@ public class ShapeOpValidation extends BaseOpValidation {
 
         OpTestCase op = new OpTestCase(new Transpose(arr, out));
         INDArray exp = arr.transpose();
-        op.expectedOutput(0, exp.dup('c'));
+        op.expectedOutput(0, exp.dup('f'));
         String err = OpValidation.validate(op);
         assertNull(err);
     }
@@ -1518,13 +1518,12 @@ public class ShapeOpValidation extends BaseOpValidation {
         SDVariable idxs = sameDiff.constant("idxs", arr2);
         SDVariable result = sameDiff.gatherNd(x, idxs);
         // build expected output array
-        INDArray expected  = Nd4j.zeros(1, 3);
+        INDArray expected  = Nd4j.zeros(3);
         for (int i=0; i<3; i++){
             INDArray idx = arr2.get(point(i), NDArrayIndex.all());
-            expected.get(NDArrayIndex.point(0), point(i)).assign(
-                    arr1.get(point(idx.getInt(0)),
+            expected.putScalar(i, arr1.get(point(idx.getInt(0)),
                             point(idx.getInt(1)),
-                            point(idx.getInt(2))));
+                            point(idx.getInt(2))).getDouble(0));
         }
         assertEquals(expected, result.eval());
     }
@@ -1734,7 +1733,7 @@ public class ShapeOpValidation extends BaseOpValidation {
 
         assertEquals(inArr.get(point(0), all(), all()), slice.getArr());
         assertEquals(inArr.get(point(2), all(), all()), slice2.getArr());
-        assertEquals(inArr.get(point(1), point(2), interval(1, 5)), slice3.getArr());
+        assertEquals(inArr.get(point(1), point(2), interval(1, 5)).reshape(4), slice3.getArr());
     }
 
     @Test

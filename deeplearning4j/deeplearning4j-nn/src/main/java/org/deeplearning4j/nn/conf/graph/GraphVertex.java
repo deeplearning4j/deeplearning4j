@@ -16,16 +16,13 @@
 
 package org.deeplearning4j.nn.conf.graph;
 
-import org.deeplearning4j.nn.conf.graph.rnn.DuplicateToTimeSeriesVertex;
-import org.deeplearning4j.nn.conf.graph.rnn.LastTimeStepVertex;
-import org.deeplearning4j.nn.conf.graph.rnn.ReverseTimeSeriesVertex;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.inputs.InvalidInputTypeException;
 import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.deeplearning4j.nn.conf.serde.legacyformat.LegacyGraphVertexDeserializerHelper;
 import org.deeplearning4j.nn.graph.ComputationGraph;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.shade.jackson.annotation.JsonSubTypes;
 import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
 
 import java.io.Serializable;
@@ -70,10 +67,11 @@ public abstract class GraphVertex implements Cloneable, Serializable {
      * @param idx              The index of the GraphVertex
      * @param paramsView       A view of the full parameters array
      * @param initializeParams If true: initialize the parameters. If false: make no change to the values in the paramsView array
+     * @param networkDatatype
      * @return The implementation GraphVertex object (i.e., implementation, no the configuration)
      */
     public abstract org.deeplearning4j.nn.graph.vertex.GraphVertex instantiate(ComputationGraph graph, String name,
-                    int idx, INDArray paramsView, boolean initializeParams);
+                                                                               int idx, INDArray paramsView, boolean initializeParams, DataType networkDatatype);
 
     /**
      * Determine the type of output for this GraphVertex, given the specified inputs. Given that a GraphVertex may do arbitrary

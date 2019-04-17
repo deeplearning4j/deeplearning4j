@@ -8668,6 +8668,10 @@ public static final int PREALLOC_SIZE = 33554432;
 
 //////////////////////////////////////////////////////////////////////
 
+//////////////////////////////////////////////////////////////////////
+@Namespace("shape") public static native void calcEws(@Cast("Nd4jLong*") LongPointer shapeInfo, @Cast("Nd4jLong") long len);
+@Namespace("shape") public static native void calcEws(@Cast("Nd4jLong*") LongBuffer shapeInfo, @Cast("Nd4jLong") long len);
+@Namespace("shape") public static native void calcEws(@Cast("Nd4jLong*") long[] shapeInfo, @Cast("Nd4jLong") long len);
 
 
 

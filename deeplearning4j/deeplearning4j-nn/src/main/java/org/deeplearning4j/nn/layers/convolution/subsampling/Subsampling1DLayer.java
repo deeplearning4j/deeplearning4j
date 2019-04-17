@@ -22,6 +22,7 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.util.ConvolutionUtils;
 import org.nd4j.base.Preconditions;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Broadcast;
 import org.nd4j.linalg.factory.Nd4j;
@@ -47,12 +48,8 @@ import java.util.Arrays;
  * @author dave@skymind.io
  */
 public class Subsampling1DLayer extends SubsamplingLayer {
-    public Subsampling1DLayer(NeuralNetConfiguration conf) {
-        super(conf);
-    }
-
-    public Subsampling1DLayer(NeuralNetConfiguration conf, INDArray input) {
-        super(conf, input);
+    public Subsampling1DLayer(NeuralNetConfiguration conf, DataType dataType) {
+        super(conf, dataType);
     }
 
     @Override
@@ -62,7 +59,6 @@ public class Subsampling1DLayer extends SubsamplingLayer {
                             + " array as epsilon for Subsampling1DLayer backprop with shape "
                             + Arrays.toString(epsilon.shape())
                             + ". Expected rank 3 array with shape [minibatchSize, features, length]. " + layerId());
-
         if(maskArray != null){
             INDArray maskOut = feedForwardMaskArray(maskArray, MaskState.Active, (int)epsilon.size(0)).getFirst();
             Preconditions.checkState(epsilon.size(0) == maskOut.size(0) && epsilon.size(2) == maskOut.size(1),
@@ -73,7 +69,7 @@ public class Subsampling1DLayer extends SubsamplingLayer {
 
         // add singleton fourth dimension to input and next layer's epsilon
         INDArray origInput = input;
-        input = input.reshape(input.size(0), input.size(1), input.size(2), 1);
+        input = input.castTo(dataType).reshape(input.size(0), input.size(1), input.size(2), 1);
         epsilon = epsilon.reshape(epsilon.size(0), epsilon.size(1), epsilon.size(2), 1);
 
         // call 2D SubsamplingLayer's backpropGradient method
@@ -96,7 +92,7 @@ public class Subsampling1DLayer extends SubsamplingLayer {
 
         // add singleton fourth dimension to input
         INDArray origInput = input;
-        input = input.reshape(input.size(0), input.size(1), input.size(2), 1);
+        input = input.castTo(dataType).reshape(input.size(0), input.size(1), input.size(2), 1);
 
         // call 2D SubsamplingLayer's activate method
         INDArray acts = super.activate(training, workspaceMgr);

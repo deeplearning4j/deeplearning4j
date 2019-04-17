@@ -103,8 +103,8 @@ public class BatchNormalizationParamInitializer implements ParamInitializer {
 
         long meanOffset = 0;
         if (!layer.isLockGammaBeta()) { //No gamma/beta parameters when gamma/beta are locked
-            INDArray gammaView = paramView.get(NDArrayIndex.point(0), NDArrayIndex.interval(0, nOut));
-            INDArray betaView = paramView.get(NDArrayIndex.point(0), NDArrayIndex.interval(nOut, 2 * nOut));
+            INDArray gammaView = paramView.get(NDArrayIndex.interval(0,0,true), NDArrayIndex.interval(0, nOut));
+            INDArray betaView = paramView.get(NDArrayIndex.interval(0,0,true), NDArrayIndex.interval(nOut, 2 * nOut));
 
             params.put(GAMMA, createGamma(conf, gammaView, initializeParams));
             conf.addVariable(GAMMA);
@@ -115,8 +115,8 @@ public class BatchNormalizationParamInitializer implements ParamInitializer {
         }
 
         INDArray globalMeanView =
-                        paramView.get(NDArrayIndex.point(0), NDArrayIndex.interval(meanOffset, meanOffset + nOut));
-        INDArray globalVarView = paramView.get(NDArrayIndex.point(0),
+                        paramView.get(NDArrayIndex.interval(0,0,true), NDArrayIndex.interval(meanOffset, meanOffset + nOut));
+        INDArray globalVarView = paramView.get(NDArrayIndex.interval(0,0,true),
                         NDArrayIndex.interval(meanOffset + nOut, meanOffset + 2 * nOut));
 
         if (initializeParams) {
@@ -151,20 +151,20 @@ public class BatchNormalizationParamInitializer implements ParamInitializer {
         Map<String, INDArray> out = new LinkedHashMap<>();
         long meanOffset = 0;
         if (!layer.isLockGammaBeta()) {
-            INDArray gammaView = gradientView.get(NDArrayIndex.point(0), NDArrayIndex.interval(0, nOut));
-            INDArray betaView = gradientView.get(NDArrayIndex.point(0), NDArrayIndex.interval(nOut, 2 * nOut));
+            INDArray gammaView = gradientView.get(NDArrayIndex.interval(0,0,true), NDArrayIndex.interval(0, nOut));
+            INDArray betaView = gradientView.get(NDArrayIndex.interval(0,0,true), NDArrayIndex.interval(nOut, 2 * nOut));
             out.put(GAMMA, gammaView);
             out.put(BETA, betaView);
             meanOffset = 2 * nOut;
         }
 
         out.put(GLOBAL_MEAN,
-                        gradientView.get(NDArrayIndex.point(0), NDArrayIndex.interval(meanOffset, meanOffset + nOut)));
+                        gradientView.get(NDArrayIndex.interval(0,0,true), NDArrayIndex.interval(meanOffset, meanOffset + nOut)));
         if(layer.isUseLogStd()){
-            out.put(GLOBAL_LOG_STD, gradientView.get(NDArrayIndex.point(0),
+            out.put(GLOBAL_LOG_STD, gradientView.get(NDArrayIndex.interval(0,0,true),
                     NDArrayIndex.interval(meanOffset + nOut, meanOffset + 2 * nOut)));
         } else {
-            out.put(GLOBAL_VAR, gradientView.get(NDArrayIndex.point(0),
+            out.put(GLOBAL_VAR, gradientView.get(NDArrayIndex.interval(0,0,true),
                     NDArrayIndex.interval(meanOffset + nOut, meanOffset + 2 * nOut)));
         }
 

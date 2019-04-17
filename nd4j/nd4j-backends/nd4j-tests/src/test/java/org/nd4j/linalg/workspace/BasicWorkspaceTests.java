@@ -1175,6 +1175,35 @@ public class BasicWorkspaceTests extends BaseNd4jTest {
         }
     }
 
+    @Test
+    public void testDtypeLeverage(){
+
+        for(DataType globalDtype : new DataType[]{DataType.DOUBLE, DataType.FLOAT, DataType.HALF}) {
+            for (DataType arrayDType : new DataType[]{DataType.DOUBLE, DataType.FLOAT, DataType.HALF}) {
+                Nd4j.setDefaultDataTypes(globalDtype, globalDtype);
+
+                WorkspaceConfiguration configOuter = WorkspaceConfiguration.builder().initialSize(10 * 1024L * 1024L)
+                        .policyAllocation(AllocationPolicy.OVERALLOCATE).policyLearning(LearningPolicy.NONE).build();
+                WorkspaceConfiguration configInner = WorkspaceConfiguration.builder().initialSize(10 * 1024L * 1024L)
+                        .policyAllocation(AllocationPolicy.OVERALLOCATE).policyLearning(LearningPolicy.NONE).build();
+
+                try (MemoryWorkspace ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace(configOuter, "ws")) {
+                    INDArray arr = Nd4j.create(arrayDType, 3, 4);
+                    try (MemoryWorkspace wsInner = Nd4j.getWorkspaceManager().getAndActivateWorkspace(configOuter, "wsInner")) {
+                        INDArray leveraged = arr.leverageTo("ws");
+                        assertTrue(leveraged.isAttached());
+                        assertEquals(arrayDType, leveraged.dataType());
+
+                        INDArray detached = leveraged.detach();
+                        assertFalse(detached.isAttached());
+                        assertEquals(arrayDType, detached.dataType());
+                    }
+                }
+            }
+        }
+        Nd4j.getWorkspaceManager().destroyAllWorkspacesForCurrentThread();
+    }
+
 
     @Override
     public char ordering() {

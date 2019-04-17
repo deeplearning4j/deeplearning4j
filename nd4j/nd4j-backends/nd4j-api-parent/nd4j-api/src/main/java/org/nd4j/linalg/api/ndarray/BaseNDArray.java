@@ -2114,13 +2114,10 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
         INDArray view = slice(slice);
 
-        if (put.length() == 1)
+        if (put.length() == 1) {
             putScalar(slice, put.getDouble(0));
-        else if (put.isVector())
-            for (int i = 0; i < put.length(); i++)
-                view.putScalar(i, put.getDouble(i));
-        else {
-            if(!view.equalShapes(put)){
+        } else {
+            if(!(view.isVector() && put.isVector() && view.length() == put.length()) && !view.equalShapes(put)){
                 throw new IllegalStateException("Cannot put slice: array to be put (" + Arrays.toString(put.shape()) +
                         ") and slice array (" + Arrays.toString(view.shape()) + ") have different shapes");
             }
@@ -2552,9 +2549,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public long slices() {
-        if (isRowVector())
-            return length();
-
         return size(0);
     }
 
@@ -2574,7 +2568,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         int n = shape.length;
 
         if (offsets.length != n)
-            throw new IllegalArgumentException("Invalid offset " + Arrays.toString(offsets));
+            throw new IllegalArgumentException("Invalid offset: number of offsets must be equal to rank " + Arrays.toString(offsets) + ", rank = " + n);
         if (stride.length != n)
             throw new IllegalArgumentException("Invalid stride " + Arrays.toString(stride));
 
@@ -3070,6 +3064,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     @Override
     public int stride(int dimension) {
         int rank = jvmShapeInfo.rank;
+        Preconditions.checkArgument(dimension < rank, "Cannot get stride for dimension %s from rank %s array: " +
+                "dimension indices must be in range -rank <= dimension < rank", dimension, rank);
         if (dimension < 0)
             return (int) stride()[dimension + rank];
         return (int) stride()[dimension];
@@ -3370,6 +3366,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public INDArray mmul(INDArray other) {
+        Preconditions.checkState(this.dataType() == other.dataType(), "Matrix multiplication: arrays must have same dtype: %s vs. %s", this.dataType(), other.dataType());
         // FIXME: for 1D case, we probably want vector output here?
         long[] shape = {rows(), other.rank() == 1 ? 1 : other.columns()};
         INDArray result = createUninitialized(this.dataType(), shape, 'f');
@@ -4101,14 +4098,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         if (slice >= slices)
             throw new IllegalArgumentException("Illegal slice " + slice);
 
-        if (jvmShapeInfo.rank == 0 || isVector()) {
-            if (slice == 0 || isVector()) {
-                return createScalarForIndex(slice, true);
-            }
-            else {
-                throw new IllegalArgumentException("Can't slice a 0-d NDArray");
-            }
-
+        if (jvmShapeInfo.rank == 0 ) {
+            throw new IllegalArgumentException("Can't slice a 0-d NDArray");
         }
 
 
@@ -4498,7 +4489,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         Nd4j.getCompressor().autoDecompress(this);
 
         // special case for empty reshape
-        if (this.length() == 1 && (newShape == null || newShape.length == 0)) {
+        if (this.length() == 1 && (newShape == null || newShape.length == 0) && this.elementWiseStride() == 1) {
             return Nd4j.create(this.data(), new int[0], new int[0], 0);
         }
 
@@ -4901,7 +4892,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public INDArray ravel() {
-        return reshape(1, length());
+        return reshape(length());
     }
 
     /**
@@ -4947,6 +4938,14 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         return get(NDArrayIndex.all(), NDArrayIndex.point(c));
     }
 
+    @Override
+    public INDArray getColumn(long c, boolean keepDim) {
+        INDArray col = getColumn(c);
+        if(!keepDim)
+            return col;
+        return col.reshape(col.length(), 1);
+    }
+
 
     /**
      * Get whole rows from the passed indices.
@@ -4980,28 +4979,20 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     public INDArray get(INDArrayIndex... indexes) {
         Nd4j.getCompressor().autoDecompress(this);
 
-        // besides of backward support for legacy "vectors" which were 2D
-        // we enforce number of indices provided to be equal to number of dimensions in this array
-        if (rank() == 2 && jvmShapeInfo.javaShapeInformation[1] == 1 && indexes.length == 1)
-            indexes = new INDArrayIndex[]{ NDArrayIndex.all(), indexes[0]};
-        else if (rank() == 2 && jvmShapeInfo.javaShapeInformation[2] == 1 && indexes.length == 1)
-            indexes = new INDArrayIndex[]{indexes[0], NDArrayIndex.all()};
-        else {
-            // we're padding remaining dimensions with all() index
-            if (indexes.length < this.rank()) {
-                val newIndexes = new INDArrayIndex[this.rank()];
-                for (int e = 0; e < indexes.length; e++)
-                    newIndexes[e] = indexes[e];
+        // we're padding remaining dimensions with all() index
+        if (indexes.length < this.rank()) {
+            val newIndexes = new INDArrayIndex[this.rank()];
+            for (int e = 0; e < indexes.length; e++)
+                newIndexes[e] = indexes[e];
 
-                for (int e = indexes.length; e < newIndexes.length; e++)
-                    newIndexes[e] = NDArrayIndex.all();
+            for (int e = indexes.length; e < newIndexes.length; e++)
+                newIndexes[e] = NDArrayIndex.all();
 
-                indexes = newIndexes;
-            }
-
-            // never going to happen :/
-            Preconditions.checkArgument(indexes != null && indexes.length >= this.rank(), "Number of indices should be greater or equal to rank of the INDArray");
+            indexes = newIndexes;
         }
+
+        // never going to happen :/
+        Preconditions.checkArgument(indexes != null && indexes.length >= this.rank(), "Number of indices should be greater or equal to rank of the INDArray");
 
         if(indexes.length > rank()) {
             int numNonNewAxis = 0;
@@ -5039,8 +5030,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         if (indexes.length < 1)
             throw new IllegalStateException("Invalid index found of zero length");
 
-        // FIXME: LONG
-        int[] shape = LongUtils.toInts(resolution.getShapes());
+        long[] shape = resolution.getShapes();
         int numSpecifiedIndex = 0;
         for (int i = 0; i < indexes.length; i++)
             if (indexes[i] instanceof SpecifiedIndex)
@@ -5048,7 +5038,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
         if (shape != null && numSpecifiedIndex > 0) {
             Generator<List<List<Long>>> gen = SpecifiedIndex.iterate(indexes);
-            INDArray ret = Nd4j.create(this.dataType(), ArrayUtil.toLongArray(shape), 'c');
+            INDArray ret = Nd4j.create(this.dataType(), shape, 'c');
             int count = 0;
             while (true) {
                 try {
@@ -5126,6 +5116,14 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         return result;
     }
 
+    @Override
+    public INDArray getRow(long r, boolean keepDim) {
+        INDArray row = getRow(r);
+        if(!keepDim)
+            return row;
+        return row.reshape(1, row.length());
+    }
+
 
     /**
      * This method allows you to compare INDArray against other INDArray, with variable eps
@@ -5153,6 +5151,9 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         if (n.isSparse()) {
             return n.equals(this);
         }
+
+        if (this.rank() != n.rank())
+            return false;
 
         if (this.length() != n.length())
             return false;
@@ -5465,8 +5466,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
                 Nd4j.getExecutioner().execAndReturn(new Tile(new INDArray[]{this.dup(this.ordering())},new INDArray[]{result},repeat));
             } else
                 Nd4j.getExecutioner().execAndReturn(new Tile(new INDArray[]{this},new INDArray[]{result},repeat));
-
-            //result = Nd4j.tile(this,repeat);
         }
         return result;
 
@@ -6055,7 +6054,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         if (Nd4j.getMemoryManager().getCurrentWorkspace() == null) {
             if (!isView()) {
                 Nd4j.getExecutioner().commit();
-                DataBuffer buffer = Nd4j.createBuffer(this.length(), false);
+                DataBuffer buffer = Nd4j.createBuffer(this.dataType(), this.length(), false);
 
                 Nd4j.getMemoryManager().memcpy(buffer, this.data());
 
@@ -6074,7 +6073,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
             if (!isView()) {
                 Nd4j.getExecutioner().commit();
-                DataBuffer buffer = Nd4j.createBuffer(this.length(), false);
+                DataBuffer buffer = Nd4j.createBuffer(this.dataType(), this.length(), false);
 
                 //Pointer.memcpy(buffer.pointer(), this.data.pointer(), this.lengthLong() * Nd4j.sizeOfDataType(this.data.dataType()));
                 Nd4j.getMemoryManager().memcpy(buffer, this.data());

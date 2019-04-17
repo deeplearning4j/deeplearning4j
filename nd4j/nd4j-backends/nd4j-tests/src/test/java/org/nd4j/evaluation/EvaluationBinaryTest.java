@@ -20,6 +20,7 @@ import org.junit.Test;
 import org.nd4j.evaluation.classification.Evaluation;
 import org.nd4j.evaluation.classification.EvaluationBinary;
 import org.nd4j.linalg.BaseNd4jTest;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.random.impl.BernoulliDistribution;
 import org.nd4j.linalg.factory.Nd4j;
@@ -45,65 +46,86 @@ public class EvaluationBinaryTest extends BaseNd4jTest {
     @Test
     public void testEvaluationBinary() {
         //Compare EvaluationBinary to Evaluation class
+        DataType dtypeBefore = Nd4j.defaultFloatingPointType();
+        EvaluationBinary first = null;
+        String sFirst = null;
+        try {
+            for (DataType globalDtype : new DataType[]{DataType.DOUBLE, DataType.FLOAT, DataType.HALF, DataType.INT}) {
+                Nd4j.setDefaultDataTypes(globalDtype, globalDtype.isFPType() ? globalDtype : DataType.DOUBLE);
+                for (DataType lpDtype : new DataType[]{DataType.DOUBLE, DataType.FLOAT, DataType.HALF}) {
 
-        Nd4j.getRandom().setSeed(12345);
+                    Nd4j.getRandom().setSeed(12345);
 
-        int nExamples = 50;
-        int nOut = 4;
-        int[] shape = {nExamples, nOut};
+                    int nExamples = 50;
+                    int nOut = 4;
+                    long[] shape = {nExamples, nOut};
 
-        INDArray labels = Nd4j.getExecutioner().exec(new BernoulliDistribution(Nd4j.createUninitialized(shape), 0.5));
+                    INDArray labels = Nd4j.getExecutioner().exec(new BernoulliDistribution(Nd4j.createUninitialized(lpDtype, shape), 0.5));
 
-        INDArray predicted = Nd4j.rand(shape);
-        INDArray binaryPredicted = predicted.gt(0.5);
+                    INDArray predicted = Nd4j.rand(lpDtype, shape);
+                    INDArray binaryPredicted = predicted.gt(0.5);
 
-        EvaluationBinary eb = new EvaluationBinary();
-        eb.eval(labels, predicted);
+                    EvaluationBinary eb = new EvaluationBinary();
+                    eb.eval(labels, predicted);
 
-        System.out.println(eb.stats());
+                    //System.out.println(eb.stats());
 
-        double eps = 1e-6;
-        for (int i = 0; i < nOut; i++) {
-            INDArray lCol = labels.getColumn(i);
-            INDArray pCol = predicted.getColumn(i);
-            INDArray bpCol = binaryPredicted.getColumn(i);
+                    double eps = 1e-6;
+                    for (int i = 0; i < nOut; i++) {
+                        INDArray lCol = labels.getColumn(i,true);
+                        INDArray pCol = predicted.getColumn(i,true);
+                        INDArray bpCol = binaryPredicted.getColumn(i,true);
 
-            int countCorrect = 0;
-            int tpCount = 0;
-            int tnCount = 0;
-            for (int j = 0; j < lCol.length(); j++) {
-                if (lCol.getDouble(j) == bpCol.getDouble(j)) {
-                    countCorrect++;
-                    if (lCol.getDouble(j) == 1) {
-                        tpCount++;
-                    } else {
-                        tnCount++;
+                        int countCorrect = 0;
+                        int tpCount = 0;
+                        int tnCount = 0;
+                        for (int j = 0; j < lCol.length(); j++) {
+                            if (lCol.getDouble(j) == bpCol.getDouble(j)) {
+                                countCorrect++;
+                                if (lCol.getDouble(j) == 1) {
+                                    tpCount++;
+                                } else {
+                                    tnCount++;
+                                }
+                            }
+                        }
+                        double acc = countCorrect / (double) lCol.length();
+
+                        Evaluation e = new Evaluation();
+                        e.eval(lCol, pCol);
+
+                        assertEquals(acc, eb.accuracy(i), eps);
+                        assertEquals(e.accuracy(), eb.scoreForMetric(ACCURACY, i), eps);
+                        assertEquals(e.precision(1), eb.scoreForMetric(PRECISION, i), eps);
+                        assertEquals(e.recall(1), eb.scoreForMetric(RECALL, i), eps);
+                        assertEquals(e.f1(1), eb.scoreForMetric(F1, i), eps);
+                        assertEquals(e.falseAlarmRate(), eb.scoreForMetric(FAR, i), eps);
+                        assertEquals(e.falsePositiveRate(1), eb.falsePositiveRate(i), eps);
+
+
+                        assertEquals(tpCount, eb.truePositives(i));
+                        assertEquals(tnCount, eb.trueNegatives(i));
+
+                        assertEquals((int) e.truePositives().get(1), eb.truePositives(i));
+                        assertEquals((int) e.trueNegatives().get(1), eb.trueNegatives(i));
+                        assertEquals((int) e.falsePositives().get(1), eb.falsePositives(i));
+                        assertEquals((int) e.falseNegatives().get(1), eb.falseNegatives(i));
+
+                        assertEquals(nExamples, eb.totalCount(i));
+
+                        String s = eb.stats();
+                        if(first == null) {
+                            first = eb;
+                            sFirst = s;
+                        } else {
+                            assertEquals(first, eb);
+                            assertEquals(sFirst, s);
+                        }
                     }
                 }
             }
-            double acc = countCorrect / (double) lCol.length();
-
-            Evaluation e = new Evaluation();
-            e.eval(lCol, pCol);
-
-            assertEquals(acc, eb.accuracy(i), eps);
-            assertEquals(e.accuracy(), eb.scoreForMetric(ACCURACY, i), eps);
-            assertEquals(e.precision(1), eb.scoreForMetric(PRECISION, i), eps);
-            assertEquals(e.recall(1), eb.scoreForMetric(RECALL, i), eps);
-            assertEquals(e.f1(1), eb.scoreForMetric(F1, i), eps);
-            assertEquals(e.falseAlarmRate(), eb.scoreForMetric(FAR, i), eps);
-            assertEquals(e.falsePositiveRate(1), eb.falsePositiveRate(i), eps);
-
-
-            assertEquals(tpCount, eb.truePositives(i));
-            assertEquals(tnCount, eb.trueNegatives(i));
-
-            assertEquals((int) e.truePositives().get(1), eb.truePositives(i));
-            assertEquals((int) e.trueNegatives().get(1), eb.trueNegatives(i));
-            assertEquals((int) e.falsePositives().get(1), eb.falsePositives(i));
-            assertEquals((int) e.falseNegatives().get(1), eb.falseNegatives(i));
-
-            assertEquals(nExamples, eb.totalCount(i));
+        } finally {
+            Nd4j.setDefaultDataTypes(dtypeBefore, dtypeBefore);
         }
     }
 

@@ -21,11 +21,11 @@ import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
-import org.deeplearning4j.nn.conf.layers.Layer;
 import org.deeplearning4j.nn.conf.layers.NoParamLayer;
 import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
 import org.deeplearning4j.nn.params.EmptyParamInitializer;
 import org.deeplearning4j.optimize.api.TrainingListener;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.learning.regularization.Regularization;
 
@@ -43,9 +43,9 @@ import java.util.Map;
 public class MaskLayer extends NoParamLayer {
     @Override
     public org.deeplearning4j.nn.api.Layer instantiate(NeuralNetConfiguration conf,
-                    Collection<TrainingListener> trainingListeners, int layerIndex, INDArray layerParamsView,
-                    boolean initializeParams) {
-        org.deeplearning4j.nn.layers.util.MaskLayer ret = new org.deeplearning4j.nn.layers.util.MaskLayer(conf);
+                                                       Collection<TrainingListener> trainingListeners, int layerIndex, INDArray layerParamsView,
+                                                       boolean initializeParams, DataType networkDataType) {
+        org.deeplearning4j.nn.layers.util.MaskLayer ret = new org.deeplearning4j.nn.layers.util.MaskLayer(conf, networkDataType);
         ret.setIndex(layerIndex);
         ret.setParamsViewArray(layerParamsView);
         Map<String, INDArray> paramTable = initializer().init(conf, layerParamsView, initializeParams);

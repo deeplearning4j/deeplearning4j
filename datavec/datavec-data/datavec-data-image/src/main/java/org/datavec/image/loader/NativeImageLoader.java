@@ -180,11 +180,13 @@ public class NativeImageLoader extends BaseImageLoader {
     }
 
     public INDArray asRowVector(Mat image) throws IOException {
-        return asMatrix(image).ravel();
+        INDArray arr = asMatrix(image);
+        return arr.reshape('c', 1, arr.length());
     }
 
     public INDArray asRowVector(org.opencv.core.Mat image) throws IOException {
-        return asMatrix(image).ravel();
+        INDArray arr = asMatrix(image);
+        return arr.reshape('c', 1, arr.length());
     }
 
     static Mat convert(PIX pix) {

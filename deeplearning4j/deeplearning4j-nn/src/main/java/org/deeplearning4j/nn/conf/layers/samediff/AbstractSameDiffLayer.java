@@ -33,6 +33,7 @@ import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.nn.weights.WeightInitUtil;
 import org.deeplearning4j.optimize.api.TrainingListener;
 import org.deeplearning4j.util.NetworkUtils;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.learning.config.IUpdater;
 import org.nd4j.linalg.learning.regularization.L1Regularization;
@@ -136,8 +137,8 @@ public abstract class AbstractSameDiffLayer extends Layer {
 
     @Override
     public abstract org.deeplearning4j.nn.api.Layer instantiate(NeuralNetConfiguration conf,
-                    Collection<TrainingListener> trainingListeners, int layerIndex, INDArray layerParamsView,
-                    boolean initializeParams);
+                                                                Collection<TrainingListener> trainingListeners, int layerIndex, INDArray layerParamsView,
+                                                                boolean initializeParams, DataType networkDataType);
 
     //==================================================================================================================
 

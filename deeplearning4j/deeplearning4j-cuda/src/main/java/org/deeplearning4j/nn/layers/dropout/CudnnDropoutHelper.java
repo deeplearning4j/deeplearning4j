@@ -25,6 +25,7 @@ import org.deeplearning4j.nn.layers.BaseCudnnHelper;
 import org.nd4j.jita.allocator.Allocator;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.jita.conf.CudaEnvironment;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.context.CudaContext;
@@ -109,6 +110,10 @@ public class CudnnDropoutHelper extends BaseCudnnHelper implements DropoutHelper
     private SizeTPointer stateSizeBytesPtr;
     private SizeTPointer reserveSizeBytesPtr;
     private float lastInitializedP;
+
+    public CudnnDropoutHelper(DataType dataType){
+        super(dataType);
+    }
 
     @Override
     public void applyDropout(INDArray input, INDArray resultArray, double dropoutInputRetainProb) {
