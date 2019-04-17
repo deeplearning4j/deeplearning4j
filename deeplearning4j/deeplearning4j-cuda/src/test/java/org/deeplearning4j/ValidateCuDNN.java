@@ -27,6 +27,7 @@ import org.deeplearning4j.nn.layers.convolution.ConvolutionLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.util.CuDNNValidationUtil;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.activations.impl.ActivationELU;
@@ -64,7 +65,7 @@ public class ValidateCuDNN extends BaseDL4JTest {
                 .dataType(DataType.DOUBLE)
                 .weightInit(WeightInit.XAVIER).seed(42)
                 .activation(new ActivationELU())
-                .updater(new Nesterovs(1e-2, 0.9))
+                .updater(new Nesterovs(1e-3, 0.9))
                 .list(
                         new Convolution2D.Builder().nOut(96)
                                 .kernelSize(11, 11).biasInit(0.0)

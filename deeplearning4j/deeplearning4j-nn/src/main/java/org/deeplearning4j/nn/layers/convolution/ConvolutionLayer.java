@@ -306,6 +306,8 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
 
         validateInputRank();
 
+        INDArray input = this.input.castTo(dataType);
+
         // FIXME: int cast
         int miniBatch = (int) input.size(0);
         int outDepth = (int) weights.size(0);

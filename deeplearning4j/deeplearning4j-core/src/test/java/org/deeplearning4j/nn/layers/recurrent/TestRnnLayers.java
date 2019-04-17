@@ -101,8 +101,7 @@ public class TestRnnLayers extends BaseDL4JTest {
     public void testDropoutRecurrentLayers(){
         Nd4j.getRandom().setSeed(12345);
 
-//        String[] layerTypes = new String[]{"graves", "lstm", "simple"};
-        String[] layerTypes = new String[]{"simple"};
+        String[] layerTypes = new String[]{"graves", "lstm", "simple"};
 
         for(String s : layerTypes){
 

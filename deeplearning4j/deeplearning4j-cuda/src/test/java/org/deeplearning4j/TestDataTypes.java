@@ -95,7 +95,7 @@ public class TestDataTypes extends BaseDL4JTest {
                         .list()
                         .layer(new ConvolutionLayer.Builder().kernelSize(2, 2).stride(1, 1).padding(0, 0).nOut(3).build())
                         .layer(new SubsamplingLayer.Builder().kernelSize(2, 2).stride(1, 1).padding(0, 0).build())
-                        .layer(new BatchNormalization())
+                        .layer(new BatchNormalization.Builder().eps(1e-3).build())
                         .layer(new ConvolutionLayer.Builder().kernelSize(2, 2).stride(1, 1).padding(0, 0).nOut(3).build())
                         .layer(new OutputLayer.Builder().nOut(10).activation(Activation.SOFTMAX).lossFunction(LossFunctions.LossFunction.MCXENT).build())
                         .setInputType(InputType.convolutionalFlat(28, 28, 1))

@@ -113,7 +113,8 @@ public class SubsamplingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
     public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon, LayerWorkspaceMgr workspaceMgr) {
         assertInputSet(true);
 
-        System.out.println("SubsamplingLayer - 1");
+        INDArray input = this.input.castTo(dataType);
+
         // FIXME: int cast
         int miniBatch = (int) input.size(0);
         int inDepth = (int) input.size(1);
@@ -136,11 +137,9 @@ public class SubsamplingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         int outH = outSize[0];
         int outW = outSize[1];
 
-        System.out.println("SubsamplingLayer - 2");
         if (helper != null && (helperCountFail == 0 || !layerConf().isCudnnAllowFallback())) {
             Pair<Gradient, INDArray> ret = null;
             try{
-                System.out.println("SubsamplingLayer - 3");
                 ret = helper.backpropGradient(input, epsilon, kernel, strides, pad,
                         layerConf().getPoolingType(), convolutionMode, dilation, workspaceMgr);
             } catch (Exception e){
@@ -164,7 +163,6 @@ public class SubsamplingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
                 return ret;
             }
         }
-        System.out.println("SubsamplingLayer - 4");
 
         //subsampling doesn't have weights and thus gradients are not calculated for this layer
         //only scale and reshape epsilon
@@ -312,6 +310,8 @@ public class SubsamplingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
                             + ". Expected rank 4 array with shape [minibatchSize, channels, inputHeight, inputWidth]. "
                             + layerId());
         }
+
+        INDArray input = this.input.castTo(dataType);
 
         // FIXME: int cast
         int miniBatch = (int) input.size(0);

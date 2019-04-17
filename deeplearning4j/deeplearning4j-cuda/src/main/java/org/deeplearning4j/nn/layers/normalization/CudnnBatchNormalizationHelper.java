@@ -284,7 +284,7 @@ public class CudnnBatchNormalizationHelper extends BaseCudnnHelper implements Ba
                 try(MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
                     varCache = Nd4j.createUninitialized(x.dataType(), mean.length());
                 }
-                if(Nd4j.dataType() == DataType.HALF){
+                if(nd4jDataType == DataType.HALF){
                     try(MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
                         varCache = varCache.castTo(DataType.FLOAT);
                     }
@@ -337,13 +337,13 @@ public class CudnnBatchNormalizationHelper extends BaseCudnnHelper implements Ba
     @Override
     public INDArray getVarCache(DataType dataType) {
         INDArray ret;
-        if(Nd4j.dataType() == DataType.HALF){
+        if(dataType == DataType.HALF){
             INDArray vc = varCache.castTo(DataType.HALF);
             ret = vc.mul(vc).rdivi(1.0).subi(eps);
         } else {
             ret = varCache.mul(varCache).rdivi(1.0).subi(eps);
         }
-        if(Nd4j.dataType() == DataType.HALF){
+        if(dataType == DataType.HALF){
             //Buffer is FP32
             return ret.castTo(DataType.HALF);
         }
