@@ -18,14 +18,14 @@ package org.deeplearning4j.regressiontest;
 
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.TestUtils;
-import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.BackpropType;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
-import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.graph.LayerVertex;
-import org.deeplearning4j.nn.conf.layers.*;
+import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
+import org.deeplearning4j.nn.conf.layers.DenseLayer;
+import org.deeplearning4j.nn.conf.layers.LSTM;
+import org.deeplearning4j.nn.conf.layers.RnnOutputLayer;
 import org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder;
-import org.deeplearning4j.nn.conf.serde.legacyformat.LegacyLayerDeserializer;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInitXavier;
@@ -46,7 +46,8 @@ import java.io.FileInputStream;
 import java.util.Arrays;
 import java.util.List;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
 
 public class RegressionTest100b3 extends BaseDL4JTest {
 
@@ -104,6 +105,8 @@ public class RegressionTest100b3 extends BaseDL4JTest {
 
             List<INDArray> activations = net.feedForward(in);
 
+            assertEquals(dt, net.getLayerWiseConfigurations().getDataType());
+            assertEquals(dt, net.params().dataType());
             assertEquals(dtype, outExp, outAct);
         }
     }

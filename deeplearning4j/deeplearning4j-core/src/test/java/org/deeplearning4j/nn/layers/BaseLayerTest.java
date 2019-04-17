@@ -85,7 +85,7 @@ public class BaseLayerTest extends BaseDL4JTest {
 
         val numParams = conf.getLayer().initializer().numParams(conf);
         INDArray params = Nd4j.create(1, numParams);
-        return conf.getLayer().instantiate(conf, null, 0, params, true);
+        return conf.getLayer().instantiate(conf, null, 0, params, true, params.dataType());
     }
 
 

@@ -24,6 +24,7 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.params.GravesBidirectionalLSTMParamInitializer;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.primitives.Pair;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
@@ -57,12 +58,8 @@ public class GravesBidirectionalLSTM
     protected FwdPassReturn cachedPassForward;
     protected FwdPassReturn cachedPassBackward;
 
-    public GravesBidirectionalLSTM(NeuralNetConfiguration conf) {
-        super(conf);
-    }
-
-    public GravesBidirectionalLSTM(NeuralNetConfiguration conf, INDArray input) {
-        super(conf, input);
+    public GravesBidirectionalLSTM(NeuralNetConfiguration conf, DataType dataType) {
+        super(conf, dataType);
     }
 
     @Override

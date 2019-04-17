@@ -59,7 +59,7 @@ public class LastTimeStepLayer extends BaseWrapperLayer {
 
     @Override
     public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon, LayerWorkspaceMgr workspaceMgr) {
-        INDArray newEps = Nd4j.create(origOutputShape, 'f');
+        INDArray newEps = Nd4j.create(epsilon.dataType(), origOutputShape, 'f');
         if(lastTimeStepIdxs == null){
             //no mask case
             newEps.put(new INDArrayIndex[]{all(), all(), point(origOutputShape[2]-1)}, epsilon);

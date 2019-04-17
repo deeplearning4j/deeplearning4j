@@ -30,6 +30,7 @@ import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.activations.impl.ActivationSigmoid;
 import org.nd4j.linalg.activations.impl.ActivationTanH;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
@@ -54,6 +55,10 @@ import static org.bytedeco.cuda.global.cudnn.*;
  */
 @Slf4j
 public class CudnnLSTMHelper extends BaseCudnnHelper implements LSTMHelper {
+
+    public CudnnLSTMHelper(DataType dataType) {
+        super(dataType);
+    }
 
     private static class CudnnLSTMContext extends CudnnContext {
 
@@ -218,7 +223,7 @@ public class CudnnLSTMHelper extends BaseCudnnHelper implements LSTMHelper {
 
         INDArray x = toCOrder(input.permute(2, 0, 1));
         INDArray dy = toCOrder(epsilon.permute(2, 0, 1));
-        INDArray dx = workspaceMgr.createUninitialized(ArrayType.ACTIVATION_GRAD, new long[] {timeSeriesLength, miniBatchSize, prevLayerSize}, 'c');
+        INDArray dx = workspaceMgr.createUninitialized(ArrayType.ACTIVATION_GRAD, inputWeights.dataType(), new long[] {timeSeriesLength, miniBatchSize, prevLayerSize}, 'c');
 
         INDArray iwGradientsOut = gradientViews.get(inputWeightKey);
         INDArray rwGradientsOut = gradientViews.get(recurrentWeightKey); //Order: {I,F,O,G}
@@ -394,10 +399,10 @@ public class CudnnLSTMHelper extends BaseCudnnHelper implements LSTMHelper {
         INDArray prevMemCell = toCOrder(prevMemCellState);
 
         INDArray outputActivations = workspaceMgr.createUninitialized(ArrayType.ACTIVATIONS,
-                        new long[] {timeSeriesLength, miniBatchSize, hiddenLayerSize * (BIDIRECTIONAL ? 2 : 1)}, 'c');
-        INDArray finalMemCellState = Nd4j.createUninitialized(
+                        inputWeights.dataType(), new long[] {timeSeriesLength, miniBatchSize, hiddenLayerSize * (BIDIRECTIONAL ? 2 : 1)}, 'c');
+        INDArray finalMemCellState = Nd4j.createUninitialized( inputWeights.dataType(),
                         new long[] {/*numLayers * (bidirectional ? 2 : 1),*/ miniBatchSize, hiddenLayerSize}, 'c');
-        INDArray finalStepActivations = Nd4j.createUninitialized(
+        INDArray finalStepActivations = Nd4j.createUninitialized( inputWeights.dataType(),
                         new long[] {/*numLayers * (bidirectional ? 2 : 1),*/ miniBatchSize, hiddenLayerSize}, 'c');
 
         FwdPassReturn toReturn = new FwdPassReturn();

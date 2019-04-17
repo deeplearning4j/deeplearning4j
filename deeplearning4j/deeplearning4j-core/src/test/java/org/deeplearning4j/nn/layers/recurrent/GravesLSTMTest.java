@@ -62,7 +62,7 @@ public class GravesLSTMTest extends BaseDL4JTest {
 
         val numParams = conf.getLayer().initializer().numParams(conf);
         INDArray params = Nd4j.create(1, numParams);
-        GravesLSTM layer = (GravesLSTM) conf.getLayer().instantiate(conf, null, 0, params, true);
+        GravesLSTM layer = (GravesLSTM) conf.getLayer().instantiate(conf, null, 0, params, true, params.dataType());
 
         //Data: has shape [miniBatchSize,nIn,timeSeriesLength];
         //Output/activations has shape [miniBatchsize,nHiddenUnits,timeSeriesLength];
@@ -108,7 +108,7 @@ public class GravesLSTMTest extends BaseDL4JTest {
 
         val numParams = conf.getLayer().initializer().numParams(conf);
         INDArray params = Nd4j.create(1, numParams);
-        GravesLSTM lstm = (GravesLSTM) conf.getLayer().instantiate(conf, null, 0, params, true);
+        GravesLSTM lstm = (GravesLSTM) conf.getLayer().instantiate(conf, null, 0, params, true, params.dataType());
         lstm.setBackpropGradientsViewArray(Nd4j.create(1, conf.getLayer().initializer().numParams(conf)));
         //Set input, do a forward pass:
         lstm.activate(inputData, false, LayerWorkspaceMgr.noWorkspaces());
@@ -159,7 +159,7 @@ public class GravesLSTMTest extends BaseDL4JTest {
 
         val numParams = conf.getLayer().initializer().numParams(conf);
         INDArray params = Nd4j.create(1, numParams);
-        GravesLSTM lstm = (GravesLSTM) conf.getLayer().instantiate(conf, null, 0, params, true);
+        GravesLSTM lstm = (GravesLSTM) conf.getLayer().instantiate(conf, null, 0, params, true, params.dataType());
         INDArray input = Nd4j.rand(new int[] {miniBatchSize, nIn, timeSeriesLength});
         lstm.setInput(input, LayerWorkspaceMgr.noWorkspaces());
 

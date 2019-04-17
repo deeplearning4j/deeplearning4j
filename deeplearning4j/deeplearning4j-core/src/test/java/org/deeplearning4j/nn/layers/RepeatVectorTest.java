@@ -40,7 +40,7 @@ public class RepeatVectorTest {
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder().seed(123)
                 .layer(new RepeatVector.Builder(REPEAT).build()).build();
         return conf.getLayer().instantiate(conf, null, 0,
-                null, false);
+                null, false, Nd4j.defaultFloatingPointType());
     }
 
     @Test

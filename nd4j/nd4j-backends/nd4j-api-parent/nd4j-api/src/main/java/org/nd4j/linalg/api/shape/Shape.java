@@ -1823,7 +1823,7 @@ public class Shape {
             return 1;
 
         if (shape.length == 1 && stride.length == 1)
-            return 1;
+            return stride[0];
 
         int oldnd;
         long[] olddims = ArrayUtil.copy(shape);

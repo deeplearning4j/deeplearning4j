@@ -20,9 +20,9 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.val;
 import org.nd4j.evaluation.BaseEvaluation;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.reduce.same.ASum;
-import org.nd4j.linalg.api.ops.impl.transforms.same.Abs;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.serde.RowVectorDeserializer;
 import org.nd4j.linalg.lossfunctions.serde.RowVectorSerializer;
@@ -160,17 +160,17 @@ public class RegressionEvaluation extends BaseEvaluation<RegressionEvaluation> {
         if (columnNames == null || columnNames.size() != n) {
             columnNames = createDefaultColumnNames(n);
         }
-        exampleCountPerColumn = Nd4j.zeros(n);
-        labelsSumPerColumn = Nd4j.zeros(n);
-        sumSquaredErrorsPerColumn = Nd4j.zeros(n);
-        sumAbsErrorsPerColumn = Nd4j.zeros(n);
-        currentMean = Nd4j.zeros(n);
+        exampleCountPerColumn = Nd4j.zeros(DataType.DOUBLE, n);
+        labelsSumPerColumn = Nd4j.zeros(DataType.DOUBLE, n);
+        sumSquaredErrorsPerColumn = Nd4j.zeros(DataType.DOUBLE, n);
+        sumAbsErrorsPerColumn = Nd4j.zeros(DataType.DOUBLE, n);
+        currentMean = Nd4j.zeros(DataType.DOUBLE, n);
 
-        currentPredictionMean = Nd4j.zeros(n);
-        sumOfProducts = Nd4j.zeros(n);
-        sumSquaredLabels = Nd4j.zeros(n);
-        sumSquaredPredicted = Nd4j.zeros(n);
-        sumLabels = Nd4j.zeros(n);
+        currentPredictionMean = Nd4j.zeros(DataType.DOUBLE, n);
+        sumOfProducts = Nd4j.zeros(DataType.DOUBLE, n);
+        sumSquaredLabels = Nd4j.zeros(DataType.DOUBLE, n);
+        sumSquaredPredicted = Nd4j.zeros(DataType.DOUBLE, n);
+        sumLabels = Nd4j.zeros(DataType.DOUBLE, n);
 
         initialized = true;
     }
@@ -234,19 +234,19 @@ public class RegressionEvaluation extends BaseEvaluation<RegressionEvaluation> {
             predictions = predictions.mul(maskArray);
         }
 
-        labelsSumPerColumn.addi(labels.sum(0));
+        labelsSumPerColumn.addi(labels.sum(0).castTo(labelsSumPerColumn.dataType()));
 
         INDArray error = predictions.sub(labels);
         INDArray absErrorSum = Nd4j.getExecutioner().exec(new ASum(error, 0));
         INDArray squaredErrorSum = error.mul(error).sum(0);
 
-        sumAbsErrorsPerColumn.addi(absErrorSum);
-        sumSquaredErrorsPerColumn.addi(squaredErrorSum);
+        sumAbsErrorsPerColumn.addi(absErrorSum.castTo(labelsSumPerColumn.dataType()));
+        sumSquaredErrorsPerColumn.addi(squaredErrorSum.castTo(labelsSumPerColumn.dataType()));
 
-        sumOfProducts.addi(labels.mul(predictions).sum(0));
+        sumOfProducts.addi(labels.mul(predictions).sum(0).castTo(labelsSumPerColumn.dataType()));
 
-        sumSquaredLabels.addi(labels.mul(labels).sum(0));
-        sumSquaredPredicted.addi(predictions.mul(predictions).sum(0));
+        sumSquaredLabels.addi(labels.mul(labels).sum(0).castTo(labelsSumPerColumn.dataType()));
+        sumSquaredPredicted.addi(predictions.mul(predictions).sum(0).castTo(labelsSumPerColumn.dataType()));
 
 
         val nRows = labels.size(0);
@@ -255,14 +255,14 @@ public class RegressionEvaluation extends BaseEvaluation<RegressionEvaluation> {
         if (maskArray == null) {
             newExampleCountPerColumn = exampleCountPerColumn.add(nRows);
         } else {
-            newExampleCountPerColumn = exampleCountPerColumn.add(maskArray.sum(0));
+            newExampleCountPerColumn = exampleCountPerColumn.add(maskArray.sum(0).castTo(labelsSumPerColumn.dataType()));
         }
-        currentMean.muliRowVector(exampleCountPerColumn).addi(labels.sum(0)).diviRowVector(newExampleCountPerColumn);
-        currentPredictionMean.muliRowVector(exampleCountPerColumn).addi(predictions.sum(0))
+        currentMean.muliRowVector(exampleCountPerColumn).addi(labels.sum(0).castTo(labelsSumPerColumn.dataType())).diviRowVector(newExampleCountPerColumn);
+        currentPredictionMean.muliRowVector(exampleCountPerColumn).addi(predictions.sum(0).castTo(labelsSumPerColumn.dataType()))
                         .divi(newExampleCountPerColumn);
         exampleCountPerColumn = newExampleCountPerColumn;
 
-        sumLabels.addi(labels.sum(0));
+        sumLabels.addi(labels.sum(0).castTo(labelsSumPerColumn.dataType()));
     }
 
     @Override

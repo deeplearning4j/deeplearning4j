@@ -108,7 +108,7 @@ public class Upsampling1DTest extends BaseDL4JTest {
                         .gradientNormalization(GradientNormalization.RenormalizeL2PerLayer).seed(123)
                         .layer(new Upsampling1D.Builder(size).build()).build();
         return conf.getLayer().instantiate(conf, null, 0,
-                null, true);
+                null, true, Nd4j.defaultFloatingPointType());
     }
 
     public INDArray getData() throws Exception {

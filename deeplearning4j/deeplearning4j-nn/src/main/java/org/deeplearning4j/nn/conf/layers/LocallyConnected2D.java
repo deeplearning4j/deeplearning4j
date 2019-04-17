@@ -128,6 +128,7 @@ public class LocallyConnected2D extends SameDiffLayer {
         if (nIn <= 0 || override) {
             InputType.InputTypeConvolutional c = (InputType.InputTypeConvolutional) inputType;
             this.nIn = c.getChannels();
+            this.featureDim = kernel[0] * kernel[1] * (int) nIn;
         }
     }
 

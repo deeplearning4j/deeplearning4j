@@ -2173,13 +2173,33 @@ public interface INDArray extends Serializable, AutoCloseable {
     INDArray getColumn(long i);
 
     /**
-     * Returns the specified row.
+     * Returns the specified column. Throws an exception if its not a matrix (rank 2).
+     * Returned array will either be 1D (keepDim = false) or 2D (keepDim = true) with shape [length, 1]
+     *
+     * @param i the row to get
+     * @param keepDim If true: return [length, 1] array. Otherwise: return [length] array
+     * @return the specified row
+     */
+    INDArray getColumn(long i, boolean keepDim);
+
+    /**
+     * Returns the specified row as a 1D vector.
      * Throws an exception if its not a matrix
      *
      * @param i the row to getScalar
      * @return the specified row
      */
     INDArray getRow(long i);
+
+    /**
+     * Returns the specified row. Throws an exception if its not a matrix.
+     * Returned array will either be 1D (keepDim = false) or 2D (keepDim = true) with shape [1, length]
+     *
+     * @param i the row to get
+     * @param keepDim If true: return [1,length] array. Otherwise: return [length] array
+     * @return the specified row
+     */
+    INDArray getRow(long i, boolean keepDim);
 
     /**
      * Returns the number of columns in this matrix (throws exception if not 2d)

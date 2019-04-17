@@ -14,6 +14,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.nd4j.linalg.activations.Activation;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.config.NoOp;
@@ -70,6 +71,7 @@ public class AttentionLayerTest extends BaseDL4JTest {
 
 
                     MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                            .dataType(DataType.DOUBLE)
                             .activation(Activation.TANH)
                             .updater(new NoOp())
                             .weightInit(WeightInit.XAVIER)
@@ -134,6 +136,7 @@ public class AttentionLayerTest extends BaseDL4JTest {
 
 
                     MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                            .dataType(DataType.DOUBLE)
                             .activation(Activation.TANH)
                             .updater(new NoOp())
                             .weightInit(WeightInit.XAVIER)
@@ -167,6 +170,7 @@ public class AttentionLayerTest extends BaseDL4JTest {
         int layerSize = 8;
 
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                .dataType(DataType.DOUBLE)
                 .activation(Activation.IDENTITY)
                 .updater(new NoOp())
                 .weightInit(WeightInit.XAVIER)
@@ -233,6 +237,7 @@ public class AttentionLayerTest extends BaseDL4JTest {
 
 
                 MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                        .dataType(DataType.DOUBLE)
                         .activation(Activation.IDENTITY)
                         .updater(new NoOp())
                         .weightInit(WeightInit.XAVIER)
@@ -294,6 +299,7 @@ public class AttentionLayerTest extends BaseDL4JTest {
 
 
                     ComputationGraphConfiguration graph = new NeuralNetConfiguration.Builder()
+                            .dataType(DataType.DOUBLE)
                             .activation(Activation.TANH)
                             .updater(new NoOp())
                             .weightInit(WeightInit.XAVIER)
@@ -360,6 +366,7 @@ public class AttentionLayerTest extends BaseDL4JTest {
 
 
                     ComputationGraphConfiguration graph = new NeuralNetConfiguration.Builder()
+                            .dataType(DataType.DOUBLE)
                             .activation(Activation.TANH)
                             .updater(new NoOp())
                             .weightInit(WeightInit.XAVIER)

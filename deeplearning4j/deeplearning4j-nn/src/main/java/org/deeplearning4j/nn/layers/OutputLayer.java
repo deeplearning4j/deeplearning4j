@@ -19,6 +19,7 @@ package org.deeplearning4j.nn.layers;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.workspace.ArrayType;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -32,17 +33,13 @@ import org.nd4j.linalg.factory.Nd4j;
  */
 public class OutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.layers.OutputLayer> {
 
-    public OutputLayer(NeuralNetConfiguration conf) {
-        super(conf);
-    }
-
-    public OutputLayer(NeuralNetConfiguration conf, INDArray input) {
-        super(conf, input);
+    public OutputLayer(NeuralNetConfiguration conf, DataType dataType) {
+        super(conf, dataType);
     }
 
     @Override
     protected INDArray getLabels2d(LayerWorkspaceMgr workspaceMgr, ArrayType arrayType) {
-        return workspaceMgr.castTo(arrayType, Nd4j.defaultFloatingPointType(), labels, false);
+        return labels;
     }
 
 }

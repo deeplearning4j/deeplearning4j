@@ -21,6 +21,7 @@ import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.normalization.LocalResponseNormalizationHelper;
 import org.deeplearning4j.nn.workspace.ArrayType;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.OpContext;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.LocalResponseNormalization;
@@ -40,6 +41,10 @@ import java.util.Map;
 public class MKLDNNLocalResponseNormalizationHelper extends BaseMKLDNNHelper implements LocalResponseNormalizationHelper {
 
     protected OpContext context;
+
+    public MKLDNNLocalResponseNormalizationHelper(DataType dataType){
+
+    }
 
     @Override
     public boolean checkSupported(double k, double n, double alpha, double beta) {

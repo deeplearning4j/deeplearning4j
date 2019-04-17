@@ -27,6 +27,7 @@ import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.api.TrainingListener;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.primitives.Pair;
 
@@ -96,10 +97,10 @@ public abstract class SameDiffLayer extends AbstractSameDiffLayer {
 
     @Override
     public org.deeplearning4j.nn.api.Layer instantiate(NeuralNetConfiguration conf,
-                    Collection<TrainingListener> trainingListeners, int layerIndex, INDArray layerParamsView,
-                    boolean initializeParams) {
+                                                       Collection<TrainingListener> trainingListeners, int layerIndex, INDArray layerParamsView,
+                                                       boolean initializeParams, DataType networkDataType) {
         org.deeplearning4j.nn.layers.samediff.SameDiffLayer ret =
-                        new org.deeplearning4j.nn.layers.samediff.SameDiffLayer(conf);
+                        new org.deeplearning4j.nn.layers.samediff.SameDiffLayer(conf, networkDataType);
         ret.setIndex(layerIndex);
         ret.setParamsViewArray(layerParamsView);
         Map<String, INDArray> paramTable = initializer().init(conf, layerParamsView, initializeParams);

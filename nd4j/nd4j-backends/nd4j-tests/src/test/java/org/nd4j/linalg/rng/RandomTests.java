@@ -79,7 +79,7 @@ public class RandomTests extends BaseNd4jTest {
     @Test
     public void testCrossBackendEquality1() {
 
-        int[] shape = {1, 12};
+        int[] shape = {12};
         double mean = 0;
         double standardDeviation = 1.0;
         INDArray exp = Nd4j.create(new double[] {-0.832718168582558, 1.3312306172061867, -0.27101354040045766, 1.0368130323476494, -0.6257379511224601, 0.30653534119847814, 0.28250229228899343, -0.5464191486048424, 0.5182898732953277, 1.463107608378911, 0.5634855878214299, -1.4979616922031507});

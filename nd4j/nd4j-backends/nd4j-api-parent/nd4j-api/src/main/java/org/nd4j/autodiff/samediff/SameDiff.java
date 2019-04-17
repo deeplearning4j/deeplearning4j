@@ -999,60 +999,6 @@ public class SameDiff extends SDBaseOps {
     }
 
 
-    /**
-     * Returns true if the given function has ndarray properties to resolve.
-     *
-     * @param function the function to check
-     * @return true if the function has yet to be resolved properties
-     */
-    public boolean hasPropertiesToResolve(DifferentialFunction function) {
-        return propertiesToResolve.containsKey(function.getOwnName());
-    }
-
-
-    /**
-     * Get the property for a given function
-     *
-     * @param functionInstance the function to get the
-     *                         property for
-     * @param propertyName     the name of the property to get
-     * @param <T>              the inferred return type
-     * @return the property for the given function
-     */
-    public <T> T getPropertyForFunction(DifferentialFunction functionInstance, String propertyName) {
-        if (!propertiesForFunction.containsKey(functionInstance.getOwnName())) {
-            return null;
-        } else {
-            val map = propertiesForFunction.get(functionInstance.getOwnName());
-            return (T) map.get(propertyName);
-
-        }
-    }
-
-    /**
-     * Add a property for the given function
-     *
-     * @param functionFor  the function add a property for
-     * @param propertyName the property name
-     * @param property     the property value
-     */
-    public void addPropertyForFunction(DifferentialFunction functionFor, String propertyName, INDArray property) {
-        addPropertyForFunction(functionFor, propertyName, (Object) property);
-    }
-
-
-    /**
-     * Add a property for the given function
-     *
-     * @param functionFor  the function to add the property for
-     * @param propertyName the name of the property to add the value for
-     * @param property     the property value to add
-     */
-    public void addPropertyForFunction(DifferentialFunction functionFor, String propertyName, long property) {
-        addPropertyForFunction(functionFor, propertyName, (Object) property);
-    }
-
-
     private void addPropertyForFunction(DifferentialFunction functionFor, String propertyName, Object propertyValue) {
         if (!propertiesForFunction.containsKey(functionFor.getOwnName())) {
             Map<String, Object> fields = new LinkedHashMap<>();
@@ -5029,4 +4975,6 @@ public class SameDiff extends SDBaseOps {
         Map<String, org.nd4j.linalg.api.buffer.DataType> out = session.output(allVars, phValues);
         return out;
     }
+
+
 }

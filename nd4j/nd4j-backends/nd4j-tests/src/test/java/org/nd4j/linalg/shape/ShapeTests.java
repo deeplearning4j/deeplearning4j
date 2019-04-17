@@ -103,7 +103,6 @@ public class ShapeTests extends BaseNd4jTest {
             INDArray arr = baseArr.tensorAlongDimension(i, 2);
             assertEquals("Failed at index " + i, assertions[i], arr);
         }
-
     }
 
 
@@ -115,7 +114,7 @@ public class ShapeTests extends BaseNd4jTest {
         INDArray vectorDimensionTest = arr.vectorAlongDimension(1, 2);
         assertEquals(assertion, vectorDimensionTest);
         INDArray zeroOne = arr.vectorAlongDimension(0, 1);
-        assertEquals(zeroOne, Nd4j.create(new float[] {1, 5, 9}));
+        assertEquals(Nd4j.create(new float[] {1, 5, 9}), zeroOne);
 
         INDArray testColumn2Assertion = Nd4j.create(new float[] {13, 17, 21});
         INDArray testColumn2 = arr.vectorAlongDimension(1, 1);

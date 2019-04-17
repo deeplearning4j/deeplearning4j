@@ -771,6 +771,8 @@ public class Configuration implements Iterable<Map.Entry<String, String>>, Writa
      */
     public Collection<String> getStringCollection(String name) {
         String valueString = get(name);
+        if(valueString == null)
+            return null;
         return Arrays.asList(StringUtils.split(valueString, ","));
     }
 
